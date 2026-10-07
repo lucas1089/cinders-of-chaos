@@ -19,14 +19,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Lua 5.3
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq lua5.3
+      - name: Install Lua 5.3 and LuaJIT
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lua5.3 luajit
 
-      - name: Lua syntax (all .lua files)
+      - name: Lua syntax (Lua 5.3 and LuaJIT, the engine's interpreter)
         run: |
           status=0
           while IFS= read -r f; do
             luac5.3 -p "$f" || status=1
+            luajit -bl "$f" > /dev/null || status=1
           done < <(git ls-files '*.lua')
           exit $status
 
@@ -47,7 +48,12 @@ jobs:
           exit $status
 
       - name: Server unit tests (mocked engine API)
-        run: cd server && lua5.3 tests/passivetree_effects_test.lua
+        run: |
+          cd server
+          for t in tests/*_test.lua; do
+            luajit "$t"
+            lua5.3 "$t"
+          done
 
       - name: Client modules (otmod name, scripts)
         run: python3 -I tools/ci/check_modules.py

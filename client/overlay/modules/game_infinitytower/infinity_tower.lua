@@ -111,6 +111,14 @@ The Infinity Tower is a solo challenge where you will face increasingly powerful
   descLabel:parseColoredText(text, '#ffffff')
 end
 
+function enterTower()
+  local protocol = g_game.isOnline() and g_game.getProtocolGame()
+  if protocol then
+    protocol:sendExtendedOpcode(OPCODE_INFINITY_TOWER, '{"action":"enter"}')
+    hide()
+  end
+end
+
 function toggle()
   if infinityTowerWindow and infinityTowerWindow:isVisible() then
     hide()

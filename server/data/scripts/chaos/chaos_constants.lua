@@ -175,15 +175,14 @@ Chaos.tower = {
 	tryCooldownSeconds = 0, -- "Next Try Available"; 0 = always ready
 	pointsPerFloor = 1000,
 	rankingSize = 10,
-	-- Milestones: SERVER item ids. The client shows these exact ids in its fallback list
-	-- (60000: 30 gold, 120000: 51964, 180000: 63185, 240000: 51956 x10, 300000: 43895).
-	-- ASSUMPTION: those client ids are also the server ids.
+	-- Milestones: SERVER item ids that exist in our items.otb (the client window reads the real ones from the
+	-- server; its built-in fallback list is only shown before the first update).
 	milestones = {
-		{points = 60000, items = {{id = 2148, count = 30, name = "Gold Coin"}}},
-		{points = 120000, items = {{id = 51964, count = 1, name = "Prize"}}},
-		{points = 180000, items = {{id = 63185, count = 1, name = "Prize"}}},
-		{points = 240000, items = {{id = 51956, count = 10, name = "Prize"}}},
-		{points = 300000, items = {{id = 43895, count = 1, name = "Prize"}}}
+		{points = 60000, items = {{id = 2148, count = 300, name = "Gold Coin"}}},
+		{points = 120000, items = {{id = 29856, count = 3, name = "Chaos Orb"}}},
+		{points = 180000, items = {{id = 29857, count = 3, name = "Divine Orb"}}},
+		{points = 240000, items = {{id = 29857, count = 10, name = "Divine Orb"}}},
+		{points = 300000, items = {{id = 8209, count = 1, name = "Soulreaper"}}}
 	}
 }
 

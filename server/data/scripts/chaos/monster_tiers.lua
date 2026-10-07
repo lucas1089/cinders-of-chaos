@@ -278,6 +278,15 @@ local function applyTier(monster, tier, depth)
 	end
 end
 
+-- other scripts (infinitytower_run.lua) force a tier on a monster they created
+function ChaosApplyTier(monster, tier)
+	if ChaosTiers[tier] and tier ~= "boss" and eligible(monster) and not state[monster:getId()] then
+		applyTier(monster, tier, 0)
+		return true
+	end
+	return false
+end
+
 local function pickWeighted(weights)
 	local total = 0
 	for _, w in pairs(weights) do
