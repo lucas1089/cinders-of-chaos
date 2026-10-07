@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Legendary Warrior" nameDescription="legendary warrior" race="blood" experience="45000000" evented = "25"  skulled="1" looting="2" speed="450" manacost="0">
 	<health now="7000000" max="7000000"/>
-	<look type="2161" corpse="6068" />
+	<look type="1497" corpse="6068" />
 	<targetchange interval="5000" chance="10" />
 	<flags>
 		<flag summonable="0" />

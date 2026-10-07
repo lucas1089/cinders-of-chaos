@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Actors Power" nameDescription="the actors power" race="undead" experience="500000" evented = "25" skulled="2" looting="1" speed="650">
 	<health now="2500000" max="2500000"/>
-	<look type="1752" head="0" body="0" legs="0" feet="0" corpse="6068"/>
+	<look type="1489" head="0" body="0" legs="0" feet="0" corpse="6068"/>
 	<targetchange interval="2000" chance="50"/>
 	<strategy attack="85" defense="15"/>
 	<flags>

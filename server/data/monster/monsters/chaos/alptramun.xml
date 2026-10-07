@@ -2,7 +2,7 @@
 <monster name="Alptramun" nameDescription="a Alptramun" race="blood" experience="52000" speed="400" evented = "4" skulled="1" looting="1" manacost="0">
 	<health now="80000" max="80000" />
 	<level min="820" max="880"/>
-	<look type="1143" corpse="6068" corpseActionId = "41021" />
+	<look type="1479" corpse="6068" corpseActionId = "41021" />
 	<levelconfig experience="250" health="100" damage="0" speed="50" />
 	<targetchange interval="4000" chance="0" />
 	<flags>

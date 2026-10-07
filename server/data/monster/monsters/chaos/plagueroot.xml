@@ -2,7 +2,7 @@
 <monster name="Plagueroot" nameDescription="a plagueroot" race="blood" experience="33000" speed="440" skulled="1" evented = "2" looting="1" manacost="0">
 	<health now="27000" max="27000"/>
 	<level min="320" max="380"/>
-	<look type="1121" corpse="6068"/>
+	<look type="1477" corpse="6068"/>
 	<targetchange interval="5000" chance="8"/>
 	<strategy attack="100" defense="0"/>
 	<levelconfig experience="250" health="100" damage="0" speed="50" />

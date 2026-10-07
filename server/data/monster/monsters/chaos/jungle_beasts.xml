@@ -2,7 +2,7 @@
 <monster name="Jungle Beasts" nameDescription="a Jungle Beasts" race="undead" experience="80000" evented = "5" skulled="1" looting="1" speed="430">
 	<health now="95000" max="95000"/>
 	<level min="1000" max="1150"/>
-	<look type="1364" corpse="6068"/>
+	<look type="1484" corpse="6068"/>
 	<targetchange interval="4000" chance="10"/>
 	<levelconfig experience="250" health="100" damage="0" speed="50" />
 	<strategy attack="100" defense="0"/>

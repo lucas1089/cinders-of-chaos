@@ -2,7 +2,7 @@
 <monster name="Evil Man" nameDescription="a evil man" race="undead" experience="250000" evented = "25" skulled="1" looting="1" speed="450">
 	<health now="1000000" max="1000000" />
 	<levelconfig experience="250" health="100" damage="50" speed="50" />
-	<look type="1652" corpse="6068" />
+	<look type="1486" corpse="6068" />
 	<targetchange interval="5000" chance="20" />
 	<flags>
 		<flag bestiary="1" />

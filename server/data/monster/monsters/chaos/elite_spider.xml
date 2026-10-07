@@ -2,7 +2,7 @@
 <monster name="Elite Spider" nameDescription="an elite spider" race="venom" experience="131000" evented = "6" speed="470" skulled="1" looting="1" manacost="0">
 	<!-- Death Reaper -->
 	<health now="190000" max="190000"/>
-	<look type="1883" corpse="6068"/>
+	<look type="909" corpse="6068"/>
 	<level min="1300" max="1450"/>
 	<targetchange interval="3000" chance="20"/>
 	<strategy attack="100" defense="0"/>

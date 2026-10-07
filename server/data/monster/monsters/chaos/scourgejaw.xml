@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Scourgejaw" nameDescription="a scourgejaw" race="fire" experience="165000" evented = "7" skulled="1" looting="1" speed="470">
 	<health now="250000" max="250000" />
-	<look type="1824" corpse="6068" />
+	<look type="1493" corpse="6068" />
 	<level min="1650" max="1800"/>
 	<targetchange interval="4000" chance="20" />
 	<levelconfig experience="250" health="100" damage="0" speed="50" />

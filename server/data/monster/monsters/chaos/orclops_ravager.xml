@@ -2,7 +2,7 @@
 <monster name="Orclops Ravager" nameDescription="a Orclops Ravager" race="blood" experience="45000" evented = "4" speed="520" skulled="1" looting="1" manacost="0">
 	<health now="45000" max="45000"/>
 	<level min="650" max="700"/>
-	<look type="935" head="133" body="133" legs="133" feet="133" corpse="6068"/>
+	<look type="1470" head="133" body="133" legs="133" feet="133" corpse="6068"/>
 	<targetchange interval="2000" chance="5"/>
 	<strategy attack="70" defense="0"/>
 	<levelconfig experience="250" health="100" damage="0" speed="50" />

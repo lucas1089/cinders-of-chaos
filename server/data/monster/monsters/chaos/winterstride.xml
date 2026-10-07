@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Winterstride" nameDescription="an winterstride" race="blood" experience="3300000" evented = "8" speed="650" skulled="1" looting="1" manacost="0">
 	<health now="2300000" max="2300000"/>
-	<look type="1932"  corpse="6068"/>
+	<look type="1494"  corpse="6068"/>
 	<level min="5000" max="5500"/>
 	<targetchange interval="3000" chance="50"/>
 	<strategy attack="130" defense="0"/>

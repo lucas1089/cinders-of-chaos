@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Garack" nameDescription="a garack" race="fire" experience="30000" skulled="2" looting="1" speed="800">
 	<health now="75000" max="75000" />
-	<look type="1030" corpse="6068" />
+	<look type="1474" corpse="6068" />
 	<level min="700" max="900"/>
 	<targetchange interval="4000" chance="10" />
 	<levelconfig experience="250" health="100" damage="0" speed="50" />

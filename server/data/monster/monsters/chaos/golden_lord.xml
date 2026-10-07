@@ -2,7 +2,7 @@
 <monster name="Golden Lord" nameDescription="a Golden lord" race="venom" experience="75000" evented = "5" skulled="1" looting="1" speed="430">
 	<health now="105000" max="105000"/>
 	<level min="950" max="1050"/>
-	<look type="1701" head="133" body="133" legs="133" feet="133" addons="3" corpse="6068"/>
+	<look type="1488" head="133" body="133" legs="133" feet="133" addons="3" corpse="6068"/>
 	<levelconfig experience="250" health="100" damage="0" speed="50" />
 	<targetchange interval="5000" chance="25"/>
 	<strategy attack="100" defense="0"/>

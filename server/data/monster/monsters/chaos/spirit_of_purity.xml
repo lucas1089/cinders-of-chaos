@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Spirit of Purity" nameDescription="an Spirit of Purity" race="blood" experience="500000" evented = "8" speed="650" skulled="1" looting="1" manacost="0">
 	<health now="450000" max="450000"/>
-	<look type="2132" corpse="6068"/>
+	<look type="1291" corpse="6068"/>
 	<level min="2500" max="3000"/>
 	<targetchange interval="3000" chance="50"/>
 	<strategy attack="130" defense="0"/>

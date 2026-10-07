@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Elite Twisted Shaper" nameDescription="a elite twisted shaper" race="blood" experience="650000" evented = "8" speed="650" skulled="1" looting="1" manacost="0">
 	<health now="4000000" max="4000000"/>
-	<look type="932" head="133" body="133" legs="133" feet="133" corpse="6068"/>
+	<look type="1468" head="133" body="133" legs="133" feet="133" corpse="6068"/>
 	<level min="2500" max="3000"/>
 	<targetchange interval="5000" chance="0"/>
 	<flags>

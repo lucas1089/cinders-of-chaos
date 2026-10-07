@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Vorathrax" nameDescription="a vorathrax" race="blood" experience="155000" power = "2" skulled="2" looting="1" speed="650">
 	<health now="3000000" max="3000000" />
-	<look type="938" corpse="6068" />
+	<look type="1471" corpse="6068" />
 	<targetchange interval="4000" chance="10" />
 	<flags>
 		<flag bestiary="1" />

@@ -2,7 +2,7 @@
 <monster name="Nexweaver" nameDescription="a nexweaver" race="venom" experience="170000" evented = "7" skulled="1" looting="1" speed="600">
 	<health now="245000" max="245000" />
 	<level min="1700" max="1850"/>
-	<look type="2333" corpse="6068"/>
+	<look type="1501" corpse="6068"/>
 	<targetchange interval="5000" chance="8"/>
 	<strategy attack="100" defense="0"/>
 	<levelconfig experience="250" health="100" damage="0" speed="50" />

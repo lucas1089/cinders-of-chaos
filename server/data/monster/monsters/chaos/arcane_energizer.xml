@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Arcane Energizer" nameDescription="a arcane energizer" race="blood" experience="5000000" evented = "25" skulled="2" looting="1" speed="700" manacost="0">
 	<health now="60000000" max="60000000"/>
-	<look type="2016" corpse="6068"/>
+	<look type="1496" corpse="6068"/>
 	<targetchange interval="4000" chance="0"/>
 	<strategy attack="100" defense="0"/>
 	<flags>

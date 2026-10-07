@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <monster name="Ormathulak" nameDescription="the Ormathulak" race="venom" experience="500000000" speed="800" manacost="0" damagereduction="10" damagepenetration="25" evented = "25" looting="1">
     <health now="910000000" max="910000000"/>
-    <look type="1988" corpse="6068"/>
+    <look type="1091" corpse="6068"/>
     <targetchange interval="20000" chance="30"/>
     <strategy attack="100" defense="0"/>
     <flags>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Jungle Warrior" nameDescription="an Jungle Warrior" race="blood" experience="790000" evented = "8" speed="650" skulled="1" looting="1" manacost="0">
 	<health now="600000" max="600000"/>
-	<look type="2200"  corpse="6068"/>
+	<look type="1499"  corpse="6068"/>
 	<level min="2800" max="3200"/>
 	<targetchange interval="3000" chance="50"/>
 	<strategy attack="130" defense="0"/>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Lacewing Moth" nameDescription="a Lacewing Moth" race="blood" experience="75000" evented = "5" skulled="1" looting="1" speed="630">
 	<health now="105000" max="105000"/>
-	<look type="1148" corpse="6068" />
+	<look type="1480" corpse="6068" />
 	<level min="950" max="1050"/>
 	<levelconfig experience="250" health="100" damage="0" speed="50" />
 	<targetchange interval="4000" chance="10" />

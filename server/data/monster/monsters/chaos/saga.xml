@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Saga" nameDescription="an saga" race="venom" experience="80000000" speed="550" manacost="0" damagereduction="10" damagepenetration="15" evented = "25" skulled="2" looting="1">
 	<health now="45000000" max="45000000"/>
-	<look type="1662" head="1333" body="116" legs="133" feet="133" addons="3"/>
+	<look type="1487" head="1333" body="116" legs="133" feet="133" addons="3"/>
 	<targetchange interval="3000" chance="20"/>
 	<strategy attack="100" defense="0"/>
 	<flags>
