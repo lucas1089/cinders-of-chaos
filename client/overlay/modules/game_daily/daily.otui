@@ -68,7 +68,7 @@ MainWindow
       size: 120 140
       anchors.top: parent.top
       anchors.left: parent.left
-      text: Saturday
+      text: Day 1
 
     GetItems
       id: daily2
@@ -76,7 +76,7 @@ MainWindow
       anchors.top: parent.top
       anchors.left: daily1.right
       margin-left: 8
-      text: Sunday
+      text: Day 2
 
     GetItems
       id: daily3
@@ -84,7 +84,7 @@ MainWindow
       anchors.top: parent.top
       anchors.left: daily2.right
       margin-left: 8
-      text: Monday
+      text: Day 3
 
     GetItems
       id: daily4
@@ -92,7 +92,7 @@ MainWindow
       anchors.top: daily1.bottom
       anchors.left: parent.left
       margin-top: 8
-      text: Tuesday
+      text: Day 4
 
     GetItems
       id: daily5
@@ -101,7 +101,7 @@ MainWindow
       anchors.left: daily4.right
       margin-left: 8
       margin-top: 8
-      text: Wednesday
+      text: Day 5
 
     GetItems
       id: daily6
@@ -110,7 +110,7 @@ MainWindow
       anchors.left: daily5.right
       margin-left: 8
       margin-top: 8
-      text: Thursday
+      text: Day 6
 
     GetItems
       id: daily7
@@ -119,7 +119,7 @@ MainWindow
       anchors.right: parent.right
       anchors.bottom: daily6.bottom
       margin-left: 8
-      text: Friday
+      text: Day 7
 
   Button
     id: closeButton

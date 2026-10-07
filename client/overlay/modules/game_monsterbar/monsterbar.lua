@@ -32,7 +32,11 @@ local function paint(creature, tier, label, mods)
   local name = window:getChildById('name')
   name:setText((label and label ~= '' and (label .. ' ') or t.label) .. creature:getName())
   name:setColor(t.text)
-  window:getChildById('mods'):setText(mods and #mods > 0 and table.concat(mods, '  -  ') or '')
+  local modsLabel = window:getChildById('mods')
+  local hasMods = mods and #mods > 0
+  modsLabel:setText(hasMods and table.concat(mods, '  -  ') or '')
+  modsLabel:setColor(t.text)
+  modsLabel:setVisible(hasMods and true or false)
 end
 
 -- in-world label: modifiers on a line above the name, name coloured by tier
@@ -46,7 +50,12 @@ local function labelCreature(creature, tier, mods)
   end
   creature:setInformationColor(t.text)
   if mods and #mods > 0 then
-    creature:setTitle(table.concat(mods, ' - '), 'verdana-11px-antialised', t.text)
+    -- two modifiers per line keeps the label about as wide as the monster's name
+    local lines = {}
+    for i = 1, #mods, 2 do
+      lines[#lines + 1] = mods[i + 1] and (mods[i] .. ' - ' .. mods[i + 1]) or mods[i]
+    end
+    creature:setTitle(table.concat(lines, '\n'), 'verdana-11px-antialised', t.text)
   end
 end
 

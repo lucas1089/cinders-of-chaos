@@ -229,6 +229,7 @@ function talk.onSay(player, words, param)
 	return false
 end
 
+talk:separator(" ")
 talk:register()
 
 -- /towerrun <floors>,<seconds> : staff test helper, records a fake run for yourself so the
@@ -248,4 +249,5 @@ function testTalk.onSay(player, words, param)
 	return false
 end
 
+testTalk:separator(" ")
 testTalk:register()

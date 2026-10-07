@@ -180,6 +180,7 @@ function nameTalk.onSay(player, words, param)
 	return false
 end
 
+nameTalk:separator(" ")
 nameTalk:register()
 
 local clientTalk = TalkAction("!autolootclient")
@@ -189,4 +190,5 @@ function clientTalk.onSay(player, words, param)
 	return false
 end
 
+clientTalk:separator(" ")
 clientTalk:register()

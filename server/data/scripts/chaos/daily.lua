@@ -2,7 +2,7 @@
 --
 -- Client contract (client/overlay/modules/game_daily/daily.lua):
 --   server -> client  {"action":"OpenDailyWindow",
---                      "data":{"Day":d, "TakenReward":0|1,
+--                      "data":{"Day":d, "TakenReward":0|1, "NextIn":seconds,
 --                              "DAILY_REWARDS":[{"ClientID":id,"Count":n} x7]}}
 --   client -> server  {"action":"calim","data":v}      ("calim" is the client's spelling)
 --
@@ -48,9 +48,13 @@ local function sendWindow(player)
 		local itemType = ItemType(reward.itemId)
 		rewards[i] = {ClientID = itemType:getClientId(), Count = reward.count}
 	end
+	local now = os.time()
+	local d = os.date("*t", now)
+	local midnight = os.time({year = d.year, month = d.month, day = d.day + 1, hour = 0, min = 0, sec = 0})
 	Chaos.send(player, OPCODE, "OpenDailyWindow", {
 		Day = slot - 2,
 		TakenReward = taken and 1 or 0,
+		NextIn = math.max(0, midnight - now), -- seconds until the server day rolls over
 		DAILY_REWARDS = rewards
 	})
 end
@@ -161,4 +165,5 @@ function talk.onSay(player, words, param)
 	return false
 end
 
+talk:separator(" ")
 talk:register()
