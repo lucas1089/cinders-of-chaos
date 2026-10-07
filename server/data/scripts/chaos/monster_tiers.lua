@@ -334,6 +334,10 @@ local death = CreatureEvent("ChaosTierDeath")
 function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjustified, mostDamageUnjustified)
 	local id = creature:getId()
 	local s = state[id]
+	-- the loot callback runs after this event: keep tier and modifiers for a few seconds (ChaosTierDead[id])
+	ChaosTierDead = ChaosTierDead or {}
+	ChaosTierDead[id] = {tier = ChaosTierOf(creature), mods = s and s.mods or {}}
+	addEvent(function(cid) ChaosTierDead[cid] = nil end, 10000, id)
 	state[id] = nil
 	if s and s.mods then
 		for _, key in ipairs(s.mods) do
