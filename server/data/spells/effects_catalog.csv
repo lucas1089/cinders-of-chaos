@@ -1,0 +1,54 @@
+name,theme,category,new id,source id,note
+fire_nova,fire,effect,372,204,3x3 f8 expanding flame ring
+fire_explosion,fire,effect,373,209,3x4 f9 fireball plume
+fire_tornado,fire,effect,374,662,5x5 f17 flame whirlwind
+fire_burst,fire,effect,375,220,3x3 f12 spiky explosion
+meteor_strike,fire,effect,376,205,2x2 f4 flaming boulder
+inferno_burst,fire,effect,377,614,3x3 f9 red-orange ember burst
+fire_ring,fire,effect,378,493,7x7 f10 big faint ember ring (wide nova)
+frost_burst,frost,effect,379,265,5x5 f7 ice shatter
+frost_nova,frost,effect,380,766,7x7 f12 teal frost ring with flash
+ice_spikes,frost,effect,381,385,3x2 f9 ice spikes erupt
+ice_crystal,frost,effect,382,244,3x3 f45 slow crystal form and shatter
+frost_ripple,frost,effect,383,765,5x5 f6 cyan ripple rings
+chain_lightning,lightning,effect,384,176,1x1 f6 cyan forked arc
+lightning_violet,lightning,effect,385,179,1x1 f6 violet forked arc
+lightning_strike,lightning,effect,386,443,3x3 f22 yellow bolt from above
+lightning_zap,lightning,effect,387,248,2x2 f4 violet jagged zap
+blood_rune,blood,effect,388,540,3x3 f5 red rune circle
+blood_ring,blood,effect,389,681,4x4 f16 red spinning ring (aura)
+blood_splash,blood,effect,390,241,2x2 f8 dark red spray
+blood_slash,blood,effect,391,637,3x3 f18 triple claw slash
+blood_nova,blood,effect,392,654,7x8 f5 red expanding ring
+shadow_smoke,shadow,effect,393,612,2x2 f8 purple smoke cloud
+shadow_cloud,shadow,effect,394,215,3x5 f10 tall purple smoke column
+shadow_ring,shadow,effect,395,219,3x3 f11 purple ring puff
+void_eye,shadow,effect,396,584,8x5 f12 eye vortex (large)
+necro_skull,necrotic,effect,397,658,5x5 f20 spectral blue skull
+shadow_flame,shadow,effect,398,678,2x2 f9 purple flame
+poison_pentagram,poison,effect,399,278,3x3 f11 green pentagram
+poison_ring,poison,effect,400,751,4x4 f16 thorny green ring (aura)
+poison_flame,poison,effect,401,677,2x2 f9 green flame
+poison_burst,poison,effect,402,196,1x1 f10 green particle burst
+holy_smite,holy,effect,403,444,6x6 f20 white light burst
+holy_cross,holy,effect,404,377,2x2 f12 golden cross
+holy_spiral,holy,effect,405,87,2x2 f8 white spiral with sparkles
+arcane_circle,arcane,effect,406,630,4x4 f16 magenta rune ring (aura)
+arcane_aura,arcane,effect,407,754,7x7 f17 violet glowing ring
+arcane_burst,arcane,effect,408,184,1x1 f8 arcane sparkle burst
+summon_portal,summon,effect,409,482,2x2 f17 pink-violet portal vortex
+summon_vortex,summon,effect,410,477,2x2 f16 blue-violet vortex
+heal_hearts,healing,effect,411,733,1x1 f18 red hearts rise
+heal_sparkle,healing,effect,412,764,5x5 f40 cyan sparkles
+ground_slam,slam,effect,413,494,3x3 f9 dust ring
+shockwave,slam,effect,414,212,3x3 f4 white burst shockwave
+fire_bolt,fire,missile,116,144,1x1 f4 fireball
+fire_streak,fire,missile,117,100,3x3 f12 long flame streak
+ice_shard,frost,missile,118,171,4x4 f18 ice lance with trail
+arcane_orb,arcane,missile,119,104,1x1 f4 purple orb
+shadow_bolt,shadow,missile,120,163,2x2 purple dark bolt
+holy_bolt,holy,missile,121,181,2x2 f4 white glowing bolt
+blood_spear,blood,missile,122,188,2x2 f4 red streak
+lightning_orb,lightning,missile,123,197,2x2 f8 cyan electric orb
+poison_dart,poison,missile,124,136,1x1 f4 green dart
+skull_orb,necrotic,missile,125,151,2x2 f2 flying skull
