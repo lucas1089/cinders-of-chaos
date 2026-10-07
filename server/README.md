@@ -49,7 +49,7 @@ working directory, as with the rest of the base server libs).
 |---|---|---|---|
 | game_bank | `bank.lua` | 60 | Gold deposit/withdraw/transfer on the native bank balance, star currency in `chaos_bank`. `!bank` opens the window. Written to the client contract; mock-tested only. |
 | game_autoloot | `autoloot.lua` | 216 | Window protocol and `!autoloot` / `!autolootclient` talkactions; list lives in the same storages (base 80000) as the base server onDropLoot callback, which does the actual looting. XML talkaction conflict possible (see below). |
-| game_daily | `daily.lua` | 207 | 7-day streak with claim, midnight rollover, `!daily`, optional open on login. Reward items are placeholders (crystal coins). |
+| game_daily | `daily.lua` | 207 | 7-day streak with claim, midnight rollover, `!daily`, optional open on login. Rewards: platinum coins, Chaos and Divine Orbs and a crystal coin, plus a week bonus on day 7 (all or nothing); edit `Chaos.daily` in `chaos_constants.lua`. |
 | game_notifications | `notifications.lua` | 79 out, 151/152 in | `/gmnotify`, accept/decline of a standard TFS party invite, `ChaosNotify.*` sender API. Catacomb start / leave-queue are hooks only; nothing triggers party/catacomb/task/battle pass toasts automatically. |
 | game_passivetree | `passivetree.lua`, `passivetree_data.lua` | 65 | Points, save with full validation (known ids, connected to root, point cap), preset storage, reset for level x 250 gold. Bonuses are computed (`ChaosPassiveTree.getBonuses`) but **not applied to anything**. |
 | game_dungeons | `dungeons.lua` | 109 | Reads the base server `DUNGEON_SYSTEM` table. Queue, group formation, teleport in, timer, monster-count progress, boss kill, difficulty unlock, speed/flawless challenges, solo/group rankings, teleport out. Difficulty does not change monsters; loot panel is display only. |
@@ -85,8 +85,7 @@ the client has no fixed value and 110 is free. Storage keys `7100000-7100999` an
    overlay (titles: Bones Dungeon, Master of the Elements, Forbidden Chevalier, Rootkraken).
 4. `game_passivetree` sends via `protocolGame.sendExtendedJSONOpcode`, an OTClient call. Stock OTClient
    10.98 may lack it.
-5. `bank.lua` / daily client code reference undefined variables in error branches (`data`/`msgWindow`);
-   harmless unless JSON decoding fails.
+5. (fixed) the JSON error branches of the bank, autoloot and daily client modules used an undefined variable.
 
 ## Stubbed or assumed (read this before relying on anything)
 

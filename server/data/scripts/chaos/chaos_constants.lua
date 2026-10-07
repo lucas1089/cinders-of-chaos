@@ -87,16 +87,20 @@ Chaos.autoloot = {
 }
 
 Chaos.daily = {
-	-- Reward for streak day 1..7 (SERVER item ids; client ids are looked up at send time).
-	-- Placeholder values: edit freely.
+	-- Reward for streak day 1..7 (SERVER item ids that exist in our items.otb; client ids are looked up at send time).
+	-- The window shows one item per day; the bonus below is added to day 7 on top of it.
 	rewards = {
-		{itemId = 2160, count = 5},
-		{itemId = 2160, count = 10},
-		{itemId = 2160, count = 15},
-		{itemId = 2160, count = 25},
-		{itemId = 2160, count = 40},
-		{itemId = 2160, count = 60},
-		{itemId = 2160, count = 100}
+		{itemId = 2152, count = 20},  -- platinum coin
+		{itemId = 29856, count = 1},  -- Chaos Orb
+		{itemId = 2152, count = 50},  -- platinum coin
+		{itemId = 29857, count = 1},  -- Divine Orb
+		{itemId = 2160, count = 1},   -- crystal coin
+		{itemId = 29856, count = 3},  -- Chaos Orb
+		{itemId = 29857, count = 3}   -- Divine Orb
+	},
+	-- given together with day 7 (all or nothing with it): a full week of claims
+	weekBonus = {
+		{itemId = 2160, count = 2}    -- crystal coin
 	},
 	openOnLogin = true, -- send OpenDailyWindow at login when today's reward is unclaimed
 	openDelayMs = 3000

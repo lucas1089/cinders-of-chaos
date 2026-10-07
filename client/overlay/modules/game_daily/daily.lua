@@ -42,7 +42,7 @@ function onDailyReward(protocol, code, buffer)
 	end)
 
 	if not json_status then
-		g_logger.error("[daily reward] JSON error: " .. data)
+		g_logger.error("[daily reward] JSON error: " .. tostring(json_data))
 
 		return false
 	end

@@ -75,10 +75,27 @@ local function claim(player, value)
 	end
 
 	local reward = cfg.rewards[slot]
-	local given = Chaos.giveItem(player, reward.itemId, reward.count)
-	if given < reward.count then
-		if given > 0 then
-			player:removeItem(reward.itemId, given) -- all or nothing
+	local list = {reward}
+	if slot == 7 then
+		for _, bonus in ipairs(cfg.weekBonus or {}) do
+			list[#list + 1] = bonus
+		end
+	end
+	-- all or nothing: if any stack does not fit, take back what was already given
+	local givenList, ok = {}, true
+	for _, r in ipairs(list) do
+		local given = Chaos.giveItem(player, r.itemId, r.count)
+		givenList[#givenList + 1] = {itemId = r.itemId, given = given}
+		if given < r.count then
+			ok = false
+			break
+		end
+	end
+	if not ok then
+		for _, g in ipairs(givenList) do
+			if g.given > 0 then
+				player:removeItem(g.itemId, g.given)
+			end
 		end
 		player:sendCancelMessage("You do not have enough room or capacity for the reward.")
 		sendWindow(player)
@@ -91,6 +108,9 @@ local function claim(player, value)
 		MESSAGE_EVENT_ADVANCE,
 		string.format("Daily reward (day %d): %dx %s.", slot, reward.count, ItemType(reward.itemId):getName())
 	)
+	if slot == 7 and #list > 1 then
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Week completed! Bonus reward collected.")
+	end
 	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
 	sendWindow(player)
 end

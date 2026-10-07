@@ -51,7 +51,7 @@ function bankOpcode(protocol, code, buffer)
 	end)
 
 	if not json_status then
-		g_logger.error("[bank] JSON error: " .. data)
+		g_logger.error("[bank] JSON error: " .. tostring(json_data))
 
 		return false
 	end
