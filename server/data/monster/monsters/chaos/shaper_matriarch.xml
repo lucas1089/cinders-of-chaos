@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<monster name="Shaper Matriarch" nameDescription="a shaper matriarch" race="blood" experience="42000" evented = "4" skulled="1" looting="1" speed="420" manacost="0">
+	<health now="38000" max="38000" />
+	<level min="640" max="700"/>
+	<look type="933" corpse="6068" />
+	<targetchange interval="5000" chance="8"/>
+	<strategy attack="100" defense="0"/>
+	<levelconfig experience="250" health="100" damage="0" speed="50" />
+	<flags>
+		<flag summonable="1" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="1" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="2" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonenergy="0" />
+		<flag canwalkonfire="0" />
+		<flag canwalkonpoison="0" />
+	</flags>
+	<script>
+        <event name="auto_loot"/>
+        <event name="orb_bonus"/>
+        <event name="crusd_chest_bonus"/>
+    </script>
+	<attacks>
+		<attack name="melee" interval="2000" min="-1100" max="-1700"/>
+		<attack name="terra strike" interval="2000" min="-1300" max="-2000"/>
+		<attack name="death wave" interval="2000" min="-1300" max="-2000"/>
+	</attacks>
+
+	<defenses armor="38" defense="40">
+        <defense name="healing" interval="2000" chance="17" min="300" max="800">
+            <attribute key="areaEffect" value="blueshimmer"/>
+        </defense>
+    </defenses>
+    <elements>
+    <element firePercent="10" />
+    <element earthPercent="10" />
+    <element energyPercent="10" />
+    <element deathPercent="10" />
+    <element physicalPercent="10" />
+    <element holyPercent="10" />
+    <element icePercent="10" />
+  </elements>
+	<immunities>
+		<immunity paralyze="1"/>
+		<immunity invisible="1"/>
+	</immunities>
+	<voices interval="2000" chance="7">
+		<voice sentence="Tar Marra Zik Tazz!" />
+		<voice sentence="Kur Tar Razka!" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="25" chance="65000"/><!-- Platinum Coin -->
+		<item id="11302;11301;11304;11303;8891;9931;11356;2645" chance="3000" /><!-- zaoan helmet -->
+		<item id="8889;8887;12607;8880;2522;2520;11117;5741" chance="4500" /><!-- skullcrackerarmor;frozen plate;elite draken mail;swamplair armor -->
+		<item id="5913" countmax="1" chance="1000" /><!-- brown pieces of cloth -->
+	</loot>
+</monster>

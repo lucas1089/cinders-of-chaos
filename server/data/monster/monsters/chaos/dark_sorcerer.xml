@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Dark Sorcerer" nameDescription="an dark sorcerer" race="blood" experience="165000" evented = "7" speed="550" skulled="1" looting="1" manacost="0">
+	<health now="255000" max="255000"/>
+	<look type="130" head="133" body="133" legs="133" feet="133" addons="3" corpse="6068"/>
+	<level min="1650" max="1800"/>
+	<targetchange interval="3000" chance="50"/>
+	<strategy attack="130" defense="0"/>
+	<levelconfig experience="250" health="100" damage="0" speed="50" />
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="95"/>
+		<flag runonhealth="0"/>
+	</flags>
+	 <script>
+		<event name="auto_loot"/>
+        <event name="orb_bonus"/>
+        <event name="crusd_chest_bonus"/>
+	</script>  
+	<attacks>
+	<attack name="melee" interval="2000" min="-3500" max="-6000" energy="600" />
+		<attack name="energy" interval="2000" range="7" target="1" min="-4250" max="-7500" >
+			<attribute key="areaEffect" value="energyarea"/>
+			<attribute key="shootEffect" value="energy"/>
+		</attack>
+		<attack name="manadrain" interval="2000" chance="15" target="1" range="7" radius="3" min="-4250" max="-8900">
+			<attribute key="areaEffect" value="energyarea"/>		
+			<attribute key="shootEffect" value="energyball"/>
+		</attack>
+		<attack name="energy" interval="2000" chance="40" length="8" spread="0" min="-4300" max="-7990">
+			<attribute key="areaEffect" value="energyarea"/>
+		</attack>
+	</attacks>
+	<defenses armor="25" defense="35">
+		<defense name="healing" interval="1000" chance="15" min="1520" max="2300">
+			<attribute key="areaEffect" value="blueshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+    <element firePercent="30" />
+    <element earthPercent="30" />
+    <element energyPercent="30" />
+    <element deathPercent="30" />
+    <element physicalPercent="30" />
+    <element holyPercent="30" />
+    <element icePercent="30" />
+  </elements>
+	<immunities>
+		<immunity paralyze="1"/>
+		<immunity invisible="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Nothing will remain but your scorched bones!"/>
+		<voice sentence="Some like it hot!"/>
+		<voice sentence="It's cooking time!"/>
+		<voice sentence="Feel the heat of battle!"/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="50" chance="65000"/><!-- Platinum Coin -->
+		<item id="8888;2500;2472;8885;8884;3983;2495;2469;7894" countmax="1" chance="3000" /><!-- armors -->
+		<item id="5462;2644;11118;11240;2537;2514;2499" countmax="1" chance="2000" /><!-- great shield;demon shield;crystal boots -->
+		<item id="25380" countmax="1" chance="10"/><!-- talent token -->
+	</loot>
+</monster>
+

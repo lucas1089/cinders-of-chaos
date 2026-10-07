@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Orcaruz" nameDescription="orcaruz" race="blood" evented = "25" experience="60000" skulled="1" looting="1" speed="400" manacost="0">
+    <health now="160000" max="160000"/>
+    <level min="200" max="200"/>
+    <look type="2" head="20" body="30" legs="40" feet="50" corpse="6068"/>
+    <targetchange interval="5000" chance="8"/>
+    <levelconfig experience="250" health="100" damage="50" speed="50" />
+    <strategy attack="100" defense="0"/>
+    <flags>
+        <flag summonable="0"/>
+        <flag attackable="1"/>
+        <flag hostile="1"/>
+        <flag illusionable="0"/>
+        <flag convinceable="0"/>
+        <flag pushable="0"/>
+        <flag canpushitems="1"/>
+        <flag canpushcreatures="1"/>
+        <flag targetdistance="1"/>
+        <flag staticattack="90"/>
+        <flag runonhealth="0"/>
+        <flag lootmessage="1"/>
+    </flags>
+    <script>
+        <event name="boss_tp_death"/>
+        <event name="first_boss_kill_talent"/>
+    </script>
+    <attacks>
+        <attack name="melee" interval="2000" min="-1300" max="-1900"/>
+        <attack name="lifedrain" interval="2000" chance="19" radius="6" target="0" min="-1400" max="-2300">
+            <attribute key="areaEffect" value="redshimmer"/>
+        </attack>
+        <attack name="dazzlecondition" interval="2000" chance="9" radius="8" target="0" min="-500" max="-1800">
+            <attribute key="areaEffect" value="greenspark"/>
+        </attack>
+        <attack name="physical" interval="2000" chance="8" range="7" target="1" radius="6" min="-1000" max="-2500">
+            <attribute key="shootEffect" value="largerock"/>
+            <attribute key="areaEffect" value="stones"/>
+        </attack>
+        <attack name="physical" interval="2000" chance="13" range="7" target="1" radius="4" min="-1000" max="-1600">
+            <attribute key="shootEffect" value="whirlwindclub"/>
+            <attribute key="areaEffect" value="explosion"/>
+        </attack>
+    </attacks>
+    <defenses armor="55" defense="55">
+        <defense name="healing" interval="2000" chance="1" min="1500" max="5000">
+            <attribute key="areaEffect" value="blueshimmer"/>
+        </defense>
+        <defense name="speed" interval="2000" chance="11" speedchange="660" duration="7000">
+            <attribute key="areaEffect" value="blackspark"/>
+        </defense>
+    </defenses>
+    <elements>
+        <element PhysicalPercent="15"/>
+        <element icePercent="5"/>
+        <element firePercent="5"/>
+        <element deathPercent="5"/>
+    </elements>
+    <immunities>
+        <immunity paralyze="1"/>
+        <immunity earth="1"/>
+        <immunity invisible="1"/>
+    </immunities>
+    <loot>
+        <item id="2160" countmax="30" chance="66000"/><!-- crystal coins -->
+        <item id="2666" countmax="2" chance="11111"/><!-- meat -->
+        <item id="2497" chance="1300"/><!-- crsuder helmet -->
+        <item id="2529" chance="1100"/><!-- black shield -->
+        <item id="2477;7895" chance="1000"/><!-- knight legs magic legs-->
+    </loot>
+</monster>

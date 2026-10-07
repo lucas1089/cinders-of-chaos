@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Tundra Troll" nameDescription="a tundra troll" race="blood" experience="60000" evented = "4" skulled="1" looting="1" speed="400">
+	<health now="75000" max="75000"/>
+	<level min="910" max="980"/>
+	<look type="257" corpse="6068"/>
+	<targetchange interval="4000" chance="20"/>
+	<strategy attack="100" defense="0"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="1"/>
+		<flag convinceable="1"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag staticattack="80"/>
+		<flag lightlevel="0"/>
+		<flag lightcolor="0"/>
+		<flag targetdistance="1"/>
+		<flag runonhealth="0"/>
+	</flags>
+	<script>
+        <event name="auto_loot"/>
+        <event name="orb_bonus"/>
+        <event name="crusd_chest_bonus"/>
+    </script>
+	<attacks>
+		<attack name="melee" interval="2000" min="-2100" max="-3000"/>
+		<attack name="physical" interval="2000" chance="35" range="6" min="-1500" max="-2800">
+			<attribute key="shootEffect" value="largerock"/>
+		</attack>
+		<attack name="ice" interval="2000" chance="55" radius="3" target="0" min="-1300" max="-3200">
+			<attribute key="areaEffect" value="poff"/>
+		</attack>
+		<attack name="ice" interval="2000" chance="65" range="7" radius="3" target="1" min="-1100" max="-2650">
+			<attribute key="shootEffect" value="snowball"/>
+		</attack>
+	</attacks>
+	<defenses armor="36" defense="36"/>
+	<elements>
+    <element firePercent="25" />
+    <element earthPercent="25" />
+    <element energyPercent="25" />
+    <element deathPercent="25" />
+    <element physicalPercent="25" />
+    <element holyPercent="25" />
+    <element icePercent="25" />
+  </elements>
+	<immunities>
+        <immunity paralyze="1"/>
+        <immunity outfit="1"/>
+        <immunity drunk="1"/>
+        <immunity invisible="1"/>
+    </immunities>
+	<voices interval="2000" chance="5">
+		<voice sentence="Hmm Humansoup"/>
+		<voice sentence="Stand still ya tasy snack!"/>
+		<voice sentence="Joh Thun!"/>
+		<voice sentence="Brore Smode!"/>
+		<voice sentence="Horre Sjan Flan!"/>
+		<voice sentence="Forle Bramma!"/>
+	</voices>
+	<loot>
+   		<item id="2148" countmax="100" chance="36450" /><!-- gold coin -->
+		<item id="2148" countmax="100" chance="36450" /><!-- gold coin -->
+		<item id="2148" countmax="32" chance="36450" /><!-- gold coin -->
+		<item id="2152" countmax="5" chance="2450" /><!-- platinum coin -->
+		<item id="11302;11301;11304;11303;8891;9931;11356;2645" countmax="1" chance="3000" /><!-- zaoan helmet -->
+		<item id="8889;8887;12607;8880;2522;2520;11117;5741" countmax="1" chance="2000" /><!-- skullcrackerarmor;frozen plate;elite draken mail;swamplair armor -->
+	</loot>
+</monster>

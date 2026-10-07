@@ -1,0 +1,26 @@
+Abyssal Shadowfiend	2020
+Actors Power	1752
+Arcane Energizer	2016
+Captain Bloodbeard	1822
+Cursed Ape	2013
+Elite Spider	1883
+Evil Man	1652
+Golden Dragon	2366
+Golden Lord	1701
+Ironhook Corsair	1823
+Jungle Warrior	2200
+Legendary Warrior	2161
+Mercenary	1719
+Mercenary Ranger	1718
+Mortal Illusion	1656
+Nexweaver	2333
+Ormathulak	1988
+Royal Man	2195
+Saga	1662
+Scaleborn	2367
+Scourgejaw	1824
+Shenlong	2201
+Snake Master	1979
+Spirit of Purity	2132
+Stormy Seadevil	1821
+Winterstride	1932

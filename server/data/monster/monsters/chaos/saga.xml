@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Saga" nameDescription="an saga" race="venom" experience="80000000" speed="550" manacost="0" damagereduction="10" damagepenetration="15" evented = "25" skulled="2" looting="1">
+	<health now="45000000" max="45000000"/>
+	<look type="1662" head="1333" body="116" legs="133" feet="133" addons="3"/>
+	<targetchange interval="3000" chance="20"/>
+	<strategy attack="100" defense="0"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag runonhealth="0"/>
+		<flag staticattack="90"/>
+	</flags>
+	<script>
+		<event name="saga_outfit_boss"/>
+		<event name="first_boss_kill_talent"/>
+	</script>
+	<attacks>
+		<attack name="physical" interval="1000" min="-21000" max="-28000"/>
+		<attack name="physical" interval="2000" chance="25"  length="7" spread="0" min="-28000" max="-37000">
+			<attribute key="areaEffect" value="holyarea"/>
+		</attack> 
+		<attack name="death" interval="2000" chance="30" length="7" spread="3" min="-30000" max="-41000">
+			<attribute key="shootEffect" value="death"/>
+			<attribute key="areaEffect" value="greenbubble"/>
+		</attack>
+		<attack name="fire" interval="1000" chance="45" range="7" radius="7" target="1" min="-18000" max="-28000">
+			<attribute key="shootEffect" value="fire"/>
+			<attribute key="areaEffect" value="firearea"/>
+		</attack>
+		<attack name="physical" interval="2000" chance="30" radius="7" target="0" min="-18000" max="-38000">
+			<attribute key="shootEffect" value="explosion"/>
+			<attribute key="areaEffect" value="explosionarea"/>
+		</attack>
+		<attack name="speed" interval="2000" chance="17" radius="6" target="0" speedchange="-500000" duration="6000">
+			<attribute key="areaEffect" value="smallplants"/>
+		</attack>
+	</attacks> 
+	<defenses armor="68" defense="75">
+		<defense name="healing" interval="2000" chance="35" min="300000" max="450000">
+			<attribute key="areaEffect" value="blueshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element earthPercent="4"/>
+		<element icePercent="4"/>
+		<element firePercent="4"/>
+		<element energyPercent="4"/>
+		<element physicalPercent="4"/>
+		<element deathPercent="4"/>
+		<element holyPercent="4"/>
+	</elements>
+	<immunities>
+		<immunity paralyze="1"/>
+		<immunity outfit="1"/>
+		<immunity drunk="1"/>
+		<immunity invisible="1"/>
+	</immunities>
+</monster>

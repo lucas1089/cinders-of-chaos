@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<monster name="Tarrasque" nameDescription="a tarrasque" race="blood" experience="155000" skulled="2" looting="1" speed="650">
+	<health now="2000000" max="2000000" />
+	<look type="268" head="133" body="133" legs="133" feet="133" addons="3" corpse="6068" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag bestiary="1" />
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="0" />
+		<flag staticattack="70" />
+		<flag runonhealth="0" />
+		<flag canwalkonenergy="0" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="1000" min="-24000" max="-28000" />
+		<attack name="fire" interval="2000" chance="30" length="4" spread="3" min="-22000" max="-30800">
+			<attribute key="areaEffect" value="explosion" />
+		</attack>
+		<attack name="fire" interval="2000" chance="25" range="7" target="1" min="-26000" max="-38550">
+			<attribute key="shootEffect" value="fire" />
+			<attribute key="areaEffect" value="firearea" />
+		</attack>
+		<attack name="energy" interval="2000" chance="35" range="7" target="1" min="-22550" max="-35000">
+			<attribute key="shootEffect" value="energy" />
+			<attribute key="areaEffect" value="energy" />
+		</attack>
+		<attack name="earth" interval="1000" chance="10" target="1" radius="4" min="-23000" max="-28800">
+			<attribute key="areaEffect" value="poff" />
+		</attack>
+		<attack name="poisoncondition" interval="2000" chance="10" target="1" min="-800" max="-2000">
+			<attribute key="shootEffect" value="poison" />
+		</attack>
+	</attacks>
+	<defenses armor="90" defense="85">
+		<defense name="healing" interval="2000" chance="15" min="18000" max="35000">
+			<attribute key="areaEffect" value="blueshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+		<element energyPercent="30"/>
+		<element earthPercent="30"/>	
+		<element holyPercent="30"/>
+		<element deathPercent="30"/>
+		<element icePercent="30"/>
+		<element firePercent="30"/>
+	</elements>
+	<immunities>
+      	<immunity lifedrain="1"/>
+      	<immunity paralyze="1"/>
+      	<immunity outfit="1"/>
+      	<immunity drunk="1"/>
+      	<immunity invisible="1"/>
+	</immunities>
+	   <voices interval="5000" chance="70">
+		<voice sentence="GGRRRRR!"/>
+		<voice sentence="ZZZZZZSSS!"/>
+	</voices>
+	<loot>
+	</loot>
+</monster>

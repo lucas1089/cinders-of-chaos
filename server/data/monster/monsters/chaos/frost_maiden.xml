@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Frost Maiden" nameDescription="a frost maiden" race="blood" experience="52000" skulled="1" evented = "4" looting="1" speed="380" manacost="0">
+    <health now="58000" max="58000"/>
+     <level min="890" max="950"/>
+    <look type="149" head="0" body="47" legs="105" feet="105" addons="0" corpse="6068"/>
+    <targetchange interval="2000" chance="5"/>
+    <strategy attack="100" defense="0"/>
+    <flags>
+        <flag summonable="0"/>
+        <flag attackable="1"/>
+        <flag hostile="1"/>
+        <flag illusionable="0"/>
+        <flag convinceable="0"/>
+        <flag pushable="0"/>
+        <flag canpushitems="1"/>
+        <flag staticattack="50"/>
+        <flag lightlevel="0"/>
+        <flag lightcolor="0"/>
+        <flag targetdistance="1"/>
+        <flag runonhealth="0"/>
+    </flags>
+    <script>
+        <event name="auto_loot"/>
+        <event name="orb_bonus"/>
+        <event name="crusd_chest_bonus"/>
+    </script>
+    <attacks>
+        <attack name="ice" interval="2000" range="5" target="1" min="-2000" max="-2800">
+            <attribute key="shootEffect" value="ice"/>
+            <attribute key="areaEffect" value="poff"/>
+        </attack>
+        <attack name="outfit" interval="1000" chance="10" range="7" item="7172" duration="8000">
+            <attribute key="areaEffect" value="blueshimmer"/>
+        </attack>
+        <attack name="ice" interval="1800" chance="45" range="7" spread="3" min="-1300" max="-2500">
+            <attribute key="areaEffect" value="icearea"/>
+        </attack>
+        <attack name="lifedrain" interval="2000" chance="34" length="8" spread="3" min="-1100" max="-2100">
+            <attribute key="areaEffect" value="poff"/>
+        </attack>
+        <attack name="physical" interval="1500" chance="25" range="7" radius="3" target="1" min="-1800" max="-2800">
+            <attribute key="shootEffect" value="snowball"/>
+        </attack>
+        <attack name="speed" interval="1000" chance="10" range="7" speedchange="-600" duration="20000">
+            <attribute key="areaEffect" value="redshimmer"/>
+        </attack>
+    </attacks>
+    <defenses armor="20" defense="20">
+        <defense name="healing" interval="1000" chance="25" min="500" max="1180">
+            <attribute key="areaEffect" value="blueshimmer"/>
+        </defense>
+    </defenses>
+    <elements>
+    <element firePercent="25" />
+    <element earthPercent="25" />
+    <element energyPercent="25" />
+    <element deathPercent="25" />
+    <element physicalPercent="25" />
+    <element holyPercent="25" />
+    <element icePercent="25" />
+  </elements>
+    <immunities>
+        <immunity paralyze="1"/>
+        <immunity outfit="1"/>
+        <immunity drunk="1"/>
+        <immunity invisible="1"/>
+    </immunities>
+    <voices interval="2000" chance="5">
+        <voice sentence="So you think you are cool?"/>
+        <voice sentence="I hope it is not too cold for you! HeHeHe."/>
+        <voice sentence="Freeze!"/>
+    </voices>
+    <loot>
+        <item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+        <item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+        <item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+        <item id="2152" countmax="4" chance="3500"/><!-- Platinum Coin -->
+        <item id="11302;11301;11304;11303;8891;9931;11356;2645" countmax="1" chance="3000" /><!-- zaoan helmet -->
+        <item id="8889;8887;12607;8880;2522;2520;11117;5741" countmax="1" chance="2000" /><!-- skullcrackerarmor;frozen plate;elite draken mail;swamplair armor -->
+    </loot>
+</monster>

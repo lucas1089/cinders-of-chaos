@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Giant Asura" nameDescription="a giant asura" race="blood" experience="50000" evented = "5" skulled="1" looting="1" speed="430">
+	<health now="185000" max="185000"/>
+	<look type="1294" corpse="6068"/>
+	<targetchange interval="5000" chance="60"/>
+	<strategy attack="100" defense="0"/>
+	<levelconfig chance="100000" experience="250" health="100" damage="0" speed="50" />
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+	</flags>
+    <script>
+        <event name="auto_loot"/>
+    </script>
+	<attacks>
+    	<attack name="physical" interval="2000" min="-1500" max="-3000"/>
+		<attack name="energy" interval="2000" chance="20" range="7" target="0" min="-2000" max="-4500">
+			<attribute key="shootEffect" value="energy"/>
+		</attack>
+		<attack name="earth" interval="2000" chance="8" range="7" radius="4" target="1" min="-2000" max="-5000">
+			<attribute key="shootEffect" value="royalspear"/>
+			<attribute key="areaEffect" value="greenspark"/>
+		</attack>
+		<attack name="earth" interval="2000" chance="10" range="7" radius="3" target="1" min="-1500" max="-4000">
+			<attribute key="shootEffect" value="poisonarrow"/>
+			<attribute key="areaEffect" value="poison"/>	
+		</attack>
+	</attacks>
+	<defenses armor="40" defense="45">
+		<defense name="healing" interval="5000" chance="20" min="10000" max="15220">
+			<attribute key="areaEffect" value="blueshimmer"/>
+		</defense>
+	</defenses>
+	<immunities>
+		<immunity invisible="1"/>
+		<immunity paralyze="1"/>
+	</immunities>
+   <loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="25" chance="65000"/><!-- Platinum Coin -->
+		<item id="5741;2645" chance="1200" /><!-- skull helmet;steel boots -->
+		<item id="11302;11301;11304;11303" chance="600" /><!-- zaoan helmet -->
+		<item id="8891;9931;11356" chance="1200" /><!-- paladin armor;coconut shoes;Zaoan robe -->
+		<item id="2522;2520;11117" chance="500" /><!-- great shield;demon shield;crystal boots -->
+		<item id="8889;8887;12607" chance="710" /><!-- skullcrackerarmor;frozen plate;elite draken mail -->
+	</loot>
+</monster>

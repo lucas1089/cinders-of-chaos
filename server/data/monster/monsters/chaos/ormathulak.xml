@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Ormathulak" nameDescription="the Ormathulak" race="venom" experience="500000000" speed="800" manacost="0" damagereduction="10" damagepenetration="25" evented = "25" looting="1">
+    <health now="910000000" max="910000000"/>
+    <look type="1988" corpse="6068"/>
+    <targetchange interval="20000" chance="30"/>
+    <strategy attack="100" defense="0"/>
+    <flags>
+        <flag summonable="0"/>
+        <flag attackable="1"/>
+        <flag hostile="1"/>
+        <flag illusionable="0"/>
+        <flag convinceable="0"/>
+        <flag pushable="0"/>
+        <flag canpushitems="1"/>
+        <flag canpushcreatures="1"/>
+        <flag targetdistance="1"/>
+        <flag staticattack="85"/>
+        <flag runonhealth="0"/>
+        <flag isBlocked="1"/>
+    </flags>
+    <attacks>    
+        <attack name="melee" interval="2000" min="-38000" max="-58000"/>
+        <attack name="death" interval="1000" chance="35" radius="9" target="0" min="-38000" max="-42000">
+            <attribute key="areaEffect" value="mortarea"/>
+        </attack>
+        <attack name="ranged_stun_stone" interval="2000" chance="60" range="8"/>
+        <attack name="death" interval="1000" chance="35" radius="5" target="0" min="-38000" max="-49000">
+            <attribute key="areaEffect" value="mortarea"/>
+            <attribute key="shootEffect" value="death"/>
+        </attack>   
+        <attack name="drunk" interval="2000" chance="10" length="3" spread="2" duration="5000">
+            <attribute key="areaEffect" value="rednote" />
+        </attack> 
+        <attack name="fire" interval="2000" chance="50" length="8" spread="3" min="-38000" max="-49000">
+            <attribute key="shootEffect" value="fire"/>
+            <attribute key="areaEffect" value="firearea"/>
+        </attack>
+        <attack name="earth" interval="2000" chance="50" target="1" range="5" radius="2" min="-38000" max="-49000">
+            <attribute key="shootEffect" value="poison"/>
+            <attribute key="areaEffect" value="poison"/>
+        </attack>
+        <attack name="fire" interval="2000" chance="30" range="7" radius="7" target="1" min="-38000" max="-49000">
+            <attribute key="shootEffect" value="fire"/>
+            <attribute key="areaEffect" value="firearea"/>
+        </attack>
+        <attack name="manadrain" interval="1000" chance="25" radius="4" target="0" min="-38000" max="-49000">
+            <attribute key="areaEffect" value="energyarea"/>
+        </attack>
+        <attack name="poisoncondition" interval="2000" chance="35" length="0" spread="0" min="-4280" max="-5800">
+            <attribute key="areaEffect" value="greenspark"/>
+        </attack>
+        <attack name="lifedrain" interval="1000" chance="30" radius="14" target="0" min="-38000" max="-49000">
+            <attribute key="areaEffect" value="greenshimmer"/>
+        </attack>
+         <attack name="gaz'haragoth iceball" interval="2000" chance="24" min="-38000" max="-49000"/>
+    </attacks>
+    <defenses armor="200" defense="200">
+        <defense name="healing" interval="5000" chance="35" min="100000" max="200000">
+            <attribute key="areaEffect" value="greenshimmer"/>
+        </defense>
+        <defense name="speed" interval="1000" chance="8" speedchange="1901" duration="5000">
+            <attribute key="areaEffect" value="redshimmer"/>
+        </defense>
+    
+    </defenses>
+    <elements>
+        <element energyPercent="20"/>
+        <element earthPercent="20"/>    
+        <element holyPercent="20"/>
+        <element deathPercent="20"/>
+        <element icePercent="20"/>
+        <element firePercent="20"/>
+        <element physicalPercent="20"/>
+    </elements>
+    <immunities>
+        <immunity lifedrain="1"/>
+        <immunity paralyze="1"/>
+        <immunity outfit="1"/>
+        <immunity drunk="1"/>
+        <immunity invisible="1"/>
+    </immunities>    
+    <loot>
+    </loot>
+</monster>

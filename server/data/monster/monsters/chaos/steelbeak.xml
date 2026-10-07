@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Steelbeak" nameDescription="a steelbeak boss" race="blood" experience="165000" speed="550" skulled="1" looting="1" manacost="0">
+	<health now="400000" max="400000"/>
+	<look type="522"  corpse="6068"/>
+	<targetchange interval="4000" chance="10"/>
+	<strategy attack="100" defense="0"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+	</flags>
+	<script>
+		 <event name="boss_tp_death"/>
+	</script> 
+    <attacks>
+	<attack name="melee" interval="1500" min="-4000" max="-6000"/>
+	<attack name="lifedrain" interval="2000" chance="20" length="8" spread="3" min="-4500" max="-8000">
+			<attribute key="areaEffect" value="redshimmer"/>
+		</attack>	
+	<attack name="poison" interval="2000" chance="20" length="8" spread="3" min="-3800" max="-5500">
+			<attribute key="areaEffect" value="poison"/>
+		</attack>
+	<attack name="physical" interval="2000" chance="10" length="8" spread="3">
+			<attribute key="areaEffect" value="poff"/>
+		</attack>
+	<attack name="physical" interval="3000" chance="35" range="3" min="-5000" max="-7000">
+			<attribute key="shootEffect" value="suddendeath"/>
+			<attribute key="areaEffect" value="mortarea"/>
+		</attack>
+		<attack name="fire" interval="2000" chance="15" range="7" target="1" min="-4000" max="-7200">
+			<attribute key="shootEffect" value="fire"/>
+			<attribute key="areaEffect" value="redspark"/>
+		</attack>
+		<attack name="poison" interval="2000" chance="30" range="7" min="-4500" max="-6400">
+			<attribute key="shootEffect" value="poison"/>
+			<attribute key="areaEffect" value="poison"/>
+		</attack>
+		<attack name="manadrain" interval="2000" chance="25" target="1" range="7" min="-2900" max="-5500">
+			<attribute key="areaEffect" value="blueshimmer"/>
+		</attack>
+	</attacks>
+	<defenses armor="65" defense="65">
+		<defense name="healing" interval="2000" chance="40" min="2000" max="6000">
+			<attribute key="areaEffect" value="blueshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+    <element firePercent="10" />
+    <element earthPercent="10" />
+    <element energyPercent="10" />
+    <element deathPercent="10" />
+    <element physicalPercent="10" />
+    <element holyPercent="10" />
+    <element icePercent="10" />
+  </elements>
+	<immunities>
+		<immunity invisible="1"/>
+		<immunity paralyze="1"/>
+	</immunities>
+	<loot>
+	</loot>
+</monster>

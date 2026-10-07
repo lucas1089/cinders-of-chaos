@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<monster name="Vorathrax" nameDescription="a vorathrax" race="blood" experience="155000" power = "2" skulled="2" looting="1" speed="650">
+	<health now="3000000" max="3000000" />
+	<look type="938" corpse="6068" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag bestiary="1" />
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="0" />
+		<flag staticattack="70" />
+		<flag runonhealth="0" />
+		<flag canwalkonenergy="0" />
+	</flags>
+	<attacks>
+		<attack name="fire" interval="1000" min="-28000" max="-33000" />
+		<attack name="fire" interval="2000" chance="45" length="4" spread="3" min="-28000" max="-36800">
+			<attribute key="areaEffect" value="explosion" />
+		</attack>
+		<attack name="fire" interval="2000" chance="35" range="7" target="1" min="-25000" max="-31550">
+			<attribute key="shootEffect" value="fire" />
+			<attribute key="areaEffect" value="firearea" />
+		</attack>
+		<attack name="earth" interval="1000" chance="20" target="1" radius="4" min="-2005500" max="-2005500">
+			<attribute key="areaEffect" value="poff" />
+		</attack>
+		<attack name="poisoncondition" interval="2000" chance="10" target="1" min="-800" max="-2000">
+			<attribute key="shootEffect" value="poison" />
+		</attack>
+	</attacks>
+	<defenses armor="90" defense="85">
+		<defense name="healing" interval="2000" chance="15" min="18000" max="35000">
+			<attribute key="areaEffect" value="blueshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+		<element energyPercent="40"/>
+		<element earthPercent="40"/>	
+		<element holyPercent="40"/>
+		<element deathPercent="40"/>
+		<element icePercent="40"/>
+		<element firePercent="40"/>
+	</elements>
+	<immunities>
+      	<immunity lifedrain="1"/>
+      	<immunity paralyze="1"/>
+      	<immunity outfit="1"/>
+      	<immunity drunk="1"/>
+      	<immunity invisible="1"/>
+	</immunities>
+	   <voices interval="5000" chance="70">
+		<voice sentence="GGRRRRR!"/>
+		<voice sentence="ZZZZZZSSS!"/>
+	</voices>
+	<loot>
+		<item id="38977;38983" countmax="1" chance="35000"/><!-- distorted heart//mould robe -->
+	</loot>
+</monster>

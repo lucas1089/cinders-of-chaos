@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Lacewing Moth" nameDescription="a Lacewing Moth" race="blood" experience="75000" evented = "5" skulled="1" looting="1" speed="630">
+	<health now="105000" max="105000"/>
+	<look type="1148" corpse="6068" />
+	<level min="950" max="1050"/>
+	<levelconfig experience="250" health="100" damage="0" speed="50" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="80" />
+		<flag runonhealth="0" />
+	</flags>
+	<script>
+        <event name="auto_loot"/>
+        <event name="orb_bonus"/>
+        <event name="crusd_chest_bonus"/>
+    </script>
+	<attacks>
+		<attack name="melee" interval="2000" min="-3000" max="-4000" />
+		<attack name="manadrain" interval="2000" chance="30" range="7" min="-3000" max="-4000" />
+		<attack name="lifedrain" interval="2000" chance="45" length="8" spread="0" min="-3000" max="-4200">
+			<attribute key="areaEffect" value="purpleenergy" />
+		</attack>
+		<attack name="energy strike" interval="2000" chance="10" range="1" min="-3000" max="-4500">
+		</attack>
+		<attack name="speed" interval="2000" chance="15" radius="1" target="1" speedchange="-100" duration="30000">
+			<attribute key="areaEffect" value="redshimmer" />
+		</attack>
+	</attacks>
+	<defenses armor="15" defense="15">
+		<defense name="healing" interval="2000" chance="15" min="1500" max="3000">
+			<attribute key="areaEffect" value="blueshimmer" />
+		</defense>
+		<defense name="speed" interval="2000" chance="15" speedchange="320" duration="5000">
+			<attribute key="areaEffect" value="redshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+    <element firePercent="25" />
+    <element earthPercent="25" />
+    <element energyPercent="25" />
+    <element deathPercent="25" />
+    <element physicalPercent="25" />
+    <element holyPercent="25" />
+    <element icePercent="25" />
+  </elements>
+	<immunities>
+		<immunity invisible="1" />
+	</immunities>
+		<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="25" chance="65000"/><!-- Platinum Coin -->
+		<item id="11302;11301;11304;11303;8891;9931;11356;2645" chance="3000" /><!-- zaoan helmet -->
+		<item id="8889;8887;12607;8880;2522;2520;11117;5741" chance="2000" /><!-- skullcrackerarmor;frozen plate;elite draken mail;swamplair armor -->
+	</loot>
+</monster>
