@@ -64,7 +64,7 @@ jobs:
       - name: Client spell data is up to date with the server spells
         run: |
           pip install --quiet pillow
-          python3 -I client/tools/gen_spell_data.py
+          python3 client/tools/gen_spell_data.py  # not -I: isolated mode ignores the user site where pip put Pillow
           git diff --exit-code client/overlay/modules/game_chaosspells/spelldata.lua
 
       - name: No references to other servers or clients
