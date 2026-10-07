@@ -1,6 +1,14 @@
 ﻿-- chunkname: @/mods/game_daily/daily.lua
 
 local OPCODE = 207
+
+-- Evolisca ships this helper in its gamelib; Fonticak does not, so keep a local copy.
+local function sendAction(opcode, action, data)
+	local protocolGame = g_game.getProtocolGame()
+	if protocolGame then
+		protocolGame:sendExtendedOpcode(opcode, json.encode({action = action, data = data or {}}))
+	end
+end
 local Time, TimerCheckEvent, dailyData, lastPos
 
 function init()
