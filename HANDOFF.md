@@ -4,7 +4,7 @@ Private working repo for a dark-fantasy (Diablo / Path of Exile flavour) Open Ti
 
 ## Decisions
 - Protocol 10.98, server base Hellgrave Exodus v3.7.5 (TFS 1.4.2 with OTCv8 extensions); best populated map and spawns found.
-- Client base: Astra (OTCv8 engine, same wire protocol as Exodus). See `client/BASE.md`; the Astra tree is not in the repo (no licence file).
+- Client base: Astra (OTCv8 engine, same wire protocol as Exodus). See `client/BASE.md`; the Astra tree is not in the repo only because of its size.
 - Cosmetic data (wings, auras, mounts, outfits) lives in `Tibia.spr`/`Tibia.dat`, which you provide.
 
 ## Layout
@@ -18,4 +18,4 @@ Private working repo for a dark-fantasy (Diablo / Path of Exile flavour) Open Ti
 - First real run: assemble the client, connect to Exodus, read the terminal log.
 - Sprites for 26 imported monsters (lookType above the 1465 outfits in our dat).
 - Game logic that is only a stub: Infinity Tower gameplay, passive tree bonuses, daily reward table.
-- Licences: most sources are other servers' files; keep this repo private.
+- The owner has permission to use everything in the source folder.

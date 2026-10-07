@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Assemble the Chaos client: Astra client source (you supply it) + patches + overlay.
 # Usage: tools/assemble_client.sh <astra-source-dir> <output-dir>
-# Astra has no public licence file, so it is not downloaded or committed here.
+# The Astra tree is ~300 MB, so it is not committed here.
 # Does NOT include Tibia.spr/.dat: copy your 10.98 pair into <out>/data/things/1098/ yourself.
 set -euo pipefail
 SRC=${1:?astra source dir (the folder with init.lua, modules/, mods/)}; OUT=${2:?output dir}

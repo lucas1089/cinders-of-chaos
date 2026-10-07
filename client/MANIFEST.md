@@ -33,7 +33,7 @@ Opcode numbers above do not collide with the ones the Exodus server already uses
 `data/images/topbuttons/` (loot, bank from Evolisca; battlepass, dungeon, passive_tree from Exodus client; minimap from Astra), `data/images/ui/events/` (Black Talon, event banners), `data/images/ui/` rarity frames (copied from game_itemrarity).
 
 ## Licence and provenance
-Most sources have no licence file or are other live servers' clients (Black Talon, Evolisca, MagicHeard, Luminaris, OxygenOT/Zerion, Astra). Treat this overlay as a private working copy: get permission or replace the code and art before any public release.
+The owner has permission to use all the source material in the Drive folder. Keep the repo private anyway if any of it came from live servers, since other people's rights are not ours to waive.
 
 ## Not done
 Server-side scripts, engine changes, any runtime test, translation of Portuguese/Spanish strings.

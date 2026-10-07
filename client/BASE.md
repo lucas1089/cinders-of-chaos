@@ -2,7 +2,7 @@
 
 Chosen because its engine is OTCv8-based, the same wire protocol as the Hellgrave Exodus server: wings, auras and outfit shaders in the outfit packets, `g_shaders.createOutfitShader` with a vertex stage (91 of the 95 Exodus outfit shaders need it), and HD upscaling (xBRZ, scale factor 1 to 4, or a 64px `.spr`). Compared with OTC-Fonticak (Redemption: extra `effect` field in every outfit packet, fragment-only shaders) and Black Talon (binaries only). Speed was judged from the code, not measured.
 
-**Licence.** The Astra tree has no licence file (it credits OTCv8 and RubiniOT). It is not in this repo: `tools/assemble_client.sh <astra-dir> <out>` takes your copy, applies `base-patches/`, drops in `overlay/` and leaves a folder to build with CMake. Not run yet. Keep this repo private.
+**Source.** You have permission to use the Astra tree and the other servers' files. The tree is about 300 MB (230 MB of it `data/` images and sounds), so it is not committed: `tools/assemble_client.sh <astra-dir> <out>` takes your copy, applies `base-patches/`, drops in `overlay/` and leaves a folder to build with CMake. Not run yet.
 
 ## Patches (`base-patches/`, dry-run applied to the Astra tree you gave me)
 1. `init.lua`: server entry named Chaos, version 860 -> 1098.
