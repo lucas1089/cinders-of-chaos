@@ -1,0 +1,10 @@
+Module
+  name: game_chaosspells
+  description: Adds the Chaos spells to the client spell list and action bar
+  author: Chaos
+  sandboxed: true
+  autoload: true
+  autoload-priority: 150
+  scripts: [ spelldata, chaosspells ]
+  @onLoad: init()
+  @onUnload: terminate()

@@ -61,5 +61,11 @@ jobs:
       - name: Server content (XML, spells, items, monsters)
         run: python3 -I tools/ci/check_content.py
 
+      - name: Client spell data is up to date with the server spells
+        run: |
+          pip install --quiet pillow
+          python3 -I client/tools/gen_spell_data.py
+          git diff --exit-code client/overlay/modules/game_chaosspells/spelldata.lua
+
       - name: No references to other servers or clients
         run: python3 -I tools/ci/check_names.py

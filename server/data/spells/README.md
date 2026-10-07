@@ -116,3 +116,6 @@ The server only needs the files above. Spell list and action bar come from the c
   name, words, spellid, icon, level, mana, group, vocations) and provide icons in the matching sprite/image folder, otherwise they show without icon. Exact files differ per client fork.
 - Official Tibia 10.98 client: its spell list is built in and cannot be extended; the spells still work by typing the words or via hotkeys/text hotkeys.
 Use the spellid column above as the id, and the words as the spell's words.
+
+## Client side
+The client side is done in `client/overlay/modules/game_chaosspells` (spell list, action bar, icons); regenerate its data with `python3 -I client/tools/gen_spell_data.py` after changing `spells_chaos.xml`. See `client/MANIFEST.md`.
