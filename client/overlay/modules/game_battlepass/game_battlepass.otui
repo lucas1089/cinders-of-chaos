@@ -1,0 +1,454 @@
+BattlePassPanel < Panel
+  image-source: /images/ui/menubox
+  image-border: 4
+
+BattlePassLabel < Label
+  anchors.top: prev.bottom
+  anchors.left: parent.left
+  anchors.right: parent.right
+  height: 76
+  text-align: center
+  text-wrap: true
+  font: verdana-11px-antialised
+
+BattlePassItem < Item
+  virtual: true
+
+BattlePassReward < UIWidget
+  anchors.top: prev.bottom
+  anchors.left: parent.left
+  anchors.right: parent.right
+  height: 88
+  image-source: /images/ui/item-blessed
+  image-border: 6
+  
+  BattlePassPanel
+    id: rewards
+    anchors.horizontalcenter: parent.horizontalcenter
+    anchors.verticalcenter: parent.verticalcenter
+    margin-top: 2
+    image-source: /images/ui/item-blessed
+    layout:
+      type: grid
+      cell-size: 34 34
+      flow: true
+
+  UICreature
+    id: outfit
+    anchors.horizontalcenter: parent.horizontalcenter
+    anchors.verticalcenter: parent.verticalcenter
+    margin-top: 8
+    image-source: /images/ui/item-blessed
+    fixed-creature: 1.0
+    size: 64 64
+    phantom: true
+    focusable: false
+
+  UIWidget
+    id: premium
+    anchors.horizontalcenter: parent.horizontalcenter
+    anchors.verticalcenter: parent.verticalcenter
+    image-source: images/battlepass_premium
+    size: 32 32
+
+  UIWidget
+    id: background
+    anchors.fill: parent
+    background-color: #000000AA
+    font: verdana-11px-antialised
+    text-align: center
+    visible: false
+    tooltip: Reward already sent to your mailbox.
+
+  UIWidget
+    id: premiumBackground
+    anchors.fill: parent
+    background-color: #000000AA
+    font: verdana-11px-antialised
+    text-align: center
+    visible: false
+    icon: images/battlepass_premium
+    icon-size: 32 32
+    icon-offset: 27 27
+    tooltip: Reward available for premium battlepass only.
+    
+BattlePassQuestLabel < Label
+  id: separator
+  height: 38
+  text-align: left
+  text-offset: 12 4
+  font: verdana-11px-antialised
+  color: #FC4B00
+
+BattlePassQuestEntry < BattlePassPanel
+  height: 123
+  margin-left: 4
+  margin-right: 4
+  image-source: /images/ui/item-blessed
+  margin-top: 4
+  Button
+    id: shuffle
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin: 8
+    text: Shuffle
+    font: verdana-11px-rounded
+    size: 120 26
+    @onClick: modules.game_battlepass.m_BattlepassFunctions.shuffleQuest(self:getParent())
+
+  Button
+    id: completed
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin: 8
+    text: Claim
+    color: #AAFF00
+    font: verdana-11px-rounded
+    size: 120 26
+    enabled: false
+    @onClick: modules.game_battlepass.m_BattlepassFunctions.completeQuest(self:getParent())
+
+  UIWidget
+    id: questProgressBar
+    anchors.verticalcenter: prev.verticalcenter
+    anchors.left: shuffle.left
+    anchors.right: prev.left
+    margin-right: 13
+    height: 28
+    image-source: /images/ui/progresbar_empty_pass
+    image-border: 2
+    
+    UIWidget
+      id: bar
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      image-source: images/battlepassquestprogress
+      margin: 2
+        
+    Label
+      id: label
+      anchors.fill: parent
+      text-align: center
+      font: verdana-11px-rounded
+
+  Label
+    id: questName
+    anchors.left: prev.left
+    anchors.right: parent.right
+    anchors.top: shuffle.bottom
+    margin-top: 8
+    margin-left: 6
+    height: 20
+    color: #fbff00
+    font: verdana-11px-antialised
+
+  Label
+    id: questDescription
+    anchors.left: prev.left
+    anchors.right: parent.right
+    anchors.top: prev.bottom
+    margin-top: 6
+    height: 16
+    color: #ffae00
+    font: verdana-11px-rounded
+    
+  Label
+    anchors.top: parent.top
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 6
+    margin-right: 12
+    height: 26
+    text-align: right
+    font: verdana-11px-antialised  
+    text: Reward
+    
+  Label
+    anchors.top: prev.bottom
+    anchors.right: prev.right
+    anchors.left: parent.left
+    height: 26
+    text-align: right
+    font: verdana-11px-antialised  
+    text: Battlepass experience points
+    
+  Label
+    id: questPoints
+    anchors.top: prev.bottom
+    anchors.right: prev.right
+    anchors.left: parent.left
+    height: 26
+    color: #AAFF00
+    text-align: right
+    font: verdana-11px-antialised
+
+  UIWidget
+    id: background
+    anchors.fill: parent
+    background-color: #000000AA
+    margin: 2
+    font: verdana-11px-antialised
+    text: ?
+    text-align: center
+    visible: false
+    
+BattlePassRewardContainer < UIWidget
+  width: 92
+  image-source: /images/ui/item-blessed
+  image-border: 16
+
+  Label
+    id: id
+    anchors.top: parent.top
+    anchors.horizontalcenter: parent.horizontalcenter
+    margin-top: 6
+    height: 24
+    font: verdana-11px-antialised
+
+  BattlePassReward
+    id: freeReward
+
+  BattlePassReward
+    id: premiumReward
+
+  UIWidget
+    id: progressBar
+    anchors.verticalcenter: prev.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 18
+    
+    UIWidget
+      id: bar
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      image-source: images/battlepass
+      width: 1
+      visible: false
+    
+HorizontalSeparator < UIWidget
+  height: 14
+  phantom: true
+    
+UIWindow
+  id: battlepassWindow
+  anchors.centerIn: parent
+  size: 971 625
+  phantom: false
+  text: BATTLEPASS
+  image-source: /images/ui/item-blessed
+  image-border: 6
+  image-border-top: 27
+  text-offset: 0 3
+  text-align: top
+  color: #ffae00
+  font: verdana-11px-antialised
+  @onEscape: modules.game_battlepass.m_BattlepassFunctions.destroy()
+
+  UIButton
+    id: closeButton
+    anchors.top: parent.top
+    anchors.right: parent.right
+    size: 14 14
+    margin: 2
+    image-source: /images/ui/miniwindow_buttons
+    image-clip: 28 0 14 14
+    @onClick: modules.game_battlepass.m_BattlepassFunctions.destroy()
+    $hover:
+      image-clip: 28 14 14 14
+    $pressed:
+      image-clip: 28 28 14 14
+
+  BattlePassPanel
+    id: infoPanel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 36
+    margin-left: 12
+    margin-right: 12
+    height: 220
+
+    BattlePassPanel
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      width: 208
+      image-source: /images/ui/item-blessed
+    
+      BattlePassLabel
+        anchors.top: parent.top
+        height: 24
+        text: TIER
+        margin-top: 6
+        color: #ffae00
+
+      HorizontalSeparator
+        anchors.top: prev.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: -6
+        margin-left: 8
+        margin-right: 8
+    
+      BattlePassLabel
+        tooltip: FREE REWARDS
+        icon-source: images/free_pass
+        icon-size: 45 85
+        icon-offset: 82 0
+        phantom: false
+
+      HorizontalSeparator
+        anchors.top: prev.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-left: 8
+        margin-right: 8
+    
+      BattlePassLabel
+        tooltip: PREMIUM REWARDS
+        icon-source: images/Paid_Pass
+        icon-size: 45 85
+        icon-offset: 82 0
+        phantom: false
+
+      HorizontalSeparator
+        anchors.top: prev.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: -4
+        margin-left: 8
+        margin-right: 8
+
+    ScrollablePanel
+      id: rewards
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      anchors.left: prev.right
+      padding-left: 2
+      padding-right: 2
+      padding-bottom: 16
+      horizontal-scrollbar: battlepassRewardsScrollBar
+      layout:
+        type: horizontalBox
+
+    HorizontalScrollBar
+      id: battlepassRewardsScrollBar
+      anchors.bottom: prev.bottom
+      anchors.right: prev.right
+      anchors.left: prev.left
+      step: 92
+      pixels-scroll: true
+
+  BattlePassPanel
+    id: levelPanel
+    anchors.top: prev.bottom
+    anchors.left: prev.left
+    anchors.right: prev.right
+    margin-top: 8
+    image-source: /images/ui/item-blessed
+    height: 64
+
+    BattlePassPanel
+      id: level
+      anchors.left: parent.left
+      anchors.verticalcenter: parent.verticalcenter
+      margin-left: 8
+      size: 48 48
+      image-source: /images/ui/item-blessed
+      text-align: center
+  
+    UIWidget
+      id: progressBar
+      anchors.verticalcenter: parent.verticalcenter
+      anchors.left: prev.right
+      anchors.right: parent.right
+      margin-left: 12
+      margin-right: 60
+      image-source: /images/ui/progresbar_empty_pass
+      image-border: 8
+      height: 32
+      
+      UIWidget
+        id: bar
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        image-source: images/battlepassbar
+        image-border: 4
+        width: 0
+        
+      Label
+        id: label
+        anchors.fill: parent
+        text-align: center
+        font: verdana-11px-rounded
+
+  ScrollablePanel
+    id: questsPanel
+    anchors.top: prev.bottom
+    anchors.bottom: parent.bottom
+    anchors.left: prev.left
+    anchors.right: prev.right
+    margin-top: 11
+    margin-bottom: 40
+    margin-right: 14
+    padding-top: 4
+    padding-bottom: 4
+    image-source: /images/ui/item-blessed
+    image-border: 4
+    vertical-scrollbar: battlepassQuestsScrollBar
+    layout:
+      type: verticalBox
+
+  VerticalScrollBar
+    id: battlepassQuestsScrollBar
+    anchors.bottom: prev.bottom
+    anchors.top: prev.top
+    anchors.left: prev.right
+    step: 44
+    pixels-scroll: true
+
+  Button
+    text: Close
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-bottom: 10
+    margin-right: 14
+    size: 160 26
+    @onClick: modules.game_battlepass.m_BattlepassFunctions.destroy()
+
+  UIWidget
+    text: Premium Battlepass
+    tooltip: If you already completed levels and you bought premium you cannot receive the rewards of completed levels.
+    anchors.bottom: prev.bottom
+    anchors.right: prev.left
+    margin-right: 6
+    size: 160 26
+    color: #ffae00
+    image-source: /images/ui/button_top_blink
+    image-clip: 0 0 26 26
+    image-border: 2
+    image-color: #FFFFFF
+    change-cursor-image: true
+    cursor: pointer
+    @onClick: modules.game_battlepass.m_BattlepassFunctions.buyPremium()
+    $hover:
+      image-clip: 26 0 26 26
+    $pressed:
+      image-clip: 52 0 26 26
+    $disabled:
+      image-clip: 52 0 26 26
+      image-color: #868686
+  
+  Label
+    id: battlepassStatus
+    anchors.verticalcenter: prev.verticalcenter
+    anchors.left: questsPanel.left
+    margin-left: 4
+    color: #FFFFFF
+    $on:
+      color: #FC4B00

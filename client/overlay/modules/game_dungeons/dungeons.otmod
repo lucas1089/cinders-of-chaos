@@ -1,0 +1,10 @@
+Module
+  name: game_dungeons
+  description: Dungeons finder
+  author: Oen
+  website: None
+  sandboxed: true
+  autoload: true
+  scripts: [ dungeons ]
+  @onLoad: init()
+  @onUnload: terminate()

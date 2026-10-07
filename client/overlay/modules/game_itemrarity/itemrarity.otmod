@@ -1,0 +1,9 @@
+Module
+  name: game_itemrarity
+  description: Contains the item rarity system
+  author: Reddington
+  autoload: true
+  sandboxed: false
+  scripts: [itemrarity]
+  @onLoad: init()
+  @onUnload: terminate()

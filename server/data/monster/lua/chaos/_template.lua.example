@@ -1,0 +1,20 @@
+-- Template for a custom monster. Copy to <name>.lua in this folder (the server loads every .lua under data/monster).
+-- Check it with: python3 -I server/tools/check_monsters.py items.otb <outfit count of Tibia.dat> <file>
+local mType = Game.createMonsterType("Example Monster")
+local monster = {}
+
+monster.description = "an example monster"
+monster.experience = 100
+monster.outfit = { lookType = 1, lookHead = 0, lookBody = 0, lookLegs = 0, lookFeet = 0, lookAddons = 0, lookMount = 0 }
+monster.health = 200
+monster.maxHealth = 200
+monster.race = "blood"
+monster.corpse = 6068 -- must exist in items.otb
+monster.speed = 200
+monster.manaCost = 0
+
+monster.flags = { summonable = false, attackable = true, hostile = true, convinceable = false, pushable = false, rewardBoss = false, illusionable = false, canPushItems = true, canPushCreatures = true, staticAttackChance = 90, targetDistance = 1, runHealth = 0, healthHidden = false, isBlockable = false, canWalkOnEnergy = false, canWalkOnFire = false, canWalkOnPoison = false }
+monster.loot = { { id = 3031, chance = 100000, maxCount = 20 } } -- gold coin
+monster.attacks = { { name = "melee", interval = 2000, chance = 100, minDamage = 0, maxDamage = -50 } }
+
+mType:register(monster)

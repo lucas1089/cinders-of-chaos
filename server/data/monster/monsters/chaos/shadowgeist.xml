@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Shadowgeist" nameDescription="shadowgeist" race="blood" experience="12000" skulled="2" looting="1" speed="470" manacost="0">
+	<health now="8000000" max="8000000"/>
+	<look type="1483" corpse="6068"/>
+	<targetchange interval="5000" chance="8"/>
+	<strategy attack="90" defense="10"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="0"/>
+		<flag staticattack="50"/>
+		<flag runonhealth="30000"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="1000" min="-5000" max="-7500"/>
+		<attack name="speed" interval="2000" chance="20" range="7" speedchange="-400" duration="2500">
+			<attribute key="shootEffect" value="earth"/>
+		</attack>
+		<attack name="fire" interval="2000" chance="35" radius="6" target="1" min="-5000" max="-7200">
+			<attribute key="areaEffect" value="firearea"/>
+			<attribute key="shootEffect" value="fire"/>
+		</attack>
+		<attack name="death" interval="2000" chance="28" length="8" spread="0" min="-5200" max="-7000">
+			<attribute key="areaEffect" value="mortarea"/>
+		</attack>
+		<attack name="energy" interval="2000" chance="25" radius="12" range="3" target="1" min="-5000" max="-8300">
+			<attribute key="areaEffect" value="greenspark"/>			
+		</attack>
+      		<attack name="lifedrain" interval="2000" chance="20" range="3" radius="4" target="1" min="-2000" max="-4500">
+      		<attribute key="shootEffect" value="poison"/>
+      		</attack>
+		<attack name="poison" interval="2000" chance="12" radius="3" target="0" min="-400" max="-1000">
+			<attribute key="areaEffect" value="poison"/>
+		</attack>
+	</attacks>
+	<defenses armor="75" defense="75">
+		<defense name="healing" interval="5000" chance="30" min="1000" max="3000">
+			<attribute key="areaEffect" value="blueshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="2"/>
+		<element deathPercent="2"/>
+		<element energyPercent="2"/>
+		<element firePercent="2"/>
+		<element holyPercent="2"/>
+	</elements>
+	<immunities>
+		<immunity drown="1"/>
+		<immunity paralyze="1"/>
+		<immunity invisible="1"/>
+		<immunity earth="1"/>
+		<immunity drunk="1"/>
+		<immunity outfit="1"/>
+	</immunities>
+	<voices interval="3000" chance="10">
+		<voice sentence="*** BRAINS *** SMALL ***"/>
+		<voice sentence="*** LIVE *** DRY ***"/>
+		<voice sentence="*** IMPORTANT ***"/>
+		<voice sentence="*** FIRE *** HOME *** VICTORY ***"/>
+		<voice sentence="*** EXISTENCE *** FUTILE ***"/>
+		<voice sentence="*** TIME ***"/>
+		<voice sentence="*** STEALTH ***"/>
+		<voice sentence="*** DEATH ***"/>
+	</voices>
+	<loot>
+	</loot>
+</monster>

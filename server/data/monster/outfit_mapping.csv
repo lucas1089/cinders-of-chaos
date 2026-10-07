@@ -1,0 +1,49 @@
+old_lookType,new_lookType,action,monsters
+908,1466,appended,grove keeper
+931,1467,appended,facetis
+932,1468,appended,twisted shaper; elite twisted shaper
+933,1469,appended,shaper matriarch
+935,1470,appended,orclops ravager
+938,1471,appended,vorathrax
+947,1472,appended,ice dragon; elite ice dragon
+980,906,reuse_existing_ours_id,vyrm
+984,1473,appended,talath
+1030,1474,appended,garack
+1038,1475,appended,black vixen
+1120,1476,appended,malofur mangrinder
+1121,1477,appended,plagueroot
+1139,1478,appended,spiky carnivor
+1143,1479,appended,alptramun; phantom shade
+1148,1480,appended,lacewing moth
+1152,1481,appended,fire man
+1286,1036,reuse_existing_ours_id,dawn strayer
+1294,1482,appended,giant asura
+1298,1483,appended,shadowgeist
+1334,1051,reuse_existing_ours_id,cunning hyaena
+1337,1054,reuse_existing_ours_id,ice lich
+1364,1484,appended,jungle beasts
+1365,1485,appended,thal
+1652,1486,appended,evil man
+1662,1487,appended,saga
+1701,1488,appended,golden lord
+1752,1489,appended,actors power
+1821,1490,appended,stormy seadevil
+1822,1491,appended,captain bloodbeard
+1823,1492,appended,ironhook corsair
+1824,1493,appended,scourgejaw
+1883,909,reuse_existing_ours_id,elite spider
+1932,1494,appended,winterstride
+1979,1085,reuse_existing_ours_id,snake master
+1988,1091,reuse_existing_ours_id,ormathulak
+2013,1495,appended,cursed ape
+2016,1496,appended,arcane energizer
+2020,928,reuse_existing_ours_id,abyssal shadowfiend
+2132,1291,reuse_existing_ours_id,spirit of purity
+2137,1296,reuse_existing_ours_id,litle devil
+2161,1497,appended,legendary warrior
+2195,1498,appended,royal man
+2200,1499,appended,jungle warrior
+2201,1500,appended,shenlong
+2333,1501,appended,nexweaver
+2366,1445,reuse_existing_ours_id,golden dragon
+2367,1446,reuse_existing_ours_id,scaleborn

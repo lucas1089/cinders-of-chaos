@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<monster name="Nightdweller" nameDescription="a nightdweller" race="blood" experience="2000000" speed="780" skulled="2" looting="1" manacost="0">
+	<health now="18000000" max="18000000" />
+	<look type="849" corpse="6068" />
+	<targetchange interval="2000" chance="3"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="1500" min="-15000" max="-22280"/>
+		<attack name="physical" interval="2000" chance="22" length="3" spread="0" min="-13000" max="-26230">
+			<attribute key="areaEffect" value="groundshaker"/>
+		</attack>
+		<attack name="fear" interval="4000" chance="40" radius="4" target="0" success="35" duration="5000">
+			<attribute key="areaEffect" value="rednote"/>
+		</attack>
+		<attack name="physical" interval="2000" chance="16" radius="3" target="0" min="-15000" max="-26200">
+			<attribute key="areaEffect" value="groundshaker"/>
+		</attack>
+		<attack name="fire" interval="2000" chance="20" range="7" target="1" min="-11000" max="-25870">
+			<attribute key="shootEffect" value="fire"/>
+			<attribute key="areaEffect" value="redspark"/>
+		</attack>
+		<attack name="death" interval="2000" chance="30" length="8" spread="0" min="-13000" max="-27720">
+			<attribute key="areaEffect" value="redspark" />
+		</attack>
+		<attack name="lifedrain" interval="2000" chance="10" range="7" target="1" radius="4" min="-8000" max="-12035">
+			<attribute key="shootEffect" value="largerock"/>
+			<attribute key="areaEffect" value="explosionarea"/>
+		</attack>
+	</attacks>
+	<defenses armor="77" defense="77">
+		<defense name="healing" interval="2000" chance="9" min="15000" max="30000">
+			<attribute key="areaEffect" value="blueshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element energyPercent="25"/>
+		<element icePercent="25"/>
+		<element firePercent="25"/>
+		<element physicalPercent="25"/>
+		<element holyPercent="25"/>
+		<element deathPercent="25"/>
+		<element earthPercent="25"/>
+	</elements>
+	<immunities>
+		<immunity invisible="1"/>
+		<immunity paralyze="1"/>
+	</immunities>
+</monster>

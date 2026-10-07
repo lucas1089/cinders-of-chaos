@@ -1,0 +1,696 @@
+BarItem < UIWidget
+  background-color: #363636
+  width: 130
+  height: 20
+  margin-left: 2
+  anchors.left: prev.right
+  anchors.top: parent.top
+  visible: false
+  //NEED FIX
+
+SubEventItem < UIWidget
+  visible: false
+  size: 54 36
+
+  UIWidget
+    id: highlight
+    anchors.fill: parent
+    phantom: true
+    visible: false
+    border: 1 #ffd76a
+    background-color: #ffd76a14
+
+  UIWidget
+    id: icon
+    anchors.horizontalCenter: parent.horizontalCenter
+    anchors.top: parent.top
+    margin-top: 11
+    phantom: true
+
+  UIWidget
+    id: background
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: parent.top
+    //background-color: green
+    opacity: 0.4
+    phantom: true
+    height: 10
+
+  UIWidget
+    id: title
+    anchors.left: background.left
+    anchors.right: background.right
+    anchors.top: background.top
+    anchors.bottom: background.bottom
+    !text: tr("Zombie")
+    font: verdana-11px-rounded
+    text-align: center
+    phantom: true
+    margin-top: 1
+
+CustomEventItem < CardPanel
+  size: 150 130
+  visible: false
+  padding: 0
+
+  // Background image (event art) - declared first so it renders BEHIND
+  // everything else. Filled in at runtime by Event.RefreshCustomEvents
+  // via HTTP.downloadImage from Services.eventImageApi.
+  UIWidget
+    id: bgImage
+    anchors.fill: parent
+    phantom: true
+    image-smooth: true
+
+  // Bottom-up dark gradient: transparent over the top half (artwork stays
+  // visible) fading to solid black at the bottom so the date/countdown
+  // text remains readable on top of it.
+  UIWidget
+    id: bgOverlay
+    anchors.fill: parent
+    phantom: true
+    background-gradient: linear-gradient(to bottom, #00000000 0%, #00000000 42%, #000000b9 70%, #000000f0 100%)
+
+  UIWidget
+    id: header
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 22
+    background-gradient: linear-gradient(to bottom, #6b1010 0%, #3a0808 100%)
+    border-bottom: 1 #8b1a1a
+    phantom: true
+
+    UIWidget
+      id: title
+      anchors.fill: parent
+      text-align: center
+      text-offset: 0 1
+      font: verdana-11px-rounded
+      color: #ffd76a
+      phantom: true
+      clipping: true
+      !text: tr("Elite Bonus")
+
+  // Kept for backwards-compat but hidden: the event art replaces the icon.
+  UIWidget
+    id: iconBg
+    anchors.top: header.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 8
+    size: 44 44
+    visible: false
+    phantom: true
+
+    UIWidget
+      id: icon
+      anchors.centerIn: parent
+      size: 32 32
+      phantom: true
+
+  UIWidget
+    id: period
+    anchors.bottom: divider.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-bottom: 3
+    height: 14
+    text-align: center
+    font: verdana-11px-rounded
+    color: #e8c890
+    phantom: true
+    !text: tr("May 10 - 12")
+
+  UIWidget
+    id: divider
+    anchors.bottom: countdown.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-bottom: 3
+    margin-left: 12
+    margin-right: 12
+    height: 1
+    background-color: #8b1a1a
+    opacity: 0.5
+    phantom: true
+
+  UIWidget
+    id: countdown
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-bottom: 8
+    height: 14
+    text-align: center
+    font: verdana-11px-rounded
+    color: #66cc66
+    phantom: true
+    text: --
+
+EventItem < MiniWindowPanelTopBar
+  padding: 26 5 5 5
+
+  UIWidget
+    id: title
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: -23
+    height: 20
+    text-offset: 0 2
+    text-align: center
+    font: verdana-11px-rounded
+    color: #FFAA00
+    phantom: true
+    !text: tr("Monday")
+
+    $checked:
+      color: #ffd76a
+
+    $!checked:
+      color: #FFAA00
+
+  SubEventItem
+    id: event1
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-left: 2
+    margin-top: 2
+
+  SubEventItem
+    id: event2
+    anchors.top: event1.bottom
+    anchors.left: event1.left
+
+  SubEventItem
+    id: event3
+    anchors.top: event2.bottom
+    anchors.left: event1.left
+
+  SubEventItem
+    id: event4
+    anchors.top: event1.top
+    anchors.left: event1.right
+    margin-left: 5
+
+  SubEventItem
+    id: event5
+    anchors.top: event4.bottom
+    anchors.left: event4.left
+
+  SubEventItem
+    id: event6
+    anchors.top: event5.bottom
+    anchors.left: event4.left
+
+  UIWidget
+    id: BorderFill
+    anchors.fill: parent
+    phantom: true
+    visible: false
+    background-color: #ffd76a18
+
+  UIWidget
+    id: Border
+    anchors.fill: parent
+    phantom: true
+    border: 0 black
+
+    $checked:
+      border: 1 #ffd76a
+
+BlackTalonMainWindow
+  size: 1010 705
+  anchors.centerIn: parent
+  !text: tr('Event Schedule')
+
+  // Mobile: 705 of height blows past the 540 logical pixels available, which
+  // would push the KOTH panel (and the close button) off screen. Fill the
+  // screen and move KOTH to the right of the custom event list, using the
+  // extra width (1200 vs 1010) to buy back the vertical space.
+  $mobile:
+    anchors.horizontalCenter: none
+    anchors.verticalCenter: none
+    anchors.fill: parent
+
+  InnerPanel
+    id: contentPanel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: CloseButton.top
+    margin: 8 22 8 22
+    padding: 8
+
+    Label
+      id: customLabel
+      anchors.top: parent.top
+      anchors.left: parent.left
+      margin-top: 8
+      margin-left: 12
+      text-auto-resize: true
+      font: sans-bold-16px
+      !text: tr("Custom Events")..":"
+
+    ScrollablePanel
+      id: CustomEventList
+      size: 920 130
+      anchors.top: customLabel.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      margin-top: 6
+      padding-left: 2
+      padding-right: 0
+      padding-top: 1
+      padding-bottom: 0
+      vertical-scrollbar-policy: off
+      horizontal-scrollbar-policy: auto
+      layout:
+        type: horizontalBox
+        spacing: 5
+
+      $mobile:
+        anchors.horizontalCenter: none
+        anchors.left: parent.left
+        anchors.right: kothBox.left
+        margin-right: 12
+
+    Label
+      id: customEventsEmpty
+      anchors.centerIn: CustomEventList
+      text-align: center
+      text-auto-resize: true
+      font: verdana-11px-rounded
+      color: #888888
+      visible: false
+      !text: tr("No events available")
+
+    HorizontalScrollBar
+      id: customScrollBar
+      anchors.top: CustomEventList.bottom
+      anchors.left: CustomEventList.left
+      anchors.right: CustomEventList.right
+      margin-top: 2
+      step: 50
+      pixels-scroll: true
+
+    UIWidget
+      id: customDivider
+      anchors.top: customScrollBar.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 12
+      margin-left: 20
+      margin-right: 20
+      height: 1
+      background-color: #8b1a1a
+      opacity: 0.6
+
+      // On mobile KOTH sits beside the custom list, so the divider hangs
+      // below whichever of the two is taller.
+      $mobile:
+        anchors.top: kothBox.bottom
+        margin-top: 8
+
+    ScrollablePanel
+      id: EventList
+      //background-color: #212121
+      size: 920 150
+      anchors.top: customDivider.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      margin-top: 12
+      margin-right: 10
+      margin-left: 10
+      padding-left: 2
+      padding-right: 0
+      padding-top: 1
+      padding-bottom: 0
+      layout:
+        type: grid
+        cell-size: 130 145
+        cell-spacing: 1
+        flow: true
+
+      $mobile:
+        margin-top: 8
+
+    UIWidget
+      id: TopBar
+      anchors.right: EventList.right
+      anchors.left: EventList.left
+      anchors.bottom: EventList.top
+      margin-bottom: 3
+      height: 20
+      margin-left: 2
+      margin-right: 2
+
+      UIWidget
+        id: item1
+        background-color: #363636
+        width: 130
+        height: 20
+        anchors.left: parent.left
+        anchors.top: parent.top
+        visible: false
+
+    UIWidget
+      id: divBar
+      anchors.right: EventList.right
+      anchors.bottom: parent.bottom
+      anchors.left: EventList.left
+      background-color: black
+      height: 1
+      margin-bottom: 10
+      visible: false
+
+    Label
+      id: nextLabel
+      anchors.top: EventList.bottom
+      anchors.left: EventList.left
+      text-auto-resize: true
+      margin-top: 12
+      margin-left: 5
+      font: sans-bold-16px
+      !text: tr("Next event")..":"
+
+      $mobile:
+        margin-top: 8
+
+    UIWidget
+      id: eventIcon
+      anchors.verticalCenter: divProgress.verticalCenter
+      anchors.left: divProgress.right
+      margin-left: 8
+      size: 32 32
+
+    Label
+      id: divText
+      anchors.verticalCenter: divProgress.verticalCenter
+      anchors.left: eventIcon.right
+      text-auto-resize: true
+      margin-left: 6
+      text: Event
+
+    UIWidget
+      id: ProgressBack
+      anchors.verticalCenter: nextLabel.verticalCenter
+      anchors.left: nextLabel.right
+      margin-left: 20
+      size: 200 18
+      background-color: #1a0404
+      border: 1 #8b1a1a
+      border-radius: 3
+      phantom: true
+
+    ProgressBar
+      id: divProgress
+      anchors.fill: ProgressBack
+      margin: 2
+      background-color: #66cc66
+
+    Panel
+      id: kothBox
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-left: 5
+      margin-right: 5
+      margin-top: 15
+      height: 150
+      padding: 0
+      background-color: #14080add
+      border: 1 #8b1a1a
+
+      // A ancora de TOPO nao pode morar no bloco base -- e o que travava o
+      // boot do mobile com "Unknown C++ exception" no displayUI.
+      //
+      // No mobile CustomEventList e customDivider penduram NESTA caixa, e
+      // divProgress esta do outro lado dessa mesma corrente:
+      //   divProgress -> ProgressBack -> nextLabel -> EventList ->
+      //   customDivider -> kothBox
+      // O bloco base e aplicado ANTES dos blocos $, entao existia um instante
+      // com "kothBox.top -> divProgress" e o grafo fechava ciclo. E addAnchor
+      // chama update() a CADA ancora, o que ja bastava para o layout rodar
+      // nesse instante. A guarda de UIAnchorLayout::updateWidget so pega o
+      // ciclo que volta ao widget INICIAL, entao um ciclo alcancado de fora
+      // recursa ate estourar a pilha; o access violation sai como "Unknown
+      // C++ exception" porque o catch(...) do luainterface o engole.
+      //
+      // Com cada topo no seu proprio bloco de estado, o base nunca chega a
+      // criar a aresta errada.
+      $!mobile:
+        anchors.top: divProgress.bottom
+
+      // Mobile: pinned to the right of the custom event list. Fixed width so
+      // CustomEventList can anchor its right edge here without a cycle.
+      $mobile:
+        anchors.left: none
+        anchors.top: customLabel.bottom
+        width: 460
+        margin-top: 6
+
+      UIWidget
+        id: kothHeader
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 22
+        background-gradient: linear-gradient(to bottom, #6b1010 0%, #3a0808 100%)
+        border-bottom: 1 #8b1a1a
+        phantom: true
+
+        Label
+          id: kothText
+          anchors.fill: parent
+          text-align: center
+          text-offset: 0 1
+          font: verdana-11px-rounded
+          color: #ffd76a
+          phantom: true
+          !text: tr("King of the Hill")
+
+      Panel
+        id: kothPanel
+        anchors.top: kothHeader.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        padding: 8
+
+        UIWidget
+          id: kothIconBg
+          anchors.verticalCenter: parent.verticalCenter
+          anchors.left: parent.left
+          margin-left: 6
+          size: 60 60
+          background-color: #1a0404
+          border: 1 #8b1a1a
+          border-radius: 4
+          phantom: true
+
+          ImageView
+            id: kothIcon
+            anchors.centerIn: parent
+            image-source: icons/king_of_the_hill
+
+        Panel
+          id: winner
+          anchors.top: parent.top
+          anchors.right: parent.right
+          anchors.bottom: parent.bottom
+          width: 170
+          background-color: #1a0404
+          border: 1 #8b1a1a
+          border-radius: 4
+
+          Label
+            id: winnerLabel
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 16
+            text-align: center
+            margin-top: 3
+            !text: tr('Current Winner')..':'
+            font: verdana-11px-rounded
+            color: #ffd76a
+
+          UIWidget
+            id: winnerDivider
+            anchors.top: winnerLabel.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            margin-top: 2
+            margin-left: 10
+            margin-right: 10
+            height: 1
+            background-color: #8b1a1a
+            opacity: 0.5
+            phantom: true
+
+          UIWidget
+            id: emblem
+            anchors.top: winnerDivider.bottom
+            anchors.horizontalCenter: parent.horizontalCenter
+            margin-top: 4
+            size: 48 48
+            image-smooth: true
+            phantom: true
+
+          Label
+            id: guildWinner
+            anchors.top: emblem.bottom
+            anchors.right: parent.right
+            anchors.left: parent.left
+            anchors.bottom: parent.bottom
+            margin-top: 2
+            margin-left: 4
+            margin-right: 4
+            margin-bottom: 4
+            text-align: center
+            font: verdana-11px-rounded
+            color: #e8c890
+            text-auto-resize: false
+            text-wrap: true
+
+        Label
+          id: state
+          anchors.top: parent.top
+          anchors.left: kothIconBg.right
+          anchors.right: winner.left
+          margin-top: 4
+          margin-left: 12
+          margin-right: 12
+          height: 16
+          text-align: center
+          font: verdana-11px-rounded
+          color: #66cc66
+          !text: tr("Waiting")
+
+        UIWidget
+          id: timeKothBg
+          anchors.verticalCenter: parent.verticalCenter
+          anchors.left: kothIconBg.right
+          anchors.right: winner.left
+          margin-left: 12
+          margin-right: 12
+          height: 18
+          background-color: #1a0404
+          border: 1 #8b1a1a
+          border-radius: 3
+          phantom: true
+
+        ProgressBar
+          id: timeKoth
+          anchors.fill: timeKothBg
+          margin: 2
+          percent: 50
+          background-color: #66cc66
+
+        Label
+          id: modalityLabel
+          anchors.top: timeKothBg.bottom
+          anchors.left: kothIconBg.right
+          anchors.right: winner.left
+          margin-top: 4
+          margin-left: 12
+          margin-right: 12
+          height: 14
+          text-align: center
+          font: verdana-11px-rounded
+          color: #ffd76a
+          text-auto-resize: false
+          !text: tr("Next: --")
+
+        Label
+          id: modalityDescription
+          anchors.top: modalityLabel.bottom
+          anchors.left: kothIconBg.right
+          anchors.right: winner.left
+          anchors.bottom: parent.bottom
+          margin-top: 2
+          margin-left: 12
+          margin-right: 12
+          margin-bottom: 4
+          text-align: center
+          font: verdana-9px
+          color: #c8b88a
+          text-auto-resize: false
+          text-wrap: true
+          text: --
+
+        UIWidget
+          id: layer
+          anchors.fill: parent
+          !tooltip: tr("King of The Hill\n\nFight with your guild to obtain control of the castle and earn its rewards. The event is held twice a day and alternates between two modes:\n\n- Balanced Mode\nAll players enter with the same HP, damage and attributes. Equipment, soul scrolls, skill tree and prestige have no effect.\n\n- No Limits Mode\nEach player enters with their real HP, damage, equipment, soul scrolls, skill tree, prestige and summons. Anything goes - the strongest wins.")
+    //Panel
+    //  id: beastPanel
+    //  anchors.bottom: kothPanel.bottom
+    //  anchors.left: kothPanel.right
+    //  anchors.top: kothPanel.top
+    //  anchors.right: parent.right
+    //  margin-right: 5
+    //  margin-left: 5
+    //  //background-color: #2f2f2f
+    //  ImageView
+    //    id: beastIcon
+    //    anchors.left: parent.left
+    //    anchors.top: parent.top
+    //    margin-left: 8
+    //    margin-top: 12
+    //    image-source: icons/beast_invasion
+    //  Label
+    //    id: beastTitle
+    //    anchors.top: parent.top
+    //    anchors.horizontalCenter: parent.horizontalCenter
+    //    margin-top: 4
+    //    !text: tr("Beast Invasion")
+    //    font: sans-bold-16px
+    //    text-auto-resize: true
+    //  Label
+    //    id: beastEventTime
+    //    anchors.top: beastTitle.bottom
+    //    anchors.right: parent.right
+    //    margin-right: 8
+    //    margin-top: 2
+    //    text: --
+    //    font: verdana-11px-rounded
+    //    text-auto-resize: true
+    //  Label
+    //    id: beastStatus
+    //    anchors.top: beastTitle.bottom
+    //    anchors.left: beastIcon.right
+    //    anchors.right: beastEventTime.left
+    //    margin-left: 12
+    //    margin-right: 8
+    //    text: Status: --
+    //    font: verdana-11px-rounded
+    //    text-auto-resize: true
+    //  ProgressBar
+    //    id: waveTimer
+    //    anchors.top: beastStatus.bottom
+    //    anchors.left: beastIcon.right
+    //    anchors.right: parent.right
+    //    margin-left: 12
+    //    margin-right: 10
+    //    margin-top: 6
+    //    background-color: green
+    //    percent: 0
+    //    text: 00:00
+    //    height: 16
+    //  UIWidget
+    //    id: beastLayer
+    //    anchors.fill: parent
+    //    !tooltip: tr("Party-based wave event focused on bestiary progress.")
+
+  Label
+    id: timeText
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    text-align: left
+    text-auto-resize: true
+    margin-left: 12
+    margin-bottom: 12
+    color: #888888
+
+  WindowCloseButton
+

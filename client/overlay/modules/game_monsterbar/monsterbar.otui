@@ -1,0 +1,54 @@
+Panel
+  id: monsterBar
+  size: 420 80
+  anchors.top: parent.top
+  anchors.horizontalCenter: parent.horizontalCenter
+  margin-top: 8
+  phantom: true
+  visible: false
+
+  ProgressBar
+    id: bar
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-left: 24
+    margin-top: 34
+    size: 372 18
+    background-color: #8a8484
+    percent: 100
+    phantom: true
+
+  UIWidget
+    id: frame
+    anchors.fill: parent
+    image-source: /images/chaos/monsterbar/frame_normal
+    phantom: true
+
+  Label
+    id: name
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 10
+    font: verdana-11px-antialised
+    text-auto-resize: true
+    color: #d6c9ae
+    phantom: true
+
+  Label
+    id: percent
+    anchors.horizontalCenter: bar.horizontalCenter
+    anchors.verticalCenter: bar.verticalCenter
+    font: verdana-11px-antialised
+    text-auto-resize: true
+    color: #ffffff
+    phantom: true
+
+  Label
+    id: mods
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 62
+    font: verdana-11px-antialised
+    text-auto-resize: true
+    color: #8c8070
+    phantom: true

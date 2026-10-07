@@ -1,0 +1,10 @@
+Module
+  name: client_chaos_theme
+  description: Chaos dark-fantasy UI theme (blackened iron, dried blood, ember gold). Provides reusable Chaos* styles.
+  author: project-chaos
+  sandboxed: true
+  scripts: [ chaos_theme ]
+  autoload: true
+  autoload-priority: 10
+  @onLoad: init()
+  @onUnload: terminate()

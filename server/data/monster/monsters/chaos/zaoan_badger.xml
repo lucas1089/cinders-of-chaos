@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<monster name="Zaoan Badger" nameDescription="a Zaoan Badger" race="blood" experience="70" skulled="1" looting="1" speed="176" evented = "2" manacost="305">
+	<health now="65" max="65" />
+	<look type="1249" corpse="6068" />
+	<targetchange interval="4000" chance="0" />
+	<flags>
+		<flag bestiary="1" />
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="1" />
+		<flag pushable="0" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="70" />
+		<flag runonhealth="0" />
+		<flag canwalkonenergy="0" />
+		<flag canwalkonfire="0" />
+		<flag canwalkonpoison="0" />
+	</flags>
+	<script>
+		<event name="auto_loot"/>
+	</script>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-40" />
+	</attacks>
+	<defenses armor="8" defense="8" />
+	<loot>
+        <item id="2148" countmax="70" chance="37500"/><!-- gold coin -->
+		<item id="2148" countmax="50" chance="37500"/><!-- gold coin -->
+		<item id="7461;3968;7896;11303;2527" countmax="1" chance="1000"/><!-- items for loot seller-->
+		<item id="25379" countmax="1" chance="50"/><!-- plainum tokens -->
+	</loot>
+</monster>

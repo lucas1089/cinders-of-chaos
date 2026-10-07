@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<monster name="Thal" nameDescription="a Thal" race="blood" experience="3900000" evented = "8" speed="850" skulled="1" looting="1" manacost="0">
+	<health now="2900000" max="2900000"/>
+	<look type="1485" corpse="6068" />
+	<level min="5500" max="6000"/>
+	<targetchange interval="4000" chance="0" />
+	<levelconfig experience="250" health="100" damage="0" speed="50" />
+	<flags>
+		<flag bestiary="1" />
+		<flag summonable="1" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="1" />
+		<flag pushable="0" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonenergy="0" />
+		<flag canwalkonfire="0" />
+		<flag canwalkonpoison="0" />
+	</flags>
+	<script>
+		<event name="auto_loot"/>
+        <event name="orb_bonus"/>
+        <event name="crusd_chest_bonus"/>
+	</script>
+	<attacks>
+		<attack name="melee" interval="1000" min="-30000" max="-40000" />
+		<attack name="Ice Strike" interval="2000" chance="45" min="-32000" max="-45000"/>
+		<attack name="gaz'haragoth iceball" interval="2000" chance="40" min="-30000" max="-50000"/>
+		<attack name="ranged_stun_stone" interval="2000" chance="10" range="5"/>
+	</attacks>
+	<defenses armor="80" defense="87">
+		<defense name="healing" interval="1000" chance="20" min="12000" max="220000">
+			<attribute key="areaEffect" value="blueshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+		<element energyPercent="35" />
+		<element icePercent="35" />
+		<element earthPercent="35" />
+		<element deathPercent="35" />
+		<element physicalPercent="35" />
+		<element firePercent="35" />
+		<element holyPercent="35" />
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="GROARRR!" yell="1" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="50" chance="65000"/><!-- Platinum Coin -->
+		<item id="25380" countmax="1" chance="50"/><!-- talent token -->
+		<item id="3983;2495;2469;7894;8888;2500;2472;8885;8884" countmax="1" chance="4000" /><!-- legs -->
+		<item id="5462;2644;11118;11240;2537;2514;2499" countmax="1" chance="3000" /><!-- great shield;demon shield;crystal boots -->
+	</loot>
+</monster>

@@ -1,0 +1,71 @@
+UIWindow
+  id: eventWarn
+  size: 240 100
+  focusable: false
+
+  UIWidget
+    id: background
+    anchors.left: parent.left
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    image-source: /images/ui/events/smallbanner/banner
+    image-border: 10
+    phantom: true
+
+  Label
+    id: title
+    anchors.top: background.top
+    anchors.horizontalCenter: background.horizontalCenter
+    margin-top: 5
+    text-auto-resize: true
+    font: sans-bold-16px
+    !text: tr("Event Name")
+
+  Label
+    id: timer
+    anchors.bottom: background.bottom
+    anchors.horizontalCenter: background.horizontalCenter
+    margin-bottom: 5
+    text: 10:00
+    color: red
+    text-auto-resize: true
+    visible: false
+
+  UILabel
+    id: text
+    anchors.top: title.bottom
+    anchors.left: background.left
+    anchors.right: background.right
+    anchors.bottom: timer.top
+    margin-left: 10
+    margin-right: 50
+    margin-top: 5
+    margin-bottom: 5
+    text-wrap: true
+    !text: tr("Click here to join the event!") .."\n".. tr("Type !events for more information")
+    text-align: left
+
+  UIWidget
+    id: layer
+    anchors.fill: background
+    margin-top: 30
+  
+  UIWidget
+    id: icon
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-right: -20
+
+  Button
+    id: closeButton
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin-right: 5
+    margin-top: 5
+    size: 10 10
+    text: X
+    color: white
+    
+    $hover:
+      color: red

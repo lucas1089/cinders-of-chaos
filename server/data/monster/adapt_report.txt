@@ -1,0 +1,147 @@
+Abyssal Shadowfiend: corpse 41162 -> 6068
+Abyssal Shadowfiend: dropped 1 loot lines for ids [40407]
+Acid Hydra: corpse 41162 -> 6068
+Acid Hydra: dropped 2 loot lines for ids [38782, 40407]
+Actors Power: corpse 41162 -> 6068
+Alptramun: corpse 41162 -> 6068
+Alptramun: dropped 1 loot lines for ids [40407]
+Ancient Fungus: corpse 41162 -> 6068
+Arcane Energizer: corpse 41162 -> 6068
+Azure Dragon: corpse 41162 -> 6068
+Azure Dragon: dropped 1 loot lines for ids [40407]
+Black Stag: corpse 41162 -> 6068
+Black Stag: dropped 1 loot lines for ids [40407]
+Black Vixen: corpse 41162 -> 6068
+Black Vixen: dropped 1 loot lines for ids [40407]
+Blazebringer: corpse 41162 -> 6068
+Blazebringer: dropped 1 loot lines for ids [40407]
+Captain Bloodbeard: corpse 41162 -> 6068
+Captain Bloodbeard: dropped 1 loot lines for ids [40407]
+Cunning Hyaena: corpse 41162 -> 6068
+Cunning Hyaena: dropped 1 loot lines for ids [40407]
+Cursed Ape: corpse 41162 -> 6068
+Cursed Ape: dropped 1 loot lines for ids [40407]
+Dark Sorcerer: corpse 41162 -> 6068
+Dark Sorcerer: dropped 2 loot lines for ids [40407, 43596]
+Dawn Strayer: corpse 41162 -> 6068
+Dawn Strayer: dropped 3 loot lines for ids [40407, 41310, 44329]
+Death Mage: corpse 41162 -> 6068
+Elite Ice Dragon: corpse 41162 -> 6068
+Elite Ice Dragon: dropped 1 loot lines for ids [40407]
+Elite Ice Witch: corpse 41162 -> 6068
+Elite Ice Witch: dropped 1 loot lines for ids [40407]
+Elite Seacrest Serpent: corpse 41162 -> 6068
+Elite Seacrest Serpent: dropped 1 loot lines for ids [40407]
+Elite Spider: corpse 41162 -> 6068
+Elite Spider: dropped 1 loot lines for ids [40407]
+Elite Twisted Shaper: corpse 41162 -> 6068
+Elite Twisted Shaper: dropped 1 loot lines for ids [40407]
+Elite Yeti: corpse 41162 -> 6068
+Elite Yeti: dropped 1 loot lines for ids [40407]
+Evil Man: corpse 41162 -> 6068
+Evil Man: dropped 1 loot lines for ids [40407]
+Facetis: corpse 41162 -> 6068
+Facetis: dropped 2 loot lines for ids [36459, 40407]
+Fire Man: corpse 41162 -> 6068
+Frost Maiden: corpse 41162 -> 6068
+Frost Maiden: dropped 1 loot lines for ids [40407]
+Garack: corpse 41162 -> 6068
+Giant Asura: corpse 41162 -> 6068
+Giant Asura: dropped 1 loot lines for ids [40407]
+Gloomfire: corpse 41162 -> 6068
+Gloomfire: dropped 2 loot lines for ids [41402, 45706]
+Golden Dragon: corpse 41162 -> 6068
+Golden Dragon: dropped 1 loot lines for ids [40407]
+Golden Lord: corpse 41162 -> 6068
+Golden Lord: dropped 1 loot lines for ids [40407]
+Grandpa Lord: corpse 41162 -> 6068
+Grove Keeper: corpse 41162 -> 6068
+Grove Keeper: dropped 1 loot lines for ids [40407]
+Ice Dragon: corpse 41162 -> 6068
+Ice Dragon: dropped 1 loot lines for ids [40407]
+Ice Lich: corpse 41162 -> 6068
+Ice Lich: dropped 2 loot lines for ids [37431, 40407]
+Infectanus: corpse 41162 -> 6068
+Ironhook Corsair: corpse 41162 -> 6068
+Ironhook Corsair: dropped 1 loot lines for ids [40407]
+Jungle Beasts: corpse 41162 -> 6068
+Jungle Beasts: dropped 2 loot lines for ids [30843, 40407]
+Jungle Warrior: corpse 41162 -> 6068
+Jungle Warrior: dropped 1 loot lines for ids [40407]
+Kroazur: corpse 41162 -> 6068
+Kroazur: dropped 1 loot lines for ids [40407]
+Lacewing Moth: corpse 41162 -> 6068
+Lacewing Moth: dropped 1 loot lines for ids [40407]
+Lady bug: corpse 41162 -> 6068
+Lady bug: dropped 1 loot lines for ids [40407]
+Legendary Warrior: corpse 41162 -> 6068
+Legendary Warrior: dropped 1 loot lines for ids [40407]
+Loricate Orger: corpse 41162 -> 6068
+Loricate Orger: dropped 1 loot lines for ids [40407]
+Malofur Mangrinder: corpse 41162 -> 6068
+Malofur Mangrinder: dropped 1 loot lines for ids [40407]
+Mercenary: corpse 41162 -> 6068
+Mercenary: dropped 2 loot lines for ids [37460, 40407]
+Mercenary Ranger: corpse 41162 -> 6068
+Mercenary Ranger: dropped 1 loot lines for ids [40407]
+Metal Freak: corpse 41162 -> 6068
+Mortal Illusion: corpse 41162 -> 6068
+Mutated Visco: corpse 41162 -> 6068
+Mutated Visco: dropped 1 loot lines for ids [40407]
+Nerubian: corpse 41162 -> 6068
+Nerubian: dropped 1 loot lines for ids [40407]
+Nexweaver: corpse 41162 -> 6068
+Nexweaver: dropped 1 loot lines for ids [40407]
+Nightdweller: corpse 41162 -> 6068
+Orcaruz: corpse 41162 -> 6068
+Orcaruz: dropped 1 loot lines for ids [40407]
+Orclops Ravager: corpse 41162 -> 6068
+Orclops Ravager: dropped 1 loot lines for ids [40407]
+Ormathulak: corpse 41162 -> 6068
+Phantom Shade: corpse 41162 -> 6068
+Plagueroot: corpse 41162 -> 6068
+Plagueroot: dropped 1 loot lines for ids [40407]
+Royal Man: corpse 41162 -> 6068
+Royal Man: dropped 1 loot lines for ids [40407]
+Scaleborn: corpse 41162 -> 6068
+Scaleborn: dropped 1 loot lines for ids [40407]
+Scourgejaw: corpse 41162 -> 6068
+Scourgejaw: dropped 1 loot lines for ids [40407]
+Serpent Pride: corpse 41162 -> 6068
+Shadowgeist: corpse 41162 -> 6068
+Shadowgeist: dropped 1 loot lines for ids [40350]
+Shaper Matriarch: corpse 41162 -> 6068
+Shaper Matriarch: dropped 1 loot lines for ids [40407]
+Shenlong: corpse 41162 -> 6068
+Shenlong: dropped 2 loot lines for ids [36168, 40407]
+Silicron: corpse 41162 -> 6068
+Silicron: dropped 1 loot lines for ids [40407]
+Snake Master: corpse 41162 -> 6068
+Spiky Carnivor: corpse 41162 -> 6068
+Spiky Carnivor: dropped 1 loot lines for ids [40407]
+Spirit of Purity: corpse 41162 -> 6068
+Spirit of Purity: dropped 1 loot lines for ids [40407]
+Steelbeak: corpse 41162 -> 6068
+Stormy Seadevil: corpse 41162 -> 6068
+Stormy Seadevil: dropped 1 loot lines for ids [40407]
+Swamp Snapper: corpse 41162 -> 6068
+Swamp Snapper: dropped 1 loot lines for ids [40407]
+Talath: corpse 41162 -> 6068
+Tarrasque: corpse 41162 -> 6068
+Tarrasque: dropped 1 loot lines for ids [41409]
+Thal: corpse 41162 -> 6068
+Thal: dropped 1 loot lines for ids [40407]
+Titanica: corpse 41162 -> 6068
+Titanica: dropped 1 loot lines for ids [40407]
+Tundra Troll: corpse 41162 -> 6068
+Tundra Troll: dropped 1 loot lines for ids [40407]
+Twisted Shaper: corpse 41162 -> 6068
+Twisted Shaper: dropped 1 loot lines for ids [40407]
+Vorathrax: corpse 41162 -> 6068
+Vorathrax: dropped 1 loot lines for ids [45706]
+Vyrm: corpse 41162 -> 6068
+Vyrm: dropped 1 loot lines for ids [40407]
+Ward Barbarian: corpse 41162 -> 6068
+Winterstride: corpse 41162 -> 6068
+Winterstride: dropped 1 loot lines for ids [40407]
+Zaoan Badger: corpse 41162 -> 6068

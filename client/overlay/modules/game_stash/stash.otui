@@ -1,0 +1,249 @@
+SuppplyBlock < UIWidget
+
+  UIWidget
+    id: background
+    anchors.fill: parent
+    image-source: /images/ui/tooltip
+    image-border: 10
+  
+  Item
+    id: item
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 10
+
+  Button
+    id: RemoveButton
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 10
+    size: 32 32
+    text: X
+
+  UIWidget
+    id: name
+    anchors.left: item.right
+    anchors.right: RemoveButton.left
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    text-wrap: true
+    margin-left: 10
+    margin-right: 10
+
+SupplyItem < UIItemTooltip
+  size: 50 50
+  padding: 1
+  image-source: /images/ui/item
+  font: verdana-11px-rounded
+  border-color: white
+  color: white
+  virtual: true
+
+  SupplyCount
+    text: 0
+    phantom: true
+
+  ItemColorFrame
+    phantom: true
+
+  $hover:
+    image-source: /images/ui/item-blessed
+
+  $disabled:
+    color: #646464
+
+SupplyCount < GameLabel
+  id: countbase
+  size: 50 10
+  font: verdana-11px-rounded
+  text-align: center
+  anchors.bottom: parent.bottom
+  margin.bottom: 0
+  text: 0
+
+
+BlackTalonMainWindow
+  size: 690 430
+  text: Supply Stash
+  @onEscape: modules.game_stash.toggle()
+
+  InnerPanel
+    id: InsideWindow
+    anchors.fill: parent
+    margin-top: 0
+    margin-bottom: 30
+    margin-left: 10
+    margin-right: 10
+    padding-right: 5
+    padding-bottom: 1
+
+  ScrollablePanel
+    id: SupplyList
+    anchors.left: InsideWindow.left
+    anchors.right: InsideWindow.right
+    anchors.top: parent.top
+    anchors.bottom: CloseButton.top
+    margin-top: 30
+    margin-bottom: 5
+    padding-left: 5
+    padding-right: 5
+    padding-top: 5
+    margin-right: 5
+    vertical-scrollbar: SupplyListScrollBar
+    layout:
+      type: grid
+      cell-size: 46 46
+      cell-spacing: 5
+      flow: true
+
+  UIWidget
+    id: DropHint
+    anchors.fill: SupplyList
+    background-color: #00000099
+    visible: false
+    phantom: true
+
+    UILabel
+      anchors.centerIn: parent
+      text: Drag and drop here
+      text-align: center
+      font: verdana-11px-rounded
+      color: #ffcc33
+
+
+  VerticalScrollBar
+    id: SupplyListScrollBar
+    anchors.top: SupplyList.top
+    anchors.bottom: SupplyList.bottom
+    anchors.right: InsideWindow.right
+    margin-right: 3
+    margin-top: 2
+    margin-bottom: 2
+    step: 14
+    pixels-scroll: true
+
+
+  Button
+    id: ClearSearchButton
+    anchors.right: InsideWindow.right
+    anchors.bottom: SupplyList.top
+    margin-bottom: 3
+    margin-right: 3
+    size: 24 24
+    icon: /images/ui/icon_close
+    icon-size: 16 16
+    icon-offset: 4 4
+
+    $pressed:
+      icon-offset: 4 4
+
+  TextEdit
+    id: Search
+    anchors.right: ClearSearchButton.left
+    anchors.bottom: SupplyList.top
+    margin-right: 5
+    margin-bottom: 3
+    width: 200
+    height: 22
+    placeholder: Search item...
+    placeholder-color: #808080
+
+  UILabel
+    id: SearchText
+    !text: tr("Search:")
+    anchors.right: Search.left
+    anchors.bottom: SupplyList.top
+    margin-right: 5
+    margin-bottom: 7
+    
+  ComboBox
+    id: Filter
+    anchors.left: SupplyList.left
+    anchors.bottom: SupplyList.top
+    margin-bottom: 3
+    width: 130
+
+  Button
+    id: DisableListButton
+    anchors.left: Filter.right
+    anchors.bottom: Filter.bottom
+    margin-left: 10
+    width: 135
+    !text: tr("Disabled Items")
+
+  Button
+    id: CloseButton
+    !text: tr("Close")
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-right: 15
+    margin-bottom: 0
+
+  UIWidget
+    id: Overlay
+    anchors.right: parent.right
+    anchors.left: parent.left
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    margin-top: -50
+    margin-left: -16
+    margin-right: -16
+    margin-bottom: -16
+
+    UIWidget
+      id: background
+      anchors.fill: parent
+      background-color: black
+      opacity: 0.5
+
+    UIWidget
+      id: BlockListBase
+      background-color: black
+      anchors.centerIn: parent
+      border: 1 #4a4a4a
+      border-radius: 6
+      background-gradient: linear-gradient(to bottom, #4a0e0e 0%, #2a0808 30%, #150404 65%, #050101 100%)
+      size: 280 300
+
+      Button
+        id: CloseButton
+        anchors.bottom: parent.bottom
+        anchors.horizontalCenter: parent.horizontalCenter
+        margin-bottom: 20
+        text: Close
+          
+      ScrollablePanel
+        id: BlockList
+        size: 220 200
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: CloseButton.top
+        margin-bottom: 10
+        padding-left: 5
+        padding-right: 5
+        padding-top: 5
+        margin-right: 5
+        vertical-scrollbar: BlockListScrollBar
+        layout:
+          type: grid
+          cell-size: 210 50
+          cell-spacing: 5
+          flow: true
+
+      VerticalScrollBar
+        id: BlockListScrollBar
+        anchors.top: BlockList.top
+        anchors.bottom: BlockList.bottom
+        anchors.left: BlockList.right
+        step: 14
+        margin-left: 5
+        pixels-scroll: true
+
+      UILabel
+        id: Title
+        anchors.bottom: BlockList.top
+        anchors.left: BlockList.left
+        anchors.right: BlockList.right
+        anchors.top: parent.top
+        margin-top: -20
+        !text: tr("Stash Block List")
+        text-align: center

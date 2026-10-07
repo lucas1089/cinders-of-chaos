@@ -1,0 +1,741 @@
+DungeonMenuItem < Panel
+  height: 60
+  image-color: #ababab
+  image-source: /images/ui/panel_flat
+  image-border: 1
+  image-color: #999999
+  focusable: true
+  phantom: false
+
+  $hover !disabled:
+    image-color: #dfdfdf
+
+  $focus:
+    image-color: #ffffff
+
+  UICreature
+    id: boss
+    anchors.top: parent.top
+    anchors.left: parent.left
+    size: 48 48
+    padding-top: 10
+    old-scaling: true
+
+  Label
+    id: title
+    anchors.top: parent.top
+    anchors.left: boss.right
+    anchors.right: parent.right
+    margin-top: 1
+    margin-left: 3
+    text: Dungeon Name
+    color: #dfdfdf
+
+  Label
+    id: level
+    anchors.top: prev.bottom
+    anchors.left: boss.right
+    anchors.right: parent.right
+    margin-top: 2
+    margin-left: 3
+
+  Label
+    id: queue
+    anchors.top: prev.bottom
+    anchors.left: boss.right
+    anchors.right: parent.right
+    margin-top: 2
+    margin-left: 3
+
+DifficultyButton < Panel
+  width: 160
+  image-color: #ababab
+  image-source: /images/ui/panel_flat
+  image-border: 1
+  image-color: #999999
+  color: #999999
+  text-offset: 0 -35
+  phantom: false
+  clipping: true
+
+  $hover !disabled:
+    image-color: #dfdfdf
+
+  $focus:
+    image-color: #ffffff
+
+  $disabled:
+    color: #ababab88
+
+DifficultyIcon < Panel
+  anchors.top: parent.top
+  anchors.horizontalCenter: parent.horizontalCenter
+  size: 40 42
+  image-source: /images/dungeons/diff
+  opacity: 1.0
+
+  $disabled:
+    opacity: 0.8
+
+DifficultyInfo < Label
+  anchors.top: prev.bottom
+  anchors.left: parent.left
+  anchors.right: parent.right
+  anchors.bottom: parent.bottom
+  margin-top: 20
+  text-align: top
+  color: #ababab
+
+PlayersTableRow < TableRow
+  height: 19
+  focusable: false
+
+PlayersTableColumn < TableColumn
+  width: 80
+  text-align: center
+
+PlayersTableHeaderColumn < UIWidget
+  font: verdana-11px-antialised
+  color: #dfdfdf88
+  focusable: true
+  text-offset: 0 0
+  image-source: /images/ui/panel_flat
+  image-color: #999999
+  image-border: 1
+  focusable: false
+
+ChallengesPanel < ScrollablePanel
+  text-offset: 0 2
+  text-align: top
+  image-source: /images/ui/miniwindow
+  image-border: 4
+  image-border-top: 23
+  image-color: #999999
+  padding: 4
+  padding-top: 20
+  padding-right: 18
+
+ChallengePanel < MiniPanel
+  height: 84
+  text-align: leftTop
+  text-offset: 26 2
+
+  CheckBox
+    id: checkbox
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: -20
+    enabled: false
+
+    $disabled:
+      image-color: #dfdfdfff
+      color: #dfdfdf
+      opacity: 1.0
+
+  Label
+    id: description
+    anchors.fill: parent
+    text-wrap: true
+
+LootItem < UIItem
+  padding: 1
+  image-source: /images/ui/item
+  size: 34 34
+  font: verdana-11px-rounded
+  color: white
+  virtual: true
+
+MainWindow
+  text: Dungeons
+  size: 1219 720
+
+  ScrollablePanel
+    id: dungeonsMenu
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.bottom: separator.top
+    width: 190
+    margin-bottom: 10
+    image-source: /images/ui/panel_flat
+    image-border: 1
+    image-color: #999999
+    padding: 1
+    vertical-scrollbar: dungeonsScroll
+    auto-focus: none
+    layout:
+      type: verticalBox
+
+  VerticalScrollBar
+    id: dungeonsScroll
+    anchors.top: dungeonsMenu.top
+    anchors.bottom: dungeonsMenu.bottom
+    anchors.left: dungeonsMenu.right
+    step: 24
+    pixels-scroll: true
+
+  FlatPanel
+    id: dungeonInfo
+    anchors.top: prev.top
+    anchors.left: prev.right
+    anchors.right: parent.right
+    anchors.bottom: prev.bottom
+    margin-left: 10
+    padding: 1
+
+    UIWidget
+      id: banner
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 100
+      background: #555555
+
+    MiniPanel
+      id: difficulties
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 155
+      margin-top: 100
+      text: Difficulty
+      layout:
+        type: horizontalBox
+
+      DifficultyButton
+        text: Normal
+        @onFocusChange: modules.game_dungeons.onDifficultyFocus(1, self:isFocused())
+
+        DifficultyIcon
+          image-clip: 0 0 40 42
+        
+        DifficultyInfo
+          !text: 'Monster Health 100%\nMonster Damage 100%'
+
+      DifficultyButton
+        text: Hard
+        @onFocusChange: modules.game_dungeons.onDifficultyFocus(2, self:isFocused())
+
+        DifficultyIcon
+          image-clip: 40 0 40 42
+        
+        DifficultyInfo
+          !text: 'Monster Health 200%\nMonster Damage 130%\nBonus XP +75%\nGold Drop +75%'
+        
+        Panel
+          id: lockBg
+          anchors.fill: parent
+          background: #000000cc
+          margin-top: 1
+          visible: false
+        
+        Panel
+          id: lockImg
+          anchors.centerIn: parent
+          image-source: /images/dungeons/difficulty_lock
+          visible: false
+
+      DifficultyButton
+        text: Expert
+        @onFocusChange: modules.game_dungeons.onDifficultyFocus(3, self:isFocused())
+
+        DifficultyIcon
+          image-clip: 80 0 40 42
+        
+        DifficultyInfo
+          !text: 'Monster Health 320%\nMonster Damage 190%\nBonus XP +100%\nGold Drop +100%\nLoot Chance +15%'
+        
+        Panel
+          id: lockBg
+          anchors.fill: parent
+          background: #000000cc
+          margin-top: 1
+          visible: false
+        
+        Panel
+          id: lockImg
+          anchors.centerIn: parent
+          image-source: /images/dungeons/difficulty_lock
+          visible: false
+
+      DifficultyButton
+        text: Master
+        @onFocusChange: modules.game_dungeons.onDifficultyFocus(4, self:isFocused())
+
+        DifficultyIcon
+          image-clip: 120 0 40 42
+        
+        DifficultyInfo
+          !text: 'Monster Health 500%\nMonster Damage 280%\nBonus XP +200%\nGold Drop +200%\nLoot Chance +30%'
+        
+        Panel
+          id: lockBg
+          anchors.fill: parent
+          background: #000000cc
+          margin-top: 1
+          visible: false
+        
+        Panel
+          id: lockImg
+          anchors.centerIn: parent
+          image-source: /images/dungeons/difficulty_lock
+          visible: false
+
+      DifficultyButton
+        text: Torment
+        @onFocusChange: modules.game_dungeons.onDifficultyFocus(5, self:isFocused())
+
+        DifficultyIcon
+          image-clip: 160 0 40 42
+        
+        DifficultyInfo
+          !text: 'Monster Health 800%\nMonster Damage 400%\nBonus XP +300%\nGold Drop +300%\nLoot Chance +45%'
+        
+        Panel
+          id: lockBg
+          anchors.fill: parent
+          background: #000000cc
+          margin-top: 1
+          visible: false
+        
+        Panel
+          id: lockImg
+          anchors.centerIn: parent
+          image-source: /images/dungeons/difficulty_lock
+          visible: false
+
+      DifficultyButton
+        text: Hell
+        @onFocusChange: modules.game_dungeons.onDifficultyFocus(6, self:isFocused())
+
+        DifficultyIcon
+          image-clip: 200 0 40 42
+        
+        DifficultyInfo
+          !text: 'Monster Health 1300%\nMonster Damage 600%\nBonus XP +400%\nGold Drop +400%\nLoot Chance +60%'
+        
+        Panel
+          id: lockBg
+          anchors.fill: parent
+          background: #000000cc
+          margin-top: 1
+          visible: false
+        
+        Panel
+          id: lockImg
+          anchors.centerIn: parent
+          image-source: /images/dungeons/difficulty_lock
+          visible: false
+
+    MiniPanel
+      id: requirements
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      size: 221 192
+      image-source: /images/ui/minipanel
+      image-border: 10
+      image-border-top: 30
+      image-border-bottom: 5
+      margin-top: 1
+      text: Requirements
+
+      Label
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-left: 2
+        text: Level:
+
+        $disabled:
+          height: 0
+          margin-top: 0
+
+        Label
+          id: level
+          anchors.top: parent.top
+          anchors.right: parent.right
+          margin-right: 5
+          text-align: right
+          text-auto-resize: true
+          text: 100
+
+      Label
+        anchors.top: prev.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-left: 2
+        text: Party:
+
+        $disabled:
+          height: 0
+
+        Label
+          id: party
+          anchors.top: parent.top
+          anchors.right: parent.right
+          margin-right: 5
+          text-align: right
+          text-auto-resize: true
+          text: 1-4
+
+      Label
+        anchors.top: prev.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-left: 2
+        text: Item Level:
+
+        $disabled:
+          height: 0
+
+        Label
+          id: iLvl
+          anchors.top: parent.top
+          anchors.right: parent.right
+          margin-right: 5
+          text-align: right
+          text-auto-resize: true
+          text: 350
+
+      Label
+        anchors.top: prev.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-left: 2
+        text: Gold:
+
+        $disabled:
+          height: 0
+
+        Label
+          id: gold
+          anchors.top: parent.top
+          anchors.right: parent.right
+          margin-right: 5
+          text-align: right
+          text-auto-resize: true
+          text: 100.000.000
+
+      MiniPanel
+        anchors.top: prev.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 2
+        margin-left: 2
+        margin-right: 4
+        text: Quests
+        height: 55
+
+        $disabled:
+          height: 0
+          margin-top: 0
+
+        Label
+          id: quests
+          anchors.fill: parent
+          text-auto-resize: true
+          text-wrap: true
+      
+      MiniPanel
+        id: items
+        anchors.top: prev.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 65
+        text: Items
+        layout:
+          type: grid
+          cell-size: 34 34
+          flow: true
+
+        $disabled:
+          height: 0
+          margin-top: 0
+          margin-bottom: 0
+      
+        LootItem
+          id: item1
+        LootItem
+          id: item2
+        LootItem
+          id: item3
+        LootItem
+          id: item4
+        LootItem
+          id: item5
+        LootItem
+          id: item6
+
+    MiniPanel
+      id: bossLoot
+      anchors.top: prev.top
+      anchors.left: prev.right
+      size: 247 162
+      text: Potential Boss Loot
+      layout:
+        type: grid
+        cell-size: 34 34
+        flow: true
+
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+      LootItem
+
+    MiniPanel
+      anchors.top: prev.top
+      anchors.left: prev.right
+      anchors.bottom: parent.bottom
+      image-source: /images/ui/minipanel
+      image-border: 20
+      image-border-top: 30
+      image-border-bottom: 5
+      width: 250
+      text: Top Solo Runners
+
+      Table
+        id: soloTable
+        anchors.fill: parent
+        focusable: false
+        table-data: soloTableData
+        row-style: PlayersTableRow
+        column-style: PlayersTableColumn
+        header-column-style: false
+        header-row-style: false
+
+        TableHeaderRow
+          id: header
+          height: 20
+          
+          PlayersTableHeaderColumn
+            !text: '#'
+            width: 33
+
+          PlayersTableHeaderColumn
+            !text: 'Name'
+            width: 128
+
+          PlayersTableHeaderColumn
+            !text: 'Time'
+            width: 70
+
+      TableData
+        id: soloTableData
+        anchors.fill: soloTable
+        padding: 1
+        padding-top: 20
+        vertical-scrollbar: soloTableScroll
+
+      VerticalScrollBar
+        id: soloTableScroll
+        anchors.top: soloTableData.top
+        anchors.bottom: soloTableData.bottom
+        anchors.right: soloTableData.right
+        step: 20
+        pixels-scroll: true
+    
+    MiniPanel
+      anchors.top: prev.top
+      anchors.left: prev.right
+      anchors.bottom: parent.bottom
+      image-source: /images/ui/minipanel
+      image-border: 20
+      image-border-top: 30
+      image-border-bottom: 5
+      width: 250
+      text: Top Group Runners
+
+      Table
+        id: groupTable
+        anchors.fill: parent
+        focusable: false
+        table-data: groupTableData
+        row-style: PlayersTableRow
+        column-style: PlayersTableColumn
+        header-column-style: false
+        header-row-style: false
+
+        TableHeaderRow
+          id: header
+          height: 20
+          
+          PlayersTableHeaderColumn
+            !text: '#'
+            width: 33
+
+          PlayersTableHeaderColumn
+            !text: 'Name'
+            width: 128
+
+          PlayersTableHeaderColumn
+            !text: 'Time'
+            width: 70
+
+      TableData
+        id: groupTableData
+        anchors.fill: groupTable
+        padding: 1
+        padding-top: 20
+        vertical-scrollbar: groupTableScroll
+
+      VerticalScrollBar
+        id: groupTableScroll
+        anchors.top: groupTableData.top
+        anchors.bottom: groupTableData.bottom
+        anchors.right: groupTableData.right
+        step: 20
+        pixels-scroll: true
+
+    MiniPanel
+      anchors.top: requirements.bottom
+      anchors.left: parent.left
+      anchors.right: requirements.right
+      anchors.bottom: parent.bottom
+      image-source: /images/ui/minipanel
+      image-border: 10
+      image-border-top: 30
+      image-border-bottom: 5
+      text: Queue
+
+      Label
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-left: 2
+        margin-top: 2
+        text-auto-resize: true
+        text: Status:
+
+        Label
+          id: queueStatus
+          anchors.top: parent.top
+          anchors.right: parent.right
+          margin-right: 5
+          text-align: right
+          text-auto-resize: true
+          color: green
+          text: Open
+          text-auto-resize: true
+
+      Label
+        anchors.top: prev.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-left: 2
+        text: Estimated Time:
+        text-auto-resize: true
+
+        Label
+          id: queueTime
+          anchors.top: parent.top
+          anchors.right: parent.right
+          margin-right: 5
+          text-align: right
+          text: 00:00:00
+          text-auto-resize: true
+
+      HorizontalSeparator
+        anchors.top: prev.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin: 0 10
+        margin-top: 10
+
+      HorizontalSeparator
+        anchors.top: prev.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin: 0 10
+        margin-top: 70
+
+      Label
+        anchors.centerIn: parent
+        text: Waiting Time
+        margin-bottom: 22
+        color: #adadad
+        text-auto-resize: true
+
+      Label
+        id: queueWaiting
+        anchors.centerIn: parent
+        text: 00:00:00
+        margin-bottom: 7
+        text-auto-resize: true
+
+      Label
+        id: queueDungeon
+        anchors.centerIn: parent
+        margin-top: 11
+        text: ------
+        text-auto-resize: true
+
+      Button
+        id: queueButton
+        anchors.bottom: parent.bottom
+        anchors.horizontalCenter: parent.horizontalCenter
+        text: Join
+        margin-bottom: 5
+        @onClick: modules.game_dungeons.joinQueue()
+
+    ChallengesPanel
+      id: challenges
+      anchors.top: bossLoot.bottom
+      anchors.left: bossLoot.left
+      anchors.right: bossLoot.right
+      anchors.bottom: parent.bottom
+      image-source: /images/ui/panel_map
+      image-border: 10
+      image-border-top: 5
+      image-border-bottom: 5
+      text: Challenges
+      vertical-scrollbar: challengesScroll
+      layout:
+        type: verticalBox
+    
+    VerticalScrollBar
+      id: challengesScroll
+      anchors.top: challenges.top
+      anchors.bottom: challenges.bottom
+      anchors.right: challenges.right
+      margin-top: 23
+      margin-bottom: 4
+      margin-right: 4
+      step: 24
+      pixels-scroll: true
+
+  HorizontalSeparator
+    id: separator
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-bottom: 35
+
+  Button
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    text: Close
+    width: 60
+    @onClick: modules.game_dungeons.toggle()

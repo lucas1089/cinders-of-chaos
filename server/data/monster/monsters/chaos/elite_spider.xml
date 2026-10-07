@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Elite Spider" nameDescription="an elite spider" race="venom" experience="131000" evented = "6" speed="470" skulled="1" looting="1" manacost="0">
+	<!-- Death Reaper -->
+	<health now="190000" max="190000"/>
+	<look type="909" corpse="6068"/>
+	<level min="1300" max="1450"/>
+	<targetchange interval="3000" chance="20"/>
+	<strategy attack="100" defense="0"/>
+	<levelconfig chance="100000" experience="250" health="100" damage="0" speed="50" />
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="0"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+	</flags>
+	<script>
+		<event name="auto_loot"/>
+        <event name="orb_bonus"/>
+        <event name="crusd_chest_bonus"/>
+	</script>
+	<attacks>
+		<attack name="melee" interval="2000" min="-2500" max="-5000"/>
+		<attack name="earth" interval="2000" chance="10" range="7" radius="1" target="1" min="-3000" max="-5500">
+			<attribute key="shootEffect" value="poison"/>
+			<attribute key="areaEffect" value="poison"/>
+		</attack>
+		<attack name="earth" interval="2000" chance="20" range="7" radius="3" target="1" min="-3000" max="-6000">
+			<attribute key="areaEffect" value="poison"/>
+		</attack>
+	</attacks>
+	<defenses armor="40" defense="50"/>
+	<elements>
+    <element firePercent="30" />
+    <element earthPercent="30" />
+    <element energyPercent="30" />
+    <element deathPercent="30" />
+    <element physicalPercent="30" />
+    <element holyPercent="30" />
+    <element icePercent="30" />
+  </elements>
+	<immunities>
+      	<immunity lifedrain="1"/>
+      	<immunity paralyze="1"/>
+      	<immunity outfit="1"/>
+      	<immunity drunk="1"/>
+      	<immunity invisible="1"/>
+	</immunities>
+    <loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="5879" countmax="1" chance="800"/><!-- spider silk -->
+		<item id="2152" countmax="50" chance="65000"/><!-- Platinum Coin -->
+		<item id="8888;2500;2472;8885;8884;3983;2495;2469;7894" countmax="1" chance="3000" /><!-- armors -->
+		<item id="5462;2644;11118;11240;2537;2514;2499" countmax="1" chance="2000" /><!-- great shield;demon shield;crystal boots -->
+		<item id="25380" countmax="1" chance="10"/><!-- talent token -->
+	</loot>
+</monster>

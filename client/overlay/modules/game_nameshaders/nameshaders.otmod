@@ -1,0 +1,13 @@
+Module
+  name: game_nameshaders
+  description: Name Shader Selection - Apply visual effects to your character name
+  author: BlackTalon
+  website: blacktalon.online
+  sandboxed: true
+  autoload: false
+  scripts: [ nameshaders ]
+  dependencies:
+    - game_interface
+    - game_textmessage
+  @onLoad: init()
+  @onUnload: terminate()

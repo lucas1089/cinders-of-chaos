@@ -1,0 +1,11 @@
+Module
+  name: game_monsterbar
+  description: Tiered monster health bar (normal / magic / rare / legendary / boss)
+  author: Chaos
+  sandboxed: true
+  autoload: true
+  autoload-priority: 900
+  dependencies: [ game_interface ]
+  scripts: [ monsterbar ]
+  @onLoad: init()
+  @onUnload: terminate()

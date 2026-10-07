@@ -1,0 +1,535 @@
+CommonNode < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/skills
+  image-color: #6f6f6f
+  size: 27 27
+  phantom: false
+  icon-source: /images/passivetree/common_notallocated
+  icon-size: 56 56
+  icon-offset: -15 -15
+
+  $hover !$on:
+    icon-source: /images/passivetree/commont_canallocate
+    image-color: #ffffff
+
+  $on:
+    icon-source: /images/passivetree/common_active
+    image-color: #ffffff
+
+InfoLabel < Label
+  id: infoLabel
+  text-auto-resize: false
+  text-wrap: true
+
+UncommonNode < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/skills
+  image-color: #6f6f6f
+  size: 38 38
+  phantom: false
+  icon-source: /images/passivetree/uncommon_notallocated
+  icon-size: 95 95
+  icon-offset: -27 -27
+
+  $hover !$on:
+    icon-source: /images/passivetree/uncommon_canallocate
+    image-color: #ffffff
+
+  $on:
+    icon-source: /images/passivetree/uncommon_activated
+    image-color: #ffffff
+
+RareNode < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/skills
+  image-color: #6f6f6f
+  size: 41 41
+  phantom: false
+  icon-source: /images/passivetree/rare_notallocated
+  icon-size: 95 95
+  icon-offset: -27 -27
+
+  $hover !$on:
+    icon-source: /images/passivetree/rare_canallocate
+    image-color: #ffffff
+
+  $on:
+    icon-source: /images/passivetree/rare_active
+    image-color: #ffffff
+
+VeryRareNode < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/skills
+  image-color: #6f6f6f
+  size: 38 38
+  phantom: false
+  icon-source: /images/passivetree/veryrare_notallocate
+  icon-size: 95 95
+  icon-offset: -27 -27
+
+  $hover !$on:
+    icon-source: /images/passivetree/veryrare_canallocate
+    image-color: #ffffff
+
+  $on:
+    icon-source: /images/passivetree/veryrare_active
+    image-color: #ffffff
+
+MythicNode < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/skills
+  image-color: #6f6f6f
+  size: 38 38
+  phantom: false
+  icon-source: /images/passivetree/NotableFrameUnallocated
+  icon-size: 95 95
+  icon-offset: -27 -27
+
+  $hover !$on:
+    icon-source: /images/passivetree/NotableFrameCanAllocate
+    image-color: #ffffff
+
+  $on:
+    icon-source: /images/passivetree/NotableFrameAllocated
+    image-color: #ffffff
+
+DivineNode < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/skills
+  image-color: #6f6f6f
+  size: 60 60
+  phantom: false
+  icon-source: /images/passivetree/KeystoneFrameUnallocated
+  icon-size: 143 149
+  icon-offset: -42 -44
+
+  $hover !$on:
+    icon-source: /images/passivetree/KeystoneFrameCanAllocate
+    image-color: #ffffff
+
+  $on:
+    icon-source: /images/passivetree/KeystoneFrameAllocated
+    image-color: #ffffff
+
+LineConnectorNormal < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/LineConnectorNormal
+
+LineConnectorIntermediate < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/LineConnectorIntermediate
+
+LineConnectorActive < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/LineConnectorActive
+
+Orbit1Normal < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/Orbit1Normal
+
+Orbit1Intermediate < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/Orbit1Intermediate
+
+Orbit1Active < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/Orbit1Active
+
+Orbit2Normal < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/Orbit2Normal
+
+Orbit2Intermediate < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/Orbit2Intermediate
+
+Orbit2Active < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/Orbit2Active
+
+Orbit3Normal < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/Orbit3Normal
+
+Orbit3Intermediate < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/Orbit3Intermediate
+
+Orbit3Active < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/Orbit3Active
+
+Orbit4Normal < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/Orbit4Normal
+
+Orbit4Intermediate < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/Orbit4Intermediate
+
+Orbit4Active < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/Orbit4Active
+
+Orbit5Normal < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/Orbit5Normal
+
+Orbit5Intermediate < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/Orbit5Intermediate
+
+Orbit5Active < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/Orbit5Active
+
+Orbit6Normal < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/Orbit6Normal
+
+Orbit6Intermediate < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/Orbit6Intermediate
+
+Orbit6Active < Panel
+  anchors.centerIn: parent
+  image-source: /images/passivetree/Orbit6Active
+
+DecorationCircle < Panel
+  anchors.centerIn: parent
+
+TreeButton < UIButton
+  font: verdana-11px-rounded
+  color: #dfdfdfff
+  size: 106 30
+  text-offset: 0 1
+  image-source: /images/passivetree/button_tree
+  image-border: 6
+  image-color: #ffffff
+  image-clip: 0 0 75 30
+  padding: 5 10 5 10
+
+  $hover !disabled:
+    image-clip: 0 30 75 30
+
+  $pressed:
+    image-clip: 0 60 75 30
+    text-offset: 1 1
+
+  $disabled:
+    color: #aaaaaa
+    image-color: #888888
+
+PresetItem < TreeButton
+  anchors.top: parent.top
+  anchors.right: parent.right
+  anchors.left: parent.left
+  margin: 5 5 0 5
+  font: verdana-11px-rounded
+  height: 25
+  text-offset: 0 2
+
+TreeComboBoxPopupScrollMenuButton < UIButton
+  height: 25
+  font: verdana-11px-antialised
+  text-align: left
+  text-offset: 4 0
+  color: #BFBFBF
+  image-color: #ffffff
+  margin: 0
+  image-source: /images/passivetree/dropdown_menu
+  image-clip: 0 75 179 25
+  image-border: 2
+  image-border-left: 7
+  image-border-right: 7
+
+  $hover !disabled:
+    image-color: #afafaf
+
+TreeComboBoxPopupScrollMenu < UIPopupScrollMenu
+
+TreeComboBoxPopupMenuButton < UIButton
+  height: 25
+  font: verdana-11px-antialised
+  text-align: left
+  text-offset: 5 2
+  color: #dfdfdf
+  image-color: #ffffff
+  margin: 0
+  image-source: /images/passivetree/dropdown_menu
+  image-clip: 0 75 179 25
+  image-border: 2
+  image-border-left: 7
+  image-border-right: 7
+
+  $hover !disabled:
+    image-color: #dfdfdf
+
+TreeComboBoxPopupMenu < UIPopupMenu
+  image-source: /images/passivetree/dropdown_menu
+  image-clip: 0 75 179 25
+  image-border: 3
+
+TreeComboBox < UIComboBox
+  font: verdana-11px-antialised
+  color: #dfdfdf
+  size: 179 25
+  text-offset: 5 2
+  text-align: left
+  image-source: /images/passivetree/dropdown_menu
+  image-border: 4
+  image-border-right: 34
+  image-clip: 0 0 179 25
+  menu-scroll-step: 25
+
+  $hover !disabled:
+    image-clip: 0 25 179 25
+
+  $on:
+    image-clip: 0 50 179 25
+
+  $disabled:
+    color: #dfdfdf88
+    opacity: 0.8
+
+CalcSeparator < UIWidget
+  margin: 5 0
+
+UIWindow
+  @onEscape: hide()
+  anchors.fill: parent
+  image-source: /images/passivetree/background_tree
+  
+  FlatPanel
+    id: view
+    anchors.fill: parent
+    phantom: false
+    draggable: true
+    image-color: #ffffffaa
+
+    Panel
+      id: background
+      anchors.centerIn: parent
+      image-source: /images/passivetree/background_tree
+      image-repeated: false
+      image-color: #ffffffaa
+      image-border: 0
+
+    Panel
+      id: decoView
+      anchors.centerIn: parent
+      opacity: 1
+
+    Panel
+      id: nodesView
+      anchors.centerIn: parent
+      opacity: 1
+      
+  Panel
+    id: stats
+    anchors.top: parent.top
+    anchors.left: parent.left
+    width: 300
+    height: 300
+    margin-left: 20
+
+    Panel
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: next.top
+      background: #000000dd
+      padding: 4 2
+
+      ScrollablePanel
+        id: labels
+        anchors.fill: parent
+        margin-top: 5
+        vertical-scrollbar: statsScrollBar
+        layout:
+          type: verticalBox
+          spacing: 2
+
+      VerticalScrollBar
+        id: statsScrollBar
+        anchors.top: labels.top
+        anchors.right: labels.right
+        anchors.bottom: labels.bottom
+        margin: 0 0 0 0
+        step: 30
+        margin-left: 2
+        pixels-scroll: true
+
+    TreeButton
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      text: Info & Bonuses
+      @onClick: modules.game_passivetree.toggleStats()
+
+  TreeButton
+    id: applyPoints
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 40
+    margin-right: 3
+    text: Apply Points
+    width: 110
+    enabled: true
+    @onClick: modules.game_passivetree.applyPoints()
+
+  TreeButton
+    id: resetPresetButton
+    anchors.top: applyPoints.top
+    anchors.left: applyPoints.right
+    margin-left: 5
+    text: Reset
+    width: 110
+    enabled: true
+    @onClick: modules.game_passivetree.reset()
+
+  UIWidget
+    id: presets
+    anchors.top: presetsButton.bottom
+    anchors.horizontalCenter: applyPoints.horizontalCenter
+    margin-top: 40
+    size: 200 340
+    image-source: /images/ui/miniwindow
+    image-border: 20
+    text: Reset
+    font: verdana-11px-rounded
+    text-align: top
+    text-offset: 0 4
+
+    Panel
+      id: presetsSave
+      image-source: /images/ui/tooltip
+      image-border: 20
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      height: 75
+      margin: 20 5 0 5
+      Label
+        text: Preset Name:
+        anchors.top: parent.top
+        font: verdana-11px-rounded
+        margin-top: 4
+        anchors.horizontalCenter: parent.horizontalCenter
+      TextEdit
+        id: presetName
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.left: parent.left
+        margin-right: 6
+        margin-left: 6
+        margin-top: 20
+        shift-navigation: true
+        max-length: 24
+        focusable: false
+        text-align: center
+        text-auto-submit: true
+      Button
+        id: savePresetButton
+        anchors.top: presetName.bottom
+        anchors.right: presetName.left
+        text: Save
+        width: 50
+        enabled: false
+        margin: 5 5 0 0
+      Button
+        id: resetPresetButton
+        anchors.top: presetName.bottom
+        anchors.left: presetName.right
+        text: Reset
+        width: 50
+        margin: 5 0 0 5
+        @onClick: modules.game_passivetree.reset()
+    
+    Label
+      id: presetSlots
+      text: Slots: 1/1
+      anchors.top: presetsSave.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      margin-top: 10
+      font: verdana-11px-rounded
+
+    Panel
+      id: slots
+      image-source: /images/ui/tooltip
+      image-border: 20
+      anchors.top: presetSlots.bottom
+      anchors.right: parent.right
+      anchors.left: parent.left
+      anchors.bottom: parent.bottom
+      margin: 5 5 35 5
+
+      PresetItem
+        id: preset1
+        text: Default
+    
+    Button
+      width: 40
+      text: Close
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      margin: 0 7 7 0
+      @onClick: modules.game_passivetree.presets()
+
+  
+  Panel
+    id: pWindow
+    anchors.top: applyPoints.top
+    anchors.right: applyPoints.left
+    margin-right: 6
+    image-source: /images/passivetree/PSPointsFrame
+    size: 110 30
+    padding: 7 15
+    
+    Label
+      id: points
+      font: verdana-11px-rounded
+      anchors.centerIn: parent
+      text-auto-resize: true
+      text: 10 Passive Points
+    
+
+
+
+    
+  TreeButton
+    id: zoomLess
+    anchors.bottom: parent.bottom
+    anchors.right: parent.horizontalCenter
+    margin-bottom: 5
+    margin-right: 5
+    text: Zoom -
+    width: 110
+    enabled: true
+    @onClick: modules.game_passivetree.zoomLess()
+
+  TreeButton
+    id: zoomPlus
+    anchors.left: prev.right
+    anchors.verticalCenter: prev.verticalCenter
+    margin-left: 5
+    text: Zoom +
+    width: 110
+    enabled: true
+    @onClick: modules.game_passivetree.zoomPlus()
+  TreeButton
+    anchors.bottom: zoomLess.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-bottom: 5
+    text: Close
+    width: 110
+    @onClick: modules.game_passivetree.hide()
+
+  TreeButton
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 10
+    text: Cancel
+    width: 110
+    enabled: false
+    visible: false

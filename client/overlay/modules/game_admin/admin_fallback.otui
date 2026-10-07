@@ -1,0 +1,11 @@
+// Loaded by admin.lua ONLY when the client_chaos_theme module is not available.
+// Maps the Chaos* style names onto stock OTClient styles so the panel still opens.
+ChaosWindow < MainWindow
+ChaosPanel < Panel
+ChaosLabel < Label
+ChaosTextEdit < TextEdit
+ChaosButton < Button
+
+ChaosTabButton < Button
+  $on:
+    color: #ff6a5a

@@ -1,0 +1,9 @@
+Module
+  name: game_stash
+  description: Supply Stash System
+  author: Lazarocp
+  website: Discord: lazarocp#3148
+  sandboxed: true
+  scripts: [ stash ]
+  @onLoad: Stash.Init()
+  @onUnload: Stash.Terminate()

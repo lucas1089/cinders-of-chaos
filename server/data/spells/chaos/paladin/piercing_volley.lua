@@ -1,0 +1,29 @@
+-- Piercing Volley: a 7 sqm line of spears hitting everything in it. Scales with distance skill.
+dofile('data/spells/scripts/chaos/_common.lua')
+
+local combat = Combat()
+combat:setParameter(COMBAT_PARAM_TYPE, COMBAT_PHYSICALDAMAGE)
+combat:setParameter(COMBAT_PARAM_EFFECT, Fx("blood_spear", CONST_ME_HITAREA))
+combat:setParameter(COMBAT_PARAM_BLOCKARMOR, true)
+combat:setArea(createCombatArea(AREA_BEAM7))
+
+function onGetFormulaValues(player, skill, attack, factor)
+	local dist = player:getEffectiveSkillLevel(SKILL_DISTANCE)
+	local min = (player:getLevel() / 5) + (dist * 0.9) + 20
+	local max = (player:getLevel() / 5) + (dist * 1.6) + 40
+	return -min, -max
+end
+
+combat:setCallback(CALLBACK_PARAM_SKILLVALUE, "onGetFormulaValues")
+
+function onCastSpell(creature, variant, isHotkey)
+	if not creature:isPlayer() then
+		return false
+	end
+	local from = creature:getPosition()
+	local dir = creature:getDirection()
+	for i = 2, 6, 2 do
+		ChaosSpell.shoot(from, ChaosSpell.stepPos(from, dir, i), "blood_spear", CONST_ANI_SPEAR)
+	end
+	return combat:execute(creature, variant)
+end

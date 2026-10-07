@@ -1,0 +1,118 @@
+NotificationPanel < Panel
+  id: notificationPanel
+  size: 400 140
+  image-source: images/background
+  image-color: #ccbebb
+  border-width: 1
+  border-color: #6a5632
+  visible: true
+
+  // Ícone do módulo (esquerda)
+  Panel
+    id: iconContainer
+    size: 80 80
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 15
+    image-source: images/Box Categories
+    image-color: #a78c87
+    border-width: 1
+    border-color: #6a5632
+
+    UIWidget
+      id: moduleIcon
+      size: 64 64
+      anchors.centerIn: parent
+      image-source: images/notifications/gm.png
+
+  // Botão de fixar (topo direito)
+  UIButton
+    id: pinButton
+    size: 24 24
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-top: 8
+    margin-right: 8
+    image-source: images/Icon Close
+    tooltip: Pin notification
+
+  // Título principal (grande)
+  Label
+    id: titleLabel
+    text: GAMEMASTER NOTIFICATION
+    anchors.top: parent.top
+    anchors.left: iconContainer.right
+    anchors.right: pinButton.left
+    margin-left: 15
+    margin-top: 15
+    margin-right: 10
+    height: 25
+    font: Fontin-19px-antialiased
+    color: #a3844b
+    text-align: center
+
+  // Separador
+  HorizontalSeparator
+    id: separator
+    anchors.left: iconContainer.right
+    anchors.right: pinButton.left
+    anchors.top: titleLabel.bottom
+    margin-left: 15
+    margin-right: 10
+    margin-top: 5
+
+  // Texto da mensagem (centro) - COR AMARELA E FONTE MAIOR
+  Label
+    id: messageLabel
+    text: Esta é uma mensagem de teste do sistema de notificações
+    anchors.top: separator.bottom
+    anchors.left: iconContainer.right
+    anchors.right: pinButton.left
+    margin-left: 15
+    margin-top: 8
+    margin-right: 10
+    height: 35
+    font: verdana-12px-rounded
+    color: #FFD700
+    text-align: center
+    text-wrap: true
+
+  // Texto do tempo acima da barra
+  Label
+    id: timerTextLabel
+    text: 5 sec
+    anchors.bottom: timerBarContainer.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-bottom: 2
+    font: verdana-11px-rounded
+    color: #FFFFFF
+    text-align: center
+
+  // Barra de tempo (embaixo de tudo) - ALTURA REDUZIDA (40% do tamanho)
+  Panel
+    id: timerBarContainer
+    anchors.bottom: parent.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    height: 7
+    width: 200
+    margin-bottom: 8
+    background-color: #34495E
+    border-width: 1
+    border-color: #2c3e50
+
+    Panel
+      id: timerBarFill
+      anchors.left: parent.left
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      width: 200
+      background-color: #00FF7F
+      border: 0
+
+    Label
+      id: timerLabel
+      text: 5
+      anchors.centerIn: parent
+      color: #FFFFFF
+      font: verdana-8px-rounded
+      text-align: center

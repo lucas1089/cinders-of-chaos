@@ -1,0 +1,9 @@
+Module
+  name: game_passivetree
+  description: Passive Tree
+  website: None
+  sandboxed: true
+  autoload: true
+  scripts: [ passivetree, treedata ]
+  @onLoad: init()
+  @onUnload: terminate()

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<monster name="Ancient Fungus" nameDescription="a ancient fungus" race="blood" experience="700000" evented = "25" skulled="2" looting="1" speed="450">
+	<health now="5000000" max="5000000" />
+	<look type="488" corpse="6068" />
+	<targetchange interval="4000" chance="15" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="80" />
+		<flag runonhealth="0" />
+	</flags>
+	<script>
+        <event name="RewardChestDeath"/>
+        <event name="first_boss_kill_talent"/>
+        <event name="spawn_for_time"/>
+    </script>
+	<attacks>
+		<attack name="melee" interval="1000" min="-7000" max="-9000"/>
+		<attack name="earth" interval="2000" chance="20" range="7" min="-7500" max="-15350">
+			<attribute key="shootEffect" value="smallearth" />
+			<attribute key="areaEffect" value="smallplants" />
+		</attack>
+		<attack name="poisonfield" interval="2000" chance="20" radius="4" target="0" />
+		<attack name="poisoncondition" interval="2000" chance="10" length="8" spread="0" min="-5500" max="-10000">
+			<attribute key="areaEffect" value="greenbubble" />
+		</attack>
+		<attack name="fire" interval="1000" chance="25" target="1" radius="4" min="-10000" max="-13000">
+			<attribute key="areaEffect" value="firearea"/>
+		</attack>
+		<attack name="lifedrain" interval="2000" chance="25" target="0" length="5" spread="0" min="-2200" max="-6000">
+			<attribute key="areaEffect" value="redshimmer" />
+		</attack>
+		<attack name="poisoncondition" interval="2000" chance="15" target="0" radius="3" range="7" min="-8000" max="-10000">
+			<attribute key="areaEffect" value="greenspark" />
+		</attack>
+	</attacks>
+	<defenses armor="55" defense="55">
+		<defense name="healing" interval="2000" chance="20" min="10000" max="25200">
+			<attribute key="areaEffect" value="blueshimmer" />
+		</defense>
+	</defenses>
+	<immunities>
+		<immunity earth="1" />
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Munch munch munch!" />
+	</voices>
+</monster>

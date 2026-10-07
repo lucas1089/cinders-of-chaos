@@ -1,0 +1,9 @@
+Module
+  name: game_bank
+  description: game_bank
+  author: Aboamen
+  sandboxed: true
+  scripts: [ bank ]
+  autoload: true
+  @onLoad: initBank()
+  @onUnload: terminateBank()

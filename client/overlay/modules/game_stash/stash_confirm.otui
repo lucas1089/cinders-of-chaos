@@ -1,0 +1,57 @@
+MiniMainWindow
+  id: ConfirmWindow
+  size: 280 180
+  !text: tr("Retrieve Items")
+  anchors.horizontalCenter: parent.horizontalCenter
+  anchors.verticalCenter: parent.verticalCenter
+  draggable: false
+  margin-top: -20
+  @onEnter: modules.game_stash.confirmOk()
+  
+  Item
+    id: SupplyIcon
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 10
+    margin-left: 10
+  
+  UILabel
+    id: ConfirmText
+    !text: tr('Set the number of items you want to retrieve')
+    anchors.left: SupplyIcon.right
+    anchors.top: SupplyIcon.top
+    text-wrap: true
+    size: 180 40
+    text-offset: 10 5 
+    margin-left: 5
+  
+  HorizontalScrollBar
+    id: quantityScroll
+    anchors.left: ConfirmText.left
+    anchors.right: ConfirmText.right
+    anchors.top: prev.bottom
+    margin-top: 10
+    margin-left: 0
+    margin-right: 0
+    show-value: true
+    minimum: 1
+    maximum: 100
+    step: 1
+  
+  Button
+    id: OkButton
+    size: 83 26
+    !text: tr('Ok')
+    anchors.left: ConfirmText.left
+    anchors.bottom: parent.bottom
+    margin-left: -30
+    margin-bottom: 5
+  
+  Button
+    id: CancelButton
+    size: 83 26
+    !text: tr('Cancel')
+    anchors.right: ConfirmText.right
+    anchors.bottom: parent.bottom
+    margin-right: 0
+    margin-bottom: 5

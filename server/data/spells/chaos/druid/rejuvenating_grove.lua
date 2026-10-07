@@ -1,0 +1,26 @@
+-- Rejuvenating Grove: a healing zone on the caster's tile; 8 pulses (1/s) heal allies standing within 3 sqm.
+dofile('data/spells/scripts/chaos/_common.lua')
+
+function onCastSpell(creature, variant, isHotkey)
+	local player = creature:getPlayer()
+	if not player then
+		return false
+	end
+	local p = player:getPosition()
+	local center = {x = p.x, y = p.y, z = p.z}
+	local min, max = ChaosSpell.mlValues(player, 1.6, 2.6, 25, 45)
+
+	ChaosSpell.pulse(player:getId(), 8, 1000, function(caster, step)
+		local pos = Position(center)
+		ChaosSpell.fx(pos, "aura_ring", CONST_ME_GREEN_RINGS)
+		for _, ally in ipairs(ChaosSpell.alliesAround(caster, pos, 3, true)) do
+			if step % 3 == 0 then
+				ally:removeCondition(CONDITION_POISON)
+				ally:removeCondition(CONDITION_BLEEDING)
+			end
+			ChaosSpell.healTarget(caster, ally, min, max, Fx("heal_sparkle", CONST_ME_MAGIC_GREEN))
+		end
+		return true
+	end)
+	return true
+end

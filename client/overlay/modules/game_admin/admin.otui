@@ -1,0 +1,228 @@
+// Project Chaos admin panel. Styles named Chaos* come from client_chaos_theme
+// (or admin_fallback.otui when that module is absent).
+
+AdminCategoryButton < ChaosTabButton
+  height: 26
+  margin-bottom: 3
+  text-align: left
+  color: #c9b7a6
+
+  $on:
+    color: #ff5040
+
+AdminActionRow < ChaosButton
+  height: 22
+  margin-bottom: 2
+  margin-right: 2
+  text-align: left
+  color: #c9b7a6
+
+  $on:
+    color: #ff5040
+
+AdminParamLabel < ChaosLabel
+  height: 14
+  margin-top: 6
+  color: #b89a8a
+  text-auto-resize: true
+
+AdminParamEdit < ChaosTextEdit
+  height: 20
+  margin-top: 2
+  margin-right: 14
+
+AdminParamCombo < ComboBox
+  height: 20
+  margin-top: 2
+  margin-right: 14
+
+AdminParamCheck < CheckBox
+  height: 18
+  margin-top: 6
+  color: #b89a8a
+
+AdminResultLine < ChaosLabel
+  text-wrap: true
+  text-auto-resize: true
+  margin-right: 4
+  color: #c9b7a6
+
+ChaosWindow
+  id: adminWindow
+  !text: tr('Chaos Administration')
+  size: 900 620
+  padding-top: 28
+  padding-left: 12
+  padding-right: 12
+  padding-bottom: 12
+  @onEscape: modules.game_admin.hide()
+
+  ChaosPanel
+    id: sidebar
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.bottom: closeButton.top
+    margin-bottom: 8
+    width: 170
+    padding: 6
+
+    ScrollablePanel
+      id: categoryList
+      anchors.fill: parent
+      vertical-scrollbar: categoryScroll
+      layout:
+        type: verticalBox
+
+    VerticalScrollBar
+      id: categoryScroll
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      step: 14
+      pixels-scroll: true
+
+  ChaosTextEdit
+    id: filterEdit
+    anchors.top: parent.top
+    anchors.left: sidebar.right
+    margin-left: 8
+    width: 270
+    height: 22
+
+  ScrollablePanel
+    id: actionList
+    anchors.top: filterEdit.bottom
+    anchors.left: sidebar.right
+    anchors.bottom: resultFrame.top
+    margin-left: 8
+    margin-top: 6
+    margin-bottom: 8
+    width: 258
+    background-color: #00000066
+    vertical-scrollbar: actionScroll
+    layout:
+      type: verticalBox
+
+  VerticalScrollBar
+    id: actionScroll
+    anchors.top: actionList.top
+    anchors.bottom: actionList.bottom
+    anchors.left: actionList.right
+    width: 12
+    step: 16
+    pixels-scroll: true
+
+  ChaosPanel
+    id: detail
+    anchors.top: parent.top
+    anchors.left: actionScroll.right
+    anchors.right: parent.right
+    anchors.bottom: resultFrame.top
+    margin-left: 8
+    margin-bottom: 8
+    padding: 8
+
+    ChaosLabel
+      id: actionTitle
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 18
+      color: #ff5040
+      text: Select an action
+
+    ChaosLabel
+      id: actionDesc
+      anchors.top: actionTitle.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      text-wrap: true
+      text-auto-resize: true
+      color: #b89a8a
+
+    ScrollablePanel
+      id: paramList
+      anchors.top: actionDesc.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: runButton.top
+      margin-top: 6
+      margin-bottom: 6
+      vertical-scrollbar: paramScroll
+      layout:
+        type: verticalBox
+
+    VerticalScrollBar
+      id: paramScroll
+      anchors.top: paramList.top
+      anchors.bottom: paramList.bottom
+      anchors.right: parent.right
+      width: 12
+      step: 16
+      pixels-scroll: true
+
+    ChaosButton
+      id: runButton
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      width: 150
+      height: 24
+      text: Run
+      enabled: false
+
+  ChaosPanel
+    id: resultFrame
+    anchors.left: sidebar.right
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-left: 8
+    margin-bottom: 8
+    height: 190
+    padding: 6
+
+    ScrollablePanel
+      id: resultList
+      anchors.fill: parent
+      margin-right: 14
+      vertical-scrollbar: resultScroll
+      layout:
+        type: verticalBox
+
+    VerticalScrollBar
+      id: resultScroll
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      width: 12
+      step: 16
+      pixels-scroll: true
+
+  ChaosButton
+    id: closeButton
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    width: 90
+    height: 24
+    !text: tr('Close')
+    @onClick: modules.game_admin.hide()
+
+  ChaosButton
+    id: refreshButton
+    anchors.bottom: parent.bottom
+    anchors.right: closeButton.left
+    margin-right: 6
+    width: 110
+    height: 24
+    !text: tr('Refresh catalog')
+    @onClick: modules.game_admin.refresh()
+
+  ChaosButton
+    id: clearButton
+    anchors.bottom: parent.bottom
+    anchors.right: refreshButton.left
+    margin-right: 6
+    width: 90
+    height: 24
+    !text: tr('Clear output')
+    @onClick: modules.game_admin.clearResults()

@@ -1,0 +1,11 @@
+--- a/modules/client_entergame/entergame.lua
++++ b/modules/client_entergame/entergame.lua
+@@ -20,7 +20,7 @@
+ local rememberPasswordBox
+ local rememberEmailBox
+ local autoLoginBox
+-local protos = { "860", "1524" }
++local protos = { "860", "1098", "1524" }
+ 
+ -- Google Configuration
+ local googleSession = ""
