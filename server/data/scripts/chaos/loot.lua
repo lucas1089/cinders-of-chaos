@@ -315,7 +315,8 @@ function L.rollExtraLoot(lootTable, tier, ctx)
 	for _ = 1, rolls do
 		for _, entry in ipairs(lootTable) do
 			local id = entry.itemId
-			if id and not (c.extraSkipItems and c.extraSkipItems[id]) and lootRandom() <= entry.chance * chanceMult then
+			local threshold = (entry.chance or 0) * chanceMult
+			if id and threshold > 0 and not (c.extraSkipItems and c.extraSkipItems[id]) and lootRandom() <= threshold then
 				local minC = entry.minCount or 1
 				local maxC = entry.maxCount or entry.count or 1
 				if maxC < minC then
@@ -693,7 +694,7 @@ local function processKill(monster, corpse)
 	local items = {}
 	for slot = 0, corpse:getSize() - 1 do
 		local item = corpse:getItem(slot)
-		if type(item) == "userdata" and item:isItem() then
+		if item and item:isItem() then
 			items[#items + 1] = item
 		end
 	end
