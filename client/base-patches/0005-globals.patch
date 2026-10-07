@@ -1,0 +1,11 @@
+--- a/modules/corelib/globals.lua
++++ b/modules/corelib/globals.lua
+@@ -186,7 +186,7 @@
+ local function noop() end
+ 
+ do
+-  local defaultClientVersion = 860
++  local defaultClientVersion = 1098
+   GameInfo = GameInfo or {}
+   GameInfo.version = GameInfo.version or defaultClientVersion
+   GameInfo.strVersion = GameInfo.strVersion or tostring(GameInfo.version)

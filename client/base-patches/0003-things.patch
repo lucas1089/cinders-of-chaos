@@ -1,0 +1,15 @@
+--- a/modules/game_things/things.lua
++++ b/modules/game_things/things.lua
+@@ -105,9 +105,9 @@
+       datPath = resolvepath('/things/' .. filename)
+       sprPath = resolvepath('/things/' .. filename)
+     else
+-      -- Force loading the 8.60 asset pack used by this server.
+-      datPath = resolvepath('/things/860/Tibia')
+-      sprPath = resolvepath('/things/860/Tibia')
++      -- Force loading the 10.98 asset pack used by this server.
++      datPath = resolvepath('/things/1098/Tibia')
++      sprPath = resolvepath('/things/1098/Tibia')
+     end
+   end
+ 

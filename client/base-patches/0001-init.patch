@@ -1,0 +1,15 @@
+--- a/init.lua
++++ b/init.lua
+@@ -24,10 +24,10 @@
+ -- Direct connection to the TFS login server (no HTTP service required).
+ Servers = {
+   LocalTestServ = {
+-    name = "LocalTestServ",
++    name = "Chaos",
+     host = "127.0.0.1",
+     port = 7171,
+-    version = 860
++    version = 1098
+   }
+ }
+ 

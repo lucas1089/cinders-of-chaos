@@ -1,0 +1,11 @@
+--- a/modules/gamelib/game.lua
++++ b/modules/gamelib/game.lua
+@@ -55,7 +55,7 @@
+ end
+ 
+ function g_game.getSupportedClients()
+-  return { 860, 1524 }
++  return { 860, 1098, 1524 }
+ end
+ 
+ -- The client version and protocol version where
