@@ -4,11 +4,12 @@ local Filter = "AllItems"
 local DepotId = 3502
 
 Stash.Data = {}
-Stash.Opcode = modules.client_manager.Manage.ReturnOpcode()
+Stash.Opcode = 110 -- must match ChaosOpcodes.stash on the server
 Stash.CategoryData = nil
 Stash.BlockList = {}
 
 Stash.Init = function()
+	ProtocolGame.registerExtendedOpcode(Stash.Opcode, Stash.OnExtended)
 
 	connect(g_game, {
 		onGameStart = Stash.OnStart,
@@ -74,6 +75,7 @@ Stash.UnhookDragHint = function()
 end
 
 Stash.Terminate = function()
+	ProtocolGame.unregisterExtendedOpcode(Stash.Opcode)
 	if Stash.UI then
 		Stash.UI:destroy()
 		Stash.UI = nil
@@ -268,7 +270,13 @@ Stash.DataManager = function(protocol, opcode, buffer)
 	end
 end
 
-modules.client_manager.Manage.NewModule("Stash", modules.game_stash.Stash.DataManager)
+-- Replaces Black Talon's client_manager: decode the JSON payload and dispatch.
+Stash.OnExtended = function(protocol, opcode, buffer)
+	local ok, data = pcall(json.decode, buffer)
+	if ok and type(data) == "table" then
+		Stash.DataManager(protocol, opcode, data)
+	end
+end
 
 Stash.Define = function()
 

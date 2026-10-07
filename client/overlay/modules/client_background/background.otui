@@ -1,0 +1,33 @@
+UIWidget
+  id: background
+  anchors.fill: parent
+  focusable: false
+  background-color: #000000
+  image-source: /images/chaos/background
+  image-smooth: true
+  image-fixed-ratio: true
+  margin-top: 1
+
+  UIWidget
+    id: chaosLogo
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 22
+    size: 380 150
+    image-source: /images/chaos/logo_small
+    image-smooth: true
+    phantom: true
+    focusable: false
+
+  UILabel
+    id: clientVersionLabel
+    background-color: #0d0b0ecc
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    text-align: center
+    text-auto-resize: false
+    width: 220
+    height: 90
+    padding: 2
+    color: #d6c9ae
+    font: verdana-11px-rounded

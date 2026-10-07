@@ -1,0 +1,11 @@
+Module
+  name: game_admin
+  description: Chaos administrator panel (server-driven, requires opcode 120 and a high enough group)
+  author: Project Chaos
+  website: None
+  sandboxed: true
+  autoload: true
+  autoload-priority: 1000
+  scripts: [ admin ]
+  @onLoad: init()
+  @onUnload: terminate()
