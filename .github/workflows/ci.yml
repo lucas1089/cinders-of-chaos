@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lua 5.3
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lua5.3
+
+      - name: Lua syntax (all .lua files)
+        run: |
+          status=0
+          while IFS= read -r f; do
+            luac5.3 -p "$f" || status=1
+          done < <(git ls-files '*.lua')
+          exit $status
+
+      - name: Python syntax
+        run: |
+          status=0
+          while IFS= read -r f; do
+            python3 -I -m py_compile "$f" || status=1
+          done < <(git ls-files '*.py')
+          exit $status
+
+      - name: Shell syntax
+        run: |
+          status=0
+          while IFS= read -r f; do
+            bash -n "$f" || status=1
+          done < <(git ls-files '*.sh')
+          exit $status
+
+      - name: Client modules (otmod name, scripts)
+        run: python3 -I tools/ci/check_modules.py
+
+      - name: Server content (XML, spells, items, monsters)
+        run: python3 -I tools/ci/check_content.py
+
+      - name: No references to other servers or clients
+        run: python3 -I tools/ci/check_names.py
