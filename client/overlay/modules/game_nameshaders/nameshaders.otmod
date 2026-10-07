@@ -1,8 +1,7 @@
 Module
   name: game_nameshaders
   description: Name Shader Selection - Apply visual effects to your character name
-  author: BlackTalon
-  website: blacktalon.online
+  author: Chaos
   sandboxed: true
   autoload: false
   scripts: [ nameshaders ]

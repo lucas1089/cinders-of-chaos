@@ -1,4 +1,4 @@
-"""Append chosen magic effects + distance missiles (dat entry + sprites) from a source dat/spr pair (Black Talon 10.98)
+"""Append chosen magic effects + distance missiles (dat entry + sprites) from a source dat/spr pair (donor client 10.98)
 to COPIES of our dat/spr.  Can chain after merge_outfits.py: pass its merged Tibia.dat/.spr as --ours-dat/--ours-spr and
 the result holds both the new outfits (1501..) and the new effects (372..) / missiles (116..) in ONE pair.
 

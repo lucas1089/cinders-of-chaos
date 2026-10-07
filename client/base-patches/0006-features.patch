@@ -5,7 +5,7 @@
      -- GameShopCountU16 is negotiated dynamically via GameServerFeatures (0x43).
      -- GameAstraExtendedSpellIds is also negotiated; legacy 0xA4 keeps U8 ids.
 +  elseif version == 1098 then
-+    -- Hellgrave Exodus (OTCv8 wire protocol): ladder copied from the Exodus client's features.lua
++    -- base server wire protocol: ladder copied from the base server's own client features.lua
 +    g_game.enableFeature(GameBot)
 +    g_game.enableFeature(GameMagicEffectU16)
 +    g_game.enableFeature(GameWingsAndAura)

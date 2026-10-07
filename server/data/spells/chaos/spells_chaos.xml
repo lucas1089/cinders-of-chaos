@@ -1,4 +1,4 @@
-<!-- Hellgrave chaos spells. Script paths are relative to data/spells/scripts (run tools/register_spells.py). -->
+<!-- Chaos spells. Script paths are relative to data/spells/scripts (run tools/register_spells.py). -->
 	<!-- sorcerer -->
 	<instant group="attack" spellid="410" name="Frost Nova" words="exevo frigo nova" level="20" mana="120" premium="0" selftarget="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/frost_nova.lua">
 		<vocation name="Sorcerer" />

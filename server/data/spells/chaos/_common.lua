@@ -1,4 +1,4 @@
--- Shared helpers for the Hellgrave "chaos" spells.
+-- Shared helpers for the Chaos spells.
 -- Loaded by every chaos spell with: dofile('data/spells/scripts/chaos/_common.lua')
 -- (path is relative to the server working dir, same convention as the rest of data/).
 if not Fx or not FxMissile then

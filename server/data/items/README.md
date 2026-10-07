@@ -1,4 +1,4 @@
-# Hellgrave Chaos unique items
+# Chaos unique items
 
 48 unique/legendary items made by **overriding the definitions of existing item ids** in `items.xml`. No `items.otb` or
 client `.dat/.spr` change is needed: ids are valid server ids from our `items.otb`, and each one's sprite fits the new theme
@@ -91,7 +91,7 @@ documented in `ChaosSets` but **not implemented** (see below).
 For every id the stock entry was copied for structural attributes (`weight`, `weaponType`, `slotType`, `ammoType`, `shootType`,
 `range`, `attackSpeed`, hit chances); attack/defense/armor and bonuses were then set, and transform/decay/duration/charges
 attributes of the stock item (boots of haste style timers, equip transforms) were deliberately dropped so the items are permanent.
-Only attribute keys from `ItemParseAttributesMap` in the Exodus `src/items.cpp` are used (checked by `register_items.py`).
+Only attribute keys from `ItemParseAttributesMap` in the base server `src/items.cpp` are used (checked by `register_items.py`).
 
 ## Honest caveats
 * **Nothing was run on a server.** Verified only: XML well-formed, every id present in our items.otb, every attribute key known to the parser,
@@ -107,7 +107,7 @@ Only attribute keys from `ItemParseAttributesMap` in the Exodus `src/items.cpp` 
   new item. They were chosen because none appear in stock monster loot XML; some appear in a few Lua files (e.g. profession/upgrade scripts) - grep your data first.
 * **Balance is untested.** Numbers are Tibia-like guesses scaled by level; tune freely. Elemental/leech/crit attributes depend on this
   engine version's parsing: leech/crit use percent chances; `elementFire`/`elementDeath` add elemental damage to melee attack.
-* **Wands:** in this Exodus fork wands/rods have no weapon script; their damage handling is whatever the engine does for
+* **Wands:** in this base server fork wands/rods have no weapon script; their damage handling is whatever the engine does for
   `weaponType wand`; only magic level and bonuses were changed (shoot type and range kept).
 * **Set bonuses are not implemented**, `ChaosSets` is documentation. Drop monster lists use names that exist in our monster data (checked against stock + chaos monster XML).
 * Items with several identical-looking stock twins (e.g. two "crimson sword" ids) were chosen on purpose to avoid collisions with the stock loot tables.

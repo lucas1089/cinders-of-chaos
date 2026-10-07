@@ -1,4 +1,4 @@
-# Chaos spells (Hellgrave Exodus, TFS 1.4.2 / protocol 10.98)
+# Chaos spells (the base server, TFS 1.4.2 / protocol 10.98)
 
 36 custom spells, dark-fantasy flavour: 7 sorcerer, 7 druid, 6 paladin, 6 knight, 6 illusionist and 4 shared utility spells.
 **Status: written and smoke-tested against a hand-written Lua mock only. Nothing has been run on a real TFS server.**

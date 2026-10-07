@@ -2,7 +2,6 @@ Module
   name: game_chaosnotify
   description: NOTIFICATIONS
   author: Atlas
-  website: MagicHeart
   sandboxed: true
   autoload: true
   scripts: [ notifications ]

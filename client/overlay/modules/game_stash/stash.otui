@@ -62,7 +62,7 @@ SupplyCount < GameLabel
   text: 0
 
 
-BlackTalonMainWindow
+ChaosMainWindow
   size: 690 430
   text: Supply Stash
   @onEscape: modules.game_stash.toggle()

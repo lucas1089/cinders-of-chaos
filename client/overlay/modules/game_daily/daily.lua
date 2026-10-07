@@ -2,7 +2,7 @@
 
 local OPCODE = 207
 
--- Evolisca ships this helper in its gamelib; the base client does not, so keep a local copy.
+-- donor server ships this helper in its gamelib; the base client does not, so keep a local copy.
 local function sendAction(opcode, action, data)
 	local protocolGame = g_game.getProtocolGame()
 	if protocolGame then

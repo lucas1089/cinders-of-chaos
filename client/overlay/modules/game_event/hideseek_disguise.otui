@@ -37,7 +37,7 @@ HideSeekDisguiseCell < UIWidget
     virtual: true
     phantom: true
 
-BlackTalonMainWindow
+ChaosMainWindow
   id: hideSeekDisguiseWindow
   size: 320 410
   anchors.centerIn: parent

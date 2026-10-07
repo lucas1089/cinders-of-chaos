@@ -95,7 +95,7 @@ only returns a table so this is harmless (loot.lua reads the global `ChaosLootCo
 ## Honest caveats
 
 * Nothing here has run on a real server. Tested only with a Lua 5.3 mock harness (EventCallback, corpse, MonsterType,
-  `Game.createItemWithRarity`, spectators). APIs assumed from the Hellgrave Exodus 3.7.5 source: `Container:addItemEx`
+  `Game.createItemWithRarity`, spectators). APIs assumed from the base server 3.7.5 source: `Container:addItemEx`
   returning `RETURNVALUE_NOERROR`, `Game.getSpectators(pos, multifloor, onlyPlayers, minX, maxX, minY, maxY)`,
   `Monster:getMonsterLevel()`, `Item:getCustomAttribute("rarity")`, `ItemType(id):getAbilities()`.
 * The stock pass only stores the custom attribute `rarity` on its items; `Game.createItemWithRarity` additionally rolls the

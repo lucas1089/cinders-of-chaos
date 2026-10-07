@@ -10,7 +10,7 @@
 --
 -- All numbers live in loot_config.lua. See LOOT.md. Not verified on a running server; the
 -- engine APIs used (Game.createItemWithRarity, Container:addItemEx, Game.getSpectators,
--- MonsterType:getLoot, Monster:getMonsterLevel) are read from the Hellgrave Exodus v3.7.5 sources.
+-- MonsterType:getLoot, Monster:getMonsterLevel) are read from the base server sources.
 --
 -- Lua dialect: TFS 1.4.2 / LuaJIT (Lua 5.1 semantics).
 

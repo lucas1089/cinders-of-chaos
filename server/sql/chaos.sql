@@ -1,4 +1,4 @@
--- Chaos client-module tables for TFS 1.4.2 / Hellgrave Exodus (MySQL / MariaDB, InnoDB).
+-- Chaos client-module tables for TFS 1.4.2 / the base server (MySQL / MariaDB, InnoDB).
 -- Safe to run more than once (CREATE TABLE IF NOT EXISTS). Table names must match
 -- Chaos.tables in server/data/scripts/chaos/chaos_constants.lua.
 -- Foreign keys reference players(id) as `int(11) NOT NULL`, the stock TFS schema.

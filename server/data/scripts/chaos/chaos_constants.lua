@@ -17,7 +17,7 @@ Chaos = {}
 -- ---------------------------------------------------------------------------
 -- Extended opcodes
 -- ---------------------------------------------------------------------------
--- Opcodes already used by the Hellgrave Exodus v3.7.5 reference server (checked by grep):
+-- Opcodes already used by the base server reference server (checked by grep):
 --   1 (language), 67 (item fusion), 73 (highscores), 89 (ancestral points push),
 --   91 (crafting), 92 (tasks), 99 (reputation), 106 (char stats), 107 (inspect),
 --   136 (party icons), 181 (character upgrades), 201 (game store), 202 (waystone/tier maps)
@@ -119,11 +119,11 @@ Chaos.stash = {
 }
 
 Chaos.dungeons = {
-	-- how the Exodus DUNGEON_SYSTEM (lib/core/dungeon.lua) is reused:
+	-- how the base server DUNGEON_SYSTEM (lib/core/dungeon.lua) is reused:
 	--   * list / levels / party size / DungeonPos / FromPos / ToPos / DungeonTime / cooldown storage
-	-- Everything the Exodus table does not have is declared here, per Exodus dungeon id.
+	-- Everything the base server table does not have is declared here, per base server dungeon id.
 	exitDelayMs = 10000, -- delay between finishing and teleporting the group out
-	cooldownOnSuccess = true, -- apply DUNGEON_SYSTEM.CooldownTime also after a win (the Exodus modal only did on failure)
+	cooldownOnSuccess = true, -- apply DUNGEON_SYSTEM.CooldownTime also after a win (the base server modal only did on failure)
 	queueTickMs = 3000,
 	maxDifficulty = 6, -- client has 6 difficulty buttons
 	-- percentage of area monsters that must die before the "boss can be killed" notice

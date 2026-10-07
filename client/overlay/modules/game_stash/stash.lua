@@ -270,7 +270,7 @@ Stash.DataManager = function(protocol, opcode, buffer)
 	end
 end
 
--- Replaces Black Talon's client_manager: decode the JSON payload and dispatch.
+-- Replaces the donor client's client_manager: decode the JSON payload and dispatch.
 Stash.OnExtended = function(protocol, opcode, buffer)
 	local ok, data = pcall(json.decode, buffer)
 	if ok and type(data) == "table" and type(data.data) == "table" then

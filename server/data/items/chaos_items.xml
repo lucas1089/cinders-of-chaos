@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Hellgrave Chaos unique items: OVERRIDE the stock definitions of these server ids (same id => replaced by tools/register_items.py).
+<!-- Chaos unique items: OVERRIDE the stock definitions of these server ids (same id => replaced by tools/register_items.py).
      Sprites stay those of the original item (no .otb/.dat change). Level requirements are in the description only (no items.xml attribute exists). -->
 <items>
 	<!-- 8209: stock "crimson sword", client id 7385 -->

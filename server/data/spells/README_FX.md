@@ -1,11 +1,11 @@
 # Custom spell effects (dark-fantasy set)
 
-43 magic effects (ids 372..414) and 10 distance missiles (ids 116..125) taken from the Black Talon 10.98 dat/spr and
+43 magic effects (ids 372..414) and 10 distance missiles (ids 116..125) taken from the donor client 10.98 dat/spr and
 appended to our Tibia.dat/.spr. Names and ids: `effects_catalog.csv`; Lua: `server/data/lib/chaos_fx.lua`
 (`Fx("fire_nova", CONST_ME_FIREAREA)`, `FxMissile("fire_bolt", CONST_ANI_FIRE)`). Previews: `client/tools/sprites/fx_sheets/`
 (`picked_*.jpg` = the chosen ones). Pick list: `client/tools/sprites/fx_picks.csv`.
 
-Server limit: magic effects are uint16 end to end in the Exodus source (`MagicEffectClasses : uint16_t`,
+Server limit: magic effects are uint16 end to end in the base server source (`MagicEffectClasses : uint16_t`,
 `ProtocolGame::sendMagicEffect` writes u16, `Combat` params `impactEffect` uint16_t, Lua `Position:sendMagicEffect`), so ids
 above 255 work with the client feature `GameMagicEffectU16` (enabled in our 10.98 profile). No server patch needed.
 Distance shots (`sendDistanceShoot`, `distanceEffect`) are uint8: max 255, our new ids stop at 125.
@@ -14,7 +14,7 @@ Distance shots (`sendDistanceShoot`, `distanceEffect`) are uint8: max 255, our n
 
 ```
 cd client/tools/sprites
-# 1. outfits (Black Talon source A_dat.dat / A.spr, our originals Tibia.dat / Tibia.spr)
+# 1. outfits (donor client source A_dat.dat / A.spr, our originals Tibia.dat / Tibia.spr)
 python3 -I merge_outfits.py --src-dat A_dat.dat --src-spr A.spr --ours-dat Tibia.dat --ours-spr Tibia.spr \
     --report report.csv --out-dir out/outfits
 # 2. effects + missiles, chained on the outfit result -> ONE pair in out/final/

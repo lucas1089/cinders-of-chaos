@@ -1,7 +1,7 @@
 -- game_stash (extended opcode ChaosOpcodes.stash = 110, plus the "!stash" talkaction)
 --
 -- Client contract (client/overlay/modules/game_stash/stash.lua). The shipped client talks through
--- Black Talon's client_manager, which is NOT part of the overlay. This file assumes the manager
+-- the donor client's client_manager, which is NOT part of the overlay. This file assumes the manager
 -- uses the same envelope in both directions:   {"action":"Stash","data":{"make":...,...}}
 -- (see README for the 6-line client patch that makes that true without client_manager).
 --

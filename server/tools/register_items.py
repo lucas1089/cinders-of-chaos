@@ -7,7 +7,7 @@ usage: python3 -I register_items.py ITEMS_XML CHAOS_ITEMS_XML [--otb ITEMS_OTB] 
 Checks before touching anything (exit 1 on a problem):
   * chaos_items.xml is well-formed, every <item> has a numeric id, no duplicate ids / names
   * every id exists in items.otb (if --otb given; server ids, attribute 0x10)
-  * every <attribute key> is one the Exodus parser knows (list copied from src/items.cpp ItemParseAttributesMap)
+  * every <attribute key> is one the base server parser knows (list copied from src/items.cpp ItemParseAttributesMap)
 Replacement is textual: the stock <item id="N" ...>...</item> block (or self-closing tag) is replaced in place, so the rest of
 items.xml keeps its formatting and comments. Items not present are appended before </items>. A .bak copy is written once.
 The stock entry of every replaced id is OVERRIDDEN, i.e. the old name/stats are gone for every use of that id (NPC shops,

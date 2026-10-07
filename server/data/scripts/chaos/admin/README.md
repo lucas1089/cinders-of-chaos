@@ -141,7 +141,7 @@ invisible, ghost (group 6), god_mode (group 5; uses `healthchange` + `manachange
 
 ## Untested / assumptions
 
-* Nothing was executed against TFS 1.4.2; API names were written from memory of TFS 1.4.x and from the Exodus scripts
+* Nothing was executed against TFS 1.4.2; API names were written from memory of TFS 1.4.x and from the base server scripts
   (`ban.lua`, `ipban.lua`, `reload.lua`, `force_raid.lua`, ...). Anything marked "if supported" is guarded.
 * Assumed schema: `players`, `accounts`, `account_bans`, `ip_bans`, optionally `market_offers` (standard TFS 1.4.2 columns).
   `ip` values use the same encoding as `Player:getIp()` (`Game.convertIpToString`).

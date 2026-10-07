@@ -31,7 +31,7 @@ TABLE_OLD[254] = 'usable'
 TABLES = {'old': TABLE_OLD, 'new': TABLE_NEW}
 
 
-# extra (custom) flag bytes found in Evolisca/BlackTalon-style dats: byte -> data kind
+# extra (custom) flag bytes found in donor-style dats: byte -> data kind
 DEFAULT_EXTRA = {39: 'b16', 41: None, 42: 'c16', 43: None, 46: 'u16x2', 62: 'b16'}
 
 

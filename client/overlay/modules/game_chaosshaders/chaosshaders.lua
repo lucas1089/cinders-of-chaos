@@ -1,7 +1,7 @@
--- Registers the outfit shaders the server sends by name (data/XML/shaders.xml of Hellgrave Exodus,
+-- Registers the outfit shaders the server sends by name (data/XML/shaders.xml of the base server,
 -- ids 1-17) so monster modifiers, store shaders and outfit shaders draw. Same list and files as the
--- Exodus client's game_shaders module; the .frag files are in data/shaders.
--- The server names "blue Dortmond" (id 5) with a space, the Exodus client "blue_Dortmond": both are registered.
+-- base client's game_shaders module; the .frag files are in data/shaders.
+-- The server names "blue Dortmond" (id 5) with a space, the base client "blue_Dortmond": both are registered.
 
 local SHADERS = {
   { "Enterprise", "/shaders/expand_vertex", "/shaders/shine15" },

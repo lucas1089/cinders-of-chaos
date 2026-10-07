@@ -1,4 +1,4 @@
--- Sistema de Notificações Moderno para TFS 1.3 / OTCv8 - VERSÃO CORRIGIDA
+-- Sistema de Notificações Moderno para TFS 1.3 / OTClient - VERSÃO CORRIGIDA
 -- CORREÇÕES: Party invite notifications integradas ao sistema de catacomb + POPUPS CORRIGIDOS
 
 local opcode = 79
