@@ -5,6 +5,6 @@ Module
   sandboxed: true
   scripts: [ chaos_theme ]
   autoload: true
-  autoload-priority: 10
+  autoload-priority: 500
   @onLoad: init()
   @onUnload: terminate()

@@ -14,7 +14,7 @@ rm -rf "$OUT/mods/game_stash" "$OUT/modules/game_stash"
 # the base client's battle pass is for its own server; ours matches the base server (raw opcode 39)
 rm -rf "$OUT/modules/game_battlepass" "$OUT/mods/game_battlepass"
 cp -a "$HERE"/overlay/modules/. "$OUT/modules/"
-mkdir -p "$OUT/data/images"; cp -a "$HERE"/overlay/data/images/. "$OUT/data/images/"
+cp -a "$HERE"/overlay/data/. "$OUT/data/"
 # the Chaos spell icons go into the client's spell icon sheets (cells 201..236; needs python3 with Pillow)
 ICONS=$(mktemp -d)
 python3 -I "$HERE/tools/gen_spell_icons.py" "$ICONS"

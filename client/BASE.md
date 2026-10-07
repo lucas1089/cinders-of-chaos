@@ -13,7 +13,7 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
 ## What the overlay replaces
 - `game_stash` (the client's own targets a different protocol): ours, extended opcode 110.
 - `game_battlepass`: ours (raw opcode 39).
-- `client_background`: ours (themed login background).
+- Login background: the client's own `client_background` module stays (other modules call its functions); the overlay replaces only its images `data/images/title.png` (Chaos background) and `data/images/ui/logo.png` (Chaos logo).
 - `game_mainpanel`, `game_healthcircle`, `game_realminimap` and `game_sidebars` stay the client's own (the first two have alternates in `alternates/`).
 
 ## Still open

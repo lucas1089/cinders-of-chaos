@@ -25,6 +25,7 @@ ChaosTheme = {
 
 function init()
   g_ui.importStyle('styles')
+  g_ui.importStyle('compat')
 end
 
 function terminate()

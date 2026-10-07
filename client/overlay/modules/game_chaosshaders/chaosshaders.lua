@@ -26,10 +26,17 @@ local SHADERS = {
 }
 
 function init()
-  for _, s in ipairs(SHADERS) do
-    g_shaders.createOutfitShader(s[1], s[2], s[3])
+  -- one missing or broken shader file must not stop the client from starting
+  local function create(name, vertex, fragment)
+    local ok, err = pcall(g_shaders.createOutfitShader, name, vertex, fragment)
+    if not ok then
+      g_logger.warning('[chaosshaders] ' .. name .. ': ' .. tostring(err))
+    end
   end
-  g_shaders.createOutfitShader("blue Dortmond", "/shaders/expand_vertex", "/shaders/shine11")
+  for _, s in ipairs(SHADERS) do
+    create(s[1], s[2], s[3])
+  end
+  create("blue Dortmond", "/shaders/expand_vertex", "/shaders/shine11")
 end
 
 function terminate()
