@@ -15,8 +15,8 @@ make -j$(nproc)
 `-DPHYSFS_LIBRARY=...so`: Ubuntu's static `libphysfs.a` has no archive index and the link fails without it.
 
 ## Run
-Put `Tibia.dat`/`Tibia.spr` (10.98) in `<game-dir>/data/things/1098/`, copy or link the `AstraClient` binary into
-`<game-dir>` and start it from there. Without a GPU: `LIBGL_ALWAYS_SOFTWARE=1 ./AstraClient`; headless:
+Put `Tibia.dat`/`Tibia.spr` (10.98) in `<game-dir>/data/things/1098/`, copy or link the client binary that CMake built into
+`<game-dir>` and start it from there. Without a GPU: `LIBGL_ALWAYS_SOFTWARE=1 ./<client binary>`; headless:
 `Xvfb :99 &` then `DISPLAY=:99 ...`.
 
 ## What the first run found (fixed)
