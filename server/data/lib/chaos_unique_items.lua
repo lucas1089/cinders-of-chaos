@@ -1,8 +1,10 @@
 -- Chaos unique items: global ChaosUniqueItems consumed by data/scripts/chaos/loot.lua (contract: LOOT.md).
--- Item definitions (names, stats) live in data/items/chaos_items.xml (override of the stock ids).
+-- Each unique is a normal copy of a base item that gets its own name, description and stats as item attributes when
+-- it is created (ChaosMakeUnique below, data in chaos_unique_specs.lua generated from data/items/chaos_items.xml).
+-- items.xml is NOT changed: stock monsters, shops and scripts find items by their stock names.
 -- chance = per 10000 per kill BEFORE the tier multiplier in loot_config.lua (magic x1, rare x2, legendary x4, boss x6;
 -- normal-tier kills never drop uniques). So chance 8 on a legendary monster = 32 per 10000 = 0.32%.
--- Generated from tools/register_items.py data; edit freely, it is plain Lua.
+-- Edit freely, it is plain Lua.
 
 ChaosUniqueItems = {
 	{ name = "Nightfang Katana", id = 2412, minTier = "magic", chance = 4, level = 60, slot = "sword",
@@ -113,6 +115,33 @@ for _, e in ipairs(ChaosUniqueItems) do
 	ChaosUniqueById[e.id] = e
 end
 
+if not ChaosUniqueSpecs then
+	dofile('data/lib/chaos_unique_specs.lua')
+end
+
+-- Turn a freshly created base item into its unique: name, article, description, attack/defense/armor... as item
+-- attributes, skills/critical/leech/absorbs as the custom attributes the stock rarity scripts apply on equip.
+-- Returns true when the item id has a unique spec.
+function ChaosMakeUnique(item)
+	local spec = item and ChaosUniqueSpecs[item:getId()]
+	if not spec then
+		return false
+	end
+	item:setAttribute(ITEM_ATTRIBUTE_NAME, spec.name)
+	if spec.article ~= "" then
+		item:setAttribute(ITEM_ATTRIBUTE_ARTICLE, spec.article)
+	end
+	item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, spec.description)
+	for key, value in pairs(spec.attributes) do
+		item:setAttribute(key, value)
+	end
+	for key, value in pairs(spec.custom) do
+		item:setCustomAttribute(key, value)
+	end
+	item:setCustomAttribute("chaos_unique", 1)
+	return true
+end
+
 -- Give one unique to a player (admin/quest/reward helper). Accepts the name (case-insensitive) or the server id.
 -- Returns the Item, or nil + reason. Falls back to dropping on the floor if the backpack is full.
 function ChaosGiveUnique(player, name)
@@ -127,6 +156,7 @@ function ChaosGiveUnique(player, name)
 	if not item then
 		return nil, "could not create " .. e.name
 	end
+	ChaosMakeUnique(item)
 	if player.sendTextMessage then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, "You received " .. e.name .. ".")
 	end

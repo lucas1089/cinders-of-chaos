@@ -673,7 +673,9 @@ local function processKill(monster, corpse)
 	local corpsePos = corpse:getPosition()
 
 	-- items that must never be touched: unique items
-	L.protectedIds = uniqueSet()
+	-- uniques are ordinary base items until ChaosMakeUnique runs on the dropped copy (step 4, after the gear
+	-- upgrades), so stock copies of the same base ids may still be upgraded
+	L.protectedIds = {}
 
 	-- 1. extra rolls
 	local lootTable = mType and mType:getLoot()
@@ -735,6 +737,9 @@ local function processKill(monster, corpse)
 	for _, e in ipairs(L.rollUniques(tier, monster:getName(), level, ctx.itemFind)) do
 		local item = corpse:addItem(e.id, 1)
 		if item then
+			if ChaosMakeUnique then
+				ChaosMakeUnique(item)
+			end
 			bonus[#bonus + 1] = "{" .. e.name .. "}"
 			local effect = globalByName(u.effect, u.fallbackEffect)
 			corpsePos:sendMagicEffect(effect)

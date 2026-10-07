@@ -67,5 +67,10 @@ jobs:
           python3 client/tools/gen_spell_data.py  # not -I: isolated mode ignores the user site where pip put Pillow
           git diff --exit-code client/overlay/modules/game_chaosspells/spelldata.lua
 
+      - name: Unique item specs are up to date with chaos_items.xml
+        run: |
+          cd server && python3 -I tools/gen_unique_specs.py
+          git diff --exit-code data/lib/chaos_unique_specs.lua
+
       - name: No references to other servers or clients
         run: python3 -I tools/ci/check_names.py

@@ -1,28 +1,31 @@
 # Chaos unique items
 
-48 unique/legendary items made by **overriding the definitions of existing item ids** in `items.xml`. No `items.otb` or
-client `.dat/.spr` change is needed: ids are valid server ids from our `items.otb`, and each one's sprite fits the new theme
-(bone, crimson, ember, obsidian, void). Files:
+48 unique/legendary items. Each one is a **normal copy of an existing base item** that gets its own name, description
+and stats as item attributes when it drops or is given (`ChaosMakeUnique`). `items.xml` is not touched.
+
+Why not override `items.xml`: a first run of the server showed that 28 of the 48 base items are found **by their stock name**
+by stock monsters, NPC shops and scripts ("alicorn headguard", "makeshift boots", "ghost chestplate"...). Renaming those ids
+made 15 boss loot tables fail to load. With per-copy attributes the stock items keep working and only the dropped copies
+are unique.
 
 | file | purpose |
 | --- | --- |
-| `data/items/chaos_items.xml` | the 48 `<item id=..>` definitions (full replacement of the stock entries) |
+| `data/items/chaos_items.xml` | source data for the 48 uniques (base id, name, description, stats); not installed into items.xml |
+| `data/lib/chaos_unique_specs.lua` | generated from the XML by `tools/gen_unique_specs.py`: what `ChaosMakeUnique` applies |
+| `data/lib/chaos_unique_items.lua` | `ChaosUniqueItems` (drop table for `loot.lua`), `ChaosMakeUnique`, `ChaosGiveUnique`, documented `ChaosSets` |
 | `data/items/chaos_items_sheet.jpg` | contact sheet: sprite, name, slot, level, id, tier |
-| `data/lib/chaos_unique_items.lua` | `ChaosUniqueItems` (drop table for `loot.lua`), `ChaosUniqueByName`, `ChaosUniqueById`, `ChaosGiveUnique`, documented `ChaosSets` |
-| `tools/register_items.py` | merges `chaos_items.xml` into `data/items/items.xml` by id (idempotent), validates ids and attributes |
+
+How the stats are applied: attack, defense, extra defense, armor, hit chance and range as item attributes; skills, magic
+level, critical hit, leech and absorbs as the custom attributes the stock rarity scripts already apply on equip. Max health,
+max mana, speed, regeneration, element damage and attack speed cannot be stored per item in this engine, so they were
+dropped (listed as `skipped` in `chaos_unique_specs.lua`).
 
 ## Install
 
-1. Copy `data/items/chaos_items.xml`, `data/lib/chaos_unique_items.lua` into the server's `data/` tree (same paths).
-2. Merge into the real items.xml (writes `items.xml.bak` once; safe to re-run, a second run changes nothing):
-   `python3 -I tools/register_items.py data/items/items.xml data/items/chaos_items.xml --otb data/items/items.otb`
-   (`--dry-run` to preview). Exit code 1 + `PROBLEM:` lines if an id is not in items.otb, an attribute is unknown to the
-   parser, or an id/name is duplicated.
-3. Make sure `data/lib/chaos_unique_items.lua` is loaded before `loot.lua` runs: files under `data/lib` are loaded by the
-   engine at startup (alphabetically, with `core.lua`), and `loot.lua` reads the global at kill time, so no ordering issue.
-4. Full server restart (items.xml is not reloadable with `/reload` for items that already exist in a running world; a restart is safest).
-5. Test: `/i Soulreaper` (or `/i 8209`) as GM, or `ChaosGiveUnique(player, "Soulreaper")` from a talkaction.
-6. Drop check: `print(ChaosLootReport("Demon", "legendary", 10000))` lists unique counts.
+1. Copy `data/lib/chaos_unique_items.lua` and `data/lib/chaos_unique_specs.lua` into the server's `data/lib/` and add
+   `dofile('data/lib/chaos_unique_items.lua')` at the end of `data/lib/lib.lua`.
+2. After editing `chaos_items.xml`, regenerate the specs: `python3 -I tools/gen_unique_specs.py`.
+3. Test: `ChaosGiveUnique(player, "Soulreaper")` from a talkaction, or check drops with `print(ChaosLootReport("Demon", "legendary", 10000))`.
 
 ## Items
 
@@ -91,7 +94,7 @@ documented in `ChaosSets` but **not implemented** (see below).
 For every id the stock entry was copied for structural attributes (`weight`, `weaponType`, `slotType`, `ammoType`, `shootType`,
 `range`, `attackSpeed`, hit chances); attack/defense/armor and bonuses were then set, and transform/decay/duration/charges
 attributes of the stock item (boots of haste style timers, equip transforms) were deliberately dropped so the items are permanent.
-Only attribute keys from `ItemParseAttributesMap` in the base server `src/items.cpp` are used (checked by `register_items.py`).
+
 
 ## Honest caveats
 * **Nothing was run on a server.** Verified only: XML well-formed, every id present in our items.otb, every attribute key known to the parser,
