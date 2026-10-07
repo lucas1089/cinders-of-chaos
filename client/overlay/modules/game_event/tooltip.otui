@@ -1,0 +1,90 @@
+// Tooltip do Event Schedule. O visual e o mesmo da tooltip padrao do client
+// (TooltipMain em data/styles/10-tooltip.otui): gradiente frio, cantos
+// arredondados e a moldura feita com outline + box-shadow em vez de "border",
+// porque as duas sao desenhadas FORA do rect e nao comem area util do conteudo.
+// A paleta e FRIA de proposito: as janelas do jogo sao vermelhas, entao um
+// tooltip quente sumia por cima delas.
+// UIWidget, NAO UIWindow: a classe base UIWindow roda onOpenAnim() a cada
+// onVisibilityChange (corelib/ui/uiwindow.lua), ou seja um fade-in de 130ms
+// que reinicia a opacidade em 0 a CADA show(). Passando o mouse rapido entre
+// os cards a tooltip era pega no meio do fade e aparecia translucida. De
+// quebra, o wrap global de UIWindow:onVisibilityChange do game_windowfocus
+// disparava um focusGame() a cada hover. O TooltipMain do corelib e UIWidget
+// pelo mesmo motivo -- tooltip nao e janela: nao arrasta, nao fecha, nao foca.
+UIWidget
+  id: eventtooltip
+  size: 330 300
+  background-gradient: linear-gradient(to bottom, #232b36f7 0%, #161c24f2 55%, #0a0d11f7 100%)
+  border-radius: 6
+  outline: 1 #5a6d84 1
+  box-shadow: 0 5 14 #000000c0, inset 0 1 0 #ffffff1f
+  // phantom igual ao TooltipMain: a tooltip nasce ao lado do cursor e, quando
+  // e virada para dentro perto da borda da tela, cai embaixo dele. Sem phantom
+  // ela rouba o hover do card, que dispara hide() e faz a tooltip piscar.
+  phantom: true
+
+  Label
+    id: name
+    anchors.top: parent.top
+    anchors.left: parent.left
+    text-auto-resize: true
+    margin-top: 10
+    margin-left: 10
+    font: sans-bold-16px
+    text: "Name"
+    color: #eef3f9
+
+  UIWidget
+    id: divBar
+    anchors.top: name.bottom
+    anchors.left: name.left
+    anchors.right: name.right
+    margin-top: 3
+    height: 1
+    background-color: #5a6d84
+
+  Label
+    id: starttime
+    font: verdana-11px-rounded
+    anchors.top: name.bottom
+    anchors.left: parent.left
+    text-auto-resize: true
+    margin-top: 10
+    margin-left: 10
+    text: "Name"
+    color: #dfe6ee
+
+  Label
+    id: players
+    font: verdana-11px-rounded
+    anchors.top: starttime.bottom
+    anchors.left: starttime.left
+    text-auto-resize: true
+    margin-top: 2
+    text: "Name"
+    color: #dfe6ee
+
+  Label
+    id: commands
+    font: verdana-11px-rounded
+    anchors.top: players.bottom
+    anchors.left: starttime.left
+    text-auto-resize: true
+    margin-top: 2
+    text: "Name"
+    color: #dfe6ee
+
+  // Sem anchors.right/bottom de proposito: a largura e a altura do 'desc' sao
+  // medidas e aplicadas por Event.LayoutTooltip. Ancorado ao parent.bottom a
+  // altura dele viria do parent, e o parent e justamente o que queremos
+  // dimensionar a partir dele -- a dependencia seria circular.
+  UIWidget
+    id: desc
+    font: verdana-11px-rounded
+    anchors.top: commands.bottom
+    anchors.left: starttime.left
+    width: 310
+    margin-top: 5
+    text-align: topleft
+    text-wrap: true
+    color: #dfe6ee

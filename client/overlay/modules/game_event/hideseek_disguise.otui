@@ -1,0 +1,124 @@
+// ===================================================================
+// Hide and Seek :: staff disguise picker window
+// Lives inside the existing game_event module (no new module / .otmod).
+// Displayed via g_ui.displayUI('hideseek_disguise') from event.lua.
+// ASCII-only strings; OTUI comments use //.
+//
+// HideSeekDisguiseCell is a compact icon-grid cell: sprite only (no name).
+// The sprite is drawn with the CLIENT item id (cid) while the widget also
+// carries the SERVER id (sid), which is what the pick sends back. Named
+// uniquely so it never clashes with global item styles.
+// ===================================================================
+
+HideSeekDisguiseCell < UIWidget
+  size: 34 34
+  focusable: false
+  background-color: #1a0d0f
+  border: 1 #402024
+
+  $hover:
+    background-color: #3a1418
+
+  // Green border = the disguise currently worn (survives across pages).
+  $on:
+    border: 1 #66cc66
+
+  // Gold border = the cell selected to wear next (click to select). Declared
+  // last so it wins when a cell is both worn and selected. Uses $checked
+  // (not $focus) so selecting never grabs keyboard focus from the game map.
+  $checked:
+    background-color: #5a1010
+    border: 1 #BFA240
+
+  UIItem
+    id: item
+    anchors.centerIn: parent
+    size: 32 32
+    virtual: true
+    phantom: true
+
+BlackTalonMainWindow
+  id: hideSeekDisguiseWindow
+  size: 320 410
+  anchors.centerIn: parent
+  focusable: false
+  !text: tr('Choose Your Disguise')
+
+  Label
+    id: hintLabel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    margin-left: 12
+    margin-right: 12
+    height: 40
+    text-align: center
+    text-auto-resize: false
+    text-wrap: true
+    font: verdana-11px-rounded
+    color: #b0b8c8
+    !text: tr('Pick an object found on this map to disguise as. Wear / Swap to change.')
+
+  // Fixed 8x5 icon grid (40 per page). The Lua side slices the full list
+  // per page, so this panel never needs a scrollbar.
+  Panel
+    id: disguiseGrid
+    anchors.top: hintLabel.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 8
+    size: 297 186
+    padding: 2
+    border: 1 #8b1a1a
+    background-color: #14080a
+    layout:
+      type: grid
+      cell-size: 34 34
+      cell-spacing: 3
+      num-columns: 8
+
+  Panel
+    id: pagerPanel
+    anchors.top: disguiseGrid.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    margin-left: 12
+    margin-right: 12
+    height: 22
+
+    Button
+      id: prevButton
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      width: 56
+      height: 20
+      !text: tr('< Prev')
+
+    Button
+      id: nextButton
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      width: 56
+      height: 20
+      !text: tr('Next >')
+
+    Label
+      id: pageLabel
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.verticalCenter: parent.verticalCenter
+      text-auto-resize: true
+      font: verdana-11px-rounded
+      color: #dfdfdf
+      !text: tr('Page 1 / 1')
+
+  // No close button: the picker stays open the whole hide so a staffer can
+  // swap disguise anytime. It closes only when the server sends closeDisguise
+  // (elimination / round end). Drag it by the title bar to move it aside.
+  Button
+    id: wearButton
+    anchors.bottom: parent.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-bottom: 12
+    width: 140
+    !text: tr('Wear / Swap')

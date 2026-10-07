@@ -1,0 +1,17 @@
+Panel
+  anchors.top: parent.top
+  anchors.horizontalCenter: parent.horizontalCenter
+  margin-top: 10
+  size: 280 64
+  image-source: /images/dungeons/challenge_completed
+  padding-left: 32
+  image-border-left: 145
+  image-border-right: 98
+
+  Label
+    id: text
+    anchors.centerIn: parent
+    text: The Beginning challenge completed!
+    color: #341c06
+    font: almendra-14px
+    text-auto-resize: true

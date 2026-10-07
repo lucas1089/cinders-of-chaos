@@ -1,0 +1,1015 @@
+function getTreeIcons()
+	return {
+		startNode = {
+			y = 0,
+			h = 235,
+			file = "/images/passivetree/PSGroupBackground95.png",
+			w = 245,
+			x = 0
+		},
+		baseStat = {
+			w = 38,
+			h = 38,
+			x = 266,
+			y = 726
+		},
+		startingNode = {
+			w = 76,
+			h = 76,
+			x = 644,
+			y = 1900
+		},
+		strength = {
+			w = 27,
+			h = 27,
+			x = 810,
+			y = 0
+		},
+		dexterity = {
+			w = 27,
+			h = 27,
+			x = 243,
+			y = 27
+		},
+		intelligence = {
+			w = 27,
+			h = 27,
+			x = 54,
+			y = 27
+		},
+		life = {
+			w = 27,
+			h = 27,
+			x = 189,
+			y = 54
+		},
+		mana = {
+			w = 27,
+			h = 27,
+			x = 432,
+			y = 54
+		},
+		armor = {
+			w = 27,
+			h = 27,
+			x = 541,
+			y = 0
+		},
+		shield = {
+			w = 27,
+			h = 27,
+			x = 568,
+			y = 0
+		},
+		elementalDamage = {
+			w = 27,
+			h = 27,
+			x = 432,
+			y = 27
+		},
+		fireDamage = {
+			w = 27,
+			h = 27,
+			x = 756,
+			y = 54
+		},
+		healthDamage = {
+			w = 25,
+			h = 25,
+			x = 0,
+			y = 215
+		},
+		waterDamage = {
+			w = 25,
+			h = 25,
+			x = 947,
+			y = 54
+		},
+		arcaneDamage = {
+			w = 25,
+			h = 25,
+			x = 756,
+			y = 81
+		},
+		holyDamage = {
+			w = 25,
+			h = 25,
+			x = 0,
+			y = 242
+		},
+		earthDamage = {
+			w = 25,
+			h = 25,
+			x = 188,
+			y = 188
+		},
+		lightningDamage = {
+			w = 25,
+			h = 25,
+			x = 567,
+			y = 79
+		},
+		deathDamage = {
+			w = 27,
+			h = 27,
+			x = 0,
+			y = 189
+		},
+		coldDamage = {
+			w = 27,
+			h = 27,
+			x = 513,
+			y = 81
+		},
+		lifeManaDrain = {
+			w = 27,
+			h = 27,
+			x = 890,
+			y = 52
+		},
+		drownDamage = {
+			w = 25,
+			h = 25,
+			x = 133,
+			y = 243
+		},
+		absorbFire = {
+			w = 25,
+			h = 25,
+			x = 614,
+			y = 778
+		},
+		absorbDeath = {
+			w = 25,
+			h = 25,
+			x = 214,
+			y = 270
+		},
+		absorbEnergy = {
+			w = 25,
+			h = 25,
+			x = 267,
+			y = 377
+		},
+		absorbIce = {
+			w = 25,
+			h = 25,
+			x = 427,
+			y = 696
+		},
+		absorbArcane = {
+			w = 25,
+			h = 25,
+			x = 453,
+			y = 670
+		},
+		absorbWater = {
+			w = 25,
+			h = 25,
+			x = 641,
+			y = 910
+		},
+		absorbPhysical = {
+			w = 25,
+			h = 25,
+			x = 507,
+			y = 911
+		},
+		absorbDrown = {
+			w = 25,
+			h = 25,
+			x = 668,
+			y = 991
+		},
+		absorbLife = {
+			w = 25,
+			h = 25,
+			x = 962,
+			y = 457
+		},
+		absorbMana = {
+			w = 25,
+			h = 25,
+			x = 936,
+			y = 457
+		},
+		absorbLifeMana = {
+			w = 25,
+			h = 25,
+			x = 668,
+			y = 831
+		},
+		absorbHoly = {
+			w = 25,
+			h = 25,
+			x = 399,
+			y = 777
+		},
+		absorbEarth = {
+			w = 25,
+			h = 25,
+			x = 642,
+			y = 431
+		},
+		physicalDamage = {
+			w = 27,
+			h = 27,
+			x = 81,
+			y = 54
+		},
+		fireWalker = {
+			w = 38,
+			h = 38,
+			x = 190,
+			y = 574
+		},
+		frostWalker = {
+			w = 38,
+			h = 38,
+			x = 228,
+			y = 574
+		},
+		lightningWalker = {
+			w = 38,
+			h = 38,
+			x = 266,
+			y = 574
+		},
+		spellDamage = {
+			w = 27,
+			h = 27,
+			x = 54,
+			y = 135
+		},
+		tidesOfChange = {
+			w = 28,
+			h = 28,
+			x = 294,
+			y = 937
+		},
+		coldNature = {
+			w = 28,
+			h = 28,
+			x = 428,
+			y = 1072
+		},
+		hulkingSmash = {
+			w = 28,
+			h = 28,
+			x = 667,
+			y = 964
+		},
+		anticipation = {
+			w = 28,
+			h = 28,
+			x = 321,
+			y = 885
+		},
+		cooldownRecovery = {
+			w = 27,
+			h = 27,
+			x = 918,
+			y = 81
+		},
+		arcanistsDominion = {
+			w = 38,
+			h = 38,
+			x = 684,
+			y = 574
+		},
+		pathOfTheSavant = {
+			w = 38,
+			h = 38,
+			x = 380,
+			y = 612
+		},
+		movementSpeed = {
+			w = 27,
+			h = 27,
+			x = 918,
+			y = 135
+		},
+		dodgeLife = {
+			w = 27,
+			h = 27,
+			x = 135,
+			y = 162
+		},
+		attackDamage = {
+			w = 27,
+			h = 27,
+			x = 108,
+			y = 0
+		},
+		attackSpeed = {
+			w = 27,
+			h = 27,
+			x = 108,
+			y = 81
+		},
+		rangedDamage = {
+			w = 27,
+			h = 27,
+			x = 459,
+			y = 135
+		},
+		skill = {
+			w = 27,
+			h = 27,
+			x = 459,
+			y = 216
+		},
+		clubSkill = {
+			w = 27,
+			h = 27,
+			x = 375,
+			y = 456
+		},
+		swordSkill = {
+			w = 27,
+			h = 27,
+			x = 400,
+			y = 456
+		},
+		axeSkill = {
+			w = 27,
+			h = 27,
+			x = 240,
+			y = 457
+		},
+		distanceSkill = {
+			w = 27,
+			h = 27,
+			x = 890,
+			y = 189
+		},
+		shieldingSkill = {
+			w = 27,
+			h = 27,
+			x = 82,
+			y = 81
+		},
+		magicSkill = {
+			w = 27,
+			h = 27,
+			x = 539,
+			y = 217
+		},
+		craftingSkill = {
+			w = 27,
+			h = 27,
+			x = 675,
+			y = 54
+		},
+		woodcuttingSkill = {
+			w = 27,
+			h = 27,
+			x = 243,
+			y = 81
+		},
+		herbalistSkill = {
+			w = 27,
+			h = 27,
+			x = 864,
+			y = 189
+		},
+		miningSkill = {
+			w = 27,
+			h = 27,
+			x = 0,
+			y = 350
+		},
+		weaponsmithSkill = {
+			w = 27,
+			h = 27,
+			x = 269,
+			y = 243
+		},
+		armorsmithSkill = {
+			w = 27,
+			h = 27,
+			x = 562,
+			y = 511
+		},
+		jewelsmithSkill = {
+			w = 27,
+			h = 27,
+			x = 402,
+			y = 751
+		},
+		criticalHitChance = {
+			w = 27,
+			h = 27,
+			x = 26,
+			y = 0
+		},
+		criticalHitAmount = {
+			w = 27,
+			h = 27,
+			x = 1,
+			y = 1
+		},
+		lifeLeechChance = {
+			w = 27,
+			h = 27,
+			x = 883,
+			y = 484
+		},
+		lifeLeechAmount = {
+			w = 27,
+			h = 27,
+			x = 883,
+			y = 484
+		},
+		manaLeechChance = {
+			w = 27,
+			h = 27,
+			x = 856,
+			y = 484
+		},
+		manaLeechAmount = {
+			w = 27,
+			h = 27,
+			x = 856,
+			y = 484
+		},
+		demoniacPassive = {
+			w = 27,
+			h = 27,
+			x = 432,
+			y = 135
+		},
+		manaRegeneration = {
+			w = 27,
+			h = 27,
+			x = 432,
+			y = 135
+		},
+		meleeDamage = {
+			w = 27,
+			h = 27,
+			x = 189,
+			y = 81
+		},
+		criticalDamage = {
+			w = 27,
+			h = 27,
+			x = 27,
+			y = 0
+		},
+		criticalChance2 = {
+			w = 27,
+			h = 27,
+			x = 405,
+			y = 216
+		},
+		armour = {
+			w = 27,
+			h = 27,
+			x = 837,
+			y = 27
+		},
+		soulOfSteel = {
+			w = 27,
+			h = 27,
+			x = 213,
+			y = 324
+		},
+		charisma = {
+			w = 27,
+			h = 27,
+			x = 135,
+			y = 215
+		},
+		longLife = {
+			w = 27,
+			h = 27,
+			x = 429,
+			y = 832
+		},
+		criticalChance = {
+			w = 27,
+			h = 27,
+			x = 162,
+			y = 162
+		},
+		defensiveWay = {
+			w = 27,
+			h = 27,
+			x = 107,
+			y = 885
+		},
+		brokenPast = {
+			w = 27,
+			h = 27,
+			x = 214,
+			y = 750
+		},
+		deactivity = {
+			w = 27,
+			h = 27,
+			x = 241,
+			y = 992
+		},
+		trueStrike = {
+			w = 38,
+			h = 38,
+			x = 418,
+			y = 688
+		},
+		arcaneWill = {
+			w = 38,
+			h = 38,
+			x = 76,
+			y = 688
+		},
+		wihazard = {
+			w = 27,
+			h = 27,
+			x = 588,
+			y = 537
+		},
+		naturalWrath = {
+			w = 27,
+			h = 27,
+			x = 536,
+			y = 564
+		},
+		brutalSkewering = {
+			w = 27,
+			h = 27,
+			x = 318,
+			y = 938
+		},
+		righteousDecree = {
+			w = 38,
+			h = 38,
+			x = 304,
+			y = 422
+		},
+		constitution = {
+			w = 38,
+			h = 38,
+			x = 608,
+			y = 536
+		},
+		experience = {
+			w = 27,
+			h = 27,
+			x = 348,
+			y = 563
+		},
+		loot = {
+			w = 27,
+			h = 27,
+			x = 242,
+			y = 725
+		},
+		orbHunter = {
+			w = 27,
+			h = 27,
+			x = 453,
+			y = 1017
+		},
+		rarityLoot = {
+			w = 27,
+			h = 27,
+			x = 455,
+			y = 859
+		},
+		explosiveFrenzy = {
+			w = 38,
+			h = 38,
+			x = 570,
+			y = 574
+		},
+		breathOfFlames = {
+			w = 27,
+			h = 27,
+			x = 454,
+			y = 937
+		},
+		heartAndSoul = {
+			w = 27,
+			h = 27,
+			x = 242,
+			y = 1151
+		},
+		lurskBringer = {
+			w = 27,
+			h = 27,
+			x = 641,
+			y = 1045
+		},
+		whisperOfDoom = {
+			w = 27,
+			h = 27,
+			x = 347,
+			y = 670
+		},
+		concusiveDexterity = {
+			w = 27,
+			h = 27,
+			x = 213,
+			y = 350
+		},
+		swordHeal = {
+			w = 38,
+			h = 38,
+			x = 646,
+			y = 840
+		},
+		longSide = {
+			w = 27,
+			h = 27,
+			x = 373,
+			y = 751
+		},
+		bluntTrauma = {
+			w = 27,
+			h = 27,
+			x = 427,
+			y = 1098
+		},
+		arcaneGuarding = {
+			w = 27,
+			h = 27,
+			x = 534,
+			y = 671
+		},
+		masterSkill = {
+			w = 27,
+			h = 27,
+			x = 882,
+			y = 457
+		},
+		enigmaticDefence = {
+			w = 38,
+			h = 38,
+			x = 532,
+			y = 460
+		},
+		heartOfDarkness = {
+			w = 27,
+			h = 27,
+			x = 401,
+			y = 537
+		},
+		disciplineForbidden = {
+			w = 27,
+			h = 27,
+			x = 918,
+			y = 216
+		},
+		obliteration = {
+			w = 38,
+			h = 38,
+			x = 152,
+			y = 955
+		},
+		diamondSkin = {
+			w = 27,
+			h = 27,
+			x = 107,
+			y = 724
+		},
+		mysticism = {
+			w = 27,
+			h = 27,
+			x = 161,
+			y = 1152
+		},
+		totalIncineration = {
+			w = 28,
+			h = 28,
+			x = 668,
+			y = 723
+		},
+		wrathOfNature = {
+			w = 28,
+			h = 28,
+			x = 668,
+			y = 670
+		},
+		fleshcrafting = {
+			w = 28,
+			h = 28,
+			x = 482,
+			y = 671
+		},
+		carvingStructure = {
+			w = 28,
+			h = 28,
+			x = 401,
+			y = 403
+		},
+		orionHorizon = {
+			w = 28,
+			h = 28,
+			x = 482,
+			y = 457
+		},
+		fulguredDream = {
+			w = 28,
+			h = 28,
+			x = 856,
+			y = 270
+		},
+		ballAndChain = {
+			w = 28,
+			h = 28,
+			x = 294,
+			y = 670
+		},
+		physicalDamageDex = {
+			w = 27,
+			h = 27,
+			x = 702,
+			y = 162
+		},
+		healing = {
+			w = 27,
+			h = 27,
+			x = 594,
+			y = 54
+		},
+		speed = {
+			w = 25,
+			h = 25,
+			x = 297,
+			y = 215
+		},
+		manaLife = {
+			w = 27,
+			h = 27,
+			x = 594,
+			y = 81
+		},
+		manaCost = {
+			w = 27,
+			h = 27,
+			x = 27,
+			y = 81
+		},
+		spellCriticalChance = {
+			w = 27,
+			h = 27,
+			x = 918,
+			y = 54
+		},
+		staffSpell = {
+			w = 27,
+			h = 27,
+			x = 81,
+			y = 135
+		},
+		wand = {
+			w = 27,
+			h = 27,
+			x = 891,
+			y = 81
+		},
+		arcaneSurge = {
+			w = 27,
+			h = 27,
+			x = 400,
+			y = 1177
+		},
+		insight = {
+			w = 27,
+			h = 27,
+			x = 810,
+			y = 81
+		},
+		forethought = {
+			w = 27,
+			h = 27,
+			x = 562,
+			y = 777
+		},
+		wandElemental = {
+			w = 27,
+			h = 27,
+			x = 837,
+			y = 243
+		},
+		wandCold = {
+			w = 27,
+			h = 27,
+			x = 864,
+			y = 243
+		},
+		spellLifeLeech = {
+			w = 27,
+			h = 27,
+			x = 405,
+			y = 27
+		},
+		spellManaLeech = {
+			w = 27,
+			h = 27,
+			x = 378,
+			y = 27
+		},
+		spellManaLifeLeech = {
+			w = 27,
+			h = 27,
+			x = 891,
+			y = 243
+		},
+		tempestBlast = {
+			w = 27,
+			h = 27,
+			x = 615,
+			y = 696
+		},
+		multiStat = {
+			w = 27,
+			h = 27,
+			x = 27,
+			y = 27
+		},
+		divineFervour = {
+			w = 27,
+			h = 27,
+			x = 563,
+			y = 403
+		},
+		resoluteTechnique = {
+			w = 27,
+			h = 27,
+			x = 292,
+			y = 937
+		},
+		shamanisticFury = {
+			w = 27,
+			h = 27,
+			x = 402,
+			y = 1124
+		},
+		revelry = {
+			w = 27,
+			h = 27,
+			x = 427,
+			y = 349
+		},
+		soulEater = {
+			w = 38,
+			h = 38,
+			x = 76,
+			y = 346
+		},
+		vitalityDrain = {
+			w = 38,
+			h = 38,
+			x = 38,
+			y = 346
+		},
+		impact = {
+			w = 38,
+			h = 38,
+			x = 38,
+			y = 308
+		},
+		elementalist = {
+			w = 53,
+			h = 54,
+			x = 636,
+			y = 1176
+		},
+		battlemage = {
+			w = 53,
+			h = 54,
+			x = 583,
+			y = 1176
+		},
+		elementalEquilibrium = {
+			w = 53,
+			h = 54,
+			x = 53,
+			y = 1122
+		},
+		berserkerMode = {
+			w = 50,
+			h = 50,
+			x = 689,
+			y = 1178
+		},
+		gatheringExp = {
+			w = 50,
+			h = 50,
+			x = 794,
+			y = 1180
+		},
+		gatheringMaterials = {
+			w = 50,
+			h = 50,
+			x = 844,
+			y = 1179
+		},
+		craftingExp = {
+			w = 50,
+			h = 50,
+			x = 742,
+			y = 1178
+		},
+		craftingExpandMaterials = {
+			w = 50,
+			h = 50,
+			x = 895,
+			y = 1179
+		},
+		reflectAttack = {
+			w = 49,
+			h = 49,
+			x = 375,
+			y = 1071
+		},
+		damageReduction = {
+			w = 38,
+			h = 38,
+			x = 153,
+			y = 727
+		},
+		dmgReductionHpMpHealing = {
+			w = 50,
+			h = 50,
+			x = 691,
+			y = 1072
+		},
+		specialHPMP = {
+			w = 35,
+			h = 35,
+			x = 572,
+			y = 613
+		},
+		exposedPrecision = {
+			w = 38,
+			h = 38,
+			x = 646,
+			y = 955
+		},
+		ShaolinRage = {
+			w = 50,
+			h = 50,
+			x = 160,
+			y = 1070
+		},
+		FreyjaBlessing = {
+			w = 52,
+			h = 52,
+			x = 849,
+			y = 1069
+		},
+		Void = {
+			w = 38,
+			h = 34,
+			x = 839,
+			y = 1033
+		},
+		JacqenConfluence = {
+			w = 37,
+			h = 37,
+			x = 7,
+			y = 1249
+		},
+		InaccurateAgility = {
+			w = 37,
+			h = 37,
+			x = 458,
+			y = 843
+		},
+		PreciseHealing = {
+			w = 38,
+			h = 38,
+			x = 380,
+			y = 764
+		},
+		GoldHoarder = {
+			w = 43,
+			h = 45,
+			x = 54,
+			y = 1230
+		},
+		EnergyCapacitancy = {
+			w = 53,
+			h = 53,
+			x = 106,
+			y = 1230
+		},
+		Reliquary = {
+			w = 38,
+			h = 38,
+			x = 494,
+			y = 270
+		},
+		RelicKnowledge = {
+			w = 38,
+			h = 38,
+			x = 798,
+			y = 270
+		}
+	}
+end
+
+return 

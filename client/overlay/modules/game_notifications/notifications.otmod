@@ -1,0 +1,10 @@
+Module
+  name: game_notifications
+  description: NOTIFICATIONS
+  author: Atlas
+  website: MagicHeart
+  sandboxed: true
+  autoload: true
+  scripts: [ notifications ]
+  @onLoad: init()
+  @onUnload: terminate()

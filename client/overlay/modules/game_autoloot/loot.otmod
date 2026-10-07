@@ -1,0 +1,10 @@
+Module
+  name: game_autoloot
+  description: Game Auto-Loot
+  author: Luis
+  sandboxed: true
+  scripts: [ loot ]
+  autoload: true
+  autoload-priority: 1001
+  @onLoad: init()
+  @onUnload: terminate()

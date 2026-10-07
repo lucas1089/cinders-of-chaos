@@ -1,0 +1,9 @@
+Module
+  name: game_event
+  description: Event Manager
+  author: Lazarocp
+  website: Discord: lazarocp#3148
+  sandboxed: true
+  scripts: [ event ]
+  @onLoad: Event.Init()
+  @onUnload: Event.Terminate()

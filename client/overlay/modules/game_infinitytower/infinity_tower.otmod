@@ -1,0 +1,12 @@
+Module
+  name: game_infinitytower
+  description: Infinity Tower Info Window
+  author: Luminaris
+  website: www.otclient.info
+  sandboxed: true
+  autoload: true
+  autoload-priority: 1000
+  dependencies: [ game_interface ]
+  scripts: [ infinity_tower ]
+  @onLoad: init()
+  @onUnload: terminate()

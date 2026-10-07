@@ -1,0 +1,187 @@
+NameShaderItem < UIWidget
+  height: 50
+  background-color: #2a2a2a
+  focusable: true
+  phantom: false
+
+  $focus:
+    background-color: #404040
+
+  $hover:
+    background-color: #3a3a4a
+
+  $!enabled:
+    opacity: 0.6
+
+  UIWidget
+    id: lockIcon
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 10
+    size: 16 16
+    image-source: /images/ui/lock
+    visible: false
+
+  Label
+    id: shaderName
+    anchors.left: parent.left
+    anchors.top: parent.top
+    anchors.right: selectedMark.left
+    margin-left: 12
+    margin-top: 8
+    margin-right: 10
+    font: verdana-11px-rounded
+    text: Shader Name
+    text-auto-resize: true
+    color: #ffffff
+
+  Label
+    id: description
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    anchors.right: selectedMark.left
+    margin-left: 12
+    margin-right: 10
+    margin-bottom: 8
+    font: verdana-11px-rounded
+    color: #888888
+    text: Description
+    text-auto-resize: true
+
+  UIWidget
+    id: selectedMark
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 10
+    size: 16 16
+    image-source: /images/ui/check
+    visible: false
+
+MainWindowTopBar
+  id: nameShaderWindow
+  !text: tr('Name Shaders')
+  size: 420 500
+  @onEscape: modules.game_nameshaders.hide()
+
+  Label
+    id: currentShaderLabel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 30
+    margin-left: 10
+    text: Current: None
+    font: verdana-11px-rounded
+    color: #ffffff
+
+  Button
+    id: removeButton
+    !text: tr('Remove')
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-top: 26
+    margin-right: 10
+    width: 80
+    @onClick: modules.game_nameshaders.removeNameShader()
+
+  Panel
+    id: previewPanel
+    anchors.top: currentShaderLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 10 10 0 10
+    height: 80
+    background-color: #1a1a1a
+    border: 1 #444444
+
+    UICreature
+      id: previewCreature
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 15
+      size: 64 64
+      animate: true
+
+    Label
+      id: previewNameLabel
+      anchors.left: previewCreature.right
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-left: 15
+      margin-top: 20
+      margin-right: 10
+      font: verdana-11px-rounded
+      text: Player Name
+      text-auto-resize: true
+      color: #ffffff
+
+    Label
+      id: previewShaderLabel
+      anchors.left: previewCreature.right
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      margin-left: 15
+      margin-bottom: 20
+      margin-right: 10
+      font: verdana-11px-rounded
+      text: Shader: None
+      text-auto-resize: true
+      color: #888888
+
+  TextEdit
+    id: searchField
+    anchors.top: previewPanel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 10 10 0 10
+    placeholder: Search shaders...
+    placeholder-color: #808080
+
+  Panel
+    id: separator
+    anchors.top: searchField.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    height: 1
+    background-color: #444444
+
+  ScrollablePanel
+    id: shaderList
+    anchors.top: separator.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: statusLabel.top
+    margin: 8 10 8 10
+    vertical-scrollbar: shaderScrollBar
+    layout:
+      type: verticalBox
+      spacing: 2
+
+  VerticalScrollBar
+    id: shaderScrollBar
+    anchors.top: separator.bottom
+    anchors.bottom: statusLabel.top
+    anchors.right: parent.right
+    margin: 8 5 8 0
+    step: 50
+    pixels-scroll: true
+
+  Label
+    id: statusLabel
+    anchors.bottom: closeButton.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-bottom: 8
+    margin-left: 10
+    font: verdana-11px-rounded
+    color: #888888
+    text: Unlocked: 0/0
+
+  Button
+    id: closeButton
+    !text: tr('Close')
+    anchors.bottom: parent.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-bottom: 10
+    width: 80
+    @onClick: modules.game_nameshaders.hide()

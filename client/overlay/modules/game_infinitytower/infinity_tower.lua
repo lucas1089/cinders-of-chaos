@@ -1,0 +1,461 @@
+local infinityTowerWindow = nil
+local OPCODE_INFINITY_TOWER = 214
+local milestoneWidgets = {}
+local cachedTowerData = nil
+
+-- Milestones padrão espelhados do servidor, exibidos antes dos dados chegarem
+local DEFAULT_MILESTONES = {
+  { points = 60000,  items = { { id = 3043,  count = 30, name = "Gold Coin" } } },
+  { points = 120000, items = { { id = 51964, count = 1,  name = "Prize" } } },
+  { points = 180000, items = { { id = 63185, count = 1,  name = "Prize" } } },
+  { points = 240000, items = { { id = 51956, count = 10, name = "Prize" } } },
+  { points = 300000, items = { { id = 43895, count = 1,  name = "Prize" } } },
+}
+
+function init()
+  ProtocolGame.registerExtendedOpcode(OPCODE_INFINITY_TOWER, onExtendedOpcode)
+
+  connect(g_game, {
+    onGameStart = onGameStart,
+    onGameEnd = onGameEnd
+  })
+
+  if g_game.isOnline() then
+    onGameStart()
+  end
+end
+
+function terminate()
+  disconnect(g_game, {
+    onGameStart = onGameStart,
+    onGameEnd = onGameEnd
+  })
+
+  ProtocolGame.unregisterExtendedOpcode(OPCODE_INFINITY_TOWER)
+  onGameEnd()
+
+  if infinityTowerWindow then
+    infinityTowerWindow:destroy()
+    infinityTowerWindow = nil
+  end
+
+  if seasonTimerEvent then
+    removeEvent(seasonTimerEvent)
+    seasonTimerEvent = nil
+  end
+end
+
+function onGameStart()
+end
+
+function onGameEnd()
+  cachedTowerData = nil
+  hide()
+end
+
+function onExtendedOpcode(protocol, opcode, buffer)
+  local data = json.decode(buffer)
+  if not data then return end
+
+  if data.action == "open" then
+    cachedTowerData = data
+    show(data)
+  elseif data.action == "update" then
+    cachedTowerData = data
+    if infinityTowerWindow and infinityTowerWindow:isVisible() then
+      scheduleEvent(function()
+        if data.milestones then
+          populateMilestones(data.milestones, data.playerPoints or 0)
+        end
+        if data.rankings then
+          populateRankings(data.rankings)
+        end
+        populateSeasonInfos(data)
+      end, 50)
+    end
+  end
+end
+
+local function fixAcentos(str)
+  return str:fixEncoding()
+end
+
+function setupDescription()
+  local descLabel = infinityTowerWindow:recursiveGetChildById('descriptionLabel')
+  if not descLabel then return end
+
+  local text = [[[color=#f75f5f]Welcome to the Infinity Tower![/color]
+
+The Infinity Tower is a solo challenge where you will face increasingly powerful waves of monsters. Push your limits and see how far you can go!
+
+[color=#f75f5f]How It Works:[/color]
+- Pull the [color=#f75f5f]lever[/color] to start the event and enter your exclusive instance.
+- Each floor has [color=#f75f5f]3 waves[/color] of monsters that must be defeated.
+- After clearing all waves, you will earn [color=#f75f5f]Tower Points[/color] and may choose to advance to the next floor or leave.
+- Difficulty [color=#f75f5f]scales progressively[/color] with each new floor reached.
+
+[color=#f75f5f]Rewards and Scoring:[/color]
+- Each completed floor grants [color=#f75f5f]Experience immediately[/color].
+- You will also accumulate [color=#f75f5f]Tower Points[/color] for every floor cleared.
+- Reaching Tower Point milestones will unlock [color=#f75f5f]special rewards[/color] on the progress bar below.
+- Simply click the [color=#f75f5f]"Claim"[/color] button to collect your exclusive rewards!
+- At the end of each season, the [color=#f75f5f]top 3 players[/color] will receive the [color=#f75f5f]"Top Rank Rewards"[/color] chests with exclusive prizes!
+
+[color=#f75f5f]Important Rules:[/color]
+- If you die during the event, [color=#f75f5f]you will not lose any level or skills[/color]. You will be healed and safely returned to the temple.
+- Your time is tracked! Try to reach [color=#f75f5f]as high as possible in the shortest time[/color] to earn a spot on the Ranking (Top 10).
+- The Ranking updates [color=#f75f5f]immediately[/color] whenever you beat your own record of [color=#f75f5f]Highest Floor or Best Time[/color].
+
+[color=#f75f5f]Tip:[/color] Prepare well before entering! Bring potions, proper equipment, and good luck!]]
+
+  descLabel:parseColoredText(text, '#ffffff')
+end
+
+function toggle()
+  if infinityTowerWindow and infinityTowerWindow:isVisible() then
+    hide()
+  else
+    show(cachedTowerData)
+    if g_game.isOnline() then
+      local protocol = g_game.getProtocolGame()
+      if protocol then
+        protocol:sendExtendedOpcode(OPCODE_INFINITY_TOWER, '{"action":"request"}')
+      end
+    end
+  end
+end
+
+function showLoadingState()
+  local seasonLabel = infinityTowerWindow:recursiveGetChildById('seasonLabel')
+  if seasonLabel then seasonLabel:setText('Current Season: --') end
+  local endLabel = infinityTowerWindow:recursiveGetChildById('seasonEndLabel')
+  if endLabel then endLabel:setText('Season Ends In: --') end
+  local tryLabel = infinityTowerWindow:recursiveGetChildById('nextTryLabel')
+  if tryLabel then tryLabel:setText('Next Try Available: --') end
+  local pointsLabel = infinityTowerWindow:recursiveGetChildById('towerPointsLabel')
+  if pointsLabel then pointsLabel:setText('Your Tower Points: 0') end
+
+  populateMilestones(DEFAULT_MILESTONES, 0)
+end
+
+function show(data)
+  if not infinityTowerWindow then
+    infinityTowerWindow = g_ui.displayUI('infinity_tower')
+    if not infinityTowerWindow then return end
+    setupDescription()
+    populatePodium()
+  end
+
+  infinityTowerWindow:show()
+  infinityTowerWindow:raise()
+  infinityTowerWindow:focus()
+  startShimmer()
+
+  if data then
+    -- Delay to ensure layout is calculated
+    scheduleEvent(function()
+      if data.milestones then
+        populateMilestones(data.milestones, data.playerPoints or 0)
+      end
+      if data.rankings then
+        populateRankings(data.rankings)
+      end
+      populateSeasonInfos(data)
+    end, 50)
+  else
+    scheduleEvent(showLoadingState, 50)
+  end
+end
+
+function hide()
+  stopShimmer()
+  if seasonTimerEvent then
+    removeEvent(seasonTimerEvent)
+    seasonTimerEvent = nil
+  end
+  if infinityTowerWindow then
+    infinityTowerWindow:hide()
+  end
+end
+
+function populatePodium()
+  local podiumItems = {
+    { id = 'podiumItem1', itemId = 63196 }, -- Gold Tower Chest
+    { id = 'podiumItem2', itemId = 63195 }, -- Silver Tower Chest
+    { id = 'podiumItem3', itemId = 63194 }, -- Copper Tower Chest
+  }
+  for _, entry in ipairs(podiumItems) do
+    local widget = infinityTowerWindow:recursiveGetChildById(entry.id)
+    if widget then
+      widget:setItemId(entry.itemId)
+    end
+  end
+end
+
+function clearMilestoneWidgets()
+  for _, w in ipairs(milestoneWidgets) do
+    if w and not w:isDestroyed() then
+      w:destroy()
+    end
+  end
+  milestoneWidgets = {}
+end
+
+function populateMilestones(milestones, playerPoints)
+  local track = infinityTowerWindow:recursiveGetChildById('milestoneTrack')
+  local progressPanel = infinityTowerWindow:recursiveGetChildById('pointsProgress')
+  if not track or not progressPanel then return end
+
+  clearMilestoneWidgets()
+
+  local maxPoints = milestones[#milestones] and milestones[#milestones].points or 1
+  local barWidth = progressPanel:getWidth()
+  local barX = progressPanel:getX() - track:getX()
+  local barY = progressPanel:getY() - track:getY()
+
+  for i, milestone in ipairs(milestones) do
+    local ratio = milestone.points / maxPoints
+    local xPos = barX + math.floor(ratio * barWidth)
+
+    -- White vertical divider above the bar (grows upward, does not enter the bar)
+    local divider = g_ui.createWidget('UIWidget', track)
+    divider:setId('milestoneDivider' .. i)
+    divider:setSize({width = 2, height = 50})
+    divider:setBackgroundColor('#ffffffcc')
+    divider:addAnchor(AnchorBottom, 'pointsProgress', AnchorTop)
+    divider:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+    divider:setMarginBottom(0)
+    divider:setMarginLeft(xPos - 1)
+    table.insert(milestoneWidgets, divider)
+
+    -- Points label above the item slot
+    local pointsStr = milestone.points >= 1000 and (math.floor(milestone.points / 1000) .. 'k') or tostring(milestone.points)
+    local pointsLbl = g_ui.createWidget('UIWidget', track)
+    pointsLbl:setId('milestonePoints' .. i)
+    pointsLbl:setSize({width = 50, height = 12})
+    pointsLbl:setText(pointsStr .. ' pts')
+    pointsLbl:setFont('cipsoftFont')
+    pointsLbl:setColor('#ffda34')
+    pointsLbl:setTextAlign(AlignCenter)
+    pointsLbl:addAnchor(AnchorBottom, 'pointsProgress', AnchorTop)
+    pointsLbl:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+    pointsLbl:setMarginBottom(58)
+    pointsLbl:setMarginLeft(xPos - 25)
+    table.insert(milestoneWidgets, pointsLbl)
+
+    -- Item slot above the bar
+    local itemSlot = g_ui.createWidget('TowerRewardItem', track)
+    itemSlot:setId('milestoneItem' .. i)
+    itemSlot:addAnchor(AnchorBottom, 'pointsProgress', AnchorTop)
+    itemSlot:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+    itemSlot:setMarginBottom(12)
+    itemSlot:setMarginLeft(xPos - 17)
+    table.insert(milestoneWidgets, itemSlot)
+
+    -- Set item data
+    local firstItem = milestone.items and milestone.items[1]
+    if firstItem then
+      local itemWidget = itemSlot:getChildById('item')
+      if itemWidget then
+        itemWidget:setItemId(firstItem.id)
+        itemWidget:setItemCount(firstItem.count)
+      end
+      local tooltipText = firstItem.name or 'Item'
+      if firstItem.count > 1 then
+        tooltipText = firstItem.count .. 'x ' .. tooltipText
+      end
+      itemSlot:setTooltip(tooltipText)
+    end
+
+    -- Dim if claimed
+    if milestone.claimed then
+      itemSlot:setOpacity(0.4)
+    end
+
+    -- Claim button below the bar
+    local claimBtn = g_ui.createWidget('Button', track)
+    claimBtn:setId('claimBtn' .. i)
+    claimBtn:setSize({width = 43, height = 20})
+    claimBtn:setText('Claim')
+    claimBtn:setFont('cipsoftFont')
+    claimBtn:addAnchor(AnchorTop, 'pointsProgress', AnchorBottom)
+    claimBtn:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+    claimBtn:setMarginTop(4)
+    claimBtn:setMarginLeft(xPos - 21)
+    table.insert(milestoneWidgets, claimBtn)
+
+    -- Enable/disable based on points and claimed status
+    if milestone.claimed then
+      claimBtn:setEnabled(false)
+      claimBtn:setText('Done')
+    elseif playerPoints >= milestone.points then
+      claimBtn:setEnabled(true)
+      claimBtn.onClick = function()
+        -- Send claim request to server
+        if ProtocolGame then
+          local protocol = g_game.getProtocolGame()
+          if protocol then
+            local payload = '{"action":"claim", "milestoneIndex":' .. i .. '}'
+            protocol:sendExtendedOpcode(214, payload)
+          end
+        end
+      end
+    else
+      claimBtn:setEnabled(false)
+    end
+  end
+
+  -- Update progress bar
+  local progressBar = infinityTowerWindow:recursiveGetChildById('progressBar')
+  local progressLabel = infinityTowerWindow:recursiveGetChildById('progressLabel')
+
+  if progressBar and progressLabel then
+    local percent = math.min(playerPoints / maxPoints, 1.0)
+    local fillWidth = math.floor((barWidth - 6) * percent)
+    progressBar:setWidth(fillWidth)
+    progressLabel:setText(playerPoints .. ' / ' .. maxPoints .. ' pts')
+  end
+end
+
+function populateRankings(rankings)
+  local rankList = infinityTowerWindow:recursiveGetChildById('rankList')
+  if not rankList then return end
+
+  rankList:destroyChildren()
+
+  if not rankings or #rankings == 0 then return end
+
+  local rankColors = { '#FFD700', '#C0C0C0', '#CD7F32' }
+
+  for i, rankData in ipairs(rankings) do
+    local row = g_ui.createWidget('TowerRankRow', rankList)
+    if not row then break end
+
+    local color = rankColors[i] or '#FFFFFF'
+
+    local rankWidget = row:getChildById('rank')
+    if rankWidget then
+      rankWidget:setText(tostring(i))
+      rankWidget:setColor(color)
+    end
+
+    local nameWidget = row:getChildById('name')
+    if nameWidget then
+      nameWidget:setText(rankData.name or '')
+      nameWidget:setColor(color)
+    end
+
+    local floorWidget = row:getChildById('floor')
+    if floorWidget then
+      floorWidget:setText(tostring(rankData.floor or 0))
+    end
+
+    local timeWidget = row:getChildById('time')
+    if timeWidget then
+      local t = rankData.time or 0
+      timeWidget:setText(string.format('%02d:%02d', math.floor(t / 60), t % 60))
+    end
+  end
+end
+
+-- Shimmer animation
+local shimmerEvent = nil
+local shimmerDirection = -1
+local shimmerOpacity = 1.0
+
+function startShimmer()
+  if shimmerEvent then return end
+
+  local function animate()
+    if not infinityTowerWindow then return end
+    local label = infinityTowerWindow:recursiveGetChildById('topRankLabel')
+    if not label then return end
+
+    shimmerOpacity = shimmerOpacity + (shimmerDirection * 0.03)
+    if shimmerOpacity <= 0.4 then
+      shimmerOpacity = 0.4
+      shimmerDirection = 1
+    elseif shimmerOpacity >= 1.0 then
+      shimmerOpacity = 1.0
+      shimmerDirection = -1
+    end
+
+    label:setOpacity(shimmerOpacity)
+    shimmerEvent = scheduleEvent(animate, 50)
+  end
+
+  animate()
+end
+
+function stopShimmer()
+  if shimmerEvent then
+    removeEvent(shimmerEvent)
+    shimmerEvent = nil
+  end
+end
+
+local seasonTimerEvent = nil
+
+local function formatTimeRemaining(seconds)
+    if seconds <= 0 then return "Now" end
+    local days = math.floor(seconds / (24 * 60 * 60))
+    local hours = math.floor((seconds % (24 * 60 * 60)) / (60 * 60))
+    local minutes = math.floor((seconds % (60 * 60)) / 60)
+    local secs = seconds % 60
+    
+    if days > 0 then
+        return string.format("%d days, %02d:%02d:%02d", days, hours, minutes, secs)
+    else
+        return string.format("%02d:%02d:%02d", hours, minutes, secs)
+    end
+end
+
+function populateSeasonInfos(data)
+  if not infinityTowerWindow then return end
+  local seasonLabel = infinityTowerWindow:recursiveGetChildById('seasonLabel')
+  local endLabel = infinityTowerWindow:recursiveGetChildById('seasonEndLabel')
+  local tryLabel = infinityTowerWindow:recursiveGetChildById('nextTryLabel')
+  local pointsLabel = infinityTowerWindow:recursiveGetChildById('towerPointsLabel')
+  
+  if seasonLabel then seasonLabel:setText("Current Season: " .. (data.seasonNum or 1)) end
+  if pointsLabel then pointsLabel:setText("Your Tower Points: " .. (data.playerPoints or 0)) end
+  
+  -- Clear existing timer
+  if seasonTimerEvent then
+    removeEvent(seasonTimerEvent)
+    seasonTimerEvent = nil
+  end
+  
+  local targetSeasonEnd = data.seasonEnd or 0
+  local targetNextTry = data.nextTry or 0
+  
+  local function updateTimers()
+      if not infinityTowerWindow or not infinityTowerWindow:isVisible() then
+          seasonTimerEvent = nil
+          return
+      end
+      
+      local now = os.time()
+      if endLabel then
+          local remainEnd = targetSeasonEnd - now
+          if remainEnd > 0 then
+              endLabel:setText("Season Ends In: " .. formatTimeRemaining(remainEnd))
+          else
+              endLabel:setText("Season Ends In: Finished")
+          end
+      end
+      
+      if tryLabel then
+          local remainTry = targetNextTry - now
+          if remainTry > 0 then
+              tryLabel:setText("Next Try Available: " .. formatTimeRemaining(remainTry))
+          else
+              tryLabel:setText("Next Try Available: Ready Now!")
+          end
+      end
+      
+      seasonTimerEvent = scheduleEvent(updateTimers, 1000)
+  end
+  
+  updateTimers()
+end

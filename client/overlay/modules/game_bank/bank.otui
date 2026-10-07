@@ -1,0 +1,295 @@
+BankingAcceptWindow < MainWindow
+  id: amountWindow
+  !text: tr('Accept Window')
+  size: 270 150
+
+  Label
+    id: balance
+    text-align: center
+    text-offset: 0 0
+    anchors.top: parent.top
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 3
+    height: 16
+    text: Your Balance Is:
+    color: yellow
+
+  Label
+    id: shit
+    text-offset: 0 0
+    anchors.top: balance.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    height: 16
+    text: The Amount:
+
+  OptionScrollbar
+    id: value
+    margin-top: 16
+    anchors.right: parent.right
+    anchors.left: parent.left
+    anchors.top: shit.bottom
+    minimum: 0
+    maximum: 0
+
+  HorizontalSeparator
+    anchors.right: parent.right
+    anchors.left: parent.left
+    anchors.top: value.bottom
+    margin-top: 10 
+    height: 3
+
+  Button
+    id: buttonCancel
+    !text: tr('Cancel')
+    height: 20
+    anchors.left: value.horizontalCenter
+    anchors.right: value.right
+    anchors.top: value.bottom
+    margin-top: 25
+    focusable: false
+
+  Button
+    id: buttonOk
+    !text: tr('Accept')
+    height: 20
+    anchors.right: value.horizontalCenter
+    anchors.left: value.left
+    anchors.top: value.bottom
+    margin-top: 25
+    margin-right: 6
+    focusable: false
+
+AcceptWindowTransfer < MainWindow
+  id: amountWindow
+  !text: tr('Transfer Window')
+  size: 270 185
+
+  Label
+    id: balanceTransfer
+    text-align: center
+    text-offset: 0 0
+    anchors.top: parent.top
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 3
+    height: 16
+    text: Your Balance Is:
+    color: yellow
+
+  Label
+    id: sender
+    text-offset: 0 0
+    anchors.top: balanceTransfer.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    height: 16
+    text: Recipient:
+
+  TextEdit
+    id: senderName
+    anchors.right: parent.right
+    anchors.left: parent.left
+    anchors.top: sender.bottom
+    width: 80
+    font: verdana-11px-rounded
+
+  Label
+    id: sendAmount
+    text-offset: 0 0
+    anchors.top: senderName.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    margin-top: 5
+    height: 16
+    text: The Amount:
+
+  OptionScrollbar
+    id: value
+    margin-top: 10
+    anchors.right: parent.right
+    anchors.left: parent.left
+    anchors.top: sendAmount.bottom
+    minimum: 0
+    maximum: 0
+
+  HorizontalSeparator
+    anchors.right: parent.right
+    anchors.left: parent.left
+    anchors.top: value.bottom
+    margin-top: 10 
+    height: 3
+
+  Button
+    id: buttonCancel
+    !text: tr('Cancel')
+    height: 20
+    anchors.left: value.horizontalCenter
+    anchors.right: value.right
+    anchors.top: value.bottom
+    margin-top: 25
+    focusable: false
+
+  Button
+    id: buttonOk
+    !text: tr('Send')
+    height: 20
+    anchors.right: value.horizontalCenter
+    anchors.left: value.left
+    anchors.top: value.bottom
+    margin-top: 25
+    margin-right: 6
+    focusable: false
+
+MainWindow
+  id: amountWindow
+  !text: tr('Bank')
+  size: 330 175
+  @onEscape: bankWindowtoggle()
+
+  CustomTabButton
+    id: gold
+    size: 145 25
+    anchors.top: parent.top
+    anchors.left: parent.left
+    text: Gold Coins
+    text-offset: 0 -1
+
+  CustomTabButton
+    id: star
+    size: 145 25
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-left: 10
+    text: Star Coins
+    text-offset: 0 -1
+
+  HorizontalSeparator
+    id: sharta1
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 5
+
+  VerticalSeparator
+    id: sharta2
+    anchors.top: prev.bottom
+    anchors.bottom: parent.bottom
+    anchors.left: parent.horizontalCenter
+    margin-top: 5
+    margin-bottom: 30
+
+  UIWidget
+    id: balance
+    anchors.top: sharta1.bottom
+    anchors.left: parent.left
+    margin-top: 5
+    !text: tr('Inventory Balance:')
+
+  Item
+    id: item
+    size: 22 22
+    anchors.left: parent.left
+    anchors.top: balance.bottom
+    margin-top: 8
+    focusable: false
+    virtual: true
+    tooltip: Gold Coin
+
+  Panel
+    id: textEdit2
+    image-source: /images/ui/panel_flat
+    image-border: 6
+    padding: 3
+    image-color: #cccccc
+    size: 109 22
+    anchors.left: item.right
+    anchors.top: balance.bottom
+    font: verdana-11px-rounded
+    text-align: center
+    margin-top: 8
+    margin-left: 5
+    color: yellow
+
+  Button
+    id: depositButton
+    !text: tr('Deposit')
+    size: 135 20
+    anchors.left: parent.left
+    anchors.top: item.bottom
+    margin-top: 7
+    margin-right: 6
+    focusable: false
+
+  UIWidget
+    id: balance2
+    anchors.top: sharta1.bottom
+    anchors.left: sharta2.right
+    margin-left: 15
+    margin-top: 10
+    !text: tr('Bank Balance:')
+
+  Item
+    id: item2
+    size: 22 22
+    anchors.left: sharta2.right
+    anchors.top: balance2.bottom
+    margin-top: 8
+    margin-left: 15
+    focusable: false
+    virtual: true
+    tooltip: Gold Coin
+
+  Panel
+    id: textEdit3
+    image-source: /images/ui/panel_flat
+    image-border: 6
+    padding: 3
+    image-color: #cccccc
+    size: 109 22
+    anchors.left: item2.right
+    anchors.top: balance2.bottom
+    font: verdana-11px-rounded
+    text-align: center
+    margin-top: 8
+    margin-left: 5
+    editable: false
+    color: yellow
+
+  Button
+    id: WithdrawButton
+    !text: tr('Withdraw')
+    size: 65 20
+    anchors.left: sharta2.right
+    anchors.top: item2.bottom
+    margin-top: 7
+    margin-left: 15
+    focusable: false
+
+  Button
+    id: TransferButton
+    !text: tr('Transfer')
+    size: 65 20
+    anchors.left: WithdrawButton.right
+    anchors.top: item2.bottom
+    margin-top: 7
+    margin-left: 6
+    focusable: false
+
+  HorizontalSeparator
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-bottom: 20
+
+  Button
+    id: close
+    !text: tr('Close')
+    size: 100 20
+    anchors.horizontalCenter: parent.horizontalCenter
+    anchors.bottom: parent.bottom
+    margin-bottom: -6
+    focusable: false

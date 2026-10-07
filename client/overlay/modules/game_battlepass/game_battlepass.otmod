@@ -1,0 +1,12 @@
+Module
+  name: game_battlepass
+  description: Game pass
+  author: Oskar
+  website: GG 9988363
+  scripts: [ game_battlepass ]
+  
+  sandboxed: true
+  autoload: true
+  
+  @onLoad: onLoad()
+  @onUnload: onUnload()

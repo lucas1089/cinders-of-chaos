@@ -1,0 +1,112 @@
+ObjectiveCheckBox < UICheckBox
+  anchors.left: parent.left
+  anchors.right: parent.right
+  size: 21 20
+  font: verdana-11px-rounded
+  text-align: left
+  text-offset: 24 2
+  color: #dfdfdf
+  image-color: #dfdfdfff
+  image-rect: 0 0 21 20
+  image-source: /images/dungeons/checkboxes
+  phantom: true
+  text-wrap: true
+  opacity: 1.0
+
+  $hover !disabled:
+    color: #ffffff
+
+  $!checked:
+    image-clip: 0 0 21 20
+
+  $checked:
+    image-clip: 21 0 21 20
+
+  $disabled:
+    image-color: #dfdfdf88
+    color: #dfdfdf88
+    opacity: 0.8
+
+Panel
+  anchors.bottom: parent.bottom
+  anchors.left: parent.left
+  size: 305 235
+
+  Label
+    anchors.top: parent.top
+    anchors.left: parent.left
+    text: Objectives
+    color: #FFA500
+    width: 75
+    font: verdana-11px-rounded
+
+  ObjectiveCheckBox
+    id: mainObjective
+    anchors.top: prev.bottom
+    margin-top: 5
+
+  ObjectiveCheckBox
+    id: bossObjective
+    anchors.top: prev.bottom
+    margin-top: 5
+
+  Panel
+    id: bonusObjectives
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 5
+    height: 65
+
+    Label
+      anchors.top: parent.top
+      anchors.left: parent.left
+      text: Bonus Objectives
+      color: #FFA500
+      font: verdana-11px-rounded
+
+  Label
+    id: monstersLeft
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 5
+    font: verdana-11px-rounded
+    text-wrap: true
+
+  Label
+    id: timeLeft
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 5
+    font: verdana-11px-rounded
+    text-wrap: true
+
+  Panel
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    margin-bottom: 13
+    margin-left: 16
+    image-source: /images/dungeons/killcounter_bg
+
+  UIImageView
+    id: bar
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    margin-bottom: 13
+    margin-left: 0
+    image-source: /images/dungeons/killcounter_bar_progess
+    image-offset: 16 24
+    phantom: true
+    interactive: false
+
+  Panel
+    id: label
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    image-source: /images/dungeons/killcounter_border
+    font: verdana-11px-rounded
+    text-align: center
+    text-offset: 0 14
+    text: 80%

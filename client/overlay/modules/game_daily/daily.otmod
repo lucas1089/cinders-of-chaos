@@ -1,0 +1,9 @@
+Module
+  name: game_daily
+  author: Aboamen
+  sandboxed: true
+  autoload: true
+  scripts: [ daily ]
+  dependencies: [ game_interface ]
+  @onLoad: init()
+  @onUnload: terminate()

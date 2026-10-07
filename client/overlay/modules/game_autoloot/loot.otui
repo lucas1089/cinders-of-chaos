@@ -1,0 +1,132 @@
+RowListLoot < UIWidget
+  id: rowLoot
+  size: 50 55
+  margin: 2
+  background-color: #00000022
+
+  Item
+    id: rowItem
+    anchors.verticalCenter: parent.verticalCenter
+    anchors.left: parent.left
+    virtual: true
+    margin-left: 8
+
+  Label
+    id: rowItemName
+    anchors.verticalCenter: parent.verticalCenter
+    anchors.left: rowItem.right
+    margin-left: 10
+    text-auto-resize: true
+    !text: tr('Empty Slot')
+
+  Button
+    id: rowButtonRemove
+    width: 15
+    height: 15
+    anchors.verticalCenter: parent.verticalCenter
+    anchors.right: parent.right
+    margin-right: 10
+    color: red
+    !text: tr('X')
+
+MainWindow
+  size: 450 325
+  !text: tr('AutoLoot')
+  &focusable: false
+  @onEscape: modules.game_autoloot.toggle()
+
+  ScrollablePanel
+    id: listLoot
+    size: 240 255
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-bottom: 10
+    padding: 5
+    vertical-scrollbar: lootScrollBar
+    focusable: false
+    image-source: /images/ui/menubox	
+    image-border: 4
+    image-border-top: 29
+    image-border-bottom: 29
+    layout:
+      type: grid
+      flow: true
+      cell-size: 218 55
+
+  VerticalScrollBar
+    id: lootScrollBar
+    anchors.top: listLoot.top
+    anchors.bottom: listLoot.bottom
+    anchors.right: listLoot.right
+    margin: 2 3 3 0
+    step: 50
+    pixels-scroll: true
+
+  VerticalSeparator
+    anchors.top: listLoot.top
+    anchors.bottom: listLoot.bottom
+    anchors.right: listLoot.right
+    margin-right: -7
+
+  Label
+    id: lbl
+    anchors.top: parent.top
+    anchors.left: lootScrollBar.right
+    margin-left: 20
+    !text: tr('Write an item SID or name:')
+
+  TextEdit
+    id: editItemName
+    width: 160
+    anchors.top: lbl.bottom
+    anchors.left: lbl.left
+    margin: 10 0 0 0
+    placeholder: demon shield
+
+  Button
+    id: add
+    width: 160
+    height: 35
+    anchors.top: editItemName.bottom
+    anchors.left: lbl.left
+    margin: 10 0 0 0
+    color: green
+    font: verdana-11px-rounded
+    !text: tr(' Add to list')
+    @onClick: addLoot(true)
+
+  Button
+    id: clear
+    width: 160
+    height: 35
+    anchors.top: add.bottom
+    anchors.left: lbl.left
+    margin: 10 0 0 0
+    color: red
+    !text: tr('Clear List')
+    @onClick: removeListLoot()
+
+  Label
+    id: slots
+    anchors.top: clear.bottom
+    anchors.left: clear.left
+    font: verdana-11px-rounded
+    margin: 10 0 0 0
+    text-auto-resize: true
+    !text: tr('Current Slots: 3/10')
+    color: orange
+
+  HorizontalSeparator
+    margin-bottom: 8
+    anchors.bottom: next.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+
+  Button
+    id: btnClose
+    !text: tr('Close')
+    size: 100 20
+    anchors.horizontalCenter: parent.horizontalCenter
+    anchors.bottom: parent.bottom
+    margin-bottom: -6
+    @onClick: modules.game_autoloot.toggle()

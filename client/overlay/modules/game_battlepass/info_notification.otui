@@ -1,0 +1,28 @@
+MainWindow
+  id: waitingWindow
+  text: Premium battlepass notification
+  size: 300 200
+  @onEscape: modules.game_battlepass.m_BattlepassFunctions.destroyHover()
+
+  UIWidget
+    anchors.top: parent.top
+    anchors.horizontalcenter: parent.horizontalcenter
+    size: 45 85
+    image-source: images/free_pass
+
+  Label
+    id: description
+    anchors.top: prev.bottom
+    anchors.bottom: next.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-wrap: true
+    text-align: center
+    text: Your 
+
+  Button
+    text: Close
+    anchors.bottom: parent.bottom
+    anchors.horizontalcenter: parent.horizontalcenter
+    size: 80 26
+    @onClick: modules.game_battlepass.m_BattlepassFunctions.destroyHover()

@@ -1,0 +1,24 @@
+UIWindow
+  id: ConfirmWindow
+  size: 180 30
+  text-align: top
+  text-offset: 0 10
+  anchors.horizontalCenter: parent.horizontalCenter
+  anchors.verticalCenter: parent.verticalCenter
+  draggable: false
+  margin-bottom: 70
+  image-source: /images/ui/tooltip
+  image-border: 10
+
+  Label
+    id: text
+    anchors.centerIn: parent
+    text: Stashing all items
+    text-auto-resize: true
+
+  Label
+    id: points
+    anchors.left: text.right
+    anchors.bottom: text.bottom
+    margin-left: 3
+    text: ...

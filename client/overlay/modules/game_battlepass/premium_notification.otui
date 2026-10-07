@@ -1,0 +1,51 @@
+MainWindow
+  id: waitingWindow
+  text: Buy premium battlepass
+  size: 300 250
+  @onEscape: modules.game_battlepass.m_BattlepassFunctions.destroyHover()
+
+  UIWidget
+    anchors.top: parent.top
+    anchors.horizontalcenter: parent.horizontalcenter
+    size: 45 85
+    image-source: images/Paid_Pass
+
+  Label
+    id: description
+    anchors.top: prev.bottom
+    anchors.bottom: next.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-wrap: true
+    text-align: center
+
+  Button
+    text: Cancel
+    anchors.bottom: parent.bottom
+    anchors.left: parent.horizontalcenter
+    margin-left: 4
+    size: 80 26
+    @onClick: modules.game_battlepass.m_BattlepassFunctions.destroyHover()
+
+  UIWidget
+    text: Accept
+    tooltip: I Accept if i already completed levels i cannot receive premium rewards of previous levels.
+    anchors.bottom: prev.bottom
+    color: #ffae00
+    anchors.right: prev.left
+    margin-right: 8
+    size: 80 26
+    @onClick: modules.game_battlepass.m_BattlepassFunctions.acceptPremiumNotification()
+    image-source: /images/ui/button_top_blink
+    image-clip: 0 0 26 26
+    image-border: 2
+    image-color: #FFFFFF
+    change-cursor-image: true
+    cursor: pointer
+    $hover:
+      image-clip: 26 0 26 26
+    $pressed:
+      image-clip: 52 0 26 26
+    $disabled:
+      image-clip: 52 0 26 26
+      image-color: #868686

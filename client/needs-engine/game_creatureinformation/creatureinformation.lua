@@ -1,0 +1,332 @@
+controller = Controller:new()
+
+if not g_gameConfig.isDrawingInformationByWidget() then
+    return
+end
+
+g_logger.warning("Creature Information By Widget is enabled. (performance may be depreciated)");
+
+local devMode = false
+local debug = false
+
+local COVERED_COLOR = '#606060'
+local NPC_COLOR = '#66CCFF'
+
+local function vitalAnimDuration(delta)
+    local speed = modules.client_options and modules.client_options.getOption('uiBarAnimationSpeed') or 100
+    local factor = 100 / math.max(speed, 1)
+    return math.max(80, math.floor(math.min(1800, math.max(550, 420 + math.abs(delta) * 18)) * factor + 0.5))
+end
+
+local function setAnimatedPercent(bar, targetPercent, optionKey, firstPaint)
+    local animate = false
+    if modules.client_options and modules.client_options.isBarAnimationEnabled then
+        animate = modules.client_options.isBarAnimationEnabled(optionKey)
+    elseif modules.client_options and modules.client_options.getOption then
+        animate = modules.client_options.getOption(optionKey) ~= false
+    end
+    if animate and not firstPaint and g_effects and g_effects.animatePercent then
+        local from = bar.getPercent and bar:getPercent() or targetPercent
+        g_effects.animatePercent(bar, targetPercent, vitalAnimDuration(targetPercent - from))
+    else
+        if g_effects and g_effects.cancelPercent then
+            g_effects.cancelPercent(bar)
+        end
+        bar:setPercent(targetPercent)
+    end
+    bar._animReady = true
+end
+
+local function updateHarmonyWidget(creature, harmony)
+    local widget = creature:getWidgetInformation()
+    if not widget or not widget.harmonyBar then
+        return
+    end
+
+    harmony = math.max(0, math.min(5, harmony or 0))
+    for i = 1, 5 do
+        local segment = widget.harmonyBar:getChildByIndex(i)
+        if segment then
+            segment:setOn(i <= harmony)
+        end
+    end
+end
+
+local function updateSereneWidget(creature, serene)
+    local widget = creature:getWidgetInformation()
+    if widget and widget.sereneBar then
+        widget.sereneBar:setOn(serene == true)
+    end
+end
+
+local function isHarmonyHudEnabled()
+    return isMapHarmonyBarEnabled()
+end
+
+local function shouldShowMonkBars(creature)
+    return creature:isLocalPlayer() and isMonkPlayer(creature) and isHarmonyHudEnabled()
+end
+
+local function refreshMonkBars(creature)
+    local widget = creature:getWidgetInformation()
+    if not widget then
+        return
+    end
+
+    local visible = shouldShowMonkBars(creature)
+    if widget.harmonyBar then
+        widget.harmonyBar:setVisible(visible)
+    end
+    if widget.sereneBar then
+        widget.sereneBar:setVisible(visible)
+    end
+
+    if visible then
+        updateHarmonyWidget(creature, creature:getHarmony())
+        updateSereneWidget(creature, creature:isSerene())
+    end
+end
+
+local function onHarmonyChange(creature, harmony)
+    if not creature:isLocalPlayer() then
+        return
+    end
+    refreshMonkBars(creature)
+    updateHarmonyWidget(creature, harmony)
+end
+
+local function onSereneChange(creature, serene)
+    if not creature:isLocalPlayer() then
+        return
+    end
+    refreshMonkBars(creature)
+    updateSereneWidget(creature, serene)
+end
+
+local function onVocationChange(creature)
+    if not creature:isLocalPlayer() then
+        return
+    end
+    refreshMonkBars(creature)
+end
+
+local function onCreate(creature)
+    local widget = g_ui.loadUI('creatureinformation')
+
+    if debug then
+        widget:setBorderColor('red')
+        widget:setBorderWidth(2)
+        widget.icons:setBorderColor('yellow')
+        widget.icons:setBorderWidth(2)
+    end
+
+    widget.manaBar:setVisible(creature:isLocalPlayer())
+
+    creature:setWidgetInformation(widget)
+    refreshMonkBars(creature)
+end
+
+local function onHealthPercentChange(creature, healthPercent, oldHealthPercent)
+    local gameMapPanel = modules.game_interface.getMapPanel()
+    local widget = creature:getWidgetInformation()
+    local color = nil
+
+    if healthPercent > 92 then
+        color = '#00BC00';
+    elseif healthPercent > 60 then
+        color = '#50A150';
+    elseif healthPercent > 30 then
+        color = '#A1A100';
+    elseif healthPercent > 8 then
+        color = '#BF0A0A';
+    elseif healthPercent > 3 then
+        color = '#910F0F';
+    else
+        color = '#850C0F'
+    end
+
+    widget.name:setColor(color)
+    widget.lifeBar:setBackgroundColor(color)
+    widget.lifeBar:setVisible(gameMapPanel:isDrawingHealthBars())
+    setAnimatedPercent(widget.lifeBar, healthPercent, 'showAnimationHudHealthBar',
+        not widget.lifeBar._animReady or (oldHealthPercent and oldHealthPercent > 100))
+end
+
+local function onManaChange(player, mana, maxMana, oldMana, oldMaxMana)
+    local gameMapPanel = modules.game_interface.getMapPanel()
+    local widget = player:getWidgetInformation()
+
+    local targetPercent = 1
+    if player:getMaxMana() > 1 then
+        targetPercent = (mana / maxMana) * 100
+    end
+
+    setAnimatedPercent(widget.manaBar, targetPercent, 'showAnimationHudManaBar',
+        not widget.manaBar._animReady or (oldMaxMana and oldMaxMana == 0))
+    widget.manaBar:setVisible(gameMapPanel:isDrawingManaBar())
+end
+
+local function onChangeName(creature, name, oldName)
+    local gameMapPanel = modules.game_interface.getMapPanel()
+    local infoWidget = creature:getWidgetInformation()
+
+    if g_game.getFeature(GameBlueNpcNameColor) and creature:isNpc() and creature:isFullHealth() then
+        infoWidget.name:setColor(NPC_COLOR)
+    end
+
+    infoWidget.name:setText(name)
+    if creature:isLocalPlayer() and gameMapPanel.isDrawingPlayerNames then
+        infoWidget.name:setVisible(gameMapPanel:isDrawingPlayerNames())
+    else
+        infoWidget.name:setVisible(gameMapPanel:isDrawingNames())
+    end
+end
+
+local function onCovered(creature, isCovered, oldIsCovered)
+    local infoWidget = creature:getWidgetInformation()
+    if isCovered then
+        infoWidget.name:setColor(COVERED_COLOR)
+        infoWidget.lifeBar:setBackgroundColor(COVERED_COLOR)
+    else
+        onHealthPercentChange(creature, creature:getHealthPercent())
+    end
+end
+
+local function onOutfitChange(creature, outfit, oldOutfit)
+    local infoWidget = creature:getWidgetInformation()
+    if not infoWidget then
+        return
+    end
+
+    if g_gameConfig.isAdjustCreatureInformationBasedCropSize() then
+        infoWidget:setMarginTop(-creature:getExactSize())
+    end
+end
+
+local function blinkIcon(icon, ticks)
+    if icon:isDestroyed() then
+        return
+    end
+
+    icon:setVisible(not icon:isVisible())
+
+    scheduleEvent(function()
+        blinkIcon(icon, ticks)
+    end, ticks)
+end
+
+local function setIcon(creature, id, getIconPath, typeIcon)
+    local setParentAnchor = function(w)
+        w:addAnchor(AnchorTop, 'parent', AnchorTop)
+        w:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+    end
+
+    local infoWidget = creature:getWidgetInformation()
+    local oldIcon = infoWidget.icons[typeIcon]
+
+    if oldIcon then
+        local index = oldIcon:getChildIndex()
+        oldIcon:destroy()
+
+        if index == 1 and infoWidget.icons:hasChildren() then
+            setParentAnchor(infoWidget.icons:getChildByIndex(index))
+        end
+    end
+
+    local hasChildren = infoWidget.icons:hasChildren()
+    local path, blink = getIconPath(id)
+
+    if path == nil then
+        if not hasChildren then
+            infoWidget.icons:setVisible(false)
+        end
+        return
+    end
+
+    local icon = g_ui.createWidget('IconInformation', infoWidget.icons)
+    icon:setId(typeIcon)
+    icon:setImageSource(path)
+
+    if not hasChildren then
+        setParentAnchor(icon)
+        infoWidget.icons:setVisible(true)
+    end
+
+    if blink then
+        blinkIcon(icon, g_gameConfig.getShieldBlinkTicks())
+    end
+end
+
+local creatureEvents = {
+    onCreate = onCreate,
+    onOutfitChange = onOutfitChange,
+    onCovered = onCovered,
+    onHealthPercentChange = onHealthPercentChange,
+    onChangeName = onChangeName,
+    onTypeChange = function(creature, id) setIcon(creature, id, getTypeImagePath, 'type') end,
+    onIconChange = function(creature, id) setIcon(creature, id, getIconImagePath, 'icon') end,
+    onSkullChange = function(creature, id) setIcon(creature, id, getSkullImagePath, 'skull') end,
+    onShieldChange = function(creature, id) setIcon(creature, id, getShieldImagePathAndBlink, 'shield') end,
+    onEmblemChange = function(creature, id) setIcon(creature, id, getEmblemImagePath, 'emblem') end,
+};
+
+function toggleInformation()
+    local localPlayer = g_game.getLocalPlayer()
+    if not localPlayer then return end
+
+    local gameMapPanel = modules.game_interface.getMapPanel()
+
+    localPlayer:getWidgetInformation().manaBar:setVisible(gameMapPanel:isDrawingManaBar())
+    refreshMonkBars(localPlayer)
+
+    local drawPlayerNames = gameMapPanel.isDrawingPlayerNames and gameMapPanel:isDrawingPlayerNames() or gameMapPanel:isDrawingNames()
+    local drawPlayerBars = gameMapPanel.isDrawingPlayerBars and gameMapPanel:isDrawingPlayerBars() or gameMapPanel:isDrawingHealthBars()
+
+    local spectators = modules.game_interface.getMapPanel():getSpectators()
+    for _, creature in ipairs(spectators) do
+        local info = creature:getWidgetInformation()
+        if creature:isLocalPlayer() then
+            info.name:setVisible(drawPlayerNames)
+            info.lifeBar:setVisible(drawPlayerBars)
+            refreshMonkBars(creature)
+        else
+            info.name:setVisible(gameMapPanel:isDrawingNames())
+            info.lifeBar:setVisible(gameMapPanel:isDrawingHealthBars())
+        end
+    end
+end
+
+function controller:onInit()
+    controller:registerEvents(Creature, creatureEvents)
+    controller:registerEvents(LocalPlayer, {
+        onManaChange = onManaChange,
+        onHarmonyChange = onHarmonyChange,
+        onSereneChange = onSereneChange,
+        onVocationChange = onVocationChange
+    })
+end
+
+if devMode then
+    function controller:onGameStart()
+        local spectators = modules.game_interface.getMapPanel():getSpectators()
+        for _, creature in ipairs(spectators) do
+            onCreate(creature)
+
+            if creature:isLocalPlayer() then
+                onManaChange(creature, creature:getMana(), creature:getMaxMana(), creature:getMana(),
+                    creature:getMaxMana())
+            end
+
+            onOutfitChange(creature, creature:getOutfit())
+            onCovered(creature, creature:isCovered())
+            onHealthPercentChange(creature, creature:getHealthPercent(), creature:getHealthPercent())
+            onChangeName(creature, creature:getName())
+
+            creatureEvents.onTypeChange(creature, creature:getType())
+            creatureEvents.onIconChange(creature, creature:getIcon())
+            creatureEvents.onSkullChange(creature, creature:getSkull())
+            creatureEvents.onShieldChange(creature, creature:getShield())
+            creatureEvents.onEmblemChange(creature, creature:getEmblem())
+        end
+    end
+end
