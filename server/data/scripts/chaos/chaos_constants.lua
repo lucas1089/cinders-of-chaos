@@ -24,6 +24,7 @@ Chaos = {}
 -- None of the values below collide with those.
 ChaosOpcodes = {
 	bank = 60,
+	monsterbar = 125,
 	passivetree = 65,
 	notifications = 79,
 	dungeons = 109,
