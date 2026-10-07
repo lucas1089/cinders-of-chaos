@@ -2,7 +2,18 @@
 -- Loaded by every chaos spell with: dofile('data/spells/scripts/chaos/_common.lua')
 -- (path is relative to the server working dir, same convention as the rest of data/).
 if not Fx or not FxMissile then
-	dofile('data/spells/scripts/chaos/_fx_fallback.lua')
+	pcall(dofile, 'data/lib/chaos_fx.lua') -- real ids, once the merged dat/spr is in use
+	if not Fx or not FxMissile then
+		dofile('data/spells/scripts/chaos/_fx_fallback.lua')
+	end
+end
+-- the spells use a few names the effect catalog spells differently
+if ChaosFx then
+	ChaosFx.aura_ring = ChaosFx.aura_ring or ChaosFx.arcane_aura
+	ChaosFx.poison_cloud = ChaosFx.poison_cloud or ChaosFx.poison_burst
+end
+if ChaosFxMissile then
+	ChaosFxMissile.holy_arrow = ChaosFxMissile.holy_arrow or ChaosFxMissile.holy_bolt
 end
 if ChaosSpell then
 	return

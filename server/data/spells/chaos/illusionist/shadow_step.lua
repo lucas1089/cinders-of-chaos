@@ -16,6 +16,7 @@ function onCastSpell(creature, variant, isHotkey)
 	if #spots == 0 then
 		return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHROOM)
 	end
+	ChaosSpell.shoot(from, tpos, "shadow_bolt", CONST_ANI_DEATH)
 	ChaosSpell.fx(from, "shadow_smoke", CONST_ME_MORTAREA)
 	player:teleportTo(spots[1].pos)
 	ChaosSpell.fx(spots[1].pos, "shadow_smoke", CONST_ME_MORTAREA)
