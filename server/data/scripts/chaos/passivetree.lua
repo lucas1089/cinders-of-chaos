@@ -15,10 +15,9 @@
 -- The server validates every save: known ids, no duplicates, every node connected to the root
 -- (node 1) through other allocated nodes, and #nodes <= points the player owns.
 --
--- NOT implemented: applying the node bonuses to combat/stats. ChaosPassiveTree.getBonuses(player)
--- returns the summed customStats (e.g. {strength=3, incrementFire=10}); wire those into your
--- damage/absorb/skill code, or register appliers in ChaosPassiveTree.appliers (called after
--- each save and at login). See README.
+-- The node bonuses are applied by passivetree_effects.lua through ChaosPassiveTree.listeners
+-- (called after each save, reset and at login with the summed customStats). You can also read
+-- ChaosPassiveTree.getBonuses(player) or register per-stat appliers in ChaosPassiveTree.appliers.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -163,15 +162,22 @@ function ChaosPassiveTree.getBonuses(player)
 	return bonuses
 end
 
+-- last computed bonuses per player id (read by passivetree_effects.lua during combat)
+ChaosPassiveCache = ChaosPassiveCache or {}
+-- listeners[i] = function(player, bonuses) : called once after every apply (login, save, reset)
+ChaosPassiveTree.listeners = ChaosPassiveTree.listeners or {}
+
 local function applyBonuses(player)
-	if next(ChaosPassiveTree.appliers) == nil then
-		return
-	end
 	local bonuses = ChaosPassiveTree.getBonuses(player)
+	ChaosPassiveCache[player:getId()] = bonuses
 	for stat, applier in pairs(ChaosPassiveTree.appliers) do
 		applier(player, bonuses[stat] or 0)
 	end
+	for _, listener in ipairs(ChaosPassiveTree.listeners) do
+		listener(player, bonuses)
+	end
 end
+ChaosPassiveTree.apply = applyBonuses
 
 local function handleSave(player, data)
 	if type(data) ~= "table" then

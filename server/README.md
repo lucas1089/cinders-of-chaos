@@ -183,3 +183,13 @@ The server also pushes `info` for tiered monsters to players within about 10 til
 
 ## Custom spells and spell effects
 36 spells (`data/spells/chaos/`, installer `tools/register_spells.py`, table in `data/spells/README.md`) and 43 extra magic effects plus 10 projectiles (`data/lib/chaos_fx.lua`, catalog `data/spells/effects_catalog.csv`, merge commands in `data/spells/README_FX.md`). The spells load `chaos_fx.lua` themselves and fall back to standard effects if it is missing, so they work before the merged dat/spr is in use; the custom effects show only with that merged pair on the client. Effect ids above 255 work because the base server sends them as 16 bits and the client profile enables `GameMagicEffectU16`. Not run on a server. The client spell list and action bar need entries and icons for the new spells (see `data/spells/README.md`).
+
+## Passive tree effects (`passivetree_effects.lua`)
+The tree now has an effect: after every save, reset and login the summed node stats are applied.
+- **Character stats** (strength, intelligence, dexterity, vitality, spirit, wisdom): added on top of the stat window, capped per stat (`charStatCap`) because the engine formulas are percentages (a dexterity above 100 would make the player take no damage). One node in the data carries 239 strength; the cap contains it. A 5 s check re-adds the bonus if the stat window rewrites the value.
+- **Skills, magic level, critical hit, leech:** a permanent attribute condition (sub ids 7200 to 7219).
+- **Absorbs:** the second absorb storage per damage type (977562 to 977575) that the stock absorb event already reads; `absorbAllElements` adds to the nine elements; capped at 80% from the tree.
+- **Damage dealt:** `incrementX` for the type, `multiIncrement` for all elements, `incrementHealth` for healing; the event is registered on the target when a tree player attacks it.
+- **Experience, loot, speed:** experience multiplier, the item-find storage that `loot.lua` reads (loot plus rarity loot), and `changeSpeed` by the difference (capped at 80).
+- The conversion factors from node value to game value are in `cfg` at the top of the file (for example 1 point of experience = 0.1%), and the client tooltip shows the same numbers.
+- `server/tests/passivetree_effects_test.lua` checks the maths and the apply/remove logic against a mocked engine API and runs in CI. It does not prove the real API calls (`Condition`, `setCharacterStat`, `changeSpeed`, `onTargetCombat`) behave as assumed: that needs a server run. Speed bonuses are not restored after a death or a speed-resetting spell until the next save or login.

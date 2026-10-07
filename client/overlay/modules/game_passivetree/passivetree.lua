@@ -1446,19 +1446,19 @@ function getCustomStatString(t)
 	end
 
 	if t.experience then
-		table.insert(texts, string.format("+%.1f Experience Gained.", t.experience/100))
+		table.insert(texts, string.format("+%.1f%% Experience Gained.", t.experience * 0.1))
 	end
 
 	if t.loot then
-		table.insert(texts, string.format("+%.1f Loot Increased.", t.loot/100))
+		table.insert(texts, string.format("+%.1f%% Loot Increased.", t.loot * 0.2))
 	end
 
 	if t.rarityLoot then
-		table.insert(texts, string.format("+%.1f Rarity Loot Increased.", t.rarityLoot/2))
+		table.insert(texts, string.format("+%.1f%% Rarity Loot Increased.", t.rarityLoot * 1.0))
 	end
 
 	if t.speed then
-		table.insert(texts, string.format("+%.1f Increased Speed.", t.speed/2))
+		table.insert(texts, string.format("+%.1f Increased Speed.", t.speed / 10))
 	end
 
 	if t.swordSkill then
