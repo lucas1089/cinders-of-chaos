@@ -13,6 +13,7 @@ local TIERS = {
 
 local window, current
 local tierOf = {}
+local modsOf = {}
 
 local function send(action, data)
   local protocol = g_game.getProtocolGame()
@@ -21,7 +22,7 @@ local function send(action, data)
   end
 end
 
-local function paint(creature, tier, label)
+local function paint(creature, tier, label, mods)
   if not window or creature ~= current then
     return
   end
@@ -31,6 +32,7 @@ local function paint(creature, tier, label)
   local name = window:getChildById('name')
   name:setText((label and label ~= '' and (label .. ' ') or t.label) .. creature:getName())
   name:setColor(t.text)
+  window:getChildById('mods'):setText(mods and #mods > 0 and table.concat(mods, '  -  ') or '')
 end
 
 local function updateHealth(creature, percent)
@@ -54,7 +56,7 @@ local function onAttackingCreatureChange(creature)
     return
   end
   current = creature
-  paint(creature, tierOf[creature:getId()] or 'normal')
+  paint(creature, tierOf[creature:getId()] or 'normal', nil, modsOf[creature:getId()])
   updateHealth(creature, creature:getHealthPercent())
   window:show()
   if not tierOf[creature:getId()] then
@@ -68,13 +70,15 @@ local function onExtendedOpcode(protocol, opcode, buffer)
     return
   end
   tierOf[msg.data.cid] = msg.data.tier
+  modsOf[msg.data.cid] = msg.data.mods
   if current and current:getId() == msg.data.cid then
-    paint(current, msg.data.tier, msg.data.label)
+    paint(current, msg.data.tier, msg.data.label, msg.data.mods)
   end
 end
 
 local function onDisappear(creature)
   tierOf[creature:getId()] = nil
+  modsOf[creature:getId()] = nil
   if creature == current then
     current = nil
     if window then
@@ -85,6 +89,7 @@ end
 
 local function onGameEnd()
   tierOf = {}
+  modsOf = {}
   current = nil
   if window then
     window:hide()

@@ -1,0 +1,10 @@
+Module
+  name: game_chaosshaders
+  description: Outfit shaders used by the server (monster modifiers, store)
+  author: Chaos
+  sandboxed: true
+  autoload: true
+  autoload-priority: 500
+  scripts: [ chaosshaders ]
+  @onLoad: init()
+  @onUnload: terminate()

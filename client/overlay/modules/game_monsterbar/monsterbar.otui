@@ -1,6 +1,6 @@
 Panel
   id: monsterBar
-  size: 420 64
+  size: 420 80
   anchors.top: parent.top
   anchors.horizontalCenter: parent.horizontalCenter
   margin-top: 8
@@ -41,4 +41,14 @@ Panel
     font: verdana-11px-antialised
     text-auto-resize: true
     color: #ffffff
+    phantom: true
+
+  Label
+    id: mods
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 62
+    font: verdana-11px-antialised
+    text-auto-resize: true
+    color: #8c8070
     phantom: true
