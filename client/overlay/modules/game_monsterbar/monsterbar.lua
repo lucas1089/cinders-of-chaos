@@ -35,6 +35,21 @@ local function paint(creature, tier, label, mods)
   window:getChildById('mods'):setText(mods and #mods > 0 and table.concat(mods, '  -  ') or '')
 end
 
+-- in-world label: modifiers on a line above the name, name coloured by tier
+local function labelCreature(creature, tier, mods)
+  if not creature then
+    return
+  end
+  local t = TIERS[tier]
+  if not t or tier == 'normal' then
+    return
+  end
+  creature:setInformationColor(t.text)
+  if mods and #mods > 0 then
+    creature:setTitle(table.concat(mods, ' - '), 'verdana-11px-antialised', t.text)
+  end
+end
+
 local function updateHealth(creature, percent)
   if not window or creature ~= current then
     return
@@ -71,14 +86,21 @@ local function onExtendedOpcode(protocol, opcode, buffer)
   end
   tierOf[msg.data.cid] = msg.data.tier
   modsOf[msg.data.cid] = msg.data.mods
+  labelCreature(g_map.getCreatureById(msg.data.cid), msg.data.tier, msg.data.mods)
   if current and current:getId() == msg.data.cid then
     paint(current, msg.data.tier, msg.data.label, msg.data.mods)
   end
 end
 
+local function onAppear(creature)
+  local id = creature:getId()
+  if tierOf[id] then
+    labelCreature(creature, tierOf[id], modsOf[id])
+  end
+end
+
 local function onDisappear(creature)
-  tierOf[creature:getId()] = nil
-  modsOf[creature:getId()] = nil
+  -- tier info stays cached (a monster that walks out of view and back keeps its label)
   if creature == current then
     current = nil
     if window then
@@ -100,12 +122,12 @@ function init()
   window = g_ui.loadUI('monsterbar', modules.game_interface.getMapPanel())
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
   connect(g_game, { onAttackingCreatureChange = onAttackingCreatureChange, onGameEnd = onGameEnd })
-  connect(Creature, { onHealthPercentChange = updateHealth, onDisappear = onDisappear })
+  connect(Creature, { onHealthPercentChange = updateHealth, onAppear = onAppear, onDisappear = onDisappear })
 end
 
 function terminate()
   disconnect(g_game, { onAttackingCreatureChange = onAttackingCreatureChange, onGameEnd = onGameEnd })
-  disconnect(Creature, { onHealthPercentChange = updateHealth, onDisappear = onDisappear })
+  disconnect(Creature, { onHealthPercentChange = updateHealth, onAppear = onAppear, onDisappear = onDisappear })
   ProtocolGame.unregisterExtendedOpcode(OPCODE)
   if window then
     window:destroy()

@@ -46,3 +46,5 @@ The theme (`client_chaos_theme`, `client_chaos_topbar`, `client_background`, `da
 
 ## Outfit shaders for monsters (new)
 `game_chaosshaders` registers the 17 shader names the server sends (same list as the Exodus client) using the files in `overlay/data/shaders/`. The monster modifiers in `monster_tiers.lua` pick one of them per monster, and the monster bar lists the modifier names under the bar. Untested; it relies on Astra's `g_shaders.createOutfitShader(name, vertex, fragment)`, which exists in Astra's `game_shaders`.
+
+In the world a tiered monster's name is coloured by tier and its modifiers are drawn on a line above the name (`Creature:setTitle` and `setInformationColor` of the Astra engine); on the bar the modifiers sit under the bar.

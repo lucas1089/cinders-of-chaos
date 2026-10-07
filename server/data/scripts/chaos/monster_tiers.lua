@@ -203,6 +203,26 @@ local function applyMods(monster, mods)
 	monster:registerEvent("ChaosModTaken")
 end
 
+-- one "info" message for a creature (used for the monster bar query and for the in-world labels)
+local function sendInfo(player, creature)
+	local cid = creature:getId()
+	local tier = ChaosTierOf(creature)
+	local t = ChaosTiers[tier]
+	local s = state[cid]
+	local names = {}
+	for _, key in ipairs(s and s.mods or {}) do
+		names[#names + 1] = ChaosMods[key].name
+	end
+	Chaos.send(player, OPCODE, "info", {
+		cid = cid,
+		tier = tier,
+		name = creature:getName(),
+		label = (t and tier ~= "boss") and t.label or nil,
+		mods = names,
+		mult = t and {hp = t.hp, damage = t.damage, xp = t.xp} or nil
+	})
+end
+
 local function tick(id)
 	local monster = Monster(id)
 	local s = state[id]
@@ -213,6 +233,16 @@ local function tick(id)
 	local key = s.mods[(s.step - 1) % #s.mods + 1]
 	local m = ChaosMods[key]
 	monster:getPosition():sendMagicEffect(m.effect)
+	-- push the tier and modifiers to players in view (resent every 15 s) so the client can label the monster
+	s.sent = s.sent or {}
+	local now = os.time()
+	for _, p in ipairs(Game.getSpectators(monster:getPosition(), false, true, 10, 10, 8, 8)) do
+		local pid = p:getId()
+		if not s.sent[pid] or now - s.sent[pid] >= 15 then
+			s.sent[pid] = now
+			sendInfo(p, monster)
+		end
+	end
 	for _, k in ipairs(s.mods) do
 		local mod = ChaosMods[k]
 		if mod.onTick then
@@ -428,20 +458,6 @@ function query.onExtendedOpcode(player, opcode, buffer)
 	if player:getPosition():getDistance(creature:getPosition()) > 15 then
 		return
 	end
-	local tier = ChaosTierOf(creature)
-	local t = ChaosTiers[tier]
-	local s = state[cid]
-	local names = {}
-	for _, key in ipairs(s and s.mods or {}) do
-		names[#names + 1] = ChaosMods[key].name
-	end
-	Chaos.send(player, OPCODE, "info", {
-		cid = cid,
-		tier = tier,
-		name = creature:getName(),
-		label = (t and tier ~= "boss") and t.label or nil,
-		mods = names,
-		mult = t and {hp = t.hp, damage = t.damage, xp = t.xp} or nil
-	})
+	sendInfo(player, creature)
 end
 query:register()

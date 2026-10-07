@@ -52,13 +52,15 @@ def frame(tier):
                 d.polygon([(bx, 30 - k * 2), (bx + dx * 7, 26 - k * 2), (bx + dx * 4, 34)], fill=light + (255,), outline=dark + (255,))
         d.ellipse((cx - 7, 24, cx + 7, 38), fill=dark + (255,), outline=light + (255,))
     elif orn == 'flame':
-        random.seed(7)
+        # symmetric flames along the top rim, kept inside the canvas and clear of the name text
+        heights = [10, 14, 9, 13, 8, 12]
         for dx in (-1, 1):
-            for k in range(6):
-                bx = cx + dx * (160 + k * 12)
-                h = random.randint(8, 16)
+            for k, h in enumerate(heights):
+                bx = cx + dx * (150 + k * 9)
                 d.polygon([(bx - 4, 30), (bx, 30 - h), (bx + 4, 30)], fill=(255, 140 + k * 10, 40, 255), outline=dark + (255,))
-        d.polygon([(cx - 14, 30), (cx, 6), (cx + 14, 30)], fill=light + (255,), outline=dark + (255,))
+            # small ember gem at each end of the bar
+            gx = cx + dx * 196
+            d.polygon([(gx, 33), (gx + 5, 43), (gx, 53), (gx - 5, 43)], fill=gc + (255,), outline=light + (255,))
     elif orn == 'skull':
         # horns
         for dx in (-1, 1):
