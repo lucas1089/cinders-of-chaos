@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Ornate dark-fantasy UI skin for the Chaos client (procedural, original art).
 
-usage: python3 client/tools/gen_skin.py [--preview DIR] [group ...]
+usage: python3 client/tools/gen_skin.py [--base <base-client-dir>] [group ...]
 
 Groups (default: all): frames, controls, stock, hud, ornaments.
 
@@ -15,8 +15,9 @@ It writes
   overlay/data/images/<stock path>      stock images redrawn in place with the same size and layout
                                         (listed in STOCK below); they are removed from
                                         RESKIN_FILES.txt so tools/gen_ui_reskin.py leaves them alone.
-Run gen_ui_reskin.py first (if at all), then this script.
---preview DIR also writes contact sheets and 9-slice previews of the frames at real sizes.
+Run gen_ui_reskin.py first (if at all), then this script. The 'stock' group needs --base (the assembled
+base client source) for the layouts and silhouettes of the stock images it redraws.
+nine_slice() renders a frame the way the engine stretches it (tiled edges), handy for previews.
 Needs Pillow and numpy.
 """
 import math
@@ -836,8 +837,22 @@ def gen_controls():
         save(arrow_button(13, st, 'down'), 'chaos/scroll_down' + nm)
     save(panel(13, 32, 1, 'inset', 'abyss', seed=25), 'chaos/scroll_track')
     save(topbar_bg(32, 44), 'chaos/topbar_bg')
+    # menu bar of client_chaos_topbar (image-border 8)
+    save(frame(64, 36, 8, 8, 8, 8, outer=5, seed=20, center='abyss', rivets=False), SKIN + '/menubar')
+    # highlight frame a base module asks for but the base client does not ship (proficiency window)
+    save(glow_frame(22, 22), 'animations/button-highlight-22x22')
     # tooltip and popup menu
     save(panel(32, 32, 4, 'raised', 'abyss', seed=26, rim=GOLD), SKIN + '/tooltip')
+
+
+def glow_frame(W, H):
+    d = dist_rect(H, W)
+    a = np.exp(-d / 1.6) * 0.9
+    o = np.zeros((H, W, 4), np.float32)
+    o[..., :3] = GOLD_L
+    o[..., 3] = a
+    o[d < 1, :3] = GOLD_H
+    return o
 
 
 def title_plate(W, H):
@@ -1043,20 +1058,114 @@ def map_frame(n):
     return o
 
 
+# ---------------------------------------------------------------- HUD (game_chaoshud)
+HUD_W, HUD_H = 300, 96
+HUD_PC = (47, 48)        # portrait centre
+HUD_HOLE = 30            # portrait opening radius
+HUD_RING = 40            # outer radius of the portrait ring
+HUD_BAR_X, HUD_BAR_W = 96, 166
+HUD_BARS = {'name': (20, 13), 'hp': (35, 15), 'mp': (54, 13), 'xp': (71, 5)}   # y, height
+
+
+def hud_plate():
+    W, H = HUD_W, HUD_H
+    out = np.zeros((H, W, 4), np.float32)
+    cx, cy = HUD_PC
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    # plaque body: rounded bar from the portrait to the right end, with a pointed tip
+    x0, x1, y0, y1 = cx, W - 6, 14, 84
+
+    def body(d, s):
+        d.rounded_rectangle([x0 * s, y0 * s, (x1 - 10) * s, y1 * s], radius=10 * s, fill=255)
+        d.polygon([((x1 - 14) * s, y0 * s), (x1 * s, (y0 + y1) / 2 * s), ((x1 - 14) * s, y1 * s)], fill=255)
+    m = mask_draw(W, H, body)
+    iron = mat_iron(H, W, 101, tone=0.85)
+    # height: bevelled rim
+    hm = gauss(m, 2.5) * 3
+    rgb = shade(hm, iron, amb=0.4, diff=0.9, spec=0.3)
+    plate = rgba(rgb, m)
+    # gold trim along the plaque edge
+    edge = np.clip(m - gauss(m, 1.0) * 1.0, 0, 1)
+    inner = np.clip(gauss(m, 3.0) * 1.8 - 1.0, 0, 1)
+    trim = np.clip(m * 2 - 1, 0, 1) * np.clip((1 - inner) * 3 - 1.8, 0, 1)
+    blend_rgb(plate, GOLD * 1.05, trim * 0.85)
+    over(out, plate)
+    # sockets for the name, the bars and the experience line
+    for key, (y, h) in HUD_BARS.items():
+        if key == 'name':
+            continue
+        sk = panel(HUD_BAR_W + 4, h + 4, 2, 'inset', 'abyss', seed=102 + y, rim=GOLD * 0.75, tone=0.6)
+        over(out, sk, HUD_BAR_X - 2, y - 2)
+    # filigree at the tip
+    def fil(d, s):
+        poly_stroke(d, curl_points(W - 26, 25, 6, 1.4, math.pi / 2, 0.9, flip=-1), 1.6, s)
+        poly_stroke(d, curl_points(W - 26, 73, 6, 1.4, -math.pi / 2, 0.9, flip=1), 1.6, s)
+    over(out, metal_from_mask(mask_draw(W, H, fil), gold_albedo(H, W), height_scale=1.8, blur=0.6))
+    g = gem(3.4, BLOOD, BLOOD_L)
+    over(out, g, W - 14 - g.shape[1] // 2, (y0 + y1) // 2 - g.shape[0] // 2)
+    # portrait ring: iron disc with a gold bezel and four studs
+    d = np.sqrt((xx - cx) ** 2 + (yy - cy) ** 2)
+    ring_m = np.clip(HUD_RING + 0.5 - d, 0, 1)
+    rh = np.where(d < HUD_RING, np.sin(np.clip((d - HUD_HOLE) / (HUD_RING - HUD_HOLE), 0, 1) * math.pi), 0) * 4
+    alb = mat_iron(H, W, 103, tone=1.0)
+    gold_band = (d >= HUD_HOLE) & (d < HUD_HOLE + 3)
+    gold_out = (d >= HUD_RING - 2.5) & (d < HUD_RING)
+    alb[gold_band | gold_out] = gold_albedo(H, W, 104)[gold_band | gold_out]
+    rgb = shade(rh, alb, amb=0.4, diff=0.9, spec=0.7, shin=10)
+    over(out, rgba(rgb, ring_m))
+    # dark well behind the portrait
+    well = np.clip(HUD_HOLE + 0.5 - d, 0, 1)
+    wc = mat_stone(H, W, 105, tint=hexc('#120b0e')) * (0.6 + 0.6 * np.clip(d / HUD_HOLE, 0, 1))[..., None]
+    wc = wc + BLOOD_D[None, None, :] * np.clip(1 - d / HUD_HOLE, 0, 1)[..., None] * 0.8
+    over(out, rgba(np.clip(wc, 0, 1), well))
+    for ang in (45, 135, 225, 315):
+        a = math.radians(ang)
+        rv = rivet(2.0, metal=GOLD_L)
+        px = cx + math.cos(a) * (HUD_RING - 5) - rv.shape[1] / 2
+        py = cy + math.sin(a) * (HUD_RING - 5) - rv.shape[0] / 2
+        over(out, rv, int(round(px)), int(round(py)))
+    return out, d
+
+
+def hud_fill(W, H, base, light, seed):
+    y = np.arange(H, dtype=np.float32)[:, None] / max(H - 1, 1)
+    n = fbm(H, W, base=2, octaves=4, seed=seed, aspect=3)
+    v = 0.75 + 0.35 * n
+    col = base[None, None, :] * v[..., None]
+    col = col * (1.1 - 0.5 * y)[..., None]
+    gloss = np.exp(-((y - 0.22) ** 2) / 0.012)
+    col = col + light[None, None, :] * gloss[..., None] * 0.45
+    out = rgba(np.clip(col, 0, 1))
+    out[0, :, :3] = np.clip(out[0, :, :3] * 1.3, 0, 1)
+    out[-1, :, :3] *= 0.5
+    return out
+
+
+def gen_hud():
+    plate, d = hud_plate()
+    save(plate, SKIN + '/hud_plate')
+    # the part of the plate that covers the portrait's square corners (the opening is cut out)
+    cov = plate[0:96, 0:96].copy()
+    cov[..., 3] = cov[..., 3] * np.clip(d[0:96, 0:96] - HUD_HOLE + 0.5, 0, 1)
+    save(cov, SKIN + '/hud_portrait_cover')
+    save(hud_fill(HUD_BAR_W, HUD_BARS['hp'][1], BLOOD, BLOOD_L, 111), SKIN + '/hud_hp_fill')
+    save(hud_fill(HUD_BAR_W, HUD_BARS['mp'][1], ARCANE, ARCANE_L, 112), SKIN + '/hud_mp_fill')
+    save(hud_fill(HUD_BAR_W, HUD_BARS['xp'][1], GOLD, GOLD_H, 113), SKIN + '/hud_xp_fill')
+    # level badge (a small gold-rimmed plaque under the portrait)
+    save(button_face(40, 18, 4, 'on', seed=114, rim=GOLD_L), SKIN + '/hud_level')
+
+
 GROUPS = {
     'frames': gen_frames,
     'controls': gen_controls,
     'stock': gen_stock,
+    'hud': gen_hud,
     'ornaments': gen_ornaments,
 }
 
 
 def main(argv):
     args = [a for a in argv[1:] if not a.startswith('--')]
-    preview = None
-    if '--preview' in argv:
-        preview = argv[argv.index('--preview') + 1]
-        args = [a for a in args if a != preview]
     global BASE
     if '--base' in argv:
         BASE = argv[argv.index('--base') + 1]
@@ -1074,26 +1183,5 @@ def main(argv):
     print('%d images written' % len(WRITTEN))
 
 
-def preview_window():
-    w = frame(128, 128, 12, 32, 12, 12, outer=8, title=30, seed=3)
-    big = nine_slice(w, 360, 240, 12, 32, 12, 12)
-    return w, big
-
-
-if __name__ == '__main__' and 'test' not in sys.argv:
+if __name__ == '__main__':
     main(sys.argv)
-
-if __name__ == '__main__' and 'test' in sys.argv:
-    w, big = preview_window()
-    c = ornament_corner()
-    cr = ornament_crest()
-    W_, H_ = big.shape[1], big.shape[0]
-    canvas = np.zeros((H_ + 40, W_ + 40, 4), np.float32); canvas[..., :3] = hexc('#3a5a3a'); canvas[..., 3] = 1
-    over(canvas, big, 20, 20)
-    for fx, fy in ((0,0),(1,0),(0,1),(1,1)):
-        p = mirror(c, fx, fy)
-        over(canvas, p, 20 - 8 if not fx else 20 + W_ + 8 - p.shape[1], 20 - 8 if not fy else 20 + H_ + 8 - p.shape[0])
-    over(canvas, cr, 20 + W_ // 2 - cr.shape[1] // 2, 20 - 13)
-    to_img(canvas).resize((canvas.shape[1]*2, canvas.shape[0]*2), Image.NEAREST).save('/tmp/claude-0/-home-user/a624c66a-2fef-5352-b9d8-48bc1ea53968/scratchpad/skin/t_orn.png')
-    to_img(w).resize((512, 512), Image.NEAREST).save('/tmp/claude-0/-home-user/a624c66a-2fef-5352-b9d8-48bc1ea53968/scratchpad/skin/t_win.png')
-    to_img(big).save('/tmp/claude-0/-home-user/a624c66a-2fef-5352-b9d8-48bc1ea53968/scratchpad/skin/t_big.png')

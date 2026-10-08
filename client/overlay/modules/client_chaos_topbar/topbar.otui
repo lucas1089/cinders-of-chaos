@@ -5,21 +5,21 @@ ChaosMenuButton < UIButton
   font: verdana-11px-antialised
   color: #d6c9ae
   text-align: left
-  text-offset: 28 0
+  text-offset: 28 1
   icon-size: 20 20
   icon-offset: 5 3
-  background-color: #1a0b09e6
-  border-width: 1
-  border-color: #4a1712
+  image-source: /images/chaos/skin/button
+  image-clip: 0 0 64 24
+  image-border: 5
   focusable: false
 
   $hover:
-    background-color: #3a120ef0
-    border-color: #a8322a
-    color: #ffe2b8
+    image-clip: 0 24 64 24
+    color: #ffe7a6
 
   $pressed:
-    background-color: #5a1712
+    image-clip: 0 48 64 24
+    text-offset: 29 2
 
 ChaosMenuBar < UIWidget
   id: chaosMenuBar
@@ -28,9 +28,8 @@ ChaosMenuBar < UIWidget
   anchors.top: parent.top
   anchors.horizontalCenter: parent.horizontalCenter
   margin-top: 2
-  image-source: /images/chaos/topbar_bg
-  image-border: 2
-  image-border-bottom: 10
+  image-source: /images/chaos/skin/menubar
+  image-border: 8
   focusable: false
   visible: false
 

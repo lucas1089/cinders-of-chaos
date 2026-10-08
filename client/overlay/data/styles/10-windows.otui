@@ -52,6 +52,10 @@ NewWindow < UIWindow
   padding-right: 4
   padding-bottom: 4
   display-sound: 2785
+  &chaosOrnate: true
+  &chaosTitleY: 3
+  &chaosOrnInset: 11
+  &chaosCrestUp: 24
 
 NewHeadlessWindow < UIWindow
   image-source: /images/ui/3pixel-frame-borderimage

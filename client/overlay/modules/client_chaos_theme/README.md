@@ -11,7 +11,8 @@ It also adds two widget helpers some modules expect and this engine lacks: `UIWi
 | `modules/client_chaos_theme/chaos_theme.otmod`, `chaos_theme.lua`, `styles.otui` | The theme module and all styles |
 | `modules/client_chaos_topbar/` | Menu bar at the top of the game window with drop-downs by category (otmod, lua, otui) |
 | `data/images/chaos/` | All generated art (PNG, 80 files) |
-| `../tools/gen_theme_art.py` | Generator: `python3 -I client/tools/gen_theme_art.py [frames] [icons] [logo] [background]` (Pillow + numpy, deterministic, about 15 s) |
+| `../tools/gen_theme_art.py` | Icons, logo and login background: `python3 -I client/tools/gen_theme_art.py [icons] [logo] [background]` |
+| `../tools/gen_skin.py` | Frames, controls, ornaments, HUD and in-place stock images: `python3 client/tools/gen_skin.py --base <base-client-dir>` |
 
 `client/tools/assemble_client.sh` copies the overlay into the client; the login background and logo are plain images (`data/images/title.png`, `data/images/ui/logo.png`) used by the stock `client_background`.
 
@@ -34,6 +35,14 @@ Window 9-slice: `image-border: 18`, `image-border-top: 34` (title band is part o
 `background` (1920x1080), `logo` (760x300), `logo_small` (380x150),
 `topbutton_<name>[_hover]` (64x64) and `small/topbutton_<name>[_hover]` (32x32) for: inventory, skills, battlelist, vip, spells, quests, market, bank, stash,
 autoloot, daily, battlepass, passivetree, dungeons, events, infinitytower, minimap, options, notifications, help, logout, admin, ranking.
+
+## Ornate skin (gen_skin.py)
+
+`client/tools/gen_skin.py` draws the frame and control art of `data/images/chaos/` (same sizes and borders as listed above),
+the new `data/images/chaos/skin/` set (main window, button and tab sheets, corner ornaments, crest, tooltip, menu bar, HUD plate)
+and redraws stock images in place. `chaos_theme.lua` adds the corner ornaments and crest to windows whose style sets
+`&chaosOrnate: true` (`Window`, `NewWindow`, `ChaosWindow`; `&chaosTitleY`, `&chaosOrnInset`, `&chaosCrestUp` tune them) and skins tooltips.
+See client/MANIFEST.md, section "Ornate UI skin".
 
 ## Stock interface reskin
 

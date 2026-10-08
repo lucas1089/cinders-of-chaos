@@ -135,12 +135,13 @@ end
 function ChaosTheme.decorateWindow(win)
   if not win or win:isDestroyed() or win.chaosDecorated then return end
   win.chaosDecorated = true
-  local s, i = ORN_SIZE, -ORN_INSET
+  local s, i = ORN_SIZE, -(tonumber(win.chaosOrnInset) or ORN_INSET)
+  local crestUp = tonumber(win.chaosCrestUp) or CREST_UP
   addOrnament(win, 'chaosOrnTL', SKIN .. 'orn_corner_tl', s, s, AnchorLeft, AnchorTop, i, i)
   addOrnament(win, 'chaosOrnTR', SKIN .. 'orn_corner_tr', s, s, AnchorRight, AnchorTop, i, i)
   addOrnament(win, 'chaosOrnBL', SKIN .. 'orn_corner_bl', s, s, AnchorLeft, AnchorBottom, i, i)
   addOrnament(win, 'chaosOrnBR', SKIN .. 'orn_corner_br', s, s, AnchorRight, AnchorBottom, i, i)
-  addOrnament(win, 'chaosOrnCrest', SKIN .. 'orn_crest', CREST_W, CREST_H, nil, AnchorTop, 0, -CREST_UP)
+  addOrnament(win, 'chaosOrnCrest', SKIN .. 'orn_crest', CREST_W, CREST_H, nil, AnchorTop, 0, -crestUp)
   connect(win, { onGeometryChange = updateOrnaments })
   updateOrnaments(win)
 end
@@ -178,7 +179,48 @@ local function decorateExisting(widget)
   end
 end
 
+-- ---------------------------------------------------------------- tooltips
+-- corelib paints the tooltip label light grey with dark text after every display call; repaint it as a
+-- dark gold-rimmed plate. Coloured (table) tooltips keep their own colours.
+local tooltipWrapped = {}
+
+local function skinTooltip()
+  local label = rootWidget and rootWidget:getChildById('toolTip')
+  if not label then return end
+  label:setBackgroundColor('#00000000')
+  label:setBorderWidth(0)
+  label:setImageSource(SKIN .. 'tooltip')
+  label:setImageBorder(4)
+  label:setColor('#e4d8c0')
+  label:resize(label:getWidth() + 8, label:getHeight() + 4)
+  label:setTextOffset({ x = 7, y = 4 })
+end
+
+local function wrapTooltip()
+  if not g_tooltip then return end
+  for _, name in ipairs({ 'display', 'displayText', 'parseColoreDisplay' }) do
+    local orig = g_tooltip[name]
+    if type(orig) == 'function' and not tooltipWrapped[name] then
+      tooltipWrapped[name] = orig
+      g_tooltip[name] = function(...)
+        local r = orig(...)
+        skinTooltip()
+        return r
+      end
+    end
+  end
+end
+
+local function unwrapTooltip()
+  if not g_tooltip then return end
+  for name, orig in pairs(tooltipWrapped) do
+    g_tooltip[name] = orig
+  end
+  tooltipWrapped = {}
+end
+
 function init()
+  wrapTooltip()
   g_ui.importStyle('styles')
   g_ui.importStyle('compat')
   installWidgetHelpers()
@@ -188,6 +230,7 @@ end
 
 function terminate()
   disconnect(UIWidget, { onStyleApply = onStyleApply })
+  unwrapTooltip()
   ChaosTheme = nil
 end
 

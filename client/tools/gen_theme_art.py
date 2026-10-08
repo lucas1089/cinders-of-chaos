@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Procedural art generator for the Chaos dark-fantasy OTClient theme.
 
-Run:  python3 -I client/tools/gen_theme_art.py [frames] [icons] [background] [logo]
-(no argument = everything).  Needs Pillow + numpy.  Output goes to
+Run:  python3 -I client/tools/gen_theme_art.py [icons] [background] [logo]
+(no argument = all three).  The frame and control images of chaos/ (window, buttons, panels, tabs,
+scroll bars, ...) are drawn by gen_skin.py now; the old "frames" task here would overwrite them with the
+previous flat look, so it only runs when asked for by name.  Needs Pillow + numpy.  Output goes to
 client/overlay/data/images/chaos/.  Deterministic (fixed seeds).
 """
 import os
@@ -1577,7 +1579,7 @@ def gen_logo():
 
 # ---------------------------------------------------------------- main
 def main(argv):
-    tasks = argv[1:] or ["frames", "icons", "logo", "background"]
+    tasks = argv[1:] or ["icons", "logo", "background"]
     for t in tasks:
         {"frames": gen_frames, "icons": gen_icons, "logo": gen_logo, "background": gen_background}[t]()
 

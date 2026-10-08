@@ -1,0 +1,122 @@
+// Character plate (art: client/tools/gen_skin.py, group "hud"). Positions match the plate image:
+// portrait centre 47,48 (opening radius 30), bars at x 96, width 166.
+ChaosHudText < UILabel
+  font: verdana-11px-rounded
+  color: #f4ead6
+  text-align: center
+  phantom: true
+
+ChaosHudFill < UIWidget
+  phantom: true
+  anchors.left: parent.left
+  anchors.top: parent.top
+  margin-left: 96
+
+UIWidget
+  id: chaosHud
+  size: 300 96
+  anchors.top: parent.top
+  anchors.left: gameMapPanel.left
+  margin-top: 40
+  margin-left: 34
+  image-source: /images/chaos/skin/hud_plate
+  phantom: true
+  focusable: false
+
+  UIWidget
+    id: portraitClip
+    size: 62 62
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-left: 16
+    margin-top: 17
+    clipping: true
+    phantom: true
+
+    UICreature
+      id: portrait
+      size: 88 88
+      anchors.left: parent.left
+      anchors.top: parent.top
+      margin-left: -24
+      margin-top: -26
+      phantom: true
+
+  UIWidget
+    id: portraitCover
+    size: 96 96
+    anchors.left: parent.left
+    anchors.top: parent.top
+    image-source: /images/chaos/skin/hud_portrait_cover
+    phantom: true
+
+  UILabel
+    id: level
+    size: 40 18
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-left: 27
+    margin-top: 78
+    image-source: /images/chaos/skin/hud_level
+    image-border: 4
+    font: verdana-11px-rounded
+    color: #ffe7a6
+    text-align: center
+    text-offset: 0 1
+    phantom: false
+    focusable: false
+
+  UILabel
+    id: name
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-left: 98
+    margin-top: 19
+    size: 160 14
+    font: verdana-11px-rounded
+    color: #e8c477
+    text-align: left
+    phantom: true
+
+  ChaosHudFill
+    id: hpFill
+    margin-top: 35
+    size: 166 15
+    image-source: /images/chaos/skin/hud_hp_fill
+
+  ChaosHudText
+    id: hpText
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-left: 96
+    margin-top: 35
+    size: 166 15
+    text-offset: 0 1
+
+  ChaosHudFill
+    id: mpFill
+    margin-top: 54
+    size: 166 13
+    image-source: /images/chaos/skin/hud_mp_fill
+
+  ChaosHudText
+    id: mpText
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-left: 96
+    margin-top: 54
+    size: 166 13
+
+  ChaosHudFill
+    id: xpFill
+    margin-top: 71
+    size: 166 5
+    image-source: /images/chaos/skin/hud_xp_fill
+
+  UIWidget
+    id: xpHover
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-left: 94
+    margin-top: 68
+    size: 170 11

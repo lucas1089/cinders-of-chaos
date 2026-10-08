@@ -118,6 +118,12 @@ local function extendHelper()
   return true
 end
 
+-- signal handlers must not return a truthy value: signalcall stops at it, and every onGameStart handler
+-- connected after this one (passive tree, dungeons, bank, ...) would never run
+local function onGameStartExtend()
+  extendHelper()
+end
+
 function init()
   if not SpellInfo or not SpellInfo.Default or not SpellIcons then
     g_logger.warning('[chaosspells] spell tables not found, Chaos spells not registered')
@@ -125,7 +131,7 @@ function init()
   end
   local order = SpelllistSettings and SpelllistSettings.Default and SpelllistSettings.Default.spellOrder
   renameStockSpells(order)
-  connect(g_game, { onGameStart = extendHelper })
+  connect(g_game, { onGameStart = onGameStartExtend })
   extendHelper()
   for _, s in ipairs(ChaosSpellData) do
     SpellInfo.Default[s.name] = {
@@ -161,5 +167,5 @@ function terminate()
   end
   added = {}
   restoreStockSpells(order)
-  disconnect(g_game, { onGameStart = extendHelper })
+  disconnect(g_game, { onGameStart = onGameStartExtend })
 end
