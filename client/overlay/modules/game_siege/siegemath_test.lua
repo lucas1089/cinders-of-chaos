@@ -1,0 +1,36 @@
+-- luajit siegemath_test.lua && lua5.3 siegemath_test.lua (CI runs every client/overlay/modules/*/*_test.lua)
+local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
+dofile(dir .. 'siegemath.lua')
+local fails = 0
+local function eq(a, b, what)
+  if a ~= b then print('FAIL ' .. what .. ': ' .. tostring(a) .. ' ~= ' .. tostring(b)); fails = fails + 1 end
+end
+eq(SiegeMath.clock(725), '12:05', 'clock')
+eq(SiegeMath.clock(-3), '0:00', 'clock negative')
+eq(SiegeMath.clock(nil), '0:00', 'clock nil')
+eq(SiegeMath.clock(1500), '25:00', 'clock match')
+eq(SiegeMath.countdown(2 * 86400 + 3 * 3600 + 5), '2d 3h', 'countdown days')
+eq(SiegeMath.countdown(5 * 3600 + 12 * 60), '5h 12m', 'countdown hours')
+eq(SiegeMath.countdown(750), '12m 30s', 'countdown minutes')
+local teams = { { name = 'B', score = 10, kills = 1 }, { name = 'A', score = 30, kills = 0 }, { name = 'C', score = 10, kills = 4 } }
+local s = SiegeMath.sorted(teams)
+eq(s[1].name, 'A', 'sorted 1')
+eq(s[2].name, 'C', 'sorted 2 (kills)')
+eq(s[3].name, 'B', 'sorted 3')
+eq(teams[1].name, 'B', 'original untouched')
+eq(#SiegeMath.sorted(nil), 0, 'sorted nil')
+local text, color = SiegeMath.holder({ phase = 'match', holder = 'Iron Wolves', holderColor = '#d23a2a' })
+eq(text, 'Obelisk: Iron Wolves', 'holder')
+eq(color, '#d23a2a', 'holder colour')
+eq(SiegeMath.holder({ phase = 'match', holder = '', contested = true }), 'Obelisk: contested', 'contested')
+eq(SiegeMath.holder({ phase = 'match', holder = '' }), 'Obelisk: neutral', 'neutral')
+eq(SiegeMath.holder({ phase = 'gather', left = 65 }), 'Gates open in 1:05', 'gathering')
+eq(SiegeMath.holder({ phase = 'ending', holder = 'X' }), 'The siege is over', 'ending')
+eq(SiegeMath.title({ phase = 'match', brackets = 1 }), 'Guild Siege', 'title')
+eq(SiegeMath.title({ phase = 'match', brackets = 2, bracket = 2 }), 'Guild Siege - arena 2', 'title bracket')
+eq(SiegeMath.title({ phase = 'ending', result = { winner = 'Blood Ravens' } }), 'Blood Ravens wins!', 'title winner')
+eq(SiegeMath.title({ phase = 'ending', result = { winner = '' } }), 'Siege over', 'title no winner')
+eq(SiegeMath.youText({ kills = 3, deaths = 1, points = 120 }), 'You: 3 kills, 1 downed, 120 points', 'you')
+eq(SiegeMath.youText(nil), '', 'you nil')
+if fails > 0 then os.exit(1) end
+print('siegemath tests OK')

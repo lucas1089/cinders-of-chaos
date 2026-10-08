@@ -38,6 +38,7 @@ ChaosOpcodes = {
 	bounty = 223, -- bounty board (client game_bounty, !bounty; bounty.lua, bounty_config.lua)
 	leaderboard = 229, -- leaderboards (client game_leaderboard, !leaderboard; leaderboard.lua, leaderboard_config.lua)
 	crafting = 232, -- crafting bench (client game_crafting, !craft; crafting.lua, data/lib/chaos_crafting.lua)
+	siege = 233, -- guild siege HUD and sign-up window (client game_siege, !siege; siege.lua, siege_config.lua)
 	spellbook = 219 -- spell list window (client game_spellbook, !spells)
 }
 

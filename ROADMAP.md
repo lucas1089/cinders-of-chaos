@@ -49,7 +49,7 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 |---|---|---|---|
 | 13 | Weekly world-boss damage leaderboard with titles | done | `chaos/leaderboard*.lua`, client `game_leaderboard` (`!leaderboard`, Chaos -> Leaderboards): weekly World Boss, Bounty Hunter and Rifts boards (Monday 06:00 reset; top 3 get a title in the look text and orbs to the inbox), all-time Class Ladder; rift scripts report with `ChaosLeaderboard.record("rift", player, tier)`; see server/README.md "Leaderboards" |
 | 14 | Arena 1v1 / 2v2 with ratings | in progress | PvP rules and multi-client blocks already exist |
-| 15 | Scheduled guild wars / guild-hall siege | in progress | |
+| 15 | Scheduled guild wars / guild-hall siege | done | Weekly Guild Siege (`siege.lua`, client `game_siege`): sign-ups by leader/vice (`!siege join`), runtime arena with the Chaos Obelisk and a base per guild (up to 4 per arena, 3 arenas), no real deaths (downed, back to base), kills + obelisk points, rewards, "Siege Champions" title and +5% exp for a week; tested in game with two clients. The base server's guild wars have no in-game declare/accept (website only, read at login); out of scope |
 
 ## Then: quality of life
 

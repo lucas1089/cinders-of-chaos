@@ -125,6 +125,11 @@ function ChaosSpell.canAttack(caster, target)
 	if casterPlayer == targetPlayer or Game.getWorldType() == WORLD_TYPE_NO_PVP then
 		return false
 	end
+	-- guild siege arena: its own rules (data/scripts/chaos/siege.lua; nil = not the siege's business)
+	local siege = ChaosSiege and ChaosSiege.canAttack and ChaosSiege.canAttack(casterPlayer, targetPlayer)
+	if siege ~= nil then
+		return siege
+	end
 	for _, pos in ipairs({targetPlayer:getPosition(), casterPlayer:getPosition()}) do
 		local tile = Tile(pos)
 		if tile and (tile:hasFlag(TILESTATE_PROTECTIONZONE) or tile:hasFlag(TILESTATE_NOPVPZONE)) then
