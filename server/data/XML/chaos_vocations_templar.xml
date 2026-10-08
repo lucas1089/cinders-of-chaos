@@ -1,0 +1,69 @@
+<!-- Chaos vocations, the Templar line (docs/CLASSES.md, the seventh class): Templar (base) -> Inquisitor | Sentinel.
+     A fragment next to server/data/XML/chaos_vocations.xml: server/tools/add_vocations.py installs the entries of
+     both (and of the other class fragments) between the "BEGIN chaos vocations" markers. All ids of the line: ChaosTemplar.cfg.ids in server/data/scripts/chaos/templar_aura_core.lua.
+
+     | id | class      | base | client byte |
+     | 23 | Templar    | 23   |  9 |
+     | 24 | Inquisitor | 23   | 19 |
+     | 25 | Sentinel   | 23   | 29 |
+
+     clientid: slot 9 (+10 / +20 for the two ascended classes; the Necromancer has slot 7, the Monk slot 8). The client
+     maps the bytes back to these ids (client/base-patches/0016-chaos-vocation-ids.patch).
+
+     The Templar is holy melee: a one-handed sword or mace with a shield, the armour the Warrior wears. Gains per level
+     between the Warrior (hp 15 / mana 5 / cap 25) and the Thief line: Templar hp 14 / mana 8 / cap 25, Inquisitor
+     hp 13 / mana 10 / cap 24 (its damage is holy spells and Radiant Strikes), Sentinel hp 14 / mana 7 / cap 25 with
+     defense / armor 1.15 and weapon hits x0.9 (the tank-support: nearly the Juggernaut's toughness, little damage).
+     Skills: sword and club 1.1 like the Warrior, axe and fist 1.2, distance 1.4, shielding 1.1; magic level 2.5
+     (between the Thief line's 2.0 and the Warrior's 3.0: the holy spells use a little magic level). -->
+	<vocation id="23" clientid="9" name="Templar" description="a templar" gaincap="25" gainhp="14" gainmana="8" gainhpticks="4" gainhpamount="5" gainmanaticks="4" gainmanaamount="5" manamultiplier="2.5" attackspeed="2000" basespeed="220" soulmax="100" gainsoulticks="120" fromvoc="23">
+		<formula meleeDamage="1.0" distDamage="1.0" defense="1.05" armor="1.05" />
+		<skill id="0" multiplier="1.2" />
+		<skill id="1" multiplier="1.1" />
+		<skill id="2" multiplier="1.1" />
+		<skill id="3" multiplier="1.2" />
+		<skill id="4" multiplier="1.4" />
+		<skill id="5" multiplier="1.1" />
+		<skill id="6" multiplier="1.1" />
+		<skill id="7" multiplier="1.1" />
+		<skill id="8" multiplier="1.1" />
+		<skill id="9" multiplier="1.1" />
+		<skill id="10" multiplier="1.1" />
+		<skill id="11" multiplier="1.1" />
+		<skill id="12" multiplier="1.1" />
+		<skill id="13" multiplier="1.1" />
+	</vocation>
+	<vocation id="24" clientid="19" name="Inquisitor" description="an inquisitor" gaincap="24" gainhp="13" gainmana="10" gainhpticks="3" gainhpamount="10" gainmanaticks="3" gainmanaamount="10" manamultiplier="2.5" attackspeed="2000" basespeed="220" soulmax="200" gainsoulticks="15" fromvoc="23">
+		<formula meleeDamage="1.0" distDamage="1.0" defense="1.0" armor="1.0" />
+		<skill id="0" multiplier="1.2" />
+		<skill id="1" multiplier="1.1" />
+		<skill id="2" multiplier="1.1" />
+		<skill id="3" multiplier="1.2" />
+		<skill id="4" multiplier="1.4" />
+		<skill id="5" multiplier="1.1" />
+		<skill id="6" multiplier="1.1" />
+		<skill id="7" multiplier="1.1" />
+		<skill id="8" multiplier="1.1" />
+		<skill id="9" multiplier="1.1" />
+		<skill id="10" multiplier="1.1" />
+		<skill id="11" multiplier="1.1" />
+		<skill id="12" multiplier="1.1" />
+		<skill id="13" multiplier="1.1" />
+	</vocation>
+	<vocation id="25" clientid="29" name="Sentinel" description="a sentinel" gaincap="25" gainhp="14" gainmana="7" gainhpticks="2" gainhpamount="10" gainmanaticks="4" gainmanaamount="10" manamultiplier="2.5" attackspeed="2000" basespeed="220" soulmax="200" gainsoulticks="15" fromvoc="23">
+		<formula meleeDamage="0.9" distDamage="1.0" defense="1.15" armor="1.15" />
+		<skill id="0" multiplier="1.2" />
+		<skill id="1" multiplier="1.1" />
+		<skill id="2" multiplier="1.1" />
+		<skill id="3" multiplier="1.2" />
+		<skill id="4" multiplier="1.4" />
+		<skill id="5" multiplier="1.1" />
+		<skill id="6" multiplier="1.1" />
+		<skill id="7" multiplier="1.1" />
+		<skill id="8" multiplier="1.1" />
+		<skill id="9" multiplier="1.1" />
+		<skill id="10" multiplier="1.1" />
+		<skill id="11" multiplier="1.1" />
+		<skill id="12" multiplier="1.1" />
+		<skill id="13" multiplier="1.1" />
+	</vocation>

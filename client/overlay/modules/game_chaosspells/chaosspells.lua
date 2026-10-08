@@ -69,7 +69,9 @@ end
 
 -- The client's stock spell entries list the old vocation ids; the server moved those kits to the classes
 -- (server/tools/add_vocations.py): druid spells -> Mystic (1) and Illusionist (10), elder druid spells -> Illusionist,
--- knight spells also the Berserker (14), paladin spells also the Beastmaster (15). The spell list filters by these lists.
+-- knight spells also the Berserker (14), paladin spells also the Beastmaster (15), and the casters' stock healing and
+-- support instants also the Necromancer line (20-22; no rune conjuring, no stock summon). The spell list filters by
+-- these lists.
 local oldVocations = {} -- spell entry -> its own list, restored at terminate
 
 local function remapStockVocations()
@@ -90,6 +92,12 @@ local function remapStockVocations()
       if has[6] then add(10) end
       if has[4] or has[8] then add(14) end
       if has[3] or has[7] then add(15) end
+      -- the Necromancer line (20-22): the casters' stock healing and support instants (server/tools/add_vocations.py)
+      local group = type(spell.group) == 'table' and spell.group or {}
+      if (has[1] or has[2]) and not group[1] and spell.type ~= 'Conjure'
+          and spell.words ~= 'utevo res' and spell.words ~= 'vael kal' then
+        add(20); add(21); add(22)
+      end
       if #list ~= #spell.vocations then
         oldVocations[spell] = spell.vocations
         spell.vocations = list
@@ -108,10 +116,11 @@ end
 -- The helper (mods/game_helper) only offers spells from its own per-vocation id lists (spelldata.json).
 -- Add the Chaos spells to them: attack spells to the shooter list, healing spells to the healing list, support
 -- spells to the support list. The helper keys its classes 1 warrior, 2 ranger, 3 mystic / elementalist, 4 illusionist
--- (the druid's healing lists), 5 the old illusionist, 6 thief (its translateVocation of our server ids, base patch 0016),
--- and the promoted ids are those + 10.
+-- (the druid's healing lists), 5 the old illusionist, 6 thief, 7 necromancer, 8 monk, 9 templar (its translateVocation
+-- of our server ids, base patch 0016), and the promoted ids are those + 10.
 local HELPER_VOCATION = { [1] = 3, [3] = 2, [4] = 1, [5] = 3, [7] = 2, [8] = 1, [10] = 4,
-  [11] = 6, [12] = 6, [13] = 6, [14] = 1, [15] = 2 }
+  [11] = 6, [12] = 6, [13] = 6, [14] = 1, [15] = 2, [17] = 8, [18] = 8, [19] = 8, [20] = 7, [21] = 7, [22] = 7,
+  [23] = 9, [24] = 9, [25] = 9 }
 local helperExtended = false
 
 local function addOnce(list, value)

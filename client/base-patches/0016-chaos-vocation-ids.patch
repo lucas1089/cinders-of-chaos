@@ -23,7 +23,7 @@
    red        = '#F55E5E',
 --- a/modules/gamelib/spells.lua
 +++ b/modules/gamelib/spells.lua
-@@ -615,16 +615,18 @@
+@@ -615,16 +615,27 @@
  
  VocationNames = {
    [0] = 'None',
@@ -48,25 +48,39 @@
 +  [12] = 'Ninja',
 +  [13] = 'Samurai',
 +  [14] = 'Berserker',
-+  [15] = 'Beastmaster'
++  [15] = 'Beastmaster',
++  [17] = 'Monk',
++  [18] = 'Shadowfist',
++  [19] = 'Iron Sage',
++  [20] = 'Necromancer',
++  [21] = 'Lich',
++  [22] = 'Bone Lord',
++  [23] = 'Templar',
++  [24] = 'Inquisitor',
++  [25] = 'Sentinel'
  }
  
  SpellGroups = {
 --- a/modules/gamelib/game.lua
 +++ b/modules/gamelib/game.lua
-@@ -95,56 +95,23 @@
+@@ -95,56 +95,28 @@
    g_game.setRsa(OTSERV_RSA)
  end
  
 +-- Chaos classes (server ids, docs/CLASSES.md): 4 Warrior, 8 Juggernaut, 14 Berserker, 3 Ranger, 7 Deadeye,
-+-- 15 Beastmaster, 1 Mystic, 5 Elementalist, 10 Illusionist, 11 Thief, 12 Ninja, 13 Samurai (2, 6 and 9 are retired)
++-- 15 Beastmaster, 1 Mystic, 5 Elementalist, 10 Illusionist, 11 Thief, 12 Ninja, 13 Samurai, 17 Monk, 18 Shadowfist,
++-- 19 Iron Sage, 20 Necromancer, 21 Lich, 22 Bone Lord, 23 Templar, 24 Inquisitor, 25 Sentinel (2, 6 and 9 are retired)
 +local ChaosVocationNames = {
 +  [1] = "Mystic", [3] = "Ranger", [4] = "Warrior", [5] = "Elementalist", [7] = "Deadeye", [8] = "Juggernaut",
-+  [10] = "Illusionist", [11] = "Thief", [12] = "Ninja", [13] = "Samurai", [14] = "Berserker", [15] = "Beastmaster"
++  [10] = "Illusionist", [11] = "Thief", [12] = "Ninja", [13] = "Samurai", [14] = "Berserker", [15] = "Beastmaster",
++  [17] = "Monk", [18] = "Shadowfist", [19] = "Iron Sage", [20] = "Necromancer", [21] = "Lich", [22] = "Bone Lord",
++  [23] = "Templar", [24] = "Inquisitor", [25] = "Sentinel"
 +}
 +local ChaosVocationBase = {
 +  [1] = "Mystic", [5] = "Mystic", [10] = "Mystic", [3] = "Ranger", [7] = "Ranger", [15] = "Ranger",
-+  [4] = "Warrior", [8] = "Warrior", [14] = "Warrior", [11] = "Thief", [12] = "Thief", [13] = "Thief"
++  [4] = "Warrior", [8] = "Warrior", [14] = "Warrior", [11] = "Thief", [12] = "Thief", [13] = "Thief",
++  [17] = "Monk", [18] = "Monk", [19] = "Monk", [20] = "Necromancer", [21] = "Necromancer", [22] = "Necromancer",
++  [23] = "Templar", [24] = "Templar", [25] = "Templar"
 +}
 +
  function g_game.getVocationName(vocationId)
@@ -126,7 +140,7 @@
  function g_game.isNpcOrSafeFight(creatureId)
 --- a/modules/gamelib/util.lua
 +++ b/modules/gamelib/util.lua
-@@ -529,18 +529,15 @@
+@@ -529,18 +529,17 @@
  
  -- servers may have different id's, change if not working properly (only for protocols 910+)
  function getVocationId(name)
@@ -144,7 +158,9 @@
 +  local n = name:lower()
 +  for _, v in ipairs({ { "berserker", 14 }, { "beastmaster", 15 }, { "juggernaut", 8 }, { "warrior", 8 },
 +      { "deadeye", 7 }, { "ranger", 7 }, { "elementalist", 5 }, { "illusionist", 10 }, { "mystic", 5 },
-+      { "ninja", 12 }, { "samurai", 13 }, { "thief", 11 } }) do
++      { "ninja", 12 }, { "samurai", 13 }, { "thief", 11 }, { "shadowfist", 18 }, { "iron sage", 19 }, { "monk", 18 },
++      { "bone lord", 22 }, { "lich", 21 }, { "necromancer", 21 }, { "inquisitor", 24 }, { "sentinel", 25 },
++      { "templar", 24 } }) do
 +    if string.find(n, v[1]) then
 +      return v[2]
 +    end
@@ -153,7 +169,7 @@
    return 0
  end
  -- servers may have different id's, change if not working properly (only for protocols 910+)
-@@ -594,32 +591,30 @@
+@@ -594,32 +593,32 @@
  
  function translateVocation(id)
    if not id or id == 0 then return 0 end
@@ -167,6 +183,7 @@
 +  if id == 1 or id == 5 then return 5 end     -- Chaos: Mystic / Elementalist
 +  if id == 10 then return 6 end               -- Chaos: Illusionist (the druid's rods and spells)
 +  if id == 11 or id == 12 or id == 13 then return id end -- Chaos: Thief / Ninja / Samurai (both ascended classes)
++  if id >= 17 and id <= 25 then return id end -- Chaos: the Monk (17-19), Necromancer (20-22) and Templar (23-25) lines
    return 0
  end
  
@@ -194,18 +211,23 @@
 -  if id == 9 or id == 10 then return 9 end    -- Monk / Exalted Monk
 +  if id == 1 or id == 5 then return 1 end     -- Chaos: Mystic / Elementalist
 +  if id == 10 then return 2 end               -- Chaos: Illusionist
++  if id == 20 or id == 21 or id == 22 then return 1 end -- Chaos: Necromancer line (the casters' items)
 +  if id == 3 or id == 7 or id == 15 then return 3 end -- Chaos: Ranger line
 +  if id == 4 or id == 8 or id == 14 then return 4 end -- Chaos: Warrior line
    return 0
  end
  
-@@ -636,14 +631,12 @@
+@@ -634,16 +633,14 @@
+ function getDatVocationBitMask(vocationId)
+   local profession = 0
    vocationId = tonumber(vocationId) or 0
-   if vocationId == 1 or vocationId == 5 then
-     profession = 3
+-  if vocationId == 1 or vocationId == 5 then
+-    profession = 3
 -  elseif vocationId == 2 or vocationId == 6 then
 -    profession = 4
 -  elseif vocationId == 3 or vocationId == 7 then
++  if vocationId == 1 or vocationId == 5 or vocationId == 20 or vocationId == 21 or vocationId == 22 then
++    profession = 3 -- Chaos: Mystic / Elementalist, and the Necromancer line wears the same
 +  elseif vocationId == 10 then
 +    profession = 4 -- Chaos: the Illusionist uses the druid's items
 +  elseif vocationId == 3 or vocationId == 7 or vocationId == 15 then
@@ -218,7 +240,7 @@
    end
    if profession <= 0 then
      return 0
-@@ -653,12 +646,7 @@
+@@ -653,12 +650,7 @@
  
  function translateVocationName(id)
    if not id or id == 0 then return "Rookie" end
@@ -234,7 +256,7 @@
  
 --- a/modules/gamelib/creature.lua
 +++ b/modules/gamelib/creature.lua
-@@ -225,29 +225,35 @@
+@@ -225,29 +225,54 @@
    return 0
  end
  
@@ -269,15 +291,34 @@
 +
 +-- Chaos: the Thief line (11 Thief, 12 Ninja, 13 Samurai; 11-13 are not other servers' promoted ids here)
 +function Creature:isThief()
++  local vocation = getCreatureVocation(self)
++  return vocation == 11 or vocation == 12 or vocation == 13
++end
++
++-- Chaos: the Monk line (17 Monk, 18 Shadowfist, 19 Iron Sage). Not Creature:isMonk(), which switches on the client's
++-- newer-protocol monk features (harmony bar, monk health circle) the 10.98 server does not send.
++function Creature:isChaosMonk()
++  local vocation = getCreatureVocation(self)
++  return vocation == 17 or vocation == 18 or vocation == 19
++end
++
++-- Chaos: the Necromancer line (20 Necromancer, 21 Lich, 22 Bone Lord)
++function Creature:isNecromancer()
++  local vocation = getCreatureVocation(self)
++  return vocation == 20 or vocation == 21 or vocation == 22
++end
++
++-- Chaos: the Templar line (23 Templar, 24 Inquisitor, 25 Sentinel)
++function Creature:isTemplar()
    local vocation = getCreatureVocation(self)
 -  return vocation == 9 or vocation == 10 or vocation == 15
-+  return vocation == 11 or vocation == 12 or vocation == 13
++  return vocation == 23 or vocation == 24 or vocation == 25
  end
  
  function g_game.onCreatureIconChange(creatureId)
 --- a/mods/game_helper/helper.lua
 +++ b/mods/game_helper/helper.lua
-@@ -292,11 +292,11 @@
+@@ -292,11 +292,14 @@
  -- Standard Tibia IDs are 1-10; some supported servers use 11-15 for promoted
  -- vocations. Spell definitions use {base, promoted}, e.g. Sorcerer {1, 5}.
  local ServerToClientVocationMap = {
@@ -290,18 +331,21 @@
 +  [10] = { 2, 6 },                            -- Chaos: Illusionist (the druid's spells)
 +  [3] = { 3, 7 }, [7] = { 3, 7 }, [15] = { 3, 7 }, -- Chaos: Ranger / Deadeye / Beastmaster
 +  [4] = { 4, 8 }, [8] = { 4, 8 }, [14] = { 4, 8 }, -- Chaos: Warrior / Juggernaut / Berserker
-+  [11] = { 11 }, [12] = { 11, 12 }, [13] = { 11, 13 } -- Chaos: Thief / Ninja / Samurai
++  [11] = { 11 }, [12] = { 11, 12 }, [13] = { 11, 13 }, -- Chaos: Thief / Ninja / Samurai
++  [17] = { 17 }, [18] = { 17, 18 }, [19] = { 17, 19 }, -- Chaos: Monk / Shadowfist / Iron Sage
++  [20] = { 20 }, [21] = { 20, 21 }, [22] = { 20, 22 }, -- Chaos: Necromancer / Lich / Bone Lord
++  [23] = { 23 }, [24] = { 23, 24 }, [25] = { 23, 25 } -- Chaos: Templar / Inquisitor / Sentinel
  }
  
  -- Check if server vocation can use spell based on client vocations
-@@ -812,25 +812,17 @@
+@@ -812,25 +815,20 @@
  --             HelperSpellData.getHasteWhiteList()
  
  -- Converte diferentes representações de vocação em um ID padronizado
 --- Retornos: 0=rook, 1=Knight, 2=Paladin, 3=Sorcerer, 4=Druid, 5=Monk
 +-- Retornos: 0=rook, 1=Knight, 2=Paladin, 3=Sorcerer, 4=Druid, 5=Monk, 6=Thief. Chaos classes (server ids): the Warrior
 +-- line is the knight, the Ranger line the paladin, Mystic / Elementalist the sorcerer, the Illusionist the druid
-+-- (its heals), the Thief line 6
++-- (its heals), the Thief line 6, the Necromancer line 7, the Monk line 8, the Templar line 9
  function translateVocation(v)
    local map = {
      [0] = 0,
@@ -325,10 +369,13 @@
 +    [1] = 3, [5] = 3, -- Mystic / Elementalist
 +    [10] = 4, -- Illusionist
 +    [11] = 6, [12] = 6, [13] = 6, -- Thief / Ninja / Samurai
++    [20] = 7, [21] = 7, [22] = 7, -- Necromancer / Lich / Bone Lord
++    [17] = 8, [18] = 8, [19] = 8, -- Monk / Shadowfist / Iron Sage
++    [23] = 9, [24] = 9, [25] = 9, -- Templar / Inquisitor / Sentinel
    }
  
    if type(v) == 'number' then
-@@ -859,11 +851,11 @@
+@@ -859,11 +857,14 @@
  -- Standard IDs are 1-10; alternate promoted IDs are 11-15.
  -- Spell definitions use the standard {base, promoted} pairs.
  local ServerToClientVocationMap = {
@@ -341,13 +388,16 @@
 +  [10] = { 2, 6 },                            -- Chaos: Illusionist (the druid's spells)
 +  [3] = { 3, 7 }, [7] = { 3, 7 }, [15] = { 3, 7 }, -- Chaos: Ranger / Deadeye / Beastmaster
 +  [4] = { 4, 8 }, [8] = { 4, 8 }, [14] = { 4, 8 }, -- Chaos: Warrior / Juggernaut / Berserker
-+  [11] = { 11 }, [12] = { 11, 12 }, [13] = { 11, 13 } -- Chaos: Thief / Ninja / Samurai
++  [11] = { 11 }, [12] = { 11, 12 }, [13] = { 11, 13 }, -- Chaos: Thief / Ninja / Samurai
++  [17] = { 17 }, [18] = { 17, 18 }, [19] = { 17, 19 }, -- Chaos: Monk / Shadowfist / Iron Sage
++  [20] = { 20 }, [21] = { 20, 21 }, [22] = { 20, 22 }, -- Chaos: Necromancer / Lich / Bone Lord
++  [23] = { 23 }, [24] = { 23, 24 }, [25] = { 23, 25 } -- Chaos: Templar / Inquisitor / Sentinel
  }
  
  -- Retorna a lista de IDs de vocação do cliente correspondente à vocação enviada pelo servidor
 --- a/mods/game_helper/tools_panel.lua
 +++ b/mods/game_helper/tools_panel.lua
-@@ -427,12 +427,12 @@
+@@ -427,12 +427,15 @@
    local player = getPlayer()
    if not player then return 0 end
    local voc = player:getVocation()
@@ -363,6 +413,9 @@
 +  if voc == 1 or voc == 5 then return 3 end -- Mystic / Elementalist
 +  if voc == 10 then return 4 end -- Illusionist (the druid's heals)
 +  if voc == 11 or voc == 12 or voc == 13 then return 6 end -- Thief / Ninja / Samurai
++  if voc == 20 or voc == 21 or voc == 22 then return 7 end -- Necromancer / Lich / Bone Lord
++  if voc == 17 or voc == 18 or voc == 19 then return 8 end -- Monk / Shadowfist / Iron Sage
++  if voc == 23 or voc == 24 or voc == 25 then return 9 end -- Templar / Inquisitor / Sentinel
    return voc
  end
  
@@ -372,8 +425,8 @@
          GameAstraExtendedSpellIds = 152,
          // Chaos 10.98 server: seven crafting skills follow fishing in the skills packet
          GameChaosCraftingSkills = 153,
-+        // Chaos 10.98 server: the vocation byte is the class: the base slot (1 warrior, 2 ranger, 3 mystic, 6 thief),
-+        // + 10 for the first ascended class, + 20 for the second
++        // Chaos 10.98 server: the vocation byte is the class: the base slot (1 warrior, 2 ranger, 3 mystic, 6 thief,
++        // 7 necromancer, 8 monk, 9 templar), + 10 for the first ascended class, + 20 for the second
 +        GameChaosVocationIds = 154,
  
 -        LastGameFeature = 154
@@ -383,7 +436,7 @@
      enum PathFindResult {
 --- a/src/client/protocolgameparse.cpp
 +++ b/src/client/protocolgameparse.cpp
-@@ -2122,6 +2122,21 @@
+@@ -2122,6 +2122,23 @@
      if (g_game.getFeature(Otc::GamePremiumExpiration))
          /*int premiumEx = */msg->getU32(); // premium expiration used for premium advertisement
      int vocation = msg->getU8(); // vocation
@@ -391,15 +444,17 @@
 +        // the class byte (base slot + 10 / + 20 for the two ascended classes) -> the server's vocation id, which the
 +        // modules use (docs/CLASSES.md): 1/11/21 Warrior / Juggernaut / Berserker (4 / 8 / 14), 2/12/22 Ranger /
 +        // Deadeye / Beastmaster (3 / 7 / 15), 3/13/23 Mystic / Elementalist / Illusionist (1 / 5 / 10), 6/16/26
-+        // Thief / Ninja / Samurai (11 / 12 / 13); the retired druid / illusionist bytes 4 and 5 read as the Mystic
-+        static const int toServerId[3][7] = {
-+            { 0, 4, 3, 1, 1, 1, 11 },
-+            { 0, 8, 7, 5, 10, 10, 12 },
-+            { 0, 14, 15, 10, 10, 10, 13 },
++        // Thief / Ninja / Samurai (11 / 12 / 13), 7/17/27 Necromancer / Lich / Bone Lord (20 / 21 / 22), 8/18/28
++        // Monk / Shadowfist / Iron Sage (17 / 18 / 19), 9/19/29 Templar / Inquisitor / Sentinel (23 / 24 / 25); the
++        // retired druid / illusionist bytes 4 and 5 read as the Mystic
++        static const int toServerId[3][10] = {
++            { 0, 4, 3, 1, 1, 1, 11, 20, 17, 23 },
++            { 0, 8, 7, 5, 10, 10, 12, 21, 18, 24 },
++            { 0, 14, 15, 10, 10, 10, 13, 22, 19, 25 },
 +        };
 +        const int tier = vocation / 10;
 +        const int slot = vocation % 10;
-+        if (tier <= 2 && slot <= 6)
++        if (tier <= 2 && slot <= 9)
 +            vocation = toServerId[tier][slot];
 +    }
  

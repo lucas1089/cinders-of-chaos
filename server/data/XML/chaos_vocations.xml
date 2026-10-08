@@ -1,8 +1,10 @@
-<!-- Chaos vocations: the four base classes and their ascended classes (docs/CLASSES.md). server/tools/add_vocations.py
-     installs them into the base server's data/XML/vocations.xml between "BEGIN chaos vocations" / "END chaos vocations"
-     markers (idempotent): an entry of this table replaces the base server's entry with the same id, and the retired
-     ids 2, 6 and 9 (Druid, Elder Druid, Illusionist) are removed (data/scripts/chaos/class_migration.lua moves their
-     characters at the first start: Druid and Illusionist -> Mystic, Elder Druid -> Illusionist).
+<!-- Chaos vocations: the four base classes and their ascended classes (docs/CLASSES.md). The Monk, Necromancer and
+     Templar lines are in the fragments next to this file (chaos_vocations_monk.xml, chaos_vocations_necro.xml,
+     chaos_vocations_templar.xml; their numbers are explained there). server/tools/add_vocations.py installs all of
+     them into the base server's data/XML/vocations.xml between "BEGIN chaos vocations" / "END chaos vocations" markers
+     (idempotent): an entry of this table replaces the base server's entry with the same id, and the retired ids 2, 6
+     and 9 (Druid, Elder Druid, Illusionist) are removed (data/scripts/chaos/class_migration.lua moves their characters
+     at the first start: Druid and Illusionist -> Mystic, Elder Druid -> Illusionist).
 
      | id | class | base | was | client byte |
      |  4 | Warrior      | 4  | Knight            |  1 |
@@ -17,14 +19,23 @@
      | 11 | Thief        | 11 | (phase 1)         |  6 |
      | 12 | Ninja        | 11 | (phase 1)         | 16 |
      | 13 | Samurai      | 11 | (phase 1)         | 26 |
+     | 17 | Monk         | 17 | (new, fragment)   |  8 |
+     | 18 | Shadowfist   | 17 | (new, fragment)   | 18 |
+     | 19 | Iron Sage    | 17 | (new, fragment)   | 28 |
+     | 20 | Necromancer  | 20 | (new, fragment)   |  7 |
+     | 21 | Lich         | 20 | (new, fragment)   | 17 |
+     | 22 | Bone Lord    | 20 | (new, fragment)   | 27 |
+     | 23 | Templar      | 23 | (new, fragment)   |  9 |
+     | 24 | Inquisitor   | 23 | (new, fragment)   | 19 |
+     | 25 | Sentinel     | 23 | (new, fragment)   | 29 |
 
      Ids that map 1:1 keep their number, so items, spells, NPCs and the database keep working. Both ascended classes of a
      base name it as fromvoc: the engine knows one promotion per vocation, so the choice is made by
      data/scripts/chaos/ascension.lua (!ascend <class>), never by the engine's promotion.
 
-     clientid: the vocation byte of the login packet (0x9F): the base slot (1 warrior, 2 ranger, 3 mystic, 6 thief)
-     + 10 for the first ascended class, + 20 for the second, so the client can tell all of them apart
-     (client/base-patches/0016-chaos-vocation-ids.patch maps the bytes back to these ids).
+     clientid: the vocation byte of the login packet (0x9F): the base slot (1 warrior, 2 ranger, 3 mystic, 6 thief,
+     7 necromancer, 8 monk, 9 templar) + 10 for the first ascended class, + 20 for the second, so the client can
+     tell all of them apart (client/base-patches/0016-chaos-vocation-ids.patch maps the bytes back to these ids).
 
      Gains and skills: Warrior / Juggernaut, Ranger / Deadeye, Mystic / Elementalist are the Knight / Elite Knight, Paladin /
      Royal Paladin and Sorcerer / Master Sorcerer values; the Illusionist keeps the Arch Illusionist's (health 7, mana 27).

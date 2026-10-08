@@ -81,6 +81,25 @@ return {
 			},
 			role = "thief"
 		},
+		monk = { -- the Monk line fights unarmed: no weapon, the light armour the Ranger may wear (add_vocations.py)
+			equip = {
+				{slot = "head", id = 2461}, -- leather helmet
+				{slot = "armor", id = 2467}, -- leather armor
+				{slot = "legs", id = 2468}, -- studded legs
+				{slot = "feet", id = 2643}
+			},
+			backpack = {
+				{id = 7618, count = 10},
+				{id = 7620, count = 5}
+			},
+			role = "thief" -- the unrestricted potions
+		},
+		necromancer = { -- the Necromancer line wields and wears what the Mystic does (add_vocations.py): the caster kit
+			base = "mystic"
+		},
+		templar = { -- the Templar line: a one-handed sword and a shield, the armour the Warrior wears (add_vocations.py)
+			base = "warrior"
+		},
 		ninja = { -- like the Thief, with a second dagger for the off hand
 			base = "thief",
 			backpack = {
@@ -105,7 +124,8 @@ return {
 	},
 
 	-- vocation id -> kit, by the class ids of Chaos.classes.ids (chaos_constants.lua, docs/CLASSES.md): a character is
-	-- created as Warrior 4, Ranger 3, Mystic 1 or Thief 11; the ascended classes are listed too (staff re-grants, a
+	-- created as Warrior 4, Ranger 3, Mystic 1, Thief 11, Monk 17, Necromancer 20 or Templar 23 (the last three behind the
+	-- store's class unlock); the ascended classes are listed too (staff re-grants, a
 	-- class changed before the first login). The retired ids 2, 6 and 9 have no row (class_migration.lua moves them;
 	-- they would get `default`). A new class needs one row here, or ChaosNewPlayer.setKit from its own script.
 	vocations = {
@@ -120,7 +140,16 @@ return {
 		[10] = "mystic", -- Illusionist
 		[11] = "thief", -- Thief
 		[12] = "ninja", -- Ninja
-		[13] = "thief" -- Samurai
+		[13] = "thief", -- Samurai
+		[17] = "monk", -- Monk
+		[18] = "monk", -- Shadowfist
+		[19] = "monk", -- Iron Sage
+		[20] = "necromancer", -- Necromancer
+		[21] = "necromancer", -- Lich
+		[22] = "necromancer", -- Bone Lord
+		[23] = "templar", -- Templar
+		[24] = "templar", -- Inquisitor
+		[25] = "templar" -- Sentinel
 	},
 	-- vocations the kit never handles: the base server's creaturescripts/firstitems.lua already equips vocation 0
 	skipVocations = {[0] = true},

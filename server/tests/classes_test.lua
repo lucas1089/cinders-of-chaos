@@ -195,4 +195,36 @@ eq(C.dodges(4, true, 0.0), false, "knights do not dodge")
 eq(C.poisonTick(400), math.floor(400 * cfg.poisonBlades.share / cfg.poisonBlades.ticks + 0.5), "poison per tick")
 eq(C.poisonTick(0), 1, "at least 1")
 
+-- ------------------------------------------------------------------ the Monk, Necromancer and Templar lines
+-- (ids and choices in chaos_constants.lua; each line's own rules: tests/monk_test.lua, necro_test.lua, templar_test.lua)
+eq(cfg.ids.monk, 17); eq(cfg.ids.shadowfist, 18); eq(cfg.ids.ironsage, 19)
+eq(C.ascensionFor(17, 100, "shadowfist", true, false), 18, "monk -> shadowfist")
+eq(C.ascensionFor(17, 100, "ironsage", true, false), 19, "monk -> iron sage")
+eq(C.ascensionFor(17, 99, "ironsage", true, false), nil, "monk: level 100")
+eq(C.ascensionFor(18, 300, "ironsage", true, false), nil, "final: a shadowfist cannot switch")
+eq(C.ascensionFor(11, 300, "shadowfist", true, false), nil, "not a choice of the thief")
+eq(C.baseOf(19), 17, "iron sage line"); eq(C.isAscended(18), true); eq(C.isThiefLine(17), false)
+eq(C.keystoneKey(17), nil, "the Monk has no passive tree entry yet")
+
+eq(C.ascensionFor(20, 100, "lich", true, false), 21, "necromancer -> lich")
+eq(C.ascensionFor(20, 300, " BoneLord ", true, false), 22, "necromancer -> bone lord (trimmed, case-free)")
+eq(C.ascensionFor(20, 99, "lich", true, false), nil, "necromancer level 99 refused")
+eq(C.ascensionFor(21, 300, "bonelord", true, false), nil, "an ascended lich cannot ascend again")
+eq(C.baseOf(22), 20, "bone lord's base"); eq(C.isAscended(21), true, "lich is ascended")
+eq(C.keystoneKey(20), nil, "no passive tree entry yet")
+local necroCfg = dofile("data/scripts/chaos/necro_config.lua")
+for key, vid in pairs(necroCfg.ids) do eq(cfg.ids[key], vid, "Chaos.classes.ids." .. key .. " = necro_config.lua") end
+
+eq(cfg.ids.templar, 23); eq(cfg.ids.inquisitor, 24); eq(cfg.ids.sentinel, 25)
+eq(C.ascensionFor(23, 100, "inquisitor", true, false), 24, "templar -> inquisitor")
+eq(C.ascensionFor(23, 100, "sentinel", true, false), 25, "templar -> sentinel")
+eq(C.ascensionFor(24, 300, "sentinel", true, false), nil, "final: an inquisitor cannot switch")
+eq(C.baseOf(25), 23, "sentinel line"); eq(C.isAscended(23), false); eq(C.keystoneKey(23), nil)
+
+-- the vocation change words name every class of the three lines
+for _, w in ipairs({"monk", "shadowfist", "ironsage", "necromancer", "lich", "bonelord", "templar", "inquisitor", "sentinel"}) do
+	eq(Chaos.shopServices.vocations[w] ~= nil, true, "!changevocation " .. w)
+	eq(("|" .. Chaos.shopServices.vocationWords .. "|"):find("|" .. w .. "|", 1, true) ~= nil, true, "word list names " .. w)
+end
+
 print("classes_test: OK")

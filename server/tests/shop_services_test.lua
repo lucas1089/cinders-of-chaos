@@ -182,6 +182,29 @@ assert(S.check(pl, pouchOffer):find("already own"), "pouch owned")
 assert(S.check(pl, {kind = "unlock", unlock = "nope"}), "unknown unlock refused")
 assert(S.check(pl, {kind = "service", service = "nope"}), "unknown service refused")
 
+-- a class unlock (class_unlocks.lua, per account): the store asks ChaosClassUnlocks.storeUnlock for the entry
+do
+	local owned, granted = false, 0
+	ChaosClassUnlocks = {storeUnlock = function(name)
+		if name ~= "unlockTemplar" then
+			return nil
+		end
+		return {name = "the Templar class", done = "",
+			owned = function() return owned end,
+			grant = function() granted = granted + 1; owned = true; return true end}
+	end}
+	local classOffer = {kind = "unlock", unlock = "unlockTemplar"}
+	eq(S.check(pl, classOffer), nil, "class unlock can be bought")
+	eq(S.deliver(pl, classOffer), true, "class unlock delivered")
+	eq(granted, 1, "granted through class_unlocks.lua")
+	assert(S.check(pl, classOffer):find("already own"), "class unlock owned")
+	assert(S.check(pl, {kind = "unlock", unlock = "unlockNope"}), "unknown class unlock refused")
+	ChaosClassUnlocks = {storeUnlock = function() return {name = "x", done = "", owned = function() return false end,
+		grant = function() return false, "db down" end} end}
+	eq(S.deliver(pl, classOffer), "db down", "a failed grant is an error (shop.lua refunds)")
+	ChaosClassUnlocks = nil
+end
+
 -- stamina: refused when full
 eq(S.check(pl, {kind = "service", service = "stamina"}), nil, "stamina not full")
 eq(S.deliver(pl, {kind = "service", service = "stamina"}), true, "stamina delivered")

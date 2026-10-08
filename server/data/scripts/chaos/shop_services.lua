@@ -2,7 +2,8 @@
 --
 --   {kind = "service", service = "<handler>", ...}   something done for the character right away (stamina, world
 --                                                   buff, name change token, ...); handlers in S.services below
---   {kind = "unlock", unlock = "<name>"}            a permanent per-character flag (storage), see S.unlocks
+--   {kind = "unlock", unlock = "<name>"}            a permanent flag: per character (a storage, S.unlocks) or, for
+--                                                   a class, per account (class_unlocks.lua)
 --
 -- shop.lua calls ChaosShopServices.check(player, offer) BEFORE taking coins (a text = refused, nothing is taken)
 -- and ChaosShopServices.deliver(player, offer) after; deliver returns true or an error text, and shop.lua refunds
@@ -319,6 +320,16 @@ S.unlocks = {
 		done = "Set it in the Loot Filter (!lootfilter or Hunt -> Loot Filter)."}
 }
 
+-- an unlock entry: S.unlocks (per character, a storage) or a class unlock (per account, class_unlocks.lua:
+-- {name, done, owned = fn(player), grant = fn(player)})
+local function unlockEntry(name)
+	local u = S.unlocks[name or ""]
+	if not u and ChaosClassUnlocks and ChaosClassUnlocks.storeUnlock then
+		u = ChaosClassUnlocks.storeUnlock(name)
+	end
+	return u
+end
+
 local function tokenService(storage, what, command)
 	return {
 		check = function(player)
@@ -503,11 +514,17 @@ S.services = {
 -- ------------------------------------------------------------------------ entry points for shop.lua
 function S.check(player, offer)
 	if offer.kind == "unlock" then
-		local u = S.unlocks[offer.unlock]
+		local u = unlockEntry(offer.unlock)
 		if not u then
 			return "This offer cannot be bought."
 		end
-		if player:getStorageValue(u.storage) > 0 then
+		local owned
+		if u.owned then
+			owned = u.owned(player)
+		else
+			owned = player:getStorageValue(u.storage) > 0
+		end
+		if owned then
 			return "You already own " .. u.name .. "."
 		end
 		return nil
@@ -521,11 +538,18 @@ end
 
 function S.deliver(player, offer)
 	if offer.kind == "unlock" then
-		local u = S.unlocks[offer.unlock]
+		local u = unlockEntry(offer.unlock)
 		if not u then
 			return "This offer cannot be bought."
 		end
-		player:setStorageValue(u.storage, 1)
+		if u.grant then
+			local ok, err = u.grant(player)
+			if not ok then
+				return err or "Something went wrong. Your coins were refunded."
+			end
+		else
+			player:setStorageValue(u.storage, 1)
+		end
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You unlocked " .. u.name .. ". " .. u.done)
 		return true
 	end
@@ -779,6 +803,15 @@ function vocTalk.onSay(player, words, param)
 	if not newVoc then
 		player:sendCancelMessage("That vocation does not exist on this server.")
 		return false
+	end
+	-- the class lock (class_unlocks.lua): a locked class needs the account's unlock; the token is kept
+	if ChaosClassUnlocks and ChaosClassUnlocks.canUseVocation then
+		local allowed, lockMessage = ChaosClassUnlocks.canUseVocation(player, newId)
+		if not allowed then
+			player:sendTextMessage(MESSAGE_INFO_DESCR, (lockMessage or "That class is locked. Unlock it in the store.")
+				.. " Your Vocation Change is kept.")
+			return false
+		end
 	end
 	if inCombat(player) then
 		player:sendCancelMessage("You cannot change your vocation in combat.")

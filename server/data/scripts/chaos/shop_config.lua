@@ -11,7 +11,8 @@
 --   {kind = "service", service = "<handler>", icon = <item id>, ...}  done right away by shop_services.lua
 --       stamina | templeScroll (uses = n) | worldBuff (buff = "xp" | "loot" | "skill") | nameToken |
 --       vocationToken | blessings | skullRemover | sexChange | passiveReset
---   {kind = "unlock", unlock = "lootPouch" | "autoSeller", icon = <item id>}   permanent, per character
+--   {kind = "unlock", unlock = "lootPouch" | "autoSeller" | "rarityAutoloot", icon = <item id>}   permanent, per character
+--   {kind = "unlock", unlock = "unlockNecromancer" | "unlockMonk" | "unlockTemplar", ...}  a class, per account (class_unlocks.lua)
 --   Services and unlocks need name and description; the icon is only a picture (iconCount for a coin pile).
 -- Names, descriptions and the category icon are what the client shows. Cosmetics without a name take
 -- the one from their XML file.
@@ -120,6 +121,19 @@ return {
 					description = "Permanent: loot on your !autosell list is sold at NPC prices, gold to your bank."},
 				{kind = "unlock", unlock = "rarityAutoloot", icon = 2472, cost = 400, name = "Rarity Autoloot",
 					description = "Permanent: autoloot by rarity in the Loot Filter: take good gear, leave junk."}
+			}
+		},
+		{
+			-- class unlocks (class_unlocks.lua): account-wide; offer names and prices must match
+			-- ChaosClassUnlocksCore.config (class_unlocks_core.lua). PLACEHOLDER PRICES (750 each), to be decided.
+			name = "Classes", icon = {item = 2523},
+			offers = {
+				{kind = "unlock", unlock = "unlockNecromancer", icon = 2436, cost = 750, name = "Necromancer",
+					description = "Unlocks the Necromancer class (Lich, Bone Lord) for every character of your account."},
+				{kind = "unlock", unlock = "unlockMonk", icon = 7422, cost = 750, name = "Monk",
+					description = "Unlocks the Monk class (Shadowfist, Iron Sage) for every character of your account."},
+				{kind = "unlock", unlock = "unlockTemplar", icon = 2523, cost = 750, name = "Templar",
+					description = "Unlocks the Templar class (Inquisitor, Sentinel) for every character of your account."}
 			}
 		},
 		{
