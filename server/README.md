@@ -145,7 +145,7 @@ notifications
 - `/gmnotify` is allowed for any group with `Group:getAccess()`.
 
 passivetree
-- Tree shape comes from the client's `nodes.lua` (618 nodes; the file records 932 stat entries).
+- Tree shape comes from the client's `nodes.lua` (624 nodes; the generator records 951 stat entries, per-vocation keystone variants included).
   Regenerate `passivetree_data.lua` with `tools/gen_passivetree_data.lua` whenever the client tree changes.
 - Points formula is invented: `(level - 8) * 1` plus storage `7100020`. Change `Chaos.passive`.
 - Only one preset slot exists in the client UI; presets 0 and 1 are the same slot. `refund` is just a resync.
@@ -257,6 +257,44 @@ The tree now has an effect: after every save, reset and login the summed node st
 - **Experience, loot, speed:** experience multiplier, the item-find storage that `loot.lua` reads (loot plus rarity loot), and `changeSpeed` by the difference (capped at 80).
 - The conversion factors from node value to game value are in `cfg` at the top of the file (for example 1 point of experience = 0.1%), and the client tooltip shows the same numbers.
 - `server/tests/passivetree_effects_test.lua` checks the maths and the apply/remove logic against a mocked engine API and runs in CI. It does not prove the real API calls (`Condition`, `setCharacterStat`, `changeSpeed`, `onTargetCombat`) behave as assumed: that needs a server run. Speed bonuses are not restored after a death or a speed-resetting spell until the next save or login.
+
+## Passive tree keystones (`passivetree_keystones.lua`)
+Two new paths at the edge of the tree, each two notables and a keystone (1 point per node, like every node): **Wrath**
+(619 Gathering Fury, 620 Edge of Ruin, keystone 621; starts at node 600, north-east) and **Resolve** (622 Iron Resolve,
+623 Unbroken Will, keystone 624; starts at node 489, south-west). Both keystones sit about 25 nodes from the start, like the
+divine nodes. A keystone node has one variant per vocation (`knight = {...}`, `paladin = {...}` in the client's `nodes.lua`; the
+generator writes them to `v` in `passivetree_data.lua`, and `ChaosPassiveTree.getBonuses` takes the variant of the player's
+vocation, by the vocation's client id). The server also sends the vocation key with `sendNodes`, so the client shows the same
+variant the server applies (the client's own vocation number did not match: an Elite Knight reported 4, "druid").
+
+| Vocation | Wrath (621) | Resolve (624) |
+|---|---|---|
+| Knight | Cleaving Arc: two-handed melee hits also hit up to 3 other enemies next to you for 40% | Bulwark: with a shield, 15% to block a melee/ranged attack completely; 30% of melee damage taken reflected |
+| Paladin | Ricochet: bow/crossbow hits, 30% to bounce to the nearest other enemy within 4 sqm for 65%, then once more for 42%; never the same target twice | Deadeye: crossbow + bolts, 15% for a shot with double damage |
+| Sorcerer | Arcane Echo: a spell hitting 2+ enemies, 35% to repeat 0.6 s later on the same spots for 50%; 3 s cooldown | Elemental Overload: a spell hit primes the other elements, the next spell of another element within 8 s deals +20% |
+| Druid | Overgrowth: heals on others heal 30% more over 6 s (3 pulses) | Thorns: melee/ranged attackers take 30% of their hit + 2 x magic level as earth damage |
+| Illusionist (support) | Shared Phantasm: your hits mark the enemy for 6 s; other party members deal +12% to it | Inspiring Illusion: other party members within 8 sqm deal +8% damage |
+
+- Every extra hit (cleave, ricochet, echo, reflect, thorns, regrowth) is dealt from an `addEvent` with `ChaosKeystones.depth > 0` and
+  `ORIGIN_SPELL`: no keystone, no passive bonus (`passivetree_effects.lua` skips it) and no weapon style (two-handed factor, arrow
+  splash) applies to it, so nothing chains. Targets: monsters that are not a player's summon; players only where
+  `ChaosSpell.canAttack` (the PvP rules) allows it. The illusionist bonuses need a party, never apply to the illusionist and are
+  not given or received by multi-client characters (`Chaos.isMultiClient`).
+- The event order matters: the keystones' `onTargetCombat` callback registers with index 1, after the passive tree's and the weapon
+  style's (index 0), so the cleave/ricochet share is taken of the hit after the passive bonuses and the two-handed factor.
+- Visuals: cleave `blood_slash`, ricochet a bolt/arrow missile between the targets, Deadeye `holy_cross`, echo `arcane_burst` on each
+  tile, overload `arcane_circle` on the caster, regrowth plants then `heal_sparkle`, thorns an earth missile and plant attack, Bulwark
+  the block / shockwave effect, Shared Phantasm `arcane_circle` on a newly marked enemy; plus `ChaosCombatFx.dodge/reflect/crit`
+  when that module is loaded. Icons: `client/tools/gen_keystone_icons.py` -> `data/images/passivetree/keystones.png`.
+- Measured on the test server (level 1000, 60-120 s of auto attack against the balance dummies, 5 dummies, two next to the knight):
+  knight two-handed 456/s on the main dummy, with Cleaving Arc 503/s main + 454/s on the 2 neighbours; paladin crossbow 766/s single,
+  Deadeye 833/s (+9% in 90 s, +15% expected), Ricochet 742/s main + 312/s on the others; sorcerer Rime Bloom 5150 per cast on 5 targets,
+  every cast echoing 7490 (+45%), with the real 35% chance +16% expected; alternating ice and fire spells +15% with Overload; Thorns
+  reflected 569 per 970 melee hit (magic level 157), Bulwark blocked 2 of 20 hits and reflected 329 per hit.
+- Not measured in game: Overgrowth and the illusionist party bonuses (they need a second character); the unit test covers them.
+- `server/tests/passivetree_keystones_test.lua`: chance maths, cleave and ricochet target choice, echo cooldown, overload priming, party
+  bonus, the engine glue against mocked creatures, the recursion guard, the per-vocation data and that the client tooltips state the
+  server's numbers.
 
 ## Infinity Tower gameplay (`infinitytower_run.lua`)
 The tower exists now. `!tower start` (or the new Enter Tower button of the client window, action `enter`) takes you, or your party (leader only, members within 12 tiles, up to 4), into an arena that is built at runtime with `Game.createTile` in an empty part of the map (x from 2000, y 2000, z 7; sixteen arenas side by side), so no map editing is needed. Floors are waves: kill everything to open the next one (6 s pause, half of the missing health and mana restored, `floorGold` x floor gold); every 10th floor is a boss floor with its helpers. Pools get harder every 8 floors, and the chance of magic, rare and legendary monsters (with their modifiers and shaders) rises with the floor. A floor has a 300 s limit. Dying, leaving (`!tower leave`), logging out or running out of time ends your part of the run and records the cleared floors with `ChaosTower.recordRun` (points, best floor, ranking, milestones). Logging in inside an arena sends you to the temple. Milestone rewards now use item ids that exist (gold, Chaos and Divine Orbs, Soulreaper). Everything is configured at the top of the file (`ChaosTowerRunConfig`).

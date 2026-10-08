@@ -8,7 +8,7 @@
 --                     resetPreset N                      -> costs level*250 gold, then sendNodes + sendPoints
 --                     refund                             -> resync (sendPoints + sendNodes)
 --   server -> client  {"action":"sendPoints","data":<free points number>}
---                     {"action":"sendNodes","data":{"preset":N,"presetsTable":[{"name":".."}],"nodes":[ids]}}
+--                     {"action":"sendNodes","data":{"preset":N,"presetsTable":[{"name":".."}],"nodes":[ids],"vocation":"knight"}}
 --                     {"action":"sendMessage","data":{"title":"..","message":".."}}
 --
 -- Tree topology comes from passivetree_data.lua (generated from the client's nodes.lua).
@@ -99,7 +99,9 @@ local function sendNodes(player, rows)
 	Chaos.send(player, OPCODE, "sendNodes", {
 		preset = active and active.preset or 0,
 		presetsTable = presetsTable,
-		nodes = active and active.nodes or {}
+		nodes = active and active.nodes or {},
+		-- which per-vocation node variants (keystones) the client must show: the ones the server applies
+		vocation = ChaosPassiveTree.vocationKey and ChaosPassiveTree.vocationKey(player) or nil
 	})
 end
 
@@ -144,16 +146,30 @@ local function validateNodes(player, rawNodes)
 	return ids
 end
 
+-- vocation key of the per-vocation node variants (keystones), by the client's vocation id like the client module
+local VOCATION_KEY = {[1] = "knight", [2] = "paladin", [3] = "sorcerer", [4] = "druid", [5] = "illusionist", [6] = "monk"}
+function ChaosPassiveTree.vocationKey(player)
+	local vocation = player:getVocation()
+	return vocation and VOCATION_KEY[vocation:getClientId()] or nil
+end
+
+-- stats a node gives this vocation: its own variant (node.v) if it has one, else the shared stats
+function ChaosPassiveTree.nodeStats(node, vocationKey)
+	return (node.v and vocationKey and node.v[vocationKey]) or node.s
+end
+
 function ChaosPassiveTree.getBonuses(player)
 	local tree = getTree()
 	local rows = loadPresets(player:getGuid())
 	local active = activePreset(rows)
 	local bonuses = {}
+	local vocationKey = ChaosPassiveTree.vocationKey(player)
 	if active then
 		for _, id in ipairs(active.nodes) do
 			local node = tree.nodes[id]
-			if node and node.s then
-				for stat, value in pairs(node.s) do
+			local stats = node and ChaosPassiveTree.nodeStats(node, vocationKey)
+			if stats then
+				for stat, value in pairs(stats) do
 					bonuses[stat] = (bonuses[stat] or 0) + value
 				end
 			end

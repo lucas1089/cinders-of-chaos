@@ -1,6 +1,7 @@
 -- passivetree_data.lua  (GENERATED from client/overlay/modules/game_passivetree/treedata/nodes.lua)
 -- Do not edit by hand: regenerate with server/tools/gen_passivetree_data.lua if the client tree changes.
--- Format: ChaosPassiveTreeData.nodes[id] = { n = {neighbour ids (undirected)}, s = {customStats} }
+-- Format: ChaosPassiveTreeData.nodes[id] = { n = {neighbour ids (undirected)}, s = {customStats},
+--         v = {[vocation] = {customStats of that vocation's variant}} (keystones; replaces s for that vocation) }
 if ChaosPassiveTreeData then return ChaosPassiveTreeData end
 ChaosPassiveTreeData = { root = 1, nodes = {
 [1]={n={2,3,4,5,6,7}},
@@ -491,7 +492,7 @@ ChaosPassiveTreeData = { root = 1, nodes = {
 [486]={n={487,490},s={incrementDrown=1}},
 [487]={n={486,488},s={absorbDrown=1}},
 [488]={n={487,489,495},s={incrementDrown=1}},
-[489]={n={488,491},s={absorbDrown=1}},
+[489]={n={488,491,622},s={absorbDrown=1}},
 [490]={n={261,486,491},s={absorbDrown=1}},
 [491]={n={489,490},s={incrementDrown=1}},
 [492]={n={493,494},s={experience=10,loot=10,strength=2,vitality=2}},
@@ -602,7 +603,7 @@ ChaosPassiveTreeData = { root = 1, nodes = {
 [597]={n={596,598},s={incrementArcane=6}},
 [598]={n={593,597,599},s={absorbArcane=4}},
 [599]={n={598},s={absorbArcane=6,incrementArcane=15,intelligence=3,magicSkill=2,speed=500}},
-[600]={n={601,604},s={absorbWater=1}},
+[600]={n={601,604,619},s={absorbWater=1}},
 [601]={n={600,602},s={incrementWater=1}},
 [602]={n={245,601,603},s={absorbWater=1}},
 [603]={n={602,605},s={incrementWater=1}},
@@ -621,5 +622,11 @@ ChaosPassiveTreeData = { root = 1, nodes = {
 [616]={n={615,617,618},s={absorbWater=4}},
 [617]={n={612,616},s={incrementWater=6}},
 [618]={n={616},s={absorbWater=6,experience=20,incrementWater=15,intelligence=2,spirit=5,vitality=5,wisdom=3}},
+[619]={n={600,620},s={incrementPhysical=3,multiIncrement=3}},
+[620]={n={619,621},s={incrementHealth=4,incrementPhysical=4,multiIncrement=4}},
+[621]={n={620},v={druid={ksOvergrowth=1},illusionist={ksSharedPhantasm=1},knight={ksCleavingArc=1},paladin={ksRicochet=1},sorcerer={ksArcaneEcho=1}}},
+[622]={n={489,623},s={spirit=2,vitality=2}},
+[623]={n={622,624},s={absorbAllElements=2,absorbPhysical=2}},
+[624]={n={623},v={druid={ksThorns=1},illusionist={ksInspiringIllusion=1},knight={ksBulwark=1},paladin={ksDeadeye=1},sorcerer={ksOverload=1}}},
 } }
 return ChaosPassiveTreeData

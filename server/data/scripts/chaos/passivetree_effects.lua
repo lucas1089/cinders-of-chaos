@@ -241,7 +241,9 @@ ChaosPassiveTree.listeners[#ChaosPassiveTree.listeners + 1] = applyAll
 -- ---------------------------------------------------------------- damage dealt / healing
 local dealt = CreatureEvent("ChaosPassiveDealt")
 function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
-	if attacker and attacker:isPlayer() then
+	-- keystone procs (passivetree_keystones.lua) are a share of a hit that already had these bonuses
+	local procActive = ChaosKeystones and ChaosKeystones.depth and ChaosKeystones.depth > 0
+	if attacker and attacker:isPlayer() and not procActive then
 		local bonuses = ChaosPassiveCache[attacker:getId()]
 		if bonuses then
 			local m1 = (1 + ChaosPassiveDamagePercent(bonuses, primaryType) / 100) * ChaosPassiveStatMultiplier(bonuses, primaryType, origin)

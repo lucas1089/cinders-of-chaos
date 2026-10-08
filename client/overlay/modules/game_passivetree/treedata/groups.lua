@@ -710,6 +710,20 @@ function getTreeGroups()
 			y = -2550,
 			nodes = {}
 		},
+		--- group 102: Wrath keystone (one keystone per vocation, nodes 619-621) ---
+		{
+			orbit = 260,
+			x = 700,
+			y = -2330,
+			nodes = {}
+		},
+		--- group 103: Resolve keystone (one keystone per vocation, nodes 622-624) ---
+		{
+			orbit = 261,
+			x = -700,
+			y = 2330,
+			nodes = {}
+		},
 		  
 		  
 	}

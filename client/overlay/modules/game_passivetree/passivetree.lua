@@ -29,7 +29,14 @@ local m_sqrt = math.sqrt
 local m_max = math.max
 
 
+-- the vocation whose node variants (keystones) are shown; the server names it in sendNodes, because the
+-- number the client's player:getVocation() returns does not follow one scheme (an Elite Knight reports 4)
+local serverVocation = nil
+
 local function getPlayerVocation()
+  if serverVocation then
+    return serverVocation
+  end
   local player = g_game.getLocalPlayer()
   local cid = player:getVocation()
   if cid == 1 then
@@ -341,6 +348,9 @@ function createNodes()
 				widget.setIconOffsetX(widget, widget.getIconOffsetX(widget)*SCALE)
 				widget.setIconOffsetY(widget, widget.getIconOffsetY(widget)*SCALE)
 				widget.setImageClip(widget, icon.x .. " " .. icon.y .. " " .. icon.w .. " " .. icon.h)
+				if icon.file then -- keystone icons live in their own sheet (treedata/icons.lua)
+					widget.setImageSource(widget, icon.file)
+				end
 
 				local tooltipType = 1
 				
@@ -365,6 +375,10 @@ function createNodes()
 
 				if customStats then
 					local texts = getCustomStatString(customStats)
+					-- keystones: the vocation's own description lines under the stats
+					for _, line in ipairs((vocationNode and vocationNode.stats) or {}) do
+						table.insert(texts, line)
+					end
 
 					widget.setExtendedTooltip(widget, nodeName .. ((DEBUG and " (ID: " .. id .. ")") or ""), texts, tooltipType)
 				elseif node.stats then
@@ -508,6 +522,9 @@ function onExtendedOpcode(protocol, code, buffer)
 end
 
 function updateNodes(data)
+	if type(data.vocation) == "string" then
+		serverVocation = data.vocation
+	end
 	currentPreset = data.preset
 	currentSelected = currentPreset
 
@@ -1052,7 +1069,7 @@ local vocationSpecials = {
 
 function calculateStats()
 	local bonuses = getSkillTreeBonuses()
-	local bonusText = getCustomStatString(bonuses)
+	local bonusText = getCustomStatString(bonuses, true)
 	local stats = window:recursiveGetChildById("stats")
 	local labels = stats.recursiveGetChildById(stats, "labels")
 
@@ -1081,6 +1098,7 @@ function calculateStats()
 end
 
 function destroy()
+	serverVocation = nil -- the next character may have another vocation
 	if window then
 		view = nil
 		decoView = nil
@@ -1318,8 +1336,29 @@ function sendMessageBox(title, message)
 	return 
 end
 
-function getCustomStatString(t)
+-- keystone stats (nodes 621 and 624, one per vocation); effects on the server in passivetree_keystones.lua
+KEYSTONE_NAMES = {
+	ksCleavingArc = "Cleaving Arc", ksBulwark = "Bulwark", ksRicochet = "Ricochet", ksDeadeye = "Deadeye",
+	ksArcaneEcho = "Arcane Echo", ksOverload = "Elemental Overload", ksOvergrowth = "Overgrowth", ksThorns = "Thorns",
+	ksSharedPhantasm = "Shared Phantasm", ksInspiringIllusion = "Inspiring Illusion"
+}
+
+-- withKeystones: also list the allocated keystones by name (the bonus summary; a node's tooltip has the name as title)
+function getCustomStatString(t, withKeystones)
 	local texts = {}
+
+	if withKeystones then
+		local names = {}
+		for key, name in pairs(KEYSTONE_NAMES) do
+			if t[key] then
+				table.insert(names, name)
+			end
+		end
+		table.sort(names)
+		for _, name in ipairs(names) do
+			table.insert(texts, "Keystone: " .. name)
+		end
+	end
 
 	if t.strength then
 		table.insert(texts, string.format("+%.1f strength.", t.strength/1))
