@@ -65,10 +65,16 @@ local function formatSeconds(ms)
   return string.format('%.1fs', s)
 end
 
--- "Master Sorcerer" -> "MS"
+-- "Master Sorcerer" -> "MS"; a one-word class name keeps three letters ("Berserker" -> "Ber", "Beastmaster" -> "Bea"),
+-- so the classes of the class rework stay apart
 local function initials(name)
+  local words = {}
+  for word in tostring(name):gmatch('%a+') do words[#words + 1] = word end
+  if #words == 1 then
+    return words[1]:sub(1, 1):upper() .. words[1]:sub(2, 3):lower()
+  end
   local out = ''
-  for word in tostring(name):gmatch('%a+') do out = out .. word:sub(1, 1):upper() end
+  for _, word in ipairs(words) do out = out .. word:sub(1, 1):upper() end
   return out
 end
 

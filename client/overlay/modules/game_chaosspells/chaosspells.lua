@@ -1,7 +1,7 @@
 -- Registers the Chaos spells (spelldata.lua, generated from the server's spells_chaos.xml) in the client's
 -- spell tables, so the spell list, the action bar, hotkeys and cooldown display know them:
 --   SpellInfo.Default[name]  the spell (same fields as the client's own entries)
---   SpellIcons[iconKey]      {icon cell, server spell id}; the cells 201..245 of the spell icon sheets that
+--   SpellIcons[iconKey]      {icon cell, server spell id}; the cells 201..249 of the spell icon sheets that
 --                            client/overlay/data/images/game/spells holds (tools/gen_all_spell_icons.py draws them)
 --   SpelllistSettings.Default.spellOrder   so the spell list shows them
 -- It also gives the client's stock spell entries their Chaos names and words (ChaosSpellNames in spelldata.lua), the
@@ -67,12 +67,51 @@ local function restoreStockSpells(order)
   end
 end
 
+-- The client's stock spell entries list the old vocation ids; the server moved those kits to the classes
+-- (server/tools/add_vocations.py): druid spells -> Mystic (1) and Illusionist (10), elder druid spells -> Illusionist,
+-- knight spells also the Berserker (14), paladin spells also the Beastmaster (15). The spell list filters by these lists.
+local oldVocations = {} -- spell entry -> its own list, restored at terminate
+
+local function remapStockVocations()
+  for name, spell in pairs(SpellInfo.Default) do
+    if type(spell.vocations) == 'table' and not oldVocations[spell] then
+      local has, list = {}, {}
+      for _, v in ipairs(spell.vocations) do
+        has[v] = true
+        list[#list + 1] = v
+      end
+      local function add(v)
+        if not has[v] then
+          has[v] = true
+          list[#list + 1] = v
+        end
+      end
+      if has[2] then add(1); add(10) end
+      if has[6] then add(10) end
+      if has[4] or has[8] then add(14) end
+      if has[3] or has[7] then add(15) end
+      if #list ~= #spell.vocations then
+        oldVocations[spell] = spell.vocations
+        spell.vocations = list
+      end
+    end
+  end
+end
+
+local function restoreStockVocations()
+  for spell, list in pairs(oldVocations) do
+    spell.vocations = list
+  end
+  oldVocations = {}
+end
+
 -- The helper (mods/game_helper) only offers spells from its own per-vocation id lists (spelldata.json).
 -- Add the Chaos spells to them: attack spells to the shooter list, healing spells to the healing list, support
--- spells to the support list. The helper keys vocations 1 knight, 2 paladin, 3 sorcerer, 4 druid, 5 illusionist, 6 thief
--- (its translateVocation of our server ids), and the promoted ids are those + 10.
-local HELPER_VOCATION = { [1] = 3, [2] = 4, [3] = 2, [4] = 1, [5] = 3, [6] = 4, [7] = 2, [8] = 1, [9] = 5, [10] = 5,
-  [11] = 6, [12] = 6, [13] = 6 }
+-- spells to the support list. The helper keys its classes 1 warrior, 2 ranger, 3 mystic / elementalist, 4 illusionist
+-- (the druid's healing lists), 5 the old illusionist, 6 thief (its translateVocation of our server ids, base patch 0016),
+-- and the promoted ids are those + 10.
+local HELPER_VOCATION = { [1] = 3, [3] = 2, [4] = 1, [5] = 3, [7] = 2, [8] = 1, [10] = 4,
+  [11] = 6, [12] = 6, [13] = 6, [14] = 1, [15] = 2 }
 local helperExtended = false
 
 local function addOnce(list, value)
@@ -132,6 +171,7 @@ function init()
   end
   local order = SpelllistSettings and SpelllistSettings.Default and SpelllistSettings.Default.spellOrder
   renameStockSpells(order)
+  remapStockVocations()
   connect(g_game, { onGameStart = onGameStartExtend })
   extendHelper()
   for _, s in ipairs(ChaosSpellData) do
@@ -168,5 +208,6 @@ function terminate()
   end
   added = {}
   restoreStockSpells(order)
+  restoreStockVocations()
   disconnect(g_game, { onGameStart = onGameStartExtend })
 end

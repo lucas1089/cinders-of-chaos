@@ -26,11 +26,14 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 
 | # | Item | Status | Notes |
 |---|---|---|---|
-| C1 | Vocations: 4 base classes (Warrior, Ranger, Mystic, Thief), each with 2 ascended choices; scripted ascension | in progress (Thief first) | phase 1 done: framework (`!ascend`, `server/tools/add_vocations.py`, client ids, store change) with the Thief line; phase 2: migration of existing characters as in `docs/CLASSES.md` |
+| C1 | Vocations: 4 base classes (Warrior, Ranger, Mystic, Thief), each with 2 ascended choices; scripted ascension | done | phase 1: framework (`!ascend`, `server/tools/add_vocations.py`, client ids, store change) with the Thief line; phase 2a: Warrior / Ranger / Mystic and their ascended classes (ids in `docs/CLASSES.md`), one-time migration of existing characters with a free switch to Berserker / Beastmaster (`class_migration.lua`), client names (base patch 0016) |
 | C2 | Thief, Ninja and Samurai: kit, shurikens, stealth, scripted dual wield, counters | in progress | kit done: 9 spells, measured at levels 300 / 1000 (`server/data/spells/README.md`); passive tree, healing and gear open (`docs/CLASSES.md`) |
-| C3 | Rework the existing kits into Juggernaut/Berserker, Deadeye/Beastmaster, Elementalist/Illusionist (support) | todo | reuses today's spells and the new keystones |
+| C3 | Rework the existing kits into Juggernaut/Berserker, Deadeye/Beastmaster, Elementalist/Illusionist (support) | in progress | phase 2a done: kits reassigned (Chaos and stock spells, weapons, equipment, potions), Berserker Rage + Skyfall Cleave + Bloodrage, Beastmaster companion + Wild Bond + Feral Command, sanity-measured at level 1000 (`server/data/spells/README.md`, "Classes"); phase 2b: full rebalance with passive trees, starting kits and outfits |
 | C4 | Passive trees, spell icons, effects and outfits per class; balance at levels 300 and 1000 | todo | |
-| C5 | Necromancer as a fifth class (summoner) | todo | after the first eight are balanced |
+| C5 | Necromancer as a fifth class (summoner) | in progress | ascensions Lich (curses, damage over time, corpse explosion) and Bone Lord (the army); built in new files, joined to the class framework after C1-C3 phase 2 lands |
+| C6 | Monk as a sixth class: fists, chi / combo points; ascensions Shadowfist (single-target burst) and Iron Sage (bruiser, party chi shield) | in progress | built in new files like C5, joined to the class framework after phase 2 lands |
+| C7 | Templar as a seventh class: holy melee with a party defence aura; ascensions Inquisitor (holy area damage) and Sentinel (tank-support, party aura, Lay on Hands) | in progress | built in new files like C5/C6 |
+| C8 | Lock the Necromancer, Monk and Templar behind a store unlock (account-wide) | in progress | `class_unlocks.lua`; 750 coins each as a placeholder; the unlock method is pluggable: the owner will decide the final way to unlock them |
 
 ## Then: endgame loops
 
@@ -40,7 +43,7 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 | 9 | Paragon track for leftover passive points ("option 2") | done | `chaos/paragon.lua`, client `game_passivetree/paragon*`: 1 point per level above 1000, four categories of small capped stats added on top of the tree's bonuses; reset level x 250 gold or the store reset; see server/README.md "Paragon" |
 | 10 | Bounty board: daily rotating "kill X in Y" contracts paying orbs | done | `chaos/bounty*.lua`, client `game_bounty`, pool from `server/tools/gen_bounty_pool.py` (rerun after spawn changes); see server/README.md "Bounty board". Party credit not tested with two real players |
 | 11 | Crafting orbs: add-a-modifier and remove-a-modifier orbs next to Chaos/Divine, plus a crafting bench | done | `data/lib/chaos_crafting.lua` (Exalted, Annulment, Scouring, Transmutation, Alchemy; Chaos/Divine on the bench), bench `chaos/crafting.lua` + client `game_crafting` (`!craft`, Chaos -> Crafting Bench), installer `tools/install_crafting.py`; see server/README.md "Crafting". No Vaal-style orb. Weekly bounty chest extras not tested in game |
-| 12 | Seasons / ladders: fresh-start season characters, season uniques, per-vocation highscores, cosmetic carry-over | todo | per-vocation highscores done: the all-time Class Ladder of the leaderboards (item 13); seasons still open |
+| 12 | Seasons / ladders: fresh-start season characters, season uniques, per-vocation highscores, cosmetic carry-over | in progress | per-vocation highscores done: the all-time Class Ladder of the leaderboards (item 13); seasons being built (season characters, isolation, season ladder, season uniques, reward track, end-of-season migration) |
 | 24 | Treasure goblins: a very rare cowardly monster that flees, blinks and escapes, and drops a hoard when killed in time | done | `chaos/treasure_goblin*.lua`, `monsters/chaos/treasure_goblin.xml`: replaces 1 in 3000 natural respawns (no bosses, instances, protection zones; per-area cooldown), scaled to the area level; gold, Chaos/Divine Orbs, 2-4 rarity-rolled items and a raised unique chance through the Chaos loot layer; guarded hooks for loot rays and a "goblin" leaderboard; see server/README.md "Treasure goblins" |
 
 ## Then: social and replay
@@ -56,18 +59,18 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 | # | Item | Status | Notes |
 |---|---|---|---|
 | 16 | Loot filter: hide or highlight items by rarity (autoloot and corpses); loot channel with clickable item icons (greyed out once looted); rarity autoloot as a store unlock; loot rays for uniques and Legendary+ | in progress | |
-| 17 | In-client hunt tracker: exp/h and profit/h | todo | |
-| 18 | Build sharing: export/import a passive tree code | todo | |
-| 19 | Respec cost that scales with level | todo | decide together with the store's respec token (item 1) |
+| 17 | In-client hunt tracker: exp/h and profit/h | in progress | |
+| 18 | Build sharing: export/import a passive tree code | in progress | |
+| 19 | Respec cost that scales with level | in progress | with build sharing (item 18): single-node refunds, full reset priced from measured gold income per level, free cases |
 
 ## Then: polish and retention
 
 | # | Item | Status | Notes |
 |---|---|---|---|
-| 20 | Login streaks tied to the daily reward | todo | `chaos/daily.lua` |
+| 20 | Login streaks tied to the daily reward | in progress | `chaos/daily.lua`; with the hunt tracker (item 17): streak counter, milestones, grace days, account-wide claims |
 | 21 | New-player kit per vocation | in progress | |
 | 22 | Tutorial island: passive tree, orbs, keystones | in progress | needs map work |
-| 23 | Weekly patch-notes window in the client | todo | |
+| 23 | Weekly patch-notes window in the client | in progress | |
 
 ## Open decisions and loose ends
 

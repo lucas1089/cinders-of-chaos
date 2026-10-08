@@ -306,13 +306,20 @@ Chaos = {passive = {}, tables = {passiveTree = "chaos_passive_tree"}, storage = 
 ChaosOpcodes = {}
 db = {escapeString = function(s) return "'" .. s .. "'" end, query = function() end}
 dofile("data/scripts/chaos/passivetree.lua")
-local function voc(clientId) return {getGuid = function() return 1 end, getVocation = function() return {getClientId = function() return clientId end} end} end
-local b = ChaosPassiveTree.getBonuses(voc(1))
-eq(b.ksCleavingArc, 1, "knight wrath"); eq(b.ksBulwark, 1, "knight resolve"); eq(b.ksRicochet, nil, "no paladin keystone")
+local function voc(id) return {getGuid = function() return 1 end, getVocation = function() return {getId = function() return id end} end} end
+local b = ChaosPassiveTree.getBonuses(voc(8))
+eq(b.ksCleavingArc, 1, "juggernaut wrath"); eq(b.ksBulwark, 1, "juggernaut resolve"); eq(b.ksRicochet, nil, "no paladin keystone")
 eq(b.incrementPhysical, 7, "the path notables count for everyone")
-b = ChaosPassiveTree.getBonuses(voc(2)); eq(b.ksRicochet, 1, "paladin"); eq(b.ksDeadeye, 1, "paladin resolve")
-b = ChaosPassiveTree.getBonuses(voc(5)); eq(b.ksSharedPhantasm, 1, "illusionist"); eq(b.ksInspiringIllusion, 1, "illusionist resolve")
+b = ChaosPassiveTree.getBonuses(voc(14)); eq(b.ksCleavingArc, 1, "berserker: the knight variant")
+b = ChaosPassiveTree.getBonuses(voc(4)); eq(b.ksBulwark, 1, "warrior: the knight variant")
+b = ChaosPassiveTree.getBonuses(voc(7)); eq(b.ksRicochet, 1, "deadeye"); eq(b.ksDeadeye, 1, "deadeye resolve")
+b = ChaosPassiveTree.getBonuses(voc(15)); eq(b.ksRicochet, 1, "beastmaster: the paladin variant")
+b = ChaosPassiveTree.getBonuses(voc(5)); eq(b.ksArcaneEcho, 1, "elementalist"); eq(b.ksOverload, 1, "elementalist resolve")
+b = ChaosPassiveTree.getBonuses(voc(1)); eq(b.ksArcaneEcho, 1, "mystic: the sorcerer variant")
+b = ChaosPassiveTree.getBonuses(voc(10)); eq(b.ksSharedPhantasm, 1, "illusionist"); eq(b.ksInspiringIllusion, 1, "illusionist resolve")
+eq(b.ksOvergrowth, nil, "the druid variant is no class's")
 b = ChaosPassiveTree.getBonuses(voc(0)); assert(not K.hasKeystone(b), "no vocation: no keystone")
+b = ChaosPassiveTree.getBonuses(voc(12)); assert(not K.hasKeystone(b), "the Thief line has no tree entry yet")
 
 -- ---------------------------------------------------------------- the client tooltips state the server numbers
 local nodesFile = "../client/overlay/modules/game_passivetree/treedata/nodes.lua"

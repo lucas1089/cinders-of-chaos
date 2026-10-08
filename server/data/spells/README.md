@@ -1,7 +1,8 @@
 # Chaos spells (the base server, TFS 1.4.2 / protocol 10.98)
 
-45 custom spells, dark-fantasy flavour: 7 sorcerer, 7 druid, 6 paladin, 6 knight, 6 illusionist, 4 shared utility spells and 9 for the
-Thief line (Thief, Ninja, Samurai; see "Thief line" below).
+49 custom spells, dark-fantasy flavour: 7 sorcerer, 7 druid, 6 paladin, 6 knight, 6 illusionist, 4 shared utility spells, 9 for the
+Thief line (Thief, Ninja, Samurai; see "Thief line" below) and 4 for the Berserker and the Beastmaster (see "Classes" below). Since the
+class rework (docs/CLASSES.md) the old kits belong to the new classes; the folder names keep the old vocation names.
 **Status: written and smoke-tested against a hand-written Lua mock only. Nothing has been run on a real TFS server.**
 
 ## Layout
@@ -40,53 +41,55 @@ ground_slam; missiles fire_bolt, ice_shard, arcane_orb, shadow_bolt, holy_arrow,
 
 ## Spells
 
-Vocations: S Sorcerer, MS Master Sorcerer, D Druid, ED Elder Druid, P Paladin, RP Royal Paladin, K Knight, EK Elite Knight, I Illusionist, AI Arch Illusionist.
+Vocations (the classes, docs/CLASSES.md): W Warrior, J Juggernaut, B Berserker, R Ranger, D Deadeye, BM Beastmaster, M Mystic,
+E Elementalist, I Illusionist (the old kits: sorcerer -> M, E; druid -> I, the first three also M; paladin -> R, D, BM; knight -> W, J,
+B; illusionist -> M, I). The table below still names the old vocations in the section rows; the "Vocations" column is current.
 All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level can cast, no scroll/NPC teaching), `premium=1` from level 60 up.
 
 | id | Name | Words | Vocations | Lvl | Mana | Cooldown | What it does |
 |---|---|---|---|---|---|---|---|
 | **sorcerer** | | | | | | | |
-| 200 | Rime Bloom | `drai hyr rhim` | S, MS | 20 | 120 | 8s | Ice burst (7x7 circle) around you; hit enemies are slowed 40% for 4s. |
-| 201 | Witchfire Bolt | `kah pyr vesh` | S, MS | 30 | 70 | 4s | Fire bolt at one target that also leaves it burning (4 ticks). |
-| 202 | Forked Storm | `kah zhul zarn` | S, MS | 50 | 200 | 7s | Energy bolt that jumps to up to 3 more monsters within 3 sqm (70% damage per jump). |
-| 203 | Crimson Covenant | `tor nyx cruor` | S, MS | 90 | 50 | 30s | Sacrifice 15% max health: restore 1.5x that as mana and +15% magic level for 12s. |
-| 204 | Falling Pyre | `drai gal vas infr` | S, MS | 150 | 700 | 20s | Marks the target position; 1.2s later a meteor hits a 5x5 area for heavy fire damage and ignites enemies. |
-| 205 | Frozen Crypt | `drai gal vas hyr krypt` | MS | 220 | 900 | 30s | Ice zone (5x5) on the target for 6 pulses over 5s; enemies inside are slowed 70%. |
-| 206 | Doomtide | `drai zhul infr doma` | MS | 300 | 1500 | 45s | Three waves (fire, energy, fire) over a 13x13 circle around you. |
+| 200 | Rime Bloom | `drai hyr rhim` | M, E | 20 | 120 | 8s | Ice burst (7x7 circle) around you; hit enemies are slowed 40% for 4s. |
+| 201 | Witchfire Bolt | `kah pyr vesh` | M, E | 30 | 70 | 4s | Fire bolt at one target that also leaves it burning (4 ticks). |
+| 202 | Forked Storm | `kah zhul zarn` | M, E | 50 | 200 | 7s | Energy bolt that jumps to up to 3 more monsters within 3 sqm (70% damage per jump). |
+| 203 | Crimson Covenant | `tor nyx cruor` | M, E | 90 | 50 | 30s | Sacrifice 15% max health: restore 1.5x that as mana and +15% magic level for 12s. |
+| 204 | Falling Pyre | `drai gal vas infr` | M, E | 150 | 700 | 20s | Marks the target position; 1.2s later a meteor hits a 5x5 area for heavy fire damage and ignites enemies. |
+| 205 | Frozen Crypt | `drai gal vas hyr krypt` | E | 220 | 900 | 30s | Ice zone (5x5) on the target for 6 pulses over 5s; enemies inside are slowed 70%. |
+| 206 | Doomtide | `drai zhul infr doma` | E | 300 | 1500 | 45s | Three waves (fire, energy, fire) over a 13x13 circle around you. |
 | **druid** | | | | | | | |
-| 207 | Blightswarm | `drai vex kriv` | D, ED | 25 | 110 | 8s | Poison cloud (7x7) around you: earth damage plus a poison condition. |
-| 208 | Purifying Wellspring | `saen vas aquen` | D, ED | 40 | 160 | 6s | Heals you, party members and your summons within 3 sqm and cures poison/fire/energy/bleeding/curse/freeze/dazzle/drown. |
-| 209 | Ironbark Hide | `tor ael skar` | D, ED | 60 | 140 | 25s | +20% max health and regeneration for 20s. |
-| 210 | Briar Prison | `drai thral brin` | D, ED | 70 | 240 | 14s | Thorns erupt around the target (3x3, 3 pulses) and root enemies (90% slow) for 5s. |
-| 211 | Moonfang Pack | `vael luth wyrd` | D, ED | 120 | 450 | 30s | Summons 2 wolves (3 from level 200) for 40s; max 4 summons. |
-| 212 | Verdant Sanctuary | `saen gal vas vert` | D, ED | 180 | 600 | 30s | Healing zone on your tile: 8 pulses (1/s) heal allies within 3 sqm. |
-| 213 | Primordial Squall | `drai gal vas stoma` | ED | 250 | 1200 | 35s | Three waves (earth, ice, earth) over an 11x11 circle; the ice wave slows 50%. |
+| 207 | Blightswarm | `drai vex kriv` | M, I | 25 | 110 | 8s | Poison cloud (7x7) around you: earth damage plus a poison condition. |
+| 208 | Purifying Wellspring | `saen vas aquen` | M, I | 40 | 160 | 6s | Heals you, party members and your summons within 3 sqm and cures poison/fire/energy/bleeding/curse/freeze/dazzle/drown. |
+| 209 | Ironbark Hide | `tor ael skar` | M, I | 60 | 140 | 25s | +20% max health and regeneration for 20s. |
+| 210 | Briar Prison | `drai thral brin` | I | 70 | 240 | 14s | Thorns erupt around the target (3x3, 3 pulses) and root enemies (90% slow) for 5s. |
+| 211 | Moonfang Pack | `vael luth wyrd` | I | 120 | 450 | 30s | Summons 2 wolves (3 from level 200) for 40s; max 4 summons. |
+| 212 | Verdant Sanctuary | `saen gal vas vert` | I | 180 | 600 | 30s | Healing zone on your tile: 8 pulses (1/s) heal allies within 3 sqm. |
+| 213 | Primordial Squall | `drai gal vas stoma` | I | 250 | 1200 | 35s | Three waves (earth, ice, earth) over an 11x11 circle; the ice wave slows 50%. |
 | **paladin** | | | | | | | |
-| 214 | Dawnpiercer | `kah sol aurr` | P, RP | 30 | 60 | 3s | Holy bolt at one target, the paladin filler; scales mainly with distance skill. |
-| 215 | Skewering Line | `kah sag lanc` | P, RP | 60 | 150 | 8s | 7 sqm line of spears in your facing direction; scales with distance skill. |
-| 216 | Blessed Earth | `drai vas sol hal` | P, RP | 100 | 350 | 24s | Consecrates your tile for 6s: holy damage to enemies within 2 sqm each second, allies are healed half as much. |
-| 217 | Lightward | `tor sol ghar` | P, RP | 140 | 300 | 30s | Cleanses harmful conditions (incl. paralyze) and gives 8s of strong health/mana regeneration. |
-| 218 | Final Verdict | `kah gal sol judh` | P, RP | 200 | 450 | 14s | Heavy holy strike (distance skill); +50% damage against targets under 25% health. |
-| 219 | Hail of Dawn | `drai gal vas sol volv` | P, RP | 280 | 800 | 24s | 3 volleys of 4 holy arrows, every arrow strikes the target (distance skill). |
+| 214 | Dawnpiercer | `kah sol aurr` | R, D, BM | 30 | 60 | 3s | Holy bolt at one target, the paladin filler; scales mainly with distance skill. |
+| 215 | Skewering Line | `kah sag lanc` | R, D, BM | 60 | 150 | 8s | 7 sqm line of spears in your facing direction; scales with distance skill. |
+| 216 | Blessed Earth | `drai vas sol hal` | R, D, BM | 100 | 350 | 24s | Consecrates your tile for 6s: holy damage to enemies within 2 sqm each second, allies are healed half as much. |
+| 217 | Lightward | `tor sol ghar` | R, D, BM | 140 | 300 | 30s | Cleanses harmful conditions (incl. paralyze) and gives 8s of strong health/mana regeneration. |
+| 218 | Final Verdict | `kah gal sol judh` | D | 200 | 450 | 14s | Heavy holy strike (distance skill); +50% damage against targets under 25% health. |
+| 219 | Hail of Dawn | `drai gal vas sol volv` | R, D | 280 | 800 | 24s | 3 volleys of 4 holy arrows, every arrow strikes the target (distance skill). |
 | **knight** | | | | | | | |
-| 220 | Reaping Gyre | `kah spir` | K, EK | 30 | 80 | 6s | Three spinning strikes (0/0.4/0.8s) against adjacent enemies; uses weapon attack and skill. |
-| 221 | Earthbreaker | `kah grund krak` | K, EK | 60 | 150 | 10s | Shockwave (5x5) with physical damage; staggers enemies (60% slow, 3s). |
-| 222 | Red Frenzy | `vyr ira cruor` | K, EK | 100 | 300 | 40s | +30% melee skill, -30% shield skill for 12s. |
-| 223 | Iron Bellow | `vok vas rhov` | K, EK | 120 | 200 | 20s | Taunts all monsters within 4 sqm and slows them 25% for 6s; Iron Will: you take 25% less damage and get +15% shielding for 8s. |
-| 224 | Vaulting Cleave | `kah brak skai` | K, EK | 170 | 250 | 12s | Jump next to the target and strike it with weapon attack and skill. |
-| 225 | Colossus Fall | `kah gal vas tyr` | K, EK | 260 | 650 | 30s | Two crushing blows (0/0.6s) in a 7x7 circle; enemies slowed 70% for 4s. |
+| 220 | Reaping Gyre | `kah spir` | W, J, B | 30 | 80 | 6s | Three spinning strikes (0/0.4/0.8s) against adjacent enemies; uses weapon attack and skill. |
+| 221 | Earthbreaker | `kah grund krak` | W, J, B | 60 | 150 | 10s | Shockwave (5x5) with physical damage; staggers enemies (60% slow, 3s). |
+| 222 | Red Frenzy | `vyr ira cruor` | W, J, B | 100 | 300 | 40s | +30% melee skill, -30% shield skill for 12s. |
+| 223 | Iron Bellow | `vok vas rhov` | W, J | 120 | 200 | 20s | Taunts all monsters within 4 sqm and slows them 25% for 6s; Iron Will: you take 25% less damage and get +15% shielding for 8s. |
+| 224 | Vaulting Cleave | `kah brak skai` | W, J, B | 170 | 250 | 12s | Jump next to the target and strike it with weapon attack and skill. |
+| 225 | Colossus Fall | `kah gal vas tyr` | W, J, B | 260 | 650 | 30s | Two crushing blows (0/0.6s) in a 7x7 circle; enemies slowed 70% for 4s. |
 | **illusionist** | | | | | | | |
-| 226 | Hall of Mirrors | `drai spek` | I, AI | 40 | 250 | 30s | Up to 3 decoy clones in your outfit for 10s (needs the Clone monster). |
-| 227 | Umbral Stride | `ruan nyx umh` | I, AI | 70 | 120 | 8s | Teleport to the far side of the target and stab it for death damage. |
-| 228 | Shattered Psyche | `kah mynd frak` | I, AI | 110 | 200 | 6s | Death bolt plus cursing damage-over-time and a 30% slow for 2.5s. |
-| 229 | Wraithshroud | `fen wrai` | I, AI | 150 | 350 | 35s | 8s invisibility plus speed boost. |
-| 230 | Nightburst | `drai gal vas umh` | AI | 210 | 900 | 25s | After 0.9s shadows erupt in a 7x7 circle (death damage, 40% slow). |
-| 231 | Tear in the Weave | `drai zhul riv` | AI | 280 | 1300 | 40s | Pulls monsters within 5 sqm next to you, then two death implosions (0.6s, 1.2s). |
+| 226 | Hall of Mirrors | `drai spek` | M, I | 40 | 250 | 30s | Up to 3 decoy clones in your outfit for 10s (needs the Clone monster). |
+| 227 | Umbral Stride | `ruan nyx umh` | M, I | 70 | 120 | 8s | Teleport to the far side of the target and stab it for death damage. |
+| 228 | Shattered Psyche | `kah mynd frak` | M, I | 110 | 200 | 6s | Death bolt plus cursing damage-over-time and a 30% slow for 2.5s. |
+| 229 | Wraithshroud | `fen wrai` | M, I | 150 | 350 | 35s | 8s invisibility plus speed boost. |
+| 230 | Nightburst | `drai gal vas umh` | I | 210 | 900 | 25s | After 0.9s shadows erupt in a 7x7 circle (death damage, 40% slow). |
+| 231 | Tear in the Weave | `drai zhul riv` | I | 280 | 1300 | 40s | Pulls monsters within 5 sqm next to you, then two death implosions (0.6s, 1.2s). |
 | **shared** | | | | | | | |
-| 232 | Flickerdash | `ash flik` | all | 35 | 80 | 6s | Dash up to 4 sqm in your facing direction, stops at obstacles; 2.5s speed boost. |
-| 233 | Banner Call | `tor vas vant` | all | 60 | 250 | 35s | You and party members within 5 sqm: +10% melee/distance/magic and speed for 12s. |
-| 234 | Soulward | `tor anh` | all | 80 | 150 | 40s | Mana shield for 15s with mana regeneration (stock Magic Shield has none). |
-| 235 | Hunter's Instinct | `ash senn` | all | 25 | 40 | 10s | Marks monsters within 12 sqm (max 15) and tells the nearest one's direction. |
+| 232 | Flickerdash | `ash flik` | every class | 35 | 80 | 6s | Dash up to 4 sqm in your facing direction, stops at obstacles; 2.5s speed boost. |
+| 233 | Banner Call | `tor vas vant` | every class | 60 | 250 | 35s | You and party members within 5 sqm: +10% melee/distance/magic and speed for 12s. |
+| 234 | Soulward | `tor anh` | every class | 80 | 150 | 40s | Mana shield for 15s with mana regeneration (stock Magic Shield has none). |
+| 235 | Hunter's Instinct | `ash senn` | every class | 25 | 40 | 10s | Marks monsters within 12 sqm (max 15) and tells the nearest one's direction. |
 | **thief** (T Thief, N Ninja, Sa Samurai) | | | | | | | |
 | 236 | Shuriken Toss | `kah shur` | T, N, Sa | 20 | 50 | 3s | Throws a shuriken (range 5): ranged weapon strike, the better of sword and distance skill x the star in hand (or a default star). The Thief's filler. |
 | 238 | Shadow Veil | `fen umh` | T, N, Sa | 40 | 120 | 20s | 4 s stealth: monsters drop you and cannot pick you; dealing damage or taking a hit ends it; the first weapon hit out of it crits (x2). |
@@ -97,9 +100,48 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 243 | Counter Stance | `tor ryx` | Sa | 100 | 100 | 8s | For 2 s the next melee hit taken is parried (no damage) and answered with 1.5x the parried hit. |
 | 244 | Iaijutsu | `kah gal kaen` | Sa | 120 | 350 | 10s | 0.8 s charge, then one heavy melee weapon strike on the target if it is still within 2 sqm. |
 | 245 | Bushido Focus | `vyr mynd` | Sa | 150 | 200 | 30s | 30 s: +3% crit chance per second without taking damage (3 at once, max 10 stacks = 30%), crits do x1.5; a hit taken resets the stacks. |
+| **berserker** (B) / **beastmaster** (BM) | | | | | | | |
+| 246 | Skyfall Cleave | `drai skai hrun` | B | 100 | 300 | 10s | Leap next to the target (range 5) and slam a 3x3 square around it: (level/5 + skill x attack x 0.060..0.105 + 20..40) x 0.7 physical, 30% slow 2 s. Needs a weapon. |
+| 247 | Bloodrage | `vyr sang khar` | B | 120 | 200 | 30s | Costs 10% of the current health; 12 s: Rage +10% and every melee weapon hit also strikes up to 4 other enemies next to you for 40% of it. |
+| 248 | Wild Bond | `vael ferh` | BM | 100 | 300 | 10s | Calls the companion (a War Wolf; 2 from level 400): health 500 + 15 x level; companions already out come back to you and heal 50%. |
+| 249 | Feral Command | `kah ferh` | BM | 110 | 200 | 8s | Every companion leaps to the target (range 7) and mauls it for 1.5 bites. |
 
 Damage formulas follow the stock style: `level/5 + magicLevel*a + b` (min/max with different a, b); knight spells use the stock
 skill*attack callback, paladin spells scale mainly with the distance skill (plus a little magic level).
+
+### Classes (Berserker, Beastmaster; the class rework, docs/CLASSES.md)
+
+- **Rage** (Berserker, passive, `data/scripts/chaos/berserker_combat.lua`): every damage the Berserker deals is x(1 + 0.30 x
+  min(1, missing health / 70%)): nothing at full health, +15% at 65%, +30% at 30% health and below (`Chaos.classes.rage`). Bloodrage adds
+  +10% on top. Keystone extra hits and the Bloodrage cleave get no Rage of their own.
+- **Companion** (Beastmaster, `data/scripts/chaos/beastmaster.lua`, `Chaos.classes.companion`): a War Wolf (look type 3; the Wolf if the
+  server has none), the player's summon, so the engine makes it follow the owner and attack the owner's target. Every 2 s it bites the
+  owner's target when next to it: physical damage dealt as the owner, avg = 0.12 x level + 0.6 x distance skill, +-20% (level 1000,
+  distance 154: ~212). Health 500 + 15 x level. 1 companion, 2 from level 400. It drops no loot, the owner's own hits (arrow splash,
+  area spells) do not hurt it, it is brought back when more than 7 sqm away or on another floor, and it goes when the character stops
+  being a Beastmaster. The base server's familiar (`!summonfamiliar`) refuses while a companion is out (one summon of any kind).
+- The Berserker uses two-handed melee weapons (the knight's area spells, Skyfall Cleave, Bloodrage, and the Cleaving Arc keystone); the
+  Beastmaster bows and arrows (arrow splash, the Ricochet keystone).
+
+Sanity measurement at level 1000 (`ztest/classrot.lua` on the test server: 90 s, auto attack on the main dummy, spells on cooldown,
+buffs kept up, the knight / paladin level 1000 equipment, melee skills 140 / distance 141, **no passive tree points**, so lower than the
+tables above; both classes of a line measured with the same character and gear):
+
+| Class | Weapon | Kit in the rotation | Total single target | Total 5 targets | Mana/min |
+|---|---|---|---|---|---|
+| Juggernaut | Dawnforged Longsword (2h) | Colossus Fall, Earthbreaker, Vaulting Cleave, Reaping Gyre, Red Frenzy | 743 | 1765 | 4610 |
+| Berserker | same | + Skyfall Cleave, Bloodrage | 927 | 2456 | 6480 |
+| Deadeye | crossbow + bolts | Hail of Dawn, Final Verdict, Dawnpiercer | 1130 | 1130 | 4950 |
+| Beastmaster | bow + arrows | Wild Bond, Feral Command, Dawnpiercer (2 companions) | 1064 | 2262 | 2680 |
+
+The Berserker does ~1.4x the Juggernaut's area damage and ~1.25x its single target with full health (Rage near 0; Bloodrage costs
+health, so Rage was ~+10% late in the run); the Juggernaut keeps Iron Bellow / Iron Will, Bulwark and more defence. With the 2h
+knight's level 1000 tree numbers (1957 / 3664) that puts the Berserker around 2400 / 5100, under the Elementalist's 6427 area damage.
+The Beastmaster stays under the Deadeye in single target (its companions are ~230 of the 1064: measured alone 292 per second before the
+last tuning, x0.8 since) and above it on packs (arrow splash). Rage alone, auto attack only (40 s): 413 per second at full health, 559 at
+30% health (+35%; the formula is +30%, the auto attack varies by ~15%). Before tuning the first runs gave the Berserker 2507 on 5
+targets (cleave 50%, weapon hits x1.1, Skyfall x0.8) and the Beastmaster 1338 single target (bites 0.30 x level + 1.5 x skill, 3 bites
+per Feral Command, Hail of Dawn in the kit, and companions killed by the owner's own arrow splash).
 
 ## Names (all spells)
 
@@ -123,6 +165,8 @@ the Chaos spells' words, and the client changes its own entries at runtime. Para
 (`saen kin "Name"`, `sekh "Name"`, `ash ul "up"`, `vael kal "creature"`).
 
 ## Roles and balance
+
+Roles as measured before the class rework (the old vocations; the classes that took the kits over are in docs/CLASSES.md):
 
 | Vocation | Role | Tools |
 |---|---|---|
@@ -226,7 +270,7 @@ Purifying Wellspring at 80% health, and the shooter casts Rime Bloom / Blightswa
 
 - Tested on the base server (TFS 1.4 based, protocol 10.98) with the real client: every spell was cast through its script against dummies and
   against a second player, see "Roles and balance". Not tested: party rules (needs two clients in one party), very large crowds.
-- spellid: 200-245 without 237 (the base server's Duelist's Oath has 237), a block no other stock spell (server or client) uses. Ids must stay below 256: the 10.98 cooldown packet
+- spellid: 200-249 without 237 (the base server's Duelist's Oath has 237), a block no other stock spell (server or client) uses. Ids must stay below 256: the 10.98 cooldown packet
   (`ProtocolGame::sendSpellCooldown`) sends the id as one byte, so an id like 410 arrives as 154 and the client (action bar,
   helper) puts the cooldown on the wrong spell. A few stock spells of the base server (ids 258-268) already wrap that way.
   The stock file also has a duplicate spellid (106) not related to this work.
@@ -252,4 +296,4 @@ The server only needs the files above. Spell list and action bar come from the c
 Use the spellid column above as the id, and the words as the spell's words.
 
 ## Client side
-The client side is done in `client/overlay/modules/game_chaosspells` (spell list, action bar, icons); regenerate its data with `python3 -I client/tools/gen_spell_data.py` after changing `spells_chaos.xml`. The icons (cells 201..245, drawn by `client/tools/gen_spell_icons.py`) live in the complete generated spell icon sheets in `client/overlay/data/images/game/spells/`; rebuild those with `client/tools/gen_all_spell_icons.py`. See `client/MANIFEST.md`.
+The client side is done in `client/overlay/modules/game_chaosspells` (spell list, action bar, icons); regenerate its data with `python3 -I client/tools/gen_spell_data.py` after changing `spells_chaos.xml`. The icons (cells 201..249, drawn by `client/tools/gen_spell_icons.py`) live in the complete generated spell icon sheets in `client/overlay/data/images/game/spells/`; rebuild those with `client/tools/gen_all_spell_icons.py`. See `client/MANIFEST.md`.

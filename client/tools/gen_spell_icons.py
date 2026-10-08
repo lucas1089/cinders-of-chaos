@@ -161,10 +161,21 @@ def hood(d, c):
     d.ellipse((40, 52, 88, 100), fill=(20, 10, 30))
     d.ellipse((50, 70, 60, 78), fill=c); d.ellipse((68, 70, 78, 78), fill=c)
 
+def greataxe(d, c):
+    d.line([(30, 120), (86, 22)], fill=c, width=10)
+    d.pieslice((52, 2, 124, 74), 200, 20, fill=c)
+    d.polygon([(60, 30), (40, 8), (34, 38)], fill=c)
+
+def fang(d, c):
+    d.pieslice((10, 6, 118, 96), 0, 180, fill=c)
+    for x in (30, 82):
+        d.polygon([(x, 50), (x + 16, 50), (x + 8, 120)], fill=c)
+    d.ellipse((36, 30, 52, 46), fill=(20, 10, 30)); d.ellipse((76, 30, 92, 46), fill=(20, 10, 30))
+
 GLYPH = {k: v for k, v in globals().items() if callable(v) and k in (
     'burst', 'bolt', 'drop', 'crystal', 'meteor', 'dots', 'shield', 'thorns', 'paw', 'leaf', 'swirl', 'cross', 'arrows',
     'ring', 'sword', 'slam', 'wave', 'arrowup', 'hammer', 'twin', 'dash', 'eye', 'ghost', 'rift', 'missile',
-    'shuriken', 'daggers', 'smoke', 'katana', 'hood')}
+    'shuriken', 'daggers', 'smoke', 'katana', 'hood', 'greataxe', 'fang')}
 
 ICONS = [  # (spell name, theme, glyph)
     ('Rime Bloom', 'frost', 'burst'), ('Witchfire Bolt', 'fire', 'missile'), ('Forked Storm', 'light', 'bolt'),
@@ -182,7 +193,10 @@ ICONS = [  # (spell name, theme, glyph)
     # the Thief line (cells 237..245)
     ('Shuriken Toss', 'steel', 'shuriken'), ('Shadow Veil', 'shadow', 'hood'), ('Poison Blades', 'poison', 'daggers'),
     ('Shadow Step', 'shadow', 'dash'), ('Smoke Bomb', 'shadow', 'smoke'), ('Shuriken Barrage', 'steel', 'shuriken'),
-    ('Counter Stance', 'ember', 'shield'), ('Iaijutsu', 'blood', 'katana'), ('Bushido Focus', 'light', 'katana')]
+    ('Counter Stance', 'ember', 'shield'), ('Iaijutsu', 'blood', 'katana'), ('Bushido Focus', 'light', 'katana'),
+    # Berserker and Beastmaster (cells 246..249)
+    ('Skyfall Cleave', 'ember', 'greataxe'), ('Bloodrage', 'blood', 'greataxe'), ('Wild Bond', 'nature', 'fang'),
+    ('Feral Command', 'blood', 'fang')]
 
 def render(theme, glyph):
     c = COL[theme]

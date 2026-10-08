@@ -14,7 +14,7 @@
  
  GameAstraExtendedSpellIds = 152
  GameChaosCraftingSkills = 153 -- Chaos 10.98 server: crafting skills in the skills packet
-+GameChaosVocationIds = 154 -- Chaos 10.98 server: vocation byte in Tibia's ids (6 thief, 16 ninja, 26 samurai)
++GameChaosVocationIds = 154 -- Chaos 10.98 server: class byte (base slot + 10 / + 20 for the two ascended classes)
  
 -LastGameFeature = 154
 +LastGameFeature = 155
@@ -23,224 +23,346 @@
    red        = '#F55E5E',
 --- a/modules/gamelib/spells.lua
 +++ b/modules/gamelib/spells.lua
-@@ -623,8 +623,11 @@
-   [6] = 'Elder Druid',
-   [7] = 'Royal Paladin',
-   [8] = 'Elite Knight',
+@@ -615,16 +615,18 @@
+ 
+ VocationNames = {
+   [0] = 'None',
+-  [1] = 'Sorcerer',
+-  [2] = 'Druid',
+-  [3] = 'Paladin',
+-  [4] = 'Knight',
+-  [5] = 'Master Sorcerer',
+-  [6] = 'Elder Druid',
+-  [7] = 'Royal Paladin',
+-  [8] = 'Elite Knight',
 -  [9] = 'Monk',
 -  [10] = 'Exalted Monk'
-+  [9] = 'Illusionist',
-+  [10] = 'Arch Illusionist',
++  [1] = 'Mystic',
++  [3] = 'Ranger',
++  [4] = 'Warrior',
++  [5] = 'Elementalist',
++  [7] = 'Deadeye',
++  [8] = 'Juggernaut',
++  [10] = 'Illusionist',
 +  [11] = 'Thief',
 +  [12] = 'Ninja',
-+  [13] = 'Samurai'
++  [13] = 'Samurai',
++  [14] = 'Berserker',
++  [15] = 'Beastmaster'
  }
  
  SpellGroups = {
 --- a/modules/gamelib/game.lua
 +++ b/modules/gamelib/game.lua
-@@ -113,15 +113,15 @@
-   elseif vocationId == 8 then
-     return "Elite Knight"
-   elseif vocationId == 9 then
--    return "Monk"
-+    return "Illusionist"
-   elseif vocationId == 10 then
--    return "Exalted Monk"
-+    return "Arch Illusionist"
-   elseif vocationId == 11 then
--    return "Elite Knight"
-+    return "Thief"
-   elseif vocationId == 12 then
--    return "Royal Paladin"
-+    return "Ninja"
-   elseif vocationId == 13 then
+@@ -95,56 +95,23 @@
+   g_game.setRsa(OTSERV_RSA)
+ end
+ 
++-- Chaos classes (server ids, docs/CLASSES.md): 4 Warrior, 8 Juggernaut, 14 Berserker, 3 Ranger, 7 Deadeye,
++-- 15 Beastmaster, 1 Mystic, 5 Elementalist, 10 Illusionist, 11 Thief, 12 Ninja, 13 Samurai (2, 6 and 9 are retired)
++local ChaosVocationNames = {
++  [1] = "Mystic", [3] = "Ranger", [4] = "Warrior", [5] = "Elementalist", [7] = "Deadeye", [8] = "Juggernaut",
++  [10] = "Illusionist", [11] = "Thief", [12] = "Ninja", [13] = "Samurai", [14] = "Berserker", [15] = "Beastmaster"
++}
++local ChaosVocationBase = {
++  [1] = "Mystic", [5] = "Mystic", [10] = "Mystic", [3] = "Ranger", [7] = "Ranger", [15] = "Ranger",
++  [4] = "Warrior", [8] = "Warrior", [14] = "Warrior", [11] = "Thief", [12] = "Thief", [13] = "Thief"
++}
++
+ function g_game.getVocationName(vocationId)
+-  if vocationId == 1 then
+-    return "Sorcerer"
+-  elseif vocationId == 2 then
+-    return "Druid"
+-  elseif vocationId == 3 then
+-    return "Paladin"
+-  elseif vocationId == 4 then
+-    return "Knight"
+-  elseif vocationId == 5 then
 -    return "Master Sorcerer"
-+    return "Samurai"
-   elseif vocationId == 14 then
-     return "Elder Druid"
-   elseif vocationId == 15 then
-@@ -132,16 +132,18 @@
+-  elseif vocationId == 6 then
+-    return "Elder Druid"
+-  elseif vocationId == 7 then
+-    return "Royal Paladin"
+-  elseif vocationId == 8 then
+-    return "Elite Knight"
+-  elseif vocationId == 9 then
+-    return "Monk"
+-  elseif vocationId == 10 then
+-    return "Exalted Monk"
+-  elseif vocationId == 11 then
+-    return "Elite Knight"
+-  elseif vocationId == 12 then
+-    return "Royal Paladin"
+-  elseif vocationId == 13 then
+-    return "Master Sorcerer"
+-  elseif vocationId == 14 then
+-    return "Elder Druid"
+-  elseif vocationId == 15 then
+-    return "Exalted Monk"
+-  else
+-    return "None"
+-  end
++  return ChaosVocationNames[vocationId] or "None"
  end
  
  function g_game.getVocationNameBase(vocationId)
 -  if vocationId == 1 or vocationId == 5 or vocationId == 13 then
-+  if vocationId == 1 or vocationId == 5 then
-     return "Sorcerer"
-   elseif vocationId == 2 or vocationId == 6 or vocationId == 14 then
-     return "Druid"
+-    return "Sorcerer"
+-  elseif vocationId == 2 or vocationId == 6 or vocationId == 14 then
+-    return "Druid"
 -  elseif vocationId == 3 or vocationId == 7 or vocationId == 12 then
-+  elseif vocationId == 3 or vocationId == 7 then
-     return "Paladin"
+-    return "Paladin"
 -  elseif vocationId == 4 or vocationId == 8 or vocationId == 11 then
-+  elseif vocationId == 4 or vocationId == 8 then
-     return "Knight"
-   elseif vocationId == 9 or vocationId == 10 or vocationId == 15 then
+-    return "Knight"
+-  elseif vocationId == 9 or vocationId == 10 or vocationId == 15 then
 -    return "Monk"
-+    return "Illusionist"
-+  elseif vocationId == 11 or vocationId == 12 or vocationId == 13 then
-+    return "Thief"
-   else
-     return "None"
-   end
+-  else
+-    return "None"
+-  end
++  return ChaosVocationBase[vocationId] or "None"
+ end
+ 
+ function g_game.isNpcOrSafeFight(creatureId)
 --- a/modules/gamelib/util.lua
 +++ b/modules/gamelib/util.lua
-@@ -537,8 +537,14 @@
-     return 5 -- ms
-   elseif string.find(name:lower(), "druid") then
-     return 6 -- ed
--  elseif string.find(name:lower(), "monk") then
-+  elseif string.find(name:lower(), "monk") or string.find(name:lower(), "illusionist") then
-     return 9 -- em
-+  elseif string.find(name:lower(), "ninja") then
-+    return 12
-+  elseif string.find(name:lower(), "samurai") then
-+    return 13
-+  elseif string.find(name:lower(), "thief") then
-+    return 11
-   end
+@@ -529,18 +529,15 @@
  
+ -- servers may have different id's, change if not working properly (only for protocols 910+)
+ function getVocationId(name)
+-  if string.find(name:lower(), "knight") then
+-    return 8 -- ek
+-  elseif string.find(name:lower(), "paladin") then
+-    return 7 -- rp
+-  elseif string.find(name:lower(), "sorcerer") then
+-    return 5 -- ms
+-  elseif string.find(name:lower(), "druid") then
+-    return 6 -- ed
+-  elseif string.find(name:lower(), "monk") then
+-    return 9 -- em
++  -- Chaos classes: the ascended id of a class name (server ids, docs/CLASSES.md)
++  local n = name:lower()
++  for _, v in ipairs({ { "berserker", 14 }, { "beastmaster", 15 }, { "juggernaut", 8 }, { "warrior", 8 },
++      { "deadeye", 7 }, { "ranger", 7 }, { "elementalist", 5 }, { "illusionist", 10 }, { "mystic", 5 },
++      { "ninja", 12 }, { "samurai", 13 }, { "thief", 11 } }) do
++    if string.find(n, v[1]) then
++      return v[2]
++    end
+   end
+-
    return 0
-@@ -599,6 +605,7 @@
-   if id == 1 or id == 5 then return 5 end     -- Sorcerer / Master Sorcerer
-   if id == 2 or id == 6 then return 6 end     -- Druid / Elder Druid
-   if id == 9 or id == 10 then return 10 end   -- Monk / Exalted Monk
+ end
+ -- servers may have different id's, change if not working properly (only for protocols 910+)
+@@ -594,32 +591,30 @@
+ 
+ function translateVocation(id)
+   if not id or id == 0 then return 0 end
+-  if id == 4 or id == 8 then return 8 end     -- Knight / Elite Knight
+-  if id == 3 or id == 7 then return 7 end     -- Paladin / Royal Paladin
+-  if id == 1 or id == 5 then return 5 end     -- Sorcerer / Master Sorcerer
+-  if id == 2 or id == 6 then return 6 end     -- Druid / Elder Druid
+-  if id == 9 or id == 10 then return 10 end   -- Monk / Exalted Monk
++  if id == 4 or id == 8 or id == 14 then return 8 end -- Chaos: Warrior / Juggernaut / Berserker (knight items)
++  if id == 3 or id == 7 or id == 15 then return 7 end -- Chaos: Ranger / Deadeye / Beastmaster (paladin items)
++  if id == 1 or id == 5 then return 5 end     -- Chaos: Mystic / Elementalist
++  if id == 10 then return 6 end               -- Chaos: Illusionist (the druid's rods and spells)
 +  if id == 11 or id == 12 or id == 13 then return id end -- Chaos: Thief / Ninja / Samurai (both ascended classes)
    return 0
  end
  
-@@ -657,7 +664,10 @@
-   if id == 3 or id == 7 then return "Paladin" end
-   if id == 1 or id == 5 then return "Sorcerer" end
-   if id == 2 or id == 6 then return "Druid" end
--  if id == 9 or id == 10 then return "Monk" end
-+  if id == 9 or id == 10 then return "Illusionist" end
-+  if id == 11 then return "Thief" end
-+  if id == 12 then return "Ninja" end
-+  if id == 13 then return "Samurai" end
-   return "Rookie"
+ function translateWheelVocation(id)
+   if not id or id == 0 then return 0 end
+-  if id == 4 or id == 8 then return 1 end     -- Knight / Elite Knight
+-  if id == 3 or id == 7 then return 2 end     -- Paladin / Royal Paladin
+-  if id == 1 or id == 5 then return 3 end     -- Sorcerer / Master Sorcerer
+-  if id == 2 or id == 6 then return 4 end     -- Druid / Elder Druid
+-  if id == 9 or id == 10 then return 5 end    -- Monk / Exalted Monk
++  if id == 4 or id == 8 or id == 14 then return 1 end -- Chaos: Warrior line
++  if id == 3 or id == 7 or id == 15 then return 2 end -- Chaos: Ranger line
++  if id == 1 or id == 5 then return 3 end     -- Chaos: Mystic / Elementalist
++  if id == 10 then return 4 end               -- Chaos: Illusionist
+   return 0
  end
+ 
+ -- OTC/TFS custom market vocation ids used by server restrictVocation bitmasks.
+ function translateMarketVocation(id)
+   if not id or id == 0 then return 0 end
+-  if id == 1 or id == 5 then return 1 end     -- Sorcerer / Master Sorcerer
+-  if id == 2 or id == 6 then return 2 end     -- Druid / Elder Druid
+-  if id == 3 or id == 7 then return 3 end     -- Paladin / Royal Paladin
+-  if id == 4 or id == 8 then return 4 end     -- Knight / Elite Knight
+-  if id == 9 or id == 10 then return 9 end    -- Monk / Exalted Monk
++  if id == 1 or id == 5 then return 1 end     -- Chaos: Mystic / Elementalist
++  if id == 10 then return 2 end               -- Chaos: Illusionist
++  if id == 3 or id == 7 or id == 15 then return 3 end -- Chaos: Ranger line
++  if id == 4 or id == 8 or id == 14 then return 4 end -- Chaos: Warrior line
+   return 0
+ end
+ 
+@@ -636,14 +631,12 @@
+   vocationId = tonumber(vocationId) or 0
+   if vocationId == 1 or vocationId == 5 then
+     profession = 3
+-  elseif vocationId == 2 or vocationId == 6 then
+-    profession = 4
+-  elseif vocationId == 3 or vocationId == 7 then
++  elseif vocationId == 10 then
++    profession = 4 -- Chaos: the Illusionist uses the druid's items
++  elseif vocationId == 3 or vocationId == 7 or vocationId == 15 then
+     profession = 2
+-  elseif vocationId == 4 or vocationId == 8 then
++  elseif vocationId == 4 or vocationId == 8 or vocationId == 14 then
+     profession = 1
+-  elseif vocationId == 9 or vocationId == 10 then
+-    profession = 5
+   end
+   if profession <= 0 then
+     return 0
+@@ -653,12 +646,7 @@
+ 
+ function translateVocationName(id)
+   if not id or id == 0 then return "Rookie" end
+-  if id == 4 or id == 8 then return "Knight" end
+-  if id == 3 or id == 7 then return "Paladin" end
+-  if id == 1 or id == 5 then return "Sorcerer" end
+-  if id == 2 or id == 6 then return "Druid" end
+-  if id == 9 or id == 10 then return "Monk" end
+-  return "Rookie"
++  return g_game.getVocationName(id) ~= "None" and g_game.getVocationName(id) or "Rookie"
+ end
+ 
  
 --- a/modules/gamelib/creature.lua
 +++ b/modules/gamelib/creature.lua
-@@ -232,17 +232,17 @@
+@@ -225,29 +225,35 @@
+   return 0
+ end
+ 
++-- Chaos classes (docs/CLASSES.md): the old vocation checks answer for the class that took the kit over
+ function Creature:isDruid()
+   local vocation = getCreatureVocation(self)
+-  return vocation == 2 or vocation == 6 or vocation == 14
++  return vocation == 10 -- the Illusionist (the druid's heals)
+ end
  
  function Creature:isSorcerer()
    local vocation = getCreatureVocation(self)
 -  return vocation == 1 or vocation == 5 or vocation == 13
-+  return vocation == 1 or vocation == 5
++  return vocation == 1 or vocation == 5 -- Mystic / Elementalist
  end
  
  function Creature:isPaladin()
    local vocation = getCreatureVocation(self)
 -  return vocation == 3 or vocation == 7 or vocation == 12
-+  return vocation == 3 or vocation == 7
++  return vocation == 3 or vocation == 7 or vocation == 15 -- Ranger / Deadeye / Beastmaster
  end
  
  function Creature:isKnight()
    local vocation = getCreatureVocation(self)
 -  return vocation == 4 or vocation == 8 or vocation == 11
-+  return vocation == 4 or vocation == 8
++  return vocation == 4 or vocation == 8 or vocation == 14 -- Warrior / Juggernaut / Berserker
  end
  
  function Creature:isMonk()
-@@ -250,5 +250,11 @@
-   return vocation == 9 or vocation == 10 or vocation == 15
- end
- 
-+-- Chaos: the Thief line (11 Thief, 12 Ninja, 13 Samurai; 11-13 are not other servers' promoted ids here)
-+function Creature:isThief()
-+  local vocation = getCreatureVocation(self)
-+  return vocation == 11 or vocation == 12 or vocation == 13
++  return false -- no monks on the Chaos server
 +end
 +
- function g_game.onCreatureIconChange(creatureId)
++-- Chaos: the Thief line (11 Thief, 12 Ninja, 13 Samurai; 11-13 are not other servers' promoted ids here)
++function Creature:isThief()
+   local vocation = getCreatureVocation(self)
+-  return vocation == 9 or vocation == 10 or vocation == 15
++  return vocation == 11 or vocation == 12 or vocation == 13
  end
+ 
+ function g_game.onCreatureIconChange(creatureId)
 --- a/mods/game_helper/helper.lua
 +++ b/mods/game_helper/helper.lua
-@@ -292,11 +292,12 @@
+@@ -292,11 +292,11 @@
  -- Standard Tibia IDs are 1-10; some supported servers use 11-15 for promoted
  -- vocations. Spell definitions use {base, promoted}, e.g. Sorcerer {1, 5}.
  local ServerToClientVocationMap = {
 -  [1] = { 1, 5 }, [5] = { 1, 5 }, [13] = { 1, 5 },   -- Sorcerer / Master Sorcerer
-+  [1] = { 1, 5 }, [5] = { 1, 5 },   -- Sorcerer / Master Sorcerer
-   [2] = { 2, 6 }, [6] = { 2, 6 }, [14] = { 2, 6 },   -- Druid / Elder Druid
+-  [2] = { 2, 6 }, [6] = { 2, 6 }, [14] = { 2, 6 },   -- Druid / Elder Druid
 -  [3] = { 3, 7 }, [7] = { 3, 7 }, [12] = { 3, 7 },   -- Paladin / Royal Paladin
 -  [4] = { 4, 8 }, [8] = { 4, 8 }, [11] = { 4, 8 },   -- Knight / Elite Knight
 -  [9] = { 9, 10 }, [10] = { 9, 10 }, [15] = { 9, 10 } -- Monk / Exalted Monk
-+  [3] = { 3, 7 }, [7] = { 3, 7 },   -- Paladin / Royal Paladin
-+  [4] = { 4, 8 }, [8] = { 4, 8 },   -- Knight / Elite Knight
-+  [9] = { 9, 10 }, [10] = { 9, 10 }, [15] = { 9, 10 }, -- Monk / Exalted Monk
-+  [11] = { 11 }, [12] = { 11, 12 }, [13] = { 11, 13 } -- Chaos: Thief / Ninja / Samurai (11-13 are not promoted ids here)
++  [1] = { 1, 2, 5 }, [5] = { 1, 5 },          -- Chaos: Mystic (sorcerer + druid spells) / Elementalist
++  [10] = { 2, 6 },                            -- Chaos: Illusionist (the druid's spells)
++  [3] = { 3, 7 }, [7] = { 3, 7 }, [15] = { 3, 7 }, -- Chaos: Ranger / Deadeye / Beastmaster
++  [4] = { 4, 8 }, [8] = { 4, 8 }, [14] = { 4, 8 }, -- Chaos: Warrior / Juggernaut / Berserker
++  [11] = { 11 }, [12] = { 11, 12 }, [13] = { 11, 13 } -- Chaos: Thief / Ninja / Samurai
  }
  
  -- Check if server vocation can use spell based on client vocations
-@@ -812,25 +813,26 @@
+@@ -812,25 +812,17 @@
  --             HelperSpellData.getHasteWhiteList()
  
  -- Converte diferentes representações de vocação em um ID padronizado
 --- Retornos: 0=rook, 1=Knight, 2=Paladin, 3=Sorcerer, 4=Druid, 5=Monk
-+-- Retornos: 0=rook, 1=Knight, 2=Paladin, 3=Sorcerer, 4=Druid, 5=Monk, 6=Thief (Chaos: 11-13 are the Thief line,
-+-- not other servers' promoted ids)
++-- Retornos: 0=rook, 1=Knight, 2=Paladin, 3=Sorcerer, 4=Druid, 5=Monk, 6=Thief. Chaos classes (server ids): the Warrior
++-- line is the knight, the Ranger line the paladin, Mystic / Elementalist the sorcerer, the Illusionist the druid
++-- (its heals), the Thief line 6
  function translateVocation(v)
    local map = {
      [0] = 0,
-     [4] = 1,
+-    [4] = 1,
 -    [8] = 1,
 -    [11] = 1, -- Knight + EK
-+    [8] = 1, -- Knight + EK
-     [3] = 2,
+-    [3] = 2,
 -    [7] = 2,
 -    [12] = 2, -- Paladin + RP
-+    [7] = 2, -- Paladin + RP
-     [1] = 3,
+-    [1] = 3,
 -    [5] = 3,
 -    [13] = 3, -- Sorcerer + MS
-+    [5] = 3, -- Sorcerer + MS
-     [2] = 4,
-     [6] = 4,
-     [14] = 4, -- Druid + ED
-     [9] = 5,
-     [10] = 5,
-     [15] = 5, -- Monk + promo
-+    [11] = 6,
-+    [12] = 6,
-+    [13] = 6, -- Chaos: Thief / Ninja / Samurai
+-    [2] = 4,
+-    [6] = 4,
+-    [14] = 4, -- Druid + ED
+-    [9] = 5,
+-    [10] = 5,
+-    [15] = 5, -- Monk + promo
++    [4] = 1, [8] = 1, [14] = 1, -- Warrior / Juggernaut / Berserker
++    [3] = 2, [7] = 2, [15] = 2, -- Ranger / Deadeye / Beastmaster
++    [1] = 3, [5] = 3, -- Mystic / Elementalist
++    [10] = 4, -- Illusionist
++    [11] = 6, [12] = 6, [13] = 6, -- Thief / Ninja / Samurai
    }
  
    if type(v) == 'number' then
-@@ -859,11 +861,12 @@
+@@ -859,11 +851,11 @@
  -- Standard IDs are 1-10; alternate promoted IDs are 11-15.
  -- Spell definitions use the standard {base, promoted} pairs.
  local ServerToClientVocationMap = {
 -  [1] = { 1, 5 }, [5] = { 1, 5 }, [13] = { 1, 5 },   -- Sorcerer / Master Sorcerer
-+  [1] = { 1, 5 }, [5] = { 1, 5 },   -- Sorcerer / Master Sorcerer
-   [2] = { 2, 6 }, [6] = { 2, 6 }, [14] = { 2, 6 },   -- Druid / Elder Druid
+-  [2] = { 2, 6 }, [6] = { 2, 6 }, [14] = { 2, 6 },   -- Druid / Elder Druid
 -  [3] = { 3, 7 }, [7] = { 3, 7 }, [12] = { 3, 7 },   -- Paladin / Royal Paladin
 -  [4] = { 4, 8 }, [8] = { 4, 8 }, [11] = { 4, 8 },   -- Knight / Elite Knight
 -  [9] = { 9, 10 }, [10] = { 9, 10 }, [15] = { 9, 10 } -- Monk / Exalted Monk
-+  [3] = { 3, 7 }, [7] = { 3, 7 },   -- Paladin / Royal Paladin
-+  [4] = { 4, 8 }, [8] = { 4, 8 },   -- Knight / Elite Knight
-+  [9] = { 9, 10 }, [10] = { 9, 10 }, [15] = { 9, 10 }, -- Monk / Exalted Monk
-+  [11] = { 11 }, [12] = { 11, 12 }, [13] = { 11, 13 } -- Chaos: Thief / Ninja / Samurai (11-13 are not promoted ids here)
++  [1] = { 1, 2, 5 }, [5] = { 1, 5 },          -- Chaos: Mystic (sorcerer + druid spells) / Elementalist
++  [10] = { 2, 6 },                            -- Chaos: Illusionist (the druid's spells)
++  [3] = { 3, 7 }, [7] = { 3, 7 }, [15] = { 3, 7 }, -- Chaos: Ranger / Deadeye / Beastmaster
++  [4] = { 4, 8 }, [8] = { 4, 8 }, [14] = { 4, 8 }, -- Chaos: Warrior / Juggernaut / Berserker
++  [11] = { 11 }, [12] = { 11, 12 }, [13] = { 11, 13 } -- Chaos: Thief / Ninja / Samurai
  }
  
  -- Retorna a lista de IDs de vocação do cliente correspondente à vocação enviada pelo servidor
 --- a/mods/game_helper/tools_panel.lua
 +++ b/mods/game_helper/tools_panel.lua
-@@ -428,11 +428,12 @@
+@@ -427,12 +427,12 @@
+   local player = getPlayer()
    if not player then return 0 end
    local voc = player:getVocation()
-   -- Normalize to base vocation (remove promotion)
+-  -- Normalize to base vocation (remove promotion)
 -  if voc == 4 or voc == 8 or voc == 11 then return 1 end -- Knight / Elite Knight
 -  if voc == 3 or voc == 7 or voc == 12 then return 2 end -- Paladin / Royal Paladin
 -  if voc == 1 or voc == 5 or voc == 13 then return 3 end -- Sorcerer / Master Sorcerer
-+  if voc == 4 or voc == 8 then return 1 end -- Knight / Elite Knight
-+  if voc == 3 or voc == 7 then return 2 end -- Paladin / Royal Paladin
-+  if voc == 1 or voc == 5 then return 3 end -- Sorcerer / Master Sorcerer
-   if voc == 2 or voc == 6 or voc == 14 then return 4 end -- Druid / Elder Druid
-   if voc == 9 or voc == 10 or voc == 15 then return 5 end -- Monk / Exalted Monk
-+  if voc == 11 or voc == 12 or voc == 13 then return 6 end -- Chaos: Thief / Ninja / Samurai
+-  if voc == 2 or voc == 6 or voc == 14 then return 4 end -- Druid / Elder Druid
+-  if voc == 9 or voc == 10 or voc == 15 then return 5 end -- Monk / Exalted Monk
++  -- Normalize to the helper's class (Chaos classes, server ids)
++  if voc == 4 or voc == 8 or voc == 14 then return 1 end -- Warrior / Juggernaut / Berserker
++  if voc == 3 or voc == 7 or voc == 15 then return 2 end -- Ranger / Deadeye / Beastmaster
++  if voc == 1 or voc == 5 then return 3 end -- Mystic / Elementalist
++  if voc == 10 then return 4 end -- Illusionist (the druid's heals)
++  if voc == 11 or voc == 12 or voc == 13 then return 6 end -- Thief / Ninja / Samurai
    return voc
  end
  
@@ -250,8 +372,8 @@
          GameAstraExtendedSpellIds = 152,
          // Chaos 10.98 server: seven crafting skills follow fishing in the skills packet
          GameChaosCraftingSkills = 153,
-+        // Chaos 10.98 server: the vocation byte uses Tibia's ids (1 knight, 2 paladin, 3 sorcerer, 4 druid, 5 illusionist),
-+        // 6 thief (16 ninja, 26 samurai)
++        // Chaos 10.98 server: the vocation byte is the class: the base slot (1 warrior, 2 ranger, 3 mystic, 6 thief),
++        // + 10 for the first ascended class, + 20 for the second
 +        GameChaosVocationIds = 154,
  
 -        LastGameFeature = 154
@@ -266,19 +388,19 @@
          /*int premiumEx = */msg->getU32(); // premium expiration used for premium advertisement
      int vocation = msg->getU8(); // vocation
 +    if (g_game.getFeature(Otc::GameChaosVocationIds)) {
-+        // the modules use server vocation ids (1 sorcerer, 2 druid, 3 paladin, 4 knight, 9 illusionist, 11 thief);
-+        // the server cannot tell base from promoted here, so the base vocation is used, except for the Thief
-+        // line, whose ascended classes send their own byte: 16 ninja (12), 26 samurai (13)
-+        static const int toServerId[] = { 0, 4, 3, 1, 2, 9, 11 };
-+        if (vocation == 16)
-+            vocation = 12;
-+        else if (vocation == 26)
-+            vocation = 13;
-+        else {
-+            const int base = vocation > 10 ? vocation - 10 : vocation;
-+            if (base >= 0 && base <= 6)
-+                vocation = toServerId[base];
-+        }
++        // the class byte (base slot + 10 / + 20 for the two ascended classes) -> the server's vocation id, which the
++        // modules use (docs/CLASSES.md): 1/11/21 Warrior / Juggernaut / Berserker (4 / 8 / 14), 2/12/22 Ranger /
++        // Deadeye / Beastmaster (3 / 7 / 15), 3/13/23 Mystic / Elementalist / Illusionist (1 / 5 / 10), 6/16/26
++        // Thief / Ninja / Samurai (11 / 12 / 13); the retired druid / illusionist bytes 4 and 5 read as the Mystic
++        static const int toServerId[3][7] = {
++            { 0, 4, 3, 1, 1, 1, 11 },
++            { 0, 8, 7, 5, 10, 10, 12 },
++            { 0, 14, 15, 10, 10, 10, 13 },
++        };
++        const int tier = vocation / 10;
++        const int slot = vocation % 10;
++        if (tier <= 2 && slot <= 6)
++            vocation = toServerId[tier][slot];
 +    }
  
      if (g_game.getFeature(Otc::GamePrey)) {

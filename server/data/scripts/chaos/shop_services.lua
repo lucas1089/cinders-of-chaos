@@ -395,7 +395,7 @@ S.services = {
 
 	nameToken = tokenService(ST.nameChangeTokens, "name change", "!changename <New Name>"),
 	vocationToken = tokenService(ST.vocationChangeTokens, "vocation change",
-		"!changevocation <knight|paladin|sorcerer|druid|illusionist|thief|ninja|samurai>"),
+		"!changevocation <" .. Chaos.shopServices.vocationWords .. ">"),
 
 	blessings = {
 		check = function(player)
@@ -601,7 +601,7 @@ function login.onLogin(player)
 	end
 	if player:getStorageValue(ST.vocationChangeTokens) > 0 then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
-			"You have an unused vocation change: !changevocation <knight|paladin|sorcerer|druid|illusionist|thief|ninja|samurai>")
+			"You have an unused vocation change: !changevocation <" .. C().vocationWords .. ">")
 	end
 	return true
 end
@@ -767,7 +767,7 @@ function vocTalk.onSay(player, words, param)
 	local current = player:getVocation()
 	local newId, err = S.vocationFor(param, current:getId())
 	if not newId then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Usage: !changevocation <knight|paladin|sorcerer|druid|illusionist|thief|ninja|samurai>. " .. err)
+		player:sendTextMessage(MESSAGE_INFO_DESCR, "Usage: !changevocation <" .. C().vocationWords .. ">. " .. err)
 		return false
 	end
 	local newVoc = Vocation(newId)
@@ -802,11 +802,14 @@ function vocTalk.onSay(player, words, param)
 	if ChaosPassiveTree and ChaosPassiveTree.resetAll then
 		ChaosPassiveTree.resetAll(player)
 	end
-	-- the Thief line (classes.lua): the Ninja's off-hand rule, and the client learns the vocation without a relog
+	-- classes.lua: the Ninja's off-hand rule, a pending free switch of the migration is spent, and the client learns
+	-- the vocation without a relog
+	player:setStorageValue(Chaos.classes.storage.freeSwitch, -1)
 	if ChaosClasses then
-		ChaosClasses.syncDualWield(player)
-		if ChaosClasses.sendBasicData then
-			ChaosClasses.sendBasicData(player)
+		if ChaosClasses.afterVocationChange then
+			ChaosClasses.afterVocationChange(player)
+		else
+			ChaosClasses.syncDualWield(player)
 		end
 	end
 	player:save()

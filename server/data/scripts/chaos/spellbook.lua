@@ -544,8 +544,33 @@ local function loadVocations()
 	if Vocation == nil then
 		return map
 	end
+	-- the ids of data/XML/vocations.xml when it can be read (Vocation(id) of a missing id, like the retired 2, 6 and 9
+	-- of the class rework, prints an engine warning), else a scan
+	local ids
+	local f = io and io.open and io.open("data/XML/vocations.xml", "r")
+	if f then
+		local text = f:read("*a") or ""
+		f:close()
+		ids = {}
+		for tag in text:gsub("<!%-%-.-%-%->", ""):gmatch("<vocation%s[^>]*>") do
+			local id = tonumber(tag:match('%sid="(%d+)"'))
+			if id then
+				ids[#ids + 1] = id
+			end
+		end
+		table.sort(ids)
+		if #ids == 0 then
+			ids = nil
+		end
+	end
+	if not ids then
+		ids = {}
+		for id = 0, 20 do
+			ids[#ids + 1] = id
+		end
+	end
 	local misses = 0
-	for id = 0, 20 do
+	for _, id in ipairs(ids) do
 		local ok, voc = pcall(Vocation, id)
 		if ok and voc then
 			misses = 0

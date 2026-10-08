@@ -151,11 +151,15 @@ local function validateNodes(player, rawNodes)
 	return ids
 end
 
--- vocation key of the per-vocation node variants (keystones), by the client's vocation id like the client module
-local VOCATION_KEY = {[1] = "knight", [2] = "paladin", [3] = "sorcerer", [4] = "druid", [5] = "illusionist", [6] = "monk"}
+-- vocation key of the per-vocation node variants (keystones): by class (ChaosClasses.keystoneKey, classes.lua):
+-- Warrior / Juggernaut / Berserker "knight", Ranger / Deadeye / Beastmaster "paladin", Mystic / Elementalist
+-- "sorcerer", Illusionist "illusionist" (the "druid" variants are no class's any more since the class rework)
+if not ChaosClasses then
+	dofile("data/scripts/chaos/classes.lua")
+end
 function ChaosPassiveTree.vocationKey(player)
 	local vocation = player:getVocation()
-	return vocation and VOCATION_KEY[vocation:getClientId()] or nil
+	return vocation and ChaosClasses.keystoneKey(vocation:getId()) or nil
 end
 
 -- stats a node gives this vocation: its own variant (node.v) if it has one, else the shared stats
