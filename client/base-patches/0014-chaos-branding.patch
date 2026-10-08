@@ -1,0 +1,588 @@
+--- a/data/styles/10-windows.otui
++++ b/data/styles/10-windows.otui
+@@ -241,8 +241,8 @@
+       anchors.bottom: parent.bottom
+       anchors.left: parent.left
+       text-offset: 16 -2
+-      !text: tr('I agree with Astra Terms and Conditions.')
+-      !tooltip: tr('I have read and I agree to the Extended Astra Service Agreement and the Astra Privacy Policy.')
++      !text: tr('I agree with Chaos Terms and Conditions.')
++      !tooltip: tr('I have read and I agree to the Extended Chaos Service Agreement and the Chaos Privacy Policy.')
+       margin-bottom: 5
+       font: $var-cip-font
+       color: $var-text-cip-color
+--- a/init.lua
++++ b/init.lua
+@@ -36,7 +36,7 @@
+ --USE_NEW_ENERGAME = true -- uses entergamev2 based on websockets instead of entergame
+ ALLOW_CUSTOM_SERVERS = false -- if true it shows option ANOTHER on server list
+ 
+-g_app.setName("AstraClient - OTCv8")
++g_app.setName("Chaos")
+ -- CONFIG END
+ 
+ -- print first terminal message
+--- a/mods/client_settings/classes/conditions.lua
++++ b/mods/client_settings/classes/conditions.lua
+@@ -108,7 +108,7 @@
+         visibleBar = true,
+         tooltipBar = tr('You are drunk'),
+         tooltip = tr(
+-            "Taverns in Astra are popular gathering places where many\nadventurers enjoy relaxing after their wearisome travels with a\npint of cool beer. However, Astra's beer is quite strong, so don't be\nsurprised if your character has trouble walking in a straight line for\na while."
++            "Taverns in Chaos are popular gathering places where many\nadventurers enjoy relaxing after their wearisome travels with a\npint of cool beer. However, Chaos's beer is quite strong, so don't be\nsurprised if your character has trouble walking in a straight line for\na while."
+         )
+     },
+     [10] = {
+@@ -168,7 +168,7 @@
+         visibleBar = true,
+         tooltipBar = tr('You are drowning'),
+         tooltip = tr(
+-            "Astra features a special underwater area. Since no one can survive\nwithout fresh air, characters will take damage if they walk\nunderwater without the proper equipment. The only way to survive\nis to leave the water quickly or equip a life-saving diving helmet."
++            "Chaos features a special underwater area. Since no one can survive\nwithout fresh air, characters will take damage if they walk\nunderwater without the proper equipment. The only way to survive\nis to leave the water quickly or equip a life-saving diving helmet."
+         )
+     },
+     [15] = {
+@@ -420,7 +420,7 @@
+         visibleBar = true,
+         tooltipBar = tr('You are hungry'),
+         tooltip = tr(
+-            "Characters who are hungry do not regenerate mana or health. To\nfill up your character's stomach, look for something edible, such as\nan apple, bread, or ham. There are plenty of things in Astra that\nyour character can eat. Check out stores, search bushes, bake your\nown bread or cake, or defeat creatures to find some delicacies."
++            "Characters who are hungry do not regenerate mana or health. To\nfill up your character's stomach, look for something edible, such as\nan apple, bread, or ham. There are plenty of things in Chaos that\nyour character can eat. Check out stores, search bushes, bake your\nown bread or cake, or defeat creatures to find some delicacies."
+         )
+     }
+ }
+--- a/mods/client_settings/classes/import-config.lua
++++ b/mods/client_settings/classes/import-config.lua
+@@ -12,6 +12,6 @@
+         EnterGame.hide()
+         closeOptions()
+         scheduleEvent(function() g_app.exit() end, 4000)
+-        displayNonCloseInfoBox(tr("Import Config"), "Your Astra 13 config has been imported.\n\nYour client will close soon, please restart your client.", function() end)
++        displayNonCloseInfoBox(tr("Import Config"), "Your 13.x config has been imported.\n\nYour client will close soon, please restart your client.", function() end)
+     end
+ end
+\ No newline at end of file
+--- a/mods/client_settings/options/controls.otui
++++ b/mods/client_settings/options/controls.otui
+@@ -478,7 +478,7 @@
+     Button
+       id: importButton
+       size: 128 20
+-      !text: tr('Import Astra 13 Config')
++      !text: tr('Import 13.x Config')
+       anchors.top: parent.top
+       anchors.left: parent.left
+       margin-top: 5
+@@ -492,7 +492,7 @@
+       margin-right: 5
+       margin-top: 5
+       image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('Import all options from Astra 13 config. This will overwrite\nall your current settings.')
++      !tooltip: tr('Import all options from 13.x config. This will overwrite\nall your current settings.')
+ 
+     Button
+       id: exportButton
+--- a/mods/client_settings/options/effects.otui
++++ b/mods/client_settings/options/effects.otui
+@@ -118,7 +118,7 @@
+       margin-right: 5
+       margin-top: 5
+       image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('Not all graphics cards are capable of drawing light effects fast\nenough for Astra to run smoothly. If your system is working with\nsuch a graphics card, it may be a good idea to deactivate the light\neffects in order to improve overall game performance. Note that \nthis option will be disabled if your graphics card is not able to draw\nlight effects at all.\n\nThe following options are only available if Show Light Effects are enabled:\n\n      * Ambient Light: Here you can determine the brightness of\n        your ambience. If you prefer to play in a mysterious and\n        dark surrounding, you should set the ambient light slider as\n        low as possible. Players that rather like to see everything in\n        a bright light, should position the bar at 100%%.\n      * Level Separator: By using this slider, you can determine how\n        dark or bright lower levels will be displayed for your\n        character.\n      * Clouds & Indoor Effect: By using this slider, you can\n        determine how dark or bright the inside of houses or\n        shadows of clouds will be displayed for your character.')
++      !tooltip: tr('Not all graphics cards are capable of drawing light effects fast\nenough for Chaos to run smoothly. If your system is working with\nsuch a graphics card, it may be a good idea to deactivate the light\neffects in order to improve overall game performance. Note that \nthis option will be disabled if your graphics card is not able to draw\nlight effects at all.\n\nThe following options are only available if Show Light Effects are enabled:\n\n      * Ambient Light: Here you can determine the brightness of\n        your ambience. If you prefer to play in a mysterious and\n        dark surrounding, you should set the ambient light slider as\n        low as possible. Players that rather like to see everything in\n        a bright light, should position the bar at 100%%.\n      * Level Separator: By using this slider, you can determine how\n        dark or bright lower levels will be displayed for your\n        character.\n      * Clouds & Indoor Effect: By using this slider, you can\n        determine how dark or bright the inside of houses or\n        shadows of clouds will be displayed for your character.')
+ 
+   FlatPanel
+     size: 505 205
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -62,7 +62,7 @@
+     margin-right: 9
+     margin-top: 3
+     image-source: /images/skin/show-gui-help-grey
+-    !tooltip: tr('If you select "Antialiasing", the Astra graphics will appear in a \nsmoother look. However, if you are a fan of retro games, you \nshould choose "None" to enjoy a pixelated old-school look. \n"Smooth Retro" combines the other two modes – it is offering a \nsmooth pixelated look.')
++    !tooltip: tr('If you select "Antialiasing", the Chaos graphics will appear in a \nsmoother look. However, if you are a fan of retro games, you \nshould choose "None" to enjoy a pixelated old-school look. \n"Smooth Retro" combines the other two modes – it is offering a \nsmooth pixelated look.')
+ 
+   FlatPanel
+     size: 505 22
+@@ -126,7 +126,7 @@
+       margin-right: 5
+       margin-top: 5
+       image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('You can play Astra both in a full screen mode and in a windowed \nmode. In full screen mode, Astra will take up the whole screen, \nwhile it is possible to modify the clients size if the windowed mode \nis activated. You can toggle between the two modes by using this \noption. Alternatively, pressing the shortcut Ctrl+F will have the \nsame effect.')
++      !tooltip: tr('You can play Chaos both in a full screen mode and in a windowed \nmode. In full screen mode, Chaos will take up the whole screen, \nwhile it is possible to modify the clients size if the windowed mode \nis activated. You can toggle between the two modes by using this \noption. Alternatively, pressing the shortcut Ctrl+F will have the \nsame effect.')
+ 
+   FlatPanel
+     size: 505 22
+@@ -159,7 +159,7 @@
+       margin-right: 5
+       margin-top: 5
+       image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('Enable this option to use only integral multiples as scale factor \ne.g., 50%%, 100%%, 200%% when scaling the game window. This way \nyou keep the original pixelated look of Astra when you do not use \nAntialiasing.')
++      !tooltip: tr('Enable this option to use only integral multiples as scale factor \ne.g., 50%%, 100%%, 200%% when scaling the game window. This way \nyou keep the original pixelated look of Chaos when you do not use \nAntialiasing.')
+ 
+   FlatPanel
+     size: 505 22
+@@ -249,7 +249,7 @@
+       margin-right: 5
+       margin-top: -1
+       image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('If you check this option, the client will try to produce as many \nframes as possible. If you find your computers performance is bad \nwhen running Astra, you should rather try to set a frame rate limit.')
++      !tooltip: tr('If you check this option, the client will try to produce as many \nframes as possible. If you find your computers performance is bad \nwhen running Chaos, you should rather try to set a frame rate limit.')
+ 
+     Label
+       id: frameRateLabel
+@@ -295,7 +295,7 @@
+       margin-right: 5
+       margin-top: -1
+       image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('By using this slider, you can modify the preset frame rate limit \nfrom 10 to 500 fps frames per second. If you find your \ncomputers performance is bad when running Astra, you should try \nreducing the frame rate. Note that this function is not available if \nyou have checked "No Frame Rate Limit".')
++      !tooltip: tr('By using this slider, you can modify the preset frame rate limit \nfrom 10 to 500 fps frames per second. If you find your \ncomputers performance is bad when running Chaos, you should try \nreducing the frame rate. Note that this function is not available if \nyou have checked "No Frame Rate Limit".')
+ 
+     Label
+       id: currentFrameRateLabel
+--- a/mods/client_settings/options/help.otui
++++ b/mods/client_settings/options/help.otui
+@@ -151,7 +151,7 @@
+       Button
+         id: importButton
+         size: 128 20
+-        !text: tr('Import Astra 10 Config')
++        !text: tr('Import 10.x Config')
+         anchors.top: parent.top
+         anchors.left: parent.left
+         margin-top: 5
+@@ -169,7 +169,7 @@
+       Button
+         id: importMapButton
+         size: 128 20
+-        !text: tr('Import Astra 10 Map')
++        !text: tr('Import 10.x Map')
+         anchors.top: importButton.bottom
+         anchors.left: parent.left
+         margin-top: 6
+--- a/mods/client_settings/options/interface.otui
++++ b/mods/client_settings/options/interface.otui
+@@ -71,7 +71,7 @@
+       margin-right: 5
+       margin-top: 5
+       image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('Enable this option if you prefer to use the mouse cursor design of \nyour operating system instead of the Astra design.')
++      !tooltip: tr('Enable this option if you prefer to use the mouse cursor design of \nyour operating system instead of the Chaos design.')
+ 
+   FlatPanel
+     size: 505 22
+@@ -250,7 +250,7 @@
+       margin-right: 5
+       margin-top: 5
+       image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('If this option is checked, you will get a warning whenever you try to \ncopy a link from the console. This warning will remind you to be \ncareful about any posted links as they might have been designed \nto hack your Astra account.')
++      !tooltip: tr('If this option is checked, you will get a warning whenever you try to \ncopy a link from the console. This warning will remind you to be \ncareful about any posted links as they might have been designed \nto hack your Chaos account.')
+ 
+   FlatPanel
+     size: 505 44
+--- a/mods/client_settings/options/screenshot.otui
++++ b/mods/client_settings/options/screenshot.otui
+@@ -101,7 +101,7 @@
+       margin-right: 5
+       margin-top: 5
+       image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('Enable this option to save screenshots of the most important\nmoments of your Astra career! Whenever one of the events you\nhave selected takes place, a screenshot will be taken\nautomatically.\n\nThe following events can be selected to trigger an auto screenshot:\n\n- Level Up: Your character has reached the next level\n- Skill Up: You advanced in one of your skills (e.g. Magic Level\nor Sword Fighting)\n- Achievement: You earned an achievement, either while\nplaying or upon login\n- Bestiary Entry Unlocked: You unlocked new information\nabout a creature in the Bestiary\n- Bestiary Entry Completed: You unlocked all information about\na creature in the Bestiary\n- Treasure Found: You received some reward from a container\nfor solving a quest or a riddle\n- Valuable Loot: You just found some loot which you have\nmarked in the Drop Tracker\n- Boss Defeated: You defeated a boss monster, either alone or\ntogether with other players, and are entitled to loot it\n- Death PvE: You were just killed by some creature (PvE)\n- Death PvP: You were just killed by another player (PvP)\n- Player Kill: You defeated another player\n- Player Killer Assist: You assisted the killing of another player\n- Player Attacking: Another player just started to attack you\n- Highest Damage Dealt: You dealt a new all-time high damage\non a foe. To see or reset your current all-time high, check\nthe Impact Analyser\n- Highest Healing Done: You healed someone with a new all-\ntime high healing value. To see or reset your current all-time\nhigh, check the Impact Analyser\n- Low Health: You have reached a threshold of deep red\nhealth Copy')
++      !tooltip: tr('Enable this option to save screenshots of the most important\nmoments of your Chaos career! Whenever one of the events you\nhave selected takes place, a screenshot will be taken\nautomatically.\n\nThe following events can be selected to trigger an auto screenshot:\n\n- Level Up: Your character has reached the next level\n- Skill Up: You advanced in one of your skills (e.g. Magic Level\nor Sword Fighting)\n- Achievement: You earned an achievement, either while\nplaying or upon login\n- Bestiary Entry Unlocked: You unlocked new information\nabout a creature in the Bestiary\n- Bestiary Entry Completed: You unlocked all information about\na creature in the Bestiary\n- Treasure Found: You received some reward from a container\nfor solving a quest or a riddle\n- Valuable Loot: You just found some loot which you have\nmarked in the Drop Tracker\n- Boss Defeated: You defeated a boss monster, either alone or\ntogether with other players, and are entitled to loot it\n- Death PvE: You were just killed by some creature (PvE)\n- Death PvP: You were just killed by another player (PvP)\n- Player Kill: You defeated another player\n- Player Killer Assist: You assisted the killing of another player\n- Player Attacking: Another player just started to attack you\n- Highest Damage Dealt: You dealt a new all-time high damage\non a foe. To see or reset your current all-time high, check\nthe Impact Analyser\n- Highest Healing Done: You healed someone with a new all-\ntime high healing value. To see or reset your current all-time\nhigh, check the Impact Analyser\n- Low Health: You have reached a threshold of deep red\nhealth Copy')
+ 
+     Label
+       id: selectLabel
+--- a/mods/client_settings/options/uiSounds.otui
++++ b/mods/client_settings/options/uiSounds.otui
+@@ -307,7 +307,7 @@
+       anchors.right: parent.right
+       margin-right: 5
+       image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('Tick this box if you like to hear a sound when a new message for \nthe whole game world appears, e.g., the game world is going down \nor a Astra member makes an important announcement.')
++      !tooltip: tr('Tick this box if you like to hear a sound when a new message for \nthe whole game world appears, e.g., the game world is going down \nor a Chaos member makes an important announcement.')
+ 
+ 
+   Button
+--- a/mods/game_announcement/announce.otui
++++ b/mods/game_announcement/announce.otui
+@@ -344,7 +344,7 @@
+         anchors.top: parent.top
+         anchors.horizontalCenter: parent.horizontalCenter
+         margin-top: 2
+-        !text: tr('Astra Poll')
++        !text: tr('Chaos Poll')
+         font: $var-cip-font
+         color: $var-text-cip-color-grey
+         text-auto-resize: true
+--- a/mods/game_compendium/compendium.lua
++++ b/mods/game_compendium/compendium.lua
+@@ -14,14 +14,14 @@
+     title = "Client Features",
+     pages = {
+       "ATC Helper\nConfigure supported helper tools, alarms and shortcuts from the ATC Helper panel.",
+-      "Modern Windows\nInspect items, customise monster podiums and manage familiar appearance through Astra-only protocol extensions."
++      "Modern Windows\nInspect items, customise monster podiums and manage familiar appearance through Chaos-only protocol extensions."
+     }
+   },
+   {
+     title = "Useful Info",
+     pages = {
+       "Use the right-side menu to open Cyclopedia, Task Hunt, Compendium and other game systems.",
+-      "Only Astra Client receives the modern extension bytes. Legacy Cip and OTC clients keep their original packet layout."
++      "Only Chaos Client receives the modern extension bytes. Legacy Cip and OTC clients keep their original packet layout."
+     }
+   },
+   {
+@@ -33,7 +33,7 @@
+   {
+     title = "Support",
+     pages = {
+-      "For account or gameplay support, use the official Astra support channels. Include screenshots and the exact error message when reporting a problem."
++      "For account or gameplay support, use the official Chaos support channels. Include screenshots and the exact error message when reporting a problem."
+     }
+   }
+ }
+--- a/mods/game_report/report.otui
++++ b/mods/game_report/report.otui
+@@ -16,7 +16,7 @@
+     anchors.top: prev.bottom
+     anchors.left: parent.left
+     margin-top: 1
+-    !text: tr('Please select the Astra Rule which is violated.')
++    !text: tr('Please select the Chaos Rule which is violated.')
+     text-auto-resize: true
+     font: $var-cip-font
+     color: $var-text-cip-color
+--- a/mods/game_store/classes/Bazaar.lua
++++ b/mods/game_store/classes/Bazaar.lua
+@@ -823,7 +823,7 @@
+ 	check3:setColor("$var-text-cip-color")
+ 	check3:setSize("715 45")
+ 
+-	local secondLabel = ' By confirming the auction, an auction fee of '.. Bazaar.initialFee ..'<img src="/images/store/icon-tibiacointransferable" width="12" height="12" offset="0 2" /> becomes due which will be deducted from your account\'s<p>Astra Coins balance. Further, 8% of the auction\'s sales revenue will be kept by Astra as commission.</p>'
++	local secondLabel = ' By confirming the auction, an auction fee of '.. Bazaar.initialFee ..'<img src="/images/store/icon-tibiacointransferable" width="12" height="12" offset="0 2" /> becomes due which will be deducted from your account\'s<p>Chaos Coins balance. Further, 8% of the auction\'s sales revenue will be kept by Chaos as commission.</p>'
+ 	check3:setHTML(string.format(stringFormat, '/images/store/icon-yes', secondLabel))
+ 
+ 	local check4 = g_ui.createWidget('Label', checkList)
+@@ -832,7 +832,7 @@
+ 	check4:setSize("715 15")
+ 
+ 	local stringFormat = '<table><tbody><tr><td style="padding-right: 5px;"><img src="%s" width="4" height="9" offset="2 2" /></td><td>%s</td></tr></tbody></table>'
+-	local secondLabel = '  Important: Note that the Astra Coins you receive for selling your character may be partly or completely non-transferable up to 120 days after the auction has ended. Non-transferable Astra Coins cannot be sold in the Market or gifted to other accounts.\n'
++	local secondLabel = '  Important: Note that the Chaos Coins you receive for selling your character may be partly or completely non-transferable up to 120 days after the auction has ended. Non-transferable Chaos Coins cannot be sold in the Market or gifted to other accounts.\n'
+ 	check4:setHTML(string.format(stringFormat, '/images/store/icon-exclamationmark', secondLabel))
+ 
+ 	local check5 = g_ui.createWidget('Label', checkList)
+--- a/mods/game_store/classes/Home.lua
++++ b/mods/game_store/classes/Home.lua
+@@ -160,7 +160,7 @@
+ 		if canReroll then
+ 			rerollButton.onClick = function(self) HomeOffer:onRerollDailyOffer(self) end
+ 			rerollButton:setEnabled(Store.transferableCoins >= dailyOfferPrice)
+-			rerollButton:setTooltip(string.format("Reroll offers for %d Astra Coins", dailyOfferPrice))
++			rerollButton:setTooltip(string.format("Reroll offers for %d Chaos Coins", dailyOfferPrice))
+ 		end
+ 		Store:profileStep("HomeOffer completion", completionStartedAt)
+ 	end)
+@@ -200,7 +200,7 @@
+ 		g_client.setInputLockWidget(nil)
+ 	end
+ 
+-	local message = string.format("Are you sure you want to reroll the daily offer for %d Astra Coins?", HomeOffer.dailyReroll)
++	local message = string.format("Are you sure you want to reroll the daily offer for %d Chaos Coins?", HomeOffer.dailyReroll)
+ 
+ 	HomeOffer.dailyRerollWindow = displayGeneralBox(tr('Confirm reroll'), tr(message), {
+ 		{ text=tr('Ok'), callback = okButton },
+--- a/mods/game_store/classes/Store.lua
++++ b/mods/game_store/classes/Store.lua
+@@ -373,7 +373,12 @@
+ 		["font"] = "Verdana",
+ 		["id"] = offerId
+ 	}
+-	HTTP.downloadConditionalImage("https://widget.astra.com/"..offerId, data, function(path, err)
++	-- offer images come from an image service; none is configured unless Services.storeWidget is set
++	local widgetBase = Services and Services.storeWidget
++	if type(widgetBase) ~= "string" or widgetBase == "" then
++		return
++	end
++	HTTP.downloadConditionalImage(widgetBase .. offerId, data, function(path, err)
+ 		if err then
+ 			return
+ 		end
+--- a/mods/game_store/store.lua
++++ b/mods/game_store/store.lua
+@@ -777,51 +777,8 @@
+     rulesTextList:destroyChildren()
+ 
+     local longText = "Extended Terms of Conditions for Paid Services\n\n" ..
+-                      "These Terms of Service establish the conditions under which D FATO GAMES LTDA provides 'VIP Time,' 'Astra Coins,' and 'Additional Services' (referred to as 'Paid Services') for the online RPG game 'Astra.' This document complements the 'Astra Service Agreement,' which all users must accept when creating an account.\n\n" ..
+-                      
+-                      "1 - Object of the Term\n\n" ..
+-                      "1.1. 'VIP Time' grants temporary exclusive abilities and benefits to the account holder ('VIP Account') that are not available to free accounts. D FATO GAMES LTDA reserves the right to add, modify, or remove such abilities and benefits at any time, respecting the principles of good faith and social function in accordance with the Brazilian Civil Code. The VIP Account is for personal and non-transferable use.\n\n" ..
+-                      "1.2. 'Astra Coins' are virtual currency used to purchase exclusive products and benefits in the games store. D FATO GAMES LTDA reserves the right to add, alter, or remove products at any time. Astra Coins may be transferred between accounts depending on conditions and the payment method, always in compliance with security standards.\n\n" ..
+-                      "1.3. 'Additional Services' are special functionalities that assist in managing Astra accounts and are non-transferable between accounts.\n\n" ..
+-                      
+-                      "2 - Payment of Fees\n\n" ..
+-                      "2.1. Fees for Paid Services must be paid in advance, with acquisition considered full acceptance of the terms herein. Prices are listed on the Astra website and may be changed by D FATO GAMES LTDA, with new prices applicable to future purchases only.\n\n" ..
+-                      "2.2. Fees are non-refundable, except as provided by law, such as cases of proven technical failure or cancellation within the legal withdrawal period (7 days under Brazilian Consumer Protection Code).\n\n" ..
+-
+-                      "3 - Termination and Limitations\n\n" ..
+-                      "3.1. Accounts inactive for two years will have unused Paid Services canceled without refund. D FATO GAMES LTDA reserves the right to deactivate such accounts, upholding transparency and good faith.\n\n" ..
+-                      "3.2. Upon VIP Time expiration, the account reverts to free status, and VIP benefits end. Users are notified in advance of expiration.\n\n" ..
+-                      
+-                      "4 - Right to Cancellation\n\n" ..
+-                      "4.1. Users may cancel within 7 days of acceptance if the service has not been used, per article 49 of the Brazilian Consumer Protection Code. The cancellation request must be sent via email to pagamentos@astra.com.\n\n" ..
+-                      "4.2. Refunds for cancellations will be processed within 7 calendar days, using the original payment method.\n\n" ..
+-
+-                      "5 - User Responsibilities\n\n" ..
+-                      "5.1. Users are fully responsible for protecting their login credentials and for activities under their ownership. Secure passwords and regular changes are recommended.\n\n" ..
+-                      "5.2. Sharing or transferring access information to third parties is prohibited. Suspected compromise must be reported immediately.\n\n" ..
+-                      "5.3. D FATO GAMES LTDA is not liable for damages from compromised accounts due to user negligence.\n\n" ..
+-
+-                      "6 - Game Access Suspension\n\n" ..
+-                      "6.1. Users must comply with Astra rules, available on the official website. Violation may result in account suspension without a refund.\n\n" ..
+-                      "6.2. D FATO GAMES LTDA may modify Astra Rules at any time, with 30 days notice for significant changes.\n\n" ..
+-                      "6.3. Astra holds the right to ban accounts for bot usage, following a chance for the user to explain.\n\n" ..
+-
+-                      "7 - Limitation of Warranties\n\n" ..
+-                      "7.1. D FATO GAMES LTDA will make reasonable efforts to maintain game operation but does not guarantee uninterrupted or error-free service.\n\n" ..
+-                      "7.2. The company is not responsible for internet or equipment failures beyond its control.\n\n" ..
+-
+-                      "8 - Limitation of Liability\n\n" ..
+-                      "8.1. D FATO GAMES LTDA is not responsible for financial, moral, material, or consequential damages from game usage or data loss.\n\n" ..
+-                      "8.2. The company disclaims responsibility for indirect damages from software failures or gameplay adjustments.\n\n" ..
+-
+-                      "9 - Forum and Jurisdiction\n\n" ..
+-                      "9.1. These Terms are governed by Brazilian law, with disputes resolved in S?o Paulo/SP.\n\n" ..
+-
+-                      "10 - Final Provisions\n\n" ..
+-                      "10.1. D FATO GAMES LTDA may amend these Terms in whole or in part, with changes communicated at least 30 days in advance on the Astra website.\n\n" ..
+-                      "10.2. Invalid provisions will be replaced, while remaining provisions continue in force.\n\n" ..
+-                      "10.3. By using D FATO GAMES LTDAs services, users accept these Terms, understanding their rights, obligations, and responsibilities.\n\n" ..
+-                      "10.4. By electronically accepting these Terms, users confirm their commitment to all clauses."
++                      "The terms for paid services of Chaos are published on the official website. "
++                      .. "By buying you agree to them."
+ 
+     local label = g_ui.createWidget('UILabel', rulesTextList)
+     label:setText(longText)
+--- a/mods/game_store/store.otui
++++ b/mods/game_store/store.otui
+@@ -70,7 +70,7 @@
+ 
+     Label
+       id: balanceTitle
+-      !text: tr('Astra Coins:')
++      !text: tr('Chaos Coins:')
+       anchors.left: parent.left
+       anchors.verticalCenter: parent.verticalCenter
+       margin-left: 7
+@@ -104,7 +104,7 @@
+     image-clip: 0 0 64 20
+     margin-top: 13
+     margin-left: 5
+-    !tooltip: tr('Get Astra Coins')
++    !tooltip: tr('Get Chaos Coins')
+     $hover:
+       image-clip: 0 0 64 20
+     $pressed:
+@@ -120,7 +120,7 @@
+     margin-left: 5
+     image-source: /images/store/transfer-coin
+     image-clip: 0 0 64 20
+-    !tooltip: tr('Gift Astra Coins to another character.')
++    !tooltip: tr('Gift Chaos Coins to another character.')
+     $hover !pressed:
+       image-clip: 0 0 64 20
+     $pressed:
+--- a/mods/game_store/styles/gift.otui
++++ b/mods/game_store/styles/gift.otui
+@@ -1,6 +1,6 @@
+ GiftWindow < NewMainWindow
+   id: countWithdraw
+-  !text: tr('Gift Astra Coins')
++  !text: tr('Gift Chaos Coins')
+   size: 279 238
+ 
+   Panel
+@@ -37,7 +37,7 @@
+     Label
+       anchors.top: prev.bottom
+       anchors.left: parent.left
+-      !text: tr('Transferable Astra Coins:')
++      !text: tr('Transferable Chaos Coins:')
+       font: $var-cip-font
+       color: $var-text-cip-color
+       text-auto-resize: true
+--- a/mods/game_store/styles/hirelingwindow.otui
++++ b/mods/game_store/styles/hirelingwindow.otui
+@@ -14,7 +14,7 @@
+       height: 64
+       margin-top: 5
+       margin-left: 5
+-      !text: tr('Here you can customise your hireling. Make sure that the name does not violate the Astra Rules, or your hireling might get reported and receive on automatically generated name.')
++      !text: tr('Here you can customise your hireling. Make sure that the name does not violate the Chaos Rules, or your hireling might get reported and receive on automatically generated name.')
+       text-wrap: true
+   Label
+     !text: tr('Name:')
+--- a/mods/game_store/styles/pixdonate.otui
++++ b/mods/game_store/styles/pixdonate.otui
+@@ -47,8 +47,8 @@
+     anchors.bottom: parent.bottom
+     anchors.left: parent.left
+     text-offset: 16 -2
+-    !text: tr('I agree with Astra Terms and Conditions.')
+-    !tooltip: tr('I have read and I agree to the Extended Astra Service Agreement and the Astra Privacy Policy.')
++    !text: tr('I agree with Chaos Terms and Conditions.')
++    !tooltip: tr('I have read and I agree to the Extended Chaos Service Agreement and the Chaos Privacy Policy.')
+     margin-bottom: 5
+     font: $var-cip-font
+     color: $var-text-cip-color
+--- a/mods/game_tibia_market/t_market.lua
++++ b/mods/game_tibia_market/t_market.lua
+@@ -494,9 +494,9 @@
+ 	
+ 	local coinTooltip = {}
+ 
+-	setStringColor(coinTooltip, "Total Astra Coins: " .. comma_value(coins + transferableCoins), "#3f3f3f")
++	setStringColor(coinTooltip, "Total Chaos Coins: " .. comma_value(coins + transferableCoins), "#3f3f3f")
+ 	setStringColor(coinTooltip, " £", "#f7e6fe")
+-	setStringColor(coinTooltip, "\nIncluded transferable Astra Coins: " .. comma_value(transferableCoins), "#3f3f3f")
++	setStringColor(coinTooltip, "\nIncluded transferable Chaos Coins: " .. comma_value(transferableCoins), "#3f3f3f")
+ 	setStringColor(coinTooltip, " ¢", "#f7e6fe")
+ 
+ 	marketWindow.contentPanel.coinPanel.gold:setText(comma_value(transferableCoins))
+--- a/modules/client_background/casts.lua
++++ b/modules/client_background/casts.lua
+@@ -117,7 +117,7 @@
+   end)
+   if not ok then
+     if castProtocol == protocol then castProtocol = nil end
+-    g_logger.warning('Could not request the Astra cast list: ' .. tostring(err))
++    g_logger.warning('Could not request the Chaos cast list: ' .. tostring(err))
+   end
+ end
+ 
+--- a/modules/client_entergame/characterlist.lua
++++ b/modules/client_entergame/characterlist.lua
+@@ -392,7 +392,7 @@
+         g_app.exit()
+       end
+ 
+-      errorBox = displayGeneralBox(tr('Info'), "Your client version is too old.\nRestart Astra to update your client.", {
++      errorBox = displayGeneralBox(tr('Info'), "Your client version is too old.\nRestart Chaos to update your client.", {
+         { text=tr('Update'), callback=okFunc },
+         { text=tr('Exit'), callback=ExitFunc },
+         { text=tr('Cancel'), callback=cancelFunc }
+--- a/modules/client_entergame/entergame.lua
++++ b/modules/client_entergame/entergame.lua
+@@ -438,12 +438,14 @@
+ 
+ 
+ function EnterGame.addTestServer()
++  -- the base client adds its own test servers here; Chaos has none
++  do return end
+   local testServer = {
+     name = "TesteArena",
+-    loginLink = "http://logints.astra.com.br:8083/login",
+-    clientServicesLink = "https://astra.net/clientservices/clientservices.php",
+-    hintsLink = "https://astra.net/hints.json",
+-    googleLogin = "https://astra.com.br/"
++    loginLink = "",
++    clientServicesLink = "",
++    hintsLink = "",
++    googleLogin = ""
+   }
+ 
+   if not Servers then
+@@ -459,10 +461,10 @@
+ 
+   local testServer = {
+     name = "TesteMulti",
+-    loginLink = "http://logints.astra.com.br:8071/login",
+-    clientServicesLink = "https://astra.net/clientservices/clientservices.php",
+-    hintsLink = "https://astra.net/hints.json",
+-    googleLogin = "https://astra.com.br/"
++    loginLink = "",
++    clientServicesLink = "",
++    hintsLink = "",
++    googleLogin = ""
+   }
+ 
+   if not getServerInfoByName(testServer.name) then
+--- a/modules/client_entergame/entergame.otui
++++ b/modules/client_entergame/entergame.otui
+@@ -319,6 +319,9 @@
+     margin-top: 11
+ 
+   Button
++    id: googleButton
++    // the Chaos login server has no Google sign-in
++    visible: false
+     !text: tr('Login with Google')
+     size: 229 20
+     anchors.left: parent.left
+--- a/modules/corelib/globals.lua
++++ b/modules/corelib/globals.lua
+@@ -190,7 +190,7 @@
+   GameInfo = GameInfo or {}
+   GameInfo.version = GameInfo.version or defaultClientVersion
+   GameInfo.strVersion = GameInfo.strVersion or tostring(GameInfo.version)
+-  GameInfo.CoinName = GameInfo.CoinName or 'Astra Coins'
++  GameInfo.CoinName = GameInfo.CoinName or 'Chaos Coins'
+ end
+ 
+ consoleln = consoleln or function(...)
+--- a/modules/dev_otui/otml.lua
++++ b/modules/dev_otui/otml.lua
+@@ -6,7 +6,7 @@
+ --
+ -- Rules mirrored from the C++ parser (src/framework/otml/otmlparser.cpp):
+ --   * two spaces of indentation per level
+---   * '//' starts an Astra OTML comment. '#' is also kept inert here so the
++--   * '//' starts an OTML comment. '#' is also kept inert here so the
+ --     editor preserves legacy files, although Astra will not render those lines.
+ --   * a node whose line contains ':' is UNIQUE, and unique nodes are
+ --     PROPERTIES; without ':' the node becomes a CHILD WIDGET (uimanager.cpp:735)
+--- a/modules/game_interface/gameinterface.lua
++++ b/modules/game_interface/gameinterface.lua
+@@ -755,7 +755,7 @@
+       end
+     end
+   else
+-    msg = 'Are you sure you want to leave Astra?'
++    msg = 'Are you sure you want to leave Chaos?'
+ 
+     yesCallback = function()
+       g_game.safeLogout()
+--- a/modules/game_skills/skills.lua
++++ b/modules/game_skills/skills.lua
+@@ -1164,7 +1164,7 @@
+     end
+   end
+ 
+-  local message = tr("Do you want to buy an XP boost for %s Astra Coins?", price)
++  local message = tr("Do you want to buy an XP boost for %s Chaos Coins?", price)
+   confirmBoostWindow = displayGeneralBox(tr('Warning'), message, {
+     { text=tr('Yes'), callback=yesCallback },
+     { text=tr('No'), callback=noCallback },
+--- a/modules/gamelib/const.lua
++++ b/modules/gamelib/const.lua
+@@ -769,7 +769,7 @@
+   ["rewardWallDialog"] = "%s reward wall",
+   ["analyticsSelectorWidget"] = "%s analytics selector window",
+   ["compendiumDialog"] = "%s compendium",
+-  ["cyclopediaDialog"] = "%s Astra Cyclopedia",
++  ["cyclopediaDialog"] = "%s Cyclopedia",
+   ["bosstiaryDialog"] = "%s Bosstiary Dialog",
+   ["bossslotsDialog"] = "%s Boss Slots Dialog",
+   ["bosstiaryTrackerWidget"] = "%s Bosstiary tracker window",
+--- a/modules/gamelib/protocollogin.lua
++++ b/modules/gamelib/protocollogin.lua
+@@ -464,7 +464,7 @@
+ 
+   if not ok then
+     signalcall(self.onLoginError, self, tr('Invalid cast list received from the server.'))
+-    g_logger.warning('Invalid Astra cast list packet: ' .. tostring(response))
++    g_logger.warning('Invalid Chaos cast list packet: ' .. tostring(response))
+     return
+   end
+ 

@@ -46,3 +46,10 @@ boosted creature and boss, the event calendar and the players online. `init.lua`
   ("invalid slot"). `base-patches/0012-chaos-skills-and-slots.patch` adds the feature `GameChaosCraftingSkills`
   (enabled in the 1098 profile, patch 0006), reads the seven crafting skills (passed to Lua as
   `g_game.onCraftingSkill(index, level, base, percent)`) and accepts slot 16.
+
+## Branding
+`base-patches/0014-chaos-branding.patch` renames what the player reads in the base client: window title "Chaos",
+"Chaos Coins", "Cyclopedia", option help texts, rules and store texts. It also hides the Google sign-in button
+(our login server has none), turns the base client's built-in test servers (Ctrl+Alt+T) into a no-op, fetches
+store offer images only from `Services.storeWidget` when it is set, and replaces the paid-services terms of the
+base client's company with a short Chaos text. Map marker names in the minimap data are left as they are.
