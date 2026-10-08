@@ -57,7 +57,7 @@ function onCastSpell(creature, variant, isHotkey)
 				s:teleportTo(spots[1].pos, true)
 			end
 		end
-		s:addHealth(math.floor(s:getMaxHealth() / 2))
+		s:addHealth("healing", math.floor(s:getMaxHealth() / 2)) -- this engine: (damage type, amount)
 		ChaosSpell.fx(s:getPosition(), "heal_sparkle", CONST_ME_MAGIC_GREEN)
 	end
 	local want = C.companionCap(player:getLevel()) - #have
@@ -74,7 +74,7 @@ function onCastSpell(creature, variant, isHotkey)
 				m:setDropLoot(false)
 				m:registerEvent("ChaosCompanionGuard")
 				m:setMaxHealth(hp)
-				m:addHealth(hp)
+				m:addHealth("healing", hp)
 				local speed = player:getBaseSpeed() - m:getBaseSpeed()
 				if speed > 0 then
 					m:changeSpeed(speed)

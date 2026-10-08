@@ -213,7 +213,7 @@ reg{id = "heal", name = "Heal", description = "Restore full health and mana.",
 	handler = function(actor, p)
 		local t, err = ChaosAdmin.targetOrSelf(actor, p.player)
 		if not t then return false, err end
-		t:addHealth(t:getMaxHealth() - t:getHealth())
+		Chaos.heal(t, t:getMaxHealth() - t:getHealth())
 		t:addMana(t:getMaxMana() - t:getMana())
 		t:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)
 		return true, t:getName() .. " healed."

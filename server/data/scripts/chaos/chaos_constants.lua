@@ -716,3 +716,22 @@ end
 function Chaos.load(fileName)
 	return dofile("data/scripts/chaos/" .. fileName)
 end
+
+-- Heal a creature by `amount` (rounded down, at most what it is missing); returns the health it really gained.
+-- This engine's Creature:addHealth takes (damage type, amount): a one-argument addHealth(amount) does nothing.
+-- The second call covers the stock TFS signature (amount), where the first one does nothing; as in arena.lua.
+function Chaos.heal(creature, amount)
+	if not creature or type(amount) ~= "number" then
+		return 0
+	end
+	local before = creature:getHealth()
+	amount = math.min(math.floor(amount), creature:getMaxHealth() - before)
+	if amount <= 0 then
+		return 0
+	end
+	creature:addHealth("healing", amount)
+	if creature:getHealth() == before then
+		creature:addHealth(amount)
+	end
+	return creature:getHealth() - before
+end

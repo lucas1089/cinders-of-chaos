@@ -236,7 +236,7 @@ local function floorCleared(run)
 			if cfg.floorGold > 0 then
 				player:addMoney(cfg.floorGold * run.floor)
 			end
-			player:addHealth(math.floor((player:getMaxHealth() - player:getHealth()) * cfg.healBetweenFloors))
+			Chaos.heal(player, (player:getMaxHealth() - player:getHealth()) * cfg.healBetweenFloors)
 			player:addMana(math.floor((player:getMaxMana() - player:getMana()) * cfg.healBetweenFloors))
 		end
 	end

@@ -74,8 +74,11 @@ local function mkPlayer(id, name, level)
   function p:sendCancelMessage(t) self.cancel = t end
   function p:getCondition() return nil end
   function p:addMoney(m) self.money = self.money + m end
-  function p:addHealth() end function p:addMana() end
-  function p:getMaxHealth() return 100 end function p:getHealth() return 50 end
+  -- this engine's addHealth: (damage type, amount); a one-argument call does nothing
+  p.hp = 50
+  function p:addHealth(t, v) if type(t) == "string" then self.hp = math.min(100, self.hp + v) end end
+  function p:addMana() end
+  function p:getMaxHealth() return 100 end function p:getHealth() return self.hp end
   function p:getMaxMana() return 100 end function p:getMana() return 50 end
   function p:getTown() return {getTemplePosition = function() return Position(1, 1, 7) end} end
   return p
@@ -83,6 +86,8 @@ end
 local players = {}
 function Player(id) return players[id] end
 Chaos.decode = function() end
+-- the real Chaos.heal (chaos_constants.lua returns early while Chaos exists, so load it into a fresh table)
+do local stub = Chaos; Chaos = nil; dofile("data/scripts/chaos/chaos_constants.lua"); stub.heal = Chaos.heal; Chaos = stub end
 
 dofile("data/scripts/chaos/infinitytower_run.lua")
 local assertEq = function(a, b, m) if a ~= b then error((m or "") .. ": " .. tostring(a) .. " ~= " .. tostring(b), 2) end end
@@ -114,6 +119,13 @@ for _, m in ipairs(created) do assert(m.events["ChaosTowerMonsterDeath"], "monst
 local ev = registry["ChaosTowerMonsterDeath"]
 for i = 1, 4 do ev.onDeath(created[i]) end
 assertEq(a.money, 50, "floor gold")
+assertEq(a.hp, 75, "half the missing health back after a floor")
+-- Chaos.heal: at most the missing health, the stock one-argument signature as the fallback, nothing at full health
+local s = {hp = 90}
+function s:getHealth() return self.hp end function s:getMaxHealth() return 100 end
+function s:addHealth(v) if type(v) == "number" then self.hp = self.hp + v end end
+assertEq(Chaos.heal(s, 50.7), 10, "heal clamped to the missing health"); assertEq(s.hp, 100, "stock signature")
+assertEq(Chaos.heal(s, 5), 0, "nothing at full health"); assertEq(Chaos.heal(nil, 5), 0, "no creature")
 advance(7000) -- next floor delay -> floor 2
 assertEq(#created, 4 + 4, "floor 2 spawned")
 -- Alice dies on floor 2: run ends with 1 cleared floor

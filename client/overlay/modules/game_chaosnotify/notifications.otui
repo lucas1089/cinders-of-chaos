@@ -1,7 +1,7 @@
 NotificationPanel < Panel
   id: notificationPanel
   size: 400 140
-  image-source: images/background
+  image-source: images/Background
   image-color: #ccbebb
   border-width: 1
   border-color: #6a5632

@@ -59,7 +59,7 @@ end
 -- are called by the handlers below.
 local function heal(monster, amount)
 	if amount > 0 then
-		monster:addHealth(math.min(amount, monster:getMaxHealth() - monster:getHealth()))
+		Chaos.heal(monster, amount)
 	end
 end
 

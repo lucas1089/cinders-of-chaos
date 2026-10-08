@@ -654,7 +654,7 @@ local function runPhase(token, i)
 			if m then
 				if phase.adds.health then
 					m:setMaxHealth(phase.adds.health)
-					m:addHealth(phase.adds.health)
+					Chaos.heal(m, phase.adds.health)
 				end
 				state.adds[m:getId()] = true
 				m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
@@ -684,7 +684,7 @@ local function pulse(boss, b)
 		end
 	end
 	if p.healPerHit and hits > 0 then
-		boss:addHealth(p.healPerHit * hits)
+		Chaos.heal(boss, p.healPerHit * hits)
 	end
 end
 

@@ -177,7 +177,7 @@ function K.give(player, kind)
 	local voc, levels = player:getVocation(), math.max(0, player:getLevel() - 8)
 	player:setMaxHealth(185 + levels * voc:getHealthGain())
 	player:setMaxMana(90 + levels * voc:getManaGain())
-	player:addHealth(player:getMaxHealth())
+	Chaos.heal(player, player:getMaxHealth())
 	player:addMana(player:getMaxMana())
 	player:getPosition():sendMagicEffect(CONST_ME_HOLYAREA)
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
