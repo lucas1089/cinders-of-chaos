@@ -12,9 +12,18 @@ Runs the server and the client on your own computer.
      account test  / password test    Test Warrior, Test Ranger, Test Mystic, Test Thief (level 1, tutorial)
 4. To stop: close the game server window, then run stop-server.bat.
 
+Map editor
+  open-map-editor.bat opens the map editor (Remere's Map Editor, version 10.98). The first time it asks where the
+  10.98 client files are: choose the folder client\data\things\1098 of this package. It already has the game's
+  items (including every Chaos item) and the Chaos monsters in its creature list.
+  The server's map is the .otbm file in server\data\world. Stop the game server before saving over it, keep a copy
+  of the old file, and restart the server to load the change. docs/MAP_GUIDE.md in the repository has the building
+  rules (sizes, borders, detail) for new areas.
+
 Folders
   server\     the game server (ChaosServer.exe, config.lua, data\, the map)
   client\     the Chaos client (Chaos.exe; data\things\1098 holds the Chaos Tibia.dat and Tibia.spr)
+  mapeditor\  the map editor (open-map-editor.bat)
   mariadb\    portable MariaDB (nothing is installed on Windows)
   database\   made at the first start: the game database. Delete it (with the server and database stopped)
               to start over with a fresh database and the test accounts above.

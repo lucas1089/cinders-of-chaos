@@ -321,6 +321,7 @@ jobs:
           path: assets
           sparse-checkout: |
             things
+            mapeditor
             SHA256SUMS.parts
           sparse-checkout-cone-mode: true
 
@@ -342,6 +343,16 @@ jobs:
           (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
           mkdir -p "$P/client/data/things/1098"
           tar -xJf assets/things/things-1098.tar.xz -C "$P/client/data/things/1098"
+
+          # the map editor (10.98): our items.otb / items.xml (with every Chaos item the installers added) and our
+          # monsters in its creature list; it reads the sprites from client\data\things\1098 (README.txt)
+          mkdir mapx
+          tar -xJf assets/mapeditor/map-editor.tar.xz -C mapx
+          mv mapx/*/ "$P/mapeditor"
+          mv "$P"/mapeditor/*.exe "$P/mapeditor/MapEditor.exe"
+          cp "$P/server/data/items/items.otb" "$P/server/data/items/items.xml" "$P/mapeditor/data/1098/"
+          python3 -I chaos/tools/windows/rme_creatures.py "$P/mapeditor/data/1098/creatures.xml" \
+            chaos/server/data/monster/monsters/chaos
 
           curl -fsSL --retry 3 -o mariadb.zip \
             "https://archive.mariadb.org/mariadb-${MARIADB_VERSION}/winx64-packages/mariadb-${MARIADB_VERSION}-winx64.zip"
