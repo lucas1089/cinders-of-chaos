@@ -26,7 +26,9 @@ return {
 		{key = "bounty", name = "Bounty Hunter", mode = "add", value = "Contracts", title = "Warden of the Hunt",
 			info = "Bounty contracts completed this week."},
 		{key = "rift", name = "Rifts", mode = "max", value = "Highest Tier", count = "Runs", title = "Riftwalker",
-			info = "Highest rift tier completed this week."}
+			info = "Highest rift tier completed this week."},
+		{key = "goblin", name = "Goblin Slayer", mode = "add", value = "Goblins", title = "Goblin Slayer",
+			info = "Treasure goblins slain this week."}
 	},
 	top = 3,
 	rewards = {

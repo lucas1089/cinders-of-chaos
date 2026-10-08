@@ -223,8 +223,12 @@ end
 local function buildTabs()
   window.tabs:destroyChildren()
   tabs = {}
-  for _, b in ipairs(list(meta.boards)) do
+  local boards = list(meta.boards)
+  -- share the row between the boards (124 px each at most, as in the .otui)
+  local width = math.min(124, math.floor((window.tabs:getWidth() - 4 * #boards) / math.max(1, #boards)))
+  for _, b in ipairs(boards) do
     local tab = g_ui.createWidget('LeaderboardTab', window.tabs)
+    if width > 40 then tab:setWidth(width) end
     tab:setText(b.name or b.key)
     tab:setTooltip(b.weekly and tr('Weekly: %s', b.info or '') or (b.info or ''))
     local key = b.key

@@ -41,6 +41,7 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 | 10 | Bounty board: daily rotating "kill X in Y" contracts paying orbs | done | `chaos/bounty*.lua`, client `game_bounty`, pool from `server/tools/gen_bounty_pool.py` (rerun after spawn changes); see server/README.md "Bounty board". Party credit not tested with two real players |
 | 11 | Crafting orbs: add-a-modifier and remove-a-modifier orbs next to Chaos/Divine, plus a crafting bench | in progress | item modifier code in `server/data/lib` |
 | 12 | Seasons / ladders: fresh-start season characters, season uniques, per-vocation highscores, cosmetic carry-over | todo | per-vocation highscores done: the all-time Class Ladder of the leaderboards (item 13); seasons still open |
+| 24 | Treasure goblins: a very rare cowardly monster that flees, blinks and escapes, and drops a hoard when killed in time | done | `chaos/treasure_goblin*.lua`, `monsters/chaos/treasure_goblin.xml`: replaces 1 in 3000 natural respawns (no bosses, instances, protection zones; per-area cooldown), scaled to the area level; gold, Chaos/Divine Orbs, 2-4 rarity-rolled items and a raised unique chance through the Chaos loot layer; guarded hooks for loot rays and a "goblin" leaderboard; see server/README.md "Treasure goblins" |
 
 ## Then: social and replay
 

@@ -28,3 +28,8 @@ Adaptations (`adapt_report.txt`): 147 changes, mostly the donor server's corpse 
 - Checked in the test client (merged pair: 1501 outfits + the Chaos effects), for the late game set: the 17 spawned monsters
   render with their art. Dawn Strayer (lookType 1036) draws as a broken striped image, so it is not spawned; Cunning Hyaena
   (1051) draws a green tentacled creature that does not read as a hyaena, also left out.
+
+**Treasure Goblin.** `monsters/chaos/treasure_goblin.xml` is our own (lookType 297, the stock goblin scavenger, checked in the
+test client). Its health, speed, experience and loot are set by `data/scripts/chaos/treasure_goblin.lua` from the area level, and
+its `runonhealth` must stay equal to `runThreshold` in `treasure_goblin_config.lua` (the flee-on-first-hit trick). It spawns only
+by replacing a rare natural respawn; never put it in a spawn file. See `server/README.md` "Treasure goblins".
