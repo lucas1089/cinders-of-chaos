@@ -1,0 +1,353 @@
+// Spellbook window (game_spellbook). Styles from client_chaos_theme (styles.otui).
+
+SpellbookRow < UIWidget
+  height: 36
+  focusable: true
+  phantom: false
+  background-color: alpha
+  padding: 2
+
+  $hover !focus:
+    background-color: #3a333955
+
+  $focus:
+    background-color: #5a0a0a99
+    border-width: 1
+    border-color: #e8b84a
+
+  UIWidget
+    id: icon
+    size: 32 32
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    phantom: true
+
+  UIItem
+    id: item
+    size: 32 32
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    virtual: true
+    phantom: true
+    visible: false
+
+  UILabel
+    id: level
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin-right: 4
+    margin-top: 2
+    width: 44
+    text-align: right
+    font: verdana-11px-rounded
+    color: #8c8070
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: icon.right
+    anchors.right: level.left
+    anchors.top: parent.top
+    margin-left: 6
+    margin-top: 2
+    text-align: left
+    font: verdana-11px-rounded
+    color: #d6c9ae
+    phantom: true
+
+  UILabel
+    id: words
+    anchors.left: name.left
+    anchors.right: parent.right
+    anchors.top: name.bottom
+    margin-top: 2
+    margin-right: 4
+    text-align: left
+    font: verdana-11px-antialised
+    color: #8c8070
+    phantom: true
+
+SpellbookStat < UIWidget
+  height: 15
+  phantom: true
+
+  UILabel
+    id: key
+    anchors.left: parent.left
+    anchors.top: parent.top
+    width: 72
+    text-align: left
+    font: verdana-11px-antialised
+    color: #8c8070
+
+  UILabel
+    id: value
+    anchors.left: key.right
+    anchors.right: parent.right
+    anchors.top: parent.top
+    text-align: left
+    font: verdana-11px-antialised
+    color: #d6c9ae
+
+SpellbookCell < UIWidget
+  size: 13 13
+  phantom: true
+  background-color: #1a1416
+  border-width: 1
+  border-color: #2a2226
+
+SpellbookLegend < UIWidget
+  size: 10 10
+  phantom: true
+  border-width: 1
+  border-color: #0d0b0e
+
+SpellbookLegendLabel < UILabel
+  font: verdana-11px-antialised
+  color: #8c8070
+  text-auto-resize: true
+  phantom: true
+
+ChaosMainWindow
+  id: spellbookWindow
+  size: 640 460
+  !text: tr('Spellbook')
+  @onEscape: modules.game_spellbook.hide()
+
+  ChaosTextEdit
+    id: searchEdit
+    anchors.top: parent.top
+    anchors.left: parent.left
+    width: 230
+    height: 22
+    placeholder: Search name or words...
+    placeholder-color: #6b6258
+
+  ChaosComboBox
+    id: filterCombo
+    anchors.top: searchEdit.bottom
+    anchors.left: parent.left
+    margin-top: 5
+    width: 130
+
+  ChaosLabelDim
+    id: countLabel
+    anchors.left: filterCombo.right
+    anchors.right: searchEdit.right
+    anchors.verticalCenter: filterCombo.verticalCenter
+    text-align: right
+
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: filterCombo.bottom
+    anchors.left: parent.left
+    anchors.bottom: closeButton.top
+    margin-top: 6
+    margin-bottom: 6
+    width: 230
+    padding: 3
+
+  UIScrollArea
+    id: spellList
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: spellScroll.left
+    anchors.bottom: listFrame.bottom
+    margin: 3
+    layout:
+      type: verticalBox
+    vertical-scrollbar: spellScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: spellScroll
+    anchors.top: listFrame.top
+    anchors.right: listFrame.right
+    anchors.bottom: listFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 36
+    pixels-scroll: true
+
+  ChaosPanel
+    id: details
+    anchors.top: parent.top
+    anchors.left: listFrame.right
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-left: 8
+    margin-bottom: 6
+
+    UIWidget
+      id: icon
+      size: 32 32
+      anchors.top: parent.top
+      anchors.left: parent.left
+      phantom: true
+
+    UIItem
+      id: item
+      size: 32 32
+      anchors.top: parent.top
+      anchors.left: parent.left
+      virtual: true
+      phantom: true
+      visible: false
+
+    UILabel
+      id: name
+      anchors.top: parent.top
+      anchors.left: icon.right
+      anchors.right: parent.right
+      margin-left: 8
+      margin-top: 1
+      text-align: left
+      font: verdana-11px-rounded
+      color: #e8b84a
+
+    UILabel
+      id: words
+      anchors.top: name.bottom
+      anchors.left: name.left
+      anchors.right: parent.right
+      margin-top: 3
+      text-align: left
+      font: verdana-11px-antialised
+      color: #f6cf72
+
+    ChaosSeparator
+      id: headerSeparator
+      anchors.top: icon.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+
+    UIWidget
+      id: stats
+      anchors.top: headerSeparator.bottom
+      anchors.left: parent.left
+      width: 182
+      height: 166
+      margin-top: 4
+      phantom: true
+      layout:
+        type: verticalBox
+
+    UILabel
+      id: areaTitle
+      anchors.top: headerSeparator.bottom
+      anchors.left: stats.right
+      anchors.right: parent.right
+      margin-top: 4
+      margin-left: 6
+      text-align: center
+      font: verdana-11px-rounded
+      color: #e8b84a
+      !text: tr('Area of effect')
+
+    UIWidget
+      id: areaBox
+      anchors.top: areaTitle.bottom
+      anchors.left: areaTitle.left
+      anchors.right: parent.right
+      height: 140
+      margin-top: 4
+      phantom: true
+      background-color: #0d0b0e88
+
+      UIWidget
+        id: areaGrid
+        anchors.centerIn: parent
+        size: 13 13
+        phantom: true
+
+    UIWidget
+      id: legend
+      anchors.top: areaBox.bottom
+      anchors.horizontalCenter: areaBox.horizontalCenter
+      margin-top: 4
+      size: 150 12
+      phantom: true
+
+      SpellbookLegend
+        id: legendHit
+        anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+
+      SpellbookLegendLabel
+        id: legendHitLabel
+        anchors.left: legendHit.right
+        anchors.verticalCenter: parent.verticalCenter
+        margin-left: 3
+        !text: tr('Hit')
+
+      SpellbookLegend
+        id: legendCaster
+        anchors.left: legendHitLabel.right
+        anchors.verticalCenter: parent.verticalCenter
+        margin-left: 10
+        background-color: #f6cf72
+
+      SpellbookLegendLabel
+        id: legendCasterLabel
+        anchors.left: legendCaster.right
+        anchors.verticalCenter: parent.verticalCenter
+        margin-left: 3
+        !text: tr('You')
+
+      SpellbookLegend
+        id: legendTarget
+        anchors.left: legendCasterLabel.right
+        anchors.verticalCenter: parent.verticalCenter
+        margin-left: 10
+        border-width: 2
+        border-color: #ffffff
+
+      SpellbookLegendLabel
+        id: legendTargetLabel
+        anchors.left: legendTarget.right
+        anchors.verticalCenter: parent.verticalCenter
+        margin-left: 3
+        !text: tr('Target')
+
+    ChaosLabelDim
+      id: areaNote
+      anchors.top: legend.bottom
+      anchors.left: areaBox.left
+      anchors.right: areaBox.right
+      margin-top: 2
+      text-align: center
+      text-wrap: true
+      text-auto-resize: true
+
+    ChaosSeparator
+      id: descSeparator
+      anchors.top: stats.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 30
+
+    ChaosLabel
+      id: description
+      anchors.top: descSeparator.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      text-align: topleft
+      text-wrap: true
+      text-auto-resize: true
+
+    ChaosLabelDim
+      id: emptyText
+      anchors.centerIn: parent
+      !text: tr('Select a spell.')
+      text-auto-resize: true
+      visible: false
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    !text: tr('Close')
+    @onClick: modules.game_spellbook.hide()

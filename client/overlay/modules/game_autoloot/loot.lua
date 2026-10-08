@@ -2,7 +2,7 @@
 
 local autoLootOpcode = 216
 
--- Evolisca ships this helper in its gamelib; the base client does not, so keep a local copy.
+-- donor server ships this helper in its gamelib; the base client does not, so keep a local copy.
 local function sendAction(opcode, action, data)
 	local protocolGame = g_game.getProtocolGame()
 	if protocolGame then
@@ -56,7 +56,7 @@ function autolootOpcodeParse(protocol, code, buffer)
 	end)
 
 	if not json_status then
-		g_logger.error("[autoloot] JSON error: " .. data)
+		g_logger.error("[autoloot] JSON error: " .. tostring(json_data))
 
 		return false
 	end

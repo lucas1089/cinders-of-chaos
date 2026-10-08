@@ -1,4 +1,4 @@
--- Barkskin: +20% max health and steady regeneration for 20s.
+-- Ironbark Hide: +20% max health and steady regeneration for 20s.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 function onCastSpell(creature, variant, isHotkey)

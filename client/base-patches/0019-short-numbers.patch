@@ -1,0 +1,926 @@
+# Short numbers in the windows (1000 -> 1k, 15300 -> 15.3k, 2450000 -> 2.45M) with formatShortNumber/shortNumbersIn of overlay module client_chaos_numbers; exact values in tooltips, prices to confirm stay exact.
+diff -ru a/mods/game_analyser/classes/DropTrackerAnalyser.lua b/mods/game_analyser/classes/DropTrackerAnalyser.lua
+--- a/mods/game_analyser/classes/DropTrackerAnalyser.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/mods/game_analyser/classes/DropTrackerAnalyser.lua	2026-10-08 03:35:41.391742065 +0000
+@@ -118,7 +118,7 @@
+ 			widget:setId("ItemPanel_" .. itemId)
+ 			widget.itemSlot:setItemId(itemId)
+ 			widget.itemName:setText(string.capitalize(short_text(getItemServerName(itemId), 13)))
+-			widget.drops:setText(formatMoney(config.dropCount, ","))
++			widget.drops:setText(formatShortNumber(config.dropCount))
+ 
+ 			for _, monsterDrop in ipairs(config.monsterDrop) do
+ 				local monsterWidget = g_ui.createWidget('MonsterPanel', widget.dropMonster)
+@@ -132,7 +132,7 @@
+ 		else
+ 			-- if we found the item, and applied updates to it, must must
+ 			-- check it to not be removed
+-			widget.drops:setText(formatMoney(config.dropCount, ","))
++			widget.drops:setText(formatShortNumber(config.dropCount))
+ 			widget.toBeRemoved = nil
+ 
+ 			local toBeRemoved = {}
+diff -ru a/mods/game_analyser/classes/HuntingAnalyser.lua b/mods/game_analyser/classes/HuntingAnalyser.lua
+--- a/mods/game_analyser/classes/HuntingAnalyser.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/mods/game_analyser/classes/HuntingAnalyser.lua	2026-10-08 03:35:41.392511433 +0000
+@@ -165,9 +165,9 @@
+ 	local experience = HuntingAnalyser.xpGain
+ 	if not contentsPanel.xpGain.lastExperience or contentsPanel.xpGain.lastExperience ~= experience then
+ 		if experience > 1000000 then
+-			contentsPanel.xpGain:setText(formatMoney(compactNumber(experience), ","))
++			contentsPanel.xpGain:setText(formatShortNumber(experience))
+ 		else
+-			contentsPanel.xpGain:setText(formatMoney(experience, ","))
++			contentsPanel.xpGain:setText(formatShortNumber(experience))
+ 		end
+ 		contentsPanel.xpGain.lastExperience = experience
+ 	end
+@@ -182,9 +182,9 @@
+ 
+ 	if not contentsPanel.xpHour.lastValue or contentsPanel.xpHour.lastValue ~= HuntingAnalyser.xpHour then
+ 		if HuntingAnalyser.xpHour > 10000000 then
+-			contentsPanel.xpHour:setText(formatMoney(compactNumber(HuntingAnalyser.xpHour), ","))
++			contentsPanel.xpHour:setText(formatShortNumber(HuntingAnalyser.xpHour))
+ 		else
+-			contentsPanel.xpHour:setText(formatMoney(HuntingAnalyser.xpHour, ","))
++			contentsPanel.xpHour:setText(formatShortNumber(HuntingAnalyser.xpHour))
+ 		end
+ 		contentsPanel.xpHour.lastValue = HuntingAnalyser.xpHour
+ 	end
+@@ -194,18 +194,18 @@
+ 
+ 	if not contentsPanel.rawXpGain.lastValue or contentsPanel.rawXpGain.lastValue ~= rawExperience then
+ 		if rawExperience > 10000000 then
+-			contentsPanel.rawXpGain:setText(formatMoney(compactNumber(rawExperience), ","))
++			contentsPanel.rawXpGain:setText(formatShortNumber(rawExperience))
+ 		else
+-			contentsPanel.rawXpGain:setText(formatMoney(rawExperience, ","))
++			contentsPanel.rawXpGain:setText(formatShortNumber(rawExperience))
+ 		end
+ 		contentsPanel.rawXpGain.lastValue = rawExperience
+ 	end
+ 
+ 	if not contentsPanel.rawXpHour.lastValue or contentsPanel.rawXpHour.lastValue ~= HuntingAnalyser.rawXpHour then
+ 		if HuntingAnalyser.rawXpHour > 10000000 then
+-			contentsPanel.rawXpHour:setText(formatMoney(compactNumber(HuntingAnalyser.rawXpHour), ","))
++			contentsPanel.rawXpHour:setText(formatShortNumber(HuntingAnalyser.rawXpHour))
+ 		else
+-			contentsPanel.rawXpHour:setText(formatMoney(HuntingAnalyser.rawXpHour, ","))
++			contentsPanel.rawXpHour:setText(formatShortNumber(HuntingAnalyser.rawXpHour))
+ 		end
+ 		contentsPanel.rawXpHour.lastValue = HuntingAnalyser.rawXpHour
+ 	end
+@@ -213,18 +213,18 @@
+ 	-- supplies
+ 	if not contentsPanel.loot.lastValue or contentsPanel.loot.lastValue ~= HuntingAnalyser.loot then
+ 		if HuntingAnalyser.loot > 1000000 then
+-			contentsPanel.loot:setText(formatMoney(compactNumber(HuntingAnalyser.loot), ","))
++			contentsPanel.loot:setText(formatShortNumber(HuntingAnalyser.loot))
+ 		else
+-			contentsPanel.loot:setText(formatMoney(HuntingAnalyser.loot, ","))
++			contentsPanel.loot:setText(formatShortNumber(HuntingAnalyser.loot))
+ 		end
+ 		contentsPanel.loot.lastValue = HuntingAnalyser.loot
+ 	end
+ 
+ 	if not contentsPanel.supplies.lastValue or contentsPanel.supplies.lastValue ~= HuntingAnalyser.supplies then
+ 		if HuntingAnalyser.supplies > 1000000 then
+-			contentsPanel.supplies:setText(formatMoney(compactNumber(HuntingAnalyser.supplies), ","))
++			contentsPanel.supplies:setText(formatShortNumber(HuntingAnalyser.supplies))
+ 		else
+-			contentsPanel.supplies:setText(formatMoney(HuntingAnalyser.supplies, ","))
++			contentsPanel.supplies:setText(formatShortNumber(HuntingAnalyser.supplies))
+ 		end
+ 		contentsPanel.supplies.lastValue = HuntingAnalyser.supplies
+ 	end
+@@ -232,9 +232,9 @@
+ 	HuntingAnalyser:checkBalance()
+ 	if not contentsPanel.balance.lastValue or contentsPanel.balance.lastValue ~= HuntingAnalyser.balance then
+ 		if HuntingAnalyser.balance > 1000000 then
+-			contentsPanel.balance:setText(formatMoney(compactNumber(HuntingAnalyser.balance), ","))
++			contentsPanel.balance:setText(formatShortNumber(HuntingAnalyser.balance))
+ 		else
+-			contentsPanel.balance:setText(comma_value(HuntingAnalyser.balance))
++			contentsPanel.balance:setText(formatShortNumber(HuntingAnalyser.balance))
+ 		end
+ 		contentsPanel.balance.lastValue = HuntingAnalyser.balance
+ 	end
+@@ -244,9 +244,9 @@
+ 
+ 	if not contentsPanel.damage.lastValue or contentsPanel.damage.lastValue ~= HuntingAnalyser.damage then
+ 		if HuntingAnalyser.damage > 1000000 then
+-			contentsPanel.damage:setText(formatMoney(compactNumber(HuntingAnalyser.damage), ","))
++			contentsPanel.damage:setText(formatShortNumber(HuntingAnalyser.damage))
+ 		else
+-			contentsPanel.damage:setText(formatMoney(HuntingAnalyser.damage, ","))
++			contentsPanel.damage:setText(formatShortNumber(HuntingAnalyser.damage))
+ 		end
+ 		contentsPanel.damage.lastValue = HuntingAnalyser.damage
+ 	end
+@@ -255,18 +255,18 @@
+ 	if not contentsPanel.damageHour.lastValue or contentsPanel.damageHour.lastValue ~= currentDamagePerHour then
+ 		HuntingAnalyser.damageHour = currentDamagePerHour
+ 		if HuntingAnalyser.damageHour > 1000000 then
+-			contentsPanel.damageHour:setText(formatMoney(compactNumber(HuntingAnalyser.damageHour), ","))
++			contentsPanel.damageHour:setText(formatShortNumber(HuntingAnalyser.damageHour))
+ 		else
+-			contentsPanel.damageHour:setText(formatMoney(HuntingAnalyser.damageHour, ","))
++			contentsPanel.damageHour:setText(formatShortNumber(HuntingAnalyser.damageHour))
+ 		end
+ 		contentsPanel.damageHour.lastValue = HuntingAnalyser.damageHour
+ 	end
+ 
+ 	if not contentsPanel.healing.lastValue or contentsPanel.healing.lastValue ~= HuntingAnalyser.healing then
+ 		if HuntingAnalyser.healing > 1000000 then
+-			contentsPanel.healing:setText(formatMoney(compactNumber(HuntingAnalyser.healing), ","))
++			contentsPanel.healing:setText(formatShortNumber(HuntingAnalyser.healing))
+ 		else
+-			contentsPanel.healing:setText(formatMoney(HuntingAnalyser.healing, ","))
++			contentsPanel.healing:setText(formatShortNumber(HuntingAnalyser.healing))
+ 		end
+ 		contentsPanel.healing.lastValue = HuntingAnalyser.healing
+ 	end
+@@ -277,9 +277,9 @@
+ 
+ 	if not contentsPanel.healHour.lastValue or contentsPanel.healHour.lastValue ~= HuntingAnalyser.healingHour then
+ 		if HuntingAnalyser.healingHour > 1000000 then
+-			contentsPanel.healHour:setText(formatMoney(compactNumber(HuntingAnalyser.healingHour), ","))
++			contentsPanel.healHour:setText(formatShortNumber(HuntingAnalyser.healingHour))
+ 		else
+-			contentsPanel.healHour:setText(formatMoney(HuntingAnalyser.healingHour, ","))
++			contentsPanel.healHour:setText(formatShortNumber(HuntingAnalyser.healingHour))
+ 		end
+ 		contentsPanel.healHour.lastValue = HuntingAnalyser.healingHour
+ 	end
+diff -ru a/mods/game_analyser/classes/ImpactAnalyser.lua b/mods/game_analyser/classes/ImpactAnalyser.lua
+--- a/mods/game_analyser/classes/ImpactAnalyser.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/mods/game_analyser/classes/ImpactAnalyser.lua	2026-10-08 03:35:41.393050876 +0000
+@@ -117,12 +117,12 @@
+ 	ImpactAnalyser:checkAnchos()
+ 	local contentsPanel = ImpactAnalyser.window.contentsPanel
+ 
+-	contentsPanel.dmg:setText(formatMoney(ImpactAnalyser.damageTotal, ","))
+-	contentsPanel.allTimeHigh:setText(formatMoney(ImpactAnalyser.allTimeHightDps, ","))
+-	contentsPanel.maxDps:setText(formatMoney(ImpactAnalyser.maxDPS, ","))
+-	contentsPanel.dps:setText(formatMoney(currentDPS, ","))
++	contentsPanel.dmg:setText(formatShortNumber(ImpactAnalyser.damageTotal))
++	contentsPanel.allTimeHigh:setText(formatShortNumber(ImpactAnalyser.allTimeHightDps))
++	contentsPanel.maxDps:setText(formatShortNumber(ImpactAnalyser.maxDPS))
++	contentsPanel.dps:setText(formatShortNumber(currentDPS))
+ 
+-	contentsPanel.targetDps:setText(formatMoney(ImpactAnalyser.targetDPS, ","))
++	contentsPanel.targetDps:setText(formatShortNumber(ImpactAnalyser.targetDPS))
+ 	-- movido pro check de 15s
+ 	contentsPanel.graphDpsPanel:addValue(currentDPS)
+ 
+@@ -159,7 +159,7 @@
+ 			end
+ 
+ 			local percent = (damage * 100) / ImpactAnalyser.damageTotal
+-			widget.desc:setText(formatMoney(damage, ",") .. " (" .. string.format("%.1f", percent) .. "%)")
++			widget.desc:setText(formatShortNumber(damage) .. " (" .. string.format("%.1f", percent) .. "%)")
+ 			widget.toBeRemoved = false
+ 		end
+ 	end
+@@ -172,13 +172,13 @@
+ 
+ 	---------------------------- Healing -------------------------------
+ 
+-	contentsPanel.hpsTotal:setText(formatMoney(ImpactAnalyser.healingTotal, ","))
+-	contentsPanel.allTimeHighHealing:setText(formatMoney(ImpactAnalyser.allTimeHightHps, ","))
++	contentsPanel.hpsTotal:setText(formatShortNumber(ImpactAnalyser.healingTotal))
++	contentsPanel.allTimeHighHealing:setText(formatShortNumber(ImpactAnalyser.allTimeHightHps))
+ 
+-	contentsPanel.maxHps:setText(formatMoney(ImpactAnalyser.maxHPS, ","))
+-	contentsPanel.hps:setText(formatMoney(currentHPS, ","))
++	contentsPanel.maxHps:setText(formatShortNumber(ImpactAnalyser.maxHPS))
++	contentsPanel.hps:setText(formatShortNumber(currentHPS))
+ 
+-	contentsPanel.targetHps:setText(formatMoney(ImpactAnalyser.targetHPS, ","))
++	contentsPanel.targetHps:setText(formatShortNumber(ImpactAnalyser.targetHPS))
+ 	-- movido pro check de 15s
+ 	contentsPanel.graphHealPanel:addValue(currentHPS)
+ 
+diff -ru a/mods/game_analyser/classes/InputAnalyser.lua b/mods/game_analyser/classes/InputAnalyser.lua
+--- a/mods/game_analyser/classes/InputAnalyser.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/mods/game_analyser/classes/InputAnalyser.lua	2026-10-08 03:35:41.393580312 +0000
+@@ -118,8 +118,8 @@
+ 	local contentsPanel = InputAnalyser.window.contentsPanel
+ 
+ 	local dps = tonumber(InputAnalyser.maxDPS) or 1
+-	contentsPanel.rcvDmg:setText(formatMoney(InputAnalyser.total, ","))
+-	contentsPanel.maxDps:setText(formatMoney(dps, ","))
++	contentsPanel.rcvDmg:setText(formatShortNumber(InputAnalyser.total))
++	contentsPanel.maxDps:setText(formatShortNumber(dps))
+ 
+ 	-------------- DAMAGE TYPE
+ 	local count = 1
+@@ -135,7 +135,7 @@
+ 		widget:setId(effect)
+ 		widget.icon:setImageSource(string.format(imageDir, effectsFiles[effect]))
+ 		widget.icon:setTooltip(getCombatName(effect))
+-		widget.desc:setText(formatMoney(damage, ",") .. " (" .. string.format("%.1f", percent) .. "%)")
++		widget.desc:setText(formatShortNumber(damage) .. " (" .. string.format("%.1f", percent) .. "%)")
+ 	
+ 		count = count + 1
+ 		table.insert(widgets, {widget = widget, percent = percent})
+@@ -216,7 +216,7 @@
+ 			widget.icon:setImageSource(string.format(imageDir, effectsFiles[effect]))
+ 			widget.icon:setTooltip(getCombatName(effect))
+ 			local percent = (damage * 100) / InputAnalyser.total
+-			widget.desc:setText(formatMoney(damage, ",") .. " (" .. string.format("%.1f", percent) .. "%)")
++			widget.desc:setText(formatShortNumber(damage) .. " (" .. string.format("%.1f", percent) .. "%)")
+ 		end
+ 		contentsPanel.dmgSourceTypes:setHeight(15 * count)
+ 	elseif table.empty(InputAnalyser.inputValues) then
+@@ -235,7 +235,7 @@
+ 		InputAnalyser.maxDPS = lastDps
+ 	end
+ 
+-	InputAnalyser.window.contentsPanel.maxDps:setText(formatMoney(InputAnalyser.maxDPS, ","))
++	InputAnalyser.window.contentsPanel.maxDps:setText(formatShortNumber(InputAnalyser.maxDPS))
+ 	InputAnalyser.window.contentsPanel.graphPanel:addValue(InputAnalyser.curDPS)
+ end
+ 
+@@ -275,7 +275,7 @@
+ 			widget.icon:setImageSource(string.format(imageDir, effectsFiles[effect]))
+ 			widget.icon:setTooltip(getCombatName(effect))
+ 			local percent = (damage * 100) / InputAnalyser.total
+-			widget.desc:setText(formatMoney(damage, ",") .. " (" .. string.format("%.1f", percent) .. "%)")
++			widget.desc:setText(formatShortNumber(damage) .. " (" .. string.format("%.1f", percent) .. "%)")
+ 		end
+ 		InputAnalyser.window.contentsPanel.dmgSourceTypes:setHeight(15 * count)
+ 	elseif table.empty(InputAnalyser.inputValues) then
+diff -ru a/mods/game_analyser/classes/LootAnalyser.lua b/mods/game_analyser/classes/LootAnalyser.lua
+--- a/mods/game_analyser/classes/LootAnalyser.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/mods/game_analyser/classes/LootAnalyser.lua	2026-10-08 03:35:41.394495562 +0000
+@@ -152,9 +152,9 @@
+ 	end
+ 	local contentsPanel = LootAnalyser.window.contentsPanel
+ 
+-	contentsPanel.gold:setText(formatMoney(LootAnalyser.goldValue, ","))
+-	contentsPanel.goldHour:setText(formatMoney(math.floor(LootAnalyser.goldHour), ","))
+-	contentsPanel.goldTarget:setText(formatMoney(LootAnalyser.target, ","))
++	contentsPanel.gold:setText(formatShortNumber(LootAnalyser.goldValue))
++	contentsPanel.goldHour:setText(formatShortNumber(math.floor(LootAnalyser.goldHour)))
++	contentsPanel.goldTarget:setText(formatShortNumber(LootAnalyser.target))
+ 
+ 	if LootAnalyser.target == 0 and LootAnalyser.goldHour == 0 then
+ 		LootAnalyser.window.contentsPanel.lootTargetBG.lootArrow:setMarginLeft(targetMaxMargin / 2)
+@@ -265,7 +265,7 @@
+ end
+ function LootAnalyser:setTarget(value)
+ 	LootAnalyser.target = tonumber(value)
+-	LootAnalyser.window.contentsPanel.goldTarget:setText(formatMoney(LootAnalyser.target, ","))
++	LootAnalyser.window.contentsPanel.goldTarget:setText(formatShortNumber(LootAnalyser.target))
+ end
+ 
+ function LootAnalyser:openTargetConfig()
+diff -ru a/mods/game_analyser/classes/PartyHuntAnalyser.lua b/mods/game_analyser/classes/PartyHuntAnalyser.lua
+--- a/mods/game_analyser/classes/PartyHuntAnalyser.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/mods/game_analyser/classes/PartyHuntAnalyser.lua	2026-10-08 03:35:41.395005037 +0000
+@@ -119,10 +119,10 @@
+ 		if not data[5] then
+ 			widget.name:setColor("$var-cip-inactive-color")
+ 		end
+-		widget.balance:setText(comma_value(playerBalance))
++		widget.balance:setText(formatShortNumber(playerBalance))
+ 		widget.balance:setColor(playerBalance >= 0 and "$var-text-cip-color-green" or "$var-text-cip-color-orange")
+-		widget.damage:setText(comma_value(data[3]))
+-		widget.healing:setText(comma_value(data[4]))
++		widget.damage:setText(formatShortNumber(data[3]))
++		widget.healing:setText(formatShortNumber(data[4]))
+ 		widget:setId(id)
+ 
+ 		local tooltipMessage = {}
+@@ -143,9 +143,9 @@
+ 	PartyHuntAnalyser.supplies = supplyTotal
+ 	PartyHuntAnalyser.balance = balance
+ 
+-	contentsPanel.loot:setText(formatMoney(lootTotal, ","))
+-	contentsPanel.supplies:setText(formatMoney(supplyTotal, ","))
+-	contentsPanel.balance:setText(comma_value(balance))
++	contentsPanel.loot:setText(formatShortNumber(lootTotal))
++	contentsPanel.supplies:setText(formatShortNumber(supplyTotal))
++	contentsPanel.balance:setText(formatShortNumber(balance))
+ 	contentsPanel.balance:setColor(balance >= 0 and "$var-text-cip-color-green" or "$var-text-cip-color-orange")
+ 
+ end
+diff -ru a/mods/game_analyser/classes/SupplyAnalyser.lua b/mods/game_analyser/classes/SupplyAnalyser.lua
+--- a/mods/game_analyser/classes/SupplyAnalyser.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/mods/game_analyser/classes/SupplyAnalyser.lua	2026-10-08 03:35:41.395493042 +0000
+@@ -111,9 +111,9 @@
+ 	local goldValue = SupplyAnalyser.goldValue or 0
+ 
+ 	local contentsPanel = SupplyAnalyser.window.contentsPanel
+-	contentsPanel.gold:setText(formatMoney(goldValue, ","))
+-	contentsPanel.goldHour:setText(formatMoney(goldHour, ","))
+-	contentsPanel.goldTarget:setText(formatMoney(target, ","))
++	contentsPanel.gold:setText(formatShortNumber(goldValue))
++	contentsPanel.goldHour:setText(formatShortNumber(goldHour))
++	contentsPanel.goldTarget:setText(formatShortNumber(target))
+ 
+ 	if target == 0 and goldHour == 0 then
+ 		SupplyAnalyser.window.contentsPanel.supplyTargetBG.supplyArrow:setMarginLeft(targetMaxMargin / 2)
+@@ -258,7 +258,7 @@
+ end
+ function SupplyAnalyser:setTarget(value)
+ 	SupplyAnalyser.target = tonumber(value) or 0
+-	SupplyAnalyser.window.contentsPanel.goldTarget:setText(formatMoney(SupplyAnalyser.target, ","))
++	SupplyAnalyser.window.contentsPanel.goldTarget:setText(formatShortNumber(SupplyAnalyser.target))
+ end
+ 
+ function SupplyAnalyser:openTargetConfig()
+diff -ru a/mods/game_analyser/classes/XPAanalyser.lua b/mods/game_analyser/classes/XPAanalyser.lua
+--- a/mods/game_analyser/classes/XPAanalyser.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/mods/game_analyser/classes/XPAanalyser.lua	2026-10-08 03:35:41.395945717 +0000
+@@ -67,10 +67,10 @@
+ 	local contentsPanel = XPAnalyser.window.contentsPanel
+ 
+ 	local experience = XPAnalyser.xpGain
+-	contentsPanel.xpGain:setText(formatMoney(experience, ","))
++	contentsPanel.xpGain:setText(formatShortNumber(experience))
+ 
+ 	local experience = XPAnalyser.rawXPGain
+-	contentsPanel.rawXpGain:setText(formatMoney(experience, ","))
++	contentsPanel.rawXpGain:setText(formatShortNumber(experience))
+ 
+ 	if XPAnalyser.target == 0 and XPAnalyser.xpHour == 0 then
+ 		XPAnalyser.window.contentsPanel.xpBG.xpArrow:setMarginLeft(targetMaxMargin / 2)
+@@ -131,7 +131,7 @@
+ 		XPAnalyser.xpHour = 0
+ 		contentsPanel.xpHour:setText(0)
+ 	else
+-		contentsPanel.xpHour:setText(formatMoney(XPAnalyser.xpHour, ","))
++		contentsPanel.xpHour:setText(formatShortNumber(XPAnalyser.xpHour))
+ 	end
+ 
+ 	local nextLevelExp = modules.game_skills.expForLevel(player:getLevel()+1)
+@@ -147,7 +147,7 @@
+ 		XPAnalyser.rawXpHour = 0
+ 		contentsPanel.rawXpHour:setText(0)
+ 	else
+-		contentsPanel.rawXpHour:setText(formatMoney(XPAnalyser.rawXpHour, ","))
++		contentsPanel.rawXpHour:setText(formatShortNumber(XPAnalyser.rawXpHour))
+ 	end
+ 
+ 	XPAnalyser.window.contentsPanel.graphPanel:addValue(math.max(0,XPAnalyser.xpHour))
+diff -ru a/mods/game_cyclopedia/classes/character.lua b/mods/game_cyclopedia/classes/character.lua
+--- a/mods/game_cyclopedia/classes/character.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/mods/game_cyclopedia/classes/character.lua	2026-10-08 03:35:06.695032394 +0000
+@@ -150,7 +150,9 @@
+ 
+     cyclopediaWindow:recursiveGetChildById('minorCharmAmount'):setText(echoeBalance.." / "..maxEchoeBalance)
+     cyclopediaWindow:recursiveGetChildById('charmAmount'):setText(charmBalance.." / "..maxCharmBalance)
+-    cyclopediaWindow:recursiveGetChildById('coinsAmount'):setText(comma_value(bankMoney + characterMoney))
++    -- Chaos: short number (15.3k), exact in the tooltip
++    cyclopediaWindow:recursiveGetChildById('coinsAmount'):setText(formatShortNumber(bankMoney + characterMoney))
++    cyclopediaWindow:recursiveGetChildById('coinsAmount'):setTooltip(comma_value(bankMoney + characterMoney))
+ end
+ 
+ function Character.initMainWindow()
+@@ -565,9 +567,11 @@
+ 		valueLabel:setId(v.name)
+ 
+ 		if k == 1 then
+-			valueLabel:setText(comma_value(player:getLevel()))  -- Level
++			valueLabel:setText(formatShortNumber(player:getLevel()))  -- Level (Chaos: short numbers, exact in the tooltip)
++			valueLabel:setTooltip(comma_value(player:getLevel()))
+ 		elseif k == 2 then
+-			valueLabel:setText(comma_value(player:getExperience())) -- Experience
++			valueLabel:setText(formatShortNumber(player:getExperience())) -- Experience
++			valueLabel:setTooltip(comma_value(player:getExperience()))
+ 		elseif k == 3 then
+ 			local gainRate, tooltip = Character.getExperienceGainRate(player)
+ 			valueLabel:setText(gainRate .. "%")
+@@ -575,18 +579,19 @@
+ 			valueLabel:setTooltip(tooltip)
+ 			valueLabel:setColor("#44ad25") -- Xp Gain Rate
+ 		elseif k == 4 then
+-			valueLabel:setText(comma_value(player:getHealth())) -- HitPointsValue
++			valueLabel:setText(formatShortNumber(player:getHealth())) -- HitPointsValue
+ 			valueLabel:setTooltip(tr("You have %s of %s Hit Points left", comma_value(player:getHealth()), comma_value(player:getMaxHealth())))
+ 		elseif k == 5 then
+-			valueLabel:setText(comma_value(player:getMana())) -- Mana
++			valueLabel:setText(formatShortNumber(player:getMana())) -- Mana
+ 			valueLabel:setTooltip(tr("You have %s of %s Mana left", comma_value(player:getMana()), comma_value(player:getMaxMana())))
+ 		elseif k == 6 then
+-			valueLabel:setText(player:getSoul()) -- Soul Points
++			valueLabel:setText(formatShortNumber(player:getSoul())) -- Soul Points
+ 		elseif k == 7 then
+-			valueLabel:setText(comma_value(math.floor(player:getFreeCapacity()))) -- Capacity
++			valueLabel:setText(formatShortNumber(math.floor(player:getFreeCapacity()))) -- Capacity
+ 			valueLabel:setTooltip(tr("You have %s of %s Capacity left", comma_value(math.floor(player:getFreeCapacity())), comma_value(math.floor(player:getTotalCapacity() / 100))))
+ 		elseif k == 8 then
+-			valueLabel:setText(player:getSpeed()) -- Speed
++			valueLabel:setText(formatShortNumber(player:getSpeed())) -- Speed
++			valueLabel:setTooltip(comma_value(player:getSpeed()))
+ 			-- todo
+ 		elseif k == 9 then
+ 			local regenTime = player:getRegenerationTime()
+diff -ru a/mods/game_cyclopedia/classes/charms.lua b/mods/game_cyclopedia/classes/charms.lua
+--- a/mods/game_cyclopedia/classes/charms.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/mods/game_cyclopedia/classes/charms.lua	2026-10-08 03:35:57.922335778 +0000
+@@ -382,7 +382,8 @@
+     local bankMoney = player:getResourceValue(ResourceBank)
+     local characterMoney = player:getResourceValue(ResourceInventary)
+ 
+-    cyclopediaWindow:recursiveGetChildById('coinsAmount'):setText(comma_value(bankMoney + characterMoney))
++    cyclopediaWindow:recursiveGetChildById('coinsAmount'):setText(formatShortNumber(bankMoney + characterMoney)) -- Chaos: short number, exact in the tooltip
++    cyclopediaWindow:recursiveGetChildById('coinsAmount'):setTooltip(comma_value(bankMoney + characterMoney))
+ 
+     local charmContent = VisibleCyclopediaPanel:recursiveGetChildById('charmContent')
+ 
+@@ -540,7 +541,8 @@
+ 
+     cyclopediaWindow:recursiveGetChildById('minorCharmAmount'):setText(echoeBalance.." / "..maxEchoeBalance)
+     cyclopediaWindow:recursiveGetChildById('charmAmount'):setText(charmBalance.." / "..maxCharmBalance)
+-    cyclopediaWindow:recursiveGetChildById('coinsAmount'):setText(comma_value(bankMoney + characterMoney))
++    cyclopediaWindow:recursiveGetChildById('coinsAmount'):setText(formatShortNumber(bankMoney + characterMoney)) -- Chaos: short number, exact in the tooltip
++    cyclopediaWindow:recursiveGetChildById('coinsAmount'):setTooltip(comma_value(bankMoney + characterMoney))
+ end
+ 
+ function Charm:upgradeCharm()
+diff -ru a/mods/game_cyclopedia/classes/map.lua b/mods/game_cyclopedia/classes/map.lua
+--- a/mods/game_cyclopedia/classes/map.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/mods/game_cyclopedia/classes/map.lua	2026-10-08 03:35:57.922699228 +0000
+@@ -15,7 +15,8 @@
+     local bankMoney = player:getResourceValue(ResourceBank)
+     local characterMoney = player:getResourceValue(ResourceInventary)
+ 
+-    cyclopediaWindow:recursiveGetChildById('coinsAmount'):setText(comma_value(bankMoney + characterMoney))
++    cyclopediaWindow:recursiveGetChildById('coinsAmount'):setText(formatShortNumber(bankMoney + characterMoney)) -- Chaos: short number, exact in the tooltip
++    cyclopediaWindow:recursiveGetChildById('coinsAmount'):setTooltip(comma_value(bankMoney + characterMoney))
+ 
+     VisibleCyclopediaPanel = g_ui.createWidget('MapDataPanel', cyclopediaWindow.optionsPanel)
+     VisibleCyclopediaPanel:setId('MapDataPanel')
+diff -ru a/mods/game_forge/forge.lua b/mods/game_forge/forge.lua
+--- a/mods/game_forge/forge.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/mods/game_forge/forge.lua	2026-10-08 03:35:57.923098974 +0000
+@@ -76,7 +76,8 @@
+   forgeWindow.sliversPanel.slivers:setText(player:getResourceValue(ResourceForgeSlivers))
+   forgeWindow.exaltedcorePanel.exaltedcore:setText(player:getResourceValue(ResourceForgeExaltedCore))
+   forgeWindow.dustPanel.dust:setText(player:getResourceValue(ResourceForgeDust) .. '/' .. ForgeSystem.maxPlayerDust)
+-  forgeWindow.moneyPanel.gold:setText(formatMoney(player:getResourceValue(ResourceBank) + player:getResourceValue(ResourceInventary), ","))
++  forgeWindow.moneyPanel.gold:setText(formatShortNumber(player:getResourceValue(ResourceBank) + player:getResourceValue(ResourceInventary))) -- Chaos: short number, exact in the tooltip
++  forgeWindow.moneyPanel.gold:setTooltip(comma_value(player:getResourceValue(ResourceBank) + player:getResourceValue(ResourceInventary)))
+ end
+ 
+ local function ensureForgeUI()
+diff -ru a/mods/game_highscores/highscores.lua b/mods/game_highscores/highscores.lua
+--- a/mods/game_highscores/highscores.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/mods/game_highscores/highscores.lua	2026-10-08 03:36:15.389424867 +0000
+@@ -181,8 +181,10 @@
+       widget.name:setText(character[2])
+       widget.vocation:setText(g_game.getVocationName(character[3]))
+       widget.gameworld:setText(short_text(character[4], 8))
+-      widget.level:setText(character[5])
+-      widget.points:setText(comma_value(character[7]))
++      -- Chaos: short numbers (15.3k), the exact points in the tooltip
++      widget.level:setText(formatShortNumber(character[5]))
++      widget.points:setText(formatShortNumber(character[7]))
++      widget.points:setTooltip(comma_value(character[7]))
+       if character[6] then
+         color = "#60f860"
+       end
+@@ -193,6 +195,7 @@
+       widget.gameworld:setText("")
+       widget.level:setText("")
+       widget.points:setText("")
++      widget.points:removeTooltip()
+     end
+ 
+     widget.rank:setColor(color)
+diff -ru a/mods/game_prey_hunting/hunting.lua b/mods/game_prey_hunting/hunting.lua
+--- a/mods/game_prey_hunting/hunting.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/mods/game_prey_hunting/hunting.lua	2026-10-08 03:35:57.923540025 +0000
+@@ -564,7 +564,8 @@
+ 			bankBalance = 0
+ 		end
+ 
+-		huntingWindow.gold.text:setText(comma_value(bankBalance + invetoryMoney))
++		huntingWindow.gold.text:setText(formatShortNumber(bankBalance + invetoryMoney)) -- Chaos: short number, exact in the tooltip
++		huntingWindow.gold.text:setTooltip(comma_value(bankBalance + invetoryMoney))
+ 	end
+ 
+ 	local moneyTooltip = {}
+diff -ru a/mods/game_store/store.lua b/mods/game_store/store.lua
+--- a/mods/game_store/store.lua	2026-10-08 00:46:45.708797765 +0000
++++ b/mods/game_store/store.lua	2026-10-08 03:34:58.563864889 +0000
+@@ -367,7 +367,9 @@
+   local coins = Store.coins or 0
+   local transferableCoins = Store.transferableCoins or 0
+ 
+-  StoreWindow.coinsStatus.tibiacoin:setText(formatMoney(coins, ","))
++  -- Chaos: the balance is shown short (15.3k), exact in the tooltip; offer prices stay exact
++  StoreWindow.coinsStatus.tibiacoin:setText(formatShortNumber(coins))
++  StoreWindow.coinsStatus.tibiacoin:setTooltip(formatMoney(coins, ","))
+ 
+   if bazaarWindow then
+     bazaarWindow.contentPanel.rulesPanel:recursiveGetChildById('coin'):setText(formatMoney(transferableCoins, ","))
+diff -ru a/mods/game_tibia_market/t_market.lua b/mods/game_tibia_market/t_market.lua
+--- a/mods/game_tibia_market/t_market.lua	2026-10-08 00:46:45.709931541 +0000
++++ b/mods/game_tibia_market/t_market.lua	2026-10-08 03:34:46.674758721 +0000
+@@ -478,13 +478,15 @@
+ 	setStringColor(moneyTooltip, "\nBank: " .. comma_value(playerBank), "#3f3f3f")
+ 	setStringColor(moneyTooltip, " $", "#f7e6fe")
+ 
+-	marketWindow.contentPanel.moneyPanel.gold:setText(comma_value(playerBank + playerInventory))
++	marketWindow.contentPanel.moneyPanel.gold:setText(formatShortNumber(playerBank + playerInventory)) -- Chaos: short, exact in the tooltip
+ 	marketWindow.contentPanel.moneyPanel.gold:setTooltip(moneyTooltip)
+-	marketWindow.contentPanel.coinPanel.gold:setText(comma_value(playerCoins))
++	marketWindow.contentPanel.coinPanel.gold:setText(formatShortNumber(playerCoins)) -- Chaos: short, exact in the tooltip
++	marketWindow.contentPanel.coinPanel.gold:setTooltip(comma_value(playerCoins))
+ 
+-	marketWindow.MarketHistory.currentOffers.moneyPanel.gold:setText(comma_value(playerBank + playerInventory))
++	marketWindow.MarketHistory.currentOffers.moneyPanel.gold:setText(formatShortNumber(playerBank + playerInventory)) -- Chaos: short, exact in the tooltip
+ 	marketWindow.MarketHistory.currentOffers.moneyPanel.gold:setTooltip(moneyTooltip)
+-	marketWindow.MarketHistory.currentOffers.coinPanel.gold:setText(comma_value(playerCoins))
++	marketWindow.MarketHistory.currentOffers.coinPanel.gold:setText(formatShortNumber(playerCoins)) -- Chaos: short, exact in the tooltip
++	marketWindow.MarketHistory.currentOffers.coinPanel.gold:setTooltip(comma_value(playerCoins))
+ end
+ 
+ function onCoinBalance(coins, transferableCoins)
+@@ -499,9 +501,9 @@
+ 	setStringColor(coinTooltip, "\nIncluded transferable Chaos Coins: " .. comma_value(transferableCoins), "#3f3f3f")
+ 	setStringColor(coinTooltip, " ¢", "#f7e6fe")
+ 
+-	marketWindow.contentPanel.coinPanel.gold:setText(comma_value(transferableCoins))
++	marketWindow.contentPanel.coinPanel.gold:setText(formatShortNumber(transferableCoins)) -- Chaos: short, exact in the tooltip
+ 	marketWindow.contentPanel.coinPanel.gold:setTooltip(coinTooltip)
+-	marketWindow.MarketHistory.currentOffers.coinPanel.gold:setText(comma_value(transferableCoins))
++	marketWindow.MarketHistory.currentOffers.coinPanel.gold:setText(formatShortNumber(transferableCoins)) -- Chaos: short, exact in the tooltip
+ 	marketWindow.MarketHistory.currentOffers.coinPanel.gold:setTooltip(coinTooltip)
+ 
+ 	local selectedItem = marketWindow.contentPanel.selectedItem:getItem()
+diff -ru a/modules/game_console/classes/Chat.lua b/modules/game_console/classes/Chat.lua
+--- a/modules/game_console/classes/Chat.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/modules/game_console/classes/Chat.lua	2026-10-08 03:33:59.415330123 +0000
+@@ -616,6 +616,8 @@
+ end
+ 
+ function Chat:onTextMessage(mode, text)
++    -- Chaos: damage, healing, experience, loot, look and status texts show short numbers (15.3k); chat is left as it is
++    text = shortNumbersInMessage(mode, text)
+     -- TFS 8.60 sends orange console text as codes 19/20, which this client maps to MonsterSay/MonsterYell.
+     if g_game.getClientVersion() < 861 and
+         (mode == MessageModes.MonsterSay or mode == MessageModes.MonsterYell) then
+diff -ru a/modules/game_healthinfo/healthinfo.lua b/modules/game_healthinfo/healthinfo.lua
+--- a/modules/game_healthinfo/healthinfo.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/modules/game_healthinfo/healthinfo.lua	2026-10-08 03:31:53.329925184 +0000
+@@ -180,13 +180,13 @@
+   end
+ 
+   if healthInfoWindow and healthInfoWindow:recursiveGetChildById("healthLabel") then
+-    healthInfoWindow:recursiveGetChildById("healthLabel"):setText(health)
++    healthInfoWindow:recursiveGetChildById("healthLabel"):setText(formatShortNumber(health))
+   end
+ 
+   healthBar:setTooltip(tr(healthTooltip, health, maxHealth))
+   healthBar:setValue(health, 0, maxHealth)
+ 
+-  topHealthBar:setText(comma_value(health) .. ' / ' .. comma_value(maxHealth))
++  topHealthBar:setText(formatShortNumber(health) .. ' / ' .. formatShortNumber(maxHealth))
+   topHealthBar:setTooltip(tr(healthTooltip, health, maxHealth))
+   topHealthBar:setValue(health, 0, maxHealth)
+ end
+@@ -197,12 +197,12 @@
+     maxMana = mana
+   end
+ 
+-  healthInfoWindow:recursiveGetChildById("manaLabel"):setText(mana)
++  healthInfoWindow:recursiveGetChildById("manaLabel"):setText(formatShortNumber(mana))
+ 
+   manaBar:setTooltip(tr(manaTooltip, mana, maxMana))
+   manaBar:setValue(mana, 0, maxMana)
+ 
+-  topManaBar:setText(comma_value(mana) .. ' / ' .. comma_value(maxMana))
++  topManaBar:setText(formatShortNumber(mana) .. ' / ' .. formatShortNumber(maxMana))
+   topManaBar:setTooltip(tr(manaTooltip, mana, maxMana))
+   topManaBar:setValue(mana, 0, maxMana)
+ end
+@@ -214,11 +214,12 @@
+ end
+ 
+ function onSoulChange(localPlayer, soul)
+-  soulLabel:setText(tr('Soul') .. ': ' .. soul)
++  soulLabel:setText(tr('Soul') .. ': ' .. formatShortNumber(soul))
+ end
+ 
+ function onFreeCapacityChange(player, freeCapacity)
+-  capLabel:setText(tr('Cap') .. ': ' .. freeCapacity)
++  capLabel:setText(tr('Cap') .. ': ' .. formatShortNumber(freeCapacity))
++  capLabel:setTooltip(tr('Free capacity') .. ': ' .. formatExactNumber(freeCapacity))
+ end
+ 
+ function onStatesChange(localPlayer, now, old)
+diff -ru a/modules/game_inventory/inventory.lua b/modules/game_inventory/inventory.lua
+--- a/modules/game_inventory/inventory.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/modules/game_inventory/inventory.lua	2026-10-08 03:33:04.024271006 +0000
+@@ -782,17 +782,15 @@
+ 
+ function onSoulChange(localPlayer, soul)
+   if not soul then return end
+-  soulLabel:setText(tr'' .. soul)
++  soulLabel:setText(formatShortNumber(soul))
+ end
+ 
+ function onFreeCapacityChange(player, freeCapacity)
+   if not freeCapacity then return end
+   freeCapacity = math.floor(freeCapacity)
+-  local formattedCapacity = freeCapacity
+-  if freeCapacity > 100000 and type(tokformat) == 'function' then
+-    formattedCapacity = tokformat(freeCapacity)
+-  end
+-  capLabel.label:setText(tr'' .. formattedCapacity)
++  -- Chaos: short number (15.3k); the exact free capacity is in the tooltip
++  capLabel.label:setText(formatShortNumber(freeCapacity))
++  capLabel:setTooltip(tr("Capacity: The amount of weight you are able to carry.") .. '\n' .. tr('Free capacity') .. ': ' .. formatExactNumber(freeCapacity))
+   if freeCapacity == 0 then
+     capLabel.label:setColor('$var-text-cip-store-red')
+   elseif player and player:getTotalCapacity() ~= player:getBaseCapacity() then
+diff -ru a/modules/game_npctrade/npctrade.lua b/modules/game_npctrade/npctrade.lua
+--- a/modules/game_npctrade/npctrade.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/modules/game_npctrade/npctrade.lua	2026-10-08 03:34:28.526110757 +0000
+@@ -710,13 +710,17 @@
+   
+     local price = formatCurrency(item.price)
+     local informationText = 'Price ' .. price
++    -- Chaos: the list shows the price short (15.3k); the tooltip and the price of the selected item stay exact
++    local shortPrice = CURRENCY_DECIMAL and price or formatShortNumber(item.price)
++    local shortInformationText = 'Price ' .. shortPrice
+   
+     if showWeight and item.weight > 0 then
+       local weight = string.format('%.2f', item.weight) .. ' ' .. WEIGHT_UNIT
+       informationText = informationText .. ', ' .. weight
++      shortInformationText = shortInformationText .. ', ' .. weight
+     end
+ 
+-    local description = string.format('%s\n%s', short_text(item.name, 15), short_text(informationText, 16))
++    local description = string.format('%s\n%s', short_text(item.name, 15), short_text(shortInformationText, 16))
+     itemBox.nameLabel:setText(description, true)
+ 
+     local itemWidget = itemBox:getChildById('item')
+@@ -729,7 +733,7 @@
+     end
+     itemBox.onMouseRelease = itemPopup
+ 
+-    if (string.len(item.name) > 15) or (string.len(informationText) > 16) then
++    if (string.len(item.name) > 15) or (string.len(shortInformationText) > 16) or shortInformationText ~= informationText then
+       itemBox:setTooltip(string.format('%s\n%s', item.name, informationText))
+     end
+ 
+@@ -751,7 +755,10 @@
+ function refreshPlayerGoods()
+   if not initialized or not tradeSession.open then return end
+ 
+-  moneyLabel:setText(comma_value(formatCurrency(getPlayerMoney())))
++  -- Chaos: the balance is shown short (15.3k), exact in the tooltip
++  local playerMoney = getPlayerMoney()
++  moneyLabel:setText(CURRENCY_DECIMAL and comma_value(formatCurrency(playerMoney)) or formatShortNumber(playerMoney))
++  moneyLabel:setTooltip(comma_value(formatCurrency(playerMoney)))
+ 
+   local currentTradeType = getCurrentTradeType()
+   local searchFilter = searchText:getText():lower()
+diff -ru a/modules/game_skills/skills.lua b/modules/game_skills/skills.lua
+--- a/modules/game_skills/skills.lua	2026-10-08 00:46:45.712929111 +0000
++++ b/modules/game_skills/skills.lua	2026-10-08 03:32:47.188517657 +0000
+@@ -36,14 +36,14 @@
+   local dmgHealWidget = skillsWindow:recursiveGetChildById("damageHealingLabel")
+   local dmgHealVal = tonumber(data.damageAndHealing) or 0
+   if dmgHealWidget then
+-    dmgHealWidget:setText(tostring(math.floor(dmgHealVal + 0.5)))
++    dmgHealWidget:setText(formatShortNumber(math.floor(dmgHealVal + 0.5)))
+   end
+ 
+   local atkWidget = skillsWindow:recursiveGetChildById("attackValue")
+   local atkVal = tonumber(data.attackValue) or 0
+   local atkElem = tonumber(data.attackElement) or 0
+   if atkWidget then
+-    atkWidget:recursiveGetChildById("value"):setText(tostring(math.floor(atkVal + 0.5)))
++    atkWidget:recursiveGetChildById("value"):setText(formatShortNumber(math.floor(atkVal + 0.5)))
+     if atkVal > 0 then
+       atkWidget:recursiveGetChildById("value"):setColor("#44ad25")
+     end
+@@ -101,7 +101,7 @@
+ 
+   local defWidget = skillsWindow:recursiveGetChildById("defenseValue")
+   if defWidget then
+-    defWidget:recursiveGetChildById("value"):setText(tostring(math.floor(defenseVal + 0.5)))
++    defWidget:recursiveGetChildById("value"):setText(formatShortNumber(math.floor(defenseVal + 0.5)))
+     if math.abs(defenseVal) > 0.0001 then
+       defWidget:recursiveGetChildById("value"):setColor("#44ad25")
+     end
+@@ -109,7 +109,7 @@
+ 
+   local armorWidget = skillsWindow:recursiveGetChildById("armorValue")
+   if armorWidget then
+-    armorWidget:recursiveGetChildById("value"):setText(tostring(math.floor(armorVal + 0.5)))
++    armorWidget:recursiveGetChildById("value"):setText(formatShortNumber(math.floor(armorVal + 0.5)))
+     if math.abs(armorVal) > 0.0001 then
+       armorWidget:recursiveGetChildById("value"):setColor("#44ad25")
+     end
+@@ -621,6 +621,17 @@
+     skill:setTooltip(tooltip)
+   end
+ 
++  -- Chaos: numbers are shown short (15.3k, 2.45M); the exact value is in the tooltip of the number
++  if type(value) == 'number' then
++    if value >= 1000 or value <= -1000 then
++      widget:setTooltip(formatExactNumber(value))
++      widget.chaosExactTooltip = true
++    elseif widget.chaosExactTooltip then
++      widget:removeTooltip()
++      widget.chaosExactTooltip = nil
++    end
++    value = formatShortNumber(value)
++  end
+   widget:setText(value)
+ 
+   local expLabel = skillsWindow:recursiveGetChildById('expLabel')
+@@ -837,15 +848,11 @@
+ end
+ 
+ function onExperienceChange(localPlayer, value, oldValue)
+-  if value >= 1*(1000000000000000) then
+-    setSkillValue('experience', "1kkkk+")
+-  else
+-    setSkillValue('experience', comma_value(value))
+-  end
++  setSkillValue('experience', value)
+ end
+ 
+ function onLevelChange(localPlayer, value, percent)
+-  setSkillValue('level', comma_value(value))
++  setSkillValue('level', value)
+   local levelLabel = skillsWindow:recursiveGetChildById('level')
+   levelLabel:recursiveGetChildById('percent'):setTooltip(tr('You have %s percent to go', 100 - percent))
+ 
+@@ -1267,11 +1274,11 @@
+ function onUpdateOffenceStats(player, damageAndHealing, damageValue, damageElement, convertedValue, convertedElement)
+   -- Damage and Healing
+   local damageHealingWidget = skillsWindow:recursiveGetChildById('damageHealingLabel')
+-  damageHealingWidget:setText(damageAndHealing)
++  damageHealingWidget:setText(formatShortNumber(damageAndHealing))
+ 
+   -- Attack Value
+   local attackWidget = skillsWindow:recursiveGetChildById('attackValue')
+-  attackWidget:recursiveGetChildById("value"):setText(damageValue)
++  attackWidget:recursiveGetChildById("value"):setText(formatShortNumber(damageValue))
+   attackWidget:recursiveGetChildById("combatIcon"):setImageSource("/game_cyclopedia/images/icons/stats/element_" .. damageElement)
+ 
+   -- Converted Damage
+@@ -1346,15 +1353,15 @@
+ 
+   -- Defense
+   local defenseWidget = skillsWindow:recursiveGetChildById('defenseValue')
+-  defenseWidget:recursiveGetChildById('value'):setText(defense)
++  defenseWidget:recursiveGetChildById('value'):setText(formatShortNumber(defense))
+ 
+   -- Armor
+   local armorWidget = skillsWindow:recursiveGetChildById('armorValue')
+-  armorWidget:recursiveGetChildById('value'):setText(armor)
++  armorWidget:recursiveGetChildById('value'):setText(formatShortNumber(armor))
+ 
+   -- Mantra
+   local mantraWidget = skillsWindow:recursiveGetChildById('mantraValue')
+-  mantraWidget:recursiveGetChildById('value'):setText(mantra)
++  mantraWidget:recursiveGetChildById('value'):setText(formatShortNumber(mantra))
+ 
+   -- Mitigation
+   local mitigationWidget = skillsWindow:recursiveGetChildById('mitigationValue')
+@@ -1369,7 +1376,7 @@
+ 
+   -- Damage Reflection
+   local reflectionWidget = skillsWindow:recursiveGetChildById('reflectionValue')
+-  reflectionWidget:recursiveGetChildById('value'):setText(damageReflection)
++  reflectionWidget:recursiveGetChildById('value'):setText(formatShortNumber(damageReflection))
+   reflectionWidget:setTooltip(tr(specialTooltips["reflectionValue"], damageReflection))
+   reflectionWidget:setVisible(damageReflection > 0)
+ 
+diff -ru a/modules/game_soulseal/game_soulseal.lua b/modules/game_soulseal/game_soulseal.lua
+--- a/modules/game_soulseal/game_soulseal.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/modules/game_soulseal/game_soulseal.lua	2026-10-08 03:35:57.919437905 +0000
+@@ -11,7 +11,8 @@
+ 
+ local function setSoulsealBalance(balance)
+     if soulsealWindow then
+-        soulsealWindow.balancePanel.balanceLabel:setText(comma_value(balance))
++        soulsealWindow.balancePanel.balanceLabel:setText(formatShortNumber(balance)) -- Chaos: short number, exact in the tooltip
++        soulsealWindow.balancePanel.balanceLabel:setTooltip(comma_value(balance))
+     end
+ end
+ 
+diff -ru a/modules/game_task_hunt/classes/task-shop.lua b/modules/game_task_hunt/classes/task-shop.lua
+--- a/modules/game_task_hunt/classes/task-shop.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/modules/game_task_hunt/classes/task-shop.lua	2026-10-08 03:35:57.921206321 +0000
+@@ -25,7 +25,7 @@
+         local panel = taskHuntWindow:recursiveGetChildById('taskShopPoints')
+         if panel then
+             local label = panel:recursiveGetChildById('panelLabel')
+-            if label then label:setText(comma_value(currentBalance)) end
++            if label then label:setText(formatShortNumber(currentBalance)); label:setTooltip(comma_value(currentBalance)) end
+         end
+     end
+ 
+diff -ru a/modules/game_task_hunt/tasks.lua b/modules/game_task_hunt/tasks.lua
+--- a/modules/game_task_hunt/tasks.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/modules/game_task_hunt/tasks.lua	2026-10-08 03:35:57.920817339 +0000
+@@ -266,7 +266,7 @@
+         local panel = taskHuntWindow and taskHuntWindow:recursiveGetChildById('taskShopPoints')
+         if panel then
+             local label = panel:recursiveGetChildById('panelLabel')
+-            if label then label:setText(comma_value(balance)) end
++            if label then label:setText(formatShortNumber(balance)); label:setTooltip(comma_value(balance)) end
+         end
+         TaskShop.updateBalance(balance)
+     end
+@@ -275,7 +275,7 @@
+         local panel = taskHuntWindow and taskHuntWindow:recursiveGetChildById('soulpitPoints')
+         if panel then
+             local label = panel:recursiveGetChildById('panelLabel')
+-            if label then label:setText(comma_value(balance)) end
++            if label then label:setText(formatShortNumber(balance)); label:setTooltip(comma_value(balance)) end
+         end
+     end
+ 
+@@ -283,7 +283,7 @@
+         local panel = taskHuntWindow and taskHuntWindow:recursiveGetChildById('bountyPoints')
+         if panel then
+             local label = panel:recursiveGetChildById('panelLabel')
+-            if label then label:setText(comma_value(balance)) end
++            if label then label:setText(formatShortNumber(balance)); label:setTooltip(comma_value(balance)) end
+         end
+         BountyPreferred.populateSlots()
+     end
+diff -ru a/modules/game_textmessage/textmessage.lua b/modules/game_textmessage/textmessage.lua
+--- a/modules/game_textmessage/textmessage.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/modules/game_textmessage/textmessage.lua	2026-10-08 03:33:59.414812501 +0000
+@@ -40,6 +40,9 @@
+     return
+   end
+ 
++  -- Chaos: damage, healing, experience, loot, look and status texts show short numbers (15.3k); chat is left as it is
++  text = shortNumbersInMessage(mode, text)
++
+   if msgtype.screenTarget and m_settings.getOption("showMessages") then
+     local label = messagesPanel:recursiveGetChildById(msgtype.screenTarget)
+     local hasColorLoot = type(text) == 'string' and ItemsDatabase and ItemsDatabase.hasColorLootMarkup and ItemsDatabase.hasColorLootMarkup(text)
+diff -ru a/modules/game_topbar/topbar.lua b/modules/game_topbar/topbar.lua
+--- a/modules/game_topbar/topbar.lua	2026-10-06 00:26:18.000000000 +0000
++++ b/modules/game_topbar/topbar.lua	2026-10-08 03:32:08.738607926 +0000
+@@ -560,11 +560,13 @@
+     healthBar:setFont("Verdana Bold-11px")
+     healthBar:setColor("#ffffff")
+     healthBar:setValue(health, 0, maxHealth)
++    local healthText = formatShortNumber(health) .. ' / ' .. formatShortNumber(maxHealth)
+     if healthBar.statusHealth then
+-        healthBar.statusHealth:setText(string.format("%d / %d", health, maxHealth))
++        healthBar.statusHealth:setText(healthText)
+     else
+-        healthBar:setText(string.format("%d / %d", health, maxHealth))
++        healthBar:setText(healthText)
+     end
++    healthBar:setTooltip(formatExactNumber(health) .. ' / ' .. formatExactNumber(maxHealth))
+ end
+ 
+ function onManaShieldChange(localPlayer, mana, maxMana)
+@@ -623,8 +625,8 @@
+     manaShieldBar:setImageClip(imageClip)
+     manaShieldBar:setImageRect(imageRect)
+ 
+-    local shieldTextFormat = currentLayout == 'large' and "%d / %d@" or "(%d / %d@)"
+-    manaShieldText:setText(shieldTextFormat:format(mana, maxMana))
++    local shieldTextFormat = currentLayout == 'large' and "%s / %s@" or "(%s / %s@)"
++    manaShieldText:setText(shieldTextFormat:format(formatShortNumber(mana), formatShortNumber(maxMana)))
+     manaShieldText:setFont("Icon-VBold-11px")
+     manaShieldText:setColor("#ffffff")
+     manaShieldBar:setValue(mana, 0, maxMana)
+@@ -670,7 +672,8 @@
+     local imageRect = { x = 0, y = 0, width = math.floor(imageClip.width * (manaPercent / 100)), height = imageClip.height }
+     manaBarToUpdate:setImageRect(imageRect)
+ 
+-    manaText:setText(string.format("%d / %d", mana, maxMana))
++    manaText:setText(formatShortNumber(mana) .. ' / ' .. formatShortNumber(maxMana))
++    manaText:setTooltip(formatExactNumber(mana) .. ' / ' .. formatExactNumber(maxMana))
+     manaText:setFont("Verdana Bold-11px")
+     manaText:setColor("#ffffff")
+     manaBarToUpdate:setValue(mana, 0, maxMana)
+@@ -698,7 +701,7 @@
+     experienceBar:setTooltip(text)
+     experienceBar:setPercent(percent)
+     if levelLabel then
+-        levelLabel:setText(value)
++        levelLabel:setText(formatShortNumber(value))
+         levelLabel:setFont("Verdana Bold-11px")
+         levelLabel:setColor("#c0c0c0")
+         levelLabel:setTextAutoResize(true)
+@@ -949,7 +952,7 @@
+ 
+     local levelLabel = panel.level
+     if levelLabel then
+-        levelLabel:setText(value)
++        levelLabel:setText(formatShortNumber(value))
+         levelLabel:setFont("Verdana Bold-11px")
+         levelLabel:setColor("#c0c0c0")
+         levelLabel:setTextAutoResize(true)

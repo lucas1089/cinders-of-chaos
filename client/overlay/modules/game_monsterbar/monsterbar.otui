@@ -1,11 +1,22 @@
 Panel
   id: monsterBar
-  size: 420 80
+  size: 420 86
   anchors.top: parent.top
   anchors.horizontalCenter: parent.horizontalCenter
-  margin-top: 8
+  margin-top: 44
   phantom: true
   visible: false
+
+  // dark backing for the bar slot of the frame (the frame image is 420x64, slot at 24,34 372x18)
+  UIWidget
+    id: barBack
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-left: 24
+    margin-top: 34
+    size: 372 18
+    background-color: #120808e6
+    phantom: true
 
   ProgressBar
     id: bar
@@ -18,9 +29,12 @@ Panel
     percent: 100
     phantom: true
 
+  // fixed size: stretching the frame would move its slot away from the bar
   UIWidget
     id: frame
-    anchors.fill: parent
+    anchors.left: parent.left
+    anchors.top: parent.top
+    size: 420 64
     image-source: /images/chaos/monsterbar/frame_normal
     phantom: true
 
@@ -45,10 +59,13 @@ Panel
 
   Label
     id: mods
-    anchors.top: parent.top
+    anchors.top: frame.bottom
     anchors.horizontalCenter: parent.horizontalCenter
-    margin-top: 62
+    margin-top: 2
     font: verdana-11px-antialised
     text-auto-resize: true
+    padding: 2 8
+    background-color: #0c0606cc
     color: #8c8070
     phantom: true
+    visible: false

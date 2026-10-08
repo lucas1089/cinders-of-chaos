@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Lady bug" nameDescription="Lady bug" race="venom" experience="82000" evented = "5" skulled="1" looting="1" speed="652">
-	<health now="90000" max="90000" />
-	<level min="1100" max="1200"/>
+<monster name="Lady bug" nameDescription="Lady bug" race="venom" experience="12900" evented = "5" skulled="1" looting="1" speed="52">
+	<health now="20400" max="20400"/>
+	<level min="940" max="980"/>
 	<look type="448" corpse="6068" />
 	<targetchange interval="5000" chance="0" />
-	<levelconfig experience="250" health="100" damage="0" speed="50" />
 	<flags>
 		<flag summonable="0" />
 		<flag attackable="1" />
@@ -18,21 +17,24 @@
 		<flag targetdistance="0" />
 		<flag runonhealth="91000" />
 	</flags>
-	<script>
-        <event name="auto_loot"/>
-        <event name="orb_bonus"/>
-        <event name="crusd_chest_bonus"/>
-    </script>
 	<attacks>
-		<attack name="melee" interval="1500" min="-2800" max="-4350"/>
-		<attack name="earth" interval="1500" chance="35" range="1" min="-3000" max="-4200">
+		<attack name="melee" interval="1500" min="-530" max="-830"/>
+		<attack name="earth" interval="1500" chance="35" range="1" min="-570" max="-800">
 			<attribute key="shootEffect" value="poison" />
 		</attack>
-		<attack name="earth" interval="2000" chance="15" range="7" min="-2500" max="-4100">
+		<attack name="earth" interval="2000" chance="15" range="7" min="-480" max="-780">
 			<attribute key="shootEffect" value="poison" />
 		</attack>
 	</attacks>
-	<defenses armor="38" defense="38" />>
+	<defenses armor="38" defense="38" />
+	<elements>
+		<element physicalPercent="-15"/>
+		<element holyPercent="-15"/>
+		<element firePercent="20"/>
+		<element energyPercent="20"/>
+		<element icePercent="20"/>
+		<element deathPercent="10"/>
+	</elements>
 	<immunities>
 		<immunity earth="1" />
 		<immunity invisible="1" />
@@ -45,10 +47,21 @@
 		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
 		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
 		<item id="2152" countmax="25" chance="65000"/><!-- Platinum Coin -->
-		<item id="5741;2645" countmax="1" chance="6200" /><!-- skull helmet;steel boots -->
-		<item id="11302;11301;11304;11303" countmax="1" chance="6000" /><!-- zaoan helmet -->
-		<item id="8891;9931;11356" countmax="1" chance="6000" /><!-- paladin armor;coconut shoes;Zaoan robe -->
-		<item id="2522;2520;11117" countmax="1" chance="7020" /><!-- great shield;demon shield;crystal boots -->
-		<item id="8889;8887;12607;8880" countmax="1" chance="4800" /><!-- skullcrackerarmor;frozen plate;elite draken mail;swamplair armor -->
+		<item id="5741" countmax="1" chance="3100" /><!-- skull helmet;steel boots -->
+		<item id="2645" countmax="1" chance="3100" />
+		<item id="11302" countmax="1" chance="1500" /><!-- zaoan helmet -->
+		<item id="11301" countmax="1" chance="1500" />
+		<item id="11304" countmax="1" chance="1500" />
+		<item id="11303" countmax="1" chance="1500" />
+		<item id="8891" countmax="1" chance="2000" /><!-- paladin armor;coconut shoes;Zaoan robe -->
+		<item id="9931" countmax="1" chance="2000" />
+		<item id="11356" countmax="1" chance="2000" />
+		<item id="2522" countmax="1" chance="2340" /><!-- great shield;demon shield;crystal boots -->
+		<item id="2520" countmax="1" chance="2340" />
+		<item id="11117" countmax="1" chance="2340" />
+		<item id="8889" countmax="1" chance="1200" /><!-- skullcrackerarmor;frozen plate;elite draken mail;swamplair armor -->
+		<item id="8887" countmax="1" chance="1200" />
+		<item id="12607" countmax="1" chance="1200" />
+		<item id="8880" countmax="1" chance="1200" />
 	</loot>
 </monster>

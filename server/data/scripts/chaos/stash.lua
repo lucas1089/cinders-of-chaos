@@ -1,7 +1,7 @@
 -- game_stash (extended opcode ChaosOpcodes.stash = 110, plus the "!stash" talkaction)
 --
 -- Client contract (client/overlay/modules/game_stash/stash.lua). The shipped client talks through
--- Black Talon's client_manager, which is NOT part of the overlay. This file assumes the manager
+-- the donor client's client_manager, which is NOT part of the overlay. This file assumes the manager
 -- uses the same envelope in both directions:   {"action":"Stash","data":{"make":...,...}}
 -- (see README for the 6-line client patch that makes that true without client_manager).
 --
@@ -388,4 +388,23 @@ function talk.onSay(player, words, param)
 	return false
 end
 
+talk:separator(" ")
 talk:register()
+
+-- used by autosell.lua (Bottomless Loot Pouch): put a loose item (e.g. in a corpse) into the stash.
+-- Returns true when it was stashed; false when the item is not stashable, blocked or the entry is full.
+ChaosStash = ChaosStash or {}
+function ChaosStash.storeItem(player, item)
+	if not stashable(item) then
+		return false
+	end
+	local guid, itemId, count = player:getGuid(), item:getId(), item:getCount()
+	if isBlocked(guid, itemId) or stashCount(guid, itemId) + count > cfg.maxStackPerEntry then
+		return false
+	end
+	if not item:remove(count) then
+		return false
+	end
+	stashAdd(guid, itemId, count)
+	return true
+end

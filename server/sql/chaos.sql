@@ -1,4 +1,4 @@
--- Chaos client-module tables for TFS 1.4.2 / Hellgrave Exodus (MySQL / MariaDB, InnoDB).
+-- Chaos client-module tables for TFS 1.4.2 / the base server (MySQL / MariaDB, InnoDB).
 -- Safe to run more than once (CREATE TABLE IF NOT EXISTS). Table names must match
 -- Chaos.tables in server/data/scripts/chaos/chaos_constants.lua.
 -- Foreign keys reference players(id) as `int(11) NOT NULL`, the stock TFS schema.
@@ -36,6 +36,16 @@ CREATE TABLE IF NOT EXISTS `chaos_passive_tree` (
   `nodes` text NOT NULL,
   PRIMARY KEY (`player_id`, `preset`),
   CONSTRAINT `chaos_passive_tree_players_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Paragon track (paragon.lua): points per stat key (damage, critDamage, health, reduction, speed, mana, goldFind,
+-- itemFind); rows with 0 points are not kept.
+CREATE TABLE IF NOT EXISTS `chaos_paragon` (
+  `player_id` int(11) NOT NULL,
+  `stat` varchar(32) NOT NULL,
+  `points` smallint(5) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`player_id`, `stat`),
+  CONSTRAINT `chaos_paragon_players_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- game_dungeons: highest unlocked difficulty (1..6) and completed challenge keys per dungeon.
@@ -82,4 +92,42 @@ CREATE TABLE IF NOT EXISTS `chaos_tower_players` (
   PRIMARY KEY (`player_id`, `season`),
   KEY `chaos_tower_players_rank` (`season`, `best_floor`, `best_time`),
   CONSTRAINT `chaos_tower_players_players_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Chaos store (data/scripts/chaos/shop.lua): coins per account and purchase history
+CREATE TABLE IF NOT EXISTS `chaos_shop_coins` (
+  `account_id` int(11) NOT NULL,
+  `coins` int(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`account_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `chaos_shop_history` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `account_id` int(11) NOT NULL,
+  `player_id` int(11) NOT NULL,
+  `title` varchar(100) NOT NULL,
+  `cost` int(11) NOT NULL,
+  `created` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `chaos_shop_history_account` (`account_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Bounty board (data/scripts/chaos/bounty.lua; table name in bounty_config.lua): one row per accepted contract. day = bounty day (YYYYMMDD, the day
+-- starts at the roll hour), contract = "<band>-<slot>" of that day's board, status 0 active / 1 completed,
+-- mc = 1 when a kill was made while multi-clienting (no reward). Unfinished rows of past days and rows older than
+-- two weeks are deleted at login; completed rows of the current week count for the weekly bonus.
+CREATE TABLE IF NOT EXISTS `chaos_bounty` (
+  `player_id` int(11) NOT NULL,
+  `day` int(10) unsigned NOT NULL,
+  `contract` varchar(16) NOT NULL,
+  `monster` varchar(64) NOT NULL,
+  `progress` int(10) unsigned NOT NULL DEFAULT 0,
+  `required` int(10) unsigned NOT NULL,
+  `status` tinyint(3) unsigned NOT NULL DEFAULT 0,
+  `mc` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `accepted_at` int(10) unsigned NOT NULL,
+  `completed_at` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`player_id`, `day`, `contract`),
+  KEY `chaos_bounty_week` (`player_id`, `status`, `day`),
+  CONSTRAINT `chaos_bounty_players_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

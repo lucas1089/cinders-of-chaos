@@ -1,0 +1,20 @@
+// Compatibility styles: names that the imported modules use but the base client does not define.
+// Each one is mapped to the closest base style so those windows can load.
+
+CardPanel < Panel
+InnerPanel < Panel
+ItemColorFrame < UIWidget
+  phantom: true
+MainWindowTopBar < UIWidget
+  height: 30
+MiniWindowPanelTopBar < UIWidget
+  height: 24
+MiniMainWindow < MainWindow
+CustomTabButton < TabButton
+OptionScrollbar < VerticalScrollBar
+WindowCloseButton < CloseButton
+UIItemTooltip < Item
+LineConnector < UIWidget
+  phantom: true
+Orbit < UIWidget
+  phantom: true

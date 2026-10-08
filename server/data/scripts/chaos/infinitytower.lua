@@ -11,11 +11,10 @@
 --   "open" shows the window, "update" refreshes it if it is already open.
 --
 -- Implemented: seasons, per-season points / best floor / best time, ranking top 10, milestone
--- claiming with item rewards, "!tower" to open the window.
--- NOT implemented: the tower itself (instance, waves, lever, monsters). The reference
--- tower_defense scripts are a different minigame and are not reused. A future tower script
--- reports results by calling ChaosTower.recordRun(player, floorsCleared, seconds).
--- The season-end "top 3 chest" rewards are also not implemented (no script gives them out).
+-- claiming with item rewards, "!tower" to open the window, and the tower itself in
+-- infinitytower_run.lua ("!tower start" / "!tower leave" / the client's Enter button), which reports each
+-- finished run with ChaosTower.recordRun(player, floorsCleared, seconds).
+-- NOT implemented: the season-end "top 3 chest" rewards (no script gives them out).
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -113,7 +112,8 @@ function ChaosTower.recordRun(player, floorsCleared, seconds)
 	local season = currentSeason()
 	local row = loadPlayerRow(guid, season)
 
-	local points = row.points + floorsCleared * cfg.pointsPerFloor
+	local eventMult = ChaosEvents and ChaosEvents.bonus("towerPoints") or 1
+	local points = row.points + math.floor(floorsCleared * cfg.pointsPerFloor * eventMult)
 	local bestFloor, bestTime = row.best_floor, row.best_time
 	if floorsCleared > bestFloor or (floorsCleared == bestFloor and floorsCleared > 0 and (bestTime == 0 or seconds < bestTime)) then
 		bestFloor, bestTime = floorsCleared, seconds
@@ -196,7 +196,11 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 	if not msg then
 		return
 	end
-	if msg.action == "request" then
+	if msg.action == "enter" then
+		if ChaosTowerRun then
+			ChaosTowerRun.start(player)
+		end
+	elseif msg.action == "request" then
 		sendTower(player, "update")
 	elseif msg.action == "claim" then
 		claim(player, msg.milestoneIndex)
@@ -211,10 +215,22 @@ ExtendedEvent:register()
 local talk = TalkAction("!tower")
 
 function talk.onSay(player, words, param)
-	ChaosTower.open(player)
+	param = (param or ""):lower():match("^%s*(%a*)") or ""
+	if param == "start" or param == "enter" then
+		if ChaosTowerRun then
+			ChaosTowerRun.start(player)
+		end
+	elseif param == "leave" then
+		if ChaosTowerRun then
+			ChaosTowerRun.leave(player)
+		end
+	else
+		ChaosTower.open(player)
+	end
 	return false
 end
 
+talk:separator(" ")
 talk:register()
 
 -- /towerrun <floors>,<seconds> : staff test helper, records a fake run for yourself so the
@@ -234,4 +250,5 @@ function testTalk.onSay(player, words, param)
 	return false
 end
 
+testTalk:separator(" ")
 testTalk:register()

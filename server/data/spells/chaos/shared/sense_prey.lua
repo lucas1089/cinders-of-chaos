@@ -1,4 +1,4 @@
--- Sense Prey: pings every monster within 12 sqm on the caster's floor (max 15 marked) and reports the nearest.
+-- Hunter's Instinct: pings every monster within 12 sqm on the caster's floor (max 15 marked) and reports the nearest.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local RADIUS = 12
@@ -36,11 +36,11 @@ function onCastSpell(creature, variant, isHotkey)
 
 	ChaosSpell.fx(pos, "aura_ring", CONST_ME_MAGIC_BLUE)
 	if found == 0 then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Sense Prey: nothing stirs nearby.")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, "Hunter's Instinct: nothing stirs nearby.")
 	else
 		local np = nearest:getPosition()
 		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format(
-			"Sense Prey: %d creature%s nearby. Nearest: %s, %d sqm %s.",
+			"Hunter's Instinct: %d creature%s nearby. Nearest: %s, %d sqm %s.",
 			found, found == 1 and "" or "s", nearest:getName(), nearestDist, compass(np.x - pos.x, np.y - pos.y)))
 	end
 	return true

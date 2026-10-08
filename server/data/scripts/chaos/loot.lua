@@ -10,7 +10,7 @@
 --
 -- All numbers live in loot_config.lua. See LOOT.md. Not verified on a running server; the
 -- engine APIs used (Game.createItemWithRarity, Container:addItemEx, Game.getSpectators,
--- MonsterType:getLoot, Monster:getMonsterLevel) are read from the Hellgrave Exodus v3.7.5 sources.
+-- MonsterType:getLoot, Monster:getMonsterLevel) are read from the base server sources.
 --
 -- Lua dialect: TFS 1.4.2 / LuaJIT (Lua 5.1 semantics).
 
@@ -305,6 +305,11 @@ function L.rollExtraLoot(lootTable, tier, ctx)
 	ctx = ctx or {}
 	local out = {}
 	local rolls = tierValue(c.extraRolls, tier, 0)
+	-- loot events and the store's World Loot buff add one extra roll to every monster, normal ones included
+	local buff = ChaosShopServices and ChaosShopServices.buffMult and ChaosShopServices.buffMult("loot") or 1
+	if (ChaosEvents and ChaosEvents.bonus("loot") > 1) or buff > 1 then
+		rolls = rolls + 1
+	end
 	if rolls <= 0 or not lootTable then
 		return out
 	end
@@ -673,7 +678,9 @@ local function processKill(monster, corpse)
 	local corpsePos = corpse:getPosition()
 
 	-- items that must never be touched: unique items
-	L.protectedIds = uniqueSet()
+	-- uniques are ordinary base items until ChaosMakeUnique runs on the dropped copy (step 4, after the gear
+	-- upgrades), so stock copies of the same base ids may still be upgraded
+	L.protectedIds = {}
 
 	-- 1. extra rolls
 	local lootTable = mType and mType:getLoot()
@@ -735,6 +742,9 @@ local function processKill(monster, corpse)
 	for _, e in ipairs(L.rollUniques(tier, monster:getName(), level, ctx.itemFind)) do
 		local item = corpse:addItem(e.id, 1)
 		if item then
+			if ChaosMakeUnique then
+				ChaosMakeUnique(item)
+			end
 			bonus[#bonus + 1] = "{" .. e.name .. "}"
 			local effect = globalByName(u.effect, u.fallbackEffect)
 			corpsePos:sendMagicEffect(effect)

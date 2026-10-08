@@ -1,0 +1,55 @@
+--- a/src/client/const.h
++++ b/src/client/const.h
+@@ -128,6 +128,7 @@
+         InventorySlotExt2,
+         InventorySlotExt3,
+         InventorySlotExt4,
++        InventorySlotExt5, // the Chaos server sends slots up to 16 (gloves)
+         LastInventorySlot
+     };
+ 
+@@ -511,8 +512,10 @@
+         GameNegativeOffset = 150,
+         GameAstraBestiaryBannerCreatureData = 151,
+         GameAstraExtendedSpellIds = 152,
++        // Chaos 10.98 server: seven crafting skills follow fishing in the skills packet
++        GameChaosCraftingSkills = 153,
+ 
+-        LastGameFeature = 153
++        LastGameFeature = 154
+     };
+ 
+     enum PathFindResult {
+--- a/src/client/protocolgameparse.cpp
++++ b/src/client/protocolgameparse.cpp
+@@ -2328,6 +2328,17 @@
+ 
+         m_localPlayer->setSkill((Otc::Skill)skill, level, levelPercent);
+         m_localPlayer->setBaseSkill((Otc::Skill)skill, baseLevel);
++
++        // crafting, woodcutting, mining, herbalist, armorsmith, weaponsmith, jewelsmith: same layout as
++        // the classic skills (u16 level, u16 base, u8 percent); handed to Lua as g_game.onCraftingSkill
++        if (skill == Otc::Fishing && g_game.getFeature(Otc::GameChaosCraftingSkills)) {
++            for (int craft = 0; craft < 7; ++craft) {
++                int craftLevel = msg->getU16();
++                int craftBase = msg->getU16();
++                int craftPercent = msg->getU8();
++                g_lua.callGlobalField("g_game", "onCraftingSkill", craft, craftLevel, craftBase, craftPercent);
++            }
++        }
+     }
+ 
+     if (g_game.getFeature(Otc::GameTibia12Protocol)) {
+--- a/modules/gamelib/const.lua
++++ b/modules/gamelib/const.lua
+@@ -358,8 +358,9 @@
+ GameNegativeOffset = 150
+ 
+ GameAstraExtendedSpellIds = 152
++GameChaosCraftingSkills = 153 -- Chaos 10.98 server: crafting skills in the skills packet
+ 
+-LastGameFeature = 153
++LastGameFeature = 154
+ 
+ TextColors = {
+   red        = '#F55E5E',

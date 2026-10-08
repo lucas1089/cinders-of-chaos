@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Procedural art generator for the Chaos dark-fantasy OTClient theme.
 
-Run:  python3 -I client/tools/gen_theme_art.py [frames] [icons] [background] [logo]
-(no argument = everything).  Needs Pillow + numpy.  Output goes to
+Run:  python3 -I client/tools/gen_theme_art.py [icons] [background] [logo]
+(no argument = all three).  The frame and control images of chaos/ (window, buttons, panels, tabs,
+scroll bars, ...) are drawn by gen_skin.py now; the old "frames" task here would overwrite them with the
+previous flat look, so it only runs when asked for by name.  Needs Pillow + numpy.  Output goes to
 client/overlay/data/images/chaos/.  Deterministic (fixed seeds).
 """
 import os
@@ -736,6 +738,43 @@ def glyph_ranking(g):
     g.poly(star_pts(50, 40, 8, 3.6), 0)
 
 
+def glyph_community(g):
+    # speech bubble with three dots (community / chat server)
+    g.rrect(18, 24, 82, 66, 12)
+    g.poly([(32, 62), (30, 82), (50, 64)])
+    for x in (36, 50, 64):
+        g.circ(x, 45, 5, 0)
+
+
+def glyph_console(g):
+    g.rrect(16, 22, 84, 78, 6)
+    g.rrect(21, 32, 79, 73, 3, 0)
+    g.line([(30, 42), (42, 52), (30, 62)], 5.5)
+    g.rect(48, 60, 66, 65)
+
+
+def glyph_exit(g):
+    # power symbol
+    g.arc(50, 54, 25, -55, 235, 7)
+    g.line([(50, 20), (50, 52)], 7)
+
+
+def glyph_proficiency(g):
+    sword(g, 24, 78, 76, 24)
+    sword(g, 76, 78, 24, 24)
+
+
+def glyph_pvp(g):
+    # skull
+    g.ell(50, 44, 26, 24)
+    g.rrect(36, 58, 64, 78, 4)
+    g.circ(40, 46, 7, 0)
+    g.circ(60, 46, 7, 0)
+    g.poly([(50, 54), (45, 63), (55, 63)], 0)
+    for x in (43, 50, 57):
+        g.rect(x - 1.2, 68, x + 1.2, 78, 0)
+
+
 ICONS = [
     ("inventory", glyph_inventory, "Inventory"), ("skills", glyph_skills, "Skills"),
     ("battlelist", glyph_battlelist, "Battle List"), ("vip", glyph_vip, "VIP"),
@@ -749,6 +788,9 @@ ICONS = [
     ("notifications", glyph_notifications, "Notifications"), ("help", glyph_help, "Help"),
     ("logout", glyph_logout, "Logout"), ("admin", glyph_admin, "Admin"),
     ("ranking", glyph_ranking, "Ranking"),
+    ("community", glyph_community, "Community"), ("console", glyph_console, "Console"),
+    ("exit", glyph_exit, "Exit"), ("proficiency", glyph_proficiency, "Weapon Proficiency"),
+    ("pvp", glyph_pvp, "PvP"),
 ]
 
 
@@ -1577,7 +1619,7 @@ def gen_logo():
 
 # ---------------------------------------------------------------- main
 def main(argv):
-    tasks = argv[1:] or ["frames", "icons", "logo", "background"]
+    tasks = argv[1:] or ["icons", "logo", "background"]
     for t in tasks:
         {"frames": gen_frames, "icons": gen_icons, "logo": gen_logo, "background": gen_background}[t]()
 

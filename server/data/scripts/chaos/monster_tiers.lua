@@ -47,6 +47,13 @@ local cfg = {
 }
 ChaosTierConfig = cfg
 
+-- World bosses (worldboss.lua): boss tier for the client (their XML also has isboss="1"; this is the fallback) but
+-- no random modifiers: Regenerating, Juggernaut or Explosive (5% of max health on death) would wreck the tuned fight.
+for _, b in ipairs(Chaos.worldBoss and Chaos.worldBoss.bosses or {}) do
+	cfg.bosses[b.name:lower()] = true
+	cfg.skip[b.name:lower()] = true
+end
+
 -- Modifiers. shader = id in data/XML/shaders.xml, power decides which modifier colours the monster.
 -- hp/speed/damage are multipliers or additions applied when the modifier is rolled; the on* hooks
 -- are called by the handlers below.
@@ -88,6 +95,9 @@ ChaosMods = {
 	reflective = {name = "Reflective", shader = 13, power = 4, effect = CONST_ME_MAGIC_BLUE,
 		onTaken = function(m, attacker, dmg)
 			if attacker and attacker:isPlayer() then
+				if ChaosCombatFx then
+					ChaosCombatFx.reflect(m) -- shield flash on the reflecting monster (combat_fx.lua, throttled)
+				end
 				doTargetCombatHealth(m, attacker, COMBAT_PHYSICALDAMAGE, -math.floor(dmg * 0.15), -math.floor(dmg * 0.15), CONST_ME_NONE)
 			end
 		end},
@@ -278,6 +288,15 @@ local function applyTier(monster, tier, depth)
 	end
 end
 
+-- other scripts (infinitytower_run.lua) force a tier on a monster they created
+function ChaosApplyTier(monster, tier)
+	if ChaosTiers[tier] and tier ~= "boss" and eligible(monster) and not state[monster:getId()] then
+		applyTier(monster, tier, 0)
+		return true
+	end
+	return false
+end
+
 local function pickWeighted(weights)
 	local total = 0
 	for _, w in pairs(weights) do
@@ -305,8 +324,9 @@ spawnCb.onSpawn = function(self, position, startup, artificial)
 	end
 	if eligible(self) then
 		local roll = math.random(10000)
+		local eventMult = ChaosEvents and ChaosEvents.bonus("tierChance") or 1
 		for _, tier in ipairs({"legendary", "rare", "magic"}) do
-			if roll <= cfg.spawnChance[tier] then
+			if roll <= cfg.spawnChance[tier] * eventMult then
 				applyTier(self, tier, 0)
 				return true
 			end
@@ -356,7 +376,8 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 	if tier == "boss" or depth >= cfg.maxChain or not eligible(creature) then
 		return true
 	end
-	if math.random(10000) > (cfg.ambush[tier] or 0) then
+	local ambushMult = ChaosEvents and ChaosEvents.bonus("ambush") or 1
+	if math.random(10000) > (cfg.ambush[tier] or 0) * ambushMult then
 		return true
 	end
 	local newTier = pickWeighted(cfg.ambushTier)

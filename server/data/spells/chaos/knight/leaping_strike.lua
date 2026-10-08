@@ -1,4 +1,4 @@
--- Leaping Strike: jump next to the target (range 5) and strike it with weapon attack and skill.
+-- Vaulting Cleave: jump next to the target (range 5) and strike it with weapon attack and skill.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local combat = Combat()
@@ -8,8 +8,8 @@ combat:setParameter(COMBAT_PARAM_BLOCKARMOR, true)
 combat:setParameter(COMBAT_PARAM_USECHARGES, true)
 
 function onGetFormulaValues(player, skill, attack, factor)
-	local min = (player:getLevel() / 5) + (skill * attack * 0.07) + 20
-	local max = (player:getLevel() / 5) + (skill * attack * 0.14) + 40
+	local min = ((player:getLevel() / 5) + (skill * attack * 0.047) + 17) * 0.7
+	local max = ((player:getLevel() / 5) + (skill * attack * 0.093) + 33) * 0.7
 	return -min, -max
 end
 
@@ -23,6 +23,9 @@ function onCastSpell(creature, variant, isHotkey)
 	local target = ChaosSpell.targetOf(variant)
 	if not target or target == player then
 		return ChaosSpell.cancel(player, RETURNVALUE_YOUCANONLYUSEITONCREATURES)
+	end
+	if not ChaosSpell.canAttack(player, target) then
+		return ChaosSpell.cancel(player, RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER)
 	end
 	local from = player:getPosition()
 	local tpos = target:getPosition()

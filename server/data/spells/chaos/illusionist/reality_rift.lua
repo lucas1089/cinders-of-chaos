@@ -1,4 +1,4 @@
--- Reality Rift: drags monsters within 5 sqm next to the caster (monsters over 20000 max health are not moved),
+-- Tear in the Weave: drags monsters within 5 sqm next to the caster (monsters over 20000 max health are not moved),
 -- then two arcane-death implosions at 0.6s and 1.2s.
 dofile('data/spells/scripts/chaos/_common.lua')
 
@@ -20,7 +20,7 @@ function onCastSpell(creature, variant, isHotkey)
 	end
 	local p = player:getPosition()
 	local center = {x = p.x, y = p.y, z = p.z}
-	local min, max = ChaosSpell.mlValues(player, 2.8, 5.0, 60, 110)
+	local min, max = ChaosSpell.mlValues(player, 3.35, 6.0, 72, 132, 1.4)
 
 	ChaosSpell.fx(p, "arcane_circle", CONST_ME_MAGIC_BLUE)
 	for _, c in ipairs(ChaosSpell.enemiesAround(player, p, 5)) do

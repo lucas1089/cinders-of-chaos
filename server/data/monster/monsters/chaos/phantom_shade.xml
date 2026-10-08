@@ -19,7 +19,7 @@
 	</flags>
 	<attacks>
 		<attack name="melee" interval="1500" min="-8500" max="-11000"/>
-		<attack name="fear" interval="2000" chance="40" radius="4" target="0" success="35" duration="5000">
+		<attack name="dread" interval="2000" chance="40" radius="4" target="0" success="35" duration="5000">
 			<attribute key="areaEffect" value="rednote"/>
 		</attack>
 		<attack name="fire" interval="2000" chance="22" radius="6" target="1" min="-5200" max="-10000">

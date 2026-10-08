@@ -9,7 +9,7 @@ Classes
   c_missing         lookType > number of outfits in our dat
   x_source_empty    the source pair has no sprite at that lookType (cannot judge / cannot merge)
   item_look         monster uses lookTypeEx (an item sprite), not an outfit
-  e_undefined       name not found in Evolisca xml/registry nor in v6 lua (no lookType known)
+  e_undefined       name not found in donor server xml/registry nor in ds2 lua (no lookType known)
 For b/c rows the column `dup_in_ours` lists lookTypes in our dat whose picture equals the source picture
 (so the creature already exists under another id and only the monster's lookType needs remapping).
 """
@@ -69,7 +69,7 @@ def main():
     nours = len(od.outfits)
     m2 = json.load(open(a.mon2)); mon = json.load(open(a.mon))
     evo = evo_looks(a.evo_dir)
-    v6 = mon['v6']
+    ds2 = mon['ds2']
     cnt = m2['cnt']
 
     # index of our outfits by hash for duplicate lookup
@@ -93,12 +93,12 @@ def main():
     for name in m2['miss']:
         defs = {}
         if name in evo:
-            defs['evolisca'] = evo[name][1:]
-        if name in v6:
-            defs['v6'] = (v6[name]['look'], v6[name]['ex'])
+            defs['ds1'] = evo[name][1:]
+        if name in ds2:
+            defs['ds2'] = (ds2[name]['look'], ds2[name]['ex'])
         if not defs:
             rows.append(dict(name=name, source='none', lookType='', cls='e_undefined', spawns=cnt.get(name, 0),
-                             pixdiff='', dup_in_ours='', note='not in Evolisca registry/xml nor v6 lua'))
+                             pixdiff='', dup_in_ours='', note='not in donor server registry/xml nor ds2 lua'))
             continue
         # merge identical looks
         bylook = {}

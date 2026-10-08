@@ -257,7 +257,8 @@ m_BattlepassFunctions.updateExperience = function()
 	local width = math.ceil(m_BattlepassList.progressBar:getWidth() * percentValue)
 	m_BattlepassList.bar:setWidth(width)
 	m_BattlepassList.bar:setImageClip("0 0 " .. width .. " 32")
-	m_BattlepassList.progressLabel:setText(m_BattlepassFunctions.experience .. " / " .. nextLevelExperience)
+	m_BattlepassList.progressLabel:setText(formatShortNumber(m_BattlepassFunctions.experience) .. " / " .. formatShortNumber(nextLevelExperience))
+	m_BattlepassList.progressLabel:setTooltip(comma_value(m_BattlepassFunctions.experience) .. " / " .. comma_value(nextLevelExperience))
 	m_BattlepassList.progressLevel:setText(m_BattlepassFunctions.level)
 	
 	m_BattlepassList.currentId = 1
@@ -270,7 +271,7 @@ m_BattlepassFunctions.updateProgressBar = function(widget, amount, amountMax)
 	local width = math.ceil((questProgressBar:getWidth() - 4) * amount / amountMax)
 	bar:setWidth(width)
 	bar:setImageClip("0 0 " .. width .. " 26")
-	questProgressBar:getChildById("label"):setText(amount .. " / " .. amountMax)
+	questProgressBar:getChildById("label"):setText(formatShortNumber(amount) .. " / " .. formatShortNumber(amountMax))
 end
 
 m_BattlepassFunctions.getQuestWidget = function(id)
@@ -300,14 +301,14 @@ m_BattlepassFunctions.updateDescription = function(widget, questId, amount, valu
 	local questName = widget:getChildById("questName")
 	local questDescription = widget:getChildById("questDescription")
 	local questPoints = widget:getChildById("questPoints")
-	questPoints:setText(experience)
+	questPoints:setText(formatShortNumber(experience))
 
 	if questId == m_BattlepassFunctions.BATTLEPASS_QUEST_KILL_MONSTER then
 		questName:setText("Monster Hunter: " .. value)
-		questDescription:setText("Kill " .. value .. " " .. amount .. " times in total")
+		questDescription:setText("Kill " .. value .. " " .. formatShortNumber(amount) .. " times in total")
 	elseif questId == m_BattlepassFunctions.BATTLEPASS_QUEST_KILL_MONSTERS then
 		questName:setText("Species Killer: " .. value:upper())
-		questDescription:setText("Kill " .. amount .. " " .. value .. " of any kind")
+		questDescription:setText("Kill " .. formatShortNumber(amount) .. " " .. value .. " of any kind")
 	elseif questId == m_BattlepassFunctions.BATTLEPASS_QUEST_KILL_BOSS then
 		questName:setText("Boss Slayer: " .. value)
 		if value == "" then

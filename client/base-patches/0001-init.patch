@@ -1,6 +1,16 @@
 --- a/init.lua
 +++ b/init.lua
-@@ -24,10 +24,10 @@
+@@ -15,7 +15,8 @@
+   stats = "",
+   crash = "",
+   feedback = "",
+-  status = "",
++  -- players online on the login screen; same endpoint as clientServicesLink below
++  status = { "http://127.0.0.1:8090/clientservices" },
+   -- Direct HTTPS URL to a compatible OTMM file. The minimap download button
+   -- stays hidden while this value is empty.
+   minimap = ""
+@@ -24,10 +25,12 @@
  -- Direct connection to the TFS login server (no HTTP service required).
  Servers = {
    LocalTestServ = {
@@ -9,7 +19,9 @@
      host = "127.0.0.1",
      port = 7171,
 -    version = 860
-+    version = 1098
++    version = 1098,
++    -- boosted creature/boss and event calendar on the login screen (server/tools/clientservices.py)
++    clientServicesLink = "http://127.0.0.1:8090/clientservices"
    }
  }
  

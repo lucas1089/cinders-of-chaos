@@ -2,7 +2,7 @@
 
 local bankBalanceOpCode = 60
 
--- Evolisca ships this helper in its gamelib; the base client does not, so keep a local copy.
+-- donor server ships this helper in its gamelib; the base client does not, so keep a local copy.
 local function sendAction(opcode, action, data)
 	local protocolGame = g_game.getProtocolGame()
 	if protocolGame then
@@ -51,7 +51,7 @@ function bankOpcode(protocol, code, buffer)
 	end)
 
 	if not json_status then
-		g_logger.error("[bank] JSON error: " .. data)
+		g_logger.error("[bank] JSON error: " .. tostring(json_data))
 
 		return false
 	end
@@ -71,8 +71,15 @@ function bankOpcode(protocol, code, buffer)
 end
 
 function refresh()
-	bankingWindow.gold.item:setItemId(3031)
-	bankingWindow.star.item:setItemId(35572)
+	-- the tab buttons carry an item icon only when the style defines one (CustomTabButton may not)
+	local goldIcon = bankingWindow.gold:getChildById("item")
+	if goldIcon then
+		goldIcon:setItemId(3031)
+	end
+	local starIcon = bankingWindow.star:getChildById("item")
+	if starIcon then
+		starIcon:setItemId(35572)
+	end
 	bankRadioTabs:selectWidget(bankingWindow.gold)
 	bankingWindow.gold:setOn(true)
 end
@@ -82,14 +89,19 @@ function openBank(data, currencyName)
 		return
 	end
 
+	-- balances are shown short (15.3k), exact in the tooltip; the deposit/withdraw/transfer dialogs stay exact
+	local function showAmount(widget, amount)
+		widget:setText(formatShortNumber(tonumber(amount) or 0))
+		widget:setTooltip(comma_value(amount))
+	end
 	if currencyName == "gold" then
-		bankingWindow.textEdit2:setText(comma_value(data[1]))
-		bankingWindow.textEdit3:setText(comma_value(data[2]))
+		showAmount(bankingWindow.textEdit2, data[1])
+		showAmount(bankingWindow.textEdit3, data[2])
 		bankingWindow.item:setItemId(3031)
 		bankingWindow.item2:setItemId(3031)
 	else
-		bankingWindow.textEdit2:setText(comma_value(data[4]))
-		bankingWindow.textEdit3:setText(comma_value(data[3]))
+		showAmount(bankingWindow.textEdit2, data[4])
+		showAmount(bankingWindow.textEdit3, data[3])
 		bankingWindow.item:setItemId(35572)
 		bankingWindow.item2:setItemId(35572)
 	end

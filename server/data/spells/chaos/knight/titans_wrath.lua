@@ -1,4 +1,4 @@
--- Titan's Wrath: two crushing blows (0 / 0.6s) in a 7x7 circle; enemies are slowed 70% for 4s.
+-- Colossus Fall: two crushing blows (0 / 0.6s) in a 7x7 circle; enemies are slowed 70% for 4s.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local combat = Combat()
@@ -9,8 +9,8 @@ combat:setParameter(COMBAT_PARAM_USECHARGES, true)
 combat:setArea(createCombatArea(AREA_CIRCLE3X3))
 
 function onGetFormulaValues(player, skill, attack, factor)
-	local min = (player:getLevel() / 5) + (skill * attack * 0.10) + 40
-	local max = (player:getLevel() / 5) + (skill * attack * 0.18) + 70
+	local min = ((player:getLevel() / 5) + (skill * attack * 0.052) + 20) * 0.7
+	local max = ((player:getLevel() / 5) + (skill * attack * 0.093) + 40) * 0.7
 	return -min, -max
 end
 

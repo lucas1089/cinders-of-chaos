@@ -14,9 +14,10 @@ import os, re, struct, sys
 TOK = re.compile(rb'\xfd.|\xfe|\xff', re.S)
 UNESC = re.compile(rb'\xfd(.)', re.S)
 
-def otb_ids(path):
+def otb_ids(path, with_client=False):
+    """set of server ids; with_client=True -> {server id: client id or None} (attribute 0x11)."""
     d = open(path, 'rb').read()
-    pending, first, valid = None, True, set()
+    pending, first, valid = None, True, {}
     spans = []
     for m in TOK.finditer(d, 4):
         s = m.group()
@@ -29,11 +30,14 @@ def otb_ids(path):
         if first: first = False; continue
         pl = UNESC.sub(rb'\1', d[a:b])
         k = 4
+        sid = cid = None
         while k + 3 <= len(pl):
             at, ln = pl[k], struct.unpack_from('<H', pl, k + 1)[0]; k += 3
-            if at == 0x10 and ln == 2: valid.add(struct.unpack_from('<H', pl, k)[0])
+            if at == 0x10 and ln == 2: sid = struct.unpack_from('<H', pl, k)[0]
+            if at == 0x11 and ln == 2: cid = struct.unpack_from('<H', pl, k)[0]
             k += ln
-    return valid
+        if sid: valid[sid] = cid
+    return valid if with_client else set(valid)
 
 def parse(path):
     t = open(path, errors='ignore').read()

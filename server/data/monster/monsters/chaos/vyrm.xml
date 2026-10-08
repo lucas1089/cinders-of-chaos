@@ -29,7 +29,7 @@
 	</script>
 	<attacks>
 		<attack name="melee" interval="1000" min="-25000" max="-35000" />
-		<attack name="Ice Strike" interval="2000" chance="45" min="-25000" max="-35000"/>
+		<attack name="Frostbite" interval="2000" chance="45" min="-25000" max="-35000"/>
 		<attack name="gaz'haragoth iceball" interval="2000" chance="40" min="-30000" max="-36000"/>
 		<attack name="ranged_stun_stone" interval="2000" chance="40" range="5"/>
 	</attacks>

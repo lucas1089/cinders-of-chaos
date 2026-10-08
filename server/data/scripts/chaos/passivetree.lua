@@ -8,17 +8,21 @@
 --                     resetPreset N                      -> costs level*250 gold, then sendNodes + sendPoints
 --                     refund                             -> resync (sendPoints + sendNodes)
 --   server -> client  {"action":"sendPoints","data":<free points number>}
---                     {"action":"sendNodes","data":{"preset":N,"presetsTable":[{"name":".."}],"nodes":[ids]}}
+--                     {"action":"sendNodes","data":{"preset":N,"presetsTable":[{"name":".."}],"nodes":[ids],"vocation":"knight"}}
 --                     {"action":"sendMessage","data":{"title":"..","message":".."}}
+--   Paragon track (paragon.lua, ChaosParagon.actions), same opcode:
+--   client -> server  paragonRequest                     -> server paragonState
+--                     paragonApply {alloc:{stat:n}}      -> absolute allocation, validated; saved, applied, paragonState
+--                     paragonReset                       -> costs level*250 gold, then paragonState
+--   server -> client  {"action":"paragonState","data":{unlocked, level, startLevel, total, spent, free, resetCost, categories}}
 --
 -- Tree topology comes from passivetree_data.lua (generated from the client's nodes.lua).
 -- The server validates every save: known ids, no duplicates, every node connected to the root
 -- (node 1) through other allocated nodes, and #nodes <= points the player owns.
 --
--- NOT implemented: applying the node bonuses to combat/stats. ChaosPassiveTree.getBonuses(player)
--- returns the summed customStats (e.g. {strength=3, incrementFire=10}); wire those into your
--- damage/absorb/skill code, or register appliers in ChaosPassiveTree.appliers (called after
--- each save and at login). See README.
+-- The node bonuses are applied by passivetree_effects.lua through ChaosPassiveTree.listeners
+-- (called after each save, reset and at login with the summed customStats). You can also read
+-- ChaosPassiveTree.getBonuses(player) or register per-stat appliers in ChaosPassiveTree.appliers.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -45,7 +49,7 @@ local function sendMessageBox(player, title, message)
 end
 
 local function totalPoints(player)
-	local byLevel = math.max(0, player:getLevel() - cfg.startLevel) * cfg.pointsPerLevel
+	local byLevel = math.floor(math.max(0, player:getLevel() - cfg.startLevel) / (cfg.levelsPerPoint or 1))
 	local extra = player:getStorageValue(Chaos.storage.passiveExtraPoints)
 	return byLevel + math.max(0, extra)
 end
@@ -100,7 +104,9 @@ local function sendNodes(player, rows)
 	Chaos.send(player, OPCODE, "sendNodes", {
 		preset = active and active.preset or 0,
 		presetsTable = presetsTable,
-		nodes = active and active.nodes or {}
+		nodes = active and active.nodes or {},
+		-- which per-vocation node variants (keystones) the client must show: the ones the server applies
+		vocation = ChaosPassiveTree.vocationKey and ChaosPassiveTree.vocationKey(player) or nil
 	})
 end
 
@@ -145,16 +151,30 @@ local function validateNodes(player, rawNodes)
 	return ids
 end
 
+-- vocation key of the per-vocation node variants (keystones), by the client's vocation id like the client module
+local VOCATION_KEY = {[1] = "knight", [2] = "paladin", [3] = "sorcerer", [4] = "druid", [5] = "illusionist", [6] = "monk"}
+function ChaosPassiveTree.vocationKey(player)
+	local vocation = player:getVocation()
+	return vocation and VOCATION_KEY[vocation:getClientId()] or nil
+end
+
+-- stats a node gives this vocation: its own variant (node.v) if it has one, else the shared stats
+function ChaosPassiveTree.nodeStats(node, vocationKey)
+	return (node.v and vocationKey and node.v[vocationKey]) or node.s
+end
+
 function ChaosPassiveTree.getBonuses(player)
 	local tree = getTree()
 	local rows = loadPresets(player:getGuid())
 	local active = activePreset(rows)
 	local bonuses = {}
+	local vocationKey = ChaosPassiveTree.vocationKey(player)
 	if active then
 		for _, id in ipairs(active.nodes) do
 			local node = tree.nodes[id]
-			if node and node.s then
-				for stat, value in pairs(node.s) do
+			local stats = node and ChaosPassiveTree.nodeStats(node, vocationKey)
+			if stats then
+				for stat, value in pairs(stats) do
 					bonuses[stat] = (bonuses[stat] or 0) + value
 				end
 			end
@@ -163,15 +183,26 @@ function ChaosPassiveTree.getBonuses(player)
 	return bonuses
 end
 
+-- last computed bonuses per player id (read by passivetree_effects.lua during combat)
+ChaosPassiveCache = ChaosPassiveCache or {}
+-- listeners[i] = function(player, bonuses) : called once after every apply (login, save, reset)
+ChaosPassiveTree.listeners = ChaosPassiveTree.listeners or {}
+
 local function applyBonuses(player)
-	if next(ChaosPassiveTree.appliers) == nil then
-		return
-	end
 	local bonuses = ChaosPassiveTree.getBonuses(player)
+	-- the Paragon track's percentages go into the same table (keys paragonX), so every effect sums tree + Paragon
+	if ChaosParagon and ChaosParagon.addBonuses then
+		ChaosParagon.addBonuses(player, bonuses)
+	end
+	ChaosPassiveCache[player:getId()] = bonuses
 	for stat, applier in pairs(ChaosPassiveTree.appliers) do
 		applier(player, bonuses[stat] or 0)
 	end
+	for _, listener in ipairs(ChaosPassiveTree.listeners) do
+		listener(player, bonuses)
+	end
 end
+ChaosPassiveTree.apply = applyBonuses
 
 local function handleSave(player, data)
 	if type(data) ~= "table" then
@@ -234,10 +265,45 @@ local function handleReset(player, data)
 	sendMessageBox(player, "Reset", string.format("Your passive tree was reset for %d gold coins.", cost))
 end
 
+-- store services (shop_services.lua): free reset of every preset (respec offer, vocation change)
+function ChaosPassiveTree.hasAllocation(player)
+	for _, row in ipairs(loadPresets(player:getGuid())) do
+		if #row.nodes > 0 then
+			return true
+		end
+	end
+	return false
+end
+
+function ChaosPassiveTree.resetAll(player)
+	db.query("UPDATE `" .. T .. "` SET `nodes` = '' WHERE `player_id` = " .. player:getGuid())
+	sendNodes(player)
+	sendPoints(player)
+	applyBonuses(player)
+end
+
 local LoginEvent = CreatureEvent("ChaosPassiveTreeLogin")
+
+-- presets that hold more nodes than the character owns points (the point rate went down, or the level dropped)
+-- are emptied for free, so no allocation is ever larger than the points behind it
+local function refundOverBudget(player)
+	local total = totalPoints(player)
+	local refunded = 0
+	for _, row in ipairs(loadPresets(player:getGuid())) do
+		if #row.nodes > total then
+			db.query("UPDATE `" .. T .. "` SET `nodes` = '' WHERE `player_id` = " .. player:getGuid() .. " AND `preset` = " .. row.preset)
+			refunded = refunded + 1
+		end
+	end
+	if refunded > 0 then
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+			"Your passive tree was refunded for free: it held more nodes than your %d passive points. Please allocate them again.", total))
+	end
+end
 
 function LoginEvent.onLogin(player)
 	player:registerEvent("ChaosPassiveTreeExtended")
+	refundOverBudget(player)
 	applyBonuses(player)
 	return true
 end
@@ -265,6 +331,8 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 	elseif action == "refund" then
 		sendNodes(player)
 		sendPoints(player)
+	elseif ChaosParagon and ChaosParagon.actions and ChaosParagon.actions[action] then
+		ChaosParagon.actions[action](player, msg.data)
 	end
 end
 

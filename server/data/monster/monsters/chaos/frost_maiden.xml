@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-<monster name="Frost Maiden" nameDescription="a frost maiden" race="blood" experience="52000" skulled="1" evented = "4" looting="1" speed="380" manacost="0">
-    <health now="58000" max="58000"/>
-     <level min="890" max="950"/>
+<monster name="Frost Maiden" nameDescription="a frost maiden" race="blood" experience="8450" skulled="1" evented = "4" looting="1" speed="50" manacost="0">
+    <health now="16300" max="16300"/>
+     <level min="800" max="840"/>
     <look type="149" head="0" body="47" legs="105" feet="105" addons="0" corpse="6068"/>
     <targetchange interval="2000" chance="5"/>
     <strategy attack="100" defense="0"/>
@@ -19,26 +19,21 @@
         <flag targetdistance="1"/>
         <flag runonhealth="0"/>
     </flags>
-    <script>
-        <event name="auto_loot"/>
-        <event name="orb_bonus"/>
-        <event name="crusd_chest_bonus"/>
-    </script>
     <attacks>
-        <attack name="ice" interval="2000" range="5" target="1" min="-2000" max="-2800">
+        <attack name="ice" interval="2000" range="5" target="1" min="-240" max="-340" chance="100">
             <attribute key="shootEffect" value="ice"/>
             <attribute key="areaEffect" value="poff"/>
         </attack>
         <attack name="outfit" interval="1000" chance="10" range="7" item="7172" duration="8000">
             <attribute key="areaEffect" value="blueshimmer"/>
         </attack>
-        <attack name="ice" interval="1800" chance="45" range="7" spread="3" min="-1300" max="-2500">
+        <attack name="ice" interval="1800" chance="45" range="7" spread="3" min="-160" max="-300">
             <attribute key="areaEffect" value="icearea"/>
         </attack>
-        <attack name="lifedrain" interval="2000" chance="34" length="8" spread="3" min="-1100" max="-2100">
+        <attack name="lifedrain" interval="2000" chance="34" length="8" spread="3" min="-130" max="-260">
             <attribute key="areaEffect" value="poff"/>
         </attack>
-        <attack name="physical" interval="1500" chance="25" range="7" radius="3" target="1" min="-1800" max="-2800">
+        <attack name="physical" interval="1500" chance="25" range="7" radius="3" target="1" min="-220" max="-340">
             <attribute key="shootEffect" value="snowball"/>
         </attack>
         <attack name="speed" interval="1000" chance="10" range="7" speedchange="-600" duration="20000">
@@ -50,15 +45,15 @@
             <attribute key="areaEffect" value="blueshimmer"/>
         </defense>
     </defenses>
-    <elements>
-    <element firePercent="25" />
-    <element earthPercent="25" />
-    <element energyPercent="25" />
-    <element deathPercent="25" />
-    <element physicalPercent="25" />
-    <element holyPercent="25" />
-    <element icePercent="25" />
-  </elements>
+	<elements>
+		<element physicalPercent="-15"/>
+		<element holyPercent="-15"/>
+		<element firePercent="20"/>
+		<element energyPercent="20"/>
+		<element icePercent="20"/>
+		<element earthPercent="20"/>
+		<element deathPercent="10"/>
+	</elements>
     <immunities>
         <immunity paralyze="1"/>
         <immunity outfit="1"/>
@@ -75,7 +70,21 @@
         <item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
         <item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
         <item id="2152" countmax="4" chance="3500"/><!-- Platinum Coin -->
-        <item id="11302;11301;11304;11303;8891;9931;11356;2645" countmax="1" chance="3000" /><!-- zaoan helmet -->
-        <item id="8889;8887;12607;8880;2522;2520;11117;5741" countmax="1" chance="2000" /><!-- skullcrackerarmor;frozen plate;elite draken mail;swamplair armor -->
+        <item id="11302" countmax="1" chance="375" /><!-- zaoan helmet -->
+        <item id="11301" countmax="1" chance="375" />
+        <item id="11304" countmax="1" chance="375" />
+        <item id="11303" countmax="1" chance="375" />
+        <item id="8891" countmax="1" chance="375" />
+        <item id="9931" countmax="1" chance="375" />
+        <item id="11356" countmax="1" chance="375" />
+        <item id="2645" countmax="1" chance="375" />
+        <item id="8889" countmax="1" chance="250" /><!-- skullcrackerarmor;frozen plate;elite draken mail;swamplair armor -->
+        <item id="8887" countmax="1" chance="250" />
+        <item id="12607" countmax="1" chance="250" />
+        <item id="8880" countmax="1" chance="250" />
+        <item id="2522" countmax="1" chance="250" />
+        <item id="2520" countmax="1" chance="250" />
+        <item id="11117" countmax="1" chance="250" />
+        <item id="5741" countmax="1" chance="250" />
     </loot>
 </monster>

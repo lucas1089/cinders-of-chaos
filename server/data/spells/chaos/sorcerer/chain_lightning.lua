@@ -1,4 +1,4 @@
--- Chain Lightning: hits the target, then jumps to up to 3 more monsters within 3 sqm (70% damage per jump).
+-- Forked Storm: hits the target, then jumps to up to 3 more monsters within 3 sqm (70% damage per jump).
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local JUMPS = 3
@@ -26,8 +26,11 @@ function onCastSpell(creature, variant, isHotkey)
 	if not first or first == player then
 		return ChaosSpell.cancel(player, RETURNVALUE_YOUCANONLYUSEITONCREATURES)
 	end
+	if not ChaosSpell.canAttack(player, first) then
+		return ChaosSpell.cancel(player, RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER)
+	end
 
-	local min, max = ChaosSpell.mlValues(player, 2.6, 4.4, 25, 50)
+	local min, max = ChaosSpell.mlValues(player, 2.85, 4.85, 28, 55, 1.2)
 	local casterId = player:getId()
 	strike(casterId, player:getPosition(), first:getId(), 1, min, max)
 

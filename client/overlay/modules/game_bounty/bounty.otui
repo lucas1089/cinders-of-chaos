@@ -1,0 +1,177 @@
+// Bounty board window (game_bounty). Styles from client_chaos_theme (styles.otui).
+
+BountyRow < ChaosPanelDark
+  height: 76
+  margin-bottom: 4
+  phantom: false
+
+  UICreature
+    id: creature
+    size: 56 56
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    phantom: true
+
+  UILabel
+    id: kind
+    anchors.left: creature.right
+    anchors.top: parent.top
+    margin-left: 8
+    margin-top: 1
+    text-auto-resize: true
+    font: verdana-11px-rounded
+    color: #8c8070
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: kind.right
+    anchors.right: action.left
+    anchors.top: parent.top
+    margin-left: 6
+    margin-top: 1
+    margin-right: 6
+    text-align: left
+    font: verdana-11px-rounded
+    color: #e8b84a
+    phantom: true
+
+  UILabel
+    id: task
+    anchors.left: kind.left
+    anchors.right: action.left
+    anchors.top: kind.bottom
+    margin-top: 3
+    margin-right: 6
+    text-align: left
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    phantom: true
+
+  UILabel
+    id: reward
+    anchors.left: kind.left
+    anchors.right: action.left
+    anchors.top: task.bottom
+    margin-top: 3
+    margin-right: 6
+    text-align: left
+    font: verdana-11px-antialised
+    color: #f6cf72
+    phantom: false
+
+  ChaosProgressBar
+    id: progress
+    anchors.left: kind.left
+    anchors.right: action.left
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    height: 14
+    text-offset: 0 1
+    font: verdana-11px-antialised
+
+  ChaosButton
+    id: action
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    width: 86
+
+BountyTab < ChaosTabButton
+  width: 118
+  margin-right: 4
+
+ChaosMainWindow
+  id: bountyWindow
+  size: 640 500
+  !text: tr('Bounty Board')
+  @onEscape: modules.game_bounty.hide()
+
+  ChaosLabel
+    id: activeLabel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    text-auto-resize: true
+
+  ChaosLabel
+    id: weekLabel
+    anchors.top: parent.top
+    anchors.left: activeLabel.right
+    margin-left: 18
+    text-auto-resize: true
+    phantom: false
+
+  ChaosLabel
+    id: timerLabel
+    anchors.top: parent.top
+    anchors.right: parent.right
+    text-auto-resize: true
+    color: #f6cf72
+
+  UIWidget
+    id: tabs
+    anchors.top: activeLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    height: 24
+    phantom: true
+    layout:
+      type: horizontalBox
+
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: tabs.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: hintLabel.top
+    margin-top: 4
+    margin-bottom: 6
+    padding: 3
+
+  UIScrollArea
+    id: contractList
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: listScroll.left
+    anchors.bottom: listFrame.bottom
+    margin: 4
+    layout:
+      type: verticalBox
+    vertical-scrollbar: listScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: listScroll
+    anchors.top: listFrame.top
+    anchors.right: listFrame.right
+    anchors.bottom: listFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 40
+    pixels-scroll: true
+
+  ChaosLabelDim
+    id: emptyText
+    anchors.centerIn: listFrame
+    !text: tr('No contracts for these levels today.')
+    text-auto-resize: true
+    visible: false
+
+  ChaosLabelDim
+    id: hintLabel
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    margin-right: 8
+    text-align: left
+    text-wrap: true
+    height: 28
+    !text: tr('Your own kills and kills of party members near you count. Rewards are paid at once; contracts expire at the next roll.')
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    !text: tr('Close')
+    @onClick: modules.game_bounty.hide()

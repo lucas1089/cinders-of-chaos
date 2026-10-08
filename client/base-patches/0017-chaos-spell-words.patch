@@ -1,0 +1,68 @@
+# Chaos spell words: the helper casts magic shield with the words from the spell table, and the action bar /
+# hotkey param fix for creature illusion knows its Chaos words (vael kal nir).
+diff -ru a/mods/client_settings/classes/custom-hotkeys.lua b/mods/client_settings/classes/custom-hotkeys.lua
+--- a/mods/client_settings/classes/custom-hotkeys.lua	2026-10-08 03:20:49.523160072 +0000
++++ b/mods/client_settings/classes/custom-hotkeys.lua	2026-10-08 03:20:49.541702847 +0000
+@@ -284,9 +284,9 @@
+     local paramText = window.contentPanel.paramText:getText()
+ 
+ 		local check = (param .. " " .. paramText)
+-		if string.find(check, "utevo res ina") then
+-			param = "utevo res ina"
+-			paramText = string.gsub(paramText, "ina ", "")
++		if string.find(check, "vael kal nir") then
++			param = "vael kal nir"
++			paramText = string.gsub(paramText, "nir ", "")
+ 		end
+ 
+     if paramText:lower():find("up|down") then
+diff -ru a/mods/game_helper/tools_panel.lua b/mods/game_helper/tools_panel.lua
+--- a/mods/game_helper/tools_panel.lua	2026-10-08 03:20:49.497122191 +0000
++++ b/mods/game_helper/tools_panel.lua	2026-10-08 03:20:49.540494472 +0000
+@@ -1054,6 +1054,12 @@
+ -- MAGIC SHIELD FUNCTIONS (Sorcerer/Druid Only)
+ -- ============================================================
+ 
++-- Chaos: spell words come from the client's spell table (the server's words, renamed by game_chaosspells)
++local function spellWords(spellId, fallback)
++  local spell = Spells and Spells.getSpellDataById and Spells.getSpellDataById(spellId)
++  return spell and spell.words or fallback
++end
++
+ -- Toggle utamo vita auto-cast
+ function tools.toggleUtamoVita(checked)
+   local helperConfig = _Helper.getHelperConfig and _Helper.getHelperConfig()
+@@ -1186,7 +1192,7 @@
+   if exanaEnabled and healthPercent > exanaHpPercent and hasMShield then
+     if not isGroupOnCooldown(SUPPORT_GROUP_ID) then
+       safeDoThing(false)
+-      g_game.talk("exana vita")
++      g_game.talk(spellWords(CANCEL_MAGIC_SHIELD_SPELL_ID, "exana vita"))
+       safeDoThing(true)
+       return
+     end
+@@ -1199,7 +1205,7 @@
+   if utamoEnabled and healthPercent <= utamoHpPercent and not hasMShield then
+     if not isGroupOnCooldown(SUPPORT_GROUP_ID) then
+       safeDoThing(false)
+-      g_game.talk("utamo vita")
++      g_game.talk(spellWords(MAGIC_SHIELD_SPELL_ID, "utamo vita"))
+       safeDoThing(true)
+       return
+     end
+diff -ru a/modules/game_actionbar/actionbar.lua b/modules/game_actionbar/actionbar.lua
+--- a/modules/game_actionbar/actionbar.lua	2026-10-08 03:20:49.509668102 +0000
++++ b/modules/game_actionbar/actionbar.lua	2026-10-08 03:20:49.541169846 +0000
+@@ -2047,9 +2047,9 @@
+ 		local paramText = window.contentPanel.paramText:getText()
+ 
+ 		local check = (param .. " " .. paramText)
+-		if string.find(check, "utevo res ina") then
+-			param = "utevo res ina"
+-			paramText = string.gsub(paramText, "ina ", "")
++		if string.find(check, "vael kal nir") then
++			param = "vael kal nir"
++			paramText = string.gsub(paramText, "nir ", "")
+ 		end
+ 
+ 		if paramText:lower():find("up|down") then

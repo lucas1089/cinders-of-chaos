@@ -1,4 +1,4 @@
--- Meteor Strike: marks the target's position, the meteor lands 1.2s later (fire, 5x5) and sets enemies ablaze.
+-- Falling Pyre: marks the target's position, the meteor lands 1.2s later (fire, 5x5) and sets enemies ablaze.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local area = createCombatArea(AREA_CIRCLE2X2)
@@ -27,7 +27,7 @@ function onCastSpell(creature, variant, isHotkey)
 		return ChaosSpell.cancel(player, RETURNVALUE_YOUCANONLYUSEITONCREATURES)
 	end
 	local pos = target:getPosition()
-	local min, max = ChaosSpell.mlValues(player, 5.5, 9.0, 120, 220)
+	local min, max = ChaosSpell.mlValues(player, 6.6, 10.8, 145, 265, 1.2)
 
 	ChaosSpell.shoot(player:getPosition(), pos, "fire_bolt", CONST_ANI_FIRE)
 	ChaosSpell.fx(pos, "arcane_circle", CONST_ME_MAGIC_RED)

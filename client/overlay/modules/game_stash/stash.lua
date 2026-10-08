@@ -21,17 +21,22 @@ Stash.Init = function()
 		onWalk = Stash.OnWalkClose
 	})
 
-	StashButton = modules.game_extramenu.Menu.AddButton("Stash",  function() modules.game_stash.vipToggle() end, "stash", nil)
+	-- the extra-menu button only exists in the client this module came from; the Chaos top bar has a stash icon
+	if modules.game_extramenu and modules.game_extramenu.Menu then
+		StashButton = modules.game_extramenu.Menu.AddButton("Stash",  function() modules.game_stash.vipToggle() end, "stash", nil)
+	end
 	Stash.Progress = g_ui.displayUI("stash_progress")
 	Stash.Progress:hide()
 
-	Keybind.new("Windows", "Toggle Stash", "", "")
-	Keybind.bind("Windows", "Toggle Stash", {
-		{
-		  type = KEY_DOWN,
-		  callback = Stash.Toggle,
-		}
-	})
+	if Keybind then
+		Keybind.new("Windows", "Toggle Stash", "", "")
+		Keybind.bind("Windows", "Toggle Stash", {
+			{
+			  type = KEY_DOWN,
+			  callback = Stash.Toggle,
+			}
+		})
+	end
 
 	Stash.HookDragHint()
 end
@@ -86,7 +91,9 @@ Stash.Terminate = function()
 		Stash.Progress = nil
 	end
 
-	Keybind.delete("Windows", "Toggle Stash")
+	if Keybind then
+		Keybind.delete("Windows", "Toggle Stash")
+	end
 
 	disconnect(g_game, {
 		onGameStart = Stash.OnStart,
@@ -270,7 +277,7 @@ Stash.DataManager = function(protocol, opcode, buffer)
 	end
 end
 
--- Replaces Black Talon's client_manager: decode the JSON payload and dispatch.
+-- Replaces the donor client's client_manager: decode the JSON payload and dispatch.
 Stash.OnExtended = function(protocol, opcode, buffer)
 	local ok, data = pcall(json.decode, buffer)
 	if ok and type(data) == "table" and type(data.data) == "table" then
@@ -369,7 +376,7 @@ Stash.Define = function()
 	Stash.CreateItem = function(Data)
 		local itemWidget = g_ui.createWidget('SupplyItem', Stash.UI.SupplyList)
 		itemWidget:setItemId(Data.sprite)
-		itemWidget.countbase:setText(Data.count)
+		itemWidget.countbase:setText(formatShortNumber(Data.count)) -- short (15.3k); the withdraw dialog shows the exact count
 		-- UIItem's internal count is uint16 (see client/src/client/item.h),
 		-- so passing the raw stash count overflows for any value >= 65536 and
 		-- silently displays a wrong stack-art tier. The number the player sees

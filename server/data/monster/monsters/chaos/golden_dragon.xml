@@ -25,7 +25,7 @@
 	</script>
 	<attacks>
 		<attack name="melee" interval="2000" min="-15000" max="-18000"/>
-		<attack name="fear" interval="4000" chance="15" radius="4" target="0" success="35" duration="5000">
+		<attack name="dread" interval="4000" chance="15" radius="4" target="0" success="35" duration="5000">
 			<attribute key="areaEffect" value="rednote"/>
 		</attack>
 		<attack name="fire" interval="2000" chance="30" range="7" radius="4" target="1" min="-18000" max="-22000">

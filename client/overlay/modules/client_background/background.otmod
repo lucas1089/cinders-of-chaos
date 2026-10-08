@@ -1,9 +1,0 @@
-Module
-  name: client_background
-  description: Handles the background of the login screen (Chaos dark-fantasy artwork)
-  author: edubart, restyled for project-chaos
-  website: https://github.com/edubart/otclient
-  sandboxed: true
-  scripts: [ background ]
-  @onLoad: init()
-  @onUnload: terminate()

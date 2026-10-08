@@ -1,0 +1,164 @@
+old_name,new_name,words,rune_item
+Annihilation,Ruinous Cleave,exori gran ico,
+Apprentice's Strike,Kindling Spark,exori min flam,
+Berserk,Reaver's Spin,exori,
+Brutal Strike,Bonebreaker,exori ico,
+Buzz,Static Sting,exori infir vis,
+Chill Out,Rime Breath,exevo infir frigo hur,
+Curse,Hex of Withering,utori mort,
+Death Strike,Gravetouch,exori mort,
+Divine Caldera,Sanctum Burst,exevo mas san,
+Divine Grenade,Radiant Shard,exevo tempo mas san,
+Divine Missile,Dawnbolt,exori san,
+Executioners Throw,Headsman's Hurl,exori amp kor,
+Electrify,Galvanic Mark,utori vis,
+Energy Beam,Stormlance,exevo vis lux,
+Energy Strike,Arc Bolt,exori vis,
+Arcane Strike,Riftbolt,exori ar,
+Energy Wave,Tempest Fan,exevo vis hur,
+Envenom,Blackroot Venom,utori pox,
+Ice Burst,Shatterfrost,exevo ulus frigo,
+Terra Burst,Quakeburst,exevo ulus tera,
+Eternal Winter,Endless Rime,exevo gran mas frigo,
+Grand Death Beam,Lance of the Grave,exevo max mort,
+Ethereal Spear,Phantom Javelin,exori con,
+Fierce Berserk,Butcher's Gyre,exori gran,
+Fire Wave,Cinder Fan,exevo flam hur,
+Expose Weakness,Sunder Guard,exori moe,
+Great Fire Wave,Pyre Torrent,exevo gran flam hur,
+Flame Strike,Ember Lash,exori flam,
+Front Sweep,Scything Arc,exori min,
+Great Energy Beam,Thunder Lance,exevo gran vis lux,
+Groundshaker,Earthrend,exori mas,
+Hell's Core,Infernal Heart,exevo gran mas flam,
+Holy Flash,Glare of Dawn,utori san,
+Ice Strike,Frostbite,exori frigo,
+Ice Wave,Glacier Fan,exevo frigo hur,
+Ignite,Smoulder Brand,utori flam,
+Inflict Wound,Rending Mark,utori kor,
+Lightning,Skyfang,exori amp vis,
+Mud Attack,Bog Splatter,exori infir tera,
+Physical Strike,Hammerfall Palm,exori moe ico,
+Practice Fire Wave,Novice's Cinders,exevo dis flam hur,
+Rage of the Skies,Storm Crown's Wrath,exevo gran mas vis,
+Scorch,Searing Gust,exevo infir flam hur,
+Strong Energy Strike,Greater Arc Bolt,exori gran vis,
+Strong Ethereal Spear,Greater Phantom Javelin,exori gran con,
+Strong Flame Strike,Greater Ember Lash,exori gran flam,
+Strong Ice Strike,Greater Frostbite,exori gran frigo,
+Strong Ice Wave,Greater Glacier Fan,exevo gran frigo hur,
+Strong Terra Strike,Greater Thornlash,exori gran tera,
+Terra Strike,Thornlash,exori tera,
+Terra Wave,Bramble Fan,exevo tera hur,
+Ultimate Energy Strike,Supreme Arc Bolt,exori max vis,
+Ultimate Flame Strike,Supreme Ember Lash,exori max flam,
+Ultimate Ice Strike,Supreme Frostbite,exori max frigo,
+Ultimate Terra Strike,Supreme Thornlash,exori max tera,
+Whirlwind Throw,Cyclone Hurl,exori hur,
+Wrath of Nature,Wildwood Ruin,exevo gran mas tera,
+Bruise Bane,Salve of Scars,exura infir ico,
+Cure Bleeding,Staunch Blood,exana kor,
+Cure Burning,Douse Embers,exana flam,
+Cure Curse,Lift Hex,exana mort,
+Cure Splash,Wash Taint,exana splash,
+Cure Bewitched,Break Glamour,exana arcane,
+Cure Electrification,Ground Static,exana vis,
+Cure Poison,Purge Venom,exana pox,
+Divine Healing,Dawn's Mending,exura san,
+Heal Friend,Kindred Mend,exura sio,
+Natures Embrace,Heartwood Embrace,exura gran sio,
+Intense Healing,Deep Mending,exura gran,
+Intense Recovery,Greater Second Wind,utura gran,
+Intense Wound Cleansing,Warlord's Resolve,exura gran ico,
+Light Healing,Minor Mending,exura,
+Magic Patch,Arcane Stitch,exura infir,
+Mass Healing,Circle of Mending,exura gran mas res,
+Practice Healing,Novice's Mending,exura dis,
+Recovery,Second Wind,utura,
+Salvation,Lightbearer's Grace,exura gran san,
+Ultimate Healing,Grand Mending,exura vita,
+Restoration,Rebirth of Flesh,exura max vita,
+Wound Cleansing,Battle Salve,exura ico,
+Fair Wound Cleansing,Iron Salve,exura med ico,
+Divine Empowerment,Hallowed Ground,utevo grav san,
+Blood Rage,Bloodlust,utito tempo,
+Chivalrous Challenge,Duelist's Oath,exeta amp res,
+Cancel Invisibility,Unveil,exana ina,
+Challenge,Taunt of Iron,exeta res,
+Charge,Warhorse Rush,utani tempo hur,
+Creature Illusion,Skinchanger's Guise,utevo res ina,
+Find Person,Bloodtrail,exiva,
+Food,Conjure Rations,exevo pan,
+Great Light,Greater Lantern,utevo gran lux,
+Haste,Fleetfoot,utani hur,
+Invisibility,Shroud of Shadows,utana vid,
+Levitate,Wraith Step,exani hur,
+Light,Lantern,utevo lux,
+Magic Rope,Ghost Rope,exani tera,
+Magic Shield,Ward of the Mind,utamo vita,
+Protector,Bulwark,utamo tempo,
+Sharpshooter,Hawkeye,utito tempo san,
+Strong Haste,Galeborne Stride,utani gran hur,
+Summon Creature,Call Thrall,utevo res,
+Swift Foot,Windrunner,utamo tempo san,
+Ultimate Light,Radiant Lantern,utevo vis lux,
+Enchant Party,Arcane Communion,utori mas sio,
+Heal Party,Mending Communion,utura mas sio,
+Protect Party,Shielding Communion,utamo mas sio,
+Train Party,Martial Communion,utito mas sio,
+Arrow Call,Quiver Call,exevo infir con,
+Conjure Arrow,Fletch Arrows,exevo con,
+Conjure Spectral Bolt,Fletch Wraith Bolts,exevo gran con vis,
+Conjure Bolt,Fletch Bolts,exevo con mort,
+Conjure Diamond Arrow,Fletch Crystal Arrows,exevo gran con hur,
+Conjure Explosive Arrow,Fletch Blast Arrows,exevo con flam,
+Conjure Piercing Bolt,Fletch Piercing Bolts,exevo con grav,
+Conjure Poisoned Arrow,Fletch Venom Arrows,exevo con pox,
+Conjure Power Bolt,Fletch Storm Bolts,exevo con vis,
+Conjure Sniper Arrow,Fletch Marksman Arrows,exevo con hur,
+Enchant Spear,Hallow Spear,exeta con,
+Enchant Staff,Charge Staff,exeta vis,
+Evasion,Fading Step,exevo gran mas evasion,
+Cruz,Crossfire Hex,exevo cruz,
+Bewitched Curse,Bewitching Hex,exevo witched,
+Fear,Dread,exevo phobia,
+Arcane Wave,Arcane Ripple,exevo wave,
+Adento Grav,Gravity Snare,adento grav,
+Avalanche Rune,Frostfall Rune,adori mas frigo,2274
+Energy Bomb Rune,Storm Seed Rune,adevo mas vis,2262
+Energy Field Rune,Sparkmire Rune,adevo grav vis,2277
+Energy Wall Rune,Stormwall Rune,adevo mas grav vis,2279
+Explosion Rune,Concussion Rune,adevo mas hur,2313
+Fire Bomb Rune,Ember Seed Rune,adevo mas flam,2305
+Fire Field Rune,Cinderpatch Rune,adevo grav flam,2301
+Fire Wall Rune,Pyrewall Rune,adevo mas grav flam,2303
+Fireball Rune,Cinder Orb Rune,adori flam,2302
+Great Fireball Rune,Searing Orb Rune,adori mas flam,2304
+Heavy Magic Missile Rune,Greater Hexdart Rune,adori vis,2311
+Holy Missile Rune,Dawnshard Rune,adori san,2295
+Icicle Rune,Rimespike Rune,adori frigo,2271
+Light Magic Missile Rune,Hexdart Rune,adori min vis,2287
+Light Stone Shower Rune,Pebblestorm Rune,adori infir mas tera,23722
+Lightest Magic Missile Rune,Faint Hexdart Rune,,19392
+Lightest Missile Rune,Faint Dart Rune,adori infir vis,23723
+Magic Wall Rune,Bastion Rune,adevo grav tera,2293
+Poison Bomb Rune,Blight Seed Rune,adevo mas pox,2286
+Poison Field Rune,Blightpatch Rune,adevo grav pox,2285
+Poison Wall Rune,Blightwall Rune,adevo mas grav pox,2289
+Soulfire Rune,Soulpyre Rune,adevo res flam,2308
+Stalagmite Rune,Stonefang Rune,adori tera,2292
+Stone Shower Rune,Rockfall Rune,adori mas tera,2288
+Sudden Death Rune,Reaper's Rune,adori gran mort,2268
+Thunderstorm Rune,Stormcall Rune,adori mas vis,2315
+Paralyze Rune,Shackle Rune,adana ani,2278
+Wild Growth Rune,Thicket Rune,adevo grav vita,2269
+Cure Poison Rune,Purge Rune,adana pox,2266
+Intense Healing Rune,Mending Rune,adura gran,2265
+Ultimate Healing Rune,Grand Mending Rune,adura vita,2273
+Animate Dead Rune,Gravecall Rune,adana mort,2316
+Convince Creature Rune,Beastbond Rune,adeta sio,2290
+Chameleon Rune,Mimic Rune,adevo ina,2291
+Disintegrate Rune,Unmaking Rune,adito tera,2310
+Destroy Field Rune,Dispel Rune,adito grav,2261
+Blank Rune,Unscribed Rune,adori blank,
+Practice Magic Missile Rune,Novice's Hexdart Rune,adori dis min vis,

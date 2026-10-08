@@ -2,9 +2,10 @@
 --
 -- Client contract (client/overlay/modules/game_daily/daily.lua):
 --   server -> client  {"action":"OpenDailyWindow",
---                      "data":{"Day":d, "TakenReward":0|1,
+--                      "data":{"Day":d, "TakenReward":0|1, "NextIn":seconds,
 --                              "DAILY_REWARDS":[{"ClientID":id,"Count":n} x7]}}
 --   client -> server  {"action":"calim","data":v}      ("calim" is the client's spelling)
+--   client -> server  {"action":"open"}                (window opened from the menu: send the data)
 --
 -- Quirks of the shipped client that this file compensates for:
 --   * the client does Day = Day + 2 on receipt, so we send Day = slot - 2.
@@ -48,9 +49,13 @@ local function sendWindow(player)
 		local itemType = ItemType(reward.itemId)
 		rewards[i] = {ClientID = itemType:getClientId(), Count = reward.count}
 	end
+	local now = os.time()
+	local d = os.date("*t", now)
+	local midnight = os.time({year = d.year, month = d.month, day = d.day + 1, hour = 0, min = 0, sec = 0})
 	Chaos.send(player, OPCODE, "OpenDailyWindow", {
 		Day = slot - 2,
 		TakenReward = taken and 1 or 0,
+		NextIn = math.max(0, midnight - now), -- seconds until the server day rolls over
 		DAILY_REWARDS = rewards
 	})
 end
@@ -75,10 +80,27 @@ local function claim(player, value)
 	end
 
 	local reward = cfg.rewards[slot]
-	local given = Chaos.giveItem(player, reward.itemId, reward.count)
-	if given < reward.count then
-		if given > 0 then
-			player:removeItem(reward.itemId, given) -- all or nothing
+	local list = {reward}
+	if slot == 7 then
+		for _, bonus in ipairs(cfg.weekBonus or {}) do
+			list[#list + 1] = bonus
+		end
+	end
+	-- all or nothing: if any stack does not fit, take back what was already given
+	local givenList, ok = {}, true
+	for _, r in ipairs(list) do
+		local given = Chaos.giveItem(player, r.itemId, r.count)
+		givenList[#givenList + 1] = {itemId = r.itemId, given = given}
+		if given < r.count then
+			ok = false
+			break
+		end
+	end
+	if not ok then
+		for _, g in ipairs(givenList) do
+			if g.given > 0 then
+				player:removeItem(g.itemId, g.given)
+			end
 		end
 		player:sendCancelMessage("You do not have enough room or capacity for the reward.")
 		sendWindow(player)
@@ -91,6 +113,9 @@ local function claim(player, value)
 		MESSAGE_EVENT_ADVANCE,
 		string.format("Daily reward (day %d): %dx %s.", slot, reward.count, ItemType(reward.itemId):getName())
 	)
+	if slot == 7 and #list > 1 then
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Week completed! Bonus reward collected.")
+	end
 	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
 	sendWindow(player)
 end
@@ -126,6 +151,8 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 	end
 	if msg.action == "calim" then
 		claim(player, msg.data)
+	elseif msg.action == "open" then
+		sendWindow(player)
 	end
 end
 
@@ -141,4 +168,5 @@ function talk.onSay(player, words, param)
 	return false
 end
 
+talk:separator(" ")
 talk:register()

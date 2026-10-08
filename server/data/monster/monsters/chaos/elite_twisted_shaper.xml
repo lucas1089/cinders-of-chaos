@@ -28,7 +28,7 @@
 	</script>
 	<attacks>
 		<attack name="melee" interval="2000" min="-18000" max="-25000"/>
-		<attack name="energy strike" interval="2000" chance="40" min="-20000" max="-28000"/>
+		<attack name="arc bolt" interval="2000" chance="40" min="-20000" max="-28000"/>
 		<attack name="manadrain" interval="2000" chance="25" range="7" min="-15000" max="-26000" />
 		<attack name="speed" interval="2000" chance="15" range="7" speedchange="-800" duration="30000">
 			<attribute key="shootEffect" value="poison" />

@@ -220,7 +220,7 @@ EventItem < MiniWindowPanelTopBar
     $checked:
       border: 1 #ffd76a
 
-BlackTalonMainWindow
+ChaosMainWindow
   size: 1010 705
   anchors.centerIn: parent
   !text: tr('Event Schedule')

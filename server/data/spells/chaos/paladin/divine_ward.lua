@@ -1,4 +1,4 @@
--- Divine Ward: cleanses harmful conditions and grants 8s of strong regeneration.
+-- Lightward: cleanses harmful conditions and grants 8s of strong regeneration.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local CLEANSE = {

@@ -13,5 +13,5 @@ Panel
     anchors.centerIn: parent
     text: The Beginning challenge completed!
     color: #341c06
-    font: almendra-14px
+    font: Verdana Bold-13px
     text-auto-resize: true

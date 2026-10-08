@@ -1,4 +1,4 @@
--- Ancient Tempest: three waves (earth, ice, earth) around the caster, the ice wave chills.
+-- Primordial Squall: three waves (earth, ice, earth) around the caster, the ice wave chills.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local area = createCombatArea(AREA_CIRCLE5X5)
@@ -15,7 +15,7 @@ function onCastSpell(creature, variant, isHotkey)
 	end
 	local p = player:getPosition()
 	local center = {x = p.x, y = p.y, z = p.z}
-	local min, max = ChaosSpell.mlValues(player, 3.2, 6.0, 70, 140)
+	local min, max = ChaosSpell.mlValues(player, 2.1, 3.9, 45, 90, 0.85)
 
 	ChaosSpell.pulse(player:getId(), #WAVES, 800, function(caster, step)
 		local w = WAVES[step]

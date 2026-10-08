@@ -1,0 +1,47 @@
+--- a/mods/game_cyclopedia/classes/items.lua
++++ b/mods/game_cyclopedia/classes/items.lua
+@@ -477,7 +477,8 @@
+ 		table.insert(useMarketPrice, k)
+ 	end
+ 
+-	local customPrice = g_things.getItemsPrice()
++	-- getItemsPrice / setCyclopedia* are not bound in every client build
++	local customPrice = g_things.getItemsPrice and g_things.getItemsPrice() or {}
+ 	for k, v in pairs(itemsData["customSalePrices"]) do
+ 		local key = tonumber(k) or k
+ 		customPrice[key] = v
+@@ -488,8 +489,12 @@
+ 		return true
+ 	end
+ 
+-	player:setCyclopediaMarketList(useMarketPrice)
+-	player:setCyclopediaCustomPrice(customPrice)
++	if player.setCyclopediaMarketList then
++		player:setCyclopediaMarketList(useMarketPrice)
++	end
++	if player.setCyclopediaCustomPrice then
++		player:setCyclopediaCustomPrice(customPrice)
++	end
+ end
+ 
+ function CyclopediaItems.saveJson()
+--- a/mods/game_cyclopedia/cyclopedia.lua
++++ b/mods/game_cyclopedia/cyclopedia.lua
+@@ -517,9 +517,14 @@
+ 
+ function Cyclopedia.startGame()
+   local benchmark = g_clock.millis()
+-  CyclopediaItems.loadJson()
+-
+-  MagicalArchive.loadJson()
++  -- an error here would abort every onGameStart handler connected after this module
++  local ok, err = pcall(function()
++    CyclopediaItems.loadJson()
++    MagicalArchive.loadJson()
++  end)
++  if not ok then
++    g_logger.warning('Cyclopedia start: ' .. tostring(err))
++  end
+   consoleln("Cyclopedia loaded in " .. (g_clock.millis() - benchmark) / 1000 .. " seconds.")
+ end
+ 

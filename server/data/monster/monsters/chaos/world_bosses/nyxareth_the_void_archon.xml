@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- World boss (worldboss.lua). Void caster: keeps distance, death bolts, energy beam, mana drain, curse DoT. Lowest health, highest burst. -->
+<monster name="Nyxareth the Void Archon" nameDescription="Nyxareth the Void Archon" race="undead" experience="16000000" speed="320" manacost="0">
+	<health now="15000000" max="15000000" />
+	<look type="862" head="114" body="91" legs="114" feet="91" addons="0" corpse="2916" />
+	<targetchange interval="4000" chance="25" />
+	<flags>
+		<flag isboss="1" />
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="4" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-1500" max="-3500" />
+		<!-- Oblivion Bolt -->
+		<attack name="death" interval="2000" chance="25" range="7" target="1" radius="3" min="-3500" max="-6000">
+			<attribute key="shootEffect" value="suddendeath" />
+			<attribute key="areaEffect" value="mortarea" />
+		</attack>
+		<!-- Rift Beam: narrow, long, the hardest single hit of the five -->
+		<attack name="energy" interval="2000" chance="18" length="8" spread="0" min="-4500" max="-8000">
+			<attribute key="areaEffect" value="purpleenergy" />
+		</attack>
+		<!-- Void Hunger: drains mana around her -->
+		<attack name="manadrain" interval="2000" chance="14" radius="6" min="-3000" max="-5000">
+			<attribute key="areaEffect" value="purplesmoke" />
+		</attack>
+		<!-- Withering curse, total 5-8k -->
+		<attack name="cursecondition" interval="2000" chance="14" range="7" target="1" min="-5000" max="-8000" tick="2000">
+			<attribute key="shootEffect" value="death" />
+			<attribute key="areaEffect" value="smallclouds" />
+		</attack>
+		<attack name="drunk" interval="2000" chance="8" radius="5" duration="6000">
+			<attribute key="areaEffect" value="purpleenergy" />
+		</attack>
+	</attacks>
+	<defenses armor="80" defense="80">
+		<defense name="healing" interval="2000" chance="10" min="20000" max="30000">
+			<attribute key="areaEffect" value="purpleenergy" />
+		</defense>
+		<defense name="speed" interval="2000" chance="10" speedchange="450" duration="4000">
+			<attribute key="areaEffect" value="blacksmoke" />
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="-10" />
+		<element firePercent="10" />
+		<element energyPercent="50" />
+		<element earthPercent="10" />
+		<element icePercent="10" />
+		<element holyPercent="-25" />
+	</elements>
+	<immunities>
+		<immunity death="1" />
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+		<immunity lifedrain="1" />
+		<immunity manadrain="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="There is nothing beyond me. Only the void." yell="1" />
+		<voice sentence="Your light is a candle in an endless night." yell="1" />
+		<voice sentence="UNMAKE!" yell="1" />
+	</voices>
+	<loot>
+		<item id="2160" countmax="55" chance="100000" /><!-- crystal coin -->
+		<item id="29856" countmax="12" chance="100000" /><!-- Chaos Orb -->
+		<item id="29857" countmax="6" chance="85000" /><!-- Divine Orb -->
+		<item id="29861" chance="6000" /><!-- Myst Regalia Helmet -->
+		<item id="29862" chance="6000" /><!-- Myst Regalia Mantle -->
+		<item id="29865" chance="5000" /><!-- Myst Regalia Spellbook -->
+		<item id="29866" chance="4000" /><!-- Myst Regalia Wand -->
+		<item id="29868" chance="4000" /><!-- Myst Regalia Ring -->
+		<item id="29876" chance="4000" /><!-- Seraphic Necklace -->
+	</loot>
+</monster>

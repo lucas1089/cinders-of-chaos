@@ -2,49 +2,75 @@
 
 Status of every requested module. **Nothing here has been run.** The session that assembled it had no OTClient runtime, so "loads" means "the code looks self-contained", not "tested".
 
-Layout: `overlay/modules/<name>` is copied into the client's `modules/` folder; `overlay/data/images/...` into its `data/images/`. Source clients put some of these under `mods/`; they were all moved to `modules/` here, so check `autoload` and `autoload-priority` in each `.otmod` when wiring them in.
+Layout: `overlay/modules/<name>` is copied into the client's `modules/` folder; `overlay/data/images/...` into its `data/images/`. Some of these were under `mods/` originally; they were all moved to `modules/` here, so check `autoload` and `autoload-priority` in each `.otmod` when wiring them in.
 
-Protocol target is 10.98 on Hellgrave Exodus (TFS 1.4.2). The sources are mostly 8.60 or 12.x+ clients, so the real risk is the client engine (C++ API) and the server contract, not the Lua.
+Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 8.60 or 12.x+ clients, so the real risk is the client engine (C++ API) and the server contract, not the Lua.
 
-| Module | Source client | Server contract | Client-engine needs | Verdict |
-|---|---|---|---|---|
-| game_stash | Black Talon | extended opcode 110 + `!stash` talk | none after port | Ported off `client_manager`; replaces Astra's own stash; untested |
-| game_bank | Evolisca | extended opcode 60 | none | Needs server script |
-| game_autoloot | Evolisca | extended opcode 216 | none | Needs server script (Exodus has a partial autoloot) |
-| game_itemrarity | Black Talon | none | optional `g_game.setRarityShaderEnabled` (guarded) | Client-only; frames work without the shader. Server must send item rarity somehow (see Exodus rarity customs) |
-| game_battlepass | Exodus GitHub client | raw game opcode 39 via `ProtocolGame.registerOpcode` (not extended) | needs custom C++ packet parsing | Needs engine and server work |
-| game_passivetree | Exodus GitHub client | extended opcode 65 | none | Needs server script |
-| game_daily | Evolisca | extended opcode 207 | none | Needs server script |
-| game_healthcircle | Black Talon | none | none | In `alternates/`: Astra's own is used |
-| game_mainpanel | Astra | none | none | In `alternates/`: Astra's own is used |
-| game_chaosnotify (was game_notifications) | MagicHeard | extended opcodes 79, 151, 152 | none | Needs server script |
-| game_itemtooltip | OxygenOT/Zerion (`game_tooltips`) | none | none | Client-only. Black Talon's richer one needs opcode 52 |
-| game_sidebars | Astra | none | none | Not in the overlay: it is Astra's own module |
-| game_realminimap | Astra | none | none | Not in the overlay: it is Astra's own module |
-| game_nameshaders | Black Talon | extended opcode 96 | also hooks `onOpenOutfitWindow` with extra shader lists | Needs engine and server work |
-| game_dungeons | Exodus GitHub client | extended opcode 109 | none | Needs server script (Exodus has dungeon customs) |
-| game_infinitytower | Luminaris | extended opcode 214 | none | Needs server script. It is classic-style, so no conversion was needed |
-| game_event | Black Talon | none seen in the module | none | Client-only UI; wiring to a server event system is open |
-| game_creatureinformation | OTC-Fonticak | none | engine APIs of Fonticak | Not copied (it was the Fonticak one; the base is now Astra, which has no such module) |
+| Module | Server contract | Client-engine needs | Verdict |
+|---|---|---|---|
+| game_stash | extended opcode 110 + `!stash` talk | none after port | Ported off `client_manager`; replaces the base client's own stash; untested |
+| game_bank | extended opcode 60 | none | Needs server script |
+| game_autoloot | extended opcode 216 | none | Needs server script (base server has a partial autoloot) |
+| game_itemrarity | none | optional `g_game.setRarityShaderEnabled` (guarded) | Client-only; frames work without the shader. Server must send item rarity somehow (see base server rarity customs) |
+| game_battlepass | raw game opcode 39 via `ProtocolGame.registerOpcode` (not extended) | needs custom C++ packet parsing | Needs engine and server work |
+| game_passivetree | extended opcode 65 | none | Needs server script. Paragon panel (`paragon.lua`, `paragon.otui`, `paragonmath.lua`) on the same opcode |
+| game_shop | extended opcode 218 (JSON) | none | Chaos store: categories, pages, purchase, coin gifts, history; server `data/scripts/chaos/shop.lua`; tested in game |
+| game_spellbook | extended opcode 219 (JSON) + `!spells` | none | Spellbook window: search, vocation filter, spell details and an area-of-effect grid; server `data/scripts/chaos/spellbook.lua`; untested in a client |
+| game_craftskills | skills packet (crafting skills after fishing) | base patch 0012 (`GameChaosCraftingSkills`) | Profession section at the bottom of the skills window, live updates; tested in game |
+| game_daily | extended opcode 207 | none | Needs server script |
+| game_bounty | extended opcode 223 (JSON) + `!bounty` | none | Bounty board: today's contracts per level band (tabs), creature preview, reward, Accept/Abandon, progress bars, timer to the next roll, weekly chest count; Chaos -> Bounty Board in the top menu; toasts through game_chaosnotify (action `bounty`); server `data/scripts/chaos/bounty.lua`; tested in game |
+| game_healthcircle | none | none | In `alternates/`: the base client's own is used |
+| game_mainpanel | none | none | In `alternates/`: the base client's own is used |
+| game_chaosnotify (was game_notifications) | extended opcodes 79, 151, 152 | none | Needs server script |
+| game_itemtooltip | none | none | Client-only. A richer version would need opcode 52 |
+| game_sidebars | none | none | Not in the overlay: it is the base client's own module |
+| game_realminimap | none | none | Not in the overlay: it is the base client's own module |
+| game_nameshaders | extended opcode 96 | also hooks `onOpenOutfitWindow` with extra shader lists | Needs engine and server work |
+| game_dungeons | extended opcode 109 | none | Needs server script (base server has dungeon customs) |
+| game_infinitytower | extended opcode 214 | none | Needs server script. It is classic-style, so no conversion was needed |
+| game_event | none seen in the module | none | Client-only UI; wiring to a server event system is open |
+| game_creatureinformation | none | engine APIs this client lacks | Not included |
+| client_chaos_numbers | none | none | Short-number formatter for every module (`formatShortNumber`, `shortNumbersIn`); self test `numbers_test.lua` runs in CI; not run in a client |
 
-Opcode numbers above do not collide with the ones the Exodus server already uses (106, 91, 181, 107, 202, 1, 136, 99, 201, 92, 89). The stash and battlepass numbers are not fixed in the Lua and still have to be chosen.
+Opcode numbers above do not collide with the ones the base server already uses (106, 91, 181, 107, 202, 1, 136, 99, 201, 92, 89). The stash and battlepass numbers are not fixed in the Lua and still have to be chosen.
 
 ## Shared assets copied
-`data/images/topbuttons/` (loot, bank from Evolisca; battlepass, dungeon, passive_tree from Exodus client; minimap from Astra), `data/images/ui/events/` (Black Talon, event banners), `data/images/ui/` rarity frames (copied from game_itemrarity).
-
-## Licence and provenance
-The owner has permission to use all the source material in the Drive folder. Keep the repo private anyway if any of it came from live servers, since other people's rights are not ours to waive.
+`data/images/topbuttons/` (loot, bank, battlepass, dungeon, passive_tree, minimap), `data/images/ui/events/` (event banners), `data/images/ui/` rarity frames (copied from game_itemrarity).
 
 ## Not done
 Server-side scripts, engine changes, any runtime test, translation of Portuguese/Spanish strings.
 
 ## Added after the first draft
-The theme (`client_chaos_theme`, `client_chaos_topbar`, `client_background`, `data/images/chaos/`, generator in `tools/gen_theme_art.py`) and the admin panel (`game_admin`, opcode 120) are in the overlay too. The server counterparts are in `../server/`.
+The theme (`client_chaos_theme`, `client_chaos_topbar`, `data/images/chaos/`, generator in `tools/gen_theme_art.py`) and the admin panel (`game_admin`, opcode 120) are in the overlay too. The server counterparts are in `../server/`.
 
 ## Monster bar (new)
-`game_monsterbar` (opcode 125) shows a bar at the top of the map for the creature you attack, with a different frame and colour for normal, magic, rare, legendary and boss. The server side is `server/data/scripts/chaos/monster_tiers.lua`. Frames are generated by `tools/gen_monsterbar_art.py`. Astra's `game_boss_health` was not reused: it waits for a native boss-health packet that the 10.98 server does not send. No Black Talon or MagicHeard art was used. Untested.
+`game_monsterbar` (opcode 125) shows a bar at the top of the map for the creature you attack, with a different frame and colour for normal, magic, rare, legendary and boss. The server side is `server/data/scripts/chaos/monster_tiers.lua`. Frames are generated by `tools/gen_monsterbar_art.py`. The client's own `game_boss_health` was not reused: it waits for a native boss-health packet that the 10.98 server does not send. The art is generated by code. Untested.
 
 ## Outfit shaders for monsters (new)
-`game_chaosshaders` registers the 17 shader names the server sends (same list as the Exodus client) using the files in `overlay/data/shaders/`. The monster modifiers in `monster_tiers.lua` pick one of them per monster, and the monster bar lists the modifier names under the bar. Untested; it relies on Astra's `g_shaders.createOutfitShader(name, vertex, fragment)`, which exists in Astra's `game_shaders`.
+`game_chaosshaders` registers the 17 shader names the server sends (same list as the base client) using the files in `overlay/data/shaders/`. The monster modifiers in `monster_tiers.lua` pick one of them per monster, and the monster bar lists the modifier names under the bar. Untested; it relies on the base client's `g_shaders.createOutfitShader(name, vertex, fragment)`, which exists in the base client's `game_shaders`.
 
-In the world a tiered monster's name is coloured by tier and its modifiers are drawn on a line above the name (`Creature:setTitle` and `setInformationColor` of the Astra engine); on the bar the modifiers sit under the bar.
+In the world a tiered monster's name is coloured by tier and its modifiers are drawn on a line above the name (`Creature:setTitle` and `setInformationColor` of the base client engine); on the bar the modifiers sit under the bar.
+
+## Chaos spells in the client (new)
+`game_chaosspells` adds the 45 Chaos spells to the spell list, action bar, hotkeys and cooldown display (`SpellInfo.Default`, `SpellIcons`, `SpelllistSettings.Default.spellOrder`). The data (`spelldata.lua`) is generated from `server/data/spells/chaos/spells_chaos.xml` by `tools/gen_spell_data.py` (CI fails if it is out of date). All three spell icon sheets (`overlay/data/images/game/spells/spell-icons-32x32.png`, `-22x24.png`, `-20x20.png`, 20 columns, 260 cells) are our own generated art and replace the base client's sheets when `tools/assemble_client.sh` copies the overlay: `tools/gen_all_spell_icons.py --spells-lua <client>/modules/gamelib/spells.lua --out-dir overlay/data/images/game/spells` draws every cell the client's `SpellIcons` table names from the spell's words (element from flam/frigo/vis/tera/mort/san/pox/kor/ico/..., kind from exori/exevo hur/lux/mas/exura/exana/utani/utamo/utevo/ad... runes, tier from infir/min, gran, max), the 45 Chaos spells at cells 201 to 245 (the Thief line's nine at 237-245) with the drawings of `tools/gen_spell_icons.py`, and a neutral filler in every unused cell, so no base icon is left. Rerun it after changing `gen_spell_icons.py` or the order of `spells_chaos.xml`. Spells are matched by icon key and words, not by display name. Untested in a client; it assumes the client reads `SpellInfo`/`SpellIcons` when the windows open.
+
+## Spellbook (new)
+`game_spellbook` opens on `!spells` (or Character -> Spellbook in the top menu, which asks the server with `open`). Left: search box (name or words), a filter ("My vocation" / "All spells") and the spell list (icon, name in the element colour, words, level in red when it is above yours). Right: icon, name, words, level, magic level, mana, soul, cooldown (group cooldown in the tooltip), group, type, element, target, what it scales with, vocations (initials, full names in the tooltip), premium, the description and the area of effect drawn as a grid (hit cells in the element colour, your tile gold, the target outlined white; single-target spells show you and the target, self spells only you; cells shrink to fit areas up to 21 x 21). Icons come from `Spells.getSpellIcon(words)` of gamelib; runes show their rune item. Names, descriptions and areas come from the server (`server/data/scripts/chaos/spellbook.lua`), so the client keeps no spell data of its own. Not run in a client: the layout sizes, the theme styles in this window and the combo box popup were checked by reading only.
+
+## Short numbers (new)
+Every number the client shows is short: 1000 -> 1k, 15300 -> 15.3k, 2450000 -> 2.45M, 1200000000 -> 1.2B (three significant digits, trailing zeros dropped, rounded down so 999999 is 999k, below 1000 as it is, negatives keep the sign). `client_chaos_numbers` (not sandboxed, autoload-priority 10, so it loads before gamelib and every game module) defines the globals `formatShortNumber(n)`, `formatExactNumber(n)` (15,300, for tooltips), `shortNumbersIn(text)` (shortens standalone integers inside a text, `1,234,567` and `1.234.567` included, and leaves times, dates and years, coordinates, ids, `#123`, numbers glued to letters, decimals and the loot markup `{id:value|...}` alone) and `shortNumbersInMessage(mode, text)` (only the look, damage, healing, experience, status, loot, NPC trade, mana and potion message modes; chat, private, NPC talk, login and broadcasts stay as they are). `numbers_test.lua` (luajit and lua5.3, CI step "Client unit tests") checks the rule against an integer reference and the text cases. The numbers above the map use the same rule in C++ (base patch 0018).
+
+Used by base patch `0019-short-numbers.patch` (health/mana in healthinfo and topbar, the skills window, inventory capacity and soul, on-screen and console server messages, NPC trade balance and list prices, market/store/forge/prey/cyclopedia/soulseal/task balances, the analysers, highscores) and by the overlay modules bank, shop, infinity tower, dungeons, battle pass, stash, craft skills, passive tree and spellbook. Exact values are kept in tooltips where a widget can show one, and everywhere the player types or confirms an amount (bank deposit/withdraw/transfer dialogs, NPC trade price of the selected item, market offers and create-offer totals, store offer prices, shop buy confirmation, analyser clipboard exports). Not run in a client.
+
+## Ornate UI skin (new)
+The whole interface is redrawn as iron, gold trim, blood-red and arcane-blue gems instead of flat recoloured stone. All art is procedural, made by `tools/gen_skin.py`: tileable noise materials, a height map with lighting for bevels, plus rivets, gold filigree and gems. Regenerate it with `python3 client/tools/gen_skin.py --base <assembled base client dir>`. The groups are `frames controls stock hud ornaments`, and only `stock` needs `--base`. Run `gen_ui_reskin.py` first if you use it. `gen_skin.py` takes every file it draws off `RESKIN_FILES.txt`, so the recolour tool never overwrites them. `gen_theme_art.py` no longer draws the chaos/ frames by default.
+- **Windows**: `data/styles/10-windows.otui` (copied from the patched base, then edited) points `Window` at `chaos/skin/window` (borders 12/32) and keeps the stock paddings. `NewWindow` keeps the redrawn `ui/popupwindow`. `Window`, `NewWindow` and `ChaosWindow` set `&chaosOrnate`. For those, `client_chaos_theme` adds gold corner pieces and a crest as phantom children, one frame after creation, so `prev` anchors and child indexes are untouched. It also centres the title on the title plate and paints it gold, because many base windows move it for the old 17 px bar.
+- **Buttons**: `data/styles/10-buttons.otui` points `Button` at `chaos/skin/button`: border 5, normal/hover with an ember glow/pressed/disabled. `ui/buttons`, `ui/button`, the tab sheets, `ui/menubox` (popup menus), `ui/textedit`, the inner panel frames, the map frame, `ui/window` (mini windows), the item, inventory and action bar slots (stock silhouettes kept) and the top bars are redrawn in place, at the same size and layout. Scroll bars, check boxes, the mini window buttons, combo boxes, the console sheet, `common_buttons/*` and the arrows are "relit". Their layout comes from the stock image, and their pixels are remapped to iron/bronze/gold. Mini window titles are gold (`data/styles/30-miniwindow.otui`). Tooltips are a dark gold-rimmed plate (`client_chaos_theme` wraps `g_tooltip.display*`).
+- **Top menu bar**: `client_chaos_topbar` uses the skin button and a framed bar (`chaos/skin/menubar`). The stock top strip of `client_topmenu` (Join Discord link, console, DAT Offset Studio, options and exit icons) is kept hidden on the login screen and in game; its buttons are entries of the menu instead. On the login screen the bar shows only the entries marked `offline` (System: Options, Join Discord, Console, DAT Offset Studio, Exit). In game, Weapon Proficiency (Character) and Unjustified Points (Hunt) were added, since their stock buttons sat on the hidden bars. The invite link is `ChaosTopBar.COMMUNITY_URL` in `chaos_topbar.lua` (empty for now: the entry then says the link is not available yet). Icons `topbutton_community/console/exit/proficiency/pvp` come from `tools/gen_theme_art.py icons`.
+- **HUD**: new module `game_chaoshud` puts a character plate in the game root panel, over the top-left of the map. It shows the outfit portrait in a gold ring, a level badge, the name, health and mana bars with short numbers and an experience line. `hudmath.lua` is tested by `hud_test.lua`.
+- **Character list**: base patch `0021-chaos-skin-character-list.patch` changes the hard-coded grey row colours to the palette.
+- **Fixes found while testing**: `game_chaosspells` connected an `onGameStart` handler that returned `true`, and `signalcall` stops at that, so every handler after it (passive tree, dungeons, bank, top menu hiding, ...) never ran. It is wrapped now. With those handlers running, two missing assets showed up: `game_dungeons/challenge.otui` used a font the client does not have (now `Verdana Bold-13px`), and `images/animations/button-highlight-22x22`, which the base proficiency window wants, is now generated.
+Checked in the Linux client at 1280x800: login, character list, game screen, skills, options, spellbook, shop, daily reward, passive tree, the popup menu and tooltips. No errors in the log.
+
+## Paragon panel (new)
+`game_passivetree` has a Paragon button next to Apply Points / Reset. It opens a `ChaosWindow` (ornate skin: `ChaosPanelDark` per category, `ChaosButton` +/-, Apply / Reset / Close) inside the tree window, built from the server's `paragonState` (`paragon.lua`, `paragon.otui`): points available / spent / total, four categories with two stats each (points / max, value / cap, tooltips with the per-point value), shift-click for 5 points, Apply sends the absolute allocation (`paragonApply`), Reset asks first (level x 250 gold, `paragonReset`). Below level 1000 it shows "Unlocks at level 1000". The "Info & Bonuses" list gets a Paragon section. The +/- maths are in `paragonmath.lua` (tested by `paragonmath_test.lua`); the server validates everything (server/README.md "Paragon"). Checked in the Linux client at 1280x800.

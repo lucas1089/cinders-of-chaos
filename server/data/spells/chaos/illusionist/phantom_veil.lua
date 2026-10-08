@@ -1,4 +1,4 @@
--- Phantom Veil: 8s of invisibility plus a speed boost.
+-- Wraithshroud: 8s of invisibility plus a speed boost.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 function onCastSpell(creature, variant, isHotkey)

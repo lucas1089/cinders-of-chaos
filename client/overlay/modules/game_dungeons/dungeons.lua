@@ -203,7 +203,7 @@ function onDungeonsList(data)
     local queue = dungeonMenu:getChildById("queue")
     boss:setOutfit(dungeon.boss)
     title:setText(dungeon.title)
-    level:setText(dungeon.level .. "+ Level")
+    level:setText(formatShortNumber(dungeon.level) .. "+ Level")
     queue:setText("Queue: " .. (dungeon.queue == 0 and "Open" or dungeon.queue .. " Players"))
     if dungeon.queue >= 6 then
       queue:setColor("red")
@@ -275,7 +275,8 @@ local function applyRequirementsUI(dungeon)
   if req.gold then
     local widget = panel:recursiveGetChildById("gold")
     if widget then
-      widget:setText(comma_value(req.gold))
+      widget:setText(formatShortNumber(req.gold))
+      widget:setTooltip(comma_value(req.gold))
     end
   end
 
@@ -312,7 +313,7 @@ local function applyRequirementsUI(dungeon)
     if req[key] ~= nil then
       local widget = panel:recursiveGetChildById(key)
       if widget then
-        widget:setText(req[key])
+        widget:setText(type(req[key]) == "number" and formatShortNumber(req[key]) or req[key])
       end
     end
   end
@@ -486,6 +487,26 @@ function onDungeonSelected(parent, child, reason)
   doSelection(dungeonId)
 end
 
+-- banner art lives in /images/dungeons/<short name>.png; the server sends the full title
+local BANNERS = {
+  ["Bones Dungeon"] = "Bones",
+  ["Master of the Elements"] = "MasterElement",
+  ["Forbidden Chevalier"] = "Forbidden",
+  ["Rootkraken"] = "Rootkraken",
+  ["Underworld"] = "Underworld"
+}
+
+function bannerFor(title)
+  title = tostring(title or "")
+  local candidates = { BANNERS[title], title, title:match("^(%S+)") }
+  for _, name in ipairs(candidates) do
+    if name and g_resources.fileExists("/images/dungeons/" .. name .. ".png") then
+      return "/images/dungeons/" .. name
+    end
+  end
+  return "/images/dungeons/Underworld"
+end
+
 function selectDungeon(dungeonId)
   local dungeon = Dungeons[dungeonId]
   if not dungeon then return end
@@ -503,7 +524,7 @@ function selectDungeon(dungeonId)
   currentUI.soloTable = window and window:recursiveGetChildById("soloTable") or nil
   currentUI.groupTable = window and window:recursiveGetChildById("groupTable") or nil
 
-  dungeonInfo:getChildById("banner"):setImageSource("/images/dungeons/" .. dungeon.title)
+  dungeonInfo:getChildById("banner"):setImageSource(bannerFor(dungeon.title))
 
   if currentUI.difficultiesPanel then
     if currentUI.difficultiesPanel:getChildCount() >= 1 then
@@ -563,7 +584,7 @@ function selectDungeon(dungeonId)
     for i = 1, #dungeon.challenges do
       local challenge = dungeon.challenges[i]
       local widget = g_ui.createWidget("ChallengePanel", currentUI.challengesPanel)
-      widget:setText(challenge.title .. " (" .. challenge.points .. " Points)")
+      widget:setText(challenge.title .. " (" .. formatShortNumber(challenge.points) .. " Points)")
       widget:getChildById("checkbox"):setChecked(challenge.completed)
       widget:getChildById("description"):setText(challenge.desc)
     end

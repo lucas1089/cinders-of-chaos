@@ -411,6 +411,15 @@ InfinityTowerWindow < NewHeadlessWindow
     margin-top: 10
 
   Button
+    id: enterButton
+    !text: tr('Enter Tower')
+    anchors.top: bottomSeparator.bottom
+    anchors.right: closeButton.left
+    margin-top: 10
+    margin-right: 8
+    @onClick: modules.game_infinitytower.enterTower()
+
+  Button
     id: closeButton
     !text: tr('Close')
     anchors.top: bottomSeparator.bottom

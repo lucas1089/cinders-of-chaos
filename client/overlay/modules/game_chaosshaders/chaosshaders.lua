@@ -1,7 +1,7 @@
--- Registers the outfit shaders the server sends by name (data/XML/shaders.xml of Hellgrave Exodus,
+-- Registers the outfit shaders the server sends by name (data/XML/shaders.xml of the base server,
 -- ids 1-17) so monster modifiers, store shaders and outfit shaders draw. Same list and files as the
--- Exodus client's game_shaders module; the .frag files are in data/shaders.
--- The server names "blue Dortmond" (id 5) with a space, the Exodus client "blue_Dortmond": both are registered.
+-- base client's game_shaders module; the .frag files are in data/shaders.
+-- The server names "blue Dortmond" (id 5) with a space, the base client "blue_Dortmond": both are registered.
 
 local SHADERS = {
   { "Enterprise", "/shaders/expand_vertex", "/shaders/shine15" },
@@ -26,10 +26,17 @@ local SHADERS = {
 }
 
 function init()
-  for _, s in ipairs(SHADERS) do
-    g_shaders.createOutfitShader(s[1], s[2], s[3])
+  -- one missing or broken shader file must not stop the client from starting
+  local function create(name, vertex, fragment)
+    local ok, err = pcall(g_shaders.createOutfitShader, name, vertex, fragment)
+    if not ok then
+      g_logger.warning('[chaosshaders] ' .. name .. ': ' .. tostring(err))
+    end
   end
-  g_shaders.createOutfitShader("blue Dortmond", "/shaders/expand_vertex", "/shaders/shine11")
+  for _, s in ipairs(SHADERS) do
+    create(s[1], s[2], s[3])
+  end
+  create("blue Dortmond", "/shaders/expand_vertex", "/shaders/shine11")
 end
 
 function terminate()

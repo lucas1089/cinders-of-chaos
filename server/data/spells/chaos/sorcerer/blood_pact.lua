@@ -1,4 +1,4 @@
--- Blood Pact: sacrifice 15% of max health for mana and a short magic level boost.
+-- Crimson Covenant: sacrifice 15% of max health for mana and a short magic level boost.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 function onCastSpell(creature, variant, isHotkey)

@@ -1,4 +1,4 @@
--- Mirror Image: up to 3 decoys wearing the caster's outfit, they vanish after 10s.
+-- Hall of Mirrors: up to 3 decoys wearing the caster's outfit, they vanish after 10s.
 -- Needs the "Clone" monster (data/monster/lua/clones/clone.lua in the reference server).
 dofile('data/spells/scripts/chaos/_common.lua')
 

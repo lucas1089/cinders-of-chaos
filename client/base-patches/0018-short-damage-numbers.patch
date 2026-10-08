@@ -1,0 +1,68 @@
+# Damage, healing, mana and experience numbers above the map are shortened: 1000 -> 1k, 15300 -> 15.3k, 2450000 -> 2.45M.
+diff -ru a/src/client/protocolgameparse.cpp b/src/client/protocolgameparse.cpp
+--- a/src/client/protocolgameparse.cpp	2026-10-08 03:27:19.698198074 +0000
++++ b/src/client/protocolgameparse.cpp	2026-10-08 04:09:13.572805440 +0000
+@@ -1725,6 +1725,35 @@
+     g_map.addThing(effect, pos);
+ }
+ 
++// Chaos: numbers above the map are shortened, 1000 -> 1k, 15300 -> 15.3k, 2450000 -> 2.45M, 1200000000 -> 1.2B
++// (three significant digits, trailing zeros dropped; below 1000 the number is shown as it is)
++static std::string chaosShortNumber(uint64_t value)
++{
++    static const char* units[] = { "", "k", "M", "B", "T" };
++    if (value < 1000)
++        return std::to_string(value);
++    uint64_t div = 1;
++    int unit = 0;
++    while (value / div >= 1000 && unit < 4) {
++        div *= 1000;
++        ++unit;
++    }
++    // integer maths only: floating point turns 1150 into "1.14k"
++    const uint64_t whole = value / div;
++    const int decimals = whole >= 100 ? 0 : (whole >= 10 ? 1 : 2);
++    std::string text = std::to_string(whole);
++    if (decimals > 0) {
++        const uint64_t step = div / (decimals == 2 ? 100 : 10);
++        std::string frac = std::to_string((value % div) / step);
++        frac.insert(0, decimals - frac.size(), '0');
++        while (!frac.empty() && frac.back() == '0')
++            frac.pop_back();
++        if (!frac.empty())
++            text += "." + frac;
++    }
++    return text + units[unit];
++}
++
+ void ProtocolGame::parseAnimatedText(const InputMessagePtr& msg)
+ {
+     Position position = getPosition(msg);
+@@ -1733,6 +1762,9 @@
+     if(g_game.getFeature(Otc::GameAnimatedTextCustomFont))
+         font = msg->getString();
+     std::string text = msg->getString();
++    // scripts send damage numbers as plain text too: shorten those like the engine's damage numbers
++    if (!text.empty() && text.size() < 20 && text.find_first_not_of("0123456789") == std::string::npos)
++        text = chaosShortNumber(std::stoull(text));
+ 
+     AnimatedTextPtr animatedText = std::make_shared<AnimatedText>();
+     animatedText->setColor(color);
+@@ -2682,7 +2714,7 @@
+                 continue;
+             AnimatedTextPtr animatedText = std::make_shared<AnimatedText>();
+             animatedText->setColor(color[i]);
+-            animatedText->setText(stdext::to_string(value[i]));
++            animatedText->setText(chaosShortNumber(value[i]));
+             if (font.size())
+                 animatedText->setFont(font);
+ 
+@@ -2705,7 +2737,7 @@
+ 
+         AnimatedTextPtr animatedText = std::make_shared<AnimatedText>();
+         animatedText->setColor(color);
+-        animatedText->setText(stdext::to_string(value));
++        animatedText->setText(chaosShortNumber(value));
+         if(font.size())
+             animatedText->setFont(font);
+         g_map.addThing(animatedText, pos);

@@ -11,7 +11,7 @@
 --                     killed {percent,left} | {boss=true}    objective {id,finished}
 --                     challenge "<title>"   difficulty {id,difficulty}   finish
 --
--- Integration with the Exodus dungeon system (lib/core/dungeon.lua, global DUNGEON_SYSTEM):
+-- Integration with the base server dungeon system (lib/core/dungeon.lua, global DUNGEON_SYSTEM):
 -- the dungeon list, level requirement, group size (AmountParty when NeedParty), DungeonPos,
 -- FromPos/ToPos, DungeonTime, SpawnMonsters/Monsters and the cooldown storage are all read from
 -- DUNGEON_SYSTEM.Dungeons live. Entry here is by matchmaking queue instead of the modal window;
@@ -52,11 +52,11 @@ local function nowMs()
 	return os.time() * 1000
 end
 
-local function exodusDungeons()
+local function baseDungeons()
 	return (DUNGEON_SYSTEM and DUNGEON_SYSTEM.Dungeons) or {}
 end
 
-local function exodusMessage(key, fallback)
+local function baseMessage(key, fallback)
 	local m = DUNGEON_SYSTEM and DUNGEON_SYSTEM.Messages
 	return (m and m[key]) or fallback
 end
@@ -101,7 +101,7 @@ local function send(player, action, data)
 	Chaos.send(player, OPCODE, action, data)
 end
 
--- Box of a dungeon. The Exodus table is inconsistent for some entries (e.g. Forbidden Chevalier has
+-- Box of a dungeon. The base server table is inconsistent for some entries (e.g. Forbidden Chevalier has
 -- DungeonPos z=0 but FromPos/ToPos z=7), so the floor range is widened to include DungeonPos.
 local function boundsOf(dg)
 	local f, t, d = dg.FromPos, dg.ToPos, dg.DungeonPos
@@ -318,7 +318,7 @@ end
 local function sendAll(player)
 	local guid = player:getGuid()
 	local list = {}
-	local dungeons = exodusDungeons()
+	local dungeons = baseDungeons()
 	local ids = {}
 	for id in pairs(dungeons) do
 		ids[#ids + 1] = id
@@ -355,7 +355,7 @@ local function sendAll(player)
 end
 
 local function broadcastQueue(id)
-	local dg = exodusDungeons()[id]
+	local dg = baseDungeons()[id]
 	if not dg then
 		return
 	end
@@ -394,6 +394,11 @@ local function leaveQueue(guid, notify)
 end
 
 -- returns nil if the player may queue, else a reason string
+-- true while the character takes part in a dungeon run (multiclient.lua refuses a second login then)
+function ChaosDungeonIsInside(player)
+	return runOfPlayer[player:getGuid()] ~= nil
+end
+
 local function entryProblem(player, id, dg, difficulty)
 	local guid = player:getGuid()
 	if runOfPlayer[guid] then
@@ -402,8 +407,11 @@ local function entryProblem(player, id, dg, difficulty)
 	if inBox(dg, player:getPosition()) then
 		return "You cannot queue from inside the dungeon."
 	end
+	if Chaos.isMultiClient(player) then
+		return Chaos.multiClient.msgDungeon
+	end
 	if player:getLevel() < levelOf(dg) then
-		return string.format(exodusMessage("MsgNeedLevel", "You need level %s."), levelOf(dg))
+		return string.format(baseMessage("MsgNeedLevel", "You need level %s."), levelOf(dg))
 	end
 	local storage = cooldownStorage()
 	if storage then
@@ -462,7 +470,7 @@ local function endRun(run, success, reason)
 		return
 	end
 	run.ended = true
-	local dg = exodusDungeons()[run.dungeonId]
+	local dg = baseDungeons()[run.dungeonId]
 	local extra = extraOf(run.dungeonId)
 
 	local function teardown()
@@ -473,7 +481,7 @@ local function endRun(run, success, reason)
 				p:teleportTo(origin or p:getTown():getTemplePosition())
 				p:getPosition():sendMagicEffect(40)
 				if not success then
-					p:popupFYI(reason or exodusMessage("ToFail", "You were unable to complete the dungeon in time."))
+					p:popupFYI(reason or baseMessage("ToFail", "You were unable to complete the dungeon in time."))
 				end
 			end
 			if not success or cfg.cooldownOnSuccess then
@@ -541,7 +549,7 @@ local function endRun(run, success, reason)
 end
 
 local function startRun(dungeonId, difficulty, players)
-	local dg = exodusDungeons()[dungeonId]
+	local dg = baseDungeons()[dungeonId]
 	local extra = extraOf(dungeonId)
 	local bossName = extra.bossName and extra.bossName:lower() or nil
 
@@ -577,7 +585,7 @@ local function startRun(dungeonId, difficulty, players)
 		p:registerEvent("ChaosDungeonDeath")
 		p:teleportTo(dg.DungeonPos)
 		p:getPosition():sendMagicEffect(40)
-		p:say(exodusMessage("ToEntry", "Welcome to Dungeon"), TALKTYPE_MONSTER_SAY)
+		p:say(baseMessage("ToEntry", "Welcome to Dungeon"), TALKTYPE_MONSTER_SAY)
 	end
 
 	local monsters, bosses = scanArea(dg, bossName)
@@ -601,7 +609,7 @@ local function startRun(dungeonId, difficulty, players)
 	addEvent(function(runId)
 		local r = runs[runId]
 		if r and not r.ended then
-			endRun(r, false, exodusMessage("ToFail", "You were unable to complete the dungeon in the respective time.\n\nNext time you will do it better!"))
+			endRun(r, false, baseMessage("ToFail", "You were unable to complete the dungeon in the respective time.\n\nNext time you will do it better!"))
 		end
 	end, durationMs, run.id)
 
@@ -609,7 +617,7 @@ local function startRun(dungeonId, difficulty, players)
 end
 
 local function tryMatch(id)
-	local dg = exodusDungeons()[id]
+	local dg = baseDungeons()[id]
 	local list = queues[id]
 	if not dg or not list or #list == 0 or runOfDungeon[id] then
 		return
@@ -691,7 +699,7 @@ tick = function()
 
 	for runId, run in pairs(runs) do
 		if not run.ended then
-			local dg = exodusDungeons()[run.dungeonId]
+			local dg = baseDungeons()[run.dungeonId]
 			local extra = extraOf(run.dungeonId)
 			local bossName = extra.bossName and extra.bossName:lower() or nil
 			local monsters, bosses, playersInside = scanArea(dg, bossName)
@@ -817,7 +825,7 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 		sendAll(player)
 	elseif msg.action == "queue" and type(msg.data) == "table" then
 		local id = Chaos.toInt(msg.data.id, 1)
-		local dg = id and exodusDungeons()[id]
+		local dg = id and baseDungeons()[id]
 		if not dg then
 			return
 		end

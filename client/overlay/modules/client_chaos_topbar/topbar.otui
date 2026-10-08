@@ -1,27 +1,35 @@
-// Styles for the Chaos top bar. Imported from chaos_topbar.lua.
+// Styles for the Chaos menu bar. Imported from chaos_topbar.lua.
 
-ChaosTopButton < UIButton
-  size: 32 32
-  image-source: /images/chaos/small/topbutton_help
-  change-cursor-image: true
-  cursor: pointer
+ChaosMenuButton < UIButton
+  height: 26
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: left
+  text-offset: 28 1
+  icon-size: 20 20
+  icon-offset: 5 3
+  image-source: /images/chaos/skin/button
+  image-clip: 0 0 64 24
+  image-border: 5
   focusable: false
 
+  $hover:
+    image-clip: 0 24 64 24
+    color: #ffe7a6
+
   $pressed:
-    image-color: #b8b8b8
+    image-clip: 0 48 64 24
+    text-offset: 29 2
 
-  $disabled:
-    image-color: #ffffff66
-
-ChaosTopBar < UIWidget
-  id: chaosTopBar
-  height: 44
+ChaosMenuBar < UIWidget
+  id: chaosMenuBar
+  height: 36
   width: 120
   anchors.top: parent.top
   anchors.horizontalCenter: parent.horizontalCenter
-  image-source: /images/chaos/topbar_bg
-  image-border: 2
-  image-border-bottom: 10
+  margin-top: 2
+  image-source: /images/chaos/skin/menubar
+  image-border: 8
   focusable: false
   visible: false
 
@@ -31,8 +39,9 @@ ChaosTopBar < UIWidget
     margin-top: 4
     margin-left: 8
     margin-right: 8
-    margin-bottom: 8
+    margin-bottom: 6
     focusable: false
+    phantom: true
     layout:
       type: horizontalBox
-      spacing: 3
+      spacing: 4

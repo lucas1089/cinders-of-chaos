@@ -1,0 +1,577 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Chaos unique items: SOURCE DATA ONLY. Not merged into items.xml (stock content finds these ids by their stock names); tools/gen_unique_specs.py turns it into data/lib/chaos_unique_specs.lua. -->
+<items>
+	<!-- 8209: stock "crimson sword", client id 7385 -->
+	<item id="8209" article="a" name="Soulreaper">
+		<attribute key="weight" value="3600" />
+		<attribute key="weaponType" value="sword" />
+		<attribute key="attack" value="52" />
+		<attribute key="defense" value="28" />
+		<attribute key="extraDef" value="2" />
+		<attribute key="skillSword" value="4" />
+		<attribute key="lifeLeechChance" value="15" />
+		<attribute key="lifeLeechAmount" value="8" />
+		<attribute key="description" value="Every soul it cuts only feeds the hunger of its blade. (Requires level 120.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 11395: stock "crimson sword", client id 860 -->
+	<item id="11395" article="a" name="Bloodmoon Edge">
+		<attribute key="weight" value="3600" />
+		<attribute key="weaponType" value="sword" />
+		<attribute key="attack" value="44" />
+		<attribute key="defense" value="22" />
+		<attribute key="skillSword" value="3" />
+		<attribute key="criticalHitChance" value="8" />
+		<attribute key="criticalHitAmount" value="25" />
+		<attribute key="description" value="Forged under a crimson moon; it never dries. (Requires level 90.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 11426: stock "the Ron the Ripper's sabre", client id 6101 -->
+	<item id="11426" article="a" name="Gorecleaver">
+		<attribute key="weight" value="2500" />
+		<attribute key="weaponType" value="sword" />
+		<attribute key="attack" value="36" />
+		<attribute key="defense" value="18" />
+		<attribute key="lifeLeechChance" value="8" />
+		<attribute key="lifeLeechAmount" value="5" />
+		<attribute key="description" value="A ripper's sabre, notched by a thousand slaughters. (Requires level 70.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2412: stock "katana", client id 3300 -->
+	<item id="2412" article="a" name="Nightfang Katana">
+		<attribute key="weight" value="3100" />
+		<attribute key="weaponType" value="sword" />
+		<attribute key="attack" value="32" />
+		<attribute key="defense" value="16" />
+		<attribute key="extraDef" value="2" />
+		<attribute key="skillSword" value="2" />
+		<attribute key="criticalHitChance" value="6" />
+		<attribute key="criticalHitAmount" value="20" />
+		<attribute key="description" value="Quick as a whisper in the crypt, and as final. (Requires level 60.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 22690: stock "light rapier", client id 20341 -->
+	<item id="22690" article="a" name="Widowmaker">
+		<attribute key="weight" value="1500" />
+		<attribute key="weaponType" value="sword" />
+		<attribute key="attack" value="24" />
+		<attribute key="defense" value="12" />
+		<attribute key="extraDef" value="2" />
+		<attribute key="criticalHitChance" value="5" />
+		<attribute key="criticalHitAmount" value="15" />
+		<attribute key="description" value="Slim, patient and well-used; its owners all died young. (Requires level 40.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 8925: stock "solar axe", client id 8097 -->
+	<item id="8925" article="a" name="Cinderbrand Axe">
+		<attribute key="weight" value="11000" />
+		<attribute key="weaponType" value="axe" />
+		<attribute key="attack" value="58" />
+		<attribute key="defense" value="30" />
+		<attribute key="extraDef" value="3" />
+		<attribute key="elementFire" value="24" />
+		<attribute key="skillAxe" value="5" />
+		<attribute key="absorbPercentFire" value="10" />
+		<attribute key="description" value="Hewn from a dying star; the haft is always warm. (Requires level 130.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 10301: stock "scythe of the reaper", client id 9384 -->
+	<item id="10301" article="a" name="Harvester of Sorrows">
+		<attribute key="weight" value="3000" />
+		<attribute key="weaponType" value="axe" />
+		<attribute key="slotType" value="two-handed" />
+		<attribute key="attack" value="50" />
+		<attribute key="defense" value="14" />
+		<attribute key="elementDeath" value="22" />
+		<attribute key="skillAxe" value="4" />
+		<attribute key="manaLeechChance" value="10" />
+		<attribute key="manaLeechAmount" value="6" />
+		<attribute key="description" value="It has reaped countless souls and still wants a few more. (Requires level 100.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2440: stock "daramian waraxe", client id 3328 -->
+	<item id="2440" article="an" name="Executioner's Reckoning">
+		<attribute key="weight" value="5250" />
+		<attribute key="weaponType" value="axe" />
+		<attribute key="slotType" value="two-handed" />
+		<attribute key="attack" value="50" />
+		<attribute key="defense" value="18" />
+		<attribute key="skillAxe" value="3" />
+		<attribute key="criticalHitChance" value="10" />
+		<attribute key="criticalHitAmount" value="30" />
+		<attribute key="description" value="The last thing many a condemned man heard was its song. (Requires level 80.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 7379: stock "brutetamer's staff", client id 7379 -->
+	<item id="7379" article="a" name="Bonegrinder">
+		<attribute key="weight" value="3800" />
+		<attribute key="weaponType" value="club" />
+		<attribute key="slotType" value="two-handed" />
+		<attribute key="attack" value="58" />
+		<attribute key="defense" value="18" />
+		<attribute key="skillClub" value="5" />
+		<attribute key="criticalHitChance" value="7" />
+		<attribute key="criticalHitAmount" value="25" />
+		<attribute key="description" value="A skull on a pole. The skull is grinning, the pole is not. (Requires level 90.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 25418: stock "maimer", client id 22762 -->
+	<item id="25418" article="a" name="Mawmaker">
+		<attribute key="weight" value="7700" />
+		<attribute key="weaponType" value="club" />
+		<attribute key="attack" value="62" />
+		<attribute key="defense" value="30" />
+		<attribute key="skillClub" value="4" />
+		<attribute key="lifeLeechChance" value="10" />
+		<attribute key="lifeLeechAmount" value="6" />
+		<attribute key="description" value="Wherever it lands, a new mouth opens. (Requires level 110.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 23590: stock "one hit wonder", client id 21219 -->
+	<item id="23590" article="a" name="Gorehammer">
+		<attribute key="weight" value="9600" />
+		<attribute key="weaponType" value="club" />
+		<attribute key="slotType" value="two-handed" />
+		<attribute key="attack" value="66" />
+		<attribute key="defense" value="20" />
+		<attribute key="criticalHitChance" value="12" />
+		<attribute key="criticalHitAmount" value="30" />
+		<attribute key="description" value="A two-handed argument that ends all debate. (Requires level 100.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 3961: stock "lich staff", client id 3343 -->
+	<item id="3961" article="a" name="Lichfang Staff">
+		<attribute key="weight" value="4100" />
+		<attribute key="weaponType" value="club" />
+		<attribute key="attack" value="36" />
+		<attribute key="defense" value="30" />
+		<attribute key="extraDef" value="2" />
+		<attribute key="elementDeath" value="14" />
+		<attribute key="magicPoints" value="2" />
+		<attribute key="skillClub" value="2" />
+		<attribute key="description" value="The scent of death clings to it; so does its former owner. (Requires level 70.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 16111: stock "thorn spitter", client id 14768 -->
+	<item id="16111" article="a" name="Hellspite Arbalest">
+		<attribute key="weight" value="12600" />
+		<attribute key="weaponType" value="distance" />
+		<attribute key="slotType" value="two-handed" />
+		<attribute key="ammoType" value="bolt" />
+		<attribute key="range" value="6" />
+		<attribute key="attack" value="14" />
+		<attribute key="hitChance" value="6" />
+		<attribute key="skillDist" value="4" />
+		<attribute key="criticalHitChance" value="6" />
+		<attribute key="criticalHitAmount" value="20" />
+		<attribute key="description" value="Its bolts scream on the way down. (Requires level 100.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27230: stock "bow of cataclysm", client id 24574 -->
+	<item id="27230" article="a" name="Doomtide Longbow">
+		<attribute key="weight" value="4700" />
+		<attribute key="weaponType" value="distance" />
+		<attribute key="slotType" value="two-handed" />
+		<attribute key="ammoType" value="arrow" />
+		<attribute key="range" value="6" />
+		<attribute key="attack" value="10" />
+		<attribute key="hitChance" value="6" />
+		<attribute key="skillDist" value="6" />
+		<attribute key="absorbPercentDeath" value="6" />
+		<attribute key="description" value="Strung with something that was once alive; it hums at the dead. (Requires level 110.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 8849: stock "modified crossbow", client id 8021 -->
+	<item id="8849" article="a" name="Gallowsbolt Crossbow">
+		<attribute key="weight" value="3500" />
+		<attribute key="weaponType" value="distance" />
+		<attribute key="slotType" value="two-handed" />
+		<attribute key="ammoType" value="bolt" />
+		<attribute key="range" value="5" />
+		<attribute key="hitChance" value="4" />
+		<attribute key="skillDist" value="3" />
+		<attribute key="description" value="A hangman's design: it only needs one shot. (Requires level 60.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 19390: stock "mean paladin spear", client id 17110 -->
+	<item id="19390" article="a" name="Hellspear of the Damned">
+		<attribute key="weight" value="1000" />
+		<attribute key="weaponType" value="distance" />
+		<attribute key="shootType" value="spear" />
+		<attribute key="attack" value="28" />
+		<attribute key="maxHitChance" value="84" />
+		<attribute key="range" value="4" />
+		<attribute key="skillDist" value="2" />
+		<attribute key="description" value="Hurled by the damned at those who would leave. (Requires level 50.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 13760: stock "wand of dimensions", client id 12603 -->
+	<item id="13760" article="a" name="Riftcaller">
+		<attribute key="weight" value="2800" />
+		<attribute key="weaponType" value="wand" />
+		<attribute key="shootType" value="death" />
+		<attribute key="range" value="3" />
+		<attribute key="magicPoints" value="3" />
+		<attribute key="manaLeechChance" value="8" />
+		<attribute key="manaLeechAmount" value="5" />
+		<attribute key="description" value="Tears a seam in the world and lets the death in. (Requires level 80.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 29571: stock "Soulbinder Wand", client id 26915 -->
+	<item id="29571" article="a" name="Soulshackle Scepter">
+		<attribute key="weight" value="2450" />
+		<attribute key="weaponType" value="wand" />
+		<attribute key="shootType" value="arcane" />
+		<attribute key="range" value="6" />
+		<attribute key="attackSpeed" value="1800" />
+		<attribute key="magicPoints" value="5" />
+		<attribute key="criticalHitChance" value="10" />
+		<attribute key="criticalHitAmount" value="12" />
+		<attribute key="manaLeechChance" value="10" />
+		<attribute key="manaLeechAmount" value="8" />
+		<attribute key="absorbPercentDeath" value="8" />
+		<attribute key="description" value="A cage of rattling chains for what is left of a mind. (Requires level 120.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 29866: stock "Myst Regalia Wand", client id 27210 -->
+	<item id="29866" article="a" name="Duskweaver Wand">
+		<attribute key="weight" value="2850" />
+		<attribute key="weaponType" value="wand" />
+		<attribute key="shootType" value="arcane" />
+		<attribute key="range" value="6" />
+		<attribute key="attackSpeed" value="1800" />
+		<attribute key="magicPoints" value="6" />
+		<attribute key="criticalHitChance" value="12" />
+		<attribute key="criticalHitAmount" value="15" />
+		<attribute key="manaLeechChance" value="12" />
+		<attribute key="manaLeechAmount" value="10" />
+		<attribute key="absorbPercentPhysical" value="8" />
+		<attribute key="description" value="It weaves the last light of day into a shroud. (Requires level 140.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 10296: stock "heavy metal t-shirt", client id 9379 -->
+	<item id="10296" article="a" name="Pall of Skulls">
+		<attribute key="weight" value="800" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="14" />
+		<attribute key="absorbPercentDeath" value="8" />
+		<attribute key="absorbPercentPhysical" value="4" />
+		<attribute key="maxHitPoints" value="100" />
+		<attribute key="description" value="Light, black and covered in grinning faces. (Requires level 60.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27295: stock "ghost chestplate", client id 24639 -->
+	<item id="27295" article="a" name="Wraithplate">
+		<attribute key="weight" value="12300" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="24" />
+		<attribute key="absorbPercentPhysical" value="8" />
+		<attribute key="absorbPercentDeath" value="6" />
+		<attribute key="maxHitPoints" value="250" />
+		<attribute key="description" value="Plate that remembers the hand that wore it. The hand still moves. (Requires level 100.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 8892: stock "ethno coat", client id 8064 -->
+	<item id="8892" article="a" name="Cindermail Coat">
+		<attribute key="weight" value="2550" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="16" />
+		<attribute key="absorbPercentFire" value="12" />
+		<attribute key="absorbPercentPhysical" value="4" />
+		<attribute key="magicPoints" value="2" />
+		<attribute key="description" value="Singed at the seams, it still smoulders when no one is looking. (Requires level 80.) Part of the Embers of Aranoth set." />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27232: stock "toga mortis", client id 24576 -->
+	<item id="27232" article="a" name="Mortis Shroud">
+		<attribute key="weight" value="5200" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="20" />
+		<attribute key="magicPoints" value="5" />
+		<attribute key="absorbPercentDeath" value="12" />
+		<attribute key="maxManaPoints" value="300" />
+		<attribute key="description" value="Woven from burial linen of a lich-queen. (Requires level 110.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27228: stock "embrace of nature", client id 24572 -->
+	<item id="27228" article="a" name="Shroud of the Hollow Wood">
+		<attribute key="weight" value="2400" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="18" />
+		<attribute key="absorbPercentIce" value="14" />
+		<attribute key="absorbPercentEnergy" value="-3" />
+		<attribute key="skillDist" value="4" />
+		<attribute key="description" value="Cut from a tree that grew in a graveyard and never once bloomed. (Requires level 90.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 7462: stock "ragnir helmet", client id 7462 -->
+	<item id="7462" article="a" name="Crown of Cinders">
+		<attribute key="weight" value="3100" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="14" />
+		<attribute key="absorbPercentFire" value="8" />
+		<attribute key="maxHitPoints" value="150" />
+		<attribute key="skillAxe" value="2" />
+		<attribute key="description" value="The king died, the crown kept burning. (Requires level 100.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27675: stock "alicorn headguard", client id 25019 -->
+	<item id="27675" article="a" name="Visage of the Pale King">
+		<attribute key="weight" value="3900" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="15" />
+		<attribute key="absorbPercentDeath" value="8" />
+		<attribute key="absorbPercentPhysical" value="6" />
+		<attribute key="magicPoints" value="2" />
+		<attribute key="skillDist" value="3" />
+		<attribute key="description" value="A face that looks back. It has never blinked. (Requires level 120.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2496: stock "horned helmet", client id 3390 -->
+	<item id="2496" article="a" name="Hornsworn Helm">
+		<attribute key="weight" value="5100" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="14" />
+		<attribute key="absorbPercentFire" value="8" />
+		<attribute key="maxHitPoints" value="120" />
+		<attribute key="skillSword" value="2" />
+		<attribute key="skillAxe" value="2" />
+		<attribute key="skillClub" value="2" />
+		<attribute key="description" value="Sworn to a master who answers to no one above. (Requires level 70.) Part of the Embers of Aranoth set." />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 3972: stock "bonelord helmet", client id 3408 -->
+	<item id="3972" article="a" name="Bonelord's Gaze">
+		<attribute key="weight" value="4600" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="10" />
+		<attribute key="magicPoints" value="2" />
+		<attribute key="maxManaPoints" value="150" />
+		<attribute key="absorbPercentDeath" value="6" />
+		<attribute key="description" value="It watches you from the inside of your own skull. (Requires level 60.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27231: stock "galea mortis", client id 24575 -->
+	<item id="27231" article="a" name="Mortis Cowl">
+		<attribute key="weight" value="2300" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="11" />
+		<attribute key="absorbPercentDeath" value="10" />
+		<attribute key="magicPoints" value="3" />
+		<attribute key="absorbPercentHoly" value="-5" />
+		<attribute key="description" value="Beneath it, only a voice and a smell of old earth. (Requires level 100.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27692: stock "dawnfire pantaloons", client id 25036 -->
+	<item id="27692" article="a" name="Emberveil Greaves">
+		<attribute key="weight" value="3000" />
+		<attribute key="slotType" value="legs" />
+		<attribute key="armor" value="13" />
+		<attribute key="absorbPercentFire" value="10" />
+		<attribute key="absorbPercentPhysical" value="4" />
+		<attribute key="magicPoints" value="2" />
+		<attribute key="description" value="Each step leaves a warm print in the ash. (Requires level 80.) Part of the Embers of Aranoth set." />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27693: stock "midnight sarong", client id 25037 -->
+	<item id="27693" article="a pair of" name="Nightshade Leggings">
+		<attribute key="weight" value="3100" />
+		<attribute key="slotType" value="legs" />
+		<attribute key="armor" value="12" />
+		<attribute key="magicPoints" value="3" />
+		<attribute key="absorbPercentIce" value="8" />
+		<attribute key="absorbPercentDeath" value="6" />
+		<attribute key="description" value="Dyed in the juice of berries nobody should eat. (Requires level 90.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 28020: stock "Astro Legs", client id 25364 -->
+	<item id="28020" article="a pair of" name="Voidscale Legguards">
+		<attribute key="weight" value="6200" />
+		<attribute key="slotType" value="legs" />
+		<attribute key="armor" value="18" />
+		<attribute key="skillSword" value="4" />
+		<attribute key="skillAxe" value="4" />
+		<attribute key="skillClub" value="4" />
+		<attribute key="absorbPercentPhysical" value="6" />
+		<attribute key="manaLeechChance" value="6" />
+		<attribute key="manaLeechAmount" value="6" />
+		<attribute key="description" value="Scales shed by something that lives between the stars. (Requires level 130.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 26133: stock "void boots", client id 23477 -->
+	<item id="26133" article="a pair of" name="Voidwalker Boots">
+		<attribute key="weight" value="1500" />
+		<attribute key="slotType" value="feet" />
+		<attribute key="armor" value="4" />
+		<attribute key="speed" value="30" />
+		<attribute key="absorbPercentDeath" value="6" />
+		<attribute key="description" value="They make no sound, and neither does the one who falls behind. (Requires level 100.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27288: stock "pair of nightmare boots", client id 24632 -->
+	<item id="27288" article="a pair of" name="Maw Treads">
+		<attribute key="weight" value="1300" />
+		<attribute key="slotType" value="feet" />
+		<attribute key="armor" value="3" />
+		<attribute key="magicPoints" value="2" />
+		<attribute key="absorbPercentDeath" value="5" />
+		<attribute key="speed" value="15" />
+		<attribute key="description" value="Tiny fangs line the soles; it is best not to ask why. (Requires level 70.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27647: stock "makeshift boots", client id 24991 -->
+	<item id="27647" article="a pair of" name="Bloodstep Boots">
+		<attribute key="weight" value="1450" />
+		<attribute key="slotType" value="feet" />
+		<attribute key="armor" value="4" />
+		<attribute key="absorbPercentFire" value="8" />
+		<attribute key="magicPoints" value="1" />
+		<attribute key="speed" value="20" />
+		<attribute key="description" value="Dyed in the blood of the road they walked. (Requires level 80.) Part of the Embers of Aranoth set." />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 10318: stock "shield Nevermourn", client id 9401 -->
+	<item id="10318" article="an" name="Obsidian Aegis">
+		<attribute key="weight" value="5200" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="38" />
+		<attribute key="skillShield" value="4" />
+		<attribute key="absorbPercentPhysical" value="8" />
+		<attribute key="absorbPercentDeath" value="5" />
+		<attribute key="description" value="Polished black glass; it reflects what you fear. (Requires level 110.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 3975: stock "salamander shield", client id 3445 -->
+	<item id="3975" article="an" name="Emberwarden">
+		<attribute key="weight" value="5900" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="34" />
+		<attribute key="skillShield" value="3" />
+		<attribute key="absorbPercentFire" value="15" />
+		<attribute key="description" value="Hold it up and the fire has to ask permission. (Requires level 90.) Part of the Embers of Aranoth set." />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 22474: stock "eerie song book", client id 20140 -->
+	<item id="22474" article="a" name="Tome of Whispers">
+		<attribute key="weight" value="1300" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="14" />
+		<attribute key="magicPoints" value="4" />
+		<attribute key="absorbPercentDeath" value="8" />
+		<attribute key="maxManaPoints" value="200" />
+		<attribute key="description" value="Do not read it aloud. It will answer. (Requires level 100.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 10218: stock "bonfire amulet", client id 9301 -->
+	<item id="10218" article="a" name="Heart of Cinders">
+		<attribute key="weight" value="700" />
+		<attribute key="slotType" value="necklace" />
+		<attribute key="absorbPercentFire" value="18" />
+		<attribute key="absorbPercentPhysical" value="6" />
+		<attribute key="maxHitPoints" value="200" />
+		<attribute key="description" value="A coal that never cools, hung where a heart should be. (Requires level 80.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 10221: stock "shockwave amulet", client id 9304 -->
+	<item id="10221" article="a" name="Heartbleed Pendant">
+		<attribute key="weight" value="700" />
+		<attribute key="slotType" value="necklace" />
+		<attribute key="lifeLeechChance" value="8" />
+		<attribute key="lifeLeechAmount" value="6" />
+		<attribute key="criticalHitChance" value="6" />
+		<attribute key="criticalHitAmount" value="20" />
+		<attribute key="description" value="Each beat is a drop of someone else's life. (Requires level 90.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 24790: stock "enchanted werewolf amulet", client id 22134 -->
+	<item id="24790" article="a" name="Fangs of the Ninth Circle">
+		<attribute key="weight" value="550" />
+		<attribute key="slotType" value="necklace" />
+		<attribute key="armor" value="2" />
+		<attribute key="magicPoints" value="3" />
+		<attribute key="absorbPercentDeath" value="8" />
+		<attribute key="absorbPercentHoly" value="-6" />
+		<attribute key="maxManaPoints" value="250" />
+		<attribute key="description" value="Twin horned heads, cut from something that fell a long way down. (Requires level 120.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 24851: stock "onyx pendant", client id 22195 -->
+	<item id="24851" article="a" name="Tear of the Void">
+		<attribute key="weight" value="850" />
+		<attribute key="slotType" value="necklace" />
+		<attribute key="armor" value="2" />
+		<attribute key="absorbPercentDeath" value="10" />
+		<attribute key="absorbPercentPhysical" value="5" />
+		<attribute key="maxManaPoints" value="200" />
+		<attribute key="magicPoints" value="2" />
+		<attribute key="description" value="A single drop of the dark, held in black stone. (Requires level 100.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 11374: stock "beetle necklace", client id 10457 -->
+	<item id="11374" article="a" name="Carrion Scarab Amulet">
+		<attribute key="weight" value="820" />
+		<attribute key="slotType" value="necklace" />
+		<attribute key="speed" value="10" />
+		<attribute key="absorbPercentPoison" value="10" />
+		<attribute key="maxHitPoints" value="100" />
+		<attribute key="description" value="The beetle was dead long before it was strung. (Requires level 50.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 10314: stock "claw of 'The Noxious Spawn'", client id 9397 -->
+	<item id="10314" article="a" name="Cinderclaw Band">
+		<attribute key="weight" value="500" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="skillSword" value="3" />
+		<attribute key="skillAxe" value="3" />
+		<attribute key="skillClub" value="3" />
+		<attribute key="absorbPercentFire" value="8" />
+		<attribute key="magicPoints" value="1" />
+		<attribute key="description" value="A claw of fire clamped around the finger. (Requires level 80.) Part of the Embers of Aranoth set." />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 21693: stock "horn", client id 19359 -->
+	<item id="21693" article="a" name="Hornbinder Ring">
+		<attribute key="weight" value="120" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="armor" value="2" />
+		<attribute key="skillClub" value="3" />
+		<attribute key="maxHitPoints" value="120" />
+		<attribute key="description" value="A horn-ring from something that did not want to give it up. (Requires level 60.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 29868: stock "Myst Regalia Ring", client id 27212 -->
+	<item id="29868" article="a" name="Veil of the Wraith">
+		<attribute key="weight" value="250" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="armor" value="4" />
+		<attribute key="skillShield" value="5" />
+		<attribute key="magicPoints" value="2" />
+		<attribute key="absorbPercentPhysical" value="5" />
+		<attribute key="description" value="Put it on and the living stop being able to find you. (Requires level 120.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2206: stock "time ring", client id 3090 -->
+	<item id="2206" article="a" name="Ring of the Last Ember">
+		<attribute key="weight" value="90" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="speed" value="20" />
+		<attribute key="healthGain" value="4" />
+		<attribute key="healthTicks" value="4000" />
+		<attribute key="manaGain" value="6" />
+		<attribute key="manaTicks" value="4000" />
+		<attribute key="description" value="One spark left. Make it count. (Requires level 70.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 10510: stock "broken wedding ring", client id 9593 -->
+	<item id="10510" article="a" name="Widow's Last Vow">
+		<attribute key="weight" value="40" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="lifeLeechChance" value="6" />
+		<attribute key="lifeLeechAmount" value="5" />
+		<attribute key="manaLeechChance" value="6" />
+		<attribute key="manaLeechAmount" value="5" />
+		<attribute key="maxHitPoints" value="100" />
+		<attribute key="description" value="A promise made to the grave, kept in blood. (Requires level 90.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+</items>

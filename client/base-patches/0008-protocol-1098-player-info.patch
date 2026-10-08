@@ -1,0 +1,21 @@
+--- a/src/client/protocolgameparse.cpp
++++ b/src/client/protocolgameparse.cpp
+@@ -2127,13 +2127,16 @@
+         /*bool preyEnabled = */msg->getU8()/* > 0*/;
+     }
+ 
++    // 10.98 servers send one byte per spell id and no magic shield flag; this client's own protocol uses two bytes + the flag
++    const bool wideSpellIds = g_game.getProtocolVersion() != 1098;
+     int spellCount = msg->getU16();
+     std::vector<int> spells;
+     spells.reserve(spellCount);
+     for (int i = 0; i < spellCount; ++i)
+-        spells.push_back(msg->getU16()); // custom spell ids exceed 255
++        spells.push_back(wideSpellIds ? msg->getU16() : msg->getU8()); // custom spell ids exceed 255
+ 
+-    msg->getU8(); // magic shield active
++    if (wideSpellIds)
++        msg->getU8(); // magic shield active
+ 
+     m_localPlayer->setPremium(premium);
+     m_localPlayer->setVocation(vocation);

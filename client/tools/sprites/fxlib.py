@@ -78,3 +78,18 @@ def contact_sheet(things, spr, path, cols=5, n=4, box=64, missile=False, labels=
         dr.text((cx + 4, cy + 1), lab, fill=(255, 220, 120, 255))
         dr.rectangle([cx, cy, cx + cw - 1, cy + ch - 1], outline=(50, 50, 70, 255))
     sheet.convert('RGB').save(path)
+
+
+def render_item(dat, spr, client_id, scale=1, box=None):
+    """RGBA image of an item by CLIENT id (items category starts at 100 in Tibia.dat)."""
+    from datspr import render_thing
+    f = render_thing(dat.items[client_id - 100], spr, layers='all')
+    if f.width > 64 or f.height > 64:
+        f = f.crop((0, 0, min(f.width, 64), min(f.height, 64)))
+    if scale != 1:
+        f = f.resize((f.width * scale, f.height * scale), Image.NEAREST)
+    if box:
+        c = Image.new('RGBA', (box, box), (0, 0, 0, 0))
+        c.paste(f, ((box - f.width) // 2, (box - f.height) // 2), f)
+        return c
+    return f

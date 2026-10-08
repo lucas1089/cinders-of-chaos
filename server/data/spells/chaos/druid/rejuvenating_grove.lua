@@ -1,4 +1,4 @@
--- Rejuvenating Grove: a healing zone on the caster's tile; 8 pulses (1/s) heal allies standing within 3 sqm.
+-- Verdant Sanctuary: a healing zone on the caster's tile; 8 pulses (1/s) heal allies standing within 3 sqm.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 function onCastSpell(creature, variant, isHotkey)
@@ -8,7 +8,7 @@ function onCastSpell(creature, variant, isHotkey)
 	end
 	local p = player:getPosition()
 	local center = {x = p.x, y = p.y, z = p.z}
-	local min, max = ChaosSpell.mlValues(player, 1.6, 2.6, 25, 45)
+	local min, max = ChaosSpell.mlValues(player, 3.8, 5.9, 40, 70)
 
 	ChaosSpell.pulse(player:getId(), 8, 1000, function(caster, step)
 		local pos = Position(center)

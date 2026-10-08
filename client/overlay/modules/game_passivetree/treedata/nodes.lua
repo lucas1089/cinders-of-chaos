@@ -2015,7 +2015,7 @@ function getTreeNodes()
 		{
 			orbit = 2,
 			orbitDist = 120,
-			name = "Wrath of Nature",
+			name = "Wildwood Fury",
 			isUncommon = true,
 			orbitIndex = 135,
 			group = 23,
@@ -9205,7 +9205,7 @@ function getTreeNodes()
 				491	
 			},
 			out = {
-				488
+				488, 622
 			}
 		},
 		--- 490---
@@ -11369,7 +11369,7 @@ function getTreeNodes()
 				601
 			},
 			out = {
-				604
+				604, 619
 			}
 		},
 		--- 601 ---
@@ -11725,6 +11725,247 @@ function getTreeNodes()
 			}
 		},
 
+		--- Keystones (619-624): two paths of two notables, each ending in a per-vocation keystone ---
+		--- 619 ---
+		{
+			orbit = 2,
+			orbitDist = 340,
+			name = "Gathering Fury",
+			orbitIndex = 310,
+			isMythic = true,
+			group = 102,
+			icon = "attackDamage",
+			customStats = {
+				incrementPhysical = 3,
+				multiIncrement = 3
+			},
+			inputs = {
+				600
+			},
+			out = {
+				620
+			}
+		},
+		--- 620 ---
+		{
+			orbit = 1,
+			orbitDist = 150,
+			name = "Edge of Ruin",
+			orbitIndex = 310,
+			isMythic = true,
+			group = 102,
+			icon = "spellDamage",
+			customStats = {
+				incrementPhysical = 4,
+				multiIncrement = 4,
+				incrementHealth = 4
+			},
+			inputs = {
+				619
+			},
+			out = {
+				621
+			}
+		},
+		--- 621 ---
+		-- keystone: every vocation sees (and gets) its own keystone here; the server reads the same
+		-- per-vocation customStats (passivetree_data.lua `v`); effects in passivetree_keystones.lua
+		{
+			orbit = 0,
+			orbitDist = 0,
+			name = "Wrath Keystone",
+			orbitIndex = 0,
+			isDivine = true,
+			isKeystone = true,
+			group = 102,
+			icon = "ksWrath",
+			stats = {
+				"Holds the keystone of your vocation."
+			},
+			knight = {
+				icon = "ksCleavingArc",
+				name = "Cleaving Arc",
+				customStats = {
+					ksCleavingArc = 1
+				},
+				stats = {
+					"Two-handed melee hits cleave: up to 3 other",
+					"enemies next to you take 40% of the hit."
+				}
+			},
+			paladin = {
+				icon = "ksRicochet",
+				name = "Ricochet",
+				customStats = {
+					ksRicochet = 1
+				},
+				stats = {
+					"Bow and crossbow hits: 30% chance to ricochet to",
+					"the nearest other enemy within 4 sqm for 65% of",
+					"the hit, then once more for 65% of that (42%).",
+					"Never the same target twice."
+				}
+			},
+			sorcerer = {
+				icon = "ksArcaneEcho",
+				name = "Arcane Echo",
+				customStats = {
+					ksArcaneEcho = 1
+				},
+				stats = {
+					"Spells that hit 2 or more enemies: 35% chance to",
+					"echo 0.6 s later on the same spots for 50% of",
+					"their damage. Cooldown 3 s."
+				}
+			},
+			druid = {
+				icon = "ksOvergrowth",
+				name = "Overgrowth",
+				customStats = {
+					ksOvergrowth = 1
+				},
+				stats = {
+					"Heals you cast on others also plant regrowth:",
+					"30% of the heal again over 6 s (3 pulses).",
+					"A new heal refreshes it."
+				}
+			},
+			illusionist = {
+				icon = "ksSharedPhantasm",
+				name = "Shared Phantasm",
+				customStats = {
+					ksSharedPhantasm = 1
+				},
+				stats = {
+					"Support (needs a party): your hits mark the enemy",
+					"for 6 s. Other party members deal +12% damage",
+					"to a marked enemy."
+				}
+			},
+			inputs = {
+				620
+			},
+			out = {
+			}
+		},
+		--- 622 ---
+		{
+			orbit = 2,
+			orbitDist = 340,
+			name = "Iron Resolve",
+			orbitIndex = 130,
+			isMythic = true,
+			group = 103,
+			icon = "life",
+			customStats = {
+				vitality = 2,
+				spirit = 2
+			},
+			inputs = {
+				489
+			},
+			out = {
+				623
+			}
+		},
+		--- 623 ---
+		{
+			orbit = 1,
+			orbitDist = 150,
+			name = "Unbroken Will",
+			orbitIndex = 130,
+			isMythic = true,
+			group = 103,
+			icon = "damageReduction",
+			customStats = {
+				absorbPhysical = 2,
+				absorbAllElements = 2
+			},
+			inputs = {
+				622
+			},
+			out = {
+				624
+			}
+		},
+		--- 624 ---
+		-- keystone: every vocation sees (and gets) its own keystone here; the server reads the same
+		-- per-vocation customStats (passivetree_data.lua `v`); effects in passivetree_keystones.lua
+		{
+			orbit = 0,
+			orbitDist = 0,
+			name = "Resolve Keystone",
+			orbitIndex = 0,
+			isDivine = true,
+			isKeystone = true,
+			group = 103,
+			icon = "ksResolve",
+			stats = {
+				"Holds the keystone of your vocation."
+			},
+			knight = {
+				icon = "ksBulwark",
+				name = "Bulwark",
+				customStats = {
+					ksBulwark = 1
+				},
+				stats = {
+					"With a shield: 15% chance to block a melee or",
+					"ranged attack completely, and 30% of melee",
+					"damage taken is reflected to the attacker."
+				}
+			},
+			paladin = {
+				icon = "ksDeadeye",
+				name = "Deadeye",
+				customStats = {
+					ksDeadeye = 1
+				},
+				stats = {
+					"Crossbow and bolts: 15% chance for a Deadeye",
+					"shot that deals double damage (+100%)."
+				}
+			},
+			sorcerer = {
+				icon = "ksOverload",
+				name = "Elemental Overload",
+				customStats = {
+					ksOverload = 1
+				},
+				stats = {
+					"A spell hit primes the other elements: your next",
+					"spell of a different element within 8 s deals",
+					"+20% damage."
+				}
+			},
+			druid = {
+				icon = "ksThorns",
+				name = "Thorns",
+				customStats = {
+					ksThorns = 1
+				},
+				stats = {
+					"Melee and ranged attackers take earth damage",
+					"back: 30% of their hit + 2 x your magic level."
+				}
+			},
+			illusionist = {
+				icon = "ksInspiringIllusion",
+				name = "Inspiring Illusion",
+				customStats = {
+					ksInspiringIllusion = 1
+				},
+				stats = {
+					"Support (needs a party): other party members",
+					"within 8 sqm of you deal +8% damage."
+				}
+			},
+			inputs = {
+				623
+			},
+			out = {
+			}
+		},
 }
 end
 

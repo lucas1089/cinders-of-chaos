@@ -1,4 +1,4 @@
--- Whirlwind: three spinning strikes (0 / 0.4 / 0.8s) against everything adjacent. Uses weapon attack and skill.
+-- Reaping Gyre: three spinning strikes (0 / 0.4 / 0.8s) against everything adjacent. Uses weapon attack and skill.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local combat = Combat()
@@ -9,8 +9,8 @@ combat:setParameter(COMBAT_PARAM_USECHARGES, true)
 combat:setArea(createCombatArea(AREA_SQUARE1X1))
 
 function onGetFormulaValues(player, skill, attack, factor)
-	local min = (player:getLevel() / 5) + (skill * attack * 0.03) + 8
-	local max = (player:getLevel() / 5) + (skill * attack * 0.06) + 15
+	local min = ((player:getLevel() / 5) + (skill * attack * 0.010) + 4) * 0.7
+	local max = ((player:getLevel() / 5) + (skill * attack * 0.019) + 7) * 0.7
 	return -min, -max
 end
 

@@ -501,8 +501,11 @@ Event.Define = function()
 			return
 		end
 
-		local apiUrl = (Services and Services.eventImageApi) or
-			"https://blacktalon.online/api/api_event_image.php"
+		-- no default image service: set Services.eventImageApi in init.lua to enable custom event backgrounds
+		local apiUrl = Services and Services.eventImageApi
+		if not apiUrl or apiUrl == "" then
+			return
+		end
 		local url = string.format("%s?img=%s", apiUrl, bgImage)
 
 		Event.BgImageCache[bgImage] = false

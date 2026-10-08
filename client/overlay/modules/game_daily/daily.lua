@@ -2,7 +2,7 @@
 
 local OPCODE = 207
 
--- Evolisca ships this helper in its gamelib; the base client does not, so keep a local copy.
+-- donor server ships this helper in its gamelib; the base client does not, so keep a local copy.
 local function sendAction(opcode, action, data)
 	local protocolGame = g_game.getProtocolGame()
 	if protocolGame then
@@ -42,7 +42,7 @@ function onDailyReward(protocol, code, buffer)
 	end)
 
 	if not json_status then
-		g_logger.error("[daily reward] JSON error: " .. data)
+		g_logger.error("[daily reward] JSON error: " .. tostring(json_data))
 
 		return false
 	end
@@ -55,6 +55,8 @@ function onDailyReward(protocol, code, buffer)
 
 		if dailyData then
 			dailyData.Day = dailyData.Day + 2
+			-- server midnight as a local clock instant, so the countdown follows the server day
+			dailyData.ResetAt = os.time() + (tonumber(dailyData.NextIn) or 0)
 		end
 
 		CollectInfo()
@@ -105,20 +107,10 @@ function CollectInfo()
 				panel.claim:show()
 			end
 		elseif i == dailyData.Day + 1 and dailyData.Day < 7 then
-			local currentTime = os.time() - 3600
-			local midnight = os.time({
-				hour = 24,
-				min = 0,
-				sec = 0,
-				year = os.date("%Y"),
-				month = os.date("%m"),
-				day = os.date("%d")
-			})
-			local remainingTime = os.difftime(midnight, currentTime)
+			local remainingTime = math.max(0, os.difftime(dailyData.ResetAt or os.time(), os.time()))
 			local remainingHours = math.floor(remainingTime / 3600)
 			local remainingMinutes = math.floor(remainingTime % 3600 / 60)
-			local elapsedTimeInMinutes = os.date("%H") * 60 + os.date("%M") + 60
-			local valuePercent = elapsedTimeInMinutes / 1440 * 100
+			local valuePercent = (86400 - remainingTime) / 86400 * 100
 
 			panel.Timer:show()
 			panel.Status:hide()
@@ -160,7 +152,8 @@ function toggle()
 	if DailyWindow:isVisible() then
 		DailyWindow:hide()
 	else
-		Show()
+		-- the server answers with OpenDailyWindow, which fills and shows the window
+		sendAction(OPCODE, "open")
 	end
 end
 
