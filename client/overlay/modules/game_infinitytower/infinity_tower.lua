@@ -237,7 +237,7 @@ function populateMilestones(milestones, playerPoints)
     table.insert(milestoneWidgets, divider)
 
     -- Points label above the item slot
-    local pointsStr = milestone.points >= 1000 and (math.floor(milestone.points / 1000) .. 'k') or tostring(milestone.points)
+    local pointsStr = formatShortNumber(milestone.points)
     local pointsLbl = g_ui.createWidget('UIWidget', track)
     pointsLbl:setId('milestonePoints' .. i)
     pointsLbl:setSize({width = 50, height = 12})
@@ -321,7 +321,8 @@ function populateMilestones(milestones, playerPoints)
     local percent = math.min(playerPoints / maxPoints, 1.0)
     local fillWidth = math.floor((barWidth - 6) * percent)
     progressBar:setWidth(fillWidth)
-    progressLabel:setText(playerPoints .. ' / ' .. maxPoints .. ' pts')
+    progressLabel:setText(formatShortNumber(playerPoints) .. ' / ' .. formatShortNumber(maxPoints) .. ' pts')
+    progressLabel:setTooltip(comma_value(playerPoints) .. ' / ' .. comma_value(maxPoints) .. ' pts')
   end
 end
 
@@ -355,7 +356,7 @@ function populateRankings(rankings)
 
     local floorWidget = row:getChildById('floor')
     if floorWidget then
-      floorWidget:setText(tostring(rankData.floor or 0))
+      floorWidget:setText(formatShortNumber(rankData.floor or 0))
     end
 
     local timeWidget = row:getChildById('time')
@@ -426,7 +427,10 @@ function populateSeasonInfos(data)
   local pointsLabel = infinityTowerWindow:recursiveGetChildById('towerPointsLabel')
   
   if seasonLabel then seasonLabel:setText("Current Season: " .. (data.seasonNum or 1)) end
-  if pointsLabel then pointsLabel:setText("Your Tower Points: " .. (data.playerPoints or 0)) end
+  if pointsLabel then
+    pointsLabel:setText("Your Tower Points: " .. formatShortNumber(data.playerPoints or 0))
+    pointsLabel:setTooltip("Your Tower Points: " .. comma_value(data.playerPoints or 0))
+  end
   
   -- Clear existing timer
   if seasonTimerEvent then

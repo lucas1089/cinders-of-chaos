@@ -89,14 +89,19 @@ function openBank(data, currencyName)
 		return
 	end
 
+	-- balances are shown short (15.3k), exact in the tooltip; the deposit/withdraw/transfer dialogs stay exact
+	local function showAmount(widget, amount)
+		widget:setText(formatShortNumber(tonumber(amount) or 0))
+		widget:setTooltip(comma_value(amount))
+	end
 	if currencyName == "gold" then
-		bankingWindow.textEdit2:setText(comma_value(data[1]))
-		bankingWindow.textEdit3:setText(comma_value(data[2]))
+		showAmount(bankingWindow.textEdit2, data[1])
+		showAmount(bankingWindow.textEdit3, data[2])
 		bankingWindow.item:setItemId(3031)
 		bankingWindow.item2:setItemId(3031)
 	else
-		bankingWindow.textEdit2:setText(comma_value(data[4]))
-		bankingWindow.textEdit3:setText(comma_value(data[3]))
+		showAmount(bankingWindow.textEdit2, data[4])
+		showAmount(bankingWindow.textEdit3, data[3])
 		bankingWindow.item:setItemId(35572)
 		bankingWindow.item2:setItemId(35572)
 	end

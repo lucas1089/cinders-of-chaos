@@ -55,6 +55,13 @@ jobs:
             lua5.3 "$t"
           done
 
+      - name: Client unit tests (modules without client API)
+        run: |
+          for t in client/overlay/modules/*/*_test.lua; do
+            luajit "$t"
+            lua5.3 "$t"
+          done
+
       - name: Client modules (otmod name, scripts)
         run: python3 -I tools/ci/check_modules.py
 

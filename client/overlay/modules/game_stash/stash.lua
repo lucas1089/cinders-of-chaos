@@ -376,7 +376,7 @@ Stash.Define = function()
 	Stash.CreateItem = function(Data)
 		local itemWidget = g_ui.createWidget('SupplyItem', Stash.UI.SupplyList)
 		itemWidget:setItemId(Data.sprite)
-		itemWidget.countbase:setText(Data.count)
+		itemWidget.countbase:setText(formatShortNumber(Data.count)) -- short (15.3k); the withdraw dialog shows the exact count
 		-- UIItem's internal count is uint16 (see client/src/client/item.h),
 		-- so passing the raw stash count overflows for any value >= 65536 and
 		-- silently displays a wrong stack-art tier. The number the player sees

@@ -201,6 +201,11 @@ local function addStat(key, value, tooltip)
   if value == nil or value == '' then return end
   local row = g_ui.createWidget('SpellbookStat', window.details.stats)
   row.key:setText(key)
+  if type(value) == 'number' then
+    -- numbers are shown short (15.3k), exact in the tooltip
+    if not tooltip and (value >= 1000 or value <= -1000) then tooltip = comma_value(value) end
+    value = formatShortNumber(value)
+  end
   row.value:setText(tostring(value))
   if tooltip then row.value:setTooltip(tooltip) end
   return row
@@ -242,7 +247,7 @@ local function showDetails(spell)
   else
     addStat(tr('Mana'), mana > 0 and mana or '-')
   end
-  if (tonumber(spell.soul) or 0) > 0 then addStat(tr('Soul'), spell.soul) end
+  if (tonumber(spell.soul) or 0) > 0 then addStat(tr('Soul'), tonumber(spell.soul)) end
   addStat(tr('Cooldown'), formatSeconds(spell.cooldown),
     spell.groupCooldown and tr('Group cooldown: %s', formatSeconds(spell.groupCooldown)) or nil)
   addStat(tr('Group'), capitalize(spell.group or '-'))
@@ -311,7 +316,7 @@ local function buildList()
     setIcon(row.icon, row.item, spell)
     row.name:setText(spell.name or '?')
     row.words:setText((spell.words and spell.words ~= '') and spell.words or (spell.rune and tr('Rune') or ''))
-    row.level:setText(tr('Lv %d', tonumber(spell.level) or 0))
+    row.level:setText(tr('Lv %s', formatShortNumber(tonumber(spell.level) or 0)))
     if meta.level and (tonumber(spell.level) or 0) > meta.level then row.level:setColor('#e03a1e') end
     if spell.element then row.name:setColor(elementColor(spell.element)) end
     rows[i] = row

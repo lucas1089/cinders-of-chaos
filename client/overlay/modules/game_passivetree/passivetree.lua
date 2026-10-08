@@ -148,7 +148,7 @@ function create()
 		return 
 	end
 
-	window.pWindow.points:setText(pointsOwned .. " points")
+	window.pWindow.points:setText(formatShortNumber(pointsOwned) .. " points")
 
 	view = window:recursiveGetChildById("view")
 	background = window:recursiveGetChildById("background")
@@ -1196,7 +1196,7 @@ end
 function updatePoints(value)
 	pointsOwned = pointsOwned + value
 
-	window.pWindow.points:setText(pointsOwned .. " points")
+	window.pWindow.points:setText(formatShortNumber(pointsOwned) .. " points")
 
 	return 
 end

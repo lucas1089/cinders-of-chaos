@@ -28,7 +28,7 @@ local function paint(index)
     return
   end
   local value = row:getChildById('value')
-  value:setText(tostring(v.level))
+  value:setText(formatShortNumber(v.level)) -- short (15.3k); the row tooltip has the exact level
   if v.level > v.base then
     value:setColor('#44ad25')
     row:setTooltip(string.format('%s: %d (base %d)\n%d%% to the next level', NAMES[index + 1], v.level, v.base, v.percent))

@@ -1,8 +1,8 @@
 # Damage, healing, mana and experience numbers above the map are shortened: 1000 -> 1k, 15300 -> 15.3k, 2450000 -> 2.45M.
 diff -ru a/src/client/protocolgameparse.cpp b/src/client/protocolgameparse.cpp
 --- a/src/client/protocolgameparse.cpp	2026-10-08 03:27:19.698198074 +0000
-+++ b/src/client/protocolgameparse.cpp	2026-10-08 03:27:19.717462152 +0000
-@@ -1725,6 +1725,34 @@
++++ b/src/client/protocolgameparse.cpp	2026-10-08 03:43:03.052725353 +0000
+@@ -1725,6 +1725,35 @@
      g_map.addThing(effect, pos);
  }
  
@@ -13,23 +13,24 @@ diff -ru a/src/client/protocolgameparse.cpp b/src/client/protocolgameparse.cpp
 +    static const char* units[] = { "", "k", "M", "B", "T" };
 +    if (value < 1000)
 +        return std::to_string(value);
-+    double v = static_cast<double>(value);
++    uint64_t div = 1;
 +    int unit = 0;
-+    while (v >= 1000.0 && unit < 4) {
-+        v /= 1000.0;
++    while (value / div >= 1000 && unit < 4) {
++        div *= 1000;
 +        ++unit;
 +    }
-+    const int decimals = v >= 100.0 ? 0 : (v >= 10.0 ? 1 : 2);
-+    double factor = decimals == 2 ? 100.0 : (decimals == 1 ? 10.0 : 1.0);
-+    v = std::floor(v * factor) / factor; // floor: 999999 is 999k, not 1000k
-+    char buffer[32];
-+    snprintf(buffer, sizeof(buffer), "%.*f", decimals, v);
-+    std::string text = buffer;
-+    if (text.find('.') != std::string::npos) {
-+        while (!text.empty() && text.back() == '0')
-+            text.pop_back();
-+        if (!text.empty() && text.back() == '.')
-+            text.pop_back();
++    // integer maths only: floating point turns 1150 into "1.14k"
++    const uint64_t whole = value / div;
++    const int decimals = whole >= 100 ? 0 : (whole >= 10 ? 1 : 2);
++    std::string text = std::to_string(whole);
++    if (decimals > 0) {
++        const uint64_t step = div / (decimals == 2 ? 100 : 10);
++        std::string frac = std::to_string((value % div) / step);
++        frac.insert(0, decimals - frac.size(), '0');
++        while (!frac.empty() && frac.back() == '0')
++            frac.pop_back();
++        if (!frac.empty())
++            text += "." + frac;
 +    }
 +    return text + units[unit];
 +}
@@ -37,7 +38,7 @@ diff -ru a/src/client/protocolgameparse.cpp b/src/client/protocolgameparse.cpp
  void ProtocolGame::parseAnimatedText(const InputMessagePtr& msg)
  {
      Position position = getPosition(msg);
-@@ -2682,7 +2710,7 @@
+@@ -2682,7 +2711,7 @@
                  continue;
              AnimatedTextPtr animatedText = std::make_shared<AnimatedText>();
              animatedText->setColor(color[i]);
@@ -46,7 +47,7 @@ diff -ru a/src/client/protocolgameparse.cpp b/src/client/protocolgameparse.cpp
              if (font.size())
                  animatedText->setFont(font);
  
-@@ -2705,7 +2733,7 @@
+@@ -2705,7 +2734,7 @@
  
          AnimatedTextPtr animatedText = std::make_shared<AnimatedText>();
          animatedText->setColor(color);

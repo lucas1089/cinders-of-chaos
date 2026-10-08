@@ -1,0 +1,9 @@
+Module
+  name: client_chaos_numbers
+  description: Short numbers everywhere (1000 -> 1k, 15300 -> 15.3k, 2450000 -> 2.45M): globals formatShortNumber, shortNumbersIn, shortNumberTooltip
+  author: project-chaos
+  sandboxed: false
+  reloadable: false
+  scripts: [ numbers ]
+  autoload: true
+  autoload-priority: 10

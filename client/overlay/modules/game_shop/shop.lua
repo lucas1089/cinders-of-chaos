@@ -308,7 +308,9 @@ function processStatus(data)
     processAd(data['ad'])
   end
   if data['points'] then
-    shop.infoPanel.points:setText(tr("Chaos Coins:") .. " " .. data['points'])
+    -- the balance is shown short (15.3k), exact in the tooltip
+    shop.infoPanel.points:setText(tr("Chaos Coins:") .. " " .. formatShortNumber(tonumber(data['points']) or data['points']))
+    shop.infoPanel.points:setTooltip(tr("Chaos Coins:") .. " " .. comma_value(data['points']))
   end
   if data['buyUrl'] and data['buyUrl']:sub(1, 4):lower() == "http" then
     shop.infoPanel.buy:show()
@@ -427,7 +429,12 @@ function addOffer(category, data)
   end
   local newIndex = shop.offers:getChildCount() + 1
   offer:setId("offer_" .. category .. "_" .. newIndex)
-  offer.title:setText(data["title"] .. " (" .. data["cost"] .. " coins)")
+  -- the price in the list is short (15.3k), exact in the tooltip and in the buy confirmation
+  local cost = tonumber(data["cost"])
+  offer.title:setText(data["title"] .. " (" .. (cost and formatShortNumber(cost) or tostring(data["cost"])) .. " coins)")
+  if cost and (cost >= 1000 or cost <= -1000) then
+    offer.title:setTooltip(data["title"] .. " (" .. comma_value(cost) .. " coins)")
+  end
   offer.description:setText(data["description"])  
   offer.offerId = data["id"]
   if category ~= 0 then
