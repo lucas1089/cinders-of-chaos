@@ -268,6 +268,13 @@ eqm(K.partyMultiplier({attackerId = 1, party = 1, pos = pos(10, 10), now = 1000}
 eqm(K.partyMultiplier(hit, mark, {{id = 1, pos = pos(11, 10)}, {id = 3, pos = pos(11, 10)}}), 1.2, "both, one aura at most")
 eqm(K.partyMultiplier({attackerId = 2, party = 1, pos = pos(10, 10), now = 1000, multiClient = true}, mark, givers), 1, "multi-client member gets nothing")
 eqm(K.partyMultiplier(hit, {owner = 1, party = 1, untilTime = 5000, multiClient = true}, {{id = 1, pos = pos(11, 10), multiClient = true}}), 1, "multi-client illusionist gives nothing")
+-- Shared Phantasm also heals the hitting party member for a share of the hit (the illusionist's own hits: nothing)
+eq(K.phantasmLeech(hit, mark, 1000), math.floor(1000 * cfg.phantasm.leech), "leech on a marked enemy")
+eq(K.phantasmLeech(hit, nil, 1000), 0, "no mark, no leech")
+eq(K.phantasmLeech({attackerId = 1, party = 1, pos = pos(10, 10), now = 1000}, mark, 1000), 0, "not for the illusionist")
+eq(K.phantasmLeech({attackerId = 2, party = 9, pos = pos(10, 10), now = 1000}, mark, 1000), 0, "other party")
+eq(K.phantasmLeech({attackerId = 2, party = 1, pos = pos(10, 10), now = 5001}, mark, 1000), 0, "mark expired")
+eq(K.phantasmLeech({attackerId = 2, party = 1, pos = pos(10, 10), now = 1000, multiClient = true}, mark, 1000), 0, "multi-client")
 
 -- engine glue: the illusionist marks, a party member hits the marked enemy harder
 local leader = mkCreature(7, pos(600, 600), "player")
@@ -277,6 +284,7 @@ leader.getParty = function() return party end; member.getParty = function() retu
 ChaosPassiveCache[7] = {ksSharedPhantasm = 1, ksInspiringIllusion = 1}
 ChaosPassiveCache[8] = {}
 local m1 = mkCreature(70, pos(603, 600), "monster")
+dealt = {}
 eq(ev.onHealthChange(m1, member, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), 1080, "aura only (no mark yet)")
 eq(ev.onHealthChange(m1, leader, 1000, COMBAT_DEATHDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 1000, "the illusionist gets nothing")
 eq(ev.onHealthChange(m1, member, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), 1200, "mark + aura")
@@ -285,6 +293,11 @@ eq(ev.onHealthChange(m1, member, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, OR
 NOW = NOW + cfg.phantasm.duration + 1
 eq(ev.onHealthChange(m1, member, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED), 1000, "mark gone")
 runEvents()
+local heals = {}
+for _, d in ipairs(dealt) do if d.type == COMBAT_HEALING then heals[#heals + 1] = d end end
+eq(#heals, 1, "one Shared Phantasm heal per tick and member")
+eq(heals[1].target, 8, "the party member is healed"); eq(heals[1].attacker, 7, "by the illusionist")
+eq(heals[1].amount, math.floor(1200 * cfg.phantasm.leech) + math.floor(1120 * cfg.phantasm.leech), "4% of the marked hits")
 
 -- ---------------------------------------------------------------- per-vocation stats in the generated data
 local data = dofile("data/scripts/chaos/passivetree_data.lua")
@@ -340,7 +353,7 @@ if f then
       cfg.echo.minTargets .. " or more"}, [624] = {sec(cfg.overload.window), "+" .. pct(cfg.overload.bonus)}},
     druid = {[621] = {pct(cfg.overgrowth.percent), sec(cfg.overgrowth.pulses * cfg.overgrowth.interval), cfg.overgrowth.pulses .. " pulses"},
       [624] = {pct(cfg.thorns.percent), cfg.thorns.perMagicLevel .. " x your magic level"}},
-    illusionist = {[621] = {sec(cfg.phantasm.duration), "+" .. pct(cfg.phantasm.bonus)},
+    illusionist = {[621] = {sec(cfg.phantasm.duration), "+" .. pct(cfg.phantasm.bonus), "heal for " .. pct(cfg.phantasm.leech)},
       [624] = {cfg.inspire.range .. " sqm", "+" .. pct(cfg.inspire.bonus)}},
   }
   for vocName, byNode in pairs(want) do

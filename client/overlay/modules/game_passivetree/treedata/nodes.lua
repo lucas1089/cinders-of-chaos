@@ -11839,7 +11839,7 @@ function getTreeNodes()
 				stats = {
 					"Support (needs a party): your hits mark the enemy",
 					"for 6 s. Other party members deal +12% damage",
-					"to a marked enemy."
+					"to a marked enemy and heal for 4% of it."
 				}
 			},
 			inputs = {

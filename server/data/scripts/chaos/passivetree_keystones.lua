@@ -13,6 +13,7 @@
 --                ksThorns       melee/ranged attackers take 30% of their hit + 2 x magic level back as earth damage
 --   illusionist  (support: makes the party hit harder, never the illusionist)
 --                ksSharedPhantasm    the illusionist's hits mark the enemy for 6 s: other party members deal +12% to it
+--                                    and heal for 4% of the damage they deal to it (the illusionist heals them)
 --                ksInspiringIllusion other party members within 8 sqm (same floor) deal +8% damage
 --                Both need a party; multi-client characters neither give nor get them (Chaos.isMultiClient).
 -- The numbers are in `cfg` below; the client tooltips (treedata/nodes.lua) repeat them and the unit test checks that.
@@ -42,7 +43,7 @@ local cfg = {
 	overload = {bonus = 0.20, window = 8000, castWindow = 150},
 	overgrowth = {percent = 0.30, pulses = 3, interval = 2000},
 	thorns = {percent = 0.30, perMagicLevel = 2},
-	phantasm = {bonus = 0.12, duration = 6000},
+	phantasm = {bonus = 0.12, duration = 6000, leech = 0.04},
 	inspire = {bonus = 0.08, range = 8},
 }
 K.cfg = cfg
@@ -184,6 +185,16 @@ function K.partyMultiplier(hit, mark, givers)
 		end
 	end
 	return m
+end
+
+-- Shared Phantasm's heal: what a party member's hit of `amount` on a marked enemy heals it for (0 when the mark does
+-- not count for this hit: no party, another party, its own mark, expired, multi-client)
+function K.phantasmLeech(hit, mark, amount)
+	if not hit.party or hit.multiClient or not mark or mark.party ~= hit.party or mark.owner == hit.attackerId
+			or hit.now > mark.untilTime or mark.multiClient then
+		return 0
+	end
+	return math.floor(math.abs(amount) * cfg.phantasm.leech)
 end
 
 function K.hasKeystone(bonuses)
@@ -430,6 +441,32 @@ local function setMark(player, party, target)
 	end
 end
 
+-- Shared Phantasm heals: collected per party member until the end of the server tick, healed by the mark's owner
+local leechBuffer = {}
+local function flushLeech(memberId)
+	local entry = leechBuffer[memberId]
+	leechBuffer[memberId] = nil
+	local member = Player(memberId)
+	if entry and member and member:getHealth() > 0 and entry.amount > 0 then
+		guarded(doTargetCombat, Player(entry.owner) or 0, member, COMBAT_HEALING, entry.amount, entry.amount, CONST_ME_NONE,
+			ORIGIN_SPELL)
+	end
+end
+
+local function addLeech(member, owner, amount)
+	if amount <= 0 then
+		return
+	end
+	local id = member:getId()
+	local entry = leechBuffer[id]
+	if not entry then
+		entry = {owner = owner, amount = 0}
+		leechBuffer[id] = entry
+		addEvent(flushLeech, 0, id)
+	end
+	entry.amount = entry.amount + amount
+end
+
 local function partyBonus(attacker, creature, pd, sd)
 	local party = attacker:getParty()
 	if not party then
@@ -448,10 +485,14 @@ local function partyBonus(attacker, creature, pd, sd)
 	if not mark and #givers == 0 then
 		return pd, sd
 	end
-	local m = K.partyMultiplier({attackerId = attacker:getId(), party = K.partyKey(party), pos = copyPos(attacker:getPosition()),
-		now = now(), multiClient = isMultiClient(attacker)}, mark, givers)
+	local hit = {attackerId = attacker:getId(), party = K.partyKey(party), pos = copyPos(attacker:getPosition()),
+		now = now(), multiClient = isMultiClient(attacker)}
+	local m = K.partyMultiplier(hit, mark, givers)
 	if m ~= 1 then
 		pd, sd = K.scale(pd, m), K.scale(sd, m)
+	end
+	if mark then
+		addLeech(attacker, mark.owner, K.phantasmLeech(hit, mark, math.abs(pd) + math.abs(sd)))
 	end
 	return pd, sd
 end
