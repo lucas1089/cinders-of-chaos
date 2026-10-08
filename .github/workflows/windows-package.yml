@@ -111,6 +111,19 @@ jobs:
           # the libraries are built with the VS 2019 toolset (v142, 14.29, installed on the windows-2022 image): the
           # Boost 1.83 ports build with b2, which names libraries vc140 for MSVC 14.4x and then cannot find them. The
           # engine itself is built with the current compiler (v142 and v143 libraries are binary compatible).
+          # vcpkg's packages export imported targets (cryptopp::cryptopp, unofficial::libmariadb); the base CMakeLists.txt
+          # names the libraries by bare file names that do not exist there (cryptopp-static.lib, libmariadb.lib)
+          python - <<'PY'
+          import re
+          p = 'server/CMakeLists.txt'
+          s = open(p).read()
+          block = ('\n# Windows package build: vcpkg imported targets\n'
+                   'if (TARGET cryptopp::cryptopp)\n    set(Crypto++_LIBRARIES cryptopp::cryptopp)\nendif ()\n'
+                   'if (TARGET unofficial::libmariadb)\n    set(MYSQL_CLIENT_LIBS unofficial::libmariadb)\nendif ()\n')
+          s, n = re.subn(r'(find_package\(Threads REQUIRED\)\n)', lambda m: m.group(1) + block, s, count=1)
+          assert n == 1, 'find_package(Threads REQUIRED) not found'
+          open(p, 'w').write(s)
+          PY
           mkdir -p server/triplets
           cat > server/triplets/x64-windows-v142.cmake <<EOF
           set(VCPKG_TARGET_ARCHITECTURE x64)
