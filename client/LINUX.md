@@ -39,4 +39,10 @@ Put `Tibia.dat`/`Tibia.spr` (10.98) in `<game-dir>/data/things/1098/`, copy or l
 Start `server/tools/clientservices.py` next to the game server (see `server/README.md`) so the login screen shows the
 boosted creature and boss, the event calendar and the players online. `init.lua` points at `http://127.0.0.1:8090/clientservices`.
 
-Still logged at login, not investigated yet: "invalid slot", and a parse exception on one login packet (292 bytes left unread).
+- The server sends 14 skills (the classic seven plus crafting, woodcutting, mining, herbalist, armorsmith, weaponsmith
+  and jewelsmith) where the client read seven, so critical hit and leech showed the crafting numbers and the 35 bytes
+  left over were read as opcode 0x00, dropping the rest of the message ("parse message exception ... 292 unread") at
+  login and on every skill update. It also sends inventory slots up to 16 (gloves) where the client stopped at 15
+  ("invalid slot"). `base-patches/0012-chaos-skills-and-slots.patch` adds the feature `GameChaosCraftingSkills`
+  (enabled in the 1098 profile, patch 0006), reads the seven crafting skills (passed to Lua as
+  `g_game.onCraftingSkill(index, level, base, percent)`) and accepts slot 16.
