@@ -212,6 +212,9 @@ function p:sendCancelMessage(t) self.cancel = t end
 function p:sendTextMessage(_, t) self.msgs[#self.msgs + 1] = t end
 
 B.chunkBytes = 1500 -- force several packets
+-- chunks go out one per tick: run the scheduled sends right away, in order
+function addEvent(fn, delay, ...) fn(...) end
+function Player(id) return id == p.id and p or nil end
 assert(talks["!spells"] and talks["/spells"], "both talkactions registered")
 eq(talks["!spells"].onSay(p, "!spells", ""), false, "talkaction returns false")
 eq(sent[1].action, "open", "open first"); eq(sent[1].opcode, 219, "opcode on the wire")
@@ -246,4 +249,7 @@ function gm:getGroup() return {getAccess = function() return true end} end
 talks["/spells"].onSay(gm, "/spells", "reload")
 assert(gm.msgs[1] and gm.msgs[1]:find("12 spells"), "reload message")
 
+-- control characters from script files (CR, tabs, NUL) never reach the client
+assert(ChaosSpellbook.clean("Heals\r\nyou\0 and\tfriends") == "Heals you and friends", "clean control characters")
+assert(ChaosSpellbook.clean({a = {"x\0y"}}).a[1] == "x y", "clean nested")
 print("spellbook: all asserts passed")

@@ -1,0 +1,122 @@
+# Creatures can be drawn bigger: Creature:setDrawScale(f) (Lua), scaled around their feet, name and bars lifted; used for bosses.
+diff -ru a/src/client/creature.cpp b/src/client/creature.cpp
+--- a/src/client/creature.cpp	2026-10-08 04:01:12.356878083 +0000
++++ b/src/client/creature.cpp	2026-10-08 04:09:13.543025709 +0000
+@@ -161,6 +161,10 @@
+ 
+     size_t drawQueueSize = g_drawQueue->size();
+     m_outfit.draw(dest - jumpOffset + animationOffset, m_walking ? m_walkDirection : m_direction, m_walkAnimationPhase, true, lightView);
++    if (m_drawScale != 1.0f) {
++        // scale around the feet (bottom middle of the creature's tile) so it stays on its square
++        g_drawQueue->setScale(drawQueueSize, creatureCenter + Point(0, sprSize / 2), m_drawScale);
++    }
+     if (m_marked) {
+         g_drawQueue->setMark(drawQueueSize, updatedMarkedColor());
+     }
+@@ -190,8 +194,14 @@
+     m_outfit.draw(destRect, direction, 0, animate, ui, oldScaling, mountOnly, ignoreDisplacement);
+ }
+ 
+-void Creature::drawInformation(const Point& point, bool useGray, const Rect& parentRect, int drawFlags)
++void Creature::drawInformation(const Point& drawPoint, bool useGray, const Rect& parentRect, int drawFlags)
+ {
++    // a creature drawn bigger (setDrawScale) gets its name and bars lifted above its head
++    Point point = drawPoint;
++    if (m_drawScale > 1.0f) {
++        const int tiles = std::max(1, rawGetThingType() ? rawGetThingType()->getHeight() : 1);
++        point.y -= (int)((m_drawScale - 1.0f) * tiles * g_sprites.spriteSize());
++    }
+     if (!g_game.getFeature(Otc::GameOldInformationBar) && g_game.getClientVersion() >= 760) {
+         if (m_healthPercent < 1)  // creature is dead, we get rid of its information bar
+             return;
+diff -ru a/src/client/creature.h b/src/client/creature.h
+--- a/src/client/creature.h	2026-10-08 04:01:12.345623378 +0000
++++ b/src/client/creature.h	2026-10-08 04:01:30.106161699 +0000
+@@ -96,6 +96,9 @@
+ 
+     Point getInformationOffset() { return m_informationOffset; }
+     void setInformationOffset(int x, int y) { m_informationOffset = Point(x, y); }
++    // Chaos: draw the creature bigger (bosses); 1 = normal size, anchored at the creature's feet
++    void setDrawScale(float scale) { m_drawScale = std::max(0.5f, std::min(3.0f, scale)); }
++    float getDrawScale() { return m_drawScale; }
+ 
+     void setText(const std::string& text, const Color& color);
+     std::string getText();
+@@ -270,6 +273,7 @@
+     Color m_informationColor;
+     bool m_useCustomInformationColor = false;
+     Point m_informationOffset;
++    float m_drawScale = 1.0f;
+     Color m_outfitColor;
+     ScheduledEventPtr m_outfitColorUpdateEvent;
+     Timer m_outfitColorTimer;
+diff -ru a/src/client/luafunctions_client.cpp b/src/client/luafunctions_client.cpp
+--- a/src/client/luafunctions_client.cpp	2026-10-08 04:01:12.367340597 +0000
++++ b/src/client/luafunctions_client.cpp	2026-10-08 04:01:30.110251813 +0000
+@@ -664,6 +664,8 @@
+     g_lua.bindClassMemberFunction<Creature>("resetInformationColor", &Creature::resetInformationColor);
+     g_lua.bindClassMemberFunction<Creature>("setInformationOffset", &Creature::setInformationOffset);
+     g_lua.bindClassMemberFunction<Creature>("getInformationOffset", &Creature::getInformationOffset);
++    g_lua.bindClassMemberFunction<Creature>("setDrawScale", &Creature::setDrawScale);
++    g_lua.bindClassMemberFunction<Creature>("getDrawScale", &Creature::getDrawScale);
+     g_lua.bindClassMemberFunction<Creature>("setText", &Creature::setText);
+     g_lua.bindClassMemberFunction<Creature>("getText", &Creature::getText);
+     g_lua.bindClassMemberFunction<Creature>("clearText", &Creature::clearText);
+diff -ru a/src/framework/graphics/drawqueue.cpp b/src/framework/graphics/drawqueue.cpp
+--- a/src/framework/graphics/drawqueue.cpp	2026-10-08 04:01:12.332061322 +0000
++++ b/src/framework/graphics/drawqueue.cpp	2026-10-08 04:01:12.384282704 +0000
+@@ -220,6 +220,19 @@
+     g_painter->popTransformMatrix();
+ }
+ 
++void DrawQueueConditionScale::start(DrawQueue*)
++{
++    g_painter->pushTransformMatrix();
++    g_painter->translate(-m_center.x, -m_center.y);
++    g_painter->scale(m_factor);
++    g_painter->translate(m_center.x, m_center.y);
++}
++
++void DrawQueueConditionScale::end(DrawQueue*)
++{
++    g_painter->popTransformMatrix();
++}
++
+ void DrawQueueConditionMark::start(DrawQueue*)
+ {
+     // nothing
+diff -ru a/src/framework/graphics/drawqueue.h b/src/framework/graphics/drawqueue.h
+--- a/src/framework/graphics/drawqueue.h	2026-10-08 04:01:12.322213630 +0000
++++ b/src/framework/graphics/drawqueue.h	2026-10-08 04:01:12.383990335 +0000
+@@ -213,6 +213,18 @@
+     float m_angle;
+ };
+ 
++// Chaos: draws the queued items scaled around a point (bosses are drawn bigger, anchored at their feet)
++struct DrawQueueConditionScale : public DrawQueueCondition {
++    DrawQueueConditionScale(size_t start, size_t end, const Point& center, float factor) :
++        DrawQueueCondition(start, end), m_center(center), m_factor(factor) {}
++
++    void start(DrawQueue* queue) override;
++    void end(DrawQueue* queue) override;
++
++    Point m_center;
++    float m_factor;
++};
++
+ struct DrawQueueConditionMark : public DrawQueueCondition {
+     DrawQueueConditionMark(size_t start, size_t end, const Color& color) :
+         DrawQueueCondition(start, end), m_color(color)
+@@ -349,6 +361,12 @@
+         }
+     }
+ 
++    void setScale(size_t start, const Point& center, float factor)
++    {
++        if (start == m_queue.size() || factor == 1.0f) return;
++        m_conditions.push_back(std::make_unique<DrawQueueConditionScale>(start, m_queue.size(), center, factor));
++    }
++
+     void setMark(size_t start, const Color& color)
+     {
+         if (start == m_queue.size()) return;

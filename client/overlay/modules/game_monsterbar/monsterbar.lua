@@ -39,10 +39,16 @@ local function paint(creature, tier, label, mods)
   modsLabel:setVisible(hasMods and true or false)
 end
 
+-- bosses are drawn this much bigger than ordinary monsters (needs base patch 0020, Creature:setDrawScale)
+local BOSS_SCALE = 1.5
+
 -- in-world label: modifiers on a line above the name, name coloured by tier
 local function labelCreature(creature, tier, mods)
   if not creature then
     return
+  end
+  if creature.setDrawScale then
+    creature:setDrawScale(tier == 'boss' and BOSS_SCALE or 1)
   end
   local t = TIERS[tier]
   if not t or tier == 'normal' then

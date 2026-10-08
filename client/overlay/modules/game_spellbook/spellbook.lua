@@ -255,7 +255,11 @@ local function showDetails(spell)
   local elementRow = addStat(tr('Element'), spell.element and capitalize(spell.element) or '-')
   if elementRow and spell.element then elementRow.value:setColor(elementColor(spell.element)) end
   addStat(tr('Target'), TARGET_TEXT[spell.target] or '-')
-  if spell.scaling then addStat(tr('Scales with'), spell.scaling, spell.scaling) end
+  if spell.scaling then
+    -- the column is narrow: short form here, the full text in the tooltip
+    local short = spell.scaling:gsub('distance skill x weapon attack', 'dist. x weapon'):gsub('skill x weapon attack', 'skill x weapon')
+    addStat(tr('Scales'), short, 'Scales with ' .. spell.scaling)
+  end
   local short, full = vocationText(spell)
   addStat(tr('Vocations'), short, full)
   if spell.premium then addStat(tr('Premium'), tr('Yes')) end

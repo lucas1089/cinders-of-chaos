@@ -31,6 +31,7 @@ local Book = ChaosSpellbook
 Book.spellsXml = Book.spellsXml or "data/spells/spells.xml"
 Book.scriptsDir = Book.scriptsDir or "data/spells/scripts/"
 Book.chunkBytes = Book.chunkBytes or 6500 -- JSON bytes of spells per packet (the packet limit is far higher)
+Book.chunkDelay = Book.chunkDelay or 50 -- ms between chunk packets
 Book.maxAreaSize = 21
 Book.openCooldown = 2 -- seconds between two full sends to the same player
 
@@ -724,6 +725,22 @@ function Book.chunk(list, budget, encode)
 end
 
 -- ------------------------------------------------------------------ protocol
+-- Text read from script files can carry control characters (CR from CRLF files, tabs, even NUL bytes). They break
+-- the client's JSON parser, and a NUL cuts the extended opcode string short so the rest of the packet is misread.
+local function clean(value)
+	if type(value) == "string" then
+		return (value:gsub("%c", " "):gsub("  +", " "))
+	elseif type(value) == "table" then
+		local out = {}
+		for k, v in pairs(value) do
+			out[k] = clean(v)
+		end
+		return out
+	end
+	return value
+end
+Book.clean = clean
+
 local lastOpen = {}
 
 function Book.sendTo(player)
@@ -734,7 +751,7 @@ function Book.sendTo(player)
 	end
 	lastOpen[pid] = now
 
-	local list = Book.get()
+	local list = clean(Book.get())
 	local chunks = Book.chunk(list, Book.chunkBytes, json.encode)
 	local vocation = player:getVocation()
 	Chaos.send(player, OPCODE, "open", {
@@ -745,10 +762,21 @@ function Book.sendTo(player)
 		chunks = #chunks,
 		vocationNames = Book.vocationList or {}
 	})
+	-- one chunk per server tick: sent together they end up in a single ~80 KB packet, which the client misreads
 	for i, chunk in ipairs(chunks) do
-		Chaos.send(player, OPCODE, "spells", {index = i, spells = chunk})
+		addEvent(function()
+			local p = Player(pid)
+			if p then
+				Chaos.send(p, OPCODE, "spells", {index = i, spells = chunk})
+			end
+		end, i * Book.chunkDelay)
 	end
-	Chaos.send(player, OPCODE, "done", {total = #list})
+	addEvent(function()
+		local p = Player(pid)
+		if p then
+			Chaos.send(p, OPCODE, "done", {total = #list})
+		end
+	end, (#chunks + 1) * Book.chunkDelay)
 	return true
 end
 

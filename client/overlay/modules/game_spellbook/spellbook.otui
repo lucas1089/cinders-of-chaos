@@ -75,7 +75,7 @@ SpellbookStat < UIWidget
     id: key
     anchors.left: parent.left
     anchors.top: parent.top
-    width: 74
+    width: 72
     text-align: left
     font: verdana-11px-antialised
     color: #8c8070
