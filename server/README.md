@@ -44,6 +44,10 @@ server/
     crafting.lua (crafting bench and orbs; rules in data/lib/chaos_crafting.lua, installer tools/install_crafting.py)
     treasure_goblin.lua  treasure_goblin_core.lua  treasure_goblin_config.lua (treasure goblins, see "Treasure goblins")
     leaderboard.lua  leaderboard_core.lua  leaderboard_config.lua (weekly boards with titles, class ladder)
+    season.lua  season_core.lua  season_config.lua (seasons; sql/chaos_season.sql, tools/patch_season_events.py)
+    hunt.lua  hunt_core.lua  hunt_config.lua  hunt_supplies.lua (hunt tracker; supply prices from tools/gen_supply_prices.py)
+    daily_core.lua  daily_config.lua (daily reward login streaks, milestones, grace, login window order)
+    patchnotes.lua  patchnotes_core.lua (patch notes window; the notes are data/patchnotes/*.md, see "Patch notes")
 ```
 
 ## Install
@@ -102,7 +106,7 @@ working directory, as with the rest of the base server libs).
 |---|---|---|---|
 | game_bank | `bank.lua` | 60 | Gold deposit/withdraw/transfer on the native bank balance, star currency in `chaos_bank`. `!bank` opens the window. Written to the client contract; mock-tested only. |
 | game_autoloot | `autoloot.lua` | 216 | Window protocol and `!autoloot` / `!autolootclient` talkactions; list lives in the same storages (base 80000) as the base server onDropLoot callback, which does the actual looting. XML talkaction conflict possible (see below). |
-| game_daily | `daily.lua` | 207 | 7-day streak with claim, midnight rollover, `!daily`, optional open on login. Rewards: platinum coins, Chaos and Divine Orbs and a crystal coin, plus a week bonus on day 7 (all or nothing); edit `Chaos.daily` in `chaos_constants.lua`. |
+| game_daily | `daily.lua`, `daily_core.lua`, `daily_config.lua` | 207 | 7-day reward cycle with claim, midnight rollover, `!daily`, open on login through the login window queue. Rewards: platinum coins, Chaos and Divine Orbs and a crystal coin, plus a week bonus on day 7 (all or nothing); edit `Chaos.daily` in `chaos_constants.lua`. Account-wide login streaks with milestones, titles and grace days (see "Daily reward and login streaks"). |
 | game_notifications | `notifications.lua` | 79 out, 151/152 in | `/gmnotify`, accept/decline of a standard TFS party invite, `ChaosNotify.*` sender API. Catacomb start / leave-queue are hooks only; nothing triggers party/catacomb/task/battle pass toasts automatically. |
 | game_passivetree | `passivetree.lua`, `passivetree_data.lua`, `passivetree_effects.lua`, `passivetree_keystones.lua`, `paragon.lua` | 65 | Points, save with full validation (known ids, connected to root, point cap), preset storage, priced reset and single-node refund (see "Respec"), build codes (see "Build sharing"); the bonuses are applied (see "Passive tree effects"). Paragon track past level 1000 on the same opcode (see "Paragon"). |
 | game_dungeons | `dungeons.lua` | 109 | Reads the base server `DUNGEON_SYSTEM` table. Queue, group formation, teleport in, timer, monster-count progress, boss kill, difficulty unlock, speed/flawless challenges, solo/group rankings, teleport out. Difficulty does not change monsters; loot panel is display only. |
@@ -116,8 +120,11 @@ working directory, as with the rest of the base server libs).
 | game_siege | `siege.lua`, `siege_core.lua`, `siege_config.lua` | 233, `!siege` / `/siege` | Weekly guild siege for the Chaos Obelisk: sign-ups, runtime arena, HUD, rewards and the champion title, tested in game (see "Guild siege"). |
 | game_leaderboard | `leaderboard.lua`, `leaderboard_core.lua`, `leaderboard_config.lua` | 229, `!leaderboard` | Weekly World Boss / Bounty Hunter / Rifts / Goblin Slayer / Guild Siege / Arena boards with titles and orbs for the top 3, all-time class ladder, tested in game (see "Leaderboards"). |
 | game_crafting | `crafting.lua`, `data/lib/chaos_crafting.lua` | 232, `!craft` / `/craft` | Crafting bench and the crafting orbs (Transmutation, Alchemy, Exalted, Annulment, Scouring, plus Chaos and Divine), tested in game (see "Crafting"). |
+| game_hunt | `hunt.lua`, `hunt_core.lua`, `hunt_config.lua`, `hunt_supplies.lua` | 241, `!hunt` / `/hunt` | Hunt tracker: session time with pause/reset, exp/h, time to level, loot and profit/h, supplies, kills, damage/healing, Chaos drops; tested in game (see "Hunt tracker"). |
+| game_season | `season.lua`, `season_core.lua`, `season_config.lua` | 246, `!season` / `/season` | Seasons: fresh-start season characters isolated from standard ones, season ladder view, season uniques, account-wide reward track, end-of-season migration; tested in game with two clients (see "Seasons"). |
+| game_patchnotes | `patchnotes.lua`, `patchnotes_core.lua`, `data/patchnotes/*.md` | 244, `!patchnotes` / `/patchnotes` | Weekly patch notes read from Markdown files on the server, opened once per new week at login (after the Daily Reward), per-account "Don't show automatically"; tested in game (see "Patch notes"). |
 
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 228, 229, 232, 233, 236, 238 are all registered in the global
+Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 228, 229, 232, 233, 236, 241, 244, 246 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
 
 ### Opcode collision check
@@ -1021,6 +1028,100 @@ the annulled Drown absorb gone), the history, the store purchase and the loot si
 covers eligibility, each orb on a mocked item, slot limits, the description and unique protection. Not tested: the
 weekly bounty chest with the extra orbs (needs seven finished contracts).
 
+## Seasons (`season.lua`, `season_core.lua`, `season_config.lua`, `sql/chaos_season.sql`, `tools/patch_season_events.py`)
+
+Roadmap item 12, phase 1: fresh-start season characters with their own ladder, season-only uniques and an account-wide
+cosmetic reward track that is kept after the season. Client `game_season` (Chaos -> Season in the top menu, or `!season`),
+extended opcode 246 (`ChaosOpcodes.season`). Every rule and number is in `season_config.lua`.
+
+**Install.** Run `sql/chaos_season.sql` (4 tables) and `python3 -I server/tools/patch_season_events.py <server>/data`
+(idempotent, `--dry-run`). The tool enables `onTradeRequest` / `onTradeAccept` in `data/events/events.xml` (shipped
+disabled, so no script could see a trade) and makes `Player:onMoveItem` (`data/events/scripts/player.lua`) ask
+`ChaosSeason.onMoveItem` first: a script callback cannot refuse a move reliably, because the base dispatcher keeps only
+the return value of the last `onMoveItem` callback. Without the tool the server logs a warning at startup and only the
+party, bank and unique rules apply.
+
+**How a character joins (and why this way).** Characters are created on the website: the base server has no account
+manager, no in-game creation and the client has no creation screen (the base ships `ADD_DEPOT_BOXES_NEW_PLAYERS.txt`,
+a snippet for the website's `users.php`). A creation option would need website work, so a fresh character opts in in
+game: `!season join` (or Join in the window), then `!season join confirm` (or the window's confirmation) within 60 s.
+Allowed while a season runs for a character of level 7 or lower (`join.maxLevel`; level 8 comes within minutes) that never
+joined a season, has an empty depot, inbox and store inbox, is not in a party and owns no house. Joining destroys every
+carried item, empties the bank balance, the Chaos bank stars and the supply stash (so nothing a standard character handed
+over before the join comes along), then gives the new-player kit again when the character had received it. The flag is a
+row in `chaos_season_players`; the look text says "He is a Season of Ash character [S1]." (after the season: "a veteran
+of ...").
+
+**Season record.** `seasons = {{id, name, tag, start, finish, hour, modifier}}`: dates as YYYYMMDD (at `hour`, server
+time) or unix time. The modifier is shown in the window; `expMult` multiplies the monster experience of that season's
+characters (an `onGainExperience` callback, so it needs `patch_base_events.py` like every Chaos experience bonus).
+Gods (account type god): `/season start [id]` starts the next season now, `/season end` ends the running one now (both
+stored as `server_config` rows `chaos_season_<id>_start|_end`, which win over the config dates), `/season status`.
+
+**Isolation.** While a season runs, a character's realm is its season id (standard characters: 0). Different realms
+cannot exchange anything; gamemasters and up (`isolation.exemptGroup`) are never blocked.
+
+| Way | Rule | Hook |
+|---|---|---|
+| Trade window | refused between realms (also the house trade of `!sellhouse`, which skips the request event) | EventCallback `onTradeRequest` / `onTradeAccept` |
+| Items on the ground | an item a player drops is tagged with the dropper's realm (custom attribute `chaos_realm`, pickupable items only); another realm cannot move it or anything inside it. Own items lose the tag when they reach the inventory (they stack again) | `onItemMoved`, `ChaosSeason.onMoveItem` |
+| Corpses | a monster corpse gets the realm of its owner (the engine's most-damage player), a player corpse the realm of the dead character: another realm cannot loot it | `onDropLoot`, `onDeath` |
+| Mail | a parcel or letter dropped on a mailbox is refused when the receiver (first line of the label / letter) is of another realm | `ChaosSeason.onMoveItem` |
+| Houses | taking items from, or putting items into, a house owned by another realm is refused | `ChaosSeason.onMoveItem` |
+| Party | **not allowed** between realms (the joining character and the leader are told). Chosen over "allowed without shared loot and experience": the party is also what the bounty board, the dungeons and 2v2 arena use, so one rule covers all of them | EventCallback `onJoin` |
+| Chaos bank transfer | refused between realms | `bank.lua` asks `ChaosSeason.transferBlocked` |
+| PvP: open world, arena, guild siege | **allowed** between realms. Nothing changes hands: player corpses keep the dead character's realm, arena and siege rewards come from the server, and 2v2 arena teams are parties (same realm). Season characters can be in guilds (a guild shares no items) | - |
+| Depot | per character, nothing to share | - |
+
+Not blocked (open): **the market** (the market item's action is the engine's `function="market"`; Lua cannot refuse the
+market window or an offer, it needs an engine change or the market switched off), **the NPC bank transfer** of the base
+NPC scripts, and the account-wide **store coins** (season characters can buy orbs and supplies in the store). Items on
+the ground before a season starts are untagged (free).
+
+**Ladder.** While a season runs the leaderboard window shows a "[S1] only" toggle (`leaderboard.lua` adds
+`ChaosSeason.leaderboardMeta` to its meta and passes `season` to `ChaosSeason.sendBoard`): the class ladder then lists
+only that season's characters (players joined with `chaos_season_players`, cached 120 s), and the weekly boards (World
+Boss, Bounty Hunter, Rifts, ...) only their scores. The normal view still lists everybody, and titles are won on the
+normal boards only.
+
+**Season uniques.** A `ChaosUniqueItems` entry with `season = <id>` (`data/lib/chaos_unique_items.lua`) drops for nobody
+before that season, only for that season's characters during it, and for everybody after it. `loot.lua` passes the
+corpse owner to `rollUniques`; rolls without an owner (rifts, treasure goblins, the goblin hoard) leave season uniques
+out while the season runs. Season 1: Widowmaker, Riftcaller, Hellspite Arbalest, Mortis Cowl (existing uniques, no new
+art; `chaos_unique_specs.lua` is unchanged).
+
+**Reward track.** Milestones of a season character (`track`): level 100 (title Ashborn), 300 (Death Herald outfit),
+600 (its addons), 1000 (Doom Skull mount), 25 bounty contracts (Revenant outfit), 5 world bosses (Darklight Devourer
+mount), and a tier 10 rift (title Ashen Riftwalker; listed only when `ChaosRift` exists). Season stats come from a wrapper
+around `ChaosLeaderboard.record` (`stats`: bounty and goblin add, rift keeps the best, world boss counts), so the bounty,
+rift, world boss and goblin scripts needed no change. A milestone unlocks the reward for the whole account forever
+(`chaos_season_rewards`): every online character of the account gets outfits and mounts at once, every other character
+(also ones created later) at its next login; titles show in the look text ("He holds the season title Ashborn (Season of
+Ash)."). Every look type and mount id exists in the base server's XML.
+
+**End of season.** When the finish has passed (once-a-minute check, and at login) or after `/season end`, every
+unmigrated character of that season becomes a standard character: `migrated_at` is set once (`WHERE migrated_at = 0`,
+so running it again does nothing) and logged in `chaos_season_log` and the console. Level, skills, items, passive tree
+and season uniques stay; the realm rule already treats a character of an ended season as standard, so trade works at
+once even before the row is updated.
+
+**Tests.** `tests/season_test.lua` (LuaJIT and Lua 5.3): the date math and overrides, join eligibility, the trade /
+move / party / mail decisions, realms and item tags, milestone detection and the track view, the migration decisions,
+the season unique rule and the look text.
+
+Verified on the test server with two clients (a season character and a standard one): `/season start` and the
+broadcast, the window (time left, modifier, track, Join), the join confirmation and the wipe (backpack, gold, bank
+5000 -> 0), trade refused between realms and allowed within the season, a standard drop that the season character could
+neither push nor pick up (the standard one could), the season character's drop refused to the standard one and untagged
+when picked up again, a standard kill's corpse refused to the season character, a parcel to a standard character refused
+and to a season character delivered, party refused between realms and allowed within, level 301 -> two milestones,
+the outfit, the look text with the title, 25 bounty records -> Revenant outfit, the reward delivered at login to another
+character of the account, the "[S1] only" view of the Bounty Hunter board and the class ladder, the bank transfer and
+unique rules (300 boss rolls: 23 season uniques for the season character, 0 for the standard one and without an owner),
+`/season end` migrating both characters (online and offline) once, a second `/season end` migrating none, and trade
+allowed afterwards. Not verified in game: the experience modifier, the house rules, a player corpse in PvP, the confirm
+box closing by itself after a join from the chat, a natural season start / end from the dates.
+
 ## Guild siege (`siege.lua`, `siege_core.lua`, `siege_config.lua`, `sql/chaos_siege.sql`)
 
 A weekly scheduled war between guilds for the Chaos Obelisk. Client: `game_siege` (HUD + sign-up window, extended
@@ -1213,6 +1314,70 @@ mocked engine only (there were two client displays).
 logout during a fight, so a logout mid-fight is a disconnect (counted after 3 s). Players keep their buffs, summons and
 items (potions and runes are used up as normal). The world type must allow PvP (`worldType = "pvp"`); on a no-pvp world
 the engine blocks the damage before the scripts see it.
+
+## Hunt tracker (`hunt.lua`, `hunt_core.lua`, `hunt_config.lua`, `hunt_supplies.lua`, `tools/gen_supply_prices.py`)
+
+Client `game_hunt` (opcode 241), opened with `!hunt` or Hunt -> Hunt Tracker in the top menu. `!hunt pause`, `!hunt resume`
+and `!hunt reset` work from the chat too. Settings: `hunt_config.lua` (loaded as `Chaos.huntConfig`). No DB tables.
+
+**Why not the base client's analyser.** The base client ships an analyser (`mods/game_analyser`, menu Hunt -> Hunt
+Analyser). Its loot, supply, damage and kill panes are fed by game-protocol messages (kill tracker, loot stats, supply
+tracker, impact tracker) that a 10.98 server never sends, and it prices items with the client's own price list, not
+the server's NPC prices. Only its experience pane works here. The Chaos window is fed by the server instead. The base
+analyser is left as it is.
+
+**What it shows.** The session time, with Pause / Resume and Reset. Experience gained, exp/h, the time to the next
+level (the experience left is in the tooltip) and the kill count. Loot value and loot/h, supplies used and supplies/h,
+profit (loot minus supplies) and profit/h, in green or red. Damage dealt and healing, as totals and per second. Four
+tabs list kills per monster (count and share), looted items (icon, count, gold), supplies used, and Chaos drops (orbs,
+uniques and items with a rarity, in the loot filter's rarity colours). Copy puts a text summary on the clipboard.
+
+**How it counts (server side).** Sessions are kept in memory by character. A session starts at login (`autoStart`).
+Its clock only runs while the character is online and the session is not paused. After a logout it is kept for
+`keepOfflineMinutes` (30), so a relog continues the same session. A server restart clears it.
+- Experience: an `onGainExperience` EventCallback at index 1000, after every bonus, so the number is what the character
+  really gets. It reads the value and returns it unchanged.
+- Kills: a `kill` CreatureEvent. The engine runs it for the last hit and for the most damage. Summons are not counted.
+- Loot: the corpses the character owns, read in `onDropLoot` before (1.9) and after (2.4) the index-2 callbacks. For
+  each item the larger count is kept, so items the auto seller sells and coins or keys added at index 2 both count.
+  Items are valued at the NPC sell price (`sell_prices.lua`, highest price any NPC pays). Coins count at face value.
+  `extraValues` can price items no NPC buys. Orbs count at 0 gold unless priced there.
+- Supplies: every `thinkMs` (2 s), the potions, runes, ammunition and thrown weapons in the inventory are counted. If
+  there are fewer than at the last count, the difference was used. Nothing is counted in a protection zone, so the
+  depot, NPC trades and bank are not "used". The baseline is taken again after a pause or a login. Prices come from
+  `hunt_supplies.lua`, generated by `python3 -I server/tools/gen_supply_prices.py <server>/data`: the lowest price an NPC
+  asks per item. Runes are stackable in this protocol, so the price is per rune. The staff test NPCs are skipped.
+- Damage: a `healthchange` event registered from `onTargetCombat` (index 60) on whatever the character or its summon
+  attacks. It is capped at the target's remaining health, so overkill does not count.
+- Healing: a `healthchange` event on the character itself, capped at the missing health (healing received).
+- The client gets a state when the window opens and then every 2 s while it is open. It ticks the clock in between.
+
+**Protocol** (JSON `{action, data}`): client -> server `open | close | get | pause | resume | reset`. Server -> client
+`state {open?, t, p, xp, xph, lvl, left, ttl, lv, lvh, sv, svh, pf, pfh, dmg, dps, heal, hps, kc, k, l, s, x}`.
+The lists are arrays to keep the message short (see `hunt_core.lua` `H.state`). Each list is capped (`maxKills`
+40, `maxLoot` 60, `maxSupplies` 30, `maxSpecials` 40); the totals always count everything.
+
+**Tested in game** (test server, a level 599 paladin, bow and arrows, Dragons, Dragon Lords, Cyclops, Trolls, Orc
+Warriors and a treasure goblin):
+- Experience: the tracker showed 652,994, the same as the character's experience minus the saved value at login.
+- Supplies: 30 health potions, 30 runes and 43 arrows used, matching the inventory.
+- Loot: after a reset, 8 corpses held 306 items worth 7,789 gold, the same as the tracker. The goblin's hoard added
+  14 crystal coins, 3 platinum coins and two demon helmets (Rare, Mythic) at 40,000 each, plus 5 Chaos Orbs in the
+  Chaos drops tab.
+- Damage and healing counted, pause / resume / reset worked, and the session continued after a relog.
+- `tests/hunt_test.lua` covers the clock (pause, offline, relog, reset), the counters, the corpse merge, used supplies,
+  the level formula against the engine's, the rates and the state. The client's `game_hunt/huntmath_test.lua` covers
+  the formatting.
+
+**Limits.**
+- Loot is what dropped in the corpses the character owns, not what it picked up. In a party, the corpse owner's
+  session gets the loot.
+- A supply that leaves the inventory outside a protection zone counts as used: thrown on the floor, traded, or put in
+  a container on the ground.
+- Damage done by a script hit that skips `onTargetCombat` is not counted. That was seen with a scripted kill of the
+  goblin.
+- Healing is healing received from any source, not healing done to others. Mana is not tracked.
+- The rates include idle time while the session runs: pause it when you stop hunting.
 
 ## Loot filter, loot channel and loot rays (`lootfilter.lua`, `lootfilter_core.lua`, `lootfilter_config.lua`, client `game_lootfilter`)
 
@@ -1475,6 +1640,135 @@ client); the exit to the temple with the Warrior kit and the welcome; "Skip tuto
 scorcher equipped, wand in the backpack); relog gives no second kit; milestones 20, then 50 + 100 in one jump, nothing after
 losing and regaining level 20; `/newplayerkit` and its options. Not verified: PvP block (needs two clients), the island build
 refusal over foreign tiles, the full stations for the Thief line beyond 1-2.
+
+## Patch notes (`patchnotes.lua`, `patchnotes_core.lua`, `data/patchnotes/*.md`, client `game_patchnotes`)
+
+Weekly patch notes for players (roadmap item 23). Client: `client/overlay/modules/game_patchnotes` (Chaos -> Patch Notes
+in the top menu, or `!patchnotes`), extended opcode 244 (`ChaosOpcodes.patchnotes`), table `chaos_patchnotes` (created at
+startup if missing; also `sql/chaos_patchnotes.sql`). The notes live on the server, so new notes never need a client update.
+
+- **Files.** One Markdown-ish file per week or version in `data/patchnotes/` (copy `server/data/patchnotes/` there), named
+  `<id>.md` (e.g. `2026-10-08.md`; the id is the name without `.md`). Format (parser: `patchnotes_core.lua`):
+  `# Title`, an optional `Date: YYYY-MM-DD` line (else the date at the start of the file name), free text before the first
+  section (the intro), then `## New`, `## Changes`, `## Fixes`, `## Balance` (other headings are kept and drawn in plain
+  colour). Bullets `- ` (or `* `, `+ `), sub-bullets indented by 2+ spaces, indented lines without a dash continue the
+  bullet above, `- **Lead.** text` gives the bullet a highlighted lead, `<!-- ... -->` is ignored, `**`/`__`/backticks
+  and `[text](link)` markers are removed. `README.md` and drafts (a name starting with `_`) are skipped. Write for
+  players, and only about what is live. The folder is listed with `ls` (`dir /b` on Windows; `data/patchnotes/index.txt`,
+  one file name per line, when the server cannot run commands) at startup and again at most every 60 s, so a new file
+  shows up within a minute; `/patchnotes reload` (staff) reads it at once. Weeks are ordered by date, then id (newest
+  first); the list shows up to 52.
+- **Window.** Weeks on the left (date, title, NEW for unseen ones), the selected week on the right: title, date, intro,
+  section headings in colour (New green, Changes gold, Fixes blue, Balance violet), bullets with a dot in the section
+  colour, sub-bullets, bold leads. A long note is sent in parts of about 4 KB of text (`PN.parts`; one 9 KB message never
+  arrived in the test client) and joined by the client.
+- **Login.** Once per new week per **account** (`seen_key` = date|id of the newest week the account was shown; a week
+  counts as seen when the client displayed it, opened by itself or by hand, and an older week never lowers it). "Don't
+  show automatically" (`auto_open`, per account) stops the login opening; the menu and `!patchnotes` still work. The login
+  opening never stacks with the Daily Reward window: it is the `patchnotes` entry (order 30, after the daily's 20; set
+  `Chaos.dailyStreak.loginOrder.patchnotes` to change it) of daily.lua's login window queue `ChaosLoginWindows`, so the
+  server sends it only after the client reports the daily window closed (or when the daily is not due), and the window
+  reports `closed` itself so the queue can go on. The client also refuses to show it over a visible Daily Reward window
+  (and hides it again if one appears in the first 20 s), and game_daily waits while `patchNotesWindow` is on screen. On
+  a server without that queue, the script falls back to its own timer (the daily's `openDelayMs` + 1.5 s) and tells the
+  client whether a daily window is expected; the client then waits up to 6 s for it to appear and until it is closed.
+- **Staff:** `/patchnotes reload` (read the folder now), `/patchnotes unseen` (forget the own account's last seen week, to
+  test the login opening), `/patchnotes` (status).
+- **Tests:** `tests/patchnotes_test.lua` (parsing, limits, file list, ids, order, seen key, auto-open, the parts; also
+  parses every real file of `data/patchnotes/`) and the client's `patchnotesview_test.lua` (blocks and colours, joining
+  parts, the login wait).
+
+Verified on the test server: the window from the menu and with `!patchnotes`, week list and switching weeks, the
+formatted notes (four sections, leads, sub-bullets, scrolling), the login opening with the Daily Reward window first
+(old timer path and the login window queue: the notes appear only after the daily window is closed), the opening at once
+when the daily is already claimed, no second opening at the next login, "Don't show automatically" (no opening for a new
+week, unticked again from the window), the seen key and setting in the database. Not verified: two characters of one
+account online at once, the Windows `dir` listing and the `index.txt` fallback, the client stepping aside for a daily window that
+appears in the first 20 s (cannot happen with the queue).
+
+## Daily reward and login streaks (`daily.lua`, `daily_core.lua`, `daily_config.lua`)
+
+Client `game_daily` (opcode 207), opened with `!daily` or Chaos -> Daily Reward, and by itself at login while today's
+reward is unclaimed. The 7 daily rewards and the week bonus stay in `Chaos.daily` (`chaos_constants.lua`). The streak
+rules are in `daily_config.lua` (loaded as `Chaos.dailyStreak`). Table: `chaos_daily_account` (`sql/chaos.sql`).
+
+**Account-wide.** One claim a day per account, whichever character claims it. The reward goes to that character. The
+row holds the streak (consecutive claim days), the best streak ever, grace charges, the day of the last claim and the
+total number of claims. It is cached in memory and written through on every claim.
+- Migration: the first login of an account after the update builds its row from the old per-character storages
+  (`dailyStreakDay`, `dailyLastClaim`) of all its characters. The most recent claim wins, then the higher slot. The
+  old cycle only stored the slot, so that slot becomes the streak.
+- The old storages are still written on each claim, but nothing reads them any more.
+- If the table is missing, the server prints one warning and keeps streaks in memory until the next restart.
+
+**Streak and the 7-slot cycle.** The window's 7 slots follow the streak: slot = ((streak - 1) mod 7) + 1, so day 8
+of a streak is slot 1 again, and the week bonus comes with every slot 7. The window shows `Streak: N days`, the best
+streak, the grace charges, the next milestone (days, how many claims away, and the reward), and the account's title.
+An older client ignores the new fields.
+
+**Grace day.** Missing one day does not break the streak if the account has a grace charge. One charge is used per
+missed day. A charge is earned every 7 claimed days of a streak, 2 stored at most (`graceEvery`, `graceMax`). Two or
+more missed days in a row always break the streak (`graceMaxMissed` = 1). The window marks the charges in gold on a
+day when a charge will be used.
+
+**Milestones** (all in `daily_config.lua`, paid together with the day's reward, all or nothing):
+
+| Days | Reward |
+|---|---|
+| 7 | 2 Chaos Orbs, 1 Divine Orb |
+| 14 | 3 Chaos Orbs, 2 Divine Orbs |
+| 30 | 5 Chaos, 3 Divine, 1 Exalted Orb and the title "the Devoted" |
+| 60 | 8 Chaos, 5 Divine, 2 Exalted Orbs |
+| 100 | 12 Chaos, 8 Divine, 3 Exalted Orbs, 10 crystal coins and the title "the Relentless" |
+| 180 | 20 Chaos, 12 Divine, 5 Exalted Orbs, 25 crystal coins and the title "the Undying" |
+
+- A milestone is paid every time a streak reaches it.
+- Titles use the leaderboards' mechanism: a line in the look text of every character of the account ("He holds the
+  login streak title the Devoted (30 days in a row).", `onLook` at index 101, after the leaderboard titles). The title
+  follows the account's best streak, so it is kept after the streak breaks.
+- The first time an account reaches a title milestone, it is broadcast.
+- No new art or items: the rewards are the existing orbs and coins.
+
+**Login order (`ChaosLoginWindows` in `daily.lua`, the one place for it).** Windows that open by themselves at login go
+through one queue, so they never stack on top of each other:
+- Each window registers with `ChaosLoginWindows.register(key, order, wants(player), open(player))`. A lower order opens
+  first. The daily window is `daily`, order 20 (`Chaos.dailyStreak.loginOrder`). The patch notes use it with order 30.
+- At login, after `Chaos.daily.openDelayMs`, the wanted windows are sent one at a time.
+- The next window is sent when the client reports the current one closed (`ChaosLoginWindows.closed(player, key)`;
+  game_daily sends `{"action":"closed"}`), or after `loginWindowMaxWaitMs` (90 s) if the client never does.
+- On the client, a window opened this way (`"Login":1`) waits while a server modal dialog (the new-player welcome, the
+  tutorial) or another login window (`LOGIN_BLOCKERS` in game_daily) is on screen. This fixes the daily window that
+  opened over the new-player welcome.
+- The walk-away rule of the daily window (more than 3 tiles closes it) now ignores jumps (the placement at login, a
+  teleport). Those move its anchor instead.
+
+**Protocol additions** (the shipped protocol and its quirks are unchanged; see the header of `daily.lua`):
+- `OpenDailyWindow` also carries `Streak, Best, Grace, GraceMax, GraceUse, Broken, Title, Next {Days, In, Reward,
+  Title}` and `Login`.
+- The client also sends `closed`.
+
+Staff: `/daily` shows the own account's state, `/daily shift <days>` moves the daily clock (tests),
+`/daily set <streak> [grace]` sets the own account's streak as if claimed yesterday (group access required).
+
+**Tests:** `tests/daily_test.lua`.
+- Pure part: days over month, year and DST ends, the slot cycle, claims, grace (use, earn, cap, two missed days),
+  broken streaks, a clock that went back, milestones, titles and texts, the migration, the login order.
+- Mocked `daily.lua`: the slot mapping of the client, the migration at login, an alt of the same account refused, a
+  second account, a stale window, day 7 with the week bonus, milestone and grace charge, all or nothing with a
+  milestone that does not fit, the look text, and the login queue moving on at "closed".
+
+**Tested in game** (test server, clock moved with `ChaosDaily.offsetDays`):
+- The migration from the old storages (slot 2 -> streak 2).
+- A claim on the next day (streak 3, row written).
+- Day 7 paid 3 Divine Orbs plus the milestone (2 Chaos Orbs, 1 Divine Orb), 2 crystal coins of the week bonus, and a
+  grace charge.
+- A missed day covered by the charge (charges shown in gold, streak 7 -> 8, charge used).
+- Day 30: the title in the window and in the look text.
+- The window waited behind a server modal dialog and opened when it closed. Closing it emptied the server queue.
+- After a relog the window opened by itself. A teleport kept it open; walking 4 tiles closed it.
+
+**Not verified in game.** The refusal for a second character of the same account. The test client cannot list two
+characters of one account (a base client character-list error), so this is covered by the mocked test only.
 
 ## Late game (`tools/late_game.py`, `tools/late_game_spawns.csv`, 17 monsters in `data/monster/monsters/chaos/`)
 

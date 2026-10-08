@@ -6,6 +6,8 @@
 -- normal-tier kills never drop uniques). So chance 8 on a legendary monster = 32 per 10000 = 0.32%.
 -- The boss-only entries also list the five world bosses (worldboss.lua): corpse drop through loot.lua, and the same
 -- pool is used for the world boss participation reward (Chaos.worldBoss.reward.uniqueChance).
+-- season = <id>: a season unique (season_config.lua): during that season it drops only for that season's characters,
+-- before it for nobody, after it for everyone (season.lua ChaosSeason.uniqueBlocked, asked by loot.lua).
 -- Edit freely, it is plain Lua.
 
 ChaosUniqueItems = {
@@ -25,7 +27,7 @@ ChaosUniqueItems = {
 	  bossOnly = false, monsters = {"Demon", "Hellhound", "Fire Devil", "Hellfire Fighter", "Diabolic Imp", "Hellspawn", "Defiler", "Destroyer", "Massive Fire Elemental", "Dragon Lord", "Blazebringer"} },
 	{ name = "Hornbinder Ring", id = 21693, minTier = "magic", chance = 6, level = 60, slot = "ring",
 	  bossOnly = false, monsters = {"Juggernaut", "Behemoth", "Minotaur", "Orc Warlord", "Destroyer", "Dragon Lord", "Hand of Cursed Fate", "Demon", "Hellhound", "Fire Devil", "Hellfire Fighter", "Diabolic Imp", "Hellspawn", "Defiler"} },
-	{ name = "Widowmaker", id = 22690, minTier = "magic", chance = 6, level = 40, slot = "sword",
+	{ name = "Widowmaker", id = 22690, minTier = "magic", chance = 6, level = 40, slot = "sword", season = 1,
 	  bossOnly = false, monsters = {"Phantom Shade", "Shadowgeist", "Nightdweller", "Abyssal Shadowfiend", "Lost Soul", "Nightstalker", "Death Mage", "Bonelord", "Elder Bonelord", "Skeleton Warrior", "Demon Skeleton", "Lich", "Undead Gladiator", "Crypt Shambler"} },
 	{ name = "Ring of the Last Ember", id = 2206, minTier = "rare", chance = 5, level = 70, slot = "ring",
 	  bossOnly = false, monsters = {"Hellfire Fighter", "Fire Devil", "Massive Fire Elemental", "Hellhound", "Dragon Lord", "Blazebringer", "Phantom Shade", "Shadowgeist", "Nightdweller", "Abyssal Shadowfiend", "Lost Soul", "Nightstalker", "Death Mage"} },
@@ -51,9 +53,9 @@ ChaosUniqueItems = {
 	  bossOnly = false, monsters = {"Demon", "Hellhound", "Fire Devil", "Hellfire Fighter", "Diabolic Imp", "Hellspawn", "Defiler", "Destroyer", "Juggernaut", "Behemoth", "Minotaur", "Orc Warlord", "Dragon Lord", "Hand of Cursed Fate"} },
 	{ name = "Gorecleaver", id = 11426, minTier = "rare", chance = 5, level = 70, slot = "sword",
 	  bossOnly = false, monsters = {"Juggernaut", "Behemoth", "Minotaur", "Orc Warlord", "Destroyer", "Dragon Lord", "Hand of Cursed Fate", "Lich", "Vampire", "Banshee", "Ghoul", "Grim Reaper", "Undead Dragon", "Demon Skeleton", "Betrayed Wraith", "Blightwalker"} },
-	{ name = "Riftcaller", id = 13760, minTier = "rare", chance = 5, level = 80, slot = "wand",
+	{ name = "Riftcaller", id = 13760, minTier = "rare", chance = 5, level = 80, slot = "wand", season = 1,
 	  bossOnly = false, monsters = {"Warlock", "Lich", "Dark Torturer", "Infernalist", "Necromancer", "Priestess", "Death Mage", "Phantom Shade", "Shadowgeist", "Nightdweller", "Abyssal Shadowfiend", "Lost Soul", "Nightstalker"} },
-	{ name = "Hellspite Arbalest", id = 16111, minTier = "rare", chance = 5, level = 100, slot = "distance",
+	{ name = "Hellspite Arbalest", id = 16111, minTier = "rare", chance = 5, level = 100, slot = "distance", season = 1,
 	  bossOnly = false, monsters = {"Demon", "Hellhound", "Fire Devil", "Hellfire Fighter", "Diabolic Imp", "Hellspawn", "Defiler", "Destroyer", "Massive Fire Elemental", "Dragon Lord", "Blazebringer"} },
 	{ name = "Tome of Whispers", id = 22474, minTier = "rare", chance = 4, level = 100, slot = "shield",
 	  bossOnly = false, monsters = {"Warlock", "Lich", "Dark Torturer", "Infernalist", "Necromancer", "Priestess", "Death Mage", "Phantom Shade", "Shadowgeist", "Nightdweller", "Abyssal Shadowfiend", "Lost Soul", "Nightstalker"} },
@@ -61,7 +63,7 @@ ChaosUniqueItems = {
 	  bossOnly = false, monsters = {"Juggernaut", "Behemoth", "Minotaur", "Orc Warlord", "Destroyer", "Dragon Lord", "Hand of Cursed Fate", "Demon", "Hellhound", "Fire Devil", "Hellfire Fighter", "Diabolic Imp", "Hellspawn", "Defiler"} },
 	{ name = "Shroud of the Hollow Wood", id = 27228, minTier = "rare", chance = 4, level = 90, slot = "body",
 	  bossOnly = false, monsters = {"Phantom Shade", "Shadowgeist", "Nightdweller", "Abyssal Shadowfiend", "Lost Soul", "Nightstalker", "Death Mage", "Warlock", "Lich", "Dark Torturer", "Infernalist", "Necromancer", "Priestess"} },
-	{ name = "Mortis Cowl", id = 27231, minTier = "rare", chance = 5, level = 100, slot = "head",
+	{ name = "Mortis Cowl", id = 27231, minTier = "rare", chance = 5, level = 100, slot = "head", season = 1,
 	  bossOnly = false, monsters = {"Phantom Shade", "Shadowgeist", "Nightdweller", "Abyssal Shadowfiend", "Lost Soul", "Nightstalker", "Death Mage", "Lich", "Vampire", "Banshee", "Ghoul", "Grim Reaper", "Undead Dragon", "Demon Skeleton", "Betrayed Wraith", "Blightwalker"} },
 	{ name = "Maw Treads", id = 27288, minTier = "rare", chance = 5, level = 70, slot = "feet",
 	  bossOnly = false, monsters = {"Demon", "Hellhound", "Fire Devil", "Hellfire Fighter", "Diabolic Imp", "Hellspawn", "Defiler", "Destroyer", "Bonelord", "Elder Bonelord", "Skeleton Warrior", "Demon Skeleton", "Lich", "Undead Gladiator", "Crypt Shambler"} },

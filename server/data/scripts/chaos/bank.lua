@@ -135,6 +135,9 @@ local function doTransfer(player, currency, targetName, amount)
 	if targetGuid == player:getGuid() then
 		return fail(player, "You cannot transfer to yourself.")
 	end
+	if ChaosSeason and ChaosSeason.transferBlocked and ChaosSeason.transferBlocked(player, targetGuid) then -- season.lua
+		return fail(player, ChaosSeason.transferBlockedText)
+	end
 
 	if currency == "gold" then
 		local balance = player:getBankBalance()

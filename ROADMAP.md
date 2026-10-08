@@ -43,7 +43,7 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 | 9 | Paragon track for leftover passive points ("option 2") | done | `chaos/paragon.lua`, client `game_passivetree/paragon*`: 1 point per level above 1000, four categories of small capped stats added on top of the tree's bonuses; reset level x 250 gold or the store reset; see server/README.md "Paragon" |
 | 10 | Bounty board: daily rotating "kill X in Y" contracts paying orbs | done | `chaos/bounty*.lua`, client `game_bounty`, pool from `server/tools/gen_bounty_pool.py` (rerun after spawn changes); see server/README.md "Bounty board". Party credit not tested with two real players |
 | 11 | Crafting orbs: add-a-modifier and remove-a-modifier orbs next to Chaos/Divine, plus a crafting bench | done | `data/lib/chaos_crafting.lua` (Exalted, Annulment, Scouring, Transmutation, Alchemy; Chaos/Divine on the bench), bench `chaos/crafting.lua` + client `game_crafting` (`!craft`, Chaos -> Crafting Bench), installer `tools/install_crafting.py`; see server/README.md "Crafting". No Vaal-style orb. Weekly bounty chest extras not tested in game |
-| 12 | Seasons / ladders: fresh-start season characters, season uniques, per-vocation highscores, cosmetic carry-over | in progress | per-vocation highscores done: the all-time Class Ladder of the leaderboards (item 13); seasons being built (season characters, isolation, season ladder, season uniques, reward track, end-of-season migration) |
+| 12 | Seasons / ladders: fresh-start season characters, season uniques, per-vocation highscores, cosmetic carry-over | phase 1 done | `chaos/season*.lua`, client `game_season` (`!season`, Chaos -> Season), `sql/chaos_season.sql`, `tools/patch_season_events.py`: fresh characters opt in with `!season join` (characters are made on the website); trade, mail, ground/corpse/house items, parties and the Chaos bank transfer isolated; "[S1] only" view of the leaderboards; 4 season uniques; account-wide reward track; migration at the end. Open: the market and the NPC bank transfer are not isolated (need an engine change), store coins are account-wide, the experience modifier and house rules not tested in game; see server/README.md "Seasons" |
 | 24 | Treasure goblins: a very rare cowardly monster that flees, blinks and escapes, and drops a hoard when killed in time | done | `chaos/treasure_goblin*.lua`, `monsters/chaos/treasure_goblin.xml`: replaces 1 in 3000 natural respawns (no bosses, instances, protection zones; per-area cooldown), scaled to the area level; gold, Chaos/Divine Orbs, 2-4 rarity-rolled items and a raised unique chance through the Chaos loot layer; guarded hooks for loot rays and a "goblin" leaderboard; see server/README.md "Treasure goblins" |
 
 ## Then: social and replay
@@ -59,7 +59,7 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 | # | Item | Status | Notes |
 |---|---|---|---|
 | 16 | Loot filter: hide or highlight items by rarity (autoloot and corpses); loot channel with clickable item icons (greyed out once looted); rarity autoloot as a store unlock; loot rays for uniques and Legendary+ | done | `chaos/lootfilter*.lua`, client `game_lootfilter` (`!lootfilter`, Hunt -> Loot Filter, opcode 238): glow / dim by rarity and category in corpses (dimmed, never hidden), presets, settings per character; the Loot tab shows a row of item icons per kill (click to loot, Shift = one; greyed when autolooted, looted or decayed); coloured rare-drop lines; Rarity Autoloot (store, 400 coins); loot rays 424..428 for uniques and Legendary+; tested in game; see server/README.md "Loot filter". Party members do not get rows or rays |
-| 17 | In-client hunt tracker: exp/h and profit/h | in progress | |
+| 17 | In-client hunt tracker: exp/h and profit/h | done | `chaos/hunt*.lua`, client `game_hunt` (`!hunt`, Hunt -> Hunt Tracker, opcode 241): server-counted session with pause/reset, exp/h, time to level, loot (NPC sell prices) and profit/h minus supplies (NPC buy prices, `tools/gen_supply_prices.py`), kills, damage/healing, Chaos drops; checked in game against the real numbers; see server/README.md "Hunt tracker" |
 | 18 | Build sharing: export/import a passive tree code | done | `buildshare.lua`, `buildshare_core.lua`: versioned checksummed code (`CB1-...`, stable node ids), Build Code panel with tree preview, `!build`; short on points = first N nodes in path order; taking points back costs the full reset price. Tested in game |
 | 19 | Respec cost that scales with level | done | `respec.lua`, `respec_config.lua`: full reset ~37.5 min of hunting gold (225k at 100, 3.95M at 600, 5.95M at 1000), right-click single-node refund ~1.5 min, free below 50 and once after a class change; income measured with `tools/respec_income.py` (README "Respec") |
 
@@ -67,10 +67,10 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 
 | # | Item | Status | Notes |
 |---|---|---|---|
-| 20 | Login streaks tied to the daily reward | in progress | `chaos/daily.lua`; with the hunt tracker (item 17): streak counter, milestones, grace days, account-wide claims |
+| 20 | Login streaks tied to the daily reward | done | `chaos/daily*.lua`, client `game_daily`: account-wide claims (`chaos_daily_account`, migrated from the old per-character storages), streak and best streak in the window, milestones at 7/14/30/60/100/180 days (orbs; titles at 30/100/180 in the look text), grace charges (1 per 7 days, 2 max), login window queue `ChaosLoginWindows` (the daily window no longer opens over the new-player welcome); see server/README.md "Daily reward and login streaks" |
 | 21 | New-player kit per vocation | done | `chaos/newplayer*.lua`: kit per class (Warrior / Ranger / Mystic / Thief ids), welcome window + toast, gifts at 20/50/100/200, `/newplayerkit`; tested in game |
 | 22 | Tutorial island: passive tree, orbs, keystones | done | `chaos/newplayer_tutorial.lua`: island built at runtime (no map work), 5 stations, skip, resume; tested in game |
-| 23 | Weekly patch-notes window in the client | in progress | |
+| 23 | Weekly patch-notes window in the client | done | `chaos/patchnotes*.lua`, client `game_patchnotes` (`!patchnotes`, Chaos -> Patch Notes): notes are Markdown files in `server/data/patchnotes/` (no client update needed), opens once per new week per account at login after the Daily Reward (login window queue), "Don't show automatically"; see server/README.md "Patch notes" |
 
 ## Open decisions and loose ends
 
@@ -79,7 +79,7 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
   client's healing helper (`mods/game_helper/helper.lua`) replays every missed 50 ms cycle after any client stall
   and can still flood spell casts (packet-limit kick) after other long frames; needs a base patch.
 - Notification toasts (`game_chaosnotify`) have no background: the code loads `images/background`, the file is
-  `Background.png`. The Daily Reward window also opens over other windows at login.
+  `Background.png`. (Fixed with item 20: the Daily Reward window no longer opens over other login windows.)
 - Re-measure the weapon (auto-attack) numbers in `server/data/spells/README.md`: the balance harness sets the
   target with `setTarget`, which skips `onTargetCombat`, so the passive tree and weapon-style damage events were
   never put on the dummies in those runs (two-handed x1.6, dexterity, keystones). Spell numbers are not affected.

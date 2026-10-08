@@ -410,7 +410,8 @@ function L.uniqueList(source)
 				monsters = e.monsters,
 				bossOnly = e.bossOnly and true or false,
 				level = e.level,
-				minMonsterLevel = e.minMonsterLevel
+				minMonsterLevel = e.minMonsterLevel,
+				season = e.season -- season uniques (season.lua)
 			}
 		end
 	end
@@ -440,7 +441,8 @@ local function monsterListed(monsters, name)
 end
 
 -- returns list of unique entries that dropped (at most unique.maxPerKill, random among the hits)
-function L.rollUniques(tier, monsterName, monsterLevel, itemFind, source)
+-- owner (optional): the Player the drop is for; season uniques only drop for that season's characters (season.lua)
+function L.rollUniques(tier, monsterName, monsterLevel, itemFind, source, owner)
 	local u = cfg().unique
 	tier = L.normTier(tier)
 	local mult = tierValue(u.tierMult, tier, 0)
@@ -458,6 +460,9 @@ function L.rollUniques(tier, monsterName, monsterLevel, itemFind, source)
 			ok = false
 		end
 		if ok and e.minMonsterLevel and (monsterLevel or 0) < e.minMonsterLevel then
+			ok = false
+		end
+		if ok and e.season and ChaosSeason and ChaosSeason.uniqueBlocked and ChaosSeason.uniqueBlocked(e.season, owner) then
 			ok = false
 		end
 		if ok then
@@ -739,7 +744,7 @@ local function processKill(monster, corpse)
 
 	-- 4. uniques
 	local u = c.unique
-	for _, e in ipairs(L.rollUniques(tier, monster:getName(), level, ctx.itemFind)) do
+	for _, e in ipairs(L.rollUniques(tier, monster:getName(), level, ctx.itemFind, nil, owner)) do
 		local item = corpse:addItem(e.id, 1)
 		if item then
 			if ChaosMakeUnique then

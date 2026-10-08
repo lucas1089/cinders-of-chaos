@@ -225,3 +225,16 @@ CREATE TABLE IF NOT EXISTS `chaos_arena_match_players` (
   KEY `chaos_arena_match_players_player` (`player_id`, `match_id`),
   CONSTRAINT `chaos_arena_match_players_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Daily reward and login streaks (data/scripts/chaos/daily.lua): one claim a day per account. streak = consecutive
+-- claim days, best = best streak ever (login streak titles), grace = grace charges, last_claim = YYYYMMDD of the last
+-- claim. Rows are created at the first login after the update from the old per-character storages (the best one).
+CREATE TABLE IF NOT EXISTS `chaos_daily_account` (
+  `account_id` int(11) NOT NULL,
+  `streak` int(11) NOT NULL DEFAULT 0,
+  `best` int(11) NOT NULL DEFAULT 0,
+  `grace` tinyint(3) unsigned NOT NULL DEFAULT 0,
+  `last_claim` int(11) NOT NULL DEFAULT 0,
+  `claims` int(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`account_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

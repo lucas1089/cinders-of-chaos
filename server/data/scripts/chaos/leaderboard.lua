@@ -413,10 +413,15 @@ local function sendMeta(player, open)
 		groups[#groups + 1] = {key = g.key, name = g.name}
 	end
 	Chaos.send(player, OPCODE, "meta", {open = open and true or false, boards = boards, groups = groups,
-		ownGroup = (groupOfPlayer(player) or {}).key})
+		ownGroup = (groupOfPlayer(player) or {}).key,
+		season = ChaosSeason and ChaosSeason.leaderboardMeta and ChaosSeason.leaderboardMeta(player) or nil}) -- season.lua
 end
 
-function LB.sendBoard(player, key, groupKey)
+function LB.sendBoard(player, key, groupKey, season)
+	-- the "Season" view (season.lua): only the running season's characters
+	if season and ChaosSeason and ChaosSeason.sendBoard and ChaosSeason.sendBoard(player, key, groupKey) then
+		return
+	end
 	local now = LB.now()
 	local data
 	if key == cfg.ladder.key then
@@ -525,7 +530,7 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		sendMeta(player, true)
 		LB.sendBoard(player, key or cfg.boards[1].key)
 	elseif msg.action == "get" then
-		LB.sendBoard(player, key or cfg.boards[1].key, data.group)
+		LB.sendBoard(player, key or cfg.boards[1].key, data.group, data.season == true)
 	end
 end
 ext:type("extendedopcode")
