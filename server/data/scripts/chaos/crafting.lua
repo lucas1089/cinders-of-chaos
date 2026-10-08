@@ -1,7 +1,9 @@
--- Crafting bench (client game_crafting, extended opcode ChaosOpcodes.crafting, !craft) and the use-with action of the
--- crafting orbs. The orb rules live in data/lib/chaos_crafting.lua (ChaosCrafting); see server/README.md "Crafting".
+-- The use-with action of the crafting orbs and the crafting bench (client game_crafting, extended opcode
+-- ChaosOpcodes.crafting, !craft). The orb rules live in data/lib/chaos_crafting.lua (ChaosCrafting); see server/README.md
+-- "Crafting". Every orb is used directly on an item ("Use with", then click the item); the bench is optional (it shows
+-- an item's modifiers and what each orb would do). Both paths run the same craft() below. Rift Keys are craftable too.
 --
--- The bench works on items inside the backpack only (never equipped ones, never the ground). An item is addressed by
+-- Orbs and the bench work on items inside the backpack only (never equipped ones, never the ground). An item is addressed by
 -- its path from the backpack ("3" = slot 3 of the backpack, "3.0" = slot 0 of the bag in slot 3) plus its id and the
 -- signature of its modifiers, so an orb is never applied to an item that moved or changed after the player picked it.
 -- Every check is done here: the player owns the orb, the item is in the backpack, the orb fits the item, no uniques.
@@ -9,10 +11,11 @@
 -- Protocol (JSON {action, data}):
 --   client -> server  open | select {path, id} | select {pos = {x, y, z}, clientId} (dragged from a container) |
 --                     apply {orb, path, id, sig} | clear
---   server -> client  state {open, orbs = [{key, id, clientId, name, text, count}], item = {path, clientId, name,
---                            rarity, rarityName, level, mods = [{group, text}], maxMods, unique, orbs = {key -> ""|why},
---                            sig} | nil, items = [{path, id, clientId, name, rarity, rarityName,
---                            unique}], history = [{time, orb, item, text}]}
+--   server -> client  state {open, orbs = [{key, id, clientId, name, text, keyText, count}], item = {path, clientId,
+--                            name, kind ("riftkey" for a key), rarity, rarityName, level, mods = [{group, text}], maxMods,
+--                            rewards (keys), unique, orbs = {key -> ""|why}, preview = {key -> text}, sig} | nil,
+--                            items = [{path, id, clientId, name, rarity, rarityName, unique, key}],
+--                            history = [{time, orb, item, text}]}
 --                     result {ok, orb, text}
 -- Lua 5.1 / LuaJIT compatible.
 
@@ -131,15 +134,24 @@ local function orbList(player)
 	local out = {}
 	for _, orb in ipairs(cfg.orbs) do
 		out[#out + 1] = {key = orb.key, id = orb.id, clientId = clientIdOf(orb.id), name = orb.name, text = orb.text,
-			count = player:getItemCount(orb.id)}
+			keyText = orb.keyText, count = player:getItemCount(orb.id)}
 	end
 	return out
+end
+
+-- gear and Rift Keys
+local function craftable(item)
+	return C.isGear(item) or C.isRiftKey(item)
 end
 
 local function itemList(player)
 	local out = {}
 	walk(player, function(item, path)
-		if #out < MAX_LIST and not item:isContainer() and C.isGear(item) then
+		if #out < MAX_LIST and not item:isContainer() and C.isRiftKey(item) then
+			local view = C.describeKey(item)
+			out[#out + 1] = {path = path, id = item:getId(), clientId = clientIdOf(item:getId()), name = view.name,
+				rarity = 0, rarityName = "Rift Key", key = true}
+		elseif #out < MAX_LIST and not item:isContainer() and C.isGear(item) then
 			out[#out + 1] = {path = path, id = item:getId(), clientId = clientIdOf(item:getId()), name = C.itemName(item),
 				rarity = C.rarityOf(item), rarityName = C.rarityOf(item) > 0 and C.rarityName(C.rarityOf(item)) or nil,
 				unique = C.isUnique(item) or nil}
@@ -155,7 +167,7 @@ local function sendState(player, open)
 	local sel = selected[pid]
 	if sel then
 		local item = itemAt(player, sel.path)
-		if item and item:getId() == sel.id and C.isGear(item) then
+		if item and item:getId() == sel.id and craftable(item) then
 			local view = C.describe(item)
 			view.path = sel.path
 			view.clientId = clientIdOf(item:getId())
@@ -251,7 +263,7 @@ local function selectItem(player, data)
 		sendResult(player, false, nil, "Put an item from your backpack on the bench.")
 		return
 	end
-	if not C.isGear(item) then
+	if not craftable(item) then
 		sendResult(player, false, nil, C.reasons.notGear)
 		return
 	end
@@ -344,32 +356,53 @@ for _, words in ipairs({"!craft", "/craft"}) do
 	talk:register()
 end
 
--- ---------------------------------------------------------------- use-with on the new orbs
--- (the Chaos and Divine Orbs keep the base server's own action, customs/rarity/reroll_rarity_stats.lua)
--- The three rune stones are "use with" items in the dat/otb. The Orb of Transmutation and the Exalted Orb are not
--- (plain "use" only), so using one of those, or any orb without a target, opens the bench.
-for _, orb in ipairs(cfg.orbs) do
-	if orb.key ~= "chaos" and orb.key ~= "divine" then
-		local action = Action()
-		local key = orb.key
-		function action.onUse(player, item, fromPosition, target, toPosition, isHotkey)
-			if not target or type(target) ~= "userdata" or not target.isItem or not target:isItem() or target == item then
-				sendState(player, true)
-				return true
-			end
-			local ok, text = craft(player, key, target, item)
-			if not ok then
-				player:sendCancelMessage(text)
-			else
-				sendState(player, false) -- an open bench shows the new counts (a closed one stays closed)
-			end
-			return true
-		end
-		action:id(orb.id)
-		action:allowFarUse(false)
-		action:register()
-	end
+-- ---------------------------------------------------------------- use-with on every orb
+-- All seven orbs are "use with" items: "Use with" on the orb, then click the item (or the Rift Key) in the backpack.
+-- The Orb of Transmutation and the Exalted Orb are made use-with by server/tools/install_crafting.py (items.otb flag
+-- "useable") and client/tools/sprites/set_multiuse.py (the client dat's multi-use flag). The Chaos and Divine Orbs are
+-- registered here too, so they follow the same rules and logging (crafting.lua loads before the base server's
+-- customs/rarity/reroll_rarity_stats.lua; install_crafting.py makes that script skip its own registration).
+-- Using an orb without a target (a plain "use", e.g. from a hotkey) only explains how to use it.
+local function useHint(player, orb, prefix)
+	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format(
+		"%sUse the %s on an item: choose \"Use with\" on the orb, then click an item or a Rift Key in your backpack. "
+		.. "The crafting bench (!craft) shows a preview first.", prefix or "", orb.name))
 end
+
+function ChaosCraftingUseOrb(player, orbItem, target, orbKey)
+	local orb = C.orbByKey[orbKey]
+	if not orb then
+		return false
+	end
+	-- no target, a creature, the floor, or anything else that can never carry modifiers: explain the orb
+	if not target or type(target) ~= "userdata" or not target.isItem or not target:isItem() or target == orbItem then
+		useHint(player, orb)
+		return true
+	end
+	if not craftable(target) then
+		useHint(player, orb, "That cannot carry modifiers. ")
+		return true
+	end
+	local ok, text = craft(player, orbKey, target, orbItem)
+	if not ok then
+		player:sendCancelMessage(text)
+	else
+		sendState(player, false) -- an open bench shows the new counts (a closed one stays closed)
+	end
+	return true
+end
+
+for _, orb in ipairs(cfg.orbs) do
+	local action = Action()
+	local key = orb.key
+	function action.onUse(player, item, fromPosition, target, toPosition, isHotkey)
+		return ChaosCraftingUseOrb(player, item, target, key)
+	end
+	action:id(orb.id)
+	action:allowFarUse(false)
+	action:register()
+end
+C.ownsStockOrbs = true -- read by the patched reroll_rarity_stats.lua (install_crafting.py)
 
 -- old rows go at startup
 local startup = GlobalEvent("ChaosCraftingStartup")

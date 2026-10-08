@@ -106,15 +106,16 @@ function R.encodeMods(mods)
 	return table.concat(parts, ",")
 end
 
--- parses and validates (unknown keys dropped, values clamped to the range, duplicates dropped, at most 3)
+-- parses and validates (unknown keys dropped, values clamped to the range, duplicates dropped, at most cfg.key.maxMods)
 function R.decodeMods(cfg, text)
 	local mods, seen = {}, {}
 	if type(text) ~= "string" then
 		return mods
 	end
+	local max = cfg.key and cfg.key.maxMods or 3
 	for key, value in text:gmatch("([%a_]+):(%-?%d+)") do
 		local def = R.modDef(cfg, key)
-		if def and not seen[key] and #mods < 3 then
+		if def and not seen[key] and #mods < max then
 			seen[key] = true
 			mods[#mods + 1] = {key = key, value = clamp(tonumber(value), def.range[1], def.range[2])}
 		end

@@ -36,6 +36,8 @@ eq(L.label({ nm = 'Soulreaper', u = 1 }), '[Unique] Soulreaper', 'unique label')
 eq(L.tooltip({ nm = 'gold coin', c = 50, left = 20 }), '50x gold coin\n20 left in the corpse\nClick: loot all   Shift+click: loot one', 'stack tooltip')
 eq(L.tooltip({ nm = 'Sword', r = 3, c = 1, left = 0 }), '[Rare] Sword\nLooted (or gone)', 'gone tooltip')
 eq(L.tooltip({ nm = 'Sword', c = 1, left = 1 }), 'Sword\nClick: loot', 'single tooltip')
+eq(L.tooltip({ nm = 'Sword', r = 4, c = 1, left = 1, x = 'Attack Speed +5%; Life on Kill +12' }),
+  '[Epic] Sword\nAttack Speed +5%; Life on Kill +12\nClick: loot', 'tooltip with Chaos modifiers')
 eq(L.thresholdText(0), 'Off', 'off')
 eq(L.thresholdText(5), 'Legendary+', 'threshold')
 

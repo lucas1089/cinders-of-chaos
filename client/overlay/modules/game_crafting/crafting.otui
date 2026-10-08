@@ -142,8 +142,8 @@ ChaosMainWindow
     margin: 18 14 0 14
     text-wrap: true
     text-align: center
-    height: 60
-    !text: tr('Drag an item from your backpack onto the slot, or click one of your items below.')
+    height: 72
+    !text: tr('Drag an item or a Rift Key from your backpack onto the slot, or click one below. Orbs also work without the bench: Use with on the orb, then click the item.')
 
   // ------------------------------------------------------------ gear in the backpack
   ChaosLabel
@@ -152,7 +152,7 @@ ChaosMainWindow
     anchors.left: parent.left
     margin-top: 8
     text-auto-resize: true
-    !text: tr('Gear in your backpack')
+    !text: tr('Gear and Rift Keys in your backpack')
 
   ChaosPanelDark
     id: gearFrame
@@ -193,7 +193,7 @@ ChaosMainWindow
     id: gearEmpty
     anchors.centerIn: gearFrame
     text-auto-resize: true
-    !text: tr('No gear in your backpack.')
+    !text: tr('No gear or Rift Key in your backpack.')
     visible: false
 
   // ------------------------------------------------------------ orbs

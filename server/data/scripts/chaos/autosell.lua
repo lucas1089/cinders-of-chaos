@@ -182,6 +182,10 @@ local function pouch(monster, corpse)
 		end
 	end
 	for _, item in ipairs(leftovers) do
+		-- rolled now: the engine's rarity pass only reaches items still in the corpse (loot.lua finalizeRarity)
+		if ChaosLoot and ChaosLoot.finalizeRarity then
+			item = ChaosLoot.finalizeRarity(item)
+		end
 		-- the base autoloot stops at the first item that does not fit; a lighter one may still fit
 		if not item:moveTo(owner) then
 			if ChaosStash and ChaosStash.storeItem(owner, item) then

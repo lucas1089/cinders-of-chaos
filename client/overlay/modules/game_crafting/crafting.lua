@@ -1,9 +1,11 @@
--- Crafting bench: put an item from the backpack on the bench, see its rarity and modifiers, apply an orb.
+-- Crafting bench: put an item (or a Rift Key) from the backpack on the bench, see its rarity and modifiers and what
+-- each orb would do, apply an orb. The bench is optional: every orb also works by "Use with" on the item.
 -- Server: server/data/scripts/chaos/crafting.lua and data/lib/chaos_crafting.lua, extended opcode 232 (JSON).
---   server -> client  state {open, orbs = [{key, id, clientId, name, text, count}], item = {path, clientId, name,
---                            rarity, rarityName, level, mods = [{group, text}], maxMods, unique, orbs = {key -> ""|why},
---                            sig} | nil, items = [{path, id, clientId, name, rarity, rarityName,
---                            unique}], history = [{time, orb, item, text}]}
+--   server -> client  state {open, orbs = [{key, id, clientId, name, text, keyText, count}], item = {path, clientId,
+--                            name, kind, rarity, rarityName, level, mods = [{group, text}], maxMods, rewards, unique,
+--                            orbs = {key -> ""|why}, preview = {key -> text}, sig} | nil,
+--                            items = [{path, id, clientId, name, rarity, rarityName, unique, key}],
+--                            history = [{time, orb, item, text}]}
 --                     result {ok, orb, text}
 --   client -> server  open | select {path, id} | select {pos, clientId} | apply {orb, path, id, sig} | clear
 -- The server checks everything (orb owned, item in the backpack, orb fits the item, no uniques); the buttons here only
@@ -16,7 +18,9 @@ local RARITY_COLOR = {
   '#c4cebc', '#5fd35f', '#4a8cff', '#b070ff', '#f6cf72', '#ff9c3a', '#d860ff', '#e03a1e', '#7fe6ff',
   '#ffe680', '#c0a0ff', '#9fe0ff', '#ff70c0', '#ff4040', '#ffffff'
 }
-local GROUP_COLOR = { absorb = '#7fa8ff', skill = '#9fdc7f', special = '#f6cf72', element = '#ff8a5a' }
+local GROUP_COLOR = { absorb = '#7fa8ff', skill = '#9fdc7f', special = '#f6cf72', element = '#ff8a5a',
+  chaos = '#ff70c0', rift = '#c0a0ff' }
+local KEY_COLOR = '#c0a0ff' -- Rift Keys
 
 local window
 local state        -- last state from the server
@@ -71,7 +75,13 @@ local function showItem(item)
   window.itemName:setText(item.name or '?')
   local rarity = tonumber(item.rarity) or 0
   window.itemName:setColor(rarity > 0 and rarityColor(rarity) or '#d6c9ae')
-  if item.unique then
+  window.itemRarity:setTooltip('')
+  if item.kind == 'riftkey' then
+    window.itemName:setColor(KEY_COLOR)
+    window.itemRarity:setText(tr('Rift Key, tier %d (level %d+)', tonumber(item.tier) or 0, tonumber(item.level) or 0))
+    window.itemRarity:setColor(KEY_COLOR)
+    window.itemRarity:setTooltip(item.rewards and tr('Rewards: %s', item.rewards) or '')
+  elseif item.unique then
     window.itemRarity:setText(tr('Unique item: orbs cannot change it'))
     window.itemRarity:setColor('#e8582a')
   elseif rarity > 0 then
@@ -82,7 +92,7 @@ local function showItem(item)
     window.itemRarity:setColor('#d6c9ae')
   end
   local mods = list(item.mods)
-  if rarity > 0 then
+  if rarity > 0 or item.kind == 'riftkey' then
     window.itemSlots:setText(tr('Modifiers: %d / %d', #mods, tonumber(item.maxMods) or 0))
   else
     window.itemSlots:setText(#mods > 0 and tr('Modifiers: %d', #mods) or tr('No modifiers'))
@@ -91,6 +101,11 @@ local function showItem(item)
     local label = g_ui.createWidget('CraftModLabel', window.modList)
     label:setText(m.text or '')
     label:setColor(GROUP_COLOR[m.group] or '#d6c9ae')
+  end
+  if item.kind == 'riftkey' and item.rewards then
+    local label = g_ui.createWidget('CraftModLabel', window.modList)
+    label:setText(tr('Rewards: %s', item.rewards))
+    label:setColor('#9fdc7f')
   end
 end
 
@@ -114,9 +129,17 @@ local function updateOrbs()
       elseif type(item.orbs) == 'table' and item.orbs[orb.key] and item.orbs[orb.key] ~= '' then
         why = item.orbs[orb.key]
       end
+      -- what the orb would do to the item on the bench (the server's preview)
+      local preview = why == '' and item and type(item.preview) == 'table' and item.preview[orb.key] or ''
+      if preview ~= '' then
+        row.count:setText(tr('You have %s', short(count)) .. '  |  ' .. preview)
+        row.count:setColor('#9fdc7f')
+      end
+      local text = (item and item.kind == 'riftkey' and orb.keyText) or orb.text or ''
       row.use:setEnabled(why == '')
       row.use:setTooltip(why)
-      row:setTooltip((orb.text or '') .. (why ~= '' and ('\n' .. why) or ''))
+      row:setTooltip(text .. (preview ~= '' and ('\n' .. tr('Preview: %s', preview)) or '')
+        .. (why ~= '' and ('\n' .. why) or ''))
       row:setOpacity(why == '' and 1.0 or 0.75)
     end
   end
@@ -151,13 +174,15 @@ local function buildGear()
     local tip = it.name or ''
     if it.unique then
       tip = tip .. '\n' .. tr('Unique')
+    elseif it.key then
+      tip = tip .. '\n' .. tr('Rift Key')
     elseif rarity > 0 then
       tip = tip .. '\n' .. (it.rarityName or tr('Rarity %d', rarity))
     end
     slot:setTooltip(tip)
-    if rarity > 0 or it.unique then
+    if rarity > 0 or it.unique or it.key then
       slot:setBorderWidth(1)
-      slot:setBorderColor(it.unique and '#e8582a' or rarityColor(rarity))
+      slot:setBorderColor(it.unique and '#e8582a' or it.key and KEY_COLOR or rarityColor(rarity))
     end
     if current and current.path == it.path then
       slot:setBorderWidth(1)

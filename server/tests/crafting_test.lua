@@ -1,6 +1,7 @@
 -- Run from the server/ folder: luajit tests/crafting_test.lua (and lua5.3; CI runs both)
 -- The crafting orbs (data/lib/chaos_crafting.lua) against a mocked item: eligibility, what every orb does, the
--- modifier slot limits, the description text, and that uniques are never touched.
+-- modifier slot limits, the description text, and that uniques are never touched. Also the Chaos item modifiers through
+-- the orbs (Exalted adds, Annulment removes, Chaos / Scouring), the bench preview, and the orbs on Rift Keys.
 
 local function eq(a, b, m)
 	if a ~= b then
@@ -52,6 +53,8 @@ function Item:removeCustomAttribute(k) self.custom[k:lower()] = nil return true 
 function Item:getAttribute(k) return self.attrs[k] or (k == ITEM_ATTRIBUTE_DESCRIPTION and "" or nil) end
 function Item:setAttribute(k, v) self.attrs[k] = v end
 function Item:getParent() return self.parent end
+function Item:getActionId() return self.aid or 0 end
+function Item:setActionId(a) self.aid = a end
 function Item:remove() self.removed = true
 	if self.parent then
 		for i, it in ipairs(self.parent.items) do
@@ -92,6 +95,9 @@ Game = {
 
 dofile("data/lib/chaos_crafting.lua")
 local C = ChaosCrafting
+local M = ChaosItemMods
+-- drops and recreated items roll Chaos modifiers with M.random: by default never (the highest roll fails every chance)
+M.random = function(a, b) return b end
 -- deterministic dice: queue values, else the lowest
 local dice = {}
 C.random = function(a, b)
@@ -308,5 +314,152 @@ dice = {1, 1, 1}
 C.apply("exalted", sword)
 assert(C.signature(sword) ~= sig, "signature changes with the modifiers")
 eq(C.describe(sword).orbs.exalted, C.reasons.full, "five of five: full")
+
+
+-- ---------------------------------------------------------------- Chaos item modifiers through the orbs
+-- Exalted: the Chaos group comes after the engine's groups. Armor (kind "armor"): absorb 30, skill 30, special 25,
+-- chaos 25 -> roll 86..110 is the Chaos group; its entries for armor: dodge 6, reflect 6, thorns 8, damage from
+-- monsters 8 (28) -> roll 13..20 = thorns; rarity 4 (tier 2, 8..15) at level 42 (window 31..60: no pull) -> 11
+local ca = rareItem(2466, 4, {rarity_iceAbsorb = 2})
+dice = {100, 15, 11}
+ok, res = C.apply("exalted", ca)
+eq(ok, true, "exalted adds a Chaos modifier")
+eq(res.added.group, "chaos")
+eq(ca:getCustomAttribute("chaos_mod_thorns"), 11, "stored as chaos_mod_thorns")
+eq(res.text, "golden armor gained Thorns +11.")
+eq(ca:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "Level: 42, Ice +2%, Thorns +11", "description shows it")
+eq(#C.readMods(ca), 2, "a Chaos modifier is one modifier")
+-- a weapon never gets an armor modifier, and armor never attack speed
+local kinds = {}
+for _, row in ipairs(C.addable(ca).chaos) do kinds[row.entry.key] = true end
+eq(kinds.attackspeed, nil, "no attack speed on armor")
+eq(kinds.thorns, nil, "thorns already there")
+eq(kinds.dodge, true)
+-- the slot limit counts Chaos modifiers: Common armor (3 slots) with 2 engine modifiers + 1 Chaos modifier is full
+local cfull = rareItem(2466, 1, {rarity_physicalAbsorb = 1, rarity_clubSkill = 1, chaos_mod_dodge = 1})
+eq(select(2, C.check("exalted", cfull)), "full", "Chaos modifiers take slots")
+-- Annulment can take the Chaos modifier (mods in description order: absorb, skill, special, chaos, element)
+dice = {2}
+ok, res = C.apply("annulment", ca)
+eq(res.removed.group, "chaos", "annulment removes a Chaos modifier")
+eq(ca:getCustomAttribute("chaos_mod_thorns"), nil)
+eq(ca:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "Level: 42, Ice +2%")
+-- attack speed is the weapon's own interval (ITEM_ATTRIBUTE_ATTACK_SPEED); removing it gives the base back
+ITEM_ATTRIBUTE_ATTACK_SPEED = 99
+function Item:removeAttribute(k) self.attrs[k] = nil end
+local aw = rareItem(2400, 7, {})
+M.set(aw, "attackspeed", 8)
+eq(aw:getAttribute(ITEM_ATTRIBUTE_ATTACK_SPEED), 1840, "2000 ms base (no own interval) -8%")
+eq(aw:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "Level: 42", "the description is the caller's job")
+C.rewriteDescription(aw)
+eq(aw:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "Level: 42, Attack Speed +8%")
+dice = {1}
+C.apply("annulment", aw)
+eq(aw:getAttribute(ITEM_ATTRIBUTE_ATTACK_SPEED), nil, "interval back to the item type's")
+ITEM_ATTRIBUTE_ATTACK_SPEED = nil
+-- orbs that make a new copy roll Chaos modifiers like a drop (M.random: lowest = every chance hits)
+M.random = function(a, b) return a end
+ok, res = C.apply("chaos", rareItem(2400, 9, {}))
+local cm = M.read(res.item)
+eq(#cm, 2, "a Chaos Orb copy of rarity 9 rolled two Chaos modifiers (first and second chance hit)")
+eq(cm[1].key, "attackspeed", "lowest weighted pick = the first weapon modifier")
+eq(#C.readMods(res.item), 4, "2 engine + 2 Chaos, under the maximum of 7")
+assert(res.text:find("Attack Speed %+"), "the result text lists them")
+-- Scouring makes a plain copy: no Chaos modifiers survive
+ok, res = C.apply("scouring", res.item)
+eq(#M.read(res.item), 0, "scoured")
+-- no free slot: nothing is rolled
+local tight = rareItem(2466, 1, {rarity_physicalAbsorb = 1, rarity_clubSkill = 1, rarity_iceAbsorb = 1})
+eq(#C.rollDropMods(tight), 0, "full item gets no Chaos modifier")
+eq(#C.rollDropMods(unique), 0, "uniques never")
+-- a monster drop the engine has not rolled yet (rarity only, no item level): room for the engine's modifiers is kept
+-- (a weapon one Chaos modifier, other gear two) and the description waits for the engine
+local pending = put(newItem(2400))
+pending:setCustomAttribute("rarity", 9)
+eq(#C.rollDropMods(pending), 1, "pending weapon: one, though rarity 9 rolled two")
+eq(pending:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "", "description left to the engine")
+local pendingArmor = put(newItem(2466))
+pendingArmor:setCustomAttribute("rarity", 9)
+eq(#C.rollDropMods(pendingArmor), 2, "pending armor: two")
+M.random = function(a, b) return b end
+
+-- ---------------------------------------------------------------- bench preview
+local pv = C.describe(rareItem(2466, 4, {rarity_iceAbsorb = 2}))
+eq(pv.preview.exalted, "1 -> 2 of 5 modifiers")
+eq(pv.preview.annulment, "one of 1 modifiers goes")
+eq(pv.preview.transmutation, "", "no preview for an orb that does not fit")
+eq(C.describe(put(newItem(2400))).preview.alchemy, "Rare 55%, Epic 30%, Legendary 15%")
+
+-- ---------------------------------------------------------------- Rift Keys
+local R, rcfg = C.rift()
+local function newKey(tier, mods)
+	local k = put(newItem(rcfg.key.itemId))
+	k:setActionId(rcfg.key.actionId)
+	C.writeKey(k, {tier = tier, mods = R.decodeMods(rcfg, mods or "")})
+	return k
+end
+local key = newKey(4, "")
+eq(C.isRiftKey(key), true, "a key")
+eq(C.isRiftKey(put(newItem(rcfg.key.itemId))), false, "the base item without the action id is no key")
+eq(C.check("exalted", key), true, "exalted on an empty key")
+eq(select(2, C.check("annulment", key)), "keyNoMods")
+eq(select(2, C.check("scouring", key)), "keyNoMods")
+eq(select(2, C.check("chaos", key)), "keyNoMods")
+eq(select(2, C.check("divine", key)), "keyNoMods")
+-- Transmutation: one modifier. pool of 8, pick 3 = haste, value step 0 -> 40
+dice = {3, 0}
+ok, res = C.apply("transmutation", key)
+eq(ok, true, "transmutation on a key")
+eq(key:getCustomAttribute("rift_mods"), "haste:40")
+eq(key:getAttribute(ITEM_ATTRIBUTE_NAME), "Rift Key (Tier 4)")
+eq(key:getCustomAttribute("rift_tier"), 4, "tier unchanged")
+assert(key:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION):find("Monsters move %+40 faster"), "description rewritten")
+eq(res.text, "Rift Key (Tier 4): Monsters move +40 faster. Rewards: +6% quantity, +0% rarity, +0% experience.")
+eq(select(2, C.check("transmutation", key)), "keyNeedNone", "transmutation needs an empty key")
+eq(select(2, C.check("alchemy", key)), "keyNeedNone")
+-- Exalted up to the maximum (3)
+dice = {1, 2}
+C.apply("exalted", key) -- pool without haste: vitality first, value 20 + 2 x 5
+eq(key:getCustomAttribute("rift_mods"), "vitality:30,haste:40", "config order")
+dice = {6, 0}
+C.apply("exalted", key) -- pool of 6 left (vitality and haste taken): the 6th is swarm, value 1
+eq(#C.readKey(key).mods, 3)
+eq(select(2, C.check("exalted", key)), "keyFull", "three is the maximum")
+eq(C.describe(key).maxMods, 3)
+eq(C.describe(key).kind, "riftkey")
+-- Divine: same modifiers, new values inside the ranges
+dice = {8, 0, 2}
+C.apply("divine", key)
+local dk = C.readKey(key).mods
+eq(dk[1].key, "vitality"); eq(dk[1].value, 60, "vitality 20 + 8 x 5")
+eq(dk[2].key, "haste"); eq(dk[2].value, 40)
+eq(#dk, 3)
+-- Annulment: one goes
+dice = {1}
+ok, res = C.apply("annulment", key)
+eq(#C.readKey(key).mods, 2)
+eq(C.readKey(key).mods[1].key, "haste", "the first one went")
+assert(res.text:find("lost \"Monsters have %+60%% health\""), res.text)
+-- Chaos: new modifiers (1-3 by the drop weights)
+dice = {100, 1, 0, 1, 0, 1, 0} -- count roll 100 of 100 -> 3 modifiers; then the first of the pool each time
+C.apply("chaos", key)
+local ck = C.readKey(key).mods
+eq(#ck, 3, "chaos rolled three")
+eq(ck[1].key, "vitality"); eq(ck[2].key, "brutality"); eq(ck[3].key, "haste")
+-- Scouring: all go
+C.apply("scouring", key)
+eq(key:getCustomAttribute("rift_mods"), "", "scoured key")
+assert(key:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION):find("Modifiers: none"), "description says none")
+-- Alchemy: 2 or 3 on an empty key ({2, 60}, {3, 40}: roll 61 -> 3)
+dice = {61, 1, 0, 1, 0, 1, 0}
+C.apply("alchemy", key)
+eq(#C.readKey(key).mods, 3, "alchemy gave three")
+-- uniques and rarity rules do not apply; a stack of keys does not exist (not stackable). The signature follows mods
+local ksig = C.signature(key)
+dice = {1}
+C.apply("annulment", key)
+assert(C.signature(key) ~= ksig, "key signature changes")
+-- maxMods from the config caps the decoded list too
+eq(#R.decodeMods(rcfg, "vitality:20,brutality:20,haste:40,elites:50"), 3, "at most key.maxMods")
 
 print("crafting_test: OK")

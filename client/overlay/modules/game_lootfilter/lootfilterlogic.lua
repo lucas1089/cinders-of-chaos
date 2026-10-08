@@ -95,6 +95,9 @@ end
 function L.tooltip(info)
   local count = tonumber(info.c) or 1
   local lines = { (count > 1 and (count .. 'x ') or '') .. L.label(info) }
+  if type(info.x) == 'string' and info.x ~= '' then
+    lines[#lines + 1] = info.x -- the Chaos item modifiers (server item_mods)
+  end
   local left = tonumber(info.left)
   if left and left <= 0 then
     lines[#lines + 1] = 'Looted (or gone)'

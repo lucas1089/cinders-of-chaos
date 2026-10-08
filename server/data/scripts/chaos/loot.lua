@@ -104,7 +104,9 @@ function L.itemFindMult(player)
 		return 1
 	end
 	local ok, v = pcall(function() return player:getStorageValue(c.itemFindStorage) end)
-	v = ok and tonumber(v) or 0
+	v = math.max(0, ok and tonumber(v) or 0)
+	-- the Item Find modifier of the equipped items (item_mods.lua)
+	v = v + (ChaosItemMods and ChaosItemMods.playerBonus and ChaosItemMods.playerBonus(player, "itemfind") or 0)
 	if v <= 0 then
 		return 1
 	end
@@ -639,6 +641,47 @@ local function itemRarityOf(item)
 	return ok and tonumber(r) or 0
 end
 
+-- true once the engine rolled the rarity stats (Item::applyRarityEffects / the Monster::dropLoot pass set it)
+function L.isRolled(item)
+	local ok, v = pcall(function() return item:getCustomAttribute("combatPowerLevel") end)
+	return ok and v ~= nil
+end
+
+-- For an item about to leave a corpse before the engine's rarity pass (autoloot, the loot pouch): replace it in the
+-- same container with a copy whose rarity stats are rolled now (Game.createItemWithRarity), keeping its Chaos item
+-- modifiers. Returns the item to move (the copy, or the item itself when there is nothing to roll or it failed).
+function L.finalizeRarity(item)
+	local r = itemRarityOf(item)
+	if r <= 0 or L.isRolled(item) or not L.isGearId(item:getId()) then
+		return item
+	end
+	local parent = item:getParent()
+	if not parent or not parent.addItemEx then
+		return item
+	end
+	local newItem = Game.createItemWithRarity(item:getId(), item:getCount(), r)
+	if not newItem then
+		return item
+	end
+	if not L.isRolled(newItem) then
+		newItem:remove()
+		return item
+	end
+	local mods = ChaosItemMods and ChaosItemMods.read and ChaosItemMods.read(item) or {}
+	for _, m in ipairs(mods) do
+		ChaosItemMods.set(newItem, m.key, m.value)
+	end
+	if parent:addItemEx(newItem, INDEX_WHEREEVER or -1, FLAG_NOLIMIT or 1) ~= (RETURNVALUE_NOERROR or 0) then
+		newItem:remove()
+		return item
+	end
+	item:remove()
+	if #mods > 0 and ChaosCrafting and ChaosCrafting.rewriteDescription then
+		ChaosCrafting.rewriteDescription(newItem)
+	end
+	return newItem
+end
+
 local function announce(owner, corpsePos, text, nearMessage)
 	local u = cfg().unique
 	local msgType = globalByName(u.messageType, MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR)
@@ -711,26 +754,40 @@ local function processKill(monster, corpse)
 		end
 	end
 	local noError = RETURNVALUE_NOERROR or 0
+	-- the Rarity Find modifier of the equipped items (item_mods.lua) raises the bonus rarity chance
+	local rarityFind = ChaosItemMods and ChaosItemMods.playerBonus and ChaosItemMods.playerBonus(owner, "rarityfind") or 0
+	-- Only the "rarity" attribute is raised here, as the stock callback sets it: the engine rolls the stats of every
+	-- item that still carries one in the corpse after all onDropLoot callbacks (Monster::dropLoot), once. Rolling here
+	-- too (Game.createItemWithRarity) gave corpse items two sets of stats. Items that leave the corpse before the
+	-- engine pass (autoloot, the loot pouch) are rolled on the way out: L.finalizeRarity.
 	for _, item in ipairs(items) do
 		local id = item:getId()
-		if L.isGearId(id) then
+		if L.isGearId(id) and not L.isRolled(item) then
 			local current = itemRarityOf(item)
-			local target = L.upgradeRarity(tier, current, ctx.itemFind)
+			local target = L.upgradeRarity(tier, current, ctx.itemFind * (1 + rarityFind / 100))
 			if target > current then
-				local newItem = Game.createItemWithRarity(id, 1, target)
-				if newItem and itemRarityOf(newItem) == target then
-					if corpse:addItemEx(newItem) == noError then
-						item:remove()
-						bonus[#bonus + 1] = string.format("[%s] %s", rarityName(target), itemName(id))
-						local from = c.announceRarityFrom or 0
-						if from > 0 and target >= from then
-							announce(owner, corpsePos,
-								string.format("%s found a [%s] %s!", owner:getName(), rarityName(target), itemName(id)))
-						end
-					end
+				item:setCustomAttribute("rarity", target)
+				bonus[#bonus + 1] = string.format("[%s] %s", rarityName(target), itemName(id))
+				local from = c.announceRarityFrom or 0
+				if from > 0 and target >= from then
+					announce(owner, corpsePos,
+						string.format("%s found a [%s] %s!", owner:getName(), rarityName(target), itemName(id)))
 				end
-				-- otherwise the original item stays untouched (a temp item is freed by the engine)
 			end
+		end
+	end
+
+	-- 2b. Chaos item modifiers (data/lib/chaos_item_mods.lua) on every gear drop with a rarity, inside its free slots
+	if ChaosCrafting and ChaosCrafting.rollDropMods then
+		local rolled = false
+		for slot = 0, corpse:getSize() - 1 do
+			local item = corpse:getItem(slot)
+			if item and itemRarityOf(item) > 0 and L.isGearId(item:getId()) then
+				rolled = #ChaosCrafting.rollDropMods(item) > 0 or rolled
+			end
+		end
+		if rolled and ChaosItemMods.afterDrop then
+			ChaosItemMods.afterDrop(corpse) -- the description once the engine's own rarity pass is done
 		end
 	end
 

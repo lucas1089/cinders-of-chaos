@@ -8,8 +8,9 @@
 --                   {"action":"peek","data":{"cid":N}}         rarity data of an open container (client container id)
 --                   {"action":"take","data":{"k":kill,"n":entry,"id":clientId,"one":bool}}   click to loot
 -- server -> client  settings {s, unlocked, presets, samples, open}
---                   peek {cid, corpse, items = [{i (0-based index), id (client id), r, u, o, g}]}
---                   kill {k, m (monster), p (corpse position), items = [{n, id, c, r, u, o, g, nm, left}], drops = [{text, color, rank}]}
+--                   peek {cid, corpse, items = [{i (0-based index), id (client id), r, u, o, g, x}]}
+--                   kill {k, m (monster), p (corpse position), items = [{n, id, c, r, u, o, g, x, nm, left}], drops = [{text, color, rank}]}
+--                   (x = the item's Chaos modifiers as one line, item_mods.lua; absent when it has none)
 --                   update {k, left = [remaining count per entry]}      decay {k}      msg {text} (a refused click)
 --
 -- onDropLoot (lower index first): 0 stock loot, 1 Chaos loot layer, 2 auto seller, 2.5 SNAPSHOT + hold back list items
@@ -151,13 +152,18 @@ local function itemInfo(item)
 	info.orb = orbs[id] or (not info.unique and info.rarity == 0 and itemType:isStackable()
 		and (lname:find("%f[%a]orb$") or lname:find("^orb of ")) and true) or false
 	info.category = categoryOf(itemType, info)
+	-- Chaos item modifiers ("Attack Speed +5%; Life on Kill +12", data/lib/chaos_item_mods.lua), shown in the tooltip
+	if ChaosItemMods and info.category == "equipment" then
+		local ok, text = pcall(ChaosItemMods.summary, item)
+		info.mods = ok and text ~= "" and text or nil
+	end
 	return info
 end
 ChaosLootFilter.itemInfo = itemInfo
 
 local function wire(info, extra)
 	local t = {id = info.clientId, c = info.count, r = info.rarity, u = info.unique and 1 or 0, o = info.orb and 1 or 0,
-		g = info.category}
+		g = info.category, x = info.mods}
 	for k, v in pairs(extra or {}) do
 		t[k] = v
 	end
@@ -449,6 +455,10 @@ local function pickup(monster, corpse)
 		local info = itemInfo(item)
 		if F.autoloot(info, current.s, list[info.id], true) == "take" then
 			local label = F.label(info)
+			-- rolled now: the engine's rarity pass only reaches items still in the corpse (loot.lua finalizeRarity)
+			if ChaosLoot and ChaosLoot.finalizeRarity then
+				item = ChaosLoot.finalizeRarity(item)
+			end
 			if intoBags(owner, item) then
 				taken[#taken + 1] = label
 			elseif owner:getStorageValue(ST.shopLootPouch) > 0 and ((ChaosStash and ChaosStash.storeItem(owner, item))

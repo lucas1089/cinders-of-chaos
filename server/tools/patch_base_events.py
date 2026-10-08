@@ -29,6 +29,11 @@ pet share, so the bonuses multiply the staged experience and the pet gets its sh
    its ascension at each login. The demotion branch is removed; the premium branch (promotion storage) is unchanged.
    The engine itself never demotes (Vocation:getDemotion is only a lookup; premium only gates spells, items, outfits).
 
+5. data/scripts/creaturescripts/autoloot.lua: the engine rolls the stats of an item with a "rarity" in
+   Monster::dropLoot after all onDropLoot callbacks, so an item the autoloot moved out of the corpse kept its rarity
+   but never got its stats. The autoloot now hands each item to ChaosLoot.finalizeRarity (data/scripts/chaos/loot.lua)
+   first, which rolls it once on the way out.
+
 Idempotent: every inserted block carries a marker comment and is not added twice.
 """
 import os, re, sys
@@ -147,6 +152,25 @@ def patch_login_demotion(text):
     return text[:m.start()] + '\n' + m.group(1) + DEMOTION_MARKER + m.group(2) + text[m.end():], 'patched'
 
 
+AUTOLOOT_MARKER = '-- Chaos: rarity stats rolled before the item leaves the corpse (patch_base_events.py)'
+
+
+def patch_autoloot(text):
+    """returns (new text, status)"""
+    if AUTOLOOT_MARKER in text:
+        return text, 'already'
+    m = list(re.finditer(r'\n([ \t]*)if not item:moveTo\(corpseOwner\) then', text))
+    if len(m) != 1:
+        return text, 'unexpected autoloot.lua ("if not item:moveTo(corpseOwner) then" not found once)'
+    m = m[0]
+    ind = m.group(1)
+    block = (f'\n{ind}{AUTOLOOT_MARKER}\n'
+             f'{ind}if ChaosLoot and ChaosLoot.finalizeRarity then\n'
+             f'{ind}    item = ChaosLoot.finalizeRarity(item)\n'
+             f'{ind}end')
+    return text[:m.start()] + block + text[m.start():], 'patched'
+
+
 def apply(path, fn, dry):
     text = open(path, encoding='utf-8', errors='surrogateescape').read()
     new, status = fn(text)
@@ -167,6 +191,7 @@ def main():
                patch_loot, dry) and ok
     ok = apply(os.path.join(args[0], 'events', 'scripts', 'creature.lua'), patch_target_combat, dry) and ok
     ok = apply(os.path.join(args[0], 'creaturescripts', 'scripts', 'login.lua'), patch_login_demotion, dry) and ok
+    ok = apply(os.path.join(args[0], 'scripts', 'creaturescripts', 'autoloot.lua'), patch_autoloot, dry) and ok
     return 0 if ok else 1
 
 
