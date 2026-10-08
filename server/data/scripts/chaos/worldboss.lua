@@ -46,12 +46,13 @@ function W.layout(a)
 	local last = a.inner + 1
 	local L = {z = o.z}
 	L.arena = {x1 = o.x, y1 = o.y, x2 = o.x + last, y2 = o.y + last}
-	local cx, cy = o.x + (a.inner + 1) / 2, o.y + (a.inner + 1) / 2
+	local half = math.floor((a.inner + 1) / 2) -- integer in Lua 5.3 too (positions are table keys in tests)
+	local cx, cy = o.x + half, o.y + half
 	L.center = {x = cx, y = cy, z = o.z}
-	local halfW = (a.lobbyInnerW + 1) / 2
+	local halfW = math.floor((a.lobbyInnerW + 1) / 2)
 	local ly1 = L.arena.y2 + a.lobbyGap + 1
 	L.lobby = {x1 = cx - halfW, y1 = ly1, x2 = cx + halfW, y2 = ly1 + a.lobbyInnerH + 1}
-	local lcy = L.lobby.y1 + (a.lobbyInnerH + 1) / 2
+	local lcy = L.lobby.y1 + math.floor((a.lobbyInnerH + 1) / 2)
 	L.bossSpawn = {x = cx, y = cy, z = o.z}
 	L.arenaEntry = {x = cx, y = L.arena.y2 - 3, z = o.z} -- players arrive here from the lobby
 	L.arenaBack = {x = cx, y = L.arena.y2 - 1, z = o.z} -- forcefield back to the lobby
