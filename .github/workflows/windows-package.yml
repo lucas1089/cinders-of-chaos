@@ -16,6 +16,10 @@
 name: Windows package
 
 on:
+  # TEMPORARY, removed before merge: test runs from the PR branch (a manual workflow cannot start before it is on main)
+  push:
+    branches: [claude/happy-hawking-maq9wm]
+    paths: [".github/workflows/windows-package.yml", "tools/windows/**"]
   workflow_dispatch:
     inputs:
       assets_ref:
