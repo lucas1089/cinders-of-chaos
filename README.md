@@ -285,5 +285,6 @@ The full priority list is in [ROADMAP.md](ROADMAP.md).
 | [server/data/spells/README.md](server/data/spells/README.md) | spells and balance tables |
 | [ROADMAP.md](ROADMAP.md) | what's done, in progress and planned |
 | [docs/LAUNCH.md](docs/LAUNCH.md) | **Running a server**: install (`server/tools/install_all.py`), production config, systemd, backups, monitoring, launch checklist |
+| [website/README.md](website/README.md) | the website (ZnoteX with our layout and plugin): installer, class lock on character creation, leaderboards / patch notes / seasons pages, banners and art |
 
 This page is kept up to date as features are merged: new systems move from *Coming soon* into their sections.

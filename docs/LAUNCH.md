@@ -290,3 +290,18 @@ Check the server folder before the first start (`ls data/scripts data/scripts/ta
 9. Backups: run `chaos-backup.service` once, restore the dump into a scratch database (section 7).
 10. Load test on the full map, then set `maxPlayers` (section 9).
 11. Open the firewall ports, announce.
+
+## Website
+
+The account site is `website/` (ZnoteX with our layout and plugin; details in `website/README.md`). Install it after
+the database (section 2) on the web host, outside the repository:
+
+```
+sudo cp website/site.env.example /etc/chaos/site.env && sudo chmod 600 /etc/chaos/site.env   # fill in the placeholders
+website/install_site.sh /etc/chaos/chaos.env /etc/chaos/site.env                             # again: no changes
+```
+
+It covers section 6's rules: the four base classes only, the Monk / Necromancer / Templar for accounts with a
+`chaos_class_unlocks` row (checked server-side), level 1 characters with `lastlogin = 0` and no items. Set
+`CHAOS_SERVER_DATA` to `/opt/chaos/server/data` (patch notes, seasons), the site and game addresses, the client
+download links and the Discord invite, and `CHAOS_ADMIN_ACCOUNTS`; then edit the Rules page in the admin panel.
