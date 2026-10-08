@@ -37,6 +37,7 @@ server/
                                       weapon attack speed scaled by the vocation's (thief_combat.lua)
     shop.lua  shop_config.lua  shop_services.lua  autosell.lua  sell_prices.lua (store, see "Store services")
     bounty.lua  bounty_core.lua  bounty_config.lua  bounty_pool.lua (bounty board; pool from tools/gen_bounty_pool.py)
+    rift.lua  rift_core.lua  rift_config.lua (rifts: keys, runtime-built instances, run HUD; see "Rifts")
     crafting.lua (crafting bench and orbs; rules in data/lib/chaos_crafting.lua, installer tools/install_crafting.py)
     treasure_goblin.lua  treasure_goblin_core.lua  treasure_goblin_config.lua (treasure goblins, see "Treasure goblins")
     leaderboard.lua  leaderboard_core.lua  leaderboard_config.lua (weekly boards with titles, class ladder)
@@ -105,13 +106,15 @@ working directory, as with the rest of the base server libs).
 | game_infinitytower | `infinitytower.lua` | 214 | Seasons, points, best floor/time, ranking, milestone claim, `!tower`, `/towerrun` staff test helper. **The tower gameplay does not exist**; a future script reports results with `ChaosTower.recordRun`. Season-end top 3 chests not implemented. |
 | game_stash | `stash.lua` | **110** (new), `!stash` | Deposit by drag, redeem, categories, block list, `!stash all`, DB persistence. Client must be ported first (see below). |
 | game_spellbook | `spellbook.lua` | 219, `!spells` / `/spells` | Spell list window: every player spell of `data/spells/spells.xml` with its data, a short description and its area of effect (see "Spellbook" below). |
+| game_lootfilter | `lootfilter.lua`, `lootfilter_core.lua`, `lootfilter_config.lua` | 238, `!lootfilter` | Loot filter (glow/dim by rarity in corpses), loot channel with click-to-loot icons, rare-drop lines, loot rays, Rarity Autoloot store unlock. Tested in game (see "Loot filter"). |
 | game_bounty | `bounty.lua`, `bounty_core.lua`, `bounty_config.lua`, `bounty_pool.lua` | 223, `!bounty` / `/bounty` | Daily rotating kill contracts per level band, tested in game (see "Bounty board"). |
+| game_rift | `rift.lua`, `rift_core.lua`, `rift_config.lua` | 228 (server -> client), `!rift` / `/rift` | Rift Keys open timed instances with modifiers; run HUD; tested in game (see "Rifts"). |
 | game_arena | `arena.lua`, `arena_core.lua`, `arena_config.lua` | 236, `!arena` / `/arena` | Ranked PvP arena, 1v1 and 2v2 with Elo per mode, runtime instances, no death / skull / frag inside, tested in game with two clients (see "Arena"). |
 | game_siege | `siege.lua`, `siege_core.lua`, `siege_config.lua` | 233, `!siege` / `/siege` | Weekly guild siege for the Chaos Obelisk: sign-ups, runtime arena, HUD, rewards and the champion title, tested in game (see "Guild siege"). |
 | game_leaderboard | `leaderboard.lua`, `leaderboard_core.lua`, `leaderboard_config.lua` | 229, `!leaderboard` | Weekly World Boss / Bounty Hunter / Rifts / Goblin Slayer / Guild Siege / Arena boards with titles and orbs for the top 3, all-time class ladder, tested in game (see "Leaderboards"). |
 | game_crafting | `crafting.lua`, `data/lib/chaos_crafting.lua` | 232, `!craft` / `/craft` | Crafting bench and the crafting orbs (Transmutation, Alchemy, Exalted, Annulment, Scouring, plus Chaos and Divine), tested in game (see "Crafting"). |
 
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 229, 232, 233, 236 are all registered in the global
+Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 228, 229, 232, 233, 236, 238 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
 
 ### Opcode collision check
@@ -1107,6 +1110,195 @@ mocked engine only (there were two client displays).
 logout during a fight, so a logout mid-fight is a disconnect (counted after 3 s). Players keep their buffs, summons and
 items (potions and runes are used up as normal). The world type must allow PvP (`worldType = "pvp"`); on a no-pvp world
 the engine blocks the damage before the scripts see it.
+
+## Loot filter, loot channel and loot rays (`lootfilter.lua`, `lootfilter_core.lua`, `lootfilter_config.lua`, client `game_lootfilter`)
+
+Extended opcode 238 (`ChaosOpcodes.lootfilter`), `!lootfilter` (or Hunt -> Loot Filter) opens the window; `!lootfilter all|hunter|strict` applies a preset.
+
+**How rarity reaches the client.** It does not, natively. The base server stores rarity as the item custom attribute
+`rarity` (1..15, Common .. Transcendent, rolled in `eventcallbacks/monster/default_onDropLoot.lua` and by the Chaos loot
+layer); uniques carry `chaos_unique`. `NetworkMessage::addItem` sends only the client id, count and fluid, so a container
+item in the client has no rarity. `game_itemrarity` reads a `[NAME]` tag out of `item:getTooltip()`, but the server never
+fills that tooltip string (the 10.98 packets have no description field; the hover tooltip is a separate 0x9F/0x9E request
+used by `game_itemtooltip`), and its table has 6 names that are not the server's 15. So the filter asks the server: on
+every container open/change the client sends `peek {cid}` and the server answers the rarity, unique flag, orb flag and
+category of each slot of that container (`player:getContainerById`). `game_itemrarity` / `game_itemtooltip` are not changed.
+
+**Rules** (`lootfilter_core.lua`, mirrored for drawing in the client's `lootfilterlogic.lua`):
+- *Glow on gear from* rarity X (0 = off): equipment with rarity >= X gets a glow in its rarity colour. Uniques (orange) and
+  orbs (teal) always glow.
+- *Dim gear below* rarity Y (0 = off): equipment with a lower rarity (rarity 0 = no rarity) is dimmed. Dimming only, items are
+  never hidden (hiding would shift container slot indexes); dimmed items stay lootable.
+- *Show* per category (equipment, currency = orbs and coins, supplies = potions/runes/ammo/food, other): a category switched
+  off is dimmed (gear at or above the glow line still glows).
+- Items with a rarity that do not glow get a thin frame in their colour. Corpses dim; other containers only glow/frame.
+- *Rare-drop message*: every glowing item (not orbs) gives a coloured line `Rare drop: [Legendary] Dawnforged Helmet`
+  (`Unique drop: [Unique] ...`) in the loot channel and over the map. TFS text messages have no colour, so these go through the opcode.
+- *Rarity Autoloot* (store unlock, see below): *leave list gear below* Z keeps autoloot-list equipment of a lower rarity in
+  the corpse; *also pick up gear from* W autoloots equipment with rarity >= W, and uniques, even when they are not on the
+  autoloot list. Uniques, orbs and coins are never held back.
+- Presets: *Show all* (Rare+ glows, nothing dimmed), *Hunter* (Epic+ glows, below Uncommon dimmed, picks up Epic+),
+  *Strict* (Legendary+ glows, below Epic dimmed, supplies and other dimmed, leaves list gear below Epic, picks up Legendary+).
+  Presets keep the two display options (icons, rare-drop message).
+- Settings live in one storage value per character, `Chaos.storage.lootFilter` (7100500), packed by `F.pack`; the client
+  mirrors them (pushed after login and asked for with `sync` at game start).
+
+**onDropLoot order** (lower index first): 0 stock loot + "Loot of" text, 1 Chaos loot layer, 2 auto seller,
+**2.5 snapshot** (the corpse contents for the loot channel; list items below the Rarity Autoloot minimum are moved into a
+bag on the corpse tile for the rest of the chain), 3 base autoloot, **3.5 rarity pickup**, 4 loot pouch,
+**4.5 finish** (the held items go back into the corpse, the bag is removed, the loot row, rare-drop lines and rays start).
+Every step is in `pcall` and returns nothing, so the chain never stops. `autoloot.lua` and `autosell.lua` are unchanged; the
+auto seller still sells first (sold items never show in the row) and the loot pouch still takes the list items the base
+autoloot could not carry (checked in game: "Auto seller: sold ...", "Loot pouch: ... sent 1 to your stash").
+Treasure goblins add their hoard in their death event, which the engine runs before `dropLoot`, so the snapshot sees it
+(rays included; the old `ChaosLootRays.beam` hook in `treasure_goblin.lua` was removed).
+
+### Loot channel (icons, click to loot)
+- On each kill the corpse owner gets `kill {k, m, p, items = [{n, id, c, r, u, o, g, nm, left}], drops}`. The client opens
+  the console's **Loot** tab and lays a panel with one row per kill (time, monster, item icons with count, rarity glow /
+  frame / dim, tooltip with name, rarity and how to loot) over that tab's text while it is selected. Uncheck "Loot tab shows
+  item icons" to get the plain text back. The last 50 rows are kept (`historySize`, client `MAX_ROWS`).
+- The corpse gets the custom attribute `lf_kill = <kill id>` so it can be found again on its tile (it survives
+  container-to-container decay stages). Entries are matched to corpse items by `id:rarity:unique name`
+  (`F.signature`, `F.reconcile`); identical items are interchangeable.
+- Click = loot all of that entry, Shift+click = one of a stack. `take {k, n, id, one}`: the server checks the kill belongs to
+  the player, the corpse still exists and holds a matching item, the player may open it (owner or a party member of the
+  owner, the engine's `canOpenCorpse` rule), same floor and within 7x5 squares (`reach`). The item goes into the backpack
+  and the bags inside it (capacity checked; never into an equipment slot), else, with the Loot Pouch, to the stash or inbox,
+  else it is refused ("You do not have enough capacity or room.", shown over the map; a split stack goes back).
+- Greying: `update {k, left}` after autoloot (in the same drop), after a click, after any player move out of the corpse
+  (`EventCallback.onItemMoved`, index 11), and from a 1 s timer while rays run / every 5 s otherwise; `decay {k}` when the
+  corpse is gone (all icons of the row grey with a check mark). Records are dropped on logout, when nothing is left or the
+  corpse decayed.
+
+### Rarity Autoloot (store unlock)
+Store -> Convenience -> "Rarity Autoloot", 400 Chaos Coins, `kind = "unlock"`, `unlock = "rarityAutoloot"`, storage
+`Chaos.storage.shopRarityAutoloot` (7100106), handled by `S.unlocks` in `shop_services.lua`. Without it the two Rarity
+Autoloot selectors are greyed in the window with a store hint and the server ignores them (`F.autoloot` returns nil);
+glow, dim, rare-drop lines, rays and the loot channel are free. Checked in game: before buying, an Exotic sword off the list
+stayed in the corpse; after buying (Strict) it was picked up and a Common list sword stayed.
+
+### Loot rays
+- A beam rises from the corpse tile while a qualifying item is still in it: uniques (`rayUniques = true`, orange beam
+  `loot_ray_unique`) and items of base rarity >= `rayMinRarity` (5 = Legendary): Legendary/Exotic gold, Mythic/Chaos/Eternal
+  red, Divine/Phantasmal/Celestial white-blue, Cosmic/Abyssal/Transcendent violet (`rayBands`). One beam per corpse: a unique
+  wins, else the highest rarity left. Epic and below never get one.
+- Resent every `rayIntervalMs` (1000; the effect is 900 ms) for at most `rayDurationS` (60) and stops as soon as the item
+  leaves the corpse or the corpse decays (same tracking as the loot channel; checked in game: orange -> red after looting
+  the unique, nothing after looting the last one).
+- Visible to the looters only (`rayVisibleTo = "looters"`: the corpse owner and their party on the same floor nearby);
+  `"all"` shows it to everyone who sees the tile.
+- Art: effects 424..428 (`loot_ray_*`), style `lootbeam` in `client/tools/sprites/gen_effects.py` (a 2x2 single effect: a
+  thin bright core, a soft halo, a ground flare and rising motes, 91 % of every frame transparent). Rebuild the client pair as
+  in `data/spells/README_FX.md`; `data/lib/chaos_fx.lua` and `effects_catalog.csv` are regenerated. Without the new dat the
+  ids show nothing (the server does not check).
+
+**Tests:** `server/tests/lootfilter_test.lua` (packing, sanitizing, presets, glow/dim rules, Rarity Autoloot decisions,
+ray choice with the real config, reconcile, reach, labels, drop lines) and the client's
+`game_lootfilter/lootfilter_test.lua`. Checked in game on the test server: glow / frame / dim in a corpse window and in the
+loot channel, presets, the setting surviving a relog, click to loot (all, Shift = one, refused with a full backpack),
+autoloot greying icons, decay greying a row, the store purchase, Rarity Autoloot hold-back and pickup, the rays of every band.
+**Not verified:** party members looting (rows and rays go to the corpse owner only; party members can click-loot only
+corpses of their own kills), corpses moved by a player (the row greys as decayed), many players at once.
+
+## Rifts (`rift.lua`, `rift_core.lua`, `rift_config.lua`, client `game_rift`)
+
+Map devices (roadmap item 8). A consumable Rift Key opens a timed instance with random modifiers for the player and their
+party. All numbers are in `rift_config.lua`; the pure logic (key rolls, rewards, key odds, slots and layout, the timer, the
+experience cap) is in `rift_core.lua` and tested by `tests/rift_test.lua`. Extended opcode 228 (server -> client HUD),
+storages 7100400-7100409, action ids 47401 (key) and 47402 (reward chest). No database table.
+
+- **The key.** An existing non-stackable item, the "shadow orb" (10155), with action id 47401, the custom attributes
+  `rift_tier` (1-15) and `rift_mods` (`"vitality:40,reflection:10"`), the name "Rift Key (Tier N)" and a description
+  that lists the modifiers, the reward bonuses and the level needed, so looking at a key shows everything. One NPC (Black
+  Bert) lists the shadow orb in his trade, so a player could sell a key there.
+- **Modifiers** (1-3 per key, weights 50/35/15; a next-tier key from a sealed rift rolls 25/45/30). Each has a value
+  range and gives reward bonuses per point of value:
+
+  | Modifier | Effect | Reward bonus |
+  |---|---|---|
+  | Vitality | monsters +20-60% health | quantity 0.5x, experience 0.25x the value |
+  | Brutality | monsters +15-40% damage (health and mana damage to players) | rarity 0.75x, experience 0.25x |
+  | Haste | monsters +40-120 speed | quantity 0.15x |
+  | Elites | +50-200% magic/rare/legendary monsters | rarity 0.15x, quantity 0.1x |
+  | Reflection | monsters reflect 5-15% of the damage that lands (not overkill) as physical damage | experience 1.5x, quantity 1x |
+  | Warding | monsters resist 10-30% of all non-physical damage | quantity 0.75x, rarity 0.5x |
+  | Withering | players get no health regeneration (food regeneration is swapped for one with mana only; restored on leaving) | +15% experience, +15% quantity |
+  | Swarm | +1-3 monsters in every pack | quantity 8x, experience 5x |
+
+  Quantity multiplies the Chaos loot rate of the rift's kills (`loot_config.lua` rateMult) and the chest's gold, orbs
+  and rolls; rarity raises the chest's gear rarity; experience multiplies the kill experience in the rift.
+- **Tiers.** Tier N picks its monsters from the bounty pool (`bounty_pool.lua`, only monsters that spawn on the map, no
+  bosses, at least 100 health) in a level window, and needs a level: 1: 80-180 (level 100), 2: 140-240 (150),
+  3: 200-320 (200), 4: 280-420 (300), 5: 380-520 (400), 6: 480-640 (500), 7: 580-740 (600), 8: 680-840 (700),
+  9: 780-940 (800), 10: 880-1100 (900). Tiers 11-15 keep the tier 10 window and add +15% monster health and damage and
+  +10% rewards per tier (level +25 per tier). A window with fewer than three types is widened.
+- **Opening.** Use the key in a protection zone, out of combat, not multi-clienting (`Chaos.isMultiClient`), not in a
+  dungeon, the tower or the world boss arena, at the tier's level. Party members within 8 sqm on the same floor come
+  along (up to 4 players); members who fail a rule stay behind and both are told why.
+- **The instance** is built at runtime with `Game.createTile` in a grid of 16 slots (4 x 4, 64 sqm apart) at
+  x/y 8192-8447, z 7, where the map has no tiles (checked in the OTBM; other runtime areas: tower 2000+, tutorial island
+  4600+, world boss 5000+, siege 5100+, PvP arena 6000+). The first use of a slot checks every tile of its footprint like
+  `worldboss.lua` and refuses a slot that has a tile it did not build (the slot is marked unusable, the next one is
+  taken). Each slot is a 15 x 15 hub and four 11 x 11 side rooms joined by 3-wide corridors; every run opens 2-4 of them
+  (stone walls close the others) and picks a theme for the floor: Abyssal Rift (rift floor), Obsidian Hall (black marble),
+  Ashen Crypt (dark sandy / rutted stone) or Forsaken Sanctum (gilded stone), with coal basins for light. The engine has
+  no Lua call to remove a tile, so built slots stay for the server's lifetime and are reused: at the end of a run every
+  monster and loose item (corpses, drops, fields, the chest) on the floor is removed.
+- **The run.** Packs: 6 + tier/3 + 2 per extra player, of 3-4 monsters (+ Swarm), one type per pack; the first pack in
+  the north of the hub, the rest in the open rooms. Every monster rolls magic 10% / rare 3% / legendary 0.6%
+  (x (1 + 0.05 tier) x the Elites modifier) through `ChaosApplyTier` (monster_tiers.lua; the natural spawn roll and the
+  ambush also still apply). After 75% of the monsters died the guardian appears in the hub: the strongest type of the
+  rift, legendary, with 3x its base health (+100% per extra player). Time limit 10 minutes. The HUD (top left, under the
+  character plate) shows tier, theme, time left, kills / left, the guardian, the modifiers and the bonuses.
+- **End.** Guardian killed in time: the rift is sealed, the remaining monsters vanish, a chest (1740, action id 47402)
+  appears where it died and every finisher may open it once within 60 s; whoever did not gets it delivered at the exit
+  (or at the next login when offline). Time up: "the rift collapses", everyone is sent back to where they used the key,
+  the key is lost. Death inside: the normal death rules (temple, losses), the player is out of the run. Logout inside: the
+  player is put back at their entry position and is out of the run. A run whose last player left fails.
+- **The chest** (per finisher): gold to the bank 10,000 x tier^2, Chaos Orbs 1 + 0.5 x tier, Divine Orbs 0.25 x tier,
+  item rolls 2 + 0.5 x tier (each draws one entry of a random rift monster's loot table weighted by its chance; gear gets
+  a rarity from `ChaosLoot.upgradeRarity` at magic (tiers 1-3) / rare (4-6) / legendary (7-10) / boss (11+), x the
+  rarity bonus), one Chaos currency roll and one unique roll at that tier; gold, orbs and rolls x (1 + quantity bonus).
+  Measured: tier 1 10k gold, 2 Chaos, 1 Divine, a few items; tier 7 (+40% quantity) 686k gold, 6 Chaos, 3 Divine,
+  an [Exotic] dragon robe, potions, 11 crystal coins; tier 10 1M+ gold. Finishers are recorded on the weekly Rifts
+  leaderboard (`ChaosLeaderboard.record("rift", player, tier)`).
+- **Keys.** A sealed rift drops one key (to the player who used the key, else a random finisher) with 30% + 10% per
+  modifier (max 60%); of those 50% + 10% per modifier are the next tier (with more modifiers), the rest the same tier.
+  Rare / legendary monsters inside a rift carry a key of its tier 2% / 6% of the time. Tier-1 keys: normal kills outside
+  rifts (EventCallback onDropLoot, after the Chaos loot layer, before autoloot) with 50 in 100,000 per kill x (magic 3,
+  rare 8, legendary 20, boss 40) when the monster's pool level is at least max(60, killer level x 0.4) and the killer is
+  level 100+; completed bounty contracts give one 25% (hunt) / 50% (elite) / 100% (boss) of the time (`bounty.lua` calls
+  `ChaosRift.onBountyPaid`).
+- **Experience** comes only from the kills, with a cap so a dense rift cannot beat open hunting: the base experience of a
+  kill (monster experience x the monster-level bonus x the stage x the magic/rare/legendary multiplier) counts against
+  an allowance of 1.1 x the leveling model's base rate at the player's level (the sorcerer hours of "The leveling model",
+  the fastest vocation) per minute in the run; above it a kill gives 2% of its experience. Stamina, potions, the Chaos
+  bonuses and the rift's Experience bonus apply on top, as when hunting. Measured at level 1000, tier 10: 32 monsters
+  killed in the first second gave 13.8M experience instead of ~220M (the first minute's allowance is 3.2M base).
+- **Crash refund.** Using the key writes a "run in progress" marker (tier and modifiers, storages 7100400-7100404) and
+  saves the player before the teleport. It is cleared when the key's owner leaves the run (end, death, logout). If the
+  server stops during a run (crash, kill, the daily shutdown), the next login returns the key. A key whose owner just
+  lost the connection while the server kept running is not returned.
+- **Other systems.** `ChaosRift.isInside(player)`; the temple scroll refuses inside a rift (`shop_services.lua`), a second
+  character of the connection cannot log in while one is in a rift (`multiclient.lua`).
+- **Commands.** `!rift` (dialog: the run status and every key carried with its modifiers). Gamemasters: `/rift key <tier>
+  [count | mods]`, `/rift status` (runs, built and unusable slots), `/rift fail`.
+
+**Edits to shared files** (one line or block each): `chaos_constants.lua` (`ChaosOpcodes.rift = 228`,
+`Chaos.storage.riftRun = 7100400`), `loot_config.lua` (rateMult x `ChaosRift.lootMult(ctx)`), `shop_services.lua`
+(`S.teleportBlocked`), `multiclient.lua` (`insideInstance`), `bounty.lua` (`payContract` calls `ChaosRift.onBountyPaid`).
+
+**Verified on the test server** (cropped map, level 1000 test characters): open a rift from a key (and the refusals: no
+protection zone, in a fight, multi-client); the build and the four themes; the HUD (start, live updates, the guardian,
+sealed, collapsed, left); kills -> guardian at 75% -> sealed -> chest (once per player, the second open refused), the
+unopened chest delivered at the exit; the next-tier key drop; timeout fail; death inside; logout inside; the crash
+refund after `kill -9` of the server; two runs at once (two characters, slots 0 and 1) and a slot reused while another
+run was active; cleanup (no monsters or items left, tiles kept); Vitality x1.40 health, Reflection 10% of the landed
+damage, Warding -20% fire, Withering (no regeneration inside, back outside); the tier-1 key from a normal kill and from a
+bounty; the temple scroll and the multi-client login refusal; the experience cap. Not verified: a real party (only one
+player per run was tested), the protection-zone rule on a real map (the cropped test map has no protection zone, so the
+rule was switched off after checking the refusal), balance of tiers 8-15 against geared characters.
 
 ## Late game (`tools/late_game.py`, `tools/late_game_spawns.csv`, 17 monsters in `data/monster/monsters/chaos/`)
 

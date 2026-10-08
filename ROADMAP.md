@@ -39,7 +39,7 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 
 | # | Item | Status | Notes |
 |---|---|---|---|
-| 8 | Rifts / map devices: consumable keys open a timed instance with random modifiers; higher tiers drop better keys | in progress | reuse the dungeon instance code and the monster tiers |
+| 8 | Rifts / map devices: consumable keys open a timed instance with random modifiers; higher tiers drop better keys | done | `chaos/rift*.lua`, client `game_rift`: Rift Keys (tier 1-15, 1-3 of 8 modifiers), instances built at runtime in a 16-slot grid, bounty-pool packs with monster tiers, a guardian at 75%, 10 minutes, reward chest, next-tier keys, an experience cap at the leveling model's rate, crash refund; see server/README.md "Rifts". A real party not tested |
 | 9 | Paragon track for leftover passive points ("option 2") | done | `chaos/paragon.lua`, client `game_passivetree/paragon*`: 1 point per level above 1000, four categories of small capped stats added on top of the tree's bonuses; reset level x 250 gold or the store reset; see server/README.md "Paragon" |
 | 10 | Bounty board: daily rotating "kill X in Y" contracts paying orbs | done | `chaos/bounty*.lua`, client `game_bounty`, pool from `server/tools/gen_bounty_pool.py` (rerun after spawn changes); see server/README.md "Bounty board". Party credit not tested with two real players |
 | 11 | Crafting orbs: add-a-modifier and remove-a-modifier orbs next to Chaos/Divine, plus a crafting bench | done | `data/lib/chaos_crafting.lua` (Exalted, Annulment, Scouring, Transmutation, Alchemy; Chaos/Divine on the bench), bench `chaos/crafting.lua` + client `game_crafting` (`!craft`, Chaos -> Crafting Bench), installer `tools/install_crafting.py`; see server/README.md "Crafting". No Vaal-style orb. Weekly bounty chest extras not tested in game |
@@ -58,7 +58,7 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 
 | # | Item | Status | Notes |
 |---|---|---|---|
-| 16 | Loot filter: hide or highlight items by rarity (autoloot and corpses); loot channel with clickable item icons (greyed out once looted); rarity autoloot as a store unlock; loot rays for uniques and Legendary+ | in progress | |
+| 16 | Loot filter: hide or highlight items by rarity (autoloot and corpses); loot channel with clickable item icons (greyed out once looted); rarity autoloot as a store unlock; loot rays for uniques and Legendary+ | done | `chaos/lootfilter*.lua`, client `game_lootfilter` (`!lootfilter`, Hunt -> Loot Filter, opcode 238): glow / dim by rarity and category in corpses (dimmed, never hidden), presets, settings per character; the Loot tab shows a row of item icons per kill (click to loot, Shift = one; greyed when autolooted, looted or decayed); coloured rare-drop lines; Rarity Autoloot (store, 400 coins); loot rays 424..428 for uniques and Legendary+; tested in game; see server/README.md "Loot filter". Party members do not get rows or rays |
 | 17 | In-client hunt tracker: exp/h and profit/h | in progress | |
 | 18 | Build sharing: export/import a passive tree code | in progress | |
 | 19 | Respec cost that scales with level | in progress | with build sharing (item 18): single-node refunds, full reset priced from measured gold income per level, free cases |

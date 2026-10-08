@@ -17,7 +17,7 @@ than days.
 | Classes | 4 base classes, each with 2 ascensions (8 ascended classes) |
 | Level cap | 1000, then Paragon levels. Reaching 1000 takes roughly 100 hours of hunting |
 | Items | 15 rarities from Common to Transcendent, item levels, random modifiers, about 50 uniques |
-| Endgame | world bosses, bounties, rifts, the Infinity Tower, dungeons, arena, guild siege, weekly leaderboards |
+| Endgame | world bosses, bounties, rifts with keys and modifiers, the Infinity Tower, dungeons, arena, guild siege, weekly leaderboards |
 | Fair play | multi-client rules, staff characters left out of every leaderboard |
 
 ---
@@ -58,6 +58,14 @@ Balance is measured on test dummies at levels 300 and 1000, so every class keeps
   **ambush**.
 - **Treasure goblins:** a very rare, cowardly goblin that flees, blinks away and taunts you, then escapes 18 seconds
   after the first hit. Catch it in time for a hoard of gold, orbs and rarity gear.
+- **Loot filter** (`!lootfilter`): items glow in their rarity colour in corpses, and junk below your chosen rarity is
+  dimmed. You can switch whole categories off, or pick a preset: Show all, Hunter or Strict.
+- **Loot channel with icons:** every kill gets a row of item icons. Click an icon to loot it (Shift+click for one from
+  a stack). Looted items grey out.
+- **Loot rays:** a beam of light rises from corpses holding a unique or a Legendary-or-better item, coloured by
+  rarity.
+- **Rarity Autoloot** (store unlock): pick up gear by rarity even when it isn't on your autoloot list, and leave the
+  junk behind.
 - **Autoloot, auto seller, bank and stash** so you spend your time hunting, not walking.
 
 ## Crafting
@@ -89,6 +97,13 @@ the store. Uniques can't be crafted, so they stay unique.
   Each has phases and 15 to 24 million health. Everyone who does real damage gets a reward, not only the last hit.
 - **Bounty board** (`!bounty`): daily "kill X in Y" contracts per level band that pay orbs. Finish seven in a week
   for the weekly bounty chest.
+- **Rifts** (`!rift`): use a **Rift Key** to open a 10-minute instance for you and up to 3 party members.
+  - Each key has a tier (1-15) and 1-3 random modifiers, such as *Vitality, Brutality, Haste, Elites, Reflection,
+    Warding, Withering* or *Swarm*. Harder modifiers raise the rewards: item quantity, rarity and experience.
+  - Clear the packs and the **Guardian** appears. Kill it to seal the rift, and its chest pays gold, Chaos and Divine
+    Orbs and gear for every finisher.
+  - A sealed rift can drop the next tier's key. Keys also drop from tiered monsters and bounties.
+  - A crash refunds your key.
 - **Infinity Tower** (`!tower`): climb floor after floor alone or with a party of up to 4, against the clock.
 - **Dungeons:** instanced runs with their own progress.
 - **Late game:** 17 level-scaled Chaos monsters (levels 650-1000) live in the deepest hunting grounds. Experience
@@ -138,9 +153,6 @@ Siegebreaker, Duelist, Gladiator) and orbs. The all-time **Class Ladder** ranks 
 ## Coming soon
 
 Being built right now:
-- **Rifts:** timed instances opened with keys, with random modifiers and better keys at higher tiers.
-- **Loot filter:** hide or highlight loot by rarity; the loot channel becomes clickable item icons; loot beams for
-  uniques and Legendary+ items; rarity autoloot.
 - **Hunt tracker:** experience and profit per hour, kills and loot of your session.
 - **Build codes:** share your passive tree as a code, and a fairer respec cost that scales with level.
 - **Login streaks** with milestones, and a **patch-notes** window in the client.

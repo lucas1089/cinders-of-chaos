@@ -134,6 +134,11 @@ effect,420,imbue_energy,append,area,combat,imbue,energy,1,7,70,kind=energy;count
 effect,421,imbue_earth,append,area,combat,imbue,poison,1,7,70,kind=earth;count=6,elemental weapon hit (earth): edge trail and spores
 effect,422,imbue_death,append,area,combat,imbue,necro,1,7,70,kind=death;count=6,elemental weapon hit (death): edge trail and dark wisps
 effect,423,imbue_holy,append,area,combat,imbue,holy,1,7,70,kind=holy;count=6,elemental weapon hit (holy): edge trail and motes
+effect,424,loot_ray_unique,append,single,loot,lootbeam,fire,2,9,100,,loot ray over a corpse with a unique (lootfilter.lua): orange beam
+effect,425,loot_ray_legendary,append,single,loot,lootbeam,gold,2,9,100,,loot ray: Legendary and Exotic items (gold beam)
+effect,426,loot_ray_mythic,append,single,loot,lootbeam,bloodglow,2,9,100,,loot ray: Mythic Chaos and Eternal items (red beam)
+effect,427,loot_ray_divine,append,single,loot,lootbeam,storm,2,9,100,,loot ray: Divine Phantasmal and Celestial items (white-blue beam)
+effect,428,loot_ray_cosmic,append,single,loot,lootbeam,arcane,2,9,100,,loot ray: Cosmic Abyssal and Transcendent items (violet beam)
 missile,4,CONST_ANI_FIRE,replace,,fire,orb,fire,1,4,80,r=3.6,fire runes and strikes
 missile,5,CONST_ANI_ENERGY,replace,,energy,orb,energy,1,4,60,spark=1;r=3,energy strikes; buzz
 missile,11,CONST_ANI_DEATH,replace,,death,orb,shadow,1,4,80,r=3.2,death strike; curse

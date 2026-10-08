@@ -117,7 +117,9 @@ return {
 				{kind = "unlock", unlock = "lootPouch", icon = 10518, cost = 500, name = "Bottomless Loot Pouch",
 					description = "Permanent: autoloot that does not fit your backpack goes to your stash or inbox."},
 				{kind = "unlock", unlock = "autoSeller", icon = 2160, iconCount = 100, cost = 500, name = "Auto Seller",
-					description = "Permanent: loot on your !autosell list is sold at NPC prices, gold to your bank."}
+					description = "Permanent: loot on your !autosell list is sold at NPC prices, gold to your bank."},
+				{kind = "unlock", unlock = "rarityAutoloot", icon = 2472, cost = 400, name = "Rarity Autoloot",
+					description = "Permanent: autoloot by rarity in the Loot Filter: take good gear, leave junk."}
 			}
 		},
 		{

@@ -28,6 +28,7 @@ end
 local function insideInstance(player)
 	return (ChaosDungeonIsInside and ChaosDungeonIsInside(player))
 		or (ChaosTowerRun and ChaosTowerRun.isInside and ChaosTowerRun.isInside(player))
+		or (ChaosRift and ChaosRift.isInside and ChaosRift.isInside(player))
 end
 
 local login = CreatureEvent("ChaosMultiClientLogin")

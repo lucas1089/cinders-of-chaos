@@ -167,6 +167,7 @@ local CATEGORIES = {
     { text = 'Prey',               icon = 'battlelist',  modules = { 'game_prey' },      fns = { 'toggle' } },
     { text = 'Task Hunt',          icon = 'quests',      modules = { 'game_task_hunt' }, fns = { 'toggle' } },
     { text = 'Auto Loot',          icon = 'autoloot',    modules = { 'game_autoloot' },  fns = { 'toggle' } },
+    { text = 'Loot Filter',        icon = 'autoloot',    modules = { 'game_lootfilter' }, fns = { 'toggle' } },
     { text = 'Minimap',            icon = 'minimap',     modules = { 'game_minimap', 'game_realminimap' }, fns = { 'toggle' } },
     { text = 'Unjustified Points', icon = 'pvp',         modules = { 'game_unjustifiedpoints' }, fns = { 'toggle' } },
   } },

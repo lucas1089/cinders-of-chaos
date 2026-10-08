@@ -1179,7 +1179,32 @@ def st_imbue(cv, t, f, n, pal):
     return [(trail, pal, 'glow'), (pt, cv.opt('ptpal', pal), 'glow')]
 
 
+def st_lootbeam(cv, t, f, n, pal):
+    """loot ray (lootfilter.lua): a tall thin beam of light rising from the corpse tile, with a flat flare where it
+    touches the ground and motes drifting up inside it.  2x2 canvas: the tile is the bottom-right 32x32 quarter, so the
+    beam stands on its centre and reaches the top edge (two tiles high).  Resent every second while the item lies in
+    the corpse, so it never fully fades: the envelope only breathes between 0.55 and 1."""
+    S = cv.S
+    cx = S * 0.74
+    base = S * 0.84
+    env = 0.78 + 0.22 * math.cos(2 * math.pi * t)
+    X = cv.X - cx
+    up = np.clip((base - cv.Y) / base, 0, 1) * (cv.Y < base + 0.5)
+    fall = (1 - up) ** 0.9                                      # brightest at the ground, thin out towards the top
+    bands = 0.72 + 0.28 * np.sin(cv.Y * 0.32 + 2 * math.pi * 2 * t)   # light travelling upwards
+    core = np.exp(-(X / 1.5) ** 2) * fall * (cv.Y < base) * env
+    halo = np.exp(-(X / 5.0) ** 2) * fall * bands * (cv.Y < base) * env * 0.75
+    flare = cv.gauss(cx, base, 8.0, 0.35) * env
+    mo = particles(cv, 'mo', 6, lambda g, m: (g.normal(0, 0.9, m), g.random(m)))
+    m_ = cv.zeros()
+    for mx, ph in zip(*mo):
+        u = (t + ph) % 1
+        m_ = np.maximum(m_, cv.gauss(cx + mx, base - u * base * 0.85, 0.75) * (1 - u) * env)
+    return [(halo, pal, 'glow'), (np.maximum(np.maximum(core, flare), m_), pal, 'glow')]
+
+
 STYLES = {
+    'lootbeam': st_lootbeam,
     'critstar': st_critstar, 'whoosh': st_whoosh, 'aegis': st_aegis, 'imbue': st_imbue,
     'meteor': st_meteor, 'burst': st_burst, 'nova': st_nova, 'flame': st_flame, 'shards': st_shards, 'sparks': st_sparks, 'cloud': st_cloud,
     'skull': st_skull, 'rays': st_rays, 'pillar': st_pillar, 'splash': st_splash, 'slash': st_slash, 'impact': st_impact,

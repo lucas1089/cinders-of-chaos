@@ -36,10 +36,12 @@ ChaosOpcodes = {
 	autoloot = 216,
 	shop = 218, -- Chaos store (client game_shop); the base server's own store uses 201
 	bounty = 223, -- bounty board (client game_bounty, !bounty; bounty.lua, bounty_config.lua)
+	rift = 228, -- rift run HUD, server -> client (client game_rift, !rift; rift.lua, rift_config.lua)
 	leaderboard = 229, -- leaderboards (client game_leaderboard, !leaderboard; leaderboard.lua, leaderboard_config.lua)
 	crafting = 232, -- crafting bench (client game_crafting, !craft; crafting.lua, data/lib/chaos_crafting.lua)
 	siege = 233, -- guild siege HUD and sign-up window (client game_siege, !siege; siege.lua, siege_config.lua)
 	arena = 236, -- ranked PvP arena window and match HUD (client game_arena, !arena; arena.lua, arena_config.lua)
+	lootfilter = 238, -- loot filter window, corpse highlight data, loot channel rows (client game_lootfilter, !lootfilter; lootfilter.lua)
 	spellbook = 219 -- spell list window (client game_spellbook, !spells)
 }
 
@@ -60,6 +62,8 @@ Chaos.storage = {
 	passiveStatsFixed = 7100021, -- 1 once the stats older passive tree versions wrote into the character are clamped
 	dungeonQueueLock = 7100030, -- (os.time of the last queue join; anti spam)
 	bountyWeekBonus = 7100300, -- bounty board (bounty.lua): 7100300 - 7100309 reserved; week key of the last weekly bonus
+	riftRun = 7100400, -- rifts (rift.lua): 7100400 - 7100409 reserved; +0 tier of the key of a run in progress, +1..+3 its modifiers, +4 start
+	lootFilter = 7100500, -- loot filter settings of the character, packed in one value (lootfilter_core.lua F.pack); 7100500 - 7100509 reserved
 
 	-- store: one-time cosmetics owned (base + id of the wings / aura / shader)
 	shopWingsBase = 7100600,
@@ -73,6 +77,7 @@ Chaos.storage = {
 	autosellRarity = 7100103, -- 1 = opt-in: the auto seller may sell items with a rarity / modifiers
 	nameChangeTokens = 7100104, -- unused name changes bought in the store
 	vocationChangeTokens = 7100105, -- unused vocation changes bought in the store
+	shopRarityAutoloot = 7100106, -- 1 = Rarity Autoloot unlocked (lootfilter.lua: autoloot by rarity)
 	autosellBase = 7100110 -- + 1 .. + Chaos.shopServices.autosellSlots: item ids on the auto-sell list
 }
 

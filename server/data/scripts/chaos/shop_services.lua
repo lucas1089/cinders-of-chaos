@@ -275,6 +275,9 @@ function S.teleportBlocked(player)
 	if ChaosWorldBoss and ChaosWorldBoss.inside and ChaosWorldBoss.inside(player:getPosition()) then
 		return "You cannot use this inside the world boss arena."
 	end
+	if ChaosRift and ChaosRift.isInside and ChaosRift.isInside(player) then
+		return "You cannot use this inside a rift."
+	end
 	return nil
 end
 
@@ -311,7 +314,9 @@ S.unlocks = {
 	lootPouch = {storage = ST.shopLootPouch, name = "the Bottomless Loot Pouch",
 		done = "Autolooted items that do not fit now go to your stash (stackables) or your inbox."},
 	autoSeller = {storage = ST.shopAutoSeller, name = "the Auto Seller",
-		done = "Mark items with !autosell add <item name>; see !autosell for all commands."}
+		done = "Mark items with !autosell add <item name>; see !autosell for all commands."},
+	rarityAutoloot = {storage = ST.shopRarityAutoloot, name = "Rarity Autoloot",
+		done = "Set it in the Loot Filter (!lootfilter or Hunt -> Loot Filter)."}
 }
 
 local function tokenService(storage, what, command)

@@ -1,0 +1,611 @@
+-- Loot filter (Hunt -> Loot Filter, !lootfilter), corpse highlights and the loot channel with item icons.
+-- Server: server/data/scripts/chaos/lootfilter.lua, extended opcode 238 (JSON {action, data}).
+--   server -> client  settings {s, unlocked, presets, samples, open}
+--                     peek {cid, corpse, items = [{i, id, c, r, u, o, g}]}      rarity data of an open container
+--                     kill {k, m, p, items = [{n, id, c, r, u, o, g, nm, left}], drops = [{text, color, rank}]}
+--                     update {k, left = [...]}   decay {k}   msg {text}
+--   client -> server  open | sync | set {s} | preset {name} | peek {cid} | take {k, n, id, one}
+-- The rules used for drawing are in lootfilterlogic.lua (a mirror of the server's lootfilter_core.lua).
+
+local OPCODE = 238
+local L = LootFilterLogic
+
+local MAX_ROWS = 50
+local DIM_OPACITY = 0.45
+local GONE_OPACITY = 0.6 -- with the dark veil and the check mark
+local PEEK_DELAY = 60
+
+local settings = L.defaults()
+local unlocked = false
+local presets = {}
+local samples = {}
+
+local window
+local updatingUi = false
+local saveEvent
+
+local peekData = {}   -- [cid] = {corpse = bool, items = {[index] = row}}
+local peekEvents = {}
+
+local lootPanel       -- LootChannelPanel inside the console content panel
+local rows = {}       -- [kill id] = {widget, icons = {[n] = {w, info}}}
+local rowOrder = {}
+local flashLabel, flashEvent
+
+-- every handler the engine or another module calls runs through this: an error here is logged once per kind
+-- and never reaches the caller (game_containers, the console, the protocol)
+local reported = {}
+local handlers = {} -- the wrapped callbacks connected in init()
+local function safe(name, fn)
+  return function(...)
+    local ok, err = pcall(fn, ...)
+    if not ok and not reported[name] then
+      reported[name] = true
+      g_logger.warning('[lootfilter] ' .. name .. ': ' .. tostring(err))
+    end
+  end
+end
+
+-- ---------------------------------------------------------------- protocol
+local function send(action, data)
+  local protocol = g_game.getProtocolGame()
+  if protocol then
+    protocol:sendExtendedOpcode(OPCODE, json.encode({ action = action, data = data or {} }))
+  end
+end
+
+local function list(v)
+  local out = {}
+  if type(v) == 'table' then
+    for _, x in ipairs(v) do out[#out + 1] = x end
+  end
+  return out
+end
+
+-- ---------------------------------------------------------------- item widget decoration
+local imageOk = {}
+local function setImage(widget, path)
+  if imageOk[path] == nil then
+    imageOk[path] = not g_resources or not g_resources.fileExists
+      or g_resources.fileExists(path .. '.png') or g_resources.fileExists(path) or false
+  end
+  if imageOk[path] then widget:setImageSource(path) end
+end
+
+local function child(widget, id, style)
+  local c = widget:getChildById(id)
+  if not c then
+    c = g_ui.createWidget('UIWidget', widget)
+    c:setId(id)
+    c:setPhantom(true)
+    c:setFocusable(false)
+    c:fill('parent')
+    if style == 'glow' then
+      setImage(c, '/modules/game_lootfilter/images/lf_glow')
+    elseif style == 'frame' then
+      setImage(c, '/modules/game_lootfilter/images/lf_frame')
+    elseif style == 'gone' then
+      c:setBackgroundColor('#0a080cc8')
+      setImage(c, '/modules/game_lootfilter/images/lf_taken')
+    end
+  end
+  return c
+end
+
+local function clearDecoration(widget)
+  if not widget or widget:isDestroyed() then return end
+  for _, id in ipairs({ 'lfGlow', 'lfFrame', 'lfGone' }) do
+    local c = widget:getChildById(id)
+    if c then c:hide() end
+  end
+  if widget.lfDimmed then
+    widget:setOpacity(1)
+    widget.lfDimmed = nil
+  end
+end
+
+-- state: 'highlight' | 'normal' | 'dim'; gone: looted (loot channel only)
+local function decorate(widget, info, allowDim, gone)
+  if not widget or widget:isDestroyed() then return end
+  local state = L.classify(info, settings)
+  local color = L.color(info)
+  local glow = child(widget, 'lfGlow', 'glow')
+  local frame = child(widget, 'lfFrame', 'frame')
+  if color and state == 'highlight' and not gone then
+    glow:setImageColor(color)
+    glow:show()
+  else
+    glow:hide()
+  end
+  if color and not gone then
+    frame:setImageColor(color)
+    frame:show()
+  else
+    frame:hide()
+  end
+  local goneOverlay = widget:getChildById('lfGone')
+  if gone then
+    child(widget, 'lfGone', 'gone'):show()
+    widget:setOpacity(GONE_OPACITY)
+    widget.lfDimmed = true
+  else
+    if goneOverlay then goneOverlay:hide() end
+    if allowDim and state == 'dim' then
+      widget:setOpacity(DIM_OPACITY)
+      widget.lfDimmed = true
+    elseif widget.lfDimmed then
+      widget:setOpacity(1)
+      widget.lfDimmed = nil
+    end
+  end
+end
+
+-- ---------------------------------------------------------------- containers
+local function decorateContainer(container)
+  if not container or not container.itemsPanel or container.itemsPanel:isDestroyed() then return end
+  local data = peekData[container:getId()]
+  local first = container.getFirstIndex and container:getFirstIndex() or 0
+  for slot = 0, container:getCapacity() - 1 do
+    local widget = container.itemsPanel:getChildById('item' .. slot)
+    if widget then
+      local item = container:getItem(slot)
+      local row = data and data.items[first + slot]
+      if item and row and row.id == item:getId() then
+        decorate(widget, row, data.corpse, false)
+      else
+        clearDecoration(widget)
+      end
+    end
+  end
+end
+
+local function requestPeek(container)
+  local cid = container:getId()
+  if peekEvents[cid] then removeEvent(peekEvents[cid]) end
+  peekEvents[cid] = scheduleEvent(function()
+    peekEvents[cid] = nil
+    if g_game.isOnline() then send('peek', { cid = cid }) end
+  end, PEEK_DELAY)
+end
+
+local function onContainerChange(container)
+  decorateContainer(container) -- stale rows whose item id no longer matches are cleared at once
+  requestPeek(container)
+end
+
+local function onContainerOpen(container)
+  peekData[container:getId()] = nil
+  requestPeek(container)
+end
+
+local function onContainerClose(container)
+  peekData[container:getId()] = nil
+end
+
+local function onPeek(data)
+  local cid = tonumber(data.cid)
+  if not cid then return end
+  local items = {}
+  for _, r in ipairs(list(data.items)) do
+    items[tonumber(r.i) or -1] = r
+  end
+  peekData[cid] = { corpse = data.corpse and true or false, items = items }
+  local container = g_game.getContainer(cid)
+  if container then decorateContainer(container) end
+end
+
+local function redrawContainers()
+  for _, container in pairs(g_game.getContainers()) do
+    decorateContainer(container)
+  end
+end
+
+-- ---------------------------------------------------------------- loot channel
+local function getChat()
+  local console = modules.game_console
+  local chat = console and console.g_chat or nil
+  if type(chat) ~= 'table' and type(chat) ~= 'userdata' then return nil end
+  return chat
+end
+
+local function updatePanelVisibility()
+  if not lootPanel or lootPanel:isDestroyed() then return end
+  local chat = getChat()
+  local current = chat and chat.getCurrentTabName and chat:getCurrentTabName() or ''
+  lootPanel:setVisible(settings.icons and current == 'Loot')
+end
+
+local function ensureLootTab()
+  local chat = getChat()
+  if not settings.icons or not chat then return end
+  if chat.getTabByName and not chat:getTabByName('Loot') and modules.game_console.openLootChannel then
+    modules.game_console.openLootChannel()
+  end
+end
+
+local function ensureLootPanel()
+  if lootPanel and not lootPanel:isDestroyed() then return lootPanel end
+  local chat = getChat()
+  if not chat or not chat.contentPanel then return nil end
+  local ok, panel = pcall(g_ui.createWidget, 'LootChannelPanel', chat.contentPanel)
+  if not ok or not panel then return nil end
+  lootPanel = panel
+  lootPanel:hide()
+  if chat.tabBar then
+    connect(chat.tabBar, { onTabChange = handlers.tab or updatePanelVisibility })
+  end
+  updatePanelVisibility()
+  return lootPanel
+end
+
+local function setIconState(icon)
+  local info = icon.info
+  local left = tonumber(info.left) or tonumber(info.c) or 1
+  local count = tonumber(info.c) or 1
+  icon.w:setItemCount(left > 0 and left or count)
+  decorate(icon.w, info, true, left <= 0)
+  icon.w:setTooltip(L.tooltip(info))
+end
+
+local function onIconClick(row, icon)
+  local left = tonumber(icon.info.left) or 0
+  if left <= 0 then return end
+  send('take', { k = row.k, n = icon.info.n, id = icon.info.id, one = g_keyboard.isShiftPressed() })
+end
+
+local function dropRow(k)
+  local row = rows[k]
+  rows[k] = nil
+  if row and row.widget and not row.widget:isDestroyed() then
+    row.widget:destroy()
+  end
+  for _, w in ipairs(row and row.lines or {}) do
+    if not w:isDestroyed() then w:destroy() end
+  end
+end
+
+local function showFlash(drops)
+  if #drops == 0 then return end
+  local gi = modules.game_interface
+  local root = gi and ((gi.getMapPanel and gi.getMapPanel()) or (gi.getRootPanel and gi.getRootPanel()))
+  if not root then return end
+  if flashLabel and not flashLabel:isDestroyed() and flashLabel:getParent() ~= root then
+    flashLabel:destroy()
+    flashLabel = nil
+  end
+  if not flashLabel or flashLabel:isDestroyed() then
+    flashLabel = g_ui.createWidget('UILabel', root)
+    flashLabel:setFont('verdana-11px-rounded')
+    flashLabel:setTextAutoResize(true)
+    flashLabel:setPhantom(true)
+    flashLabel:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
+    flashLabel:addAnchor(AnchorVerticalCenter, 'parent', AnchorVerticalCenter)
+    flashLabel:setMarginBottom(150) -- above the character (the map panel may reach above the screen)
+    flashLabel:setId('lfFlash')
+  end
+  local d = drops[1] -- the best one: a unique, else the highest rarity
+  for _, x in ipairs(drops) do
+    if (tonumber(x.rank) or 0) > (tonumber(d.rank) or 0) then d = x end
+  end
+  flashLabel:setText(d.text or '')
+  flashLabel:setColor(d.color or '#ffffff')
+  flashLabel:show()
+  flashLabel:raise()
+  if flashEvent then removeEvent(flashEvent) end
+  flashEvent = scheduleEvent(function()
+    flashEvent = nil
+    if flashLabel and not flashLabel:isDestroyed() then flashLabel:hide() end
+  end, 4000)
+end
+
+local function onKill(data)
+  local drops = list(data.drops)
+  showFlash(drops)
+  local panel = ensureLootPanel()
+  if not panel then return end
+  ensureLootTab()
+  local k = tonumber(data.k)
+  if not k then return end
+  local items = list(data.items)
+  panel.hint:hide() -- the how-to line only while the tab is empty
+  local lines = {}
+  for _, d in ipairs(drops) do
+    local line = g_ui.createWidget('LootChannelLine', panel.list)
+    line:setText(L.clock(os.time()) .. '  ' .. (d.text or ''))
+    line:setColor(d.color or '#ffffff')
+    lines[#lines + 1] = line
+  end
+  local widget = g_ui.createWidget('LootChannelRow', panel.list)
+  local head = g_ui.createWidget('LootChannelHead', widget)
+  head:setText(L.clock(os.time()) .. ' ' .. (data.m or '?') .. (#items == 0 and ': nothing' or ':'))
+  local row = { k = k, widget = widget, icons = {}, lines = lines }
+  for _, info in ipairs(items) do
+    local w = g_ui.createWidget('LootChannelItem', widget)
+    w:setItemId(tonumber(info.id) or 0)
+    w:setVirtual(true)
+    local icon = { w = w, info = info }
+    row.icons[tonumber(info.n) or (#row.icons + 1)] = icon
+    w.onMouseRelease = function(self, mousePos, button)
+      if button == MouseLeftButton and self:containsPoint(mousePos) then
+        onIconClick(row, icon)
+        return true
+      end
+      return false
+    end
+    setIconState(icon)
+  end
+  rows[k] = row
+  rowOrder[#rowOrder + 1] = k
+  for _, old in ipairs(L.trim(rowOrder, MAX_ROWS)) do
+    dropRow(old)
+  end
+end
+
+local function onUpdate(data)
+  local row = rows[tonumber(data.k) or -1]
+  if not row then return end
+  for n, left in ipairs(list(data.left)) do
+    local icon = row.icons[n]
+    if icon then
+      icon.info.left = tonumber(left) or 0
+      setIconState(icon)
+    end
+  end
+end
+
+local function onDecay(data)
+  local row = rows[tonumber(data.k) or -1]
+  if not row then return end
+  row.decayed = true
+  for _, icon in pairs(row.icons) do
+    icon.info.left = 0
+    setIconState(icon)
+  end
+end
+
+local function redrawRows()
+  for _, row in pairs(rows) do
+    for _, icon in pairs(row.icons) do setIconState(icon) end
+  end
+end
+
+local function clearRows()
+  for k in pairs(rows) do dropRow(k) end
+  rows, rowOrder = {}, {}
+  if lootPanel and not lootPanel:isDestroyed() then lootPanel.hint:show() end
+end
+
+-- ---------------------------------------------------------------- window
+local function rarityCombo(combo, offText, value, suffix)
+  combo:clearOptions()
+  combo:addOption(offText, 0)
+  for i, r in ipairs(L.RARITY) do
+    combo:addOption(r.name .. (suffix or ''), i)
+  end
+  combo:setCurrentIndex((value or 0) + 1)
+end
+
+local function scheduleSave()
+  if saveEvent then removeEvent(saveEvent) end
+  saveEvent = scheduleEvent(function()
+    saveEvent = nil
+    send('set', { s = settings })
+  end, 250)
+end
+
+local function buildPreview()
+  if not window then return end
+  local panel = window.preview
+  panel:destroyChildren()
+  local gear = tonumber(samples.gear) or 0
+  local entries = {}
+  entries[#entries + 1] = { id = gear, r = 0, g = 'equipment', nm = tr('Gear without rarity') }
+  for i, r in ipairs(L.RARITY) do
+    entries[#entries + 1] = { id = gear, r = i, g = 'equipment', nm = r.name .. ' gear' }
+  end
+  entries[#entries + 1] = { id = tonumber(samples.unique) or gear, u = 1, g = 'equipment', nm = tr('A unique') }
+  entries[#entries + 1] = { id = tonumber(samples.orb) or 0, o = 1, g = 'currency', nm = tr('An orb') }
+  entries[#entries + 1] = { id = tonumber(samples.coin) or 0, g = 'currency', nm = tr('Coins') }
+  entries[#entries + 1] = { id = tonumber(samples.supply) or 0, g = 'supplies', nm = tr('A potion') }
+  entries[#entries + 1] = { id = tonumber(samples.other) or 0, g = 'other', nm = tr('Other loot') }
+  for _, e in ipairs(entries) do
+    local w = g_ui.createWidget('LootFilterPreview', panel)
+    w:setItemId(e.id)
+    w:setVirtual(true)
+    local state = L.classify(e, settings)
+    w:setTooltip(L.label(e) .. '\n' .. (state == 'highlight' and tr('glows') or state == 'dim' and tr('dimmed') or tr('shown')))
+    decorate(w, e, true, false)
+  end
+end
+
+local function refreshWindow()
+  if not window then return end
+  updatingUi = true
+  rarityCombo(window.highlightCombo, tr('Off'), settings.highlight, '+')
+  rarityCombo(window.dimCombo, tr('Off'), settings.dim)
+  rarityCombo(window.autolootPanel.lootMinCombo, tr('Off'), settings.lootMin)
+  rarityCombo(window.autolootPanel.lootFromCombo, tr('Off'), settings.lootFrom, '+')
+  for _, c in ipairs(L.CATEGORIES) do
+    window['show_' .. c]:setChecked(settings.show[c])
+  end
+  window.icons:setChecked(settings.icons)
+  window.notify:setChecked(settings.notify)
+  local ap = window.autolootPanel
+  ap.lootMinCombo:setEnabled(unlocked)
+  ap.lootFromCombo:setEnabled(unlocked)
+  ap.lootMinLabel:setEnabled(unlocked)
+  ap.lootFromLabel:setEnabled(unlocked)
+  ap.storeButton:setVisible(not unlocked)
+  if unlocked then
+    ap.lockLabel:setColor('#8c8070')
+    ap.lockLabel:setText(tr('Unlocked. Uniques and orbs are never held back.'))
+  else
+    ap.lockLabel:setColor('#e03a1e')
+    ap.lockLabel:setText(tr('Locked: buy "Rarity Autoloot" in the Store (Convenience).'))
+  end
+  window.presets:destroyChildren()
+  for _, p in ipairs(presets) do
+    local b = g_ui.createWidget('LootFilterPreset', window.presets)
+    b:setText(p.name or p.key)
+    b:setTooltip(p.desc or '')
+    local key = p.key
+    b.onClick = function() send('preset', { name = key }) end
+    b.onHoverChange = function(_, hovered)
+      if window then window.presetInfo:setText(hovered and (p.desc or '') or '') end
+    end
+  end
+  updatingUi = false
+  buildPreview()
+end
+
+local function onUiChange()
+  if updatingUi or not window then return end
+  local function comboValue(c)
+    return tonumber(c:getCurrentOption() and c:getCurrentOption().data) or 0
+  end
+  settings.highlight = comboValue(window.highlightCombo)
+  settings.dim = comboValue(window.dimCombo)
+  if unlocked then
+    settings.lootMin = comboValue(window.autolootPanel.lootMinCombo)
+    settings.lootFrom = comboValue(window.autolootPanel.lootFromCombo)
+  end
+  for _, c in ipairs(L.CATEGORIES) do
+    settings.show[c] = window['show_' .. c]:isChecked()
+  end
+  settings.icons = window.icons:isChecked()
+  settings.notify = window.notify:isChecked()
+  buildPreview()
+  redrawContainers()
+  redrawRows()
+  updatePanelVisibility()
+  scheduleSave()
+end
+
+local function onSettings(data)
+  settings = L.normalize(data.s)
+  unlocked = data.unlocked and true or false
+  presets = list(data.presets)
+  if type(data.samples) == 'table' then samples = data.samples end
+  redrawContainers()
+  redrawRows()
+  ensureLootPanel()
+  ensureLootTab()
+  updatePanelVisibility()
+  if window and (window:isVisible() or data.open) then
+    refreshWindow()
+  end
+  if data.open then show() end
+end
+
+local function onExtendedOpcode(protocol, opcode, buffer)
+  local ok, msg = pcall(json.decode, buffer)
+  if not ok or type(msg) ~= 'table' then
+    g_logger.error('[lootfilter] invalid JSON: ' .. tostring(msg))
+    return
+  end
+  local data = type(msg.data) == 'table' and msg.data or {}
+  if msg.action == 'settings' then onSettings(data)
+  elseif msg.action == 'peek' then onPeek(data)
+  elseif msg.action == 'kill' then onKill(data)
+  elseif msg.action == 'update' then onUpdate(data)
+  elseif msg.action == 'decay' then onDecay(data)
+  elseif msg.action == 'msg' then showFlash({ { text = data.text or '', color = '#ff7a5a' } })
+  end
+end
+
+function show()
+  if not window then return end
+  window:show()
+  window:raise()
+  window:focus()
+end
+
+function hide()
+  if window then window:hide() end
+end
+
+function toggle()
+  if not window then return end
+  if window:isVisible() then
+    hide()
+  else
+    send('open') -- the server answers with the settings (open = true)
+  end
+end
+
+function openStore()
+  if modules.game_shop and modules.game_shop.toggle then
+    modules.game_shop.toggle()
+  end
+end
+
+local function onGameStart()
+  peekData = {}
+  clearRows()
+  ensureLootPanel()
+  -- ask for the settings (the server also pushes them after login; an older server simply never answers)
+  scheduleEvent(function() if g_game.isOnline() then send('sync') end end, 1000)
+end
+
+local function onGameEnd()
+  hide()
+  peekData = {}
+  clearRows()
+  if flashLabel and not flashLabel:isDestroyed() then flashLabel:hide() end
+end
+
+function init()
+  handlers.container = {
+    onOpen = safe('open', onContainerOpen), onClose = safe('close', onContainerClose),
+    onAddItem = safe('add', onContainerChange), onRemoveItem = safe('remove', onContainerChange),
+    onUpdateItem = safe('update', onContainerChange), onSizeChange = safe('size', onContainerChange)
+  }
+  handlers.game = { onGameStart = safe('start', onGameStart), onGameEnd = safe('end', onGameEnd) }
+  handlers.tab = safe('tab', updatePanelVisibility)
+  handlers.opcode = safe('opcode', onExtendedOpcode)
+
+  local ok, ui = pcall(g_ui.displayUI, 'lootfilter')
+  if ok and ui then
+    window = ui
+    window:hide()
+    local function hook(widget, field, fn)
+      if widget then widget[field] = safe('ui', fn) end
+    end
+    hook(window.highlightCombo, 'onOptionChange', onUiChange)
+    hook(window.dimCombo, 'onOptionChange', onUiChange)
+    local ap = window.autolootPanel
+    hook(ap and ap.lootMinCombo, 'onOptionChange', onUiChange)
+    hook(ap and ap.lootFromCombo, 'onOptionChange', onUiChange)
+    for _, c in ipairs(L.CATEGORIES) do
+      hook(window['show_' .. c], 'onCheckChange', onUiChange)
+    end
+    hook(window.icons, 'onCheckChange', onUiChange)
+    hook(window.notify, 'onCheckChange', onUiChange)
+  else
+    window = nil
+    g_logger.warning('[lootfilter] window not loaded (theme styles missing?): ' .. tostring(ui))
+  end
+  ProtocolGame.registerExtendedOpcode(OPCODE, handlers.opcode)
+  connect(Container, handlers.container)
+  connect(g_game, handlers.game)
+  if g_game.isOnline() then handlers.game.onGameStart() end
+end
+
+function terminate()
+  if handlers.container then disconnect(Container, handlers.container) end
+  if handlers.game then disconnect(g_game, handlers.game) end
+  pcall(ProtocolGame.unregisterExtendedOpcode, OPCODE)
+  for _, e in pairs(peekEvents) do removeEvent(e) end
+  peekEvents = {}
+  if saveEvent then removeEvent(saveEvent) saveEvent = nil end
+  if flashEvent then removeEvent(flashEvent) flashEvent = nil end
+  local chat = getChat()
+  if chat and chat.tabBar and handlers.tab then pcall(disconnect, chat.tabBar, { onTabChange = handlers.tab }) end
+  clearRows()
+  if lootPanel and not lootPanel:isDestroyed() then lootPanel:destroy() end
+  lootPanel = nil
+  if flashLabel and not flashLabel:isDestroyed() then flashLabel:destroy() end
+  flashLabel = nil
+  if window then window:destroy() window = nil end
+  handlers = {}
+end

@@ -134,6 +134,11 @@ imbue_energy,combat,effect,420,append,area,imbue,energy,1x1,7,70,elemental weapo
 imbue_earth,combat,effect,421,append,area,imbue,poison,1x1,7,70,elemental weapon hit (earth): edge trail and spores
 imbue_death,combat,effect,422,append,area,imbue,necro,1x1,7,70,elemental weapon hit (death): edge trail and dark wisps
 imbue_holy,combat,effect,423,append,area,imbue,holy,1x1,7,70,elemental weapon hit (holy): edge trail and motes
+loot_ray_unique,loot,effect,424,append,single,lootbeam,fire,2x2,9,100,loot ray over a corpse with a unique (lootfilter.lua): orange beam
+loot_ray_legendary,loot,effect,425,append,single,lootbeam,gold,2x2,9,100,loot ray: Legendary and Exotic items (gold beam)
+loot_ray_mythic,loot,effect,426,append,single,lootbeam,bloodglow,2x2,9,100,loot ray: Mythic Chaos and Eternal items (red beam)
+loot_ray_divine,loot,effect,427,append,single,lootbeam,storm,2x2,9,100,loot ray: Divine Phantasmal and Celestial items (white-blue beam)
+loot_ray_cosmic,loot,effect,428,append,single,lootbeam,arcane,2x2,9,100,loot ray: Cosmic Abyssal and Transcendent items (violet beam)
 CONST_ANI_FIRE,fire,missile,4,replace,,orb,fire,1x1,4,80,fire runes and strikes
 CONST_ANI_ENERGY,energy,missile,5,replace,,orb,energy,1x1,4,60,energy strikes; buzz
 CONST_ANI_DEATH,death,missile,11,replace,,orb,shadow,1x1,4,80,death strike; curse
