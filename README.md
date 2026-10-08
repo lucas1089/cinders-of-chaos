@@ -1,6 +1,17 @@
+![Project Chaos](docs/images/banner.png)
+
 # Project Chaos
 
 > *The world was not ended. It was broken, and the pieces still bleed.*
+
+> Once there was one world. Then the sky split, and the **Chaos** came through the wound.
+> It did not end the world. It broke it into drifting shards, and through every crack it still bleeds: into the beasts
+> of the deep hunting grounds, into the orbs that reshape steel, into the **rifts** that open wherever a Rift Key turns.
+> Five colossi came with it. Kaelgor, Skaldra, the Rotmother, Nyxareth and Vharok still answer every portal that opens
+> at the temples, and the guilds still bleed for the **Chaos Obelisk**.
+> Against them stand those who take up the sword, the bow, the spell or the shadow. At the hundredth step of their road
+> the **Ascendant Oracle** shows them two paths, and they leave as something more than they came.
+> The ash is still falling. This is the **Season of Ash**.
 
 Project Chaos is a dark fantasy Open Tibia server (protocol 10.98) with its own client. It keeps the classic top-down
 hunt-and-loot game and adds the depth of an action RPG: classes with ascensions, a huge passive tree, items with
@@ -24,6 +35,9 @@ than days.
 
 ## Your first steps
 
+> *"Nobody dies on the island. It is the last kindness this world will show you."*
+> (from the Chronicle of the Broken World)
+
 - **Tutorial island:** new characters start on a small island with five stations: fight, cast your first spell, spend
   a passive point, use a Chaos Orb, and learn about keystones, bounties and the store. Each station opens the next
   gate. You can skip it any time (`!skiptutorial`), and nobody can die there.
@@ -32,6 +46,11 @@ than days.
 - **Milestone gifts** at levels 20, 50, 100 and 200: potions for your role and Chaos Orbs.
 
 ## Classes
+
+> *"Steel, string, spell or shadow. Choose one. At the hundredth step I will ask you to choose again."*
+> (the Ascendant Oracle)
+
+![Classes and ascensions: Warrior, Ranger, Mystic and Thief](docs/images/feature_classes.png)
 
 You start as one of four base classes. At level 100 you **ascend** into one of two specialisations (`!ascend`).
 
@@ -47,6 +66,11 @@ Balance is measured on test dummies at levels 300 and 1000, so every class keeps
 
 ## Passive tree and Paragon
 
+> *"Six hundred stars, and never enough light to reach them all. No two heroes draw the same constellation."*
+> (from the Chronicle of the Broken World)
+
+![The passive tree and the Paragon window](docs/images/feature_passive_tree.png)
+
 - **Passive tree:** over 600 nodes, with points from levels and not enough to take everything, so every build is a
   choice. Class **keystones** change how you play:
   - *Cleaving Arc*: two-handed hits strike everything around you
@@ -61,6 +85,11 @@ Balance is measured on test dummies at levels 300 and 1000, so every class keeps
   categories, so there is always something to gain.
 
 ## Items and loot
+
+> *"The Chaos seeps into everything it touches. Most of it is rust. Some of it glows."*
+> (a scavenger of the deep hunting grounds)
+
+![The fifteen rarities and the loot filter](docs/images/feature_loot.png)
 
 - **15 rarities**: Common, Uncommon, Rare, Epic, Legendary, Exotic, Mythic, Chaos, Eternal, Divine, Phantasmal,
   Celestial, Cosmic, Abyssal and Transcendent.
@@ -83,6 +112,11 @@ Balance is measured on test dummies at levels 300 and 1000, so every class keeps
 
 ## Crafting
 
+> *"Every orb is a splinter of the break. Press it to steel, and the steel forgets what it was."*
+> (from the Chronicle of the Broken World)
+
+![The Crafting Bench and its seven orbs](docs/images/feature_crafting.png)
+
 Orbs reshape your gear at the **Crafting Bench** (`!craft`):
 
 | Orb | What it does |
@@ -99,6 +133,11 @@ Orbs drop from monsters (more from tiered ones and bosses), from bounties and th
 the store. Uniques can't be crafted, so they stay unique.
 
 ## Endgame
+
+> *"Five came through the first wound. Whenever the portals open at the temples, they come back, and never weaker."*
+> (from the Chronicle of the Broken World, the Book of the Five)
+
+![The five world bosses and a sealed rift](docs/images/feature_endgame.png)
 
 - **World bosses:** a server-wide event. A portal opens at every temple and one of five colossal bosses appears:
   - Kaelgor the Infernal Warlord
@@ -129,6 +168,11 @@ the store. Uniques can't be crafted, so they stay unique.
 
 ## Seasons
 
+> *"The ash falls, the ladder is swept clean, and new names climb it. The ash remembers who reached the top."*
+> (from the Chronicle of the Broken World, on the Season of Ash)
+
+![Seasons: the Season of Ash and its reward track](docs/images/feature_seasons.png)
+
 Start fresh with a **season character** (`!season join` on a new character) and race on the season ladder.
 - **Own economy:** season characters trade, mail, party and loot only with their own season.
 - **Season uniques:** some uniques drop only for season characters while the season runs, then for everyone.
@@ -137,6 +181,11 @@ Start fresh with a **season character** (`!season join` on a new character) and 
 - **Season end:** season characters join the normal world with everything they earned.
 
 ## PvP
+
+> *"The Obelisk does not care whose banner flies over it. It only counts the seconds you hold it."*
+> (a Siege Champion)
+
+![The ranked arena and the guild siege](docs/images/feature_pvp.png)
 
 - **Ranked arena** (`!arena`): **1v1 and 2v2** with an Elo rating per mode.
   - Matchmaking pairs players of close rating and similar level.
@@ -148,6 +197,11 @@ Start fresh with a **season character** (`!season join` on a new character) and 
   - The winners become **Siege Champions** for a week: a title and +5% experience.
 
 ## Leaderboards and titles
+
+> *"Every Monday the stone is wiped and the names are carved anew. Only the titles linger, for one week."*
+> (from the Chronicle of the Broken World)
+
+![The weekly leaderboards and a title above a name plate](docs/images/feature_leaderboards.png)
 
 Weekly boards (`!leaderboard`) reset every Monday:
 - World Boss damage
@@ -169,6 +223,11 @@ lists them, `!title <name>` picks one, `!title none` hides it. Monsters and NPCs
 
 ## Achievements
 
+> *"I write down every deed. A few of them I may not write down until someone has done them."*
+> (the Chronicler)
+
+![The achievements window](docs/images/feature_achievements.png)
+
 Over 90 achievements (`!achievements`, or Chaos -> Achievements) give you goals in every corner of the game:
 - **What counts:** levels and Paragon, magic, rare and legendary kills, ambushes, Treasure Goblins, each world boss, rift
   tiers and modifiers, bounty contracts and weekly chests, uniques and rarities found, orbs used at the Crafting Bench,
@@ -182,6 +241,11 @@ Over 90 achievements (`!achievements`, or Chaos -> Achievements) give you goals 
 - The window shows your progress on each one, and a toast pops up the moment you unlock one.
 
 ## Quality of life
+
+> *"Count your kills, count your coin, and come back tomorrow. The Chaos is patient. So are its rewards."*
+> (from the Chronicle of the Broken World)
+
+![The hunt tracker and the daily reward](docs/images/feature_qol.png)
 
 - **Combat visuals:** crits, dodges and reflects get their own sprites. Elemental weapon damage shows as a separate
   coloured number with its element's effect. Big numbers are shortened (12.4k).
