@@ -1,0 +1,17 @@
+# Project Chaos backup run (server/tools/backup.sh), started by chaos-backup.timer.
+#   sudo cp server/deploy/chaos-backup.service server/deploy/chaos-backup.timer /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now chaos-backup.timer
+# Runs as root so it can signal the game server (save before the dump) and write /var/backups/chaos.
+
+[Unit]
+Description=Project Chaos backup (database dump + server data)
+After=mariadb.service mysql.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/chaos/chaos.env
+ExecStart=/opt/chaos/repo/server/tools/backup.sh --save-service chaos-server
+StandardOutput=append:/var/log/chaos/backup.log
+StandardError=append:/var/log/chaos/backup.log
+Nice=10
+IOSchedulingClass=idle

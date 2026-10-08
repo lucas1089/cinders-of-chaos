@@ -42,9 +42,11 @@ ChaosOpcodes = {
 	siege = 233, -- guild siege HUD and sign-up window (client game_siege, !siege; siege.lua, siege_config.lua)
 	arena = 236, -- ranked PvP arena window and match HUD (client game_arena, !arena; arena.lua, arena_config.lua)
 	lootfilter = 238, -- loot filter window, corpse highlight data, loot channel rows (client game_lootfilter, !lootfilter; lootfilter.lua)
+	nameplate = 248, -- name plates over players: title, guild, frame (client game_nameplate, !title; nameplate.lua, titles.lua)
 	season = 246, -- seasons window (client game_season, !season; season.lua, season_config.lua)
 	patchnotes = 244,
 	hunt = 241, -- hunt tracker window, exp/h and profit/h (client game_hunt, !hunt; hunt.lua, hunt_core.lua, hunt_config.lua)
+	achievements = 250, -- achievements window and unlocks (client game_achievements, !achievements; achievements*.lua)
 	spellbook = 219 -- spell list window (client game_spellbook, !spells)
 }
 

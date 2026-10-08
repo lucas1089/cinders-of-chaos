@@ -187,6 +187,11 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 	if not msg then
 		return
 	end
+	-- every request reads or writes the database (ratelimit.lua); per action, so opening the window and the
+	-- request that follows it are never dropped together
+	if ChaosRateLimit and not ChaosRateLimit.allow(player, "bank." .. tostring(msg.action), 150) then
+		return
+	end
 
 	if msg.action == "openBank" then
 		sendBankState(player)

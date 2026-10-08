@@ -1,0 +1,14 @@
+# Project Chaos backups: every 6 hours, the 06:15 run 15 minutes after the daily server save (06:00 with
+# server/tools/prod_config.py --save-time 06:00; move both together). Persistent=true catches up on a missed run
+# after a reboot.
+
+[Unit]
+Description=Project Chaos backups
+
+[Timer]
+OnCalendar=*-*-* 00,06,12,18:15:00
+RandomizedDelaySec=120
+Persistent=true
+
+[Install]
+WantedBy=timers.target

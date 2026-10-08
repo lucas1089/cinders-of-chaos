@@ -322,9 +322,14 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	elseif msg.action == "buy" then
 		buy(player, msg.data)
 	elseif msg.action == "history" then
-		history(player)
+		-- database reads (ratelimit.lua)
+		if not ChaosRateLimit or ChaosRateLimit.allow(player, "shop.history", 1000) then
+			history(player)
+		end
 	elseif msg.action == "gift_coins" then
-		gift(player, msg.data)
+		if not ChaosRateLimit or ChaosRateLimit.allow(player, "shop.gift", 1000) then
+			gift(player, msg.data)
+		end
 	end
 end
 ext:type("extendedopcode")

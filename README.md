@@ -160,6 +160,27 @@ Weekly boards (`!leaderboard`) reset every Monday:
 The top 3 of each board earn a **title** for the next week (Bossbane, Warden of the Hunt, Riftwalker, Goblin Slayer,
 Siegebreaker, Duelist, Gladiator) and orbs. The all-time **Class Ladder** ranks the highest characters of every class.
 
+### Name plates and titles
+
+Above every player floats a name plate: their **title** on top, their **guild** in braces below it, and their **name**
+on a small framed plate. Titles come from the leaderboards (gold), the guild siege (Siege Champions, orange, with a
+crimson plate), seasons, login streaks and achievements; staff wear red titles on a gold plate. Hold several? `!title`
+lists them, `!title <name>` picks one, `!title none` hides it. Monsters and NPCs keep their plain names.
+
+## Achievements
+
+Over 90 achievements (`!achievements`, or Chaos -> Achievements) give you goals in every corner of the game:
+- **What counts:** levels and Paragon, magic, rare and legendary kills, ambushes, Treasure Goblins, each world boss, rift
+  tiers and modifiers, bounty contracts and weekly chests, uniques and rarities found, orbs used at the Crafting Bench,
+  arena wins and ratings, guild sieges, and a few secrets that stay hidden as **???** until you find them.
+- **Points:** every achievement is worth points. Your account total counts each achievement once, whichever character
+  earned it.
+- **Titles:** many achievements give a title to show above your name. Pick one in the window or with `!title`.
+- **Rewards:** some pay orbs, others an outfit with its addons or a mount.
+- **Already a veteran?** Levels, Paragon, ascension, bounties and arena results you had before are counted the next time
+  you log in.
+- The window shows your progress on each one, and a toast pops up the moment you unlock one.
+
 ## Quality of life
 
 - **Combat visuals:** crits, dodges and reflects get their own sprites. Elemental weapon damage shows as a separate
@@ -185,7 +206,6 @@ Siegebreaker, Duelist, Gladiator) and orbs. The all-time **Class Ladder** ranks 
 Being built right now:
 - **New classes:** the **Necromancer** (Lich / Bone Lord), the **Monk** (Shadowfist / Iron Sage) and the **Templar**
   (Inquisitor / Sentinel).
-- **Name plates:** title, guild and name above every player.
 
 The full priority list is in [ROADMAP.md](ROADMAP.md).
 
@@ -200,5 +220,6 @@ The full priority list is in [ROADMAP.md](ROADMAP.md).
 | [docs/CLASSES.md](docs/CLASSES.md) | class design and implementation status |
 | [server/data/spells/README.md](server/data/spells/README.md) | spells and balance tables |
 | [ROADMAP.md](ROADMAP.md) | what's done, in progress and planned |
+| [docs/LAUNCH.md](docs/LAUNCH.md) | **Running a server**: install (`server/tools/install_all.py`), production config, systemd, backups, monitoring, launch checklist |
 
 This page is kept up to date as features are merged: new systems move from *Coming soon* into their sections.

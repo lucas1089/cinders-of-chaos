@@ -63,6 +63,15 @@ local NOTIFICATION_TYPES = {
         borderColor = "#6a5632",
         duration = 12000,
     },
+    -- achievements (server data/scripts/chaos/achievements.lua): one toast per unlock
+    ACHIEVEMENT = {
+        icon = "images/notifications/task.png",
+        title = "ACHIEVEMENT UNLOCKED",
+        titleColor = "#5cc8c0",
+        backgroundColor = "#ccbebb",
+        borderColor = "#2c6e69",
+        duration = 8000,
+    },
     CATACOMB_FREE = {
         icon = "images/notifications/catacomb2.png",
         title = "CATACOMB AVAILABLE",
@@ -1051,6 +1060,13 @@ function onExtendedOpcode(protocol, opcode, buffer)
         newplayer = function(data)
             if data.message then
                 addNotification("NEW_PLAYER", data.message)
+            end
+        end,
+
+        -- achievements (server data/scripts/chaos/achievements.lua)
+        achievement = function(data)
+            if data.message then
+                addNotification("ACHIEVEMENT", data.message)
             end
         end,
 
