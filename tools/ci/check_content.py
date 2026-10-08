@@ -28,7 +28,9 @@ def parse(path):
             fail(f'{path}: not well-formed ({e})')
             return None
 
-for f in subprocess.check_output(['git', 'ls-files', '*.xml'], text=True).split():
+for f in subprocess.check_output(['git', 'ls-files', '-z', '*.xml'], text=True).split('\0'):
+    if not f:
+        continue
     parse(f)
 
 # spells
