@@ -1,0 +1,12 @@
+Module
+  name: game_craftskills
+  description: Profession skills (crafting, gathering, smithing) at the bottom of the skills window
+  author: project-chaos
+  sandboxed: true
+  scripts: [ craftskills ]
+  dependencies:
+    - game_skills
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()
