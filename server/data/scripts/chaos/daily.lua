@@ -5,6 +5,7 @@
 --                      "data":{"Day":d, "TakenReward":0|1, "NextIn":seconds,
 --                              "DAILY_REWARDS":[{"ClientID":id,"Count":n} x7]}}
 --   client -> server  {"action":"calim","data":v}      ("calim" is the client's spelling)
+--   client -> server  {"action":"open"}                (window opened from the menu: send the data)
 --
 -- Quirks of the shipped client that this file compensates for:
 --   * the client does Day = Day + 2 on receipt, so we send Day = slot - 2.
@@ -150,6 +151,8 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 	end
 	if msg.action == "calim" then
 		claim(player, msg.data)
+	elseif msg.action == "open" then
+		sendWindow(player)
 	end
 end
 

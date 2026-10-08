@@ -152,7 +152,8 @@ function toggle()
 	if DailyWindow:isVisible() then
 		DailyWindow:hide()
 	else
-		Show()
+		-- the server answers with OpenDailyWindow, which fills and shows the window
+		sendAction(OPCODE, "open")
 	end
 end
 

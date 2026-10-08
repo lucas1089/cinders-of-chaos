@@ -1,0 +1,36 @@
+--- a/data/styles/0-vars.otui
++++ b/data/styles/0-vars.otui
+@@ -1,12 +1,12 @@
+-// Colors
+-&var-text-color: #dfdfdf
+-&var-text-cip-color-white: #f7f7f7
+-&var-text-cip-color-highlight: #f4f4f4
+-&var-text-cip-color-grey: #909090
+-&var-text-cip-color: #c0c0c0
+-&var-cip-inactive-color: #707070
++// Colors (Chaos palette: parchment text on blackened iron)
++&var-text-color: #e4d8c0
++&var-text-cip-color-white: #f4ead6
++&var-text-cip-color-highlight: #fff1d6
++&var-text-cip-color-grey: #8c8070
++&var-text-cip-color: #cdbfa4
++&var-cip-inactive-color: #6b6258
+ &var-text-cip-color-green: #44ad25
+-&var-text-color-disabled: #dfdfdf88
++&var-text-color-disabled: #e4d8c088
+ &var-text-cip-color-orange: #ff9854
+ &var-text-cip-color-yellow: #ffda34
+ &var-text-cip-color-light-red: #f75f5f
+@@ -19,9 +19,9 @@
+ &var-text-cip-store-sale-disabled: #6f5f18
+ &var-text-cip-store-timed: #1872c3
+ &var-text-cip-store-timed-disabled: #183f63
+-&var-textlist-selected: #585858
+-&var-textlist-even: #414141
+-&var-textlist-odd: #484848
++&var-textlist-selected: #5a1f19
++&var-textlist-even: #1e1314
++&var-textlist-odd: #261819
+ 
+ 
+ // Labels

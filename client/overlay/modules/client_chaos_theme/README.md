@@ -35,6 +35,16 @@ Window 9-slice: `image-border: 18`, `image-border-top: 34` (title band is part o
 `topbutton_<name>[_hover]` (64x64) and `small/topbutton_<name>[_hover]` (32x32) for: inventory, skills, battlelist, vip, spells, quests, market, bank, stash,
 autoloot, daily, battlepass, passivetree, dungeons, events, infinitytower, minimap, options, notifications, help, logout, admin, ranking.
 
+## Stock interface reskin
+
+The base client's own chrome (windows, mini windows, panels, buttons, scroll bars, tabs, console, action bar,
+inventory, minimap frame, login window) is recoloured to the same palette: `client/tools/gen_ui_reskin.py
+<base-client-dir>` maps every grey pixel of those textures by brightness onto blackened iron, dried blood, bronze and
+parchment, keeps saturated pixels (icons, bars, flags) and keeps size, alpha and layout, so no .otui changes. It writes
+`overlay/data/images/<same path>` and lists the files in `overlay/data/images/RESKIN_FILES.txt` (rerun it after
+updating the base client; files not in that list are our own art and are never overwritten). Base patch
+`0013-chaos-text-colors.patch` turns the stock text colours to parchment tones to match.
+
 ## Menu bar (client_chaos_topbar)
 
 Category buttons at the top of the game window: Character, Hunt, Chaos, Economy, Social, System and Admin (admins only). Each opens a
