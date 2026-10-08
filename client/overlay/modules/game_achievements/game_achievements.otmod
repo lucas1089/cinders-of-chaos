@@ -1,0 +1,13 @@
+Module
+  name: game_achievements
+  description: Achievements window (categories, progress, points, titles, recent unlocks; !achievements, extended opcode 250)
+  author: project-chaos
+  sandboxed: true
+  scripts: [ achievementsview, achievements ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

@@ -45,6 +45,7 @@ ChaosOpcodes = {
 	season = 246, -- seasons window (client game_season, !season; season.lua, season_config.lua)
 	patchnotes = 244,
 	hunt = 241, -- hunt tracker window, exp/h and profit/h (client game_hunt, !hunt; hunt.lua, hunt_core.lua, hunt_config.lua)
+	achievements = 250, -- achievements window and unlocks (client game_achievements, !achievements; achievements*.lua)
 	spellbook = 219 -- spell list window (client game_spellbook, !spells)
 }
 

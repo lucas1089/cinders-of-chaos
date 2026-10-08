@@ -182,6 +182,7 @@ local CATEGORIES = {
     { text = 'Crafting Bench',     icon = 'proficiency', modules = { 'game_crafting' }, fns = { 'toggle' } },
     { text = 'Event Calendar',     icon = 'events',      modules = { 'game_schedule' },  fns = { 'toggle' } },
     { text = 'Leaderboards',       icon = 'ranking',     modules = { 'game_leaderboard' }, fns = { 'toggle' } },
+    { text = 'Achievements',       icon = 'ranking',     modules = { 'game_achievements' }, fns = { 'toggle' } },
     { text = 'Season',             icon = 'events',      modules = { 'game_season' },    fns = { 'toggle' } },
     { text = 'Notifications',      icon = 'notifications', modules = { 'game_chaosnotify' }, fns = { 'toggle', 'showAll' } },
     { text = 'Patch Notes',        icon = 'events',      modules = { 'game_patchnotes' }, fns = { 'toggle' } },

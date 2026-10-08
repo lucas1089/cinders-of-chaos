@@ -160,6 +160,20 @@ Weekly boards (`!leaderboard`) reset every Monday:
 The top 3 of each board earn a **title** for the next week (Bossbane, Warden of the Hunt, Riftwalker, Goblin Slayer,
 Siegebreaker, Duelist, Gladiator) and orbs. The all-time **Class Ladder** ranks the highest characters of every class.
 
+## Achievements
+
+Over 90 achievements (`!achievements`, or Chaos -> Achievements) give you goals in every corner of the game:
+- **What counts:** levels and Paragon, magic, rare and legendary kills, ambushes, Treasure Goblins, each world boss, rift
+  tiers and modifiers, bounty contracts and weekly chests, uniques and rarities found, orbs used at the Crafting Bench,
+  arena wins and ratings, guild sieges, and a few secrets that stay hidden as **???** until you find them.
+- **Points:** every achievement is worth points. Your account total counts each achievement once, whichever character
+  earned it.
+- **Titles:** many achievements give a title to show above your name. Pick one in the window or with `!title`.
+- **Rewards:** some pay orbs, others an outfit with its addons or a mount.
+- **Already a veteran?** Levels, Paragon, ascension, bounties and arena results you had before are counted the next time
+  you log in.
+- The window shows your progress on each one, and a toast pops up the moment you unlock one.
+
 ## Quality of life
 
 - **Combat visuals:** crits, dodges and reflects get their own sprites. Elemental weapon damage shows as a separate

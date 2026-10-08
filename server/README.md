@@ -48,6 +48,7 @@ server/
     hunt.lua  hunt_core.lua  hunt_config.lua  hunt_supplies.lua (hunt tracker; supply prices from tools/gen_supply_prices.py)
     daily_core.lua  daily_config.lua (daily reward login streaks, milestones, grace, login window order)
     patchnotes.lua  patchnotes_core.lua (patch notes window; the notes are data/patchnotes/*.md, see "Patch notes")
+    achievements.lua  achievements_core.lua  achievements_data.lua (achievements, points, titles, rewards; sql/chaos_achievements.sql)
 ```
 
 ## Install
@@ -128,8 +129,9 @@ working directory, as with the rest of the base server libs).
 | game_hunt | `hunt.lua`, `hunt_core.lua`, `hunt_config.lua`, `hunt_supplies.lua` | 241, `!hunt` / `/hunt` | Hunt tracker: session time with pause/reset, exp/h, time to level, loot and profit/h, supplies, kills, damage/healing, Chaos drops; tested in game (see "Hunt tracker"). |
 | game_season | `season.lua`, `season_core.lua`, `season_config.lua` | 246, `!season` / `/season` | Seasons: fresh-start season characters isolated from standard ones, season ladder view, season uniques, account-wide reward track, end-of-season migration; tested in game with two clients (see "Seasons"). |
 | game_patchnotes | `patchnotes.lua`, `patchnotes_core.lua`, `data/patchnotes/*.md` | 244, `!patchnotes` / `/patchnotes` | Weekly patch notes read from Markdown files on the server, opened once per new week at login (after the Daily Reward), per-account "Don't show automatically"; tested in game (see "Patch notes"). |
+| game_achievements | `achievements.lua`, `achievements_core.lua`, `achievements_data.lua` | 250, `!achievements` | Achievements: 93 in 9 categories with points, titles and rewards, progress fed by the other systems, retroactive at login; tested in game (see "Achievements"). |
 
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 228, 229, 232, 233, 236, 241, 244, 246 are all registered in the global
+Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 228, 229, 232, 233, 236, 241, 244, 246, 250 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
 
 ### Opcode collision check
@@ -1774,6 +1776,74 @@ Staff: `/daily` shows the own account's state, `/daily shift <days>` moves the d
 
 **Not verified in game.** The refusal for a second character of the same account. The test client cannot list two
 characters of one account (a base client character-list error), so this is covered by the mocked test only.
+
+## Achievements (`achievements.lua`, `achievements_core.lua`, `achievements_data.lua`, client `game_achievements`)
+
+Long-term goals across every system: 93 achievements in 9 categories (Combat & Leveling, Monsters, World Bosses, Rifts,
+Bounties, Items & Crafting, PvP, Exploration & Social, Secrets), 2125 points in all. Client `game_achievements` (Chaos ->
+Achievements in the top menu, or `!achievements`), extended opcode 250 (`ChaosOpcodes.achievements`), tables
+`chaos_achievements` and `chaos_achievement_stats` (`sql/chaos_achievements.sql`; also created at startup).
+
+- **The list** is `achievements_data.lua`, one line each: `id`, `name`, `desc`, `cat`, `points`, `stat` + `target` (or `all =
+  {stats}`: each at least once), optional `hidden`, `title` (24 characters at most) and `reward` (`gold`, `items`, `outfit =
+  {name, female, male, addons}`, `mount = {name, id}`; outfits and mounts the base server already has). Bad entries are
+  printed at startup and left out. Never rename a live `id`: it is what the database stores.
+- **Counters** (per character, they only go up): `ChaosAchievements.progress(who, key, amount)` and `.set(who, key, value)`
+  (the higher value is kept); `who` is a Player, a guid or `{guid, name}`. Offline characters are written straight to the
+  database and checked at their next login. Online counters are saved every 30 s, at logout and at shutdown; unlocks at once.
+  An achievement unlocks once per character (`INSERT IGNORE`), with a chat line, a toast (game_chaosnotify action
+  `achievement`), its reward and its title; the window refreshes if it is open.
+- **Where the counters come from.** Nothing in the other systems was rewritten:
+  - level, Paragon level (`level - Chaos.paragon.startLevel`), ascension, tutorial island finished, guild: login, level up
+    and a 30 s sweep of the online characters;
+  - kills (a `kill` event on every player, the tier from `ChaosTierOf`): magic / rare / legendary, party kills, Treasure
+    Goblins, the secrets; ambushes from `ChaosTierDead[id].depth` (one line added to `monster_tiers.lua`);
+  - `ChaosLeaderboard.record` is wrapped at runtime, like `season.lua` does: `bounty` (contracts), `rift` (tier, runs; the
+    modifiers and "nobody lost" from `ChaosRift.runOf`), `arena1v1` / `arena2v2` (wins and best rating from
+    `ChaosArena.ratingOf`), `siege` (played; won when the player's bracket winner is their guild);
+  - `ChaosWorldBoss.computeRewards` is wrapped: every rewarded player (offline ones too), the boss by name, top damage = rank 1;
+  - `ChaosCrafting.apply` is wrapped: orbs used on the bench and by the crafting orbs' use-with, Exalted Orbs, the most
+    modifiers on an item. **Not counted:** the base server's own Chaos / Divine Orb use-with (`reroll_rarity_stats.lua`,
+    local functions, no hook);
+  - `ChaosTreasureGoblin.tick` is wrapped: a goblin removed by its timer after being hit = "escaped" for its attackers;
+  - an `onDropLoot` callback at index 2.4 (before the loot filter's snapshot and the base autoloot): uniques found, best
+    rarity, modifiers. Only monster corpses count (not rift chests, goblin hoards or world boss rewards);
+  - the weekly bounty chest: `Chaos.storage.bountyWeekBonus` holds the week of the last chest; a newer week = one more.
+  Any other script: `if ChaosAchievements then ChaosAchievements.progress(player, "my_stat", 1) end` and an entry with
+  `stat = "my_stat"`.
+- **Retroactive** at every login (quietly, one summary toast): level, Paragon, ascension, tutorial, guild, completed contracts
+  in `chaos_bounty` (`status = 1`), the last weekly bounty chest, arena wins and best rating in `chaos_arena_ratings`. Kills,
+  orbs, rifts and world bosses have no history to read and start at 0.
+- **Points.** Character points are the sum of its unlocks. Account points count each achievement once, whichever character
+  of the account earned it (alts do not add the same achievement twice). The window shows both.
+- **Titles** go to the name plates: `ChaosTitles.register("achievement", ...)` (titles.lua, colour teal), key
+  `achievement:<id>`. Players pick one with `!title <name>` or the window's title box (it says `!title` for them).
+  Nothing happens while titles.lua is not loaded.
+- **Class unlock method.** achievements.lua replaces the `achievement` kind of `ChaosClassUnlocksCore` with a superset of it:
+  `achievement = {points = 500}` (the account has 500 achievement points), `achievement = {name = "rift_t10"}` (any
+  character of the account has that achievement), or both (either is enough). It is checked at login and on level up by
+  class_unlocks.lua, and after every unlock by achievements.lua. **No class uses it**: every class keeps `store` only. To
+  offer it, add it next to the store in `class_unlocks_core.lua`, e.g.
+  `unlock = {store = {offer = "unlockMonk", cost = 750}, achievement = {points = 500}}` (any listed method unlocks; the lock
+  message lists both).
+- **Protocol** (opcode 250, JSON `{action, data}`): client `open` / `get`; server `state` (points, account points, counts,
+  categories, recent, titles, active title), then `list` in parts of 30 rows (`{i, n, d, c, p, h, u, v, t, ti, r}`; hidden
+  locked rows come as "???" with no progress, title or reward), and `unlock` (the open window asks again).
+- **Commands.** `!achievements` (summary + window). Staff (`/achievements`, on yourself): `grant <id>`, `stat <key> <value>`,
+  `add <key> <n>`, `reset`.
+- **Tests:** `tests/achievements_test.lua` (the list, thresholds, unlocking once, hidden rows, points and account points, the
+  retroactive stats, titles, the class unlock method plugged into class_unlocks_core.lua, SQL) and the client's
+  `game_achievements/achievementsview_test.lua`.
+
+**Tested in game** (test server, cropped map): retroactive unlocks at login (level 562: levels 50-500, ascension, with the
+level 500 orbs; a level 1000 character: the Doombringer mount, arena 1v1 wins / rating 1200 and bounty contracts read from
+the database), a live level up (level 700 + its orbs) with the toast, a legendary ambush copy (Legend Slayer, It Was a
+Trap, the hidden Out of the Frying Pan, Legendary Find from its corpse), a rare kill, a Chaos Orb on the crafting bench, a
+tier 1 rift sealed with Brutality / Withering / Swarm (6 achievements), a death, a bounty record and the weekly chest
+storage, world boss shares for an offline character (unlocked at its next login), the window (categories, progress,
+"???", recent), the title box and the title on the name plate, the class unlock method with a test config. Not tested in
+game: arena and siege matches, a real world boss fight, a Treasure Goblin escape, party kills (unit-level only or not at
+all).
 
 ## Late game (`tools/late_game.py`, `tools/late_game_spawns.csv`, 17 monsters in `data/monster/monsters/chaos/`)
 

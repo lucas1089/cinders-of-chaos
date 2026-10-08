@@ -357,6 +357,7 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 	-- the loot callback runs after this event: keep tier and modifiers for a few seconds (ChaosTierDead[id])
 	ChaosTierDead = ChaosTierDead or {}
 	ChaosTierDead[id] = {tier = ChaosTierOf(creature), mods = s and s.mods or {}}
+	ChaosTierDead[id].depth = s and s.depth or 0 -- > 0: an ambush copy (achievements.lua counts ambushes survived)
 	addEvent(function(cid) ChaosTierDead[cid] = nil end, 10000, id)
 	state[id] = nil
 	if s and s.mods then

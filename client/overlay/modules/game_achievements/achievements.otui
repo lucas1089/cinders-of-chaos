@@ -1,0 +1,202 @@
+// Achievements window (game_achievements). Styles from client_chaos_theme (styles.otui).
+
+AchievementRow < ChaosPanelDark
+  height: 74
+  margin-bottom: 3
+  phantom: false
+
+  UILabel
+    id: name
+    anchors.left: parent.left
+    anchors.right: points.left
+    anchors.top: parent.top
+    margin-left: 4
+    margin-right: 6
+    text-align: left
+    font: verdana-11px-rounded
+    color: #8c8070
+    phantom: true
+
+  UILabel
+    id: points
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin-right: 4
+    width: 60
+    text-align: right
+    font: verdana-11px-rounded
+    color: #8c8070
+    phantom: true
+
+  UILabel
+    id: desc
+    anchors.left: name.left
+    anchors.right: parent.right
+    anchors.top: name.bottom
+    margin-top: 2
+    margin-right: 4
+    text-align: left
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    phantom: true
+
+  UILabel
+    id: extra
+    anchors.left: name.left
+    anchors.right: parent.right
+    anchors.top: desc.bottom
+    margin-top: 2
+    margin-right: 4
+    text-align: left
+    font: verdana-11px-antialised
+    color: #5cc8c0
+    phantom: true
+
+  ChaosProgressBar
+    id: progress
+    anchors.left: name.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-right: 4
+    height: 12
+    text-offset: 0 0
+    font: verdana-11px-antialised
+    background-color: #2c6e69
+
+// the client builds a combo box's popup from "<style>PopupMenu" and "<style>PopupMenuButton"
+AchievementTitleComboPopupMenuButton < UIButton
+  height: 20
+  font: verdana-11px-antialised
+  text-align: left
+  text-offset: 6 2
+  color: #d6c9ae
+  background-color: #1a151a
+
+  $hover !disabled:
+    color: #f6cf72
+    background-color: #3a2410
+
+AchievementTitleComboPopupMenu < UIPopupMenu
+  image-source: /images/chaos/panel_dark
+  image-border: 6
+  padding: 3
+
+AchievementTitleCombo < ChaosComboBox
+
+AchievementCategory < ChaosTabButton
+  height: 24
+  margin-bottom: 3
+  text-align: left
+
+ChaosMainWindow
+  id: achievementsWindow
+  size: 720 560
+  !text: tr('Achievements')
+  @onEscape: modules.game_achievements.hide()
+
+  ChaosLabel
+    id: summaryLabel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: titleLabel.left
+    margin-right: 8
+    text-align: left
+    color: #f6cf72
+    font: verdana-11px-rounded
+
+  ChaosLabel
+    id: titleLabel
+    anchors.right: titleCombo.left
+    anchors.verticalCenter: titleCombo.verticalCenter
+    margin-right: 6
+    text-auto-resize: true
+    !text: tr('Title:')
+
+  AchievementTitleCombo
+    id: titleCombo
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-top: -3
+    width: 170
+
+  ChaosPanelDark
+    id: categoryPanel
+    anchors.top: titleCombo.bottom
+    anchors.left: parent.left
+    anchors.bottom: recentPanel.top
+    margin-top: 8
+    margin-bottom: 8
+    width: 180
+    layout:
+      type: verticalBox
+
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: categoryPanel.top
+    anchors.left: categoryPanel.right
+    anchors.right: parent.right
+    anchors.bottom: categoryPanel.bottom
+    margin-left: 8
+    padding: 3
+
+  UIScrollArea
+    id: rowList
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: listScroll.left
+    anchors.bottom: listFrame.bottom
+    margin: 4
+    layout:
+      type: verticalBox
+    vertical-scrollbar: listScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: listScroll
+    anchors.top: listFrame.top
+    anchors.right: listFrame.right
+    anchors.bottom: listFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 77
+    pixels-scroll: true
+
+  ChaosLabelDim
+    id: emptyText
+    anchors.centerIn: listFrame
+    text-auto-resize: true
+    visible: false
+    !text: tr('Nothing here yet.')
+
+  ChaosPanelHighlight
+    id: recentPanel
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-bottom: 8
+    height: 34
+
+    ChaosLabel
+      id: recentLabel
+      anchors.fill: parent
+      text-align: left
+      color: #5cc8c0
+      font: verdana-11px-rounded
+
+  ChaosLabelDim
+    id: hintLabel
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    margin-right: 8
+    text-align: left
+    text-wrap: true
+    height: 28
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    !text: tr('Close')
+    @onClick: modules.game_achievements.hide()
