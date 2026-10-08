@@ -1,4 +1,50 @@
-# Helper: no packet burst after a long frame. Catch-up cycles (same frame or < 25 ms real time after the last one) are skipped, and the heal spells the helper says are limited by real time (one per 200 ms, the same spell again after 500 ms unless the server's cooldown comes first). Without it a 2 s stall replayed ~40 cycles at once and a rejected heal went out 20 times a second, and the server kicked for packets per second.
+# Helper: no packet burst after a long frame. Catch-up cycles (same frame or < 25 ms real time after the last one) are skipped, and the spells the helper says are limited by real time: heals one per 200 ms, and every heal, magic shooter and auto haste spell is said again only after 500 ms unless the server's cooldown comes first. Without it a 2 s stall replayed ~40 cycles at once and a rejected heal went out 20 times a second, and the server kicked for packets per second.
+--- a/mods/game_helper/classes/auto_haste.lua
++++ b/mods/game_helper/classes/auto_haste.lua
+@@ -226,11 +226,20 @@ _Helper.AutoHaste.check = function()
+     return
+   end
+ 
++  -- Chaos: real-time retry guard (helper.lua, spellTalkGuard). The haste cycle is its own 500 ms cycleEvent, so after a
++  -- long frame its missed cycles run back to back, and a rejected haste gets no cooldown to stop them.
++  if _Helper.spellTalkBlocked and _Helper.spellTalkBlocked(spellId, true) then
++    return
++  end
++
+   local safeDoThing = _Helper.safeDoThing and _Helper.safeDoThing
+   if safeDoThing then
+     safeDoThing(false)
+   end
+   g_game.talk(spell.words, true)
++  if _Helper.noteSpellTalk then
++    _Helper.noteSpellTalk(spellId, true)
++  end
+   if safeDoThing then
+     safeDoThing(true)
+   end
+--- a/mods/game_helper/classes/magic_shooter.lua
++++ b/mods/game_helper/classes/magic_shooter.lua
+@@ -791,6 +791,12 @@ _Helper.MagicShooter.check = function()
+           goto continue
+         end
+ 
++        -- Chaos: real-time retry guard (helper.lua, spellTalkGuard): a spell the server rejects gets no cooldown and
++        -- would go out again after the 200 ms pre-cooldown, which reads the per-frame clock
++        if _Helper.spellTalkBlocked and _Helper.spellTalkBlocked(spell.id, true) then
++          goto continue
++        end
++
+         -- Extra delay: if configured, add delay to cooldown check
+         local extraDelay = config.extraDelay or 0
+         if extraDelay > 0 and _Helper.getSpellCooldown then
+@@ -820,6 +826,7 @@ _Helper.MagicShooter.check = function()
+           end
+         end
+         g_game.talk(spell.words)
++        if _Helper.noteSpellTalk then _Helper.noteSpellTalk(spell.id, true) end
+         if _Helper.safeDoThing then _Helper.safeDoThing(true) end
+ 
+         -- Track buff expiration for spells with buff duration
 --- a/mods/game_helper/helper.lua
 +++ b/mods/game_helper/helper.lua
 @@ -422,7 +422,11 @@ end
@@ -14,7 +60,7 @@
  }
  
  local timers = {
-@@ -487,6 +491,34 @@ local cachedPrioritizedHealthPotions = {}
+@@ -487,6 +491,41 @@ local cachedPrioritizedHealthPotions = {}
  local cachedPrioritizedManaPotions = {}
  local healingActiveBuffs = {}
  
@@ -24,6 +70,8 @@
 +-- cycle, and after a long frame the replayed cycles all said it again in one burst (kick: packets per second).
 +-- Real time: at most one heal spell per 200 ms, and the same spell again only after 500 ms unless the server's
 +-- cooldown arrives first (heal cooldowns are 1 s or more, so normal healing does not notice).
++-- The magic shooter and auto haste use the same per-spell retry with perSpellOnly = true: no shared 200 ms gap, since
++-- one shooter pass may cast an attack and a support spell together (different cooldown groups).
 +local spellTalkGuard = {
 +  minGap = 200,     -- ms between any two heal spells the helper says
 +  retryDelay = 500, -- ms before the same spell is said again
@@ -31,25 +79,30 @@
 +  lastAtBySpell = {}
 +}
 +
-+function helperSpellTalkBlocked(spellId)
++function helperSpellTalkBlocked(spellId, perSpellOnly)
 +  local now = g_clock.realMillis()
-+  if now - spellTalkGuard.lastAt < spellTalkGuard.minGap then
++  if not perSpellOnly and now - spellTalkGuard.lastAt < spellTalkGuard.minGap then
 +    return true
 +  end
 +  local last = spellTalkGuard.lastAtBySpell[spellId]
 +  return last ~= nil and now - last < spellTalkGuard.retryDelay
 +end
 +
-+function helperNoteSpellTalk(spellId)
++function helperNoteSpellTalk(spellId, perSpellOnly)
 +  local now = g_clock.realMillis()
-+  spellTalkGuard.lastAt = now
++  if not perSpellOnly then
++    spellTalkGuard.lastAt = now
++  end
 +  spellTalkGuard.lastAtBySpell[spellId] = now
 +end
++
++_Helper.spellTalkBlocked = helperSpellTalkBlocked
++_Helper.noteSpellTalk = helperNoteSpellTalk
 +
  -- Forward declaration
  local rebuildHealingCache
  
-@@ -1792,6 +1824,16 @@ local function isServerFrozen()
+@@ -1792,6 +1831,16 @@ local function isServerFrozen()
  end
  
  function helperCycleEvent()
@@ -66,7 +119,7 @@
    -- Pausa o helper enquanto o servidor não responder (ex.: server save).
    -- Sem isso, comandos enfileirados derrubam o player por excesso de pacotes ao retomar.
    if isServerFrozen() then
-@@ -3906,7 +3948,7 @@ function castHealingSpell(spellData)
+@@ -3906,7 +3955,7 @@ function castHealingSpell(spellData)
      return false
    end
  
@@ -75,7 +128,7 @@
      return false
    end
  
-@@ -3944,6 +3986,7 @@ function castHealingSpell(spellData)
+@@ -3944,6 +3993,7 @@ function castHealingSpell(spellData)
    -- Execute the spell
    safeDoThing(false)
    g_game.talk(spell.words, true)
@@ -83,7 +136,7 @@
    safeDoThing(true)
  
    -- Track buff expiration for spells with buff duration
-@@ -4240,12 +4283,13 @@ function useAutoSio(target)
+@@ -4240,12 +4290,13 @@ function useAutoSio(target)
      return false
    end
  
@@ -98,7 +151,7 @@
    safeDoThing(true)
  
    return true
-@@ -4324,12 +4368,13 @@ function useAutoGranSio(target)
+@@ -4324,12 +4375,13 @@ function useAutoGranSio(target)
      return false
    end
  
@@ -113,7 +166,7 @@
    safeDoThing(true)
  
    return true
-@@ -4350,12 +4395,13 @@ function useAutoTioSio(target)
+@@ -4350,12 +4402,13 @@ function useAutoTioSio(target)
      return false
    end
  
@@ -128,7 +181,7 @@
    safeDoThing(true)
  
    return true
-@@ -4376,12 +4422,13 @@ function useAutoMasRes()
+@@ -4376,12 +4429,13 @@ function useAutoMasRes()
      return false
    end
  
