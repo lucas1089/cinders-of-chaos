@@ -97,10 +97,11 @@ working directory, as with the rest of the base server libs).
 | game_stash | `stash.lua` | **110** (new), `!stash` | Deposit by drag, redeem, categories, block list, `!stash all`, DB persistence. Client must be ported first (see below). |
 | game_spellbook | `spellbook.lua` | 219, `!spells` / `/spells` | Spell list window: every player spell of `data/spells/spells.xml` with its data, a short description and its area of effect (see "Spellbook" below). |
 | game_bounty | `bounty.lua`, `bounty_core.lua`, `bounty_config.lua`, `bounty_pool.lua` | 223, `!bounty` / `/bounty` | Daily rotating kill contracts per level band, tested in game (see "Bounty board"). |
-| game_leaderboard | `leaderboard.lua`, `leaderboard_core.lua`, `leaderboard_config.lua` | 229, `!leaderboard` | Weekly World Boss / Bounty Hunter / Rifts / Goblin Slayer boards with titles and orbs for the top 3, all-time class ladder, tested in game (see "Leaderboards"). |
+| game_siege | `siege.lua`, `siege_core.lua`, `siege_config.lua` | 233, `!siege` / `/siege` | Weekly guild siege for the Chaos Obelisk: sign-ups, runtime arena, HUD, rewards and the champion title, tested in game (see "Guild siege"). |
+| game_leaderboard | `leaderboard.lua`, `leaderboard_core.lua`, `leaderboard_config.lua` | 229, `!leaderboard` | Weekly World Boss / Bounty Hunter / Rifts / Goblin Slayer / Guild Siege boards with titles and orbs for the top 3, all-time class ladder, tested in game (see "Leaderboards"). |
 | game_crafting | `crafting.lua`, `data/lib/chaos_crafting.lua` | 232, `!craft` / `/craft` | Crafting bench and the crafting orbs (Transmutation, Alchemy, Exalted, Annulment, Scouring, plus Chaos and Divine), tested in game (see "Crafting"). |
 
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 229, 232 are all registered in the global
+Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 229, 232, 233 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
 
 ### Opcode collision check
@@ -777,7 +778,7 @@ window, and builds its SQL from client input without checks. So the Chaos window
 "Highscores" became "Leaderboards".
 
 - **Boards.** Weekly: **World Boss** (damage dealt to world bosses, kills participated), **Bounty Hunter** (contracts
-  completed), **Rifts** (highest rift tier completed, runs), **Goblin Slayer** (treasure goblins slain). All time: **Class Ladder** (highest level per class).
+  completed), **Rifts** (highest rift tier completed, runs), **Goblin Slayer** (treasure goblins slain), **Guild Siege** (siege points). All time: **Class Ladder** (highest level per class).
   Each board shows the top 20 (`rows`), the player's own rank and value, and the time until the weekly reset.
   Ranks are never shared: on equal values the player who reached the value first ranks higher, then the lower id.
   Staff characters (`group_id >= staffGroup`, 4) are left out of every board, title and reward.
@@ -788,7 +789,7 @@ window, and builds its SQL from client input without checks. So the Chaos window
   count too). `bounty.lua` records a contract when it pays (not when multi-clienting). The rift scripts call the API below.
 - **Reset.** A once-a-minute check (and one at startup) runs the reset when the week key is later than the last
   processed one. It takes the top 3 (`top`) of every weekly board of the week that ended. They get the board's title
-  (`title`: Bossbane, Warden of the Hunt, Riftwalker, Goblin Slayer) for the week that starts. Their orbs (`rewards`: 1st 5 Divine +
+  (`title`: Bossbane, Warden of the Hunt, Riftwalker, Goblin Slayer, Siegebreaker) for the week that starts. Their orbs (`rewards`: 1st 5 Divine +
   10 Chaos, 2nd 3 + 6, 3rd 1 + 3) go straight to the inbox. A player offline at the reset gets them at the next login:
   the `rewarded` flag is in the DB, so a restart loses nothing. The reset broadcasts the winners (also as a toast with
   `game_chaosnotify`). Score rows older than `keepWeeks` (8) are deleted. When the server was down over several
@@ -806,7 +807,7 @@ window, and builds its SQL from client input without checks. So the Chaos window
 ### API (rifts and any other script)
 
 ```lua
--- board: "worldboss" | "bounty" | "rift" | "goblin" (a key of Chaos.leaderboardConfig.boards)
+-- board: "worldboss" | "bounty" | "rift" | "goblin" | "siege" (a key of Chaos.leaderboardConfig.boards)
 -- who:   a Player, a player guid, or {guid = n, name = s} (offline players are looked up)
 -- value: integer >= 0; mode: "add" (sum) or "max" (keep the best); nil = the board's mode (rift: "max")
 -- Every call also adds 1 to the board's count column (kills / contracts / runs).
@@ -902,6 +903,110 @@ the look text after each change, the armor's modifiers applied when equipped (Ho
 the annulled Drown absorb gone), the history, the store purchase and the loot simulation. `tests/crafting_test.lua`
 covers eligibility, each orb on a mocked item, slot limits, the description and unique protection. Not tested: the
 weekly bounty chest with the extra orbs (needs seven finished contracts).
+
+## Guild siege (`siege.lua`, `siege_core.lua`, `siege_config.lua`, `sql/chaos_siege.sql`)
+
+A weekly scheduled war between guilds for the Chaos Obelisk. Client: `game_siege` (HUD + sign-up window, extended
+opcode 233, Chaos -> Guild Siege in the top menu). Every number below is in `siege_config.lua`.
+
+**Install.** Run `sql/chaos_siege.sql` (tables `chaos_siege_signups`, `chaos_siege_results`) and
+`python3 -I server/tools/patch_base_events.py <server>/data` (its third patch puts the siege rules in front of the
+base server's `Creature:onTargetCombat`, see "PvP inside"). The Chaos spells ask the siege through
+`ChaosSiege.canAttack` in `data/spells/chaos/_common.lua` (reinstall the spells with `register_spells.py`).
+
+**Schedule.** Saturday 20:00 server time (`weekday`, `hour`, `minute`). Broadcasts 60, 15, 5 and 1 minutes before (the
+first and the last also as a toast), with the guilds signed up so far. The login-screen calendar and `!events` show a
+"Guild Siege" day: siege.lua adds that entry to `Chaos.events.list` when it loads (no edit of the calendar config).
+
+**Sign-ups.** `!siege join` / `!siege leave` (or the window's buttons) by the guild leader or a vice-leader
+(`signupRank` 2); the guild needs `minMembers` (3) members in `guild_membership`. Sign-ups close `signupCloseMinutes`
+(5) before the start and while a siege runs. Up to `perBracket` (4) guilds share an arena; more guilds run as parallel
+brackets (`maxBrackets` 3, arenas side by side, sizes differ by at most one, never below `minGuilds`); beyond 12 the
+latest sign-ups wait (first come). Fewer than `minGuilds` (2) at the start: the siege is cancelled and the sign-ups
+dropped. `!siege` shows the status and opens the window (next siege, countdown, sign-ups, your guild, champions, rules).
+
+**The arena (built in code, like the world-boss arena).** At the start one arena per bracket is built with
+`Game.createTile` at `arena.origin` (5100,5000,7; bracket b is `stride` tiles further east), refused if any footprint
+tile already exists in the map with another ground or a house. Each is a 31 x 31 floor of black marble with a stone
+wall, the Chaos Obelisk (item 1560) on the centre tile, the capture area (white marble, 5 x 5 around the obelisk,
+`capture.radius` 2), eight stone pillars for cover, coal basins, and four base rooms (7 x 5, stone floor, two flags,
+two basins) outside the middle of each side, sharing the arena wall. A base has a gate forcefield next to the wall
+(action id 47212) into the arena, and an exit forcefield at the back (47213) to the temple. Nothing connects a base to
+the arena by walking, so no enemy can enter it. After the siege the arena is cleaned (monsters, corpses, loose
+items); walls, obelisk and decoration stay for the next week (the footprint check accepts our own grounds).
+
+**Event flow.** Start -> entry forcefields (action id 47211) next to every temple (`portalOffsets`, or
+`portalPositions`), broadcast + toast -> members (level 100+) step in and arrive in their guild's base; gates are shut
+for `gatherSeconds` (180) -> gates open, broadcast + toast, `matchMinutes` (25) of war; with `lateJoin` the portals stay
+open -> end: standings, rewards, results in `chaos_siege_results`, broadcast + toast with every arena's ranking, the
+HUD shows the final score -> after `exitDelaySeconds` (30) everyone inside goes to their temple (`exitPosition`
+overrides it) and the arena is cleaned. A player who logs in inside during the match goes back to the base; inside
+after the siege, to the temple.
+
+**PvP inside.** During the match, in the arena of the player's own bracket:
+- members of different guilds can always attack each other: skulls, the target's secure mode and party do not matter.
+  `ChaosSiege.targetCombat` decides; the base `Creature:onTargetCombat` refuses a target with secure mode on and party
+  members before any script callback runs, which is why `patch_base_events.py` inserts the hook before those rules
+  (the hook returns nil outside the siege, so nothing changes elsewhere). Your own secure mode still has to be off to
+  attack, as anywhere: the engine checks it (`Combat::canTargetCreature`) before Lua is asked.
+- guild mates, players in a base, a downed player, players of other brackets and non-participants cannot be attacked;
+  nobody attacks during the gathering. Monsters and fields cannot hurt players in a base or downed.
+- **no real death**: a `preparedeath` event cancels the lethal hit. The engine never runs the death, so there is no
+  frag, no unjustified kill, no skull from the kill, no experience, skill or item loss and no blessing is used. The
+  player is "downed" for `downedSeconds` (3): slowed, cannot attack or be attacked, does not count on the point, then
+  wakes up in the guild's base with full health and mana, poison/fire/energy/bleeding/paralyze removed.
+- skulls: the engine still gives an attacker a white skull on each hit on an unmarked player
+  (`Player::onAttackedCreature`, no Lua hook). siege.lua takes it back right after the hit (health-change event on the
+  participants) and every second; on leaving, the in-fight condition (pz lock) is removed for players who came in
+  without a skull. A red or black skull from outside stays as it was.
+- multi-client (`Chaos.isMultiClient`): refused at the portal with "Multi-client: another character from your connection
+  is online. Log it out to join the siege."; a participant who becomes one is sent out.
+
+**Scoring.** `points.kill` (20) to the guild (and the killer) for every enemy struck down; `points.holdPerSecond` (1)
+per second to the guild holding the obelisk, and 1 per second to each of its members on the point. Holding = the most
+members (not downed) within `capture.radius` of the obelisk; a tie contests it (`capture.exclusive = true`: any enemy
+contests). Standings: score, then kills, then sign-up order; a full tie for first place, or nobody scoring, has no
+winner. 15 minutes of holding (900) outweighs a few kills more for the other side.
+
+**Rewards.** For players with at least `minPresenceSeconds` (300) inside while the match ran: the winning guild's
+members 500,000 gold to the bank, 5 Chaos Orbs and 2 Divine Orbs; everyone else 150,000 gold and 2 Chaos Orbs (inbox
+when the backpack is full; offline players get it at their next login). The winning guild is "Siege Champions" for
+`titleDays` (7): its members' look text gets "He is one of the Siege Champions (guild)." (an onLook callback after the
+base text) and +5% experience from monsters (`buff.xp`, onGainExperience callback; needs the
+`patch_base_events.py` experience dispatch). Champions are loaded from `chaos_siege_results` at startup.
+Leaderboard: every participant's points (kills x 20 + seconds on the held point) go to
+`ChaosLeaderboard.record("siege", player, points, "add")`: the weekly Guild Siege board of the leaderboards (title
+Siegebreaker).
+
+**HUD.** Sent every second to everyone inside: title (arena number when there are several), time left (or "Gates
+open in"), who holds the obelisk in the guild's colour / contested / neutral, a row per guild (colour of its base:
+north red, east blue, south green, west gold; members inside, kills, score) sorted by score, and "You: kills, downed,
+points". Hidden when the player leaves.
+
+**Commands.** `!siege` (status + window), `!siege join`, `!siege leave`, `!siege status`. Staff (`/siege`, group with
+access): `start` (now, with the upcoming siege's sign-ups; they are consumed when it ends), `match` (skip the
+gathering), `end` (end now with results), `stop` (cancel, no results), `portal` (entry forcefield two tiles east of
+you), `arena [n]` (build arena n and go there), `signup <guild>` (no rule checks), `clear` (drop the upcoming
+sign-ups).
+
+**The base server's guild wars.** The stock TFS tables are there (`guild_wars` with status, `guildwar_kills`), and the
+base `playerdeath.lua` (twice: `creaturescripts/scripts` and `scripts/customs/znote`) writes a `guildwar_kills` row
+when both guilds have an active war (status 1). There is no in-game way to declare or accept a war (no `/war` or
+`!war` script): it is meant for the website (Znote AAC), and the engine reads a guild's wars only at login
+(`IOLoginData::getWarList`), so a war accepted while members are online counts for them only after a relog; startup
+deletes pending (status 0) declarations. The siege does not use these tables. Possible double `guildwar_kills` rows
+from the two death scripts were not checked.
+
+**Tested in game** (test server, cropped map, two clients from one IP, guilds Iron Wolves and Blood Ravens):
+sign-up refusal with too few members and the sign-up by command and from the window; the window; the forced start and
+the arena build; the multi-client refusal at the portal (blocks on) and the toast; entry into the right base; gates
+shut during the gathering and refusing another guild's gate; PvP by melee against a target with secure mode on; a lethal
+hit (no death row, no experience lost, back in the base after 3 s); holding the obelisk alone (+1 per second, HUD
+"Obelisk: Iron Wolves"); the end with results and rewards (winner 500k + orbs, the other guild 150k + 2 Chaos Orbs);
+the champion look text and the +5% experience; everyone sent out and the arena cleaned. Not tested: two guilds at once
+on the point (contested; covered by the unit test), parallel brackets, the scheduled start at the real time,
+`tests/siege_test.lua` covers the schedule, sign-up rules, brackets, the arena geometry, capture control, standings,
+rewards and the champion title.
 
 ## Late game (`tools/late_game.py`, `tools/late_game_spawns.csv`, 17 monsters in `data/monster/monsters/chaos/`)
 

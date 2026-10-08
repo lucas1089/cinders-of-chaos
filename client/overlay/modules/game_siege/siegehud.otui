@@ -1,0 +1,98 @@
+// Guild siege HUD, top centre of the map (in the game root panel, below the top menu) (server: siege.lua, extended opcode 233). Rows are SiegeTeamRow.
+SiegeHudLabel < UILabel
+  font: verdana-11px-rounded
+  color: #d6c9ae
+  text-align: center
+  text-auto-resize: true
+  phantom: true
+
+SiegeTeamRow < UIWidget
+  height: 18
+  margin-top: 2
+  phantom: true
+
+  UIWidget
+    id: swatch
+    size: 10 10
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    border-width: 1
+    border-color: #1a1410
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: swatch.right
+    anchors.right: kills.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 6
+    margin-right: 4
+    font: verdana-11px-rounded
+    color: #e8dcc2
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: kills
+    width: 40
+    anchors.right: score.left
+    anchors.verticalCenter: parent.verticalCenter
+    font: verdana-11px-antialised
+    color: #8c8070
+    text-align: right
+    phantom: true
+
+  UILabel
+    id: score
+    width: 48
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    font: verdana-11px-rounded
+    color: #f6cf72
+    text-align: right
+    phantom: true
+
+ChaosPanelDark
+  id: siegeHud
+  width: 250
+  anchors.top: parent.top
+  anchors.horizontalCenter: gameMapPanel.horizontalCenter
+  margin-top: 44
+  padding: 8
+  phantom: true
+  focusable: false
+  visible: false
+  layout:
+    type: verticalBox
+    fit-children: true
+
+  ChaosTitle
+    id: title
+    text: Guild Siege
+    phantom: true
+
+  UILabel
+    id: clock
+    font: sans-bold-16px
+    color: #f4d27a
+    text-align: center
+    height: 22
+    phantom: true
+    margin-top: 2
+
+  SiegeHudLabel
+    id: holder
+    margin-top: 2
+
+  UIWidget
+    id: teams
+    phantom: true
+    margin-top: 4
+    layout:
+      type: verticalBox
+      fit-children: true
+
+  SiegeHudLabel
+    id: you
+    color: #8c8070
+    margin-top: 4

@@ -1,0 +1,152 @@
+// Guild siege window (game_siege): next siege, sign-ups, your guild, champions, rules. Styles: client_chaos_theme.
+SiegeListLabel < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: left
+  text-wrap: true
+  text-auto-resize: true
+  margin-top: 3
+  phantom: true
+
+ChaosMainWindow
+  id: siegeWindow
+  size: 580 580
+  !text: tr('Guild Siege')
+  @onEscape: modules.game_siege.hide()
+
+  ChaosLabel
+    id: nextLabel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    text-auto-resize: true
+    color: #f6cf72
+
+  ChaosLabel
+    id: countdown
+    anchors.top: parent.top
+    anchors.right: parent.right
+    text-auto-resize: true
+    color: #f6cf72
+
+  ChaosLabelDim
+    id: status
+    anchors.top: nextLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    text-align: left
+    text-wrap: true
+    text-auto-resize: true
+
+  ChaosPanelDark
+    id: guildPanel
+    anchors.top: status.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    height: 58
+    padding: 6
+
+    ChaosLabel
+      id: guildLabel
+      anchors.left: parent.left
+      anchors.right: joinButton.left
+      anchors.top: parent.top
+      margin-right: 8
+      text-align: left
+
+    ChaosLabelDim
+      id: guildReason
+      anchors.left: parent.left
+      anchors.right: joinButton.left
+      anchors.top: guildLabel.bottom
+      margin-top: 2
+      margin-right: 8
+      text-align: left
+      text-wrap: true
+      height: 28
+
+    ChaosButton
+      id: leaveButton
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      width: 86
+      !text: tr('Withdraw')
+      @onClick: modules.game_siege.leave()
+
+    ChaosButton
+      id: joinButton
+      anchors.right: leaveButton.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-right: 6
+      width: 86
+      !text: tr('Sign up')
+      @onClick: modules.game_siege.join()
+
+  ChaosLabel
+    id: signupsHeader
+    anchors.top: guildPanel.bottom
+    anchors.left: parent.left
+    margin-top: 10
+    text-auto-resize: true
+    !text: tr('Signed up')
+
+  ChaosLabel
+    id: championsHeader
+    anchors.top: guildPanel.bottom
+    anchors.left: parent.horizontalCenter
+    margin-top: 10
+    margin-left: 6
+    text-auto-resize: true
+    !text: tr('Champions')
+
+  ChaosPanelDark
+    id: signups
+    anchors.top: signupsHeader.bottom
+    anchors.left: parent.left
+    anchors.right: parent.horizontalCenter
+    margin-top: 4
+    margin-right: 6
+    height: 96
+    padding: 6
+    layout:
+      type: verticalBox
+
+  ChaosPanelDark
+    id: champions
+    anchors.top: championsHeader.bottom
+    anchors.left: parent.horizontalCenter
+    anchors.right: parent.right
+    margin-top: 4
+    margin-left: 6
+    height: 96
+    padding: 6
+    layout:
+      type: verticalBox
+
+  ChaosLabel
+    id: rulesHeader
+    anchors.top: signups.bottom
+    anchors.left: parent.left
+    margin-top: 10
+    text-auto-resize: true
+    !text: tr('Rules')
+
+  ChaosPanelDark
+    id: rules
+    anchors.top: rulesHeader.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-top: 4
+    margin-bottom: 8
+    padding: 6
+    layout:
+      type: verticalBox
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    !text: tr('Close')
+    @onClick: modules.game_siege.hide()

@@ -18,6 +18,11 @@ pet share, so the bonuses multiply the staged experience and the pet gets its sh
    +level % chance to roll at all and +level/2 % per tier, as the upgrades' own comments describe.
    (The "Experience" upgrade, storage 405788, is read by data/scripts/chaos/waystone_bonuses.lua.)
 
+3. data/events/scripts/creature.lua: Creature:onTargetCombat asks ChaosSiege.targetCombat first (guild siege,
+   data/scripts/chaos/siege.lua). The base rules refuse an attack on a player with secure mode on or in the same
+   party BEFORE the script callbacks run, so without the hook members of enemy guilds could not always fight in the
+   siege arena. The hook returns nil outside the siege (the base rules then run as before).
+
 Idempotent: every inserted block carries a marker comment and is not added twice.
 """
 import os, re, sys
@@ -92,6 +97,36 @@ def patch_loot(text):
     return text, 'patched'
 
 
+COMBAT_MARKER = '-- Chaos: guild siege rules before the base PvP rules (patch_base_events.py)'
+COMBAT_BLOCK = (
+    '\t' + COMBAT_MARKER + '\n'
+    '\tif ChaosSiege and ChaosSiege.targetCombat then\n'
+    '\t\tlocal chaosSiegeRet = ChaosSiege.targetCombat(self, target)\n'
+    '\t\tif chaosSiegeRet then\n'
+    '\t\t\treturn chaosSiegeRet\n'
+    '\t\tend\n'
+    '\tend\n'
+)
+
+
+def patch_target_combat(text):
+    """returns (new text, status)"""
+    if COMBAT_MARKER in text:
+        return text, 'already'
+    start = text.find('function Creature:onTargetCombat(')
+    if start < 0:
+        return text, 'Creature:onTargetCombat not found'
+    end = text.find('\nend', start)
+    body = text[start:end]
+    # after the base guard and its registerEvent lines, before the first PvP rule; else right after the signature
+    m = re.search(r'\n[ \t]*if self:isMonster\(\) and target:isPlayer\(\) then', body)
+    if m:
+        at = start + m.start() + 1
+    else:
+        at = text.find('\n', start) + 1
+    return text[:at] + COMBAT_BLOCK + text[at:], 'patched'
+
+
 def apply(path, fn, dry):
     text = open(path, encoding='utf-8', errors='surrogateescape').read()
     new, status = fn(text)
@@ -110,6 +145,7 @@ def main():
     ok = apply(os.path.join(args[0], 'events', 'scripts', 'player.lua'), patch, dry)
     ok = apply(os.path.join(args[0], 'scripts', 'eventcallbacks', 'monster', 'default_onDropLoot.lua'),
                patch_loot, dry) and ok
+    ok = apply(os.path.join(args[0], 'events', 'scripts', 'creature.lua'), patch_target_combat, dry) and ok
     return 0 if ok else 1
 
 

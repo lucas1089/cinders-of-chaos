@@ -28,7 +28,9 @@ return {
 		{key = "rift", name = "Rifts", mode = "max", value = "Highest Tier", count = "Runs", title = "Riftwalker",
 			info = "Highest rift tier completed this week."},
 		{key = "goblin", name = "Goblin Slayer", mode = "add", value = "Goblins", title = "Goblin Slayer",
-			info = "Treasure goblins slain this week."}
+			info = "Treasure goblins slain this week."},
+		{key = "siege", name = "Guild Siege", mode = "add", value = "Points", title = "Siegebreaker",
+			info = "Guild siege points this week: enemies struck down and seconds holding the obelisk."}
 	},
 	top = 3,
 	rewards = {
