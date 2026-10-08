@@ -30,7 +30,7 @@ function onCastSpell(creature, variant, isHotkey)
 		return ChaosSpell.cancel(player, RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER)
 	end
 
-	local min, max = ChaosSpell.mlValues(player, 2.85, 4.85, 28, 55)
+	local min, max = ChaosSpell.mlValues(player, 2.85, 4.85, 28, 55, 1.2)
 	local casterId = player:getId()
 	strike(casterId, player:getPosition(), first:getId(), 1, min, max)
 

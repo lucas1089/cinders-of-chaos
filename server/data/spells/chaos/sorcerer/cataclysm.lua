@@ -15,7 +15,7 @@ function onCastSpell(creature, variant, isHotkey)
 	end
 	local pos = player:getPosition()
 	local center = {x = pos.x, y = pos.y, z = pos.z}
-	local min, max = ChaosSpell.mlValues(player, 3.5, 6.5, 80, 160)
+	local min, max = ChaosSpell.mlValues(player, 3.5, 6.5, 80, 160, 1.2)
 
 	ChaosSpell.pulse(player:getId(), #WAVES, 700, function(caster, step)
 		local w = WAVES[step]

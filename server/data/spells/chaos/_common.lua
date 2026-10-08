@@ -44,11 +44,13 @@ function ChaosSpell.shoot(fromPos, toPos, name, fallback)
 	Position(fromPos):sendDistanceEffect(Position(toPos), FxMissile(name, fallback))
 end
 
--- Damage helper: returns positive min, max from the usual TFS level/magic-level formula.
-function ChaosSpell.mlValues(player, mlMin, mlMax, baseMin, baseMax)
+-- Damage helper: returns positive min, max from the usual TFS level/magic-level formula, times `scale` (default 1,
+-- the per-spell balance factor: the whole value scales, the level part included).
+function ChaosSpell.mlValues(player, mlMin, mlMax, baseMin, baseMax, scale)
 	local l = player:getLevel() / 5
 	local m = player:getMagicLevel()
-	return l + m * mlMin + baseMin, l + m * mlMax + baseMax
+	scale = scale or 1
+	return (l + m * mlMin + baseMin) * scale, (l + m * mlMax + baseMax) * scale
 end
 
 -- Damage helper for skill based spells (melee / distance).

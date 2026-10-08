@@ -9,8 +9,8 @@ combat:setParameter(COMBAT_PARAM_USECHARGES, true)
 combat:setArea(createCombatArea(AREA_CIRCLE2X2))
 
 function onGetFormulaValues(player, skill, attack, factor)
-	local min = (player:getLevel() / 5) + (skill * attack * 0.05) + 16
-	local max = (player:getLevel() / 5) + (skill * attack * 0.10) + 32
+	local min = ((player:getLevel() / 5) + (skill * attack * 0.05) + 16) * 0.7
+	local max = ((player:getLevel() / 5) + (skill * attack * 0.10) + 32) * 0.7
 	return -min, -max
 end
 

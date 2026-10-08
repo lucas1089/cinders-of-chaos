@@ -7,8 +7,8 @@ combat:setParameter(COMBAT_PARAM_EFFECT, Fx("fire_nova", CONST_ME_FIREAREA))
 combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, FxMissile("fire_bolt", CONST_ANI_FIRE))
 
 function onGetFormulaValues(player, level, magicLevel)
-	local min = (level / 5) + (magicLevel * 3.0) + 15
-	local max = (level / 5) + (magicLevel * 5.0) + 30
+	local min = ((level / 5) + (magicLevel * 3.0) + 15) * 1.2
+	local max = ((level / 5) + (magicLevel * 5.0) + 30) * 1.2
 	return -min, -max
 end
 

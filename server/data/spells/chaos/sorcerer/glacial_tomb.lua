@@ -11,7 +11,7 @@ function onCastSpell(creature, variant, isHotkey)
 	local target = ChaosSpell.targetOf(variant)
 	local center = target and target:getPosition() or player:getPosition()
 	center = {x = center.x, y = center.y, z = center.z}
-	local min, max = ChaosSpell.mlValues(player, 1.8, 3.0, 20, 40)
+	local min, max = ChaosSpell.mlValues(player, 1.8, 3.0, 20, 40, 1.2)
 
 	ChaosSpell.shoot(player:getPosition(), Position(center), "ice_shard", CONST_ANI_ICE)
 	ChaosSpell.pulse(player:getId(), 6, 1000, function(caster, step)

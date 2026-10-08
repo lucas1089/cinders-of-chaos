@@ -14,7 +14,7 @@ function onCastSpell(creature, variant, isHotkey)
 	end
 	local p = target:getPosition()
 	local center = {x = p.x, y = p.y, z = p.z}
-	local min, max = ChaosSpell.mlValues(player, 1.1, 1.95, 14, 25)
+	local min, max = ChaosSpell.mlValues(player, 1.1, 1.95, 14, 25, 0.85)
 
 	ChaosSpell.shoot(player:getPosition(), p, "poison_dart", CONST_ANI_POISON)
 	ChaosSpell.pulse(player:getId(), 3, 1000, function(caster, step)

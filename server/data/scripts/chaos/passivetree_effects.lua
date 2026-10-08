@@ -35,7 +35,7 @@ local cfg = {
 	maxAbsorb = 80,           -- percent, passive absorbs only (equipment adds on top)
 	maxDamagePercent = 150,
 	-- the stat window formulas are percentages (vitality = % health, dexterity = % damage taken less):
-	charStatCap = {strength = 60, intelligence = 60, dexterity = 40, vitality = 50, spirit = 50, wisdom = 40}
+	charStatCap = {strength = 60, intelligence = 60, dexterity = 20, vitality = 50, spirit = 50, wisdom = 40} -- dexterity 20: weapon hits x1.25 (at 40 knights out-damaged everyone at level 1000)
 }
 ChaosPassiveEffectsConfig = cfg
 
