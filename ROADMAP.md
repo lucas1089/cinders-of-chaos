@@ -37,7 +37,7 @@ Estimated today: ~155 h to level 1000 for a sorcerer, ~285 h for a knight or pal
 | # | Item | Status | Notes |
 |---|---|---|---|
 | 8 | Rifts / map devices: consumable keys open a timed instance with random modifiers; higher tiers drop better keys | todo | reuse the dungeon instance code and the monster tiers |
-| 9 | Paragon track for leftover passive points ("option 2") | in progress | small infinite bonuses once the tree budget is spent |
+| 9 | Paragon track for leftover passive points ("option 2") | done | `chaos/paragon.lua`, client `game_passivetree/paragon*`: 1 point per level above 1000, four categories of small capped stats added on top of the tree's bonuses; reset level x 250 gold or the store reset; see server/README.md "Paragon" |
 | 10 | Bounty board: daily rotating "kill X in Y" contracts paying orbs | done | `chaos/bounty*.lua`, client `game_bounty`, pool from `server/tools/gen_bounty_pool.py` (rerun after spawn changes); see server/README.md "Bounty board". Party credit not tested with two real players |
 | 11 | Crafting orbs: add-a-modifier and remove-a-modifier orbs next to Chaos/Divine, plus a crafting bench | todo | item modifier code in `server/data/lib` |
 | 12 | Seasons / ladders: fresh-start season characters, season uniques, per-vocation highscores, cosmetic carry-over | todo | |

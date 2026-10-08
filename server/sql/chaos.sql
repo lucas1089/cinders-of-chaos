@@ -38,6 +38,16 @@ CREATE TABLE IF NOT EXISTS `chaos_passive_tree` (
   CONSTRAINT `chaos_passive_tree_players_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+-- Paragon track (paragon.lua): points per stat key (damage, critDamage, health, reduction, speed, mana, goldFind,
+-- itemFind); rows with 0 points are not kept.
+CREATE TABLE IF NOT EXISTS `chaos_paragon` (
+  `player_id` int(11) NOT NULL,
+  `stat` varchar(32) NOT NULL,
+  `points` smallint(5) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`player_id`, `stat`),
+  CONSTRAINT `chaos_paragon_players_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 -- game_dungeons: highest unlocked difficulty (1..6) and completed challenge keys per dungeon.
 CREATE TABLE IF NOT EXISTS `chaos_dungeon_progress` (
   `player_id` int(11) NOT NULL,

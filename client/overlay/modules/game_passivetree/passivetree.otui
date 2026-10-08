@@ -388,6 +388,16 @@ UIWindow
     enabled: true
     @onClick: modules.game_passivetree.reset()
 
+  TreeButton
+    id: paragonButton
+    anchors.top: applyPoints.top
+    anchors.left: resetPresetButton.right
+    margin-left: 5
+    text: Paragon
+    width: 110
+    enabled: true
+    @onClick: modules.game_passivetree.toggleParagon()
+
   UIWidget
     id: presets
     anchors.top: presetsButton.bottom

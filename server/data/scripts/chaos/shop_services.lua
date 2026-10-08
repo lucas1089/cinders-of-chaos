@@ -472,13 +472,19 @@ S.services = {
 			if not (ChaosPassiveTree and ChaosPassiveTree.resetAll) then
 				return "The passive tree is not available."
 			end
-			if not ChaosPassiveTree.hasAllocation(player) then
-				return "Your passive tree has no allocated points."
+			-- the service also resets the Paragon track (paragon.lua): one paid respec for every passive point
+			local paragon = ChaosParagon and ChaosParagon.hasAllocation and ChaosParagon.hasAllocation(player)
+			if not ChaosPassiveTree.hasAllocation(player) and not paragon then
+				return "Your passive tree and Paragon track have no allocated points."
 			end
 		end,
 		apply = function(player)
+			if ChaosParagon and ChaosParagon.resetAll then
+				ChaosParagon.resetAll(player, true) -- the tree's resetAll below reapplies everything once
+			end
 			ChaosPassiveTree.resetAll(player)
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Your passive tree was reset. All points are free to spend again.")
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
+				"Your passive tree and Paragon points were reset. All points are free to spend again.")
 			return true
 		end
 	}

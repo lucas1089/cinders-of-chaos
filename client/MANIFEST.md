@@ -13,7 +13,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | game_autoloot | extended opcode 216 | none | Needs server script (base server has a partial autoloot) |
 | game_itemrarity | none | optional `g_game.setRarityShaderEnabled` (guarded) | Client-only; frames work without the shader. Server must send item rarity somehow (see base server rarity customs) |
 | game_battlepass | raw game opcode 39 via `ProtocolGame.registerOpcode` (not extended) | needs custom C++ packet parsing | Needs engine and server work |
-| game_passivetree | extended opcode 65 | none | Needs server script |
+| game_passivetree | extended opcode 65 | none | Needs server script. Paragon panel (`paragon.lua`, `paragon.otui`, `paragonmath.lua`) on the same opcode |
 | game_shop | extended opcode 218 (JSON) | none | Chaos store: categories, pages, purchase, coin gifts, history; server `data/scripts/chaos/shop.lua`; tested in game |
 | game_spellbook | extended opcode 219 (JSON) + `!spells` | none | Spellbook window: search, vocation filter, spell details and an area-of-effect grid; server `data/scripts/chaos/spellbook.lua`; untested in a client |
 | game_craftskills | skills packet (crafting skills after fishing) | base patch 0012 (`GameChaosCraftingSkills`) | Profession section at the bottom of the skills window, live updates; tested in game |
@@ -71,3 +71,6 @@ The whole interface is redrawn as iron, gold trim, blood-red and arcane-blue gem
 - **Character list**: base patch `0021-chaos-skin-character-list.patch` changes the hard-coded grey row colours to the palette.
 - **Fixes found while testing**: `game_chaosspells` connected an `onGameStart` handler that returned `true`, and `signalcall` stops at that, so every handler after it (passive tree, dungeons, bank, top menu hiding, ...) never ran. It is wrapped now. With those handlers running, two missing assets showed up: `game_dungeons/challenge.otui` used a font the client does not have (now `Verdana Bold-13px`), and `images/animations/button-highlight-22x22`, which the base proficiency window wants, is now generated.
 Checked in the Linux client at 1280x800: login, character list, game screen, skills, options, spellbook, shop, daily reward, passive tree, the popup menu and tooltips. No errors in the log.
+
+## Paragon panel (new)
+`game_passivetree` has a Paragon button next to Apply Points / Reset. It opens a `ChaosWindow` (ornate skin: `ChaosPanelDark` per category, `ChaosButton` +/-, Apply / Reset / Close) inside the tree window, built from the server's `paragonState` (`paragon.lua`, `paragon.otui`): points available / spent / total, four categories with two stats each (points / max, value / cap, tooltips with the per-point value), shift-click for 5 points, Apply sends the absolute allocation (`paragonApply`), Reset asks first (level x 250 gold, `paragonReset`). Below level 1000 it shows "Unlocks at level 1000". The "Info & Bonuses" list gets a Paragon section. The +/- maths are in `paragonmath.lua` (tested by `paragonmath_test.lua`); the server validates everything (server/README.md "Paragon"). Checked in the Linux client at 1280x800.

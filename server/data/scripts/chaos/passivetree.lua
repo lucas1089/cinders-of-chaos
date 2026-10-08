@@ -10,6 +10,11 @@
 --   server -> client  {"action":"sendPoints","data":<free points number>}
 --                     {"action":"sendNodes","data":{"preset":N,"presetsTable":[{"name":".."}],"nodes":[ids],"vocation":"knight"}}
 --                     {"action":"sendMessage","data":{"title":"..","message":".."}}
+--   Paragon track (paragon.lua, ChaosParagon.actions), same opcode:
+--   client -> server  paragonRequest                     -> server paragonState
+--                     paragonApply {alloc:{stat:n}}      -> absolute allocation, validated; saved, applied, paragonState
+--                     paragonReset                       -> costs level*250 gold, then paragonState
+--   server -> client  {"action":"paragonState","data":{unlocked, level, startLevel, total, spent, free, resetCost, categories}}
 --
 -- Tree topology comes from passivetree_data.lua (generated from the client's nodes.lua).
 -- The server validates every save: known ids, no duplicates, every node connected to the root
@@ -185,6 +190,10 @@ ChaosPassiveTree.listeners = ChaosPassiveTree.listeners or {}
 
 local function applyBonuses(player)
 	local bonuses = ChaosPassiveTree.getBonuses(player)
+	-- the Paragon track's percentages go into the same table (keys paragonX), so every effect sums tree + Paragon
+	if ChaosParagon and ChaosParagon.addBonuses then
+		ChaosParagon.addBonuses(player, bonuses)
+	end
 	ChaosPassiveCache[player:getId()] = bonuses
 	for stat, applier in pairs(ChaosPassiveTree.appliers) do
 		applier(player, bonuses[stat] or 0)
@@ -322,6 +331,8 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 	elseif action == "refund" then
 		sendNodes(player)
 		sendPoints(player)
+	elseif ChaosParagon and ChaosParagon.actions and ChaosParagon.actions[action] then
+		ChaosParagon.actions[action](player, msg.data)
 	end
 end
 

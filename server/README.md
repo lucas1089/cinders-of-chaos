@@ -24,6 +24,7 @@ server/
     dungeons.lua  infinitytower.lua  stash.lua  spell_guard.lua (Iron Will damage reduction of the Iron Bellow spell)
     combat_fx.lua (crit / dodge / reflect / elemental weapon hit visuals, ChaosCombatFx)
   src-patches/0001-critical-hit-to-lua.patch   engine: onHealthChange gets `critical` (combat_fx.lua)
+    paragon.lua (Paragon track past the passive tree, see "Paragon")
     shop.lua  shop_config.lua  shop_services.lua  autosell.lua  sell_prices.lua (store, see "Store services")
     bounty.lua  bounty_core.lua  bounty_config.lua  bounty_pool.lua (bounty board; pool from tools/gen_bounty_pool.py)
 ```
@@ -69,7 +70,7 @@ working directory, as with the rest of the base server libs).
 | game_autoloot | `autoloot.lua` | 216 | Window protocol and `!autoloot` / `!autolootclient` talkactions; list lives in the same storages (base 80000) as the base server onDropLoot callback, which does the actual looting. XML talkaction conflict possible (see below). |
 | game_daily | `daily.lua` | 207 | 7-day streak with claim, midnight rollover, `!daily`, optional open on login. Rewards: platinum coins, Chaos and Divine Orbs and a crystal coin, plus a week bonus on day 7 (all or nothing); edit `Chaos.daily` in `chaos_constants.lua`. |
 | game_notifications | `notifications.lua` | 79 out, 151/152 in | `/gmnotify`, accept/decline of a standard TFS party invite, `ChaosNotify.*` sender API. Catacomb start / leave-queue are hooks only; nothing triggers party/catacomb/task/battle pass toasts automatically. |
-| game_passivetree | `passivetree.lua`, `passivetree_data.lua` | 65 | Points, save with full validation (known ids, connected to root, point cap), preset storage, reset for level x 250 gold. Bonuses are computed (`ChaosPassiveTree.getBonuses`) but **not applied to anything**. |
+| game_passivetree | `passivetree.lua`, `passivetree_data.lua`, `passivetree_effects.lua`, `passivetree_keystones.lua`, `paragon.lua` | 65 | Points, save with full validation (known ids, connected to root, point cap), preset storage, reset for level x 250 gold; the bonuses are applied (see "Passive tree effects"). Paragon track past level 1000 on the same opcode (see "Paragon"). |
 | game_dungeons | `dungeons.lua` | 109 | Reads the base server `DUNGEON_SYSTEM` table. Queue, group formation, teleport in, timer, monster-count progress, boss kill, difficulty unlock, speed/flawless challenges, solo/group rankings, teleport out. Difficulty does not change monsters; loot panel is display only. |
 | game_infinitytower | `infinitytower.lua` | 214 | Seasons, points, best floor/time, ranking, milestone claim, `!tower`, `/towerrun` staff test helper. **The tower gameplay does not exist**; a future script reports results with `ChaosTower.recordRun`. Season-end top 3 chests not implemented. |
 | game_stash | `stash.lua` | **110** (new), `!stash` | Deposit by drag, redeem, categories, block list, `!stash all`, DB persistence. Client must be ported first (see below). |
@@ -241,8 +242,8 @@ scripts ignore it) and removes the two `CONST_ME_CRITICAL_DAMAGE` effects in `co
 One passive point every `Chaos.passive.levelsPerPoint` (4) levels above level 8, plus `passiveExtraPoints` from quests/GMs:
 about 248 points at level 1000 against 618 nodes, so the tree cannot be completed and each build has to choose a path.
 On login, a preset holding more nodes than the character's points is emptied for free with a message (this covers
-characters made under the old 1-point-per-level rate). Planned later: a Paragon track that takes the points a character
-earns once the tree's budget is reached, for small capped bonuses.
+characters made under the old 1-point-per-level rate). Past the tree's budget, the Paragon track (below) gives small capped
+bonuses.
 
 ## Passive tree effects (`passivetree_effects.lua`)
 The tree now has an effect: after every save, reset and login the summed node stats are applied.
@@ -262,9 +263,73 @@ The tree now has an effect: after every save, reset and login the summed node st
 
 ## Passive tree keystones (`passivetree_keystones.lua`)
 Two new paths at the edge of the tree, each two notables and a keystone (1 point per node, like every node): **Wrath**
+- **Paragon:** the Paragon track's percentages arrive in the same bonus table and are added here (see "Paragon").
 (619 Gathering Fury, 620 Edge of Ruin, keystone 621; starts at node 600, north-east) and **Resolve** (622 Iron Resolve,
 623 Unbroken Will, keystone 624; starts at node 489, south-west). Both keystones sit about 25 nodes from the start, like the
 divine nodes. A keystone node has one variant per vocation (`knight = {...}`, `paladin = {...}` in the client's `nodes.lua`; the
+## Paragon (`paragon.lua`)
+The long-term goal past the passive tree: the tree budget ends around level 1000 (about 248 of 624 nodes), and from there
+every level gives one Paragon point (`Chaos.paragon.startLevel` = 1000, `pointsPerLevel` = 1, so level 1001 has 1 point).
+Points go into eight small stats in four categories; a stat takes at most `maxPoints`, its cap is `perPoint x maxPoints`:
+
+| Category | Stat (key) | Per point | Max points | Cap | Applied as |
+|---|---|---|---|---|---|
+| Offense | Damage (`damage`) | +0.5% | 40 | +20% | multiplier on damage dealt (every type, not healing), after the tree's own bonuses |
+| Offense | Critical Damage (`critDamage`) | +0.3% | 50 | +15% | added to the tree's `criticalHitAmount` (one condition, sub id 7215) |
+| Defense | Max Health (`health`) | +0.5% | 40 | +20% | added to vitality in the same max health condition (sub id 7220) |
+| Defense | Damage Reduction (`reduction`) | +0.25% | 32 | +8% | added to every absorb storage (977562-977575), with the tree's absorbs, capped at 80% together |
+| Utility | Movement Speed (`speed`) | +0.5% | 20 | +10% | percent of the base speed, added to the tree's flat speed (`changeSpeed` by the difference) |
+| Utility | Max Mana (`mana`) | +0.5% | 40 | +20% | added to spirit in the same max mana condition (sub id 7221) |
+| Fortune | Gold Find (`goldFind`) | +1% | 20 | +20% | extra coins in the kill's corpse (onDropLoot index 2: after the stock loot and the Chaos loot layer, before autoloot) |
+| Fortune | Item Find (`itemFind`) | +0.5% | 40 | +20% | added to the Chaos loot layer's item-find storage (`loot_config.lua` `itemFindStorage`) |
+
+All maxed: 282 points (level 1282). Points past that are kept but have nowhere to go.
+- **Stacking with the tree:** `ChaosPassiveTree.apply` (passivetree.lua) asks `ChaosParagon.addBonuses` to put the Paragon
+  percentages into the tree's summed bonus table (keys `paragonDamage`, `paragonHealth`, ...), and `passivetree_effects.lua` applies
+  the sum once. So the health and mana conditions (fixed sub ids 7220/7221), the crit condition, the absorb storages and the
+  item-find storage each hold tree + Paragon together and never overwrite each other. The tree's own caps (vitality 50, absorbs 80,
+  speed 80) still apply to the tree's share. A health/mana sum with a half percent (Paragon has 0.5% steps) uses the flat parameter
+  with the engine's own formula (current maximum x percent / 100), whole percents keep the percent parameter.
+- Whole numbers: crit damage, damage reduction and item find are engine integers, so the sum (tree + Paragon) is rounded down
+  (8 reduction points = 2%, 1 point = 0.25% = nothing until the 4th). Damage, health, mana, speed and gold find are exact.
+- Gold find: `value x percent / 100` of the coins in the corpse, the fraction as a chance of one more gold coin, paid as crystal /
+  platinum / gold coins. Only coins on the corpse's top level count (where the stock loot puts them).
+- **Allocations only go up.** Taking points back is a reset: level x `Chaos.passive.resetCostPerLevel` (250) gold, the tree's rule
+  (carried gold, `removeMoney`). **Decision:** the store's Passive Tree Reset service resets the tree *and* Paragon for free (one paid
+  respec for every passive point; its description says so). The vocation change resets only the tree: Paragon stats do not depend on
+  the vocation.
+- A character whose level fell below the points it spent is refunded for free at login (like the tree). On every level above 1000
+  the player is told how many points are unspent, and the speed share follows the new base speed.
+- Protocol (opcode 65, documented at the top of `passivetree.lua` and `paragon.lua`): `paragonRequest` -> `paragonState`
+  `{unlocked, level, startLevel, total, spent, free, resetCost, categories = [{key, name, stats = [{key, name, desc, perPoint,
+  maxPoints, points}]}]}`; `paragonApply {alloc = {statKey = points}}` (the absolute allocation; the server checks: unlocked, known
+  keys, whole numbers 0..maxPoints, no stat lower than now, sum <= points owned) -> saved, applied, `paragonState`; `paragonReset` ->
+  costs the gold, `paragonState`. Errors use the tree's `sendMessage` box. The client gets the numbers from the server.
+- Table `chaos_paragon` (`server/sql/chaos.sql`): one row per player and stat key with points > 0. Run once on an existing database:
+
+```sql
+CREATE TABLE IF NOT EXISTS `chaos_paragon` (
+  `player_id` int(11) NOT NULL,
+  `stat` varchar(32) NOT NULL,
+  `points` smallint(5) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`player_id`, `stat`),
+  CONSTRAINT `chaos_paragon_players_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+```
+
+- Client: the Paragon button next to Apply Points / Reset in the passive tree window (`game_passivetree/paragon.lua`,
+  `paragon.otui`, maths in `paragonmath.lua`). Below level 1000 it shows "Unlocks at level 1000". The "Info & Bonuses" list has a
+  Paragon section.
+- `server/tests/paragon_test.lua`: points, caps, validation, the handlers against a mocked db, gold find maths, the login refund and
+  the stacking with the tree in `passivetree_effects.lua`. `client/.../paragonmath_test.lua`: the panel's +/- maths.
+- Measured on the test server (Elite Knight, 120 tree nodes with vitality 22, spirit 12, absorb physical 3, item find 3, crit 5):
+  tree only max health 22055 / mana 6787 / speed base+80 / 1000 fire hit on the dummy 1316 / 1000 physical taken 970. With
+  damage 10, health 20, reduction 8, speed 10, item find 2 points: health 23862 (18078 x 1.32: one condition, 22% + 10%), speed base +
+  80 + 5%, absorb 5, item find 4, fire hit 1382 (x1.05), physical taken 950. Capped damage 40 / crit 50 / reduction 32 + health 21 +
+  mana 1: hit 1579 (x1.20), crit 20, absorb 11, health 18078 x 1.325, mana 6060 x 1.125, taken 890. Gold find 20: the callback added
+  207 gold to 1035 in 40 dragon corpses (20.0%). Reset (gold), the store reset, the forged requests, relog, restart and the login
+  refund were checked too.
+
 generator writes them to `v` in `passivetree_data.lua`, and `ChaosPassiveTree.getBonuses` takes the variant of the player's
 vocation, by the vocation's client id). The server also sends the vocation key with `sendNodes`, so the client shows the same
 variant the server applies (the client's own vocation number did not match: an Elite Knight reported 4, "druid").

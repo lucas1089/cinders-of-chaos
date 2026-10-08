@@ -1,0 +1,165 @@
+// Paragon panel of the passive tree window (paragon.lua). Ornate skin styles from client_chaos_theme.
+ParagonStatRow < UIWidget
+  height: 26
+  phantom: false
+
+  ChaosLabel
+    id: statName
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    width: 140
+    text-auto-resize: false
+
+  ChaosButton
+    id: minusButton
+    anchors.left: statName.right
+    anchors.verticalCenter: parent.verticalCenter
+    size: 24 22
+    padding: 0
+    text: -
+
+  ChaosLabel
+    id: statPoints
+    anchors.left: minusButton.right
+    anchors.verticalCenter: parent.verticalCenter
+    width: 58
+    text-align: center
+    text-auto-resize: false
+
+  ChaosButton
+    id: plusButton
+    anchors.left: statPoints.right
+    anchors.verticalCenter: parent.verticalCenter
+    size: 24 22
+    padding: 0
+    text: +
+
+  ChaosLabel
+    id: statValue
+    anchors.left: plusButton.right
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 10
+    text-align: right
+    text-auto-resize: false
+
+ParagonCategory < ChaosPanelDark
+  height: 88
+  padding: 6 10 6 10
+
+  ChaosTitle
+    id: catTitle
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-align: left
+
+  Panel
+    id: catRows
+    anchors.top: catTitle.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    layout:
+      type: verticalBox
+      spacing: 2
+
+ChaosWindow
+  id: paragonWindow
+  !text: tr('Paragon')
+  size: 470 548
+  anchors.centerIn: parent
+  @onEscape: modules.game_passivetree.closeParagon()
+
+  ChaosLabel
+    id: summary
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-align: center
+    text-auto-resize: false
+    height: 18
+
+  ChaosLabelDim
+    id: hint
+    anchors.top: summary.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    height: 30
+    text-wrap: true
+    text-auto-resize: false
+    text-align: center
+    text: Small, capped bonuses on top of the passive tree. Points come from every level above 1000. Shift-click: 5 points.
+
+  ChaosSeparator
+    id: sep
+    anchors.top: hint.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+
+  Panel
+    id: categories
+    anchors.top: sep.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: applyButton.top
+    margin-top: 6
+    margin-bottom: 8
+    layout:
+      type: verticalBox
+      spacing: 6
+
+  Panel
+    id: lockedPanel
+    anchors.top: sep.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: applyButton.top
+    margin-top: 6
+    margin-bottom: 8
+    visible: false
+
+    ChaosTitle
+      id: lockedTitle
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 120
+      text: Unlocks at level 1000
+
+    ChaosLabelDim
+      id: lockedText
+      anchors.top: lockedTitle.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 10
+      height: 60
+      text-wrap: true
+      text-auto-resize: false
+      text-align: center
+
+  ChaosButton
+    id: applyButton
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    width: 130
+    text: Apply
+    @onClick: modules.game_passivetree.applyParagon()
+
+  ChaosButton
+    id: resetButton
+    anchors.bottom: parent.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    width: 130
+    text: Reset
+    @onClick: modules.game_passivetree.resetParagon()
+
+  ChaosButton
+    id: closeButton
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    width: 130
+    text: Close
+    @onClick: modules.game_passivetree.closeParagon()

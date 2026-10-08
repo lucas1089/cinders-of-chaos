@@ -93,6 +93,11 @@ function init()
 	return 
 end
 
+-- the tree window (paragon.lua puts the Paragon panel into it)
+function getTreeWindow()
+	return window
+end
+
 function isVisible()
     return window and window:isVisible()
 end
@@ -516,6 +521,8 @@ function onExtendedOpcode(protocol, code, buffer)
 		sendMessageBox(data.title, data.message)
 	elseif action == "sendNodes" then
 		updateNodes(data)
+	elseif action == "paragonState" then
+		onParagonState(data) -- paragon.lua
 	end
 
 	return 
@@ -1094,11 +1101,31 @@ function calculateStats()
 		label:setText(v)
 	end
 
+	-- Paragon track (paragon.lua): the applied bonuses, added on top of the tree's by the server
+	local paragon = getParagonState and getParagonState()
+	if paragon then
+		label = g_ui.createWidget("InfoLabel", labels)
+		label:setText("---------------- PARAGON ----------------")
+		local lines = ParagonMath.bonusLines(paragon)
+		if not paragon.unlocked then
+			lines = {string.format("Unlocks at level %d.", paragon.startLevel or 1000)}
+		elseif #lines == 0 then
+			lines = {string.format("%d Paragon points to spend (Paragon button).", paragon.free or 0)}
+		elseif (paragon.free or 0) > 0 then
+			table.insert(lines, string.format("%d unspent Paragon points.", paragon.free))
+		end
+		for _, line in ipairs(lines) do
+			label = g_ui.createWidget("InfoLabel", labels)
+			label:setText(line)
+		end
+	end
+
 	return 
 end
 
 function destroy()
 	serverVocation = nil -- the next character may have another vocation
+	destroyParagon() -- paragon.lua
 	if window then
 		view = nil
 		decoView = nil
@@ -1127,6 +1154,7 @@ function show()
 
 	sendAction("requestPoints")
 	sendAction("requestNodesUnlocked")
+	sendAction("paragonRequest")
 	window:show()
 	window:raise()
 	window:focus()
@@ -1145,6 +1173,7 @@ function hide()
 	end
 
 	window.presets:hide()
+	closeParagon()
 	window:hide()
 
 	if messageBox then

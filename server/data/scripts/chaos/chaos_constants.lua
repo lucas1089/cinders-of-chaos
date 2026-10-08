@@ -80,6 +80,7 @@ Chaos.tables = {
 	stash = "chaos_stash",
 	stashBlock = "chaos_stash_block",
 	passiveTree = "chaos_passive_tree",
+	paragon = "chaos_paragon", -- Paragon track allocations (paragon.lua)
 	dungeonProgress = "chaos_dungeon_progress",
 	dungeonRuns = "chaos_dungeon_runs",
 	dungeonRunPlayers = "chaos_dungeon_run_players",
@@ -131,9 +132,31 @@ Chaos.passive = {
 	rootNode = 1,
 	startLevel = 8, -- level 8 has no points; points are counted from here
 	levelsPerPoint = 4, -- 1 point every 4 levels: ~248 at level 1000 for 618 nodes, so a build has to choose
-	-- (planned later: a Paragon track that takes points once the tree is full)
+	-- past the tree budget: the Paragon track (Chaos.paragon below, paragon.lua)
 	maxPresets = 6,
 	resetCostPerLevel = 250 -- gold per level; the client text promises "level x 250"
+}
+
+-- Paragon track (paragon.lua): 1 point per level above startLevel, spent on small capped stats. A stat's cap is
+-- perPoint x maxPoints. Paragon bonuses are added on top of the passive tree's by passivetree_effects.lua.
+-- The reset costs level x Chaos.passive.resetCostPerLevel gold, like the tree's.
+Chaos.paragon = {
+	startLevel = 1000, -- the level where the tree budget (about 248 points) ends; points from level 1001 on
+	pointsPerLevel = 1,
+	categories = {
+		{key = "offense", name = "Offense", stats = {
+			{key = "damage", name = "Damage", perPoint = 0.5, maxPoints = 40, desc = "Damage dealt (every damage type, not healing)"},
+			{key = "critDamage", name = "Critical Damage", perPoint = 0.3, maxPoints = 50, desc = "Extra damage of critical hits"}}},
+		{key = "defense", name = "Defense", stats = {
+			{key = "health", name = "Max Health", perPoint = 0.5, maxPoints = 40, desc = "Maximum health"},
+			{key = "reduction", name = "Damage Reduction", perPoint = 0.25, maxPoints = 32, desc = "Less damage taken from every type"}}},
+		{key = "utility", name = "Utility", stats = {
+			{key = "speed", name = "Movement Speed", perPoint = 0.5, maxPoints = 20, desc = "Of your base speed"},
+			{key = "mana", name = "Max Mana", perPoint = 0.5, maxPoints = 40, desc = "Maximum mana"}}},
+		{key = "fortune", name = "Fortune", stats = {
+			{key = "goldFind", name = "Gold Find", perPoint = 1.0, maxPoints = 20, desc = "More gold coins in your kills' corpses"},
+			{key = "itemFind", name = "Item Find", perPoint = 0.5, maxPoints = 40, desc = "Chaos loot: extra rolls, currency, uniques, rarity"}}}
+	}
 }
 
 Chaos.stash = {

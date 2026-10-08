@@ -16,6 +16,11 @@
 --   * experience: EventCallback onGainExperience
 --   * loot / rarity loot: the item-find storage that loot.lua reads
 --   * speed: Creature:changeSpeed by the difference to what was applied before
+-- Paragon (paragon.lua) adds its percentages to the same bonus table (keys paragonX) and they are summed here with the
+-- tree's, never applied on their own: damage (a multiplier after the tree's), crit damage (+ criticalHitAmount, one
+-- condition), max health / mana (+ vitality / spirit, one condition each, sub ids 7220 / 7221), damage reduction
+-- (+ every absorb storage), item find (+ the item-find storage), speed (% of base speed + the tree's flat speed).
+-- Gold find is paragon.lua's own onDropLoot.
 -- All numbers that turn a node value into a game value are in cfg below. Not run on a server.
 
 if not Chaos then
@@ -120,6 +125,16 @@ function ChaosPassiveDamagePercent(bonuses, combatType)
 	return clamp(pct, 0, cfg.maxDamagePercent)
 end
 
+-- Paragon damage: every damage type, not healing (multiplies after the tree's own bonuses)
+function ChaosParagonDamageMultiplier(bonuses, combatType)
+	local pct = bonuses.paragonDamage or 0
+	if pct <= 0 or combatType == COMBAT_HEALING or combatType == COMBAT_NONE then
+		return 1
+	end
+	return 1 + pct / 100
+end
+
+-- tree absorb + Paragon damage reduction (all types), whole percent: the absorb event reads integer storages
 function ChaosPassiveAbsorbPercent(bonuses, statName)
 	local v = bonuses[statName] or 0
 	for _, name in ipairs(ELEMENT_ABSORB) do
@@ -127,7 +142,8 @@ function ChaosPassiveAbsorbPercent(bonuses, statName)
 			v = v + (bonuses.absorbAllElements or 0)
 		end
 	end
-	return clamp(v, 0, cfg.maxAbsorb)
+	v = v + (bonuses.paragonReduction or 0)
+	return math.floor(clamp(v, 0, cfg.maxAbsorb) + 1e-6)
 end
 
 function ChaosPassiveExperienceMultiplier(bonuses)
@@ -135,11 +151,30 @@ function ChaosPassiveExperienceMultiplier(bonuses)
 end
 
 function ChaosPassiveItemFind(bonuses)
-	return math.floor((bonuses.loot or 0) * cfg.lootPerPoint + (bonuses.rarityLoot or 0) * cfg.rarityLootPerPoint)
+	return math.floor((bonuses.loot or 0) * cfg.lootPerPoint + (bonuses.rarityLoot or 0) * cfg.rarityLootPerPoint
+		+ (bonuses.paragonItemFind or 0) + 1e-6)
 end
 
 function ChaosPassiveSpeed(bonuses)
 	return clamp(math.floor((bonuses.speed or 0) * cfg.speedPerPoint), 0, cfg.maxSpeed)
+end
+
+-- Paragon speed: percent of the base speed (vocation base + 2 per level), added to the tree's flat speed
+function ChaosParagonSpeed(bonuses, baseSpeed)
+	return math.floor((baseSpeed or 0) * (bonuses.paragonSpeed or 0) / 100 + 1e-6)
+end
+
+-- max health / mana percent: tree vitality / spirit (capped) + Paragon health / mana
+local PARAGON_PERCENT = {vitality = "paragonHealth", spirit = "paragonMana"}
+function ChaosPassiveMaxPercent(bonuses, stat)
+	return clamp(bonuses[stat] or 0, 0, cfg.charStatCap[stat]) + (bonuses[PARAGON_PERCENT[stat]] or 0)
+end
+
+-- condition stats that Paragon adds to (one condition for both, so neither overwrites the other)
+local PARAGON_CONDITION = {criticalHitAmount = "paragonCritDamage"}
+function ChaosPassiveConditionValue(bonuses, stat)
+	local v = (bonuses[stat] or 0) + (bonuses[PARAGON_CONDITION[stat] or ""] or 0)
+	return math.floor(v + 1e-6)
 end
 
 -- ---------------------------------------------------------------- applying
@@ -155,21 +190,29 @@ local function setCondition(player, stat, value)
 	end
 end
 
--- vitality / spirit as % max health / mana (sub ids next to the skill conditions)
+-- vitality / spirit (+ Paragon health / mana) as % max health / mana (sub ids next to the skill conditions).
+-- One condition per stat holds the tree's and the Paragon share together. Whole percents use the engine's percent
+-- parameter; a fractional sum (Paragon has 0.5% steps) uses the flat parameter with the same formula the engine uses
+-- for the percent one (the maximum at the moment the condition starts, without this condition, x percent / 100).
 local PERCENT = {
-	vitality = {CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT, 7220},
-	spirit = {CONDITION_PARAM_STAT_MAXMANAPOINTSPERCENT, 7221},
+	vitality = {CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT, 7220, CONDITION_PARAM_STAT_MAXHITPOINTS, "getMaxHealth"},
+	spirit = {CONDITION_PARAM_STAT_MAXMANAPOINTSPERCENT, 7221, CONDITION_PARAM_STAT_MAXMANAPOINTS, "getMaxMana"},
 }
 
 local function applyCharStats(player, bonuses)
 	for stat, info in pairs(PERCENT) do
-		local value = math.floor(clamp(bonuses[stat] or 0, 0, cfg.charStatCap[stat]))
+		local value = ChaosPassiveMaxPercent(bonuses, stat)
 		player:removeCondition(CONDITION_ATTRIBUTES, CONDITIONID_DEFAULT, info[2], true)
 		if value > 0 then
 			local c = Condition(CONDITION_ATTRIBUTES, CONDITIONID_DEFAULT)
 			c:setTicks(-1)
 			c:setParameter(CONDITION_PARAM_SUBID, info[2])
-			c:setParameter(info[1], 100 + value)
+			local whole = math.floor(value + 1e-6)
+			if math.abs(value - whole) < 1e-6 then
+				c:setParameter(info[1], 100 + whole)
+			else
+				c:setParameter(info[3], math.floor(player[info[4]](player) * value / 100))
+			end
 			player:addCondition(c)
 		end
 	end
@@ -213,6 +256,15 @@ function ChaosPassiveStatMultiplier(bonuses, combatType, origin)
 	return m
 end
 
+-- tree flat speed + Paragon percent of the base speed
+local function totalSpeed(player, bonuses)
+	local speed = ChaosPassiveSpeed(bonuses)
+	if (bonuses.paragonSpeed or 0) > 0 then
+		speed = speed + ChaosParagonSpeed(bonuses, player:getBaseSpeed())
+	end
+	return speed
+end
+
 local function applyAll(player, bonuses)
 	local id = player:getId()
 	local state = applied[id] or {speed = 0}
@@ -220,7 +272,7 @@ local function applyAll(player, bonuses)
 	ChaosPassiveCache[id] = bonuses
 
 	for stat in pairs(CONDITIONS) do
-		setCondition(player, stat, math.floor(bonuses[stat] or 0))
+		setCondition(player, stat, ChaosPassiveConditionValue(bonuses, stat))
 	end
 	for stat, info in pairs(ABSORB) do
 		player:setStorageValue(info[2], ChaosPassiveAbsorbPercent(bonuses, stat))
@@ -230,13 +282,27 @@ local function applyAll(player, bonuses)
 		player:setStorageValue(find, ChaosPassiveItemFind(bonuses))
 	end
 	applyCharStats(player, bonuses)
-	local speed = ChaosPassiveSpeed(bonuses)
+	local speed = totalSpeed(player, bonuses)
 	if speed ~= state.speed then
 		player:changeSpeed(speed - state.speed)
 		state.speed = speed
 	end
 end
 ChaosPassiveTree.listeners[#ChaosPassiveTree.listeners + 1] = applyAll
+
+-- the Paragon speed share follows the base speed, which grows with every level (paragon.lua calls this on level up)
+function ChaosPassiveRefreshSpeed(player)
+	local id = player:getId()
+	local state, bonuses = applied[id], ChaosPassiveCache[id]
+	if not state or not bonuses then
+		return
+	end
+	local speed = totalSpeed(player, bonuses)
+	if speed ~= state.speed then
+		player:changeSpeed(speed - state.speed)
+		state.speed = speed
+	end
+end
 
 -- ---------------------------------------------------------------- damage dealt / healing
 local dealt = CreatureEvent("ChaosPassiveDealt")
@@ -247,7 +313,9 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		local bonuses = ChaosPassiveCache[attacker:getId()]
 		if bonuses then
 			local m1 = (1 + ChaosPassiveDamagePercent(bonuses, primaryType) / 100) * ChaosPassiveStatMultiplier(bonuses, primaryType, origin)
+				* ChaosParagonDamageMultiplier(bonuses, primaryType)
 			local m2 = (1 + ChaosPassiveDamagePercent(bonuses, secondaryType) / 100) * ChaosPassiveStatMultiplier(bonuses, secondaryType, origin)
+				* ChaosParagonDamageMultiplier(bonuses, secondaryType)
 			if m1 ~= 1 then
 				primaryDamage = scale(primaryDamage, m1)
 			end

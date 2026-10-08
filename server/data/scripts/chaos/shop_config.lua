@@ -98,7 +98,7 @@ return {
 				{kind = "service", service = "skullRemover", icon = 2229, cost = 150, name = "Frag & Skull Remover",
 					description = "Clears your unjustified kills and removes a red or black skull. Not usable in combat."},
 				{kind = "service", service = "passiveReset", icon = 18559, cost = 60, name = "Passive Tree Reset",
-					description = "Refunds every passive point at once, without the gold cost of the normal reset."}
+					description = "Refunds every passive tree and Paragon point at once, without the gold cost of the normal resets."}
 			}
 		},
 		{
