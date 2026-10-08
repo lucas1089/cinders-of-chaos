@@ -80,7 +80,9 @@ jobs:
   engine:
     name: Engine (MSVC, vcpkg x64-windows)
     needs: server
-    runs-on: windows-2025
+    # Visual Studio 2022 (toolset v143): the Boost 1.83 ports build with b2, which does not know newer toolsets
+    # (on the Visual Studio 2026 image it names the libraries vc140 and cannot find them)
+    runs-on: windows-2022
     timeout-minutes: 150
     env:
       VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\vcpkg_cache
@@ -115,9 +117,9 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ${{ github.workspace }}\vcpkg_cache
-          key: vcpkg-chaos-engine-${{ env.ENGINE_VCPKG_BASELINE }}-${{ github.run_id }}
+          key: vcpkg-chaos-engine-vs2022-${{ env.ENGINE_VCPKG_BASELINE }}-${{ github.run_id }}
           restore-keys: |
-            vcpkg-chaos-engine-${{ env.ENGINE_VCPKG_BASELINE }}-
+            vcpkg-chaos-engine-vs2022-${{ env.ENGINE_VCPKG_BASELINE }}-
 
       - name: Build
         shell: cmd
@@ -145,7 +147,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ${{ github.workspace }}\vcpkg_cache
-          key: vcpkg-chaos-engine-${{ env.ENGINE_VCPKG_BASELINE }}-${{ github.run_id }}
+          key: vcpkg-chaos-engine-vs2022-${{ env.ENGINE_VCPKG_BASELINE }}-${{ github.run_id }}
 
       - name: Collect the exe and its DLLs
         shell: bash
