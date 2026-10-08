@@ -140,6 +140,11 @@ for free, at the migration.
   wield, counter stance, Bushido stacks (`server/data/scripts/chaos/thief_combat.lua`). Spells, numbers and the balance measurement
   are in `server/data/spells/README.md` ("Thief line"). Shurikens are the base server's throwing star (2399) and assassin star (7368),
   open to every vocation already; the shuriken spells use them when they are in hand.
+- **Outfits** (look types 1505-1510, from a third donor sprite set, see `server/data/monster/CUSTOM_MONSTERS.md`): Ninja gets
+  Shadow Ninja, Crimson Ninja and Masked Ninja (colourable); Samurai gets Oni Samurai, Ronin and Dark Samurai. Ascending gives the
+  class's three and puts on the first; characters already in the class get them at their next login (look unchanged). They stay
+  after a class change. List in `Chaos.classes.outfits` (`chaos_constants.lua`), code in `ascension.lua`
+  (`giveClassOutfits`), outfits.xml entries for both sexes by `server/tools/install_outfits.py` (install step `outfits`).
 
 Limits of phase 1:
 - Stealth is scripted: monsters drop the player and cannot attack it while it lasts, but area attacks aimed at someone else still hit

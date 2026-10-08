@@ -20,6 +20,7 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   lategame     tools/late_game.py                experience stages in config.lua + late game spawns (README "Install" 5)
   crafting     tools/install_crafting.py         crafting orb items and the reroll guard (README "Crafting")
   darktiles    tools/install_dark_tiles.py       the dark tile set in items.otb / items.xml (README "Dark tile set")
+  outfits      tools/install_outfits.py          the Ninja / Samurai class outfits in outfits.xml (docs/CLASSES.md)
   monsters     tools/register_monsters.py        every folder under data/monster/monsters/chaos (world bosses, goblin, ...)
   spells       tools/register_spells.py          the Chaos spells (README "Install" 3)
                CLASS HOOK: every tools/install_class_*.py (sorted), called as `install_class_X.py DATA_DIR [--dry-run]`;
@@ -55,7 +56,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'vocations', 'events', 'weapons', 'lategame', 'crafting', 'darktiles', 'monsters', 'spells', 'autoloot', 'sql']
+STEPS = ['files', 'lib', 'vocations', 'events', 'weapons', 'lategame', 'crafting', 'darktiles', 'outfits', 'monsters', 'spells', 'autoloot', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -227,6 +228,10 @@ def step_crafting(server, data, ctx):
 
 def step_darktiles(server, data, ctx):
     return tool_result(run_tool([tool('install_dark_tiles.py'), data], 'install_dark_tiles.py'))
+
+
+def step_outfits(server, data, ctx):
+    return tool_result(run_tool([tool('install_outfits.py'), data], 'install_outfits.py'))
 
 
 def step_monsters(server, data, ctx):

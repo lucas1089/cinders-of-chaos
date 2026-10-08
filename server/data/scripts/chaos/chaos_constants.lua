@@ -590,6 +590,15 @@ Chaos.classes = {
 		oldNames = {[1] = "Sorcerer", [2] = "Druid", [3] = "Paladin", [4] = "Knight", [5] = "Master Sorcerer",
 			[6] = "Elder Druid", [7] = "Royal Paladin", [8] = "Elite Knight", [9] = "Illusionist", [10] = "Arch Illusionist"}
 	},
+	-- class outfits (look types 1505-1510 of the client pair, client/tools/sprites/import_outfits.py; added to
+	-- data/XML/outfits.xml for both sexes by server/tools/install_outfits.py): ascending to the class gives them,
+	-- and they stay when the character changes class again. Names must match outfits.xml.
+	outfits = {
+		[12] = {{lookType = 1505, name = "Shadow Ninja"}, {lookType = 1506, name = "Crimson Ninja"},
+			{lookType = 1507, name = "Masked Ninja"}},
+		[13] = {{lookType = 1508, name = "Oni Samurai"}, {lookType = 1509, name = "Ronin"},
+			{lookType = 1510, name = "Dark Samurai"}}
+	},
 	storage = {
 		dualWield = 7100200, -- 1 while the character may hold an off-hand sword (read by server/src-patches/0002)
 		ascended = 7100201, -- os.time of the ascension (information only)

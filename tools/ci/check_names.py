@@ -3,7 +3,7 @@
 base-patches/ is skipped: its context lines are copied from the client tree and cannot be edited."""
 import os, re, subprocess, sys
 
-DENY = re.compile(r'hellgrave|exodus|evolisca|black ?talon|magic ?heard|luminaris|zerion|fonticak|\bastra|archlight|'
+DENY = re.compile(r'hellgrave|tenkaiser|drakantos|exodus|evolisca|black ?talon|magic ?heard|luminaris|zerion|fonticak|\bastra|archlight|'
                   r'demolidores|crystalserver|fortibia|balrog|rubinot|medivia|ravendawn|otservbr|mordragor', re.I)
 SKIP = ('client/base-patches/', 'tools/ci/check_names.py')
 files = subprocess.check_output(['git', 'ls-files'], text=True).split('\n')

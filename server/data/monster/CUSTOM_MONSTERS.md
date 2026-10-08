@@ -35,6 +35,15 @@ Adaptations (`adapt_report.txt`): 147 changes, mostly the donor server's corpse 
   `python3 -I client/tools/sprites/import_outfits.py --src-dat <8.60 donor Tibia.dat> --src-spr <8.60 donor Tibia.spr> --ours-dat <pair after set_multiuse>/Tibia.dat --ours-spr <same>/Tibia.spr --looks 1719,1718,1656 --expect-first 1502 --out-dir out/monsters`
   (`--expect-first` stops the run when the input pair does not have exactly 1501 outfits). It verifies its output: every
   sprite slot and frame of the three outfits pixel-identical to the donor, all old entries byte-identical.
+- **Ninja and Samurai class outfits: 1505-1510** (docs/CLASSES.md). Donor: a third 10.98 sprite set (dat 0x42A3, spr
+  0x57BBD603) whose items carry flags datspr.py does not know, so `client/tools/sprites/donor_subset.py` first cuts a small dat
+  with just the wanted outfits (same numbering), then `import_outfits.py` appends them after the three monster outfits:
+  `python3 -I client/tools/sprites/donor_subset.py <donor C>.dat out/donorC.dat 4212,4220,3482,4234,4206,1584`, then
+  `python3 -I client/tools/sprites/import_outfits.py --src-dat out/donorC.dat --src-spr <donor C>.spr --ours-dat <pair with 1504 outfits>/Tibia.dat --ours-spr <same>/Tibia.spr --looks 4212,4220,3482,4234,4206,1584 --expect-first 1505 --out-dir out/classes`.
+  The chain is now merge_outfits.py -> gen_effects.py -> set_multiuse.py -> import_outfits.py (monsters) ->
+  donor_subset.py + import_outfits.py (class outfits) -> gen_dark_tiles.py. Verified: the six outfits pixel-identical to the
+  donor in every group, phase and direction, all old entries byte-identical, the rebuild reproduces the same md5s
+  (dat 6266a15d49e304b6c05c01ecb458d00a, spr 4c66dff2ef6a48870e58d5c30c45707d); checked in the test client (Shadow Ninja worn).
 - Checked in the test client (merged pair: 1501 outfits + the Chaos effects), for the late game set: the 17 spawned monsters
   render with their art. Dawn Strayer (lookType 1036) draws as a broken striped image, so it is not spawned; Cunning Hyaena
   (1051) draws a green tentacled creature that does not read as a hyaena, also left out.

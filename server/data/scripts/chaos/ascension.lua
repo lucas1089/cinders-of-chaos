@@ -78,10 +78,41 @@ function C.applyVocation(player, newVoc)
 	C.afterVocationChange(player)
 end
 
+-- the class's outfits (Chaos.classes.outfits) for both sexes; with wear, the first one is put on when the character had
+-- none of them yet (on a class change; at login only the unlock, the look stays the player's)
+function C.giveClassOutfits(player, wear)
+	local list = Chaos.classes.outfits and Chaos.classes.outfits[player:getVocation():getId()]
+	if not list then
+		return 0
+	end
+	local added, hadOne, names = 0, false, {}
+	for _, o in ipairs(list) do
+		names[#names + 1] = o.name
+		if player:hasOutfit(o.lookType) then
+			hadOne = true
+		else
+			player:addOutfit(o.lookType)
+			if player:hasOutfit(o.lookType) then
+				added = added + 1
+			end
+		end
+	end
+	if added > 0 then
+		if wear and not hadOne then
+			local look = player:getOutfit()
+			look.lookType = list[1].lookType
+			player:setOutfit(look)
+		end
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "New outfits: " .. table.concat(names, ", ") .. ".")
+	end
+	return added
+end
+
 -- after any vocation change (ascension, the free switch, the store's change): the Ninja's off-hand rule, companions
 -- go when the character is no Beastmaster any more, and the client learns the vocation without a relog
 function C.afterVocationChange(player)
 	C.syncDualWield(player)
+	C.giveClassOutfits(player, true)
 	if ChaosBeastmaster and ChaosBeastmaster.dismissIfNotBeastmaster then
 		ChaosBeastmaster.dismissIfNotBeastmaster(player)
 	end
@@ -155,3 +186,11 @@ function talk.onSay(player, words, param)
 end
 talk:separator(" ")
 talk:register()
+
+-- characters that were Ninja or Samurai before the class outfits existed get them at their next login
+local outfitLogin = CreatureEvent("ChaosClassOutfitsLogin")
+function outfitLogin.onLogin(player)
+	pcall(C.giveClassOutfits, player, false)
+	return true
+end
+outfitLogin:register()
