@@ -38,7 +38,7 @@ Estimated today: ~155 h to level 1000 for a sorcerer, ~285 h for a knight or pal
 |---|---|---|---|
 | 8 | Rifts / map devices: consumable keys open a timed instance with random modifiers; higher tiers drop better keys | todo | reuse the dungeon instance code and the monster tiers |
 | 9 | Paragon track for leftover passive points ("option 2") | todo | small infinite bonuses once the tree budget is spent |
-| 10 | Bounty board: daily rotating "kill X in Y" contracts paying orbs | todo | cheap content that spreads players over the map |
+| 10 | Bounty board: daily rotating "kill X in Y" contracts paying orbs | in progress | cheap content that spreads players over the map |
 | 11 | Crafting orbs: add-a-modifier and remove-a-modifier orbs next to Chaos/Divine, plus a crafting bench | todo | item modifier code in `server/data/lib` |
 | 12 | Seasons / ladders: fresh-start season characters, season uniques, per-vocation highscores, cosmetic carry-over | todo | |
 
