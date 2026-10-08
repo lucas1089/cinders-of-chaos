@@ -432,19 +432,11 @@ local function cleanse(player)
 	end
 end
 
--- full health. setHealth clamps to the base maximum (without item / buff bonuses) on this engine, and its
--- Creature:addHealth takes (damageType, value); the standard TFS addHealth(value) ignores a string first argument.
--- Both calls are harmless where they do not apply.
+-- full health. setHealth clamps to the base maximum (without item / buff bonuses) on this engine, so Chaos.heal tops
+-- up the rest.
 local function heal(player)
 	player:setHealth(player:getMaxHealth())
-	local missing = player:getMaxHealth() - player:getHealth()
-	if missing > 0 then
-		player:addHealth("healing", missing)
-	end
-	missing = player:getMaxHealth() - player:getHealth()
-	if missing > 0 then
-		player:addHealth(missing)
-	end
+	Chaos.heal(player, player:getMaxHealth() - player:getHealth())
 	player:addMana(player:getMaxMana() - player:getMana())
 end
 

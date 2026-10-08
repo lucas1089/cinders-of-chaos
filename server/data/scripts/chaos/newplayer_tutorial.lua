@@ -513,13 +513,7 @@ function health.onHealthChange(creature, attacker, primaryDamage, primaryType, s
 	addEvent(function()
 		local p = Player(cid)
 		if p then
-			-- this engine's Creature:addHealth takes (damageType, value); the stock one (value) ignores a string
-			local missing = p:getMaxHealth() - p:getHealth()
-			p:addHealth("healing", missing)
-			missing = p:getMaxHealth() - p:getHealth()
-			if missing > 0 then
-				p:addHealth(missing)
-			end
+			Chaos.heal(p, p:getMaxHealth() - p:getHealth())
 			p:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)
 			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, "The island will not let you die: you are healed. Use your potions and spells in the real world!")
 		end
