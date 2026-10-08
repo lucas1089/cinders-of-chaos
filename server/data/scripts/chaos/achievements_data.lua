@@ -25,6 +25,7 @@
 --   kills_magic, kills_rare, kills_legendary, kills_tiered,          kills (kill event + monster_tiers.lua)
 --   ambush_kills, party_kills, goblin_kills, goblin_escaped, rat_500, witching_legendary, deaths
 --   wb_kills, wb_top, wb_kaelgor, wb_skaldra, wb_rotmother, wb_nyxareth, wb_vharok      world boss rewards
+--   wb_heal_top, wb_tank_top, wb_role_podium                         world boss roles (worldboss.lua distribute)
 --   rift_tier, rift_runs, rift_flawless, rift_three, rift_mod_<modifier key>           sealed rifts
 --   bounty_done, bounty_weeks                                        bounty board (retroactive from chaos_bounty)
 --   unique_found, rarity_max, orbs_used, orb_exalted, mods_max       loot and the crafting bench
@@ -140,6 +141,12 @@ return {
 			stat = "wb_kills", target = 10, reward = {items = orbs(5, 2)}},
 		{id = "wb_50", cat = "bosses", name = "Eternal Raider", desc = "Be rewarded at 50 world boss kills.", points = 50,
 			stat = "wb_kills", target = 50},
+		{id = "wb_heal_top_1", cat = "bosses", name = "Lifeline", desc = "Heal the most of everyone at a world boss kill.",
+			points = 25, stat = "wb_heal_top", title = "Lifeline"},
+		{id = "wb_tank_top_1", cat = "bosses", name = "Immovable", desc = "Take the most boss damage and live, at a world boss kill.",
+			points = 25, stat = "wb_tank_top", title = "Immovable"},
+		{id = "wb_role_5", cat = "bosses", name = "Pillar of the Raid", desc = "Place in the top 3 for healing or tanking at 5 world boss kills.",
+			points = 50, stat = "wb_role_podium", target = 5, reward = {items = orbs(5, 2)}},
 
 		-- ------------------------------------------------------------------ Rifts
 		{id = "rift_t1", cat = "rifts", name = "Through the Breach", desc = "Seal a rift.", points = 10, stat = "rift_tier", target = 1},

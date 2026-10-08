@@ -8,8 +8,10 @@
 --        not ours), a forcefield (item 1387, action id aid.enter) appears next to every temple, broadcast + toast
 --     -> after gatherSeconds the boss appears in the middle of the arena
 --     -> phases at health thresholds: adds, enrage (a periodic pulse around the boss)
---     -> boss dies: rewards for every eligible damage dealer (not only the corpse owner), broadcast; or the fight
---        time runs out / /worldboss stop: the boss leaves, broadcast
+--     -> boss dies: rewards for every eligible participant (not only the corpse owner) by contribution score
+--        (damage + healing and tanking at configured weights), extra rewards and a role title for the top 3 of each
+--        category (damage, healing, tanking), broadcast with the three top 3 lists; or the fight time runs out /
+--        /worldboss stop: the boss leaves, broadcast
 --     -> town portals are removed, after exitDelaySeconds everybody still inside goes to their temple, the arena is
 --        cleaned (monsters, corpses, loose items; walls, decor and the arena portals stay)
 --   The lobby is protected by script (no combat in it, no PvP in lobby or arena unless allowPvp): dynamic tiles cannot
@@ -19,16 +21,25 @@
 -- already cannot attack players), but they get no participation reward unless mcReward = true. A character counts
 -- as multi-clienting if it was at entry or at any arena check (every 3 s) during the event.
 --
--- Not run on a server. Assumed engine API (TFS 1.4 as in the base server source): Game.createTile(pos, true),
+-- Roles (Chaos.worldBoss.roles, server/README.md "World bosses"): damage on the boss (healthchange on the boss);
+-- healing of other players inside the arena (healthchange registered on every player inside: the engine passes the
+-- healer as attacker for spells, runes, potions used on someone and doTargetCombat heals; Chaos.heal / addHealth
+-- has no origin and is not attributed), capped at the missing health and at the boss damage the target was not
+-- healed for yet; tanking: damage from the boss and its adds the player survived, capped per hit, x offTargetWeight when
+-- the attacker was not targeting the player, only while the player is active (attacked or healed within
+-- activeSeconds).
+--
+-- Assumed engine API (TFS 1.4 as in the base server source): Game.createTile(pos, true),
 -- Game.createItem(id, n, pos), Item:setActionId/getActionId, Tile:getGround/getItemById/getItems/getHouse/hasProperty,
 -- Game.createMonster(name, pos, false, true), Creature:setMaxHealth/addHealth, CreatureEvent healthchange/death/login,
 -- MoveEvent stepin with aid, EventCallback onTargetCombat, GlobalEvent onThink/onStartup, doTargetCombatHealth,
 -- Player:getInbox()/addItemEx/getBankBalance/setBankBalance, Game.createItemWithRarity, Game.getTowns.
--- The pure parts (layout, schedule, rotation, shares, rewards, phases) are tested in tests/worldboss_test.lua.
+-- The pure parts (layout, schedule, rotation, shares, roles, rewards, phases) are tested in tests/worldboss_test.lua.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+dofile("data/lib/chaos_dark_paint.lua")
 
 ChaosWorldBoss = ChaosWorldBoss or {}
 local W = ChaosWorldBoss
@@ -154,29 +165,123 @@ function W.duePhases(phases, done, fraction)
 	return list
 end
 
--- damage = {[guid] = {damage = n, name = s}}; excluded = {[guid] = true}
--- -> sorted list {guid, name, damage, share, rank} of the eligible players, total eligible damage
-function W.computeShares(damage, maxHealth, minPercent, excluded)
+-- Contribution score of one participant: damage + healing x healWeight + tanking x tankWeight
+-- (weights = Chaos.worldBoss.roles; nil = damage only, the rule before the healer/tank roles).
+function W.score(e, weights)
+	if not weights then
+		return e.damage or 0
+	end
+	return (e.damage or 0) + (e.healing or 0) * (weights.healWeight or 0) + (e.tanking or 0) * (weights.tankWeight or 0)
+end
+
+local function seqOf(e, key)
+	return (e.seq and e.seq[key]) or 0
+end
+
+-- value desc; equal values: the one who reached it first (lower seq), then the lower guid
+local function byValue(key)
+	return function(a, b)
+		local va, vb = a[key] or 0, b[key] or 0
+		if va ~= vb then
+			return va > vb
+		end
+		local sa, sb = seqOf(a, key), seqOf(b, key)
+		if sa ~= sb then
+			return sa < sb
+		end
+		return a.guid < b.guid
+	end
+end
+
+-- stats = {[guid] = {name, damage, healing?, tanking?, seq? = {damage = n, ...}}}; excluded = {[guid] = true}
+-- -> list of the eligible players sorted by score: {guid, name, damage, healing, tanking, score, share, scoreRank,
+--    rank}, total eligible score. Eligible: score >= minPercent % of the boss max health (anti-AFK), not excluded.
+--    share = score / total. rank = place by damage among the eligible (nil without damage; achievements.lua reads
+--    rank 1 as "dealt the most damage"), scoreRank = place by score.
+function W.computeShares(stats, maxHealth, minPercent, excluded, weights)
 	excluded = excluded or {}
-	local minDamage = (maxHealth or 0) * (minPercent or 0) / 100
+	local minScore = (maxHealth or 0) * (minPercent or 0) / 100
 	local list, total = {}, 0
-	for guid, e in pairs(damage) do
-		if not excluded[guid] and e.damage > 0 and e.damage >= minDamage then
-			list[#list + 1] = {guid = guid, name = e.name, damage = e.damage}
-			total = total + e.damage
+	for guid, e in pairs(stats) do
+		local score = W.score(e, weights)
+		if not excluded[guid] and score > 0 and score >= minScore then
+			list[#list + 1] = {guid = guid, name = e.name, damage = e.damage or 0, healing = e.healing or 0,
+				tanking = e.tanking or 0, score = score, seq = e.seq}
+			total = total + score
 		end
 	end
 	table.sort(list, function(a, b)
-		if a.damage ~= b.damage then
-			return a.damage > b.damage
+		if a.score ~= b.score then
+			return a.score > b.score
 		end
 		return a.guid < b.guid
 	end)
+	local dealers = {}
 	for i, e in ipairs(list) do
-		e.share = total > 0 and e.damage / total or 0
+		e.share = total > 0 and e.score / total or 0
+		e.scoreRank = i
+		if e.damage > 0 then
+			dealers[#dealers + 1] = e
+		end
+	end
+	table.sort(dealers, byValue("damage"))
+	for i, e in ipairs(dealers) do
 		e.rank = i
 	end
 	return list, total
+end
+
+-- The top `pc.top` of every category (pc = Chaos.worldBoss.reward.podium: damage, healing, tanking) among the
+-- eligible shares: sets s.places = {[category key] = place} and returns {[category key] = {share, ...}} in place order. One player
+-- can place in several categories. Ties: who reached the value first places higher (seq), then the lower guid; a
+-- value under placeMinPercent % of the boss max health does not place.
+function W.placeRoles(shares, pc, maxHealth)
+	local podium = {}
+	pc = pc or {}
+	local minValue = (maxHealth or 0) * (pc.placeMinPercent or 0) / 100
+	for _, cat in ipairs(pc.categories or {}) do
+		local list = {}
+		for _, s in ipairs(shares) do
+			local v = s[cat.key] or 0
+			if v > 0 and v >= minValue then
+				list[#list + 1] = s
+			end
+		end
+		table.sort(list, byValue(cat.key))
+		podium[cat.key] = {}
+		for i = 1, math.min(pc.top or 3, #list) do
+			local s = list[i]
+			s.places = s.places or {}
+			s.places[cat.key] = i
+			podium[cat.key][i] = s
+		end
+	end
+	return podium
+end
+
+-- Tanking credit of one hit from the boss or an add: only the part the player survived (a hit that kills counts
+-- nothing), capped at tankHitCap, x offTargetWeight when the attacker was not targeting the player (splash).
+function W.tankCredit(damage, health, targeted, roles)
+	if not damage or damage <= 0 or not health or health <= 0 or damage >= health then
+		return 0
+	end
+	local v = math.min(damage, roles.tankHitCap or damage)
+	if not targeted then
+		v = v * (roles.offTargetWeight or 1)
+	end
+	return v
+end
+
+-- Healing credit of one heal: effective healing (capped at the target's missing health), at most the boss damage
+-- the target took and was not healed for yet (`debt`), so only healing of boss damage counts. Healing yourself
+-- counts x selfHealWeight. -> credit, effective healing
+function W.healCredit(amount, missing, debt, self, roles)
+	local eff = math.max(0, math.min(amount or 0, missing or 0))
+	local credit = math.min(eff, math.max(0, debt or 0))
+	if self then
+		credit = credit * (roles.selfHealWeight or 0)
+	end
+	return credit, eff
 end
 
 local function addItem(map, order, id, count)
@@ -190,9 +295,14 @@ local function addItem(map, order, id, count)
 	map[id] = map[id] + count
 end
 
--- shares from computeShares -> list of {guid, name, share, rank, bank, items = {{id, count}}, gear, gearRarity, unique}
+-- shares from computeShares (+ placeRoles) -> list of {guid, name, share, rank, scoreRank, damage, healing, tanking,
+-- places, bank, items = {{id, count}}, gear, gearRarity, unique, titles = {{key, text, color, place, name}}}.
+-- r = Chaos.worldBoss.reward: base items for everyone, pool split by share, r.podium.categories[i].rewards[place]
+-- for the top 3 of each category, plus their title and an extra unique chance (one unique at most per player).
 function W.computeRewards(shares, r, boss, uniquePool, rng)
 	rng = rng or math.random
+	uniquePool = uniquePool or {}
+	local cats = r.podium and r.podium.categories or {}
 	local out = {}
 	for _, s in ipairs(shares) do
 		local map, order = {}, {}
@@ -202,14 +312,25 @@ function W.computeRewards(shares, r, boss, uniquePool, rng)
 		for _, it in ipairs(r.pool or {}) do
 			addItem(map, order, it.id, math.floor(it.count * s.share))
 		end
-		for _, it in ipairs((r.top or {})[s.rank] or {}) do
-			addItem(map, order, it.id, it.count)
+		local titles, uniqueRolls = {}, {}
+		for _, cat in ipairs(cats) do
+			local place = s.places and s.places[cat.key]
+			if place then
+				for _, it in ipairs((cat.rewards or {})[place] or {}) do
+					addItem(map, order, it.id, it.count)
+				end
+				if cat.title then
+					titles[#titles + 1] = {key = cat.key, text = cat.title, color = cat.color, place = place, name = cat.name}
+				end
+				uniqueRolls[#uniqueRolls + 1] = (cat.uniqueChance or {})[place] or 0
+			end
 		end
 		local items = {}
 		for _, id in ipairs(order) do
 			items[#items + 1] = {id = id, count = map[id]}
 		end
-		local reward = {guid = s.guid, name = s.name, share = s.share, rank = s.rank, damage = s.damage, items = items,
+		local reward = {guid = s.guid, name = s.name, share = s.share, rank = s.rank, scoreRank = s.scoreRank,
+			damage = s.damage, healing = s.healing, tanking = s.tanking, places = s.places, items = items, titles = titles,
 			bank = (r.bankGold or 0) + math.floor((r.bankGoldPool or 0) * s.share)}
 		local gear = boss and boss.gear or {}
 		if #gear > 0 and rng(10000) <= (r.gearChance or 0) + math.floor((r.gearShareBonus or 0) * s.share) then
@@ -217,13 +338,50 @@ function W.computeRewards(shares, r, boss, uniquePool, rng)
 			local lo, hi = (r.gearRarity or {0, 0})[1], (r.gearRarity or {0, 0})[2]
 			reward.gearRarity = rng(lo, math.max(lo, hi))
 		end
-		uniquePool = uniquePool or {}
-		if #uniquePool > 0 and rng(10000) <= (r.uniqueChance or 0) + math.floor((r.uniqueShareBonus or 0) * s.share) then
-			reward.unique = uniquePool[rng(#uniquePool)]
+		if #uniquePool > 0 then
+			local won = rng(10000) <= (r.uniqueChance or 0) + math.floor((r.uniqueShareBonus or 0) * s.share)
+			for _, chance in ipairs(uniqueRolls) do
+				if won then
+					break
+				end
+				won = chance > 0 and rng(10000) <= chance
+			end
+			if won then
+				reward.unique = uniquePool[rng(#uniquePool)]
+			end
 		end
 		out[#out + 1] = reward
 	end
 	return out
+end
+
+-- "1.2M", "850k", "900"
+function W.short(n)
+	n = math.floor(n or 0)
+	if n >= 1000000 then
+		return string.format("%.1fM", n / 1000000)
+	elseif n >= 10000 then
+		return string.format("%dk", math.floor(n / 1000))
+	end
+	return tostring(n)
+end
+
+-- {"Top damage: A 1.2M, B 800k.", "Top healing: C 300k.", "Top tanking: nobody."}
+function W.podiumLines(podium, pc)
+	local lines = {}
+	for _, cat in ipairs((pc or {}).categories or {}) do
+		local names = {}
+		for _, s in ipairs(podium[cat.key] or {}) do
+			names[#names + 1] = s.name .. " " .. W.short(s[cat.key])
+		end
+		lines[#lines + 1] = string.format("Top %s: %s.", (cat.name or cat.key):lower(),
+			#names > 0 and table.concat(names, ", ") or "nobody")
+	end
+	return lines
+end
+
+function W.podiumText(podium, pc)
+	return table.concat(W.podiumLines(podium, pc), " ")
 end
 
 -- boss-only uniques of chaos_unique_items.lua that list this boss
@@ -333,9 +491,58 @@ local function playersInside()
 end
 
 -- ======================================================================== arena
+-- the dark tile set (Chaos.worldBoss.arena.dark): walls, pillars and lights switch to it and both rooms are painted
+-- by ChaosDarkPaint when it is installed; otherwise the stock ids of the config are used unchanged
+local function darkArena()
+	local a = C().arena
+	if a.darkActive ~= nil then
+		return a.darkActive
+	end
+	a.darkActive = false
+	local d = a.dark
+	if d and d.enabled and ChaosDarkPaint and ChaosDarkTiles and ChaosDarkPaint.ready(d.arenaStyle)
+		and ChaosDarkPaint.ready(d.lobbyStyle) then
+		local wall, pillar, basin = ChaosDarkTiles.id(d.wall), ChaosDarkTiles.id(d.pillar), ChaosDarkTiles.id(d.basin)
+		if wall and pillar and basin then
+			a.wallId, a.pillarId, a.basinId = wall, pillar, basin
+			a.darkActive = true
+		end
+	end
+	return a.darkActive
+end
+
 local function fixedItemIds()
+	darkArena()
 	local a = C().arena
 	return {[a.wallId] = true, [a.pillarId] = true, [a.basinId] = true, [a.portalId] = true}
+end
+
+local function keepItem(keep, id)
+	return keep[id] or (darkArena() and ChaosDarkPaint.isDark(id))
+end
+
+-- paints the floors of both rooms (the fixtures' tiles stay plain)
+local function paintArena(L, foot)
+	local a = C().arena
+	local walls, arena, lobby = {}, {}, {}
+	for _, t in ipairs(foot) do
+		if t.wall then
+			walls[t.x .. "," .. t.y] = true
+		elseif t.lobby then
+			lobby[#lobby + 1] = t
+		else
+			arena[#arena + 1] = t
+		end
+	end
+	local reserved = {L.center, L.bossSpawn, L.arenaEntry, L.arenaBack, L.lobbyArrival, L.lobbyToArena}
+	for _, list in ipairs({L.lobbyExits, L.pillars, L.basins}) do
+		for _, p in ipairs(list) do
+			reserved[#reserved + 1] = p
+		end
+	end
+	local opts = {walls = walls, reserved = reserved}
+	ChaosDarkPaint.apply(ChaosDarkPaint.plan(arena, a.dark.arenaStyle, math.random, opts), L.z)
+	ChaosDarkPaint.apply(ChaosDarkPaint.plan(lobby, a.dark.lobbyStyle, math.random, opts), L.z)
 end
 
 local function placeItem(pos, id, aid)
@@ -355,14 +562,16 @@ end
 
 -- returns true, or false + reason (nothing is built then)
 function W.buildArena()
+	local dark = darkArena()
 	local a = C().arena
 	local L = W.layout()
 	local foot = W.footprint(L)
+	local ours = {[a.groundId] = true, [a.lobbyGroundId] = true}
 	for _, t in ipairs(foot) do
 		local tile = Tile(P(t))
 		if tile then
 			local gid = groundId(tile)
-			if (gid ~= a.groundId and gid ~= a.lobbyGroundId) or (tile.getHouse and tile:getHouse()) then
+			if not (ours[gid] or (dark and ChaosDarkPaint.isDark(gid))) or (tile.getHouse and tile:getHouse()) then
 				return false, string.format("tile %d,%d,%d already exists in the map", t.x, t.y, t.z)
 			end
 		end
@@ -391,6 +600,10 @@ function W.buildArena()
 	for _, p in ipairs(L.lobbyExits) do
 		placeItem(P(p), a.portalId, aid.exit)
 	end
+	if dark and not W.painted then
+		paintArena(L, foot)
+		W.painted = true
+	end
 	return true
 end
 
@@ -408,7 +621,7 @@ local function cleanArena()
 					end
 				end
 				for _, item in ipairs(tile:getItems() or {}) do
-					if not keep[item:getId()] then
+					if not keepItem(keep, item:getId()) then
 						item:remove()
 					end
 				end
@@ -532,6 +745,56 @@ local function itemName(id)
 	return it and it:getName() or tostring(id)
 end
 
+function W.placeName(place)
+	return ({"1st", "2nd", "3rd"})[place] or (tostring(place) .. "th")
+end
+
+-- ======================================================================== role titles (name plates, titles.lua)
+-- A role title is held for roles.titleDays after the fight: player storage roles.titleStorage + category index - 1
+-- = os.time until which it is held (saved with the character).
+local function categories()
+	return C().reward.podium and C().reward.podium.categories or {}
+end
+
+function W.grantTitle(player, t)
+	local ro = C().roles
+	for i, cat in ipairs(categories()) do
+		if cat.key == t.key and ro.titleStorage then
+			player:setStorageValue(ro.titleStorage + i - 1, os.time() + (ro.titleDays or 7) * 86400)
+		end
+	end
+	if ChaosNameplate and ChaosNameplate.refresh then
+		pcall(ChaosNameplate.refresh, player)
+	end
+end
+
+-- titles the player holds now: {{key, text, color, at}}
+function W.titlesOf(player)
+	local ro = C().roles
+	local out = {}
+	if not ro.titleStorage then
+		return out
+	end
+	local now = os.time()
+	for i, cat in ipairs(categories()) do
+		local untilAt = tonumber(player:getStorageValue(ro.titleStorage + i - 1)) or -1
+		if cat.title and untilAt > now then
+			out[#out + 1] = {key = "worldboss:" .. cat.key, text = cat.title, color = cat.color,
+				at = untilAt - (ro.titleDays or 7) * 86400}
+		end
+	end
+	return out
+end
+
+function W.registerTitles()
+	if not (ChaosTitles and ChaosTitles.register) then
+		return false
+	end
+	ChaosTitles.register("worldboss", W.titlesOf)
+	return true
+end
+W.registerTitles()
+
 function W.deliver(player, r)
 	local inboxUsed = false
 	if r.bank and r.bank > 0 then
@@ -561,10 +824,20 @@ function W.deliver(player, r)
 			announce(player:getName() .. " received the unique " .. (e and e.name or itemName(r.unique)) .. " from the world boss!", false)
 		end
 	end
+	local roles = {}
+	for _, t in ipairs(r.titles or {}) do
+		roles[#roles + 1] = string.format("%s in %s", W.placeName(t.place), (t.name or t.key):lower())
+		W.grantTitle(player, t)
+	end
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
-		"World boss reward (rank %d, %.1f%% of the damage): %d gold to your bank, %s.%s",
-		r.rank, r.share * 100, r.bank or 0, table.concat(parts, ", "),
+		"World boss reward (%.1f%% of the contribution: %s damage, %s healing, %s tanking%s): %d gold to your bank, %s.%s",
+		(r.share or 0) * 100, W.short(r.damage), W.short(r.healing), W.short(r.tanking),
+		#roles > 0 and ("; " .. table.concat(roles, ", ")) or "", r.bank or 0, table.concat(parts, ", "),
 		inboxUsed and " Your backpack was full: the rest is in your inbox." or ""))
+	for _, t in ipairs(r.titles or {}) do
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("You earned the title %s (%s %s) for %d days.",
+			t.text, W.placeName(t.place), (t.name or t.key):lower(), C().roles.titleDays or 7))
+	end
 	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
 end
 
@@ -577,9 +850,30 @@ local function distribute()
 			excluded[guid] = true
 		end
 	end
-	local shares, total = W.computeShares(state.damage or {}, state.maxHealth or 0, c.reward.minDamagePercent, excluded)
+	local minPercent = c.reward.minScorePercent or c.reward.minDamagePercent
+	local shares, total = W.computeShares(state.stats or {}, state.maxHealth or 0, minPercent, excluded, c.roles)
+	local podium = W.placeRoles(shares, c.reward.podium, state.maxHealth or 0)
 	local rewards = W.computeRewards(shares, c.reward, boss, W.uniquePool(boss.name))
-	if ChaosLeaderboard and ChaosLeaderboard.recordShares then ChaosLeaderboard.recordShares(shares) end -- leaderboard.lua
+	local LB = ChaosLeaderboard
+	if LB and LB.recordShares then LB.recordShares(shares) end -- leaderboard.lua (World Boss: damage, kills)
+	local boards = c.roles.boards or {}
+	for _, s in ipairs(shares) do
+		local who = {guid = s.guid, name = s.name}
+		if LB and LB.record then
+			if boards.healing and s.healing >= 1 then
+				LB.record(boards.healing, who, math.floor(s.healing), "add")
+			end
+			if boards.tanking and s.tanking >= 1 then
+				LB.record(boards.tanking, who, math.floor(s.tanking), "add")
+			end
+		end
+		local A = ChaosAchievements -- achievements.lua: wb_heal_top, wb_tank_top, wb_role_podium
+		if A and A.progress and s.places then
+			if s.places.healing == 1 then pcall(A.progress, who, "wb_heal_top", 1) end
+			if s.places.tanking == 1 then pcall(A.progress, who, "wb_tank_top", 1) end
+			if s.places.healing or s.places.tanking then pcall(A.progress, who, "wb_role_podium", 1) end
+		end
+	end
 	for _, r in ipairs(rewards) do
 		local player = Player(r.name)
 		if player and player:getGuid() == r.guid then
@@ -590,24 +884,19 @@ local function distribute()
 		end
 	end
 	-- the ones who fought but get nothing are told why
-	for guid, e in pairs(state.damage or {}) do
+	local got = {}
+	for _, s in ipairs(shares) do
+		got[s.guid] = true
+	end
+	for guid, e in pairs(state.stats or {}) do
 		local player = Player(e.name)
-		if player and player:getGuid() == guid then
-			local got = false
-			for _, s in ipairs(shares) do
-				if s.guid == guid then
-					got = true
-					break
-				end
-			end
-			if not got then
-				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, excluded[guid]
-					and "No world boss reward: another character from your connection was online during the fight."
-					or string.format("No world boss reward: you need at least %.2f%% of the boss health in damage.", c.reward.minDamagePercent))
-			end
+		if player and player:getGuid() == guid and not got[guid] then
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, excluded[guid]
+				and "No world boss reward: another character from your connection was online during the fight."
+				or string.format("No world boss reward: you need a contribution (damage, healing and tanking) of at least %.2f%% of the boss health.", minPercent))
 		end
 	end
-	return shares, total
+	return shares, total, podium
 end
 
 -- ======================================================================== event flow
@@ -697,6 +986,7 @@ local function tick(token)
 		if Chaos.isMultiClient and Chaos.isMultiClient(p) then
 			state.mc[p:getGuid()] = true
 		end
+		W.watchPlayer(p)
 	end
 	local boss = state.bossId and Monster(state.bossId)
 	if boss and state.phase == "fight" then
@@ -774,14 +1064,17 @@ finish = function(victory, reason)
 	end
 	local delay = C().exitDelaySeconds
 	if victory then
-		local shares = distribute()
+		local shares, _, podium = distribute()
 		local secs = os.time() - (state.fightStart or os.time())
-		local top = {}
-		for i = 1, math.min(3, #shares) do
-			top[#top + 1] = string.format("%s (%.1f%%)", shares[i].name, shares[i].share * 100)
+		state.result = podium
+		announce(string.format("%s has been slain by %d champion(s) in %dm %02ds! %s Everyone inside returns home in %d seconds.",
+			b.name, #shares, math.floor(secs / 60), secs % 60, W.podiumText(podium, C().reward.podium), delay), false)
+		-- the client toast has room for about two lines: one toast per category (it shows three at once)
+		if ChaosNotify and ChaosNotify.gmBroadcast then
+			for _, line in ipairs(W.podiumLines(podium, C().reward.podium)) do
+				ChaosNotify.gmBroadcast(nil, "World boss slain! " .. line)
+			end
 		end
-		announce(string.format("%s has been slain by %d champion(s) in %dm %02ds! Top damage: %s. Everyone inside returns home in %d seconds.",
-			b.name, #shares, math.floor(secs / 60), secs % 60, #top > 0 and table.concat(top, ", ") or "nobody", delay), true)
 	else
 		local boss = state.bossId and Monster(state.bossId)
 		if boss then
@@ -822,7 +1115,8 @@ function W.start(index)
 	end
 	Game.setStorageValue(c.rotationStorage, index)
 	local token = state.token + 1
-	W.state = {phase = "gather", token = token, index = index, damage = {}, mc = {}, adds = {}, phasesDone = {},
+	W.state = {phase = "gather", token = token, index = index, stats = {}, debt = {}, active = {}, seq = 0, mc = {},
+		adds = {}, phasesDone = {},
 		startedAt = os.time(), spawnAt = os.time() + c.gatherSeconds, portalsUntil = os.time() + c.portalMinutes * 60}
 	state = W.state
 	local n = openPortals()
@@ -869,7 +1163,116 @@ function W.status()
 	return "The world boss event is ending."
 end
 
+-- ======================================================================== role tracking
+-- state.stats[guid] = {name, damage, healing, tanking, deaths, seq = {[key] = n}}: seq is a running counter taken
+-- when the value last went up (ties in the top 3: who reached the value first).
+-- state.debt[guid] = boss damage the player took and was not healed for yet (caps the healing credit of others).
+-- state.active[guid] = os.time of the player's last attack on the boss or an add, or last heal on another player.
+local function statsOf(player)
+	local guid = player:getGuid()
+	local e = state.stats[guid]
+	if not e then
+		e = {name = player:getName(), damage = 0, healing = 0, tanking = 0, deaths = 0, seq = {}}
+		state.stats[guid] = e
+	end
+	return e
+end
+
+function W.credit(player, key, amount)
+	if not amount or amount <= 0 then
+		return
+	end
+	local e = statsOf(player)
+	e[key] = e[key] + amount
+	state.seq = (state.seq or 0) + 1
+	e.seq[key] = state.seq
+	if key ~= "tanking" then
+		state.active[player:getGuid()] = os.time()
+	end
+end
+
+-- the player attacked the boss or an add (EventCallback onTargetCombat below)
+function W.markActive(player)
+	if state.phase == "fight" and state.active then
+		state.active[player:getGuid()] = os.time()
+	end
+end
+
+local function bossSource(creature)
+	if not creature then
+		return false
+	end
+	local id = creature:getId()
+	return id == state.bossId or (state.adds and state.adds[id]) or false
+end
+
+-- onHealthChange of a player inside the arena while the boss is alive (registered on everyone inside)
+function W.onPlayerHealth(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType)
+	if state.phase ~= "fight" or not W.inArena(creature:getPosition()) then
+		return
+	end
+	local ro = C().roles
+	local guid = creature:getGuid()
+	local health, maxHealth = creature:getHealth(), creature:getMaxHealth()
+	if health <= 0 then
+		return
+	end
+	if primaryType == COMBAT_HEALING then
+		local healer = playerOf(attacker)
+		local self = healer and healer:getId() == creature:getId() or false
+		local credit, eff = W.healCredit(math.abs(primaryDamage), maxHealth - health, state.debt[guid], self, ro)
+		state.debt[guid] = math.max(0, (state.debt[guid] or 0) - eff)
+		if healer and credit > 0 and W.inArena(healer:getPosition()) then
+			W.credit(healer, "healing", credit)
+		end
+		return
+	end
+	if not bossSource(attacker) then
+		return
+	end
+	local dmg = math.abs(primaryDamage) + (secondaryType ~= COMBAT_HEALING and math.abs(secondaryDamage or 0) or 0)
+	state.debt[guid] = (state.debt[guid] or 0) + math.min(dmg, health)
+	-- tanking only counts for players who fight (attacked the boss or an add, or healed someone) within activeSeconds
+	local last = state.active[guid]
+	if not last or os.time() - last > (ro.activeSeconds or 30) then
+		return
+	end
+	local target = attacker.getTarget and attacker:getTarget()
+	local targeted = target and target:getId() == creature:getId() or false
+	W.credit(creature, "tanking", W.tankCredit(dmg, health, targeted, ro))
+end
+
 -- ======================================================================== engine hooks
+local roleHealth = CreatureEvent("ChaosWorldBossRoles")
+function roleHealth.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+	if state.phase == "fight" and creature:isPlayer() then
+		local ok, err = pcall(W.onPlayerHealth, creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType)
+		if not ok then
+			print("[Chaos world boss] role tracking: " .. tostring(err))
+		end
+	end
+	return primaryDamage, primaryType, secondaryDamage, secondaryType
+end
+roleHealth:register()
+
+-- a death keeps what was earned; the dead player is out of the arena until they come back through the portals
+local roleDeath = CreatureEvent("ChaosWorldBossRoleDeath")
+function roleDeath.onDeath(creature)
+	if state.phase == "fight" and creature:isPlayer() and W.inArena(creature:getPosition()) then
+		local e = statsOf(creature)
+		e.deaths = e.deaths + 1
+		state.debt[creature:getGuid()] = 0
+		state.active[creature:getGuid()] = nil
+	end
+	return true
+end
+roleDeath:register()
+
+function W.watchPlayer(p)
+	p:registerEvent("ChaosWorldBossRoles")
+	p:registerEvent("ChaosWorldBossRoleDeath")
+end
+
 local health = CreatureEvent("ChaosWorldBossHealth")
 function health.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	if state.phase == "fight" and creature:getId() == state.bossId and primaryType ~= COMBAT_HEALING then
@@ -877,13 +1280,7 @@ function health.onHealthChange(creature, attacker, primaryDamage, primaryType, s
 		dmg = math.min(dmg, creature:getHealth())
 		local player = playerOf(attacker)
 		if player and dmg > 0 then
-			local guid = player:getGuid()
-			local e = state.damage[guid]
-			if not e then
-				e = {damage = 0, name = player:getName()}
-				state.damage[guid] = e
-			end
-			e.damage = e.damage + dmg
+			W.credit(player, "damage", dmg)
 		end
 		local b = bossCfg()
 		local fraction = (creature:getHealth() - dmg) / creature:getMaxHealth()
@@ -932,7 +1329,14 @@ login:register()
 -- no PvP in arena and lobby, no combat at all against players in the lobby
 local guard = EventCallback
 guard.onTargetCombat = function(creature, target)
-	if not creature or not target or not target:isPlayer() then
+	if not creature or not target then
+		return RETURNVALUE_NOERROR
+	end
+	if not target:isPlayer() then
+		local attacker = state.phase == "fight" and bossSource(target) and playerOf(creature)
+		if attacker then
+			W.markActive(attacker)
+		end
 		return RETURNVALUE_NOERROR
 	end
 	local L = W.layout()
@@ -1005,6 +1409,7 @@ function toArena.onStepIn(creature, item, position, fromPosition)
 		pushBack(player, fromPosition, "There is no fight in the arena right now.")
 		return true
 	end
+	W.watchPlayer(player)
 	player:teleportTo(P(W.layout().arenaEntry))
 	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 	return true
@@ -1129,6 +1534,7 @@ info:register()
 local startup = GlobalEvent("ChaosWorldBossStartup")
 function startup.onStartup()
 	W.nextAt = C().enabled and W.nextStart(os.time()) or nil
+	W.registerTitles() -- titles.lua may load after this file
 	return true
 end
 startup:register()

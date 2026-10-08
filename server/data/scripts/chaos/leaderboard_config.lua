@@ -23,6 +23,10 @@ return {
 	boards = {
 		{key = "worldboss", name = "World Boss", mode = "add", value = "Damage", count = "Kills", title = "Bossbane",
 			info = "Damage dealt to world bosses this week."},
+		{key = "bosshealer", name = "Boss Healer", mode = "add", value = "Healing", count = "Kills", title = "Lifebinder",
+			info = "Healing on other players during world boss fights this week."},
+		{key = "bosstank", name = "Boss Tank", mode = "add", value = "Tanked", count = "Kills", title = "Ironwall",
+			info = "Damage from world bosses and their adds survived this week."},
 		{key = "bounty", name = "Bounty Hunter", mode = "add", value = "Contracts", title = "Warden of the Hunt",
 			info = "Bounty contracts completed this week."},
 		{key = "rift", name = "Rifts", mode = "max", value = "Highest Tier", count = "Runs", title = "Riftwalker",
@@ -34,7 +38,9 @@ return {
 		{key = "arena1v1", name = "Arena 1v1", mode = "max", value = "Rating", title = "Duelist",
 			info = "Best 1v1 arena rating reached this week."},
 		{key = "arena2v2", name = "Arena 2v2", mode = "max", value = "Rating", title = "Gladiator",
-			info = "Best 2v2 arena rating reached this week."}
+			info = "Best 2v2 arena rating reached this week."},
+		{key = "defender", name = "Defender", mode = "add", value = "Points", count = "Invasions", title = "Defender of the Realm",
+			info = "Invasions defended this week: 10 points each plus your share of the defence in percent."}
 	},
 	top = 3,
 	rewards = {
