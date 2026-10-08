@@ -22,6 +22,16 @@ Estimated today: ~155 h to level 1000 for a sorcerer, ~285 h for a knight or pal
 | 6 | Fix the waystone "Experience" character upgrade | todo | `customs/waystone_system/character_upgrades.lua` writes storage 405788 and nothing reads it |
 | 7 | Monster level bonus roll bug | todo | `src/monster.cpp:52` `randomChance > 1 \|\| randomChance < 20` is always true |
 
+## Then: class rework (design agreed, see `docs/CLASSES.md`)
+
+| # | Item | Status | Notes |
+|---|---|---|---|
+| C1 | Vocations: 4 base classes (Warrior, Ranger, Mystic, Thief), each with 2 ascended choices; scripted ascension | todo | migration of existing characters as in `docs/CLASSES.md` |
+| C2 | Thief, Ninja and Samurai: kit, shurikens, stealth, scripted dual wield, counters | todo | the only fully new class |
+| C3 | Rework the existing kits into Juggernaut/Berserker, Deadeye/Beastmaster, Elementalist/Illusionist (support) | todo | reuses today's spells and the new keystones |
+| C4 | Passive trees, spell icons, effects and outfits per class; balance at levels 300 and 1000 | todo | |
+| C5 | Necromancer as a fifth class (summoner) | todo | after the first eight are balanced |
+
 ## Then: endgame loops
 
 | # | Item | Status | Notes |
@@ -60,7 +70,7 @@ Estimated today: ~155 h to level 1000 for a sorcerer, ~285 h for a knight or pal
 
 ## Open decisions and loose ends
 
-- Illusionist role is not decided yet.
+- Illusionist: decided, a support class (party attack buffs and some healing), the Mystic's second ascension.
 - Community (Discord) invite link: `ChaosTopBar.COMMUNITY_URL` in `client/overlay/modules/client_chaos_topbar/chaos_topbar.lua` is empty until there is one.
 - Optional: swap the client's xBRZ for version 1.8 (fixes artifacts on transparent sprite edges; same GPL-3 license; needs testing).
 - The base server also has its own world-boss timer (`data/scripts/customs/worldbosses/`), separate from the Chaos world bosses; decide whether to keep both.
