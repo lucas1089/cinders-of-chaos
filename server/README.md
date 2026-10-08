@@ -34,6 +34,7 @@ server/
                                       weapon attack speed scaled by the vocation's (thief_combat.lua)
     shop.lua  shop_config.lua  shop_services.lua  autosell.lua  sell_prices.lua (store, see "Store services")
     bounty.lua  bounty_core.lua  bounty_config.lua  bounty_pool.lua (bounty board; pool from tools/gen_bounty_pool.py)
+    leaderboard.lua  leaderboard_core.lua  leaderboard_config.lua (weekly boards with titles, class ladder)
 ```
 
 ## Install
@@ -94,6 +95,7 @@ working directory, as with the rest of the base server libs).
 | game_stash | `stash.lua` | **110** (new), `!stash` | Deposit by drag, redeem, categories, block list, `!stash all`, DB persistence. Client must be ported first (see below). |
 | game_spellbook | `spellbook.lua` | 219, `!spells` / `/spells` | Spell list window: every player spell of `data/spells/spells.xml` with its data, a short description and its area of effect (see "Spellbook" below). |
 | game_bounty | `bounty.lua`, `bounty_core.lua`, `bounty_config.lua`, `bounty_pool.lua` | 223, `!bounty` / `/bounty` | Daily rotating kill contracts per level band, tested in game (see "Bounty board"). |
+| game_leaderboard | `leaderboard.lua`, `leaderboard_core.lua`, `leaderboard_config.lua` | 229, `!leaderboard` | Weekly World Boss / Bounty Hunter / Rifts boards with titles and orbs for the top 3, all-time class ladder, tested in game (see "Leaderboards"). |
 
 Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
@@ -708,6 +710,78 @@ straight from the client is refused); the same board (same checksum) after a res
 restart; next-day expiry (simulated by shifting the day function); a multi-client contract pays nothing. Not verified in
 game: party credit with two real players (unit-tested only) and the real 06:00 roll (the roll is a once-a-minute check
 of the day key).
+
+## Leaderboards (`leaderboard.lua`, `leaderboard_core.lua`, `leaderboard_config.lua`)
+
+Client `game_leaderboard` (opcode 229), opened with `!leaderboard` or Chaos -> Leaderboards in the top menu. Settings:
+`leaderboard_config.lua` (loaded as `Chaos.leaderboardConfig`). Tables: `chaos_leaderboard`, `chaos_leaderboard_titles`
+(`sql/chaos.sql`); the last processed reset week is the `server_config` row `chaos_leaderboard_reset`.
+
+**Why not the base highscores.** The top menu used to open the base client's `game_highscores`. That window asks for
+data with the game packet 0xB1 (the newer protocol's highscores), which this engine does not parse: it stays empty
+(checked in game). The base server's own `customs/highscores` script answers extended opcode 73 for a different client
+window, and builds its SQL from client input without checks. So the Chaos window is separate, and the menu entry
+"Highscores" became "Leaderboards".
+
+- **Boards.** Weekly: **World Boss** (damage dealt to world bosses, kills participated), **Bounty Hunter** (contracts
+  completed), **Rifts** (highest rift tier completed, runs). All time: **Class Ladder** (highest level per class).
+  Each board shows the top 20 (`rows`), the player's own rank and value, and the time until the weekly reset.
+  Ranks are never shared: on equal values the player who reached the value first ranks higher, then the lower id.
+  Staff characters (`group_id >= staffGroup`, 4) are left out of every board, title and reward.
+- **Week.** The weekly boards reset on Monday at 06:00 server time (`resetHour`). This is the bounty board's week rule:
+  `ChaosLeaderboard.week` calls `ChaosBounty.week`. The week key is the YYYYMMDD of that Monday.
+- **Sources.** `worldboss.lua` records every rewarded participant's damage when the boss dies (the shares of
+  `computeShares`, so multi-client characters and those below `minDamagePercent` do not count; offline participants
+  count too). `bounty.lua` records a contract when it pays (not when multi-clienting). The rift scripts call the API below.
+- **Reset.** A once-a-minute check (and one at startup) runs the reset when the week key is later than the last
+  processed one. It takes the top 3 (`top`) of every weekly board of the week that ended. They get the board's title
+  (`title`: Bossbane, Warden of the Hunt, Riftwalker) for the week that starts. Their orbs (`rewards`: 1st 5 Divine +
+  10 Chaos, 2nd 3 + 6, 3rd 1 + 3) go straight to the inbox. A player offline at the reset gets them at the next login:
+  the `rewarded` flag is in the DB, so a restart loses nothing. The reset broadcasts the winners (also as a toast with
+  `game_chaosnotify`). Score rows older than `keepWeeks` (8) are deleted. When the server was down over several
+  Mondays, only the week just ended is scored.
+- **Titles.** They show in the look text ("He holds the title Bossbane (1st)."; an `onLook` EventCallback registered
+  at index 100, after the base server's `default_onLook` at index 0, which builds the "You see" text and ignores what came
+  before it) and next to the name on every board (that board's title first, "+n" for more).
+- **Class Ladder.** It reads the players table (`deletion = 0`, below the staff group), ordered by experience, and
+  caches each class for `cacheSeconds` (300). Online characters count with their last saved level. Classes are grouped by base
+  class through `ladder.baseOf` (nil = `Chaos.classes.baseOf` of the class rework). A vocation missing from the
+  mapping is grouped through `Vocation(id):getDemotion()`. The class list holds the vocation ids of
+  `data/XML/vocations.xml` that the engine knows. Names come from the server (`Vocation(id):getName()`), so renamed
+  or new classes need no change here.
+
+### API (rifts and any other script)
+
+```lua
+-- board: "worldboss" | "bounty" | "rift" (a key of Chaos.leaderboardConfig.boards)
+-- who:   a Player, a player guid, or {guid = n, name = s} (offline players are looked up)
+-- value: integer >= 0; mode: "add" (sum) or "max" (keep the best); nil = the board's mode (rift: "max")
+-- Every call also adds 1 to the board's count column (kills / contracts / runs).
+-- Returns the player's entry {value, count, at} of this week, or nil (unknown board or player).
+ChaosLeaderboard.record(board, who, value, mode)
+
+-- e.g. at the end of a cleared rift, for every member:
+if ChaosLeaderboard then ChaosLeaderboard.record("rift", player, tier) end
+```
+
+`ChaosLeaderboard.recordShares(shares)` (world boss shares), `ChaosLeaderboard.titlesOf(guid)` (titles held this week)
+and `ChaosLeaderboard.checkReset(force)` are public too. A new weekly board is one more entry in `boards` (key, name,
+mode, value/count labels, title, info); the client builds its tabs from the server.
+
+Staff: `/leaderboard reset` runs the reset again for the week that just ended (it does not award twice),
+`/leaderboard shift <days>` moves the leaderboard clock for tests (0 = real time), `/leaderboard` alone shows the state.
+
+**Tests:** `tests/leaderboard_test.lua` (week key and reset time, record add/max, ranking and ties, the staff filter,
+titles and rewards at the reset, look and broadcast text, class grouping).
+
+Verified on the test server: a world boss killed with spell damage -> 18M damage, 1 kill on the board. A bounty
+contract completed -> 1 contract. `record("rift", player, 7)` then `5` -> 7, 2 runs. Fake scores for 9 characters
+through the API (guid path), a tie at 18M ranked by who reached it first. The reset (clock shifted 4 days): 9 titles,
+the broadcast, 3 Chaos + 1 Divine Orb in the online 3rd place's inbox, the offline winners' rows kept for their login.
+Look text "You hold the title Riftwalker (3rd).". Restart: no second reset, titles and the new week's scores loaded
+from the DB, the reward of an unrewarded row delivered at login. Tabs, class tabs, own rank, the top menu entry. Not
+verified: the look text from another player's view ("He"/"She"; unit-tested), the real Monday 06:00 change (a
+once-a-minute check of the week key), the rift source (the rift scripts do not call it yet).
 
 ## Late game (`tools/late_game.py`, `tools/late_game_spawns.csv`, 17 monsters in `data/monster/monsters/chaos/`)
 

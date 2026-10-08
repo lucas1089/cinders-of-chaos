@@ -176,7 +176,7 @@ local CATEGORIES = {
     { text = 'Daily Reward',       icon = 'daily',       modules = { 'game_daily' },     fns = { 'toggle' } },
     { text = 'Bounty Board',       icon = 'quests',      modules = { 'game_bounty' },    fns = { 'toggle' } },
     { text = 'Event Calendar',     icon = 'events',      modules = { 'game_schedule' },  fns = { 'toggle' } },
-    { text = 'Highscores',         icon = 'ranking',     modules = { 'game_highscores' }, fns = { 'toggle', 'show' } },
+    { text = 'Leaderboards',       icon = 'ranking',     modules = { 'game_leaderboard' }, fns = { 'toggle' } },
     { text = 'Notifications',      icon = 'notifications', modules = { 'game_chaosnotify' }, fns = { 'toggle', 'showAll' } },
   } },
   { id = 'economy', text = 'Economy', icon = 'market', entries = {

@@ -131,3 +131,97 @@ CREATE TABLE IF NOT EXISTS `chaos_bounty` (
   KEY `chaos_bounty_week` (`player_id`, `status`, `day`),
   CONSTRAINT `chaos_bounty_players_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Leaderboards (data/scripts/chaos/leaderboard.lua; table names in leaderboard_config.lua). Weekly scores: one row per
+-- board ("worldboss", "bounty", "rift"), week (YYYYMMDD of the Monday the week starts, at the reset hour) and player.
+-- value = damage / contracts / highest tier, count = kills / contracts / runs recorded, updated_at = when the value last
+-- changed (the earlier one wins a tie). Rows older than keepWeeks are deleted at the weekly reset.
+CREATE TABLE IF NOT EXISTS `chaos_leaderboard` (
+  `board` varchar(16) NOT NULL,
+  `week` int(10) unsigned NOT NULL,
+  `player_id` int(11) NOT NULL,
+  `value` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `count` int(10) unsigned NOT NULL DEFAULT 0,
+  `updated_at` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`board`, `week`, `player_id`),
+  KEY `chaos_leaderboard_rank` (`board`, `week`, `value`),
+  CONSTRAINT `chaos_leaderboard_players_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Leaderboards: the top 3 of every weekly board of an ended week (week = the week that was scored). They hold the title
+-- during the week after; rewarded = 1 once the orbs were put in the inbox (at the reset, or at the next login).
+-- The last processed reset week is the server_config row `chaos_leaderboard_reset`.
+CREATE TABLE IF NOT EXISTS `chaos_leaderboard_titles` (
+  `week` int(10) unsigned NOT NULL,
+  `board` varchar(16) NOT NULL,
+  `rank` tinyint(3) unsigned NOT NULL,
+  `player_id` int(11) NOT NULL,
+  `value` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `title` varchar(48) NOT NULL,
+  `rewarded` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `awarded_at` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`week`, `board`, `rank`),
+  KEY `chaos_leaderboard_titles_player` (`player_id`, `rewarded`),
+  CONSTRAINT `chaos_leaderboard_titles_players_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Crafting bench (data/scripts/chaos/crafting.lua): one row per orb used (bench or use-with). The bench shows the last
+-- few; rows older than historyKeepDays (data/lib/chaos_crafting.lua) are deleted at startup.
+CREATE TABLE IF NOT EXISTS `chaos_crafting_log` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `player_id` int(11) NOT NULL,
+  `created_at` int(10) unsigned NOT NULL,
+  `orb` varchar(32) NOT NULL,
+  `item` varchar(80) NOT NULL,
+  `result` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `chaos_crafting_log_player` (`player_id`, `id`),
+  CONSTRAINT `chaos_crafting_log_players_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Arena (data/scripts/chaos/arena.lua; table names in arena_config.lua). Rating per player and mode ("1v1", "2v2"),
+-- Elo starting at 1000; best = highest rating reached. Seasonal reset columns are not there yet.
+CREATE TABLE IF NOT EXISTS `chaos_arena_ratings` (
+  `player_id` int(11) NOT NULL,
+  `mode` varchar(4) NOT NULL,
+  `rating` int(11) NOT NULL DEFAULT 1000,
+  `wins` int(10) unsigned NOT NULL DEFAULT 0,
+  `losses` int(10) unsigned NOT NULL DEFAULT 0,
+  `draws` int(10) unsigned NOT NULL DEFAULT 0,
+  `best` int(11) NOT NULL DEFAULT 1000,
+  `updated_at` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`player_id`, `mode`),
+  KEY `chaos_arena_ratings_rank` (`mode`, `rating`),
+  CONSTRAINT `chaos_arena_ratings_players_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Arena: one row per rated match. winner = 1 / 2 (team) or 0 (draw); reason = defeat / timeout.
+CREATE TABLE IF NOT EXISTS `chaos_arena_matches` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `mode` varchar(4) NOT NULL,
+  `slot` tinyint(3) unsigned NOT NULL DEFAULT 0,
+  `winner` tinyint(3) unsigned NOT NULL DEFAULT 0,
+  `reason` varchar(16) NOT NULL DEFAULT '',
+  `started_at` int(10) unsigned NOT NULL,
+  `ended_at` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Arena: every player of a rated match (the window's recent matches). result = win / loss / draw; reason = how this
+-- player's match ended (defeat / timeout, or defeated / left / secure / mc when the player was out before the end).
+CREATE TABLE IF NOT EXISTS `chaos_arena_match_players` (
+  `match_id` int(10) unsigned NOT NULL,
+  `player_id` int(11) NOT NULL,
+  `mode` varchar(4) NOT NULL,
+  `team` tinyint(3) unsigned NOT NULL,
+  `result` varchar(4) NOT NULL,
+  `rating_before` int(11) NOT NULL,
+  `rating_after` int(11) NOT NULL,
+  `opponents` varchar(100) NOT NULL DEFAULT '',
+  `partner` varchar(64) NOT NULL DEFAULT '',
+  `reason` varchar(16) NOT NULL DEFAULT '',
+  `ended_at` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`match_id`, `player_id`),
+  KEY `chaos_arena_match_players_player` (`player_id`, `match_id`),
+  CONSTRAINT `chaos_arena_match_players_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

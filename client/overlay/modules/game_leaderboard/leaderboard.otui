@@ -1,0 +1,256 @@
+// Leaderboards window (game_leaderboard). Styles from client_chaos_theme (styles.otui).
+
+LeaderboardRow < UIWidget
+  height: 22
+  margin-bottom: 1
+  phantom: false
+  background-color: #1a151a
+
+  UILabel
+    id: rank
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    width: 40
+    text-align: center
+    font: verdana-11px-rounded
+    color: #8c8070
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: rank.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 6
+    text-auto-resize: true
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    phantom: true
+
+  UILabel
+    id: title
+    anchors.left: name.right
+    anchors.right: value.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 8
+    margin-right: 6
+    text-align: left
+    font: verdana-11px-antialised
+    color: #b070ff
+    phantom: true
+
+  UILabel
+    id: extra
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    width: 120
+    margin-right: 6
+    text-align: right
+    font: verdana-11px-antialised
+    color: #8c8070
+    phantom: true
+
+  UILabel
+    id: value
+    anchors.right: extra.left
+    anchors.verticalCenter: parent.verticalCenter
+    width: 110
+    text-align: right
+    font: verdana-11px-rounded
+    color: #f6cf72
+    phantom: false
+
+LeaderboardTab < ChaosTabButton
+  width: 124
+  margin-right: 4
+
+LeaderboardGroupTab < ChaosTabButton
+  width: 92
+  height: 22
+  margin-right: 3
+
+HeaderLabel < UILabel
+  font: verdana-11px-rounded
+  color: #e8b84a
+  phantom: true
+
+ChaosMainWindow
+  id: leaderboardWindow
+  size: 620 560
+  !text: tr('Leaderboards')
+  @onEscape: modules.game_leaderboard.hide()
+
+  ChaosLabel
+    id: infoLabel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: timerLabel.left
+    margin-right: 8
+    text-align: left
+
+  ChaosLabel
+    id: timerLabel
+    anchors.top: parent.top
+    anchors.right: parent.right
+    text-auto-resize: true
+    color: #f6cf72
+
+  UIWidget
+    id: tabs
+    anchors.top: infoLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    height: 24
+    phantom: true
+    layout:
+      type: horizontalBox
+
+  UIWidget
+    id: groupTabs
+    anchors.top: tabs.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 22
+    phantom: true
+    layout:
+      type: horizontalBox
+
+  ChaosPanelDark
+    id: championPanel
+    anchors.top: groupTabs.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 40
+
+    ChaosLabel
+      id: championTitle
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 1
+      text-align: left
+      color: #e8b84a
+      font: verdana-11px-rounded
+
+    ChaosLabel
+      id: championNames
+      phantom: false
+      anchors.top: championTitle.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 2
+      text-align: left
+
+  UIWidget
+    id: header
+    anchors.top: championPanel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 18
+    phantom: true
+
+    HeaderLabel
+      id: rank
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 4
+      width: 40
+      text-align: center
+      !text: tr('Rank')
+
+    HeaderLabel
+      id: name
+      anchors.left: rank.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 10
+      text-auto-resize: true
+      !text: tr('Name')
+
+    HeaderLabel
+      id: extra
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-right: 26
+      width: 120
+      text-align: right
+
+    HeaderLabel
+      id: value
+      anchors.right: extra.left
+      anchors.verticalCenter: parent.verticalCenter
+      width: 110
+      text-align: right
+
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: header.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: ownPanel.top
+    margin-top: 2
+    margin-bottom: 6
+    padding: 3
+
+  UIScrollArea
+    id: rowList
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: listScroll.left
+    anchors.bottom: listFrame.bottom
+    margin: 4
+    layout:
+      type: verticalBox
+    vertical-scrollbar: listScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: listScroll
+    anchors.top: listFrame.top
+    anchors.right: listFrame.right
+    anchors.bottom: listFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 23
+    pixels-scroll: true
+
+  ChaosLabelDim
+    id: emptyText
+    anchors.centerIn: listFrame
+    text-auto-resize: true
+    visible: false
+
+  ChaosPanelHighlight
+    id: ownPanel
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-bottom: 8
+    height: 34
+
+    ChaosLabel
+      id: ownLabel
+      anchors.fill: parent
+      text-align: left
+      color: #f6cf72
+      font: verdana-11px-rounded
+
+  ChaosLabelDim
+    id: hintLabel
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    margin-right: 8
+    text-align: left
+    text-wrap: true
+    height: 28
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    !text: tr('Close')
+    @onClick: modules.game_leaderboard.hide()

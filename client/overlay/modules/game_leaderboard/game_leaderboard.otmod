@@ -1,0 +1,13 @@
+Module
+  name: game_leaderboard
+  description: Leaderboards (weekly world boss / bounty / rift boards with titles, class ladder; !leaderboard, extended opcode 229)
+  author: project-chaos
+  sandboxed: true
+  scripts: [ leaderboard ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()
