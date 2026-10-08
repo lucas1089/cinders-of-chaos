@@ -160,6 +160,13 @@ Weekly boards (`!leaderboard`) reset every Monday:
 The top 3 of each board earn a **title** for the next week (Bossbane, Warden of the Hunt, Riftwalker, Goblin Slayer,
 Siegebreaker, Duelist, Gladiator) and orbs. The all-time **Class Ladder** ranks the highest characters of every class.
 
+### Name plates and titles
+
+Above every player floats a name plate: their **title** on top, their **guild** in braces below it, and their **name**
+on a small framed plate. Titles come from the leaderboards (gold), the guild siege (Siege Champions, orange, with a
+crimson plate), seasons, login streaks and achievements; staff wear red titles on a gold plate. Hold several? `!title`
+lists them, `!title <name>` picks one, `!title none` hides it. Monsters and NPCs keep their plain names.
+
 ## Achievements
 
 Over 90 achievements (`!achievements`, or Chaos -> Achievements) give you goals in every corner of the game:
@@ -199,7 +206,6 @@ Over 90 achievements (`!achievements`, or Chaos -> Achievements) give you goals 
 Being built right now:
 - **New classes:** the **Necromancer** (Lich / Bone Lord), the **Monk** (Shadowfist / Iron Sage) and the **Templar**
   (Inquisitor / Sentinel).
-- **Name plates:** title, guild and name above every player.
 
 The full priority list is in [ROADMAP.md](ROADMAP.md).
 

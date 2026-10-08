@@ -1,0 +1,12 @@
+Module
+  name: game_nameplate
+  description: Name plates over players - title, guild and a framed name (extended opcode 248, !title)
+  author: project-chaos
+  sandboxed: true
+  scripts: [ nameplatemath, nameplate ]
+  dependencies:
+    - game_interface
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

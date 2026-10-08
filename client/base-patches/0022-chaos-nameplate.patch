@@ -1,0 +1,133 @@
+# Chaos name plates: Creature:setNameplate(guild, font, guildColor, nameColor, frameImage, border) draws a guild line between the title and the name, a 9-slice frame behind the name and the name in its own colour (players, module game_nameplate).
+diff -ru a/src/client/creature.cpp b/src/client/creature.cpp
+--- a/src/client/creature.cpp	2026-10-08 13:14:25.805886139 +0000
++++ b/src/client/creature.cpp	2026-10-08 14:03:12.822089496 +0000
+@@ -194,6 +194,24 @@
+     m_outfit.draw(destRect, direction, 0, animate, ui, oldScaling, mountOnly, ignoreDisplacement);
+ }
+ 
++// Chaos name plate: draws a texture as a 9-slice (corners kept, edges and middle stretched) into dest
++static void addNineSlice(const Rect& dest, const TexturePtr& tex, int border)
++{
++    const Size ts = tex->getSize();
++    const int b = std::max(0, std::min({ border, ts.width() / 2, ts.height() / 2, dest.width() / 2, dest.height() / 2 }));
++    const int dx[4] = { dest.x(), dest.x() + b, dest.x() + dest.width() - b, dest.x() + dest.width() };
++    const int dy[4] = { dest.y(), dest.y() + b, dest.y() + dest.height() - b, dest.y() + dest.height() };
++    const int sx[4] = { 0, b, ts.width() - b, ts.width() };
++    const int sy[4] = { 0, b, ts.height() - b, ts.height() };
++    for (int j = 0; j < 3; ++j) {
++        for (int i = 0; i < 3; ++i) {
++            if (dx[i + 1] > dx[i] && dy[j + 1] > dy[j] && sx[i + 1] > sx[i] && sy[j + 1] > sy[j])
++                g_drawQueue->addTexturedRect(Rect(dx[i], dy[j], dx[i + 1] - dx[i], dy[j + 1] - dy[j]), tex,
++                                             Rect(sx[i], sy[j], sx[i + 1] - sx[i], sy[j + 1] - sy[j]));
++        }
++    }
++}
++
+ void Creature::drawInformation(const Point& drawPoint, bool useGray, const Rect& parentRect, int drawFlags)
+ {
+     // a creature drawn bigger (setDrawScale) gets its name and bars lifted above its head
+@@ -229,6 +247,8 @@
+ 
+     Size nameSize = m_nameCache.getTextSize();
+     Rect textRect = Rect(point.x + m_informationOffset.x - nameSize.width() / 2.0, point.y + m_informationOffset.y - 12, nameSize);
++    if (m_plateFrame)
++        textRect.translate(0, -2); // Chaos name plate: room for the frame above the health bar
+     textRect.bind(parentRect);
+ 
+     // distance them
+@@ -331,16 +351,31 @@
+     }
+ 
+     if (drawFlags & Otc::DrawNames) {
++        // Chaos name plate: the frame behind the name, then the guild line and the title stacked above it
++        Point lineAnchor = textRect.topCenter();
++        if (m_plateFrame) {
++            Rect plate(textRect.left() - 7, textRect.top() - 5, nameSize.width() + 14, 15);
++            if (!useGray)
++                addNineSlice(plate, m_plateFrame, m_plateBorder);
++            lineAnchor = Point(plate.horizontalCenter(), plate.top() + 2);
++        }
++
+         if (useGray)
+             m_nameCache.draw(textRect, fillColor);
+         else
+-            m_nameCache.draw(textRect, fillColor, m_nameShader);
++            m_nameCache.draw(textRect, m_plateNameColor.aF() > 0 ? m_plateNameColor : fillColor, m_nameShader);
++
++        if (m_plateGuildCache.hasText()) {
++            Rect guildRect(Point(0, 0), m_plateGuildCache.getTextSize());
++            guildRect.moveBottomCenter(lineAnchor + Point(0, 3));
++            m_plateGuildCache.draw(guildRect, useGray ? fillColor : m_plateGuildColor);
++            lineAnchor = guildRect.topCenter() + Point(0, 3);
++        }
+ 
+         if (m_titleCache.hasText()) {
+             Size titleSize = m_titleCache.getTextSize();
+-            Point textCenter = textRect.topCenter();
+             textRect.setSize(titleSize);
+-            textRect.moveBottomCenter(textCenter);
++            textRect.moveBottomCenter(lineAnchor);
+             m_titleCache.draw(textRect, m_titleColor);
+         }
+ 
+@@ -1403,6 +1438,18 @@
+     callLuaField("onProgressBarUpdate", m_progressBarPercent, duration, ltr);
+ }
+ 
++void Creature::setNameplate(const std::string& guild, const std::string& font, const Color& guildColor, const Color& nameColor,
++                            const std::string& frame, int border)
++{
++    m_plateNameColor = nameColor;
++    m_plateGuildCache.setText(guild);
++    if (!font.empty())
++        m_plateGuildCache.setFont(g_fonts.getFont(font));
++    m_plateGuildColor = guildColor;
++    m_plateFrame = frame.empty() ? nullptr : g_textures.getTexture(frame);
++    m_plateBorder = border;
++}
++
+ void Creature::setTitle(const std::string& title, const std::string& font, const Color& color)
+ {
+     m_titleCache.setText(title);
+diff -ru a/src/client/creature.h b/src/client/creature.h
+--- a/src/client/creature.h	2026-10-08 13:14:25.805942382 +0000
++++ b/src/client/creature.h	2026-10-08 13:16:58.811603383 +0000
+@@ -107,6 +107,12 @@
+     void setTitle(const std::string& title, const std::string& font, const Color& color);
+     void clearTitle() { setTitle("", "", Color::white); }
+     std::string getTitle() { return m_titleCache.getText(); }
++    // Chaos name plate (players): a guild line between the title and the name, a 9-slice frame behind the name and
++    // the name's colour (alpha 0 = the usual information colour)
++    void setNameplate(const std::string& guild, const std::string& font, const Color& guildColor, const Color& nameColor,
++                      const std::string& frame, int border);
++    void clearNameplate() { setNameplate("", "", Color::white, Color::alpha, "", 0); }
++    bool hasNameplate() { return m_plateFrame != nullptr || m_plateGuildCache.hasText(); }
+ 
+     uint32 getId() { return m_id; }
+     uint32 getMasterId() { return m_masterId; }
+@@ -279,6 +285,11 @@
+     Timer m_outfitColorTimer;
+     CachedText m_titleCache;
+     Color m_titleColor;
++    CachedText m_plateGuildCache;
++    Color m_plateGuildColor;
++    Color m_plateNameColor = Color::alpha;
++    TexturePtr m_plateFrame;
++    int m_plateBorder = 0;
+ 
+     static std::array<double, Otc::LastSpeedFormula> m_speedFormula;
+ 
+diff -ru a/src/client/luafunctions_client.cpp b/src/client/luafunctions_client.cpp
+--- a/src/client/luafunctions_client.cpp	2026-10-08 13:14:25.805979657 +0000
++++ b/src/client/luafunctions_client.cpp	2026-10-08 13:14:48.601563711 +0000
+@@ -672,6 +672,9 @@
+     g_lua.bindClassMemberFunction<Creature>("setTitle", &Creature::setTitle);
+     g_lua.bindClassMemberFunction<Creature>("clearTitle", &Creature::clearTitle);
+     g_lua.bindClassMemberFunction<Creature>("getTitle", &Creature::getTitle);
++    g_lua.bindClassMemberFunction<Creature>("setNameplate", &Creature::setNameplate);
++    g_lua.bindClassMemberFunction<Creature>("clearNameplate", &Creature::clearNameplate);
++    g_lua.bindClassMemberFunction<Creature>("hasNameplate", &Creature::hasNameplate);
+     g_lua.bindClassMemberFunction<Creature>("isTimedSquareVisible", &Creature::isTimedSquareVisible);
+     g_lua.bindClassMemberFunction<Creature>("getTimedSquareColor", &Creature::getTimedSquareColor);
+     g_lua.bindClassMemberFunction<Creature>("isStaticSquareVisible", &Creature::isStaticSquareVisible);

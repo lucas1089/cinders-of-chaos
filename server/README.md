@@ -49,6 +49,7 @@ server/
     daily_core.lua  daily_config.lua (daily reward login streaks, milestones, grace, login window order)
     patchnotes.lua  patchnotes_core.lua (patch notes window; the notes are data/patchnotes/*.md, see "Patch notes")
     achievements.lua  achievements_core.lua  achievements_data.lua (achievements, points, titles, rewards; sql/chaos_achievements.sql)
+    nameplate.lua  nameplate_core.lua  titles.lua (name plates over players, title registry, !title; sql/chaos_nameplate.sql)
 ```
 
 ## Install
@@ -130,8 +131,9 @@ working directory, as with the rest of the base server libs).
 | game_season | `season.lua`, `season_core.lua`, `season_config.lua` | 246, `!season` / `/season` | Seasons: fresh-start season characters isolated from standard ones, season ladder view, season uniques, account-wide reward track, end-of-season migration; tested in game with two clients (see "Seasons"). |
 | game_patchnotes | `patchnotes.lua`, `patchnotes_core.lua`, `data/patchnotes/*.md` | 244, `!patchnotes` / `/patchnotes` | Weekly patch notes read from Markdown files on the server, opened once per new week at login (after the Daily Reward), per-account "Don't show automatically"; tested in game (see "Patch notes"). |
 | game_achievements | `achievements.lua`, `achievements_core.lua`, `achievements_data.lua` | 250, `!achievements` | Achievements: 93 in 9 categories with points, titles and rewards, progress fed by the other systems, retroactive at login; tested in game (see "Achievements"). |
+| game_nameplate | `nameplate.lua`, `nameplate_core.lua`, `titles.lua` | 248, `!title` | Name plates over players: active title, `{guild}` and the name on a frame (client base patch 0022); title registry `ChaosTitles.register`; tested in game (see "Name plates and titles"). |
 
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 228, 229, 232, 233, 236, 241, 244, 246, 250 are all registered in the global
+Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 228, 229, 232, 233, 236, 241, 244, 246, 248, 250 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
 
 ### Opcode collision check
@@ -1976,3 +1978,50 @@ experience per kill at a level 900 knight = XML exp x 0.03 x level x stage x 1.5
 Experience buff that was active), i.e. exactly 1.875 x the model for all 17. Not measured: real hunting speed (the 0.47
 efficiency and the 3-target assumption), the one-handed knight (~14% less damage than two-handed), druids and
 illusionists (earth/ice/death are resisted too).
+
+## Name plates and titles (`nameplate.lua`, `nameplate_core.lua`, `titles.lua`, client `game_nameplate`, base patch 0022)
+
+Over every player the client draws three lines, like a name plate: the **active title** (coloured by where it comes from),
+the **guild** in braces (`{Ashen Covenant}`), and the **name** in gold on a small framed plate. A line that has nothing to
+show is left out (no title, no guild). The health bar stays where the client always draws it, right under the name, so
+players read it in the same place as on monsters; the plate is lifted 2 px so the frame does not touch the bar. Monsters
+and NPCs keep the normal look. Extended opcode 248 (`ChaosOpcodes.nameplate`), `sql/chaos_nameplate.sql` (also created at
+startup).
+
+- **Titles** come from a registry: `ChaosTitles.register(source, fn)`, `fn(player)` returns the titles the player holds
+  now (`{text, key?, color?, at?, frame?, priority?}`; see the head of `titles.lua`). Registering a source again replaces
+  it. Sources today: `staff` (group: Tutor, Senior Tutor, Game Master, Community Manager, Administrator; red, gold
+  frame, always listed first), `leaderboard` (weekly top 3, `ChaosLeaderboard.titlesOf`; gold), `champion` (Siege
+  Champions while the guild holds it, `ChaosSiege.champions`; orange, crimson frame), `season` (season title rewards,
+  `ChaosSeason.titlesOf`; violet), `streak` (login-streak milestone title, `ChaosDaily`; green); achievements register
+  `achievement` (teal) from `achievements.lua`; arena titles have a colour (steel blue) waiting. Each source reads the
+  other system's tables at call time and returns nothing while that system is not loaded, so `leaderboard.lua` and the
+  rest were not edited (the leaderboard's look-text title stays).
+- **Active title**: the one picked with `!title <name>` (prefix and case do not matter), stored per character in
+  `chaos_player_titles`; otherwise staff titles first, then the most recently earned. `!title` lists, `!title none` hides,
+  `!title auto` goes back to the default. A picked title that is gone falls back to the default.
+- **Frames**: `default` (blackened iron with ember studs) for everyone, `gold` while a staff title is active, `crimson`
+  for Siege Champions, plus `violet` and `frost` unused yet. `ChaosTitles.registerFrame(source, fn)` lets the store or
+  seasons hand out a cosmetic frame (`fn(player)` -> frame id), which wins over the title's frame. The images are
+  16x15 9-slices from `client/tools/gen_nameplate_art.py`.
+- **Traffic**: plain text, one line per player: `cid|title|RRGGBB|guild|frame` (about 40 bytes). Sent to everyone who
+  sees the player (`Game.getSpectators`, all floors) at login, and the plates around to the player who logs in; the
+  client asks `q|id,id,...` (batched every 250 ms, at most 40 ids) for players that appear without a plate or with one
+  older than 60 s, and asks again (3 s, 4 tries) when no answer came. Every 5 s the server rebuilds the plates of the
+  online players and sends only the ones that changed (new or lost title, guild joined or left, frame), so systems that
+  grant titles need no hook; `ChaosNameplate.refresh(player)` sends at once.
+- **Guild**: the name from the engine (`player:getGuild()`); the rank stays in the look text (the engine already says
+  "He is Leader of the ..."). The engine's emblems and war colours are untouched; the guild line turns red-orange for a
+  war enemy (red emblem).
+- **Client**: patch `client/base-patches/0022-chaos-nameplate.patch` adds `Creature:setNameplate(guild, font, guildColor,
+  nameColor, frameImage, border)` to `drawInformation` (the title line is the engine's own `setTitle`; 9 textured quads
+  and one text more per player, nothing per frame in Lua). A client without the patch shows title and guild as one block
+  above the name, without the frame. **The Windows client must be rebuilt with patch 0022.**
+
+**Tests:** `server/tests/nameplate_test.lua` (title order, pick and find, colours and frames, wire format, queries, the
+registry with mocked leaderboard / siege / season / login-streak tables) and `game_nameplate/nameplatemath_test.lua`
+(parsing, batching, retries). Checked in game on the test server with two clients: all three lines (staff
+"Administrator", guild, gold frame), a player without a title, a leaderboard title appearing live within 5 s, the guild
+line disappearing live after leaving the guild, `!title` list / switch (Bossbane, Siege Champions with the crimson frame)
+/ none / auto, the choice kept after a relog, monsters unchanged. Not checked: 30 players on screen (the drawing cost is a
+few quads per player), war colours (no guild war on the test server).

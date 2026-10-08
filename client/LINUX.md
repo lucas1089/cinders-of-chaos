@@ -67,3 +67,10 @@ apart (the other vocations still arrive as their base vocation). The names Thief
 data lists them), `Creature:isThief()` is new, and the helper treats the line as its class 6 (`game_chaosspells` fills its spell
 lists). 11-15 used to be other servers' promoted ids in those tables; with this server they are the Thief line. Tested: login as a
 Thief shows vocation 11 "Thief", and `!ascend ninja` switches the client to 12 "Ninja" without a relog (the server resends 0x9F).
+
+## Name plates
+`base-patches/0022-chaos-nameplate.patch` adds `Creature:setNameplate(guild, font, guildColor, nameColor, frameImage, border)`:
+`drawInformation` draws a 9-slice frame behind the name (lifted 2 px off the health bar), the name in its own colour and
+a guild line between the name and the engine's title line (`setTitle`, unchanged for monsters). Used by `game_nameplate`
+(see `MANIFEST.md` and server/README.md "Name plates and titles"). Built and tested on Linux; the Windows binary needs a
+rebuild with this patch (without it the module falls back to title and guild as plain text above the name).
