@@ -5,7 +5,8 @@
 --   client -> server  requestPoints                      -> server sendPoints
 --                     requestNodesUnlocked               -> server sendNodes
 --                     sendNodes  {nodes:[ids], preset:N} -> saved (no reply on success)
---                     resetPreset N                      -> costs level*250 gold, then sendNodes + sendPoints
+--                     resetPreset N                      -> priced by respec.lua (respec_config.lua), then sendNodes + sendPoints
+--                     respec.lua / buildshare.lua add refundNode, respecInfo, buildExport, buildPreview, buildApply
 --                     refund                             -> resync (sendPoints + sendNodes)
 --   server -> client  {"action":"sendPoints","data":<free points number>}
 --                     {"action":"sendNodes","data":{"preset":N,"presetsTable":[{"name":".."}],"nodes":[ids],"vocation":"knight"}}
@@ -228,9 +229,27 @@ local function handleSave(player, data)
 		preset = 1
 	end
 	local name = "Preset " .. preset
+	local saved
 	for _, row in ipairs(rows) do
 		if row.preset == preset then
 			name = row.name
+			saved = row.nodes
+		end
+	end
+	-- allocations only go up: taking a node back is a priced reset or refund (respec.lua), never a plain save
+	if saved and #saved > 0 then
+		local kept = {}
+		for _, id in ipairs(ids) do
+			kept[id] = true
+		end
+		for _, id in ipairs(saved) do
+			if not kept[id] then
+				sendMessageBox(player, "Error saving passive tree",
+					"Saved nodes cannot be removed by saving. Use a refund (right-click a node) or a reset.")
+				sendNodes(player)
+				sendPoints(player)
+				return
+			end
 		end
 	end
 	savePreset(guid, preset, name, ids)
@@ -286,6 +305,12 @@ function ChaosPassiveTree.resetAll(player)
 	applyBonuses(player)
 end
 
+-- respec.lua / buildshare.lua (single-node refund, priced full reset, build codes) use these, and add their opcode
+-- actions to ChaosPassiveTree.extraActions (checked first; a handler that returns true has handled the message)
+ChaosPassiveTree.internal = {getTree = getTree, loadPresets = loadPresets, savePreset = savePreset, sendNodes = sendNodes,
+	sendPoints = sendPoints, sendMessageBox = sendMessageBox, totalPoints = totalPoints, validateNodes = validateNodes}
+ChaosPassiveTree.extraActions = ChaosPassiveTree.extraActions or {}
+
 local LoginEvent = CreatureEvent("ChaosPassiveTreeLogin")
 
 -- presets that hold more nodes than the character owns points (the point rate went down, or the level dropped)
@@ -324,6 +349,10 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 	end
 
 	local action = msg.action
+	local extra = type(action) == "string" and ChaosPassiveTree.extraActions[action]
+	if extra and extra(player, msg.data) then
+		return
+	end
 	if action == "requestPoints" then
 		sendPoints(player)
 	elseif action == "requestNodesUnlocked" then

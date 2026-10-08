@@ -1,0 +1,102 @@
+// Build code panel of the passive tree window (buildshare.lua). Ornate skin styles from client_chaos_theme.
+ChaosWindow
+  id: buildShareWindow
+  !text: tr('Build Code')
+  size: 400 360
+  anchors.top: parent.top
+  anchors.right: parent.right
+  margin-top: 80
+  margin-right: 20
+  @onEscape: modules.game_passivetree.closeBuildShare()
+
+  ChaosLabelDim
+    id: hint
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 30
+    text-wrap: true
+    text-auto-resize: false
+    text-align: center
+    text: Export copies your build code to the clipboard. Paste a code and press Import to preview it in the tree.
+
+  ChaosTextEdit
+    id: codeEdit
+    anchors.top: hint.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 24
+    max-length: 600
+
+  ChaosButton
+    id: exportButton
+    anchors.top: codeEdit.bottom
+    anchors.left: parent.left
+    margin-top: 6
+    width: 110
+    text: Export
+    @onClick: modules.game_passivetree.exportBuild()
+
+  ChaosButton
+    id: importButton
+    anchors.top: codeEdit.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 6
+    width: 110
+    text: Import
+    @onClick: modules.game_passivetree.importBuild()
+
+  ChaosButton
+    id: pasteButton
+    anchors.top: codeEdit.bottom
+    anchors.right: parent.right
+    margin-top: 6
+    width: 110
+    text: Paste
+    @onClick: modules.game_passivetree.pasteBuild()
+
+  ChaosSeparator
+    id: sep
+    anchors.top: exportButton.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+
+  ChaosLabel
+    id: previewText
+    anchors.top: sep.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: applyButton.top
+    margin-top: 8
+    margin-bottom: 8
+    text-wrap: true
+    text-auto-resize: false
+    text-align: topLeft
+
+  ChaosButton
+    id: applyButton
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    width: 110
+    text: Apply Build
+    enabled: false
+    @onClick: modules.game_passivetree.applyBuild()
+
+  ChaosButton
+    id: cancelButton
+    anchors.bottom: parent.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    width: 110
+    text: Cancel Preview
+    enabled: false
+    @onClick: modules.game_passivetree.cancelBuildPreview()
+
+  ChaosButton
+    id: closeButton
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    width: 110
+    text: Close
+    @onClick: modules.game_passivetree.closeBuildShare()

@@ -55,6 +55,14 @@ local NOTIFICATION_TYPES = {
         borderColor = "#6a5632",
         duration = 8000,
     },
+    NEW_PLAYER = {
+        icon = "images/notifications/gm.png",
+        title = "NEW ADVENTURER",
+        titleColor = "#a3844b",
+        backgroundColor = "#ccbebb",
+        borderColor = "#6a5632",
+        duration = 12000,
+    },
     CATACOMB_FREE = {
         icon = "images/notifications/catacomb2.png",
         title = "CATACOMB AVAILABLE",
@@ -1036,6 +1044,13 @@ function onExtendedOpcode(protocol, opcode, buffer)
         bounty = function(data)
             if data.message then
                 addNotification("BOUNTY", data.message, nil, data.monsterLookType)
+            end
+        end,
+
+        -- new players (server data/scripts/chaos/newplayer*.lua): welcome, tutorial stations, milestone gifts
+        newplayer = function(data)
+            if data.message then
+                addNotification("NEW_PLAYER", data.message)
             end
         end,
 

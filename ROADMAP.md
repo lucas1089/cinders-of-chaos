@@ -60,16 +60,16 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 |---|---|---|---|
 | 16 | Loot filter: hide or highlight items by rarity (autoloot and corpses); loot channel with clickable item icons (greyed out once looted); rarity autoloot as a store unlock; loot rays for uniques and Legendary+ | done | `chaos/lootfilter*.lua`, client `game_lootfilter` (`!lootfilter`, Hunt -> Loot Filter, opcode 238): glow / dim by rarity and category in corpses (dimmed, never hidden), presets, settings per character; the Loot tab shows a row of item icons per kill (click to loot, Shift = one; greyed when autolooted, looted or decayed); coloured rare-drop lines; Rarity Autoloot (store, 400 coins); loot rays 424..428 for uniques and Legendary+; tested in game; see server/README.md "Loot filter". Party members do not get rows or rays |
 | 17 | In-client hunt tracker: exp/h and profit/h | in progress | |
-| 18 | Build sharing: export/import a passive tree code | in progress | |
-| 19 | Respec cost that scales with level | in progress | with build sharing (item 18): single-node refunds, full reset priced from measured gold income per level, free cases |
+| 18 | Build sharing: export/import a passive tree code | done | `buildshare.lua`, `buildshare_core.lua`: versioned checksummed code (`CB1-...`, stable node ids), Build Code panel with tree preview, `!build`; short on points = first N nodes in path order; taking points back costs the full reset price. Tested in game |
+| 19 | Respec cost that scales with level | done | `respec.lua`, `respec_config.lua`: full reset ~37.5 min of hunting gold (225k at 100, 3.95M at 600, 5.95M at 1000), right-click single-node refund ~1.5 min, free below 50 and once after a class change; income measured with `tools/respec_income.py` (README "Respec") |
 
 ## Then: polish and retention
 
 | # | Item | Status | Notes |
 |---|---|---|---|
 | 20 | Login streaks tied to the daily reward | in progress | `chaos/daily.lua`; with the hunt tracker (item 17): streak counter, milestones, grace days, account-wide claims |
-| 21 | New-player kit per vocation | in progress | |
-| 22 | Tutorial island: passive tree, orbs, keystones | in progress | needs map work |
+| 21 | New-player kit per vocation | done | `chaos/newplayer*.lua`: kit per class (Warrior / Ranger / Mystic / Thief ids), welcome window + toast, gifts at 20/50/100/200, `/newplayerkit`; tested in game |
+| 22 | Tutorial island: passive tree, orbs, keystones | done | `chaos/newplayer_tutorial.lua`: island built at runtime (no map work), 5 stations, skip, resume; tested in game |
 | 23 | Weekly patch-notes window in the client | in progress | |
 
 ## Open decisions and loose ends
