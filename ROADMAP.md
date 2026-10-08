@@ -7,7 +7,7 @@ Status: `todo`, `in progress`, `done`.
 
 | # | Item | Status | Notes |
 |---|---|---|---|
-| 1 | Store additions: stamina refill, temple teleport, bottomless loot pouch, auto seller, training weapons, world buffs, name change, vocation change, extras (double exp potion, blessings, frag/skull removal, sex change, respec) | in progress | `server/data/scripts/chaos/shop*.lua` |
+| 1 | Store additions: stamina refill, temple teleport, bottomless loot pouch, auto seller, training weapons, world buffs, name change, vocation change, extras (double exp potion, blessings, frag/skull removal, sex change, respec) | done | `server/data/scripts/chaos/shop*.lua` |
 | 2 | Passive tree keystones per vocation (knight Cleaving Arc, paladin Ricochet, sorcerer Arcane Echo, druid Overgrowth, illusionist Mirror Strike, ...) | in progress | measured on the test dummies so the role order holds |
 | 3 | Combat visuals: elemental weapon damage as its own coloured number + element sprite; crit, dodge and reflect sprites | in progress | server module `ChaosCombatFx` |
 
