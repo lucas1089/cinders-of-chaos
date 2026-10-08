@@ -390,3 +390,21 @@ end
 
 talk:separator(" ")
 talk:register()
+
+-- used by autosell.lua (Bottomless Loot Pouch): put a loose item (e.g. in a corpse) into the stash.
+-- Returns true when it was stashed; false when the item is not stashable, blocked or the entry is full.
+ChaosStash = ChaosStash or {}
+function ChaosStash.storeItem(player, item)
+	if not stashable(item) then
+		return false
+	end
+	local guid, itemId, count = player:getGuid(), item:getId(), item:getCount()
+	if isBlocked(guid, itemId) or stashCount(guid, itemId) + count > cfg.maxStackPerEntry then
+		return false
+	end
+	if not item:remove(count) then
+		return false
+	end
+	stashAdd(guid, itemId, count)
+	return true
+end

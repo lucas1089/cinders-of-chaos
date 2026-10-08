@@ -22,6 +22,7 @@ server/
     chaos_constants.lua               ALL opcodes, storage keys, table names, tunables, shared helpers
     bank.lua  autoloot.lua  daily.lua  notifications.lua  passivetree.lua  passivetree_data.lua
     dungeons.lua  infinitytower.lua  stash.lua  spell_guard.lua (Iron Will damage reduction of the Iron Bellow spell)
+    shop.lua  shop_config.lua  shop_services.lua  autosell.lua  sell_prices.lua (store, see "Store services")
 ```
 
 ## Install
@@ -235,7 +236,117 @@ The tower exists now. `!tower start` (or the new Enter Tower button of the clien
 `/testkit [mage|knight|paladin][, player]` (admins only) equips a strong set for the vocation (uniques where they fit), a backpack of supplies (potions, runes, crystal coins, Chaos and Divine Orbs), raises the level to 500 and the main skills (magic level 110 for mages, 120 melee or 125 distance), and resets health and mana to the vocation's values. Relog afterwards so the stock rarity script applies the item bonuses.
 
 ## Store (`shop.lua`, `shop_config.lua`)
-The client's Store (menu Economy -> Store, module `game_shop`) talks JSON on extended opcode 218 (`ChaosOpcodes.shop`; the base server's own store script uses 201 and is left alone). Prices are in Chaos Coins, kept per account in `chaos_shop_coins`; purchases go to `chaos_shop_history` (both in `sql/chaos.sql`). Staff give coins with `/coins <player>, <amount>` (negative takes them away). Categories and offers are in `shop_config.lua`: Chaos and Divine Orbs, supplies, wings, auras and outfit shaders (names and previews read from `data/XML/wings.xml`, `auras.xml`, `shaders.xml`), outfits, mounts and premium time. Wings, auras and shaders are bought once (storages 7100600+); outfits and mounts check whether the player already has them; a delivery that fails refunds the coins. Tested in game: buying an item and wings, refusing a second purchase of the same wings, coins and history in the database.
+The client's Store (menu Economy -> Store, module `game_shop`) talks JSON on extended opcode 218 (`ChaosOpcodes.shop`; the base server's own store script uses 201 and is left alone). Prices are in Chaos Coins, kept per account in `chaos_shop_coins`; purchases go to `chaos_shop_history` (both in `sql/chaos.sql`). Staff give coins with `/coins <player>, <amount>` (negative takes them away). Categories and offers are in `shop_config.lua`: Chaos and Divine Orbs, supplies, wings, auras and outfit shaders (names and previews read from `data/XML/wings.xml`, `auras.xml`, `shaders.xml`), outfits, mounts and premium time, plus boosts, world buffs, services, convenience unlocks and training weapons (see "Store services"). The two outfit offers give female characters the female look type (910, 1238; they gave the male one before). Wings, auras and shaders are bought once (storages 7100600+); outfits and mounts check whether the player already has them; a delivery that fails refunds the coins. Tested in game: buying an item and wings, refusing a second purchase of the same wings, coins and history in the database.
+
+## Store services (`shop_services.lua`, `autosell.lua`, `sell_prices.lua`)
+
+Five store categories sell services, unlocks and boosts besides the cosmetics. `shop_config.lua` has two new offer kinds,
+both dispatched by `ChaosShopServices` (`shop_services.lua`):
+- `{kind = "service", service = "<handler>", icon = <item id>}`: done for the character at once (`S.services` table).
+- `{kind = "unlock", unlock = "lootPouch" | "autoSeller"}`: a permanent per-character flag (storage).
+
+`shop.lua` asks `ChaosShopServices.check(player, offer)` **before** it takes coins: an unlock already owned, full stamina, a
+world buff at its cap, an unused token, no skull to remove, an empty passive tree... is refused with a message and costs
+nothing. Then the coins are taken and `ChaosShopServices.deliver` runs; a delivery error (no room for a scroll, a script
+error, caught with `pcall`) refunds the coins, as for the other offers. Icons and descriptions come from the server; the
+client module needed no change.
+
+| Category | Offer | Coins | What it does |
+|---|---|---|---|
+| Boosts | Stamina Refill | 40 | stamina to 42 h at once (refused when full) |
+| | Stamina Extension | 8 | the base server's item 27990 (+2 h when used) |
+| | Double Experience Potion / 5 potions | 50 / 225 | the base server's item 28095: x2 experience for 1 h per potion (storage 6000, `!exp`) |
+| | All Blessings | 60 | blessings 1-5 (refused when all are owned) |
+| World Buffs | World Experience | 300 | +25% monster experience for everybody, 1 h, up to 3 h |
+| | World Loot | 300 | +25% Chaos loot (`rateMult`) and one extra loot roll on every monster, like the Loot Frenzy event, 1 h, up to 3 h |
+| | World Training | 250 | +25% skill and magic level tries for everybody, 1 h, up to 3 h |
+| Services | Name Change | 250 | a token for `!changename` |
+| | Vocation Change | 400 | a token for `!changevocation` |
+| | Sex Change | 100 | at once; every owned outfit and addon is copied to the other sex (pairs by name in `data/XML/outfits.xml`) |
+| | Frag & Skull Remover | 150 | skull time (the engine's unjustified-kill counter) to 0, red/black skull removed; not in combat |
+| | Passive Tree Reset | 60 | empties every preset for free (the in-window reset costs level x 250 gold) |
+| Convenience | Temple Teleport Scroll / 25 uses | 5 / 80 | see below |
+| | Bottomless Loot Pouch | 500 | unlock, see below |
+| | Auto Seller | 500 | unlock, see below |
+| Training | 21 exercise weapon chests | 25 / 75 / 450 | the base server's chests: sword, axe, club, bow, rod, wand, shield with 500 / 1800 / 14400 charges |
+
+Premium (250 for 30 days) stays where it was.
+
+**Temple Teleport Scroll.** An ordinary "scroll" (item 6119, used by no other script) with action id 47301, the name
+"temple teleport scroll", a description and the uses left in the custom attribute `chaos_uses`; no new item id. Using it
+takes you to your town's temple. Refused with a battle sign or PZ lock, inside a dungeon run (`ChaosDungeonIsInside`), the
+Infinity Tower (`ChaosTowerRun.isInside`) and the world boss lobby/arena (`ChaosWorldBoss.inside`). 2 s cooldown. The stash
+refuses it (action id), so it stays an item.
+
+**World buffs.** A purchase broadcasts "<buyer> activated the World Experience ..." to everybody (and fireworks); buying
+while it runs extends it ("<buyer> extended ..."). A purchase that would leave more than 180 minutes is refused before
+coins are taken. The expiry times are global storages 7100921 (xp), 7100922 (loot), 7100923 (skill) and rows
+`chaos_worldbuff_xp|loot|skill` of the stock `server_config` table: they survive `/reload` and a **restart** (checked on
+the test server). `!worldbuffs` lists the active ones with the time left; players get the list at login; the end is
+broadcast (30 s check). Experience: `EventCallback.onGainExperience` (needs `patch_base_events.py`), monsters only.
+Training: `EventCallback.onGainSkillTries`, which the base `player.lua` already dispatches (no patch needed); one try
+x1.25 becomes 1 or 2 tries at random, so small gains are not rounded away. Loot: `loot_config.lua` `rateMult` and the
+extra-roll rule in `loot.lua`.
+
+**Name change.** `!changename <New Name>` (needs the token, out of combat, in a protection zone). Rules
+(`ChaosShopServices.validateName`, settings `Chaos.shopServices.name`): 3-20 characters, letters and single spaces, at most
+3 words of at least 2 letters, each word is capitalised for you ("kael vorn" -> "Kael Vorn"), no letter three times in a
+row, no staff word as a word (GM, CM, God, Admin, Tutor, Gamemaster, ...), no forbidden substring, not a monster name, not
+taken (`players.name`). Then: the token is used, the character is saved and kicked, and 0.5 s later (retried each second
+while it is still online) `players.name` is updated together with the tables that keep names as text: the member list of
+`chaos_dungeon_runs` (runs the character took part in), `player_deaths.killed_by` / `mostdamage_by` (player killers) and
+`guildwar_kills.killer` / `target`. If the name was taken in between, the token is given back. `chaos_admin_log.player_name`
+is an audit log and keeps the old name. All other Chaos tables use the player id.
+
+**Vocation change.** `!changevocation <knight|paladin|sorcerer|druid|illusionist>` (token, out of combat, in a
+protection zone; your own vocation is refused). A promoted character gets the promoted id (`Chaos.shopServices.vocations`:
+sorcerer 1/5, druid 2/6, paladin 3/7, knight 4/8, illusionist 9/10). Health and mana are recomputed as the engine counts
+them, 185 / 90 at level 8 plus (level - 8) x the new vocation's gain; capacity keeps whatever the character has outside the
+level gains: cap + (level - 8) x (new gain - old gain). Skills and magic level are **kept** as they are (a knight turned
+sorcerer keeps its sword skill and its low magic level). The passive tree is reset for free (`ChaosPassiveTree.resetAll`).
+Items restricted to the old vocation stay equipped.
+
+**Bottomless Loot Pouch.** An `onDropLoot` callback with index 4, after the base autoloot (3): every item of the autoloot
+list still in a corpse you own is tried once more (the base callback stops at the first item that does not fit), then put
+into the supply stash when the stash takes it (stackable, no attributes, not on the block list) or else into your inbox
+(gear with a rarity keeps its attributes there). "Loot pouch: your backpack is full, loot sent N to your stash and M to
+your inbox" at most once a minute. Note that the base autoloot only fails on a full backpack, not on capacity (the
+engine's `moveTo` ignores capacity).
+
+**Auto Seller.** `onDropLoot` index 2 (after the Chaos loot layer at 1, before the autoloot at 3): items on your auto-sell
+list are taken out of corpses you own and sold at the NPC price; the gold goes into your bank balance and one loot
+message per corpse lists what was sold. The list is separate from the autoloot list (no autoloot slot needed), up to 40
+items. Items with a rarity, Chaos modifiers or a custom name/description/text (any custom attribute) are kept unless you
+opt in; uniques (`chaos_unique`) are never sold. Containers are not sold.
+```
+!autosell add <item name>      only items an NPC buys
+!autosell remove <item name>
+!autosell list | clear | on | off
+!autosell rarity on|off        opt-in for items with a rarity or modifiers
+```
+Prices: `sell_prices.lua`, generated by `python3 -I server/tools/gen_sell_prices.py <server>/data` from the NPC shops
+(`shop_sellable` parameters of `data/npc/*.xml`, `addSellableItem` and `{..., sell = n}` tables of `data/npc/scripts/*.lua`,
+highest price any NPC pays; 1377 items with the reference data). Regenerate after NPC changes. The client's autoloot window
+was not extended; the list is managed by chat command.
+
+**Storage keys** (all in `chaos_constants.lua`): 7100100 Loot Pouch, 7100101 Auto Seller, 7100102 auto seller paused,
+7100103 rarity opt-in, 7100104 name change tokens, 7100105 vocation change tokens, 7100111-7100150 auto-sell list; global
+7100921-7100923 world buffs. Settings: `Chaos.shopServices`.
+
+**Tests.** `server/tests/shop_services_test.lua` (LuaJIT and Lua 5.3): name rules, buff stacking and the cap, buff
+effects and the reload from `server_config`, vocation mapping and stat recomputation, sell prices and the keep rules,
+unlock/service checks, the auto seller and the loot pouch callbacks against mocked items and corpses.
+
+**Verified in game** (test server, client screenshots): every new category and offer renders with icon and description;
+buying stamina, blessings, potions, a training chest, both scrolls, both unlocks, the three world buffs, both tokens, sex
+change, skull remover and passive reset; refusals without coin loss (full stamina, unlock owned, buff at the cap, token
+unused, nothing to remove/reset); refund when the backpack had no room; the scroll teleports, counts down and is refused
+with a battle sign and in the world boss arena; world experience x1.25 on a real kill, skill tries x1.25 through the
+engine, loot multiplier 1.25; buffs still active after a server restart, listed at login and by `!worldbuffs`; the auto
+seller sold plain items to the bank and kept rarity/unique items (rarity sold after the opt-in, nothing sold while off);
+the loot pouch sent a stackable to the stash and gear to the inbox with a full backpack; `!changename` renamed the
+character (and its dungeon run entry) and back; `!changevocation` paladin -> knight -> paladin returned exactly the
+original health, mana and capacity.
 
 ## Spellbook (`spellbook.lua`)
 `!spells` (or `/spells`, or Character -> Spellbook in the client menu) opens the client window `game_spellbook` on extended opcode 219 (`ChaosOpcodes.spellbook`). The list is read from the running server's own files, so renamed stock spells, the Chaos spells and anything added later show up without a client update:

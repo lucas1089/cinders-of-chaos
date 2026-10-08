@@ -8,6 +8,11 @@
 --   {kind = "outfit", looktype = male, lookfemale = female, addons = 0..3}   bought once
 --   {kind = "mount", id = <mount id>, clientid = <look type>}               bought once
 --   {kind = "premium", days = n}
+--   {kind = "service", service = "<handler>", icon = <item id>, ...}  done right away by shop_services.lua
+--       stamina | templeScroll (uses = n) | worldBuff (buff = "xp" | "loot" | "skill") | nameToken |
+--       vocationToken | blessings | skullRemover | sexChange | passiveReset
+--   {kind = "unlock", unlock = "lootPouch" | "autoSeller", icon = <item id>}   permanent, per character
+--   Services and unlocks need name and description; the icon is only a picture (iconCount for a coin pile).
 -- Names, descriptions and the category icon are what the client shows. Cosmetics without a name take
 -- the one from their XML file.
 
@@ -56,6 +61,86 @@ return {
 			}
 		},
 		{
+			name = "Boosts", icon = {item = 28095},
+			offers = {
+				{kind = "service", service = "stamina", icon = 27990, cost = 40, name = "Stamina Refill",
+					description = "Fills your stamina to the full 42 hours at once."},
+				{kind = "item", id = 27990, count = 1, cost = 8, name = "Stamina Extension",
+					description = "Use it to regain 2 hours of stamina (up to the maximum)."},
+				{kind = "item", id = 28095, count = 1, cost = 50, name = "Double Experience Potion",
+					description = "Use it for 1 hour of double experience; more potions add more hours. !exp shows the time."},
+				{kind = "item", id = 28095, count = 5, cost = 225, name = "5 Double Experience Potions",
+					description = "Five hours of double experience, one potion at a time."},
+				{kind = "service", service = "blessings", icon = 11260, cost = 60, name = "All Blessings",
+					description = "All five blessings at once: less experience and item loss when you die."}
+			}
+		},
+		{
+			name = "World Buffs", icon = {item = 2128},
+			offers = {
+				{kind = "service", service = "worldBuff", buff = "xp", icon = 7440, cost = 300, name = "World Experience",
+					description = "+25% experience for EVERY player for 1 hour, announced with your name. Stacks up to 3 hours."},
+				{kind = "service", service = "worldBuff", buff = "loot", icon = 2148, iconCount = 100, cost = 300, name = "World Loot",
+					description = "+25% Chaos loot and an extra loot roll on every monster for everyone, 1 hour. Up to 3 hours."},
+				{kind = "service", service = "worldBuff", buff = "skill", icon = 7443, cost = 250, name = "World Training",
+					description = "+25% skill and magic level training for every player for 1 hour. Stacks up to 3 hours."}
+			}
+		},
+		{
+			name = "Services", icon = {item = 12466},
+			offers = {
+				{kind = "service", service = "nameToken", icon = 25427, cost = 250, name = "Name Change",
+					description = "Then say !changename <New Name> in a protection zone. You are logged out and return renamed."},
+				{kind = "service", service = "vocationToken", icon = 2175, cost = 400, name = "Vocation Change",
+					description = "Then say !changevocation <vocation>. Skills are kept, the passive tree is reset for free."},
+				{kind = "service", service = "sexChange", icon = 9019, cost = 100, name = "Sex Change",
+					description = "Your character changes sex at once. Every outfit and addon you own comes along."},
+				{kind = "service", service = "skullRemover", icon = 2229, cost = 150, name = "Frag & Skull Remover",
+					description = "Clears your unjustified kills and removes a red or black skull. Not usable in combat."},
+				{kind = "service", service = "passiveReset", icon = 18559, cost = 60, name = "Passive Tree Reset",
+					description = "Refunds every passive point at once, without the gold cost of the normal reset."}
+			}
+		},
+		{
+			name = "Convenience", icon = {item = 10522},
+			offers = {
+				{kind = "service", service = "templeScroll", uses = 1, icon = 6119, cost = 5, name = "Temple Teleport Scroll",
+					description = "One trip to your temple. Not in combat, dungeons, the tower or the world boss arena."},
+				{kind = "service", service = "templeScroll", uses = 25, icon = 6119, cost = 80, name = "Temple Teleport Scroll (25 uses)",
+					description = "A scroll with 25 trips to your temple. Same rules as the single scroll."},
+				{kind = "unlock", unlock = "lootPouch", icon = 10518, cost = 500, name = "Bottomless Loot Pouch",
+					description = "Permanent: autoloot that does not fit your backpack goes to your stash or inbox."},
+				{kind = "unlock", unlock = "autoSeller", icon = 2160, iconCount = 100, cost = 500, name = "Auto Seller",
+					description = "Permanent: loot on your !autosell list is sold at NPC prices, gold to your bank."}
+			}
+		},
+		{
+			name = "Training", icon = {item = 27732},
+			offers = {
+				{kind = "item", id = 27761, count = 1, cost = 25, name = "Exercise Sword (500)", description = "Use the chest to get a sword with 500 training charges."},
+				{kind = "item", id = 27762, count = 1, cost = 25, name = "Exercise Axe (500)", description = "Use the chest to get an axe with 500 training charges."},
+				{kind = "item", id = 27763, count = 1, cost = 25, name = "Exercise Club (500)", description = "Use the chest to get a club with 500 training charges."},
+				{kind = "item", id = 27764, count = 1, cost = 25, name = "Exercise Bow (500)", description = "Use the chest to get a bow with 500 training charges."},
+				{kind = "item", id = 27765, count = 1, cost = 25, name = "Exercise Rod (500)", description = "Use the chest to get a rod with 500 training charges."},
+				{kind = "item", id = 27766, count = 1, cost = 25, name = "Exercise Wand (500)", description = "Use the chest to get a wand with 500 training charges."},
+				{kind = "item", id = 27767, count = 1, cost = 25, name = "Exercise Shield (500)", description = "Use the chest to get a shield with 500 training charges."},
+				{kind = "item", id = 27768, count = 1, cost = 75, name = "Durable Exercise Sword (1800)", description = "Use the chest to get a sword with 1800 training charges."},
+				{kind = "item", id = 27769, count = 1, cost = 75, name = "Durable Exercise Axe (1800)", description = "Use the chest to get an axe with 1800 training charges."},
+				{kind = "item", id = 27770, count = 1, cost = 75, name = "Durable Exercise Club (1800)", description = "Use the chest to get a club with 1800 training charges."},
+				{kind = "item", id = 27771, count = 1, cost = 75, name = "Durable Exercise Bow (1800)", description = "Use the chest to get a bow with 1800 training charges."},
+				{kind = "item", id = 27772, count = 1, cost = 75, name = "Durable Exercise Rod (1800)", description = "Use the chest to get a rod with 1800 training charges."},
+				{kind = "item", id = 27773, count = 1, cost = 75, name = "Durable Exercise Wand (1800)", description = "Use the chest to get a wand with 1800 training charges."},
+				{kind = "item", id = 27774, count = 1, cost = 75, name = "Durable Exercise Shield (1800)", description = "Use the chest to get a shield with 1800 training charges."},
+				{kind = "item", id = 27775, count = 1, cost = 450, name = "Lasting Exercise Sword (14400)", description = "Use the chest to get a sword with 14400 training charges."},
+				{kind = "item", id = 27776, count = 1, cost = 450, name = "Lasting Exercise Axe (14400)", description = "Use the chest to get an axe with 14400 training charges."},
+				{kind = "item", id = 27777, count = 1, cost = 450, name = "Lasting Exercise Club (14400)", description = "Use the chest to get a club with 14400 training charges."},
+				{kind = "item", id = 27778, count = 1, cost = 450, name = "Lasting Exercise Bow (14400)", description = "Use the chest to get a bow with 14400 training charges."},
+				{kind = "item", id = 27779, count = 1, cost = 450, name = "Lasting Exercise Rod (14400)", description = "Use the chest to get a rod with 14400 training charges."},
+				{kind = "item", id = 27780, count = 1, cost = 450, name = "Lasting Exercise Wand (14400)", description = "Use the chest to get a wand with 14400 training charges."},
+				{kind = "item", id = 27781, count = 1, cost = 450, name = "Lasting Exercise Shield (14400)", description = "Use the chest to get a shield with 14400 training charges."}
+			}
+		},
+		{
 			name = "Wings", icon = {outfit = preview({wings = 937})},
 			offers = {
 				{kind = "wings", id = 1, cost = 250}, {kind = "wings", id = 4, cost = 250}, {kind = "wings", id = 7, cost = 300},
@@ -91,8 +176,8 @@ return {
 		{
 			name = "Outfits", icon = {outfit = {type = 909, head = 2, body = 116, legs = 114, feet = 114, addons = 3, rotating = true}},
 			offers = {
-				{kind = "outfit", looktype = 909, lookfemale = 909, addons = 3, cost = 750, name = "Shadowlotus Outfit", description = "Full Shadowlotus outfit with both addons."},
-				{kind = "outfit", looktype = 1237, lookfemale = 1237, addons = 3, cost = 750, name = "Blade Dancer Outfit", description = "Full Blade Dancer outfit with both addons."}
+				{kind = "outfit", looktype = 909, lookfemale = 910, addons = 3, cost = 750, name = "Shadowlotus Outfit", description = "Full Shadowlotus outfit with both addons."},
+				{kind = "outfit", looktype = 1237, lookfemale = 1238, addons = 3, cost = 750, name = "Blade Dancer Outfit", description = "Full Blade Dancer outfit with both addons."}
 			}
 		},
 		{

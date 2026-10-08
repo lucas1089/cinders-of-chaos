@@ -305,8 +305,9 @@ function L.rollExtraLoot(lootTable, tier, ctx)
 	ctx = ctx or {}
 	local out = {}
 	local rolls = tierValue(c.extraRolls, tier, 0)
-	-- loot events add one extra roll to every monster, normal ones included
-	if ChaosEvents and ChaosEvents.bonus("loot") > 1 then
+	-- loot events and the store's World Loot buff add one extra roll to every monster, normal ones included
+	local buff = ChaosShopServices and ChaosShopServices.buffMult and ChaosShopServices.buffMult("loot") or 1
+	if (ChaosEvents and ChaosEvents.bonus("loot") > 1) or buff > 1 then
 		rolls = rolls + 1
 	end
 	if rolls <= 0 or not lootTable then

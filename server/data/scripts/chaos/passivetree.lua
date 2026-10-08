@@ -240,6 +240,23 @@ local function handleReset(player, data)
 	sendMessageBox(player, "Reset", string.format("Your passive tree was reset for %d gold coins.", cost))
 end
 
+-- store services (shop_services.lua): free reset of every preset (respec offer, vocation change)
+function ChaosPassiveTree.hasAllocation(player)
+	for _, row in ipairs(loadPresets(player:getGuid())) do
+		if #row.nodes > 0 then
+			return true
+		end
+	end
+	return false
+end
+
+function ChaosPassiveTree.resetAll(player)
+	db.query("UPDATE `" .. T .. "` SET `nodes` = '' WHERE `player_id` = " .. player:getGuid())
+	sendNodes(player)
+	sendPoints(player)
+	applyBonuses(player)
+end
+
 local LoginEvent = CreatureEvent("ChaosPassiveTreeLogin")
 
 -- presets that hold more nodes than the character owns points (the point rate went down, or the level dropped)

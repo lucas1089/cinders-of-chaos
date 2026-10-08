@@ -98,6 +98,9 @@ local function clientOffer(offer)
 		view.type, view.outfit = "outfit", {type = offer.clientid, rotating = true}
 	elseif offer.kind == "premium" then
 		view.type, view.item, view.count = "item", ItemType(16101):getClientId(), 1
+	elseif offer.kind == "service" or offer.kind == "unlock" then
+		-- shop_services.lua: the icon is any item picture
+		view.type, view.item, view.count = "item", ItemType(offer.icon or 1949):getClientId(), offer.iconCount or 1
 	end
 	view.title = view.title or "Offer"
 	return view
@@ -203,6 +206,11 @@ local function deliver(player, offer)
 		player:addMount(offer.id)
 	elseif offer.kind == "premium" then
 		player:addPremiumDays(offer.days)
+	elseif offer.kind == "service" or offer.kind == "unlock" then
+		if not ChaosShopServices then
+			return "This offer is not available."
+		end
+		return ChaosShopServices.deliver(player, offer)
 	else
 		return "This offer cannot be bought."
 	end
@@ -225,6 +233,16 @@ local function buy(player, data)
 	local key = ownedKey(offer)
 	if key and player:getStorageValue(key) > 0 then
 		return message(player, "Error", "You already own " .. view.title .. ".")
+	end
+	-- services and unlocks say before any coin is taken whether they can apply now (owned, stamina full, ...)
+	if offer.kind == "service" or offer.kind == "unlock" then
+		local problem = "This offer is not available."
+		if ChaosShopServices then
+			problem = ChaosShopServices.check(player, offer)
+		end
+		if problem then
+			return message(player, "Not possible", problem)
+		end
 	end
 	local accountId = player:getAccountId()
 	if Shop.getCoins(accountId) < offer.cost then

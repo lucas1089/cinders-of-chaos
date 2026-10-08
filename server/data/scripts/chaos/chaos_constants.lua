@@ -58,7 +58,16 @@ Chaos.storage = {
 	-- store: one-time cosmetics owned (base + id of the wings / aura / shader)
 	shopWingsBase = 7100600,
 	shopAuraBase = 7100650,
-	shopShaderBase = 7100700
+	shopShaderBase = 7100700,
+
+	-- store services (shop_services.lua, autosell.lua): 7100100 - 7100159
+	shopLootPouch = 7100100, -- 1 = Bottomless Loot Pouch unlocked (per character)
+	shopAutoSeller = 7100101, -- 1 = Auto Seller unlocked (per character)
+	autosellPaused = 7100102, -- 1 = auto seller switched off with !autosell off
+	autosellRarity = 7100103, -- 1 = opt-in: the auto seller may sell items with a rarity / modifiers
+	nameChangeTokens = 7100104, -- unused name changes bought in the store
+	vocationChangeTokens = 7100105, -- unused vocation changes bought in the store
+	autosellBase = 7100110 -- + 1 .. + Chaos.shopServices.autosellSlots: item ids on the auto-sell list
 }
 
 -- ---------------------------------------------------------------------------
@@ -354,6 +363,57 @@ Chaos.boosted = {
 	storageCreature = 7100900, -- global storages for the fallback pick: index into the list above
 	storageBoss = 7100901,
 	storageDay = 7100902 -- YYYYMMDD of the fallback pick
+}
+
+-- Store services (shop_services.lua, autosell.lua). Prices and the offers themselves are in shop_config.lua.
+Chaos.shopServices = {
+	maxStamina = 2520, -- minutes (42 h), what the Stamina Refill restores to
+
+	-- Temple Teleport Scroll: an ordinary "scroll" item (6119, no other script uses it) with this action id and a
+	-- custom name/description; the uses left are kept in the item's custom attribute "chaos_uses".
+	templeScroll = {itemId = 6119, actionId = 47301, name = "temple teleport scroll", cooldown = 2},
+
+	-- World buffs: one purchase adds `minutes`; buying while active extends it, never beyond `capMinutes` left
+	-- (a purchase that would pass the cap is refused, no coins taken). Expiry times are global storages
+	-- (globalStorage + index) and are also written to the server_config table, so they survive /reload and a
+	-- restart.
+	worldBuffs = {
+		{id = "xp", name = "World Experience", bonus = 0.25, minutes = 60, capMinutes = 180,
+			text = "+25% experience from monsters for every player"},
+		{id = "loot", name = "World Loot", bonus = 0.25, minutes = 60, capMinutes = 180,
+			text = "+25% Chaos loot (extra loot rolls and currency drops) for every player"},
+		{id = "skill", name = "World Training", bonus = 0.25, minutes = 60, capMinutes = 180,
+			text = "+25% skill and magic level training for every player"}
+	},
+	worldBuffStorage = 7100920, -- global storages 7100921.. (expiry unix time per buff, in list order)
+	worldBuffConfigKey = "chaos_worldbuff_", -- server_config rows chaos_worldbuff_<id>
+
+	-- Name change rules (ChaosShopServices.validateName)
+	name = {
+		minLength = 3, maxLength = 20, maxWords = 3, minWordLength = 2,
+		-- a first word (or any word) that is one of these is refused: staff look-alikes
+		staffWords = {"gm", "cm", "god", "admin", "adm", "tutor", "gamemaster", "staff", "support", "owner", "sr", "senior", "server"},
+		-- refused anywhere in the name (lower case, substring match); extend as needed
+		forbidden = {"admin", "gamemaster", "moderator", "fuck", "shit", "bitch", "whore", "nazi", "hitler", "cunt", "rape"}
+	},
+
+	-- Vocation change: command word -> {base id, promoted id} (data/XML/vocations.xml). A promoted character
+	-- gets the promoted id of the new vocation, an unpromoted one the base id.
+	vocations = {
+		sorcerer = {1, 5},
+		druid = {2, 6},
+		paladin = {3, 7},
+		knight = {4, 8},
+		illusionist = {9, 10}
+	},
+	vocationBaseLevel = 8, -- health/mana/capacity gains are counted from this level (as the engine does)
+
+	-- Bottomless Loot Pouch: tell the player at most once per this many seconds
+	pouchNoticeSeconds = 60,
+	-- Auto Seller
+	autosellSlots = 40,
+	-- blessings of the "All Blessings" offer (base server: 1-5, see creaturescripts login.lua)
+	blessings = {1, 2, 3, 4, 5}
 }
 
 -- Client services: the login screen asks an HTTP endpoint (client/tools or server/tools/clientservices.py)
