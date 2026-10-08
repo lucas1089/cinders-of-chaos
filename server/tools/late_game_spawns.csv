@@ -1,0 +1,269 @@
+area,centerx,centery,centerz,x,y,z,replaces,monster
+Darklight Core,34206,31047,11,0,0,11,Darklight Matter,Azure Dragon
+Darklight Core,34200,31050,11,0,0,11,Darklight Construct,Azure Dragon
+Darklight Core,34210,31050,11,0,0,11,Darklight Striker,Azure Dragon
+Darklight Core,34201,31052,11,0,0,11,Darklight Striker,Golden Lord
+Darklight Core,34209,31055,11,0,0,11,Darklight Construct,Golden Lord
+Darklight Core,34199,31001,12,0,0,12,Darklight Striker,Golden Lord
+Darklight Core,34203,31003,12,0,0,12,Darklight Striker,Lacewing Moth
+Darklight Core,34195,31004,12,0,0,12,Darklight Emitter,Lacewing Moth
+Darklight Core,34206,31005,12,0,0,12,Darklight Matter,Lacewing Moth
+Darklight Core,34206,31005,12,-1,1,12,Darklight Emitter,Jungle Beasts
+Darklight Core,34201,31013,12,0,0,12,Darklight Matter,Jungle Beasts
+Darklight Core,34201,31021,12,0,0,12,Darklight Emitter,Jungle Beasts
+Darklight Core,34201,31028,12,0,0,12,Darklight Source,Lady bug
+Darklight Core,34203,31056,12,0,0,12,Darklight Construct,Lady bug
+Darklight Core,34222,31060,12,0,0,12,Darklight Source,Lady bug
+Darklight Core,34204,31061,12,0,0,12,Darklight Emitter,Malofur Mangrinder
+Darklight Core,34228,31062,12,0,0,12,Darklight Striker,Malofur Mangrinder
+Darklight Core,34243,31062,12,0,0,12,Darklight Matter,Malofur Mangrinder
+Darklight Core,34197,31063,12,0,0,12,Darklight Construct,Azure Dragon
+Darklight Core,34216,31063,12,0,0,12,Darklight Source,Azure Dragon
+Darklight Core,34236,31063,12,0,0,12,Darklight Striker,Azure Dragon
+Darklight Core,34189,31064,12,0,0,12,Darklight Construct,Golden Lord
+Darklight Core,34203,31064,12,0,0,12,Darklight Matter,Golden Lord
+Darklight Core,34225,31064,12,0,0,12,Darklight Source,Golden Lord
+Darklight Core,34226,31054,13,0,0,13,Darklight Construct,Lacewing Moth
+Darklight Core,34279,31054,13,0,0,13,Darklight Emitter,Lacewing Moth
+Darklight Core,34228,31056,13,0,0,13,Darklight Construct,Lacewing Moth
+Darklight Core,34276,31056,13,0,0,13,Darklight Matter,Jungle Beasts
+Darklight Core,34252,31058,13,0,0,13,Darklight Construct,Jungle Beasts
+Darklight Core,34269,31059,13,0,0,13,Darklight Matter,Jungle Beasts
+Darklight Core,34264,31060,13,0,0,13,Darklight Emitter,Lady bug
+Darklight Core,34251,31062,13,0,0,13,Darklight Construct,Lady bug
+Darklight Core,34241,31069,13,0,0,13,Darklight Emitter,Lady bug
+Darklight Core,34247,31070,13,0,0,13,Darklight Source,Malofur Mangrinder
+Darklight Core,34262,31070,13,0,0,13,Darklight Striker,Malofur Mangrinder
+Darklight Core,34239,31071,13,0,0,13,Darklight Striker,Malofur Mangrinder
+Darklight Core,34301,31073,13,0,0,13,Darklight Source,Azure Dragon
+Darklight Core,34306,31075,13,0,0,13,Darklight Matter,Azure Dragon
+Darklight Core,34268,31077,13,0,0,13,Darklight Construct,Azure Dragon
+Darklight Core,34298,31077,13,0,0,13,Darklight Construct,Golden Lord
+Darklight Core,34305,31081,13,0,0,13,Darklight Striker,Golden Lord
+Darklight Core,34281,31083,13,0,0,13,Darklight Matter,Golden Lord
+Darklight Core,34262,31086,13,0,0,13,Darklight Source,Lacewing Moth
+Darklight Core,34238,31087,13,0,0,13,Darklight Source,Lacewing Moth
+Darklight Core,34271,31087,13,0,0,13,Darklight Striker,Lacewing Moth
+Darklight Core,34306,31088,13,0,0,13,Darklight Striker,Jungle Beasts
+Darklight Core,34238,31095,13,0,0,13,Darklight Striker,Jungle Beasts
+Darklight Core,34264,31098,13,0,0,13,Darklight Matter,Jungle Beasts
+Darklight Core,34291,31102,13,0,0,13,Darklight Matter,Lady bug
+Darklight Core,34263,31103,13,0,0,13,Darklight Striker,Lady bug
+Darklight Core,34238,31104,13,0,0,13,Darklight Emitter,Lady bug
+Darklight Core,34253,31110,13,0,0,13,Darklight Source,Malofur Mangrinder
+Darklight Core,34265,31110,13,0,0,13,Darklight Emitter,Malofur Mangrinder
+Darklight Core,34240,31111,13,0,0,13,Darklight Matter,Malofur Mangrinder
+Darklight Core,34272,31111,13,0,0,13,Darklight Matter,Azure Dragon
+Darklight Core,34275,31061,14,0,0,14,Darklight Emitter,Azure Dragon
+Darklight Core,34277,31068,14,0,0,14,Darklight Matter,Azure Dragon
+Darklight Core,34264,31072,14,0,0,14,Darklight Construct,Golden Lord
+Darklight Core,34271,31072,14,0,0,14,Darklight Emitter,Golden Lord
+Darklight Core,34257,31077,14,0,0,14,Darklight Source,Golden Lord
+Darklight Core,34259,31084,14,0,0,14,Darklight Matter,Lacewing Moth
+Darklight Core,34268,31085,14,0,0,14,Darklight Striker,Lacewing Moth
+Darklight Core,34276,31086,14,0,0,14,Darklight Emitter,Lacewing Moth
+Darklight Core,34289,31091,14,0,0,14,Darklight Emitter,Jungle Beasts
+Darklight Core,34301,31091,14,0,0,14,Darklight Matter,Jungle Beasts
+Darklight Core,34275,31093,14,0,0,14,Darklight Striker,Jungle Beasts
+Darklight Core,34276,31098,14,0,0,14,Darklight Construct,Lady bug
+Darklight Core,34276,31106,14,0,0,14,Darklight Matter,Lady bug
+Jaded Roots,34334,31208,9,0,0,9,Rotten Man-Maggot,Alptramun
+Jaded Roots,34342,31210,9,0,0,9,Rotten Man-Maggot,Alptramun
+Jaded Roots,34330,31212,9,0,0,9,Rotten Man-Maggot,Alptramun
+Jaded Roots,34340,31212,9,0,0,9,Darklight Matter,Swamp Snapper
+Jaded Roots,34328,31216,9,0,-1,9,Oozing Corpus,Swamp Snapper
+Jaded Roots,34341,31217,9,0,0,9,Oozing Corpus,Swamp Snapper
+Jaded Roots,34337,31220,9,0,0,9,Walking Pillar,Loricate Orger
+Jaded Roots,34335,31226,9,0,0,9,Sopping Carcass,Loricate Orger
+Jaded Roots,34344,31229,9,0,0,9,Converter,Loricate Orger
+Jaded Roots,34336,31230,9,0,0,9,Wandering Pillar,Frost Maiden
+Jaded Roots,34330,31234,9,0,0,9,Meandering Mushroom,Frost Maiden
+Jaded Roots,34342,31234,9,-1,1,9,Darklight Emitter,Frost Maiden
+Jaded Roots,34387,31237,9,0,0,9,Bloated Man-Maggot,Tundra Troll
+Jaded Roots,34393,31238,9,0,0,9,Darklight Emitter,Tundra Troll
+Jaded Roots,34389,31240,9,0,0,9,Walking Pillar,Tundra Troll
+Jaded Roots,34339,31244,9,0,0,9,Bloated Man-Maggot,Royal Man
+Jaded Roots,34331,31247,9,0,0,9,Foxmouse,Royal Man
+Jaded Roots,34342,31248,9,0,0,9,Darklight Source,Royal Man
+Jaded Roots,34333,31249,9,0,0,9,Darklight Striker,Alptramun
+Jaded Roots,34338,31250,9,0,0,9,Meandering Mushroom,Alptramun
+Jaded Roots,34355,31252,9,0,0,9,Walking Pillar,Alptramun
+Jaded Roots,34386,31252,9,0,0,9,Darklight Striker,Swamp Snapper
+Jaded Roots,34383,31254,9,0,0,9,Bloated Man-Maggot,Swamp Snapper
+Jaded Roots,34365,31256,9,0,-1,9,Darklight Source,Swamp Snapper
+Jaded Roots,34358,31256,9,0,0,9,Sopping Corpus,Loricate Orger
+Jaded Roots,34342,31257,9,0,0,9,Darklight Source,Loricate Orger
+Jaded Roots,34383,31258,9,0,0,9,Oozing Carcass,Loricate Orger
+Jaded Roots,34311,31198,10,0,0,10,Elder Bloodjaw,Frost Maiden
+Jaded Roots,34328,31199,10,0,0,10,Darklight Emitter,Frost Maiden
+Jaded Roots,34340,31199,10,0,0,10,Elder Bloodjaw,Frost Maiden
+Jaded Roots,34331,31200,10,0,0,10,Oozing Corpus,Tundra Troll
+Jaded Roots,34312,31202,10,0,0,10,Mycobiontic Beetle,Tundra Troll
+Jaded Roots,34314,31207,10,0,0,10,Walking Pillar,Tundra Troll
+Jaded Roots,34310,31208,10,0,0,10,Oozing Corpus,Royal Man
+Jaded Roots,34314,31218,10,0,0,10,Walking Pillar,Royal Man
+Jaded Roots,34336,31218,10,0,0,10,Feral Werecrocodile,Royal Man
+Jaded Roots,34317,31221,10,0,0,10,Mycobiontic Beetle,Alptramun
+Jaded Roots,34343,31221,10,0,0,10,Rotten Man-Maggot,Alptramun
+Jaded Roots,34343,31225,10,0,0,10,Converter,Alptramun
+Jaded Roots,34337,31227,10,0,0,10,Rotten Man-Maggot,Swamp Snapper
+Jaded Roots,34323,31231,10,0,0,10,Wandering Pillar,Swamp Snapper
+Jaded Roots,34320,31232,10,0,0,10,Darklight Emitter,Swamp Snapper
+Jaded Roots,34333,31235,10,0,0,10,Sopping Corpus,Loricate Orger
+Jaded Roots,34325,31238,10,0,0,10,Mycobiontic Beetle,Loricate Orger
+Jaded Roots,34329,31240,10,0,0,10,Darklight Emitter,Loricate Orger
+Jaded Roots,34291,31241,10,0,0,10,Bloated Man-Maggot,Frost Maiden
+Jaded Roots,34278,31242,10,0,0,10,Wandering Pillar,Frost Maiden
+Jaded Roots,34333,31242,10,0,0,10,Sopping Corpus,Frost Maiden
+Jaded Roots,34313,31244,10,0,0,10,Meandering Mushroom,Tundra Troll
+Jaded Roots,34291,31245,10,0,0,10,Darklight Construct,Tundra Troll
+Jaded Roots,34323,31247,10,0,0,10,Darklight Construct,Tundra Troll
+Jaded Roots,34310,31250,10,0,0,10,Rotten Man-Maggot,Royal Man
+Jaded Roots,34309,31255,10,0,0,10,Mycobiontic Beetle,Royal Man
+Jaded Roots,34297,31258,10,0,0,10,Feral Werecrocodile,Royal Man
+Jaded Roots,34371,31275,10,0,0,10,Meandering Mushroom,Alptramun
+Jaded Roots,34343,31276,10,0,0,10,Oozing Carcass,Alptramun
+Jaded Roots,34365,31276,10,0,0,10,Mycobiontic Beetle,Alptramun
+Jaded Roots,34374,31283,10,0,0,10,Meandering Mushroom,Swamp Snapper
+Jaded Roots,34343,31285,10,0,0,10,Meandering Mushroom,Swamp Snapper
+Jaded Roots,34380,31285,10,0,0,10,Rotten Man-Maggot,Swamp Snapper
+Jaded Roots,34344,31295,10,0,0,10,Foxmouse,Loricate Orger
+Jaded Roots,34341,31296,10,0,0,10,Werecrocodile,Loricate Orger
+Jaded Roots,34368,31297,10,0,0,10,Werecrocodile,Loricate Orger
+Jaded Roots,34379,31298,10,0,0,10,Mycobiontic Beetle,Frost Maiden
+Jaded Roots,34357,31304,10,0,0,10,Werecrocodile,Frost Maiden
+Jaded Roots,34380,31305,10,0,0,10,Werecrocodile,Frost Maiden
+Jaded Roots,34359,31311,10,0,0,10,Rotten Man-Maggot,Tundra Troll
+Jaded Roots,34366,31312,10,0,0,10,Werepanther,Tundra Troll
+Jaded Roots,34378,31312,10,0,0,10,Meandering Mushroom,Tundra Troll
+Jaded Roots,34380,31316,10,0,0,10,Werepanther,Royal Man
+Jaded Roots,34344,31321,10,0,0,10,Oozing Carcass,Royal Man
+Jaded Roots,34363,31321,10,0,0,10,Rotten Man-Maggot,Royal Man
+Jaded Roots,34352,31273,11,0,0,11,Meandering Mushroom,Alptramun
+Jaded Roots,34362,31273,11,0,0,11,Oozing Corpus,Alptramun
+Jaded Roots,34334,31280,11,0,0,11,Mycobiontic Beetle,Alptramun
+Jaded Roots,34343,31281,11,0,0,11,Meandering Mushroom,Swamp Snapper
+Jaded Roots,34361,31282,11,0,0,11,Werepanther,Swamp Snapper
+Jaded Roots,34375,31282,11,0,0,11,Oozing Corpus,Swamp Snapper
+Jaded Roots,34341,31286,11,0,0,11,Werepanther,Loricate Orger
+Jaded Roots,34363,31289,11,0,0,11,Werecrocodile,Loricate Orger
+Jaded Roots,34341,31292,11,0,0,11,Mycobiontic Beetle,Loricate Orger
+Jaded Roots,34367,31293,11,0,0,11,Rotten Man-Maggot,Frost Maiden
+Jaded Roots,34333,31295,11,0,0,11,Werecrocodile,Frost Maiden
+Jaded Roots,34355,31297,11,0,0,11,Meandering Mushroom,Frost Maiden
+Jaded Roots,34340,31299,11,0,0,11,Oozing Carcass,Tundra Troll
+Jaded Roots,34379,31300,11,0,0,11,Rotten Man-Maggot,Tundra Troll
+Jaded Roots,34355,31304,11,0,0,11,Mycobiontic Beetle,Tundra Troll
+Jaded Roots,34365,31305,11,0,0,11,Oozing Corpus,Royal Man
+Jaded Roots,34343,31308,11,0,0,11,Werecrocodile,Royal Man
+Jaded Roots,34343,31311,11,0,0,11,Meandering Mushroom,Royal Man
+Jaded Roots,34372,31312,11,0,0,11,Mycobiontic Beetle,Alptramun
+Jaded Roots,34355,31314,11,0,0,11,Meandering Mushroom,Alptramun
+Jaded Roots,34350,31319,11,0,0,11,Oozing Carcass,Alptramun
+Jaded Roots,34380,31274,12,0,0,12,Mycobiontic Beetle,Swamp Snapper
+Jaded Roots,34345,31276,12,0,0,12,Mycobiontic Beetle,Swamp Snapper
+Jaded Roots,34360,31276,12,0,0,12,Rotten Man-Maggot,Swamp Snapper
+Jaded Roots,34356,31277,12,0,0,12,Werecrocodile,Loricate Orger
+Jaded Roots,34370,31277,12,0,0,12,Mycobiontic Beetle,Loricate Orger
+Jaded Roots,34334,31281,12,0,0,12,Mycobiontic Beetle,Loricate Orger
+Jaded Roots,34378,31282,12,0,0,12,Meandering Mushroom,Frost Maiden
+Jaded Roots,34345,31291,12,0,0,12,Werecrocodile,Frost Maiden
+Jaded Roots,34352,31291,12,0,0,12,Meandering Mushroom,Frost Maiden
+Jaded Roots,34377,31291,12,0,0,12,Oozing Corpus,Tundra Troll
+Jaded Roots,34357,31292,12,0,0,12,Werepanther,Tundra Troll
+Jaded Roots,34369,31292,12,0,0,12,Mycobiontic Beetle,Tundra Troll
+Jaded Roots,34380,31294,12,0,0,12,Rotten Man-Maggot,Royal Man
+Jaded Roots,34346,31298,12,0,0,12,Rotten Man-Maggot,Royal Man
+Jaded Roots,34355,31298,12,0,0,12,Oozing Carcass,Royal Man
+Jaded Roots,34338,31299,12,0,0,12,Rotten Man-Maggot,Alptramun
+Jaded Roots,34350,31301,12,0,0,12,Werepanther,Alptramun
+Jaded Roots,34346,31304,12,0,0,12,Mycobiontic Beetle,Alptramun
+Jaded Roots,34350,31305,12,0,0,12,Werepanther,Swamp Snapper
+Jaded Roots,34337,31309,12,0,0,12,Oozing Corpus,Swamp Snapper
+Jaded Roots,34357,31310,12,0,0,12,Mycobiontic Beetle,Swamp Snapper
+Jaded Roots,34380,31311,12,0,0,12,Oozing Corpus,Loricate Orger
+Jaded Roots,34366,31312,12,0,0,12,Oozing Corpus,Loricate Orger
+Jaded Roots,34347,31313,12,0,0,12,Werecrocodile,Loricate Orger
+Jaded Roots,34359,31313,12,0,0,12,Meandering Mushroom,Frost Maiden
+Jaded Roots,34355,31317,12,0,0,12,Oozing Carcass,Frost Maiden
+Gloom Pillars,34494,31257,9,0,0,9,Walking Pillar,Orclops Ravager
+Gloom Pillars,34494,31257,9,-1,1,9,Wandering Pillar,Orclops Ravager
+Gloom Pillars,34493,31268,9,0,0,9,Wandering Pillar,Orclops Ravager
+Gloom Pillars,34492,31274,9,0,0,9,Sopping Carcass,Shaper Matriarch
+Gloom Pillars,34491,31280,9,1,0,9,Walking Pillar,Shaper Matriarch
+Gloom Pillars,34495,31282,9,0,0,9,Sopping Carcass,Shaper Matriarch
+Gloom Pillars,34500,31283,9,0,0,9,Wandering Pillar,Grove Keeper
+Gloom Pillars,34513,31283,9,0,0,9,Wandering Pillar,Grove Keeper
+Gloom Pillars,34500,31286,9,0,0,9,Walking Pillar,Grove Keeper
+Gloom Pillars,34503,31291,9,0,0,9,Wandering Pillar,Blazebringer
+Gloom Pillars,34517,31300,9,0,0,9,Sopping Corpus,Blazebringer
+Gloom Pillars,34511,31301,9,0,0,9,Weretiger,Blazebringer
+Gloom Pillars,34519,31303,9,0,0,9,Sopping Carcass,Garack
+Gloom Pillars,34504,31221,10,0,0,10,Walking Pillar,Garack
+Gloom Pillars,34484,31222,10,0,0,10,Sopping Corpus,Garack
+Gloom Pillars,34492,31222,10,0,0,10,Wandering Pillar,Orclops Ravager
+Gloom Pillars,34507,31222,10,0,0,10,Weretiger,Orclops Ravager
+Gloom Pillars,34513,31222,10,0,0,10,Sopping Corpus,Orclops Ravager
+Gloom Pillars,34479,31225,10,0,0,10,Wandering Pillar,Shaper Matriarch
+Gloom Pillars,34477,31231,10,0,0,10,Weretiger,Shaper Matriarch
+Gloom Pillars,34475,31240,10,-1,-1,10,Wandering Pillar,Shaper Matriarch
+Gloom Pillars,34474,31242,10,0,0,10,Sopping Corpus,Grove Keeper
+Gloom Pillars,34487,31249,10,0,0,10,Weretiger,Grove Keeper
+Gloom Pillars,34488,31254,10,0,0,10,Walking Pillar,Grove Keeper
+Gloom Pillars,34492,31257,10,0,0,10,Sopping Carcass,Blazebringer
+Gloom Pillars,34500,31257,10,0,0,10,Sopping Corpus,Blazebringer
+Gloom Pillars,34536,31191,11,0,0,11,Sopping Carcass,Blazebringer
+Gloom Pillars,34539,31192,11,0,0,11,Weretiger,Garack
+Gloom Pillars,34546,31194,11,0,0,11,Wandering Pillar,Garack
+Gloom Pillars,34530,31199,11,0,0,11,Sopping Carcass,Garack
+Gloom Pillars,34545,31204,11,0,0,11,Sopping Corpus,Orclops Ravager
+Gloom Pillars,34542,31207,11,0,0,11,Weretiger,Orclops Ravager
+Gloom Pillars,34533,31209,11,0,0,11,Weretiger,Orclops Ravager
+Gloom Pillars,34535,31212,11,0,0,11,Wandering Pillar,Shaper Matriarch
+Gloom Pillars,34535,31221,11,0,0,11,Walking Pillar,Shaper Matriarch
+Gloom Pillars,34535,31226,11,0,0,11,Wandering Pillar,Shaper Matriarch
+Gloom Pillars,34468,31230,11,0,0,11,Sopping Carcass,Grove Keeper
+Gloom Pillars,34485,31231,11,0,0,11,Sopping Corpus,Grove Keeper
+Gloom Pillars,34483,31233,11,0,0,11,Weretiger,Grove Keeper
+Gloom Pillars,34517,31233,11,0,0,11,White Weretiger,Blazebringer
+Gloom Pillars,34450,31234,11,0,0,11,Sopping Carcass,Blazebringer
+Gloom Pillars,34473,31235,11,0,0,11,Wandering Pillar,Blazebringer
+Gloom Pillars,34484,31236,11,0,0,11,Sopping Carcass,Garack
+Gloom Pillars,34516,31237,11,0,0,11,Wandering Pillar,Garack
+Gloom Pillars,34456,31238,11,0,0,11,Wandering Pillar,Garack
+Gloom Pillars,34445,31239,11,0,0,11,Sopping Carcass,Orclops Ravager
+Gloom Pillars,34468,31239,11,0,0,11,White Weretiger,Orclops Ravager
+Gloom Pillars,34518,31239,11,0,0,11,Sopping Corpus,Orclops Ravager
+Gloom Pillars,34464,31240,11,0,0,11,Wandering Pillar,Shaper Matriarch
+Gloom Pillars,34483,31240,11,0,0,11,Sopping Carcass,Shaper Matriarch
+Gloom Pillars,34505,31240,11,0,0,11,White Weretiger,Shaper Matriarch
+Gloom Pillars,34514,31240,11,0,0,11,Weretiger,Grove Keeper
+Gloom Pillars,34528,31241,11,0,0,11,Wandering Pillar,Grove Keeper
+Gloom Pillars,34445,31242,11,0,0,11,Sopping Corpus,Grove Keeper
+Gloom Pillars,34448,31245,11,0,0,11,White Weretiger,Blazebringer
+Gloom Pillars,34507,31245,11,0,0,11,Walking Pillar,Blazebringer
+Gloom Pillars,34486,31247,11,0,0,11,Sopping Corpus,Blazebringer
+Gloom Pillars,34471,31248,11,0,0,11,Walking Pillar,Garack
+Gloom Pillars,34506,31248,11,0,0,11,Wandering Pillar,Garack
+Putrefactory,34058,31145,11,0,0,11,Bloated Man-Maggot,Orclops Ravager
+Putrefactory,34065,31151,11,0,0,11,Bloated Man-Maggot,Orclops Ravager
+Putrefactory,34051,31156,11,0,0,11,Converter,Orclops Ravager
+Putrefactory,34019,31174,11,0,0,11,Converter,Shaper Matriarch
+Putrefactory,34049,31152,12,0,0,12,Meandering Mushroom,Shaper Matriarch
+Putrefactory,34052,31156,12,0,0,12,Bloated Man-Maggot,Shaper Matriarch
+Putrefactory,34040,31165,12,0,0,12,Bloated Man-Maggot,Grove Keeper
+Putrefactory,34032,31171,12,0,0,12,Converter,Grove Keeper
+Putrefactory,34059,31172,12,0,0,12,Bloated Man-Maggot,Grove Keeper
+Putrefactory,34036,31177,12,0,0,12,Bloated Man-Maggot,Blazebringer
+Putrefactory,34027,31184,12,0,0,12,Converter,Blazebringer
+Putrefactory,34024,31187,12,0,0,12,Feral Werecrocodile,Blazebringer
+Putrefactory,34041,31188,12,0,0,12,Meandering Mushroom,Garack
+Putrefactory,34014,31191,12,-1,0,12,Bloated Man-Maggot,Garack
+Putrefactory,34002,31195,12,0,0,12,Foxmouse,Garack
+Putrefactory,34013,31200,12,-1,0,12,Feral Werecrocodile,Orclops Ravager
+Putrefactory,33994,31204,12,0,0,12,Bloated Man-Maggot,Orclops Ravager
+Putrefactory,33987,31206,12,0,0,12,Converter,Orclops Ravager
+Putrefactory,33981,31207,12,0,0,12,Elder Bloodjaw,Shaper Matriarch
+Putrefactory,34019,31207,12,0,0,12,Bloated Man-Maggot,Shaper Matriarch
+Putrefactory,34033,31209,12,0,0,12,Converter,Shaper Matriarch
+Putrefactory,34039,31217,12,0,0,12,Elder Bloodjaw,Grove Keeper

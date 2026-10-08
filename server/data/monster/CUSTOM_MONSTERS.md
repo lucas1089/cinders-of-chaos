@@ -9,7 +9,14 @@
 **Importing from another server.** `server/tools/adapt_monsters.py` replaces unknown corpse ids with a fallback and drops loot lines whose item does not exist here. It does not touch lookType.
 
 ## What was imported
-Our map (the two spawn files) spawns 958 monster names. 98 of them (19,530 spawns) had no definition in the base server package, so those spawns were silent. Found definitions for 90: 85 XML from the donor server (`monsters/chaos/`) and 5 Lua from the second donor server (`lua/chaos/`). Still undefined: demon (goblin), horse1, horse3, labirint, litle devil, nomadfemale, training monk, yalaharimonster (1,389 spawns; they look like placeholder names).
+**Correction (they did not spawn).** The figures below were counted over two spawn files, and the 19,530 spawns of the imported
+names are almost all in the spawn file of a second map that the server does not load (`mapName` in `config.lua` names the
+loaded one). On the loaded map none of the 85 imported XML monsters spawned (only the 5 Lua ones from `lua/chaos/` do,
+98 spawns). Since the late game work 17 of the XML ones do, in four
+level 500+ areas, with clamped levels and retuned stats: `server/tools/late_game.py` and `server/tools/late_game_spawns.csv`,
+see `server/README.md` "Late game". The other imported XML monsters are still registered but spawn nowhere on the loaded map.
+
+The two spawn files together spawn 958 monster names. 98 of them (19,530 spawns) had no definition in the base server package, so those spawns were silent. Found definitions for 90: 85 XML from the donor server (`monsters/chaos/`) and 5 Lua from the second donor server (`lua/chaos/`). Still undefined: demon (goblin), horse1, horse3, labirint, litle devil, nomadfemale, training monk, yalaharimonster (1,389 spawns; they look like placeholder names).
 
 Adaptations (`adapt_report.txt`): 147 changes, mostly the donor server's corpse id 41162 (not in our items) replaced by 6068, and loot lines for items that do not exist here removed. A common one is item 40407 in almost every donor server monster, which looks like a server-specific token: its drops are gone until we decide what it is.
 
@@ -18,3 +25,6 @@ Adaptations (`adapt_report.txt`): 147 changes, mostly the donor server's corpse 
 - **You must build the merged dat/spr** (the spr is 494 MB, too big for git): `python3 -I client/tools/sprites/merge_outfits.py --src-dat <donor client Tibia.dat> --src-spr <donor client Tibia.spr> --ours-dat <base server Tibia.dat> --ours-spr <base server Tibia.spr> --report server/data/monster/sprite_report.csv --out-dir out/merged`, then use `out/merged/Tibia.dat` and `Tibia.spr` as the `data/things/1098` pair of the client. Without them the remapped monsters show wrong art.
 - Verified in the sandbox: the merged dat parses (1501 outfits), the 36 new outfits render pixel-identical to the source, and 60 random original outfits are unchanged. Not verified in a real client. Six custom dat flags (39, 41, 42, 43, 46, 62) were stripped from the copied entries; their meaning is a guess.
 - Still without a sprite: Golden Dragon, Scaleborn (suspect art), Mercenary, Mercenary Ranger, Mortal Illusion (`needs_sprites.txt`), and 5 names with no lookType.
+- Checked in the test client (merged pair: 1501 outfits + the Chaos effects), for the late game set: the 17 spawned monsters
+  render with their art. Dawn Strayer (lookType 1036) draws as a broken striped image, so it is not spawned; Cunning Hyaena
+  (1051) draws a green tentacled creature that does not read as a hyaena, also left out.

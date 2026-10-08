@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Lacewing Moth" nameDescription="a Lacewing Moth" race="blood" experience="75000" evented = "5" skulled="1" looting="1" speed="630">
-	<health now="105000" max="105000"/>
+<monster name="Lacewing Moth" nameDescription="a Lacewing Moth" race="blood" experience="12400" evented = "5" skulled="1" looting="1" speed="53">
+	<health now="19900" max="19900"/>
 	<look type="1480" corpse="6068" />
-	<level min="950" max="1050"/>
-	<levelconfig experience="250" health="100" damage="0" speed="50" />
+	<level min="900" max="940"/>
 	<targetchange interval="4000" chance="10" />
 	<flags>
 		<flag summonable="0" />
@@ -18,18 +17,13 @@
 		<flag staticattack="80" />
 		<flag runonhealth="0" />
 	</flags>
-	<script>
-        <event name="auto_loot"/>
-        <event name="orb_bonus"/>
-        <event name="crusd_chest_bonus"/>
-    </script>
 	<attacks>
-		<attack name="melee" interval="2000" min="-3000" max="-4000" />
-		<attack name="manadrain" interval="2000" chance="30" range="7" min="-3000" max="-4000" />
-		<attack name="lifedrain" interval="2000" chance="45" length="8" spread="0" min="-3000" max="-4200">
+		<attack name="melee" interval="2000" min="-760" max="-1020" />
+		<attack name="manadrain" interval="2000" chance="30" range="7" min="-760" max="-1020" />
+		<attack name="lifedrain" interval="2000" chance="45" length="8" spread="0" min="-760" max="-1070">
 			<attribute key="areaEffect" value="purpleenergy" />
 		</attack>
-		<attack name="arc bolt" interval="2000" chance="10" range="1" min="-3000" max="-4500">
+		<attack name="energy" target="1" interval="2000" chance="10" range="1" min="-760" max="-1150">
 		</attack>
 		<attack name="speed" interval="2000" chance="15" radius="1" target="1" speedchange="-100" duration="30000">
 			<attribute key="areaEffect" value="redshimmer" />
@@ -39,19 +33,19 @@
 		<defense name="healing" interval="2000" chance="15" min="1500" max="3000">
 			<attribute key="areaEffect" value="blueshimmer" />
 		</defense>
-		<defense name="speed" interval="2000" chance="15" speedchange="320" duration="5000">
+		<defense name="speed" interval="2000" chance="15" speedchange="300" duration="5000">
 			<attribute key="areaEffect" value="redshimmer" />
 		</defense>
 	</defenses>
 	<elements>
-    <element firePercent="25" />
-    <element earthPercent="25" />
-    <element energyPercent="25" />
-    <element deathPercent="25" />
-    <element physicalPercent="25" />
-    <element holyPercent="25" />
-    <element icePercent="25" />
-  </elements>
+		<element physicalPercent="-15"/>
+		<element holyPercent="-15"/>
+		<element firePercent="20"/>
+		<element energyPercent="20"/>
+		<element icePercent="20"/>
+		<element earthPercent="20"/>
+		<element deathPercent="10"/>
+	</elements>
 	<immunities>
 		<immunity invisible="1" />
 	</immunities>
@@ -60,7 +54,21 @@
 		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
 		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
 		<item id="2152" countmax="25" chance="65000"/><!-- Platinum Coin -->
-		<item id="11302;11301;11304;11303;8891;9931;11356;2645" chance="3000" /><!-- zaoan helmet -->
-		<item id="8889;8887;12607;8880;2522;2520;11117;5741" chance="2000" /><!-- skullcrackerarmor;frozen plate;elite draken mail;swamplair armor -->
+		<item id="11302" chance="375" /><!-- zaoan helmet -->
+		<item id="11301" chance="375" />
+		<item id="11304" chance="375" />
+		<item id="11303" chance="375" />
+		<item id="8891" chance="375" />
+		<item id="9931" chance="375" />
+		<item id="11356" chance="375" />
+		<item id="2645" chance="375" />
+		<item id="8889" chance="250" /><!-- skullcrackerarmor;frozen plate;elite draken mail;swamplair armor -->
+		<item id="8887" chance="250" />
+		<item id="12607" chance="250" />
+		<item id="8880" chance="250" />
+		<item id="2522" chance="250" />
+		<item id="2520" chance="250" />
+		<item id="11117" chance="250" />
+		<item id="5741" chance="250" />
 	</loot>
 </monster>

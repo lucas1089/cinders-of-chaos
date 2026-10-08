@@ -13,12 +13,12 @@ Status: `todo`, `in progress`, `done`.
 
 ## Next: fix the late game (players hit a wall after level ~500)
 
-Estimated today: ~155 h to level 1000 for a sorcerer, ~285 h for a knight or paladin, and 80% of it is spent between 700 and 1000.
+Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for a knight or paladin, and 80% of it is spent between 700 and 1000.
 
 | # | Item | Status | Notes |
 |---|---|---|---|
-| 4 | Spawn the level-scaled Chaos monsters on the map that is actually loaded | todo | They are registered in monsters.xml but only spawn in `newcity-spawn.xml`, which belongs to a map that is not loaded. `server/data/monster/CUSTOM_MONSTERS.md` wrongly says they spawn |
-| 5 | Smooth the experience stage curve after level 700 | todo | `config.lua` stages: x15 at 700 drops to x3 from 851 |
+| 4 | Spawn the level-scaled Chaos monsters on the map that is actually loaded | done | 17 of them (levels 650-1000, retuned health/speed/damage/exp, weak to physical and holy) replace 268 of the weaker spawns in four level 500+ areas (Darklight Core, Jaded Roots, Gloom Pillars, Putrefactory): `server/tools/late_game.py` + `late_game_spawns.csv`, README "Late game" |
+| 5 | Smooth the experience stage curve after level 700 | done | x15 to 800, x14 to 900, x13 after (was 12/9/6/3; the last stage had no maxlevel, which this engine reads as 0, so 851+ really got rateExp x5). Model: sorcerer ~96 h, knight ~154 h, paladin ~140 h to 1000 (was ~138/257/252 h with the x5 bug, ~154/286/281 h as written) |
 | 6 | Fix the waystone "Experience" character upgrade (and its siblings Loot and Rarity) | done | all three only wrote a storage nothing read; now applied (`waystone_bonuses.lua`, `tools/patch_base_events.py`) |
 | 7 | Monster level bonus roll bug | done (kept as is) | `src/monster.cpp:52` uses `\|\|`, so only the first branch runs: a plain uniform roll between min and max level. The other branches would skew 80% of monsters to the top of their range and compute negative ranges for narrow level spans, so the current uniform behaviour is kept on purpose |
 

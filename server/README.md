@@ -16,15 +16,16 @@ database. Treat every engine-API call (listed under "Assumed API") as unverified
 ```
 server/
   README.md
-  sql/chaos.sql                       CREATE TABLE IF NOT EXISTS for 10 tables
+  sql/chaos.sql                       CREATE TABLE IF NOT EXISTS for 13 tables
   tools/gen_passivetree_data.lua      regenerates passivetree_data.lua from the client tree
+  tools/late_game.py, late_game_spawns.csv   late game stages and spawns (see "Late game")
   data/scripts/chaos/
     chaos_constants.lua               ALL opcodes, storage keys, table names, tunables, shared helpers
     bank.lua  autoloot.lua  daily.lua  notifications.lua  passivetree.lua  passivetree_data.lua
     dungeons.lua  infinitytower.lua  stash.lua  spell_guard.lua (Iron Will damage reduction of the Iron Bellow spell)
     combat_fx.lua (crit / dodge / reflect / elemental weapon hit visuals, ChaosCombatFx)
-  src-patches/0001-critical-hit-to-lua.patch   engine: onHealthChange gets `critical` (combat_fx.lua)
     paragon.lua (Paragon track past the passive tree, see "Paragon")
+  src-patches/0001-critical-hit-to-lua.patch   engine: onHealthChange gets `critical` (combat_fx.lua)
     shop.lua  shop_config.lua  shop_services.lua  autosell.lua  sell_prices.lua (store, see "Store services")
     bounty.lua  bounty_core.lua  bounty_config.lua  bounty_pool.lua (bounty board; pool from tools/gen_bounty_pool.py)
 ```
@@ -48,11 +49,15 @@ server/
    (+1% per level, x2.0 at level 100). Before, all three only stored their level and nothing read it.
    Verified on the test server: Experience 50 -> x1.5; Loot and Rarity 100 over 300 Dragon kills: items
    985 -> 1279, items with a rarity 81 -> 212.
-5. Restart the server (or `/reload scripts`). Check the console for Lua errors.
-6. Autoloot only: if `data/talkactions/talkactions.xml` registers `!autoloot` (the legacy
+5. Late game: copy `server/data/monster/monsters/chaos/*.xml` to `<server>/data/monster/monsters/chaos/` (17 of them
+   are tuned for levels 650-1000), then `python3 -I server/tools/late_game.py <server>/data` (idempotent; `--dry-run`
+   shows what would change, `--remove` undoes it). It writes the new `experienceStages` into `config.lua` and puts the
+   level-scaled monsters of `server/tools/late_game_spawns.csv` into the loaded map's spawn file. See "Late game".
+6. Restart the server (or `/reload scripts`). Check the console for Lua errors.
+7. Autoloot only: if `data/talkactions/talkactions.xml` registers `!autoloot` (the legacy
    `talkactions/scripts/autoloot.lua`), TFS 1.4.2 keeps the XML one and silently ignores
    `autoloot.lua`'s `!autoloot`. Remove that XML line for live window refresh. See "Stubbed or assumed".
-7. Client: apply the client-side gaps listed below, otherwise bank, autoloot, daily and stash
+8. Client: apply the client-side gaps listed below, otherwise bank, autoloot, daily and stash
    cannot talk to the server at all.
 
 `data/scripts/chaos/admin/` and `sql/chaos_admin.sql` are a separate admin-panel module written by another
@@ -258,15 +263,10 @@ The tree now has an effect: after every save, reset and login the summed node st
 - **Absorbs:** the second absorb storage per damage type (977562 to 977575) that the stock absorb event already reads; `absorbAllElements` adds to the nine elements; capped at 80% from the tree.
 - **Damage dealt:** `incrementX` for the type, `multiIncrement` for all elements, `incrementHealth` for healing; the event is registered on the target when a tree player attacks it.
 - **Experience, loot, speed:** experience multiplier, the item-find storage that `loot.lua` reads (loot plus rarity loot), and `changeSpeed` by the difference (capped at 80).
+- **Paragon:** the Paragon track's percentages arrive in the same bonus table and are added here (see "Paragon").
 - The conversion factors from node value to game value are in `cfg` at the top of the file (for example 1 point of experience = 0.1%), and the client tooltip shows the same numbers.
 - `server/tests/passivetree_effects_test.lua` checks the maths and the apply/remove logic against a mocked engine API and runs in CI. It does not prove the real API calls (`Condition`, `setCharacterStat`, `changeSpeed`, `onTargetCombat`) behave as assumed: that needs a server run. Speed bonuses are not restored after a death or a speed-resetting spell until the next save or login.
 
-## Passive tree keystones (`passivetree_keystones.lua`)
-Two new paths at the edge of the tree, each two notables and a keystone (1 point per node, like every node): **Wrath**
-- **Paragon:** the Paragon track's percentages arrive in the same bonus table and are added here (see "Paragon").
-(619 Gathering Fury, 620 Edge of Ruin, keystone 621; starts at node 600, north-east) and **Resolve** (622 Iron Resolve,
-623 Unbroken Will, keystone 624; starts at node 489, south-west). Both keystones sit about 25 nodes from the start, like the
-divine nodes. A keystone node has one variant per vocation (`knight = {...}`, `paladin = {...}` in the client's `nodes.lua`; the
 ## Paragon (`paragon.lua`)
 The long-term goal past the passive tree: the tree budget ends around level 1000 (about 248 of 624 nodes), and from there
 every level gives one Paragon point (`Chaos.paragon.startLevel` = 1000, `pointsPerLevel` = 1, so level 1001 has 1 point).
@@ -330,6 +330,11 @@ CREATE TABLE IF NOT EXISTS `chaos_paragon` (
   207 gold to 1035 in 40 dragon corpses (20.0%). Reset (gold), the store reset, the forged requests, relog, restart and the login
   refund were checked too.
 
+## Passive tree keystones (`passivetree_keystones.lua`)
+Two new paths at the edge of the tree, each two notables and a keystone (1 point per node, like every node): **Wrath**
+(619 Gathering Fury, 620 Edge of Ruin, keystone 621; starts at node 600, north-east) and **Resolve** (622 Iron Resolve,
+623 Unbroken Will, keystone 624; starts at node 489, south-west). Both keystones sit about 25 nodes from the start, like the
+divine nodes. A keystone node has one variant per vocation (`knight = {...}`, `paladin = {...}` in the client's `nodes.lua`; the
 generator writes them to `v` in `passivetree_data.lua`, and `ChaosPassiveTree.getBonuses` takes the variant of the player's
 vocation, by the vocation's client id). The server also sends the vocation key with `sendNodes`, so the client shows the same
 variant the server applies (the client's own vocation number did not match: an Elite Knight reported 4, "druid").
@@ -686,3 +691,135 @@ straight from the client is refused); the same board (same checksum) after a res
 restart; next-day expiry (simulated by shifting the day function); a multi-client contract pays nothing. Not verified in
 game: party credit with two real players (unit-tested only) and the real 06:00 roll (the roll is a once-a-minute check
 of the day key).
+
+## Late game (`tools/late_game.py`, `tools/late_game_spawns.csv`, 17 monsters in `data/monster/monsters/chaos/`)
+
+Goal agreed with the owner: a dedicated sorcerer reaches level 1000 in about 100 hours, knights and paladins in about 150
+or less. Before, the model gave ~155 h (sorcerer) and ~285 h (knight, paladin), 80% of it between 700 and 1000.
+`python3 -I server/tools/late_game.py <server>/data [--config PATH] [--spawn PATH] [--dry-run] [--remove]` does both parts
+below; it is idempotent and `--remove` restores the stock stage table and every replaced spawn.
+
+### Experience stages (`config.lua`)
+
+| Level | 1-650 | 651-700 | 701-750 | 751-800 | 801-850 | 851-900 | 901-950 | 951+ |
+|---|---|---|---|---|---|---|---|---|
+| before (as written) | unchanged | 15 | 12 | 9 | 6 | 3 | 3 | 3 |
+| before (as the engine used it) | unchanged | 15 | 12 | 9 | 6 | **5** | **5** | **5** |
+| after | unchanged | 15 | 15 | 15 | 14 | 14 | 13 | 13 |
+
+The stock last stage `{ minlevel = 851, multiplier = 3 }` has no maxlevel. This engine's `loadLuaStages` reads a missing
+maxlevel as 0, so the stage never matched and levels 851+ fell back to `rateExp` (5). The new table gives its last stage
+`maxlevel = 999999`. Checked on the test server: `Game.getExperienceStage` 700 -> 15, 750 -> 15, 800 -> 15, 801 -> 14,
+900 -> 14, 901 -> 13, 1000 -> 13 (before the fix in the tool, 951 and 1000 returned 5).
+
+### The monsters
+
+The imported level-scaled monsters of the 650-1300 band that render in the client (Dawn Strayer draws broken, Cunning
+Hyaena's art does not match it, Mercenary and Mercenary Ranger have no sprite; see `data/monster/CUSTOM_MONSTERS.md`).
+The engine scales a monster at level L: health x(1 + 0.0074 L), speed x(1 + 0.0085 L), damage x(1 + 0.0015 L),
+experience x0.03 L (`data/events/scripts/player.lua`), black skull from 401 and loot x2.7 from 501. At their old levels
+(up to 1300) they had 300k-900k health and 3000-7000 speed. Now:
+- levels clamped to 650-1000, narrow ranges, three tiers;
+- base health, experience and speed rewritten so the values at the level land where they should (speed 380-480 like the
+  existing 500+ monsters, 350-450);
+- attack damage scaled per monster so that a level 1000 knight in the best level 1000 gear takes about as much per second as
+  from the strongest existing late-game monsters (Embermaw Archon and Inferno Juggernaut ~1550/s, Pitlord Incarnate ~1070/s,
+  Aegis Sentinel ~780/s); player spells used as monster attacks (Reaver's Spin, Thornlash, an unknown "death wave",
+  "arc bolt") became plain combat attacks, `lenght` typos fixed, slows capped at -900, hastes at +300;
+- elements: physical and holy -15% (weakness), fire, energy, ice and earth +20%, death +10%. This is the lever that gives
+  knights and paladins a hunt where they keep up (see the model);
+- the donor events (`auto_loot`, `orb_bonus`, `crusd_chest_bonus`, unknown here, one warning per spawn) were removed, and
+  the donor's "one of" loot lines (`id="a;b;c"`, which this engine reads as item 0 and drops) became one line per item with
+  the chance split.
+
+Values at the middle of the level range (health, speed and experience per health point as measured in game on fresh
+normal-tier spawns; damage per second and the largest 100 ms hit measured with 45 s of a monster attacking a level 1000
+two-handed knight in full level 1000 gear):
+
+| Monster | Level | XML health / exp / speed | Health | Speed | Exp per health | Damage/s | Largest hit |
+|---|---|---|---|---|---|---|---|
+| Orclops Ravager | 650-690 | 13,400 / 4,550 / 60 | 80k | 402 | 1.15 | 1,094 | 1,736 |
+| Shaper Matriarch | 650-690 | 12,600 / 4,300 / 57 | 75k | 382 | 1.15 | 923 | 3,296 |
+| Grove Keeper | 680-720 | 13,800 / 4,850 / 59 | 85k | 410 | 1.19 | 1,049 | 4,030 |
+| Blazebringer | 700-740 | 13,400 / 4,700 / 60 | 85k | 427 | 1.20 | 1,031 | 12,052 |
+| Garack | 710-750 | 14,800 / 5,400 / 67 | 95k | 483 | 1.25 | 1,008 | 5,017 |
+| Alptramun | 760-800 | 16,200 / 8,200 / 54 | 110k | 412 | 1.75 | 1,088 | 3,214 |
+| Swamp Snapper | 760-800 | 16,200 / 8,200 / 55 | 110k | 420 | 1.75 | 1,229 | 8,904 |
+| Loricate Orger | 790-830 | 17,200 / 8,900 / 55 | 120k | 434 | 1.80 | 1,238 | 3,238 |
+| Frost Maiden | 800-840 | 16,300 / 8,450 / 50 | 115k | 399 | 1.80 | 1,058 | 3,725 |
+| Tundra Troll | 810-850 | 18,200 / 9,650 / 52 | 130k | 419 | 1.85 | 1,253 | 4,507 |
+| Royal Man | 810-850 | 17,500 / 9,300 / 53 | 125k | 427 | 1.85 | 1,155 | 3,952 |
+| Azure Dragon | 860-900 | 20,000 / 12,250 / 52 | 150k | 441 | 2.15 | 1,175 | 6,002 |
+| Golden Lord | 880-920 | 20,900 / 12,750 / 51 | 160k | 441 | 2.15 | 1,241 | 2,474 |
+| Lacewing Moth | 900-940 | 19,900 / 12,400 / 53 | 155k | 467 | 2.20 | 1,449 | 5,693 |
+| Jungle Beasts | 920-960 | 21,400 / 13,300 / 49 | 170k | 441 | 2.20 | 1,412 | 6,414 |
+| Lady bug | 940-980 | 20,400 / 12,900 / 52 | 165k | 476 | 2.25 | 1,719 | 7,450 |
+| Malofur Mangrinder | 960-1000 | 22,400 / 14,150 / 49 | 185k | 457 | 2.25 | 1,856 | 5,614 |
+| *existing, for comparison* | | | | | | | |
+| Embermaw Archon | - | 95,000 / 62,000 | 95k | - | 0.65 | 1,543 | 4,145 |
+| Inferno Juggernaut | - | 120,000 / 65,000 | 120k | - | 0.54 | 1,563 | 3,745 |
+| Pitlord Incarnate | - | 44,000 / 42,500 / 450 | 44k | 450 | 0.97 | 1,069 | 2,666 |
+| Aegis Sentinel | - | 40,000 / 58,000 / 350 | 40k | 350 | 1.45 | 783 | 2,231 |
+| Darklight Striker (replaced) | - | - | ~30k | 420 | ~0.69 | 110 | 738 |
+
+"Largest hit" is the largest health drop in one 100 ms sample, so attacks that land on the same tick add up: Blazebringer's
+12k and Swamp Snapper's 8.9k are such peaks (Blazebringer peaked at 3.4k in an earlier 40 s run with nearly the same
+scale); most attacks land at 1-3k. A level 1000 knight standing in Darklight Core without healing went from 18k to 9k in
+about 2 s against a pull of 6-8 and died in the next area: these are not monsters to pull in packs of five.
+
+Tier averages of experience per health point: 1.19 (levels 650-750), 1.80 (760-850), 2.20 (860-1000). Today's best
+spawned monsters give 1.0-1.45 (Soul War 1.02, Helm Hunter 1.43, Aegis Sentinel 1.45), so the first tier is no faster than
+the existing 650-700 hunts. The Chaos monster tiers (magic/rare/legendary) still apply on top, as everywhere.
+
+### Spawns (the loaded map's `<mapName>-spawn.xml`)
+
+268 entries of four level 500+ areas (the Bakragore monster set, Darklights task, level 500) are renamed to the new
+monsters. Only weaker monsters were taken (all under 25k experience per kill: the Darklight / pillar / maggot set at
+19-23k and were-creatures; no bosses or unique names), spread evenly over each area in packs of three of a kind; the
+positions are the existing spawn positions (walkable, checked in game: tile with ground, not protection zone, not
+blocking, not a floor change). Each changed line carries `lategame="<old name>"`.
+
+| Area | Box (x, y, z) | Spawns there | Replaced | New monsters |
+|---|---|---|---|---|
+| Darklight Core | 34185-34306, 30999-31111, 11-14 | 136 | 68 (Darklight Matter, Striker, Construct, Emitter, Source) | tier 3: Azure Dragon, Golden Lord, Lacewing Moth, Jungle Beasts, Lady bug, Malofur Mangrinder |
+| Jaded Roots | 34274-34393, 31198-31321, 9-12 | 299 | 119 (Mycobiontic Beetle, Rotten Man-Maggot, Meandering Mushroom, Oozing Corpus, Werecrocodile, ...) | tier 2: Alptramun, Swamp Snapper, Loricate Orger, Frost Maiden, Tundra Troll, Royal Man |
+| Gloom Pillars | 34445-34546, 31191-31303, 9-11 | 149 | 59 (Wandering/Walking Pillar, Sopping Carcass/Corpus, Weretiger) | tier 1: Orclops Ravager, Shaper Matriarch, Grove Keeper, Blazebringer, Garack |
+| Putrefactory | 33981-34065, 31144-31224, 11-12 | 58 | 22 (Bloated Man-Maggot, Converter, Elder Bloodjaw, ...) | tier 1 |
+
+The full list (spawn centre, offset, old and new monster) is `tools/late_game_spawns.csv`. Editing it and running the tool
+again syncs the file: new rows are applied, changed rows updated, removed rows restored.
+
+### The leveling model and the hours
+
+The model of the earlier analysis: rotation DPS from `data/spells/README.md` (5-target values, interpolated 300 -> 1000),
+0.47 of it turning into kills, the best hunt per level (generic 1.25 exp/health, Soul War with its task from 500), tasks as
+flat experience. Added: the new monsters from the level a player can hunt them (tier 1 from 650, tier 2 from 725, tier 3 from
+800) at their exp/health, with fewer targets per pull (3 instead of 5: they are 5-8 times bulkier than the area's old
+monsters and hit as hard as the strongest existing ones) and their elements (knights and paladins x1.15, sorcerers x0.80).
+"Boosted" = premium stamina x1.5, double experience potion, Soul Pit; "+hooks" also the Chaos callbacks (Blood Moon,
+passive tree, store World Experience +25%, waystone upgrade) as in the earlier analysis.
+
+Hours per level band, base (no boosts):
+
+| Vocation | | 1-100 | 100-300 | 300-500 | 500-700 | 700-800 | 800-900 | 900-1000 | total |
+|---|---|---|---|---|---|---|---|---|---|
+| sorcerer | before (stages as written) | 0.3 | 2.6 | 7.3 | 21.8 | 22.4 | 43.0 | 56.9 | **154** |
+| sorcerer | before (as the engine used them) | 0.3 | 2.6 | 7.3 | 21.8 | 22.4 | 38.0 | 45.7 | **138** |
+| sorcerer | after | 0.3 | 2.6 | 7.3 | 21.8 | 17.2 | 21.1 | 25.5 | **96** |
+| knight | before (stages as written) | 0.8 | 6.3 | 16.0 | 42.5 | 41.5 | 77.7 | 100.7 | **286** |
+| knight | before (as the engine used them) | 0.8 | 6.3 | 16.0 | 42.5 | 41.5 | 68.8 | 80.9 | **257** |
+| knight | after | 0.8 | 6.3 | 16.0 | 42.5 | 28.4 | 27.3 | 33.0 | **154** |
+| paladin | before (stages as written) | 0.7 | 5.5 | 14.7 | 41.0 | 40.8 | 77.2 | 100.8 | **281** |
+| paladin | before (as the engine used them) | 0.7 | 5.5 | 14.7 | 41.0 | 40.8 | 68.3 | 80.9 | **252** |
+| paladin | after | 0.7 | 5.5 | 14.7 | 41.0 | 25.3 | 23.6 | 28.8 | **140** |
+
+Levels 1-700 are unchanged (no stage changed there, and the first tier is not better than the existing 650-700 hunts). In
+the model the sorcerer keeps hunting Soul War with its task (wide pulls), and the knight and the paladin move to the new
+monsters from 725. Boosted: sorcerer 61 -> 35 h, knight 112 -> 52 h, paladin 111 -> 47 h; boosted + hooks 46 -> 25,
+84 -> 38, 82 -> 34 h.
+
+Checked on the test server: all 268 entries spawn (a monster of the new name within 6 sqm of every row, 268/268 walkable);
+experience per kill at a level 900 knight = XML exp x 0.03 x level x stage x 1.5 (premium stamina) x 1.25 (the store's World
+Experience buff that was active), i.e. exactly 1.875 x the model for all 17. Not measured: real hunting speed (the 0.47
+efficiency and the 3-target assumption), the one-handed knight (~14% less damage than two-handed), druids and
+illusionists (earth/ice/death are resisted too).
