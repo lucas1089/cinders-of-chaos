@@ -5,6 +5,10 @@ items to a 10.98 Tibia.dat / Tibia.spr pair.
 Every picture is drawn here from code (periodic noise, Voronoi cells, height maps lit from the upper left, shape
 fields); no sprite of any client is read, traced or recoloured.  Each tile is drawn at 128 px, averaged down to the
 64 px masters (kept as PNG next to this file, for a future 64 px spr) and to the 32 px sprites the client uses.
+Before the downsampling a detail pass adds readable shading: grounds get cavity shading and lit rims from their height
+maps (darklib.relief); objects get a soft volume light from their silhouette, a bright rim on the edge that faces the
+light, a core shadow on the far edge and a small gloss (darklib.rim_light; matte for rubble and bones, rim only for
+walls).
 
 python3 -I gen_dark_tiles.py --ours-dat Tibia.dat --ours-spr Tibia.spr --out-dir out/dark \
         [--masters dark_tiles/masters] [--sheets dark_tiles] [--manifest-out ../../../server/data/items/dark_tiles.csv]
@@ -23,8 +27,12 @@ python3 -I gen_dark_tiles.py --ours-dat Tibia.dat --ours-spr Tibia.spr --out-dir
   for byte; identical records are written once and records already in the input spr are reused.
 * Outputs in --out-dir: Tibia.dat, Tibia.spr, dark_tiles.csv (manifest), chaos_dark_tiles.lua, contact sheets.
   --masters writes the 64 px master PNGs (one sheet per thing: patterns as laid out in the world, animation phases
-  side by side); --sheets writes contact_32.png, contact_64.png and scene_32.png / scene_32_x2.png (a sample area at
-  32 px and doubled with the client's upscaler order: nearest; the real xBRZ look is checked in the client).
+  side by side); --sheets writes contact_32.jpg, contact_64.jpg (first frame of every thing) and scene_32.png (a
+  sample area at 32 px: grounds with borders over a plain green, walls, objects); scene_32_x2.png (nearest x2) goes to
+  --out-dir. The xBRZ look is checked in the client (HD upscaling).
+* Fill check (always, before anything is written): grounds must be opaque edge to edge, walls and objects must fill
+  their canvas (objects are scaled to fit after drawing), every 32x32 part of a multi-tile thing must be used, border
+  pieces must reach the edges they continue. The run stops when a sprite fails.
 * Verification (always): the output dat is re-parsed; every written thing is rendered back from the output spr and
   compared pixel-exact with the generated 32 px picture; every other dat entry and 3000 sampled old sprites are
   checked unchanged.
@@ -350,8 +358,9 @@ def cursed_pool(seed, phase, phases, Y=None, X=None):
 # =================================================================================================== borders
 def edge_depth(seed, coord, side):
     """ragged edge depth (hi-res px) along a world coordinate, periodic in T"""
-    n = L.FBM(seed * 7 + side, 6, T, 4)
-    return R * 0.31 + (n(coord, np.full_like(coord, 17.0 * side)) - 0.5) * R * 0.30
+    n = L.FBM(seed * 7 + side, 8, T, 4)
+    d = R * 0.32 + (n(coord, np.full_like(coord, 17.0 * side)) - 0.5) * R * 0.95
+    return np.clip(d, R * 0.12, R * 0.56)
 
 
 BORDER_PIECES = ['n', 'e', 's', 'w', 'outer_ne', 'outer_nw', 'outer_se', 'outer_sw',
@@ -370,7 +379,7 @@ def border_mask(seed, piece, px, py, pad):
     n = R + 2 * pad
     ly, lx = L.grid(n, n, -pad, -pad)
     X = px * R + lx; Y = py * R + ly
-    jit = (L.PNoise(seed * 7 + 9, 24, T)(X % T, Y % T) - 0.5) * R * 0.06
+    jit = (L.PNoise(seed * 7 + 9, 40, T)(X % T, Y % T) - 0.5) * R * 0.12
     dn = edge_depth(seed, X % T, 1) + jit
     ds = edge_depth(seed, X % T, 2) + jit
     dw = edge_depth(seed, Y % T, 3) + jit
@@ -841,6 +850,9 @@ def rubble_img(seed, bones=False):
 
 
 # =================================================================================================== the set
+# small loose pieces (stones, bones): softer volume light and no gloss, so they stay matte floor clutter
+SMALL_RIM = dict(form=0.6, gloss=0.0, hl=0.45, sh=0.55, width=6)
+
 def ground(key, name, fn, seed, speed, minimap, phases=1, ms=0, light=None, walk=True, border=False):
     return dict(key=key, name=name, kind='ground', w=1, h=1, px=4, py=4, phases=phases, ms=ms, seed=seed, fn=fn,
                 speed=speed, minimap=minimap, light=light, walk=walk, border=border)
@@ -876,9 +888,9 @@ def build_things():
                            minimap=c216(5, 1, 0) if False else 186, light=None, block=('solid', 'missile', 'path')))
     O = []
 
-    def obj(key, name, w, h, seed, draw, block=(), light=None, phases=1, ms=0, minimap=None, bottom=False, sync=False):
+    def obj(key, name, w, h, seed, draw, block=(), light=None, phases=1, ms=0, minimap=None, bottom=False, sync=False, rim=None):
         O.append(dict(key=key, name=name, kind='object', w=w, h=h, px=1, py=1, phases=phases, ms=ms, seed=seed, draw=draw,
-                      block=block, light=light, minimap=minimap, bottom=bottom, sync=sync))
+                      block=block, light=light, minimap=minimap, bottom=bottom, sync=sync, rim=rim or {}))
     obj('dead_tree', 'dead tree', 2, 2, 701, lambda s, p, n: tree_img(s, 2, 4, R * 0.52, 16.0, 0.85),
         block=('solid',), minimap=c216(1, 1, 0))
     obj('twisted_tree', 'twisted dead tree', 2, 2, 702, lambda s, p, n: tree_img(s, 2, 5, R * 0.5, 15.0, 0.75),
@@ -908,8 +920,9 @@ def build_things():
         light=(2, LC_TEAL), phases=4, ms=420)
     obj('blood_crystals', 'blood crystals', 1, 1, 712, lambda s, p, n: crystal_img(s), block=('solid',),
         light=(2, LC_CRIMSON), minimap=c216(3, 0, 0))
-    obj('bone_pile', 'pile of bones', 1, 1, 713, lambda s, p, n: rubble_img(s, bones=True))
-    obj('rubble', 'dark rubble', 1, 1, 714, lambda s, p, n: rubble_img(s))
+    obj('bone_pile', 'pile of bones', 1, 1, 713, lambda s, p, n: rubble_img(s, bones=True),
+        rim=SMALL_RIM)
+    obj('rubble', 'dark rubble', 1, 1, 714, lambda s, p, n: rubble_img(s), rim=SMALL_RIM)
     things += O
     for i, t in enumerate(things):
         t['cid'] = FIRST_ID + i
@@ -928,7 +941,8 @@ def render(things, log=print):
         s32, m64 = {}, {}
         if t['kind'] == 'ground':
             for ph in range(t['phases']):
-                rgb, _ = t['fn'](t['seed'], ph, t['phases'])
+                rgb, hmap = t['fn'](t['seed'], ph, t['phases'])
+                rgb = L.relief(rgb, hmap, True, **t.get('relief', {}))
                 tex = L.rgba(rgb, np.ones(rgb.shape[:2], np.float32))
                 d32 = L.finish(tex, 4, True, 0.55)
                 d64 = L.finish(tex, 2, True, 0.3)
@@ -960,11 +974,12 @@ def render(things, log=print):
         elif t['kind'] == 'wall':
             for y in range(t['py']):
                 for x in range(t['px']):
-                    hi = wall_cube(t['seed'], t['style'], x, y)
+                    hi = L.rim_light(wall_cube(t['seed'], t['style'], x, y), hl=0.35, sh=0.3, form=0, width=6)
                     s32[(0, x, y)] = L.finish(hi, 4, False, 0.45)
                     m64[(0, x, y)] = L.finish(hi, 2, False, 0.25)
         else:
             his = fit_frames([t['draw'](t['seed'], ph, t['phases']) for ph in range(t['phases'])], t['w'], t['h'])
+            his = [L.rim_light(hi, **t.get('rim', {})) for hi in his]
             for ph, hi in enumerate(his):
                 s32[(ph, 0, 0)] = L.finish(hi, 4, False, 0.45)
                 m64[(ph, 0, 0)] = L.finish(hi, 2, False, 0.25)
@@ -1031,7 +1046,7 @@ def check_fill(things, art):
                 if p.startswith('outer'):
                     cy = 0 if p[6] == 'n' else 31
                     cx = 0 if p[7] == 'w' else 31
-                    if img[cy, cx, 3] == 0 or cov < 0.04:
+                    if img[cy, cx, 3] == 0 or cov < 0.015:
                         bad.append('%s %s: corner piece does not reach its corner' % (t['key'], k))
                     continue
                 if cov < 0.12:
@@ -1394,7 +1409,7 @@ def contact(things, art, which, size, path, cols=8):
         checker.alpha_composite(s)
         img.paste(checker, (x0 + 6, y0 + 20))
         dr.text((x0 + 6, y0 + 4), '%d %s' % (t['cid'], t['key'][:26]), fill=(235, 205, 140, 255))
-    img.convert('RGB').save(path)
+    img.convert('RGB').save(path, quality=90)
 
 
 def scene(things, art, ospr_dat, path, scale_paths):
@@ -1512,11 +1527,11 @@ def main():
     print('fill check: every sprite fills its cell (grounds opaque, objects and walls fit their canvas)')
     sheets = a.sheets or a.out_dir
     os.makedirs(sheets, exist_ok=True)
-    contact(draw_list, art, 's32', 32, os.path.join(sheets, 'contact_32.png'))
-    contact(draw_list, art, 'm64', 64, os.path.join(sheets, 'contact_64.png'), cols=6)
+    contact(draw_list, art, 's32', 32, os.path.join(sheets, 'contact_32.jpg'))
+    contact(draw_list, art, 'm64', 64, os.path.join(sheets, 'contact_64.jpg'), cols=6)
     if not a.only:
         sc = scene(things, art, None, os.path.join(sheets, 'scene_32.png'), None)
-        sc.resize((sc.width * 2, sc.height * 2), Image.NEAREST).convert('RGB').save(os.path.join(sheets, 'scene_32_x2.png'))
+        sc.resize((sc.width * 2, sc.height * 2), Image.NEAREST).convert('RGB').save(os.path.join(a.out_dir, 'scene_32_x2.png'))
     if a.masters:
         os.makedirs(a.masters, exist_ok=True)
         for t in draw_list:

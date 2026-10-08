@@ -30,6 +30,7 @@ than days.
 | Items | 15 rarities from Common to Transcendent, item levels, random modifiers, about 50 uniques |
 | Endgame | world bosses, bounties, rifts with keys and modifiers, the Infinity Tower, dungeons, arena, guild siege, guild levels and guild halls, invasions and world events, weekly leaderboards |
 | Fair play | multi-client rules, staff characters left out of every leaderboard |
+| World art | our own dark tile set (cracked obsidian, ash, bones, wet rock, glowing fungus, braziers) in rifts, the world boss arena and the ascension trial |
 
 ---
 

@@ -136,6 +136,9 @@ server/
    `python3 -I server/tools/register_monsters.py <server>/data/monster/monsters.xml <server>/data/monster/monsters/chaos`.
    The class lock: run `server/sql/chaos_class_unlocks.sql` (the server also creates the table at startup). The three classes
    need an account-wide unlock, sold in the store's "Classes" category (750 coins each, a placeholder); see "Class lock".
+5d. Dark tile set: `python3 -I server/tools/install_dark_tiles.py <server>/data [--dry-run]` (idempotent; `install_all.py` step
+   `darktiles`) adds the 74 items of `data/items/dark_tiles.csv` to `items.otb` / `items.xml`. The client needs the matching
+   `Tibia.dat` / `Tibia.spr` (`client/tools/sprites/gen_dark_tiles.py`). See "Dark tile set".
 6. Restart the server (or `/reload scripts`). Check the console for Lua errors.
 7. Autoloot only: if `data/talkactions/talkactions.xml` registers `!autoloot` (the legacy
    `talkactions/scripts/autoloot.lua`), TFS 1.4.2 keeps the XML one and silently ignores
@@ -1344,6 +1347,38 @@ every path; earlier: refusals (unique, full item, no orb, equipped item), drag a
 purchase and the loot simulation. `tests/crafting_test.lua` covers eligibility, each orb on a mocked item, slot limits,
 the description, unique protection, the Chaos modifiers through the orbs, the previews and every orb on a Rift Key.
 Not tested: the weekly bounty chest with the extra orbs (needs seven finished contracts), a hotkey set to plain "use".
+
+## Dark tile set (`data/lib/chaos_dark_tiles.lua`, `data/lib/chaos_dark_paint.lua`, `tools/install_dark_tiles.py`)
+
+Our own dark environment tiles, drawn in code by `client/tools/sprites/gen_dark_tiles.py` (client/MANIFEST.md "Dark tile
+set"): 9 grounds (cracked obsidian, magma-veined obsidian, ash soil, bone-strewn earth, wet black rock, mossy black rock,
+dark moss, ruined dark stone floor, an animated cursed pool), 48 border pieces (edges, outer and inner corners for
+obsidian, ash soil, wet rock and dark moss), 3 walls and 14 objects (dead trees, a dead bush, a boulder, a 2x2 rock
+outcrop, ruined and broken pillars, an iron brazier and a standing torch that give light, violet and teal glowcaps,
+blood crystals, bones, rubble).
+
+- Ids: client ids 27484-27557 (appended after the last stock item), server id = client id + 3000 (30484-30557).
+  `data/items/dark_tiles.csv` is the manifest (ids, names, size, ground speed, otb group / flags / top order, light,
+  dat flags); `data/lib/chaos_dark_tiles.lua` maps the names to server ids. Both are written by the generator.
+- Install: step 5d. `install_dark_tiles.py` appends one otb node per row (keeps `items.otb.bak` the first time, parses the
+  file again and checks every node) and writes the `items.xml` names between two marker comments. A second run changes
+  nothing; a server id that already belongs to another client id stops it before anything is written.
+- Without the items (or with `dark.enabled = false`) every area uses its stock ids: `ChaosDarkTiles.id(name, fallback)`
+  returns the fallback while `ItemType(id):getId()` is 0, and `ChaosDarkPaint.ready(style)` is false.
+- Where it is used (`ChaosDarkPaint.plan` / `apply`; styles in `chaos_dark_paint.lua`): a main ground with accent
+  variants, patches of a second ground with border pieces around them, loose walkable pieces on the floor and solid ones
+  only against the walls, never near arrival, portal or spawn tiles.
+  - Rifts (`rift_config.lua` `dark`): walls `obsidian_wall`, hub lights `brazier`; themes Abyssal Rift (`abyss`), Obsidian
+    Hall (`hall`), Ashen Crypt (`crypt`), Forsaken Sanctum (`sanctum`).
+  - World boss arena (`chaos_constants.lua` `worldBoss.dark`): `dark_wall`, `ruined_pillar` as cover, `brazier` lights,
+    styles `arena` and `lobby`.
+  - Ascension trial room (`ascension_quest_config.lua` `trial.dark`): `ruined_wall`, `brazier`, style `trial` (nothing
+    solid on the floor).
+  - Guild hall decoration tier 2 "Obsidian" (`guild_config.lua`): `obsidian_floor` and `obsidian_wall`.
+- Tests: `tests/dark_paint_test.lua` (border pieces per neighbourhood, a planned room: borders next to patches, nothing
+  solid near reserved tiles or away from the walls; the fallback when not installed; the Lua ids against the manifest).
+  Checked in game on the test server: a tier 1 rift (Ashen Crypt), `/worldboss arena` (lobby, corners, pillars) and the
+  trial room, with the set on and off, at normal size and with the client's HD upscaling (x2).
 
 ## Item modifiers (`data/lib/chaos_item_mods.lua`, `item_mods.lua`)
 

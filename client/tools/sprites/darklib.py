@@ -272,3 +272,51 @@ def finish(img, f, wrap, amount, cut=0.5):
     out[..., 3] = np.where(on, 255, 0)
     out[~on] = 0
     return out
+
+
+# ------------------------------------------------------------------------------------------- detail pass
+def relief(rgb, h, wrap, ao=0.38, hl=0.30, r=6):
+    """cavity shading of a height map: crevices darkened (ambient occlusion), raised rims facing the light picked out
+    with a highlight; keeps cracks, pebbles and plates readable once the tile is down at 32 px"""
+    cav = h - blur(h, r, wrap)
+    cav = cav / (np.std(cav) + 1e-6)
+    lam, _ = lighting(h, wrap)
+    face = np.clip((lam - LIGHT[2] * 0.85) * 4, 0, 1)
+    dark = np.clip(-cav / 2.2, 0, 1) * ao
+    lift = np.clip(cav / 2.0, 0, 1) * face * hl
+    out = rgb * (1 - dark[..., None])
+    out = out + lift[..., None] * (out * 0.9 + 0.035)
+    return np.clip(out, 0, 1)
+
+
+def rim_light(img, width=8, hl=1.1, sh=0.6, form=0.9, gloss=0.35, floor=0.035):
+    """volume and edge light for a drawn object (RGBA, straight alpha), lit from the upper left:
+    * form: a soft pseudo-normal taken from the blurred silhouette rounds flat shapes (lit side up, far side down),
+    * rim: a narrow bright band inside the silhouette edge that faces the light and a core shadow on the far edge,
+    * gloss: a small specular hot spot on the rounded form.
+    Outline pixels (darker than `floor`) and bright emissive pixels (flames, glow) are left as they are."""
+    rgb = img[..., :3]
+    lum = rgb @ np.array([0.3, 0.55, 0.15], np.float32)
+    body = (img[..., 3] > 0.5) & (lum > floor)
+    keep = (1 - sstep(0.42, 0.72, lum)) * body
+    bf = body.astype(np.float32)
+    out = img.copy()
+    o = rgb.copy()
+    if form:
+        big = max(2, int(min(img.shape[:2]) * 0.045))
+        hb = blur(bf, big, False) * big * 1.6
+        lam, sp = lighting(hb, False)
+        fl = (lam / LIGHT[2] - 1.0)
+        o = o * (1 + form * np.clip(fl, -1, 1)[..., None] * keep[..., None])
+        o = o + (gloss * sp ** 18 * keep)[..., None] * (o * 0.8 + 0.06)
+    a = blur(bf, max(1, width // 2), False)
+    gy, gx = np.gradient(a)
+    g = np.sqrt(gx * gx + gy * gy) + 1e-6
+    d = -(gx * LIGHT[0] + gy * LIGHT[1]) / g
+    edge = np.clip(g * width * 2.2, 0, 1) * keep
+    lit = np.clip(d, 0, 1) * edge * hl
+    shd = np.clip(-d, 0, 1) * edge * sh
+    o = o * (1 - shd[..., None])
+    o = o + lit[..., None] * (o * 1.1 + 0.05)
+    out[..., :3] = np.clip(o, 0, 1)
+    return out
