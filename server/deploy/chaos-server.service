@@ -1,0 +1,47 @@
+# Project Chaos game server (systemd). Install: docs/LAUNCH.md, "Running it".
+#   sudo cp server/deploy/chaos-server.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now chaos-server
+# Layout assumed here (change the paths if yours differ):
+#   /opt/chaos/server        the base server folder after server/tools/install_all.py (config.lua, data/, key.pem)
+#   /opt/chaos/server/tfs    the engine built from the base sources + server/src-patches/
+#   /etc/chaos/chaos.env     CHAOS_DB_* (server/deploy/chaos.env.example), mode 0600, owner root
+#   /var/log/chaos/          console log (rotated by server/deploy/chaos.logrotate)
+#
+# The daily server save (data/globalevents/globalevents.xml "Server Save") saves and then shuts the engine down,
+# because config.lua keeps serverSaveShutdown = true (server/tools/prod_config.py). Restart=always starts it again a few
+# seconds later, so every day begins with a fresh process and a clean map. Crashes restart the same way.
+# SIGTERM (systemctl stop / restart) makes the engine save and shut down cleanly; SIGUSR1 saves without stopping
+# (server/tools/backup.sh sends it before a dump): sudo systemctl kill -s SIGUSR1 chaos-server
+
+[Unit]
+Description=Project Chaos game server
+Wants=network-online.target
+After=network-online.target mariadb.service mysql.service
+
+[Service]
+Type=simple
+User=chaos
+Group=chaos
+WorkingDirectory=/opt/chaos/server
+EnvironmentFile=/etc/chaos/chaos.env
+ExecStart=/opt/chaos/server/tfs
+Restart=always
+RestartSec=5
+# a full save of a busy server can take a while; do not SIGKILL it halfway
+TimeoutStopSec=180
+KillSignal=SIGTERM
+# the engine's console is the log
+StandardOutput=append:/var/log/chaos/server.log
+StandardError=append:/var/log/chaos/server.log
+LimitNOFILE=65536
+LimitCORE=infinity
+# hardening that leaves the server folder writable (saves, data/chaos_clientservices.json, data/logs)
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target

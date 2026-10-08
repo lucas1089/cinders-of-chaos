@@ -42,6 +42,7 @@ def answer(data, kind):
 
 class Handler(BaseHTTPRequestHandler):
     server_version = 'ChaosClientServices/1.0'
+    timeout = 10  # seconds per connection: a client that sends nothing (or too slowly) does not hold a thread forever
     data_file = None
 
     def _send(self, code, payload):
@@ -73,8 +74,11 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, {k: answer(data, k) for k in TYPES})
 
     def do_POST(self):
-        length = int(self.headers.get('Content-Length') or 0)
-        if length > 64 * 1024:
+        try:
+            length = int(self.headers.get('Content-Length') or 0)
+        except ValueError:
+            length = -1
+        if length < 0 or length > 64 * 1024:
             self._send(413, {'error': 'request too large'})
             return
         try:

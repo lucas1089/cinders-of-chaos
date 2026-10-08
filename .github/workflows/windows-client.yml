@@ -1,0 +1,188 @@
+# Windows build of the Chaos client: the base client sources + client/base-patches/* + client/overlay
+# (client/tools/assemble_client.sh), built with MSVC, CMake + Ninja and vcpkg (x64-windows-static) the same way the base
+# client's own Windows workflow builds it. The exe (and a runnable package without Tibia.dat / Tibia.spr) are uploaded
+# as artifacts.
+#
+# MANUAL ONLY (workflow_dispatch): it never runs on push or pull_request, so it cannot turn PR checks red.
+#
+# The base client sources are not in this repository (client/BASE.md: about 300 MB). They are fetched from their git
+# repository, given as an input or as repository variables (Settings -> Secrets and variables -> Actions -> Variables):
+#   base_repo / CHAOS_BASE_CLIENT_REPO   owner/name of the base client repository on GitHub (client/BASE.md)
+#   base_ref  / CHAOS_BASE_CLIENT_REF    branch, tag or commit to build; pin the commit the patches were made against
+#                                        (a moving branch can make client/base-patches/*.patch stop applying)
+# For a private base repository add a secret BASE_CLIENT_TOKEN (a read-only token for that repository).
+# The first run builds about 90 vcpkg ports (around 30-40 minutes); later runs reuse the vcpkg binary cache.
+name: Windows client
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_repo:
+        description: "Base client repository, owner/name (empty: repository variable CHAOS_BASE_CLIENT_REPO)"
+        required: false
+        default: ""
+      base_ref:
+        description: "Branch, tag or commit of the base client (empty: variable CHAOS_BASE_CLIENT_REF, else its default branch)"
+        required: false
+        default: ""
+      server_host:
+        description: "Public host name or IP the client connects to (login 7171, login-screen services 8090); empty keeps 127.0.0.1"
+        required: false
+        default: ""
+      package:
+        description: "Also upload the runnable client folder (exe + init.lua, data, modules, mods; no Tibia.dat/.spr)"
+        type: boolean
+        required: false
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-client-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Chaos client (Windows x64)
+    runs-on: windows-latest
+    timeout-minutes: 120
+    env:
+      BASE_REPO: ${{ inputs.base_repo || vars.CHAOS_BASE_CLIENT_REPO }}
+      BASE_REF: ${{ inputs.base_ref || vars.CHAOS_BASE_CLIENT_REF }}
+      SERVER_HOST: ${{ inputs.server_host }}
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\vcpkg_cache
+      VCPKG_BINARY_SOURCES: "clear;files,${{ github.workspace }}\\vcpkg_cache,readwrite"
+    steps:
+      - name: Check the inputs
+        shell: bash
+        run: |
+          if [ -z "$BASE_REPO" ]; then
+            echo "::error::No base client repository: give the base_repo input or set the repository variable CHAOS_BASE_CLIENT_REPO (owner/name, see client/BASE.md)."
+            exit 1
+          fi
+          if [ -n "$SERVER_HOST" ] && ! [[ "$SERVER_HOST" =~ ^[A-Za-z0-9.-]+$ ]]; then
+            echo "::error::server_host must be a host name or an IPv4 address"
+            exit 1
+          fi
+          echo "Base client: $BASE_REPO @ ${BASE_REF:-<default branch>}"
+
+      # the patches are plain unified diffs with LF line endings; a CRLF checkout would make them fail to apply
+      - name: Keep line endings as they are
+        shell: bash
+        run: git config --global core.autocrlf false
+
+      - name: Check out Project Chaos
+        uses: actions/checkout@v4
+        with:
+          path: chaos
+
+      - name: Check out the base client
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.BASE_REPO }}
+          ref: ${{ env.BASE_REF }}
+          token: ${{ secrets.BASE_CLIENT_TOKEN || github.token }}
+          path: base
+
+      - name: Assemble the Chaos client (base + client/base-patches + client/overlay)
+        shell: bash
+        run: |
+          patch --version | head -n 1
+          bash chaos/client/tools/assemble_client.sh "$GITHUB_WORKSPACE/base" "$GITHUB_WORKSPACE/game"
+          echo "base client commit: $(git -C base rev-parse HEAD)" | tee game/BUILD_INFO.txt
+          echo "chaos commit: $GITHUB_SHA" | tee -a game/BUILD_INFO.txt
+          # the server entry and the login-screen URLs of init.lua (client/base-patches/0001-init.patch) point at 127.0.0.1
+          if [ -n "$SERVER_HOST" ]; then
+            sed -i -E "s#(host = \"|http://)127\.0\.0\.1#\1$SERVER_HOST#g" game/init.lua
+            grep -n "$SERVER_HOST" game/init.lua
+            echo "server host: $SERVER_HOST" | tee -a game/BUILD_INFO.txt
+          fi
+
+      - name: Get CMake and Ninja
+        uses: lukka/get-cmake@latest
+
+      - name: Restore the vcpkg binary cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ github.workspace }}\vcpkg_cache
+          key: vcpkg-chaos-client-${{ hashFiles('game/vcpkg.json') }}-${{ github.run_id }}
+          restore-keys: |
+            vcpkg-chaos-client-${{ hashFiles('game/vcpkg.json') }}-
+            vcpkg-chaos-client-
+
+      # cmd + vcvars64, as the base client's own workflow does: the vcpkg port builds need the full MSVC environment
+      - name: Build (MSVC, vcpkg x64-windows-static, Ninja, Release)
+        shell: cmd
+        working-directory: game
+        run: |
+          if not exist "%VCPKG_DEFAULT_BINARY_CACHE%" mkdir "%VCPKG_DEFAULT_BINARY_CACHE%"
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSDIR=%%i"
+          call "%VSDIR%\VC\Auxiliary\Build\vcvars64.bat"
+          if errorlevel 1 exit /b 1
+          if not exist vcpkg git clone https://github.com/microsoft/vcpkg vcpkg
+          call vcpkg\bootstrap-vcpkg.bat -disableMetrics
+          if errorlevel 1 exit /b 1
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_TOOLCHAIN_FILE=%CD%\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static
+          if errorlevel 1 exit /b 1
+          cmake --build build --parallel %NUMBER_OF_PROCESSORS%
+          if errorlevel 1 exit /b 1
+
+      # saved even when the build fails: the ports are built before the client code, so the next run starts there
+      - name: Save the vcpkg binary cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}\vcpkg_cache
+          key: vcpkg-chaos-client-${{ hashFiles('game/vcpkg.json') }}-${{ github.run_id }}
+
+      - name: Collect the exe
+        shell: bash
+        run: |
+          shopt -s nullglob
+          exes=(game/build/*.exe)
+          if [ ${#exes[@]} -ne 1 ]; then
+            echo "::error::expected one exe in game/build, found: ${exes[*]:-none}"
+            exit 1
+          fi
+          mkdir -p out/exe
+          cp "${exes[0]}" out/exe/Chaos.exe
+          cp game/build/*.dll out/exe/ 2>/dev/null || true
+          cp game/BUILD_INFO.txt out/exe/
+          ls -la out/exe
+
+      - name: Upload the exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: chaos-client-windows-exe-${{ github.sha }}
+          path: out/exe/
+          if-no-files-found: error
+
+      - name: Put the runnable client folder together
+        if: ${{ inputs.package }}
+        shell: bash
+        run: |
+          mkdir -p out/package
+          cp out/exe/* out/package/
+          for p in init.lua data modules mods layouts; do
+            if [ -e "game/$p" ]; then cp -r "game/$p" out/package/; fi
+          done
+          if [ -d game/build/data ]; then cp -r game/build/data/. out/package/data/; fi
+          mkdir -p out/package/data/things/1098
+          echo "Put Tibia.dat and Tibia.spr (10.98, the merged Chaos pair) here." > out/package/data/things/1098/README.txt
+
+      - name: Upload the runnable client folder
+        if: ${{ inputs.package }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: chaos-client-windows-${{ github.sha }}
+          path: out/package/
+          if-no-files-found: error
+
+      - name: Upload the vcpkg build logs (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vcpkg-logs-${{ github.sha }}
+          path: game/vcpkg/buildtrees/**/*.log
+          if-no-files-found: ignore

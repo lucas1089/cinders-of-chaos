@@ -296,6 +296,10 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		return
 	end
 	local data = type(msg.data) == "table" and msg.data or {}
+	-- every answer walks the backpack and reads the history from the database; "apply" has its own MIN_INTERVAL
+	if msg.action ~= "apply" and ChaosRateLimit and not ChaosRateLimit.allow(player, "crafting.state", 150) then
+		return
+	end
 	if msg.action == "open" then
 		sendState(player, true)
 	elseif msg.action == "select" then

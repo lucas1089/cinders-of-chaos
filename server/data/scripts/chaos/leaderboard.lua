@@ -526,6 +526,10 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	end
 	local data = type(msg.data) == "table" and msg.data or {}
 	local key = type(data.board) == "string" and data.board or nil
+	-- board answers read the database (the class ladder counts the players ahead); ratelimit.lua
+	if msg.action == "get" and ChaosRateLimit and not ChaosRateLimit.allow(player, "leaderboard.get", 150) then
+		return
+	end
 	if msg.action == "open" then
 		sendMeta(player, true)
 		LB.sendBoard(player, key or cfg.boards[1].key)

@@ -1,0 +1,36 @@
+# Project Chaos login-screen services (boosted creature/boss, event calendar, players online) for the client.
+# The game server writes data/chaos_clientservices.json (data/scripts/chaos/clientservices.lua) at start and every
+# 5 minutes; server/tools/clientservices.py (Python 3 standard library only) serves that file over HTTP. The client asks
+# the URL set as clientServicesLink in its init.lua: http://<host>:8090/clientservices (any path works).
+#   sudo cp server/deploy/chaos-clientservices.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now chaos-clientservices
+# /opt/chaos/repo is a checkout of this repository (only server/tools/clientservices.py is used).
+
+[Unit]
+Description=Project Chaos login-screen services (HTTP)
+Wants=network-online.target
+After=network-online.target chaos-server.service
+
+[Service]
+Type=simple
+User=chaos
+Group=chaos
+ExecStart=/usr/bin/python3 -I /opt/chaos/repo/server/tools/clientservices.py /opt/chaos/server/data/chaos_clientservices.json --host 0.0.0.0 --port 8090
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/chaos/clientservices.log
+StandardError=append:/var/log/chaos/clientservices.log
+# it only reads one file: lock everything else down
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6
+MemoryMax=128M
+
+[Install]
+WantedBy=multi-user.target

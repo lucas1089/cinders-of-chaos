@@ -407,6 +407,11 @@ local function entryProblem(player, id, dg, difficulty)
 	if inBox(dg, player:getPosition()) then
 		return "You cannot queue from inside the dungeon."
 	end
+	-- the run teleports from wherever the player stands: without this a fight (or a chase) could be left by queueing.
+	-- Checked again on every queue tick (tryMatch), so fighting while queued drops the player from the queue
+	if player:isPzLocked() or player:hasCondition(CONDITION_INFIGHT) then
+		return "You cannot enter a dungeon while you are in a fight."
+	end
 	if Chaos.isMultiClient(player) then
 		return Chaos.multiClient.msgDungeon
 	end
@@ -821,6 +826,10 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 	local guid = player:getGuid()
 
 	if msg.action == "fetch" then
+		-- the full list reads progress and rankings from the database (ratelimit.lua)
+		if ChaosRateLimit and not ChaosRateLimit.allow(player, "dungeons.fetch", 1000) then
+			return
+		end
 		subscribers[guid] = true
 		sendAll(player)
 	elseif msg.action == "queue" and type(msg.data) == "table" then

@@ -192,9 +192,21 @@ local function resolveItem(player, pos)
 	if not tile then
 		return nil
 	end
+	-- Item:remove() skips the engine's house rule (HouseTile::queryRemove only checks when there is an actor), so a
+	-- floor item of a house is reachable only from inside that same house (where only invited players can stand);
+	-- otherwise a player outside could stash, i.e. take, the gold lying on a house floor right behind the wall
+	local house = tile:getHouse()
+	if house then
+		local own = Tile(playerPos)
+		local ownHouse = own and own:getHouse()
+		if not ownHouse or ownHouse:getId() ~= house:getId() then
+			return nil
+		end
+	end
 	local stackpos = Chaos.toInt(pos.stackpos, 0)
 	local thing = stackpos and tile:getThing(stackpos) or nil
-	if thing and thing:isItem() then
+	-- map decoration and fixed items stay where they are (the engine refuses to move them, Item:remove does not)
+	if thing and thing:isItem() and thing:getType():isMovable() then
 		return thing
 	end
 	return nil
@@ -351,6 +363,12 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 		return
 	end
 	local data = msg.data
+	-- list, redeem and block-list requests read the database; a flood of them is dropped (ratelimit.lua). "Stash" is
+	-- not limited: the client waits for its echo, and each one needs a real item
+	local limit = ({SendCategories = 300, SendItems = 300, Redeem = 100, ChangeStash = 100})[data.make]
+	if limit and ChaosRateLimit and not ChaosRateLimit.allow(player, "stash." .. data.make, limit) then
+		return
+	end
 
 	if data.make == "SendCategories" then
 		sendCategories(player, data.sendBlocks == true)
