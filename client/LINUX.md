@@ -60,3 +60,10 @@ and its cavebot) out of the client and remove the helper's Cavebot and Scripts t
 keeps healing, potions, haste, shooter, equipment, timers, alarms and tools (auto healing tested in game).
 `base-patches/0016-chaos-vocation-ids.patch`: the server sends the vocation in Tibia's ids (3 = sorcerer) while the modules expect server
 ids (3 = paladin), so the helper offered the wrong spells; the 1098 profile now translates them (feature `GameChaosVocationIds`).
+The same patch gives the Thief line its own ids: the server sends 6 (the client's free sixth slot) for the Thief, 16 for the
+Ninja and 26 for the Samurai, and the client turns them into the server ids 11, 12 and 13, so the two ascended classes are told
+apart (the other vocations still arrive as their base vocation). The names Thief / Ninja / Samurai are in `VocationNames`,
+`g_game.getVocationName(Base)`, `translateVocationName` and `getVocationId`; `translateVocation` keeps 11-13 as they are (the spell
+data lists them), `Creature:isThief()` is new, and the helper treats the line as its class 6 (`game_chaosspells` fills its spell
+lists). 11-15 used to be other servers' promoted ids in those tables; with this server they are the Thief line. Tested: login as a
+Thief shows vocation 11 "Thief", and `!ascend ninja` switches the client to 12 "Ninja" without a relog (the server resends 0x9F).

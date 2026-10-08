@@ -176,3 +176,39 @@
 		<vocation name="Illusionist" />
 		<vocation name="Arch Illusionist" />
 	</instant>
+	<!-- thief (Thief, and its ascended classes Ninja and Samurai) -->
+	<instant group="attack" spellid="236" name="Shuriken Toss" words="kah shur" level="20" mana="50" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="3000" groupcooldown="2000" needlearn="0" script="chaos/thief/shuriken_toss.lua">
+		<vocation name="Thief" />
+		<vocation name="Ninja" />
+		<vocation name="Samurai" />
+	</instant>
+	<instant group="support" spellid="238" name="Shadow Veil" words="fen umh" level="40" mana="120" premium="0" aggressive="0" selftarget="1" cooldown="20000" groupcooldown="2000" needlearn="0" script="chaos/thief/shadow_veil.lua">
+		<vocation name="Thief" />
+		<vocation name="Ninja" />
+		<vocation name="Samurai" />
+	</instant>
+	<instant group="support" spellid="239" name="Poison Blades" words="vyr vex thyss" level="60" mana="150" premium="1" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/thief/poison_blades.lua">
+		<vocation name="Thief" />
+		<vocation name="Ninja" />
+		<vocation name="Samurai" />
+	</instant>
+	<!-- ninja -->
+	<instant group="attack" spellid="240" name="Shadow Step" words="ash umh" level="100" mana="150" premium="1" range="5" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/ninja/shadow_step.lua">
+		<vocation name="Ninja" />
+	</instant>
+	<instant group="support" spellid="241" name="Smoke Bomb" words="drai nebh" level="130" mana="300" premium="1" aggressive="0" selftarget="1" cooldown="20000" groupcooldown="2000" needlearn="0" script="chaos/ninja/smoke_bomb.lua">
+		<vocation name="Ninja" />
+	</instant>
+	<instant group="attack" spellid="242" name="Shuriken Barrage" words="drai vas shur" level="180" mana="400" premium="1" range="5" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/ninja/shuriken_barrage.lua">
+		<vocation name="Ninja" />
+	</instant>
+	<!-- samurai -->
+	<instant group="support" spellid="243" name="Counter Stance" words="tor ryx" level="100" mana="100" premium="1" aggressive="0" selftarget="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/samurai/counter_stance.lua">
+		<vocation name="Samurai" />
+	</instant>
+	<instant group="attack" spellid="244" name="Iaijutsu" words="kah gal kaen" level="120" mana="350" premium="1" range="2" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/samurai/iaijutsu.lua">
+		<vocation name="Samurai" />
+	</instant>
+	<instant group="support" spellid="245" name="Bushido Focus" words="vyr mynd" level="150" mana="200" premium="1" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/samurai/bushido_focus.lua">
+		<vocation name="Samurai" />
+	</instant>

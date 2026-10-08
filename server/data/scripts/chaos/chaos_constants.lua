@@ -424,12 +424,18 @@ Chaos.shopServices = {
 
 	-- Vocation change: command word -> {base id, promoted id} (data/XML/vocations.xml). A promoted character
 	-- gets the promoted id of the new vocation, an unpromoted one the base id.
+	-- The Thief line has two ascended classes (Chaos.classes.ascension): "ninja" and "samurai" both name the Thief
+	-- base (11), and "thief" carries `choose`: an ascended character must name the ascended class it wants
+	-- (!changevocation ninja|samurai), an unascended one becomes a Thief with any of the three words.
 	vocations = {
 		sorcerer = {1, 5},
 		druid = {2, 6},
 		paladin = {3, 7},
 		knight = {4, 8},
-		illusionist = {9, 10}
+		illusionist = {9, 10},
+		thief = {11, 12, choose = {"ninja", "samurai"}},
+		ninja = {11, 12},
+		samurai = {11, 13}
 	},
 	vocationBaseLevel = 8, -- health/mana/capacity gains are counted from this level (as the engine does)
 
@@ -447,6 +453,53 @@ Chaos.shopServices = {
 Chaos.clientServices = {
 	file = "data/chaos_clientservices.json",
 	refreshSeconds = 300
+}
+
+-- Classes (docs/CLASSES.md). Phase 1: the Thief line. Logic in classes.lua (ChaosClasses), the ascension in
+-- ascension.lua, the combat mechanics in thief_combat.lua, the spells in data/spells/chaos/thief|ninja|samurai.
+Chaos.classes = {
+	-- vocation ids (server/data/XML/chaos_vocations.xml, added by server/tools/add_vocations.py)
+	ids = {thief = 11, ninja = 12, samurai = 13},
+	-- the engine knows one promotion per vocation; the choice between two ascended classes is this script's
+	ascension = {
+		minLevel = 100,
+		needProtectionZone = true,
+		-- base vocation id -> {command word -> ascended vocation id}
+		choices = {[11] = {ninja = 12, samurai = 13}}
+	},
+	storage = {
+		dualWield = 7100200, -- 1 while the character may hold an off-hand sword (read by server/src-patches/0002)
+		ascended = 7100201 -- os.time of the ascension (information only)
+	},
+	-- condition sub ids of the class buffs (CONDITIONID_COMBAT). The spells and the combat scripts run in different
+	-- Lua states; the conditions are the state both see. Stealth is CONDITION_INVISIBLE, the others
+	-- CONDITION_ATTRIBUTES without attributes (a timer). Next to ChaosSpell.SUBID (71001-71009).
+	subId = {stealth = 71010, poisonBlades = 71011, counter = 71012, bushido = 71013},
+	-- Shadow Veil: monsters drop the player as a target and cannot pick it; attacking or being hit ends it
+	stealth = {
+		durationMs = 4000,
+		pulseMs = 200, -- how often monsters around are made to drop the player
+		radius = 8,
+		ambushMultiplier = 2.0 -- the first weapon hit out of stealth is a critical hit
+	},
+	-- Evasion: chance to dodge a melee or ranged hit (monster or player weapon attacks), per vocation id
+	evasion = {[11] = 0.08, [12] = 0.12, [13] = 0.05},
+	-- Poison Blades: weapon hits poison the target, `share` of the hit as earth damage over `ticks` seconds
+	poisonBlades = {durationMs = 20000, share = 0.6, ticks = 4, tickMs = 1000},
+	-- Ninja dual wield: each main-hand weapon hit adds an off-hand strike of `share` of the hit, scaled by the
+	-- off-hand weapon's attack against the main hand's (clamped to minRatio..maxRatio)
+	dualWield = {share = 0.5, minRatio = 0.5, maxRatio = 1.25, delayMs = 150},
+	-- Samurai Counter Stance: the next melee hit taken within windowMs is parried (no damage) and answered with a
+	-- strike of `multiplier` x the parried hit
+	counter = {windowMs = 2000, multiplier = 1.5},
+	-- Samurai Bushido Focus: while the buff lasts, every second without taking damage adds a stack;
+	-- each stack is +perStack critical chance on weapon hits and Iaijutsu, a critical hit does critMultiplier
+	bushido = {durationMs = 30000, stackMs = 1000, perStack = 0.03, maxStacks = 10, startStacks = 3, critMultiplier = 1.5},
+	-- shurikens: the throwing stars of the base server; the attack a shuriken spell uses without one in hand
+	shuriken = {items = {2399, 7368}, defaultAttack = 50},
+	-- spell strikes x (1 + (level - from) / per), at most max (ChaosSpell.thiefLevelScale). A stand-in for the
+	-- passive tree the Thief line does not have yet: re-tune or drop it with the tree (phase 2)
+	spellLevelScale = {from = 300, per = 700, max = 2.2}
 }
 
 -- ---------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 # Chaos spells (the base server, TFS 1.4.2 / protocol 10.98)
 
-36 custom spells, dark-fantasy flavour: 7 sorcerer, 7 druid, 6 paladin, 6 knight, 6 illusionist and 4 shared utility spells.
+45 custom spells, dark-fantasy flavour: 7 sorcerer, 7 druid, 6 paladin, 6 knight, 6 illusionist, 4 shared utility spells and 9 for the
+Thief line (Thief, Ninja, Samurai; see "Thief line" below).
 **Status: written and smoke-tested against a hand-written Lua mock only. Nothing has been run on a real TFS server.**
 
 ## Layout
@@ -11,6 +12,7 @@ server/data/spells/chaos/
   _common.lua                 shared helpers (global table ChaosSpell)
   _fx_fallback.lua            20-line stub: defines Fx()/FxMissile() only if data/lib/chaos_fx.lua did not
   sorcerer/ druid/ paladin/ knight/ illusionist/ shared/   one .lua per spell
+  thief/ ninja/ samurai/                                  the Thief line (classes, docs/CLASSES.md)
 server/tools/register_spells.py
 ```
 
@@ -85,6 +87,16 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 233 | Banner Call | `tor vas vant` | all | 60 | 250 | 35s | You and party members within 5 sqm: +10% melee/distance/magic and speed for 12s. |
 | 234 | Soulward | `tor anh` | all | 80 | 150 | 40s | Mana shield for 15s with mana regeneration (stock Magic Shield has none). |
 | 235 | Hunter's Instinct | `ash senn` | all | 25 | 40 | 10s | Marks monsters within 12 sqm (max 15) and tells the nearest one's direction. |
+| **thief** (T Thief, N Ninja, Sa Samurai) | | | | | | | |
+| 236 | Shuriken Toss | `kah shur` | T, N, Sa | 20 | 50 | 3s | Throws a shuriken (range 5): ranged weapon strike, the better of sword and distance skill x the star in hand (or a default star). The Thief's filler. |
+| 238 | Shadow Veil | `fen umh` | T, N, Sa | 40 | 120 | 20s | 4 s stealth: monsters drop you and cannot pick you; dealing damage or taking a hit ends it; the first weapon hit out of it crits (x2). |
+| 239 | Poison Blades | `vyr vex thyss` | T, N, Sa | 60 | 150 | 30s | 20 s: weapon hits and weapon strikes poison the target, 60% of the hit as earth damage over 4 s. |
+| 240 | Shadow Step | `ash umh` | N | 100 | 150 | 8s | Teleport behind the target (range 5) and stab it: melee weapon strike, the off-hand follows. |
+| 241 | Smoke Bomb | `drai nebh` | N | 130 | 300 | 20s | Smoke 5x5 around you: monsters lose their target and cannot pick a player for 3 s, slowed 30% (bosses only drop the target once). |
+| 242 | Shuriken Barrage | `drai vas shur` | N | 180 | 400 | 10s | A shuriken at the target and up to 4 more monsters within 3 sqm of it. |
+| 243 | Counter Stance | `tor ryx` | Sa | 100 | 100 | 8s | For 2 s the next melee hit taken is parried (no damage) and answered with 1.5x the parried hit. |
+| 244 | Iaijutsu | `kah gal kaen` | Sa | 120 | 350 | 10s | 0.8 s charge, then one heavy melee weapon strike on the target if it is still within 2 sqm. |
+| 245 | Bushido Focus | `vyr mynd` | Sa | 150 | 200 | 30s | 30 s: +3% crit chance per second without taking damage (3 at once, max 10 stacks = 30%), crits do x1.5; a hit taken resets the stacks. |
 
 Damage formulas follow the stock style: `level/5 + magicLevel*a + b` (min/max with different a, b); knight spells use the stock
 skill*attack callback, paladin spells scale mainly with the distance skill (plus a little magic level).
@@ -160,6 +172,39 @@ of 77) the paladin's Final Verdict drops from ~1840 to ~860, Dawnpiercer from ~5
 Healing (formula averages, magic level 100, per target): Purifying Wellspring ~1800 every 6s to the whole party within 3 sqm, Verdant Sanctuary ~4800 over 8s
 every 30s; for comparison stock Grand Mending ~1100 (self), Circle of Mending ~880.
 
+### Thief line (Thief, Ninja, Samurai)
+
+Ascension at level 100 (`!ascend ninja|samurai`, data/scripts/chaos/ascension.lua). The kit's mechanics are scripted in
+`data/scripts/chaos/thief_combat.lua` (rules in `classes.lua`, numbers in `Chaos.classes`, chaos_constants.lua):
+
+- **Evasion** (passive): 8% Thief, 12% Ninja, 5% Samurai chance to dodge a melee or ranged hit (monster attacks and player weapons),
+  shown with `ChaosCombatFx.dodge`. Measured: 4 dodges in a 20 s fight against three Behemoths.
+- **Weapon strikes**: the damaging spells deal their physical damage with a weapon origin (melee or ranged), so the weapon rules apply to
+  them too: the stealth crit, Poison Blades, the Bushido crit, and the Ninja's off-hand strike after Shadow Step.
+- **Dual wield** (Ninja): a one-handed sword in each hand (the shield hand takes it only with `server/src-patches/0002`); every melee hit of
+  the main hand is followed 0.15 s later by an off-hand strike for 50% of it x (off-hand attack / main-hand attack, clamped 0.5-1.25).
+- **Level factor**: the line's spell strikes are x(1 + (level - 300) / 700), at most 2.2 (x2 at level 1000). It stands in for the passive
+  tree the line does not have yet (the numbers of the other classes carry 73 / 248 tree points); re-tune it with the tree.
+
+Measured on the dummies like the tables above, but as a timed rotation (`ztest/thiefrot.lua`: 90 s, auto attack on the main dummy,
+spells on cooldown with the 2 s group cooldowns, buffs kept up) and **without any passive tree points**; auto attack alone over 60 s.
+Level 300: sword 110, embersage sword (atk 55, 1800 ms) and for the Ninja a second one in the off hand. Level 1000: sword 140, the
+level 1000 paladin armour set (the line wears what the Paladin wears) and the Dawnforged Blade (atk 65), two for the Ninja.
+
+| Level | Class | Auto attack | Total single target | Total 5 targets | Mana/min | Max health |
+|---|---|---|---|---|---|---|
+| 300 | Ninja | 609 | **1050** | 1385 | 4600 | 4426 |
+| 300 | Samurai | 309 | 968 | 968 | 3800 | 4777 |
+| 300 | Thief | 321 | 728 | 728 | 1470 | 4426 |
+| 1000 | Ninja | 1010 | **2837** | 3710 | 4600 | 14506 |
+| 1000 | Samurai | 491 | 2376 | 2376 | 3800 | 15697 |
+| 1000 | Thief | 588 | 1802 | 1802 | 1470 | 14506 |
+
+Against the tables above: the Ninja is at the paladin's crossbow level (1074 / 2770), the Samurai a little below in sustained damage with
+more health (Iaijutsu averages ~1700 at level 300 and ~5300 at level 1000 before crits, formula values; Counter Stance answers are not in these numbers: measured
+7 parries of 8 stances against two Behemoths), and the Thief in the middle (between the knight and the illusionist at level 300).
+The auto attack alone is noisy (a 30 s sample varies by ~15%).
+
 ### PvP (tested with two characters on the test server)
 
 - Damage to players is halved by the engine (spell and weapon alike); measured per cast against a level 300 knight with no armour, e.g.
@@ -181,7 +226,7 @@ Purifying Wellspring at 80% health, and the shooter casts Rime Bloom / Blightswa
 
 - Tested on the base server (TFS 1.4 based, protocol 10.98) with the real client: every spell was cast through its script against dummies and
   against a second player, see "Roles and balance". Not tested: party rules (needs two clients in one party), very large crowds.
-- spellid: 200-235, a block no stock spell (server or client) uses. Ids must stay below 256: the 10.98 cooldown packet
+- spellid: 200-245 without 237 (the base server's Duelist's Oath has 237), a block no other stock spell (server or client) uses. Ids must stay below 256: the 10.98 cooldown packet
   (`ProtocolGame::sendSpellCooldown`) sends the id as one byte, so an id like 410 arrives as 154 and the client (action bar,
   helper) puts the cooldown on the wrong spell. A few stock spells of the base server (ids 258-268) already wrap that way.
   The stock file also has a duplicate spellid (106) not related to this work.
@@ -207,4 +252,4 @@ The server only needs the files above. Spell list and action bar come from the c
 Use the spellid column above as the id, and the words as the spell's words.
 
 ## Client side
-The client side is done in `client/overlay/modules/game_chaosspells` (spell list, action bar, icons); regenerate its data with `python3 -I client/tools/gen_spell_data.py` after changing `spells_chaos.xml`. The icons (cells 201..236, drawn by `client/tools/gen_spell_icons.py`) live in the complete generated spell icon sheets in `client/overlay/data/images/game/spells/`; rebuild those with `client/tools/gen_all_spell_icons.py`. See `client/MANIFEST.md`.
+The client side is done in `client/overlay/modules/game_chaosspells` (spell list, action bar, icons); regenerate its data with `python3 -I client/tools/gen_spell_data.py` after changing `spells_chaos.xml`. The icons (cells 201..245, drawn by `client/tools/gen_spell_icons.py`) live in the complete generated spell icon sheets in `client/overlay/data/images/game/spells/`; rebuild those with `client/tools/gen_all_spell_icons.py`. See `client/MANIFEST.md`.

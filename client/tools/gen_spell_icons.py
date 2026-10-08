@@ -130,9 +130,41 @@ def missile(d, c):
     d.polygon([(14, 112), (70, 70), (56, 56)], fill=c)
     d.ellipse((52, 20, 108, 76), fill=c)
 
+def shuriken(d, c):
+    for i in range(4):
+        a = math.pi / 2 * i + math.pi / 8
+        d.polygon([(64 + 16 * math.cos(a - .9), 64 + 16 * math.sin(a - .9)), (64 + 58 * math.cos(a), 64 + 58 * math.sin(a)),
+                   (64 + 16 * math.cos(a + .9), 64 + 16 * math.sin(a + .9))], fill=c)
+    d.ellipse((50, 50, 78, 78), fill=c)
+    d.ellipse((58, 58, 70, 70), fill=(20, 10, 30))
+
+def daggers(d, c):
+    for flip in (False, True):
+        pts = [(20, 112), (30, 102), (96, 22), (106, 14), (100, 32), (40, 108), (30, 118)]
+        if flip:
+            pts = [(128 - x, y) for x, y in pts]
+        d.polygon(pts, fill=c)
+    d.rectangle((18, 96, 46, 104), fill=c); d.rectangle((82, 96, 110, 104), fill=c)
+
+def smoke(d, c):
+    for x, y, r in [(44, 78, 30), (84, 74, 28), (64, 50, 30), (36, 52, 18), (94, 46, 18), (64, 96, 22)]:
+        d.ellipse((x - r, y - r, x + r, y + r), fill=c)
+
+def katana(d, c):
+    d.line([(22, 108), (40, 90)], fill=c, width=12)
+    d.polygon([(40, 96), (34, 86), (100, 18), (114, 10), (108, 26)], fill=c)
+    d.ellipse((30, 82, 52, 104), outline=c, width=6)
+
+def hood(d, c):
+    d.pieslice((18, 14, 110, 120), 180, 360, fill=c)
+    d.polygon([(18, 66), (110, 66), (98, 120), (30, 120)], fill=c)
+    d.ellipse((40, 52, 88, 100), fill=(20, 10, 30))
+    d.ellipse((50, 70, 60, 78), fill=c); d.ellipse((68, 70, 78, 78), fill=c)
+
 GLYPH = {k: v for k, v in globals().items() if callable(v) and k in (
     'burst', 'bolt', 'drop', 'crystal', 'meteor', 'dots', 'shield', 'thorns', 'paw', 'leaf', 'swirl', 'cross', 'arrows',
-    'ring', 'sword', 'slam', 'wave', 'arrowup', 'hammer', 'twin', 'dash', 'eye', 'ghost', 'rift', 'missile')}
+    'ring', 'sword', 'slam', 'wave', 'arrowup', 'hammer', 'twin', 'dash', 'eye', 'ghost', 'rift', 'missile',
+    'shuriken', 'daggers', 'smoke', 'katana', 'hood')}
 
 ICONS = [  # (spell name, theme, glyph)
     ('Rime Bloom', 'frost', 'burst'), ('Witchfire Bolt', 'fire', 'missile'), ('Forked Storm', 'light', 'bolt'),
@@ -146,7 +178,11 @@ ICONS = [  # (spell name, theme, glyph)
     ('Vaulting Cleave', 'steel', 'arrowup'), ("Colossus Fall", 'ember', 'hammer'), ('Hall of Mirrors', 'arcane', 'twin'),
     ('Umbral Stride', 'shadow', 'dash'), ('Shattered Psyche', 'arcane', 'eye'), ('Wraithshroud', 'shadow', 'ghost'),
     ('Nightburst', 'shadow', 'burst'), ('Tear in the Weave', 'arcane', 'rift'), ('Flickerdash', 'arcane', 'dash'),
-    ('Banner Call', 'holy', 'wave'), ('Soulward', 'arcane', 'shield'), ("Hunter's Instinct", 'poison', 'eye')]
+    ('Banner Call', 'holy', 'wave'), ('Soulward', 'arcane', 'shield'), ("Hunter's Instinct", 'poison', 'eye'),
+    # the Thief line (cells 237..245)
+    ('Shuriken Toss', 'steel', 'shuriken'), ('Shadow Veil', 'shadow', 'hood'), ('Poison Blades', 'poison', 'daggers'),
+    ('Shadow Step', 'shadow', 'dash'), ('Smoke Bomb', 'shadow', 'smoke'), ('Shuriken Barrage', 'steel', 'shuriken'),
+    ('Counter Stance', 'ember', 'shield'), ('Iaijutsu', 'blood', 'katana'), ('Bushido Focus', 'light', 'katana')]
 
 def render(theme, glyph):
     c = COL[theme]

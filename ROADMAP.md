@@ -26,8 +26,8 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 
 | # | Item | Status | Notes |
 |---|---|---|---|
-| C1 | Vocations: 4 base classes (Warrior, Ranger, Mystic, Thief), each with 2 ascended choices; scripted ascension | in progress (Thief first) | migration of existing characters as in `docs/CLASSES.md` |
-| C2 | Thief, Ninja and Samurai: kit, shurikens, stealth, scripted dual wield, counters | in progress | the only fully new class |
+| C1 | Vocations: 4 base classes (Warrior, Ranger, Mystic, Thief), each with 2 ascended choices; scripted ascension | in progress (Thief first) | phase 1 done: framework (`!ascend`, `server/tools/add_vocations.py`, client ids, store change) with the Thief line; phase 2: migration of existing characters as in `docs/CLASSES.md` |
+| C2 | Thief, Ninja and Samurai: kit, shurikens, stealth, scripted dual wield, counters | in progress | kit done: 9 spells, measured at levels 300 / 1000 (`server/data/spells/README.md`); passive tree, healing and gear open (`docs/CLASSES.md`) |
 | C3 | Rework the existing kits into Juggernaut/Berserker, Deadeye/Beastmaster, Elementalist/Illusionist (support) | todo | reuses today's spells and the new keystones |
 | C4 | Passive trees, spell icons, effects and outfits per class; balance at levels 300 and 1000 | todo | |
 | C5 | Necromancer as a fifth class (summoner) | todo | after the first eight are balanced |

@@ -311,3 +311,89 @@ ChaosSpell.SUBID = {
 	blood_pact = 71001, crimson_fury = 71002, rally = 71003, barkskin = 71004,
 	divine_ward = 71005, soul_aegis = 71006, phantom_veil = 71007, dash = 71008, iron_will = 71009,
 }
+
+-- ------------------------------------------------------------------------------------------------ Thief line
+-- (thief/ ninja/ samurai/; the class rules are data/scripts/chaos/classes.lua, loaded here once)
+function ChaosSpell.loadClasses()
+	if not ChaosClasses then
+		dofile('data/scripts/chaos/classes.lua')
+	end
+	return ChaosClasses
+end
+
+-- attack of the main-hand melee weapon (left hand first, as the engine picks it), never below 20 (an empty hand)
+function ChaosSpell.meleeAttack(player)
+	for _, slot in ipairs({CONST_SLOT_LEFT, CONST_SLOT_RIGHT}) do
+		local item = player:getSlotItem(slot)
+		local it = item and ItemType(item:getId())
+		if it then
+			local wt = it:getWeaponType()
+			if wt == WEAPON_SWORD or wt == WEAPON_CLUB or wt == WEAPON_AXE then
+				return math.max(20, itemAttack(item))
+			end
+		end
+	end
+	return 20
+end
+
+-- skill x attack of a Thief-line weapon strike: the sword skill and the main-hand blade
+function ChaosSpell.bladePower(player)
+	return player:getEffectiveSkillLevel(SKILL_SWORD) * ChaosSpell.meleeAttack(player)
+end
+
+-- skill x attack of a shuriken: the better of sword and distance skill, the throwing star in hand (any throwing
+-- weapon) or Chaos.classes.shuriken.defaultAttack
+function ChaosSpell.shurikenPower(player)
+	local skill = math.max(player:getEffectiveSkillLevel(SKILL_SWORD), player:getEffectiveSkillLevel(SKILL_DISTANCE))
+	local attack = (Chaos and Chaos.classes and Chaos.classes.shuriken.defaultAttack) or 50
+	for _, slot in ipairs({CONST_SLOT_LEFT, CONST_SLOT_RIGHT}) do
+		local item = player:getSlotItem(slot)
+		local it = item and ItemType(item:getId())
+		if it and it:getWeaponType() == WEAPON_DISTANCE and it:getAmmoType() == 0 then
+			attack = math.max(attack, itemAttack(item))
+		end
+	end
+	return skill * attack
+end
+
+-- A weapon strike dealt by a spell: physical damage with a weapon origin (ORIGIN_MELEE or ORIGIN_RANGED), so the
+-- weapon-hit rules of data/scripts/chaos/thief_combat.lua apply to it (stealth ambush crit, Poison Blades, Bushido
+-- crit, the Ninja's off-hand strike after a melee strike). PvP rules as ChaosSpell.damageTarget.
+-- Level factor of the Thief line's spell strikes (Chaos.classes.spellLevelScale): 1 up to level `from`, then +1 per
+-- `per` levels, at most `max`. It stands in for the passive tree the Thief line does not have yet (the other classes'
+-- level 1000 numbers carry 248 tree points); re-tune or drop it with the Thief-line tree (docs/CLASSES.md, phase 2).
+function ChaosSpell.thiefLevelScale(player)
+	local s = Chaos and Chaos.classes and Chaos.classes.spellLevelScale
+	if not s or not player.getLevel then
+		return 1
+	end
+	return math.min(s.max, 1 + math.max(0, player:getLevel() - s.from) / s.per)
+end
+
+function ChaosSpell.weaponStrike(caster, target, min, max, effect, origin)
+	if not ChaosSpell.canAttack(caster, target) then
+		return false
+	end
+	local k = ChaosSpell.thiefLevelScale(caster)
+	min, max = min * k, max * k
+	return doTargetCombat(caster, target, COMBAT_PHYSICALDAMAGE, -math.floor(min), -math.floor(max), effect,
+		origin or ORIGIN_MELEE)
+end
+
+-- Make monsters around `pos` let go of `player` (or of every player, when player is nil): drop it as attack and
+-- follow target and take it off their target lists. Used by Shadow Veil (stealth) and Smoke Bomb (blind).
+function ChaosSpell.dropTarget(monster, player)
+	if not monster or not monster:isMonster() then
+		return
+	end
+	local current = monster:getTarget()
+	if current and (not player or current == player) then
+		monster:setTarget(nil)
+		monster:setFollowCreature(nil)
+	end
+	for _, t in ipairs(monster:getTargetList() or {}) do
+		if t:isPlayer() and (not player or t == player) then
+			monster:removeTarget(t)
+		end
+	end
+end

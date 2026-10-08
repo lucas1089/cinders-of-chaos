@@ -114,10 +114,15 @@ function S.vocationFor(word, currentId, map)
 		table.sort(names)
 		return nil, "Choose one of: " .. table.concat(names, ", ") .. "."
 	end
+	local promoted = S.isPromoted(currentId, map)
+	-- a base class with two ascended classes (Thief: Ninja or Samurai): an ascended character names the one it wants
+	if promoted and ids.choose then
+		return nil, "You have ascended: name the ascended class you want (" .. table.concat(ids.choose, " or ") .. ")."
+	end
 	if ids[1] == currentId or ids[2] == currentId then
 		return nil, "You already are of that vocation."
 	end
-	return S.isPromoted(currentId, map) and ids[2] or ids[1]
+	return promoted and ids[2] or ids[1]
 end
 
 -- Health, mana and capacity after a vocation change, counted like the engine does from level `baseLevel`:
@@ -390,7 +395,7 @@ S.services = {
 
 	nameToken = tokenService(ST.nameChangeTokens, "name change", "!changename <New Name>"),
 	vocationToken = tokenService(ST.vocationChangeTokens, "vocation change",
-		"!changevocation <knight|paladin|sorcerer|druid|illusionist>"),
+		"!changevocation <knight|paladin|sorcerer|druid|illusionist|thief|ninja|samurai>"),
 
 	blessings = {
 		check = function(player)
@@ -596,7 +601,7 @@ function login.onLogin(player)
 	end
 	if player:getStorageValue(ST.vocationChangeTokens) > 0 then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
-			"You have an unused vocation change: !changevocation <knight|paladin|sorcerer|druid|illusionist>")
+			"You have an unused vocation change: !changevocation <knight|paladin|sorcerer|druid|illusionist|thief|ninja|samurai>")
 	end
 	return true
 end
@@ -762,7 +767,7 @@ function vocTalk.onSay(player, words, param)
 	local current = player:getVocation()
 	local newId, err = S.vocationFor(param, current:getId())
 	if not newId then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Usage: !changevocation <knight|paladin|sorcerer|druid|illusionist>. " .. err)
+		player:sendTextMessage(MESSAGE_INFO_DESCR, "Usage: !changevocation <knight|paladin|sorcerer|druid|illusionist|thief|ninja|samurai>. " .. err)
 		return false
 	end
 	local newVoc = Vocation(newId)
@@ -796,6 +801,13 @@ function vocTalk.onSay(player, words, param)
 	player:addMana(player:getMaxMana())
 	if ChaosPassiveTree and ChaosPassiveTree.resetAll then
 		ChaosPassiveTree.resetAll(player)
+	end
+	-- the Thief line (classes.lua): the Ninja's off-hand rule, and the client learns the vocation without a relog
+	if ChaosClasses then
+		ChaosClasses.syncDualWield(player)
+		if ChaosClasses.sendBasicData then
+			ChaosClasses.sendBasicData(player)
+		end
 	end
 	player:save()
 	player:getPosition():sendMagicEffect(CONST_ME_HOLYAREA)

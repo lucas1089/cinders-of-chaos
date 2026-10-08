@@ -21,6 +21,6 @@ rm -f "$OUT/mods/game_helper/cavebot_panel.lua" "$OUT/mods/game_helper/scripting
 cp -a "$HERE"/overlay/modules/. "$OUT/modules/"
 cp -a "$HERE"/overlay/data/. "$OUT/data/"
 # (the overlay's data/images/game/spells/spell-icons-*.png are complete generated sheets, Chaos spells at cells
-#  201..236 included, and replace the base ones; regenerate them with tools/gen_all_spell_icons.py)
+#  201..245 included, and replace the base ones; regenerate them with tools/gen_all_spell_icons.py)
 mkdir -p "$OUT/data/things/1098"
 echo "Done. Put Tibia.spr and Tibia.dat (10.98) in $OUT/data/things/1098/, then build with CMake."

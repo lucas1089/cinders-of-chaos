@@ -1,0 +1,57 @@
+# Thief line (docs/CLASSES.md), two small engine changes in src/player.cpp:
+#  1. Dual wield: a player whose storage 7100200 is above 0 (data/scripts/chaos/classes.lua keeps it at 1 for Ninjas,
+#     Chaos.classes.storage.dualWield) may put a one-handed sword in the shield hand (with classicEquipmentSlots = false
+#     that hand otherwise takes shields only). The engine keeps swinging only the main-hand weapon (Player::getWeapon
+#     checks the left hand first); data/scripts/chaos/thief_combat.lua adds the off-hand strike.
+#  2. Attack speed: a weapon with its own attackspeed (items.xml) is scaled by the vocation's attackspeed / 2000, so a
+#     fast vocation (Thief 1600, Ninja 1400, Samurai 1800; every other vocation 2000 = unchanged) stays fast with it.
+# Apply in the server source root: patch -p1 < 0002-dual-wield-and-vocation-attack-speed.patch, then rebuild.
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -367,6 +367,9 @@
+ 	uint32_t ret = weapon ? weapon->getAttackSpeed() : 2000;
+ 	if (!weapon || weapon->getAttackSpeed() == 0) {
+ 		ret = vocation->getAttackSpeed();
++	} else if (vocation->getAttackSpeed() != 2000) {
++		// Chaos: a weapon's own speed is scaled by the vocation's (2000 = unchanged), so a fast vocation stays fast
++		ret = ret * vocation->getAttackSpeed() / 2000;
+ 	}
+ 
+ 	ret = ret - (ret * getCharacterStat(CHARSTAT_DEXTERITY) / 100.0);
+@@ -2324,6 +2327,20 @@
+ 	return itemWeight <= getFreeCapacity();
+ }
+ 
++// Chaos: a dual-wield vocation (the Ninja; data/scripts/chaos/thief_combat.lua keeps this storage at 1 for it) may hold
++// a one-handed sword in the shield hand as its off-hand weapon. The engine still swings only the main-hand weapon
++// (getWeapon checks the left hand first); the off-hand strike is scripted.
++static constexpr uint32_t CHAOS_DUAL_WIELD_STORAGE = 7100200;
++
++static bool chaosCanHoldOffhand(const Player* player, const Item* item)
++{
++	if (item->getWeaponType() != WEAPON_SWORD || (item->getSlotPosition() & SLOTP_TWO_HAND)) {
++		return false;
++	}
++	int32_t value;
++	return player->getStorageValue(CHAOS_DUAL_WIELD_STORAGE, value) && value > 0;
++}
++
+ ReturnValue Player::queryAdd(int32_t index, const Thing& thing, uint32_t count, uint32_t flags, Creature*) const
+ {
+ 	const Item* item = thing.getItem();
+@@ -2400,7 +2417,14 @@
+ 		case CONST_SLOT_RIGHT: {
+ 			if (slotPosition & SLOTP_RIGHT) {
+ 				if (!g_config.getBoolean(ConfigManager::CLASSIC_EQUIPMENT_SLOTS)) {
+-					if (item->getWeaponType() != WEAPON_SHIELD) {
++					if (item->getWeaponType() != WEAPON_SHIELD && chaosCanHoldOffhand(this, item)) {
++						const Item* leftItem = inventory[CONST_SLOT_LEFT];
++						if (leftItem && leftItem != item && (leftItem->getSlotPosition() & SLOTP_TWO_HAND)) {
++							ret = RETURNVALUE_BOTHHANDSNEEDTOBEFREE;
++						} else {
++							ret = RETURNVALUE_NOERROR;
++						}
++					} else if (item->getWeaponType() != WEAPON_SHIELD) {
+ 						ret = RETURNVALUE_CANNOTBEDRESSED;
+ 					} else {
+ 						const Item* leftItem = inventory[CONST_SLOT_LEFT];

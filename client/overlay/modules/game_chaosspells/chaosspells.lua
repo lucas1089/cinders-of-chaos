@@ -1,7 +1,7 @@
 -- Registers the Chaos spells (spelldata.lua, generated from the server's spells_chaos.xml) in the client's
 -- spell tables, so the spell list, the action bar, hotkeys and cooldown display know them:
 --   SpellInfo.Default[name]  the spell (same fields as the client's own entries)
---   SpellIcons[iconKey]      {icon cell, server spell id}; the cells 201..236 of the spell icon sheets that
+--   SpellIcons[iconKey]      {icon cell, server spell id}; the cells 201..245 of the spell icon sheets that
 --                            client/overlay/data/images/game/spells holds (tools/gen_all_spell_icons.py draws them)
 --   SpelllistSettings.Default.spellOrder   so the spell list shows them
 -- It also gives the client's stock spell entries their Chaos names and words (ChaosSpellNames in spelldata.lua), the
@@ -69,9 +69,10 @@ end
 
 -- The helper (mods/game_helper) only offers spells from its own per-vocation id lists (spelldata.json).
 -- Add the Chaos spells to them: attack spells to the shooter list, healing spells to the healing list, support
--- spells to the support list. The helper keys vocations 1 knight, 2 paladin, 3 sorcerer, 4 druid, 5 illusionist
+-- spells to the support list. The helper keys vocations 1 knight, 2 paladin, 3 sorcerer, 4 druid, 5 illusionist, 6 thief
 -- (its translateVocation of our server ids), and the promoted ids are those + 10.
-local HELPER_VOCATION = { [1] = 3, [2] = 4, [3] = 2, [4] = 1, [5] = 3, [6] = 4, [7] = 2, [8] = 1, [9] = 5, [10] = 5 }
+local HELPER_VOCATION = { [1] = 3, [2] = 4, [3] = 2, [4] = 1, [5] = 3, [6] = 4, [7] = 2, [8] = 1, [9] = 5, [10] = 5,
+  [11] = 6, [12] = 6, [13] = 6 }
 local helperExtended = false
 
 local function addOnce(list, value)

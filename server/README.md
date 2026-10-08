@@ -24,8 +24,14 @@ server/
     bank.lua  autoloot.lua  daily.lua  notifications.lua  passivetree.lua  passivetree_data.lua
     dungeons.lua  infinitytower.lua  stash.lua  spell_guard.lua (Iron Will damage reduction of the Iron Bellow spell)
     combat_fx.lua (crit / dodge / reflect / elemental weapon hit visuals, ChaosCombatFx)
+    classes.lua  ascension.lua  thief_combat.lua   the Thief line (Thief, Ninja, Samurai): class rules, !ascend, scripted
+                                                   stealth / evasion / poison blades / dual wield / counter / bushido
+  data/XML/chaos_vocations.xml        the Thief line's vocation entries (ids 11-13), added by tools/add_vocations.py
+  tools/add_vocations.py              adds them to data/XML/vocations.xml (+ weapons.xml / movements.xml vocation lists)
     paragon.lua (Paragon track past the passive tree, see "Paragon")
   src-patches/0001-critical-hit-to-lua.patch   engine: onHealthChange gets `critical` (combat_fx.lua)
+  src-patches/0002-dual-wield-and-vocation-attack-speed.patch   engine: a Ninja may hold a sword in the shield hand;
+                                      weapon attack speed scaled by the vocation's (thief_combat.lua)
     shop.lua  shop_config.lua  shop_services.lua  autosell.lua  sell_prices.lua (store, see "Store services")
     bounty.lua  bounty_core.lua  bounty_config.lua  bounty_pool.lua (bounty board; pool from tools/gen_bounty_pool.py)
 ```
@@ -53,6 +59,13 @@ server/
    are tuned for levels 650-1000), then `python3 -I server/tools/late_game.py <server>/data` (idempotent; `--dry-run`
    shows what would change, `--remove` undoes it). It writes the new `experienceStages` into `config.lua` and puts the
    level-scaled monsters of `server/tools/late_game_spawns.csv` into the loaded map's spawn file. See "Late game".
+5b. Classes: `python3 -I server/tools/add_vocations.py <server>/data [--dry-run]` (idempotent). It inserts the vocations of
+   `data/XML/chaos_vocations.xml` (Thief 11, Ninja 12, Samurai 13) into `data/XML/vocations.xml` between marker comments and lets the
+   Thief line use one-handed swords, throwing weapons and whatever the Paladin may wear (vocation lists of `weapons.xml` and
+   `movements.xml`). For the Ninja's dual wield and the line's attack speed with weapons that have their own speed, build the engine
+   with `src-patches/0002-dual-wield-and-vocation-attack-speed.patch` (without it the off-hand sword cannot be equipped; everything
+   else works). Ascension: `!ascend ninja|samurai` at level 100 in a protection zone (final; the store's Vocation Change with
+   `!changevocation ninja|samurai` is the only way back). See docs/CLASSES.md.
 6. Restart the server (or `/reload scripts`). Check the console for Lua errors.
 7. Autoloot only: if `data/talkactions/talkactions.xml` registers `!autoloot` (the legacy
    `talkactions/scripts/autoloot.lua`), TFS 1.4.2 keeps the XML one and silently ignores
@@ -449,9 +462,13 @@ while it is still online) `players.name` is updated together with the tables tha
 `guildwar_kills.killer` / `target`. If the name was taken in between, the token is given back. `chaos_admin_log.player_name`
 is an audit log and keeps the old name. All other Chaos tables use the player id.
 
-**Vocation change.** `!changevocation <knight|paladin|sorcerer|druid|illusionist>` (token, out of combat, in a
+**Vocation change.** `!changevocation <knight|paladin|sorcerer|druid|illusionist|thief|ninja|samurai>` (token, out of combat, in a
 protection zone; your own vocation is refused). A promoted character gets the promoted id (`Chaos.shopServices.vocations`:
-sorcerer 1/5, druid 2/6, paladin 3/7, knight 4/8, illusionist 9/10). Health and mana are recomputed as the engine counts
+sorcerer 1/5, druid 2/6, paladin 3/7, knight 4/8, illusionist 9/10). The Thief (11) has two ascended classes, Ninja (12) and
+Samurai (13), which both count as promoted: a promoted (or ascended) character names the one it wants (`!changevocation ninja` or
+`samurai`; `thief` asks it to choose), an unpromoted one becomes a Thief with any of the three words, and a Ninja can switch to
+Samurai and back this way (the only way after `!ascend`). The change also resends the vocation to the client and keeps the Ninja's
+dual-wield storage in line (`ChaosClasses.syncDualWield`). Health and mana are recomputed as the engine counts
 them, 185 / 90 at level 8 plus (level - 8) x the new vocation's gain; capacity keeps whatever the character has outside the
 level gains: cap + (level - 8) x (new gain - old gain). Skills and magic level are **kept** as they are (a knight turned
 sorcerer keeps its sword skill and its low magic level). The passive tree is reset for free (`ChaosPassiveTree.resetAll`).

@@ -8,7 +8,8 @@ from gen_spell_icons import ICONS
 
 FIRST_ICON = 201  # Chaos cells in the spell icon sheets (client/tools/gen_all_spell_icons.py draws them; 240 cells)
 VOC = {'Sorcerer': 1, 'Druid': 2, 'Paladin': 3, 'Knight': 4, 'Master Sorcerer': 5, 'Elder Druid': 6,
-       'Royal Paladin': 7, 'Elite Knight': 8, 'Illusionist': 9, 'Arch Illusionist': 10}
+       'Royal Paladin': 7, 'Elite Knight': 8, 'Illusionist': 9, 'Arch Illusionist': 10,
+       'Thief': 11, 'Ninja': 12, 'Samurai': 13}
 GROUP = {'attack': 1, 'healing': 2, 'support': 3}
 
 def main():
