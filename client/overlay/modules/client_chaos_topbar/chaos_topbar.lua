@@ -174,6 +174,7 @@ local CATEGORIES = {
     { text = 'Infinity Tower',     icon = 'infinitytower', modules = { 'game_infinitytower' }, fns = { 'toggle' } },
     { text = 'Dungeons',           icon = 'dungeons',    modules = { 'game_dungeons' },  fns = { 'toggle' } },
     { text = 'Daily Reward',       icon = 'daily',       modules = { 'game_daily' },     fns = { 'toggle' } },
+    { text = 'Bounty Board',       icon = 'quests',      modules = { 'game_bounty' },    fns = { 'toggle' } },
     { text = 'Event Calendar',     icon = 'events',      modules = { 'game_schedule' },  fns = { 'toggle' } },
     { text = 'Highscores',         icon = 'ranking',     modules = { 'game_highscores' }, fns = { 'toggle', 'show' } },
     { text = 'Notifications',      icon = 'notifications', modules = { 'game_chaosnotify' }, fns = { 'toggle', 'showAll' } },

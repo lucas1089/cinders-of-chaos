@@ -35,6 +35,7 @@ ChaosOpcodes = {
 	infinitytower = 214,
 	autoloot = 216,
 	shop = 218, -- Chaos store (client game_shop); the base server's own store uses 201
+	bounty = 223, -- bounty board (client game_bounty, !bounty; bounty.lua, bounty_config.lua)
 	spellbook = 219 -- spell list window (client game_spellbook, !spells)
 }
 
@@ -54,6 +55,7 @@ Chaos.storage = {
 	passiveExtraPoints = 7100020, -- bonus passive points granted by quests/GM
 	passiveStatsFixed = 7100021, -- 1 once the stats older passive tree versions wrote into the character are clamped
 	dungeonQueueLock = 7100030, -- (os.time of the last queue join; anti spam)
+	bountyWeekBonus = 7100300, -- bounty board (bounty.lua): 7100300 - 7100309 reserved; week key of the last weekly bonus
 
 	-- store: one-time cosmetics owned (base + id of the wings / aura / shader)
 	shopWingsBase = 7100600,

@@ -18,6 +18,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | game_spellbook | extended opcode 219 (JSON) + `!spells` | none | Spellbook window: search, vocation filter, spell details and an area-of-effect grid; server `data/scripts/chaos/spellbook.lua`; untested in a client |
 | game_craftskills | skills packet (crafting skills after fishing) | base patch 0012 (`GameChaosCraftingSkills`) | Profession section at the bottom of the skills window, live updates; tested in game |
 | game_daily | extended opcode 207 | none | Needs server script |
+| game_bounty | extended opcode 223 (JSON) + `!bounty` | none | Bounty board: today's contracts per level band (tabs), creature preview, reward, Accept/Abandon, progress bars, timer to the next roll, weekly chest count; Chaos -> Bounty Board in the top menu; toasts through game_chaosnotify (action `bounty`); server `data/scripts/chaos/bounty.lua`; tested in game |
 | game_healthcircle | none | none | In `alternates/`: the base client's own is used |
 | game_mainpanel | none | none | In `alternates/`: the base client's own is used |
 | game_chaosnotify (was game_notifications) | extended opcodes 79, 151, 152 | none | Needs server script |

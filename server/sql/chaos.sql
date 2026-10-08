@@ -101,3 +101,23 @@ CREATE TABLE IF NOT EXISTS `chaos_shop_history` (
   PRIMARY KEY (`id`),
   KEY `chaos_shop_history_account` (`account_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Bounty board (data/scripts/chaos/bounty.lua; table name in bounty_config.lua): one row per accepted contract. day = bounty day (YYYYMMDD, the day
+-- starts at the roll hour), contract = "<band>-<slot>" of that day's board, status 0 active / 1 completed,
+-- mc = 1 when a kill was made while multi-clienting (no reward). Unfinished rows of past days and rows older than
+-- two weeks are deleted at login; completed rows of the current week count for the weekly bonus.
+CREATE TABLE IF NOT EXISTS `chaos_bounty` (
+  `player_id` int(11) NOT NULL,
+  `day` int(10) unsigned NOT NULL,
+  `contract` varchar(16) NOT NULL,
+  `monster` varchar(64) NOT NULL,
+  `progress` int(10) unsigned NOT NULL DEFAULT 0,
+  `required` int(10) unsigned NOT NULL,
+  `status` tinyint(3) unsigned NOT NULL DEFAULT 0,
+  `mc` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `accepted_at` int(10) unsigned NOT NULL,
+  `completed_at` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`player_id`, `day`, `contract`),
+  KEY `chaos_bounty_week` (`player_id`, `status`, `day`),
+  CONSTRAINT `chaos_bounty_players_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

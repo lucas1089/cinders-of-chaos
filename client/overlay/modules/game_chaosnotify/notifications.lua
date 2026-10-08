@@ -47,6 +47,14 @@ local NOTIFICATION_TYPES = {
         borderColor = "#6a5632",
         duration = 30000, -- 30 segundos
     },
+    BOUNTY = {
+        icon = "images/notifications/task.png",
+        title = "BOUNTY BOARD",
+        titleColor = "#a3844b",
+        backgroundColor = "#ccbebb",
+        borderColor = "#6a5632",
+        duration = 8000,
+    },
     CATACOMB_FREE = {
         icon = "images/notifications/catacomb2.png",
         title = "CATACOMB AVAILABLE",
@@ -421,7 +429,7 @@ local function createCompactNotification(data, isPinned)
                 pcall(function()
                     monsterOutfit:setId('monsterOutfit')
                     monsterOutfit:setSize({width = 48, height = 48})
-                    monsterOutfit:setOutfit({lookType = data.monsterLookType})
+                    monsterOutfit:setOutfit({type = data.monsterLookType}) -- the engine reads "type"
                     monsterOutfit:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
                     monsterOutfit:addAnchor(AnchorVerticalCenter, 'parent', AnchorVerticalCenter)
                 end)
@@ -1024,6 +1032,13 @@ function onExtendedOpcode(protocol, opcode, buffer)
             end
         end,
         
+        -- bounty board (server data/scripts/chaos/bounty.lua): milestones, completion, weekly chest
+        bounty = function(data)
+            if data.message then
+                addNotification("BOUNTY", data.message, nil, data.monsterLookType)
+            end
+        end,
+
         battlePassComplete = function(data)
             if data.missionName and data.expPoints then
                 local message = string.format("Mission Complete: %s and received %d battle pass exp", 
