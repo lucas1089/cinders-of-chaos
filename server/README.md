@@ -260,3 +260,107 @@ refused entry, a third login was refused.
   is applied by `weapon_styles.lua` to weapon hits only (spells, runes and wands are not affected).
 - Arrows splash: creatures around the target take 50% of the hit (normal PvP / protection zone rules). Bolts hit only
   their target.
+
+## World bosses (`worldboss.lua`, `data/monster/monsters/chaos/world_bosses/`)
+
+A server-wide event: a portal opens next to every temple, players gather in a lobby, one of five world bosses appears in an
+arena built at runtime, and everyone who did real damage is rewarded, not only the corpse owner. Settings: `Chaos.worldBoss`
+in `chaos_constants.lua`. Not run on a server; `tests/worldboss_test.lua` covers the layout, schedule, rotation, phases,
+damage shares, rewards and the whole event flow against a mocked engine (LuaJIT and Lua 5.3).
+
+**Install.** Copy the XMLs to `<server>/data/monster/monsters/chaos/world_bosses/` and register them:
+`python3 -I server/tools/register_monsters.py data/monster/monsters.xml data/monster/monsters/chaos/world_bosses`.
+The script itself loads with the rest of `data/scripts/chaos/`. Without the XMLs `/worldboss start` refuses with "not loaded".
+
+### The bosses
+
+All five have `<flag isboss="1"/>` (monster_tiers.lua also lists them in `cfg.bosses` as a fallback), so the client gets
+the `boss` tier and draws them bigger; worldboss.lua also pushes the tier to players in the arena every 3 s. They are in
+monster_tiers' `cfg.skip`: no random modifiers (Regenerating, Juggernaut or Explosive would wreck a tuned fight).
+
+| Boss | Health | Main attacks (per 2 s check) | Phases (script) | Weak / immune | Loot highlights |
+|---|---|---|---|---|---|
+| Kaelgor the Infernal Warlord (fire warlord, look 842) | 18M | melee 2.5-5.5k, fire wave 3.5-6k, meteor r3 3-5k, warstomp r5 2.5-4.5k, burning DoT 4-7k, slow | 70% 4 Hellfire Fighters, 40% enrage (fire nova r6 2.5-4k / 8 s), 15% 4 Hellspawn | ice -15% / fire 60% resist | Dawnforged set (plate, longsword, chopper, helmet, shield, ring) |
+| Skaldra the Rime Queen (frost wyrm queen, look 1472) | 16M | melee 2-4.5k, rime breath (length 9) 3.5-6.5k, hailstorm r3 3-5.5k, shatter r6 2.5-4k, frostbite DoT 6-9k, slow r4 | 70% 3 Frost Dragons, 40% enrage (blizzard r7 2-3.5k / 7 s), 15% 4 Ice Golems | fire -20% / ice immune | Seraphic set (tabard, piercer, greaves, quiver, ring), Myst galoshes |
+| The Rotmother (plague abomination, look 238) | 22M | poisoned melee 2-4k, bile wave 3.5-6k, spore burst r4 3-5k, miasma DoT r6 6-10k, lifedrain 2.5-4k; heals 40-60k | 75% 5 Defilers, 50% 4 Plaguesmiths, 25% enrage (miasma r8 1.5-2.5k / 6 s) | fire -25%, holy -10% / earth immune | legs and boots of all three sets, Myst amulet |
+| Nyxareth the Void Archon (void caster, look 862, keeps distance 4) | 15M | oblivion bolt r3 3.5-6k, rift beam (length 8) 4.5-8k, mana drain r6 3-5k, curse DoT 5-8k, drunk r5 | 70% 4 Phantasms, 40% enrage (void pulse r7 2.5-4k / 7 s), 15% 4 Lost Souls | holy -25%, physical -10% / death immune | Myst Regalia set (helmet, mantle, spellbook, wand, ring), Seraphic necklace |
+| Vharok the Blood Colossus (blood colossus, look 591) | 24M | bleeding melee 3-6.5k, crimson cleave wave 4-7.5k, quake r4 3-5k, blood leech r3 3-5k, hemorrhage DoT 6-9k; heals 60-100k | 75% 4 Blood Beasts, 45% enrage (blood nova r6 2.5-4.5k / 7 s, +5k health per player hit), 20% 3 Juggernauts | holy -20% / physical 40% resist, lifedrain immune | Dawnforged plate, great axe, skull crusher, mace, amulet; Seraphic helmet |
+
+Every boss: 55-75 crystal coins, 12-15 Chaos Orbs, 5-7 Divine Orbs (80-90%), 4-6% per set item; immune to paralyze,
+invisibility, outfit and drunk. Adds get the configured health (100k-200k) so they matter at level 1000. Look types are
+outfits other monsters already use (1472 needs the merged dat, see `data/monster/CUSTOM_MONSTERS.md`); corpses are stock
+containers (slain demon, dead frost dragon, dead defiler, dead juggernaut).
+
+**Why these numbers.** Measured single-target damage per second: level 300 about 400-700, level 1000 with the best gear
+about 1300-3200. With ~70% uptime (movement, deaths, healers who do not attack):
+
+| Group | Raw DPS | Effective | Nyxareth 15M | Skaldra 16M | Kaelgor 18M | Rotmother 22M | Vharok 24M |
+|---|---|---|---|---|---|---|---|
+| 20 x level 1000 | ~45k | ~31k | ~8 min | ~9 min | ~10 min | ~13 min | ~15 min |
+| 15 x level ~700 | ~22k | ~16k | ~17 min | ~18 min | ~20 min | ~27 min | ~32 min |
+| 10 x level 300 | ~5.5k | ~3.9k | > 60 min: fails the 45-minute limit |
+
+(Self-healing is included: 1.2-3.2k health per second on average from the XML heals, Vharok up to ~3.5k more while
+enraged.) Resistances shift this per vocation (Vharok resists 40% physical). The 5-target numbers (2400-6300 at level 1000)
+only count against adds. Incoming damage: single hits 2.5-8k (the 8k rift beam and 7.5k cleave are the spikes), DoTs of
+4-10k total over ~20-40 s, so a 9k-health level 1000 character survives one big hit and a 27k tank survives several,
+with a healer. Level 300 characters (3-5k health) can be one-shot by the spikes; they should stay at range.
+
+### Arena (built in code)
+
+`Game.createTile` + ground/wall items, like the Infinity Tower; nothing is saved to the map. Coordinates (z 7):
+- Arena x 5000-5032, y 5000-5032 (31 x 31 inside walls), black marble floor, stone walls, four stone pillars as cover at
+  the centre +-7, coal basins in the corners. Boss spawn: centre 5016, 5016. Players arrive at 5016, 5029; the forcefield
+  at 5016, 5031 goes back to the lobby.
+- Lobby x 5009-5023, y 5040-5048 (13 x 7 inside), seven empty rows south of the arena so the boss can never see or reach it.
+  Arrival 5016, 5046; forcefield to the arena at 5016, 5041; forcefields home (own temple) at 5010, 5044 and 5022, 5044.
+- Free area: the map file was scanned for tile areas (OTBM tile-area nodes): the nearest content is around x 1024-2047,
+  y 3072-4095; nothing exists within x/y 4500-5600. Other runtime areas: Infinity Tower x 2000-2660, y 2000-2020; the
+  balance test harness 1490-1510. Before building, every tile of the footprint is checked: a tile that already exists and
+  is not ours (other ground or a house) stops the build ("arena not built: tile x,y,z already exists").
+- The lobby is protected by script (no combat against players in it); the engine has no Lua call to give a dynamic tile the
+  protection-zone flag. PvP is blocked in lobby and arena (`allowPvp = false`). Deaths in the arena are normal deaths.
+- Forcefields are item 1387 (magic forcefield, type teleport) **without destination** and with action ids 47201-47204;
+  MoveEvents do the moving, so monsters that step on them stay put and the entry rules are checked.
+
+### The event
+
+- **Schedule:** every `intervalHours` (6) at full hours offset by `offsetHours` (3): 03:00, 09:00, 15:00, 21:00 server time,
+  with broadcasts 10, 5 and 1 minute before. A GlobalEvent checks every 30 s. `events_schedule.lua` was not reused: it
+  handles whole-day bonus events for the calendar, not timed spawns. `enabled = false` turns the schedule off.
+- **Start** (`/worldboss start [name|number|random]`, staff only; no argument = the configured mode): the arena is built,
+  a portal appears next to every distinct temple of `Game.getTowns()` (first free tile of `portalOffsets`: walkable, not a
+  house, no other teleport; or exactly at `portalPositions`), broadcast + toast (game_chaosnotify `gmBroadcast`, no client
+  change). Entry: level 300+, at most 40 players inside. The boss appears after 120 s; portals stay 30 minutes.
+- **Boss choice:** `mode = "rotation"` (next one each time; the last index is a global storage, in memory) or `"random"`
+  (never the same twice in a row).
+- **End:** the boss dies (victory, rewards, broadcast with the top 3 and the time), or 45 minutes pass (it withdraws), or
+  `/worldboss stop`. Town portals and adds disappear at once; after 90 s (10 s on stop) everybody still inside goes to their
+  temple and the arena is cleaned (monsters, corpses, loose items). Logging in inside the arena when no event runs sends you
+  to the temple.
+- `!worldboss` (everyone): next start and boss, or the running fight (health %, minutes left). `/worldboss arena` (staff):
+  builds the arena if needed and takes you to the lobby, to look at it without an event.
+
+### Rewards
+
+- The corpse works as for any monster: the engine's loot goes to the top damage dealer (corpse owner), plus the Chaos loot
+  layer with the `boss` tier (extra rolls, gear rarity floor 6, currency, and the boss-only uniques of
+  `chaos_unique_items.lua`, which now list the five world bosses).
+- **Participation reward** for every player whose damage reached `minDamagePercent` (0.25%) of the boss max health
+  (~40-60k damage, about 1.5 minutes of a level 300 hitting it). Damage is counted per character (GUID) by a healthchange
+  event on the boss (summons count for their master, healing does not, overkill is clamped to the health left).
+  share = own damage / damage of all eligible players. Each gets: 500k gold + share x 10M gold into the bank, 3 Chaos Orbs +
+  1 Divine Orb + share x (60 Chaos Orbs, 25 Divine Orbs), the top 3 extra Divine Orbs and crystal coins, a 15% + share x 30%
+  chance of one piece of the boss's set (rarity 6-9 via `Game.createItemWithRarity`) and a 0.5% + share x 3% chance of one
+  of the boss-only uniques. Items that do not fit go to the inbox. Players offline at the kill get it at their next login
+  (kept in memory until a restart).
+- **Multi-client:** characters with another character online from their IP may enter and fight (they already cannot attack
+  players, and blocking entry would split friends sharing a connection), but get no participation reward (`mcReward = false`)
+  and are told so at entry and at the end. A character counts if it was multi-clienting at entry or at any 3-second check
+  while inside. Corpse loot is not affected (it follows the engine's damage rules).
+
+### Not verified (needs a server run)
+Monster XML loading of the five files (attack names, effect names and flags were checked against the engine source: every
+`areaEffect`/`shootEffect` value is in the engine's name tables), dynamic-tile building and the forcefields' step-in with no
+destination, `Game.getTowns()` temple spots on the real map, the reward delivery (`addItemEx`/inbox, bank), the client
+showing the boss tier, and the actual fight balance. Monster damage may be scaled by the server's own monster level system.

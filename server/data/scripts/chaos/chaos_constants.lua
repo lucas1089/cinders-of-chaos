@@ -269,7 +269,7 @@ Chaos.worldBoss = {
 	towns = nil,
 	portalPositions = {},
 	portalOffsets = {{2, 0}, {-2, 0}, {0, 2}, {0, -2}, {2, 2}, {-2, 2}, {2, -2}, {-2, -2}, {3, 0}, {-3, 0}},
-	rotationStorage = 7100910, -- global storage: index of the last boss (rotation survives /reload)
+	rotationStorage = 7100910, -- global storage (Game.setStorageValue, in memory): last boss index; resets on restart
 
 	-- participation reward (everybody with at least minDamagePercent % of the boss max health in damage).
 	-- share = own damage / damage of all eligible players. Delivered to the backpack, the rest to the inbox;
@@ -339,7 +339,7 @@ Chaos.worldBoss = {
 				{at = 0.20, adds = {name = "Juggernaut", count = 3, health = 200000}, yell = "CRUSH THEM!"}
 			},
 			-- every player hit by the pulse heals Vharok by healPerHit
-			pulse = {type = "physical", min = 2500, max = 4500, radius = 6, every = 7, effect = "groundshaker", healPerHit = 50000},
+			pulse = {type = "physical", min = 2500, max = 4500, radius = 6, every = 7, effect = "groundshaker", healPerHit = 5000},
 			gear = {29878, 29879, 29880, 29886, 29887, 29888, 29889, 29869}}
 	}
 }

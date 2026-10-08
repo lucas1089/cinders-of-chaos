@@ -2,6 +2,8 @@
 
 **Loading.** Lua monsters: drop a `.lua` anywhere under `data/monster/` (the server loads the whole folder, see `_template.lua.example` in `lua/chaos/`). XML monsters: put the file in `monsters/chaos/` and run `python3 -I server/tools/register_monsters.py data/monster/monsters.xml data/monster/monsters/chaos`, which adds the missing entries (safe to re-run).
 
+**World bosses.** `monsters/chaos/world_bosses/` holds the five world bosses of `worldboss.lua` (our own, not imported). Register that folder too: `python3 -I server/tools/register_monsters.py data/monster/monsters.xml data/monster/monsters/chaos/world_bosses`. See `server/README.md` "World bosses".
+
 **Checking.** `python3 -I server/tools/check_monsters.py items.otb 1465 data/monster` flags a lookType above the outfit count of your `Tibia.dat` (no sprite on the client), corpse or loot ids missing from `items.otb`, and, with `--known names.txt`, undefined summons.
 
 **Importing from another server.** `server/tools/adapt_monsters.py` replaces unknown corpse ids with a fallback and drops loot lines whose item does not exist here. It does not touch lookType.

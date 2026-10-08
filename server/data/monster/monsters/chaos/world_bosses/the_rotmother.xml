@@ -42,7 +42,7 @@
 		</attack>
 	</attacks>
 	<defenses armor="110" defense="90">
-		<defense name="healing" interval="2000" chance="15" min="50000" max="100000">
+		<defense name="healing" interval="2000" chance="10" min="40000" max="60000">
 			<attribute key="areaEffect" value="greenshimmer" />
 		</defense>
 	</defenses>
