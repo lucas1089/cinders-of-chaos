@@ -14,6 +14,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | game_itemrarity | none | optional `g_game.setRarityShaderEnabled` (guarded) | Client-only; frames work without the shader. Server must send item rarity somehow (see base server rarity customs) |
 | game_battlepass | raw game opcode 39 via `ProtocolGame.registerOpcode` (not extended) | needs custom C++ packet parsing | Needs engine and server work |
 | game_passivetree | extended opcode 65 | none | Needs server script |
+| game_shop | extended opcode 218 (JSON) | none | Chaos store: categories, pages, purchase, coin gifts, history; server `data/scripts/chaos/shop.lua`; tested in game |
 | game_craftskills | skills packet (crafting skills after fishing) | base patch 0012 (`GameChaosCraftingSkills`) | Profession section at the bottom of the skills window, live updates; tested in game |
 | game_daily | extended opcode 207 | none | Needs server script |
 | game_healthcircle | none | none | In `alternates/`: the base client's own is used |

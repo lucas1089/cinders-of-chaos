@@ -53,3 +53,10 @@ boosted creature and boss, the event calendar and the players online. `init.lua`
 (our login server has none), turns the base client's built-in test servers (Ctrl+Alt+T) into a no-op, fetches
 store offer images only from `Services.storeWidget` when it is set, and replaces the paid-services terms of the
 base client's company with a short Chaos text. Map marker names in the minimap data are left as they are.
+
+## No scripting bot
+`base-patches/0015-no-bot-no-cavebot-no-scripts.patch` and `tools/assemble_client.sh` leave the vBot module (`game_bot`, Lua scripts
+and its cavebot) out of the client and remove the helper's Cavebot and Scripts tabs, panels, hotkeys, shortcut and HUD options. The helper
+keeps healing, potions, haste, shooter, equipment, timers, alarms and tools (auto healing tested in game).
+`base-patches/0016-chaos-vocation-ids.patch`: the server sends the vocation in Tibia's ids (3 = sorcerer) while the modules expect server
+ids (3 = paladin), so the helper offered the wrong spells; the 1098 profile now translates them (feature `GameChaosVocationIds`).

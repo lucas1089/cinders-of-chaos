@@ -1,0 +1,67 @@
+--- a/modules/game_features/features.lua
++++ b/modules/game_features/features.lua
+@@ -145,6 +145,7 @@
+     g_game.enableFeature(GameAdditionalSkills)
+     g_game.enableFeature(GameOutfitShaders)
+     g_game.enableFeature(GameChaosCraftingSkills)
++    g_game.enableFeature(GameChaosVocationIds)
+   elseif version == 1524 then
+     -- Reserved for the future 15.24 profile.
+   end
+--- a/modules/gamelib/const.lua
++++ b/modules/gamelib/const.lua
+@@ -359,8 +359,9 @@
+ 
+ GameAstraExtendedSpellIds = 152
+ GameChaosCraftingSkills = 153 -- Chaos 10.98 server: crafting skills in the skills packet
++GameChaosVocationIds = 154 -- Chaos 10.98 server: vocation byte in Tibia's ids
+ 
+-LastGameFeature = 154
++LastGameFeature = 155
+ 
+ TextColors = {
+   red        = '#F55E5E',
+--- a/modules/gamelib/spells.lua
++++ b/modules/gamelib/spells.lua
+@@ -623,8 +623,8 @@
+   [6] = 'Elder Druid',
+   [7] = 'Royal Paladin',
+   [8] = 'Elite Knight',
+-  [9] = 'Monk',
+-  [10] = 'Exalted Monk'
++  [9] = 'Illusionist',
++  [10] = 'Arch Illusionist'
+ }
+ 
+ SpellGroups = {
+--- a/src/client/const.h
++++ b/src/client/const.h
+@@ -514,8 +514,10 @@
+         GameAstraExtendedSpellIds = 152,
+         // Chaos 10.98 server: seven crafting skills follow fishing in the skills packet
+         GameChaosCraftingSkills = 153,
++        // Chaos 10.98 server: the vocation byte uses Tibia's ids (1 knight, 2 paladin, 3 sorcerer, 4 druid, 5 illusionist)
++        GameChaosVocationIds = 154,
+ 
+-        LastGameFeature = 154
++        LastGameFeature = 155
+     };
+ 
+     enum PathFindResult {
+--- a/src/client/protocolgameparse.cpp
++++ b/src/client/protocolgameparse.cpp
+@@ -2122,6 +2122,14 @@
+     if (g_game.getFeature(Otc::GamePremiumExpiration))
+         /*int premiumEx = */msg->getU32(); // premium expiration used for premium advertisement
+     int vocation = msg->getU8(); // vocation
++    if (g_game.getFeature(Otc::GameChaosVocationIds)) {
++        // the modules use server vocation ids (1 sorcerer, 2 druid, 3 paladin, 4 knight, 9 illusionist);
++        // the server cannot tell base from promoted here, so the base vocation is used
++        static const int toServerId[] = { 0, 4, 3, 1, 2, 9 };
++        const int base = vocation > 10 ? vocation - 10 : vocation;
++        if (base >= 0 && base <= 5)
++            vocation = toServerId[base];
++    }
+ 
+     if (g_game.getFeature(Otc::GamePrey)) {
+         /*bool preyEnabled = */msg->getU8()/* > 0*/;

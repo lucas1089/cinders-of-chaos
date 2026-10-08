@@ -36,14 +36,16 @@ GetItems < MiniPanel
     id: Timer
     anchors.bottom: parent.bottom
     anchors.horizontalCenter: parent.horizontalCenter 
-    background-color: #ef8f00
+    background-color: #8a2a18
     size: 64 18
 
   Button
     id: claim
     anchors.bottom: parent.bottom
     anchors.horizontalCenter: parent.horizontalCenter 
-    image-color: green
+    // ember instead of the stock green, to match the Chaos palette
+    image-color: #d8762a
+    color: #fff1d6
     text: Claim
     size: 64 18
 

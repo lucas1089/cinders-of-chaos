@@ -81,13 +81,6 @@ local function call(path, ...)
   if type(fn) == 'function' then return fn(...) end
 end
 
-local function openStore()
-  if g_game.openStore then g_game.openStore() end
-  local store = getModule('game_store')
-  local s = store and rawget(store, 'Store')
-  if s and type(s.openHome) == 'function' then s:openHome() end
-end
-
 local function openQuestLog()
   if g_game.requestQuestLog then g_game.requestQuestLog() end
   call('game_questlog.toggle')
@@ -158,7 +151,7 @@ local CATEGORIES = {
     { text = 'Notifications',      icon = 'notifications', modules = { 'game_chaosnotify' }, fns = { 'toggle', 'showAll' } },
   } },
   { id = 'economy', text = 'Economy', icon = 'market', entries = {
-    { text = 'Store',              icon = 'market',      custom = openStore, available = function() return g_game.openStore ~= nil end },
+    { text = 'Store',              icon = 'market',      modules = { 'game_shop' }, fns = { 'toggle' } },
     { text = 'Battle Pass',        icon = 'battlepass',  modules = { 'game_sidebuttons' }, fns = { 'openBattlePassWindow' } },
     { text = 'Market',             icon = 'market',      modules = { 'game_tibia_market', 'game_market' }, fns = { 'toggle' } },
     { text = 'Bank',               icon = 'bank',        modules = { 'game_bank' },      fns = { 'bankWindowtoggle', 'toggle' } },

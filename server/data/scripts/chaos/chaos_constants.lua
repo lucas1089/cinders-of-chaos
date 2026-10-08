@@ -33,7 +33,8 @@ ChaosOpcodes = {
 	notificationsQueue = 152, -- client -> server only (leave queue)
 	daily = 207,
 	infinitytower = 214,
-	autoloot = 216
+	autoloot = 216,
+	shop = 218 -- Chaos store (client game_shop); the base server's own store uses 201
 }
 
 -- ---------------------------------------------------------------------------
@@ -50,7 +51,12 @@ Chaos.storage = {
 
 	stashRemote = 7100010, -- >0 : player may keep the stash window open while walking
 	passiveExtraPoints = 7100020, -- bonus passive points granted by quests/GM
-	dungeonQueueLock = 7100030 -- (os.time of the last queue join; anti spam)
+	dungeonQueueLock = 7100030, -- (os.time of the last queue join; anti spam)
+
+	-- store: one-time cosmetics owned (base + id of the wings / aura / shader)
+	shopWingsBase = 7100600,
+	shopAuraBase = 7100650,
+	shopShaderBase = 7100700
 }
 
 -- ---------------------------------------------------------------------------
@@ -64,7 +70,9 @@ Chaos.tables = {
 	dungeonProgress = "chaos_dungeon_progress",
 	dungeonRuns = "chaos_dungeon_runs",
 	dungeonRunPlayers = "chaos_dungeon_run_players",
-	towerPlayers = "chaos_tower_players"
+	towerPlayers = "chaos_tower_players",
+	shopCoins = "chaos_shop_coins",
+	shopHistory = "chaos_shop_history"
 }
 
 -- ---------------------------------------------------------------------------

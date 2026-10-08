@@ -16,7 +16,7 @@ database. Treat every engine-API call (listed under "Assumed API") as unverified
 ```
 server/
   README.md
-  sql/chaos.sql                       CREATE TABLE IF NOT EXISTS for 8 tables
+  sql/chaos.sql                       CREATE TABLE IF NOT EXISTS for 10 tables
   tools/gen_passivetree_data.lua      regenerates passivetree_data.lua from the client tree
   data/scripts/chaos/
     chaos_constants.lua               ALL opcodes, storage keys, table names, tunables, shared helpers
@@ -210,3 +210,6 @@ The tower exists now. `!tower start` (or the new Enter Tower button of the clien
 
 ## Test kit (`admin/testkit.lua`)
 `/testkit [mage|knight|paladin][, player]` (admins only) equips a strong set for the vocation (uniques where they fit), a backpack of supplies (potions, runes, crystal coins, Chaos and Divine Orbs), raises the level to 500 and the main skills (magic level 110 for mages, 120 melee or 125 distance), and resets health and mana to the vocation's values. Relog afterwards so the stock rarity script applies the item bonuses.
+
+## Store (`shop.lua`, `shop_config.lua`)
+The client's Store (menu Economy -> Store, module `game_shop`) talks JSON on extended opcode 218 (`ChaosOpcodes.shop`; the base server's own store script uses 201 and is left alone). Prices are in Chaos Coins, kept per account in `chaos_shop_coins`; purchases go to `chaos_shop_history` (both in `sql/chaos.sql`). Staff give coins with `/coins <player>, <amount>` (negative takes them away). Categories and offers are in `shop_config.lua`: Chaos and Divine Orbs, supplies, wings, auras and outfit shaders (names and previews read from `data/XML/wings.xml`, `auras.xml`, `shaders.xml`), outfits, mounts and premium time. Wings, auras and shaders are bought once (storages 7100600+); outfits and mounts check whether the player already has them; a delivery that fails refunds the coins. Tested in game: buying an item and wings, refusing a second purchase of the same wings, coins and history in the database.

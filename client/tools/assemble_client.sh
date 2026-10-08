@@ -13,6 +13,11 @@ for p in "$HERE"/base-patches/*.patch; do patch -p1 -d "$OUT" < "$p"; done
 rm -rf "$OUT/mods/game_stash" "$OUT/modules/game_stash"
 # the base client's battle pass is for its own server; ours matches the base server (raw opcode 39)
 rm -rf "$OUT/modules/game_battlepass" "$OUT/mods/game_battlepass"
+# no scripting bot: the vBot module (scripts, cavebot) and the helper's cavebot and script workspace go
+# (patch 0015 removes them from the helper window, its module list and game_interface's load-later list)
+rm -rf "$OUT/modules/game_bot"
+rm -f "$OUT/mods/game_helper/cavebot_panel.lua" "$OUT/mods/game_helper/scripting.lua" \
+  "$OUT/mods/game_helper/scripting_actions.lua" "$OUT/mods/game_helper/scripting_compat.lua"
 cp -a "$HERE"/overlay/modules/. "$OUT/modules/"
 cp -a "$HERE"/overlay/data/. "$OUT/data/"
 # the Chaos spell icons go into the client's spell icon sheets (cells 201..236; needs python3 with Pillow)

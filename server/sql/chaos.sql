@@ -83,3 +83,21 @@ CREATE TABLE IF NOT EXISTS `chaos_tower_players` (
   KEY `chaos_tower_players_rank` (`season`, `best_floor`, `best_time`),
   CONSTRAINT `chaos_tower_players_players_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Chaos store (data/scripts/chaos/shop.lua): coins per account and purchase history
+CREATE TABLE IF NOT EXISTS `chaos_shop_coins` (
+  `account_id` int(11) NOT NULL,
+  `coins` int(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`account_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `chaos_shop_history` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `account_id` int(11) NOT NULL,
+  `player_id` int(11) NOT NULL,
+  `title` varchar(100) NOT NULL,
+  `cost` int(11) NOT NULL,
+  `created` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `chaos_shop_history_account` (`account_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

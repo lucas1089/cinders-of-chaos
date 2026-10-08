@@ -1,0 +1,347 @@
+--- a/mods/game_helper/classes/hotkey_manager.lua
++++ b/mods/game_helper/classes/hotkey_manager.lua
+@@ -288,33 +288,6 @@
+     end,
+   },
+   {
+-    type = "Enable/Disable Cavebot",
+-    codeKey = "cavebotHotkeyCode",
+-    funcKey = "cavebotHotkeyFunc",
+-    makeToggle = function()
+-      return function()
+-        if not canExecuteHelperHotkey() then return end
+-        if modules.game_helper and modules.game_helper.cavebot then
+-          local enabled = modules.game_helper.cavebot.isEnabled()
+-          modules.game_helper.cavebot.toggle(not enabled)
+-        end
+-      end
+-    end,
+-  },
+-  {
+-    type = "Toggle Recording",
+-    codeKey = "recordingHotkeyCode",
+-    funcKey = "recordingHotkeyFunc",
+-    makeToggle = function()
+-      return function()
+-        if not canExecuteHelperHotkey() then return end
+-        if modules.game_helper and modules.game_helper.cavebot then
+-          modules.game_helper.cavebot.toggleRecording()
+-        end
+-      end
+-    end,
+-  },
+-  {
+     type = "Enable/Disable Timer",
+     codeKey = "timerHotkeyCode",
+     funcKey = "timerHotkeyFunc",
+--- a/mods/game_helper/helper.lua
++++ b/mods/game_helper/helper.lua
+@@ -1409,9 +1409,7 @@
+   'toolsMenu',
+   'shooterMenu',
+   'equipMenu',
+-  'cavebotMenu',
+   'timerMenu',
+-  'scriptingMenu',
+   'settingsFolderMenu',
+ }
+ 
+@@ -2488,9 +2486,7 @@
+     toolsMenu = 'toolsMenu',
+     shooterMenu = 'shooterMenu',
+     equipMenu = "equipMenu",
+-    cavebotMenu = 'cavebotMenu',
+     timerMenu = "timerMenu",
+-    scriptingMenu = "scriptingMenu",
+     settingsFolderMenu = "settingsFolderMenu",
+   }
+ 
+@@ -6942,7 +6938,6 @@
+     "toolsMenu",
+     "shooterMenu",
+     "equipMenu",
+-    "cavebotMenu",
+     "timerMenu",
+   }
+ 
+--- a/mods/game_helper/helper.otmod
++++ b/mods/game_helper/helper.otmod
+@@ -3,6 +3,6 @@
+   description: RTC Helper
+   author: R!ck && ZLukSrT#8740 && Christianlb && worthdavi bjos
+   sandboxed: true
+-  scripts: [ spelldata, classes/rule_list, classes/equipment, tools_panel, magic_shooter_panel, classes/timer, timer_panel, classes/shortcut_panel, classes/auto_haste, classes/auto_stamina, classes/paralyze_cure, classes/mana_training, classes/auto_food, classes/alarms/low_capacity_alarm, classes/alarms/low_health_alarm, classes/alarms/low_mana_alarm, classes/alarms/full_dust_alarm, classes/alarms/private_message_alarm, classes/alarms/low_supply_alarm, classes/alarms/alarm_settings, classes/auto_target, classes/follow_friend, classes/magic_shooter, classes/exercise_training, cavebot_panel, classes/hotkey_manager, scripting_actions, scripting_compat, scripting, helper, preset_manager ]
++  scripts: [ spelldata, classes/rule_list, classes/equipment, tools_panel, magic_shooter_panel, classes/timer, timer_panel, classes/shortcut_panel, classes/auto_haste, classes/auto_stamina, classes/paralyze_cure, classes/mana_training, classes/auto_food, classes/alarms/low_capacity_alarm, classes/alarms/low_health_alarm, classes/alarms/low_mana_alarm, classes/alarms/full_dust_alarm, classes/alarms/private_message_alarm, classes/alarms/low_supply_alarm, classes/alarms/alarm_settings, classes/auto_target, classes/follow_friend, classes/magic_shooter, classes/exercise_training, classes/hotkey_manager, helper, preset_manager ]
+   @onLoad: init()
+   @onUnload: terminate()
+--- a/mods/game_helper/helper_window.otui
++++ b/mods/game_helper/helper_window.otui
+@@ -141,35 +141,6 @@
+           color: $var-text-color
+           phantom: true
+       UIButton
+-        id: cavebotMenu
+-        size: 114 38
+-        border-width: 0
+-        anchors.top: parent.top
+-        anchors.left: prev.right
+-        margin-left: 1
+-        margin-top: 1
+-        image-source: /images/ui/helper
+-        image-clip: 0 272 34 34
+-        image-size: 34 34
+-        image-offset: 3 2
+-        !tooltip: tr('Cavebot')
+-        @onClick: loadMenu('cavebotMenu')
+-        $checked:
+-          image-clip: 0 306 34 34
+-          border-width: 1
+-          border-color: #d7b46a
+-
+-        Label
+-          anchors.left: parent.left
+-          anchors.right: parent.right
+-          anchors.verticalCenter: parent.verticalCenter
+-          margin-left: 38
+-          margin-right: 3
+-          !text: tr('Cavebot')
+-          font: $var-main-font
+-          color: $var-text-color
+-          phantom: true
+-      UIButton
+         id: timerMenu
+         size: 114 38
+         border-width: 0
+@@ -199,31 +170,6 @@
+           color: $var-text-color
+           phantom: true
+       UIButton
+-        id: scriptingMenu
+-        size: 114 38
+-        border-width: 0
+-        anchors.top: parent.top
+-        anchors.left: prev.right
+-        margin-left: 1
+-        margin-top: 1
+-        font: $var-main-font
+-        !tooltip: tr('Scripts')
+-        @onClick: loadMenu('scriptingMenu')
+-        $checked:
+-          border-width: 1
+-          border-color: #d7b46a
+-
+-        Label
+-          anchors.left: parent.left
+-          anchors.right: parent.right
+-          anchors.verticalCenter: parent.verticalCenter
+-          margin-left: 38
+-          margin-right: 3
+-          !text: tr('Scripts')
+-          font: $var-main-font
+-          color: $var-text-color
+-          phantom: true
+-      UIButton
+         id: settingsFolderMenu
+         size: 114 38
+         border-width: 0
+@@ -591,17 +537,6 @@
+       margin-top: 8
+       visible: false
+ 
+-    CavebotPanel
+-      id: cavebotPanel
+-      anchors.top: optionsTabBar.bottom
+-      anchors.left: helperSidebar.right
+-      margin-left: 8
+-      anchors.right: parent.right
+-      anchors.bottom: separator.top
+-      margin-top: 8
+-      margin-bottom: 8
+-      visible: false
+-
+     ShooterPanel
+       id: shooterPanel
+       anchors.top: optionsTabBar.bottom
+@@ -636,106 +571,6 @@
+       visible: false
+ 
+     FlatPanel
+-      id: scriptingPanel
+-      anchors.top: optionsTabBar.bottom
+-      anchors.left: helperSidebar.right
+-      margin-left: 8
+-      anchors.right: parent.right
+-      anchors.bottom: separator.top
+-      margin-top: 8
+-      margin-bottom: 8
+-      visible: false
+-
+-      Label
+-        id: scriptingTitle
+-        anchors.top: parent.top
+-        anchors.left: parent.left
+-        margin-top: 8
+-        margin-left: 10
+-        !text: tr('SCRIPT WORKSPACE')
+-        font: $var-main-font
+-        color: $var-text-cip-color-highlight
+-        text-auto-resize: true
+-
+-      Label
+-        id: scriptingDescription
+-        anchors.top: scriptingTitle.bottom
+-        anchors.left: parent.left
+-        anchors.right: parent.right
+-        margin-top: 5
+-        margin-left: 10
+-        margin-right: 10
+-        !text: tr('Your scripts and HUDs, in one place. Name a slot, edit its code, then enable it.')
+-        font: $var-main-font
+-        color: $var-text-color
+-        text-wrap: true
+-        text-auto-resize: true
+-
+-      Panel
+-        id: scriptingSlots
+-        anchors.top: scriptingDescription.bottom
+-        anchors.left: parent.left
+-        anchors.right: parent.right
+-        margin-top: 10
+-        margin-left: 10
+-        margin-right: 10
+-        height: 264
+-        layout:
+-          type: verticalBox
+-          spacing: 6
+-
+-        ScriptingSlotRow
+-          id: scriptSlot1
+-
+-        ScriptingSlotRow
+-          id: scriptSlot2
+-
+-        ScriptingSlotRow
+-          id: scriptSlot3
+-
+-        ScriptingSlotRow
+-          id: scriptSlot4
+-
+-        ScriptingSlotRow
+-          id: scriptSlot5
+-
+-      Label
+-        id: scriptingStatus
+-        anchors.top: scriptingSlots.bottom
+-        anchors.left: parent.left
+-        anchors.right: parent.right
+-        margin-top: 12
+-        margin-left: 10
+-        margin-right: 10
+-        !text: tr('No scripts enabled.')
+-        font: $var-main-font
+-        color: #62c462
+-        text-wrap: true
+-        text-auto-resize: true
+-
+-      Button
+-        id: scriptingReload
+-        anchors.left: parent.left
+-        anchors.bottom: parent.bottom
+-        margin-left: 10
+-        margin-bottom: 8
+-        width: 114
+-        height: 28
+-        !text: tr('Reload Scripts')
+-        font: $var-main-font
+-
+-      Button
+-        id: scriptingStop
+-        anchors.left: scriptingReload.right
+-        anchors.bottom: parent.bottom
+-        margin-left: 8
+-        margin-bottom: 8
+-        width: 82
+-        height: 28
+-        !text: tr('Stop All')
+-        font: $var-main-font
+-
+-    FlatPanel
+       id: settingsPanel
+       anchors.top: optionsTabBar.bottom
+       anchors.left: helperSidebar.right
+@@ -934,24 +769,3 @@
+       !text: tr('Set Key')
+       @onClick: toggleHelperStatusButton()
+ 
+-    Label
+-      id: cavebotStatusLabel
+-      anchors.right: cavebotToggleButton.left
+-      anchors.verticalCenter: cavebotToggleButton.verticalCenter
+-      margin-right: 2
+-      !text: tr('Cavebot:')
+-      font: $var-main-font
+-      color: $var-text-color
+-      text-auto-resize: true
+-
+-    Button
+-      id: cavebotToggleButton
+-      size: 30 15
+-      anchors.bottom: parent.bottom
+-      anchors.right: shortcuts.left
+-      margin-right: 10
+-      margin-bottom: 4
+-      !text: tr('Off')
+-      color: #e40b0bff
+-      font: $var-main-font
+-      @onClick: toggleCavebotFromButton()
+--- a/mods/game_helper/styles/shortcut_panel.otui
++++ b/mods/game_helper/styles/shortcut_panel.otui
+@@ -91,7 +91,3 @@
+     $checked:
+       icon-clip: 0 22 22 23
+ 
+-  MiniBotShortcutButton
+-    id: shortcutCavebot
+-    icon-clip: 429 0 13 13
+-    !tooltip: tr('Toggle Cavebot')
+--- a/mods/game_helper/styles/tools_panel.otui
++++ b/mods/game_helper/styles/tools_panel.otui
+@@ -281,6 +281,8 @@
+         self:setCurrentOption('Normal')
+     CheckBox
+       id: hudShowCavebot
++      // no cavebot in this client
++      visible: false
+       anchors.top: enableBotHud.bottom
+       anchors.left: parent.left
+       margin-top: 8
+@@ -300,9 +302,9 @@
+       @onCheckChange: modules.game_helper.tools.updateBotHudSettings()
+     CheckBox
+       id: hudShowEquipment
+-      anchors.top: hudShowCavebot.bottom
++      anchors.top: enableBotHud.bottom
+       anchors.left: parent.left
+-      margin-top: 6
++      margin-top: 8
+       margin-left: 10
+       width: 120
+       !text: tr('Equipment')
+@@ -348,6 +350,7 @@
+       @onCheckChange: modules.game_helper.tools.updateBotHudSettings()
+     CheckBox
+       id: hudShowWaypoints
++      visible: false
+       anchors.top: hudShowPlayer.bottom
+       anchors.left: parent.horizontalCenter
+       margin-top: 6
+--- a/modules/game_interface/interface.otmod
++++ b/modules/game_interface/interface.otmod
+@@ -36,7 +36,6 @@
+     - game_imbuing
+     - game_stats
+     - game_shaders
+-    - game_bot
+     - game_forge
+     - game_quickloot
+     - game_stash
