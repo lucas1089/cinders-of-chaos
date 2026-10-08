@@ -65,7 +65,7 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 |---|---|---|---|
 | 20 | Login streaks tied to the daily reward | todo | `chaos/daily.lua` |
 | 21 | New-player kit per vocation | in progress | |
-| 22 | Tutorial island: passive tree, orbs, keystones | todo | needs map work |
+| 22 | Tutorial island: passive tree, orbs, keystones | in progress | needs map work |
 | 23 | Weekly patch-notes window in the client | todo | |
 
 ## Open decisions and loose ends
