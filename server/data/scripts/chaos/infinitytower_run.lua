@@ -25,6 +25,8 @@ local cfg = {
 	slotSpacing = 40,
 	maxSlots = 16,
 	inner = 19, -- inner width and height of the arena (odd)
+	spawnRadius = 6, -- monsters appear within this distance of the middle (players start there)
+	spawnMinDistance = 3, -- ... but not closer than this
 	groundId = 413, -- "stone floor"
 	wallId = 5648, -- "stone wall"
 	minLevel = 100,
@@ -109,13 +111,15 @@ local function buildArena(slot)
 	local last = cfg.inner + 1
 	for dx = 0, last do
 		for dy = 0, last do
-			local tile = Game.createTile(arenaPos(slot, dx, dy), true)
+			local pos = arenaPos(slot, dx, dy)
+			local tile = Game.createTile(pos, true)
 			if tile then
+				-- Game.createItem places a ground item as the tile's ground; Tile:addItem does not
 				if not tile:getGround() then
-					tile:addItem(cfg.groundId)
+					Game.createItem(cfg.groundId, 1, pos)
 				end
 				if (dx == 0 or dy == 0 or dx == last or dy == last) and not tile:getItemById(cfg.wallId) then
-					tile:addItem(cfg.wallId)
+					Game.createItem(cfg.wallId, 1, pos)
 				end
 			end
 		end
@@ -142,8 +146,19 @@ local function clearArena(slot)
 	end
 end
 
+-- monsters appear around the middle of the arena, where the players stand, so they always see them
 local function randomInnerPos(slot, rng)
-	return arenaPos(slot, rng(cfg.inner), rng(cfg.inner))
+	local center = math.floor(cfg.inner / 2) + 1
+	local r = math.min(cfg.spawnRadius or 6, center - 1)
+	local minDist = math.min(cfg.spawnMinDistance or 3, r)
+	for _ = 1, 20 do
+		local dx = center + rng(2 * r + 1) - r - 1
+		local dy = center + rng(2 * r + 1) - r - 1
+		if math.max(math.abs(dx - center), math.abs(dy - center)) >= minDist then
+			return arenaPos(slot, dx, dy)
+		end
+	end
+	return arenaPos(slot, center, center - r)
 end
 
 -- ------------------------------------------------------------------ run state
@@ -364,7 +379,7 @@ function ChaosTowerRun.start(player)
 		run.players[m:getId()] = {id = m:getId(), guid = m:getGuid(), entry = m:getPosition()}
 		runOf[m:getId()] = run
 		m:registerEvent("ChaosTowerPlayerDeath")
-		m:teleportTo(arenaPos(slot, center + (i - 1) % 2, cfg.inner))
+		m:teleportTo(arenaPos(slot, center + (i - 1) % 2, center + math.floor((i - 1) / 2)))
 		m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 		m:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Welcome to the Infinity Tower. Floor 1 starts in %d seconds. Say !tower leave to leave.", cfg.startDelay))
 	end

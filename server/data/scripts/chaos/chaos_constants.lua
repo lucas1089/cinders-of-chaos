@@ -190,6 +190,52 @@ Chaos.tower = {
 	}
 }
 
+-- Event schedule (events_schedule.lua). Recurring events; every event is active for whole server days.
+--   weekdays = {1..7} (1 = Sunday, os.date("%w") + 1), or monthdays = {1, 2, ...}
+--   bonus: xp (multiplier), loot (multiplier on the Chaos loot layer + one extra roll on normal
+--          monsters), tierChance (multiplier on magic/rare/legendary spawn chance), ambush (multiplier
+--          on the ambush chance after a kill), towerPoints (multiplier on Infinity Tower points)
+-- colorlight / colordark are the colours of the event in the client calendar.
+Chaos.events = {
+	list = {
+		{id = "bloodmoon", name = "Blood Moon", weekdays = {7, 1}, colorlight = "#d23a2a", colordark = "#7a1a12",
+			description = "The blood moon rises over the world: +50% experience from every kill.",
+			bonus = {xp = 1.5}},
+		{id = "chaosrift", name = "Chaos Rift", weekdays = {4}, colorlight = "#9b59d6", colordark = "#4d2470",
+			description = "Reality tears open: magic, rare and legendary monsters appear twice as often and ambushes are more likely.",
+			bonus = {tierChance = 2.0, ambush = 1.5}},
+		{id = "lootfrenzy", name = "Loot Frenzy", weekdays = {6}, colorlight = "#e0a526", colordark = "#7a5410",
+			description = "Monsters carry more treasure: +50% Chaos loot and an extra loot roll on every monster.",
+			bonus = {loot = 1.5}},
+		{id = "towerascension", name = "Tower Ascension", monthdays = {1, 2, 3, 15, 16, 17}, colorlight = "#2f9fd0", colordark = "#145470",
+			description = "The Infinity Tower calls: double tower points for every floor cleared.",
+			bonus = {towerPoints = 2.0}}
+	},
+	-- how many days of the calendar are sent to the client (from the first day of the current month)
+	calendarDays = 62,
+	announceOnLogin = true
+}
+
+-- Boosted creature / boss of the day (clientservices.lua). The reference server already picks both at
+-- startup (global storages + boostedMonsterList / boostedBossesList); these lists are only the fallback
+-- when that pick is missing or names a monster that does not exist.
+Chaos.boosted = {
+	creatures = {"Dragon", "Dragon Lord", "Giant Spider", "Hydra", "Behemoth", "Serpent Spawn", "Warlock", "Hero",
+		"Nightmare", "Grim Reaper", "Frost Dragon", "Medusa", "Sea Serpent", "Wyrm", "Lost Soul"},
+	bosses = {"Ferumbras", "Orshabaal", "Ghazbaran", "Morgaroth", "Zulazza the Corruptor", "The Plasmother"},
+	storageCreature = 7100900, -- global storages for the fallback pick: index into the list above
+	storageBoss = 7100901,
+	storageDay = 7100902 -- YYYYMMDD of the fallback pick
+}
+
+-- Client services: the login screen asks an HTTP endpoint (client/tools or server/tools/clientservices.py)
+-- for the boosted creature/boss, the event calendar and the players online. The game server writes what
+-- that endpoint serves into this JSON file (path relative to the server folder).
+Chaos.clientServices = {
+	file = "data/chaos_clientservices.json",
+	refreshSeconds = 300
+}
+
 -- ---------------------------------------------------------------------------
 -- Shared helpers
 -- ---------------------------------------------------------------------------

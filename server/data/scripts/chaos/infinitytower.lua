@@ -112,7 +112,8 @@ function ChaosTower.recordRun(player, floorsCleared, seconds)
 	local season = currentSeason()
 	local row = loadPlayerRow(guid, season)
 
-	local points = row.points + floorsCleared * cfg.pointsPerFloor
+	local eventMult = ChaosEvents and ChaosEvents.bonus("towerPoints") or 1
+	local points = row.points + math.floor(floorsCleared * cfg.pointsPerFloor * eventMult)
 	local bestFloor, bestTime = row.best_floor, row.best_time
 	if floorsCleared > bestFloor or (floorsCleared == bestFloor and floorsCleared > 0 and (bestTime == 0 or seconds < bestTime)) then
 		bestFloor, bestTime = floorsCleared, seconds

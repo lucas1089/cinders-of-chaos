@@ -12,7 +12,10 @@ return {
 	-- global hook. A number, or function(ctx) returning a number; ctx = {tier=, monster=, player=}.
 	-- Multiplies the chance and the count of the EXTRA rolls and the currency chances.
 	-- (Unique items are only scaled by tierMult and item find.)
-	rateMult = 1,
+	-- the Loot Frenzy event (events_schedule.lua) raises it on its days
+	rateMult = function(ctx)
+		return ChaosEvents and ChaosEvents.bonus("loot") or 1
+	end,
 
 	-- player storage key; value v means +v % to all chances of this layer (extra rolls, currency,
 	-- uniques, gear upgrade chance). 0 / unset = no bonus. Read from the corpse owner only.

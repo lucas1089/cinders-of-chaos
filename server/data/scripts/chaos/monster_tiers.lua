@@ -314,8 +314,9 @@ spawnCb.onSpawn = function(self, position, startup, artificial)
 	end
 	if eligible(self) then
 		local roll = math.random(10000)
+		local eventMult = ChaosEvents and ChaosEvents.bonus("tierChance") or 1
 		for _, tier in ipairs({"legendary", "rare", "magic"}) do
-			if roll <= cfg.spawnChance[tier] then
+			if roll <= cfg.spawnChance[tier] * eventMult then
 				applyTier(self, tier, 0)
 				return true
 			end
@@ -365,7 +366,8 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 	if tier == "boss" or depth >= cfg.maxChain or not eligible(creature) then
 		return true
 	end
-	if math.random(10000) > (cfg.ambush[tier] or 0) then
+	local ambushMult = ChaosEvents and ChaosEvents.bonus("ambush") or 1
+	if math.random(10000) > (cfg.ambush[tier] or 0) * ambushMult then
 		return true
 	end
 	local newTier = pickWeighted(cfg.ambushTier)

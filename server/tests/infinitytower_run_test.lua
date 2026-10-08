@@ -40,6 +40,7 @@ end
 Game = {}
 function Game.createTile(p) local k = key(p); tiles[k] = tiles[k] or mkTile(p); return tiles[k] end
 function Tile(p) return tiles[key(p)] end
+function Game.createItem(id, count, p) local t = tiles[key(p)]; if t then t:addItem(id) end; return true end
 local created = {}
 function Game.createMonster(name, pos)
   nextId = nextId + 1
