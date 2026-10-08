@@ -4,14 +4,15 @@
 usage: python3 -I rename_spells.py DATA_DIR [--sql OUT.sql] [--dry-run]
 
 DATA_DIR is the base server's data folder. Rewrites, in place and idempotently (a second run changes nothing):
-  spells/spells.xml       name="" of <instant>/<rune>/<conjure> (monster and house spells and the chaos block are left alone)
+  spells/spells.xml       name="" of <instant>/<rune>/<conjure>, and words="" translated part by part with
+                          spell_words.csv (monster and house spells and the chaos block are left alone)
   items/items.xml         name="" (lower case) and article of the rune items listed in the csv
   monster/**/*.xml        <attack>/<defense> spells that use a player spell, <item> loot of renamed runes
   monster/**/*.lua        {name = "..."} / {id = "..."} entries naming a renamed spell or rune
   npc/scripts/**/*.lua    spellName = '...' of the spell teachers
   npc/**/*.xml            shop lists ("Old Name,itemid,price")
 --sql writes the UPDATEs for player_spells (spells players already learned); run it once against the game database.
-Words are not changed. Anything else in DATA_DIR still quoting an old name is listed at the end, so it can be checked.
+Anything else in DATA_DIR still quoting an old name is listed at the end, so it can be checked.
 """
 import csv, glob, os, re, sys
 
@@ -21,11 +22,27 @@ CHAOS_BEGIN = '<!-- BEGIN chaos spells'
 CHAOS_END = '<!-- END chaos spells -->'
 
 
+WORDS_CSV = os.path.join(HERE, '..', 'data', 'spells', 'spell_words.csv')
+
+
 def load():
     rows = list(csv.DictReader(open(CSV, encoding='utf-8')))
     names = {r['old_name']: r['new_name'] for r in rows}
     runes = {int(r['rune_item']): r['new_name'] for r in rows if r['rune_item']}
     return rows, names, runes
+
+
+def load_words():
+    """word part -> Chaos word part (spell_words.csv)"""
+    return {r['old']: r['new'] for r in csv.DictReader(open(WORDS_CSV, encoding='utf-8'))}
+
+
+def translate_words(words, parts):
+    """the Chaos incantation, or None when a part is unknown (monster, house and already translated words)"""
+    tokens = words.split()
+    if not tokens or not all(t in parts for t in tokens):
+        return None
+    return ' '.join(parts[t] for t in tokens)
 
 
 def keep_case(old_text, new_name):
@@ -36,18 +53,26 @@ def sub_attr(tag_text, attr, value):
     return re.sub(r'(\b%s=")[^"]*(")' % attr, lambda m: m.group(1) + value + m.group(2), tag_text, count=1)
 
 
-def rename_spells_xml(path, names):
+def rename_spells_xml(path, names, parts):
     s = open(path, encoding='utf-8', errors='surrogateescape').read()
     head, sep, rest = s.partition(CHAOS_BEGIN)
     count = 0
 
     def tag(m):
         nonlocal count
-        name = re.search(r'\bname="([^"]*)"', m.group(0))
+        t = m.group(0)
+        name = re.search(r'\bname="([^"]*)"', t)
         if name and name.group(1) in names:
             count += 1
-            return sub_attr(m.group(0), 'name', names[name.group(1)])
-        return m.group(0)
+            t = sub_attr(t, 'name', names[name.group(1)])
+        words = re.search(r'\bwords="([^"]*)"', t)
+        script = re.search(r'\bscript="([^"]*)"', t)
+        if words and not (script and script.group(1).startswith(('house/', 'monster/'))):
+            new = translate_words(words.group(1), parts)
+            if new:
+                count += 1
+                t = sub_attr(t, 'words', new)
+        return t
     head = re.sub(r'<(?:instant|rune|conjure)\b[^>]*>', tag, head)
     tail = ''
     if sep:
@@ -118,7 +143,7 @@ def main():
                 open(path, 'w', encoding='utf-8', errors='surrogateescape').write(text)
 
     p = os.path.join(data, 'spells', 'spells.xml')
-    write(p, *rename_spells_xml(p, names))
+    write(p, *rename_spells_xml(p, names, load_words()))
     p = os.path.join(data, 'items', 'items.xml')
     if os.path.exists(p):
         write(p, *rename_items_xml(p, runes, rune_names))
@@ -148,7 +173,7 @@ def main():
     total = sum(changes.values())
     for path, n in sorted(changes.items()):
         print(f'{n:5d}  {path}')
-    print(f'{total} names {"would be " if dry else ""}changed in {len(changes)} files')
+    print(f'{total} names and words {"would be " if dry else ""}changed in {len(changes)} files')
 
     # leftovers: an old name quoted anywhere else in data (scripts, quests, raids...)
     olds = sorted(names, key=len, reverse=True)

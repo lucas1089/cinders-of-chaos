@@ -32,10 +32,13 @@ def main():
     # stock spells: Chaos names by words (server/data/spells/spell_names.csv, applied to the server by
     # server/tools/rename_spells.py); chaosspells.lua renames the client's own spell entries with it
     import csv
-    out += ['', '-- words -> Chaos name of the stock spells (from server/data/spells/spell_names.csv)', 'ChaosSpellNames = {']
+    parts = {r['old']: r['new'] for r in csv.DictReader(open('server/data/spells/spell_words.csv', encoding='utf-8'))}
+    out += ['', '-- stock spells: old words -> Chaos name and words (server/data/spells/spell_names.csv, spell_words.csv)',
+            'ChaosSpellNames = {']
     for r in csv.DictReader(open('server/data/spells/spell_names.csv', encoding='utf-8')):
         if r['words']:
-            out.append('  ["%s"] = "%s",' % (r['words'], r['new_name'].replace('"', '\\"')))
+            words = ' '.join(parts[t] for t in r['words'].split())
+            out.append('  ["%s"] = { name = "%s", words = "%s" },' % (r['words'], r['new_name'].replace('"', '\\"'), words))
     out.append('}')
     path = 'client/overlay/modules/game_chaosspells/spelldata.lua'
     os.makedirs(os.path.dirname(path), exist_ok=True)

@@ -4,28 +4,30 @@
 --   SpellIcons[iconKey]      {icon cell, server spell id}; the cells 201..236 of the spell icon sheets that
 --                            client/overlay/data/images/game/spells holds (tools/gen_all_spell_icons.py draws them)
 --   SpelllistSettings.Default.spellOrder   so the spell list shows them
--- It also renames the client's stock spell entries to their Chaos names (ChaosSpellNames in spelldata.lua), the
--- same names server/tools/rename_spells.py gives them on the server.
+-- It also gives the client's stock spell entries their Chaos names and words (ChaosSpellNames in spelldata.lua), the
+-- same ones server/tools/rename_spells.py gives them on the server.
 
 local added = {}
-local renamed = {} -- new name -> old name of the client's own entries
+local renamed = {} -- new name -> {old name, old words} of the client's own entries
 
--- Give the client's stock spell entries their Chaos names (ChaosSpellNames: words -> name). Keys of SpellInfo,
--- the spell list order and the rune table all use the name, so all three follow.
+-- Give the client's stock spell entries their Chaos names and words (ChaosSpellNames: old words -> {name, words}).
+-- Keys of SpellInfo, the spell list order and the rune table all use the name, so all three follow.
 local function renameStockSpells(order)
-  local newOf = {}
+  local newOf, entryOf = {}, {}
   for oldName, spell in pairs(SpellInfo.Default) do
-    local newName = spell.words and ChaosSpellNames[spell.words:lower()]
-    if newName and newName ~= oldName and not SpellInfo.Default[newName] then
-      newOf[oldName] = newName
+    local entry = spell.words and ChaosSpellNames[spell.words:lower()]
+    if entry and (entry.name == oldName or not SpellInfo.Default[entry.name]) then
+      newOf[oldName] = entry.name
+      entryOf[oldName] = entry
     end
   end
   for oldName, newName in pairs(newOf) do
     local spell = SpellInfo.Default[oldName]
+    renamed[newName] = { oldName, spell.words }
     SpellInfo.Default[oldName] = nil
     spell.name = newName
+    spell.words = entryOf[oldName].words
     SpellInfo.Default[newName] = spell
-    renamed[newName] = oldName
   end
   if order then
     for i, name in ipairs(order) do
@@ -43,22 +45,24 @@ end
 local function restoreStockSpells(order)
   local oldOf = renamed
   renamed = {}
-  for newName, oldName in pairs(oldOf) do
+  local oldNameOf = {}
+  for newName, old in pairs(oldOf) do
+    oldNameOf[newName] = old[1]
     local spell = SpellInfo.Default[newName]
     if spell then
       SpellInfo.Default[newName] = nil
-      spell.name = oldName
-      SpellInfo.Default[oldName] = spell
+      spell.name, spell.words = old[1], old[2]
+      SpellInfo.Default[old[1]] = spell
     end
   end
   if order then
     for i, name in ipairs(order) do
-      order[i] = oldOf[name] or name
+      order[i] = oldNameOf[name] or name
     end
   end
   for _, rune in pairs(SpellRunesData or {}) do
-    if rune.name and oldOf[rune.name] then
-      rune.name = oldOf[rune.name]
+    if rune.name and oldNameOf[rune.name] then
+      rune.name = oldNameOf[rune.name]
     end
   end
 end
