@@ -32,11 +32,16 @@ server/
 3. Spells: `python3 -I server/tools/register_spells.py <server>/data` (Chaos spells) and
    `python3 -I server/tools/rename_spells.py <server>/data --sql rename_spells.sql` (Chaos names for the stock
    spells and runes; apply the SQL once). See `data/spells/README.md`.
-4. Restart the server (or `/reload scripts`). Check the console for Lua errors.
-5. Autoloot only: if `data/talkactions/talkactions.xml` registers `!autoloot` (the legacy
+4. Experience bonuses: `python3 -I server/tools/patch_base_events.py <server>/data` (once; idempotent). The base
+   server's `Player:onGainExperience` (`data/events/scripts/player.lua`) never runs the script callbacks, so
+   without it every Chaos experience bonus is silently ignored: Blood Moon, the passive tree's experience nodes,
+   monster tier experience, and the store's world buffs. The patch adds the dispatch after the stage, stamina
+   and potion multipliers (verified on the test server: +2% passive bonus -> exactly 1.02x the experience).
+5. Restart the server (or `/reload scripts`). Check the console for Lua errors.
+6. Autoloot only: if `data/talkactions/talkactions.xml` registers `!autoloot` (the legacy
    `talkactions/scripts/autoloot.lua`), TFS 1.4.2 keeps the XML one and silently ignores
    `autoloot.lua`'s `!autoloot`. Remove that XML line for live window refresh. See "Stubbed or assumed".
-6. Client: apply the client-side gaps listed below, otherwise bank, autoloot, daily and stash
+7. Client: apply the client-side gaps listed below, otherwise bank, autoloot, daily and stash
    cannot talk to the server at all.
 
 `data/scripts/chaos/admin/` and `sql/chaos_admin.sql` are a separate admin-panel module written by another
