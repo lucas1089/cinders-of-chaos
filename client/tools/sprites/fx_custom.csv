@@ -125,6 +125,15 @@ effect,411,heal_hearts,append,single,healing,hearts,bloodglow,1,10,90,,red heart
 effect,412,heal_sparkle,append,single,healing,sparkle,heal,2,12,70,count=12;ring=1,green-white sparkles and a rising ring
 effect,413,ground_slam,append,area,slam,eruption,earth,1,9,70,rocks=8;cracks=1,rocks and dust ring
 effect,414,shockwave,append,area,slam,nova,storm,1,6,67,rings=2,white burst shockwave
+effect,415,crit_burst,append,single,combat,critstar,crit,2,8,70,scale=1.05,critical hit: sharp eight-blade star with a white-hot core
+effect,416,dodge_whoosh,append,single,combat,whoosh,wraith,2,8,90,scale=1.3,dodge: speed streaks and a fading afterimage
+effect,417,reflect_aegis,append,single,combat,aegis,aegis,2,9,70,,reflect: shield outline flash that bounces outward
+effect,418,imbue_fire,append,area,combat,imbue,fire,1,7,70,kind=fire;count=6,elemental weapon hit (fire): edge trail and embers
+effect,419,imbue_ice,append,area,combat,imbue,frost,1,7,70,kind=ice;count=6,elemental weapon hit (ice): edge trail and glints
+effect,420,imbue_energy,append,area,combat,imbue,energy,1,7,70,kind=energy;count=6,elemental weapon hit (energy): edge trail and micro arcs
+effect,421,imbue_earth,append,area,combat,imbue,poison,1,7,70,kind=earth;count=6,elemental weapon hit (earth): edge trail and spores
+effect,422,imbue_death,append,area,combat,imbue,necro,1,7,70,kind=death;count=6,elemental weapon hit (death): edge trail and dark wisps
+effect,423,imbue_holy,append,area,combat,imbue,holy,1,7,70,kind=holy;count=6,elemental weapon hit (holy): edge trail and motes
 missile,4,CONST_ANI_FIRE,replace,,fire,orb,fire,1,4,80,r=3.6,fire runes and strikes
 missile,5,CONST_ANI_ENERGY,replace,,energy,orb,energy,1,4,60,spark=1;r=3,energy strikes; buzz
 missile,11,CONST_ANI_DEATH,replace,,death,orb,shadow,1,4,80,r=3.2,death strike; curse

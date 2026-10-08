@@ -22,6 +22,8 @@ server/
     chaos_constants.lua               ALL opcodes, storage keys, table names, tunables, shared helpers
     bank.lua  autoloot.lua  daily.lua  notifications.lua  passivetree.lua  passivetree_data.lua
     dungeons.lua  infinitytower.lua  stash.lua  spell_guard.lua (Iron Will damage reduction of the Iron Bellow spell)
+    combat_fx.lua (crit / dodge / reflect / elemental weapon hit visuals, ChaosCombatFx)
+  src-patches/0001-critical-hit-to-lua.patch   engine: onHealthChange gets `critical` (combat_fx.lua)
     shop.lua  shop_config.lua  shop_services.lua  autosell.lua  sell_prices.lua (store, see "Store services")
 ```
 
@@ -191,7 +193,40 @@ Every magic, rare, legendary and boss monster rolls modifiers: magic 1-2, rare 2
 The server also pushes `info` for tiered monsters to players within about 10 tiles every 15 s (from the monster's own 2.5 s tick), so the client can label them in the world without a query.
 
 ## Custom spells and spell effects
-36 spells (`data/spells/chaos/`, installer `tools/register_spells.py`, table in `data/spells/README.md`) and 43 extra magic effects plus 10 projectiles (`data/lib/chaos_fx.lua`, catalog `data/spells/effects_catalog.csv`, build commands in `data/spells/README_FX.md`). All spell effects are our own procedurally drawn art (`client/tools/sprites/gen_effects.py`): it appends the 43 + 10 and also redraws, at the same ids, the 83 stock effects and 25 stock missiles that spells and spell hits use, so stock spell scripts need no change. The spells load `chaos_fx.lua` themselves and fall back to standard effects if it is missing, so they work before the generated dat/spr is in use; the custom art shows only with that pair on the client. Effect ids above 255 work because the base server sends them as 16 bits and the client profile enables `GameMagicEffectU16`. Not run on a server. The client spell list and action bar need entries and icons for the new spells (see `data/spells/README.md`).
+36 spells (`data/spells/chaos/`, installer `tools/register_spells.py`, table in `data/spells/README.md`) and 52 extra magic effects plus 10 projectiles (`data/lib/chaos_fx.lua`, catalog `data/spells/effects_catalog.csv`, build commands in `data/spells/README_FX.md`). All spell effects are our own procedurally drawn art (`client/tools/sprites/gen_effects.py`): it appends the 52 + 10 and also redraws, at the same ids, the 83 stock effects and 25 stock missiles that spells and spell hits use, so stock spell scripts need no change. The spells load `chaos_fx.lua` themselves and fall back to standard effects if it is missing, so they work before the generated dat/spr is in use; the custom art shows only with that pair on the client. Effect ids above 255 work because the base server sends them as 16 bits and the client profile enables `GameMagicEffectU16`. Not run on a server. The client spell list and action bar need entries and icons for the new spells (see `data/spells/README.md`).
+
+## Combat feedback (`combat_fx.lua`, `src-patches/0001-critical-hit-to-lua.patch`)
+
+What the engine already does: a weapon with an element (items.xml `elementFire` etc.) hits with one combat whose
+primary is physical and whose secondary is the element; `Game::combatChangeHealth` sends both values in one damage
+message with their own colours (physical by race, e.g. red on blood; fire orange, ice sky blue, energy purple, earth
+light green, death dark red, holy yellow) plus the stock hit effect of each type, and the client draws two numbers side
+by side (verified on the test server: fire sword on a dummy shows an orange and a red number). The rarity modifier
+"adds X% <element> damage" (`customs/rarity/rarity_onCombat_elementdamage.lua`) adds its part to the same secondary
+damage, so it shows the same way. Nothing had to change for the numbers.
+
+`combat_fx.lua` adds, for any player attack (event registered on the target from `onTargetCombat`, index 50, after the
+rarity and passive-tree damage events):
+- elemental weapon hit (origin melee, ranged or wand, secondary damage of an element type; water and arcane use the
+  ice / energy art): `imbue_<element>` (418..423) on the target. Falls back to the rarity storages when the rarity
+  script has not added its part yet.
+- critical hit: `crit_burst` (415) and a yellow "CRIT!" (animated text, opcode 0x84, sent to the spectators). Needs the
+  engine patch below; without it `critical` is nil, nothing is added and the engine keeps its own
+  `CONST_ME_CRITICAL_DAMAGE`.
+- `ChaosCombatFx.dodge(creature)`: `dodge_whoosh` (416) + grey "DODGE"; `ChaosCombatFx.reflect(creature)`:
+  `reflect_aegis` (417) (label off by default). Neither the engine nor our scripts had a dodge; the only reflect is the
+  monster modifier "Reflective" (`monster_tiers.lua`, which now calls `reflect`). Keystones or items that add dodge or
+  reflect call these (`if ChaosCombatFx then ChaosCombatFx.dodge(player) end`).
+- `ChaosCombatFx.crit(pos[, sourceId])`, `.element(pos, combatType[, amount[, sourceId]])`, `.label(pos, text, color)`.
+- `ChaosCombatFx.config`: `enabled`, `crit`, `critLabel`, `dodge`, `dodgeLabel`, `reflect`, `reflectLabel`, `element`,
+  label texts and colours, and the throttle: per source and kind at most `perSource` (3) visuals per `windowMs`
+  (300 ms), one per tile and kind per `tileMs` (200 ms), one label per source and kind per `labelMs` (600 ms). An area
+  spell that crits 20 monsters shows 3 bursts and one "CRIT!".
+
+Engine patch (only where the server is built from source): `patch -p1 < server/src-patches/0001-critical-hit-to-lua.patch`
+in the server source root, rebuild. It pushes `damage.critical` as the 8th argument of `onHealthChange` (existing
+scripts ignore it) and removes the two `CONST_ME_CRITICAL_DAMAGE` effects in `combat.cpp`. Tested on the test server
+(TFS build from this source, objects of `combat.cpp` and `creatureevent.cpp` recompiled and relinked).
 
 ## Passive tree points
 

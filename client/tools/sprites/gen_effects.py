@@ -7,7 +7,7 @@ any client is read, traced or recoloured.  The spec table `fx_custom.csv` (next 
   mode=replace  stock effect / missile ids that spells use (scripts in data/spells, the per-damage-type hit effects the
                 engine shows in game.cpp / combat.cpp, and the area effects monster spells name in their XML).  The dat
                 entry is rebuilt at the SAME id, so stock spell scripts keep working unchanged.
-  mode=append   our own effects 372..414 and missiles 116..125 (names = server/data/lib/chaos_fx.lua).
+  mode=append   our own effects 372..423 and missiles 116..125 (names = server/data/lib/chaos_fx.lua).
 
 python3 -I gen_effects.py --ours-dat Tibia.dat --ours-spr Tibia.spr --out-dir out/final \
         [--spec fx_custom.csv] [--preview DIR] [--overview fx_sheets/custom_overview.jpg] \
@@ -22,7 +22,7 @@ python3 -I gen_effects.py --ours-dat Tibia.dat --ours-spr Tibia.spr --out-dir ou
   layers 1, patterns (missiles 3x3), phases, animator with per-frame ms, u32 sprite ids).  All other effect and missile
   entries are copied byte for byte.
 * Outputs in --out-dir: Tibia.dat, Tibia.spr, chaos_fx.lua, effects_catalog.csv.  --lua-out / --catalog-out also write
-  those two files elsewhere; --lua-out refuses to write when the chaos names/ids differ from the file already there.
+  those two files elsewhere; --lua-out refuses to write when a chaos name/id of the file already there would change or vanish (adding is fine).
 * Verification (always run): the output dat is re-parsed; every written effect/missile frame and pattern is rendered back
   from the output spr and compared pixel-exact with the generated picture; every other dat entry and 3000 sampled old
   sprites are checked unchanged.
@@ -73,6 +73,9 @@ PALETTES = {
     'snow':    (_hex('101c2c 263c58 46648a 7094bc a0c0e0 c8e0f4 e8f4ff ffffff'), False),
     'ethereal': (_hex('040c18 0a2238 104060 1a6a8e 30a0bc 6ad4e0 b4f4f4 f4ffff'), True),
     'crit':    (_hex('180404 4a0808 8a1010 c82014 f0501c fa9a30 ffe070 ffffff'), True),
+    'necro':   (_hex('0c0204 26040a 4a0812 6e0c18 92141e b42a2a d05a4e ecaa98'), True),
+    'aegis':   (_hex('080c14 18243a 2c4466 4a6e98 76a0c8 a8cce8 dcecfa ffffff'), True),
+    'wraith':  (_hex('0a0c10 1c2028 343a46 525c6c 7a8698 a6b2c4 d2dae6 f6f8fc'), False),
 }
 # alpha per ramp level.  No level is a faint wash: whatever passes the cut is a visible, crisp-edged shape.
 ALPHA = {
@@ -1028,7 +1031,156 @@ def st_meteor(cv, t, f, n, pal):
     return [(fire, pal, 'glow'), (rock, 'earth', 'solid')]
 
 
+# --- combat feedback (crit / dodge / reflect / elemental weapon hit), sent by server/data/scripts/chaos/combat_fx.lua
+def st_critstar(cv, t, f, n, pal):
+    """critical hit: a sharp, slightly tilted star (four long blades, four short ones) snapping open at once with a
+    white-hot core, then the blades thin and retract while a few sparks fly off.  No ring, no haze."""
+    cx, cy, R = cv.cx, cv.cy, cv.R * cv.opt('scale', 1.0)
+    rot = cv.opt('rot', 0.32)
+    snap = ease_out(min(1.0, t / 0.12))
+    fade = 1.0 if t < 0.3 else max(0.0, 1 - (t - 0.3) / 0.7)
+    blades = cv.zeros()
+    for i in range(8):
+        a = rot + i * math.pi / 4
+        L = R * (1.15 if i % 2 == 0 else 0.55) * (0.4 + 0.6 * snap) * (0.55 + 0.45 * fade)
+        W = (1.9 if i % 2 == 0 else 1.3) * (0.35 + 0.65 * fade)
+        ux, uy = math.cos(a), math.sin(a)
+        poly = [(cx - uy * W, cy + ux * W), (cx + ux * L, cy + uy * L), (cx + uy * W, cy - ux * W)]
+        blades = np.maximum(blades, cv.poly(poly) * (0.75 if i % 2 == 0 else 0.55) * fade)
+    core = cv.disc(cx, cy, 2.6 * (1 - 0.7 * t) + 0.6, 0.8) * fade
+    hot = np.maximum(core, cv.star4(cx, cy, R * 0.5 * snap * fade + 0.5, 0.5) * fade)
+    spk = cv.zeros()
+    sp = particles(cv, 'sp', 6, lambda g, m: (np.arange(m) / m * 6.283 + 0.4 + g.normal(0, 0.2, m), 0.6 + 0.4 * g.random(m)))
+    if t > 0.15:
+        s = (t - 0.15) / 0.85
+        for a, v in zip(*sp):
+            rr = R * (0.5 + 0.7 * v * ease_out(s))
+            spk = np.maximum(spk, cv.gauss(cx + math.cos(a) * rr, cy + math.sin(a) * rr + 3 * s * s, 0.65) * (1 - s))
+    return [(blades, pal, 'glow'), (np.maximum(hot, spk), pal, 'glow')]
+
+
+def st_whoosh(cv, t, f, n, pal):
+    """dodge: an afterimage leaving sideways: three tapered speed streaks sweep across the creature (right to left),
+    a pale ghost sliver at the tail, a little dust kicked up at the feet."""
+    cx, cy, R = cv.cx, cv.cy, cv.R * cv.opt('scale', 1.0)
+    d = cv.opt('dir', -1.0)
+    out = cv.zeros()
+    for i, (dy, L, dl) in enumerate(((-0.6, 1.7, 0.0), (-0.05, 2.2, 0.05), (0.5, 1.5, 0.1))):
+        u = (t - dl) / 0.75
+        if u <= 0 or u >= 1:
+            continue
+        head = cx + d * R * (-0.7 + 1.4 * ease_out(u))
+        tail = head - d * R * L * (0.3 + 0.7 * min(1.0, u * 2.5)) * (1 - u)
+        y = cy + dy * R + 1.2 * math.sin(u * 3.0 + i)
+        lo, hi = min(head, tail), max(head, tail)
+        if hi - lo < 1:
+            continue
+        s = np.clip((cv.X - tail) / (head - tail), 0, 1)                    # 0 at the tail, 1 at the head
+        inside = (cv.X >= lo) * (cv.X <= hi)
+        w = 0.45 + 1.7 * s ** 1.5
+        out = np.maximum(out, np.exp(-((cv.Y - y - 1.5 * (1 - s) ** 2) / w) ** 2) * inside * (0.35 + 0.65 * s) * (1 - u ** 2))
+    ghost = cv.zeros()                                                     # crescent afterimage edge
+    if t < 0.6:
+        u = t / 0.6
+        gx = cx - d * R * 0.15 + d * R * 0.55 * ease_out(u)
+        a = cv.angle(gx, cy)
+        m = np.clip((np.cos(a) * -d - 0.15) * 2.2, 0, 1)
+        ghost = cv.ring(gx, cy, R * 0.55, 0.8, 1.35) * m * (1 - u) * 0.9
+    dust = cv.zeros()
+    dp = particles(cv, 'dp', 4, lambda g, m: (g.uniform(-0.5, 0.6, m), g.random(m)))
+    for x, v in zip(*dp):
+        s = min(1.0, t * 1.4)
+        dust = np.maximum(dust, cv.disc(cx - d * R * (x + 0.4 * s), cy + R * 0.8 - 3 * s * v, 1.1 * (1 - s) + 0.2, 0.6) * (1 - s))
+    return [(dust, 'ash', 'smoke'), (ghost, pal, 'glow'), (out, pal, 'glow')]
+
+
+def _shield(cx, cy, w, h):
+    """heater shield outline points: flat top, straight-ish sides, curving to a point at the bottom."""
+    top = cy - h * 0.5
+    right = [(cx + w * (1 - (k / 10) ** 1.7) ** 0.6, top + h * k / 10) for k in range(11)]
+    left = [(2 * cx - x, y) for x, y in reversed(right)]
+    return [(cx - w, top)] + right + left[1:]
+
+
+def st_aegis(cv, t, f, n, pal):
+    """reflect: a heater-shield outline flashes up in front of the creature, a glint sweeps across it, then the
+    outline bounces outward in three short arcs (the damage being thrown back) and fades."""
+    cx, cy, R = cv.cx, cv.cy, cv.R * cv.opt('scale', 1.0)
+    w, h = R * 0.68, R * 1.35
+    grow = ease_out(min(1.0, t / 0.18))
+    fade = 1.0 if t < 0.45 else max(0.0, 1 - (t - 0.45) / 0.55)
+    s = 0.75 + 0.25 * grow
+    outer = cv.poly(_shield(cx, cy, w * s, h * s))
+    inner = cv.poly(_shield(cx, cy + 0.6, (w - 2.0) * s, (h - 3.2) * s))
+    rim = np.clip(outer - inner, 0, 1)
+    body = rim * 0.85 * fade
+    face = inner * 0.12 * fade * (t < 0.35)
+    glint = cv.zeros()
+    if 0.08 < t < 0.6:
+        u = (t - 0.08) / 0.52
+        A, B = cv.local(cx - w + 2 * w * u, cy - h * 0.2, 0.7071, 0.7071)
+        glint = np.exp(-(B / 1.3) ** 2) * outer * (1 - u)
+    arcs = cv.zeros()
+    if t > 0.3:
+        u = (t - 0.3) / 0.7
+        for k, a0 in enumerate((-2.2, -1.57, -0.94)):
+            rr = h * 0.6 + R * 0.9 * ease_out(u)
+            a = cv.angle(cx, cy)
+            m = np.clip(1 - np.abs(((a - a0 + math.pi) % (2 * math.pi)) - math.pi) / 0.32, 0, 1)
+            arcs = np.maximum(arcs, cv.ring(cx, cy, rr, 0.9) * m * (1 - u))
+    return [(face, pal, 'soft'), (np.maximum(body, arcs), pal, 'glow'), (glint, 'storm', 'glow')]
+
+
+def st_imbue(cv, t, f, n, pal):
+    """elemental weapon hit: a thin crescent edge-trail in the element's colour cutting across the tile (the strike),
+    plus a few element particles: kind=fire embers rising, ice glints, energy micro-arcs, earth spores, death wisps,
+    holy motes.  Small and mostly transparent on purpose: it shows on every auto-attack hit."""
+    cx, cy, R = cv.cx, cv.cy, cv.R * cv.opt('scale', 1.0)
+    kind = cv.opt('kind', 'fire')
+    th = cv.memo('th', lambda: -0.6 + cv.rng.uniform(-0.45, 0.45))
+    ux, uy = math.cos(th), math.sin(th)
+    trail = cv.zeros()
+    head = min(1.0, 0.3 + t / 0.3); tail = max(0.0, (t - 0.1) / 0.55)
+    if tail < head:
+        pts = []
+        for s in np.linspace(tail, head, 9):
+            a_ = (s - 0.5) * R * 2.0
+            b_ = -math.sin(s * math.pi) * R * 0.35
+            pts.append((cx + a_ * ux - b_ * uy, cy + a_ * uy + b_ * ux))
+        m = len(pts) - 1
+        for j in range(m):
+            wj = 0.45 + 1.0 * math.sin(math.pi * (j + 0.5) / m)
+            trail = np.maximum(trail, cv.line(pts[j:j + 2], wj) * (1 - tail) * 0.9)
+    g = cv.frng(f)
+    pt = cv.zeros()
+    k = int(cv.opt('count', 5))
+    pp = particles(cv, 'pp', k, lambda r, m: (r.normal(0, 0.45, m), r.normal(0, 0.35, m), 0.6 + 0.6 * r.random(m), r.random(m)))
+    s = t
+    env = (1 - s) ** 1.1
+    for x, y, v, ph in zip(*pp):
+        px_, py_ = cx + x * R, cy + y * R
+        if kind == 'fire':                  # embers drift up and flicker
+            pt = np.maximum(pt, cv.gauss(px_ + 1.5 * math.sin(s * 8 + ph * 6), py_ - R * 0.9 * s * v, 0.75) * env * (0.7 + 0.3 * math.sin(f * 2 + ph * 9)))
+        elif kind == 'ice':                 # tiny four-point glints that twinkle and fall a little
+            pt = np.maximum(pt, cv.star4(px_, py_ + 3 * s * s, 1.8 * v * env + 0.3, 0.4) * env)
+        elif kind == 'energy':              # micro arcs re-rolled every frame
+            a = g.random() * 6.283; L = 2.5 + 3 * g.random()
+            pts = _bolt(g, px_, py_, px_ + math.cos(a) * L, py_ + math.sin(a) * L, 2, 0.35)
+            pt = np.maximum(pt, cv.line(pts, 0.5) * env)
+        elif kind == 'earth':               # spores swelling then popping
+            pt = np.maximum(pt, cv.disc(px_, py_ - R * 0.3 * s * v, (0.6 + 1.0 * v) * (1 - s) + 0.2, 0.6) * env)
+        elif kind == 'death':               # dark wisps curling upward
+            pts = [(px_ + 1.6 * math.sin(q * 2.5 + ph * 6 + s * 5), py_ - R * 0.5 * s - q * 4) for q in np.linspace(0, 1, 5)]
+            pt = np.maximum(pt, cv.line(pts, 0.55) * env)
+        else:                               # holy motes rising slowly with a glint
+            pt = np.maximum(pt, cv.gauss(px_, py_ - R * 0.5 * s * v, 0.7) * env)
+            if ph > 0.6:
+                pt = np.maximum(pt, cv.star4(px_, py_ - R * 0.5 * s * v, 2.2 * env + 0.3, 0.35) * env * 0.9)
+    return [(trail, pal, 'glow'), (pt, cv.opt('ptpal', pal), 'glow')]
+
+
 STYLES = {
+    'critstar': st_critstar, 'whoosh': st_whoosh, 'aegis': st_aegis, 'imbue': st_imbue,
     'meteor': st_meteor, 'burst': st_burst, 'nova': st_nova, 'flame': st_flame, 'shards': st_shards, 'sparks': st_sparks, 'cloud': st_cloud,
     'skull': st_skull, 'rays': st_rays, 'pillar': st_pillar, 'splash': st_splash, 'slash': st_slash, 'impact': st_impact,
     'eruption': st_eruption, 'thorns': st_thorns, 'sparkle': st_sparkle, 'rings': st_rings, 'circle': st_circle,
@@ -1559,7 +1711,8 @@ def main():
     for cat, have in (('effect', ne0), ('missile', nm0)):
         app = [r['id'] for r in rows if r['category'] == cat and r['mode'] == 'append']
         stock = STOCK_EFFECTS if cat == 'effect' else STOCK_MISSILES
-        assert have == stock or have >= max(app, default=0), f'{cat}s in input: {have}; expected {stock} or >= {max(app)}'
+        # stock pair, or an earlier output of this script (fewer appended ids than the spec: the new ones are added)
+        assert have >= stock, f'{cat}s in input: {have}; expected at least {stock}'
 
     # --- 1. draw
     gens = [render_row(r) for r in rows]
@@ -1678,8 +1831,8 @@ def main():
     if a.lua_out:
         if os.path.exists(a.lua_out):
             old, new = lua_ids(open(a.lua_out).read()), lua_ids(lua)
-            if old != new:
-                diff = sorted(set(old.items()) ^ set(new.items()))
+            if any(new.get(k) != v for k, v in old.items()):     # new names may be added; none may move or vanish
+                diff = sorted(set(old.items()) - set(new.items()))
                 sys.exit(f'refusing to write {a.lua_out}: chaos names/ids differ from the existing file: {diff[:10]}')
         open(a.lua_out, 'w').write(lua)
         print('wrote', a.lua_out)

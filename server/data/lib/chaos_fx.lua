@@ -46,6 +46,15 @@ ChaosFx = {
 	heal_sparkle = 412,  -- healing: green-white sparkles and a rising ring
 	ground_slam = 413,  -- slam: rocks and dust ring
 	shockwave = 414,  -- slam: white burst shockwave
+	crit_burst = 415,  -- combat: critical hit: sharp eight-blade star with a white-hot core
+	dodge_whoosh = 416,  -- combat: dodge: speed streaks and a fading afterimage
+	reflect_aegis = 417,  -- combat: reflect: shield outline flash that bounces outward
+	imbue_fire = 418,  -- combat: elemental weapon hit (fire): edge trail and embers
+	imbue_ice = 419,  -- combat: elemental weapon hit (ice): edge trail and glints
+	imbue_energy = 420,  -- combat: elemental weapon hit (energy): edge trail and micro arcs
+	imbue_earth = 421,  -- combat: elemental weapon hit (earth): edge trail and spores
+	imbue_death = 422,  -- combat: elemental weapon hit (death): edge trail and dark wisps
+	imbue_holy = 423,  -- combat: elemental weapon hit (holy): edge trail and motes
 }
 
 ChaosFxMissile = {

@@ -1,0 +1,39 @@
+# Critical hits reach Lua: onHealthChange gets an 8th argument `critical` (true on an engine crit) and the engine no
+# longer draws CONST_ME_CRITICAL_DAMAGE itself; data/scripts/chaos/combat_fx.lua shows a throttled crit burst and "CRIT!".
+# Apply in the server source root: patch -p1 < 0001-critical-hit-to-lua.patch, then rebuild.
+--- a/src/combat.cpp
++++ b/src/combat.cpp
+@@ -912,9 +912,7 @@
+ 			}
+ 		}
+ 
+-		if (damage.critical) {
+-			g_game.addMagicEffect(target->getPosition(), CONST_ME_CRITICAL_DAMAGE);
+-		}
++		// Chaos: no engine crit effect; onHealthChange gets `critical` and scripts/chaos/combat_fx.lua shows it
+ 
+ 		if (!damage.leeched && damage.primary.type != COMBAT_HEALING && casterPlayer && target != caster && damage.origin != ORIGIN_CONDITION) {
+ 			CombatDamage leechCombat;
+@@ -1061,7 +1059,7 @@
+ 		if (damageCopy.critical) {
+ 			damageCopy.primary.value += playerCombatReduced ? (criticalPrimary / 2) : criticalPrimary;
+ 			damageCopy.secondary.value += playerCombatReduced ? (criticalSecondary / 2) : criticalSecondary;
+-			g_game.addMagicEffect(creature->getPosition(), CONST_ME_CRITICAL_DAMAGE);
++			// Chaos: crit effect left to scripts/chaos/combat_fx.lua (onHealthChange `critical`)
+ 		}
+ 		bool success = false;
+ 		if (damageCopy.primary.type != COMBAT_MANADRAIN) {
+--- a/src/creatureevent.cpp
++++ b/src/creatureevent.cpp
+@@ -510,8 +510,10 @@
+ 	}
+ 
+ 	LuaScriptInterface::pushCombatDamage(L, damage);
++	// Chaos: 8th argument `critical` (scripts/chaos/combat_fx.lua shows the crit burst instead of the engine)
++	LuaScriptInterface::pushBoolean(L, damage.critical);
+ 
+-	if (scriptInterface->protectedCall(L, 7, 4) != 0) {
++	if (scriptInterface->protectedCall(L, 8, 4) != 0) {
+ 		LuaScriptInterface::reportError(nullptr, LuaScriptInterface::popString(L));
+ 	} else {
+ 		damage.primary.value = std::abs(LuaScriptInterface::getNumber<int32_t>(L, -4));

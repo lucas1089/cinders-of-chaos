@@ -95,6 +95,9 @@ ChaosMods = {
 	reflective = {name = "Reflective", shader = 13, power = 4, effect = CONST_ME_MAGIC_BLUE,
 		onTaken = function(m, attacker, dmg)
 			if attacker and attacker:isPlayer() then
+				if ChaosCombatFx then
+					ChaosCombatFx.reflect(m) -- shield flash on the reflecting monster (combat_fx.lua, throttled)
+				end
 				doTargetCombatHealth(m, attacker, COMBAT_PHYSICALDAMAGE, -math.floor(dmg * 0.15), -math.floor(dmg * 0.15), CONST_ME_NONE)
 			end
 		end},
