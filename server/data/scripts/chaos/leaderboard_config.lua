@@ -30,7 +30,11 @@ return {
 		{key = "goblin", name = "Goblin Slayer", mode = "add", value = "Goblins", title = "Goblin Slayer",
 			info = "Treasure goblins slain this week."},
 		{key = "siege", name = "Guild Siege", mode = "add", value = "Points", title = "Siegebreaker",
-			info = "Guild siege points this week: enemies struck down and seconds holding the obelisk."}
+			info = "Guild siege points this week: enemies struck down and seconds holding the obelisk."},
+		{key = "arena1v1", name = "Arena 1v1", mode = "max", value = "Rating", title = "Duelist",
+			info = "Best 1v1 arena rating reached this week."},
+		{key = "arena2v2", name = "Arena 2v2", mode = "max", value = "Rating", title = "Gladiator",
+			info = "Best 2v2 arena rating reached this week."}
 	},
 	top = 3,
 	rewards = {

@@ -1,0 +1,13 @@
+Module
+  name: game_arena
+  description: Ranked PvP arena (1v1 / 2v2 queue window, match HUD, result toast; !arena, extended opcode 236)
+  author: project-chaos
+  sandboxed: true
+  scripts: [ arenatext, arena ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()
