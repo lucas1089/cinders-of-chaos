@@ -46,7 +46,7 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 
 | # | Item | Status | Notes |
 |---|---|---|---|
-| 13 | Weekly world-boss damage leaderboard with titles | todo | damage share is already tracked in `worldboss.lua` |
+| 13 | Weekly world-boss damage leaderboard with titles | in progress | damage share is already tracked in `worldboss.lua` |
 | 14 | Arena 1v1 / 2v2 with ratings | todo | PvP rules and multi-client blocks already exist |
 | 15 | Scheduled guild wars / guild-hall siege | todo | |
 
