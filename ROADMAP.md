@@ -70,6 +70,10 @@ Estimated today: ~155 h to level 1000 for a sorcerer, ~285 h for a knight or pal
 
 ## Open decisions and loose ends
 
+- **Bug, high priority:** with about 120 passive tree nodes allocated, opening the passive tree window freezes the
+  client for ~1.6 s and the server kicks the player ("exceeding packet per second limit", `maxPacketsPerSecond`
+  50). Reproduced with the module from before the Paragon work, so it is older. Players with large builds can be
+  disconnected by opening their tree.
 - Notification toasts (`game_chaosnotify`) have no background: the code loads `images/background`, the file is
   `Background.png`. The Daily Reward window also opens over other windows at login.
 - Re-measure the weapon (auto-attack) numbers in `server/data/spells/README.md`: the balance harness sets the
