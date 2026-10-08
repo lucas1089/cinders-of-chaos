@@ -155,6 +155,8 @@ Siegebreaker, Duelist, Gladiator) and orbs. The all-time **Class Ladder** ranks 
 
 - **Combat visuals:** crits, dodges and reflects get their own sprites. Elemental weapon damage shows as a separate
   coloured number with its element's effect. Big numbers are shortened (12.4k).
+- **Patch notes in the client:** a window with every week's changes. It opens once at login when there is something
+  new, after the daily reward.
 - **Daily rewards**, **waystones** with account upgrades (experience, loot, rarity), and toast notifications for
   everything that matters.
 - **Store** (Chaos Coins):
@@ -167,7 +169,7 @@ Siegebreaker, Duelist, Gladiator) and orbs. The all-time **Class Ladder** ranks 
 
 Being built right now:
 - **Hunt tracker:** experience and profit per hour, kills and loot of your session.
-- **Login streaks** with milestones, and a **patch-notes** window in the client.
+- **Login streaks** with milestones.
 - **Seasons:** fresh-start season characters with their own economy, ladder, season uniques and cosmetic rewards that
   carry over.
 - **New classes:** the **Necromancer** (Lich / Bone Lord), the **Monk** (Shadowfist / Iron Sage) and the **Templar**

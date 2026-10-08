@@ -70,7 +70,7 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 | 20 | Login streaks tied to the daily reward | in progress | `chaos/daily.lua`; with the hunt tracker (item 17): streak counter, milestones, grace days, account-wide claims |
 | 21 | New-player kit per vocation | done | `chaos/newplayer*.lua`: kit per class (Warrior / Ranger / Mystic / Thief ids), welcome window + toast, gifts at 20/50/100/200, `/newplayerkit`; tested in game |
 | 22 | Tutorial island: passive tree, orbs, keystones | done | `chaos/newplayer_tutorial.lua`: island built at runtime (no map work), 5 stations, skip, resume; tested in game |
-| 23 | Weekly patch-notes window in the client | in progress | |
+| 23 | Weekly patch-notes window in the client | done | `chaos/patchnotes*.lua`, client `game_patchnotes` (`!patchnotes`, Chaos -> Patch Notes): notes are Markdown files in `server/data/patchnotes/` (no client update needed), opens once per new week per account at login after the Daily Reward (login window queue), "Don't show automatically"; see server/README.md "Patch notes" |
 
 ## Open decisions and loose ends
 

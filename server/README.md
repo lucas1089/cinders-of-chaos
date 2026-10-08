@@ -41,6 +41,7 @@ server/
     shop.lua  shop_config.lua  shop_services.lua  autosell.lua  sell_prices.lua (store, see "Store services")
     bounty.lua  bounty_core.lua  bounty_config.lua  bounty_pool.lua (bounty board; pool from tools/gen_bounty_pool.py)
     rift.lua  rift_core.lua  rift_config.lua (rifts: keys, runtime-built instances, run HUD; see "Rifts")
+    patchnotes.lua  patchnotes_core.lua (patch notes window; the notes are data/patchnotes/*.md, see "Patch notes")
     crafting.lua (crafting bench and orbs; rules in data/lib/chaos_crafting.lua, installer tools/install_crafting.py)
     treasure_goblin.lua  treasure_goblin_core.lua  treasure_goblin_config.lua (treasure goblins, see "Treasure goblins")
     leaderboard.lua  leaderboard_core.lua  leaderboard_config.lua (weekly boards with titles, class ladder)
@@ -112,12 +113,13 @@ working directory, as with the rest of the base server libs).
 | game_lootfilter | `lootfilter.lua`, `lootfilter_core.lua`, `lootfilter_config.lua` | 238, `!lootfilter` | Loot filter (glow/dim by rarity in corpses), loot channel with click-to-loot icons, rare-drop lines, loot rays, Rarity Autoloot store unlock. Tested in game (see "Loot filter"). |
 | game_bounty | `bounty.lua`, `bounty_core.lua`, `bounty_config.lua`, `bounty_pool.lua` | 223, `!bounty` / `/bounty` | Daily rotating kill contracts per level band, tested in game (see "Bounty board"). |
 | game_rift | `rift.lua`, `rift_core.lua`, `rift_config.lua` | 228 (server -> client), `!rift` / `/rift` | Rift Keys open timed instances with modifiers; run HUD; tested in game (see "Rifts"). |
+| game_patchnotes | `patchnotes.lua`, `patchnotes_core.lua`, `data/patchnotes/*.md` | 244, `!patchnotes` / `/patchnotes` | Weekly patch notes read from Markdown files on the server, opened once per new week at login (after the Daily Reward), per-account "Don't show automatically"; tested in game (see "Patch notes"). |
 | game_arena | `arena.lua`, `arena_core.lua`, `arena_config.lua` | 236, `!arena` / `/arena` | Ranked PvP arena, 1v1 and 2v2 with Elo per mode, runtime instances, no death / skull / frag inside, tested in game with two clients (see "Arena"). |
 | game_siege | `siege.lua`, `siege_core.lua`, `siege_config.lua` | 233, `!siege` / `/siege` | Weekly guild siege for the Chaos Obelisk: sign-ups, runtime arena, HUD, rewards and the champion title, tested in game (see "Guild siege"). |
 | game_leaderboard | `leaderboard.lua`, `leaderboard_core.lua`, `leaderboard_config.lua` | 229, `!leaderboard` | Weekly World Boss / Bounty Hunter / Rifts / Goblin Slayer / Guild Siege / Arena boards with titles and orbs for the top 3, all-time class ladder, tested in game (see "Leaderboards"). |
 | game_crafting | `crafting.lua`, `data/lib/chaos_crafting.lua` | 232, `!craft` / `/craft` | Crafting bench and the crafting orbs (Transmutation, Alchemy, Exalted, Annulment, Scouring, plus Chaos and Divine), tested in game (see "Crafting"). |
 
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 228, 229, 232, 233, 236, 238 are all registered in the global
+Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 228, 229, 232, 233, 236, 238, 244 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
 
 ### Opcode collision check
@@ -1475,6 +1477,51 @@ client); the exit to the temple with the Warrior kit and the welcome; "Skip tuto
 scorcher equipped, wand in the backpack); relog gives no second kit; milestones 20, then 50 + 100 in one jump, nothing after
 losing and regaining level 20; `/newplayerkit` and its options. Not verified: PvP block (needs two clients), the island build
 refusal over foreign tiles, the full stations for the Thief line beyond 1-2.
+
+## Patch notes (`patchnotes.lua`, `patchnotes_core.lua`, `data/patchnotes/*.md`, client `game_patchnotes`)
+
+Weekly patch notes for players (roadmap item 23). Client: `client/overlay/modules/game_patchnotes` (Chaos -> Patch Notes
+in the top menu, or `!patchnotes`), extended opcode 244 (`ChaosOpcodes.patchnotes`), table `chaos_patchnotes` (created at
+startup if missing; also `sql/chaos_patchnotes.sql`). The notes live on the server, so new notes never need a client update.
+
+- **Files.** One Markdown-ish file per week or version in `data/patchnotes/` (copy `server/data/patchnotes/` there), named
+  `<id>.md` (e.g. `2026-10-08.md`; the id is the name without `.md`). Format (parser: `patchnotes_core.lua`):
+  `# Title`, an optional `Date: YYYY-MM-DD` line (else the date at the start of the file name), free text before the first
+  section (the intro), then `## New`, `## Changes`, `## Fixes`, `## Balance` (other headings are kept and drawn in plain
+  colour). Bullets `- ` (or `* `, `+ `), sub-bullets indented by 2+ spaces, indented lines without a dash continue the
+  bullet above, `- **Lead.** text` gives the bullet a highlighted lead, `<!-- ... -->` is ignored, `**`/`__`/backticks
+  and `[text](link)` markers are removed. `README.md` and drafts (a name starting with `_`) are skipped. Write for
+  players, and only about what is live. The folder is listed with `ls` (`dir /b` on Windows; `data/patchnotes/index.txt`,
+  one file name per line, when the server cannot run commands) at startup and again at most every 60 s, so a new file
+  shows up within a minute; `/patchnotes reload` (staff) reads it at once. Weeks are ordered by date, then id (newest
+  first); the list shows up to 52.
+- **Window.** Weeks on the left (date, title, NEW for unseen ones), the selected week on the right: title, date, intro,
+  section headings in colour (New green, Changes gold, Fixes blue, Balance violet), bullets with a dot in the section
+  colour, sub-bullets, bold leads. A long note is sent in parts of about 4 KB of text (`PN.parts`; one 9 KB message never
+  arrived in the test client) and joined by the client.
+- **Login.** Once per new week per **account** (`seen_key` = date|id of the newest week the account was shown; a week
+  counts as seen when the client displayed it, opened by itself or by hand, and an older week never lowers it). "Don't
+  show automatically" (`auto_open`, per account) stops the login opening; the menu and `!patchnotes` still work. The login
+  opening never stacks with the Daily Reward window: it is the `patchnotes` entry (order 30, after the daily's 20; set
+  `Chaos.dailyStreak.loginOrder.patchnotes` to change it) of daily.lua's login window queue `ChaosLoginWindows`, so the
+  server sends it only after the client reports the daily window closed (or when the daily is not due), and the window
+  reports `closed` itself so the queue can go on. The client also refuses to show it over a visible Daily Reward window
+  (and hides it again if one appears in the first 20 s), and game_daily waits while `patchNotesWindow` is on screen. On
+  a server without that queue, the script falls back to its own timer (the daily's `openDelayMs` + 1.5 s) and tells the
+  client whether a daily window is expected; the client then waits up to 6 s for it to appear and until it is closed.
+- **Staff:** `/patchnotes reload` (read the folder now), `/patchnotes unseen` (forget the own account's last seen week, to
+  test the login opening), `/patchnotes` (status).
+- **Tests:** `tests/patchnotes_test.lua` (parsing, limits, file list, ids, order, seen key, auto-open, the parts; also
+  parses every real file of `data/patchnotes/`) and the client's `patchnotesview_test.lua` (blocks and colours, joining
+  parts, the login wait).
+
+Verified on the test server: the window from the menu and with `!patchnotes`, week list and switching weeks, the
+formatted notes (four sections, leads, sub-bullets, scrolling), the login opening with the Daily Reward window first
+(old timer path and the login window queue: the notes appear only after the daily window is closed), the opening at once
+when the daily is already claimed, no second opening at the next login, "Don't show automatically" (no opening for a new
+week, unticked again from the window), the seen key and setting in the database. Not verified: two characters of one
+account online at once, the Windows `dir` listing and the `index.txt` fallback, the client stepping aside for a daily window that
+appears in the first 20 s (cannot happen with the queue).
 
 ## Late game (`tools/late_game.py`, `tools/late_game_spawns.csv`, 17 monsters in `data/monster/monsters/chaos/`)
 

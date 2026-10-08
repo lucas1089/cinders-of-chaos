@@ -42,6 +42,7 @@ ChaosOpcodes = {
 	siege = 233, -- guild siege HUD and sign-up window (client game_siege, !siege; siege.lua, siege_config.lua)
 	arena = 236, -- ranked PvP arena window and match HUD (client game_arena, !arena; arena.lua, arena_config.lua)
 	lootfilter = 238, -- loot filter window, corpse highlight data, loot channel rows (client game_lootfilter, !lootfilter; lootfilter.lua)
+	patchnotes = 244,
 	spellbook = 219 -- spell list window (client game_spellbook, !spells)
 }
 

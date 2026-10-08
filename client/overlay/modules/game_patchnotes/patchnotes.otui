@@ -1,0 +1,233 @@
+// Patch notes window (game_patchnotes). Styles from client_chaos_theme (styles.otui).
+
+PatchWeekEntry < UIWidget
+  height: 50
+  margin-bottom: 2
+  padding: 4 6 4 8
+  phantom: false
+  focusable: true
+  background-color: #1a151a
+
+  $hover !checked:
+    background-color: #241c22
+
+  $checked:
+    background-color: #3a2410
+
+  UILabel
+    id: date
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: newBadge.left
+    height: 15
+    font: verdana-11px-rounded
+    color: #e8b84a
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: newBadge
+    anchors.top: parent.top
+    anchors.right: parent.right
+    text-auto-resize: true
+    font: verdana-11px-rounded
+    color: #7cd35a
+    phantom: true
+
+  UILabel
+    id: title
+    anchors.top: date.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    height: 28
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    text-align: topleft
+    text-wrap: true
+    phantom: true
+
+PatchTitle < UILabel
+  font: Verdana Bold-13px
+  color: #f6cf72
+  text-wrap: true
+  text-auto-resize: true
+  text-align: topleft
+  phantom: true
+
+PatchDate < UILabel
+  font: verdana-11px-antialised
+  color: #8c8070
+  text-auto-resize: true
+  text-align: left
+  margin-top: 2
+  phantom: true
+
+PatchIntro < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-wrap: true
+  text-auto-resize: true
+  text-align: topleft
+  margin-top: 8
+  phantom: true
+
+PatchSection < UILabel
+  font: Verdana Bold-13px
+  color: #e8b84a
+  height: 20
+  text-align: bottomleft
+  margin-top: 14
+  margin-bottom: 4
+  phantom: true
+
+  UIWidget
+    id: rule
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-bottom: -3
+    height: 1
+    background-color: #3a3339
+    phantom: true
+
+PatchParagraph < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-wrap: true
+  text-auto-resize: true
+  text-align: topleft
+  margin-top: 4
+  phantom: true
+
+// a bullet: the dot and the wrapped text side by side; patchnotes.lua keeps the row as tall as its text
+PatchBullet < UIWidget
+  height: 14
+  margin-top: 4
+  phantom: true
+
+  UIWidget
+    id: dot
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 5
+    size: 5 5
+    background-color: #e8b84a
+    phantom: true
+
+  UILabel
+    id: text
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-left: 16
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    text-wrap: true
+    text-auto-resize: true
+    text-align: topleft
+    phantom: true
+
+// a sub-bullet: dot and text further in (patchnotes.lua)
+PatchSubBullet < PatchBullet
+  margin-top: 2
+
+ChaosMainWindow
+  id: patchNotesWindow
+  size: 780 560
+  !text: tr('Patch Notes')
+  @onEscape: modules.game_patchnotes.hide()
+
+  ChaosLabelDim
+    id: weeksLabel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    width: 210
+    text-align: left
+    !text: tr('Weeks')
+
+  ChaosPanelDark
+    id: weekFrame
+    anchors.top: weeksLabel.bottom
+    anchors.left: parent.left
+    anchors.bottom: closeButton.top
+    margin-top: 4
+    margin-bottom: 8
+    width: 210
+
+  UIScrollArea
+    id: weekList
+    anchors.top: weekFrame.top
+    anchors.left: weekFrame.left
+    anchors.right: weekScroll.left
+    anchors.bottom: weekFrame.bottom
+    margin: 4
+    layout:
+      type: verticalBox
+    vertical-scrollbar: weekScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: weekScroll
+    anchors.top: weekFrame.top
+    anchors.right: weekFrame.right
+    anchors.bottom: weekFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 52
+    pixels-scroll: true
+
+  ChaosPanelDark
+    id: noteFrame
+    anchors.top: parent.top
+    anchors.left: weekFrame.right
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-left: 8
+    margin-bottom: 8
+
+  UIScrollArea
+    id: noteArea
+    anchors.top: noteFrame.top
+    anchors.left: noteFrame.left
+    anchors.right: noteScroll.left
+    anchors.bottom: noteFrame.bottom
+    margin: 10 8 10 14
+    layout:
+      type: verticalBox
+    vertical-scrollbar: noteScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: noteScroll
+    anchors.top: noteFrame.top
+    anchors.right: noteFrame.right
+    anchors.bottom: noteFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 36
+    pixels-scroll: true
+
+  ChaosLabelDim
+    id: emptyText
+    anchors.centerIn: noteFrame
+    text-auto-resize: true
+    visible: false
+
+  ChaosCheckBox
+    id: autoCheck
+    anchors.left: parent.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    width: 240
+    !text: tr("Don't show automatically")
+    !tooltip: tr('When checked, new patch notes no longer open by themselves at login. Chaos -> Patch Notes and !patchnotes still open them.')
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    !text: tr('Close')
+    @onClick: modules.game_patchnotes.hide()

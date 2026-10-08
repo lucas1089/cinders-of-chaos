@@ -182,6 +182,7 @@ local CATEGORIES = {
     { text = 'Event Calendar',     icon = 'events',      modules = { 'game_schedule' },  fns = { 'toggle' } },
     { text = 'Leaderboards',       icon = 'ranking',     modules = { 'game_leaderboard' }, fns = { 'toggle' } },
     { text = 'Notifications',      icon = 'notifications', modules = { 'game_chaosnotify' }, fns = { 'toggle', 'showAll' } },
+    { text = 'Patch Notes',        icon = 'events',      modules = { 'game_patchnotes' }, fns = { 'toggle' } },
   } },
   { id = 'economy', text = 'Economy', icon = 'market', entries = {
     { text = 'Store',              icon = 'market',      modules = { 'game_shop' }, fns = { 'toggle' } },
