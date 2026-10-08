@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- World boss (worldboss.lua). Plague abomination: slow and tanky, poison waves and heavy DoTs, heals itself. -->
+<monster name="The Rotmother" nameDescription="the Rotmother" race="venom" experience="20000000" speed="200" manacost="0">
+	<health now="22000000" max="22000000" />
+	<look type="238" corpse="6532" />
+	<targetchange interval="5000" chance="15" />
+	<flags>
+		<flag isboss="1" />
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-2000" max="-4000" poison="800" />
+		<!-- Bile Spray: wave in front -->
+		<attack name="earth" interval="2000" chance="20" length="7" spread="2" min="-3500" max="-6000">
+			<attribute key="areaEffect" value="greenbubble" />
+		</attack>
+		<!-- Spore Burst on a target -->
+		<attack name="earth" interval="2000" chance="22" range="7" target="1" radius="4" min="-3000" max="-5000">
+			<attribute key="shootEffect" value="poison" />
+			<attribute key="areaEffect" value="poison" />
+		</attack>
+		<!-- Miasma: poison DoT on everybody close, total 6-10k -->
+		<attack name="poisoncondition" interval="2000" chance="14" radius="6" min="-6000" max="-10000" tick="2000">
+			<attribute key="areaEffect" value="greensmoke" />
+		</attack>
+		<attack name="lifedrain" interval="2000" chance="10" range="7" target="1" min="-2500" max="-4000">
+			<attribute key="shootEffect" value="smallearth" />
+			<attribute key="areaEffect" value="smallplants" />
+		</attack>
+	</attacks>
+	<defenses armor="110" defense="90">
+		<defense name="healing" interval="2000" chance="15" min="50000" max="100000">
+			<attribute key="areaEffect" value="greenshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="25" />
+		<element firePercent="-25" />
+		<element energyPercent="20" />
+		<element icePercent="20" />
+		<element holyPercent="-10" />
+		<element deathPercent="30" />
+	</elements>
+	<immunities>
+		<immunity earth="1" />
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Come to mother... let me hold you..." yell="1" />
+		<voice sentence="Every corpse feeds my children!" yell="1" />
+		<voice sentence="BLGHHRRLLL!" yell="1" />
+	</voices>
+	<loot>
+		<item id="2160" countmax="70" chance="100000" /><!-- crystal coin -->
+		<item id="29856" countmax="14" chance="100000" /><!-- Chaos Orb -->
+		<item id="29857" countmax="6" chance="85000" /><!-- Divine Orb -->
+		<item id="29863" chance="6000" /><!-- Myst Regalia Legs -->
+		<item id="29880" chance="6000" /><!-- Dawnforged Legs -->
+		<item id="29871" chance="6000" /><!-- Seraphic Greaves -->
+		<item id="29881" chance="5000" /><!-- Dawnforged Boots -->
+		<item id="29872" chance="5000" /><!-- Seraphic Boots -->
+		<item id="29867" chance="4000" /><!-- Myst Regalia Amulet -->
+	</loot>
+</monster>

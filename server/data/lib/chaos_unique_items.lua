@@ -4,6 +4,8 @@
 -- items.xml is NOT changed: stock monsters, shops and scripts find items by their stock names.
 -- chance = per 10000 per kill BEFORE the tier multiplier in loot_config.lua (magic x1, rare x2, legendary x4, boss x6;
 -- normal-tier kills never drop uniques). So chance 8 on a legendary monster = 32 per 10000 = 0.32%.
+-- The boss-only entries also list the five world bosses (worldboss.lua): corpse drop through loot.lua, and the same
+-- pool is used for the world boss participation reward (Chaos.worldBoss.reward.uniqueChance).
 -- Edit freely, it is plain Lua.
 
 ChaosUniqueItems = {
@@ -94,15 +96,20 @@ ChaosUniqueItems = {
 	{ name = "Soulshackle Scepter", id = 29571, minTier = "legendary", chance = 7, level = 120, slot = "wand",
 	  bossOnly = false, monsters = {"Warlock", "Lich", "Dark Torturer", "Infernalist", "Necromancer", "Priestess", "Death Mage", "Vampire", "Banshee", "Ghoul", "Grim Reaper", "Undead Dragon", "Demon Skeleton", "Betrayed Wraith", "Blightwalker"} },
 	{ name = "Cinderbrand Axe", id = 8925, minTier = "boss", chance = 20, level = 130, slot = "axe",
-	  bossOnly = true, monsters = {"Ghazbaran", "Morgaroth", "Orshabaal", "Ferumbras", "Zugurosh", "Infernatil", "The Plasmother"} },
+	  bossOnly = true, monsters = {"Ghazbaran", "Morgaroth", "Orshabaal", "Ferumbras", "Zugurosh", "Infernatil", "The Plasmother",
+	    "Kaelgor the Infernal Warlord", "Skaldra the Rime Queen", "The Rotmother", "Nyxareth the Void Archon", "Vharok the Blood Colossus"} },
 	{ name = "Fangs of the Ninth Circle", id = 24790, minTier = "boss", chance = 20, level = 120, slot = "necklace",
-	  bossOnly = true, monsters = {"Ghazbaran", "Morgaroth", "Orshabaal", "Ferumbras", "Zugurosh", "Infernatil", "The Plasmother"} },
+	  bossOnly = true, monsters = {"Ghazbaran", "Morgaroth", "Orshabaal", "Ferumbras", "Zugurosh", "Infernatil", "The Plasmother",
+	    "Kaelgor the Infernal Warlord", "Skaldra the Rime Queen", "The Rotmother", "Nyxareth the Void Archon", "Vharok the Blood Colossus"} },
 	{ name = "Visage of the Pale King", id = 27675, minTier = "boss", chance = 20, level = 120, slot = "head",
-	  bossOnly = true, monsters = {"Ghazbaran", "Morgaroth", "Orshabaal", "Ferumbras", "Zugurosh", "Infernatil", "The Plasmother"} },
+	  bossOnly = true, monsters = {"Ghazbaran", "Morgaroth", "Orshabaal", "Ferumbras", "Zugurosh", "Infernatil", "The Plasmother",
+	    "Kaelgor the Infernal Warlord", "Skaldra the Rime Queen", "The Rotmother", "Nyxareth the Void Archon", "Vharok the Blood Colossus"} },
 	{ name = "Duskweaver Wand", id = 29866, minTier = "boss", chance = 20, level = 140, slot = "wand",
-	  bossOnly = true, monsters = {"Ghazbaran", "Morgaroth", "Orshabaal", "Ferumbras", "Zugurosh", "Infernatil", "The Plasmother"} },
+	  bossOnly = true, monsters = {"Ghazbaran", "Morgaroth", "Orshabaal", "Ferumbras", "Zugurosh", "Infernatil", "The Plasmother",
+	    "Kaelgor the Infernal Warlord", "Skaldra the Rime Queen", "The Rotmother", "Nyxareth the Void Archon", "Vharok the Blood Colossus"} },
 	{ name = "Veil of the Wraith", id = 29868, minTier = "boss", chance = 20, level = 120, slot = "ring",
-	  bossOnly = true, monsters = {"Ghazbaran", "Morgaroth", "Orshabaal", "Ferumbras", "Zugurosh", "Infernatil", "The Plasmother"} },
+	  bossOnly = true, monsters = {"Ghazbaran", "Morgaroth", "Orshabaal", "Ferumbras", "Zugurosh", "Infernatil", "The Plasmother",
+	    "Kaelgor the Infernal Warlord", "Skaldra the Rime Queen", "The Rotmother", "Nyxareth the Void Archon", "Vharok the Blood Colossus"} },
 }
 
 -- name (and lower-case name) -> entry

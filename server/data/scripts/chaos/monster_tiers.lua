@@ -47,6 +47,13 @@ local cfg = {
 }
 ChaosTierConfig = cfg
 
+-- World bosses (worldboss.lua): boss tier for the client (their XML also has isboss="1"; this is the fallback) but
+-- no random modifiers: Regenerating, Juggernaut or Explosive (5% of max health on death) would wreck the tuned fight.
+for _, b in ipairs(Chaos.worldBoss and Chaos.worldBoss.bosses or {}) do
+	cfg.bosses[b.name:lower()] = true
+	cfg.skip[b.name:lower()] = true
+end
+
 -- Modifiers. shader = id in data/XML/shaders.xml, power decides which modifier colours the monster.
 -- hp/speed/damage are multipliers or additions applied when the modifier is rolled; the on* hooks
 -- are called by the handlers below.

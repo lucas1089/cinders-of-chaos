@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- World boss (worldboss.lua). Fire and steel melee brute. Numbers: server/README.md "World bosses". -->
+<monster name="Kaelgor the Infernal Warlord" nameDescription="Kaelgor the Infernal Warlord" race="fire" experience="18000000" speed="300" manacost="0">
+	<health now="18000000" max="18000000" />
+	<look type="842" head="94" body="78" legs="94" feet="114" addons="1" corpse="2916" />
+	<targetchange interval="5000" chance="15" />
+	<flags>
+		<flag isboss="1" />
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-2500" max="-5500" />
+		<!-- Hellbrand Sweep: wave in front -->
+		<attack name="fire" interval="2000" chance="22" length="8" spread="3" min="-3500" max="-6000">
+			<attribute key="areaEffect" value="firearea" />
+		</attack>
+		<!-- Meteor: thrown at a target, splashes radius 3 -->
+		<attack name="fire" interval="2000" chance="20" range="7" target="1" radius="3" min="-3000" max="-5000">
+			<attribute key="shootEffect" value="fire" />
+			<attribute key="areaEffect" value="explosionarea" />
+		</attack>
+		<!-- Warstomp: everything around him -->
+		<attack name="physical" interval="2000" chance="14" radius="5" min="-2500" max="-4500">
+			<attribute key="areaEffect" value="groundshaker" />
+		</attack>
+		<!-- Cinder brand: burning DoT, total 4-7k -->
+		<attack name="firecondition" interval="2000" chance="12" range="7" target="1" min="-4000" max="-7000" tick="2000">
+			<attribute key="shootEffect" value="fire" />
+			<attribute key="areaEffect" value="firearea" />
+		</attack>
+		<attack name="speed" interval="2000" chance="8" range="7" target="1" speedchange="-600" duration="5000">
+			<attribute key="shootEffect" value="infernalbolt" />
+			<attribute key="areaEffect" value="redsmoke" />
+		</attack>
+	</attacks>
+	<defenses armor="120" defense="120">
+		<defense name="healing" interval="2000" chance="8" min="20000" max="40000">
+			<attribute key="areaEffect" value="redshimmer" />
+		</defense>
+		<defense name="speed" interval="2000" chance="8" speedchange="400" duration="5000">
+			<attribute key="areaEffect" value="redsmoke" />
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="10" />
+		<element firePercent="60" />
+		<element energyPercent="10" />
+		<element earthPercent="10" />
+		<element icePercent="-15" />
+		<element holyPercent="0" />
+		<element deathPercent="20" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+		<immunity lifedrain="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="KNEEL BEFORE THE WARLORD OF CINDERS!" yell="1" />
+		<voice sentence="Your bones will fuel my forges!" yell="1" />
+		<voice sentence="Burn, and be remembered as ash!" yell="1" />
+	</voices>
+	<loot>
+		<item id="2160" countmax="60" chance="100000" /><!-- crystal coin -->
+		<item id="29856" countmax="12" chance="100000" /><!-- Chaos Orb -->
+		<item id="29857" countmax="5" chance="80000" /><!-- Divine Orb -->
+		<item id="29879" chance="6000" /><!-- Dawnforged Plate -->
+		<item id="29884" chance="5000" /><!-- Dawnforged Longsword -->
+		<item id="29885" chance="5000" /><!-- Dawnforged Chopper -->
+		<item id="29878" chance="6000" /><!-- Dawnforged Helmet -->
+		<item id="29882" chance="5000" /><!-- Dawnforged Shield -->
+		<item id="29890" chance="4000" /><!-- Dawnforged Ring -->
+	</loot>
+</monster>

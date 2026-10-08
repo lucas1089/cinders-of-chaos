@@ -227,6 +227,123 @@ Chaos.events = {
 	announceOnLogin = true
 }
 
+-- World boss event (worldboss.lua). Monster XMLs: data/monster/monsters/chaos/world_bosses/ (register them with
+-- tools/register_monsters.py). Times are server local time. See server/README.md "World bosses".
+Chaos.worldBoss = {
+	enabled = true, -- automatic schedule (the GM command works either way)
+	-- starts at every hour h with (h - offsetHours) % intervalHours == 0, minute 0: 03:00, 09:00, 15:00, 21:00
+	intervalHours = 6,
+	offsetHours = 3,
+	warnMinutes = {10, 5, 1}, -- broadcasts before a scheduled start
+	mode = "rotation", -- "rotation" (next boss each time) or "random" (never the same twice in a row)
+	gatherSeconds = 120, -- portals open, boss appears after this
+	portalMinutes = 30, -- town portals stay this long (or until the boss dies)
+	fightMinutes = 45, -- the boss leaves this long after it appeared (event failed)
+	exitDelaySeconds = 90, -- after the end: time to loot before everyone is sent to their temple
+	minLevel = 300,
+	maxPlayers = 40, -- players inside lobby + arena at once (0 = no limit)
+	allowPvp = false, -- no player-vs-player damage in the lobby and the arena
+	-- multi-client characters (Chaos.isMultiClient) may enter and fight, but get no participation reward
+	mcReward = false,
+
+	-- arena: built at runtime with Game.createTile. Footprint x 5000..5032 (arena) and the lobby south of it,
+	-- y 5000..5048, z 7. That part of the map has no tiles (checked in the map file; the script checks again
+	-- before building and refuses to build over existing tiles).
+	arena = {
+		origin = {x = 5000, y = 5000, z = 7}, -- top-left wall corner of the arena
+		inner = 31, -- inner width/height of the arena (odd, so there is a centre tile)
+		lobbyGap = 7, -- empty (tile-less) rows between the arena's south wall and the lobby's north wall
+		lobbyInnerW = 13, lobbyInnerH = 7,
+		groundId = 407, -- black marble floor (arena)
+		lobbyGroundId = 413, -- stone floor (lobby)
+		wallId = 5648, -- stone wall
+		pillarId = 1514, -- stone pillar (line-of-sight cover inside the arena)
+		basinId = 1481, -- coal basin (light, lobby corners and arena corners)
+		portalId = 1387 -- magic forcefield (type teleport in items.xml); used without destination + action id
+	},
+	-- action ids of the forcefields (handled by MoveEvent onStepIn, never by the teleport destination, so monsters
+	-- that step on them are not moved and the entry rules are checked)
+	aid = {enter = 47201, arena = 47202, lobby = 47203, exit = 47204},
+	-- town portals: next to every temple of Game.getTowns() (first free spot of portalOffsets), or exactly at
+	-- portalPositions when that list is not empty. towns = {id, ...} limits the towns (nil = all).
+	towns = nil,
+	portalPositions = {},
+	portalOffsets = {{2, 0}, {-2, 0}, {0, 2}, {0, -2}, {2, 2}, {-2, 2}, {2, -2}, {-2, -2}, {3, 0}, {-3, 0}},
+	rotationStorage = 7100910, -- global storage: index of the last boss (rotation survives /reload)
+
+	-- participation reward (everybody with at least minDamagePercent % of the boss max health in damage).
+	-- share = own damage / damage of all eligible players. Delivered to the backpack, the rest to the inbox;
+	-- players offline at the kill get it at their next login (kept in memory until a restart).
+	reward = {
+		minDamagePercent = 0.25,
+		bankGold = 500000, -- deposited into the bank for every eligible player
+		bankGoldPool = 10000000, -- split by damage share, deposited into the bank
+		base = {{id = 29856, count = 3}, {id = 29857, count = 1}}, -- Chaos Orbs, Divine Orb for everyone
+		pool = {{id = 29856, count = 60}, {id = 29857, count = 25}}, -- split by damage share (floor)
+		top = { -- bonus for the top damage dealers
+			{{id = 29857, count = 5}, {id = 2160, count = 50}},
+			{{id = 29857, count = 3}, {id = 2160, count = 30}},
+			{{id = 29857, count = 2}, {id = 2160, count = 20}}
+		},
+		gearChance = 1500, -- per 10000: one item of the boss gear list (rolled with rarity gearRarity)
+		gearShareBonus = 3000, -- + share x this (a player with 20% of the damage: +600)
+		gearRarity = {6, 9}, -- min, max rarity of that item (Game.createItemWithRarity)
+		uniqueChance = 50, -- per 10000: one of the boss-only uniques that list this boss (chaos_unique_items.lua)
+		uniqueShareBonus = 300 -- + share x this
+	},
+
+	-- the five bosses. adds: {name, count, health}; phases trigger once when health falls to `at` (fraction).
+	-- enrage: from that phase on, `pulse` hits every player within radius every `every` seconds.
+	bosses = {
+		{name = "Kaelgor the Infernal Warlord", element = "fire",
+			intro = "Kaelgor the Infernal Warlord marches out of the burning rift!",
+			phases = {
+				{at = 0.70, adds = {name = "Hellfire Fighter", count = 4, health = 150000}, yell = "LEGION, TO ME!"},
+				{at = 0.40, enrage = true, yell = "I WILL BURN THIS WORLD TO THE GROUND!"},
+				{at = 0.15, adds = {name = "Hellspawn", count = 4, health = 150000}, yell = "My guard dies before I do!"}
+			},
+			pulse = {type = "fire", min = 2500, max = 4000, radius = 6, every = 8, effect = "explosionarea"},
+			gear = {29878, 29879, 29880, 29881, 29882, 29883, 29884, 29885, 29890}},
+		{name = "Skaldra the Rime Queen", element = "ice",
+			intro = "The sky freezes over: Skaldra the Rime Queen descends!",
+			phases = {
+				{at = 0.70, adds = {name = "Frost Dragon", count = 3, health = 200000}, yell = "My brood, wake!"},
+				{at = 0.40, enrage = true, yell = "THE LONG WINTER BEGINS!"},
+				{at = 0.15, adds = {name = "Ice Golem", count = 4, health = 120000}, yell = "Shards, protect your queen!"}
+			},
+			pulse = {type = "ice", min = 2000, max = 3500, radius = 7, every = 7, effect = "giantice"},
+			gear = {29869, 29870, 29871, 29872, 29873, 29874, 29875, 29876, 29877}},
+		{name = "The Rotmother", element = "earth",
+			intro = "The ground splits and the Rotmother crawls out of the plague pits!",
+			phases = {
+				{at = 0.75, adds = {name = "Defiler", count = 5, health = 120000}, yell = "Children, feed!"},
+				{at = 0.50, adds = {name = "Plaguesmith", count = 4, health = 150000}, yell = "More! I need MORE!"},
+				{at = 0.25, enrage = true, yell = "BREATHE ME IN!"}
+			},
+			pulse = {type = "earth", min = 1500, max = 2500, radius = 8, every = 6, effect = "greensmoke"},
+			gear = {29863, 29867, 29871, 29872, 29880, 29881}},
+		{name = "Nyxareth the Void Archon", element = "death",
+			intro = "Reality tears: Nyxareth the Void Archon steps out of the void!",
+			phases = {
+				{at = 0.70, adds = {name = "Phantasm", count = 4, health = 100000}, yell = "Echoes, consume them."},
+				{at = 0.40, enrage = true, yell = "THE VOID OPENS!"},
+				{at = 0.15, adds = {name = "Lost Soul", count = 4, health = 100000}, yell = "Your dead serve me now."}
+			},
+			pulse = {type = "death", min = 2500, max = 4000, radius = 7, every = 7, effect = "mortarea"},
+			gear = {29861, 29862, 29863, 29864, 29865, 29866, 29867, 29868}},
+		{name = "Vharok the Blood Colossus", element = "physical",
+			intro = "The earth trembles: Vharok the Blood Colossus awakens!",
+			phases = {
+				{at = 0.75, adds = {name = "Blood Beast", count = 4, health = 150000}, yell = "FEED ME!"},
+				{at = 0.45, enrage = true, yell = "BLOOD FOR THE COLOSSUS!"},
+				{at = 0.20, adds = {name = "Juggernaut", count = 3, health = 200000}, yell = "CRUSH THEM!"}
+			},
+			-- every player hit by the pulse heals Vharok by healPerHit
+			pulse = {type = "physical", min = 2500, max = 4500, radius = 6, every = 7, effect = "groundshaker", healPerHit = 50000},
+			gear = {29878, 29879, 29880, 29886, 29887, 29888, 29889, 29869}}
+	}
+}
+
 -- Boosted creature / boss of the day (clientservices.lua). The reference server already picks both at
 -- startup (global storages + boostedMonsterList / boostedBossesList); these lists are only the fallback
 -- when that pick is missing or names a monster that does not exist.

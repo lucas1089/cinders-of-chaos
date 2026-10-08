@@ -3,7 +3,8 @@
  - XML files parse (fragments such as spells_chaos.xml are checked wrapped in a root element)
  - spells: unique spellid, words and name; every script file exists under data/spells/chaos
  - items: unique ids in chaos_items.xml
- - monsters: unique names; a lookType above MAX_OUTFIT must be listed in needs_sprites.txt
+ - monsters (monsters/chaos and its subfolders, e.g. world_bosses/): unique names; a lookType above MAX_OUTFIT must be
+   listed in needs_sprites.txt
 Usage: python3 tools/ci/check_content.py"""
 import glob, os, re, subprocess, sys
 import xml.dom.minidom as minidom
@@ -62,7 +63,7 @@ np_ = 'server/data/monster/needs_sprites.txt'
 if os.path.exists(np_):
     needs = {l.split('\t')[0].lower() for l in open(np_, encoding='utf-8') if l.strip()}
 names = {}
-for f in sorted(glob.glob('server/data/monster/monsters/chaos/*.xml')):
+for f in sorted(glob.glob('server/data/monster/monsters/chaos/**/*.xml', recursive=True)):
     t = open(f, encoding='utf-8', errors='ignore').read()
     m = re.search(r'<monster\s+name="([^"]+)"', t)
     if not m:
