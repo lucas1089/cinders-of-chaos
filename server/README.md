@@ -66,6 +66,8 @@ server/
     nameplate.lua  nameplate_core.lua  titles.lua (name plates over players, title registry, !title; sql/chaos_nameplate.sql)
     guild.lua  guild_hall.lua  guild_core.lua  guild_config.lua (guild levels, perks, guild bank, guild halls; sql/chaos_guild.sql)
     achievements.lua  achievements_core.lua  achievements_data.lua (achievements, points, titles, rewards; sql/chaos_achievements.sql)
+    pets.lua  pets_core.lua  pets_config.lua (pets: companions that level from kills, small abilities; sql/chaos_pets.sql)
+  data/monster/monsters/chaos/pets/   the pet monster types (not attackable, no attacks)
 ```
 
 ## Install
@@ -180,6 +182,7 @@ working directory, as with the rest of the base server libs).
 | game_nameplate | `nameplate.lua`, `nameplate_core.lua`, `titles.lua` | 248, `!title` | Name plates over players: active title, `{guild}` and the name on a frame (client base patch 0022); title registry `ChaosTitles.register`; tested in game (see "Name plates and titles"). |
 | game_guild | `guild.lua`, `guild_hall.lua`, `guild_core.lua`, `guild_config.lua` | 252, `!guild` | Guild levels (guild XP from the members, perks), guild bank, guild halls (runtime instance, upgrades, rent, depot), weekly top guilds; tested in game with two members (see "Guild levels and guild halls"). |
 | game_achievements | `achievements.lua`, `achievements_core.lua`, `achievements_data.lua` | 250, `!achievements` | Achievements: 93 in 9 categories with points, titles and rewards, progress fed by the other systems, retroactive at login; tested in game (see "Achievements"). |
+| game_pets | `pets.lua`, `pets_core.lua`, `pets_config.lua` | 254, `!pet` / `/pet` | Pets: one companion out at a time that follows its owner, levels from kills, two small abilities per species; drops, store and achievements; tested in game (see "Pets"). |
 | game_invasion | `invasion.lua`, `invasion_core.lua`, `invasion_config.lua`, `worldevents.lua` | 251 (server -> client; `query` / `calendar` back), `!invasion`, `/invasion` | Invasions (waves at a town or hunting ground, breach meter, boss, contribution rewards, Defender board, Victory buff, occupation) and the world events Chaos Storm, Wandering Merchant and Golden Hour; HUD and upcoming events window; toasts with action `invasion` on 79; tested in game on a test area (see "Invasions and world events"). |
 
 Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 228, 229, 232, 233, 236, 241, 244, 246, 247, 248, 250, 251, 252 are all registered in the global
@@ -2633,3 +2636,98 @@ registry with mocked leaderboard / siege / season / login-streak tables) and `ga
 line disappearing live after leaving the guild, `!title` list / switch (Bossbane, Siege Champions with the crimson frame)
 / none / auto, the choice kept after a relog, monsters unchanged. Not checked: 30 players on screen (the drawing cost is a
 few quads per player), war colours (no guild war on the test server).
+
+## Pets (`pets.lua`, `pets_core.lua`, `pets_config.lua`, `sql/chaos_pets.sql`, client `game_pets`)
+
+A pet is a small companion that cannot fight and cannot be fought. One is out at a time; it follows its owner, levels from
+the owner's kills and has two small abilities (the first from pet level 1, the second from level 20). Client `game_pets`
+(Chaos -> Pets in the top menu, or `!pet`), extended opcode 254 (`ChaosOpcodes.pets`), table `chaos_pets` (one row per
+character and species: name, total XP, out or not, source; `sql/chaos_pets.sql`, also created at startup). Every number
+is in `pets_config.lua`; the pure rules in `pets_core.lua`.
+
+- **The creature.** The pet is a monster type of `data/monster/monsters/chaos/pets/` (registered by the installer's
+  monsters step), created next to the owner and made the owner's summon, so the engine makes it follow. The types are not
+  attackable, have no attacks, no loot, 40 health (below the monster tiers' minimum, and `pets.lua` puts them in
+  `ChaosTierConfig.skip`), every immunity and speed 600; they are pushable, so players and monsters that push can move
+  them. A renamed pet carries its name (`Monster:rename`); its look text says whose pet it is.
+- **Following.** Every 500 ms (`thinkMs`): a pet farther than 6 squares from its owner or on another floor is put next to
+  it; a pet the engine removed (a long teleport) comes back next to its owner. The pet **rests** (removed with a puff,
+  back by itself when the reason ends) while the owner stands in a protection zone, in a banned zone, or has another
+  summon that is not a class companion. **Anti-block:** a monster that targets the owner, stands next to the pet, is not
+  next to the owner and cannot push creatures for 1.5 s in a row makes the pet step out of the way for 6 s.
+- **Coexistence with class summons.** Beastmaster companions (`Chaos.classes.companion.monsters`) and Necromancer
+  minions (`ChaosNecroConfig.minions`) count only their own monster types, so a pet never lowers their caps, and the
+  pet stays out next to them. Any other summon (the stock summon spells and Convince Creature, Moonfang Pack, the base
+  server's own familiars) makes the pet rest while it is out, so the stock limit of two summons and Moonfang's cap of
+  four are never reduced by a pet. The base server's familiar command refuses while any summon is out, so a player
+  dismisses the pet before calling a familiar.
+- **Levels.** 1 to 50; XP from level L to L+1 = floor(8 x L^1.4): 8 at level 1, 200 at 10, 724 at 25, 1,859 at 49;
+  736 in all to level 10, 7,180 to 25, 38,871 to 50. A kill of the owner while the pet is out (monster with experience,
+  not a summon) gives 1 XP, plus 1 / 3 / 7 / 10 for a magic / rare / legendary / boss monster. A normal monster only
+  counts when its experience is at least 2 x the owner's level (no farming of trivial monsters): a Dragon (700) counts up
+  to level 350, a Dragon Lord (2,100) up to 1,050. At about 700 counted kills an hour, level 20 (4,149 XP) takes about 6 hours, level 50
+  about 45 hours of hunting.
+- **Abilities** (value at pet level 1 -> 50; L = pet level):
+
+  | Ability | Kind | Value | Rule |
+  |---|---|---|---|
+  | Mend | combat | 4% -> 7.9% of max health (+0.08 per level) | below 50% health; every 30 s at most |
+  | Ward | combat | 6% -> 11.9% less damage from monsters (+0.12 per level) | below 60% health, for 6 s; every 45 s at most |
+  | Spark Aura | combat | owner level x 0.25 + L x 4, +/-20% (owner 300 / pet 50: about 275; owner 1000: about 450) | every 2 s, up to 3 monsters next to the pet that target the owner or are its target; dealt as the owner in the pet's element (resistances apply) |
+  | Gold Sniffer | utility | +2% -> +6.9% gold coins in the corpse (+0.1 per level) | corpses the owner owns (onDropLoot index 2) |
+  | Treasure Sense | utility | +1% -> +5.9% item find (+0.1 per level) | added to the item find of the Chaos loot layer (`loot.lua` `L.itemFindMult`) |
+  | Fetch | utility | 3 -> 5 squares (+0.05 per level) | coins of a corpse within range of the pet go to the bank (index 2.45, after the hunt tracker's read) |
+
+  Combat abilities pause in PvP combat (`ChaosHealing.inPvp`) and in "utility" zones; the aura never hits players or
+  summons.
+- **Zones** (`zones`): banned (the pet waits until the owner leaves, cannot be called there): ranked arena, guild siege,
+  PvP-zone tiles. Utility only (no Mend, Ward or Aura): rifts, the world boss arena and lobby, Infinity Tower runs,
+  dungeons (their own rankings). Seasons: a season character keeps its own pets; achievement pets come only from
+  achievements the season character earned itself (store pets are per character anyway).
+- **Species** (looks are existing outfits of our dat):
+
+  | Species | Look | Abilities | How |
+  |---|---|---|---|
+  | Ember Whelp | 272 (red hatchling) | Spark Aura (fire), Ward | 1 in 2,500 kills of dragons, dragon lords and their hatchlings |
+  | Frost Whelp | 283 (frost hatchling) | Ward, Spark Aura (ice) | 1 in 2,500 kills of frost dragons, frost dragon hatchlings, ice dragons |
+  | Duskwing | 122 (bat) | Fetch, Gold Sniffer | 1 in 20,000 counted kills of any monster (x2 / x4 / x8 / x10 magic / rare / legendary / boss) |
+  | Lantern Wisp | 294 (wisp) | Mend, Ward | Store, Pets: 400 Chaos Coins |
+  | Hoarder Squirrel | 274 (squirrel) | Gold Sniffer, Treasure Sense | Store, Pets: 400 Chaos Coins |
+  | Ash Cat | 276 (cat) | Fetch, Mend | Achievement Hired Blade (`bounty_25`) |
+  | Gilded Goblin | 61 (goblin) | Gold Sniffer, Fetch | Achievement Greed Is Good (`goblin_10`) |
+  | Riftling | 232 (lost soul) | Treasure Sense, Spark Aura (death) | Achievement Deeper Wounds (`rift_t5`) |
+
+  A drop goes straight to the character (message, fireworks, console line). A second copy of an owned species gives that
+  pet 400 XP. Achievement pets are account-wide like achievements: checked at login, when the window opens and every
+  60 s. Store offers are `kind = "unlock"` with the keys of `pets_config.lua` `store`; `shop_services.lua` asks
+  `ChaosPets.storeUnlock`, and an owned pet cannot be bought again (no coins taken).
+- **Rules.** 5 s between summon / dismiss / switching, 30 s between renames (2-16 letters and single spaces, capitalised;
+  never the name of a monster type, so a pet cannot pass for a class companion or a boss). The owner's death: the pet
+  flees (dismissed) and cannot be called for 60 s (kept over a relog). Logout: XP and name are saved, the pet that was out
+  comes back 2 s after the next login. XP is saved on level up, dismiss, logout, death, every 60 s and at shutdown.
+- **Commands.** `!pet` (window), `!pet summon <name or species>`, `!pet dismiss`, `!pet rename <name>` (the pet that is
+  out), `!pet list`. Staff (`/pet`, access groups): `give <species>[, character]`, `xp <n>`, `level <n>`, `reset`, `species`.
+- **Protocol** (JSON `{action, data}`): client -> server `open | get | close | summon {species} | dismiss | rename {species,
+  name}`; server -> client `state` (owned pets with level, XP, abilities and their unlock state, the catalogue with how to
+  get each species, the active pet, out / resting text, zone rule, cooldowns) and `xp` (after a kill while the window is
+  open).
+- **Shared-file lines.** `chaos_constants.lua` (`pets = 254`), `loot.lua` (one line in `L.itemFindMult`),
+  `shop_services.lua` (`unlockEntry` asks `ChaosPets.storeUnlock`), `shop.lua` (an unlock offer with `look` shows that
+  outfit), `shop_config.lua` (category "Pets").
+- **Tests:** `tests/pets_test.lua` (config sanity, the curve numbers above, kill XP, ability values and unlocks, zone rules,
+  drops with a seeded run, names, cooldowns, gold, anti-block, rest reasons, the window view) and
+  `game_pets/petsview_test.lua` (list, texts, buttons).
+- **Tested in game** (test server with the scripts of this repo, one client): staff give; summon from the window (the pet
+  follows); rename (`!pet rename`) shown over the pet; kill XP (Dragon Lords and Heroes count at level 500, Dragons do
+  not) with the window's XP bar updating live; Spark Aura hitting Heroes next to the pet (about 100-115 each 2 s at owner
+  500 / pet 1; Dragon Lords take nothing from the fire aura, they are immune); Mend (+475 at pet level 21, 8,496 max
+  health) and Ward (a fixed 1,000 hit: 860 without, 787 with ward 8.4%); forced drops (a new Frost Whelp from a Frost
+  Dragon, a Duskwing from a Hero, a duplicate Ember Whelp -> +400 XP); Fetch (coins to the bank with a message) and Gold
+  Sniffer (with the value raised to 102% for the test: 40 coins in the corpse -> 81 fetched); rest while a non-class
+  summon is out and back after it; banned zone (arena check forced on): pet sent home and "Pets are not allowed here (the
+  arena)"; leash after a teleport; owner death: pet gone, "still recovering from your death: 34 s" after the respawn;
+  store purchase (400 coins taken, pet owned, second purchase refused); achievement pet (Ash Cat after `bounty_25`);
+  logout and server restart: name, XP and the pet that was out come back. **Not tested in game:** the protection-zone
+  rest (the test map has no protection-zone tile; same code path as the other rests), the anti-block step-aside, PvP
+  pause, the rift / tower / world boss / dungeon utility rule, two players. The stock loot message ("Loot of ...") is
+  written before Fetch runs, so it still lists the coins the pet carried to the bank.

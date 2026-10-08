@@ -789,6 +789,7 @@ SHOTS = {
     "pvp": [("arena_window.png", (359, 128, 924, 585)), ("hud_hold.png", (514, 128, 766, 272))],
     "leaderboards": [("lb_worldboss_titles.png", (338, 126, 942, 462)), ("nameplate/09_zoom.png", (62, 0, 468, 150))],
     "achievements": [("achievements/07_window_rifts.png", (278, 118, 1007, 687))],
+    "pets": [("pets/16_window_final.png", (352, 140, 1018, 622)), ("pets/03_spark_aura_on_heroes.png", (560, 180, 920, 400))],
     "qol": [("hunt/tab_loot.png", (419, 118, 866, 677)), ("daily/day7_milestone.png", (359, 153, 921, 637))],
 }
 
@@ -871,6 +872,9 @@ SHOT_CARDS = {
     "achievements": ("feature_achievements.png", "Achievements",
                      "Over 90 deeds to record, from the first rift sealed to the secrets nobody talks about.",
                      (1.0,), hexc("#1a2a3a")),
+    "pets": ("feature_pets.png", "Pets",
+             "A companion at your side that levels with your kills: it mends, wards, burns and fetches gold.",
+             (1.0, 1.0), hexc("#2a1a10")),
     "qol": ("feature_qol.png", "Quality of Life",
             "A hunt tracker counted by the server, daily rewards and streaks, and patch notes in the client.",
             (1.0, 1.0), hexc("#1a2a1a")),
@@ -1040,6 +1044,7 @@ TASKS = {
     "pvp": lambda sd: card_from_shots(sd, "pvp"),
     "leaderboards": lambda sd: card_from_shots(sd, "leaderboards"),
     "achievements": lambda sd: card_from_shots(sd, "achievements"),
+    "pets": lambda sd: card_from_shots(sd, "pets"),
     "qol": lambda sd: card_from_shots(sd, "qol"),
 }
 

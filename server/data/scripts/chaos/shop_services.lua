@@ -327,6 +327,9 @@ local function unlockEntry(name)
 	if not u and ChaosClassUnlocks and ChaosClassUnlocks.storeUnlock then
 		u = ChaosClassUnlocks.storeUnlock(name)
 	end
+	if not u and ChaosPets and ChaosPets.storeUnlock then
+		u = ChaosPets.storeUnlock(name) -- a pet (pets.lua), per character
+	end
 	return u
 end
 

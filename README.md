@@ -288,6 +288,32 @@ Over 90 achievements (`!achievements`, or Chaos -> Achievements) give you goals 
   you log in.
 - The window shows your progress on each one, and a toast pops up the moment you unlock one.
 
+## Pets
+
+> *"It will not fight for you. It will not die for you. It will, however, steal from the dead on your behalf."*
+> (a pet trader in the lower city)
+
+![The pets window](docs/images/feature_pets.png)
+
+A pet is a small companion that walks at your side (`!pet`, or Chaos -> Pets). It cannot fight and cannot be hurt, and
+only one is out at a time.
+- **Getting one:** whelps drop very rarely from dragons and frost dragons, the Duskwing from any monster worth your time
+  (more often from magic, rare and legendary ones), the Lantern Wisp and the Hoarder Squirrel are in the store (Pets),
+  and the Ash Cat, the Gilded Goblin and the Riftling come with achievements. Finding a pet you already have gives yours
+  experience instead.
+- **Levels:** your pet levels with your kills, up to level 50. Monsters far below your level do not count; magic, rare,
+  legendary monsters and bosses count more.
+- **Abilities:** every species has two small ones, the second from level 20: **Mend** (heals you when you drop below half
+  health), **Ward** (less damage from monsters for a few seconds when you are hurt), **Spark Aura** (hits the monsters
+  next to it that are after you), **Gold Sniffer** (more gold in your kills), **Treasure Sense** (more item find) and
+  **Fetch** (carries the gold of your kills straight to your bank).
+- **Names:** give it a name in the window or with `!pet rename <name>`.
+- **Where:** pets wait outside protection zones and stay home from the arena, the siege and PvP zones. In rifts, the
+  Infinity Tower, dungeons and the world boss arena only the gold, item find and fetch abilities work. While you have
+  other summons out your pet stays back; class companions (wolves, minions) do not mind it.
+- If you die, your pet runs off and needs a minute before you can call it again. Log out with it at your side and it is
+  back when you return.
+
 ## Quality of life
 
 > *"Count your kills, count your coin, and come back tomorrow. The Chaos is patient. So are its rewards."*

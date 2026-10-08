@@ -1,0 +1,237 @@
+// Pets window (game_pets). Styles from client_chaos_theme (styles.otui).
+
+PetRow < ChaosPanelDark
+  height: 46
+  margin-bottom: 3
+  phantom: false
+  focusable: true
+
+  $focus:
+    background-color: #3a2410
+
+  UICreature
+    id: creature
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    size: 40 40
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: creature.right
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin-left: 4
+    margin-top: 6
+    text-align: left
+    font: verdana-11px-rounded
+    color: #f6cf72
+    phantom: true
+
+  UILabel
+    id: sub
+    anchors.left: name.left
+    anchors.right: parent.right
+    anchors.top: name.bottom
+    margin-top: 3
+    text-align: left
+    font: verdana-11px-antialised
+    color: #a89c86
+    phantom: true
+
+PetAbility < UIWidget
+  height: 46
+  margin-bottom: 4
+
+  UILabel
+    id: title
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: parent.top
+    text-align: left
+    font: verdana-11px-rounded
+    color: #e8b84a
+
+  UILabel
+    id: text
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: title.bottom
+    margin-top: 2
+    text-align: left
+    text-wrap: true
+    height: 28
+    font: verdana-11px-antialised
+    color: #d6c9ae
+
+ChaosMainWindow
+  id: petsWindow
+  size: 660 470
+  !text: tr('Pets')
+  @onEscape: modules.game_pets.hide()
+
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.bottom: statusLabel.top
+    margin-bottom: 8
+    width: 220
+    padding: 3
+
+  UIScrollArea
+    id: petList
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: listScroll.left
+    anchors.bottom: listFrame.bottom
+    margin: 4
+    layout:
+      type: verticalBox
+    vertical-scrollbar: listScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: listScroll
+    anchors.top: listFrame.top
+    anchors.right: listFrame.right
+    anchors.bottom: listFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 49
+    pixels-scroll: true
+
+  ChaosPanelDark
+    id: detail
+    anchors.top: parent.top
+    anchors.left: listFrame.right
+    anchors.right: parent.right
+    anchors.bottom: statusLabel.top
+    margin-left: 8
+    margin-bottom: 8
+    padding: 8
+
+    UICreature
+      id: creature
+      anchors.left: parent.left
+      anchors.top: parent.top
+      size: 72 72
+
+    ChaosTitle
+      id: nameLabel
+      anchors.left: creature.right
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin-left: 8
+      margin-top: 4
+      text-align: left
+
+    ChaosLabelDim
+      id: speciesLabel
+      anchors.left: nameLabel.left
+      anchors.right: parent.right
+      anchors.top: nameLabel.bottom
+      text-align: left
+
+    ChaosProgressBar
+      id: xpBar
+      anchors.left: nameLabel.left
+      anchors.right: parent.right
+      anchors.top: speciesLabel.bottom
+      margin-top: 6
+      background-color: #8a6a1c
+
+    ChaosLabel
+      id: abilitiesTitle
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: creature.bottom
+      margin-top: 8
+      text-align: left
+      color: #f6cf72
+      font: verdana-11px-rounded
+      !text: tr('Abilities')
+
+    UIWidget
+      id: abilities
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: abilitiesTitle.bottom
+      margin-top: 4
+      height: 100
+      layout:
+        type: verticalBox
+
+    ChaosLabel
+      id: howLabel
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: abilities.bottom
+      margin-top: 4
+      height: 30
+      text-align: topLeft
+      text-wrap: true
+      color: #5cc8c0
+
+    ChaosTextEdit
+      id: nameEdit
+      anchors.left: parent.left
+      anchors.right: renameButton.left
+      anchors.verticalCenter: renameButton.verticalCenter
+      margin-right: 6
+      max-length: 16
+
+    ChaosButton
+      id: renameButton
+      anchors.right: parent.right
+      anchors.bottom: summonButton.top
+      margin-bottom: 8
+      width: 90
+      !text: tr('Rename')
+      @onClick: modules.game_pets.renameSelected()
+
+    ChaosButton
+      id: summonButton
+      anchors.left: parent.left
+      anchors.bottom: parent.bottom
+      width: 120
+      !text: tr('Summon')
+      @onClick: modules.game_pets.summonSelected()
+
+    ChaosButton
+      id: dismissButton
+      anchors.left: summonButton.right
+      anchors.bottom: parent.bottom
+      margin-left: 8
+      width: 120
+      !text: tr('Dismiss')
+      @onClick: modules.game_pets.dismiss()
+
+  ChaosLabel
+    id: statusLabel
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    anchors.bottom: hintLabel.top
+    margin-right: 8
+    margin-bottom: 2
+    height: 16
+    text-align: left
+    color: #5cc8c0
+
+  ChaosLabelDim
+    id: hintLabel
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    height: 16
+    text-align: left
+    !text: tr('One pet out at a time; it levels from your kills. Chat: !pet')
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    !text: tr('Close')
+    @onClick: modules.game_pets.hide()

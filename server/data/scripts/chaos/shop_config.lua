@@ -13,6 +13,7 @@
 --       vocationToken | blessings | skullRemover | sexChange | passiveReset
 --   {kind = "unlock", unlock = "lootPouch" | "autoSeller" | "rarityAutoloot", icon = <item id>}   permanent, per character
 --   {kind = "unlock", unlock = "unlockNecromancer" | "unlockMonk" | "unlockTemplar", ...}  a class, per account (class_unlocks.lua)
+--   {kind = "unlock", unlock = "<pets_config.lua store key>", look = <looktype>, ...}  a pet, per character (pets.lua)
 --   Services and unlocks need name and description; the icon is only a picture (iconCount for a coin pile).
 -- Names, descriptions and the category icon are what the client shows. Cosmetics without a name take
 -- the one from their XML file.
@@ -124,6 +125,17 @@ return {
 			}
 		},
 		{
+		{
+			-- pets (pets.lua): per character; the unlock keys are pets_config.lua `store` (look = the pet's outfit, shown
+			-- instead of an item icon)
+			name = "Pets", icon = {outfit = {type = 294, rotating = true}},
+			offers = {
+				{kind = "unlock", unlock = "petLanternWisp", look = 294, icon = 2050, cost = 400, name = "Lantern Wisp",
+					description = "A pet that mends you below half health and later wards you. Call it with !pet."},
+				{kind = "unlock", unlock = "petHoarderSquirrel", look = 274, icon = 2148, cost = 400, name = "Hoarder Squirrel",
+					description = "A pet that finds more gold in your kills and later more items. Call it with !pet."}
+			}
+		},
 			-- class unlocks (class_unlocks.lua): account-wide; offer names and prices must match
 			-- ChaosClassUnlocksCore.config (class_unlocks_core.lua). PLACEHOLDER PRICES (750 each), to be decided.
 			name = "Classes", icon = {item = 2523},

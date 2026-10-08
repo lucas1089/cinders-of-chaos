@@ -98,6 +98,9 @@ local function clientOffer(offer)
 		view.type, view.outfit = "outfit", {type = offer.clientid, rotating = true}
 	elseif offer.kind == "premium" then
 		view.type, view.item, view.count = "item", ItemType(16101):getClientId(), 1
+	elseif offer.kind == "unlock" and offer.look then
+		-- a pet (pets.lua): its outfit
+		view.type, view.outfit = "outfit", {type = offer.look, rotating = true}
 	elseif offer.kind == "service" or offer.kind == "unlock" then
 		-- shop_services.lua: the icon is any item picture
 		view.type, view.item, view.count = "item", ItemType(offer.icon or 1949):getClientId(), offer.iconCount or 1

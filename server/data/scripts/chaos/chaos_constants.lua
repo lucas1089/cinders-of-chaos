@@ -50,6 +50,8 @@ ChaosOpcodes = {
 	achievements = 250, -- achievements window and unlocks (client game_achievements, !achievements; achievements*.lua)
 	invasion = 251, -- invasion HUD and upcoming events window, server -> client (client game_invasion, !invasion; invasion*.lua, worldevents.lua)
 	guild = 252, -- Guild window: level, perks, members, guild bank, guild hall, depot, top guilds (client game_guild, !guild; guild*.lua)
+	bestiary = 253, -- bestiary, kill tasks and the task tracker HUD (client game_bestiary, !bestiary, !tasks; bestiary*.lua)
+	pets = 254, -- pets window: owned pets, summon / dismiss / rename, levels and abilities (client game_pets, !pet; pets*.lua)
 	spellbook = 219 -- spell list window (client game_spellbook, !spells)
 }
 

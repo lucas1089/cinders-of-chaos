@@ -107,6 +107,8 @@ function L.itemFindMult(player)
 	v = math.max(0, ok and tonumber(v) or 0)
 	-- the Item Find modifier of the equipped items (item_mods.lua)
 	v = v + (ChaosItemMods and ChaosItemMods.playerBonus and ChaosItemMods.playerBonus(player, "itemfind") or 0)
+	-- the pet's Treasure Sense (pets.lua)
+	v = v + (ChaosPets and ChaosPets.itemFind and ChaosPets.itemFind(player) or 0)
 	if v <= 0 then
 		return 1
 	end

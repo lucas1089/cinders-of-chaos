@@ -186,6 +186,7 @@ local CATEGORIES = {
     { text = 'Season',             icon = 'events',      modules = { 'game_season' },    fns = { 'toggle' } },
     { text = 'Notifications',      icon = 'notifications', modules = { 'game_chaosnotify' }, fns = { 'toggle', 'showAll' } },
     { text = 'Patch Notes',        icon = 'events',      modules = { 'game_patchnotes' }, fns = { 'toggle' } },
+    { text = 'Pets',               icon = 'vip',         modules = { 'game_pets' },      fns = { 'toggle' } },
   } },
   { id = 'economy', text = 'Economy', icon = 'market', entries = {
     { text = 'Store',              icon = 'market',      modules = { 'game_shop' }, fns = { 'toggle' } },
