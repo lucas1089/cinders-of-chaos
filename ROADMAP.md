@@ -8,7 +8,7 @@ Status: `todo`, `in progress`, `done`.
 | # | Item | Status | Notes |
 |---|---|---|---|
 | 1 | Store additions: stamina refill, temple teleport, bottomless loot pouch, auto seller, training weapons, world buffs, name change, vocation change, extras (double exp potion, blessings, frag/skull removal, sex change, respec) | done | `server/data/scripts/chaos/shop*.lua` |
-| 2 | Passive tree keystones per vocation (knight Cleaving Arc, paladin Ricochet, sorcerer Arcane Echo, druid Overgrowth, illusionist Mirror Strike, ...) | in progress | measured on the test dummies so the role order holds |
+| 2 | Passive tree keystones per vocation (knight Cleaving Arc, paladin Ricochet, sorcerer Arcane Echo, druid Overgrowth, illusionist support) | done | measured on the test dummies so the role order holds |
 | 3 | Combat visuals: elemental weapon damage as its own coloured number + element sprite; crit, dodge and reflect sprites | done | server module `ChaosCombatFx` |
 
 ## Next: fix the late game (players hit a wall after level ~500)
@@ -70,6 +70,11 @@ Estimated today: ~155 h to level 1000 for a sorcerer, ~285 h for a knight or pal
 
 ## Open decisions and loose ends
 
+- Re-measure the weapon (auto-attack) numbers in `server/data/spells/README.md`: the balance harness sets the
+  target with `setTarget`, which skips `onTargetCombat`, so the passive tree and weapon-style damage events were
+  never put on the dummies in those runs (two-handed x1.6, dexterity, keystones). Spell numbers are not affected.
+- Keystones not verified in game yet: Overgrowth, both Illusionist keystones (need a party), arrow Ricochet, and
+  the visuals of Bulwark/Thorns/Deadeye (`ChaosCombatFx`).
 - Bug (existing): the rarity element script (`data/scripts/customs/rarity/rarity_onCombat_elementdamage.lua`,
   base server) returns nothing when a player wears two different rarity elements, which zeroes the damage.
 - Bug (existing): `/testkit` (`admin/testkit.lua`) calls `addHealth(n)`, which does nothing on this engine
