@@ -19,8 +19,8 @@ Estimated today: ~155 h to level 1000 for a sorcerer, ~285 h for a knight or pal
 |---|---|---|---|
 | 4 | Spawn the level-scaled Chaos monsters on the map that is actually loaded | todo | They are registered in monsters.xml but only spawn in `newcity-spawn.xml`, which belongs to a map that is not loaded. `server/data/monster/CUSTOM_MONSTERS.md` wrongly says they spawn |
 | 5 | Smooth the experience stage curve after level 700 | todo | `config.lua` stages: x15 at 700 drops to x3 from 851 |
-| 6 | Fix the waystone "Experience" character upgrade | todo | `customs/waystone_system/character_upgrades.lua` writes storage 405788 and nothing reads it |
-| 7 | Monster level bonus roll bug | todo | `src/monster.cpp:52` `randomChance > 1 \|\| randomChance < 20` is always true |
+| 6 | Fix the waystone "Experience" character upgrade (and its siblings Loot and Rarity) | done | all three only wrote a storage nothing read; now applied (`waystone_bonuses.lua`, `tools/patch_base_events.py`) |
+| 7 | Monster level bonus roll bug | done (kept as is) | `src/monster.cpp:52` uses `\|\|`, so only the first branch runs: a plain uniform roll between min and max level. The other branches would skew 80% of monsters to the top of their range and compute negative ranges for narrow level spans, so the current uniform behaviour is kept on purpose |
 
 ## Then: class rework (design agreed, see `docs/CLASSES.md`)
 

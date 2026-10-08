@@ -40,6 +40,12 @@ server/
    without it every Chaos experience bonus is silently ignored: Blood Moon, the passive tree's experience nodes,
    monster tier experience, and the store's world buffs. The patch adds the dispatch after the stage, stamina
    and potion multipliers (verified on the test server: +2% passive bonus -> exactly 1.02x the experience).
+   The same tool makes the base loot callback (`data/scripts/eventcallbacks/monster/default_onDropLoot.lua`) apply
+   the waystone character upgrades "Loot" (item drop chances x(1 + level/100)) and "Rarity" (+level % to roll a
+   rarity, +level/2 % per tier); `data/scripts/chaos/waystone_bonuses.lua` applies the "Experience" upgrade
+   (+1% per level, x2.0 at level 100). Before, all three only stored their level and nothing read it.
+   Verified on the test server: Experience 50 -> x1.5; Loot and Rarity 100 over 300 Dragon kills: items
+   985 -> 1279, items with a rarity 81 -> 212.
 5. Restart the server (or `/reload scripts`). Check the console for Lua errors.
 6. Autoloot only: if `data/talkactions/talkactions.xml` registers `!autoloot` (the legacy
    `talkactions/scripts/autoloot.lua`), TFS 1.4.2 keeps the XML one and silently ignores
