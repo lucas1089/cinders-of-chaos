@@ -120,19 +120,38 @@ the Chaos spells' words, and the client changes its own entries at runtime. Para
 | Druid | healer | Purifying Wellspring (party burst heal + cleanse), Verdant Sanctuary (party heal zone), stock Mass Healing / Heal Friend |
 | Illusionist | not decided yet | burst/control kit (Shattered Psyche, Umbral Stride, Hall of Mirrors, Wraithshroud, Tear in the Weave); numbers sit between the others |
 
-Measured on a test server (cast through the spell scripts against 5 stationary dummies; 3 casts per spell averaged), level 300 reference
-characters: mages magic level 100 with a level 250 wand/rod; knight sword 110 / shielding 100 with a magic longsword; paladin distance 110 /
-magic level 30 with a royal crossbow and infernal bolts. Rotation DPS = 60s, 2s attack group cooldown, always the strongest ready spell,
-plus the weapon's auto attack (measured: knight 165, paladin 185, wands/rods ~60 per second; it hits one target). Summons (Moonfang Pack)
-are not counted.
+Measured on a test server: every spell cast through its script against 5 stationary dummies, 2 casts per spell averaged, stats 20
+(stat window maximum). Rotation DPS = 60s, 2s attack group cooldown, always the strongest ready spell, plus the weapon's auto attack
+(measured over 30-90s; it hits one target, arrows also splash). Summons (Moonfang Pack) are not counted.
+
+Level 300: 73 passive points; mages magic level 100 with a level 250 wand/rod; knight sword 110 / shielding 100 with a magic longsword;
+paladin distance 110 / magic level 30 with a royal crossbow and infernal bolts.
 
 | Vocation | Spells, single target | Weapon | Total single target | Total 5 targets | Mana/min |
 |---|---|---|---|---|---|
-| Paladin | 503 | 185 | **688** | 864 | 7170 |
-| Sorcerer | 381 | 59 | 440 | **1415** | 9410 |
-| Illusionist | 324 | 63 | 387 | 733 | 8020 |
-| Knight | 205 | 165 | 370 | 857 | 4090 |
-| Druid | 158 | 63 | 221 | 853 | 4370 |
+| Paladin | 666 | 409 | **1074** | 1322 | 6320 |
+| Illusionist | 731 | 124 | 855 | 1761 | 7820 |
+| Sorcerer | 747 | 107 | 854 | **2815** | 9410 |
+| Knight | 208 | 431 | 639 | 1157 | 4090 |
+| Druid | 372 | 98 | 471 | 1963 | 4240 |
+
+Level 1000: 248 passive points, the best level 1000 equipment of the server; mages magic level 140; knight sword 140 / shielding 130;
+paladin distance 140 / magic level 40.
+
+| Build | Spells, single target | Weapon | Total single target | Total 5 targets | Mana/min |
+|---|---|---|---|---|---|
+| Paladin, crossbow + bolts | 1404 | 1366 | **2770** | 3648 | 6320 |
+| Sorcerer | 1758 | 372 | 2130 | **6427** | 9410 |
+| Paladin, bow + arrows | 1231 | ~845 (+ splash) | ~2080 | ~4520 | 6320 |
+| Knight, two-handed | 674 | 1283 | 1957 | 3664 | 3940 |
+| Illusionist | 1364 | 400 | 1764 | 3257 | 8020 |
+| Knight, one-handed + shield | 660 | 1090 | 1750 | 3166 | 4100 |
+| Druid | 859 | 383 | 1242 | 4687 | 4240 |
+
+Level 1000 tuning (from the first level 1000 run): knight spells x0.7, sorcerer spells x1.2, druid attack spells x0.85, illusionist
+spells x1.4 (the `scale` argument of `ChaosSpell.mlValues` or a factor on the formula), and the passive tree's dexterity cap 40 -> 20
+(weapon hits x1.25 instead of x1.67; at 40 knights out-damaged every other class). The bow's single-target weapon number is estimated:
+its arrows splash half of each hit on the 4 other dummies, and the test cannot separate the two.
 
 Weapons count twice for knights and paladins: the auto attack, and the spells (knight spells use the engine's skill x weapon attack callback;
 paladin spells use distance skill x bow/crossbow + ammunition attack, `ChaosSpell.distanceAttack`). With a weak crossbow (attack 30 instead
