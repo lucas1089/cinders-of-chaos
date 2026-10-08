@@ -12,6 +12,13 @@ What you need:
 - a Linux machine (the test server runs Ubuntu 24.04), MariaDB 10.x, Python 3.7+ and the `mysql` client;
 - a checkout of this repository, for example in `/opt/chaos/repo`.
 
+To play it on one Windows PC first, without any of this: run the **Windows package** workflow (Actions -> Windows
+package -> Run workflow) and download the `ProjectChaos-Windows` artifact from the run. It holds the patched engine
+(`ChaosServer.exe`), the Chaos client, the merged dat/spr, a portable MariaDB and `start-server.bat` /
+`start-client.bat` (`tools/windows/package/README.txt`). Its inputs live on the private branch `windows-assets`
+(its README.md); `tools/windows/prepare_server.sh` turns the base server into the package's server folder. It has
+test accounts with known passwords: local play only.
+
 ## 1. Engine
 
 1. Build the engine from the base sources with our patches applied, in the source root:
