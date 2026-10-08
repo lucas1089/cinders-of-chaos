@@ -1,0 +1,256 @@
+// Crafting bench window (game_crafting). Styles from client_chaos_theme (styles.otui).
+
+CraftOrbRow < ChaosPanelDark
+  height: 44
+  margin-bottom: 3
+  phantom: false
+
+  UIItem
+    id: icon
+    size: 34 34
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    virtual: true
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: icon.right
+    anchors.right: use.left
+    anchors.top: parent.top
+    margin-left: 8
+    margin-right: 6
+    margin-top: 1
+    text-align: left
+    font: verdana-11px-rounded
+    color: #e8b84a
+    phantom: true
+
+  UILabel
+    id: count
+    anchors.left: icon.right
+    anchors.right: use.left
+    anchors.bottom: parent.bottom
+    margin-left: 8
+    margin-right: 6
+    margin-bottom: 1
+    text-align: left
+    font: verdana-11px-antialised
+    color: #8c8070
+    phantom: true
+
+  ChaosButton
+    id: use
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    width: 64
+    !text: tr('Use')
+
+CraftGearSlot < ChaosItemSlot
+  size: 36 36
+  virtual: true
+
+CraftModLabel < UILabel
+  height: 16
+  text-align: left
+  font: verdana-11px-antialised
+  color: #7fa8ff
+  phantom: true
+
+CraftHistoryLabel < UILabel
+  height: 14
+  text-align: left
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-auto-resize: false
+  phantom: false
+
+ChaosMainWindow
+  id: craftingWindow
+  size: 700 560
+  !text: tr('Crafting Bench')
+  @onEscape: modules.game_crafting.hide()
+
+  // ------------------------------------------------------------ the item on the bench
+  ChaosPanelDark
+    id: itemPanel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    width: 320
+    height: 236
+
+  ChaosItemSlot
+    id: itemSlot
+    size: 52 52
+    anchors.top: itemPanel.top
+    anchors.left: itemPanel.left
+    margin: 8
+    virtual: true
+    !tooltip: tr('Drag an item from your backpack here.')
+
+  UILabel
+    id: itemName
+    anchors.top: itemSlot.top
+    anchors.left: itemSlot.right
+    anchors.right: itemPanel.right
+    margin-left: 10
+    margin-right: 8
+    text-align: left
+    font: verdana-11px-rounded
+    color: #e8b84a
+    !text: tr('Empty bench')
+
+  ChaosLabel
+    id: itemRarity
+    anchors.top: itemName.bottom
+    anchors.left: itemName.left
+    anchors.right: itemName.right
+    margin-top: 4
+    text-align: left
+
+  ChaosLabelDim
+    id: itemSlots
+    anchors.top: itemRarity.bottom
+    anchors.left: itemName.left
+    anchors.right: itemName.right
+    margin-top: 3
+    text-align: left
+
+  ChaosSeparator
+    id: itemSep
+    anchors.top: itemSlot.bottom
+    anchors.left: itemPanel.left
+    anchors.right: itemPanel.right
+    margin: 6 8 0 8
+
+  UIWidget
+    id: modList
+    anchors.top: itemSep.bottom
+    anchors.left: itemPanel.left
+    anchors.right: itemPanel.right
+    anchors.bottom: itemPanel.bottom
+    margin: 4 12 6 12
+    phantom: true
+    layout:
+      type: verticalBox
+
+  ChaosLabelDim
+    id: emptyHint
+    anchors.top: itemSep.bottom
+    anchors.left: itemPanel.left
+    anchors.right: itemPanel.right
+    margin: 18 14 0 14
+    text-wrap: true
+    text-align: center
+    height: 60
+    !text: tr('Drag an item from your backpack onto the slot, or click one of your items below.')
+
+  // ------------------------------------------------------------ gear in the backpack
+  ChaosLabel
+    id: gearLabel
+    anchors.top: itemPanel.bottom
+    anchors.left: parent.left
+    margin-top: 8
+    text-auto-resize: true
+    !text: tr('Gear in your backpack')
+
+  ChaosPanelDark
+    id: gearFrame
+    anchors.top: gearLabel.bottom
+    anchors.left: parent.left
+    anchors.bottom: resultLabel.top
+    width: 320
+    margin-top: 4
+    margin-bottom: 8
+
+  UIScrollArea
+    id: gearList
+    anchors.top: gearFrame.top
+    anchors.left: gearFrame.left
+    anchors.right: gearScroll.left
+    anchors.bottom: gearFrame.bottom
+    margin: 5
+    vertical-scrollbar: gearScroll
+    auto-focus: none
+    layout:
+      type: grid
+      cell-size: 36 36
+      cell-spacing: 3
+      flow: true
+
+  ChaosScrollBar
+    id: gearScroll
+    anchors.top: gearFrame.top
+    anchors.right: gearFrame.right
+    anchors.bottom: gearFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 39
+    pixels-scroll: true
+
+  ChaosLabelDim
+    id: gearEmpty
+    anchors.centerIn: gearFrame
+    text-auto-resize: true
+    !text: tr('No gear in your backpack.')
+    visible: false
+
+  // ------------------------------------------------------------ orbs
+  ChaosLabel
+    id: orbLabel
+    anchors.top: parent.top
+    anchors.left: itemPanel.right
+    margin-left: 12
+    text-auto-resize: true
+    !text: tr('Orbs')
+
+  UIWidget
+    id: orbList
+    anchors.top: orbLabel.bottom
+    anchors.left: orbLabel.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 330
+    phantom: true
+    layout:
+      type: verticalBox
+
+  // ------------------------------------------------------------ history
+  ChaosLabel
+    id: historyTitle
+    anchors.top: orbList.bottom
+    anchors.left: orbLabel.left
+    margin-top: 6
+    text-auto-resize: true
+    !text: tr('Recent crafts')
+
+  ChaosPanelDark
+    id: historyPanel
+    anchors.top: historyTitle.bottom
+    anchors.left: orbLabel.left
+    anchors.right: parent.right
+    anchors.bottom: resultLabel.top
+    margin-top: 4
+    margin-bottom: 8
+    padding: 5
+    layout:
+      type: verticalBox
+
+  // ------------------------------------------------------------ bottom
+  ChaosLabel
+    id: resultLabel
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    margin-right: 8
+    text-align: left
+    text-wrap: true
+    height: 30
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    !text: tr('Close')
+    @onClick: modules.game_crafting.hide()

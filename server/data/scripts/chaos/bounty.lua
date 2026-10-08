@@ -209,6 +209,11 @@ local function giveWeekly(player, bandIndex)
 	if r.divine > 0 then
 		container:addItem(cfg.items.divine, r.divine)
 	end
+	local extra = {}
+	for _, e in ipairs(cfg.weeklyExtra or {}) do
+		container:addItem(e.id, e.count)
+		extra[#extra + 1] = string.format(", %d %s", e.count, e.name)
+	end
 	local inbox = false
 	if player:addItemEx(chest, false) ~= RETURNVALUE_NOERROR then
 		local box = player:getInbox()
@@ -218,8 +223,8 @@ local function giveWeekly(player, bandIndex)
 		end
 	end
 	player:setStorageValue(Chaos.storage.bountyWeekBonus, B.week(os.time(), cfg))
-	local text = string.format("Weekly bounty bonus: a %s with %d Chaos Orbs and %d Divine Orbs.%s",
-		cfg.weeklyChestName or "chest", r.chaos, r.divine, inbox and " It is in your inbox." or "")
+	local text = string.format("Weekly bounty bonus: a %s with %d Chaos Orbs and %d Divine Orbs%s.%s",
+		cfg.weeklyChestName or "chest", r.chaos, r.divine, table.concat(extra), inbox and " It is in your inbox." or "")
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
 	notify(player, text)
 end

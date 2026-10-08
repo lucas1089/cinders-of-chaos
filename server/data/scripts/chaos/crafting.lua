@@ -1,0 +1,377 @@
+-- Crafting bench (client game_crafting, extended opcode ChaosOpcodes.crafting, !craft) and the use-with action of the
+-- crafting orbs. The orb rules live in data/lib/chaos_crafting.lua (ChaosCrafting); see server/README.md "Crafting".
+--
+-- The bench works on items inside the backpack only (never equipped ones, never the ground). An item is addressed by
+-- its path from the backpack ("3" = slot 3 of the backpack, "3.0" = slot 0 of the bag in slot 3) plus its id and the
+-- signature of its modifiers, so an orb is never applied to an item that moved or changed after the player picked it.
+-- Every check is done here: the player owns the orb, the item is in the backpack, the orb fits the item, no uniques.
+--
+-- Protocol (JSON {action, data}):
+--   client -> server  open | select {path, id} | select {pos = {x, y, z}, clientId} (dragged from a container) |
+--                     apply {orb, path, id, sig} | clear
+--   server -> client  state {open, orbs = [{key, id, clientId, name, text, count}], item = {path, clientId, name,
+--                            rarity, rarityName, level, mods = [{group, text}], maxMods, unique, orbs = {key -> ""|why},
+--                            sig} | nil, items = [{path, id, clientId, name, rarity, rarityName,
+--                            unique}], history = [{time, orb, item, text}]}
+--                     result {ok, orb, text}
+-- Lua 5.1 / LuaJIT compatible.
+
+if not Chaos then
+	dofile("data/scripts/chaos/chaos_constants.lua")
+end
+if not ChaosCrafting then
+	dofile("data/lib/chaos_crafting.lua")
+end
+
+local C = ChaosCrafting
+local cfg = C.config
+local OPCODE = ChaosOpcodes.crafting or 232
+local MAX_LIST = 64 -- items listed from the backpack
+local MAX_DEPTH = 4 -- bags inside bags
+local lastAction = {} -- player id -> time in ms of the last apply (anti spam)
+local MIN_INTERVAL = 250 -- ms between two orbs
+
+local function nowMs()
+	return os.mtime and os.mtime() or os.time() * 1000
+end
+local selected = {} -- player id -> {path, id}
+
+-- ---------------------------------------------------------------- backpack paths
+local function backpackOf(player)
+	local bp = player:getSlotItem(CONST_SLOT_BACKPACK)
+	if bp and bp:isContainer() then
+		return bp
+	end
+	return nil
+end
+
+local function itemAt(player, path)
+	if type(path) ~= "string" or #path > 32 or not path:match("^%d+[%.%d]*$") then
+		return nil
+	end
+	local c = backpackOf(player)
+	local item
+	for index in path:gmatch("%d+") do
+		if not c then
+			return nil
+		end
+		item = c:getItem(tonumber(index))
+		if not item then
+			return nil
+		end
+		c = item:isContainer() and item or nil
+	end
+	return item
+end
+
+-- walk the backpack: fn(item, path) for every item, depth first
+local function walk(player, fn)
+	local count = 0
+	local function visit(container, prefix, depth)
+		for i = 0, container:getSize() - 1 do
+			local item = container:getItem(i)
+			if item then
+				count = count + 1
+				if count > 2000 then
+					return
+				end
+				local path = prefix == "" and tostring(i) or (prefix .. "." .. i)
+				if fn(item, path) then
+					return true
+				end
+				if item:isContainer() and depth < MAX_DEPTH and visit(item, path, depth + 1) then
+					return true
+				end
+			end
+		end
+	end
+	local bp = backpackOf(player)
+	if bp then
+		visit(bp, "", 1)
+	end
+end
+
+local function pathOf(player, target)
+	local found
+	walk(player, function(item, path)
+		if item == target then
+			found = path
+			return true
+		end
+	end)
+	return found
+end
+
+local function clientIdOf(id)
+	local ok, cid = pcall(function() return ItemType(id):getClientId() end)
+	return ok and cid or id
+end
+
+-- ---------------------------------------------------------------- history (table chaos_crafting_log)
+local function history(player)
+	local rows = Chaos.select(string.format(
+		"SELECT `created_at`, `orb`, `item`, `result` FROM `%s` WHERE `player_id` = %d ORDER BY `id` DESC LIMIT %d",
+		cfg.historyTable, player:getGuid(), cfg.historySize),
+		{{"created_at", "n"}, {"orb", "s"}, {"item", "s"}, {"result", "s"}})
+	local out = {}
+	for _, r in ipairs(rows) do
+		out[#out + 1] = {time = r.created_at, orb = r.orb, item = r.item, text = r.result}
+	end
+	return out
+end
+
+local function logCraft(player, orb, itemName, text)
+	db.query(string.format("INSERT INTO `%s` (`player_id`, `created_at`, `orb`, `item`, `result`) VALUES (%d, %d, %s, %s, %s)",
+		cfg.historyTable, player:getGuid(), os.time(), db.escapeString(orb.name), db.escapeString(itemName:sub(1, 80)),
+		db.escapeString(text:sub(1, 255))))
+end
+
+-- ---------------------------------------------------------------- state
+local function orbList(player)
+	local out = {}
+	for _, orb in ipairs(cfg.orbs) do
+		out[#out + 1] = {key = orb.key, id = orb.id, clientId = clientIdOf(orb.id), name = orb.name, text = orb.text,
+			count = player:getItemCount(orb.id)}
+	end
+	return out
+end
+
+local function itemList(player)
+	local out = {}
+	walk(player, function(item, path)
+		if #out < MAX_LIST and not item:isContainer() and C.isGear(item) then
+			out[#out + 1] = {path = path, id = item:getId(), clientId = clientIdOf(item:getId()), name = C.itemName(item),
+				rarity = C.rarityOf(item), rarityName = C.rarityOf(item) > 0 and C.rarityName(C.rarityOf(item)) or nil,
+				unique = C.isUnique(item) or nil}
+		end
+	end)
+	return out
+end
+
+local function sendState(player, open)
+	local pid = player:getId()
+	local data = {open = open and true or false, orbs = orbList(player), items = itemList(player),
+		history = history(player)}
+	local sel = selected[pid]
+	if sel then
+		local item = itemAt(player, sel.path)
+		if item and item:getId() == sel.id and C.isGear(item) then
+			local view = C.describe(item)
+			view.path = sel.path
+			view.clientId = clientIdOf(item:getId())
+			data.item = view
+		else
+			selected[pid] = nil
+		end
+	end
+	Chaos.send(player, OPCODE, "state", data)
+end
+
+local function sendResult(player, ok, orbKey, text)
+	Chaos.send(player, OPCODE, "result", {ok = ok, orb = orbKey, text = text})
+end
+
+-- ---------------------------------------------------------------- shared apply (bench and use-with)
+-- true when the item sits in the player's backpack (or a bag inside it), not equipped and not on the ground
+local function inBackpack(player, item)
+	local bp = backpackOf(player)
+	if not bp or item == bp then
+		return false
+	end
+	local p, depth = item:getParent(), 0
+	while p and depth <= MAX_DEPTH + 1 do
+		if not (p.isItem and p:isItem()) then
+			return false
+		end
+		if p == bp then
+			return true
+		end
+		p, depth = p:getParent(), depth + 1
+	end
+	return false
+end
+
+-- apply orbKey to item for player; orbItem = the used orb (use-with) or nil (bench: take one from the player).
+-- returns ok, text, newItem
+local function craft(player, orbKey, item, orbItem)
+	local orb = C.orbByKey[orbKey]
+	if not orb then
+		return false, C.reasons.unknownOrb
+	end
+	if not inBackpack(player, item) then
+		return false, "Put the item in your backpack first (equipped items cannot be crafted)."
+	end
+	if not orbItem and player:getItemCount(orb.id) < 1 then
+		return false, string.format("You have no %s.", orb.name)
+	end
+	local name = C.itemName(item)
+	local ok, res = C.apply(orbKey, item)
+	if not ok then
+		return false, res
+	end
+	if orbItem then
+		orbItem:remove(1)
+	else
+		player:removeItem(orb.id, 1)
+	end
+	logCraft(player, orb, name, res.text)
+	local pos = player:getPosition()
+	pos:sendMagicEffect((orbKey == "annulment" or orbKey == "scouring") and CONST_ME_MAGIC_RED or CONST_ME_MAGIC_GREEN)
+	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s: %s", orb.name, res.text))
+	return true, res.text, res.item
+end
+
+-- ---------------------------------------------------------------- bench actions
+local function selectItem(player, data)
+	local pid = player:getId()
+	local id = Chaos.toInt(data.id, 1, 65535)
+	local item, path
+	if type(data.path) == "string" then
+		path = data.path
+		item = itemAt(player, path)
+	elseif type(data.pos) == "table" then
+		-- dragged from an open container: x = 0xFFFF, y = 0x40 | container id, z = slot
+		local x, y, z = Chaos.toInt(data.pos.x), Chaos.toInt(data.pos.y), Chaos.toInt(data.pos.z)
+		if x == 65535 and y and z and y >= 64 then
+			local container = player:getContainerById(y - 64)
+			item = container and container:getItem(z)
+			path = item and pathOf(player, item)
+			-- the client knows client ids only
+			local cid = Chaos.toInt(data.clientId, 1, 65535)
+			if item and cid and clientIdOf(item:getId()) ~= cid then
+				item = nil
+			end
+			id = nil
+		elseif x == 65535 and y and y < 64 then
+			sendResult(player, false, nil, "Take the item off first: the bench works on items in your backpack.")
+			return
+		end
+	end
+	if not item or not path or (id and item:getId() ~= id) then
+		sendResult(player, false, nil, "Put an item from your backpack on the bench.")
+		return
+	end
+	if not C.isGear(item) then
+		sendResult(player, false, nil, C.reasons.notGear)
+		return
+	end
+	selected[pid] = {path = path, id = item:getId()}
+	sendState(player, false)
+end
+
+local function apply(player, data)
+	local pid = player:getId()
+	local now = nowMs()
+	if lastAction[pid] and now - lastAction[pid] < MIN_INTERVAL then
+		sendState(player, false) -- the client disabled the button; give it back
+		return
+	end
+	lastAction[pid] = now
+	local orbKey = type(data.orb) == "string" and data.orb or ""
+	local item = itemAt(player, data.path)
+	local id = Chaos.toInt(data.id, 1, 65535)
+	if not item or item:getId() ~= id or (data.sig and C.signature(item) ~= data.sig) then
+		selected[pid] = nil
+		sendResult(player, false, orbKey, "The item moved or changed. Put it on the bench again.")
+		sendState(player, false)
+		return
+	end
+	local ok, text, newItem = craft(player, orbKey, item)
+	if ok and newItem then
+		local path = pathOf(player, newItem)
+		selected[pid] = path and {path = path, id = newItem:getId()} or nil
+	end
+	sendResult(player, ok, orbKey, text)
+	sendState(player, false)
+end
+
+-- ---------------------------------------------------------------- events
+local ext = CreatureEvent("ChaosCraftingExtended")
+function ext.onExtendedOpcode(player, opcode, buffer)
+	if opcode ~= OPCODE then
+		return
+	end
+	local msg = Chaos.decode(buffer)
+	if not msg then
+		return
+	end
+	local data = type(msg.data) == "table" and msg.data or {}
+	if msg.action == "open" then
+		sendState(player, true)
+	elseif msg.action == "select" then
+		selectItem(player, data)
+	elseif msg.action == "apply" then
+		apply(player, data)
+	elseif msg.action == "clear" then
+		selected[player:getId()] = nil
+		sendState(player, false)
+	end
+end
+ext:type("extendedopcode")
+ext:register()
+
+local login = CreatureEvent("ChaosCraftingLogin")
+function login.onLogin(player)
+	player:registerEvent("ChaosCraftingExtended")
+	player:registerEvent("ChaosCraftingLogout")
+	return true
+end
+login:type("login")
+login:register()
+
+local logout = CreatureEvent("ChaosCraftingLogout")
+function logout.onLogout(player)
+	selected[player:getId()] = nil
+	lastAction[player:getId()] = nil
+	return true
+end
+logout:type("logout")
+logout:register()
+
+local function onCraftCommand(player, words, param)
+	sendState(player, true)
+	return false
+end
+
+for _, words in ipairs({"!craft", "/craft"}) do
+	local talk = TalkAction(words)
+	talk.onSay = onCraftCommand
+	talk:separator(" ")
+	talk:register()
+end
+
+-- ---------------------------------------------------------------- use-with on the new orbs
+-- (the Chaos and Divine Orbs keep the base server's own action, customs/rarity/reroll_rarity_stats.lua)
+-- The three rune stones are "use with" items in the dat/otb. The Orb of Transmutation and the Exalted Orb are not
+-- (plain "use" only), so using one of those, or any orb without a target, opens the bench.
+for _, orb in ipairs(cfg.orbs) do
+	if orb.key ~= "chaos" and orb.key ~= "divine" then
+		local action = Action()
+		local key = orb.key
+		function action.onUse(player, item, fromPosition, target, toPosition, isHotkey)
+			if not target or type(target) ~= "userdata" or not target.isItem or not target:isItem() or target == item then
+				sendState(player, true)
+				return true
+			end
+			local ok, text = craft(player, key, target, item)
+			if not ok then
+				player:sendCancelMessage(text)
+			else
+				sendState(player, false) -- an open bench shows the new counts (a closed one stays closed)
+			end
+			return true
+		end
+		action:id(orb.id)
+		action:allowFarUse(false)
+		action:register()
+	end
+end
+
+-- old rows go at startup
+local startup = GlobalEvent("ChaosCraftingStartup")
+function startup.onStartup()
+	db.asyncQuery(string.format("DELETE FROM `%s` WHERE `created_at` < %d", cfg.historyTable,
+		os.time() - cfg.historyKeepDays * 86400))
+	return true
+end
+startup:register()

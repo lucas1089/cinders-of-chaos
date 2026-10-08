@@ -75,7 +75,19 @@ return {
 			{id = 29857, name = "Divine Orb", weight = 30, count = {1, 1},
 				chance = {normal = 20, magic = 150, rare = 600, legendary = 2500, boss = 4000}},
 			{id = 29856, name = "Orb of Chaos", weight = 70, count = {1, 1},
-				chance = {normal = 40, magic = 300, rare = 1200, legendary = 4000, boss = 5000}}
+				chance = {normal = 40, magic = 300, rare = 1200, legendary = 4000, boss = 5000}},
+			-- crafting orbs (data/lib/chaos_crafting.lua): Transmutation common, Alchemy / Annulment / Scouring
+			-- uncommon, Exalted rare
+			{id = 29851, name = "Orb of Transmutation", weight = 20, count = {1, 2},
+				chance = {normal = 30, magic = 200, rare = 700, legendary = 2500, boss = 3500}},
+			{id = 24691, name = "Orb of Alchemy", weight = 10, count = {1, 1},
+				chance = {normal = 10, magic = 80, rare = 300, legendary = 1200, boss = 2000}},
+			{id = 24697, name = "Orb of Annulment", weight = 10, count = {1, 1},
+				chance = {normal = 10, magic = 80, rare = 300, legendary = 1200, boss = 2000}},
+			{id = 24688, name = "Orb of Scouring", weight = 10, count = {1, 1},
+				chance = {normal = 15, magic = 100, rare = 400, legendary = 1500, boss = 2500}},
+			{id = 29855, name = "Exalted Orb", weight = 5, count = {1, 1},
+				chance = {normal = 4, magic = 30, rare = 120, legendary = 600, boss = 1000}}
 			-- add more: {id = 12345, name = "Soul Shard", weight = 50, count = {1, 3}, chance = {...}}
 		},
 		-- guaranteed number of entries drawn by weight (in addition to the chances above)
