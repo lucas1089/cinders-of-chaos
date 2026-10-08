@@ -1,12 +1,15 @@
 -- ascension.lua: the choice between the two ascended classes of a base class (docs/CLASSES.md).
 --
 --   !ascend              tells the player the choices
---   !ascend ninja        a Thief of level 100+ in a protection zone, out of combat, becomes a Ninja
---   !ascend samurai      ... or a Samurai
+--   !ascend <class>      a base class of level 100+ in a protection zone, out of combat, becomes that ascended class:
+--                        Warrior: juggernaut | berserker, Ranger: deadeye | beastmaster, Mystic: elementalist |
+--                        illusionist, Thief: ninja | samurai
 --
 -- The engine knows one promotion per vocation (fromvoc), so the two-way choice is this script: it sets the vocation
--- directly. The choice is final; only the store's Vocation Change (!changevocation ninja|samurai, shop_services.lua)
--- changes it later. Rules: ChaosClasses.ascensionFor (classes.lua), numbers: Chaos.classes.ascension.
+-- directly. The choice is final; only the store's Vocation Change (!changevocation <class>, shop_services.lua)
+-- changes it later. One exception: a character the class migration moved from Elite Knight / Royal Paladin
+-- (class_migration.lua) may switch once, for free, to Berserker / Beastmaster (storage Chaos.classes.storage.freeSwitch).
+-- Rules: ChaosClasses.ascensionFor (classes.lua), numbers: Chaos.classes.ascension.
 --
 -- Health, mana and capacity follow the new vocation's gains (ChaosShopServices.recomputeStats, as the vocation
 -- change does). The client learns the new vocation from a fresh basic-data packet (0x9F, the one the server sends at
@@ -70,16 +73,32 @@ function C.applyVocation(player, newVoc)
 		pcall(player.addHealth, player, "healing", missing)
 	end
 	player:addMana(player:getMaxMana())
+	C.afterVocationChange(player)
+end
+
+-- after any vocation change (ascension, the free switch, the store's change): the Ninja's off-hand rule, companions
+-- go when the character is no Beastmaster any more, and the client learns the vocation without a relog
+function C.afterVocationChange(player)
 	C.syncDualWield(player)
+	if ChaosBeastmaster and ChaosBeastmaster.dismissIfNotBeastmaster then
+		ChaosBeastmaster.dismissIfNotBeastmaster(player)
+	end
 	C.sendBasicData(player)
 end
+
+local EFFECT = {[8] = CONST_ME_GROUNDSHAKER, [14] = CONST_ME_DRAWBLOOD, [7] = CONST_ME_HOLYDAMAGE,
+	[15] = CONST_ME_MAGIC_GREEN, [5] = CONST_ME_FIREAREA, [10] = CONST_ME_PURPLEENERGY, [12] = CONST_ME_MORTAREA,
+	[13] = CONST_ME_GROUNDSHAKER}
 
 local talk = TalkAction("!ascend")
 function talk.onSay(player, words, param)
 	local voc = player:getVocation()
-	local newId, err = C.ascensionFor(voc:getId(), player:getLevel(), param, inProtectionZone(player), inCombat(player))
+	local key = Chaos.classes.storage.freeSwitch
+	local freeTo = player:getStorageValue(key)
+	local newId, how = C.ascensionFor(voc:getId(), player:getLevel(), param, inProtectionZone(player), inCombat(player),
+		freeTo > 0 and freeTo or nil)
 	if not newId then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, err)
+		player:sendTextMessage(MESSAGE_INFO_DESCR, how)
 		return false
 	end
 	local newVoc = Vocation(newId)
@@ -88,11 +107,22 @@ function talk.onSay(player, words, param)
 		return false
 	end
 	C.applyVocation(player, newVoc)
-	player:setStorageValue(Chaos.classes.storage.ascended, os.time())
+	if how == true then
+		-- the free switch of the migration is spent (both classes of a line use the same keystones: the tree stays)
+		player:setStorageValue(key, -1)
+	else
+		player:setStorageValue(Chaos.classes.storage.ascended, os.time())
+	end
 	player:save()
 	local pos = player:getPosition()
 	pos:sendMagicEffect(CONST_ME_HOLYAREA)
-	pos:sendMagicEffect(C.isNinja(newId) and CONST_ME_MORTAREA or CONST_ME_GROUNDSHAKER)
+	pos:sendMagicEffect(EFFECT[newId] or CONST_ME_GROUNDSHAKER)
+	if how == true then
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+			"You switched for free: you are now %s. This was your only free switch; from now on only the store's Vocation Change changes it.",
+			newVoc:getDescription()))
+		return false
+	end
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
 		"You have ascended: you are now %s. The choice is final; only the store's Vocation Change can undo it.",
 		newVoc:getDescription()))

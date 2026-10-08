@@ -6,7 +6,7 @@ Writes spell-icons-32x32.png (RGBA), spell-icons-22x24.png (RGBA) and spell-icon
 cell n (1-based) at col (n-1)%20, row (n-1)//20, like Spells.getImageClipNormal.
  - cells named in the client's SpellIcons table: an icon derived from the spell's words (element, kind, tier);
    spells are matched by their icon key, never by their display name (the client renames them at runtime)
- - cells 201..245: the Chaos spell icons from gen_spell_icons.py (same drawings, same downscale)
+ - cells 201..249: the Chaos spell icons from gen_spell_icons.py (same drawings, same downscale)
  - every other cell: a neutral filler (dark plate + plain sigil)
 Needs Pillow."""
 import argparse, math, os, re, sys

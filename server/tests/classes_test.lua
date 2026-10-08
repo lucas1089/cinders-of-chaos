@@ -1,6 +1,8 @@
 -- Run from the server/ folder: luajit tests/classes_test.lua (no engine needed; CI runs it with luajit and lua5.3)
--- Covers the class rules of the Thief line (data/scripts/chaos/classes.lua): the ascension, the dual-wield proc and
--- off-hand damage, the stealth outcomes, the counter window, the Bushido stacks, evasion, Poison Blades and light blades.
+-- Covers the class rules (data/scripts/chaos/classes.lua): the ascension of the four base classes and the free switch,
+-- the migration of the old vocations (mapping, SQL, message), the keystone variants, the Berserker's Rage and Bloodrage,
+-- the Beastmaster companion's scaling, and the Thief line: the dual-wield proc and off-hand damage, the stealth
+-- outcomes, the counter window, the Bushido stacks, evasion, Poison Blades and light blades.
 WEAPON_SWORD, WEAPON_CLUB, WEAPON_DISTANCE = 1, 2, 5
 SLOTP_TWO_HAND = 2048
 
@@ -31,7 +33,92 @@ eq(C.ascensionFor(THIEF, 300, "knight", true, false), nil, "not a choice of the 
 id, why = C.ascensionFor(NINJA, 300, "samurai", true, false)
 eq(id, nil, "final: a ninja cannot switch"); eq(why:find("Vocation Change") ~= nil, true, "points to the store")
 eq(C.ascensionFor(SAMURAI, 300, "ninja", true, false), nil, "final: a samurai cannot switch")
-eq(C.ascensionFor(4, 300, "ninja", true, false), nil, "a knight has no ascension yet")
+eq(C.ascensionFor(4, 300, "ninja", true, false), nil, "not a choice of the warrior")
+
+-- ------------------------------------------------------------------ the other base classes
+local ids = cfg.ids
+eq(ids.warrior, 4); eq(ids.juggernaut, 8); eq(ids.berserker, 14); eq(ids.ranger, 3); eq(ids.deadeye, 7)
+eq(ids.beastmaster, 15); eq(ids.mystic, 1); eq(ids.elementalist, 5); eq(ids.illusionist, 10)
+for word, want in pairs({juggernaut = 8, berserker = 14}) do eq(C.ascensionFor(4, 100, word, true, false), want, "warrior " .. word) end
+for word, want in pairs({deadeye = 7, beastmaster = 15}) do eq(C.ascensionFor(3, 100, word, true, false), want, "ranger " .. word) end
+for word, want in pairs({elementalist = 5, illusionist = 10}) do eq(C.ascensionFor(1, 100, word, true, false), want, "mystic " .. word) end
+id, why = C.ascensionFor(4, 300, "", true, false)
+eq(why:find("berserker|juggernaut", 1, true) ~= nil, true, "lists the warrior's choices: " .. why)
+eq(C.ascensionFor(3, 300, "berserker", true, false), nil, "not a choice of the ranger")
+eq(C.ascensionFor(1, 99, "illusionist", true, false), nil, "level rule for every class")
+id, why = C.ascensionFor(8, 300, "berserker", true, false)
+eq(id, nil, "final: a juggernaut cannot switch"); eq(why:find("Vocation Change") ~= nil, true)
+eq(C.ascensionFor(2, 300, "illusionist", true, false), nil, "retired ids have no ascension")
+eq(C.ascensionFor(0, 300, "juggernaut", true, false), nil, "no vocation")
+-- the free switch of the migration: an old Elite Knight (Juggernaut) may become a Berserker once, at any level
+local fid, free = C.ascensionFor(8, 50, "berserker", true, false, 14)
+eq(fid, 14, "free switch to berserker"); eq(free, true, "marked as the free switch")
+eq(select(2, C.ascensionFor(4, 100, "juggernaut", true, false)), false, "a normal ascension is not the free switch")
+id, why = C.ascensionFor(8, 300, "juggernaut", true, false, 14)
+eq(id, nil, "already a juggernaut"); eq(why:find("stays") ~= nil, true, "the switch is kept")
+id, why = C.ascensionFor(8, 300, "elementalist", true, false, 14)
+eq(id, nil, "only the other class of the line"); eq(why:find("!ascend berserker", 1, true) ~= nil, true, why)
+eq(C.ascensionFor(8, 300, "berserker", false, false, 14), nil, "free switch: still a protection zone")
+eq(C.ascensionFor(8, 300, "berserker", true, true, 14), nil, "free switch: not in combat")
+eq(C.ascensionFor(7, 300, "beastmaster", true, false, 15), 15, "old royal paladin -> beastmaster")
+eq(C.baseOf(14), 4); eq(C.baseOf(15), 3); eq(C.baseOf(10), 1); eq(C.baseOf(2), nil, "retired")
+eq(C.isAscended(14), true); eq(C.isAscended(4), false); eq(C.isAscended(0), false)
+
+-- ------------------------------------------------------------------ keystone variants
+local keys = {[4] = "knight", [8] = "knight", [14] = "knight", [3] = "paladin", [7] = "paladin", [15] = "paladin",
+  [1] = "sorcerer", [5] = "sorcerer", [10] = "illusionist"}
+for v, k in pairs(keys) do eq(C.keystoneKey(v), k, "keystone key " .. v) end
+eq(C.keystoneKey(12), nil, "the Thief line has no tree entry yet")
+
+-- ------------------------------------------------------------------ migration
+local function mig(v) local p = C.migrationFor(v); return p and p.to, p and p.freeSwitch, p and p.resetTree end
+local want = {[1] = 1, [2] = 1, [3] = 3, [4] = 4, [5] = 5, [6] = 10, [7] = 7, [8] = 8, [9] = 1, [10] = 10}
+for old, new in pairs(want) do
+  local to, sw, reset = mig(old)
+  eq(to, new, "old " .. old); eq(reset, true, "tree reset " .. old)
+end
+eq(select(2, mig(8)), 14, "elite knight: free switch to berserker"); eq(select(2, mig(7)), 15, "royal paladin: to beastmaster")
+eq(select(2, mig(4)), nil, "knight: no free switch (it chooses at ascension)"); eq(select(2, mig(5)), nil)
+eq(C.migrationFor(11), nil, "the Thief line is left alone"); eq(C.migrationFor(14), nil); eq(C.migrationFor(0), nil)
+-- every new id the migration produces is a class
+for old in pairs(want) do eq(C.baseOf((mig(old))) ~= nil, true, "lands on a class " .. old) end
+local sql = C.migrationSql("chaos_passive_tree")
+eq(#sql, 1 + 2 + 1 + 3, "storage, two free switches, tree, three retired ids")
+eq(sql[1]:find("`player_storage`") ~= nil and sql[1]:find(tostring(cfg.storage.migratedFrom)) ~= nil, true, "remembers the old vocation")
+eq(sql[2]:find("WHERE `vocation` = 7") ~= nil and sql[2]:find(", 15 FROM") ~= nil, true, sql[2])
+eq(sql[3]:find("WHERE `vocation` = 8") ~= nil and sql[3]:find(", 14 FROM") ~= nil, true, sql[3])
+eq(sql[4]:find("UPDATE `chaos_passive_tree` SET `nodes` = ''", 1, true) ~= nil, true, "tree reset")
+eq(sql[5], "UPDATE `players` SET `vocation` = 1 WHERE `vocation` = 2", "druid -> mystic")
+eq(sql[6], "UPDATE `players` SET `vocation` = 10 WHERE `vocation` = 6", "elder druid -> illusionist")
+eq(sql[7], "UPDATE `players` SET `vocation` = 1 WHERE `vocation` = 9", "illusionist -> mystic")
+for i = 1, 4 do assert(sql[i]:find("vocation") and sql[i]:find("players"), "storages and tree run before the ids move") end
+local text = C.migrationMessage("Elite Knight", "Juggernaut", "berserker", true)
+eq(text:find("Elite Knight is now Juggernaut") ~= nil, true, text); eq(text:find("!ascend berserker", 1, true) ~= nil, true)
+eq(text:find("passive tree") ~= nil, true, "mentions the reset")
+eq(C.migrationMessage("Druid", "Mystic", nil, true):find("ascend") == nil, true, "no switch offered")
+
+-- ------------------------------------------------------------------ berserker rage
+local r = cfg.rage
+eq(C.rageMultiplier(1000, 1000, false), 1, "full health: no rage")
+eq(math.abs(C.rageMultiplier(300, 1000, false) - (1 + r.maxBonus)) < 1e-9, true, "30% health: full rage")
+eq(math.abs(C.rageMultiplier(100, 1000, false) - (1 + r.maxBonus)) < 1e-9, true, "below: capped")
+eq(math.abs(C.rageMultiplier(650, 1000, false) - (1 + r.maxBonus / 2)) < 1e-9, true, "halfway: half the rage")
+assert(C.rageMultiplier(800, 1000, false) < C.rageMultiplier(700, 1000, false), "grows as health drops")
+eq(math.abs(C.rageMultiplier(1000, 1000, true) - (1 + cfg.bloodrage.bonus)) < 1e-9, true, "bloodrage adds on top")
+eq(C.rageMultiplier(0, 0, false), 1, "no max health: no rage")
+eq(C.bloodrageCleave(-400), 160, "cleave: 40% of the hit")
+eq(C.bloodrageCost(1000), 100, "bloodrage costs 10% of the health"); eq(C.bloodrageCost(1), 0, "never the last point")
+
+-- ------------------------------------------------------------------ beastmaster companion
+eq(C.companionCap(100), 1, "one companion"); eq(C.companionCap(399), 1); eq(C.companionCap(400), 2, "two from level 400")
+eq(C.companionHealth(0), cfg.companion.health.base)
+eq(C.companionHealth(1000), cfg.companion.health.base + 1000 * cfg.companion.health.perLevel, "health scales with level")
+local lo, hi = C.biteValues(1000, 140)
+local avg = 1000 * cfg.companion.biteLevel + 140 * cfg.companion.biteSkill
+eq(lo, math.floor(avg * (1 - cfg.companion.spread)), "bite min"); eq(hi, math.floor(avg * (1 + cfg.companion.spread)), "bite max")
+local lo3, hi3 = C.biteValues(300, 110)
+assert(hi3 < hi and lo3 < lo, "bites scale with level and skill")
+eq(C.isBerserker(14), true); eq(C.isBeastmaster(15), true); eq(C.isBeastmaster(7), false)
 
 -- ------------------------------------------------------------------ light blades and dual wield
 eq(C.isLightBlade(WEAPON_SWORD, 48), true, "one-handed sword")

@@ -37,20 +37,13 @@ local function getPlayerVocation()
   if serverVocation then
     return serverVocation
   end
+  -- fallback before the server named it: the client reports server vocation ids (base patch 0016)
   local player = g_game.getLocalPlayer()
-  local cid = player:getVocation()
-  if cid == 1 then
-    return "knight"
-  elseif cid == 2 then
-    return "paladin"
-  elseif cid == 3 then
-    return "sorcerer"
-  elseif cid == 4 then
-    return "druid"
-  elseif cid == 5 then
-	return "illusionist"
-  elseif cid == 6 then
-	return "monk"
+  local id = player and player:getVocation() or 0
+  local keys = { [4] = "knight", [8] = "knight", [14] = "knight", [3] = "paladin", [7] = "paladin", [15] = "paladin",
+    [1] = "sorcerer", [5] = "sorcerer", [10] = "illusionist" }
+  if keys[id] then
+    return keys[id]
   end
   return nil
 end

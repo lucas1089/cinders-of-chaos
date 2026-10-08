@@ -1,9 +1,12 @@
--- classes.lua: the class rules that need no engine (ChaosClasses). Phase 1 of the class rework: the Thief line
--- (Thief -> Ninja | Samurai, docs/CLASSES.md). Tunables: Chaos.classes in chaos_constants.lua.
+-- classes.lua: the class rules that need no engine (ChaosClasses). Four base classes with two ascended classes each
+-- (docs/CLASSES.md): Warrior -> Juggernaut | Berserker, Ranger -> Deadeye | Beastmaster, Mystic -> Elementalist |
+-- Illusionist, Thief -> Ninja | Samurai. Tunables: Chaos.classes in chaos_constants.lua.
 --
--- Used by ascension.lua (!ascend), thief_combat.lua (stealth, evasion, poison blades, dual wield, counter stance,
--- bushido), shop_services.lua (!changevocation) and the spells in data/spells/chaos/thief|ninja|samurai (they run in
--- the spell Lua state and load this file themselves). Unit tests: server/tests/classes_test.lua.
+-- Used by ascension.lua (!ascend), class_migration.lua (the old vocations), thief_combat.lua (stealth, evasion, poison
+-- blades, dual wield, counter stance, bushido), berserker_combat.lua (Rage, Bloodrage), beastmaster.lua (the
+-- companion), passivetree.lua (keystone variants), shop_services.lua (!changevocation) and the class spells in
+-- data/spells/chaos/<class> (they run in the spell Lua state and load this file themselves). Unit tests:
+-- server/tests/classes_test.lua.
 --
 -- Times are milliseconds from whatever clock the caller passes (os.mtime on the server), so the state machines
 -- can be tested without an engine. State is per creature id and lives in memory: it does not survive a relog
@@ -24,8 +27,7 @@ M.now = os.mtime or function() return os.time() * 1000 end
 
 -- ------------------------------------------------------------------------------------------------ vocations
 function M.isThiefLine(vocId)
-	local ids = cfg().ids
-	return vocId == ids.thief or vocId == ids.ninja or vocId == ids.samurai
+	return cfg().baseOf[vocId] == cfg().ids.thief
 end
 
 function M.isNinja(vocId)
@@ -36,31 +38,86 @@ function M.isSamurai(vocId)
 	return vocId == cfg().ids.samurai
 end
 
--- The ascension (!ascend <word>): returns the new vocation id, or nil and the reason.
--- vocId = current vocation, inPz = standing in a protection zone, inFight = has a fight condition.
-function M.ascensionFor(vocId, level, word, inPz, inFight)
-	local a = cfg().ascension
-	local choices = a.choices[vocId]
-	if not choices then
-		for _, list in pairs(a.choices) do
-			for _, id in pairs(list) do
-				if id == vocId then
-					return nil, "You have already ascended. Only the store's Vocation Change can change that."
-				end
-			end
-		end
-		return nil, "Your vocation has no ascension yet."
-	end
+function M.isBerserker(vocId)
+	return vocId == cfg().ids.berserker
+end
+
+function M.isBeastmaster(vocId)
+	return vocId == cfg().ids.beastmaster
+end
+
+-- the base class of a class (itself for a base class), nil for no class (0, retired ids)
+function M.baseOf(vocId)
+	return cfg().baseOf[vocId]
+end
+
+function M.isAscended(vocId)
+	local base = cfg().baseOf[vocId]
+	return base ~= nil and base ~= vocId
+end
+
+-- which per-vocation variant of the passive tree's keystones (nodes 621 / 624, passivetree_data.lua) a class gets:
+-- the Warrior line the knight's (Cleaving Arc, Bulwark), the Ranger line the paladin's (Ricochet, Deadeye), Mystic
+-- and Elementalist the sorcerer's (Arcane Echo, Overload), the Illusionist the illusionist's support keystones
+-- (Shared Phantasm, Inspiring Illusion). The Thief line has no tree entry yet (nil).
+local KEYSTONE_KEY = {[4] = "knight", [8] = "knight", [14] = "knight", [3] = "paladin", [7] = "paladin",
+	[15] = "paladin", [1] = "sorcerer", [5] = "sorcerer", [10] = "illusionist"}
+function M.keystoneKey(vocId)
+	return KEYSTONE_KEY[vocId]
+end
+
+local function trimWord(word)
+	return (tostring(word or "")):lower():gsub("^%s+", ""):gsub("%s+$", "")
+end
+
+local function choiceNames(choices)
 	local names = {}
 	for k in pairs(choices) do
 		names[#names + 1] = k
 	end
 	table.sort(names)
-	local id = choices[(tostring(word or "")):lower():gsub("^%s+", ""):gsub("%s+$", "")]
-	if not id then
-		return nil, "Choose your ascension: !ascend " .. table.concat(names, "|") .. ". The choice is final."
+	return names
+end
+
+-- The ascension (!ascend <word>): returns the new vocation id, or nil and the reason.
+-- vocId = current vocation, inPz = standing in a protection zone, inFight = has a fight condition,
+-- freeSwitchTo = the ascended vocation id a migrated character may still switch to for free (class_migration.lua),
+-- or nil. The free switch has no level rule (the character is ascended already).
+function M.ascensionFor(vocId, level, word, inPz, inFight, freeSwitchTo)
+	local a = cfg().ascension
+	local choices = a.choices[vocId]
+	local free = false
+	if not choices then
+		local base = cfg().baseOf[vocId]
+		local own = base and base ~= vocId and a.choices[base]
+		if not own then
+			return nil, "Your vocation has no ascension."
+		end
+		local id = own[trimWord(word)]
+		if freeSwitchTo and freeSwitchTo > 0 then
+			local freeWord
+			for k, v in pairs(own) do
+				if v == freeSwitchTo then
+					freeWord = k
+				end
+			end
+			if id == vocId then
+				return nil, "You already are of that class. Your free switch (!ascend " .. tostring(freeWord) .. ") stays."
+			end
+			if not id or id ~= freeSwitchTo then
+				return nil, "You may switch once, for free: !ascend " .. tostring(freeWord) .. "."
+			end
+			free = true
+		else
+			return nil, "You have already ascended. Only the store's Vocation Change can change that."
+		end
+		choices = {[trimWord(word)] = id}
 	end
-	if level < a.minLevel then
+	local id = choices[trimWord(word)]
+	if not id then
+		return nil, "Choose your ascension: !ascend " .. table.concat(choiceNames(choices), "|") .. ". The choice is final."
+	end
+	if not free and level < a.minLevel then
 		return nil, string.format("You need level %d to ascend.", a.minLevel)
 	end
 	if a.needProtectionZone and not inPz then
@@ -69,7 +126,122 @@ function M.ascensionFor(vocId, level, word, inPz, inFight)
 	if inFight then
 		return nil, "You cannot ascend in combat."
 	end
-	return id
+	return id, free
+end
+
+-- ------------------------------------------------------------------------------------------------ migration
+-- What the one-time migration does to a character of vocation `oldVoc` (an id of the old vocations, 1-10):
+-- {to = new vocation id, freeSwitch = ascended id it may switch to for free or nil, resetTree = bool}.
+-- nil for vocations it leaves alone (0, the Thief line, the new ids).
+function M.migrationFor(oldVoc)
+	local m = cfg().migration
+	if type(oldVoc) ~= "number" or oldVoc < 1 or oldVoc > 10 then
+		return nil
+	end
+	local reset = false
+	for _, v in ipairs(m.resetTree) do
+		if v == oldVoc then
+			reset = true
+		end
+	end
+	return {to = m.map[oldVoc] or oldVoc, freeSwitch = m.freeSwitch[oldVoc], resetTree = reset}
+end
+
+-- the login message: oldName / newName = vocation names, freeWord = the !ascend word of the free switch or nil
+function M.migrationMessage(oldName, newName, freeWord, treeReset)
+	local text = string.format("The classes were reworked: your %s is now %s.", oldName, newName)
+	if treeReset then
+		text = text .. " Your passive tree was reset for free; allocate your points again."
+	end
+	if freeWord then
+		text = text .. string.format(" You may switch to the other ascended class once, for free: say !ascend %s in a "
+			.. "protection zone.", freeWord)
+	end
+	return text
+end
+
+-- The SQL of the one-time migration (class_migration.lua runs it at startup, before anyone can log in), in order:
+-- 1. remember every old character's vocation in a storage (the login message reads it), 2. the free switch for the
+-- old Elite Knights / Royal Paladins, 3. empty their passive trees, 4. move the retired ids. `tree` = the passive tree
+-- table. Running it twice is harmless (storages are upserts, the retired ids are gone after the first run), but
+-- class_migration.lua runs it once per migration version anyway.
+function M.migrationSql(tree)
+	local m, st = cfg().migration, cfg().storage
+	local old = table.concat(m.resetTree, ", ")
+	local q = {}
+	q[#q + 1] = string.format("INSERT INTO `player_storage` (`player_id`, `key`, `value`) SELECT `id`, %d, `vocation` "
+		.. "FROM `players` WHERE `vocation` BETWEEN 1 AND 10 ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)", st.migratedFrom)
+	local from = {}
+	for k in pairs(m.freeSwitch) do
+		from[#from + 1] = k
+	end
+	table.sort(from)
+	for _, k in ipairs(from) do
+		q[#q + 1] = string.format("INSERT INTO `player_storage` (`player_id`, `key`, `value`) SELECT `id`, %d, %d "
+			.. "FROM `players` WHERE `vocation` = %d ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)", st.freeSwitch,
+			m.freeSwitch[k], k)
+	end
+	q[#q + 1] = string.format("UPDATE `%s` SET `nodes` = '' WHERE `player_id` IN (SELECT `id` FROM `players` WHERE "
+		.. "`vocation` IN (%s))", tree, old)
+	local ids = {}
+	for k in pairs(m.map) do
+		ids[#ids + 1] = k
+	end
+	table.sort(ids)
+	for _, k in ipairs(ids) do
+		q[#q + 1] = string.format("UPDATE `players` SET `vocation` = %d WHERE `vocation` = %d", m.map[k], k)
+	end
+	return q
+end
+
+-- ------------------------------------------------------------------------------------------------ berserker
+-- Rage: the damage multiplier at `health` of `maxHealth` (1 at full health, 1 + maxBonus at fullBelow and below),
+-- plus the Bloodrage bonus while that buff is up
+function M.rageMultiplier(health, maxHealth, bloodrage)
+	local r = cfg().rage
+	local bonus = 0
+	if (maxHealth or 0) > 0 then
+		local missing = 1 - math.max(0, math.min(1, health / maxHealth))
+		bonus = r.maxBonus * math.min(1, missing / (1 - r.fullBelow))
+	end
+	if bloodrage then
+		bonus = bonus + cfg().bloodrage.bonus
+	end
+	return 1 + bonus
+end
+
+-- Bloodrage cleave: damage to each other enemy next to the Berserker for a weapon hit of `hit`
+function M.bloodrageCleave(hit)
+	return math.floor(math.abs(hit or 0) * cfg().bloodrage.cleave)
+end
+
+-- health the Bloodrage cast costs (never the last point)
+function M.bloodrageCost(health)
+	return math.max(0, math.min(health - 1, math.floor(health * cfg().bloodrage.healthCost)))
+end
+
+-- ------------------------------------------------------------------------------------------------ beastmaster
+-- how many companions a Beastmaster of `level` may have out
+function M.companionCap(level)
+	local count = 0
+	for _, step in ipairs(cfg().companion.caps) do
+		if level >= step.level then
+			count = step.count
+		end
+	end
+	return count
+end
+
+function M.companionHealth(level)
+	local h = cfg().companion.health
+	return math.floor(h.base + h.perLevel * level)
+end
+
+-- a bite: positive min, max from the owner's level and distance skill
+function M.biteValues(level, distanceSkill)
+	local c = cfg().companion
+	local avg = level * c.biteLevel + (distanceSkill or 0) * c.biteSkill
+	return math.floor(avg * (1 - c.spread)), math.floor(avg * (1 + c.spread))
 end
 
 -- ------------------------------------------------------------------------------------------------ weapons

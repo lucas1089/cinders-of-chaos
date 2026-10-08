@@ -81,9 +81,10 @@ local function kindOf(player)
 	return "mage" -- sorcerer, druid, illusionist (and no vocation)
 end
 
+-- the Illusionist (10) carries the druid's kit since the class rework (docs/CLASSES.md): it gets the rod
 local function isDruid(player)
 	local id = player:getVocation():getId()
-	return id == 2 or id == 6
+	return id == 10
 end
 
 local function raiseLevel(player, level)

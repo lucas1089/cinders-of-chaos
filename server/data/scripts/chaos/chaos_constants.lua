@@ -426,21 +426,27 @@ Chaos.shopServices = {
 		forbidden = {"admin", "gamemaster", "moderator", "fuck", "shit", "bitch", "whore", "nazi", "hitler", "cunt", "rape"}
 	},
 
-	-- Vocation change: command word -> {base id, promoted id} (data/XML/vocations.xml). A promoted character
-	-- gets the promoted id of the new vocation, an unpromoted one the base id.
-	-- The Thief line has two ascended classes (Chaos.classes.ascension): "ninja" and "samurai" both name the Thief
-	-- base (11), and "thief" carries `choose`: an ascended character must name the ascended class it wants
-	-- (!changevocation ninja|samurai), an unascended one becomes a Thief with any of the three words.
+	-- Vocation change: command word -> {base id, ascended id} (data/XML/vocations.xml, docs/CLASSES.md). An ascended
+	-- character gets the ascended id of the new class, an unascended one the base id.
+	-- Every base class has two ascended classes (Chaos.classes.ascension): the ascended words name the base too, and the
+	-- base word carries `choose`: an ascended character must name the ascended class it wants
+	-- (!changevocation berserker), an unascended one becomes the base class with any word of the line.
 	vocations = {
-		sorcerer = {1, 5},
-		druid = {2, 6},
-		paladin = {3, 7},
-		knight = {4, 8},
-		illusionist = {9, 10},
+		warrior = {4, 8, choose = {"juggernaut", "berserker"}},
+		juggernaut = {4, 8},
+		berserker = {4, 14},
+		ranger = {3, 7, choose = {"deadeye", "beastmaster"}},
+		deadeye = {3, 7},
+		beastmaster = {3, 15},
+		mystic = {1, 5, choose = {"elementalist", "illusionist"}},
+		elementalist = {1, 5},
+		illusionist = {1, 10},
 		thief = {11, 12, choose = {"ninja", "samurai"}},
 		ninja = {11, 12},
 		samurai = {11, 13}
 	},
+	-- the word list players see (!changevocation, the store's notices)
+	vocationWords = "warrior|juggernaut|berserker|ranger|deadeye|beastmaster|mystic|elementalist|illusionist|thief|ninja|samurai",
 	vocationBaseLevel = 8, -- health/mana/capacity gains are counted from this level (as the engine does)
 
 	-- Bottomless Loot Pouch: tell the player at most once per this many seconds
@@ -459,26 +465,59 @@ Chaos.clientServices = {
 	refreshSeconds = 300
 }
 
--- Classes (docs/CLASSES.md). Phase 1: the Thief line. Logic in classes.lua (ChaosClasses), the ascension in
--- ascension.lua, the combat mechanics in thief_combat.lua, the spells in data/spells/chaos/thief|ninja|samurai.
+-- Classes (docs/CLASSES.md). Logic in classes.lua (ChaosClasses), the ascension in ascension.lua, the migration of the
+-- old vocations in class_migration.lua, the combat mechanics in thief_combat.lua (Thief line), berserker_combat.lua (Rage,
+-- Bloodrage) and beastmaster.lua (the companion), the spells in data/spells/chaos/<class>/.
 Chaos.classes = {
-	-- vocation ids (server/data/XML/chaos_vocations.xml, added by server/tools/add_vocations.py)
-	ids = {thief = 11, ninja = 12, samurai = 13},
+	-- vocation ids (server/data/XML/chaos_vocations.xml, installed by server/tools/add_vocations.py). Ids that map 1:1
+	-- keep the old number (4 Knight -> Warrior, 8 Elite Knight -> Juggernaut, 3 Paladin -> Ranger, 7 Royal Paladin ->
+	-- Deadeye, 1 Sorcerer -> Mystic, 5 Master Sorcerer -> Elementalist, 10 Arch Illusionist -> Illusionist), so items,
+	-- spells, NPCs and the database keep working; 2, 6 and 9 are retired (class_migration.lua moves them).
+	ids = {
+		mystic = 1, ranger = 3, warrior = 4, elementalist = 5, deadeye = 7, juggernaut = 8, illusionist = 10,
+		thief = 11, ninja = 12, samurai = 13, berserker = 14, beastmaster = 15
+	},
+	-- base class of every class (the line)
+	baseOf = {[1] = 1, [5] = 1, [10] = 1, [3] = 3, [7] = 3, [15] = 3, [4] = 4, [8] = 4, [14] = 4, [11] = 11, [12] = 11, [13] = 11},
 	-- the engine knows one promotion per vocation; the choice between two ascended classes is this script's
 	ascension = {
 		minLevel = 100,
 		needProtectionZone = true,
 		-- base vocation id -> {command word -> ascended vocation id}
-		choices = {[11] = {ninja = 12, samurai = 13}}
+		choices = {
+			[4] = {juggernaut = 8, berserker = 14},
+			[3] = {deadeye = 7, beastmaster = 15},
+			[1] = {elementalist = 5, illusionist = 10},
+			[11] = {ninja = 12, samurai = 13}
+		}
+	},
+	-- one-time migration of the old vocations (class_migration.lua). Runs once at startup (version in server_config),
+	-- then tells each character at its next login what happened.
+	migration = {
+		version = 1,
+		configKey = "chaos_class_migration",
+		-- old vocation id -> new vocation id (ids not listed keep their number)
+		map = {[2] = 1, [6] = 10, [9] = 1},
+		-- the passive trees of these old vocations are emptied once, for free
+		resetTree = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+		-- old ascended vocation -> the other ascended class it may switch to once, for free (!ascend <word>)
+		freeSwitch = {[8] = 14, [7] = 15},
+		-- health / mana / capacity gains per level of the retired vocations (their vocations.xml entries are gone)
+		oldGains = {[2] = {hp = 5, mana = 30, cap = 1000}, [6] = {hp = 5, mana = 30, cap = 1000}, [9] = {hp = 6, mana = 22, cap = 1200}},
+		-- names for the login message
+		oldNames = {[1] = "Sorcerer", [2] = "Druid", [3] = "Paladin", [4] = "Knight", [5] = "Master Sorcerer",
+			[6] = "Elder Druid", [7] = "Royal Paladin", [8] = "Elite Knight", [9] = "Illusionist", [10] = "Arch Illusionist"}
 	},
 	storage = {
 		dualWield = 7100200, -- 1 while the character may hold an off-hand sword (read by server/src-patches/0002)
-		ascended = 7100201 -- os.time of the ascension (information only)
+		ascended = 7100201, -- os.time of the ascension (information only)
+		migratedFrom = 7100202, -- the old vocation id until the login message of the migration was shown, then 0
+		freeSwitch = 7100203 -- the ascended vocation id a migrated character may still switch to for free (!ascend)
 	},
 	-- condition sub ids of the class buffs (CONDITIONID_COMBAT). The spells and the combat scripts run in different
 	-- Lua states; the conditions are the state both see. Stealth is CONDITION_INVISIBLE, the others
 	-- CONDITION_ATTRIBUTES without attributes (a timer). Next to ChaosSpell.SUBID (71001-71009).
-	subId = {stealth = 71010, poisonBlades = 71011, counter = 71012, bushido = 71013},
+	subId = {stealth = 71010, poisonBlades = 71011, counter = 71012, bushido = 71013, bloodrage = 71014},
 	-- Shadow Veil: monsters drop the player as a target and cannot pick it; attacking or being hit ends it
 	stealth = {
 		durationMs = 4000,
@@ -503,7 +542,26 @@ Chaos.classes = {
 	shuriken = {items = {2399, 7368}, defaultAttack = 50},
 	-- spell strikes x (1 + (level - from) / per), at most max (ChaosSpell.thiefLevelScale). A stand-in for the
 	-- passive tree the Thief line does not have yet: re-tune or drop it with the tree (phase 2)
-	spellLevelScale = {from = 300, per = 700, max = 2.2}
+	spellLevelScale = {from = 300, per = 700, max = 2.2},
+	-- Berserker Rage (passive): every damage the Berserker deals gets up to +maxBonus, growing linearly from 0 at full
+	-- health to maxBonus at `fullBelow` of the maximum health and below
+	rage = {maxBonus = 0.30, fullBelow = 0.30},
+	-- Bloodrage (spell): costs `healthCost` of the current health; for durationMs weapon hits also strike up to
+	-- maxTargets other enemies next to the Berserker for `cleave` of the hit, and Rage gets +bonus on top
+	bloodrage = {durationMs = 12000, healthCost = 0.10, cleave = 0.4, maxTargets = 4, bonus = 0.10, delayMs = 100},
+	-- Beastmaster companion: a real monster type (the first of `monsters` that exists), summoned by Wild Bond.
+	-- Health base + perLevel x level; a bite every biteMs on the owner's target when next to it, physical damage
+	-- dealt as the owner: avg = level x biteLevel + distance skill x biteSkill, min/max = avg x (1 -/+ spread).
+	-- Feral Command: every companion leaps to the target and mauls it for mauls x a bite.
+	companion = {
+		monsters = {"War Wolf", "Wolf"},
+		caps = {{level = 0, count = 1}, {level = 400, count = 2}},
+		health = {base = 500, perLevel = 15},
+		biteMs = 2000, biteLevel = 0.12, biteSkill = 0.6, spread = 0.2,
+		mauls = 1.5,
+		leashRange = 7, -- a companion farther than this from its owner (or on another floor) is brought back
+		thinkMs = 500
+	}
 }
 
 -- ---------------------------------------------------------------------------
