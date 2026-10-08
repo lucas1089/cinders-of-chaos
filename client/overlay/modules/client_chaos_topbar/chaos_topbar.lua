@@ -1,7 +1,9 @@
 -- Chaos menu bar
 -- A row of category buttons at the top of the game map. Each category opens a drop-down with
 -- the windows of that group (Character, Hunt, Chaos, Economy, Social, System, Admin).
--- It replaces the icon grid of game_sidebuttons on the right panel, which is closed on login.
+-- It replaces the icon grid of game_sidebuttons on the right panel, which is closed on login,
+-- and the stock top strip of client_topmenu (community link, console, options, exit icons), which
+-- is kept hidden: on the login screen the bar shows only the entries marked `offline`.
 --
 -- An entry is shown only when the module it controls is loaded and exposes a call we know
 -- (all calls are pcall'd), so a missing or renamed module never breaks the menu.
@@ -11,6 +13,9 @@ ChaosTopBar = {}
 
 local ICON_DIR = '/images/chaos/small/topbutton_'
 local ADMIN_MIN_GROUP = 4     -- TFS: 4 = gamemaster and above
+-- community server invite link for the "Join Discord" entry (the stock top strip's button);
+-- until it is set, the entry says so instead of opening a page
+ChaosTopBar.COMMUNITY_URL = ''
 
 local menuBar
 local buttonsPanel
@@ -18,6 +23,7 @@ local categoryButtons = {}    -- category id -> widget
 local adminOverride = nil     -- set via ChaosTopBar.setAdmin() (e.g. from a server opcode)
 local openMenu
 local refreshEvent
+local gameParent              -- game_interface root panel (the bar's parent while in game)
 
 -- ---------------------------------------------------------------- helpers
 -- Sandboxed module environments fall back to _G through __index, so use
@@ -61,6 +67,8 @@ local function findAction(entry)
         local fn = resolvePath(m, path)
         if type(fn) == 'function' then
           -- functions declared as Module:fn() expect the module as self; plain ones ignore it
+          -- (noSelf: the function takes an optional argument of its own, so call it bare)
+          if entry.noSelf then return function() fn() end end
           return function() fn(m) end
         end
       end
@@ -92,6 +100,23 @@ local function logout()
     gi.tryLogout()
   elseif g_game and g_game.isOnline() then
     g_game.safeLogout()
+  end
+end
+
+-- in game: log out (the stock exit button did the same); on the login screen: close the client
+local function exitClient()
+  if g_game and g_game.isOnline() then
+    logout()
+  else
+    g_app.exit()
+  end
+end
+
+local function openCommunity()
+  if ChaosTopBar.COMMUNITY_URL ~= '' then
+    g_platform.openUrl(ChaosTopBar.COMMUNITY_URL)
+  else
+    displayInfoBox(tr('Join Discord'), tr('The community link is not available yet.'))
   end
 end
 
@@ -130,6 +155,7 @@ local CATEGORIES = {
     { text = 'Spell List',         icon = 'spells',      modules = { 'game_tibia_spelllist', 'game_spells', 'game_spelllist' }, fns = { 'toggle' } },
     { text = 'Spellbook',          icon = 'spells',      modules = { 'game_spellbook' }, fns = { 'toggle' } },
     { text = 'Passive Tree',       icon = 'passivetree', modules = { 'game_passivetree' }, fns = { 'toggle' } },
+    { text = 'Weapon Proficiency', icon = 'proficiency', modules = { 'game_proficiency' }, fns = { 'requestOpenWindow' }, noSelf = true },
     { text = 'Outfit',             icon = 'inventory',   custom = function() g_game.requestOutfit() end },
     { text = 'Blessings',          icon = 'help',        modules = { 'game_blessing' },  fns = { 'toggle', 'show' } },
   } },
@@ -142,6 +168,7 @@ local CATEGORIES = {
     { text = 'Task Hunt',          icon = 'quests',      modules = { 'game_task_hunt' }, fns = { 'toggle' } },
     { text = 'Auto Loot',          icon = 'autoloot',    modules = { 'game_autoloot' },  fns = { 'toggle' } },
     { text = 'Minimap',            icon = 'minimap',     modules = { 'game_minimap', 'game_realminimap' }, fns = { 'toggle' } },
+    { text = 'Unjustified Points', icon = 'pvp',         modules = { 'game_unjustifiedpoints' }, fns = { 'toggle' } },
   } },
   { id = 'chaos', text = 'Chaos', icon = 'infinitytower', entries = {
     { text = 'Infinity Tower',     icon = 'infinitytower', modules = { 'game_infinitytower' }, fns = { 'toggle' } },
@@ -165,22 +192,34 @@ local CATEGORIES = {
     { text = 'Quest Tracker',      icon = 'quests',      modules = { 'game_questlog' },  fns = { 'toggleTracker' } },
   } },
   { id = 'system', text = 'System', icon = 'options', entries = {
-    { text = 'Options',            icon = 'options',     modules = { 'client_settings', 'client_options' }, fns = { 'toggle' } },
+    { text = 'Options',            icon = 'options',     modules = { 'client_settings', 'client_options' }, fns = { 'toggle' }, offline = true },
     { text = 'Hotkeys',            icon = 'options',     modules = { 'game_hotkeys' },   fns = { 'toggle' } },
     { text = 'Helper',             icon = 'help',        modules = { 'game_helper' },    fns = { 'toggle' } },
     { text = 'Report a Bug',       icon = 'help',        modules = { 'game_bugreport' }, fns = { 'show' } },
-    { separator = true },
+    { text = 'Join Discord',       icon = 'community',   custom = openCommunity, offline = true },
+    { separator = true, offline = true },
+    { text = 'Console',            icon = 'console',     modules = { 'client_terminal' }, fns = { 'toggle' }, offline = true },
+    { text = 'DAT Offset Studio',  icon = 'console',     modules = { 'game_offsets' },   fns = { 'toggleDatOffsetEditor' }, offline = true },
+    { separator = true, offline = true },
     { text = 'Logout',             icon = 'logout',      custom = logout },
+    { text = 'Exit',               icon = 'exit',        custom = exitClient, offline = true },
   } },
   { id = 'admin', text = 'Admin', icon = 'admin', admin = true, entries = {
     { text = 'Admin Panel',        icon = 'admin',       modules = { 'game_admin' },     fns = { 'toggle' } },
   } },
 }
 
+local function isOnline()
+  return g_game and g_game.isOnline() or false
+end
+
 local function availableEntries(category)
   local list = {}
+  local online = isOnline()
   for _, entry in ipairs(category.entries) do
-    if entry.separator then
+    if not online and not entry.offline then
+      -- login screen: only entries that make sense without a character
+    elseif entry.separator then
       if #list > 0 and not list[#list].separator then list[#list + 1] = entry end
     else
       local action = findAction(entry)
@@ -264,7 +303,14 @@ function ChaosTopBar.refresh()
     end
   end
   menuBar:setWidth(width)
-  menuBar:setVisible(g_game.isOnline())
+  -- in game the bar sits on the game root panel; on the login screen on the root widget
+  local parent = isOnline() and gameParent or g_ui.getRootWidget()
+  if parent and menuBar:getParent() ~= parent then
+    menuBar:setParent(parent)
+    menuBar:addAnchor(AnchorTop, 'parent', AnchorTop)
+    menuBar:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
+  end
+  menuBar:setVisible(true)
   menuBar:raise()
 end
 
@@ -331,7 +377,24 @@ end
 local function onGameEnd()
   adminOverride = nil
   closeMenu()
-  if isAlive(menuBar) then menuBar:hide() end
+  -- back to the login-screen entries once the game interface is gone
+  scheduleEvent(function() ChaosTopBar.refresh() end, 100)
+end
+
+-- ---------------------------------------------------------------- stock top strip
+-- client_topmenu shows its strip on the login screen (and again on every logout); its buttons
+-- are in this menu now, so it stays hidden.
+local stockTopMenu
+local function hideStockTopMenu()
+  local tm = getModule('client_topmenu')
+  local getter = tm and rawget(tm, 'getTopMenu')
+  local w = type(getter) == 'function' and getter() or nil
+  if not isAlive(w) then return end
+  stockTopMenu = w
+  w:hide()
+  w.onVisibilityChange = function(widget, visible)
+    if visible then widget:hide() end
+  end
 end
 
 -- ---------------------------------------------------------------- lifecycle
@@ -344,6 +407,7 @@ function init()
     parent = gi.getRootPanel()
   end
   parent = parent or g_ui.getRootWidget()
+  gameParent = parent
 
   -- anchored to the top of the game root panel (in the extended view the map panel is larger than
   -- the window, so its top edge is off screen)
@@ -357,7 +421,8 @@ function init()
   -- pushFront: signalcall stops at the first handler that returns a value, and some stock
   -- handlers do, so a handler at the end of the list may never run
   connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd }, true)
-  if g_game.isOnline() then onGameStart() end
+  hideStockTopMenu()
+  if g_game.isOnline() then onGameStart() else ChaosTopBar.refresh() end
 end
 
 function terminate()
@@ -365,6 +430,10 @@ function terminate()
   if refreshEvent then removeEvent(refreshEvent) refreshEvent = nil end
   closeMenu()
   if isAlive(menuBar) then menuBar:destroy() end
-  menuBar, buttonsPanel, categoryButtons = nil, nil, {}
+  if isAlive(stockTopMenu) then
+    stockTopMenu.onVisibilityChange = nil
+    stockTopMenu:show()
+  end
+  menuBar, buttonsPanel, categoryButtons, gameParent, stockTopMenu = nil, nil, {}, nil, nil
   ChaosTopBar = nil
 end
