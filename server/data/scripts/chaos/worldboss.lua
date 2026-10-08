@@ -579,6 +579,7 @@ local function distribute()
 	end
 	local shares, total = W.computeShares(state.damage or {}, state.maxHealth or 0, c.reward.minDamagePercent, excluded)
 	local rewards = W.computeRewards(shares, c.reward, boss, W.uniquePool(boss.name))
+	if ChaosLeaderboard and ChaosLeaderboard.recordShares then ChaosLeaderboard.recordShares(shares) end -- leaderboard.lua
 	for _, r in ipairs(rewards) do
 		local player = Player(r.name)
 		if player and player:getGuid() == r.guid then

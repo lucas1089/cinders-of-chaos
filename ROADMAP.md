@@ -40,13 +40,13 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 | 9 | Paragon track for leftover passive points ("option 2") | done | `chaos/paragon.lua`, client `game_passivetree/paragon*`: 1 point per level above 1000, four categories of small capped stats added on top of the tree's bonuses; reset level x 250 gold or the store reset; see server/README.md "Paragon" |
 | 10 | Bounty board: daily rotating "kill X in Y" contracts paying orbs | done | `chaos/bounty*.lua`, client `game_bounty`, pool from `server/tools/gen_bounty_pool.py` (rerun after spawn changes); see server/README.md "Bounty board". Party credit not tested with two real players |
 | 11 | Crafting orbs: add-a-modifier and remove-a-modifier orbs next to Chaos/Divine, plus a crafting bench | in progress | item modifier code in `server/data/lib` |
-| 12 | Seasons / ladders: fresh-start season characters, season uniques, per-vocation highscores, cosmetic carry-over | todo | |
+| 12 | Seasons / ladders: fresh-start season characters, season uniques, per-vocation highscores, cosmetic carry-over | todo | per-vocation highscores done: the all-time Class Ladder of the leaderboards (item 13); seasons still open |
 
 ## Then: social and replay
 
 | # | Item | Status | Notes |
 |---|---|---|---|
-| 13 | Weekly world-boss damage leaderboard with titles | in progress | damage share is already tracked in `worldboss.lua` |
+| 13 | Weekly world-boss damage leaderboard with titles | done | `chaos/leaderboard*.lua`, client `game_leaderboard` (`!leaderboard`, Chaos -> Leaderboards): weekly World Boss, Bounty Hunter and Rifts boards (Monday 06:00 reset; top 3 get a title in the look text and orbs to the inbox), all-time Class Ladder; rift scripts report with `ChaosLeaderboard.record("rift", player, tier)`; see server/README.md "Leaderboards" |
 | 14 | Arena 1v1 / 2v2 with ratings | in progress | PvP rules and multi-client blocks already exist |
 | 15 | Scheduled guild wars / guild-hall siege | in progress | |
 

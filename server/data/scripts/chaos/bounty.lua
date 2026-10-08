@@ -325,6 +325,7 @@ local function creditKill(player, c, tierName)
 		notify(player, string.format("Bounty completed: %s (%d/%d).%s", c.name, e.progress, e.required,
 			paid and "" or " No reward (multi-client)."), c.look)
 		if paid then
+			if ChaosLeaderboard and ChaosLeaderboard.record then ChaosLeaderboard.record("bounty", player, 1) end -- leaderboard.lua
 			st.weekDone = st.weekDone + 1
 			local week = B.week(os.time(), cfg)
 			if st.weekDone >= cfg.weeklyNeed and player:getStorageValue(Chaos.storage.bountyWeekBonus) ~= week then
