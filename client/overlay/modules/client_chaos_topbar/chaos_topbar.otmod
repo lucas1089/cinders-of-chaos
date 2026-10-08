@@ -1,6 +1,6 @@
 Module
   name: client_chaos_topbar
-  description: Chaos-styled icon bar at the top of the game window (toggles the custom game_* windows when present)
+  description: Chaos menu bar at the top of the game map (category drop-downs; replaces the side button icons)
   author: project-chaos
   sandboxed: true
   scripts: [ chaos_topbar ]

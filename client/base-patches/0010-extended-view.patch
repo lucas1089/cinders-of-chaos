@@ -1,0 +1,11 @@
+--- a/data/default-config.otml
++++ b/data/default-config.otml
+@@ -150,7 +150,7 @@
+ resetconfig: true
+ map
+   viewport: 8 6
+-  extended-view-ui: false
++  extended-view-ui: true
+   max-z: 15
+   sea-floor: 7
+   underground-floor: 8

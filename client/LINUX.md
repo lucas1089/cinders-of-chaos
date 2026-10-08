@@ -26,4 +26,17 @@ Put `Tibia.dat`/`Tibia.spr` (10.98) in `<game-dir>/data/things/1098/`, copy or l
   a missing style or module stops the client at start. Fixed with guards and `client_chaos_theme/compat.otui`.
 - The overlay used to replace `client_background`, which other base modules call; now only its images are replaced.
 
-Still logged but harmless at login: a missing `getItemsPrice` in the base client's cyclopedia, and "invalid slot".
+## What the in-game test found (fixed)
+- The missing `getItemsPrice` in the base cyclopedia was not harmless: its `onGameStart` handler raised an error and every
+  `onGameStart` handler connected after it (battle list, skills, VIP, quest log and all the Chaos modules) never ran at login.
+  `base-patches/0009-cyclopedia-start-guard.patch` guards it; the Chaos menu also connects first (`pushFront`).
+- The engine hands HTTP results to Lua as a table (`{status, headers, body, ...}`) but `corelib/http.lua` expected the body
+  string, so no HTTP JSON call worked (boosted creature, event calendar, players online).
+  `base-patches/0011-http-result-body.patch` passes the body on.
+- `base-patches/0010-extended-view.patch` turns on the extended view: the map fills the whole window and the panels float on it.
+
+## Login screen services
+Start `server/tools/clientservices.py` next to the game server (see `server/README.md`) so the login screen shows the
+boosted creature and boss, the event calendar and the players online. `init.lua` points at `http://127.0.0.1:8090/clientservices`.
+
+Still logged at login, not investigated yet: "invalid slot", and a parse exception on one login packet (292 bytes left unread).

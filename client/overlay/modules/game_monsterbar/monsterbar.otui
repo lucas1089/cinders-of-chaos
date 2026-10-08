@@ -3,7 +3,7 @@ Panel
   size: 420 86
   anchors.top: parent.top
   anchors.horizontalCenter: parent.horizontalCenter
-  margin-top: 8
+  margin-top: 44
   phantom: true
   visible: false
 

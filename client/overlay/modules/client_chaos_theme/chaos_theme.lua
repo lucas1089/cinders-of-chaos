@@ -23,9 +23,70 @@ ChaosTheme = {
   imagePath = '/images/chaos/',
 }
 
+-- Widget helpers some of our modules were written against; this engine does not ship them.
+local function installWidgetHelpers()
+  -- "[color=#rrggbb]text[/color]" markup -> the engine's coloured text {text, colour, text, colour, ...}
+  if not UIWidget.parseColoredText then
+    UIWidget.parseColoredText = function(self, text, defaultColor)
+      defaultColor = defaultColor or '#ffffff'
+      local parts, pos = {}, 1
+      text = tostring(text or '')
+      while true do
+        local s, e, color, inner = text:find('%[color=(#?%x+)%](.-)%[/color%]', pos)
+        if not s then break end
+        if s > pos then
+          parts[#parts + 1] = text:sub(pos, s - 1)
+          parts[#parts + 1] = defaultColor
+        end
+        parts[#parts + 1] = inner
+        parts[#parts + 1] = color
+        pos = e + 1
+      end
+      if pos <= #text then
+        parts[#parts + 1] = text:sub(pos)
+        parts[#parts + 1] = defaultColor
+      end
+      if self.setColoredText then
+        self:setColoredText(parts)
+      else
+        self:setText((text:gsub('%[/?color[^%]]*%]', '')))
+      end
+    end
+  end
+
+  -- rich tooltip (title + list of lines) -> plain multi-line tooltip
+  if not UIWidget.setExtendedTooltip then
+    UIWidget.setExtendedTooltip = function(self, title, texts, style)
+      self.extendedTooltip = { title = title, texts = texts, style = style }
+      local lines = { tostring(title or '') }
+      if type(texts) == 'table' then
+        for _, line in ipairs(texts) do
+          lines[#lines + 1] = type(line) == 'table' and tostring(line.text or line[1] or '') or tostring(line)
+        end
+      elseif texts then
+        lines[#lines + 1] = tostring(texts)
+      end
+      self:setTooltip(table.concat(lines, '\n'))
+    end
+    UIWidget.removeExtendedTooltip = function(self)
+      self.extendedTooltip = nil
+      self:removeTooltip()
+    end
+    UIWidget.getExtendedTooltip = function(self)
+      return self.extendedTooltip
+    end
+  end
+  -- the rich tooltip controller of the same family; the plain tooltip above needs no control
+  if not rawget(_G, 'g_extendedtooltip') then
+    local noop = function() end
+    rawset(_G, 'g_extendedtooltip', { init = noop, terminate = noop, show = noop, hide = noop })
+  end
+end
+
 function init()
   g_ui.importStyle('styles')
   g_ui.importStyle('compat')
+  installWidgetHelpers()
 end
 
 function terminate()

@@ -486,6 +486,26 @@ function onDungeonSelected(parent, child, reason)
   doSelection(dungeonId)
 end
 
+-- banner art lives in /images/dungeons/<short name>.png; the server sends the full title
+local BANNERS = {
+  ["Bones Dungeon"] = "Bones",
+  ["Master of the Elements"] = "MasterElement",
+  ["Forbidden Chevalier"] = "Forbidden",
+  ["Rootkraken"] = "Rootkraken",
+  ["Underworld"] = "Underworld"
+}
+
+function bannerFor(title)
+  title = tostring(title or "")
+  local candidates = { BANNERS[title], title, title:match("^(%S+)") }
+  for _, name in ipairs(candidates) do
+    if name and g_resources.fileExists("/images/dungeons/" .. name .. ".png") then
+      return "/images/dungeons/" .. name
+    end
+  end
+  return "/images/dungeons/Underworld"
+end
+
 function selectDungeon(dungeonId)
   local dungeon = Dungeons[dungeonId]
   if not dungeon then return end
@@ -503,7 +523,7 @@ function selectDungeon(dungeonId)
   currentUI.soloTable = window and window:recursiveGetChildById("soloTable") or nil
   currentUI.groupTable = window and window:recursiveGetChildById("groupTable") or nil
 
-  dungeonInfo:getChildById("banner"):setImageSource("/images/dungeons/" .. dungeon.title)
+  dungeonInfo:getChildById("banner"):setImageSource(bannerFor(dungeon.title))
 
   if currentUI.difficultiesPanel then
     if currentUI.difficultiesPanel:getChildCount() >= 1 then

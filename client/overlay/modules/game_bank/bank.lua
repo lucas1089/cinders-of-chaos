@@ -71,8 +71,15 @@ function bankOpcode(protocol, code, buffer)
 end
 
 function refresh()
-	bankingWindow.gold.item:setItemId(3031)
-	bankingWindow.star.item:setItemId(35572)
+	-- the tab buttons carry an item icon only when the style defines one (CustomTabButton may not)
+	local goldIcon = bankingWindow.gold:getChildById("item")
+	if goldIcon then
+		goldIcon:setItemId(3031)
+	end
+	local starIcon = bankingWindow.star:getChildById("item")
+	if starIcon then
+		starIcon:setItemId(35572)
+	end
 	bankRadioTabs:selectWidget(bankingWindow.gold)
 	bankingWindow.gold:setOn(true)
 end

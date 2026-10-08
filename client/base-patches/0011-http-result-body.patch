@@ -1,0 +1,24 @@
+--- a/modules/corelib/http.lua
++++ b/modules/corelib/http.lua
+@@ -149,6 +149,10 @@
+ end
+ 
+ function HTTP.onGet(operationId, url, err, data)
++  -- the engine passes the whole result table ({status, headers, body, ...}), not the body string
++  if type(data) == "table" then
++    data = data.body or ""
++  end
+   local operation = HTTP.operations[operationId]
+   if operation == nil then
+     return
+@@ -186,6 +190,10 @@
+ end
+ 
+ function HTTP.onPost(operationId, url, err, data)
++  -- the engine passes the whole result table ({status, headers, body, ...}), not the body string
++  if type(data) == "table" then
++    data = data.body or ""
++  end
+   local operation = HTTP.operations[operationId]
+   if operation == nil then
+     return
