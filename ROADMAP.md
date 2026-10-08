@@ -9,7 +9,7 @@ Status: `todo`, `in progress`, `done`.
 |---|---|---|---|
 | 1 | Store additions: stamina refill, temple teleport, bottomless loot pouch, auto seller, training weapons, world buffs, name change, vocation change, extras (double exp potion, blessings, frag/skull removal, sex change, respec) | done | `server/data/scripts/chaos/shop*.lua` |
 | 2 | Passive tree keystones per vocation (knight Cleaving Arc, paladin Ricochet, sorcerer Arcane Echo, druid Overgrowth, illusionist Mirror Strike, ...) | in progress | measured on the test dummies so the role order holds |
-| 3 | Combat visuals: elemental weapon damage as its own coloured number + element sprite; crit, dodge and reflect sprites | in progress | server module `ChaosCombatFx` |
+| 3 | Combat visuals: elemental weapon damage as its own coloured number + element sprite; crit, dodge and reflect sprites | done | server module `ChaosCombatFx` |
 
 ## Next: fix the late game (players hit a wall after level ~500)
 
@@ -70,6 +70,13 @@ Estimated today: ~155 h to level 1000 for a sorcerer, ~285 h for a knight or pal
 
 ## Open decisions and loose ends
 
+- Bug (existing): the rarity element script (`data/scripts/customs/rarity/rarity_onCombat_elementdamage.lua`,
+  base server) returns nothing when a player wears two different rarity elements, which zeroes the damage.
+- Bug (existing): `/testkit` (`admin/testkit.lua`) calls `addHealth(n)`, which does nothing on this engine
+  (it takes a damage type first), so health is not refilled.
+- Note: the engine only runs `onTargetCombat` for weapon hits after the player clicks to attack; targets set
+  from Lua skip it, and with it the rarity, passive tree and combat feedback damage events.
+- The Windows server binary has no `server/src-patches/` applied: no "CRIT!" visual there until it is rebuilt.
 - Illusionist: decided, a support class (party attack buffs and some healing), the Mystic's second ascension.
 - Community (Discord) invite link: `ChaosTopBar.COMMUNITY_URL` in `client/overlay/modules/client_chaos_topbar/chaos_topbar.lua` is empty until there is one.
 - Optional: swap the client's xBRZ for version 1.8 (fixes artifacts on transparent sprite edges; same GPL-3 license; needs testing).
