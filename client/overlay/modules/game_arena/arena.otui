@@ -1,0 +1,214 @@
+// Arena window (game_arena). Styles from client_chaos_theme (styles.otui).
+
+ArenaModeCard < ChaosPanelDark
+  height: 112
+  phantom: false
+
+  ChaosTitle
+    id: title
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+
+  UILabel
+    id: rating
+    anchors.top: title.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 2
+    text-auto-resize: true
+    font: sans-bold-16px
+    color: #f6cf72
+    phantom: true
+
+  ChaosLabelDim
+    id: record
+    anchors.top: rating.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 4
+    text-auto-resize: true
+    phantom: false
+
+  ChaosButton
+    id: queue
+    anchors.bottom: parent.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    width: 150
+
+ArenaMatchRow < ChaosPanelDark
+  height: 26
+  margin-bottom: 3
+  phantom: false
+
+  UILabel
+    id: mode
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    width: 30
+    font: verdana-11px-rounded
+    color: #8c8070
+    phantom: true
+
+  UILabel
+    id: result
+    anchors.left: mode.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+    width: 64
+    font: verdana-11px-rounded
+    phantom: true
+
+  UILabel
+    id: change
+    anchors.left: result.right
+    anchors.verticalCenter: parent.verticalCenter
+    width: 136
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    phantom: true
+
+  UILabel
+    id: opponents
+    anchors.left: change.right
+    anchors.right: when.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 6
+    text-align: left
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    phantom: true
+
+  UILabel
+    id: when
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    width: 60
+    text-align: right
+    font: verdana-11px-antialised
+    color: #8c8070
+    phantom: true
+
+ChaosMainWindow
+  id: arenaWindow
+  size: 560 520
+  !text: tr('Arena')
+  @onEscape: modules.game_arena.hide()
+
+  ArenaModeCard
+    id: card1v1
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.horizontalCenter
+    margin-right: 4
+
+  ArenaModeCard
+    id: card2v2
+    anchors.top: parent.top
+    anchors.left: parent.horizontalCenter
+    anchors.right: parent.right
+    margin-left: 4
+
+  ChaosPanelDark
+    id: statusPanel
+    anchors.top: card1v1.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    height: 58
+
+  ChaosLabel
+    id: statusLabel
+    anchors.top: statusPanel.top
+    anchors.left: statusPanel.left
+    anchors.right: leaveButton.left
+    margin-top: 8
+    margin-left: 10
+    margin-right: 8
+    text-align: left
+    color: #f6cf72
+
+  ChaosLabelDim
+    id: infoLabel
+    anchors.top: statusLabel.bottom
+    anchors.left: statusLabel.left
+    anchors.right: leaveButton.left
+    margin-top: 6
+    margin-right: 8
+    text-align: left
+    phantom: false
+
+  ChaosButton
+    id: leaveButton
+    anchors.right: statusPanel.right
+    anchors.verticalCenter: statusPanel.verticalCenter
+    margin-right: 8
+    width: 110
+    !text: tr('Leave Queue')
+    @onClick: modules.game_arena.leaveQueue()
+
+  ChaosLabel
+    id: recentTitle
+    anchors.top: statusPanel.bottom
+    anchors.left: parent.left
+    margin-top: 8
+    !text: tr('Recent matches')
+    color: #e8b84a
+    text-auto-resize: true
+
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: recentTitle.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: hintLabel.top
+    margin-top: 4
+    margin-bottom: 6
+    padding: 3
+
+  UIScrollArea
+    id: matchList
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: listScroll.left
+    anchors.bottom: listFrame.bottom
+    margin: 4
+    layout:
+      type: verticalBox
+    vertical-scrollbar: listScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: listScroll
+    anchors.top: listFrame.top
+    anchors.right: listFrame.right
+    anchors.bottom: listFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 29
+    pixels-scroll: true
+
+  ChaosLabelDim
+    id: emptyText
+    anchors.centerIn: listFrame
+    !text: tr('No arena matches yet.')
+    text-auto-resize: true
+    visible: false
+
+  ChaosLabelDim
+    id: hintLabel
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    margin-right: 8
+    text-align: left
+    text-wrap: true
+    height: 30
+    !text: tr('Queue in a protection zone. No skull, frag or death loss: a killing blow leaves you at 1 health. Leaving is a loss.')
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    !text: tr('Close')
+    @onClick: modules.game_arena.hide()

@@ -175,6 +175,7 @@ local CATEGORIES = {
     { text = 'Dungeons',           icon = 'dungeons',    modules = { 'game_dungeons' },  fns = { 'toggle' } },
     { text = 'Daily Reward',       icon = 'daily',       modules = { 'game_daily' },     fns = { 'toggle' } },
     { text = 'Bounty Board',       icon = 'quests',      modules = { 'game_bounty' },    fns = { 'toggle' } },
+    { text = 'Arena',              icon = 'pvp',         modules = { 'game_arena' },     fns = { 'toggle' } },
     { text = 'Guild Siege',        icon = 'pvp',         modules = { 'game_siege' },     fns = { 'toggle' } },
     { text = 'Crafting Bench',     icon = 'proficiency', modules = { 'game_crafting' }, fns = { 'toggle' } },
     { text = 'Event Calendar',     icon = 'events',      modules = { 'game_schedule' },  fns = { 'toggle' } },

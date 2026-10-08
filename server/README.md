@@ -97,11 +97,12 @@ working directory, as with the rest of the base server libs).
 | game_stash | `stash.lua` | **110** (new), `!stash` | Deposit by drag, redeem, categories, block list, `!stash all`, DB persistence. Client must be ported first (see below). |
 | game_spellbook | `spellbook.lua` | 219, `!spells` / `/spells` | Spell list window: every player spell of `data/spells/spells.xml` with its data, a short description and its area of effect (see "Spellbook" below). |
 | game_bounty | `bounty.lua`, `bounty_core.lua`, `bounty_config.lua`, `bounty_pool.lua` | 223, `!bounty` / `/bounty` | Daily rotating kill contracts per level band, tested in game (see "Bounty board"). |
+| game_arena | `arena.lua`, `arena_core.lua`, `arena_config.lua` | 236, `!arena` / `/arena` | Ranked PvP arena, 1v1 and 2v2 with Elo per mode, runtime instances, no death / skull / frag inside, tested in game with two clients (see "Arena"). |
 | game_siege | `siege.lua`, `siege_core.lua`, `siege_config.lua` | 233, `!siege` / `/siege` | Weekly guild siege for the Chaos Obelisk: sign-ups, runtime arena, HUD, rewards and the champion title, tested in game (see "Guild siege"). |
-| game_leaderboard | `leaderboard.lua`, `leaderboard_core.lua`, `leaderboard_config.lua` | 229, `!leaderboard` | Weekly World Boss / Bounty Hunter / Rifts / Goblin Slayer / Guild Siege boards with titles and orbs for the top 3, all-time class ladder, tested in game (see "Leaderboards"). |
+| game_leaderboard | `leaderboard.lua`, `leaderboard_core.lua`, `leaderboard_config.lua` | 229, `!leaderboard` | Weekly World Boss / Bounty Hunter / Rifts / Goblin Slayer / Guild Siege / Arena boards with titles and orbs for the top 3, all-time class ladder, tested in game (see "Leaderboards"). |
 | game_crafting | `crafting.lua`, `data/lib/chaos_crafting.lua` | 232, `!craft` / `/craft` | Crafting bench and the crafting orbs (Transmutation, Alchemy, Exalted, Annulment, Scouring, plus Chaos and Divine), tested in game (see "Crafting"). |
 
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 229, 232, 233 are all registered in the global
+Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 229, 232, 233, 236 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
 
 ### Opcode collision check
@@ -778,7 +779,7 @@ window, and builds its SQL from client input without checks. So the Chaos window
 "Highscores" became "Leaderboards".
 
 - **Boards.** Weekly: **World Boss** (damage dealt to world bosses, kills participated), **Bounty Hunter** (contracts
-  completed), **Rifts** (highest rift tier completed, runs), **Goblin Slayer** (treasure goblins slain), **Guild Siege** (siege points). All time: **Class Ladder** (highest level per class).
+  completed), **Rifts** (highest rift tier completed, runs), **Goblin Slayer** (treasure goblins slain), **Guild Siege** (siege points), **Arena 1v1** and **Arena 2v2** (best rating of the week). All time: **Class Ladder** (highest level per class).
   Each board shows the top 20 (`rows`), the player's own rank and value, and the time until the weekly reset.
   Ranks are never shared: on equal values the player who reached the value first ranks higher, then the lower id.
   Staff characters (`group_id >= staffGroup`, 4) are left out of every board, title and reward.
@@ -789,7 +790,7 @@ window, and builds its SQL from client input without checks. So the Chaos window
   count too). `bounty.lua` records a contract when it pays (not when multi-clienting). The rift scripts call the API below.
 - **Reset.** A once-a-minute check (and one at startup) runs the reset when the week key is later than the last
   processed one. It takes the top 3 (`top`) of every weekly board of the week that ended. They get the board's title
-  (`title`: Bossbane, Warden of the Hunt, Riftwalker, Goblin Slayer, Siegebreaker) for the week that starts. Their orbs (`rewards`: 1st 5 Divine +
+  (`title`: Bossbane, Warden of the Hunt, Riftwalker, Goblin Slayer, Siegebreaker, Duelist, Gladiator) for the week that starts. Their orbs (`rewards`: 1st 5 Divine +
   10 Chaos, 2nd 3 + 6, 3rd 1 + 3) go straight to the inbox. A player offline at the reset gets them at the next login:
   the `rewarded` flag is in the DB, so a restart loses nothing. The reset broadcasts the winners (also as a toast with
   `game_chaosnotify`). Score rows older than `keepWeeks` (8) are deleted. When the server was down over several
@@ -807,7 +808,7 @@ window, and builds its SQL from client input without checks. So the Chaos window
 ### API (rifts and any other script)
 
 ```lua
--- board: "worldboss" | "bounty" | "rift" | "goblin" | "siege" (a key of Chaos.leaderboardConfig.boards)
+-- board: "worldboss" | "bounty" | "rift" | "goblin" | "siege" | "arena1v1" | "arena2v2" (a key of Chaos.leaderboardConfig.boards)
 -- who:   a Player, a player guid, or {guid = n, name = s} (offline players are looked up)
 -- value: integer >= 0; mode: "add" (sum) or "max" (keep the best); nil = the board's mode (rift: "max")
 -- Every call also adds 1 to the board's count column (kills / contracts / runs).
@@ -1007,6 +1008,95 @@ the champion look text and the +5% experience; everyone sent out and the arena c
 on the point (contested; covered by the unit test), parallel brackets, the scheduled start at the real time,
 `tests/siege_test.lua` covers the schedule, sign-up rules, brackets, the arena geometry, capture control, standings,
 rewards and the champion title.
+
+## Arena (`arena.lua`, `arena_core.lua`, `arena_config.lua`, client `game_arena`)
+
+Ranked PvP: 1v1 and 2v2, an Elo rating per mode, matches in arena instances built at runtime. Settings are in
+`arena_config.lua`, the pure part (ratings, matchmaking, level rule, death catch, timeout) in `arena_core.lua`
+(`tests/arena_test.lua`), the runtime in `arena.lua` (`tests/arena_flow_test.lua` runs it on a mocked engine: 2v2,
+parallel slots, disconnect, timeout).
+
+**Queue.** `!arena queue 1v1`, `!arena queue 2v2` (a party of exactly two; either member queues both), `!arena leave`
+(leaves the queue, or forfeits a running match), `!arena` (status and the window). The window (Chaos -> Arena in the top
+menu, or `!arena`) shows the rating, W-L-D and best per mode, the queue buttons, the queue time and window, the level
+range you can face, whether today's first-win bonus is taken and the last 10 matches. To queue (and again when the match
+is found) every player must be level 50+, in a protection zone, out of combat (no fight lock), not multi-clienting
+(`Chaos.isMultiClient`) and not inside a dungeon, the Infinity Tower, a rift, the world boss rooms or a siege
+(`ChaosDungeonIsInside`, `ChaosTowerRun.isInside`, `ChaosRift.isInside`, `ChaosWorldBoss.inside`, `ChaosSiege.isInside`;
+each is skipped when it does not exist). A player who fails the check when the match is found is dropped from the queue
+with the reason; the other entry stays queued.
+
+**Matchmaking.** Every 2 seconds, oldest entry first, each entry takes the closest rating it may face. Allowed rating
+difference: 100, +50 for every 10 s waited, at most 600, measured on the entry that waited longer. 2v2 teams queue with
+the average 2v2 rating of the two. Two 1v1 players in the same party, or two entries from the same connection, never
+pair. **Level rule** (one rule for both modes, over every player of the match): the lowest level must be at least 80%
+of the highest, or within 20 levels of it. 800 fights 1000, 300 never does; there is no stat normalisation.
+
+**The match.** A free slot of a grid of 8 (`grid` in the config: origin 6000,6000,7, 4 columns, 24 tiles apart; the
+world boss uses 5000-5048, the tower 2000-2660, rifts 8192-8448) is built once with `Game.createTile`: an 11 x 9 room
+of black marble with two pillars and coal basins, and a gallery south of it behind a wall. The build is refused if any
+tile of the slot already exists (runtime tiles are gone after a restart, so an existing tile is always the map's); a
+refused slot is skipped (`/arena slots` lists them). Everyone is checked again, healed to full health and mana, freed of
+damage-over-time conditions and teleported in, the teams 6 tiles apart. 10 seconds of countdown (no damage between
+players at all), then 5 minutes of fight. The client module turns secure mode off for the match (the base PvP rules make
+a player with secure mode on unattackable) and back on after it; a fighter who still has it on 15 s into the fight is
+counted as defeated.
+
+**No death, skull or frag inside.** Fighters get three creature events for the match. `onHealthChange` drops every hit
+that is not allowed (countdown, team mate, defeated attacker or target, anyone from outside the match) and cuts a hit
+that would kill to leave 1 health: that player is defeated and moved to the gallery, where nothing can hit them and they
+cannot hit. `onPrepareDeath` is the safety net (a hit raised by a later script, an `ORIGIN_NONE` hit): it cancels the
+death and defeats the player. `onManaChange` drops mana taken by players who may not hit. An EventCallback
+`onTargetCombat` refuses attacks before the fight, on team mates and the defeated, and in or out of a match ("The fight
+starts in N seconds."). Nobody dies, so there is no frag, unjustified kill, death loss or corpse; the white skull and the
+fight lock of the fight are removed at the end (`removeCondition(CONDITION_INFIGHT)` clears both), the target is
+cleared, and everyone goes back to where they stood when the match started (the temple for a missing position), healed.
+
+**End.** One side has nobody standing: the other side wins. Time out: the side with the higher share of health left
+(sum of health / sum of max health, the defeated count as 0) wins; equal (within 0.1%) is a draw. Leaving counts as a
+loss: logging out (only possible in the countdown, the engine refuses a logout in fight), losing the connection for 3 s,
+`!arena leave`, being moved out of the slot, or another character of the same connection logging in. A leaver is sent
+back at once and scores 0 even when the partner wins the 2v2. `/arena stop` (staff) ends every match unrated.
+
+**Ratings.** Elo per mode, start 1000, floor 100, K 40 for a player's first 10 matches of the mode, then 24. Every player
+is rated against the other team's average (1v1: the opponent). Both the window and the result toast show the change
+(`Rating 1000 -> 1020 (+20)`); the chat gets the same line. `ChaosLeaderboard.record("arena1v1" / "arena2v2", player,
+rating, "max")` is called after every rated match when the leaderboard module is loaded (board keys in
+`arena_config.lua` `modes`): the weekly Arena 1v1 and Arena 2v2 boards of the leaderboards (best rating of the week;
+titles Duelist and Gladiator). Seasonal resets are not there yet.
+
+**Rewards.** A win: 1 Chaos Orb (at most 10 rewarded wins a day). The first win of the day on top: 1 Divine Orb and 2
+Chaos Orbs. A draw or a loss gives nothing. Backpack first, the rest to the inbox. Storages 7100340-7100342 (player:
+first-win day, wins day, wins count); 7100340-7100349 are reserved for the arena.
+
+**Database** (`sql/chaos.sql`): `chaos_arena_ratings` (player, mode, rating, wins, losses, draws, best),
+`chaos_arena_matches` (one row per rated match: mode, slot, winner, reason, start, end) and
+`chaos_arena_match_players` (every player of a rated match: team, result, rating before/after, opponents, partner,
+reason; the window's recent matches).
+
+**Client** (`game_arena`, opcode 236 JSON): `state` (window), `start` (HUD on, secure mode off), `hud` every second
+(both teams' names and health %, countdown or fight clock, your team on the left), `end` (VICTORY / DEFEAT / DRAW toast
+with the rating change and the reward, 8 s; secure mode restored, attack cancelled); client -> server `open`,
+`queue {mode}`, `leave`.
+
+**Test switch.** The test map has no protection zone and the engine has no Lua call to give a runtime tile the
+protection-zone flag, so the queue's protection-zone rule can be switched off for tests only:
+`Game.setStorageValue(Chaos.arenaConfig.testNoPzStorage, 1)` (global storage 7100345, in memory, gone after a restart).
+Never set it on a live server.
+
+**Tested in game** (srv6, two clients on one IP, multi-client blocks switched off for the fights): the multi-client and
+protection-zone refusals, the level rule (562 vs 1000 stayed queued, 850 vs 1000 paired), queue and match start, the
+countdown block (attack refused with the message, scripted damage dropped), the death catch from a real melee hit and
+from a scripted 30000 hit (1 health, defeated, gallery, no death row, no skull after), the rating change on both sides
+(+20/-20, +18/-18, the underdog +26), the timeout decision (an exact health-share tie gave a draw, -2/+2), a dropped
+connection as a loss, `/arena stop` unrated, the footprint refusal over the test map's tiles and all 8 slots built, the
+HUD, the result toast, the window and the top-menu entry. 2v2, the gallery in a 2v2 and parallel matches were run on the
+mocked engine only (there were two client displays).
+
+**Limits.** No spectators from outside. No stat normalisation between levels inside the 80% band. The engine refuses a
+logout during a fight, so a logout mid-fight is a disconnect (counted after 3 s). Players keep their buffs, summons and
+items (potions and runes are used up as normal). The world type must allow PvP (`worldType = "pvp"`); on a no-pvp world
+the engine blocks the damage before the scripts see it.
 
 ## Late game (`tools/late_game.py`, `tools/late_game_spawns.csv`, 17 monsters in `data/monster/monsters/chaos/`)
 

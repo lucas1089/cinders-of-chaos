@@ -1,0 +1,125 @@
+// Arena match HUD (game_arena): in the game root panel, top centre of the map, under the top menu. Team rows are created by arena.lua.
+
+ArenaHudRow < UIWidget
+  height: 30
+  margin-bottom: 2
+  phantom: true
+
+  UILabel
+    id: name
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 13
+    font: verdana-11px-rounded
+    color: #d6c9ae
+    phantom: true
+
+  ChaosHealthBar
+    id: bar
+    anchors.top: name.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    height: 14
+    font: verdana-11px-antialised
+    text-offset: 0 1
+    phantom: true
+
+UIWidget
+  id: arenaHud
+  size: 420 92
+  anchors.top: parent.top
+  anchors.horizontalCenter: gameMapPanel.horizontalCenter
+  margin-top: 44
+  image-source: /images/chaos/panel_dark
+  image-border: 6
+  padding: 8
+  phantom: true
+  visible: false
+
+  UIWidget
+    id: left
+    anchors.top: parent.top
+    anchors.left: parent.left
+    width: 150
+    height: 70
+    phantom: true
+    layout:
+      type: verticalBox
+
+  UIWidget
+    id: right
+    anchors.top: parent.top
+    anchors.right: parent.right
+    width: 150
+    height: 70
+    phantom: true
+    layout:
+      type: verticalBox
+
+  UILabel
+    id: mode
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    text-auto-resize: true
+    font: verdana-11px-rounded
+    color: #8c8070
+    phantom: true
+
+  UILabel
+    id: clock
+    anchors.top: mode.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 2
+    text-auto-resize: true
+    font: sans-bold-16px
+    color: #f6cf72
+    phantom: true
+
+  UILabel
+    id: phase
+    anchors.top: clock.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 2
+    text-auto-resize: true
+    font: verdana-11px-antialised
+    color: #8c8070
+    phantom: true
+
+  UIWidget
+    id: result
+    anchors.fill: parent
+    image-source: /images/chaos/panel_dark
+    image-border: 6
+    phantom: true
+    visible: false
+
+    UILabel
+      id: title
+      anchors.top: parent.top
+      anchors.horizontalCenter: parent.horizontalCenter
+      margin-top: 8
+      text-auto-resize: true
+      font: sans-bold-16px
+      phantom: true
+
+    UILabel
+      id: rating
+      anchors.top: title.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      margin-top: 6
+      text-auto-resize: true
+      font: verdana-11px-rounded
+      color: #d6c9ae
+      phantom: true
+
+    UILabel
+      id: reward
+      anchors.top: rating.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      margin-top: 4
+      text-auto-resize: true
+      font: verdana-11px-antialised
+      color: #f6cf72
+      phantom: true
