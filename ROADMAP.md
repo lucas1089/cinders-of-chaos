@@ -54,7 +54,7 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 
 | # | Item | Status | Notes |
 |---|---|---|---|
-| 16 | Loot filter: hide or highlight items by rarity (autoloot and corpses) | todo | |
+| 16 | Loot filter: hide or highlight items by rarity (autoloot and corpses) | in progress | |
 | 17 | In-client hunt tracker: exp/h and profit/h | todo | |
 | 18 | Build sharing: export/import a passive tree code | todo | |
 | 19 | Respec cost that scales with level | todo | decide together with the store's respec token (item 1) |
