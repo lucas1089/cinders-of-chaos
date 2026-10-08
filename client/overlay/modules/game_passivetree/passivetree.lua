@@ -471,6 +471,7 @@ local function buildTree()
 				end
 
 				widget.onClick = onClickNode
+				widget.onMousePress = onNodeMousePress -- respec.lua: right-click refund of a saved node
 				scaleNodeWidget(widget)
 				nodeWidgets[node.id] = widget
 			end
@@ -804,6 +805,12 @@ local function showAllocation(ids, blocked)
 	startBuild(key)
 end
 
+-- buildshare.lua: shows a build preview the same way sendNodes shows the saved allocation
+function showTreeAllocation(ids, blocked)
+	changesPending = false
+	showAllocation(ids, blocked)
+end
+
 local function allocatedIds()
 	if pendingAlloc then
 		return pendingAlloc.ids -- not shown yet (a build is running): the allocation it will show
@@ -869,6 +876,8 @@ function onExtendedOpcode(protocol, code, buffer)
 		updateNodes(data)
 	elseif action == "paragonState" then
 		onParagonState(data) -- paragon.lua
+	elseif ChaosTreeHandlers and ChaosTreeHandlers[action] then
+		ChaosTreeHandlers[action](data) -- buildshare.lua, respec.lua
 	end
 
 	return 
@@ -1531,6 +1540,9 @@ function reset()
 	  "You are about to reset your passive tree for %d gold coins (Level: %d x 250 gold per level). Proceed?",
 	  cost, level
 	)
+	if respecResetText then
+	  text = respecResetText() -- respec.lua: the server's price (respecInfo)
+	end
   
 	local function okFunc()
 	  sendAction("resetPreset", currentSelected)

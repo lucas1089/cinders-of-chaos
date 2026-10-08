@@ -16,7 +16,7 @@
 -- Protocol (extended opcode 65, dispatched by passivetree.lua, same {"action":..,"data":..} JSON):
 --   client -> server  paragonRequest                          -> paragonState
 --                     paragonApply {alloc = {statKey = n}}    -> absolute allocation; validated, saved, applied, paragonState
---                     paragonReset                            -> costs level x 250 gold, then paragonState
+--                     paragonReset                            -> priced by respec.lua (respec_config.lua), then paragonState
 --   server -> client  {"action":"paragonState","data":{unlocked, level, startLevel, total, spent, free, resetCost,
 --                      categories = [{key, name, stats = [{key, name, desc, perPoint, maxPoints, points}]}]}}
 --                     errors use the tree's {"action":"sendMessage"} box
@@ -193,7 +193,9 @@ function P.state(player)
 	return {
 		unlocked = P.unlocked(player:getLevel()) or spent > 0, level = player:getLevel(), startLevel = cfg.startLevel,
 		total = total, spent = spent, free = math.max(0, total - spent),
-		resetCost = player:getLevel() * Chaos.passive.resetCostPerLevel, categories = categories
+		-- respec.lua prices the reset (respec_config.lua); the old rule if it is not loaded
+		resetCost = ChaosRespec and ChaosRespec.fullCost(player, "paragon") or player:getLevel() * Chaos.passive.resetCostPerLevel,
+		categories = categories
 	}
 end
 

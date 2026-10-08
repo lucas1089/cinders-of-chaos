@@ -32,6 +32,9 @@ server/
   tools/add_vocations.py              writes them into data/XML/vocations.xml (2, 6, 9 retired) and converts the vocation lists
                                       of spells.xml / weapons.xml / movements.xml (+ potions.lua, lib/core/player.lua)
     paragon.lua (Paragon track past the passive tree, see "Paragon")
+    buildshare.lua  buildshare_core.lua (passive tree build codes, see "Build sharing")
+    respec.lua  respec_core.lua  respec_config.lua (respec prices, single-node refund, see "Respec")
+  tools/respec_income.py              gold per hour of hunting per level, the basis of the respec prices
   src-patches/0001-critical-hit-to-lua.patch   engine: onHealthChange gets `critical` (combat_fx.lua)
   src-patches/0002-dual-wield-and-vocation-attack-speed.patch   engine: a Ninja may hold a sword in the shield hand;
                                       weapon attack speed scaled by the vocation's (thief_combat.lua)
@@ -101,7 +104,7 @@ working directory, as with the rest of the base server libs).
 | game_autoloot | `autoloot.lua` | 216 | Window protocol and `!autoloot` / `!autolootclient` talkactions; list lives in the same storages (base 80000) as the base server onDropLoot callback, which does the actual looting. XML talkaction conflict possible (see below). |
 | game_daily | `daily.lua` | 207 | 7-day streak with claim, midnight rollover, `!daily`, optional open on login. Rewards: platinum coins, Chaos and Divine Orbs and a crystal coin, plus a week bonus on day 7 (all or nothing); edit `Chaos.daily` in `chaos_constants.lua`. |
 | game_notifications | `notifications.lua` | 79 out, 151/152 in | `/gmnotify`, accept/decline of a standard TFS party invite, `ChaosNotify.*` sender API. Catacomb start / leave-queue are hooks only; nothing triggers party/catacomb/task/battle pass toasts automatically. |
-| game_passivetree | `passivetree.lua`, `passivetree_data.lua`, `passivetree_effects.lua`, `passivetree_keystones.lua`, `paragon.lua` | 65 | Points, save with full validation (known ids, connected to root, point cap), preset storage, reset for level x 250 gold; the bonuses are applied (see "Passive tree effects"). Paragon track past level 1000 on the same opcode (see "Paragon"). |
+| game_passivetree | `passivetree.lua`, `passivetree_data.lua`, `passivetree_effects.lua`, `passivetree_keystones.lua`, `paragon.lua` | 65 | Points, save with full validation (known ids, connected to root, point cap), preset storage, priced reset and single-node refund (see "Respec"), build codes (see "Build sharing"); the bonuses are applied (see "Passive tree effects"). Paragon track past level 1000 on the same opcode (see "Paragon"). |
 | game_dungeons | `dungeons.lua` | 109 | Reads the base server `DUNGEON_SYSTEM` table. Queue, group formation, teleport in, timer, monster-count progress, boss kill, difficulty unlock, speed/flawless challenges, solo/group rankings, teleport out. Difficulty does not change monsters; loot panel is display only. |
 | game_infinitytower | `infinitytower.lua` | 214 | Seasons, points, best floor/time, ranking, milestone claim, `!tower`, `/towerrun` staff test helper. **The tower gameplay does not exist**; a future script reports results with `ChaosTower.recordRun`. Season-end top 3 chests not implemented. |
 | game_stash | `stash.lua` | **110** (new), `!stash` | Deposit by drag, redeem, categories, block list, `!stash all`, DB persistence. Client must be ported first (see below). |
@@ -326,8 +329,8 @@ All maxed: 282 points (level 1282). Points past that are kept but have nowhere t
   (8 reduction points = 2%, 1 point = 0.25% = nothing until the 4th). Damage, health, mana, speed and gold find are exact.
 - Gold find: `value x percent / 100` of the coins in the corpse, the fraction as a chance of one more gold coin, paid as crystal /
   platinum / gold coins. Only coins on the corpse's top level count (where the stock loot puts them).
-- **Allocations only go up.** Taking points back is a reset: level x `Chaos.passive.resetCostPerLevel` (250) gold, the tree's rule
-  (carried gold, `removeMoney`). **Decision:** the store's Passive Tree Reset service resets the tree *and* Paragon for free (one paid
+- **Allocations only go up.** Taking points back is a reset, priced like the tree's full reset by `respec.lua` (see "Respec"; it
+  was level x 250 gold, still the fallback in `paragon.lua` without `respec.lua`). **Decision:** the store's Passive Tree Reset service resets the tree *and* Paragon for free (one paid
   respec for every passive point; its description says so). The vocation change resets only the tree: Paragon stats do not depend on
   the vocation.
 - A character whose level fell below the points it spent is refunded for free at login (like the tree). On every level above 1000
@@ -399,6 +402,106 @@ variant the server applies (the client's own vocation number did not match: an E
 - `server/tests/passivetree_keystones_test.lua`: chance maths, cleave and ricochet target choice, echo cooldown, overload priming, party
   bonus, the engine glue against mocked creatures, the recursion guard, the per-vocation data and that the client tooltips state the
   server's numbers.
+
+## Build sharing (`buildshare.lua`, `buildshare_core.lua`)
+A build can be exported as a short text code and imported on another character (or after a reset). The server encodes, decodes,
+validates and applies; the client only shows what the server sends.
+- **Client:** the **Build Code** button of the passive tree window opens a panel (`game_passivetree/buildshare.lua`,
+  `buildshare.otui`): **Export** puts the code in the text box and on the clipboard (`g_window.setClipboardText`), **Paste** /
+  **Import** asks the server for a preview. The tree then shows the nodes the import would allocate, and the panel says the
+  points needed vs. owned, what changes (new / taken back), the nodes left out and the price. **Apply Build** (with a confirm
+  box showing the price) applies it, **Cancel Preview** shows the saved tree again.
+- **Chat:** `!build export` (the code plus a "build link" `[build CB1-...]` to paste in chat), `!build import <code or link>`
+  (preview as text), `!build confirm` (within 5 minutes), `!build cancel`.
+- **Code format, version 1:** `CB1-` + base64url of: class line (1 byte, index into `ChaosBuildShare.CLASS_LINES` = warrior,
+  ranger, mystic, thief; 0 = no class; never a vocation id), flags (1 byte, 1 = Paragon part), the optional Paragon part (count,
+  then stat index into `PARAGON_KEYS` + points, 1 byte each), a bitset of the allocated node ids (bit `id % 8` of byte `id / 8`,
+  trailing zero bytes dropped) and a 3 byte checksum (`h = (h x 257 + byte) mod 16777213` over "CB1" and the bytes). Only the
+  canonical base64 form is accepted, so every single-character typo is rejected (test). A 100 node build is ~60 characters, a
+  248 node level 1000 build ~110, the whole tree ~120.
+- **Stability rule:** the bitset is indexed by the stable node ids of `passivetree_data.lua` (the client's `nodes.lua` ids), not
+  by array positions. New nodes are appended with new ids; existing ids are never renumbered or reused, so old codes stay valid
+  and mean the same nodes. A retired id makes codes that use it invalid ("node N is not in the passive tree"). Class lines and
+  Paragon stat keys are append-only lists. A new format gets a new version number; old versions are rejected with a clear message
+  unless `decode` keeps reading them (only version 1 exists).
+- **Import rules (server):** same class line as the importer (Juggernaut and Berserker share the Warrior line; keystone variants
+  follow the importer's class via `ChaosClasses.keystoneKey`), else "This build is for a Warrior line class; you are a ...";
+  every node known and connected to the start through the build's own nodes; a keystone only if the importer's class has a variant
+  of it; the saved list passes the tree's own save validation (`validateNodes`) again. **Not enough points (decision): the first N
+  nodes in path order are applied** (the nodes the character already has first, then nearest to the start, then lowest id; the
+  prefix is always connected) and the preview / result says how many were left out. The Paragon part is applied when the track is
+  unlocked, stat by stat in key order up to the points owned.
+- **Price:** an import that only adds to the current tree (and Paragon) is free, onto an empty tree too. One that takes nodes or
+  Paragon points back costs the full reset price of that part (`respec.lua`: tree, Paragon), with the same free cases (below level
+  50, the free reset after a class change). The store's Passive Tree Reset service (a free reset of both) can be used first. The
+  client sends back the price the preview showed; a higher price at apply time is refused ("preview again").
+- Protocol (opcode 65, through `ChaosPassiveTree.extraActions`, which `passivetree.lua` checks before its own actions):
+  `buildExport` -> `buildCode {code, nodes, paragon}`; `buildPreview {code}` -> `buildPreview {code, nodes, current, wanted,
+  applied, skipped, added, removed, treeReset, paragon, paragonChange, paragonReset, cost, free, points, notes, change, summary}` or
+  `buildError {message}`; `buildApply {code, cost}` -> `sendNodes`, `sendPoints`, `paragonState`, `respecInfo`, `buildApplied
+  {message}` or `buildError {message}`. No new opcode.
+- `server/tests/buildshare_test.lua`: round trip (40 / 248 nodes, Paragon part), every single-character typo, swapped and truncated
+  codes, old / newer version, wrong class, unknown and disconnected nodes, keystones, too many points, reset detection, the Paragon
+  part, an old code on a tree with an appended node.
+- Tested on the test server (Deadeye, level 599, 147 points): a 100 node tree exported (63 characters, clipboard checked), reset
+  (3,945,000 gold), imported (free) and saved identical to before; imported over a 147 node tree (took 47 back, 3,945,000 gold) and
+  identical again; a 200 node code applied its first 147 nodes; bad checksum, wrong class and old version gave their messages; the
+  chat flow (`!build export / import / confirm`) and "You need 3,945,000 gold coins" with too little gold. Screenshots in the
+  session's scratchpad. Not tested in game: the Paragon part (the character is below level 1000; unit tests only).
+
+## Respec (`respec.lua`, `respec_core.lua`, `respec_config.lua`, `tools/respec_income.py`)
+What taking passive points back costs. Every number is in `respec_config.lua`.
+- **Full reset** of the tree (Reset button) and of the Paragon track (its Reset button): a level curve worth about 37.5 minutes of
+  hunting gold at the level, linear between the points below (and the last slope past level 1000). Paragon uses the same curve
+  (`paragonFactor` 1.0). Rounded down to 1,000 gold. Paid from carried gold, then the bank (`Player.removeTotalMoney`).
+
+| Level | 49 | 50 | 100 | 200 | 300 | 500 | 600 | 1000 | 1200 |
+|---|---|---|---|---|---|---|---|---|---|
+| Full reset | free | 50,000 | 225,000 | 395,000 | 565,000 | 3,450,000 | 3,950,000 | 5,950,000 | 6,950,000 |
+| Single-node refund | free | 2,000 | 9,000 | 15,000 | 22,000 | 138,000 | 158,000 | 238,000 | 278,000 |
+
+- **Single-node refund:** right-click a saved node in the tree, confirm (the dialog shows the price). The server checks that the
+  node is allocated and that every other allocated node stays connected to the start without it (a leaf, or a node on a loop),
+  then charges 4% of the full reset price (~1.5 minutes of hunting) and frees the point. Not-yet-saved nodes are still taken back
+  for free with a left click, as before.
+- **Free cases:** everything below level 50; **one free full reset after the vocation changed** (ascension, class migration): the
+  vocation id of the last free reset is kept in storage `7100550` (`freeVocationStorage`), recorded at the first login with
+  `respec.lua`, and a different vocation means the next full reset (tree, Paragon or a build import that takes points back) is free.
+  The store's vocation change keeps resetting the tree for free, and the store's Passive Tree Reset service stays a free reset of
+  tree and Paragon; both go through `ChaosPassiveTree.resetAll`, which `respec.lua` wraps so it also uses up a pending free reset
+  (no double free reset after a vocation change).
+- **Client:** the server sends `respecInfo {level, full, paragon, node, free, freeBelowLevel}` with every `requestPoints` and after
+  each reset / refund (`game_passivetree/respec.lua`). The Reset button tooltip and the reset dialog show the tree price and the
+  node price, the refund dialog the node price, the Paragon reset dialog the Paragon price (`paragonState.resetCost`).
+- Protocol (opcode 65, `ChaosPassiveTree.extraActions`): `respecInfo` -> `respecInfo`; `refundNode {id}` -> `sendNodes`,
+  `sendPoints`, `respecInfo`; `resetPreset` and `paragonReset` are handled here (the old handlers in `passivetree.lua` /
+  `paragon.lua` remain as the level x 250 fallback when `respec.lua` is not loaded).
+- **Measured income** (`python3 -I server/tools/respec_income.py <server>/data`): for each level the best of the hunts that are
+  spawned in the map, gold per hour = kills per hour x (expected coins + NPC sell value of the drops from `sell_prices.lua`, i.e.
+  what the Auto Seller pays) x 1.11 (the Chaos loot layer's extra rolls at the tier spawn chances). Coin counts use the stock
+  level count multiplier; health the engine's level bonus. Kills per hour = 3600 x 0.47 x average 5-target rotation DPS
+  (`data/spells/README.md`: 1804 at level 300, 4337 at 1000, linear) / health; the late-game monsters 3 at a time (x0.75). This is
+  the leveling model's estimate, not a measured hunt.
+
+| Level | Best hunt (spawned) | Kills / h | Coins / h | Item sale value / h | Total / h | Full reset = minutes | Node refund = minutes |
+|---|---|---|---|---|---|---|---|
+| 100 | Dragons (Dragon, Dragon Lord, Wyrm, Hydra) | 1,033 | 67,777 | 291,062 | 358,839 | 37.6 | 1.5 |
+| 300 | Demons (Demon, Hellspawn, Behemoth, Dark Torturer, Juggernaut) | 355 | 158,430 | 723,436 | 881,866 | 38.4 | 1.5 |
+| 500 | Soul War (8 monsters, 905 spawns) | 158 | 1,410,416 | 4,137,915 | 5,548,330 | 37.3 | 1.5 |
+| 600 | Soul War | 181 | 1,612,325 | 4,730,281 | 6,342,606 | 37.4 | 1.5 |
+| 1000 | Soul War | 272 | 2,419,962 | 7,099,748 | 9,519,711 | 37.5 | 1.5 |
+
+  The late-game tier 3 monsters (Darklight Core, `tools/late_game_spawns.csv`) are an experience hunt, not a gold hunt: about
+  162,000 gold per hour at level 1000 (33 kills, little coin loot), so the curve follows Soul War, which a level 1000 character can
+  still hunt. The jump at level 500 is where Soul War opens. Vexclaw (in `monsters.xml` as `Vexclaw.xml`, file `vexclaw.xml`) is not
+  loaded by the server and left out.
+- `server/tests/respec_test.lua`: the curve points, linear parts, monotony, the minutes against the measured income, free cases,
+  `canRemove` (leaf, middle, loop, root, unallocated), and the handlers against a mocked engine (refund, paid / free / used-up
+  reset, the store wrapper, below 50, Paragon, `requestPoints`).
+- Tested on the test server (level 599): Reset tooltip and dialog showed 3,945,000 / 157,000, the reset charged 3,945,000 from the
+  bank, a right-click refund of node 4 (on a loop) charged 157,000 and freed the point, a refund of node 11 (others depend on it) was
+  refused with its message. Not seen in game: the free reset after a class change (unit test only; the test server was killed by the
+  machine's memory limit during that run) and the Paragon reset dialog (character below level 1000).
 
 ## Infinity Tower gameplay (`infinitytower_run.lua`)
 The tower exists now. `!tower start` (or the new Enter Tower button of the client window, action `enter`) takes you, or your party (leader only, members within 12 tiles, up to 4), into an arena that is built at runtime with `Game.createTile` in an empty part of the map (x from 2000, y 2000, z 7; sixteen arenas side by side), so no map editing is needed. Floors are waves: kill everything to open the next one (6 s pause, half of the missing health and mana restored, `floorGold` x floor gold); every 10th floor is a boss floor with its helpers. Pools get harder every 8 floors, and the chance of magic, rare and legendary monsters (with their modifiers and shaders) rises with the floor. A floor has a 300 s limit. Dying, leaving (`!tower leave`), logging out or running out of time ends your part of the run and records the cleared floors with `ChaosTower.recordRun` (points, best floor, ranking, milestones). Logging in inside an arena sends you to the temple. Milestone rewards now use item ids that exist (gold, Chaos and Divine Orbs, Soulreaper). Everything is configured at the top of the file (`ChaosTowerRunConfig`).

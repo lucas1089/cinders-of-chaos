@@ -53,6 +53,10 @@ Balance is measured on test dummies at levels 300 and 1000, so every class keeps
   - *Ricochet*: arrows bounce to another target
   - *Arcane Echo*: spells can cast a second time
   - Illusionist party auras
+- **Build codes:** export your tree as a short code (`!build export`) and import someone else's. The tree previews it
+  first, with the points needed against the points you have.
+- **Respec:** right-click a node to refund just that node, or reset the whole tree. Both are priced by your level: a
+  full reset costs about 35-40 minutes of hunting gold. Resets are free below level 50 and once after a class change.
 - **Paragon:** after level 1000 every level gives a Paragon point. You spend them on small, capped bonuses in four
   categories, so there is always something to gain.
 
@@ -163,7 +167,6 @@ Siegebreaker, Duelist, Gladiator) and orbs. The all-time **Class Ladder** ranks 
 
 Being built right now:
 - **Hunt tracker:** experience and profit per hour, kills and loot of your session.
-- **Build codes:** share your passive tree as a code, and a fairer respec cost that scales with level.
 - **Login streaks** with milestones, and a **patch-notes** window in the client.
 - **Seasons:** fresh-start season characters with their own economy, ladder, season uniques and cosmetic rewards that
   carry over.

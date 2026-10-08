@@ -398,6 +398,17 @@ UIWindow
     enabled: true
     @onClick: modules.game_passivetree.toggleParagon()
 
+  TreeButton
+    id: buildShareButton
+    anchors.top: applyPoints.top
+    anchors.left: paragonButton.right
+    margin-left: 5
+    text: Build Code
+    width: 110
+    enabled: true
+    !tooltip: tr('Export your build as a code, or import a code (preview first)')
+    @onClick: modules.game_passivetree.toggleBuildShare()
+
   UIWidget
     id: presets
     anchors.top: presetsButton.bottom

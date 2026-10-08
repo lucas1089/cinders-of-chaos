@@ -192,9 +192,9 @@ function resetParagon()
     sendAction('paragonReset')
     close()
   end
-  resetBox = displayGeneralBox('Reset Paragon', string.format(
-    'Refund all %d Paragon points for %d gold coins (level %d x 250)? Proceed?',
-    paragonState.spent or 0, paragonState.resetCost or 0, paragonState.level or 0), {
+  local cost = paragonState.resetCost or 0 -- the server's price (respec.lua)
+  resetBox = displayGeneralBox('Reset Paragon', string.format('Refund all %d Paragon points for %s? Proceed?',
+    paragonState.spent or 0, cost > 0 and (formatGold(cost) .. ' gold coins') or 'free'), {
       {text = tr('Ok'), callback = ok},
       {text = tr('Cancel'), callback = close},
       anchor = AnchorHorizontalCenter
