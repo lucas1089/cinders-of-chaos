@@ -54,6 +54,8 @@ return {
 	weeklyNeed = 7,
 	weeklyChestId = 1990,
 	weeklyChestName = "bounty chest",
+	-- crafting orbs added to every weekly chest (data/lib/chaos_crafting.lua); {} for none
+	weeklyExtra = {{id = 29851, count = 3, name = "Orbs of Transmutation"}, {id = 24697, count = 1, name = "Orb of Annulment"}},
 
 	items = {chaos = 29856, divine = 29857}
 }

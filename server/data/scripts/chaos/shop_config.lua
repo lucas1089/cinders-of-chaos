@@ -44,7 +44,13 @@ return {
 				{kind = "item", id = 29856, count = 10, cost = 90, name = "10 Chaos Orbs", description = "A pouch of ten Chaos Orbs."},
 				{kind = "item", id = 29856, count = 50, cost = 400, name = "50 Chaos Orbs", description = "A chest of fifty Chaos Orbs."},
 				{kind = "item", id = 29857, count = 1, cost = 25, name = "Divine Orb", description = "Rerolls the values of an item's modifiers."},
-				{kind = "item", id = 29857, count = 10, cost = 225, name = "10 Divine Orbs", description = "A pouch of ten Divine Orbs."}
+				{kind = "item", id = 29857, count = 10, cost = 225, name = "10 Divine Orbs", description = "A pouch of ten Divine Orbs."},
+				-- crafting orbs (data/lib/chaos_crafting.lua, the crafting bench: !craft)
+				{kind = "item", id = 29851, count = 1, cost = 5, name = "Orb of Transmutation", description = "Turns a normal item into a Common or Uncommon one with random modifiers."},
+				{kind = "item", id = 24691, count = 1, cost = 15, name = "Orb of Alchemy", description = "Turns a normal item into a Rare, Epic or Legendary one."},
+				{kind = "item", id = 24688, count = 1, cost = 12, name = "Orb of Scouring", description = "Removes the rarity and all modifiers of an item."},
+				{kind = "item", id = 24697, count = 1, cost = 20, name = "Orb of Annulment", description = "Removes one random modifier from an item."},
+				{kind = "item", id = 29855, count = 1, cost = 40, name = "Exalted Orb", description = "Adds one random modifier to an item with a free modifier slot."}
 			}
 		},
 		{

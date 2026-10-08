@@ -34,6 +34,7 @@ server/
                                       weapon attack speed scaled by the vocation's (thief_combat.lua)
     shop.lua  shop_config.lua  shop_services.lua  autosell.lua  sell_prices.lua (store, see "Store services")
     bounty.lua  bounty_core.lua  bounty_config.lua  bounty_pool.lua (bounty board; pool from tools/gen_bounty_pool.py)
+    crafting.lua (crafting bench and orbs; rules in data/lib/chaos_crafting.lua, installer tools/install_crafting.py)
     treasure_goblin.lua  treasure_goblin_core.lua  treasure_goblin_config.lua (treasure goblins, see "Treasure goblins")
     leaderboard.lua  leaderboard_core.lua  leaderboard_config.lua (weekly boards with titles, class ladder)
 ```
@@ -97,8 +98,9 @@ working directory, as with the rest of the base server libs).
 | game_spellbook | `spellbook.lua` | 219, `!spells` / `/spells` | Spell list window: every player spell of `data/spells/spells.xml` with its data, a short description and its area of effect (see "Spellbook" below). |
 | game_bounty | `bounty.lua`, `bounty_core.lua`, `bounty_config.lua`, `bounty_pool.lua` | 223, `!bounty` / `/bounty` | Daily rotating kill contracts per level band, tested in game (see "Bounty board"). |
 | game_leaderboard | `leaderboard.lua`, `leaderboard_core.lua`, `leaderboard_config.lua` | 229, `!leaderboard` | Weekly World Boss / Bounty Hunter / Rifts / Goblin Slayer boards with titles and orbs for the top 3, all-time class ladder, tested in game (see "Leaderboards"). |
+| game_crafting | `crafting.lua`, `data/lib/chaos_crafting.lua` | 232, `!craft` / `/craft` | Crafting bench and the crafting orbs (Transmutation, Alchemy, Exalted, Annulment, Scouring, plus Chaos and Divine), tested in game (see "Crafting"). |
 
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 229 are all registered in the global
+Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 229, 232 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
 
 ### Opcode collision check
@@ -833,6 +835,73 @@ Look text "You hold the title Riftwalker (3rd).". Restart: no second reset, titl
 from the DB, the reward of an unrewarded row delivered at login. Tabs, class tabs, own rank, the top menu entry. Not
 verified: the look text from another player's view ("He"/"She"; unit-tested), the real Monday 06:00 change (a
 once-a-minute check of the week key), the rift source (the rift scripts do not call it yet).
+
+## Crafting (`crafting.lua`, `data/lib/chaos_crafting.lua`, `tools/install_crafting.py`)
+
+Install: `python3 -I server/tools/install_crafting.py <server>/data` (idempotent, `--dry-run`) and the
+`chaos_crafting_log` table of `sql/chaos.sql`. `crafting.lua` loads `data/lib/chaos_crafting.lua` itself, so `lib.lua`
+needs no change.
+
+**How an item carries modifiers (base server).** A rarity is the custom attribute `rarity` (1..15: Common, Uncommon,
+Rare, Epic, Legendary, Exotic, Mythic, Chaos, Eternal, Divine, Phantasmal, Celestial, Cosmic, Abyssal, Transcendent).
+The engine rolls it in C++ (`Item::applyRarityEffects`, reached through `Game.createItemWithRarity`): an item level
+(`combatPowerLevel`, shown as "Level: N"), a small attack/defense/armor/hit chance bonus, and per rarity a fixed number
+of modifiers, one custom attribute each: absorbs `rarity_<x>Absorb` (%), skills `rarity_<skill>Skill` (magic level is
+`rarity_maglevelSkill`), critical / mana leech / life leech as chance + amount pairs, and on weapons without an element
+of their own one `rarity_element<x>` (% extra damage). Everything is also written into the description attribute
+("Level: 53, Holy +3%, Fishing +1, Critical Chance +1%, Critical Hit +1%"), which is what the look text and the client
+tooltip show. `customs/rarity/base_rarity.lua` turns the attributes into conditions and storages when the item is
+equipped (and at login); the element and absorb combat scripts read those storages. Uniques (`chaos_unique_items.lua`)
+are base items with the custom attribute `chaos_unique` and their stats as the same `rarity_*` attributes, without a
+rarity. The stock Chaos Orb (29856) keeps the rarity and makes a new copy of the item (new level, modifiers and values);
+the stock Divine Orb (29857) makes a new copy with a new random rarity, which is none 85% of the time (the store text
+"rerolls the values" does not describe it). Both are the base server's `customs/rarity/reroll_rarity_stats.lua`.
+
+**The orbs.** A modifier is one line of the description (a leech or critical pair is one modifier). The maximum per
+rarity is one more than a weapon of that rarity rolls: 3, 4, 4, 5, 5, 6, 6, 6, 7, 7, 7, 7, 7, 9, 9 (`maxMods`).
+
+| orb | id | rule |
+|---|---|---|
+| Orb of Transmutation | 29851 (existing currency item) | normal item (no rarity, no modifiers, no item level) -> Common 65% / Uncommon 35%, engine roll |
+| Orb of Alchemy | 24691 (rune stone, named by the installer) | normal item -> Rare 55% / Epic 30% / Legendary 15%, engine roll |
+| Exalted Orb | 29855 (existing currency item) | item with a rarity and a free slot: one new modifier it does not have yet. Group weights absorb 30, skill 30, leech/critical 25, element 15 (weapons only, one at most); combat skills weigh 4, profession skills 1; value from the rarity's range (item.cpp tables) |
+| Orb of Annulment | 24697 (rune stone) | item with a rarity: one random modifier goes (rarity and level stay) |
+| Orb of Scouring | 24688 (rune stone) | item with a rarity: a plain copy of the base item |
+| Chaos Orb | 29856 | as the stock orb, on the bench only for items with a rarity |
+| Divine Orb | 29857 | as the stock orb |
+
+Transmutation, Alchemy, Scouring, Chaos and Divine make a new copy (like the stock orbs), so upgrade levels on the item
+are lost; Exalted and Annulment change the item in place and rewrite only the rarity part of the description (text in
+front of "Level:" and `[...]` upgrade slots behind it are kept). Never touched: uniques (also an old unique without the
+marker, recognised by its spec name), stacks, containers, non-gear, the boat items, equipped items, items outside the
+backpack. The installer also makes the stock reroll script refuse uniques (it turned a unique into a plain copy).
+No Vaal-style orb: the stock Chaos/Divine use-with could not be made to respect a "corrupted" flag without more
+patching of base scripts.
+
+**Bench.** `!craft` / `/craft`, Chaos -> Crafting Bench in the top menu, or using an Orb of Transmutation / Exalted Orb
+(they are plain-use items in the dat, the three rune stones are use-with). Drag an item from an open backpack onto the
+slot, or click one of the backpack's gear in the grid (bags inside the backpack included, 64 at most). The bench shows
+rarity, item level, modifiers / maximum and every orb with your count; a button is enabled only when the server says
+the orb fits. The server checks again on every click: the item is found by its path from the backpack plus its id and a
+signature of its modifiers (moved or changed -> "put it on the bench again"), the orb is owned, the rules above, 250 ms
+between orbs. The last 8 crafts come from `chaos_crafting_log` (rows older than 60 days go at startup); use-with crafts
+are logged too. Use-with: the five new orbs work on items in the backpack the normal way (`Action` per id).
+
+**Drops and rewards.** Chaos loot layer (`loot_config.lua` currency, per 10000 kills, normal / magic / rare / legendary /
+boss): Transmutation 30/200/700/2500/3500 (1-2), Alchemy and Annulment 10/80/300/1200/2000, Scouring
+15/100/400/1500/2500, Exalted 4/30/120/600/1000; weights for the guaranteed legendary/boss draw 20/10/10/10/5 (Chaos 70,
+Divine 30). Simulated 10000 legendary kills: Chaos 8513, Divine 4380, Transmutation 7607, Alchemy 1862, Annulment 1864,
+Scouring 2110, Exalted 945. Store (Chaos Currency): Transmutation 5, Scouring 12, Alchemy 15, Annulment 20, Exalted 40
+coins. Weekly bounty chest: + 3 Orbs of Transmutation and 1 Orb of Annulment (`weeklyExtra` in `bounty_config.lua`).
+
+**Tested in game** (test server, cropped map): every orb from the bench (Exalted twice to a full Exotic armor, then
+refused; Annulment; Transmutation -> Common; Scouring -> normal; Alchemy -> Epic with an element; Chaos keeps Epic;
+Divine -> normal), use-with of the Orb of Annulment, plain use of the Exalted Orb opening the bench, drag and drop onto
+the slot, refusals (unique on the bench and by use-with, full item, no orb, equipped item, stock Chaos Orb on a unique),
+the look text after each change, the armor's modifiers applied when equipped (Holy absorb 3, Fishing +1, Herbalism +2,
+the annulled Drown absorb gone), the history, the store purchase and the loot simulation. `tests/crafting_test.lua`
+covers eligibility, each orb on a mocked item, slot limits, the description and unique protection. Not tested: the
+weekly bounty chest with the extra orbs (needs seven finished contracts).
 
 ## Late game (`tools/late_game.py`, `tools/late_game_spawns.csv`, 17 monsters in `data/monster/monsters/chaos/`)
 
