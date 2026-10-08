@@ -55,6 +55,11 @@ ChaosFx = {
 	imbue_earth = 421,  -- combat: elemental weapon hit (earth): edge trail and spores
 	imbue_death = 422,  -- combat: elemental weapon hit (death): edge trail and dark wisps
 	imbue_holy = 423,  -- combat: elemental weapon hit (holy): edge trail and motes
+	loot_ray_unique = 424,  -- loot: loot ray over a corpse with a unique (lootfilter.lua): orange beam
+	loot_ray_legendary = 425,  -- loot: loot ray: Legendary and Exotic items (gold beam)
+	loot_ray_mythic = 426,  -- loot: loot ray: Mythic Chaos and Eternal items (red beam)
+	loot_ray_divine = 427,  -- loot: loot ray: Divine Phantasmal and Celestial items (white-blue beam)
+	loot_ray_cosmic = 428,  -- loot: loot ray: Cosmic Abyssal and Transcendent items (violet beam)
 }
 
 ChaosFxMissile = {

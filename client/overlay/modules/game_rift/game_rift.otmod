@@ -1,0 +1,13 @@
+Module
+  name: game_rift
+  description: Rift run HUD (time left, monsters left, modifiers; extended opcode 228, !rift)
+  author: project-chaos
+  sandboxed: true
+  scripts: [ riftmath, rift ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

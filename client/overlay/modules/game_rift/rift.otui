@@ -1,0 +1,79 @@
+// Rift run HUD, left side of the map under the character plate (server: rift.lua, extended opcode 228)
+RiftHudLabel < UILabel
+  font: verdana-11px-rounded
+  color: #d6c9ae
+  text-align: left
+  text-wrap: true
+  text-auto-resize: true
+  phantom: true
+  margin-top: 2
+
+RiftModLabel < RiftHudLabel
+  color: #c79bff
+
+ChaosPanelDark
+  id: riftHud
+  width: 230
+  anchors.top: parent.top
+  anchors.left: parent.left
+  margin-top: 192
+  margin-left: 40
+  padding: 8
+  phantom: true
+  focusable: false
+  layout:
+    type: verticalBox
+    fit-children: true
+
+  ChaosTitle
+    id: title
+    text: Rift
+    phantom: true
+
+  RiftHudLabel
+    id: theme
+    color: #8c8070
+    text-align: center
+
+  UILabel
+    id: clock
+    font: sans-bold-16px
+    color: #f4d27a
+    text-align: center
+    height: 22
+    phantom: true
+    margin-top: 2
+
+  ChaosProgressBar
+    id: progress
+    margin-top: 4
+    phantom: true
+
+  RiftHudLabel
+    id: boss
+    color: #e8b84a
+    margin-top: 4
+
+  RiftHudLabel
+    id: modsHeader
+    color: #8c8070
+    text: Modifiers
+    margin-top: 6
+
+  UIWidget
+    id: mods
+    phantom: true
+    layout:
+      type: verticalBox
+      fit-children: true
+
+  RiftHudLabel
+    id: bonus
+    color: #7fd07f
+    margin-top: 6
+
+  RiftHudLabel
+    id: result
+    color: #f4d27a
+    margin-top: 6
+    visible: false

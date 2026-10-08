@@ -1,0 +1,332 @@
+// Loot Filter window and loot channel styles (game_lootfilter). Styles from client_chaos_theme (styles.otui).
+
+LootFilterLabel < ChaosLabel
+  text-align: left
+  text-auto-resize: true
+
+LootFilterHeader < UILabel
+  font: verdana-11px-rounded
+  color: #e8b84a
+  text-auto-resize: true
+  phantom: true
+
+LootFilterCombo < ChaosComboBox
+  size: 132 22
+
+LootFilterPreset < ChaosButton
+  size: 104 22
+  margin-right: 6
+
+LootFilterPreview < ChaosItemSlot
+  size: 34 34
+  margin-right: 2
+  margin-bottom: 2
+  virtual: true
+
+// one kill in the loot channel: time + monster, then the item icons
+LootChannelRow < UIWidget
+  height: 34
+  margin-bottom: 2
+  phantom: true
+  layout:
+    type: horizontalBox
+    spacing: 2
+
+LootChannelHead < UILabel
+  width: 118
+  height: 32
+  font: verdana-11px-antialised
+  color: #b8a88a
+  text-align: left
+  text-wrap: true
+  phantom: true
+
+LootChannelItem < Item
+  size: 32 32
+  virtual: true
+  phantom: false
+
+LootChannelLine < UILabel
+  height: 14
+  font: verdana-11px-rounded
+  text-align: left
+  phantom: true
+
+// covers the console text while the Loot tab is selected
+LootChannelPanel < UIWidget
+  image-source: /images/ui/console
+  image-clip: 0 50 184 124
+  image-border: 4
+  anchors.fill: parent
+  phantom: false
+  focusable: false
+
+  ScrollablePanel
+    id: list
+    anchors.fill: parent
+    margin-right: 12
+    vertical-scrollbar: listScroll
+    padding: 4
+    padding-left: 4
+    layout:
+      type: verticalBox
+      align-bottom: true
+    inverted-scroll: true
+
+  VerticalScrollBar
+    id: listScroll
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-top: 3
+    margin-right: 3
+    margin-bottom: 3
+    step: 36
+    pixels-scroll: true
+
+  UILabel
+    id: hint
+    anchors.top: parent.top
+    anchors.right: listScroll.left
+    margin-top: 3
+    margin-right: 6
+    text-auto-resize: true
+    font: verdana-11px-antialised
+    color: #8c8070
+    !text: tr('Loot: click an icon to loot (shift: one)')
+
+ChaosMainWindow
+  id: lootFilterWindow
+  size: 640 500
+  !text: tr('Loot Filter')
+  @onEscape: modules.game_lootfilter.hide()
+
+  LootFilterHeader
+    id: presetHeader
+    anchors.top: parent.top
+    anchors.left: parent.left
+    !text: tr('Presets')
+
+  UIWidget
+    id: presets
+    anchors.top: presetHeader.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 22
+    phantom: true
+    layout:
+      type: horizontalBox
+
+  ChaosLabelDim
+    id: presetInfo
+    anchors.top: presets.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 14
+    text-align: left
+
+  ChaosSeparator
+    id: sep1
+    anchors.top: presetInfo.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+
+  LootFilterHeader
+    id: corpseHeader
+    anchors.top: sep1.bottom
+    anchors.left: parent.left
+    margin-top: 4
+    !text: tr('Corpses and the loot channel (free)')
+
+  LootFilterLabel
+    id: highlightLabel
+    anchors.top: corpseHeader.bottom
+    anchors.left: parent.left
+    margin-top: 10
+    !text: tr('Glow on gear from')
+
+  LootFilterCombo
+    id: highlightCombo
+    anchors.verticalCenter: highlightLabel.verticalCenter
+    anchors.left: parent.left
+    margin-left: 130
+
+  LootFilterLabel
+    id: dimLabel
+    anchors.verticalCenter: highlightLabel.verticalCenter
+    anchors.left: highlightCombo.right
+    margin-left: 24
+    !text: tr('Dim gear below')
+
+  LootFilterCombo
+    id: dimCombo
+    anchors.verticalCenter: highlightLabel.verticalCenter
+    anchors.left: dimLabel.right
+    margin-left: 10
+
+  ChaosCheckBox
+    id: show_equipment
+    anchors.top: highlightLabel.bottom
+    anchors.left: parent.left
+    margin-top: 14
+    width: 290
+    !text: tr('Show equipment')
+
+  ChaosCheckBox
+    id: show_currency
+    anchors.top: show_equipment.top
+    anchors.left: show_equipment.right
+    width: 290
+    !text: tr('Show currency (orbs, coins)')
+
+  ChaosCheckBox
+    id: show_supplies
+    anchors.top: show_equipment.bottom
+    anchors.left: parent.left
+    margin-top: 6
+    width: 290
+    !text: tr('Show supplies (potions, runes, ammo)')
+
+  ChaosCheckBox
+    id: show_other
+    anchors.top: show_supplies.top
+    anchors.left: show_supplies.right
+    width: 290
+    !text: tr('Show other items')
+
+  ChaosLabelDim
+    id: categoryHint
+    anchors.top: show_supplies.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 14
+    text-align: left
+    !text: tr('Unchecked categories are dimmed (still lootable). Uniques and orbs always glow.')
+
+  ChaosCheckBox
+    id: icons
+    anchors.top: categoryHint.bottom
+    anchors.left: parent.left
+    margin-top: 8
+    width: 290
+    !text: tr('Loot tab shows item icons')
+    !tooltip: tr('The Loot console tab shows a row of icons per kill instead of the text. Click an icon to loot it.')
+
+  ChaosCheckBox
+    id: notify
+    anchors.top: icons.top
+    anchors.left: icons.right
+    width: 290
+    !text: tr('Rare-drop message')
+    !tooltip: tr('A coloured "Rare drop: [Legendary] ..." line for every item that glows.')
+
+  ChaosSeparator
+    id: sep2
+    anchors.top: icons.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+
+  ChaosPanelDark
+    id: autolootPanel
+    anchors.top: sep2.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 96
+
+    LootFilterHeader
+      id: autolootHeader
+      anchors.top: parent.top
+      anchors.left: parent.left
+      !text: tr('Rarity Autoloot (store unlock)')
+
+    LootFilterLabel
+      id: lootMinLabel
+      anchors.top: autolootHeader.bottom
+      anchors.left: parent.left
+      margin-top: 10
+      !text: tr('Leave list gear below')
+
+    LootFilterCombo
+      id: lootMinCombo
+      anchors.verticalCenter: lootMinLabel.verticalCenter
+      anchors.left: parent.left
+      margin-left: 150
+      !tooltip: tr('Gear on your autoloot list with a lower rarity stays in the corpse.')
+
+    LootFilterLabel
+      id: lootFromLabel
+      anchors.top: lootMinLabel.bottom
+      anchors.left: parent.left
+      margin-top: 14
+      !text: tr('Also pick up gear from')
+
+    LootFilterCombo
+      id: lootFromCombo
+      anchors.verticalCenter: lootFromLabel.verticalCenter
+      anchors.left: parent.left
+      margin-left: 150
+      !tooltip: tr('Gear of this rarity or better (and uniques) is autolooted even when it is not on your autoloot list.')
+
+    ChaosLabel
+      id: lockLabel
+      anchors.top: autolootHeader.bottom
+      anchors.left: lootMinCombo.right
+      anchors.right: storeButton.left
+      margin-left: 16
+      margin-right: 8
+      margin-top: 8
+      height: 56
+      text-wrap: true
+      text-align: topLeft
+      color: #e03a1e
+
+    ChaosButton
+      id: storeButton
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      size: 92 24
+      !text: tr('Open Store')
+      @onClick: modules.game_lootfilter.openStore()
+
+  LootFilterHeader
+    id: previewHeader
+    anchors.top: autolootPanel.bottom
+    anchors.left: parent.left
+    margin-top: 8
+    !text: tr('Preview (as a corpse shows them with these settings)')
+
+  UIWidget
+    id: preview
+    anchors.top: previewHeader.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 74
+    phantom: true
+    layout:
+      type: grid
+      cell-size: 34 34
+      cell-spacing: 2
+      flow: true
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 80 24
+    !text: tr('Close')
+    @onClick: modules.game_lootfilter.hide()
+
+  ChaosLabelDim
+    id: savedLabel
+    anchors.verticalCenter: closeButton.verticalCenter
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    text-align: left
+    !text: tr('Changes are saved on your character at once (!lootfilter opens this window).')

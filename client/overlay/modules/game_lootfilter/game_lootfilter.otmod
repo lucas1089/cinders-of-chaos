@@ -1,0 +1,12 @@
+Module
+  name: game_lootfilter
+  description: Loot filter (rarity glow / dim in corpses), loot channel with item icons (click to loot), rare-drop lines; extended opcode 238, !lootfilter
+  author: project-chaos
+  sandboxed: true
+  scripts: [ lootfilterlogic, lootfilter ]
+  dependencies:
+    - game_interface
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

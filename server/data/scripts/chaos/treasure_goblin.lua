@@ -15,8 +15,7 @@
 --
 -- Config: treasure_goblin_config.lua. Pure logic: treasure_goblin_core.lua (tests: server/tests/treasure_goblin_test.lua).
 -- Exports: ChaosTreasureGoblin.spawn(pos[, opts]) (staff / tests), ChaosTreasureGoblin.alive (id -> state).
--- Optional hooks, called guarded, never created here: ChaosLootRays.beam(position, kind, player) when the loot rays
--- module exists; ChaosLeaderboard.record(board, player, 1, "add") when Chaos.leaderboardConfig has the board
+-- Optional hooks, called guarded, never created here: ChaosLeaderboard.record(board, player, 1, "add") when Chaos.leaderboardConfig has the board
 -- (cfg.leaderboard.board, "goblin"); ChaosNotify.gmBroadcast(player, text) for the appear toast.
 
 if not Chaos then
@@ -489,10 +488,8 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 				owner:sendTextMessage(msgType, text)
 			end
 			pos:sendMagicEffect(CONST_ME_GIFT_WRAPS or CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_BLUE)
-			-- optional hook: loot rays / beams (another module; called only when it exists)
-			if ChaosLootRays and ChaosLootRays.beam then
-				pcall(ChaosLootRays.beam, pos, kind, owner)
-			end
+			-- loot rays: lootfilter.lua reads the corpse in onDropLoot, after this death event, so uniques and
+			-- Legendary+ items placed above get their beam without a hook
 			print(string.format("[Chaos goblin] %s killed one (area level %d): %s", owner:getName(), st.level, text))
 		end
 	end

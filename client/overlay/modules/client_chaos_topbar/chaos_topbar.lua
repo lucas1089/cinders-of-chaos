@@ -167,6 +167,7 @@ local CATEGORIES = {
     { text = 'Prey',               icon = 'battlelist',  modules = { 'game_prey' },      fns = { 'toggle' } },
     { text = 'Task Hunt',          icon = 'quests',      modules = { 'game_task_hunt' }, fns = { 'toggle' } },
     { text = 'Auto Loot',          icon = 'autoloot',    modules = { 'game_autoloot' },  fns = { 'toggle' } },
+    { text = 'Loot Filter',        icon = 'autoloot',    modules = { 'game_lootfilter' }, fns = { 'toggle' } },
     { text = 'Minimap',            icon = 'minimap',     modules = { 'game_minimap', 'game_realminimap' }, fns = { 'toggle' } },
     { text = 'Unjustified Points', icon = 'pvp',         modules = { 'game_unjustifiedpoints' }, fns = { 'toggle' } },
   } },
@@ -292,6 +293,31 @@ local function hideSideButtons()
   end
 end
 
+-- The base client opens the side window again whenever it lays out its side panels (game_interface calls
+-- game_sidebuttons.move on login, on resize and when panels are added or moved), so hiding it once is not enough:
+-- wrap move/online and hide the window again whenever it becomes visible.
+local function keepSideButtonsHidden()
+  local sb = getModule('game_sidebuttons')
+  if not sb or rawget(sb, 'chaosHidePatched') then return end
+  for _, name in ipairs({ 'move', 'online' }) do
+    local original = rawget(sb, name)
+    if type(original) == 'function' then
+      sb[name] = function(...)
+        local result = original(...)
+        hideSideButtons()
+        return result
+      end
+    end
+  end
+  local w = rawget(sb, 'buttonsWindow')
+  if isAlive(w) then
+    w.onVisibilityChange = function(widget, visible)
+      if visible then scheduleEvent(hideSideButtons, 1) end
+    end
+  end
+  sb.chaosHidePatched = true
+end
+
 -- ---------------------------------------------------------------- refresh
 -- Shows the categories that have at least one usable entry.
 function ChaosTopBar.refresh()
@@ -371,6 +397,7 @@ local function scheduleRefresh(delay)
 end
 
 local function onGameStart()
+  keepSideButtonsHidden()
   hideSideButtons()
   ChaosTopBar.refresh()
   -- game modules (and game_sidebuttons re-adding its window) finish a moment after onGameStart
