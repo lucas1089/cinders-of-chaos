@@ -1,54 +1,162 @@
-name,theme,category,new id,source id,note
-fire_nova,fire,effect,372,204,3x3 f8 expanding flame ring
-fire_explosion,fire,effect,373,209,3x4 f9 fireball plume
-fire_tornado,fire,effect,374,662,5x5 f17 flame whirlwind
-fire_burst,fire,effect,375,220,3x3 f12 spiky explosion
-meteor_strike,fire,effect,376,205,2x2 f4 flaming boulder
-inferno_burst,fire,effect,377,614,3x3 f9 red-orange ember burst
-fire_ring,fire,effect,378,493,7x7 f10 big faint ember ring (wide nova)
-frost_burst,frost,effect,379,265,5x5 f7 ice shatter
-frost_nova,frost,effect,380,766,7x7 f12 teal frost ring with flash
-ice_spikes,frost,effect,381,385,3x2 f9 ice spikes erupt
-ice_crystal,frost,effect,382,244,3x3 f45 slow crystal form and shatter
-frost_ripple,frost,effect,383,765,5x5 f6 cyan ripple rings
-chain_lightning,lightning,effect,384,176,1x1 f6 cyan forked arc
-lightning_violet,lightning,effect,385,179,1x1 f6 violet forked arc
-lightning_strike,lightning,effect,386,443,3x3 f22 yellow bolt from above
-lightning_zap,lightning,effect,387,248,2x2 f4 violet jagged zap
-blood_rune,blood,effect,388,540,3x3 f5 red rune circle
-blood_ring,blood,effect,389,681,4x4 f16 red spinning ring (aura)
-blood_splash,blood,effect,390,241,2x2 f8 dark red spray
-blood_slash,blood,effect,391,637,3x3 f18 triple claw slash
-blood_nova,blood,effect,392,654,7x8 f5 red expanding ring
-shadow_smoke,shadow,effect,393,612,2x2 f8 purple smoke cloud
-shadow_cloud,shadow,effect,394,215,3x5 f10 tall purple smoke column
-shadow_ring,shadow,effect,395,219,3x3 f11 purple ring puff
-void_eye,shadow,effect,396,584,8x5 f12 eye vortex (large)
-necro_skull,necrotic,effect,397,658,5x5 f20 spectral blue skull
-shadow_flame,shadow,effect,398,678,2x2 f9 purple flame
-poison_pentagram,poison,effect,399,278,3x3 f11 green pentagram
-poison_ring,poison,effect,400,751,4x4 f16 thorny green ring (aura)
-poison_flame,poison,effect,401,677,2x2 f9 green flame
-poison_burst,poison,effect,402,196,1x1 f10 green particle burst
-holy_smite,holy,effect,403,444,6x6 f20 white light burst
-holy_cross,holy,effect,404,377,2x2 f12 golden cross
-holy_spiral,holy,effect,405,87,2x2 f8 white spiral with sparkles
-arcane_circle,arcane,effect,406,630,4x4 f16 magenta rune ring (aura)
-arcane_aura,arcane,effect,407,754,7x7 f17 violet glowing ring
-arcane_burst,arcane,effect,408,184,1x1 f8 arcane sparkle burst
-summon_portal,summon,effect,409,482,2x2 f17 pink-violet portal vortex
-summon_vortex,summon,effect,410,477,2x2 f16 blue-violet vortex
-heal_hearts,healing,effect,411,733,1x1 f18 red hearts rise
-heal_sparkle,healing,effect,412,764,5x5 f40 cyan sparkles
-ground_slam,slam,effect,413,494,3x3 f9 dust ring
-shockwave,slam,effect,414,212,3x3 f4 white burst shockwave
-fire_bolt,fire,missile,116,144,1x1 f4 fireball
-fire_streak,fire,missile,117,100,3x3 f12 long flame streak
-ice_shard,frost,missile,118,171,4x4 f18 ice lance with trail
-arcane_orb,arcane,missile,119,104,1x1 f4 purple orb
-shadow_bolt,shadow,missile,120,163,2x2 purple dark bolt
-holy_bolt,holy,missile,121,181,2x2 f4 white glowing bolt
-blood_spear,blood,missile,122,188,2x2 f4 red streak
-lightning_orb,lightning,missile,123,197,2x2 f8 cyan electric orb
-poison_dart,poison,missile,124,136,1x1 f4 green dart
-skull_orb,necrotic,missile,125,151,2x2 f2 flying skull
+name,theme,category,id,mode,style,palette,size,frames,ms,note
+CONST_ME_DRAWBLOOD,blood,effect,1,replace,splash,blood,1x1,6,70,engine hit on bleeding targets; inflict wound
+CONST_ME_LOSEENERGY,water,effect,2,replace,bubbles,water,1x1,8,70,engine drown/water hit; monster drown spells
+CONST_ME_POFF,smoke,effect,3,replace,cloud,ash,1x1,7,70,engine block/fail puff; many spells
+CONST_ME_BLOCKHIT,steel,effect,4,replace,impact,gold,1x1,5,70,engine armour block / immunity
+CONST_ME_EXPLOSIONAREA,fire,effect,5,replace,burst,fire,2x2,9,70,explosion rune; physical strike
+CONST_ME_EXPLOSIONHIT,fire,effect,6,replace,burst,fire,1x1,7,70,soulfire monster spells
+CONST_ME_FIREAREA,fire,effect,7,replace,flame,fire,2x2,10,80,great fireball; fire bomb; hell's core
+CONST_ME_YELLOW_RINGS,holy,effect,8,replace,rings,gold,1x1,8,80,monster skill reducers
+CONST_ME_GREEN_RINGS,poison,effect,9,replace,rings,poison,1x1,8,80,engine earth hit; monster freeze
+CONST_ME_HITAREA,physical,effect,10,replace,impact,ash,1x1,6,60,engine physical hit (undead); knight spells
+CONST_ME_TELEPORT,arcane,effect,11,replace,swirl,arcane,1x1,10,80,levitate; summon spells
+CONST_ME_ENERGYHIT,energy,effect,12,replace,sparks,energy,1x1,7,60,engine energy hit; energy spells
+CONST_ME_MAGIC_BLUE,arcane,effect,13,replace,sparkle,frost,1x1,9,70,engine mana gain; support/conjuring spells
+CONST_ME_MAGIC_RED,blood,effect,14,replace,sparkle,bloodglow,1x1,9,70,engine life drain/leech; paralyze
+CONST_ME_MAGIC_GREEN,healing,effect,15,replace,sparkle,heal,1x1,9,70,haste; enchant; support spells
+CONST_ME_HITBYFIRE,fire,effect,16,replace,flame,fire,1x1,8,70,engine fire hit; fire waves
+CONST_ME_HITBYPOISON,poison,effect,17,replace,splash,venom,1x1,6,70,engine physical hit on venomous targets
+CONST_ME_MORTAREA,death,effect,18,replace,cloud,shadow,1x1,9,80,death spells; curse
+CONST_ME_SOUND_GREEN,sound,effect,19,replace,notes,poison,1x1,9,90,monster spells (music)
+CONST_ME_SOUND_RED,sound,effect,20,replace,notes,bloodglow,1x1,9,90,monster spells (music)
+CONST_ME_POISONAREA,poison,effect,21,replace,cloud,poison,1x1,9,80,poison area (monster spells; chaos fallback)
+CONST_ME_SOUND_YELLOW,sound,effect,22,replace,notes,gold,1x1,9,90,monster spells (music)
+CONST_ME_SOUND_PURPLE,sound,effect,23,replace,notes,arcane,1x1,9,90,monster spells (music)
+CONST_ME_SOUND_BLUE,sound,effect,24,replace,notes,frost,1x1,9,90,monster spells (music)
+CONST_ME_SOUND_WHITE,sound,effect,25,replace,notes,storm,1x1,9,90,monster spells (music)
+CONST_ME_BUBBLES,water,effect,26,replace,bubbles,water,1x1,10,70,monster drown spells
+CONST_ME_STUN,physical,effect,32,replace,stun,gold,1x1,8,90,monster skill reducers
+CONST_ME_SLEEP,sound,effect,33,replace,notes,storm,1x1,10,100,monster sleep spells
+CONST_ME_GROUNDSHAKER,earth,effect,35,replace,eruption,earth,2x2,10,80,groundshaker
+CONST_ME_FIREATTACK,fire,effect,37,replace,burst,ember,1x1,7,70,fireball rune; apprentice's strike
+CONST_ME_ENERGYAREA,energy,effect,38,replace,sparks,energy,1x1,8,70,energy waves and bombs
+CONST_ME_SMALLCLOUDS,death,effect,39,replace,cloud,shadow,1x1,8,80,engine death hit; death spells
+CONST_ME_HOLYDAMAGE,holy,effect,40,replace,rays,holy,1x1,8,70,engine holy hit; holy spells
+CONST_ME_BIGCLOUDS,energy,effect,41,replace,cloud,ash,2x2,10,80,rage of the skies
+CONST_ME_ICEAREA,frost,effect,42,replace,shards,frost,2x2,10,70,ice waves; avalanche
+CONST_ME_ICETORNADO,frost,effect,43,replace,tornado,frost,2x2,12,70,eternal winter
+CONST_ME_ICEATTACK,frost,effect,44,replace,shards,frost,1x1,8,60,engine ice hit; ice strikes
+CONST_ME_STONES,earth,effect,45,replace,eruption,earth,1x1,9,70,stone shower; stalagmite
+CONST_ME_SMALLPLANTS,earth,effect,46,replace,thorns,nature,1x1,9,80,terra spells; avalanche
+CONST_ME_CARNIPHILA,poison,effect,47,replace,thorns,moss,1x1,9,80,envenom; terra spells
+CONST_ME_PURPLEENERGY,arcane,effect,48,replace,sparks,arcane,1x1,8,70,monster spells
+CONST_ME_YELLOWENERGY,energy,effect,49,replace,sparks,gold,1x1,8,70,monster spells
+CONST_ME_HOLYAREA,holy,effect,50,replace,rays,holy,2x2,10,70,divine caldera; holy missile rune
+CONST_ME_BIGPLANTS,earth,effect,51,replace,thorns,nature,2x2,10,80,monster spells
+CONST_ME_GIANTICE,frost,effect,53,replace,shards,frost,2x2,11,70,great fire wave (ice part)
+CONST_ME_WATERSPLASH,water,effect,54,replace,splash,water,1x1,7,70,monster drown spells
+CONST_ME_BLACKSMOKE,death,effect,158,replace,cloud,soot,1x1,9,80,monster spells
+CONST_ME_REDSMOKE,blood,effect,167,replace,cloud,bloodglow,1x1,9,80,intense healing
+CONST_ME_CRITICAL_DAMAGE,physical,effect,173,replace,impact,crit,1x1,6,60,engine critical hit
+EFFECT_182,earth,effect,182,replace,eruption,earth,1x1,9,70,groundshaker; rage of the skies (earth)
+EFFECT_183,earth,effect,183,replace,thorns,venom,1x1,9,70,divine caldera; divine missile (earth)
+EFFECT_185,healing,effect,185,replace,rings,heal,1x1,9,80,fair wound cleansing
+CONST_ME_BEWITCHED,arcane,effect,187,replace,swirl,arcane,1x1,9,70,engine arcane hit; death waves
+EFFECT_200,fire,effect,200,replace,flame,hellfire,1x1,9,70,divine caldera (fire)
+EFFECT_201,holy,effect,201,replace,rays,holy,1x1,9,70,holy part of the elemental waves
+EFFECT_202,frost,effect,202,replace,shards,frost,1x1,9,70,energy wave (ice); icebound wave
+EFFECT_203,death,effect,203,replace,skull,bone,1x1,10,80,monster dice curse
+EFFECT_204,energy,effect,204,replace,sparks,storm,1x1,8,60,berserk; divine missile (energy)
+EFFECT_205,frost,effect,205,replace,nova,frost,1x1,8,70,groundshaker; rage of the skies (ice)
+EFFECT_213,fire,effect,213,replace,burst,fire,1x1,8,70,divine missile (fire)
+EFFECT_215,frost,effect,215,replace,shards,frost,1x1,9,70,divine caldera (ice)
+EFFECT_216,fire,effect,216,replace,flame,ember,1x1,9,70,avalanche; terra wave (fire)
+EFFECT_217,energy,effect,217,replace,sparks,void,1x1,8,70,energy/death parts of waves; fear
+EFFECT_218,death,effect,218,replace,swirl,shadow,1x1,9,70,death/arcane parts of waves; curses
+EFFECT_219,energy,effect,219,replace,sparks,storm,1x1,8,60,great fire wave; terra wave (energy)
+EFFECT_220,death,effect,220,replace,cloud,death,1x1,9,80,energy wave (drown); groundshaker (death)
+EFFECT_221,fire,effect,221,replace,nova,fire,1x1,8,70,eternal winter; groundshaker (fire)
+EFFECT_222,death,effect,222,replace,skull,death,1x1,10,80,eternal winter; rage of the skies (death)
+EFFECT_223,blood,effect,223,replace,aura,bloodglow,1x1,10,80,blood rage
+EFFECT_224,holy,effect,224,replace,aura,gold,1x1,10,80,sharpshooter
+EFFECT_225,holy,effect,225,replace,rays,holy,1x1,8,70,great fire wave; strong ice wave (holy)
+EFFECT_226,fire,effect,226,replace,burst,hellfire,1x1,8,70,strong ice wave (fire)
+EFFECT_244,arcane,effect,244,replace,circle,arcane,1x1,10,70,arcane wave
+EFFECT_246,energy,effect,246,replace,sparks,energy,1x1,8,60,monster energy spells
+EFFECT_248,fire,effect,248,replace,burst,hellfire,2x2,10,70,monster explosion spells
+EFFECT_262,holy,effect,262,replace,pillar,holy,1x1,9,70,monster holy/energy spells
+EFFECT_264,holy,effect,264,replace,nova,holy,2x2,10,70,monster holy spells
+EFFECT_288,arcane,effect,288,replace,burst,arcane,1x1,8,70,arcane strike
+EFFECT_291,arcane,effect,291,replace,circle,arcane,1x1,10,70,arcane cross; paralyzer
+EFFECT_309,arcane,effect,309,replace,swirl,void,1x1,10,70,arcane gravity field
+EFFECT_312,arcane,effect,312,replace,sparkle,arcane,1x1,9,70,evasion; arcane gravity field
+EFFECT_359,frost,effect,359,replace,shards,frost,1x1,9,70,glacial wave (monster)
+EFFECT_367,earth,effect,367,replace,eruption,moss,1x1,9,70,earth wave (monster)
+fire_nova,fire,effect,372,append,nova,fire,2x2,10,70,expanding flame ring
+fire_explosion,fire,effect,373,append,burst,fire,2x2,10,70,fireball blast with embers and smoke
+fire_tornado,fire,effect,374,append,tornado,fire,2x2,12,70,spinning flame whirlwind
+fire_burst,fire,effect,375,append,impact,fire,2x2,8,60,spiky fire burst
+meteor_strike,fire,effect,376,append,meteor,fire,2x2,11,70,burning rock crashing down and exploding
+inferno_burst,fire,effect,377,append,burst,hellfire,2x2,10,70,red-orange ember burst
+fire_ring,fire,effect,378,append,nova,ember,2x2,10,80,wide double ember ring
+frost_burst,frost,effect,379,append,shards,frost,2x2,10,70,ice shards bursting out and shattering
+frost_nova,frost,effect,380,append,nova,frost,2x2,10,70,frost ring with flash
+ice_spikes,frost,effect,381,append,shards,frost,2x2,10,70,ice spikes erupt from the ground
+ice_crystal,frost,effect,382,append,shards,frost,2x2,14,80,slow crystal growth then shatter
+frost_ripple,frost,effect,383,append,nova,frost,2x2,10,80,cold ripple rings on the ground
+chain_lightning,lightning,effect,384,append,sparks,energy,1x1,7,60,cyan-violet forked arcs
+lightning_violet,lightning,effect,385,append,sparks,arcane,1x1,7,60,violet forked arcs
+lightning_strike,lightning,effect,386,append,sparks,storm,2x2,10,60,bolt from the sky with ground flash
+lightning_zap,lightning,effect,387,append,sparks,energy,2x2,6,60,jagged zap
+blood_rune,blood,effect,388,append,circle,bloodglow,2x2,10,70,red rune circle
+blood_ring,blood,effect,389,append,aura,bloodglow,2x2,12,80,red pulsing ring with rising streaks (aura)
+blood_splash,blood,effect,390,append,splash,blood,2x2,8,70,dark red spray
+blood_slash,blood,effect,391,append,slash,bloodglow,2x2,9,60,triple claw slash
+blood_nova,blood,effect,392,append,nova,bloodglow,2x2,9,70,red expanding ring
+shadow_smoke,shadow,effect,393,append,cloud,shadow,2x2,10,80,violet smoke cloud
+shadow_cloud,shadow,effect,394,append,cloud,shadow,2x2,12,80,rising violet smoke column
+shadow_ring,shadow,effect,395,append,nova,shadow,2x2,10,70,violet ring puff
+void_eye,shadow,effect,396,append,swirl,void,2x2,12,80,vortex opening a burning eye
+necro_skull,necrotic,effect,397,append,skull,death,2x2,12,80,spectral skull rising from smoke
+shadow_flame,shadow,effect,398,append,flame,shadow,2x2,10,70,violet flame
+poison_pentagram,poison,effect,399,append,circle,poison,2x2,10,70,green pentagram circle
+poison_ring,poison,effect,400,append,aura,poison,2x2,12,80,green pulsing ring (aura)
+poison_flame,poison,effect,401,append,flame,poison,2x2,10,70,green flame
+poison_burst,poison,effect,402,append,cloud,poison,1x1,9,70,green spore burst
+holy_smite,holy,effect,403,append,pillar,holy,2x2,10,70,light column smiting down
+holy_cross,holy,effect,404,append,rays,holy,2x2,10,80,golden cross of light
+holy_spiral,holy,effect,405,append,swirl,holy,2x2,10,70,white-gold spiral with sparkles
+arcane_circle,arcane,effect,406,append,circle,arcane,2x2,12,70,magenta rune ring (aura)
+arcane_aura,arcane,effect,407,append,aura,arcane,2x2,12,80,violet glowing ring
+arcane_burst,arcane,effect,408,append,impact,arcane,1x1,7,60,arcane sparkle burst
+summon_portal,summon,effect,409,append,swirl,arcane,2x2,12,80,pink-violet portal vortex
+summon_vortex,summon,effect,410,append,swirl,energy,2x2,12,80,blue-violet vortex
+heal_hearts,healing,effect,411,append,hearts,bloodglow,1x1,10,90,red hearts rise
+heal_sparkle,healing,effect,412,append,sparkle,heal,2x2,12,70,green-white sparkles and a rising ring
+ground_slam,slam,effect,413,append,eruption,earth,2x2,9,70,rocks and dust ring
+shockwave,slam,effect,414,append,nova,storm,2x2,6,60,white burst shockwave
+CONST_ANI_FIRE,fire,missile,4,replace,orb,fire,1x1,4,80,fire runes and strikes
+CONST_ANI_ENERGY,energy,missile,5,replace,orb,energy,1x1,4,60,energy strikes; buzz
+CONST_ANI_DEATH,death,missile,11,replace,orb,shadow,1x1,4,80,death strike; curse
+CONST_ANI_LARGEROCK,earth,missile,12,replace,rock,earth,1x1,4,80,monster skill reducer (also thrown by monsters)
+CONST_ANI_SNOWBALL,frost,missile,13,replace,rock,snow,1x1,4,80,monster skill reducer (also a throwable)
+CONST_ANI_POISON,poison,missile,15,replace,orb,poison,1x1,4,80,divine missile (earth)
+CONST_ANI_WHIRLWINDSWORD,physical,missile,25,replace,spin,steel,1x1,4,50,executioner's throw
+CONST_ANI_ETHEREALSPEAR,physical,missile,28,replace,arrow,ethereal,1x1,4,70,ethereal spear spells
+CONST_ANI_ICE,frost,missile,29,replace,shard,frost,1x1,2,100,avalanche; warlock spells
+CONST_ANI_EARTH,earth,missile,30,replace,shard,moss,1x1,2,100,avalanche; envenom; terra spells
+CONST_ANI_HOLY,holy,missile,31,replace,orb,holy,1x1,4,70,holy missile rune
+CONST_ANI_SUDDENDEATH,death,missile,32,replace,orb,death,1x1,4,80,sudden death rune; death waves
+CONST_ANI_FLASHARROW,energy,missile,33,replace,arrow,storm,1x1,2,80,monster skill reducer (also flash arrow ammo)
+CONST_ANI_ENERGYBALL,energy,missile,36,replace,orb,energy,1x1,4,60,energy bomb; avalanche
+CONST_ANI_SMALLICE,frost,missile,37,replace,shard,frost,1x1,2,100,ice strikes; icicle rune
+CONST_ANI_SMALLHOLY,holy,missile,38,replace,orb,holy,1x1,4,70,holy flash; divine missile
+CONST_ANI_SMALLEARTH,earth,missile,39,replace,orb,moss,1x1,4,80,mud attack; terra strikes
+CONST_ANI_EXPLOSION,fire,missile,41,replace,orb,ember,1x1,4,70,explosion rune; physical strike
+MISSILE_56,frost,missile,56,replace,shard,frost,1x1,2,100,energy wave (ice)
+MISSILE_57,holy,missile,57,replace,bolt,holy,1x1,4,70,energy wave (holy)
+MISSILE_60,water,missile,60,replace,orb,water,1x1,4,80,energy wave (drown)
+MISSILE_84,arcane,missile,84,replace,orb,arcane,1x1,4,70,bewitched curse
+CONST_ANI_ARCANE,arcane,missile,85,replace,bolt,arcane,1x1,4,70,fear
+MISSILE_86,arcane,missile,86,replace,shard,arcane,1x1,2,90,arcane strike
+MISSILE_104,arcane,missile,104,replace,orb,void,1x1,4,80,paralyzer (monster)
+fire_bolt,fire,missile,116,append,orb,fire,1x1,4,70,fireball
+fire_streak,fire,missile,117,append,bolt,fire,1x1,4,60,long flame streak
+ice_shard,frost,missile,118,append,shard,frost,1x1,2,90,ice lance with frost trail
+arcane_orb,arcane,missile,119,append,orb,arcane,1x1,4,70,violet orb
+shadow_bolt,shadow,missile,120,append,bolt,shadow,1x1,4,70,dark violet bolt
+holy_bolt,holy,missile,121,append,arrow,holy,1x1,2,80,glowing holy arrow
+blood_spear,blood,missile,122,append,arrow,bloodglow,1x1,2,80,blood-red spear with trail
+lightning_orb,lightning,missile,123,append,orb,energy,1x1,4,50,crackling electric orb
+poison_dart,poison,missile,124,append,dart,poison,1x1,4,70,venom dart
+skull_orb,necrotic,missile,125,append,orb,shadow,1x1,4,80,flying skull in violet flame
