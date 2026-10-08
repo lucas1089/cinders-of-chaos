@@ -1,0 +1,145 @@
+# Helper: no packet burst after a long frame. Catch-up cycles (same frame or < 25 ms real time after the last one) are skipped, and the heal spells the helper says are limited by real time (one per 200 ms, the same spell again after 500 ms unless the server's cooldown comes first). Without it a 2 s stall replayed ~40 cycles at once and a rejected heal went out 20 times a second, and the server kicked for packets per second.
+--- a/mods/game_helper/helper.lua
++++ b/mods/game_helper/helper.lua
+@@ -422,7 +422,11 @@ end
+ 
+ local helperEvents = {
+   helperCycleEvent = nil,
+-  helperCycleTimer = 50
++  helperCycleTimer = 50,
++  -- Chaos: catch-up guard, see helperCycleEvent
++  minRealGap = 25,
++  lastFrameMillis = -1,
++  lastRealMillis = -1000
+ }
+ 
+ local timers = {
+@@ -487,6 +491,34 @@ local cachedPrioritizedHealthPotions = {}
+ local cachedPrioritizedManaPotions = {}
+ local healingActiveBuffs = {}
+ 
++-- Chaos: wall-clock guard for the heal spells the helper says itself (own heal, sio, gran sio, tio sio, mas res).
++-- isSpellOnCooldown only knows a cooldown once the server sends one, and it reads g_clock.millis(), which is cached per
++-- frame. A spell the server rejects ("wrong vocation", exhausted...) never gets a cooldown, so it went out on every 50 ms
++-- cycle, and after a long frame the replayed cycles all said it again in one burst (kick: packets per second).
++-- Real time: at most one heal spell per 200 ms, and the same spell again only after 500 ms unless the server's
++-- cooldown arrives first (heal cooldowns are 1 s or more, so normal healing does not notice).
++local spellTalkGuard = {
++  minGap = 200,     -- ms between any two heal spells the helper says
++  retryDelay = 500, -- ms before the same spell is said again
++  lastAt = 0,
++  lastAtBySpell = {}
++}
++
++function helperSpellTalkBlocked(spellId)
++  local now = g_clock.realMillis()
++  if now - spellTalkGuard.lastAt < spellTalkGuard.minGap then
++    return true
++  end
++  local last = spellTalkGuard.lastAtBySpell[spellId]
++  return last ~= nil and now - last < spellTalkGuard.retryDelay
++end
++
++function helperNoteSpellTalk(spellId)
++  local now = g_clock.realMillis()
++  spellTalkGuard.lastAt = now
++  spellTalkGuard.lastAtBySpell[spellId] = now
++end
++
+ -- Forward declaration
+ local rebuildHealingCache
+ 
+@@ -1792,6 +1824,16 @@ local function isServerFrozen()
+ end
+ 
+ function helperCycleEvent()
++  -- Chaos: after a long frame the engine runs every missed cycle back to back (ScheduledEvent::nextCycle adds the delay
++  -- to the old due time) and g_clock.millis() is the same for all of them, so cooldowns did not hold them back: a 2 s
++  -- stall meant ~40 cycles at once, each able to send a packet. Skip a cycle in the same frame as the last one that ran
++  -- or less than 25 ms of real time after it (normal cycles are ~50 ms apart down to about 40 fps).
++  local frameNow, realNow = g_clock.millis(), g_clock.realMillis()
++  if frameNow == helperEvents.lastFrameMillis or realNow - helperEvents.lastRealMillis < helperEvents.minRealGap then
++    return
++  end
++  helperEvents.lastFrameMillis, helperEvents.lastRealMillis = frameNow, realNow
++
+   -- Pausa o helper enquanto o servidor não responder (ex.: server save).
+   -- Sem isso, comandos enfileirados derrubam o player por excesso de pacotes ao retomar.
+   if isServerFrozen() then
+@@ -3906,7 +3948,7 @@ function castHealingSpell(spellData)
+     return false
+   end
+ 
+-  if (isSpellOnCooldown(spell)) then
++  if isSpellOnCooldown(spell) or helperSpellTalkBlocked(spell.id) then
+     return false
+   end
+ 
+@@ -3944,6 +3986,7 @@ function castHealingSpell(spellData)
+   -- Execute the spell
+   safeDoThing(false)
+   g_game.talk(spell.words, true)
++  helperNoteSpellTalk(spell.id)
+   safeDoThing(true)
+ 
+   -- Track buff expiration for spells with buff duration
+@@ -4240,12 +4283,13 @@ function useAutoSio(target)
+     return false
+   end
+ 
+-  if (isSpellOnCooldown(spell)) then
++  if isSpellOnCooldown(spell) or helperSpellTalkBlocked(spell.id) then
+     return false
+   end
+ 
+   safeDoThing(false)
+   g_game.talk(string.format("%s \"%s\"", spell.words, target:getName()), true)
++  helperNoteSpellTalk(spell.id)
+   safeDoThing(true)
+ 
+   return true
+@@ -4324,12 +4368,13 @@ function useAutoGranSio(target)
+     return false
+   end
+ 
+-  if (isSpellOnCooldown(spell)) then
++  if isSpellOnCooldown(spell) or helperSpellTalkBlocked(spell.id) then
+     return false
+   end
+ 
+   safeDoThing(false)
+   g_game.talk(string.format("%s \"%s\"", spell.words, target:getName()), true)
++  helperNoteSpellTalk(spell.id)
+   safeDoThing(true)
+ 
+   return true
+@@ -4350,12 +4395,13 @@ function useAutoTioSio(target)
+     return false
+   end
+ 
+-  if (isSpellOnCooldown(spell)) then
++  if isSpellOnCooldown(spell) or helperSpellTalkBlocked(spell.id) then
+     return false
+   end
+ 
+   safeDoThing(false)
+   g_game.talk(string.format("%s \"%s\"", spell.words, target:getName()), true)
++  helperNoteSpellTalk(spell.id)
+   safeDoThing(true)
+ 
+   return true
+@@ -4376,12 +4422,13 @@ function useAutoMasRes()
+     return false
+   end
+ 
+-  if (isSpellOnCooldown(spell)) then
++  if isSpellOnCooldown(spell) or helperSpellTalkBlocked(spell.id) then
+     return false
+   end
+ 
+   safeDoThing(false)
+   g_game.talk(spell.words, true)
++  helperNoteSpellTalk(spell.id)
+   safeDoThing(true)
+ 
+   return true
