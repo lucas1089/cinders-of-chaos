@@ -1,0 +1,185 @@
+category,src_id,name,purpose
+outfit,1245,Golden Dragon,custom monster without a sprite (needs_sprites.txt)
+outfit,4463,Scaleborn,custom monster without a sprite (needs_sprites.txt); alt: library outfit 169
+outfit,215,red dragon,dragon line / late game
+outfit,223,frost dragon,dragon line / late game
+outfit,1181,storm wyvern,dragon line / world boss
+outfit,6981,red drake,dragon hatchling line
+outfit,708,red demon,demon line
+outfit,1448,demon brute,demon line / rift boss
+outfit,3904,winged shadow demon,world boss look
+outfit,1396,lich,Necromancer enemy / Lich look
+outfit,3834,lich lord,boss look
+outfit,524,hooded warlock,caster enemy
+outfit,91,skeleton,Necromancer summon
+outfit,101,skeleton warrior,Necromancer summon (Bone Lord army)
+outfit,1075,frost skeleton,undead variant
+outfit,529,ghost,Necromancer shade / spirit
+outfit,503,minotaur warlord,boss look
+outfit,1241,werewolf,beast enemy
+outfit,5162,giant black spider,cave boss look
+outfit,743,rock golem,Bone Golem stand-in / cave enemy
+outfit,2136,cultist,dark cult enemy
+outfit,2862,warrior,Warrior class outfit
+outfit,6888,golden paladin,Templar class outfit
+outfit,3901,angel paladin,Templar ascended (Inquisitor / Sentinel) outfit
+outfit,2661,ronin,Samurai class outfit
+outfit,4104,shadow ninja,Ninja class outfit
+outfit,3424,hooded thief,Thief class outfit
+outfit,3714,brawler monk,Monk class outfit
+outfit,5387,elf ranger,Ranger class outfit
+outfit,3099,archmage,Mystic class outfit
+outfit,2849,plague doctor,Necromancer class outfit
+outfit,6280,skeletal horse,mount
+effect,93,claw slash,spell effect
+effect,94,twin slash,spell effect
+effect,148,blood crystal burst,spell effect
+effect,173,fire explosion,spell effect
+effect,216,fire pillar,spell effect
+effect,226,frost nova,spell effect
+effect,233,ice burst,spell effect
+effect,243,smoke burst,spell effect
+effect,290,holy crescent,spell effect
+effect,292,holy crescent wide,spell effect
+effect,1207,pale crescent slash,spell effect
+effect,1251,golden cross slash,spell effect
+effect,1286,ice cross slash,spell effect
+effect,1357,blue claw rend,spell effect
+effect,1361,red claw rend,spell effect
+effect,1384,water wave,spell effect
+effect,1389,meteor impact,spell effect
+effect,1395,poison cloud,spell effect
+effect,1418,necrotic crescent,spell effect
+effect,1462,flame crescent,spell effect
+effect,1512,arcane burst,spell effect
+effect,1531,rune circle,spell effect
+effect,1584,blood portal,spell effect
+effect,1587,void portal,spell effect
+missile,9,arrow,spell / weapon missile
+missile,10,steel arrow,spell / weapon missile
+missile,43,fire bolt,spell / weapon missile
+missile,44,fireball,spell / weapon missile
+missile,46,frost orb,spell / weapon missile
+missile,62,holy orb,spell / weapon missile
+missile,63,chaos orb,spell / weapon missile
+missile,64,arcane orb,spell / weapon missile
+missile,69,poison glob,spell / weapon missile
+missile,71,blood orb,spell / weapon missile
+missile,95,great fireball,spell / weapon missile
+missile,129,ice shards,spell / weapon missile
+missile,133,necrotic orb,spell / weapon missile
+missile,167,shuriken,spell / weapon missile
+missile,175,flame burst,spell / weapon missile
+missile,230,frost bolt,spell / weapon missile
+item,8750,claw 1,Monk fist weapon art
+item,8751,claw 2,Monk fist weapon art
+item,8752,claw 3,Monk fist weapon art
+item,8753,claw 4,Monk fist weapon art
+item,8754,claw 5,Monk fist weapon art
+item,8755,claw 6,Monk fist weapon art
+item,8756,claw 7,Monk fist weapon art
+item,8757,claw 8,Monk fist weapon art
+item,8758,claw 9,Monk fist weapon art
+item,8759,claw 10,Monk fist weapon art
+item,8760,claw 11,Monk fist weapon art
+item,8761,claw 12,Monk fist weapon art
+item,8762,claw 13,Monk fist weapon art
+item,8763,claw 14,Monk fist weapon art
+item,8764,claw 15,Monk fist weapon art
+item,5312,dungeon floor 1,castle / dungeon ground set
+item,5313,dungeon floor 2,castle / dungeon ground set
+item,5314,dungeon floor 3,castle / dungeon ground set
+item,5315,dungeon floor 4,castle / dungeon ground set
+item,5316,dungeon floor 5,castle / dungeon ground set
+item,5317,dungeon floor 6,castle / dungeon ground set
+item,5318,dungeon floor 7,castle / dungeon ground set
+item,5319,dungeon floor 8,castle / dungeon ground set
+item,5320,dungeon floor 9,castle / dungeon ground set
+item,5321,dungeon floor 10,castle / dungeon ground set
+item,5322,dungeon floor 11,castle / dungeon ground set
+item,5323,dungeon floor 12,castle / dungeon ground set
+item,5324,dungeon floor 13,castle / dungeon ground set
+item,5325,dungeon floor 14,castle / dungeon ground set
+item,5326,dungeon floor 15,castle / dungeon ground set
+item,5327,dungeon floor 16,castle / dungeon ground set
+item,5328,dungeon floor 17,castle / dungeon ground set
+item,5329,dungeon floor 18,castle / dungeon ground set
+item,5330,dungeon floor 19,castle / dungeon ground set
+item,5331,dungeon floor 20,castle / dungeon ground set
+item,5332,dungeon floor 21,castle / dungeon ground set
+item,5333,dungeon floor 22,castle / dungeon ground set
+item,5334,dungeon floor 23,castle / dungeon ground set
+item,5335,dungeon floor 24,castle / dungeon ground set
+item,5336,dungeon floor 25,castle / dungeon ground set
+item,5337,dungeon floor 26,castle / dungeon ground set
+item,5338,dungeon floor 27,castle / dungeon ground set
+item,5339,dungeon floor 28,castle / dungeon ground set
+item,5340,dungeon floor 29,castle / dungeon ground set
+item,5341,dungeon floor 30,castle / dungeon ground set
+item,5342,dungeon floor 31,castle / dungeon ground set
+item,5343,dungeon floor 32,castle / dungeon ground set
+item,5344,dungeon floor 33,castle / dungeon ground set
+item,5345,dungeon floor 34,castle / dungeon ground set
+item,5346,dungeon floor 35,castle / dungeon ground set
+item,5347,dungeon floor 36,castle / dungeon ground set
+item,5348,dungeon floor 37,castle / dungeon ground set
+item,5349,dungeon floor 38,castle / dungeon ground set
+item,5350,dungeon floor 39,castle / dungeon ground set
+item,5351,dungeon floor 40,castle / dungeon ground set
+item,5352,dungeon floor 41,castle / dungeon ground set
+item,5353,dungeon floor 42,castle / dungeon ground set
+item,5354,dungeon floor 43,castle / dungeon ground set
+item,5355,dungeon floor 44,castle / dungeon ground set
+item,5356,dungeon floor 45,castle / dungeon ground set
+item,5357,dungeon floor 46,castle / dungeon ground set
+item,5358,dungeon floor 47,castle / dungeon ground set
+item,5359,dungeon floor 48,castle / dungeon ground set
+item,5360,dungeon floor 49,castle / dungeon ground set
+item,5361,dungeon floor 50,castle / dungeon ground set
+item,5362,dungeon floor 51,castle / dungeon ground set
+item,5363,dungeon floor 52,castle / dungeon ground set
+item,5365,gothic door or window 1,castle / dungeon wall set
+item,5366,gothic door or window 2,castle / dungeon wall set
+item,5367,gothic door or window 3,castle / dungeon wall set
+item,5368,gothic door or window 4,castle / dungeon wall set
+item,5369,gothic door or window 5,castle / dungeon wall set
+item,5370,gothic door or window 6,castle / dungeon wall set
+item,5371,gothic door or window 7,castle / dungeon wall set
+item,5372,gothic door or window 8,castle / dungeon wall set
+item,5373,gothic door or window 9,castle / dungeon wall set
+item,5374,gothic door or window 10,castle / dungeon wall set
+item,5375,gothic door or window 11,castle / dungeon wall set
+item,5376,gothic door or window 12,castle / dungeon wall set
+item,5377,gothic door or window 13,castle / dungeon wall set
+item,5378,gothic door or window 14,castle / dungeon wall set
+item,5379,gothic door or window 15,castle / dungeon wall set
+item,5380,gothic door or window 16,castle / dungeon wall set
+item,5381,gothic door or window 17,castle / dungeon wall set
+item,5382,gothic door or window 18,castle / dungeon wall set
+item,5383,gothic door or window 19,castle / dungeon wall set
+item,5384,gothic door or window 20,castle / dungeon wall set
+item,5385,gothic door or window 21,castle / dungeon wall set
+item,5386,gothic door or window 22,castle / dungeon wall set
+item,5387,gothic door or window 23,castle / dungeon wall set
+item,5388,gothic door or window 24,castle / dungeon wall set
+item,5389,gothic door or window 25,castle / dungeon wall set
+item,5390,gothic door or window 26,castle / dungeon wall set
+item,5391,gothic door or window 27,castle / dungeon wall set
+item,5392,gothic door or window 28,castle / dungeon wall set
+item,5393,gothic door or window 29,castle / dungeon wall set
+item,5394,gothic door or window 30,castle / dungeon wall set
+item,5395,gothic door or window 31,castle / dungeon wall set
+item,5396,gothic door or window 32,castle / dungeon wall set
+item,5397,gothic door or window 33,castle / dungeon wall set
+item,5398,gothic door or window 34,castle / dungeon wall set
+item,5399,gothic door or window 35,castle / dungeon wall set
+item,5400,gothic door or window 36,castle / dungeon wall set
+item,5401,gothic door or window 37,castle / dungeon wall set
+item,5402,gothic door or window 38,castle / dungeon wall set
+item,5403,gothic door or window 39,castle / dungeon wall set
+item,5404,gothic door or window 40,castle / dungeon wall set
+item,5405,gothic door or window 41,castle / dungeon wall set
+item,5406,gothic door or window 42,castle / dungeon wall set
+item,5407,gothic door or window 43,castle / dungeon wall set
+item,5408,gothic door or window 44,castle / dungeon wall set
+item,5409,gothic door or window 45,castle / dungeon wall set

@@ -117,3 +117,17 @@ letters (Ber, Bea) so the classes stay apart. Checked in the Linux client: the c
 - `tools/sprites/dark_tiles/`: `masters/*.png` (64 px, one sheet per thing: patterns as laid out in the world, animation phases side by side, for a future 64 px spr), `contact_32.jpg`, `contact_64.jpg`, `scene_32.png` (a sample area over plain green).
 - Run: `python3 -I gen_dark_tiles.py --ours-dat Tibia.dat --ours-spr Tibia.spr --out-dir OUT --masters dark_tiles/masters --sheets dark_tiles --manifest-out ../../../server/data/items/dark_tiles.csv --lua-out ../../../server/data/lib/chaos_dark_tiles.lua`. Order in the rebuild chain: merge_outfits.py -> gen_effects.py -> set_multiuse.py -> gen_dark_tiles.py. The input must have 27483 items (or be an earlier output: the set is rebuilt in place and the pair comes out identical). Deterministic; the output is re-read and checked pixel by pixel; outfits, effects, missiles and stock items are copied byte for byte.
 - Checked in the Linux client at normal size and with HD upscaling (xBRZ x2) in a rift, the world boss arena and the ascension trial room.
+
+## Donor art libraries (new, `tools/sprites/import_donor_things.py`)
+Two donor clients were converted into separate 10.98 library pairs (not in git, too big): donor B (the 64px-style
+donor: 31,330 things, 535,781 sprites, 0.86 GB spr) and donor C (29,006 things, 274,559 sprites, 0.55 GB spr), each
+with `catalogue.csv` (library id, source id, size, frames, flags, short description, sprite hash) and contact sheets
+with the library ids. Only things whose art is not already in our pair are kept (pixel compare), exact duplicates and
+empty entries are dropped. `import_donor_things.py import` appends chosen library ids to a live pair (verified: old
+entries byte-identical, new ones pixel-identical to the library). `donor_b_selection.csv` is the recommended first
+live set (32 outfits incl. Golden Dragon and Scaleborn looks and class outfits, 24 effects, 16 missiles, 112 items),
+run with `--first-item 28000` after `gen_dark_tiles.py`; it writes `donor_items.csv`, which goes to
+`server/data/items/donor_items.csv` for `server/tools/install_donor_items.py` (install_all step `donoritems`).
+Donor B centres big creatures with negative displacements, which the 1098 profile reads unsigned: before
+donor B outfits go live, `GameNegativeOffset` has to be enabled for 1098 (base-patches/0006) and checked in the client. Catalogue rows tagged "named character" (donor C) are recognisable characters of other
+works: library only, never live. Not checked in the test client yet.
