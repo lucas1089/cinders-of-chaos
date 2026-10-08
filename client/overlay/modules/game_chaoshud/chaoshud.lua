@@ -42,11 +42,10 @@ local function onLevelChange(player, level, percent)
   if x then x:setTooltip(tr('Experience: %d%% to level %d', percent or 0, (level or 0) + 1)) end
 end
 
-local function onOutfitChange(creature)
-  local player = g_game.getLocalPlayer()
-  if hud and player and creature == player then
+local function onOutfitChange(player, outfit)
+  if hud and player and player:isLocalPlayer() then
     local p = hud:recursiveGetChildById('portrait')
-    if p then p:setOutfit(player:getOutfit()) end
+    if p then p:setOutfit(outfit or player:getOutfit()) end
   end
 end
 
@@ -87,15 +86,17 @@ end
 function init()
   -- in the game root panel next to the map (the map panel itself reaches above the visible area)
   hud = g_ui.loadUI('chaoshud', modules.game_interface.getRootPanel())
-  connect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onLevelChange = onLevelChange })
-  connect(Creature, { onOutfitChange = onOutfitChange })
+  -- the outfit hook goes on LocalPlayer: another module's LocalPlayer.onOutfitChange hides Creature.onOutfitChange for
+  -- the local player, so a Creature hook never fired and the portrait kept the login outfit
+  connect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onLevelChange = onLevelChange,
+    onOutfitChange = onOutfitChange })
   connect(g_game, { onGameStart = online, onGameEnd = offline })
   if g_game.isOnline() then online() end
 end
 
 function terminate()
-  disconnect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onLevelChange = onLevelChange })
-  disconnect(Creature, { onOutfitChange = onOutfitChange })
+  disconnect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onLevelChange = onLevelChange,
+    onOutfitChange = onOutfitChange })
   disconnect(g_game, { onGameStart = online, onGameEnd = offline })
   if hud then
     hud:destroy()
