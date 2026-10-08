@@ -44,7 +44,7 @@ local function sendMessageBox(player, title, message)
 end
 
 local function totalPoints(player)
-	local byLevel = math.max(0, player:getLevel() - cfg.startLevel) * cfg.pointsPerLevel
+	local byLevel = math.floor(math.max(0, player:getLevel() - cfg.startLevel) / (cfg.levelsPerPoint or 1))
 	local extra = player:getStorageValue(Chaos.storage.passiveExtraPoints)
 	return byLevel + math.max(0, extra)
 end
@@ -242,8 +242,26 @@ end
 
 local LoginEvent = CreatureEvent("ChaosPassiveTreeLogin")
 
+-- presets that hold more nodes than the character owns points (the point rate went down, or the level dropped)
+-- are emptied for free, so no allocation is ever larger than the points behind it
+local function refundOverBudget(player)
+	local total = totalPoints(player)
+	local refunded = 0
+	for _, row in ipairs(loadPresets(player:getGuid())) do
+		if #row.nodes > total then
+			db.query("UPDATE `" .. T .. "` SET `nodes` = '' WHERE `player_id` = " .. player:getGuid() .. " AND `preset` = " .. row.preset)
+			refunded = refunded + 1
+		end
+	end
+	if refunded > 0 then
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+			"Your passive tree was refunded for free: it held more nodes than your %d passive points. Please allocate them again.", total))
+	end
+end
+
 function LoginEvent.onLogin(player)
 	player:registerEvent("ChaosPassiveTreeExtended")
+	refundOverBudget(player)
 	applyBonuses(player)
 	return true
 end

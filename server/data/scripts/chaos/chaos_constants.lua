@@ -52,6 +52,7 @@ Chaos.storage = {
 
 	stashRemote = 7100010, -- >0 : player may keep the stash window open while walking
 	passiveExtraPoints = 7100020, -- bonus passive points granted by quests/GM
+	passiveStatsFixed = 7100021, -- 1 once the stats older passive tree versions wrote into the character are clamped
 	dungeonQueueLock = 7100030, -- (os.time of the last queue join; anti spam)
 
 	-- store: one-time cosmetics owned (base + id of the wings / aura / shader)
@@ -117,8 +118,9 @@ Chaos.daily = {
 
 Chaos.passive = {
 	rootNode = 1,
-	startLevel = 8, -- first point at level startLevel+1
-	pointsPerLevel = 1,
+	startLevel = 8, -- level 8 has no points; points are counted from here
+	levelsPerPoint = 4, -- 1 point every 4 levels: ~248 at level 1000 for 618 nodes, so a build has to choose
+	-- (planned later: a Paragon track that takes points once the tree is full)
 	maxPresets = 6,
 	resetCostPerLevel = 250 -- gold per level; the client text promises "level x 250"
 }

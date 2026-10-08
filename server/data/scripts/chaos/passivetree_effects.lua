@@ -1,7 +1,14 @@
 -- Passive tree effects: turns the summed node stats (ChaosPassiveTree.getBonuses) into real bonuses.
 --
 -- Registered as a listener of passivetree.lua, so it runs after every save, reset and login:
---   * character stats (strength ... wisdom): added on top of the stat window values, capped (charStatCap)
+--   * character stats (strength ... spirit), capped (charStatCap), with the same effect the engine gives the stat window's
+--     points but WITHOUT writing the character stats (those are saved with the player and are the stat window's points:
+--     writing them made the bonus stack on every login and let the stat window refund it as free points):
+--       strength / intelligence: damage dealt x (1 + value/230) for physical / every other type (engine formula)
+--       dexterity: weapon hits (melee, distance, wand) x 1 / (1 - value/100), the damage equal of the engine's
+--         "attack time - value%" (a script cannot change the attack speed)
+--       vitality / spirit: max health / max mana + value% (condition)
+--       wisdom: no effect (the engine gives none)
 --   * skills, magic level, critical hit, leech: a permanent CONDITION_ATTRIBUTES (sub ids 7200+)
 --   * absorbs: the second absorb storage of each damage type (977562-977573) that the stock absorb
 --     event already reads (the first one belongs to equipment)
@@ -28,8 +35,7 @@ local cfg = {
 	maxAbsorb = 80,           -- percent, passive absorbs only (equipment adds on top)
 	maxDamagePercent = 150,
 	-- the stat window formulas are percentages (vitality = % health, dexterity = % damage taken less):
-	charStatCap = {strength = 60, intelligence = 60, dexterity = 40, vitality = 50, spirit = 50, wisdom = 40},
-	checkMs = 5000
+	charStatCap = {strength = 60, intelligence = 60, dexterity = 40, vitality = 50, spirit = 50, wisdom = 40}
 }
 ChaosPassiveEffectsConfig = cfg
 
@@ -149,22 +155,62 @@ local function setCondition(player, stat, value)
 	end
 end
 
-local function applyCharStats(player, bonuses, state)
-	state.stats = state.stats or {}
-	for name, index in pairs(STAT_INDEX) do
-		local want = clamp(bonuses[name] or 0, 0, cfg.charStatCap[name])
-		local s = state.stats[name] or {applied = 0, last = nil}
-		local current = player:getCharacterStat(index)
-		if s.last ~= nil and current ~= s.last then
-			s.applied = 0 -- the stat window rewrote the value: our part is gone
+-- vitality / spirit as % max health / mana (sub ids next to the skill conditions)
+local PERCENT = {
+	vitality = {CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT, 7220},
+	spirit = {CONDITION_PARAM_STAT_MAXMANAPOINTSPERCENT, 7221},
+}
+
+local function applyCharStats(player, bonuses)
+	for stat, info in pairs(PERCENT) do
+		local value = math.floor(clamp(bonuses[stat] or 0, 0, cfg.charStatCap[stat]))
+		player:removeCondition(CONDITION_ATTRIBUTES, CONDITIONID_DEFAULT, info[2], true)
+		if value > 0 then
+			local c = Condition(CONDITION_ATTRIBUTES, CONDITIONID_DEFAULT)
+			c:setTicks(-1)
+			c:setParameter(CONDITION_PARAM_SUBID, info[2])
+			c:setParameter(info[1], 100 + value)
+			player:addCondition(c)
 		end
-		local newValue = current - s.applied + want
-		if newValue ~= current then
-			player:setCharacterStat(index, newValue)
-		end
-		s.applied, s.last = want, newValue
-		state.stats[name] = s
 	end
+end
+
+-- Older versions wrote the bonus into the character stats, which the server saves: clamp them back to what the
+-- stat window allows (StatsMaxValues of the base server's stat window script), once per character.
+local function fixLegacyStats(player)
+	local key = Chaos.storage.passiveStatsFixed
+	if not key or player:getStorageValue(key) == 1 then
+		return
+	end
+	if StatsMaxValues then
+		for _, index in pairs(STAT_INDEX) do
+			local max = StatsMaxValues[index]
+			if max and player:getCharacterStat(index) > max then
+				player:setCharacterStat(index, max)
+			end
+		end
+	end
+	player:setStorageValue(key, 1)
+end
+ChaosPassiveFixLegacyStats = fixLegacyStats
+
+local WEAPON_ORIGIN = {}
+if ORIGIN_MELEE then
+	WEAPON_ORIGIN[ORIGIN_MELEE], WEAPON_ORIGIN[ORIGIN_RANGED], WEAPON_ORIGIN[ORIGIN_WAND] = true, true, true
+end
+
+-- damage multiplier from strength / intelligence / dexterity (pure, testable)
+function ChaosPassiveStatMultiplier(bonuses, combatType, origin)
+	local m
+	if combatType == COMBAT_PHYSICALDAMAGE then
+		m = 1 + clamp(bonuses.strength or 0, 0, cfg.charStatCap.strength) / 230
+	else
+		m = 1 + clamp(bonuses.intelligence or 0, 0, cfg.charStatCap.intelligence) / 230
+	end
+	if WEAPON_ORIGIN[origin] then
+		m = m / (1 - clamp(bonuses.dexterity or 0, 0, cfg.charStatCap.dexterity) / 100)
+	end
+	return m
 end
 
 local function applyAll(player, bonuses)
@@ -183,7 +229,7 @@ local function applyAll(player, bonuses)
 	if find then
 		player:setStorageValue(find, ChaosPassiveItemFind(bonuses))
 	end
-	applyCharStats(player, bonuses, state)
+	applyCharStats(player, bonuses)
 	local speed = ChaosPassiveSpeed(bonuses)
 	if speed ~= state.speed then
 		player:changeSpeed(speed - state.speed)
@@ -192,34 +238,19 @@ local function applyAll(player, bonuses)
 end
 ChaosPassiveTree.listeners[#ChaosPassiveTree.listeners + 1] = applyAll
 
--- the stat window may rewrite a character stat later: re-sync every few seconds
-local function check(playerId)
-	local player = Player(playerId)
-	if not player then
-		applied[playerId] = nil
-		ChaosPassiveCache[playerId] = nil
-		return
-	end
-	local state, bonuses = applied[playerId], ChaosPassiveCache[playerId]
-	if state and bonuses then
-		applyCharStats(player, bonuses, state)
-	end
-	addEvent(check, cfg.checkMs, playerId)
-end
-
 -- ---------------------------------------------------------------- damage dealt / healing
 local dealt = CreatureEvent("ChaosPassiveDealt")
 function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	if attacker and attacker:isPlayer() then
 		local bonuses = ChaosPassiveCache[attacker:getId()]
 		if bonuses then
-			local p1 = ChaosPassiveDamagePercent(bonuses, primaryType)
-			local p2 = ChaosPassiveDamagePercent(bonuses, secondaryType)
-			if p1 > 0 then
-				primaryDamage = scale(primaryDamage, 1 + p1 / 100)
+			local m1 = (1 + ChaosPassiveDamagePercent(bonuses, primaryType) / 100) * ChaosPassiveStatMultiplier(bonuses, primaryType, origin)
+			local m2 = (1 + ChaosPassiveDamagePercent(bonuses, secondaryType) / 100) * ChaosPassiveStatMultiplier(bonuses, secondaryType, origin)
+			if m1 ~= 1 then
+				primaryDamage = scale(primaryDamage, m1)
 			end
-			if p2 > 0 then
-				secondaryDamage = scale(secondaryDamage, 1 + p2 / 100)
+			if m2 ~= 1 then
+				secondaryDamage = scale(secondaryDamage, m2)
 			end
 		end
 	end
@@ -251,7 +282,7 @@ xpCb:register()
 local login = CreatureEvent("ChaosPassiveEffectsLogin")
 function login.onLogin(player)
 	player:registerEvent("ChaosPassiveDealt") -- own heals and heals from others pass through the target's events
-	addEvent(check, cfg.checkMs, player:getId())
+	fixLegacyStats(player)
 	return true
 end
 login:register()

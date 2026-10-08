@@ -187,9 +187,23 @@ The server also pushes `info` for tiered monsters to players within about 10 til
 ## Custom spells and spell effects
 36 spells (`data/spells/chaos/`, installer `tools/register_spells.py`, table in `data/spells/README.md`) and 43 extra magic effects plus 10 projectiles (`data/lib/chaos_fx.lua`, catalog `data/spells/effects_catalog.csv`, build commands in `data/spells/README_FX.md`). All spell effects are our own procedurally drawn art (`client/tools/sprites/gen_effects.py`): it appends the 43 + 10 and also redraws, at the same ids, the 83 stock effects and 25 stock missiles that spells and spell hits use, so stock spell scripts need no change. The spells load `chaos_fx.lua` themselves and fall back to standard effects if it is missing, so they work before the generated dat/spr is in use; the custom art shows only with that pair on the client. Effect ids above 255 work because the base server sends them as 16 bits and the client profile enables `GameMagicEffectU16`. Not run on a server. The client spell list and action bar need entries and icons for the new spells (see `data/spells/README.md`).
 
+## Passive tree points
+
+One passive point every `Chaos.passive.levelsPerPoint` (4) levels above level 8, plus `passiveExtraPoints` from quests/GMs:
+about 248 points at level 1000 against 618 nodes, so the tree cannot be completed and each build has to choose a path.
+On login, a preset holding more nodes than the character's points is emptied for free with a message (this covers
+characters made under the old 1-point-per-level rate). Planned later: a Paragon track that takes the points a character
+earns once the tree's budget is reached, for small capped bonuses.
+
 ## Passive tree effects (`passivetree_effects.lua`)
 The tree now has an effect: after every save, reset and login the summed node stats are applied.
-- **Character stats** (strength, intelligence, dexterity, vitality, spirit, wisdom): added on top of the stat window, capped per stat (`charStatCap`) because the engine formulas are percentages (a dexterity above 100 would make the player take no damage). One node in the data carries 239 strength; the cap contains it. A 5 s check re-adds the bonus if the stat window rewrites the value.
+- **Character stats** (strength, intelligence, dexterity, vitality, spirit, wisdom), capped per stat (`charStatCap`), get the
+  engine's effect without being written into the character's stats (those are the stat window's points and are saved with the
+  player; writing them made the bonus stack on every login and let the stat window refund it as free points): strength /
+  intelligence multiply damage dealt by `1 + value/230` (physical / other types, the engine formula), dexterity multiplies weapon
+  hits by `1 / (1 - value/100)` (the damage equal of the engine's faster attacks, which a script cannot set), vitality / spirit
+  are +value% max health / mana conditions, wisdom has no effect in the engine. Characters whose stats an older version
+  inflated are clamped once to the stat window maximum on login (`passiveStatsFixed` storage).
 - **Skills, magic level, critical hit, leech:** a permanent attribute condition (sub ids 7200 to 7219).
 - **Absorbs:** the second absorb storage per damage type (977562 to 977575) that the stock absorb event already reads; `absorbAllElements` adds to the nine elements; capped at 80% from the tree.
 - **Damage dealt:** `incrementX` for the type, `multiIncrement` for all elements, `incrementHealth` for healing; the event is registered on the target when a tree player attacks it.

@@ -43,29 +43,47 @@ assertEq(ChaosPassiveExperienceMultiplier(b), 1.1, "xp")
 local p, st, stats, speed = mkPlayer()
 local applyAll = ChaosPassiveTree.listeners[1]
 applyAll(p, b)
-assertEq(stats[CHARSTAT_STRENGTH], 60, "str cap")
-assertEq(stats[CHARSTAT_VITALITY], 20, "vit")
+-- character stats are never written (they are the stat window's points, saved with the player)
+assertEq(stats[CHARSTAT_STRENGTH], nil, "strength not written")
+assertEq(stats[CHARSTAT_VITALITY], nil, "vitality not written")
+assert(added[7220] and added[7220].p[CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT] == 120, "vitality as +20% max health")
+assert(added[7221] == nil, "no spirit, no mana condition")
 assertEq(st[977562], 15, "storage fire")
 assertEq(st[977563], 80, "storage phys")
 assertEq(st[7100040], 14, "item find storage")
 assertEq(speed(), 80, "speed")
 assert(added[7200] and added[7200].p[CONDITION_PARAM_SKILL_SWORD] == 4, "sword condition")
 assert(added[7214].p[CONDITION_PARAM_SPECIALSKILL_CRITICALHITCHANCE] == 5, "crit condition")
--- stat window rewrites strength to 10: re-sync must re-add our part on top
+-- the stat window's own value is left alone across re-applies
 stats[CHARSTAT_STRENGTH] = 10
 applyAll(p, b)
-assertEq(stats[CHARSTAT_STRENGTH], 70, "resync after external write")
+assertEq(stats[CHARSTAT_STRENGTH], 10, "stat window value untouched")
 -- respec: bonuses removed
 applyAll(p, {})
-assertEq(stats[CHARSTAT_STRENGTH], 10, "strength back to base")
+assert(added[7220] == nil, "vitality condition removed")
 assertEq(speed(), 0, "speed removed")
 assert(added[7200] == nil, "condition removed")
 -- damage event
 ChaosPassiveCache[7] = b
 local ev = registered["ChaosPassiveDealt"]
 local atk = {isPlayer = function() return true end, getId = function() return 7 end}
+-- b: fire +13%, physical +7%, strength 100 (capped 60 -> x1.2609), no intelligence, no dexterity
 local d1, t1, d2, t2 = ev.onHealthChange({}, atk, -100, COMBAT_FIREDAMAGE, -50, COMBAT_PHYSICALDAMAGE, 0)
-assertEq(d1, -113, "fire dealt"); assertEq(d2, -53, "phys dealt")
+assertEq(d1, -113, "fire dealt"); assertEq(d2, -67, "phys dealt with strength (50 x 1.07 x 1.2609)")
+assertEq(ChaosPassiveStatMultiplier({intelligence = 23}, COMBAT_FIREDAMAGE, 0), 1.1, "intelligence 23 -> +10%")
+assertEq(ChaosPassiveStatMultiplier({dexterity = 20}, COMBAT_FIREDAMAGE, 0), 1, "dexterity ignores spells")
+assertEq(ChaosPassiveStatMultiplier({dexterity = 20}, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE), 1.25, "dexterity 20 on a weapon hit")
+-- legacy clamp: stats an older version wrote are cut back to the stat window maximum once
+Chaos.storage.passiveStatsFixed = 4242
+StatsMaxValues = {[CHARSTAT_STRENGTH] = 20, [CHARSTAT_INTELLIGENCE] = 20, [CHARSTAT_DEXTERITY] = 20,
+  [CHARSTAT_VITALITY] = 20, [CHARSTAT_SPIRIT] = 20, [CHARSTAT_WISDOM] = 0}
+stats[CHARSTAT_STRENGTH], stats[CHARSTAT_WISDOM] = 204, 120
+ChaosPassiveFixLegacyStats(p)
+assertEq(stats[CHARSTAT_STRENGTH], 20, "legacy strength clamped"); assertEq(stats[CHARSTAT_WISDOM], 0, "legacy wisdom clamped")
+assertEq(st[4242], 1, "done flag")
+stats[CHARSTAT_STRENGTH] = 30
+ChaosPassiveFixLegacyStats(p)
+assertEq(stats[CHARSTAT_STRENGTH], 30, "only once")
 local xp = registered["onGainExperience"]
 assertEq(xp(p, {}, 1000, 1000), 1100, "xp")
 print("passive effects: all asserts passed")

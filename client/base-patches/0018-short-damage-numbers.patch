@@ -1,0 +1,57 @@
+# Damage, healing, mana and experience numbers above the map are shortened: 1000 -> 1k, 15300 -> 15.3k, 2450000 -> 2.45M.
+diff -ru a/src/client/protocolgameparse.cpp b/src/client/protocolgameparse.cpp
+--- a/src/client/protocolgameparse.cpp	2026-10-08 03:27:19.698198074 +0000
++++ b/src/client/protocolgameparse.cpp	2026-10-08 03:27:19.717462152 +0000
+@@ -1725,6 +1725,34 @@
+     g_map.addThing(effect, pos);
+ }
+ 
++// Chaos: numbers above the map are shortened, 1000 -> 1k, 15300 -> 15.3k, 2450000 -> 2.45M, 1200000000 -> 1.2B
++// (three significant digits, trailing zeros dropped; below 1000 the number is shown as it is)
++static std::string chaosShortNumber(uint64_t value)
++{
++    static const char* units[] = { "", "k", "M", "B", "T" };
++    if (value < 1000)
++        return std::to_string(value);
++    double v = static_cast<double>(value);
++    int unit = 0;
++    while (v >= 1000.0 && unit < 4) {
++        v /= 1000.0;
++        ++unit;
++    }
++    const int decimals = v >= 100.0 ? 0 : (v >= 10.0 ? 1 : 2);
++    double factor = decimals == 2 ? 100.0 : (decimals == 1 ? 10.0 : 1.0);
++    v = std::floor(v * factor) / factor; // floor: 999999 is 999k, not 1000k
++    char buffer[32];
++    snprintf(buffer, sizeof(buffer), "%.*f", decimals, v);
++    std::string text = buffer;
++    if (text.find('.') != std::string::npos) {
++        while (!text.empty() && text.back() == '0')
++            text.pop_back();
++        if (!text.empty() && text.back() == '.')
++            text.pop_back();
++    }
++    return text + units[unit];
++}
++
+ void ProtocolGame::parseAnimatedText(const InputMessagePtr& msg)
+ {
+     Position position = getPosition(msg);
+@@ -2682,7 +2710,7 @@
+                 continue;
+             AnimatedTextPtr animatedText = std::make_shared<AnimatedText>();
+             animatedText->setColor(color[i]);
+-            animatedText->setText(stdext::to_string(value[i]));
++            animatedText->setText(chaosShortNumber(value[i]));
+             if (font.size())
+                 animatedText->setFont(font);
+ 
+@@ -2705,7 +2733,7 @@
+ 
+         AnimatedTextPtr animatedText = std::make_shared<AnimatedText>();
+         animatedText->setColor(color);
+-        animatedText->setText(stdext::to_string(value));
++        animatedText->setText(chaosShortNumber(value));
+         if(font.size())
+             animatedText->setFont(font);
+         g_map.addThing(animatedText, pos);
