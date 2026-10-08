@@ -18,7 +18,8 @@ return {
 		local event = ChaosEvents and ChaosEvents.bonus("loot") or 1
 		local buff = ChaosShopServices and ChaosShopServices.buffMult and ChaosShopServices.buffMult("loot") or 1
 		local rift = ChaosRift and ChaosRift.lootMult and ChaosRift.lootMult(ctx) or 1 -- the rift's Quantity bonus
-		return event * buff * rift
+		local world = ChaosWorldEvents and ChaosWorldEvents.lootMult and ChaosWorldEvents.lootMult(ctx) or 1 -- Golden Hour (worldevents.lua)
+		return event * buff * rift * world
 	end,
 
 	-- player storage key; value v means +v % to all chances of this layer (extra rolls, currency,

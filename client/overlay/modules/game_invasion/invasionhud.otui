@@ -1,0 +1,102 @@
+// Invasion HUD, top left of the map under the character plate, where the rift HUD sits (moved right of it while a rift
+// runs; the toasts use the top right) (server: invasion.lua, opcode 251).
+// Click it to fold it to the title, the waves and the breach meter.
+InvasionHudLabel < UILabel
+  font: verdana-11px-rounded
+  color: #d6c9ae
+  text-align: center
+  text-auto-resize: true
+  phantom: true
+
+InvasionTopLabel < UILabel
+  font: verdana-11px-antialised
+  color: #e8dcc2
+  text-align: left
+  text-auto-resize: true
+  phantom: true
+  margin-top: 1
+
+ChaosPanelDark
+  id: invasionHud
+  width: 270
+  anchors.top: parent.top
+  anchors.left: parent.left
+  margin-top: 192
+  margin-left: 40
+  padding: 8
+  focusable: false
+  visible: false
+  layout:
+    type: verticalBox
+    fit-children: true
+
+  ChaosTitle
+    id: title
+    text: Invasion
+    phantom: true
+
+  InvasionHudLabel
+    id: subtitle
+    color: #a89c86
+
+  UIWidget
+    id: clockRow
+    height: 22
+    phantom: true
+    margin-top: 2
+
+    UILabel
+      id: wave
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      font: verdana-11px-rounded
+      color: #e8dcc2
+      text-auto-resize: true
+      phantom: true
+
+    UILabel
+      id: clock
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      font: sans-bold-16px
+      color: #f4d27a
+      text-auto-resize: true
+      phantom: true
+
+  ChaosProgressBar
+    id: progress
+    margin-top: 2
+    background-color: #6a2ab0
+    phantom: true
+
+  ChaosProgressBar
+    id: breach
+    margin-top: 4
+    background-color: #b08a20
+    phantom: true
+
+  InvasionHudLabel
+    id: boss
+    color: #ff7040
+    margin-top: 4
+    visible: false
+
+  UIWidget
+    id: top
+    phantom: true
+    margin-top: 4
+    layout:
+      type: verticalBox
+      fit-children: true
+
+  InvasionHudLabel
+    id: you
+    color: #8c8070
+    margin-top: 3
+
+  InvasionHudLabel
+    id: result
+    font: sans-bold-16px
+    color: #7fd07f
+    margin-top: 4
+    visible: false

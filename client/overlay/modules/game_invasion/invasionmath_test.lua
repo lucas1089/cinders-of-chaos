@@ -1,0 +1,38 @@
+-- luajit invasionmath_test.lua && lua5.3 invasionmath_test.lua (CI runs every client/overlay/modules/*/*_test.lua)
+local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
+dofile(dir .. 'invasionmath.lua')
+local fails = 0
+local function eq(a, b, what)
+  if a ~= b then print('FAIL ' .. what .. ': ' .. tostring(a) .. ' ~= ' .. tostring(b)); fails = fails + 1 end
+end
+local M = InvasionMath
+eq(M.clock(725), '12:05', 'clock')
+eq(M.clock(nil), '0:00', 'clock nil')
+eq(M.left(100, 10, 15), 95, 'left')
+eq(M.left(3, 10, 20), 0, 'left not negative')
+eq(M.countdown(0), 'now', 'countdown now')
+eq(M.countdown(2 * 86400 + 3 * 3600), 'in 2d 3h', 'countdown days')
+eq(M.countdown(5 * 3600 + 12 * 60), 'in 5h 12m', 'countdown hours')
+eq(M.countdown(30), 'in 1m', 'countdown under a minute')
+eq(M.title({ area = 'Thais' }), 'Invasion: Thais', 'title')
+eq(M.title({ area = 'Thais', phase = 'occupied' }), 'Thais is occupied', 'title occupied')
+eq(M.subtitle({ faction = 'Orc Warband', target = 'the temple steps' }), 'Orc Warband - defend the temple steps', 'subtitle')
+eq(M.waveLine({ wave = 3, waves = 5, left = 14 }), 'Wave 3 of 5 - 14 invaders left', 'wave line')
+eq(M.waveLine({ wave = 5, waves = 5, left = 1 }), 'Wave 5 of 5 - 1 invader left', 'wave line singular')
+eq(M.waveLine({ wave = 0, waves = 5, next = 25 }), 'Wave 1 of 5 in 0:25', 'first wave countdown')
+eq(M.waveLine({ phase = 'occupied', left = 7 }), '7 occupiers left', 'occupiers')
+eq(M.breachColor(10), '#b08a20', 'breach low')
+eq(M.breachColor(55), '#d86a10', 'breach mid')
+eq(M.breachColor(90), '#d01818', 'breach high')
+local top = M.topLines({ { name = 'A', share = 50 }, { name = 'B', share = 30 } })
+eq(#top, 2, 'top lines')
+eq(top[1], '1. A  50%', 'top line')
+eq(#M.topLines(nil), 0, 'top nil')
+eq(M.youLine({ rank = 2, share = 12, kills = 1 }), 'You: #2, 12% of the defence, 1 kill', 'you')
+eq(M.youLine(nil), 'You: not in the defence yet', 'you nil')
+eq(M.resultColor('win'), '#7fd07f', 'win colour')
+eq(M.resultColor('breach'), '#ff5030', 'loss colour')
+eq(M.kindColor('storm'), '#b07aff', 'kind colour')
+eq(M.kindColor('x'), '#d6c9ae', 'kind default')
+if fails > 0 then os.exit(1) end
+print('invasionmath tests OK')

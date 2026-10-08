@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The Wandering Merchant: a world event (server/data/scripts/chaos/worldevents.lua). Created for 20 minutes at a random
+     free spot of a town area, removed afterwards. His goods and prices: invasion_config.lua worldEvents.merchant.items. -->
+<npc name="Wandering Merchant" script="wandering_merchant.lua" walkinterval="0" floorchange="0">
+	<health now="100" max="100" />
+	<look type="129" head="114" body="94" legs="113" feet="76" addons="3" />
+	<parameters>
+		<parameter key="message_greet" value="Ah, |PLAYERNAME|! Fresh from the broken roads. Ask for a {trade}, I do not stay long." />
+		<parameter key="message_farewell" value="May the shards spare you, |PLAYERNAME|." />
+		<parameter key="message_walkaway" value="Your loss, wanderer." />
+		<parameter key="message_sendtrade" value="Orbs and oddities, found where the world bleeds. Look, but be quick." />
+	</parameters>
+</npc>

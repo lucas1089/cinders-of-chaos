@@ -325,6 +325,7 @@ spawnCb.onSpawn = function(self, position, startup, artificial)
 	if eligible(self) then
 		local roll = math.random(10000)
 		local eventMult = ChaosEvents and ChaosEvents.bonus("tierChance") or 1
+		eventMult = eventMult * (ChaosWorldEvents and ChaosWorldEvents.tierMult and ChaosWorldEvents.tierMult(position or self:getPosition()) or 1) -- Chaos Storm (worldevents.lua)
 		for _, tier in ipairs({"legendary", "rare", "magic"}) do
 			if roll <= cfg.spawnChance[tier] * eventMult then
 				applyTier(self, tier, 0)

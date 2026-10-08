@@ -19,6 +19,7 @@ end
 
 ChaosEvents = ChaosEvents or {}
 local E = ChaosEvents
+E.dynamic = E.dynamic or {} -- key -> runtime event (see E.active)
 
 local function cfg()
 	return Chaos.events or {list = {}}
@@ -50,6 +51,12 @@ function E.active(t)
 	local list = {}
 	for _, event in ipairs(cfg().list) do
 		if E.runsOn(event, t) then
+			list[#list + 1] = event
+		end
+	end
+	-- runtime events with an end time (invasion.lua: the Victory buff; worldevents.lua): {id, name, description, bonus, untilTime}
+	for _, event in pairs(E.dynamic) do
+		if (event.untilTime or 0) > t then
 			list[#list + 1] = event
 		end
 	end
