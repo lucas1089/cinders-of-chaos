@@ -1300,6 +1300,79 @@ bounty; the temple scroll and the multi-client login refusal; the experience cap
 player per run was tested), the protection-zone rule on a real map (the cropped test map has no protection zone, so the
 rule was switched off after checking the refusal), balance of tiers 8-15 against geared characters.
 
+## New players (`newplayer.lua`, `newplayer_core.lua`, `newplayer_config.lua`, `newplayer_tutorial.lua`)
+
+Roadmap items 21 and 22. Every number, item and text is in `newplayer_config.lua`; the pure logic (kit lookup, flags,
+milestones, island layout, station state machine) in `newplayer_core.lua`, tested by `tests/newplayer_test.lua`. Storages
+`Chaos.storage.newPlayer` = 7100250 - 7100269 (kit, welcome, tutorial stage / done mask / kills / orb count / flags,
+milestones at +10..+19). Tested in game on the test server (fresh level 1 characters, see "Verified" below).
+
+- **Kit** (one time): a character logging in for the very first time (`lastLoginSaved` 0, kit storage unset) gets the kit of
+  its class: weapon and armour equipped (into the backpack when the slot is taken), a backpack with potions, 20 brown
+  mushrooms, rope, shovel, the store's Temple Teleport Scroll (3 uses, same item and attributes as `shop_services.lua`) and
+  500 gold. Kits by class id (`Chaos.classes.ids`): Warrior / Juggernaut / Berserker 4/8/14 jagged sword + dwarven shield +
+  brass set; Ranger / Deadeye / Beastmaster 3/7/15 bow + 100 arrows + chain helmet, ranger's cloak, studded legs; Mystic /
+  Elementalist / Illusionist 1/5/10 wand of vortex (the scorcher is equipped below level 7, the wand waits in the backpack) +
+  spellbook + magician's robe; Thief / Samurai 11/13 dagger + 30 throwing stars + leather set; Ninja 12 the same plus a second
+  dagger. A vocation without a row falls back to its base class (`Chaos.classes.baseOf`, then the engine's demotion), then to
+  `default` (short sword, wooden shield). Every kit weighs under ~360 oz (a level 1 character carries 400); what does not fit
+  goes to the inbox. Existing characters never get a kit by logging in. Messages read the class name from `Vocation(id)`.
+- **The base server's starting items:** `creaturescripts/firstitems.lua` only equips vocation 0, which the kit skips
+  (`skipVocations`), so nothing is given twice. The base starter chest (`scripts/customs/actions/first_chest.lua`, action id
+  and storage 33735, old vocation ids only) is marked as opened when the kit is given (`baseChestStorage`), so nobody collects
+  both. No base file is changed and no patch is needed.
+- **Welcome** (one time, after the kit): a server modal window (client `game_modaldialog`) with the next steps (`!spells`, the
+  passive tree, `!bounty`, the store, the top menu, the milestone gifts) and a toast through `game_chaosnotify` (action
+  `newplayer`, type NEW_PLAYER, added to `notifications.lua`). The tutorial island is the starter quest line.
+- **Milestone gifts** at levels 20 / 50 / 100 / 200, once per character (a storage each, so a death and the same level-up
+  again give nothing), on level-up (`onAdvance`; a jump over several milestones gives each): potions by role (each role gets
+  only potions the base `potions.lua` lets it drink; the Thief line the unrestricted ones), 1 / 2 / 3 / 5 Chaos Orbs and 2
+  Stamina Extensions (the store item) at 100. Backpack first, inbox when full; a message and a toast.
+- **API:** `ChaosNewPlayer.kitFor(vocationId)` returns a copy of a class's kit; `ChaosNewPlayer.setKit(name, def, {ids})`
+  adds or changes a kit (a `def` with `base = "warrior"` inherits that kit); docs/CLASSES.md.
+- **Staff:** `/newplayerkit <name>` gives the kit again (ignores the flag); `, welcome` shows the welcome; `, milestone <n>`
+  gives gift n; `, reset` clears every new-player storage; `, tutorial` sends the character to the island's first station.
+  Online characters only; logged to the console.
+
+### Tutorial island (`newplayer_tutorial.lua`)
+
+Built at startup with `Game.createTile` like the world boss arena (nothing is saved to the map): footprint x 4598-4642,
+y 4598-4612, z 7 (the map has no tiles within x/y 4500-5600; every tile is checked first and the island is not built over
+foreign tiles, then new characters get their kit at the first login instead). Five 7 x 9 grass pens side by side, water
+around, stone divider walls with a stone-floor gate each (action id 47504), an angel statue (47502, use: read the lesson
+again) and a white marble lesson tile (47501) in every pen, coal basins and flowers, a goblin statue (47503, skip) in the first
+pen and a magic forcefield exit (47505) in the last.
+
+A brand-new character (first login, no kit yet, a class with a kit) arrives in the first pen instead of the temple. Each
+station opens a lesson (modal window + toast) when entered; its gate opens east only when the task is done:
+1. Moving and fighting: kill 3 rats (spawned in the first pen when the lesson is closed, the lesson tile is stepped on, or
+   after 20 s; at most 3 alive). Detected with a `kill` CreatureEvent.
+2. Spells: open `!spells` (`ChaosSpellbook.sendTo` is wrapped at startup: the command and the client button both pass there)
+   and cast the class spell (Warrior Salve of Scars `saen tin brak`, Ranger / Mystic Arcane Stitch `saen tin`), detected by
+   the spell group cooldown condition (polled every 300 ms). A level 1 character with too little mana gets its maximum raised
+   to the spell's cost once. The Thief line has no spell below level 20: opening the spellbook is enough.
+3. Passive tree: one free passive point (`passiveExtraPoints` +1, kept); allocating it and pressing Apply Points completes the
+   station (a listener in `ChaosPassiveTree.listeners`).
+4. Orbs: a Chaos Orb and a Common (rarity 1) leather armor; the station completes when the orb is used (the character's orb
+   count drops: the stock action and the crafting bench both consume it). The lesson mentions `!craft` when `ChaosCrafting`
+   is loaded.
+5. Keystones, `!bounty`, the store and the top menu: information; the forcefield then sends the character to its temple with
+   the kit and the welcome.
+
+`!skiptutorial`, the goblin statue or the lesson's "Skip tutorial" button leave at once with the kit. Characters that existed
+before never enter the island. Safety: no PvP on the island (`EventCallback onTargetCombat`; runtime tiles cannot get the
+protection-zone flag); nobody dies there (a hit that would kill leaves 1 health and the character is healed; a death anyway,
+e.g. elsewhere, is answered at the next login); logging out and in, or a death, puts the character back in the pen of its
+station; monsters cannot leave (water and walls, gates push monsters back); multi-client characters are welcome.
+
+**Verified in game (test server, cropped map with a test-only temple floor):** first login lands on the island with lesson 1;
+the death guard and the heal; logout / relog and death mid-tutorial resume at the station; each station's task (kills through
+real kill events, `!spells` + `saen tin brak`, a passive node applied in the client, the Chaos Orb used on the armor from the
+client); the exit to the temple with the Warrior kit and the welcome; "Skip tutorial" (Ranger) and `!skiptutorial` (Mystic:
+scorcher equipped, wand in the backpack); relog gives no second kit; milestones 20, then 50 + 100 in one jump, nothing after
+losing and regaining level 20; `/newplayerkit` and its options. Not verified: PvP block (needs two clients), the island build
+refusal over foreign tiles, the full stations for the Thief line beyond 1-2.
+
 ## Late game (`tools/late_game.py`, `tools/late_game_spawns.csv`, 17 monsters in `data/monster/monsters/chaos/`)
 
 Goal agreed with the owner: a dedicated sorcerer reaches level 1000 in about 100 hours, knights and paladins in about 150

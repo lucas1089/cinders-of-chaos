@@ -79,7 +79,9 @@ for free, at the migration.
   - a passive tree (`game_passivetree`, `passivetree_data.lua`)
   - generated spell icons and effects
   - outfits: pick existing 10.98 looks first; new art later
-  - starting gear and a new-player kit
+  - starting gear and a new-player kit: done in `newplayer_config.lua`, keyed by these class ids. A new class adds a row there or
+    calls `ChaosNewPlayer.setKit(name, def, {ids})`; `ChaosNewPlayer.kitFor(vocationId)` returns a class's kit (own row, then its
+    base class, then `default`). See server/README.md "New players".
 - **Balance:** measure every class with the dummy harness at levels 300 and 1000, like the current tables in
   `server/data/spells/README.md`.
 
@@ -188,7 +190,7 @@ Wild Bond by its words, and the level 1000 sanity measurement in `server/data/sp
   shadow; Samurai: crit, parry, Bushido). Until then the vocation has no class entry in the tree. When it exists, re-tune or drop
   `Chaos.classes.spellLevelScale` and measure again at levels 300 and 1000. Per-ascended keystone variants (Juggernaut vs Berserker,
   Deadeye vs Beastmaster) would need new variants in the tree data; today both classes of a line share their old vocation's.
-- Healing for the Thief line (a spell or the potions script's vocation lists), a new-player kit and starting gear for every class,
+- Healing for the Thief line (a spell or the potions script's vocation lists), starting gear for every class,
   outfits, the classes in `admin/testkit.lua` (it already sorts Berserker / Beastmaster with the knight / paladin kits).
 - The full rebalance at levels 300 and 1000 with passive trees; the client's passive tree class texts (`vocationSpecials`) still
   describe the old vocations; base server scripts that test vocation ids by number (e.g. the familiar system, `firstitems.lua`, NPCs

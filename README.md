@@ -22,6 +22,15 @@ than days.
 
 ---
 
+## Your first steps
+
+- **Tutorial island:** new characters start on a small island with five stations: fight, cast your first spell, spend
+  a passive point, use a Chaos Orb, and learn about keystones, bounties and the store. Each station opens the next
+  gate. You can skip it any time (`!skiptutorial`), and nobody can die there.
+- **Starter kit per class:** weapon, armour, potions, food, tools, a temple teleport scroll and some gold, chosen for
+  your class: arrows for Rangers, a second dagger for Ninjas, and so on.
+- **Milestone gifts** at levels 20, 50, 100 and 200: potions for your role and Chaos Orbs.
+
 ## Classes
 
 You start as one of four base classes. At level 100 you **ascend** into one of two specialisations (`!ascend`).
@@ -158,7 +167,6 @@ Being built right now:
 - **Login streaks** with milestones, and a **patch-notes** window in the client.
 - **Seasons:** fresh-start season characters with their own economy, ladder, season uniques and cosmetic rewards that
   carry over.
-- **New-player experience:** a starting kit per class and a tutorial island.
 - **New classes:** the **Necromancer** (Lich / Bone Lord), the **Monk** (Shadowfist / Iron Sage) and the **Templar**
   (Inquisitor / Sentinel).
 - **Name plates:** title, guild and name above every player.
