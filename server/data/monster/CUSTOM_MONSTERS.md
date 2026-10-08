@@ -4,7 +4,7 @@
 
 **World bosses.** `monsters/chaos/world_bosses/` holds the five world bosses of `worldboss.lua` (our own, not imported). Register that folder too: `python3 -I server/tools/register_monsters.py data/monster/monsters.xml data/monster/monsters/chaos/world_bosses`. See `server/README.md` "World bosses".
 
-**Checking.** `python3 -I server/tools/check_monsters.py items.otb 1465 data/monster` flags a lookType above the outfit count of your `Tibia.dat` (no sprite on the client), corpse or loot ids missing from `items.otb`, and, with `--known names.txt`, undefined summons.
+**Checking.** `python3 -I server/tools/check_monsters.py items.otb 1504 data/monster` flags a lookType above the outfit count of your `Tibia.dat` (no sprite on the client), corpse or loot ids missing from `items.otb`, and, with `--known names.txt`, undefined summons.
 
 **Importing from another server.** `server/tools/adapt_monsters.py` replaces unknown corpse ids with a fallback and drops loot lines whose item does not exist here. It does not touch lookType.
 
@@ -24,7 +24,17 @@ Adaptations (`adapt_report.txt`): 147 changes, mostly the donor server's corpse 
 - 36 outfits were appended to a copy of our dat/spr as ids 1466 to 1501 and 12 monsters were pointed at an equal outfit already in our dat. `outfit_mapping.csv` lists every old to new lookType, and the monster XML files here already use the new ids.
 - **You must build the merged dat/spr** (the spr is 494 MB, too big for git): `python3 -I client/tools/sprites/merge_outfits.py --src-dat <donor client Tibia.dat> --src-spr <donor client Tibia.spr> --ours-dat <base server Tibia.dat> --ours-spr <base server Tibia.spr> --report server/data/monster/sprite_report.csv --out-dir out/merged`, then use `out/merged/Tibia.dat` and `Tibia.spr` as the `data/things/1098` pair of the client. Without them the remapped monsters show wrong art.
 - Verified in the sandbox: the merged dat parses (1501 outfits), the 36 new outfits render pixel-identical to the source, and 60 random original outfits are unchanged. Not verified in a real client. Six custom dat flags (39, 41, 42, 43, 46, 62) were stripped from the copied entries; their meaning is a guess.
-- Still without a sprite: Golden Dragon, Scaleborn (suspect art), Mercenary, Mercenary Ranger, Mortal Illusion (`needs_sprites.txt`), and 5 names with no lookType.
+- Still without a sprite: Golden Dragon (kept on our outfit 1445 in `outfit_mapping.csv`), Scaleborn (art rejected), both in `needs_sprites.txt`, and 5 names with no lookType.
+- **Mercenary, Mercenary Ranger, Mortal Illusion: outfits 1502, 1503, 1504.** Their art comes from a second donor sprite set
+  in the OLD 8.60 dat flag layout (dat signature 0x4C2C7993 with frame groups and u32 sprite ids, alpha spr 0x4C220594,
+  2799 outfits; donor lookTypes 1719, 1718, 1656). Its entries cannot be copied byte for byte, so
+  `client/tools/sprites/import_outfits.py` converts them: flags re-encoded with our 10.98 table, frame groups, patterns,
+  layers and animator kept, sprite records appended to our spr. Run it after `set_multiuse.py` and before
+  `gen_dark_tiles.py`; the full rebuild chain is merge_outfits.py -> gen_effects.py -> set_multiuse.py -> import_outfits.py
+  -> gen_dark_tiles.py:
+  `python3 -I client/tools/sprites/import_outfits.py --src-dat <8.60 donor Tibia.dat> --src-spr <8.60 donor Tibia.spr> --ours-dat <pair after set_multiuse>/Tibia.dat --ours-spr <same>/Tibia.spr --looks 1719,1718,1656 --expect-first 1502 --out-dir out/monsters`
+  (`--expect-first` stops the run when the input pair does not have exactly 1501 outfits). It verifies its output: every
+  sprite slot and frame of the three outfits pixel-identical to the donor, all old entries byte-identical.
 - Checked in the test client (merged pair: 1501 outfits + the Chaos effects), for the late game set: the 17 spawned monsters
   render with their art. Dawn Strayer (lookType 1036) draws as a broken striped image, so it is not spawned; Cunning Hyaena
   (1051) draws a green tentacled creature that does not read as a hyaena, also left out.

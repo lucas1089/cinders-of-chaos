@@ -9,7 +9,7 @@ Usage: python3 tools/ci/check_content.py"""
 import glob, os, re, subprocess, sys
 import xml.dom.minidom as minidom
 
-MAX_OUTFIT = 1501  # outfits of the merged dat (see server/data/monster/CUSTOM_MONSTERS.md)
+MAX_OUTFIT = 1504  # outfits of the merged dat (see server/data/monster/CUSTOM_MONSTERS.md)
 bad = 0
 
 def fail(msg):

@@ -24,8 +24,11 @@ old_lookType,new_lookType,action,monsters
 1364,1484,appended,jungle beasts
 1365,1485,appended,thal
 1652,1486,appended,evil man
+1656,1504,appended_converted_8.60,mortal illusion
 1662,1487,appended,saga
 1701,1488,appended,golden lord
+1718,1503,appended_converted_8.60,mercenary ranger
+1719,1502,appended_converted_8.60,mercenary
 1752,1489,appended,actors power
 1821,1490,appended,stormy seadevil
 1822,1491,appended,captain bloodbeard

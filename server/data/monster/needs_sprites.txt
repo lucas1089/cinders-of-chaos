@@ -1,5 +1,2 @@
-Mercenary	1719
-Mercenary Ranger	1718
-Golden Dragon	2366
-Mortal Illusion	1656
-Scaleborn	2367
+Golden Dragon	2366	kept on purpose: outfit_mapping.csv maps it to our outfit 1445; no sprite imported
+Scaleborn	2367	kept on purpose: the donor art was rejected; no sprite imported
