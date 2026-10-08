@@ -74,24 +74,28 @@ PALETTES = {
     'ethereal': (_hex('040c18 0a2238 104060 1a6a8e 30a0bc 6ad4e0 b4f4f4 f4ffff'), True),
     'crit':    (_hex('180404 4a0808 8a1010 c82014 f0501c fa9a30 ffe070 ffffff'), True),
 }
+# alpha per ramp level.  No level is a faint wash: whatever passes the cut is a visible, crisp-edged shape.
 ALPHA = {
-    'glow':  (60, 100, 150, 200, 240, 255, 255, 255),
-    'soft':  (40, 70, 100, 135, 170, 205, 235, 255),
-    'smoke': (45, 75, 105, 135, 160, 185, 205, 220),
+    'glow':  (150, 180, 210, 235, 255, 255, 255, 255),
+    'soft':  (120, 145, 170, 195, 220, 240, 255, 255),
+    'smoke': (135, 155, 175, 190, 205, 215, 225, 235),
     'solid': (255,) * 8,
-    'crystal': (170, 200, 225, 245, 255, 255, 255, 255),
+    'crystal': (190, 215, 235, 255, 255, 255, 255, 255),
 }
+CUT = 0.2                     # intensity below which a pixel is fully transparent (raised per thing if needed)
+MIN_CLEAR = 0.65              # area effects: at least this share of every 32x32 frame stays alpha 0
 LIFT = {'glow': 2, 'soft': 2}
 BAYER4 = (np.array([[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]], np.float32) + 0.5) / 16 - 0.5
 
 
-def light_of(pal, size):
+def light_of(pal):
+    """small light source for glowing missiles.  Effects get none: dozens of lit tiles in an area spell tint the
+    whole screen."""
     ramp, glows = PALETTES[pal]
     if not glows:
         return None
     r, g, b = ramp[5]
-    col = round(r / 51) * 36 + round(g / 51) * 6 + round(b / 51)
-    return (3 if size == 1 else 5, col)
+    return (2, round(r / 51) * 36 + round(g / 51) * 6 + round(b / 51))
 
 
 # ---------------------------------------------------------------------------------------------- field primitives
@@ -102,6 +106,13 @@ def smooth(x):
 def ease_out(t):
     t = min(max(t, 0.0), 1.0)
     return 1 - (1 - t) ** 2
+
+
+def life(t, peak=0.25, k=1.5):
+    """burst -> dissipate envelope: eases up to 1 at `peak`, then falls to 0 at t=1 (last frames almost empty)."""
+    if t <= peak:
+        return ease_out(t / peak) if peak > 0 else 1.0
+    return max(0.0, 1 - (t - peak) / (1 - peak)) ** k
 
 
 def window(t, a, b, fin=0.15, fout=0.3):
@@ -143,8 +154,9 @@ class Noise:
 class Cv:
     """Drawing context of one thing: supersampled coordinate grid + seeded randomness."""
 
-    def __init__(self, S, seed, opts, centre):
+    def __init__(self, S, seed, opts, centre, area=False):
         self.S = S
+        self.area = area
         n = S * SS
         c = (np.arange(n, dtype=np.float32) + 0.5) / SS
         self.X, self.Y = np.meshgrid(c, c)
@@ -154,7 +166,10 @@ class Cv:
         self.noise2 = Noise(np.random.default_rng(seed + 2))
         self.o = opts
         self.cx, self.cy = centre
-        self.R = 13.5 if S == 32 else 22.0
+        self.R = (10.5 if area else 12.0) if S == 32 else 21.0
+        if area:                                    # off-centre, different for every pattern variant
+            g = np.random.default_rng(seed + 3)
+            self.cx += g.uniform(-3, 3); self.cy += g.uniform(-3, 3)
         self._memo = {}
 
     def memo(self, key, fn):
@@ -184,6 +199,21 @@ class Cv:
 
     def ring(self, cx, cy, R, w, ry=1.0):
         return np.exp(-((self.dist(cx, cy, ry) - R) / w) ** 2)
+
+    def blob(self, cx, cy, r, amp=0.35, key=0):
+        """crisp lumpy disc: radius wobbles with angle (noise), so no two blobs are round or alike."""
+        a = np.arctan2(self.Y - cy, self.X - cx)
+        wob = self.noise(np.cos(a) * 1.7 + key * 3.7 + 11, np.sin(a) * 1.7 + key * 1.9 + 5) - 0.5
+        return np.clip((r * (1 + 2 * amp * wob) - self.dist(cx, cy)) / 0.5 + 0.5, 0, 1)
+
+    def arcs(self, cx, cy, R, w, ry=1.0, key=0, keep=0.55):
+        """ring; for area effects broken into irregular arcs so a grid of them does not read as a pattern."""
+        rg = self.ring(cx, cy, R, w, ry)
+        if not self.area:
+            return rg
+        a = np.arctan2((self.Y - cy) / ry, self.X - cx)
+        m = self.noise(np.cos(a) * 1.6 + key * 5.1 + 20, np.sin(a) * 1.6 + 20)
+        return rg * np.clip((m - (1 - keep)) * 8, 0, 1)
 
     def segd(self, x0, y0, x1, y1):
         X, Y = self.X, self.Y
@@ -222,7 +252,7 @@ class Cv:
         return dx * ux + dy * uy, -dx * uy + dy * ux
 
 
-def shade(cv, I, pal, mode='glow', cut=0.07, dither=0.55):
+def shade(cv, I, pal, mode='glow', cut=CUT, dither=0.4):
     """quantise an intensity field (supersampled) to an RGBA uint8 tile with a palette ramp and crisp alpha levels."""
     S = cv.S
     I = I.reshape(S, SS, S, SS).mean(axis=(1, 3))
@@ -232,7 +262,7 @@ def shade(cv, I, pal, mode='glow', cut=0.07, dither=0.55):
     n = len(ramp)
     q = np.clip(I, 0, 1) * n + b * dither
     idx = np.clip(np.floor(q).astype(int), 0, n - 1)
-    on = (I + b * dither / n) > cut
+    on = I > cut                                  # crisp alpha edge (colour is dithered, alpha is not)
     lift = LIFT.get(mode, 0)                      # light-emitting layers never fade to near-black: compress the ramp
     cidx = np.round(lift + idx * (n - 1 - lift) / (n - 1)).astype(int)
     out = np.zeros((S, S, 4), np.uint8)
@@ -261,85 +291,85 @@ def particles(cv, key, k, fn):
 
 
 def st_burst(cv, t, f, n, pal):
-    """fireball explosion: noisy expanding core, flying embers, smoke ring left behind."""
-    R, cx, cy = cv.R * cv.opt('scale', 1.0), cv.cx, cv.cy
-    smoke_pal = cv.opt('smoke', 'soot')
-    grow = ease_out(min(1, t * 1.8))
-    r = R * (0.3 + 0.62 * grow)
-    d = cv.dist(cx, cy)
-    nz = cv.noise.fbm((cv.X - cx) / 5.5 + 3, (cv.Y - cy) / 5.5 + t * 2.2, 3)
-    heat = 1.0 if t < 0.3 else max(0.0, 1 - (t - 0.3) / 0.7)
-    core = np.clip(1 - d / r, 0, 1) ** 0.7 * (0.55 + 0.75 * nz)
-    if t > 0.45:                                     # burnt-out hole growing from the centre
-        core *= np.clip((d - r * (t - 0.45) * 1.5) / 3, 0, 1)
-    fire = core * (0.35 + 0.75 * heat)
-    fire = np.maximum(fire, 0.3 * cv.gauss(cx, cy, r * 1.05) * heat)
-    emb = particles(cv, 'emb', int(cv.opt('embers', 10)), lambda g, k: (g.random(k) * 6.283, 0.5 + 0.6 * g.random(k)))
+    """fire explosion: a lumpy, off-centre cluster of flame blobs with hot cores, embers flung out, soot puffs last."""
+    cx, cy, R = cv.cx, cv.cy, cv.R * cv.opt('scale', 1.0)
+    k = int(cv.opt('lumps', 6))
+    lp = particles(cv, 'lp', k, lambda g, m: (g.random(m) * 6.283, g.random(m), 0.23 + 0.17 * g.random(m)))
+    fire = cv.zeros()
+    for i, (a, v, rk) in enumerate(zip(*lp)):
+        rr = R * (0.06 + 0.5 * v * ease_out(min(1, t * 1.6)))
+        x, y = cx + math.cos(a) * rr, cy + math.sin(a) * rr * 0.85 - 3 * t * t
+        r = R * rk * (0.45 + 0.75 * ease_out(min(1, t / 0.25))) * (1 - t) ** 0.8
+        if r < 0.6:
+            continue
+        heat = 0.95 - 0.5 * t
+        fire = np.maximum(fire, cv.blob(x, y, r, 0.4, i) * heat * 0.72)
+        fire = np.maximum(fire, cv.blob(x - r * 0.15, y - r * 0.2, r * 0.5, 0.3, i + 9) * heat)
+    emb = particles(cv, 'emb', int(cv.opt('embers', 8)), lambda g, m: (g.random(m) * 6.283, 0.4 + 0.6 * g.random(m)))
     for a, v in zip(*emb):
-        rr = R * (0.25 + v * ease_out(t) * 0.95)
-        fire = np.maximum(fire, cv.gauss(cx + math.cos(a) * rr, cy + math.sin(a) * rr - 3 * t * t, 0.9) * (1 - t) * 1.1)
+        rr = R * (0.3 + 0.75 * v * ease_out(t))
+        fire = np.maximum(fire, cv.gauss(cx + math.cos(a) * rr, cy + math.sin(a) * rr + 3 * t * t, 0.75) * (1 - t) * 1.1)
     smoke = cv.zeros()
-    if t > 0.3:
-        s = (t - 0.3) / 0.7
-        rs = r * (0.75 + 0.2 * s)
-        smoke = cv.ring(cx, cy - 2 * s, rs, 1.8 + 2 * s) * (0.75 - 0.65 * s) * np.clip(0.2 + 1.1 * cv.noise2.fbm(cv.X / 4, cv.Y / 4 - s, 2) - 0.5 * s, 0, 1)
-    return [(smoke, smoke_pal, 'smoke'), (fire, pal, 'glow')]
+    if t > 0.4:
+        s = (t - 0.4) / 0.6
+        sp = particles(cv, 'smk', 3, lambda g, m: (g.normal(0, 0.35, m), g.normal(0, 0.25, m)))
+        for i, (dx, dy) in enumerate(zip(*sp)):
+            r = R * 0.2 * (0.6 + 0.8 * s) * (1 - s) ** 0.5
+            if r > 0.6:
+                smoke = np.maximum(smoke, cv.blob(cx + dx * R, cy + dy * R - s * R * 0.6, r, 0.3, i + 30) * 0.55)
+    return [(smoke, cv.opt('smoke', 'soot'), 'smoke'), (fire, pal, 'glow')]
 
 
 def st_nova(cv, t, f, n, pal):
-    """expanding ring(s) of energy with sparks riding the front."""
+    """expanding ring(s) with sparks on the front; area effects get broken arcs on a slightly squashed ellipse."""
     cx, cy, R = cv.cx, cv.cy, cv.R * cv.opt('scale', 1.0)
     rings = int(cv.opt('rings', 1))
-    ry = cv.opt('ry', 1.0)
-    a = cv.angle(cx, cy)
+    ry = cv.opt('ry', 1.0) * (cv.memo('ry', lambda: 0.72 + 0.25 * cv.rng.random()) if cv.area else 1.0)
     out = cv.zeros()
     for k in range(rings):
         tk = (t - k * 0.18) / (1 - (rings - 1) * 0.18) if rings > 1 else t
         if tk <= 0 or tk > 1:
             continue
-        Rt = 2 + (R - 2) * ease_out(tk)
-        w = 2.4 * (1 - 0.55 * tk) + 0.6
-        mod = 0.55 + 0.6 * cv.noise((np.cos(a) * 3 + 8 + k * 3) + tk * 2, np.sin(a) * 3 + 8)
-        env = 1 - tk ** 2
-        out = np.maximum(out, cv.ring(cx, cy, Rt, w, ry) * mod * env)
-        out = np.maximum(out, cv.disc(cx, cy, Rt, 2.0, ry) * 0.22 * env * (1 - tk))
-        sp = particles(cv, ('sp', k), 9, lambda g, m: (g.random(m) * 6.283, g.random(m)))
+        Rt = 1.5 + (R - 1.5) * ease_out(tk)
+        w = 1.4 * (1 - 0.5 * tk) + 0.45
+        a = cv.angle(cx, cy)
+        mod = 0.6 + 0.5 * cv.noise((np.cos(a) * 3 + 8 + k * 3) + tk * 2, np.sin(a) * 3 + 8)
+        env = (1 - tk) ** 1.2
+        out = np.maximum(out, cv.arcs(cx, cy, Rt, w, ry, k + 3 * f // max(1, n // 3)) * mod * env)
+        sp = particles(cv, ('sp', k), 6, lambda g, m: (g.random(m) * 6.283, g.random(m)))
         for ang, ph in zip(*sp):
             rr = Rt * (1.0 + 0.12 * ph)
-            out = np.maximum(out, cv.star4(cx + math.cos(ang) * rr, cy + math.sin(ang) * rr * ry, 1.6, 0.45) * env * (0.6 + 0.5 * ph))
-    if t < 0.25:
-        out = np.maximum(out, cv.gauss(cx, cy, 4 + 6 * t) * (1 - t * 4))
+            out = np.maximum(out, cv.star4(cx + math.cos(ang) * rr, cy + math.sin(ang) * rr * ry, 1.4, 0.45) * env * (0.6 + 0.5 * ph))
+    if t < 0.2:
+        out = np.maximum(out, cv.gauss(cx, cy, 2.2) * (1 - t * 5))
     return [(out, pal, 'glow')]
 
 
 def st_flame(cv, t, f, n, pal):
-    """flame tongues rising from the ground, noisy and flickering, with embers."""
+    """separate flame tongues licking up at random spots, flickering, then sinking; a few embers."""
     cx, cy = cv.cx, cv.cy
     k = int(cv.opt('tongues', 3))
-    H = cv.R * cv.opt('height', 2.2)
-    base = cy + cv.R * 0.55
-    grow = min(1.0, t / 0.25) if t < 0.25 else 1.0
-    die = 1.0 if t < 0.6 else max(0.0, 1 - (t - 0.6) / 0.4)
-    tongues = particles(cv, 'tg', k, lambda g, m: (np.linspace(-1, 1, m) * (0.32 if m > 1 else 0) + g.normal(0, 0.05, m),
-                                                    (1 - 0.3 * np.abs(np.linspace(-1, 1, m))) * (0.85 + 0.25 * g.random(m)),
-                                                    g.random(m) * 10))
+    H = cv.R * cv.opt('height', 1.9)
+    base = cy + cv.R * 0.6
+    grow = ease_out(min(1.0, t / 0.2))
+    die = 1.0 if t < 0.45 else max(0.0, 1 - (t - 0.45) / 0.55) ** 1.2
+    tongues = particles(cv, 'tg', k, lambda g, m: (np.sort(g.uniform(-0.6, 0.6, m)), 0.55 + 0.45 * g.random(m), g.random(m) * 10))
     out = cv.zeros()
     for dx, hk, ph in zip(*tongues):
-        h = H * hk * (0.35 + 0.65 * grow) * (0.3 + 0.7 * die) * (0.88 + 0.12 * math.sin(t * 19 + ph))
+        h = H * hk * (0.35 + 0.65 * grow) * (0.1 + 0.9 * die) * (0.85 + 0.15 * math.sin(t * 19 + ph))
+        if h < 1.5:
+            continue
         x0 = cx + dx * cv.R
-        s = np.clip((base - cv.Y) / max(h, 1), 0, 1.2)
-        sway = 2.2 * np.sin(s * 3.2 + t * 9 + ph) * s
-        w = cv.R * cv.opt('width', 0.4) * np.clip(s * 4, 0, 1) ** 0.5 * np.clip(1 - s, 0, 1) ** 0.7 + 0.01
+        s = np.clip((base - cv.Y) / h, 0, 1.2)
+        sway = 1.8 * np.sin(s * 3.2 + t * 9 + ph) * s
+        w = cv.R * cv.opt('width', 0.3) * np.clip(s * 4, 0, 1) ** 0.5 * np.clip(1 - s, 0, 1) ** 0.7 + 0.01
         shape = np.clip(1 - np.abs(cv.X - x0 - sway) / w, 0, 1) * (s > 0) * (s < 1)
         nz = cv.noise.fbm((cv.X - x0) / 4 + ph, (cv.Y + t * 26) / 4.5, 3)
-        val = shape ** 0.6 * (0.6 + 0.6 * nz) * (1.25 - 0.45 * s)
-        out = np.maximum(out, val)
-    out = out * (0.45 + 0.55 * die)
-    out = np.maximum(out, cv.gauss(cx, base - 1.5, cv.R * 0.8, 0.4) * 0.6 * die)
-    emb = particles(cv, 'emb', 7, lambda g, m: (g.normal(0, 0.45, m), g.random(m), 0.6 + 0.6 * g.random(m)))
+        out = np.maximum(out, shape ** 0.6 * (0.6 + 0.6 * nz) * (1.25 - 0.45 * s))
+    emb = particles(cv, 'emb', 5, lambda g, m: (g.normal(0, 0.45, m), g.random(m), 0.6 + 0.6 * g.random(m)))
     for ex, ph, sp in zip(*emb):
         u = (t * sp + ph) % 1.0
-        out = np.maximum(out, cv.gauss(cx + ex * cv.R + 1.5 * math.sin(u * 9), base - u * H * 1.1, 0.8) * (1 - u) * die * 1.2)
+        out = np.maximum(out, cv.gauss(cx + ex * cv.R + 1.5 * math.sin(u * 9), base - u * H * 0.9, 0.7) * (1 - u) * die * 1.2)
     return [(out, pal, 'glow')]
 
 
@@ -384,13 +414,12 @@ def st_shards(cv, t, f, n, pal):
             rr = R * (0.25 + 0.75 * v * s)
             fx, fy = cx + math.cos(ang) * rr, (by if up else cy) + math.sin(ang) * rr * 0.8 + 10 * s * s
             frag = np.maximum(frag, cv.disc(fx, fy, sz * (1 - 0.6 * s), 0.6) * (0.85 - 0.5 * s))
-    mist = cv.gauss(cx, by, R * (0.5 + 0.6 * t), 0.7) * 0.42 * (1 - t) * (0.6 + 0.6 * cv.noise.fbm(cv.X / 5 + t, cv.Y / 5, 2))
     glint = cv.zeros()
     if 0.25 < t < shatter:
         gl = particles(cv, 'gl', 3, lambda g, m: (g.normal(0, 0.4, m), g.normal(0, 0.4, m)))
         for gx, gy in zip(*gl):
             glint = np.maximum(glint, cv.star4(cx + gx * R, by + gy * R * (0.5 if up else 1) - (4 if up else 0), 2.6, 0.45))
-    return [(mist, pal, 'soft'), (np.maximum(body, frag), pal, 'crystal'), (np.maximum(hi, glint), pal, 'glow')]
+    return [(np.maximum(body, frag), pal, 'crystal'), (np.maximum(hi, glint), pal, 'glow')]
 
 
 def _bolt(rng, x0, y0, x1, y1, depth=4, disp=0.32):
@@ -411,7 +440,7 @@ def st_sparks(cv, t, f, n, pal):
     cx, cy, R = cv.cx, cv.cy, cv.R * cv.opt('scale', 1.0)
     g = cv.frng(f)
     k = int(cv.opt('bolts', 3))
-    env = 1.0 if t < 0.6 else max(0.0, 1 - (t - 0.6) / 0.4)
+    env = life(t, 0.2, 1.2)
     core = cv.zeros(); glow = cv.zeros()
     if cv.opt('strike', 0):
         top = -4 if cv.S == 32 else 0
@@ -421,11 +450,11 @@ def st_sparks(cv, t, f, n, pal):
         npts = max(2, int(len(pts) * reach))
         if env > 0:
             core = np.maximum(core, cv.line(pts[:npts], 0.75) * env)
-            glow = np.maximum(glow, cv.line(pts[:npts], 2.6) * 0.5 * env)
+            glow = np.maximum(glow, cv.line(pts[:npts], 1.4) * 0.55 * env)
         if reach >= 1:
             s = (t - 0.3) / 0.7
-            glow = np.maximum(glow, cv.ring(cx, cy + R * 0.3, 2 + R * 0.8 * s, 1.6, 0.5) * (1 - s))
-            glow = np.maximum(glow, cv.gauss(cx, cy + R * 0.3, 5 * (1 - s) + 1) * (1 - s))
+            glow = np.maximum(glow, cv.arcs(cx, cy + R * 0.3, 2 + R * 0.8 * s, 1.1, 0.5, f) * (1 - s))
+            glow = np.maximum(glow, cv.gauss(cx, cy + R * 0.3, 2.5 * (1 - s) + 0.8) * (1 - s))
         k = 2
     for i in range(k):
         a = g.random() * 6.283
@@ -433,8 +462,8 @@ def st_sparks(cv, t, f, n, pal):
         x0, y0 = cx + math.cos(a) * 2, cy + math.sin(a) * 2
         pts = _bolt(g, x0, y0, cx + math.cos(a) * L, cy + math.sin(a) * L, 3, 0.3)
         core = np.maximum(core, cv.line(pts, 0.6) * env)
-        glow = np.maximum(glow, cv.line(pts, 2.2) * 0.45 * env)
-    flash = cv.gauss(cx, cy, 3.5 + 2 * math.sin(f * 2.1) ** 2) * (0.8 * env)
+        glow = np.maximum(glow, cv.line(pts, 1.3) * 0.5 * env)
+    flash = cv.gauss(cx, cy, 1.8 + 0.8 * math.sin(f * 2.1) ** 2) * (0.9 * env)
     spk = cv.zeros()
     for i in range(4):
         a = g.random() * 6.283; rr = R * g.random()
@@ -443,40 +472,40 @@ def st_sparks(cv, t, f, n, pal):
 
 
 def st_cloud(cv, t, f, n, pal):
-    """billowing cloud / smoke puff: noisy blobs that swell, drift up and dissolve from the edges inward."""
+    """a few separate lumpy puffs that swell, drift apart and up, then shrink away (no tile-filling haze)."""
     cx, cy, R = cv.cx, cv.cy, cv.R * cv.opt('scale', 1.0)
-    k = int(cv.opt('puffs', 5))
+    k = int(cv.opt('puffs', 4))
     rise = cv.opt('rise', 0.4)
     mode = cv.opt('alpha', 'smoke')
-    pf = particles(cv, 'pf', k, lambda g, m: (g.normal(0, 0.36, m), g.normal(0, 0.28, m), 0.38 + 0.22 * g.random(m)))
-    sw = ease_out(min(1, t * 1.6))
-    inv = np.ones_like(cv.X); hl = cv.zeros()
-    for px, py, pr in zip(*pf):
-        r = R * pr * (0.5 + 0.6 * sw)
-        bx = min(max(cx + px * R * (0.5 + 0.5 * sw), r + 1), cv.S - r - 1)
-        by = min(max(cy + py * R * (0.5 + 0.4 * sw) - rise * R * t, r + 1), cv.S - r - 1)
-        inv = inv * (1 - cv.gauss(bx, by, r))
-        hl = np.maximum(hl, cv.gauss(bx - r * 0.3, by - r * 0.35, r * 0.55))     # lit upper-left of each puff
-    nz = cv.noise.fbm((cv.X - cx) / 4 + t * 0.6, (cv.Y - cy) / 4 + t * 0.9, 2)
-    dens = (1 - inv) * (0.8 + 0.4 * nz)
-    thr = 0.3 + 0.62 * max(0.0, (t - 0.3) / 0.7) ** 1.2
-    val = np.clip((dens - thr) * 3.0, 0, 1)
-    val = val * (0.36 + 0.42 * hl)
+    pf = particles(cv, 'pf', k, lambda g, m: (g.normal(0, 0.42, m), g.normal(0, 0.3, m), 0.2 + 0.13 * g.random(m), g.random(m) * 0.25))
+    val = cv.zeros()
+    for i, (px, py, pr, dl) in enumerate(zip(*pf)):
+        u = (t - dl) / (1 - dl)
+        if u <= 0:
+            continue
+        r = R * pr * (0.5 + 0.8 * ease_out(min(1, u * 2))) * (1 - u) ** 0.6
+        if r < 0.7:
+            continue
+        bx = min(max(cx + px * R * (0.6 + 0.5 * u), r + 1), cv.S - r - 1)
+        by = min(max(cy + py * R * 0.7 - rise * R * u, r + 1), cv.S - r - 1)
+        b = cv.blob(bx, by, r, 0.35, i)
+        lit = cv.blob(bx - r * 0.3, by - r * 0.35, r * 0.5, 0.3, i + 20)
+        val = np.maximum(val, b * (0.45 + 0.32 * lit))
     layers = [(val, pal, mode)]
-    if cv.opt('bolt', 0) and 0.2 < t < 0.75:
+    if cv.opt('bolt', 0) and 0.2 < t < 0.7:
         g = cv.frng(f)
-        pts = _bolt(g, cx + g.normal(0, 3), cy - R * 0.2, cx + g.normal(0, 6), cy + R * 0.9, 3, 0.25)
-        layers.append((cv.line(pts, 0.7), cv.opt('boltpal', 'storm'), 'glow'))
+        pts = _bolt(g, cx + g.normal(0, 2), cy - R * 0.1, cx + g.normal(0, 4), cy + R * 0.8, 3, 0.25)
+        layers.append((cv.line(pts, 0.6), cv.opt('boltpal', 'storm'), 'glow'))
     if cv.opt('skull', 0):
-        w = window(t, 0.15, 0.85, 0.25, 0.3)
-        if w > 0:
-            layers.append((_skull(cv, cx, cy - 2 - 3 * t, R * 0.42) * w * 0.85, cv.opt('skullpal', 'death'), 'soft'))
+        w = life(t, 0.35, 1.2)
+        if w > 0.05:
+            layers.append((_skull(cv, cx, cy - 2 - 3 * t, R * 0.36) * w * 0.85, cv.opt('skullpal', 'death'), 'soft'))
     if cv.opt('motes', 0):
-        mo = particles(cv, 'mo', 6, lambda g, m: (g.normal(0, 0.5, m), g.random(m)))
+        mo = particles(cv, 'mo', 5, lambda g, m: (g.normal(0, 0.5, m), g.random(m)))
         m_ = cv.zeros()
         for mx, ph in zip(*mo):
             u = (t + ph) % 1
-            m_ = np.maximum(m_, cv.gauss(cx + mx * R, cy + R * 0.4 - u * R * 1.3, 0.75) * (1 - u) * (1 - t * 0.6))
+            m_ = np.maximum(m_, cv.gauss(cx + mx * R, cy + R * 0.4 - u * R * 1.2, 0.7) * (1 - u) * (1 - t))
         layers.append((m_, cv.opt('motepal', pal), 'glow'))
     return layers
 
@@ -502,7 +531,12 @@ def st_skull(cv, t, f, n, pal):
     nz = cv.noise.fbm(cv.X / 3.5, cv.Y / 3.5 + t * 2, 3)
     sk = sk * np.clip((nz + 0.85 - max(0, t - 0.55) * 2.2) * 2, 0, 1) * w
     eyes = (cv.gauss(cx - R * 0.21, sy + R * 0.03, 1.2) + cv.gauss(cx + R * 0.21, sy + R * 0.03, 1.2)) * window(t, 0.2, 0.8, 0.1, 0.2)
-    smoke = cv.gauss(cx, cy + R * 0.25, R * 0.8, 0.6) * (0.5 + 0.7 * cv.noise2.fbm(cv.X / 4 - t, cv.Y / 4, 3)) * 0.6 * window(t, 0, 1, 0.2, 0.5)
+    smoke = cv.zeros()
+    for i in range(3):
+        u = (t + i / 3) % 1
+        r = R * 0.16 * (1 - u) * window(t, 0, 1, 0.15, 0.3)
+        if r > 0.6:
+            smoke = np.maximum(smoke, cv.blob(cx + (i - 1) * R * 0.45, cy + R * 0.55 - u * R * 0.5, r, 0.3, i + 40) * 0.6)
     return [(smoke, cv.opt('smoke', 'shadow'), 'smoke'), (sk * 0.85, pal, 'soft'), (eyes, cv.opt('eyes', 'hellfire'), 'glow')]
 
 
@@ -513,7 +547,7 @@ def st_rays(cv, t, f, n, pal):
     cross = cv.opt('cross', 0)
     a = cv.angle(cx, cy); d = cv.dist(cx, cy)
     grow = ease_out(min(1, t * 2.2))
-    env = 1.0 if t < 0.55 else max(0.0, 1 - (t - 0.55) / 0.45)
+    env = life(t, 0.3, 1.3)
     rot = t * 0.9
     rays = np.clip(np.cos(k / 2 * (a - rot)), 0, 1) ** 10 * np.clip(1 - d / (R * (0.4 + 0.65 * grow)), 0, 1)
     rays2 = np.clip(np.cos(k / 2 * (a + rot * 0.7) + 1.57), 0, 1) ** 14 * np.clip(1 - d / (R * 0.7 * grow + 1), 0, 1) * 0.6
@@ -524,14 +558,13 @@ def st_rays(cv, t, f, n, pal):
         arm = np.maximum(np.exp(-(X / 1.1) ** 2) * np.clip(1 - np.abs(Y + 1.5) / (L * 1.05), 0, 1),
                          np.exp(-((Y + R * 0.25) / 1.1) ** 2) * np.clip(1 - X / (L * 0.62), 0, 1))
         out = np.maximum(out * 0.6, arm * env)
-    out = np.maximum(out, cv.gauss(cx, cy, 2.5 + 3.5 * grow) * env)
+    out = np.maximum(out, cv.gauss(cx, cy, 1.6 + 1.6 * grow) * env)
     tw = particles(cv, 'tw', 6, lambda g, m: (g.normal(0, 0.45, m), g.normal(0, 0.45, m), g.random(m) * 0.6))
     for x, y, ph in zip(*tw):
         w = window(t, ph, ph + 0.4, 0.15, 0.2)
         if w > 0:
             out = np.maximum(out, cv.star4(cx + x * R, cy + y * R - t * 4, 2.4, 0.45) * w)
-    halo = cv.gauss(cx, cy, R * 0.9 * grow + 1) * 0.35 * env
-    return [(halo, pal, 'soft'), (out, pal, 'glow')]
+    return [(out, pal, 'glow')]
 
 
 def st_pillar(cv, t, f, n, pal):
@@ -540,20 +573,20 @@ def st_pillar(cv, t, f, n, pal):
     base = cy + R * 0.45
     reach = min(1.0, t / 0.25)
     env = 1.0 if t < 0.55 else max(0.0, 1 - (t - 0.55) / 0.45)
-    w = (3.2 if cv.S == 32 else 5.0) * (1 - 0.5 * max(0, t - 0.5))
-    top = base - (base + 2) * reach
+    w = (1.8 if cv.S == 32 else 3.2) * (1 - 0.5 * max(0, t - 0.5))
+    top = base - (base - 2) * reach
     X = np.abs(cv.X - cx)
     beam = np.exp(-(X / w) ** 2) * (cv.Y > top) * (cv.Y < base + 1) * env
     beam = beam * (0.7 + 0.3 * np.sin(cv.Y * 0.8 + t * 20))
     core = np.exp(-(X / (w * 0.35)) ** 2) * (cv.Y > top) * (cv.Y < base) * env
     s = max(0.0, (t - 0.2) / 0.8)
-    ringf = cv.ring(cx, base, 2 + R * 0.85 * s, 1.5, 0.45) * (1 - s) if t > 0.2 else cv.zeros()
+    ringf = cv.arcs(cx, base, 2 + R * 0.85 * s, 1.1, 0.45, 2) * (1 - s) if t > 0.2 else cv.zeros()
     mo = particles(cv, 'mo', 6, lambda g, m: (g.normal(0, 0.45, m), g.random(m)))
     m_ = cv.zeros()
     for mx, ph in zip(*mo):
         u = (t * 1.3 + ph) % 1
         m_ = np.maximum(m_, cv.gauss(cx + mx * R, base - u * R * 1.4, 0.8) * (1 - u) * env)
-    return [(beam * 0.6, pal, 'soft'), (np.maximum(np.maximum(core, ringf), m_), pal, 'glow')]
+    return [(np.maximum(np.maximum(np.maximum(beam * 0.55, core), ringf), m_), pal, 'glow')]
 
 
 def st_splash(cv, t, f, n, pal):
@@ -576,7 +609,7 @@ def st_splash(cv, t, f, n, pal):
         # short streak behind each fast droplet
         if t < 0.5:
             body = np.maximum(body, np.exp(-(cv.segd(x, y, cx + (x - cx) * 0.6, cy + (y - cy) * 0.6) / (r * 0.6)) ** 2) * 0.8)
-    sr = R * (0.25 + 0.3 * ease_out(min(1, t * 3))) * (1 - 0.7 * max(0, t - 0.5) / 0.5)
+    sr = R * (0.16 + 0.2 * ease_out(min(1, t * 3))) * (1 - 0.8 * max(0, t - 0.4) / 0.6)
     nz = cv.noise.fbm((cv.X - cx) / 2.5, (cv.Y - cy) / 2.5, 2)
     splat = np.clip((sr - cv.dist(cx, cy, 0.8) + (nz - 0.5) * 4) / 1.0, 0, 1)
     body = np.maximum(body, splat)
@@ -600,17 +633,19 @@ def st_slash(cv, t, f, n, pal):
         tail = max(0.0, (u - 0.45) / 0.8)
         if tail >= 1:
             continue
+        th = cv.memo('th', lambda: 0.785 + (cv.rng.uniform(-0.7, 0.7) if cv.area else 0) + (math.pi / 2 if cv.area and cv.rng.random() < 0.4 else 0))
+        ux, uy = math.cos(th), math.sin(th)
         pts = []
         for s in np.linspace(tail, head, 10):
-            x = cx - R * 0.85 + s * R * 1.7 + off * 0.7
-            y = cy - R * 0.85 + s * R * 1.7 - off * 0.7 - math.sin(s * math.pi) * R * 0.32
-            pts.append((x, y))
+            a_ = (s - 0.5) * R * 2.4
+            b_ = off - math.sin(s * math.pi) * R * 0.32
+            pts.append((cx + a_ * ux - b_ * uy, cy + a_ * uy + b_ * ux))
         if len(pts) > 1 and head > tail:
             m = len(pts) - 1
             for j in range(m):                      # crescent: thick in the middle, sharp at both ends
                 wj = 0.5 + 1.1 * math.sin(math.pi * (j + 0.5) / m)
                 out = np.maximum(out, cv.line(pts[j:j + 2], wj) * (1 - tail))
-            out = np.maximum(out, cv.line(pts, 2.6) * 0.35 * (1 - tail))
+            out = np.maximum(out, cv.line(pts, 1.6) * 0.4 * (1 - tail))
     layers = [(out, pal, 'glow')]
     if t > 0.35 and cv.opt('drops', 1):
         s = (t - 0.35) / 0.65
@@ -636,14 +671,13 @@ def st_impact(cv, t, f, n, pal):
         poly = [(cx + -uy * 1.2, cy + ux * 1.2), (cx + ux * Lt, cy + uy * Lt), (cx + uy * 1.2, cy - ux * 1.2)]
         out = np.maximum(out, cv.poly(poly) * (0.7 + 0.3 * L) * env)
     out = np.maximum(out, cv.disc(cx, cy, 3.5 * (1 - t) + 0.5, 1.0) * env)
-    out = np.maximum(out, cv.gauss(cx, cy, R * 0.55 * grow + 1) * 0.4 * env)
     db = particles(cv, 'db', 7, lambda g, m: (g.random(m) * 6.283, 0.5 + 0.5 * g.random(m)))
     for a, v in zip(*db):
         rr = R * (0.3 + 0.8 * v * ease_out(t))
         out = np.maximum(out, cv.gauss(cx + math.cos(a) * rr, cy + math.sin(a) * rr + 4 * t * t, 0.7) * (1 - t))
     layers = [(out, pal, 'glow')]
     if cv.opt('ring', 0):
-        layers.append((cv.ring(cx, cy, 2 + R * 0.9 * ease_out(t), 1.2) * (1 - t), cv.opt('ringpal', pal), 'glow'))
+        layers.append((cv.arcs(cx, cy, 2 + R * 0.9 * ease_out(t), 1.0, 1.0, 1) * (1 - t), cv.opt('ringpal', pal), 'glow'))
     return layers
 
 
@@ -674,17 +708,20 @@ def st_eruption(cv, t, f, n, pal):
         rr = max(r for _, r in shape)
         light = np.clip(((x - cv.X) + (y - cv.Y)) / (2.4 * rr), -1, 1)
         rocks = np.maximum(rocks, m * (0.5 + 0.3 * light))
-    crater = cv.disc(cx, base, R * 0.55 * ease_out(min(1, t * 3)), 1.2, 0.45) * (0.22 if t < 0.8 else 0.22 * (1 - t) / 0.2)
+    crater = cv.zeros()
     if cv.opt('cracks', 0):
         cr = cv.memo('cr', lambda: [_bolt(cv.rng, cx, base, cx + math.cos(a) * R * 1.0, base + math.sin(a) * R * 0.5, 3, 0.2)
                                     for a in np.linspace(0, 6.283, 6, endpoint=False) + cv.rng.random()])
         reach = min(1.0, t * 3)
         for pts in cr:
             npt = max(2, int(len(pts) * reach))
-            crater = np.maximum(crater, cv.line(pts[:npt], 0.55) * 0.3 * (1 - max(0, t - 0.6) / 0.4))
-    s = ease_out(t)
-    dust = cv.ring(cx, base - 2 * t, R * (0.3 + 0.75 * s), 2.5 + 2.5 * s, 0.55) * (0.8 - 0.75 * t)
-    dust = dust * (0.5 + 0.8 * cv.noise.fbm(cv.X / 4, cv.Y / 4 - t, 2))
+            crater = np.maximum(crater, cv.line(pts[:npt], 0.5) * 0.55 * (1 - max(0, t - 0.6) / 0.4))
+    dust = cv.zeros()
+    for i, a in enumerate(cv.memo('dust', lambda: cv.rng.random(4) * 6.283)):
+        s = ease_out(t)
+        r = R * 0.17 * (0.5 + 0.8 * s) * (1 - t) ** 0.7
+        if r > 0.6:
+            dust = np.maximum(dust, cv.blob(cx + math.cos(a) * R * (0.25 + 0.55 * s), base + math.sin(a) * R * 0.3 * s - 3 * s, r, 0.35, i + 50) * 0.5)
     return [(crater, 'soot', 'soft'), (dust, cv.opt('dust', 'ash'), 'smoke'), (rocks, pal, 'solid')]
 
 
@@ -740,11 +777,10 @@ def st_sparkle(cv, t, f, n, pal):
         x = cx + math.cos(ang) * r * R * (1 - 0.3 * u)
         y = cy + math.sin(ang) * r * R * 0.6 - u * R * cv.opt('rise', 0.6) + 2
         out = np.maximum(out, cv.star4(x, y, 2.6 * sz, 0.45) * w)
-    glow = cv.gauss(cx, cy, R * 0.55, 1.2) * 0.28 * window(t, 0, 1, 0.2, 0.5)
     if cv.opt('ring', 0):
         s = ease_out(t)
-        glow = np.maximum(glow, cv.ring(cx, cy + R * 0.4 - s * R * 0.9, R * 0.65, 1.2, 0.4) * (1 - t) * 0.9)
-    return [(glow, pal, 'soft'), (out, pal, 'glow')]
+        out = np.maximum(out, cv.arcs(cx, cy + R * 0.4 - s * R * 0.9, R * 0.65, 1.0, 0.4, 4) * (1 - t) * 0.9)
+    return [(out, pal, 'glow')]
 
 
 def st_rings(cv, t, f, n, pal):
@@ -776,7 +812,7 @@ def st_circle(cv, t, f, n, pal):
     env = 1.0 if t < 0.65 else max(0.0, 1 - (t - 0.65) / 0.35)
     arc = ((a_ell + math.pi) / 6.283 < draw).astype(np.float32)
     r1, r2 = R * 0.95, R * 0.72
-    out = (cv.ring(cx, cy, r1, 0.8, ry) + cv.ring(cx, cy, r2, 0.65, ry) * 0.8) * arc
+    out = (cv.arcs(cx, cy, r1, 0.8, ry, 1, 0.65) + cv.arcs(cx, cy, r2, 0.65, ry, 2, 0.6) * 0.8) * arc
     rot = t * 1.6
     if fig in ('star', 'pentagram'):
         pts = [(cx + math.cos(-1.5708 + i * 4 * math.pi / 5 + rot * 0.3) * r2, cy + math.sin(-1.5708 + i * 4 * math.pi / 5 + rot * 0.3) * r2 * ry) for i in range(6)]
@@ -799,14 +835,13 @@ def st_circle(cv, t, f, n, pal):
             else:
                 out = np.maximum(out, cv.gauss(x, y, 0.8) * 1.1)
     out = out * env * (0.85 + 0.15 * math.sin(t * 18))
-    glow = cv.disc(cx, cy, r1, 2.5, ry) * 0.18 * env + cv.gauss(cx, cy, R * 0.4, ry) * 0.25 * env * window(t, 0.3, 1, 0.2, 0.4)
     mo = particles(cv, 'mo', 7, lambda g, k: (g.random(k) * 6.283, g.random(k)))
     m_ = cv.zeros()
     for ang, ph in zip(*mo):
         u = (t * 1.4 + ph) % 1
         if t > 0.25:
             m_ = np.maximum(m_, cv.gauss(cx + math.cos(ang) * r2, cy + math.sin(ang) * r2 * ry - u * R * 0.9, 0.7) * (1 - u) * env)
-    return [(glow, pal, 'soft'), (np.maximum(out, m_), pal, 'glow')]
+    return [(np.maximum(out, m_), pal, 'glow')]
 
 
 def st_swirl(cv, t, f, n, pal):
@@ -822,7 +857,7 @@ def st_swirl(cv, t, f, n, pal):
     arms = np.clip(np.cos(k * (a + d / R * 3.2 - rot)), 0, 1) ** 3
     radial = np.clip(d / (rr * 0.25), 0, 1) * np.clip(1 - d / rr, 0, 1) ** 0.7
     out = arms * radial * env * (0.6 + 0.6 * cv.noise.fbm(d / 3, a * 2, 2))
-    core = cv.disc(cx, cy, R * 0.2 * grow, 1.5, ry) * env
+    core = cv.disc(cx, cy, R * 0.14 * grow, 0.8, ry) * env
     pt = particles(cv, 'pt', 8, lambda g, m: (g.random(m) * 6.283, g.random(m)))
     for ang, ph in zip(*pt):
         u = (t * 1.5 + ph) % 1
@@ -856,7 +891,7 @@ def st_tornado(cv, t, f, n, pal):
         rr = 2 + R * 0.75 * s ** 0.8
         xo = math.sin(t * 6 + s * 3) * 2
         a = np.arctan2((cv.Y - y) / 0.3, cv.X - cx - xo)
-        band = cv.ring(cx + xo, y, rr, 2.0 + 1.2 * s, 0.32) * (0.5 + 0.5 * np.cos(a * 2 + t * 14 + i))
+        band = cv.ring(cx + xo, y, rr, 1.1 + 0.8 * s, 0.32) * (0.5 + 0.5 * np.cos(a * 2 + t * 14 + i))
         band = band * (0.55 + 0.7 * cv.noise.fbm(cv.X / 3 + t * 3, cv.Y / 2, 2))
         out = np.maximum(out, band * env * (0.75 + 0.35 * s))
     db = particles(cv, 'db', 6, lambda g, k: (g.random(k), g.random(k) * 6.283))
@@ -864,7 +899,6 @@ def st_tornado(cv, t, f, n, pal):
         y = base - s * H; rr = 2 + R * 0.75 * s
         a = ph + t * 12
         out = np.maximum(out, cv.gauss(cx + math.cos(a) * rr, y + math.sin(a) * rr * 0.3, 0.8) * env)
-    out = np.maximum(out, cv.gauss(cx, base, R * 0.5, 0.35) * 0.5 * env)
     return [(out, pal, 'glow')]
 
 
@@ -874,8 +908,7 @@ def st_aura(cv, t, f, n, pal):
     base = cy + R * 0.45
     env = window(t, 0, 1, 0.15, 0.3)
     pulse = 0.75 + 0.25 * math.sin(t * 6.283 * 2)
-    out = cv.ring(cx, base, R * 0.8, 1.3, 0.4) * env * pulse
-    out = np.maximum(out, cv.disc(cx, base, R * 0.8, 2.0, 0.4) * 0.25 * env)
+    out = cv.arcs(cx, base, R * 0.8, 1.1, 0.4, 5) * env * pulse
     st = particles(cv, 'st', 9, lambda g, k: (g.random(k) * 6.283, g.random(k), 0.6 + 0.6 * g.random(k)))
     wisp = cv.zeros()
     for a, ph, L in zip(*st):
@@ -883,10 +916,7 @@ def st_aura(cv, t, f, n, pal):
         x = cx + math.cos(a) * R * 0.72 + math.sin(u * 7 + a) * 1.2
         y = base + math.sin(a) * R * 0.72 * 0.4 - u * R * 1.25
         wisp = np.maximum(wisp, np.exp(-((cv.X - x) / 1.1) ** 2 - ((cv.Y - y) / (2.2 * L + 1)) ** 2) * (1 - u) * env)
-    nz = cv.noise.fbm(cv.X / 3, (cv.Y + t * 30) / 3, 2)
-    column = np.exp(-((cv.X - cx) / (R * 0.75)) ** 6) * np.clip((base - cv.Y) / (R * 1.4), 0, 1) * np.clip(1 - (base - cv.Y) / (R * 1.5), 0, 1)
-    column = column * np.clip(nz * 1.6 - 0.55, 0, 1) * 0.7 * env * pulse
-    return [(column, pal, 'soft'), (np.maximum(out, wisp), pal, 'glow')]
+    return [(np.maximum(out, wisp), pal, 'glow')]
 
 
 def st_bubbles(cv, t, f, n, pal):
@@ -1182,24 +1212,48 @@ def seed_of(row):
     return zlib.crc32(f"{row['category']}:{row['name']}:{row.get('seed', '')}".encode()) & 0x7fffffff
 
 
+CUTS = (CUT, 0.26, 0.32, 0.4, 0.5, 0.62)
+
+
+def clear_share(img):
+    return float((img[..., 3] == 0).mean())
+
+
 def render_row(row):
-    """-> dict(w, h, px, py, phases, durs, frames={(phase,x,y): RGBA uint8 array (h*32, w*32, 4)}, light)"""
+    """-> dict(w, h, px, py, phases, durs, frames={(phase,x,y): RGBA uint8 array (h*32, w*32, 4)}, light, stats)
+
+    Area effects get 3x3 pattern variants (the client picks one by tile position: x % 3, y % 3), each drawn off-centre
+    from its own seed, so a grid of them does not repeat.  The alpha cut is raised (deterministically) until every
+    frame keeps at least MIN_CLEAR (area) / 50 % (single) of its pixels fully transparent."""
     size = int(row['size']); S = 32 * size; n = int(row['frames']); ms = int(row['ms'])
     opts = parse_opts(row['opts'])
     pal = row['palette']
     assert pal in PALETTES, pal
-    frames = {}
+    centre = (16.0, 16.0) if size == 1 else (40.0, 40.0)
+    stats = None
     if row['category'] == 'effect':
         fn = STYLES[row['style']]
-        centre = (16.0, 16.0) if size == 1 else (40.0, 40.0)
-        cv = Cv(S, seed_of(row), opts, centre)
-        for f in range(n):
-            t = f / (n - 1) if n > 1 else 0.0
-            frames[(f, 0, 0)] = compose(cv, fn(cv, t, f, n, pal))
-        px = py = 1
+        area = row['use'] == 'area'
+        px = py = 3 if area else 1
+        layers = {}
+        for y in range(py):
+            for x in range(px):
+                cv = Cv(S, seed_of(row) + 7919 * (y * px + x), opts, centre, area)
+                for f in range(n):
+                    t = f / (n - 1) if n > 1 else 0.0
+                    layers[(f, x, y)] = (cv, fn(cv, t, f, n, pal))
+        need = MIN_CLEAR if area else 0.5
+        for cut in CUTS:
+            frames = {k: compose(cv, ly, cut) for k, (cv, ly) in layers.items()}
+            clear = [clear_share(im) for im in frames.values()]
+            if min(clear) >= need:
+                break
+        last = [1 - clear_share(frames[(n - 1, x, y)]) for y in range(py) for x in range(px)]
+        stats = dict(cut=cut, clear_min=min(clear), clear_mean=sum(clear) / len(clear), last_cover=max(last))
+        light = None
     else:
         fn = MSTYLES[row['style']]
-        centre = (16.0, 16.0) if size == 1 else (40.0, 40.0)
+        frames = {}
         for (x, y) in DIRS:
             dx, dy = x - 1, y - 1
             L = math.hypot(dx, dy)
@@ -1208,16 +1262,16 @@ def render_row(row):
             for f in range(n):
                 frames[(f, x, y)] = compose(cv, fn(cv, ux, uy, f, n, pal))
         px = py = 3
-    return dict(w=size, h=size, px=px, py=py, phases=n, durs=[ms] * n, frames=frames,
-                light=light_of(pal, size) if opts.get('light', 1) else None)
+        light = light_of(pal) if opts.get('light', 1) else None
+    return dict(w=size, h=size, px=px, py=py, phases=n, durs=[ms] * n, frames=frames, light=light, stats=stats)
 
 
-def compose(cv, layers):
+def compose(cv, layers, cut=CUT):
     out = np.zeros((cv.S, cv.S, 4), np.uint8)
     for field, pal, mode in layers:
         if np.isscalar(field) or not np.any(field > 0.02):
             continue
-        out = over(out, shade(cv, np.clip(field, 0, 1), pal, mode))
+        out = over(out, shade(cv, np.clip(field, 0, 1), pal, mode, cut=max(cut, CUT if mode != 'solid' else 0.15)))
     out[out[..., 3] == 0] = 0
     return out
 
@@ -1303,6 +1357,10 @@ def read_spec(path):
         assert r['category'] in ('effect', 'missile') and r['mode'] in ('replace', 'append'), r
         assert (r['style'] in STYLES) if r['category'] == 'effect' else (r['style'] in MSTYLES), r
         assert r['size'] in ('1', '2') and 2 <= int(r['frames']) <= 32 or (r['category'] == 'missile' and int(r['frames']) >= 1), r
+        if r['category'] == 'effect':
+            assert r['use'] in ('area', 'single'), r
+            assert r['use'] == 'single' or r['size'] == '1', ('area effects are 1x1', r['name'])
+            assert 400 <= int(r['frames']) * int(r['ms']) <= 900, ('effect length 400..900 ms', r['name'])
     for cat in ('effect', 'missile'):
         ids = [r['id'] for r in rows if r['category'] == cat]
         names = [r['name'] for r in rows if r['category'] == cat]
@@ -1345,10 +1403,46 @@ def lua_ids(text):
 def write_catalog(rows, path):
     with open(path, 'w', newline='') as f:
         w = csv.writer(f)
-        w.writerow(['name', 'theme', 'category', 'id', 'mode', 'style', 'palette', 'size', 'frames', 'ms', 'note'])
+        w.writerow(['name', 'theme', 'category', 'id', 'mode', 'use', 'style', 'palette', 'size', 'frames', 'ms', 'note'])
         for r in rows:
-            w.writerow([r['name'], r['theme'], r['category'], r['id'], r['mode'], r['style'], r['palette'],
+            w.writerow([r['name'], r['theme'], r['category'], r['id'], r['mode'], r['use'], r['style'], r['palette'],
                         f"{r['size']}x{r['size']}", r['frames'], r['ms'], r['note']])
+
+
+TILED_N = 7
+
+
+def ground(n=TILED_N, seed=5):
+    """procedural mid grey-brown flagstone ground, n x n tiles (only for previews)."""
+    g = np.random.default_rng(seed)
+    W = n * 32
+    img = np.zeros((W, W, 3), np.float32)
+    for ty in range(n):
+        for tx in range(n):
+            base = np.array([98, 88, 74], np.float32) + g.normal(0, 7)
+            img[ty * 32:(ty + 1) * 32, tx * 32:(tx + 1) * 32] = base + g.normal(0, 5, (32, 32, 1))
+    img[::32, :] *= 0.7; img[:, ::32] *= 0.7
+    out = np.full((W, W, 4), 255, np.uint8); out[..., :3] = np.clip(img, 0, 255)
+    return out
+
+
+def tiled(g, frame, n=TILED_N):
+    """the effect on every tile of an n x n area at one frame, as the client draws it (pattern = position % 3,
+    bigger things anchored at their bottom-right tile).  -> RGBA layer (n*32)^2 without ground."""
+    m = 32 * (g['w'] - 1)
+    W = n * 32
+    c = Image.new('RGBA', (W + m, W + m), (0, 0, 0, 0))
+    for ty in range(n):
+        for tx in range(n):
+            im = Image.fromarray(g['frames'][(frame, tx % g['px'], ty % g['py'])], 'RGBA')
+            c.alpha_composite(im, (tx * 32, ty * 32))
+    return np.asarray(c)[m:, m:]
+
+
+def tiled_clear(g):
+    """share of the inner 5x5 tiles left fully uncovered: (worst frame, mean over frames)."""
+    v = [float((tiled(g, f)[32:-32, 32:-32, 3] == 0).mean()) for f in range(g['phases'])]
+    return min(v), sum(v) / len(v)
 
 
 def preview(rows, gens, out_dir, overview):
@@ -1396,6 +1490,26 @@ def preview(rows, gens, out_dir, overview):
                 name = f"{cat}_{mode}_{p // per + 1:02d}.png"
                 sheet.save(os.path.join(out_dir, name))
                 sheets[name] = sheet
+    gr = ground()
+    sel = [(r, g) for r, g in zip(rows, gens) if r['category'] == 'effect']
+    per = 20
+    for p in range(0, len(sel), per):
+        part = sel[p:p + per]
+        cols = 4; cw = 2 * (TILED_N * 32 + 4) + 8; ch = TILED_N * 32 + 22
+        sheet = Image.new('RGB', (cols * cw, ((len(part) + cols - 1) // cols) * ch), (12, 12, 16))
+        dr = ImageDraw.Draw(sheet)
+        for i, (r, g) in enumerate(part):
+            x0 = (i % cols) * cw; y0 = (i // cols) * ch
+            st = g['stats']
+            dr.text((x0 + 4, y0 + 3), f"{r['category'][0]}{r['id']} {r['name']}  [{r['use']}]  clear {st['clear_min']:.0%}"
+                    f"  tiled {st['tiled_min']:.0%}", fill=(255, 220, 120))
+            for j, fr in enumerate((int(round((g['phases'] - 1) * 0.3)), int(round((g['phases'] - 1) * 0.6)))):
+                bg_ = Image.fromarray(gr, 'RGBA')
+                bg_.alpha_composite(Image.fromarray(tiled(g, fr), 'RGBA'))
+                sheet.paste(bg_.convert('RGB'), (x0 + 4 + j * (TILED_N * 32 + 4), y0 + 18))
+        name = f"tiled_{p // per + 1:02d}.png"
+        sheet.save(os.path.join(out_dir, name))
+        sheets[name] = sheet
     if overview:
         # one mid-animation frame per thing, packed in a grid, kept small (jpg < 1 MB)
         cells = []
@@ -1450,6 +1564,31 @@ def main():
     # --- 1. draw
     gens = [render_row(r) for r in rows]
     print(f'drew {len(rows)} things ({sum(len(g["frames"]) for g in gens)} frames) in {time.time() - t0:.1f}s')
+    print('alpha stats per effect: clear = share of fully transparent pixels per frame (worst / mean over frames and '
+          'pattern variants); tiled = share of the inner 5x5 of a 7x7 area left uncovered (worst / mean frame); '
+          'last = coverage of the last frame; cut = alpha threshold used')
+    srows = []
+    for r, g in zip(rows, gens):
+        st = g['stats']
+        if st is None:
+            continue
+        st['tiled_min'], st['tiled_mean'] = tiled_clear(g)
+        srows.append([r['id'], r['name'], r['use'], f"{r['size']}x{r['size']}", g['px'] * g['py'], g['phases'],
+                      g['phases'] * g['durs'][0], f"{st['clear_min']:.2f}", f"{st['clear_mean']:.2f}",
+                      f"{st['tiled_min']:.2f}", f"{st['tiled_mean']:.2f}", f"{st['last_cover']:.2f}", st['cut']])
+        print(f"  e{r['id']:<4} {r['name'][:24]:<24} {r['use']:<6} {r['size']}x{r['size']} var {g['px'] * g['py']} "
+              f"{g['phases'] * g['durs'][0]:>3}ms  clear {st['clear_min']:.0%}/{st['clear_mean']:.0%}  "
+              f"tiled {st['tiled_min']:.0%}/{st['tiled_mean']:.0%}  last {st['last_cover']:.0%}  cut {st['cut']}")
+    with open(os.path.join(a.out_dir, 'fx_alpha_stats.csv'), 'w', newline='') as fh:
+        w = csv.writer(fh)
+        w.writerow(['id', 'name', 'use', 'size', 'variants', 'frames', 'ms_total', 'clear_min', 'clear_mean',
+                    'tiled_clear_min', 'tiled_clear_mean', 'last_frame_cover', 'cut'])
+        w.writerows(srows)
+    area = [x for x in srows if x[2] == 'area']
+    print(f'area effects: {len(area)}; worst per-frame clear {min(float(x[7]) for x in area):.0%} '
+          f'(target {MIN_CLEAR:.0%}); worst tiled clear {min(float(x[9]) for x in area):.0%}; '
+          f'mean tiled clear {sum(float(x[10]) for x in area) / len(area):.0%}')
+    assert all(float(x[7]) >= MIN_CLEAR for x in area), 'an area effect frame is below MIN_CLEAR'
 
     # --- 2. sprite records (dedupe inside the new set and against the input spr)
     recs = {}                                   # record -> None (ordered set)

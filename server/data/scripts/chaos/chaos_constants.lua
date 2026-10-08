@@ -34,7 +34,8 @@ ChaosOpcodes = {
 	daily = 207,
 	infinitytower = 214,
 	autoloot = 216,
-	shop = 218 -- Chaos store (client game_shop); the base server's own store uses 201
+	shop = 218, -- Chaos store (client game_shop); the base server's own store uses 201
+	spellbook = 219 -- spell list window (client game_spellbook, !spells)
 }
 
 -- ---------------------------------------------------------------------------
@@ -249,6 +250,39 @@ Chaos.clientServices = {
 -- ---------------------------------------------------------------------------
 
 -- Decode a JSON buffer; returns a table or nil (never throws).
+-- Multi-client: how many characters one IP may have online, and who is exempt (group id, 1 = player).
+-- A character with another character online from the same IP is "multi-clienting": it cannot enter dungeons or
+-- the Infinity Tower and cannot attack players (multiclient.lua, dungeons.lua, infinitytower_run.lua and
+-- data/spells/chaos/_common.lua ChaosSpell.canAttack, which repeats the check in the spells' Lua state).
+Chaos.multiClient = {
+	maxPerIp = 2,
+	exemptGroup = 4, -- group id from which on (gamemasters, gods) the limit and the blocks do not apply
+	msgDungeon = "You cannot enter while another character from your connection is online.",
+	msgPvp = "You cannot attack players while another character from your connection is online.",
+	-- global storage: 1 turns the multi-client blocks off (events, tests); the login limit stays
+	offStorage = 7100990,
+}
+
+-- other online characters sharing this player's IP (IP 0 = no connection, never matches)
+function Chaos.mcSiblings(player)
+	local list = {}
+	local ip = player:getIp()
+	if ip == 0 or player:getGroup():getId() >= Chaos.multiClient.exemptGroup
+			or Game.getStorageValue(Chaos.multiClient.offStorage) == 1 then
+		return list
+	end
+	for _, other in ipairs(Game.getPlayers()) do
+		if other ~= player and other:getIp() == ip then
+			list[#list + 1] = other
+		end
+	end
+	return list
+end
+
+function Chaos.isMultiClient(player)
+	return #Chaos.mcSiblings(player) > 0
+end
+
 function Chaos.decode(buffer)
 	if type(buffer) ~= "string" or buffer == "" then
 		return nil

@@ -394,6 +394,11 @@ local function leaveQueue(guid, notify)
 end
 
 -- returns nil if the player may queue, else a reason string
+-- true while the character takes part in a dungeon run (multiclient.lua refuses a second login then)
+function ChaosDungeonIsInside(player)
+	return runOfPlayer[player:getGuid()] ~= nil
+end
+
 local function entryProblem(player, id, dg, difficulty)
 	local guid = player:getGuid()
 	if runOfPlayer[guid] then
@@ -401,6 +406,9 @@ local function entryProblem(player, id, dg, difficulty)
 	end
 	if inBox(dg, player:getPosition()) then
 		return "You cannot queue from inside the dungeon."
+	end
+	if Chaos.isMultiClient(player) then
+		return Chaos.multiClient.msgDungeon
 	end
 	if player:getLevel() < levelOf(dg) then
 		return string.format(baseMessage("MsgNeedLevel", "You need level %s."), levelOf(dg))

@@ -360,6 +360,10 @@ function ChaosTowerRun.start(player)
 			player:sendCancelMessage(m:getName() .. " has to wait before trying the tower again.")
 			return false
 		end
+		if Chaos and Chaos.isMultiClient and Chaos.isMultiClient(m) then
+			player:sendCancelMessage(m:getName() .. ": " .. Chaos.multiClient.msgDungeon)
+			return false
+		end
 		if m:getCondition(CONDITION_INFIGHT, CONDITIONID_DEFAULT) then
 			player:sendCancelMessage(m:getName() .. " is in a fight.")
 			return false
@@ -390,6 +394,10 @@ function ChaosTowerRun.start(player)
 		end
 	end, cfg.startDelay * 1000, slot)
 	return true
+end
+
+function ChaosTowerRun.isInside(player)
+	return runOf[player:getId()] ~= nil
 end
 
 function ChaosTowerRun.leave(player)

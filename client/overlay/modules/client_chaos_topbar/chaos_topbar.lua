@@ -128,6 +128,7 @@ local CATEGORIES = {
     { text = 'Skills',             icon = 'skills',      modules = { 'game_skills' },    fns = { 'toggle' } },
     { text = 'Inventory',          icon = 'inventory',   modules = { 'game_inventory' }, fns = { 'toggle' } },
     { text = 'Spell List',         icon = 'spells',      modules = { 'game_tibia_spelllist', 'game_spells', 'game_spelllist' }, fns = { 'toggle' } },
+    { text = 'Spellbook',          icon = 'spells',      modules = { 'game_spellbook' }, fns = { 'toggle' } },
     { text = 'Passive Tree',       icon = 'passivetree', modules = { 'game_passivetree' }, fns = { 'toggle' } },
     { text = 'Outfit',             icon = 'inventory',   custom = function() g_game.requestOutfit() end },
     { text = 'Blessings',          icon = 'help',        modules = { 'game_blessing' },  fns = { 'toggle', 'show' } },

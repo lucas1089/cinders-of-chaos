@@ -140,6 +140,16 @@ function ChaosSpell.canAttack(caster, target)
 	if targetPlayer:hasSecureMode() then
 		return false
 	end
+	-- multi-client: a character with another character online from its IP cannot attack players
+	-- (data/scripts/chaos/multiclient.lua; same rule, the settings live in chaos_constants.lua)
+	local ip = casterPlayer:getIp()
+	if ip ~= 0 and casterPlayer:getGroup():getId() < 4 and Game.getStorageValue(7100990) ~= 1 then
+		for _, other in ipairs(Game.getPlayers()) do
+			if other ~= casterPlayer and other:getIp() == ip then
+				return false
+			end
+		end
+	end
 	return true
 end
 
