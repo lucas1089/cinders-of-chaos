@@ -1,4 +1,4 @@
--- Frost Nova: ice burst around the caster, chills everything it hits.
+-- Rime Bloom: ice burst around the caster, chills everything it hits.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local combat = Combat()

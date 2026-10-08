@@ -2015,7 +2015,7 @@ function getTreeNodes()
 		{
 			orbit = 2,
 			orbitDist = 120,
-			name = "Wrath of Nature",
+			name = "Wildwood Fury",
 			isUncommon = true,
 			orbitIndex = 135,
 			group = 23,

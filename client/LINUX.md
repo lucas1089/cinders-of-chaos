@@ -7,7 +7,7 @@ and enters the game.
 ```
 sudo apt-get install -y cmake g++ libboost-all-dev libphysfs-dev libogg-dev libvorbis-dev zlib1g-dev libzip-dev \
   libbz2-dev libssl-dev libopenal-dev libglew-dev libluajit-5.1-dev libgl1-mesa-dev libglu1-mesa-dev libx11-dev
-tools/assemble_client.sh <base-client-dir> <game-dir>       # patches (C++ and Lua) + overlay + spell icons
+tools/assemble_client.sh <base-client-dir> <game-dir>       # patches (C++ and Lua) + overlay (incl. spell icon sheets)
 mkdir build && cd build
 cmake <game-dir> -DCMAKE_BUILD_TYPE=Release -DLUAJIT=ON -DPHYSFS_LIBRARY=/usr/lib/x86_64-linux-gnu/libphysfs.so
 make -j$(nproc)

@@ -1,4 +1,4 @@
--- Leaping Strike: jump next to the target (range 5) and strike it with weapon attack and skill.
+-- Vaulting Cleave: jump next to the target (range 5) and strike it with weapon attack and skill.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local combat = Combat()
@@ -23,6 +23,9 @@ function onCastSpell(creature, variant, isHotkey)
 	local target = ChaosSpell.targetOf(variant)
 	if not target or target == player then
 		return ChaosSpell.cancel(player, RETURNVALUE_YOUCANONLYUSEITONCREATURES)
+	end
+	if not ChaosSpell.canAttack(player, target) then
+		return ChaosSpell.cancel(player, RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER)
 	end
 	local from = player:getPosition()
 	local tpos = target:getPosition()

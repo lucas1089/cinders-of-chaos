@@ -1,4 +1,4 @@
--- Ground Slam: shockwave (5x5) that deals physical damage and staggers enemies (heavy slow for 3s).
+-- Earthbreaker: shockwave (5x5) that deals physical damage and staggers enemies (heavy slow for 3s).
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local combat = Combat()

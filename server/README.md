@@ -21,7 +21,7 @@ server/
   data/scripts/chaos/
     chaos_constants.lua               ALL opcodes, storage keys, table names, tunables, shared helpers
     bank.lua  autoloot.lua  daily.lua  notifications.lua  passivetree.lua  passivetree_data.lua
-    dungeons.lua  infinitytower.lua  stash.lua  spell_guard.lua (Iron Will damage reduction of the Warcry spell)
+    dungeons.lua  infinitytower.lua  stash.lua  spell_guard.lua (Iron Will damage reduction of the Iron Bellow spell)
 ```
 
 ## Install
@@ -29,11 +29,14 @@ server/
 1. Copy `server/data/scripts/chaos/` to `<server>/data/scripts/chaos/`.
 2. Run `server/sql/chaos.sql` against the game database (`mysql -u USER -p DB < chaos.sql`).
    Foreign keys assume `players.id` is `int(11) NOT NULL` (stock TFS schema).
-3. Restart the server (or `/reload scripts`). Check the console for Lua errors.
-4. Autoloot only: if `data/talkactions/talkactions.xml` registers `!autoloot` (the legacy
+3. Spells: `python3 -I server/tools/register_spells.py <server>/data` (Chaos spells) and
+   `python3 -I server/tools/rename_spells.py <server>/data --sql rename_spells.sql` (Chaos names for the stock
+   spells and runes; apply the SQL once). See `data/spells/README.md`.
+4. Restart the server (or `/reload scripts`). Check the console for Lua errors.
+5. Autoloot only: if `data/talkactions/talkactions.xml` registers `!autoloot` (the legacy
    `talkactions/scripts/autoloot.lua`), TFS 1.4.2 keeps the XML one and silently ignores
    `autoloot.lua`'s `!autoloot`. Remove that XML line for live window refresh. See "Stubbed or assumed".
-5. Client: apply the client-side gaps listed below, otherwise bank, autoloot, daily and stash
+6. Client: apply the client-side gaps listed below, otherwise bank, autoloot, daily and stash
    cannot talk to the server at all.
 
 `data/scripts/chaos/admin/` and `sql/chaos_admin.sql` are a separate admin-panel module written by another
@@ -181,7 +184,7 @@ Every magic, rare, legendary and boss monster rolls modifiers: magic 1-2, rare 2
 The server also pushes `info` for tiered monsters to players within about 10 tiles every 15 s (from the monster's own 2.5 s tick), so the client can label them in the world without a query.
 
 ## Custom spells and spell effects
-36 spells (`data/spells/chaos/`, installer `tools/register_spells.py`, table in `data/spells/README.md`) and 43 extra magic effects plus 10 projectiles (`data/lib/chaos_fx.lua`, catalog `data/spells/effects_catalog.csv`, merge commands in `data/spells/README_FX.md`). The spells load `chaos_fx.lua` themselves and fall back to standard effects if it is missing, so they work before the merged dat/spr is in use; the custom effects show only with that merged pair on the client. Effect ids above 255 work because the base server sends them as 16 bits and the client profile enables `GameMagicEffectU16`. Not run on a server. The client spell list and action bar need entries and icons for the new spells (see `data/spells/README.md`).
+36 spells (`data/spells/chaos/`, installer `tools/register_spells.py`, table in `data/spells/README.md`) and 43 extra magic effects plus 10 projectiles (`data/lib/chaos_fx.lua`, catalog `data/spells/effects_catalog.csv`, build commands in `data/spells/README_FX.md`). All spell effects are our own procedurally drawn art (`client/tools/sprites/gen_effects.py`): it appends the 43 + 10 and also redraws, at the same ids, the 83 stock effects and 25 stock missiles that spells and spell hits use, so stock spell scripts need no change. The spells load `chaos_fx.lua` themselves and fall back to standard effects if it is missing, so they work before the generated dat/spr is in use; the custom art shows only with that pair on the client. Effect ids above 255 work because the base server sends them as 16 bits and the client profile enables `GameMagicEffectU16`. Not run on a server. The client spell list and action bar need entries and icons for the new spells (see `data/spells/README.md`).
 
 ## Passive tree effects (`passivetree_effects.lua`)
 The tree now has an effect: after every save, reset and login the summed node stats are applied.

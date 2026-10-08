@@ -1,4 +1,4 @@
--- Warcry: taunts every monster within 4 sqm and slows them 25% for 6s. The knight gains Iron Will for 8s:
+-- Iron Bellow: taunts every monster within 4 sqm and slows them 25% for 6s. The knight gains Iron Will for 8s:
 -- 25% less damage taken (data/scripts/chaos/spell_guard.lua) and +15% shielding.
 dofile('data/spells/scripts/chaos/_common.lua')
 

@@ -1,4 +1,4 @@
--- Titan's Wrath: two crushing blows (0 / 0.6s) in a 7x7 circle; enemies are slowed 70% for 4s.
+-- Colossus Fall: two crushing blows (0 / 0.6s) in a 7x7 circle; enemies are slowed 70% for 4s.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local combat = Combat()

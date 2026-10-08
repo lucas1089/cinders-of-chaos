@@ -58,6 +58,35 @@ function ChaosSpell.skillValues(player, skillId, mult, baseMin, baseMax)
 	return l + s * mult * 0.6 + baseMin, l + s * mult + baseMax
 end
 
+-- Attack of the wielded distance weapon, the way the engine adds it up: bow/crossbow attack + ammunition attack,
+-- or the attack of a throwing weapon. Item attack attributes (rarity rolls) win over the item type value.
+-- Never below 20 (an empty hand), so the spells still do something without a weapon.
+local function itemAttack(item)
+	local a = item:getAttribute(ITEM_ATTRIBUTE_ATTACK)
+	if not a or a == 0 then
+		a = ItemType(item:getId()):getAttack()
+	end
+	return a or 0
+end
+
+function ChaosSpell.distanceAttack(player)
+	for _, slot in ipairs({CONST_SLOT_LEFT, CONST_SLOT_RIGHT}) do
+		local item = player:getSlotItem(slot)
+		local it = item and ItemType(item:getId())
+		if it and it:getWeaponType() == WEAPON_DISTANCE then
+			local attack = itemAttack(item)
+			if it:getAmmoType() ~= 0 then
+				local ammo = player:getSlotItem(CONST_SLOT_AMMO)
+				if ammo and ItemType(ammo:getId()):getAmmoType() == it:getAmmoType() then
+					attack = attack + itemAttack(ammo)
+				end
+			end
+			return math.max(20, attack)
+		end
+	end
+	return 20
+end
+
 function ChaosSpell.bestMeleeSkill(player)
 	local best = SKILL_SWORD
 	local bestValue = -1
@@ -75,6 +104,45 @@ function ChaosSpell.spectators(pos, radius, onlyPlayers)
 end
 
 -- A monster the caster may hit with manually looped spells (never the caster's own summons).
+-- PvP rules for damage the scripts deal themselves (doTargetCombat skips the engine's checks): the same rules as
+-- Combat::canDoCombat plus this server's Creature:onTargetCombat (a player in secure mode cannot be attacked,
+-- party members cannot hit each other). Monsters and their summons are always fair game here.
+function ChaosSpell.canAttack(caster, target)
+	if not target or target == caster or target:getHealth() <= 0 then
+		return false
+	end
+	local targetPlayer = target:getPlayer()
+	if not targetPlayer then
+		return true
+	end
+	local master = caster:getMaster()
+	local casterPlayer = caster:getPlayer() or (master and master:getPlayer())
+	if not casterPlayer then
+		return true
+	end
+	if casterPlayer == targetPlayer or Game.getWorldType() == WORLD_TYPE_NO_PVP then
+		return false
+	end
+	for _, pos in ipairs({targetPlayer:getPosition(), casterPlayer:getPosition()}) do
+		local tile = Tile(pos)
+		if tile and (tile:hasFlag(TILESTATE_PROTECTIONZONE) or tile:hasFlag(TILESTATE_NOPVPZONE)) then
+			return false
+		end
+	end
+	local protection = configManager.getNumber(configKeys.PROTECTION_LEVEL)
+	if targetPlayer:getLevel() < protection or casterPlayer:getLevel() < protection then
+		return false
+	end
+	local party = casterPlayer:getParty()
+	if party and party == targetPlayer:getParty() then
+		return false
+	end
+	if targetPlayer:hasSecureMode() then
+		return false
+	end
+	return true
+end
+
 function ChaosSpell.isEnemy(caster, target)
 	if not target or target == caster or not target:isMonster() then
 		return false
@@ -216,7 +284,10 @@ function ChaosSpell.slow(target, ticks, percent)
 end
 
 function ChaosSpell.damageTarget(caster, target, ctype, min, max, effect)
-	doTargetCombat(caster, target, ctype, -math.floor(min), -math.floor(max), effect)
+	if not ChaosSpell.canAttack(caster, target) then
+		return false
+	end
+	return doTargetCombat(caster, target, ctype, -math.floor(min), -math.floor(max), effect)
 end
 
 function ChaosSpell.healTarget(caster, target, min, max, effect)

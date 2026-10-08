@@ -1,4 +1,4 @@
--- Whirlwind: three spinning strikes (0 / 0.4 / 0.8s) against everything adjacent. Uses weapon attack and skill.
+-- Reaping Gyre: three spinning strikes (0 / 0.4 / 0.8s) against everything adjacent. Uses weapon attack and skill.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local combat = Combat()

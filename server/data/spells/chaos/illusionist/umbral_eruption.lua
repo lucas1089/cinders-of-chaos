@@ -1,4 +1,4 @@
--- Umbral Eruption: shadows gather for 0.9s, then erupt in a 7x7 circle around the cast position.
+-- Nightburst: shadows gather for 0.9s, then erupt in a 7x7 circle around the cast position.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local area = createCombatArea(AREA_CIRCLE3X3)

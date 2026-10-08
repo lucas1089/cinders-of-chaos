@@ -1,4 +1,4 @@
--- Crimson Fury: +30% melee skill, -30% shield skill for 12s. (Named so it does not clash with the stock "Blood Rage".)
+-- Red Frenzy: +30% melee skill, -30% shield skill for 12s. (Not the stock Bloodlust.)
 dofile('data/spells/scripts/chaos/_common.lua')
 
 function onCastSpell(creature, variant, isHotkey)

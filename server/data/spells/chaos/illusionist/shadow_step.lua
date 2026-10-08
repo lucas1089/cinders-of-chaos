@@ -1,4 +1,4 @@
--- Shadow Step: teleport to the far side of the target (range 5) and stab it with death damage.
+-- Umbral Stride: teleport to the far side of the target (range 5) and stab it with death damage.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 function onCastSpell(creature, variant, isHotkey)
@@ -9,6 +9,9 @@ function onCastSpell(creature, variant, isHotkey)
 	local target = ChaosSpell.targetOf(variant)
 	if not target or target == player then
 		return ChaosSpell.cancel(player, RETURNVALUE_YOUCANONLYUSEITONCREATURES)
+	end
+	if not ChaosSpell.canAttack(player, target) then
+		return ChaosSpell.cancel(player, RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER)
 	end
 	local from = player:getPosition()
 	local tpos = target:getPosition()

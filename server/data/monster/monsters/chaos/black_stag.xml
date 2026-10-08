@@ -28,7 +28,7 @@
 		<attack name="physical" interval="2000" chance="38" length="3" spread="0" min="-3500" max="-6000">
 			<attribute key="areaEffect" value="groundshaker"/>
 		</attack>
-		<attack name="fear" interval="4000" chance="40" radius="4" target="0" success="35" duration="5000">
+		<attack name="dread" interval="4000" chance="40" radius="4" target="0" success="35" duration="5000">
 			<attribute key="areaEffect" value="rednote"/>
 		</attack>
 		<attack name="physical" interval="2000" chance="30" radius="3" target="0" min="-3500" max="-6000">

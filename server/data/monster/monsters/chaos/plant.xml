@@ -21,7 +21,7 @@
 		<attack name="earth" interval="2000" radius="6" target="0" min="-25000" max="-31000">
 			<attribute key="areaEffect" value="poison"/>
 		</attack>
-		<attack name="fear" interval="2000" chance="25" radius="4" target="0" success="35" duration="5000">
+		<attack name="dread" interval="2000" chance="25" radius="4" target="0" success="35" duration="5000">
 			<attribute key="areaEffect" value="rednote"/>
 		</attack>
 		<attack name="earth" interval="2000" chance="30" range="7" target="1" min="-25000" max="-35000">

@@ -1,4 +1,4 @@
--- Reality Rift: drags monsters within 5 sqm next to the caster (monsters over 20000 max health are not moved),
+-- Tear in the Weave: drags monsters within 5 sqm next to the caster (monsters over 20000 max health are not moved),
 -- then two arcane-death implosions at 0.6s and 1.2s.
 dofile('data/spells/scripts/chaos/_common.lua')
 

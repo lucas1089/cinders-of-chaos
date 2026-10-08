@@ -1,134 +1,134 @@
 <!-- Chaos spells. Script paths are relative to data/spells/scripts (run tools/register_spells.py). -->
 	<!-- sorcerer -->
-	<instant group="attack" spellid="410" name="Frost Nova" words="exevo frigo nova" level="20" mana="120" premium="0" selftarget="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/frost_nova.lua">
+	<instant group="attack" spellid="200" name="Rime Bloom" words="exevo frigo nova" level="20" mana="120" premium="0" selftarget="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/frost_nova.lua">
 		<vocation name="Sorcerer" />
 		<vocation name="Master Sorcerer" />
 	</instant>
-	<instant group="attack" spellid="411" name="Hexfire Bolt" words="exori flam hex" level="30" mana="70" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="4000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/hexfire_bolt.lua">
+	<instant group="attack" spellid="201" name="Witchfire Bolt" words="exori flam hex" level="30" mana="70" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="4000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/hexfire_bolt.lua">
 		<vocation name="Sorcerer" />
 		<vocation name="Master Sorcerer" />
 	</instant>
-	<instant group="attack" spellid="412" name="Chain Lightning" words="exori vis catena" level="50" mana="200" premium="0" range="6" needtarget="1" blockwalls="1" cooldown="7000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/chain_lightning.lua">
+	<instant group="attack" spellid="202" name="Forked Storm" words="exori vis catena" level="50" mana="200" premium="0" range="6" needtarget="1" blockwalls="1" cooldown="7000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/chain_lightning.lua">
 		<vocation name="Sorcerer" />
 		<vocation name="Master Sorcerer" />
 	</instant>
-	<instant group="support" spellid="413" name="Blood Pact" words="utamo mort sanguis" level="90" mana="50" premium="1" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/blood_pact.lua">
+	<instant group="support" spellid="203" name="Crimson Covenant" words="utamo mort sanguis" level="90" mana="50" premium="1" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/blood_pact.lua">
 		<vocation name="Sorcerer" />
 		<vocation name="Master Sorcerer" />
 	</instant>
-	<instant group="attack" spellid="414" name="Meteor Strike" words="exevo gran mas pyra" level="150" mana="700" premium="1" range="7" needtarget="1" blockwalls="1" cooldown="20000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/meteor_strike.lua">
+	<instant group="attack" spellid="204" name="Falling Pyre" words="exevo gran mas pyra" level="150" mana="700" premium="1" range="7" needtarget="1" blockwalls="1" cooldown="20000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/meteor_strike.lua">
 		<vocation name="Sorcerer" />
 		<vocation name="Master Sorcerer" />
 	</instant>
-	<instant group="attack" spellid="415" name="Glacial Tomb" words="exevo gran mas frigo tumba" level="220" mana="900" premium="1" range="7" needtarget="1" blockwalls="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/glacial_tomb.lua">
+	<instant group="attack" spellid="205" name="Frozen Crypt" words="exevo gran mas frigo tumba" level="220" mana="900" premium="1" range="7" needtarget="1" blockwalls="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/glacial_tomb.lua">
 		<vocation name="Master Sorcerer" />
 	</instant>
-	<instant group="attack" spellid="416" name="Cataclysm" words="exevo vis pyra cataclysmus" level="300" mana="1500" premium="1" selftarget="1" cooldown="45000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/cataclysm.lua">
+	<instant group="attack" spellid="206" name="Doomtide" words="exevo vis pyra cataclysmus" level="300" mana="1500" premium="1" selftarget="1" cooldown="45000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/cataclysm.lua">
 		<vocation name="Master Sorcerer" />
 	</instant>
 	<!-- druid -->
-	<instant group="attack" spellid="417" name="Venom Swarm" words="exevo pox vermis" level="25" mana="110" premium="0" selftarget="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/druid/venom_swarm.lua">
+	<instant group="attack" spellid="207" name="Blightswarm" words="exevo pox vermis" level="25" mana="110" premium="0" selftarget="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/druid/venom_swarm.lua">
 		<vocation name="Druid" />
 		<vocation name="Elder Druid" />
 	</instant>
-	<instant group="healing" spellid="418" name="Cleansing Spring" words="exura mas fons" level="40" mana="160" premium="0" aggressive="0" selftarget="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/druid/cleansing_spring.lua">
+	<instant group="healing" spellid="208" name="Purifying Wellspring" words="exura mas fons" level="40" mana="160" premium="0" aggressive="0" selftarget="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/druid/cleansing_spring.lua">
 		<vocation name="Druid" />
 		<vocation name="Elder Druid" />
 	</instant>
-	<instant group="support" spellid="419" name="Barkskin" words="utamo vita cortex" level="60" mana="140" premium="1" aggressive="0" selftarget="1" cooldown="25000" groupcooldown="2000" needlearn="0" script="chaos/druid/barkskin.lua">
+	<instant group="support" spellid="209" name="Ironbark Hide" words="utamo vita cortex" level="60" mana="140" premium="1" aggressive="0" selftarget="1" cooldown="25000" groupcooldown="2000" needlearn="0" script="chaos/druid/barkskin.lua">
 		<vocation name="Druid" />
 		<vocation name="Elder Druid" />
 	</instant>
-	<instant group="attack" spellid="420" name="Thorn Cage" words="exevo vinculum spina" level="70" mana="240" premium="1" range="6" needtarget="1" blockwalls="1" cooldown="14000" groupcooldown="2000" needlearn="0" script="chaos/druid/thorn_cage.lua">
+	<instant group="attack" spellid="210" name="Briar Prison" words="exevo vinculum spina" level="70" mana="240" premium="1" range="6" needtarget="1" blockwalls="1" cooldown="14000" groupcooldown="2000" needlearn="0" script="chaos/druid/thorn_cage.lua">
 		<vocation name="Druid" />
 		<vocation name="Elder Druid" />
 	</instant>
-	<instant group="support" spellid="421" name="Spirit Wolves" words="utevo lupus spiritus" level="120" mana="450" premium="1" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/druid/spirit_wolves.lua">
+	<instant group="support" spellid="211" name="Moonfang Pack" words="utevo lupus spiritus" level="120" mana="450" premium="1" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/druid/spirit_wolves.lua">
 		<vocation name="Druid" />
 		<vocation name="Elder Druid" />
 	</instant>
-	<instant group="healing" spellid="422" name="Rejuvenating Grove" words="exura gran mas silva" level="180" mana="600" premium="1" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/druid/rejuvenating_grove.lua">
+	<instant group="healing" spellid="212" name="Verdant Sanctuary" words="exura gran mas silva" level="180" mana="600" premium="1" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/druid/rejuvenating_grove.lua">
 		<vocation name="Druid" />
 		<vocation name="Elder Druid" />
 	</instant>
-	<instant group="attack" spellid="423" name="Ancient Tempest" words="exevo gran mas tempestas" level="250" mana="1200" premium="1" selftarget="1" cooldown="35000" groupcooldown="2000" needlearn="0" script="chaos/druid/ancient_tempest.lua">
+	<instant group="attack" spellid="213" name="Primordial Squall" words="exevo gran mas tempestas" level="250" mana="1200" premium="1" selftarget="1" cooldown="35000" groupcooldown="2000" needlearn="0" script="chaos/druid/ancient_tempest.lua">
 		<vocation name="Elder Druid" />
 	</instant>
 	<!-- paladin -->
-	<instant group="attack" spellid="424" name="Holy Smite" words="exori san ictus" level="30" mana="60" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="3000" groupcooldown="2000" needlearn="0" script="chaos/paladin/holy_smite.lua">
+	<instant group="attack" spellid="214" name="Dawnpiercer" words="exori san ictus" level="30" mana="60" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="3000" groupcooldown="2000" needlearn="0" script="chaos/paladin/holy_smite.lua">
 		<vocation name="Paladin" />
 		<vocation name="Royal Paladin" />
 	</instant>
-	<instant group="attack" spellid="425" name="Piercing Volley" words="exori con transfixio" level="60" mana="150" premium="1" direction="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/paladin/piercing_volley.lua">
+	<instant group="attack" spellid="215" name="Skewering Line" words="exori con transfixio" level="60" mana="150" premium="1" direction="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/paladin/piercing_volley.lua">
 		<vocation name="Paladin" />
 		<vocation name="Royal Paladin" />
 	</instant>
-	<instant group="attack" spellid="426" name="Consecration" words="exevo mas san sacratum" level="100" mana="350" premium="1" selftarget="1" cooldown="24000" groupcooldown="2000" needlearn="0" script="chaos/paladin/consecration.lua">
+	<instant group="attack" spellid="216" name="Blessed Earth" words="exevo mas san sacratum" level="100" mana="350" premium="1" selftarget="1" cooldown="24000" groupcooldown="2000" needlearn="0" script="chaos/paladin/consecration.lua">
 		<vocation name="Paladin" />
 		<vocation name="Royal Paladin" />
 	</instant>
-	<instant group="support" spellid="427" name="Divine Ward" words="utamo san aegis" level="140" mana="300" premium="1" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/paladin/divine_ward.lua">
+	<instant group="support" spellid="217" name="Lightward" words="utamo san aegis" level="140" mana="300" premium="1" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/paladin/divine_ward.lua">
 		<vocation name="Paladin" />
 		<vocation name="Royal Paladin" />
 	</instant>
-	<instant group="attack" spellid="428" name="Judgement" words="exori gran san iudex" level="200" mana="450" premium="1" range="6" needtarget="1" blockwalls="1" cooldown="14000" groupcooldown="2000" needlearn="0" script="chaos/paladin/judgement.lua">
+	<instant group="attack" spellid="218" name="Final Verdict" words="exori gran san iudex" level="200" mana="450" premium="1" range="6" needtarget="1" blockwalls="1" cooldown="14000" groupcooldown="2000" needlearn="0" script="chaos/paladin/judgement.lua">
 		<vocation name="Paladin" />
 		<vocation name="Royal Paladin" />
 	</instant>
-	<instant group="attack" spellid="429" name="Sanctified Barrage" words="exevo gran mas san sagitta" level="280" mana="800" premium="1" range="7" needtarget="1" blockwalls="1" cooldown="24000" groupcooldown="2000" needlearn="0" script="chaos/paladin/sanctified_barrage.lua">
+	<instant group="attack" spellid="219" name="Hail of Dawn" words="exevo gran mas san sagitta" level="280" mana="800" premium="1" range="7" needtarget="1" blockwalls="1" cooldown="24000" groupcooldown="2000" needlearn="0" script="chaos/paladin/sanctified_barrage.lua">
 		<vocation name="Paladin" />
 		<vocation name="Royal Paladin" />
 	</instant>
 	<!-- knight -->
-	<instant group="attack" spellid="430" name="Whirlwind" words="exori gyro" level="30" mana="80" premium="0" selftarget="1" needweapon="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/knight/whirlwind.lua">
+	<instant group="attack" spellid="220" name="Reaping Gyre" words="exori gyro" level="30" mana="80" premium="0" selftarget="1" needweapon="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/knight/whirlwind.lua">
 		<vocation name="Knight" />
 		<vocation name="Elite Knight" />
 	</instant>
-	<instant group="attack" spellid="431" name="Ground Slam" words="exori terra fragor" level="60" mana="150" premium="1" selftarget="1" needweapon="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/knight/ground_slam.lua">
+	<instant group="attack" spellid="221" name="Earthbreaker" words="exori terra fragor" level="60" mana="150" premium="1" selftarget="1" needweapon="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/knight/ground_slam.lua">
 		<vocation name="Knight" />
 		<vocation name="Elite Knight" />
 	</instant>
-	<instant group="support" spellid="432" name="Crimson Fury" words="utito tempo sanguis" level="100" mana="300" premium="1" aggressive="0" selftarget="1" cooldown="40000" groupcooldown="2000" needlearn="0" script="chaos/knight/crimson_fury.lua">
+	<instant group="support" spellid="222" name="Red Frenzy" words="utito tempo sanguis" level="100" mana="300" premium="1" aggressive="0" selftarget="1" cooldown="40000" groupcooldown="2000" needlearn="0" script="chaos/knight/crimson_fury.lua">
 		<vocation name="Knight" />
 		<vocation name="Elite Knight" />
 	</instant>
-	<instant group="support" spellid="433" name="Warcry" words="exeta mas clamor" level="120" mana="200" premium="1" aggressive="0" selftarget="1" cooldown="20000" groupcooldown="2000" needlearn="0" script="chaos/knight/warcry.lua">
+	<instant group="support" spellid="223" name="Iron Bellow" words="exeta mas clamor" level="120" mana="200" premium="1" aggressive="0" selftarget="1" cooldown="20000" groupcooldown="2000" needlearn="0" script="chaos/knight/warcry.lua">
 		<vocation name="Knight" />
 		<vocation name="Elite Knight" />
 	</instant>
-	<instant group="attack" spellid="434" name="Leaping Strike" words="exori ico saltus" level="170" mana="250" premium="1" range="5" needweapon="1" needtarget="1" blockwalls="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/knight/leaping_strike.lua">
+	<instant group="attack" spellid="224" name="Vaulting Cleave" words="exori ico saltus" level="170" mana="250" premium="1" range="5" needweapon="1" needtarget="1" blockwalls="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/knight/leaping_strike.lua">
 		<vocation name="Knight" />
 		<vocation name="Elite Knight" />
 	</instant>
-	<instant group="attack" spellid="435" name="Titan's Wrath" words="exori gran mas ruina" level="260" mana="650" premium="1" selftarget="1" needweapon="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/knight/titans_wrath.lua">
+	<instant group="attack" spellid="225" name="Colossus Fall" words="exori gran mas ruina" level="260" mana="650" premium="1" selftarget="1" needweapon="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/knight/titans_wrath.lua">
 		<vocation name="Knight" />
 		<vocation name="Elite Knight" />
 	</instant>
 	<!-- illusionist -->
-	<instant group="support" spellid="436" name="Mirror Image" words="exevo spectrum" level="40" mana="250" premium="0" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/mirror_image.lua">
+	<instant group="support" spellid="226" name="Hall of Mirrors" words="exevo spectrum" level="40" mana="250" premium="0" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/mirror_image.lua">
 		<vocation name="Illusionist" />
 		<vocation name="Arch Illusionist" />
 	</instant>
-	<instant group="attack" spellid="437" name="Shadow Step" words="utani mort umbra" level="70" mana="120" premium="1" range="5" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/shadow_step.lua">
+	<instant group="attack" spellid="227" name="Umbral Stride" words="utani mort umbra" level="70" mana="120" premium="1" range="5" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/shadow_step.lua">
 		<vocation name="Illusionist" />
 		<vocation name="Arch Illusionist" />
 	</instant>
-	<instant group="attack" spellid="438" name="Mind Fracture" words="exori mens fractura" level="110" mana="200" premium="1" range="4" needtarget="1" blockwalls="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/mind_fracture.lua">
+	<instant group="attack" spellid="228" name="Shattered Psyche" words="exori mens fractura" level="110" mana="200" premium="1" range="4" needtarget="1" blockwalls="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/mind_fracture.lua">
 		<vocation name="Illusionist" />
 		<vocation name="Arch Illusionist" />
 	</instant>
-	<instant group="support" spellid="439" name="Phantom Veil" words="utana phantasma" level="150" mana="350" premium="1" aggressive="0" selftarget="1" cooldown="35000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/phantom_veil.lua">
+	<instant group="support" spellid="229" name="Wraithshroud" words="utana phantasma" level="150" mana="350" premium="1" aggressive="0" selftarget="1" cooldown="35000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/phantom_veil.lua">
 		<vocation name="Illusionist" />
 		<vocation name="Arch Illusionist" />
 	</instant>
-	<instant group="attack" spellid="440" name="Umbral Eruption" words="exevo gran mas umbra" level="210" mana="900" premium="1" selftarget="1" cooldown="25000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/umbral_eruption.lua">
+	<instant group="attack" spellid="230" name="Nightburst" words="exevo gran mas umbra" level="210" mana="900" premium="1" selftarget="1" cooldown="25000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/umbral_eruption.lua">
 		<vocation name="Arch Illusionist" />
 	</instant>
-	<instant group="attack" spellid="441" name="Reality Rift" words="exevo vis rift" level="280" mana="1300" premium="1" selftarget="1" cooldown="40000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/reality_rift.lua">
+	<instant group="attack" spellid="231" name="Tear in the Weave" words="exevo vis rift" level="280" mana="1300" premium="1" selftarget="1" cooldown="40000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/reality_rift.lua">
 		<vocation name="Arch Illusionist" />
 	</instant>
 	<!-- shared -->
-	<instant group="support" spellid="442" name="Blink Dash" words="exani celer" level="35" mana="80" premium="0" aggressive="0" selftarget="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/shared/blink_dash.lua">
+	<instant group="support" spellid="232" name="Flickerdash" words="exani celer" level="35" mana="80" premium="0" aggressive="0" selftarget="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/shared/blink_dash.lua">
 		<vocation name="Sorcerer" />
 		<vocation name="Druid" />
 		<vocation name="Paladin" />
@@ -140,7 +140,7 @@
 		<vocation name="Illusionist" />
 		<vocation name="Arch Illusionist" />
 	</instant>
-	<instant group="support" spellid="443" name="Rallying Cry" words="utamo mas vox" level="60" mana="250" premium="1" aggressive="0" selftarget="1" cooldown="35000" groupcooldown="2000" needlearn="0" script="chaos/shared/rallying_cry.lua">
+	<instant group="support" spellid="233" name="Banner Call" words="utamo mas vox" level="60" mana="250" premium="1" aggressive="0" selftarget="1" cooldown="35000" groupcooldown="2000" needlearn="0" script="chaos/shared/rallying_cry.lua">
 		<vocation name="Sorcerer" />
 		<vocation name="Druid" />
 		<vocation name="Paladin" />
@@ -152,7 +152,7 @@
 		<vocation name="Illusionist" />
 		<vocation name="Arch Illusionist" />
 	</instant>
-	<instant group="support" spellid="444" name="Soul Aegis" words="utamo anima" level="80" mana="150" premium="1" aggressive="0" selftarget="1" cooldown="40000" groupcooldown="2000" needlearn="0" script="chaos/shared/soul_aegis.lua">
+	<instant group="support" spellid="234" name="Soulward" words="utamo anima" level="80" mana="150" premium="1" aggressive="0" selftarget="1" cooldown="40000" groupcooldown="2000" needlearn="0" script="chaos/shared/soul_aegis.lua">
 		<vocation name="Sorcerer" />
 		<vocation name="Druid" />
 		<vocation name="Paladin" />
@@ -164,7 +164,7 @@
 		<vocation name="Illusionist" />
 		<vocation name="Arch Illusionist" />
 	</instant>
-	<instant group="support" spellid="445" name="Sense Prey" words="exani sensus" level="25" mana="40" premium="0" aggressive="0" selftarget="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/shared/sense_prey.lua">
+	<instant group="support" spellid="235" name="Hunter's Instinct" words="exani sensus" level="25" mana="40" premium="0" aggressive="0" selftarget="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/shared/sense_prey.lua">
 		<vocation name="Sorcerer" />
 		<vocation name="Druid" />
 		<vocation name="Paladin" />

@@ -1,4 +1,4 @@
--- Cleansing Spring: heals the caster, party members and own summons within 3 sqm and removes harmful conditions.
+-- Purifying Wellspring: heals the caster, party members and own summons within 3 sqm and removes harmful conditions.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local CLEANSE = {

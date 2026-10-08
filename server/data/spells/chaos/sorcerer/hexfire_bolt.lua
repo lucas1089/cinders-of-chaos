@@ -1,4 +1,4 @@
--- Hexfire Bolt: single target fire bolt that leaves the target burning.
+-- Witchfire Bolt: single target fire bolt that leaves the target burning.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local combat = Combat()

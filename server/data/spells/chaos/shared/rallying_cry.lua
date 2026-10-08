@@ -1,4 +1,4 @@
--- Rallying Cry: caster and party members within 5 sqm get +10% melee/distance/magic and speed for 12s.
+-- Banner Call: caster and party members within 5 sqm get +10% melee/distance/magic and speed for 12s.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local function buff(target)

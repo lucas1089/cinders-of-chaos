@@ -1,4 +1,4 @@
--- Ancient Tempest: three waves (earth, ice, earth) around the caster, the ice wave chills.
+-- Primordial Squall: three waves (earth, ice, earth) around the caster, the ice wave chills.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local area = createCombatArea(AREA_CIRCLE5X5)

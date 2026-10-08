@@ -1,4 +1,4 @@
--- Rejuvenating Grove: a healing zone on the caster's tile; 8 pulses (1/s) heal allies standing within 3 sqm.
+-- Verdant Sanctuary: a healing zone on the caster's tile; 8 pulses (1/s) heal allies standing within 3 sqm.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 function onCastSpell(creature, variant, isHotkey)

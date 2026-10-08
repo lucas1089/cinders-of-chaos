@@ -1,4 +1,4 @@
--- Piercing Volley: a 7 sqm line of spears hitting everything in it. Scales with distance skill.
+-- Skewering Line: a 7 sqm line of spears hitting everything in it. Scales with distance skill x weapon attack.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local combat = Combat()
@@ -8,9 +8,9 @@ combat:setParameter(COMBAT_PARAM_BLOCKARMOR, true)
 combat:setArea(createCombatArea(AREA_BEAM7))
 
 function onGetFormulaValues(player, skill, attack, factor)
-	local dist = player:getEffectiveSkillLevel(SKILL_DISTANCE)
-	local min = (player:getLevel() / 5) + (dist * 1.5) + 20
-	local max = (player:getLevel() / 5) + (dist * 2.5) + 40
+	local power = player:getEffectiveSkillLevel(SKILL_DISTANCE) * ChaosSpell.distanceAttack(player)
+	local min = (player:getLevel() / 5) + (power * 0.0195) + 20
+	local max = (player:getLevel() / 5) + (power * 0.0325) + 40
 	return -min, -max
 end
 

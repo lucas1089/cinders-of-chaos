@@ -1,4 +1,4 @@
--- Thorn Cage: thorns erupt around the target for 3 pulses, rooting enemies in a 3x3 for 5s.
+-- Briar Prison: thorns erupt around the target for 3 pulses, rooting enemies in a 3x3 for 5s.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local area = createCombatArea(AREA_SQUARE1X1)

@@ -1,4 +1,4 @@
--- Venom Swarm: toxic cloud around the caster, poisons everything it hits.
+-- Blightswarm: toxic cloud around the caster, poisons everything it hits.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local combat = Combat()

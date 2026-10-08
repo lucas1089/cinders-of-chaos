@@ -1,5 +1,5 @@
 -- spell_guard.lua: damage reduction granted by chaos spells.
--- Iron Will (Warcry, knights): while the condition with sub id 71009 (ChaosSpell.SUBID.iron_will in
+-- Iron Will (Iron Bellow, knights): while the condition with sub id 71009 (ChaosSpell.SUBID.iron_will in
 -- data/spells/scripts/chaos/_common.lua) is on the player, health damage taken is reduced by 25%.
 -- The spells run in another Lua state, so the condition itself is the shared signal.
 

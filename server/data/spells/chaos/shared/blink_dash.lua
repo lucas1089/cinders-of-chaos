@@ -1,4 +1,4 @@
--- Blink Dash: dash up to 4 sqm in the facing direction (stops at the first blocked tile) plus 2.5s of speed.
+-- Flickerdash: dash up to 4 sqm in the facing direction (stops at the first blocked tile) plus 2.5s of speed.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local MAX_STEPS = 4

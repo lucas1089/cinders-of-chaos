@@ -20,13 +20,7 @@ rm -f "$OUT/mods/game_helper/cavebot_panel.lua" "$OUT/mods/game_helper/scripting
   "$OUT/mods/game_helper/scripting_actions.lua" "$OUT/mods/game_helper/scripting_compat.lua"
 cp -a "$HERE"/overlay/modules/. "$OUT/modules/"
 cp -a "$HERE"/overlay/data/. "$OUT/data/"
-# the Chaos spell icons go into the client's spell icon sheets (cells 201..236; needs python3 with Pillow)
-ICONS=$(mktemp -d)
-python3 -I "$HERE/tools/gen_spell_icons.py" "$ICONS"
-for spec in "32x32:32:32:32" "22x24:22x24:22:24" "20x20:20:20:20"; do
-  IFS=: read sheet dir w h <<< "$spec"
-  f="$OUT/data/images/game/spells/spell-icons-$sheet.png"
-  if [ -f "$f" ]; then python3 -I "$HERE/tools/append_spell_icons.py" "$f" "$ICONS/$dir" 201 "$w" "$h" "$f"; else echo "warning: $f not found, icons for $sheet not added"; fi
-done
+# (the overlay's data/images/game/spells/spell-icons-*.png are complete generated sheets, Chaos spells at cells
+#  201..236 included, and replace the base ones; regenerate them with tools/gen_all_spell_icons.py)
 mkdir -p "$OUT/data/things/1098"
 echo "Done. Put Tibia.spr and Tibia.dat (10.98) in $OUT/data/things/1098/, then build with CMake."

@@ -1,4 +1,4 @@
--- Mind Fracture: death damage bolt, then a cursing damage-over-time and a short slow.
+-- Shattered Psyche: death damage bolt, then a cursing damage-over-time and a short slow.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local combat = Combat()

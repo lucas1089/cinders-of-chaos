@@ -29,7 +29,7 @@
     </script>
 	<attacks>
 		<attack name="melee" interval="2000" min="-1100" max="-1700"/>
-		<attack name="terra strike" interval="2000" min="-1300" max="-2000"/>
+		<attack name="thornlash" interval="2000" min="-1300" max="-2000"/>
 		<attack name="death wave" interval="2000" min="-1300" max="-2000"/>
 	</attacks>
 

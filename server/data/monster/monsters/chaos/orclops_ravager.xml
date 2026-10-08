@@ -25,7 +25,7 @@
 	</script>
 	<attacks>
 		<attack name="melee" interval="2000" min="-1800" max="-2800"/>
-		<attack name="Berserk" interval="2000" chance="30" min="-1300" max="-2300"/>
+		<attack name="Reaver's Spin" interval="2000" chance="30" min="-1300" max="-2300"/>
 		<attack name="physical" interval="2000" chance="20" range="7" min="-1200" max="-2200">
 			<attribute key="shootEffect" value="smallstone" />
 		</attack>

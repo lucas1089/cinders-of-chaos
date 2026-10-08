@@ -135,18 +135,18 @@ GLYPH = {k: v for k, v in globals().items() if callable(v) and k in (
     'ring', 'sword', 'slam', 'wave', 'arrowup', 'hammer', 'twin', 'dash', 'eye', 'ghost', 'rift', 'missile')}
 
 ICONS = [  # (spell name, theme, glyph)
-    ('Frost Nova', 'frost', 'burst'), ('Hexfire Bolt', 'fire', 'missile'), ('Chain Lightning', 'light', 'bolt'),
-    ('Blood Pact', 'blood', 'drop'), ('Meteor Strike', 'fire', 'meteor'), ('Glacial Tomb', 'frost', 'crystal'),
-    ('Cataclysm', 'fire', 'burst'), ('Venom Swarm', 'poison', 'dots'), ('Cleansing Spring', 'water', 'drop'),
-    ('Barkskin', 'nature', 'shield'), ('Thorn Cage', 'nature', 'thorns'), ('Spirit Wolves', 'shadow', 'paw'),
-    ('Rejuvenating Grove', 'nature', 'leaf'), ('Ancient Tempest', 'light', 'swirl'), ('Holy Smite', 'holy', 'cross'),
-    ('Piercing Volley', 'steel', 'arrows'), ('Consecration', 'holy', 'ring'), ('Divine Ward', 'holy', 'shield'),
-    ('Judgement', 'holy', 'sword'), ('Sanctified Barrage', 'holy', 'arrows'), ('Whirlwind', 'steel', 'swirl'),
-    ('Ground Slam', 'ember', 'slam'), ('Crimson Fury', 'blood', 'burst'), ('Warcry', 'ember', 'wave'),
-    ('Leaping Strike', 'steel', 'arrowup'), ("Titan's Wrath", 'ember', 'hammer'), ('Mirror Image', 'arcane', 'twin'),
-    ('Shadow Step', 'shadow', 'dash'), ('Mind Fracture', 'arcane', 'eye'), ('Phantom Veil', 'shadow', 'ghost'),
-    ('Umbral Eruption', 'shadow', 'burst'), ('Reality Rift', 'arcane', 'rift'), ('Blink Dash', 'arcane', 'dash'),
-    ('Rallying Cry', 'holy', 'wave'), ('Soul Aegis', 'arcane', 'shield'), ('Sense Prey', 'poison', 'eye')]
+    ('Rime Bloom', 'frost', 'burst'), ('Witchfire Bolt', 'fire', 'missile'), ('Forked Storm', 'light', 'bolt'),
+    ('Crimson Covenant', 'blood', 'drop'), ('Falling Pyre', 'fire', 'meteor'), ('Frozen Crypt', 'frost', 'crystal'),
+    ('Doomtide', 'fire', 'burst'), ('Blightswarm', 'poison', 'dots'), ('Purifying Wellspring', 'water', 'drop'),
+    ('Ironbark Hide', 'nature', 'shield'), ('Briar Prison', 'nature', 'thorns'), ('Moonfang Pack', 'shadow', 'paw'),
+    ('Verdant Sanctuary', 'nature', 'leaf'), ('Primordial Squall', 'light', 'swirl'), ('Dawnpiercer', 'holy', 'cross'),
+    ('Skewering Line', 'steel', 'arrows'), ('Blessed Earth', 'holy', 'ring'), ('Lightward', 'holy', 'shield'),
+    ('Final Verdict', 'holy', 'sword'), ('Hail of Dawn', 'holy', 'arrows'), ('Reaping Gyre', 'steel', 'swirl'),
+    ('Earthbreaker', 'ember', 'slam'), ('Red Frenzy', 'blood', 'burst'), ('Iron Bellow', 'ember', 'wave'),
+    ('Vaulting Cleave', 'steel', 'arrowup'), ("Colossus Fall", 'ember', 'hammer'), ('Hall of Mirrors', 'arcane', 'twin'),
+    ('Umbral Stride', 'shadow', 'dash'), ('Shattered Psyche', 'arcane', 'eye'), ('Wraithshroud', 'shadow', 'ghost'),
+    ('Nightburst', 'shadow', 'burst'), ('Tear in the Weave', 'arcane', 'rift'), ('Flickerdash', 'arcane', 'dash'),
+    ('Banner Call', 'holy', 'wave'), ('Soulward', 'arcane', 'shield'), ("Hunter's Instinct", 'poison', 'eye')]
 
 def render(theme, glyph):
     c = COL[theme]

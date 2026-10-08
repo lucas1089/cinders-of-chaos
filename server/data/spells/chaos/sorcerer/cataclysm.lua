@@ -1,4 +1,4 @@
--- Cataclysm: three waves (fire, energy, fire) rolling out from the caster over 6x6 area.
+-- Doomtide: three waves (fire, energy, fire) rolling out from the caster over 6x6 area.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local area = createCombatArea(AREA_CIRCLE6X6)

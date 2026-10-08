@@ -49,9 +49,9 @@ return {
 				{kind = "item", id = 8472, count = 100, cost = 15, name = "100 Great Spirit Potions", description = "Restores health and mana."},
 				{kind = "item", id = 8473, count = 100, cost = 20, name = "100 Ultimate Health Potions", description = "Restores a large amount of health."},
 				{kind = "item", id = 26031, count = 100, cost = 30, name = "100 Supreme Health Potions", description = "Restores a huge amount of health."},
-				{kind = "item", id = 2268, count = 100, cost = 20, name = "100 Sudden Death Runes", description = "Death damage to a single target."},
-				{kind = "item", id = 2304, count = 100, cost = 15, name = "100 Great Fireball Runes", description = "Fire damage in an area."},
-				{kind = "item", id = 2273, count = 100, cost = 15, name = "100 Ultimate Healing Runes", description = "Heals a large amount of health."},
+				{kind = "item", id = 2268, count = 100, cost = 20, name = "100 Reaper's Runes", description = "Death damage to a single target."},
+				{kind = "item", id = 2304, count = 100, cost = 15, name = "100 Searing Orb Runes", description = "Fire damage in an area."},
+				{kind = "item", id = 2273, count = 100, cost = 15, name = "100 Grand Mending Runes", description = "Heals a large amount of health."},
 				{kind = "item", id = 2365, count = 1, cost = 50, name = "Backpack of Holding", description = "A backpack with more room than any other."}
 			}
 		},

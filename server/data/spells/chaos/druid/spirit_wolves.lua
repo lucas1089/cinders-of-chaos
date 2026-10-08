@@ -1,4 +1,4 @@
--- Spirit Wolves: summons 2 wolves (3 from level 200) for 40s. Tries "Spirit Wolf", "Winter Wolf", "Wolf" in that order.
+-- Moonfang Pack: summons 2 wolves (3 from level 200) for 40s. Tries "Spirit Wolf", "Winter Wolf", "Wolf" in that order.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local CANDIDATES = {"Spirit Wolf", "Winter Wolf", "Wolf"}

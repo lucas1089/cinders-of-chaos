@@ -1,4 +1,4 @@
--- Glacial Tomb: freezing zone on the target's position, 6 pulses over 5s, enemies inside are heavily slowed.
+-- Frozen Crypt: freezing zone on the target's position, 6 pulses over 5s, enemies inside are heavily slowed.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local area = createCombatArea(AREA_CIRCLE2X2)
