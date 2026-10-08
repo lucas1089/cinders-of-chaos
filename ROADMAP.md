@@ -26,8 +26,8 @@ Estimated today: ~155 h to level 1000 for a sorcerer, ~285 h for a knight or pal
 
 | # | Item | Status | Notes |
 |---|---|---|---|
-| C1 | Vocations: 4 base classes (Warrior, Ranger, Mystic, Thief), each with 2 ascended choices; scripted ascension | todo | migration of existing characters as in `docs/CLASSES.md` |
-| C2 | Thief, Ninja and Samurai: kit, shurikens, stealth, scripted dual wield, counters | todo | the only fully new class |
+| C1 | Vocations: 4 base classes (Warrior, Ranger, Mystic, Thief), each with 2 ascended choices; scripted ascension | in progress (Thief first) | migration of existing characters as in `docs/CLASSES.md` |
+| C2 | Thief, Ninja and Samurai: kit, shurikens, stealth, scripted dual wield, counters | in progress | the only fully new class |
 | C3 | Rework the existing kits into Juggernaut/Berserker, Deadeye/Beastmaster, Elementalist/Illusionist (support) | todo | reuses today's spells and the new keystones |
 | C4 | Passive trees, spell icons, effects and outfits per class; balance at levels 300 and 1000 | todo | |
 | C5 | Necromancer as a fifth class (summoner) | todo | after the first eight are balanced |
