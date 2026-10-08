@@ -70,6 +70,8 @@ Estimated today: ~155 h to level 1000 for a sorcerer, ~285 h for a knight or pal
 
 ## Open decisions and loose ends
 
+- Notification toasts (`game_chaosnotify`) have no background: the code loads `images/background`, the file is
+  `Background.png`. The Daily Reward window also opens over other windows at login.
 - Re-measure the weapon (auto-attack) numbers in `server/data/spells/README.md`: the balance harness sets the
   target with `setTarget`, which skips `onTargetCombat`, so the passive tree and weapon-style damage events were
   never put on the dummies in those runs (two-handed x1.6, dexterity, keystones). Spell numbers are not affected.
