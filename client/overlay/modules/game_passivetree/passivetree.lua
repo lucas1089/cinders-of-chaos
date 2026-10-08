@@ -104,7 +104,7 @@ end
 
 function toggle()
 	if modules.game_passivetree.isVisible() then
-	  close()
+	  hide()
 	else
 	  show()
 	end
@@ -113,7 +113,7 @@ function toggle()
 function changeVocation(button)
 	VocationSelected = button.getText(button):lower()
 
-	createNodes()
+	rebuildTree()
 
 	return 
 end
@@ -221,8 +221,88 @@ function create()
 	return 
 end
 
-function createNodes()
-	local totalNodes = 0
+-- Building the tree: about 620 node widgets, as many connectors and the group backgrounds (~1400 widgets) cost the
+-- client roughly 0.75 s. Done in one go that stalled the whole client, and the client's cycle events (the helper's
+-- 50 ms healing loop) then ran every missed cycle back to back on the same frame clock, each one casting a spell:
+-- 80 to 100 packets in one second, so the server kicked the player (maxPacketsPerSecond 50).
+-- So the widgets are built once per zoom level and vocation, in slices of BUILD_SLICE_MS across frames (a job list,
+-- not a coroutine: the engine's C++ bindings always read the main Lua stack), and an allocation (the server's
+-- sendNodes, or the one kept on zoom) is applied to the built widgets in one pass.
+local BUILD_SLICE_MS = 30
+local nodeWidgets = {} -- [node id] = node widget
+local connectorWidgets = {} -- ["a-b"] = connector widget
+local connectorStyles = {} -- [connector widget] = current style name
+local builtFor = nil -- key (zoom + vocation) of the widgets in nodesView/decoView
+local buildingFor = nil -- key of the build in progress
+local jobs = {} -- queued work (building, then showing an allocation): each job returns true while it has work left
+local jobIndex = 1
+local jobEvent = nil
+local queueJobs, stepJobs
+local buildSliceStart = 0
+local pendingAlloc = nil -- {ids = {..}, block = bool}: applied as soon as the widgets are built
+local statsShown = false -- the bonus list matches the shown allocation
+
+local function nowMs()
+	return g_clock.realMillis and g_clock.realMillis() or g_clock.millis()
+end
+
+local syncBuild = false -- createNodes(): build everything in one go
+
+local function sliceUsed()
+	return not syncBuild and nowMs() - buildSliceStart >= BUILD_SLICE_MS
+end
+
+-- a job that calls fn(item) for every item of list, in order, a slice at a time
+local function slicedJob(list, fn)
+	local i = 1
+	return function()
+		while i <= #list do
+			fn(list[i])
+			i = i + 1
+			if sliceUsed() then
+				return i <= #list
+			end
+		end
+		return false
+	end
+end
+
+local function scaleNodeWidget(child)
+	child.setHeight(child, child.getHeight(child)*SCALE)
+	child.setWidth(child, child.getWidth(child)*SCALE)
+	child.setImageHeight(child, child.getImageHeight(child)*SCALE)
+	child.setImageWidth(child, child.getImageWidth(child)*SCALE)
+	child.setIconWidth(child, child.getIconWidth(child)*SCALE)
+	child.setIconHeight(child, child.getIconHeight(child)*SCALE)
+end
+
+local function scaleDecoWidget(child)
+	child.setHeight(child, child.getHeight(child)*SCALE)
+	child.setWidth(child, child.getWidth(child)*SCALE)
+	child.setImageHeight(child, child.getImageHeight(child)*SCALE)
+	child.setImageWidth(child, child.getImageWidth(child)*SCALE)
+end
+
+local function treeKey()
+	return string.format("%.4f|%s", SCALE, tostring(getPlayerVocation()))
+end
+
+local function destroyChildrenJob(parent)
+	return function()
+		local children = parent:getChildren()
+		for i = #children, 1, -1 do
+			children[i]:destroy()
+			if sliceUsed() then
+				return i > 1
+			end
+		end
+		return false
+	end
+end
+
+-- the jobs that build every widget of the tree at the current SCALE (sizes already scaled), in order
+local function buildTree()
+	local jobs = {}
 
 	if SCALE_MAX <= SCALE then
 		window.zoomPlus:setEnabled(false)
@@ -237,23 +317,21 @@ function createNodes()
 	end
 
 	allocNodes = {}
+	nodeWidgets = {}
+	connectorWidgets = {}
+	connectorStyles = {}
 
-	decoView:destroyChildren()
-	nodesView:destroyChildren()
+	t_insert(jobs, destroyChildrenJob(decoView))
+	t_insert(jobs, destroyChildrenJob(nodesView))
 
 	local widget = nil
 
-	-- for _, static in pairs(treeData.static[getPlayerVocation()]) do
-	-- 	widget = g_ui.createWidget("DecorationCircle", decoView)
-
-	-- 	widget.setMarginLeft(widget, static.x*SCALE)
-	-- 	widget.setMarginTop(widget, static.y*SCALE)
-	-- 	widget.setImageSource(widget, static.file)
-
-	-- 	widget = nil
-	-- end
-
-	for _, group in pairs(treeData.groups) do
+	local groups = {}
+	for key, group in pairs(treeData.groups) do
+		t_insert(groups, {key, group})
+	end
+	t_insert(jobs, slicedJob(groups, function(entry)
+		local _, group = entry[1], entry[2]
 		if group.orbit ~= 0 then
 			widget = g_ui.createWidget("DecorationCircle", decoView)
 
@@ -270,6 +348,7 @@ function createNodes()
 				widget.setText(widget, _)
 			end
 
+			scaleDecoWidget(widget)
 			widget = nil
 
 			if group.mastery then
@@ -288,13 +367,20 @@ function createNodes()
 				if DEBUG then
 					widget.setText(widget, _)
 				end
+				scaleDecoWidget(widget)
 			end
+		end
+	end))
+
+	local NODES_MAX = 700
+	local ids = {}
+	for id = 1, NODES_MAX, 1 do
+		if treeData.nodes[id] then
+			t_insert(ids, id)
 		end
 	end
 
-	local NODES_MAX = 700
-
-	for id = 1, NODES_MAX, 1 do
+	t_insert(jobs, slicedJob(ids, function(id)
 		local node = treeData.nodes[id]
 
 		if node or false then
@@ -319,6 +405,7 @@ function createNodes()
 				widget.setMarginTop(widget, group.y*SCALE)
 				widget.setImageSource(widget, icon.file)
 				widget.setImageClip(widget, icon.x .. " " .. icon.y .. " " .. icon.w .. " " .. icon.h)
+				scaleDecoWidget(widget)
 			else
 				node.alloc = false
 
@@ -329,7 +416,7 @@ function createNodes()
 					local dist = customDist > 0 and customDist or defaultDist
 					node.x = group.x + m_sin(node.angle) * dist
 					node.y = group.y - m_cos(node.angle) * dist
-				end				
+				end
 
 				local nodeClass = "CommonNode"
 
@@ -358,7 +445,7 @@ function createNodes()
 				end
 
 				local tooltipType = 1
-				
+
 				if node.isUncommon then
 					tooltipType = 2
 				elseif node.isRare then
@@ -391,34 +478,35 @@ function createNodes()
 				end
 
 				widget.onClick = onClickNode
+				scaleNodeWidget(widget)
+				nodeWidgets[node.id] = widget
 			end
 
 			nodeMap[node.id] = node
 			widget = nil
-			totalNodes = totalNodes + 1
 		end
-	end
+	end))
 
 	local function BuildConnector(node1, node2)
 		if node1.groupX == node2.groupX and node1.orbit == node2.orbit then
 			if node2.angle < node1.angle then
 			  node1, node2 = node2, node1
 			end
-		
+
 			local angle1 = node1.angle
 			local angle2 = node2.angle
 			local arcAngle = angle2 - angle1
-		
+
 			if arcAngle < 0 then
 			  arcAngle = arcAngle + 2 * m_pi
 			end
-		
+
 			local flip = false
 			if arcAngle > m_pi then
 			  arcAngle = 2 * m_pi - arcAngle
 			  flip = true
 			end
-		
+
 			if arcAngle < m_pi * 0.9 then
 			  local lineType = "Normal"
 			  if node1.alloc and node2.alloc then
@@ -426,27 +514,31 @@ function createNodes()
 			  elseif node1.alloc and not node2.alloc then
 				lineType = "Intermediate"
 			  end
-		
+
 			  local distX = (node2.x - node1.x) / SCALE
 			  local distY = (node2.y - node1.y) / SCALE
 			  local dist  = m_sqrt(distX * distX + distY * distY)
-		
+
 			  local orbitType = getOrbitType(node1.orbit, dist, node1.id)
-			  local widget = g_ui.createWidget("Orbit" .. orbitType .. lineType, decoView)
+			  local style = "Orbit" .. orbitType .. lineType
+			  local widget = g_ui.createWidget(style, decoView)
 			  widget:setId(node1.id .. "-" .. node2.id)
-		
+			  connectorWidgets[node1.id .. "-" .. node2.id] = widget
+			  connectorStyles[widget] = style
+
 			  local avgAngle = angle1 + (arcAngle / 2)
 			  local rotation = (avgAngle * 180 / m_pi) + (flip and -45 or 45)
 			  widget:setRotation(rotation)
-		
+
 			  local midX = (node1.x + node2.x) / 2
 			  local midY = (node1.y + node2.y) / 2
 			  widget:setMarginLeft(midX * SCALE)
 			  widget:setMarginTop(midY * SCALE)
+			  scaleDecoWidget(widget)
 
 				widget = nil
 
-				return 
+				return
 			end
 		end
 
@@ -465,23 +557,28 @@ function createNodes()
     		lineType = "Intermediate"
   		end
 
-  		local widget = g_ui.createWidget("LineConnector" .. lineType, decoView)
+  		local style = "LineConnector" .. lineType
+  		local widget = g_ui.createWidget(style, decoView)
   		widget:setId(node1.id .. "-" .. node2.id)
+  		connectorWidgets[node1.id .. "-" .. node2.id] = widget
+  		connectorStyles[widget] = style
   		widget:setMarginLeft(x * SCALE)
   		widget:setMarginTop(y * SCALE)
   		widget:setRotation(angle)
   		widget:setWidth(endS * 256 * SCALE)
+  		scaleDecoWidget(widget)
 
 		widget = nil
 
-		return 
+		return
 	end
 
-	for k, node in pairs(treeData.nodes) do
-		slot9 = pairs
-		slot10 = node.out or {}
-
-		for _, otherId in slot9(slot10) do
+	local nodes = {}
+	for _, node in pairs(treeData.nodes) do
+		t_insert(nodes, node)
+	end
+	t_insert(jobs, slicedJob(nodes, function(node)
+		for _, otherId in pairs(node.out or {}) do
 			local other = nodeMap[otherId]
 
 			t_insert(node.linkedId, otherId)
@@ -491,9 +588,265 @@ function createNodes()
 				BuildConnector(node, other)
 			end
 		end
+	end))
+
+	return jobs
+end
+
+local function connectorOf(id1, id2)
+	return connectorWidgets[id1 .. "-" .. id2] or connectorWidgets[id2 .. "-" .. id1]
+end
+
+-- restyle the connectors of a node after its (or its neighbours') allocation changed
+local function refreshConnectors(node)
+	for _, list in ipairs({node.out or {}, node.inputs or {}}) do
+		for _, otherId in pairs(list) do
+			local connector = connectorOf(node.id, otherId)
+
+			if connector then
+				local other = nodeMap[otherId]
+				local lineType = "Normal"
+
+				if node.alloc and other.alloc then
+					lineType = "Active"
+				elseif (node.alloc and not other.alloc) or (not node.alloc and other.alloc) then
+					lineType = "Intermediate"
+				end
+
+				local style
+				if node.groupX == other.groupX and node.orbit == other.orbit then
+					local vX = other.x - node.x
+					local vY = other.y - node.y
+					local dist = m_sqrt(vX*vX + vY*vY)
+					style = "Orbit" .. getOrbitType(node.orbit, dist) .. lineType
+				else
+					style = "LineConnector" .. lineType
+				end
+
+				if connectorStyles[connector] ~= style then
+					connector.setStyle(connector, style)
+					connectorStyles[connector] = style
+				end
+			end
+		end
+	end
+end
+
+local function hasNeighbourIn(node, set)
+	for _, list in ipairs({node.out or {}, node.inputs or {}}) do
+		for _, otherId in pairs(list) do
+			if set[otherId] then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+-- Shows an allocation on the built widgets: the given ids that connect to the start node (as clicking them in order
+-- would), the rest unallocated. Only the nodes whose state changes are touched: their widgets
+-- and connectors are updated by jobs a slice per frame (a few hundred style changes cost ~0.25 s), the bonus list is
+-- recalculated once. blocked: the shown nodes cannot be taken back (saved on the server).
+local function applyAllocation(ids, blocked)
+	local wanted = {}
+	for _, raw in pairs(ids or {}) do
+		local id = tonumber(raw)
+		if id and nodeMap[id] and not nodeMap[id].isStartNode then
+			wanted[id] = true
+		end
 	end
 
-	return 
+	local target = {}
+	for id, node in pairs(nodeMap) do
+		if node.isStartNode then
+			target[id] = true
+		end
+	end
+
+	-- a node joins once one of its own links (out or inputs, like canAllocate) is in; the links are not always
+	-- listed on both ends, so repeat until nothing more joins (a pass per ring, cheap for a few hundred ids)
+	local progress = true
+	while progress do
+		progress = false
+		for id in pairs(wanted) do
+			local node = nodeMap[id]
+			if hasNeighbourIn(node, target) and not (node.exclude and target[node.exclude]) then
+				target[id] = true
+				wanted[id] = nil
+				progress = true
+			end
+		end
+	end
+
+	local changed = {}
+	allocNodes = {}
+	for id, node in pairs(nodeMap) do
+		local alloc = target[id] == true
+		if node.alloc ~= alloc then
+			node.alloc = alloc
+			changed[#changed + 1] = node
+		end
+		if alloc then
+			allocNodes[id] = node
+		end
+		local widget = nodeWidgets[id]
+		if widget then
+			widget.blocked = (alloc and blocked) or nil
+		end
+	end
+
+	queueJobs({
+		slicedJob(changed, function(node)
+			local widget = nodeWidgets[node.id]
+			if widget and widget.isOn(widget) ~= node.alloc then
+				widget.setOn(widget, node.alloc)
+			end
+		end),
+		slicedJob(changed, refreshConnectors)
+	})
+
+	if #changed > 0 or not statsShown then
+		statsShown = true
+		calculateStats()
+	end
+end
+
+local function applyPendingAllocation()
+	local pending = pendingAlloc
+	pendingAlloc = nil
+	if pending then
+		applyAllocation(pending.ids, pending.block)
+	end
+end
+
+local function isBuilding()
+	return jobIndex <= #jobs
+end
+
+-- runs queued jobs until the slice is used up, then continues on the next frame
+function stepJobs()
+	jobEvent = nil
+	if not window then
+		return
+	end
+	local queue = jobs
+	buildSliceStart = nowMs()
+	while jobIndex <= #queue do
+		local ok, more = pcall(queue[jobIndex])
+		if queue ~= jobs then
+			return -- cancelled meanwhile
+		end
+		if not ok then
+			g_logger.error("[Passive tree] building the tree failed: " .. tostring(more))
+			more = false
+		end
+		if not more then
+			jobIndex = jobIndex + 1
+		end
+		if sliceUsed() then
+			break
+		end
+	end
+	if jobIndex > #queue then
+		jobs, jobIndex = {}, 1
+	elseif not jobEvent then
+		jobEvent = scheduleEvent(stepJobs, 1)
+	end
+end
+
+function queueJobs(list)
+	for _, job in ipairs(list) do
+		jobs[#jobs + 1] = job
+	end
+	if not jobEvent and not syncBuild then
+		jobEvent = scheduleEvent(stepJobs, 1)
+	end
+end
+
+local function cancelBuild()
+	if jobEvent then
+		removeEvent(jobEvent)
+		jobEvent = nil
+	end
+	jobs, jobIndex = {}, 1
+	buildingFor = nil
+end
+
+local function startBuild(key)
+	cancelBuild()
+	builtFor = nil
+	buildingFor = key
+	statsShown = false
+	decoView:setVisible(false)
+	nodesView:setVisible(false)
+	buildSliceStart = nowMs()
+	local list = buildTree()
+	list[#list + 1] = function()
+		builtFor = buildingFor
+		buildingFor = nil
+		decoView:setVisible(true)
+		nodesView:setVisible(true)
+		applyPendingAllocation()
+		return false
+	end
+	queueJobs(list)
+	stepJobs()
+end
+
+-- show the allocation `ids` once the widgets for the current zoom and vocation exist (built if needed, over frames)
+local function showAllocation(ids, blocked)
+	if not window then
+		return
+	end
+	pendingAlloc = {ids = ids or {}, block = blocked}
+	local key = treeKey()
+	if buildingFor then
+		if buildingFor == key then
+			return -- the running build applies it
+		end
+	elseif builtFor == key then
+		applyPendingAllocation()
+		return
+	end
+	startBuild(key)
+end
+
+local function allocatedIds()
+	if pendingAlloc then
+		return pendingAlloc.ids -- not shown yet (a build is running): the allocation it will show
+	end
+	local ids = {}
+	for id, node in pairs(allocNodes) do
+		if not node.isStartNode then
+			ids[#ids + 1] = id
+		end
+	end
+	return ids
+end
+
+-- build again for the current zoom and vocation, keeping the shown allocation
+function rebuildTree()
+	builtFor = nil
+	showAllocation(allocatedIds(), true)
+end
+
+-- synchronous full build (kept for callers outside the module); the window itself builds in slices
+function createNodes()
+	cancelBuild()
+	syncBuild = true
+	local ok, err = pcall(function()
+		for _, job in ipairs(buildTree()) do
+			while job() do
+			end
+		end
+	end)
+	syncBuild = false
+	if not ok then
+		error(err)
+	end
+	builtFor = treeKey()
+	decoView:setVisible(true)
+	nodesView:setVisible(true)
 end
 
 function onExtendedOpcode(protocol, code, buffer)
@@ -506,7 +859,7 @@ function onExtendedOpcode(protocol, code, buffer)
 	end)
 
 	if not json_status then
-		g_logger.error("[Passive tree Bar] JSON error: " .. data)
+		g_logger.error("[Passive tree Bar] JSON error: " .. tostring(buffer))
 
 		return false
 	end
@@ -557,76 +910,23 @@ function updateNodes(data)
 		slotsText,
 		"#d47b06"
 	})
-	createNodes()
-
-	local nodes = data.nodes
-	allocNodes = {
-		nodeMap[1]
-	}
-	local runs = 0
-    ignorePoints = true
-	repeat
-		for k, v in pairs(nodes) do
-			local widget = nodesView:recursiveGetChildById(v) or decoView:recursiveGetChildById(v)
-
-			if widget and onClickNode(widget) then
-				table.remove(nodes, k)
-
-				widget.blocked = true
-
-				break
-			end
-		end
-
-		runs = runs + 1
-	until #nodes == 0 or 400 <= runs
-    ignorePoints = false
-	updateZoom()
-    changesPending = false
-	return 
+	-- one pass over the built widgets (built first, over a few frames, when the zoom or the vocation changed)
+	changesPending = false
+	showAllocation(data.nodes, true)
+	return
 end
 
 ISUPDATINGLOCAL = false
 
+-- rebuild for the current zoom, keeping the shown allocation (every shown node blocked, as before)
 function updateLocal()
-	ISUPDATINGLOCAL = true
-	local data = {}
-
-	for k, v in pairs(allocNodes) do
-		t_insert(data, k)
-	end
-
-	createNodes()
-
-	local runs = 0
-	allocNodes = {
-		nodeMap[1]
-	}
-	ignorePoints = true
-
-	repeat
-		for k, v in pairs(data) do
-			local widget = nodesView:recursiveGetChildById(v)
-
-			if widget and onClickNode(widget) then
-				table.remove(data, k)
-
-				widget.blocked = true
-
-				break
-			end
-		end
-
-		runs = runs + 1
-	until #data == 0 or 400 <= runs
-
-	ISUPDATINGLOCAL = false
-	ignorePoints = false
-
-	return 
+	showAllocation(allocatedIds(), true)
 end
 
 function onClickNode(widget)
+	if isBuilding() then
+		return false
+	end
 	local nodeId = tonumber(widget.getId(widget))
 	local node = nodeMap[nodeId]
 
@@ -665,83 +965,7 @@ function onClickNode(widget)
 
 		widget.setOn(widget, not widget.isOn(widget))
 
-		slot3 = pairs
-		slot4 = node.out or {}
-
-		for _, otherId in slot3(slot4) do
-			local connector = decoView:getChildById(node.id .. "-" .. otherId)
-			connector = connector or decoView:getChildById(otherId .. "-" .. node.id)
-
-			if connector then
-				local other = nodeMap[otherId]
-
-				if node.groupX == other.groupX and node.orbit == other.orbit then
-					local lineType = "Normal"
-
-					if node.alloc and other.alloc then
-						lineType = "Active"
-					elseif (node.alloc and not other.alloc) or (not node.alloc and other.alloc) then
-						lineType = "Intermediate"
-					end
-
-					local vX = other.x - node.x
-					local vY = other.y - node.y
-					local dist = m_sqrt(vX*vX + vY*vY)
-					local orbitType = getOrbitType(node.orbit, dist)
-
-					connector.setStyle(connector, "Orbit" .. orbitType .. lineType)
-				else
-					local lineType = "Normal"
-
-					if node.alloc and other.alloc then
-						lineType = "Active"
-					elseif (node.alloc and not other.alloc) or (not node.alloc and other.alloc) then
-						lineType = "Intermediate"
-					end
-
-					connector.setStyle(connector, "LineConnector" .. lineType)
-				end
-			end
-		end
-
-		slot3 = pairs
-		slot4 = node.inputs or {}
-
-		for _, otherId in slot3(slot4) do
-			local connector = decoView:getChildById(node.id .. "-" .. otherId)
-			connector = connector or decoView:getChildById(otherId .. "-" .. node.id)
-
-			if connector then
-				local other = nodeMap[otherId]
-
-				if node.groupX == other.groupX and node.orbit == other.orbit then
-					local lineType = "Normal"
-
-					if node.alloc and other.alloc then
-						lineType = "Active"
-					elseif (node.alloc and not other.alloc) or (not node.alloc and other.alloc) then
-						lineType = "Intermediate"
-					end
-
-					local vX = other.x - node.x
-					local vY = other.y - node.y
-					local dist = m_sqrt(vX*vX + vY*vY)
-					local orbitType = getOrbitType(node.orbit, dist)
-
-					connector.setStyle(connector, "Orbit" .. orbitType .. lineType)
-				else
-					local lineType = "Normal"
-
-					if node.alloc and other.alloc then
-						lineType = "Active"
-					elseif (node.alloc and not other.alloc) or (not node.alloc and other.alloc) then
-						lineType = "Intermediate"
-					end
-
-					connector.setStyle(connector, "LineConnector" .. lineType)
-				end
-			end
-		end
+		refreshConnectors(node)
 	end
 
 	if not ISUPDATINGLOCAL then
@@ -1126,6 +1350,13 @@ end
 function destroy()
 	serverVocation = nil -- the next character may have another vocation
 	destroyParagon() -- paragon.lua
+	cancelBuild()
+	builtFor = nil
+	pendingAlloc = nil
+	allocNodes = {}
+	nodeWidgets = {}
+	connectorWidgets = {}
+	connectorStyles = {}
 	if window then
 		view = nil
 		decoView = nil
@@ -1146,7 +1377,6 @@ end
 
 function show()
 	SCALE = SCALE_MAX
-	createNodes()
 
 	if not window then
 		return 
@@ -1158,7 +1388,18 @@ function show()
 	window:show()
 	window:raise()
 	window:focus()
-	updateZoom()
+	-- The widgets are kept between openings: the tree shows the allocation it had (rebuilt only when the zoom went back
+	-- to the default) until the server's sendNodes, which then changes only the nodes that differ. Before the first
+	-- sendNodes the vocation (keystone icons) is not known, so the first build waits for it instead of building twice.
+	if serverVocation then
+		showAllocation(allocatedIds(), true)
+	else
+		scheduleEvent(function()
+			if window and window:isVisible() and not builtFor and not isBuilding() then
+				showAllocation({}, true)
+			end
+		end, 1000)
+	end
 	for _, child in pairs(view:getChildren()) do
 		child.setMarginLeft(child, STARTOFFSET.x)
 		child.setMarginTop(child, STARTOFFSET.y)
@@ -1277,25 +1518,9 @@ function zoomPlus()
 	updateZoom()
 end
 
+-- the widgets are built (and sized) for the new SCALE by updateLocal, a slice per frame
 function updateZoom()
 	updateLocal()
-
-	for _, child in pairs(nodesView:getChildren()) do
-		child.setHeight(child, child.getHeight(child)*SCALE)
-		child.setWidth(child, child.getWidth(child)*SCALE)
-		child.setImageHeight(child, child.getImageHeight(child)*SCALE)
-		child.setImageWidth(child, child.getImageWidth(child)*SCALE)
-		child.setIconWidth(child, child.getIconWidth(child)*SCALE)
-		child.setIconHeight(child, child.getIconHeight(child)*SCALE)
-	end
-
-	for _, child in pairs(decoView:getChildren()) do
-		child.setHeight(child, child.getHeight(child)*SCALE)
-		child.setWidth(child, child.getWidth(child)*SCALE)
-		child.setImageHeight(child, child.getImageHeight(child)*SCALE)
-		child.setImageWidth(child, child.getImageWidth(child)*SCALE)
-	end
-
 	return 
 end
 

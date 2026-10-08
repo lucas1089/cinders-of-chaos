@@ -70,10 +70,10 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 
 ## Open decisions and loose ends
 
-- **Bug, high priority:** with about 120 passive tree nodes allocated, opening the passive tree window freezes the
-  client for ~1.6 s and the server kicks the player ("exceeding packet per second limit", `maxPacketsPerSecond`
-  50). Reproduced with the module from before the Paragon work, so it is older. Players with large builds can be
-  disconnected by opening their tree.
+- Fixed: opening the passive tree window with a large build no longer gets players kicked. The window rebuilt
+  ~1,400 widgets four times (a 2-4 s freeze); now built once and in slices. Remaining cause, not fixed: the base
+  client's healing helper (`mods/game_helper/helper.lua`) replays every missed 50 ms cycle after any client stall
+  and can still flood spell casts (packet-limit kick) after other long frames; needs a base patch.
 - Notification toasts (`game_chaosnotify`) have no background: the code loads `images/background`, the file is
   `Background.png`. The Daily Reward window also opens over other windows at login.
 - Re-measure the weapon (auto-attack) numbers in `server/data/spells/README.md`: the balance harness sets the
