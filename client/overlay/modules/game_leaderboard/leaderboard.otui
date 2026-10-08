@@ -83,9 +83,19 @@ ChaosMainWindow
     id: infoLabel
     anchors.top: parent.top
     anchors.left: parent.left
-    anchors.right: timerLabel.left
+    anchors.right: seasonToggle.left
     margin-right: 8
     text-align: left
+
+  ChaosTabButton
+    id: seasonToggle
+    anchors.right: timerLabel.left
+    anchors.verticalCenter: timerLabel.verticalCenter
+    margin-right: 10
+    width: 96
+    height: 20
+    visible: false
+    @onClick: modules.game_leaderboard.toggleSeason()
 
   ChaosLabel
     id: timerLabel

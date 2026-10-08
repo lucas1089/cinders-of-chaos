@@ -317,7 +317,8 @@ function G.hoardCandidates(cfg, list, level)
 	local out = {}
 	local slack = cfg.loot.uniqueHoard.levelSlack or 0
 	for _, e in ipairs(list or {}) do
-		if not e.bossOnly and (tonumber(e.level) or 0) <= level + slack then
+		local seasonBlocked = e.season and ChaosSeason and ChaosSeason.uniqueBlocked and ChaosSeason.uniqueBlocked(e.season)
+		if not e.bossOnly and not seasonBlocked and (tonumber(e.level) or 0) <= level + slack then
 			out[#out + 1] = e
 		end
 	end

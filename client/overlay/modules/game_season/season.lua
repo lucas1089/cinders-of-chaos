@@ -1,0 +1,232 @@
+-- Seasons window: the season (name, time left, modifier), this character's status with a Join button when it can
+-- join, and the account's reward track (milestones, progress, what is unlocked).
+-- Server: server/data/scripts/chaos/season.lua, extended opcode 246 (JSON {action, data}).
+--   server -> client  state {open, season = {id, name, tag, status, startsIn, endsIn, modifier = {name, description}},
+--                            mine = {realm, seasonal, veteran, eligible, reason, level},
+--                            track = [{key, name, stat, value, progress, reward, kind, unlocked, by}], titles = [..]}
+--                     confirm {text, seconds}    the join terms: Join asks to confirm
+--                     notice {text}              why a join was refused
+--   client -> server  open | join {confirm}
+-- !season opens it from the chat; the top menu (Chaos -> Season) calls toggle().
+
+local OPCODE = 246
+
+local window
+local state         -- last state received
+local stateAt = 0   -- g_clock.seconds() when it arrived
+local tickEvent
+local confirmBox
+
+local function send(action, data)
+  local protocol = g_game.getProtocolGame()
+  if protocol then
+    protocol:sendExtendedOpcode(OPCODE, json.encode({ action = action, data = data or {} }))
+  end
+end
+
+local function list(value)
+  local out = {}
+  if type(value) == 'table' then
+    for _, v in ipairs(value) do out[#out + 1] = v end
+  end
+  return out
+end
+
+local function formatTime(seconds)
+  seconds = math.max(0, math.floor(seconds))
+  local d = math.floor(seconds / 86400)
+  local h = math.floor((seconds % 86400) / 3600)
+  local m = math.floor((seconds % 3600) / 60)
+  local s = seconds % 60
+  if d > 0 then return string.format('%dd %02dh %02dm', d, h, m) end
+  return string.format('%dh %02dm %02ds', h, m, s)
+end
+
+local function updateTimer()
+  if not window or not state then return end
+  local s = type(state.season) == 'table' and state.season or nil
+  local passed = g_clock.seconds() - stateAt
+  if not s then
+    window.timerLabel:setText('')
+  elseif s.status == 'active' then
+    window.timerLabel:setText(tr('Ends in %s', formatTime((tonumber(s.endsIn) or 0) - passed)))
+  elseif s.status == 'upcoming' then
+    window.timerLabel:setText(tr('Starts in %s', formatTime((tonumber(s.startsIn) or 0) - passed)))
+  else
+    window.timerLabel:setText(tr('Ended'))
+  end
+end
+
+local function tick()
+  tickEvent = nil
+  if not window or not window:isVisible() then return end
+  updateTimer()
+  tickEvent = scheduleEvent(tick, 1000)
+end
+
+local function showState()
+  if not window or not state then return end
+  local s = type(state.season) == 'table' and state.season or nil
+  local mine = type(state.mine) == 'table' and state.mine or {}
+  window.trackList:destroyChildren()
+  window.emptyText:setVisible(s == nil)
+  if not s then
+    window.nameLabel:setText(tr('Seasons'))
+    window.modifierLabel:setText('')
+    window.minePanel.mineLabel:setText(tr('No season is configured on this server.'))
+    window.minePanel.joinButton:setVisible(false)
+    window.titlesLabel:setText('')
+    updateTimer()
+    return
+  end
+  window.nameLabel:setText(string.format('%s %s', s.name or '?', s.tag or ''))
+  local mod = s.status ~= 'ended' and type(s.modifier) == 'table' and s.modifier or nil
+  window.modifierLabel:setText(mod and tr('Season modifier %s: %s', mod.name or '', mod.description or '') or '')
+
+  local text
+  if mine.seasonal then
+    text = tr('This character is a %s character. Milestones it reaches unlock their rewards for your whole account.', s.name or '')
+  elseif mine.veteran then
+    text = tr('This character played a season and is a standard character now.')
+  elseif mine.eligible then
+    text = tr('This character can join %s: it starts over with nothing and plays only with %s characters until the end.', s.name or '', s.name or '')
+  elseif s.status == 'active' then
+    text = tostring(mine.reason or '')
+  elseif s.status == 'upcoming' then
+    text = tr('The season has not started yet. Make a fresh character to join it when it starts.')
+  else
+    text = tr('The season has ended. Its rewards stay on your account.')
+  end
+  window.minePanel.mineLabel:setText(text)
+  window.minePanel.joinButton:setVisible(mine.eligible == true)
+
+  for _, m in ipairs(list(state.track)) do
+    local row = g_ui.createWidget('SeasonTrackRow', window.trackList)
+    row.name:setText(m.name or '?')
+    row.reward:setText(m.reward or '')
+    local goal = math.max(1, tonumber(m.value) or 1)
+    local progress = math.min(goal, tonumber(m.progress) or 0)
+    if m.unlocked then
+      row.mark:setText('*')
+      row.mark:setColor('#f6cf72')
+      row.name:setColor('#f6cf72')
+      row.progress:setPercent(100)
+      row.progress:setText(tr('Unlocked'))
+      row:setTooltip(m.by and tr('Unlocked by %s', m.by) or '')
+    else
+      row.mark:setText('-')
+      row.progress:setPercent(math.floor(progress * 100 / goal))
+      row.progress:setText(string.format('%d / %d', progress, goal))
+    end
+  end
+  local titles = list(state.titles)
+  window.titlesLabel:setText(#titles > 0 and tr('Season titles of your account: %s', table.concat(titles, ', ')) or '')
+  updateTimer()
+end
+
+-- the general box does not wrap: break the text into lines of about `width` characters
+local function wrap(text, width)
+  local lines, line = {}, ''
+  for word in tostring(text or ''):gmatch('%S+') do
+    if line ~= '' and #line + 1 + #word > width then
+      lines[#lines + 1] = line
+      line = word
+    else
+      line = line == '' and word or (line .. ' ' .. word)
+    end
+  end
+  if line ~= '' then lines[#lines + 1] = line end
+  return table.concat(lines, '\n')
+end
+
+-- ---------------------------------------------------------------- protocol
+local function onConfirm(data)
+  if confirmBox then confirmBox:destroy() confirmBox = nil end
+  local function yes()
+    if confirmBox then confirmBox:destroy() confirmBox = nil end
+    send('join', { confirm = true })
+  end
+  local function no()
+    if confirmBox then confirmBox:destroy() confirmBox = nil end
+  end
+  if displayGeneralBox then
+    confirmBox = displayGeneralBox(tr('Join the season'), wrap(data.text, 64),
+      { { text = tr('Join'), callback = yes }, { text = tr('Cancel'), callback = no }, anchor = AnchorHorizontalCenter }, yes, no)
+  end
+end
+
+local function onExtendedOpcode(protocol, opcode, buffer)
+  local ok, msg = pcall(json.decode, buffer)
+  if not ok or type(msg) ~= 'table' then
+    g_logger.error('[season] invalid JSON: ' .. tostring(msg))
+    return
+  end
+  local data = type(msg.data) == 'table' and msg.data or {}
+  if msg.action == 'state' then
+    if confirmBox and type(data.mine) == 'table' and not data.mine.eligible then
+      confirmBox:destroy() -- joined (or no longer eligible): the question is answered
+      confirmBox = nil
+    end
+    state = data
+    stateAt = g_clock.seconds()
+    showState()
+    if data.open then show() end
+  elseif msg.action == 'confirm' then
+    onConfirm(data)
+  elseif msg.action == 'notice' then
+    if window and window:isVisible() and data.text then
+      window.minePanel.mineLabel:setText(tostring(data.text))
+    end
+  end
+end
+
+-- ---------------------------------------------------------------- window
+function join()
+  send('join', { confirm = false })
+end
+
+function show()
+  if not window then return end
+  window:show()
+  window:raise()
+  window:focus()
+  if not tickEvent then tick() end
+end
+
+function hide()
+  if window then window:hide() end
+  if tickEvent then removeEvent(tickEvent) tickEvent = nil end
+  if confirmBox then confirmBox:destroy() confirmBox = nil end
+end
+
+function toggle()
+  if not window then return end
+  if window:isVisible() then
+    hide()
+    return
+  end
+  send('open') -- the server answers with the state (open), which shows the window
+end
+
+local function onGameEnd()
+  hide()
+  state = nil
+end
+
+function init()
+  window = g_ui.displayUI('season')
+  window:hide()
+  ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
+  connect(g_game, { onGameEnd = onGameEnd })
+end
+
+function terminate()
+  disconnect(g_game, { onGameEnd = onGameEnd })
+  ProtocolGame.unregisterExtendedOpcode(OPCODE)
+  hide()
+  if window then
+    window:destroy()
+    window = nil
+  end
+  state = nil
+end

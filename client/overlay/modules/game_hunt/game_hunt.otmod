@@ -1,0 +1,13 @@
+Module
+  name: game_hunt
+  description: Hunt tracker (session time, exp/h, loot and profit/h, supplies, kills, Chaos drops; !hunt, extended opcode 241)
+  author: project-chaos
+  sandboxed: true
+  scripts: [ huntmath, hunt ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

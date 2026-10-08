@@ -1,0 +1,240 @@
+// Hunt tracker window (game_hunt). Styles from client_chaos_theme (styles.otui).
+
+HuntStat < UIWidget
+  height: 17
+  phantom: true
+
+  UILabel
+    id: name
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+    text-auto-resize: true
+    font: verdana-11px-antialised
+    color: #8c8070
+    phantom: true
+
+  UILabel
+    id: value
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 6
+    text-auto-resize: true
+    font: verdana-11px-rounded
+    color: #d6c9ae
+    phantom: false
+
+HuntRow < UIWidget
+  height: 26
+  margin-bottom: 1
+  phantom: false
+  background-color: #1a151a
+
+  Item
+    id: icon
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 2
+    size: 24 24
+    virtual: true
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: icon.right
+    anchors.right: count.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 6
+    margin-right: 6
+    text-align: left
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    phantom: true
+
+  UILabel
+    id: value
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    width: 78
+    margin-right: 6
+    text-align: right
+    font: verdana-11px-rounded
+    color: #f6cf72
+    phantom: false
+
+  UILabel
+    id: count
+    anchors.right: value.left
+    anchors.verticalCenter: parent.verticalCenter
+    width: 70
+    text-align: right
+    font: verdana-11px-rounded
+    color: #8c8070
+    phantom: true
+
+HuntTab < ChaosTabButton
+  width: 92
+  margin-right: 4
+
+ChaosMainWindow
+  id: huntWindow
+  size: 440 560
+  !text: tr('Hunt Tracker')
+  @onEscape: modules.game_hunt.hide()
+
+  ChaosPanelHighlight
+    id: sessionPanel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 40
+
+    ChaosLabelDim
+      id: sessionTitle
+      anchors.top: parent.top
+      anchors.left: parent.left
+      margin-left: 4
+      text-auto-resize: true
+      !text: tr('Session')
+
+    UILabel
+      id: sessionTime
+      anchors.top: sessionTitle.bottom
+      anchors.left: parent.left
+      margin-left: 4
+      text-auto-resize: true
+      font: verdana-11px-rounded
+      color: #f6cf72
+
+    UILabel
+      id: statusLabel
+      anchors.left: sessionTime.right
+      anchors.verticalCenter: sessionTime.verticalCenter
+      margin-left: 10
+      text-auto-resize: true
+      font: verdana-11px-antialised
+      color: #7ccf5c
+
+    ChaosButton
+      id: resetButton
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      width: 72
+      !text: tr('Reset')
+      !tooltip: tr('Start a new session from zero.')
+      @onClick: modules.game_hunt.reset()
+
+    ChaosButton
+      id: pauseButton
+      anchors.right: resetButton.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-right: 4
+      width: 72
+      !text: tr('Pause')
+      @onClick: modules.game_hunt.togglePause()
+
+  ChaosPanelDark
+    id: statsPanel
+    anchors.top: sessionPanel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 158
+    layout:
+      type: grid
+      cell-size: 196 17
+      cell-spacing: 1
+      num-columns: 2
+      flow: true
+
+  UIWidget
+    id: tabs
+    anchors.top: statsPanel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    height: 24
+    phantom: true
+    layout:
+      type: horizontalBox
+
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: tabs.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: totalLabel.top
+    margin-top: 2
+    margin-bottom: 4
+    padding: 3
+
+  UIScrollArea
+    id: rowList
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: listScroll.left
+    anchors.bottom: listFrame.bottom
+    margin: 4
+    layout:
+      type: verticalBox
+    vertical-scrollbar: listScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: listScroll
+    anchors.top: listFrame.top
+    anchors.right: listFrame.right
+    anchors.bottom: listFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 27
+    pixels-scroll: true
+
+  ChaosLabelDim
+    id: emptyText
+    anchors.centerIn: listFrame
+    text-auto-resize: true
+    visible: false
+
+  ChaosLabel
+    id: totalLabel
+    phantom: false
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-bottom: 8
+    height: 16
+    text-align: left
+    color: #e8b84a
+
+  ChaosLabelDim
+    id: hintLabel
+    phantom: false
+    anchors.left: parent.left
+    anchors.right: copyButton.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    margin-right: 8
+    text-align: left
+    text-wrap: true
+    height: 28
+    !text: tr('!hunt pause | resume | reset')
+    !tooltip: tr('Loot is counted at NPC sell prices (coins at face value), supplies at NPC buy prices.')
+
+  ChaosButton
+    id: copyButton
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 4
+    width: 72
+    !text: tr('Copy')
+    !tooltip: tr('Copy a summary of the session to the clipboard.')
+    @onClick: modules.game_hunt.copySummary()
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 72
+    !text: tr('Close')
+    @onClick: modules.game_hunt.hide()

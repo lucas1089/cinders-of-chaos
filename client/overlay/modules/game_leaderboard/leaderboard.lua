@@ -19,10 +19,15 @@ local selectedGroup    -- class group shown on the ladder
 local tabs, groupTabs = {}, {}
 local tickEvent
 local refreshAsked = false
+local seasonView = false -- the Season toggle (server season.lua): only the running season's characters
 
 -- ---------------------------------------------------------------- helpers
 local function send(action, data)
   local protocol = g_game.getProtocolGame()
+  if action == 'get' and seasonView then
+    data = data or {}
+    data.season = true
+  end
   if protocol then
     protocol:sendExtendedOpcode(OPCODE, json.encode({ action = action, data = data or {} }))
   end
@@ -160,6 +165,14 @@ local function showBoard()
     window.championPanel.championNames:setText(tr('Every class of the %s line counts. Updated every few minutes.', groupName(current.group)))
   end
 
+  local season = type(current.season) == 'table' and current.season or nil
+  if season then
+    window.championPanel.championNames:setTooltip('')
+    window.championPanel.championTitle:setText(tr('%s %s: season characters only', season.name or '', season.tag or ''))
+    window.championPanel.championNames:setText(b.weekly and tr('This week\'s scores of the season\'s characters. Titles are won on the normal boards.')
+      or tr('Highest level of the season\'s characters in the %s line.', groupName(current.group)))
+  end
+
   window.emptyText:setText(b.weekly and tr('No scores on this board yet this week.') or tr('No characters of this class yet.'))
   window.emptyText:setVisible(#rows == 0)
 
@@ -240,6 +253,13 @@ end
 -- ---------------------------------------------------------------- protocol
 local function onMeta(data)
   meta = data
+  if data.open then seasonView = false end
+  local season = type(data.season) == 'table' and data.season or nil
+  if not season then seasonView = false end
+  window.seasonToggle:setVisible(season ~= nil)
+  window.seasonToggle:setText(season and tr('%s only', season.tag or tr('Season')) or '')
+  window.seasonToggle:setTooltip(season and tr('Show only the characters of %s.', season.name or '') or '')
+  window.seasonToggle:setChecked(seasonView)
   if not selectedGroup then selectedGroup = data.ownGroup end
   buildTabs()
   if data.open then show() end
@@ -276,6 +296,12 @@ local function onExtendedOpcode(protocol, opcode, buffer)
 end
 
 -- ---------------------------------------------------------------- window
+function toggleSeason()
+  seasonView = not seasonView
+  if window then window.seasonToggle:setChecked(seasonView) end
+  send('get', { board = selected, group = selectedGroup })
+end
+
 function show()
   if not window then return end
   window:show()

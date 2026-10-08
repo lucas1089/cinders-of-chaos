@@ -1,0 +1,189 @@
+// Seasons window (game_season). Styles from client_chaos_theme (styles.otui).
+
+SeasonTrackRow < ChaosPanelDark
+  height: 44
+  margin-bottom: 3
+  phantom: false
+
+  UILabel
+    id: mark
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 6
+    width: 18
+    text-align: center
+    font: verdana-11px-rounded
+    color: #6b6258
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: mark.right
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin-left: 6
+    margin-top: 4
+    margin-right: 8
+    text-align: left
+    font: verdana-11px-rounded
+    color: #d6c9ae
+    phantom: true
+
+  UILabel
+    id: reward
+    anchors.left: name.left
+    anchors.right: progress.left
+    anchors.bottom: parent.bottom
+    margin-bottom: 5
+    margin-right: 8
+    text-align: left
+    font: verdana-11px-antialised
+    color: #b070ff
+    phantom: true
+
+  ChaosProgressBar
+    id: progress
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    margin-bottom: 4
+    width: 150
+    height: 14
+    text-offset: 0 1
+    font: verdana-11px-antialised
+
+ChaosMainWindow
+  id: seasonWindow
+  size: 520 470
+  !text: tr('Season')
+  @onEscape: modules.game_season.hide()
+
+  ChaosLabel
+    id: nameLabel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    text-auto-resize: true
+    font: verdana-11px-rounded
+    color: #e8b84a
+
+  ChaosLabel
+    id: timerLabel
+    anchors.top: parent.top
+    anchors.right: parent.right
+    text-auto-resize: true
+    color: #f6cf72
+
+  ChaosLabel
+    id: modifierLabel
+    anchors.top: nameLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    text-align: left
+    text-wrap: true
+    height: 28
+
+  ChaosPanelHighlight
+    id: minePanel
+    anchors.top: modifierLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 46
+
+    ChaosLabel
+      id: mineLabel
+      anchors.left: parent.left
+      anchors.right: joinButton.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 6
+      margin-right: 8
+      text-align: left
+      text-wrap: true
+      height: 40
+      color: #f6cf72
+
+    ChaosButton
+      id: joinButton
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-right: 6
+      !text: tr('Join season')
+      visible: false
+      @onClick: modules.game_season.join()
+
+  ChaosLabel
+    id: trackTitle
+    anchors.top: minePanel.bottom
+    anchors.left: parent.left
+    margin-top: 8
+    text-auto-resize: true
+    color: #e8b84a
+    !text: tr('Reward track (unlocked for your whole account, kept forever)')
+
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: trackTitle.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: titlesLabel.top
+    margin-top: 4
+    margin-bottom: 6
+    padding: 3
+
+  UIScrollArea
+    id: trackList
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: listScroll.left
+    anchors.bottom: listFrame.bottom
+    margin: 4
+    layout:
+      type: verticalBox
+    vertical-scrollbar: listScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: listScroll
+    anchors.top: listFrame.top
+    anchors.right: listFrame.right
+    anchors.bottom: listFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 47
+    pixels-scroll: true
+
+  ChaosLabelDim
+    id: emptyText
+    anchors.centerIn: listFrame
+    !text: tr('No season is configured.')
+    text-auto-resize: true
+    visible: false
+
+  ChaosLabel
+    id: titlesLabel
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-bottom: 8
+    text-align: left
+    color: #b070ff
+
+  ChaosLabelDim
+    id: hintLabel
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    margin-right: 8
+    text-align: left
+    text-wrap: true
+    height: 28
+    !text: tr('Season characters trade, mail and party only within their season.')
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    !text: tr('Close')
+    @onClick: modules.game_season.hide()

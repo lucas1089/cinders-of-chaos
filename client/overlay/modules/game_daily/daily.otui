@@ -51,7 +51,7 @@ GetItems < MiniPanel
 
 MainWindow
   !text: tr('Daily Reward')
-  size: 549 372
+  size: 549 466
   @onEscape: toggle()
 
   Panel
@@ -61,8 +61,8 @@ MainWindow
     anchors.top: parent.top
     anchors.left: parent.left
     anchors.right: parent.right
-    anchors.bottom: closeButton.top
-    margin-bottom: 10
+    anchors.bottom: streakPanel.top
+    margin-bottom: 6
     padding: 8
 
     GetItems
@@ -122,6 +122,62 @@ MainWindow
       anchors.bottom: daily6.bottom
       margin-left: 8
       text: Day 7
+
+  // login streak (server daily.lua: Streak, Best, Grace, Next, Title); hidden when the server sends none
+  Panel
+    id: streakPanel
+    image-source: /images/ui/panel_flat
+    image-border: 1
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-bottom: 10
+    height: 84
+    padding: 6
+
+    Label
+      id: streakLabel
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: bestLabel.left
+      text-align: left
+      font: verdana-11px-rounded
+      color: #f6cf72
+
+    Label
+      id: bestLabel
+      anchors.top: parent.top
+      anchors.right: parent.right
+      text-auto-resize: true
+      color: #d6c9ae
+
+    Label
+      id: graceLabel
+      anchors.top: streakLabel.bottom
+      anchors.left: parent.left
+      margin-top: 4
+      text-auto-resize: true
+      color: #d6c9ae
+      phantom: false
+
+    Label
+      id: titleLabel
+      anchors.top: streakLabel.bottom
+      anchors.right: parent.right
+      margin-top: 4
+      text-auto-resize: true
+      color: #b070ff
+
+    Label
+      id: milestoneLabel
+      anchors.top: graceLabel.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      height: 28
+      text-align: left
+      text-wrap: true
+      color: #e8b84a
 
   Button
     id: closeButton

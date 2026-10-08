@@ -127,6 +127,15 @@ the store. Uniques can't be crafted, so they stay unique.
   - *Loot Frenzy* Fridays
   - a daily boosted creature and boss
 
+## Seasons
+
+Start fresh with a **season character** (`!season join` on a new character) and race on the season ladder.
+- **Own economy:** season characters trade, mail, party and loot only with their own season.
+- **Season uniques:** some uniques drop only for season characters while the season runs, then for everyone.
+- **Reward track:** outfits, addons, mounts and titles for milestones (level 100 / 300 / 600 / 1000, bounties, world
+  bosses, rifts), unlocked for your whole account and kept forever.
+- **Season end:** season characters join the normal world with everything they earned.
+
 ## PvP
 
 - **Ranked arena** (`!arena`): **1v1 and 2v2** with an Elo rating per mode.
@@ -157,7 +166,13 @@ Siegebreaker, Duelist, Gladiator) and orbs. The all-time **Class Ladder** ranks 
   coloured number with its element's effect. Big numbers are shortened (12.4k).
 - **Patch notes in the client:** a window with every week's changes. It opens once at login when there is something
   new, after the daily reward.
-- **Daily rewards**, **waystones** with account upgrades (experience, loot, rarity), and toast notifications for
+- **Hunt tracker** (`!hunt`): experience, loot, supplies and profit per hour for your session, counted by the server.
+  It also shows kills per monster, every item looted and its value, damage and healing per second, and your Chaos
+  drops. Pause, reset or copy a summary.
+- **Daily rewards and login streaks:** one claim a day per account. Your streak counter shows your current and best
+  streak. Milestones at 7, 14, 30, 60, 100 and 180 days pay orbs, and titles at 30, 100 and 180 days ("the Devoted",
+  "the Relentless", "the Undying"). Grace charges save your streak when you miss a day.
+- **Waystones** with account upgrades (experience, loot, rarity), and toast notifications for
   everything that matters.
 - **Store** (Chaos Coins):
   - stamina refill, temple teleport, bottomless loot pouch, auto seller
@@ -168,10 +183,6 @@ Siegebreaker, Duelist, Gladiator) and orbs. The all-time **Class Ladder** ranks 
 ## Coming soon
 
 Being built right now:
-- **Hunt tracker:** experience and profit per hour, kills and loot of your session.
-- **Login streaks** with milestones.
-- **Seasons:** fresh-start season characters with their own economy, ladder, season uniques and cosmetic rewards that
-  carry over.
 - **New classes:** the **Necromancer** (Lich / Bone Lord), the **Monk** (Shadowfist / Iron Sage) and the **Templar**
   (Inquisitor / Sentinel).
 - **Name plates:** title, guild and name above every player.
