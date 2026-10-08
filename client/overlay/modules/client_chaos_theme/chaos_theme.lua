@@ -83,13 +83,111 @@ local function installWidgetHelpers()
   end
 end
 
+-- ---------------------------------------------------------------- window ornaments
+-- Styles with `&chaosOrnate: true` (the skinned Window in data/styles/10-windows.otui) get gold corner
+-- pieces and a crest. They are phantom children added after the window's own children (next frame),
+-- so `prev` anchors and child indexes of the window's own layout are not affected.
+local SKIN = '/images/chaos/skin/'
+local ORN_SIZE = 44      -- corner piece size; its gem sits at (14, 14)
+local ORN_INSET = 8      -- how far the piece sticks out of the window
+local CREST_W, CREST_H, CREST_UP = 84, 30, 17
+
+local function addOrnament(win, id, image, w, h, hEdge, vEdge, mx, my)
+  local o = g_ui.createWidget('UIWidget', win)
+  o:setId(id)
+  o:setImageSource(image)
+  o:setSize({ width = w, height = h })
+  o:setPhantom(true)
+  o:setFocusable(false)
+  -- anchoring to the parent uses its padding rect, so take the padding back out
+  if hEdge == AnchorLeft then
+    o:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+    o:setMarginLeft(mx - win:getPaddingLeft())
+  elseif hEdge == AnchorRight then
+    o:addAnchor(AnchorRight, 'parent', AnchorRight)
+    o:setMarginRight(mx - win:getPaddingRight())
+  else
+    o:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
+    o:setMarginLeft((win:getPaddingRight() - win:getPaddingLeft()))
+  end
+  if vEdge == AnchorTop then
+    o:addAnchor(AnchorTop, 'parent', AnchorTop)
+    o:setMarginTop(my - win:getPaddingTop())
+  else
+    o:addAnchor(AnchorBottom, 'parent', AnchorBottom)
+    o:setMarginBottom(my - win:getPaddingBottom())
+  end
+  return o
+end
+
+local function updateOrnaments(win)
+  local crest = win:getChildById('chaosOrnCrest')
+  if crest then
+    crest:setVisible(win:getWidth() >= 170)
+  end
+  local small = win:getWidth() < 90 or win:getHeight() < 70
+  for _, id in ipairs({ 'chaosOrnTL', 'chaosOrnTR', 'chaosOrnBL', 'chaosOrnBR' }) do
+    local o = win:getChildById(id)
+    if o then o:setVisible(not small) end
+  end
+end
+
+function ChaosTheme.decorateWindow(win)
+  if not win or win:isDestroyed() or win.chaosDecorated then return end
+  win.chaosDecorated = true
+  local s, i = ORN_SIZE, -ORN_INSET
+  addOrnament(win, 'chaosOrnTL', SKIN .. 'orn_corner_tl', s, s, AnchorLeft, AnchorTop, i, i)
+  addOrnament(win, 'chaosOrnTR', SKIN .. 'orn_corner_tr', s, s, AnchorRight, AnchorTop, i, i)
+  addOrnament(win, 'chaosOrnBL', SKIN .. 'orn_corner_bl', s, s, AnchorLeft, AnchorBottom, i, i)
+  addOrnament(win, 'chaosOrnBR', SKIN .. 'orn_corner_br', s, s, AnchorRight, AnchorBottom, i, i)
+  addOrnament(win, 'chaosOrnCrest', SKIN .. 'orn_crest', CREST_W, CREST_H, nil, AnchorTop, 0, -CREST_UP)
+  connect(win, { onGeometryChange = updateOrnaments })
+  updateOrnaments(win)
+end
+
+local TITLE_COLOR = '#e8c477'
+
+local function onStyleApply(widget, styleName, styleNode)
+  if not widget.chaosOrnate then return end
+  -- many window styles of the base modules move the title for the old 17 px title bar and paint it grey:
+  -- keep it centred on the skin's title plate, in gold
+  local ty = tonumber(widget.chaosTitleY)
+  if ty then
+    local off = widget:getTextOffset()
+    if off.y ~= ty then
+      widget:setTextOffset({ x = off.x, y = ty })
+    end
+    widget:setColor(TITLE_COLOR)
+  end
+  if not widget.chaosDecorated and not widget.chaosDecorPending then
+    widget.chaosDecorPending = true
+    addEvent(function()
+      if not widget:isDestroyed() and widget.chaosOrnate then
+        ChaosTheme.decorateWindow(widget)
+      end
+    end)
+  end
+end
+
+local function decorateExisting(widget)
+  for _, child in ipairs(widget:getChildren()) do
+    if child.chaosOrnate then
+      ChaosTheme.decorateWindow(child)
+    end
+    decorateExisting(child)
+  end
+end
+
 function init()
   g_ui.importStyle('styles')
   g_ui.importStyle('compat')
   installWidgetHelpers()
+  connect(UIWidget, { onStyleApply = onStyleApply })
+  decorateExisting(rootWidget)
 end
 
 function terminate()
+  disconnect(UIWidget, { onStyleApply = onStyleApply })
   ChaosTheme = nil
 end
 

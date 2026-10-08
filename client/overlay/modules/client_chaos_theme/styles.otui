@@ -31,6 +31,8 @@ ChaosWindow < UIWindow
   padding-right: 16
   padding-bottom: 16
   draggable: true
+  &chaosOrnate: true
+  &chaosTitleY: 15
 
   $disabled:
     color: #8c8070
