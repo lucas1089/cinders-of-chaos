@@ -78,8 +78,9 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
   ~1,400 widgets four times (a 2-4 s freeze); now built once and in slices. Remaining cause, not fixed: the base
   client's healing helper (`mods/game_helper/helper.lua`) replays every missed 50 ms cycle after any client stall
   and can still flood spell casts (packet-limit kick) after other long frames; needs a base patch.
-- Notification toasts (`game_chaosnotify`) have no background: the code loads `images/background`, the file is
-  `Background.png`. (Fixed with item 20: the Daily Reward window no longer opens over other login windows.)
+- Fixed: notification toasts (`game_chaosnotify`) had no background: the code loaded `images/background`, the file is
+  `Background.png` (file names are case-sensitive on Linux); both the `.otui` and the `.lua` now load `images/Background`.
+  (Fixed with item 20: the Daily Reward window no longer opens over other login windows.)
 - Re-measure the weapon (auto-attack) numbers in `server/data/spells/README.md`: the balance harness sets the
   target with `setTarget`, which skips `onTargetCombat`, so the passive tree and weapon-style damage events were
   never put on the dummies in those runs (two-handed x1.6, dexterity, keystones). Spell numbers are not affected.
@@ -87,8 +88,12 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
   the visuals of Bulwark/Thorns/Deadeye (`ChaosCombatFx`).
 - Bug (existing): the rarity element script (`data/scripts/customs/rarity/rarity_onCombat_elementdamage.lua`,
   base server) returns nothing when a player wears two different rarity elements, which zeroes the damage.
-- Bug (existing): `/testkit` (`admin/testkit.lua`) calls `addHealth(n)`, which does nothing on this engine
-  (it takes a damage type first), so health is not refilled.
+- Fixed: `/testkit` (`admin/testkit.lua`) called `addHealth(n)`, which does nothing on this engine (it takes a
+  damage type first), so health was not refilled. All one-argument calls now go through `Chaos.heal(creature, amount)`
+  (chaos_constants.lua): the world boss adds and Vharok's heal, the Infinity Tower's heal between floors, the
+  Regenerating / Vampiric monster modifiers, the admin panel's Heal; the spells (Wild Bond, Crimson Covenant's health
+  cost) pass the damage type themselves. Fixed too: free accounts no longer lose their ascended class at login
+  (`patch_base_events.py`, step 4 of its list).
 - Note: the engine only runs `onTargetCombat` for weapon hits after the player clicks to attack; targets set
   from Lua skip it, and with it the rarity, passive tree and combat feedback damage events.
 - The Windows server binary has no `server/src-patches/` applied: no "CRIT!" visual there until it is rebuilt.

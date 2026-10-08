@@ -117,7 +117,8 @@ function Game.createMonster(name, pos)
   function m:getHealth() return self.hp end
   function m:getMaxHealth() return self.maxhp end
   function m:setMaxHealth(v) self.maxhp = v end
-  function m:addHealth(v) self.hp = math.min(self.maxhp, self.hp + v) end
+  -- this engine's addHealth: (damage type, amount); a one-argument call does nothing
+  function m:addHealth(t, v) if type(t) == "string" then self.hp = math.min(self.maxhp, self.hp + v) end end
   function m:say(t) self.said[#self.said + 1] = t end
   monsters[m.id] = m
   moveCreature(m, pos)
@@ -363,6 +364,7 @@ advance(200)
 local adds = 0; for _ in pairs(W.state.adds) do adds = adds + 1 end
 assertEq(adds, 4, "phase 1 adds")
 assertEq(monsters[next(W.state.adds)].maxhp, 150000, "adds get the configured health")
+assertEq(monsters[next(W.state.adds)].hp, 150000, "adds start at full health")
 hc.onHealthChange(boss, a, 500, COMBAT_HEALING, 0, COMBAT_NONE, 0)
 assertEq(W.state.damage[1].damage, 4000000, "healing is not damage")
 hit(cy, 50000) -- Cyra 50k = 0.28% of 18M: eligible

@@ -23,6 +23,12 @@ pet share, so the bonuses multiply the staged experience and the pet gets its sh
    party BEFORE the script callbacks run, so without the hook members of enemy guilds could not always fight in the
    siege arena. The hook returns nil outside the siege (the base rules then run as before).
 
+4. data/creaturescripts/scripts/login.lua: the stock login demoted every character whose vocation has no promotion
+   (vocation:getDemotion()) when the account is not premium (freePremium = false on this server). Since the class
+   rework every ascended class (!ascend, data/scripts/chaos/ascension.lua) is such a vocation, so a free account lost
+   its ascension at each login. The demotion branch is removed; the premium branch (promotion storage) is unchanged.
+   The engine itself never demotes (Vocation:getDemotion is only a lookup; premium only gates spells, items, outfits).
+
 Idempotent: every inserted block carries a marker comment and is not added twice.
 """
 import os, re, sys
@@ -127,6 +133,20 @@ def patch_target_combat(text):
     return text[:at] + COMBAT_BLOCK + text[at:], 'patched'
 
 
+DEMOTION_MARKER = '-- Chaos: no demotion without premium, ascended classes stay (patch_base_events.py)'
+
+
+def patch_login_demotion(text):
+    """returns (new text, status)"""
+    if DEMOTION_MARKER in text:
+        return text, 'already'
+    m = list(re.finditer(r'\n([ \t]*)elseif not promotion then[ \t]*\r?\n[ \t]*player:setVocation\(vocation:getDemotion\(\)\)[ \t]*(\r?\n)', text))
+    if len(m) != 1:
+        return text, 'unexpected login.lua (demotion branch "elseif not promotion then" not found once)'
+    m = m[0]
+    return text[:m.start()] + '\n' + m.group(1) + DEMOTION_MARKER + m.group(2) + text[m.end():], 'patched'
+
+
 def apply(path, fn, dry):
     text = open(path, encoding='utf-8', errors='surrogateescape').read()
     new, status = fn(text)
@@ -146,6 +166,7 @@ def main():
     ok = apply(os.path.join(args[0], 'scripts', 'eventcallbacks', 'monster', 'default_onDropLoot.lua'),
                patch_loot, dry) and ok
     ok = apply(os.path.join(args[0], 'events', 'scripts', 'creature.lua'), patch_target_combat, dry) and ok
+    ok = apply(os.path.join(args[0], 'creaturescripts', 'scripts', 'login.lua'), patch_login_demotion, dry) and ok
     return 0 if ok else 1
 
 

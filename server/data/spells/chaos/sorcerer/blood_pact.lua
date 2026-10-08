@@ -11,7 +11,7 @@ function onCastSpell(creature, variant, isHotkey)
 		return ChaosSpell.cancel(player, "Your life force is too low for the pact.")
 	end
 
-	player:addHealth(-cost)
+	player:addHealth("undefined", -cost) -- this engine: (damage type, amount); undefined skips the mana shield
 	player:addMana(math.floor(cost * 1.5))
 
 	local buff = Condition(CONDITION_ATTRIBUTES)

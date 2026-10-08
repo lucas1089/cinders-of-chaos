@@ -69,6 +69,11 @@ server/
    (+1% per level, x2.0 at level 100). Before, all three only stored their level and nothing read it.
    Verified on the test server: Experience 50 -> x1.5; Loot and Rarity 100 over 300 Dragon kills: items
    985 -> 1279, items with a rarity 81 -> 212.
+   It also removes the demotion from the base `creaturescripts/scripts/login.lua`: without premium (`freePremium =
+   false`) the stock login set every vocation without a promotion back to `vocation:getDemotion()`, so a free account
+   lost its ascended class (Berserker, Ninja, ...) at every login. The premium branch is left as it was; the engine
+   itself never demotes. Verified on the test server: a Berserker on a free and on a premium account stays Berserker
+   (before: Warrior after the login, saved so in `players.vocation`).
 5. Late game: copy `server/data/monster/monsters/chaos/*.xml` to `<server>/data/monster/monsters/chaos/` (17 of them
    are tuned for levels 650-1000), then `python3 -I server/tools/late_game.py <server>/data` (idempotent; `--dry-run`
    shows what would change, `--remove` undoes it). It writes the new `experienceStages` into `config.lua` and puts the
