@@ -34,6 +34,7 @@ server/
                                       weapon attack speed scaled by the vocation's (thief_combat.lua)
     shop.lua  shop_config.lua  shop_services.lua  autosell.lua  sell_prices.lua (store, see "Store services")
     bounty.lua  bounty_core.lua  bounty_config.lua  bounty_pool.lua (bounty board; pool from tools/gen_bounty_pool.py)
+    treasure_goblin.lua  treasure_goblin_core.lua  treasure_goblin_config.lua (treasure goblins, see "Treasure goblins")
     leaderboard.lua  leaderboard_core.lua  leaderboard_config.lua (weekly boards with titles, class ladder)
 ```
 
@@ -95,9 +96,9 @@ working directory, as with the rest of the base server libs).
 | game_stash | `stash.lua` | **110** (new), `!stash` | Deposit by drag, redeem, categories, block list, `!stash all`, DB persistence. Client must be ported first (see below). |
 | game_spellbook | `spellbook.lua` | 219, `!spells` / `/spells` | Spell list window: every player spell of `data/spells/spells.xml` with its data, a short description and its area of effect (see "Spellbook" below). |
 | game_bounty | `bounty.lua`, `bounty_core.lua`, `bounty_config.lua`, `bounty_pool.lua` | 223, `!bounty` / `/bounty` | Daily rotating kill contracts per level band, tested in game (see "Bounty board"). |
-| game_leaderboard | `leaderboard.lua`, `leaderboard_core.lua`, `leaderboard_config.lua` | 229, `!leaderboard` | Weekly World Boss / Bounty Hunter / Rifts boards with titles and orbs for the top 3, all-time class ladder, tested in game (see "Leaderboards"). |
+| game_leaderboard | `leaderboard.lua`, `leaderboard_core.lua`, `leaderboard_config.lua` | 229, `!leaderboard` | Weekly World Boss / Bounty Hunter / Rifts / Goblin Slayer boards with titles and orbs for the top 3, all-time class ladder, tested in game (see "Leaderboards"). |
 
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223 are all registered in the global
+Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 229 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
 
 ### Opcode collision check
@@ -711,6 +712,56 @@ restart; next-day expiry (simulated by shifting the day function); a multi-clien
 game: party credit with two real players (unit-tested only) and the real 06:00 roll (the roll is a once-a-minute check
 of the day key).
 
+## Treasure goblins (`treasure_goblin.lua`, `treasure_goblin_core.lua`, `treasure_goblin_config.lua`)
+
+A cowardly, very rare monster (`data/monster/monsters/chaos/treasure_goblin.xml`, lookType 297, the stock goblin
+scavenger with its sack, drawn with the golden outfit shader 12). It never attacks. All numbers are in
+`treasure_goblin_config.lua`. Install: copy the XML and register it (`register_monsters.py`, see
+`data/monster/CUSTOM_MONSTERS.md`); the scripts load with the rest of `data/scripts/chaos/`.
+
+- **Spawn.** Own `EventCallback.onSpawn` (index -10, so it runs before the monster tiers). Only a *natural* map respawn
+  (not `startup`, not `artificial`) of an eligible monster rolls: 1 in `spawn.oneIn` (3000). Never for bosses
+  (`isboss` or monster_tiers' boss list), summons, non-hostile critters, monsters under 40 max health, names in
+  `skipNames`, protection zones and houses, the rectangles of `excludedAreas` (quest rooms), and, guarded, the world
+  boss arena, rift and arena slots. Rifts, arenas, the siege, the tower and ambush copies are created by scripts
+  (`Game.createMonster` = artificial), so they never roll. At most `maxAlive` (3) goblins on the server and one per
+  64x64 cell per floor every 30 minutes. On a hit the replaced spawn is cancelled (its spawn block retries after its
+  normal interval) and the goblin appears on that tile. The roll is multiplied by an event bonus `goblin`
+  (`ChaosEvents.bonus("goblin")`) if the event calendar ever defines one.
+- **Area level and health.** The replaced monster's level (`getMonsterLevel`), else the average level of the players
+  within 30 tiles, else its max health / 20. Health = 300 + 40 x level, at least 3x the replaced monster's health.
+- **Announce.** Players who come within 10 tiles get "A Treasure Goblin appears!" (once each) plus a toast through
+  `ChaosNotify.gmBroadcast` (game_chaosnotify); the goblin says "Ooh, shiny...". Natural respawns happen out of sight
+  of players (the engine blocks a spawn with a player in view), so the announcement is made on discovery, not at spawn.
+- **Behaviour.** Non-hostile, it idles or keeps ~4 tiles from players. The XML `runonhealth` is 100,000,000 and the
+  script keeps the goblin's health above it (shown as 100%) until the first hit, which drops it to the real health:
+  from then on the engine's flee logic runs it away from its target. The first hit also gives it the attacker's
+  speed x 0.95 (min +80, max 1500), a taunt, and a blink every 2.5-4.5 s (70%): a teleport 3-5 tiles to the free,
+  visible tile farthest from the attackers. Taunts on further hits (60%, 2.5 s cooldown). 18 s after the first hit it
+  escapes: portal effect, "Ha ha!", a message to players within 10 tiles, removed with no corpse and no loot. Never
+  hit for 15 minutes: it vanishes quietly. `/goblin [level]` (god accounts) spawns one in front of you.
+- **Loot** (added to the corpse in the death event, so the stock loot message and autoloot see it; owner = most
+  damage): gold worth (2000 + 400 x level) x 80-130% in crystal/platinum/gold coins; 2-4 Chaos Orbs + 1 per 150
+  levels (max 10); a Divine Orb at 25% x item find; 2-4 gear items from the replaced monster's loot table (fallback:
+  a level-banded pool), each rolled as magic (50, rarity at least 2), rare (35, at least 3) or legendary (15, at least
+  5) through `ChaosLoot.upgradeRarity` / `stockRarity` and `Game.createItemWithRarity`; uniques via
+  `ChaosLoot.rollUniques` as a legendary kill of the replaced monster with 3x item find, and if none, a 3% "hoard" roll
+  for any non boss-only unique up to the area level + 20. Experience: the replaced monster's experience x 3 (min 50,
+  cap 60 x level), given directly (the XML experience is 0). The goblin has no tier, so the loot layer's own pass adds
+  nothing for it.
+- **Leaderboard.** Each kill counts on the weekly **Goblin Slayer** board (`ChaosLeaderboard.record("goblin", player,
+  1, "add")`, see "Leaderboards").
+- **Optional hook** (called guarded, nothing is created): `ChaosLootRays.beam(position, kind, player)` with kind
+  "unique" / "legendary" / "rare" / "magic" once the loot rays module exists (rename the call if it lands with another
+  name).
+- Tests: `tests/treasure_goblin_test.lua` (eligibility and exclusions, the 1-in-N roll, cooldown, health, the escape and
+  lifetime timers, blinks, loot scaling). Verified on the test server: render, announcement and toast, flee, blinks,
+  taunts, escape, a kill's corpse (level 100: 43,680 gold, 3 Chaos Orbs, Legendary / Rare / Uncommon gear; a Dragon
+  next to it: 33 gold, a crossbow, 3 dragon ham), the onSpawn replacement (driven by hand: the cropped test map has no
+  natural spawns), experience 2,100 for a goblin that replaced a Dragon. Not verified: a real natural respawn, party
+  loot, the loot ray and leaderboard hooks (their modules do not exist yet). Outfit shader 15 drew as stripes in the
+  test client, so 12 is used.
+
 ## Leaderboards (`leaderboard.lua`, `leaderboard_core.lua`, `leaderboard_config.lua`)
 
 Client `game_leaderboard` (opcode 229), opened with `!leaderboard` or Chaos -> Leaderboards in the top menu. Settings:
@@ -724,7 +775,7 @@ window, and builds its SQL from client input without checks. So the Chaos window
 "Highscores" became "Leaderboards".
 
 - **Boards.** Weekly: **World Boss** (damage dealt to world bosses, kills participated), **Bounty Hunter** (contracts
-  completed), **Rifts** (highest rift tier completed, runs). All time: **Class Ladder** (highest level per class).
+  completed), **Rifts** (highest rift tier completed, runs), **Goblin Slayer** (treasure goblins slain). All time: **Class Ladder** (highest level per class).
   Each board shows the top 20 (`rows`), the player's own rank and value, and the time until the weekly reset.
   Ranks are never shared: on equal values the player who reached the value first ranks higher, then the lower id.
   Staff characters (`group_id >= staffGroup`, 4) are left out of every board, title and reward.
@@ -735,7 +786,7 @@ window, and builds its SQL from client input without checks. So the Chaos window
   count too). `bounty.lua` records a contract when it pays (not when multi-clienting). The rift scripts call the API below.
 - **Reset.** A once-a-minute check (and one at startup) runs the reset when the week key is later than the last
   processed one. It takes the top 3 (`top`) of every weekly board of the week that ended. They get the board's title
-  (`title`: Bossbane, Warden of the Hunt, Riftwalker) for the week that starts. Their orbs (`rewards`: 1st 5 Divine +
+  (`title`: Bossbane, Warden of the Hunt, Riftwalker, Goblin Slayer) for the week that starts. Their orbs (`rewards`: 1st 5 Divine +
   10 Chaos, 2nd 3 + 6, 3rd 1 + 3) go straight to the inbox. A player offline at the reset gets them at the next login:
   the `rewarded` flag is in the DB, so a restart loses nothing. The reset broadcasts the winners (also as a toast with
   `game_chaosnotify`). Score rows older than `keepWeeks` (8) are deleted. When the server was down over several
@@ -753,7 +804,7 @@ window, and builds its SQL from client input without checks. So the Chaos window
 ### API (rifts and any other script)
 
 ```lua
--- board: "worldboss" | "bounty" | "rift" (a key of Chaos.leaderboardConfig.boards)
+-- board: "worldboss" | "bounty" | "rift" | "goblin" (a key of Chaos.leaderboardConfig.boards)
 -- who:   a Player, a player guid, or {guid = n, name = s} (offline players are looked up)
 -- value: integer >= 0; mode: "add" (sum) or "max" (keep the best); nil = the board's mode (rift: "max")
 -- Every call also adds 1 to the board's count column (kills / contracts / runs).
