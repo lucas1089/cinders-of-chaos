@@ -28,7 +28,19 @@ server/
     class_migration.lua                            one-time move of the old vocations (startup SQL + login message)
     thief_combat.lua                               the Thief line: stealth / evasion / poison blades / dual wield / counter / bushido
     berserker_combat.lua  beastmaster.lua          Berserker Rage and Bloodrage; the Beastmaster's companion
+    necro_config.lua  necro_core.lua  necro_lib.lua  necro_minions.lua  necromancer_combat.lua
+                                                   the Necromancer line: numbers, rules, minions, curses, the bone shield
+    monk_chi_core.lua  monk_combat.lua             the Monk line: ids, numbers, chi; unarmed combat, evasion, focus, stun
+    templar_aura_core.lua  templar_combat.lua      the Templar line: ids, numbers, rules; the aura, Radiant Strikes
+    class_unlocks_core.lua  class_unlocks.lua      the class lock (store unlock per account; sql/chaos_class_unlocks.sql)
+    ascension_quest.lua  ascension_quest_core.lua  ascension_quest_config.lua
+                                                   the ascension quest (the Oracle's stages, the Trial, ChaosAscension.ascend)
+  data/npc/Ascendant Oracle.xml, data/npc/scripts/ascendant_oracle.lua   the quest's NPC (tools/install_class_ascension.py)
+  data/monster/monsters/chaos/ascension/          the Trial's guardian and its adds
+  tools/patch_promotion.py            turns the stock promotion off (NPCs, npc lib, premium login); run by install_class_ascension.py
   data/XML/chaos_vocations.xml        the class entries (ids 1, 3, 4, 5, 7, 8, 10-15), installed by tools/add_vocations.py
+  data/XML/chaos_vocations_monk.xml, chaos_vocations_necro.xml, chaos_vocations_templar.xml
+                                      the Monk (17-19), Necromancer (20-22) and Templar (23-25) lines, installed with them
   tools/add_vocations.py              writes them into data/XML/vocations.xml (2, 6, 9 retired) and converts the vocation lists
                                       of spells.xml / weapons.xml / movements.xml (+ potions.lua, lib/core/player.lua)
     paragon.lua (Paragon track past the passive tree, see "Paragon")
@@ -42,14 +54,18 @@ server/
     bounty.lua  bounty_core.lua  bounty_config.lua  bounty_pool.lua (bounty board; pool from tools/gen_bounty_pool.py)
     rift.lua  rift_core.lua  rift_config.lua (rifts: keys, runtime-built instances, run HUD; see "Rifts")
     crafting.lua (crafting bench and orbs; rules in data/lib/chaos_crafting.lua, installer tools/install_crafting.py)
+    item_mods.lua (Chaos item modifiers on the character; catalogue and rolls in data/lib/chaos_item_mods.lua, see "Item modifiers")
     treasure_goblin.lua  treasure_goblin_core.lua  treasure_goblin_config.lua (treasure goblins, see "Treasure goblins")
+    invasion.lua  invasion_core.lua  invasion_config.lua  worldevents.lua (invasions and the small world events, see "Invasions and world events";
+                                      the Wandering Merchant NPC is data/npc/Wandering Merchant.xml + npc/scripts/wandering_merchant.lua)
     leaderboard.lua  leaderboard_core.lua  leaderboard_config.lua (weekly boards with titles, class ladder)
     season.lua  season_core.lua  season_config.lua (seasons; sql/chaos_season.sql, tools/patch_season_events.py)
     hunt.lua  hunt_core.lua  hunt_config.lua  hunt_supplies.lua (hunt tracker; supply prices from tools/gen_supply_prices.py)
     daily_core.lua  daily_config.lua (daily reward login streaks, milestones, grace, login window order)
     patchnotes.lua  patchnotes_core.lua (patch notes window; the notes are data/patchnotes/*.md, see "Patch notes")
-    achievements.lua  achievements_core.lua  achievements_data.lua (achievements, points, titles, rewards; sql/chaos_achievements.sql)
     nameplate.lua  nameplate_core.lua  titles.lua (name plates over players, title registry, !title; sql/chaos_nameplate.sql)
+    guild.lua  guild_hall.lua  guild_core.lua  guild_config.lua (guild levels, perks, guild bank, guild halls; sql/chaos_guild.sql)
+    achievements.lua  achievements_core.lua  achievements_data.lua (achievements, points, titles, rewards; sql/chaos_achievements.sql)
 ```
 
 ## Install
@@ -76,6 +92,23 @@ server/
    lost its ascended class (Berserker, Ninja, ...) at every login. The premium branch is left as it was; the engine
    itself never demotes. Verified on the test server: a Berserker on a free and on a premium account stays Berserker
    (before: Warrior after the login, saved so in `players.vocation`).
+   And the base `scripts/creaturescripts/autoloot.lua` hands each item to `ChaosLoot.finalizeRarity` before moving it,
+   so autolooted gear gets its rarity stats (the engine only rolls items still in the corpse; see "Rarity stats are
+   rolled once").
+4b. Stock promotion off, the ascension quest's base parts: `python3 -I server/tools/install_class_ascension.py <server>/data
+   [--dry-run]` (idempotent; `install_all.py` runs it as a class hook). It copies the Ascendant Oracle
+   (`server/data/npc/Ascendant Oracle.xml`, `npc/scripts/ascendant_oracle.lua`) into `<server>/data/npc/` and runs
+   `server/tools/patch_promotion.py <server>/data`, which makes every stock promotion path refuse: `StdModule.promotePlayer`
+   in `npc/lib/npcsystem/modules.lua` (King Tibianus, Queen Eloise, the emperors, Ishebad, The Forgotten King, ...) says a
+   short line pointing to the Ascendant Oracle and changes nothing; every NPC script that promotes answers "promotion" with
+   that line first (a keyword added right after `NpcSystem.parseParameters`), direct `setVocation(<promotion|demotion>)`
+   calls in NPC scripts (the "Promo Bug" NPC) are commented out, and the premium branch of the stock
+   `creaturescripts/scripts/login.lua` (promotion storage 30018 -> `setVocation(promotion)`) no longer promotes. The tool
+   then lists any other promotion in the data folder for a manual check: none in this base server (no talkaction, action
+   or store offer promotes; the Oracle of the starting island only sets the first vocation). Verified on the test server:
+   King Tibianus answers "promotion" with the pointer and "yes" does nothing; a premium Warrior with storage 30018 = 1 stays
+   a Warrior at login. The guardian monsters (`data/monster/monsters/chaos/ascension/`) come with step 5 / the monsters
+   step. See "Ascension quest".
 5. Late game: copy `server/data/monster/monsters/chaos/*.xml` to `<server>/data/monster/monsters/chaos/` (17 of them
    are tuned for levels 650-1000), then `python3 -I server/tools/late_game.py <server>/data` (idempotent; `--dry-run`
    shows what would change, `--remove` undoes it). It writes the new `experienceStages` into `config.lua` and puts the
@@ -90,9 +123,19 @@ server/
    folder: `class_migration.lua` moves the characters of the retired ids 2, 6 and 9 at the next start, before anyone logs in (a
    character still on a retired id cannot log in). See docs/CLASSES.md, "Phase 2a". For the Ninja's dual wield and the line's attack speed with weapons that have their own speed, build the engine
    with `src-patches/0002-dual-wield-and-vocation-attack-speed.patch` (without it the off-hand sword cannot be equipped; everything
-   else works). Ascension: `!ascend <class>` at level 100 in a protection zone (Warrior: juggernaut|berserker, Ranger:
+   else works). Ascension: the quest of the Ascendant Oracle (see "Ascension quest"; staff keep `!ascend <class>`) at level 100 (Warrior: juggernaut|berserker, Ranger:
    deadeye|beastmaster, Mystic: elementalist|illusionist, Thief: ninja|samurai; final, the store's Vocation Change is the only way
    back, except the one free switch of migrated Elite Knights / Royal Paladins). See docs/CLASSES.md.
+   The same run installs the Monk (17-19), Necromancer (20-22) and Templar (23-25) lines from `data/XML/chaos_vocations_*.xml`
+   and opens the equipment to them: the Monk line gets two-handed clubs (staves) and what the Ranger may wear, the Templar line
+   one-handed swords and clubs and what the Warrior may wear (shields too), the Necromancer line every wand and rod, what the
+   casters may wear and the Mystic's stock healing and support instants (no rune conjuring, no stock summon); the potions follow
+   (Monk: the Royal Paladin's, Templar: the Elite Knight's and the Royal Paladin's, Necromancer: the Elementalist's).
+5c. Classes five to seven: their spells come with step 3 (`spells_chaos.xml`), their scripts with step 1. The Necromancer's minions
+   are monsters: copy `data/monster/monsters/chaos/necro_*.xml` with the other Chaos monsters (step 5) and register them with
+   `python3 -I server/tools/register_monsters.py <server>/data/monster/monsters.xml <server>/data/monster/monsters/chaos`.
+   The class lock: run `server/sql/chaos_class_unlocks.sql` (the server also creates the table at startup). The three classes
+   need an account-wide unlock, sold in the store's "Classes" category (750 coins each, a placeholder); see "Class lock".
 6. Restart the server (or `/reload scripts`). Check the console for Lua errors.
 7. Autoloot only: if `data/talkactions/talkactions.xml` registers `!autoloot` (the legacy
    `talkactions/scripts/autoloot.lua`), TFS 1.4.2 keeps the XML one and silently ignores
@@ -130,10 +173,13 @@ working directory, as with the rest of the base server libs).
 | game_hunt | `hunt.lua`, `hunt_core.lua`, `hunt_config.lua`, `hunt_supplies.lua` | 241, `!hunt` / `/hunt` | Hunt tracker: session time with pause/reset, exp/h, time to level, loot and profit/h, supplies, kills, damage/healing, Chaos drops; tested in game (see "Hunt tracker"). |
 | game_season | `season.lua`, `season_core.lua`, `season_config.lua` | 246, `!season` / `/season` | Seasons: fresh-start season characters isolated from standard ones, season ladder view, season uniques, account-wide reward track, end-of-season migration; tested in game with two clients (see "Seasons"). |
 | game_patchnotes | `patchnotes.lua`, `patchnotes_core.lua`, `data/patchnotes/*.md` | 244, `!patchnotes` / `/patchnotes` | Weekly patch notes read from Markdown files on the server, opened once per new week at login (after the Daily Reward), per-account "Don't show automatically"; tested in game (see "Patch notes"). |
-| game_achievements | `achievements.lua`, `achievements_core.lua`, `achievements_data.lua` | 250, `!achievements` | Achievements: 93 in 9 categories with points, titles and rewards, progress fed by the other systems, retroactive at login; tested in game (see "Achievements"). |
+| game_monkchi | `monk_chi_core.lua`, `monk_combat.lua` | 247 (server -> client) | The Monk's chi HUD: five pips over the map, plain text `chi:<chi>:<max>:<decaySec>`; only the Monk line (17-19) sees it. Built, not tested in game yet (see docs/CLASSES.md "Monk"). |
 | game_nameplate | `nameplate.lua`, `nameplate_core.lua`, `titles.lua` | 248, `!title` | Name plates over players: active title, `{guild}` and the name on a frame (client base patch 0022); title registry `ChaosTitles.register`; tested in game (see "Name plates and titles"). |
+| game_guild | `guild.lua`, `guild_hall.lua`, `guild_core.lua`, `guild_config.lua` | 252, `!guild` | Guild levels (guild XP from the members, perks), guild bank, guild halls (runtime instance, upgrades, rent, depot), weekly top guilds; tested in game with two members (see "Guild levels and guild halls"). |
+| game_achievements | `achievements.lua`, `achievements_core.lua`, `achievements_data.lua` | 250, `!achievements` | Achievements: 93 in 9 categories with points, titles and rewards, progress fed by the other systems, retroactive at login; tested in game (see "Achievements"). |
+| game_invasion | `invasion.lua`, `invasion_core.lua`, `invasion_config.lua`, `worldevents.lua` | 251 (server -> client; `query` / `calendar` back), `!invasion`, `/invasion` | Invasions (waves at a town or hunting ground, breach meter, boss, contribution rewards, Defender board, Victory buff, occupation) and the world events Chaos Storm, Wandering Merchant and Golden Hour; HUD and upcoming events window; toasts with action `invasion` on 79; tested in game on a test area (see "Invasions and world events"). |
 
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 228, 229, 232, 233, 236, 241, 244, 246, 248, 250 are all registered in the global
+Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 228, 229, 232, 233, 236, 241, 244, 246, 247, 248, 250, 251, 252 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
 
 ### Opcode collision check
@@ -532,6 +578,7 @@ The tower exists now. `!tower start` (or the new Enter Tower button of the clien
   python3 server/tools/clientservices.py <server>/data/chaos_clientservices.json --port 8090
   ```
   The client's `init.lua` (base patch 0001) points `clientServicesLink` and `Services.status` at `http://127.0.0.1:8090/clientservices`; change the host for a public server. A GET on the same URL returns everything, handy to check it from a browser.
+- **Runtime events:** `ChaosEvents.dynamic[key] = {id, name, description, bonus, untilTime}` adds an event with an end time to `ChaosEvents.active` (and so to the bonuses, `!events` and the login lines) until `untilTime`: the invasion Victory buff and the world events use it (see "Invasions and world events"). Scheduled invasions are whole-day entries of `Chaos.events.list`.
 - `server/tests/events_schedule_test.lua` checks the weekday/month-day rules, the bonus product, the calendar ranges sent to the client and the experience callback.
 
 ## Test kit (`admin/testkit.lua`)
@@ -687,9 +734,10 @@ refused entry, a third login was refused.
 ## World bosses (`worldboss.lua`, `data/monster/monsters/chaos/world_bosses/`)
 
 A server-wide event: a portal opens next to every temple, players gather in a lobby, one of five world bosses appears in an
-arena built at runtime, and everyone who did real damage is rewarded, not only the corpse owner. Settings: `Chaos.worldBoss`
-in `chaos_constants.lua`. Not run on a server; `tests/worldboss_test.lua` covers the layout, schedule, rotation, phases,
-damage shares, rewards and the whole event flow against a mocked engine (LuaJIT and Lua 5.3).
+arena built at runtime, and everyone who took real part (damage, healing other players, tanking) is rewarded, not only the
+corpse owner; the top 3 damage dealers, healers and tanks get extra rewards and a title. Settings: `Chaos.worldBoss` in
+`chaos_constants.lua`. `tests/worldboss_test.lua` covers the layout, schedule, rotation, phases, role accounting, shares,
+rewards and the whole event flow against a mocked engine (LuaJIT and Lua 5.3); the roles were tested in game (below).
 
 **Install.** Copy the XMLs to `<server>/data/monster/monsters/chaos/world_bosses/` and register them:
 `python3 -I server/tools/register_monsters.py data/monster/monsters.xml data/monster/monsters/chaos/world_bosses`.
@@ -769,24 +817,80 @@ with a healer. Level 300 characters (3-5k health) can be one-shot by the spikes;
 - The corpse works as for any monster: the engine's loot goes to the top damage dealer (corpse owner), plus the Chaos loot
   layer with the `boss` tier (extra rolls, gear rarity floor 6, currency, and the boss-only uniques of
   `chaos_unique_items.lua`, which now list the five world bosses).
-- **Participation reward** for every player whose damage reached `minDamagePercent` (0.25%) of the boss max health
-  (~40-60k damage, about 1.5 minutes of a level 300 hitting it). Damage is counted per character (GUID) by a healthchange
-  event on the boss (summons count for their master, healing does not, overkill is clamped to the health left).
-  share = own damage / damage of all eligible players. Each gets: 500k gold + share x 10M gold into the bank, 3 Chaos Orbs +
-  1 Divine Orb + share x (60 Chaos Orbs, 25 Divine Orbs), the top 3 extra Divine Orbs and crystal coins, a 15% + share x 30%
-  chance of one piece of the boss's set (rarity 6-9 via `Game.createItemWithRarity`) and a 0.5% + share x 3% chance of one
-  of the boss-only uniques. Items that do not fit go to the inbox. Players offline at the kill get it at their next login
-  (kept in memory until a restart).
+- **Participation reward** for every player whose contribution score (see "Roles") reached `minScorePercent` (0.25%) of
+  the boss max health (~40-60k, about 1.5 minutes of a level 300 hitting it, or as much healing, or twice as much tanking;
+  the anti-AFK rule). share = own score / score of all eligible players. Each gets: 500k gold + share x 10M gold into the
+  bank, 3 Chaos Orbs + 1 Divine Orb + share x (60 Chaos Orbs, 25 Divine Orbs), a 15% + share x 30% chance of one piece of
+  the boss's set (rarity 6-9 via `Game.createItemWithRarity`) and a 0.5% + share x 3% chance of one of the boss-only
+  uniques. Items that do not fit go to the inbox. Players offline at the kill get it at their next login (kept in memory
+  until a restart).
+- **Top 3 of each category** (`reward.podium`: damage, healing, tanking; eligible players only, one player can place in
+  several): 1st 5 Divine Orbs + 50 crystal coins, 2nd 3 + 30, 3rd 2 + 20 (the old top-3 damage bonus, now per category),
+  an extra unique roll of 3% / 2% / 1% (one unique at most per player) and the category's title for 7 days on the name
+  plate: **Bossbreaker** (damage), **Lifewarden** (healing), **Bulwark** (tanking). "Bossbane" stays the weekly World
+  Boss board title, so the damage role got its own name. Ties: who reached the value first places higher, then the lower
+  id; a value under `placeMinPercent` (0.1% of the boss max health) does not place. The titles are a `ChaosTitles`
+  source "worldboss" (titles.lua; registered when the registry is loaded); the expiry is a player storage
+  (7100930-7100932, `roles.titleStorage`), so it survives logout and restarts. The victory broadcast lists the three
+  top 3 lists ("Top damage: A 1.2M, B 800k, C 50k. Top healing: ... Top tanking: ..."); the client toast has room for
+  two lines, so each category gets its own toast ("World boss slain! Top healing: ...").
 - **Multi-client:** characters with another character online from their IP may enter and fight (they already cannot attack
   players, and blocking entry would split friends sharing a connection), but get no participation reward (`mcReward = false`)
   and are told so at entry and at the end. A character counts if it was multi-clienting at entry or at any 3-second check
   while inside. Corpse loot is not affected (it follows the engine's damage rules).
 
-### Not verified (needs a server run)
-Monster XML loading of the five files (attack names, effect names and flags were checked against the engine source: every
-`areaEffect`/`shootEffect` value is in the engine's name tables), dynamic-tile building and the forcefields' step-in with no
-destination, `Game.getTowns()` temple spots on the real map, the reward delivery (`addItemEx`/inbox, bank), the client
-showing the boss tier, and the actual fight balance. Monster damage may be scaled by the server's own monster level system.
+### Roles: damage, healing, tanking (`Chaos.worldBoss.roles`)
+
+Tracked per character (GUID) while the boss is alive (`state.stats`); a death keeps what was earned.
+- **Damage:** as before, a healthchange event on the boss (summons count for their master, healing does not, overkill is
+  clamped to the health left).
+- **Healing:** a healthchange event registered on every player inside the arena (at the arena forcefield and every 3 s
+  check). For healing the engine runs it before the heal with the healer as `attacker`, so the credit is the effective
+  part: capped at the target's missing health, and at the boss damage the target took and was not healed for yet (the
+  "debt": every heal from anyone, self-heals included, pays it off), so only healing of boss damage counts and nobody
+  farms by healing damage from elsewhere. Healer and target must both be in the arena. **Self-healing does not count**
+  (`selfHealWeight = 0`): what a tank survives is already its tanking credit. Attributed (engine source; the spells also in
+  game): instant spells on others (Kindred Mend `saen kin`, Circle of Mending `saen gal vas kal`, the Chaos class heals
+  that use `doTargetCombat`/combat objects such as the Templar and keystone heal pulses), healing runes used on someone
+  (Grand Mending Rune) and potions used on someone (`potions.lua` calls `doTargetCombat(player, target, ...)`). Not
+  attributed: `Chaos.heal` / `Creature:addHealth` (no origin and no attacker: the engine skips the healthchange event),
+  health regeneration and food, life leech (no origin), and heals cast by summons only count when the summon has a player
+  master. Mana restored is not healing.
+- **Tanking:** damage from the boss or one of its adds (by creature id, conditions included: the engine passes the
+  condition's owner) that the player survived: a hit that kills counts nothing, each hit is capped at `tankHitCap` (8000,
+  the biggest designed boss hit), a hit from a boss or add that was not targeting the player (area splash) counts
+  `offTargetWeight` (half), and it only counts while the player is active: attacked the boss or an add (EventCallback
+  onTargetCombat) or healed someone within `activeSeconds` (30). So an AFK character parked in the boss's area earns
+  nothing. Damage taken into a mana shield is not counted (only health).
+- **Contribution score** = damage + healing x `healWeight` (1.0) + tanking x `tankWeight` (0.5; tanking overlaps with the
+  healing that undoes it). Sizing: a level 1000 tank in front of the boss survives ~2-3k damage per second (~1.5M in a
+  10-minute kill, score ~0.75M plus its own damage), a dedicated healer heals ~1-2k per second (~0.6-1.2M), a damage
+  dealer does ~1.2M: the three roles end up in the same range of shares.
+- **Leaderboards:** the World Boss board still records damage (and now counts a kill for every rewarded player, healers
+  included; rows with 0 damage are not ranked). Two weekly boards were added to `leaderboard_config.lua` (one board = one
+  value in this model, so a separate board per role fits it better than extending World Boss): **Boss Healer** (healing
+  credit, title Lifebinder) and **Boss Tank** (tanking credit, title Ironwall), keys in `roles.boards`. Staff characters
+  are left out of every board as before.
+- **Achievements** (`achievements_data.lua`, fed from `distribute` via `ChaosAchievements.progress`, guarded): Lifeline
+  (most healing at a kill, title), Immovable (most tanking at a kill, title), Pillar of the Raid (top 3 healing or tanking
+  at 5 kills, 5 Chaos + 2 Divine Orbs). `achievements.lua` still wraps `computeRewards` with the same signature; a share's
+  `rank` is still the damage place, so "Lion's Share" (wb_top) keeps meaning the most damage.
+
+**Tested in game** (test server with a cropped map, Kaelgor at 150k health and 1/8 damage in a test copy, gather 20 s,
+`mcReward = true` because both clients share 127.0.0.1): a level 574 Deadeye tanked and attacked, a gamemaster healed him
+with Kindred Mend and Circle of Mending (the driver also used a Grand Mending Rune and a health potion on him; their
+share of the credit was not isolated), and both hit the boss. Live
+stats during the fight (`state.stats`) grew for tanking and healing; the tank died twice (deaths counted, credit kept,
+nothing earned while away) and came back. Result: "Top damage: Tester 15k, Duelist 12k. Top healing: Duelist 12k. Top
+tanking: Tester 50k." in the broadcast; the reward message (61.6% of the contribution, 1st in damage and tanking, the
+item counts match the formula), "You earned the title Bossbreaker / Bulwark for 7 days", both titles in `!title` and on
+the name plate, the gamemaster's Lifewarden; World Boss and Boss Tank board rows (the gamemaster's healing is left out
+of Boss Healer as staff, as for every board); a second kill showed the three per-category toasts.
+
+### Not verified
+`Game.getTowns()` temple spots on the real map (the test map is cropped: no portal spot, players were moved onto the
+arena forcefield), the inbox path of the reward, and the actual fight balance at full health and damage. Monster damage
+may be scaled by the server's own monster level system.
 
 ## Bounty board (`bounty.lua`, `bounty_core.lua`, `bounty_config.lua`, `bounty_pool.lua`, `tools/gen_bounty_pool.py`)
 
@@ -898,6 +1002,165 @@ scavenger with its sack, drawn with the golden outfit shader 12). It never attac
   loot, the loot ray and leaderboard hooks (their modules do not exist yet). Outfit shader 15 drew as stripes in the
   test client, so 12 is used.
 
+## Invasions and world events (`invasion.lua`, `invasion_core.lua`, `invasion_config.lua`, `worldevents.lua`)
+
+Server-wide events in the open world. Client: `game_invasion` (HUD and the upcoming events window, extended opcode
+251), toasts through `game_chaosnotify` (action `invasion` on opcode 79). Every number is in `invasion_config.lua`
+(loaded as `Chaos.invasionConfig`; plain data, so the merchant NPC reads it too). The pure logic (schedule, waves,
+scaling, breach meter, shares, rewards, occupation, world event rotation, HUD message) is in `invasion_core.lua` and
+tested by `tests/invasion_test.lua`. No database table, no storage: the state is in memory (a restart ends a running
+invasion, the Victory buff and the world event; offline rewards wait in memory like the world boss's).
+
+**Install.** The scripts load with the rest of `data/scripts/chaos/`. Copy `data/npc/Wandering Merchant.xml` and
+`data/npc/scripts/wandering_merchant.lua` into the server's `data/npc/` (the ascension quest's installer step, which
+`install_all.py` runs, copies every file of `server/data/npc/`). Without them the merchant event refuses to start
+("the merchant NPC could not be placed") and the rotation picks another event next time.
+
+### When
+
+- **Schedule** (`schedule`): Wednesday 19:30 and Sunday 17:30, area and faction `"random"`. A random pick depends only
+  on the start time, so the warnings, the calendar and the start name the same area and faction.
+- **Random invasion** (`random`): on 35% of the days, at a random minute between 12:00 and 23:00, at least 90 minutes
+  from a scheduled one and outside the world boss hours 15 and 21. It is decided by the date alone (a restart does not
+  roll again) and kept secret until its first warning.
+- **Warnings** 30, 10 and 1 minutes before (broadcast + toast). The login-screen calendar and `!events` get one
+  whole-day "Invasion" entry per scheduled weekday (added to `Chaos.events.list` at load, as the siege does).
+  `!invasion` shows the running invasion and the upcoming events (scheduled invasions, the running or next world
+  event, the Victory buff) and opens the client window.
+- A GlobalEvent checks every 15 s. A start while another invasion (or an occupation) runs is skipped and logged.
+
+### The fight
+
+- **Areas** (`areas`): a rectangle on one floor, a level, a target point and its name, optional `edges` the waves come
+  from, `exclude` rectangles, a faction list, `kind` (town / hunt), `invasion = false` / `worldEvents = false`.
+- **Factions** (`factions`): existing monster types with their hunting level (the `bounty_pool.lua` estimates) and a
+  boss. Orc Warband (Orc .. Orc Warlord, boss "Warchief Grashnak" = Orc Warlord renamed), Undead Legion (Skeleton ..
+  Blightwalker; Dracola as "Dracola the Unburied", The Pale Count from area level 200), Infernal Host (Fire Devil ..
+  Juggernaut; Orshabaal, Ghazbaran from 300), Minotaur Horde (Minotaur .. Moohtant; Bullwark as "Bullwark the Gorer").
+  The renaming runs in an `onSpawn` callback, before the monster is placed, so clients see the new name.
+- **Waves**: 5. Wave i has (10 + 4 (i - 1)) x player factor monsters (1 + 0.15 per extra player within 30 tiles of
+  the area, at most x3): 10, 14, 18, 22, 26 for one player. Monsters come from the faction's roster within [0.35, 1.25] x
+  the area level (at least 3 types), wave 1 from its lower part, the last wave from its upper part. Packs of 3-5 appear
+  together at one point of the outer 3 rows of the area border. A spawn tile must have ground and be walkable, and
+  must not be a protection zone, a house, a depot, a teleport or a floor change, an `exclude` rectangle or within 6
+  tiles of a temple (`templeRadius`). Tiers per invader: magic 10% + 4% per wave, rare 2% + 2%, legendary 0% + 1%
+  (`ChaosApplyTier`). The next wave comes when 25% of the current one is left or after 150 s.
+- **Scaling** to the area level: ratio = area level / monster level; health x ratio, damage x ratio^0.4, experience x
+  ratio^0.8, each clamped to [0.5, 10 / 2.5 / 6]. The damage multiplier is applied on the players' `healthchange`
+  (like the tier multipliers), experience in an `onGainExperience` callback.
+- **The push**: every 0.4 s each invader without a target takes a step to the target point (at its own speed). It
+  uses `Creature:getPathTo` and falls back to greedy steps. The step is made with `Creature:move(tile, 0)`, so the
+  engine's own rules apply: no monster enters a protection zone, a house or a blocked tile (`move(direction)` would
+  ignore all of that). An invader with a player target fights (engine AI) and walks on afterwards.
+- **Breach meter**: every second, + 0.25% per invader within 2 tiles of the target (the boss counts 4), at most
+  1.5% per second; - 0.25% per second while none is there. 5 invaders at the gate take 80 s to break it. HUD
+  broadcasts at 50% and 80%.
+- **Boss**: in the last wave, the faction boss with the highest level not above the area level, legendary
+  (modifiers and shader), health 2500 x area level x player factor (at least 40,000), damage scaled from its level
+  (exponent 0.6, [0.3, 2.5]), experience x3.
+- **HUD** (every 2 s to every player online from level 30): area and faction, the target, wave N of M, invaders left,
+  the time left, "Horde slain" (killed of all planned), the breach meter (amber, orange from 50%, red from 80%), the
+  boss's health, the top 3 contributors with their share, your rank, share and kills. Click it to fold it. It sits
+  under the character plate (the rift HUD's spot) and moves right of the rift HUD while a rift runs.
+
+### Win
+
+All waves and the boss slain within 20 minutes. Contribution = damage dealt to invaders + 0.6 x healing done to other
+players inside the area (+10 tiles, effective healing only) + kills x 0.25 x the average invader health. A player needs
+0.2% of the total invader health in contribution to be rewarded. Multi-client characters fight but get nothing
+(`mcReward`). Rewards per player, by share of the total:
+- gold to the bank: area level x (200 + 8000 x share), e.g. area 100 alone 820,000; ten equal defenders 100,000 each;
+- 1 Chaos Orb + share x 20 Chaos Orbs and 6 Divine Orbs; top 3 extra Divine Orbs (3 / 2 / 1), the first an Exalted Orb;
+- a unique at (100 + share x 600) / 10000: the Chaos loot layer's own roll for the boss as a boss-tier kill (x20 item
+  find), else any non boss-only unique up to the area level + 20 (season uniques respect the season);
+- the weekly **Defender** board (`leaderboard_config.lua`, title "Defender of the Realm"): 10 points per invasion + the
+  share in percent (`ChaosLeaderboard.record("defender", ...)`, so the season and guild wrappers count it too);
+- achievements, guarded: `ChaosAchievements.progress` with `invasion_defended`, `invasion_top` (rank 1),
+  `invasion_boss` (did damage to the boss), `invasion_kills` (kills), `invasion_fought` (a lost one),
+  `invasion_liberated`. No entries in `achievements_data.lua` use them yet.
+- **Victory buff**: +10% experience for 60 minutes. With `scope = "server"` it is an entry of `ChaosEvents.dynamic`, so
+  `events_schedule.lua` applies it and `!events` lists it; with `scope = "area"` the invasion's own experience callback
+  applies it inside the area only.
+
+### Loss and occupation
+
+The breach meter at 100% or the time up: the area is **occupied** for 30 minutes. The survivors stop pushing and get
+x1.5 health, and a garrison of 6 rare (70%) / legendary (30%) invaders appears around the target. The HUD shows
+"<area> is occupied", the occupiers left and the time. All slain: the area is **liberated**, and everyone who fought
+them gets 25% of the gold and orbs (no unique, no board). Time up: they withdraw (removed). **NPC shop prices are not
+changed**: the trade code is the base server's NPC library (`npc/lib/npcsystem`), and a price penalty per town would
+mean editing it; skipped on purpose. `ChaosInvasion.isOccupied(areaKey)` is there for a later hook.
+
+### World events (`worldevents.lua`)
+
+One at a time, the first 20-60 minutes after a start, then every 2-4 hours. It is never in the area of a running
+invasion, never during one, and never within 45 minutes of an invasion start. The kind is picked by weight (storm 40,
+merchant 30, golden 30), never the same twice in a row. A broadcast + toast at the start and the end, and an entry in
+`!events` while it runs (`ChaosEvents.dynamic.worldEvent`).
+- **Chaos Storm** (15 min): magic, rare and legendary spawn chances x3 in the area. `monster_tiers.lua` multiplies its
+  spawn roll by `ChaosWorldEvents.tierMult(position)`. Lightning and clouds around the players inside every 2 s.
+- **Wandering Merchant** (20 min, town areas only): the NPC "Wandering Merchant" at a random free tile of the area (or
+  one of `merchantSpots`). Only the area is announced. Goods: Chaos Orb 40k, Divine Orb 120k, Exalted Orb 200k, Orb of
+  Alchemy 60k, Orb of Annulment 80k, Double Experience Potion 350k, supreme health potion 900 (no stock limit).
+- **Golden Hour** (30 min): +25% Chaos loot in the area. `loot_config.lua` `rateMult` multiplies by
+  `ChaosWorldEvents.lootMult(ctx)`, as for the rifts; golden rings around the players inside.
+
+### Commands
+
+`!invasion` (everyone). Staff (`/invasion`, group with access): `start <area|random> [faction]`, `stop`, `status`,
+`schedule <minutes> [area] [faction]` (a one-off start in memory, with the warnings), `check [area]` (is the area usable
+on this map: target tile, valid border tiles and why the others are refused), `areas`, `event
+<storm|merchant|golden|stop> [area]` (the merchant's spot is in the staff reply), `wave` (the next wave now), `breach <n>`.
+
+### Coordinates for the real map
+
+The areas in `invasion_config.lua` were read from the real map file (town temples from its towns list, tiles of
+the rectangles from the map nodes, blocking from `items.otb`). The test server runs a cropped map, so they were not
+walked in game.
+- `thais` (level 80): x 32324-32414, y 32196-32286, z 7, target 32365,32245 (the first walkable tile outside the temple's
+  protection zone; the whole rectangle is one connected walkable area reaching all four borders).
+- `carlin` (level 60): x 32315-32405, y 31737-31827, target 32355,31782.
+- `thaisfields` (hunting, level 150): x 32290-32400, y 32292-32338, target 32345,32315 (south of Thais).
+- `carlinwilds` (hunting, level 100): x 32300-32440, y 31685-31735, target 32370,31710 (north of Carlin).
+- `venore` (level 120) is **disabled**. The streets are bridges over water, and the largest connected walkable piece
+  around the temple holds only ~370 tiles. Try it with `/invasion check venore` and set `edges` / `target` before enabling it.
+On the live server run `/invasion check` once: it lists every area with its problems. Levels are guesses: set them to
+the hunting level around each area.
+
+### Test server
+
+`data/scripts/zz_ztest_invasion.lua` (srv2 only, not in the repo) builds a 46 x 41 grass field with a wall and a gate
+on the empty cropped map and adds it as area `testtown` (level 300) with `ChaosInvasion.addArea`.
+
+**Verified in game** (srv2, client game_ui, level 1000 character):
+- the 30, 10 and 1 minute toasts of a scheduled invasion, and its start; a start skipped while another one ran;
+- `/invasion check | schedule | start | status | breach` and `!invasion` with the upcoming events window;
+- packs arriving at the north edge and walking around the wall to the gate; invaders at the gate raising the breach
+  meter (50% / 80% broadcasts);
+- the HUD updating (waves, left, time, horde slain, breach, top, you) and the boss (Warchief Grashnak) with its health
+  in the HUD;
+- a win in 3:07: Victory toast, the reward message (7,590,000 gold, 31 Chaos, 13 Divine, 1 Exalted Orb, before the
+  gold and orbs were lowered to the current numbers), the Victory buff in `!events`, the Defender board entry (110
+  points, 1 invasion) in the leaderboard window;
+- two losses (breach) with the occupation: garrison, HUD "occupied", the liberation with its reward (615,000 gold, 5
+  Chaos, 1 Divine);
+- Chaos Storm: 1000 Dragons created in the area had 175 with a tier shader against 58 without the storm (x3); lightning;
+- Wandering Merchant: placed, greeting, trade window with the configured goods;
+- Golden Hour: `rateMult` 1.25 inside the area, 1.0 outside.
+
+**Not verified**: healing credit (needs two players), several defenders sharing the rewards, a unique reward (7% roll
+not hit), the real map areas, the area-scope Victory buff, a natural world event rotation (started by command), a
+withdrawal after 30 minutes. Found on the way, not fixed: `monster_tiers.lua` keys the tier state by the creature id
+inside `onSpawn`, which is 0 before the placement, so naturally rolled tiers keep their health and shader but report
+"normal" (no tier experience or damage multiplier, no monster bar label). Invasion monsters are not affected
+(`ChaosApplyTier` after the creation). Ambush copies of slain invaders are ordinary monsters and stay after an
+invasion.
+
+**Edits to shared files**: `chaos_constants.lua` (`ChaosOpcodes.invasion = 251`), `leaderboard_config.lua` (board
+`defender`), `loot_config.lua` (`rateMult` x `ChaosWorldEvents.lootMult`), `monster_tiers.lua` (spawn roll x
+`ChaosWorldEvents.tierMult`), `events_schedule.lua` (`ChaosEvents.dynamic`: runtime events in `E.active`),
+client `game_chaosnotify/notifications.lua` (toast type `INVASION`, action `invasion`).
+
 ## Leaderboards (`leaderboard.lua`, `leaderboard_core.lua`, `leaderboard_config.lua`)
 
 Client `game_leaderboard` (opcode 229), opened with `!leaderboard` or Chaos -> Leaderboards in the top menu. Settings:
@@ -910,7 +1173,8 @@ data with the game packet 0xB1 (the newer protocol's highscores), which this eng
 window, and builds its SQL from client input without checks. So the Chaos window is separate, and the menu entry
 "Highscores" became "Leaderboards".
 
-- **Boards.** Weekly: **World Boss** (damage dealt to world bosses, kills participated), **Bounty Hunter** (contracts
+- **Boards.** Weekly: **World Boss** (damage dealt to world bosses, kills participated), **Boss Healer** and **Boss Tank**
+  (healing and tanking at world bosses, see "World bosses"), **Bounty Hunter** (contracts
   completed), **Rifts** (highest rift tier completed, runs), **Goblin Slayer** (treasure goblins slain), **Guild Siege** (siege points), **Arena 1v1** and **Arena 2v2** (best rating of the week). All time: **Class Ladder** (highest level per class).
   Each board shows the top 20 (`rows`), the player's own rank and value, and the time until the weekly reset.
   Ranks are never shared: on equal values the player who reached the value first ranks higher, then the lower id.
@@ -974,7 +1238,9 @@ once-a-minute check of the week key), the rift source (the rift scripts do not c
 
 Install: `python3 -I server/tools/install_crafting.py <server>/data` (idempotent, `--dry-run`) and the
 `chaos_crafting_log` table of `sql/chaos.sql`. `crafting.lua` loads `data/lib/chaos_crafting.lua` itself, so `lib.lua`
-needs no change.
+needs no change. The client needs the multi-use flag on two orbs in its `Tibia.dat`:
+`python3 -I client/tools/sprites/set_multiuse.py <client>/data/things/1098/Tibia.dat` (after `gen_effects.py`, which
+writes a new dat).
 
 **How an item carries modifiers (base server).** A rarity is the custom attribute `rarity` (1..15: Common, Uncommon,
 Rare, Epic, Legendary, Exotic, Mythic, Chaos, Eternal, Divine, Phantasmal, Celestial, Cosmic, Abyssal, Transcendent).
@@ -987,39 +1253,80 @@ of their own one `rarity_element<x>` (% extra damage). Everything is also writte
 tooltip show. `customs/rarity/base_rarity.lua` turns the attributes into conditions and storages when the item is
 equipped (and at login); the element and absorb combat scripts read those storages. Uniques (`chaos_unique_items.lua`)
 are base items with the custom attribute `chaos_unique` and their stats as the same `rarity_*` attributes, without a
-rarity. The stock Chaos Orb (29856) keeps the rarity and makes a new copy of the item (new level, modifiers and values);
-the stock Divine Orb (29857) makes a new copy with a new random rarity, which is none 85% of the time (the store text
-"rerolls the values" does not describe it). Both are the base server's `customs/rarity/reroll_rarity_stats.lua`.
+rarity. On top of these, items carry the Chaos modifiers of the next section (`chaos_mod_<key>`).
 
-**The orbs.** A modifier is one line of the description (a leech or critical pair is one modifier). The maximum per
-rarity is one more than a weapon of that rarity rolls: 3, 4, 4, 5, 5, 6, 6, 6, 7, 7, 7, 7, 7, 9, 9 (`maxMods`).
+**Every orb is used directly on the item.** "Use with" on the orb, then click an item or a Rift Key in the backpack
+(an `Action` per orb id in `crafting.lua`, `ChaosCraftingUseOrb`). The bench is optional. All seven orbs go through the
+same `craft()` as the bench: the orb is owned, the item is in the backpack (equipped items and the ground are still
+refused: the copy-making orbs would have to unequip and re-equip, and the equip scripts would have to follow), no
+uniques, no stacks, the rules below, a line in `chaos_crafting_log`. Using an orb on nothing, a creature, the floor or
+anything that can never carry modifiers only explains how to use it ("Use the Exalted Orb on an item: choose
+"Use with" on the orb, then click an item or a Rift Key in your backpack..."); it no longer opens the bench.
 
-| orb | id | rule |
+**How the two plain-use orbs became use-with (and why that way).** The three rune stones and the Chaos/Divine Orbs
+were already use-with; the Orb of Transmutation (29851, client 27195) and the Exalted Orb (29855, client 27199) were
+plain items. Use-with needs two flags: the client's multi-use flag in `Tibia.dat` (otherwise the client never starts
+the crosshair) and the server's `useable` flag in `items.otb` (`Game::playerUseItemEx` refuses an item without it).
+Chosen: set both flags on the existing ids (option a). `install_crafting.py` sets `FLAG_USEABLE` on the two otb nodes
+(keeps `items.otb.bak`), `client/tools/sprites/set_multiuse.py` inserts flag byte 7 into the two items of the dat
+(keeps `Tibia.dat.bak`; checks that the dat still parses exactly). The ids stay the same, so no migration: every orb
+already in a backpack, depot, store offer, loot table, bounty chest and the character-upgrade costs
+(`waystone_system/character_upgrades.lua` counts 29851 and 29855) keeps working. Moving the orbs to other multi-use ids
+(option b) would have needed a migration of every existing stack and of all those references. With a dat that lacks
+the flag the orbs still work on the bench; the engine answers a plain use of a `useable` item with "You cannot use this
+object" (it refuses plain use of every use-with item, the rune stones included).
+
+The Chaos and Divine Orbs are registered by `crafting.lua` too (same rules, the log, Rift Keys); `crafting.lua` loads
+before `customs/rarity/reroll_rarity_stats.lua` (scripts load in path order), and the installer makes that script skip
+its own two registrations when `ChaosCrafting.ownsStockOrbs` is set (otherwise the engine prints a duplicate warning
+and keeps the first one, ours). The installer still adds the unique guard to its `isRerollable`.
+
+**The orbs on gear.** A modifier is one line of the description (a leech or critical pair is one modifier, a Chaos
+modifier is one). The maximum per rarity is one more than a weapon of that rarity rolls: 3, 4, 4, 5, 5, 6, 6, 6, 7, 7,
+7, 7, 7, 9, 9 (`maxMods`), Chaos modifiers included.
+
+| orb | id | on gear |
 |---|---|---|
-| Orb of Transmutation | 29851 (existing currency item) | normal item (no rarity, no modifiers, no item level) -> Common 65% / Uncommon 35%, engine roll |
-| Orb of Alchemy | 24691 (rune stone, named by the installer) | normal item -> Rare 55% / Epic 30% / Legendary 15%, engine roll |
-| Exalted Orb | 29855 (existing currency item) | item with a rarity and a free slot: one new modifier it does not have yet. Group weights absorb 30, skill 30, leech/critical 25, element 15 (weapons only, one at most); combat skills weigh 4, profession skills 1; value from the rarity's range (item.cpp tables) |
-| Orb of Annulment | 24697 (rune stone) | item with a rarity: one random modifier goes (rarity and level stay) |
-| Orb of Scouring | 24688 (rune stone) | item with a rarity: a plain copy of the base item |
-| Chaos Orb | 29856 | as the stock orb, on the bench only for items with a rarity |
-| Divine Orb | 29857 | as the stock orb |
+| Orb of Transmutation | 29851 (existing currency item) | normal item (no rarity, no modifiers, no item level) -> Common 65% / Uncommon 35%, engine roll + Chaos modifier roll |
+| Orb of Alchemy | 24691 (rune stone, named by the installer) | normal item -> Rare 55% / Epic 30% / Legendary 15%, engine roll + Chaos modifier roll |
+| Exalted Orb | 29855 (existing currency item) | item with a rarity and a free slot: one new modifier it does not have yet. Group weights absorb 30, skill 30, leech/critical 25, element 15 (weapons only, one at most), Chaos modifiers 25 (those the item's kind may get); combat skills weigh 4, profession skills 1; value from the rarity's range (item.cpp tables, `chaos_item_mods.lua` tiers) |
+| Orb of Annulment | 24697 (rune stone) | item with a rarity: one random modifier goes, Chaos ones included (rarity and level stay) |
+| Orb of Scouring | 24688 (rune stone) | item with a rarity: a plain copy of the base item (no Chaos modifiers either) |
+| Chaos Orb | 29856 | item with a rarity: a new copy of the same rarity (new level, engine modifiers and Chaos modifier roll) |
+| Divine Orb | 29857 | a new copy with a new random rarity, none 85% of the time (the stock roll), plus the Chaos modifier roll |
 
 Transmutation, Alchemy, Scouring, Chaos and Divine make a new copy (like the stock orbs), so upgrade levels on the item
 are lost; Exalted and Annulment change the item in place and rewrite only the rarity part of the description (text in
 front of "Level:" and `[...]` upgrade slots behind it are kept). Never touched: uniques (also an old unique without the
 marker, recognised by its spec name), stacks, containers, non-gear, the boat items, equipped items, items outside the
-backpack. The installer also makes the stock reroll script refuse uniques (it turned a unique into a plain copy).
-No Vaal-style orb: the stock Chaos/Divine use-with could not be made to respect a "corrupted" flag without more
-patching of base scripts.
+backpack. No Vaal-style orb.
 
-**Bench.** `!craft` / `/craft`, Chaos -> Crafting Bench in the top menu, or using an Orb of Transmutation / Exalted Orb
-(they are plain-use items in the dat, the three rune stones are use-with). Drag an item from an open backpack onto the
-slot, or click one of the backpack's gear in the grid (bags inside the backpack included, 64 at most). The bench shows
-rarity, item level, modifiers / maximum and every orb with your count; a button is enabled only when the server says
-the orb fits. The server checks again on every click: the item is found by its path from the backpack plus its id and a
-signature of its modifiers (moved or changed -> "put it on the bench again"), the orb is owned, the rules above, 250 ms
-between orbs. The last 8 crafts come from `chaos_crafting_log` (rows older than 60 days go at startup); use-with crafts
-are logged too. Use-with: the five new orbs work on items in the backpack the normal way (`Action` per id).
+**The orbs on Rift Keys** (the map way; `C.keyCheck` / `C.keyApply`). The rift's own modifier pool, value ranges and
+reward bonuses (`rift_config.lua` `mods`, `rift_core.lua`); the tier never changes; the key's `rift_mods` attribute,
+name and description (modifiers, reward bonuses, level) are written again through `ChaosRift.applyKey`. Rarity, unique
+and slot rules do not apply; the backpack rule and the log do.
+
+| orb | on a Rift Key |
+|---|---|
+| Transmutation | a key without modifiers gets 1 |
+| Alchemy | a key without modifiers gets 2 (60%) or 3 (40%) (`key.alchemyCount`) |
+| Exalted | one more modifier the key does not have, up to `key.maxMods` (3) |
+| Annulment | one random modifier goes |
+| Scouring | every modifier goes |
+| Chaos | new modifiers, the count rolled with the drop weights (1: 50, 2: 35, 3: 15) |
+| Divine | the same modifiers, new values inside their ranges (whole steps) |
+
+`key.maxMods` also caps the decoded key (`R.decodeMods`); above 3 the crash refund marker would need more storages.
+
+**Bench.** `!craft` / `/craft` or Chaos -> Crafting Bench in the top menu (the orbs no longer open it). Drag an item or
+a Rift Key from an open backpack onto the slot, or click one in the grid (bags inside the backpack included, 64 at
+most; keys have a violet frame). The bench shows rarity and item level (a key: tier, level and reward bonuses),
+modifiers / maximum and every orb with your count and, when it fits, a preview of what it would do ("2 -> 3 of 5
+modifiers", "Rare 55%, Epic 30%, Legendary 15%", "same modifiers, new values"; `C.preview`); a button is enabled only
+when the server says the orb fits. The server checks again on every click: the item is found by its path from the
+backpack plus its id and a signature of its modifiers (moved or changed -> "put it on the bench again"), the orb is
+owned, the rules above, 250 ms between orbs. The last 8 crafts come from `chaos_crafting_log` (rows older than 60 days
+go at startup); use-with crafts are logged too.
 
 **Drops and rewards.** Chaos loot layer (`loot_config.lua` currency, per 10000 kills, normal / magic / rare / legendary /
 boss): Transmutation 30/200/700/2500/3500 (1-2), Alchemy and Annulment 10/80/300/1200/2000, Scouring
@@ -1028,14 +1335,86 @@ Divine 30). Simulated 10000 legendary kills: Chaos 8513, Divine 4380, Transmutat
 Scouring 2110, Exalted 945. Store (Chaos Currency): Transmutation 5, Scouring 12, Alchemy 15, Annulment 20, Exalted 40
 coins. Weekly bounty chest: + 3 Orbs of Transmutation and 1 Orb of Annulment (`weeklyExtra` in `bounty_config.lua`).
 
-**Tested in game** (test server, cropped map): every orb from the bench (Exalted twice to a full Exotic armor, then
-refused; Annulment; Transmutation -> Common; Scouring -> normal; Alchemy -> Epic with an element; Chaos keeps Epic;
-Divine -> normal), use-with of the Orb of Annulment, plain use of the Exalted Orb opening the bench, drag and drop onto
-the slot, refusals (unique on the bench and by use-with, full item, no orb, equipped item, stock Chaos Orb on a unique),
-the look text after each change, the armor's modifiers applied when equipped (Holy absorb 3, Fishing +1, Herbalism +2,
-the annulled Drown absorb gone), the history, the store purchase and the loot simulation. `tests/crafting_test.lua`
-covers eligibility, each orb on a mocked item, slot limits, the description and unique protection. Not tested: the
-weekly bounty chest with the extra orbs (needs seven finished contracts).
+**Tested in game** (test server, cropped map, client with the patched dat): use-with of all seven orbs on items with no
+bench open (the Orb of Transmutation and the Exalted Orb with the mouse: right click, then click the item; the others
+by `g_game.useWith`, the same packet), the hint for an orb used on oneself and on the floor, the bench (select an item
+and a key, previews, Exalted from the bench), every orb on a Rift Key by use-with and on the bench, then a rift opened
+with the crafted key (Brutality 15, Withering, Swarm 2: damage x1.15, no regeneration, packs of 5-6), the log rows of
+every path; earlier: refusals (unique, full item, no orb, equipped item), drag and drop onto the slot, the store
+purchase and the loot simulation. `tests/crafting_test.lua` covers eligibility, each orb on a mocked item, slot limits,
+the description, unique protection, the Chaos modifiers through the orbs, the previews and every orb on a Rift Key.
+Not tested: the weekly bounty chest with the extra orbs (needs seven finished contracts), a hotkey set to plain "use".
+
+## Item modifiers (`data/lib/chaos_item_mods.lua`, `item_mods.lua`)
+
+Fourteen modifier types the engine's rarity roll does not have, rolled on drops and by the orbs next to the engine's
+own, under the same per-rarity maximum. All numbers are in `ChaosItemMods.config`; tests: `tests/item_mods_test.lua`
+(catalogue, roll ranges for every rarity and level, caps, kinds, text, the drop roll, apply and remove on equip, every
+effect against a mocked engine) and `tests/crafting_test.lua` (through the orbs).
+
+**Storage and text.** One custom attribute per modifier, `chaos_mod_<key>` = whole number. The description shows it
+after the engine's modifiers, before "Element:", in the engine's style: "Level: 57, Physical +2%, Movement Speed +4%,
+Life on Kill +30". The loot filter's rarity data carries them as `x` ("Attack Speed +5%; Life on Kill +12"; peek and
+kill rows), shown in the loot channel tooltip; the bench lists them in pink.
+
+**The modifiers** (kind = which items may roll it: weapon, shield, helmet, armor, legs, boots, jewel = amulet or ring,
+other = gloves, belts and the like). Value ranges by tier, tier = ceil(rarity / 3) (Common-Rare 1, Epic-Exotic 2,
+Mythic-Eternal 3, Divine-Celestial 4, Cosmic-Transcendent 5); cap = the most a character gets from everything equipped.
+
+| key | text | kinds | T1 | T2 | T3 | T4 | T5 | cap | how it works |
+|---|---|---|---|---|---|---|---|---|---|
+| attackspeed | Attack Speed +N% | weapon | 2-3 | 3-5 | 4-6 | 5-8 | 7-10 | 15 | the weapon's own attack interval (`ITEM_ATTRIBUTE_ATTACK_SPEED`, shown as "Atk Spd") = its base interval (items.xml, else 2000 ms) x (100 - N)%; local to the weapon, so it needs no equip code |
+| movespeed | Movement Speed +N% | boots | 2-3 | 3-4 | 4-6 | 5-7 | 6-9 | 12 | `changeSpeed` by N% of the base speed (follows level ups) |
+| bossdamage | Damage to Elites and Bosses +N% | weapon, jewel | 2-4 | 3-6 | 5-8 | 6-10 | 8-12 | 30 | damage dealt to magic/rare/legendary monsters (`ChaosTierOf`) and bosses; onHealthChange on the target, registered by onTargetCombat |
+| lifeonkill | Life on Kill +N | weapon, jewel, helmet | 5-10 | 10-20 | 20-40 | 35-60 | 50-90 | 300 | onKill, monsters only, once per kill |
+| manaonkill | Mana on Kill +N | weapon, jewel, helmet | 3-6 | 6-12 | 12-25 | 20-40 | 30-60 | 200 | onKill, monsters only |
+| dodge | Dodge +N% | armor, legs, boots, shield, other | 1 | 1-2 | 1-2 | 2-3 | 2-4 | 10 | N% chance that a hit from a creature does nothing |
+| reflect | Reflect Damage +N% | armor, shield | 1-2 | 2-3 | 2-4 | 3-5 | 4-6 | 15 | N% of the health damage that lands goes back to the attacker as physical damage |
+| thorns | Thorns +N | armor, shield, legs | 3-8 | 8-15 | 15-30 | 25-50 | 40-80 | 250 | N physical damage back to a melee attacker on every melee hit |
+| experience | Experience +N% | helmet, jewel | 1-2 | 1-3 | 2-4 | 3-5 | 4-6 | 15 | EventCallback onGainExperience (experience from a source) |
+| goldfind | Gold Find +N% | helmet, jewel, legs, other | 2-4 | 3-6 | 4-8 | 6-10 | 8-14 | 40 | extra coins, N% of the corpse's gold (onDropLoot priority 2, as Paragon's gold find) |
+| itemfind | Item Find +N% | helmet, jewel | 1-2 | 2-3 | 2-4 | 3-6 | 4-8 | 25 | added to the loot layer's item find (`ChaosLoot.itemFindMult`: extra rolls, currency, uniques, rarity bonus) |
+| rarityfind | Rarity Find +N% | helmet, jewel | 2-4 | 3-6 | 5-8 | 6-10 | 8-14 | 40 | the loot layer's bonus rarity chance x (1 + N%) |
+| healing | Healing Done +N% | weapon, shield, jewel | 1-2 | 2-3 | 3-5 | 4-6 | 5-8 | 20 | heals the player casts on any player (onHealthChange of the healed player) |
+| monsterreduction | Damage Taken from Monsters -N% | armor, helmet, legs, shield | 1 | 1-2 | 1-2 | 2-3 | 2-4 | 12 | health damage from monsters |
+
+The item level moves the roll inside the tier: the low end rises by up to half the range at the top of the tier's
+level window (`levelPull` 0.5). The numbers sit next to the passive tree's (a node gives +1-3% of a stat; the tree's
+experience reaches about +15%, its speed +80 flat). Not done: spell cooldown reduction (spell cooldowns are set inside
+the engine's spell code; no hook a script can change), mana-shield damage (dodge, reflect and the reduction act on
+health damage only).
+
+**Rolling.** New drops: the Chaos loot layer (`loot.lua` step 2b) rolls on every gear item with a rarity in the corpse:
+per rarity `dropChance` 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 33, 36, 40% for one, then `secondChance` 0 (up to
+Legendary), 5, 6, 7, 8, 10, 12, 14, 16, 18, 20% for a second, never past the rarity's maximum, weighted by `weight` among
+the modifiers the item's kind may get. The engine rolls the rarity of corpse items in `Monster::dropLoot` after every
+Lua callback (the stock callback only sets `rarity`), so for an item whose engine roll is still to come the layer keeps
+room for it (a weapon gets at most 1 Chaos modifier, other gear 2) and `ChaosItemMods.afterDrop` writes the
+description again on the next tick. The Transmutation, Alchemy, Chaos and Divine Orbs roll the same way on their new
+copy; the Exalted Orb adds one (group weight 25), Annulment removes one, Scouring clears them.
+
+**On the character** (`item_mods.lua`). Like `base_rarity.lua`, the totals of the equipped items (in a slot they fit)
+are worked out again when an item is put on or taken off (EventCallback onItemMoved, after base_rarity), at login, on
+level up (speed) and by a check every 3 s (items that left a slot without a move). They live in memory
+(`ChaosItemModsCache`), capped per modifier; nothing is written to storages, so nothing can stack across logins.
+`ChaosItemMods.playerBonus(player, key)` is the API (loot.lua reads item and rarity find with it).
+
+**Measured on the test server**: Movement Speed +9% boots: speed 1596 -> 1739 on equip (+143 = 9% of 1596), back to
+1596 on unequip; Attack Speed +10% sword (look text "Atk Spd:1.8s"): hits on a dummy every 1.61 s with a plain magic sword,
+every 1.43 s with it (both x0.8 from the character's dexterity stat); Life on Kill +80 / Mana on Kill +50 amulet: +80 health and +50 mana at the kill tick;
+drops of rare Heroes: 5 of 18 and 3 of 27 gear items with a rarity rolled a Chaos modifier (Dodge, Thorns, Reflect, Life
+on Kill, Mana on Kill, Damage Taken from Monsters), shown in the look text. Not measured in game: dodge, reflect,
+thorns, healing, elites and bosses, experience, gold / item / rarity find (unit tests only).
+
+**Rarity stats are rolled once.** The engine rolls the stats of every item that still carries a `rarity` in the corpse
+after all onDropLoot callbacks (`Monster::dropLoot`), so the loot layer's upgrade (step 2) only raises the `rarity`
+attribute, as the stock callback does; it used to make a rolled copy (`Game.createItemWithRarity`), which the engine then
+rolled a second time (two sets of stats and two "Level:" texts on every upgraded item left in the corpse). Items that
+leave the corpse before the engine pass are rolled on the way out by `ChaosLoot.finalizeRarity` (`loot.lua`: a rolled
+copy in the same container, Chaos modifiers kept): the base autoloot (patched by `tools/patch_base_events.py`, step 5),
+the Rarity Autoloot of the loot filter and the Bottomless Loot Pouch. Tested on the test server, 30 kills per path with a
+forced rarity 9 upgrade: before, 30 of 30 corpse items were rolled twice; after, every copy was rolled exactly once in the
+corpse, through the autoloot list and through the Rarity Autoloot.
 
 ## Seasons (`season.lua`, `season_core.lua`, `season_config.lua`, `sql/chaos_season.sql`, `tools/patch_season_events.py`)
 
@@ -1235,6 +1614,135 @@ on the point (contested; covered by the unit test), parallel brackets, the sched
 `tests/siege_test.lua` covers the schedule, sign-up rules, brackets, the arena geometry, capture control, standings,
 rewards and the champion title.
 
+## Guild levels and guild halls (`guild.lua`, `guild_hall.lua`, `guild_core.lua`, `guild_config.lua`, `sql/chaos_guild.sql`)
+
+Guilds earn guild XP (GXP) from what their members already do, level from 1 to 20, and unlock small perks and a
+guild hall: a guild-owned instance built at runtime. Client `game_guild` (Social -> Guild in the top menu, or `!guild`),
+extended opcode 252 (`ChaosOpcodes.guild`). Every number is in `guild_config.lua`; the pure rules (curve, caps, perks,
+upgrade prerequisites and costs, rent, slots and layout, depot rules, attribute encoding, the weekly board) are in
+`guild_core.lua` and tested by `tests/guild_test.lua`. Guilds themselves (founding, members, ranks) stay the base
+server's (`guilds`, `guild_ranks`, `guild_membership`; made on the website); rank level 3 = leader, 2 = vice-leader.
+
+**Install.** Run `sql/chaos_guild.sql` (7 tables; `guild.lua` also creates them at startup when missing). Experience
+share and the experience perk need the `patch_base_events.py` experience dispatch, like every Chaos experience bonus.
+
+**Guild XP.**
+
+| Source | GXP | Hook |
+|---|---|---|
+| Experience from monsters | 1% of it counted in "level units": a full level's worth of experience at the member's level = 10 GXP; at most 60 a member a day | own `onGainExperience` callback, kept in memory and written every minute and at logout |
+| Bounty contract | 15 | a wrapper around `ChaosLeaderboard.record` (as seasons does), so no other script changes |
+| Rift sealed | 10 + 2 x tier (max 40) | same |
+| World boss participation | 40 | same (`worldboss`, one call per rewarded participant) |
+| Invasion defended | 20 | same (`defender`, invasion.lua; any later `invasion*` board too) |
+| Guild siege, per participant | 10 + 2% of the points (max 40) | same (`siege`) |
+| Treasure goblin | 5 | same (`goblin`) |
+| Guild siege result | 500 to the bracket winner, 150 to every other guild | new rows of `chaos_siege_results`, once a minute (earlier sieges are skipped on the first run) |
+
+A member gives at most 400 GXP a day from all sources (`dailyCapAll`); siege results are not capped. The wrappers stack
+safely with the season wrapper (a guard runs the guild part once per call, and seasons is told its wrapper is still in
+place). Curve: level L -> L+1 needs round(300 x L^1.5) GXP: 300, 850, 1,560 ... 24,850; 5,110 to level 5, 33,320 to 10,
+201,410 to 20 (a ten-member guild hunting daily reaches level 5 in about a week and 20 in months).
+
+**Perks** (for online members, while they are in the guild; totals capped by `caps`):
+
+| Level | Perk | Level | Perk |
+|---|---|---|---|
+| 2 | +1% experience | 10 | +1% experience, the guild aura (aura 4, Fireflies) |
+| 3 | a guild hall scroll every day (`!guild scroll`) | 12 | respec 5% cheaper |
+| 4 | +2% loot | 13 | +20 depot slots |
+| 5 | a guild hall can be bought | 14 | +1% experience |
+| 6 | +1% experience | 15 | +1% loot |
+| 7 | respec 10% cheaper | 17 | respec 5% cheaper |
+| 8 | +20 depot slots | 18 | +20 depot slots |
+| 9 | +2% loot | 20 | +1% experience |
+
+At 20: +5% experience, +5% loot, respec -20%, +60 depot slots. Experience: monsters only, multiplied after the other
+bonuses that ran before it. Loot: wraps `ChaosLootConfig.rateMult` for the corpse owner (the Chaos loot layer's extra
+rolls and currency). Respec: wraps `ChaosRespec.fullCost` / `nodeCost` (tree, Paragon and single-node refunds). The
+aura is given with `addAura` and taken back when the member leaves the guild (not when it was bought in the store).
+A level-up is told to every online member with the new perks, and logged. API: `ChaosGuild.levelOf(guildId)` (for
+the name plates' level badge), `ChaosGuild.perksOf(guildId)`, `ChaosGuild.addXp(guildId, playerId, source, amount)`.
+
+**Guild bank.** `!guild deposit <gold>` (or the window): any member, at least 1,000, from carried gold then the bank
+balance. `!guild withdraw <gold>`: the leader only, to the leader's bank balance. The hall, its upgrades and its rent
+are paid from it. Money safety: every change of the guild bank is one conditional `UPDATE ... WHERE bank >= x` checked
+with `ROW_COUNT()` (never read-then-write); a purchase pays first and then writes its row with a conditional statement
+(`INSERT IGNORE` on the guild's key, `UPDATE ... WHERE tier = n`, `UPDATE ... WHERE paid_until = old`), and refunds and
+logs when that write changed nothing. Money requests are limited to one a second per player (`ChaosRateLimit`), the
+window requests that read the database to one per 300 ms. Season characters cannot use the guild bank or depot while
+their season runs. Staff log: `chaos_guild_log` (deposit, withdraw, hall, upgrade, rent, put, take, refund, level,
+staff) and a console line for every gold movement; `/guild log <guild>` shows the last 20.
+
+**The guild hall.** The leader buys it at guild level 5 for 5,000,000 gold, from the guild bank or with their own gold.
+One slot per guild (`chaos_guild_hall.slot`), in a grid of 64 slots (8 columns, 40 tiles apart) from 9216, 9216, 7,
+where the real map has no tiles (OTBM scan: no tile area between x/y 3000 and 16000 except two at x 1790; other runtime
+areas: tower 2000+, tutorial 4600+, world boss 5000+, siege 5100+, PvP arena 6000+, rifts 8192-8447). A slot is a
+21 x 15 floor with walls, built with `Game.createTile` the first time it is needed (a slot with a map tile in its
+footprint is skipped). The engine cannot remove tiles, so slots stay built and are reused: the fixtures are placed
+again whenever the owner or the active upgrades change. Entry: a forcefield next to every temple (`portalOffsets`, or
+`portalPositions`; placed at startup and checked once a minute): members of a guild that owns a hall go to their hall,
+everyone else is refused ("Only guild members may enter a guild hall."). The exit forcefield leads to the temple
+(`exitPosition` overrides it). Players cannot attack players inside a hall (an `onTargetCombat` callback), a player who
+is not a member of the hall's guild (left the guild, logged in inside) is sent to the temple within a minute.
+
+| Upgrade | Guild level | Gold | Needs | What it does |
+|---|---|---|---|---|
+| Teleport Hub | 6 | 2,000,000 | | 4 forcefields along the north wall to the hunting areas of `hall.hub` (lands on the nearest free walkable tile within 3) |
+| Training Room | 7 | 1,500,000 | | 3 exercise dummies of the base server (27751/27752; the store's exercise weapons work on them) and a damage dummy monster (the first of `dummyMonsters` the server knows) |
+| Crafting Bench | 8 | 1,000,000 | | an anvil that opens the crafting window (`crafting.lua`) |
+| Guild Depot | 9 | 2,500,000 | | a large trunk shared by the members, see below |
+| Trophy Room | 10 | 1,000,000 | Teleport Hub | statues whose look text shows siege wins, world bosses, rift record, bounties, invasions, level and top contributors |
+| Decoration 1 / 2 / 3 | 12 / 16 / 20 | 1.5M / 3M / 6M | Trophy Room | floor and walls: white marble, obsidian (black marble), gilded stone |
+
+**Rent.** 300,000 gold a week + 100,000 per upgrade tier, paid from the guild bank: at purchase for the first week,
+then automatically when due (once a minute check). If the bank is short the hall has 24 hours of grace (members are
+reminded once an hour); after that the upgrades lock: their fixtures disappear (hub portals, dummies, bench, trunk,
+trophies, decoration) and the depot is closed, nothing is deleted. Paying (`!guild rent`, the window's Pay rent, or the
+automatic try after a deposit) unlocks everything at once; a locked hall starts a new week from the payment (the locked
+weeks are not charged), a hall in its grace time keeps its period.
+
+**Guild depot.** Drop an item on the trunk inside your own hall: it is stored in `chaos_guild_depot` (item id, count and
+its attributes as text: description, name, text, charges, attack/defense/armor and the other standard attributes, the
+rarity system's custom attributes `rarity`, `combatPowerLevel`, every `rarity_*` modifier key of `ChaosCrafting`, uniques,
+rift keys) and removed. Take items back in the Guild window (in the hall). Containers are refused; 30 entries + the
+depot perks; members take at most 20 entries a day (leader and vice-leaders without limit). A take deletes the row with
+one conditional `DELETE` first and only then creates the item, so double clicks or repeated requests give one item; no
+room in the backpack -> the inbox; no room there either -> the row is put back. The window shows the depot's put/take
+log. Limitation: a custom attribute that is not in that list is not copied (the engine has no call to list them).
+
+**Weekly top guilds.** The window's Top Guilds tab ranks guilds by the GXP earned in the week (Monday 06:00, like the
+leaderboards; `chaos_guild_contrib` rows with the week key), then level; it also names last week's top guild. The
+Members tab shows every member's GXP this week and in total.
+
+**Commands.** `!guild` (window), `!guild deposit|withdraw <gold>` (`5k`, `2.5m` work), `!guild scroll`,
+`!guild hall buy [bank|self]`, `!guild upgrade <hub|training|crafting|depot|trophy|decor>`, `!guild rent`,
+`!guild take <id>`, `!guild info`. Staff (`/guild`, groups with access): `xp <guild>, <n>`, `bank <guild>, <+-n>`,
+`info <guild>`, `log <guild>`, `rent <guild>, due|lock|paid` (test helper: moves the paid-until time), `hall <guild>`.
+
+**Client** (`game_guild`, JSON on 252): server -> client `state` {guild, perks, members, hall, depot, log, top},
+`none` (not in a guild), `message`, `openModule` (the bench); client -> server `open`, `refresh`, `deposit`,
+`withdraw`, `buyHall`, `upgrade`, `payRent`, `take`, `scroll`. Tabs: Overview (perks, scroll, guild bank, log),
+Members, Guild Hall (rent and upgrades, buttons for the leader and vice-leaders), Depot, Top Guilds.
+
+**Tested in game** (test server, cropped map, guild Iron Wolves with a leader and a member on two accounts, one client):
+guild XP from kills (the experience share, 60 a day cap reached) and from a completed bounty contract (+15 through the
+leaderboard hook); a level-up to 10 (staff XP on top) with the broadcast and the aura; the experience perk (a Dragon kill
+18,900 -> 19,467 experience at +3%); the loot perk (rateMult x1.04); deposit and withdraw (a triple-clicked withdraw
+paid once); buying the hall from the guild bank (a triple click bought it once); entering through the portal and
+leaving through the exit; a non-member refused at the portal and sent out when placed inside; the Teleport Hub and the
+Guild Depot bought from the window; the hub portal; a stack of Chaos Orbs and a Mythic dragon scale mail put on the trunk
+and taken back with every modifier (three take requests in a row gave one item); a member taking an item; the depot
+log; rent paid from the window; rent past the grace time with an empty bank locking the upgrades (fixtures gone, depot
+closed, window red) and paying it unlocking them; the training room, bench (opens the crafting window), trophies and
+decoration tiers 1 and 3 (looked at with the upgrades set in memory); the guild hall scroll (refused in combat, a
+second claim the same day refused, used -> the hall); the window and its tabs. Not verified in game: the respec
+discount (the test server has no respec.lua), rift / world boss / invasion / siege XP (unit-tested amounts; the hook
+is the one the bounty used), the siege result poll (no `chaos_siege_results` table on the test server), the real map's
+temples and hunting-area positions (the cropped map has neither: the test server's config pointed the portal, the exit
+and one hub destination at its tiles), several guilds' halls at once, a restart with a hall in use (the tiles are gone
+after a restart; the first entry builds them again).
+
 ## Arena (`arena.lua`, `arena_core.lua`, `arena_config.lua`, client `game_arena`)
 
 Ranked PvP: 1v1 and 2v2, an Elo rating per mode, matches in arena instances built at runtime. Settings are in
@@ -1399,7 +1907,9 @@ item in the client has no rarity. `game_itemrarity` reads a `[NAME]` tag out of 
 fills that tooltip string (the 10.98 packets have no description field; the hover tooltip is a separate 0x9F/0x9E request
 used by `game_itemtooltip`), and its table has 6 names that are not the server's 15. So the filter asks the server: on
 every container open/change the client sends `peek {cid}` and the server answers the rarity, unique flag, orb flag and
-category of each slot of that container (`player:getContainerById`). `game_itemrarity` / `game_itemtooltip` are not changed.
+category of each slot of that container (`player:getContainerById`), and the item's Chaos modifiers as one line (`x`,
+"Item modifiers"; also in the kill rows, shown in the loot channel tooltip). `game_itemrarity` / `game_itemtooltip` are
+not changed.
 
 **Rules** (`lootfilter_core.lua`, mirrored for drawing in the client's `lootfilterlogic.lua`):
 - *Glow on gear from* rarity X (0 = off): equipment with rarity >= X gets a glow in its rarity colour. Uniques (orange) and
@@ -1547,6 +2057,9 @@ storages 7100400-7100409, action ids 47401 (key) and 47402 (reward chest). No da
   rare 8, legendary 20, boss 40) when the monster's pool level is at least max(60, killer level x 0.4) and the killer is
   level 100+; completed bounty contracts give one 25% (hunt) / 50% (elite) / 100% (boss) of the time (`bounty.lua` calls
   `ChaosRift.onBountyPaid`).
+- **Crafting.** Every crafting orb works on a key (Transmutation / Alchemy on a key without modifiers, Exalted up to
+  `key.maxMods` = 3, Annulment, Scouring, Chaos rerolls them, Divine rerolls their values), by "Use with" or on the
+  bench; see "Crafting".
 - **Experience** comes only from the kills, with a cap so a dense rift cannot beat open hunting: the base experience of a
   kill (monster experience x the monster-level bonus x the stage x the magic/rare/legendary multiplier) counts against
   an allowance of 1.1 x the leveling model's base rate at the player's level (the sorcerer hours of "The leveling model",
@@ -1779,10 +2292,70 @@ Staff: `/daily` shows the own account's state, `/daily shift <days>` moves the d
 **Not verified in game.** The refusal for a second character of the same account. The test client cannot list two
 characters of one account (a base client character-list error), so this is covered by the mocked test only.
 
+## Ascension quest (`ascension_quest.lua`, `ascension_quest_core.lua`, `ascension_quest_config.lua`, the Ascendant Oracle)
+
+Players ascend through a quest, not a command (docs/CLASSES.md "Ascension quest"). Install: step 4b (the NPC and the promotion
+patch) plus the scripts (step 1) and the guardian monsters (`data/monster/monsters/chaos/ascension/`, registered with the
+other Chaos monsters). Settings: `ascension_quest_config.lua` (`Chaos.ascensionQuest`); the level rule and the two ascended classes
+of every line are read at run time from `Chaos.classes.ascension`, so a new class line gets the quest without code changes.
+
+- **The Ascendant Oracle** is placed at startup next to the temple of every town in `npc.townIds` (default `{1}`; first free tile
+  of `npc.offsets`), unless an NPC of that name already stands there (placed with the map editor); `npc.positions` places it
+  exactly. Its script runs in the NPC's own Lua state: it reads the storages and opens modal windows, whose answers
+  (`ChaosAscensionModal`) are checked again in the scripts' state. "promotion" is answered with the pointer to the quest.
+- **Stages** (storage `7101000`: 0 none, 1 Proof, 2 Trial, 3 Choice, 4 done; `7101001` Proof points, `7101002` Trial cooldown,
+  `7101003` attempts, `7101004` Trial won): 1 the Calling (talk at level 100 as a base class: the two paths of the class),
+  2 Proof of Strength (10 points: a rare monster 1, a legendary 3, counted when the monster's hunting level, from
+  `bounty_pool.lua` or estimated from experience and health as `tools/gen_bounty_pool.py` does, is at least 0.6 x the player's
+  level, min 40), 3 the Trial, 4 the Choice (a list of the two classes, then a confirmation; near the Oracle, no PvP lock).
+- **The Trial**: "trial" at the Oracle -> a modal -> a runtime-built room (13 x 13, slots at x/y 7000+, `Game.createTile`,
+  refused when the footprint is not empty; 8 slots) with the class's guardian: `Ascension Warden` renamed and dressed per line
+  (Warden of Iron, of the Hunt, of the Veil, of Shadows, of the Still Fist, of Bones, of Dawn; a default for new lines), health
+  6000 x level/100 with the level clamped to 100-130, its own hits x the same factor, no experience, no loot, never a monster
+  tier. Mechanics per line (`guardians[base].mechanics`): `stillness` (3 s on one tile: a slam of 20% max health, warned at 2 s),
+  `adds` (2 shades every 15 s, at most 4), `zones` (5 marked tiles around the player burst 1.5 s later for 25%), `enrage`
+  (x1.5 below 30% health). 180 s. A lethal hit is cut to 1 health (no death: no experience, item or blessing loss); death, the
+  time limit, leaving the room or logging out fail the attempt: back to where the player stood, healed, retry after 10 min.
+  A character saved inside a room (crash) is sent to its temple at login.
+- **The ascension** is `ChaosAscension.ascend(player, word[, opts])` in `ascension_quest.lua`: the class lock
+  (`ChaosClassUnlocks.canUseVocation`, staff included), then ascension.lua's own vocation change (`ChaosClasses.applyVocation`:
+  health / mana / capacity recounted, the vocation resent to the client, dual wield synced, the companion / minions / chi
+  HUD), storage `Chaos.classes.storage.ascended`, a toast (game_chaosnotify action `ascension`), a broadcast and the name plate
+  title "Ascended <class>" (`ChaosTitles.register("ascension", ...)`, guarded: every ascended character holds it).
+- **`!ascend`**: players get "Ascension is earned, not claimed. Speak with the Ascendant Oracle in the temple." Staff (group 4+)
+  keeps the old command, and a migrated character's one free switch (`!ascend berserker|beastmaster`) still works.
+  `command = "open"` in the config restores the command for everyone. The store's Vocation Change is unchanged; a character
+  it took back to a base class may choose again at the Oracle without redoing the quest.
+- `!ascension` shows a character's progress. Staff: `/ascendset <player>, <ascended class>` sets an ascended class of the
+  character's own line (restores characters demoted by the old login bug; the class lock still applies; no broadcast).
+  Characters ascended before the quest keep their class.
+- Tests: `server/tests/ascension_quest_test.lua` (the pure rules). Verified on the test server: King Tibianus refuses; a level
+  100 Warrior did the Calling, the Proof (a rare Dragon, level 42, did not count; legendary and rare Hydras did), failed the
+  Trial twice (lethal hit caught, experience unchanged, cooldown), won it and became a Berserker; a Thief became a Ninja
+  (dual-wield storage set); a locked Templar was refused at the confirmation; `!ascend` and `/ascendset` as documented.
+  Not measured: the guardian's balance against geared characters (the numbers are first estimates).
+
+## Class lock (`class_unlocks.lua`, `class_unlocks_core.lua`, `sql/chaos_class_unlocks.sql`)
+
+The Necromancer, the Monk and the Templar (docs/CLASSES.md, classes five to seven) need an account-wide unlock. The method is one
+table, `ChaosClassUnlocksCore.config` (`class_unlocks_core.lua`): per class key (`necromancer`, `monk`, `templar`) the vocation ids,
+`locked`, and the unlock methods (`store`, `level`, `quest`, `achievement`, or a new kind registered with `registerMethod`). Today
+the only method is the store: category "Classes" in `shop_config.lua`, offers `unlockNecromancer`, `unlockMonk`, `unlockTemplar`
+at 750 coins each (**placeholder prices**; the offer names and prices must match the config). `shop_services.lua` asks
+`ChaosClassUnlocks.storeUnlock` for these offers, so the purchase is written to `chaos_class_unlocks` at once (not the engine's
+account storage, which is only saved at server save).
+
+- Gates: `!ascend` (ascension.lua) and `!changevocation` (shop_services.lua; the token is kept) refuse a locked class; at login a
+  character on a locked vocation goes to its temple, cannot attack and gains no experience or skills until the account unlocks
+  the class (the store works in that state). Staff (group 4+, or account type 5+) is never locked.
+- `!classes` shows the account's state; staff: `/classunlock <character>, <class>[, revoke]`.
+- Characters are created on the website (the base server has no in-game character creation): it should offer the three classes
+  only to unlocked accounts; the login check holds even if it does not.
+
 ## Achievements (`achievements.lua`, `achievements_core.lua`, `achievements_data.lua`, client `game_achievements`)
 
-Long-term goals across every system: 93 achievements in 9 categories (Combat & Leveling, Monsters, World Bosses, Rifts,
-Bounties, Items & Crafting, PvP, Exploration & Social, Secrets), 2125 points in all. Client `game_achievements` (Chaos ->
+Long-term goals across every system: 96 achievements in 9 categories (Combat & Leveling, Monsters, World Bosses, Rifts,
+Bounties, Items & Crafting, PvP, Exploration & Social, Secrets), 2225 points in all. Client `game_achievements` (Chaos ->
 Achievements in the top menu, or `!achievements`), extended opcode 250 (`ChaosOpcodes.achievements`), tables
 `chaos_achievements` and `chaos_achievement_stats` (`sql/chaos_achievements.sql`; also created at startup).
 

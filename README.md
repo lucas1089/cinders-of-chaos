@@ -28,7 +28,7 @@ than days.
 | Classes | 4 base classes, each with 2 ascensions (8 ascended classes) |
 | Level cap | 1000, then Paragon levels. Reaching 1000 takes roughly 100 hours of hunting |
 | Items | 15 rarities from Common to Transcendent, item levels, random modifiers, about 50 uniques |
-| Endgame | world bosses, bounties, rifts with keys and modifiers, the Infinity Tower, dungeons, arena, guild siege, weekly leaderboards |
+| Endgame | world bosses, bounties, rifts with keys and modifiers, the Infinity Tower, dungeons, arena, guild siege, guild levels and guild halls, invasions and world events, weekly leaderboards |
 | Fair play | multi-client rules, staff characters left out of every leaderboard |
 
 ---
@@ -52,13 +52,13 @@ than days.
 
 ![Classes and ascensions: Warrior, Ranger, Mystic and Thief](docs/images/feature_classes.png)
 
-You start as one of four base classes. At level 100 you **ascend** into one of two specialisations (`!ascend`).
+You start as one of four base classes. At level 100 you **ascend** into one of two specialisations through a quest: the Ascendant Oracle in the temple sends you to prove your strength against rare and legendary monsters, then into a trial against your class's guardian, and only then lets you choose.
 
 | Base class | Plays as | Ascensions |
 |---|---|---|
 | **Warrior** | melee, heavy armour, most health | **Juggernaut**: the tank, with taunts, damage reduction and block/reflect · **Berserker**: two-handed area damage; *Rage* hits harder the lower your health, *Skyfall Cleave* leaps in and slams the ground |
 | **Ranger** | bows and crossbows | **Deadeye**: the best single-target damage in the game, with crossbows, marks and crits · **Beastmaster**: fights beside a *War Wolf* companion that grows with you (two wolves from level 400) |
-| **Mystic** | spells, wands and rods | **Elementalist**: the best area damage, with fire, ice and energy combos · **Illusionist**: the support; buffs the party's attack, weakens enemies and heals |
+| **Mystic** | spells, wands and rods | **Elementalist**: the best area damage, with fire, ice and energy combos · **Illusionist**: the best healer (Mirror Mend, Lucid Reverie, party heals), plus party attack buffs; weakens enemies |
 | **Thief** | fast light weapons, shurikens, stealth | **Ninja**: dual-wields daggers with a scripted off-hand strike, plus Shadow Step · **Samurai**: one sword, counter stance, Iaijutsu draw strike and Bushido crit stacks |
 
 Every class has its own Chaos spells with custom names, icons and effects, and the spellbook (`!spells`) lists them all.
@@ -94,6 +94,10 @@ Balance is measured on test dummies at levels 300 and 1000, so every class keeps
 - **15 rarities**: Common, Uncommon, Rare, Epic, Legendary, Exotic, Mythic, Chaos, Eternal, Divine, Phantasmal,
   Celestial, Cosmic, Abyssal and Transcendent.
 - **Item levels and modifiers:** elemental damage, absorbs, skills, critical hits, life and mana leech.
+- **Chaos modifiers:** gear can also roll attack speed (weapons), movement speed (boots), damage to elites and bosses,
+  life and mana on kill, dodge, reflect, thorns, experience, gold find, item find, rarity find, healing done and less
+  damage from monsters. Higher rarities roll bigger values, and every modifier has a cap for your whole equipment. They
+  show in the item's description, in the loot channel and on the Crafting Bench.
 - **About 50 uniques** with fixed, build-defining stats. Some only drop from bosses.
 - **Monster tiers:** every spawn can roll **Magic, Rare or Legendary**, each tougher and better-rewarded. Tiered
   monsters get modifiers such as *Blazing, Chilling, Venomous, Vampiric* or *Berserker*. Killing one can trigger an
@@ -117,20 +121,23 @@ Balance is measured on test dummies at levels 300 and 1000, so every class keeps
 
 ![The Crafting Bench and its seven orbs](docs/images/feature_crafting.png)
 
-Orbs reshape your gear at the **Crafting Bench** (`!craft`):
+Orbs reshape your gear and your Rift Keys. Use them like any other tool: **"Use with" on the orb, then click the item**
+in your backpack. No bench needed. The **Crafting Bench** (`!craft`) is still there when you want to see an item's
+modifiers and a preview of what each orb would do before you use it.
 
-| Orb | What it does |
-|---|---|
-| Orb of Transmutation | a normal item becomes Common or Uncommon |
-| Orb of Alchemy | a normal item becomes Rare, Epic or Legendary |
-| Exalted Orb | adds one modifier, up to the rarity's limit |
-| Orb of Annulment | removes one random modifier |
-| Orb of Scouring | turns the item back into a normal item |
-| Chaos Orb | rerolls the item with the same rarity |
-| Divine Orb | rerolls the item with a new random rarity |
+| Orb | On gear | On a Rift Key |
+|---|---|---|
+| Orb of Transmutation | a normal item becomes Common or Uncommon | a key without modifiers gets one |
+| Orb of Alchemy | a normal item becomes Rare, Epic or Legendary | a key without modifiers gets two or three |
+| Exalted Orb | adds one modifier, up to the rarity's limit | adds one modifier, up to three |
+| Orb of Annulment | removes one random modifier | removes one random modifier |
+| Orb of Scouring | turns the item back into a normal item | removes every modifier |
+| Chaos Orb | rerolls the item with the same rarity | rerolls the key's modifiers |
+| Divine Orb | rerolls the item with a new random rarity | rerolls the values of the key's modifiers |
 
-Orbs drop from monsters (more from tiered ones and bosses), from bounties and the weekly chest, and can be bought in
-the store. Uniques can't be crafted, so they stay unique.
+A Rift Key's modifiers make the rift harder and its rewards better, so crafting a key is how you push for more loot.
+Items must sit in your backpack (not equipped). Orbs drop from monsters (more from tiered ones and bosses), from
+bounties and the weekly chest, and can be bought in the store. Uniques can't be crafted, so they stay unique.
 
 ## Endgame
 
@@ -146,7 +153,11 @@ the store. Uniques can't be crafted, so they stay unique.
   - Nyxareth the Void Archon
   - Vharok the Blood Colossus
 
-  Each has phases and 15 to 24 million health. Everyone who does real damage gets a reward, not only the last hit.
+  Each has phases and 15 to 24 million health. Everyone who takes real part gets a reward, not only the last hit:
+  damage on the boss, healing other players and tanking the boss's blows all count, so a healer or a tank is
+  rewarded like a damage dealer. The top 3 in damage, in healing and in tanking get extra orbs, a better chance at a
+  boss unique and a title for a week: Bossbreaker, Lifewarden or Bulwark. The weekly Boss Healer and Boss Tank
+  leaderboards rank the best healers and tanks.
 - **Bounty board** (`!bounty`): daily "kill X in Y" contracts per level band that pay orbs. Finish seven in a week
   for the weekly bounty chest.
 - **Rifts** (`!rift`): use a **Rift Key** to open a 10-minute instance for you and up to 3 party members.
@@ -160,6 +171,20 @@ the store. Uniques can't be crafted, so they stay unique.
 - **Dungeons:** instanced runs with their own progress.
 - **Late game:** 17 level-scaled Chaos monsters (levels 650-1000) live in the deepest hunting grounds. Experience
   stages are tuned so the road to 1000 stays rewarding.
+- **Invasions** (`!invasion`): a few times a week a horde of orcs, undead, demons or minotaurs falls on a town or a
+  hunting ground. It comes in five waves and marches on the town's heart, and its warlord leads the last wave.
+  - Everyone can defend. The bar at the top left shows the wave, the invaders left, the time and the **breach
+    meter**, which fills while invaders stand at the target.
+  - Hold it and everyone who fought is paid by their part in the defence: damage, kills, and healing for healers.
+    The pay is gold, Chaos and Divine Orbs and a chance at a unique, plus points on the weekly **Defender**
+    leaderboard. The whole world gets +10% experience for an hour.
+  - Lose it and the invaders occupy the place for 30 minutes. Slay the occupiers to free it for a smaller reward.
+  - Warnings come 30, 10 and 1 minutes before. The calendar shows the fixed invasion days, but some invasions come
+    unannounced.
+- **World events** every few hours, somewhere in the world:
+  - a *Chaos Storm*: three times as many magic, rare and legendary monsters for 15 minutes
+  - a *Wandering Merchant* who sells orbs cheaply for 20 minutes; the town is announced, you have to find him
+  - a *Golden Hour*: +25% loot in one area for 30 minutes
 - **Events calendar:**
   - *Blood Moon* weekends: +50% experience
   - *Chaos Rift* Wednesdays: double tiered spawns
@@ -196,6 +221,27 @@ Start fresh with a **season character** (`!season join` on a new character) and 
   - Nobody really dies.
   - The winners become **Siege Champions** for a week: a title and +5% experience.
 
+## Guilds and guild halls
+
+> *"A banner is only cloth. A hall is where the guild remembers its dead and counts its gold."*
+> (a guild steward)
+
+Your guild grows with you. Open the **Guild** window (`!guild`, or Social -> Guild) to see its level, your members and
+what everyone has contributed this week.
+- **Guild levels (1-20):** the guild earns guild XP from what its members already do: a small share of your hunting
+  experience (capped each day), bounty contracts, sealed rifts, world bosses, defended invasions and the guild siege.
+- **Perks for online members**, small but always on: up to +5% experience and +5% loot, cheaper respecs, a free guild
+  hall scroll every day, more guild depot space and a guild aura.
+- **Guild bank:** every member can deposit gold; the leader can withdraw it. Every movement is logged.
+- **The guild hall** (from guild level 5): the leader buys it, and members step through the portal next to the temple
+  to reach it. Nobody else gets in.
+- **Hall upgrades:** a teleport hub to the hunting grounds, a training room with exercise dummies, a crafting bench,
+  a **guild depot** shared by the members (with a log of who put in and took out what), a trophy room with your siege
+  wins, world boss victories and records, and three decoration tiers.
+- **Rent:** the hall costs a weekly rent from the guild bank. If the bank runs dry the upgrades lock until it is paid;
+  nothing is ever lost.
+- **Top guilds:** a weekly board of the guilds that earned the most guild XP.
+
 ## Leaderboards and titles
 
 > *"Every Monday the stone is wiped and the names are carved anew. Only the titles linger, for one week."*
@@ -210,9 +256,10 @@ Weekly boards (`!leaderboard`) reset every Monday:
 - Goblin Slayer
 - Guild Siege
 - Arena 1v1 and 2v2
+- Defender (invasions defended)
 
 The top 3 of each board earn a **title** for the next week (Bossbane, Warden of the Hunt, Riftwalker, Goblin Slayer,
-Siegebreaker, Duelist, Gladiator) and orbs. The all-time **Class Ladder** ranks the highest characters of every class.
+Siegebreaker, Duelist, Gladiator, Defender of the Realm) and orbs. The all-time **Class Ladder** ranks the highest characters of every class.
 
 ### Name plates and titles
 

@@ -10,6 +10,7 @@ COL = {
     'fire': (255, 130, 40), 'frost': (130, 205, 255), 'light': (255, 230, 90), 'blood': (215, 30, 40),
     'poison': (120, 205, 70), 'nature': (95, 175, 80), 'holy': (255, 238, 160), 'shadow': (160, 100, 230),
     'arcane': (125, 150, 255), 'steel': (205, 210, 222), 'ember': (240, 100, 50), 'water': (90, 190, 200),
+    'bone': (226, 214, 182), 'necrotic': (120, 222, 140),
 }
 
 def burst(d, c, n=10, r1=54, r2=24):
@@ -172,10 +173,100 @@ def fang(d, c):
         d.polygon([(x, 50), (x + 16, 50), (x + 8, 120)], fill=c)
     d.ellipse((36, 30, 52, 46), fill=(20, 10, 30)); d.ellipse((76, 30, 92, 46), fill=(20, 10, 30))
 
+# the Necromancer line
+def skull(d, c):
+    d.ellipse((24, 14, 104, 88), fill=c)
+    d.rounded_rectangle((40, 70, 88, 108), 8, fill=c)
+    d.ellipse((38, 40, 60, 64), fill=(20, 10, 30)); d.ellipse((68, 40, 90, 64), fill=(20, 10, 30))
+    d.polygon([(64, 66), (58, 80), (70, 80)], fill=(20, 10, 30))
+    for x in (48, 60, 72):
+        d.line([(x, 92), (x, 108)], fill=(20, 10, 30), width=4)
+
+def bonespear(d, c):
+    d.line([(22, 106), (98, 30)], fill=c, width=10)
+    d.polygon([(90, 22), (118, 10), (106, 38)], fill=c)
+    for x, y in ((22, 106), (30, 98)):
+        d.ellipse((x - 10, y - 10, x + 10, y + 10), fill=c)
+
+def golem(d, c):
+    d.ellipse((46, 8, 82, 40), fill=c)
+    d.rounded_rectangle((30, 40, 98, 92), 10, fill=c)
+    for y in (52, 64, 76):
+        d.line([(40, y), (88, y)], fill=(20, 10, 30), width=4)
+    d.rounded_rectangle((10, 44, 30, 96), 8, fill=c); d.rounded_rectangle((98, 44, 118, 96), 8, fill=c)
+    d.rectangle((38, 92, 56, 120), fill=c); d.rectangle((72, 92, 90, 120), fill=c)
+    d.ellipse((54, 18, 62, 26), fill=(20, 10, 30)); d.ellipse((66, 18, 74, 26), fill=(20, 10, 30))
+
+def banner(d, c):
+    d.line([(34, 10), (34, 120)], fill=c, width=8)
+    d.polygon([(38, 14), (110, 14), (96, 44), (110, 74), (38, 74)], fill=c)
+    d.ellipse((56, 26, 82, 52), fill=(20, 10, 30)); d.rectangle((62, 50, 76, 60), fill=(20, 10, 30))
+
+def ribs(d, c):
+    d.line([(64, 10), (64, 118)], fill=c, width=8)
+    for i, y in enumerate((28, 48, 68, 88)):
+        w = 46 - i * 6
+        d.arc((64 - w, y - 14, 64 + w, y + 30), 190, 350, fill=c, width=7)
+
+# the Monk line
+def fist(d, c):
+    # a clenched fist seen from the front: four knuckles over a palm block and a thumb
+    d.rounded_rectangle((30, 46, 98, 110), 14, fill=c)
+    for i in range(4):
+        x = 30 + i * 17
+        d.ellipse((x, 26, x + 19, 56), fill=c)
+    d.polygon([(26, 70), (60, 64), (64, 80), (30, 92)], fill=c)
+    for i in range(1, 4):
+        x = 30 + i * 17
+        d.line([(x, 34), (x, 52)], fill=(20, 10, 30), width=3)
+
+
+def palm(d, c):
+    # an open palm pushing out a shock ring
+    d.ellipse((6, 6, 122, 122), outline=c, width=6)
+    d.rounded_rectangle((42, 52, 88, 112), 10, fill=c)
+    for i, h in enumerate((30, 22, 24, 34)):
+        x = 42 + i * 12
+        d.rounded_rectangle((x, h, x + 10, 60), 5, fill=c)
+    d.polygon([(42, 76), (22, 60), (28, 54), (46, 66)], fill=c)
+
+
+def kick(d, c):
+    # a spinning heel: a leg arc with motion lines
+    d.arc((14, 14, 114, 114), 200, 520, fill=c, width=12)
+    d.polygon([(84, 18), (112, 22), (104, 46), (88, 40)], fill=c)
+    for r in (30, 42):
+        d.arc((64 - r, 64 - r, 64 + r, 64 + r), 30, 150, fill=c, width=4)
+
+
+def flame(d, c):
+    # a breath of chi: a rising flame over a bowl
+    d.polygon([(64, 8), (88, 48), (84, 78), (64, 92), (44, 78), (40, 48)], fill=c)
+    d.polygon([(64, 40), (74, 62), (64, 80), (54, 62)], fill=(255, 255, 255, 120))
+    d.pieslice((28, 76, 100, 124), 0, 180, fill=c)
+
+
+def nodes(d, c):
+    # pressure points: a hand's outline of five struck nodes joined by lines
+    pts = [(64, 16), (100, 46), (86, 100), (42, 100), (28, 46)]
+    d.line(pts + [pts[0]], fill=c, width=5)
+    for x, y in pts:
+        d.ellipse((x - 11, y - 11, x + 11, y + 11), fill=c)
+        d.ellipse((x - 4, y - 4, x + 4, y + 4), fill=(20, 10, 30))
+    d.ellipse((52, 54, 76, 78), fill=c)
+
+
+def mountain(d, c):
+    # the mantra of stone: a mountain with a halo
+    d.ellipse((30, 6, 98, 50), outline=c, width=6)
+    d.polygon([(6, 118), (52, 40), (70, 66), (84, 52), (122, 118)], fill=c)
+    d.polygon([(52, 40), (62, 58), (44, 58)], fill=(255, 255, 255, 140))
+
 GLYPH = {k: v for k, v in globals().items() if callable(v) and k in (
     'burst', 'bolt', 'drop', 'crystal', 'meteor', 'dots', 'shield', 'thorns', 'paw', 'leaf', 'swirl', 'cross', 'arrows',
     'ring', 'sword', 'slam', 'wave', 'arrowup', 'hammer', 'twin', 'dash', 'eye', 'ghost', 'rift', 'missile',
-    'shuriken', 'daggers', 'smoke', 'katana', 'hood', 'greataxe', 'fang')}
+    'shuriken', 'daggers', 'smoke', 'katana', 'hood', 'greataxe', 'fang', 'skull', 'bonespear', 'golem', 'banner', 'ribs',
+    'fist', 'palm', 'kick', 'flame', 'nodes', 'mountain')}
 
 ICONS = [  # (spell name, theme, glyph)
     ('Rime Bloom', 'frost', 'burst'), ('Witchfire Bolt', 'fire', 'missile'), ('Forked Storm', 'light', 'bolt'),
@@ -196,7 +287,22 @@ ICONS = [  # (spell name, theme, glyph)
     ('Counter Stance', 'ember', 'shield'), ('Iaijutsu', 'blood', 'katana'), ('Bushido Focus', 'light', 'katana'),
     # Berserker and Beastmaster (cells 246..249)
     ('Skyfall Cleave', 'ember', 'greataxe'), ('Bloodrage', 'blood', 'greataxe'), ('Wild Bond', 'nature', 'fang'),
-    ('Feral Command', 'blood', 'fang')]
+    ('Feral Command', 'blood', 'fang'),
+    # the Necromancer line (cells 250..258)
+    ('Raise Dead', 'necrotic', 'skull'), ('Bone Spear', 'bone', 'bonespear'), ('Withering Curse', 'shadow', 'skull'),
+    ('Soul Rot', 'necrotic', 'dots'), ('Life Siphon', 'blood', 'drop'), ('Corpse Explosion', 'necrotic', 'burst'),
+    ('Bone Golem', 'bone', 'golem'), ('Banner of Bones', 'bone', 'banner'), ('Bone Offering', 'blood', 'ribs'),
+    # the Monk line (cells 259..268)
+    ('Ashen Fist', 'ember', 'fist'), ('Sundering Palm', 'steel', 'palm'), ('Whirling Heel', 'ember', 'kick'),
+    ('Kindled Breath', 'light', 'flame'), ('Mistborne Step', 'water', 'dash'),
+    ('Pressure Points', 'shadow', 'nodes'), ('Shadowfist Flurry', 'shadow', 'fist'),
+    ('Chi Ward', 'holy', 'shield'), ('Iron Palm', 'steel', 'fist'), ('Mantra of Stone', 'light', 'mountain'),
+    # the Templar line (cells 269..277)
+    ('Radiant Smite', 'light', 'hammer'), ('Consecration', 'light', 'ring'), ('Vow of Mending', 'holy', 'drop'),
+    ('Judgement', 'holy', 'eye'), ('Purging Nova', 'holy', 'burst'), ('Zealotry', 'ember', 'sword'),
+    ('Rebuke', 'light', 'wave'), ('Aegis of Faith', 'light', 'shield'), ('Lay on Hands', 'light', 'cross'),
+    # the Illusionist healer pass (cells 278..279)
+    ('Mirror Mend', 'water', 'twin'), ('Lucid Reverie', 'arcane', 'ring')]
 
 def render(theme, glyph):
     c = COL[theme]

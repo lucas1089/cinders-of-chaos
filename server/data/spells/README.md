@@ -1,7 +1,10 @@
 # Chaos spells (the base server, TFS 1.4.2 / protocol 10.98)
 
-49 custom spells, dark-fantasy flavour: 7 sorcerer, 7 druid, 6 paladin, 6 knight, 6 illusionist, 4 shared utility spells, 9 for the
-Thief line (Thief, Ninja, Samurai; see "Thief line" below) and 4 for the Berserker and the Beastmaster (see "Classes" below). Since the
+77 custom spells, dark-fantasy flavour: 7 sorcerer, 7 druid, 6 paladin, 6 knight, 6 illusionist, 4 shared utility spells, 9 for the
+Thief line (Thief, Ninja, Samurai; see "Thief line" below), 4 for the Berserker and the Beastmaster (see "Classes" below), 9 for the
+Necromancer line (Necromancer, Lich, Bone Lord; see "Necromancer line"), 10 for the Monk line (Monk, Shadowfist, Iron Sage; see
+"Monk line") and 9 for the Templar line (Templar, Inquisitor, Sentinel; see "Templar line"). The last three lines are built but not
+tested in game yet (phase A); their numbers are formula estimates until measured. Since the
 class rework (docs/CLASSES.md) the old kits belong to the new classes; the folder names keep the old vocation names.
 **Status: written and smoke-tested against a hand-written Lua mock only. Nothing has been run on a real TFS server.**
 
@@ -9,11 +12,14 @@ class rework (docs/CLASSES.md) the old kits belong to the new classes; the folde
 
 ```
 server/data/spells/chaos/
-  spells_chaos.xml            the 36 <instant> lines (script="chaos/<line>/<spell>.lua")
+  spells_chaos.xml            the 77 <instant> lines (script="chaos/<line>/<spell>.lua")
   _common.lua                 shared helpers (global table ChaosSpell)
   _fx_fallback.lua            20-line stub: defines Fx()/FxMissile() only if data/lib/chaos_fx.lua did not
   sorcerer/ druid/ paladin/ knight/ illusionist/ shared/   one .lua per spell
   thief/ ninja/ samurai/                                  the Thief line (classes, docs/CLASSES.md)
+  necromancer/ lich/ bonelord/                            the Necromancer line (_necro.lua: its helpers)
+  monk/ shadowfist/ ironsage/                             the Monk line (_monk.lua: its helpers)
+  templar/ inquisitor/ sentinel/                          the Templar line (_templar.lua: its helpers)
 server/tools/register_spells.py
 ```
 
@@ -85,6 +91,8 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 229 | Wraithshroud | `fen wrai` | M, I | 150 | 350 | 35s | 8s invisibility plus speed boost. |
 | 230 | Nightburst | `drai gal vas umh` | I | 210 | 900 | 25s | After 0.9s shadows erupt in a 7x7 circle (death damage, 40% slow). |
 | 231 | Tear in the Weave | `drai zhul riv` | I | 280 | 1300 | 40s | Pulls monsters within 5 sqm next to you, then two death implosions (0.6s, 1.2s). |
+| 96 | Mirror Mend | `saen spek ["Name"]` | I | 60 | 180 | 2s | Heals the most hurt party member within 7 sqm (or the named one): level x 0.3 + ml x 11-17 + 40-80; a mirror heals the next most hurt (you included) for 25% of it. Healer pass, see "Healing". |
+| 97 | Lucid Reverie | `reth vas spek` | I | 120 | 300 | 20s | You and every party member within 7 sqm: 5 heals, one every 2 s (level x 0.16 + ml x 0.9-1.3 + 10-20 each); follows them up to 10 sqm. Healer pass. |
 | **shared** | | | | | | | |
 | 232 | Flickerdash | `ash flik` | every class | 35 | 80 | 6s | Dash up to 4 sqm in your facing direction, stops at obstacles; 2.5s speed boost. |
 | 233 | Banner Call | `tor vas vant` | every class | 60 | 250 | 35s | You and party members within 5 sqm: +10% melee/distance/magic and speed for 12s. |
@@ -105,6 +113,37 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 247 | Bloodrage | `vyr sang khar` | B | 120 | 200 | 30s | Costs 10% of the current health; 12 s: Rage +10% and every melee weapon hit also strikes up to 4 other enemies next to you for 40% of it. |
 | 248 | Wild Bond | `vael ferh` | BM | 100 | 300 | 10s | Calls the companion (a War Wolf; 2 from level 400): health 500 + 15 x level; companions already out come back to you and heal 50%. |
 | 249 | Feral Command | `kah ferh` | BM | 110 | 200 | 8s | Every companion leaps to the target (range 7) and mauls it for 1.5 bites. |
+| **necromancer** (N Necromancer, L Lich, BL Bone Lord; formula estimates, not measured) | | | | | | | |
+| 180 | Raise Dead | `vael oss` | N, L, BL | 20 | 60 | 2s | Raises a minion from an empty corpse (never one with loot), else one from nothing for twice the mana; skeletons, the Lich's shade. |
+| 181 | Bone Spear | `kah oss lanc` | N, L, BL | 15 | 40 | 2s | The filler: a bone spear at the target (range 5) that pierces to the creature behind. |
+| 182 | Withering Curse | `kah nyx maled` | N, L, BL | 40 | 120 | 8s | The target takes +15% damage from everyone and rots (Lich: +25%, spreads to 2 more; monsters only, players just rot). |
+| 183 | Soul Rot | `kah nyx putr` | L | 100 | 220 | 6s | 6 s death damage over time that jumps to a new host when the target dies. |
+| 184 | Life Siphon | `kah sang nyx` | L | 130 | 260 | 8s | Death damage to the target; heals the Lich for 50% of it. |
+| 185 | Corpse Explosion | `drai kadh krak` | L | 160 | 400 | 6s | Corpses near the target burst (needs corpses). |
+| 186 | Bone Golem | `vael gal oss` | BL | 100 | 500 | 30s | Raises the Bone Golem: slams everything next to it, taunts the monsters within 3 sqm. |
+| 187 | Banner of Bones | `tor vas oss` | BL | 120 | 300 | 30s | 20 s: minions +30% damage, -25% damage taken, 3% regeneration per second. |
+| 188 | Bone Offering | `drai sang oss` | BL | 150 | 250 | 12s | A skeleton bursts in 2 sqm; the Bone Lord takes 20% less damage for 6 s. |
+| **monk** (Mo Monk, SF Shadowfist, IS Iron Sage; finishers need 1 chi and spend all, "5 chi" values; formula estimates, not measured) | | | | | | | |
+| 63 | Ashen Fist | `kah dhun` | Mo, SF, IS | 15 | 30 | 2s | Quick strike at the target next to you; +2 chi. The builder. |
+| 64 | Sundering Palm | `kah gal dhun` | Mo, SF, IS | 30 | 80 | 6s | Finisher: heavy palm strike, x(0.30 + 0.14 per chi). |
+| 65 | Whirling Heel | `drai spir dhun` | Mo, SF, IS | 50 | 120 | 8s | Finisher: spinning kick on everything next to you (3x3), x chi scale. |
+| 66 | Kindled Breath | `saen qhal` | Mo, SF, IS | 40 | 100 | 8s | Finisher: heals (level x 2 + fist x 6) x chi scale; the Iron Sage also heals 60% more over 6 s. |
+| 67 | Mistborne Step | `ash qhal` | Mo, SF, IS | 35 | 60 | 10s | Roll up to 3 sqm forward; +25% dodge for 2 s. |
+| 68 | Pressure Points | `kah mynd dhun` | SF | 100 | 120 | 4s | Strike + 1 chi + a stack on the target (max 5, 8 s): +5% damage taken from Monks per stack. |
+| 69 | Shadowfist Flurry | `kah gal umh dhun` | SF | 150 | 300 | 12s | Finisher: 2 + 1 per chi hits, one every 0.2 s, while the target stays next to you. |
+| 70 | Chi Ward | `tor qhal ["Name"]` | IS | 100 | 200 | 12s | Finisher: shield absorbing (level x 2.5 + fist x 8) x chi scale for 8 s on a party member within 5 sqm (the named one, or the most hurt; you without a party). |
+| 71 | Iron Palm | `kah brak dhun` | IS | 120 | 200 | 8s | Finisher: strike x chi scale; stuns a monster 0.6 s + 0.4 s per chi (cannot move or attack), then 4 s immune; >50000 max health: only slowed 50%. |
+| 72 | Mantra of Stone | `tor vas qhal` | IS | 150 | 400 | 30s | 12 s aura: you and party members within 6 sqm take 8% less damage. |
+| **templar** (T Templar, I Inquisitor, Se Sentinel; P = weapon power, see "Templar line"; formula estimates, not measured) | | | | | | | |
+| 189 | Radiant Smite | `kah sol dyr` | T, I, Se | 20 | 60 | 4s | Holy strike on one target within 3 sqm: P x 0.10-0.16 + ml x 1-1.5 + 30-60. The filler. |
+| 190 | Consecration | `drai sol haln` | T, I, Se | 40 | 200 | 20s | Holy ground (circle 2) for 6 pulses: P x 0.025-0.04 + ml x 0.4-0.6 + 10-20 per pulse; allies in it healed 30% of a pulse. |
+| 191 | Vow of Mending | `saen tor fidh` | T, I, Se | 30 | 150 | 8s | Self heal: 8% max health + level/5 + ml x 4 (±10%). |
+| 198 | Judgement | `kah sol vehm` | I | 100 | 250 | 12s | Holy strike (range 5): P x 0.08-0.12 + ml x 1-1.5 + 20-40; the target takes +20% holy damage from everyone for 8 s. |
+| 199 | Purging Nova | `drai gal sol orr` | I | 120 | 350 | 8s | Holy circle of 3 sqm: P x 0.08-0.13 + ml x 1-1.5 + 20-40; heals 10% of the damage, at most 5% max health. |
+| 250 | Zealotry | `vyr sol zel` | I | 150 | 200 | 30s | 20 s: each melee weapon hit adds a stack, +4% to all damage per stack (max 10); stacks drop 3 s after the last hit. |
+| 251 | Rebuke | `vok sol kal` | Se | 100 | 150 | 12s | Taunts every monster within 4 sqm, 25% slow for 6 s. |
+| 252 | Aegis of Faith | `tor gal sol aeg` | Se | 120 | 150 | 25s | With a shield: -40% damage taken for 5 s. |
+| 253 | Lay on Hands | `saen gal manh "Name"` | Se | 150 | 400 | 60s | Party member (named, or the lowest health share) or itself within 5 sqm: 35% max health + ml x 10. |
 
 Damage formulas follow the stock style: `level/5 + magicLevel*a + b` (min/max with different a, b); knight spells use the stock
 skill*attack callback, paladin spells scale mainly with the distance skill (plus a little magic level).
@@ -216,6 +255,70 @@ of 77) the paladin's Final Verdict drops from ~1840 to ~860, Dawnpiercer from ~5
 Healing (formula averages, magic level 100, per target): Purifying Wellspring ~1800 every 6s to the whole party within 3 sqm, Verdant Sanctuary ~4800 over 8s
 every 30s; for comparison stock Grand Mending ~1100 (self), Circle of Mending ~880.
 
+### Healing (the Illusionist healer pass)
+
+The Illusionist is the best healer, for one ally and for the party, and keeps its party attack buffs (docs/CLASSES.md). Rules and
+numbers: `data/scripts/chaos/healing_rules_core.lua` (`ChaosHealing.cfg`), glue `healing_rules.lua`, tests
+`server/tests/healing_rules_test.lua`.
+
+- **Weaver's Grace** (Illusionist passive): heals it casts on another player are +5% (stock heals included; its self heals are not).
+- **Mirror Mend** (96) and **Lucid Reverie** (97): the table above. Ids 96 and 97 are free in the base server's spells.xml, the
+  client's stock spell list and the Chaos block, and outside the class lines' reserved ranges.
+- **Shared Phantasm** (keystone 621): party members also heal for 4% of the damage they deal to a marked enemy (healed by the
+  Illusionist, collected per server tick); the +12% damage stays.
+- **PvP healing reduction** (every class): a player in PvP combat receives 30% less healing (any heal that passes onHealthChange:
+  spells, potions, Shared Phantasm; not regeneration conditions or auras). PvP combat = damaged by or damaging a player (or a
+  player's summon) in the last 10 s, fight-locked by a player attack, in an arena match, or in the siege arena during a match.
+
+Measured on the test server, every heal cast through its script by one character (intelligence 20, which the engine adds to
+every non-physical value, so heals are x1.2 for every class), on itself and on a second player in its party: a same-level
+Juggernaut (5562 health at level 300, 18162 at level 1000). Magic level 100 / 140 for the casters (Illusionist, Mystic, Lich),
+Sentinel ml 25 / 40 and sword 110 / 140, Iron Sage fist 110 / 140, Ranger line ml 30 / 40, Warrior line ml 10 / 12; no passive
+tree, no gear. 4 to 16 casts per spell (12-16 for the Illusionist's kit and the stock heals); Circle of Mending by its words in
+the game client (its stock script finds no targets from the harness). Rotation model on those averages: 60 s, every spell on
+its cooldown, one lock per spell group (healing / attack / support), always the ready spell with the most healing per second of
+lock; mana not limited (Mana/min shows the cost). "Group" = 4 allies in range of every party heal (a party heal heals each
+the same). Formula-only parts: the Sentinel aura (0.4% of the ally's max health per second, per ally), the Iron Sage's Kindled
+Breath heal over time (+60%), Chi Ward (an absorb shield, counted as healing on the ally). Not in the numbers: potions (any class,
+one per second; mages only have the weak health potions), Shared Phantasm (depends on the party's damage: ~4% of it), the
+Beastmaster's Wild Bond (heals companions only) and the Bone Lord's banner (minions only).
+
+| Level | Class | On another player /s | Heal per mana | Group, 4 allies /s | Mana/min (group) | Self /s | Biggest single cast on an ally |
+|---|---|---|---|---|---|---|---|
+| 300 | Illusionist (before) | 1570 | 10.1 | 3950 | 8280 | 1555 | 3140 |
+| 300 | **Illusionist (after)** | 1797 | 10.3 | 4429 | 9320 | 1538 | 3261 |
+| 300 | Mystic (base class) | 1473 | 10.2 | 3363 | 7660 | 1456 | 3140 |
+| 300 | Lich (Necromancer line, same stock heals) | 1473 | 10.2 | 2811 | 8960 | 1547 | 3140 |
+| 300 | Elementalist | 0 | 0.0 | 0 | 0 | 1456 | 0 |
+| 300 | Sentinel (+ aura 0.4%/s) | 92 | 4.2 | 235 | 1000 | 150 | 2668 |
+| 300 | Iron Sage (Chi Ward = absorb) | 136 | 8.2 | 136 | 1000 | 302 | 1630 |
+| 300 | Ranger line | 0 | 0.0 | 0 | 0 | 798 | 0 |
+| 300 | Warrior line | 0 | 0.0 | 0 | 0 | 359 | 0 |
+| 1000 | Illusionist (before) | 2205 | 14.2 | 5738 | 8280 | 2222 | 4595 |
+| 1000 | **Illusionist (after)** | 2722 | 15.7 | 6780 | 9290 | 2317 | 4736 |
+| 1000 | Mystic (base class) | 2039 | 14.1 | 4812 | 7660 | 2048 | 4595 |
+| 1000 | Lich (Necromancer line, same stock heals) | 2039 | 14.1 | 4091 | 8960 | 2267 | 4595 |
+| 1000 | Elementalist | 0 | 0.0 | 0 | 0 | 2048 | 0 |
+| 1000 | Sentinel (+ aura 0.4%/s) | 309 | 14.2 | 825 | 1000 | 373 | 8218 |
+| 1000 | Iron Sage (Chi Ward = absorb) | 302 | 18.1 | 302 | 1000 | 682 | 3620 |
+| 1000 | Ranger line | 0 | 0.0 | 0 | 0 | 1180 | 0 |
+| 1000 | Warrior line | 0 | 0.0 | 0 | 0 | 733 | 0 |
+
+Before -> after for the Illusionist: on another player +14% / +23% (level 300 / 1000), the party +12% / +18%, heal per mana up,
+self heal unchanged. Lead after: on another player +22% / +33% over the next class (the Mystic and the Necromancer line share the
+stock Kindred Mend), the party +32% / +41% over the base Mystic and +58% / +66% over the Lich (the next ascended class: the
+Necromancer line has the Mystic's stock heals, Circle of Mending and Kindred Mend included). The biggest single cast on an ally
+stays the Sentinel's Lay on Hands at level 1000 (35% of the ally's max health, every 60 s): its emergency heal and tank-support
+identity; at level 300 Heartwood Embrace is bigger. The Sentinel (aura, Lay on Hands, Consecration) and the Iron Sage (Chi
+Ward, Kindled Breath) stay far behind as healers (a tank-support and a bruiser).
+
+PvP check (two clients, level 300): a real auto attack from the second player fight-locks it and puts both in PvP combat;
+heals then land at x0.70 (a flat 1000 heal: 1200 -> 840 on the Illusionist, 1260 -> 882 with Weaver's Grace on the other
+player), and are back to full 10 s after the last hit. So the Illusionist heals less in PvP than before this pass: about
+1260 per second on a partner and 1080 on itself at level 300 (1570 / 1555 before), against the engine's halved player damage
+(e.g. Hail of Dawn ~1830 per cast on a level 300 player): a focused Illusionist still dies; arena and siege rules unit-tested
+(not run in a live match).
+
 ### Thief line (Thief, Ninja, Samurai)
 
 Ascension at level 100 (`!ascend ninja|samurai`, data/scripts/chaos/ascension.lua). The kit's mechanics are scripted in
@@ -249,6 +352,122 @@ more health (Iaijutsu averages ~1700 at level 300 and ~5300 at level 1000 before
 7 parries of 8 stances against two Behemoths), and the Thief in the middle (between the knight and the illusionist at level 300).
 The auto attack alone is noisy (a 30 s sample varies by ~15%).
 
+### Necromancer line (Necromancer, Lich, Bone Lord)
+
+**Phase A: built, not tested in game. Every number below is a formula estimate until measured (phase B).**
+Ascension at level 100 (`!ascend lich|bonelord`), behind the store unlock of the Necromancer (`class_unlocks.lua`). Numbers:
+`data/scripts/chaos/necro_config.lua`, rules: `necro_core.lua`, minions: `necro_minions.lua`, curse and bone shield:
+`necromancer_combat.lua`.
+
+- **Minions** are summons (Game.createMonster + setMaster) of three monster types without attacks of their own
+  (`monster/monsters/chaos/necro_*.xml`): Risen Skeleton (Necromancer, Bone Lord; melee), Lich Shade (Lich; death bolts
+  from 4 sqm), Bone Golem (Bone Lord; slams everything next to it and taunts the monsters within 3 sqm). Every 2 s
+  (golem 2.5 s) a minion that reaches the owner's target hits it, and the hit is **dealt as the owner**: it counts like
+  the owner's own damage for experience (the engine would give half for a summon's share), loot (the engine skips the
+  rarity roll when a summon lands the last hit), corpse ownership, bounties, leaderboards, the hunt tracker and curses.
+  Hit: (level x 0.24 + magic level x 0.5) x class factor (Necromancer 1, Lich shade 2.4, Bone Lord skeleton 0.6 + 75%
+  splash on the enemies next to the target, golem 1.8); health: (200 + level x 9 + magic level x 6) x class factor
+  (1 / 2.5 / 1.2 / golem 4). Caps: Necromancer 1 / 2 (level 40) / 3 (80) / 4 (200) skeletons; Lich 1 shade; Bone Lord
+  5 / 6 (400) skeletons + the golem.
+- **Raise Dead** uses empty corpses only (never destroys loot; yours, your party's or nobody's), else raises one from
+  nothing for twice the mana. Minions follow and are brought back past 7 sqm or across floors, rest while the owner
+  stands in a protection zone (monsters cannot enter one) and rise again outside, and go with the owner's logout or death.
+- **Withering Curse** (+15% damage taken from everyone, the Lich's +25% and spread to 2 more; monsters only, players
+  just rot), **Soul Rot** (6 s death DoT that jumps on death), **Life Siphon** (heals 50% of the damage),
+  **Corpse Explosion** (needs corpses), **Banner of Bones** (+30% minion damage, -25% taken, 3% regen/s for 20 s),
+  **Bone Offering** (a skeleton bursts in 2 sqm; -20% damage taken for 6 s).
+- **Soul Hoard** (Lich): +25% spell damage while the shade slot is empty: the Lich plays with its shade or without.
+- **Level factor**: the line's spells x (1 + (level - 300) / 2800), at most 1.25 (x1.25 at level 1000), a stand-in for
+  the passive tree the line does not have yet (minions scale on their own formula). Re-tune both with the tree.
+
+Planned numbers (formula model, not measured yet): a 60 s rotation with the 2 s group cooldown, every spell on its
+cooldown, the curse always up, minions hitting all the time, the wand's auto attack from the mage tables (110 / 380 per
+second), no passive tree, magic level 100 at level 300 and 140 at level 1000. 5 targets: the five dummies side by side
+(the minions' main target plus four neighbours). Corpse Explosion is not in the numbers (the dummies leave no corpses).
+
+| Level | Class | Minions | Total single target | Total 5 targets | Mana/min | Max health (no gear) |
+|---|---|---|---|---|---|---|
+| 300 | Lich (with its shade) | 1 | **~1000** | ~1280 | ~5050 | 2229 |
+| 300 | Lich (no shade, Soul Hoard) | 0 | ~990 | ~1360 | ~5050 | 2229 |
+| 300 | Bone Lord | 5 + golem | ~830 | **~2110** | ~3850 | 2813 |
+| 300 | Necromancer | 4 | ~640 | ~640 | ~1600 | 2521 |
+| 1000 | Lich (with its shade) | 1 | **~2670** | ~3580 | ~5050 | 7129 |
+| 1000 | Lich (no shade, Soul Hoard) | 0 | ~2640 | ~3830 | ~5050 | 7129 |
+| 1000 | Bone Lord | 6 + golem | ~2330 | **~5780** | ~3850 | 9113 |
+| 1000 | Necromancer | 4 | ~1760 | ~1720 | ~1600 | 8121 |
+
+Against the tables above: the Lich sits in the single-target bracket (Ninja 1050 / 2837, Paladin 1074 / 2770); the Bone
+Lord is second in area damage behind the Elementalist (2815 / 6427) and below the Lich on one target; the Necromancer
+before its ascension is at the Thief's level (728 / 1802). To be measured with the dummy harness (phase B).
+
+### Monk line (Monk, Shadowfist, Iron Sage)
+
+**Phase A: built, not tested in game. Every number below is a formula estimate until measured (phase B).**
+Ascension at level 100 (`!ascend shadowfist|ironsage`), behind the store unlock of the Monk (`class_unlocks.lua`). Rules and every number:
+`ChaosMonk` in `data/scripts/chaos/monk_chi_core.lua`; combat glue `data/scripts/chaos/monk_combat.lua`.
+
+- **Unarmed**: the engine's fist hit (attack 7, no vocation multiplier) is rescaled for a Monk to a fist attack of 40 + level x 0.025 (max 60)
+  x meleeDamage 1.2 (Iron Sage 1.1); about x5 at level 300. Attack speed: the vocation's (1500 / 1300 / 1700 ms) minus dexterity.
+- **Chi** (max 5, gone after 12 s untouched): +1 per melee hit (at most one per 2 s), +2 Ashen Fist, +1 Pressure Points. Finishers spend all of
+  it and do x(0.30 + 0.14 x chi) of their 5-chi value (0.44 at 1 chi). The kit's damage is ORIGIN_SPELL; physical, blocked like a spell.
+- **Strike formula** (like the Thief line's): (level / 5 + power x a + b) x the level factor (Chaos.classes.spellLevelScale, x2 at level 1000),
+  power = fist skill x fist attack (a staff: club skill x its attack).
+- **Shadowfist**: a finisher opens a 4 s focus: weapon hits and strikes crit (x1.5) with 8% per chi spent. Pressure Points: +5% per stack.
+- **Evasion**: 6% Monk, 8% Shadowfist, 4% Iron Sage against melee and ranged hits; +25% for 2 s after Mistborne Step.
+
+**Estimate, not measured** (`ztest`-style rotation computed from the formulas: 90 s, the auto attack averaged from the formula, dexterity 20,
+the 2 s group cooldown, best ready spell, finishers at 4+ chi, Pressure Points kept at 5 stacks; no passive tree; skill 110 at level 300, 140 at
+level 1000; no armour on the target). The "5 targets" column is the area-first rotation (Whirling Heel before the single-target finishers).
+
+| Level | Class | Auto attack | Total single target | Total 5 targets | Mana/min | Max health (est.) |
+|---|---|---|---|---|---|---|
+| 300 | Shadowfist | 414 | **~1020** | ~1340 | ~3400 | ~4430 |
+| 300 | Monk | 255 | ~590 | ~880 | ~1700 | ~4430 |
+| 300 | Iron Sage | 208 | ~530 | ~750 | ~2100 | ~5010 |
+| 1000 | Shadowfist | 743 | **~2930** | ~4020 | ~3400 | ~14500 |
+| 1000 | Monk | 458 | ~1600 | ~2590 | ~1700 | ~14500 |
+| 1000 | Iron Sage | 374 | ~1490 | ~2220 | ~2100 | ~16490 |
+
+Target: the Shadowfist in the single-target bracket with the Ninja (1050 / 2837) and the crossbow Deadeye (1074 / 2770); the Iron Sage tanky with
+modest damage, below the knight (639 / 1957), paid back by Chi Ward (~1630 absorb at level 300, ~3620 at level 1000, every 12 s), Mantra of
+Stone (-8% for the party) and the stun. The Shadowfist's area value at level 1000 (~4020, Whirling Heel with the focus crit) is above the
+Ninja's 3710: watch it in phase B (lower `whirlingHeel` or exclude area strikes from the focus crit if it holds).
+
+### Templar line (Templar, Inquisitor, Sentinel)
+
+**Phase A: built, not tested in game. Every number below is a formula estimate until measured (phase B).**
+Ascension at level 100 (`!ascend inquisitor|sentinel`). Locked behind the store's class unlock (docs/CLASSES.md, "Class lock").
+Mechanics in `data/scripts/chaos/templar_combat.lua`, ids, numbers and rules in `templar_aura_core.lua` (`ChaosTemplar.cfg`).
+Power P = the best of sword, club and axe skill x the main-hand weapon's attack; strikes are
+`(level/5 + P x a + magic level x b + c) x level factor` (x1 up to level 300, x2 at level 1000, at most x2.2: the Thief line's
+stand-in for the missing passive tree). The spells are in the table above.
+
+Passives: the defence aura (Templar -6% within 4 sqm, Inquisitor -4% within 3, Sentinel -12% within 5 and 0.4% max health per
+second; the strongest aura counts) and Radiant Strikes (a holy strike for 15% / 25% / 10% of each melee weapon hit).
+
+Formula estimates, with the gear and skills of the Thief-line runs (level 300: sword 110, a one-handed blade of attack 55, magic
+level ~25; level 1000: sword 140, attack 65, magic level ~40), no passive tree points, the auto attack scaled from the Thief's
+measured one (attack speed 2000 instead of 1600, weapon hits x1.0) plus Radiant Strikes, a 90 s rotation with the 2 s group
+cooldowns, Judgement and Zealotry at their uptime (2/3):
+
+| Level | Class | Auto attack (+ Radiant) | Total single target | Total 5 targets | Mana/min | Base max health |
+|---|---|---|---|---|---|---|
+| 300 | Templar | ~245 | ~560 | ~900 | 1500 | 4273 |
+| 300 | Inquisitor | ~270 | ~940 | ~1770 | 5800 | 3981 |
+| 300 | Sentinel | ~210 | ~530 | ~870 | 1500 | 4273 |
+| 1000 | Templar | ~450 | ~1510 | ~2780 | 1500 | 14073 |
+| 1000 | Inquisitor | ~490 | ~2640 | ~5550 | 5800 | 13081 |
+| 1000 | Sentinel | ~390 | ~1450 | ~2720 | 1500 | 14073 |
+
+Toughness against weapon attacks (estimate): Juggernaut x0.765 damage taken (Iron Will -25% at 40% uptime, Bulwark 15% block),
+15 hp per level -> 19.6 effective hp per level; Sentinel x0.81 (own aura -12%, Aegis of Faith -40% at 20% uptime) with 14 hp per
+level -> 17.3, about 88% of the Juggernaut, plus 0.4% max health per second. A party member next to a Sentinel takes 12% less
+damage and regenerates 0.4% per second (next to a Templar 6% less).
+
+Targets for the measurement (phase B): the Inquisitor's 5-target total near the Berserker's, the Templar in the knight's range,
+the Sentinel the lowest damage of the line; and the party test: the same level 300 Mystic among four Behemoths for 60 s without
+healing, alone and with a Sentinel 3 sqm away (expected: ~12% less damage taken plus the regeneration).
+
 ### PvP (tested with two characters on the test server)
 
 - Damage to players is halved by the engine (spell and weapon alike); measured per cast against a level 300 knight with no armour, e.g.
@@ -274,6 +493,8 @@ Purifying Wellspring at 80% health, and the shooter casts Rime Bloom / Blightswa
   (`ProtocolGame::sendSpellCooldown`) sends the id as one byte, so an id like 410 arrives as 154 and the client (action bar,
   helper) puts the cooldown on the wrong spell. A few stock spells of the base server (ids 258-268) already wrap that way.
   The stock file also has a duplicate spellid (106) not related to this work.
+  The new lines use ids that are free in the base server's spells.xml and in the client's stock spell list: 180-188 (the
+  Necromancer line), 63-72 (the Monk line; 73, 74 kept free), 189-191, 198, 199 and 250-253 (the Templar line).
 - Word prefixes: many words start with existing words (`kah ...` vs Reaver's Spin `kah`, `saen gal vas vert` vs `saen gal`, ...). TFS picks the longest match and none of the shorter spells takes parameters, so this
   should be fine. No chaos words start with the words of a parameterised spell (sekh, ash ul, vael kal, saen kin, alana sio).
 - Manually looped spells (chain lightning jumps, warcry, pulls, ticks) only affect monsters that are not player summons; direct area combats follow the engine's normal PvP rules
@@ -296,4 +517,4 @@ The server only needs the files above. Spell list and action bar come from the c
 Use the spellid column above as the id, and the words as the spell's words.
 
 ## Client side
-The client side is done in `client/overlay/modules/game_chaosspells` (spell list, action bar, icons); regenerate its data with `python3 -I client/tools/gen_spell_data.py` after changing `spells_chaos.xml`. The icons (cells 201..249, drawn by `client/tools/gen_spell_icons.py`) live in the complete generated spell icon sheets in `client/overlay/data/images/game/spells/`; rebuild those with `client/tools/gen_all_spell_icons.py`. See `client/MANIFEST.md`.
+The client side is done in `client/overlay/modules/game_chaosspells` (spell list, action bar, icons); regenerate its data with `python3 -I client/tools/gen_spell_data.py` after changing `spells_chaos.xml`. The icons (cells 201..277, drawn by `client/tools/gen_spell_icons.py`) live in the complete generated spell icon sheets in `client/overlay/data/images/game/spells/`; rebuild those with `client/tools/gen_all_spell_icons.py`. See `client/MANIFEST.md`.

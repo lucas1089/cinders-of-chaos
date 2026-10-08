@@ -72,6 +72,24 @@ local NOTIFICATION_TYPES = {
         borderColor = "#2c6e69",
         duration = 8000,
     },
+    -- ascension quest (server data/scripts/chaos/ascension_quest.lua): Proof, Trial and the ascension itself
+    ASCENSION = {
+        icon = "images/notifications/gm.png",
+        title = "ASCENSION",
+        titleColor = "#c9a24a",
+        backgroundColor = "#ccbebb",
+        borderColor = "#6a5632",
+        duration = 10000,
+    },
+    -- invasions and world events (server data/scripts/chaos/invasion.lua, worldevents.lua): warnings, waves, the end
+    INVASION = {
+        icon = "images/notifications/gm.png",
+        title = "INVASION",
+        titleColor = "#d8452a",
+        backgroundColor = "#ccbebb",
+        borderColor = "#7a1a12",
+        duration = 9000,
+    },
     CATACOMB_FREE = {
         icon = "images/notifications/catacomb2.png",
         title = "CATACOMB AVAILABLE",
@@ -1067,6 +1085,20 @@ function onExtendedOpcode(protocol, opcode, buffer)
         achievement = function(data)
             if data.message then
                 addNotification("ACHIEVEMENT", data.message)
+            end
+        end,
+
+        -- ascension quest (server data/scripts/chaos/ascension_quest.lua)
+        ascension = function(data)
+            if data.message then
+                addNotification("ASCENSION", data.message)
+            end
+        end,
+
+        -- invasions and world events (server data/scripts/chaos/invasion.lua)
+        invasion = function(data)
+            if data.message then
+                addNotification("INVASION", data.message)
             end
         end,
 

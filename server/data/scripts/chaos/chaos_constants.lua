@@ -41,12 +41,15 @@ ChaosOpcodes = {
 	crafting = 232, -- crafting bench (client game_crafting, !craft; crafting.lua, data/lib/chaos_crafting.lua)
 	siege = 233, -- guild siege HUD and sign-up window (client game_siege, !siege; siege.lua, siege_config.lua)
 	arena = 236, -- ranked PvP arena window and match HUD (client game_arena, !arena; arena.lua, arena_config.lua)
+	monkChi = 247, -- Monk chi HUD, server -> client, plain text "chi:<chi>:<max>:<decaySec>" (client game_monkchi; monk_chi_core.lua)
 	lootfilter = 238, -- loot filter window, corpse highlight data, loot channel rows (client game_lootfilter, !lootfilter; lootfilter.lua)
 	nameplate = 248, -- name plates over players: title, guild, frame (client game_nameplate, !title; nameplate.lua, titles.lua)
 	season = 246, -- seasons window (client game_season, !season; season.lua, season_config.lua)
 	patchnotes = 244,
 	hunt = 241, -- hunt tracker window, exp/h and profit/h (client game_hunt, !hunt; hunt.lua, hunt_core.lua, hunt_config.lua)
 	achievements = 250, -- achievements window and unlocks (client game_achievements, !achievements; achievements*.lua)
+	invasion = 251, -- invasion HUD and upcoming events window, server -> client (client game_invasion, !invasion; invasion*.lua, worldevents.lua)
+	guild = 252, -- Guild window: level, perks, members, guild bank, guild hall, depot, top guilds (client game_guild, !guild; guild*.lua)
 	spellbook = 219 -- spell list window (client game_spellbook, !spells)
 }
 
@@ -70,6 +73,7 @@ Chaos.storage = {
 	riftRun = 7100400, -- rifts (rift.lua): 7100400 - 7100409 reserved; +0 tier of the key of a run in progress, +1..+3 its modifiers, +4 start
 	lootFilter = 7100500, -- loot filter settings of the character, packed in one value (lootfilter_core.lua F.pack); 7100500 - 7100509 reserved
 	newPlayer = 7100250, -- new-player kit, welcome, milestones and tutorial island (newplayer*.lua): 7100250 - 7100269 reserved
+	monk = 7100800, -- the Monk line (ChaosMonk.ids.storage in monk_chi_core.lua): 7100800 - 7100809 reserved; chi, its time, focus, Chi Ward
 
 	-- store: one-time cosmetics owned (base + id of the wings / aura / shader)
 	shopWingsBase = 7100600,
@@ -308,7 +312,11 @@ Chaos.worldBoss = {
 		wallId = 5648, -- stone wall
 		pillarId = 1514, -- stone pillar (line-of-sight cover inside the arena)
 		basinId = 1481, -- coal basin (light, lobby corners and arena corners)
-		portalId = 1387 -- magic forcefield (type teleport in items.xml); used without destination + action id
+		portalId = 1387, -- magic forcefield (type teleport in items.xml); used without destination + action id
+		-- dark tile set (server/README.md "Dark tile set"): with the set installed, walls, pillars and lights use
+		-- these and both rooms are painted (data/lib/chaos_dark_paint.lua styles); else the ids above are used
+		dark = {enabled = true, wall = "dark_wall", pillar = "ruined_pillar", basin = "brazier",
+			arenaStyle = "arena", lobbyStyle = "lobby"}
 	},
 	-- action ids of the forcefields (handled by MoveEvent onStepIn, never by the teleport destination, so monsters
 	-- that step on them are not moved and the entry rules are checked)
@@ -320,25 +328,69 @@ Chaos.worldBoss = {
 	portalOffsets = {{2, 0}, {-2, 0}, {0, 2}, {0, -2}, {2, 2}, {-2, 2}, {2, -2}, {-2, -2}, {3, 0}, {-3, 0}},
 	rotationStorage = 7100910, -- global storage (Game.setStorageValue, in memory): last boss index; resets on restart
 
-	-- participation reward (everybody with at least minDamagePercent % of the boss max health in damage).
-	-- share = own damage / damage of all eligible players. Delivered to the backpack, the rest to the inbox;
+	-- roles (worldboss.lua "role tracking"): what a player did in the fight, besides damage on the boss.
+	--   healing: healing on OTHER players inside the arena while the boss is alive, effective only (capped at the
+	--            target's missing health) and at most the boss damage the target took and was not healed for yet
+	--   tanking: damage from the boss and its adds the player survived (a killing hit counts nothing), capped per hit,
+	--            only while the player is active (attacked the boss or an add, or healed someone, within activeSeconds)
+	-- contribution score = damage + healing x healWeight + tanking x tankWeight
+	roles = {
+		healWeight = 1.0, -- 1 health healed on someone else = 1 damage
+		selfHealWeight = 0, -- healing yourself does not count (survival is already the tanking credit)
+		tankWeight = 0.5, -- tanking overlaps with the healing that undoes it, so it counts half
+		tankHitCap = 8000, -- per hit: the biggest designed boss hit (Nyxareth's rift beam)
+		offTargetWeight = 0.5, -- hits from a boss or add that is not targeting you (area splash) count half
+		activeSeconds = 30,
+		titleDays = 7, -- role titles (reward.podium) are held this long after the fight
+		titleStorage = 7100930, -- player storages 7100930-7100932: until when the damage/healing/tanking title is held
+		boards = {healing = "bosshealer", tanking = "bosstank"} -- weekly boards (leaderboard_config.lua); nil = none
+	},
+
+	-- participation reward (everybody with a contribution score of at least minScorePercent % of the boss max health).
+	-- share = own score / score of all eligible players. Delivered to the backpack, the rest to the inbox;
 	-- players offline at the kill get it at their next login (kept in memory until a restart).
 	reward = {
-		minDamagePercent = 0.25,
+		minScorePercent = 0.25,
 		bankGold = 500000, -- deposited into the bank for every eligible player
-		bankGoldPool = 10000000, -- split by damage share, deposited into the bank
+		bankGoldPool = 10000000, -- split by share, deposited into the bank
 		base = {{id = 29856, count = 3}, {id = 29857, count = 1}}, -- Chaos Orbs, Divine Orb for everyone
-		pool = {{id = 29856, count = 60}, {id = 29857, count = 25}}, -- split by damage share (floor)
-		top = { -- bonus for the top damage dealers
-			{{id = 29857, count = 5}, {id = 2160, count = 50}},
-			{{id = 29857, count = 3}, {id = 2160, count = 30}},
-			{{id = 29857, count = 2}, {id = 2160, count = 20}}
-		},
+		pool = {{id = 29856, count = 60}, {id = 29857, count = 25}}, -- split by share (floor)
 		gearChance = 1500, -- per 10000: one item of the boss gear list (rolled with rarity gearRarity)
-		gearShareBonus = 3000, -- + share x this (a player with 20% of the damage: +600)
+		gearShareBonus = 3000, -- + share x this (a player with 20% of the score: +600)
 		gearRarity = {6, 9}, -- min, max rarity of that item (Game.createItemWithRarity)
 		uniqueChance = 50, -- per 10000: one of the boss-only uniques that list this boss (chaos_unique_items.lua)
-		uniqueShareBonus = 300 -- + share x this
+		uniqueShareBonus = 300, -- + share x this
+		-- the top `top` of each category (eligible players only; one player can place in several): rewards[place],
+		-- an extra unique roll uniqueChance[place] per 10000 (one unique at most per player) and the role title.
+		-- Ties: who reached the value first places higher. A value under placeMinPercent % of the boss max health
+		-- does not place.
+		podium = {
+			top = 3,
+			placeMinPercent = 0.1,
+			categories = {
+				{key = "damage", name = "Damage", title = "Bossbreaker", color = "#f08a4b",
+					rewards = {
+						{{id = 29857, count = 5}, {id = 2160, count = 50}},
+						{{id = 29857, count = 3}, {id = 2160, count = 30}},
+						{{id = 29857, count = 2}, {id = 2160, count = 20}}
+					},
+					uniqueChance = {300, 200, 100}},
+				{key = "healing", name = "Healing", title = "Lifewarden", color = "#6fd8a8",
+					rewards = {
+						{{id = 29857, count = 5}, {id = 2160, count = 50}},
+						{{id = 29857, count = 3}, {id = 2160, count = 30}},
+						{{id = 29857, count = 2}, {id = 2160, count = 20}}
+					},
+					uniqueChance = {300, 200, 100}},
+				{key = "tanking", name = "Tanking", title = "Bulwark", color = "#9fb4cc",
+					rewards = {
+						{{id = 29857, count = 5}, {id = 2160, count = 50}},
+						{{id = 29857, count = 3}, {id = 2160, count = 30}},
+						{{id = 29857, count = 2}, {id = 2160, count = 20}}
+					},
+					uniqueChance = {300, 200, 100}}
+			}
+		}
 	},
 
 	-- the five bosses. adds: {name, count, health}; phases trigger once when health falls to `at` (fraction).
@@ -454,10 +506,20 @@ Chaos.shopServices = {
 		illusionist = {1, 10},
 		thief = {11, 12, choose = {"ninja", "samurai"}},
 		ninja = {11, 12},
-		samurai = {11, 13}
+		samurai = {11, 13},
+		monk = {17, 18, choose = {"shadowfist", "ironsage"}},
+		shadowfist = {17, 18},
+		ironsage = {17, 19},
+		necromancer = {20, 21, choose = {"lich", "bonelord"}},
+		lich = {20, 21},
+		bonelord = {20, 22},
+		templar = {23, 24, choose = {"inquisitor", "sentinel"}},
+		inquisitor = {23, 24},
+		sentinel = {23, 25}
 	},
 	-- the word list players see (!changevocation, the store's notices)
-	vocationWords = "warrior|juggernaut|berserker|ranger|deadeye|beastmaster|mystic|elementalist|illusionist|thief|ninja|samurai",
+	vocationWords = "warrior|juggernaut|berserker|ranger|deadeye|beastmaster|mystic|elementalist|illusionist|thief|ninja|samurai"
+		.. "|monk|shadowfist|ironsage|necromancer|lich|bonelord|templar|inquisitor|sentinel",
 	vocationBaseLevel = 8, -- health/mana/capacity gains are counted from this level (as the engine does)
 
 	-- Bottomless Loot Pouch: tell the player at most once per this many seconds
@@ -486,10 +548,16 @@ Chaos.classes = {
 	-- spells, NPCs and the database keep working; 2, 6 and 9 are retired (class_migration.lua moves them).
 	ids = {
 		mystic = 1, ranger = 3, warrior = 4, elementalist = 5, deadeye = 7, juggernaut = 8, illusionist = 10,
-		thief = 11, ninja = 12, samurai = 13, berserker = 14, beastmaster = 15
+		thief = 11, ninja = 12, samurai = 13, berserker = 14, beastmaster = 15,
+		-- classes five to seven, behind the store's class unlock (class_unlocks.lua); each line's own ids are in
+		-- ChaosMonk.ids (monk_chi_core.lua), necro_config.lua and ChaosTemplar.cfg.ids (templar_aura_core.lua)
+		monk = 17, shadowfist = 18, ironsage = 19,
+		necromancer = 20, lich = 21, bonelord = 22,
+		templar = 23, inquisitor = 24, sentinel = 25
 	},
 	-- base class of every class (the line)
-	baseOf = {[1] = 1, [5] = 1, [10] = 1, [3] = 3, [7] = 3, [15] = 3, [4] = 4, [8] = 4, [14] = 4, [11] = 11, [12] = 11, [13] = 11},
+	baseOf = {[1] = 1, [5] = 1, [10] = 1, [3] = 3, [7] = 3, [15] = 3, [4] = 4, [8] = 4, [14] = 4, [11] = 11, [12] = 11, [13] = 11,
+		[17] = 17, [18] = 17, [19] = 17, [20] = 20, [21] = 20, [22] = 20, [23] = 23, [24] = 23, [25] = 23},
 	-- the engine knows one promotion per vocation; the choice between two ascended classes is this script's
 	ascension = {
 		minLevel = 100,
@@ -499,7 +567,10 @@ Chaos.classes = {
 			[4] = {juggernaut = 8, berserker = 14},
 			[3] = {deadeye = 7, beastmaster = 15},
 			[1] = {elementalist = 5, illusionist = 10},
-			[11] = {ninja = 12, samurai = 13}
+			[11] = {ninja = 12, samurai = 13},
+			[17] = {shadowfist = 18, ironsage = 19},
+			[20] = {lich = 21, bonelord = 22},
+			[23] = {inquisitor = 24, sentinel = 25}
 		}
 	},
 	-- one-time migration of the old vocations (class_migration.lua). Runs once at startup (version in server_config),
@@ -529,6 +600,8 @@ Chaos.classes = {
 	-- Lua states; the conditions are the state both see. Stealth is CONDITION_INVISIBLE, the others
 	-- CONDITION_ATTRIBUTES without attributes (a timer). Next to ChaosSpell.SUBID (71001-71009).
 	subId = {stealth = 71010, poisonBlades = 71011, counter = 71012, bushido = 71013, bloodrage = 71014},
+	-- the new lines keep their sub ids in their own config: Necromancer 71020-71023 (necro_config.lua), Monk
+	-- 71030-71044 (monk_chi_core.lua), Templar 71050-71052 (templar_aura_core.lua)
 	-- Shadow Veil: monsters drop the player as a target and cannot pick it; attacking or being hit ends it
 	stealth = {
 		durationMs = 4000,

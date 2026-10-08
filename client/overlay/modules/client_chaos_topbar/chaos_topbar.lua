@@ -199,6 +199,7 @@ local CATEGORIES = {
     { text = 'VIP List',           icon = 'vip',         modules = { 'game_viplist' },   fns = { 'toggle' } },
     { text = 'Quest Log',          icon = 'quests',      custom = openQuestLog, available = function() return getModule('game_questlog') ~= nil end },
     { text = 'Quest Tracker',      icon = 'quests',      modules = { 'game_questlog' },  fns = { 'toggleTracker' } },
+    { text = 'Guild',              icon = 'vip',         modules = { 'game_guild' },     fns = { 'toggle' } },
   } },
   { id = 'system', text = 'System', icon = 'options', entries = {
     { text = 'Options',            icon = 'options',     modules = { 'client_settings', 'client_options' }, fns = { 'toggle' }, offline = true },
