@@ -7,8 +7,8 @@ combat:setParameter(COMBAT_PARAM_EFFECT, Fx("arcane_circle", CONST_ME_MORTAREA))
 combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, FxMissile("arcane_orb", CONST_ANI_DEATH))
 
 function onGetFormulaValues(player, level, magicLevel)
-	local min = (level / 5) + (magicLevel * 2.6) + 25
-	local max = (level / 5) + (magicLevel * 4.4) + 45
+	local min = (level / 5) + (magicLevel * 5.7) + 55
+	local max = (level / 5) + (magicLevel * 9.7) + 100
 	return -min, -max
 end
 

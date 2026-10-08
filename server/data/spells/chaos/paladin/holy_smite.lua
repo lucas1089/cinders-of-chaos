@@ -1,4 +1,4 @@
--- Holy Smite: single target holy bolt, scales with level, magic level and distance skill.
+-- Holy Smite: single target holy bolt, the paladin's filler. Scales mostly with distance skill.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local combat = Combat()
@@ -8,8 +8,8 @@ combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, FxMissile("holy_arrow", CONST_A
 
 function onGetFormulaValues(player, level, magicLevel)
 	local dist = player:getEffectiveSkillLevel(SKILL_DISTANCE)
-	local min = (level / 5) + (magicLevel * 1.8) + (dist * 0.25) + 18
-	local max = (level / 5) + (magicLevel * 3.0) + (dist * 0.45) + 35
+	local min = (level / 5) + (dist * 3.2) + (magicLevel * 1.0) + 20
+	local max = (level / 5) + (dist * 5.0) + (magicLevel * 1.6) + 40
 	return -min, -max
 end
 

@@ -27,7 +27,7 @@ function onCastSpell(creature, variant, isHotkey)
 		return ChaosSpell.cancel(player, RETURNVALUE_YOUCANONLYUSEITONCREATURES)
 	end
 	local pos = target:getPosition()
-	local min, max = ChaosSpell.mlValues(player, 5.5, 9.0, 120, 220)
+	local min, max = ChaosSpell.mlValues(player, 6.6, 10.8, 145, 265)
 
 	ChaosSpell.shoot(player:getPosition(), pos, "fire_bolt", CONST_ANI_FIRE)
 	ChaosSpell.fx(pos, "arcane_circle", CONST_ME_MAGIC_RED)

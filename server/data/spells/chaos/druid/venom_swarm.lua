@@ -7,8 +7,8 @@ combat:setParameter(COMBAT_PARAM_EFFECT, Fx("poison_cloud", CONST_ME_POISONAREA)
 combat:setArea(createCombatArea(AREA_CIRCLE3X3))
 
 function onGetFormulaValues(player, level, magicLevel)
-	local min = (level / 5) + (magicLevel * 2.0) + 15
-	local max = (level / 5) + (magicLevel * 3.4) + 30
+	local min = (level / 5) + (magicLevel * 2.4) + 18
+	local max = (level / 5) + (magicLevel * 4.1) + 36
 	return -min, -max
 end
 

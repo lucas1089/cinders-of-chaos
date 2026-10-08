@@ -11,9 +11,9 @@ function onCastSpell(creature, variant, isHotkey)
 		return ChaosSpell.cancel(player, RETURNVALUE_YOUCANONLYUSEITONCREATURES)
 	end
 	local dist = player:getEffectiveSkillLevel(SKILL_DISTANCE)
-	local min, max = ChaosSpell.mlValues(player, 3.4, 5.6, 60, 110)
-	min = min + dist * 0.4
-	max = max + dist * 0.7
+	local level, ml = player:getLevel() / 5, player:getMagicLevel()
+	local min = level + dist * 11 + ml * 3 + 60
+	local max = level + dist * 18 + ml * 5 + 110
 	if target:getHealth() < target:getMaxHealth() * 0.25 then
 		min, max = min * 1.5, max * 1.5
 	end

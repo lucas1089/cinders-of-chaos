@@ -47,7 +47,7 @@
 		<vocation name="Druid" />
 		<vocation name="Elder Druid" />
 	</instant>
-	<instant group="healing" spellid="422" name="Rejuvenating Grove" words="exura gran mas silva" level="180" mana="600" premium="1" aggressive="0" selftarget="1" cooldown="40000" groupcooldown="2000" needlearn="0" script="chaos/druid/rejuvenating_grove.lua">
+	<instant group="healing" spellid="422" name="Rejuvenating Grove" words="exura gran mas silva" level="180" mana="600" premium="1" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/druid/rejuvenating_grove.lua">
 		<vocation name="Druid" />
 		<vocation name="Elder Druid" />
 	</instant>
@@ -75,7 +75,7 @@
 		<vocation name="Paladin" />
 		<vocation name="Royal Paladin" />
 	</instant>
-	<instant group="attack" spellid="429" name="Sanctified Barrage" words="exevo gran mas san sagitta" level="280" mana="1000" premium="1" range="7" needtarget="1" blockwalls="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/paladin/sanctified_barrage.lua">
+	<instant group="attack" spellid="429" name="Sanctified Barrage" words="exevo gran mas san sagitta" level="280" mana="800" premium="1" range="7" needtarget="1" blockwalls="1" cooldown="24000" groupcooldown="2000" needlearn="0" script="chaos/paladin/sanctified_barrage.lua">
 		<vocation name="Paladin" />
 		<vocation name="Royal Paladin" />
 	</instant>

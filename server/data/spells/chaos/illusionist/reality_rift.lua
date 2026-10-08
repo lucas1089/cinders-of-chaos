@@ -20,7 +20,7 @@ function onCastSpell(creature, variant, isHotkey)
 	end
 	local p = player:getPosition()
 	local center = {x = p.x, y = p.y, z = p.z}
-	local min, max = ChaosSpell.mlValues(player, 2.8, 5.0, 60, 110)
+	local min, max = ChaosSpell.mlValues(player, 3.35, 6.0, 72, 132)
 
 	ChaosSpell.fx(p, "arcane_circle", CONST_ME_MAGIC_BLUE)
 	for _, c in ipairs(ChaosSpell.enemiesAround(player, p, 5)) do

@@ -11,7 +11,9 @@ function onCastSpell(creature, variant, isHotkey)
 	end
 	local p = player:getPosition()
 	local center = {x = p.x, y = p.y, z = p.z}
-	local min, max = ChaosSpell.mlValues(player, 1.4, 2.4, 15, 30)
+	local dist, ml = player:getEffectiveSkillLevel(SKILL_DISTANCE), player:getMagicLevel()
+	local min = player:getLevel() / 5 + dist * 0.25 + ml * 0.4 + 8
+	local max = player:getLevel() / 5 + dist * 0.4 + ml * 0.6 + 15
 
 	ChaosSpell.pulse(player:getId(), 6, 1000, function(caster, step)
 		local pos = Position(center)

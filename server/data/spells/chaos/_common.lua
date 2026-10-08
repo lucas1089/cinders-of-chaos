@@ -226,5 +226,5 @@ end
 -- Distinct condition sub ids so several chaos buffs can run together.
 ChaosSpell.SUBID = {
 	blood_pact = 71001, crimson_fury = 71002, rally = 71003, barkskin = 71004,
-	divine_ward = 71005, soul_aegis = 71006, phantom_veil = 71007, dash = 71008,
+	divine_ward = 71005, soul_aegis = 71006, phantom_veil = 71007, dash = 71008, iron_will = 71009,
 }

@@ -21,7 +21,7 @@ function onCastSpell(creature, variant, isHotkey)
 	player:teleportTo(spots[1].pos)
 	ChaosSpell.fx(spots[1].pos, "shadow_smoke", CONST_ME_MORTAREA)
 
-	local min, max = ChaosSpell.mlValues(player, 2.6, 4.4, 30, 55)
+	local min, max = ChaosSpell.mlValues(player, 4.7, 7.9, 54, 99)
 	ChaosSpell.damageTarget(player, target, COMBAT_DEATHDAMAGE, min, max, Fx("shadow_smoke", CONST_ME_MORTAREA))
 	return true
 end

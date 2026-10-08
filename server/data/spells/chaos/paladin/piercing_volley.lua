@@ -9,8 +9,8 @@ combat:setArea(createCombatArea(AREA_BEAM7))
 
 function onGetFormulaValues(player, skill, attack, factor)
 	local dist = player:getEffectiveSkillLevel(SKILL_DISTANCE)
-	local min = (player:getLevel() / 5) + (dist * 0.9) + 20
-	local max = (player:getLevel() / 5) + (dist * 1.6) + 40
+	local min = (player:getLevel() / 5) + (dist * 1.5) + 20
+	local max = (player:getLevel() / 5) + (dist * 2.5) + 40
 	return -min, -max
 end
 

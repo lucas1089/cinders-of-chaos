@@ -57,20 +57,20 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 419 | Barkskin | `utamo vita cortex` | D, ED | 60 | 140 | 25s | +20% max health and regeneration for 20s. |
 | 420 | Thorn Cage | `exevo vinculum spina` | D, ED | 70 | 240 | 14s | Thorns erupt around the target (3x3, 3 pulses) and root enemies (90% slow) for 5s. |
 | 421 | Spirit Wolves | `utevo lupus spiritus` | D, ED | 120 | 450 | 30s | Summons 2 wolves (3 from level 200) for 40s; max 4 summons. |
-| 422 | Rejuvenating Grove | `exura gran mas silva` | D, ED | 180 | 600 | 40s | Healing zone on your tile: 8 pulses (1/s) heal allies within 3 sqm. |
+| 422 | Rejuvenating Grove | `exura gran mas silva` | D, ED | 180 | 600 | 30s | Healing zone on your tile: 8 pulses (1/s) heal allies within 3 sqm. |
 | 423 | Ancient Tempest | `exevo gran mas tempestas` | ED | 250 | 1200 | 35s | Three waves (earth, ice, earth) over an 11x11 circle; the ice wave slows 50%. |
 | **paladin** | | | | | | | |
-| 424 | Holy Smite | `exori san ictus` | P, RP | 30 | 60 | 3s | Holy bolt at one target; scales with level, magic level and distance skill. |
+| 424 | Holy Smite | `exori san ictus` | P, RP | 30 | 60 | 3s | Holy bolt at one target, the paladin filler; scales mainly with distance skill. |
 | 425 | Piercing Volley | `exori con transfixio` | P, RP | 60 | 150 | 8s | 7 sqm line of spears in your facing direction; scales with distance skill. |
 | 426 | Consecration | `exevo mas san sacratum` | P, RP | 100 | 350 | 24s | Consecrates your tile for 6s: holy damage to enemies within 2 sqm each second, allies are healed half as much. |
 | 427 | Divine Ward | `utamo san aegis` | P, RP | 140 | 300 | 30s | Cleanses harmful conditions (incl. paralyze) and gives 8s of strong health/mana regeneration. |
-| 428 | Judgement | `exori gran san iudex` | P, RP | 200 | 450 | 14s | Heavy holy strike; +50% damage against targets under 25% health. |
-| 429 | Sanctified Barrage | `exevo gran mas san sagitta` | P, RP | 280 | 1000 | 30s | 3 volleys of 5 holy arrows raining within 2 sqm of the target. |
+| 428 | Judgement | `exori gran san iudex` | P, RP | 200 | 450 | 14s | Heavy holy strike (distance skill); +50% damage against targets under 25% health. |
+| 429 | Sanctified Barrage | `exevo gran mas san sagitta` | P, RP | 280 | 800 | 24s | 3 volleys of 4 holy arrows, every arrow strikes the target (distance skill). |
 | **knight** | | | | | | | |
 | 430 | Whirlwind | `exori gyro` | K, EK | 30 | 80 | 6s | Three spinning strikes (0/0.4/0.8s) against adjacent enemies; uses weapon attack and skill. |
 | 431 | Ground Slam | `exori terra fragor` | K, EK | 60 | 150 | 10s | Shockwave (5x5) with physical damage; staggers enemies (60% slow, 3s). |
 | 432 | Crimson Fury | `utito tempo sanguis` | K, EK | 100 | 300 | 40s | +30% melee skill, -30% shield skill for 12s. |
-| 433 | Warcry | `exeta mas clamor` | K, EK | 120 | 200 | 20s | Taunts all monsters within 4 sqm and slows them 25% for 6s. |
+| 433 | Warcry | `exeta mas clamor` | K, EK | 120 | 200 | 20s | Taunts all monsters within 4 sqm and slows them 25% for 6s; Iron Will: you take 25% less damage and get +15% shielding for 8s. |
 | 434 | Leaping Strike | `exori ico saltus` | K, EK | 170 | 250 | 12s | Jump next to the target and strike it with weapon attack and skill. |
 | 435 | Titan's Wrath | `exori gran mas ruina` | K, EK | 260 | 650 | 30s | Two crushing blows (0/0.6s) in a 7x7 circle; enemies slowed 70% for 4s. |
 | **illusionist** | | | | | | | |
@@ -87,8 +87,33 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 445 | Sense Prey | `exani sensus` | all | 25 | 40 | 10s | Marks monsters within 12 sqm (max 15) and tells the nearest one's direction. |
 
 Damage formulas follow the stock style: `level/5 + magicLevel*a + b` (min/max with different a, b); knight spells use the stock
-skill*attack callback, paladin spells add the distance skill. Rough power at level 300 / magic level 90: single-target nukes ~400-750, big area spells ~800-1100 per hit.
-These numbers are untested guesses and need balancing in play.
+skill*attack callback, paladin spells scale mainly with the distance skill (plus a little magic level).
+
+## Roles and balance
+
+| Vocation | Role | Tools |
+|---|---|---|
+| Sorcerer | area damage | Frost Nova, Chain Lightning, Meteor Strike, Glacial Tomb, Cataclysm |
+| Paladin | ranged single-target damage | Holy Smite filler, Judgement, Sanctified Barrage (all arrows on the target); Piercing Volley and Consecration for packs |
+| Knight | tank | most health, Warcry taunt + Iron Will (-25% damage taken, +15% shielding), modest damage |
+| Druid | healer | Cleansing Spring (party burst heal + cleanse), Rejuvenating Grove (party heal zone), stock Mass Healing / Heal Friend |
+| Illusionist | not decided yet | burst/control kit (Mind Fracture, Shadow Step, Mirror Image, Phantom Veil, Reality Rift); numbers sit between the others |
+
+Measured on a test server (cast through the spell scripts against 5 stationary dummies; 3 casts per spell averaged), level 300 reference
+characters: mages magic level 100; knight sword 110 / shielding 100 with a magic longsword; paladin distance 110 / magic level 30 with a
+royal crossbow and infernal bolts. Rotation DPS = 60s, 2s attack group cooldown, always the strongest ready spell, plus auto attack
+(knight 165, paladin 185 per second, measured); summons (Spirit Wolves) are not counted.
+
+| Vocation | Single target DPS | 5 targets DPS (total) | Mana/min (single target) |
+|---|---|---|---|
+| Paladin | 694 | 864 | 7170 |
+| Sorcerer | 381 | 1356 | 9410 |
+| Knight | 370 | 857 | 4090 |
+| Illusionist | 324 | 670 | 8020 |
+| Druid | 158 | 790 | 4370 |
+
+Healing (formula averages, magic level 100, per target): Cleansing Spring ~1800 every 6s to the whole party within 3 sqm, Rejuvenating Grove ~4800 over 8s
+every 30s; for comparison stock Ultimate Healing ~1100 (self), Mass Healing ~880.
 
 ## Honest notes / limitations
 
@@ -103,7 +128,8 @@ These numbers are untested guesses and need balancing in play.
   PvP behaviour of the whole set is untested, and slows/pulls can be used on bosses (Reality Rift skips monsters with more than 20000 max health; others rely on monster immunities).
 - Spirit Wolves tries "Spirit Wolf", "Winter Wolf", "Wolf" in that order (summoning needs one of them to exist). Mirror Image needs the "Clone" monster
   (reference: `data/monster/lua/clones/clone.lua`); both spells cancel with a message otherwise. Wolves/clones are removed after 40s/10s via addEvent.
-- Warcry has no damage-reduction debuff (vanilla conditions cannot lower a monster's damage); it taunts and slows. Blood Pact/Rallying Cry/Crimson Fury use
+- Warcry has no damage-reduction debuff on monsters (vanilla conditions cannot lower a monster's damage); it taunts and slows, and the knight's own
+  Iron Will is applied by `data/scripts/chaos/spell_guard.lua` (an onHealthChange event that checks the condition sub id 71009). Blood Pact/Rallying Cry/Crimson Fury use
   `CONDITION_ATTRIBUTES` with distinct sub ids so they stack with each other and with stock buffs.
 - "Crimson Fury" is deliberately not called Blood Rage (that name exists in stock). No stock `playSound` calls are made, so the spells are silent unless you add them.
 - Ticking zones (Consecration, Grove, Glacial Tomb) store the position at cast time and stop when the caster dies or logs out.

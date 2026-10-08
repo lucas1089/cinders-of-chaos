@@ -21,7 +21,7 @@ server/
   data/scripts/chaos/
     chaos_constants.lua               ALL opcodes, storage keys, table names, tunables, shared helpers
     bank.lua  autoloot.lua  daily.lua  notifications.lua  passivetree.lua  passivetree_data.lua
-    dungeons.lua  infinitytower.lua  stash.lua
+    dungeons.lua  infinitytower.lua  stash.lua  spell_guard.lua (Iron Will damage reduction of the Warcry spell)
 ```
 
 ## Install

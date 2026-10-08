@@ -7,8 +7,8 @@ combat:setParameter(COMBAT_PARAM_EFFECT, Fx("frost_burst", CONST_ME_ICEAREA))
 combat:setArea(createCombatArea(AREA_CIRCLE3X3))
 
 function onGetFormulaValues(player, level, magicLevel)
-	local min = (level / 5) + (magicLevel * 2.2) + 20
-	local max = (level / 5) + (magicLevel * 3.6) + 35
+	local min = (level / 5) + (magicLevel * 2.5) + 23
+	local max = (level / 5) + (magicLevel * 4.15) + 40
 	return -min, -max
 end
 
