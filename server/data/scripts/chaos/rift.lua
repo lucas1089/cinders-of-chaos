@@ -20,6 +20,7 @@ if not Chaos then
 end
 dofile("data/scripts/chaos/rift_core.lua")
 ChaosRiftConfig = dofile("data/scripts/chaos/rift_config.lua")
+dofile("data/lib/chaos_dark_paint.lua")
 
 ChaosRift = ChaosRift or {}
 local RF = ChaosRift
@@ -27,8 +28,40 @@ local R = ChaosRiftCore
 local OPCODE = ChaosOpcodes.rift
 local ST = Chaos.storage.riftRun -- +0 tier, +1..+3 packed modifiers, +4 start time
 
+-- the dark tile set (rift_config.lua `dark`): when it is installed, the walls and hub lights switch to it and every
+-- theme with a `darkStyle` is painted by ChaosDarkPaint (main ground, patches with borders, decoration); otherwise
+-- the stock ids of the config are used unchanged
+local function resolveDark(cfg)
+	cfg.darkActive = false
+	local d = cfg.dark
+	if not (d and d.enabled and ChaosDarkPaint and ChaosDarkTiles) then
+		return
+	end
+	local wall, basin = ChaosDarkTiles.id(d.wall), ChaosDarkTiles.id(d.basin)
+	if not wall or not basin then
+		return
+	end
+	local any = false
+	for _, th in ipairs(cfg.themes) do
+		if th.darkStyle and ChaosDarkPaint.ready(th.darkStyle) then
+			th.stockGrounds = th.stockGrounds or th.grounds
+			th.grounds = ChaosDarkPaint.groundIds(th.darkStyle)
+			th.dark = true
+			any = true
+		end
+	end
+	if any then
+		cfg.stockWallId, cfg.stockBasinId = cfg.wallId, cfg.basinId
+		cfg.wallId, cfg.basinId, cfg.darkActive = wall, basin, true
+	end
+end
+
 local function C()
-	return ChaosRiftConfig
+	local c = ChaosRiftConfig
+	if c.darkActive == nil then
+		resolveDark(c)
+	end
+	return c
 end
 
 local function rand(a, b)
@@ -323,7 +356,20 @@ local function theme(L, th, open)
 			doorTiles[t.x .. "," .. t.y] = true
 		end
 	end
-	for _, t in ipairs(L.floorList) do
+	if th.dark then
+		local reserved = {L.start, L.bossSpawn}
+		for _, b in ipairs(L.basins) do
+			reserved[#reserved + 1] = b
+		end
+		for _, d in ipairs(R.DIRS) do
+			for _, t in ipairs(L.doors[d.name]) do
+				reserved[#reserved + 1] = t
+			end
+		end
+		ChaosDarkPaint.apply(ChaosDarkPaint.plan(L.floorList, th.darkStyle, rand, {walls = L.walls, reserved = reserved}),
+			L.center.z)
+	end
+	for _, t in ipairs(th.dark and {} or L.floorList) do
 		local tile = Tile(P(t))
 		if tile then
 			local want = th.grounds[rand(1, #th.grounds)]

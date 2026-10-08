@@ -9,7 +9,10 @@ return {
 	-- action id. Tier and modifiers
 	-- are custom attributes ("rift_tier", "rift_mods" = "key:value,key:value"); the name becomes "Rift Key (Tier N)" and
 	-- the description lists the modifiers and the reward bonuses, so looking at a key shows them.
-	key = {itemId = 10155, actionId = 47401, nameFormat = "Rift Key (Tier %d)"},
+	-- maxMods: the most modifiers a key can carry (drops roll 1-3; the Exalted Orb adds up to this). alchemyCount: how
+	-- many modifiers an Orb of Alchemy gives a key without any, {count, weight} (data/lib/chaos_crafting.lua)
+	key = {itemId = 10155, actionId = 47401, nameFormat = "Rift Key (Tier %d)", maxMods = 3,
+		alchemyCount = {{2, 60}, {3, 40}}},
 	chest = {itemId = 1740, actionId = 47402}, -- the reward chest that appears where the rift boss died
 	maxTier = 15,
 
@@ -135,11 +138,16 @@ return {
 	openRooms = {2, 4}, -- side rooms opened per run (random)
 	wallId = 5648, -- stone wall (also the blocker of a closed corridor)
 	basinId = 1481, -- coal basin (light) in the hub corners
+	-- dark tile set (server/README.md "Dark tile set"): when enabled and installed (items.otb, client pair), the walls
+	-- and hub lights use these and each theme with a darkStyle is painted by data/lib/chaos_dark_paint.lua (a main
+	-- ground, patches of a second ground with borders, decoration; solid pieces only against the walls). Without the
+	-- set, or with enabled = false, the stock ids above and the theme `grounds` are used.
+	dark = {enabled = true, wall = "obsidian_wall", basin = "brazier"},
 	-- themes: grounds are picked at random per tile from the list (all full ground sprites, checked in the client)
 	themes = {
-		{name = "Abyssal Rift", grounds = {25549, 25704, 25705, 25706, 25707, 25708, 25709}}, -- "rift floor"
-		{name = "Obsidian Hall", grounds = {407}}, -- black marble floor
-		{name = "Ashen Crypt", grounds = {13189, 12237}}, -- dark sandy floor, rutted stone floor
-		{name = "Forsaken Sanctum", grounds = {415}} -- gilded stone floor
+		{name = "Abyssal Rift", grounds = {25549, 25704, 25705, 25706, 25707, 25708, 25709}, darkStyle = "abyss"}, -- "rift floor"
+		{name = "Obsidian Hall", grounds = {407}, darkStyle = "hall"}, -- black marble floor
+		{name = "Ashen Crypt", grounds = {13189, 12237}, darkStyle = "crypt"}, -- dark sandy floor, rutted stone floor
+		{name = "Forsaken Sanctum", grounds = {415}, darkStyle = "sanctum"} -- gilded stone floor
 	}
 }
