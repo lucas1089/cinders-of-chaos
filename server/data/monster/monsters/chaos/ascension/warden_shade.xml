@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Warden Shade: the adds the Ascension Warden calls in the Trial of Ascension (data/scripts/chaos/ascension_quest.lua).
+     Renamed and dressed per class at run time; health scaled like the guardian's. No experience, no loot, no tier. -->
+<monster name="Warden Shade" nameDescription="a warden shade" race="undead" experience="0" speed="200" manacost="0">
+	<health now="600" max="600" />
+	<look type="233" corpse="0" />
+	<targetchange interval="4000" chance="0" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-45" />
+	</attacks>
+	<defenses armor="10" defense="10" />
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drown="1" />
+	</immunities>
+</monster>

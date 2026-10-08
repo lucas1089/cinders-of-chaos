@@ -3,7 +3,9 @@
 --   !ascend              tells the player the choices
 --   !ascend <class>      a base class of level 100+ in a protection zone, out of combat, becomes that ascended class:
 --                        Warrior: juggernaut | berserker, Ranger: deadeye | beastmaster, Mystic: elementalist |
---                        illusionist, Thief: ninja | samurai
+--                        illusionist, Thief: ninja | samurai, Monk: shadowfist | ironsage, Necromancer: lich |
+--                        bonelord, Templar: inquisitor | sentinel (the last three need the account's class unlock,
+--                        class_unlocks.lua)
 --
 -- The engine knows one promotion per vocation (fromvoc), so the two-way choice is this script: it sets the vocation
 -- directly. The choice is final; only the store's Vocation Change (!changevocation <class>, shop_services.lua)
@@ -83,15 +85,29 @@ function C.afterVocationChange(player)
 	if ChaosBeastmaster and ChaosBeastmaster.dismissIfNotBeastmaster then
 		ChaosBeastmaster.dismissIfNotBeastmaster(player)
 	end
+	-- the Necromancer's minions go when the character leaves the line (necro_minions.lua also trims them to the new
+	-- class's caps on its own every 0.5 s; this makes it immediate)
+	if ChaosNecroMinions and ChaosNecroMinions.onVocationChange then
+		ChaosNecroMinions.onVocationChange(player)
+	end
+	-- the Monk chi HUD (monk_chi_core.lua): shown for the Monk line, hidden when the character left it
+	if ChaosMonk and ChaosMonk.sendChi and ChaosMonk.getChi then
+		ChaosMonk.sendChi(player, ChaosMonk.getChi(player), true)
+	end
 	C.sendBasicData(player)
 end
 
 local EFFECT = {[8] = CONST_ME_GROUNDSHAKER, [14] = CONST_ME_DRAWBLOOD, [7] = CONST_ME_HOLYDAMAGE,
 	[15] = CONST_ME_MAGIC_GREEN, [5] = CONST_ME_FIREAREA, [10] = CONST_ME_PURPLEENERGY, [12] = CONST_ME_MORTAREA,
-	[13] = CONST_ME_GROUNDSHAKER}
+	[13] = CONST_ME_GROUNDSHAKER, [18] = CONST_ME_MORTAREA, [19] = CONST_ME_STONES, [21] = CONST_ME_MORTAREA,
+	[22] = CONST_ME_GROUNDSHAKER, [24] = CONST_ME_HOLYAREA, [25] = CONST_ME_BLOCKHIT}
 
 local talk = TalkAction("!ascend")
 function talk.onSay(player, words, param)
+	-- the ascension quest (ascension_quest.lua): players ascend at the Ascendant Oracle; staff and the free switch keep this
+	if ChaosAscensionQuest and ChaosAscensionQuest.commandAllowed and not ChaosAscensionQuest.commandAllowed(player) then
+		return false
+	end
 	local voc = player:getVocation()
 	local key = Chaos.classes.storage.freeSwitch
 	local freeTo = player:getStorageValue(key)
@@ -105,6 +121,14 @@ function talk.onSay(player, words, param)
 	if not newVoc then
 		player:sendCancelMessage("That vocation does not exist on this server.")
 		return false
+	end
+	-- the class lock (class_unlocks.lua): the Monk, the Necromancer and the Templar need the account's unlock
+	if ChaosClassUnlocks and ChaosClassUnlocks.canUseVocation then
+		local allowed, lockMessage = ChaosClassUnlocks.canUseVocation(player, newId)
+		if not allowed then
+			player:sendTextMessage(MESSAGE_INFO_DESCR, lockMessage or "That class is locked. Unlock it in the store.")
+			return false
+		end
 	end
 	C.applyVocation(player, newVoc)
 	if how == true then

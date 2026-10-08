@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The Ascendant Oracle: starts and ends the ascension quest (docs/CLASSES.md "Ascension quest",
+     server/data/scripts/chaos/ascension_quest.lua). Placed in the temple at startup (Chaos.ascensionQuest.npc). -->
+<npc name="Ascendant Oracle" script="ascendant_oracle.lua" walkinterval="0" floorchange="0">
+	<health now="100" max="100" />
+	<look type="141" head="95" body="94" legs="95" feet="95" addons="3" />
+	<parameters>
+		<parameter key="message_greet" value="The veil parts for you, |PLAYERNAME|. I keep the road of {ascension}. Few walk it to the end." />
+		<parameter key="message_farewell" value="Walk carefully, |PLAYERNAME|. The road remembers." />
+		<parameter key="message_walkaway" value="The veil closes." />
+	</parameters>
+</npc>
