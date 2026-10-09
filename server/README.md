@@ -60,6 +60,8 @@ server/
                                       the creature (the pets, see "Pets")
   src-patches/0009-locked-items-never-sold.patch   engine: locked items (`chaos_locked`) are never sold, taken by id,
                                       put on the market or thrown into a trash holder (see "Salvage", "The item lock")
+  src-patches/0011-attack-speed-cap.patch   engine: attack interval floor, cap on all attack speed bonuses together,
+                                      life / mana leech at most once per 900 ms each (see "Attack speed cap")
     item_tooltip.lua  item_tooltip_core.lua (rich item tooltips with the equipped-item compare, client game_itemtooltip)
     shop.lua  shop_config.lua  shop_services.lua  autosell.lua  sell_prices.lua (store, see "Store services")
     bounty.lua  bounty_core.lua  bounty_config.lua  bounty_pool.lua (bounty board; pool from tools/gen_bounty_pool.py)
@@ -403,6 +405,50 @@ on install `tools/patch_base_events.py` scales the stock items' `criticalhitchan
 rarity items that already exist keep the values they were made with. Class crits (Bushido, Shadowfist focus, stealth,
 the Keen Edge support) are rolled in Lua with `math.random` and were always uniform: unchanged. The patch also rolls the
 chance of a `<monsters>` set in a spawn file uniformly (no spawn file of ours uses sets).
+
+## Attack speed cap (`src-patches/0011-attack-speed-cap.patch`)
+
+Life and mana leech roll on every hit a player deals (melee, distance, single-target spells, every scripted
+`doTargetCombat` with the player as attacker; an area spell rolls once per cast; damage over time never), so more hits
+per second meant more healing per second. Every source of extra or faster hits, at its maximum:
+
+| Source | Max |
+|---|---|
+| Vocation attack speed (patch 0002 scales a weapon's own interval by it) | Shadowfist 1300, Ninja 1400, Monk 1500, Thief 1600, Iron Sage 1700, Samurai 1800, others 2000 ms |
+| Weapon: Chaos `attackspeed` modifier + topaz gems (`M.syncAttackSpeed`) | -20% of the weapon's own interval (2000 without one) |
+| Dexterity of the stat window (engine: interval - dex%) | 20 points = -20% (the passive tree's dexterity is a damage multiplier only) |
+| Ninja off-hand strike (`thief_combat.lua`) | +1 hit per melee hit |
+| Bloodrage cleave / Cleaving Arc keystone | +4 / +3 hits per melee hit |
+| Ricochet / Arcane Echo keystones, support repeats and Reprisal | +2 bounces; one hit per enemy of the echoed spell; one repeat per cast |
+| Shadowfist Flurry | 2 + chi hits, one every 200 ms |
+| Pets, Beastmaster companion, Necromancer minions (hit as their owner) | one hit per 2 - 2.5 s each, pet auras up to 3 targets |
+| Waystones, store, world buffs | no attack speed |
+
+Before: fastest single-target swing 832 ms (Shadowfist, weapon -20%, dexterity 20), a Ninja 896 ms + off-hand = 2.2
+hits and 2.2 leech heals per second. Three engine rules (config.lua; 0 turns one off; defaults when not named):
+
+- `minPlayerAttackInterval = 1000`: no player swings faster than once a second. The fastest vocation unbuffed is 1300 ms,
+  so 1000 is reached only by the fastest classes with most of the bonuses; everyone else never sees it.
+- `maxPlayerAttackSpeedBonus = 25`: all bonuses together (weapon attribute against its type's interval, dexterity) shorten
+  the vocation-scaled interval by at most 25% (they used to multiply to -36%). Gear alone (-20%) or dexterity alone
+  (-20%) stay under it. A 2000 class bottoms out at 1500 ms, a Ninja at 1050, a Thief at 1200.
+- `minPlayerLeechInterval = 900`: life leech heals at most once per 900 ms, mana leech too; a roll inside the window is
+  skipped. One rule for every extra-hit source above (off-hands, cleaves, procs, pets, multi-hit spells), so leech is
+  about one heal per second however many hits land. 900 rather than 1000 so a swing at the 1000 ms floor that the
+  timer fires a few ms early still leeches.
+
+Lua mirror: `ChaosItemMods.effectiveInterval` / `attackCapConfig` (`data/lib/chaos_item_mods.lua`, reads the config
+keys through `configManager`); weapon tooltips add "Your Attack Interval" for the viewer's vocation and dexterity,
+"(capped)" when the cap raised it. Tests: `tests/attack_speed_cap_test.lua`, `tests/item_tooltip_test.lua`.
+
+Measured on a test server (engine built from the base source + patches 0001-0011 in order, 100% leech chance, a dummy,
+30 s each; "before" = the same build with the three keys at 0):
+
+| Build | Hits/s before | after | Life (= mana) leech heals/s before | after |
+|---|---|---|---|---|
+| Ninja, two swords, main hand -20%, dexterity 20 | 2.20 | 1.93 | 2.20 | 0.93 |
+| Shadowfist, sword -20%, dexterity 20 | 1.20 | 0.97 | 1.20 | 0.97 |
+| Shadowfist unarmed, dexterity 20 (1040 ms, under the caps) | 0.97 | 0.97 | 0.97 | 0.93 |
 
 ## Passive tree points
 
