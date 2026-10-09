@@ -57,7 +57,8 @@ local TIP_CHARS = 64
 local function tipText(text)
   local out = {}
   for line in (tostring(text or '') .. '\n'):gmatch('(.-)\n') do
-    out[#out + 1] = SupportsText.wrap(line, TIP_CHARS, '  ')
+    local lead = line:match('^%s*')
+    out[#out + 1] = lead .. SupportsText.wrap(line, TIP_CHARS - #lead, lead .. '  ')
   end
   return table.concat(out, '\n')
 end
