@@ -31,11 +31,13 @@ function onCastSpell(creature, variant, isHotkey)
 		if player:getMana() < plan.extraMana + cfg.raiseDead.mana then
 			return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHMANA)
 		end
-		if not L.raise(player, kind, pos) then
+		local minion = L.raise(player, kind, pos)
+		if not minion then
 			return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHROOM)
 		end
 		player:addMana(-plan.extraMana)
-		ChaosSpell.vfxOr(pos, "necro_seal", "summon_portal", CONST_ME_MORTAREA)
+		-- the seal where the minion rises (it may be placed next to the caster)
+		ChaosSpell.vfxOr(minion:getPosition(), "necro_seal", "summon_portal", CONST_ME_MORTAREA)
 		return true
 	end
 	local raised = 0
@@ -46,6 +48,7 @@ function onCastSpell(creature, variant, isHotkey)
 		if L.raise(player, kind, cpos) then
 			raised = raised + 1
 			ChaosSpell.shoot(pos, cpos, "skull_orb", CONST_ANI_DEATH)
+			ChaosSpell.vfxOr(cpos, "necro_seal", "summon_portal", CONST_ME_MORTAREA) -- the seal on the corpse
 		end
 	end
 	if raised == 0 then
