@@ -488,7 +488,49 @@ function T.build(item, opts)
 	if locked ~= 0 then
 		tip.locked = true
 	end
+	T.riftKey(item, tip)
 	return tip
+end
+
+-- a Rift Key (rift.lua RF.applyKey: custom attributes rift_tier / rift_mods, rift_core.lua and rift_config.lua loaded
+-- by rift.lua): its map modifiers with their tiers, the reward bonuses, the level it needs and how it is used, the
+-- same facts as its look text. A key is not worn, so it has no kind and nothing to compare (M.kindOf calls a shadow
+-- orb "other" gear). true when the item is a key.
+function T.riftKey(item, tip)
+	local R, cfg = ChaosRiftCore, ChaosRiftConfig
+	local tier = num(call(item, "getCustomAttribute", "rift_tier"))
+	if not tier or tier < 1 or not (R and cfg and R.decodeMods and R.modText and R.bonuses and R.tierInfo) then
+		return false
+	end
+	local ok, key = pcall(function()
+		local mods = call(item, "getCustomAttribute", "rift_mods")
+		return {tier = floor(tier), mods = R.decodeMods(cfg, type(mods) == "string" and mods or "")}
+	end)
+	if not ok or type(key) ~= "table" then
+		return false
+	end
+	tip.kind, tip.cmp, tip.slot, tip.stats, tip.sides = nil, nil, nil, nil, nil
+	tip.mods = {}
+	for _, m in ipairs(key.mods) do
+		local def = R.modDef and R.modDef(cfg, m.key) or nil
+		local t = def and R.modTier and R.modTier(def, m.value) or nil
+		local name = t and R.tierName and R.tierName(cfg, t) or nil
+		tip.mods[#tip.mods + 1] = {k = m.key, l = def and def.name or m.key, v = m.value,
+			t = clip(R.modText(cfg, m) .. (name and (" (" .. name .. ")") or ""), 120),
+			g = def and def.boon and "chaos" or nil} -- boons (pure rewards) in the Chaos colour
+	end
+	local b = R.bonuses(cfg, key.mods, key.tier)
+	local bonus = {}
+	for _, k in ipairs({"quantity", "rarity", "experience"}) do
+		if (b[k] or 0) > 0 then
+			bonus[#bonus + 1] = "+" .. b[k] .. "% " .. (k == "experience" and "experience" or ("item " .. k))
+		end
+	end
+	local info = R.tierInfo(cfg, key.tier)
+	tip.req = {level = info.minLevel}
+	tip.desc = clip(string.format("Rewards: %s. Opens a rift of tier %d. Use it in a protection zone; your party within %d sqm comes along.",
+		#bonus > 0 and table.concat(bonus, ", ") or "normal", key.tier, cfg.partyRange or 8), 300)
+	return true
 end
 
 return T

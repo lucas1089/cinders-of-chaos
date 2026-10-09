@@ -104,7 +104,9 @@ local function riftMarks(player, list, seen)
 	if run.chestPos then
 		M.add(list, seen, "chest", run.chestPos, "Rift chest")
 	end
-	if run.coffer and run.coffer.pos and run.coffer.state ~= "open" then
+	-- closed (not woken yet) or guarded (its wave is out); "open" is looted and "gone" crumbled at the seal
+	local cofferState = run.coffer and run.coffer.state
+	if run.coffer and run.coffer.pos and (cofferState == "closed" or cofferState == "guarded") then
 		M.add(list, seen, "coffer", run.coffer.pos, "Sealed coffer")
 	end
 	if run.goblin == "out" then

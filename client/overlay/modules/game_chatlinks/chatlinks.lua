@@ -32,15 +32,17 @@ end
 local function safe(name, fn)
   local reported = false
   return function(...)
-    local ok, a, b = pcall(fn, ...)
+    local ok, res = pcall(fn, ...)
     if not ok then
       if not reported then
         reported = true
-        g_logger.warning('[chatlinks] ' .. name .. ': ' .. tostring(a))
+        g_logger.warning('[chatlinks] ' .. name .. ': ' .. tostring(res))
       end
       return false
     end
-    return a, b
+    -- exactly one result: the engine calls a table of connected handlers (g_game.onGameStart, UIItem.onMouseRelease)
+    -- and aborts the rest of the table with "function call didn't return the expected number of results" on two
+    return res
   end
 end
 

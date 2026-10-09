@@ -1077,6 +1077,11 @@ selected, cooldown, cooldownTotal, styles}`, `cast {ms}`, `castEnd {result}`. Th
 
 Install: `register_spells.py` (already in `install_all.py`, step `spells`) installs the spell; no other installer. Client: regenerate
 `gen_spell_data.py` and the spell icon sheets (`gen_all_spell_icons.py`, cell 280 is the Town Portal icon). Tests: `tests/townportal_test.lua`.
+**Verified in game** (test server, cropped map): the Portal Style window (store styles "Store - N coins" with "Open the Store",
+"Use this style" disabled; achievement styles locked, no store button; a locked style's `select` refused); Keybearer unlocked
+by sealing the 25th rift -> Riftwalker's Gate "unlocked", selected and cast (field and return portal in its look); a store
+style granted through `storeUnlock` (Emberforge) and the Waygate cast with their effects; the cast bar; an unlock while the
+window is open now refreshes it at once (`achievements.lua` sends the state, `open = false`).
 Not verified: a real party of two clients using the return portal while the owner is away; very crowded temples (80 return spots).
 
 ## Spellbook (`spellbook.lua`)
@@ -2025,8 +2030,11 @@ the `supports` handlers: Thrift and Mana Cost Reduction become a real discount, 
 spell cooldown (the group cooldown is left alone). `ChaosSpellEvents.live` turns true at the first event the engine sends;
 until then the spell wrapper keeps its fallback (mana back and a rewritten cooldown condition a tick after the cast), so an
 engine or `events.xml` without the events works as before. **To switch the events on**, run
-`patch_base_events.py DATA --enable-spell-events` after building with patch 0008; `install_all.py` should pass that flag
-(it is a one-argument change where it calls `patch_base_events.py`).
+`patch_base_events.py DATA --enable-spell-events` after building with patch 0008; `install_all.py` (step `events`) passes
+that flag. **Verified in game** (engine with patches 0001-0011, a Ninja of group 1: a gamemaster group spends no mana and gets
+no cooldowns): Soulward 150 mana / 40000 ms bare; with a helmet of T8 Cooldown Reduction +10% and T8 Mana Cost Reduction +13%
+(the tooltip and the Codex tier table agree) 131 mana / 36000 ms on the cooldown condition, and Banner Call 250 -> 218 mana,
+35000 -> 31500 ms, the 31500 also in the client's spell cooldown; the group cooldown stayed 2000 ms.
 
 **Skipped on purpose**: none of the approved stats were dropped. Not done: mana-shield damage (dodge, block, reflect and the
 reduction act on health damage only), and a stat that adds the ailment chance to spells that deal no damage to the target
@@ -2412,7 +2420,10 @@ build of the base source plus the three patches.
 **Rich tooltips (extended opcode 242).** Hovering an item in the inventory or an open container asks the server for
 its tooltip; holding Ctrl adds the equipped item(s) worn the same way (both hands for weapons and shields, the same kind
 only: a weapon is not compared with a shield) as plates next to it, and the hovered tooltip lists the differences per
-number in green (better) or red (worse); a shorter attack interval counts as better.
+number in green (better) or red (worse); a shorter attack interval counts as better. A Rift Key (`ChaosItemTooltip.riftKey`)
+shows its map modifiers with their tiers (boons in the Chaos colour), the level its tier needs, the reward bonuses and how
+it is used, and offers no compare (it is not worn). Checked in game: a key and a legendary item with a power (Ctrl compare
+with the worn helmet, the power line in orange).
 
 - client -> server `get {items = [{pos = {x, y, z, s}, iid}]}`, at most 3 items; `iid` is the decimal string of key 6
   (JSON numbers lose digits past 14).

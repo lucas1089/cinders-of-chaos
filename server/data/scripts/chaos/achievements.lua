@@ -199,6 +199,17 @@ local function giveReward(player, reward)
 	if reward.mount and reward.mount.id then
 		player:addMount(reward.mount.id)
 	end
+	if reward.portal and ChaosTownPortal and ChaosTownPortal.sendState then
+		-- a Portal Style window that is open shows the style unlocked at once (open = false: a closed one stays closed);
+		-- a moment later, when the unlock is stored
+		local pid = player:getId()
+		addEvent(function()
+			local p = Player(pid)
+			if p then
+				pcall(ChaosTownPortal.sendState, p, false)
+			end
+		end, 200)
+	end
 	return K.rewardText(reward, itemName) .. (inbox and " (your backpack was full: see your inbox)" or "")
 end
 

@@ -156,16 +156,31 @@ local function tickCastBar()
   if pct < 100 then castEvent = scheduleEvent(tickCastBar, 50) end
 end
 
+-- the map panel runs under the console and the action bars (extended view): how much of its bottom they cover
+local function coveredBottom(map)
+  local gi = modules.game_interface
+  local bottom = map:getY() + map:getHeight()
+  local covered = 0
+  for _, name in ipairs({ 'getBottomPanel', 'getBottomActionPanel' }) do
+    local ok, w = pcall(function() return gi[name] and gi[name]() end)
+    if ok and w and w:isVisible() and w:getHeight() > 0 and w:getY() < bottom then
+      covered = math.max(covered, bottom - w:getY())
+    end
+  end
+  return covered
+end
+
 local function startCastBar(ms)
+  local map = modules.game_interface and modules.game_interface.getMapPanel and modules.game_interface.getMapPanel()
   if not castBar then
-    local map = modules.game_interface and modules.game_interface.getMapPanel and modules.game_interface.getMapPanel()
     if not map then return end
     castBar = g_ui.createWidget('TownPortalCastBar', map)
     castBar:setId('townPortalCastBar')
     castBar:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
     castBar:addAnchor(AnchorBottom, 'parent', AnchorBottom)
-    castBar:setMarginBottom(60)
   end
+  -- 60 px above the bottom of the part of the map that is not covered (re-read on every cast: the layout can change)
+  castBar:setMarginBottom(60 + (map and coveredBottom(map) or 0))
   castStart, castMs = g_clock.millis(), math.max(1, tonumber(ms) or 3000)
   castBar:setText(tr('Town Portal'))
   castBar:setPercent(0)

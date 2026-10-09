@@ -3,7 +3,7 @@
 -- attributes agree in the engine patch, the server constants and the client; client positions (inventory, container,
 -- map, malformed); map access; the request budget; the slots an item is compared with; and the tooltip of a rolled
 -- rare weapon (modifiers with tiers and roll ranges, Chaos modifier, sockets with gems, compare numbers), of a unique
--- (set, requirement, flavour text), of a plain item, of a locked item, and the cache key.
+-- (set, requirement, flavour text), of a plain item, of a locked item, of a Rift Key, and the cache key.
 
 local checks = 0
 local function eq(a, b, m)
@@ -289,6 +289,25 @@ eq(tip.count, 37) eq(tip.kind, nil) eq(tip.cmp, nil, "nothing to compare") eq(ti
 local ring = newItem(2206)
 ring:setCustomAttribute("chaos_locked", 1)
 eq(T.build(ring).locked, true)
+
+-- a Rift Key: its map modifiers, rewards and level; not worn, so nothing to compare
+dofile("data/scripts/chaos/rift_core.lua")
+ChaosRiftConfig = dofile("data/scripts/chaos/rift_config.lua")
+local key = newItem(10155)
+key:setCustomAttribute("rift_tier", 5)
+key:setCustomAttribute("rift_mods", "vitality:40,coffer:100")
+key:setAttribute(ITEM_ATTRIBUTE_NAME, "Rift Key (Tier 5)")
+tip = T.build(key)
+eq(tip.kind, nil, "a key is no gear") eq(tip.cmp, nil, "a key has nothing to compare") eq(tip.slot, nil)
+eq(#tip.mods, 2, "both key modifiers") eq(tip.mods[1].k, "vitality")
+eq(tip.mods[1].t:find("+40%% health") ~= nil, true, "the modifier's text: " .. tip.mods[1].t)
+eq(tip.mods[2].g, "chaos", "a boon in the Chaos colour")
+eq(tip.req.level, ChaosRiftCore.tierInfo(ChaosRiftConfig, 5).minLevel, "the level the tier needs")
+eq(tip.desc:find("Opens a rift of tier 5") ~= nil, true, "how it is used")
+eq(tip.desc:find("item quantity") ~= nil, true, "the reward bonus")
+local plainOrb = newItem(10155)
+eq(T.build(plainOrb).mods == nil or #T.build(plainOrb).mods == 0, true, "a shadow orb without a tier is not a key")
+ChaosRiftCore, ChaosRiftConfig = nil, nil
 
 -- a broken attribute does not break the tooltip
 local odd = newItem(2400)
