@@ -53,6 +53,7 @@ ChaosOpcodes = {
 	guild = 252, -- Guild window: level, perks, members, guild bank, guild hall, depot, top guilds (client game_guild, !guild; guild*.lua)
 	bestiary = 253, -- bestiary, kill tasks and the task tracker HUD (client game_bestiary, !bestiary, !tasks; bestiary*.lua)
 	pets = 254, -- pets window: owned pets, summon / dismiss / rename, levels and abilities (client game_pets, !pet; pets*.lua)
+	supports = 243, -- spell supports window and action bar sockets (client game_spellsupports, !supports; supports.lua)
 	spellbook = 219 -- spell list window (client game_spellbook, !spells)
 }
 
@@ -93,6 +94,8 @@ Chaos.storage = {
 	lootFilter = 7100500, -- loot filter settings of the character, packed in one value (lootfilter_core.lua F.pack); 7100500 - 7100509 reserved
 	newPlayer = 7100250, -- new-player kit, welcome, milestones and tutorial island (newplayer*.lua): 7100250 - 7100269 reserved
 	bestiary = 7100870, -- bestiary (bestiary_config.lua taskPointsStorage): 7100870 - 7100879 reserved; bestiary points from kill tasks
+	-- spell supports (data/lib/chaos_supports_config.lua): 7109990 - 7109992 cast context / Reprisal, 7110000 - 7111999
+	-- the support sockets keyed by spell id (base + spell id * 4 + 0..3)
 	monk = 7100800, -- the Monk line (ChaosMonk.ids.storage in monk_chi_core.lua): 7100800 - 7100809 reserved; chi, its time, focus, Chi Ward
 
 	-- store: one-time cosmetics owned (base + id of the wings / aura / shader)

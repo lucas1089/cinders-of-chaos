@@ -183,6 +183,7 @@ local CATEGORIES = {
     { text = 'Arena',              icon = 'pvp',         modules = { 'game_arena' },     fns = { 'toggle' } },
     { text = 'Guild Siege',        icon = 'pvp',         modules = { 'game_siege' },     fns = { 'toggle' } },
     { text = 'Crafting Bench',     icon = 'proficiency', modules = { 'game_crafting' }, fns = { 'toggle' } },
+    { text = 'Spell Supports',     icon = 'proficiency', modules = { 'game_spellsupports' }, fns = { 'toggle' } },
     { text = 'Event Calendar',     icon = 'events',      modules = { 'game_schedule' },  fns = { 'toggle' } },
     { text = 'Leaderboards',       icon = 'ranking',     modules = { 'game_leaderboard' }, fns = { 'toggle' } },
     { text = 'Achievements',       icon = 'ranking',     modules = { 'game_achievements' }, fns = { 'toggle' } },

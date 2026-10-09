@@ -1,0 +1,13 @@
+Module
+  name: game_spellsupports
+  description: Spell supports (support runes in spell sockets; !supports, extended opcode 243; action bar pips)
+  author: project-chaos
+  sandboxed: true
+  scripts: [ spellsupports ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1001
+  @onLoad: init()
+  @onUnload: terminate()

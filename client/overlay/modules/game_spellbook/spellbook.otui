@@ -351,3 +351,13 @@ ChaosMainWindow
     anchors.bottom: parent.bottom
     !text: tr('Close')
     @onClick: modules.game_spellbook.hide()
+
+  ChaosButton
+    id: supportsButton
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    width: 90
+    !text: tr('Supports')
+    !tooltip: tr('Support runes of the shown spell (Spell Supports window)')
+    @onClick: if modules.game_spellsupports then modules.game_spellsupports.openFor() end

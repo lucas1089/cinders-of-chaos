@@ -264,6 +264,11 @@ local function payContract(player, c, e)
 	for _, g in ipairs(gems) do
 		inbox = giveStack(player, g.id, g.count) or inbox
 	end
+	-- spell support runes (data/lib/chaos_supports_config.lua rewards.bounty)
+	local runes = ChaosSupports and ChaosSupports.rewardRunes("bounty", {type = c.type, band = c.band}) or {}
+	for _, g in ipairs(runes) do
+		inbox = giveStack(player, g.id, g.count) or inbox
+	end
 	if r.exp > 0 then
 		player:addExperience(r.exp, true)
 	end
@@ -279,6 +284,9 @@ local function payContract(player, c, e)
 	end
 	if #gems > 0 then
 		parts[#parts + 1] = ChaosGems.listText(gems)
+	end
+	if #runes > 0 then
+		parts[#parts + 1] = ChaosSupports.listText(runes)
 	end
 	if r.exp > 0 then
 		parts[#parts + 1] = r.exp .. " experience"

@@ -270,7 +270,12 @@ local function showDetails(spell)
   addStat(tr('Vocations'), short, full)
   if spell.premium then addStat(tr('Premium'), tr('Yes')) end
 
-  d.description:setText(spell.description or '')
+  local text = spell.description or ''
+  -- the spell's support runes (game_spellsupports), when that module knows the spell
+  local supports = modules.game_spellsupports and modules.game_spellsupports.spellbookLine
+  local ok, line = pcall(function() return supports and supports(spell.words) end)
+  if ok and line then text = text .. '\n\n' .. line end
+  d.description:setText(text)
   drawArea(spell)
 end
 

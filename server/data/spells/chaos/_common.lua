@@ -1,6 +1,12 @@
 -- Shared helpers for the Chaos spells.
 -- Loaded by every chaos spell with: dofile('data/spells/scripts/chaos/_common.lua')
 -- (path is relative to the server working dir, same convention as the rest of data/).
+if not ChaosSupportsSpell then -- spell supports: wraps every spell script loaded from here on (_supports.lua)
+	local ok, err = pcall(dofile, 'data/spells/scripts/chaos/_supports.lua')
+	if not ok then
+		print('[Chaos supports] ' .. tostring(err))
+	end
+end
 if not Fx or not FxMissile then
 	pcall(dofile, 'data/lib/chaos_fx.lua') -- real ids, once the merged dat/spr is in use
 	if not Fx or not FxMissile then

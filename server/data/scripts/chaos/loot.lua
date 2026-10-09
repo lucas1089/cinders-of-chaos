@@ -5,6 +5,7 @@
 --   2. gear quality: floor + bonus rarity per tier, items replaced via Game.createItemWithRarity
 --   3. currency / crafting drops (stock orbs 29856 / 29857 + configurable list)
 --   3b. gems (data/lib/chaos_gems_config.lua drop) and, in step 2b, sockets on gear with a rarity (chaos_gems.lua)
+--   3c. spell support runes (data/lib/chaos_supports_config.lua drop, scripts/chaos/supports.lua)
 --   4. unique items from the global ChaosUniqueItems (contract in LOOT.md)
 --   5. item find (player storage) multiplies the chances
 --   6. ChaosLootRoll(monsterName, tier, kills): pure simulation for balance tuning
@@ -819,6 +820,13 @@ local function processKill(monster, corpse)
 			if item then
 				bonus[#bonus + 1] = ChaosGems.gemName(id)
 			end
+		end
+	end
+	-- 3c. spell support runes (data/lib/chaos_supports_config.lua drop; supports.lua): like the gems
+	if ChaosSupports and ChaosSupports.lootDrop then
+		for _, name in ipairs(ChaosSupports.lootDrop(corpse, tier, level > 0 and level or owner:getLevel(),
+				rateMult(ctx) * ctx.itemFind, rnd)) do
+			bonus[#bonus + 1] = name
 		end
 	end
 
