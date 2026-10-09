@@ -82,11 +82,11 @@
 +    g_game.enableFeature(GameIngameStore)
 +    g_game.enableFeature(GameIngameStoreServiceType)
 +    g_game.enableFeature(GameIngameStoreHighlights)
++    -- signed dat displacements: the 64px donor art centres big creatures with negative offsets (import_donor_things.py)
++    g_game.enableFeature(GameNegativeOffset)
 +    g_game.enableFeature(GameAdditionalSkills)
 +    g_game.enableFeature(GameOutfitShaders)
 +    g_game.enableFeature(GameChaosCraftingSkills)
-+    -- signed dat displacements: the 64px donor art centres big creatures with negative offsets (import_donor_things.py)
-+    g_game.enableFeature(GameNegativeOffset)
    elseif version == 1524 then
      -- Reserved for the future 15.24 profile.
    end
