@@ -53,7 +53,7 @@ $sections = array(
 ?>
 <div class="chaos-page">
 <div class="chaos-box" id="about">
-	<h1 class="chaos-heading">The world of Project Chaos</h1>
+	<h1 class="chaos-heading">The world of Cinders of Chaos</h1>
 	<p class="chaos-hero__quote">The world was not ended. It was broken, and the pieces still bleed.</p>
 	<p class="chaos-lead">A dark fantasy online RPG with its own client. It keeps the classic top-down hunt-and-loot game and adds the depth of an action RPG: classes with ascensions, a huge passive tree, items with rarities and modifiers, crafting orbs, monsters that roll affixes, and endgame systems built for weeks of play rather than days.</p>
 	<table class="chaos-table">

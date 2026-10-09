@@ -1,4 +1,4 @@
--- Project Chaos plugin. Idempotent (run again on every update).
+-- Cinders of Chaos plugin. Idempotent (run again on every update).
 -- The class lock table of the game server (server/sql/chaos_class_unlocks.sql; the server also creates it at
 -- startup). Created here too so the character creation check works before the server's first start.
 CREATE TABLE IF NOT EXISTS `chaos_class_unlocks` (

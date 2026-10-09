@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 """Procedural art of the login screen (module client_chaos_login).
 
-  python3 -I client/tools/gen_login_art.py [bg] [ui]      (no argument = both; needs Pillow + numpy)
+  python3 -I client/tools/gen_login_art.py [bg] [ui] [logo]      (no argument = all; needs Pillow + numpy)
 
-bg  data/images/title.png                 1920x1080 background: night sky, ruined cathedral with red windows,
+bg  data/images/title.png                 1920x1080 background: night sky, ruined cathedral with ember-red windows,
                                           thorn vines on both sides, iron gate and graveyard, fog, lava-cracked
-                                          ground, baked-in embers and vignette. A single file: replace it with any
+                                          ground, baked-in embers, falling ash, smoke lit by the title, vignette. A single file: replace it with any
                                           16:9 picture (the client crops it to the window, see login.lua).
     data/images/chaos/login/glow.png      optional overlay (windows, fires, lava) whose opacity flickers in game;
                                           delete it (or set LOGIN_GLOW = false in login.lua) when title.png is replaced
 ui  data/images/chaos/login/*.png         panel frame, rune medallions, buttons, fields, crest, "press any key"
-                                          plate, ember sprite
+                                          plate, ember, spark and ash sprites, the halo behind the wordmark
+logo data/images/chaos/logo.png           the "Cinders of Chaos" wordmark (1000x560): charred iron capitals with
+                                          glowing cracks; also logo_small.png and ui/logo.png (the stock slot)
+     data/images/chaos/login/logo_hot.png the glow of the wordmark (cracks, hot cores, near halo); login.lua lets
+                                          its opacity smoulder over logo.png
 
 Deterministic (fixed seeds), original art, no third-party assets.
 """
@@ -203,7 +207,7 @@ def make_sky(rng_seed=7):
     ty = yy / H
     top = np.array([0.030, 0.026, 0.038], np.float32)
     mid = np.array([0.085, 0.040, 0.045], np.float32)
-    hor = np.array([0.30, 0.075, 0.045], np.float32)
+    hor = np.array([0.34, 0.095, 0.040], np.float32)
     sky = top + (mid - top) * smooth(0, 0.55, ty)[..., None]
     # horizon glow behind the cathedral (right of centre)
     g = np.exp(-(((xx - 1480) / 800) ** 2 + ((yy - 760) / 300) ** 2))
@@ -218,7 +222,10 @@ def make_sky(rng_seed=7):
     smoke = fbm(H, W, 260, 6, rng_seed + 2, 0.58, sx=1.6)
     sky *= (0.45 + 0.9 * smoke)[..., None]
     warm = smooth(0.4, 1.0, ty) * smooth(0.35, 0.75, fbm(H, W, 140, 5, rng_seed + 3, 0.6, sx=2.0))
-    sky += np.array([0.10, 0.032, 0.014], np.float32) * warm[..., None]
+    sky += np.array([0.12, 0.040, 0.014], np.float32) * warm[..., None]
+    # the burning title lights the smoke above the scene from below (top centre, where the wordmark sits)
+    lit = np.exp(-(((xx - 960) / 560) ** 2 + ((yy - 250) / 190) ** 2)) * (0.35 + 0.9 * smoke)
+    sky += np.array([0.15, 0.045, 0.016], np.float32) * lit[..., None]
     return np.clip(sky, 0, 1)
 
 
@@ -494,6 +501,23 @@ def embers_static(rng, n=620):
     return L.mask()
 
 
+def ash_static(rng, n=560):
+    """falling ash: ragged grey flakes, a few large and soft (near the eye), most small"""
+    L = Layer()
+    for _ in range(n):
+        x = rng.uniform(0, W)
+        y = rng.uniform(0, H * 0.92)
+        r = rng.choice([0.9, 1.3, 1.8, 2.6, 4.0], p=[0.35, 0.3, 0.2, 0.1, 0.05])
+        v = int(255 * rng.uniform(0.25, 0.75))
+        pts = []
+        for i in range(6):
+            a = 2 * math.pi * i / 6 + rng.uniform(-0.3, 0.3)
+            rr = r * rng.uniform(0.55, 1.2)
+            pts.append((x + math.cos(a) * rr, y + math.sin(a) * rr * 0.65))
+        L.poly(pts, v)
+    return L.mask()
+
+
 def make_background():
     rng = np.random.RandomState(1337)
     img = make_sky()
@@ -524,7 +548,7 @@ def make_background():
     wl = wl * (0.45 + 0.75 * np.clip(blur(win_m, 7) * 1.6, 0, 1))
     wy = np.clip((np.arange(H, dtype=np.float32) - 380) / 520.0, 0, 1)[:, None]
     flick = 0.8 + 0.4 * fbm(H, W, 30, 3, 93)
-    win_rgb = np.stack([np.broadcast_to(0.80 + 0.2 * wy, (H, W)), (0.045 + 0.20 * wy ** 1.5) * flick,
+    win_rgb = np.stack([np.broadcast_to(0.80 + 0.2 * wy, (H, W)), (0.085 + 0.26 * wy ** 1.5) * flick,
                         np.broadcast_to(0.015 + 0.03 * wy, (H, W))], -1)
     win_rgb = np.clip(win_rgb, 0, 1.3)
     img = comp(img, wl, np.zeros(3)) * 1.0
@@ -618,9 +642,14 @@ def make_background():
     img = fog_band(img, 520, 220, (0.22, 0.10, 0.10), 0.35, 74, 420)
 
     # --- embers baked into the picture
-    em = embers_static(np.random.RandomState(9))
-    ec = np.stack([em * 1.0, em * 0.55, em * 0.14], -1)
+    em = embers_static(np.random.RandomState(9), 820)
+    ec = np.stack([em * 1.0, em * 0.62, em * 0.18], -1)
     img += blur(ec, 0.9) * 1.1 + blur(ec, 4) * 0.55
+    # --- and ash drifting down through it, lit warm from below
+    ash = ash_static(np.random.RandomState(10))
+    ash = blur(ash, 0.7) * 0.75 + blur(ash, 2.5) * 0.35
+    ash_col = np.array([0.30, 0.27, 0.26], np.float32) + np.array([0.10, 0.03, 0.0], np.float32) * smooth(500, 1000, yy2)[..., None]
+    img = img * (1 - ash[..., None] * 0.6) + ash_col * ash[..., None] * 0.6
 
     # --- darker centre for logo and panel (kept subtle), vignette, grade, grain
     cxn = ((xx2 - 960) / 620) ** 2 + ((yy2 - 600) / 330) ** 2
@@ -822,15 +851,349 @@ def gen_ember():
 
 
 def gen_logo_glow():
-    """ember-red halo drawn behind the logo (the logo image itself is chaos/logo.png)"""
-    w, h = 900, 380
+    """smouldering halo drawn behind the wordmark: crimson outside, orange fire low under the letters
+    (the wordmark itself is chaos/logo.png, see gen_logo)"""
+    w, h = 900, 480
     yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
-    r2 = ((xx - w / 2) / (w * 0.5)) ** 2 + ((yy - h * 0.46) / (h * 0.5)) ** 2
-    a = np.clip(1 - r2, 0, 1) ** 2.2      # reaches 0 at the border: no visible edge of the image
+    r2 = ((xx - w / 2) / (w * 0.5)) ** 2 + ((yy - h * 0.5) / (h * 0.5)) ** 2
+    a = np.clip(1 - r2, 0, 1) ** 2.0      # reaches 0 at the border: no visible edge of the image
+    # the fire sits under each line of letters: two low, wide warm bands
+    core = np.zeros((h, w), np.float32)
+    for cy, sx in ((0.40, 0.40), (0.86, 0.33)):
+        core += np.exp(-(((xx - w / 2) / (w * sx)) ** 2 + ((yy - h * cy) / (h * 0.11)) ** 2))
+    core = np.clip(core, 0, 1)
+    t = np.clip(core * 0.9, 0, 1)
     arr = np.zeros((h, w, 4), np.uint8)
-    arr[..., 0], arr[..., 1], arr[..., 2] = 200, 40, 20
-    arr[..., 3] = (a * 120).astype(np.uint8)
+    arr[..., 0] = (180 + 75 * t).astype(np.uint8)
+    arr[..., 1] = (26 + 84 * t).astype(np.uint8)
+    arr[..., 2] = (10 + 22 * t).astype(np.uint8)
+    arr[..., 3] = (np.clip(a * 110 + core * a * 60, 0, 255)).astype(np.uint8)
     save(Image.fromarray(arr, 'RGBA'), os.path.join(UI_OUT, 'logo_halo.png'))
+
+
+def gen_spark():
+    """small hot spark (white-yellow core) for the sparks that leave the burning title"""
+    n = 12
+    yy, xx = np.mgrid[0:n, 0:n].astype(np.float32)
+    r = np.sqrt((xx - 5.5) ** 2 + (yy - 5.5) ** 2)
+    core = np.clip(1 - r / 2.6, 0, 1) ** 1.2
+    halo = np.clip(1 - r / 5.8, 0, 1) ** 2.0
+    a = np.clip(core + halo * 0.55, 0, 1)
+    arr = np.zeros((n, n, 4), np.uint8)
+    arr[..., 0] = 255
+    arr[..., 1] = (110 + 140 * core).astype(np.uint8)
+    arr[..., 2] = (24 + 200 * core ** 2).astype(np.uint8)
+    arr[..., 3] = (a * 255).astype(np.uint8)
+    save(Image.fromarray(arr, 'RGBA'), os.path.join(UI_OUT, 'spark.png'))
+
+
+def gen_ash():
+    """grey ash flake (ragged, soft) that drifts down over the scene"""
+    n = 12
+    rng = np.random.RandomState(17)
+    big = Image.new('L', (n * 4, n * 4), 0)
+    d = ImageDraw.Draw(big)
+    pts = []
+    for i in range(9):
+        a = 2 * math.pi * i / 9
+        rr = n * 4 * 0.5 * (0.45 + 0.5 * rng.rand())
+        pts.append((n * 2 + math.cos(a) * rr, n * 2 + math.sin(a) * rr * 0.7))
+    d.polygon(pts, fill=255)
+    a = np.asarray(big.filter(ImageFilter.GaussianBlur(2.5)).resize((n, n), Image.LANCZOS), np.float32) / 255
+    arr = np.zeros((n, n, 4), np.uint8)
+    arr[..., 0], arr[..., 1], arr[..., 2] = 150, 140, 136
+    arr[..., 3] = (a * 200).astype(np.uint8)
+    save(Image.fromarray(arr, 'RGBA'), os.path.join(UI_OUT, 'ash.png'))
+
+
+# ------------------------------------------------------------------ wordmark "Cinders of Chaos"
+# Original gothic capitals drawn as polygons (no font): each glyph lives in a 100 x 140 unit box (y down), spikes
+# reach above and below it. C H A O S are the shapes of the earlier "CHAOS" logo; I N D E R F are new in the same
+# style. The letters are charred iron with glowing cracks; a second image holds only the glow (cracks, hot cores,
+# the halo under the letters), and login.lua lets its opacity smoulder over the base image.
+LOGO_W, LOGO_H = 1000, 560                 # room around the letters for the glow
+LOGO_OY = 30                               # top of the lettering in the image
+LOGO_SS = 2
+
+
+def _chaikin_open(pts, it=3):
+    pts = list(pts)
+    for _ in range(it):
+        new = [pts[0]]
+        for a, b in zip(pts[:-1], pts[1:]):
+            new.append((0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1]))
+            new.append((0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1]))
+        new.append(pts[-1])
+        pts = new
+    return pts
+
+
+def _arc(cx, cy, rx, ry, a0, a1, n=18):
+    return [(cx + rx * math.cos(math.radians(a0 + (a1 - a0) * i / n)),
+             cy + ry * math.sin(math.radians(a0 + (a1 - a0) * i / n))) for i in range(n + 1)]
+
+
+def glyphs():
+    """letter -> (draw(d, ox, oy, k), width in units)"""
+    def mk(fn):
+        def draw(d, ox, oy, k):
+            P = lambda pts: [(ox + x * k, oy + y * k) for x, y in pts]
+            fn(d, P, ox, oy, k)
+        return draw
+
+    def stem(d, P, x=0, top=True, bottom=True):
+        d.polygon(P([(x, 0), (x + 12, -16 if top else 0), (x + 24, 0), (x + 24, 140), (x + 12, 154 if bottom else 140),
+                     (x, 140)]), fill=255)
+
+    def Hf(d, P, ox, oy, k):
+        stem(d, P, 0)
+        stem(d, P, 76)
+        d.polygon(P([(24, 56), (76, 56), (76, 70), (50, 86), (24, 70)]), fill=255)
+        d.polygon(P([(24, 76), (50, 92), (76, 76), (76, 84), (24, 84)]), fill=255)
+
+    def Af(d, P, ox, oy, k):
+        d.polygon(P([(0, 140), (44, -6), (50, -26), (56, -6), (100, 140), (74, 140), (50, 40), (26, 140)]), fill=255)
+        d.polygon(P([(24, 84), (76, 84), (80, 100), (20, 100)]), fill=255)
+        d.polygon(P([(0, 140), (14, 156), (26, 140)]), fill=255)
+        d.polygon(P([(74, 140), (86, 156), (100, 140)]), fill=255)
+
+    def Of(d, P, ox, oy, k):
+        d.ellipse([ox, oy, ox + 100 * k, oy + 140 * k], fill=255)
+        d.ellipse([ox + 28 * k, oy + 30 * k, ox + 72 * k, oy + 110 * k], fill=0)
+        d.polygon(P([(38, 2), (50, -22), (62, 2)]), fill=255)
+        d.polygon(P([(38, 138), (50, 162), (62, 138)]), fill=255)
+        d.polygon(P([(50, 56), (58, 70), (50, 84), (42, 70)]), fill=255)
+
+    def Cf(d, P, ox, oy, k):
+        d.ellipse([ox, oy, ox + 100 * k, oy + 140 * k], fill=255)
+        d.ellipse([ox + 26 * k, oy + 28 * k, ox + 74 * k, oy + 112 * k], fill=0)
+        d.polygon(P([(50, 70), (150, -10), (150, 150)]), fill=0)
+        d.polygon(P([(88, 22), (112, 6), (94, 40)]), fill=255)
+        d.polygon(P([(88, 118), (112, 134), (94, 100)]), fill=255)
+        d.polygon(P([(30, 2), (42, -20), (54, 2)]), fill=255)
+
+    def Sf(d, P, ox, oy, k):
+        pts = _chaikin_open([(86, 26), (66, 6), (36, 4), (16, 26), (28, 52), (60, 70), (84, 92), (78, 120), (54, 138),
+                             (24, 134), (8, 112)], 3)
+        Q = P(pts)
+        w = int(23 * k)
+        d.line(Q, fill=255, width=w, joint='curve')
+        r = w / 2
+        for (x, y) in Q[::2]:
+            d.ellipse([x - r, y - r, x + r, y + r], fill=255)
+        for (x, y, dx, dy) in ((86, 26, 18, -6), (8, 112, -14, 12)):
+            X, Y = ox + x * k, oy + y * k
+            d.polygon([(X - 12 * k, Y - 10 * k), (X + dx * k, Y + dy * k), (X + 12 * k, Y + 10 * k)], fill=255)
+
+    def If(d, P, ox, oy, k):
+        stem(d, P, 10)
+        d.polygon(P([(0, -2), (44, -2), (34, 14), (10, 14)]), fill=255)
+        d.polygon(P([(10, 126), (34, 126), (44, 142), (0, 142)]), fill=255)
+
+    def Nf(d, P, ox, oy, k):
+        stem(d, P, 0, bottom=False)
+        stem(d, P, 76, top=False)
+        d.polygon(P([(0, 0), (26, 0), (100, 140), (74, 140)]), fill=255)
+
+    def Df(d, P, ox, oy, k):
+        d.polygon(P([(12, 0), (50, 0)] + _arc(50, 70, 48, 70, -90, 90) + [(12, 140)]), fill=255)
+        d.polygon(P([(24, 26), (48, 26)] + _arc(48, 70, 26, 44, -90, 90) + [(24, 114)]), fill=0)
+        stem(d, P, 0)
+        d.polygon(P([(94, 58), (110, 70), (94, 82)]), fill=255)
+
+    def bar_top(d, P, right):
+        d.polygon(P([(24, 0), (right, 0), (right - 8, 24), (24, 24)]), fill=255)
+        d.polygon(P([(right - 14, 0), (right, 0), (right + 2, 36)]), fill=255)
+
+    def bar_mid(d, P, right):
+        d.polygon(P([(24, 58), (right - 14, 58), (right, 70), (right - 14, 82), (24, 82)]), fill=255)
+
+    def Ef(d, P, ox, oy, k):
+        stem(d, P, 0)
+        bar_top(d, P, 92)
+        bar_mid(d, P, 80)
+        d.polygon(P([(24, 116), (84, 116), (92, 140), (24, 140)]), fill=255)
+        d.polygon(P([(78, 140), (94, 140), (96, 102)]), fill=255)
+
+    def Ff(d, P, ox, oy, k):
+        stem(d, P, 0)
+        bar_top(d, P, 90)
+        bar_mid(d, P, 78)
+
+    def Rf(d, P, ox, oy, k):
+        d.polygon(P([(12, 0), (56, 0)] + _arc(56, 41, 40, 41, -90, 90) + [(12, 82)]), fill=255)
+        d.polygon(P([(24, 22), (54, 22)] + _arc(54, 41, 20, 19, -90, 90) + [(24, 60)]), fill=0)
+        stem(d, P, 0)
+        d.polygon(P([(40, 70), (66, 70), (100, 140), (74, 140)]), fill=255)
+        d.polygon(P([(74, 140), (86, 156), (100, 140)]), fill=255)
+
+    return {'C': (mk(Cf), 100), 'H': (mk(Hf), 100), 'A': (mk(Af), 100), 'O': (mk(Of), 100), 'S': (mk(Sf), 100),
+            'I': (mk(If), 44), 'N': (mk(Nf), 100), 'D': (mk(Df), 104), 'E': (mk(Ef), 94), 'R': (mk(Rf), 100),
+            'F': (mk(Ff), 90)}
+
+
+def word_width(word, k, gap=22):
+    G = glyphs()
+    return (sum(G[c][1] for c in word) + gap * (len(word) - 1)) * k
+
+
+def draw_word(word, cx, top, k, size, gap=22):
+    """mask (L, size) with the word centred on cx, glyph box top at `top` (all in output pixels x LOGO_SS)"""
+    G = glyphs()
+    m = Image.new('L', size, 0)
+    d = ImageDraw.Draw(m)
+    x = cx - word_width(word, k, gap) / 2
+    for c in word:
+        fn, wd = G[c]
+        fn(d, x, top, k)
+        x += (wd + gap) * k
+    return m
+
+
+def ember_ramp(h):
+    """0..1 heat -> rgb 0..255: dull red, crimson, orange, yellow, white-hot"""
+    stops = [(0.0, (70, 8, 4)), (0.3, (176, 28, 8)), (0.55, (246, 86, 16)), (0.8, (255, 170, 60)),
+             (1.0, (255, 238, 186))]
+    out = np.zeros(h.shape + (3,), np.float32)
+    for i in range(3):
+        out[..., i] = np.interp(h, [s[0] for s in stops], [s[1][i] for s in stops])
+    return out
+
+
+def make_wordmark():
+    """returns (base RGBA, hot glow RGBA), both LOGO_W x LOGO_H"""
+    s = LOGO_SS
+    Wd, Hd = LOGO_W * s, LOGO_H * s
+    cx = Wd / 2
+    k1, k2 = 1.04 * s, 1.18 * s                       # CINDERS, CHAOS
+    top1, top2 = (34 + LOGO_OY) * s, (280 + LOGO_OY) * s
+    m1 = draw_word('CINDERS', cx, top1, k1, (Wd, Hd))
+    m2 = draw_word('CHAOS', cx, top2, k2, (Wd, Hd))
+    # "OF" between the lines: O left and F right of the spike of the A that rises between them
+    ko = 0.40 * s
+    of_top = (197 + LOGO_OY) * s
+    m3 = Image.new('L', (Wd, Hd), 0)
+    g = glyphs()
+    g['O'][0](ImageDraw.Draw(m3), cx - 18 * s - 100 * ko, of_top, ko)
+    g['F'][0](ImageDraw.Draw(m3), cx + 18 * s, of_top, ko)
+    M = np.maximum(np.maximum(np.asarray(m1), np.asarray(m2)), np.asarray(m3)).astype(np.float32) / 255
+    mimg = Image.fromarray((M * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(0.6 * s))
+    M = np.asarray(mimg, np.float32) / 255
+
+    def sh(a, dx, dy):
+        return np.roll(np.roll(a, dy, 0), dx, 1)
+
+    def erode(img, r):
+        return np.asarray(img.filter(ImageFilter.MinFilter(2 * r + 1)), np.float32) / 255
+
+    def dilate(img, r):
+        return np.asarray(img.filter(ImageFilter.MaxFilter(2 * r + 1)), np.float32) / 255
+
+    # depth inside the strokes (0 at the edge, 1 in the middle of a thick stroke)
+    depth = np.clip((blur(M, 5 * s) - 0.5) * 2.2, 0, 1) * M
+    # cracks: ridges of two noise scales, wider where the stroke is deep
+    n1 = fbm(Hd, Wd, 30 * s, 4, 501, 0.55)
+    n2 = fbm(Hd, Wd, 12 * s, 3, 502, 0.5)
+    r1 = 1 - smooth(0.0, 0.042, np.abs(n1 - 0.5))
+    r2 = 1 - smooth(0.0, 0.030, np.abs(n2 - 0.5))
+    cracks = np.maximum(r1, r2 * 0.6)
+    patch = 0.2 + 1.0 * smooth(0.25, 0.8, fbm(Hd, Wd, 60 * s, 3, 503))   # hotter and cooler parts of the letters
+    yy = np.arange(Hd, dtype=np.float32)[:, None]
+    # each line burns hotter toward its foot (the fire is under the letters)
+    foot = np.clip(np.where(yy < (240 + LOGO_OY) * s, (yy - top1) / (150 * s), (yy - top2) / (170 * s)), 0, 1)
+    hot = cracks * (0.35 + 0.85 * depth) * patch * (0.6 + 0.6 * foot) + depth ** 2 * 0.22 * (0.5 + foot)
+    of_m = np.asarray(m3.filter(ImageFilter.GaussianBlur(0.6 * s)), np.float32) / 255
+    hot = np.maximum(np.clip(hot, 0, 1), of_m * 0.62) * M
+
+    # charred crust: near-black with grey ash flecks and a little warmth
+    grain = fbm(Hd, Wd, 6 * s, 3, 504, 0.6)
+    ash = smooth(0.62, 0.8, fbm(Hd, Wd, 9 * s, 3, 505))
+    crust = np.stack([20 + 22 * grain, 13 + 13 * grain, 13 + 11 * grain], -1)
+    ash = ash * smooth(0.55, 0.75, fbm(Hd, Wd, 40 * s, 2, 506))
+    crust = crust * (1 - ash[..., None] * 0.55) + np.array([96, 88, 84], np.float32) * ash[..., None] * 0.55
+    a_base = smooth(0.04, 0.55, hot) * 0.7
+    body = crust * (1 - a_base[..., None]) + ember_ramp(np.clip(hot * 0.8, 0, 1)) * a_base[..., None]
+    # iron edge: a rim of dark iron, lit from the top left, shaded bottom right
+    rim = np.clip(M - erode(mimg, 3 * s), 0, 1)
+    iron = np.array([58, 50, 52], np.float32)
+    body = body * (1 - rim[..., None] * 0.85) + iron * rim[..., None] * 0.85
+    hi = blur(np.clip(M - sh(M, 2 * s, 2 * s), 0, 1), 1.0 * s)
+    lo = blur(np.clip(M - sh(M, -2 * s, -2 * s), 0, 1), 1.0 * s)
+    body = body + hi[..., None] * (np.array([176, 150, 136], np.float32) - body) * 0.75
+    body = body * (1 - lo[..., None] * 0.55)
+    # the glowing underside of the rim (embers light the iron from below)
+    under = blur(np.clip(M - sh(M, 0, -3 * s), 0, 1), 1.2 * s) * (0.4 + 0.6 * foot)
+    body = body + under[..., None] * (np.array([255, 110, 30], np.float32) - body) * 0.55
+
+    # outline, shadow and glow under the letters
+    out = np.zeros((Hd, Wd, 4), np.float32)
+    g_far = blur(sh(M, 0, 10 * s), 24 * s)
+    g_near = blur(M, 7 * s)
+    glow_a = np.clip(g_far * 0.95 + g_near * 0.55, 0, 1)
+    glow_c = np.array([196, 34, 10], np.float32) * (1 - g_near[..., None]) + \
+        np.array([255, 96, 24], np.float32) * g_near[..., None]
+    out[..., :3] = glow_c
+    out[..., 3] = glow_a * 255
+    img = Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), 'RGBA')
+    outline = dilate(mimg, 2 * s)
+    ol = np.zeros((Hd, Wd, 4), np.float32)
+    ol[..., 0], ol[..., 1], ol[..., 2] = 8, 4, 4
+    ol[..., 3] = np.clip(outline + blur(sh(M, 3 * s, 5 * s), 3 * s) * 0.7, 0, 1) * 255
+    img.alpha_composite(Image.fromarray(ol.astype(np.uint8), 'RGBA'))
+
+    # ornament: two ember lines from the "OF" outward, with a diamond at each end
+    od = ImageDraw.Draw(img)
+    ly = of_top + 70 * ko
+    for sgn in (-1, 1):
+        x0 = cx + sgn * (18 * s + 100 * ko + 14 * s)
+        span = 230 * s
+        for i in range(int(span)):
+            t = i / span
+            col = tuple(int(c) for c in ember_ramp(np.array(0.75 - 0.5 * t))) + (int(235 * (1 - t) ** 0.8),)
+            od.point((x0 + sgn * i, ly), col)
+            od.point((x0 + sgn * i, ly + 1), col)
+            if t < 0.55:
+                od.point((x0 + sgn * i, ly + 2), col[:3] + (col[3] // 3,))
+        for (dx, r) in ((0, 5), (span * 0.62, 4)):
+            px = x0 + sgn * (dx + 2 * s)
+            od.polygon([(px, ly - r * s), (px + r * s, ly + 1), (px, ly + 2 + r * s), (px - r * s, ly + 1)],
+                       fill=(10, 5, 5, 255))
+            od.polygon([(px, ly - (r - 2) * s), (px + (r - 2) * s, ly + 1), (px, ly + 2 + (r - 2) * s),
+                        (px - (r - 2) * s, ly + 1)], fill=(246, 96, 22, 255))
+
+    layer = np.dstack([np.clip(body, 0, 255), M * 255]).astype(np.uint8)
+    img.alpha_composite(Image.fromarray(layer, 'RGBA'))
+
+    # a few sparks frozen above the letters (the moving ones are widgets, see login.lua)
+    rng = np.random.RandomState(77)
+    sp = ImageDraw.Draw(img)
+    ys, xs = np.nonzero(M[::4, ::4] > 0.5)
+    for i in rng.choice(len(xs), 46, replace=False):
+        x, y = xs[i] * 4 + rng.uniform(-6, 6) * s, ys[i] * 4 - rng.uniform(6, 40) * s
+        r = rng.choice([0.7, 1.0, 1.4]) * s
+        c = tuple(int(v) for v in ember_ramp(np.array(rng.uniform(0.55, 0.95)))) + (int(rng.uniform(120, 240)),)
+        sp.ellipse([x - r, y - r, x + r, y + r], fill=c)
+
+    # the glow image: the cracks at full heat, the hot cores and the near halo
+    hot2 = np.clip(hot * 1.25, 0, 1)
+    ha = np.clip(smooth(0.06, 0.6, hot2) * M + np.clip(g_near - M, 0, 1) * 0.42, 0, 1)
+    hc = ember_ramp(np.maximum(hot2, 0.5 * (1 - M)))
+    hot_img = Image.fromarray(np.dstack([np.clip(hc, 0, 255), ha * 255]).astype(np.uint8), 'RGBA')
+
+    size = (LOGO_W, LOGO_H)
+    return img.resize(size, Image.LANCZOS), hot_img.resize(size, Image.LANCZOS)
+
+
+def gen_logo():
+    base, hot = make_wordmark()
+    save(base, os.path.join(IMG, 'chaos', 'logo.png'))
+    save(base.resize((LOGO_W // 2, LOGO_H // 2), Image.LANCZOS), os.path.join(IMG, 'chaos', 'logo_small.png'))
+    save(hot, os.path.join(UI_OUT, 'logo_hot.png'))
+    # the stock login screen's own logo slot (hidden by client_chaos_login, 225 x 261)
+    ui = Image.new('RGBA', (225, 261), (0, 0, 0, 0))
+    sm = base.resize((225, round(225 * LOGO_H / LOGO_W)), Image.LANCZOS)
+    ui.alpha_composite(sm, (0, (261 - sm.height) // 2))
+    save(ui, os.path.join(IMG, 'ui', 'logo.png'))
 
 
 def gen_ui():
@@ -842,6 +1205,8 @@ def gen_ui():
     gen_fields()
     gen_pressplate()
     gen_ember()
+    gen_spark()
+    gen_ash()
     gen_logo_glow()
 
 
@@ -852,6 +1217,6 @@ def gen_bg():
 
 
 if __name__ == '__main__':
-    tasks = sys.argv[1:] or ['bg', 'ui']
+    tasks = sys.argv[1:] or ['bg', 'ui', 'logo']
     for t in tasks:
-        {'bg': gen_bg, 'ui': gen_ui}[t]()
+        {'bg': gen_bg, 'ui': gen_ui, 'logo': gen_logo}[t]()

@@ -1,4 +1,4 @@
-# Launch checklist: from the stock downloads to a public Project Chaos server
+# Launch checklist: from the stock downloads to a public Cinders of Chaos server
 
 This is the order to follow on launch day, and the list of what must be checked before the doors open. Everything
 here was run on the test server, except where a step says otherwise (the systemd units and the Windows client
@@ -14,7 +14,7 @@ What you need:
 
 To play it on one Windows PC first, without any of this: run the **Windows package** workflow (Actions -> Windows
 package -> Run workflow) and download the `ProjectChaos-Windows` artifact from the run. It holds the patched engine
-(`ChaosServer.exe`), the Chaos client, the merged dat/spr, a portable MariaDB and `start-server.bat` /
+(`ChaosServer.exe`), the Cinders of Chaos client, the merged dat/spr, a portable MariaDB and `start-server.bat` /
 `start-client.bat` (`tools/windows/package/README.txt`). Its inputs live on the private branch `windows-assets`
 (its README.md); `tools/windows/prepare_server.sh` turns the base server into the package's server folder. It has
 test accounts with known passwords: local play only.
@@ -48,8 +48,8 @@ columns the schema already has) and errors about the website's `znote_*` tables.
 sudo install -d -m 0755 /etc/chaos
 sudo cp server/deploy/chaos.env.example /etc/chaos/chaos.env      # fill in CHAOS_DB_* (never commit it)
 sudo chmod 600 /etc/chaos/chaos.env
-python3 -I server/tools/prod_config.py /opt/chaos/server --ip play.example.org --name Chaos \
-    --motd "Welcome to Chaos." --max-players 300 --pvp pvp --save-time 06:00 --owner "..." --url "https://..."
+python3 -I server/tools/prod_config.py /opt/chaos/server --ip play.example.org --name "Cinders of Chaos" \
+    --motd "Welcome to Cinders of Chaos." --max-players 300 --pvp pvp --save-time 06:00 --owner "..." --url "https://..."
 ```
 
 `server/tools/prod_config.py` (idempotent; its docstring explains every value) sets:

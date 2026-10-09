@@ -1,7 +1,7 @@
 Module
   name: game_invasion
   description: Invasion HUD (waves, invaders left, timer, breach meter, top defenders) and the upcoming events window (extended opcode 251)
-  author: project-chaos
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ invasionmath, invasion ]
   dependencies:

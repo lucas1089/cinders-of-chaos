@@ -23,7 +23,7 @@ python creatures/<name>.py pick out/<name>/edit/edit_v2.png
 python creatures/<name>.py animate                 # the sheet <name>_idle8_walking8.png and the GIFs
 ```
 
-## Project Chaos
+## Cinders of Chaos
 
 This studio lives in `client/tools/art_studio/` (set up from `PIXEL-ART-STUDIO.md`, section 4). Nothing here touches
 the client pair: what it makes goes to `out/` (gitignored, with `.pixellab_token`); an import into the client is a

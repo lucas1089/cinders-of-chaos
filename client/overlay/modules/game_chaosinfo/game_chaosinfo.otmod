@@ -1,7 +1,7 @@
 Module
   name: game_chaosinfo
   description: Info & Services window (character info, services, auto seller, house, rift keys, events, server info; extended opcode 237)
-  author: project-chaos
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ chaosinfoview, chaosinfo ]
   dependencies:

@@ -1,4 +1,4 @@
-/* Project Chaos: embers rising through the header (replaces the parent layout's violet motes). */
+/* Cinders of Chaos: embers rising through the header (replaces the parent layout's violet motes). */
 (function () {
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   var canvas = document.getElementById('sh-canvas');

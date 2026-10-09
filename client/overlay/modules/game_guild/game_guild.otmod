@@ -1,7 +1,7 @@
 Module
   name: game_guild
   description: Guild window (guild level, XP, perks, members' contribution, guild bank, guild hall, depot, weekly top guilds; extended opcode 252)
-  author: project-chaos
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ guildmath, guild ]
   dependencies:

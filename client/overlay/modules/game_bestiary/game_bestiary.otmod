@@ -1,7 +1,7 @@
 Module
   name: game_bestiary
   description: Bestiary, kill tasks and the task tracker HUD (extended opcode 253)
-  author: project-chaos
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ bestiaryview, bestiary ]
   dependencies:

@@ -1,7 +1,7 @@
 Module
   name: game_infinitytower
   description: Infinity Tower Info Window
-  author: Chaos
+  author: Cinders of Chaos
   sandboxed: true
   autoload: true
   autoload-priority: 1000

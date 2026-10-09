@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Project Chaos backup: a gzip'd mysqldump of the game database plus, when it changed, an archive of the server's
+# Cinders of Chaos backup: a gzip'd mysqldump of the game database plus, when it changed, an archive of the server's
 # config.lua and data/ (without the map .otbm files and logs). Keeps the last N days. Restore: docs/LAUNCH.md, "Backups".
 #
 # usage: server/tools/backup.sh [--dir DIR] [--keep-days N] [--server-dir DIR] [--db NAME]

@@ -1,6 +1,6 @@
 <?php
 /**
- * Project Chaos front page: the pitch, the classes, the features, the latest
+ * Cinders of Chaos front page: the pitch, the classes, the features, the latest
  * patch notes and the news. Data comes from index.php ($news, $page, $view)
  * and from the chaos plugin when it is active. A news permalink or a news page
  * other than the first falls back to the stock front page view.
@@ -30,7 +30,7 @@ $latest = $plugin && function_exists('chaos_patchnotes') ? (chaos_patchnotes()[0
 		<h1 class="chaos-hero__title">Enter the broken world</h1>
 		<p class="chaos-hero__quote">The world was not ended. It was broken, and the pieces still bleed.</p>
 		<div class="chaos-divider"></div>
-		<p class="chaos-hero__text">Project Chaos is a dark fantasy online RPG with its own client. It keeps the classic top-down hunt-and-loot game and adds the depth of an action RPG: classes with ascensions, a huge passive tree, items with rarities and modifiers, crafting orbs, monsters that roll affixes, and endgame systems built for weeks of play rather than days.</p>
+		<p class="chaos-hero__text">Cinders of Chaos is a dark fantasy online RPG with its own client. It keeps the classic top-down hunt-and-loot game and adds the depth of an action RPG: classes with ascensions, a huge passive tree, items with rarities and modifiers, crafting orbs, monsters that roll affixes, and endgame systems built for weeks of play rather than days.</p>
 		<div class="chaos-cta">
 			<?php if (function_exists('user_logged_in') && user_logged_in()): ?>
 				<a class="chaos-btn" href="createcharacter.php">Create a character</a>

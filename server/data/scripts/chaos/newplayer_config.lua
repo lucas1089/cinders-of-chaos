@@ -188,7 +188,7 @@ return {
 
 	-- ------------------------------------------------------------------ welcome (one time, after the kit)
 	welcome = {
-		title = "Welcome to Project Chaos",
+		title = "Welcome to Cinders of Chaos",
 		-- %s = character name, %s = vocation name
 		text = "Welcome, %s the %s.\n\n" ..
 			"Your starter kit is in your backpack. Next steps:\n" ..
@@ -196,9 +196,9 @@ return {
 			"- The passive tree (top menu, Character): a point every 4 levels past level 8.\n" ..
 			"- Adventure > Bounty Board: daily contracts that pay gold and Orbs of Upheaval.\n" ..
 			"- The store (top menu, Economy): temple scrolls, stamina and services.\n" ..
-			"- The top menu holds every Chaos window: dungeons, the tower, dailies, bank and stash.\n\n" ..
+			"- The top menu holds every game window: dungeons, the tower, dailies, bank and stash.\n\n" ..
 			"Gifts wait for you at levels 20, 50, 100 and 200.",
-		toast = "Welcome to Project Chaos! Your kit is in your backpack. Everything else is in the menu at the top.",
+		toast = "Welcome to Cinders of Chaos! Your kit is in your backpack. Everything else is in the menu at the top.",
 		delayMs = 2500
 	},
 
@@ -283,7 +283,7 @@ return {
 				text = "Keystones are the big nodes at the edge of the passive tree: they change your class (Cleaving Arc, " ..
 					"Ricochet, Arcane Echo...). Plan your path towards one.\n\n" ..
 					"The bounty board (Adventure > Bounty Board) gives daily contracts per level band that pay gold and orbs. The store (top menu, Economy) sells " ..
-					"temple scrolls, stamina and services. Dungeons, the Infinity Tower and the dailies are under Chaos in " ..
+					"temple scrolls, stamina and services. Dungeons, the Infinity Tower and the dailies are under Adventure in " ..
 					"the top menu.\n\n" ..
 					"Step into the forcefield to the east: you get your starter kit and arrive at the temple.",
 				toast = "Station 5: step into the forcefield to leave the island."}

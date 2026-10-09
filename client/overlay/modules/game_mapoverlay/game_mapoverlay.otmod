@@ -1,7 +1,7 @@
 Module
   name: game_mapoverlay
   description: Map overlay - the explored map drawn see-through over the game view, with points of interest (Tab; extended opcode 245, server map_marks.lua)
-  author: project-chaos
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ mapmath, mapoverlay ]
   dependencies:

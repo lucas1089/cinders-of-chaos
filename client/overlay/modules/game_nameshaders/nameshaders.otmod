@@ -1,7 +1,7 @@
 Module
   name: game_nameshaders
   description: Name Shader Selection - Apply visual effects to your character name
-  author: Chaos
+  author: Cinders of Chaos
   sandboxed: true
   autoload: false
   scripts: [ nameshaders ]

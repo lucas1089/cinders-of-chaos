@@ -21,7 +21,7 @@ try {
 <div class="chaos-page">
 	<div class="chaos-box">
 		<?= $html ?>
-		<div class="znx-acct-head">Project Chaos layout</div>
-		<div class="znx-acct-info">Based on the Void layout by Alex (opengamescommunity.com), re-coloured and framed for Project Chaos.</div>
+		<div class="znx-acct-head">Cinders of Chaos layout</div>
+		<div class="znx-acct-info">Based on the Void layout by Alex (opengamescommunity.com), re-coloured and framed for Cinders of Chaos.</div>
 	</div>
 </div>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Database setup for the Project Chaos website. Run by website/install_site.sh
+ * Database setup for the Cinders of Chaos website. Run by website/install_site.sh
  * with the ZnoteX folder as the working directory:
  *
  *   php <repo>/website/setup/chaos_setup.php
@@ -11,7 +11,7 @@
  *      ZnoteX's own installer, step 4)
  *   3. migrations: every pending one is run (tolerating "already exists" answers, since a fresh schema holds part
  *      of them) and recorded
- *   4. the Project Chaos plugin (plugins/chaos): install.sql, enabled
+ *   4. the Cinders of Chaos plugin (plugins/chaos): install.sql, enabled
  *   5. the layout: CHAOS_LAYOUT (default "chaos", our child of the purple "void" layout)
  *   6. the menu entries and the editable Rules page, once each (never overwritten)
  *   7. theme options from the environment (Discord URL)

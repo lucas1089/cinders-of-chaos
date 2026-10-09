@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Assemble the Chaos client: the base client source (you supply it) + patches + overlay.
+# Assemble the Cinders of Chaos client: the base client source (you supply it) + patches + overlay.
 # Usage: tools/assemble_client.sh <base-client-dir> <output-dir>
 # The base client tree is ~300 MB, so it is not committed here.
 # Does NOT include Tibia.spr/.dat: copy your 10.98 pair into <out>/data/things/1098/ yourself.

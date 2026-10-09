@@ -1,7 +1,7 @@
 Module
   name: client_chaos_theme
-  description: Chaos dark-fantasy UI theme (blackened iron, dried blood, ember gold). Provides reusable Chaos* styles.
-  author: project-chaos
+  description: Cinders of Chaos dark-fantasy UI theme (blackened iron, dried blood, ember gold). Provides reusable Chaos* styles.
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ chaos_theme ]
   autoload: true

@@ -1,6 +1,6 @@
 # client_chaos_theme
 
-Dark-fantasy UI theme (blackened iron, dried blood red, ember gold) for the OTClient 10.98 setup.
+Cinders of Chaos dark-fantasy UI theme (blackened iron, dried blood red, ember gold) for the OTClient 10.98 setup.
 Autoloads before the game modules (`autoload-priority: 500`) and imports `styles.otui` and `compat.otui`, so any other module can use the `Chaos*` styles.
 It also adds two widget helpers some modules expect and this engine lacks: `UIWidget:parseColoredText` (`[color=#rrggbb]...[/color]` markup) and `UIWidget:setExtendedTooltip` (shown as a plain multi-line tooltip).
 
@@ -11,7 +11,8 @@ It also adds two widget helpers some modules expect and this engine lacks: `UIWi
 | `modules/client_chaos_theme/chaos_theme.otmod`, `chaos_theme.lua`, `styles.otui` | The theme module and all styles |
 | `modules/client_chaos_topbar/` | Menu bar at the top of the game window with drop-downs by category (otmod, lua, otui) |
 | `data/images/chaos/` | All generated art (PNG, 80 files) |
-| `../tools/gen_theme_art.py` | Icons, logo and login background: `python3 -I client/tools/gen_theme_art.py [icons] [logo] [background]` |
+| `../tools/gen_theme_art.py` | Icons and `chaos/background.png`: `python3 -I client/tools/gen_theme_art.py [icons] [background]` |
+| `../tools/gen_login_art.py` | Login screen and the "Cinders of Chaos" wordmark (`logo`, `logo_small`, `ui/logo.png`): `python3 -I client/tools/gen_login_art.py [bg] [ui] [logo]` |
 | `../tools/gen_skin.py` | Frames, controls, ornaments, HUD and in-place stock images: `python3 client/tools/gen_skin.py --base <base-client-dir>` |
 
 `client/tools/assemble_client.sh` copies the overlay into the client; the login background and logo are plain images (`data/images/title.png`, `data/images/ui/logo.png`) used by the stock `client_background`. The login screen layout is the module `client_chaos_login` (art: `client/tools/gen_login_art.py`, `data/images/title.png` and `data/images/chaos/login/`).
@@ -32,7 +33,7 @@ Window 9-slice: `image-border: 18`, `image-border-top: 34` (title band is part o
 
 `window`, `button_{normal,hover,pressed,disabled}`, `panel`, `panel_dark`, `panel_highlight`, `title_plate`, `textedit(_focus)`, `tab_{normal,hover,active}`,
 `progress_frame`, `itemslot`, `scroll_*`, `checkbox` (16x32 sheet), `combobox`, `separator`, `topbar_bg`,
-`background` (1920x1080), `logo` (760x300), `logo_small` (380x150),
+`background` (1920x1080), `logo` (1000x560, the wordmark), `logo_small` (500x280),
 `topbutton_<name>[_hover]` (64x64) and `small/topbutton_<name>[_hover]` (32x32) for: inventory, skills, battlelist, vip, spells, quests, market, bank, stash,
 autoloot, daily, battlepass, passivetree, dungeons, events, infinitytower, minimap, options, notifications, help, logout, admin, ranking.
 

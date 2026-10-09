@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Re-colour the purple ZnoteX layout ("Void") into the Project Chaos client palette.
+"""Re-colour the purple ZnoteX layout ("Void") into the Cinders of Chaos client palette.
 
 The Void layout is downloaded by website/install_site.sh at a pinned version; it is never committed here. This tool
 reads its three theme stylesheets and writes re-coloured copies into our child layout (layouts/chaos, whose

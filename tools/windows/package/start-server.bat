@@ -1,5 +1,5 @@
 @echo off
-rem Project Chaos, Windows package: starts the database (MariaDB on 127.0.0.1:3307) and the game server.
+rem Cinders of Chaos, Windows package: starts the database (MariaDB on 127.0.0.1:3307) and the game server.
 rem The first start creates the database and loads server\sql-setup\*.sql (about a minute).
 rem (stored with LF in the repository; the package workflow writes it with CRLF, which cmd needs for its labels)
 setlocal EnableExtensions
@@ -22,7 +22,7 @@ if not exist "%DATA%\mysql" (
 tasklist /fi "imagename eq mariadbd.exe" 2>nul | find /i "mariadbd.exe" >nul
 if errorlevel 1 (
   echo Starting the database...
-  start "Chaos database - stop it with stop-server.bat" /min "%MDB%\mariadbd.exe" --defaults-file="%DATA%\my.ini" --bind-address=127.0.0.1 --console
+  start "Cinders of Chaos database - stop it with stop-server.bat" /min "%MDB%\mariadbd.exe" --defaults-file="%DATA%\my.ini" --bind-address=127.0.0.1 --console
 )
 
 set /a tries=0
@@ -31,7 +31,7 @@ set /a tries=0
 if not errorlevel 1 goto up
 set /a tries+=1
 if %tries% geq 60 (
-  echo The database did not start within 60 seconds. See the "Chaos database" window.
+  echo The database did not start within 60 seconds. See the "Cinders of Chaos database" window.
   goto fail
 )
 timeout /t 1 /nobreak >nul

@@ -22,7 +22,7 @@ if ($want !== '' && chaos_pn_valid_id($want)) {
 <div class="chaos-page">
 	<div class="chaos-box">
 		<h1 class="chaos-heading">Patch Notes</h1>
-		<p class="chaos-lead">Every week's changes, the same notes as the Patch Notes window in the game (Chaos menu, or <code>!patchnotes</code>).</p>
+		<p class="chaos-lead">Every week's changes, the same notes as the Patch Notes window in the game (top menu, or <code>!patchnotes</code>).</p>
 		<?php if (!$notes): ?>
 			<p class="chaos-empty">No patch notes yet.</p>
 		<?php else: ?>

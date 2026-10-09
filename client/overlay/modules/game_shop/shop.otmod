@@ -1,7 +1,7 @@
 Module
   name: game_shop
-  description: Chaos store (categories, offers, coin gifts and history from the server)
-  author: project-chaos
+  description: Cinders of Chaos store (categories, offers, coin gifts and history from the server)
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ shop ]
   dependencies: [ client_topmenu ]

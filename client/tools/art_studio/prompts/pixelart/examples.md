@@ -1,4 +1,4 @@
-# /pixelart examples (Project Chaos)
+# /pixelart examples (Cinders of Chaos)
 
 Ready to paste into the PixelLab website (pixellab.ai): nothing here calls the API or needs a token. Set the canvas to
 the size at the start of each prompt. Each one is under 400 characters (the website cuts longer prompts at the end).

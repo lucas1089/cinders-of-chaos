@@ -1,7 +1,7 @@
 Module
   name: game_arena
   description: Ranked PvP arena (1v1 / 2v2 queue window, match HUD, result toast; extended opcode 236)
-  author: project-chaos
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ arenatext, arena ]
   dependencies:

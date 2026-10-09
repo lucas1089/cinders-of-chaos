@@ -1,8 +1,8 @@
 {
-  "name": "Project Chaos",
+  "name": "Cinders of Chaos",
   "version": "1.0.0",
-  "author": "Project Chaos",
-  "description": "Project Chaos game data: class names and the class lock on character creation, the starter depot boxes, and the Leaderboards, Patch Notes and Seasons pages.",
+  "author": "Cinders of Chaos",
+  "description": "Cinders of Chaos game data: class names and the class lock on character creation, the starter depot boxes, and the Leaderboards, Patch Notes and Seasons pages.",
   "requires": {
     "znotex": ">=2.0.0 <3.0.0",
     "php": ">=8.1",

@@ -1,6 +1,6 @@
 <?php
 /**
- * Project Chaos helpers for the website (loaded by plugin.php on every request).
+ * Cinders of Chaos helpers for the website (loaded by plugin.php on every request).
  *
  * Only functions here: no output, no queries at load time. Every query is a
  * prepared statement through ZnoteX's db() helper; nothing is built from

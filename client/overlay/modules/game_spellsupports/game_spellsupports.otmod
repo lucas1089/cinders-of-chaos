@@ -1,7 +1,7 @@
 Module
   name: game_spellsupports
   description: Spell supports (support runes in spell sockets; extended opcode 243; action bar pips)
-  author: project-chaos
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ supportstext, spellsupports ]
   dependencies:

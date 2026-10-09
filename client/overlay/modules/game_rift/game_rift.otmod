@@ -1,7 +1,7 @@
 Module
   name: game_rift
   description: Rift run HUD (time left, monsters left, modifiers; extended opcode 228)
-  author: project-chaos
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ riftmath, rift ]
   dependencies:

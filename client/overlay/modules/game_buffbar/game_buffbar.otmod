@@ -1,7 +1,7 @@
 Module
   name: game_buffbar
   description: Buff / debuff bar (small icons with countdown and stacks; extended opcode 234, server buffbar.lua / data/lib/chaos_buffs.lua)
-  author: project-chaos
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ buffmath, buffbar ]
   dependencies:

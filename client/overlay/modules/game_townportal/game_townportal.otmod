@@ -1,7 +1,7 @@
 Module
   name: game_townportal
   description: Town Portal cast bar and the Portal Style window (server townportal.lua, extended opcode 239)
-  author: project-chaos
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ townportal ]
   dependencies:

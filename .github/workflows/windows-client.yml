@@ -1,4 +1,4 @@
-# Windows build of the Chaos client: the base client sources + client/base-patches/* + client/overlay
+# Windows build of the Cinders of Chaos client: the base client sources + client/base-patches/* + client/overlay
 # (client/tools/assemble_client.sh), built with MSVC, CMake + Ninja and vcpkg (x64-windows-static) the same way the base
 # client's own Windows workflow builds it. The exe (and a runnable package without Tibia.dat / Tibia.spr) are uploaded
 # as artifacts.
@@ -44,7 +44,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build Chaos client (Windows x64)
+    name: Build Cinders of Chaos client (Windows x64)
     runs-on: windows-latest
     timeout-minutes: 120
     env:
@@ -72,7 +72,7 @@ jobs:
         shell: bash
         run: git config --global core.autocrlf false
 
-      - name: Check out Project Chaos
+      - name: Check out Cinders of Chaos
         uses: actions/checkout@v4
         with:
           path: chaos
@@ -85,7 +85,7 @@ jobs:
           token: ${{ secrets.BASE_CLIENT_TOKEN || github.token }}
           path: base
 
-      - name: Assemble the Chaos client (base + client/base-patches + client/overlay)
+      - name: Assemble the Cinders of Chaos client (base + client/base-patches + client/overlay)
         shell: bash
         run: |
           patch --version | head -n 1

@@ -6,8 +6,8 @@
        text-offset: 16 -2
 -      !text: tr('I agree with Astra Terms and Conditions.')
 -      !tooltip: tr('I have read and I agree to the Extended Astra Service Agreement and the Astra Privacy Policy.')
-+      !text: tr('I agree with Chaos Terms and Conditions.')
-+      !tooltip: tr('I have read and I agree to the Extended Chaos Service Agreement and the Chaos Privacy Policy.')
++      !text: tr('I agree with Cinders of Chaos Terms and Conditions.')
++      !tooltip: tr('I have read and I agree to the Extended Cinders of Chaos Service Agreement and the Cinders of Chaos Privacy Policy.')
        margin-bottom: 5
        font: $var-cip-font
        color: $var-text-cip-color
@@ -18,7 +18,7 @@
  ALLOW_CUSTOM_SERVERS = false -- if true it shows option ANOTHER on server list
  
 -g_app.setName("AstraClient - OTCv8")
-+g_app.setName("Chaos")
++g_app.setName("Cinders of Chaos")
  -- CONFIG END
  
  -- print first terminal message
@@ -29,7 +29,7 @@
          tooltipBar = tr('You are drunk'),
          tooltip = tr(
 -            "Taverns in Astra are popular gathering places where many\nadventurers enjoy relaxing after their wearisome travels with a\npint of cool beer. However, Astra's beer is quite strong, so don't be\nsurprised if your character has trouble walking in a straight line for\na while."
-+            "Taverns in Chaos are popular gathering places where many\nadventurers enjoy relaxing after their wearisome travels with a\npint of cool beer. However, Chaos's beer is quite strong, so don't be\nsurprised if your character has trouble walking in a straight line for\na while."
++            "Taverns in Cinders of Chaos are popular gathering places where many\nadventurers enjoy relaxing after their wearisome travels with a\npint of cool beer. However, the local beer is quite strong, so don't be\nsurprised if your character has trouble walking in a straight line for\na while."
          )
      },
      [10] = {
@@ -38,7 +38,7 @@
          tooltipBar = tr('You are drowning'),
          tooltip = tr(
 -            "Astra features a special underwater area. Since no one can survive\nwithout fresh air, characters will take damage if they walk\nunderwater without the proper equipment. The only way to survive\nis to leave the water quickly or equip a life-saving diving helmet."
-+            "Chaos features a special underwater area. Since no one can survive\nwithout fresh air, characters will take damage if they walk\nunderwater without the proper equipment. The only way to survive\nis to leave the water quickly or equip a life-saving diving helmet."
++            "Cinders of Chaos features a special underwater area. Since no one can survive\nwithout fresh air, characters will take damage if they walk\nunderwater without the proper equipment. The only way to survive\nis to leave the water quickly or equip a life-saving diving helmet."
          )
      },
      [15] = {
@@ -47,7 +47,7 @@
          tooltipBar = tr('You are hungry'),
          tooltip = tr(
 -            "Characters who are hungry do not regenerate mana or health. To\nfill up your character's stomach, look for something edible, such as\nan apple, bread, or ham. There are plenty of things in Astra that\nyour character can eat. Check out stores, search bushes, bake your\nown bread or cake, or defeat creatures to find some delicacies."
-+            "Characters who are hungry do not regenerate mana or health. To\nfill up your character's stomach, look for something edible, such as\nan apple, bread, or ham. There are plenty of things in Chaos that\nyour character can eat. Check out stores, search bushes, bake your\nown bread or cake, or defeat creatures to find some delicacies."
++            "Characters who are hungry do not regenerate mana or health. To\nfill up your character's stomach, look for something edible, such as\nan apple, bread, or ham. There are plenty of things in Cinders of Chaos that\nyour character can eat. Check out stores, search bushes, bake your\nown bread or cake, or defeat creatures to find some delicacies."
          )
      }
  }
@@ -89,7 +89,7 @@
        margin-top: 5
        image-source: /images/skin/show-gui-help-grey
 -      !tooltip: tr('Not all graphics cards are capable of drawing light effects fast\nenough for Astra to run smoothly. If your system is working with\nsuch a graphics card, it may be a good idea to deactivate the light\neffects in order to improve overall game performance. Note that \nthis option will be disabled if your graphics card is not able to draw\nlight effects at all.\n\nThe following options are only available if Show Light Effects are enabled:\n\n      * Ambient Light: Here you can determine the brightness of\n        your ambience. If you prefer to play in a mysterious and\n        dark surrounding, you should set the ambient light slider as\n        low as possible. Players that rather like to see everything in\n        a bright light, should position the bar at 100%%.\n      * Level Separator: By using this slider, you can determine how\n        dark or bright lower levels will be displayed for your\n        character.\n      * Clouds & Indoor Effect: By using this slider, you can\n        determine how dark or bright the inside of houses or\n        shadows of clouds will be displayed for your character.')
-+      !tooltip: tr('Not all graphics cards are capable of drawing light effects fast\nenough for Chaos to run smoothly. If your system is working with\nsuch a graphics card, it may be a good idea to deactivate the light\neffects in order to improve overall game performance. Note that \nthis option will be disabled if your graphics card is not able to draw\nlight effects at all.\n\nThe following options are only available if Show Light Effects are enabled:\n\n      * Ambient Light: Here you can determine the brightness of\n        your ambience. If you prefer to play in a mysterious and\n        dark surrounding, you should set the ambient light slider as\n        low as possible. Players that rather like to see everything in\n        a bright light, should position the bar at 100%%.\n      * Level Separator: By using this slider, you can determine how\n        dark or bright lower levels will be displayed for your\n        character.\n      * Clouds & Indoor Effect: By using this slider, you can\n        determine how dark or bright the inside of houses or\n        shadows of clouds will be displayed for your character.')
++      !tooltip: tr('Not all graphics cards are capable of drawing light effects fast\nenough for Cinders of Chaos to run smoothly. If your system is working with\nsuch a graphics card, it may be a good idea to deactivate the light\neffects in order to improve overall game performance. Note that \nthis option will be disabled if your graphics card is not able to draw\nlight effects at all.\n\nThe following options are only available if Show Light Effects are enabled:\n\n      * Ambient Light: Here you can determine the brightness of\n        your ambience. If you prefer to play in a mysterious and\n        dark surrounding, you should set the ambient light slider as\n        low as possible. Players that rather like to see everything in\n        a bright light, should position the bar at 100%%.\n      * Level Separator: By using this slider, you can determine how\n        dark or bright lower levels will be displayed for your\n        character.\n      * Clouds & Indoor Effect: By using this slider, you can\n        determine how dark or bright the inside of houses or\n        shadows of clouds will be displayed for your character.')
  
    FlatPanel
      size: 505 205
@@ -100,7 +100,7 @@
      margin-top: 3
      image-source: /images/skin/show-gui-help-grey
 -    !tooltip: tr('If you select "Antialiasing", the Astra graphics will appear in a \nsmoother look. However, if you are a fan of retro games, you \nshould choose "None" to enjoy a pixelated old-school look. \n"Smooth Retro" combines the other two modes – it is offering a \nsmooth pixelated look.')
-+    !tooltip: tr('If you select "Antialiasing", the Chaos graphics will appear in a \nsmoother look. However, if you are a fan of retro games, you \nshould choose "None" to enjoy a pixelated old-school look. \n"Smooth Retro" combines the other two modes – it is offering a \nsmooth pixelated look.')
++    !tooltip: tr('If you select "Antialiasing", the Cinders of Chaos graphics will appear in a \nsmoother look. However, if you are a fan of retro games, you \nshould choose "None" to enjoy a pixelated old-school look. \n"Smooth Retro" combines the other two modes – it is offering a \nsmooth pixelated look.')
  
    FlatPanel
      size: 505 22
@@ -109,7 +109,7 @@
        margin-top: 5
        image-source: /images/skin/show-gui-help-grey
 -      !tooltip: tr('You can play Astra both in a full screen mode and in a windowed \nmode. In full screen mode, Astra will take up the whole screen, \nwhile it is possible to modify the clients size if the windowed mode \nis activated. You can toggle between the two modes by using this \noption. Alternatively, pressing the shortcut Ctrl+F will have the \nsame effect.')
-+      !tooltip: tr('You can play Chaos both in a full screen mode and in a windowed \nmode. In full screen mode, Chaos will take up the whole screen, \nwhile it is possible to modify the clients size if the windowed mode \nis activated. You can toggle between the two modes by using this \noption. Alternatively, pressing the shortcut Ctrl+F will have the \nsame effect.')
++      !tooltip: tr('You can play Cinders of Chaos both in a full screen mode and in a windowed \nmode. In full screen mode, Cinders of Chaos will take up the whole screen, \nwhile it is possible to modify the clients size if the windowed mode \nis activated. You can toggle between the two modes by using this \noption. Alternatively, pressing the shortcut Ctrl+F will have the \nsame effect.')
  
    FlatPanel
      size: 505 22
@@ -118,7 +118,7 @@
        margin-top: 5
        image-source: /images/skin/show-gui-help-grey
 -      !tooltip: tr('Enable this option to use only integral multiples as scale factor \ne.g., 50%%, 100%%, 200%% when scaling the game window. This way \nyou keep the original pixelated look of Astra when you do not use \nAntialiasing.')
-+      !tooltip: tr('Enable this option to use only integral multiples as scale factor \ne.g., 50%%, 100%%, 200%% when scaling the game window. This way \nyou keep the original pixelated look of Chaos when you do not use \nAntialiasing.')
++      !tooltip: tr('Enable this option to use only integral multiples as scale factor \ne.g., 50%%, 100%%, 200%% when scaling the game window. This way \nyou keep the original pixelated look of Cinders of Chaos when you do not use \nAntialiasing.')
  
    FlatPanel
      size: 505 22
@@ -127,7 +127,7 @@
        margin-top: -1
        image-source: /images/skin/show-gui-help-grey
 -      !tooltip: tr('If you check this option, the client will try to produce as many \nframes as possible. If you find your computers performance is bad \nwhen running Astra, you should rather try to set a frame rate limit.')
-+      !tooltip: tr('If you check this option, the client will try to produce as many \nframes as possible. If you find your computers performance is bad \nwhen running Chaos, you should rather try to set a frame rate limit.')
++      !tooltip: tr('If you check this option, the client will try to produce as many \nframes as possible. If you find your computers performance is bad \nwhen running Cinders of Chaos, you should rather try to set a frame rate limit.')
  
      Label
        id: frameRateLabel
@@ -136,7 +136,7 @@
        margin-top: -1
        image-source: /images/skin/show-gui-help-grey
 -      !tooltip: tr('By using this slider, you can modify the preset frame rate limit \nfrom 10 to 500 fps frames per second. If you find your \ncomputers performance is bad when running Astra, you should try \nreducing the frame rate. Note that this function is not available if \nyou have checked "No Frame Rate Limit".')
-+      !tooltip: tr('By using this slider, you can modify the preset frame rate limit \nfrom 10 to 500 fps frames per second. If you find your \ncomputers performance is bad when running Chaos, you should try \nreducing the frame rate. Note that this function is not available if \nyou have checked "No Frame Rate Limit".')
++      !tooltip: tr('By using this slider, you can modify the preset frame rate limit \nfrom 10 to 500 fps frames per second. If you find your \ncomputers performance is bad when running Cinders of Chaos, you should try \nreducing the frame rate. Note that this function is not available if \nyou have checked "No Frame Rate Limit".')
  
      Label
        id: currentFrameRateLabel
@@ -167,7 +167,7 @@
        margin-top: 5
        image-source: /images/skin/show-gui-help-grey
 -      !tooltip: tr('Enable this option if you prefer to use the mouse cursor design of \nyour operating system instead of the Astra design.')
-+      !tooltip: tr('Enable this option if you prefer to use the mouse cursor design of \nyour operating system instead of the Chaos design.')
++      !tooltip: tr('Enable this option if you prefer to use the mouse cursor design of \nyour operating system instead of the Cinders of Chaos design.')
  
    FlatPanel
      size: 505 22
@@ -176,7 +176,7 @@
        margin-top: 5
        image-source: /images/skin/show-gui-help-grey
 -      !tooltip: tr('If this option is checked, you will get a warning whenever you try to \ncopy a link from the console. This warning will remind you to be \ncareful about any posted links as they might have been designed \nto hack your Astra account.')
-+      !tooltip: tr('If this option is checked, you will get a warning whenever you try to \ncopy a link from the console. This warning will remind you to be \ncareful about any posted links as they might have been designed \nto hack your Chaos account.')
++      !tooltip: tr('If this option is checked, you will get a warning whenever you try to \ncopy a link from the console. This warning will remind you to be \ncareful about any posted links as they might have been designed \nto hack your Cinders of Chaos account.')
  
    FlatPanel
      size: 505 44
@@ -187,7 +187,7 @@
        margin-top: 5
        image-source: /images/skin/show-gui-help-grey
 -      !tooltip: tr('Enable this option to save screenshots of the most important\nmoments of your Astra career! Whenever one of the events you\nhave selected takes place, a screenshot will be taken\nautomatically.\n\nThe following events can be selected to trigger an auto screenshot:\n\n- Level Up: Your character has reached the next level\n- Skill Up: You advanced in one of your skills (e.g. Magic Level\nor Sword Fighting)\n- Achievement: You earned an achievement, either while\nplaying or upon login\n- Bestiary Entry Unlocked: You unlocked new information\nabout a creature in the Bestiary\n- Bestiary Entry Completed: You unlocked all information about\na creature in the Bestiary\n- Treasure Found: You received some reward from a container\nfor solving a quest or a riddle\n- Valuable Loot: You just found some loot which you have\nmarked in the Drop Tracker\n- Boss Defeated: You defeated a boss monster, either alone or\ntogether with other players, and are entitled to loot it\n- Death PvE: You were just killed by some creature (PvE)\n- Death PvP: You were just killed by another player (PvP)\n- Player Kill: You defeated another player\n- Player Killer Assist: You assisted the killing of another player\n- Player Attacking: Another player just started to attack you\n- Highest Damage Dealt: You dealt a new all-time high damage\non a foe. To see or reset your current all-time high, check\nthe Impact Analyser\n- Highest Healing Done: You healed someone with a new all-\ntime high healing value. To see or reset your current all-time\nhigh, check the Impact Analyser\n- Low Health: You have reached a threshold of deep red\nhealth Copy')
-+      !tooltip: tr('Enable this option to save screenshots of the most important\nmoments of your Chaos career! Whenever one of the events you\nhave selected takes place, a screenshot will be taken\nautomatically.\n\nThe following events can be selected to trigger an auto screenshot:\n\n- Level Up: Your character has reached the next level\n- Skill Up: You advanced in one of your skills (e.g. Magic Level\nor Sword Fighting)\n- Achievement: You earned an achievement, either while\nplaying or upon login\n- Bestiary Entry Unlocked: You unlocked new information\nabout a creature in the Bestiary\n- Bestiary Entry Completed: You unlocked all information about\na creature in the Bestiary\n- Treasure Found: You received some reward from a container\nfor solving a quest or a riddle\n- Valuable Loot: You just found some loot which you have\nmarked in the Drop Tracker\n- Boss Defeated: You defeated a boss monster, either alone or\ntogether with other players, and are entitled to loot it\n- Death PvE: You were just killed by some creature (PvE)\n- Death PvP: You were just killed by another player (PvP)\n- Player Kill: You defeated another player\n- Player Killer Assist: You assisted the killing of another player\n- Player Attacking: Another player just started to attack you\n- Highest Damage Dealt: You dealt a new all-time high damage\non a foe. To see or reset your current all-time high, check\nthe Impact Analyser\n- Highest Healing Done: You healed someone with a new all-\ntime high healing value. To see or reset your current all-time\nhigh, check the Impact Analyser\n- Low Health: You have reached a threshold of deep red\nhealth Copy')
++      !tooltip: tr('Enable this option to save screenshots of the most important\nmoments of your Cinders of Chaos career! Whenever one of the events you\nhave selected takes place, a screenshot will be taken\nautomatically.\n\nThe following events can be selected to trigger an auto screenshot:\n\n- Level Up: Your character has reached the next level\n- Skill Up: You advanced in one of your skills (e.g. Magic Level\nor Sword Fighting)\n- Achievement: You earned an achievement, either while\nplaying or upon login\n- Bestiary Entry Unlocked: You unlocked new information\nabout a creature in the Bestiary\n- Bestiary Entry Completed: You unlocked all information about\na creature in the Bestiary\n- Treasure Found: You received some reward from a container\nfor solving a quest or a riddle\n- Valuable Loot: You just found some loot which you have\nmarked in the Drop Tracker\n- Boss Defeated: You defeated a boss monster, either alone or\ntogether with other players, and are entitled to loot it\n- Death PvE: You were just killed by some creature (PvE)\n- Death PvP: You were just killed by another player (PvP)\n- Player Kill: You defeated another player\n- Player Killer Assist: You assisted the killing of another player\n- Player Attacking: Another player just started to attack you\n- Highest Damage Dealt: You dealt a new all-time high damage\non a foe. To see or reset your current all-time high, check\nthe Impact Analyser\n- Highest Healing Done: You healed someone with a new all-\ntime high healing value. To see or reset your current all-time\nhigh, check the Impact Analyser\n- Low Health: You have reached a threshold of deep red\nhealth Copy')
  
      Label
        id: selectLabel
@@ -198,7 +198,7 @@
        margin-right: 5
        image-source: /images/skin/show-gui-help-grey
 -      !tooltip: tr('Tick this box if you like to hear a sound when a new message for \nthe whole game world appears, e.g., the game world is going down \nor a Astra member makes an important announcement.')
-+      !tooltip: tr('Tick this box if you like to hear a sound when a new message for \nthe whole game world appears, e.g., the game world is going down \nor a Chaos member makes an important announcement.')
++      !tooltip: tr('Tick this box if you like to hear a sound when a new message for \nthe whole game world appears, e.g., the game world is going down \nor a Cinders of Chaos staff member makes an important announcement.')
  
  
    Button
@@ -209,7 +209,7 @@
          anchors.horizontalCenter: parent.horizontalCenter
          margin-top: 2
 -        !text: tr('Astra Poll')
-+        !text: tr('Chaos Poll')
++        !text: tr('Cinders of Chaos Poll')
          font: $var-cip-font
          color: $var-text-cip-color-grey
          text-auto-resize: true
@@ -220,7 +220,7 @@
      pages = {
        "ATC Helper\nConfigure supported helper tools, alarms and shortcuts from the ATC Helper panel.",
 -      "Modern Windows\nInspect items, customise monster podiums and manage familiar appearance through Astra-only protocol extensions."
-+      "Modern Windows\nInspect items, customise monster podiums and manage familiar appearance through Chaos-only protocol extensions."
++      "Modern Windows\nInspect items, customise monster podiums and manage familiar appearance through Cinders of Chaos protocol extensions."
      }
    },
    {
@@ -228,7 +228,7 @@
      pages = {
        "Use the right-side menu to open Cyclopedia, Task Hunt, Compendium and other game systems.",
 -      "Only Astra Client receives the modern extension bytes. Legacy Cip and OTC clients keep their original packet layout."
-+      "Only Chaos Client receives the modern extension bytes. Legacy Cip and OTC clients keep their original packet layout."
++      "Only the Cinders of Chaos client receives the modern extension bytes. Legacy Cip and OTC clients keep their original packet layout."
      }
    },
    {
@@ -237,7 +237,7 @@
      title = "Support",
      pages = {
 -      "For account or gameplay support, use the official Astra support channels. Include screenshots and the exact error message when reporting a problem."
-+      "For account or gameplay support, use the official Chaos support channels. Include screenshots and the exact error message when reporting a problem."
++      "For account or gameplay support, use the official Cinders of Chaos support channels. Include screenshots and the exact error message when reporting a problem."
      }
    }
  }
@@ -248,7 +248,7 @@
      anchors.left: parent.left
      margin-top: 1
 -    !text: tr('Please select the Astra Rule which is violated.')
-+    !text: tr('Please select the Chaos Rule which is violated.')
++    !text: tr('Please select the Cinders of Chaos Rule which is violated.')
      text-auto-resize: true
      font: $var-cip-font
      color: $var-text-cip-color
@@ -259,7 +259,7 @@
  	check3:setSize("715 45")
  
 -	local secondLabel = ' By confirming the auction, an auction fee of '.. Bazaar.initialFee ..'<img src="/images/store/icon-tibiacointransferable" width="12" height="12" offset="0 2" /> becomes due which will be deducted from your account\'s<p>Astra Coins balance. Further, 8% of the auction\'s sales revenue will be kept by Astra as commission.</p>'
-+	local secondLabel = ' By confirming the auction, an auction fee of '.. Bazaar.initialFee ..'<img src="/images/store/icon-tibiacointransferable" width="12" height="12" offset="0 2" /> becomes due which will be deducted from your account\'s<p>Chaos Coins balance. Further, 8% of the auction\'s sales revenue will be kept by Chaos as commission.</p>'
++	local secondLabel = ' By confirming the auction, an auction fee of '.. Bazaar.initialFee ..'<img src="/images/store/icon-tibiacointransferable" width="12" height="12" offset="0 2" /> becomes due which will be deducted from your account\'s<p>Chaos Coins balance. Further, 8% of the auction\'s sales revenue will be kept by Cinders of Chaos as commission.</p>'
  	check3:setHTML(string.format(stringFormat, '/images/store/icon-yes', secondLabel))
  
  	local check4 = g_ui.createWidget('Label', checkList)
@@ -359,7 +359,7 @@
 -                      "10.2. Invalid provisions will be replaced, while remaining provisions continue in force.\n\n" ..
 -                      "10.3. By using D FATO GAMES LTDAs services, users accept these Terms, understanding their rights, obligations, and responsibilities.\n\n" ..
 -                      "10.4. By electronically accepting these Terms, users confirm their commitment to all clauses."
-+                      "The terms for paid services of Chaos are published on the official website. "
++                      "The terms for paid services of Cinders of Chaos are published on the official website. "
 +                      .. "By buying you agree to them."
  
      local label = g_ui.createWidget('UILabel', rulesTextList)
@@ -419,7 +419,7 @@
        margin-top: 5
        margin-left: 5
 -      !text: tr('Here you can customise your hireling. Make sure that the name does not violate the Astra Rules, or your hireling might get reported and receive on automatically generated name.')
-+      !text: tr('Here you can customise your hireling. Make sure that the name does not violate the Chaos Rules, or your hireling might get reported and receive on automatically generated name.')
++      !text: tr('Here you can customise your hireling. Make sure that the name does not violate the Cinders of Chaos Rules, or your hireling might get reported and receive on automatically generated name.')
        text-wrap: true
    Label
      !text: tr('Name:')
@@ -431,8 +431,8 @@
      text-offset: 16 -2
 -    !text: tr('I agree with Astra Terms and Conditions.')
 -    !tooltip: tr('I have read and I agree to the Extended Astra Service Agreement and the Astra Privacy Policy.')
-+    !text: tr('I agree with Chaos Terms and Conditions.')
-+    !tooltip: tr('I have read and I agree to the Extended Chaos Service Agreement and the Chaos Privacy Policy.')
++    !text: tr('I agree with Cinders of Chaos Terms and Conditions.')
++    !tooltip: tr('I have read and I agree to the Extended Cinders of Chaos Service Agreement and the Cinders of Chaos Privacy Policy.')
      margin-bottom: 5
      font: $var-cip-font
      color: $var-text-cip-color
@@ -468,7 +468,7 @@
        end
  
 -      errorBox = displayGeneralBox(tr('Info'), "Your client version is too old.\nRestart Astra to update your client.", {
-+      errorBox = displayGeneralBox(tr('Info'), "Your client version is too old.\nRestart Chaos to update your client.", {
++      errorBox = displayGeneralBox(tr('Info'), "Your client version is too old.\nRestart Cinders of Chaos to update your client.", {
          { text=tr('Update'), callback=okFunc },
          { text=tr('Exit'), callback=ExitFunc },
          { text=tr('Cancel'), callback=cancelFunc }
@@ -549,7 +549,7 @@
      end
    else
 -    msg = 'Are you sure you want to leave Astra?'
-+    msg = 'Are you sure you want to leave Chaos?'
++    msg = 'Are you sure you want to leave Cinders of Chaos?'
  
      yesCallback = function()
        g_game.safeLogout()

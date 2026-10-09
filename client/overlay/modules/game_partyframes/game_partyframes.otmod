@@ -1,7 +1,7 @@
 Module
   name: game_partyframes
   description: Party frames (members' health, mana, level, floor, buffs; extended opcode 235, server partyframes.lua)
-  author: project-chaos
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ partymath, partyframes ]
   dependencies:

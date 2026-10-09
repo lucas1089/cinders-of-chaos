@@ -1,6 +1,6 @@
-# Windows package: the whole game for one Windows PC, as one artifact (ProjectChaos-Windows). Download it from the
-# run's page (Summary -> Artifacts), extract it and run start-server.bat, then start-client.bat (tools/windows/package/
-# README.txt is in the zip).
+# Windows package: the whole Cinders of Chaos game for one Windows PC, as one artifact (ProjectChaos-Windows).
+# Download it from the run's page (Summary -> Artifacts), extract it and run start-server.bat, then start-client.bat
+# (tools/windows/package/README.txt is in the zip).
 #
 # MANUAL ONLY (workflow_dispatch): it never runs on push or pull_request, so it cannot turn PR checks red.
 #
@@ -46,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Check out Project Chaos
+      - name: Check out Cinders of Chaos
         uses: actions/checkout@v4
         with:
           path: chaos
@@ -208,7 +208,7 @@ jobs:
         shell: bash
         run: git config --global core.autocrlf false
 
-      - name: Check out Project Chaos
+      - name: Check out Cinders of Chaos
         uses: actions/checkout@v4
         with:
           path: chaos
@@ -223,7 +223,7 @@ jobs:
             SHA256SUMS.parts
           sparse-checkout-cone-mode: true
 
-      - name: Assemble the Chaos client (base + client/base-patches + client/overlay)
+      - name: Assemble the Cinders of Chaos client (base + client/base-patches + client/overlay)
         shell: bash
         run: |
           (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
@@ -309,7 +309,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Check out Project Chaos
+      - name: Check out Cinders of Chaos
         uses: actions/checkout@v4
         with:
           path: chaos

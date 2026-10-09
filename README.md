@@ -1,6 +1,6 @@
-![Project Chaos](docs/images/banner.png)
+![Cinders of Chaos](docs/images/banner.png)
 
-# Project Chaos
+# Cinders of Chaos
 
 > *The world was not ended. It was broken, and the pieces still bleed.*
 
@@ -13,7 +13,7 @@
 > the **Ascendant Oracle** shows them two paths, and they leave as something more than they came.
 > The ash is still falling. This is the **Season of Ash**.
 
-Project Chaos is a dark fantasy Open Tibia server (protocol 10.98) with its own client. It keeps the classic top-down
+Cinders of Chaos is a dark fantasy Open Tibia server (protocol 10.98) with its own client. It keeps the classic top-down
 hunt-and-loot game and adds the depth of an action RPG: classes with ascensions, a huge passive tree, items with
 rarities and modifiers, crafting orbs, monsters that roll affixes, and endgame systems built for weeks of play rather
 than days.

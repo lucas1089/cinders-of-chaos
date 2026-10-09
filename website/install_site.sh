@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs (or updates) the Project Chaos website: ZnoteX at a pinned commit, the purple "Void" layout it is based
+# Installs (or updates) the Cinders of Chaos website: ZnoteX at a pinned commit, the purple "Void" layout it is based
 # on, our overlay (layout "chaos", plugin "chaos"), config.local.php from the environment, and ZnoteX's tables and
 # migrations in the game database. Idempotent: run it again after changing a setting or pulling the repository.
 #

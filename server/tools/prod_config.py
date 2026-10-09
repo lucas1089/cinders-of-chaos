@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Turn the base server's stock config.lua into the production config of a public Project Chaos server (idempotent).
+"""Turn the base server's stock config.lua into the production config of a public Cinders of Chaos server (idempotent).
 
 usage: python3 -I server/tools/prod_config.py SERVER_DIR --ip HOST [--name NAME] [--motd TEXT] [--max-players N]
                                               [--pvp pvp|no-pvp|pvp-enforced] [--save-time HH:MM] [--owner NAME]
@@ -64,8 +64,9 @@ def settings(opts):
         ('loginProtocolPort', '7171'),
         ('gameProtocolPort', '7172'),
         ('statusProtocolPort', '7171'),
-        ('serverName', lua_string(opts.get('--name', 'Chaos'))),
-        ('motd', lua_string(opts.get('--motd', 'Welcome to Chaos. The world was not ended. It was broken.'))),
+        ('serverName', lua_string(opts.get('--name', 'Cinders of Chaos'))),
+        ('motd', lua_string(opts.get('--motd',
+                                     'Welcome to Cinders of Chaos. The world was not ended. It was broken.'))),
         ('ownerName', lua_string(opts.get('--owner', ''))),
         ('ownerEmail', lua_string(opts.get('--email', ''))),
         ('url', lua_string(opts.get('--url', ''))),

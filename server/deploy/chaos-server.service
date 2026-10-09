@@ -1,4 +1,4 @@
-# Project Chaos game server (systemd). Install: docs/LAUNCH.md, "Running it".
+# Cinders of Chaos game server (systemd). Install: docs/LAUNCH.md, "Running it".
 #   sudo cp server/deploy/chaos-server.service /etc/systemd/system/
 #   sudo systemctl daemon-reload && sudo systemctl enable --now chaos-server
 # Layout assumed here (change the paths if yours differ):
@@ -14,7 +14,7 @@
 # (server/tools/backup.sh sends it before a dump): sudo systemctl kill -s SIGUSR1 chaos-server
 
 [Unit]
-Description=Project Chaos game server
+Description=Cinders of Chaos game server
 Wants=network-online.target
 After=network-online.target mariadb.service mysql.service
 

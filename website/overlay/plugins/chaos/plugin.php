@@ -1,6 +1,6 @@
 <?php
 /**
- * Project Chaos plugin: loaded by ZnoteX on every request (engine/init.php,
+ * Cinders of Chaos plugin: loaded by ZnoteX on every request (engine/init.php,
  * after the database and settings, before the page). Registers hooks only.
  *
  *  - Class lock: the base classes an account may create are the four open

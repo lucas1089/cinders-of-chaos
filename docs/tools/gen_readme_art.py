@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""README art for Project Chaos: the banner and the framed feature cards.
+"""README art for Cinders of Chaos: the banner and the framed feature cards.
 
 usage: python3 docs/tools/gen_readme_art.py [--shots DIR] [name ...]
 
 Writes PNGs to docs/images/ (no name = all). Everything is drawn by code (value noise, glow, cracks,
 embers, sigils, emblems), in the palette of the client skin (client/tools/gen_theme_art.py,
 gen_skin.py). The card frames reuse the client's own ornaments from
-client/overlay/data/images/chaos/skin (corners, crest) when they are present.
+client/overlay/data/images/chaos/skin (corners, crest) when they are present, and the banner's wordmark is the
+client's logo (client/overlay/data/images/chaos/logo.png, drawn by client/tools/gen_login_art.py logo).
 
 Some cards show crops of in-game screenshots. Their sources are listed in SHOTS below, relative to the
 screenshot folder (--shots DIR, or the CHAOS_SHOTS environment variable). When a source is missing the
@@ -1001,29 +1002,23 @@ def banner(_):
     p.putalpha(plate)
     img.alpha_composite(p)
 
-    # wordmark
-    draw_fancy_text(img, "PROJECT", font("title", 30), (W / 2, 62), GOLD_STOPS, tracking=22, outline=2,
-                    glow=(BLOOD_3, 8, 0.8))
-    box = draw_fancy_text(img, "CHAOS", font("title", 128), (W / 2, 150), CHAOS_STOPS, tracking=14, outline=4,
-                          glow=(BLOOD_3, 22, 1.3))
-    # blood dripping from the letters
-    word = text_mask("CHAOS", font("title", 128), 14)
-    bx, by = box[0], box[1]
-    wa = np.asarray(word) > 128
-    drips = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    dd = ImageDraw.Draw(drips)
-    cols = rng.choice(np.arange(6, word.width - 6), 16, replace=False)
-    for cx in cols:
-        ys = np.nonzero(wa[:, cx])[0]
-        if len(ys) == 0:
-            continue
-        y0 = by + ys.max() - 3
-        L = rng.uniform(8, 34)
-        x = bx + cx
-        dd.line([(x, y0), (x, y0 + L)], fill=BLOOD_2 + (255,), width=4)
-        dd.ellipse([x - 3.5, y0 + L - 3, x + 3.5, y0 + L + 4], fill=BLOOD_2 + (255,))
-        dd.line([(x - 1, y0 + 2), (x - 1, y0 + L - 2)], fill=BLOOD_4 + (200,), width=1)
-    img.alpha_composite(drips)
+    # wordmark: the client's own "Cinders of Chaos" logo (client/tools/gen_login_art.py logo), else plain text
+    logo_path = os.path.join(REPO, "client", "overlay", "data", "images", "chaos", "logo.png")
+    if os.path.exists(logo_path):
+        lg = Image.open(logo_path).convert("RGBA")
+        lh = 232
+        lg = lg.resize((round(lg.width * lh / lg.height), lh), Image.LANCZOS)
+        img.alpha_composite(lg, ((W - lg.width) // 2, 4))
+        hot_path = os.path.join(REPO, "client", "overlay", "data", "images", "chaos", "login", "logo_hot.png")
+        if os.path.exists(hot_path):      # the glow of the cracks, as the login screen shows it mid-flicker
+            hot = Image.open(hot_path).convert("RGBA").resize(lg.size, Image.LANCZOS)
+            hot.putalpha(hot.getchannel("A").point(lambda v: int(v * 0.6)))
+            img.alpha_composite(hot, ((W - lg.width) // 2, 4))
+    else:
+        draw_fancy_text(img, "CINDERS OF", font("title", 30), (W / 2, 62), GOLD_STOPS, tracking=22, outline=2,
+                        glow=(BLOOD_3, 8, 0.8))
+        draw_fancy_text(img, "CHAOS", font("title", 128), (W / 2, 150), CHAOS_STOPS, tracking=14, outline=4,
+                        glow=(BLOOD_3, 22, 1.3))
     divider(img, 236, 300)
     d = ImageDraw.Draw(img)
     tag = "Seal the rifts. Slay the colossi. Ascend."

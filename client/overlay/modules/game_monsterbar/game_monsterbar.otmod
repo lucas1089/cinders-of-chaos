@@ -1,7 +1,7 @@
 Module
   name: game_monsterbar
   description: Tiered monster health bar (normal / magic / rare / legendary / boss)
-  author: Chaos
+  author: Cinders of Chaos
   sandboxed: true
   autoload: true
   autoload-priority: 900

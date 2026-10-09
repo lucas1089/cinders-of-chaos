@@ -11,14 +11,14 @@ $port = function_exists('chaos_cfg') ? (int)chaos_cfg('game_port', 7171) : 7171;
 $icons = array('windows_client' => 'fa-windows', 'linux_client' => 'fa-linux', 'macos_client' => 'fa-apple');
 // ZnoteX replaces the label and description of its two built-in keys; ours are written here
 $about = array(
-	'windows_client' => array('Windows client', 'The Project Chaos client for Windows 10 and 11 (64-bit).'),
-	'linux_client' => array('Linux client', 'The Project Chaos client for 64-bit Linux.'),
+	'windows_client' => array('Windows client', 'The Cinders of Chaos client for Windows 10 and 11 (64-bit).'),
+	'linux_client' => array('Linux client', 'The Cinders of Chaos client for 64-bit Linux.'),
 );
 ?>
 <div class="chaos-page">
 <div class="chaos-box">
 	<h1 class="chaos-heading">Download the client</h1>
-	<p class="chaos-lead">Project Chaos is played with its own client: the dark skin, the top menu and a window for every system (passive tree, crafting bench, rifts, leaderboards, patch notes). It is free.</p>
+	<p class="chaos-lead">Cinders of Chaos is played with its own client: the dark skin, the top menu and a window for every system (passive tree, crafting bench, rifts, leaderboards, patch notes). It is free.</p>
 	<div class="chaos-dl">
 		<?php foreach ($entries as $e):
 			$url = (string)$e['url'];

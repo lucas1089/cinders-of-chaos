@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Project Chaos dark environment tile set: procedurally drawn grounds, borders, walls and objects, appended as new
+"""Cinders of Chaos dark environment tile set: procedurally drawn grounds, borders, walls and objects, appended as new
 items to a 10.98 Tibia.dat / Tibia.spr pair.
 
 Every picture is drawn here from code (periodic noise, Voronoi cells, height maps lit from the upper left, shape

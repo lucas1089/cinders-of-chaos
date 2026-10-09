@@ -15,7 +15,7 @@
  Servers = {
    LocalTestServ = {
 -    name = "LocalTestServ",
-+    name = "Chaos",
++    name = "Cinders of Chaos",
      host = "127.0.0.1",
      port = 7171,
 -    version = 860

@@ -1,7 +1,7 @@
 Module
   name: game_playerinspect
   description: Inspect Player window (extended opcode 240): outfit, level, class, guild, achievement points, records and the equipped items with their tooltips
-  author: project-chaos
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ playerinspect_logic, playerinspect ]
   dependencies:

@@ -1,7 +1,7 @@
 Module
   name: game_leaderboard
   description: Leaderboards (weekly world boss / bounty / rift boards with titles, class ladder; extended opcode 229)
-  author: project-chaos
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ leaderboard ]
   dependencies:

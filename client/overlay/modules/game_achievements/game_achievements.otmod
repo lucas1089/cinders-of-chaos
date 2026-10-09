@@ -1,7 +1,7 @@
 Module
   name: game_achievements
   description: Achievements window (categories, progress, points, titles, recent unlocks; extended opcode 250)
-  author: project-chaos
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ achievementsview, achievements ]
   dependencies:

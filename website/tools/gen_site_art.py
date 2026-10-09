@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Procedural art for the Project Chaos website and its promotion material, in the style of the client theme
-(client/tools/gen_theme_art.py: iron blacks, gold, crimson; the same palette, glyph badges, logo and frames).
+"""Procedural art for the Cinders of Chaos website and its promotion material, in the style of the client theme
+(client/tools/gen_theme_art.py: iron blacks, gold, crimson; the same palette, glyph badges and frames; the wordmark
+from client/tools/gen_login_art.py, as on the login screen).
 
 Run:  python3 -I website/tools/gen_site_art.py [task ...]      (no task = all)
 Tasks: theme (site logo, header, favicon, frame pieces), classes (class badges), social, discord, otlist,
@@ -22,7 +23,8 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.normpath(os.path.join(HERE, "..", ".."))
 sys.path.insert(0, os.path.join(REPO, "client", "tools"))
-import gen_theme_art as gta  # noqa: E402  (the client theme generator: palette, noise, glyph badges, logo)
+import gen_theme_art as gta  # noqa: E402  (the client theme generator: palette, noise, glyph badges)
+import gen_login_art as login_art  # noqa: E402  (the login screen generator: the wordmark and its letters)
 
 CLIENT_IMG = os.path.join(REPO, "client", "overlay", "data", "images", "chaos")
 OUT_THEME = os.path.join(REPO, "website", "overlay", "layouts", "chaos", "assets", "img")
@@ -254,8 +256,11 @@ def divider(img, cx, y, half):
 
 
 def chaos_word(height):
-    """The client's CHAOS logo (gen_theme_art.make_logo), trimmed, scaled to a height."""
-    lg = gta.make_logo()
+    """The client's "Cinders of Chaos" wordmark (gen_login_art.make_wordmark, with its crack glow at 60% as the login
+    screen shows it), trimmed, scaled to a height."""
+    lg, hot = login_art.make_wordmark()
+    hot.putalpha(hot.getchannel("A").point(lambda v: int(v * 0.6)))
+    lg.alpha_composite(hot)
     box = lg.getchannel("A").point(lambda v: 255 if v > 24 else 0).getbbox()
     lg = lg.crop(box)
     s = height / lg.height
@@ -345,15 +350,14 @@ def gen_classes():
 
 # ---------------------------------------------------------------- site theme
 def make_wordmark(width):
-    """'PROJECT' over the client's CHAOS logo, the tagline under it (transparent)."""
+    """The client's "Cinders of Chaos" wordmark, the tagline under it (transparent)."""
     H = int(width * 0.47)
     img = Image.new("RGBA", (width, H), (0, 0, 0, 0))
-    w = word(int(H * 0.56))
+    w = word(int(H * 0.74))
     if w.width > width * 0.94:
         w = w.resize((int(width * 0.94), int(w.height * width * 0.94 / w.width)), Image.LANCZOS)
-    top = int(H * 0.2)
+    top = int(H * 0.02)
     img.alpha_composite(w, ((width - w.width) // 2, top))
-    gold_text(img, (width // 2, int(H * 0.12)), "PROJECT", font(int(H * 0.115)), anchor="mm", spacing=int(H * 0.05), glow=0.35)
     y = top + w.height + int(H * 0.025)
     divider(img, width // 2, y, int(width * 0.3))
     plain_text(img, (width // 2, y + int(H * 0.085)), TAGLINE, font(max(11, int(H * 0.06)), "italic"), fill=TEXT, anchor="mm")
@@ -394,8 +398,7 @@ def seamless(img):
 
 
 def glyph_letter_c(g):
-    L = gta.letter_masks()
-    fn, _ = L["C"]
+    fn, _ = login_art.glyphs()["C"]
     k = gta.U * 0.36
     fn(g.d, 32 * gta.U, 27 * gta.U, k)
 
@@ -457,9 +460,8 @@ def gen_otlist():
     d.rectangle([0, 0, W - 1, H - 1], outline=BLACK + (255,), width=1)
     d.rectangle([1, 1, W - 2, H - 2], outline=GOLD_1 + (255,), width=1)
     d.rectangle([2, 2, W - 3, H - 3], outline=BLOOD_1 + (255,), width=1)
-    w = word(40)
-    img.alpha_composite(w, (12, 8))
-    gold_text(img, (12 + w.width // 2, 54), "PROJECT", font(9), anchor="mb", spacing=3, shadow=False)
+    w = word(52)
+    img.alpha_composite(w, (12, (H - w.height) // 2))
     tx = 12 + w.width + 14
     plain_text(img, (tx, 19), "Dark fantasy  |  10.98  |  own client", font(13, "display"), fill=GOLD_3, anchor="lm")
     plain_text(img, (tx, 40), "4 classes, 8 ascensions, rifts, seasons", font(12, "text"), fill=TEXT, anchor="lm")
@@ -473,7 +475,7 @@ def gen_otlist():
     img = backdrop(W, H, focus_y=0.4, dark=0.55, seed=7)
     d = ImageDraw.Draw(img)
     d.rectangle([0, 0, W - 1, H - 1], outline=GOLD_1 + (255,))
-    w = word(19)
+    w = word(21)
     if w.width > 60:
         w = w.resize((60, int(w.height * 60 / w.width)), Image.LANCZOS)
     img.alpha_composite(w, ((W - w.width) // 2, 2))

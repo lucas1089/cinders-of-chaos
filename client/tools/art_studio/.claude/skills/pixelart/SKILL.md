@@ -1,6 +1,6 @@
 ---
 name: pixelart
-description: Writes a ready-to-paste PixelLab PROMPT (no API call, no token, no balance spent) for an item, a coherent item set, a creature concept or a map object in Tibia's 45 degree oblique perspective (top surface + front face), top-left light, dark outline, grimdark by default (Project Chaos is dark fantasy). The user pastes it into the PixelLab website themselves. Use when the user asks for "a prompt", "a PixelLab prompt", wants to generate art on the website by hand, or runs /pixelart.
+description: Writes a ready-to-paste PixelLab PROMPT (no API call, no token, no balance spent) for an item, a coherent item set, a creature concept or a map object in Tibia's 45 degree oblique perspective (top surface + front face), top-left light, dark outline, grimdark by default (Cinders of Chaos is dark fantasy). The user pastes it into the PixelLab website themselves. Use when the user asks for "a prompt", "a PixelLab prompt", wants to generate art on the website by hand, or runs /pixelart.
 argument-hint: "[what to draw; size 32/64/96/128; how many; theme]"
 ---
 
@@ -35,7 +35,7 @@ use `/item-sheet` (items) or `/creature` (a game creature); for a ground, `/floo
 `faded engravings`, `tarnished metal`, `chipped enamel`, `hairline cracks revealing inner glow`, `characterful
 design`, `angled top-down view at 45 degrees` (an alternative to the primary perspective line).
 
-**The setting**: `gritty grimdark dark fantasy` by default (Project Chaos: obsidian, ash, bone, rust, dried blood,
+**The setting**: `gritty grimdark dark fantasy` by default (Cinders of Chaos: obsidian, ash, bone, rust, dried blood,
 crimson and violet glows, cold grave light). Change it only when the user names another theme.
 
 **The style reference** (at least ONE, near the END): `Tibia-style item sprite`, `Tibia-style map object`,

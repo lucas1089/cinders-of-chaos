@@ -13,7 +13,7 @@ future sheet means editing the PIXELLAB BASE PROMPT block below.
   robe laid flat in a square shape, sleeves spread out sideways`); hood and hat `shown empty`; boots `pair of …`; book
   `closed thick book`; wand, staff, long weapon `lying diagonally`.
 - **Tiers (`{TIERS}`)** only when the sheet mixes common and rare. Without tiers, delete the whole paragraph.
-- **Project Chaos (added; the BASE PROMPT block below is unchanged and stays the tested one):** the default theme is
+- **Cinders of Chaos (added; the BASE PROMPT block below is unchanged and stays the tested one):** the default theme is
   grimdark dark fantasy, so `{THEME}` is e.g. `grimdark dark fantasy crafting` and `{TEXTURES}` may take the wear
   words of the `/pixelart` skill (`weathered cracked surfaces, faded engravings, tarnished metal, chipped enamel,
   hairline cracks revealing inner glow`). Never put its poison words in a sheet prompt (`flat icon`, `icon set`,

@@ -1,7 +1,7 @@
 Module
   name: game_pets
   description: Pets window (owned pets, level and XP, abilities, summon / dismiss / rename, how to get the others; extended opcode 254)
-  author: project-chaos
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ petsview, pets ]
   dependencies:

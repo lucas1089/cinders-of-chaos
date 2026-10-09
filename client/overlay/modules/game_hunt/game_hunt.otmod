@@ -1,7 +1,7 @@
 Module
   name: game_hunt
   description: Hunt tracker (session time, exp/h, loot and profit/h, supplies, kills, Chaos drops; extended opcode 241)
-  author: project-chaos
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ huntmath, hunt ]
   dependencies:

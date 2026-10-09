@@ -1,6 +1,6 @@
 <?php
 /**
- * Prints ZnoteX's config.local.php for Project Chaos, built from environment
+ * Prints ZnoteX's config.local.php for Cinders of Chaos, built from environment
  * variables (see website/README.md). Run by website/install_site.sh:
  *
  *   php website/setup/write_config.php > <site>/config.local.php
@@ -122,7 +122,7 @@ $out = "<?php\n"
 	. "\n"
 	. "\$config['ServerEngine'] = 'TFS_10'; // TFS 1.4 based\n"
 	. "\$config['client'] = 1098;\n"
-	. "\$config['site_title'] = 'Project Chaos';\n"
+	. "\$config['site_title'] = 'Cinders of Chaos';\n"
 	. "\$config['site_title_context'] = 'The world was not ended. It was broken, and the pieces still bleed.';\n"
 	. "\$config['site_url'] = " . export(env('CHAOS_SITE_URL', 'http://localhost')) . ";\n"
 	. "\$config['cache']['memory'] = false; // no APCu needed\n"
@@ -147,12 +147,12 @@ $out = "<?php\n"
 	. "\$config['client_download'] = " . export($winUrl) . ";\n"
 	. "\$config['client_download_linux'] = " . export($linuxUrl) . ";\n"
 	. "\$config['downloads']['entries'] = " . export(array(
-		array('key' => 'windows_client', 'label' => 'Windows client', 'section' => 'client', 'enabled' => true, 'url' => $winUrl, 'image' => '', 'description' => 'The Project Chaos client for Windows 10 and 11 (64-bit).'),
-		array('key' => 'linux_client', 'label' => 'Linux client', 'section' => 'client', 'enabled' => true, 'url' => $linuxUrl, 'image' => '', 'description' => 'The Project Chaos client for 64-bit Linux.'),
+		array('key' => 'windows_client', 'label' => 'Windows client', 'section' => 'client', 'enabled' => true, 'url' => $winUrl, 'image' => '', 'description' => 'The Cinders of Chaos client for Windows 10 and 11 (64-bit).'),
+		array('key' => 'linux_client', 'label' => 'Linux client', 'section' => 'client', 'enabled' => true, 'url' => $linuxUrl, 'image' => '', 'description' => 'The Cinders of Chaos client for 64-bit Linux.'),
 	)) . ";\n\n"
 	. "// Outfit images are drawn by an external service; off until the owner picks one he trusts.\n"
 	. "\$config['show_outfits'] = array('shop' => false, 'highscores' => false, 'characterprofile' => false, 'onlinelist' => false, 'imageServer' => '');\n\n"
-	. "// Project Chaos (plugins/chaos)\n"
+	. "// Cinders of Chaos (plugins/chaos)\n"
 	. "\$config['chaos'] = " . export(array(
 		'server_data' => $serverData,
 		'game_host' => env('CHAOS_GAME_HOST'),

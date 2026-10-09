@@ -55,11 +55,11 @@ boosted creature and boss, the event calendar and the players online. `init.lua`
   `g_game.onCraftingSkill(index, level, base, percent)`) and accepts slot 16.
 
 ## Branding
-`base-patches/0014-chaos-branding.patch` renames what the player reads in the base client: window title "Chaos",
+`base-patches/0014-chaos-branding.patch` renames what the player reads in the base client: window title "Cinders of Chaos",
 "Chaos Coins", "Cyclopedia", option help texts, rules and store texts. It also hides the Google sign-in button
 (our login server has none), turns the base client's built-in test servers (Ctrl+Alt+T) into a no-op, fetches
 store offer images only from `Services.storeWidget` when it is set, and replaces the paid-services terms of the
-base client's company with a short Chaos text. Map marker names in the minimap data are left as they are.
+base client's company with a short Cinders of Chaos text. Map marker names in the minimap data are left as they are.
 
 ## No scripting bot
 `base-patches/0015-no-bot-no-cavebot-no-scripts.patch` and `tools/assemble_client.sh` leave the vBot module (`game_bot`, Lua scripts

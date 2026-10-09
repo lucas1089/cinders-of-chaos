@@ -1,5 +1,5 @@
 /*
- * Project Chaos layout: our rules on top of the re-coloured Void stylesheets.
+ * Cinders of Chaos layout: our rules on top of the re-coloured Void stylesheets.
  * website/tools/recolor_layout.py appends this file to the generated contract.css (the last stylesheet the Void
  * shell loads), so it wins over the parent's rules. Image paths are relative to assets/css/.
  * Palette: client/tools/gen_theme_art.py (IRON_*, BLOOD_*, GOLD_*) and the client's .otui text colours.
@@ -173,7 +173,7 @@ html.sn-anim .sh-logo-img { animation: chaosLogo 7s ease-in-out infinite; }
 .sh-copyright, .sh-copyright a { color: var(--c-muted) !important; }
 .sn-glow { background: radial-gradient(circle, rgba(224,58,30,.18), transparent 70%) !important; }
 
-/* ---------------------------------------------------------------- Project Chaos pages */
+/* ---------------------------------------------------------------- Cinders of Chaos pages */
 .chaos-page { display: flex; flex-direction: column; gap: 26px; }
 .chaos-box { padding: 22px 26px !important; }
 .chaos-page h1, .chaos-page h2, .chaos-page h3 { color: var(--c-gold3); }

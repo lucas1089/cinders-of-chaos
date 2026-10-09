@@ -8,7 +8,7 @@ chosen and why, and every mistake that cost a round. A new rule that holds for e
 Set up from `PIXEL-ART-STUDIO.md` section 4 into `client/tools/art_studio/`; the section 6 files were extracted byte
 for byte from the guide. The no-token test passed (beetle: 23x25 / 23x23 / 23x24 / 25x23 px, "idle frame 1 vs the
 painting: 4 px differ" north and south) and was deleted. No PixelLab token yet: nothing was generated or spent.
-`out/` is gitignored. Added: the `/pixelart` skill (prompts for the website, grimdark by default) and a Project Chaos
+`out/` is gitignored. Added: the `/pixelart` skill (prompts for the website, grimdark by default) and a Cinders of Chaos
 note in the item-sheet base instructions.
 
 ## Floors: cracked_obsidian, ash_stone, blood_moss + border blood_moss -> ash_stone (2026-10-09)

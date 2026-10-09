@@ -1,4 +1,4 @@
-# Project Chaos roadmap
+# Cinders of Chaos roadmap
 
 Priority order agreed with the project owner. Update the status here when something is started or done.
 Status: `todo`, `in progress`, `done`.

@@ -1,7 +1,7 @@
 Module
   name: game_nameplate
   description: Name plates over players - title, guild and a framed name (extended opcode 248)
-  author: project-chaos
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ nameplatemath, nameplate ]
   dependencies:

@@ -1,4 +1,4 @@
-# Chaos server scripts (TFS 1.4.2, the base server style)
+# Cinders of Chaos server scripts (TFS 1.4.2, the base server style)
 
 Server side for the client modules in `client/overlay/modules/`. One revscript per module,
 each registering a `login` CreatureEvent plus an `extendedopcode` CreatureEvent (same pattern as
@@ -2385,7 +2385,7 @@ as ordinary speech with the link text in it.
 
 **Wire format.** One link in a message is `[Item Name]{<r><id>}`: `r` is the rarity as one hex digit (`0` normal .. `f` = 15)
 or `u` for a unique, `id` is 9 characters `a-z0-9`. ASCII only (the Tibia chat is Latin-1), so other clients just show
-`[Magic sword]{4k7f2m9qax}`; Chaos clients draw `[Magic sword]` in the rarity colour and keep the rest hidden. The
+`[Magic sword]{4k7f2m9qax}`; Cinders of Chaos clients draw `[Magic sword]` in the rarity colour and keep the rest hidden. The
 text of a link is made by the server (`ChaosItemLink.token`): the name has no brackets or braces, a capital first letter and
 at most 40 characters. At most 3 links in a message (the client counts chips, the format allows more but the client draws
 only 3); a message with its links written out must fit in 250 characters.

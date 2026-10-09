@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install everything of Project Chaos into a stock base server folder, in the order of server/README.md "Install".
+"""Install everything of Cinders of Chaos into a stock base server folder, in the order of server/README.md "Install".
 
 usage: python3 -I server/tools/install_all.py SERVER_DIR [--dry-run] [--no-sql] [--skip STEP,...] [--only STEP,...]
                                               [--db NAME] [--db-host HOST] [--db-port PORT] [--db-user USER]
@@ -525,7 +525,7 @@ def main(argv):
         data = os.path.join(target, 'data')
         ctx = {'dry': dry, 'no_sql': bool(args.get('--no-sql')), 'tmp': tmp, 'mysql': args.get('--mysql', 'mysql'),
                'db': db_settings(server, args)}
-        say('Project Chaos install%s' % (' (DRY RUN on a temporary copy; nothing is changed)' if dry else ''))
+        say('Cinders of Chaos install%s' % (' (DRY RUN on a temporary copy; nothing is changed)' if dry else ''))
         say('  server:   %s' % server)
         say('  repo:     %s' % REPO_SERVER)
         say('  steps:    %s' % ', '.join(steps))

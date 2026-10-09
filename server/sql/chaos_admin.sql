@@ -1,4 +1,4 @@
--- Project Chaos admin panel: audit log of every admin action (allowed, failed and denied).
+-- Cinders of Chaos admin panel: audit log of every admin action (allowed, failed and denied).
 CREATE TABLE IF NOT EXISTS `chaos_admin_log` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `created_at` int unsigned NOT NULL,

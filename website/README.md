@@ -1,6 +1,6 @@
-# Project Chaos website
+# Cinders of Chaos website
 
-The account site of Project Chaos: accounts, character creation with the classes and the class lock, highscores,
+The account site of Cinders of Chaos: accounts, character creation with the classes and the class lock, highscores,
 leaderboards, patch notes, seasons, server info, rules and downloads. It is [ZnoteX](https://github.com/Open-Games-Community/ZnoteX)
 (a PHP account manager for TFS servers) with our own layout and plugin on top. ZnoteX itself is never copied into this
 repository: the installer clones it at a pinned commit and lays our files over it.
@@ -44,7 +44,7 @@ What it does, in order:
 3. **Our overlay** (`overlay/`) is copied over the checkout; `layouts/chaos/` and `plugins/chaos/` are replaced as a
    whole, so nothing else of ZnoteX is touched. `tools/recolor_layout.py` then writes the re-coloured stylesheets.
 4. **`config.local.php`** (mode 600; ZnoteX reads it after its own `config.php`) is written from the environment:
-   database, site title "Project Chaos", site URL, admin accounts, the classes, the towns, new characters, the
+   database, site title "Cinders of Chaos", site URL, admin accounts, the classes, the towns, new characters, the
    download links and our plugin's settings. Credentials only ever live there and in the env files, never here.
    The web installer of ZnoteX is locked (`install/installed.lock`).
 5. **The database**, with `setup/chaos_setup.php`: ZnoteX's `znote_*` tables (`CREATE TABLE IF NOT EXISTS`, seed rows

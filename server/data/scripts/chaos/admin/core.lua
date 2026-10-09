@@ -1,4 +1,4 @@
--- Project Chaos admin panel: core (registry, permission checks, audit log, opcode dispatch).
+-- Cinders of Chaos admin panel: core (registry, permission checks, audit log, opcode dispatch).
 -- Action files (actions_*.lua) only append definitions to the global ChaosAdminPending table, so the
 -- load order of files inside this directory does not matter.
 --

@@ -1,5 +1,5 @@
-Project Chaos - Windows test package
-====================================
+Cinders of Chaos - Windows test package
+=======================================
 
 Runs the server and the client on your own computer.
 
@@ -22,7 +22,7 @@ Map editor
 
 Folders
   server\     the game server (ChaosServer.exe, config.lua, data\, the map)
-  client\     the Chaos client (Chaos.exe; data\things\1098 holds the Chaos Tibia.dat and Tibia.spr)
+  client\     the Cinders of Chaos client (Chaos.exe; data\things\1098 holds the Chaos Tibia.dat and Tibia.spr)
   mapeditor\  the map editor (open-map-editor.bat)
   mariadb\    portable MariaDB (nothing is installed on Windows)
   database\   made at the first start: the game database. Delete it (with the server and database stopped)

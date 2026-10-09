@@ -1,7 +1,7 @@
 Module
   name: game_season
   description: Seasons window (season, time left, account reward track, join; extended opcode 246)
-  author: project-chaos
+  author: Cinders of Chaos
   sandboxed: true
   scripts: [ season ]
   dependencies:

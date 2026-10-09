@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ornate dark-fantasy UI skin for the Chaos client (procedural, original art).
+"""Ornate dark-fantasy UI skin for the Cinders of Chaos client (procedural, original art).
 
 usage: python3 client/tools/gen_skin.py [--base <base-client-dir>] [group ...]
 

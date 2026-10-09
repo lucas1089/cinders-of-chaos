@@ -1,6 +1,6 @@
 <?php
 /**
- * Highscores with the Project Chaos classes.
+ * Highscores with the Cinders of Chaos classes.
  *
  * Prepared by highscores.php: $vocGroups, $vocation ('all' or a class id), $type, $page, $highscore,
  * $configVocations, $loadFlags, $loadOutfits. Each class is its own group (config: fromVoc false), and the class
