@@ -3202,9 +3202,14 @@ is in `pets_config.lua`; the pure rules in `pets_core.lua`.
   summon is out and back after it; banned zone (arena check forced on): pet sent home and "Pets are not allowed here (the
   arena)"; leash after a teleport; owner death: pet gone, "still recovering from your death: 34 s" after the respawn;
   store purchase (400 coins taken, pet owned, second purchase refused); achievement pet (Ash Cat after `bounty_25`);
-  logout and server restart: name, XP and the pet that was out come back. **Not tested in game:** the protection-zone
+  logout and server restart: name, XP and the pet that was out come back. Passable (server built from the base source
+  with patches 0001-0005, two clients): the owner steps onto the pet's tile in all 8 directions, and so does a second
+  player; right after a teleport and return with the pet on the east tile, 5 of 5 steps east go through; a Fire
+  Elemental and a Dragon Lord (pushes creatures) in a 1-wide corridor path through the pet (the path is computed through
+  its tile), share its tile for a step and reach the owner at the dead end, the pet untouched; following and the leash
+  still work; attacking the pet from either client is refused. **Not tested in game:** the protection-zone
   rest (the test map has no protection-zone tile; same code path as the other rests), PvP
-  pause, the rift / tower / world boss / dungeon utility rule, two players. The stock loot message ("Loot of ...") is
+  pause, the rift / tower / world boss / dungeon utility rule. The stock loot message ("Loot of ...") is
   written before Fetch runs, so it still lists the coins the pet carried to the bank.
 
 ## Bestiary and kill tasks (`bestiary.lua`, `bestiary_core.lua`, `bestiary_config.lua`, `bestiary_spawns.lua`, client `game_bestiary`)
