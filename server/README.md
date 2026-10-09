@@ -65,6 +65,9 @@ server/
                                       (off by default; tools/patch_base_events.py --enable-spell-events)
   src-patches/0009-locked-items-never-sold.patch   engine: locked items (`chaos_locked`) are never sold, taken by id,
                                       put on the market or thrown into a trash holder (see "Salvage", "The item lock")
+  src-patches/0010-lua-register-keeps-script-object.patch   engine: `:register()` of a Lua-created Action / TalkAction /
+                                      CreatureEvent / MoveEvent / GlobalEvent / Spell no longer frees the object the script
+                                      still holds (use-after-free on every later method call, e.g. `spell:name()`)
   src-patches/0011-attack-speed-cap.patch   engine: attack interval floor, cap on all attack speed bonuses together,
                                       life / mana leech at most once per 900 ms each (see "Attack speed cap")
     item_tooltip.lua  item_tooltip_core.lua (rich item tooltips with the equipped-item compare, client game_itemtooltip)
@@ -555,6 +558,14 @@ the script runs), `onSpellPreCast` for casting restrictions (return `false`), an
 for a future "costs health instead of mana" modifier. Spell id and name come straight from the engine, so `spells.xml` does not have to be parsed
 (`spellsByScript`). One `ChaosSpellEvents` table is shared by everything that wants a hook: it holds one function per
 event and chains the callers itself.
+
+
+**Lua objects after `:register()` (0010).** The register functions of Action, TalkAction, CreatureEvent, MoveEvent,
+GlobalEvent and Spell passed the script's own object to the engine, which owns and deletes it, so the Lua variable
+dangled: `action:clearItemIdRange()` inside the engine's own register call, a second `moveevent:type(...)` for the next
+registration, or `spell:name()` after `spell:register()` read and wrote freed memory (18 AddressSanitizer reports per
+script load; arbitrary crashes when the block had been reused, e.g. after a `/lua` test that created a Spell). The engine
+now registers a copy and leaves the script's object alone. Scripts need no change.
 
 ## Passive tree points
 
