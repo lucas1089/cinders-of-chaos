@@ -14,7 +14,7 @@ It also adds two widget helpers some modules expect and this engine lacks: `UIWi
 | `../tools/gen_theme_art.py` | Icons, logo and login background: `python3 -I client/tools/gen_theme_art.py [icons] [logo] [background]` |
 | `../tools/gen_skin.py` | Frames, controls, ornaments, HUD and in-place stock images: `python3 client/tools/gen_skin.py --base <base-client-dir>` |
 
-`client/tools/assemble_client.sh` copies the overlay into the client; the login background and logo are plain images (`data/images/title.png`, `data/images/ui/logo.png`) used by the stock `client_background`.
+`client/tools/assemble_client.sh` copies the overlay into the client; the login background and logo are plain images (`data/images/title.png`, `data/images/ui/logo.png`) used by the stock `client_background`. The login screen layout is the module `client_chaos_login` (art: `client/tools/gen_login_art.py`, `data/images/title.png` and `data/images/chaos/login/`).
 
 ## Styles (styles.otui)
 
@@ -59,7 +59,7 @@ updating the base client; files not in that list are our own art and are never o
 Category buttons at the top of the game window: Character, Hunt, Adventure, Economy, Social, System and Admin (admins only).
 Each opens a drop-down of at most ten entries; rarely used windows sit in a "More" sub-menu at the end of the drop-down
 (System has a "Developer" one for the console and the DAT offset studio). The most used windows have hotkeys shown beside
-the entry and bound while in game: Alt+L Spellbook, Alt+P Passive Tree, Alt+H Hunt Tracker, Alt+B Bestiary, Alt+J
+the entry and bound while in game: Alt+S Spellbook, Alt+P Passive Tree, Alt+H Hunt Tracker, Alt+B Bestiary, Alt+J
 Dungeons, Alt+C Crafting Bench, Alt+G Guild. It replaces the icon grid of the stock `game_sidebuttons` window, which is
 closed on login, and the stock top strip of `client_topmenu`. An entry is listed only when its module is loaded and exposes
 a known call (`toggle`, `vipToggle`, ...); calls are `pcall`-guarded, so a missing module never breaks the menu. A base

@@ -1,0 +1,14 @@
+Module
+  name: client_chaos_login
+  description: Chaos login screen (full-screen gothic scene, logo, framed sign-in panel with rune medallions, press-any-key splash, status and version corners)
+  author: project-chaos
+  sandboxed: true
+  scripts: [ login ]
+  dependencies:
+    - client_chaos_theme
+    - client_entergame
+    - client_background
+  autoload: true
+  autoload-priority: 1100
+  @onLoad: init()
+  @onUnload: terminate()

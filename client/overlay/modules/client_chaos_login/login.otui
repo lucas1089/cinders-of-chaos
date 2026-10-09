@@ -1,0 +1,73 @@
+// Styles of the login screen (art: client/tools/gen_login_art.py -> data/images/chaos/login/)
+
+ChaosLoginButton < UIButton
+  size: 140 26
+  font: verdana-11px-rounded
+  color: #cdbfa6
+  text-offset: 0 0
+  image-source: /images/chaos/login/btn_normal
+  image-border: 9
+  change-cursor-image: true
+  cursor: pointer
+
+  $hover !pressed !disabled:
+    image-source: /images/chaos/login/btn_hover
+    color: #f3dcae
+
+  $pressed:
+    image-source: /images/chaos/login/btn_pressed
+    color: #b98866
+    text-offset: 0 1
+
+  $disabled:
+    image-source: /images/chaos/login/btn_disabled
+    color: #6b6258
+    change-cursor-image: false
+
+ChaosLoginButtonRed < ChaosLoginButton
+  image-source: /images/chaos/login/btn_red_normal
+  color: #ecc9b4
+
+  $hover !pressed !disabled:
+    image-source: /images/chaos/login/btn_red_hover
+    color: #ffe3c4
+
+  $pressed:
+    image-source: /images/chaos/login/btn_red_pressed
+    color: #c79678
+    text-offset: 0 1
+
+ChaosLoginLabel < UILabel
+  font: verdana-9px-bold
+  color: #a39379
+  text-align: center
+  phantom: true
+
+ChaosLoginCorner < UILabel
+  font: verdana-11px-rounded
+  color: #a89880
+  text-auto-resize: true
+  phantom: true
+
+ChaosLoginLink < UILabel
+  font: verdana-9px-rounded
+  color: #8d7d68
+  text-align: center
+  cursor: pointer
+  change-cursor-image: true
+
+  $hover:
+    color: #e0b36a
+
+ChaosLoginPress < UIWidget
+  size: 460 54
+  image-source: /images/chaos/login/presskey
+  phantom: true
+
+  UILabel
+    id: text
+    anchors.centerIn: parent
+    font: sans-bold-16px
+    color: #e6d6b8
+    text-auto-resize: true
+    phantom: true
