@@ -884,7 +884,7 @@ function finish(pid, how, text)
 				lines[#lines + 1] = "Cleared again: +" .. out.tokens .. " Trial Token" .. (out.tokens == 1 and "" or "s") .. "."
 			end
 			if out.gold > 0 then
-				lines[#lines + 1] = string.format("%d gold coins to your bank, %d Chaos Orb(s), %d Divine Orb(s)%s.", out.gold, out.chaos,
+				lines[#lines + 1] = string.format("%d gold coins to your bank, %d Orb(s) of Upheaval, %d Orb(s) of Fate%s.", out.gold, out.chaos,
 					out.divine, out.inbox and " (some in your inbox)" or "")
 			elseif not out.first then
 				lines[#lines + 1] = "The weekly repeat rewards are used up; the token is yours."

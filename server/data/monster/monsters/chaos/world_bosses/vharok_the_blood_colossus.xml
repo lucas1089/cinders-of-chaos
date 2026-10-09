@@ -71,8 +71,8 @@
 	</voices>
 	<loot>
 		<item id="2160" countmax="75" chance="100000" /><!-- crystal coin -->
-		<item id="29856" countmax="15" chance="100000" /><!-- Chaos Orb -->
-		<item id="29857" countmax="7" chance="90000" /><!-- Divine Orb -->
+		<item id="29856" countmax="15" chance="100000" /><!-- Orb of Upheaval -->
+		<item id="29857" countmax="7" chance="90000" /><!-- Orb of Fate -->
 		<item id="29879" chance="6000" /><!-- Dawnforged Plate -->
 		<item id="29886" chance="5000" /><!-- Dawnforged Great Axe -->
 		<item id="29888" chance="5000" /><!-- Dawnforged Skull Crusher -->

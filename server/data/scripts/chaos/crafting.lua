@@ -10,10 +10,16 @@
 --
 -- Protocol (JSON {action, data}):
 --   client -> server  open | select {path, id} | select {pos = {x, y, z}, clientId} (dragged from a container) |
---                     apply {orb, path, id, sig} | gem {op = "remove"|"shatter", socket, path, id, sig} | clear
---   server -> client  state {open, orbs = [{key, id, clientId, name, text, keyText, count}], item = {path, clientId,
---                            name, kind ("riftkey" for a key), rarity, rarityName, level, mods = [{group, text}], maxMods,
---                            rewards (keys), unique, orbs = {key -> ""|why}, preview = {key -> text},
+--                     apply {orb, path, id, sig, mod} (mod = the attribute key of the modifier the orb is aimed at: Binding,
+--                     Excision, Reforging; none = a random one) | gem {op = "remove"|"shatter", socket, path, id, sig} | clear
+--   server -> client  info {orbs = [{key, id, clientId, name, text, keyText}], reasons = {code -> text}}   sent when the bench
+--                            opens (an extended opcode message above 8192 bytes is dropped by the engine, so what never
+--                            changes is sent once)
+--                     state {open, counts = {orb key -> how many the player has}, item = {path, clientId,
+--                            name, kind ("riftkey" for a key), rarity, rarityName, level, mods = [{group, key, text, tier, side,
+--                            lo, hi, bound, power}], maxMods, quality, qualityCap, ruined, binds = {n, max}, pick = {orb key
+--                            -> [modifier keys it may be aimed at]}, rewards (keys), unique, orbs = {key -> ""|reason code},
+--                            preview = {key -> text},
 --                            sockets = {count, max, list = [{index, id, clientId, name, text, color, cost}]}, sig} | nil,
 --                            items = [{path, id, clientId, name, rarity, rarityName, unique, key}],
 --                            history = [{time, orb, item, text}]}
@@ -120,7 +126,7 @@ local function history(player)
 		{{"created_at", "n"}, {"orb", "s"}, {"item", "s"}, {"result", "s"}})
 	local out = {}
 	for _, r in ipairs(rows) do
-		out[#out + 1] = {time = r.created_at, orb = r.orb, item = r.item, text = r.result}
+		out[#out + 1] = {time = r.created_at, orb = r.orb, item = r.item, text = (r.result or ""):sub(1, 110)}
 	end
 	return out
 end
@@ -137,13 +143,25 @@ function ChaosCraftingLog(player, what, itemName, text)
 end
 
 -- ---------------------------------------------------------------- state
-local function orbList(player)
+-- An extended opcode message above 8192 bytes is dropped by the engine (NetworkMessage::addString), so the bench sends what
+-- never changes once ("info": the orbs with their texts, the reason texts) when it opens, and every state carries only
+-- counts, reason codes and the item. sendState also trims the lists until the JSON fits (STATE_LIMIT).
+local STATE_LIMIT = 7600
+local function orbCounts(player)
 	local out = {}
 	for _, orb in ipairs(cfg.orbs) do
-		out[#out + 1] = {key = orb.key, id = orb.id, clientId = clientIdOf(orb.id), name = orb.name, text = orb.text,
-			keyText = orb.keyText, count = player:getItemCount(orb.id)}
+		out[orb.key] = player:getItemCount(orb.id)
 	end
 	return out
+end
+
+local function sendInfo(player)
+	local orbs = {}
+	for _, orb in ipairs(cfg.orbs) do
+		orbs[#orbs + 1] = {key = orb.key, id = orb.id, clientId = clientIdOf(orb.id), name = orb.name, text = orb.text,
+			keyText = orb.keyText}
+	end
+	Chaos.send(player, OPCODE, "info", {orbs = orbs, reasons = C.reasons})
 end
 
 -- gear and Rift Keys
@@ -169,13 +187,16 @@ end
 
 local function sendState(player, open)
 	local pid = player:getId()
-	local data = {open = open and true or false, orbs = orbList(player), items = itemList(player),
+	if open then
+		sendInfo(player)
+	end
+	local data = {open = open and true or false, counts = orbCounts(player), items = itemList(player),
 		history = history(player)}
 	local sel = selected[pid]
 	if sel then
 		local item = itemAt(player, sel.path)
 		if item and item:getId() == sel.id and craftable(item) then
-			local view = C.describe(item)
+			local view = C.describe(item, {codes = true})
 			view.path = sel.path
 			view.clientId = clientIdOf(item:getId())
 			data.item = view
@@ -185,6 +206,16 @@ local function sendState(player, open)
 	end
 	if ChaosSalvage and ChaosSalvage.benchState then
 		ChaosSalvage.benchState(player, data) -- salvage.lua: shards, recipes, lock marks, the "salvage all" preview
+	end
+	-- keep the message under the engine's string limit: history first, then the end of the item list
+	while #json.encode({action = "state", data = data}) > STATE_LIMIT do
+		if #data.history > 0 then
+			data.history = {}
+		elseif #data.items > 8 then
+			table.remove(data.items)
+		else
+			break
+		end
 	end
 	Chaos.send(player, OPCODE, "state", data)
 end
@@ -215,7 +246,7 @@ end
 
 -- apply orbKey to item for player; orbItem = the used orb (use-with) or nil (bench: take one from the player).
 -- returns ok, text, newItem
-local function craft(player, orbKey, item, orbItem)
+local function craft(player, orbKey, item, orbItem, opts)
 	local orb = C.orbByKey[orbKey]
 	if not orb then
 		return false, C.reasons.unknownOrb
@@ -227,7 +258,7 @@ local function craft(player, orbKey, item, orbItem)
 		return false, string.format("You have no %s.", orb.name)
 	end
 	local name = C.itemName(item)
-	local ok, res = C.apply(orbKey, item)
+	local ok, res = C.apply(orbKey, item, opts)
 	if not ok then
 		return false, res
 	end
@@ -238,7 +269,8 @@ local function craft(player, orbKey, item, orbItem)
 	end
 	logCraft(player, orb, name, res.text)
 	local pos = player:getPosition()
-	pos:sendMagicEffect((orbKey == "annulment" or orbKey == "scouring") and CONST_ME_MAGIC_RED or CONST_ME_MAGIC_GREEN)
+	local red = orbKey == "annulment" or orbKey == "scouring" or orbKey == "excision" or res.outcome == "ruin"
+	pos:sendMagicEffect(red and CONST_ME_MAGIC_RED or CONST_ME_MAGIC_GREEN)
 	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s: %s", orb.name, res.text))
 	return true, res.text, res.item
 end
@@ -323,7 +355,11 @@ local function apply(player, data)
 		sendState(player, false)
 		return
 	end
-	local ok, text, newItem = craft(player, orbKey, item)
+	local opts
+	if type(data.mod) == "string" and #data.mod <= 64 and data.mod:match("^[%w_%.]+$") then
+		opts = {mod = data.mod}
+	end
+	local ok, text, newItem = craft(player, orbKey, item, nil, opts)
 	if ok and newItem then
 		local path = pathOf(player, newItem)
 		selected[pid] = path and {path = path, id = newItem:getId()} or nil
@@ -392,10 +428,11 @@ logout:register()
 
 
 -- ---------------------------------------------------------------- use-with on every orb
--- All eight orbs (the seven crafting orbs and the Orb of Sockets) are "use with" items: "Use with" on the orb, then
--- click the item (or the Rift Key) in the backpack.
--- The Orb of Transmutation and the Exalted Orb are made use-with by server/tools/install_crafting.py (items.otb flag
--- "useable") and client/tools/sprites/set_multiuse.py (the client dat's multi-use flag). The Chaos and Divine Orbs are
+-- Every orb (the seven crafting orbs, the Orb of Sockets and the orbs v2 of data/lib/chaos_orbs.lua) is a "use with"
+-- item: "Use with" on the orb, then click the item (or the Rift Key) in the backpack. An orb that is aimed at one
+-- modifier (Binding, Excision, Reforging) takes a random one that way; the bench lets you choose.
+-- The Orb of Awakening and the Orb of Grafting are made use-with by server/tools/install_crafting.py (items.otb flag
+-- "useable") and client/tools/sprites/set_multiuse.py (the client dat's multi-use flag). The Orbs of Upheaval and Fate are
 -- registered here too, so they follow the same rules and logging (crafting.lua loads before the base server's
 -- customs/rarity/reroll_rarity_stats.lua; install_crafting.py makes that script skip its own registration).
 -- Using an orb without a target (a plain "use", e.g. from a hotkey) only explains how to use it.

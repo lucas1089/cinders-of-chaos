@@ -184,7 +184,7 @@ return {
 		{level = 200, orbs = 5, potions = {
 			melee = {{8473, 50}}, ranged = {{26030, 50}}, caster = {{26029, 50}}, thief = {{7618, 150}, {7620, 50}}}}
 	},
-	orbId = 29856, -- Chaos Orb
+	orbId = 29856, -- Orb of Upheaval
 
 	-- ------------------------------------------------------------------ welcome (one time, after the kit)
 	welcome = {
@@ -194,7 +194,7 @@ return {
 			"Your starter kit is in your backpack. Next steps:\n" ..
 			"- Character > Spellbook (Alt+S): every spell of your class and what it does.\n" ..
 			"- The passive tree (top menu, Character): a point every 4 levels past level 8.\n" ..
-			"- Adventure > Bounty Board: daily contracts that pay gold and Chaos Orbs.\n" ..
+			"- Adventure > Bounty Board: daily contracts that pay gold and Orbs of Upheaval.\n" ..
 			"- The store (top menu, Economy): temple scrolls, stamina and services.\n" ..
 			"- The top menu holds every Chaos window: dungeons, the tower, dailies, bank and stash.\n\n" ..
 			"Gifts wait for you at levels 20, 50, 100 and 200.",
@@ -209,7 +209,7 @@ return {
 		stage = 2, -- tutorial: 1..5 = station in progress, 100 = finished, 101 = skipped
 		done = 3, -- tutorial: bit (station - 1) set when that station's task is done
 		kills = 4, -- tutorial station 1: kills so far
-		orbBase = 5, -- tutorial station 4: Chaos Orbs owned after the orb was handed out
+		orbBase = 5, -- tutorial station 4: Orbs of Upheaval owned after the orb was handed out
 		flags = 6, -- tutorial bits: 1 spellbook opened, 2 spell cast, 4 passive point given, 8 orb given, 16 mana topped up
 		milestone = 10 -- + index into milestones (10 .. 19)
 	},
@@ -250,7 +250,7 @@ return {
 			ranger = {name = "Arcane Stitch", words = "saen tin", mana = 6},
 			mystic = {name = "Arcane Stitch", words = "saen tin", mana = 6}
 		},
-		-- station 4: the Chaos Orb and the item it is used on (a Common = rarity 1 leather armor)
+		-- station 4: the Orb of Upheaval and the item it is used on (a Common = rarity 1 leather armor)
 		orbItem = {id = 2467, rarity = 1},
 
 		lessons = {
@@ -273,11 +273,11 @@ return {
 					"Task: you get one free point now. Open the tree, click a node next to the centre and press Apply Points.",
 				toast = "Station 3: spend your free passive point (Apply Points)."},
 			{title = "Station 4: Orbs and crafting",
-				text = "Monsters drop orbs. A Chaos Orb rerolls the modifiers of an item with a rarity, a Divine Orb rolls " ..
+				text = "Monsters drop orbs. An Orb of Upheaval rerolls the modifiers of an item with a rarity, an Orb of Fate rolls " ..
 					"a new rarity, and the other orbs add or remove modifiers.%s\n\n" ..
-					"Task: you got a Chaos Orb and a Common leather armor. Use the orb on the armor (right click the orb, " ..
+					"Task: you got an Orb of Upheaval and a Common leather armor. Use the orb on the armor (right click the orb, " ..
 					"Use with, then click the armor in your backpack).",
-				toast = "Station 4: use the Chaos Orb on the leather armor.",
+				toast = "Station 4: use the Orb of Upheaval on the leather armor.",
 				craftHint = " The crafting bench (Economy > Crafting Bench) shows every orb and what it does."},
 			{title = "Station 5: Keystones, bounties and the store",
 				text = "Keystones are the big nodes at the edge of the passive tree: they change your class (Cleaving Arc, " ..

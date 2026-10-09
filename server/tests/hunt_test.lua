@@ -109,7 +109,7 @@ eq(s.lootValue, gold, "session loot value")
 H.addLoot(s, {["2148:0:0"] = {id = 2148, name = "gold coin", n = 4}}, unit)
 eq(s.loot["2148:0:0"].n, 40, "counts add up")
 eq(s.loot["2148:0:0"].cid, 3031, "client id kept")
-H.addLoot(s, {["29856:0:0"] = {id = 29856, cid = 1, name = "orb of chaos", n = 2, o = true},
+H.addLoot(s, {["29856:0:0"] = {id = 29856, cid = 1, name = "orb of upheaval", n = 2, o = true},
 	["2400:7:0"] = {id = 2400, cid = 2, name = "magic sword", n = 1, r = 7},
 	["2400:0:1"] = {id = 2400, cid = 2, name = "soulreaper", n = 1, u = true}}, unit)
 eq(H.isSpecial(s.loot["29856:0:0"]), true, "orb is a Chaos drop")

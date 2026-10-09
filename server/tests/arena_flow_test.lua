@@ -223,8 +223,8 @@ eq(rb.rating, 980, "B rating -20")
 eq(S.ratingOf(a2:getGuid(), "2v2").wins, 1, "A2 win counted")
 eq(lastSend(a2, "end").delta, 20, "client told the change")
 eq(lastSend(b2, "end").result, "loss", "loser told")
-eq(a1.items[29857], 1, "first win of the day: Divine Orb")
-eq(a1.items[29856], 3, "win + first win Chaos Orbs")
+eq(a1.items[29857], 1, "first win of the day: Orb of Fate")
+eq(a1.items[29856], 3, "win + first win Orbs of Upheaval")
 eq(b1.items[29856], nil, "no reward for a loss")
 local boards = 0
 for _, r in ipairs(records) do if r[1] == "arena2v2" and r[4] == "max" then boards = boards + 1 end end

@@ -56,11 +56,11 @@ eq(V.chanceText(0.1), '0.10%', 'chance small')
 eq(V.pctText(1.5), '1.5%', 'pct fraction')
 eq(V.pctText(2), '2%', 'pct whole')
 
-eq(V.rewardText({ gold = 4000, chaos = 1, exp = 12500, points = 5 }), '4k gold, 1 Chaos Orb, 12.5k exp, 5 points',
+eq(V.rewardText({ gold = 4000, chaos = 1, exp = 12500, points = 5 }), '4k gold, 1 Orb of Upheaval, 12.5k exp, 5 points',
   'reward')
-eq(V.rewardText({ gold = 1200000, chaos = 4, divine = 1 }), '1.2M gold, 4 Chaos Orbs, 1 Divine Orb', 'reward big')
+eq(V.rewardText({ gold = 1200000, chaos = 4, divine = 1 }), '1.2M gold, 4 Orbs of Upheaval, 1 Orb of Fate', 'reward big')
 eq(V.rewardText(nil), '', 'no reward')
-eq(V.rewardShort({ gold = 30000, chaos = 1, divine = 1, exp = 14300, points = 16 }), '30k gold, 1 Chaos, 1 Divine, 14.3k exp, 16 points',
+eq(V.rewardShort({ gold = 30000, chaos = 1, divine = 1, exp = 14300, points = 16 }), '30k gold, 1 Upheaval, 1 Fate, 14.3k exp, 16 points',
   'short reward')
 eq(V.taskText({ kind = 'hunt', label = 'Dragon', required = 150 }), 'Kill 150 Dragons.', 'hunt text')
 eq(V.taskText({ kind = 'hunt', label = 'Cyclops', required = 1 }), 'Kill 1 Cyclops.', 'singular')

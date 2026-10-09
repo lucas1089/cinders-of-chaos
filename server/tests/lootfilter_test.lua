@@ -44,6 +44,7 @@ local tierS = F.sanitize({highlight = 9, tier = 6})
 eq(F.classify({rarity = 2, bestTier = 6, category = "equipment"}, tierS), "highlight", "T6 on Uncommon gear glows")
 eq(F.classify({rarity = 2, bestTier = 5, category = "equipment"}, tierS), "normal", "T5 does not")
 eq(F.classify({rarity = 2, category = "equipment"}, F.sanitize({highlight = 9})), "normal", "rule off")
+eq(F.classify({rarity = 5, power = true, category = "equipment"}, F.sanitize({highlight = 9})), "highlight", "a legendary power always glows")
 for _, p in ipairs(F.PRESETS) do
 	local ps = F.applyPreset(p.key)
 	assert(ps, "preset " .. p.key)
@@ -146,7 +147,7 @@ eq(F.label({name = "gold coin"}), "gold coin", "plain label")
 eq(F.dropLine({name = "Dawnforged Helmet", rarity = 5, category = "equipment"}, hunter), "Rare drop: [Legendary] Dawnforged Helmet",
 	"rare drop line")
 eq(F.dropLine({name = "Sword", rarity = 3, category = "equipment"}, hunter), nil, "below the highlight: no line")
-eq(F.dropLine({name = "Orb of Chaos", orb = true, count = 2, category = "currency"}, hunter), nil, "orbs: no line")
+eq(F.dropLine({name = "Orb of Upheaval", orb = true, count = 2, category = "currency"}, hunter), nil, "orbs: no line")
 eq(F.dropLine({name = "Soulreaper", unique = true, category = "equipment"}, hunter), "Unique drop: [Unique] Soulreaper", "unique line")
 local quiet = F.applyPreset("hunter"); quiet.notify = false
 eq(F.dropLine({name = "X", rarity = 9, category = "equipment"}, quiet), nil, "notify off")

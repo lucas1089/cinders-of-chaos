@@ -223,6 +223,30 @@ eq(tip.req.level, 80) eq(tip.req.voc, "knights") eq(tip.weight, 45)
 eq(tip.desc, nil, "a rolled item's description is its modifiers, not repeated")
 eq(tip.unique, nil) eq(tip.locked, nil)
 
+-- orbs v2 on the tooltip: quality, a bound modifier, a legendary power, the extra slot, a ruined item
+sword:setCustomAttribute("rarity", 5)
+C.addQuality(sword, 7)
+local lokDef = C.affixOf("chaos_mod_lifeonkill")
+sword:setCustomAttribute(M.bindAttr("chaos_mod_lifeonkill"), 1)
+C.writeAffix(sword, C.affixOf(M.attr("deathblast")), 4, 5)
+sword:setCustomAttribute(M.EXTRA, 1)
+sword:setCustomAttribute(M.RUINED, 1)
+tip = T.build(sword)
+eq(tip.quality.q, 7, "item quality") eq(tip.quality.cap, 20)
+eq(tip.ruined, true, "ruined")
+eq(tip.sides.mp, 3, "Legendary: two prefixes, one more from the extra slot") eq(tip.sides.ms, 2)
+local rows = {}
+for _, m in ipairs(tip.mods) do rows[m.k] = m end
+eq(rows.chaos_mod_lifeonkill.bd, true, "a bound modifier") eq(rows.rarity_swordSkill.bd, nil)
+eq(rows.chaos_mod_deathblast.pw, true, "a legendary power") eq(rows.chaos_mod_deathblast.t, "Death Blast: 5% chance on kill to explode")
+eq(rows.chaos_mod_deathblast.sd, "p")
+for _, k in ipairs({"chaos_mod_deathblast", "rarity_swordSkill"}) do
+	eq(rows[k].v, rows[k].v)
+end
+sword:removeCustomAttribute(M.RUINED); sword:removeCustomAttribute(M.EXTRA); sword:removeCustomAttribute(M.QUALITY)
+tip = T.build(sword)
+eq(tip.quality, nil, "no quality") eq(tip.ruined, nil)
+
 -- the attack interval of a two-handed weapon (lower is better)
 local axe = newItem(2431)
 tip = T.build(axe)

@@ -34,6 +34,7 @@
 --   bounty_done, bounty_weeks                                        bounty board (retroactive from chaos_bounty)
 --   bestiary_known, bestiary_completed, bestiary_points, bestiary_tasks   bestiary and kill tasks (bestiary.lua)
 --   unique_found, rarity_max, orbs_used, orb_exalted, mods_max       loot and the crafting bench
+--   orb_binding, ruin_improved, ruin_ruined, quality_max, power_found   orbs v2 and legendary powers (the crafting hook, loot)
 --   arena1v1_wins, arena1v1_rating, arena2v2_wins, arena2v2_rating   arena (retroactive from chaos_arena_ratings)
 --   siege_played, siege_wins                                         guild siege
 --   points                                                           the character's own achievement points
@@ -246,8 +247,19 @@ return {
 			stat = "orbs_used", target = 100, reward = {items = orbs(0, 0, 2)}},
 		{id = "orbs_1000", cat = "items", name = "Master Artificer", desc = "Use 1,000 orbs at the Crafting Bench.", points = 50,
 			stat = "orbs_used", target = 1000, title = "Artificer"},
-		{id = "exalted_25", cat = "items", name = "Exalted Hands", desc = "Use 25 Exalted Orbs.", points = 15, stat = "orb_exalted",
+		{id = "exalted_25", cat = "items", name = "Grafting Hands", desc = "Use 25 Orbs of Grafting.", points = 15, stat = "orb_exalted",
 			target = 25},
+		-- orbs v2 (data/lib/chaos_orbs.lua) and the legendary powers (data/lib/chaos_powers.lua)
+		{id = "orb_binding", cat = "items", name = "Bound by Oath", desc = "Bind a modifier with an Orb of Binding.", points = 10,
+			stat = "orb_binding"},
+		{id = "ruin_improved", cat = "items", name = "Fortune's Favourite", desc = "Improve an item with an Orb of Ruin.",
+			points = 25, stat = "ruin_improved"},
+		{id = "ruin_ruined", cat = "items", name = "Beyond Saving", desc = "Ruin an item with an Orb of Ruin.", points = 10,
+			stat = "ruin_ruined", hidden = true},
+		{id = "quality_20", cat = "items", name = "Honed to an Edge", desc = "Bring an item to 20% quality with Whetstones.",
+			points = 25, stat = "quality_max", target = 20},
+		{id = "power_found", cat = "items", name = "Legend Reborn", desc = "Own an item with a legendary power.", points = 25,
+			stat = "power_found", title = "Powerbearer"},
 		{id = "mods_9", cat = "items", name = "Perfection", desc = "Own an item with 6 modifiers (three prefixes, three suffixes).",
 			points = 50, stat = "mods_max", target = 6},
 

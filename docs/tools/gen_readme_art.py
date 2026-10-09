@@ -727,13 +727,13 @@ def panel_season():
 
 
 ORBS = [  # the crafting bench orbs, as in the README table
-    ("Orb of Transmutation", "normal to Common or Uncommon", hexc("#3f7fe0")),
-    ("Orb of Alchemy", "normal to Rare, Epic or Legendary", hexc("#e0b030")),
-    ("Exalted Orb", "adds one modifier", hexc("#f0e6c8")),
-    ("Orb of Annulment", "removes a random modifier", hexc("#c8d8e8")),
-    ("Orb of Scouring", "back to a normal item", hexc("#9a948c")),
-    ("Chaos Orb", "rerolls, same rarity", hexc("#e03a1e")),
-    ("Divine Orb", "rerolls with a new rarity", hexc("#fff0b8")),
+    ("Orb of Awakening", "normal to Common or Uncommon", hexc("#3f7fe0")),
+    ("Orb of Gilding", "normal to Rare, Epic or Legendary", hexc("#e0b030")),
+    ("Orb of Grafting", "adds one modifier", hexc("#f0e6c8")),
+    ("Orb of Unmaking", "removes a random modifier", hexc("#c8d8e8")),
+    ("Orb of Erasure", "back to a normal item", hexc("#9a948c")),
+    ("Orb of Upheaval", "rerolls, same rarity", hexc("#e03a1e")),
+    ("Orb of Fate", "rerolls with a new rarity", hexc("#fff0b8")),
 ]
 
 

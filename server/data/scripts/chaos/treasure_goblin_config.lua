@@ -47,13 +47,13 @@ return {
 	-- and the outfit shader (data/XML/shaders.xml) tell them apart. `loot` overrides parts of the shared loot table
 	-- below for that variant (only the keys given; gems, socketOrb, shards and orbs exist only there).
 	-- Expected loot per goblin (area level L, no item find):
-	--   Hoarder (70%): gold 2000 + 400 L, 3 Chaos Orbs (+1 per 150 L, at most 10), 25% Divine Orb, 2-4 rolled gear,
+	--   Hoarder (70%): gold 2000 + 400 L, 3 Orbs of Upheaval (+1 per 150 L, at most 10), 25% Orb of Fate, 2-4 rolled gear,
 	--     the unique roll x3 and the hoard roll.
 	--   Gem Goblin (20%): half the gold, 2.5 gems (+1 per 250 L, at most 5; tier by L as monster gem drops, 25% one
 	--     tier better), 1.25 Orbs of Sockets, 1 rolled gear, the unique roll x1. About 2.5 gems at L 100, 3.5 at L 300.
 	--   Shard Goblin (10%): half the gold, rune shards (10 + L/10) x 80-120% (at most 60): about 20 at L 100, 40 at
-	--     L 300; 1.5 Chaos Orbs (+1 per 300 L, at most 4), 1 random crafting orb (the salvage orb weights), 1 rolled
-	--     gear, the unique roll x1. 25 shards make a Chaos Orb at the bench, so a Shard Goblin is worth about the
+	--     L 300; 1.5 Orbs of Upheaval (+1 per 300 L, at most 4), 1 random crafting orb (the salvage orb weights), 1 rolled
+	--     gear, the unique roll x1. 25 shards make an Orb of Upheaval at the bench, so a Shard Goblin is worth about the
 	--     Hoarder's orbs, less its gear.
 	--   Across all goblins: about 0.5 gems and 2 (L 100) to 4 (L 300) rune shards per goblin on average.
 	variants = {
@@ -143,9 +143,9 @@ return {
 	loot = {
 		-- gold value: base + perLevel x area level, then x random(minMult..maxMult)%; paid in crystal/platinum/gold
 		gold = {base = 2000, perLevel = 400, minMult = 80, maxMult = 130},
-		-- Chaos Orbs (Orb of Chaos 29856): count = random(min, max) + floor(area level / perLevels), capped
+		-- Orbs of Upheaval (Orb of Upheaval 29856): count = random(min, max) + floor(area level / perLevels), capped
 		chaosOrb = {id = 29856, min = 2, max = 4, perLevels = 150, cap = 10},
-		-- Divine Orb (29857): chance in percent (x item find), count 1
+		-- Orb of Fate (29857): chance in percent (x item find), count 1
 		divineOrb = {id = 29857, chance = 25},
 		-- guaranteed gear rolls through the Chaos loot layer (rarity from ChaosLoot.upgradeRarity per tier)
 		items = {min = 2, max = 4},

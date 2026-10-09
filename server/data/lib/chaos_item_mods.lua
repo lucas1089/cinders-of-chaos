@@ -19,6 +19,13 @@
 --                                              an item from before tiers has none: the tier then follows from the value
 --   "chaos_ilvl" = 1..150                      the item level (also on plain gear drops, which have no rarity yet);
 --                                              rolled items mirror it into "combatPowerLevel", which the client shows
+--   "cb_<attribute key, lower case>" = 1      the modifier is bound (Orb of Binding): Tempering, Unmaking, Excision, Reforging
+--                                              and Upheaval skip it; at most config.bind.max of them (chaos_crafting.lua)
+--   "cv_<attribute key, lower case>" = number the value rolled inside the tier before the item quality (only on an
+--                                              item with quality; the stored value is the one the item acts with)
+--   "chaos_quality" = 0..30                    item quality in percent: every modifier value is multiplied by it
+--   "chaos_ruined" = 1                         the item is ruined (Orb of Ruin): no orb changes it any more
+--   "chaos_ext" = 1 | 2                        the one extra prefix (1) or suffix (2) slot an Orb of Ruin gave
 -- Attack speed is local to the weapon: the weapon's own attack interval (item attribute ITEM_ATTRIBUTE_ATTACK_SPEED,
 -- which the engine uses for whoever wields it and the look text shows as "Atk Spd") is set from its base interval.
 
@@ -28,6 +35,11 @@ local M = ChaosItemMods
 M.PREFIX = "chaos_mod_"
 M.TIER_PREFIX = "ct_"
 M.ILVL = "chaos_ilvl"
+M.QUALITY = "chaos_quality"
+M.RUINED = "chaos_ruined"
+M.EXTRA = "chaos_ext"
+M.RAW_PREFIX = "cv_"
+M.BIND_PREFIX = "cb_"
 
 -- ---------------------------------------------------------------------------------------------------------------
 -- configuration
@@ -89,6 +101,16 @@ M.config = {
 		element = {side = "prefix", weight = 2, -- weapons without an element of their own, one element at most
 			tiers = {{1, 3}, {3, 6}, {5, 9}, {7, 12}, {10, 16}, {13, 20}, {17, 26}, {22, 35}}}
 	},
+
+	-- item quality (orbs v2, the Whetstone): every modifier value is multiplied by (100 + quality) / 100 and rounded; one
+	-- Whetstone adds `perStone` percent, up to `cap` (`capHigh` from rarity `highFrom`, Divine and better)
+	quality = {perStone = 1, cap = 20, capHigh = 30, highFrom = 10},
+
+	-- bound modifiers (Orb of Binding): how many an item of a rarity may have, index = rarity 1..15
+	bind = {max = {1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}},
+
+	-- legendary powers (chaos_powers.lua): only on items of rarity `minRarity` (Legendary) or better, one per item
+	powers = {minRarity = 5, maxPerItem = 1},
 
 	mods = {
 		-- prefixes: damage and defence
@@ -421,6 +443,88 @@ function M.removeTier(item, attrKey)
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
+-- quality, bound modifiers, ruin, the extra slot, legendary powers (orbs v2)
+-- ---------------------------------------------------------------------------------------------------------------
+function M.rawAttr(attrKey)
+	return M.RAW_PREFIX .. tostring(attrKey):lower()
+end
+
+function M.bindAttr(attrKey)
+	return M.BIND_PREFIX .. tostring(attrKey):lower()
+end
+
+-- the most quality an item of this rarity may have
+function M.qualityCap(rarity)
+	local q = M.config.quality
+	return (tonumber(rarity) or 0) >= q.highFrom and q.capHigh or q.cap
+end
+
+-- the item's quality in percent (0 when none)
+function M.qualityOf(item)
+	local v = custom(item, M.QUALITY)
+	return v and clamp(floor(v), 0, M.config.quality.capHigh) or 0
+end
+
+-- a modifier value with quality q percent: rounded to the nearest whole number, never below the value itself
+function M.scaleQuality(value, q)
+	value, q = floor(tonumber(value) or 0), tonumber(q) or 0
+	if value <= 0 or q <= 0 then
+		return value
+	end
+	return math.max(value, floor(value * (100 + q) / 100 + 0.5))
+end
+
+function M.isRuined(item)
+	return (custom(item, M.RUINED) or 0) ~= 0
+end
+
+function M.isBound(item, attrKey)
+	return (custom(item, M.bindAttr(attrKey)) or 0) ~= 0
+end
+
+function M.setBound(item, attrKey, on)
+	if on then
+		item:setCustomAttribute(M.bindAttr(attrKey), 1)
+	else
+		pcall(function() item:removeCustomAttribute(M.bindAttr(attrKey)) end)
+	end
+end
+
+-- how many modifiers an item of this rarity may have bound
+function M.maxBinds(rarity)
+	local r = floor(tonumber(rarity) or 0)
+	return r > 0 and (M.config.bind.max[math.min(r, #M.config.bind.max)] or 1) or 0
+end
+
+-- the side the Orb of Ruin gave an extra slot ("prefix", "suffix") or nil
+function M.extraSide(item)
+	local v = custom(item, M.EXTRA)
+	return v == 1 and "prefix" or v == 2 and "suffix" or nil
+end
+
+-- prefixes (and suffixes) an item may carry: its rarity's limit, plus the extra slot on that side
+function M.sideLimitOf(item, side, rarity)
+	return M.sideLimit(rarity) + (M.extraSide(item) == side and 1 or 0)
+end
+
+-- a legendary power is a modifier of this file with `power = true` (chaos_powers.lua adds them)
+function M.isPower(def)
+	return def ~= nil and def.power == true
+end
+
+-- add a modifier definition after the file was loaded (chaos_powers.lua)
+function M.addMod(def)
+	assert(def.key and def.tiers and #def.tiers == M.config.maxTier, "bad modifier " .. tostring(def.key))
+	if M.byKey[def.key] then
+		return M.byKey[def.key]
+	end
+	table.insert(M.config.mods, def)
+	def.index = #M.config.mods
+	M.byKey[def.key] = def
+	return def
+end
+
+-- ---------------------------------------------------------------------------------------------------------------
 -- rarity: how many modifiers
 -- ---------------------------------------------------------------------------------------------------------------
 local function rarityIndex(rarity)
@@ -439,7 +543,7 @@ function M.sideLimit(rarity)
 	return r > 0 and M.config.rarity.sides[r] or 0
 end
 
--- every modifier an item of this rarity may carry (what the Exalted Orb fills up to)
+-- every modifier an item of this rarity may carry (what the Orb of Grafting fills up to)
 function M.maxMods(rarity)
 	return 2 * M.sideLimit(rarity)
 end
@@ -667,11 +771,12 @@ function M.clear(item)
 end
 
 -- modifiers of this file the item could still get (its kind, not on it yet): list of {entry = def, weight}
-function M.addable(item)
+function M.addable(item, rarity)
 	local kind = M.kindOf(item)
 	local out = {}
 	for _, def in ipairs(M.config.mods) do
-		if M.allowed(def, kind) and M.value(item, def.key) == 0 then
+		if M.allowed(def, kind) and M.value(item, def.key) == 0
+				and (not M.isPower(def) or (tonumber(rarity) or 0) >= M.config.powers.minRarity) then
 			out[#out + 1] = {entry = def, weight = def.weight}
 		end
 	end
@@ -820,6 +925,11 @@ end
 -- health a regeneration total gives per tick of `ms`
 function M.regenAmount(perSecond, ms)
 	return floor((tonumber(perSecond) or 0) * (tonumber(ms) or M.config.regenEvery) / 1000 + 1e-9)
+end
+
+-- the legendary powers are modifiers of this file too (chaos_powers.lua adds them to M.config.mods)
+if not (ChaosPowers and ChaosPowers.keys) then
+	dofile("data/lib/chaos_powers.lua")
 end
 
 return M

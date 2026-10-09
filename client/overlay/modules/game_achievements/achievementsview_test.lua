@@ -9,7 +9,7 @@ end
 
 local rows = {
   { i = 'a', c = 'combat', v = 50, t = 100, u = 0, n = 'A' },
-  { i = 'b', c = 'combat', v = 1, t = 1, u = 200, n = 'B', ti = 'Veteran', r = '3 Chaos Orb' },
+  { i = 'b', c = 'combat', v = 1, t = 1, u = 200, n = 'B', ti = 'Veteran', r = '3 Orb of Upheaval' },
   { i = 'c', c = 'rifts', v = 0, t = 0, u = 0, h = 1, n = '???' },
   { i = 'd', c = 'rifts', v = 1, t = 1, u = 300, h = 1, n = 'Secret' },
 }
@@ -24,7 +24,7 @@ eq(V.progressText(rows[1]), '50 / 100', 'progress'); eq(V.progressText(rows[3]),
 eq(V.progressText(rows[2]), 'Unlocked', 'unlocked text')
 eq(V.progressText({ v = 2500, t = 10000, u = 0 }), '2,500 / 10,000', 'grouped')
 eq(V.isHiddenLocked(rows[3]), true); eq(V.isHiddenLocked(rows[4]), false, 'unlocked hidden is shown')
-eq(V.extraText(rows[2]), 'Title: Veteran   -   Reward: 3 Chaos Orb', 'extra')
+eq(V.extraText(rows[2]), 'Title: Veteran   -   Reward: 3 Orb of Upheaval', 'extra')
 eq(V.extraText(rows[1]), '', 'no extra')
 eq(V.categoryLabel({ name = 'Rifts', done = 1, total = 13 }), 'Rifts  1/13')
 eq(V.summaryText({ points = 15, accountPoints = 40, unlocked = 2, total = 93 }),

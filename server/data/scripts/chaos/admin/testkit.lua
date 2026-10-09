@@ -21,8 +21,8 @@ local SUPPLIES = {
 	{id = 2268, count = 100}, -- sudden death rune
 	{id = 2273, count = 100}, -- ultimate healing rune
 	{id = 2160, count = 100}, -- crystal coin
-	{id = 29856, count = 20}, -- Chaos Orb
-	{id = 29857, count = 20} -- Divine Orb
+	{id = 29856, count = 20}, -- Orb of Upheaval
+	{id = 29857, count = 20} -- Orb of Fate
 }
 
 -- slot -> server item id. Ids with an entry in ChaosUniqueSpecs become that unique.

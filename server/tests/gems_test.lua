@@ -286,7 +286,7 @@ eq(plain:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "It shines. Sockets (1/1): Ch
 
 -- ---------------------------------------------------------------- the Orb of Sockets and the other orbs
 local orb = C.orbByKey.sockets
-eq(orb.id, cfg.socketOrb.id, "eighth orb"); eq(#C.config.orbs, 8, "eight orbs")
+eq(orb.id, cfg.socketOrb.id, "eighth orb"); eq(#C.config.orbs, 14, "eight orbs and the six of orbs v2")
 eq(C.orbById[24692].key, "sockets", "by id")
 local axe = gear(2431, 13)
 eq(C.check("sockets", axe), true, "a fresh two-hander")
@@ -311,8 +311,8 @@ local before = C.signature(axe)
 G.take(axe, 1)
 assert(C.signature(axe) ~= before, "signature follows the gems")
 local okChaos, r2 = C.apply("chaos", axe)
-eq(okChaos, true, "chaos orb")
-eq(G.count(r2.item), 2, "sockets survive the Chaos Orb"); eq(G.gemAt(r2.item, 2), 32002, "and the gem, in its socket")
+eq(okChaos, true, "orb of upheaval")
+eq(G.count(r2.item), 2, "sockets survive the Orb of Upheaval"); eq(G.gemAt(r2.item, 2), 32002, "and the gem, in its socket")
 assert(r2.item:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION):find("Sockets %(1/2%)"), "copy has the section")
 local okScour, r3 = C.apply("scouring", r2.item)
 eq(okScour, true, "scouring"); eq(G.count(r3.item), 2, "sockets survive scouring")

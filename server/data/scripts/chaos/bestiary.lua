@@ -46,7 +46,7 @@ local bountyCfg = Chaos.bountyConfig or dofile("data/scripts/chaos/bounty_config
 local C = ChaosBestiaryCore
 local OPCODE = ChaosOpcodes.bestiary or 253
 local SPAWNS = dofile("data/scripts/chaos/bestiary_spawns.lua")
-local ITEMS = bountyCfg.items -- Chaos and Divine Orb server ids
+local ITEMS = bountyCfg.items -- Orb of Upheaval and Orb of Fate server ids
 
 ChaosBestiary = ChaosBestiary or {}
 local X = ChaosBestiary
@@ -695,10 +695,10 @@ local function payTask(player, st, t)
 		parts[#parts + 1] = r.gold .. " gold (bank)"
 	end
 	if r.chaos > 0 then
-		parts[#parts + 1] = r.chaos .. plural(r.chaos, " Chaos Orb")
+		parts[#parts + 1] = r.chaos .. plural(r.chaos, " Orb of Upheaval")
 	end
 	if r.divine > 0 then
-		parts[#parts + 1] = r.divine .. plural(r.divine, " Divine Orb")
+		parts[#parts + 1] = r.divine .. plural(r.divine, " Orb of Fate")
 	end
 	if r.exp > 0 then
 		parts[#parts + 1] = r.exp .. " experience"

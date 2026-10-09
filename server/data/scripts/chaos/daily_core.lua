@@ -146,7 +146,7 @@ function D.migrate(list)
 end
 
 -- ---------------------------------------------------------------- texts
--- "5x Chaos Orb, 3x Divine Orb" from {{itemId, count}}; name(id) gives the item name
+-- "5x Orb of Upheaval, 3x Orb of Fate" from {{itemId, count}}; name(id) gives the item name
 function D.itemsText(items, name)
 	local parts = {}
 	for _, it in ipairs(items or {}) do

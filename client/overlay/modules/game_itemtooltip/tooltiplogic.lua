@@ -3,7 +3,9 @@
 -- The tooltip itself comes from the server (extended opcode 242, server/data/scripts/chaos/item_tooltip_core.lua):
 --   {key, id, name, count, kind, slot, rarity, rarityName, level, maxTier, sides = {p, s, max},
 --    unique = {name, set = {name, have, total}}, base = [{k, l, v, fmt}],
---    mods = [{k, l, t, v, g, lo, hi, tr, sd}] (prefixes first; tr = tier 1..8, sd = 'p' / 's'),
+--    quality = {q, cap} (item quality in percent), ruined (an Orb of Ruin ruined it),
+--    mods = [{k, l, t, v, g, lo, hi, tr, sd, bd, pw}] (prefixes first; tr = tier 1..8, sd = 'p' / 's', bd = bound,
+--    pw = a legendary power),
 --    sockets = {count, max, list = [{name, text, color}]},
 --    req = {level, magic, voc}, weight, desc, locked, stats = [{k, l, v, fmt, low}], cmp = [slot, ...]}
 
@@ -17,7 +19,7 @@ L.WRAP = 44 -- characters per line of the flavour text
 
 L.COLORS = {
   text = '#d6c9ae', dim = '#8c8070', gold = '#e8b84a', mod = '#9ab8ff', chaos = '#e080d0', element = '#ffa060',
-  gem = '#c8e8ff', empty = '#6b6258', better = '#5ccf5c', worse = '#e03a1e', unique = '#e07b24', red = '#e03a1e',
+  gem = '#c8e8ff', empty = '#6b6258', power = '#ff9a3c', bound = '#e8b84a', quality = '#7fe0a0', better = '#5ccf5c', worse = '#e03a1e', unique = '#e07b24', red = '#e03a1e',
   normal = '#e4d8c0'
 }
 -- modifier tiers T1 (lowest) .. T8 (highest)
@@ -166,6 +168,13 @@ function L.lines(tip, ctx)
       C.dim)
   end
 
+  if tip.quality and (tonumber(tip.quality.q) or 0) > 0 then
+    add(string.format('Quality +%d%%  (up to %d%%)', tip.quality.q, tip.quality.cap or 20), C.quality)
+  end
+  if tip.ruined then
+    add('Ruined: no orb can change this item', C.red)
+  end
+
   local first = true
   for _, b in ipairs(tip.base or {}) do
     add(string.format('%s: %s', b.l, L.formatValue(b.v, b.fmt, b.fmt == 'pct' and b.k:find('^protect') ~= nil)),
@@ -181,12 +190,13 @@ function L.lines(tip, ctx)
       local sides = tip.sides
       local head = side == 'p' and 'Prefixes' or 'Suffixes'
       if sides and sides.max then
-        head = string.format('%s %d/%d', head, side == 'p' and (sides.p or 0) or (sides.s or 0), sides.max)
+        local limit = (side == 'p' and sides.mp or sides.ms) or sides.max
+        head = string.format('%s %d/%d', head, side == 'p' and (sides.p or 0) or (sides.s or 0), limit)
       end
       add(head, C.dim, first)
       first = false
     end
-    local color = (m.g == 'chaos' and C.chaos) or (m.g == 'element' and C.element) or C.mod
+    local color = (m.pw and C.power) or (m.g == 'chaos' and C.chaos) or (m.g == 'element' and C.element) or C.mod
     local range = ''
     if m.lo and m.hi then
       range = m.lo == m.hi and string.format(' [%d]', m.lo) or string.format(' [%d-%d]', m.lo, m.hi)
@@ -194,8 +204,13 @@ function L.lines(tip, ctx)
     local parts
     if m.tr then
       local tag = string.format('T%d ', m.tr)
+      local bound = m.bd and ' [bound]' or ''
       parts = { tag, L.tierColor(m.tr), m.t, color, range, C.dim }
-      add(tag .. m.t .. range, color, first, parts)
+      if m.bd then
+        parts[#parts + 1] = bound
+        parts[#parts + 1] = C.bound
+      end
+      add(tag .. m.t .. range .. bound, color, first, parts)
     else
       parts = range ~= '' and { m.t, color, range, C.dim } or nil
       add(m.t .. range, color, first, parts)

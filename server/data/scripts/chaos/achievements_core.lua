@@ -14,7 +14,7 @@
 --   K.view(index, stats, unlocked)        -> the window's rows (hidden + locked -> "???", no progress)
 --   K.recent(index, unlocked, n)          -> the newest n unlocks [{id, name, points, at}]
 --   K.titlesOf(index, unlocked)           -> titles for ChaosTitles (source "achievement")
---   K.rewardText(reward, nameOf)          -> "3 Chaos Orb, mount Doombringer" (nameOf(itemId) -> name)
+--   K.rewardText(reward, nameOf)          -> "3 Orb of Upheaval, mount Doombringer" (nameOf(itemId) -> name)
 --   K.retroStats(facts)                   -> stats that the character's current state proves (level, Paragon, ...)
 --   K.paragonLevel(level, startLevel)
 --   K.unlockMethod()                      -> {describe, check} for ChaosClassUnlocksCore.registerMethod("achievement")

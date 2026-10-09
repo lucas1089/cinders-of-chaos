@@ -81,7 +81,7 @@ local function cap(s)
   return (s:gsub('^%l', string.upper))
 end
 
--- label and colour of an item row: "[Legendary] Magic Sword", "[Unique] Soulreaper", "Orb of Chaos"
+-- label and colour of an item row: "[Legendary] Magic Sword", "[Unique] Soulreaper", "Orb of Upheaval"
 function HuntMath.itemLabel(name, rarity, unique, orb)
   rarity = tonumber(rarity) or 0
   if unique == 1 or unique == true then return '[Unique] ' .. cap(name), HuntMath.UNIQUE_COLOR end

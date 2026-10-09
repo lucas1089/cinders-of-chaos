@@ -5,7 +5,7 @@
 -- come from bounty_pool.lua (tools/gen_bounty_pool.py: only monsters that spawn on the loaded map).
 -- A player sees the band of their level and the ones next to it, accepts up to maxActive contracts; kills count when
 -- the player made the kill (last hit or most damage, summons for their master) or a party member within partyRange
--- did. A finished contract pays at once: gold to the bank, Chaos/Divine Orbs to the backpack (inbox when full), a
+-- did. A finished contract pays at once: gold to the bank, Orbs of Upheaval and Fate to the backpack (inbox when full), a
 -- little experience. weeklyNeed contracts in a bounty week give a chest of orbs. Contracts expire at the next roll.
 -- State: table chaos_bounty (server/sql/chaos.sql), one row per accepted contract; the weekly bonus week in storage
 -- Chaos.storage.bountyWeekBonus. Multi-client: see mcReward in bounty_config.lua.
@@ -241,7 +241,7 @@ local function giveWeekly(player, bandIndex)
 		inbox = giveStack(player, o.id, o.count) or inbox
 	end
 	player:setStorageValue(Chaos.storage.bountyWeekBonus, B.week(os.time(), cfg))
-	local text = string.format("Weekly bounty bonus: a %s with %d Chaos Orbs and %d Divine Orbs%s.%s",
+	local text = string.format("Weekly bounty bonus: a %s with %d Orbs of Upheaval and %d Orbs of Fate%s.%s",
 		cfg.weeklyChestName or "chest", r.chaos, r.divine, table.concat(extra), inbox and " It is in your inbox." or "")
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
 	notify(player, text)
@@ -277,10 +277,10 @@ local function payContract(player, c, e)
 		parts[#parts + 1] = r.gold .. " gold (bank)"
 	end
 	if r.chaos > 0 then
-		parts[#parts + 1] = r.chaos .. " Chaos Orb" .. (r.chaos > 1 and "s" or "")
+		parts[#parts + 1] = r.chaos .. (r.chaos > 1 and " Orbs of Upheaval" or " Orb of Upheaval")
 	end
 	if r.divine > 0 then
-		parts[#parts + 1] = r.divine .. " Divine Orb" .. (r.divine > 1 and "s" or "")
+		parts[#parts + 1] = r.divine .. (r.divine > 1 and " Orbs of Fate" or " Orb of Fate")
 	end
 	if #gems > 0 then
 		parts[#parts + 1] = ChaosGems.listText(gems)

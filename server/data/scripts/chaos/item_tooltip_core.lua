@@ -12,12 +12,16 @@
 --   id, name, count, kind ("weapon", "shield", "helmet", ...), slot (what it is worn as, "Two-handed weapon")
 --   rarity, rarityName, level                    rarity 0 = normal item; level = item level (plain drops have one too)
 --   maxTier                                        the best modifier tier the item level allows (1..8)
---   sides = {p, s, max}                            prefixes and suffixes on the item, the rarity's limit of each
+--   sides = {p, s, max, mp, ms}                    prefixes and suffixes on the item, the rarity's limit of each (mp / ms:
+--                                                  the limit of that side when an Orb of Ruin gave it an extra slot)
+--   quality = {q, cap}                             item quality in percent (every modifier value is multiplied by it)
+--   ruined                                         true on an item an Orb of Ruin ruined: no orb changes it any more
 --   unique = {name, set = {name, have, total}}    uniques only
 --   base = [{k, l, v, fmt}]                        attack, defense, armour, hit chance, range, attack speed, element,
 --                                                  the item type's own bonuses (skills, protections, speed, ...)
---   mods = [{k, l, t, v, g, lo, hi, l2, v2, tr, sd}]  every modifier, prefixes first: attribute key, label, text,
---                                                  value, group, the value range of its tier, tier (1..8), side "p" / "s"
+--   mods = [{k, l, t, v, g, lo, hi, l2, v2, tr, sd, bd, pw}]  every modifier, prefixes first: attribute key, label,
+--                                                  text, value, group, the value range of its tier, tier (1..8), side "p" /
+--                                                  "s", bd = bound (Orb of Binding), pw = a legendary power
 --   sockets = {count, max, list = [{name, text, color}]}   empty sockets have no name
 --   req = {level, magic, voc}, weight (oz), desc (flavour text), locked
 --   stats = [{k, l, v, fmt, low}]                  every number the compare view adds up (low = lower is better)
@@ -380,7 +384,15 @@ function T.build(item, opts)
 		end
 		if rarity > 0 and M then
 			local p, sx = C.sideCounts(mods)
-			tip.sides = {p = p, s = sx, max = M.sideLimit(rarity)}
+			tip.sides = {p = p, s = sx, max = M.sideLimit(rarity), mp = M.sideLimitOf(item, "prefix", rarity),
+				ms = M.sideLimitOf(item, "suffix", rarity)}
+			local q = M.qualityOf(item)
+			if q > 0 then
+				tip.quality = {q = q, cap = M.qualityCap(rarity)}
+			end
+			if M.isRuined(item) then
+				tip.ruined = true
+			end
 		end
 		for _, m in ipairs(ordered) do
 			local row = {k = m.key, l = m.label, t = C.modText(m), v = m.value, g = m.group, l2 = m.label2, v2 = m.value2}
@@ -388,6 +400,8 @@ function T.build(item, opts)
 			if not unique then
 				row.tr = m.tier
 				row.sd = m.side == "prefix" and "p" or "s"
+				row.bd = m.bound or nil
+				row.pw = m.power or nil
 			end
 			tip.mods[#tip.mods + 1] = row
 			local fmt = modFmt(m)

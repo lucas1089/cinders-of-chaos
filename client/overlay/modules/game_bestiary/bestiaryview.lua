@@ -104,25 +104,25 @@ local function short(n)
 end
 V.short = short
 
--- {gold, chaos, divine, exp, points} -> "4k gold, 1 Chaos Orb, 12k exp, 5 points"
+-- {gold, chaos, divine, exp, points} -> "4k gold, 1 Orb of Upheaval, 12k exp, 5 points"
 function V.rewardText(r)
   r = type(r) == 'table' and r or {}
   local parts = {}
   if num(r.gold) > 0 then parts[#parts + 1] = short(r.gold) .. ' gold' end
-  if num(r.chaos) > 0 then parts[#parts + 1] = num(r.chaos) .. ' Chaos Orb' .. (num(r.chaos) > 1 and 's' or '') end
-  if num(r.divine) > 0 then parts[#parts + 1] = num(r.divine) .. ' Divine Orb' .. (num(r.divine) > 1 and 's' or '') end
+  if num(r.chaos) > 0 then parts[#parts + 1] = num(r.chaos) .. (num(r.chaos) > 1 and ' Orbs of Upheaval' or ' Orb of Upheaval') end
+  if num(r.divine) > 0 then parts[#parts + 1] = num(r.divine) .. (num(r.divine) > 1 and ' Orbs of Fate' or ' Orb of Fate') end
   if num(r.exp) > 0 then parts[#parts + 1] = short(r.exp) .. ' exp' end
   if num(r.points) > 0 then parts[#parts + 1] = num(r.points) .. ' points' end
   return table.concat(parts, ', ')
 end
 
--- the same, shorter (task rows): "30k gold, 1 Chaos, 14.3k exp, 16 points"
+-- the same, shorter (task rows): "30k gold, 1 Upheaval, 14.3k exp, 16 points"
 function V.rewardShort(r)
   r = type(r) == 'table' and r or {}
   local parts = {}
   if num(r.gold) > 0 then parts[#parts + 1] = short(r.gold) .. ' gold' end
-  if num(r.chaos) > 0 then parts[#parts + 1] = num(r.chaos) .. ' Chaos' end
-  if num(r.divine) > 0 then parts[#parts + 1] = num(r.divine) .. ' Divine' end
+  if num(r.chaos) > 0 then parts[#parts + 1] = num(r.chaos) .. ' Upheaval' end
+  if num(r.divine) > 0 then parts[#parts + 1] = num(r.divine) .. ' Fate' end
   if num(r.exp) > 0 then parts[#parts + 1] = short(r.exp) .. ' exp' end
   if num(r.points) > 0 then parts[#parts + 1] = num(r.points) .. ' points' end
   return table.concat(parts, ', ')

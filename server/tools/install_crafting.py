@@ -3,18 +3,18 @@
 
 usage: python3 -I install_crafting.py DATA_DIR [--dry-run]
 
-1. data/items/items.xml: the Orbs of Alchemy, Annulment and Scouring are the stackable rune stones 24691, 24697 and
+1. data/items/items.xml: the Orbs of Gilding, Unmaking and Erasure are the stackable rune stones 24691, 24697 and
    24688 (no items.xml entry, nothing uses them). They get a name, plural, description and weight here. The Orb of
-   Transmutation (29851) and the Exalted Orb (29855) are existing currency items (character upgrades); their
+   Awakening (29851) and the Orb of Grafting (29855) are existing currency items (character upgrades); their
    description gets a sentence about crafting. Descriptions written by an older version of this script are updated.
-2. data/items/items.otb: the Orb of Transmutation and the Exalted Orb get the "useable" flag (FLAG_USEABLE), which the
+2. data/items/items.otb: the Orb of Awakening and the Orb of Grafting get the "useable" flag (FLAG_USEABLE), which the
    engine needs for "use with" (Game::playerUseItemEx). The other five orbs have it already. The client side is the
    multi-use flag of the same items in Tibia.dat: client/tools/sprites/set_multiuse.py. A copy of the original file is
    kept as items.otb.bak the first time.
-3. data/scripts/customs/rarity/reroll_rarity_stats.lua: the stock Chaos and Divine Orb action made a plain copy of a
+3. data/scripts/customs/rarity/reroll_rarity_stats.lua: the stock Orb of Upheaval and Orb of Fate action made a plain copy of a
    unique item (a unique has no "rarity", so the reroll gave it none and dropped its name and stats). isRerollable now
    refuses items with the "chaos_unique" attribute, as every crafting orb does (data/lib/chaos_crafting.lua). Its two
-   actions are no longer registered when data/scripts/chaos/crafting.lua registered the Chaos and Divine Orbs itself
+   actions are no longer registered when data/scripts/chaos/crafting.lua registered the Orbs of Upheaval and Fate itself
    (same rules, logging and Rift Keys for all seven orbs).
 
 Idempotent: an item that already has an entry is left alone, descriptions are only extended once, the otb flag is
@@ -23,11 +23,11 @@ only set when missing, and the guards carry marker comments.
 import os, re, sys
 
 NEW_ITEMS = [
-    (24691, 'an', 'Orb of Alchemy', 'Orbs of Alchemy',
+    (24691, 'an', 'Orb of Gilding', 'Orbs of Gilding',
      'Use it with a normal item: it becomes Rare, Epic or Legendary with random modifiers. On a Rift Key without modifiers: 2-3 modifiers.'),
-    (24697, 'an', 'Orb of Annulment', 'Orbs of Annulment',
+    (24697, 'an', 'Orb of Unmaking', 'Orbs of Unmaking',
      'Use it with an item with a rarity or a Rift Key: one random modifier is removed.'),
-    (24688, 'an', 'Orb of Scouring', 'Orbs of Scouring',
+    (24688, 'an', 'Orb of Erasure', 'Orbs of Erasure',
      'Use it with an item with a rarity: the rarity and every modifier are removed. On a Rift Key: every modifier is removed.'),
 ]
 EXTEND = {
@@ -47,7 +47,7 @@ OLD_TEXTS = [
 ]
 WEIGHT = 50
 
-USEABLE_IDS = (29851, 29855)  # Orb of Transmutation, Exalted Orb: items.otb FLAG_USEABLE
+USEABLE_IDS = (29851, 29855)  # Orb of Awakening, Orb of Grafting: items.otb FLAG_USEABLE
 FLAG_USEABLE = 1 << 4
 OTB_ESC, OTB_START, OTB_END = 0xFD, 0xFE, 0xFF
 

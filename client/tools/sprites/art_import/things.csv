@@ -1,7 +1,7 @@
 key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
-orb_alchemy,item,look,Orb of Alchemy,icons,0,0,1,1,1,1,copy:22035,replace,24691,
-orb_annulment,item,look,Orb of Annulment,icons,32,0,1,1,1,1,copy:22041,replace,24697,
-orb_scouring,item,look,Orb of Scouring,icons,64,0,1,1,1,1,copy:22032,replace,24688,
+orb_alchemy,item,look,Orb of Gilding,icons,0,0,1,1,1,1,copy:22035,replace,24691,
+orb_annulment,item,look,Orb of Unmaking,icons,32,0,1,1,1,1,copy:22041,replace,24697,
+orb_scouring,item,look,Orb of Erasure,icons,64,0,1,1,1,1,copy:22032,replace,24688,
 ore_bronze,item,look,piece of bronze,icons,96,0,1,1,1,1,copy:23742,replace,26398,
 ore_silver,item,look,piece of silver,icons,128,0,1,1,1,1,copy:23743,replace,26399,
 ore_amethyst,item,look,piece of amethyst,icons,160,0,1,1,1,1,copy:23744,replace,26400,

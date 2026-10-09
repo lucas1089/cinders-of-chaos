@@ -359,9 +359,9 @@ do
 	for _, it in ipairs(a.items) do
 		items[it.id] = it.count
 	end
-	eq(items[29856], 1 + math.floor(r.pool[1].count * list[1].share), "Chaos Orbs: base + share of the pool")
-	eq(items[29857], math.floor(r.pool[2].count * list[1].share) + 3, "Divine Orbs: share + top 1 extra")
-	eq(items[29855], 1, "rank 1 Exalted Orb")
+	eq(items[29856], 1 + math.floor(r.pool[1].count * list[1].share), "Orbs of Upheaval: base + share of the pool")
+	eq(items[29857], math.floor(r.pool[2].count * list[1].share) + 3, "Orbs of Fate: share + top 1 extra")
+	eq(items[29855], 1, "rank 1 Orb of Grafting")
 	ok(a.unique, "unique roll")
 	eq(a.points, 10 + math.floor(100 * list[1].share + 0.5), "defender points")
 	local none = I.rewards(list, r, 100, 1, function() return 10000 end)

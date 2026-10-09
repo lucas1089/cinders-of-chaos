@@ -26,8 +26,9 @@
 --                                  rift_tier/rift_runs/modifiers/flawless (the run from ChaosRift.runOf); "arena1v1" /
 --                                  "arena2v2" -> wins and rating (ChaosArena.ratingOf); "siege" -> siege_played/siege_wins
 --   ChaosWorldBoss.computeRewards  wrapped: every rewarded player -> wb_kills, wb_<boss>, wb_top (rank 1)
---   ChaosCrafting.apply            wrapped: orbs_used, orb_exalted, mods_max (bench and the crafting orbs' use-with; the
---                                  base server's own Chaos / Divine Orb use-with is not counted)
+--   ChaosCrafting.apply            wrapped: orbs_used, orb_exalted, orb_binding, ruin_improved, ruin_ruined, quality_max,
+--                                  power_found, mods_max (bench and the crafting orbs' use-with; the
+--                                  base server's own Upheaval / Fate use-with is not counted)
 --   ChaosTreasureGoblin.tick       wrapped: a goblin that escaped after being hit -> goblin_escaped for its attackers
 --   onDropLoot (index 2.4)         unique_found, rarity_max, mods_max from the corpse of a kill (before autoloot)
 -- Retroactive at login: level, Paragon, ascension, tutorial, guild, bounty contracts (chaos_bounty), the last weekly
@@ -581,12 +582,27 @@ local function onCraft(orbKey, res)
 	A.progress(player, "orbs_used", 1)
 	if orbKey == "exalted" then
 		A.progress(player, "orb_exalted", 1)
+	elseif orbKey == "binding" then
+		A.progress(player, "orb_binding", 1)
+	elseif orbKey == "ruin" then
+		if res.outcome == "improve" then
+			A.progress(player, "ruin_improved", 1)
+		elseif res.outcome == "ruin" then
+			A.progress(player, "ruin_ruined", 1)
+		end
+	elseif orbKey == "whetstone" and res.quality then
+		A.set(player, "quality_max", res.quality)
 	end
 	local C = ChaosCrafting
 	if C and C.readMods then
 		local ok, mods = pcall(C.readMods, item)
 		if ok and type(mods) == "table" then
 			A.set(player, "mods_max", #mods)
+			for _, m in ipairs(mods) do
+				if m.power then
+					A.set(player, "power_found", 1) -- an item of the player's with a legendary power
+				end
+			end
 		end
 	end
 end
@@ -621,8 +637,8 @@ function A.installHooks()
 	local C = ChaosCrafting
 	if C and C.apply and not C.achievementsWrapped then
 		local original = C.apply
-		C.apply = function(orbKey, item)
-			local ok, res = original(orbKey, item)
+		C.apply = function(orbKey, item, opts)
+			local ok, res = original(orbKey, item, opts)
 			if ok then
 				local fine, err = pcall(onCraft, orbKey, res)
 				if not fine then
@@ -821,10 +837,17 @@ local function scanItem(owner, item, best)
 	if rarity > best.rarity and rarity <= 15 then
 		best.rarity = rarity
 	end
-	if rarity >= 13 and ChaosCrafting and ChaosCrafting.readMods then
+	if rarity >= 5 and ChaosCrafting and ChaosCrafting.readMods then
 		local okM, mods = pcall(ChaosCrafting.readMods, item)
-		if okM and type(mods) == "table" and #mods > best.mods then
-			best.mods = #mods
+		if okM and type(mods) == "table" then
+			if rarity >= 13 and #mods > best.mods then
+				best.mods = #mods
+			end
+			for _, m in ipairs(mods) do
+				if m.power then
+					best.power = true
+				end
+			end
 		end
 	end
 end
@@ -839,7 +862,7 @@ drop.onDropLoot = function(self, corpse)
 		if not owner or not A.stats[owner:getGuid()] then
 			return
 		end
-		local best = {rarity = 0, mods = 0}
+		local best = {rarity = 0, mods = 0, power = false}
 		for _, item in ipairs(corpse:getItems()) do
 			scanItem(owner, item, best)
 			if item:isContainer() then
@@ -853,6 +876,9 @@ drop.onDropLoot = function(self, corpse)
 		end
 		if best.mods > 0 then
 			A.set(owner, "mods_max", best.mods)
+		end
+		if best.power then
+			A.set(owner, "power_found", 1)
 		end
 	end)
 	if not ok then

@@ -27,7 +27,8 @@ end
 -- ---------------------------------------------------------------- config sanity
 eq(#cfg.baseShards, 15, "a yield per rarity")
 eq(#cfg.orbChance, 15, "an orb chance per rarity")
-local known = {transmutation = 1, alchemy = 1, exalted = 1, annulment = 1, scouring = 1, chaos = 1, divine = 1, sockets = 1}
+local known = {transmutation = 1, alchemy = 1, exalted = 1, annulment = 1, scouring = 1, chaos = 1, divine = 1, sockets = 1,
+	tempering = 1, binding = 1, excision = 1, reforging = 1, ruin = 1, whetstone = 1}
 for i = 2, 15 do
 	assert(cfg.baseShards[i] >= cfg.baseShards[i - 1], "yield never falls with the rarity")
 	assert(cfg.orbChance[i] >= cfg.orbChance[i - 1], "orb chance never falls with the rarity")
@@ -40,10 +41,11 @@ for _, r in ipairs(cfg.recipes) do
 	assert(known[r.key], "recipe for a known orb: " .. r.key)
 	assert(not seen[r.key], "one recipe per orb")
 	seen[r.key] = true
-	assert(r.cost >= 10, "no orb for less than 10 shards")
+	assert(r.cost >= 5, "no orb for less than 5 shards")
 end
--- recipe costs follow the store prices (about 2.5 shards per coin): the cheap orbs cheap, the Exalted dearest
-local store = {transmutation = 5, chaos = 10, scouring = 12, alchemy = 15, annulment = 20, divine = 25, sockets = 25, exalted = 40}
+-- recipe costs follow the store prices (about 2.5 shards per coin): the cheap orbs cheap, the Grafting dearest
+local store = {transmutation = 5, chaos = 10, scouring = 12, alchemy = 15, annulment = 20, divine = 25, sockets = 25, exalted = 40,
+	whetstone = 2, tempering = 8, reforging = 20, excision = 25, binding = 30, ruin = 60} -- the Orb of Ruin is not sold: its price is the weight of its rarity
 for _, r in ipairs(cfg.recipes) do
 	local ratio = r.cost / store[r.key]
 	assert(ratio >= 2.3 and ratio <= 2.7, "shards per coin for " .. r.key .. ": " .. ratio)
@@ -152,9 +154,9 @@ end
 shards, orbChance = shards / total, orbChance / total / 10000
 assert(shards > 2.2 and shards < 3.5, "an average rolled drop gives 2.2-3.5 shards: " .. shards)
 assert(orbChance > 0.005 and orbChance < 0.015, "about 1% orb chance per item: " .. orbChance)
--- a Chaos Orb's worth of shards takes about 10 rolled items (without modifiers and sockets)
+-- an Orb of Upheaval's worth of shards takes about 10 rolled items (without modifiers and sockets)
 local chaosCost = K.recipe("chaos", cfg).cost
-assert(chaosCost / shards >= 8, "at least 8 rolled items per Chaos Orb: " .. chaosCost / shards)
+assert(chaosCost / shards >= 8, "at least 8 rolled items per Orb of Upheaval: " .. chaosCost / shards)
 
 -- ---------------------------------------------------------------- salvage all
 local list = {}
@@ -194,7 +196,7 @@ eq(K.signature({}), "0:5381", "empty")
 
 -- ---------------------------------------------------------------- combining
 local ok, cost = K.combineCheck(25, "chaos", 1, cfg)
-eq(ok, true, "25 shards make a Chaos Orb")
+eq(ok, true, "25 shards make an Orb of Upheaval")
 eq(cost, 25, "cost")
 ok, cost = K.combineCheck(24, "chaos", 1, cfg)
 eq(ok, nil, "24 do not")
@@ -319,10 +321,13 @@ local NAMES = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Exotic", "Myt
 	"Phantasmal", "Celestial", "Cosmic", "Abyssal", "Transcendent"}
 ChaosCrafting = {
 	config = {historyTable = "chaos_crafting_log", rarityNames = NAMES},
-	orbByKey = {chaos = {id = 29856, name = "Chaos Orb"}, transmutation = {id = 29851, name = "Orb of Transmutation"},
-		exalted = {id = 29855, name = "Exalted Orb"}, scouring = {id = 24688, name = "Orb of Scouring"},
-		alchemy = {id = 24691, name = "Orb of Alchemy"}, annulment = {id = 24697, name = "Orb of Annulment"},
-		divine = {id = 29857, name = "Divine Orb"}, sockets = {id = 24692, name = "Orb of Sockets"}},
+	orbByKey = {chaos = {id = 29856, name = "Orb of Upheaval"}, transmutation = {id = 29851, name = "Orb of Awakening"},
+		exalted = {id = 29855, name = "Orb of Grafting"}, scouring = {id = 24688, name = "Orb of Erasure"},
+		alchemy = {id = 24691, name = "Orb of Gilding"}, annulment = {id = 24697, name = "Orb of Unmaking"},
+		divine = {id = 29857, name = "Orb of Fate"}, sockets = {id = 24692, name = "Orb of Sockets"},
+		tempering = {id = 32251, name = "Orb of Tempering"}, binding = {id = 32252, name = "Orb of Binding"},
+		excision = {id = 32253, name = "Orb of Excision"}, reforging = {id = 32254, name = "Orb of Reforging"},
+		ruin = {id = 32255, name = "Orb of Ruin"}, whetstone = {id = 32256, name = "Whetstone"}},
 	isGear = function(item) return item.id >= 2000 and item.id < 3000 end,
 	isRiftKey = function(item) return item.id == 10155 end,
 	rarityOf = function(item) return tonumber(item.custom.rarity) or 0 end,
@@ -481,14 +486,14 @@ eq(lastResult().text, "Wait a moment before the next batch.", "one batch per int
 
 -- combining
 local have = player:getItemCount(cfg.shard.id)
-assert(have >= 25, "enough shards for a Chaos Orb: " .. have)
+assert(have >= 25, "enough shards for an Orb of Upheaval: " .. have)
 act("combine", {key = "chaos", count = 1})
 eq(lastResult().ok, true, "combined")
 eq(player:getItemCount(cfg.shard.id), have - 25, "25 shards spent")
-eq(player:getItemCount(29856), 1, "a Chaos Orb")
+eq(player:getItemCount(29856), 1, "an Orb of Upheaval")
 act("combine", {key = "exalted", count = 1})
-eq(lastResult().ok, false, "not enough for an Exalted Orb")
-eq(player:getItemCount(29855), 0, "no Exalted Orb")
+eq(lastResult().ok, false, "not enough for an Orb of Grafting")
+eq(player:getItemCount(29855), 0, "no Orb of Grafting")
 act("combine", {key = "chaos", count = 99})
 eq(lastResult().ok, false, "more than maxCombine refused")
 -- a full backpack: the orb goes to the inbox

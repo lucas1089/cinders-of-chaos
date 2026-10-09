@@ -64,7 +64,7 @@ OT_RSA_N = int(
 DELTA = 0x9E3779B9
 MASK = 0xFFFFFFFF
 PREFIX = 'loadbot'
-WORDS = ['hunting rotworms', 'anyone for a rift?', 'nice drop', 'where is the bank', 'level up!', 'chaos orb please',
+WORDS = ['hunting rotworms', 'anyone for a rift?', 'nice drop', 'where is the bank', 'level up!', 'orb of upheaval please',
          'brb', 'going to the tower', 'who wants to party', 'that goblin escaped again', 'lag?', 'gg']
 
 

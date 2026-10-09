@@ -4,7 +4,7 @@
 --
 -- Economy (see the README for the reasoning): an item with a rarity gives a few Rune Shards, shards combine into the
 -- existing orbs at about 2.5 shards per Chaos Coin of the orb's store price, and a small chance gives a whole orb. With
--- the stock rarity roll an average rolled drop is worth about 3.3 shards (~0.13 Chaos Orb) plus a 0.9% orb chance, so salvaging every rolled
+-- the stock rarity roll an average rolled drop is worth about 3.3 shards (~0.13 Orb of Upheaval) plus a 0.9% orb chance, so salvaging every rolled
 -- drop adds a modest share to the orb income of the loot layer instead of replacing it.
 
 return {
@@ -37,11 +37,14 @@ return {
 	-- which orb (ChaosCrafting orb keys), by weight
 	orbWeights = {
 		{"transmutation", 35}, {"chaos", 25}, {"scouring", 12}, {"alchemy", 10}, {"annulment", 8}, {"divine", 5},
-		{"sockets", 3}, {"exalted", 2}
+		{"sockets", 3}, {"exalted", 2},
+		-- orbs v2: the cheap ones often, the gamble almost never
+		{"whetstone", 14}, {"tempering", 12}, {"reforging", 4}, {"excision", 3}, {"binding", 2}, {"ruin", 1}
 	},
 
-	-- shards -> one orb. Store prices (shop_config.lua, Chaos Coins): Transmutation 5, Chaos 10, Scouring 12,
-	-- Alchemy 15, Annulment 20, Divine 25, Sockets 25, Exalted 40.
+	-- shards -> one orb. Store prices (shop_config.lua, Chaos Coins): Awakening (transmutation) 5, Upheaval (chaos) 10,
+	-- Erasure (scouring) 12, Gilding (alchemy) 15, Unmaking (annulment) 20, Fate (divine) 25, Sockets 25, Grafting
+	-- (exalted) 40, Whetstone 2, Tempering 8, Reforging 20, Excision 25, Binding 30; the Orb of Ruin is not sold.
 	recipes = {
 		{key = "transmutation", cost = 12},
 		{key = "chaos", cost = 25},
@@ -50,7 +53,13 @@ return {
 		{key = "annulment", cost = 50},
 		{key = "divine", cost = 60},
 		{key = "sockets", cost = 60},
-		{key = "exalted", cost = 100}
+		{key = "exalted", cost = 100},
+		{key = "whetstone", cost = 5},
+		{key = "tempering", cost = 20},
+		{key = "reforging", cost = 50},
+		{key = "excision", cost = 60},
+		{key = "binding", cost = 75},
+		{key = "ruin", cost = 150}
 	},
 	maxCombine = 10, -- orbs made by one click
 

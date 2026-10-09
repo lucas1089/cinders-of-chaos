@@ -164,12 +164,12 @@ Chaos.daily = {
 	-- The window shows one item per day; the bonus below is added to day 7 on top of it.
 	rewards = {
 		{itemId = 2152, count = 20},  -- platinum coin
-		{itemId = 29856, count = 1},  -- Chaos Orb
+		{itemId = 29856, count = 1},  -- Orb of Upheaval
 		{itemId = 2152, count = 50},  -- platinum coin
-		{itemId = 29857, count = 1},  -- Divine Orb
+		{itemId = 29857, count = 1},  -- Orb of Fate
 		{itemId = 2160, count = 1},   -- crystal coin
-		{itemId = 29856, count = 3},  -- Chaos Orb
-		{itemId = 29857, count = 3}   -- Divine Orb
+		{itemId = 29856, count = 3},  -- Orb of Upheaval
+		{itemId = 29857, count = 3}   -- Orb of Fate
 	},
 	-- given together with day 7 (all or nothing with it): a full week of claims
 	weekBonus = {
@@ -279,9 +279,9 @@ Chaos.tower = {
 	-- server; its built-in fallback list is only shown before the first update).
 	milestones = {
 		{points = 60000, items = {{id = 2148, count = 300, name = "Gold Coin"}}},
-		{points = 120000, items = {{id = 29856, count = 3, name = "Chaos Orb"}}},
-		{points = 180000, items = {{id = 29857, count = 3, name = "Divine Orb"}}},
-		{points = 240000, items = {{id = 29857, count = 10, name = "Divine Orb"}}},
+		{points = 120000, items = {{id = 29856, count = 3, name = "Orb of Upheaval"}}},
+		{points = 180000, items = {{id = 29857, count = 3, name = "Orb of Fate"}}},
+		{points = 240000, items = {{id = 29857, count = 10, name = "Orb of Fate"}}},
 		{points = 300000, items = {{id = 8209, count = 1, name = "Soulreaper"}}}
 	}
 }
@@ -385,7 +385,7 @@ Chaos.worldBoss = {
 		minScorePercent = 0.25,
 		bankGold = 500000, -- deposited into the bank for every eligible player
 		bankGoldPool = 10000000, -- split by share, deposited into the bank
-		base = {{id = 29856, count = 3}, {id = 29857, count = 1}}, -- Chaos Orbs, Divine Orb for everyone
+		base = {{id = 29856, count = 3}, {id = 29857, count = 1}}, -- Orbs of Upheaval, Orb of Fate for everyone
 		pool = {{id = 29856, count = 60}, {id = 29857, count = 25}}, -- split by share (floor)
 		gearChance = 1500, -- per 10000: one item of the boss gear list (rolled with rarity gearRarity)
 		gearShareBonus = 3000, -- + share x this (a player with 20% of the score: +600)

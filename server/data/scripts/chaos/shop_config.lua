@@ -42,18 +42,24 @@ return {
 		{
 			name = "Chaos Currency", icon = {item = 29856},
 			offers = {
-				{kind = "item", id = 29856, count = 1, cost = 10, name = "Chaos Orb", description = "Rerolls the modifiers of a magic or rare item."},
-				{kind = "item", id = 29856, count = 10, cost = 90, name = "10 Chaos Orbs", description = "A pouch of ten Chaos Orbs."},
-				{kind = "item", id = 29856, count = 50, cost = 400, name = "50 Chaos Orbs", description = "A chest of fifty Chaos Orbs."},
-				{kind = "item", id = 29857, count = 1, cost = 25, name = "Divine Orb", description = "Rerolls the values of an item's modifiers."},
-				{kind = "item", id = 29857, count = 10, cost = 225, name = "10 Divine Orbs", description = "A pouch of ten Divine Orbs."},
+				{kind = "item", id = 29856, count = 1, cost = 10, name = "Orb of Upheaval", description = "Rerolls the modifiers of an item with a rarity; bound modifiers stay."},
+				{kind = "item", id = 29856, count = 10, cost = 90, name = "10 Orbs of Upheaval", description = "A pouch of ten Orbs of Upheaval."},
+				{kind = "item", id = 29856, count = 50, cost = 400, name = "50 Orbs of Upheaval", description = "A chest of fifty Orbs of Upheaval."},
+				{kind = "item", id = 29857, count = 1, cost = 25, name = "Orb of Fate", description = "Rolls a new random rarity for an item, often none. Not on an item with a bound modifier."},
+				{kind = "item", id = 29857, count = 10, cost = 225, name = "10 Orbs of Fate", description = "A pouch of ten Orbs of Fate."},
 				-- crafting orbs (data/lib/chaos_crafting.lua, the crafting bench: !craft)
-				{kind = "item", id = 29851, count = 1, cost = 5, name = "Orb of Transmutation", description = "Turns a normal item into a Common or Uncommon one with random modifiers."},
-				{kind = "item", id = 24691, count = 1, cost = 15, name = "Orb of Alchemy", description = "Turns a normal item into a Rare, Epic or Legendary one."},
-				{kind = "item", id = 24688, count = 1, cost = 12, name = "Orb of Scouring", description = "Removes the rarity and all modifiers of an item."},
-				{kind = "item", id = 24697, count = 1, cost = 20, name = "Orb of Annulment", description = "Removes one random modifier from an item."},
+				{kind = "item", id = 29851, count = 1, cost = 5, name = "Orb of Awakening", description = "Turns a normal item into a Common or Uncommon one with random modifiers."},
+				{kind = "item", id = 24691, count = 1, cost = 15, name = "Orb of Gilding", description = "Turns a normal item into a Rare, Epic or Legendary one."},
+				{kind = "item", id = 24688, count = 1, cost = 12, name = "Orb of Erasure", description = "Removes the rarity and all modifiers of an item."},
+				{kind = "item", id = 24697, count = 1, cost = 20, name = "Orb of Unmaking", description = "Removes one random modifier from an item."},
 				{kind = "item", id = 24692, count = 1, cost = 25, name = "Orb of Sockets", description = "Rolls a new number of sockets (1 to 3 by item and rarity) for a piece of gear; socketed gems stay."},
-				{kind = "item", id = 29855, count = 1, cost = 40, name = "Exalted Orb", description = "Adds one random modifier to an item with a free modifier slot."}
+				{kind = "item", id = 29855, count = 1, cost = 40, name = "Orb of Grafting", description = "Adds one random modifier to an item with a free modifier slot."},
+				-- orbs v2 (data/lib/chaos_orbs.lua); the Orb of Ruin is not sold
+				{kind = "item", id = 32256, count = 10, cost = 20, name = "10 Whetstones", description = "Each Whetstone adds 1% quality to an item with modifiers (up to 20%, 30% from Divine rarity)."},
+				{kind = "item", id = 32251, count = 1, cost = 8, name = "Orb of Tempering", description = "Rolls the values of every modifier that is not bound again, inside their tiers."},
+				{kind = "item", id = 32254, count = 1, cost = 20, name = "Orb of Reforging", description = "Rolls the tier and the value of one modifier you choose at the crafting bench again."},
+				{kind = "item", id = 32253, count = 1, cost = 25, name = "Orb of Excision", description = "Removes the modifier you choose at the crafting bench."},
+				{kind = "item", id = 32252, count = 1, cost = 30, name = "Orb of Binding", description = "Binds one modifier: the orbs that change modifiers leave it alone."}
 			}
 		},
 		{

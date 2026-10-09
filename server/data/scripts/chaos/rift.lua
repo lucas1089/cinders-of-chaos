@@ -804,7 +804,7 @@ function RF.deliver(player, run, auto)
 		found[#found + 1] = (n > 1 and (n .. "x ") or "") .. itemName(id)
 	end
 	local list = table.concat(found, ", ", 1, math.min(#found, 25)) .. (#found > 25 and (" and " .. (#found - 25) .. " more") or "")
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s: %d gold to your bank, %d Chaos Orb%s, %d Divine Orb%s%s%s.%s",
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s: %d gold to your bank, %d Orb%s of Upheaval, %d Orb%s of Fate%s%s.%s",
 		auto and ((data.omen and "Guardian's reward" or "Rift reward") .. " (the chest was not opened, it was sent to you)")
 			or (data.omen and "Guardian's chest" or "Rift chest"),
 		r.gold, r.chaos, r.chaos == 1 and "" or "s", r.divine, r.divine == 1 and "" or "s",
@@ -1135,7 +1135,7 @@ local function openCoffer(run)
 	item:setAttribute(ITEM_ATTRIBUTE_NAME, "opened coffer")
 	item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, "The seal is broken. Its spoils are free for the taking.")
 	P(cf.pos):sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
-	say(run, string.format("The coffer's seal breaks: %d gold, %d Chaos Orb%s, %d Divine Orb%s and %d more item%s inside.",
+	say(run, string.format("The coffer's seal breaks: %d gold, %d Orb%s of Upheaval, %d Orb%s of Fate and %d more item%s inside.",
 		r.gold, r.chaos, r.chaos == 1 and "" or "s", r.divine, r.divine == 1 and "" or "s", #found, #found == 1 and "" or "s"))
 end
 RF._openCoffer = openCoffer

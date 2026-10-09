@@ -57,6 +57,35 @@ CraftModLabel < UILabel
   color: #7fa8ff
   phantom: true
 
+// one modifier of the item on the bench: click it to aim an orb at it (Binding, Excision, Reforging); "bound" modifiers
+// are marked on the right
+CraftModRow < UIWidget
+  height: 17
+  margin-bottom: 1
+  phantom: false
+  focusable: false
+
+  UILabel
+    id: text
+    anchors.left: parent.left
+    anchors.right: mark.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 3
+    text-align: left
+    font: verdana-11px-antialised
+    color: #7fa8ff
+    phantom: true
+
+  UILabel
+    id: mark
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 4
+    text-auto-resize: true
+    font: verdana-11px-rounded
+    color: #e8b84a
+    phantom: true
+
 // one socket of the item on the bench: the gem (or "empty"), its effect, take it out for gold or shatter it
 CraftSocketRow < UIWidget
   height: 30
@@ -115,7 +144,7 @@ CraftSocketRow < UIWidget
 
 // one recipe of the Salvage tab: shards -> an orb
 CraftRecipeRow < ChaosPanelDark
-  size: 166 32
+  size: 156 32
   padding: 1
   phantom: false
 
@@ -242,13 +271,23 @@ ChaosMainWindow
     anchors.right: itemPanel.right
     margin: 6 8 0 8
 
+  ChaosProgressBar
+    id: qualityBar
+    anchors.left: itemPanel.left
+    anchors.right: itemPanel.right
+    anchors.bottom: itemPanel.bottom
+    margin: 0 12 7 12
+    height: 15
+    background-color: #2f8f5a
+    visible: false
+
   UIWidget
     id: modList
     anchors.top: itemSep.bottom
     anchors.left: itemPanel.left
     anchors.right: itemPanel.right
-    anchors.bottom: itemPanel.bottom
-    margin: 4 12 6 12
+    anchors.bottom: qualityBar.top
+    margin: 4 12 4 12
     phantom: true
     layout:
       type: verticalBox
@@ -341,16 +380,27 @@ ChaosMainWindow
     !tooltip: tr('Break rolled gear down into rune shards and combine the shards into orbs.')
     @onClick: modules.game_crafting.setMode('salvage')
 
-  UIWidget
+  UIScrollArea
     id: orbList
     anchors.top: orbLabel.bottom
     anchors.left: orbLabel.left
+    anchors.right: orbScroll.left
+    margin-top: 4
+    margin-right: 3
+    height: 378
+    vertical-scrollbar: orbScroll
+    auto-focus: none
+    layout:
+      type: verticalBox
+
+  ChaosScrollBar
+    id: orbScroll
+    anchors.top: orbLabel.bottom
     anchors.right: parent.right
     margin-top: 4
     height: 378
-    phantom: true
-    layout:
-      type: verticalBox
+    step: 47
+    pixels-scroll: true
 
   // ------------------------------------------------------------ salvage (the Salvage tab, in the place of the orbs)
   UIWidget
@@ -508,19 +558,30 @@ ChaosMainWindow
       text-auto-resize: true
       !text: tr('Combine shards into orbs (Ctrl: up to 10)')
 
-    UIWidget
+    UIScrollArea
       id: recipeList
       anchors.top: combineTitle.bottom
       anchors.left: parent.left
+      anchors.right: recipeScroll.left
+      anchors.bottom: parent.bottom
+      margin-top: 4
+      margin-right: 3
+      vertical-scrollbar: recipeScroll
+      auto-focus: none
+      layout:
+        type: grid
+        cell-size: 156 32
+        cell-spacing: 2
+        flow: true
+
+    ChaosScrollBar
+      id: recipeScroll
+      anchors.top: combineTitle.bottom
       anchors.right: parent.right
       anchors.bottom: parent.bottom
       margin-top: 4
-      phantom: true
-      layout:
-        type: grid
-        cell-size: 166 32
-        cell-spacing: 2
-        flow: true
+      step: 34
+      pixels-scroll: true
 
   // ------------------------------------------------------------ history
   ChaosLabel

@@ -9,8 +9,8 @@ return {
 	-- action id. Tier and modifiers
 	-- are custom attributes ("rift_tier", "rift_mods" = "key:value,key:value"); the name becomes "Rift Key (Tier N)" and
 	-- the description lists the modifiers and the reward bonuses, so looking at a key shows them.
-	-- maxMods: the most modifiers a key can carry (drops roll 1-3; the Exalted Orb adds up to this). alchemyCount: how
-	-- many modifiers an Orb of Alchemy gives a key without any, {count, weight} (data/lib/chaos_crafting.lua)
+	-- maxMods: the most modifiers a key can carry (drops roll 1-3; the Orb of Grafting adds up to this). alchemyCount: how
+	-- many modifiers an Orb of Gilding gives a key without any, {count, weight} (data/lib/chaos_crafting.lua)
 	key = {itemId = 10155, actionId = 47401, nameFormat = "Rift Key (Tier %d)", maxMods = 3,
 		alchemyCount = {{2, 60}, {3, 40}}},
 	chest = {itemId = 1740, actionId = 47402}, -- the reward chest that appears where the rift boss died
@@ -130,7 +130,7 @@ return {
 	gilded = {atKills = {25, 60}},
 	-- Sealed Coffer: a treasure chest in a random open side room. Using it wakes a wave of rift monsters around it
 	-- (wave.base + wave.perExtraPlayer x (players - 1), at least `waveTier`); once they are dead it opens with: gold
-	-- coins goldPerTier2 x tier^2, Chaos / Divine Orbs and item rolls (as the reward chest, base + perTier x tier), all x
+	-- coins goldPerTier2 x tier^2, Orbs of Upheaval and Fate and item rolls (as the reward chest, base + perTier x tier), all x
 	-- (1 + quantity bonus). Wave kills do not count towards the guardian. A coffer nobody woke crumbles when the rift is
 	-- sealed; a woken one opens then.
 	coffer = {itemId = 1746, actionId = 47403, wave = {base = 5, perExtraPlayer = 1, spread = 2}, waveTier = "magic",

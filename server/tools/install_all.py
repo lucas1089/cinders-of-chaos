@@ -20,6 +20,7 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   weapons      tools/two_handed.py               two-handed attack speed (README "Weapon styles")
   lategame     tools/late_game.py                experience stages in config.lua + late game spawns (README "Install" 5)
   crafting     tools/install_crafting.py         crafting orb items and the reroll guard (README "Crafting")
+  orbs         tools/install_orbs.py             crafting orbs v2 items, orb renames in the base files (README "Crafting orbs v2")
   darktiles    tools/install_dark_tiles.py       the dark tile set in items.otb / items.xml (README "Dark tile set")
   outfits      tools/install_outfits.py          the Ninja / Samurai class outfits in outfits.xml (docs/CLASSES.md)
   auras        tools/install_auras.py            the Chaos auras in auras.xml (data/XML/chaos_auras.csv, written by
@@ -70,7 +71,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'vocations', 'events', 'weapons', 'lategame', 'crafting', 'darktiles', 'gems', 'salvage', 'omens', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'monsters', 'spells', 'autoloot', 'commands', 'sql']
+STEPS = ['files', 'lib', 'vocations', 'events', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'monsters', 'spells', 'autoloot', 'commands', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -243,6 +244,10 @@ def step_lategame(server, data, ctx):
 
 def step_crafting(server, data, ctx):
     return tool_result(run_tool([tool('install_crafting.py'), data], 'install_crafting.py'))
+
+
+def step_orbs(server, data, ctx):
+    return tool_result(run_tool([tool('install_orbs.py'), data], 'install_orbs.py'))
 
 
 def step_darktiles(server, data, ctx):

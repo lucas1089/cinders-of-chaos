@@ -30,9 +30,11 @@
 -- too, the map way: the orbs change the key's modifiers inside the rift's own pool and ranges (rift_core.lua), see
 -- C.keyCheck / C.keyApply below.
 --
--- New orbs: C.addOrb{key, id, name, text, keyText, check = fn(item) -> ok, reason, apply = fn(item) -> ok, result,
--- preview = fn(item) -> text}. The building blocks: C.readMods, C.candidates, C.rollAffix, C.removeMod, C.forge,
--- C.rerollValues, C.rerollTiers, C.recreate, C.rewriteDescription.
+-- New orbs: C.addOrb{key, id, name, text, keyText, check = fn(item, opts) -> ok, reason, apply = fn(item, opts) -> ok,
+-- result, preview = fn(item) -> text, pick = fn(item) -> {attribute keys the orb may be aimed at}}. The building blocks:
+-- C.readMods, C.candidates, C.rollAffix, C.removeMod, C.forge, C.rerollValues, C.rerollTiers, C.recreate,
+-- C.rewriteDescription, C.qualityOf / C.addQuality (item quality), C.setBound (bound modifiers), C.ruin (ruined items).
+-- The orbs of orbs v2 (Tempering, Binding, Excision, Reforging, Ruin, the Whetstone) are in data/lib/chaos_orbs.lua.
 
 ChaosCrafting = ChaosCrafting or {}
 local C = ChaosCrafting
@@ -52,26 +54,26 @@ C.config = {
 	-- orbs in the order the bench shows them. id = server item id. The three new ids (24688, 24691, 24697) are unused
 	-- stackable rune stones without an items.xml entry; server/tools/install_crafting.py gives them their names.
 	orbs = {
-		{key = "transmutation", id = 29851, name = "Orb of Transmutation",
+		{key = "transmutation", id = 29851, name = "Orb of Awakening",
 			text = "Turns a normal item into a Common or Uncommon one with random modifiers (tiers by its item level).",
 			keyText = "Gives a Rift Key without modifiers one modifier."},
-		{key = "alchemy", id = 24691, name = "Orb of Alchemy",
+		{key = "alchemy", id = 24691, name = "Orb of Gilding",
 			text = "Turns a normal item into a Rare, Epic or Legendary one with random modifiers (tiers by its item level).",
 			keyText = "Gives a Rift Key without modifiers two or three modifiers."},
-		{key = "exalted", id = 29855, name = "Exalted Orb",
+		{key = "exalted", id = 29855, name = "Orb of Grafting",
 			text = "Adds one random modifier on an open prefix or suffix of an item with a rarity.",
 			keyText = "Adds one modifier to a Rift Key (three at most)."},
-		{key = "annulment", id = 24697, name = "Orb of Annulment",
-			text = "Removes one random modifier.",
+		{key = "annulment", id = 24697, name = "Orb of Unmaking",
+			text = "Removes one random modifier that is not bound.",
 			keyText = "Removes one random modifier of a Rift Key."},
-		{key = "scouring", id = 24688, name = "Orb of Scouring",
-			text = "Removes the rarity and every modifier: the item becomes a normal one (it keeps its item level).",
+		{key = "scouring", id = 24688, name = "Orb of Erasure",
+			text = "Removes the rarity, every modifier and every bind: the item becomes a normal one (it keeps its item level and quality).",
 			keyText = "Removes every modifier of a Rift Key."},
-		{key = "chaos", id = 29856, name = "Chaos Orb",
-			text = "Rerolls every modifier of an item with a rarity (same rarity and item level).",
+		{key = "chaos", id = 29856, name = "Orb of Upheaval",
+			text = "Rerolls every modifier of an item with a rarity that is not bound (same rarity, item level and quality).",
 			keyText = "Rerolls the modifiers of a Rift Key (one to three new ones)."},
-		{key = "divine", id = 29857, name = "Divine Orb",
-			text = "Rolls a new random rarity for the item, often none (the stock Divine Orb); the item level stays.",
+		{key = "divine", id = 29857, name = "Orb of Fate",
+			text = "Rolls a new random rarity for the item, often none (the old rarity gamble); item level and quality stay. Not on an item with a bound modifier.",
 			keyText = "Rerolls the values of a Rift Key's modifiers inside their ranges."},
 		-- gems and sockets (chaos_gems_config.lua socketOrb; install_gems.py names the rune stone)
 		{key = "sockets", id = ChaosGems.config.socketOrb.id, name = ChaosGems.config.socketOrb.name,
@@ -90,11 +92,11 @@ C.config = {
 
 	maxElements = 1, -- element modifiers per weapon (the stock roll never gives more than one)
 
-	-- Orbs of Transmutation and Alchemy: {rarity, weight}
+	-- Orbs of Awakening and Alchemy: {rarity, weight}
 	transmutation = {{1, 65}, {2, 35}},
 	alchemy = {{3, 55}, {4, 30}, {5, 15}},
 
-	-- the stock Divine Orb roll (customs/rarity/reroll_rarity_stats.lua rollRarityForReroll): rollChance % to get a
+	-- the stock Orb of Fate roll (customs/rarity/reroll_rarity_stats.lua rollRarityForReroll): rollChance % to get a
 	-- rarity at all, then each rarity in order with its own chance
 	divineRollChance = 15,
 	divineChances = {25.0, 18.0, 15.0, 12.0, 10.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.5, 3.0, 2.5, 2.0, 1.0},
@@ -227,13 +229,15 @@ end
 -- every custom attribute key a rolled item may carry (rarity, item level, each modifier and its tier mark): what a
 -- script that copies an item by hand (the guild depot) must copy
 function C.attributeKeys()
-	local out = {"rarity", M.ILVL, "combatPowerLevel"}
+	local out = {"rarity", M.ILVL, "combatPowerLevel", M.QUALITY, M.RUINED, M.EXTRA}
 	for _, a in ipairs(C.affixes()) do
 		out[#out + 1] = a.key
 		if a.key2 then
 			out[#out + 1] = a.key2
 		end
 		out[#out + 1] = M.tierAttr(a.key)
+		out[#out + 1] = M.rawAttr(a.key)
+		out[#out + 1] = M.bindAttr(a.key)
 	end
 	return out
 end
@@ -318,6 +322,8 @@ function C.readMods(item)
 		m.affix = affix
 		m.side = affix and affix.side or "suffix"
 		m.tier = affix and tierOf(item, affix, tierValue) or 1
+		m.bound = M.isBound(item, m.key)
+		m.power = affix and affix.def and M.isPower(affix.def) or false
 		if affix then
 			local r = M.tierRange(affix.tiers, m.tier)
 			m.lo, m.hi = r[1], r[2]
@@ -390,7 +396,7 @@ end
 
 -- with the tier: "Sword +2 (T3)"
 function C.modTierText(m)
-	return string.format("%s (T%d)", C.modText(m), m.tier or 1)
+	return string.format("%s (T%d%s)", C.modText(m), m.tier or 1, m.bound and ", bound" or "")
 end
 
 -- the modifier part of the description: "Prefixes: Sword +2 (T3); Fire +5% dmg (T2). Suffixes: Earth +2% (T4)"
@@ -474,27 +480,51 @@ function C.maxMods(rarity)
 	return M.maxMods(rarity)
 end
 
+-- every modifier this item may carry: its rarity's, plus the one extra slot an Orb of Ruin gave
+function C.maxModsOf(item, rarity)
+	return M.maxMods(rarity or C.rarityOf(item)) + (M.extraSide(item) and 1 or 0)
+end
+
+-- how many modifiers are bound / how many may be
+function C.bindCount(mods)
+	local n = 0
+	for _, m in ipairs(mods) do
+		if m.bound then
+			n = n + 1
+		end
+	end
+	return n
+end
+
 -- the modifiers that could still be added: list of {entry = affix, weight}. Not on the item yet, allowed on its kind,
--- an open side (rarity's prefix / suffix limit; rarity = the item's unless given), one element at most on a weapon
--- that may have one.
-function C.candidates(item, rarity, mods)
+-- an open side (rarity's prefix / suffix limit, plus the extra slot; rarity = the item's unless given), one element at
+-- most on a weapon that may have one, a legendary power only from Legendary on and only one per item. opts.extra = true:
+-- one more than the limit on each side (the Orb of Ruin's extra slot).
+function C.candidates(item, rarity, mods, opts)
 	mods = mods or C.readMods(item)
 	rarity = rarity or C.rarityOf(item)
-	local limit = M.sideLimit(rarity)
-	local have, elements = {}, 0
+	local have, elements, powers = {}, 0, 0
 	for _, m in ipairs(mods) do
 		have[m.key:lower()] = true
 		if m.group == "element" then
 			elements = elements + 1
 		end
+		if m.power then
+			powers = powers + 1
+		end
 	end
 	local p, s = C.sideCounts(mods)
-	local open = {prefix = p < limit, suffix = s < limit}
+	local extra = opts and opts.extra and 1 or 0
+	local open = {prefix = p < M.sideLimitOf(item, "prefix", rarity) + extra,
+		suffix = s < M.sideLimitOf(item, "suffix", rarity) + extra}
 	local kind = M.kindOf(item)
 	local elementOk = elements < C.config.maxElements and C.canHaveElement(item)
+	local powerOk = rarity >= M.config.powers.minRarity and powers < M.config.powers.maxPerItem
 	local out = {}
 	for _, a in ipairs(C.affixes()) do
-		if not have[a.key:lower()] and open[a.side] and M.allowed(a, kind) and (a.group ~= "element" or elementOk) then
+		local isPower = a.def and M.isPower(a.def)
+		if not have[a.key:lower()] and open[a.side] and M.allowed(a, kind) and (a.group ~= "element" or elementOk)
+				and (not isPower or powerOk) then
 			out[#out + 1] = {entry = a, weight = a.weight}
 		end
 	end
@@ -512,6 +542,16 @@ C.reasons = {
 	noMods = "This item has no modifier to remove.",
 	nothingToAdd = "There is no modifier left that this item could get.",
 	unknownOrb = "Unknown orb.",
+	ruined = "This item is ruined: no orb can change it any more.",
+	allBound = "Every modifier of this item is bound.",
+	noneBound = "This item has no bound modifier.",
+	tooManyBinds = "This item has all the bound modifiers its rarity allows.",
+	needMod = "Choose a modifier of the item first.",
+	badMod = "That modifier cannot be chosen for this orb.",
+	hasBound = "Bound modifiers stop this orb: use an Orb of Erasure first.",
+	qualityFull = "This item has all the quality it can get.",
+	needMods = "This item has no modifier for the quality to act on.",
+	ruinNothing = "Nothing left to risk: the item has no modifier an Orb of Ruin could improve.",
 	keyNeedNone = "This orb works only on a Rift Key without modifiers.",
 	keyNoMods = "This Rift Key has no modifiers.",
 	keyFull = "This Rift Key has the most modifiers a key can have.",
@@ -520,8 +560,21 @@ C.reasons = {
 	keyOrb = "This orb does not work on Rift Keys."
 }
 
--- can this orb be used on this item? returns true or false, reasonCode
-function C.check(orbKey, item)
+-- the modifiers an orb may be aimed at (attribute keys), for the orbs that take one (orb.pick); empty = none
+function C.pickList(orbKey, item)
+	local orb = C.orbByKey[orbKey]
+	if not orb or not item then
+		return {}
+	end
+	if C.isRiftKey(item) then
+		return orb.keyPick and orb.keyPick(item) or {}
+	end
+	return orb.pick and orb.pick(item) or {}
+end
+
+-- can this orb be used on this item? returns true or false, reasonCode. opts.mod = the attribute key of the modifier it is
+-- aimed at (orbs with `pick`; none = the orb chooses at random where it may)
+function C.check(orbKey, item, opts)
 	local orb = C.orbByKey[orbKey]
 	if not orb then
 		return false, "unknownOrb"
@@ -538,6 +591,9 @@ function C.check(orbKey, item)
 	if not item or not C.isGear(item) then
 		return false, "notGear"
 	end
+	if M.isRuined(item) then
+		return false, "ruined"
+	end
 	if orbKey == "sockets" then
 		local okS, why = G.orbCheck(item)
 		if not okS then
@@ -553,7 +609,7 @@ function C.check(orbKey, item)
 		return false, "stack"
 	end
 	if orb.check then
-		return orb.check(item)
+		return orb.check(item, opts)
 	end
 	local rarity = C.rarityOf(item)
 	if orbKey == "transmutation" or orbKey == "alchemy" then
@@ -561,6 +617,9 @@ function C.check(orbKey, item)
 			return false, "needNormal"
 		end
 	elseif orbKey == "divine" then
+		if C.bindCount(C.readMods(item)) > 0 then
+			return false, "hasBound"
+		end
 		return true
 	else
 		if rarity == 0 then
@@ -568,17 +627,24 @@ function C.check(orbKey, item)
 		end
 		local mods = C.readMods(item)
 		if orbKey == "exalted" then
-			if #mods >= C.maxMods(rarity) then
+			if #mods >= C.maxModsOf(item, rarity) then
 				return false, "full"
 			end
 			if #C.candidates(item, rarity, mods) == 0 then
 				local p, s = C.sideCounts(mods)
-				local limit = M.sideLimit(rarity)
-				return false, (p >= limit or s >= limit) and "sidesFull" or "nothingToAdd"
+				return false, (p >= M.sideLimitOf(item, "prefix", rarity) or s >= M.sideLimitOf(item, "suffix", rarity))
+					and "sidesFull" or "nothingToAdd"
 			end
 		elseif orbKey == "annulment" then
 			if #mods == 0 then
 				return false, "noMods"
+			end
+			if #mods == C.bindCount(mods) then
+				return false, "allBound"
+			end
+		elseif orbKey == "chaos" then
+			if #mods > 0 and #mods == C.bindCount(mods) then
+				return false, "allBound"
 			end
 		end
 	end
@@ -612,7 +678,7 @@ function C.specialChance(v)
 	return math.max(1, math.floor((2 * v + 1) / 3))
 end
 
--- the stock Divine Orb roll: 0 (no rarity) most of the time
+-- the stock Orb of Fate roll: 0 (no rarity) most of the time
 function C.rollDivineRarity()
 	if C.random(1, 100) > C.config.divineRollChance then
 		return 0
@@ -625,26 +691,47 @@ function C.rollDivineRarity()
 	return 0
 end
 
--- write one modifier of `affix` at `tier` (value rolled inside the tier unless given). Returns the modifier.
+-- item quality in percent (0 when none)
+function C.qualityOf(item)
+	return M.qualityOf(item)
+end
+
+local function removeCustom(item, key)
+	pcall(function() item:removeCustomAttribute(key) end)
+end
+
+-- write one modifier of `affix` at `tier` (the value rolled inside the tier unless given; `value` is always the value
+-- before quality). With item quality q the item carries value x (100 + q) / 100, rounded, and keeps the rolled value
+-- under "cv_<key>" so the next quality step starts from it. Returns the modifier.
 function C.writeAffix(item, affix, tier, value, rand)
 	rand = rand or C.random
 	local r = M.tierRange(affix.tiers, tier)
 	value = value or rand(r[1], r[2])
+	local q = M.qualityOf(item)
+	local function eff(v)
+		return q > 0 and M.scaleQuality(v, q) or v
+	end
 	local m = {group = affix.group, key = affix.key, key2 = affix.key2, label = affix.label, label2 = affix.label2,
-		chaosKey = affix.chaosKey, side = affix.side, tier = tier, lo = r[1], hi = r[2], affix = affix}
+		chaosKey = affix.chaosKey, side = affix.side, tier = tier, lo = r[1], hi = r[2], affix = affix,
+		bound = M.isBound(item, affix.key), power = affix.def and M.isPower(affix.def) or false}
 	if affix.group == "chaos" then
-		M.set(item, affix.chaosKey, value, tier)
-		m.value = value
+		M.set(item, affix.chaosKey, eff(value), tier)
+		m.value = eff(value)
 	elseif affix.group == "special" then
-		m.value, m.value2 = C.specialChance(value), value
+		m.value, m.value2 = eff(C.specialChance(value)), eff(value)
 		item:setCustomAttribute(affix.key, m.value)
-		item:setCustomAttribute(affix.key2, value)
+		item:setCustomAttribute(affix.key2, m.value2)
 		M.setTier(item, affix.key, tier)
 		m.lo, m.hi, m.lo2, m.hi2 = C.specialChance(r[1]), C.specialChance(r[2]), r[1], r[2]
 	else
-		item:setCustomAttribute(affix.key, value)
+		item:setCustomAttribute(affix.key, eff(value))
 		M.setTier(item, affix.key, tier)
-		m.value = value
+		m.value = eff(value)
+	end
+	if q > 0 then
+		item:setCustomAttribute(M.rawAttr(affix.key), value)
+	else
+		removeCustom(item, M.rawAttr(affix.key))
 	end
 	return m
 end
@@ -670,8 +757,22 @@ function C.rollAffixes(item, rarity, level, n, rand)
 	return added
 end
 
--- remove one modifier (as C.readMods returns it)
-function C.removeMod(item, m)
+-- the value a modifier was rolled at, before the item's quality
+function C.rawValue(item, m)
+	local v = custom(item, M.rawAttr(m.key))
+	v = num(v)
+	if v and v > 0 then
+		return math.floor(v)
+	end
+	return m.group == "special" and m.value2 or m.value
+end
+
+-- remove one modifier (as C.readMods returns it); its tier, bind and rolled value go too. A bound modifier stays unless
+-- force is set (the plain copies of the orbs). Returns true when it went.
+function C.removeMod(item, m, force)
+	if m.bound and not force then
+		return false
+	end
 	if m.group == "chaos" then
 		M.remove(item, m.chaosKey)
 	else
@@ -681,37 +782,88 @@ function C.removeMod(item, m)
 		end
 		M.removeTier(item, m.key)
 	end
+	removeCustom(item, M.rawAttr(m.key))
+	removeCustom(item, M.bindAttr(m.key))
+	return true
 end
 
--- every modifier and every tier mark goes (rarity and level stay)
+-- every modifier, tier mark, bind and the extra slot go (rarity, level and quality stay)
 function C.clearMods(item)
 	for _, m in ipairs(C.readMods(item)) do
-		C.removeMod(item, m)
+		C.removeMod(item, m, true)
 	end
 	for _, a in ipairs(C.affixes()) do
 		M.removeTier(item, a.key)
+		removeCustom(item, M.rawAttr(a.key))
+		removeCustom(item, M.bindAttr(a.key))
 	end
+	removeCustom(item, M.EXTRA)
 end
 
--- new values inside the current tiers (a Divine-style reroll for gear; orbs v2)
+-- the modifier of an item under this attribute key (as C.readMods returns it) or nil
+function C.modByKey(item, key, mods)
+	key = tostring(key or ""):lower()
+	for _, m in ipairs(mods or C.readMods(item)) do
+		if m.key:lower() == key then
+			return m
+		end
+	end
+	return nil
+end
+
+-- bind (or free) one modifier. Returns true when it changed.
+function C.setBound(item, m, on)
+	if (m.bound and true or false) == (on and true or false) then
+		return false
+	end
+	M.setBound(item, m.key, on)
+	m.bound = on and true or false
+	return true
+end
+
+-- new values inside the current tiers of every modifier that is not bound (the Orb of Tempering)
 function C.rerollValues(item, rand)
 	for _, m in ipairs(C.readMods(item)) do
-		if m.affix then
+		if m.affix and not m.bound then
 			C.writeAffix(item, m.affix, m.tier, nil, rand)
 		end
 	end
 	C.rewriteDescription(item)
 end
 
--- new tiers (by the item level) and values for the same modifiers (orbs v2)
-function C.rerollTiers(item, rand)
-	local level = C.levelOf(item)
+-- new tiers (by the item level) and values for the same modifiers that are not bound (orbs v2); `only` = one modifier
+function C.rerollTiers(item, rand, only)
+	local level = C.orbLevel(item)
 	for _, m in ipairs(C.readMods(item)) do
-		if m.affix then
+		if m.affix and not m.bound and (not only or m.key:lower() == tostring(only):lower()) then
 			C.rollAffix(item, m.affix, level, rand)
 		end
 	end
 	C.rewriteDescription(item)
+end
+
+-- the Orb of Whetstone: `stones` x the configured percent more quality, up to the cap of the item's rarity. Every value
+-- is worked out again from the value it was rolled at. Returns the new quality, the old one.
+function C.addQuality(item, stones)
+	local old = M.qualityOf(item)
+	local rarity = C.rarityOf(item)
+	local q = math.min(M.qualityCap(rarity), old + (tonumber(stones) or 1) * M.config.quality.perStone)
+	if q == old then
+		return q, old
+	end
+	local mods = C.readMods(item)
+	local raws = {}
+	for i, m in ipairs(mods) do
+		raws[i] = C.rawValue(item, m) -- before the quality changes (a stored raw value, else the value as it is)
+	end
+	item:setCustomAttribute(M.QUALITY, q)
+	for i, m in ipairs(mods) do
+		if m.affix then
+			C.writeAffix(item, m.affix, m.tier, raws[i], nil) -- the tier is stored by this call too (old items had none)
+		end
+	end
+	C.rewriteDescription(item)
+	return q, old
 end
 
 -- the base stat bonus of a rarity at an item level (item.cpp's formula)
@@ -841,6 +993,13 @@ function C.rewriteDescription(item)
 	end
 	prefix = prefix:gsub("[,%.%s]+$", "")
 	local body = "Item Level: " .. C.levelOf(item)
+	local quality = M.qualityOf(item)
+	if quality > 0 then
+		body = body .. string.format(". Quality: +%d%%", quality)
+	end
+	if M.isRuined(item) then
+		body = body .. ". Ruined"
+	end
 	local modsText = C.modsText(C.readMods(item))
 	if modsText ~= "" then
 		body = body .. ". " .. modsText
@@ -858,7 +1017,7 @@ end
 -- ---------------------------------------------------------------------------------------------------------------
 -- the orbs that change an item in place
 -- ---------------------------------------------------------------------------------------------------------------
--- Exalted Orb: one new modifier on an open side, its tier by the item level. Returns the added modifier.
+-- Orb of Grafting: one new modifier on an open side, its tier by the item level. Returns the added modifier.
 function C.exalt(item)
 	local rarity = C.rarityOf(item)
 	local affix = M.pick(C.candidates(item, rarity), C.random)
@@ -870,16 +1029,39 @@ function C.exalt(item)
 	return m
 end
 
--- Orb of Annulment: one random modifier goes. Returns the removed modifier.
+-- Orb of Unmaking: one random modifier goes. Returns the removed modifier.
 function C.annul(item)
-	local mods = C.readMods(item)
-	if #mods == 0 then
+	local free = {}
+	for _, m in ipairs(C.readMods(item)) do
+		if not m.bound then
+			free[#free + 1] = m
+		end
+	end
+	if #free == 0 then
 		return nil
 	end
-	local m = mods[C.random(1, #mods)]
+	local m = free[C.random(1, #free)]
 	C.removeMod(item, m)
 	C.rewriteDescription(item)
 	return m
+end
+
+-- Orb of Upheaval on an item with bound modifiers: they stay, every other modifier is rolled again in place (the rarity's
+-- count minus the bound ones; an extra slot stays). Returns the new modifiers.
+function C.upheave(item, rand)
+	rand = rand or C.random
+	local rarity, level = C.rarityOf(item), C.orbLevel(item)
+	local kept = 0
+	for _, m in ipairs(C.readMods(item)) do
+		if m.bound then
+			kept = kept + 1
+		else
+			C.removeMod(item, m)
+		end
+	end
+	local added = C.rollAffixes(item, rarity, level, math.max(0, M.modCount(rarity) - kept), rand)
+	C.rewriteDescription(item)
+	return added
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -911,6 +1093,10 @@ function C.recreate(item, rarity, level)
 		return nil, "The orb fizzles: the new item could not be made."
 	end
 	G.copy(item, newItem) -- sockets and gems survive every orb (chaos_gems.lua)
+	local quality = M.qualityOf(item)
+	if quality > 0 then
+		newItem:setCustomAttribute(M.QUALITY, quality) -- item quality survives every orb; forge rolls with it
+	end
 	if ChaosSalvage and ChaosSalvage.copyLock then
 		ChaosSalvage.copyLock(item, newItem) -- the item lock too (salvage.lua)
 	end
@@ -918,7 +1104,9 @@ function C.recreate(item, rarity, level)
 		C.forge(newItem, rarity, level, C.random)
 	else
 		newItem:setCustomAttribute(M.ILVL, level)
-		if G.count(newItem) > 0 then
+		if quality > 0 then
+			C.rewriteDescription(newItem) -- "Quality: +N%"
+		elseif G.count(newItem) > 0 then
 			G.writeDescription(newItem)
 		end
 	end
@@ -941,20 +1129,20 @@ end
 -- apply an orb (the caller has checked ownership and position, and removes the orb on success)
 -- returns ok, result where result = {item = <the item now>, text = <what happened>, mods = {...}} or a message
 -- ---------------------------------------------------------------------------------------------------------------
-function C.apply(orbKey, item)
-	local ok, reason = C.check(orbKey, item)
+function C.apply(orbKey, item, opts)
+	local ok, reason = C.check(orbKey, item, opts)
 	if not ok then
 		return false, C.reasons[reason] or reason
 	end
 	local orb = C.orbByKey[orbKey]
 	if C.isRiftKey(item) then
 		if orb.keyApply then
-			return orb.keyApply(item)
+			return orb.keyApply(item, opts)
 		end
 		return C.keyApply(orbKey, item)
 	end
 	if orb.apply then
-		return orb.apply(item)
+		return orb.apply(item, opts)
 	end
 	local name = C.itemName(item)
 	if orbKey == "sockets" then
@@ -975,6 +1163,11 @@ function C.apply(orbKey, item)
 			return false, C.reasons.noMods
 		end
 		return true, {item = item, text = string.format("%s lost %s.", name, C.modTierText(m)), removed = m}
+	end
+	if orbKey == "chaos" and C.bindCount(C.readMods(item)) > 0 then
+		local added = C.upheave(item, C.random)
+		return true, {item = item, text = string.format("%s: %d new modifier%s, the bound ones stayed (%s).", name, #added,
+			#added == 1 and "" or "s", C.modsText(C.readMods(item))), added = added}
 	end
 	local rarity = C.targetRarity(orbKey, item)
 	if not rarity then
@@ -1208,15 +1401,19 @@ function C.preview(orbKey, item)
 		return string.format("%s; item level %d: %s", chances(C.config.alchemy), level, tierSpan(level))
 	elseif orbKey == "exalted" then
 		local p, s = C.sideCounts(mods)
-		local limit = M.sideLimit(rarity)
-		return string.format("%d -> %d of %d (prefixes %d/%d, suffixes %d/%d), %s", n, n + 1, C.maxMods(rarity), p, limit,
-			s, limit, tierSpan(level))
+		return string.format("%d -> %d of %d (prefixes %d/%d, suffixes %d/%d), %s", n, n + 1, C.maxModsOf(item, rarity), p,
+			M.sideLimitOf(item, "prefix", rarity), s, M.sideLimitOf(item, "suffix", rarity), tierSpan(level))
 	elseif orbKey == "annulment" then
-		return string.format("one of %d modifiers goes", n)
+		return string.format("one of %d modifiers goes", n - C.bindCount(mods))
 	elseif orbKey == "scouring" then
 		return string.format("%s with %d modifiers -> normal, item level %d", rarity > 0 and C.rarityName(rarity) or "Normal",
 			n, level)
 	elseif orbKey == "chaos" then
+		local bound = C.bindCount(mods)
+		if bound > 0 then
+			return string.format("%d bound stay, %d new modifiers, %s", bound, math.max(0, M.modCount(rarity) - bound),
+				tierSpan(level))
+		end
 		return string.format("stays %s, item level %d: %d new modifiers, %s", rarity > 0 and C.rarityName(rarity) or "Normal",
 			level, M.modCount(rarity), tierSpan(level))
 	elseif orbKey == "divine" then
@@ -1243,9 +1440,10 @@ function C.signature(item)
 	if C.isRiftKey(item) then
 		return string.format("%d;key;%s;%s", item:getId(), tostring(custom(item, "rift_tier")), tostring(custom(item, "rift_mods")))
 	end
-	local parts = {tostring(item:getId()), tostring(C.rarityOf(item)), tostring(C.levelOf(item))}
+	local parts = {tostring(item:getId()), tostring(C.rarityOf(item)), tostring(C.levelOf(item)),
+		"q" .. M.qualityOf(item) .. (M.isRuined(item) and "r" or "") .. tostring(M.extraSide(item) or "")}
 	for _, m in ipairs(C.readMods(item)) do
-		parts[#parts + 1] = m.key .. "=" .. tostring(m.value) .. "t" .. tostring(m.tier)
+		parts[#parts + 1] = m.key .. "=" .. tostring(m.value) .. "t" .. tostring(m.tier) .. (m.bound and "b" or "")
 	end
 	local s = G.read(item)
 	parts[#parts + 1] = "s" .. s.count
@@ -1257,9 +1455,9 @@ end
 
 -- everything the bench shows about an item. mods = [{group, text, tier, side, lo, hi}] (prefixes first),
 -- prefixes / suffixes = {n, max}
-function C.describe(item)
+function C.describe(item, opts)
 	if C.isRiftKey(item) then
-		return C.describeKey(item)
+		return C.describeKey(item, opts)
 	end
 	local rarity = C.rarityOf(item)
 	local mods = C.readMods(item)
@@ -1267,19 +1465,27 @@ function C.describe(item)
 	for _, side in ipairs({"prefix", "suffix"}) do
 		for _, m in ipairs(mods) do
 			if m.side == side then
-				list[#list + 1] = {group = m.group, text = C.modText(m), tier = m.tier, side = m.side, lo = m.lo, hi = m.hi}
+				list[#list + 1] = {group = m.group, key = m.key, text = C.modText(m), tier = m.tier, side = m.side, lo = m.lo,
+					hi = m.hi, bound = m.bound or nil, power = m.power or nil,
+					short = m.power and string.format("%s %d%s", m.label, m.value, (m.affix and m.affix.def and m.affix.def.fmt == "flat") and "/s" or "%") or nil}
 			end
 		end
 	end
 	local orbs, preview = {}, {}
 	for _, orb in ipairs(C.config.orbs) do
 		local ok, reason = C.check(orb.key, item)
-		orbs[orb.key] = ok and "" or (C.reasons[reason] or reason)
+		orbs[orb.key] = ok and "" or ((opts and opts.codes and C.reasons[reason]) and reason or (C.reasons[reason] or reason))
 		preview[orb.key] = ok and C.preview(orb.key, item) or ""
 	end
 	local p, s = C.sideCounts(mods)
 	local limit = M.sideLimit(rarity)
 	local level = C.levelOf(item)
+	local picks = {}
+	for _, orb in ipairs(C.config.orbs) do
+		if orb.pick and orbs[orb.key] == "" then
+			picks[orb.key] = C.pickList(orb.key, item)
+		end
+	end
 	return {
 		id = item:getId(),
 		name = C.itemName(item),
@@ -1288,9 +1494,14 @@ function C.describe(item)
 		level = level,
 		maxTier = level > 0 and M.maxTierFor(level) or nil,
 		mods = list,
-		maxMods = rarity > 0 and C.maxMods(rarity) or 0,
-		prefixes = rarity > 0 and {p, limit} or nil,
-		suffixes = rarity > 0 and {s, limit} or nil,
+		maxMods = rarity > 0 and C.maxModsOf(item, rarity) or 0,
+		prefixes = rarity > 0 and {p, M.sideLimitOf(item, "prefix", rarity)} or nil,
+		suffixes = rarity > 0 and {s, M.sideLimitOf(item, "suffix", rarity)} or nil,
+		quality = M.qualityOf(item),
+		qualityCap = rarity > 0 and M.qualityCap(rarity) or 0,
+		ruined = M.isRuined(item) or nil,
+		binds = rarity > 0 and {C.bindCount(mods), M.maxBinds(rarity)} or nil,
+		pick = picks, -- orb key -> the attribute keys of the modifiers it may be aimed at (the bench's picker)
 		unique = C.isUnique(item),
 		orbs = orbs, -- orb key -> "" when usable, else why not
 		preview = preview, -- orb key -> what it would do ("" when not usable)
@@ -1323,23 +1534,27 @@ function C.describeSockets(item)
 end
 
 -- the bench view of a Rift Key (kind = "riftkey"; mods in the rift group, the reward bonuses as one line)
-function C.describeKey(item)
+function C.describeKey(item, opts)
 	local R, cfg = rift()
 	local key = C.readKey(item)
 	local list = {}
 	for _, m in ipairs(key.mods) do
-		list[#list + 1] = {group = "rift", text = R.modText(cfg, m)}
+		list[#list + 1] = {group = "rift", key = tostring(m.key), text = R.modText(cfg, m)}
 	end
 	local b = R.bonuses(cfg, key.mods, key.tier)
-	local orbs, preview = {}, {}
+	local orbs, preview, picks = {}, {}, {}
 	for _, orb in ipairs(C.config.orbs) do
 		local ok, reason = C.check(orb.key, item)
-		orbs[orb.key] = ok and "" or (C.reasons[reason] or reason)
+		orbs[orb.key] = ok and "" or ((opts and opts.codes and C.reasons[reason]) and reason or (C.reasons[reason] or reason))
 		preview[orb.key] = ok and C.preview(orb.key, item) or ""
+		if ok and orb.keyPick then
+			picks[orb.key] = orb.keyPick(item)
+		end
 	end
 	return {
 		id = item:getId(),
 		kind = "riftkey",
+		pick = picks,
 		name = R.keyName(cfg, key.tier),
 		tier = key.tier,
 		rarity = 0,
@@ -1353,6 +1568,11 @@ function C.describeKey(item)
 		preview = preview,
 		sig = C.signature(item)
 	}
+end
+
+-- the orbs of orbs v2 (Tempering, Binding, Excision, Reforging, Ruin, the Whetstone): chaos_orbs.lua adds them
+if not ChaosOrbs then
+	dofile("data/lib/chaos_orbs.lua")
 end
 
 return C

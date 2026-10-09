@@ -72,8 +72,8 @@
 	</voices>
 	<loot>
 		<item id="2160" countmax="25" chance="100000" /><!-- crystal coin -->
-		<item id="29856" countmax="4" chance="100000" /><!-- Chaos Orb -->
-		<item id="29857" countmax="2" chance="60000" /><!-- Divine Orb -->
+		<item id="29856" countmax="4" chance="100000" /><!-- Orb of Upheaval -->
+		<item id="29857" countmax="2" chance="60000" /><!-- Orb of Fate -->
 		<item id="29878" chance="9000" /><!-- Dawnforged Helmet -->
 		<item id="29879" chance="9000" /><!-- Dawnforged Plate -->
 		<item id="29880" chance="9000" /><!-- Dawnforged Legs -->

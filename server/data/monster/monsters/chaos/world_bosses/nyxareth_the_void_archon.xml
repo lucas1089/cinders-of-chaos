@@ -77,8 +77,8 @@
 	</voices>
 	<loot>
 		<item id="2160" countmax="55" chance="100000" /><!-- crystal coin -->
-		<item id="29856" countmax="12" chance="100000" /><!-- Chaos Orb -->
-		<item id="29857" countmax="6" chance="85000" /><!-- Divine Orb -->
+		<item id="29856" countmax="12" chance="100000" /><!-- Orb of Upheaval -->
+		<item id="29857" countmax="6" chance="85000" /><!-- Orb of Fate -->
 		<item id="29861" chance="6000" /><!-- Myst Regalia Helmet -->
 		<item id="29862" chance="6000" /><!-- Myst Regalia Mantle -->
 		<item id="29865" chance="5000" /><!-- Myst Regalia Spellbook -->

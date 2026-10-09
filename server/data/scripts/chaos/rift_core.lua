@@ -188,7 +188,7 @@ function R.rollMods(cfg, count, rand, tier)
 	return mods
 end
 
--- adds up to `count` new modifiers to key (the orbs of chaos_crafting.lua); returns the added ones. key.mods stays in
+-- adds up to `count` new modifiers to key (the orbs of upheaval_crafting.lua); returns the added ones. key.mods stays in
 -- config order.
 function R.addMods(cfg, key, count, rand)
 	local have = {}

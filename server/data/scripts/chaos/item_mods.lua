@@ -429,12 +429,18 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 	end
 	if (totals.dodge or 0) > 0 and math.random(1, 100) <= totals.dodge then
 		creature:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT)
+		if M.onAvoid then
+			M.onAvoid(creature, attacker, "dodge") -- Glacial Ward (item_powers.lua)
+		end
 		return 0, primaryType, 0, secondaryType
 	end
 	-- block: physical hits of a weapon or a claw (melee and ranged attacks), all of it
 	if (totals.block or 0) > 0 and primaryType == COMBAT_PHYSICALDAMAGE
 			and (origin == ORIGIN_MELEE or origin == ORIGIN_RANGED) and math.random(1, 100) <= totals.block then
 		creature:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT)
+		if M.onAvoid then
+			M.onAvoid(creature, attacker, "block")
+		end
 		return 0, primaryType, 0, secondaryType
 	end
 	if (totals.monsterreduction or 0) > 0 and attacker:isMonster() then

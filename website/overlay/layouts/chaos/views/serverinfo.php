@@ -5,9 +5,9 @@
 $h = static function ($v): string { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); };
 $sections = array(
 	'start' => array('Your first steps', array(
-		'<strong>Tutorial island.</strong> New characters start on a small island with five stations: fight, cast your first spell, spend a passive point, use a Chaos Orb, and learn about keystones, bounties and the store. Each station opens the next gate. You can skip it any time (Character > Services > Leave Tutorial), and nobody can die there.',
+		'<strong>Tutorial island.</strong> New characters start on a small island with five stations: fight, cast your first spell, spend a passive point, use an Orb of Upheaval, and learn about keystones, bounties and the store. Each station opens the next gate. You can skip it any time (Character > Services > Leave Tutorial), and nobody can die there.',
 		'<strong>Starter kit per class:</strong> weapon, armour, potions, food, tools, a temple teleport scroll and some gold, chosen for your class: arrows for Rangers, a second dagger for Ninjas, and so on.',
-		'<strong>Milestone gifts</strong> at levels 20, 50, 100 and 200: potions for your role and Chaos Orbs.',
+		'<strong>Milestone gifts</strong> at levels 20, 50, 100 and 200: potions for your role and Orbs of Upheaval.',
 	)),
 	'tree' => array('Passive tree and Paragon', array(
 		'<strong>Passive tree:</strong> over 600 nodes, with points from levels and not enough to take everything, so every build is a choice. Class keystones change how you play: <em>Cleaving Arc</em> (two-handed hits strike everything around you), <em>Ricochet</em> (arrows bounce to another target), <em>Arcane Echo</em> (spells can cast a second time) and the Illusionist party auras.',
@@ -23,7 +23,7 @@ $sections = array(
 		'<strong>Loot filter</strong> (Hunt > Loot Filter), a loot channel with clickable item icons, loot rays for the best drops, Rarity Autoloot, autoloot, auto seller, bank and stash.',
 	)),
 	'crafting' => array('Crafting', array(
-		'Orbs reshape your gear at the <strong>Crafting Bench</strong> (Economy > Crafting Bench): Transmutation and Alchemy turn normal items magic, Exalted adds a modifier, Annulment removes one, Scouring makes an item normal again, Chaos rerolls it with the same rarity and Divine with a new one.',
+		'Orbs reshape your gear at the <strong>Crafting Bench</strong> (Economy > Crafting Bench): Awakening and Gilding turn normal items magic, Grafting adds a modifier, Unmaking removes one, Erasure makes an item normal again, Upheaval rerolls it with the same rarity and Fate with a new one. Tempering, Binding, Excision, Reforging, Ruin and Whetstones let you aim: new values, bind or cut a modifier of your choice, a risky gamble, and item quality.',
 		'Orbs drop from monsters (more from tiered ones and bosses), from bounties and the weekly chest, and are sold in the store. Uniques cannot be crafted.',
 	)),
 	'endgame' => array('Endgame', array(
@@ -38,7 +38,7 @@ $sections = array(
 		'Season uniques, and a reward track of outfits, addons, mounts and titles, unlocked for your whole account and kept forever. When the season ends, season characters join the normal world with everything they earned. See <a href="page.php?plugin=chaos&amp;p=seasons">Seasons</a>.',
 	)),
 	'pvp' => array('PvP', array(
-		'<strong>Ranked arena</strong> (Adventure > Arena): 1v1 and 2v2 with an Elo rating per mode, matched by rating and level. Nobody really dies; each win pays a Chaos Orb.',
+		'<strong>Ranked arena</strong> (Adventure > Arena): 1v1 and 2v2 with an Elo rating per mode, matched by rating and level. Nobody really dies; each win pays an Orb of Upheaval.',
 		'<strong>Guild Siege</strong> (Adventure > Guild Siege): every Saturday at 20:00, up to four guilds per arena fight over the Chaos Obelisk. The winners are Siege Champions for a week: a title and +5% experience.',
 	)),
 	'boards' => array('Leaderboards and titles', array(

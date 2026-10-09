@@ -74,22 +74,36 @@ return {
 	currency = {
 		-- chance per kill in 1/10000 for EACH entry whose chance table has the tier
 		entries = {
-			{id = 29857, name = "Divine Orb", weight = 30, count = {1, 1},
+			{id = 29857, name = "Orb of Fate", weight = 30, count = {1, 1},
 				chance = {normal = 20, magic = 150, rare = 600, legendary = 2500, boss = 4000}},
-			{id = 29856, name = "Orb of Chaos", weight = 70, count = {1, 1},
+			{id = 29856, name = "Orb of Upheaval", weight = 70, count = {1, 1},
 				chance = {normal = 40, magic = 300, rare = 1200, legendary = 4000, boss = 5000}},
-			-- crafting orbs (data/lib/chaos_crafting.lua): Transmutation common, Alchemy / Annulment / Scouring
-			-- uncommon, Exalted rare
-			{id = 29851, name = "Orb of Transmutation", weight = 20, count = {1, 2},
+			-- crafting orbs (data/lib/chaos_crafting.lua): Awakening common, Gilding / Unmaking / Erasure
+			-- uncommon, Grafting rare
+			{id = 29851, name = "Orb of Awakening", weight = 20, count = {1, 2},
 				chance = {normal = 30, magic = 200, rare = 700, legendary = 2500, boss = 3500}},
-			{id = 24691, name = "Orb of Alchemy", weight = 10, count = {1, 1},
+			{id = 24691, name = "Orb of Gilding", weight = 10, count = {1, 1},
 				chance = {normal = 10, magic = 80, rare = 300, legendary = 1200, boss = 2000}},
-			{id = 24697, name = "Orb of Annulment", weight = 10, count = {1, 1},
+			{id = 24697, name = "Orb of Unmaking", weight = 10, count = {1, 1},
 				chance = {normal = 10, magic = 80, rare = 300, legendary = 1200, boss = 2000}},
-			{id = 24688, name = "Orb of Scouring", weight = 10, count = {1, 1},
+			{id = 24688, name = "Orb of Erasure", weight = 10, count = {1, 1},
 				chance = {normal = 15, magic = 100, rare = 400, legendary = 1500, boss = 2500}},
-			{id = 29855, name = "Exalted Orb", weight = 5, count = {1, 1},
+			{id = 29855, name = "Orb of Grafting", weight = 5, count = {1, 1},
 				chance = {normal = 4, magic = 30, rare = 120, legendary = 600, boss = 1000}},
+			-- orbs v2 (data/lib/chaos_orbs.lua): the Whetstone and the Orb of Tempering often, Reforging, Excision and Binding
+			-- rare, the Orb of Ruin very rare (and mostly from legendary monsters and bosses)
+			{id = 32256, name = "Whetstone", weight = 18, count = {1, 2},
+				chance = {normal = 25, magic = 180, rare = 600, legendary = 2000, boss = 3000}},
+			{id = 32251, name = "Orb of Tempering", weight = 14, count = {1, 1},
+				chance = {normal = 12, magic = 90, rare = 350, legendary = 1400, boss = 2200}},
+			{id = 32254, name = "Orb of Reforging", weight = 6, count = {1, 1},
+				chance = {normal = 4, magic = 35, rare = 140, legendary = 600, boss = 1000}},
+			{id = 32253, name = "Orb of Excision", weight = 5, count = {1, 1},
+				chance = {normal = 3, magic = 25, rare = 100, legendary = 450, boss = 800}},
+			{id = 32252, name = "Orb of Binding", weight = 3, count = {1, 1},
+				chance = {normal = 2, magic = 15, rare = 60, legendary = 250, boss = 500}},
+			{id = 32255, name = "Orb of Ruin", weight = 1, count = {1, 1},
+				chance = {normal = 0, magic = 4, rare = 18, legendary = 80, boss = 160}},
 			-- gems and sockets (data/lib/chaos_gems_config.lua socketOrb; the gems drop through chaos_gems_config.lua)
 			{id = 24692, name = "Orb of Sockets", weight = 8, count = {1, 1},
 				chance = {normal = 8, magic = 60, rare = 250, legendary = 1000, boss = 1500}}

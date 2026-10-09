@@ -210,17 +210,17 @@ do
 	local o = cfg.loot.chaosOrb
 	for _ = 1, 200 do
 		local n1 = G.chaosOrbs(cfg, 1, rand)
-		ok(n1 >= o.min and n1 <= o.max, "chaos orbs at level 1")
-		ok(G.chaosOrbs(cfg, 100000, rand) == o.cap, "chaos orbs capped")
+		ok(n1 >= o.min and n1 <= o.max, "orbs of upheaval at level 1")
+		ok(G.chaosOrbs(cfg, 100000, rand) == o.cap, "orbs of upheaval capped")
 	end
-	ok(G.chaosOrbs(cfg, 600, function(a) return a end) > o.min, "more chaos orbs at a high level")
+	ok(G.chaosOrbs(cfg, 600, function(a) return a end) > o.min, "more orbs of upheaval at a high level")
 	local div, div3 = 0, 0
 	for _ = 1, 20000 do
 		if G.divineOrb(cfg, 1, rand) then div = div + 1 end
 		if G.divineOrb(cfg, 2, rand) then div3 = div3 + 1 end
 	end
-	ok(math.abs(div / 20000 * 100 - cfg.loot.divineOrb.chance) < 2, "divine orb chance " .. div / 200)
-	ok(div3 > div * 1.6, "item find raises the divine orb chance")
+	ok(math.abs(div / 20000 * 100 - cfg.loot.divineOrb.chance) < 2, "orb of fate chance " .. div / 200)
+	ok(div3 > div * 1.6, "item find raises the orb of fate chance")
 	-- gear rolls: 2-4, tiers by weight, gear from the replaced monster first
 	local counts, tiers = {}, {}
 	for _ = 1, 6000 do
@@ -411,11 +411,11 @@ do
 	local function gGold(l, r) return G.goldValue(cg, l, r) end
 	local ratio = avg(gGold, 100, 31) / avg(hGold, 100, 31)
 	ok(math.abs(ratio - 0.5) < 0.02, "Gem / Shard Goblins carry half the gold: " .. ratio)
-	-- Hoarder: unchanged (3 Chaos Orbs at low level, 25% Divine)
-	ok(math.abs(avg(function(l, r) return G.chaosOrbs(ch, l, r) end, 50, 32) - 3) < 0.05, "Hoarder chaos orbs")
+	-- Hoarder: unchanged (3 Orbs of Upheaval at low level, 25% Divine)
+	ok(math.abs(avg(function(l, r) return G.chaosOrbs(ch, l, r) end, 50, 32) - 3) < 0.05, "Hoarder orbs of upheaval")
 	eq(G.gemCount(ch, 100, rng(1)), 0); eq(G.shardCount(ch, 100, rng(1)), 0); eq(G.socketOrbs(ch, rng(1)), 0)
 	eq(#G.orbKeys(ch, rng(1)), 0)
-	-- Gem Goblin: 2-3 gems (+1 per 250 levels, at most 5), 1.25 Orbs of Sockets, no Chaos / Divine Orbs
+	-- Gem Goblin: 2-3 gems (+1 per 250 levels, at most 5), 1.25 Orbs of Sockets, no Orbs of Upheaval and Fate
 	local gems100 = avg(function(l, r) return G.gemCount(cg, l, r) end, 100, 33)
 	local gems300 = avg(function(l, r) return G.gemCount(cg, l, r) end, 300, 34)
 	ok(math.abs(gems100 - 2.5) < 0.05, "gems at level 100: " .. gems100)
@@ -423,7 +423,7 @@ do
 	eq(G.gemCount(cg, 5000, function(a, b) return b end), 5, "gems capped")
 	local so = avg(function(l, r) return G.socketOrbs(cg, r) end, 0, 35)
 	ok(math.abs(so - 1.25) < 0.02, "Orbs of Sockets: " .. so)
-	eq(G.chaosOrbs(cg, 900, rng(1)), 0, "no Chaos Orbs"); ok(not G.divineOrb(cg, 3, rng(1)), "no Divine Orb")
+	eq(G.chaosOrbs(cg, 900, rng(1)), 0, "no Orbs of Upheaval"); ok(not G.divineOrb(cg, 3, rng(1)), "no Orb of Fate")
 	eq(G.itemCount(cg, rng(1)), 1, "one rolled gear item")
 	-- gem ids from the gem system, tiers by level (no Perfect gem from a low-level goblin)
 	local rand = rng(36)
@@ -432,14 +432,14 @@ do
 		local g = ChaosGems.gemOf(id)
 		ok(g and g.tier <= 2, "low-level gem tier")
 	end
-	-- Shard Goblin: (10 + L/10) x 80-120% shards, at most 60; 1-2 Chaos Orbs; one crafting orb
+	-- Shard Goblin: (10 + L/10) x 80-120% shards, at most 60; 1-2 Orbs of Upheaval; one crafting orb
 	local s100 = avg(function(l, r) return G.shardCount(cs, l, r) end, 100, 37)
 	local s300 = avg(function(l, r) return G.shardCount(cs, l, r) end, 300, 38)
 	ok(math.abs(s100 - 20) < 0.5, "shards at level 100: " .. s100)
 	ok(math.abs(s300 - 40) < 0.7, "shards at level 300: " .. s300)
 	eq(G.shardCount(cs, 2000, function(a, b) return b end), 60, "shards capped")
 	ok(G.shardCount(cs, 1, function(a) return a end) >= 8, "a few shards even at level 1")
-	ok(math.abs(avg(function(l, r) return G.chaosOrbs(cs, l, r) end, 100, 39) - 1.5) < 0.05, "Shard Goblin chaos orbs")
+	ok(math.abs(avg(function(l, r) return G.chaosOrbs(cs, l, r) end, 100, 39) - 1.5) < 0.05, "Shard Goblin orbs of upheaval")
 	local orbSeen = {}
 	rand = rng(40)
 	for _ = 1, 5000 do
@@ -455,7 +455,7 @@ do
 	ok(perGoblinShards100 > 1.8 and perGoblinShards100 < 2.2, "about 2 shards per goblin at level 100")
 	ok(perGoblinShards300 > 3.8 and perGoblinShards300 < 4.2, "about 4 shards per goblin at level 300")
 	-- the variants' orb value stays near the Hoarder's (Chaos Coins: Chaos 10, Divine 25, Sockets 25; 25 shards = 1
-	-- Chaos Orb): Hoarder 3 x 10 + 0.25 x 25 = 36; Gem 1.25 x 25 = 31 + gems; Shard 1.5 x 10 + 20/25 x 10 + ~11 = 34
+	-- Orb of Upheaval): Hoarder 3 x 10 + 0.25 x 25 = 36; Gem 1.25 x 25 = 31 + gems; Shard 1.5 x 10 + 20/25 x 10 + ~11 = 34
 	local hoarderOrbs = 3 * 10 + cfg.loot.divineOrb.chance / 100 * 25
 	local gemOrbs = so * 25
 	local shardOrbs = 1.5 * 10 + s100 / 25 * 10 + 11

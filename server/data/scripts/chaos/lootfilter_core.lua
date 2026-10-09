@@ -10,7 +10,7 @@
 --   ChaosLootFilter.reconcile(entries, present)  remaining count per tracked entry, given what the corpse holds now
 --   ChaosLootFilter.inReach(from, to, range)  same floor and within range.x / range.y squares
 --   ChaosLootFilter.label(info)               "[Legendary] Dawnforged Helmet" / "[Unique] Soulreaper" / "Gold Coin"
--- info = {id, rarity = 0..15, unique = bool, orb = bool, category = "equipment"|"currency"|"supplies"|"other", name, count,
+-- info = {id, rarity = 0..15, unique = bool, orb = bool, power = bool (a legendary power: always glows), category = "equipment"|"currency"|"supplies"|"other", name, count,
 --         level = item level, bestTier = the best modifier tier on it (0 = none)}
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
@@ -169,7 +169,7 @@ end
 
 -- ---------------------------------------------------------------- rules
 function F.classify(info, s)
-	if info.unique or info.orb then
+	if info.unique or info.orb or info.power then
 		return "highlight"
 	end
 	local category = info.category or "other"

@@ -1,16 +1,22 @@
 -- Crafting bench: put an item (or a Rift Key) from the backpack on the bench, see its rarity and modifiers and what
 -- each orb would do, apply an orb. The bench is optional: every orb also works by "Use with" on the item.
 -- Server: server/data/scripts/chaos/crafting.lua and data/lib/chaos_crafting.lua, extended opcode 232 (JSON).
---   server -> client  state {open, orbs = [{key, id, clientId, name, text, keyText, count}], item = {path, clientId,
+--   server -> client  info {orbs = [{key, id, clientId, name, text, keyText}], reasons = {code -> text}} (when the bench opens;
+--                            the engine drops a message above 8192 bytes, so the texts that never change come once)
+--                     state {open, counts = {orb key -> count}, item = {path, clientId,
 --                            name, kind, rarity, rarityName, level, maxTier, mods = [{group, text, tier, side, lo,
 --                            hi}] (prefixes first), prefixes = {n, max}, suffixes = {n, max}, maxMods, rewards, unique,
---                            orbs = {key -> ""|why}, preview = {key -> text},
+--                            orbs = {key -> ""|reason code}, preview = {key -> text},
 --                            sockets = {count, max, list = [{index, id, clientId, name, text, color, cost}]}, sig} | nil,
 --                            items = [{path, id, clientId, name, rarity, rarityName, unique, key}],
 --                            history = [{time, orb, item, text}]}
 --                     result {ok, orb, text}
---   client -> server  open | select {path, id} | select {pos, clientId} | apply {orb, path, id, sig} |
+--   client -> server  open | select {path, id} | select {pos, clientId} | apply {orb, path, id, sig, mod} |
 --                     gem {op = "remove"|"shatter", socket, path, id, sig} | clear
+-- Modifier rows (item.mods[i] = {key, text, tier, side, lo, hi, bound, power, group}) are clickable: the orbs that are aimed
+-- at one modifier (item.pick = {orb key -> [modifier keys]}: Binding, Excision, Reforging) are enabled once you picked
+-- one of those, and send it as `mod`. item.quality / qualityCap fill the quality bar, item.ruined and item.binds show in
+-- the header.
 -- Sockets (gems, server data/lib/chaos_gems.lua) are listed under the modifiers: a gem can be taken out for gold
 -- (Remove, it comes back) or destroyed (Shatter); socketing and combining are done by Use with on the gem.
 -- Salvage tab (server data/scripts/chaos/salvage.lua, same opcode): state.salvage = {installed, shardClientId,
@@ -30,13 +36,18 @@ local RARITY_COLOR = {
 }
 local GROUP_COLOR = { absorb = '#7fa8ff', skill = '#9fdc7f', special = '#f6cf72', element = '#ff8a5a',
   chaos = '#ff70c0', rift = '#c0a0ff' }
+local POWER_COLOR = '#ff9a3c' -- legendary powers
+local SELECT_BG = '#f6cf7236'
+local updateOrbs
 local KEY_COLOR = '#c0a0ff' -- Rift Keys
 
 local window
 local state        -- last state from the server
+local info         -- the orbs and the reason texts (server "info")
 local orbRows = {} -- orb key -> row widget
 local mode = 'orbs' -- 'orbs' | 'salvage' (the tabs)
 local updatingUi = false -- filling the salvage combo boxes: no requests
+local selectedMod -- the modifier key picked on the bench (aims Binding, Excision, Reforging), nil = none
 local confirmBox -- the "salvage all" confirmation
 local batchPaths -- path -> true for the items the "salvage all" preview takes
 
@@ -129,9 +140,34 @@ local function showSockets(item)
 end
 
 -- ---------------------------------------------------------------- item panel
+local function modByKey(item, key)
+  if not item or not key then return nil end
+  for _, m in ipairs(list(item.mods)) do
+    if m.key == key then return m end
+  end
+  return nil
+end
+
+local function showQuality(item)
+  local bar = window.qualityBar
+  local q = item and tonumber(item.quality) or 0
+  local cap = item and tonumber(item.qualityCap) or 0
+  if not item or cap <= 0 then
+    bar:setVisible(false)
+    return
+  end
+  bar:setVisible(true)
+  bar:setPercent(math.floor(100 * q / cap))
+  bar:setText(tr('Quality +%d%% / %d%%', q, cap))
+  bar:setTooltip(tr('Item quality: every modifier value is multiplied by it. A Whetstone adds 1%% (up to %d%%).', cap))
+end
+
 local function showItem(item)
   window.modList:destroyChildren()
   window.lockButton:setVisible(item ~= nil)
+  if item and selectedMod and not modByKey(item, selectedMod) then selectedMod = nil end
+  if not item then selectedMod = nil end
+  showQuality(item)
   if item then
     window.lockButton:setText(item.locked and tr('Unlock') or tr('Lock'))
     window.lockButton:setTooltip(item.locked and tr('Locked: it cannot be sold, salvaged or thrown away. Click to unlock.')
@@ -162,8 +198,9 @@ local function showItem(item)
     window.itemRarity:setColor('#e8582a')
   elseif rarity > 0 then
     window.itemRarity:setText(tr('%s, item level %d', item.rarityName or '?', tonumber(item.level) or 0)
-      .. (item.maxTier and tr(' (up to T%d)', tonumber(item.maxTier) or 0) or ''))
-    window.itemRarity:setColor(rarityColor(rarity))
+      .. (item.maxTier and tr(' (up to T%d)', tonumber(item.maxTier) or 0) or '')
+      .. (item.ruined and tr('  RUINED') or ''))
+    window.itemRarity:setColor(item.ruined and '#e03a1e' or rarityColor(rarity))
   else
     window.itemRarity:setText(tr('Normal item'))
     window.itemRarity:setColor('#d6c9ae')
@@ -171,9 +208,11 @@ local function showItem(item)
   local mods = list(item.mods)
   local pre, suf = item.prefixes, item.suffixes
   if rarity > 0 and type(pre) == 'table' and type(suf) == 'table' then
-    window.itemSlots:setText(tr('Modifiers: %d / %d  (prefixes %d/%d, suffixes %d/%d)', #mods,
+    local binds = type(item.binds) == 'table' and item.binds or nil
+    window.itemSlots:setText(tr('Mods %d/%d  P%d/%d  S%d/%d', #mods,
       tonumber(item.maxMods) or 0, tonumber(pre[1]) or 0, tonumber(pre[2]) or 0, tonumber(suf[1]) or 0,
-      tonumber(suf[2]) or 0))
+      tonumber(suf[2]) or 0) .. (binds and tr('  B%d/%d', tonumber(binds[1]) or 0, tonumber(binds[2]) or 0) or ''))
+    window.itemSlots:setTooltip(tr('Modifiers on the item / the most it can have, prefixes (P), suffixes (S), bound modifiers (B).'))
   elseif rarity > 0 or item.kind == 'riftkey' then
     window.itemSlots:setText(tr('Modifiers: %d / %d', #mods, tonumber(item.maxMods) or 0))
   else
@@ -187,16 +226,33 @@ local function showItem(item)
       head:setText(side == 'prefix' and tr('Prefixes') or tr('Suffixes'))
       head:setColor('#8c8070')
     end
-    local label = g_ui.createWidget('CraftModLabel', window.modList)
-    local text = m.text or ''
+    local row = g_ui.createWidget('CraftModRow', window.modList)
+    local text = m.short or m.text or ''
     if m.tier then
       text = string.format('T%d  %s', tonumber(m.tier) or 0, text)
       if m.lo and m.hi then
         text = text .. (m.lo == m.hi and string.format('  [%d]', m.lo) or string.format('  [%d-%d]', m.lo, m.hi))
       end
     end
-    label:setText(text)
-    label:setColor(GROUP_COLOR[m.group] or '#d6c9ae')
+    row.text:setText(text)
+    row.text:setColor(m.power and POWER_COLOR or GROUP_COLOR[m.group] or '#d6c9ae')
+    row.mark:setText(m.bound and tr('bound') or '')
+    row.modKey = m.key
+    if m.power then
+      row:setTooltip((m.text or '') .. '\n' .. tr('Legendary power: it changes what your character does.'))
+    elseif m.bound then
+      row:setTooltip(tr('Bound: the orbs that change modifiers leave it alone. Only an Orb of Erasure frees it.'))
+    end
+    if m.key and m.key == selectedMod then row:setBackgroundColor(SELECT_BG) end
+    row.onMouseRelease = function(self, mousePos, button)
+      if button ~= MouseLeftButton or not self:containsPoint(mousePos) or not self.modKey then return false end
+      selectedMod = (selectedMod ~= self.modKey) and self.modKey or nil
+      for _, child in ipairs(window.modList:getChildren()) do
+        child:setBackgroundColor((child.modKey and child.modKey == selectedMod) and SELECT_BG or '#00000000')
+      end
+      updateOrbs()
+      return true
+    end
   end
   if item.kind == 'riftkey' and item.rewards then
     local label = g_ui.createWidget('CraftModLabel', window.modList)
@@ -207,7 +263,7 @@ local function showItem(item)
 end
 
 -- ---------------------------------------------------------------- orbs
-local function updateOrbs()
+function updateOrbs()
   local item = state and state.item
   for _, orb in ipairs(list(state and state.orbs)) do
     local row = orbRows[orb.key]
@@ -224,7 +280,20 @@ local function updateOrbs()
       elseif not item then
         why = tr('Put an item on the bench first.')
       elseif type(item.orbs) == 'table' and item.orbs[orb.key] and item.orbs[orb.key] ~= '' then
-        why = item.orbs[orb.key]
+        local code = item.orbs[orb.key]
+        why = info and type(info.reasons) == 'table' and info.reasons[code] or code
+      end
+      -- an orb that is aimed at one modifier needs one picked from the modifiers it may act on
+      local aimed = why == '' and item and type(item.pick) == 'table' and type(item.pick[orb.key]) == 'table'
+        and #item.pick[orb.key] > 0 and orb.key
+      if aimed then
+        local ok = false
+        for _, k in ipairs(item.pick[orb.key]) do
+          if k == selectedMod then ok = true end
+        end
+        if not ok then
+          why = selectedMod and tr('That modifier cannot be chosen for this orb.') or tr('Click a modifier of the item first.')
+        end
       end
       -- what the orb would do to the item on the bench (the server's preview)
       local preview = why == '' and item and type(item.preview) == 'table' and item.preview[orb.key] or ''
@@ -248,11 +317,13 @@ local function buildOrbs()
   for _, orb in ipairs(list(state and state.orbs)) do
     local row = g_ui.createWidget('CraftOrbRow', window.orbList)
     local key = orb.key
+    row.orbKey = key
     row.use.onClick = function()
       local item = state and state.item
       if not item then return end
       row.use:setEnabled(false) -- the next state enables it again
-      send('apply', { orb = key, path = item.path, id = item.id, sig = item.sig })
+      local picks = type(item.pick) == 'table' and type(item.pick[key]) == 'table' and #item.pick[key] > 0
+      send('apply', { orb = key, path = item.path, id = item.id, sig = item.sig, mod = picks and selectedMod or nil })
     end
     orbRows[key] = row
   end
@@ -515,7 +586,17 @@ end
 
 -- ---------------------------------------------------------------- protocol
 local function onState(data)
+  -- the orbs: what the server told once (info) with the counts of this state
+  local orbs = {}
+  for _, o in ipairs(list(info and info.orbs)) do
+    local row = {}
+    for k, v in pairs(o) do row[k] = v end
+    row.count = type(data.counts) == 'table' and tonumber(data.counts[o.key]) or 0
+    orbs[#orbs + 1] = row
+  end
+  data.orbs = orbs
   local orbsChanged = not state or #list(state.orbs) ~= #list(data.orbs)
+  if state and state.item and data.item and state.item.path ~= data.item.path then selectedMod = nil end
   state = data
   -- opened in the Salvage tab (the menu's Salvage entry, a shard used): follow the server's mode
   if data.open and type(data.salvage) == 'table' and (data.salvage.mode == 'salvage' or data.salvage.mode == 'orbs') then
@@ -541,7 +622,9 @@ local function onExtendedOpcode(protocol, opcode, buffer)
     return
   end
   local data = type(msg.data) == 'table' and msg.data or {}
-  if msg.action == 'state' then
+  if msg.action == 'info' then
+    info = data
+  elseif msg.action == 'state' then
     onState(data)
   elseif msg.action == 'result' then
     setResult(data.text, data.ok)
@@ -594,6 +677,7 @@ local function onGameEnd()
   hide()
   state = nil
   mode = 'orbs'
+  selectedMod = nil
   if confirmBox then confirmBox:destroy() confirmBox = nil end
   if window then setResult('') end
 end

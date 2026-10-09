@@ -200,8 +200,8 @@ do
 		local r = R.reward(cfg, 6, {quantity = 20}, rand)
 		chaos, divine, rolls = chaos + r.chaos, divine + r.divine, rolls + r.rolls
 	end
-	ok(math.abs(chaos / n - 4 * 1.2) < 0.08, "mean Chaos Orbs tier 6: " .. chaos / n)
-	ok(math.abs(divine / n - 1.5 * 1.2) < 0.06, "mean Divine Orbs tier 6: " .. divine / n)
+	ok(math.abs(chaos / n - 4 * 1.2) < 0.08, "mean Orbs of Upheaval tier 6: " .. chaos / n)
+	ok(math.abs(divine / n - 1.5 * 1.2) < 0.06, "mean Orbs of Fate tier 6: " .. divine / n)
 	ok(math.abs(rolls / n - (2 + 0.5 * 6) * 1.2) < 0.1, "mean item rolls tier 6: " .. rolls / n)
 	local last = 0
 	for t = 1, cfg.maxTier do

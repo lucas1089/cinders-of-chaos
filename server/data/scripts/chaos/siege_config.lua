@@ -44,7 +44,7 @@ return {
 	-- rewards; presence = seconds inside the arena or the base while the match ran
 	minPresenceSeconds = 300,
 	reward = {
-		winner = {bankGold = 500000, items = {{id = 29856, count = 5}, {id = 29857, count = 2}}}, -- Chaos / Divine Orbs
+		winner = {bankGold = 500000, items = {{id = 29856, count = 5}, {id = 29857, count = 2}}}, -- Orbs of Upheaval and Fate
 		others = {bankGold = 150000, items = {{id = 29856, count = 2}}}
 	},
 	title = "Siege Champions", -- the winning guild's members, in the look text

@@ -98,6 +98,25 @@ eq(chaosLine.parts[2], L.TIER_COLORS[3], 'in the tier colour')
 eq(chaosLine.parts[5], ' [10-20]', 'range in its own colour')
 eq(L.tierColor(8), '#ff8a40', 'T8 colour')
 eq(L.tierColor(nil), L.COLORS.dim, 'no tier')
+-- orbs v2: quality, a bound modifier, a legendary power, the extra slot, a ruined item
+local v2 = L.lines({ rarity = 5, rarityName = 'Legendary', level = 100, quality = { q = 7, cap = 20 }, ruined = true,
+  sides = { p = 3, s = 1, max = 2, mp = 3, ms = 2 },
+  mods = { { t = 'Death Blast: 5% chance on kill to explode', g = 'chaos', tr = 4, sd = 'p', pw = true },
+    { t = 'Sword +2', g = 'skill', tr = 3, sd = 'p', bd = true } } })
+local v2all, powerLine, boundLine = {}, nil, nil
+for i, l in ipairs(v2) do
+  v2all[i] = l.text
+  if l.text:find('Death Blast', 1, true) then powerLine = l end
+  if l.text:find('Sword +2', 1, true) then boundLine = l end
+end
+v2all = table.concat(v2all, '|')
+eq(v2all:find('Quality +7%  (up to 20%)', 1, true) ~= nil, true, 'quality line')
+eq(v2all:find('Ruined: no orb can change this item', 1, true) ~= nil, true, 'ruined line')
+eq(v2all:find('Prefixes 3/3', 1, true) ~= nil, true, 'the extra slot raises the limit of that side')
+eq(v2all:find('Suffixes', 1, true), nil, 'no suffix rows, no suffix heading')
+eq(powerLine.color, L.COLORS.power, 'a legendary power in its own colour')
+eq(boundLine.text:find(' [bound]', 1, true) ~= nil, true, 'a bound modifier says so')
+eq(boundLine.parts[#boundLine.parts], L.COLORS.bound, 'in the bound colour')
 local legacy = L.lines({ rarity = 2, level = 12, mods = { { t = 'Fire +5% dmg', g = 'element', lo = 3, hi = 6 } } })
 local legacyAll = {}
 for i, l in ipairs(legacy) do legacyAll[i] = l.text end

@@ -40,11 +40,11 @@ than days.
 > (from the Chronicle of the Broken World)
 
 - **Tutorial island:** new characters start on a small island with five stations: fight, cast your first spell, spend
-  a passive point, use a Chaos Orb, and learn about keystones, bounties and the store. Each station opens the next
+  a passive point, use an Orb of Upheaval, and learn about keystones, bounties and the store. Each station opens the next
   gate. You can skip it any time (Character > Services > Leave Tutorial), and nobody can die there.
 - **Starter kit per class:** weapon, armour, potions, food, tools, a temple teleport scroll and some gold, chosen for
   your class: arrows for Rangers, a second dagger for Ninjas, and so on.
-- **Milestone gifts** at levels 20, 50, 100 and 200: potions for your role and Chaos Orbs.
+- **Milestone gifts** at levels 20, 50, 100 and 200: potions for your role and Orbs of Upheaval.
 
 ## Classes
 
@@ -153,7 +153,7 @@ Balance is measured on test dummies at levels 300 and 1000, so every class keeps
 > *"Every orb is a splinter of the break. Press it to steel, and the steel forgets what it was."*
 > (from the Chronicle of the Broken World)
 
-![The Crafting Bench and its seven orbs](docs/images/feature_crafting.png)
+![The Crafting Bench and its orbs](docs/images/feature_crafting.png)
 
 Orbs reshape your gear and your Rift Keys. Use them like any other tool: **"Use with" on the orb, then click the item**
 in your backpack. No bench needed. The **Crafting Bench** (Economy > Crafting Bench) is still there when you want to see an item's
@@ -161,13 +161,30 @@ modifiers and a preview of what each orb would do before you use it.
 
 | Orb | On gear | On a Rift Key |
 |---|---|---|
-| Orb of Transmutation | a normal item becomes Common or Uncommon | a key without modifiers gets one |
-| Orb of Alchemy | a normal item becomes Rare, Epic or Legendary | a key without modifiers gets two or three |
-| Exalted Orb | adds one modifier on an open prefix or suffix, its tier by the item level | adds one modifier, up to three |
-| Orb of Annulment | removes one random modifier | removes one random modifier |
-| Orb of Scouring | turns the item back into a normal item | removes every modifier |
-| Chaos Orb | rerolls every modifier, same rarity and item level | rerolls the key's modifiers |
-| Divine Orb | rerolls the item with a new random rarity (same item level) | rerolls the values of the key's modifiers |
+| Orb of Awakening | a normal item becomes Common or Uncommon | a key without modifiers gets one |
+| Orb of Gilding | a normal item becomes Rare, Epic or Legendary | a key without modifiers gets two or three |
+| Orb of Grafting | adds one modifier on an open prefix or suffix, its tier by the item level | adds one modifier, up to three |
+| Orb of Unmaking | removes one random modifier | removes one random modifier |
+| Orb of Erasure | turns the item back into a normal item | removes every modifier |
+| Orb of Upheaval | rerolls every modifier, same rarity and item level | rerolls the key's modifiers |
+| Orb of Fate | rerolls the item with a new random rarity (same item level) | rerolls the values of the key's modifiers |
+
+**Aim, bind and gamble** (the second set of orbs, from the Crafting Bench and the store):
+
+| Orb | What it does |
+|---|---|
+| Orb of Tempering | rolls the values of every modifier that is not bound again, inside their tiers (also on a Rift Key) |
+| Orb of Binding | **binds** one modifier you pick on the bench: the other orbs leave it alone (1 per item, 2 from Legendary). Only an Orb of Erasure frees it |
+| Orb of Excision | removes the **one modifier you pick** (a Rift Key: one modifier) |
+| Orb of Reforging | rolls the tier and the value of the one modifier you pick again |
+| Orb of Ruin | a gamble on an item with modifiers: 40% it improves (one tier more on every modifier that is not bound, or an extra modifier), 45% nothing, 15% it is **ruined**: no orb changes it any more (you can still wear and sell it) |
+| Whetstone | +1% **quality**: every modifier value is multiplied by it, up to 20% (30% from Divine rarity) |
+
+On the bench, click a modifier to pick it, then press Use on an orb that takes a modifier; used directly with "Use with",
+those orbs pick a modifier at random. Bound modifiers show "bound", quality shows as a bar and in the item's tooltip.
+**Legendary powers** roll on Legendary and better items, one per item, and count as a prefix or a suffix: Death Blast,
+Glacial Ward, Echo Shot, Critical Echo, Arc Lightning, Bloodrush, Shatter Splash, Crimson Burst, Last Breath, Ember Step,
+Hunter's Rush and Smoldering Aura. Each has a cooldown or a limit, and each shows as an orange line on the tooltip.
 
 A Rift Key's modifiers make the rift harder and its rewards better, so crafting a key is how you push for more loot.
 Items must sit in your backpack (not equipped). Orbs drop from monsters (more from tiered ones and bosses), from
@@ -199,8 +216,8 @@ their own.
 
 Gear you will never wear is not just vendor trash. The **Salvage** tab of the Crafting Bench (Economy > Salvage) breaks an
 item with a rarity into **Rune Shards** (more for higher rarities and item levels, one more per T6-or-better modifier
-and per empty socket) with a small chance of a whole orb, and turns shards into orbs: 12 for an Orb of Transmutation, 25 for a
-Chaos Orb, up to 100 for an Exalted Orb. Salvage one item, or a whole bag up to the rarity you choose (50 items at a
+and per empty socket) with a small chance of a whole orb, and turns shards into orbs: 12 for an Orb of Awakening, 25 for a
+Orb of Upheaval, up to 100 for an Orb of Grafting. Salvage one item, or a whole bag up to the rarity you choose (50 items at a
 time, after a confirmation). **Lock** the pieces you want to keep on the bench: salvage and the Auto Seller never touch
 a locked item. Uniques and items with gems in their sockets are never salvaged.
 
@@ -228,8 +245,8 @@ a locked item. Uniques and items with gems in their sockets are never salvaged.
 - **Rifts** (Adventure > Rifts): use a **Rift Key** to open a 10-minute instance for you and up to 3 party members.
   - Each key has a tier (1-15) and 1-3 random modifiers, such as *Vitality, Brutality, Haste, Elites, Reflection,
     Warding, Withering* or *Swarm*. Harder modifiers raise the rewards: item quantity, rarity and experience.
-  - Clear the packs and the **Guardian** appears. Kill it to seal the rift, and its chest pays gold, Chaos and Divine
-    Orbs and gear for every finisher.
+  - Clear the packs and the **Guardian** appears. Kill it to seal the rift, and its chest pays gold, Orbs of Upheaval and Fate
+    and gear for every finisher.
   - A sealed rift can drop the next tier's key. Keys also drop from tiered monsters and bounties.
   - A crash refunds your key.
 - **Infinity Tower** (Adventure > Infinity Tower): climb floor after floor alone or with a party of up to 4, against the clock.
@@ -241,7 +258,7 @@ a locked item. Uniques and items with gems in their sockets are never salvaged.
   - Everyone can defend. The bar at the top left shows the wave, the invaders left, the time and the **breach
     meter**, which fills while invaders stand at the target.
   - Hold it and everyone who fought is paid by their part in the defence: damage, kills, and healing for healers.
-    The pay is gold, Chaos and Divine Orbs and a chance at a unique, plus points on the weekly **Defender**
+    The pay is gold, Orbs of Upheaval and Fate and a chance at a unique, plus points on the weekly **Defender**
     leaderboard. The whole world gets +10% experience for an hour.
   - Lose it and the invaders occupy the place for 30 minutes. Slay the occupiers to free it for a smaller reward.
   - Warnings come 30, 10 and 1 minutes before. The calendar shows the fixed invasion days, but some invasions come
@@ -280,7 +297,7 @@ Start fresh with a **season character** (Adventure > Season, Join, on a new char
 - **Ranked arena** (Adventure > Arena): **1v1 and 2v2** with an Elo rating per mode.
   - Matchmaking pairs players of close rating and similar level.
   - Nobody really dies and there are no skulls: a lethal hit sends the loser to the gallery.
-  - Each win pays a Chaos Orb, and the first win of the day pays a bonus.
+  - Each win pays an Orb of Upheaval, and the first win of the day pays a bonus.
 - **Guild Siege** (Adventure > Guild Siege): every Saturday at 20:00, up to four guilds per arena fight over the **Chaos Obelisk**.
   - You score by striking enemies down and by holding the obelisk.
   - Nobody really dies.
@@ -415,7 +432,7 @@ The bestiary (Hunt > Bestiary) has a page for every monster in the world, and it
 **Kill tasks** (Hunt > Kill Tasks) are your own hunting orders:
 - **The board** offers a few hunts and family tasks for your level every day ("kill 150 Hellspawn", "kill 270 dragons
   of level 85-189"). You can also take a hunt task from any monster you have discovered, if it suits your level.
-- **Rewards:** gold to your bank, Chaos Orbs (Divine Orbs for family tasks at high levels), experience and bestiary
+- **Rewards:** gold to your bank, Orbs of Upheaval (Orbs of Fate for family tasks at high levels), experience and bestiary
   points. You can hold 3 tasks at once and finish 4 a day and 20 a week.
 - **Party:** kills by party members near you count for your tasks and your bestiary too.
 - The **bounty board** stays the big daily board shared by everyone; kill tasks are the smaller, personal ones, and a
@@ -429,7 +446,7 @@ updated with every kill. Click its title to fold it; switch it off in the bestia
 Two new invasion factions bring new monsters: the **Goblin Tribe** (grunts, archers, bombers, witches, wolf riders, a
 hobgoblin captain and the Goblin Chieftain) and the **Wildwood Uprising** (wolves, boars, mushroom folk, dryads, owlbears,
 giant beetles and spiders, the Mushroom King and the Ancient Treant). They drop creature products you can sell to Yasir
-and food you can eat. The Orbs of Alchemy, Annulment and Scouring and the mining ore pieces have new pictures.
+and food you can eat. The Orbs of Gilding, Unmaking and Erasure and the mining ore pieces have new pictures.
 
 ## Quality of life
 

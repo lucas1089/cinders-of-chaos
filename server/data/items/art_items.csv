@@ -1,7 +1,7 @@
 client_id,server_id,key,kind,mode,name,size,otb_group,otb_flags,top_order,speed,light_level,light_color,extra
-33000,24691,orb_alchemy,look,replace,Orb of Alchemy,1x1,,,,0,0,0,
-33001,24697,orb_annulment,look,replace,Orb of Annulment,1x1,,,,0,0,0,
-33002,24688,orb_scouring,look,replace,Orb of Scouring,1x1,,,,0,0,0,
+33000,24691,orb_alchemy,look,replace,Orb of Gilding,1x1,,,,0,0,0,
+33001,24697,orb_annulment,look,replace,Orb of Unmaking,1x1,,,,0,0,0,
+33002,24688,orb_scouring,look,replace,Orb of Erasure,1x1,,,,0,0,0,
 33003,26398,ore_bronze,look,replace,piece of bronze,1x1,,,,0,0,0,
 33004,26399,ore_silver,look,replace,piece of silver,1x1,,,,0,0,0,
 33005,26400,ore_amethyst,look,replace,piece of amethyst,1x1,,,,0,0,0,

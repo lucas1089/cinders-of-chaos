@@ -123,10 +123,10 @@ server/
    And the base `scripts/creaturescripts/autoloot.lua` hands each item to `ChaosLoot.finalizeRarity` before moving it,
    so autolooted gear gets its rarity stats (the engine only rolls items still in the corpse; see "Rarity stats are
    rolled once").
-4b. Stock promotion off, the ascension quest's base parts: `python3 -I server/tools/install_class_ascension.py <server>/data
-   [--dry-run]` (idempotent; `install_all.py` runs it as a class hook). It copies the Ascendant Oracle
 4a. Item links: `python3 -I server/tools/patch_help_itemlinks.py <server>/data` (once; idempotent; `install_all.py` runs it with
    the events step) keeps item links out of the Help channel (see "Item links in chat").
+4b. Stock promotion off, the ascension quest's base parts: `python3 -I server/tools/install_class_ascension.py <server>/data
+   [--dry-run]` (idempotent; `install_all.py` runs it as a class hook). It copies the Ascendant Oracle
    (`server/data/npc/Ascendant Oracle.xml`, `npc/scripts/ascendant_oracle.lua`) into `<server>/data/npc/` and runs
    `server/tools/patch_promotion.py <server>/data`, which makes every stock promotion path refuse: `StdModule.promotePlayer`
    in `npc/lib/npcsystem/modules.lua` (King Tibianus, Queen Eloise, the emperors, Ishebad, The Forgotten King, ...) says a
@@ -175,6 +175,10 @@ server/
 5f. Auras: `python3 -I server/tools/install_auras.py <server>/data [--dry-run]` (idempotent; `install_all.py` step `auras`)
    adds the 19 Chaos auras of `data/XML/chaos_auras.csv` (ids 6..24) to `auras.xml`; the store sells them (category Auras).
    The client needs the pair from `client/tools/sprites/import_vfx.py`. See `data/spells/README_FX.md` "Animated pack effects".
+5g. Crafting orbs v2: `python3 -I server/tools/install_orbs.py <server>/data [--dry-run]` (idempotent; `install_all.py` step
+   `orbs`, after `crafting`) adds the six new orbs (32251..32256) to `items.otb` / `items.xml`, gives the base server's
+   currency items their new names (`items.xml` and every loot list or shop that names them) and needs no client change.
+   See "Crafting orbs v2" and "Legendary powers".
 6. Restart the server (or `/reload scripts`). Check the console for Lua errors.
 7. Player commands: `python3 -I server/tools/install_commands.py <server>/data` takes the base server's spoken player
    commands out (talkactions.xml lines with "!" words, the "!" words of base revscripts, the "!commands" login lines);
@@ -195,7 +199,7 @@ working directory, as with the rest of the base server libs).
 |---|---|---|---|
 | game_bank | `bank.lua` | 60 | Gold deposit/withdraw/transfer on the native bank balance, star currency in `chaos_bank`. Economy > Bank opens the window. Written to the client contract; mock-tested only. |
 | game_autoloot | `autoloot.lua` | 216 | Window protocol (add / remove / clear over the opcode); list lives in the same storages (base 80000) as the base server onDropLoot callback, which does the actual looting. XML talkaction conflict possible (see below). |
-| game_daily | `daily.lua`, `daily_core.lua`, `daily_config.lua` | 207 | 7-day reward cycle with claim, midnight rollover, Adventure > Daily Reward, open on login through the login window queue. Rewards: platinum coins, Chaos and Divine Orbs and a crystal coin, plus a week bonus on day 7 (all or nothing); edit `Chaos.daily` in `chaos_constants.lua`. Account-wide login streaks with milestones, titles and grace days (see "Daily reward and login streaks"). |
+| game_daily | `daily.lua`, `daily_core.lua`, `daily_config.lua` | 207 | 7-day reward cycle with claim, midnight rollover, Adventure > Daily Reward, open on login through the login window queue. Rewards: platinum coins, Orbs of Upheaval and Fate and a crystal coin, plus a week bonus on day 7 (all or nothing); edit `Chaos.daily` in `chaos_constants.lua`. Account-wide login streaks with milestones, titles and grace days (see "Daily reward and login streaks"). |
 | game_notifications | `notifications.lua` | 79 out, 151/152 in | `/gmnotify`, accept/decline of a standard TFS party invite, `ChaosNotify.*` sender API. Catacomb start / leave-queue are hooks only; nothing triggers party/catacomb/task/battle pass toasts automatically. |
 | game_passivetree | `passivetree.lua`, `passivetree_data.lua`, `passivetree_effects.lua`, `passivetree_keystones.lua`, `paragon.lua` | 65 | Points, save with full validation (known ids, connected to root, point cap), preset storage, priced reset and single-node refund (see "Respec"), build codes (see "Build sharing"); the bonuses are applied (see "Passive tree effects"). Paragon track past level 1000 on the same opcode (see "Paragon"). |
 | game_dungeons | `dungeons.lua` | 109 | Reads the base server `DUNGEON_SYSTEM` table. Queue, group formation, teleport in, timer, monster-count progress, boss kill, difficulty unlock, speed/flawless challenges, solo/group rankings, teleport out. Difficulty does not change monsters; loot panel is display only. |
@@ -208,7 +212,7 @@ working directory, as with the rest of the base server libs).
 | game_arena | `arena.lua`, `arena_core.lua`, `arena_config.lua` | 236, Adventure > Arena / `/arena` | Ranked PvP arena, 1v1 and 2v2 with Elo per mode, runtime instances, no death / skull / frag inside, tested in game with two clients (see "Arena"). |
 | game_siege | `siege.lua`, `siege_core.lua`, `siege_config.lua` | 233, Adventure > Guild Siege / `/siege` | Weekly guild siege for the Chaos Obelisk: sign-ups, runtime arena, HUD, rewards and the champion title, tested in game (see "Guild siege"). |
 | game_leaderboard | `leaderboard.lua`, `leaderboard_core.lua`, `leaderboard_config.lua` | 229, Social > Leaderboards | Weekly World Boss / Bounty Hunter / Rifts / Goblin Slayer / Guild Siege / Arena boards with titles and orbs for the top 3, all-time class ladder, tested in game (see "Leaderboards"). |
-| game_crafting | `crafting.lua`, `data/lib/chaos_crafting.lua` | 232, Economy > Crafting Bench | Crafting bench and the crafting orbs (Transmutation, Alchemy, Exalted, Annulment, Scouring, plus Chaos and Divine), tested in game (see "Crafting"). Salvage tab and the item lock: `salvage.lua`, `salvage_core.lua`, `salvage_config.lua`, Economy > Salvage (see "Salvage"). |
+| game_crafting | `crafting.lua`, `data/lib/chaos_crafting.lua` | 232, Economy > Crafting Bench | Crafting bench and the crafting orbs (Awakening, Gilding, Grafting, Unmaking, Erasure, Upheaval, Fate, and the orbs v2: Tempering, Binding, Excision, Reforging, Ruin, Whetstone), tested in game (see "Crafting" and "Crafting orbs v2"). Salvage tab and the item lock: `salvage.lua`, `salvage_core.lua`, `salvage_config.lua`, Economy > Salvage (see "Salvage"). |
 | game_hunt | `hunt.lua`, `hunt_core.lua`, `hunt_config.lua`, `hunt_supplies.lua` | 241, Hunt > Hunt Tracker | Hunt tracker: session time with pause/reset, exp/h, time to level, loot and profit/h, supplies, kills, damage/healing, Chaos drops; tested in game (see "Hunt tracker"). |
 | game_season | `season.lua`, `season_core.lua`, `season_config.lua` | 246, Adventure > Season / `/season` | Seasons: fresh-start season characters isolated from standard ones, season ladder view, season uniques, account-wide reward track, end-of-season migration; tested in game with two clients (see "Seasons"). |
 | game_patchnotes | `patchnotes.lua`, `patchnotes_core.lua`, `data/patchnotes/*.md` | 244, Social > Patch Notes / `/patchnotes` | Weekly patch notes read from Markdown files on the server, opened once per new week at login (after the Daily Reward), per-account "Don't show automatically"; tested in game (see "Patch notes"). |
@@ -459,7 +463,7 @@ so no per-source mapping can reproduce it; every chance was scaled by one factor
 than before (10% -> 7% instead of 3%), totals above ~35% a little less. Leech amounts and critical damage are unchanged.
 What changed: gems (amethyst 1/2/3/4/5 -> 1/1/2/3/3%, cap 15 -> 10%; onyx 2/4/6/8/10 -> 1/3/4/5/7%, cap 30 -> 20%),
 the passive tree nodes (client `treedata/nodes.lua`, `passivetree_data.lua` regenerated: 2 -> 1, 3 -> 2, 5 -> 3,
-7 -> 5), the uniques (`chaos_items.xml`, specs regenerated), the rarity roll (engine patch and Exalted Orb, above), and
+7 -> 5), the uniques (`chaos_items.xml`, specs regenerated), the rarity roll (engine patch and Orb of Grafting, above), and
 on install `tools/patch_base_events.py` scales the stock items' `criticalhitchance` / `lifeleechchance` /
 `manaleechchance` in `items.xml` and the waystone "Critical / Life / Mana Chance" upgrades the same way. Uniques and
 rarity items that already exist keep the values they were made with. Class crits (Bushido, Shadowfist focus, stealth,
@@ -829,7 +833,7 @@ What taking passive points back costs. Every number is in `respec_config.lua`.
   machine's memory limit during that run) and the Paragon reset dialog (character below level 1000).
 
 ## Infinity Tower gameplay (`infinitytower_run.lua`)
-The tower exists now. The Enter Tower button of the client window (action `enter`) takes you, or your party (leader only, members within 12 tiles, up to 4), into an arena that is built at runtime with `Game.createTile` in an empty part of the map (x from 2000, y 2000, z 7; sixteen arenas side by side), so no map editing is needed. Floors are waves: kill everything to open the next one (6 s pause, half of the missing health and mana restored, `floorGold` x floor gold); every 10th floor is a boss floor with its helpers. Pools get harder every 8 floors, and the chance of magic, rare and legendary monsters (with their modifiers and shaders) rises with the floor. A floor has a 300 s limit. Dying, leaving (the Leave Tower button), logging out or running out of time ends your part of the run and records the cleared floors with `ChaosTower.recordRun` (points, best floor, ranking, milestones). Logging in inside an arena sends you to the temple. Milestone rewards now use item ids that exist (gold, Chaos and Divine Orbs, Soulreaper). Everything is configured at the top of the file (`ChaosTowerRunConfig`).
+The tower exists now. The Enter Tower button of the client window (action `enter`) takes you, or your party (leader only, members within 12 tiles, up to 4), into an arena that is built at runtime with `Game.createTile` in an empty part of the map (x from 2000, y 2000, z 7; sixteen arenas side by side), so no map editing is needed. Floors are waves: kill everything to open the next one (6 s pause, half of the missing health and mana restored, `floorGold` x floor gold); every 10th floor is a boss floor with its helpers. Pools get harder every 8 floors, and the chance of magic, rare and legendary monsters (with their modifiers and shaders) rises with the floor. A floor has a 300 s limit. Dying, leaving (the Leave Tower button), logging out or running out of time ends your part of the run and records the cleared floors with `ChaosTower.recordRun` (points, best floor, ranking, milestones). Logging in inside an arena sends you to the temple. Milestone rewards now use item ids that exist (gold, Orbs of Upheaval and Fate, Soulreaper). Everything is configured at the top of the file (`ChaosTowerRunConfig`).
 - `server/tests/infinitytower_run_test.lua` covers the floor planner, entering, clearing floors, dying, leaving, the time limit, logout and login with a mocked engine; CI runs it with LuaJIT and Lua 5.3. The real `Game.createTile`, `Tile:addItem`, `Game.createMonster` and teleport calls are assumed from the engine sources, not run.
 - Not done: the season-end top 3 chests, a visible ladder of floors in the client window, and per-floor loot beyond what the monsters drop. Check that x 2000..2700, y 2000..2020, z 7 is really empty in your map (it is in the map analysed: the content starts at x 18992).
 
@@ -845,10 +849,10 @@ The tower exists now. The Enter Tower button of the client window (action `enter
 - `server/tests/events_schedule_test.lua` checks the weekday/month-day rules, the bonus product, the calendar ranges sent to the client and the experience callback.
 
 ## Test kit (`admin/testkit.lua`)
-`/testkit [mage|knight|paladin][, player]` (admins only) equips a strong set for the vocation (uniques where they fit), a backpack of supplies (potions, runes, crystal coins, Chaos and Divine Orbs), raises the level to 500 and the main skills (magic level 110 for mages, 120 melee or 125 distance), and resets health and mana to the vocation's values. Relog afterwards so the stock rarity script applies the item bonuses.
+`/testkit [mage|knight|paladin][, player]` (admins only) equips a strong set for the vocation (uniques where they fit), a backpack of supplies (potions, runes, crystal coins, Orbs of Upheaval and Fate), raises the level to 500 and the main skills (magic level 110 for mages, 120 melee or 125 distance), and resets health and mana to the vocation's values. Relog afterwards so the stock rarity script applies the item bonuses.
 
 ## Store (`shop.lua`, `shop_config.lua`)
-The client's Store (menu Economy > Store, module `game_shop`) talks JSON on extended opcode 218 (`ChaosOpcodes.shop`; the base server's own store script uses 201 and is left alone). Prices are in Chaos Coins, kept per account in `chaos_shop_coins`; purchases go to `chaos_shop_history` (both in `sql/chaos.sql`). Staff give coins with `/coins <player>, <amount>` (negative takes them away). Categories and offers are in `shop_config.lua`: Chaos and Divine Orbs, supplies, wings, auras and outfit shaders (names and previews read from `data/XML/wings.xml`, `auras.xml`, `shaders.xml`), outfits, mounts and premium time, plus boosts, world buffs, services, convenience unlocks and training weapons (see "Store services"). The two outfit offers give female characters the female look type (910, 1238; they gave the male one before). Wings, auras and shaders are bought once (storages 7100600+); outfits and mounts check whether the player already has them; a delivery that fails refunds the coins. Tested in game: buying an item and wings, refusing a second purchase of the same wings, coins and history in the database.
+The client's Store (menu Economy > Store, module `game_shop`) talks JSON on extended opcode 218 (`ChaosOpcodes.shop`; the base server's own store script uses 201 and is left alone). Prices are in Chaos Coins, kept per account in `chaos_shop_coins`; purchases go to `chaos_shop_history` (both in `sql/chaos.sql`). Staff give coins with `/coins <player>, <amount>` (negative takes them away). Categories and offers are in `shop_config.lua`: Orbs of Upheaval and Fate, supplies, wings, auras and outfit shaders (names and previews read from `data/XML/wings.xml`, `auras.xml`, `shaders.xml`), outfits, mounts and premium time, plus boosts, world buffs, services, convenience unlocks and training weapons (see "Store services"). The two outfit offers give female characters the female look type (910, 1238; they gave the male one before). Wings, auras and shaders are bought once (storages 7100600+); outfits and mounts check whether the player already has them; a delivery that fails refunds the coins. Tested in game: buying an item and wings, refusing a second purchase of the same wings, coins and history in the database.
 
 ## Store services (`shop_services.lua`, `autosell.lua`, `sell_prices.lua`)
 
@@ -1079,7 +1083,7 @@ monster_tiers' `cfg.skip`: no random modifiers (Regenerating, Juggernaut or Expl
 | Nyxareth the Void Archon (void caster, look 862, keeps distance 4) | 15M | oblivion bolt r3 3.5-6k, rift beam (length 8) 4.5-8k, mana drain r6 3-5k, curse DoT 5-8k, drunk r5 | 70% 4 Phantasms, 40% enrage (void pulse r7 2.5-4k / 7 s), 15% 4 Lost Souls | holy -25%, physical -10% / death immune | Myst Regalia set (helmet, mantle, spellbook, wand, ring), Seraphic necklace |
 | Vharok the Blood Colossus (blood colossus, look 591) | 24M | bleeding melee 3-6.5k, crimson cleave wave 4-7.5k, quake r4 3-5k, blood leech r3 3-5k, hemorrhage DoT 6-9k; heals 60-100k | 75% 4 Blood Beasts, 45% enrage (blood nova r6 2.5-4.5k / 7 s, +5k health per player hit), 20% 3 Juggernauts | holy -20% / physical 40% resist, lifedrain immune | Dawnforged plate, great axe, skull crusher, mace, amulet; Seraphic helmet |
 
-Every boss: 55-75 crystal coins, 12-15 Chaos Orbs, 5-7 Divine Orbs (80-90%), 4-6% per set item; immune to paralyze,
+Every boss: 55-75 crystal coins, 12-15 Orbs of Upheaval, 5-7 Orbs of Fate (80-90%), 4-6% per set item; immune to paralyze,
 invisibility, outfit and drunk. Adds get the configured health (100k-200k) so they matter at level 1000. Look types are
 outfits other monsters already use (1472 needs the merged dat, see `data/monster/CUSTOM_MONSTERS.md`); corpses are stock
 containers (slain demon, dead frost dragon, dead defiler, dead juggernaut).
@@ -1142,12 +1146,12 @@ with a healer. Level 300 characters (3-5k health) can be one-shot by the spikes;
 - **Participation reward** for every player whose contribution score (see "Roles") reached `minScorePercent` (0.25%) of
   the boss max health (~40-60k, about 1.5 minutes of a level 300 hitting it, or as much healing, or twice as much tanking;
   the anti-AFK rule). share = own score / score of all eligible players. Each gets: 500k gold + share x 10M gold into the
-  bank, 3 Chaos Orbs + 1 Divine Orb + share x (60 Chaos Orbs, 25 Divine Orbs), a 15% + share x 30% chance of one piece of
+  bank, 3 Orbs of Upheaval + 1 Orb of Fate + share x (60 Orbs of Upheaval, 25 Orbs of Fate), a 15% + share x 30% chance of one piece of
   the boss's set (rarity 6-9 via `Game.createItemWithRarity`) and a 0.5% + share x 3% chance of one of the boss-only
   uniques. Items that do not fit go to the inbox. Players offline at the kill get it at their next login (kept in memory
   until a restart).
 - **Top 3 of each category** (`reward.podium`: damage, healing, tanking; eligible players only, one player can place in
-  several): 1st 5 Divine Orbs + 50 crystal coins, 2nd 3 + 30, 3rd 2 + 20 (the old top-3 damage bonus, now per category),
+  several): 1st 5 Orbs of Fate + 50 crystal coins, 2nd 3 + 30, 3rd 2 + 20 (the old top-3 damage bonus, now per category),
   an extra unique roll of 3% / 2% / 1% (one unique at most per player) and the category's title for 7 days on the name
   plate: **Bossbreaker** (damage), **Lifewarden** (healing), **Bulwark** (tanking). "Bossbane" stays the weekly World
   Boss board title, so the damage role got its own name. Ties: who reached the value first places higher, then the lower
@@ -1195,7 +1199,7 @@ Tracked per character (GUID) while the boss is alive (`state.stats`); a death ke
   are left out of every board as before.
 - **Achievements** (`achievements_data.lua`, fed from `distribute` via `ChaosAchievements.progress`, guarded): Lifeline
   (most healing at a kill, title), Immovable (most tanking at a kill, title), Pillar of the Raid (top 3 healing or tanking
-  at 5 kills, 5 Chaos + 2 Divine Orbs). `achievements.lua` still wraps `computeRewards` with the same signature; a share's
+  at 5 kills, 5 Orbs of Upheaval + 2 Orbs of Fate). `achievements.lua` still wraps `computeRewards` with the same signature; a share's
   `rank` is still the damage place, so "Lion's Share" (wb_top) keeps meaning the most damage.
 
 **Tested in game** (test server with a cropped map, Kaelgor at 150k health and 1/8 damage in a test copy, gather 20 s,
@@ -1246,7 +1250,7 @@ opcode 92, storages 187613+): no shared storage, opcode or event; its kills coun
   deleted at login.
 - **Rewards** (paid at once on completion; gold to the bank, orbs to the backpack or the inbox when it is full):
 
-  | Band | Hunt | Elite / Boss (x1.5, Divine rounded up) | Weekly chest |
+  | Band | Hunt | Elite / Boss (x1.5, Orbs of Fate rounded up) | Weekly chest |
   |---|---|---|---|
   | 8-49 | 10k gold, 1 Chaos | 15k, 1 Chaos | 5 Chaos, 1 Divine |
   | 50-149 | 50k, 2 Chaos | 75k, 3 Chaos | 6 Chaos, 1 Divine |
@@ -1267,8 +1271,8 @@ opcode 92, storages 187613+): no shared storage, opcode or event; its kills coun
   rules and expiry).
 
 Verified on the test server (level 1000 knight): open from the menu (Adventure > Bounty Board); accept; 50 hunt kills -> 2M gold
-in the bank, 6 Chaos + 2 Divine Orbs (to the inbox, backpack full), 1.52M experience; elite: normal kills do not count,
-magic/rare/legendary do; boss kill; weekly chest with 15 Chaos + 4 Divine; the 3-contract limit (also an accept sent
+in the bank, 6 Orbs of Upheaval + 2 Orbs of Fate (to the inbox, backpack full), 1.52M experience; elite: normal kills do not count,
+magic/rare/legendary do; boss kill; weekly chest with 15 Orbs of Upheaval + 4 Orbs of Fate; the 3-contract limit (also an accept sent
 straight from the client is refused); the same board (same checksum) after a restart; progress kept across relog and
 restart; next-day expiry (simulated by shifting the day function); a multi-client contract pays nothing. Not verified in
 game: party credit with two real players (unit-tested only) and the real 06:00 roll (the roll is a once-a-minute check
@@ -1303,13 +1307,13 @@ scavenger with its sack, drawn with the golden outfit shader 12). It never attac
   (look 61, shader 10). Same behaviour, experience, leaderboard (all variants count for Goblin Slayer and the goblin
   achievements) and loot rays. The announce, escape and kill texts use the variant's name. `/goblin [hoarder|gem|shard]
   [level]` spawns one. Variant loot overrides parts of the shared table (`variants[i].loot`):
-  - Gem Goblin: half the gold, no Chaos / Divine Orbs, 2-3 gems (+1 per 250 levels, max 5; type random, tier by
+  - Gem Goblin: half the gold, no Orbs of Upheaval and Fate, 2-3 gems (+1 per 250 levels, max 5; type random, tier by
     `ChaosGems.levelWeights(level)`, 25% one tier better), 1 Orb of Sockets (+25% for a second), 1 gear item, unique
     roll x1, no hoard roll.
-  - Shard Goblin: half the gold, 1-2 Chaos Orbs (+1 per 300 levels, max 4), (10 + level / 10) x 80-120% Rune Shards
+  - Shard Goblin: half the gold, 1-2 Orbs of Upheaval (+1 per 300 levels, max 4), (10 + level / 10) x 80-120% Rune Shards
     (item 32051, max 60), 1 random crafting orb (salvage orb weights), 1 gear item, unique roll x1.
   - Expected per goblin (level 100 / 300): Gem Goblin 2.5 / 3.5 gems and 1.25 Orbs of Sockets; Shard Goblin 20 / 40
-    shards. Over all goblins (70/20/10): about 0.5 gems and 2 / 4 shards per goblin. 25 shards make a Chaos Orb at the
+    shards. Over all goblins (70/20/10): about 0.5 gems and 2 / 4 shards per goblin. 25 shards make an Orb of Upheaval at the
     bench, so a Shard Goblin is worth about a Hoarder's orbs without its gear; goblins stay rare (1 in 3000, at most 1 in
     1500 with the cap), so the effect on the economy is small.
   Not done: **Goblin's Purse** (one-use vault item). The rift room builder is bound to a rift run (key, slot, lives,
@@ -1327,8 +1331,8 @@ scavenger with its sack, drawn with the golden outfit shader 12). It never attac
   escapes: portal effect, "Ha ha!", a message to players within 10 tiles, removed with no corpse and no loot. Never
   hit for 15 minutes: it vanishes quietly. `/goblin [level]` (god accounts) spawns one in front of you.
 - **Loot** (added to the corpse in the death event, so the stock loot message and autoloot see it; owner = most
-  damage): gold worth (2000 + 400 x level) x 80-130% in crystal/platinum/gold coins; 2-4 Chaos Orbs + 1 per 150
-  levels (max 10); a Divine Orb at 25% x item find; 2-4 gear items from the replaced monster's loot table (fallback:
+  damage): gold worth (2000 + 400 x level) x 80-130% in crystal/platinum/gold coins; 2-4 Orbs of Upheaval + 1 per 150
+  levels (max 10); an Orb of Fate at 25% x item find; 2-4 gear items from the replaced monster's loot table (fallback:
   a level-banded pool), each rolled as magic (50, rarity at least 2), rare (35, at least 3) or legendary (15, at least
   5) through `ChaosLoot.upgradeRarity` / `stockRarity` and `Game.createItemWithRarity`; uniques via
   `ChaosLoot.rollUniques` as a legendary kill of the replaced monster with 3x item find, and if none, a 3% "hoard" roll
@@ -1342,7 +1346,7 @@ scavenger with its sack, drawn with the golden outfit shader 12). It never attac
   name).
 - Tests: `tests/treasure_goblin_test.lua` (eligibility and exclusions, the 1-in-N roll, cooldown, health, the escape and
   lifetime timers, blinks, loot scaling). Verified on the test server: render, announcement and toast, flee, blinks,
-  taunts, escape, a kill's corpse (level 100: 43,680 gold, 3 Chaos Orbs, Legendary / Rare / Uncommon gear; a Dragon
+  taunts, escape, a kill's corpse (level 100: 43,680 gold, 3 Orbs of Upheaval, Legendary / Rare / Uncommon gear; a Dragon
   next to it: 33 gold, a crossbow, 3 dragon ham), the onSpawn replacement (driven by hand: the cropped test map has no
   natural spawns), experience 2,100 for a goblin that replaced a Dragon. Not verified: a real natural respawn, party
   loot, the loot ray and leaderboard hooks (their modules do not exist yet). Outfit shader 15 drew as stripes in the
@@ -1416,7 +1420,7 @@ players inside the area (+10 tiles, effective healing only) + kills x 0.25 x the
 0.2% of the total invader health in contribution to be rewarded. Multi-client characters fight but get nothing
 (`mcReward`). Rewards per player, by share of the total:
 - gold to the bank: area level x (200 + 8000 x share), e.g. area 100 alone 820,000; ten equal defenders 100,000 each;
-- 1 Chaos Orb + share x 20 Chaos Orbs and 6 Divine Orbs; top 3 extra Divine Orbs (3 / 2 / 1), the first an Exalted Orb;
+- 1 Orb of Upheaval + share x 20 Orbs of Upheaval and 6 Orbs of Fate; top 3 extra Orbs of Fate (3 / 2 / 1), the first an Orb of Grafting;
 - a unique at (100 + share x 600) / 10000: the Chaos loot layer's own roll for the boss as a boss-tier kill (x20 item
   find), else any non boss-only unique up to the area level + 20 (season uniques respect the season);
 - the weekly **Defender** board (`leaderboard_config.lua`, title "Defender of the Realm"): 10 points per invasion + the
@@ -1446,8 +1450,8 @@ Adventure > Events while it runs (`ChaosEvents.dynamic.worldEvent`).
 - **Chaos Storm** (15 min): magic, rare and legendary spawn chances x3 in the area. `monster_tiers.lua` multiplies its
   spawn roll by `ChaosWorldEvents.tierMult(position)`. Lightning and clouds around the players inside every 2 s.
 - **Wandering Merchant** (20 min, town areas only): the NPC "Wandering Merchant" at a random free tile of the area (or
-  one of `merchantSpots`). Only the area is announced. Goods: Chaos Orb 40k, Divine Orb 120k, Exalted Orb 200k, Orb of
-  Alchemy 60k, Orb of Annulment 80k, Double Experience Potion 350k, supreme health potion 900 (no stock limit).
+  one of `merchantSpots`). Only the area is announced. Goods: Orb of Upheaval 40k, Orb of Fate 120k, Orb of Grafting 200k, Orb of
+  Gilding 60k, Orb of Unmaking 80k, Double Experience Potion 350k, supreme health potion 900 (no stock limit).
 - **Golden Hour** (30 min): +25% Chaos loot in the area. `loot_config.lua` `rateMult` multiplies by
   `ChaosWorldEvents.lootMult(ctx)`, as for the rifts; golden rings around the players inside.
 
@@ -1485,7 +1489,7 @@ on the empty cropped map and adds it as area `testtown` (level 300) with `ChaosI
   meter (50% / 80% broadcasts);
 - the HUD updating (waves, left, time, horde slain, breach, top, you) and the boss (Warchief Grashnak) with its health
   in the HUD;
-- a win in 3:07: Victory toast, the reward message (7,590,000 gold, 31 Chaos, 13 Divine, 1 Exalted Orb, before the
+- a win in 3:07: Victory toast, the reward message (7,590,000 gold, 31 Chaos, 13 Divine, 1 Orb of Grafting, before the
   gold and orbs were lowered to the current numbers), the Victory buff in Adventure > Events, the Defender board entry (110
   points, 1 invasion) in the leaderboard window;
 - two losses (breach) with the occupation: garrison, HUD "occupied", the liberation with its reward (615,000 gold, 5
@@ -1574,7 +1578,7 @@ titles and rewards at the reset, look and broadcast text, class grouping).
 Verified on the test server: a world boss killed with spell damage -> 18M damage, 1 kill on the board. A bounty
 contract completed -> 1 contract. `record("rift", player, 7)` then `5` -> 7, 2 runs. Fake scores for 9 characters
 through the API (guid path), a tie at 18M ranked by who reached it first. The reset (clock shifted 4 days): 9 titles,
-the broadcast, 3 Chaos + 1 Divine Orb in the online 3rd place's inbox, the offline winners' rows kept for their login.
+the broadcast, 3 Orbs of Upheaval + 1 Orb of Fate in the online 3rd place's inbox, the offline winners' rows kept for their login.
 Look text "You hold the title Riftwalker (3rd).". Restart: no second reset, titles and the new week's scores loaded
 from the DB, the reward of an unrewarded row delivered at login. Tabs, class tabs, own rank, the top menu entry. Not
 verified: the look text from another player's view ("He"/"She"; unit-tested), the real Monday 06:00 change (a
@@ -1582,7 +1586,8 @@ once-a-minute check of the week key), the rift source (the rift scripts do not c
 
 ## Crafting (`crafting.lua`, `data/lib/chaos_crafting.lua`, `tools/install_crafting.py`)
 
-Install: `python3 -I server/tools/install_crafting.py <server>/data` (idempotent, `--dry-run`) and the
+Install: `python3 -I server/tools/install_crafting.py <server>/data` (idempotent, `--dry-run`), then
+`python3 -I server/tools/install_orbs.py <server>/data` (orbs v2 and the new names, see "Crafting orbs v2") and the
 `chaos_crafting_log` table of `sql/chaos.sql`. `crafting.lua` loads `data/lib/chaos_crafting.lua` itself, so `lib.lua`
 needs no change. The client needs the multi-use flag on two orbs in its `Tibia.dat`:
 `python3 -I client/tools/sprites/set_multiuse.py <client>/data/things/1098/Tibia.dat` (after `gen_effects.py`, which
@@ -1597,7 +1602,7 @@ of modifiers, one custom attribute each: absorbs `rarity_<x>Absorb` (%), skills 
 of their own one `rarity_element<x>` (% extra damage). Everything is also written into the description attribute
 ("Level: 53, Holy +3%, Fishing +1, Critical Chance +1%, Critical Hit +1%"), which is what the look text and the client
 tooltip show. With engine patch 0004 a critical / leech chance is (2 x roll + 1) / 3 of the pair's roll (1..6 -> 1, 1,
-2, 3, 3, 4; the amount keeps the roll; the Exalted Orb does the same, `ChaosCrafting.specialChance`). `customs/rarity/base_rarity.lua` turns the attributes into conditions and storages when the item is
+2, 3, 3, 4; the amount keeps the roll; the Orb of Grafting does the same, `ChaosCrafting.specialChance`). `customs/rarity/base_rarity.lua` turns the attributes into conditions and storages when the item is
 equipped (and at login); the element and absorb combat scripts read those storages. Uniques (`chaos_unique_items.lua`)
 are base items with the custom attribute `chaos_unique` and their stats as the same `rarity_*` attributes, without a
 rarity. On top of these, items carry the Chaos modifiers of the next section (`chaos_mod_<key>`).
@@ -1607,11 +1612,11 @@ rarity. On top of these, items carry the Chaos modifiers of the next section (`c
 same `craft()` as the bench: the orb is owned, the item is in the backpack (equipped items and the ground are still
 refused: the copy-making orbs would have to unequip and re-equip, and the equip scripts would have to follow), no
 uniques, no stacks, the rules below, a line in `chaos_crafting_log`. Using an orb on nothing, a creature, the floor or
-anything that can never carry modifiers only explains how to use it ("Use the Exalted Orb on an item: choose
+anything that can never carry modifiers only explains how to use it ("Use the Orb of Grafting on an item: choose
 "Use with" on the orb, then click an item or a Rift Key in your backpack..."); it no longer opens the bench.
 
-**How the two plain-use orbs became use-with (and why that way).** The three rune stones and the Chaos/Divine Orbs
-were already use-with; the Orb of Transmutation (29851, client 27195) and the Exalted Orb (29855, client 27199) were
+**How the two plain-use orbs became use-with (and why that way).** The three rune stones and the Orbs of Upheaval and Fate
+were already use-with; the Orb of Awakening (29851, client 27195) and the Orb of Grafting (29855, client 27199) were
 plain items. Use-with needs two flags: the client's multi-use flag in `Tibia.dat` (otherwise the client never starts
 the crosshair) and the server's `useable` flag in `items.otb` (`Game::playerUseItemEx` refuses an item without it).
 Chosen: set both flags on the existing ids (option a). `install_crafting.py` sets `FLAG_USEABLE` on the two otb nodes
@@ -1623,7 +1628,7 @@ already in a backpack, depot, store offer, loot table, bounty chest and the char
 the flag the orbs still work on the bench; the engine answers a plain use of a `useable` item with "You cannot use this
 object" (it refuses plain use of every use-with item, the rune stones included).
 
-The Chaos and Divine Orbs are registered by `crafting.lua` too (same rules, the log, Rift Keys); `crafting.lua` loads
+The Orbs of Upheaval and Fate are registered by `crafting.lua` too (same rules, the log, Rift Keys); `crafting.lua` loads
 before `customs/rarity/reroll_rarity_stats.lua` (scripts load in path order), and the installer makes that script skip
 its own two registrations when `ChaosCrafting.ownsStockOrbs` is set (otherwise the engine prints a duplicate warning
 and keeps the first one, ours). The installer still adds the unique guard to its `isRerollable`.
@@ -1634,20 +1639,21 @@ modifiers"), Chaos modifiers included.
 
 | orb | id | on gear |
 |---|---|---|
-| Orb of Transmutation | 29851 (existing currency item) | normal item (no rarity, no modifiers) -> Common 65% / Uncommon 35%, rolled by `forge` at the item's level |
-| Orb of Alchemy | 24691 (rune stone, named by the installer) | normal item -> Rare 55% / Epic 30% / Legendary 15%, rolled by `forge` at the item's level |
-| Exalted Orb | 29855 (existing currency item) | item with a rarity and an open prefix or suffix: one new modifier it does not have yet, on an open side, its tier by the item level (weights per type in `ChaosCrafting.affixes()`) |
-| Orb of Annulment | 24697 (rune stone) | item with a rarity: one random modifier goes (rarity and item level stay) |
-| Orb of Scouring | 24688 (rune stone) | item with a rarity: a plain copy of the base item (no modifiers; the item level stays) |
-| Chaos Orb | 29856 | item with a rarity: a new copy of the same rarity and item level with a new set of modifiers |
-| Divine Orb | 29857 | a new copy with a new random rarity, none 85% of the time (the stock roll); the item level stays |
+| Orb of Awakening | 29851 (existing currency item) | normal item (no rarity, no modifiers) -> Common 65% / Uncommon 35%, rolled by `forge` at the item's level |
+| Orb of Gilding | 24691 (rune stone, named by the installer) | normal item -> Rare 55% / Epic 30% / Legendary 15%, rolled by `forge` at the item's level |
+| Orb of Grafting | 29855 (existing currency item) | item with a rarity and an open prefix or suffix: one new modifier it does not have yet, on an open side, its tier by the item level (weights per type in `ChaosCrafting.affixes()`) |
+| Orb of Unmaking | 24697 (rune stone) | item with a rarity: one random modifier goes (rarity and item level stay) |
+| Orb of Erasure | 24688 (rune stone) | item with a rarity: a plain copy of the base item (no modifiers; the item level stays) |
+| Orb of Upheaval | 29856 | item with a rarity: a new copy of the same rarity and item level with a new set of modifiers |
+| Orb of Fate | 29857 | a new copy with a new random rarity, none 85% of the time (the stock roll); the item level stays |
 
-Transmutation, Alchemy, Scouring, Chaos and Divine make a new copy (like the stock orbs), so upgrade levels on the item
-are lost; Exalted and Annulment change the item in place and rewrite only the rarity part of the description (text in
+Awakening, Gilding, Erasure, Upheaval and Fate make a new copy (like the stock orbs), so upgrade levels on the item
+are lost; Grafting and Unmaking change the item in place and rewrite only the rarity part of the description (text in
 front of "Level:" and `[...]` upgrade slots behind it are kept). Never touched: uniques (also an old unique without the
 marker, recognised by its spec name), stacks, containers, non-gear, the boat items, equipped items, items outside the
-backpack. No Vaal-style orb. The eighth orb on the bench, the Orb of Sockets, changes the number of sockets: see "Gems
-and sockets".
+backpack. There is no orb that copies an item. The Orb of Sockets changes the number of sockets: see "Gems
+and sockets". The six orbs that came after (Tempering, Binding, Excision, Reforging, Ruin, the Whetstone) and the new names of
+the old ones are in "Crafting orbs v2".
 
 **The orbs on Rift Keys** (the map way; `C.keyCheck` / `C.keyApply`). The rift's own modifier pool, value ranges and
 reward bonuses (`rift_config.lua` `mods`, `rift_core.lua`); the tier never changes; the key's `rift_mods` attribute,
@@ -1656,11 +1662,11 @@ and slot rules do not apply; the backpack rule and the log do.
 
 | orb | on a Rift Key |
 |---|---|
-| Transmutation | a key without modifiers gets 1 |
-| Alchemy | a key without modifiers gets 2 (60%) or 3 (40%) (`key.alchemyCount`) |
-| Exalted | one more modifier the key does not have, up to `key.maxMods` (3) |
-| Annulment | one random modifier goes |
-| Scouring | every modifier goes |
+| Awakening | a key without modifiers gets 1 |
+| Gilding | a key without modifiers gets 2 (60%) or 3 (40%) (`key.alchemyCount`) |
+| Grafting | one more modifier the key does not have, up to `key.maxMods` (3) |
+| Unmaking | one random modifier goes |
+| Erasure | every modifier goes |
 | Chaos | new modifiers, the count rolled with the drop weights (1: 50, 2: 35, 3: 15) |
 | Divine | the same modifiers, new values inside their ranges (whole steps) |
 
@@ -1677,21 +1683,128 @@ owned, the rules above, 250 ms between orbs. The last 8 crafts come from `chaos_
 go at startup); use-with crafts are logged too.
 
 **Drops and rewards.** Chaos loot layer (`loot_config.lua` currency, per 10000 kills, normal / magic / rare / legendary /
-boss): Transmutation 30/200/700/2500/3500 (1-2), Alchemy and Annulment 10/80/300/1200/2000, Scouring
-15/100/400/1500/2500, Exalted 4/30/120/600/1000; weights for the guaranteed legendary/boss draw 20/10/10/10/5 (Chaos 70,
-Divine 30). Simulated 10000 legendary kills: Chaos 8513, Divine 4380, Transmutation 7607, Alchemy 1862, Annulment 1864,
-Scouring 2110, Exalted 945. Store (Chaos Currency): Transmutation 5, Scouring 12, Alchemy 15, Annulment 20, Exalted 40
-coins. Weekly bounty chest: + 3 Orbs of Transmutation and 1 Orb of Annulment (`weeklyExtra` in `bounty_config.lua`).
+boss): Awakening 30/200/700/2500/3500 (1-2), Gilding and Unmaking 10/80/300/1200/2000, Erasure
+15/100/400/1500/2500, Grafting 4/30/120/600/1000; weights for the guaranteed legendary/boss draw 20/10/10/10/5 (Upheaval 70,
+Fate 30). Simulated 10000 legendary kills: Upheaval 8513, Fate 4380, Awakening 7607, Gilding 1862, Unmaking 1864,
+Erasure 2110, Grafting 945. Store (Chaos Currency): Awakening 5, Erasure 12, Gilding 15, Unmaking 20, Grafting 40
+coins. Weekly bounty chest: + 3 Orbs of Awakening, 1 Orb of Unmaking, 5 Whetstones and 2 Orbs of Tempering (`weeklyExtra` in `bounty_config.lua`).
 
 **Tested in game** (test server, cropped map, client with the patched dat): use-with of all seven orbs on items with no
-bench open (the Orb of Transmutation and the Exalted Orb with the mouse: right click, then click the item; the others
+bench open (the Orb of Awakening and the Orb of Grafting with the mouse: right click, then click the item; the others
 by `g_game.useWith`, the same packet), the hint for an orb used on oneself and on the floor, the bench (select an item
-and a key, previews, Exalted from the bench), every orb on a Rift Key by use-with and on the bench, then a rift opened
+and a key, previews, Grafting from the bench), every orb on a Rift Key by use-with and on the bench, then a rift opened
 with the crafted key (Brutality 15, Withering, Swarm 2: damage x1.15, no regeneration, packs of 5-6), the log rows of
 every path; earlier: refusals (unique, full item, no orb, equipped item), drag and drop onto the slot, the store
 purchase and the loot simulation. `tests/crafting_test.lua` covers eligibility, each orb on a mocked item, slot limits,
 the description, unique protection, the Chaos modifiers through the orbs, the previews and every orb on a Rift Key.
 Not tested: the weekly bounty chest with the extra orbs (needs seven finished contracts), a hotkey set to plain "use".
+
+## Crafting orbs v2 (`data/lib/chaos_orbs.lua`, `chaos_orbs_config.lua`, `tools/install_orbs.py`, `item_powers.lua`)
+
+The second set of orbs, on top of the item level / tier / prefix and suffix rework ("Item modifiers"). They are registered
+with `ChaosCrafting.addOrb{key, id, name, text, check, apply, preview, pick, keyCheck, keyPick, keyApply}` from
+`data/lib/chaos_orbs.lua`, which `chaos_crafting.lua` loads at its end, so `crafting.lua` registers a use-with action and a
+bench row for each of them like for the first eight. Every number is in `ChaosOrbsConfig` (`chaos_orbs_config.lua`).
+Tests: `tests/orbs_test.lua` (8500 checks), `tests/powers_test.lua`.
+
+**New names.** The currency items used the names of another game; every orb has a name of its own now. Only the names change:
+ids, keys (`transmutation`, `exalted`, ...), storages and the character-upgrade shop stay.
+
+| old name | new name | id |
+|---|---|---|
+| Orb of Transmutation | Orb of Awakening | 29851 |
+| Orb of Augmentation | Ember Orb (character upgrades only) | 29852 |
+| Regal Orb | Crown Orb (character upgrades only) | 29853 |
+| Vaal Orb | Void Orb (character upgrades only) | 29854 |
+| Exalted Orb | Orb of Grafting | 29855 |
+| Chaos Orb | Orb of Upheaval | 29856 |
+| Divine Orb | Orb of Fate | 29857 |
+| Angel Orb | Dawn Orb (character upgrades only) | 29858 |
+| Mirror of Kalandra | Orb of Echoes (character upgrades only; it never copied an item, and nothing here does) | 29859 |
+| Orb of Alchemy | Orb of Gilding | 24691 |
+| Orb of Annulment | Orb of Unmaking | 24697 |
+| Orb of Scouring | Orb of Erasure | 24688 |
+
+`install_orbs.py` writes the names (and plurals) into `items.xml` and replaces the old names in every base-server file that
+lists items by name: the loot lists of the waystone monsters (`id = "vaal orb"` ...), monster XML, NPC lists, any script
+outside `data/scripts/chaos` (case-insensitive, whole words; 220 references in 36 files of the test server's base data). The
+repository's own files carry the new names (a sweep over scripts, configs, tests, docs, the website). `check_names.py` has no
+list of these names; the old ones are gone from the player-facing text.
+
+**The orbs.**
+
+| orb | id (sprite) | what it does | source |
+|---|---|---|---|
+| Orb of Tempering | 32251 (blue inlay stone) | rolls the values of every modifier that is not bound again, inside the current tiers; on a Rift Key: new values | store 8, drops, salvage 20 shards |
+| Orb of Binding | 32252 (violet crystal) | binds one modifier (chosen on the bench; a random one by use-with): Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone. At most 1 bound modifier up to Epic, 2 from Legendary (`ChaosItemMods.config.bind.max`). Only an Orb of Erasure frees it | store 30, drops (rare), salvage 75 |
+| Orb of Excision | 32253 (red crystal) | removes the modifier you choose (a random one that is not bound by use-with); on a Rift Key: one modifier | store 25, drops, salvage 60 |
+| Orb of Reforging | 32254 (gold crystal) | rolls the tier (by the item level) and the value of the one modifier you choose again | store 20, drops, salvage 50 |
+| Orb of Ruin | 32255 (black stone) | the gamble, below | drops (very rare), salvage 150, no store |
+| Whetstone | 32256 (moonlight crystals) | +1% item quality, up to 20% (30% from Divine rarity) | store 2 each (10 for 20), bounty chest (5), drops, salvage 5 |
+
+The sprites are the stock multi-use inlay stones, essence crystals and moonlight crystals (clients 24483, 25047, 25049, 25048,
+24477, 22083): they have the multi-use flag in `Tibia.dat` already, so **no client dat change and no `set_multiuse.py` run**
+is needed; the live dat pair is untouched. The server nodes are copies of the stock nodes with the `useable` flag (the same
+way as the gems and the salvage shard, `install_gems.py`' helpers). Ids 32251..32260 are reserved for this set.
+
+**The Orb of Ruin.** Odds in `ChaosOrbsConfig.ruin`, shown on the bench and in the orb's text: 40% the item **improves**,
+45% nothing happens, 15% the item is **ruined**. An improvement is (60%) one tier more on every modifier that is not bound
+(T8 stays; a new value inside the new tier; the item level does not limit it), else (or when nothing can go up) one **extra
+modifier** above the side limit of its rarity, once per item (`chaos_ext`: the side that got it has one more slot from then
+on, the bench shows the new limit). A **ruined** item (`chaos_ruined`, "Ruined" in the description, a red line in the
+tooltip and on the bench) refuses every orb, the Orb of Sockets included; it can still be used, worn, sold and salvaged.
+`ChaosOrbs.forceRuin = "improve" | "nothing" | "ruin"` and `ChaosOrbs.forceImprove = "tiers" | "slot"` are the test hooks (nil in
+the game; the in-game test drove them with a test-only talkaction).
+
+**Bound modifiers** (`cb_<attribute key>` = 1 on the item; "(T3, bound)" in the description, "bound" in the tooltip and on the
+bench). `removeMod`, `rerollValues`, `rerollTiers`, `annul` and `upheave` skip them; `clearMods` (the plain copy of Erasure)
+removes them. The Orb of Upheaval on an item with bound modifiers works **in place**: the bound ones stay, the rest is rolled
+again up to the rarity's count (the upgrade levels of the item stay too). The Orb of Fate (a new copy with a new rarity) is
+refused on an item with a bound modifier ("use an Orb of Erasure first"). The rule for the Orb of Fate itself: it keeps the old
+rarity gamble (stock odds: 85% of the time no rarity at all), item level and quality stay; it is the "risky rarity" orb next to
+the Orb of Ruin, no longer a value reroll (that is the Orb of Tempering).
+
+**Item quality** (`chaos_quality`, 0..30). Every modifier value is multiplied by (100 + quality) / 100 and rounded to the nearest
+whole number, never below the value itself: a T4 skill of 3 at 20% is 4, a value of 1 stays 1 (so very small values only move
+with enough quality; the larger Chaos modifiers move earlier). The item stores the value as it was rolled inside the tier
+(`cv_<attribute key>`) and the value it acts with; Tempering, Reforging and Ruin roll the raw value and scale it again; the
+orbs that make a new copy (Upheaval, Fate, Erasure, Awakening, Gilding) carry the quality over. The bench has a quality bar,
+the tooltip a line "Quality +9% (up to 20%)". Not scaled: the base attack / armour of the item, sockets and gems.
+
+**The bench's modifier picker.** Every modifier row is clickable; the orbs that are aimed at one modifier (`pick` of the
+orb: Binding, Excision, Reforging) are enabled once a modifier they may act on is selected and send it as `mod` (the server
+checks it again: it must be an unbound modifier of that item). Rows show the tier and range, a gold "bound" mark, an orange
+colour for legendary powers; the item panel shows the quality bar and "Mods 4/6 P2/3 S2/3 B1/2". The orb list scrolls (14
+orbs), the Salvage tab's recipe grid too. Nothing else about the bench changed.
+**An extended opcode message above 8192 bytes is dropped by the engine** (`NetworkMessage::addString` refuses a longer string).
+With fourteen orbs the bench state passed that limit as soon as an item had many modifiers, so the protocol changed: the
+bench sends an `info` message when it opens (the orbs with their texts, the reason texts) and every `state` carries only
+counts, reason codes, the item and the lists; `sendState` drops the history and then the end of the item list until the JSON is
+under 7600 bytes (opcode 232 documentation in `crafting.lua` / `game_crafting/crafting.lua`).
+
+**Sources.** Drops: `loot_config.lua` currency entries with weights 18 / 14 / 6 / 5 / 3 / 1 (Whetstone, Tempering, Reforging,
+Excision, Binding, Ruin) and chances per 10000 kills per monster tier (the Whetstone 25/180/600/2000/3000, Ruin 0/4/18/80/160 for
+normal / magic / rare / legendary / boss); rifts and Omen guardians pay through the same currency roll. Store (Chaos Currency, 2
+pages): Whetstone 10 for 20 coins, Tempering 8, Reforging 20, Excision 25, Binding 30; the Orb of Ruin is not sold. Weekly bounty
+chest: + 5 Whetstones and 2 Orbs of Tempering. Salvage: recipes (shards) Whetstone 5, Tempering 20, Reforging 50, Excision 60,
+Binding 75, Ruin 150 (about 2.5 shards per store coin, the Orb of Ruin priced like a 60 coin item), and the whole-orb chance of a
+salvaged item picks them with weights 14 / 12 / 4 / 3 / 2 / 1. Loot filter: orbs glow as before (the filter finds them in the
+currency list); an item with a legendary power always glows.
+
+**Achievements.** Bound by Oath (bind a modifier), Fortune's Favourite (an Orb of Ruin improves an item), Beyond Saving (it ruins
+one; hidden), Honed to an Edge (20% quality), Legend Reborn (own an item with a legendary power; title Powerbearer).
+
+**Install.** `python3 -I server/tools/install_orbs.py <server>/data [--dry-run]`. `install_all.py` is not changed yet: it needs
+a step `orbs` after `crafting` (`'orbs'` in `STEPS`, and `def step_orbs(server, data, ctx): return
+tool_result(run_tool([tool('install_orbs.py'), data], 'install_orbs.py'))` like `step_salvage`). Idempotent; keeps `items.otb.bak`; verifies
+the written `items.otb`. **Tested in game** (test server, ASan engine build with patches 0001-0011, cropped map, client with the
+unchanged live dat): bench with 14 orbs (scrolling), an Orb of Awakening on a plain sword, Binding of a picked modifier
+(bound mark, Binding / Fate / Excision / Reforging disabled with the reason), Tempering that kept the bound value and rerolled
+the other, Excision of the chosen one, Reforging (T4 -> T5), 9 Whetstones (quality bar, values x1.09), Ruin forced to improve
+tiers (3 modifiers one tier up), improve slot (an extra prefix on a full Epic item, limit 3/3) and ruin (RUINED, every orb
+disabled), Upheaval on a bound item (in place, the bound one stayed), Binding and Whetstone by use-with without the bench,
+the tooltip with quality / bound / power, the store (page 2 with the new orbs), the Salvage tab recipes. Not tested in game:
+orbs on a Rift Key (unit-tested), the drops of the new orbs (the loot simulation only), the weekly chest.
 
 ## Dark tile set (`data/lib/chaos_dark_tiles.lua`, `data/lib/chaos_dark_paint.lua`, `tools/install_dark_tiles.py`)
 
@@ -1745,8 +1858,8 @@ are fixed at 145 (`worldBoss`), the tutorial's gear at 5 (`tutorial`), rift ches
 level (else the top of the tier's window) with the rift bonuses, the treasure goblin its area level as a Legendary.
 `store` (60) is the fixed level for Chaos-store gear; the store sells orbs and no gear today, so nothing uses it yet
 (`ChaosCrafting.createItem(id, rarity, ChaosItemMods.config.itemLevel.store)` is the call). Plain gear without a rarity
-gets `chaos_ilvl` too, so an Orb of Transmutation or Alchemy on it uses the level it dropped with. Orbs keep the item's
-level (Scouring and Divine too); an item without any level gets one from the item type's required level.
+gets `chaos_ilvl` too, so an Orb of Awakening or Gilding on it uses the level it dropped with. Orbs keep the item's
+level (Erasure and Fate too); an item without any level gets one from the item type's required level.
 
 **Tiers.** Eight per modifier, T1 the lowest, T8 the highest. A tier needs an item level (`tierLevels`): T1 1, T2 15, T3 30,
 T4 50, T5 70, T6 95, T7 120, T8 140. A modifier rolls among the best five tiers the item level allows
@@ -1767,12 +1880,12 @@ the lowest of T2-T6 whose range holds it, above T6 the top. The pair attributes 
 | Eternal, Divine, Phantasmal, Celestial | 5 | 3 |
 | Cosmic, Abyssal, Transcendent | 6 | 3 |
 
-(`config.rarity.count` / `.sides`.) The Exalted Orb fills up to 2 x the side
+(`config.rarity.count` / `.sides`.) The Orb of Grafting fills up to 2 x the side
 limit. Prefixes are damage and defence, suffixes utility, resistances and speed; a new item is rolled until the count or
 both sides are full. Old items keep what they have (an old Epic item may carry more of one side than today's limit; the
-orbs only add on a side that is open). **The Exalted Orb** picks among the modifiers on an open side that the item does not
-have and that suit its kind, **Annulment** removes one at random, **Chaos / Transmutation / Alchemy / Divine** make a new
-copy and `forge` it (so the limits hold), **Scouring** makes a plain copy. An item's description lists them:
+orbs only add on a side that is open). **The Orb of Grafting** picks among the modifiers on an open side that the item does not
+have and that suit its kind, **Unmaking** removes one at random, **Upheaval / Awakening / Gilding / Fate** make a new
+copy and `forge` it (so the limits hold), **Erasure** makes a plain copy. An item's description lists them:
 "Item Level: 57. Prefixes: Sword +2 (T3); Critical Chance +1%, Critical Hit +2% (T2). Suffixes: Fire +3% (T4)".
 
 **The engine's types** (absorbs, skills, critical / leech pairs, weapon elements) have tiers too (`config.engine`), weighed
@@ -1858,7 +1971,7 @@ reduction act on health damage only), and a stat that adds the ailment chance to
 
 **Loot filter, tooltips, bench, salvage.** The loot filter has a rule "glow on a modifier of tier T+" (settings bits 22-25,
 `tier`); the rarity data of a corpse item (`x`) is "Item Level 57; Sword +2 (T3); ..." and `t` is its best tier. The rich
-tooltip (`item_tooltip_core.lua`) sends `level`, `maxTier`, `sides = {p, s, max}` and per modifier `tr` (tier), `sd` (side)
+tooltip (`item_tooltip_core.lua`) sends `level`, `maxTier`, `sides = {p, s, max, mp, ms}` (mp / ms: the limit of a side with an extra slot), `quality = {q, cap}`, `ruined`, and per modifier `tr` (tier), `sd` (side), `bd` (bound), `pw` (a legendary power)
 and `lo` / `hi` (the range of that tier); the client shows "Item Level 57  (up to T4)", then "Prefixes 2/2" / "Suffixes
 1/2" with "T3 Sword +2 [1-3]" lines in a colour per tier (`game_itemtooltip`). The bench shows the same per modifier
 (prefixes first, "T3  Sword +2  [1-3]") and the preview of each orb names the tiers the item level allows ("T1-T3").
@@ -1879,15 +1992,49 @@ number the next tick, and `ChaosCrafting.unshield` does the same for an item tha
 Readers go through `tonumber`. Items that leave a corpse before the pass go through `ChaosLoot.finalizeRarity`
 (autoloot, Rarity Autoloot, the pouch).
 
-**Orbs v2: what the follow-up needs.** `ChaosCrafting.addOrb{key, id, name, text, check, apply, preview, keyCheck, keyApply}`
-adds an orb (use-with action and bench row follow; add it from a lib file before `crafting.lua` loads); building blocks
-`candidates`, `rollAffix`, `rollAffixes`, `writeAffix`, `removeMod`, `rerollValues` (values inside the current tiers),
-`rerollTiers` (new tiers by the item level), `forge`, `recreate`, `rewriteDescription`. The follow-up still has to do: the
-new orbs themselves (item ids and names in `items.otb` / `items.xml` / the client `Tibia.dat`, installer step, drop weights in
-`loot_config.lua`, store and salvage recipes, `shop_config.lua`, the bench rows), renaming the existing orbs, legendary
-powers (a place on the item for a fixed power, an attribute and tooltip line), a lock / seal marker per modifier that
-`removeMod` and `rerollValues` respect, item quality as a multiplier, and a decision on the Divine Orb (still the stock rarity
-reroll).
+## Legendary powers (`data/lib/chaos_powers.lua`, `data/scripts/chaos/item_powers.lua`)
+
+Twelve modifiers that change what the character does instead of adding a number. A power is a modifier of
+`ChaosItemMods.config.mods` with `power = true` (chaos_powers.lua adds them): it has a tier (T1..T8, higher is stronger), a
+value, a prefix or suffix side, a tooltip line, a cap, and it **counts against the modifier limits**. It only rolls on items of
+rarity **Legendary or better** and at most **one per item** (`config.powers`), through the same forge / Orb of Grafting /
+Reforging / Ruin paths as every modifier (`C.candidates` enforces the gate). The value of a tier is the chance of the proc, except
+Last Breath (the health left), Bloodrush (percent per stack) and Smoldering Aura (damage per second). The capped totals of the
+equipped items (`ChaosItemModsCache`) are what `item_powers.lua` reads; every proc has an internal cooldown (`ChaosPowers.config`)
+and the damage of a power never starts another power (a guard), only monsters that are not somebody's summon are hit.
+
+| power | side | what it does | tiers T1..T8 | cap | limit |
+|---|---|---|---|---|---|
+| Death Blast | prefix (weapon, jewel) | on kill: a fire explosion on up to 8 monsters around the corpse, 25% of its maximum health, at most 50 + 8 x level | 2-3% .. 12-16% | 25% | 1.5 s |
+| Glacial Ward | prefix (shield, armour, legs, boots, other) | when you dodge or block a monster's hit: an ice nova (40 + 5 x level) that slows 35% for 3 s | 2-3% .. 12-16% | 30% | 4 s |
+| Echo Shot | prefix (weapon) | a ranged hit that landed is repeated after 250 ms for 60% | 2-3% .. 12-16% | 25% | 0.8 s |
+| Critical Echo | prefix (weapon, jewel) | a critical hit is repeated after 200 ms for 50% | 3-5% .. 18-25% | 30% | 1 s |
+| Arc Lightning | prefix (weapon, jewel) | a hit arcs to 3 monsters within 3 sqm for 30% | 2-3% .. 12-16% | 30% | 0.7 s |
+| Bloodrush | prefix (weapon, jewel, other) | every kill adds a stack (5, 6 s): +N% damage per stack | 1% .. 4-5% | 5% (25% at 5 stacks) | stacks |
+| Shatter Splash | prefix (weapon) | the killing blow bursts onto up to 6 monsters within 2 sqm for N% of it | 10-15% .. 60-75% | 100% | 1 s |
+| Crimson Burst | suffix (weapon, jewel, helmet) | a hit heals 4% of your maximum health | 2-3% .. 12-16% | 25% | 2.5 s |
+| Last Breath | suffix (armour, helmet, shield, jewel, legs) | a lethal hit leaves you at N% health instead (the time of the last one is a player storage, 7101800: once per 5 minutes, also across logins) | 10-15% .. 45-50% | 50% | 5 min |
+| Ember Step | suffix (boots, legs, armour, jewel) | a single hit of 20% of your health or more blinks you up to 3 sqm away (a free tile) and burns where you stood | 4-6% .. 22-28% | 30% | 15 s |
+| Hunter's Rush | suffix (boots, jewel, helmet, other) | on kill: haste +40 for 4 s | 4-6% .. 22-28% | 30% | 8 s |
+| Smoldering Aura | suffix (armour, helmet, jewel, legs, other) | every 3 s N x 3 fire damage to up to 6 monsters within 2 sqm | 5-10 .. 250-400 per s | 600 | tick |
+
+**Not done, on purpose.** *Culling strike* is the Execute modifier already (a hit that leaves a monster at or below N% health
+kills it). *A chance to cast a class spell on a critical hit* needs an engine call that casts a spell by name; there is none, so
+Critical Echo (the hit again) is the closest thing. *Summons* (a spectral ally and the like) need a monster per class and a
+lifetime owned by the minion scripts (the Necromancer's); no power summons.
+
+Engine pieces used: `onHealthChange` on the target (registered by `onTargetCombat`, like `item_mods.lua`; its 8th argument
+`critical` comes from engine patch 0001), `onHealthChange` on the player (Last Breath, Ember Step), `onKill`, a hook
+`ChaosItemMods.onAvoid` that `item_mods.lua` calls on a dodge or a block, conditions (haste, slow) and a repeating global event
+(the aura). Tooltips: the power is an orange line "T8 Death Blast: 13% chance on kill to explode"; the bench shows "Death Blast
+13%" with the full text as a tooltip.
+
+**Tested in game** (same test server): Death Blast (fire on the trolls around the corpse, damage numbers on screen), Hunter's
+Rush, Arc Lightning (energy on the monsters nearby) and Crimson Burst (+384 = 4% of 9600), Last Breath (a 99999 hit left a level
+600 character at 3839 of 9600 = 40%), the totals and caps (`deathblast=25` from a value of 100). Unit-tested only: the other
+powers' procs (Echo Shot, Critical Echo, Bloodrush, Shatter Splash, Ember Step, Glacial Ward, Smoldering Aura) and every
+cooldown. `tests/powers_test.lua` (240 checks) covers the catalogue, the maths, each handler against a mocked engine, the
+cooldowns, the guard and the dodge hook; `tests/orbs_test.lua` the rarity gate, one power per item and the side limits.
 
 ## Gems and sockets (`data/lib/chaos_gems.lua`, `chaos_gems_config.lua`, `gems.lua`, `tools/install_gems.py`)
 
@@ -1920,7 +2067,7 @@ Divine-Celestial, Cosmic-Transcendent 3. Sockets come from:
   when nothing could change. It drops from the loot layer (8/60/250/1000/1500 per 10000 kills, normal to boss), and the
   store sells it for 25 Chaos Currency.
 
-Sockets and gems survive every orb that remakes an item (Transmutation, Alchemy, Scouring, Chaos, Divine: `C.recreate`
+Sockets and gems survive every orb that remakes an item (Awakening, Gilding, Erasure, Upheaval, Fate: `C.recreate`
 copies them) and the loot layer's rolled copy (`ChaosLoot.finalizeRarity`). **Uniques** have one fixed socket
 (`uniqueSockets`) without the attribute: gems can be socketed and taken out, no orb changes the count. The socket shows
 in the look text from the moment the unique is made (`ChaosMakeUnique` is wrapped by `gems.lua`).
@@ -2001,7 +2148,7 @@ without a rarity keep their own text (the items.xml description) in front. The l
   weapon (+12%); 300 fire damage taken: 250 -> 230 with a Perfect Ruby in the amulet (-8%).
 - combining three Chipped Rubies; on the bench, Remove (200k from the bank; refused without the gold) and Shatter.
 - the Orb of Sockets on the bench (3 -> 1, the gem kept and moved to the front) and by use-with (an axe with no
-  sockets got 1). The Chaos Orb on socketed armour: sockets and gem kept.
+  sockets got 1). The Orb of Upheaval on socketed armour: sockets and gem kept.
 - a unique: one socket, a gem socketed, the orb refused.
 - gem drops with a raised chance, sockets on rarity drops (5 of 8 gear drops of 100 demons had sockets, written after
   the engine's text), the rift chest and world boss rewards with gems.
@@ -2019,7 +2166,7 @@ solo runtime-built challenge arena (x / y 9000+, 8 / 9 / 10 minutes, 3 / 3 / 2 l
 per pair. The full design table (every trial, every pair with its trade-off and numbers) is `server/data/scripts/chaos/TRIALS.md`.
 Entry: the Keeper of Trials NPC (temple) or the Trials button of the Passive Tree window (opcode 65 `extraActions`); the
 run HUD is the rift HUD (opcode 228). A lethal hit costs a life instead of killing (no experience or item loss). First
-clear: bank gold, Chaos and Divine Orbs and the pair; repeat: 1 Trial Token (5 a week) and a small reward. Switching a
+clear: bank gold, Orbs of Upheaval and Fate and the pair; repeat: 1 Trial Token (5 a week) and a small reward. Switching a
 pick or giving a pair up: 1 Trial Token + level x 250 gold, not in combat or during a run. Special nodes use their own
 combat code (`trials_effects.lua`, about 40 keys, damage dealt bounded 0.25-2.5 and taken 0.3-2.0), are separate from the
 passive points, survive every tree reset, and are not in build codes. Ten nodes use spell cost / cooldown keys and need
@@ -2055,18 +2202,18 @@ and a duplicate is still worth keeping for a season or a trade.
 - base by rarity (Common .. Transcendent): 1, 1, 2, 2, 3, 3, 4, 5, 6, 7, 8, 10, 12, 14, 18 (a Transcendent at the top
   of its window: 27).
 - whole orb on top, per item: 0.5, 0.5, 0.75, 0.75, 1, 1, 1.5, 1.5, 2, 2, 2.5, 3, 3.5, 4, 5%; which orb by weight:
-  Transmutation 35, Chaos 25, Scouring 12, Alchemy 10, Annulment 8, Divine 5, Sockets 3, Exalted 2.
+  Awakening 35, Upheaval 25, Erasure 12, Gilding 10, Unmaking 8, Fate 5, Sockets 3, Grafting 2, Whetstone 14, Tempering 12, Reforging 4, Excision 3, Binding 2, Ruin 1.
 
-**Shards into orbs** (one click makes 1, Ctrl+click up to 10): Transmutation 12, Chaos 25, Scouring 30, Alchemy 40,
-Annulment 50, Divine 60, Sockets 60, Exalted 100 shards, about 2.5 shards per Chaos Coin of the store price (5, 10, 12,
-15, 20, 25, 25, 40).
+**Shards into orbs** (one click makes 1, Ctrl+click up to 10): Awakening 12, Upheaval 25, Erasure 30, Gilding 40,
+Unmaking 50, Fate 60, Sockets 60, Grafting 100, Whetstone 5, Tempering 20, Reforging 50, Excision 60, Binding 75, Ruin 150 shards, about 2.5 shards per Chaos Coin of the store price (5, 10, 12,
+15, 20, 25, 25, 40; Whetstone 2, Tempering 8, Reforging 20, Excision 25, Binding 30).
 
 **Why these numbers.** With the stock rarity roll (70% of gear drops pass, then each rarity in order with its own chance)
 an average rolled drop gives about 2.8 shards before modifiers and sockets (about 3.3 with them) and a 0.9% orb chance:
-roughly a tenth of a Chaos Orb. Rolled drops come a few times more often than orbs from the loot layer (a normal monster
+roughly a tenth of an Orb of Upheaval. Rolled drops come a few times more often than orbs from the loot layer (a normal monster
 drops an orb on about 1.4% of kills), so salvaging everything adds a modest share to a player's orb income instead of
 replacing the orb drops, and it competes with selling the item: salvage is a sink for unwanted rarity gear, not a mint.
-`tests/salvage_test.lua` checks the average (2.2-3.5 shards, about 1% orbs) and that a Chaos Orb takes at least 8 rolled
+`tests/salvage_test.lua` checks the average (2.2-3.5 shards, about 1% orbs) and that an Orb of Upheaval takes at least 8 rolled
 items.
 
 **Salvage all.** Choose a container (the backpack or one bag in it, its direct contents) and the highest rarity; the bench
@@ -2082,7 +2229,7 @@ all", and never sold by the **Auto Seller**, even with Economy > Auto Seller (`a
 `ChaosShopServices.sellBlocked` returns "locked"; "Auto seller: kept a locked item."). The look text says "It is locked:
 it cannot be sold, salvaged or thrown away." (EventCallback onLook, index 120); the gear grid shows locked items dimmed,
 the rich tooltips (engine patch 0003, key 3) show "Locked". The lock survives the orbs that make a new copy
-(Transmutation, Alchemy, Scouring, Chaos, Divine: `C.recreate` calls `ChaosSalvage.copyLock`). Orbs and gems still work
+(Awakening, Gilding, Erasure, Upheaval, Fate: `C.recreate` calls `ChaosSalvage.copyLock`). Orbs and gems still work
 on a locked item: the lock protects from destruction and selling, not from crafting.
 
 Engine patch `src-patches/0009-locked-items-never-sold.patch` closes the paths the scripts cannot see (an item is
@@ -2114,15 +2261,15 @@ are the bench's `result` (orb `"salvage"`) and `state`.
 again"); `inBackpack` again before anything is removed; all rules again on every item of a batch; 300 ms between single
 actions and locks, 2 s between batches, 300 ms between combines; shards and orbs go to the backpack, else the inbox (a
 message says so), else the floor. **Log**: every salvaged item is one row of `chaos_crafting_log` (orb `Salvage`, item
-name, "Rare (level 26): 2 rune shards [+ 1 Chaos Orb]"; a batch writes its rows in one INSERT), combines are `Shards`
-rows ("75 rune shards -> 3x Chaos Orb"), lock changes `Lock` rows; the bench's Recent crafts shows them.
+name, "Rare (level 26): 2 rune shards [+ 1 Orb of Upheaval]"; a batch writes its rows in one INSERT), combines are `Shards`
+rows ("75 rune shards -> 3x Orb of Upheaval"), lock changes `Lock` rows; the bench's Recent crafts shows them.
 
 **Tested in game** (test server, client with the new tab): a single Common salvaged from the bench (1 shard, log row);
 "salvage all" in the backpack up to Uncommon with the cap lowered to 5 (5 taken, 6 over the limit, the socketed and the
 higher ones skipped), then a bag up to Legendary (4 Commons and a Rare: 6 shards; the locked Uncommon skipped); the
-confirmation box; Transmutation (12 shards) and Ctrl+click Chaos (3 orbs for 75 shards); Lock / Unlock from the bench,
+confirmation box; Awakening (12 shards) and Ctrl+click Chaos (3 orbs for 75 shards); Lock / Unlock from the bench,
 the refusal of a locked item, the look text; a monster kill with a locked and an unlocked rarity fire sword on the auto
-sell list with the rarity opt-in: the unlocked one sold (4000 gold to the bank), the locked one kept; a Chaos Orb on a
+sell list with the rarity opt-in: the unlocked one sold (4000 gold to the bank), the locked one kept; an Orb of Upheaval on a
 locked sword (new copy, still locked). Unit tests: yields, orb roll, checks, the lock, batch cap and skips, signature,
 combine, the economy average, and `salvage.lua` single / batch / lock / combine / full backpack / look text against
 mocks; `tests/shop_services_test.lua`: the auto seller keeps a locked item.
@@ -2212,7 +2359,7 @@ login and every inventory, container and ground item carrying its keys (a rolled
 sockets 2, id, version); frames from the attribute in the backpack (Chaos red, Divine, unique orange) and on the
 equipped unique; tooltips of a rolled rare weapon (modifiers with ranges, Chaos modifiers, a Flawless Ruby), of a
 unique (Soulreaper) and of Divine armour with two gems; Ctrl compare of the rare sword against the equipped Soulreaper
-with green and red rows; an Orb of Annulment on the sword: the version changed at once and the next hover showed one
+with green and red rows; an Orb of Unmaking on the sword: the version changed at once and the next hover showed one
 modifier less; the budget (12 of 20 requests at once answered), unopened container, slot 11, far map position and a
 wrong `iid` all answered `gone`; the same client against the engine without the patch: feature off, no errors from it.
 Screenshots: scratchpad `tooltips/`. Not tested: two players watching the same container, trade windows.
@@ -2481,7 +2628,7 @@ contests). Standings: score, then kills, then sign-up order; a full tie for firs
 winner. 15 minutes of holding (900) outweighs a few kills more for the other side.
 
 **Rewards.** For players with at least `minPresenceSeconds` (300) inside while the match ran: the winning guild's
-members 500,000 gold to the bank, 5 Chaos Orbs and 2 Divine Orbs; everyone else 150,000 gold and 2 Chaos Orbs (inbox
+members 500,000 gold to the bank, 5 Orbs of Upheaval and 2 Orbs of Fate; everyone else 150,000 gold and 2 Orbs of Upheaval (inbox
 when the backpack is full; offline players get it at their next login). The winning guild is "Siege Champions" for
 `titleDays` (7): its members' look text gets "He is one of the Siege Champions (guild)." (an onLook callback after the
 base text) and +5% experience from monsters (`buff.xp`, onGainExperience callback; needs the
@@ -2514,7 +2661,7 @@ sign-up refusal with too few members and the sign-up by command and from the win
 the arena build; the multi-client refusal at the portal (blocks on) and the toast; entry into the right base; gates
 shut during the gathering and refusing another guild's gate; PvP by melee against a target with secure mode on; a lethal
 hit (no death row, no experience lost, back in the base after 3 s); holding the obelisk alone (+1 per second, HUD
-"Obelisk: Iron Wolves"); the end with results and rewards (winner 500k + orbs, the other guild 150k + 2 Chaos Orbs);
+"Obelisk: Iron Wolves"); the end with results and rewards (winner 500k + orbs, the other guild 150k + 2 Orbs of Upheaval);
 the champion look text and the +5% experience; everyone sent out and the arena cleaned. Not tested: two guilds at once
 on the point (contested; covered by the unit test), parallel brackets, the scheduled start at the real time,
 `tests/siege_test.lua` covers the schedule, sign-up rules, brackets, the arena geometry, capture control, standings,
@@ -2637,7 +2784,7 @@ leaderboard hook); a level-up to 10 (staff XP on top) with the broadcast and the
 18,900 -> 19,467 experience at +3%); the loot perk (rateMult x1.04); deposit and withdraw (a triple-clicked withdraw
 paid once); buying the hall from the guild bank (a triple click bought it once); entering through the portal and
 leaving through the exit; a non-member refused at the portal and sent out when placed inside; the Teleport Hub and the
-Guild Depot bought from the window; the hub portal; a stack of Chaos Orbs and a Mythic dragon scale mail put on the trunk
+Guild Depot bought from the window; the hub portal; a stack of Orbs of Upheaval and a Mythic dragon scale mail put on the trunk
 and taken back with every modifier (three take requests in a row gave one item); a member taking an item; the depot
 log; rent paid from the window; rent past the grace time with an empty bank locking the upgrades (fixtures gone, depot
 closed, window red) and paying it unlocking them; the training room, bench (opens the crafting window), trophies and
@@ -2705,8 +2852,8 @@ rating, "max")` is called after every rated match when the leaderboard module is
 `arena_config.lua` `modes`): the weekly Arena 1v1 and Arena 2v2 boards of the leaderboards (best rating of the week;
 titles Duelist and Gladiator). Seasonal resets are not there yet.
 
-**Rewards.** A win: 1 Chaos Orb (at most 10 rewarded wins a day). The first win of the day on top: 1 Divine Orb and 2
-Chaos Orbs. A draw or a loss gives nothing. Backpack first, the rest to the inbox. Storages 7100340-7100342 (player:
+**Rewards.** A win: 1 Orb of Upheaval (at most 10 rewarded wins a day). The first win of the day on top: 1 Orb of Fate and 2
+Orbs of Upheaval. A draw or a loss gives nothing. Backpack first, the rest to the inbox. Storages 7100340-7100342 (player:
 first-win day, wins day, wins count); 7100340-7100349 are reserved for the arena.
 
 **Database** (`sql/chaos.sql`): `chaos_arena_ratings` (player, mode, rating, wins, losses, draws, best),
@@ -2785,7 +2932,7 @@ Warriors and a treasure goblin):
 - Experience: the tracker showed 652,994, the same as the character's experience minus the saved value at login.
 - Supplies: 30 health potions, 30 runes and 43 arrows used, matching the inventory.
 - Loot: after a reset, 8 corpses held 306 items worth 7,789 gold, the same as the tracker. The goblin's hoard added
-  14 crystal coins, 3 platinum coins and two demon helmets (Rare, Mythic) at 40,000 each, plus 5 Chaos Orbs in the
+  14 crystal coins, 3 platinum coins and two demon helmets (Rare, Mythic) at 40,000 each, plus 5 Orbs of Upheaval in the
   Chaos drops tab.
 - Damage and healing counted, pause / resume / reset worked, and the session continued after a relog.
 - `tests/hunt_test.lua` covers the clock (pause, offline, relog, reset), the counters, the corpse merge, used supplies,
@@ -2928,7 +3075,7 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   | Teeming | +20-50% packs | 80, 1+ | quantity 0.5x, experience 0.3x |
   | Gilded Trail (boon) | 30-70% chance that the existing Treasure Goblin (`ChaosTreasureGoblin.spawn`) appears in a random open room after 25-60% of the kills, at the level of the strongest type | 40, 1+ | - |
   | Warbands | 10-30% of packs: every member rare, the first legendary | 60, 2+ | rarity 1x, quantity 0.3x |
-  | Sealed Coffer (boon) | 40-100% chance of a coffer (treasure chest 1746, action id 47403) in an open room. Using it wakes 5 (+1 per extra player) magic+ rift monsters, which do not count towards the guardian. Once they are dead it opens with coins worth 4,000 x tier^2, Chaos 1 + 0.25 x tier, Divine 0.1 x tier and 2 + 0.25 x tier item rolls, all x quantity. An unwoken coffer crumbles at the seal | 50, 1+ | - |
+  | Sealed Coffer (boon) | 40-100% chance of a coffer (treasure chest 1746, action id 47403) in an open room. Using it wakes 5 (+1 per extra player) magic+ rift monsters, which do not count towards the guardian. Once they are dead it opens with coins worth 4,000 x tier^2, Orbs of Upheaval 1 + 0.25 x tier, Orbs of Fate 0.1 x tier and 2 + 0.25 x tier item rolls, all x quantity. An unwoken coffer crumbles at the seal | 50, 1+ | - |
   | Twin Guardians | two guardians, each with 55-75% of the guardian health; both must die | 50, 3+ | rarity 0.25x, quantity 0.2x |
   | Echoing Spoils (boon) | 5-15% of kills: every corpse item is copied once (onDropLoot 1.5, before the loot snapshot so rays and autoloot see the copies; Rift Keys are not copied) | 35, 2+ | - |
   | Cinderdeath | 1.5 s after a kill, players within 1 sqm take fire damage: 5-15% of the monster's max health, at most 300 + 150 x tier | 70, 3+ | quantity 1.2x, rarity 0.8x |
@@ -2947,7 +3094,7 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   15-60, Haste 40-180, Elites 50-300, Reflection 5-22, Warding 10-40, Swarm 1-5, Teeming 20-70, Gilded 30-100, Warbands
   10-40, Twin 55-85, Echo 5-25, Cinderdeath 5-25, Blight 20-70, Waning 15-40, Dread 50-250; the Coffer stays at 3 tiers
   because it is a chance). A key rolls tiers by its own tier (`modTiers.window`): keys 1-5 I-III (as before), 6-10
-  I-IV, 11-15 II-V; Divine Orbs reroll inside the same window. Names show on keys and HUD ("Vitality IV"). Each tier IV /
+  I-IV, 11-15 II-V; Orbs of Fate reroll inside the same window. Names show on keys and HUD ("Vitality IV"). Each tier IV /
   V modifier raises the bonus caps (+8/+8/+6 and +16/+16/+12).
 - **Lives.** A run has shared lives: 3, +1 per extra player who entered, minus Fragile (new modifier, key tier 4+,
   1-2 fewer lives, quantity 7x / rarity 7x / experience 5x the value), at least 1. A death inside is the engine's
@@ -2998,7 +3145,7 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   (or at the next login when offline). Time up: "the rift collapses", everyone is sent back to where they used the key,
   the key is lost. Death inside: the normal death rules (temple, losses), the player is out of the run. Logout inside: the
   player is put back at their entry position and is out of the run. A run whose last player left fails.
-- **The chest** (per finisher): gold to the bank 10,000 x tier^2, Chaos Orbs 1 + 0.5 x tier, Divine Orbs 0.25 x tier,
+- **The chest** (per finisher): gold to the bank 10,000 x tier^2, Orbs of Upheaval 1 + 0.5 x tier, Orbs of Fate 0.25 x tier,
   item rolls 2 + 0.5 x tier (each draws one entry of a random rift monster's loot table weighted by its chance; gear gets
   a rarity from `ChaosLoot.upgradeRarity` at magic (tiers 1-3) / rare (4-6) / legendary (7-10) / boss (11+), x the
   rarity bonus), one Chaos currency roll and one unique roll at that tier; gold, orbs and rolls x (1 + quantity bonus).
@@ -3012,8 +3159,8 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   rare 8, legendary 20, boss 40) when the monster's pool level is at least max(60, killer level x 0.4) and the killer is
   level 100+; completed bounty contracts give one 25% (hunt) / 50% (elite) / 100% (boss) of the time (`bounty.lua` calls
   `ChaosRift.onBountyPaid`).
-- **Crafting.** Every crafting orb works on a key (Transmutation / Alchemy on a key without modifiers, Exalted up to
-  `key.maxMods` = 3, Annulment, Scouring, Chaos rerolls them, Divine rerolls their values), by "Use with" or on the
+- **Crafting.** Every crafting orb works on a key (Awakening / Gilding on a key without modifiers, Grafting up to
+  `key.maxMods` = 3, Unmaking, Erasure, Upheaval rerolls them, Fate rerolls their values; Tempering and Excision work on a key too), by "Use with" or on the
   bench; see "Crafting".
 - **Experience** comes only from the kills, with a cap so a dense rift cannot beat open hunting: the base experience of a
   kill (monster experience x the monster-level bonus x the stage x the magic/rare/legendary multiplier) counts against
@@ -3071,7 +3218,7 @@ milestones at +10..+19). Tested in game on the test server (fresh level 1 charac
   `newplayer`, type NEW_PLAYER, added to `notifications.lua`). The tutorial island is the starter quest line.
 - **Milestone gifts** at levels 20 / 50 / 100 / 200, once per character (a storage each, so a death and the same level-up
   again give nothing), on level-up (`onAdvance`; a jump over several milestones gives each): potions by role (each role gets
-  only potions the base `potions.lua` lets it drink; the Thief line the unrestricted ones), 1 / 2 / 3 / 5 Chaos Orbs and 2
+  only potions the base `potions.lua` lets it drink; the Thief line the unrestricted ones), 1 / 2 / 3 / 5 Orbs of Upheaval and 2
   Stamina Extensions (the store item) at 100. Backpack first, inbox when full; a message and a toast.
 - **API:** `ChaosNewPlayer.kitFor(vocationId)` returns a copy of a class's kit; `ChaosNewPlayer.setKit(name, def, {ids})`
   adds or changes a kit (a `def` with `base = "warrior"` inherits that kit); docs/CLASSES.md.
@@ -3098,7 +3245,7 @@ station opens a lesson (modal window + toast) when entered; its gate opens east 
    to the spell's cost once. The Thief line has no spell below level 20: opening the spellbook is enough.
 3. Passive tree: one free passive point (`passiveExtraPoints` +1, kept); allocating it and pressing Apply Points completes the
    station (a listener in `ChaosPassiveTree.listeners`).
-4. Orbs: a Chaos Orb and a Common (rarity 1) leather armor; the station completes when the orb is used (the character's orb
+4. Orbs: an Orb of Upheaval and a Common (rarity 1) leather armor; the station completes when the orb is used (the character's orb
    count drops: the stock action and the crafting bench both consume it). The lesson mentions Economy > Crafting Bench when `ChaosCrafting`
    is loaded.
 5. Keystones, Adventure > Bounty Board, the store and the top menu: information; the forcefield then sends the character to its temple with
@@ -3112,7 +3259,7 @@ station; monsters cannot leave (water and walls, gates push monsters back); mult
 
 **Verified in game (test server, cropped map with a test-only temple floor):** first login lands on the island with lesson 1;
 the death guard and the heal; logout / relog and death mid-tutorial resume at the station; each station's task (kills through
-real kill events, Character > Spellbook + `saen tin brak`, a passive node applied in the client, the Chaos Orb used on the armor from the
+real kill events, Character > Spellbook + `saen tin brak`, a passive node applied in the client, the Orb of Upheaval used on the armor from the
 client); the exit to the temple with the Warrior kit and the welcome; "Skip tutorial" (Ranger) and Character > Services > Leave Tutorial (Mystic:
 scorcher equipped, wand in the backpack); relog gives no second kit; milestones 20, then 50 + 100 in one jump, nothing after
 losing and regaining level 20; `/newplayerkit` and its options. Not verified: PvP block (needs two clients), the island build
@@ -3192,12 +3339,12 @@ day when a charge will be used.
 
 | Days | Reward |
 |---|---|
-| 7 | 2 Chaos Orbs, 1 Divine Orb |
-| 14 | 3 Chaos Orbs, 2 Divine Orbs |
-| 30 | 5 Chaos, 3 Divine, 1 Exalted Orb and the title "the Devoted" |
-| 60 | 8 Chaos, 5 Divine, 2 Exalted Orbs |
-| 100 | 12 Chaos, 8 Divine, 3 Exalted Orbs, 10 crystal coins and the title "the Relentless" |
-| 180 | 20 Chaos, 12 Divine, 5 Exalted Orbs, 25 crystal coins and the title "the Undying" |
+| 7 | 2 Orbs of Upheaval, 1 Orb of Fate |
+| 14 | 3 Orbs of Upheaval, 2 Orbs of Fate |
+| 30 | 5 Chaos, 3 Divine, 1 Orb of Grafting and the title "the Devoted" |
+| 60 | 8 Chaos, 5 Divine, 2 Orbs of Grafting |
+| 100 | 12 Chaos, 8 Divine, 3 Orbs of Grafting, 10 crystal coins and the title "the Relentless" |
+| 180 | 20 Chaos, 12 Divine, 5 Orbs of Grafting, 25 crystal coins and the title "the Undying" |
 
 - A milestone is paid every time a streak reaches it.
 - Titles use the leaderboards' mechanism: a line in the look text of every character of the account ("He holds the
@@ -3237,7 +3384,7 @@ Staff: `/daily` shows the own account's state, `/daily shift <days>` moves the d
 **Tested in game** (test server, clock moved with `ChaosDaily.offsetDays`):
 - The migration from the old storages (slot 2 -> streak 2).
 - A claim on the next day (streak 3, row written).
-- Day 7 paid 3 Divine Orbs plus the milestone (2 Chaos Orbs, 1 Divine Orb), 2 crystal coins of the week bonus, and a
+- Day 7 paid 3 Orbs of Fate plus the milestone (2 Orbs of Upheaval, 1 Orb of Fate), 2 crystal coins of the week bonus, and a
   grace charge.
 - A missed day covered by the charge (charges shown in gold, streak 7 -> 8, charge used).
 - Day 30: the title in the window and in the look text.
@@ -3332,8 +3479,8 @@ Achievements in the top menu, or Character > Achievements), extended opcode 250 
     modifiers and "nobody lost" from `ChaosRift.runOf`), `arena1v1` / `arena2v2` (wins and best rating from
     `ChaosArena.ratingOf`), `siege` (played; won when the player's bracket winner is their guild);
   - `ChaosWorldBoss.computeRewards` is wrapped: every rewarded player (offline ones too), the boss by name, top damage = rank 1;
-  - `ChaosCrafting.apply` is wrapped: orbs used on the bench and by the crafting orbs' use-with, Exalted Orbs, the most
-    modifiers on an item. **Not counted:** the base server's own Chaos / Divine Orb use-with (`reroll_rarity_stats.lua`,
+  - `ChaosCrafting.apply` is wrapped: orbs used on the bench and by the crafting orbs' use-with, Orbs of Grafting, the most
+    modifiers on an item. **Not counted:** the base server's own Upheaval / Fate use-with (`reroll_rarity_stats.lua`,
     local functions, no hook);
   - `ChaosTreasureGoblin.tick` is wrapped: a goblin removed by its timer after being hit = "escaped" for its attackers;
   - an `onDropLoot` callback at index 2.4 (before the loot filter's snapshot and the base autoloot): uniques found, best
@@ -3370,7 +3517,7 @@ Achievements in the top menu, or Character > Achievements), extended opcode 250 
 **Tested in game** (test server, cropped map): retroactive unlocks at login (level 562: levels 50-500, ascension, with the
 level 500 orbs; a level 1000 character: the Doombringer mount, arena 1v1 wins / rating 1200 and bounty contracts read from
 the database), a live level up (level 700 + its orbs) with the toast, a legendary ambush copy (Legend Slayer, It Was a
-Trap, the hidden Out of the Frying Pan, Legendary Find from its corpse), a rare kill, a Chaos Orb on the crafting bench, a
+Trap, the hidden Out of the Frying Pan, Legendary Find from its corpse), a rare kill, an Orb of Upheaval on the crafting bench, a
 tier 1 rift sealed with Brutality / Withering / Swarm (6 achievements), a death, a bounty record and the weekly chest
 storage, world boss shares for an offline character (unlocked at its next login), the window (categories, progress,
 "???", recent), the title box and the title on the name plate, the class unlock method with a test config. Not tested in
@@ -3714,9 +3861,9 @@ is in `bestiary_config.lua`; the pure rules in `bestiary_core.lua`.
   the bounty board, the week on Monday). No expiry: a task stays until done or abandoned; progress is written every
   10 kills, at the milestones (25/50/75%) and at logout.
 - **Rewards** (paid at once; gold to the bank, orbs to the backpack or the inbox): a share of the bounty board's hunt
-  reward of the band of min(task level, character level) (`bounty_config.lua` bands): hunt 40% gold, 50% Chaos Orbs, 1.5%
+  reward of the band of min(task level, character level) (`bounty_config.lua` bands): hunt 40% gold, 50% Orbs of Upheaval, 1.5%
   of a level's experience, 5 x the difficulty's stage-1 points; family 60% gold, 75% Chaos, 50% Divine, 2% experience,
-  8 x points. So: level 120, hunt 20k gold, 1 Chaos Orb, 10.7k experience, 10 points; family 30k, 1 Chaos, 14.3k, 16
+  8 x points. So: level 120, hunt 20k gold, 1 Orb of Upheaval, 10.7k experience, 10 points; family 30k, 1 Chaos, 14.3k, 16
   points; band 800+: hunt 800k, 3 Chaos; family 1.2M, 4 Chaos, 1 Divine. Four a day pay at most 4.8M gold at 800+,
   against 24M for the twelve bounty contracts of a day. Multi-client: as the bounty board, a task that got a kill while
   multi-clienting pays nothing (`mcReward = false`).
@@ -3748,7 +3895,7 @@ is in `bestiary_config.lua`; the pure rules in `bestiary_core.lua`.
 - **Tested in game** (test server with the scripts of this repo, cropped map, monsters created next to the character,
   one client): discovery and stage messages and toasts, the window (categories, search, pages, an undiscovered, a studied
   and a completed entry with elements, areas and loot icons), the board, accepting hunt and family tasks, progress on the
-  tracker with every kill, completion (20,000 gold to the bank, 1 Chaos Orb, 10,711 experience = 1.5% at level 120, 10
+  tracker with every kill, completion (20,000 gold to the bank, 1 Orb of Upheaval, 10,711 experience = 1.5% at level 120, 10
   points), the active cap and the daily limit (Accept greyed with the reason; a forced accept refused), progress kept
   over relog and restart, bounty contracts on the tracker and gone when completed, the completion bonus (a dragon: 45,601
   experience with the bonus, 45,150 without, x1.01; 360 holy damage -> 363) and the damage event registered by real melee,
@@ -3769,7 +3916,7 @@ Art from the October 2026 art sets, converted to our 32 px format once and kept 
   `shop_sellable` list (`data/npc/Yasir.xml`, at the prices of the manifest). Idempotent. After a change of the manifest:
   `install_pack_items.py --lua` rewrites `data/lib/chaos_pack_items.lua`.
 - New looks (mode `replace`: only the client id of the existing items.otb node changes, names and scripts stay): Orb of
-  Alchemy 24691, Orb of Annulment 24697, Orb of Scouring 24688 (they were plain rune stones), and the seven ore pieces of
+  Gilding 24691, Orb of Unmaking 24697, Orb of Erasure 24688 (they were plain rune stones), and the seven ore pieces of
   the mining profession 26398-26404 (they were small dots).
 - Creature products 36010-36036 (27, stackable, loot of the new monsters, sold to Yasir for 8-120 gold) and food
   36037-36060 (24, eaten like the stock food by `pack_items.lua`: food x 12 s of regeneration, "You are full" at 1200 s).

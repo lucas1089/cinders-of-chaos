@@ -181,7 +181,7 @@ do
 			potions = potions + it.count
 		end
 	end
-	eq(orbs, 3, "level 100: 3 Chaos Orbs")
+	eq(orbs, 3, "level 100: 3 Orbs of Upheaval")
 	ok(stamina > 0, "level 100: stamina refill item")
 	ok(potions > 0, "level 100: potions")
 	local thief = NP.milestoneItems(2, "thief")

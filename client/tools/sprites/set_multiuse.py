@@ -3,8 +3,8 @@
 
 usage: python3 -I set_multiuse.py DAT [CLIENT_ID ...] [--out OUT] [--check]
 
-With no ids it sets the flag on the crafting orbs that lack it: the Orb of Transmutation (server 29851, client 27195)
-and the Exalted Orb (server 29855, client 27199), and on the small diamond (client 3028), the sprite of the diamond
+With no ids it sets the flag on the crafting orbs that lack it: the Orb of Awakening (server 29851, client 27195)
+and the Orb of Grafting (server 29855, client 27199), and on the small diamond (client 3028), the sprite of the diamond
 gems (server 32026..32030, server/tools/install_gems.py; every other gem sprite has the flag already). With the flag the client starts "use with" (the crosshair) when the
 orb is used, and sends the target item to the server (data/scripts/chaos/crafting.lua). The server side is the
 items.otb "useable" flag of the same items: server/tools/install_crafting.py.
@@ -19,7 +19,7 @@ import os, shutil, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from datspr import Dat, TABLES, _DATA  # noqa: E402
 
-ORBS = {27195: 'Orb of Transmutation', 27199: 'Exalted Orb'}
+ORBS = {27195: 'Orb of Awakening', 27199: 'Orb of Grafting'}
 GEMS = {3028: 'small diamond: the diamond gems'}
 MULTIUSE = 7
 END = 0xFF

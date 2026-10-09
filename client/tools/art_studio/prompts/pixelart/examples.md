@@ -6,8 +6,8 @@ Not generated yet: record what comes back in `NOTES.md`.
 
 ## 1. The crafting orbs (a set of 6, 32x32)
 
-The orbs of the crafting bench (`server/data/lib/chaos_crafting.lua`), in the bench's order: Transmutation (silver
-mist), Alchemy (molten gold), Exalted (white star), Annulment (black void), Scouring (rust sand), Chaos (crimson
+The orbs of the crafting bench (`server/data/lib/chaos_crafting.lua`), in the bench's order: Awakening (silver
+mist), Gilding (molten gold), Grafting (white star), Unmaking (black void), Erasure (rust sand), Upheaval (crimson
 swirl). 399 characters.
 
 ```text

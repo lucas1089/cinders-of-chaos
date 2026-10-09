@@ -279,10 +279,10 @@ local boss1 = {gear = {111, 222}}
 local rewards = W.computeRewards(shares, r, boss1, {9001}, function(a, b) if b then return a end; return 1 end)
 local A, C3 = rewards[1], rewards[3]
 assertEq(A.bank, 1000 + 60000, "bank A")
-assertEq(A.items[1].id, 29856, "first item"); assertEq(A.items[1].count, 3 + 36, "chaos orbs A: base + 60% of 60")
-assertEq(A.items[2].count, 1 + 15 + 5, "divine orbs A: base + 60% of 25 + top 1")
+assertEq(A.items[1].id, 29856, "first item"); assertEq(A.items[1].count, 3 + 36, "orbs of upheaval A: base + 60% of 60")
+assertEq(A.items[2].count, 1 + 15 + 5, "orbs of fate A: base + 60% of 25 + top 1")
 assertEq(rewards[2].items[3].id, 2160, "rank 2 bonus"); assertEq(rewards[2].items[3].count, 30, "rank 2 bonus count")
-assertEq(C3.items[1].count, 3 + 6, "chaos orbs C (10%)")
+assertEq(C3.items[1].count, 3 + 6, "orbs of upheaval C (10%)")
 assertEq(#C3.items, 2, "rank 3 has no configured bonus here")
 assertEq(A.titles[1].text, "Bossbreaker", "damage 1st: role title"); assertEq(A.titles[1].place, 1, "title place")
 assertEq(#C3.titles, 1, "3rd in damage still gets the title")
@@ -354,7 +354,7 @@ local function count(rw, id) for _, it in ipairs(rw.items) do if it.id == id the
 local cats = cfg.reward.podium.categories
 local tankShare = byName.Tank.share
 assertEq(count(rb.Tank, 29857), 1 + math.floor(25 * tankShare) + cats[1].rewards[2][1].count + cats[3].rewards[2][1].count,
-  "Tank: base + share + damage 2nd + tanking 2nd Divine Orbs")
+  "Tank: base + share + damage 2nd + tanking 2nd Orbs of Fate")
 assertEq(count(rb.Tank, 2160), cats[1].rewards[2][2].count + cats[3].rewards[2][2].count, "Tank: crystal coins of both places")
 assertEq(#rb.Tank.titles, 2, "two role titles"); assertEq(rb.Tank.titles[2].text, "Bulwark", "tank title")
 assertEq(rb.Healer.titles[1].text, "Lifewarden", "healer title"); assertEq(count(rb.Healer, 2160), cats[2].rewards[1][2].count, "healer 1st")
@@ -485,7 +485,7 @@ assertEq(#W.state.portals, 0, "town portals removed")
 assertEq(portal.removed, true, "portal item removed")
 for id in pairs(monsters) do assert(not (monsters[id].name == "Hellfire Fighter"), "adds removed") end
 assert(b.bank >= cfg.reward.bankGold, "Bob paid into the bank")
-assert((b.bag[29856] or 0) >= 3, "Bob got Chaos Orbs")
+assert((b.bag[29856] or 0) >= 3, "Bob got Orbs of Upheaval")
 assert(cy.bank >= cfg.reward.bankGold, "Cyra (small share) still rewarded")
 assertEq(alt.bank, 0, "multi-client character gets nothing")
 assert(alt.msgs[#alt.msgs]:find("connection"), "and is told why")

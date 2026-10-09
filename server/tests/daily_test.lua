@@ -128,9 +128,9 @@ local title, tdays = D.titleFor(SC, 45)
 eq(title, D.milestoneAt(SC, 30).title, "title at 45 days")
 eq(tdays, 30, "its days")
 eq(D.titleFor(SC, 500), D.milestoneAt(SC, 180).title, "highest title")
-local names = {[29856] = "Chaos Orb", [29857] = "Divine Orb", [29855] = "Exalted Orb"}
+local names = {[29856] = "Orb of Upheaval", [29857] = "Orb of Fate", [29855] = "Orb of Grafting"}
 local function nm(id) return names[id] or ("item " .. id) end
-eq(D.milestoneText(D.milestoneAt(SC, 7), nm), "2x Chaos Orb, 1x Divine Orb", "milestone text")
+eq(D.milestoneText(D.milestoneAt(SC, 7), nm), "2x Orb of Upheaval, 1x Orb of Fate", "milestone text")
 assert(D.milestoneText(D.milestoneAt(SC, 30), nm):find("and the title \"", 1, true), "title in the milestone text")
 eq(D.lookText(nil, 0, "He"), nil, "no look text without a title")
 eq(D.lookText("the Devoted", 30, "You"), "You hold the login streak title the Devoted (30 days in a row).", "look text")

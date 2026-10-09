@@ -162,12 +162,15 @@ local function itemInfo(item)
 			if lv > 0 then
 				parts[1] = "Item Level " .. lv
 			end
+			local power = false
 			for _, m in ipairs(C.readMods(item)) do
 				parts[#parts + 1] = C.modTierText(m)
 				if not info.unique and m.tier > top then
 					top = m.tier
 				end
+				power = power or m.power
 			end
+			info.power = power and not info.unique or nil -- a legendary power always glows
 			return table.concat(parts, "; "), top, lv
 		end)
 		info.mods = ok and text ~= "" and text or nil

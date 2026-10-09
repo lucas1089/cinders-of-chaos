@@ -533,7 +533,7 @@ FEATURES = [
                                   "Paragon points after level 1000"]),
     ("Items and loot", ["15 rarities, item levels, modifiers", "About 50 build-defining uniques",
                         "Loot filter, loot rays, rarity autoloot"]),
-    ("Crafting orbs", ["Transmutation, Alchemy, Exalted", "Annulment, Scouring, Chaos, Divine",
+    ("Crafting orbs", ["Awakening, Gilding, Grafting", "Unmaking, Erasure, Upheaval, Fate",
                        "A crafting bench that shows it all"]),
     ("Endgame", ["Five world bosses with phases", "Rifts with keys, tiers and modifiers",
                  "Infinity Tower, dungeons, bounties"]),

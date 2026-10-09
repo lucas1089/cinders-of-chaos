@@ -44,7 +44,7 @@ return {
 	},
 	top = 3,
 	rewards = {
-		{{id = 29857, count = 5}, {id = 29856, count = 10}}, -- 1st: Divine Orbs, Chaos Orbs
+		{{id = 29857, count = 5}, {id = 29856, count = 10}}, -- 1st: Orbs of Fate, Orbs of Upheaval
 		{{id = 29857, count = 3}, {id = 29856, count = 6}}, -- 2nd
 		{{id = 29857, count = 1}, {id = 29856, count = 3}} -- 3rd
 	},

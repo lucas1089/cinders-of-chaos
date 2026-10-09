@@ -60,8 +60,8 @@ return {
 	contribution = {damage = 1.0, healing = 0.6, kill = 0.25, minPercent = 0.2},
 	rewards = {
 		goldBase = 200, goldPool = 8000, -- gold to the bank: area level x (goldBase + goldPool x share)
-		base = {{id = 29856, count = 1}}, -- every rewarded player: 1 Chaos Orb
-		pool = {{id = 29856, count = 20}, {id = 29857, count = 6}}, -- split by share: Chaos Orbs, Divine Orbs
+		base = {{id = 29856, count = 1}}, -- every rewarded player: 1 Orb of Upheaval
+		pool = {{id = 29856, count = 20}, {id = 29857, count = 6}}, -- split by share: Orbs of Upheaval, Orbs of Fate
 		top = { -- extras for the top 3
 			{{id = 29857, count = 3}, {id = 29855, count = 1}},
 			{{id = 29857, count = 2}},
@@ -189,11 +189,11 @@ return {
 			kinds = {"town"}, -- only in town areas
 			-- what the NPC sells (gold): orbs and rare consumables a little below the usual value
 			items = {
-				{id = 29856, price = 40000, name = "chaos orb"},
-				{id = 29857, price = 120000, name = "divine orb"},
-				{id = 29855, price = 200000, name = "exalted orb"},
-				{id = 24691, price = 60000, name = "orb of alchemy"},
-				{id = 24697, price = 80000, name = "orb of annulment"},
+				{id = 29856, price = 40000, name = "orb of upheaval"},
+				{id = 29857, price = 120000, name = "orb of fate"},
+				{id = 29855, price = 200000, name = "orb of grafting"},
+				{id = 24691, price = 60000, name = "orb of gilding"},
+				{id = 24697, price = 80000, name = "orb of unmaking"},
 				{id = 28095, price = 350000, name = "double experience potion"},
 				{id = 26031, price = 900, name = "supreme health potion"}
 			}}

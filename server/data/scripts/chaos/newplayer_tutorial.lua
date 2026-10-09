@@ -3,7 +3,7 @@
 --   1 moving and fighting: kill 3 rats in the first pen (CreatureEvent kill)
 --   2 spells: open !spells (ChaosSpellbook.sendTo, wrapped) and cast the class spell (spell group cooldown)
 --   3 the passive tree: one free point, allocate it (ChaosPassiveTree.listeners)
---   4 orbs: a Chaos Orb and a Common leather armor; use the orb on it (stock action or the crafting bench)
+--   4 orbs: an Orb of Upheaval and a Common leather armor; use the orb on it (stock action or the crafting bench)
 --   5 keystones, !bounty and the store: information, then the exit forcefield
 -- Divider walls with a gate keep a player in its station until the task is done; a lesson (modal window + toast)
 -- opens on entering a station, on its white marble tile and on its angel statue. !skiptutorial or the goblin statue in

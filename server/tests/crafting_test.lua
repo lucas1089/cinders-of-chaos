@@ -1,7 +1,7 @@
 -- Run from the server/ folder: luajit tests/crafting_test.lua (and lua5.3; CI runs both)
 -- The crafting orbs (data/lib/chaos_crafting.lua) against a mocked item: eligibility, what every orb does, the
 -- modifier slot limits, the description text, and that uniques are never touched. Also the Chaos item modifiers through
--- the orbs (Exalted adds, Annulment removes, Chaos / Scouring), the bench preview, and the orbs on Rift Keys.
+-- the orbs (Grafting adds, Unmaking removes, Upheaval / Erasure), the bench preview, and the orbs on Rift Keys.
 
 local function eq(a, b, m)
 	if a ~= b then
@@ -235,7 +235,7 @@ local legacyFull = rareItem(2466, 4, {rarity_physicalAbsorb = 1, rarity_iceAbsor
 	rarity_deathAbsorb = 1})
 eq(select(2, C.check("exalted", legacyFull)), "full")
 
--- ---------------------------------------------------------------- Exalted Orb
+-- ---------------------------------------------------------------- Orb of Grafting
 -- armor, item level 42 (T1-T3 can roll, best first). Lowest dice: the first candidate (Physical, a suffix), the first
 -- tier row (T3), the lowest value of T3 (1)
 local armor = rareItem(2466, 6, {rarity_holyAbsorb = 2})
@@ -284,7 +284,7 @@ eq(kinds.chaos_mod_attackspeed, nil, "no attack speed on armor")
 eq(kinds.chaos_mod_thorns, true)
 eq(kinds.rarity_holyabsorb or kinds.rarity_holyAbsorb, nil, "never a modifier the item has")
 
--- ---------------------------------------------------------------- Orb of Annulment
+-- ---------------------------------------------------------------- Orb of Unmaking
 local ann = rareItem(2400, 6, {rarity_swordSkill = 2, rarity_lifeLeechChance = 3, rarity_lifeLeechAmount = 3})
 ann:setCustomAttribute("ct_rarity_lifeleechchance", 5)
 dice = {2}
@@ -314,7 +314,7 @@ C.rewriteDescription(deco)
 eq(deco:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION),
 	"Forged by Ana. Item Level: 42. Prefixes: Fist +1 (T3). Suffixes: Ice +1% (T1) [Armor+2]", "stable on a rewrite")
 
--- ---------------------------------------------------------------- Orb of Scouring (a new plain copy)
+-- ---------------------------------------------------------------- Orb of Erasure (a new plain copy)
 local sc = rareItem(2466, 7, {rarity_deathAbsorb = 3})
 ok, res = C.apply("scouring", sc)
 eq(ok, true)
@@ -325,7 +325,7 @@ eq(C.isNormal(res.item), true, "normal now")
 eq(C.levelOf(res.item), 42, "the item level stays")
 eq(res.text, "golden armor is now a normal item (item level 42).")
 
--- ---------------------------------------------------------------- Transmutation / Alchemy / Chaos / Divine
+-- ---------------------------------------------------------------- Awakening / Gilding / Upheaval / Fate
 local tr = put(newItem(2466))
 tr:setCustomAttribute("chaos_ilvl", 100)
 dice = {80} -- transmutation weights 65 / 35 -> rarity 2
@@ -446,7 +446,7 @@ for _, m in ipairs(C.readMods(rr)) do
 end
 
 -- ---------------------------------------------------------------- orbs v2: an orb with rules of its own
-local tempered = C.addOrb({key = "tempering", id = 30001, name = "Orb of Tempering", text = "Rerolls the values.",
+local tempered = C.addOrb({key = "testorb", id = 30001, name = "Orb of Testing", text = "Rerolls the values.",
 	check = function(item)
 		if C.rarityOf(item) == 0 then return false, "needRarity" end
 		return true
@@ -456,16 +456,16 @@ local tempered = C.addOrb({key = "tempering", id = 30001, name = "Orb of Temperi
 		return true, {item = item, text = "tempered"}
 	end,
 	preview = function(item) return "same modifiers, new values" end})
-eq(C.orbByKey.tempering, tempered); eq(C.orbById[30001], tempered)
-eq(C.addOrb({key = "tempering", id = 30001, name = "x"}), tempered, "added once")
-eq(select(2, C.check("tempering", put(newItem(2400)))), "needRarity", "its own check")
-eq(select(2, C.check("tempering", unique)), "unique", "the common rules first")
-local tok, tres = C.apply("tempering", rr)
+eq(C.orbByKey.testorb, tempered); eq(C.orbById[30001], tempered)
+eq(C.addOrb({key = "testorb", id = 30001, name = "x"}), tempered, "added once")
+eq(select(2, C.check("testorb", put(newItem(2400)))), "needRarity", "its own check")
+eq(select(2, C.check("testorb", unique)), "unique", "the common rules first")
+local tok, tres = C.apply("testorb", rr)
 eq(tok, true); eq(tres.text, "tempered")
-eq(C.preview("tempering", rr), "same modifiers, new values")
-eq(C.describe(rr).preview.tempering, "same modifiers, new values", "on the bench")
+eq(C.preview("testorb", rr), "same modifiers, new values")
+eq(C.describe(rr).preview.testorb, "same modifiers, new values", "on the bench")
 table.remove(C.config.orbs)
-C.orbByKey.tempering, C.orbById[30001] = nil, nil
+C.orbByKey.testorb, C.orbById[30001] = nil, nil
 
 -- ---------------------------------------------------------------- describe / signature / preview
 local d = C.describe(sword)
@@ -522,7 +522,7 @@ eq(select(2, C.check("annulment", key)), "keyNoMods")
 eq(select(2, C.check("scouring", key)), "keyNoMods")
 eq(select(2, C.check("chaos", key)), "keyNoMods")
 eq(select(2, C.check("divine", key)), "keyNoMods")
--- Transmutation: one modifier. pool of 8, pick 3 = haste, value step 0 -> 40
+-- Awakening: one modifier. pool of 8, pick 3 = haste, value step 0 -> 40
 dice = {300, 0} -- weighted pick: the old eight weigh 100 each, so 300 is the third (haste)
 ok, res = C.apply("transmutation", key)
 eq(ok, true, "transmutation on a key")
@@ -533,7 +533,7 @@ assert(key:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION):find("Monsters move %+40 fas
 eq(res.text, "Rift Key (Tier 4): Monsters move +40 faster. Rewards: +6% quantity, +0% rarity, +0% experience.")
 eq(select(2, C.check("transmutation", key)), "keyNeedNone", "transmutation needs an empty key")
 eq(select(2, C.check("alchemy", key)), "keyNeedNone")
--- Exalted up to the maximum (3)
+-- Grafting up to the maximum (3)
 dice = {100, 2}
 C.apply("exalted", key) -- pool without haste: vitality first, value 20 + 2 x 5
 eq(key:getCustomAttribute("rift_mods"), "vitality:30,haste:40", "config order")
@@ -550,7 +550,7 @@ local dk = C.readKey(key).mods
 eq(dk[1].key, "vitality"); eq(dk[1].value, 60, "vitality 20 + 8 x 5")
 eq(dk[2].key, "haste"); eq(dk[2].value, 40)
 eq(#dk, 3)
--- Annulment: one goes
+-- Unmaking: one goes
 dice = {1}
 ok, res = C.apply("annulment", key)
 eq(#C.readKey(key).mods, 2)
@@ -562,11 +562,11 @@ C.apply("chaos", key)
 local ck = C.readKey(key).mods
 eq(#ck, 3, "chaos rolled three")
 eq(ck[1].key, "vitality"); eq(ck[2].key, "brutality"); eq(ck[3].key, "haste")
--- Scouring: all go
+-- Erasure: all go
 C.apply("scouring", key)
 eq(key:getCustomAttribute("rift_mods"), "", "scoured key")
 assert(key:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION):find("Modifiers: none"), "description says none")
--- Alchemy: 2 or 3 on an empty key ({2, 60}, {3, 40}: roll 61 -> 3)
+-- Gilding: 2 or 3 on an empty key ({2, 60}, {3, 40}: roll 61 -> 3)
 dice = {61}
 C.apply("alchemy", key)
 eq(#C.readKey(key).mods, 3, "alchemy gave three")

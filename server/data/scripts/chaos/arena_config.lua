@@ -34,8 +34,8 @@ return {
 
 	-- rewards: every win (at most maxRewardedWinsPerDay a day) and once a day the first win on top
 	reward = {
-		win = {{id = 29856, count = 1}}, -- Chaos Orb
-		firstWin = {{id = 29857, count = 1}, {id = 29856, count = 2}}, -- Divine Orb, Chaos Orbs
+		win = {{id = 29856, count = 1}}, -- Orb of Upheaval
+		firstWin = {{id = 29857, count = 1}, {id = 29856, count = 2}}, -- Orb of Fate, Orbs of Upheaval
 		maxRewardedWinsPerDay = 10
 	},
 

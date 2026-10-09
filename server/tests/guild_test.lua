@@ -324,7 +324,7 @@ eq(#C.decodeAttrs(nil), 0, "nil")
 eq(#C.decodeAttrs("garbage;n:x"), 0, "garbage ignored")
 -- log lines
 local at = os.time({year = 2026, month = 10, day = 8, hour = 14, min = 5})
-eq(C.logLine({at = at, name = "Tester", action = "put", count = 5, item = "Chaos Orb"}), "08.10 14:05 Tester put in 5 x Chaos Orb", "put line")
+eq(C.logLine({at = at, name = "Tester", action = "put", count = 5, item = "Orb of Upheaval"}), "08.10 14:05 Tester put in 5 x Orb of Upheaval", "put line")
 eq(C.logLine({at = at, name = "Tester", action = "take", count = 1, item = "dragon robe"}), "08.10 14:05 Tester took out 1 x dragon robe", "take line")
 eq(C.logLine({at = at, name = "Ann", action = "deposit", amount = 2500000}), "08.10 14:05 Ann deposited 2,500,000 gold", "deposit line")
 eq(C.logLine({at = at, name = "Ann", action = "withdraw", amount = 1000}), "08.10 14:05 Ann withdrew 1,000 gold", "withdraw line")
