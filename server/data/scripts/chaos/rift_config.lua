@@ -77,8 +77,50 @@ return {
 		{key = "withering", name = "Withering", text = "Players do not regenerate health", range = {1, 1}, step = 1,
 			reward = {fixed = {experience = 15, quantity = 15}}},
 		{key = "swarm", name = "Swarm", text = "+%d monsters in every pack", range = {1, 3}, step = 1,
-			reward = {quantity = 8, experience = 5}}
+			reward = {quantity = 8, experience = 5}},
+		-- map modifiers (second set). weight: relative roll weight (the first eight have the default 100); minTier: the
+		-- lowest key tier that rolls it (a key of a lower tier never gets it from a drop or an orb); boon = true: a pure
+		-- reward without a bonus of its own (shown in gold on the HUD). Effects in rift.lua, numbers in the blocks below.
+		{key = "teeming", name = "Teeming", text = "+%d%% monster packs", range = {20, 50}, step = 10,
+			weight = 80, reward = {quantity = 0.5, experience = 0.3}},
+		{key = "gilded", name = "Gilded Trail", text = "%d%% chance of a fleeing Treasure Goblin",
+			range = {30, 70}, step = 10, weight = 40, boon = true},
+		{key = "warband", name = "Warbands", text = "%d%% of packs are rare warbands",
+			range = {10, 30}, step = 5, weight = 60, minTier = 2, reward = {rarity = 1.0, quantity = 0.3}},
+		{key = "coffer", name = "Sealed Coffer", text = "%d%% chance of a guarded coffer",
+			range = {40, 100}, step = 20, weight = 50, boon = true},
+		{key = "twin", name = "Twin Guardians", text = "Twin guardians, %d%% health each", range = {55, 75},
+			step = 5, weight = 50, minTier = 3, reward = {rarity = 0.25, quantity = 0.2}},
+		{key = "echo", name = "Echoing Spoils", text = "%d%% chance of double loot",
+			range = {5, 15}, step = 5, weight = 35, minTier = 2, boon = true},
+		{key = "cinder", name = "Cinderdeath", text = "Slain monsters burst for %d%% health",
+			range = {5, 15}, step = 5, weight = 70, minTier = 3, reward = {quantity = 1.2, rarity = 0.8}},
+		{key = "blight", name = "Blighted Mending", text = "Players receive %d%% less healing", range = {20, 50}, step = 10,
+			weight = 70, minTier = 2, reward = {rarity = 0.5, experience = 0.3, quantity = 0.2}},
+		{key = "waning", name = "Waning Veil", text = "The rift closes %d%% sooner", range = {15, 30}, step = 5,
+			weight = 70, reward = {quantity = 1.0, experience = 0.5}},
+		{key = "dread", name = "Dread Guardian", text = "Guardian +%d%% health and damage", range = {50, 150},
+			step = 25, weight = 60, minTier = 4, reward = {rarity = 0.2, quantity = 0.1}}
 	},
+	-- caps of the summed reward bonuses of a key (percent). The highest three-modifier sums of the first eight
+	-- modifiers (quantity 77, rarity 75, experience 53) stay under them, so they only bound the new combinations.
+	bonusCap = {quantity = 80, rarity = 75, experience = 60},
+	-- Gilded Trail: the goblin (treasure_goblin.lua, ChaosTreasureGoblin.spawn) appears in a random open room once
+	-- this percent range of the rift's kills is done (rolled per run), at the level of the rift's strongest type
+	gilded = {atKills = {25, 60}},
+	-- Sealed Coffer: a treasure chest in a random open side room. Using it wakes a wave of rift monsters around it
+	-- (wave.base + wave.perExtraPlayer x (players - 1), at least `waveTier`); once they are dead it opens with: gold
+	-- coins goldPerTier2 x tier^2, Chaos / Divine Orbs and item rolls (as the reward chest, base + perTier x tier), all x
+	-- (1 + quantity bonus). Wave kills do not count towards the guardian. A coffer nobody woke crumbles when the rift is
+	-- sealed; a woken one opens then.
+	coffer = {itemId = 1746, actionId = 47403, wave = {base = 5, perExtraPlayer = 1, spread = 2}, waveTier = "magic",
+		goldPerTier2 = 4000, chaos = {base = 1, perTier = 0.25}, divine = {base = 0, perTier = 0.1},
+		rolls = {base = 2, perTier = 0.25}},
+	-- Cinderdeath: delayMs after a (non-guardian) monster dies, every player within `radius` sqm of it takes fire damage:
+	-- value % of the monster's max health, at most capBase + capPerTier x tier
+	cinder = {delayMs = 1500, radius = 1, capBase = 300, capPerTier = 150},
+	-- Twin Guardians: the second guardian appears this many sqm east of the first
+	twin = {offset = 2},
 	-- Withering keeps mana regeneration: the food regeneration condition is replaced by one without health gain.
 
 	-- ------------------------------------------------------------------ rewards (the chest, per player)

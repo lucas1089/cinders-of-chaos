@@ -11,6 +11,9 @@ RiftHudLabel < UILabel
 RiftModLabel < RiftHudLabel
   color: #c79bff
 
+RiftNoteLabel < RiftHudLabel
+  color: #f4d27a
+
 ChaosPanelDark
   id: riftHud
   width: 230
@@ -63,6 +66,14 @@ ChaosPanelDark
   UIWidget
     id: mods
     phantom: true
+    layout:
+      type: verticalBox
+      fit-children: true
+
+  UIWidget
+    id: notes
+    phantom: true
+    margin-top: 4
     layout:
       type: verticalBox
       fit-children: true

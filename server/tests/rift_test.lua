@@ -50,8 +50,13 @@ do
 		end
 		eq(key.tier, 4, "tier kept")
 	end
+	-- every modifier a tier-4 key may roll shows up about in proportion to its weight; the gated ones never do
 	for _, def in ipairs(cfg.mods) do
-		ok((seenMods[def.key] or 0) > 200, "every modifier rolls: " .. def.key)
+		if (def.minTier or 1) <= 4 then
+			ok((seenMods[def.key] or 0) > 2.5 * R.modWeight(def), "every modifier rolls: " .. def.key .. " " .. tostring(seenMods[def.key]))
+		else
+			eq(seenMods[def.key], nil, "tier gating: " .. def.key)
+		end
 	end
 	-- weights 50 / 35 / 15
 	ok(math.abs(counts[1] / 3000 - 0.50) < 0.04, "one modifier ~50%")
@@ -398,6 +403,205 @@ do
 		normal = normal + rate * R.capFactor(cfg, st3, 950, rate, minute)
 	end
 	ok(math.abs(normal - rate * 10) < 1, "model-speed hunting is never cut")
+end
+
+-- ------------------------------------------------------------------ map modifiers (second set)
+do
+	local function def(k)
+		return (R.modDef(cfg, k))
+	end
+	-- ten new modifiers with a weight, a description and (for the hard ones) a reward bonus
+	local new = {"teeming", "gilded", "warband", "coffer", "twin", "echo", "cinder", "blight", "waning", "dread"}
+	for _, k in ipairs(new) do
+		local d = def(k)
+		ok(d ~= nil, "new modifier " .. k)
+		ok(d and d.weight and d.weight > 0, "weight " .. k)
+		ok(d and (d.boon or d.reward ~= nil), "reward bonus or boon " .. k)
+		ok(d and #R.modText(cfg, {key = k, value = d.range[2]}) > 10, "text " .. k)
+		ok(d and not R.modText(cfg, {key = k, value = d.range[1]}):find("%%d"), "text formatted " .. k)
+	end
+	-- the first eight keep their storage index (crash refund marker)
+	eq(select(2, R.modDef(cfg, "swarm")), 8, "swarm still index 8")
+	-- tier gating
+	local rand = rng(21)
+	local seen1, seen15 = {}, {}
+	for _ = 1, 4000 do
+		for _, m in ipairs(R.rollKey(cfg, 1, rand).mods) do
+			seen1[m.key] = true
+		end
+		for _, m in ipairs(R.rollKey(cfg, 15, rand).mods) do
+			seen15[m.key] = true
+		end
+	end
+	for _, d in ipairs(cfg.mods) do
+		if (d.minTier or 1) > 1 then
+			ok(not seen1[d.key], "tier 1 never rolls " .. d.key)
+		else
+			ok(seen1[d.key], "tier 1 rolls " .. d.key)
+		end
+		ok(seen15[d.key], "tier 15 rolls " .. d.key)
+	end
+	-- weights: Teeming (80) rolls about twice as often as Gilded Trail (40)
+	local cnt = {}
+	local r2 = rng(33)
+	for _ = 1, 20000 do
+		for _, m in ipairs(R.rollMods(cfg, 1, r2, 15)) do
+			cnt[m.key] = (cnt[m.key] or 0) + 1
+		end
+	end
+	local ratio = cnt.teeming / cnt.gilded
+	ok(ratio > 1.7 and ratio < 2.3, "weights: teeming / gilded ~2: " .. ratio)
+	-- addMods (orbs): respects the tier, no duplicates, config order
+	local key = {tier = 1, mods = {{key = "waning", value = 20}}}
+	local added = R.addMods(cfg, key, 2, rng(4))
+	eq(#added, 2, "addMods adds two")
+	eq(#key.mods, 3, "key has three")
+	local last = 0
+	for _, m in ipairs(key.mods) do
+		ok((def(m.key).minTier or 1) <= 1, "addMods respects the tier: " .. m.key)
+		local _, i = R.modDef(cfg, m.key)
+		ok(i > last, "addMods keeps config order")
+		last = i
+	end
+	-- packing a new modifier for the crash refund marker
+	local u = R.unpackMod(cfg, R.packMod(cfg, {key = "dread", value = 125}))
+	eq(u.key .. u.value, "dread125", "pack / unpack dread")
+
+	-- bonuses and the cap
+	local b = R.bonuses(cfg, {{key = "warband", value = 30}, {key = "blight", value = 50}, {key = "dread", value = 150}})
+	eq(b.rarity, cfg.bonusCap.rarity, "rarity capped") -- 85 > 75 -> 75
+end
+
+do
+	local b = R.bonuses(cfg, {{key = "warband", value = 30}, {key = "blight", value = 50}, {key = "dread", value = 150}})
+	eq(b.quantity, 9 + 10 + 15, "quantity of warband + blight + dread")
+	eq(b.experience, 15, "experience of blight")
+	local q = R.bonuses(cfg, {{key = "vitality", value = 60}, {key = "waning", value = 30}, {key = "swarm", value = 3}})
+	eq(q.quantity, cfg.bonusCap.quantity, "quantity capped (30 + 30 + 24 = 84 -> 80)")
+	-- the old eight never reach a cap: the best three of each kind
+	local best = {quantity = 0, rarity = 0, experience = 0}
+	local old = {}
+	for i = 1, 8 do
+		old[i] = cfg.mods[i]
+	end
+	for a = 1, 8 do
+		for bb = a + 1, 8 do
+			for c = bb + 1, 8 do
+				local mods = {}
+				for _, i in ipairs({a, bb, c}) do
+					mods[#mods + 1] = {key = old[i].key, value = old[i].range[2]}
+				end
+				local raw = R.bonuses({mods = cfg.mods, tiers = cfg.tiers, beyond = cfg.beyond, maxTier = cfg.maxTier}, mods)
+				for k, v in pairs(raw) do
+					best[k] = math.max(best[k], v)
+				end
+			end
+		end
+	end
+	for k, v in pairs(best) do
+		ok(v <= cfg.bonusCap[k], "old combinations stay under the " .. k .. " cap: " .. v)
+	end
+
+	-- effects
+	local fx = R.effects(cfg, {{key = "teeming", value = 50}, {key = "gilded", value = 40}, {key = "warband", value = 20},
+		{key = "coffer", value = 60}, {key = "twin", value = 60}, {key = "echo", value = 10}, {key = "cinder", value = 10},
+		{key = "blight", value = 30}, {key = "waning", value = 20}, {key = "dread", value = 100}}, 5)
+	ok(math.abs(fx.packMult - 1.5) < 1e-9, "teeming x1.5")
+	eq(fx.gilded, 40, "gilded chance")
+	eq(fx.warband, 20, "warband share")
+	eq(fx.coffer, 60, "coffer chance")
+	ok(math.abs(fx.twin - 0.6) < 1e-9, "twin share")
+	eq(fx.echo, 10, "echo chance")
+	ok(math.abs(fx.cinder - 0.1) < 1e-9, "cinder share")
+	ok(math.abs(fx.healMult - 0.7) < 1e-9, "blight x0.7")
+	ok(math.abs(fx.timeMult - 0.8) < 1e-9, "waning x0.8")
+	ok(math.abs(fx.boss - 2) < 1e-9, "dread x2")
+	local none = R.effects(cfg, {}, 5)
+	eq(none.packMult .. none.healMult .. none.timeMult .. none.boss .. none.twin, "11110", "neutral effects")
+
+	-- plan: Teeming packs, Warbands, the goblin threshold, the coffer room
+	local types = {{name = "A", level = 300}, {name = "B", level = 320}, {name = "C", level = 350}}
+	local base = R.plan(cfg, 4, none, 1, types, {"east"}, rng(8))
+	local more = R.plan(cfg, 4, R.effects(cfg, {{key = "teeming", value = 50}}, 4), 1, types, {"east"}, rng(8))
+	eq(#more.packs, math.floor(#base.packs * 1.5 + 0.5), "teeming: +50% packs")
+	eq(base.gildedAt, nil, "no goblin without the modifier")
+	eq(base.coffer, nil, "no coffer without the modifier")
+	eq(base.guardians, 1, "one guardian")
+	local wb, packs = 0, 0
+	local r = rng(9)
+	local fxw = R.effects(cfg, {{key = "warband", value = 30}}, 4)
+	for _ = 1, 300 do
+		for _, p in ipairs(R.plan(cfg, 4, fxw, 1, types, {"east"}, r).packs) do
+			packs = packs + 1
+			if p.warband then
+				wb = wb + 1
+				eq(p.elites[1], "legendary", "warband leader legendary")
+				for k = 2, p.count do
+					ok(p.elites[k] == "rare" or p.elites[k] == "legendary", "warband members rare+")
+				end
+			end
+		end
+	end
+	ok(math.abs(wb / packs - 0.30) < 0.03, "warbands ~30% of packs: " .. wb / packs)
+	local fxg = R.effects(cfg, {{key = "gilded", value = 100}, {key = "coffer", value = 100}, {key = "twin", value = 55}}, 4)
+	for _ = 1, 200 do
+		local p = R.plan(cfg, 4, fxg, 1, types, {"east", "west"}, r)
+		ok(p.gildedAt and p.gildedAt >= math.ceil(p.total * 0.25) and p.gildedAt <= math.ceil(p.total * 0.60), "goblin at 25-60% kills")
+		ok(p.coffer == "east" or p.coffer == "west", "coffer in an open room")
+		eq(p.guardians, 2, "twin: two guardians")
+	end
+	local hub = R.plan(cfg, 4, fxg, 1, types, {}, r)
+	eq(hub.coffer, "hub", "coffer in the hub when no side room is open")
+	local gch, gn = 0, 2000
+	local fxg40 = R.effects(cfg, {{key = "gilded", value = 40}}, 4)
+	for _ = 1, gn do
+		if R.plan(cfg, 4, fxg40, 1, types, {"east"}, r).gildedAt then
+			gch = gch + 1
+		end
+	end
+	ok(math.abs(gch / gn - 0.4) < 0.04, "goblin chance ~40%: " .. gch / gn)
+
+	-- guardian health: twin share, dread, players
+	local hm = R.guardianHealthMult(cfg, none, 1)
+	ok(math.abs(hm - cfg.boss.healthMult) < 1e-9, "guardian x3")
+	ok(math.abs(R.guardianHealthMult(cfg, R.effects(cfg, {{key = "twin", value = 60}}, 4), 1) - 1.8) < 1e-9, "twin 60% each")
+	ok(math.abs(R.guardianHealthMult(cfg, R.effects(cfg, {{key = "dread", value = 100}}, 4), 2) - 12) < 1e-9, "dread x2, 2 players")
+
+	-- run: Waning Veil shortens the limit, twin guardians need two kills
+	local run = R.newRun(cfg, 1000, 10, 8, R.effects(cfg, {{key = "waning", value = 30}, {key = "twin", value = 60}}, 4))
+	eq(run.limit, 420, "waning: 600 s -> 420 s")
+	eq(run.deadline, 1420, "deadline")
+	eq(run.guardians, 2, "two guardians")
+	for _ = 1, 8 do
+		R.onKill(run)
+	end
+	eq(run.boss, "alive", "guardians out")
+	eq(R.onBossKilled(run, 1100), "twin", "first guardian: twin left")
+	eq(run.state, "running", "still running")
+	eq(R.onBossKilled(run, 1101), "success", "second guardian: sealed")
+	local plain = R.newRun(cfg, 0, 5, 4)
+	eq(plain.limit, cfg.timeLimit, "no fx: the full limit")
+	eq(plain.guardians, 1, "no fx: one guardian")
+
+	-- cinder damage: share of the health, capped by tier
+	eq(R.cinderDamage(cfg, 2000, 0.1, 4), 200, "cinder 10% of 2000")
+	eq(R.cinderDamage(cfg, 100000, 0.15, 4), cfg.cinder.capBase + 4 * cfg.cinder.capPerTier, "cinder cap tier 4")
+	eq(R.cinderDamage(cfg, 2000, 0, 4), 0, "no cinder")
+
+	-- coffer
+	eq(R.cofferWaveSize(cfg, 1), cfg.coffer.wave.base, "wave solo")
+	eq(R.cofferWaveSize(cfg, 3), cfg.coffer.wave.base + 2 * cfg.coffer.wave.perExtraPlayer, "wave 3 players")
+	local cl = R.cofferLoot(cfg, 5, {quantity = 20, rarity = 10}, rng(2))
+	eq(cl.gold, math.floor(4000 * 25 * 1.2), "coffer gold tier 5 +20%")
+	ok(cl.rolls >= 1 and cl.chaos >= 2, "coffer rolls / chaos")
+	ok(cl.gold < R.reward(cfg, 5, {quantity = 20}, rng(2)).gold, "coffer below the chest")
+	local coins = R.coins(1234567)
+	local total = 0
+	for _, c in ipairs(coins) do
+		total = total + ({[2160] = 10000, [2152] = 100, [2148] = 1})[c[1]] * c[2]
+		ok(c[2] <= 100 and c[2] > 0, "coin stack size")
+	end
+	eq(total, 1234567, "coins sum")
 end
 
 print(string.format("rift tests: %d checks, %d failed", checks, fails))

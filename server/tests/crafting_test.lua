@@ -407,7 +407,7 @@ eq(select(2, C.check("scouring", key)), "keyNoMods")
 eq(select(2, C.check("chaos", key)), "keyNoMods")
 eq(select(2, C.check("divine", key)), "keyNoMods")
 -- Transmutation: one modifier. pool of 8, pick 3 = haste, value step 0 -> 40
-dice = {3, 0}
+dice = {300, 0} -- weighted pick: the old eight weigh 100 each, so 300 is the third (haste)
 ok, res = C.apply("transmutation", key)
 eq(ok, true, "transmutation on a key")
 eq(key:getCustomAttribute("rift_mods"), "haste:40")
@@ -418,10 +418,10 @@ eq(res.text, "Rift Key (Tier 4): Monsters move +40 faster. Rewards: +6% quantity
 eq(select(2, C.check("transmutation", key)), "keyNeedNone", "transmutation needs an empty key")
 eq(select(2, C.check("alchemy", key)), "keyNeedNone")
 -- Exalted up to the maximum (3)
-dice = {1, 2}
+dice = {100, 2}
 C.apply("exalted", key) -- pool without haste: vitality first, value 20 + 2 x 5
 eq(key:getCustomAttribute("rift_mods"), "vitality:30,haste:40", "config order")
-dice = {6, 0}
+dice = {600, 0}
 C.apply("exalted", key) -- pool of 6 left (vitality and haste taken): the 6th is swarm, value 1
 eq(#C.readKey(key).mods, 3)
 eq(select(2, C.check("exalted", key)), "keyFull", "three is the maximum")
@@ -441,7 +441,7 @@ eq(#C.readKey(key).mods, 2)
 eq(C.readKey(key).mods[1].key, "haste", "the first one went")
 assert(res.text:find("lost \"Monsters have %+60%% health\""), res.text)
 -- Chaos: new modifiers (1-3 by the drop weights)
-dice = {100, 1, 0, 1, 0, 1, 0} -- count roll 100 of 100 -> 3 modifiers; then the first of the pool each time
+dice = {100} -- count roll 100 of 100 -> 3 modifiers; then the lowest dice: the first of the pool each time
 C.apply("chaos", key)
 local ck = C.readKey(key).mods
 eq(#ck, 3, "chaos rolled three")
@@ -451,7 +451,7 @@ C.apply("scouring", key)
 eq(key:getCustomAttribute("rift_mods"), "", "scoured key")
 assert(key:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION):find("Modifiers: none"), "description says none")
 -- Alchemy: 2 or 3 on an empty key ({2, 60}, {3, 40}: roll 61 -> 3)
-dice = {61, 1, 0, 1, 0, 1, 0}
+dice = {61}
 C.apply("alchemy", key)
 eq(#C.readKey(key).mods, 3, "alchemy gave three")
 -- uniques and rarity rules do not apply; a stack of keys does not exist (not stackable). The signature follows mods

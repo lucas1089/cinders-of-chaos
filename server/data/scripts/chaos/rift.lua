@@ -75,6 +75,7 @@ RF.built = RF.built or {} -- slot -> true once its tiles exist (they stay for th
 RF.bad = RF.bad or {} -- slot -> reason (footprint not empty)
 RF.pending = RF.pending or {} -- guid -> list of {run data} rewards for finishers who were offline at the exit
 RF.nextId = RF.nextId or 0
+RF.echo = RF.echo or {} -- monster id -> true: Echoing Spoils copies its loot (set at death, used by onDropLoot)
 RF.noRefund = RF.noRefund or {} -- guid -> true: the key of an interrupted run was spent (left without a logout event)
 
 -- ======================================================================== pool
@@ -407,11 +408,32 @@ local function hudData(run)
 	local mods = {}
 	for _, m in ipairs(run.key.mods) do
 		local def = R.modDef(C(), m.key)
-		mods[#mods + 1] = {name = def and def.name or m.key, text = R.modText(C(), m)}
+		mods[#mods + 1] = {name = def and def.name or m.key, text = R.modText(C(), m), boon = def and def.boon or nil}
 	end
-	return {tier = run.key.tier, theme = run.themeName, left = R.timeLeft(run, os.time()), limit = C().timeLimit,
+	-- live lines of the map modifiers (coffer, goblin, twin guardians)
+	local notes = {}
+	local cf = run.coffer
+	if cf then
+		if cf.state == "closed" then
+			notes[#notes + 1] = string.format("A sealed coffer waits in the %s room.", cf.room == "hub" and "central" or cf.room)
+		elseif cf.state == "guarded" then
+			notes[#notes + 1] = string.format("Coffer guards: %d left.", cf.waveLeft)
+		elseif cf.state == "open" then
+			notes[#notes + 1] = "The coffer is open."
+		end
+	end
+	if run.goblin == "out" and not Monster(run.goblinId) then
+		run.goblin = "gone" -- slain or escaped
+	end
+	if run.goblin == "out" then
+		notes[#notes + 1] = "A Treasure Goblin is loose!"
+	end
+	if (run.guardians or 1) > 1 and run.boss == "alive" then
+		notes[#notes + 1] = string.format("Guardians left: %d.", run.guardians - (run.guardiansKilled or 0))
+	end
+	return {tier = run.key.tier, theme = run.themeName, left = R.timeLeft(run, os.time()), limit = run.limit or C().timeLimit,
 		total = run.total, killed = run.killed, bossAt = run.bossAt, boss = run.boss, state = run.state,
-		bossName = run.plan.boss, mods = mods, bonus = run.bonus}
+		bossName = run.plan.boss, mods = mods, bonus = run.bonus, notes = notes}
 end
 
 local function sendHud(run, action, player)
@@ -612,6 +634,10 @@ function RF.deliver(player, run, auto)
 		for _, g in ipairs(ChaosGems and ChaosGems.rewardGems("rift", {tier = data.tier}, rand) or {}) do
 			stack(g.id, g.count)
 		end
+		-- spell support runes (data/lib/chaos_supports_config.lua rewards.rift)
+		for _, g in ipairs(ChaosSupports and ChaosSupports.rewardRunes("rift", {tier = data.tier}, rand) or {}) do
+			stack(g.id, g.count)
+		end
 		for _, e in ipairs(L.rollUniques(r.lootTier, data.boss, 0, itemFind * r.rarityMult)) do
 			local item = Game.createItem(e.id, 1)
 			if item then
@@ -660,6 +686,7 @@ local function success(run, pos)
 			end
 		end
 	end
+	RF.cofferOnSeal(run)
 	run.finishers, run.claimed = {}, {}
 	for id, e in pairs(run.players) do
 		run.finishers[e.guid] = {name = e.name}
@@ -733,8 +760,7 @@ local function spawnOne(run, name, pos, tier, boss)
 	end
 	local hp
 	if boss then
-		local c = C().boss
-		hp = math.floor(base * c.healthMult * (1 + c.perExtraPlayer * (run.size - 1)) * run.fx.health)
+		hp = math.floor(base * R.guardianHealthMult(C(), run.fx, run.size)) -- + Dread Guardian, Twin Guardians share
 	else
 		hp = math.floor(m:getMaxHealth() * run.fx.health)
 	end
@@ -771,19 +797,266 @@ end
 
 local function spawnBoss(run)
 	local cfg = C()
-	local m = spawnOne(run, run.plan.boss, run.L.bossSpawn, cfg.boss.tier, true)
-	if not m then
+	run.bossIds = run.bossIds or {}
+	local first
+	for i = 1, run.guardians or 1 do
+		local at = run.L.bossSpawn
+		if i > 1 then
+			at = {x = at.x + cfg.twin.offset, y = at.y, z = at.z}
+		end
+		local m = spawnOne(run, run.plan.boss, at, cfg.boss.tier, true)
+		if m then
+			run.bossIds[m:getId()] = true
+			run.bossId = run.bossId or m:getId()
+			first = first or m
+			P(at):sendMagicEffect(CONST_ME_MORTAREA)
+		end
+	end
+	if not first then
 		print("[ChaosRift] boss " .. tostring(run.plan.boss) .. " could not be created; the rift counts as sealed")
 		run.boss = "alive"
+		run.guardians, run.guardiansKilled = 1, 0
 		if R.onBossKilled(run, os.time()) == "success" then
 			success(run, nil)
 		end
 		return
 	end
-	run.bossId = m:getId()
-	P(run.L.bossSpawn):sendMagicEffect(CONST_ME_MORTAREA)
-	say(run, string.format("The rift guardian %s tears through the veil!", m:getName()))
+	local made = 0
+	for _ in pairs(run.bossIds) do
+		made = made + 1
+	end
+	run.guardians = made -- a twin that could not be created does not have to be killed
+	if made > 1 then
+		say(run, string.format("Twin guardians %s tear through the veil!", first:getName()))
+	else
+		say(run, string.format("The rift guardian %s tears through the veil!", first:getName()))
+	end
 	sendHud(run, "update")
+end
+
+-- ======================================================================== map modifiers
+-- a free floor tile in a room rect (nil after a few tries)
+local function freeTileIn(rect, z, margin)
+	for _ = 1, 20 do
+		local p = randomIn({x1 = rect.x1, y1 = rect.y1, x2 = rect.x2, y2 = rect.y2, z = z}, margin or 1)
+		local tile = Tile(P(p))
+		if tile and tile:getGround() and tile:getCreatureCount() == 0 and not tile:getItemById(C().wallId)
+				and not tile:getItemById(C().basinId) and tile:getTopDownItem() == nil then
+			return p
+		end
+	end
+	return nil
+end
+
+local function roomRect(run, room)
+	if room == "hub" or not run.L.rooms[room] then
+		return run.L.hub
+	end
+	return run.L.rooms[room].rect
+end
+
+-- Gilded Trail: a Treasure Goblin (treasure_goblin.lua) in a random open room
+local function spawnGoblin(run)
+	run.goblin = "tried"
+	if not (ChaosTreasureGoblin and ChaosTreasureGoblin.spawn) then
+		return
+	end
+	local rooms = {"hub"}
+	for _, r in ipairs(run.rooms) do
+		rooms[#rooms + 1] = r
+	end
+	local pos = freeTileIn(roomRect(run, rooms[rand(1, #rooms)]), run.L.center.z, 2)
+	if not pos then
+		return
+	end
+	local level = RF.poolLevel[run.plan.boss:lower()] or R.tierInfo(C(), run.key.tier).pick[2]
+	local ok, m = pcall(ChaosTreasureGoblin.spawn, P(pos), {level = level, name = run.plan.boss})
+	if ok and m then
+		run.goblin = "out"
+		run.goblinId = m:getId()
+		say(run, "A Treasure Goblin slips out of the rift with its hoard. Catch it before it escapes!")
+	end
+end
+
+-- Sealed Coffer: placed at the start of the run
+local function placeCoffer(run)
+	local cfg = C()
+	local room = run.plan.coffer
+	local pos = room and freeTileIn(roomRect(run, room), run.L.center.z, 2)
+	if not pos then
+		return
+	end
+	local item = Game.createItem(cfg.coffer.itemId, 1, P(pos))
+	if item then
+		item:setActionId(cfg.coffer.actionId)
+		item:setAttribute(ITEM_ATTRIBUTE_NAME, "sealed coffer")
+		item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, "A coffer sealed by the rift. Breaking the seal wakes its guards.")
+		run.coffer = {state = "closed", room = room, pos = pos, waveLeft = 0, wave = {}}
+	end
+end
+
+local function cofferItem(run)
+	local tile = run.coffer and Tile(P(run.coffer.pos))
+	return tile and tile:getItemById(C().coffer.itemId) or nil
+end
+
+-- rolls one item of a random rift monster's loot table (as the reward chest does) into the container
+local function rollInto(container, types, lootTier, itemFind, rarityMult, countMult, found)
+	local L = ChaosLoot
+	if not L then
+		return
+	end
+	local mt = MonsterType(types[rand(1, #types)])
+	local rows = {}
+	for _, e in ipairs(mt and mt:getLoot() or {}) do
+		if e.itemId and (e.chance or 0) > 0 then
+			rows[#rows + 1] = {e, e.chance}
+		end
+	end
+	local e = R.weighted(rows, rand)
+	if not e then
+		return
+	end
+	if L.isGearId(e.itemId) then
+		local rarity = L.upgradeRarity(lootTier, L.stockRarity(), itemFind * rarityMult)
+		local item = (rarity > 0 and Game.createItemWithRarity) and Game.createItemWithRarity(e.itemId, 1, rarity)
+			or Game.createItem(e.itemId, 1)
+		if item and container:addItemEx(item, INDEX_WHEREEVER or -1, FLAG_NOLIMIT) == RETURNVALUE_NOERROR then
+			found[#found + 1] = itemName(e.itemId)
+		end
+	else
+		local maxC = math.max(e.maxCount or 1, e.minCount or 1)
+		local n = math.max(1, math.floor(rand(e.minCount or 1, maxC) * countMult))
+		if not L.isStackableId(e.itemId) then
+			n = math.min(n, 3)
+		end
+		for _ = 1, L.isStackableId(e.itemId) and 1 or n do
+			container:addItem(e.itemId, L.isStackableId(e.itemId) and math.min(n, 100) or 1, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
+		end
+		found[#found + 1] = itemName(e.itemId)
+	end
+end
+
+local function openCoffer(run)
+	local cfg = C()
+	local cf = run.coffer
+	local item = cofferItem(run)
+	cf.state = "open"
+	if not item or not item:isContainer() then
+		return
+	end
+	local r = R.cofferLoot(cfg, run.key.tier, run.bonus, rand)
+	for _, c in ipairs(R.coins(r.gold)) do
+		item:addItem(c[1], c[2], INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
+	end
+	if r.chaos > 0 then
+		item:addItem(cfg.reward.items.chaos, r.chaos, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
+	end
+	if r.divine > 0 then
+		item:addItem(cfg.reward.items.divine, r.divine, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
+	end
+	local found = {}
+	for _ = 1, r.rolls do
+		rollInto(item, run.typeNames, r.lootTier, 1, r.rarityMult, r.countMult, found)
+	end
+	item:setAttribute(ITEM_ATTRIBUTE_NAME, "opened coffer")
+	item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, "The seal is broken. Its spoils are free for the taking.")
+	P(cf.pos):sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
+	say(run, string.format("The coffer's seal breaks: %d gold, %d Chaos Orb%s, %d Divine Orb%s and %d more item%s inside.",
+		r.gold, r.chaos, r.chaos == 1 and "" or "s", r.divine, r.divine == 1 and "" or "s", #found, #found == 1 and "" or "s"))
+end
+RF._openCoffer = openCoffer
+
+local function wakeCoffer(run, player)
+	local cfg = C()
+	local cf = run.coffer
+	local n = R.cofferWaveSize(cfg, run.size)
+	local spread = cfg.coffer.wave.spread
+	cf.state, cf.waveLeft, cf.wave = "guarded", 0, {}
+	for _ = 1, n do
+		local pos = {x = cf.pos.x + rand(-spread, spread), y = cf.pos.y + rand(-spread, spread), z = cf.pos.z}
+		local tierName = R.eliteTier(cfg, run.fx, run.key.tier, rand)
+		if not tierName or tierName == "magic" then
+			tierName = cfg.coffer.waveTier
+		end
+		local m = spawnOne(run, run.typeNames[rand(1, #run.typeNames)], pos, tierName, false)
+		if m then
+			cf.wave[m:getId()] = true
+			cf.waveLeft = cf.waveLeft + 1
+		end
+	end
+	P(cf.pos):sendMagicEffect(CONST_ME_MORTAREA)
+	say(run, string.format("%s breaks the coffer's seal: %d guards answer!", player:getName(), cf.waveLeft))
+	if cf.waveLeft == 0 then
+		openCoffer(run)
+	end
+	sendHud(run, "update")
+end
+
+-- the coffer at the seal of the rift: a woken one opens (its guards vanished with the rift), an untouched one crumbles
+function RF.cofferOnSeal(run)
+	local cf = run.coffer
+	if not cf then
+		return
+	end
+	if cf.state == "guarded" then
+		openCoffer(run)
+	elseif cf.state == "closed" then
+		cf.state = "gone"
+		local item = cofferItem(run)
+		if item then
+			P(cf.pos):sendMagicEffect(CONST_ME_POFF)
+			item:remove()
+		end
+	end
+end
+
+function RF.useCoffer(player, item)
+	local slot = R.slotOfPos(C(), item:getPosition())
+	local run = slot and RF.runs[slot]
+	local cf = run and run.coffer
+	if not cf or run.ended or not run.players[player:getId()] then
+		player:sendCancelMessage("The coffer does not answer you.")
+		return true
+	end
+	if cf.state == "closed" then
+		if run.state ~= "running" then
+			player:sendCancelMessage("The coffer's seal has gone cold.")
+			return true
+		end
+		wakeCoffer(run, player)
+		return true
+	elseif cf.state == "guarded" then
+		player:sendCancelMessage(string.format("The coffer is still sealed: %d guard%s left.", cf.waveLeft,
+			cf.waveLeft == 1 and "" or "s"))
+		return true
+	end
+	return false -- open: the engine opens the container
+end
+
+-- Cinderdeath: the burst of a slain monster hits the players next to it after a short delay
+local function cinderBurst(run, pos, maxHealth)
+	local cfg = C()
+	local dmg = R.cinderDamage(cfg, maxHealth, run.fx.cinder, run.key.tier)
+	if dmg <= 0 then
+		return
+	end
+	pos:sendMagicEffect(CONST_ME_HITBYFIRE)
+	local rid, slot = run.id, run.slot
+	addEvent(function(p, amount)
+		local r = RF.runs[slot]
+		if not r or r.id ~= rid or r.ended or r.state ~= "running" then
+			return
+		end
+		local at = Position(p.x, p.y, p.z)
+		at:sendMagicEffect(CONST_ME_FIREAREA)
+		local rad = cfg.cinder.radius
+		for _, pl in ipairs(Game.getSpectators(at, false, true, rad, rad, rad, rad)) do
+			if r.players[pl:getId()] then
+				doTargetCombatHealth(0, pl, COMBAT_FIREDAMAGE, -amount, -amount, CONST_ME_FIREAREA)
+			end
+		end
+	end, cfg.cinder.delayMs, {x = pos.x, y = pos.y, z = pos.z}, dmg)
 end
 
 -- ======================================================================== tick
@@ -950,7 +1223,7 @@ function RF.open(player, item)
 	RF.nextId = RF.nextId + 1
 	local fx = R.effects(cfg, key.mods, key.tier)
 	local plan = R.plan(cfg, key.tier, fx, #group, types, rooms, rand)
-	local run = R.newRun(cfg, os.time(), plan.total, plan.bossAt)
+	local run = R.newRun(cfg, os.time(), plan.total, plan.bossAt, fx)
 	run.id, run.slot, run.L, run.key, run.fx, run.plan = RF.nextId, slot, L, key, fx, plan
 	run.bonus = R.bonuses(cfg, key.mods, key.tier)
 	run.players, run.size, run.themeName, run.rooms = {}, #group, th.name, rooms
@@ -976,12 +1249,16 @@ function RF.open(player, item)
 	local spawned = spawnPacks(run)
 	run.total = spawned
 	run.bossAt = math.max(1, math.ceil(spawned * cfg.bossAt / 100))
+	if plan.gildedAt then
+		plan.gildedAt = math.min(plan.gildedAt, math.max(1, spawned))
+	end
+	placeCoffer(run)
 	local names = {}
 	for _, m in ipairs(key.mods) do
 		names[#names + 1] = R.modText(cfg, m)
 	end
 	say(run, string.format("Rift tier %d (%s): %d monsters, the guardian appears after %d kills. %d minutes. Modifiers: %s.",
-		key.tier, th.name, run.total, run.bossAt, math.floor(cfg.timeLimit / 60),
+		key.tier, th.name, run.total, run.bossAt, math.floor(run.limit / 60),
 		#names > 0 and table.concat(names, "; ") or "none"))
 	sendHud(run, "start")
 	run.hudAt = os.time() + cfg.hudEvery
@@ -1085,12 +1362,35 @@ function monsterDeath.onDeath(creature, corpse, killer, mostDamageKiller)
 	if not run or run.ended or run.state ~= "running" then
 		return true
 	end
-	if mid == run.bossId then
-		if R.onBossKilled(run, os.time()) == "success" then
+	-- Echoing Spoils: the loot is copied in the onDropLoot callback below (the engine drops loot after this event)
+	if run.fx.echo > 0 and R.chance(run.fx.echo, rand) then
+		RF.echo[mid] = true
+	end
+	if run.bossIds and run.bossIds[mid] then
+		run.bossIds[mid] = nil
+		local res = R.onBossKilled(run, os.time())
+		if res == "success" then
 			success(run, creature:getPosition())
+		elseif res == "twin" then
+			say(run, "One guardian falls. Its twin still stands!")
+			sendHud(run, "update")
 		else
 			fail(run, "Time is up!")
 		end
+		return true
+	end
+	if run.fx.cinder > 0 then
+		cinderBurst(run, creature:getPosition(), creature:getMaxHealth())
+	end
+	-- Sealed Coffer guards do not count towards the guardian
+	local cf = run.coffer
+	if cf and cf.wave[mid] then
+		cf.wave[mid] = nil
+		cf.waveLeft = math.max(0, cf.waveLeft - 1)
+		if cf.waveLeft == 0 and cf.state == "guarded" then
+			openCoffer(run)
+		end
+		sendHud(run, "update")
 		return true
 	end
 	-- rare / legendary monsters may carry a key of the rift's tier
@@ -1105,7 +1405,11 @@ function monsterDeath.onDeath(creature, corpse, killer, mostDamageKiller)
 			say(run, string.format("The %s monster dropped a %s!", tierName, R.keyName(C(), key.tier)))
 		end
 	end
-	if R.onKill(run) == "boss" then
+	local spawnGuardian = R.onKill(run) == "boss"
+	if run.plan.gildedAt and not run.goblin and run.killed >= run.plan.gildedAt then
+		spawnGoblin(run)
+	end
+	if spawnGuardian then
 		spawnBoss(run)
 	else
 		sendHud(run, "update")
@@ -1113,6 +1417,45 @@ function monsterDeath.onDeath(creature, corpse, killer, mostDamageKiller)
 	return true
 end
 monsterDeath:register()
+
+-- the Sealed Coffer
+local cofferAction = Action()
+function cofferAction.onUse(player, item, fromPosition, target, toPosition, isHotkey)
+	return RF.useCoffer(player, item)
+end
+cofferAction:aid(C().coffer.actionId)
+cofferAction:register()
+
+-- Echoing Spoils: every item in the corpse once more (after the Chaos loot layer at 1, before the auto seller at 2;
+-- the engine rolls the stats of rarity items after all callbacks, so each copy gets its own). Rift Keys are not copied.
+local echoCb = EventCallback
+echoCb.onDropLoot = function(monster, corpse)
+	local mid = monster:getId()
+	if not RF.echo[mid] then
+		return
+	end
+	RF.echo[mid] = nil
+	local ok, err = pcall(function()
+		if not corpse or not corpse:isContainer() then
+			return
+		end
+		local keyAid = C().key.actionId
+		local copies = {}
+		for _, item in ipairs(corpse:getItems(false) or {}) do
+			if item:getActionId() ~= keyAid then
+				copies[#copies + 1] = item:clone()
+			end
+		end
+		-- no effect of its own: the loot snapshot (lootfilter.lua, index 2.5) sees the copies and sends the loot rays
+		for _, c in ipairs(copies) do
+			corpse:addItemEx(c, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
+		end
+	end)
+	if not ok then
+		print("[ChaosRift] echo onDropLoot failed: " .. tostring(err))
+	end
+end
+echoCb:register(1.5)
 
 -- damage taken by rift monsters: Warding (elemental resistance), Reflection
 local reflecting = false
@@ -1149,15 +1492,29 @@ monsterHealth:register()
 -- damage taken by players from rift monsters: Brutality and the tiers above the table
 local function scaleHit(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType)
 	local run = attacker and not reflecting and RF.monsterRun[attacker:getId()]
-	if run and primaryType ~= COMBAT_HEALING and run.fx.damage ~= 1 then
-		primaryDamage = math.floor(primaryDamage * run.fx.damage)
-		secondaryDamage = math.floor(secondaryDamage * run.fx.damage)
+	if run and primaryType ~= COMBAT_HEALING then
+		local mult = run.fx.damage
+		if run.bossIds and run.bossIds[attacker:getId()] then
+			mult = mult * run.fx.boss -- Dread Guardian
+		end
+		if mult ~= 1 then
+			primaryDamage = math.floor(primaryDamage * mult)
+			secondaryDamage = math.floor(secondaryDamage * mult)
+		end
 	end
 	return primaryDamage, primaryType, secondaryDamage, secondaryType
 end
 
 local playerHit = CreatureEvent("ChaosRiftPlayerHit")
 function playerHit.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+	if primaryType == COMBAT_HEALING then
+		-- Blighted Mending: less healing (spells, potions, runes; food regeneration is not a heal event)
+		local run = RF.runOf[creature:getId()]
+		if run and run.state == "running" and run.fx.healMult < 1 then
+			primaryDamage = math.floor(primaryDamage * run.fx.healMult)
+		end
+		return primaryDamage, primaryType, secondaryDamage, secondaryType
+	end
 	return scaleHit(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType)
 end
 playerHit:register()
@@ -1321,7 +1678,7 @@ local function onRift(player, words, param)
 		local tier = R.clampTier(cfg, tonumber(args[2]) or 1)
 		local key
 		if args[3] and tonumber(args[3]) then
-			key = {tier = tier, mods = R.rollMods(cfg, tonumber(args[3]), rand)}
+			key = {tier = tier, mods = R.rollMods(cfg, tonumber(args[3]), rand, tier)}
 		elseif args[3] then
 			key = {tier = tier, mods = R.decodeMods(cfg, args[3])}
 		else

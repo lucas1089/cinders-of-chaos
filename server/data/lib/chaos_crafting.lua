@@ -818,26 +818,7 @@ end
 -- `count` new modifiers the key does not have yet (in the order of the config)
 local function addKeyMods(key, count)
 	local R, cfg = rift()
-	local have = {}
-	for _, m in ipairs(key.mods) do
-		have[m.key] = true
-	end
-	local pool = {}
-	for _, def in ipairs(cfg.mods) do
-		if not have[def.key] then
-			pool[#pool + 1] = def
-		end
-	end
-	local added = {}
-	for _ = 1, math.min(count, #pool) do
-		local def = table.remove(pool, C.random(1, #pool))
-		local steps = math.floor((def.range[2] - def.range[1]) / def.step)
-		local m = {key = def.key, value = def.range[1] + C.random(0, steps) * def.step}
-		key.mods[#key.mods + 1] = m
-		added[#added + 1] = m
-	end
-	key.mods = R.decodeMods(cfg, R.encodeMods(key.mods)) -- config order, validated
-	return added
+	return R.addMods(cfg, key, count, C.random)
 end
 
 local function keyModsText(key)
@@ -871,9 +852,7 @@ function C.keyApply(orbKey, item)
 		addKeyMods(key, math.min(C.keyMaxMods(), R.rollModCount(cfg, C.random)))
 	elseif orbKey == "divine" then
 		for _, m in ipairs(key.mods) do
-			local def = R.modDef(cfg, m.key)
-			local steps = math.floor((def.range[2] - def.range[1]) / def.step)
-			m.value = def.range[1] + C.random(0, steps) * def.step
+			m.value = R.rollValue(R.modDef(cfg, m.key), C.random)
 		end
 	else
 		return false, C.reasons.unknownOrb

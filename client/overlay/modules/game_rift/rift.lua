@@ -1,7 +1,8 @@
 -- Rift run HUD: time left, monsters killed / left, the guardian, the modifiers and the reward bonuses of the rift
 -- the player is in. Server: server/data/scripts/chaos/rift.lua, extended opcode 228 (JSON {action, data}).
 --   server -> client  start / update {tier, theme, left, limit, total, killed, bossAt, boss = waiting|alive|dead,
---                                     state, bossName, mods = [{name, text}], bonus = {quantity, rarity, experience}}
+--                                     state, bossName, mods = [{name, text, boon}], bonus = {quantity, rarity, experience},
+--                                     notes = [text] (live lines: sealed coffer, goblin, twin guardians)}
 --                     end {result = success|failed, text, exitIn}
 --   client -> server  query (after a module reload: the server answers with start when the player is in a rift)
 -- !rift (server talkaction) shows the keys the player carries and the run status.
@@ -72,7 +73,13 @@ local function render()
   local list = type(data.mods) == 'table' and data.mods or {}
   for _, m in ipairs(list) do
     local label = g_ui.createWidget('RiftModLabel', mods)
-    label:setText('- ' .. tostring(m.text or m.name or ''))
+    label:setText('- ' .. RiftMath.modLine(m))
+    if m.boon then label:setColor('#e8c060') end -- a pure reward modifier (coffer, goblin, echoing spoils)
+  end
+  local notes = child('notes')
+  notes:destroyChildren()
+  for _, text in ipairs(type(data.notes) == 'table' and data.notes or {}) do
+    g_ui.createWidget('RiftNoteLabel', notes):setText(tostring(text))
   end
   child('modsHeader'):setText(#list > 0 and tr('Modifiers') or tr('No modifiers'))
   local bonus = RiftMath.bonusLine(data.bonus)

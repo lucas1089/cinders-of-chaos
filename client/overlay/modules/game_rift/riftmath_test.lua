@@ -6,6 +6,9 @@ local function eq(a, b, what)
   if a ~= b then print('FAIL ' .. what .. ': ' .. tostring(a) .. ' ~= ' .. tostring(b)); fails = fails + 1 end
 end
 eq(RiftMath.clock(75), '1:15', 'clock')
+eq(RiftMath.modLine({name = 'Teeming', text = '+30% monster packs'}), 'Teeming: +30% monster packs', 'mod line')
+eq(RiftMath.modLine({text = 'x'}), 'x', 'mod line without name')
+eq(RiftMath.modLine(nil), '', 'mod line nil')
 eq(RiftMath.clock(600), '10:00', 'clock ten minutes')
 eq(RiftMath.clock(-3), '0:00', 'clock negative')
 eq(RiftMath.clock(nil), '0:00', 'clock nil')

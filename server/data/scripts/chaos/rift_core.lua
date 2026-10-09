@@ -74,28 +74,86 @@ function R.rollModCount(cfg, rand, better)
 	return weighted(better and cfg.modCountBetter or cfg.modCount, rand)
 end
 
--- `count` different modifiers, each {key =, value =}, in the order of cfg.mods
-function R.rollMods(cfg, count, rand)
+-- roll weight of a modifier (default 100) and whether a key of `tier` may roll it (minTier, default 1; nil tier: any)
+function R.modWeight(def)
+	return def.weight or 100
+end
+
+function R.modAllowed(def, tier)
+	return tier == nil or tier >= (def.minTier or 1)
+end
+
+local function rollValue(def, rand)
+	local steps = floor((def.range[2] - def.range[1]) / def.step)
+	return def.range[1] + rand(0, steps) * def.step
+end
+R.rollValue = rollValue
+
+-- indexes of cfg.mods a key of `tier` may still roll (not in `have` = {key = true})
+local function modPool(cfg, tier, have)
 	local pool = {}
-	for i = 1, #cfg.mods do
-		pool[i] = i
+	for i, def in ipairs(cfg.mods) do
+		if R.modAllowed(def, tier) and not (have and have[def.key]) and R.modWeight(def) > 0 then
+			pool[#pool + 1] = i
+		end
 	end
+	return pool
+end
+R.modPool = modPool
+
+-- draws up to `count` different indexes from pool (weighted, without replacement)
+local function drawMods(cfg, pool, count, rand)
 	local picked = {}
 	for _ = 1, math.min(count, #pool) do
-		picked[#picked + 1] = table.remove(pool, rand(1, #pool))
+		local total = 0
+		for _, i in ipairs(pool) do
+			total = total + R.modWeight(cfg.mods[i])
+		end
+		local roll, acc = rand(1, total), 0
+		for k, i in ipairs(pool) do
+			acc = acc + R.modWeight(cfg.mods[i])
+			if roll <= acc then
+				picked[#picked + 1] = table.remove(pool, k)
+				break
+			end
+		end
 	end
 	table.sort(picked)
+	return picked
+end
+
+-- `count` different modifiers, each {key =, value =}, in the order of cfg.mods (weighted by `weight`; with a tier,
+-- only the modifiers whose minTier it reaches)
+function R.rollMods(cfg, count, rand, tier)
 	local mods = {}
-	for _, i in ipairs(picked) do
+	for _, i in ipairs(drawMods(cfg, modPool(cfg, tier), count, rand)) do
 		local m = cfg.mods[i]
-		local steps = floor((m.range[2] - m.range[1]) / m.step)
-		mods[#mods + 1] = {key = m.key, value = m.range[1] + rand(0, steps) * m.step}
+		mods[#mods + 1] = {key = m.key, value = rollValue(m, rand)}
 	end
 	return mods
 end
 
+-- adds up to `count` new modifiers to key (the orbs of chaos_crafting.lua); returns the added ones. key.mods stays in
+-- config order.
+function R.addMods(cfg, key, count, rand)
+	local have = {}
+	for _, m in ipairs(key.mods) do
+		have[m.key] = true
+	end
+	local added = {}
+	for _, i in ipairs(drawMods(cfg, modPool(cfg, key.tier, have), count, rand)) do
+		local def = cfg.mods[i]
+		local m = {key = def.key, value = rollValue(def, rand)}
+		key.mods[#key.mods + 1] = m
+		added[#added + 1] = m
+	end
+	key.mods = R.decodeMods(cfg, R.encodeMods(key.mods))
+	return added
+end
+
 function R.rollKey(cfg, tier, rand, better)
-	return {tier = R.clampTier(cfg, tier), mods = R.rollMods(cfg, R.rollModCount(cfg, rand, better), rand)}
+	tier = R.clampTier(cfg, tier)
+	return {tier = tier, mods = R.rollMods(cfg, R.rollModCount(cfg, rand, better), rand, tier)}
 end
 
 function R.encodeMods(mods)
@@ -172,8 +230,12 @@ function R.bonuses(cfg, mods, tier)
 			end
 		end
 	end
+	local cap = cfg.bonusCap or {}
 	for k, v in pairs(b) do
 		b[k] = floor(v + 0.5)
+		if cap[k] and b[k] > cap[k] then
+			b[k] = cap[k]
+		end
 	end
 	return b
 end
@@ -219,7 +281,9 @@ end
 -- what the modifiers do: multipliers / additions used by rift.lua
 function R.effects(cfg, mods, tier)
 	local t = R.tierInfo(cfg, tier)
-	local fx = {health = t.health, damage = t.damage, speed = 0, elite = 1, reflect = 0, resist = 0, noRegen = false, packBonus = 0}
+	local fx = {health = t.health, damage = t.damage, speed = 0, elite = 1, reflect = 0, resist = 0, noRegen = false, packBonus = 0,
+		packMult = 1, gilded = 0, warband = 0, coffer = 0, twin = 0, echo = 0, cinder = 0, healMult = 1, timeMult = 1,
+		boss = 1}
 	for _, m in ipairs(mods or {}) do
 		local v = m.value
 		if m.key == "vitality" then
@@ -238,6 +302,26 @@ function R.effects(cfg, mods, tier)
 			fx.noRegen = true
 		elseif m.key == "swarm" then
 			fx.packBonus = fx.packBonus + v
+		elseif m.key == "teeming" then
+			fx.packMult = fx.packMult * (1 + v / 100)
+		elseif m.key == "gilded" then
+			fx.gilded = v -- percent chance of the goblin
+		elseif m.key == "warband" then
+			fx.warband = v -- percent of packs
+		elseif m.key == "coffer" then
+			fx.coffer = v -- percent chance of the coffer
+		elseif m.key == "twin" then
+			fx.twin = v / 100 -- health share of each guardian
+		elseif m.key == "echo" then
+			fx.echo = v -- percent chance per kill
+		elseif m.key == "cinder" then
+			fx.cinder = v / 100 -- share of the monster's max health
+		elseif m.key == "blight" then
+			fx.healMult = fx.healMult * (1 - v / 100)
+		elseif m.key == "waning" then
+			fx.timeMult = fx.timeMult * (1 - v / 100)
+		elseif m.key == "dread" then
+			fx.boss = fx.boss * (1 + v / 100) -- guardian health and damage
 		end
 	end
 	return fx
@@ -304,6 +388,9 @@ function R.plan(cfg, tier, fx, players, types, rooms, rand)
 		return plan
 	end
 	local count = cfg.packs.base + floor(tier / cfg.packs.perTiers) + cfg.packs.perExtraPlayer * (players - 1)
+	if (fx.packMult or 1) ~= 1 then
+		count = floor(count * fx.packMult + 0.5) -- Teeming
+	end
 	local areas = {}
 	for _, r in ipairs(rooms) do
 		areas[#areas + 1] = r
@@ -321,12 +408,57 @@ function R.plan(cfg, tier, fx, players, types, rooms, rand)
 		for k = 1, size do
 			elites[k] = eliteTier(cfg, fx, tier, rand) or false
 		end
-		plan.packs[#plan.packs + 1] = {room = room, name = name, count = size, elites = elites}
+		local warband = (fx.warband or 0) > 0 and chance(fx.warband, rand)
+		if warband then -- Warbands: every member at least rare, the first legendary
+			for k = 1, size do
+				if elites[k] ~= "legendary" then
+					elites[k] = "rare"
+				end
+			end
+			elites[1] = "legendary"
+		end
+		plan.packs[#plan.packs + 1] = {room = room, name = name, count = size, elites = elites, warband = warband or nil}
 		plan.total = plan.total + size
 	end
 	plan.bossAt = math.max(1, math.ceil(plan.total * cfg.bossAt / 100))
 	plan.boss = types[#types].name -- the strongest type (types are sorted by level)
+	plan.guardians = (fx.twin or 0) > 0 and 2 or 1
+	-- Gilded Trail: the kill count at which the goblin appears (nil: no goblin this run)
+	if (fx.gilded or 0) > 0 and chance(fx.gilded, rand) then
+		local at = cfg.gilded and cfg.gilded.atKills or {25, 60}
+		plan.gildedAt = math.max(1, math.ceil(plan.total * rand(at[1], at[2]) / 100))
+	end
+	-- Sealed Coffer: the room it stands in (nil: no coffer this run)
+	if (fx.coffer or 0) > 0 and chance(fx.coffer, rand) then
+		plan.coffer = #rooms > 0 and rooms[rand(1, #rooms)] or "hub"
+	end
 	return plan
+end
+
+-- the guardian's health multiplier (on its base health): boss.healthMult, players, the modifiers' health, Dread
+-- Guardian, and the Twin Guardians share of each
+function R.guardianHealthMult(cfg, fx, players)
+	local c = cfg.boss
+	local m = c.healthMult * (1 + c.perExtraPlayer * (math.max(1, players or 1) - 1)) * (fx.health or 1) * (fx.boss or 1)
+	if (fx.twin or 0) > 0 then
+		m = m * fx.twin
+	end
+	return m
+end
+
+-- Cinderdeath: fire damage of a slain monster's burst
+function R.cinderDamage(cfg, maxHealth, share, tier)
+	if not share or share <= 0 then
+		return 0
+	end
+	local c = cfg.cinder
+	return math.max(1, floor(math.min((maxHealth or 0) * share, c.capBase + c.capPerTier * R.clampTier(cfg, tier))))
+end
+
+-- Sealed Coffer: number of monsters in the wave
+function R.cofferWaveSize(cfg, players)
+	local w = cfg.coffer.wave
+	return w.base + w.perExtraPlayer * (math.max(1, players or 1) - 1)
 end
 
 -- ===================================================================== rewards
@@ -365,6 +497,38 @@ function R.reward(cfg, tier, bonus, rand)
 		lootTier = R.lootTier(cfg, t.tier),
 		rarityMult = 1 + (bonus and bonus.rarity or 0) / 100
 	}
+end
+
+-- the Sealed Coffer's contents: {gold, chaos, divine, rolls, countMult, lootTier, rarityMult}
+function R.cofferLoot(cfg, tier, bonus, rand)
+	local t = R.tierInfo(cfg, tier)
+	local q = 1 + (bonus and bonus.quantity or 0) / 100
+	local scale = q * t.reward
+	local c = cfg.coffer
+	return {
+		gold = floor(c.goldPerTier2 * t.tier * t.tier * scale),
+		chaos = roundChance((c.chaos.base + c.chaos.perTier * t.tier) * scale, rand),
+		divine = roundChance((c.divine.base + c.divine.perTier * t.tier) * scale, rand),
+		rolls = math.max(1, roundChance((c.rolls.base + c.rolls.perTier * t.tier) * scale, rand)),
+		countMult = q,
+		lootTier = R.lootTier(cfg, t.tier),
+		rarityMult = 1 + (bonus and bonus.rarity or 0) / 100
+	}
+end
+
+-- gold value -> coin stacks {{id, count}} (crystal 2160, platinum 2152, gold 2148; at most 100 per stack)
+function R.coins(value)
+	local out = {}
+	for _, c in ipairs({{2160, 10000}, {2152, 100}, {2148, 1}}) do
+		local n = floor(value / c[2])
+		value = value - n * c[2]
+		while n > 0 do
+			local k = math.min(100, n)
+			out[#out + 1] = {c[1], k}
+			n = n - k
+		end
+	end
+	return out
 end
 
 -- odds of the next key: {chance = percent of a key, nextTier = percent of those that are tier + 1}
@@ -537,10 +701,12 @@ function R.pickRooms(cfg, rand)
 end
 
 -- ===================================================================== run state
--- run = R.newRun(cfg, now, total, bossAt): {state = "running", startTime, deadline, total, killed, bossAt, boss = "waiting"}
-function R.newRun(cfg, now, total, bossAt)
-	return {state = "running", startTime = now, deadline = now + cfg.timeLimit, total = total, killed = 0,
-		bossAt = bossAt or total, boss = "waiting"}
+-- run = R.newRun(cfg, now, total, bossAt[, fx]): {state = "running", startTime, deadline, limit, total, killed, bossAt,
+-- boss = "waiting", guardians}. fx (R.effects): Waning Veil shortens the limit, Twin Guardians makes two guardians.
+function R.newRun(cfg, now, total, bossAt, fx)
+	local limit = math.max(60, floor(cfg.timeLimit * (fx and fx.timeMult or 1) + 0.5))
+	return {state = "running", startTime = now, deadline = now + limit, limit = limit, total = total, killed = 0,
+		bossAt = bossAt or total, boss = "waiting", guardians = (fx and (fx.twin or 0) > 0) and 2 or 1}
 end
 
 function R.timeLeft(run, now)
@@ -563,7 +729,8 @@ function R.onKill(run)
 	return nil
 end
 
--- the boss died: "success" (only while running and before the deadline)
+-- a guardian died: "twin" while another guardian still lives, then "success" (only while running and before the
+-- deadline)
 function R.onBossKilled(run, now)
 	if run.state ~= "running" or run.boss ~= "alive" then
 		return nil
@@ -571,6 +738,10 @@ function R.onBossKilled(run, now)
 	if now > run.deadline then
 		run.state = "failed"
 		return "fail"
+	end
+	run.guardiansKilled = (run.guardiansKilled or 0) + 1
+	if run.guardiansKilled < (run.guardians or 1) then
+		return "twin"
 	end
 	run.boss = "dead"
 	run.state = "success"

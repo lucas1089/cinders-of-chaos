@@ -2243,7 +2243,7 @@ corpses of their own kills), corpses moved by a player (the row greys as decayed
 Map devices (roadmap item 8). A consumable Rift Key opens a timed instance with random modifiers for the player and their
 party. All numbers are in `rift_config.lua`; the pure logic (key rolls, rewards, key odds, slots and layout, the timer, the
 experience cap) is in `rift_core.lua` and tested by `tests/rift_test.lua`. Extended opcode 228 (server -> client HUD),
-storages 7100400-7100409, action ids 47401 (key) and 47402 (reward chest). No database table.
+storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403 (Sealed Coffer). No database table.
 
 - **The key.** An existing non-stackable item, the "shadow orb" (10155), with action id 47401, the custom attributes
   `rift_tier` (1-15) and `rift_mods` (`"vitality:40,reflection:10"`), the name "Rift Key (Tier N)" and a description
@@ -2295,6 +2295,26 @@ storages 7100400-7100409, action ids 47401 (key) and 47402 (reward chest). No da
   player is put back at their entry position and is out of the run. A run whose last player left fails.
 - **The chest** (per finisher): gold to the bank 10,000 x tier^2, Chaos Orbs 1 + 0.5 x tier, Divine Orbs 0.25 x tier,
   item rolls 2 + 0.5 x tier (each draws one entry of a random rift monster's loot table weighted by its chance; gear gets
+  Map modifiers (second set). These have a roll weight (the first eight weigh 100) and a lowest key tier; keys below
+  that tier never roll them, from drops or from orbs (`R.addMods`). Boons are pure rewards with no bonus of their own,
+  shown in gold on the HUD:
+
+  | Modifier | Effect | Weight, tier | Reward bonus |
+  |---|---|---|---|
+  | Teeming | +20-50% packs | 80, 1+ | quantity 0.5x, experience 0.3x |
+  | Gilded Trail (boon) | 30-70% chance that the existing Treasure Goblin (`ChaosTreasureGoblin.spawn`) appears in a random open room after 25-60% of the kills, at the level of the strongest type | 40, 1+ | - |
+  | Warbands | 10-30% of packs: every member rare, the first legendary | 60, 2+ | rarity 1x, quantity 0.3x |
+  | Sealed Coffer (boon) | 40-100% chance of a coffer (treasure chest 1746, action id 47403) in an open room. Using it wakes 5 (+1 per extra player) magic+ rift monsters, which do not count towards the guardian. Once they are dead it opens with coins worth 4,000 x tier^2, Chaos 1 + 0.25 x tier, Divine 0.1 x tier and 2 + 0.25 x tier item rolls, all x quantity. An unwoken coffer crumbles at the seal | 50, 1+ | - |
+  | Twin Guardians | two guardians, each with 55-75% of the guardian health; both must die | 50, 3+ | rarity 0.25x, quantity 0.2x |
+  | Echoing Spoils (boon) | 5-15% of kills: every corpse item is copied once (onDropLoot 1.5, before the loot snapshot so rays and autoloot see the copies; Rift Keys are not copied) | 35, 2+ | - |
+  | Cinderdeath | 1.5 s after a kill, players within 1 sqm take fire damage: 5-15% of the monster's max health, at most 300 + 150 x tier | 70, 3+ | quantity 1.2x, rarity 0.8x |
+  | Blighted Mending | players receive 20-50% less healing (spells, potions, runes) | 70, 2+ | rarity 0.5x, experience 0.3x, quantity 0.2x |
+  | Waning Veil | the time limit is 15-30% shorter | 70, 1+ | quantity 1x, experience 0.5x |
+  | Dread Guardian | the guardian(s) +50-150% health and damage | 60, 4+ | rarity 0.2x, quantity 0.1x |
+
+  The summed bonuses of a key are capped (`bonusCap`): quantity 80%, rarity 75%, experience 60%. These caps sit above
+  every three-modifier sum of the first eight modifiers.
+
   a rarity from `ChaosLoot.upgradeRarity` at magic (tiers 1-3) / rare (4-6) / legendary (7-10) / boss (11+), x the
   rarity bonus), one Chaos currency roll and one unique roll at that tier; gold, orbs and rolls x (1 + quantity bonus).
   Measured: tier 1 10k gold, 2 Chaos, 1 Divine, a few items; tier 7 (+40% quantity) 686k gold, 6 Chaos, 3 Divine,

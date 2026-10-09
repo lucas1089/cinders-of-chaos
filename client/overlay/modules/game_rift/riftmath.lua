@@ -41,6 +41,14 @@ function RiftMath.bonusLine(b)
   return table.concat(parts, ', ')
 end
 
+-- "Teeming: +30% monster packs" (name and text of a modifier; either alone when the other is missing)
+function RiftMath.modLine(m)
+  if type(m) ~= 'table' then return '' end
+  local name, text = tostring(m.name or ''), tostring(m.text or '')
+  if name ~= '' and text ~= '' then return name .. ': ' .. text end
+  return name ~= '' and name or text
+end
+
 -- colour of the clock: gold, orange under a minute, red under 20 s
 function RiftMath.clockColor(left)
   if left <= 20 then return '#ff4030' end
