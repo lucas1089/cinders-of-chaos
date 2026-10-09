@@ -1,0 +1,124 @@
+--- a/mods/game_helper/helper.lua
++++ b/mods/game_helper/helper.lua
+@@ -10,6 +10,59 @@
+ local function helperDebug(message)
+ end
+ 
++-- Chaos (base-patch 0026): no replay of missed cycles after a client stall.
++-- The engine's cycleEvent puts each run at "last scheduled time + interval", so after a long frame (a big window
++-- built, a module reload) it ran every missed cycle back to back: about 50 helper ticks after a 2.5 s stall, each
++-- one free to cast before the server's cooldown packets came back, and the server kicked the player for sending
++-- too many packets. This module-local cycleEvent (the module is sandboxed, so every helper script gets it and the
++-- rest of the client keeps the engine's) schedules the next run from the time the callback ran: after a stall it
++-- runs once (catches up at most one cycle) and then keeps its interval. removeEvent(handle) stops it as before.
++local engineScheduleEvent = scheduleEvent
++function cycleEvent(callback, interval)
++  local handle = {}
++  local pending = nil
++  local function run()
++    pending = nil
++    if handle.canceled then
++      return
++    end
++    local ok, err = pcall(callback)
++    if not ok then
++      safeLog("error", "game_helper cycle: " .. tostring(err))
++    end
++    if not handle.canceled then
++      pending = engineScheduleEvent(run, interval)
++    end
++  end
++  function handle:cancel()
++    self.canceled = true
++    if pending then
++      pending:cancel()
++      pending = nil
++    end
++  end
++  pending = engineScheduleEvent(run, interval)
++  return handle
++end
++
++-- Chaos (base-patch 0026): rate guard on the helper's spell casts. The same words are not sent again within
++-- sameWordsGap ms and at most maxPerSecond casts go out in any second, whatever the cycles do.
++local castGuard = { sameWordsGap = 500, maxPerSecond = 4, last = {}, recent = {} }
++function helperCastAllowed(words)
++  local now = (g_clock.realMillis and g_clock.realMillis()) or g_clock.millis()
++  local recent = castGuard.recent
++  while recent[1] and now - recent[1] >= 1000 do
++    table.remove(recent, 1)
++  end
++  local last = castGuard.last[words]
++  if #recent >= castGuard.maxPerSecond or (last and now - last < castGuard.sameWordsGap) then
++    return false
++  end
++  castGuard.last[words] = now
++  recent[#recent + 1] = now
++  return true
++end
++
+ -- Tabela global para organizar submódulos do Helper
+ -- Não sobrescreve se já existir (shortcut_panel.lua pode ser carregado antes)
+ if not _Helper then
+@@ -3951,6 +4004,9 @@
+   end
+ 
+   -- Execute the spell
++  if not helperCastAllowed(spell.words) then
++    return false
++  end
+   safeDoThing(false)
+   g_game.talk(spell.words, true)
+   safeDoThing(true)
+@@ -4253,8 +4309,12 @@
+     return false
+   end
+ 
++  local castWords = string.format("%s \"%s\"", spell.words, target:getName())
++  if not helperCastAllowed(castWords) then
++    return false
++  end
+   safeDoThing(false)
+-  g_game.talk(string.format("%s \"%s\"", spell.words, target:getName()), true)
++  g_game.talk(castWords, true)
+   safeDoThing(true)
+ 
+   return true
+@@ -4337,8 +4397,12 @@
+     return false
+   end
+ 
++  local castWords = string.format("%s \"%s\"", spell.words, target:getName())
++  if not helperCastAllowed(castWords) then
++    return false
++  end
+   safeDoThing(false)
+-  g_game.talk(string.format("%s \"%s\"", spell.words, target:getName()), true)
++  g_game.talk(castWords, true)
+   safeDoThing(true)
+ 
+   return true
+@@ -4363,8 +4427,12 @@
+     return false
+   end
+ 
++  local castWords = string.format("%s \"%s\"", spell.words, target:getName())
++  if not helperCastAllowed(castWords) then
++    return false
++  end
+   safeDoThing(false)
+-  g_game.talk(string.format("%s \"%s\"", spell.words, target:getName()), true)
++  g_game.talk(castWords, true)
+   safeDoThing(true)
+ 
+   return true
+@@ -4389,6 +4457,9 @@
+     return false
+   end
+ 
++  if not helperCastAllowed(spell.words) then
++    return false
++  end
+   safeDoThing(false)
+   g_game.talk(spell.words, true)
+   safeDoThing(true)

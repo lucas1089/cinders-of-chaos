@@ -93,9 +93,12 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 ## Open decisions and loose ends
 
 - Fixed: opening the passive tree window with a large build no longer gets players kicked. The window rebuilt
-  ~1,400 widgets four times (a 2-4 s freeze); now built once and in slices. Remaining cause, not fixed: the base
-  client's healing helper (`mods/game_helper/helper.lua`) replays every missed 50 ms cycle after any client stall
-  and can still flood spell casts (packet-limit kick) after other long frames; needs a base patch.
+  ~1,400 widgets four times (a 2-4 s freeze); now built once and in slices. Fixed too: the base client's healing
+  helper (`mods/game_helper/helper.lua`) replayed every missed 50 ms cycle after any client stall (the engine's
+  `cycleEvent` schedules from the last planned time) and flooded spell casts; base patch
+  `client/base-patches/0026-helper-no-cycle-replay.patch` gives the helper module a `cycleEvent` that schedules the
+  next run from now (after a stall it runs once) and a cast rate guard (same words not within 500 ms, at most 4
+  casts a second). Tested in game: 2.5 s stall with healing on, 17 casts in 170 ms before, 1 cast after.
 - Fixed: notification toasts (`game_chaosnotify`) had no background: the code loaded `images/background`, the file is
   `Background.png` (file names are case-sensitive on Linux); both the `.otui` and the `.lua` now load `images/Background`.
   (Fixed with item 20: the Daily Reward window no longer opens over other login windows.)
@@ -104,8 +107,11 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
   never put on the dummies in those runs (two-handed x1.6, dexterity, keystones). Spell numbers are not affected.
 - Keystones not verified in game yet: Overgrowth, both Illusionist keystones (need a party), arrow Ricochet, and
   the visuals of Bulwark/Thorns/Deadeye (`ChaosCombatFx`).
-- Bug (existing): the rarity element script (`data/scripts/customs/rarity/rarity_onCombat_elementdamage.lua`,
-  base server) returns nothing when a player wears two different rarity elements, which zeroes the damage.
+- Fixed: the base rarity element script (`data/scripts/customs/rarity/rarity_onCombat_elementdamage.lua`) returned
+  nothing when a player wore two different rarity elements, so the engine dealt 0 damage. `patch_base_events.py`
+  (step 9) now hands that case to `chaos/rarity_elements.lua`: primary kept, each element its own share (one in the
+  secondary, the others as their own hits right after); the mana handler counts every element.
+  `tests/rarity_elements_test.lua`; tested in game (0 damage before, fire + ice shares after).
 - Fixed: `/testkit` (`admin/testkit.lua`) called `addHealth(n)`, which does nothing on this engine (it takes a
   damage type first), so health was not refilled. All one-argument calls now go through `Chaos.heal(creature, amount)`
   (chaos_constants.lua): the world boss adds and Vharok's heal, the Infinity Tower's heal between floors, the

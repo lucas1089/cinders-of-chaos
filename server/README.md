@@ -126,6 +126,8 @@ server/
    And the base `scripts/creaturescripts/autoloot.lua` hands each item to `ChaosLoot.finalizeRarity` before moving it,
    so autolooted gear gets its rarity stats (the engine only rolls items still in the corpse; see "Rarity stats are
    rolled once").
+   And the base rarity element script (`scripts/customs/rarity/rarity_onCombat_elementdamage.lua`) no longer deals 0 damage
+   with two different rarity elements: each element gets its own share, see `data/scripts/chaos/rarity_elements.lua`.
 4a. Item links: `python3 -I server/tools/patch_help_itemlinks.py <server>/data` (once; idempotent; `install_all.py` runs it with
    the events step) keeps item links out of the Help channel (see "Item links in chat").
 4b. Stock promotion off, the ascension quest's base parts: `python3 -I server/tools/install_class_ascension.py <server>/data

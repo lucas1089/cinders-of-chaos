@@ -49,6 +49,14 @@ pet share, so the bonuses multiply the staged experience and the pet gets its sh
    come back unchanged), so enabling them without a script changes no behaviour. `--enable-spell-events` sets the four
    entries to enabled="1" (run it only where the engine has patch 0008); without the flag an existing value is kept.
 
+9. data/scripts/customs/rarity/rarity_onCombat_elementdamage.lua: with two different rarity elements (e.g. fire on the
+   weapon, ice on the shield) the onHealthChange handler returned nothing, which the engine reads as 0 damage: the whole
+   hit was lost. That bare `return` now hands the hit to ChaosRarityElements.onHealthChange
+   (data/scripts/chaos/rarity_elements.lua: each element its own share, the primary damage unchanged) and falls back to
+   the unchanged damage when that script is missing. The onManaChange handler stopped at the second element too
+   (no bonus at all); every element's % now counts there (mana damage has no element). Exact match on the stock lines;
+   anything else is reported and left alone.
+
 Idempotent: every inserted block carries a marker comment and is not added twice.
 """
 import os, re, sys
@@ -293,6 +301,40 @@ def make_spell_events(enable):
     return patch_spell_events
 
 
+RARITY_MARKER = '-- Chaos: several rarity elements, each its own share, never 0 damage (patch_base_events.py)'
+RARITY_HEALTH_RX = re.compile(r'(\n([ \t]*)elseif chosenBonusType ~= elemData\.combatType then[ \t]*\r?\n)'
+                              r'[ \t]*return[ \t]*(\r?\n)')
+RARITY_MANA_RX = re.compile(r'(\n([ \t]*)elseif chosenBonusType ~= elemData\.combatType then[ \t]*\r?\n)'
+                            r'[ \t]*return manaChange[ \t]*(\r?\n)')
+
+
+def patch_rarity_elements(text):
+    """returns (new text, status)"""
+    if RARITY_MARKER in text:
+        return text, 'already'
+    health = list(RARITY_HEALTH_RX.finditer(text))
+    mana = list(RARITY_MANA_RX.finditer(text))
+    if len(health) != 1 or len(mana) != 1:
+        return text, ('unexpected rarity_onCombat_elementdamage.lua (the stock "elseif chosenBonusType ~= '
+                      'elemData.combatType then" + "return" / "return manaChange" lines not found once each)')
+    h, m = health[0], mana[0]
+    ind, nl = h.group(2) + '    ', h.group(3)
+    hblock = (h.group(1)
+              + ind + RARITY_MARKER + nl
+              + ind + 'if ChaosRarityElements and ChaosRarityElements.onHealthChange then' + nl
+              + ind + '    return ChaosRarityElements.onHealthChange(source, target, baseElement, baseElementType,' + nl
+              + ind + '        primaryDamage, primaryType, secondaryDamage, secondaryType)' + nl
+              + ind + 'end' + nl
+              + ind + 'return primaryDamage, primaryType, secondaryDamage, secondaryType' + nl)
+    mind, mnl = m.group(2) + '    ', m.group(3)
+    mblock = m.group(1) + mind + RARITY_MARKER + ': every element counts for mana' + mnl
+    # replace the later match first so the earlier offsets stay valid
+    parts = sorted([(h, hblock), (m, mblock)], key=lambda x: x[0].start(), reverse=True)
+    for match, block in parts:
+        text = text[:match.start()] + block + text[match.end():]
+    return text, 'patched'
+
+
 def apply(path, fn, dry):
     text = open(path, encoding='utf-8', errors='surrogateescape').read()
     new, status = fn(text)
@@ -320,6 +362,8 @@ def main():
     ok = apply(os.path.join(args[0], 'events', 'scripts', 'player.lua'), patch_spell_stubs, dry) and ok
     ok = apply(os.path.join(args[0], 'events', 'events.xml'),
                make_spell_events('--enable-spell-events' in sys.argv), dry) and ok
+    ok = apply(os.path.join(args[0], 'scripts', 'customs', 'rarity', 'rarity_onCombat_elementdamage.lua'),
+               patch_rarity_elements, dry) and ok
     return 0 if ok else 1
 
 
