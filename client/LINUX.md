@@ -25,6 +25,13 @@ Put `Tibia.dat`/`Tibia.spr` (10.98) in `<game-dir>/data/things/1098/`, copy or l
 - Several imported modules depended on modules or UI styles of the clients they came from (stash, bank, event...);
   a missing style or module stops the client at start. Fixed with guards and `client_chaos_theme/compat.otui`.
 - The overlay used to replace `client_background`, which other base modules call; now only its images are replaced.
+- Accounts with more than one character could not log in (stuck at "Connecting to login server...",
+  `protocollogin.lua:338: attempt to index a nil value`). The server's character list (0x64) entry is world id u8,
+  name, then level u32, vocation u16 (server id), outfit (looktype u16; head, body, legs, feet, addons u8, or an item
+  id u16 when the looktype is 0) and mount u16; the client read only world id and name, so the second entry's world id
+  came out of the first one's level (with one character the leftover bytes were read as the account status and
+  premium time, hence "-20726 days left"). `base-patches/0025-chaos-character-list-entries.patch` reads the whole
+  entry for 1098, so the list also shows level, class and outfit. Tested with 1, 2 and 5 characters on an account.
 
 ## What the in-game test found (fixed)
 - The missing `getItemsPrice` in the base cyclopedia was not harmless: its `onGameStart` handler raised an error and every
