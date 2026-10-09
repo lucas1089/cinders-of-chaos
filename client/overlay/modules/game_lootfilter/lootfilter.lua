@@ -550,6 +550,11 @@ function toggle()
   end
 end
 
+-- the filter settings as the client has them (game_groundlabels labels ground items by the same rules)
+function getSettings()
+  return settings
+end
+
 function openStore()
   if modules.game_shop and modules.game_shop.toggle then
     modules.game_shop.toggle()

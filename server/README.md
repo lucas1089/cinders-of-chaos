@@ -212,6 +212,7 @@ working directory, as with the rest of the base server libs).
 | game_stash | `stash.lua` | **110** (new), Economy > Supply Stash | Deposit by drag, redeem, categories, block list, the Stash All button, DB persistence. Client must be ported first (see below). |
 | game_spellbook | `spellbook.lua` | 219, Character > Spellbook / `/spells` | Spell list window: every player spell of `data/spells/spells.xml` with its data, a short description and its area of effect (see "Spellbook" below). |
 | game_lootfilter | `lootfilter.lua`, `lootfilter_core.lua`, `lootfilter_config.lua` | 238, Hunt > Loot Filter | Loot filter (glow/dim by rarity in corpses), loot channel with click-to-loot icons, rare-drop lines, loot rays, Rarity Autoloot store unlock. Tested in game (see "Loot filter"). |
+| game_groundlabels | `groundloot.lua`, `groundloot_core.lua` (client also `game_lootfilter`, `game_itemtooltip`) | 230 | Ground loot labels: names, rarity, category and decay of the items on the tiles in view and a short list of what lootable corpses hold; tooltips of ground items; `raise` puts an item lower in a pile on top so the normal move can pick it up. Tested in game (see "Ground loot labels") |
 | game_bounty | `bounty.lua`, `bounty_core.lua`, `bounty_config.lua`, `bounty_pool.lua` | 223, Adventure > Bounty Board | Daily rotating kill contracts per level band, tested in game (see "Bounty board"). |
 | game_rift | `rift.lua`, `rift_core.lua`, `rift_config.lua` | 228 (server -> client), Adventure > Rifts / `/rift` | Rift Keys open timed instances with modifiers; run HUD; tested in game (see "Rifts"). |
 | game_arena | `arena.lua`, `arena_core.lua`, `arena_config.lua` | 236, Adventure > Arena / `/arena` | Ranked PvP arena, 1v1 and 2v2 with Elo per mode, runtime instances, no death / skull / frag inside, tested in game with two clients (see "Arena"). |
@@ -234,7 +235,7 @@ working directory, as with the rest of the base server libs).
 | game_playerinspect | `inspect.lua`, `inspect_core.lua` | 240, Social > Inspect Player, right-click a player | Inspect Player: outfit, level, class, guild, achievement points, rift and trial records and the equipment with full tooltips; right-click within 10 tiles or any online player by name; privacy setting per character (storage `Chaos.storage.inspectOff`); tested in game with two clients (see "Inspect Player"). |
 | game_invasion | `invasion.lua`, `invasion_core.lua`, `invasion_config.lua`, `worldevents.lua` | 251 (server -> client; `query` / `calendar` back), Adventure > Events, `/invasion` | Invasions (waves at a town or hunting ground, breach meter, boss, contribution rewards, Defender board, Victory buff, occupation) and the world events Chaos Storm, Wandering Merchant and Golden Hour; HUD and upcoming events window; toasts with action `invasion` on 79; tested in game on a test area (see "Invasions and world events"). |
 
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 228, 229, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
+Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 228, 229, 230, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
 
 ### Opcode collision check
@@ -3112,6 +3113,65 @@ loot channel, presets, the setting surviving a relog, click to loot (all, Shift 
 autoloot greying icons, decay greying a row, the store purchase, Rarity Autoloot hold-back and pickup, the rays of every band.
 **Not verified:** party members looting (rows and rays go to the corpse owner only; party members can click-loot only
 corpses of their own kills), corpses moved by a player (the row greys as decayed), many players at once.
+
+## Ground loot labels (`groundloot.lua`, `groundloot_core.lua`, client `game_groundlabels`)
+
+Path of Exile style name plates over the loot on the ground. The client sees the items on the tiles around it (ids, counts
+and the item custom attributes of engine patch 0003: rarity, unique, per-item id) but not their names, categories or
+decay, so it asks extended opcode 230 (`ChaosOpcodes.groundLoot`) about the tiles whose items changed and draws the labels
+itself by the loot filter's rules (`game_lootfilter`, the same settings the server keeps for the corpse highlights).
+
+- **Protocol** (JSON `{action, data}`): `look {t = [[x, y, z], ...]}` (at most 30 tiles) -> `tiles {t = [{p, i}]}` where
+  every asked tile is answered (`i` may be empty) with an item row `{s, id, c, nm, r, u, o, pw, g, t, il, e}` (`s` its index
+  on the tile, `id` the client id, the rest as the loot filter's `itemInfo`, `e` the seconds until it decays) or a corpse
+  row `{s, id, k = 1, n, i = [{c, nm, r, u, o, pw, g, t}], e}`; `tip {p, s, id}` -> `tip {p, s, id, tip | gone}` (the
+  rich tooltip `item_tooltip_core.lua` builds); `raise {p, s, id, c, iid}` -> `raised {p, id[, err]}`. Answers are split
+  so no message passes 7000 bytes.
+- **What the server reveals and checks.** Only tiles on the player's floor within 8 x 6 squares that the player can see; not
+  the tiles of a house the player does not own; a corpse's contents only when the player may loot it (owner, party, or
+  no owner: `ChaosLootFilter.canLoot`, the loot channel's rule); only items that can be picked up (furniture gets no
+  label). A request budget per player (120 tiles at once, then 60 per second; a tooltip costs 2, a raise 4); a flood is
+  dropped, the client asks again.
+- **Picking up** is the engine's: the client sends the normal move to its backpack, so the engine walks there first,
+  checks capacity and room, the corpse owner and every move rule (`Player:onMoveItem`, the season isolation). The engine
+  only ever moves the top item of a ground pile (`Game::internalGetThing`, `STACKPOS_MOVE`), so for an item lower in a
+  pile the client first sends `raise`: the server checks the tile is in view, on the floor and seen, the player has a line
+  of sight to it or stands next to it, it is not another player's house, the item is still there with the same client id,
+  count and per-item id (`chaos_iid`), it can be picked up, is no corpse and has no map unique id; then it moves that item
+  through a bag that exists for this call only back onto the same tile, which puts it on top (a failed move back leaves the
+  bag with the item on the tile; nothing is lost). Nothing leaves the tile there. A click on a corpse label opens the
+  corpse with the normal use (the engine walks there and checks the owner).
+- **Despawn.** Ground items have no owner and no timer in this server: `cleanMap()` only runs from `/clean` and the admin
+  panel (the server save's clean is off in `globalevents/scripts/save.lua` and `serverSaveCleanMap = false`). So `e` is
+  only sent for what decays (`ITEM_ATTRIBUTE_DECAYSTATE` = decaying, `ITEM_ATTRIBUTE_DURATION` left, exact with the decay
+  manager of `src-patches/0006`): lit torches, special items and corpses. For a corpse it is the time until its loot is
+  gone: a corpse decays in stages (a fresh demon 10 s, then "slain demon" stages of 900 and 600 s) and keeps its items as
+  long as the next stage is a container, so the stages are summed until the first that is not (`G.lootExpiry`).
+- **Client** (`client/overlay/modules/game_groundlabels`): labels of items the filter makes glow (framed in the colour),
+  Rare+ items (rarity >= Rare, uniques, orbs, legendary powers; a setting), everything else only while Alt is held (items
+  the filter hides then faded). Items the filter hides never get a label without Alt, Rare or not. "Corpse: N items" over
+  a corpse holding items that glow or are Rare+. The despawn timer (`m:ss`) for corpses and for items worth it. Labels of
+  one tile stack upwards over it, a block that would cover a neighbour's moves up past it (or down when that is too far);
+  at most 40, the best first (uniques, rarity, glow, corpses, then the nearest). Each labelled tile carries one widget
+  (`Tile:setWidget`), drawn by the engine on the tile every frame; clicks and hovering are matched on the map panel. Left
+  click: pick up / open the corpse; right click: the item menu; hover: the rich tooltip or the corpse's list. The engine
+  has no Lua callback for tile changes, so the tiles in view are compared every 400 ms and right after the player moves
+  (ids and counts first; the candidate test only runs on a changed tile; under 1 ms with 50 labelled tiles in software
+  rendering), and only changed tiles are asked about. Settings in the Loot Filter window's "Ground Labels" button (saved
+  in `g_settings`, node `groundLabels`): on/off, Rare+, Alt, corpses, timers, label size.
+
+**Tests:** `server/tests/groundloot_test.lua` (positions from client input, view range, budget, decay and corpse stages,
+wire rows, the message split, and the handler on a mocked engine: what is and is not revealed, refused tiles answered
+empty, tooltips, every refusal of `raise` and the reorder) and the client's `game_groundlabels/groundlabels_test.lua`
+(settings, candidates, the label decisions with the real loot filter rules, text, timer, colour, priority and the cap, and
+the layout: no two blocks overlap in a row of wide labels, a 4 x 3 cluster or on one tile). Checked in game at 1280x720 and
+1920x1080: labels of 15 rarities, a unique, orbs, a corpse with its timer and contents, a real demon kill (orb in the
+corpse), Alt showing everything, the strict preset hiding Common to Rare (faded with Alt), stacks on one tile and a row of
+neighbours, 40 labels of 54 tiles, the timer counting down, pick up by click (top item, an item lower in a pile, a unique
+two squares away: walked there), the item menu on right click, the rich tooltip and the corpse tooltip on hover, label
+sizes, switching labels off and on. **Not verified:** two players at once, a season character facing another realm's
+items (the engine refuses the move; the label still shows), labels while walking fast over many piles (positions follow
+the engine, the scan lags at most 400 ms).
 
 ## Rifts (`rift.lua`, `rift_core.lua`, `rift_config.lua`, client `game_rift`)
 

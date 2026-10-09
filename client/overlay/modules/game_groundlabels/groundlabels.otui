@@ -1,0 +1,97 @@
+// Ground loot labels (game_groundlabels): the label styles and the settings window. Styles from client_chaos_theme.
+
+// one tile's labels; the engine draws it centred on the tile (Tile:setWidget)
+GroundLabelBlock < UIWidget
+  phantom: true
+  focusable: false
+
+GroundLabel < UILabel
+  font: verdana-11px-rounded
+  text-align: center
+  color: #d8cfbf
+  background-color: #0c0a0cd8
+  border-width: 1
+  border-color: #3a3230
+  phantom: true
+  focusable: false
+
+GroundLabelsCheck < ChaosCheckBox
+  anchors.left: parent.left
+  anchors.right: parent.right
+  margin-top: 8
+
+GroundLabelsWindow < ChaosMainWindow
+  id: groundLabelsWindow
+  size: 400 292
+  !text: tr('Ground Labels')
+  @onEscape: modules.game_groundlabels.hideSettings()
+
+  ChaosLabelDim
+    id: intro
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 42
+    text-wrap: true
+    text-align: topLeft
+    !text: tr('Names over the items on the ground, in their rarity colour, by the rules of your loot filter. Click a label to pick the item up, right click for its menu.')
+
+  GroundLabelsCheck
+    id: enabled
+    anchors.top: intro.bottom
+    !text: tr('Show ground labels')
+
+  GroundLabelsCheck
+    id: rarePlus
+    anchors.top: enabled.bottom
+    !text: tr('Always label Rare+ items (else only what glows)')
+    !tooltip: tr('Rare and better gear, uniques, orbs and legendary powers get a label even when the filter does not make them glow. Items the filter dims never do.')
+
+  GroundLabelsCheck
+    id: altAll
+    anchors.top: rarePlus.bottom
+    !text: tr('Hold Alt to label everything')
+    !tooltip: tr('While Alt is held every item on the ground gets a label, the ones the filter dims too (faded).')
+
+  GroundLabelsCheck
+    id: corpses
+    anchors.top: altAll.bottom
+    !text: tr('Label corpses that hold loot for you')
+    !tooltip: tr('"Corpse: 2 items" over a corpse you may loot when it holds items your filter makes glow. Click it to open the corpse.')
+
+  GroundLabelsCheck
+    id: timers
+    anchors.top: corpses.bottom
+    !text: tr('Show despawn timers')
+    !tooltip: tr('Time until a corpse (with its loot) or a decaying item is gone. Items lying on the floor do not vanish on their own.')
+
+  ChaosLabel
+    id: sizeLabel
+    anchors.top: timers.bottom
+    anchors.left: parent.left
+    margin-top: 14
+    text-auto-resize: true
+    !text: tr('Label size')
+
+  ChaosComboBox
+    id: sizeCombo
+    anchors.verticalCenter: sizeLabel.verticalCenter
+    anchors.left: sizeLabel.right
+    margin-left: 12
+    size: 110 22
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 80 24
+    !text: tr('Close')
+    @onClick: modules.game_groundlabels.hideSettings()
+
+  ChaosLabelDim
+    id: savedLabel
+    anchors.verticalCenter: closeButton.verticalCenter
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    text-align: left
+    !text: tr('Saved on this computer.')

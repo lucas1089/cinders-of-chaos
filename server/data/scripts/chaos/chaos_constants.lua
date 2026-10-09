@@ -61,6 +61,7 @@ ChaosOpcodes = {
 	itemLink = 249, -- items linked into chat: register / get a snapshot (client game_chatlinks; itemlink.lua, itemlink_core.lua)
 	inspect = 240, -- Inspect Player window: equipment and public stats of another player (client game_playerinspect; inspect.lua, inspect_core.lua)
 	buffs = 234, -- buff / debuff bar, server -> client diffs (client game_buffbar; buffbar.lua, data/lib/chaos_buffs.lua)
+	groundLoot = 230, -- ground loot labels: names, rarity and decay of the items on the tiles in view (client game_groundlabels; groundloot.lua)
 	partyFrames = 235 -- party frames: members' health, mana, level, floor, buffs; client -> server actions (client game_partyframes; partyframes.lua)
 }
 

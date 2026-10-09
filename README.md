@@ -144,6 +144,11 @@ Balance is measured on test dummies at levels 300 and 1000, so every class keeps
   a stack). Looted items grey out.
 - **Loot rays:** a beam of light rises from corpses holding a unique or a Legendary-or-better item, coloured by
   rarity.
+- **Ground labels:** loot lying on the ground gets its name over it in its rarity colour ("Rare Fire Sword",
+  "3x Chaos Orb"), following your loot filter. Hold **Alt** to see every item, the ones your filter hides too. Corpses
+  holding loot for you say so ("Corpse: 2 items") with the time left before the loot is gone. Click a label to pick the
+  item up (you walk there), right-click it for the item menu, hover it for the full tooltip. Settings: Loot Filter >
+  Ground Labels.
 - **Rarity Autoloot** (store unlock): pick up gear by rarity even when it isn't on your autoloot list, and leave the
   junk behind.
 - **Autoloot, auto seller, bank and stash** so you spend your time hunting, not walking.

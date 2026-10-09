@@ -336,10 +336,20 @@ ChaosMainWindow
     !text: tr('Close')
     @onClick: modules.game_lootfilter.hide()
 
+  ChaosButton
+    id: groundLabelsButton
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    size: 110 24
+    !text: tr('Ground Labels')
+    !tooltip: tr('Names over the items on the ground, by these rules')
+    @onClick: if modules.game_groundlabels then modules.game_groundlabels.toggleSettings() end
+
   ChaosLabelDim
     id: savedLabel
     anchors.verticalCenter: closeButton.verticalCenter
     anchors.left: parent.left
-    anchors.right: closeButton.left
+    anchors.right: groundLabelsButton.left
     text-align: left
-    !text: tr('Changes are saved on your character at once (Hunt > Loot Filter opens this window).')
+    !text: tr('Changes are saved on your character at once.')

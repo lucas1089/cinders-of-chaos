@@ -252,6 +252,8 @@ local function canLoot(player, corpse)
 	return false
 end
 
+ChaosLootFilter.canLoot = canLoot -- also the ground labels' rule for showing what a corpse holds (groundloot.lua)
+
 local function findCorpse(kill)
 	local tile = Tile(kill.pos)
 	if not tile then
