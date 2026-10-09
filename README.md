@@ -8,6 +8,7 @@ other works: library only, never live.
 
 Restore one library:
 
+    cat donorB/donorB.tar.xz.part* | xz -d | tar -x      # -> donorB/
     cat donorC/donorC.tar.xz.part* | xz -d | tar -x      # -> donorC/
 
 | folder | things | sprites | spr size |
