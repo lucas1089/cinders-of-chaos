@@ -205,6 +205,10 @@ local function applyBonuses(player)
 	if ChaosParagon and ChaosParagon.addBonuses then
 		ChaosParagon.addBonuses(player, bonuses)
 	end
+	-- the held Vocation Trial nodes (trials.lua): not passive points, kept through the tree's resets
+	if ChaosTrials and ChaosTrials.addBonuses then
+		ChaosTrials.addBonuses(player, bonuses)
+	end
 	ChaosPassiveCache[player:getId()] = bonuses
 	for stat, applier in pairs(ChaosPassiveTree.appliers) do
 		applier(player, bonuses[stat] or 0)

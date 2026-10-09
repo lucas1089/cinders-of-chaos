@@ -1992,6 +1992,24 @@ The damage test used `Combat:execute` (the spell path, which runs onTargetCombat
 registered by hand. Not tested in game: a bounty payout and the weekly chest (unit tests of the rolls only), melee hits,
 life leech and attack speed from gems in a fight.
 
+## Vocation Trials (`trials*.lua`, `TRIALS.md`, client `game_passivetree/trials*.lua`)
+
+A layer on the passive tree: per vocation (21: 7 base classes and both ascensions of each, in 7 trial families) a
+solo runtime-built challenge arena (x / y 9000+, 8 / 9 / 10 minutes, 3 / 3 / 2 lives, Normal / Cruel / Merciless at level
+100 / 250 / 400) and 3 pairs of special nodes (126 in all); each cleared tier opens one pair, a character holds one node
+per pair. The full design table (every trial, every pair with its trade-off and numbers) is `server/data/scripts/chaos/TRIALS.md`.
+Entry: the Keeper of Trials NPC (temple) or the Trials button of the Passive Tree window (opcode 65 `extraActions`); the
+run HUD is the rift HUD (opcode 228). A lethal hit costs a life instead of killing (no experience or item loss). First
+clear: bank gold, Chaos and Divine Orbs and the pair; repeat: 1 Trial Token (5 a week) and a small reward. Switching a
+pick or giving a pair up: 1 Trial Token + level x 250 gold, not in combat or during a run. Special nodes use their own
+combat code (`trials_effects.lua`, about 40 keys, damage dealt bounded 0.25-2.5 and taken 0.3-2.0), are separate from the
+passive points, survive every tree reset, and are not in build codes. Ten nodes use spell cost / cooldown keys and need
+engine patch 0008. Crash recovery: a marker storage moves the character out at the next login. Tests:
+`tests/trials_test.lua`, `trials_flow_test.lua`, client `trialsmath_test.lua`; tested in game (one Berserker slice:
+runs, life loss, first clear, choose / refuse / switch, tree reset, crash recovery). Not exercised in game: the seal,
+mark and fire mechanics and the evade / reflect / mana shield nodes. Balance: boss health (`hp` per tier) and the thrall
+hit rate are first guesses.
+
 ## Salvage (`salvage.lua`, `salvage_core.lua`, `salvage_config.lua`, `tools/install_salvage.py`, client `game_crafting`)
 
 Rolled gear you do not want becomes crafting currency instead of NPC gold. A **Salvage** tab on the crafting bench

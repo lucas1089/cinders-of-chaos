@@ -409,6 +409,17 @@ UIWindow
     !tooltip: tr('Export your build as a code, or import a code (preview first)')
     @onClick: modules.game_passivetree.toggleBuildShare()
 
+  TreeButton
+    id: trialsButton
+    anchors.top: applyPoints.top
+    anchors.left: buildShareButton.right
+    margin-left: 5
+    text: Trials
+    width: 110
+    enabled: true
+    !tooltip: tr('Vocation Trials: clear your vocation trial to open pairs of special nodes (choose one of each pair)')
+    @onClick: modules.game_passivetree.toggleTrials()
+
   UIWidget
     id: presets
     anchors.top: presetsButton.bottom

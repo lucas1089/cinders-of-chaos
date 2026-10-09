@@ -113,6 +113,12 @@ Balance is measured on test dummies at levels 300 and 1000, so every class keeps
   less damage from monsters. Every modifier has a cap for your whole equipment. They show with their tier in the item's
   description, in the loot channel and on the Crafting Bench.
 - **About 50 uniques** with fixed, build-defining stats. Some only drop from bosses.
+- **Vocation Trials:** every vocation has a themed trial (talk to the Keeper of Trials in the temple, or press Trials in
+  the Passive Tree window): a solo, timed arena fight with three lives (Normal at level 100, Cruel at 250, Merciless at 400).
+  Each tier you clear opens one pair of special passives, and you hold only one of each pair: Berserker's Bloodlust or
+  Cleaver's Hunger, a Ninja's Twin Fangs or Shadow Flurry, a Mystic's Overchannel or Thrifty Weave... Every choice has a
+  trade-off. Changing your mind costs a Trial Token (earned by repeating a trial) and gold. They don't use passive points
+  and survive tree resets.
 - **Map overlay:** press **Tab** to lay a see-through map over the game view, centred on your character, with icons for your
   party, the temple, depots and NPCs, rift exits and guardians, treasure goblins, world bosses and invasions. Mouse wheel or
   +/- zooms; opacity and the corner-box mode are in Hunt > Map Overlay Settings. Inside a rift the layout fills in as you

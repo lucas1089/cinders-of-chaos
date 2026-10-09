@@ -1352,6 +1352,7 @@ end
 function destroy()
 	serverVocation = nil -- the next character may have another vocation
 	destroyParagon() -- paragon.lua
+	destroyTrials() -- trials.lua
 	cancelBuild()
 	builtFor = nil
 	pendingAlloc = nil
@@ -1417,6 +1418,7 @@ function hide()
 
 	window.presets:hide()
 	closeParagon()
+	closeTrials()
 	window:hide()
 
 	if messageBox then

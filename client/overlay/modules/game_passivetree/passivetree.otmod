@@ -4,6 +4,6 @@ Module
   website: None
   sandboxed: true
   autoload: true
-  scripts: [ passivetree, treedata, paragonmath, paragon, respec, buildshare, bosspoints ]
+  scripts: [ passivetree, treedata, paragonmath, paragon, respec, buildshare, bosspoints, trialsmath, trials ]
   @onLoad: init()
   @onUnload: terminate()

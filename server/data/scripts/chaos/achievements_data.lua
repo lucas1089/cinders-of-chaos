@@ -28,6 +28,7 @@
 --   ambush_kills, party_kills, goblin_kills, goblin_escaped, rat_500, witching_legendary, deaths
 --   wb_kills, wb_top, wb_kaelgor, wb_skaldra, wb_rotmother, wb_nyxareth, wb_vharok      world boss rewards
 --   wb_heal_top, wb_tank_top, wb_role_podium                         world boss roles (worldboss.lua distribute)
+--   trial_tier_<1-3>, trial_runs, trial_nodes, trial_switches         Vocation Trials (trials.lua)
 --   rift_tier, rift_runs, rift_flawless, rift_three, rift_mod_<modifier key>           sealed rifts
 --   omen_kills, omen_<kind>                                                            omen guardians (rift.lua)
 --   bounty_done, bounty_weeks                                        bounty board (retroactive from chaos_bounty)
@@ -81,6 +82,20 @@ return {
 			target = 1000, title = "the Unbroken", reward = {mount = {name = "Doombringer", id = 53}}},
 		{id = "ascended", cat = "combat", name = "Ascended", desc = "Ascend into one of your class's two paths.", points = 10,
 			stat = "ascended"},
+		-- Vocation Trials (trials.lua): trial_tier_<1-3> (a tier cleared), trial_runs (clears), trial_nodes (nodes held now),
+		-- trial_switches (held nodes changed)
+		{id = "trial_normal", cat = "combat", name = "Trial by Fire", desc = "Clear your vocation's trial on Normal.", points = 10,
+			stat = "trial_tier_1"},
+		{id = "trial_cruel", cat = "combat", name = "No Mercy Asked", desc = "Clear your vocation's trial on Cruel.", points = 25,
+			stat = "trial_tier_2"},
+		{id = "trial_merciless", cat = "combat", name = "Merciless", desc = "Clear your vocation's trial on Merciless.", points = 50,
+			stat = "trial_tier_3", title = "the Trialbound"},
+		{id = "trial_nodes_3", cat = "combat", name = "Three Choices", desc = "Hold a special node from every pair of your vocation.",
+			points = 25, stat = "trial_nodes", target = 3},
+		{id = "trial_runs_10", cat = "combat", name = "Pilgrim of Trials", desc = "Clear a trial 10 times.", points = 15,
+			stat = "trial_runs", target = 10},
+		{id = "trial_changed", cat = "combat", name = "Changed Mind", desc = "Change a held trial node for another.", points = 5,
+			stat = "trial_switches"},
 		{id = "paragon_1", cat = "combat", name = "Beyond the Wall", desc = "Earn your first Paragon level.", points = 10,
 			stat = "paragon", target = 1},
 		{id = "paragon_50", cat = "combat", name = "Paragon of Ash", desc = "Reach Paragon level 50.", points = 25, stat = "paragon",
