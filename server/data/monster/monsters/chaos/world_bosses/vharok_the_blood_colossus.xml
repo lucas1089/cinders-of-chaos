@@ -2,7 +2,7 @@
 <!-- World boss (worldboss.lua). Blood colossus: the tankiest, hardest melee, bleeding, drains life and heals. -->
 <monster name="Vharok the Blood Colossus" nameDescription="Vharok the Blood Colossus" race="blood" experience="22000000" speed="260" manacost="0">
 	<health now="24000000" max="24000000" />
-	<look type="591" head="94" body="94" legs="113" feet="94" corpse="6336" />
+	<look type="1537" head="94" body="94" legs="113" feet="94" corpse="6336" />
 	<targetchange interval="6000" chance="10" />
 	<flags>
 		<flag isboss="1" />

@@ -5,7 +5,7 @@
      The class mechanics (stillness, adds, zones, enrage) are scripted. No experience, no loot; never gets a monster tier. -->
 <monster name="Ascension Warden" nameDescription="an ascension warden" race="undead" experience="0" speed="230" manacost="0">
 	<health now="6000" max="6000" />
-	<look type="300" corpse="0" />
+	<look type="1540" corpse="0" />
 	<targetchange interval="4000" chance="0" />
 	<flags>
 		<flag summonable="0" />

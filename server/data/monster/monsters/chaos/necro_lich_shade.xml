@@ -6,7 +6,7 @@
      Pushable, so players can push it out of the way; monsters never enter protection zones (the minions rest there). -->
 <monster name="Lich Shade" nameDescription="a lich shade" race="undead" experience="0" speed="200" manacost="0">
 	<health now="10" max="10" />
-	<look type="48" corpse="5993" />
+	<look type="1545" corpse="5993" />
 	<targetchange interval="4000" chance="0" />
 	<flags>
 		<flag summonable="0" />

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Elite Ice Dragon" nameDescription="a Elite Ice Dragon" race="blood" experience="160000" speed="700" manacost="0" bosses="1">
 	<health now="1000000" max="1000000"/>
-	<look type="1472" head="11" body="11" legs="11" feet="11" corpse="6068"/>
+	<look type="1533" head="11" body="11" legs="11" feet="11" corpse="6068"/>
 	<targetchange interval="4000" chance="10"/>
 	<strategy attack="100" defense="0"/>
 	<flags>

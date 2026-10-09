@@ -6,7 +6,7 @@
      Pushable, so players can push it out of the way; monsters never enter protection zones (the minions rest there). -->
 <monster name="Bone Golem" nameDescription="a bone golem" race="undead" experience="0" speed="190" manacost="0">
 	<health now="10" max="10" />
-	<look type="37" corpse="5963" />
+	<look type="1549" corpse="5963" />
 	<targetchange interval="4000" chance="0" />
 	<flags>
 		<flag summonable="0" />

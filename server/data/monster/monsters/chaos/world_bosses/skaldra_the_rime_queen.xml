@@ -2,7 +2,7 @@
 <!-- World boss (worldboss.lua). Frost wyrm queen: long ice breaths, freezing DoTs, slows. -->
 <monster name="Skaldra the Rime Queen" nameDescription="Skaldra the Rime Queen" race="undead" experience="16000000" speed="280" manacost="0">
 	<health now="16000000" max="16000000" />
-	<look type="1472" head="86" body="9" legs="86" feet="9" corpse="7091" />
+	<look type="1534" head="86" body="9" legs="86" feet="9" corpse="7091" />
 	<targetchange interval="5000" chance="20" />
 	<flags>
 		<flag isboss="1" />

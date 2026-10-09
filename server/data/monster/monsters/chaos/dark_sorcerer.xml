@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Dark Sorcerer" nameDescription="an dark sorcerer" race="blood" experience="165000" evented = "7" speed="550" skulled="1" looting="1" manacost="0">
 	<health now="255000" max="255000"/>
-	<look type="130" head="133" body="133" legs="133" feet="133" addons="3" corpse="6068"/>
+	<look type="1541" head="133" body="133" legs="133" feet="133" addons="3" corpse="6068"/>
 	<level min="1650" max="1800"/>
 	<targetchange interval="3000" chance="50"/>
 	<strategy attack="130" defense="0"/>

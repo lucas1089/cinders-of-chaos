@@ -2,7 +2,7 @@
 <!-- World boss (worldboss.lua). Void caster: keeps distance, death bolts, energy beam, mana drain, curse DoT. Lowest health, highest burst. -->
 <monster name="Nyxareth the Void Archon" nameDescription="Nyxareth the Void Archon" race="undead" experience="16000000" speed="320" manacost="0">
 	<health now="15000000" max="15000000" />
-	<look type="862" head="114" body="91" legs="114" feet="91" addons="0" corpse="2916" />
+	<look type="1538" head="114" body="91" legs="114" feet="91" addons="0" corpse="2916" />
 	<targetchange interval="4000" chance="25" />
 	<flags>
 		<flag isboss="1" />

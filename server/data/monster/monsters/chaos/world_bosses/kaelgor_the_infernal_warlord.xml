@@ -2,7 +2,7 @@
 <!-- World boss (worldboss.lua). Fire and steel melee brute. Numbers: server/README.md "World bosses". -->
 <monster name="Kaelgor the Infernal Warlord" nameDescription="Kaelgor the Infernal Warlord" race="fire" experience="18000000" speed="300" manacost="0">
 	<health now="18000000" max="18000000" />
-	<look type="842" head="94" body="78" legs="94" feet="114" addons="1" corpse="2916" />
+	<look type="1536" head="94" body="78" legs="94" feet="114" addons="1" corpse="2916" />
 	<targetchange interval="5000" chance="15" />
 	<flags>
 		<flag isboss="1" />

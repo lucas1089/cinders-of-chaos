@@ -6,7 +6,7 @@
      Pushable, so players can push it out of the way; monsters never enter protection zones (the minions rest there). -->
 <monster name="Risen Skeleton" nameDescription="a risen skeleton" race="undead" experience="0" speed="200" manacost="0">
 	<health now="10" max="10" />
-	<look type="33" corpse="5972" />
+	<look type="1542" corpse="5972" />
 	<targetchange interval="4000" chance="0" />
 	<flags>
 		<flag summonable="0" />
