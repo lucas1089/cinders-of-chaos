@@ -96,5 +96,78 @@ eq(g.cx, 250 + 4 * 98 + 49, 'player centre x')
 eq(g.cy, -30 + 3 * 98 + 49, 'player centre y')
 eq(M.viewGeometry({ x = 0, y = 0, width = 100, height = 100 }, function() return nil end, { x = 1, y = 1 }), nil, 'no map')
 
+-- pan, zoom toward the cursor
+local function near(a, b, what)
+  if math.abs(a - b) > 1e-9 then print('FAIL ' .. what .. ': ' .. tostring(a) .. ' ~= ' .. tostring(b)); fails = fails + 1 end
+end
+eq(M.pixelsPerTile(3), 8, 'pixels per tile')
+eq(M.isPanned(0, 0), false, 'centred is not panned')
+eq(M.isPanned(0, 0.01), false, 'tiny pan is not panned')
+eq(M.isPanned(2, 0), true, 'panned')
+local px, py = M.clampPan(9999, -9999)
+eq(px, M.PAN_LIMIT, 'pan clamped x'); eq(py, -M.PAN_LIMIT, 'pan clamped y')
+px, py = M.clampPan('x', nil)
+eq(px, 0, 'junk pan x'); eq(py, 0, 'junk pan y')
+-- dragging right by 40 px at 4 px/tile moves the view 10 tiles left (the map follows the mouse)
+px, py = M.dragPan(0, 0, 40, -20, 2)
+near(px, -10, 'drag x'); near(py, 5, 'drag y')
+px, py = M.dragPan(3, 3, 0, 0, 2)
+near(px, 3, 'drag zero keeps pan')
+px, py = M.dragPan(0, 0, 100000, 0, 0)
+eq(px, -M.PAN_LIMIT, 'drag clamped')
+px, py = M.keyPan(0, 0, 1, 0, 2, 48)
+near(px, 12, 'key pan right 48px at x4'); near(py, 0, 'key pan y')
+px, py = M.keyPan(0, 0, 0, -1, 4, 8)
+near(py, -1, 'key pan at least one tile')
+-- zoom toward the cursor keeps the point under it: world = pan + offset / ppt
+local ox, oy = 100, -60
+local ax, ay = 3.5, -2
+local bx, by = M.zoomToward(ax, ay, 2, 4, ox, oy)
+near(ax + ox / 4, bx + ox / 16, 'zoom keeps the point under the cursor x')
+near(ay + oy / 4, by + oy / 16, 'zoom keeps the point under the cursor y')
+bx, by = M.zoomToward(0, 0, 2, 2, ox, oy)
+near(bx, 0, 'same zoom is a no-op x'); near(by, 0, 'same zoom is a no-op y')
+bx, by = M.zoomToward(0, 0, 2, 1, 0, 0)
+near(bx, 0, 'cursor on the anchor: no pan')
+bx, by = M.zoomToward(500, 0, 4, 0, -1000, 0)
+eq(bx, M.PAN_LIMIT, 'zoom result clamped')
+-- zoom in then out at the same cursor returns to the start
+bx, by = M.zoomToward(ax, ay, 2, 4, ox, oy)
+bx, by = M.zoomToward(bx, by, 4, 2, ox, oy)
+near(bx, ax, 'zoom round trip x'); near(by, ay, 'zoom round trip y')
+-- whole-tile camera + sub-tile rest
+local cx, cy, rx, ry = M.splitPan(2.25, -3.5, 3)
+eq(cx, 2, 'camera x'); eq(cy, -3, 'camera y (half rounds up)')
+eq(rx, -2, 'rest x px'); eq(ry, 4, 'rest y px')
+cx, cy, rx, ry = M.splitPan(0, 0, 4)
+eq(cx, 0, 'unpanned camera'); eq(rx, 0, 'unpanned rest x'); eq(ry, 0, 'unpanned rest y')
+-- marker of the character when it is outside the view
+eq(M.edgeMarker(50, 50, 200, 100), nil, 'inside')
+local ex, ey, ea = M.edgeMarker(-80, 50, 200, 100)
+eq(ex, 14, 'edge x'); eq(ey, 50, 'edge y'); eq(ea, '<', 'arrow left')
+ex, ey, ea = M.edgeMarker(300, 400, 200, 100)
+eq(ex, 186, 'edge x clamped'); eq(ey, 86, 'edge y clamped'); eq(ea, 'v', 'arrow down')
+ex, ey, ea = M.edgeMarker(100, -500, 200, 100)
+eq(ea, '^', 'arrow up')
+eq(select(3, M.edgeMarker(900, 40, 200, 100)), '>', 'arrow right')
+-- free area of the view
+local fa = M.freeArea({ x = 0, y = -88, width = 1280, height = 888 }, { width = 1280, height = 800 },
+  { top = 40, right = 177, bottom = 205 })
+eq(fa.x, 0, 'free x'); eq(fa.y, 40, 'free y'); eq(fa.width, 1103, 'free width'); eq(fa.height, 555, 'free height')
+fa = M.freeArea({ x = 300, y = 10, width = 400, height = 300 }, { width = 1280, height = 800 })
+eq(fa.x, 300, 'inner view x'); eq(fa.width, 400, 'inner view width')
+fa = M.freeArea({ x = 0, y = 0, width = 100, height = 100 }, { width = 50, height = 50 }, { left = 80 })
+eq(fa.width, 0, 'empty free area')
+-- default centre key
+list = {}
+eq(M.assignKey(list, M.CENTRE_ACTION, M.CENTRE_KEY), true, 'centre key added')
+eq(M.assignKey(list, M.CENTRE_ACTION, M.CENTRE_KEY), false, 'centre key only once')
+list = { entry('Other', 'Home') }
+eq(M.assignKey(list, M.CENTRE_ACTION, M.CENTRE_KEY), false, 'Home taken: stays unbound')
+eq(#list, 1, 'list kept')
+eq(M.assignKey(nil, M.CENTRE_ACTION, M.CENTRE_KEY), false, 'no list for the centre key')
+eq(M.sanitize({}).strip, true, 'strip on by default')
+eq(M.sanitize({ strip = false }).strip, false, 'strip off')
+
 if fails > 0 then error(fails .. ' failure(s)') end
 print('mapmath_test: ok')

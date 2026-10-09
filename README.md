@@ -120,9 +120,14 @@ Balance is measured on test dummies at levels 300 and 1000, so every class keeps
   trade-off. Changing your mind costs a Trial Token (earned by repeating a trial) and gold. They don't use passive points
   and survive tree resets.
 - **Map overlay:** press **Tab** to lay a see-through map over the game view, centred on your character, with icons for your
-  party, the temple, depots and NPCs, rift exits and guardians, treasure goblins, world bosses and invasions. Mouse wheel or
-  +/- zooms; opacity and the corner-box mode are in Hunt > Map Overlay Settings. Inside a rift the layout fills in as you
-  explore it.
+  party, the temple, depots and NPCs, rift exits and guardians, treasure goblins, world bosses and invasions. While it is
+  open: mouse wheel (or +/-) zooms, **Ctrl + wheel** changes the opacity, and holding the **middle mouse button** while
+  dragging pans the map (Shift + arrow keys work too, Ctrl + Shift + arrows while the chat is on). **Home** (Ctrl + Home with
+  chat on) or the **Centre** button of the small control strip in the bottom right returns to your character; the strip also
+  has opacity and zoom buttons and a Close button, and everything else stays click-through so you keep playing. While you are
+  panned the strip says so and your character keeps a marker. The pan resets when the overlay closes or a rift run starts.
+  Opacity, the strip and the corner-box mode are in Hunt > Map Overlay Settings; the Centre key is in Options > Hotkeys.
+  Inside a rift the layout fills in as you explore it.
 - **Rich item tooltips:** hover an item to see its rarity, item level, its prefixes and suffixes, every modifier with
   its tier ("T5") and the value range of that tier,
   sockets and gems, unique set and requirements. Hold **Ctrl** to compare it with what you are wearing, stat by stat in

@@ -17,7 +17,12 @@ M.CATEGORY = {
   worldboss = 'events', invasion = 'events', boss = 'events',
 }
 
-M.DEFAULTS = { opacity = 0.6, zoom = 2, mode = 'center', party = true, town = true, events = true }
+M.CENTRE_ACTION = 'ChaosMapOverlayCentre'   -- hotkey set action name of "snap back to the character"
+M.CENTRE_KEY = 'Home'
+M.CENTRE_KEY_CHAT = 'Ctrl+Home'          -- with chat on the chat input takes a plain Home
+M.PAN_LIMIT = 512                      -- furthest the view can be panned from the character, in tiles
+
+M.DEFAULTS = { opacity = 0.6, zoom = 2, mode = 'center', party = true, town = true, events = true, strip = true }
 
 local function clamp(v, lo, hi)
   if v < lo then return lo end
@@ -53,10 +58,79 @@ function M.sanitize(t)
   s.opacity = M.stepOpacity(t.opacity, 0)
   s.zoom = M.clampZoom(t.zoom)
   s.mode = (t.mode == 'corner') and 'corner' or 'center'
-  for _, k in ipairs({ 'party', 'town', 'events' }) do
+  for _, k in ipairs({ 'party', 'town', 'events', 'strip' }) do
     if t[k] == nil then s[k] = M.DEFAULTS[k] else s[k] = (t[k] == true or t[k] == 'true') end
   end
   return s
+end
+
+-- ---------------------------------------------------------------- pan and zoom
+-- The pan is the offset of the map point shown at the anchor (the character's screen point) from the character,
+-- in tiles (x, y). (0, 0) = centred on the character. Screen offsets are in pixels; one tile = 2^zoom pixels.
+function M.pixelsPerTile(zoom)
+  return 2 ^ M.clampZoom(zoom)
+end
+
+function M.clampPan(x, y, limit)
+  limit = tonumber(limit) or M.PAN_LIMIT
+  return clamp(tonumber(x) or 0, -limit, limit), clamp(tonumber(y) or 0, -limit, limit)
+end
+
+function M.isPanned(x, y)
+  return math.abs(tonumber(x) or 0) >= 0.05 or math.abs(tonumber(y) or 0) >= 0.05
+end
+
+-- dragging the map by (dx, dy) pixels from a pan (startX, startY): the map follows the mouse
+function M.dragPan(startX, startY, dx, dy, zoom)
+  local ppt = M.pixelsPerTile(zoom)
+  return M.clampPan((tonumber(startX) or 0) - (tonumber(dx) or 0) / ppt, (tonumber(startY) or 0) - (tonumber(dy) or 0) / ppt)
+end
+
+-- a keyboard step: dirX / dirY in -1..1, about `pixels` screen pixels (at least one tile)
+function M.keyPan(x, y, dirX, dirY, zoom, pixels)
+  local step = math.max(1, (tonumber(pixels) or 48) / M.pixelsPerTile(zoom))
+  return M.clampPan((tonumber(x) or 0) + (tonumber(dirX) or 0) * step, (tonumber(y) or 0) + (tonumber(dirY) or 0) * step)
+end
+
+-- zooming from oldZoom to newZoom keeping the map point under the cursor (ox, oy = cursor offset in pixels from the
+-- anchor) where it is
+function M.zoomToward(x, y, oldZoom, newZoom, ox, oy)
+  local a, b = M.pixelsPerTile(oldZoom), M.pixelsPerTile(newZoom)
+  return M.clampPan((tonumber(x) or 0) + (tonumber(ox) or 0) / a - (tonumber(ox) or 0) / b,
+    (tonumber(y) or 0) + (tonumber(oy) or 0) / a - (tonumber(oy) or 0) / b)
+end
+
+-- the pan as a whole-tile camera offset plus the sub-tile rest in pixels (the minimap only moves in whole tiles)
+function M.splitPan(x, y, zoom)
+  local ppt = M.pixelsPerTile(zoom)
+  local cx, cy = math.floor(x + 0.5), math.floor(y + 0.5)
+  return cx, cy, math.floor((cx - x) * ppt + 0.5), math.floor((cy - y) * ppt + 0.5)
+end
+
+-- where an off-view point (px, py: pixels from the view's top left) is shown on the view's edge:
+-- returns nil when inside, else x, y (clamped to the edge with a margin) and a direction arrow "<" ">" "^" "v"
+function M.edgeMarker(px, py, w, h, margin)
+  margin = margin or 14
+  if px >= 0 and py >= 0 and px <= w and py <= h then return nil end
+  local x, y = clamp(px, margin, w - margin), clamp(py, margin, h - margin)
+  local dx, dy = px - w / 2, py - h / 2
+  local arrow
+  if math.abs(dx) * h >= math.abs(dy) * w then arrow = dx < 0 and '<' or '>' else arrow = dy < 0 and '^' or 'v' end
+  return x, y, arrow
+end
+
+-- adds one action with its default key to a hotkey list when the list has no entry for it and the key is free
+-- (no steal). Returns true when the list changed.
+function M.assignKey(list, action, key)
+  if type(list) ~= 'table' then return false end
+  for _, e in ipairs(list) do
+    if type(e) == 'table' then
+      if type(e.actionsetting) == 'table' and e.actionsetting.action == action then return false end
+      if e.keysequence == key then return false end
+    end
+  end
+  list[#list + 1] = { actionsetting = { action = action }, keysequence = key }
+  return true
 end
 
 -- the marks to draw: known kind, the shown floor, category switched on
@@ -149,6 +223,18 @@ function M.viewGeometry(rect, probe, player)
     cx = math.floor(bx1 + (player.x - c.x - 1) * tsx + tsx / 2),
     cy = math.floor(by1 + (player.y - c.y - 1) * tsy + tsy / 2),
   }
+end
+
+-- The part of the game view the player really sees: the view rect cut to the window and by the panels drawn over it
+-- (insets = pixels taken from each side of the window area: left, top, right, bottom; nil = none).
+-- Returns {x, y, width, height}.
+function M.freeArea(view, win, insets)
+  insets = insets or {}
+  local x1, y1 = math.max(view.x, 0), math.max(view.y, 0)
+  local x2, y2 = math.min(view.x + view.width, win.width), math.min(view.y + view.height, win.height)
+  x1, y1 = math.max(x1, insets.left or 0), math.max(y1, insets.top or 0)
+  x2, y2 = math.min(x2, win.width - (insets.right or 0)), math.min(y2, win.height - (insets.bottom or 0))
+  return { x = x1, y = y1, width = math.max(0, x2 - x1), height = math.max(0, y2 - y1) }
 end
 
 -- the corner box (position mode "corner"): top right of the game view, a third of its width

@@ -8,6 +8,13 @@ MapOverlayMark < UIWidget
   focusable: false
   image-smooth: true
 
+MapOverlayYou < ChaosLabel
+  phantom: true
+  focusable: false
+  text-auto-resize: true
+  color: #f6cf72
+  background-color: #0d0b0ecc
+
 MapOverlayRow < UIWidget
   height: 22
   margin-top: 6
@@ -56,10 +63,87 @@ MapOverlay < UIWidget
     phantom: true
     focusable: false
 
+// the compact control strip in a corner of the game view: the only clickable part of the overlay
+MapOverlayStripButton < ChaosButton
+  size: 22 20
+  padding: 0
+  anchors.top: parent.top
+  margin-top: 4
+  margin-left: 2
+
+MapOverlayStripValue < ChaosLabel
+  size: 36 20
+  text-align: center
+  anchors.top: parent.top
+  margin-top: 4
+
+MapOverlayStrip < UIWidget
+  id: mapOverlayStrip
+  size: 336 44
+  background-color: #0d0b0ee6
+  border-width: 1
+  border-color: #7d7176
+  focusable: false
+
+  MapOverlayStripButton
+    id: opMinus
+    text: -
+    anchors.left: parent.left
+    margin-left: 4
+    @onClick: modules.game_mapoverlay.stepOpacity(-0.1)
+  MapOverlayStripValue
+    id: opValue
+    anchors.left: prev.right
+    margin-left: 0
+  MapOverlayStripButton
+    id: opPlus
+    text: +
+    anchors.left: prev.right
+    margin-left: 0
+    @onClick: modules.game_mapoverlay.stepOpacity(0.1)
+  MapOverlayStripButton
+    id: zMinus
+    text: -
+    anchors.left: prev.right
+    margin-left: 10
+    @onClick: modules.game_mapoverlay.zoom(-1)
+  MapOverlayStripValue
+    id: zValue
+    anchors.left: prev.right
+    margin-left: 0
+  MapOverlayStripButton
+    id: zPlus
+    text: +
+    anchors.left: prev.right
+    margin-left: 0
+    @onClick: modules.game_mapoverlay.zoom(1)
+  MapOverlayStripButton
+    id: centre
+    !text: tr('Centre')
+    width: 54
+    anchors.left: prev.right
+    margin-left: 10
+    @onClick: modules.game_mapoverlay.centre()
+  MapOverlayStripButton
+    id: close
+    text: x
+    anchors.left: prev.right
+    margin-left: 4
+    @onClick: modules.game_mapoverlay.setShown(false)
+  ChaosLabelDim
+    id: status
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-left: 6
+    margin-right: 4
+    margin-bottom: 3
+    text-align: left
+
 MapOverlaySettings < ChaosMainWindow
   id: mapOverlaySettings
   !text: tr('Map Overlay')
-  size: 286 334
+  size: 330 396
 
   ChaosCheckBox
     id: showBox
@@ -120,9 +204,16 @@ MapOverlaySettings < ChaosMainWindow
       anchors.right: parent.right
       anchors.verticalCenter: parent.verticalCenter
 
+  MapOverlayCheck
+    id: stripBox
+    anchors.top: modeRow.bottom
+    margin-top: 10
+    !text: tr('Show the control strip')
+    @onCheckChange: modules.game_mapoverlay.setStrip(self:isChecked())
+
   ChaosSeparator
     id: sep1
-    anchors.top: modeRow.bottom
+    anchors.top: stripBox.bottom
     anchors.left: parent.left
     anchors.right: parent.right
     margin-top: 8
