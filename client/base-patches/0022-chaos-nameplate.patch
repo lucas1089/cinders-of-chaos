@@ -43,7 +43,7 @@ diff -ru a/src/client/creature.cpp b/src/client/creature.cpp
 +        // Chaos name plate: the frame behind the name, then the guild line and the title stacked above it
 +        Point lineAnchor = textRect.topCenter();
 +        if (m_plateFrame) {
-+            Rect plate(textRect.left() - 7, textRect.top() - 5, nameSize.width() + 14, 15);
++            Rect plate(textRect.left() - 7, textRect.top() - 3, nameSize.width() + 14, nameSize.height() + 5); // whole name inside
 +            if (!useGray)
 +                addNineSlice(plate, m_plateFrame, m_plateBorder);
 +            lineAnchor = Point(plate.horizontalCenter(), plate.top() + 2);
