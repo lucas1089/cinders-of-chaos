@@ -20,9 +20,13 @@
 -- Real: queueing, group formation, teleport in, time limit, monster-count progress, boss kill,
 -- completion, per-dungeon unlocked difficulty, challenges (speed / flawless), personal and group
 -- ranking in the DB, teleport out.
--- NOT real (see README): difficulty does not change monster stats, the loot panel is display
--- only (real loot is whatever the boss monster XML drops), bosses are assumed to exist in the
--- map (spawned by the map/spawn system or by SpawnMonsters), dungeons are one-run-at-a-time.
+-- Difficulty (dungeons_difficulty.lua, the numbers of the client's difficulty panel): every monster in the
+-- dungeon box during a run (seen at the start and by every queue tick, so respawns too) gets x health; its
+-- damage to the run's players x damage (health and mana events registered on the members); its kills give
+-- + experience, its corpse + gold coins and one more roll of every loot entry at + loot percent of its chance.
+-- NOT real (see README): the loot panel is display only (real loot is whatever the boss monster XML drops),
+-- bosses are assumed to exist in the map (spawned by the map/spawn system or by SpawnMonsters), dungeons are
+-- one-run-at-a-time.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -33,6 +37,10 @@ local cfg = Chaos.dungeons
 local TP = Chaos.tables.dungeonProgress
 local TR = Chaos.tables.dungeonRuns
 local TRP = Chaos.tables.dungeonRunPlayers
+
+ChaosDungeonDifficulty = dofile("data/scripts/chaos/dungeons_difficulty.lua")
+local DIFF = ChaosDungeonDifficulty
+local scaledBy = {} -- [monster id] = run (the monster got the run's difficulty)
 
 local queues = {} -- [dungeonId] = array of {guid=, difficulty=, joined=}
 local queuedIn = {} -- [guid] = dungeonId
@@ -93,8 +101,17 @@ local function levelOf(dg)
 	return 1
 end
 
+-- the engine has no Game.getPlayerByGUID (that call made every queue tick fail): a scan of the online players
 local function online(guid)
-	return Game.getPlayerByGUID(guid)
+	if Game.getPlayerByGUID then
+		return Game.getPlayerByGUID(guid)
+	end
+	for _, p in ipairs(Game.getPlayers()) do
+		if p:getGuid() == guid then
+			return p
+		end
+	end
+	return nil
 end
 
 local function send(player, action, data)
@@ -451,6 +468,37 @@ local function releasePlayer(run, guid)
 	if p then
 		p:unregisterEvent("ChaosDungeonKill")
 		p:unregisterEvent("ChaosDungeonDeath")
+		p:unregisterEvent("ChaosDungeonHit")
+		p:unregisterEvent("ChaosDungeonMana")
+	end
+end
+
+-- the run's difficulty on a monster (once per monster)
+local function scaleMonster(run, monster)
+	local mid = monster:getId()
+	if scaledBy[mid] then
+		return
+	end
+	scaledBy[mid] = run
+	local hp = DIFF.health(monster:getMaxHealth(), run.difficulty)
+	if hp ~= monster:getMaxHealth() then
+		local share = monster:getHealth() / math.max(1, monster:getMaxHealth())
+		monster:setMaxHealth(hp)
+		monster:setHealth(math.max(1, math.floor(hp * share + 0.5)))
+	end
+end
+
+local function scaleList(run, monsterList)
+	for _, m in ipairs(monsterList or {}) do
+		scaleMonster(run, m)
+	end
+end
+
+local function forgetRun(run)
+	for mid, r in pairs(scaledBy) do
+		if r == run then
+			scaledBy[mid] = nil
+		end
 	end
 end
 
@@ -500,6 +548,7 @@ local function endRun(run, success, reason)
 		if dg then
 			cleanArea(dg, extra.bossName and extra.bossName:lower() or nil)
 		end
+		forgetRun(run)
 		runOfDungeon[run.dungeonId] = nil
 	end
 
@@ -588,14 +637,17 @@ local function startRun(dungeonId, difficulty, players)
 		runOfPlayer[guid] = run
 		p:registerEvent("ChaosDungeonKill")
 		p:registerEvent("ChaosDungeonDeath")
+		p:registerEvent("ChaosDungeonHit")
+		p:registerEvent("ChaosDungeonMana")
 		p:teleportTo(dg.DungeonPos)
 		p:getPosition():sendMagicEffect(40)
 		p:say(baseMessage("ToEntry", "Welcome to Dungeon"), TALKTYPE_MONSTER_SAY)
 	end
 
-	local monsters, bosses = scanArea(dg, bossName)
+	local monsters, bosses, _, monsterList = scanArea(dg, bossName)
 	run.total = monsters
 	run.bossSeen = bosses > 0
+	scaleList(run, monsterList)
 
 	local durationMs = (dg.DungeonTime or 3600) * 1000
 	local objectives = {}
@@ -707,7 +759,8 @@ tick = function()
 			local dg = baseDungeons()[run.dungeonId]
 			local extra = extraOf(run.dungeonId)
 			local bossName = extra.bossName and extra.bossName:lower() or nil
-			local monsters, bosses, playersInside = scanArea(dg, bossName)
+			local monsters, bosses, playersInside, monsterList = scanArea(dg, bossName)
+			scaleList(run, monsterList) -- respawns inside the box get the difficulty too
 
 			if bosses > 0 then
 				run.bossSeen = true
@@ -729,6 +782,7 @@ tick = function()
 				runs[runId] = nil
 				runOfDungeon[run.dungeonId] = nil
 				cleanArea(dg, bossName)
+				forgetRun(run)
 			else
 				local percent = 100
 				if run.total > 0 then
@@ -789,6 +843,83 @@ end
 
 DeathEvent:type("death")
 DeathEvent:register()
+
+-- difficulty: damage of the run's monsters to its players
+local function scaleHit(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType)
+	local run = attacker and attacker:isMonster() and scaledBy[attacker:getId()]
+	if run and not run.ended and primaryType ~= COMBAT_HEALING then
+		primaryDamage = DIFF.damage(primaryDamage, run.difficulty)
+		secondaryDamage = DIFF.damage(secondaryDamage, run.difficulty)
+	end
+	return primaryDamage, primaryType, secondaryDamage, secondaryType
+end
+
+local HitEvent = CreatureEvent("ChaosDungeonHit")
+function HitEvent.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+	return scaleHit(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType)
+end
+HitEvent:register()
+
+local ManaEvent = CreatureEvent("ChaosDungeonMana")
+function ManaEvent.onManaChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+	return scaleHit(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType)
+end
+ManaEvent:register()
+
+-- difficulty: experience of the run's kills (for the run's players)
+local xpCallback = EventCallback
+xpCallback.onGainExperience = function(player, source, exp, rawExp)
+	local run = source and source:isMonster() and scaledBy[source:getId()]
+	if run and exp > 0 and run.members[player:getGuid()] then
+		return DIFF.experience(exp, run.difficulty)
+	end
+	return exp
+end
+xpCallback:register(90) -- after the stages and Chaos bonuses, before the rift cap (100, not inside a dungeon)
+
+-- difficulty: gold coins and extra loot rolls in the corpse (after the Chaos loot layer at 1 and the rift's Echoing
+-- Spoils at 1.5, before the rift key drop at 2 and the loot snapshot at 2.5, so loot rays and autoloot see them)
+local lootCallback = EventCallback
+lootCallback.onDropLoot = function(monster, corpse)
+	local run = scaledBy[monster:getId()]
+	if not run or run.difficulty <= 1 then
+		return
+	end
+	local ok, err = pcall(function()
+		if not corpse or not corpse:isContainer() then
+			return
+		end
+		local add = {}
+		for _, item in ipairs(corpse:getItems(false) or {}) do
+			if DIFF.coins[item:getId()] then
+				local n = DIFF.extraGold(item:getCount(), run.difficulty, math.random)
+				if n > 0 then
+					add[#add + 1] = {item:getId(), n}
+				end
+			end
+		end
+		for _, e in ipairs(monster:getType():getLoot() or {}) do
+			local chance = DIFF.extraLootChance(e.chance or 0, run.difficulty)
+			if e.itemId and chance > 0 and math.random(1, 100000) <= chance then
+				local maxC = math.max(e.maxCount or 1, 1)
+				add[#add + 1] = {e.itemId, math.random(1, maxC)}
+			end
+		end
+		for _, a in ipairs(add) do
+			local id, n = a[1], a[2]
+			local stackable = ItemType(id):isStackable()
+			while n > 0 do
+				local k = stackable and math.min(n, 100) or 1
+				corpse:addItem(id, k, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
+				n = n - k
+			end
+		end
+	end)
+	if not ok then
+		print("[ChaosDungeons] difficulty loot failed: " .. tostring(err))
+	end
+end
+lootCallback:register(1.7)
 
 local LogoutEvent = CreatureEvent("ChaosDungeonsLogout")
 

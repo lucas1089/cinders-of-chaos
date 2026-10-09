@@ -17,6 +17,7 @@ function Chaos.send(player, opcode, action, data) sent[#sent + 1] = {opcode = op
 
 local events, talks = {}, {}
 function CreatureEvent(name) local o = {}; function o:type() end; function o:register() events[name] = o end; return o end
+EventCallback = {register = function() end} -- dungeons.lua (difficulty) hooks onGainExperience / onDropLoot callbacks
 function TalkAction(words) local o = {}; function o:separator() end; function o:register() talks[words] = o end; return o end
 function GlobalEvent(name) local o = {}; function o:interval() end; function o:register() end; return o end
 function addEvent() return 1 end
