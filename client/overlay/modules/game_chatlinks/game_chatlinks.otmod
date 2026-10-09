@@ -1,0 +1,14 @@
+Module
+  name: game_chatlinks
+  description: Item links in chat (extended opcode 249): Shift+click an item to put it in the message, hover a link to see its tooltip
+  author: project-chaos
+  sandboxed: true
+  scripts: [ chatlinks_logic, chatlinks ]
+  dependencies:
+    - game_interface
+    - game_console
+    - game_itemtooltip
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

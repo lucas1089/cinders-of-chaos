@@ -247,6 +247,7 @@ local CATEGORIES = {
     entry('Leaderboards',    'ranking',     { modules = { 'game_leaderboard' }, fns = { 'toggle' } }),
     entry('Quest Log',       'quests',      { custom = openQuestLog, available = has('game_questlog') }),
     entry('Quest Tracker',   'quests',      { modules = { 'game_questlog' },  fns = { 'toggleTracker' } }),
+    entry('Inspect Player',  'skills',      { modules = { 'game_playerinspect' },   fns = { 'toggle' } }),
     entry('Notifications',   'notifications', { modules = { 'game_chaosnotify' }, fns = { 'toggle', 'showAll' } }),
     entry('Patch Notes',     'events',      { modules = { 'game_patchnotes' }, fns = { 'toggle' } }),
   } },

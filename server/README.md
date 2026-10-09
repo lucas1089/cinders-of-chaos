@@ -123,6 +123,8 @@ server/
    rolled once").
 4b. Stock promotion off, the ascension quest's base parts: `python3 -I server/tools/install_class_ascension.py <server>/data
    [--dry-run]` (idempotent; `install_all.py` runs it as a class hook). It copies the Ascendant Oracle
+4a. Item links: `python3 -I server/tools/patch_help_itemlinks.py <server>/data` (once; idempotent; `install_all.py` runs it with
+   the events step) keeps item links out of the Help channel (see "Item links in chat").
    (`server/data/npc/Ascendant Oracle.xml`, `npc/scripts/ascendant_oracle.lua`) into `<server>/data/npc/` and runs
    `server/tools/patch_promotion.py <server>/data`, which makes every stock promotion path refuse: `StdModule.promotePlayer`
    in `npc/lib/npcsystem/modules.lua` (King Tibianus, Queen Eloise, the emperors, Ishebad, The Forgotten King, ...) says a
@@ -219,6 +221,8 @@ working directory, as with the rest of the base server libs).
 
 Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 228, 229, 232, 233, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
+| game_chatlinks | `itemlink.lua`, `itemlink_core.lua` (client also `game_itemtooltip`) | 249, Shift+click an item | Item links in chat: the server checks the player carries the item and keeps a snapshot of its tooltip for 10 minutes under a random id; the link travels as ordinary speech `[Item Name]{<r><id>}` in every channel; receivers ask for the snapshot on hover. Limits, Help channel rule (`tools/patch_help_itemlinks.py`); tested in game with two clients (see "Item links in chat"). |
+| game_playerinspect | `inspect.lua`, `inspect_core.lua` | 240, Social > Inspect Player, right-click a player | Inspect Player: outfit, level, class, guild, achievement points, rift and trial records and the equipment with full tooltips; right-click within 10 tiles or any online player by name; privacy setting per character (storage `Chaos.storage.inspectOff`); tested in game with two clients (see "Inspect Player"). |
 
 ### Opcode collision check
 Searched the reference server for every `onExtendedOpcode`, `sendExtendedOpcode(` and opcode
@@ -2213,6 +2217,111 @@ Screenshots: scratchpad `tooltips/`. Not tested: two players watching the same c
 
 Roadmap item 12, phase 1: fresh-start season characters with their own ladder, season-only uniques and an account-wide
 cosmetic reward track that is kept after the season. Client `game_season` (Adventure > Season in the top menu),
+## Item links in chat (`itemlink.lua`, `itemlink_core.lua`, `tools/patch_help_itemlinks.py`, client `game_chatlinks`)
+
+Players link items they carry into chat. Extended opcode `ChaosOpcodes.itemLink` = **249**. The server has no hook on every
+chat path (local say, party and guild channels and private messages have no Lua callback), so the link is a capability
+carried by the stock chat instead of a server-side broadcast: the client first registers the items, then sends the message
+as ordinary speech with the link text in it.
+
+**Wire format.** One link in a message is `[Item Name]{<r><id>}`: `r` is the rarity as one hex digit (`0` normal .. `f` = 15)
+or `u` for a unique, `id` is 9 characters `a-z0-9`. ASCII only (the Tibia chat is Latin-1), so other clients just show
+`[Magic sword]{4k7f2m9qax}`; Chaos clients draw `[Magic sword]` in the rarity colour and keep the rest hidden. The
+text of a link is made by the server (`ChaosItemLink.token`): the name has no brackets or braces, a capital first letter and
+at most 40 characters. At most 3 links in a message (the client counts chips, the format allows more but the client draws
+only 3); a message with its links written out must fit in 250 characters.
+
+**Protocol (JSON `{action, data}`).**
+
+| direction | action | data |
+|---|---|---|
+| client -> server | `register` | `{n, items = [{pos = {x, y, z}, iid}], ctx = {kind, id}}` up to 3 items; `pos` is the client position of the item (inventory `{0xFFFF, slot, 0}`, open container `{0xFFFF, 0x40 + container id, slot}`), `iid` its per-item id as a decimal string, `ctx` the chat tab (`say`, `party`, `guild`, `private`, `channel` with the channel id, `npc`, `loot`, `log`) |
+| server -> client | `registered` | `{n, links = [{token, name, rarity, unique}]}` |
+| server -> client | `refused` | `{n, reason}` |
+| client -> server | `get` | `{id}` the 9 characters of a link id |
+| server -> client | `link` | `{id, tip, owner, left}` or `{id, gone = true}`; `tip` is the tooltip of `item_tooltip_core.lua`, `left` the seconds the link lives |
+| server -> client | `caps` | `{help}` sent 2 s after login: the player may link in the Help channel (tutor or above) |
+
+**Rules.**
+- The item must be carried: the item's top parent is the player (inventory and containers inside it). Ground, corpses,
+  depot and trade windows are refused (`itemAt`); the position is decoded by `ChaosItemTooltip.decodePos` and a wrong `iid` (the
+  item moved since the client looked) refuses. A locked item (salvage lock) is linked like any other; the tooltip says "Locked".
+- The snapshot (`ChaosItemTooltip.build`: rarity, item level, tiers, modifiers, sockets, requirements, set info of the
+  owner's equipment, no viewer-specific "Your Attack Interval") is stored in a cache under a random id from `/dev/urandom`
+  (`math.random` if it cannot be read): 36^9 values. It lives 10 minutes (`ttl`), at most 2000 snapshots are kept (least
+  recently used go first) and 40 per player (oldest first). Registering the same item in the same state again gives the same
+  link and renews it. The snapshot is what the item was when linked: a changed or sold item does not change old links.
+- "Only links that appeared in messages the player received": the id is the secret. A player who has not seen the message
+  does not know the id; guessing is counted: 8 unknown or expired ids in 60 s block that player's lookups for 60 s. The client
+  asks only for ids it has drawn in its console. This is a capability check, not a record of who received what: anybody who
+  was handed the id (a pasted message) can read the snapshot until it expires.
+- Budgets (token bucket per player): `register` 6 items at once then one per 4 s (every requested item costs one, found or
+  not); `get` 20 at once then 10 per second.
+- Contexts: no links in the Help channel for players below tutor, none in NPC conversations, the loot channel or the spell
+  channel. The client enforces all of it when writing and again when sending (a chip in a Help message goes out as plain
+  `[Name]`); for modified clients the Help channel script is patched: `python3 -I tools/patch_help_itemlinks.py <server>/data`
+  (run by `install_all.py` with the events step, idempotent) makes `data/chatchannels/scripts/help.lua` call
+  `ChaosItemLink.helpBlocks(player, message)` and refuse the message ("Item links are not allowed in the Help channel."). Other
+  channel scripts are not patched: a modified client can still paste a link into World Chat, which only shows a name and a
+  snapshot the pasting player has to own the id of.
+- Spam: the usual chat limits apply to the message itself; the link adds the budgets above.
+
+Tests: `tests/itemlink_test.lua` (ids, the format and its parser, names, cache limits, budgets, strikes, contexts, the handlers
+against a mocked engine) and the client's `chatlinks_logic_test.lua`.
+
+**Tested in game** (srv34: the base source with patches 0001-0011, the client with the overlay; two characters on two
+accounts): Shift+click on an equipped unique and on backpack items put `[Name]` chips in the input, the fourth chip was
+refused with "You can link up to 3 items in one message."; the message arrived in the other client in the rarity colours
+(blue, purple, unique orange); hovering showed the rich tooltip with "Linked by X - 10 min left"; Ctrl showed the compare
+view against the equipped sword; the same in a party channel and in a private channel (the sender sees the coloured link
+in the own message too); in the Help channel the client refused a chip, and a raw link text sent with `talkChannel` was
+refused by the server while plain text went through. Not tested: guild channel (the same chat path as the party channel),
+a tutor account, the 10-minute expiry (unit test only).
+
+## Inspect Player (`inspect.lua`, `inspect_core.lua`, client `game_playerinspect`)
+
+A window with the public side of another player. Extended opcode `ChaosOpcodes.inspect` = **240**; the client module is
+`game_playerinspect` because the base client already has a module `game_inspect` (Inspect Object).
+
+**Protocol (JSON `{action, data}`).**
+
+| direction | action | data |
+|---|---|---|
+| client -> server | `inspect` | `{cid}` the creature id of a player the player right-clicked, or `{name}` typed in the window |
+| client -> server | `privacy` | `{}` asks for the own setting, `{allow = true / false}` sets it |
+| server -> client | `result` | `{name, level, voc, vocId, ascended, guild = {name, rank}, ach, rift, trials, outfit = {type, head, body, legs, feet, addons, mount}, self, parts}` |
+| server -> client | `equip` | `{name, rows = [{slot, tip}], part}` `parts` packets follow a `result`, cut at about 12000 bytes of JSON; slot 1-10 as the inventory, `tip` the rich tooltip |
+| server -> client | `denied` | `{code, text}` code: `notfound`, `private`, `range`, `rate`, `bad` |
+| server -> client | `privacy` | `{allow}` |
+
+**What is public** (and all that is ever sent): name, level, vocation and whether it is an ascended class, guild and rank,
+achievement points of the character (`ChaosAchievements.pointsOf`), the best rift tier sealed (the achievement counter
+`rift_tier`), the highest Vocation Trial tier cleared as the current vocation (`ChaosTrials.tierCleared`), the outfit and the
+ten equipment slots with their tooltips. No health, mana, skills, passive tree, storage, gold or backpack contents.
+
+**Rules.**
+- `cid` (right-click): the same floor, at most 10 tiles away in x and y and in view (`player:canSee`). `name` (the menu
+  entry): any online player, any distance; the same public data.
+- Not inspectable: staff (account type gamemaster or above, or a group with access) and players in ghost mode answer exactly
+  like a name that is not online. Yourself is always allowed.
+- Privacy: `Chaos.storage.inspectOff` (7100960), per character, 1 = refuses; default on, so nothing is stored for most
+  characters. Set from the checkbox "Allow others to inspect me" in the window (the server also tells the player in the text
+  line). A refusal says "<name> does not allow others to inspect them."
+- Limits: one request per 1.5 s and a bucket of 6 (one more per 5 s) per player; names are 2-29 letters, spaces, `'` and `-`.
+- Menu: Social > Inspect Player (the window asks for the name; no spoken command) and "Inspect Player" in the right-click
+  menu of a player (`game_interface.addMenuHook`). The base client's own "Inspect <name> Prestige" entry is a different thing.
+
+Tests: `tests/inspect_test.lua` (names, who may be inspected from where, budget, packets, the handler against a mocked
+engine: public fields only, equipment tooltips, privacy default / off / on, hidden staff and ghosts, rate limit) and the
+client's `playerinspect_logic_test.lua`.
+
+**Tested in game** (two clients): right-click menu (Ctrl + right-click with the classic controls) > Inspect Player on a
+player next to the inspector: outfit, level, class, achievement points, equipment with the rich tooltip on hover (slot name
+under it); Social > Inspect Player and a typed name; the privacy checkbox switched off in one client and the other client's
+request refused with the name in the text and no stale data in the window. Not tested in game: a hidden staff member, a player
+out of range (unit tests), a character with a guild (the guild line is the stock `getGuild`), rift / trial records of a
+character that has them (the fields were 0).
+
 extended opcode 246 (`ChaosOpcodes.season`). Every rule and number is in `season_config.lua`.
 
 **Install.** Run `sql/chaos_season.sql` (4 tables) and `python3 -I server/tools/patch_season_events.py <server>/data`

@@ -231,12 +231,24 @@ local function render()
   if not tip then return end
   local wantCompare = g_keyboard.isCtrlPressed() and tip.cmp ~= nil
   local extra, others = {}, {}
+  for _, r in ipairs(hovered.extra or {}) do extra[#extra + 1] = r end
   if wantCompare then
     local bySlot, missing = equippedTips(tip)
     if #missing > 0 then send(missing) end
     others = L.compareWith(tip, bySlot, hovered.key)
     for _, o in ipairs(others) do
-      for _, r in ipairs(diffRows(tip, o)) do extra[#extra + 1] = r end
+      local partner = o
+      if hovered.external then
+        -- a linked or inspected item has no "Your Attack Interval" (it is the viewer's own number): leave it out of
+        -- the equipped item's side too, or the difference would list it as a change
+        partner = {}
+        for k, v in pairs(o) do partner[k] = v end
+        partner.stats = {}
+        for _, st in ipairs(o.stats or {}) do
+          if st.k ~= 'yourinterval' then partner.stats[#partner.stats + 1] = st end
+        end
+      end
+      for _, r in ipairs(diffRows(tip, partner)) do extra[#extra + 1] = r end
     end
     if #others == 0 and #missing == 0 then
       extra[#extra + 1] = { text = 'Nothing equipped to compare', color = C.dim, sep = true }
@@ -265,7 +277,8 @@ end
 local function poll()
   pollEvent = nil
   if not hovered then return end
-  if hovered.widget:isDestroyed() or not hovered.widget:isVisible() then
+  if hovered.widget:isDestroyed() or not hovered.widget:isVisible() or
+      (hovered.external and not hovered.widget:containsPoint(g_window.getMousePosition())) then
     hovered = nil
     clearPanels()
     return
@@ -277,6 +290,25 @@ local function poll()
     place()
   end
   pollEvent = scheduleEvent(poll, CTRL_POLL)
+end
+
+-- Tooltips of items that are not in this player's inventory or containers (item links in the chat, the inspect
+-- window): the caller has the tooltip and a widget the pointer is over. Same plate, Ctrl compares with what the
+-- player wears. key is any string unique to the item, extra = { { text, color, sep } } lines under the tooltip.
+function showTip(widget, key, tip, extra)
+  if not widget or widget:isDestroyed() or type(tip) ~= 'table' then return end
+  L.cachePut(cache, key, tip, false, now())
+  if askEvent then removeEvent(askEvent) askEvent = nil end
+  hovered = { widget = widget, key = key, plain = false, external = true, extra = extra }
+  render()
+  if not pollEvent then pollEvent = scheduleEvent(poll, CTRL_POLL) end
+end
+
+function hideTip(widget)
+  if hovered and hovered.external and (not widget or hovered.widget == widget) then
+    hovered = nil
+    clearPanels()
+  end
 end
 
 -- ---------------------------------------------------------------- events

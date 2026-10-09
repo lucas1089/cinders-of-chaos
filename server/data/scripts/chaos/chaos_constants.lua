@@ -57,7 +57,11 @@ ChaosOpcodes = {
 	spellbook = 219, -- spell list window (client game_spellbook)
 	townPortal = 239, -- Town Portal cast bar and Portal Style window (client game_townportal; townportal.lua)
 	mapmarks = 245, -- map overlay points of interest and the rift square (client game_mapoverlay; map_marks.lua)
-	info = 237 -- Info & Services window: the player commands reached from the menu (client game_chaosinfo; commands_ui*.lua)
+	info = 237, -- Info & Services window: the player commands reached from the menu (client game_chaosinfo; commands_ui*.lua)
+	itemLink = 249, -- items linked into chat: register / get a snapshot (client game_chatlinks; itemlink.lua, itemlink_core.lua)
+	inspect = 240, -- Inspect Player window: equipment and public stats of another player (client game_playerinspect; inspect.lua, inspect_core.lua)
+	buffs = 234, -- buff / debuff bar, server -> client diffs (client game_buffbar; buffbar.lua, data/lib/chaos_buffs.lua)
+	partyFrames = 235 -- party frames: members' health, mana, level, floor, buffs; client -> server actions (client game_partyframes; partyframes.lua)
 }
 
 -- ---------------------------------------------------------------------------
@@ -101,6 +105,7 @@ Chaos.storage = {
 	-- the support sockets keyed by spell id (base + spell id * 4 + 0..3)
 	-- Town Portal (townportal_config.lua storage): 7101600 - 7101639 reserved; selected style, cooldown, store styles owned
 	monk = 7100800, -- the Monk line (ChaosMonk.ids.storage in monk_chi_core.lua): 7100800 - 7100809 reserved; chi, its time, focus, Chi Ward
+	inspectOff = 7100960, -- 1 = this character does not allow others to inspect it (inspect.lua; default on, so unset)
 
 	-- store: one-time cosmetics owned (base + id of the wings / aura / shader)
 	shopWingsBase = 7100600,

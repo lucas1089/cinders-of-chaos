@@ -333,6 +333,21 @@ on a small framed plate. Titles come from the leaderboards (gold), the guild sie
 crimson plate), seasons, login streaks and achievements; staff wear red titles on a gold plate. Hold several? Pick one, or none, in
 the Achievements window (Character > Achievements). Monsters and NPCs keep their plain names.
 
+## Chat item links and inspecting players
+
+- **Show off an item:** with the chat input active, **Shift + click** an item in your inventory or a backpack. Its name
+  appears in the message as `[Item Name]` (up to 3 per message); write the rest and send it. Everyone who gets the message
+  (say, party, guild, a channel, a private message) sees the name in the item's rarity colour (uniques in orange). **Hover**
+  it to see the same tooltip you get in your own backpack, and hold **Ctrl** to compare it with what you wear. A link shows
+  the item as it was when you linked it and lasts 10 minutes. You can only link items you carry (not items on the ground or
+  in the depot). Locked items can be linked. Links are not allowed in the Help channel or in NPC conversations.
+- **Inspect a player:** **Ctrl + right-click** (or right-click, depending on your controls) a player and choose
+  **Inspect Player**, or open **Social > Inspect Player** and type the name of anyone who is online. The window shows their
+  outfit, level, class, guild, achievement points, best rift and Vocation Trial, and every worn item with its tooltip.
+  Nothing else is shown: no health, skills or passive tree. Staff who are hidden cannot be inspected.
+- **Privacy:** the checkbox **Allow others to inspect me** in the Inspect Player window switches it off for your character
+  (on by default). Others then see that you do not allow it.
+
 ## Achievements
 
 > *"I write down every deed. A few of them I may not write down until someone has done them."*

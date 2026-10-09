@@ -1,0 +1,138 @@
+// Inspect Player window (game_playerinspect). Styles from client_chaos_theme (styles.otui).
+
+InspectSlot < ChaosItemSlot
+  size: 44 44
+  virtual: true
+  anchors.top: parent.top
+  anchors.left: parent.left
+
+  UIWidget
+    id: frame
+    anchors.fill: parent
+    phantom: true
+    border-width: 0
+
+InspectLine < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: left
+  anchors.left: parent.left
+  anchors.right: parent.right
+  height: 15
+  phantom: true
+
+ChaosMainWindow
+  id: playerInspectWindow
+  size: 500 440
+  !text: tr('Inspect Player')
+  @onEscape: modules.game_playerinspect.hide()
+
+  ChaosLabel
+    id: nameLabel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 5
+    !text: tr('Player')
+
+  ChaosTextEdit
+    id: nameEdit
+    anchors.top: parent.top
+    anchors.left: nameLabel.right
+    anchors.right: goButton.left
+    margin-left: 8
+    margin-right: 6
+    height: 22
+    max-length: 29
+
+  ChaosButton
+    id: goButton
+    anchors.top: parent.top
+    anchors.right: parent.right
+    width: 80
+    !text: tr('Inspect')
+    @onClick: modules.game_playerinspect.inspectTyped()
+
+  ChaosPanelDark
+    id: infoPanel
+    anchors.top: nameEdit.bottom
+    anchors.left: parent.left
+    anchors.bottom: statusLabel.top
+    margin-top: 8
+    margin-bottom: 6
+    width: 210
+    padding: 8
+
+    UICreature
+      id: creature
+      anchors.top: parent.top
+      anchors.horizontalCenter: parent.horizontalCenter
+      size: 96 96
+      margin-top: 4
+      phantom: true
+
+    ChaosTitle
+      id: charName
+      anchors.top: creature.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 6
+      text-align: center
+      text-auto-resize: false
+      height: 18
+
+    UIWidget
+      id: lines
+      anchors.top: charName.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 8
+      phantom: true
+      layout:
+        type: verticalBox
+        spacing: 3
+
+  ChaosPanelDark
+    id: gearPanel
+    anchors.top: nameEdit.bottom
+    anchors.left: infoPanel.right
+    anchors.right: parent.right
+    anchors.bottom: statusLabel.top
+    margin-top: 8
+    margin-left: 8
+    margin-bottom: 6
+
+    ChaosLabelDim
+      id: gearHint
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-bottom: 6
+      text-align: center
+      !text: tr('Hover an item for its tooltip.')
+
+  ChaosLabelDim
+    id: statusLabel
+    anchors.bottom: privacyBox.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-bottom: 6
+    height: 16
+    text-align: left
+
+  ChaosCheckBox
+    id: privacyBox
+    anchors.bottom: closeButton.bottom
+    anchors.left: parent.left
+    margin-bottom: 4
+    width: 260
+    !text: tr('Allow others to inspect me')
+    @onCheckChange: modules.game_playerinspect.onPrivacyToggle()
+
+  ChaosButton
+    id: closeButton
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    width: 80
+    !text: tr('Close')
+    @onClick: modules.game_playerinspect.hide()
