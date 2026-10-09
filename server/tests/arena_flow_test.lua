@@ -289,5 +289,39 @@ storages[Chaos.multiClient.offStorage] = 1
 check(S.join(c1, "1v1"), "allowed with the multi-client blocks off")
 S.leaveQueue(c1, true)
 
+-- ---------------------------------------------------------------- a shutdown / a closed server: no rating change
+storages[Chaos.multiClient.offStorage] = nil
+local function ratingSnapshot(list)
+  local out = {}
+  for _, p in ipairs(list) do local r = S.ratingOf(p:getGuid(), "1v1"); out[#out + 1] = r.rating .. "/" .. r.wins .. "/" .. r.losses .. "/" .. r.draws end
+  return table.concat(out, " ")
+end
+check(S.join(a1, "1v1"), "shutdown: queue A1"); check(S.join(b2, "1v1"), "shutdown: queue B2")
+advance(2000)
+local ms = S.matchOf[a1:getId()]
+check(ms ~= nil, "shutdown: match started")
+advance(10000)
+local before = ratingSnapshot({a1, b2})
+globals.ChaosArenaShutdown.onShutdown()
+eq(ms.phase, "done", "onShutdown stops the match")
+events.ChaosArenaLogout.onLogout(a1); events.ChaosArenaLogout.onLogout(b2) -- the kicks
+eq(ratingSnapshot({a1, b2}), before, "onShutdown: no rating change")
+check(a1.pos.x == 100 + a1.id % 10 and b2.pos.x == 100 + b2.id % 10, "onShutdown: both sent back")
+advance(cfg.endDelaySeconds * 1000)
+-- a closed server (no onShutdown): the first kick stops the match unrated
+check(S.join(a1, "1v1"), "closed: queue A1"); check(S.join(b2, "1v1"), "closed: queue B2")
+advance(2000)
+local mc = S.matchOf[a1:getId()]
+check(mc ~= nil, "closed: match started")
+advance(10000)
+before = ratingSnapshot({a1, b2})
+Game.getGameState = function() return GAME_STATE_CLOSED end
+events.ChaosArenaLogout.onLogout(b2)
+eq(mc.phase, "done", "closed: the kick stops the match")
+eq(ratingSnapshot({a1, b2}), before, "closed: no loss for the kicked player, no win for the other")
+events.ChaosArenaLogout.onLogout(a1)
+Game.getGameState = nil
+advance(cfg.endDelaySeconds * 1000)
+
 print(string.format("arena_flow_test: %d checks, %d failed", count, fails))
 if fails > 0 then os.exit(1) end

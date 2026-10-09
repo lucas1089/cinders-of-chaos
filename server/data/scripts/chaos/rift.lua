@@ -13,7 +13,8 @@
 --   Omens: 60 Omen Fragments bind an Omen Key (item 32072, attribute omen_kind) that opens a guardian arena in the
 --   same slot grid (every side room shut, one guardian, the same lives, timer and chest flow).
 --   The key is consumed at the start; a "run in progress" marker (storages Chaos.storage.riftRun ..+4) refunds it at
---   the next login when the server stopped or crashed during the run.
+--   the next login when the server crashed during the run. A clean shutdown or a closed server (the daily restart)
+--   ends every run first (RF.interrupt): everyone to the temple, the key back while the guardian lives.
 --
 -- Exports: ChaosRift.isInside(player), ChaosRift.lootMult(ctx) (loot_config.lua rateMult),
 -- ChaosRift.onBountyPaid(player, contract) (bounty.lua), ChaosRift.createKey / giveKey.
@@ -294,12 +295,15 @@ local function clearMarker(player)
 	end
 end
 
-local function refundMarker(player)
+-- why: set by a clean shutdown (RF.interrupt), which refunds the key of a run the player is still in; without it (the
+-- next login) a player who is in a run, may return to one or left one without a logout event gets nothing.
+-- The marker is the record: it is cleared in the same step the key is given and saved with it, so a key comes back once.
+local function refundMarker(player, why)
 	local tier = player:getStorageValue(ST)
 	if tier <= 0 then
 		return false
 	end
-	if RF.noRefund[player:getGuid()] or RF.runOf[player:getId()] or RF.revive[player:getGuid()] then
+	if not why and (RF.noRefund[player:getGuid()] or RF.runOf[player:getId()] or RF.revive[player:getGuid()]) then
 		RF.noRefund[player:getGuid()] = nil
 		clearMarker(player)
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You left your rift: its key is spent.")
@@ -315,12 +319,13 @@ local function refundMarker(player)
 	for i = 0, 4 do
 		player:setStorageValue(ST + i, 0)
 	end
+	RF.noRefund[player:getGuid()] = nil
 	local omen = R.markerOmen(C(), tier)
 	if omen then
-		RF.giveOmenKey(player, omen, "Your last omen arena was interrupted by a server restart, so its key is returned")
+		RF.giveOmenKey(player, omen, why or "Your last omen arena was interrupted by a server restart, so its key is returned")
 	else
 		RF.giveKey(player, {tier = R.clampTier(C(), tier), mods = mods},
-			"Your last rift was interrupted by a server restart, so its key is returned")
+			why or "Your last rift was interrupted by a server restart, so its key is returned")
 	end
 	player:save()
 	return true
@@ -575,7 +580,11 @@ local function removePlayer(run, id, mode)
 		player:unregisterEvent("ChaosRiftPlayerDeath")
 		player:unregisterEvent("ChaosRiftPlayerHit")
 		player:unregisterEvent("ChaosRiftPlayerMana")
-		if mode == "out" or mode == "logout" then
+		if run.restart and mode ~= "dead" then
+			-- a clean shutdown (RF.interrupt): out to the temple, where the character is saved
+			player:teleportTo(player:getTown():getTemplePosition())
+			player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+		elseif mode == "out" or mode == "logout" then
 			player:teleportTo(entry.entry)
 			player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 		end
@@ -593,8 +602,13 @@ local function removePlayer(run, id, mode)
 		end
 	elseif entry.guid == run.openerGuid then
 		-- gone without a logout event (lost connection, kicked): no refund at the next login while this server runs;
-		-- only a crash or a restart (which empties this table) refunds the key
+		-- and none after a restart either: the character was saved with the marker when it was removed, so the marker
+		-- is taken out of the database now (a restart empties this table)
 		RF.noRefund[entry.guid] = true
+		if db and db.query then
+			db.query(string.format("DELETE FROM `player_storage` WHERE `player_id` = %d AND `key` >= %d AND `key` <= %d",
+				entry.guid, ST, ST + 4))
+		end
 	end
 	-- a fallen player who may still return keeps a running rift open (until the time runs out)
 	if next(run.players) == nil and not run.ended and not (run.state == "running" and next(run.revive or {}) ~= nil) then
@@ -656,6 +670,54 @@ local function fail(run, text)
 	finishExit(run)
 end
 RF._fail = fail
+
+-- ======================================================================== clean shutdown / server save
+-- A shutdown (onShutdown below, SIGTERM, /closeserver shutdown, the server save) or a closed server (/closeserver, the
+-- server save with "close") kicks every player, which would read as "logged out inside: the key is spent". Instead every
+-- open run ends here first: everyone goes to the temple; a run whose guardian is still alive gives its key back to the
+-- player who used it (while that player is still in the run, like the crash refund), through the marker, so exactly once;
+-- a sealed run (guardian dead, chest up) gives no key, its chest shares are handed out now as at a normal exit.
+-- A crash has no event: the marker refunds the key at the next login (refundMarker).
+function RF.interrupt(run)
+	if run.ended then
+		return false
+	end
+	run.restart = true
+	local refunded
+	if run.state == "running" then
+		for id, e in pairs(run.players) do
+			local p = Player(id)
+			if p and e.guid == run.openerGuid then
+				refunded = refundMarker(p, run.omen and "The server is restarting: your omen arena closes and its key is returned"
+					or "The server is restarting: your rift closes and its key is returned") and p:getName() or nil
+			end
+		end
+		run.state = "interrupted"
+		run.endText = (run.omen and "The server is restarting: the arena closes" or "The server is restarting: the rift closes")
+			.. (refunded and string.format(" and %s gets the key back.", refunded) or ".")
+		say(run, run.endText)
+	end
+	finishExit(run)
+	print(string.format("[ChaosRift] run %d interrupted by a shutdown (key %s)", run.id, refunded and ("refunded to " .. refunded)
+		or "not refunded"))
+	return true
+end
+
+function RF.interruptAll()
+	local n = 0
+	for _, run in pairs(RF.runs) do
+		if RF.interrupt(run) then
+			n = n + 1
+		end
+	end
+	return n
+end
+
+local function serverClosing()
+	local state = Game.getGameState and Game.getGameState()
+	return state ~= nil and (state == GAME_STATE_SHUTDOWN or state == GAME_STATE_CLOSED)
+end
+RF.serverClosing = serverClosing
 
 -- ======================================================================== rewards
 -- every unique of ChaosUniqueItems without its monster list (the omen guardians' pool); rebuilt when the list changes
@@ -1929,6 +1991,11 @@ local function revive(player)
 	player:registerEvent("ChaosRiftPlayerDeath")
 	player:registerEvent("ChaosRiftPlayerHit")
 	player:registerEvent("ChaosRiftPlayerMana")
+	if guid == run.openerGuid then
+		-- the key's owner is back in the run: a shutdown or a crash from here on returns the key again (the death
+		-- cleared the marker, so a run that ends while the owner is away returns nothing)
+		setMarker(player, run.key)
+	end
 	local L = run.L
 	player:teleportTo(Position(L.start.x, L.start.y, L.start.z))
 	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
@@ -1948,6 +2015,10 @@ playerDeath:register()
 
 local logout = CreatureEvent("ChaosRiftLogout")
 function logout.onLogout(player)
+	-- kicked by a closing server (no onShutdown for GAME_STATE_CLOSED): end every run as a shutdown does
+	if next(RF.runs) ~= nil and serverClosing() then
+		RF.interruptAll()
+	end
 	local run = RF.runOf[player:getId()]
 	if run then
 		say(run, player:getName() .. " left the rift.")
@@ -1957,16 +2028,25 @@ function logout.onLogout(player)
 end
 logout:register()
 
+local shutdown = GlobalEvent("ChaosRiftShutdown")
+function shutdown.onShutdown()
+	RF.interruptAll()
+	return true
+end
+shutdown:register()
+
 local login = CreatureEvent("ChaosRiftLogin")
 function login.onLogin(player)
 	player:registerEvent("ChaosRiftLogout")
 	player:registerEvent("ChaosRiftExtended")
-	revive(player)
+	local back = revive(player)
 	if R.slotOfPos(C(), player:getPosition()) and not RF.runOf[player:getId()] then
 		local temple = player:getTown():getTemplePosition()
 		player:teleportTo(temple)
 	end
-	refundMarker(player)
+	if not back then -- a returning key owner carries the run's marker again (revive)
+		refundMarker(player)
+	end
 	local list = RF.pending[player:getGuid()]
 	if list then
 		RF.pending[player:getGuid()] = nil

@@ -207,7 +207,7 @@ working directory, as with the rest of the base server libs).
 | game_daily | `daily.lua`, `daily_core.lua`, `daily_config.lua` | 207 | 7-day reward cycle with claim, midnight rollover, Adventure > Daily Reward, open on login through the login window queue. Rewards: platinum coins, Orbs of Upheaval and Fate and a crystal coin, plus a week bonus on day 7 (all or nothing); edit `Chaos.daily` in `chaos_constants.lua`. Account-wide login streaks with milestones, titles and grace days (see "Daily reward and login streaks"). |
 | game_notifications | `notifications.lua` | 79 out, 151/152 in | `/gmnotify`, accept/decline of a standard TFS party invite, `ChaosNotify.*` sender API. Catacomb start / leave-queue are hooks only; nothing triggers party/catacomb/task/battle pass toasts automatically. |
 | game_passivetree | `passivetree.lua`, `passivetree_data.lua`, `passivetree_effects.lua`, `passivetree_keystones.lua`, `paragon.lua` | 65 | Points, save with full validation (known ids, connected to root, point cap), preset storage, priced reset and single-node refund (see "Respec"), build codes (see "Build sharing"); the bonuses are applied (see "Passive tree effects"). Paragon track past level 1000 on the same opcode (see "Paragon"). |
-| game_dungeons | `dungeons.lua` | 109 | Reads the base server `DUNGEON_SYSTEM` table. Queue, group formation, teleport in, timer, monster-count progress, boss kill, difficulty unlock, speed/flawless challenges, solo/group rankings, teleport out. Difficulty does not change monsters; loot panel is display only. |
+| game_dungeons | `dungeons.lua` | 109 | Reads the base server `DUNGEON_SYSTEM` table. Queue, group formation, teleport in, timer, monster-count progress, boss kill, difficulty unlock, speed/flawless challenges, solo/group rankings, teleport out. Difficulty does not change monsters; loot panel is display only. A shutdown ends the queue runs without a cooldown (members back where they entered); the first login after a restart or a crash inside a dungeon box goes to the temple (also for runs of the base modal, whose exit timer dies with the server). |
 | game_infinitytower | `infinitytower.lua` | 214 | Seasons, points, best floor/time, ranking, milestone claim, Adventure > Infinity Tower, `/towerrun` staff test helper. **The tower gameplay does not exist**; a future script reports results with `ChaosTower.recordRun`. Season-end top 3 chests not implemented. |
 | game_stash | `stash.lua` | **110** (new), Economy > Supply Stash | Deposit by drag, redeem, categories, block list, the Stash All button, DB persistence. Client must be ported first (see below). |
 | game_spellbook | `spellbook.lua` | 219, Character > Spellbook / `/spells` | Spell list window: every player spell of `data/spells/spells.xml` with its data, a short description and its area of effect (see "Spellbook" below). |
@@ -1119,6 +1119,18 @@ rewards and the whole event flow against a mocked engine (LuaJIT and Lua 5.3); t
 **Install.** Copy the XMLs to `<server>/data/monster/monsters/chaos/world_bosses/` and register them:
 `python3 -I server/tools/register_monsters.py data/monster/monsters.xml data/monster/monsters/chaos/world_bosses`.
 The script itself loads with the rest of `data/scripts/chaos/`. Without the XMLs `/worldboss start` refuses with "not loaded".
+
+**The base server's island bosses stay** (`data/scripts/customs/worldbosses/world_boss_timer.lua`, not in this repository;
+compared with the Chaos event, decision recorded in ROADMAP.md). They are other content and do not clash: nine open-world
+bosses (Lua monsters in `data/monster/lua/The_isles/worldbosses/`) that each appear once a week on their own island of the
+base map (Sunday 00:00, Monday 16:00, Saturday 12:00, otherwise 20:00 server time) with a broadcast ("X has spawned on Y
+Island."), a map mark and a sound; they never leave, their reward is their own loot. The Chaos world bosses run every 6
+hours (03:00, 09:00, 15:00, 21:00) in the arena at x 5000 built at runtime, behind portals, with shared rewards, titles
+and the weekly boards. No time slot is shared (closest: an island boss at 20:00 and the Chaos event at 21:00), and no
+position, monster, storage, opcode, reward or board overlaps; island boss kills count for none of the Chaos boards, roles,
+achievements or boss points. The base script defines the globals `spawnBoss` and `notifyPlayers`: Chaos scripts must not
+define globals with those names (every current use is local). To turn the island bosses off, remove that file from the
+server's data; nothing in Chaos depends on it.
 
 ### The bosses
 
@@ -2916,7 +2928,9 @@ cleared, and everyone goes back to where they stood when the match started (the 
 (sum of health / sum of max health, the defeated count as 0) wins; equal (within 0.1%) is a draw. Leaving counts as a
 loss: logging out (only possible in the countdown, the engine refuses a logout in fight), losing the connection for 3 s,
 Adventure > Arena, being moved out of the slot, or another character of the same connection logging in. A leaver is sent
-back at once and scores 0 even when the partner wins the 2v2. `/arena stop` (staff) ends every match unrated.
+back at once and scores 0 even when the partner wins the 2v2. `/arena stop` (staff) ends every match unrated. So does a
+server shutdown or a closed server (the daily restart): `onShutdown`, or the first kick of a closed server, stops every
+match unrated before the players are kicked, so nobody gets a loss from the restart (`tests/arena_flow_test.lua`).
 
 **Ratings.** Elo per mode, start 1000, floor 100, K 40 for a player's first 10 matches of the mode, then 24. Every player
 is rated against the other team's average (1v1: the opponent). Both the window and the result toast show the change
@@ -3300,10 +3314,24 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   the fastest vocation) per minute in the run; above it a kill gives 2% of its experience. Stamina, potions, the Chaos
   bonuses and the rift's Experience bonus apply on top, as when hunting. Measured at level 1000, tier 10: 32 monsters
   killed in the first second gave 13.8M experience instead of ~220M (the first minute's allowance is 3.2M base).
-- **Crash refund.** Using the key writes a "run in progress" marker (tier and modifiers, storages 7100400-7100404) and
-  saves the player before the teleport. It is cleared when the key's owner leaves the run (end, death, logout). If the
-  server stops during a run (crash, kill, the daily shutdown), the next login returns the key. A key whose owner just
-  lost the connection while the server kept running is not returned.
+- **Restart and crash refund.** Using the key writes a "run in progress" marker (tier and modifiers, storages
+  7100400-7100404) and saves the player before the teleport. It is cleared, and saved, when the key's owner leaves the run
+  (end, death, logout) and set again when the owner returns after a death with lives left. The marker is the only record
+  of the refund: it is cleared in the same step the key is given and saved with it, so a key comes back once.
+  - *Clean shutdown or closed server* (the daily server save with `serverSaveShutdown`/`serverSaveClose`, SIGTERM/systemd
+    stop, `/closeserver [shutdown]`, the admin panel's shutdown): an `onShutdown` event, and for a closed server (which
+    has none) the first kick's `onLogout`, end every open run before the players are kicked (`ChaosRift.interrupt`). Everyone
+    goes to the temple (and is saved there). Guardian still alive: the key's owner, if still in the run, gets the key back
+    (same tier and modifiers; an omen arena its Omen Key) with "The server is restarting: your rift closes and its key is
+    returned". Guardian dead (chest up): no key; unclaimed chest shares of the players online are handed out as at a normal
+    exit. Without this the kick read as "logged out inside" and the key was lost.
+  - *Crash* (`kill -9`, power loss: no event): the next login returns the key ("Your last rift was interrupted by a server
+    restart ...") and a character saved inside a rift slot goes to its temple. A logout, a death or the timer clear the
+    marker first, so none of them gives a key back, not even across a crash. A character removed without a logout event
+    while the server keeps running gets nothing, then or after a restart (the marker is deleted from the database).
+  - Not refunded: a run whose key owner had left (logout, or a death without returning) when the server stopped; chest
+    shares of finishers who were offline at the exit live only in memory and are lost at a restart.
+  - `tests/rift_refund_test.lua` (rift.lua against a mocked engine) covers all of these.
 - **Other systems.** `ChaosRift.isInside(player)`; the temple scroll refuses inside a rift (`shop_services.lua`), a second
   character of the connection cannot log in while one is in a rift (`multiclient.lua`).
 - **Commands.** Adventure > Rifts (dialog: the run status and every key carried with its modifiers). Gamemasters: `/rift key <tier>
@@ -3317,7 +3345,8 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
 protection zone, in a fight, multi-client); the build and the four themes; the HUD (start, live updates, the guardian,
 sealed, collapsed, left); kills -> guardian at 75% -> sealed -> chest (once per player, the second open refused), the
 unopened chest delivered at the exit; the next-tier key drop; timeout fail; death inside; logout inside; the crash
-refund after `kill -9` of the server; two runs at once (two characters, slots 0 and 1) and a slot reused while another
+refund after `kill -9` of the server; the restart refund (in a run, SIGTERM: at the temple with the same key, once over two
+more restarts; the same with a closed server and after a death and return; a logout inside then `kill -9`: nothing); two runs at once (two characters, slots 0 and 1) and a slot reused while another
 run was active; cleanup (no monsters or items left, tiles kept); Vitality x1.40 health, Reflection 10% of the landed
 damage, Warding -20% fire, Withering (no regeneration inside, back outside); the tier-1 key from a normal kill and from a
 bounty; the temple scroll and the multi-client login refusal; the experience cap. Not verified: a real party (only one

@@ -102,6 +102,10 @@ local function levelOf(dg)
 end
 
 -- the engine has no Game.getPlayerByGUID (that call made every queue tick fail): a scan of the online players
+-- when this server started (kept over a /reload): a character whose last logout is older was kicked by a shutdown or
+-- lost in a crash; one saved inside a dungeon box then goes to its temple at login (below)
+ChaosDungeonsBoot = ChaosDungeonsBoot or os.time()
+
 local function online(guid)
 	if Game.getPlayerByGUID then
 		return Game.getPlayerByGUID(guid)
@@ -941,8 +945,43 @@ local LoginEvent = CreatureEvent("ChaosDungeonsLogin")
 
 function LoginEvent.onLogin(player)
 	player:registerEvent("ChaosDungeonsExtended")
+	-- the first login after a restart or a crash inside a dungeon box (a queue run here or a run of the base modal, whose
+	-- exit timer died with the server): out to the temple. A relog while the server runs stays (the run may go on).
+	if not runOfPlayer[player:getGuid()] and (player:getLastLogout() or 0) < ChaosDungeonsBoot then
+		local pos = player:getPosition()
+		for _, dg in pairs(baseDungeons()) do
+			if dg.FromPos and dg.ToPos and dg.DungeonPos and inBox(dg, pos) then
+				player:teleportTo(player:getTown():getTemplePosition())
+				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Your dungeon run was cut short by a server restart.")
+				break
+			end
+		end
+	end
 	return true
 end
+
+-- a clean shutdown: every queue run ends without a cooldown, the members back where they entered (saved there by the kick)
+local ShutdownEvent = GlobalEvent("ChaosDungeonsShutdown")
+function ShutdownEvent.onShutdown()
+	for _, run in pairs(runs) do
+		if not run.ended then
+			run.ended = true
+			local dg = baseDungeons()[run.dungeonId]
+			for guid, origin in pairs(run.members) do
+				local p = online(guid)
+				if p then
+					send(p, "finish")
+					if dg and inBox(dg, p:getPosition()) then
+						p:teleportTo(origin or p:getTown():getTemplePosition())
+					end
+				end
+				releasePlayer(run, guid)
+			end
+		end
+	end
+	return true
+end
+ShutdownEvent:register()
 
 local ExtendedEvent = CreatureEvent("ChaosDungeonsExtended")
 

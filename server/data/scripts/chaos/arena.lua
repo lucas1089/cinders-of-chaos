@@ -1032,6 +1032,13 @@ function logout.onLogout(player)
 		S.leaveQueue(player, true)
 	end
 	local m = S.matchOf[cid]
+	if m and m.phase ~= "done" then
+		-- kicked by a closing server (shutdown / server save): no loss for anyone, every match stops unrated
+		local state = Game.getGameState and Game.getGameState()
+		if state ~= nil and (state == GAME_STATE_SHUTDOWN or state == GAME_STATE_CLOSED) then
+			S.stopAll()
+		end
+	end
 	if m then
 		local e = m.players[cid]
 		if m.phase == "done" then
@@ -1046,6 +1053,14 @@ function logout.onLogout(player)
 end
 logout:type("logout")
 logout:register()
+
+-- a clean shutdown: the matches stop unrated before the players are kicked (the logout above then sends them out)
+local shutdown = GlobalEvent("ChaosArenaShutdown")
+function shutdown.onShutdown()
+	S.stopAll()
+	return true
+end
+shutdown:register()
 
 local ext = CreatureEvent("ChaosArenaExtended")
 function ext.onExtendedOpcode(player, opcode, buffer)
