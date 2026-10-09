@@ -31,3 +31,21 @@ Restore one library (X = B, C, D, ...):
 
 Each library is deduplicated against the live client pair and every library above it. LIBRARY_MD5 has the md5 of
 each Tibia.dat / Tibia.spr; SHA256SUMS lists the parts.
+
+## vfx_packs: raw effect and missile art (PNG sheets, not converted)
+
+Free pixel-art packs from the owner's Drive (permission given by the owner), kept as delivered (PNG sheets only;
+GIF previews, duplicates and off-style parts left out). Each folder has `contact_sheet.png` (all kept sheets on a
+dark background). The packs came without licence or readme files. Nothing here is in the client pair yet: cut the
+frames, scale to our 32 px grid (16 px art: Scale2x; 64 px cells: 2x2 effect or 50% downscale) and import with the
+vfx tools of the main branch.
+
+| folder | holds | suggested use |
+|---|---|---|
+| Pixel_Holy_Spell_Effect_32x32_Pack_3 | 2 sheets, 12 effects of 7-19 frames in 64x64 cells (art up to 64 px despite the name) | holy/arcane bursts, sigils and wards: 2x2 effects or downscaled 32 px; light and holy spells, shields, buffs |
+| Free_Effect_Bullet_Impact_Explosion_32x32_V1 | 5 colour variants (blue, green, purple, red, yellow), 640x512 each, about 240 32x32 frames per colour (impacts, bursts, flames, slashes, bolts, rings) | straight 32 px: impact and hit effects per element (red fire, blue ice/energy, green poison/nature, purple dark/arcane, yellow holy/lightning); bolt rows as missiles |
+| Super_Package_Retro_Pixel_Effects_32x32_pack_2 | 35 sheets 192x64 = 12 frames of 32x32 each (fire, ice, arcane, poison, earth, dust, wind) | ready 32 px spell effects: explosions, fire fields (05), ice bursts, dust/earth puffs, arcane pulses |
+| Effect_and_Bullet_16x16 | 4 colour variants (fire, green, purple, water), 576x208 = 36x13 cells of 16 px | Scale2x to 32 px: small hits, flames, sparkles, orbs and bolts as missiles; fire/poison/dark/ice sets |
+| New_All_Fire_Bullet_Pixel_16x16 | 8 colour variants (orange, red, blue, green, yellow, violet, grey, rose), 640x400 = 40x25 cells of 16 px, about 790 frames each | missiles: bolts, arrows, orbs and comets drawn facing right; Scale2x or pad to 32 px, rotate/mirror for the 8 directions (fire, ice, poison, holy, arcane, shadow bolts) |
+| Free_Smoke_Fx_Pixel_2 | 4 sheets of 64x64 cells (8-16 frames per row, about 730 frames), white silhouettes | tint per element: smoke, poof, dust, teleport and death puffs, dark-mist rings; 2x2 effects or downscaled 32 px |
+| Trap_and_Weapon | kept subset only: `00 All_throwing_stars_crop.png` (52 throwing stars, 48 px cells, cut from the pack's `00 All.png`), `Suriken.png` (spinning saw, 8 frames 32 px), `Spear.png`, `SpikeBall.png`, `Fire.png` | throwing stars as distance-weapon items and spinning missiles; saw/spike ball as trap or missile art; the platformer traps, cannons and rockets were left out |
