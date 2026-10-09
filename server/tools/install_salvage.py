@@ -15,6 +15,10 @@ weight, description), the same file the Lua side uses.
 2. data/items/items.xml: the entry (name, plural, description, weight) between two marker comments before </items>,
    rewritten when the config changed. An id that already has an entry outside the block stops the script.
 
+3. data/scripts/customs/upgrade/upgrade_slot_item.lua: the stock "Upgrade and Rarity Remover" (29623) destroys the
+   target and gives a plain copy, which would drop the item lock (and make the item sellable). A guard at the top of
+   levelRemover.onUse refuses a locked item ("This item is locked.").
+
 Idempotent: a second run changes nothing.
 """
 import os, re, struct, sys
@@ -123,6 +127,24 @@ def patch_xml(text, cfg):
     return text[:end] + block + text[end:], 'items.xml: salvage block added (the rune shard)'
 
 
+REMOVER_MARKER = '-- Chaos: a locked item keeps its lock (install_salvage.py)'
+REMOVER_GUARD = ('    ' + REMOVER_MARKER + '\n'
+                 '    if itemEx and itemEx.isItem and itemEx:isItem() and (tonumber(itemEx:getCustomAttribute("chaos_locked")) or 0) ~= 0 then\n'
+                 '        player:sendCancelMessage("This item is locked.")\n'
+                 '        return true\n'
+                 '    end\n')
+
+
+def patch_remover(text):
+    """The lock guard at the top of the stock rarity remover's onUse. Returns (text, note)."""
+    if REMOVER_MARKER in text:
+        return text, 'upgrade_slot_item.lua: lock guard already'
+    m = re.search(r'^levelRemover\.onUse = function\(player, item, fromPosition, itemEx, toPosition\)\n', text, re.M)
+    if not m:
+        return text, 'upgrade_slot_item.lua: levelRemover.onUse not found'
+    return text[:m.end()] + REMOVER_GUARD + text[m.end():], 'upgrade_slot_item.lua: lock guard added'
+
+
 def main():
     args = sys.argv[1:]
     dry = '--dry-run' in args
@@ -145,9 +167,19 @@ def main():
     text = open(xml, encoding='utf-8', errors='surrogateescape').read()
     new_text, xnote = patch_xml(text, cfg)
     print(xnote)
+    remover = os.path.join(data_dir, 'scripts', 'customs', 'upgrade', 'upgrade_slot_item.lua')
+    rtext = rnew = None
+    if os.path.exists(remover):
+        rtext = open(remover, encoding='utf-8', errors='surrogateescape').read()
+        rnew, rnote = patch_remover(rtext)
+        print(rnote)
+    else:
+        print('upgrade_slot_item.lua: not found (no rarity remover to guard)')
     if dry:
         print('dry run: nothing written')
         return 0
+    if rnew is not None and rnew != rtext:
+        open(remover, 'w', encoding='utf-8', errors='surrogateescape', newline='').write(rnew)
     if new != raw:
         if not os.path.exists(otb + '.bak'):
             open(otb + '.bak', 'wb').write(raw)

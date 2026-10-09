@@ -1745,7 +1745,8 @@ rules are `salvage_core.lua` (tests: `tests/salvage_test.lua`, which also drives
 **Install.** `python3 -I server/tools/install_salvage.py <server>/data [--dry-run]` (idempotent; `install_all.py` step
 `salvage`, after `gems`). It adds one items.otb node, the **rune shard** (server id **32051**), a copy of the stock node
 of the violet crystal shard (18414, client 16120: stackable, so the client needs no change), and its items.xml entry
-between marker comments. Without it the bench says salvage is not installed and refuses. No SQL: salvage writes to
+between marker comments. Without it the bench says salvage is not installed and refuses. It also guards the stock rarity
+remover against locked items (see "The item lock"). No SQL: salvage writes to
 `chaos_crafting_log`.
 
 **What can be salvaged.** Gear with a rarity, in the backpack or a bag inside it (never equipped, never the ground),
@@ -1801,6 +1802,7 @@ is never sold or trashed with a locked item in it):
 | `player:getItemCount(id)` (turn-in checks) | Does not count locked items; third argument `includeLocked = true` counts them. A turn-in with only locked copies fails as if the player had none. |
 | Market (sell offer, accepting a buy offer) | Never takes a locked item (`Item::hasMarketAttributes()`; any custom attribute already kept rolled items off the market). |
 | Trash holders (trash cans, lava, ...) | A locked item cannot be moved onto one ("This item cannot be moved there."), and a trash holder never destroys one. |
+| The stock "Upgrade and Rarity Remover" (29623, makes a plain copy) | Refused: "This item is locked." (a guard added to `data/scripts/customs/upgrade/upgrade_slot_item.lua` by `tools/install_salvage.py`; Lua, works without the patch). |
 
 Unchanged on purpose: scripts that act on one specific item object (`item:remove()`: using a Rift Key or a scroll,
 the guild depot and the stash, which keep the item; salvage itself checks the lock), player-to-player trade and mail

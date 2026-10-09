@@ -11,7 +11,7 @@
 # Apply after 0001-0008: patch -p1 < 0009-locked-items-never-sold.patch (in the server folder, next to src/).
 --- a/src/game.cpp
 +++ b/src/game.cpp
-@@ -3093,6 +3093,18 @@
+@@ -3086,6 +3086,18 @@
  		subType = count;
  	}
  
@@ -32,7 +32,7 @@
  
 --- a/src/item.cpp
 +++ b/src/item.cpp
-@@ -2150,8 +2150,58 @@
+@@ -2164,8 +2164,58 @@
  	g_game.startDecay(this);
  }
  
@@ -93,7 +93,7 @@
  	}
 --- a/src/item.h
 +++ b/src/item.h
-@@ -1034,6 +1034,10 @@
+@@ -1039,6 +1039,10 @@
  		}
  
  		bool hasMarketAttributes() const;
@@ -106,7 +106,7 @@
  			if (!attributes) {
 --- a/src/luascript.cpp
 +++ b/src/luascript.cpp
-@@ -9134,7 +9134,8 @@
+@@ -9156,7 +9156,8 @@
  
  int LuaScriptInterface::luaPlayerGetItemCount(lua_State* L)
  {
@@ -116,7 +116,7 @@
  	Player* player = getUserdata<Player>(L, 1);
  	if (!player) {
  		lua_pushnil(L);
-@@ -9153,7 +9154,11 @@
+@@ -9175,7 +9176,11 @@
  	}
  
  	int32_t subType = getNumber<int32_t>(L, 3, -1);
@@ -129,7 +129,7 @@
  	return 1;
  }
  
-@@ -9682,7 +9687,8 @@
+@@ -9704,7 +9709,8 @@
  
  int LuaScriptInterface::luaPlayerRemoveItem(lua_State* L)
  {
@@ -139,7 +139,7 @@
  	Player* player = getUserdata<Player>(L, 1);
  	if (!player) {
  		lua_pushnil(L);
-@@ -9703,7 +9709,8 @@
+@@ -9725,7 +9731,8 @@
  	uint32_t count = getNumber<uint32_t>(L, 3);
  	int32_t subType = getNumber<int32_t>(L, 4, -1);
  	bool ignoreEquipped = getBoolean(L, 5, false);
