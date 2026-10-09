@@ -33,25 +33,25 @@ Columns: server id / client id, the stock item that was overridden, required lev
 
 | name | slot | id (server/client) | stock item | level | tier | key stats |
 | --- | --- | --- | --- | --- | --- | --- |
-| Widowmaker | sword | 22690 / 20341 | light rapier | 40 | magic | Atk 24, Def 12, criticalHitChance 5, criticalHitAmount 15 |
-| Nightfang Katana | sword | 2412 / 3300 | katana | 60 | magic | Atk 32, Def 16, skillSword 2, criticalHitChance 6, criticalHitAmount 20 |
-| Gorecleaver | sword | 11426 / 6101 | the Ron the Ripper's sabre | 70 | rare | Atk 36, Def 18, lifeLeechChance 8, lifeLeechAmount 5 |
-| Bloodmoon Edge | sword | 11395 / 860 | crimson sword | 90 | rare | Atk 44, Def 22, skillSword 3, criticalHitChance 8, criticalHitAmount 25 |
-| Soulreaper | sword | 8209 / 7385 | crimson sword | 120 | legendary | Atk 52, Def 28, skillSword 4, lifeLeechChance 15, lifeLeechAmount 8 |
-| Executioner's Reckoning | axe | 2440 / 3328 | daramian waraxe | 80 | rare | Atk 50, Def 18, skillAxe 3, criticalHitChance 10, criticalHitAmount 30 |
-| Harvester of Sorrows | axe | 10301 / 9384 | scythe of the reaper | 100 | legendary | Atk 50, Def 14, elementDeath 22, skillAxe 4, manaLeechChance 10, manaLeechAmount 6 |
+| Widowmaker | sword | 22690 / 20341 | light rapier | 40 | magic | Atk 24, Def 12, criticalHitChance 3, criticalHitAmount 15 |
+| Nightfang Katana | sword | 2412 / 3300 | katana | 60 | magic | Atk 32, Def 16, skillSword 2, criticalHitChance 4, criticalHitAmount 20 |
+| Gorecleaver | sword | 11426 / 6101 | the Ron the Ripper's sabre | 70 | rare | Atk 36, Def 18, lifeLeechChance 5, lifeLeechAmount 5 |
+| Bloodmoon Edge | sword | 11395 / 860 | crimson sword | 90 | rare | Atk 44, Def 22, skillSword 3, criticalHitChance 5, criticalHitAmount 25 |
+| Soulreaper | sword | 8209 / 7385 | crimson sword | 120 | legendary | Atk 52, Def 28, skillSword 4, lifeLeechChance 10, lifeLeechAmount 8 |
+| Executioner's Reckoning | axe | 2440 / 3328 | daramian waraxe | 80 | rare | Atk 50, Def 18, skillAxe 3, criticalHitChance 7, criticalHitAmount 30 |
+| Harvester of Sorrows | axe | 10301 / 9384 | scythe of the reaper | 100 | legendary | Atk 50, Def 14, elementDeath 22, skillAxe 4, manaLeechChance 7, manaLeechAmount 6 |
 | Cinderbrand Axe | axe | 8925 / 8097 | solar axe | 130 | boss | Atk 58, Def 30, elementFire 24, skillAxe 5, absorbPercentFire 10 |
 | Lichfang Staff | club | 3961 / 3343 | lich staff | 70 | magic | Atk 36, Def 30, elementDeath 14, magicPoints 2, skillClub 2 |
-| Bonegrinder | club | 7379 / 7379 | brutetamer's staff | 90 | rare | Atk 58, Def 18, skillClub 5, criticalHitChance 7, criticalHitAmount 25 |
-| Gorehammer | club | 23590 / 21219 | one hit wonder | 100 | rare | Atk 66, Def 20, criticalHitChance 12, criticalHitAmount 30 |
-| Mawmaker | club | 25418 / 22762 | maimer | 110 | legendary | Atk 62, Def 30, skillClub 4, lifeLeechChance 10, lifeLeechAmount 6 |
+| Bonegrinder | club | 7379 / 7379 | brutetamer's staff | 90 | rare | Atk 58, Def 18, skillClub 5, criticalHitChance 5, criticalHitAmount 25 |
+| Gorehammer | club | 23590 / 21219 | one hit wonder | 100 | rare | Atk 66, Def 20, criticalHitChance 8, criticalHitAmount 30 |
+| Mawmaker | club | 25418 / 22762 | maimer | 110 | legendary | Atk 62, Def 30, skillClub 4, lifeLeechChance 7, lifeLeechAmount 6 |
 | Hellspear of the Damned | distance | 19390 / 17110 | mean paladin spear | 50 | magic | Atk 28, MaxHit% 84, skillDist 2 |
 | Gallowsbolt Crossbow | distance | 8849 / 8021 | modified crossbow | 60 | magic | Hit% 4, skillDist 3 |
-| Hellspite Arbalest | distance | 16111 / 14768 | thorn spitter | 100 | rare | Atk 14, Hit% 6, skillDist 4, criticalHitChance 6, criticalHitAmount 20 |
+| Hellspite Arbalest | distance | 16111 / 14768 | thorn spitter | 100 | rare | Atk 14, Hit% 6, skillDist 4, criticalHitChance 4, criticalHitAmount 20 |
 | Doomtide Longbow | distance | 27230 / 24574 | bow of cataclysm | 110 | legendary | Atk 10, Hit% 6, skillDist 6, absorbPercentDeath 6 |
-| Riftcaller | wand | 13760 / 12603 | wand of dimensions | 80 | rare | magicPoints 3, manaLeechChance 8, manaLeechAmount 5 |
-| Soulshackle Scepter | wand | 29571 / 26915 | Soulbinder Wand | 120 | legendary | magicPoints 5, criticalHitChance 10, criticalHitAmount 12, manaLeechChance 10, manaLeechAmount 8, absorbPercentDeath 8 |
-| Duskweaver Wand | wand | 29866 / 27210 | Myst Regalia Wand | 140 | boss | magicPoints 6, criticalHitChance 12, criticalHitAmount 15, manaLeechChance 12, manaLeechAmount 10, absorbPercentPhysical 8 |
+| Riftcaller | wand | 13760 / 12603 | wand of dimensions | 80 | rare | magicPoints 3, manaLeechChance 5, manaLeechAmount 5 |
+| Soulshackle Scepter | wand | 29571 / 26915 | Soulbinder Wand | 120 | legendary | magicPoints 5, criticalHitChance 7, criticalHitAmount 12, manaLeechChance 7, manaLeechAmount 8, absorbPercentDeath 8 |
+| Duskweaver Wand | wand | 29866 / 27210 | Myst Regalia Wand | 140 | boss | magicPoints 6, criticalHitChance 8, criticalHitAmount 15, manaLeechChance 8, manaLeechAmount 10, absorbPercentPhysical 8 |
 | Bonelord's Gaze | head | 3972 / 3408 | bonelord helmet | 60 | magic | Arm 10, magicPoints 2, maxManaPoints 150, absorbPercentDeath 6 |
 | Hornsworn Helm | head | 2496 / 3390 | horned helmet | 70 | rare (set) | Arm 14, absorbPercentFire 8, maxHitPoints 120, skillSword 2, skillAxe 2, skillClub 2 |
 | Crown of Cinders | head | 7462 / 7462 | ragnir helmet | 100 | legendary | Arm 14, absorbPercentFire 8, maxHitPoints 150, skillAxe 2 |
@@ -59,7 +59,7 @@ Columns: server id / client id, the stock item that was overridden, required lev
 | Visage of the Pale King | head | 27675 / 25019 | alicorn headguard | 120 | boss | Arm 15, absorbPercentDeath 8, absorbPercentPhysical 6, magicPoints 2, skillDist 3 |
 | Carrion Scarab Amulet | necklace | 11374 / 10457 | beetle necklace | 50 | magic | speed 10, absorbPercentPoison 10, maxHitPoints 100 |
 | Heart of Cinders | necklace | 10218 / 9301 | bonfire amulet | 80 | rare | absorbPercentFire 18, absorbPercentPhysical 6, maxHitPoints 200 |
-| Heartbleed Pendant | necklace | 10221 / 9304 | shockwave amulet | 90 | rare | lifeLeechChance 8, lifeLeechAmount 6, criticalHitChance 6, criticalHitAmount 20 |
+| Heartbleed Pendant | necklace | 10221 / 9304 | shockwave amulet | 90 | rare | lifeLeechChance 5, lifeLeechAmount 6, criticalHitChance 4, criticalHitAmount 20 |
 | Tear of the Void | necklace | 24851 / 22195 | onyx pendant | 100 | legendary | Arm 2, absorbPercentDeath 10, absorbPercentPhysical 5, maxManaPoints 200, magicPoints 2 |
 | Fangs of the Ninth Circle | necklace | 24790 / 22134 | enchanted werewolf amulet | 120 | boss | Arm 2, magicPoints 3, absorbPercentDeath 8, absorbPercentHoly -6, maxManaPoints 250 |
 | Pall of Skulls | body | 10296 / 9379 | heavy metal t-shirt | 60 | magic | Arm 14, absorbPercentDeath 8, absorbPercentPhysical 4, maxHitPoints 100 |
@@ -72,14 +72,14 @@ Columns: server id / client id, the stock item that was overridden, required lev
 | Obsidian Aegis | shield | 10318 / 9401 | shield Nevermourn | 110 | legendary | Def 38, skillShield 4, absorbPercentPhysical 8, absorbPercentDeath 5 |
 | Emberveil Greaves | legs | 27692 / 25036 | dawnfire pantaloons | 80 | rare (set) | Arm 13, absorbPercentFire 10, absorbPercentPhysical 4, magicPoints 2 |
 | Nightshade Leggings | legs | 27693 / 25037 | midnight sarong | 90 | rare | Arm 12, magicPoints 3, absorbPercentIce 8, absorbPercentDeath 6 |
-| Voidscale Legguards | legs | 28020 / 25364 | Astro Legs | 130 | legendary | Arm 18, skillSword 4, skillAxe 4, skillClub 4, absorbPercentPhysical 6, manaLeechChance 6, manaLeechAmount 6 |
+| Voidscale Legguards | legs | 28020 / 25364 | Astro Legs | 130 | legendary | Arm 18, skillSword 4, skillAxe 4, skillClub 4, absorbPercentPhysical 6, manaLeechChance 4, manaLeechAmount 6 |
 | Maw Treads | feet | 27288 / 24632 | pair of nightmare boots | 70 | rare | Arm 3, magicPoints 2, absorbPercentDeath 5, speed 15 |
 | Bloodstep Boots | feet | 27647 / 24991 | makeshift boots | 80 | rare (set) | Arm 4, absorbPercentFire 8, magicPoints 1, speed 20 |
 | Voidwalker Boots | feet | 26133 / 23477 | void boots | 100 | legendary | Arm 4, speed 30, absorbPercentDeath 6 |
 | Hornbinder Ring | ring | 21693 / 19359 | horn | 60 | magic | Arm 2, skillClub 3, maxHitPoints 120 |
 | Ring of the Last Ember | ring | 2206 / 3090 | time ring | 70 | rare | speed 20, healthGain 4, healthTicks 4000, manaGain 6, manaTicks 4000 |
 | Cinderclaw Band | ring | 10314 / 9397 | claw of 'The Noxious Spawn' | 80 | rare (set) | skillSword 3, skillAxe 3, skillClub 3, absorbPercentFire 8, magicPoints 1 |
-| Widow's Last Vow | ring | 10510 / 9593 | broken wedding ring | 90 | rare | lifeLeechChance 6, lifeLeechAmount 5, manaLeechChance 6, manaLeechAmount 5, maxHitPoints 100 |
+| Widow's Last Vow | ring | 10510 / 9593 | broken wedding ring | 90 | rare | lifeLeechChance 4, lifeLeechAmount 5, manaLeechChance 4, manaLeechAmount 5, maxHitPoints 100 |
 | Veil of the Wraith | ring | 29868 / 27212 | Myst Regalia Ring | 120 | boss | Arm 4, skillShield 5, magicPoints 2, absorbPercentPhysical 5 |
 
 Drop chances (per 10000 per kill before the tier multiplier x1/x2/x4/x6 for magic/rare/legendary/boss; normal tier never drops uniques)

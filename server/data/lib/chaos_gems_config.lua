@@ -38,7 +38,7 @@ return {
 			armour = {effect = "movespeed", values = {1, 1, 2, 2, 3}},
 			jewel = {effect = "res_earth", values = {2, 3, 4, 6, 8}}},
 		{key = "amethyst", name = "amethyst", plural = "amethysts", clientId = 3033, clientIdHigh = 678, color = "#b070ff",
-			weapon = {effect = "crit", values = {1, 2, 3, 4, 5}, values2 = {5, 10, 15, 20, 25}},
+			weapon = {effect = "crit", values = {1, 1, 2, 3, 3}, values2 = {5, 10, 15, 20, 25}},
 			armour = {effect = "res_death", values = {2, 3, 4, 6, 8}},
 			jewel = {effect = "dmg_death", values = {2, 4, 6, 9, 12}}},
 		{key = "topaz", name = "topaz", plural = "topazes", clientId = 9057, color = "#f6cf4a",
@@ -50,7 +50,7 @@ return {
 			armour = {effect = "res_all", values = {1, 1, 2, 3, 4}},
 			jewel = {effect = "res_holy", values = {2, 3, 4, 6, 8}}},
 		{key = "onyx", name = "onyx", plural = "onyxes", clientId = 22193, color = "#9a8c8c",
-			weapon = {effect = "leech", values = {2, 4, 6, 8, 10}, values2 = {1, 2, 3, 4, 5}},
+			weapon = {effect = "leech", values = {1, 3, 4, 5, 7}, values2 = {1, 2, 3, 4, 5}},
 			armour = {effect = "res_physical", values = {1, 1, 2, 3, 4}},
 			jewel = {effect = "dmg_physical", values = {1, 2, 3, 4, 6}}}
 	},
@@ -79,9 +79,9 @@ return {
 		maxmana = {label = "Max Mana", fmt = "flat", cap = 1500},
 		movespeed = {label = "Movement Speed", fmt = "pct", cap = 12},
 		-- engine critical hit: chance (%) and extra damage (%) as a pair
-		crit = {label = "Critical Chance", label2 = "Critical Hit", fmt = "pair", cap = 15, cap2 = 75},
+		crit = {label = "Critical Chance", label2 = "Critical Hit", fmt = "pair", cap = 10, cap2 = 75},
 		-- engine life leech: chance (%) to leech amount (%) of the damage
-		leech = {label = "Life Leech Chance", label2 = "Life Leech Amount", fmt = "pair", cap = 30, cap2 = 15},
+		leech = {label = "Life Leech Chance", label2 = "Life Leech Amount", fmt = "pair", cap = 20, cap2 = 15},
 		-- local to the weapon, like the Attack Speed modifier: the weapon's attack interval (mod + gems, at most this)
 		attackspeed = {label = "Attack Speed", fmt = "pct", cap = 20}
 	},

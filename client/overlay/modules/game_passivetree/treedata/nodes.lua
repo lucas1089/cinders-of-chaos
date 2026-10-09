@@ -1450,7 +1450,7 @@ function getTreeNodes()
 			group = 20,
 			icon = "manaLeechChance",
 			customStats = {
-				manaLeechChance = 2,
+				manaLeechChance = 1,
 				manaLeechAmount = 2
 			},
 			inputs = {
@@ -1524,7 +1524,7 @@ function getTreeNodes()
 			group = 24,
 			icon = "lifeLeechChance",
 			customStats = {
-				lifeLeechChance = 2,
+				lifeLeechChance = 1,
 				lifeLeechAmount = 2,
 			},
 			inputs = {
@@ -2524,7 +2524,7 @@ function getTreeNodes()
 			group = 37,
 			icon = "lifeLeechChance",
 			customStats = {
-				lifeLeechChance = 2,
+				lifeLeechChance = 1,
 				lifeLeechAmount = 2
 			},
 			inputs = {
@@ -2583,7 +2583,7 @@ function getTreeNodes()
 			group = 38,
 			icon = "manaLeechChance",
 			customStats = {
-				manaLeechChance = 2,
+				manaLeechChance = 1,
 				manaLeechAmount = 2
 			},
 			inputs = {
@@ -2639,7 +2639,7 @@ function getTreeNodes()
 			group = 39,
 			icon = "lifeLeechChance",
 			customStats = {
-				lifeLeechChance = 2,
+				lifeLeechChance = 1,
 				lifeLeechAmount = 2
 			},
 			inputs = {
@@ -2695,7 +2695,7 @@ function getTreeNodes()
 			group = 36,
 			icon = "manaLeechChance",
 			customStats = {
-				manaLeechChance = 2,
+				manaLeechChance = 1,
 				manaLeechAmount = 2
 			},
 			inputs = {
@@ -2755,7 +2755,7 @@ function getTreeNodes()
 			isRare = true,
 			icon = "absorbPhysical",
 			customStats = {
-				lifeLeechChance = 3,
+				lifeLeechChance = 2,
 				lifeLeechAmount = 3,
 				vitality = 3,
 				absorbPhysical = 3
@@ -2777,7 +2777,7 @@ function getTreeNodes()
 			isRare = true,
 			icon = "absorbFire",
 			customStats = {
-				lifeLeechChance = 3,
+				lifeLeechChance = 2,
 				lifeLeechAmount = 3,
 				vitality = 3,
 				absorbFire = 3
@@ -2799,7 +2799,7 @@ function getTreeNodes()
 			isRare = true,
 			icon = "absorbEarth",
 			customStats = {
-				manaLeechChance = 3,
+				manaLeechChance = 2,
 				manaLeechAmount = 3,
 				spirit = 3,
 				absorbEarth = 3
@@ -2821,7 +2821,7 @@ function getTreeNodes()
 			group = 38,
 			icon = "absorbEnergy",
 			customStats = {
-				manaLeechChance = 3,
+				manaLeechChance = 2,
 				manaLeechAmount = 3,
 				spirit = 3,
 				absorbEnergy = 3
@@ -5130,7 +5130,7 @@ function getTreeNodes()
 			group = 68,
 			icon = "lifeLeechChance",
 			customStats = {
-				lifeLeechChance = 2,
+				lifeLeechChance = 1,
 				lifeLeechAmount = 2
 			},
 			inputs = {
@@ -5186,7 +5186,7 @@ function getTreeNodes()
 			group = 69,
 			icon = "manaLeechChance",
 			customStats = {
-				manaLeechChance = 2,
+				manaLeechChance = 1,
 				manaLeechAmount = 2
 			},
 			inputs = {
@@ -5265,7 +5265,7 @@ function getTreeNodes()
 			group = 72,
 			icon = "lifeLeechChance",
 			customStats = {
-				lifeLeechChance = 2,
+				lifeLeechChance = 1,
 				lifeLeechAmount = 2
 			},
 			inputs = {
@@ -5327,7 +5327,7 @@ function getTreeNodes()
 			group = 71,
 			icon = "manaLeechChance",
 			customStats = {
-				manaLeechChance = 2,
+				manaLeechChance = 1,
 				manaLeechAmount = 2
 			},
 			inputs = {
@@ -5452,7 +5452,7 @@ function getTreeNodes()
 			group = 74,
 			icon = "lifeLeechChance",
 			customStats = {
-				lifeLeechChance = 2,
+				lifeLeechChance = 1,
 				lifeLeechAmount = 2
 			},
 			inputs = {
@@ -5511,7 +5511,7 @@ function getTreeNodes()
 			group = 75,
 			icon = "manaLeechChance",
 			customStats = {
-				manaLeechChance = 2,
+				manaLeechChance = 1,
 				manaLeechAmount = 2
 			},
 			inputs = {
@@ -5590,7 +5590,7 @@ function getTreeNodes()
 			group = 78,
 			icon = "lifeLeechChance",
 			customStats = {
-				lifeLeechChance = 2,
+				lifeLeechChance = 1,
 				lifeLeechAmount = 2
 			},
 			inputs = {
@@ -5646,7 +5646,7 @@ function getTreeNodes()
 			group = 77,
 			icon = "manaLeechChance",
 			customStats = {
-				manaLeechChance = 2,
+				manaLeechChance = 1,
 				manaLeechAmount = 2
 			},
 			inputs = {
@@ -5930,7 +5930,7 @@ function getTreeNodes()
 			group = 81,
 			icon = "bluntTrauma",
 			customStats = {
-				criticalHitChance = 3,
+				criticalHitChance = 2,
 				criticalHitAmount = 3,
 				wisdom = 5,
 				multiIncrement = 1
@@ -6131,7 +6131,7 @@ function getTreeNodes()
 			group = 82,
 			icon = "criticalHitChance",
 			customStats = {
-				criticalHitChance = 3,
+				criticalHitChance = 2,
 				criticalHitAmount = 3
 			},
 			inputs = {
@@ -6193,7 +6193,7 @@ function getTreeNodes()
 			customStats = {
 				strength = 10,
 				skillShield = 1,
-				lifeLeechChance = 3,
+				lifeLeechChance = 2,
 				lifeLeechAmount = 3
 			},
 			inputs = {
@@ -6215,7 +6215,7 @@ function getTreeNodes()
 			customStats = {
 				dexterity = 10,
 				speed = 300,
-				manaLeechChance = 3,
+				manaLeechChance = 2,
 				manaLeechAmount = 3
 			},
 			inputs = {
@@ -6400,7 +6400,7 @@ function getTreeNodes()
 			group = 83,
 			icon = "manaLeechChance",
 			customStats = {
-				manaLeechChance = 2,
+				manaLeechChance = 1,
 				manaLeechAmount = 2,
 			},
 			inputs = {
@@ -6500,7 +6500,7 @@ function getTreeNodes()
 			group = 83,
 			icon = "wihazard",
 			customStats = {
-				manaLeechChance = 3,
+				manaLeechChance = 2,
 				manaLeechAmount = 3,
 				magicSkill = 1
 			},
@@ -6670,7 +6670,7 @@ function getTreeNodes()
 			group = 84,
 			icon = "criticalHitChance",
 			customStats = {
-				criticalHitChance = 5,
+				criticalHitChance = 3,
 				criticalHitAmount = 5
 			},
 			inputs = {
@@ -7306,7 +7306,7 @@ function getTreeNodes()
 			group = 89,
 			icon = "lifeLeechChance",
 			customStats = {
-				lifeLeechChance = 7,
+				lifeLeechChance = 5,
 				lifeLeechAmount = 7
 			},
 			inputs = {
@@ -10855,7 +10855,7 @@ function getTreeNodes()
 			group = 99,
 			icon = "manaLeechAmount",
 			customStats = {
-				manaLeechChance = 2,
+				manaLeechChance = 1,
 				manaLeechAmount = 2
 			},
 			inputs = {
@@ -10875,7 +10875,7 @@ function getTreeNodes()
 			group = 99,
 			icon = "criticalHitAmount",
 			customStats = {
-				criticalHitChance = 2,
+				criticalHitChance = 1,
 				criticalHitAmount = 2
 			},
 			inputs = {
@@ -10914,7 +10914,7 @@ function getTreeNodes()
 			group = 99,
 			icon = "criticalHitChance",
 			customStats = {
-				criticalHitChance = 2,
+				criticalHitChance = 1,
 				criticalHitAmount = 2
 			},
 			inputs = {
@@ -10934,7 +10934,7 @@ function getTreeNodes()
 			group = 99,
 			icon = "lifeLeechChance",
 			customStats = {
-				lifeLeechChance = 2,
+				lifeLeechChance = 1,
 				lifeLeechAmount = 2
 			},
 			inputs = {
@@ -10955,7 +10955,7 @@ function getTreeNodes()
 			icon = "healthDamage",
 			customStats = {
 				incrementHealth = 3,
-				criticalHitChance = 3,
+				criticalHitChance = 2,
 				criticalHitAmount = 3
 			},
 			inputs = {
@@ -10976,12 +10976,12 @@ function getTreeNodes()
 			icon = "diamondSkin",
 			customStats = {
 				incrementHealth = 20,
-				criticalHitChance = 3,
+				criticalHitChance = 2,
 				criticalHitAmount = 3,
-				lifeLeechChance = 3,
+				lifeLeechChance = 2,
 				lifeLeechAmount = 3,
 				manaLeechAmount = 3,
-				manaLeechChance = 3
+				manaLeechChance = 2
 			},
 			inputs = {
 				579

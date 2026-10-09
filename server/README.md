@@ -53,16 +53,19 @@ server/
   src-patches/0003-item-custom-attributes.patch   engine: item custom attributes in every item packet for our client
                                       (rarity, item level, lock, unique, sockets, per-item id, version); item:sendUpdate(),
                                       item:getClientAttributes() (see "Item attributes in packets and rich tooltips")
+  src-patches/0004-uniform-chance-rolls.patch   engine: critical hit, life / mana leech and spawn-set chances rolled
+                                      uniformly (were a bell curve); rarity crit / leech chance = 2/3 of the roll
+                                      (see "Critical and leech chances")
     item_tooltip.lua  item_tooltip_core.lua (rich item tooltips with the equipped-item compare, client game_itemtooltip)
     shop.lua  shop_config.lua  shop_services.lua  autosell.lua  sell_prices.lua (store, see "Store services")
     bounty.lua  bounty_core.lua  bounty_config.lua  bounty_pool.lua (bounty board; pool from tools/gen_bounty_pool.py)
     rift.lua  rift_core.lua  rift_config.lua (rifts: keys, runtime-built instances, run HUD; see "Rifts")
     crafting.lua (crafting bench and orbs; rules in data/lib/chaos_crafting.lua, installer tools/install_crafting.py)
+    salvage.lua  salvage_core.lua  salvage_config.lua (salvage into rune shards, the item lock; installer tools/install_salvage.py)
     item_mods.lua (Chaos item modifiers on the character; catalogue and rolls in data/lib/chaos_item_mods.lua, see "Item modifiers")
     treasure_goblin.lua  treasure_goblin_core.lua  treasure_goblin_config.lua (treasure goblins, see "Treasure goblins")
     invasion.lua  invasion_core.lua  invasion_config.lua  worldevents.lua (invasions and the small world events, see "Invasions and world events";
                                       the Wandering Merchant NPC is data/npc/Wandering Merchant.xml + npc/scripts/wandering_merchant.lua)
-    salvage.lua  salvage_core.lua  salvage_config.lua (salvage into rune shards, the item lock; installer tools/install_salvage.py)
     leaderboard.lua  leaderboard_core.lua  leaderboard_config.lua (weekly boards with titles, class ladder)
     season.lua  season_core.lua  season_config.lua (seasons; sql/chaos_season.sql, tools/patch_season_events.py)
     hunt.lua  hunt_core.lua  hunt_config.lua  hunt_supplies.lua (hunt tracker; supply prices from tools/gen_supply_prices.py)
@@ -359,6 +362,43 @@ Engine patch (only where the server is built from source): `patch -p1 < server/s
 in the server source root, rebuild. It pushes `damage.critical` as the 8th argument of `onHealthChange` (existing
 scripts ignore it) and removes the two `CONST_ME_CRITICAL_DAMAGE` effects in `combat.cpp`. Tested on the test server
 (TFS build from this source, objects of `combat.cpp` and `creatureevent.cpp` recompiled and relinked).
+
+## Critical and leech chances (`src-patches/0004-uniform-chance-rolls.patch`)
+
+The base engine rolled the critical hit chance (single-target hits: melee, distance, runes and single-target spells),
+the life and mana leech chances (every hit) with `normal_random(1, 100) <= chance`. `normal_random` is a bell curve
+around 50 (sd 25; a draw outside 1..100 lands on 50/51), so a chance fired far less often than written, the more so
+the smaller it was (measured in game: a 10% leech gem leeched in ~5% of the hits, a small sample; the exact rate is
+3.0%). Area spells already rolled their critical hit uniformly. Patch 0004 rolls every one of them with
+`uniform_random`: a chance now means what it says. The old effective rate, exactly (P(normal_random(1, 100) <= c)):
+
+| written chance c | old effective rate | new value of a Chaos source (round(2c/3)) |
+|---|---|---|
+| 1% | 0.1% | 1% |
+| 2% | 0.3% | 1% |
+| 3% | 0.6% | 2% |
+| 5% | 1.2% | 3% |
+| 7% | 1.8% | 5% |
+| 10% | 3.0% | 7% |
+| 15% | 5.6% | 10% |
+| 20% | 9.0% | 13% |
+| 25% | 13.3% | 17% |
+| 30% | 18.7% | 20% |
+| 40% | 32.0% | 27% |
+| 50% | 50.0% | 33% |
+
+The engine rolls once against the sum of every source (gear, gems, tree, waystone), and the old curve is not linear,
+so no per-source mapping can reproduce it; every chance was scaled by one factor, two thirds (at least 1, 100 stays
+100), which gives the old effective rate at a total of ~30% (end-game builds); smaller totals now fire more often
+than before (10% -> 7% instead of 3%), totals above ~35% a little less. Leech amounts and critical damage are unchanged.
+What changed: gems (amethyst 1/2/3/4/5 -> 1/1/2/3/3%, cap 15 -> 10%; onyx 2/4/6/8/10 -> 1/3/4/5/7%, cap 30 -> 20%),
+the passive tree nodes (client `treedata/nodes.lua`, `passivetree_data.lua` regenerated: 2 -> 1, 3 -> 2, 5 -> 3,
+7 -> 5), the uniques (`chaos_items.xml`, specs regenerated), the rarity roll (engine patch and Exalted Orb, above), and
+on install `tools/patch_base_events.py` scales the stock items' `criticalhitchance` / `lifeleechchance` /
+`manaleechchance` in `items.xml` and the waystone "Critical / Life / Mana Chance" upgrades the same way. Uniques and
+rarity items that already exist keep the values they were made with. Class crits (Bushido, Shadowfist focus, stealth,
+the Keen Edge support) are rolled in Lua with `math.random` and were always uniform: unchanged. The patch also rolls the
+chance of a `<monsters>` set in a spawn file uniformly (no spawn file of ours uses sets).
 
 ## Passive tree points
 
@@ -1298,7 +1338,8 @@ of modifiers, one custom attribute each: absorbs `rarity_<x>Absorb` (%), skills 
 `rarity_maglevelSkill`), critical / mana leech / life leech as chance + amount pairs, and on weapons without an element
 of their own one `rarity_element<x>` (% extra damage). Everything is also written into the description attribute
 ("Level: 53, Holy +3%, Fishing +1, Critical Chance +1%, Critical Hit +1%"), which is what the look text and the client
-tooltip show. `customs/rarity/base_rarity.lua` turns the attributes into conditions and storages when the item is
+tooltip show. With engine patch 0004 a critical / leech chance is (2 x roll + 1) / 3 of the pair's roll (1..6 -> 1, 1,
+2, 3, 3, 4; the amount keeps the roll; the Exalted Orb does the same, `ChaosCrafting.specialChance`). `customs/rarity/base_rarity.lua` turns the attributes into conditions and storages when the item is
 equipped (and at login); the element and absorb combat scripts read those storages. Uniques (`chaos_unique_items.lua`)
 are base items with the custom attribute `chaos_unique` and their stats as the same `rarity_*` attributes, without a
 rarity. On top of these, items carry the Chaos modifiers of the next section (`chaos_mod_<key>`).
@@ -1542,13 +1583,13 @@ most a character gets from all gems.
 | ruby | Fire Damage +2/4/6/9/12% | Max Health +20/45/80/130/200 | Fire Resistance +2/3/4/6/8% |
 | sapphire | Ice Damage +2/4/6/9/12% | Max Mana +15/35/60/100/150 | Ice Resistance +2/3/4/6/8% |
 | emerald | Earth Damage +2/4/6/9/12% | Movement Speed +1/1/2/2/3% | Earth Resistance +2/3/4/6/8% |
-| amethyst | Critical Chance +1..5%, Critical Hit +5..25% | Death Resistance +2/3/4/6/8% | Death Damage +2/4/6/9/12% |
+| amethyst | Critical Chance +1/1/2/3/3%, Critical Hit +5..25% | Death Resistance +2/3/4/6/8% | Death Damage +2/4/6/9/12% |
 | topaz | Attack Speed +1/2/3/4/5% | Energy Resistance +2/3/4/6/8% | Energy Damage +2/4/6/9/12% |
 | diamond | Holy Damage +2/4/6/9/12% | Elemental Resistances +1/1/2/3/4% (fire, ice, earth, death, energy, holy) | Holy Resistance +2/3/4/6/8% |
-| onyx | Life Leech Chance +2..10%, Amount +1..5% | Physical Resistance +1/1/2/3/4% | Physical Damage +1/2/3/4/6% |
+| onyx | Life Leech Chance +1/3/4/5/7%, Amount +1..5% | Physical Resistance +1/1/2/3/4% | Physical Damage +1/2/3/4/6% |
 
 Caps: element damage 40% each, physical damage 12%, element resistances 30% each, physical resistance 10%, max health
-2000, max mana 1500, critical 15% chance / 75% damage, life leech 30% / 15%, movement speed 12% (together with the
+2000, max mana 1500, critical 10% chance / 75% damage, life leech 20% / 15%, movement speed 12% (together with the
 Movement Speed modifier, whose cap it shares), attack speed 20% on the weapon (modifier and gems together).
 An offensive theme (critical, life leech, attack speed) sits in weapons with the gem's element damage in jewellery;
 otherwise the element damage sits in weapons and the theme in armour.

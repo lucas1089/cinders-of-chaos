@@ -76,8 +76,8 @@ C.config = {
 	-- (one fewer on other gear: no element); every rarity allows one more than a weapon rolls.
 	maxMods = {3, 4, 4, 5, 5, 6, 6, 6, 7, 7, 7, 7, 7, 9, 9},
 
-	-- value ranges per rarity, copied from item.cpp: absorbs, skills, critical and leech use absorbRange,
-	-- element damage uses elementRange
+	-- value ranges per rarity, copied from item.cpp: absorbs, skills, critical and leech use absorbRange (a critical /
+	-- leech chance is C.specialChance of the roll, its amount the roll), element damage uses elementRange
 	absorbRange = {{1, 1}, {1, 1}, {1, 1}, {1, 2}, {1, 2}, {1, 3}, {1, 3}, {1, 4}, {1, 4}, {2, 5},
 		{2, 5}, {2, 5}, {3, 6}, {4, 6}, {5, 6}},
 	elementRange = {{1, 3}, {3, 6}, {4, 8}, {5, 10}, {6, 12}, {7, 14}, {8, 16}, {9, 18}, {10, 20}, {12, 22},
@@ -479,6 +479,12 @@ function C.rollValue(group, rarity)
 	return C.random(r[1], r[2])
 end
 
+-- the chance of a critical / leech pair rolled as `v` (the amount keeps v): about two thirds, as engine patch 0004
+-- does since the chance rolls are uniform (1..6 -> 1, 1, 2, 3, 3, 4)
+function C.specialChance(v)
+	return math.max(1, math.floor((2 * v + 1) / 3))
+end
+
 -- the stock Divine Orb roll: 0 (no rarity) most of the time
 function C.rollDivineRarity()
 	if C.random(1, 100) > C.config.divineRollChance then
@@ -565,13 +571,17 @@ function C.exalt(item)
 		return {group = "chaos", key = M.attr(entry.key), chaosKey = entry.key, label = entry.label, value = v}
 	end
 	local value = C.rollValue(group, rarity)
+	local amount = value
+	if group == "special" then
+		value = C.specialChance(amount)
+	end
 	item:setCustomAttribute(entry.key, value)
 	if entry.key2 then
-		item:setCustomAttribute(entry.key2, value)
+		item:setCustomAttribute(entry.key2, amount)
 	end
 	C.rewriteDescription(item)
 	return {group = group, key = entry.key, key2 = entry.key2, label = entry.label, label2 = entry.label2,
-		value = value, value2 = entry.key2 and value or nil}
+		value = value, value2 = entry.key2 and amount or nil}
 end
 
 -- Orb of Annulment: one random modifier goes. Returns the removed modifier.

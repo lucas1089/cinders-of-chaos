@@ -22,9 +22,10 @@ test accounts with known passwords: local play only.
 ## 1. Engine
 
 1. Build the engine from the base sources with our patches applied, in the source root:
-   `patch -p1 < server/src-patches/0001-critical-hit-to-lua.patch` and
-   `patch -p1 < server/src-patches/0002-dual-wield-and-vocation-attack-speed.patch`, then the usual CMake build.
-   The Windows binary in the download has neither patch (no "CRIT!" visual, no off-hand sword for the Ninja).
+   every `server/src-patches/*.patch` in order (`for p in server/src-patches/*.patch; do patch -p1 < "$p"; done`:
+   0001 crit to Lua, 0002 dual wield, 0003 item attributes, 0004 uniform crit / leech chance rolls), then the usual
+   CMake build (a full one: 0003 adds members to `ProtocolGame`). The Windows binary in the download has none of them (no "CRIT!" visual, no off-hand sword for the
+   Ninja, and crit / leech chances fire less often than the rescaled values say).
 2. Put the binary into the server folder as `/opt/chaos/server/tfs` (the path the service file uses).
 
 ## 2. Database

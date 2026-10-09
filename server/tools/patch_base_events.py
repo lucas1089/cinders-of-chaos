@@ -34,6 +34,14 @@ pet share, so the bonuses multiply the staged experience and the pet gets its sh
    but never got its stats. The autoloot now hands each item to ChaosLoot.finalizeRarity (data/scripts/chaos/loot.lua)
    first, which rolls it once on the way out.
 
+6. data/items/items.xml: the stock critical hit / life leech / mana leech chances (criticalhitchance,
+   lifeleechchance, manaleechchance) become about two thirds (round(2 * v / 3), at least 1; 100 stays 100). Engine
+   patch 0004 rolls these chances uniformly; the base engine's bell-curve roll made them fire far less often than
+   written (10% fired ~3%, 30% ~19%), see server/README.md "Critical and leech chances".
+
+7. data/scripts/customs/waystone_system/character_upgrades.lua: the waystone upgrades "Critical Chance",
+   "Life Chance" and "Mana Chance" give about two thirds of their level as chance (same rule as 6).
+
 Idempotent: every inserted block carries a marker comment and is not added twice.
 """
 import os, re, sys
@@ -171,6 +179,45 @@ def patch_autoloot(text):
     return text[:m.start()] + block + text[m.start():], 'patched'
 
 
+CHANCE_MARKER = '<!-- Chaos: critical / leech chances rescaled for uniform rolls (patch_base_events.py) -->'
+
+
+def chance_value(v):
+    """the rescaled chance: round(2 * v / 3), at least 1; 100 (always) stays 100"""
+    return v if v >= 100 else max(1, (2 * v + 1) // 3)
+
+
+def patch_item_chances(text):
+    if CHANCE_MARKER in text:
+        return text, 'already'
+    m = re.search(r'<items>[^\n]*\n', text)
+    if not m:
+        return text, '<items> not found'
+    rx = re.compile(r'(<attribute\s+key="(?:criticalhitchance|lifeleechchance|manaleechchance)"\s+value=")(\d+)(")',
+                    re.IGNORECASE)
+    text = rx.sub(lambda a: a.group(1) + str(chance_value(int(a.group(2)))) + a.group(3), text)
+    return text[:m.end()] + '\t' + CHANCE_MARKER + '\n' + text[m.end():], 'patched'
+
+
+WAYSTONE_MARKER = '-- Chaos: chance upgrades give two thirds of their level (patch_base_events.py)'
+
+
+def patch_waystone_chances(text):
+    if WAYSTONE_MARKER in text:
+        return text, 'already'
+    m = re.search(r'\n([ \t]*)cond:setParameter\(param, lvl\)', text)
+    if not m:
+        return text, 'cond:setParameter(param, lvl) not found'
+    ind = m.group(1)
+    block = (f'\n{ind}{WAYSTONE_MARKER}\n'
+             f'{ind}local value = lvl\n'
+             f'{ind}if offer.upgradeType == "criticalch" or offer.upgradeType == "lifech" or offer.upgradeType == "manach" then\n'
+             f'{ind}  value = math.max(1, math.floor((2 * lvl + 1) / 3))\n'
+             f'{ind}end\n'
+             f'{ind}cond:setParameter(param, value)')
+    return text[:m.start()] + block + text[m.end():], 'patched'
+
+
 def apply(path, fn, dry):
     text = open(path, encoding='utf-8', errors='surrogateescape').read()
     new, status = fn(text)
@@ -192,6 +239,9 @@ def main():
     ok = apply(os.path.join(args[0], 'events', 'scripts', 'creature.lua'), patch_target_combat, dry) and ok
     ok = apply(os.path.join(args[0], 'creaturescripts', 'scripts', 'login.lua'), patch_login_demotion, dry) and ok
     ok = apply(os.path.join(args[0], 'scripts', 'creaturescripts', 'autoloot.lua'), patch_autoloot, dry) and ok
+    ok = apply(os.path.join(args[0], 'items', 'items.xml'), patch_item_chances, dry) and ok
+    ok = apply(os.path.join(args[0], 'scripts', 'customs', 'waystone_system', 'character_upgrades.lua'),
+               patch_waystone_chances, dry) and ok
     return 0 if ok else 1
 
 

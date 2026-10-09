@@ -9,7 +9,7 @@
 		<attribute key="defense" value="28" />
 		<attribute key="extraDef" value="2" />
 		<attribute key="skillSword" value="4" />
-		<attribute key="lifeLeechChance" value="15" />
+		<attribute key="lifeLeechChance" value="10" />
 		<attribute key="lifeLeechAmount" value="8" />
 		<attribute key="description" value="Every soul it cuts only feeds the hunger of its blade. (Requires level 120.)" />
 		<attribute key="showattributes" value="1" />
@@ -21,7 +21,7 @@
 		<attribute key="attack" value="44" />
 		<attribute key="defense" value="22" />
 		<attribute key="skillSword" value="3" />
-		<attribute key="criticalHitChance" value="8" />
+		<attribute key="criticalHitChance" value="5" />
 		<attribute key="criticalHitAmount" value="25" />
 		<attribute key="description" value="Forged under a crimson moon; it never dries. (Requires level 90.)" />
 		<attribute key="showattributes" value="1" />
@@ -32,7 +32,7 @@
 		<attribute key="weaponType" value="sword" />
 		<attribute key="attack" value="36" />
 		<attribute key="defense" value="18" />
-		<attribute key="lifeLeechChance" value="8" />
+		<attribute key="lifeLeechChance" value="5" />
 		<attribute key="lifeLeechAmount" value="5" />
 		<attribute key="description" value="A ripper's sabre, notched by a thousand slaughters. (Requires level 70.)" />
 		<attribute key="showattributes" value="1" />
@@ -45,7 +45,7 @@
 		<attribute key="defense" value="16" />
 		<attribute key="extraDef" value="2" />
 		<attribute key="skillSword" value="2" />
-		<attribute key="criticalHitChance" value="6" />
+		<attribute key="criticalHitChance" value="4" />
 		<attribute key="criticalHitAmount" value="20" />
 		<attribute key="description" value="Quick as a whisper in the crypt, and as final. (Requires level 60.)" />
 		<attribute key="showattributes" value="1" />
@@ -57,7 +57,7 @@
 		<attribute key="attack" value="24" />
 		<attribute key="defense" value="12" />
 		<attribute key="extraDef" value="2" />
-		<attribute key="criticalHitChance" value="5" />
+		<attribute key="criticalHitChance" value="3" />
 		<attribute key="criticalHitAmount" value="15" />
 		<attribute key="description" value="Slim, patient and well-used; its owners all died young. (Requires level 40.)" />
 		<attribute key="showattributes" value="1" />
@@ -84,7 +84,7 @@
 		<attribute key="defense" value="14" />
 		<attribute key="elementDeath" value="22" />
 		<attribute key="skillAxe" value="4" />
-		<attribute key="manaLeechChance" value="10" />
+		<attribute key="manaLeechChance" value="7" />
 		<attribute key="manaLeechAmount" value="6" />
 		<attribute key="description" value="It has reaped countless souls and still wants a few more. (Requires level 100.)" />
 		<attribute key="showattributes" value="1" />
@@ -97,7 +97,7 @@
 		<attribute key="attack" value="50" />
 		<attribute key="defense" value="18" />
 		<attribute key="skillAxe" value="3" />
-		<attribute key="criticalHitChance" value="10" />
+		<attribute key="criticalHitChance" value="7" />
 		<attribute key="criticalHitAmount" value="30" />
 		<attribute key="description" value="The last thing many a condemned man heard was its song. (Requires level 80.)" />
 		<attribute key="showattributes" value="1" />
@@ -110,7 +110,7 @@
 		<attribute key="attack" value="58" />
 		<attribute key="defense" value="18" />
 		<attribute key="skillClub" value="5" />
-		<attribute key="criticalHitChance" value="7" />
+		<attribute key="criticalHitChance" value="5" />
 		<attribute key="criticalHitAmount" value="25" />
 		<attribute key="description" value="A skull on a pole. The skull is grinning, the pole is not. (Requires level 90.)" />
 		<attribute key="showattributes" value="1" />
@@ -122,7 +122,7 @@
 		<attribute key="attack" value="62" />
 		<attribute key="defense" value="30" />
 		<attribute key="skillClub" value="4" />
-		<attribute key="lifeLeechChance" value="10" />
+		<attribute key="lifeLeechChance" value="7" />
 		<attribute key="lifeLeechAmount" value="6" />
 		<attribute key="description" value="Wherever it lands, a new mouth opens. (Requires level 110.)" />
 		<attribute key="showattributes" value="1" />
@@ -134,7 +134,7 @@
 		<attribute key="slotType" value="two-handed" />
 		<attribute key="attack" value="66" />
 		<attribute key="defense" value="20" />
-		<attribute key="criticalHitChance" value="12" />
+		<attribute key="criticalHitChance" value="8" />
 		<attribute key="criticalHitAmount" value="30" />
 		<attribute key="description" value="A two-handed argument that ends all debate. (Requires level 100.)" />
 		<attribute key="showattributes" value="1" />
@@ -162,7 +162,7 @@
 		<attribute key="attack" value="14" />
 		<attribute key="hitChance" value="6" />
 		<attribute key="skillDist" value="4" />
-		<attribute key="criticalHitChance" value="6" />
+		<attribute key="criticalHitChance" value="4" />
 		<attribute key="criticalHitAmount" value="20" />
 		<attribute key="description" value="Its bolts scream on the way down. (Requires level 100.)" />
 		<attribute key="showattributes" value="1" />
@@ -212,7 +212,7 @@
 		<attribute key="shootType" value="death" />
 		<attribute key="range" value="3" />
 		<attribute key="magicPoints" value="3" />
-		<attribute key="manaLeechChance" value="8" />
+		<attribute key="manaLeechChance" value="5" />
 		<attribute key="manaLeechAmount" value="5" />
 		<attribute key="description" value="Tears a seam in the world and lets the death in. (Requires level 80.)" />
 		<attribute key="showattributes" value="1" />
@@ -225,9 +225,9 @@
 		<attribute key="range" value="6" />
 		<attribute key="attackSpeed" value="1800" />
 		<attribute key="magicPoints" value="5" />
-		<attribute key="criticalHitChance" value="10" />
+		<attribute key="criticalHitChance" value="7" />
 		<attribute key="criticalHitAmount" value="12" />
-		<attribute key="manaLeechChance" value="10" />
+		<attribute key="manaLeechChance" value="7" />
 		<attribute key="manaLeechAmount" value="8" />
 		<attribute key="absorbPercentDeath" value="8" />
 		<attribute key="description" value="A cage of rattling chains for what is left of a mind. (Requires level 120.)" />
@@ -241,9 +241,9 @@
 		<attribute key="range" value="6" />
 		<attribute key="attackSpeed" value="1800" />
 		<attribute key="magicPoints" value="6" />
-		<attribute key="criticalHitChance" value="12" />
+		<attribute key="criticalHitChance" value="8" />
 		<attribute key="criticalHitAmount" value="15" />
-		<attribute key="manaLeechChance" value="12" />
+		<attribute key="manaLeechChance" value="8" />
 		<attribute key="manaLeechAmount" value="10" />
 		<attribute key="absorbPercentPhysical" value="8" />
 		<attribute key="description" value="It weaves the last light of day into a shroud. (Requires level 140.)" />
@@ -393,7 +393,7 @@
 		<attribute key="skillAxe" value="4" />
 		<attribute key="skillClub" value="4" />
 		<attribute key="absorbPercentPhysical" value="6" />
-		<attribute key="manaLeechChance" value="6" />
+		<attribute key="manaLeechChance" value="4" />
 		<attribute key="manaLeechAmount" value="6" />
 		<attribute key="description" value="Scales shed by something that lives between the stars. (Requires level 130.)" />
 		<attribute key="showattributes" value="1" />
@@ -476,9 +476,9 @@
 	<item id="10221" article="a" name="Heartbleed Pendant">
 		<attribute key="weight" value="700" />
 		<attribute key="slotType" value="necklace" />
-		<attribute key="lifeLeechChance" value="8" />
+		<attribute key="lifeLeechChance" value="5" />
 		<attribute key="lifeLeechAmount" value="6" />
-		<attribute key="criticalHitChance" value="6" />
+		<attribute key="criticalHitChance" value="4" />
 		<attribute key="criticalHitAmount" value="20" />
 		<attribute key="description" value="Each beat is a drop of someone else's life. (Requires level 90.)" />
 		<attribute key="showattributes" value="1" />
@@ -566,9 +566,9 @@
 	<item id="10510" article="a" name="Widow's Last Vow">
 		<attribute key="weight" value="40" />
 		<attribute key="slotType" value="ring" />
-		<attribute key="lifeLeechChance" value="6" />
+		<attribute key="lifeLeechChance" value="4" />
 		<attribute key="lifeLeechAmount" value="5" />
-		<attribute key="manaLeechChance" value="6" />
+		<attribute key="manaLeechChance" value="4" />
 		<attribute key="manaLeechAmount" value="5" />
 		<attribute key="maxHitPoints" value="100" />
 		<attribute key="description" value="A promise made to the grave, kept in blood. (Requires level 90.)" />

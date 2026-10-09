@@ -198,11 +198,14 @@ dice = {61, 2, 3} -- group special, entry 2 (mana leech), value 3
 local ok, res = C.apply("exalted", armor)
 eq(ok, true, "exalted on armor")
 eq(res.added.key, "rarity_manaLeechChance")
-eq(armor:getCustomAttribute("rarity_manaLeechChance"), 3)
-eq(armor:getCustomAttribute("rarity_manaLeechAmount"), 3, "leech pair gets both keys")
+eq(armor:getCustomAttribute("rarity_manaLeechChance"), 2, "the chance is two thirds of the roll (uniform chance rolls)")
+eq(armor:getCustomAttribute("rarity_manaLeechAmount"), 3, "leech pair gets both keys, the amount the full roll")
 eq(#C.readMods(armor), 2)
-eq(armor:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "Level: 42, Holy +2%, Mana Chance +3%, Mana Amount +3%")
-eq(res.text, "golden armor gained Mana Chance +3%, Mana Amount +3%.")
+eq(armor:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "Level: 42, Holy +2%, Mana Chance +2%, Mana Amount +3%")
+eq(res.text, "golden armor gained Mana Chance +2%, Mana Amount +3%.")
+for v, want in ipairs({1, 1, 2, 3, 3, 4}) do
+	eq(C.specialChance(v), want, "special chance of a roll of " .. v .. " (as engine patch 0004)")
+end
 -- the value range follows the rarity (rarity 6: 1..3 for absorbs)
 dice = {1, 1, 2}
 C.apply("exalted", armor)
