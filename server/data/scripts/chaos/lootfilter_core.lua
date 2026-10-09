@@ -10,7 +10,8 @@
 --   ChaosLootFilter.reconcile(entries, present)  remaining count per tracked entry, given what the corpse holds now
 --   ChaosLootFilter.inReach(from, to, range)  same floor and within range.x / range.y squares
 --   ChaosLootFilter.label(info)               "[Legendary] Dawnforged Helmet" / "[Unique] Soulreaper" / "Gold Coin"
--- info = {id, rarity = 0..15, unique = bool, orb = bool, category = "equipment"|"currency"|"supplies"|"other", name, count}
+-- info = {id, rarity = 0..15, unique = bool, orb = bool, category = "equipment"|"currency"|"supplies"|"other", name, count,
+--         level = item level, bestTier = the best modifier tier on it (0 = none)}
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
 ChaosLootFilter = ChaosLootFilter or {}
@@ -48,10 +49,12 @@ F.CATEGORIES = {"equipment", "currency", "supplies", "other"}
 -- show       per category; a category switched off is dimmed (equipment at or above `highlight` still glows)
 -- icons      the Loot console tab shows item icons (click to loot) instead of the text lines
 -- notify     the "Rare drop: [Legendary] ..." line for highlighted items
+-- tier       equipment with a modifier of this tier or better glows whatever its rarity (0 = off, 1..8 = T1..T8)
 function F.defaults()
 	return {highlight = 3, dim = 0, lootMin = 0, lootFrom = 0,
-		show = {equipment = true, currency = true, supplies = true, other = true}, icons = true, notify = true}
+		show = {equipment = true, currency = true, supplies = true, other = true}, icons = true, notify = true, tier = 0}
 end
+F.MAX_TIER = 8
 
 F.PRESETS = {
 	{key = "all", name = "Show all", desc = "Rare+ glows, nothing is dimmed, autoloot as on your list."},
@@ -108,8 +111,12 @@ function F.sanitize(t)
 		lootFrom = clampRarity(t.lootFrom, d.lootFrom),
 		show = {},
 		icons = bool(t.icons, d.icons),
-		notify = bool(t.notify, d.notify)
+		notify = bool(t.notify, d.notify),
+		tier = math.max(0, math.min(F.MAX_TIER, math.floor(tonumber(t.tier) or d.tier)))
 	}
+	if s.tier ~= s.tier then
+		s.tier = d.tier
+	end
 	local show = type(t.show) == "table" and t.show or {}
 	for _, c in ipairs(F.CATEGORIES) do
 		s.show[c] = bool(show[c], true)
@@ -117,7 +124,8 @@ function F.sanitize(t)
 	return s
 end
 
--- bits: highlight 0-3, dim 4-7, lootMin 8-11, lootFrom 12-15, show 16-19 (CATEGORIES order), icons 20, notify 21.
+-- bits: highlight 0-3, dim 4-7, lootMin 8-11, lootFrom 12-15, show 16-19 (CATEGORIES order), icons 20, notify 21,
+-- tier 22-25.
 -- Arithmetic only (no bit library: Lua 5.1 and 5.3 both run it). Fits easily in a positive int32 storage value.
 function F.pack(s)
 	s = F.sanitize(s)
@@ -135,7 +143,7 @@ function F.pack(s)
 	if s.notify then
 		v = v + 2097152
 	end
-	return v
+	return v + s.tier * 4194304
 end
 
 function F.unpack(v)
@@ -155,6 +163,7 @@ function F.unpack(v)
 	end
 	s.icons = field(1048576, 2) == 1
 	s.notify = field(2097152, 2) == 1
+	s.tier = field(4194304, 16)
 	return F.sanitize(s)
 end
 
@@ -168,6 +177,9 @@ function F.classify(info, s)
 	if category == "equipment" then
 		local r = tonumber(info.rarity) or 0
 		if s.highlight > 0 and r >= s.highlight then
+			return "highlight"
+		end
+		if (s.tier or 0) > 0 and (tonumber(info.bestTier) or 0) >= s.tier then
 			return "highlight"
 		end
 		if not shown or r < s.dim then

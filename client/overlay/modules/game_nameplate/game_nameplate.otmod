@@ -1,6 +1,6 @@
 Module
   name: game_nameplate
-  description: Name plates over players - title, guild and a framed name (extended opcode 248, !title)
+  description: Name plates over players - title, guild and a framed name (extended opcode 248)
   author: project-chaos
   sandboxed: true
   scripts: [ nameplatemath, nameplate ]

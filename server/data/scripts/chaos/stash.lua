@@ -365,7 +365,8 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 	local data = msg.data
 	-- list, redeem and block-list requests read the database; a flood of them is dropped (ratelimit.lua). "Stash" is
 	-- not limited: the client waits for its echo, and each one needs a real item
-	local limit = ({SendCategories = 300, SendItems = 300, Redeem = 100, ChangeStash = 100})[data.make]
+	local limit = ({SendCategories = 300, SendItems = 300, Redeem = 100, ChangeStash = 100, Open = 300,
+		StashAllRequest = 1000})[data.make]
 	if limit and ChaosRateLimit and not ChaosRateLimit.allow(player, "stash." .. data.make, limit) then
 		return
 	end
@@ -386,6 +387,10 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 		redeem(player, data)
 	elseif data.make == "ChangeStash" then
 		changeBlock(player, data)
+	elseif data.make == "Open" then
+		send(player, {make = "Toggle", remote = isRemote(player)})
+	elseif data.make == "StashAllRequest" then
+		stashAll(player)
 	end
 end
 
@@ -393,21 +398,6 @@ LoginEvent:type("login")
 LoginEvent:register()
 ExtendedEvent:type("extendedopcode")
 ExtendedEvent:register()
-
--- "!stash" toggles the window, "!stash all" stashes every stackable in the main backpack.
-local talk = TalkAction("!stash")
-
-function talk.onSay(player, words, param)
-	if param:lower():gsub("%s+", "") == "all" then
-		stashAll(player)
-	else
-		send(player, {make = "Toggle", remote = isRemote(player)})
-	end
-	return false
-end
-
-talk:separator(" ")
-talk:register()
 
 -- used by autosell.lua (Bottomless Loot Pouch): put a loose item (e.g. in a corpse) into the stash.
 -- Returns true when it was stashed; false when the item is not stashable, blocked or the entry is full.

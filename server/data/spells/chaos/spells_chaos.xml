@@ -156,6 +156,30 @@
 		<vocation name="Inquisitor" />
 		<vocation name="Sentinel" />
 	</instant>
+	<!-- Town Portal: every class from level 1 (data/scripts/chaos/townportal.lua; the real 60 s cooldown starts when the portal opens) -->
+	<instant group="support" spellid="254" name="Town Portal" words="ash domh" level="1" mana="0" premium="0" aggressive="0" selftarget="1" cooldown="1000" groupcooldown="0" needlearn="0" script="chaos/shared/town_portal.lua">
+		<vocation name="Warrior" />
+		<vocation name="Juggernaut" />
+		<vocation name="Berserker" />
+		<vocation name="Ranger" />
+		<vocation name="Deadeye" />
+		<vocation name="Beastmaster" />
+		<vocation name="Mystic" />
+		<vocation name="Elementalist" />
+		<vocation name="Illusionist" />
+		<vocation name="Thief" />
+		<vocation name="Ninja" />
+		<vocation name="Samurai" />
+		<vocation name="Monk" />
+		<vocation name="Shadowfist" />
+		<vocation name="Iron Sage" />
+		<vocation name="Necromancer" />
+		<vocation name="Lich" />
+		<vocation name="Bone Lord" />
+		<vocation name="Templar" />
+		<vocation name="Inquisitor" />
+		<vocation name="Sentinel" />
+	</instant>
 	<instant group="support" spellid="233" name="Banner Call" words="tor vas vant" level="60" mana="250" premium="1" aggressive="0" selftarget="1" cooldown="35000" groupcooldown="2000" needlearn="0" script="chaos/shared/rallying_cry.lua">
 		<vocation name="Warrior" />
 		<vocation name="Juggernaut" />

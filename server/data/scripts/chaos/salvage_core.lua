@@ -2,7 +2,8 @@
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible (integers through math.floor). Numbers: salvage_config.lua.
 --
 -- An item is described by an info table built by salvage.lua from the engine item:
---   {gear, riftKey, rarity, level, unique, sockets, gems (socketed), chaosMods, locked, stackable, inBackpack}
+--   {gear, riftKey, rarity, level (item level), unique, sockets, gems (socketed), highTiers (modifiers of tier
+--   cfg.highTier or better), locked, stackable, inBackpack}
 --
 --   K.isLocked(value)                     a lock attribute value -> true / false
 --   K.check(info, cfg)                    nil when the item may be salvaged, else a reason key (K.reasons)
@@ -89,23 +90,21 @@ local function rarityIndex(info, cfg)
 	return clamp(floor(tonumber(info.rarity) or 0), 1, #cfg.baseShards)
 end
 
--- position of the item level inside its rarity's window, 0..1 (0 when the level is outside the window)
-function K.levelFraction(rarity, level, cfg)
-	local w = cfg.levelWindow
-	local first = (rarity - 1) * w + 1
-	local last = rarity * w
+-- the item level as a share of the highest, 0..1
+function K.levelFraction(level, cfg)
+	local max = tonumber(cfg.maxLevel) or 150
 	level = floor(tonumber(level) or 0)
-	if level < first or level > last or last == first then
+	if level <= 0 or max <= 0 then
 		return 0
 	end
-	return (level - first) / (last - first)
+	return math.min(1, level / max)
 end
 
 function K.shards(info, cfg)
 	local r = rarityIndex(info, cfg)
 	local base = cfg.baseShards[r]
-	local n = floor(base * (1 + cfg.levelBonus * K.levelFraction(r, info.level, cfg)) + 1e-9)
-	n = n + (cfg.perChaosMod or 0) * floor(tonumber(info.chaosMods) or 0)
+	local n = floor(base * (1 + cfg.levelBonus * K.levelFraction(info.level, cfg)) + 1e-9)
+	n = n + (cfg.perHighTier or 0) * floor(tonumber(info.highTiers) or 0)
 	n = n + (cfg.perSocket or 0) * math.max(0, floor(tonumber(info.sockets) or 0) - floor(tonumber(info.gems) or 0))
 	return math.max(1, n)
 end

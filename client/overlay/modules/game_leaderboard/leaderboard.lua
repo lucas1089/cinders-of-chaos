@@ -5,7 +5,7 @@
 --                     board {key, group, week, resetIn, rows = [{rank, name, value, count, level, vocation, title}],
 --                            own = {rank, value, count} | nil, champions = [{rank, rankName, name, value, title}], total}
 --   client -> server  open | get {board, group}
--- !leaderboard opens it from the chat; the top menu (Chaos -> Leaderboards) calls toggle().
+-- The top menu (Social > Leaderboards) calls toggle().
 
 local OPCODE = 229
 local RANK_COLOR = { '#e8b84a', '#a8b4c8', '#c87a3a' }

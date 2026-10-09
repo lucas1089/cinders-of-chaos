@@ -1,6 +1,6 @@
 Module
   name: game_achievements
-  description: Achievements window (categories, progress, points, titles, recent unlocks; !achievements, extended opcode 250)
+  description: Achievements window (categories, progress, points, titles, recent unlocks; extended opcode 250)
   author: project-chaos
   sandboxed: true
   scripts: [ achievementsview, achievements ]

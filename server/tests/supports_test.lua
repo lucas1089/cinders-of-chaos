@@ -457,6 +457,53 @@ eq(env.onCastSpell(caster, {}), "orig", "unknown script: not wrapped")
 eq(W.wrapped, before + 1, "count unchanged")
 W.spellsByScript = realList
 flushEvents()
+-- ---------------------------------------------------------------- the same through the spell events (engine patch 0008)
+local E = ChaosSpellEvents
+ok(E and E.onSpellCost and E.onSpellCooldown, "ChaosSpellEvents loaded with the spell side")
+W.spellsByScript = function() return spellsXml end
+S.setRune(caster, 201, 1, S.runeId(S.byKey.thrift.index, 3)) -- 12%
+S.setRune(caster, 201, 2, S.runeId(S.byKey.quickening.index, 2)) -- 9%
+E.live = false
+local mana, health = E.onSpellCost(caster, "Witchfire Bolt", 201, 1, true, 200)
+eq(mana, 176, "Thrift: a real discount, 200 - 12%"); eq(health, 0)
+eq(E.live, true, "the first event marks the events as live")
+eq(E.onSpellCooldown(caster, "Witchfire Bolt", 201, 1, true, "spell", 10000), 9100, "Quickening on the spell cooldown")
+eq(E.onSpellCooldown(caster, "Witchfire Bolt", 201, 1, true, "group", 2000), 2000, "the group cooldown stays")
+eq(E.onSpellCost(caster, "Unknown", 999, 1, true, 100), 100, "a spell without supports: unchanged")
+-- the item modifiers join under the support caps (ChaosItemMods totals of the player)
+local savedBonus = W.itemBonus
+W.itemBonus = function() return {cdr = 25, manacost = 10} end
+eq(E.onSpellCost(caster, "Witchfire Bolt", 201, 1, true, 200), 156, "12% + 10% = 22% off")
+eq(E.onSpellCost(caster, "Unknown", 999, 1, true, 100), 90, "items alone on any spell")
+eq(E.onSpellCooldown(caster, "Witchfire Bolt", 201, 1, true, "spell", 10000), 7000, "9% + 25% capped at 30%")
+eq(E.onSpellCooldown(caster, "Unknown", 999, 1, true, "spell", 1200), 1000, "never below the 1 s floor")
+eq(E.onSpellCooldown(caster, "Unknown", 999, 1, true, "spell", 800), 800, "a shorter cooldown stays")
+-- with the events live the wrapper gives nothing back afterwards (no double discount)
+caster.mana = 0
+caster.conditions[201].ticks = 10000
+wrapped(caster, {})
+flushEvents()
+eq(caster.mana, 0, "no refund tick when the events are live")
+eq(caster.conditions[201].ticks, 10000, "no cooldown rewrite either")
+E.live = false
+wrapped(caster, {})
+flushEvents()
+eq(caster.mana, 44, "fallback without the events: (12% + 10%) of 200 back")
+W.itemBonus = savedBonus
+-- chaining: handlers in order, each sees the previous result; a broken one is skipped
+E.set("cost", "test_double", function(p, n, id, g, a, m, h) return m * 2, h + 3 end)
+E.set("cost", "test_broken", function() error("boom") end)
+local m2, h2 = E.onSpellCost(caster, "Unknown", 999, 1, true, 100)
+eq(m2, 200, "chained"); eq(h2, 3, "health cost from a handler")
+eq(E.remove("cost", "test_double"), true); E.remove("cost", "test_broken")
+eq(E.onSpellPreCast(caster, "x", 1, 1, true, 10, 0), true, "no pre-cast handler: go on")
+E.set("precast", "test_no", function() return false end)
+eq(E.onSpellPreCast(caster, "x", 1, 1, true, 10, 0), false, "a handler can cancel")
+E.remove("precast", "test_no")
+eq(E.discount(200, 12), 176); eq(E.shorten(10000, 9, 1000), 9100)
+for i = 1, 3 do S.setRune(caster, 201, i, 0) end
+W.spellsByScript = realList
+
 
 -- ---------------------------------------------------------------- the scripts side (supports.lua)
 dofile("data/scripts/chaos/supports.lua")

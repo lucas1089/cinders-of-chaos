@@ -43,7 +43,7 @@ UIWindow
     margin-top: 5
     margin-bottom: 5
     text-wrap: true
-    !text: tr("Click here to join the event!") .."\n".. tr("Type !events for more information")
+    !text: tr("Click here to join the event!") .."\n".. tr("Adventure > Events in the menu has more")
     text-align: left
 
   UIWidget

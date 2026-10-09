@@ -179,6 +179,17 @@ ChaosMainWindow
     margin-right: 15
     margin-bottom: 0
 
+  Button
+    id: StashAllButton
+    !text: tr("Stash All")
+    !tooltip: tr("Put every stackable item of your main backpack into the stash.")
+    anchors.right: CloseButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    margin-bottom: 0
+    width: 80
+    @onClick: modules.game_stash.stashAll()
+
   UIWidget
     id: Overlay
     anchors.right: parent.right

@@ -1,8 +1,10 @@
 -- Rich item tooltips, the view logic without client API (tested by tooltiplogic_test.lua): cache keys, what is
 -- asked from the server, the lines a tooltip shows and the differences of the Ctrl compare view.
 -- The tooltip itself comes from the server (extended opcode 242, server/data/scripts/chaos/item_tooltip_core.lua):
---   {key, id, name, count, kind, slot, rarity, rarityName, tier, level, unique = {name, set = {name, have, total}},
---    base = [{k, l, v, fmt}], mods = [{k, l, t, v, g, lo, hi}], sockets = {count, max, list = [{name, text, color}]},
+--   {key, id, name, count, kind, slot, rarity, rarityName, level, maxTier, sides = {p, s, max},
+--    unique = {name, set = {name, have, total}}, base = [{k, l, v, fmt}],
+--    mods = [{k, l, t, v, g, lo, hi, tr, sd}] (prefixes first; tr = tier 1..8, sd = 'p' / 's'),
+--    sockets = {count, max, list = [{name, text, color}]},
 --    req = {level, magic, voc}, weight, desc, locked, stats = [{k, l, v, fmt, low}], cmp = [slot, ...]}
 
 ItemTooltipLogic = {}
@@ -18,6 +20,8 @@ L.COLORS = {
   gem = '#c8e8ff', empty = '#6b6258', better = '#5ccf5c', worse = '#e03a1e', unique = '#e07b24', red = '#e03a1e',
   normal = '#e4d8c0'
 }
+-- modifier tiers T1 (lowest) .. T8 (highest)
+L.TIER_COLORS = { '#8c8070', '#a89c88', '#c8c8c8', '#5ccf5c', '#4a90ff', '#a35cf0', '#ffd040', '#ff8a40' }
 L.RARITY_COLORS = { '#c8c8c8', '#5ccf5c', '#4a90ff', '#a35cf0', '#ffd040', '#f5b13a', '#ff5a5a', '#e02424', '#ff8a70',
   '#c8e8ff', '#9ad8ff', '#e4f2ff', '#b878ff', '#9a4ce0', '#e070ff' }
 
@@ -131,6 +135,10 @@ function L.rarityColor(r)
   return L.RARITY_COLORS[tonumber(r) or 0]
 end
 
+function L.tierColor(t)
+  return L.TIER_COLORS[tonumber(t) or 0] or L.COLORS.dim
+end
+
 function L.titleColor(tip)
   if tip.unique then return L.COLORS.unique end
   return L.rarityColor(tip.rarity) or L.COLORS.normal
@@ -154,7 +162,8 @@ function L.lines(tip, ctx)
   if tip.slot then sub[#sub + 1] = tip.slot end
   if #sub > 0 then add(table.concat(sub, ' '), L.titleColor(tip)) end
   if tip.level then
-    add(string.format('Item Level %d', tip.level) .. (tip.tier and string.format('  (Tier %d)', tip.tier) or ''), C.dim)
+    add(string.format('Item Level %d', tip.level) .. (tip.maxTier and string.format('  (up to T%d)', tip.maxTier) or ''),
+      C.dim)
   end
 
   local first = true
@@ -165,14 +174,32 @@ function L.lines(tip, ctx)
   end
 
   first = true
+  local side
   for _, m in ipairs(tip.mods or {}) do
-    local color = (m.g == 'chaos' and C.chaos) or (m.g == 'element' and C.element) or C.mod
-    local parts
-    if m.lo and m.hi then
-      local range = m.lo == m.hi and string.format(' [%d]', m.lo) or string.format(' [%d-%d]', m.lo, m.hi)
-      parts = { m.t, color, range, C.dim }
+    if m.sd and m.sd ~= side then
+      side = m.sd
+      local sides = tip.sides
+      local head = side == 'p' and 'Prefixes' or 'Suffixes'
+      if sides and sides.max then
+        head = string.format('%s %d/%d', head, side == 'p' and (sides.p or 0) or (sides.s or 0), sides.max)
+      end
+      add(head, C.dim, first)
+      first = false
     end
-    add(m.t .. (parts and parts[3] or ''), color, first, parts)
+    local color = (m.g == 'chaos' and C.chaos) or (m.g == 'element' and C.element) or C.mod
+    local range = ''
+    if m.lo and m.hi then
+      range = m.lo == m.hi and string.format(' [%d]', m.lo) or string.format(' [%d-%d]', m.lo, m.hi)
+    end
+    local parts
+    if m.tr then
+      local tag = string.format('T%d ', m.tr)
+      parts = { tag, L.tierColor(m.tr), m.t, color, range, C.dim }
+      add(tag .. m.t .. range, color, first, parts)
+    else
+      parts = range ~= '' and { m.t, color, range, C.dim } or nil
+      add(m.t .. range, color, first, parts)
+    end
     first = false
   end
 

@@ -1,4 +1,4 @@
--- Hunt tracker (client game_hunt, extended opcode ChaosOpcodes.hunt, !hunt)
+-- Hunt tracker (client game_hunt, extended opcode ChaosOpcodes.hunt)
 --
 -- Counts a hunting session on the server and pushes it to the client window: session time (pause / resume / reset),
 -- experience and exp/h, time to the next level, kills per monster, loot (items and gold value, NPC sell prices of
@@ -385,22 +385,3 @@ end
 ext:type("extendedopcode")
 ext:register()
 
--- !hunt opens the window; !hunt pause | resume | reset work from the chat too
-local function onCommand(player, words, param)
-	param = (param or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
-	if param == "pause" or param == "resume" or param == "reset" then
-		act(player, param)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Hunt tracker: " .. (param == "reset" and "session reset."
-			or param == "pause" and "paused." or "running."))
-	end
-	H.watch[player:getId()] = true
-	send(player, true)
-	return false
-end
-
-for _, words in ipairs({"!hunt", "/hunt"}) do
-	local talk = TalkAction(words)
-	talk.onSay = onCommand
-	talk:separator(" ")
-	talk:register()
-end

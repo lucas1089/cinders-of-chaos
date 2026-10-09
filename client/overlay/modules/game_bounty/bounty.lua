@@ -5,7 +5,7 @@
 --                            outfit, reward = {gold, chaos, divine, exp}, state = open|active|done, progress}]}]}
 --                     progress {key, progress, count, state}
 --   client -> server  open | accept {key} | abandon {key}
--- !bounty opens it from the chat; the top menu (Chaos -> Bounty Board) calls toggle().
+-- The top menu (Adventure > Bounty Board) calls toggle().
 
 local OPCODE = 223
 

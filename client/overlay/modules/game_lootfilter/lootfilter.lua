@@ -1,4 +1,4 @@
--- Loot filter (Hunt -> Loot Filter, !lootfilter), corpse highlights and the loot channel with item icons.
+-- Loot filter (Hunt -> Loot Filter), corpse highlights and the loot channel with item icons.
 -- Server: server/data/scripts/chaos/lootfilter.lua, extended opcode 238 (JSON {action, data}).
 --   server -> client  settings {s, unlocked, presets, samples, open}
 --                     peek {cid, corpse, items = [{i, id, c, r, u, o, g}]}      rarity data of an open container
@@ -386,6 +386,16 @@ local function rarityCombo(combo, offText, value, suffix)
   combo:setCurrentIndex((value or 0) + 1)
 end
 
+-- modifier tier threshold: Off, T1+ .. T8+
+local function tierCombo(combo, value)
+  combo:clearOptions()
+  combo:addOption(tr('Off'), 0)
+  for t = 1, L.MAX_TIER do
+    combo:addOption(string.format('T%d+', t), t)
+  end
+  combo:setCurrentIndex((value or 0) + 1)
+end
+
 local function scheduleSave()
   if saveEvent then removeEvent(saveEvent) end
   saveEvent = scheduleEvent(function()
@@ -403,6 +413,10 @@ local function buildPreview()
   entries[#entries + 1] = { id = gear, r = 0, g = 'equipment', nm = tr('Gear without rarity') }
   for i, r in ipairs(L.RARITY) do
     entries[#entries + 1] = { id = gear, r = i, g = 'equipment', nm = r.name .. ' gear' }
+  end
+  if (settings.tier or 0) > 0 then
+    entries[#entries + 1] = { id = gear, r = 1, t = settings.tier, g = 'equipment',
+      nm = string.format(tr('Common gear with a T%d modifier'), settings.tier) }
   end
   entries[#entries + 1] = { id = tonumber(samples.unique) or gear, u = 1, g = 'equipment', nm = tr('A unique') }
   entries[#entries + 1] = { id = tonumber(samples.orb) or 0, o = 1, g = 'currency', nm = tr('An orb') }
@@ -424,6 +438,7 @@ local function refreshWindow()
   updatingUi = true
   rarityCombo(window.highlightCombo, tr('Off'), settings.highlight, '+')
   rarityCombo(window.dimCombo, tr('Off'), settings.dim)
+  if window.tierCombo then tierCombo(window.tierCombo, settings.tier) end
   rarityCombo(window.autolootPanel.lootMinCombo, tr('Off'), settings.lootMin)
   rarityCombo(window.autolootPanel.lootFromCombo, tr('Off'), settings.lootFrom, '+')
   for _, c in ipairs(L.CATEGORIES) do
@@ -466,6 +481,7 @@ local function onUiChange()
   end
   settings.highlight = comboValue(window.highlightCombo)
   settings.dim = comboValue(window.dimCombo)
+  if window.tierCombo then settings.tier = comboValue(window.tierCombo) end
   if unlocked then
     settings.lootMin = comboValue(window.autolootPanel.lootMinCombo)
     settings.lootFrom = comboValue(window.autolootPanel.lootFromCombo)
@@ -574,6 +590,7 @@ function init()
     end
     hook(window.highlightCombo, 'onOptionChange', onUiChange)
     hook(window.dimCombo, 'onOptionChange', onUiChange)
+    hook(window.tierCombo, 'onOptionChange', onUiChange)
     local ap = window.autolootPanel
     hook(ap and ap.lootMinCombo, 'onOptionChange', onUiChange)
     hook(ap and ap.lootFromCombo, 'onOptionChange', onUiChange)

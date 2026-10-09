@@ -29,8 +29,8 @@ eq(V.extraText(rows[1]), '', 'no extra')
 eq(V.categoryLabel({ name = 'Rifts', done = 1, total = 13 }), 'Rifts  1/13')
 eq(V.summaryText({ points = 15, accountPoints = 40, unlocked = 2, total = 93 }),
   'Points: 15   -   Account: 40   -   Unlocked: 2 / 93')
-eq(V.titleCommand('auto'), '!title auto'); eq(V.titleCommand('none'), '!title none')
-eq(V.titleCommand('Veteran'), '!title Veteran')
+eq(V.titleParam('auto'), 'auto'); eq(V.titleParam('none'), 'none')
+eq(V.titleParam('Veteran'), 'Veteran')
 eq(V.dateText(0), '', 'no date')
 eq(V.group(1234567), '1,234,567'); eq(V.group(12), '12')
 

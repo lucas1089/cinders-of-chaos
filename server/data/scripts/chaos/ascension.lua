@@ -16,6 +16,9 @@
 -- Health, mana and capacity follow the new vocation's gains (ChaosShopServices.recomputeStats, as the vocation
 -- change does). The client learns the new vocation from a fresh basic-data packet (0x9F, the one the server sends at
 -- login), so its spell list and action bar switch without a relog.
+if not ChaosCommands then
+	dofile("data/scripts/chaos/commands_ui_core.lua")
+end
 
 if not ChaosClasses then
 	dofile("data/scripts/chaos/classes.lua")
@@ -133,7 +136,7 @@ local EFFECT = {[8] = CONST_ME_GROUNDSHAKER, [14] = CONST_ME_DRAWBLOOD, [7] = CO
 	[13] = CONST_ME_GROUNDSHAKER, [18] = CONST_ME_MORTAREA, [19] = CONST_ME_STONES, [21] = CONST_ME_MORTAREA,
 	[22] = CONST_ME_GROUNDSHAKER, [24] = CONST_ME_HOLYAREA, [25] = CONST_ME_BLOCKHIT}
 
-local talk = TalkAction("!ascend")
+local talk = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "ascend")
 function talk.onSay(player, words, param)
 	-- the ascension quest (ascension_quest.lua): players ascend at the Ascendant Oracle; staff and the free switch keep this
 	if ChaosAscensionQuest and ChaosAscensionQuest.commandAllowed and not ChaosAscensionQuest.commandAllowed(player) then
@@ -184,8 +187,7 @@ function talk.onSay(player, words, param)
 	Game.broadcastMessage(string.format("%s has ascended to %s.", player:getName(), newVoc:getName()), MESSAGE_EVENT_ADVANCE)
 	return false
 end
-talk:separator(" ")
-talk:register()
+ChaosCommands.register("ascend", function(player, param) return talk.onSay(player, "", param) end)
 
 -- characters that were Ninja or Samurai before the class outfits existed get them at their next login
 local outfitLogin = CreatureEvent("ChaosClassOutfitsLogin")

@@ -1,5 +1,5 @@
 -- Spell supports on the server (scripts state): the support window (client game_spellsupports, extended opcode
--- ChaosOpcodes.supports = 243, JSON, !supports), socketing / removing / combining runes, opening the third socket,
+-- ChaosOpcodes.supports = 243, JSON), socketing / removing / combining runes, opening the third socket,
 -- what the runes do to the hits of their spell, and the drop and reward helpers the loot layer and the rift call.
 -- Rules and numbers: data/lib/chaos_supports.lua and chaos_supports_config.lua; the spell side (cast context, mana,
 -- cooldown): data/spells/chaos/_supports.lua. Design and the full list: SUPPORTS.md next to this file.
@@ -1006,7 +1006,7 @@ local function onUseRune(player, item, fromPosition, target, toPosition, isHotke
 		end
 	else
 		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s - %s. Fits %s spells. Socket it in the spell "
-			.. "supports window (!supports).", S.runeName(id), S.effectText(id), S.fitsText(S.runeOf(id).type)))
+			.. "supports window (Character > Spell Supports).", S.runeName(id), S.effectText(id), S.fitsText(S.runeOf(id).type)))
 	end
 	sendState(player)
 	sendBar(player)
@@ -1021,8 +1021,12 @@ for id = cfg.firstId, S.lastId do
 	action:register()
 end
 
-local talk = TalkAction("!supports")
+-- staff only (players open the window from the menu): /supports reload
+local talk = TalkAction("/supports")
 function talk.onSay(player, words, param)
+	if not player:getGroup():getAccess() then
+		return false -- players open it from the menu
+	end
 	if param and param:lower():find("reload") and player:getGroup():getAccess() then
 		local n = 0
 		for _ in pairs(S.loadCatalog()) do

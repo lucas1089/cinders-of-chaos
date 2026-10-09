@@ -1,0 +1,13 @@
+Module
+  name: game_chaosinfo
+  description: Info & Services window (character info, services, auto seller, house, rift keys, events, server info; extended opcode 237)
+  author: project-chaos
+  sandboxed: true
+  scripts: [ chaosinfoview, chaosinfo ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

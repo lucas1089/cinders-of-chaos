@@ -204,6 +204,10 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 		sendTower(player, "update")
 	elseif msg.action == "claim" then
 		claim(player, msg.milestoneIndex)
+	elseif msg.action == "leave" then
+		if ChaosTowerRun then
+			ChaosTowerRun.leave(player)
+		end
 	end
 end
 
@@ -211,27 +215,6 @@ LoginEvent:type("login")
 LoginEvent:register()
 ExtendedEvent:type("extendedopcode")
 ExtendedEvent:register()
-
-local talk = TalkAction("!tower")
-
-function talk.onSay(player, words, param)
-	param = (param or ""):lower():match("^%s*(%a*)") or ""
-	if param == "start" or param == "enter" then
-		if ChaosTowerRun then
-			ChaosTowerRun.start(player)
-		end
-	elseif param == "leave" then
-		if ChaosTowerRun then
-			ChaosTowerRun.leave(player)
-		end
-	else
-		ChaosTower.open(player)
-	end
-	return false
-end
-
-talk:separator(" ")
-talk:register()
 
 -- /towerrun <floors>,<seconds> : staff test helper, records a fake run for yourself so the
 -- window, ranking and milestones can be checked without the (missing) tower gameplay.

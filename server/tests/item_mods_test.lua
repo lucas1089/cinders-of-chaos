@@ -152,24 +152,42 @@ local M = ChaosItemMods
 local C = ChaosCrafting
 
 -- ---------------------------------------------------------------- catalogue
-eq(#M.config.mods, 15, "fifteen modifiers")
+eq(#M.config.mods, 30, "thirty modifiers (fifteen old, fifteen new)")
+local sides = {prefix = 0, suffix = 0}
 for _, def in ipairs(M.config.mods) do
-	eq(#def.tiers, 5, def.key .. ": five tiers")
+	eq(#def.tiers, 8, def.key .. ": eight tiers")
 	assert(def.cap > 0 and def.weight > 0, def.key)
+	assert(def.side == "prefix" or def.side == "suffix", def.key .. ": a side")
+	sides[def.side] = sides[def.side] + 1
 	local prevLo, prevHi = 0, 0
 	for t, r in ipairs(def.tiers) do
 		assert(r[1] >= 1 and r[1] <= r[2], def.key .. " tier " .. t .. " range")
 		assert(r[1] >= prevLo and r[2] >= prevHi, def.key .. " ranges grow with the tier")
 		prevLo, prevHi = r[1], r[2]
 	end
-	assert(def.tiers[5][2] <= def.cap, def.key .. ": one item never beats the cap")
+	assert(def.tiers[8][2] <= def.cap, def.key .. ": one item never beats the cap")
 	assert(next(def.kinds), def.key .. ": allowed somewhere")
 end
--- balance: percent modifiers stay in the passive tree's range (a few percent per item)
-eq(M.byKey.attackspeed.tiers[5][2], 10)
+eq(sides.prefix, 15, "fifteen prefixes"); eq(sides.suffix, 15, "fifteen suffixes")
+-- the five tiers of before are T2 .. T6, so old items keep their meaning
+local OLD = {attackspeed = {{2, 3}, {3, 5}, {4, 6}, {5, 8}, {7, 10}}, lifeonkill = {{5, 10}, {10, 20}, {20, 40}, {35, 60},
+	{50, 90}}, goblinchance = {{10, 15}, {14, 20}, {18, 27}, {22, 33}, {28, 40}}, dodge = {{1, 1}, {1, 2}, {1, 2}, {2, 3},
+	{2, 4}}, movespeed = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}}}
+for key, old in pairs(OLD) do
+	for t, r in ipairs(old) do
+		local n = M.byKey[key].tiers[M.config.oldTiers[t]]
+		eq(n[1], r[1], key .. " old tier " .. t .. " low"); eq(n[2], r[2], key .. " old tier " .. t .. " high")
+	end
+end
 eq(M.byKey.movespeed.cap, 12)
 eq(M.byKey.dodge.cap, 10)
 eq(M.byKey.experience.cap, 15)
+eq(M.byKey.attackspeed.side, "suffix", "speed is a suffix")
+eq(M.byKey.bossdamage.side, "prefix", "damage is a prefix")
+-- the engine's types have eight tiers too
+for name, e in pairs(M.config.engine) do
+	eq(#e.tiers, 8, name .. ": eight tiers")
+end
 
 -- ---------------------------------------------------------------- kinds
 eq(M.kindOf(newItem(2400)), "weapon")
@@ -191,45 +209,89 @@ eq(addableKeys(newItem(2195)).movespeed, true, "movement speed on boots")
 eq(addableKeys(newItem(2466)).movespeed, nil, "not on armor")
 eq(addableKeys(newItem(2400)).attackspeed, true, "attack speed on weapons")
 eq(addableKeys(newItem(2514)).attackspeed, nil, "not on shields")
+eq(addableKeys(newItem(2514)).block, true, "block on shields")
+eq(addableKeys(newItem(2400)).block, nil, "not on weapons")
+eq(addableKeys(newItem(2400)).execute, true, "execute on weapons")
+eq(addableKeys(newItem(2471)).cdr, true, "cooldown reduction on helmets")
 
--- ---------------------------------------------------------------- tiers and roll ranges
-eq(M.tierOf(1), 1); eq(M.tierOf(3), 1); eq(M.tierOf(4), 2); eq(M.tierOf(9), 3); eq(M.tierOf(13), 5); eq(M.tierOf(15), 5)
-eq(M.tierOf(99), 5, "clamped")
+-- ---------------------------------------------------------------- tiers
+eq(M.maxTierFor(1), 1); eq(M.maxTierFor(14), 1); eq(M.maxTierFor(15), 2); eq(M.maxTierFor(69), 4)
+eq(M.maxTierFor(70), 5); eq(M.maxTierFor(139), 7); eq(M.maxTierFor(140), 8); eq(M.maxTierFor(150), 8)
+eq(M.maxTierFor(0), 1, "no level: T1")
+local rows = M.tierRows(150)
+eq(#rows, 5, "five tiers can roll"); eq(rows[1][1], 8, "best first"); eq(rows[5][1], 4, "T4 the lowest at 150")
+eq(#M.tierRows(40), 3, "T1-T3 at item level 40")
+-- higher tiers are rarer
+for t = 2, 8 do
+	assert(M.config.tierWeights[t] < M.config.tierWeights[t - 1], "weights fall with the tier")
+end
+local ch = M.tierChances(150)
+eq(ch[8], 6.5, "T8 at item level 150: 12 / 184"); eq(ch[4], 35.3); eq(ch[1], nil, "T1 cannot roll at 150")
+eq(M.tierChances(10)[1], 100, "item level 10: only T1")
+-- the roll: forced dice pick the tiers
+eq(M.rollTier(150, function(a, b) return a end), 8, "lowest dice: the first row (best tier)")
+eq(M.rollTier(150, function(a, b) return b end), 4, "highest dice: the last row")
+eq(M.rollTier(1, function(a, b) return b end), 1)
+-- average tier grows with the item level (exact weighted mean)
+local function mean(level)
+	local sum, w = 0, 0
+	for _, r in ipairs(M.tierRows(level)) do
+		sum, w = sum + r[1] * r[2], w + r[2]
+	end
+	return sum / w
+end
+assert(mean(20) < mean(60) and mean(60) < mean(100) and mean(100) < mean(150), "higher item levels roll higher tiers")
+-- ranges and old values
 local as = M.byKey.attackspeed
-local r = M.range(as, 1, 1)
-eq(r[1], 2); eq(r[2], 3)
-r = M.range(as, 13, 121) -- tier 5 window starts at level 121: no pull
-eq(r[1], 7); eq(r[2], 10)
-r = M.range(as, 15, 150) -- top of the window: the low end rises by half the range (7 + floor(3 x 0.5))
-eq(r[1], 8); eq(r[2], 10)
-r = M.range(M.byKey.lifeonkill, 9, 90) -- tier 3 (20..40) at the top of 61..90: 20 + 10
-eq(r[1], 30); eq(r[2], 40)
--- every roll of every modifier at every rarity and level stays in the tier's range
+eq(M.range(as, 1)[1], 1); eq(M.range(as, 8)[2], 14); eq(M.range(as, 99)[2], 14, "clamped")
+eq(M.tierOfValue(as.tiers, 10), 6, "+10% attack speed: the lowest tier that holds it, T6 (7-10)")
+eq(M.tierOfValue(as.tiers, 3), 2, "+3%: T2 (2-3)")
+eq(M.tierOfValue(as.tiers, 20), 8, "above every range: the top tier")
+eq(M.tierOfValue(as.tiers, 0), 1)
+eq(M.tierOfValue(as.tiers, 2, 2, 6), 2, "searched in T2..T6 only")
 for _, def in ipairs(M.config.mods) do
-	for rarity = 1, 15 do
-		local t = def.tiers[M.tierOf(rarity)]
-		for _, level in ipairs({0, rarity * 10 - 9, rarity * 10, 200}) do
-			for _, pickLow in ipairs({true, false}) do
-				local v = M.rollValue(def, rarity, level, function(a, b) return pickLow and a or b end)
-				assert(v >= t[1] and v <= t[2], def.key .. " roll in range")
-			end
+	for t = 1, 8 do
+		for _, low in ipairs({true, false}) do
+			local v = M.rollValue(def, t, function(a, b) return low and a or b end)
+			local r = def.tiers[t]
+			assert(v >= r[1] and v <= r[2], def.key .. " roll in its tier")
 		end
 	end
 end
+-- stored tier, else the one of the value
+local sw = newItem(2400)
+M.set(sw, "attackspeed", 9, 7)
+eq(sw:getCustomAttribute("ct_chaos_mod_attackspeed"), 7, "tier stored next to the value")
+eq(M.read(sw)[1].tier, 7)
+eq(M.read(sw)[1].side, "suffix")
+sw:removeCustomAttribute("ct_chaos_mod_attackspeed")
+eq(M.read(sw)[1].tier, 6, "no stored tier (an old item): 9 in today's T2..T6 -> T6 (7-10)")
+M.set(sw, "attackspeed", 2)
+eq(M.read(sw)[1].tier, 2, "an old +2%: T2 (the old T1), not the new T1")
+eq(sw:getCustomAttribute("ct_chaos_mod_attackspeed"), nil, "set without a tier drops a stale one")
 
--- ---------------------------------------------------------------- drop rolls
-eq(M.rollCount(0, function(a, b) return a end), 0, "no rarity, nothing")
-eq(M.rollCount(1, function(a, b) return a end), 1, "Common: one at most (second chance 0)")
-eq(M.rollCount(9, function(a, b) return a end), 2, "Eternal: a second one possible")
-eq(M.rollCount(15, function(a, b) return b end), 0, "a failed roll")
-local seq = {40, 21} -- rarity 15: 40 <= 40 hits, 21 > 20 misses
-eq(M.rollCount(15, function(a, b) return table.remove(seq, 1) end), 1)
-local boots = newItem(2195)
-local added = M.rollNew(boots, 9, 85, 1, function(a, b) return a end)
-eq(#added, 1, "limited by the free slots")
-eq(added[1].key, "movespeed", "the only boots modifier of the first weight")
-eq(boots:getCustomAttribute("chaos_mod_movespeed"), 4, "tier 3 (4..6) at level 85 of 61..90: 4 + floor(2 x 0.83 x 0.5) = 4")
-eq(#M.rollNew(newItem(2195), 9, 85, 0, function(a, b) return a end), 0, "no free slot, nothing")
+-- ---------------------------------------------------------------- rarity: how many
+eq(M.modCount(1), 2); eq(M.sideLimit(1), 1); eq(M.maxMods(1), 2, "Common: one prefix, one suffix")
+eq(M.modCount(4), 3); eq(M.maxMods(4), 4)
+eq(M.modCount(15), 6); eq(M.sideLimit(15), 3); eq(M.maxMods(15), 6, "top rarities: 3 + 3")
+eq(M.modCount(0), 0); eq(M.maxMods(0), 0)
+for r = 1, 15 do
+	assert(M.modCount(r) <= M.maxMods(r), "count within the limits at rarity " .. r)
+	assert(r == 1 or M.modCount(r) >= M.modCount(r - 1), "never fewer at a higher rarity")
+end
+
+-- ---------------------------------------------------------------- item level of a drop
+eq(M.levelFromMonster(1), 1); eq(M.levelFromMonster(50), 22); eq(M.levelFromMonster(75), 29, "between 50 and 100")
+eq(M.levelFromMonster(1100), 128); eq(M.levelFromMonster(99999), 145)
+eq(M.sourceLevel({monsterLevel = 42}), 18, "a Dragon: 12 + 10 x 17 / 25")
+eq(M.sourceLevel({monsterLevel = 42, tier = "legendary"}), 25, "+7 legendary")
+eq(M.sourceLevel({monsterLevel = 1000, tier = "legendary", riftTier = 10}), 140, "a legendary in a tier 10 rift: T8")
+eq(M.sourceLevel({monsterLevel = 1100, tier = "boss", riftTier = 15, omen = true}), 150, "capped")
+eq(M.sourceLevel({monsterLevel = 5, riftTier = 99}), M.levelFromMonster(5) + 15, "rift bonus capped")
+eq(M.sourceLevel({worldBoss = true}), 145)
+eq(M.sourceLevel({fixed = 60}), 60)
+eq(M.estimateMonsterLevel(700, 1000), 42, "Dragon, as gen_bounty_pool.py")
+eq(M.estimateMonsterLevel(6000, 8200), 137, "Demon: its health counts (as bounty_pool.lua)")
 
 -- ---------------------------------------------------------------- text and description
 eq(M.text("attackspeed", 6), "Attack Speed +6%")
@@ -242,8 +304,13 @@ amulet:setCustomAttribute("combatPowerLevel", 55)
 amulet:setCustomAttribute("rarity_holyAbsorb", 3)
 M.set(amulet, "experience", 4)
 M.set(amulet, "lifeonkill", 18)
-eq(C.rewriteDescription(amulet), "Level: 55, Holy +3%, Life on Kill +18, Experience +4%", "engine format, catalogue order")
-eq(M.summary(amulet), "Life on Kill +18; Experience +4%")
+eq(C.rewriteDescription(amulet), "Item Level: 55. Suffixes: Holy +3% (T3); Life on Kill +18 (T3); Experience +4% (T4)",
+	"item level, the suffixes with their tiers (an old item: tiers from the values)")
+eq(M.summary(amulet), "Life on Kill +18 (T3); Experience +4% (T4)")
+eq(M.text("execute", 4), "Executes Monsters below 4% Health")
+eq(M.text("regen", 12), "Health Regeneration +12 per Second")
+eq(M.text("bleedchance", 6), "Chance to Bleed +6%")
+eq(M.text("lifeonhit", 9), "Health on Hit +9")
 -- attack speed: the weapon's own interval
 local js = newItem(7390)
 M.set(js, "attackspeed", 10)
@@ -271,7 +338,8 @@ eq(M.experience(1000, 4), 1040)
 do
 	local gc = M.byKey.goblinchance
 	eq(gc.label, "Treasure Goblin Chance"); eq(gc.fmt, "pct"); eq(gc.cap, 100)
-	eq(gc.tiers[1][1], 10, "+10% at the bottom"); eq(gc.tiers[5][2], 40, "+40% at the top")
+	eq(gc.tiers[1][1], 6, "+6% at the bottom"); eq(gc.tiers[6][2], 40, "+40% at the top of the old tiers")
+	eq(gc.tiers[8][2], 60, "+60% at T8")
 	eq(M.text("goblinchance", 25), "Treasure Goblin Chance +25%")
 	eq(addableKeys(newItem(2471)).goblinchance, true, "on helmets")
 	eq(addableKeys(newItem(2171)).goblinchance, true, "on amulets")
@@ -279,22 +347,23 @@ do
 	eq(addableKeys(newItem(2466)).goblinchance, nil, "not on armor")
 	eq(addableKeys(newItem(2400)).goblinchance, nil, "not on weapons")
 	eq(addableKeys(newItem(2195)).goblinchance, nil, "not on boots")
-	-- rolls: tier 1 at Common, tier 5 at Transcendent with the level pull
-	local lo = M.rollValue(gc, 1, 1, function(a, b) return a end)
-	local hi = M.rollValue(gc, 15, 150, function(a, b) return b end)
-	eq(lo, 10); eq(hi, 40)
-	eq(M.range(gc, 15, 150)[1], 34, "28 + floor(12 x 0.5) at the top of the window")
-	-- an Exalted-style add on a helmet can pick it (weighted pick: force the last row)
+	-- rolls: the tier's range
+	local lo = M.rollValue(gc, 1, function(a, b) return a end)
+	local hi = M.rollValue(gc, 8, function(a, b) return b end)
+	eq(lo, 6); eq(hi, 60)
+	-- helmets may get it
 	local helm = newItem(2471)
-	local rows = M.addable(helm)
-	local last = rows[#rows].entry
-	eq(last.key, "goblinchance", "last in catalogue order (stored keys of older items unchanged)")
+	local found = false
+	for _, row in ipairs(M.addable(helm)) do
+		found = found or row.entry.key == "goblinchance"
+	end
+	eq(found, true, "on the helmet's list")
 	-- cap: helmet 40 + amulet 40 + ring 40 = 120 -> 100
 	local h, am, rg = newItem(2471), newItem(2171), newItem(2123)
 	M.set(h, "goblinchance", 40); M.set(am, "goblinchance", 40); M.set(rg, "goblinchance", 40)
 	eq(M.totals({h, am, rg}).goblinchance, 100, "capped at +100% per character")
 	eq(M.totals({h, am}).goblinchance, 80)
-	eq(M.summary(h), "Treasure Goblin Chance +40%")
+	eq(M.summary(h), "Treasure Goblin Chance +40% (T6)")
 end
 
 -- ---------------------------------------------------------------- on the character
@@ -449,13 +518,11 @@ M.remove(ring, "goblinchance")
 M.refresh(player)
 eq(M.playerBonus(player, "goblinchance"), 0)
 
--- after a drop: the engine appends its rarity text after the Lua callbacks; the marked corpse is rewritten next tick
+-- after a drop: loot.lua forged the item and kept its rarity as text through the engine's pass; the marked corpse
+-- gives it back as a number next tick
 local dropped = newItem(2466)
-dropped:setCustomAttribute("rarity", 2)
-dropped:setCustomAttribute("combatPowerLevel", 17)
-dropped:setCustomAttribute("rarity_iceAbsorb", 1)
-M.set(dropped, "thorns", 6)
-dropped:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, "Level: 0, Thorns +6, Level: 17, Ice +1%")
+dropped:setCustomAttribute("rarity", "2")
+eq(C.rarityOf(dropped), 2, "a shielded rarity reads as a number")
 local marked = newItem(2160)
 marked.isContainer = function() return true end
 marked.getItems = function() return {dropped} end
@@ -466,8 +533,125 @@ timers = {}
 M.afterDrop(marked)
 eq(marked:getCustomAttribute("chaos_mods_pending"), 1, "corpse marked")
 timers[#timers].fn(table.unpack and table.unpack(timers[#timers].args) or unpack(timers[#timers].args))
-eq(dropped:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "Level: 17, Ice +1%, Thorns +6", "description rebuilt")
+eq(dropped:getCustomAttribute("rarity"), 2, "a number again")
 eq(marked:getCustomAttribute("chaos_mods_pending"), nil, "marker gone")
+-- an item looted before that tick: any move gives it back
+local early = newItem(2466)
+early:setCustomAttribute("rarity", "5")
+move(player, early, 1, {x = 100, y = 100, z = 7}, {x = 0xFFFF, y = 64, z = 0})
+eq(early:getCustomAttribute("rarity"), 5, "unshielded on its first move")
+
+-- ---------------------------------------------------------------- the new modifiers in combat
+ORIGIN_CONDITION, ORIGIN_RANGED = 1, 4
+COMBAT_ICEDAMAGE = 512
+CONDITION_BLEEDING, CONDITION_FIRE, CONDITION_POISON, CONDITION_PARALYZE = 1, 2, 3, 4
+CONDITION_PARAM_OWNER, CONDITION_PARAM_DELAYED, CONDITION_PARAM_TICKS = 1, 2, 3
+local conditions = {}
+Condition = function(kind)
+	local c = {kind = kind, params = {}}
+	function c:setParameter(k, v) self.params[k] = v end
+	function c:addDamage(rounds, time, value) self.rounds, self.time, self.value = rounds, time, value end
+	function c:setFormula(a, b, c2, d) self.formula = {a, b, c2, d} end
+	return c
+end
+function Creature:addCondition(c) conditions[#conditions + 1] = {to = self, c = c} end
+function Creature:getName() return self.name or "orc" end
+function Creature:getMaxMana() return 1000 end
+local RES = {orc = {[COMBAT_PHYSICALDAMAGE] = 20, [COMBAT_ICEDAMAGE] = 50}}
+function Creature:getType()
+	local me = self
+	return {isBoss = function() return me.boss == true end, getElementList = function() return RES[me.name or "orc"] or {} end}
+end
+
+local weapon = newItem(2400)
+M.set(weapon, "physpen", 10); M.set(weapon, "elepen", 25); M.set(weapon, "lifeonhit", 7); M.set(weapon, "manaonhit", 3)
+M.set(weapon, "execute", 5); M.set(weapon, "dot", 20)
+for _, slot in ipairs({CONST_SLOT_LEFT, CONST_SLOT_RIGHT}) do
+	if player.slots[slot] then
+		unequip(slot)
+	end
+end
+equip(weapon, CONST_SLOT_LEFT)
+local orc = newCreature("monster", {health = 100000})
+orc.name = "orc"
+eq(target(player, orc), RETURNVALUE_NOERROR)
+eq(orc.registered.ChaosItemModsDealt, true, "any offensive modifier registers the hit event")
+math.random = function(a, b) return b end -- no ailment
+player.health, player.mana = 100, 0
+-- physical: 20% resistance, 10 points ignored: 80 landed = 100 raw -> 90
+eq(dealt.onHealthChange(orc, player, 80, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), 90, "physical penetration")
+eq(player.health, 107, "health on hit"); eq(player.mana, 3, "mana on hit")
+-- ice: 50% resistance, 25 ignored: 50 landed = 100 raw -> 75
+local _, _, sIce = dealt.onHealthChange(orc, player, 0, COMBAT_PHYSICALDAMAGE, 50, COMBAT_ICEDAMAGE, ORIGIN_SPELL)
+eq(sIce, 75, "elemental penetration on the secondary part")
+-- damage over time: hits of conditions you own, no on-hit
+player.health = 100
+eq(dealt.onHealthChange(orc, player, 50, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_CONDITION), 60, "+20% damage over time")
+eq(player.health, 100, "a condition tick is no hit")
+-- execute: a non-boss monster left at or below 5% dies
+orc.health = 5400
+eq(dealt.onHealthChange(orc, player, 500, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 5400, "4900 of 100000 left: executed")
+orc.health = 9000
+eq(dealt.onHealthChange(orc, player, 500, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 500, "8500 left: not yet")
+local bossMon = newCreature("monster", {boss = true, health = 5400})
+eq(dealt.onHealthChange(bossMon, player, 500, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 500, "bosses are never executed")
+eq(M.executes(5400, 100000, 500, 5), true); eq(M.executes(400, 100000, 500, 5), false, "the hit kills anyway")
+-- ailments: forced rolls
+M.set(weapon, "bleedchance", 10); M.set(weapon, "chillchance", 10); M.set(weapon, "shockchance", 10)
+M.refresh(player)
+conditions = {}
+math.random = function(a, b) return a end -- every roll hits
+orc.health = 100000
+dealt.onHealthChange(orc, player, 400, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+local kinds = {}
+for _, c in ipairs(conditions) do kinds[c.c.kind] = c.c end
+eq(kinds[CONDITION_BLEEDING].value, -M.ailmentTick(450), "bleeding: a share of the hit (400 -> 450 after penetration) per tick")
+eq(kinds[CONDITION_BLEEDING].params[CONDITION_PARAM_OWNER], player:getId(), "owned by the player")
+eq(kinds[CONDITION_BLEEDING].rounds, 4)
+eq(kinds[CONDITION_PARALYZE].formula[1], -0.3, "chill slows by 30%")
+eq(kinds[CONDITION_FIRE], nil, "no ignite chance, no ignite")
+eq(M.ailmentTick(400), 40, "40% of 400 over 4 ticks")
+-- shocked: +15% damage from everyone
+math.random = function(a, b) return b end
+local other2 = newCreature("player")
+eq(dealt.onHealthChange(orc, other2, 100, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 115, "shocked: +15% for another player")
+M.shocked[orc:getId()] = 0
+eq(dealt.onHealthChange(orc, other2, 100, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 100, "shock over")
+unequip(CONST_SLOT_LEFT)
+-- block: physical melee and ranged hits only
+local buckler = newItem(2514)
+M.set(buckler, "block", 10)
+equip(buckler, CONST_SLOT_RIGHT)
+math.random = function(a, b) return a end
+eq(taken.onHealthChange(player, monster, 200, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED), 0, "a blocked arrow")
+eq(taken.onHealthChange(player, monster, 200, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), 200, "spells are not blocked")
+math.random = realRandom
+unequip(CONST_SLOT_RIGHT)
+-- health regeneration: the 3 s check heals 3 x the total
+local plate = newItem(2466)
+M.set(plate, "regen", 10)
+equip(plate, CONST_SLOT_ARMOR)
+player.health = 100
+timers = {}
+events.ChaosItemModsStartup.onStartup()
+for _, timer in ipairs(timers) do
+	if timer.ms == 3000 then
+		timer.fn()
+		break
+	end
+end
+eq(player.health, 130, "+10 per second, every 3 s")
+eq(M.regenAmount(10, 3000), 30)
+unequip(CONST_SLOT_ARMOR)
+-- equipped items for the spell side (cooldown and mana cost reduction)
+local hood = newItem(2471)
+M.set(hood, "cdr", 8); M.set(hood, "manacost", 6)
+equip(hood, CONST_SLOT_HEAD)
+local eqT = M.totals(M.equippedItems(player))
+eq(eqT.cdr, 8, "the spell side reads the equipped items"); eq(eqT.manacost, 6)
+unequip(CONST_SLOT_HEAD)
+eq(M.penetrate(80, 20, 10), 90); eq(M.penetrate(80, 0, 10), 80, "no resistance, nothing to ignore")
+eq(M.penetrate(80, 100, 10), 80, "immune stays immune"); eq(M.penetrate(80, 5, 10), 84, "never below 0 resistance")
 
 -- logout forgets everything
 events.ChaosItemModsLogout.onLogout(player)

@@ -241,54 +241,6 @@ actions.buildApply = function(player, data)
 end
 
 -- ------------------------------------------------------------------------------------------------ chat
-local function onBuildCommand(player, words, param)
-	local verb, rest = (param or ""):match("^%s*(%S*)%s*(.-)%s*$")
-	verb = (verb or ""):lower()
-	local id = player:getId()
-	if verb == "export" then
-		local code = B.exportCode(player)
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Your build code: " .. code)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Build link: [build " .. code .. "]  (import with !build import <code>)")
-		actions.buildExport(player)
-	elseif verb == "import" then
-		local p, err = B.preview(player, rest)
-		if not p then
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Build import: " .. err)
-			return false
-		end
-		p.summary = summary(p)
-		Chaos.send(player, OPCODE, "buildPreview", p)
-		for line in p.summary:gmatch("[^\n]+") do
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, line)
-		end
-		if p.change then
-			B.pending[id] = {code = p.code, cost = p.cost, time = os.time()}
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Type !build confirm to apply it, or !build cancel.")
-		end
-	elseif verb == "confirm" then
-		local pending = B.pending[id]
-		B.pending[id] = nil
-		if not pending or os.time() - pending.time > PENDING_SECONDS then
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "No build import to confirm. Use !build import <code> first.")
-			return false
-		end
-		local ok, text = B.apply(player, pending.code, pending.cost)
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, ok and text or ("Build import: " .. text))
-	elseif verb == "cancel" then
-		B.pending[id] = nil
-		ChaosPassiveTree.internal.sendNodes(player)
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Build import cancelled.")
-	else
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
-			"!build export: your build code. !build import <code>: preview a build, then !build confirm to apply it.")
-	end
-	return false
-end
-
-local talk = TalkAction("!build")
-talk.onSay = onBuildCommand
-talk:separator(" ")
-talk:register()
 
 local logout = CreatureEvent("ChaosBuildShareLogout")
 function logout.onLogout(player)

@@ -17,6 +17,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not ChaosCommands then
+	dofile("data/scripts/chaos/commands_ui_core.lua")
+end
 
 ChaosShopServices = ChaosShopServices or {}
 local S = ChaosShopServices
@@ -318,9 +321,9 @@ S.unlocks = {
 	lootPouch = {storage = ST.shopLootPouch, name = "the Bottomless Loot Pouch",
 		done = "Autolooted items that do not fit now go to your stash (stackables) or your inbox."},
 	autoSeller = {storage = ST.shopAutoSeller, name = "the Auto Seller",
-		done = "Mark items with !autosell add <item name>; see !autosell for all commands."},
+		done = "Mark the items to sell in Economy > Auto Seller."},
 	rarityAutoloot = {storage = ST.shopRarityAutoloot, name = "Rarity Autoloot",
-		done = "Set it in the Loot Filter (!lootfilter or Hunt -> Loot Filter)."}
+		done = "Set it in the Loot Filter (Hunt > Loot Filter)."}
 }
 
 -- an unlock entry: S.unlocks (per character, a storage) or a class unlock (per account, class_unlocks.lua:
@@ -333,6 +336,9 @@ local function unlockEntry(name)
 	if not u and ChaosPets and ChaosPets.storeUnlock then
 		u = ChaosPets.storeUnlock(name) -- a pet (pets.lua), per character
 	end
+	if not u and ChaosTownPortal and ChaosTownPortal.storeUnlock then
+		u = ChaosTownPortal.storeUnlock(name) -- a portal style (townportal.lua), per character
+	end
 	return u
 end
 
@@ -340,12 +346,12 @@ local function tokenService(storage, what, command)
 	return {
 		check = function(player)
 			if player:getStorageValue(storage) > 0 then
-				return "You already have an unused " .. what .. ". Use it first: " .. command
+				return "You already have an unused " .. what .. ". Use it first (" .. command .. ")."
 			end
 		end,
 		apply = function(player)
 			player:setStorageValue(storage, 1)
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You received a " .. what .. ". Use it with " .. command .. ".")
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You received a " .. what .. ". Use it in " .. command .. ".")
 			return true
 		end
 	}
@@ -415,9 +421,8 @@ S.services = {
 		end
 	},
 
-	nameToken = tokenService(ST.nameChangeTokens, "name change", "!changename <New Name>"),
-	vocationToken = tokenService(ST.vocationChangeTokens, "vocation change",
-		"!changevocation <" .. Chaos.shopServices.vocationWords .. ">"),
+	nameToken = tokenService(ST.nameChangeTokens, "name change", "Character > Services"),
+	vocationToken = tokenService(ST.vocationChangeTokens, "vocation change", "Character > Services"),
 
 	blessings = {
 		check = function(player)
@@ -632,17 +637,17 @@ function login.onLogin(player)
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "World buff active - " .. line)
 	end
 	if player:getStorageValue(ST.nameChangeTokens) > 0 then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You have an unused name change: !changename <New Name>")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You have an unused name change: Character > Services.")
 	end
 	if player:getStorageValue(ST.vocationChangeTokens) > 0 then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
-			"You have an unused vocation change: !changevocation <" .. C().vocationWords .. ">")
+			"You have an unused vocation change: Character > Services.")
 	end
 	return true
 end
 login:register()
 
-local buffsTalk = TalkAction("!worldbuffs")
+local buffsTalk = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "worldbuffs")
 function buffsTalk.onSay(player, words, param)
 	local lines = S.describeBuffs()
 	if #lines == 0 then
@@ -652,8 +657,7 @@ function buffsTalk.onSay(player, words, param)
 	end
 	return false
 end
-buffsTalk:separator(" ")
-buffsTalk:register()
+ChaosCommands.register("worldbuffs", function(player, param) return buffsTalk.onSay(player, "", param) end)
 
 -- temple teleport scroll
 local exhaust = {}
@@ -742,14 +746,14 @@ local function applyRename(guid, oldName, newName, tries)
 end
 S.applyRename = applyRename
 
-local renameTalk = TalkAction("!changename")
+local renameTalk = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "changename")
 function renameTalk.onSay(player, words, param)
 	if player:getStorageValue(ST.nameChangeTokens) < 1 then
 		player:sendCancelMessage("You need a Name Change from the store first.")
 		return false
 	end
 	if trim(param) == "" then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Usage: !changename <New Name>  (3-20 letters, single spaces, " ..
+		player:sendTextMessage(MESSAGE_INFO_DESCR, "Type the new name (3-20 letters, single spaces, " ..
 			"in a protection zone, out of combat). You will be logged out and log in with the new name.")
 		return false
 	end
@@ -789,11 +793,10 @@ function renameTalk.onSay(player, words, param)
 	end, 1500, player:getId())
 	return false
 end
-renameTalk:separator(" ")
-renameTalk:register()
+ChaosCommands.register("changename", function(player, param) return renameTalk.onSay(player, "", param) end)
 
 -- ------------------------------------------------------------------------ !changevocation
-local vocTalk = TalkAction("!changevocation")
+local vocTalk = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "changevocation")
 function vocTalk.onSay(player, words, param)
 	if player:getStorageValue(ST.vocationChangeTokens) < 1 then
 		player:sendCancelMessage("You need a Vocation Change from the store first.")
@@ -802,7 +805,7 @@ function vocTalk.onSay(player, words, param)
 	local current = player:getVocation()
 	local newId, err = S.vocationFor(param, current:getId())
 	if not newId then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Usage: !changevocation <" .. C().vocationWords .. ">. " .. err)
+		player:sendTextMessage(MESSAGE_INFO_DESCR, "Choose one of: " .. C().vocationWords:gsub("|", ", ") .. ". " .. err)
 		return false
 	end
 	local newVoc = Vocation(newId)
@@ -863,5 +866,4 @@ function vocTalk.onSay(player, words, param)
 		newVoc:getDescription()))
 	return false
 end
-vocTalk:separator(" ")
-vocTalk:register()
+ChaosCommands.register("changevocation", function(player, param) return vocTalk.onSay(player, "", param) end)

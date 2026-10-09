@@ -2,7 +2,10 @@
 -- corpse AFTER the stock data/scripts/eventcallbacks/monster/default_onDropLoot.lua.
 --
 --   1. extra loot rolls from the monster's own loot table by tier (magic x1, rare x2, legendary x3, boss x2)
---   2. gear quality: floor + bonus rarity per tier, items replaced via Game.createItemWithRarity
+--   2. gear quality: floor + bonus rarity per tier (the "rarity" attribute)
+--   2b. item level and modifiers: every gear drop gets the item level of this kill (L.dropLevel: the monster's level,
+--       its tier, boss, rift tier, Omen guardian, world boss; chaos_item_mods.lua M.sourceLevel); drops with a rarity
+--       are rolled whole by ChaosCrafting.forgeDrop (tiers by item level, count by rarity, prefixes / suffixes)
 --   3. currency / crafting drops (stock orbs 29856 / 29857 + configurable list)
 --   3b. gems (data/lib/chaos_gems_config.lua drop) and, in step 2b, sockets on gear with a rarity (chaos_gems.lua)
 --   3c. spell support runes (data/lib/chaos_supports_config.lua drop, scripts/chaos/supports.lua)
@@ -651,43 +654,85 @@ function L.isRolled(item)
 	return ok and v ~= nil
 end
 
--- For an item about to leave a corpse before the engine's rarity pass (autoloot, the loot pouch): replace it in the
--- same container with a copy whose rarity stats are rolled now (Game.createItemWithRarity), keeping its Chaos item
--- modifiers. Returns the item to move (the copy, or the item itself when there is nothing to roll or it failed).
+-- For an item about to leave a corpse before the engine's rarity pass (autoloot, the loot pouch, the Rarity Autoloot).
+-- A drop the loot layer forged keeps its rarity as text until a tick later (ChaosCrafting.shield): it gets the number
+-- back now. An item with a rarity nobody rolled yet (a corpse the layer skipped) is forged here, in place, at the item
+-- level it carries (or its type's). Returns the item to move (always the item itself now; callers keep the return).
 function L.finalizeRarity(item)
+	local C = ChaosCrafting
+	if not C then
+		return item
+	end
+	if C.unshield(item) then
+		return item
+	end
 	local r = itemRarityOf(item)
 	if r <= 0 or L.isRolled(item) or not L.isGearId(item:getId()) then
 		return item
 	end
-	local parent = item:getParent()
-	if not parent or not parent.addItemEx then
-		return item
+	C.forge(item, r, C.orbLevel(item))
+	return item
+end
+
+-- ---------------------------------------------------------------------------
+-- item level of a kill's drops
+-- ---------------------------------------------------------------------------
+local poolLevels
+local function poolLevel(name)
+	if not poolLevels then
+		poolLevels = {}
+		local ok, pool = pcall(dofile, "data/scripts/chaos/bounty_pool.lua")
+		if ok and type(pool) == "table" then
+			for _, list in ipairs({pool.hunt or {}, pool.bosses or {}}) do
+				for _, e in ipairs(list) do
+					poolLevels[tostring(e.name):lower()] = tonumber(e.level)
+				end
+			end
+		end
 	end
-	local newItem = Game.createItemWithRarity(item:getId(), item:getCount(), r)
-	if not newItem then
-		return item
+	return poolLevels[tostring(name):lower()]
+end
+
+-- the monster's level: Monster:getMonsterLevel (level-scaled monsters), else its hunting level from bounty_pool.lua,
+-- else the same estimate from its experience and health
+function L.monsterLevel(monster)
+	local ok, lvl = pcall(function() return monster:getMonsterLevel() end)
+	if ok and tonumber(lvl) and tonumber(lvl) > 0 then
+		return tonumber(lvl)
 	end
-	if not L.isRolled(newItem) then
-		newItem:remove()
-		return item
+	local okN, name = pcall(function() return monster:getName() end)
+	local pl = okN and poolLevel(name)
+	if pl and pl > 0 then
+		return pl
 	end
-	local mods = ChaosItemMods and ChaosItemMods.read and ChaosItemMods.read(item) or {}
-	for _, m in ipairs(mods) do
-		ChaosItemMods.set(newItem, m.key, m.value)
+	local mt = monster:getType()
+	local okE, exp = pcall(function() return mt:getExperience() end)
+	local okH, hp = pcall(function() return mt:getMaxHealth() end)
+	return ChaosItemMods.estimateMonsterLevel(okE and exp or 0, okH and hp or 0)
+end
+
+-- the item level of this kill's drops (owner = the corpse owner; inside a rift / Omen arena its run counts)
+function L.dropLevel(monster, owner, tier)
+	local M = ChaosItemMods
+	if not M then
+		return 0
 	end
-	local sockets = ChaosGems and ChaosGems.count(item) or 0
-	if sockets > 0 then
-		ChaosGems.copy(item, newItem)
+	local src = {monsterLevel = L.monsterLevel(monster), tier = tier}
+	local mt = monster:getType()
+	local okB, boss = pcall(function() return mt and mt:isBoss() end)
+	if okB and boss then
+		src.tier = "boss"
 	end
-	if parent:addItemEx(newItem, INDEX_WHEREEVER or -1, FLAG_NOLIMIT or 1) ~= (RETURNVALUE_NOERROR or 0) then
-		newItem:remove()
-		return item
+	local run = owner and ChaosRift and ChaosRift.runOf and ChaosRift.runOf[owner:getId()]
+	if run and run.key then
+		src.riftTier = run.key.tier
+		src.omen = run.omen ~= nil
 	end
-	item:remove()
-	if (#mods > 0 or sockets > 0) and ChaosCrafting and ChaosCrafting.rewriteDescription then
-		ChaosCrafting.rewriteDescription(newItem)
+	local wb = ChaosWorldBoss and ChaosWorldBoss.state
+	if wb and wb.bossId and wb.bossId == monster:getId() then
+		src.worldBoss = true
 	end
-	return newItem
+	return M.sourceLevel(src)
 end
 
 local function announce(owner, corpsePos, text, nearMessage)
@@ -785,21 +830,27 @@ local function processKill(monster, corpse)
 		end
 	end
 
-	-- 2b. Chaos item modifiers (data/lib/chaos_item_mods.lua) on every gear drop with a rarity, inside its free slots
-	if ChaosCrafting and ChaosCrafting.rollDropMods then
-		local rolled = false
+	-- 2b. item level and modifiers (data/lib/chaos_crafting.lua forgeDrop): every gear drop gets this kill's item
+	-- level; one with a rarity gets sockets (data/lib/chaos_gems.lua: 0-3 by rarity) and its whole roll now, the
+	-- rarity kept as text through the engine's own pass (ChaosItemMods.afterDrop makes it a number a tick later)
+	if ChaosCrafting and ChaosCrafting.forgeDrop then
+		local ilvl = L.dropLevel(monster, owner, tier)
+		local forged = false
 		for slot = 0, corpse:getSize() - 1 do
 			local item = corpse:getItem(slot)
-			if item and itemRarityOf(item) > 0 and L.isGearId(item:getId()) then
-				rolled = #ChaosCrafting.rollDropMods(item) > 0 or rolled
-				-- sockets (data/lib/chaos_gems.lua): 0-3 by rarity, the item's maximum
-				if ChaosGems and ChaosGems.rollDropSockets(item) > 0 then
-					rolled = true
+			if item and L.isGearId(item:getId()) and not L.isRolled(item) then
+				if itemRarityOf(item) > 0 then
+					if ChaosGems then
+						ChaosGems.rollDropSockets(item)
+					end
+					forged = #ChaosCrafting.forgeDrop(item, ilvl) >= 0 or forged
+				else
+					ChaosCrafting.forgeDrop(item, ilvl)
 				end
 			end
 		end
-		if rolled and ChaosItemMods.afterDrop then
-			ChaosItemMods.afterDrop(corpse) -- the description once the engine's own rarity pass is done
+		if forged and ChaosItemMods.afterDrop then
+			ChaosItemMods.afterDrop(corpse)
 		end
 	end
 

@@ -102,10 +102,10 @@ function M.ascensionFor(vocId, level, word, inPz, inFight, freeSwitchTo)
 				end
 			end
 			if id == vocId then
-				return nil, "You already are of that class. Your free switch (!ascend " .. tostring(freeWord) .. ") stays."
+				return nil, "You already are of that class. Your free switch (to " .. tostring(freeWord) .. ") stays."
 			end
 			if not id or id ~= freeSwitchTo then
-				return nil, "You may switch once, for free: !ascend " .. tostring(freeWord) .. "."
+				return nil, "You may switch once, for free, to " .. tostring(freeWord) .. " (Character > Services)."
 			end
 			free = true
 		else
@@ -115,7 +115,7 @@ function M.ascensionFor(vocId, level, word, inPz, inFight, freeSwitchTo)
 	end
 	local id = choices[trimWord(word)]
 	if not id then
-		return nil, "Choose your ascension: !ascend " .. table.concat(choiceNames(choices), "|") .. ". The choice is final."
+		return nil, "Choose your ascension: " .. table.concat(choiceNames(choices), " or ") .. ". The choice is final."
 	end
 	if not free and level < a.minLevel then
 		return nil, string.format("You need level %d to ascend.", a.minLevel)
@@ -147,15 +147,15 @@ function M.migrationFor(oldVoc)
 	return {to = m.map[oldVoc] or oldVoc, freeSwitch = m.freeSwitch[oldVoc], resetTree = reset}
 end
 
--- the login message: oldName / newName = vocation names, freeWord = the !ascend word of the free switch or nil
+-- the login message: oldName / newName = vocation names, freeWord = the class word of the free switch or nil
 function M.migrationMessage(oldName, newName, freeWord, treeReset)
 	local text = string.format("The classes were reworked: your %s is now %s.", oldName, newName)
 	if treeReset then
 		text = text .. " Your passive tree was reset for free; allocate your points again."
 	end
 	if freeWord then
-		text = text .. string.format(" You may switch to the other ascended class once, for free: say !ascend %s in a "
-			.. "protection zone.", freeWord)
+		text = text .. string.format(" You may switch to the other ascended class once, for free (%s): Character > Services, "
+			.. "in a protection zone.", freeWord)
 	end
 	return text
 end

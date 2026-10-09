@@ -1,4 +1,4 @@
--- Achievements (client game_achievements, extended opcode ChaosOpcodes.achievements = 250, !achievements).
+-- Achievements (client game_achievements, extended opcode ChaosOpcodes.achievements = 250).
 -- The list: achievements_data.lua. Pure logic: achievements_core.lua (tests: server/tests/achievements_test.lua).
 -- Tables: chaos_achievements, chaos_achievement_stats (server/sql/chaos_achievements.sql; also created at startup).
 --
@@ -241,7 +241,7 @@ local function unlock(player, def, quiet)
 	end
 	local parts = {string.format("Achievement unlocked: %s (+%d points).", def.name, def.points)}
 	if def.title then
-		parts[#parts + 1] = string.format("Title: %s (!title %s).", def.title, def.title)
+		parts[#parts + 1] = string.format("Title: %s (pick it in the Achievements window).", def.title)
 	end
 	if def.reward then
 		local ok, text = pcall(giveReward, player, def.reward)
@@ -444,7 +444,12 @@ local function titleInfo(player)
 		return false, nil
 	end
 	local active = N.pick(list, N.choice and N.choice[player:getGuid()])
-	return true, active and active.text or nil
+	-- every title the character holds (leaderboards, siege, seasons, staff, achievements): the window's selector
+	local held = {}
+	for _, t in ipairs(list) do
+		held[#held + 1] = {text = t.text}
+	end
+	return true, active and active.text or nil, held
 end
 
 function A.sendState(player, open)
@@ -458,7 +463,7 @@ function A.sendState(player, open)
 	for _ in pairs(unlocked) do
 		count = count + 1
 	end
-	local titlesOn, active = titleInfo(player)
+	local titlesOn, active, held = titleInfo(player)
 	Chaos.send(player, OPCODE, "state", {
 		open = open and true or false,
 		points = points, accountPoints = accPoints, maxPoints = K.maxPoints(index),
@@ -466,7 +471,7 @@ function A.sendState(player, open)
 		categories = K.categorySummary(index, unlocked),
 		recent = K.recent(index, unlocked, 5),
 		titles = K.titlesOf(index, unlocked),
-		titlesOn = titlesOn, activeTitle = active or ""
+		titlesOn = titlesOn, activeTitle = active or "", heldTitles = held or {}
 	})
 	local rows = K.view(index, stats, unlocked, itemName)
 	for i = 1, #rows, CHUNK do
@@ -792,6 +797,15 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	local action = type(msg) == "table" and msg.action
 	if action == "open" or action == "get" then
 		A.sendState(player, action == "open")
+	elseif action == "title" then
+		-- the title selector: {action = "title", data = {title = "auto" | "none" | <title text>}} (nameplate.lua)
+		if ChaosRateLimit and not ChaosRateLimit.allow(player, "achievements.title", 500) then
+			return
+		end
+		local title = type(msg.data) == "table" and msg.data.title
+		if ChaosNameplate and ChaosNameplate.setTitle and type(title) == "string" then
+			ChaosNameplate.setTitle(player, title:sub(1, 60))
+		end
 	end
 end
 ext:register()
@@ -883,26 +897,6 @@ end
 startup:register()
 
 -- ---------------------------------------------------------------- commands
-local function onCommand(player, words, param)
-	local guid = player:getGuid()
-	if not A.unlocked[guid] then
-		return false
-	end
-	local points, accPoints = A.pointsOf(player)
-	local count = 0
-	for _ in pairs(A.unlocked[guid]) do
-		count = count + 1
-	end
-	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Achievements: %d of %d, %d points (account %d).", count,
-		#index.list, points, accPoints))
-	A.sendState(player, true)
-	return false
-end
-
-local talk = TalkAction("!achievements", "!achievement")
-talk.onSay = onCommand
-talk:separator(" ")
-talk:register()
 
 -- staff: /achievements grant <id> | stat <key> <value> | add <key> <amount> | reset   (on yourself)
 local gm = TalkAction("/achievements")

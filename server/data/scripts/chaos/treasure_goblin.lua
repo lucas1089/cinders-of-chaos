@@ -483,11 +483,20 @@ function TG.fillCorpse(corpse, st, owner)
 		end
 		r = math.min(r, maxRarity)
 		local placed = false
-		if r > 0 and Game.createItemWithRarity then
-			local item = Game.createItemWithRarity(id, 1, r)
-			if item and corpse:addItemEx(item) == RETURNVALUE_NOERROR then
-				placed = true
-				bonus[#bonus + 1] = string.format("[%s] %s", rarityName(r), itemName(id))
+		if r > 0 and ChaosCrafting and ChaosCrafting.createItem then
+			-- rolled now at the goblin's item level (its area level, as a legendary kill) and kept as text through the
+			-- engine's rarity pass of this corpse (ChaosCrafting.shield; item_mods.lua gives it back a tick later)
+			local ilvl = ChaosItemMods.sourceLevel({monsterLevel = level, tier = "legendary"})
+			local item = ChaosCrafting.createItem(id, r, ilvl)
+			if item then
+				ChaosCrafting.shield(item)
+				if corpse:addItemEx(item) == RETURNVALUE_NOERROR then
+					placed = true
+					bonus[#bonus + 1] = string.format("[%s] %s", rarityName(r), itemName(id))
+					if ChaosItemMods.afterDrop then
+						ChaosItemMods.afterDrop(corpse)
+					end
+				end
 			end
 		end
 		if not placed and corpse:addItem(id, 1) then

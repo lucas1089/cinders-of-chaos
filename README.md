@@ -41,7 +41,7 @@ than days.
 
 - **Tutorial island:** new characters start on a small island with five stations: fight, cast your first spell, spend
   a passive point, use a Chaos Orb, and learn about keystones, bounties and the store. Each station opens the next
-  gate. You can skip it any time (`!skiptutorial`), and nobody can die there.
+  gate. You can skip it any time (Character > Services > Leave Tutorial), and nobody can die there.
 - **Starter kit per class:** weapon, armour, potions, food, tools, a temple teleport scroll and some gold, chosen for
   your class: arrows for Rangers, a second dagger for Ninjas, and so on.
 - **Milestone gifts** at levels 20, 50, 100 and 200: potions for your role and Chaos Orbs.
@@ -62,7 +62,7 @@ You start as one of four base classes. At level 100 you **ascend** into one of t
 | **Mystic** | spells, wands and rods | **Elementalist**: the best area damage, with fire, ice and energy combos · **Illusionist**: the best healer (Mirror Mend, Lucid Reverie, party heals), plus party attack buffs; weakens enemies |
 | **Thief** | fast light weapons, shurikens, stealth | **Ninja**: dual-wields daggers with a scripted off-hand strike, plus Shadow Step · **Samurai**: one sword, counter stance, Iaijutsu draw strike and Bushido crit stacks |
 
-Every class has its own Chaos spells with custom names, icons and effects, and the spellbook (`!spells`) lists them all.
+Every class has its own Chaos spells with custom names, icons and effects, and the spellbook (Character > Spellbook) lists them all.
 Balance is measured on test dummies at levels 300 and 1000, so every class keeps a clear role in a group.
 
 ## Passive tree and Paragon
@@ -78,7 +78,7 @@ Balance is measured on test dummies at levels 300 and 1000, so every class keeps
   - *Ricochet*: arrows bounce to another target
   - *Arcane Echo*: spells can cast a second time
   - Illusionist party auras
-- **Build codes:** export your tree as a short code (`!build export`) and import someone else's. The tree previews it
+- **Build codes:** export your tree as a short code (the passive tree's Build Code panel) and import someone else's. The tree previews it
   first, with the points needed against the points you have.
 - **Respec:** right-click a node to refund just that node, or reset the whole tree. Both are priced by your level: a
   full reset costs about 35-40 minutes of hunting gold. Resets are free below level 50 and once after a class change.
@@ -94,13 +94,27 @@ Balance is measured on test dummies at levels 300 and 1000, so every class keeps
 
 - **15 rarities**: Common, Uncommon, Rare, Epic, Legendary, Exotic, Mythic, Chaos, Eternal, Divine, Phantasmal,
   Celestial, Cosmic, Abyssal and Transcendent.
-- **Item levels and modifiers:** elemental damage, absorbs, skills, critical hits, life and mana leech.
-- **Chaos modifiers:** gear can also roll attack speed (weapons), movement speed (boots), damage to elites and bosses,
-  life and mana on kill, dodge, reflect, thorns, experience, gold find, item find, rarity find, healing done and less
-  damage from monsters. Higher rarities roll bigger values, and every modifier has a cap for your whole equipment. They
-  show in the item's description, in the loot channel and on the Crafting Bench.
+- **Item levels:** every piece of gear that drops has an item level from 1 to 150. It comes from what dropped it: the
+  monster's level, plus a bonus for Magic, Rare and Legendary monsters, bosses, the rift's tier and Omen guardians. World
+  boss gear is item level 145. Orbs never change an item's level.
+- **Rarity decides how many modifiers, item level decides how good they are.** A Common item has one prefix and one
+  suffix; top rarities carry up to three of each (Rare to Exotic: two of each; Mythic and above: three). **Prefixes** are
+  damage and defence (skills, critical hits, element damage, ailments, penetration, block, dodge, thorns ...),
+  **suffixes** are utility, resistances and speed (absorbs, leech, attack and movement speed, find bonuses, cooldown
+  reduction ...).
+- **Modifier tiers T1 to T8:** each modifier rolls a tier, T1 the lowest and T8 the highest, each with its own value range.
+  A tier needs an item level (T2 at 15, T3 at 30, T4 at 50, T5 at 70, T6 at 95, T7 at 120, T8 at 140), and higher tiers
+  are rarer, so gear from stronger monsters rolls better. Older items keep their values; their tier is read from the value.
+- **The modifiers:** elemental damage, absorbs, skills, critical hits, life and mana leech, attack speed (weapons),
+  movement speed (boots), damage to elites and bosses, life and mana on kill, health and mana on hit, dodge, block
+  (shields), reflect, thorns, chance to bleed, ignite, poison, chill or shock, physical and elemental penetration, execute
+  (monsters below a share of their health die to your hit; never bosses), damage over time, cooldown and mana cost
+  reduction, health regeneration, experience, gold find, item find, rarity find, treasure goblin chance, healing done and
+  less damage from monsters. Every modifier has a cap for your whole equipment. They show with their tier in the item's
+  description, in the loot channel and on the Crafting Bench.
 - **About 50 uniques** with fixed, build-defining stats. Some only drop from bosses.
-- **Rich item tooltips:** hover an item to see its rarity, item level, every modifier with its tier and roll range,
+- **Rich item tooltips:** hover an item to see its rarity, item level, its prefixes and suffixes, every modifier with
+  its tier ("T5") and the value range of that tier,
   sockets and gems, unique set and requirements. Hold **Ctrl** to compare it with what you are wearing, stat by stat in
   green and red. Item slots are framed in their rarity colour.
 - **Monster tiers:** every spawn can roll **Magic, Rare or Legendary**, each tougher and better-rewarded. Tiered
@@ -108,8 +122,9 @@ Balance is measured on test dummies at levels 300 and 1000, so every class keeps
   **ambush**.
 - **Treasure goblins:** a very rare, cowardly goblin that flees, blinks away and taunts you, then escapes 18 seconds
   after the first hit. Catch it in time for a hoard of gold, orbs and rarity gear.
-- **Loot filter** (`!lootfilter`): items glow in their rarity colour in corpses, and junk below your chosen rarity is
-  dimmed. You can switch whole categories off, or pick a preset: Show all, Hunter or Strict.
+- **Loot filter** (Hunt > Loot Filter): items glow in their rarity colour in corpses, and junk below your chosen rarity is
+  dimmed. You can switch whole categories off, make gear glow when it carries a modifier of a chosen tier (say T7+)
+  whatever its rarity, or pick a preset: Show all, Hunter or Strict.
 - **Loot channel with icons:** every kill gets a row of item icons. Click an icon to loot it (Shift+click for one from
   a stack). Looted items grey out.
 - **Loot rays:** a beam of light rises from corpses holding a unique or a Legendary-or-better item, coloured by
@@ -126,18 +141,18 @@ Balance is measured on test dummies at levels 300 and 1000, so every class keeps
 ![The Crafting Bench and its seven orbs](docs/images/feature_crafting.png)
 
 Orbs reshape your gear and your Rift Keys. Use them like any other tool: **"Use with" on the orb, then click the item**
-in your backpack. No bench needed. The **Crafting Bench** (`!craft`) is still there when you want to see an item's
+in your backpack. No bench needed. The **Crafting Bench** (Economy > Crafting Bench) is still there when you want to see an item's
 modifiers and a preview of what each orb would do before you use it.
 
 | Orb | On gear | On a Rift Key |
 |---|---|---|
 | Orb of Transmutation | a normal item becomes Common or Uncommon | a key without modifiers gets one |
 | Orb of Alchemy | a normal item becomes Rare, Epic or Legendary | a key without modifiers gets two or three |
-| Exalted Orb | adds one modifier, up to the rarity's limit | adds one modifier, up to three |
+| Exalted Orb | adds one modifier on an open prefix or suffix, its tier by the item level | adds one modifier, up to three |
 | Orb of Annulment | removes one random modifier | removes one random modifier |
 | Orb of Scouring | turns the item back into a normal item | removes every modifier |
-| Chaos Orb | rerolls the item with the same rarity | rerolls the key's modifiers |
-| Divine Orb | rerolls the item with a new random rarity | rerolls the values of the key's modifiers |
+| Chaos Orb | rerolls every modifier, same rarity and item level | rerolls the key's modifiers |
+| Divine Orb | rerolls the item with a new random rarity (same item level) | rerolls the values of the key's modifiers |
 
 A Rift Key's modifiers make the rift harder and its rewards better, so crafting a key is how you push for more loot.
 Items must sit in your backpack (not equipped). Orbs drop from monsters (more from tiered ones and bosses), from
@@ -167,9 +182,9 @@ their own.
 
 ### Salvage
 
-Gear you will never wear is not just vendor trash. The **Salvage** tab of the Crafting Bench (`!salvage`) breaks an
-item with a rarity into **Rune Shards** (more for higher rarities and item levels, one more per Chaos modifier and per
-empty socket) with a small chance of a whole orb, and turns shards into orbs: 12 for an Orb of Transmutation, 25 for a
+Gear you will never wear is not just vendor trash. The **Salvage** tab of the Crafting Bench (Economy > Salvage) breaks an
+item with a rarity into **Rune Shards** (more for higher rarities and item levels, one more per T6-or-better modifier
+and per empty socket) with a small chance of a whole orb, and turns shards into orbs: 12 for an Orb of Transmutation, 25 for a
 Chaos Orb, up to 100 for an Exalted Orb. Salvage one item, or a whole bag up to the rarity you choose (50 items at a
 time, after a confirmation). **Lock** the pieces you want to keep on the bench: salvage and the Auto Seller never touch
 a locked item. Uniques and items with gems in their sockets are never salvaged.
@@ -193,20 +208,20 @@ a locked item. Uniques and items with gems in their sockets are never salvaged.
   rewarded like a damage dealer. The top 3 in damage, in healing and in tanking get extra orbs, a better chance at a
   boss unique and a title for a week: Bossbreaker, Lifewarden or Bulwark. The weekly Boss Healer and Boss Tank
   leaderboards rank the best healers and tanks.
-- **Bounty board** (`!bounty`): daily "kill X in Y" contracts per level band that pay orbs. Finish seven in a week
+- **Bounty board** (Adventure > Bounty Board): daily "kill X in Y" contracts per level band that pay orbs. Finish seven in a week
   for the weekly bounty chest.
-- **Rifts** (`!rift`): use a **Rift Key** to open a 10-minute instance for you and up to 3 party members.
+- **Rifts** (Adventure > Rifts): use a **Rift Key** to open a 10-minute instance for you and up to 3 party members.
   - Each key has a tier (1-15) and 1-3 random modifiers, such as *Vitality, Brutality, Haste, Elites, Reflection,
     Warding, Withering* or *Swarm*. Harder modifiers raise the rewards: item quantity, rarity and experience.
   - Clear the packs and the **Guardian** appears. Kill it to seal the rift, and its chest pays gold, Chaos and Divine
     Orbs and gear for every finisher.
   - A sealed rift can drop the next tier's key. Keys also drop from tiered monsters and bounties.
   - A crash refunds your key.
-- **Infinity Tower** (`!tower`): climb floor after floor alone or with a party of up to 4, against the clock.
+- **Infinity Tower** (Adventure > Infinity Tower): climb floor after floor alone or with a party of up to 4, against the clock.
 - **Dungeons:** instanced runs with their own progress.
 - **Late game:** 17 level-scaled Chaos monsters (levels 650-1000) live in the deepest hunting grounds. Experience
   stages are tuned so the road to 1000 stays rewarding.
-- **Invasions** (`!invasion`): a few times a week a horde of orcs, undead, demons or minotaurs falls on a town or a
+- **Invasions** (Adventure > Events): a few times a week a horde of orcs, undead, demons or minotaurs falls on a town or a
   hunting ground. It comes in five waves and marches on the town's heart, and its warlord leads the last wave.
   - Everyone can defend. The bar at the top left shows the wave, the invaders left, the time and the **breach
     meter**, which fills while invaders stand at the target.
@@ -233,7 +248,7 @@ a locked item. Uniques and items with gems in their sockets are never salvaged.
 
 ![Seasons: the Season of Ash and its reward track](docs/images/feature_seasons.png)
 
-Start fresh with a **season character** (`!season join` on a new character) and race on the season ladder.
+Start fresh with a **season character** (Adventure > Season, Join, on a new character) and race on the season ladder.
 - **Own economy:** season characters trade, mail, party and loot only with their own season.
 - **Season uniques:** some uniques drop only for season characters while the season runs, then for everyone.
 - **Reward track:** outfits, addons, mounts and titles for milestones (level 100 / 300 / 600 / 1000, bounties, world
@@ -247,11 +262,11 @@ Start fresh with a **season character** (`!season join` on a new character) and 
 
 ![The ranked arena and the guild siege](docs/images/feature_pvp.png)
 
-- **Ranked arena** (`!arena`): **1v1 and 2v2** with an Elo rating per mode.
+- **Ranked arena** (Adventure > Arena): **1v1 and 2v2** with an Elo rating per mode.
   - Matchmaking pairs players of close rating and similar level.
   - Nobody really dies and there are no skulls: a lethal hit sends the loser to the gallery.
   - Each win pays a Chaos Orb, and the first win of the day pays a bonus.
-- **Guild Siege** (`!siege`): every Saturday at 20:00, up to four guilds per arena fight over the **Chaos Obelisk**.
+- **Guild Siege** (Adventure > Guild Siege): every Saturday at 20:00, up to four guilds per arena fight over the **Chaos Obelisk**.
   - You score by striking enemies down and by holding the obelisk.
   - Nobody really dies.
   - The winners become **Siege Champions** for a week: a title and +5% experience.
@@ -261,7 +276,7 @@ Start fresh with a **season character** (`!season join` on a new character) and 
 > *"A banner is only cloth. A hall is where the guild remembers its dead and counts its gold."*
 > (a guild steward)
 
-Your guild grows with you. Open the **Guild** window (`!guild`, or Social -> Guild) to see its level, your members and
+Your guild grows with you. Open the **Guild** window (Social > Guild) to see its level, your members and
 what everyone has contributed this week.
 - **Guild levels (1-20):** the guild earns guild XP from what its members already do: a small share of your hunting
   experience (capped each day), bounty contracts, sealed rifts, world bosses, defended invasions and the guild siege.
@@ -284,7 +299,7 @@ what everyone has contributed this week.
 
 ![The weekly leaderboards and a title above a name plate](docs/images/feature_leaderboards.png)
 
-Weekly boards (`!leaderboard`) reset every Monday:
+Weekly boards (Social > Leaderboards) reset every Monday:
 - World Boss damage
 - Bounty Hunter
 - Rifts
@@ -300,8 +315,8 @@ Siegebreaker, Duelist, Gladiator, Defender of the Realm) and orbs. The all-time 
 
 Above every player floats a name plate: their **title** on top, their **guild** in braces below it, and their **name**
 on a small framed plate. Titles come from the leaderboards (gold), the guild siege (Siege Champions, orange, with a
-crimson plate), seasons, login streaks and achievements; staff wear red titles on a gold plate. Hold several? `!title`
-lists them, `!title <name>` picks one, `!title none` hides it. Monsters and NPCs keep their plain names.
+crimson plate), seasons, login streaks and achievements; staff wear red titles on a gold plate. Hold several? Pick one, or none, in
+the Achievements window (Character > Achievements). Monsters and NPCs keep their plain names.
 
 ## Achievements
 
@@ -310,13 +325,13 @@ lists them, `!title <name>` picks one, `!title none` hides it. Monsters and NPCs
 
 ![The achievements window](docs/images/feature_achievements.png)
 
-Over 90 achievements (`!achievements`, or Chaos -> Achievements) give you goals in every corner of the game:
+Over 90 achievements (Character > Achievements) give you goals in every corner of the game:
 - **What counts:** levels and Paragon, magic, rare and legendary kills, ambushes, Treasure Goblins, each world boss, rift
   tiers and modifiers, bounty contracts and weekly chests, uniques and rarities found, orbs used at the Crafting Bench,
   arena wins and ratings, guild sieges, and a few secrets that stay hidden as **???** until you find them.
 - **Points:** every achievement is worth points. Your account total counts each achievement once, whichever character
   earned it.
-- **Titles:** many achievements give a title to show above your name. Pick one in the window or with `!title`.
+- **Titles:** many achievements give a title to show above your name. Pick one in the window.
 - **Rewards:** some pay orbs, others an outfit with its addons or a mount.
 - **Already a veteran?** Levels, Paragon, ascension, bounties and arena results you had before are counted the next time
   you log in.
@@ -329,7 +344,7 @@ Over 90 achievements (`!achievements`, or Chaos -> Achievements) give you goals 
 
 ![The pets window](docs/images/feature_pets.png)
 
-A pet is a small companion that walks at your side (`!pet`, or Chaos -> Pets). It cannot fight and cannot be hurt, and
+A pet is a small companion that walks at your side (Character > Pets). It cannot fight and cannot be hurt, and
 only one is out at a time.
 - **Getting one:** whelps drop very rarely from dragons and frost dragons, the Duskwing from any monster worth your time
   (more often from magic, rare and legendary ones), the Lantern Wisp and the Hoarder Squirrel are in the store (Pets),
@@ -341,7 +356,7 @@ only one is out at a time.
   health), **Ward** (less damage from monsters for a few seconds when you are hurt), **Spark Aura** (hits the monsters
   next to it that are after you), **Gold Sniffer** (more gold in your kills), **Treasure Sense** (more item find) and
   **Fetch** (carries the gold of your kills straight to your bank).
-- **Names:** give it a name in the window or with `!pet rename <name>`.
+- **Names:** give it a name with the window's Rename button.
 - **Where:** pets wait outside protection zones and stay home from the arena, the siege and PvP zones. In rifts, the
   Infinity Tower, dungeons and the world boss arena only the gold, item find and fetch abilities work. While you have
   other summons out your pet stays back; class companions (wolves, minions) do not mind it.
@@ -355,7 +370,7 @@ only one is out at a time.
 
 ![The bestiary window and the task tracker](docs/images/feature_bestiary.png)
 
-The bestiary (`!bestiary`, or Hunt -> Bestiary) has a page for every monster in the world, and it fills in as you hunt:
+The bestiary (Hunt > Bestiary) has a page for every monster in the world, and it fills in as you hunt:
 - **Stages:** your kills unlock each monster in four stages: **Discovered**, **Studied**, **Mastered** and **Completed**.
   How many kills each stage needs depends on how dangerous the monster is: a rat is done after 250, a dragon lord after
   1,000, a boss after 5 kills. Rare monsters that only live in a few places need fewer.
@@ -367,7 +382,7 @@ The bestiary (`!bestiary`, or Hunt -> Bestiary) has a page for every monster in 
 - **Search** by name, browse by family (dragons, demons, undead, beasts, bosses, Chaos monsters and more), and see your
   completion in each.
 
-**Kill tasks** (`!tasks`, or Hunt -> Kill Tasks) are your own hunting orders:
+**Kill tasks** (Hunt > Kill Tasks) are your own hunting orders:
 - **The board** offers a few hunts and family tasks for your level every day ("kill 150 Hellspawn", "kill 270 dragons
   of level 85-189"). You can also take a hunt task from any monster you have discovered, if it suits your level.
 - **Rewards:** gold to your bank, Chaos Orbs (Divine Orbs for family tasks at high levels), experience and bestiary
@@ -397,7 +412,7 @@ and food you can eat. The Orbs of Alchemy, Annulment and Scouring and the mining
   coloured number with its element's effect. Big numbers are shortened (12.4k).
 - **Patch notes in the client:** a window with every week's changes. It opens once at login when there is something
   new, after the daily reward.
-- **Hunt tracker** (`!hunt`): experience, loot, supplies and profit per hour for your session, counted by the server.
+- **Hunt tracker** (Hunt > Hunt Tracker): experience, loot, supplies and profit per hour for your session, counted by the server.
   It also shows kills per monster, every item looted and its value, damage and healing per second, and your Chaos
   drops. Pause, reset or copy a summary.
 - **Daily rewards and login streaks:** one claim a day per account. Your streak counter shows your current and best

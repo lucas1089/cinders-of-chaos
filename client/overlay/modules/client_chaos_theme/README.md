@@ -56,14 +56,20 @@ updating the base client; files not in that list are our own art and are never o
 
 ## Menu bar (client_chaos_topbar)
 
-Category buttons at the top of the game window: Character, Hunt, Chaos, Economy, Social, System and Admin (admins only). Each opens a
-drop-down with the windows of that group (skills, spell list, passive tree, battle list, analyser, prey, auto loot, Infinity Tower, dungeons,
-daily reward, event calendar, store, battle pass, market, bank, stash, VIP, quest log, options, hotkeys, logout, ...). It replaces the icon grid of
-the stock `game_sidebuttons` window, which is closed on login. An entry is listed only when its module is loaded and exposes a known call
-(`toggle`, `Stash.Toggle`, ...); calls are `pcall`-guarded, so a missing module never breaks the menu.
+Category buttons at the top of the game window: Character, Hunt, Adventure, Economy, Social, System and Admin (admins only).
+Each opens a drop-down of at most ten entries; rarely used windows sit in a "More" sub-menu at the end of the drop-down
+(System has a "Developer" one for the console and the DAT offset studio). The most used windows have hotkeys shown beside
+the entry and bound while in game: Alt+L Spellbook, Alt+P Passive Tree, Alt+H Hunt Tracker, Alt+B Bestiary, Alt+J
+Dungeons, Alt+C Crafting Bench, Alt+G Guild. It replaces the icon grid of the stock `game_sidebuttons` window, which is
+closed on login, and the stock top strip of `client_topmenu`. An entry is listed only when its module is loaded and exposes
+a known call (`toggle`, `vipToggle`, ...); calls are `pcall`-guarded, so a missing module never breaks the menu. A base
+window a Chaos one replaces (spell list, hunt analyser) is listed only when the Chaos module is missing.
+Every player command of the server is in the menu: the commands that only print text or take a short argument open a page
+of the Info & Services window (`game_chaosinfo`).
 The admin category shows when the local player has GM access or a script calls `modules.client_chaos_topbar.ChaosTopBar.setAdmin(true)`.
-Other modules can add entries with `ChaosTopBar.addEntry('chaos', { text = ..., icon = ..., modules = {...}, fns = {...} })`;
-`ChaosTopBar.available()` lists what the menu shows and `ChaosTopBar.run(text)` runs an entry (useful for checks).
+Other modules can add entries with `ChaosTopBar.addEntry('adventure', { text = ..., icon = ..., modules = {...}, fns = {...}, key = ... })`
+(a third argument, e.g. `'More'`, puts it in that sub-menu); `ChaosTopBar.available()` lists what the menu shows,
+`ChaosTopBar.run(text)` runs an entry and `ChaosTopBar.open(id)` opens a drop-down (useful for checks).
 
 ## Notes
 

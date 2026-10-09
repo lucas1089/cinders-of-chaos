@@ -119,6 +119,14 @@ function enterTower()
   end
 end
 
+function leaveTower()
+  local protocol = g_game.isOnline() and g_game.getProtocolGame()
+  if protocol then
+    protocol:sendExtendedOpcode(OPCODE_INFINITY_TOWER, '{"action":"leave"}')
+    hide()
+  end
+end
+
 function toggle()
   if infinityTowerWindow and infinityTowerWindow:isVisible() then
     hide()

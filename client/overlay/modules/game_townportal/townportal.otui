@@ -1,0 +1,174 @@
+// Town Portal (game_townportal): the Portal Style window and the cast bar. Styles from client_chaos_theme.
+
+PortalStyleRow < ChaosPanelDark
+  height: 44
+  margin-bottom: 3
+  phantom: false
+  focusable: true
+
+  $focus:
+    background-color: #3a2410
+
+  UIItem
+    id: item
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+    size: 36 36
+    virtual: true
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: item.right
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin-left: 6
+    margin-top: 6
+    text-align: left
+    font: verdana-11px-rounded
+    color: #f6cf72
+    phantom: true
+
+  UILabel
+    id: sub
+    anchors.left: name.left
+    anchors.right: parent.right
+    anchors.top: name.bottom
+    margin-top: 3
+    text-align: left
+    font: verdana-11px-antialised
+    color: #a89c86
+    phantom: true
+
+TownPortalCastBar < ChaosProgressBar
+  size: 220 18
+  background-color: #4a6ad0
+  phantom: true
+
+ChaosMainWindow
+  id: portalStyleWindow
+  size: 620 430
+  !text: tr('Portal Style')
+  @onEscape: modules.game_townportal.hide()
+
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.bottom: statusLabel.top
+    margin-bottom: 8
+    width: 250
+    padding: 3
+
+  UIScrollArea
+    id: styleList
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: listScroll.left
+    anchors.bottom: listFrame.bottom
+    margin: 4
+    layout:
+      type: verticalBox
+    vertical-scrollbar: listScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: listScroll
+    anchors.top: listFrame.top
+    anchors.right: listFrame.right
+    anchors.bottom: listFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 47
+    pixels-scroll: true
+
+  ChaosPanelDark
+    id: detail
+    anchors.top: parent.top
+    anchors.left: listFrame.right
+    anchors.right: parent.right
+    anchors.bottom: statusLabel.top
+    margin-left: 8
+    margin-bottom: 8
+    padding: 8
+
+    UIItem
+      id: item
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.top: parent.top
+      margin-top: 4
+      size: 96 96
+      virtual: true
+
+    ChaosTitle
+      id: nameLabel
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: item.bottom
+      margin-top: 8
+      text-align: center
+
+    ChaosLabel
+      id: descLabel
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: nameLabel.bottom
+      margin-top: 8
+      height: 34
+      text-align: center
+      text-wrap: true
+
+    ChaosLabel
+      id: howLabel
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: descLabel.bottom
+      margin-top: 6
+      height: 34
+      text-align: center
+      text-wrap: true
+      color: #5cc8c0
+
+    ChaosButton
+      id: selectButton
+      anchors.left: parent.left
+      anchors.bottom: parent.bottom
+      width: 130
+      !text: tr('Use this style')
+      @onClick: modules.game_townportal.selectCurrent()
+
+    ChaosButton
+      id: storeButton
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      width: 130
+      !text: tr('Open the Store')
+      @onClick: modules.game_townportal.openStore()
+
+  ChaosLabelDim
+    id: statusLabel
+    anchors.left: parent.left
+    anchors.right: castButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    height: 20
+    text-align: left
+
+  ChaosButton
+    id: castButton
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    width: 150
+    !text: tr('Open Town Portal')
+    @onClick: modules.game_townportal.cast()
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 80
+    !text: tr('Close')
+    @onClick: modules.game_townportal.hide()

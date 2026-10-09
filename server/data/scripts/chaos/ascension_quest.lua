@@ -26,6 +26,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not ChaosCommands then
+	dofile("data/scripts/chaos/commands_ui_core.lua")
+end
 if not ChaosAscensionQuestCore or not ChaosAscensionQuestCore.sendConfirmModal then
 	dofile("data/scripts/chaos/ascension_quest_core.lua")
 end
@@ -832,7 +835,7 @@ end
 logout:register()
 
 -- ======================================================================== talkactions
-local status = TalkAction("!ascension")
+local status = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "ascension")
 function status.onSay(player, words, param)
 	local voc = player:getVocation():getId()
 	local ok, code, text = Q.eligibility(voc, player:getLevel())
@@ -857,7 +860,7 @@ function status.onSay(player, words, param)
 	player:sendTextMessage(MESSAGE_INFO_DESCR, "Ascension: " .. lines[st] .. extra)
 	return false
 end
-status:register()
+ChaosCommands.register("ascension", function(player, param) return status.onSay(player, "", param) end)
 
 local set = TalkAction("/ascendset")
 function set.onSay(player, words, param)

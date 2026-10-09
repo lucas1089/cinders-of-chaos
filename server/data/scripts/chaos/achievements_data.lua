@@ -18,6 +18,8 @@
 --               items  = {{id = n, count = n}}   server item ids
 --               outfit = {name, female = lookType, male = lookType, addons = 0..3}   both looks are added
 --               mount  = {name, id = mount id}   data/XML/mounts.xml of the base server
+--               portal = {key, name}             a Town Portal style (townportal_config.lua, route "achievement"); it is
+--                                                owned while the character has the achievement (also for older unlocks)
 --             outfits and mounts are ones the base server already has (no new art).
 --
 -- Stats (per character; values only go up). Who feeds them, see server/README.md "Achievements":
@@ -117,7 +119,7 @@ return {
 		{id = "goblin_10", cat = "monsters", name = "Greed Is Good", desc = "Slay 10 Treasure Goblins.", points = 25,
 			stat = "goblin_kills", target = 10, reward = {items = orbs(0, 2)}},
 		{id = "goblin_50", cat = "monsters", name = "Hoardbreaker", desc = "Slay 50 Treasure Goblins.", points = 50,
-			stat = "goblin_kills", target = 50, title = "Goblinbane"},
+			stat = "goblin_kills", target = 50, title = "Goblinbane", reward = {portal = {key = "hoarder", name = "Hoarder's Gate"}}},
 		{id = "goblin_escaped", cat = "monsters", name = "Ha Ha!", desc = "Hit a Treasure Goblin and watch it escape anyway.",
 			points = 5, stat = "goblin_escaped", hidden = true},
 		-- bestiary (bestiary.lua: discovered / completed entries, kill tasks done)
@@ -143,7 +145,7 @@ return {
 			stat = "wb_vharok"},
 		{id = "wb_all", cat = "bosses", name = "Colossus Hunter", desc = "Help slay each of the five world bosses.", points = 50,
 			all = {"wb_kaelgor", "wb_skaldra", "wb_rotmother", "wb_nyxareth", "wb_vharok"}, title = "Colossus Hunter",
-			reward = {mount = {name = "Corpsefire Skull", id = 107}}},
+			reward = {mount = {name = "Corpsefire Skull", id = 107}, portal = {key = "abyssal", name = "Abyssal Maw"}}},
 		{id = "wb_top_1", cat = "bosses", name = "Lion's Share", desc = "Deal the most damage of everyone to a world boss.",
 			points = 25, stat = "wb_top", title = "Worldbreaker"},
 		{id = "wb_top_5", cat = "bosses", name = "Unrivalled", desc = "Deal the most damage to a world boss 5 times.", points = 50,
@@ -166,7 +168,8 @@ return {
 			target = 10, reward = {items = orbs(0, 2)}},
 		{id = "rift_t15", cat = "rifts", name = "Rift Sealer", desc = "Seal a tier 15 rift.", points = 50, stat = "rift_tier",
 			target = 15, title = "Rift Sealer", reward = {outfit = {name = "Rift Warrior", female = 845, male = 846, addons = 3}}},
-		{id = "rift_25", cat = "rifts", name = "Keybearer", desc = "Seal 25 rifts.", points = 15, stat = "rift_runs", target = 25},
+		{id = "rift_25", cat = "rifts", name = "Keybearer", desc = "Seal 25 rifts.", points = 15, stat = "rift_runs", target = 25,
+			reward = {portal = {key = "riftwalker", name = "Riftwalker's Gate"}}},
 		{id = "rift_100", cat = "rifts", name = "Lord of Thresholds", desc = "Seal 100 rifts.", points = 50, stat = "rift_runs",
 			target = 100, title = "Threshold Lord", reward = {mount = {name = "Rift Runner", id = 87}}},
 		{id = "rift_flawless", cat = "rifts", name = "Flawless Seal", desc = "Seal a rift with everyone who entered still standing.",
@@ -192,7 +195,7 @@ return {
 		{id = "omen_storm", cat = "rifts", name = "Eye of the Storm", desc = "Slay Thalcyra the Stormbound Seer.", points = 15,
 			stat = "omen_storm"},
 		{id = "omen_10", cat = "rifts", name = "Herald of Omens", desc = "Slay 10 omen guardians.", points = 50,
-			stat = "omen_kills", target = 10, title = "Omenbreaker", reward = {items = orbs(10, 5)}},
+			stat = "omen_kills", target = 10, title = "Omenbreaker", reward = {items = orbs(10, 5), portal = {key = "hellmouth", name = "Hellmouth Gate"}}},
 
 		-- ------------------------------------------------------------------ Bounties
 		{id = "bounty_1", cat = "bounties", name = "Contract Signed", desc = "Complete a bounty contract.", points = 5,
@@ -230,8 +233,8 @@ return {
 			stat = "orbs_used", target = 1000, title = "Artificer"},
 		{id = "exalted_25", cat = "items", name = "Exalted Hands", desc = "Use 25 Exalted Orbs.", points = 15, stat = "orb_exalted",
 			target = 25},
-		{id = "mods_9", cat = "items", name = "Perfection", desc = "Own an item with 9 modifiers.", points = 50, stat = "mods_max",
-			target = 9},
+		{id = "mods_9", cat = "items", name = "Perfection", desc = "Own an item with 6 modifiers (three prefixes, three suffixes).",
+			points = 50, stat = "mods_max", target = 6},
 
 		-- ------------------------------------------------------------------ PvP
 		{id = "arena1_win", cat = "pvp", name = "Sand and Blood", desc = "Win a ranked 1v1 arena match.", points = 5,
@@ -258,7 +261,7 @@ return {
 		{id = "siege_play", cat = "pvp", name = "Under the Banner", desc = "Score in a guild siege.", points = 10,
 			stat = "siege_played"},
 		{id = "siege_win", cat = "pvp", name = "Siege Champion", desc = "Win a guild siege with your guild.", points = 25,
-			stat = "siege_wins", title = "Obelisk Breaker"},
+			stat = "siege_wins", title = "Obelisk Breaker", reward = {portal = {key = "warbanner", name = "Warbanner Gate"}}},
 		{id = "siege_win5", cat = "pvp", name = "Warlord of the Obelisk", desc = "Win 5 guild sieges.", points = 50,
 			stat = "siege_wins", target = 5, title = "Warlord", reward = {mount = {name = "Siegebreaker", id = 56}}},
 
@@ -279,7 +282,7 @@ return {
 		{id = "rat_500", cat = "secrets", name = "Overqualified", desc = "Kill a rat at level 500 or higher.", points = 10,
 			stat = "rat_500", hidden = true},
 		{id = "deaths_50", cat = "secrets", name = "Death Is a Teacher", desc = "Die 50 times.", points = 10, stat = "deaths",
-			target = 50, hidden = true, title = "the Undying"},
+			target = 50, hidden = true, title = "the Undying", reward = {portal = {key = "gravecall", name = "Gravecall Gate"}}},
 		{id = "witching_hour", cat = "secrets", name = "Witching Hour", desc = "Kill a legendary monster between midnight and 1 am.",
 			points = 10, stat = "witching_legendary", hidden = true},
 		{id = "ambushed_legend", cat = "secrets", name = "Out of the Frying Pan",

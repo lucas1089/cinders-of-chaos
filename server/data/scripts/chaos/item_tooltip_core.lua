@@ -10,11 +10,14 @@
 -- One tooltip (JSON object, see item_tooltip.lua for the protocol):
 --   key        "<item id>:<version>" from the item's client attributes (Chaos.itemAttr ID / VERSION), nil without them
 --   id, name, count, kind ("weapon", "shield", "helmet", ...), slot (what it is worn as, "Two-handed weapon")
---   rarity, rarityName, tier (1..5), level        rarity 0 = normal item
+--   rarity, rarityName, level                    rarity 0 = normal item; level = item level (plain drops have one too)
+--   maxTier                                        the best modifier tier the item level allows (1..8)
+--   sides = {p, s, max}                            prefixes and suffixes on the item, the rarity's limit of each
 --   unique = {name, set = {name, have, total}}    uniques only
 --   base = [{k, l, v, fmt}]                        attack, defense, armour, hit chance, range, attack speed, element,
 --                                                  the item type's own bonuses (skills, protections, speed, ...)
---   mods = [{k, l, t, v, g, lo, hi, l2, v2}]       every modifier: attribute key, label, text, value, group, roll range
+--   mods = [{k, l, t, v, g, lo, hi, l2, v2, tr, sd}]  every modifier, prefixes first: attribute key, label, text,
+--                                                  value, group, the value range of its tier, tier (1..8), side "p" / "s"
 --   sockets = {count, max, list = [{name, text, color}]}   empty sockets have no name
 --   req = {level, magic, voc}, weight (oz), desc (flavour text), locked
 --   stats = [{k, l, v, fmt, low}]                  every number the compare view adds up (low = lower is better)
@@ -239,29 +242,12 @@ end
 -- ---------------------------------------------------------------------------------------------------------------
 -- modifiers with tiers and roll ranges
 -- ---------------------------------------------------------------------------------------------------------------
--- the range a modifier of this item rolls in (nil for uniques / items without a rarity)
-function T.modRange(m, rarity, level)
-	local C, M = ChaosCrafting, ChaosItemMods
-	if rarity <= 0 or not C then
+-- the range of a modifier at its tier (nil for uniques / items without a rarity)
+function T.modRange(m, rarity)
+	if (rarity or 0) <= 0 or not m.lo then
 		return nil
 	end
-	if m.group == "chaos" then
-		local def = M and M.byKey[m.chaosKey]
-		if def then
-			local r = M.range(def, rarity, level)
-			return r[1], r[2]
-		end
-		return nil
-	end
-	local ranges = m.group == "element" and C.config.elementRange or C.config.absorbRange
-	local r = ranges[rarity]
-	if r and m.group == "special" and C.specialChance then
-		return C.specialChance(r[1]), C.specialChance(r[2]) -- the chance part of a critical / leech pair
-	end
-	if r then
-		return r[1], r[2]
-	end
-	return nil
+	return m.lo, m.hi
 end
 
 local function modFmt(m)
@@ -344,11 +330,11 @@ function T.build(item, opts)
 	end
 
 	local rarity = C and C.rarityOf(item) or 0
-	local level = C and floor(C.customNumber(item, "combatPowerLevel")) or 0
+	local level = M and M.itemLevelOf(item) or 0
 	tip.rarity = rarity
 	tip.rarityName = rarity > 0 and C.rarityName(rarity) or nil
-	tip.tier = (rarity > 0 and M) and M.tierOf(rarity) or nil
 	tip.level = level > 0 and level or nil
+	tip.maxTier = (level > 0 and M) and M.maxTierFor(level) or nil
 
 	local unique = C and C.isUnique(item) or false
 	local uniqueEntry = ChaosUniqueById and ChaosUniqueById[id] or nil
@@ -383,9 +369,26 @@ function T.build(item, opts)
 
 	tip.mods = {}
 	if C then
-		for _, m in ipairs(C.readMods(item)) do
+		local mods = C.readMods(item)
+		local ordered = {}
+		for _, side in ipairs({"prefix", "suffix"}) do
+			for _, m in ipairs(mods) do
+				if m.side == side then
+					ordered[#ordered + 1] = m
+				end
+			end
+		end
+		if rarity > 0 and M then
+			local p, sx = C.sideCounts(mods)
+			tip.sides = {p = p, s = sx, max = M.sideLimit(rarity)}
+		end
+		for _, m in ipairs(ordered) do
 			local row = {k = m.key, l = m.label, t = C.modText(m), v = m.value, g = m.group, l2 = m.label2, v2 = m.value2}
-			row.lo, row.hi = T.modRange(m, rarity, level)
+			row.lo, row.hi = T.modRange(m, unique and 0 or rarity)
+			if not unique then
+				row.tr = m.tier
+				row.sd = m.side == "prefix" and "p" or "s"
+			end
 			tip.mods[#tip.mods + 1] = row
 			local fmt = modFmt(m)
 			if m.group == "special" then

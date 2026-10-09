@@ -35,26 +35,29 @@ ChaosOpcodes = {
 	infinitytower = 214,
 	autoloot = 216,
 	shop = 218, -- Chaos store (client game_shop); the base server's own store uses 201
-	bounty = 223, -- bounty board (client game_bounty, !bounty; bounty.lua, bounty_config.lua)
-	rift = 228, -- rift run HUD, server -> client (client game_rift, !rift; rift.lua, rift_config.lua)
-	leaderboard = 229, -- leaderboards (client game_leaderboard, !leaderboard; leaderboard.lua, leaderboard_config.lua)
-	crafting = 232, -- crafting bench (client game_crafting, !craft; crafting.lua, data/lib/chaos_crafting.lua)
-	siege = 233, -- guild siege HUD and sign-up window (client game_siege, !siege; siege.lua, siege_config.lua)
-	arena = 236, -- ranked PvP arena window and match HUD (client game_arena, !arena; arena.lua, arena_config.lua)
+	bounty = 223, -- bounty board (client game_bounty; bounty.lua, bounty_config.lua)
+	rift = 228, -- rift run HUD, server -> client (client game_rift; rift.lua, rift_config.lua)
+	leaderboard = 229, -- leaderboards (client game_leaderboard; leaderboard.lua, leaderboard_config.lua)
+	crafting = 232, -- crafting bench (client game_crafting; crafting.lua, data/lib/chaos_crafting.lua)
+	siege = 233, -- guild siege HUD and sign-up window (client game_siege; siege.lua, siege_config.lua)
+	arena = 236, -- ranked PvP arena window and match HUD (client game_arena; arena.lua, arena_config.lua)
 	monkChi = 247, -- Monk chi HUD, server -> client, plain text "chi:<chi>:<max>:<decaySec>" (client game_monkchi; monk_chi_core.lua)
-	lootfilter = 238, -- loot filter window, corpse highlight data, loot channel rows (client game_lootfilter, !lootfilter; lootfilter.lua)
-	nameplate = 248, -- name plates over players: title, guild, frame (client game_nameplate, !title; nameplate.lua, titles.lua)
-	season = 246, -- seasons window (client game_season, !season; season.lua, season_config.lua)
+	lootfilter = 238, -- loot filter window, corpse highlight data, loot channel rows (client game_lootfilter; lootfilter.lua)
+	nameplate = 248, -- name plates over players: title, guild, frame (client game_nameplate; nameplate.lua, titles.lua)
+	season = 246, -- seasons window (client game_season; season.lua, season_config.lua)
 	patchnotes = 244,
-	hunt = 241, -- hunt tracker window, exp/h and profit/h (client game_hunt, !hunt; hunt.lua, hunt_core.lua, hunt_config.lua)
+	hunt = 241, -- hunt tracker window, exp/h and profit/h (client game_hunt; hunt.lua, hunt_core.lua, hunt_config.lua)
 	itemTooltip = 242, -- rich item tooltips with the equipped-item compare (client game_itemtooltip; item_tooltip*.lua)
-	achievements = 250, -- achievements window and unlocks (client game_achievements, !achievements; achievements*.lua)
-	invasion = 251, -- invasion HUD and upcoming events window, server -> client (client game_invasion, !invasion; invasion*.lua, worldevents.lua)
-	guild = 252, -- Guild window: level, perks, members, guild bank, guild hall, depot, top guilds (client game_guild, !guild; guild*.lua)
-	bestiary = 253, -- bestiary, kill tasks and the task tracker HUD (client game_bestiary, !bestiary, !tasks; bestiary*.lua)
-	pets = 254, -- pets window: owned pets, summon / dismiss / rename, levels and abilities (client game_pets, !pet; pets*.lua)
-	supports = 243, -- spell supports window and action bar sockets (client game_spellsupports, !supports; supports.lua)
-	spellbook = 219 -- spell list window (client game_spellbook, !spells)
+	achievements = 250, -- achievements window and unlocks (client game_achievements; achievements*.lua)
+	invasion = 251, -- invasion HUD and upcoming events window, server -> client (client game_invasion; invasion*.lua, worldevents.lua)
+	guild = 252, -- Guild window: level, perks, members, guild bank, guild hall, depot, top guilds (client game_guild; guild*.lua)
+	bestiary = 253, -- bestiary, kill tasks and the task tracker HUD (client game_bestiary; bestiary*.lua)
+	pets = 254, -- pets window: owned pets, summon / dismiss / rename, levels and abilities (client game_pets; pets*.lua)
+	supports = 243, -- spell supports window and action bar sockets (client game_spellsupports; supports.lua)
+	spellbook = 219, -- spell list window (client game_spellbook)
+	townPortal = 239, -- Town Portal cast bar and Portal Style window (client game_townportal; townportal.lua)
+	mapmarks = 245, -- map overlay points of interest and the rift square (client game_mapoverlay; map_marks.lua)
+	info = 237 -- Info & Services window: the player commands reached from the menu (client game_chaosinfo; commands_ui*.lua)
 }
 
 -- ---------------------------------------------------------------------------
@@ -96,6 +99,7 @@ Chaos.storage = {
 	bestiary = 7100870, -- bestiary (bestiary_config.lua taskPointsStorage): 7100870 - 7100879 reserved; bestiary points from kill tasks
 	-- spell supports (data/lib/chaos_supports_config.lua): 7109990 - 7109992 cast context / Reprisal, 7110000 - 7111999
 	-- the support sockets keyed by spell id (base + spell id * 4 + 0..3)
+	-- Town Portal (townportal_config.lua storage): 7101600 - 7101639 reserved; selected style, cooldown, store styles owned
 	monk = 7100800, -- the Monk line (ChaosMonk.ids.storage in monk_chi_core.lua): 7100800 - 7100809 reserved; chi, its time, focus, Chi Ward
 
 	-- store: one-time cosmetics owned (base + id of the wings / aura / shader)

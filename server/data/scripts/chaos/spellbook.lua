@@ -855,9 +855,13 @@ local function onSpellsCommand(player, words, param)
 	return false
 end
 
-for _, words in ipairs({"!spells", "/spells"}) do
-	local talk = TalkAction(words)
-	talk.onSay = onSpellsCommand
-	talk:separator(" ")
-	talk:register()
+-- staff only (players open the window from the menu)
+local talk = TalkAction("/spells")
+function talk.onSay(player, words, param)
+	if not player:getGroup():getAccess() then
+		return false -- players open it from the menu
+	end
+	return onSpellsCommand(player, words, param)
 end
+talk:separator(" ")
+talk:register()

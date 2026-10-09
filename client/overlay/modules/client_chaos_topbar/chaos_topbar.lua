@@ -1,6 +1,7 @@
 -- Chaos menu bar
 -- A row of category buttons at the top of the game map. Each category opens a drop-down with
--- the windows of that group (Character, Hunt, Chaos, Economy, Social, System, Admin).
+-- the windows of that group (Character, Hunt, Adventure, Economy, Social, System, Admin); rarely used windows sit in a
+-- "More" sub-menu at the end of a drop-down. The most used windows have hotkeys (Alt+<letter>, shown in the menu).
 -- It replaces the icon grid of game_sidebuttons on the right panel, which is closed on login,
 -- and the stock top strip of client_topmenu (community link, console, options, exit icons), which
 -- is kept hidden: on the login screen the bar shows only the entries marked `offline`.
@@ -56,6 +57,7 @@ end
 
 -- Finds a callable action for an entry or returns nil.
 local function findAction(entry)
+  if entry.unless and entry.unless() then return nil end
   if entry.custom then
     if entry.available and not entry.available() then return nil end
     return entry.custom
@@ -147,95 +149,147 @@ end
 
 -- ---------------------------------------------------------------- menu layout
 -- entry: text, icon (topbutton_<icon>), and either custom (function) or
---        modules (candidate module names) + fns (function paths) / windows (widget globals)
+--        modules (candidate module names) + fns (function paths) / windows (widget globals);
+--        key (a hotkey, shown in the menu and bound while in game); sub (entries of a sub-menu, opened beside the
+--        drop-down); unless (function: true hides the entry, e.g. a base window a Chaos window replaces)
+-- Every player command of the server is in here: the windows of the Chaos modules, and the Info & Services window
+-- (game_chaosinfo) for the commands that only print text or take a short argument.
+local function info(page)
+  return {
+    custom = function() call('game_chaosinfo.openPage', page) end,
+    available = function()
+      local m = getModule('game_chaosinfo')
+      local offered = m and rawget(m, 'isPageOffered')
+      return m ~= nil and (type(offered) ~= 'function' or offered(page))
+    end,
+  }
+end
+
+local function entry(text, icon, def)
+  def.text, def.icon = text, icon
+  return def
+end
+
+local function has(name) return function() return getModule(name) ~= nil end end
+
 local CATEGORIES = {
   { id = 'character', text = 'Character', icon = 'skills', entries = {
-    { text = 'Skills',             icon = 'skills',      modules = { 'game_skills' },    fns = { 'toggle' } },
-    { text = 'Inventory',          icon = 'inventory',   modules = { 'game_inventory' }, fns = { 'toggle' } },
-    { text = 'Spell List',         icon = 'spells',      modules = { 'game_tibia_spelllist', 'game_spells', 'game_spelllist' }, fns = { 'toggle' } },
-    { text = 'Spellbook',          icon = 'spells',      modules = { 'game_spellbook' }, fns = { 'toggle' } },
-    { text = 'Passive Tree',       icon = 'passivetree', modules = { 'game_passivetree' }, fns = { 'toggle' } },
-    { text = 'Weapon Proficiency', icon = 'proficiency', modules = { 'game_proficiency' }, fns = { 'requestOpenWindow' }, noSelf = true },
-    { text = 'Outfit',             icon = 'inventory',   custom = function() g_game.requestOutfit() end },
-    { text = 'Blessings',          icon = 'help',        modules = { 'game_blessing' },  fns = { 'toggle', 'show' } },
+    entry('Skills',          'skills',      { modules = { 'game_skills' },    fns = { 'toggle' } }),
+    entry('Spellbook',       'spells',      { modules = { 'game_spellbook' }, fns = { 'toggle' }, key = 'Alt+L' }),
+    -- the base spell list only where the Chaos spellbook is missing
+    entry('Spell List',      'spells',      { modules = { 'game_tibia_spelllist', 'game_spells', 'game_spelllist' }, fns = { 'toggle' },
+                                              unless = has('game_spellbook') }),
+    entry('Spell Supports',  'spells',      { modules = { 'game_spellsupports' }, fns = { 'toggle' } }),
+    entry('Passive Tree',    'passivetree', { modules = { 'game_passivetree' }, fns = { 'toggle' }, key = 'Alt+P' }),
+    entry('Achievements',    'ranking',     { modules = { 'game_achievements' }, fns = { 'toggle' } }),
+    entry('Pets',            'vip',         { modules = { 'game_pets' },      fns = { 'toggle' } }),
+    entry('Town Portal',     'minimap',     { modules = { 'game_townportal' }, fns = { 'cast' } }),
+    entry('Character Info',  'help',        info('character')),
+    entry('Services',        'help',        info('services')),
+    entry('More',            'inventory',   { sub = {
+      entry('Inventory',          'inventory',   { modules = { 'game_inventory' }, fns = { 'toggle' } }),
+      entry('Outfit',             'inventory',   { custom = function() g_game.requestOutfit() end }),
+      entry('Portal Style',       'inventory',   { modules = { 'game_townportal' }, fns = { 'toggle' } }),
+      entry('Weapon Proficiency', 'proficiency', { modules = { 'game_proficiency' }, fns = { 'requestOpenWindow' }, noSelf = true }),
+      entry('Blessings',          'help',        { modules = { 'game_blessing' },  fns = { 'toggle', 'show' } }),
+    } }),
   } },
   { id = 'hunt', text = 'Hunt', icon = 'battlelist', entries = {
-    { text = 'Battle List',        icon = 'battlelist',  modules = { 'game_battle' },    fns = { 'toggle' } },
-    { text = 'Party',              icon = 'vip',         modules = { 'game_party_list' }, fns = { 'toggle' } },
-    { text = 'Hunt Analyser',      icon = 'ranking',     modules = { 'game_analyser' },  fns = { 'toggle' } },
-    { text = 'Hunt Tracker',       icon = 'ranking',     modules = { 'game_hunt' },      fns = { 'toggle' } },
-    { text = 'Loot Splitter',      icon = 'bank',        modules = { 'game_lootsplitter' }, fns = { 'toggle' } },
-    { text = 'Prey',               icon = 'battlelist',  modules = { 'game_prey' },      fns = { 'toggle' } },
-    { text = 'Task Hunt',          icon = 'quests',      modules = { 'game_task_hunt' }, fns = { 'toggle' } },
-    { text = 'Bestiary',           icon = 'battlelist',  modules = { 'game_bestiary' },  fns = { 'toggle' } },
-    { text = 'Kill Tasks',         icon = 'quests',      modules = { 'game_bestiary' },  fns = { 'showTasks' } },
-    { text = 'Task Tracker',       icon = 'quests',      modules = { 'game_bestiary' },  fns = { 'toggleTracker' } },
-    { text = 'Auto Loot',          icon = 'autoloot',    modules = { 'game_autoloot' },  fns = { 'toggle' } },
-    { text = 'Loot Filter',        icon = 'autoloot',    modules = { 'game_lootfilter' }, fns = { 'toggle' } },
-    { text = 'Minimap',            icon = 'minimap',     modules = { 'game_minimap', 'game_realminimap' }, fns = { 'toggle' } },
-    { text = 'Unjustified Points', icon = 'pvp',         modules = { 'game_unjustifiedpoints' }, fns = { 'toggle' } },
+    entry('Battle List',     'battlelist',  { modules = { 'game_battle' },    fns = { 'toggle' } }),
+    entry('Party',           'vip',         { modules = { 'game_party_list' }, fns = { 'toggle' } }),
+    entry('Hunt Tracker',    'ranking',     { modules = { 'game_hunt' },      fns = { 'toggle' }, key = 'Alt+H' }),
+    -- the base hunt analyser only where the Chaos hunt tracker is missing
+    entry('Hunt Analyser',   'ranking',     { modules = { 'game_analyser' },  fns = { 'toggle' }, unless = has('game_hunt') }),
+    entry('Bestiary',        'battlelist',  { modules = { 'game_bestiary' },  fns = { 'toggle' }, key = 'Alt+B' }),
+    entry('Kill Tasks',      'quests',      { modules = { 'game_bestiary' },  fns = { 'showTasks' } }),
+    entry('Task Tracker',    'quests',      { modules = { 'game_bestiary' },  fns = { 'toggleTracker' } }),
+    entry('Loot Filter',     'autoloot',    { modules = { 'game_lootfilter' }, fns = { 'toggle' } }),
+    entry('Auto Loot',       'autoloot',    { modules = { 'game_autoloot' },  fns = { 'toggle' } }),
+    entry('Minimap',         'minimap',     { modules = { 'game_minimap', 'game_realminimap' }, fns = { 'toggle' } }),
+    entry('Map Overlay',     'minimap',     { modules = { 'game_mapoverlay' }, fns = { 'toggle' } }),
+    entry('More',            'battlelist',  { sub = {
+      entry('Map Overlay Settings', 'minimap', { modules = { 'game_mapoverlay' }, fns = { 'toggleSettings' } }),
+      entry('Loot Splitter',      'bank',      { modules = { 'game_lootsplitter' }, fns = { 'toggle' } }),
+      entry('Prey',               'battlelist', { modules = { 'game_prey' },     fns = { 'toggle' } }),
+      entry('Task Hunt',          'quests',    { modules = { 'game_task_hunt' }, fns = { 'toggle' } }),
+      entry('Unjustified Points', 'pvp',       { modules = { 'game_unjustifiedpoints' }, fns = { 'toggle' } }),
+    } }),
   } },
-  { id = 'chaos', text = 'Chaos', icon = 'infinitytower', entries = {
-    { text = 'Infinity Tower',     icon = 'infinitytower', modules = { 'game_infinitytower' }, fns = { 'toggle' } },
-    { text = 'Dungeons',           icon = 'dungeons',    modules = { 'game_dungeons' },  fns = { 'toggle' } },
-    { text = 'Daily Reward',       icon = 'daily',       modules = { 'game_daily' },     fns = { 'toggle' } },
-    { text = 'Bounty Board',       icon = 'quests',      modules = { 'game_bounty' },    fns = { 'toggle' } },
-    { text = 'Arena',              icon = 'pvp',         modules = { 'game_arena' },     fns = { 'toggle' } },
-    { text = 'Guild Siege',        icon = 'pvp',         modules = { 'game_siege' },     fns = { 'toggle' } },
-    { text = 'Crafting Bench',     icon = 'proficiency', modules = { 'game_crafting' }, fns = { 'toggle' } },
-    { text = 'Spell Supports',     icon = 'proficiency', modules = { 'game_spellsupports' }, fns = { 'toggle' } },
-    { text = 'Event Calendar',     icon = 'events',      modules = { 'game_schedule' },  fns = { 'toggle' } },
-    { text = 'Leaderboards',       icon = 'ranking',     modules = { 'game_leaderboard' }, fns = { 'toggle' } },
-    { text = 'Achievements',       icon = 'ranking',     modules = { 'game_achievements' }, fns = { 'toggle' } },
-    { text = 'Pets',               icon = 'vip',         modules = { 'game_pets' },      fns = { 'toggle' } },
-    { text = 'Season',             icon = 'events',      modules = { 'game_season' },    fns = { 'toggle' } },
-    { text = 'Notifications',      icon = 'notifications', modules = { 'game_chaosnotify' }, fns = { 'toggle', 'showAll' } },
-    { text = 'Patch Notes',        icon = 'events',      modules = { 'game_patchnotes' }, fns = { 'toggle' } },
+  { id = 'adventure', text = 'Adventure', icon = 'infinitytower', entries = {
+    entry('Dungeons',        'dungeons',    { modules = { 'game_dungeons' },  fns = { 'toggle' }, key = 'Alt+J' }),
+    entry('Rifts',           'dungeons',    info('rift')),
+    entry('Infinity Tower',  'infinitytower', { modules = { 'game_infinitytower' }, fns = { 'toggle' } }),
+    entry('Bounty Board',    'quests',      { modules = { 'game_bounty' },    fns = { 'toggle' } }),
+    entry('Daily Reward',    'daily',       { modules = { 'game_daily' },     fns = { 'toggle' } }),
+    entry('Season',          'events',      { modules = { 'game_season' },    fns = { 'toggle' } }),
+    entry('Arena',           'pvp',         { modules = { 'game_arena' },     fns = { 'toggle' } }),
+    entry('Guild Siege',     'pvp',         { modules = { 'game_siege' },     fns = { 'toggle' } }),
+    entry('Events',          'events',      info('events')),
   } },
   { id = 'economy', text = 'Economy', icon = 'market', entries = {
-    { text = 'Store',              icon = 'market',      modules = { 'game_shop' }, fns = { 'toggle' } },
-    { text = 'Battle Pass',        icon = 'battlepass',  modules = { 'game_sidebuttons' }, fns = { 'openBattlePassWindow' } },
-    { text = 'Market',             icon = 'market',      modules = { 'game_tibia_market', 'game_market' }, fns = { 'toggle' } },
-    { text = 'Bank',               icon = 'bank',        modules = { 'game_bank' },      fns = { 'bankWindowtoggle', 'toggle' } },
-    { text = 'Supply Stash',       icon = 'stash',       modules = { 'game_stash' },     fns = { 'Stash.Toggle', 'toggle' } },
-    { text = 'Character Bazaar',   icon = 'market',      modules = { 'game_character_bazaar' }, fns = { 'toggle' } },
+    entry('Crafting Bench',  'proficiency', { modules = { 'game_crafting' },  fns = { 'toggle' }, key = 'Alt+C' }),
+    entry('Salvage',         'proficiency', { modules = { 'game_crafting' },  fns = { 'openSalvage' } }),
+    entry('Store',           'market',      { modules = { 'game_shop' },      fns = { 'toggle' } }),
+    entry('Market',          'market',      { modules = { 'game_tibia_market', 'game_market' }, fns = { 'toggle' } }),
+    entry('Bank',            'bank',        { modules = { 'game_bank' },      fns = { 'bankWindowtoggle', 'toggle' } }),
+    entry('Supply Stash',    'stash',       { modules = { 'game_stash' },     fns = { 'vipToggle', 'Stash.Toggle', 'toggle' } }),
+    entry('Auto Seller',     'autoloot',    info('autoseller')),
+    entry('Battle Pass',     'battlepass',  { modules = { 'game_sidebuttons' }, fns = { 'openBattlePassWindow' } }),
+    entry('More',            'market',      { sub = {
+      entry('House',            'bank',      info('house')),
+      entry('Ancestral Store',  'market',    info('ancestral')),
+      entry('Character Bazaar', 'market',    { modules = { 'game_character_bazaar' }, fns = { 'toggle' } }),
+    } }),
   } },
   { id = 'social', text = 'Social', icon = 'vip', entries = {
-    { text = 'VIP List',           icon = 'vip',         modules = { 'game_viplist' },   fns = { 'toggle' } },
-    { text = 'Quest Log',          icon = 'quests',      custom = openQuestLog, available = function() return getModule('game_questlog') ~= nil end },
-    { text = 'Quest Tracker',      icon = 'quests',      modules = { 'game_questlog' },  fns = { 'toggleTracker' } },
-    { text = 'Guild',              icon = 'vip',         modules = { 'game_guild' },     fns = { 'toggle' } },
+    entry('Guild',           'vip',         { modules = { 'game_guild' },     fns = { 'toggle' }, key = 'Alt+G' }),
+    entry('VIP List',        'vip',         { modules = { 'game_viplist' },   fns = { 'toggle' } }),
+    entry('Leaderboards',    'ranking',     { modules = { 'game_leaderboard' }, fns = { 'toggle' } }),
+    entry('Quest Log',       'quests',      { custom = openQuestLog, available = has('game_questlog') }),
+    entry('Quest Tracker',   'quests',      { modules = { 'game_questlog' },  fns = { 'toggleTracker' } }),
+    entry('Notifications',   'notifications', { modules = { 'game_chaosnotify' }, fns = { 'toggle', 'showAll' } }),
+    entry('Patch Notes',     'events',      { modules = { 'game_patchnotes' }, fns = { 'toggle' } }),
   } },
   { id = 'system', text = 'System', icon = 'options', entries = {
-    { text = 'Options',            icon = 'options',     modules = { 'client_settings', 'client_options' }, fns = { 'toggle' }, offline = true },
-    { text = 'Hotkeys',            icon = 'options',     modules = { 'game_hotkeys' },   fns = { 'toggle' } },
-    { text = 'Helper',             icon = 'help',        modules = { 'game_helper' },    fns = { 'toggle' } },
-    { text = 'Report a Bug',       icon = 'help',        modules = { 'game_bugreport' }, fns = { 'show' } },
-    { text = 'Join Discord',       icon = 'community',   custom = openCommunity, offline = true },
+    entry('Options',         'options',     { modules = { 'client_settings', 'client_options' }, fns = { 'toggle' }, offline = true }),
+    entry('Hotkeys',         'options',     { modules = { 'game_hotkeys' },   fns = { 'toggle' } }),
+    entry('Helper',          'help',        { modules = { 'game_helper' },    fns = { 'toggle' } }),
+    entry('Server Info',     'help',        info('server')),
+    entry('Report a Bug',    'help',        { modules = { 'game_bugreport' }, fns = { 'show' } }),
+    entry('Join Discord',    'community',   { custom = openCommunity, offline = true }),
     { separator = true, offline = true },
-    { text = 'Console',            icon = 'console',     modules = { 'client_terminal' }, fns = { 'toggle' }, offline = true },
-    { text = 'DAT Offset Studio',  icon = 'console',     modules = { 'game_offsets' },   fns = { 'toggleDatOffsetEditor' }, offline = true },
+    entry('Developer',       'console',     { offline = true, sub = {
+      entry('Console',           'console', { modules = { 'client_terminal' }, fns = { 'toggle' }, offline = true }),
+      entry('DAT Offset Studio', 'console', { modules = { 'game_offsets' },    fns = { 'toggleDatOffsetEditor' }, offline = true }),
+    } }),
     { separator = true, offline = true },
-    { text = 'Logout',             icon = 'logout',      custom = logout },
-    { text = 'Exit',               icon = 'exit',        custom = exitClient, offline = true },
+    entry('Logout',          'logout',      { custom = logout }),
+    entry('Exit',            'exit',        { custom = exitClient, offline = true }),
   } },
   { id = 'admin', text = 'Admin', icon = 'admin', admin = true, entries = {
-    { text = 'Admin Panel',        icon = 'admin',       modules = { 'game_admin' },     fns = { 'toggle' } },
+    entry('Admin Panel',     'admin',       { modules = { 'game_admin' },     fns = { 'toggle' } }),
   } },
 }
+-- older ids other modules may still pass to addEntry
+local CATEGORY_ALIAS = { chaos = 'adventure' }
 
 local function isOnline()
   return g_game and g_game.isOnline() or false
 end
 
-local function availableEntries(category)
+-- the usable entries of a list (a category or a sub-menu): {entry, action} items, separators, and {entry, sub} items
+-- for sub-menus with at least one usable entry
+local function availableEntries(entries)
   local list = {}
   local online = isOnline()
-  for _, entry in ipairs(category.entries) do
+  for _, entry in ipairs(entries) do
     if not online and not entry.offline then
       -- login screen: only entries that make sense without a character
     elseif entry.separator then
       if #list > 0 and not list[#list].separator then list[#list + 1] = entry end
+    elseif entry.sub then
+      local inner = availableEntries(entry.sub)
+      if #inner > 0 then list[#list + 1] = { entry = entry, sub = inner } end
     else
       local action = findAction(entry)
       if action then list[#list + 1] = { entry = entry, action = action } end
@@ -245,40 +299,73 @@ local function availableEntries(category)
   return list
 end
 
+-- every usable entry of a category, sub-menus flattened
+local function flatEntries(entries, out)
+  out = out or {}
+  for _, item in ipairs(availableEntries(entries)) do
+    if item.sub then
+      for _, inner in ipairs(item.sub) do
+        if not inner.separator then out[#out + 1] = inner end
+      end
+    elseif not item.separator then
+      out[#out + 1] = item
+    end
+  end
+  return out
+end
+
 local function closeMenu()
   if isAlive(openMenu) then openMenu:destroy() end
   openMenu = nil
 end
 
-local function showCategory(category, button)
+local function setOptionIcon(option, icon)
+  if option and icon then
+    pcall(function()
+      option:setIcon(ICON_DIR .. icon)
+      option:setIconSize({ width = 16, height = 16 })
+      option:setIconOffset({ x = 4, y = 2 })
+    end)
+  end
+end
+
+local function runItem(item)
+  local ok, err = pcall(item.action)
+  if not ok then g_logger.error('[chaos_menu] ' .. item.entry.text .. ': ' .. tostring(err)) end
+end
+
+-- a drop-down at pos; sub-menu entries open their own drop-down beside it
+local function showList(list, pos)
   closeMenu()
-  local list = availableEntries(category)
   if #list == 0 then return end
   local menu = g_ui.createWidget('PopupMenu')
   menu:setGameMenu(true)
   for _, item in ipairs(list) do
     if item.separator then
       menu:addSeparator()
-    else
-      local entry, action = item.entry, item.action
+    elseif item.sub then
       -- leading spaces leave room for the icon drawn at the left of the option
-      menu:addOption('      ' .. entry.text, function()
-        local ok, err = pcall(action)
-        if not ok then g_logger.error('[chaos_menu] ' .. entry.text .. ': ' .. tostring(err)) end
-      end)
+      menu:addOption('      ' .. item.entry.text .. '  >', function() end)
       local option = menu:getLastChild()
-      if option and entry.icon then
-        pcall(function()
-          option:setIcon(ICON_DIR .. entry.icon)
-          option:setIconSize({ width = 16, height = 16 })
-          option:setIconOffset({ x = 4, y = 2 })
-        end)
+      setOptionIcon(option, item.entry.icon)
+      option.onClick = function(widget)
+        local x = menu:getX() + menu:getWidth() - 6
+        local y = widget:getY() - 4
+        menu:destroy()
+        showList(item.sub, { x = x, y = y })
       end
+    else
+      menu:addOption('      ' .. item.entry.text, function() runItem(item) end, item.entry.key)
+      setOptionIcon(menu:getLastChild(), item.entry.icon)
     end
   end
-  local pos = button:getPosition()
-  menu:display({ x = pos.x, y = pos.y + button:getHeight() + 2 })
+  menu:display(pos)
   openMenu = menu
+end
+
+local function showCategory(category, button)
+  local pos = button:getPosition()
+  showList(availableEntries(category.entries), { x = pos.x, y = pos.y + button:getHeight() + 2 })
 end
 
 local function createCategoryButton(category)
@@ -336,7 +423,7 @@ function ChaosTopBar.refresh()
   for _, category in ipairs(CATEGORIES) do
     local button = categoryButtons[category.id]
     if button then
-      local show = #availableEntries(category) > 0
+      local show = #availableEntries(category.entries) > 0
       if show and category.admin then show = hasAdminAccess() end
       button:setVisible(show)
       if show then width = width + button:getWidth() + 4 end
@@ -359,11 +446,27 @@ function ChaosTopBar.setAdmin(value)
   ChaosTopBar.refresh()
 end
 
--- Lets other modules add an entry to a category: ChaosTopBar.addEntry('chaos', {text=..., icon=..., modules=..., fns=...})
-function ChaosTopBar.addEntry(categoryId, entry)
+-- Lets other modules add an entry: ChaosTopBar.addEntry('adventure', {text=..., icon=..., modules=..., fns=...});
+-- with `under` = the text of a sub-menu entry ('More'), it goes into that sub-menu. A top-level entry goes before a
+-- closing 'More' so that one stays last. An entry with `key` gets its hotkey at the next login.
+function ChaosTopBar.addEntry(categoryId, entry, under)
+  categoryId = CATEGORY_ALIAS[categoryId] or categoryId
   for _, category in ipairs(CATEGORIES) do
     if category.id == categoryId and entry and entry.text then
-      table.insert(category.entries, entry)
+      local target = category.entries
+      if under then
+        target = nil
+        for _, e in ipairs(category.entries) do
+          if e.sub and e.text == under then target = e.sub end
+        end
+        if not target then return false end
+      end
+      local last = target[#target]
+      if not under and last and last.sub then
+        table.insert(target, #target, entry)
+      else
+        table.insert(target, entry)
+      end
       ChaosTopBar.refresh()
       return true
     end
@@ -371,13 +474,13 @@ function ChaosTopBar.addEntry(categoryId, entry)
   return false
 end
 
--- {category id -> {entry texts}} of what the menu would show now (for checks and tools)
+-- {category id -> {entry texts}} of what the menu would show now, sub-menus flattened (for checks and tools)
 function ChaosTopBar.available()
   local out = {}
   for _, category in ipairs(CATEGORIES) do
     local texts = {}
-    for _, item in ipairs(availableEntries(category)) do
-      if not item.separator then texts[#texts + 1] = item.entry.text end
+    for _, item in ipairs(flatEntries(category.entries)) do
+      texts[#texts + 1] = item.entry.text
     end
     out[category.id] = texts
   end
@@ -387,14 +490,58 @@ end
 -- runs the entry with this text, as a click on it would; returns false when it is not available
 function ChaosTopBar.run(text)
   for _, category in ipairs(CATEGORIES) do
-    for _, item in ipairs(availableEntries(category)) do
-      if not item.separator and item.entry.text == text then
+    for _, item in ipairs(flatEntries(category.entries)) do
+      if item.entry.text == text then
         item.action()
         return true
       end
     end
   end
   return false
+end
+
+-- opens a category's drop-down as a click on its button would (for checks and screenshots)
+function ChaosTopBar.open(categoryId)
+  local button = categoryButtons[CATEGORY_ALIAS[categoryId] or categoryId]
+  for _, category in ipairs(CATEGORIES) do
+    if button and category.id == (CATEGORY_ALIAS[categoryId] or categoryId) then
+      showCategory(category, button)
+      return true
+    end
+  end
+  return false
+end
+
+-- ---------------------------------------------------------------- hotkeys
+-- The entries with a `key` (the most used windows) are bound while in game; the menu shows the key beside the entry.
+local boundKeys = {}
+local function forEachKeyed(entries, fn)
+  for _, e in ipairs(entries) do
+    if e.sub then forEachKeyed(e.sub, fn) elseif e.key then fn(e) end
+  end
+end
+
+local function bindHotkeys()
+  for _, category in ipairs(CATEGORIES) do
+    forEachKeyed(category.entries, function(e)
+      if not boundKeys[e.key] then
+        local handler = function()
+          local action = findAction(e)
+          if action then runItem({ entry = e, action = action }) end
+          return true
+        end
+        boundKeys[e.key] = handler
+        g_keyboard.bindKeyDown(e.key, handler)
+      end
+    end)
+  end
+end
+
+local function unbindHotkeys()
+  for key, handler in pairs(boundKeys) do
+    pcall(function() g_keyboard.unbindKeyDown(key, handler) end)
+  end
+  boundKeys = {}
 end
 
 local function scheduleRefresh(delay)
@@ -407,6 +554,7 @@ local function scheduleRefresh(delay)
 end
 
 local function onGameStart()
+  bindHotkeys()
   keepSideButtonsHidden()
   hideSideButtons()
   ChaosTopBar.refresh()
@@ -416,6 +564,7 @@ local function onGameStart()
 end
 
 local function onGameEnd()
+  unbindHotkeys()
   adminOverride = nil
   closeMenu()
   -- back to the login-screen entries once the game interface is gone
@@ -468,6 +617,7 @@ end
 
 function terminate()
   disconnect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
+  unbindHotkeys()
   if refreshEvent then removeEvent(refreshEvent) refreshEvent = nil end
   closeMenu()
   if isAlive(menuBar) then menuBar:destroy() end

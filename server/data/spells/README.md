@@ -321,7 +321,7 @@ player), and are back to full 10 s after the last hit. So the Illusionist heals 
 
 ### Thief line (Thief, Ninja, Samurai)
 
-Ascension at level 100 (`!ascend ninja|samurai`, data/scripts/chaos/ascension.lua). The kit's mechanics are scripted in
+Ascension at level 100 (the Ascendant Oracle, data/scripts/chaos/ascension.lua). The kit's mechanics are scripted in
 `data/scripts/chaos/thief_combat.lua` (rules in `classes.lua`, numbers in `Chaos.classes`, chaos_constants.lua):
 
 - **Evasion** (passive): 8% Thief, 12% Ninja, 5% Samurai chance to dodge a melee or ranged hit (monster attacks and player weapons),
@@ -355,7 +355,7 @@ The auto attack alone is noisy (a 30 s sample varies by ~15%).
 ### Necromancer line (Necromancer, Lich, Bone Lord)
 
 **Phase A: built, not tested in game. Every number below is a formula estimate until measured (phase B).**
-Ascension at level 100 (`!ascend lich|bonelord`), behind the store unlock of the Necromancer (`class_unlocks.lua`). Numbers:
+Ascension at level 100 (the Ascendant Oracle), behind the store unlock of the Necromancer (`class_unlocks.lua`). Numbers:
 `data/scripts/chaos/necro_config.lua`, rules: `necro_core.lua`, minions: `necro_minions.lua`, curse and bone shield:
 `necromancer_combat.lua`.
 
@@ -403,7 +403,7 @@ before its ascension is at the Thief's level (728 / 1802). To be measured with t
 ### Monk line (Monk, Shadowfist, Iron Sage)
 
 **Phase A: built, not tested in game. Every number below is a formula estimate until measured (phase B).**
-Ascension at level 100 (`!ascend shadowfist|ironsage`), behind the store unlock of the Monk (`class_unlocks.lua`). Rules and every number:
+Ascension at level 100 (the Ascendant Oracle), behind the store unlock of the Monk (`class_unlocks.lua`). Rules and every number:
 `ChaosMonk` in `data/scripts/chaos/monk_chi_core.lua`; combat glue `data/scripts/chaos/monk_combat.lua`.
 
 - **Unarmed**: the engine's fist hit (attack 7, no vocation multiplier) is rescaled for a Monk to a fist attack of 40 + level x 0.025 (max 60)
@@ -436,7 +436,7 @@ Ninja's 3710: watch it in phase B (lower `whirlingHeel` or exclude area strikes 
 ### Templar line (Templar, Inquisitor, Sentinel)
 
 **Phase A: built, not tested in game. Every number below is a formula estimate until measured (phase B).**
-Ascension at level 100 (`!ascend inquisitor|sentinel`). Locked behind the store's class unlock (docs/CLASSES.md, "Class lock").
+Ascension at level 100 (the Ascendant Oracle). Locked behind the store's class unlock (docs/CLASSES.md, "Class lock").
 Mechanics in `data/scripts/chaos/templar_combat.lua`, ids, numbers and rules in `templar_aura_core.lua` (`ChaosTemplar.cfg`).
 Power P = the best of sword, club and axe skill x the main-hand weapon's attack; strikes are
 `(level/5 + P x a + magic level x b + c) x level factor` (x1 up to level 300, x2 at level 1000, at most x2.2: the Thief line's

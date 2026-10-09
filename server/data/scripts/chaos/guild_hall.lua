@@ -735,7 +735,7 @@ function G.hallThink(noPay)
 		end
 		if state == "locked" and not G.lockTold[gid] then
 			G.lockTold[gid] = true
-			G.tellGuild(gid, string.format("The guild hall's rent (%s gold) is unpaid: its upgrades are locked until it is paid (!guild rent).",
+			G.tellGuild(gid, string.format("The guild hall's rent (%s gold) is unpaid: its upgrades are locked until it is paid (Social > Guild).",
 				C.money(C.rentAmount(h.upgrades, cfg))))
 		elseif state == "grace" and not noPay and now() - (G.graceTold[gid] or 0) >= 3600 then
 			G.graceTold[gid] = now()
@@ -842,6 +842,12 @@ local function depotCustomKeys()
 					end
 				end
 			end
+		end
+	end
+	-- the item level, every modifier and its tier mark (chaos_crafting.lua C.attributeKeys)
+	if ChaosCrafting and ChaosCrafting.attributeKeys then
+		for _, k in ipairs(ChaosCrafting.attributeKeys()) do
+			add(k)
 		end
 	end
 	customKeys = list

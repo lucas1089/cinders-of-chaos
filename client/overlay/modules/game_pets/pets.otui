@@ -227,7 +227,7 @@ ChaosMainWindow
     margin-right: 8
     height: 16
     text-align: left
-    !text: tr('One pet out at a time; it levels from your kills. Chat: !pet')
+    !text: tr('One pet out at a time; it levels from your kills.')
 
   ChaosButton
     id: closeButton

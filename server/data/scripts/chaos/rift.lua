@@ -22,6 +22,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not ChaosCommands then
+	dofile("data/scripts/chaos/commands_ui_core.lua")
+end
 dofile("data/scripts/chaos/rift_core.lua")
 ChaosRiftConfig = dofile("data/scripts/chaos/rift_config.lua")
 dofile("data/lib/chaos_dark_paint.lua")
@@ -676,6 +679,24 @@ local function omenUniques()
 	return omenUniqueCache
 end
 
+-- the item level of a rift's chest and coffer gear (chaos_item_mods.lua M.sourceLevel): the level of the rift's boss
+-- (its hunting level, else the top of the tier's level window), the rift tier and the Omen bonus
+function RF.itemLevel(tier, bossName, omen, kind)
+	local M = ChaosItemMods
+	if not M then
+		return nil
+	end
+	local level = bossName and RF.poolLevel[tostring(bossName):lower()] or R.tierInfo(C(), tier).pick[2]
+	return M.sourceLevel({monsterLevel = level, tier = kind or "boss", riftTier = tier, omen = omen and true or false})
+end
+
+local function riftGear(id, rarity, ilvl)
+	if ChaosCrafting and ChaosCrafting.createItem then
+		return ChaosCrafting.createItem(id, rarity, ilvl)
+	end
+	return Game.createItem(id, 1)
+end
+
 -- one finisher's chest. auto = true when it was not opened before the exit
 function RF.deliver(player, run, auto)
 	local cfg = C()
@@ -717,8 +738,7 @@ function RF.deliver(player, run, auto)
 			if e then
 				if L.isGearId(e.itemId) then
 					local rarity = L.upgradeRarity(r.lootTier, L.stockRarity(), itemFind * r.rarityMult)
-					local item = (rarity > 0 and Game.createItemWithRarity) and Game.createItemWithRarity(e.itemId, 1, rarity)
-						or Game.createItem(e.itemId, 1)
+					local item = riftGear(e.itemId, rarity, RF.itemLevel(asTier, data.boss, data.omen))
 					if item then
 						inbox = giveEx(player, item) or inbox
 						local names = ChaosLootConfig and ChaosLootConfig.gear and ChaosLootConfig.gear.names
@@ -1054,7 +1074,7 @@ local function cofferItem(run)
 end
 
 -- rolls one item of a random rift monster's loot table (as the reward chest does) into the container
-local function rollInto(container, types, lootTier, itemFind, rarityMult, countMult, found)
+local function rollInto(container, types, lootTier, itemFind, rarityMult, countMult, found, ilvl)
 	local L = ChaosLoot
 	if not L then
 		return
@@ -1072,8 +1092,7 @@ local function rollInto(container, types, lootTier, itemFind, rarityMult, countM
 	end
 	if L.isGearId(e.itemId) then
 		local rarity = L.upgradeRarity(lootTier, L.stockRarity(), itemFind * rarityMult)
-		local item = (rarity > 0 and Game.createItemWithRarity) and Game.createItemWithRarity(e.itemId, 1, rarity)
-			or Game.createItem(e.itemId, 1)
+		local item = riftGear(e.itemId, rarity, ilvl)
 		if item and container:addItemEx(item, INDEX_WHEREEVER or -1, FLAG_NOLIMIT) == RETURNVALUE_NOERROR then
 			found[#found + 1] = itemName(e.itemId)
 		end
@@ -1110,7 +1129,8 @@ local function openCoffer(run)
 	end
 	local found = {}
 	for _ = 1, r.rolls do
-		rollInto(item, run.typeNames, r.lootTier, 1, r.rarityMult, r.countMult, found)
+		rollInto(item, run.typeNames, r.lootTier, 1, r.rarityMult, r.countMult, found,
+			RF.itemLevel(run.key.tier, nil, false, "legendary"))
 	end
 	item:setAttribute(ITEM_ATTRIBUTE_NAME, "opened coffer")
 	item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, "The seal is broken. Its spoils are free for the taking.")
@@ -2146,9 +2166,17 @@ local function onRift(player, words, param)
 	return false
 end
 
-for _, words in ipairs({"!rift", "/rift"}) do
-	local talk = TalkAction(words)
-	talk.onSay = onRift
-	talk:separator(" ")
-	talk:register()
+-- staff only (players open the window from the menu)
+local talk = TalkAction("/rift")
+function talk.onSay(player, words, param)
+	if not player:getGroup():getAccess() then
+		return false -- players open it from the menu
+	end
+	return onRift(player, words, param)
 end
+talk:separator(" ")
+talk:register()
+-- players: the run status and the keys carried, from the menu (Info & Services, commands_ui.lua)
+ChaosCommands.register("rift", function(player)
+	return onRift(player, "", "")
+end)

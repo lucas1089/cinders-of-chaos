@@ -1,6 +1,6 @@
 Module
   name: game_crafting
-  description: Crafting bench (crafting orbs on backpack items; !craft, extended opcode 232)
+  description: Crafting bench (crafting orbs on backpack items; extended opcode 232)
   author: project-chaos
   sandboxed: true
   scripts: [ crafting ]

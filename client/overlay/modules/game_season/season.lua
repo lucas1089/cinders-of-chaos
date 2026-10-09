@@ -7,7 +7,7 @@
 --                     confirm {text, seconds}    the join terms: Join asks to confirm
 --                     notice {text}              why a join was refused
 --   client -> server  open | join {confirm}
--- !season opens it from the chat; the top menu (Chaos -> Season) calls toggle().
+-- The top menu (Adventure > Season) calls toggle().
 
 local OPCODE = 246
 

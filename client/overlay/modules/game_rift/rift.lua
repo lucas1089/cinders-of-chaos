@@ -7,7 +7,7 @@
 --                                     omen (kind name) and title (an Omen Key arena)}
 --                     end {result = success|failed, text, exitIn}
 --   client -> server  query (after a module reload: the server answers with start when the player is in a rift)
--- !rift (server talkaction) shows the keys the player carries and the run status.
+-- The Rift Keys page of the Info & Services window (game_chaosinfo) shows the keys the player carries and the run status.
 
 local OPCODE = 228
 local hud

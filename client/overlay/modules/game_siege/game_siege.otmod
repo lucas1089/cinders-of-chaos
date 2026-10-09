@@ -1,6 +1,6 @@
 Module
   name: game_siege
-  description: Guild siege HUD (scores, time left, obelisk holder) and sign-up window (!siege, extended opcode 233)
+  description: Guild siege HUD (scores, time left, obelisk holder) and sign-up window (extended opcode 233)
   author: project-chaos
   sandboxed: true
   scripts: [ siegemath, siege ]

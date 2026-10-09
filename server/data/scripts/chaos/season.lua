@@ -664,7 +664,7 @@ local function doJoin(player, season)
 		pcall(NP.giveKit, player)
 	end
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Welcome to %s! %s is now a season character %s. " ..
-		"The season ends in %s. !season shows your milestones.", season.name, player:getName(), season.tag or "",
+		"The season ends in %s. Adventure > Season shows your milestones.", season.name, player:getName(), season.tag or "",
 		S.formatDuration(select(2, S.times(season, S.ov)) - now())))
 	player:getPosition():sendMagicEffect(CONST_ME_MAGIC_RED or CONST_ME_MAGIC_BLUE)
 	pcall(function() player:save() end)
@@ -688,7 +688,7 @@ function S.join(player, confirm)
 	end
 	S.pending[guid] = now() + cfg.join.confirmSeconds
 	local text = joinTerms(season)
-	player:sendTextMessage(MESSAGE_INFO_DESCR, text .. string.format(" Type !season join confirm within %d seconds.",
+	player:sendTextMessage(MESSAGE_INFO_DESCR, text .. string.format(" Confirm in the Season window within %d seconds.",
 		cfg.join.confirmSeconds))
 	Chaos.send(player, OPCODE, "confirm", {text = text, seconds = cfg.join.confirmSeconds})
 	return false
@@ -773,7 +773,7 @@ local function infoText(player)
 	if d.mine.seasonal then
 		lines[#lines + 1] = "This character is a season character."
 	elseif d.mine.eligible then
-		lines[#lines + 1] = "This character can join: !season join."
+		lines[#lines + 1] = "This character can join: Adventure > Season."
 	elseif s.status == "active" then
 		lines[#lines + 1] = "Join: " .. tostring(d.mine.reason)
 	end
@@ -956,7 +956,7 @@ local function checkSeasons(startup)
 	local id = season and season.id or 0
 	if not startup and lastActive ~= nil and id ~= lastActive then
 		if season then
-			Game.broadcastMessage(string.format("%s %s has begun! New characters can join with !season join.", season.name,
+			Game.broadcastMessage(string.format("%s %s has begun! New characters can join in Adventure > Season.", season.name,
 				season.tag or ""), MESSAGE_EVENT_ADVANCE)
 			logEvent(season.id, 0, "start", "season started")
 		end
@@ -1041,11 +1041,11 @@ function login.onLogin(player)
 		local s = S.current()
 		if s then
 			if S.realmOf(p) == s.id then
-				p:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s %s: %s left. !season shows your milestones.",
+				p:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s %s: %s left. Adventure > Season shows your milestones.",
 					s.name, s.tag or "", S.formatDuration(select(2, S.times(s, S.ov)) - now())))
 			elseif not S.rowOf(p:getGuid()) and p:getLevel() <= cfg.join.maxLevel then
 				p:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s is running. This character can still join it: " ..
-					"!season join (or Chaos -> Season in the top menu).", s.name))
+					"Adventure > Season in the menu.", s.name))
 			end
 		end
 		S.sendState(p, false)
@@ -1186,9 +1186,13 @@ local function onCommand(player, words, param)
 	return false
 end
 
-for _, words in ipairs({"!season", "/season"}) do
-	local talk = TalkAction(words)
-	talk.onSay = onCommand
-	talk:separator(" ")
-	talk:register()
+-- staff only (players open the window from the menu)
+local talk = TalkAction("/season")
+function talk.onSay(player, words, param)
+	if not player:getGroup():getAccess() then
+		return false -- players open it from the menu
+	end
+	return onCommand(player, words, param)
 end
+talk:separator(" ")
+talk:register()

@@ -39,6 +39,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not ChaosCommands then
+	dofile("data/scripts/chaos/commands_ui_core.lua")
+end
 dofile("data/lib/chaos_dark_paint.lua")
 
 ChaosWorldBoss = ChaosWorldBoss or {}
@@ -812,7 +815,10 @@ function W.deliver(player, r)
 		parts[#parts + 1] = it.count .. "x " .. itemName(it.id)
 	end
 	if r.gear then
-		local item = Game.createItemWithRarity and Game.createItemWithRarity(r.gear, 1, r.gearRarity or 0) or Game.createItem(r.gear, 1)
+		-- the world boss item level (chaos_item_mods.lua itemLevel.worldBoss), rolled by ChaosCrafting.forge
+		local item = ChaosCrafting and ChaosCrafting.createItem
+			and ChaosCrafting.createItem(r.gear, r.gearRarity or 0, ChaosItemMods.sourceLevel({worldBoss = true}))
+			or Game.createItem(r.gear, 1)
 		if item then
 			inboxUsed = giveEx(player, item) or inboxUsed
 			parts[#parts + 1] = itemName(r.gear)
@@ -1529,13 +1535,12 @@ end
 gm:separator(" ")
 gm:register()
 
-local info = TalkAction("!worldboss")
+local info = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "worldboss")
 function info.onSay(player, words, param)
 	player:sendTextMessage(MESSAGE_INFO_DESCR, W.status())
 	return false
 end
-info:separator(" ")
-info:register()
+ChaosCommands.register("worldboss", function(player, param) return info.onSay(player, "", param) end)
 
 local startup = GlobalEvent("ChaosWorldBossStartup")
 function startup.onStartup()

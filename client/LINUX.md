@@ -66,7 +66,7 @@ apart (the other vocations still arrive as their base vocation). The names Thief
 `g_game.getVocationName(Base)`, `translateVocationName` and `getVocationId`; `translateVocation` keeps 11-13 as they are (the spell
 data lists them), `Creature:isThief()` is new, and the helper treats the line as its class 6 (`game_chaosspells` fills its spell
 lists). 11-15 used to be other servers' promoted ids in those tables; with this server they are the Thief line. Tested: login as a
-Thief shows vocation 11 "Thief", and `!ascend ninja` switches the client to 12 "Ninja" without a relog (the server resends 0x9F).
+Thief shows vocation 11 "Thief", and the Ascendant Oracle switches the client to 12 "Ninja" without a relog (the server resends 0x9F).
 
 ## Name plates
 `base-patches/0022-chaos-nameplate.patch` adds `Creature:setNameplate(guild, font, guildColor, nameColor, frameImage, border)`:

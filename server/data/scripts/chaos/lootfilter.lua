@@ -1,4 +1,4 @@
--- Loot filter, loot channel and loot rays (client game_lootfilter, extended opcode ChaosOpcodes.lootfilter, !lootfilter).
+-- Loot filter, loot channel and loot rays (client game_lootfilter, extended opcode ChaosOpcodes.lootfilter).
 -- Rules and packing: lootfilter_core.lua (tested by server/tests/lootfilter_test.lua). Tunables: lootfilter_config.lua.
 --
 -- client -> server  {"action":"open"}                         settings + open the window
@@ -152,10 +152,27 @@ local function itemInfo(item)
 	info.orb = orbs[id] or (not info.unique and info.rarity == 0 and itemType:isStackable()
 		and (lname:find("%f[%a]orb$") or lname:find("^orb of ")) and true) or false
 	info.category = categoryOf(itemType, info)
-	-- Chaos item modifiers ("Attack Speed +5%; Life on Kill +12", data/lib/chaos_item_mods.lua), shown in the tooltip
-	if ChaosItemMods and info.category == "equipment" then
-		local ok, text = pcall(ChaosItemMods.summary, item)
+	-- item level and every modifier with its tier ("Item Level 57; Sword +2 (T3); Fire +3% (T5)",
+	-- data/lib/chaos_crafting.lua), shown in the tooltip; the best tier feeds the filter's tier rule
+	if ChaosCrafting and info.category == "equipment" then
+		local ok, text, best, level = pcall(function()
+			local C = ChaosCrafting
+			local parts, top = {}, 0
+			local lv = C.levelOf(item)
+			if lv > 0 then
+				parts[1] = "Item Level " .. lv
+			end
+			for _, m in ipairs(C.readMods(item)) do
+				parts[#parts + 1] = C.modTierText(m)
+				if not info.unique and m.tier > top then
+					top = m.tier
+				end
+			end
+			return table.concat(parts, "; "), top, lv
+		end)
 		info.mods = ok and text ~= "" and text or nil
+		info.bestTier = ok and best or 0
+		info.level = ok and level or 0
 		-- sockets and gems ("Sockets 1/2: Flawless Ruby (Fire Damage +9%), empty", data/lib/chaos_gems.lua)
 		local okG, gems = pcall(function() return ChaosGems and ChaosGems.summary(item) or "" end)
 		if okG and gems ~= "" then
@@ -168,7 +185,8 @@ ChaosLootFilter.itemInfo = itemInfo
 
 local function wire(info, extra)
 	local t = {id = info.clientId, c = info.count, r = info.rarity, u = info.unique and 1 or 0, o = info.orb and 1 or 0,
-		g = info.category, x = info.mods}
+		g = info.category, x = info.mods, t = (info.bestTier or 0) > 0 and info.bestTier or nil,
+		il = (info.level or 0) > 0 and info.level or nil}
 	for k, v in pairs(extra or {}) do
 		t[k] = v
 	end
@@ -727,24 +745,3 @@ end
 ExtendedEvent:type("extendedopcode")
 ExtendedEvent:register()
 
-local talk = TalkAction("!lootfilter")
-function talk.onSay(player, words, param)
-	local name = (param or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
-	if name ~= "" then
-		local s = F.applyPreset(name)
-		if not s then
-			player:sendCancelMessage("Presets: all, hunter, strict.")
-			return false
-		end
-		local old = settingsOf(player)
-		s.icons, s.notify = old.icons, old.notify
-		saveSettings(player, s)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Loot filter: preset " .. name .. ".")
-		sendSettings(player, false)
-		return false
-	end
-	sendSettings(player, true)
-	return false
-end
-talk:separator(" ")
-talk:register()

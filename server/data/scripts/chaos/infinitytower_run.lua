@@ -385,7 +385,7 @@ function ChaosTowerRun.start(player)
 		m:registerEvent("ChaosTowerPlayerDeath")
 		m:teleportTo(arenaPos(slot, center + (i - 1) % 2, center + math.floor((i - 1) / 2)))
 		m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
-		m:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Welcome to the Infinity Tower. Floor 1 starts in %d seconds. Say !tower leave to leave.", cfg.startDelay))
+		m:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Welcome to the Infinity Tower. Floor 1 starts in %d seconds. Leave Tower (Adventure > Infinity Tower) takes you out.", cfg.startDelay))
 	end
 	run.nextEvent = addEvent(function(s)
 		local r = runs[s]

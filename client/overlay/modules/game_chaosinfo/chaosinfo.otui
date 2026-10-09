@@ -1,0 +1,119 @@
+// Info & Services window (game_chaosinfo). Styles from client_chaos_theme (styles.otui).
+
+ChaosInfoPageButton < ChaosTabButton
+  height: 26
+  margin-bottom: 3
+  text-align: left
+  text-offset: 8 1
+
+ChaosInfoRow < UIWidget
+  height: 26
+  margin-bottom: 4
+  layout:
+    type: horizontalBox
+    spacing: 6
+
+ChaosInfoRowLabel < ChaosLabel
+  width: 84
+  height: 24
+  text-align: left
+  text-offset: 0 5
+
+ChaosInfoRowButton < ChaosButton
+  height: 24
+
+ChaosMainWindow
+  id: chaosInfoWindow
+  size: 690 450
+  !text: tr('Info & Services')
+  @onEscape: modules.game_chaosinfo.hide()
+
+  ChaosPanelDark
+    id: pageList
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.bottom: closeButton.top
+    margin-bottom: 8
+    width: 140
+    padding: 5
+    layout:
+      type: verticalBox
+
+  ChaosLabel
+    id: pageTitle
+    anchors.top: parent.top
+    anchors.left: pageList.right
+    anchors.right: parent.right
+    margin-left: 10
+    text-align: left
+    font: verdana-11px-rounded
+    color: #e8b84a
+    height: 16
+
+  ChaosLabelDim
+    id: pageText
+    anchors.top: pageTitle.bottom
+    anchors.left: pageTitle.left
+    anchors.right: parent.right
+    margin-top: 2
+    text-align: left
+    text-wrap: true
+    height: 28
+
+  UIWidget
+    id: rows
+    anchors.top: pageText.bottom
+    anchors.left: pageTitle.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 0
+    layout:
+      type: verticalBox
+      fit-children: true
+
+  ChaosPanelDark
+    id: outputFrame
+    anchors.top: rows.bottom
+    anchors.left: pageTitle.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-top: 6
+    margin-bottom: 8
+
+  ChaosMultilineTextEdit
+    id: output
+    anchors.top: outputFrame.top
+    anchors.left: outputFrame.left
+    anchors.right: outputScroll.left
+    anchors.bottom: outputFrame.bottom
+    margin: 4
+    text-wrap: true
+    editable: false
+    vertical-scrollbar: outputScroll
+    color: #d6c9ae
+
+  ChaosScrollBar
+    id: outputScroll
+    anchors.top: outputFrame.top
+    anchors.right: outputFrame.right
+    anchors.bottom: outputFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 14
+    pixels-scroll: true
+
+  ChaosButton
+    id: refreshButton
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    !text: tr('Refresh')
+    @onClick: modules.game_chaosinfo.refresh()
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    !text: tr('Close')
+    @onClick: modules.game_chaosinfo.hide()

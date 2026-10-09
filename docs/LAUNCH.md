@@ -99,7 +99,7 @@ The order (server/README.md "Install" and each system's section), every step ide
 8. `monsters`: `register_monsters.py` for every folder under `monsters/chaos` (world bosses, goblin, ...)
 9. `spells`: `register_spells.py`, then the class hook (every `server/tools/install_class_*.py`), then
    `rename_spells.py --sql`
-10. `autoloot`: the stock XML `!autoloot` talkaction is commented out (autoloot.lua's own one refreshes the window)
+10. `autoloot`: the stock XML `!autoloot` talkaction is commented out (the Auto Loot window talks to autoloot.lua over its opcode)
 11. `sql`: `server/sql/chaos.sql`, every other `server/sql/*.sql`, and the `player_spells` renames
 
 Tested end to end on a clean copy of the base data: the first run changed 494 files and created 29 tables, the second
@@ -145,7 +145,7 @@ sudo ufw default deny incoming && sudo ufw allow 22/tcp && sudo ufw allow 7171/t
 ## 6. Accounts, staff and the website
 
 - **Characters are created on the website** (the base server has no in-game account manager). The website must:
-  - offer only the base classes: Warrior 4, Ranger 3, Mystic 1, Thief 11; the ascended classes come from `!ascend`;
+  - offer only the base classes: Warrior 4, Ranger 3, Mystic 1, Thief 11; the ascended classes come from the Ascendant Oracle;
     the retired ids 2, 6 and 9 never;
   - offer the **locked classes** (Necromancer 20, Monk 17, Templar 23; ids in `docs/CLASSES.md`) only to accounts that
     have a row in `chaos_class_unlocks` for that class (`class_key` necromancer / monk / templar). The server enforces

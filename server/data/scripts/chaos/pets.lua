@@ -1,4 +1,4 @@
--- Pets (client game_pets, extended opcode ChaosOpcodes.pets, !pet). Numbers and species: pets_config.lua. Pure logic:
+-- Pets (client game_pets, extended opcode ChaosOpcodes.pets). Numbers and species: pets_config.lua. Pure logic:
 -- pets_core.lua (tests: server/tests/pets_test.lua). Table chaos_pets (server/sql/chaos_pets.sql; created at startup).
 -- Overview and numbers: server/README.md "Pets".
 --
@@ -395,7 +395,7 @@ function P.grant(player, key, source, quiet)
 	rows[key] = {id = got.id, species = key, name = got.name, xp = K.capXp(got.xp, cfg), active = got.active,
 		source = source or "", obtained = t}
 	if not quiet then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("New pet: %s! Say !pet or open Chaos -> Pets to call it.",
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("New pet: %s! Open Character > Pets to call it.",
 			species.name))
 		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_BLUE or CONST_ME_MAGIC_BLUE)
 	end
@@ -439,7 +439,7 @@ function P.storeUnlock(unlockName)
 	end
 	return {
 		name = "the pet " .. species.name,
-		done = "Call it with !pet or Chaos -> Pets.",
+		done = "Call it in Character > Pets.",
 		owned = function(player)
 			return rowsOf(player)[key] ~= nil
 		end,
@@ -991,52 +991,6 @@ local function findOwned(player, text)
 	end
 	return nil
 end
-
-local talk = TalkAction("!pet", "!pets")
-function talk.onSay(player, words, param)
-	local cmd, rest = (param or ""):match("^%s*(%a*)%s*(.-)%s*$")
-	cmd = (cmd or ""):lower()
-	if cmd == "summon" or cmd == "call" then
-		local key = findOwned(player, rest)
-		if not key then
-			say(player, false, "You do not own that pet. !pet list shows yours.")
-			return false
-		end
-		local done, why = P.callOut(player, key)
-		if not done then
-			say(player, false, why)
-		end
-	elseif cmd == "dismiss" then
-		if not P.dismiss(player) then
-			say(player, false, "No pet is out.")
-		end
-	elseif cmd == "rename" then
-		local live = P.live[player:getId()]
-		if not live then
-			say(player, false, "Call the pet you want to rename first.")
-			return false
-		end
-		local done, why = P.rename(player, live.species, rest)
-		say(player, done, done and ("Your pet is now called " .. why .. ".") or why)
-	elseif cmd == "list" then
-		local lines = {}
-		for key, row in pairs(rowsOf(player)) do
-			local s = K.species(key, cfg)
-			if s then
-				lines[#lines + 1] = string.format("%s (%s) level %d%s", displayName(row, s), s.name,
-					(K.levelOf(row.xp, cfg)), row.active == 1 and ", out" or "")
-			end
-		end
-		say(player, true, #lines > 0 and ("Your pets: " .. table.concat(lines, "; ") .. ".")
-			or "You have no pets yet. Rare drops, the store (Pets) and some achievements give them.")
-	else
-		P.checkAchievements(player, false)
-		P.sendState(player, true)
-	end
-	return false
-end
-talk:separator(" ")
-talk:register()
 
 -- staff: /pet give <species>[, character] | xp <n> | level <n> | reset | species
 local gm = TalkAction("/pet")

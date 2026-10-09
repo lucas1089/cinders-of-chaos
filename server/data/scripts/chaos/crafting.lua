@@ -1,5 +1,5 @@
 -- The use-with action of the crafting orbs and the crafting bench (client game_crafting, extended opcode
--- ChaosOpcodes.crafting, !craft). The orb rules live in data/lib/chaos_crafting.lua (ChaosCrafting); see server/README.md
+-- ChaosOpcodes.crafting). The orb rules live in data/lib/chaos_crafting.lua (ChaosCrafting); see server/README.md
 -- "Crafting". Every orb is used directly on an item ("Use with", then click the item); the bench is optional (it shows
 -- an item's modifiers and what each orb would do). Both paths run the same craft() below. Rift Keys are craftable too.
 --
@@ -390,17 +390,6 @@ end
 logout:type("logout")
 logout:register()
 
-local function onCraftCommand(player, words, param)
-	sendState(player, true)
-	return false
-end
-
-for _, words in ipairs({"!craft", "/craft"}) do
-	local talk = TalkAction(words)
-	talk.onSay = onCraftCommand
-	talk:separator(" ")
-	talk:register()
-end
 
 -- ---------------------------------------------------------------- use-with on every orb
 -- All eight orbs (the seven crafting orbs and the Orb of Sockets) are "use with" items: "Use with" on the orb, then
@@ -413,7 +402,7 @@ end
 local function useHint(player, orb, prefix)
 	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format(
 		"%sUse the %s on an item: choose \"Use with\" on the orb, then click an item or a Rift Key in your backpack. "
-		.. "The crafting bench (!craft) shows a preview first.", prefix or "", orb.name))
+		.. "The crafting bench (Economy > Crafting Bench) shows a preview first.", prefix or "", orb.name))
 end
 
 function ChaosCraftingUseOrb(player, orbItem, target, orbKey)

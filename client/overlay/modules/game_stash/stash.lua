@@ -578,8 +578,14 @@ function confirmOk()
 	end
 end
 
+-- asks the server to open the stash (it answers "Toggle" with the remote-access flag)
 function vipToggle()
-	g_game.talkChannel(11,1,"!stash")
+	Stash.Communicate(json.encode({action = "Stash", data = {make = "Open"}}))
+end
+
+-- the "Stash All" button: every stackable of the main backpack into the stash
+function stashAll()
+	Stash.Communicate(json.encode({action = "Stash", data = {make = "StashAllRequest"}}))
 end
 
 function ReturnWindow()

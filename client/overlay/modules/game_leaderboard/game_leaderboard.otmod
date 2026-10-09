@@ -1,6 +1,6 @@
 Module
   name: game_leaderboard
-  description: Leaderboards (weekly world boss / bounty / rift boards with titles, class ladder; !leaderboard, extended opcode 229)
+  description: Leaderboards (weekly world boss / bounty / rift boards with titles, class ladder; extended opcode 229)
   author: project-chaos
   sandboxed: true
   scripts: [ leaderboard ]

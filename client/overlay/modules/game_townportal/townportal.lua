@@ -1,0 +1,217 @@
+-- Town Portal (server: server/data/scripts/chaos/townportal.lua, extended opcode 239, JSON {action, data}).
+--   client -> server  open | get | select {id} | cast
+--   server -> client  state {open, selected, cooldown, cooldownTotal, styles = [{id, name, desc, route, how, owned,
+--                     selected, clientItem}]}     cast {ms}     castEnd {result}
+-- The menu (Character -> Town Portal / Portal Style) calls cast and toggle; the action bar uses the spell
+-- "Town Portal" (game_chaosspells) and lands in the same server code. While the portal opens a cast bar fills
+-- above the bottom of the map.
+
+local OPCODE = 239
+
+local window
+local state
+local selectedId
+local rowWidgets = {}
+local castBar
+local castEvent
+local castStart, castMs
+local refreshEvent
+
+local function send(action, data)
+  local protocol = g_game.getProtocolGame()
+  if protocol then
+    protocol:sendExtendedOpcode(OPCODE, json.encode({ action = action, data = data or {} }))
+  end
+end
+
+local function styleOf(id)
+  for _, s in ipairs(state and state.styles or {}) do
+    if s.id == id then return s end
+  end
+  return nil
+end
+
+local function routeText(s)
+  if s.route == 'store' then return s.owned and tr('Store - owned') or (tr('Store') .. (s.price and (' - ' .. s.price .. ' coins') or ''))
+  elseif s.route == 'achievement' then return s.owned and tr('Achievement - unlocked') or tr('Achievement - locked')
+  end
+  return tr('Every character')
+end
+
+-- ---------------------------------------------------------------- window
+local function showDetail()
+  if not window then return end
+  local d = window.detail
+  local s = styleOf(selectedId)
+  d:setVisible(s ~= nil)
+  if not s then return end
+  if s.clientItem then d.item:setItemId(s.clientItem) end
+  d.nameLabel:setText(s.name .. (s.selected and ('  (' .. tr('in use') .. ')') or ''))
+  d.descLabel:setText(s.desc or '')
+  d.howLabel:setText(s.how or '')
+  d.selectButton:setEnabled(s.owned and not s.selected)
+  d.storeButton:setVisible(s.route == 'store' and not s.owned)
+end
+
+local function pick(id)
+  selectedId = id
+  for k, w in pairs(rowWidgets) do
+    if k == id then w:focus() end
+  end
+  showDetail()
+end
+
+local function statusText()
+  local left = state and tonumber(state.cooldown) or 0
+  if left > 0 then
+    return tr('Town Portal ready in %d s.', left)
+  end
+  return tr('Town Portal ready.')
+end
+
+local function showList()
+  if not window or not state then return end
+  window.styleList:destroyChildren()
+  rowWidgets = {}
+  for _, s in ipairs(state.styles or {}) do
+    local row = g_ui.createWidget('PortalStyleRow', window.styleList)
+    if s.clientItem then row.item:setItemId(s.clientItem) end
+    row.name:setText(s.name .. (s.selected and '  *' or ''))
+    row.sub:setText(routeText(s))
+    if not s.owned then
+      row.name:setColor('#8c8070')
+      row.item:setOpacity(0.45)
+    end
+    local id = s.id
+    row.onClick = function() pick(id) end
+    rowWidgets[id] = row
+  end
+  window.statusLabel:setText(statusText())
+  window.castButton:setEnabled((tonumber(state.cooldown) or 0) <= 0)
+  pick(styleOf(selectedId) and selectedId or state.selected)
+end
+
+local function scheduleRefresh()
+  if refreshEvent then removeEvent(refreshEvent) end
+  refreshEvent = scheduleEvent(function()
+    refreshEvent = nil
+    if window and window:isVisible() then
+      if state and (tonumber(state.cooldown) or 0) > 0 then
+        state.cooldown = state.cooldown - 1
+        window.statusLabel:setText(statusText())
+        window.castButton:setEnabled(state.cooldown <= 0)
+      end
+      scheduleRefresh()
+    end
+  end, 1000)
+end
+
+function show()
+  if not window then return end
+  window:show()
+  window:raise()
+  window:focus()
+  scheduleRefresh()
+end
+
+function hide()
+  if window then window:hide() end
+end
+
+function toggle()
+  if not window then return end
+  if window:isVisible() then
+    hide()
+  else
+    send('open')
+  end
+end
+
+function selectCurrent()
+  if selectedId then send('select', { id = selectedId }) end
+end
+
+function openStore()
+  local shop = modules.game_shop
+  if shop and type(shop.toggle) == 'function' then shop.toggle() end
+end
+
+-- the menu entry and the window button; the action bar uses the spell
+function cast()
+  if g_game.isOnline() then send('cast') end
+end
+
+-- ---------------------------------------------------------------- cast bar
+local function stopCastBar()
+  if castEvent then removeEvent(castEvent) end
+  castEvent = nil
+  if castBar then castBar:hide() end
+end
+
+local function tickCastBar()
+  castEvent = nil
+  if not castBar or not castStart then return end
+  local pct = math.min(100, (g_clock.millis() - castStart) * 100 / castMs)
+  castBar:setPercent(pct)
+  if pct < 100 then castEvent = scheduleEvent(tickCastBar, 50) end
+end
+
+local function startCastBar(ms)
+  if not castBar then
+    local map = modules.game_interface and modules.game_interface.getMapPanel and modules.game_interface.getMapPanel()
+    if not map then return end
+    castBar = g_ui.createWidget('TownPortalCastBar', map)
+    castBar:setId('townPortalCastBar')
+    castBar:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
+    castBar:addAnchor(AnchorBottom, 'parent', AnchorBottom)
+    castBar:setMarginBottom(60)
+  end
+  castStart, castMs = g_clock.millis(), math.max(1, tonumber(ms) or 3000)
+  castBar:setText(tr('Town Portal'))
+  castBar:setPercent(0)
+  if castEvent then removeEvent(castEvent) end
+  castEvent = nil
+  castBar:show()
+  castBar:raise()
+  tickCastBar()
+end
+
+-- ---------------------------------------------------------------- protocol
+local function onExtendedOpcode(protocol, opcode, buffer)
+  local ok, msg = pcall(json.decode, buffer)
+  if not ok or type(msg) ~= 'table' then return end
+  local data = type(msg.data) == 'table' and msg.data or {}
+  if msg.action == 'state' then
+    state = data
+    showList()
+    if data.open then show() end
+  elseif msg.action == 'cast' then
+    startCastBar(data.ms)
+  elseif msg.action == 'castEnd' then
+    stopCastBar()
+  end
+end
+
+local function onGameEnd()
+  hide()
+  stopCastBar()
+  state, selectedId, rowWidgets = nil, nil, {}
+end
+
+function init()
+  window = g_ui.displayUI('townportal')
+  window:hide()
+  ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
+  connect(g_game, { onGameEnd = onGameEnd })
+end
+
+function terminate()
+  disconnect(g_game, { onGameEnd = onGameEnd })
+  ProtocolGame.unregisterExtendedOpcode(OPCODE)
+  if refreshEvent then removeEvent(refreshEvent) end
+  stopCastBar()
+  if castBar then castBar:destroy() end
+  castBar = nil
+  if window then window:destroy() end
+  window = nil
+end

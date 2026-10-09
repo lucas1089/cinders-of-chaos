@@ -912,53 +912,6 @@ local function parseAmount(s)
 end
 G.parseAmount = parseAmount
 
-local function onGuildCommand(player, words, param)
-	local args = {}
-	for w in (param or ""):gmatch("%S+") do
-		args[#args + 1] = w
-	end
-	local sub = (args[1] or ""):lower()
-	local ok, text
-	if sub == "" or sub == "open" then
-		G.sendState(player, true)
-		return false
-	elseif sub == "deposit" then
-		ok, text = G.deposit(player, parseAmount(args[2]))
-	elseif sub == "withdraw" then
-		ok, text = G.withdraw(player, parseAmount(args[2]))
-	elseif sub == "scroll" then
-		ok, text = G.claimScroll(player)
-	elseif sub == "hall" and (args[2] or ""):lower() == "buy" and G.buyHall then
-		ok, text = G.buyHall(player, (args[3] or "bank"):lower() == "self" and "self" or "bank")
-	elseif sub == "upgrade" and G.buyUpgrade then
-		ok, text = G.buyUpgrade(player, (args[2] or ""):lower())
-	elseif sub == "rent" and G.payRentBy then
-		ok, text = G.payRentBy(player)
-	elseif sub == "take" and G.depotTake then
-		ok, text = G.depotTake(player, tonumber(args[2]))
-	elseif sub == "level" or sub == "info" then
-		local gid, gname = G.guildOf(player)
-		if not gid then
-			ok, text = false, "You are not in a guild."
-		else
-			local r = G.row(gid)
-			local level, into, need = C.levelOf(r.xp, cfg)
-			ok, text = true, string.format("%s: guild level %d (%s / %s GXP), guild bank %s gold.", gname, level, C.money(into),
-				C.money(need), C.money(r.bank))
-		end
-	else
-		ok, text = false, "!guild [deposit <gold> | withdraw <gold> | scroll | hall buy [bank|self] | upgrade <key> | rent | take <id> | info]"
-	end
-	G.message(player, ok, text)
-	G.sendState(player, false)
-	return false
-end
-
-local talk = TalkAction("!guild")
-talk.onSay = onGuildCommand
-talk:separator(" ")
-talk:register()
-
 -- staff: /guild xp <guild>, <n> | info <guild> | log <guild> | rent <guild>, due|lock|paid | hall <guild> | bank <guild>, <n>
 local function guildByName(name)
 	local rows = Chaos.select("SELECT `id`, `name` FROM `guilds` WHERE `name` = " .. db.escapeString(name or ""), {{"id", "n"}, {"name", "s"}})

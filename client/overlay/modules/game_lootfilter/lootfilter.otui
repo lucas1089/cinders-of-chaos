@@ -97,7 +97,7 @@ LootChannelPanel < UIWidget
 
 ChaosMainWindow
   id: lootFilterWindow
-  size: 640 500
+  size: 640 526
   !text: tr('Loot Filter')
   @onEscape: modules.game_lootfilter.hide()
 
@@ -167,9 +167,22 @@ ChaosMainWindow
     anchors.left: dimLabel.right
     margin-left: 10
 
+  LootFilterLabel
+    id: tierLabel
+    anchors.top: highlightLabel.bottom
+    anchors.left: parent.left
+    margin-top: 14
+    !text: tr('Glow on a modifier of')
+
+  LootFilterCombo
+    id: tierCombo
+    anchors.verticalCenter: tierLabel.verticalCenter
+    anchors.left: parent.left
+    margin-left: 130
+
   ChaosCheckBox
     id: show_equipment
-    anchors.top: highlightLabel.bottom
+    anchors.top: tierLabel.bottom
     anchors.left: parent.left
     margin-top: 14
     width: 290
@@ -329,4 +342,4 @@ ChaosMainWindow
     anchors.left: parent.left
     anchors.right: closeButton.left
     text-align: left
-    !text: tr('Changes are saved on your character at once (!lootfilter opens this window).')
+    !text: tr('Changes are saved on your character at once (Hunt > Loot Filter opens this window).')

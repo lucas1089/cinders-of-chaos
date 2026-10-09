@@ -422,9 +422,13 @@ local function onSay(player, words, param)
 	return false
 end
 
-for _, words in ipairs({"!daily", "/daily"}) do
-	local talk = TalkAction(words)
-	talk.onSay = onSay
-	talk:separator(" ")
-	talk:register()
+-- staff only (players open the window from the menu)
+local talk = TalkAction("/daily")
+function talk.onSay(player, words, param)
+	if not player:getGroup():getAccess() then
+		return false -- players open it from the menu
+	end
+	return onSay(player, words, param)
 end
+talk:separator(" ")
+talk:register()

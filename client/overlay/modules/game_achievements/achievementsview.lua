@@ -80,11 +80,10 @@ function V.summaryText(state)
     num(state.unlocked), num(state.total))
 end
 
--- the chat command for a title choice
-function V.titleCommand(choice)
-  if choice == 'auto' then return '!title auto' end
-  if choice == 'none' then return '!title none' end
-  return '!title ' .. tostring(choice)
+-- what the title selector sends to the server for a choice ("auto", "none" or the title's text)
+function V.titleParam(choice)
+  if choice == 'auto' or choice == 'none' then return choice end
+  return tostring(choice)
 end
 
 return V

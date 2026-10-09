@@ -620,7 +620,7 @@ function S.description(typeIndex, level)
 	if level < S.LEVELS then
 		text = text .. " Three of them combine into one of the next level."
 	end
-	return text .. " Use it to open the spell supports (!supports)."
+	return text .. " Use it to open the spell supports (Character > Spell Supports)."
 end
 
 return S

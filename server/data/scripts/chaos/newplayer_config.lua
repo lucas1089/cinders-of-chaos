@@ -192,13 +192,13 @@ return {
 		-- %s = character name, %s = vocation name
 		text = "Welcome, %s the %s.\n\n" ..
 			"Your starter kit is in your backpack. Next steps:\n" ..
-			"- !spells opens your spellbook: every spell of your class and what it does.\n" ..
+			"- Character > Spellbook (Alt+L): every spell of your class and what it does.\n" ..
 			"- The passive tree (top menu, Character): a point every 4 levels past level 8.\n" ..
-			"- !bounty: daily contracts that pay gold and Chaos Orbs.\n" ..
+			"- Adventure > Bounty Board: daily contracts that pay gold and Chaos Orbs.\n" ..
 			"- The store (top menu, Economy): temple scrolls, stamina and services.\n" ..
 			"- The top menu holds every Chaos window: dungeons, the tower, dailies, bank and stash.\n\n" ..
 			"Gifts wait for you at levels 20, 50, 100 and 200.",
-		toast = "Welcome to Project Chaos! Your kit is in your backpack. Try !spells, !bounty and the top menu.",
+		toast = "Welcome to Project Chaos! Your kit is in your backpack. Everything else is in the menu at the top.",
 		delayMs = 2500
 	},
 
@@ -259,13 +259,13 @@ return {
 					"Walk with the arrow keys or by clicking the ground. Attack a creature by clicking it in the battle list " ..
 					"or with ctrl + click / right click on it. Keep an eye on your health bar.\n\n" ..
 					"Task: kill %d of the rats in this pen. The gate to the east opens when you are done.\n\n" ..
-					"Experienced? Say !skiptutorial (or use the goblin statue) to take your kit and leave at once.",
+					"Experienced? Use the goblin statue (or Character > Services) to take your kit and leave at once.",
 				toast = "Station 1: kill %d rats in the first pen."},
 			{title = "Station 2: Spells",
-				text = "Every class has its own spells. !spells (or Character > Spellbook in the top menu) lists them with " ..
+				text = "Every class has its own spells. Character > Spellbook in the top menu (Alt+L) lists them with " ..
 					"their words, mana, level and what they do.\n\n" ..
-					"Task: open your spellbook with !spells%s",
-				toast = "Station 2: open !spells%s"},
+					"Task: open your spellbook (Character > Spellbook)%s",
+				toast = "Station 2: open your spellbook%s"},
 			{title = "Station 3: The passive tree",
 				text = "Every 4 levels past level 8 you get a passive point. Spend them in the passive tree (top menu, " ..
 					"Character > Passive Tree): start next to the centre and walk outwards. Big nodes are notables; the " ..
@@ -278,11 +278,11 @@ return {
 					"Task: you got a Chaos Orb and a Common leather armor. Use the orb on the armor (right click the orb, " ..
 					"Use with, then click the armor in your backpack).",
 				toast = "Station 4: use the Chaos Orb on the leather armor.",
-				craftHint = " The crafting bench (!craft, or Chaos > Crafting Bench) shows every orb and what it does."},
+				craftHint = " The crafting bench (Economy > Crafting Bench) shows every orb and what it does."},
 			{title = "Station 5: Keystones, bounties and the store",
 				text = "Keystones are the big nodes at the edge of the passive tree: they change your class (Cleaving Arc, " ..
 					"Ricochet, Arcane Echo...). Plan your path towards one.\n\n" ..
-					"!bounty gives daily contracts per level band that pay gold and orbs. The store (top menu, Economy) sells " ..
+					"The bounty board (Adventure > Bounty Board) gives daily contracts per level band that pay gold and orbs. The store (top menu, Economy) sells " ..
 					"temple scrolls, stamina and services. Dungeons, the Infinity Tower and the dailies are under Chaos in " ..
 					"the top menu.\n\n" ..
 					"Step into the forcefield to the east: you get your starter kit and arrive at the temple.",

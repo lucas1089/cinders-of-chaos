@@ -8,7 +8,7 @@
 --                     hud {phase, mode, left, team, sides = [[{name, hp, defeated, cid}], [...]]}   (every second)
 --                     end {mode, result, before, after, delta, reason, reward, firstWin, rated, opponents}
 --   client -> server  open | queue {mode} | leave
--- !arena opens the window from the chat; the top menu (Chaos -> Arena) calls toggle().
+-- The top menu (Adventure > Arena) calls toggle().
 
 local OPCODE = 236
 local T = ArenaText

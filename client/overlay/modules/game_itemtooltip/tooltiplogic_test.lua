@@ -57,12 +57,13 @@ eq(L.title('Soulreaper'), 'Soulreaper', 'already capital')
 -- ---------------------------------------------------------------- lines
 local sword = {
   key = '1:2', id = 3400, name = 'magic sword', kind = 'weapon', slot = 'Weapon', rarity = 4, rarityName = 'Epic',
-  tier = 2, level = 37,
+  level = 37, maxTier = 3, sides = { p = 1, s = 2, max = 2 },
   base = { { k = 'attack', l = 'Attack', v = 50 }, { k = 'defense', l = 'Defense', v = 35 } },
   mods = {
-    { k = 'rarity_physicalAbsorb', l = 'Physical', t = 'Physical +2%', v = 2, g = 'absorb', lo = 1, hi = 2 },
-    { k = 'chaos_mod_lifeonkill', l = 'Life on Kill', t = 'Life on Kill +15', v = 15, g = 'chaos', lo = 10, hi = 20 },
-    { k = 'rarity_swordSkill', l = 'Sword', t = 'Sword +1', v = 1, g = 'skill', lo = 1, hi = 1 }
+    { k = 'rarity_swordSkill', l = 'Sword', t = 'Sword +1', v = 1, g = 'skill', lo = 1, hi = 1, tr = 1, sd = 'p' },
+    { k = 'rarity_physicalAbsorb', l = 'Physical', t = 'Physical +2%', v = 2, g = 'absorb', lo = 1, hi = 2, tr = 2, sd = 's' },
+    { k = 'chaos_mod_lifeonkill', l = 'Life on Kill', t = 'Life on Kill +15', v = 15, g = 'chaos', lo = 10, hi = 20,
+      tr = 3, sd = 's' }
   },
   sockets = { count = 2, max = 2, list = { { name = 'Flawless Ruby', text = 'Fire Damage +9%', color = '#ff5a4a' }, {} } },
   req = { level = 80, voc = 'knights' }, weight = 45,
@@ -78,15 +79,29 @@ for i, l in ipairs(lines) do texts[i] = l.text end
 local all = table.concat(texts, '|')
 eq(lines[1].text, 'Epic Weapon', 'rarity and slot')
 eq(lines[1].color, L.rarityColor(4), 'in the rarity colour')
-eq(lines[2].text, 'Item Level 37  (Tier 2)', 'item level and tier')
+eq(lines[2].text, 'Item Level 37  (up to T3)', 'item level and the best tier it allows')
 eq(lines[3].text, 'Attack: 50', 'base stat')
 eq(lines[3].sep, true, 'a rule before the base stats')
-eq(all:find('Physical +2% [1-2]', 1, true) ~= nil, true, 'modifier with its range')
-eq(all:find('Sword +1 [1]', 1, true) ~= nil, true, 'a range of one value')
-local chaosLine
-for _, l in ipairs(lines) do if l.text:find('Life on Kill', 1, true) then chaosLine = l end end
+eq(all:find('T2 Physical +2% [1-2]', 1, true) ~= nil, true, 'modifier with its tier and the range of the tier')
+eq(all:find('T1 Sword +1 [1]', 1, true) ~= nil, true, 'a range of one value')
+eq(all:find('Prefixes 1/2|T1 Sword', 1, true) ~= nil, true, 'prefix heading with the count')
+eq(all:find('Suffixes 2/2|T2 Physical', 1, true) ~= nil, true, 'then the suffixes')
+local chaosLine, prefixHead
+for _, l in ipairs(lines) do
+  if l.text:find('Life on Kill', 1, true) then chaosLine = l end
+  if l.text == 'Prefixes 1/2' then prefixHead = l end
+end
+eq(prefixHead.sep, true, 'a rule before the modifiers')
 eq(chaosLine.color, L.COLORS.chaos, 'Chaos modifier colour')
-eq(chaosLine.parts[3], ' [10-20]', 'range in its own colour')
+eq(chaosLine.parts[1], 'T3 ', 'tier first')
+eq(chaosLine.parts[2], L.TIER_COLORS[3], 'in the tier colour')
+eq(chaosLine.parts[5], ' [10-20]', 'range in its own colour')
+eq(L.tierColor(8), '#ff8a40', 'T8 colour')
+eq(L.tierColor(nil), L.COLORS.dim, 'no tier')
+local legacy = L.lines({ rarity = 2, level = 12, mods = { { t = 'Fire +5% dmg', g = 'element', lo = 3, hi = 6 } } })
+local legacyAll = {}
+for i, l in ipairs(legacy) do legacyAll[i] = l.text end
+eq(table.concat(legacyAll, '|'):find('Fire +5% dmg [3-6]', 1, true) ~= nil, true, 'a row without a tier still shows')
 eq(all:find('Sockets 1/2', 1, true) ~= nil, true, 'socket count')
 eq(all:find('  Flawless Ruby: Fire Damage +9%', 1, true) ~= nil, true, 'gem line')
 eq(all:find('  empty socket', 1, true) ~= nil, true, 'empty socket')

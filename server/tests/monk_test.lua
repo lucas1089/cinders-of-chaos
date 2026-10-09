@@ -37,7 +37,7 @@ eq(C.isAscended(SF), true); eq(C.isAscended(MONK), false); eq(C.baseOf(IS), MONK
 eq(C.ascensionFor(MONK, 100, "shadowfist", true, false), SF, "monk -> shadowfist")
 eq(C.ascensionFor(MONK, 300, " IronSage ", true, false), IS, "monk -> iron sage (trimmed, case-free)")
 local id, why = C.ascensionFor(MONK, 300, "", true, false)
-eq(id, nil, "no choice"); eq(why:find("ironsage|shadowfist", 1, true) ~= nil, true, "lists the choices: " .. why)
+eq(id, nil, "no choice"); eq(why:find("ironsage or shadowfist", 1, true) ~= nil, true, "lists the choices: " .. why)
 eq(C.ascensionFor(MONK, 99, "shadowfist", true, false), nil, "level 100")
 eq(C.ascensionFor(MONK, 300, "ninja", true, false), nil, "not a choice of the monk")
 id, why = C.ascensionFor(SF, 300, "ironsage", true, false)

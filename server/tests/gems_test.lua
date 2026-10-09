@@ -273,7 +273,7 @@ eq(G.strip("Level: 5 Sockets (1/2): Flawless Ruby (Fire Damage +9%), empty. [Att
 sword:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, "Level: 42 [Attack+1]")
 sword:setCustomAttribute("rarity_swordSkill", 1)
 G.writeDescription(sword)
-eq(sword:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "Level: 42, Sword +1 [Attack+1]. Sockets (2/2): Flawless Ruby (Fire Damage +9%), Polished Amethyst (Critical Chance +2%, Critical Hit +15%).", "rarity description")
+eq(sword:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "Item Level: 42. Prefixes: Sword +1 (T1) [Attack+1]. Sockets (2/2): Flawless Ruby (Fire Damage +9%), Polished Amethyst (Critical Chance +2%, Critical Hit +15%).", "rarity description")
 C.rewriteDescription(sword)
 local _, n = sword:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION):gsub("Sockets", "")
 eq(n, 1, "one section after a second rewrite")

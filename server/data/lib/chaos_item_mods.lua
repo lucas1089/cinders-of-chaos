@@ -1,15 +1,24 @@
--- Chaos item modifiers (ChaosItemMods): modifier types the engine's rarity roll does not have (attack speed, movement
--- speed, damage to elites and bosses, life / mana on kill, dodge, reflect, thorns, experience, gold / item / rarity
--- find, healing done, damage taken from monsters, treasure goblin chance).
+-- Chaos item modifiers (ChaosItemMods): item levels, modifier tiers, the prefix / suffix split and the modifier types
+-- the engine's rarity roll does not have (attack speed, movement speed, damage to elites and bosses, life / mana on
+-- kill and on hit, dodge, block, reflect, thorns, experience, gold / item / rarity find, healing done, damage taken from
+-- monsters, treasure goblin chance, ailment chances, penetration, execute, damage over time, cooldown and mana cost
+-- reduction, health regeneration).
 --
 -- This file is the pure part (no engine calls apart from reading and writing item attributes): the catalogue, the
--- value tiers per rarity, the rolls, the caps, the description text and the per-player totals. It is loaded by
--- data/lib/chaos_crafting.lua (which writes the description and rolls the modifiers of new drops and recreated items)
--- and by data/scripts/chaos/item_mods.lua (which applies the totals of the equipped items to the player).
--- Tested by server/tests/item_mods_test.lua. Lua 5.1 / LuaJIT and Lua 5.3 compatible.
+-- tiers (T1 lowest .. T8 highest) with their item level requirements and roll weights, the item level of a drop from
+-- its source, how many modifiers a rarity gets, the caps, the description text and the per-player totals. It is loaded
+-- by data/lib/chaos_crafting.lua (which owns the whole roll of an item: the engine's modifier types and these, see
+-- ChaosCrafting.forge), by data/scripts/chaos/item_mods.lua (which applies the totals of the equipped items to the
+-- player) and by data/spells/chaos/_supports.lua (cooldown and mana cost reduction on casts).
+-- Tested by server/tests/item_mods_test.lua. Lua 5.1 / LuaJIT and Lua 5.3 compatible. Overview: server/README.md
+-- "Item modifiers".
 --
--- Storage on the item: one custom attribute per modifier, "chaos_mod_<key>" = whole number (e.g. chaos_mod_movespeed = 4).
--- The description shows it after the engine's modifiers ("Level: 57, Physical +2%, Movement Speed +4%").
+-- Storage on the item:
+--   "chaos_mod_<key>" = whole number           one custom attribute per modifier of this file (chaos_mod_movespeed = 4)
+--   "ct_<attribute key, lower case>" = 1..8    the tier of a modifier (ct_chaos_mod_movespeed, ct_rarity_swordskill);
+--                                              an item from before tiers has none: the tier then follows from the value
+--   "chaos_ilvl" = 1..150                      the item level (also on plain gear drops, which have no rarity yet);
+--                                              rolled items mirror it into "combatPowerLevel", which the client shows
 -- Attack speed is local to the weapon: the weapon's own attack interval (item attribute ITEM_ATTRIBUTE_ATTACK_SPEED,
 -- which the engine uses for whoever wields it and the look text shows as "Atk Spd") is set from its base interval.
 
@@ -17,60 +26,174 @@ ChaosItemMods = ChaosItemMods or {}
 local M = ChaosItemMods
 
 M.PREFIX = "chaos_mod_"
+M.TIER_PREFIX = "ct_"
+M.ILVL = "chaos_ilvl"
 
 -- ---------------------------------------------------------------------------------------------------------------
 -- configuration
 -- ---------------------------------------------------------------------------------------------------------------
 -- kinds of items (M.kindOf): weapon, shield, helmet, armor, legs, boots, jewel (amulet or ring), other (gloves, belts..)
--- tiers: value range per modifier tier. Tier = ceil(rarity / 3): Common-Rare 1, Epic-Exotic 2, Mythic-Eternal 3,
--- Divine-Celestial 4, Cosmic-Transcendent 5. cap: the most a character gets from all equipped items together.
--- fmt: "pct" = "+N%", "flat" = "+N", "less" = "-N%". weight: chance to be picked among the modifiers an item may get.
--- The numbers sit next to the passive tree's: a tree node gives +1% to +3% of a stat, the tree's speed tops out at
--- +80 flat, its experience at about +15%.
+-- side: "prefix" (damage and defence) or "suffix" (utility, resistances, speed); a rarity allows so many of each.
+-- tiers: value range per tier, T1 (lowest) .. T8 (highest). The five ranges the modifiers had before item levels
+-- (tier = ceil(rarity / 3)) are T2 .. T6 here, so an old item keeps what its numbers meant; T1 is new below them,
+-- T7 and T8 are new above them. cap: the most a character gets from all equipped items together.
+-- fmt: "pct" = "+N%", "flat" = "+N", "less" = "-N%"; text: a format of its own ("%d" = the value).
+-- weight: chance to be picked among every modifier an item may get (the engine's types weigh in, chaos_crafting.lua).
 M.config = {
+	maxTier = 8,
+	-- the item level a tier needs (T1 .. T8)
+	tierLevels = {1, 15, 30, 50, 70, 95, 120, 140},
+	-- roll weight of each tier: higher tiers are rarer
+	tierWeights = {100, 90, 80, 65, 50, 35, 22, 12},
+	-- only the best `tierWindow` tiers the item level allows can roll (a level 150 item rolls T4 .. T8)
+	tierWindow = 5,
+	-- today's five tiers on the new scale (old tier t = new tier oldTiers[t])
+	oldTiers = {2, 3, 4, 5, 6},
+
+	-- rarity 1..15 (Common .. Transcendent): how many modifiers a new item gets, and how many prefixes and how many
+	-- suffixes it may carry at most (the orbs fill up to 2 x sides)
+	rarity = {
+		count = {2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6},
+		sides = {1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3}
+	},
+
+	-- item level of a drop: the dropping monster's level (Monster:getMonsterLevel, else its hunting level from
+	-- bounty_pool.lua, else 1.6 x sqrt(experience) raised by health / 60, as tools/gen_bounty_pool.py estimates it)
+	-- along `curve` ({monster level, item level}, straight lines in between), plus the bonuses, at most `max`
+	itemLevel = {
+		max = 150,
+		curve = {{1, 1}, {10, 5}, {25, 12}, {50, 22}, {100, 36}, {200, 54}, {350, 74}, {500, 90}, {700, 106},
+			{900, 118}, {1100, 128}, {1500, 136}, {3000, 142}, {6000, 145}},
+		tierBonus = {normal = 0, magic = 2, rare = 4, legendary = 7, boss = 10},
+		riftPerTier = 1, -- + rift tier x this (a kill inside a rift, the rift's chest), at most riftMax
+		riftMax = 15,
+		omen = 15, -- an Omen guardian arena, on top of the rift bonus
+		worldBoss = 145, -- fixed: world boss drops and rewards
+		store = 60, -- fixed: gear the Chaos store or an NPC hands out with a rarity
+		tutorial = 5 -- fixed: the tutorial island's gear
+	},
+
+	-- the engine's modifier types (absorbs, skills, critical / leech pairs, weapon elements; chaos_crafting.lua) get
+	-- tiers too. The values replace item.cpp's ranges per rarity; old items keep theirs.
+	engine = {
+		absorb = {side = "suffix", weight = 3,
+			tiers = {{1, 1}, {1, 2}, {1, 3}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}}},
+		skill = {side = "prefix", weight = 3, -- fist, club, sword, axe, distance, shielding, magic level
+			tiers = {{1, 1}, {1, 2}, {1, 3}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}}},
+		profession = {side = "suffix", weight = 1, -- fishing, crafting, woodcutting, mining, herbalism, smithing
+			tiers = {{1, 1}, {1, 2}, {1, 3}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}}},
+		critical = {side = "prefix", weight = 8, -- the amount; the chance is about two thirds of it (C.specialChance)
+			tiers = {{1, 1}, {1, 2}, {1, 3}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}}},
+		leech = {side = "suffix", weight = 6, -- life and mana leech, each
+			tiers = {{1, 1}, {1, 2}, {1, 3}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}}},
+		element = {side = "prefix", weight = 2, -- weapons without an element of their own, one element at most
+			tiers = {{1, 3}, {3, 6}, {5, 9}, {7, 12}, {10, 16}, {13, 20}, {17, 26}, {22, 35}}}
+	},
+
 	mods = {
-		{key = "attackspeed", label = "Attack Speed", fmt = "pct", weight = 10, cap = 15, kinds = {weapon = true},
-			tiers = {{2, 3}, {3, 5}, {4, 6}, {5, 8}, {7, 10}}},
-		{key = "movespeed", label = "Movement Speed", fmt = "pct", weight = 10, cap = 12, kinds = {boots = true},
-			tiers = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}}},
-		{key = "bossdamage", label = "Damage to Elites and Bosses", fmt = "pct", weight = 8, cap = 30,
-			kinds = {weapon = true, jewel = true}, tiers = {{2, 4}, {3, 6}, {5, 8}, {6, 10}, {8, 12}}},
-		{key = "lifeonkill", label = "Life on Kill", fmt = "flat", weight = 10, cap = 300,
-			kinds = {weapon = true, jewel = true, helmet = true}, tiers = {{5, 10}, {10, 20}, {20, 40}, {35, 60}, {50, 90}}},
-		{key = "manaonkill", label = "Mana on Kill", fmt = "flat", weight = 10, cap = 200,
-			kinds = {weapon = true, jewel = true, helmet = true}, tiers = {{3, 6}, {6, 12}, {12, 25}, {20, 40}, {30, 60}}},
-		{key = "dodge", label = "Dodge", fmt = "pct", weight = 6, cap = 10,
+		-- prefixes: damage and defence
+		{key = "bossdamage", label = "Damage to Elites and Bosses", fmt = "pct", side = "prefix", weight = 6, cap = 30,
+			kinds = {weapon = true, jewel = true},
+			tiers = {{1, 3}, {2, 4}, {3, 6}, {5, 8}, {6, 10}, {8, 12}, {10, 14}, {12, 16}}},
+		{key = "dodge", label = "Dodge", fmt = "pct", side = "prefix", weight = 5, cap = 10,
 			kinds = {armor = true, legs = true, boots = true, shield = true, other = true},
-			tiers = {{1, 1}, {1, 2}, {1, 2}, {2, 3}, {2, 4}}},
-		{key = "reflect", label = "Reflect Damage", fmt = "pct", weight = 6, cap = 15, kinds = {armor = true, shield = true},
-			tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}}},
-		{key = "thorns", label = "Thorns", fmt = "flat", weight = 8, cap = 250,
-			kinds = {armor = true, shield = true, legs = true}, tiers = {{3, 8}, {8, 15}, {15, 30}, {25, 50}, {40, 80}}},
-		{key = "experience", label = "Experience", fmt = "pct", weight = 6, cap = 15, kinds = {helmet = true, jewel = true},
-			tiers = {{1, 2}, {1, 3}, {2, 4}, {3, 5}, {4, 6}}},
-		{key = "goldfind", label = "Gold Find", fmt = "pct", weight = 8, cap = 40,
-			kinds = {helmet = true, jewel = true, legs = true, other = true}, tiers = {{2, 4}, {3, 6}, {4, 8}, {6, 10}, {8, 14}}},
-		{key = "itemfind", label = "Item Find", fmt = "pct", weight = 6, cap = 25, kinds = {helmet = true, jewel = true},
-			tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 6}, {4, 8}}},
-		{key = "rarityfind", label = "Rarity Find", fmt = "pct", weight = 6, cap = 40, kinds = {helmet = true, jewel = true},
-			tiers = {{2, 4}, {3, 6}, {5, 8}, {6, 10}, {8, 14}}},
-		{key = "healing", label = "Healing Done", fmt = "pct", weight = 8, cap = 20,
-			kinds = {weapon = true, shield = true, jewel = true}, tiers = {{1, 2}, {2, 3}, {3, 5}, {4, 6}, {5, 8}}},
-		{key = "monsterreduction", label = "Damage Taken from Monsters", fmt = "less", weight = 8, cap = 12,
-			kinds = {armor = true, helmet = true, legs = true, shield = true}, tiers = {{1, 1}, {1, 2}, {1, 2}, {2, 3}, {2, 4}}},
+			tiers = {{1, 1}, {1, 1}, {1, 2}, {1, 2}, {2, 3}, {2, 4}, {3, 4}, {3, 5}}},
+		{key = "reflect", label = "Reflect Damage", fmt = "pct", side = "prefix", weight = 5, cap = 15,
+			kinds = {armor = true, shield = true},
+			tiers = {{1, 1}, {1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}, {6, 8}}},
+		{key = "thorns", label = "Thorns", fmt = "flat", side = "prefix", weight = 6, cap = 250,
+			kinds = {armor = true, shield = true, legs = true},
+			tiers = {{1, 4}, {3, 8}, {8, 15}, {15, 30}, {25, 50}, {40, 80}, {60, 110}, {90, 150}}},
+		{key = "monsterreduction", label = "Damage Taken from Monsters", fmt = "less", side = "prefix", weight = 6,
+			cap = 12, kinds = {armor = true, helmet = true, legs = true, shield = true},
+			tiers = {{1, 1}, {1, 1}, {1, 2}, {1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}}},
+		{key = "block", label = "Block Chance", fmt = "pct", side = "prefix", weight = 8, cap = 15,
+			kinds = {shield = true},
+			tiers = {{1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 7}, {6, 8}, {7, 10}, {9, 12}}},
+		{key = "bleedchance", label = "Chance to Bleed", fmt = "pct", side = "prefix", weight = 4, cap = 30,
+			kinds = {weapon = true, other = true},
+			tiers = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}, {12, 16}}},
+		{key = "ignitechance", label = "Chance to Ignite", fmt = "pct", side = "prefix", weight = 4, cap = 30,
+			kinds = {weapon = true, other = true},
+			tiers = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}, {12, 16}}},
+		{key = "poisonchance", label = "Chance to Poison", fmt = "pct", side = "prefix", weight = 4, cap = 30,
+			kinds = {weapon = true, other = true},
+			tiers = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}, {12, 16}}},
+		{key = "chillchance", label = "Chance to Chill", fmt = "pct", side = "prefix", weight = 4, cap = 30,
+			kinds = {weapon = true, other = true},
+			tiers = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}, {12, 16}}},
+		{key = "shockchance", label = "Chance to Shock", fmt = "pct", side = "prefix", weight = 4, cap = 30,
+			kinds = {weapon = true, other = true},
+			tiers = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}, {12, 16}}},
+		{key = "physpen", label = "Physical Penetration", fmt = "pct", side = "prefix", weight = 4, cap = 25,
+			kinds = {weapon = true, jewel = true},
+			tiers = {{1, 2}, {2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}}},
+		{key = "elepen", label = "Elemental Penetration", fmt = "pct", side = "prefix", weight = 4, cap = 25,
+			kinds = {weapon = true, jewel = true},
+			tiers = {{1, 2}, {2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}}},
+		{key = "execute", label = "Execute", text = "Executes Monsters below %d%% Health", side = "prefix", weight = 3,
+			cap = 10, kinds = {weapon = true},
+			tiers = {{1, 1}, {1, 2}, {2, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 8}}},
+		{key = "dot", label = "Damage over Time", fmt = "pct", side = "prefix", weight = 4, cap = 60,
+			kinds = {weapon = true, jewel = true, other = true},
+			tiers = {{2, 4}, {4, 6}, {6, 9}, {8, 12}, {10, 15}, {13, 19}, {16, 23}, {20, 28}}},
+
+		-- suffixes: utility, resistances and speed
+		{key = "attackspeed", label = "Attack Speed", fmt = "pct", side = "suffix", weight = 8, cap = 15,
+			kinds = {weapon = true},
+			tiers = {{1, 2}, {2, 3}, {3, 5}, {4, 6}, {5, 8}, {7, 10}, {9, 12}, {11, 14}}},
+		{key = "movespeed", label = "Movement Speed", fmt = "pct", side = "suffix", weight = 10, cap = 12,
+			kinds = {boots = true},
+			tiers = {{1, 2}, {2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 10}, {9, 11}}},
+		{key = "lifeonkill", label = "Life on Kill", fmt = "flat", side = "suffix", weight = 6, cap = 300,
+			kinds = {weapon = true, jewel = true, helmet = true},
+			tiers = {{2, 5}, {5, 10}, {10, 20}, {20, 40}, {35, 60}, {50, 90}, {75, 120}, {100, 150}}},
+		{key = "manaonkill", label = "Mana on Kill", fmt = "flat", side = "suffix", weight = 6, cap = 200,
+			kinds = {weapon = true, jewel = true, helmet = true},
+			tiers = {{1, 3}, {3, 6}, {6, 12}, {12, 25}, {20, 40}, {30, 60}, {50, 80}, {70, 100}}},
+		{key = "lifeonhit", label = "Health on Hit", fmt = "flat", side = "suffix", weight = 5, cap = 120,
+			kinds = {weapon = true, jewel = true, other = true},
+			tiers = {{1, 2}, {2, 4}, {3, 6}, {5, 9}, {7, 13}, {10, 18}, {14, 25}, {20, 35}}},
+		{key = "manaonhit", label = "Mana on Hit", fmt = "flat", side = "suffix", weight = 5, cap = 80,
+			kinds = {weapon = true, jewel = true, other = true},
+			tiers = {{1, 1}, {1, 2}, {2, 4}, {3, 6}, {5, 8}, {7, 12}, {10, 16}, {14, 22}}},
+		{key = "regen", label = "Health Regeneration", text = "Health Regeneration +%d per Second", side = "suffix",
+			weight = 6, cap = 120, kinds = {armor = true, legs = true, helmet = true, jewel = true, shield = true},
+			tiers = {{1, 2}, {2, 4}, {4, 7}, {6, 10}, {9, 15}, {13, 21}, {18, 28}, {25, 40}}},
+		{key = "experience", label = "Experience", fmt = "pct", side = "suffix", weight = 4, cap = 15,
+			kinds = {helmet = true, jewel = true},
+			tiers = {{1, 1}, {1, 2}, {1, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}, {6, 8}}},
+		{key = "goldfind", label = "Gold Find", fmt = "pct", side = "suffix", weight = 5, cap = 40,
+			kinds = {helmet = true, jewel = true, legs = true, other = true},
+			tiers = {{1, 3}, {2, 4}, {3, 6}, {4, 8}, {6, 10}, {8, 14}, {11, 17}, {14, 20}}},
+		{key = "itemfind", label = "Item Find", fmt = "pct", side = "suffix", weight = 4, cap = 25,
+			kinds = {helmet = true, jewel = true},
+			tiers = {{1, 1}, {1, 2}, {2, 3}, {2, 4}, {3, 6}, {4, 8}, {6, 10}, {8, 12}}},
+		{key = "rarityfind", label = "Rarity Find", fmt = "pct", side = "suffix", weight = 4, cap = 40,
+			kinds = {helmet = true, jewel = true},
+			tiers = {{1, 3}, {2, 4}, {3, 6}, {5, 8}, {6, 10}, {8, 14}, {11, 17}, {14, 20}}},
+		{key = "healing", label = "Healing Done", fmt = "pct", side = "suffix", weight = 5, cap = 20,
+			kinds = {weapon = true, shield = true, jewel = true},
+			tiers = {{1, 1}, {1, 2}, {2, 3}, {3, 5}, {4, 6}, {5, 8}, {7, 10}, {9, 12}}},
 		-- the treasure goblin roll of a respawn near the player (treasure_goblin.lua: the highest total of the players
 		-- around the spawn point counts; +100% = twice the odds)
-		{key = "goblinchance", label = "Treasure Goblin Chance", fmt = "pct", weight = 5, cap = 100,
-			kinds = {helmet = true, jewel = true}, tiers = {{10, 15}, {14, 20}, {18, 27}, {22, 33}, {28, 40}}}
+		{key = "goblinchance", label = "Treasure Goblin Chance", fmt = "pct", side = "suffix", weight = 3, cap = 100,
+			kinds = {helmet = true, jewel = true},
+			tiers = {{6, 10}, {10, 15}, {14, 20}, {18, 27}, {22, 33}, {28, 40}, {35, 50}, {45, 60}}},
+		{key = "cdr", label = "Cooldown Reduction", fmt = "pct", side = "suffix", weight = 4, cap = 20,
+			kinds = {helmet = true, jewel = true, other = true},
+			tiers = {{1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 8}, {7, 9}, {8, 10}}},
+		{key = "manacost", label = "Mana Cost Reduction", fmt = "pct", side = "suffix", weight = 4, cap = 25,
+			kinds = {helmet = true, armor = true, jewel = true},
+			tiers = {{1, 2}, {2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}}}
 	},
-	raritiesPerTier = 3, -- tier = ceil(rarity / 3)
-	levelsPerTier = 30, -- item levels of a tier window (the engine gives rarity r levels 10r-9 .. 10r)
-	-- item level inside the tier's window raises the low end of the roll by up to this share of the range
-	levelPull = 0.5,
-	-- new drops (Chaos loot layer) and items the Transmutation, Alchemy, Chaos and Divine Orbs make: percent chance per
-	-- rarity of one Chaos modifier, then of a second one; never above the rarity's modifier maximum
-	dropChance = {8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 33, 36, 40},
-	secondChance = {0, 0, 0, 0, 0, 5, 6, 7, 8, 10, 12, 14, 16, 18, 20},
+
+	-- what the new modifiers do (item_mods.lua): an ailment deals `share` % of the hit that caused it over `rounds`
+	-- ticks of `interval` ms (bleeding: physical, ignite: fire, poison: earth); a chill slows by chillSlow % for
+	-- chillMs; a shocked monster takes shockPct % more damage from everyone for shockMs
+	ailment = {share = 40, rounds = 4, interval = 1000, chillSlow = 30, chillMs = 3000, shockPct = 15, shockMs = 4000},
+	regenEvery = 3000, -- ms between two regeneration ticks (the equipment check of item_mods.lua)
+
 	-- weapons without an attack interval of their own swing at the vocation's speed; the engine falls back to this
 	defaultAttackSpeed = 2000,
 	minAttackSpeed = 100 -- the engine's floor for the attribute
@@ -112,6 +235,7 @@ local function num(v)
 	end
 	return tonumber(v)
 end
+M.num = num
 
 local function hasBit(value, b)
 	return floor((value or 0) / b) % 2 == 1
@@ -127,8 +251,18 @@ local function typeNumber(it, method)
 	return ok and tonumber(v) or 0
 end
 
+local function custom(item, key)
+	local ok, v = pcall(function() return item:getCustomAttribute(key) end)
+	return ok and num(v) or nil
+end
+
 function M.attr(key)
 	return M.PREFIX .. key
+end
+
+-- the attribute that holds the tier of the modifier stored under attribute `attrKey`
+function M.tierAttr(attrKey)
+	return M.TIER_PREFIX .. tostring(attrKey):lower()
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -170,49 +304,232 @@ function M.kindOf(item)
 end
 
 function M.allowed(def, kind)
-	return kind ~= nil and def.kinds[kind] == true
+	return kind ~= nil and (def.kinds == nil or def.kinds[kind] == true)
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
--- tiers and rolls
+-- tiers
 -- ---------------------------------------------------------------------------------------------------------------
-function M.tierOf(rarity)
-	rarity = clamp(floor(tonumber(rarity) or 1), 1, 15)
-	return math.ceil(rarity / M.config.raritiesPerTier)
+-- the best tier an item level allows (1 at least)
+function M.maxTierFor(level)
+	level = tonumber(level) or 0
+	local best = 1
+	for t, need in ipairs(M.config.tierLevels) do
+		if level >= need then
+			best = t
+		end
+	end
+	return best
 end
 
--- the range a modifier rolls in for an item of this rarity and item level: {lo, hi}
-function M.range(def, rarity, level)
-	local t = M.tierOf(rarity)
-	local r = def.tiers[t] or def.tiers[#def.tiers]
-	local lo, hi = r[1], r[2]
-	local per = M.config.levelsPerTier
-	local first = (t - 1) * per + 1
-	local frac = clamp(((tonumber(level) or 0) - first) / (per - 1), 0, 1)
-	lo = lo + floor((hi - lo) * frac * M.config.levelPull + 1e-9)
-	return {lo, hi}
+-- the tiers that can roll at this item level, best first: {{tier, weight}, ...}
+function M.tierRows(level)
+	local top = M.maxTierFor(level)
+	local rows = {}
+	for t = top, math.max(1, top - M.config.tierWindow + 1), -1 do
+		rows[#rows + 1] = {t, M.config.tierWeights[t] or 1}
+	end
+	return rows
 end
 
-function M.rollValue(def, rarity, level, rand)
-	local r = M.range(def, rarity, level)
+local function weighted(rows, rand)
+	local total = 0
+	for _, r in ipairs(rows) do
+		total = total + r[2]
+	end
+	if total <= 0 then
+		return nil
+	end
+	local roll, acc = rand(1, total), 0
+	for _, r in ipairs(rows) do
+		acc = acc + r[2]
+		if roll <= acc then
+			return r[1]
+		end
+	end
+	return rows[#rows][1]
+end
+M.weighted = weighted
+
+-- a tier for a modifier of an item of this level
+function M.rollTier(level, rand)
+	return weighted(M.tierRows(level), rand or M.random) or 1
+end
+
+-- chance (percent, one decimal) of each tier at this item level: {[tier] = pct}
+function M.tierChances(level)
+	local rows, total, out = M.tierRows(level), 0, {}
+	for _, r in ipairs(rows) do
+		total = total + r[2]
+	end
+	for _, r in ipairs(rows) do
+		out[r[1]] = floor(r[2] * 1000 / total + 0.5) / 10
+	end
+	return out
+end
+
+-- the value range of a tier table at tier t (clamped to the table): {lo, hi}
+function M.tierRange(tiers, t)
+	t = clamp(floor(tonumber(t) or 1), 1, #tiers)
+	return tiers[t]
+end
+
+-- the tier an old value (no stored tier) belongs to: the lowest tier whose range holds it, searched in minT .. maxT
+-- (default all); a value above every range gets maxT, one between ranges the best tier that starts below it
+function M.tierOfValue(tiers, value, minT, maxT)
+	value = tonumber(value) or 0
+	minT, maxT = minT or 1, math.min(maxT or #tiers, #tiers)
+	local below = minT
+	for t = minT, maxT do
+		local r = tiers[t]
+		if value >= r[1] and value <= r[2] then
+			return t
+		end
+		if value >= r[1] then
+			below = t
+		end
+	end
+	return below
+end
+
+-- the range of a modifier of this file at tier t: {lo, hi}
+function M.range(def, tier)
+	return M.tierRange(def.tiers, tier)
+end
+
+function M.rollValue(def, tier, rand)
+	local r = M.range(def, tier)
 	return (rand or M.random)(r[1], r[2])
+end
+
+-- the stored tier of the modifier under attrKey (nil when none or out of range)
+function M.storedTier(item, attrKey)
+	local t = custom(item, M.tierAttr(attrKey))
+	t = t and floor(t) or nil
+	if t and t >= 1 and t <= M.config.maxTier then
+		return t
+	end
+	return nil
+end
+
+function M.setTier(item, attrKey, tier)
+	item:setCustomAttribute(M.tierAttr(attrKey), clamp(floor(tonumber(tier) or 1), 1, M.config.maxTier))
+end
+
+function M.removeTier(item, attrKey)
+	pcall(function() item:removeCustomAttribute(M.tierAttr(attrKey)) end)
+end
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- rarity: how many modifiers
+-- ---------------------------------------------------------------------------------------------------------------
+local function rarityIndex(rarity)
+	return clamp(floor(tonumber(rarity) or 0), 0, #M.config.rarity.count)
+end
+
+-- modifiers a new item of this rarity gets
+function M.modCount(rarity)
+	local r = rarityIndex(rarity)
+	return r > 0 and M.config.rarity.count[r] or 0
+end
+
+-- prefixes (and, the same number, suffixes) an item of this rarity may carry
+function M.sideLimit(rarity)
+	local r = rarityIndex(rarity)
+	return r > 0 and M.config.rarity.sides[r] or 0
+end
+
+-- every modifier an item of this rarity may carry (what the Exalted Orb fills up to)
+function M.maxMods(rarity)
+	return 2 * M.sideLimit(rarity)
+end
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- item level
+-- ---------------------------------------------------------------------------------------------------------------
+function M.itemLevelOf(item)
+	local v = custom(item, M.ILVL)
+	if v and v > 0 then
+		return floor(v)
+	end
+	v = custom(item, "combatPowerLevel")
+	return v and v > 0 and floor(v) or 0
+end
+
+-- the item level the curve gives a monster level (before bonuses)
+function M.levelFromMonster(monsterLevel)
+	local lv = math.max(1, tonumber(monsterLevel) or 1)
+	local curve = M.config.itemLevel.curve
+	if lv <= curve[1][1] then
+		return curve[1][2]
+	end
+	for i = 2, #curve do
+		local a, b = curve[i - 1], curve[i]
+		if lv <= b[1] then
+			return floor(a[2] + (b[2] - a[2]) * (lv - a[1]) / (b[1] - a[1]) + 1e-9)
+		end
+	end
+	return curve[#curve][2]
+end
+
+-- the hunting level of a monster without a level of its own (tools/gen_bounty_pool.py estimate_level)
+function M.estimateMonsterLevel(experience, health)
+	local byExp = 1.6 * math.sqrt(math.max(tonumber(experience) or 0, 1))
+	local byHp = (tonumber(health) or 0) / 60
+	return math.max(1, floor(math.max(byExp, math.min(byHp, byExp * 1.5)) + 0.5))
+end
+
+-- the item level of a drop. src = {monsterLevel, tier = "normal" | "magic" | "rare" | "legendary" | "boss",
+-- riftTier, omen = bool, worldBoss = bool, fixed = item level (store, tutorial ...)}
+function M.sourceLevel(src)
+	local c = M.config.itemLevel
+	src = src or {}
+	if src.fixed then
+		return clamp(floor(tonumber(src.fixed) or 1), 1, c.max)
+	end
+	if src.worldBoss then
+		return c.worldBoss
+	end
+	local lv = M.levelFromMonster(src.monsterLevel)
+	lv = lv + (c.tierBonus[src.tier or "normal"] or 0)
+	local rt = tonumber(src.riftTier) or 0
+	if rt > 0 then
+		lv = lv + math.min(c.riftMax, floor(rt * c.riftPerTier))
+	end
+	if src.omen then
+		lv = lv + c.omen
+	end
+	return clamp(lv, 1, c.max)
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
 -- reading and writing an item
 -- ---------------------------------------------------------------------------------------------------------------
 function M.value(item, key)
-	local ok, v = pcall(function() return item:getCustomAttribute(M.attr(key)) end)
-	return ok and floor(num(v) or 0) or 0
+	local v = custom(item, M.attr(key))
+	return v and floor(v) or 0
 end
 
--- the Chaos modifiers of an item in catalogue order: {key, value, def, label}
+-- the tier of a modifier of this file on an item: the stored one, else the one its value belongs to (an item from
+-- before tiers was rolled in today's T2 .. T6)
+function M.tierOf(item, key, value)
+	local def = M.byKey[key]
+	local t = M.storedTier(item, M.attr(key))
+	if t or not def then
+		return t or 1
+	end
+	local old = M.config.oldTiers
+	return M.tierOfValue(def.tiers, value or M.value(item, key), old[1], old[#old])
+end
+
+-- the Chaos modifiers of an item in catalogue order: {key, value, def, label, tier, side}
 function M.read(item)
 	local out = {}
 	for _, def in ipairs(M.config.mods) do
 		local v = M.value(item, def.key)
 		if v ~= 0 then
-			out[#out + 1] = {key = def.key, value = v, def = def, label = def.label}
+			out[#out + 1] = {key = def.key, value = v, def = def, label = def.label, side = def.side,
+				tier = M.tierOf(item, def.key, v)}
 		end
 	end
 	return out
@@ -224,7 +541,9 @@ function M.text(key, value)
 		return tostring(key)
 	end
 	value = floor(tonumber(value) or 0)
-	if def.fmt == "flat" then
+	if def.text then
+		return string.format(def.text, value)
+	elseif def.fmt == "flat" then
 		return string.format("%s +%d", def.label, value)
 	elseif def.fmt == "less" then
 		return string.format("%s -%d%%", def.label, value)
@@ -232,11 +551,11 @@ function M.text(key, value)
 	return string.format("%s +%d%%", def.label, value)
 end
 
--- one line, "Attack Speed +5%; Life on Kill +12" (loot filter tooltips)
+-- one line, "Attack Speed +5% (T4); Life on Kill +12 (T3)" (loot filter tooltips)
 function M.summary(item)
 	local parts = {}
 	for _, m in ipairs(M.read(item)) do
-		parts[#parts + 1] = M.text(m.key, m.value)
+		parts[#parts + 1] = string.format("%s (T%d)", M.text(m.key, m.value), m.tier)
 	end
 	return table.concat(parts, "; ")
 end
@@ -320,8 +639,14 @@ function M.sendUpdate(item)
 	end
 end
 
-function M.set(item, key, value)
+-- write a modifier (and its tier when given; without one an old tier is dropped, the value then decides)
+function M.set(item, key, value, tier)
 	item:setCustomAttribute(M.attr(key), floor(value))
+	if tier then
+		M.setTier(item, M.attr(key), tier)
+	else
+		M.removeTier(item, M.attr(key))
+	end
 	if key == "attackspeed" then
 		M.syncAttackSpeed(item)
 	end
@@ -329,6 +654,7 @@ end
 
 function M.remove(item, key)
 	item:removeCustomAttribute(M.attr(key))
+	M.removeTier(item, M.attr(key))
 	if key == "attackspeed" then
 		M.syncAttackSpeed(item)
 	end
@@ -340,7 +666,7 @@ function M.clear(item)
 	end
 end
 
--- modifiers this item could still get: list of {entry = def, weight}
+-- modifiers of this file the item could still get (its kind, not on it yet): list of {entry = def, weight}
 function M.addable(item)
 	local kind = M.kindOf(item)
 	local out = {}
@@ -371,49 +697,50 @@ local function pick(rows, rand)
 end
 M.pick = pick
 
--- add one random modifier the item may get; returns {key, value} or nil
-function M.addRandom(item, rarity, level, rand)
-	rand = rand or M.random
-	local def = pick(M.addable(item), rand)
-	if not def then
-		return nil
-	end
-	local value = M.rollValue(def, rarity, level, rand)
-	M.set(item, def.key, value)
-	return {key = def.key, value = value, def = def, label = def.label}
-end
-
--- how many Chaos modifiers a new item of this rarity gets (before the free slots limit it)
-function M.rollCount(rarity, rand)
-	rand = rand or M.random
-	local r = clamp(floor(tonumber(rarity) or 0), 0, 15)
-	if r < 1 then
-		return 0
-	end
-	local n = 0
-	if rand(1, 100) <= (M.config.dropChance[r] or 0) then
-		n = 1
-		if rand(1, 100) <= (M.config.secondChance[r] or 0) then
-			n = 2
+-- ---------------------------------------------------------------------------------------------------------------
+-- equipped items (item_mods.lua and the spell side)
+-- ---------------------------------------------------------------------------------------------------------------
+function M.slotBits()
+	local bits = {}
+	local function add(slot, bit)
+		if slot and bit then
+			bits[slot] = bit
 		end
 	end
-	return n
+	add(CONST_SLOT_HEAD, SLOTP_HEAD); add(CONST_SLOT_NECKLACE, SLOTP_NECKLACE); add(CONST_SLOT_ARMOR, SLOTP_ARMOR)
+	add(CONST_SLOT_LEGS, SLOTP_LEGS); add(CONST_SLOT_FEET, SLOTP_FEET); add(CONST_SLOT_RING, SLOTP_RING)
+	add(CONST_SLOT_RIGHT, SLOTP_RIGHT); add(CONST_SLOT_LEFT, SLOTP_LEFT)
+	add(CONST_SLOT_BADGE, SLOTP_BADGE); add(CONST_SLOT_GLOVES, SLOTP_GLOVES); add(CONST_SLOT_BELT, SLOTP_BELT)
+	return bits
 end
 
--- roll the Chaos modifiers of a new item (drop or orb). free = slots left under the rarity's maximum.
--- returns the list of added modifiers
-function M.rollNew(item, rarity, level, free, rand)
-	rand = rand or M.random
-	local added = {}
-	local n = math.min(M.rollCount(rarity, rand), math.max(0, free or 0))
-	for _ = 1, n do
-		local m = M.addRandom(item, rarity, level, rand)
-		if not m then
-			break
-		end
-		added[#added + 1] = m
+-- true when the item counts in this slot (worn where it belongs; weapons and shields in a hand)
+function M.fits(item, slot, bits)
+	bits = bits or M.slotBits()
+	local bitValue = bits[slot]
+	if not bitValue then
+		return false
 	end
-	return added
+	local it = item:getType()
+	if hasBit(it:getSlotPosition(), bitValue) then
+		return true
+	end
+	if slot == CONST_SLOT_LEFT or slot == CONST_SLOT_RIGHT then
+		return it:getWeaponType() ~= (WEAPON_NONE or 0) and it:getWeaponType() ~= (WEAPON_AMMO or 7)
+	end
+	return false
+end
+
+-- the equipped items that count: {item, ...}
+function M.equippedItems(player)
+	local bits, out = M.slotBits(), {}
+	for slot in pairs(bits) do
+		local item = player:getSlotItem(slot)
+		if item and M.fits(item, slot, bits) then
+			out[#out + 1] = item
+		end
+	end
+	return out
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -458,6 +785,41 @@ end
 -- experience with the bonus
 function M.experience(exp, pct)
 	return floor((tonumber(exp) or 0) * (100 + (tonumber(pct) or 0)) / 100 + 1e-9)
+end
+
+-- penetration: a hit that the monster's resistance r (percent) reduced, as if r were pen points lower (never below 0;
+-- an immune monster stays immune). Same maths as the Sunder support (chaos_supports.lua S.penetrate).
+function M.penetrate(value, r, pen)
+	r, pen = tonumber(r) or 0, tonumber(pen) or 0
+	if r <= 0 or r >= 100 or pen <= 0 then
+		return value
+	end
+	local rNew = math.max(0, r - pen)
+	local raw = math.abs(value) * 100 / (100 - r)
+	local a = floor(raw * (100 - rNew) / 100 + 1e-6)
+	return value < 0 and -a or a
+end
+
+-- damage per tick of an ailment caused by a hit of `hit` (whole points, at least 1)
+function M.ailmentTick(hit)
+	local a = M.config.ailment
+	return math.max(1, floor(math.abs(tonumber(hit) or 0) * a.share / 100 / a.rounds + 1e-9))
+end
+
+-- true when a monster at `health` of `maxHealth` drops to or below `pct` % by a hit of `damage` (and survives it):
+-- the execute modifier kills it instead
+function M.executes(health, maxHealth, damage, pct)
+	health, maxHealth, damage, pct = tonumber(health) or 0, tonumber(maxHealth) or 0, tonumber(damage) or 0, tonumber(pct) or 0
+	if pct <= 0 or maxHealth <= 0 then
+		return false
+	end
+	local left = health - damage
+	return left > 0 and left * 100 <= maxHealth * pct
+end
+
+-- health a regeneration total gives per tick of `ms`
+function M.regenAmount(perSecond, ms)
+	return floor((tonumber(perSecond) or 0) * (tonumber(ms) or M.config.regenEvery) / 1000 + 1e-9)
 end
 
 return M

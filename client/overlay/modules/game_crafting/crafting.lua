@@ -2,7 +2,8 @@
 -- each orb would do, apply an orb. The bench is optional: every orb also works by "Use with" on the item.
 -- Server: server/data/scripts/chaos/crafting.lua and data/lib/chaos_crafting.lua, extended opcode 232 (JSON).
 --   server -> client  state {open, orbs = [{key, id, clientId, name, text, keyText, count}], item = {path, clientId,
---                            name, kind, rarity, rarityName, level, mods = [{group, text}], maxMods, rewards, unique,
+--                            name, kind, rarity, rarityName, level, maxTier, mods = [{group, text, tier, side, lo,
+--                            hi}] (prefixes first), prefixes = {n, max}, suffixes = {n, max}, maxMods, rewards, unique,
 --                            orbs = {key -> ""|why}, preview = {key -> text},
 --                            sockets = {count, max, list = [{index, id, clientId, name, text, color, cost}]}, sig} | nil,
 --                            items = [{path, id, clientId, name, rarity, rarityName, unique, key}],
@@ -18,7 +19,7 @@
 -- state.item.salvage = {ok, why, shards, orbChance}. Client -> server: salvage {path, id, sig} | lock {path, id, on} |
 -- salvageScope {bag, maxRarity, mode} | salvageBatch {bag, maxRarity, sig} | combine {key, count}.
 -- The server checks everything (orb owned, item in the backpack, orb fits the item, no uniques); the buttons here only
--- mirror its answer. !craft opens it from the chat; the top menu (Chaos -> Crafting Bench) calls toggle().
+-- mirror its answer. The top menu (Economy > Crafting Bench, Economy > Salvage) calls toggle() and openSalvage().
 
 local OPCODE = 232
 
@@ -160,21 +161,41 @@ local function showItem(item)
     window.itemRarity:setText(tr('Unique item: orbs cannot change it'))
     window.itemRarity:setColor('#e8582a')
   elseif rarity > 0 then
-    window.itemRarity:setText(tr('%s, item level %d', item.rarityName or '?', tonumber(item.level) or 0))
+    window.itemRarity:setText(tr('%s, item level %d', item.rarityName or '?', tonumber(item.level) or 0)
+      .. (item.maxTier and tr(' (up to T%d)', tonumber(item.maxTier) or 0) or ''))
     window.itemRarity:setColor(rarityColor(rarity))
   else
     window.itemRarity:setText(tr('Normal item'))
     window.itemRarity:setColor('#d6c9ae')
   end
   local mods = list(item.mods)
-  if rarity > 0 or item.kind == 'riftkey' then
+  local pre, suf = item.prefixes, item.suffixes
+  if rarity > 0 and type(pre) == 'table' and type(suf) == 'table' then
+    window.itemSlots:setText(tr('Modifiers: %d / %d  (prefixes %d/%d, suffixes %d/%d)', #mods,
+      tonumber(item.maxMods) or 0, tonumber(pre[1]) or 0, tonumber(pre[2]) or 0, tonumber(suf[1]) or 0,
+      tonumber(suf[2]) or 0))
+  elseif rarity > 0 or item.kind == 'riftkey' then
     window.itemSlots:setText(tr('Modifiers: %d / %d', #mods, tonumber(item.maxMods) or 0))
   else
     window.itemSlots:setText(#mods > 0 and tr('Modifiers: %d', #mods) or tr('No modifiers'))
   end
+  local side
   for _, m in ipairs(mods) do
+    if m.side and m.side ~= side then
+      side = m.side
+      local head = g_ui.createWidget('CraftModLabel', window.modList)
+      head:setText(side == 'prefix' and tr('Prefixes') or tr('Suffixes'))
+      head:setColor('#8c8070')
+    end
     local label = g_ui.createWidget('CraftModLabel', window.modList)
-    label:setText(m.text or '')
+    local text = m.text or ''
+    if m.tier then
+      text = string.format('T%d  %s', tonumber(m.tier) or 0, text)
+      if m.lo and m.hi then
+        text = text .. (m.lo == m.hi and string.format('  [%d]', m.lo) or string.format('  [%d-%d]', m.lo, m.hi))
+      end
+    end
+    label:setText(text)
     label:setColor(GROUP_COLOR[m.group] or '#d6c9ae')
   end
   if item.kind == 'riftkey' and item.rewards then
@@ -496,7 +517,7 @@ end
 local function onState(data)
   local orbsChanged = not state or #list(state.orbs) ~= #list(data.orbs)
   state = data
-  -- opened in the Salvage tab (!salvage, a shard used): follow the server's mode
+  -- opened in the Salvage tab (the menu's Salvage entry, a shard used): follow the server's mode
   if data.open and type(data.salvage) == 'table' and (data.salvage.mode == 'salvage' or data.salvage.mode == 'orbs') then
     mode = data.salvage.mode
   end
@@ -560,6 +581,13 @@ function toggle()
     return
   end
   send('open') -- the server answers with the state, which shows the window
+end
+
+-- the menu's Salvage entry: the bench in its Salvage tab
+function openSalvage()
+  if not window then return end
+  send('salvageScope', { mode = 'salvage' })
+  send('open')
 end
 
 local function onGameEnd()

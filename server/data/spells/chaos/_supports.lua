@@ -11,6 +11,12 @@
 --     state (data/scripts/chaos/supports.lua, onHealthChange) knows which spell a hit came from;
 --   * after a cast that went through (the script returned true), one tick later when the engine has taken the mana
 --     and set the cooldown: Thrift gives back part of the mana, Quickening shortens the spell's cooldown condition;
+--     the Mana Cost Reduction and Cooldown Reduction item modifiers of the equipped items (data/lib/chaos_item_mods.lua)
+--     add to them, both together under the support's cap. That is the fallback: with the spell events of engine patch
+--     0008 switched on (patch_base_events.py --enable-spell-events) the same numbers go through ChaosSpellEvents
+--     (data/lib/chaos_spell_events.lua) instead: onSpellCost makes Thrift / Mana Cost Reduction a real discount (the
+--     "enough mana" check sees it) and onSpellCooldown shortens the spell's own cooldown as it is set; the wrapper then
+--     skips its after-cast step;
 --   * Reprisal: remembers spell and time in two storages for the hit-taken side.
 -- A script whose spell has no id (or shares it) is left as it is. Nothing here changes what a spell does by itself.
 
@@ -96,13 +102,88 @@ ctxAddEvent = function(callback, delay, ...)
 	end, delay, ...)
 end
 
--- ---------------------------------------------------------------- after the cast
-local function afterCast(pid, spell, fx)
+-- ---------------------------------------------------------------- item modifiers
+-- the capped Cooldown Reduction and Mana Cost Reduction of the equipped items: {cdr, manacost}. Every engine Lua
+-- interface shares one state, so the totals item_mods.lua keeps per player are read first; without them (tests, a
+-- player the equipment check has not seen yet) the items are read.
+function W.itemBonus(player)
+	if not ChaosItemMods then
+		pcall(dofile, "data/lib/chaos_item_mods.lua")
+	end
+	local M = ChaosItemMods
+	if M and M.playerBonus and ChaosItemModsCache then
+		local okId, id = pcall(function() return player:getId() end)
+		if okId and ChaosItemModsCache[id] then
+			return {cdr = M.playerBonus(player, "cdr"), manacost = M.playerBonus(player, "manacost")}
+		end
+	end
+	if not M or not M.equippedItems then
+		return {cdr = 0, manacost = 0}
+	end
+	local ok, t = pcall(function() return M.totals(M.equippedItems(player)) end)
+	if not ok or type(t) ~= "table" then
+		return {cdr = 0, manacost = 0}
+	end
+	return {cdr = t.cdr or 0, manacost = t.manacost or 0}
+end
+
+-- what the after-cast step gives: thrift / quickening percent (supports + item modifiers, under the supports' caps)
+function W.castBonus(fx, items)
+	local caps = cfg.caps or {}
+	local thrift = (fx.thrift and fx.thrift.value or 0) + (items and items.manacost or 0)
+	local quick = (fx.quickening and fx.quickening.value or 0) + (items and items.cdr or 0)
+	return math.min(caps.thrift or 30, thrift), math.min(caps.quickening or 30, quick)
+end
+
+-- ---------------------------------------------------------------- spell events (engine patch 0008)
+if not ChaosSpellEvents or not ChaosSpellEvents.set then
+	dofile("data/lib/chaos_spell_events.lua")
+end
+local E = ChaosSpellEvents
+
+-- the catalogue entry of a spell id (level for the socket count), nil for spells without supports
+local byId
+function W.spellById(id)
+	if not byId then
+		byId = {}
+		for _, e in pairs(W.spellsByScript()) do
+			if e.id then
+				byId[e.id] = e
+			end
+		end
+	end
+	return byId[tonumber(id) or -1]
+end
+
+-- thrift and quickening percent of a cast: the spell's runes plus the item modifiers, under the supports' caps
+function W.bonusOf(player, spellId)
+	local spell = W.spellById(spellId)
+	local fx = spell and S.spellEffects(player, spell.id, spell.level) or {}
+	return W.castBonus(fx, W.itemBonus(player))
+end
+
+E.set("cost", "supports", function(player, name, id, group, aggressive, mana, health)
+	local thrift = W.bonusOf(player, id)
+	if thrift > 0 and mana > 0 then
+		mana = E.discount(mana, thrift)
+	end
+	return mana, health
+end)
+
+E.set("cooldown", "supports", function(player, name, id, group, aggressive, cooldownType, ms)
+	if cooldownType ~= "spell" then
+		return ms -- the spell's own cooldown only; the group cooldowns stay
+	end
+	local _, quick = W.bonusOf(player, id)
+	return E.shorten(ms, quick, cfg.effect.cooldownMinMs)
+end)
+
+-- ---------------------------------------------------------------- after the cast (fallback without the events)
+local function afterCast(pid, spell, thrift, quick)
 	local player = Player(pid)
 	if not player then
 		return
 	end
-	local thrift = fx.thrift and fx.thrift.value or 0
 	if thrift > 0 then
 		local mana = spell.mana or 0
 		if spell.manaPercent and spell.manaPercent > 0 then
@@ -113,7 +194,6 @@ local function afterCast(pid, spell, fx)
 			player:addMana(back)
 		end
 	end
-	local quick = fx.quickening and fx.quickening.value or 0
 	if quick > 0 and (spell.cooldown or 0) > 0 then
 		local c = player:getCondition(CONDITION_SPELLCOOLDOWN, CONDITIONID_DEFAULT, spell.id)
 		if c then
@@ -147,8 +227,12 @@ local function wrap(spell, original)
 		local ctx = {pid = pid, value = S.ctxEncode(serial, spell.id)}
 		local result = runWith(pid, ctx, original, creature, variant, ...)
 		if result then
-			if fx.thrift or fx.quickening then
-				rawAddEvent(afterCast, 0, pid, spell, fx)
+			local thrift, quick = 0, 0
+			if not E.live then -- the engine's spell events did it already
+				thrift, quick = W.castBonus(fx, W.itemBonus(player))
+			end
+			if thrift > 0 or quick > 0 then
+				rawAddEvent(afterCast, 0, pid, spell, thrift, quick)
 			end
 			if fx.reprisal then
 				player:setStorageValue(cfg.storageReprisal, spell.id)

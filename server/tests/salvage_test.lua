@@ -16,7 +16,7 @@ end
 local function gear(rarity, level, o)
 	o = o or {}
 	local info = {gear = true, rarity = rarity, level = level or (rarity * 10 - 9), sockets = o.sockets or 0,
-		gems = o.gems or 0, chaosMods = o.chaosMods or 0, locked = o.locked or false, unique = o.unique or false,
+		gems = o.gems or 0, highTiers = o.highTiers or 0, locked = o.locked or false, unique = o.unique or false,
 		riftKey = o.riftKey or false, stackable = o.stackable or false, inBackpack = o.inBackpack}
 	if o.gear == false then
 		info.gear = false
@@ -52,20 +52,20 @@ assert(cfg.batchCap == 50, "hard cap of 50 items per batch")
 assert(not cfg.allowUniques, "uniques are not salvaged")
 
 -- ---------------------------------------------------------------- yields
-eq(K.shards(gear(1), cfg), 1, "Common, bottom of the window")
-eq(K.shards(gear(1, 10), cfg), 1, "Common, top: floor(1.5)")
-eq(K.shards(gear(3, 21), cfg), 2, "Rare bottom")
-eq(K.shards(gear(3, 30), cfg), 3, "Rare top: +50%")
-eq(K.shards(gear(5, 41), cfg), 3, "Legendary bottom")
-eq(K.shards(gear(5, 50), cfg), 4, "Legendary top")
-eq(K.shards(gear(10, 91), cfg), 7, "Divine bottom")
-eq(K.shards(gear(10, 100), cfg), 10, "Divine top")
-eq(K.shards(gear(15, 141), cfg), 18, "Transcendent bottom")
-eq(K.shards(gear(15, 150), cfg), 27, "Transcendent top")
-eq(K.shards(gear(5, 0), cfg), 3, "a level outside the window counts as the bottom")
-eq(K.shards(gear(5, 999), cfg), 3, "a level above the window too")
-eq(K.shards(gear(4, 31, {chaosMods = 2}), cfg), 4, "+1 per Chaos modifier")
-eq(K.shards(gear(4, 31, {sockets = 3}), cfg), 5, "+1 per empty socket")
+eq(K.shards(gear(1, 1), cfg), 1, "Common, item level 1")
+eq(K.shards(gear(1, 150), cfg), 1, "Common, item level 150: floor(1.5)")
+eq(K.shards(gear(3, 1), cfg), 2, "Rare at item level 1")
+eq(K.shards(gear(3, 150), cfg), 3, "Rare at 150: +50%")
+eq(K.shards(gear(5, 75), cfg), 3, "Legendary at 75: floor(3.75)")
+eq(K.shards(gear(5, 150), cfg), 4, "Legendary at 150")
+eq(K.shards(gear(10, 1), cfg), 7, "Divine at 1")
+eq(K.shards(gear(10, 150), cfg), 10, "Divine at 150")
+eq(K.shards(gear(15, 1), cfg), 18, "Transcendent at 1")
+eq(K.shards(gear(15, 150), cfg), 27, "Transcendent at 150")
+eq(K.shards(gear(5, 0), cfg), 3, "no item level counts as the bottom")
+eq(K.shards(gear(5, 999), cfg), 4, "above the top counts as the top")
+eq(K.shards(gear(4, 1, {highTiers = 2}), cfg), 4, "+1 per modifier of T6 or better")
+eq(K.shards(gear(4, 1, {sockets = 3}), cfg), 5, "+1 per empty socket")
 eq(K.shards(gear(99, 0), cfg), cfg.baseShards[15], "rarity clamped to 15")
 eq(K.orbChance(gear(1), cfg), 50, "0.5% on a Common")
 eq(K.orbChance(gear(15), cfg), 500, "5% on a Transcendent")
@@ -95,7 +95,7 @@ for reason in pairs({locked = 1, unique = 1, normal = 1, gems = 1, riftKey = 1, 
 	unknownRecipe = 1, shards = 1, count = 1}) do
 	assert(type(K.reasons[reason]) == "string", "a text for " .. reason)
 end
-local p = K.preview(gear(5, 50), cfg)
+local p = K.preview(gear(5, 150), cfg)
 eq(p.ok, true, "preview ok")
 eq(p.shards, 4, "preview shards")
 eq(p.orbChance, "1", "preview orb chance")
@@ -330,7 +330,9 @@ ChaosCrafting = {
 	isUnique = function(item) return item.custom.chaos_unique ~= nil end,
 	itemName = function(item) return "item" .. item.id end,
 	rarityName = function(r) return NAMES[r] end,
-	signature = function(item) return item.id .. ";" .. tostring(item.custom.rarity) .. ";" .. tostring(item.custom.combatPowerLevel) end
+	signature = function(item) return item.id .. ";" .. tostring(item.custom.rarity) .. ";" .. tostring(item.custom.combatPowerLevel) end,
+	levelOf = function(item) return tonumber(item.custom.chaos_ilvl) or tonumber(item.custom.combatPowerLevel) or 0 end,
+	readMods = function(item) return item.mods or {} end
 }
 ChaosGems = {read = function(item)
 	local n, filled = tonumber(item.custom.chaos_sockets) or 0, 0
@@ -375,11 +377,11 @@ local function act(action, data)
 end
 
 -- one item
-local sword = put(backpack, newItem(2400, {custom = {rarity = 5, combatPowerLevel = 50}}))
+local sword = put(backpack, newItem(2400, {custom = {rarity = 5, chaos_ilvl = 150, combatPowerLevel = 150}}))
 local state = {items = {{path = "0", id = 2400}}, item = {path = "0", id = 2400}}
 S.benchState(player, state)
 eq(state.item.salvage.ok, true, "the bench previews the salvage")
-eq(state.item.salvage.shards, 4, "Legendary at the top: 4 shards")
+eq(state.item.salvage.shards, 4, "Legendary at item level 150: 4 shards")
 eq(state.salvage.installed, true, "the shard item exists")
 eq(#state.salvage.recipes, #cfg.recipes, "every recipe on the bench")
 eq(state.salvage.batch, nil, "no batch preview outside the Salvage mode")

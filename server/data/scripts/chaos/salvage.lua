@@ -1,4 +1,4 @@
--- Salvage (the crafting bench's Salvage mode; client game_crafting, extended opcode ChaosOpcodes.crafting 232, !salvage).
+-- Salvage (the crafting bench's Salvage mode; client game_crafting, extended opcode ChaosOpcodes.crafting 232).
 -- Rolled gear (an item with a rarity) is broken down into Rune Shards (a new stackable item, server/tools/install_salvage.py),
 -- with a small chance of a whole orb; shards combine into the existing orbs at the bench. The item lock (custom attribute
 -- `chaos_locked`, the bench's Lock button) keeps an item away from salvage and from the Auto Seller (autosell.lua).
@@ -108,7 +108,12 @@ end
 -- the info table of salvage_core.lua for an engine item
 function S.infoOf(player, item)
 	local s = ChaosGems and ChaosGems.read(item) or {count = 0, filled = 0}
-	local mods = ChaosItemMods and ChaosItemMods.read(item) or {}
+	local high = 0
+	for _, m in ipairs(C.readMods(item)) do
+		if m.tier >= (cfg.highTier or 6) then
+			high = high + 1
+		end
+	end
 	local b = bench()
 	local inBackpack
 	if player and b then
@@ -118,11 +123,11 @@ function S.infoOf(player, item)
 		gear = C.isGear(item),
 		riftKey = C.isRiftKey(item),
 		rarity = C.rarityOf(item),
-		level = math.floor(C.customNumber(item, "combatPowerLevel")),
+		level = C.levelOf(item),
 		unique = C.isUnique(item),
 		sockets = s.count or 0,
 		gems = s.filled or 0,
-		chaosMods = #mods,
+		highTiers = high,
 		locked = S.isLocked(item),
 		stackable = isStackable(item),
 		inBackpack = inBackpack
@@ -565,14 +570,6 @@ function shardUse.onUse(player, item, fromPosition, target, toPosition, isHotkey
 end
 shardUse:id(cfg.shard.id)
 shardUse:register()
-
-local talk = TalkAction("!salvage")
-function talk.onSay(player, words, param)
-	openSalvage(player)
-	return false
-end
-talk:separator(" ")
-talk:register()
 
 local logout = CreatureEvent("ChaosSalvageLogout")
 function logout.onLogout(player)

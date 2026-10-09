@@ -228,13 +228,3 @@ LoginEvent:register()
 ExtendedEvent:type("extendedopcode")
 ExtendedEvent:register()
 
--- Convenience: "!bank" opens the window (the client also opens it from its top-bar button).
-local talk = TalkAction("!bank")
-
-function talk.onSay(player, words, param)
-	sendBankState(player)
-	return false
-end
-
-talk:separator(" ")
-talk:register()

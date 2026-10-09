@@ -297,6 +297,9 @@ function K.rewardText(reward, nameOf)
 	if reward.mount then
 		parts[#parts + 1] = "mount " .. tostring(reward.mount.name or "?")
 	end
+	if reward.portal then
+		parts[#parts + 1] = "portal style " .. tostring(reward.portal.name or "?")
+	end
 	return table.concat(parts, ", ")
 end
 

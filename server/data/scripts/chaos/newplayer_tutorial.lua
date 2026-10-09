@@ -22,6 +22,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not ChaosCommands then
+	dofile("data/scripts/chaos/commands_ui_core.lua")
+end
 if not ChaosNewPlayer or not ChaosNewPlayer.layout then
 	dofile("data/scripts/chaos/newplayer_core.lua")
 end
@@ -272,7 +275,7 @@ local function poll(pid)
 		if castSpell(player) and not NP.hasBit(flagsOf(player), 2) then
 			setFlag(player, 2)
 			if not NP.hasBit(flagsOf(player), 1) then
-				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Well cast! Now open your spellbook with !spells.")
+				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Well cast! Now open your spellbook: Character > Spellbook (Alt+L).")
 			end
 		end
 		if NP.spellTaskDone(flagsOf(player), spellOf(player) ~= nil) then
@@ -347,7 +350,10 @@ local function startTask(player, i)
 				container = player:addItem(C().common.backpackId, 1, false, 1, CONST_SLOT_BACKPACK)
 			end
 			local o = t.orbItem
-			local item = Game.createItemWithRarity and Game.createItemWithRarity(o.id, 1, o.rarity) or Game.createItem(o.id, 1)
+			-- the tutorial's fixed item level (chaos_item_mods.lua itemLevel.tutorial); rolled by ChaosCrafting.forge
+			local item = ChaosCrafting and ChaosCrafting.createItem
+				and ChaosCrafting.createItem(o.id, o.rarity or 0, ChaosItemMods.config.itemLevel.tutorial)
+				or Game.createItem(o.id, 1)
 			if item then
 				if not (container and container:addItemEx(item) == RETURNVALUE_NOERROR) then
 					player:addItemEx(item, true)
@@ -685,7 +691,7 @@ end
 skip:aid(NP.cfg().tutorial.aid.skip)
 skip:register()
 
-local skipTalk = TalkAction("!skiptutorial")
+local skipTalk = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "skiptutorial")
 function skipTalk.onSay(player, words, param)
 	if not NP.inTutorial(stageOf(player)) then
 		player:sendCancelMessage("You are not in the tutorial.")
@@ -694,7 +700,7 @@ function skipTalk.onSay(player, words, param)
 	NP.tutorialFinish(player, "skipped")
 	return false
 end
-skipTalk:register()
+ChaosCommands.register("skiptutorial", function(player, param) return skipTalk.onSay(player, "", param) end)
 
 local startup = GlobalEvent("ChaosTutorialStartup")
 function startup.onStartup()

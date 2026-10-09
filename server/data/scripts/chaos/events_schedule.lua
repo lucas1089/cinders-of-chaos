@@ -16,6 +16,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not ChaosCommands then
+	dofile("data/scripts/chaos/commands_ui_core.lua")
+end
 
 ChaosEvents = ChaosEvents or {}
 local E = ChaosEvents
@@ -154,7 +157,7 @@ function login.onLogin(player)
 end
 login:register()
 
-local talk = TalkAction("!events")
+local talk = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "events")
 function talk.onSay(player, words, param)
 	local lines = E.describeActive()
 	if #lines == 0 then
@@ -164,5 +167,4 @@ function talk.onSay(player, words, param)
 	end
 	return false
 end
-talk:separator(" ")
-talk:register()
+ChaosCommands.register("events", function(player, param) return talk.onSay(player, "", param) end)

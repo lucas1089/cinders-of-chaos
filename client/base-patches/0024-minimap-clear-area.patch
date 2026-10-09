@@ -1,0 +1,67 @@
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -225,6 +225,7 @@
+     g_lua.bindSingletonFunction("g_minimap", "saveImage", &Minimap::saveImage, &g_minimap);
+     g_lua.bindSingletonFunction("g_minimap", "loadOtmm", &Minimap::loadOtmm, &g_minimap);
+     g_lua.bindSingletonFunction("g_minimap", "saveOtmm", &Minimap::saveOtmm, &g_minimap);
++    g_lua.bindSingletonFunction("g_minimap", "clearArea", &Minimap::clearArea, &g_minimap);
+ 
+     g_lua.registerSingletonClass("g_creatures");
+     g_lua.bindSingletonFunction("g_creatures", "getCreatures", &CreatureManager::getCreatures, &g_creatures);
+--- a/src/client/minimap.cpp
++++ b/src/client/minimap.cpp
+@@ -25,6 +25,7 @@
+ #include "tile.h"
+ #include "game.h"
+ #include "gameconfig.h"
++#include "map.h"
+ #include "spritemanager.h"
+ 
+ #include <framework/graphics/image.h>
+@@ -100,6 +101,35 @@
+         tileBlocks.clear();
+ }
+ 
++int Minimap::clearArea(const Position& from, const Position& to)
++{
++    if(from.z != to.z || from.z > g_gameConfig.getMapMaxZ())
++        return 0;
++    int x1 = std::min(from.x, to.x), x2 = std::max(from.x, to.x);
++    int y1 = std::min(from.y, to.y), y2 = std::max(from.y, to.y);
++    if(x2 - x1 > 2048 || y2 - y1 > 2048)
++        return 0;
++    int cleared = 0;
++    for(int y = y1; y <= y2; ++y) {
++        for(int x = x1; x <= x2; ++x) {
++            Position pos(x, y, from.z);
++            if(!hasBlock(pos))
++                continue;
++            MinimapBlock& block = getBlock(pos);
++            Point offsetPos = getBlockOffset(Point(x, y));
++            if(block.getTile(x - offsetPos.x, y - offsetPos.y) == MinimapTile())
++                continue;
++            block.resetTile(x - offsetPos.x, y - offsetPos.y);
++            block.mustUpdate();
++            ++cleared;
++            // keep what the client holds right now (the tiles in view)
++            if(const TilePtr& tile = g_map.getTile(pos))
++                updateTile(pos, tile);
++        }
++    }
++    return cleared;
++}
++
+ void Minimap::draw(const Rect& screenRect, const Position& mapCenter, float scale, const Color& color)
+ {
+     if(screenRect.isEmpty())
+--- a/src/client/minimap.h
++++ b/src/client/minimap.h
+@@ -86,6 +86,8 @@
+     void terminate();
+ 
+     void clean();
++    // forget the seen tiles of a rectangle of one floor (a rebuilt instance area); tiles in view stay
++    int clearArea(const Position& from, const Position& to);
+ 
+     void draw(const Rect& screenRect, const Position& mapCenter, float scale, const Color& color);
+     Point getTilePoint(const Position& pos, const Rect& screenRect, const Position& mapCenter, float scale);

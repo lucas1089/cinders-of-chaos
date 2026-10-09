@@ -5,7 +5,7 @@
 --                     note {id, title, date, part, parts, intro, sections = [{name, kind, cont, items = [{text, level,
 --                           lead}]}]}   a long note comes in parts; PatchNotesView.join puts them back together
 --   client -> server  open {id?} | get {id} | seen {id} | auto {enabled} | closed (window hidden)
--- Opened from the top menu (Chaos -> Patch Notes, toggle()) and with !patchnotes. At login the server sends `auto` once
+-- Opened from the top menu (Social > Patch Notes, toggle()). At login the server sends `auto` once
 -- per unseen week, in its turn in the server's login window queue (after the Daily Reward). The window also waits
 -- by itself while the Daily Reward window (game_daily) is visible, or expected (PatchNotesView.autoStep), so the two
 -- never stack; game_daily in turn waits while this window (id patchNotesWindow) is on screen. Drawing and that rule are in patchnotesview.lua (tested).

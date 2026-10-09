@@ -1,4 +1,4 @@
-// Upcoming events window (game_invasion): invasions, the running world event, the Victory buff. Opened by !invasion.
+// Upcoming events window (game_invasion): invasions, the running world event, the Victory buff. Opened from the menu (Adventure > Events).
 InvasionEventRow < UIWidget
   height: 20
   margin-top: 2

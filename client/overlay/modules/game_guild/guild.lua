@@ -7,7 +7,7 @@
 --                     openModule {name}          (the hall's crafting bench opens game_crafting)
 --   client -> server  open {tab} | refresh {tab} | deposit {amount} | withdraw {amount} | buyHall {from} |
 --                     upgrade {key} | payRent | take {id} | scroll
--- !guild opens the window from the chat; the top menu (Social -> Guild) calls toggle().
+-- The top menu (Social -> Guild) calls toggle().
 
 local OPCODE = 252
 local TABS = {

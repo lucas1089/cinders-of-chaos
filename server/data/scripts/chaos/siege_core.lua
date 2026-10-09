@@ -336,7 +336,7 @@ function S.calendarEvent(cfg)
 		colorlight = cfg.calendar and cfg.calendar.colorlight or "#c0392b",
 		colordark = cfg.calendar and cfg.calendar.colordark or "#5e1a12",
 		description = string.format("%02d:%02d server time: signed-up guilds fight for the Chaos Obelisk. "
-			.. "Guild leaders sign up with !siege join (at least %d members).", cfg.hour or 20, cfg.minute or 0, cfg.minMembers or 1)}
+			.. "Guild leaders sign up in Adventure > Guild Siege (at least %d members).", cfg.hour or 20, cfg.minute or 0, cfg.minMembers or 1)}
 end
 
 -- seconds -> "2d 3h", "5h 12m", "12m" (until the next siege)

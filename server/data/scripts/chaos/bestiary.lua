@@ -1,4 +1,4 @@
--- Bestiary and kill tasks (client game_bestiary, extended opcode ChaosOpcodes.bestiary, !bestiary, !tasks)
+-- Bestiary and kill tasks (client game_bestiary, extended opcode ChaosOpcodes.bestiary)
 --
 -- Bestiary: an entry for every monster the server knows (Game.getMonsterTypes, minus scenery and summons:
 -- bestiary_config.lua minExp / excludeNames / excludePatterns), unlocked by kills in four stages (Discovered, Studied,
@@ -1046,34 +1046,3 @@ end
 ext:type("extendedopcode")
 ext:register()
 
--- !bestiary [monster name]: the window (on that monster's entry); !tasks: the task board
-local function onBestiary(player, words, param)
-	sendSummary(player, true)
-	param = tostring(param or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
-	local e = param ~= "" and X.cat().byKey[param]
-	if e then
-		sendEntry(player, e.id)
-	elseif param ~= "" then
-		player:sendCancelMessage("No bestiary entry with that name.")
-	end
-	return false
-end
-
-local function onTasks(player, words, param)
-	sendBoard(player)
-	Chaos.send(player, OPCODE, "show", {tab = "tasks"})
-	return false
-end
-
-for _, words in ipairs({"!bestiary", "/bestiary"}) do
-	local talk = TalkAction(words)
-	talk.onSay = onBestiary
-	talk:separator(" ")
-	talk:register()
-end
-for _, words in ipairs({"!tasks", "/tasks"}) do
-	local talk = TalkAction(words)
-	talk.onSay = onTasks
-	talk:separator(" ")
-	talk:register()
-end

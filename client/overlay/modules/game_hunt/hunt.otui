@@ -218,7 +218,7 @@ ChaosMainWindow
     text-align: left
     text-wrap: true
     height: 28
-    !text: tr('!hunt pause | resume | reset')
+    !text: tr('Alt+H opens and closes this window.')
     !tooltip: tr('Loot is counted at NPC sell prices (coins at face value), supplies at NPC buy prices.')
 
   ChaosButton

@@ -1,4 +1,4 @@
--- Name plates (client game_nameplate, extended opcode ChaosOpcodes.nameplate, !title)
+-- Name plates (client game_nameplate, extended opcode ChaosOpcodes.nameplate)
 --
 -- Over every player the client draws a stack: the active title (coloured by its source), the guild in braces, and the
 -- name on a small frame (base patch 0022). This script tells the clients what to draw; the titles come from the
@@ -208,7 +208,7 @@ function startup.onStartup()
 end
 startup:register()
 
--- ---------------------------------------------------------------- !title
+-- ---------------------------------------------------------------- title choice (the Achievements window)
 local function describe(t, active)
 	return t.text .. (t == active and " (active)" or "")
 end
@@ -230,8 +230,7 @@ local function onTitle(player, words, param)
 			parts[#parts + 1] = describe(t, active)
 		end
 		player:sendTextMessage(MESSAGE_INFO_DESCR, "Your titles: " .. table.concat(parts, ", ") ..
-			(choice == "none" and " (hidden)" or "") .. ". Use !title <name> to show one, !title none to hide it, " ..
-			"!title auto for the newest.")
+			(choice == "none" and " (hidden)" or "") .. ". Pick one in the Achievements window.")
 		return false
 	end
 	if lower == "none" or lower == "off" or lower == "hide" then
@@ -245,7 +244,7 @@ local function onTitle(player, words, param)
 	else
 		local t = N.find(list, param)
 		if not t then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, "You do not hold the title \"" .. param .. "\". !title lists yours.")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, "You do not hold the title \"" .. param .. "\".")
 			return false
 		end
 		saveChoice(player, t.key)
@@ -255,7 +254,8 @@ local function onTitle(player, words, param)
 	return false
 end
 
-local talk = TalkAction("!title")
-talk.onSay = onTitle
-talk:separator(" ")
-talk:register()
+-- the Achievements window's title selector (achievements.lua, action "title"): "auto", "none" or a title's text
+function N.setTitle(player, choice)
+	return onTitle(player, "", choice)
+end
+

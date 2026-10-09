@@ -5,13 +5,13 @@
 $h = static function ($v): string { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); };
 $sections = array(
 	'start' => array('Your first steps', array(
-		'<strong>Tutorial island.</strong> New characters start on a small island with five stations: fight, cast your first spell, spend a passive point, use a Chaos Orb, and learn about keystones, bounties and the store. Each station opens the next gate. You can skip it any time (<code>!skiptutorial</code>), and nobody can die there.',
+		'<strong>Tutorial island.</strong> New characters start on a small island with five stations: fight, cast your first spell, spend a passive point, use a Chaos Orb, and learn about keystones, bounties and the store. Each station opens the next gate. You can skip it any time (Character > Services > Leave Tutorial), and nobody can die there.',
 		'<strong>Starter kit per class:</strong> weapon, armour, potions, food, tools, a temple teleport scroll and some gold, chosen for your class: arrows for Rangers, a second dagger for Ninjas, and so on.',
 		'<strong>Milestone gifts</strong> at levels 20, 50, 100 and 200: potions for your role and Chaos Orbs.',
 	)),
 	'tree' => array('Passive tree and Paragon', array(
 		'<strong>Passive tree:</strong> over 600 nodes, with points from levels and not enough to take everything, so every build is a choice. Class keystones change how you play: <em>Cleaving Arc</em> (two-handed hits strike everything around you), <em>Ricochet</em> (arrows bounce to another target), <em>Arcane Echo</em> (spells can cast a second time) and the Illusionist party auras.',
-		'<strong>Build codes:</strong> export your tree as a short code (<code>!build export</code>) and import someone else\'s. The tree previews it first.',
+		'<strong>Build codes:</strong> export your tree as a short code (the passive tree's Build Code panel) and import someone else\'s. The tree previews it first.',
 		'<strong>Respec:</strong> right-click a node to refund just that node, or reset the whole tree; both are priced by your level. Resets are free below level 50 and once after a class change.',
 		'<strong>Paragon:</strong> after level 1000 every level gives a Paragon point for small, capped bonuses in four categories.',
 	)),
@@ -20,33 +20,33 @@ $sections = array(
 		'<strong>Item levels and modifiers:</strong> elemental damage, absorbs, skills, critical hits, life and mana leech. About 50 uniques with fixed, build-defining stats; some only drop from bosses.',
 		'<strong>Monster tiers:</strong> every spawn can roll Magic, Rare or Legendary, with modifiers such as <em>Blazing, Chilling, Venomous, Vampiric</em> or <em>Berserker</em>. Killing one can trigger an ambush.',
 		'<strong>Treasure goblins:</strong> a very rare, cowardly goblin that flees, blinks away and escapes 18 seconds after the first hit. Catch it in time for a hoard.',
-		'<strong>Loot filter</strong> (<code>!lootfilter</code>), a loot channel with clickable item icons, loot rays for the best drops, Rarity Autoloot, autoloot, auto seller, bank and stash.',
+		'<strong>Loot filter</strong> (Hunt > Loot Filter), a loot channel with clickable item icons, loot rays for the best drops, Rarity Autoloot, autoloot, auto seller, bank and stash.',
 	)),
 	'crafting' => array('Crafting', array(
-		'Orbs reshape your gear at the <strong>Crafting Bench</strong> (<code>!craft</code>): Transmutation and Alchemy turn normal items magic, Exalted adds a modifier, Annulment removes one, Scouring makes an item normal again, Chaos rerolls it with the same rarity and Divine with a new one.',
+		'Orbs reshape your gear at the <strong>Crafting Bench</strong> (Economy > Crafting Bench): Transmutation and Alchemy turn normal items magic, Exalted adds a modifier, Annulment removes one, Scouring makes an item normal again, Chaos rerolls it with the same rarity and Divine with a new one.',
 		'Orbs drop from monsters (more from tiered ones and bosses), from bounties and the weekly chest, and are sold in the store. Uniques cannot be crafted.',
 	)),
 	'endgame' => array('Endgame', array(
 		'<strong>World bosses:</strong> a portal opens at every temple and one of five colossal bosses appears: Kaelgor the Infernal Warlord, Skaldra the Rime Queen, The Rotmother, Nyxareth the Void Archon or Vharok the Blood Colossus. Everyone who does real damage gets a reward.',
-		'<strong>Bounty board</strong> (<code>!bounty</code>): daily "kill X in Y" contracts per level band that pay orbs; seven in a week earn the weekly bounty chest.',
-		'<strong>Rifts</strong> (<code>!rift</code>): a Rift Key opens a 10-minute instance for you and up to 3 party members. Keys have a tier (1-15) and 1-3 modifiers; harder modifiers raise the rewards. Kill the Guardian to seal the rift. A crash refunds your key.',
-		'<strong>Infinity Tower</strong> (<code>!tower</code>) alone or with a party, <strong>dungeons</strong>, and 17 level-scaled Chaos monsters (levels 650-1000) in the deepest hunting grounds.',
+		'<strong>Bounty board</strong> (Adventure > Bounty Board): daily "kill X in Y" contracts per level band that pay orbs; seven in a week earn the weekly bounty chest.',
+		'<strong>Rifts</strong> (Adventure > Rifts): a Rift Key opens a 10-minute instance for you and up to 3 party members. Keys have a tier (1-15) and 1-3 modifiers; harder modifiers raise the rewards. Kill the Guardian to seal the rift. A crash refunds your key.',
+		'<strong>Infinity Tower</strong> (Adventure > Infinity Tower) alone or with a party, <strong>dungeons</strong>, and 17 level-scaled Chaos monsters (levels 650-1000) in the deepest hunting grounds.',
 		'<strong>Events:</strong> Blood Moon weekends (+50% experience), Chaos Rift Wednesdays (double tiered spawns), Loot Frenzy Fridays, and a daily boosted creature and boss.',
 	)),
 	'seasons' => array('Seasons', array(
-		'Start fresh with a <strong>season character</strong> (<code>!season join</code> on a new character) and race on the season ladder. Season characters trade, mail, party and loot only with their own season.',
+		'Start fresh with a <strong>season character</strong> (Adventure > Season, Join, on a new character) and race on the season ladder. Season characters trade, mail, party and loot only with their own season.',
 		'Season uniques, and a reward track of outfits, addons, mounts and titles, unlocked for your whole account and kept forever. When the season ends, season characters join the normal world with everything they earned. See <a href="page.php?plugin=chaos&amp;p=seasons">Seasons</a>.',
 	)),
 	'pvp' => array('PvP', array(
-		'<strong>Ranked arena</strong> (<code>!arena</code>): 1v1 and 2v2 with an Elo rating per mode, matched by rating and level. Nobody really dies; each win pays a Chaos Orb.',
-		'<strong>Guild Siege</strong> (<code>!siege</code>): every Saturday at 20:00, up to four guilds per arena fight over the Chaos Obelisk. The winners are Siege Champions for a week: a title and +5% experience.',
+		'<strong>Ranked arena</strong> (Adventure > Arena): 1v1 and 2v2 with an Elo rating per mode, matched by rating and level. Nobody really dies; each win pays a Chaos Orb.',
+		'<strong>Guild Siege</strong> (Adventure > Guild Siege): every Saturday at 20:00, up to four guilds per arena fight over the Chaos Obelisk. The winners are Siege Champions for a week: a title and +5% experience.',
 	)),
 	'boards' => array('Leaderboards and titles', array(
-		'Weekly boards (<code>!leaderboard</code>) reset every Monday: World Boss damage, Bounty Hunter, Rifts, Goblin Slayer, Guild Siege, Arena 1v1 and 2v2. The top 3 of each board earn a title for the next week and orbs. The all-time Class Ladder ranks the highest characters of every class. See <a href="page.php?plugin=chaos&amp;p=leaderboards">Leaderboards</a>.',
+		'Weekly boards (Social > Leaderboards) reset every Monday: World Boss damage, Bounty Hunter, Rifts, Goblin Slayer, Guild Siege, Arena 1v1 and 2v2. The top 3 of each board earn a title for the next week and orbs. The all-time Class Ladder ranks the highest characters of every class. See <a href="page.php?plugin=chaos&amp;p=leaderboards">Leaderboards</a>.',
 	)),
 	'qol' => array('Quality of life', array(
 		'<strong>Combat visuals:</strong> crits, dodges and reflects get their own sprites; elemental weapon damage shows as its own coloured number.',
-		'<strong>Patch notes in the client</strong>, a server-counted <strong>hunt tracker</strong> (<code>!hunt</code>), <strong>daily rewards and login streaks</strong> with titles, <strong>waystones</strong> with account upgrades, and toast notifications.',
+		'<strong>Patch notes in the client</strong>, a server-counted <strong>hunt tracker</strong> (Hunt > Hunt Tracker), <strong>daily rewards and login streaks</strong> with titles, <strong>waystones</strong> with account upgrades, and toast notifications.',
 		'<strong>Store</strong> (Chaos Coins): stamina refill, temple teleport, bottomless loot pouch, auto seller, training weapons, world buffs, name / vocation / sex change, blessings, passive tree reset, crafting orbs.',
 	)),
 );
@@ -74,7 +74,7 @@ $sections = array(
 
 <div class="chaos-box" id="classes">
 	<h2 class="chaos-heading">Classes</h2>
-	<p class="chaos-lead">You start as one of four base classes. At level 100 you <strong>ascend</strong> into one of two specialisations (<code>!ascend</code>). Every class has its own Chaos spells with custom names, icons and effects; the spellbook (<code>!spells</code>) lists them all. Balance is measured on test dummies at levels 300 and 1000, so every class keeps a clear role in a group.</p>
+	<p class="chaos-lead">You start as one of four base classes. At level 100 you <strong>ascend</strong> into one of two specialisations at the Ascendant Oracle. Every class has its own Chaos spells with custom names, icons and effects; the spellbook (Character > Spellbook) lists them all. Balance is measured on test dummies at levels 300 and 1000, so every class keeps a clear role in a group.</p>
 	<?php if (function_exists('chaos_class_lines')): ?>
 	<table class="chaos-table">
 		<thead><tr><th>Base class</th><th>Plays as</th><th>Ascensions</th></tr></thead>

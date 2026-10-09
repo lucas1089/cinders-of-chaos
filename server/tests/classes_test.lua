@@ -28,7 +28,7 @@ id, why = C.ascensionFor(THIEF, 300, "ninja", false, false)
 eq(id, nil, "outside a protection zone refused"); eq(why:find("protection zone") ~= nil, true)
 eq(C.ascensionFor(THIEF, 300, "ninja", true, true), nil, "in combat refused")
 id, why = C.ascensionFor(THIEF, 300, "", true, false)
-eq(id, nil, "no choice"); eq(why:find("ninja|samurai", 1, true) ~= nil, true, "lists the choices")
+eq(id, nil, "no choice"); eq(why:find("ninja or samurai", 1, true) ~= nil, true, "lists the choices")
 eq(C.ascensionFor(THIEF, 300, "knight", true, false), nil, "not a choice of the thief")
 id, why = C.ascensionFor(NINJA, 300, "samurai", true, false)
 eq(id, nil, "final: a ninja cannot switch"); eq(why:find("Vocation Change") ~= nil, true, "points to the store")
@@ -43,7 +43,7 @@ for word, want in pairs({juggernaut = 8, berserker = 14}) do eq(C.ascensionFor(4
 for word, want in pairs({deadeye = 7, beastmaster = 15}) do eq(C.ascensionFor(3, 100, word, true, false), want, "ranger " .. word) end
 for word, want in pairs({elementalist = 5, illusionist = 10}) do eq(C.ascensionFor(1, 100, word, true, false), want, "mystic " .. word) end
 id, why = C.ascensionFor(4, 300, "", true, false)
-eq(why:find("berserker|juggernaut", 1, true) ~= nil, true, "lists the warrior's choices: " .. why)
+eq(why:find("berserker or juggernaut", 1, true) ~= nil, true, "lists the warrior's choices: " .. why)
 eq(C.ascensionFor(3, 300, "berserker", true, false), nil, "not a choice of the ranger")
 eq(C.ascensionFor(1, 99, "illusionist", true, false), nil, "level rule for every class")
 id, why = C.ascensionFor(8, 300, "berserker", true, false)
@@ -57,7 +57,7 @@ eq(select(2, C.ascensionFor(4, 100, "juggernaut", true, false)), false, "a norma
 id, why = C.ascensionFor(8, 300, "juggernaut", true, false, 14)
 eq(id, nil, "already a juggernaut"); eq(why:find("stays") ~= nil, true, "the switch is kept")
 id, why = C.ascensionFor(8, 300, "elementalist", true, false, 14)
-eq(id, nil, "only the other class of the line"); eq(why:find("!ascend berserker", 1, true) ~= nil, true, why)
+eq(id, nil, "only the other class of the line"); eq(why:find("to berserker", 1, true) ~= nil, true, why)
 eq(C.ascensionFor(8, 300, "berserker", false, false, 14), nil, "free switch: still a protection zone")
 eq(C.ascensionFor(8, 300, "berserker", true, true, 14), nil, "free switch: not in combat")
 eq(C.ascensionFor(7, 300, "beastmaster", true, false, 15), 15, "old royal paladin -> beastmaster")
@@ -93,7 +93,7 @@ eq(sql[6], "UPDATE `players` SET `vocation` = 10 WHERE `vocation` = 6", "elder d
 eq(sql[7], "UPDATE `players` SET `vocation` = 1 WHERE `vocation` = 9", "illusionist -> mystic")
 for i = 1, 4 do assert(sql[i]:find("vocation") and sql[i]:find("players"), "storages and tree run before the ids move") end
 local text = C.migrationMessage("Elite Knight", "Juggernaut", "berserker", true)
-eq(text:find("Elite Knight is now Juggernaut") ~= nil, true, text); eq(text:find("!ascend berserker", 1, true) ~= nil, true)
+eq(text:find("Elite Knight is now Juggernaut") ~= nil, true, text); eq(text:find("(berserker): Character > Services", 1, true) ~= nil, true, text)
 eq(text:find("passive tree") ~= nil, true, "mentions the reset")
 eq(C.migrationMessage("Druid", "Mystic", nil, true):find("ascend") == nil, true, "no switch offered")
 

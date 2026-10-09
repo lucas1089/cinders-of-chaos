@@ -1,27 +1,38 @@
--- Chaos crafting: currency orbs that change the rarity modifiers of an item (ChaosCrafting).
--- Used by data/scripts/chaos/crafting.lua (crafting bench window, !craft, use-with on the orbs) and tested by
--- server/tests/crafting_test.lua against a mocked item. Lua 5.1 / LuaJIT compatible.
+-- Chaos crafting: the whole modifier roll of an item (ChaosCrafting.forge) and the currency orbs that change it.
+-- Used by data/scripts/chaos/crafting.lua (crafting bench window, !craft, use-with on the orbs), by the loot layer
+-- (loot.lua: every gear drop with a rarity) and by every script that hands out gear with a rarity (ChaosCrafting
+-- .createItem); tested by server/tests/crafting_test.lua against a mocked item. Lua 5.1 / LuaJIT compatible.
 --
--- How the base server stores a rarity (src/item.cpp Item::applyRarityEffects, Game.createItemWithRarity):
+-- How an item carries a rarity and its modifiers:
 --   custom attribute "rarity"            1..15 (Common .. Transcendent, names in Chaos loot_config.lua gear.names)
---   custom attribute "combatPowerLevel"  item level rolled inside the tier's level window (shown as "Level: N")
---   attack/defense/armor/hit chance      raised once by a small tier bonus (item attributes)
---   one custom attribute per modifier    rarity_<x>Absorb (percent), rarity_<skill>Skill, rarity_maglevelSkill,
---                                        rarity_criticalHitChance + rarity_criticalHitAmount (always a pair, same for
---                                        mana and life leech), rarity_element<x> (weapons only, % extra damage)
---   the description attribute           "Level: 57, Physical +2%, Sword +1, Critical Chance +1%, Critical Hit +1%,
---                                        Element: Fire +5% dmg" - the look text and the client tooltip show this text
--- customs/rarity/base_rarity.lua reads the modifier attributes when the item is equipped (conditions for skills,
--- critical and leech; storages for absorbs and element damage), so an item that is changed while it sits in the
--- backpack is picked up correctly the next time it is equipped. Custom attribute keys are case-insensitive.
+--   custom attribute "chaos_ilvl"        the item level (1..150, from the drop's source: chaos_item_mods.lua
+--                                        M.sourceLevel), mirrored into "combatPowerLevel" (the client and the engine
+--                                        show that one); an item from before item levels has only "combatPowerLevel"
+--   attack/defense/armor/hit chance      raised once by a small bonus of the rarity and the item level
+--   one custom attribute per modifier    the engine's types: rarity_<x>Absorb (percent), rarity_<skill>Skill,
+--                                        rarity_maglevelSkill, rarity_criticalHitChance + rarity_criticalHitAmount
+--                                        (always a pair, same for mana and life leech), rarity_element<x> (weapons
+--                                        only, % extra damage); and the Chaos types "chaos_mod_<key>"
+--   "ct_<attribute key>" per modifier    its tier, T1 (lowest) .. T8 (chaos_item_mods.lua); missing on old items: the
+--                                        tier then follows from the value
+--   the description attribute           "Item Level: 57. Prefixes: Sword +2 (T3); Critical Chance +1%, Critical Hit
+--                                        +2% (T2). Suffixes: Fire +3% (T4)" - the look text shows this text
+-- The engine's own roll (src/item.cpp Item::applyRarityEffects, Monster::dropLoot) is not used for new items any more:
+-- C.forge rolls every modifier here, tiers by the item level, how many by the rarity, prefixes and suffixes apart.
+-- customs/rarity/base_rarity.lua reads the engine types' attributes when the item is equipped (conditions for skills,
+-- critical and leech; storages for absorbs and element damage), so the attribute keys stay the engine's.
+-- Custom attribute keys are case-insensitive.
 --
 -- A "modifier" here is one line of the description: one absorb, one skill, one leech/critical pair, one element or
--- one Chaos modifier (data/lib/chaos_item_mods.lua: attack speed, life on kill, ... stored as "chaos_mod_<key>").
--- Uniques (custom attribute "chaos_unique", data/lib/chaos_unique_items.lua) are never touched.
+-- one Chaos modifier. Uniques (custom attribute "chaos_unique", data/lib/chaos_unique_items.lua) are never touched.
 --
 -- Rift Keys (rift.lua: item 10155 with action id 47401, custom attributes "rift_tier" and "rift_mods") are craftable
 -- too, the map way: the orbs change the key's modifiers inside the rift's own pool and ranges (rift_core.lua), see
 -- C.keyCheck / C.keyApply below.
+--
+-- New orbs: C.addOrb{key, id, name, text, keyText, check = fn(item) -> ok, reason, apply = fn(item) -> ok, result,
+-- preview = fn(item) -> text}. The building blocks: C.readMods, C.candidates, C.rollAffix, C.removeMod, C.forge,
+-- C.rerollValues, C.rerollTiers, C.recreate, C.rewriteDescription.
 
 ChaosCrafting = ChaosCrafting or {}
 local C = ChaosCrafting
@@ -42,25 +53,25 @@ C.config = {
 	-- stackable rune stones without an items.xml entry; server/tools/install_crafting.py gives them their names.
 	orbs = {
 		{key = "transmutation", id = 29851, name = "Orb of Transmutation",
-			text = "Turns a normal item into a Common or Uncommon one with random modifiers.",
+			text = "Turns a normal item into a Common or Uncommon one with random modifiers (tiers by its item level).",
 			keyText = "Gives a Rift Key without modifiers one modifier."},
 		{key = "alchemy", id = 24691, name = "Orb of Alchemy",
-			text = "Turns a normal item into a Rare, Epic or Legendary one with random modifiers.",
+			text = "Turns a normal item into a Rare, Epic or Legendary one with random modifiers (tiers by its item level).",
 			keyText = "Gives a Rift Key without modifiers two or three modifiers."},
 		{key = "exalted", id = 29855, name = "Exalted Orb",
-			text = "Adds one random modifier to an item with a rarity that has a free modifier slot.",
+			text = "Adds one random modifier on an open prefix or suffix of an item with a rarity.",
 			keyText = "Adds one modifier to a Rift Key (three at most)."},
 		{key = "annulment", id = 24697, name = "Orb of Annulment",
 			text = "Removes one random modifier.",
 			keyText = "Removes one random modifier of a Rift Key."},
 		{key = "scouring", id = 24688, name = "Orb of Scouring",
-			text = "Removes the rarity and every modifier: the item becomes a normal one.",
+			text = "Removes the rarity and every modifier: the item becomes a normal one (it keeps its item level).",
 			keyText = "Removes every modifier of a Rift Key."},
 		{key = "chaos", id = 29856, name = "Chaos Orb",
-			text = "Rerolls the item level and the modifiers of an item with a rarity (same rarity).",
+			text = "Rerolls every modifier of an item with a rarity (same rarity and item level).",
 			keyText = "Rerolls the modifiers of a Rift Key (one to three new ones)."},
 		{key = "divine", id = 29857, name = "Divine Orb",
-			text = "Rolls a new random rarity for the item, often none (the stock Divine Orb).",
+			text = "Rolls a new random rarity for the item, often none (the stock Divine Orb); the item level stays.",
 			keyText = "Rerolls the values of a Rift Key's modifiers inside their ranges."},
 		-- gems and sockets (chaos_gems_config.lua socketOrb; install_gems.py names the rune stone)
 		{key = "sockets", id = ChaosGems.config.socketOrb.id, name = ChaosGems.config.socketOrb.name,
@@ -72,22 +83,11 @@ C.config = {
 	rarityNames = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Exotic", "Mythic", "Chaos", "Eternal",
 		"Divine", "Phantasmal", "Celestial", "Cosmic", "Abyssal", "Transcendent"},
 
-	-- maximum number of modifiers per rarity. The stock roll gives a weapon 2/3/3/4/4/5/5/5/6/6/6/6/6/8/8 modifiers
-	-- (one fewer on other gear: no element); every rarity allows one more than a weapon rolls.
-	maxMods = {3, 4, 4, 5, 5, 6, 6, 6, 7, 7, 7, 7, 7, 9, 9},
+	-- the attack / defense / armor / hit chance bonus of a rarity (item.cpp's table): {min, max}; the bonus is
+	-- min + floor(item level x (max - min + 1) / 100)
+	baseBonus = {{1, 1}, {1, 2}, {1, 2}, {1, 3}, {1, 3}, {2, 4}, {2, 5}, {3, 6}, {3, 7}, {4, 8}, {4, 9}, {5, 10},
+		{6, 10}, {7, 12}, {9, 15}},
 
-	-- value ranges per rarity, copied from item.cpp: absorbs, skills, critical and leech use absorbRange (a critical /
-	-- leech chance is C.specialChance of the roll, its amount the roll), element damage uses elementRange
-	absorbRange = {{1, 1}, {1, 1}, {1, 1}, {1, 2}, {1, 2}, {1, 3}, {1, 3}, {1, 4}, {1, 4}, {2, 5},
-		{2, 5}, {2, 5}, {3, 6}, {4, 6}, {5, 6}},
-	elementRange = {{1, 3}, {3, 6}, {4, 8}, {5, 10}, {6, 12}, {7, 14}, {8, 16}, {9, 18}, {10, 20}, {12, 22},
-		{14, 24}, {16, 26}, {18, 28}, {20, 30}, {25, 40}},
-
-	-- Exalted Orb: weight of each modifier group (a group with nothing left to add is skipped). chaos = the Chaos
-	-- modifiers of chaos_item_mods.lua (only those the item's kind may get)
-	groupWeights = {absorb = 30, skill = 30, special = 25, element = 15, chaos = 25},
-	-- weight of a skill inside the skill group: profession skills are rarer than combat skills
-	skillWeights = {combat = 4, profession = 1},
 	maxElements = 1, -- element modifiers per weapon (the stock roll never gives more than one)
 
 	-- Orbs of Transmutation and Alchemy: {rarity, weight}
@@ -140,9 +140,12 @@ C.skills = {
 	{key = "rarity_maglevelSkill", label = "Magic", kind = "combat"}
 }
 C.specials = {
-	{key = "rarity_criticalHitChance", key2 = "rarity_criticalHitAmount", label = "Critical Chance", label2 = "Critical Hit"},
-	{key = "rarity_manaLeechChance", key2 = "rarity_manaLeechAmount", label = "Mana Chance", label2 = "Mana Amount"},
-	{key = "rarity_lifeLeechChance", key2 = "rarity_lifeLeechAmount", label = "Life Chance", label2 = "Life Amount"}
+	{key = "rarity_criticalHitChance", key2 = "rarity_criticalHitAmount", label = "Critical Chance", label2 = "Critical Hit",
+		kind = "critical"},
+	{key = "rarity_manaLeechChance", key2 = "rarity_manaLeechAmount", label = "Mana Chance", label2 = "Mana Amount",
+		kind = "leech"},
+	{key = "rarity_lifeLeechChance", key2 = "rarity_lifeLeechAmount", label = "Life Chance", label2 = "Life Amount",
+		kind = "leech"}
 }
 C.elements = {
 	{key = "rarity_elementfire", label = "Fire"},
@@ -156,14 +159,88 @@ C.elements = {
 }
 
 C.orbByKey, C.orbById = {}, {}
-for _, orb in ipairs(C.config.orbs) do
+local function indexOrb(orb)
 	C.orbByKey[orb.key] = orb
 	C.orbById[orb.id] = orb
+end
+for _, orb in ipairs(C.config.orbs) do
+	indexOrb(orb)
+end
+
+-- add an orb (orbs v2): {key, id, name, text, keyText, check, apply, preview}. On gear the orb's own check / apply /
+-- preview run instead of the built-in rules (the common ones - gear, unique, stack - are checked first); Rift Keys
+-- refuse it unless it has keyCheck / keyApply. crafting.lua registers a use-with action for every orb in
+-- C.config.orbs when it loads, so add orbs before it (a data/lib file).
+function C.addOrb(orb)
+	assert(type(orb) == "table" and orb.key and orb.id and orb.name, "orb needs key, id and name")
+	if C.orbByKey[orb.key] then
+		return C.orbByKey[orb.key]
+	end
+	table.insert(C.config.orbs, orb)
+	indexOrb(orb)
+	return orb
 end
 
 -- random source; tests replace it
 C.random = function(a, b)
 	return math.random(a, b)
+end
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- the affix list: every modifier type an item may roll, the engine's and the Chaos ones, with side, weight, tiers
+-- {key (attribute), key2, group, label, label2, side, weight, tiers, kinds (nil = any gear), chaosKey, def}
+-- ---------------------------------------------------------------------------------------------------------------
+local affixCache
+function C.affixes()
+	if affixCache then
+		return affixCache
+	end
+	local E, list = M.config.engine, {}
+	local function add(row, e)
+		row.side, row.weight, row.tiers = e.side, e.weight, e.tiers
+		list[#list + 1] = row
+	end
+	for _, a in ipairs(C.absorbs) do
+		add({key = a.key, group = "absorb", label = a.label}, E.absorb)
+	end
+	for _, s in ipairs(C.skills) do
+		add({key = s.key, group = "skill", label = s.label}, s.kind == "profession" and E.profession or E.skill)
+	end
+	for _, s in ipairs(C.specials) do
+		add({key = s.key, key2 = s.key2, group = "special", label = s.label, label2 = s.label2}, E[s.kind])
+	end
+	for _, def in ipairs(M.config.mods) do
+		list[#list + 1] = {key = M.attr(def.key), chaosKey = def.key, group = "chaos", label = def.label, side = def.side,
+			weight = def.weight, tiers = def.tiers, kinds = def.kinds, def = def}
+	end
+	for _, e in ipairs(C.elements) do
+		add({key = e.key, group = "element", label = e.label}, E.element)
+	end
+	affixCache = list
+	C.affixByKey = {}
+	for _, a in ipairs(list) do
+		C.affixByKey[a.key:lower()] = a
+	end
+	return list
+end
+
+-- every custom attribute key a rolled item may carry (rarity, item level, each modifier and its tier mark): what a
+-- script that copies an item by hand (the guild depot) must copy
+function C.attributeKeys()
+	local out = {"rarity", M.ILVL, "combatPowerLevel"}
+	for _, a in ipairs(C.affixes()) do
+		out[#out + 1] = a.key
+		if a.key2 then
+			out[#out + 1] = a.key2
+		end
+		out[#out + 1] = M.tierAttr(a.key)
+	end
+	return out
+end
+
+function C.affixOf(key)
+	C.affixes()
+	return C.affixByKey[tostring(key):lower()]
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -192,9 +269,10 @@ function C.customNumber(item, key)
 	return num(custom(item, key)) or 0
 end
 
+-- the rarity (a drop's rarity is a text while the engine's own roll passes the corpse: C.shield)
 function C.rarityOf(item)
 	local r = math.floor(C.customNumber(item, "rarity"))
-	if r < 0 or r > #C.config.maxMods then
+	if r < 0 or r > #C.config.rarityNames then
 		return 0
 	end
 	return r
@@ -202,6 +280,10 @@ end
 
 function C.rarityName(r)
 	return C.config.rarityNames[r] or ("Rarity " .. tostring(r))
+end
+
+function C.levelOf(item)
+	return M.itemLevelOf(item)
 end
 
 function C.isUnique(item)
@@ -219,38 +301,77 @@ function C.isUnique(item)
 	return false
 end
 
--- list of modifiers in description order: {group, key, key2, label, label2, value}
+-- the tier of a modifier: stored, else from its value (a critical / leech pair: from its amount)
+local function tierOf(item, affix, value)
+	local t = M.storedTier(item, affix.key)
+	if t then
+		return t
+	end
+	return M.tierOfValue(affix.tiers, value)
+end
+
+-- list of modifiers in description order:
+-- {group, key, key2, label, label2, value, value2, tier, side, lo, hi, chaosKey, affix}
 function C.readMods(item)
 	local mods = {}
+	local function push(m, affix, tierValue)
+		m.affix = affix
+		m.side = affix and affix.side or "suffix"
+		m.tier = affix and tierOf(item, affix, tierValue) or 1
+		if affix then
+			local r = M.tierRange(affix.tiers, m.tier)
+			m.lo, m.hi = r[1], r[2]
+			if m.group == "special" then
+				m.lo, m.hi = C.specialChance(r[1]), C.specialChance(r[2]) -- the chance part (value); value2 = amount
+				m.lo2, m.hi2 = r[1], r[2]
+			end
+		end
+		mods[#mods + 1] = m
+	end
+	C.affixes()
 	for _, a in ipairs(C.absorbs) do
 		local v = C.customNumber(item, a.key)
 		if v ~= 0 then
-			mods[#mods + 1] = {group = "absorb", key = a.key, label = a.label, value = v}
+			push({group = "absorb", key = a.key, label = a.label, value = v}, C.affixOf(a.key), v)
 		end
 	end
 	for _, s in ipairs(C.skills) do
 		local v = C.customNumber(item, s.key)
 		if v ~= 0 then
-			mods[#mods + 1] = {group = "skill", key = s.key, label = s.label, value = v}
+			push({group = "skill", key = s.key, label = s.label, value = v}, C.affixOf(s.key), v)
 		end
 	end
 	for _, s in ipairs(C.specials) do
 		local v, v2 = C.customNumber(item, s.key), C.customNumber(item, s.key2)
 		if v ~= 0 or v2 ~= 0 then
-			mods[#mods + 1] = {group = "special", key = s.key, key2 = s.key2, label = s.label, label2 = s.label2,
-				value = v, value2 = v2}
+			push({group = "special", key = s.key, key2 = s.key2, label = s.label, label2 = s.label2, value = v, value2 = v2},
+				C.affixOf(s.key), v2 ~= 0 and v2 or v)
 		end
 	end
 	for _, m in ipairs(M.read(item)) do
-		mods[#mods + 1] = {group = "chaos", key = M.attr(m.key), chaosKey = m.key, label = m.label, value = m.value}
+		push({group = "chaos", key = M.attr(m.key), chaosKey = m.key, label = m.label, value = m.value},
+			C.affixOf(M.attr(m.key)), m.value)
 	end
 	for _, e in ipairs(C.elements) do
 		local v = C.customNumber(item, e.key)
 		if v ~= 0 then
-			mods[#mods + 1] = {group = "element", key = e.key, label = e.label, value = v}
+			push({group = "element", key = e.key, label = e.label, value = v}, C.affixOf(e.key), v)
 		end
 	end
 	return mods
+end
+
+-- prefixes and suffixes on the item: p, s
+function C.sideCounts(mods)
+	local p, s = 0, 0
+	for _, m in ipairs(mods) do
+		if m.side == "prefix" then
+			p = p + 1
+		else
+			s = s + 1
+		end
+	end
+	return p, s
 end
 
 -- text of one modifier, as item.cpp writes it into the description
@@ -267,20 +388,26 @@ function C.modText(m)
 	return string.format("%s +%d%% dmg", m.label, m.value)
 end
 
--- the modifier part of the description: "Physical +2%, Sword +1, Element: Fire +5% dmg"
+-- with the tier: "Sword +2 (T3)"
+function C.modTierText(m)
+	return string.format("%s (T%d)", C.modText(m), m.tier or 1)
+end
+
+-- the modifier part of the description: "Prefixes: Sword +2 (T3); Fire +5% dmg (T2). Suffixes: Earth +2% (T4)"
 function C.modsText(mods)
-	local parts, elements = {}, {}
+	local pre, suf = {}, {}
 	for _, m in ipairs(mods) do
-		if m.group == "element" then
-			elements[#elements + 1] = C.modText(m)
-		else
-			parts[#parts + 1] = C.modText(m)
-		end
+		local list = m.side == "prefix" and pre or suf
+		list[#list + 1] = C.modTierText(m)
 	end
-	if #elements > 0 then
-		parts[#parts + 1] = "Element: " .. table.concat(elements, ", ")
+	local parts = {}
+	if #pre > 0 then
+		parts[#parts + 1] = "Prefixes: " .. table.concat(pre, "; ")
 	end
-	return table.concat(parts, ", ")
+	if #suf > 0 then
+		parts[#parts + 1] = "Suffixes: " .. table.concat(suf, "; ")
+	end
+	return table.concat(parts, ". ")
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -337,44 +464,38 @@ function C.canHaveElement(item)
 		and typeNumber(it, "getElementDamage") <= 0
 end
 
--- true when the item has no rarity, no modifiers and no item level (upgrade scripts write one too)
+-- true when the item has no rarity, no modifiers and no rolled level (the +N upgrade scripts write one too; the item
+-- level of a plain drop, "chaos_ilvl", does not count)
 function C.isNormal(item)
 	return C.rarityOf(item) == 0 and #C.readMods(item) == 0 and C.customNumber(item, "combatPowerLevel") == 0
 end
 
 function C.maxMods(rarity)
-	return C.config.maxMods[rarity] or 0
+	return M.maxMods(rarity)
 end
 
--- modifiers that could still be added: list of {group, entry, weight}
-function C.addable(item)
-	local mods = C.readMods(item)
+-- the modifiers that could still be added: list of {entry = affix, weight}. Not on the item yet, allowed on its kind,
+-- an open side (rarity's prefix / suffix limit; rarity = the item's unless given), one element at most on a weapon
+-- that may have one.
+function C.candidates(item, rarity, mods)
+	mods = mods or C.readMods(item)
+	rarity = rarity or C.rarityOf(item)
+	local limit = M.sideLimit(rarity)
 	local have, elements = {}, 0
 	for _, m in ipairs(mods) do
-		have[m.key] = true
+		have[m.key:lower()] = true
 		if m.group == "element" then
 			elements = elements + 1
 		end
 	end
-	local out = {absorb = {}, skill = {}, special = {}, element = {}, chaos = M.addable(item)}
-	for _, a in ipairs(C.absorbs) do
-		if not have[a.key] then
-			out.absorb[#out.absorb + 1] = {entry = a, weight = 1}
-		end
-	end
-	for _, s in ipairs(C.skills) do
-		if not have[s.key] then
-			out.skill[#out.skill + 1] = {entry = s, weight = C.config.skillWeights[s.kind] or 1}
-		end
-	end
-	for _, s in ipairs(C.specials) do
-		if not have[s.key] then
-			out.special[#out.special + 1] = {entry = s, weight = 1}
-		end
-	end
-	if elements < C.config.maxElements and C.canHaveElement(item) then
-		for _, e in ipairs(C.elements) do
-			out.element[#out.element + 1] = {entry = e, weight = 1}
+	local p, s = C.sideCounts(mods)
+	local open = {prefix = p < limit, suffix = s < limit}
+	local kind = M.kindOf(item)
+	local elementOk = elements < C.config.maxElements and C.canHaveElement(item)
+	local out = {}
+	for _, a in ipairs(C.affixes()) do
+		if not have[a.key:lower()] and open[a.side] and M.allowed(a, kind) and (a.group ~= "element" or elementOk) then
+			out[#out + 1] = {entry = a, weight = a.weight}
 		end
 	end
 	return out
@@ -387,6 +508,7 @@ C.reasons = {
 	needNormal = "This orb works only on a normal item (no rarity, no modifiers).",
 	needRarity = "This orb works only on an item with a rarity.",
 	full = "This item has no free modifier slot.",
+	sidesFull = "Every open prefix and suffix of this item is taken.",
 	noMods = "This item has no modifier to remove.",
 	nothingToAdd = "There is no modifier left that this item could get.",
 	unknownOrb = "Unknown orb.",
@@ -394,7 +516,8 @@ C.reasons = {
 	keyNoMods = "This Rift Key has no modifiers.",
 	keyFull = "This Rift Key has the most modifiers a key can have.",
 	keyNothing = "There is no modifier left that this Rift Key could get.",
-	keySockets = "Rift Keys have no sockets."
+	keySockets = "Rift Keys have no sockets.",
+	keyOrb = "This orb does not work on Rift Keys."
 }
 
 -- can this orb be used on this item? returns true or false, reasonCode
@@ -404,6 +527,12 @@ function C.check(orbKey, item)
 		return false, "unknownOrb"
 	end
 	if item and C.isRiftKey(item) then
+		if orb.check and not orb.keyCheck then
+			return false, "keyOrb"
+		end
+		if orb.keyCheck then
+			return orb.keyCheck(item)
+		end
 		return C.keyCheck(orbKey, item)
 	end
 	if not item or not C.isGear(item) then
@@ -423,6 +552,9 @@ function C.check(orbKey, item)
 	if okCount and tonumber(count) and count > 1 then
 		return false, "stack"
 	end
+	if orb.check then
+		return orb.check(item)
+	end
 	local rarity = C.rarityOf(item)
 	if orbKey == "transmutation" or orbKey == "alchemy" then
 		if not C.isNormal(item) then
@@ -439,9 +571,10 @@ function C.check(orbKey, item)
 			if #mods >= C.maxMods(rarity) then
 				return false, "full"
 			end
-			local add = C.addable(item)
-			if #add.absorb + #add.skill + #add.special + #add.element + #add.chaos == 0 then
-				return false, "nothingToAdd"
+			if #C.candidates(item, rarity, mods) == 0 then
+				local p, s = C.sideCounts(mods)
+				local limit = M.sideLimit(rarity)
+				return false, (p >= limit or s >= limit) and "sidesFull" or "nothingToAdd"
 			end
 		elseif orbKey == "annulment" then
 			if #mods == 0 then
@@ -473,12 +606,6 @@ function C.weighted(rows) -- rows = {{value, weight}, ...}
 	return rows[#rows][1]
 end
 
-function C.rollValue(group, rarity)
-	local ranges = group == "element" and C.config.elementRange or C.config.absorbRange
-	local r = ranges[rarity] or ranges[1]
-	return C.random(r[1], r[2])
-end
-
 -- the chance of a critical / leech pair rolled as `v` (the amount keeps v): about two thirds, as engine patch 0004
 -- does since the chance rolls are uniform (1..6 -> 1, 1, 2, 3, 3, 4)
 function C.specialChance(v)
@@ -498,6 +625,196 @@ function C.rollDivineRarity()
 	return 0
 end
 
+-- write one modifier of `affix` at `tier` (value rolled inside the tier unless given). Returns the modifier.
+function C.writeAffix(item, affix, tier, value, rand)
+	rand = rand or C.random
+	local r = M.tierRange(affix.tiers, tier)
+	value = value or rand(r[1], r[2])
+	local m = {group = affix.group, key = affix.key, key2 = affix.key2, label = affix.label, label2 = affix.label2,
+		chaosKey = affix.chaosKey, side = affix.side, tier = tier, lo = r[1], hi = r[2], affix = affix}
+	if affix.group == "chaos" then
+		M.set(item, affix.chaosKey, value, tier)
+		m.value = value
+	elseif affix.group == "special" then
+		m.value, m.value2 = C.specialChance(value), value
+		item:setCustomAttribute(affix.key, m.value)
+		item:setCustomAttribute(affix.key2, value)
+		M.setTier(item, affix.key, tier)
+		m.lo, m.hi, m.lo2, m.hi2 = C.specialChance(r[1]), C.specialChance(r[2]), r[1], r[2]
+	else
+		item:setCustomAttribute(affix.key, value)
+		M.setTier(item, affix.key, tier)
+		m.value = value
+	end
+	return m
+end
+
+-- roll one modifier of `affix` on an item of item level `level`: the tier among those the level allows, the value
+-- inside the tier
+function C.rollAffix(item, affix, level, rand)
+	rand = rand or C.random
+	return C.writeAffix(item, affix, M.rollTier(level, rand), nil, rand)
+end
+
+-- add `n` random modifiers (the rarity's side limits, the item's kind). Returns the added ones.
+function C.rollAffixes(item, rarity, level, n, rand)
+	rand = rand or C.random
+	local added = {}
+	for _ = 1, n or 0 do
+		local affix = M.pick(C.candidates(item, rarity), rand)
+		if not affix then
+			break
+		end
+		added[#added + 1] = C.rollAffix(item, affix, level, rand)
+	end
+	return added
+end
+
+-- remove one modifier (as C.readMods returns it)
+function C.removeMod(item, m)
+	if m.group == "chaos" then
+		M.remove(item, m.chaosKey)
+	else
+		item:removeCustomAttribute(m.key)
+		if m.key2 then
+			item:removeCustomAttribute(m.key2)
+		end
+		M.removeTier(item, m.key)
+	end
+end
+
+-- every modifier and every tier mark goes (rarity and level stay)
+function C.clearMods(item)
+	for _, m in ipairs(C.readMods(item)) do
+		C.removeMod(item, m)
+	end
+	for _, a in ipairs(C.affixes()) do
+		M.removeTier(item, a.key)
+	end
+end
+
+-- new values inside the current tiers (a Divine-style reroll for gear; orbs v2)
+function C.rerollValues(item, rand)
+	for _, m in ipairs(C.readMods(item)) do
+		if m.affix then
+			C.writeAffix(item, m.affix, m.tier, nil, rand)
+		end
+	end
+	C.rewriteDescription(item)
+end
+
+-- new tiers (by the item level) and values for the same modifiers (orbs v2)
+function C.rerollTiers(item, rand)
+	local level = C.levelOf(item)
+	for _, m in ipairs(C.readMods(item)) do
+		if m.affix then
+			C.rollAffix(item, m.affix, level, rand)
+		end
+	end
+	C.rewriteDescription(item)
+end
+
+-- the base stat bonus of a rarity at an item level (item.cpp's formula)
+function C.baseBonusOf(rarity, level)
+	local b = C.config.baseBonus[rarity]
+	if not b then
+		return 0
+	end
+	return b[1] + math.floor((tonumber(level) or 0) * (b[2] - b[1] + 1) / 100)
+end
+
+-- attack / defense / armor / hit chance = the item type's + the bonus (only on a fresh item: the forge of a drop or
+-- of an orb's new copy)
+function C.applyBaseBonus(item, rarity, level)
+	local it = itemType(item)
+	local bonus = C.baseBonusOf(rarity, level)
+	if not it or bonus <= 0 then
+		return
+	end
+	local function raise(attr, method)
+		local base = typeNumber(it, method)
+		if attr and base > 0 then
+			item:setAttribute(attr, base + bonus)
+		end
+	end
+	raise(ITEM_ATTRIBUTE_ATTACK, "getAttack")
+	raise(ITEM_ATTRIBUTE_DEFENSE, "getDefense")
+	raise(ITEM_ATTRIBUTE_ARMOR, "getArmor")
+	raise(ITEM_ATTRIBUTE_HITCHANCE, "getHitChance")
+end
+
+-- the whole roll of an item with a rarity: rarity, item level, base bonus (opts.base ~= false), as many modifiers as
+-- the rarity gets (M.modCount), each tier by the item level, prefixes and suffixes apart; the description. Every
+-- earlier modifier goes. Returns the added modifiers.
+function C.forge(item, rarity, level, rand, opts)
+	rand = rand or C.random
+	level = math.max(1, math.min(M.config.itemLevel.max, math.floor(tonumber(level) or 1)))
+	C.clearMods(item)
+	item:setCustomAttribute("rarity", rarity)
+	item:setCustomAttribute(M.ILVL, level)
+	item:setCustomAttribute("combatPowerLevel", level)
+	if not opts or opts.base ~= false then
+		C.applyBaseBonus(item, rarity, level)
+	end
+	local added = C.rollAffixes(item, rarity, level, M.modCount(rarity), rand)
+	C.rewriteDescription(item)
+	return added
+end
+
+-- the item level an orb uses: the item's own, else one from the item type's required level (old plain items)
+function C.orbLevel(item)
+	local level = C.levelOf(item)
+	if level > 0 then
+		return level
+	end
+	local it = itemType(item)
+	return M.sourceLevel({monsterLevel = math.max(1, it and typeNumber(it, "getMinReqLevel") or 1)})
+end
+
+-- a new item of id with this rarity (0 = plain, keeps only the level) and item level, rolled by C.forge. For every
+-- script that hands out gear (rift chests, world boss, treasure goblin, store, tutorial): use it instead of
+-- Game.createItemWithRarity, whose engine roll ignores item levels and tiers.
+function C.createItem(id, rarity, level, rand)
+	local item = Game.createItem(id, 1)
+	if not item then
+		return nil
+	end
+	rarity = tonumber(rarity) or 0
+	if C.isGear(item) and not C.isUnique(item) then
+		if rarity > 0 then
+			C.forge(item, rarity, level, rand)
+		elseif level then
+			item:setCustomAttribute(M.ILVL, math.max(1, math.floor(level)))
+		end
+	end
+	return item
+end
+
+-- While the engine's rarity pass (Monster::dropLoot, after every onDropLoot callback) runs over a corpse, a forged drop
+-- keeps its rarity as text: the pass rolls only items whose "rarity" is a number, so it leaves ours alone. Every
+-- reader goes through tonumber; C.unshield (item_mods.lua, a tick later, and on the way out of a corpse) makes it a
+-- number again.
+function C.shield(item)
+	local r = C.rarityOf(item)
+	if r > 0 then
+		item:setCustomAttribute("rarity", tostring(r))
+	end
+end
+
+function C.unshield(item)
+	local raw = custom(item, "rarity")
+	if type(raw) == "string" then
+		local r = C.rarityOf(item)
+		if r > 0 then
+			item:setCustomAttribute("rarity", r)
+		else
+			item:removeCustomAttribute("rarity")
+		end
+		return true
+	end
+	return false
+end
+
 -- ---------------------------------------------------------------------------------------------------------------
 -- description
 -- ---------------------------------------------------------------------------------------------------------------
@@ -509,12 +826,12 @@ local function descriptionOf(item)
 	return ""
 end
 
--- rewrite the rarity part of the description from the item's attributes. Text in front of "Level: N" and
--- bracketed upgrade slots behind it ("[Attack+2]", customs/upgrade) are kept.
+-- rewrite the rarity part of the description from the item's attributes. Text in front of "Item Level: N" (or an
+-- old item's "Level: N") and bracketed upgrade slots behind it ("[Attack+2]", customs/upgrade) are kept.
 function C.rewriteDescription(item)
 	local old = G.strip(descriptionOf(item)) -- the sockets section is written again at the end
 	local prefix, rest = old, ""
-	local s = old:find("Level:%s*%-?%d+")
+	local s = old:find("Item Level:%s*%-?%d+") or old:find("Level:%s*%-?%d+")
 	if s then
 		prefix, rest = old:sub(1, s - 1), old:sub(s)
 	end
@@ -522,13 +839,13 @@ function C.rewriteDescription(item)
 	for b in rest:gmatch("%[[^%]]*%]") do
 		slots[#slots + 1] = b
 	end
-	prefix = prefix:gsub("[,%s]+$", "")
-	local body = "Level: " .. math.floor(C.customNumber(item, "combatPowerLevel"))
+	prefix = prefix:gsub("[,%.%s]+$", "")
+	local body = "Item Level: " .. C.levelOf(item)
 	local modsText = C.modsText(C.readMods(item))
 	if modsText ~= "" then
-		body = body .. ", " .. modsText
+		body = body .. ". " .. modsText
 	end
-	local text = prefix ~= "" and (prefix .. ", " .. body) or body
+	local text = prefix ~= "" and (prefix .. ". " .. body) or body
 	if #slots > 0 then
 		text = text .. " " .. table.concat(slots, ", ")
 	end
@@ -541,47 +858,16 @@ end
 -- ---------------------------------------------------------------------------------------------------------------
 -- the orbs that change an item in place
 -- ---------------------------------------------------------------------------------------------------------------
--- Exalted Orb: one new modifier. Returns the added modifier.
+-- Exalted Orb: one new modifier on an open side, its tier by the item level. Returns the added modifier.
 function C.exalt(item)
 	local rarity = C.rarityOf(item)
-	local add = C.addable(item)
-	local groups = {}
-	for group, list in pairs(add) do
-		if #list > 0 and group ~= "chaos" then
-			groups[#groups + 1] = {group, C.config.groupWeights[group] or 1}
-		end
-	end
-	table.sort(groups, function(a, b) return a[1] < b[1] end) -- pairs() order is not stable
-	if #add.chaos > 0 then
-		groups[#groups + 1] = {"chaos", C.config.groupWeights.chaos or 1} -- last, after the engine's groups
-	end
-	local group = C.weighted(groups)
-	if not group then
+	local affix = M.pick(C.candidates(item, rarity), C.random)
+	if not affix then
 		return nil
 	end
-	local rows = {}
-	for _, cand in ipairs(add[group]) do
-		rows[#rows + 1] = {cand.entry, cand.weight}
-	end
-	local entry = C.weighted(rows)
-	if group == "chaos" then
-		local v = M.rollValue(entry, rarity, C.customNumber(item, "combatPowerLevel"), C.random)
-		M.set(item, entry.key, v)
-		C.rewriteDescription(item)
-		return {group = "chaos", key = M.attr(entry.key), chaosKey = entry.key, label = entry.label, value = v}
-	end
-	local value = C.rollValue(group, rarity)
-	local amount = value
-	if group == "special" then
-		value = C.specialChance(amount)
-	end
-	item:setCustomAttribute(entry.key, value)
-	if entry.key2 then
-		item:setCustomAttribute(entry.key2, amount)
-	end
+	local m = C.rollAffix(item, affix, C.orbLevel(item), C.random)
 	C.rewriteDescription(item)
-	return {group = group, key = entry.key, key2 = entry.key2, label = entry.label, label2 = entry.label2,
-		value = value, value2 = entry.key2 and amount or nil}
+	return m
 end
 
 -- Orb of Annulment: one random modifier goes. Returns the removed modifier.
@@ -591,20 +877,13 @@ function C.annul(item)
 		return nil
 	end
 	local m = mods[C.random(1, #mods)]
-	if m.group == "chaos" then
-		M.remove(item, m.chaosKey)
-	else
-		item:removeCustomAttribute(m.key)
-	end
-	if m.key2 then
-		item:removeCustomAttribute(m.key2)
-	end
+	C.removeMod(item, m)
 	C.rewriteDescription(item)
 	return m
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
--- the orbs that make a new copy of the base item (the engine rolls the rarity: Game.createItemWithRarity)
+-- the orbs that make a new copy of the base item
 -- ---------------------------------------------------------------------------------------------------------------
 -- rarity the new copy gets for this orb (0 = a normal copy)
 function C.targetRarity(orbKey, item)
@@ -622,31 +901,26 @@ function C.targetRarity(orbKey, item)
 	return nil
 end
 
--- make the new copy and put it where the old one was (same container). Returns the new item or nil, reason.
-function C.recreate(item, rarity)
+-- make the new copy (rarity and level rolled by C.forge; level = the old item's, which every orb keeps) and put it
+-- where the old one was (same container). Returns the new item or nil, reason.
+function C.recreate(item, rarity, level)
 	local id = item:getId()
-	local newItem
-	if rarity > 0 then
-		newItem = Game.createItemWithRarity(id, 1, rarity)
-	else
-		newItem = Game.createItem(id, 1)
-	end
+	level = level or C.orbLevel(item)
+	local newItem = Game.createItem(id, 1)
 	if not newItem then
 		return nil, "The orb fizzles: the new item could not be made."
-	end
-	if rarity > 0 and C.rarityOf(newItem) ~= rarity then
-		newItem:remove()
-		return nil, "This item cannot carry a rarity."
 	end
 	G.copy(item, newItem) -- sockets and gems survive every orb (chaos_gems.lua)
 	if ChaosSalvage and ChaosSalvage.copyLock then
 		ChaosSalvage.copyLock(item, newItem) -- the item lock too (salvage.lua)
 	end
 	if rarity > 0 then
-		C.rollDropMods(newItem) -- the Chaos modifiers a drop of this rarity gets
-	end
-	if G.count(newItem) > 0 then
-		G.writeDescription(newItem)
+		C.forge(newItem, rarity, level, C.random)
+	else
+		newItem:setCustomAttribute(M.ILVL, level)
+		if G.count(newItem) > 0 then
+			G.writeDescription(newItem)
+		end
 	end
 	local parent = item:getParent()
 	if not parent or not parent.addItemEx then
@@ -672,8 +946,15 @@ function C.apply(orbKey, item)
 	if not ok then
 		return false, C.reasons[reason] or reason
 	end
+	local orb = C.orbByKey[orbKey]
 	if C.isRiftKey(item) then
+		if orb.keyApply then
+			return orb.keyApply(item)
+		end
 		return C.keyApply(orbKey, item)
+	end
+	if orb.apply then
+		return orb.apply(item)
 	end
 	local name = C.itemName(item)
 	if orbKey == "sockets" then
@@ -687,61 +968,51 @@ function C.apply(orbKey, item)
 		if not m then
 			return false, C.reasons.nothingToAdd
 		end
-		return true, {item = item, text = string.format("%s gained %s.", name, C.modText(m)), added = m}
+		return true, {item = item, text = string.format("%s gained %s (%s).", name, C.modTierText(m), m.side), added = m}
 	elseif orbKey == "annulment" then
 		local m = C.annul(item)
 		if not m then
 			return false, C.reasons.noMods
 		end
-		return true, {item = item, text = string.format("%s lost %s.", name, C.modText(m)), removed = m}
+		return true, {item = item, text = string.format("%s lost %s.", name, C.modTierText(m)), removed = m}
 	end
 	local rarity = C.targetRarity(orbKey, item)
 	if not rarity then
 		return false, C.reasons.unknownOrb
 	end
-	local newItem, err = C.recreate(item, rarity)
+	local level = C.orbLevel(item)
+	local newItem, err = C.recreate(item, rarity, level)
 	if not newItem then
 		return false, err
 	end
 	local text
 	if rarity > 0 then
 		local mods = C.readMods(newItem)
-		text = string.format("%s is now %s (level %d): %s.", name, C.rarityName(rarity),
-			math.floor(C.customNumber(newItem, "combatPowerLevel")), #mods > 0 and C.modsText(mods) or "no modifiers")
+		text = string.format("%s is now %s (item level %d): %s.", name, C.rarityName(rarity), C.levelOf(newItem),
+			#mods > 0 and C.modsText(mods) or "no modifiers")
 	else
-		text = string.format("%s is now a normal item.", name)
+		text = string.format("%s is now a normal item (item level %d).", name, level)
 	end
 	return true, {item = newItem, text = text, rarity = rarity}
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
--- Chaos modifiers of a new item (loot layer drops and the copies the Transmutation, Alchemy, Chaos and Divine Orbs
--- make): chaos_item_mods.lua rolls them inside the free slots of the rarity, the description is rewritten.
--- A monster drop whose rarity the engine has not rolled yet (only the "rarity" attribute: the stock loot callback
--- leaves the roll to Monster::dropLoot, after every Lua callback) leaves room for the engine's modifiers (a weapon
--- rolls maxMods - 1 of them, other gear one fewer) and keeps its description: item_mods.lua rewrites it once the
--- engine is done (ChaosItemMods.afterDrop).
--- returns the list of added modifiers
+-- drops: the loot layer (loot.lua) forges every gear item with a rarity in the corpse at the source's item level and
+-- shields it from the engine's own pass (C.shield); a plain gear drop gets the item level only.
 -- ---------------------------------------------------------------------------------------------------------------
-function C.rollDropMods(item, rand)
+function C.forgeDrop(item, level, rand)
 	if not item or not C.isGear(item) or C.isUnique(item) then
 		return {}
 	end
 	local rarity = C.rarityOf(item)
-	if rarity < 1 or #M.read(item) > 0 then
+	if rarity < 1 then
+		if level and C.levelOf(item) == 0 then
+			item:setCustomAttribute(M.ILVL, math.max(1, math.floor(level)))
+		end
 		return {}
 	end
-	local level = C.customNumber(item, "combatPowerLevel")
-	local free
-	if level > 0 then
-		free = C.maxMods(rarity) - #C.readMods(item)
-	else -- the engine's roll is still to come
-		free = M.kindOf(item) == "weapon" and 1 or 2
-	end
-	local added = M.rollNew(item, rarity, level, free, rand or M.random)
-	if #added > 0 and level > 0 then
-		C.rewriteDescription(item)
-	end
+	local added = C.forge(item, rarity, level or C.orbLevel(item), rand or M.random)
+	C.shield(item)
 	return added
 end
 
@@ -891,6 +1162,14 @@ local function chances(rows)
 	return table.concat(parts, ", ")
 end
 
+-- "T1-T3" for an item level
+local function tierSpan(level)
+	local rows = M.tierRows(level)
+	local hi, lo = rows[1][1], rows[#rows][1]
+	return lo == hi and string.format("T%d", hi) or string.format("T%d-T%d", lo, hi)
+end
+C.tierSpan = tierSpan
+
 function C.preview(orbKey, item)
 	if C.isRiftKey(item) then
 		local key = C.readKey(item)
@@ -912,25 +1191,36 @@ function C.preview(orbKey, item)
 		end
 		return ""
 	end
+	local orb = C.orbByKey[orbKey]
+	if orb and orb.preview then
+		return orb.preview(item)
+	end
 	if orbKey == "sockets" then
 		return G.orbPreview(item)
 	end
 	local rarity = C.rarityOf(item)
-	local n = #C.readMods(item)
+	local mods = C.readMods(item)
+	local n = #mods
+	local level = C.orbLevel(item)
 	if orbKey == "transmutation" then
-		return chances(C.config.transmutation)
+		return string.format("%s; item level %d: %s", chances(C.config.transmutation), level, tierSpan(level))
 	elseif orbKey == "alchemy" then
-		return chances(C.config.alchemy)
+		return string.format("%s; item level %d: %s", chances(C.config.alchemy), level, tierSpan(level))
 	elseif orbKey == "exalted" then
-		return string.format("%d -> %d of %d modifiers", n, n + 1, C.maxMods(rarity))
+		local p, s = C.sideCounts(mods)
+		local limit = M.sideLimit(rarity)
+		return string.format("%d -> %d of %d (prefixes %d/%d, suffixes %d/%d), %s", n, n + 1, C.maxMods(rarity), p, limit,
+			s, limit, tierSpan(level))
 	elseif orbKey == "annulment" then
 		return string.format("one of %d modifiers goes", n)
 	elseif orbKey == "scouring" then
-		return string.format("%s with %d modifiers -> normal", rarity > 0 and C.rarityName(rarity) or "Normal", n)
+		return string.format("%s with %d modifiers -> normal, item level %d", rarity > 0 and C.rarityName(rarity) or "Normal",
+			n, level)
 	elseif orbKey == "chaos" then
-		return string.format("stays %s, new level and modifiers", rarity > 0 and C.rarityName(rarity) or "Normal")
+		return string.format("stays %s, item level %d: %d new modifiers, %s", rarity > 0 and C.rarityName(rarity) or "Normal",
+			level, M.modCount(rarity), tierSpan(level))
 	elseif orbKey == "divine" then
-		return string.format("new random rarity (%d%% none)", 100 - C.config.divineRollChance)
+		return string.format("new random rarity (%d%% none), item level %d stays", 100 - C.config.divineRollChance, level)
 	end
 	return ""
 end
@@ -953,10 +1243,9 @@ function C.signature(item)
 	if C.isRiftKey(item) then
 		return string.format("%d;key;%s;%s", item:getId(), tostring(custom(item, "rift_tier")), tostring(custom(item, "rift_mods")))
 	end
-	local parts = {tostring(item:getId()), tostring(C.rarityOf(item)),
-		tostring(math.floor(C.customNumber(item, "combatPowerLevel")))}
+	local parts = {tostring(item:getId()), tostring(C.rarityOf(item)), tostring(C.levelOf(item))}
 	for _, m in ipairs(C.readMods(item)) do
-		parts[#parts + 1] = m.key .. "=" .. tostring(m.value)
+		parts[#parts + 1] = m.key .. "=" .. tostring(m.value) .. "t" .. tostring(m.tier)
 	end
 	local s = G.read(item)
 	parts[#parts + 1] = "s" .. s.count
@@ -966,7 +1255,8 @@ function C.signature(item)
 	return table.concat(parts, ";")
 end
 
--- everything the bench shows about an item
+-- everything the bench shows about an item. mods = [{group, text, tier, side, lo, hi}] (prefixes first),
+-- prefixes / suffixes = {n, max}
 function C.describe(item)
 	if C.isRiftKey(item) then
 		return C.describeKey(item)
@@ -974,8 +1264,12 @@ function C.describe(item)
 	local rarity = C.rarityOf(item)
 	local mods = C.readMods(item)
 	local list = {}
-	for _, m in ipairs(mods) do
-		list[#list + 1] = {group = m.group, text = C.modText(m)}
+	for _, side in ipairs({"prefix", "suffix"}) do
+		for _, m in ipairs(mods) do
+			if m.side == side then
+				list[#list + 1] = {group = m.group, text = C.modText(m), tier = m.tier, side = m.side, lo = m.lo, hi = m.hi}
+			end
+		end
 	end
 	local orbs, preview = {}, {}
 	for _, orb in ipairs(C.config.orbs) do
@@ -983,14 +1277,20 @@ function C.describe(item)
 		orbs[orb.key] = ok and "" or (C.reasons[reason] or reason)
 		preview[orb.key] = ok and C.preview(orb.key, item) or ""
 	end
+	local p, s = C.sideCounts(mods)
+	local limit = M.sideLimit(rarity)
+	local level = C.levelOf(item)
 	return {
 		id = item:getId(),
 		name = C.itemName(item),
 		rarity = rarity,
 		rarityName = rarity > 0 and C.rarityName(rarity) or "Normal",
-		level = math.floor(C.customNumber(item, "combatPowerLevel")),
+		level = level,
+		maxTier = level > 0 and M.maxTierFor(level) or nil,
 		mods = list,
 		maxMods = rarity > 0 and C.maxMods(rarity) or 0,
+		prefixes = rarity > 0 and {p, limit} or nil,
+		suffixes = rarity > 0 and {s, limit} or nil,
 		unique = C.isUnique(item),
 		orbs = orbs, -- orb key -> "" when usable, else why not
 		preview = preview, -- orb key -> what it would do ("" when not usable)

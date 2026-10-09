@@ -18,17 +18,18 @@ return {
 		article = "a",
 		weight = 5,
 		description = "A splinter of the power bound in salvaged gear. Combine shards into orbs at the crafting bench "
-			.. "(!craft, Salvage)."
+			.. "(Economy > Salvage)."
 	},
 
-	-- shards per rarity 1..15 (Common .. Transcendent) at the bottom of the rarity's item level window
+	-- shards per rarity 1..15 (Common .. Transcendent) at item level 1
 	baseShards = {1, 1, 2, 2, 3, 3, 4, 5, 6, 7, 8, 10, 12, 14, 18},
-	-- the engine rolls rarity r with item level 10r-9 .. 10r; the top of that window gives up to this share more
-	-- (floor, so Common and Uncommon stay at 1)
-	levelWindow = 10,
+	-- the item level (chaos_item_mods.lua, 1 .. maxLevel) gives up to this share more: floor(base x (1 + levelBonus x
+	-- level / maxLevel)), so Common and Uncommon stay at 1
+	maxLevel = 150,
 	levelBonus = 0.5,
-	-- extra shards per Chaos modifier (chaos_item_mods.lua) and per empty socket
-	perChaosMod = 1,
+	-- extra shards per modifier of tier highTier or better (T6+), and per empty socket
+	highTier = 6,
+	perHighTier = 1,
 	perSocket = 1,
 
 	-- chance (per 10000) of a whole orb on top of the shards, by rarity 1..15

@@ -1211,7 +1211,7 @@ local function calendarEntries()
 			table.insert(Chaos.events.list, {id = "invasion" .. i, name = c.calendarName or "Invasion",
 				weekdays = e.weekdays or {1, 2, 3, 4, 5, 6, 7}, colorlight = colors[1], colordark = colors[2],
 				description = string.format("A horde invades %s at %02d:%02d (server time). Defend it for gold, orbs, a "
-					.. "chance at a unique and a 1-hour Victory buff; !invasion shows the next ones.",
+					.. "chance at a unique and a 1-hour Victory buff; Adventure > Events shows the next ones.",
 					area and area.name or "a town or a hunting ground", e.hour or 20, e.minute or 0)})
 		end
 	end
@@ -1316,11 +1316,3 @@ end
 gm:separator(" ")
 gm:register()
 
-local info = TalkAction("!invasion")
-function info.onSay(player, words, param)
-	player:sendTextMessage(MESSAGE_INFO_DESCR, statusText())
-	Chaos.send(player, OPCODE, "calendar", {list = V.calendar(), open = true})
-	return false
-end
-info:separator(" ")
-info:register()

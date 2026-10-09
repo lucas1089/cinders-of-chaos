@@ -3,7 +3,7 @@
 --   server -> client  state {open, pets, catalog, active, out, rest, zone, cooldowns, maxLevel, secondAt}  (petsview.lua)
 --                     xp {species, level, xp, into, need, pct}                    (a kill while the window is open)
 --   client -> server  open | get | close | summon {species} | dismiss | rename {species, name}
--- !pet opens it from the chat; the top menu (Chaos -> Pets) calls toggle().
+-- The top menu (Character > Pets) calls toggle().
 
 local OPCODE = 254
 local V = PetsView

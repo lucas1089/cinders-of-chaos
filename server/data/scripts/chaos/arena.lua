@@ -1,4 +1,4 @@
--- Ranked PvP arena: 1v1 and 2v2 with Elo ratings per mode (client game_arena, extended opcode 236, !arena).
+-- Ranked PvP arena: 1v1 and 2v2 with Elo ratings per mode (client game_arena, extended opcode 236).
 -- Settings: arena_config.lua. Pure part (ratings, matchmaking, level rule, death catch, timeout): arena_core.lua,
 -- tested by tests/arena_test.lua. Overview and numbers: server/README.md "Arena".
 --
@@ -162,7 +162,7 @@ local function refusal(player, ignoreQueue)
 		return "You are already in an arena match."
 	end
 	if not ignoreQueue and S.queued[player:getId()] then
-		return "You are already in the arena queue (!arena leave)."
+		return "You are already in the arena queue (leave it in the Arena window)."
 	end
 	if Chaos.isMultiClient and Chaos.isMultiClient(player) then
 		return "You cannot fight in the arena while another character from your connection is online."
@@ -307,7 +307,7 @@ function S.join(player, mode)
 		S.queued[cid] = entry
 		local m = Player(cid)
 		if m then
-			msg(m, string.format("Arena: you joined the %s queue (rating %d). Stay in a protection zone; !arena leave to leave.",
+			msg(m, string.format("Arena: you joined the %s queue (rating %d). Stay in a protection zone; the Arena window leaves the queue.",
 				mode, math.floor(entry.rating)))
 			stateLater(cid)
 		end
@@ -1089,7 +1089,7 @@ local function statusText(player)
 	elseif S.matchOf[player:getId()] then
 		text = text .. " You are in a match."
 	else
-		text = text .. " !arena queue 1v1, !arena queue 2v2 (party of two), !arena leave."
+		text = text .. " Queue for 1v1 or 2v2 (party of two) in the Arena window (Adventure > Arena)."
 	end
 	return text
 end
@@ -1100,7 +1100,7 @@ local function onArena(player, words, param)
 	if cmd == "queue" or cmd == "join" then
 		local mode = A.parseMode(C(), arg)
 		if not mode then
-			player:sendCancelMessage("Usage: !arena queue 1v1 or !arena queue 2v2")
+			player:sendCancelMessage("Choose 1v1 or 2v2.")
 			return false
 		end
 		S.join(player, mode)
@@ -1120,11 +1120,14 @@ local function onArena(player, words, param)
 	return false
 end
 
-for _, words in ipairs({"!arena", "/arena"}) do
+for _, words in ipairs({"/arena"}) do -- staff only (players open the window from the menu)
 	local talk = TalkAction(words)
 	talk.onSay = function(player, w, param)
+		if not player:getGroup():getAccess() then
+			return false
+		end
 		-- staff: /arena stop | slots
-		if w == "/arena" and player:getGroup():getAccess() then
+		if w == "/arena" then
 			local cmd = tostring(param or ""):match("^%s*(%S*)")
 			if cmd == "stop" then
 				player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Arena: %d match(es) stopped (not rated).", S.stopAll()))

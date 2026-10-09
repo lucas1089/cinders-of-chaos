@@ -329,9 +329,13 @@ local function onCommand(player, words, param)
 	return false
 end
 
-for _, words in ipairs({"!patchnotes", "/patchnotes"}) do
-	local talk = TalkAction(words)
-	talk.onSay = onCommand
-	talk:separator(" ")
-	talk:register()
+-- staff only (players open the window from the menu)
+local talk = TalkAction("/patchnotes")
+function talk.onSay(player, words, param)
+	if not player:getGroup():getAccess() then
+		return false -- players open it from the menu
+	end
+	return onCommand(player, words, param)
 end
+talk:separator(" ")
+talk:register()

@@ -8,7 +8,7 @@
 --                     tracker {rows = [{k = task|bounty, key, label, p, r}]}
 --                     show {tab}
 --   client -> server  open | list | summary | entry {id} | board | take {id} | accept {key} | abandon {key} | query
--- !bestiary [name] and !tasks open it from the chat; the top menu (Hunt -> Bestiary / Task Tracker) calls toggle() and
+-- The top menu (Hunt -> Bestiary / Task Tracker) calls toggle() and
 -- toggleTracker().
 
 local OPCODE = 253

@@ -2,20 +2,16 @@
 --
 -- Client contract (client/overlay/modules/game_autoloot/loot.lua):
 --   client -> server  {"action":"open"}                     (no data)
---   client -> server  talk "!autoloot add, <item name>"
---                     talk "!autolootclient add, <numeric CLIENT item id>"
---                     talk "!autoloot remove, <item name>"
---                     talk "!autoloot clear"
+--   client -> server  {"action":"add","data":{"name":"<item name>"}} or {"action":"add","data":{"clientId":N}}
+--                     {"action":"remove","data":{"name":"<item name>"}}
+--                     {"action":"clear"}
 --   server -> client  {"action":"open","data":{"itemsTable":[[clientId,"name"],...],
 --                                              "currentSlot":N,"maxSlot":M}}
 --
 -- The list lives in the same player storages (base 80000) as the reference server's
 -- scripts/creaturescripts/autoloot.lua, so that script's onDropLoot callback keeps doing the
--- actual looting. This file only adds the window protocol and the two talkactions.
---
--- NOTE: if the reference data/talkactions/talkactions.xml already registers "!autoloot",
--- TFS 1.4.2 silently keeps the XML one and ignores the one below (see README). The window then
--- still works but does not refresh after add/remove until it is reopened.
+-- actual looting. This file only adds the window protocol (Hunt -> Auto Loot in the menu). The reference server's
+-- spoken "!autoloot" (talkactions.xml) is commented out by server/tools/install_commands.py.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -144,7 +140,7 @@ local function handleCommand(player, param, byClient)
 			end
 		end
 	elseif action ~= "show" and action ~= "" then
-		player:sendCancelMessage("Use: !autoloot add, <name> | remove, <name> | clear. Or use the Autoloot window.")
+		player:sendCancelMessage("Unknown auto loot action.")
 	end
 	sendList(player)
 end
@@ -163,8 +159,20 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 		return
 	end
 	local msg = Chaos.decode(buffer)
-	if msg and msg.action == "open" then
+	if not msg then
+		return
+	end
+	if msg.action == "open" then
 		sendList(player)
+	elseif msg.action == "add" or msg.action == "remove" or msg.action == "clear" then
+		-- the window: {action, data = {name}} (an item name) or {action, data = {clientId}} (a client item id)
+		if ChaosRateLimit and not ChaosRateLimit.allow(player, "autoloot.edit", 200) then
+			return
+		end
+		local d = type(msg.data) == "table" and msg.data or {}
+		local byClient = d.clientId ~= nil
+		local argument = tostring(byClient and d.clientId or d.name or ""):gsub("[%c,]", " "):sub(1, 60)
+		handleCommand(player, msg.action .. ", " .. argument, byClient)
 	end
 end
 
@@ -173,22 +181,3 @@ LoginEvent:register()
 ExtendedEvent:type("extendedopcode")
 ExtendedEvent:register()
 
-local nameTalk = TalkAction("!autoloot")
-
-function nameTalk.onSay(player, words, param)
-	handleCommand(player, param or "", false)
-	return false
-end
-
-nameTalk:separator(" ")
-nameTalk:register()
-
-local clientTalk = TalkAction("!autolootclient")
-
-function clientTalk.onSay(player, words, param)
-	handleCommand(player, param or "", true)
-	return false
-end
-
-clientTalk:separator(" ")
-clientTalk:register()

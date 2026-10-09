@@ -10,8 +10,17 @@
 --   elites and bosses  damage dealt to magic / rare / legendary monsters and bosses (onHealthChange on the target,
 --                      registered by onTargetCombat, like passivetree_effects.lua)
 --   life / mana on kill  CreatureEvent onKill, monsters only
---   dodge, reflect, thorns, damage taken from monsters  onHealthChange on the player (hits from creatures)
+--   dodge, block, reflect, thorns, damage taken from monsters  onHealthChange on the player (hits from creatures)
 --   healing done       onHealthChange on the healed player (the healer's bonus)
+--   on your hits       onHealthChange on the target (registered by onTargetCombat): penetration (physical / elemental:
+--                      the monster's resistance counts that many points lower, as the Sunder support), damage over time
+--                      (hits of conditions you own), execute (a non-boss monster your hit leaves at or below N% health
+--                      dies), health / mana on hit, and the ailment chances: bleeding (physical), ignite (fire), poison
+--                      (earth) deal a share of the hit over a few seconds (conditions owned by you), chill slows, shock
+--                      makes the monster take more damage from everyone for a few seconds
+--   health regeneration  the equipment check every 3 s heals 3 x the total
+--   cooldown / mana cost reduction  on the spell side (data/spells/chaos/_supports.lua, after a cast, as the
+--                      Quickening and Thrift supports)
 --   experience         EventCallback onGainExperience
 --   gold find          EventCallback onDropLoot (priority 2, as Paragon's gold find)
 --   item / rarity find read by loot.lua (ChaosItemMods.playerBonus)
@@ -35,43 +44,13 @@ local CHECK_INTERVAL = 3000 -- ms between two checks of the equipment of everyon
 local guard = false -- reflect / thorns hits must not trigger more reflect / thorns
 
 -- ---------------------------------------------------------------- equipped items
-local SLOT_BITS = {
-	[CONST_SLOT_HEAD] = SLOTP_HEAD, [CONST_SLOT_NECKLACE] = SLOTP_NECKLACE, [CONST_SLOT_ARMOR] = SLOTP_ARMOR,
-	[CONST_SLOT_LEGS] = SLOTP_LEGS, [CONST_SLOT_FEET] = SLOTP_FEET, [CONST_SLOT_RING] = SLOTP_RING,
-	[CONST_SLOT_RIGHT] = SLOTP_RIGHT, [CONST_SLOT_LEFT] = SLOTP_LEFT
-}
-if CONST_SLOT_BADGE and SLOTP_BADGE then
-	SLOT_BITS[CONST_SLOT_BADGE] = SLOTP_BADGE
-end
-if CONST_SLOT_GLOVES and SLOTP_GLOVES then
-	SLOT_BITS[CONST_SLOT_GLOVES] = SLOTP_GLOVES
-end
-if CONST_SLOT_BELT and SLOTP_BELT then
-	SLOT_BITS[CONST_SLOT_BELT] = SLOTP_BELT
-end
-
-local function fits(item, slot)
-	local bitValue = SLOT_BITS[slot]
-	if not bitValue then
-		return false
-	end
-	local it = item:getType()
-	local slots = it:getSlotPosition()
-	if math.floor(slots / bitValue) % 2 == 1 then
-		return true
-	end
-	-- hands: weapons and shields (two-handed weapons carry SLOTP_TWO_HAND, a dual-wield off-hand sword the other hand)
-	if slot == CONST_SLOT_LEFT or slot == CONST_SLOT_RIGHT then
-		return it:getWeaponType() ~= WEAPON_NONE and it:getWeaponType() ~= WEAPON_AMMO
-	end
-	return false
-end
+local SLOT_BITS = M.slotBits()
 
 local function equipped(player)
 	local items, sig = {}, {}
 	for slot in pairs(SLOT_BITS) do
 		local item = player:getSlotItem(slot)
-		if item and fits(item, slot) then
+		if item and M.fits(item, slot, SLOT_BITS) then
 			local mods = M.read(item)
 			local gems = ChaosGems and ChaosGems.read(item)
 			if #mods > 0 or (gems and gems.filled > 0) then
@@ -136,6 +115,10 @@ end
 -- ---------------------------------------------------------------- equip / unequip
 local moved = EventCallback
 moved.onItemMoved = function(player, item, count, fromPosition, toPosition, fromCylinder, toCylinder)
+	-- a drop that leaves its corpse before the tick that gives its rarity back as a number (C.shield)
+	if ChaosCrafting and ChaosCrafting.unshield and ChaosCrafting.unshield(item) then
+		M.sendUpdate(item)
+	end
 	local inv = CONTAINER_POSITION or 0xFFFF
 	local fromSlot = fromPosition.x == inv and math.floor(fromPosition.y / 64) % 2 == 0
 	local toSlot = toPosition.x == inv and math.floor(toPosition.y / 64) % 2 == 0
@@ -145,10 +128,34 @@ moved.onItemMoved = function(player, item, count, fromPosition, toPosition, from
 end
 moved:register(11) -- after base_rarity.lua (10)
 
+-- this engine's Creature:addHealth takes (damage type, amount); a one-argument call heals nothing (Chaos.heal)
+local function heal(creature, amount)
+	if Chaos.heal then
+		return Chaos.heal(creature, amount)
+	end
+	local before = creature:getHealth()
+	amount = math.min(math.floor(amount), creature:getMaxHealth() - before)
+	if amount > 0 then
+		creature:addHealth("healing", amount)
+		if creature:getHealth() == before then
+			creature:addHealth(amount)
+		end
+	end
+end
+
+local function regenerate(player)
+	local totals = cache[player:getId()]
+	local per = totals and totals.regen or 0
+	if per > 0 and player:getHealth() > 0 and player:getHealth() < player:getMaxHealth() then
+		heal(player, M.regenAmount(per, CHECK_INTERVAL))
+	end
+end
+
 local function checkAll()
 	for _, player in ipairs(Game.getPlayers()) do
 		if applied[player:getId()] then
 			M.refresh(player)
+			regenerate(player)
 		end
 	end
 	addEvent(checkAll, CHECK_INTERVAL)
@@ -162,6 +169,10 @@ end
 startup:register()
 
 -- ---------------------------------------------------------------- damage
+local function now()
+	return os.mtime and os.mtime() or os.time() * 1000
+end
+
 local function isElite(creature)
 	if not creature or not creature:isMonster() then
 		return false
@@ -175,6 +186,21 @@ local function isElite(creature)
 	return ok and boss or false
 end
 
+-- bosses, world bosses and rift / omen guardians are never executed
+local function executeProof(creature)
+	local mt = creature:getType()
+	local ok, boss = pcall(function() return mt and mt:isBoss() end)
+	if ok and boss then
+		return true
+	end
+	local run = ChaosRift and ChaosRift.monsterRun and ChaosRift.monsterRun[creature:getId()]
+	if run and run.bossIds and run.bossIds[creature:getId()] then
+		return true
+	end
+	local wb = ChaosWorldBoss and ChaosWorldBoss.state
+	return wb ~= nil and wb.bossId == creature:getId()
+end
+
 local function playerOf(creature)
 	if not creature then
 		return nil
@@ -186,17 +212,183 @@ local function playerOf(creature)
 	return master and master:isPlayer() and master or nil
 end
 
--- damage dealt to elites and bosses
+-- monster resistances (MonsterType:getElementList: combat type -> percent), cached by name
+local resCache = {}
+local function resistance(creature, ctype)
+	local name = creature:getName():lower()
+	local r = resCache[name]
+	if r == nil then
+		local ok, list = pcall(function()
+			local t = creature:getType()
+			return t and t:getElementList()
+		end)
+		r = ok and type(list) == "table" and list or false
+		resCache[name] = r
+	end
+	return r and tonumber(r[ctype]) or 0
+end
+
+local NOT_ELEMENTAL = {}
+for _, n in ipairs({"COMBAT_PHYSICALDAMAGE", "COMBAT_HEALING", "COMBAT_LIFEDRAIN", "COMBAT_MANADRAIN", "COMBAT_NONE",
+		"COMBAT_UNDEFINEDDAMAGE"}) do
+	if _G[n] then
+		NOT_ELEMENTAL[_G[n]] = true
+	end
+end
+
+local function penetrate(creature, value, ctype, totals)
+	if value == 0 or not ctype then
+		return value
+	end
+	local pen = ctype == COMBAT_PHYSICALDAMAGE and totals.physpen or (not NOT_ELEMENTAL[ctype] and totals.elepen) or 0
+	if pen > 0 then
+		return M.penetrate(value, resistance(creature, ctype), pen)
+	end
+	return value
+end
+
+-- shocked monsters: id -> until (ms)
+local shocked = {}
+local shockedCount = 0
+local function shock(creature)
+	shocked[creature:getId()] = now() + M.config.ailment.shockMs
+	shockedCount = shockedCount + 1
+	if shockedCount > 500 then
+		shockedCount = 0
+		local t = now()
+		for id, untilMs in pairs(shocked) do
+			if untilMs < t then
+				shocked[id] = nil
+			end
+		end
+	end
+	creature:getPosition():sendMagicEffect(CONST_ME_ENERGYHIT or CONST_ME_ENERGYAREA or 12)
+end
+M.shocked = shocked
+
+local function isShocked(creature)
+	local untilMs = shocked[creature:getId()]
+	if untilMs and untilMs >= now() then
+		return true
+	end
+	shocked[creature:getId()] = nil
+	return false
+end
+
+local DOTS = {
+	bleedchance = {cond = "CONDITION_BLEEDING", effect = "CONST_ME_DRAWBLOOD"},
+	ignitechance = {cond = "CONDITION_FIRE", effect = "CONST_ME_HITBYFIRE"},
+	poisonchance = {cond = "CONDITION_POISON", effect = "CONST_ME_HITBYPOISON"}
+}
+
+local function addDot(target, player, key, hit)
+	local d = DOTS[key]
+	local ctype = _G[d.cond]
+	if not ctype or not Condition then
+		return
+	end
+	local a = M.config.ailment
+	local c = Condition(ctype)
+	c:setParameter(CONDITION_PARAM_OWNER, player:getId())
+	c:setParameter(CONDITION_PARAM_DELAYED, true)
+	c:addDamage(a.rounds, a.interval, -M.ailmentTick(hit))
+	target:addCondition(c)
+	if _G[d.effect] then
+		target:getPosition():sendMagicEffect(_G[d.effect])
+	end
+end
+
+local function chill(target)
+	if not CONDITION_PARALYZE or not Condition then
+		return
+	end
+	local a = M.config.ailment
+	local c = Condition(CONDITION_PARALYZE)
+	c:setParameter(CONDITION_PARAM_TICKS, a.chillMs)
+	c:setFormula(-a.chillSlow / 100, 0, -a.chillSlow / 100, 0)
+	target:addCondition(c)
+	target:getPosition():sendMagicEffect(CONST_ME_ICEATTACK or CONST_ME_ICEAREA or 43)
+end
+
+local function roll(pct)
+	return pct > 0 and math.random(1, 100) <= pct
+end
+
+-- after a hit of yours landed: health / mana on hit and the ailment rolls
+local function onHit(creature, player, totals, hit)
+	if (totals.lifeonhit or 0) > 0 then
+		heal(player, totals.lifeonhit)
+	end
+	if (totals.manaonhit or 0) > 0 then
+		player:addMana(totals.manaonhit)
+	end
+	if not creature:isMonster() then
+		return -- ailments only on monsters
+	end
+	for key in pairs(DOTS) do
+		if roll(totals[key] or 0) then
+			addDot(creature, player, key, hit)
+		end
+	end
+	if roll(totals.chillchance or 0) then
+		chill(creature)
+	end
+	if roll(totals.shockchance or 0) then
+		shock(creature)
+	end
+end
+
+-- the keys that need the hit event on the target (any of them > 0)
+local OFFENCE = {"bossdamage", "physpen", "elepen", "execute", "dot", "lifeonhit", "manaonhit", "bleedchance",
+	"ignitechance", "poisonchance", "chillchance", "shockchance"}
+local function offensive(totals)
+	if not totals then
+		return false
+	end
+	for _, k in ipairs(OFFENCE) do
+		if (totals[k] or 0) > 0 then
+			return true
+		end
+	end
+	return false
+end
+
+-- your hits on a monster (and shocked monsters' hits from anyone)
 local dealt = CreatureEvent("ChaosItemModsDealt")
 function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	if guard or primaryType == COMBAT_HEALING then
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
 	local p = playerOf(attacker)
-	local pct = p and M.playerBonus(p, "bossdamage") or 0
-	if pct > 0 and isElite(creature) then
-		primaryDamage = M.scale(primaryDamage, pct)
-		secondaryDamage = M.scale(secondaryDamage, pct)
+	local totals = p and cache[p:getId()]
+	if totals then
+		primaryDamage = penetrate(creature, primaryDamage, primaryType, totals)
+		secondaryDamage = penetrate(creature, secondaryDamage, secondaryType, totals)
+		local pct = totals.bossdamage or 0
+		if pct > 0 and isElite(creature) then
+			primaryDamage = M.scale(primaryDamage, pct)
+			secondaryDamage = M.scale(secondaryDamage, pct)
+		end
+		if origin == ORIGIN_CONDITION and (totals.dot or 0) > 0 then
+			primaryDamage = M.scale(primaryDamage, totals.dot)
+			secondaryDamage = M.scale(secondaryDamage, totals.dot)
+		end
+	end
+	if p and creature:isMonster() and isShocked(creature) then
+		local s = M.config.ailment.shockPct
+		primaryDamage = M.scale(primaryDamage, s)
+		secondaryDamage = M.scale(secondaryDamage, s)
+	end
+	if totals and creature:isMonster() then
+		local hit = math.abs(primaryDamage) + math.abs(secondaryDamage)
+		if (totals.execute or 0) > 0 and M.executes(creature:getHealth(), creature:getMaxHealth(), hit, totals.execute)
+				and not executeProof(creature) then
+			primaryDamage = creature:getHealth()
+			creature:getPosition():sendMagicEffect(CONST_ME_MORTAREA or 18)
+		end
+		if hit > 0 and origin ~= ORIGIN_CONDITION and p == attacker then
+			onHit(creature, p, totals, hit)
+		end
 	end
 	return primaryDamage, primaryType, secondaryDamage, secondaryType
 end
@@ -206,7 +398,7 @@ local targetCb = EventCallback
 targetCb.onTargetCombat = function(creature, target)
 	if creature and target and target:isMonster() then
 		local p = playerOf(creature)
-		if p and M.playerBonus(p, "bossdamage") > 0 then
+		if p and offensive(cache[p:getId()]) then
 			target:registerEvent("ChaosItemModsDealt")
 		end
 	end
@@ -214,7 +406,7 @@ targetCb.onTargetCombat = function(creature, target)
 end
 targetCb:register()
 
--- hits taken (dodge, damage from monsters, reflect, thorns) and heals received (the healer's Healing Done)
+-- hits taken (dodge, block, damage from monsters, reflect, thorns) and heals received (the healer's Healing Done)
 local taken = CreatureEvent("ChaosItemModsTaken")
 function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	if guard then
@@ -236,6 +428,12 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
 	if (totals.dodge or 0) > 0 and math.random(1, 100) <= totals.dodge then
+		creature:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT)
+		return 0, primaryType, 0, secondaryType
+	end
+	-- block: physical hits of a weapon or a claw (melee and ranged attacks), all of it
+	if (totals.block or 0) > 0 and primaryType == COMBAT_PHYSICALDAMAGE
+			and (origin == ORIGIN_MELEE or origin == ORIGIN_RANGED) and math.random(1, 100) <= totals.block then
 		creature:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT)
 		return 0, primaryType, 0, secondaryType
 	end
@@ -262,21 +460,6 @@ end
 taken:register()
 
 -- ---------------------------------------------------------------- kills
--- this engine's Creature:addHealth takes (damage type, amount); a one-argument call heals nothing (Chaos.heal)
-local function heal(creature, amount)
-	if Chaos.heal then
-		return Chaos.heal(creature, amount)
-	end
-	local before = creature:getHealth()
-	amount = math.min(math.floor(amount), creature:getMaxHealth() - before)
-	if amount > 0 then
-		creature:addHealth("healing", amount)
-		if creature:getHealth() == before then
-			creature:addHealth(amount)
-		end
-	end
-end
-
 local killed = {} -- monster id -> true (onKill may run for more than one killer)
 local kill = CreatureEvent("ChaosItemModsKill")
 function kill.onKill(player, target)
@@ -352,9 +535,10 @@ end
 goldCb:register(2)
 
 -- ---------------------------------------------------------------- drops
--- The engine rolls the rarity of a corpse's items in Monster::dropLoot AFTER every Lua onDropLoot callback, and appends
--- its text to the description. loot.lua calls this for a corpse whose items got Chaos modifiers: the corpse is marked
--- and, right after the engine is done, the description of those items is written again from their attributes.
+-- The engine rolls the rarity of a corpse's items in Monster::dropLoot AFTER every Lua onDropLoot callback. loot.lua
+-- forges every gear drop with a rarity itself (ChaosCrafting.forgeDrop: item level, tiers, prefixes and suffixes) and
+-- keeps the rarity as text meanwhile, which the engine's pass skips (ChaosCrafting.shield). Right after the engine is
+-- done, this gives those rarities back as numbers (and sends the items again, so open corpses show the frames).
 local PENDING = "chaos_mods_pending"
 function M.afterDrop(corpse)
 	local ok = pcall(function() corpse:setCustomAttribute(PENDING, 1) end)
@@ -370,8 +554,8 @@ function M.fixCorpses(pos)
 		if corpse:isContainer() and corpse:getCustomAttribute(PENDING) then
 			corpse:removeCustomAttribute(PENDING)
 			for _, item in ipairs(corpse:getItems(true)) do
-				if #M.read(item) > 0 or (ChaosGems and ChaosGems.count(item) > 0) then
-					ChaosCrafting.rewriteDescription(item)
+				if ChaosCrafting.unshield(item) then
+					M.sendUpdate(item)
 				end
 			end
 		end

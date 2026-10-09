@@ -13,7 +13,7 @@ local function eq(a, b, m)
 end
 
 local function sameSettings(a, b, m)
-	for _, k in ipairs({"highlight", "dim", "lootMin", "lootFrom", "icons", "notify"}) do
+	for _, k in ipairs({"highlight", "dim", "lootMin", "lootFrom", "icons", "notify", "tier"}) do
 		eq(a[k], b[k], m .. " " .. k)
 	end
 	for _, c in ipairs(F.CATEGORIES) do
@@ -33,9 +33,17 @@ sameSettings(F.unpack(-1), d, "unset storage = defaults")
 sameSettings(F.unpack(nil), d, "nil = defaults")
 sameSettings(F.unpack(F.pack(d)), d, "defaults round trip")
 local s = {highlight = 15, dim = 7, lootMin = 4, lootFrom = 12, show = {equipment = false, currency = true, supplies = false,
-	other = true}, icons = false, notify = true}
+	other = true}, icons = false, notify = true, tier = 8}
 sameSettings(F.unpack(F.pack(s)), F.sanitize(s), "full round trip")
 assert(F.pack(s) < 2 ^ 31, "fits an int32 storage")
+eq(F.unpack(F.pack(s)).tier, 8, "the tier rule round trip")
+eq(F.unpack(2097152 + 1048576 + 3).tier, 0, "settings saved before the tier rule: off")
+eq(F.sanitize({tier = 12}).tier, 8, "clamped")
+-- the tier rule: gear with a modifier of that tier or better glows
+local tierS = F.sanitize({highlight = 9, tier = 6})
+eq(F.classify({rarity = 2, bestTier = 6, category = "equipment"}, tierS), "highlight", "T6 on Uncommon gear glows")
+eq(F.classify({rarity = 2, bestTier = 5, category = "equipment"}, tierS), "normal", "T5 does not")
+eq(F.classify({rarity = 2, category = "equipment"}, F.sanitize({highlight = 9})), "normal", "rule off")
 for _, p in ipairs(F.PRESETS) do
 	local ps = F.applyPreset(p.key)
 	assert(ps, "preset " .. p.key)

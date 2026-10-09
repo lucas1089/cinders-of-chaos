@@ -77,7 +77,7 @@ return {
 				{kind = "item", id = 27990, count = 1, cost = 8, name = "Stamina Extension",
 					description = "Use it to regain 2 hours of stamina (up to the maximum)."},
 				{kind = "item", id = 28095, count = 1, cost = 50, name = "Double Experience Potion",
-					description = "Use it for 1 hour of double experience; more potions add more hours. !exp shows the time."},
+					description = "Use it for 1 hour of double experience; more potions add more hours. Character > Character Info shows the time."},
 				{kind = "item", id = 28095, count = 5, cost = 225, name = "5 Double Experience Potions",
 					description = "Five hours of double experience, one potion at a time."},
 				{kind = "service", service = "blessings", icon = 11260, cost = 60, name = "All Blessings",
@@ -99,9 +99,9 @@ return {
 			name = "Services", icon = {item = 12466},
 			offers = {
 				{kind = "service", service = "nameToken", icon = 25427, cost = 250, name = "Name Change",
-					description = "Then say !changename <New Name> in a protection zone. You are logged out and return renamed."},
+					description = "Then use it in Character > Services, in a protection zone. You are logged out and return renamed."},
 				{kind = "service", service = "vocationToken", icon = 2175, cost = 400, name = "Vocation Change",
-					description = "Then say !changevocation <vocation>. Skills are kept, the passive tree is reset for free."},
+					description = "Then pick the vocation in Character > Services. Skills are kept, the passive tree is reset for free."},
 				{kind = "service", service = "sexChange", icon = 9019, cost = 100, name = "Sex Change",
 					description = "Your character changes sex at once. Every outfit and addon you own comes along."},
 				{kind = "service", service = "skullRemover", icon = 2229, cost = 150, name = "Frag & Skull Remover",
@@ -113,14 +113,12 @@ return {
 		{
 			name = "Convenience", icon = {item = 10522},
 			offers = {
-				{kind = "service", service = "templeScroll", uses = 1, icon = 6119, cost = 5, name = "Temple Teleport Scroll",
-					description = "One trip to your temple. Not in combat, dungeons, the tower or the world boss arena."},
-				{kind = "service", service = "templeScroll", uses = 25, icon = 6119, cost = 80, name = "Temple Teleport Scroll (25 uses)",
-					description = "A scroll with 25 trips to your temple. Same rules as the single scroll."},
+				-- the Temple Teleport Scroll is no longer sold: every character has the free Town Portal (townportal.lua);
+				-- scrolls bought earlier keep working (shop_services.lua)
 				{kind = "unlock", unlock = "lootPouch", icon = 10518, cost = 500, name = "Bottomless Loot Pouch",
 					description = "Permanent: autoloot that does not fit your backpack goes to your stash or inbox."},
 				{kind = "unlock", unlock = "autoSeller", icon = 2160, iconCount = 100, cost = 500, name = "Auto Seller",
-					description = "Permanent: loot on your !autosell list is sold at NPC prices, gold to your bank."},
+					description = "Permanent: loot on your auto-sell list (Economy > Auto Seller) is sold at NPC prices, gold to your bank."},
 				{kind = "unlock", unlock = "rarityAutoloot", icon = 2472, cost = 400, name = "Rarity Autoloot",
 					description = "Permanent: autoloot by rarity in the Loot Filter: take good gear, leave junk."}
 			}
@@ -131,9 +129,9 @@ return {
 			name = "Pets", icon = {outfit = {type = 294, rotating = true}},
 			offers = {
 				{kind = "unlock", unlock = "petLanternWisp", look = 294, icon = 2050, cost = 400, name = "Lantern Wisp",
-					description = "A pet that mends you below half health and later wards you. Call it with !pet."},
+					description = "A pet that mends you below half health and later wards you. Call it in Character > Pets."},
 				{kind = "unlock", unlock = "petHoarderSquirrel", look = 274, icon = 2148, cost = 400, name = "Hoarder Squirrel",
-					description = "A pet that finds more gold in your kills and later more items. Call it with !pet."}
+					description = "A pet that finds more gold in your kills and later more items. Call it in Character > Pets."}
 			}
 		},
 		{
@@ -210,6 +208,25 @@ return {
 				{kind = "aura", id = 22, cost = 250, description = "A crackling storm mantle."},
 				{kind = "aura", id = 23, cost = 250, description = "Leaves and blossoms bloom at your feet."},
 				{kind = "aura", id = 24, cost = 250, description = "A violet rift of the void opens under you."}
+			}
+		},
+		{
+			-- portal styles (townportal.lua, townportal_config.lua): the look of your Town Portal, per character. Store-only;
+			-- the achievement styles are never sold (server/tests/townportal_test.lua checks both lists)
+			name = "Portal Styles", icon = {item = 29633},
+			offers = {
+				{kind = "unlock", unlock = "portal_emberforge", icon = 29640, cost = 250, name = "Emberforge Gate",
+					description = "Town Portal style: a gate of molten rock that spills embers. Choose it in Character > Portal Style."},
+				{kind = "unlock", unlock = "portal_rimeglass", icon = 29641, cost = 250, name = "Rimeglass Gate",
+					description = "Town Portal style: a frame of blue ice that hums with cold. Choose it in Character > Portal Style."},
+				{kind = "unlock", unlock = "portal_verdant", icon = 29632, cost = 250, name = "Verdant Gate",
+					description = "Town Portal style: a gate overgrown with living green. Choose it in Character > Portal Style."},
+				{kind = "unlock", unlock = "portal_gilded", icon = 29630, cost = 300, name = "Gilded Gate",
+					description = "Town Portal style: a golden arch full of sunlight. Choose it in Character > Portal Style."},
+				{kind = "unlock", unlock = "portal_bloodmoon", icon = 29631, cost = 300, name = "Bloodmoon Gate",
+					description = "Town Portal style: a red gate under a blood moon. Choose it in Character > Portal Style."},
+				{kind = "unlock", unlock = "portal_sanctum", icon = 29636, cost = 300, name = "Sanctum Gate",
+					description = "Town Portal style: a white palace door with a red veil. Choose it in Character > Portal Style."}
 			}
 		},
 		{

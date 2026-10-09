@@ -8,7 +8,7 @@
 --                           rank, signed, members, canJoin, joinReason, canLeave, champions = [{name, untilText}],
 --                           status, rules = [text]}
 --   client -> server  open | join | leave
--- !siege opens the window from the chat; the top menu (Chaos -> Guild Siege) calls toggle().
+-- The top menu (Adventure > Guild Siege) calls toggle().
 
 local OPCODE = 233
 

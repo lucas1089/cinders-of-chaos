@@ -1,7 +1,8 @@
 -- Loot filter rules on the client (no client API, tested by lootfilter_test.lua). Mirror of the server's
 -- server/data/scripts/chaos/lootfilter_core.lua (classify, color, label): keep both in step. The server stays the
 -- authority for autoloot and click-to-loot; the client uses these rules only to draw.
--- info = {r = rarity 0..15, u = unique (0/1 or bool), o = orb (0/1 or bool), g = category, nm = name, c = count}
+-- info = {r = rarity 0..15, u = unique (0/1 or bool), o = orb (0/1 or bool), g = category, nm = name, c = count,
+--         t = the best modifier tier on it (1..8, nil = none), il = item level}
 
 LootFilterLogic = {}
 local L = LootFilterLogic
@@ -23,6 +24,7 @@ L.RARITY = {
   { name = 'Abyssal',      color = '#9a4ce0' },
   { name = 'Transcendent', color = '#e070ff' },
 }
+L.MAX_TIER = 8
 L.UNIQUE_COLOR = '#e07b24'
 L.ORB_COLOR = '#4fd8d0'
 L.CATEGORIES = { 'equipment', 'currency', 'supplies', 'other' }
@@ -34,7 +36,7 @@ end
 
 function L.defaults()
   return { highlight = 3, dim = 0, lootMin = 0, lootFrom = 0,
-    show = { equipment = true, currency = true, supplies = true, other = true }, icons = true, notify = true }
+    show = { equipment = true, currency = true, supplies = true, other = true }, icons = true, notify = true, tier = 0 }
 end
 
 -- settings as received from the server (JSON), with every field present
@@ -52,6 +54,8 @@ function L.normalize(s)
   end
   out.icons = s.icons ~= false
   out.notify = s.notify ~= false
+  local t = tonumber(s.tier)
+  out.tier = t and t == t and math.max(0, math.min(L.MAX_TIER, math.floor(t))) or d.tier
   return out
 end
 
@@ -64,6 +68,7 @@ function L.classify(info, s)
   if category == 'equipment' then
     local r = tonumber(info.r) or 0
     if s.highlight > 0 and r >= s.highlight then return 'highlight' end
+    if (s.tier or 0) > 0 and (tonumber(info.t) or 0) >= s.tier then return 'highlight' end
     if not shown or r < s.dim then return 'dim' end
     return 'normal'
   end
@@ -96,7 +101,7 @@ function L.tooltip(info)
   local count = tonumber(info.c) or 1
   local lines = { (count > 1 and (count .. 'x ') or '') .. L.label(info) }
   if type(info.x) == 'string' and info.x ~= '' then
-    lines[#lines + 1] = info.x -- the Chaos item modifiers (server item_mods)
+    lines[#lines + 1] = info.x -- item level and the modifiers with their tiers (server lootfilter.lua)
   end
   local left = tonumber(info.left)
   if left and left <= 0 then

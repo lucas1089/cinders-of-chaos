@@ -1,4 +1,4 @@
--- Bounty board (client game_bounty, extended opcode ChaosOpcodes.bounty, !bounty)
+-- Bounty board (client game_bounty, extended opcode ChaosOpcodes.bounty)
 --
 -- Every day at Chaos.bountyConfig.rollHour the board rolls 4 contracts per level band (hunt, hunt, elite, boss), the
 -- same for everyone: the roll is seeded from the date (bounty_core.lua), so a restart gives the same board. Monsters
@@ -463,7 +463,7 @@ function roll.onThink(interval)
 	if before and before ~= board.day then
 		for _, player in ipairs(Game.getPlayers()) do
 			stateOf(player)
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "The bounty board has new contracts (!bounty).")
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "The bounty board has new contracts (Adventure > Bounty Board).")
 		end
 	end
 	return true
@@ -511,14 +511,3 @@ end
 ext:type("extendedopcode")
 ext:register()
 
-local function onBountyCommand(player, words, param)
-	B.sendBoard(player, true)
-	return false
-end
-
-for _, words in ipairs({"!bounty", "/bounty"}) do
-	local talk = TalkAction(words)
-	talk.onSay = onBountyCommand
-	talk:separator(" ")
-	talk:register()
-end

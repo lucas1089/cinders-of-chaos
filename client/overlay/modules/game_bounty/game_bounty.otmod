@@ -1,6 +1,6 @@
 Module
   name: game_bounty
-  description: Bounty board (daily rotating kill contracts; !bounty, extended opcode 223)
+  description: Bounty board (daily rotating kill contracts; extended opcode 223)
   author: project-chaos
   sandboxed: true
   scripts: [ bounty ]

@@ -85,7 +85,7 @@ melee hit adds a holy strike). Radiant Smite, Consecration, Vow of Mending.
 | Druid / Elder Druid | Mystic / Illusionist |
 | Illusionist / Arch Illusionist | Mystic / Illusionist |
 
-The store's vocation change token and `!changevocation` must learn the new names. Passive trees reset once,
+The store's vocation change token and Character > Services must learn the new names. Passive trees reset once,
 for free, at the migration.
 
 ## Technical plan
@@ -130,9 +130,9 @@ for free, at the migration.
   Paladin may wear. `server/src-patches/0002` scales a weapon's own attack speed by the vocation's (x attackspeed / 2000), so the line
   stays fast with high-level weapons, and lets a Ninja hold a one-handed sword in the shield hand.
 - **Ascension** (`server/data/scripts/chaos/ascension.lua`, rules in `classes.lua`, numbers in `Chaos.classes.ascension`):
-  `!ascend ninja|samurai`, level 100+, in a protection zone, out of combat. It sets the vocation directly (the engine's single
+  the Ascendant Oracle, level 100+, in a protection zone, out of combat. It sets the vocation directly (the engine's single
   promotion per vocation is not used), recounts health / mana / capacity and resends the vocation to the client (no relog). Final:
-  `!ascend` refuses an ascended character; only the store's Vocation Change (`!changevocation ninja|samurai`) changes it. The table
+  the Ascendant Oracle refuses an ascended character; only the store's Vocation Change (`Character > Services ninja|samurai`) changes it. The table
   `Chaos.classes.ascension.choices` is keyed by base vocation, so the other base classes are added there in phase 2.
 - **Client** (`client/base-patches/0016-chaos-vocation-ids.patch`): bytes 6 / 16 / 26 become server ids 11 / 12 / 13; Thief, Ninja and
   Samurai are named wherever the client names vocations; the helper treats the line as its class 6.
@@ -186,8 +186,8 @@ Limits of phase 1:
   weapons and hand items and never to shields; the Beastmaster only to bows and arrows among weapons, hand items and ammunition.
   `potions.lua`: a potion of the Elite Knight (8) also lists the Berserker (14), one of the Royal Paladin (7) the Beastmaster (15);
   `lib/core/player.lua`: `Player.isKnight` / `isPaladin` count them too. Weapons without a vocation list stay open to everyone.
-- **Ascension**: `!ascend juggernaut|berserker` (Warrior), `deadeye|beastmaster` (Ranger), `elementalist|illusionist` (Mystic),
-  `ninja|samurai` (Thief); level 100, protection zone, out of combat, final. The store's `!changevocation` takes the new words
+- **Ascension**: the Ascendant Oracle (Warrior), `deadeye|beastmaster` (Ranger), `elementalist|illusionist` (Mystic),
+  `ninja|samurai` (Thief); level 100, protection zone, out of combat, final. The store's Character > Services takes the new words
   (`warrior|juggernaut|berserker|ranger|deadeye|beastmaster|mystic|elementalist|illusionist|thief|ninja|samurai`; the base word asks
   an ascended character to name the ascended class). The passive tree's keystone variant follows the line
   (`ChaosClasses.keystoneKey`): Warrior line knight, Ranger line paladin, Mystic / Elementalist sorcerer, Illusionist illusionist;
@@ -200,8 +200,8 @@ Limits of phase 1:
   4. `UPDATE players SET vocation = 1 WHERE vocation = 2`, `= 10 WHERE vocation = 6`, `= 1 WHERE vocation = 9`.
   At the next login health, mana and capacity are recounted from the new gains when they changed (old Druid / Illusionist gains are in
   `oldGains`), and the player gets a message and a popup: what the vocation became, that the tree was reset, the free switch
-  (`!ascend berserker` / `!ascend beastmaster`, once, any level, protection zone, out of combat) or, for a base class, the ascension
-  words. The store's vocation change spends the free switch. Old Knights / Paladins (unascended) simply choose at `!ascend`.
+  (the Ascendant Oracle / the Ascendant Oracle, once, any level, protection zone, out of combat) or, for a base class, the ascension
+  words. The store's vocation change spends the free switch. Old Knights / Paladins (unascended) simply choose at the Ascendant Oracle.
 - **Kits**: see `server/data/spells/README.md` ("Classes"). New: Berserker Rage (passive), Skyfall Cleave (246), Bloodrage (247);
   Beastmaster companion (War Wolf, else Wolf), Wild Bond (248), Feral Command (249).
 - **Client** (`client/base-patches/0016-chaos-vocation-ids.patch`): the class byte maps to the server ids (1/11/21 -> 4/8/14, 2/12/22 ->
@@ -223,7 +223,7 @@ Wild Bond by its words, and the level 1000 sanity measurement in `server/data/sp
   22 Bone Lord (27; 9 / 24 / 15, defense / armor 1.05). Skills and magic level like the Mystic; the casters' wands, rods,
   gear, stock heals and mana potions (`add_vocations.py`). Locked behind the store's class unlock (`class_unlocks.lua`,
   key "necromancer").
-- **Ascension**: `!ascend lich|bonelord` (`Chaos.classes.ascension.choices[20]`).
+- **Ascension**: the Ascendant Oracle (`Chaos.classes.ascension.choices[20]`).
 - **Kit**: 9 spells (ids 180-188; `server/data/spells/chaos/necromancer|lich|bonelord`, helpers `_necro.lua`);
   minions `necro_minions.lua`, curse and bone shield `necromancer_combat.lua`, engine helpers `necro_lib.lua`, pure
   rules `necro_core.lua` (tests `server/tests/necro_test.lua`), numbers `necro_config.lua`; minion monsters
@@ -255,7 +255,7 @@ Open for the Necromancer:
   | 18 | Shadowfist | 17 | 18 | 12 / 10 / 22 | 1300 | 232 | x1.2 |
   | 19 | Iron Sage | 17 | 28 | 14 / 9 / 25 (defense / armor 1.15) | 1700 | 228 | x1.1 |
 
-  Skills: fist fighting and club 1.1, sword / axe / distance 1.3, shielding 1.2 (Iron Sage 1.1), magic level 2.0. `!ascend shadowfist|ironsage`
+  Skills: fist fighting and club 1.1, sword / axe / distance 1.3, shielding 1.2 (Iron Sage 1.1), magic level 2.0. the Ascendant Oracle
   at level 100. All ids (vocations, client bytes, spells 63-72, storages 7100800-7100809, condition sub ids 71030-71044, opcode 247) are in
   `ChaosMonk.ids` (`server/data/scripts/chaos/monk_chi_core.lua`). Equipment (`add_vocations.py`): two-handed clubs (staves) and
   whatever the Ranger may wear; the Royal Paladin's potions. New-player kit: light armour, no weapon.
@@ -283,7 +283,7 @@ Open for the Monk:
 
 ### Templar (C7, phase A: built, not tested in game)
 
-Holy melee with a party defence aura; the tank-support alternative to the Juggernaut. Ascension with `!ascend inquisitor|sentinel`
+Holy melee with a party defence aura; the tank-support alternative to the Juggernaut. Ascension with the Ascendant Oracle
 at level 100+ (the same rules as the other classes).
 
 | id | Name | client byte | hp / mana / cap per level | weapon hits | defense / armor |
@@ -350,7 +350,7 @@ registered with `registerMethod`), without touching the gate code.
   so a paid unlock could be lost by a crash.
 - API (`class_unlocks.lua`, stable): `isUnlocked(player or accountId, classKey)`, `classOfVocation(vocId)`,
   `canUseVocation(player, vocId)` -> ok, message; also `grant`, `revoke`, `isRestricted`, `storeUnlock`.
-- Gates: the store's `!changevocation` and `!ascend` refuse a locked class (the vocation change token is kept);
+- Gates: the store's Character > Services and the Ascendant Oracle refuse a locked class (the vocation change token is kept);
   the login check covers everything else (characters made on the website, staff tools): a character on a locked vocation
   logs in, goes to its temple, cannot attack and gains no experience or skills, and a window says how to unlock; the store
   works in that state, so buying the unlock ends the restriction at once. (`login.mode = "kick"` logs it out instead.)
@@ -358,7 +358,7 @@ registered with `registerMethod`), without touching the gate code.
 - Characters are created on the website: the base server has no account manager and no in-game character creation (the
   engine never inserts into `players`; its login only reads the character list). The website should offer the three classes
   only to accounts with a row in `chaos_class_unlocks`; the login check holds even if it does not.
-- `!classes` shows the account's state; staff: `/classunlock <character>, <class>[, revoke]`.
+- Character > Character Info shows the account's state; staff: `/classunlock <character>, <class>[, revoke]`.
 
 ### Ascension quest (C9, done)
 
@@ -376,7 +376,7 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
   1. **The Calling**: talk to the Oracle ("ascension", "quest"); it describes the two paths of your class.
   2. **Proof of Strength**: 10 points from rare (1) and legendary (3) monsters at your level: the monster's hunting level
      (as the bounty pool estimates it) must be at least 0.6 x your level (a Hydra, 73, counts at level 100; a Dragon, 42, does not).
-     Magic monsters, bosses and normal monsters do not count. Progress: `!ascension` or the Oracle.
+     Magic monsters, bosses and normal monsters do not count. Progress: Character > Character Info or the Oracle.
   3. **The Trial**: alone in a runtime-built room against your class's guardian, an existing monster look scaled to levels
      100-130 (6000 health at 100, x1.3 at 130 and above; its hits scale the same way), 180 seconds. The guardians and their
      mechanics: Warden of Iron (Warrior: punishes standing still, enrages), Warden of the Hunt (Ranger: hounds, punishes
@@ -389,8 +389,8 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
      (`ChaosClassUnlocks.canUseVocation`), then the existing vocation change of ascension.lua (health, mana and capacity
      recounted, the vocation resent to the client, dual wield synced). Rewards: the name plate title "Ascended <class>"
      (titles.lua), a toast and a broadcast.
-- **`!ascend`** is staff-only now; players are told to speak with the Ascendant Oracle in the temple. The one free switch of
-  migrated Elite Knights / Royal Paladins (`!ascend berserker|beastmaster`) still works. The store's Vocation Change is unchanged
+- **the Ascendant Oracle** is staff-only now; players are told to speak with the Ascendant Oracle in the temple. The one free switch of
+  migrated Elite Knights / Royal Paladins (the Ascendant Oracle) still works. The store's Vocation Change is unchanged
   (a character it takes back to a base class may choose again at the Oracle).
 - **Existing characters**: ascended characters keep their class (and get the title). Staff can restore a character the old
   login bug demoted with `/ascendset <player>, <ascended class>` (same line only; the class lock still applies).

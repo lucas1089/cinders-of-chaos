@@ -262,11 +262,20 @@ def mountain(d, c):
     d.polygon([(6, 118), (52, 40), (70, 66), (84, 52), (122, 118)], fill=c)
     d.polygon([(52, 40), (62, 58), (44, 58)], fill=(255, 255, 255, 140))
 
+
+def gate(d, c):
+    # Town Portal: an arched gate with a swirl inside
+    d.rounded_rectangle((26, 14, 102, 120), 36, outline=c, width=9)
+    for i in range(3):
+        r = 30 - i * 9
+        d.arc((64 - r, 70 - r, 64 + r, 70 + r), 40 + i * 70, 300 + i * 70, fill=c, width=5)
+    d.rectangle((14, 112, 114, 122), fill=c)
+
 GLYPH = {k: v for k, v in globals().items() if callable(v) and k in (
     'burst', 'bolt', 'drop', 'crystal', 'meteor', 'dots', 'shield', 'thorns', 'paw', 'leaf', 'swirl', 'cross', 'arrows',
     'ring', 'sword', 'slam', 'wave', 'arrowup', 'hammer', 'twin', 'dash', 'eye', 'ghost', 'rift', 'missile',
     'shuriken', 'daggers', 'smoke', 'katana', 'hood', 'greataxe', 'fang', 'skull', 'bonespear', 'golem', 'banner', 'ribs',
-    'fist', 'palm', 'kick', 'flame', 'nodes', 'mountain')}
+    'fist', 'palm', 'kick', 'flame', 'nodes', 'mountain', 'gate')}
 
 ICONS = [  # (spell name, theme, glyph)
     ('Rime Bloom', 'frost', 'burst'), ('Witchfire Bolt', 'fire', 'missile'), ('Forked Storm', 'light', 'bolt'),
@@ -302,7 +311,9 @@ ICONS = [  # (spell name, theme, glyph)
     ('Judgement', 'holy', 'eye'), ('Purging Nova', 'holy', 'burst'), ('Zealotry', 'ember', 'sword'),
     ('Rebuke', 'light', 'wave'), ('Aegis of Faith', 'light', 'shield'), ('Lay on Hands', 'light', 'cross'),
     # the Illusionist healer pass (cells 278..279)
-    ('Mirror Mend', 'water', 'twin'), ('Lucid Reverie', 'arcane', 'ring')]
+    ('Mirror Mend', 'water', 'twin'), ('Lucid Reverie', 'arcane', 'ring'),
+    # Town Portal, every class (cell 280)
+    ('Town Portal', 'arcane', 'gate')]
 
 def render(theme, glyph):
     c = COL[theme]

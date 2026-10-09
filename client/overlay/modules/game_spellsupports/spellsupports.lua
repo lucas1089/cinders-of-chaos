@@ -1,4 +1,4 @@
--- Spell supports: the support sockets of the character's spells. A window (!supports, Chaos -> Spell Supports, or
+-- Spell supports: the support sockets of the character's spells. A window (Character > Spell Supports, or
 -- using a support rune) lists the class kit's spells with their 1-3 sockets and the support runes carried; a rune
 -- goes into a free socket by selecting it and pressing Socket or by dragging it (from the window's rune grid or from a
 -- backpack) onto the socket; Remove gives it back for gold, Shatter destroys it; Combine 3 makes one rune of the next
@@ -463,7 +463,7 @@ function spellbookLine(words)
   if not id then return nil end
   local runes = barRunes(id)
   if not runes or #runes == 0 then
-    return tr('Supports: none socketed (Spell Supports window, !supports).')
+    return tr('Supports: none socketed (Character > Spell Supports).')
   end
   local names, effects = {}, {}
   for _, r in ipairs(runes) do

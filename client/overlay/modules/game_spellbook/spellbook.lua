@@ -3,7 +3,7 @@
 --   server -> client  open {vocation, level, magicLevel, total, chunks, vocationNames}
 --                     spells {index, spells = [...]}  (several messages)
 --                     done {total}
---   client -> server  open                             (menu / toggle; the server answers as for !spells)
+--   client -> server  open                             (menu / toggle)
 -- Spell fields: name, words, level, maglevel, mana, manaPercent, soul, cooldown, groupCooldown, group, type,
 -- element, target (single/area/self/front), center (caster/target), area (matrix: 1 hit, 2 centre, 3 centre + hit,
 -- "front" spells face north), range, description, scaling, vocations (ids), premium, rune, runeClientId.

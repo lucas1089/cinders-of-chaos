@@ -10,7 +10,7 @@ cell n (1-based) at col (n-1)%20, row (n-1)//20, like Spells.getImageClipNormal.
    element icon sets: the Chaos spells mapped by element and role in chaos_spell_icons.csv, the named stock cells by
    element and kind) uses that pixel-art icon: 32x32 copied as it is, 22x24 and 20x20 redrawn from the inner art with a
    1 px frame in the icon's own frame colour. Cells without art, and every cell with --no-art, are drawn as below
- - cells 201..279: the Chaos spell icons from gen_spell_icons.py (same drawings, same downscale)
+ - cells 201..280: the Chaos spell icons from gen_spell_icons.py (same drawings, same downscale)
  - every other cell: a neutral filler (dark plate + plain sigil)
 Needs Pillow."""
 import argparse, math, os, re, sys

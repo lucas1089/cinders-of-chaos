@@ -109,7 +109,7 @@ Two Lua states are involved: spells run in their own state, everything else in t
 
 Storage: 7110000 + spell id x 4 + 0 (third socket opened) / + 1..3 (rune server id per socket), spell ids 0..499.
 
-Window: client `game_spellsupports` (Chaos -> Spell Supports, `!supports`, using a rune, or the Supports button of the
+Window: client `game_spellsupports` (Character > Spell Supports, using a rune, or the Supports button of the
 spellbook), extended opcode 243. The action bar gets coloured pips (one per rune, the level colour) on spell buttons and
 the runes in the button tooltip; the spellbook adds a "Supports:" line under the description.
 

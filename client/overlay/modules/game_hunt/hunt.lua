@@ -7,7 +7,7 @@
 --                     s = [[clientId, n, gold, name]], x = [[clientId, n, name, rarity, unique, orb]]}
 --   client -> server  open | close | get | pause | resume | reset
 -- While the window is open the server sends a state every 2 s; the session clock ticks here in between.
--- !hunt opens it from the chat; the top menu (Hunt -> Hunt Tracker) calls toggle().
+-- The top menu (Hunt -> Hunt Tracker) calls toggle().
 -- The base client's analyser (mods/game_analyser) is not used: its loot, supply, damage and kill panes are fed by
 -- game-protocol messages this server's protocol never sends (see server/README.md "Hunt tracker").
 

@@ -30,6 +30,9 @@
 --     store works in that state, so it can buy the unlock at once; the restriction ends the moment it is bought);
 --     mode "kick" shows the same window and logs it out. Staff (group 4+ or account type 5+) is never locked.
 -- Commands: !classes (what the account has unlocked); staff: /classunlock <character>, <class>[, revoke].
+if not ChaosCommands then
+	dofile("data/scripts/chaos/commands_ui_core.lua")
+end
 
 if not ChaosClassUnlocksCore then
 	dofile("data/scripts/chaos/class_unlocks_core.lua")
@@ -338,7 +341,7 @@ local function statusLines(player)
 	return lines
 end
 
-local classesTalk = TalkAction("!classes")
+local classesTalk = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "classes")
 function classesTalk.onSay(player, words, param)
 	local lines = statusLines(player)
 	if #lines == 0 then
@@ -348,7 +351,7 @@ function classesTalk.onSay(player, words, param)
 	end
 	return false
 end
-classesTalk:register()
+ChaosCommands.register("classes", function(player, param) return classesTalk.onSay(player, "", param) end)
 
 -- staff: /classunlock <character>, <class>[, revoke]   (works for offline characters: it is per account)
 local gmTalk = TalkAction("/classunlock")

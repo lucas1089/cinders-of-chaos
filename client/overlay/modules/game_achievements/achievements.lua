@@ -1,5 +1,5 @@
 -- Achievements window: categories, a progress bar per achievement, points (character and account), hidden ones as
--- "???", a title selector (sends !title to the server's name plates) and the recent unlocks.
+-- "???", a title selector (every title the character holds, for the server's name plates) and the recent unlocks.
 -- Server: server/data/scripts/chaos/achievements.lua, extended opcode 250 (JSON {action, data}).
 --   server -> client  state {open, points, accountPoints, maxPoints, unlocked, total, categories = [{key, name, done,
 --                            total, points, max}], recent = [{id, name, points, at}], titles = [{key, text, at}],
@@ -7,7 +7,7 @@
 --                     list {first, last, rows = [{i, n, d, c, p, h, u, v, t, ti, r}]}   (sent in parts after state)
 --                     unlock {id, name, points, title}                                   (the toast comes on opcode 79)
 --   client -> server  open | get
--- !achievements opens it from the chat; the top menu (Chaos -> Achievements) calls toggle().
+-- The top menu (Character > Achievements) calls toggle().
 
 local OPCODE = 250
 local V = AchievementsView
@@ -100,7 +100,8 @@ local function buildTitles()
   local combo = window.titleCombo
   updatingCombo = true
   combo:clearOptions()
-  local titles = list(state.titles)
+  -- every title the character holds (achievements, leaderboards, siege, seasons); older servers: achievement titles
+  local titles = #list(state.heldTitles) > 0 and list(state.heldTitles) or list(state.titles)
   local on = state.titlesOn and true or false
   combo:setVisible(on)
   window.titleLabel:setVisible(on)
@@ -113,9 +114,9 @@ local function buildTitles()
       if t.text == state.activeTitle then current = t.text end
     end
     if current then combo:setCurrentOption(current) else combo:setCurrentOption(tr('Newest title')) end
-    window.hintLabel:setText(tr('Titles from achievements show above your name. Other titles: !title'))
+    window.hintLabel:setText(tr('Your title shows above your name.'))
   else
-    window.hintLabel:setText(tr('Achievement titles: %d. Pick one with !title <name>.', #titles))
+    window.hintLabel:setText(tr('Titles: %d.', #titles))
   end
   updatingCombo = false
 end
@@ -187,7 +188,7 @@ end
 
 local function onTitleChange(combo, text, data)
   if updatingCombo or not data then return end
-  g_game.talk(V.titleCommand(data))
+  send('title', { title = V.titleParam(data) })
   scheduleEvent(function() send('get') end, 600)
 end
 

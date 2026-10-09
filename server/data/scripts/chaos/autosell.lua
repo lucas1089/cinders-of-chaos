@@ -16,6 +16,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not ChaosCommands then
+	dofile("data/scripts/chaos/commands_ui_core.lua")
+end
 
 local ST = Chaos.storage
 local S = ChaosShopServices -- pure helpers (shop_services.lua); looked up again at run time if nil at load
@@ -118,7 +121,7 @@ local function autoSell(monster, corpse)
 	end
 	if kept > 0 then
 		owner:sendTextMessage(MESSAGE_LOOT or MESSAGE_INFO_DESCR,
-			"Auto seller: kept an item with a rarity or modifiers (\"!autosell rarity on\" sells those too).")
+			"Auto seller: kept an item with a rarity or modifiers (Economy > Auto Seller can sell those too).")
 	end
 	if keptLocked > 0 then
 		owner:sendTextMessage(MESSAGE_LOOT or MESSAGE_INFO_DESCR, "Auto seller: kept a locked item.")
@@ -163,7 +166,7 @@ local function notify(player)
 		parts[#parts + 1] = p.inbox .. " to your inbox"
 	end
 	player:sendTextMessage(MESSAGE_LOOT or MESSAGE_INFO_DESCR, "Loot pouch: your backpack is full, loot sent " ..
-		table.concat(parts, " and ") .. " (!stash).")
+		table.concat(parts, " and ") .. " (Economy > Supply Stash).")
 	p.stash, p.inbox, p.last = 0, 0, now
 end
 
@@ -247,9 +250,9 @@ local function lookup(text)
 	return nil
 end
 
-local HELP = "Auto seller: !autosell add <item> | remove <item> | list | clear | on | off | rarity on|off"
+local HELP = "Auto seller: add or remove items, switch it on or off, and choose whether items with a rarity are sold."
 
-local talk = TalkAction("!autosell")
+local talk = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "autosell")
 function talk.onSay(player, words, param)
 	if player:getStorageValue(ST.shopAutoSeller) < 1 then
 		player:sendCancelMessage("You need the Auto Seller from the store (Convenience).")
@@ -315,5 +318,4 @@ function talk.onSay(player, words, param)
 	end
 	return false
 end
-talk:separator(" ")
-talk:register()
+ChaosCommands.register("autosell", function(player, param) return talk.onSay(player, "", param) end)

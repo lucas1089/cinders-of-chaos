@@ -125,8 +125,8 @@ function M.onLogin(player)
 				names[#names + 1] = k
 			end
 			table.sort(names)
-			text = text .. string.format(" From level %d choose your ascended class: !ascend %s.",
-				cfg().ascension.minLevel, table.concat(names, "|"))
+			text = text .. string.format(" From level %d choose your ascended class at the Ascendant Oracle: %s.",
+				cfg().ascension.minLevel, table.concat(names, " or "))
 		end
 	end
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
