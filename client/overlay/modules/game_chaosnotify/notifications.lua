@@ -99,6 +99,15 @@ local NOTIFICATION_TYPES = {
         borderColor = "#7a1a12",
         duration = 9000,
     },
+    -- boss passive points (server data/scripts/chaos/bosspoints.lua): first kill of a major boss, +1 passive point
+    BOSS_POINT = {
+        icon = "images/notifications/task.png",
+        title = "BOSS PASSIVE POINT",
+        titleColor = "#d8a03a",
+        backgroundColor = "#ccbebb",
+        borderColor = "#7a5410",
+        duration = 10000,
+    },
     CATACOMB_FREE = {
         icon = "images/notifications/catacomb2.png",
         title = "CATACOMB AVAILABLE",
@@ -1101,6 +1110,13 @@ function onExtendedOpcode(protocol, opcode, buffer)
         achievement = function(data)
             if data.message then
                 addNotification("ACHIEVEMENT", data.message)
+            end
+        end,
+
+        -- boss passive points (server data/scripts/chaos/bosspoints.lua)
+        bosspoints = function(data)
+            if data.message then
+                addNotification("BOSS_POINT", data.message)
             end
         end,
 

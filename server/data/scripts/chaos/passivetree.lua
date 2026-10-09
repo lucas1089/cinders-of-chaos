@@ -9,6 +9,7 @@
 --                     respec.lua / buildshare.lua add refundNode, respecInfo, buildExport, buildPreview, buildApply
 --                     refund                             -> resync (sendPoints + sendNodes)
 --   server -> client  {"action":"sendPoints","data":<free points number>}
+--                     {"action":"bossPoints","data":{got, total, label, bosses}} after every sendPoints (bosspoints.lua)
 --                     {"action":"sendNodes","data":{"preset":N,"presetsTable":[{"name":".."}],"nodes":[ids],"vocation":"knight"}}
 --                     {"action":"sendMessage","data":{"title":"..","message":".."}}
 --   Paragon track (paragon.lua, ChaosParagon.actions), same opcode:
@@ -52,7 +53,9 @@ end
 local function totalPoints(player)
 	local byLevel = math.floor(math.max(0, player:getLevel() - cfg.startLevel) / (cfg.levelsPerPoint or 1))
 	local extra = player:getStorageValue(Chaos.storage.passiveExtraPoints)
-	return byLevel + math.max(0, extra)
+	-- +1 per major boss killed once (bosspoints.lua): kept through every reset, refund and build code
+	local bosses = ChaosBossPoints and ChaosBossPoints.count and ChaosBossPoints.count(player) or 0
+	return byLevel + math.max(0, extra) + bosses
 end
 
 -- preset rows: {{preset=1,name="..",nodes={ids}}, ...} ordered by preset
@@ -93,6 +96,9 @@ end
 local function sendPoints(player, rows)
 	rows = rows or loadPresets(player:getGuid())
 	Chaos.send(player, OPCODE, "sendPoints", freePoints(player, rows))
+	if ChaosBossPoints and ChaosBossPoints.sendInfo then
+		ChaosBossPoints.sendInfo(player) -- "Boss points n/10" under the points box
+	end
 end
 
 local function sendNodes(player, rows)

@@ -368,6 +368,33 @@ The tree now has an effect: after every save, reset and login the summed node st
 - **Character stats** (strength, intelligence, dexterity, vitality, spirit, wisdom), capped per stat (`charStatCap`), get the
   engine's effect without being written into the character's stats (those are the stat window's points and are saved with the
   player; writing them made the bonus stack on every login and let the stat window refund it as free points): strength /
+### Boss passive points (`bosspoints.lua`, `bosspoints_core.lua`, `bosspoints_config.lua`)
+
+The first kill of each major boss gives the character +1 passive point, once per boss (10 points in all): the five world
+bosses (Kaelgor, Skaldra, The Rotmother, Nyxareth, Vharok), the Ascension Trial's Warden (type `Ascension Warden`, whatever
+class name it wears) and Ghazbaran, Apocalypse, Ferumbras Mortal Shell and Gaz'haragoth. Bosses are matched on the monster
+TYPE name, so renamed spawns count.
+
+- Credit, as the bestiary and the bounty board (`ChaosBounty.credit`): every player in the boss's damage map (summons for
+  their master), the last hit and the most damage, plus the party members of each within `partyRange` (30) tiles on the same
+  floor. A player who logged out or died before the kill is not credited.
+- Storage: one flag per boss, `storageBase + id` (7101400 - 7101419 reserved; +0 = old kills checked). `ChaosBossPoints.count`
+  is added to the tree budget by `passivetree.lua totalPoints` with the level points and `passiveExtraPoints`, so resets,
+  single-node refunds and build codes keep them. The Paragon track is not changed: its points come from levels above 1000
+  only, the boss points are tree points (248 + 10 + 1 is still far below the 618 nodes, so they never overflow).
+- Old kills: once per character, at the first login (again if `retroVersion` is raised), the missing points are given from
+  the `chaos_bestiary` row of the boss (kills > 0), the world boss stats of `chaos_achievement_stats` (`wb_kaelgor` ...) and
+  the Ascension quest stage (3 = Trial won, 4 = ascended). Bestiary rows only exist for the last hit / most damage and their
+  party (and only since the bestiary was installed), so a helper who only did some damage before that is not found: those
+  characters get the point at their next kill of that boss.
+- Client: a toast (`game_chaosnotify` action `bosspoints`) and a message on the first kill; the passive tree window shows
+  "Boss points n/10" under the points box, with the list (slain or not) as its tooltip (`game_passivetree/bosspoints.lua`,
+  `bossPoints` sent after every `sendPoints`).
+- Removing a boss from the list takes its point back at the next login (a tree with more nodes than points is refunded for
+  free); never reuse an id.
+- `server/tests/bosspoints_test.lua`: the list (the five world bosses of `Chaos.worldBoss`, the Trial guardian type and stage
+  storage), counting, damage-map and party credit, first kill only, the Trial Warden, the tree budget, the old kills once.
+
   intelligence multiply damage dealt by `1 + value/230` (physical / other types, the engine formula), dexterity multiplies weapon
   hits by `1 / (1 - value/100)` (the damage equal of the engine's faster attacks, which a script cannot set), vitality / spirit
   are +value% max health / mana conditions, wisdom has no effect in the engine. Characters whose stats an older version

@@ -513,7 +513,20 @@ UIWindow
       anchors.centerIn: parent
       text-auto-resize: true
       text: 10 Passive Points
-    
+
+  Label
+    id: bossPoints
+    anchors.top: pWindow.bottom
+    anchors.horizontalCenter: pWindow.horizontalCenter
+    margin-top: 3
+    font: verdana-11px-rounded
+    color: #d8a03a
+    text-auto-resize: true
+    background-color: #000000a0
+    padding: 1 4
+    phantom: false
+    visible: false
+
 
 
 
