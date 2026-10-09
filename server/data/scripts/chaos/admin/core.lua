@@ -291,8 +291,11 @@ end
 ------------------------------------------------------------------------------------------------
 -- Catalog + dispatch
 ------------------------------------------------------------------------------------------------
+-- The catalog is about 20 KB, over the 8192 bytes one extended opcode message can carry, so everything goes through
+-- Chaos.sendChunked (S/P/E parts; the client listens with ProtocolGame.registerExtendedJSONOpcode).
 local function send(player, action, data)
-	player:sendExtendedOpcode(CHAOS_ADMIN_OPCODE, json.encode({action = action, data = data}))
+	if not Chaos then dofile("data/scripts/chaos/chaos_constants.lua") end
+	Chaos.sendChunked(player, CHAOS_ADMIN_OPCODE, json.encode({action = action, data = data}))
 end
 
 function ChaosAdmin.buildCatalog(player)

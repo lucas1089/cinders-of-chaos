@@ -785,6 +785,45 @@ function Chaos.send(player, opcode, action, data)
 	return true
 end
 
+-- An extended opcode message (0x32, u8 opcode, u16 length, bytes) carries its payload as one string, and the engine's
+-- NetworkMessage::addString silently refuses strings over 8192 bytes. The base Player.sendExtendedOpcode writes 0x32 and
+-- the opcode before the string, so a longer payload left those two bytes alone in the packet: the client read the next
+-- two bytes as the string length and dropped the rest of that network message ("parse message exception ... last opcode
+-- is 0x32" at every admin login: the 20 KB admin catalog). extended_opcode.lua refuses such payloads (with a warning);
+-- Chaos.sendChunked splits one into the parts "S..." (start), "P..." (part), "E..." (end) that the client's
+-- ProtocolGame.registerExtendedJSONOpcode joins back together. A payload that fits goes out unchanged.
+Chaos.extendedOpcodeMax = 8192
+Chaos.extendedOpcodeChunk = 8000
+
+function Chaos.splitExtended(buffer, size)
+	buffer = tostring(buffer or "")
+	if #buffer <= Chaos.extendedOpcodeMax then
+		return {buffer}
+	end
+	size = math.min(size or Chaos.extendedOpcodeChunk, Chaos.extendedOpcodeMax - 1)
+	local parts = {}
+	for i = 1, #buffer, size do
+		parts[#parts + 1] = buffer:sub(i, i + size - 1)
+	end
+	for i = 1, #parts do
+		parts[i] = (i == 1 and "S" or (i == #parts and "E" or "P")) .. parts[i]
+	end
+	return parts
+end
+
+-- for client modules that listen with ProtocolGame.registerExtendedJSONOpcode (JSON payloads only)
+function Chaos.sendChunked(player, opcode, buffer)
+	if not player then
+		return false
+	end
+	for _, part in ipairs(Chaos.splitExtended(buffer)) do
+		if player:sendExtendedOpcode(opcode, part) == false then
+			return false
+		end
+	end
+	return true
+end
+
 -- Positive integer from client input, or nil.
 function Chaos.toInt(value, minimum, maximum)
 	local n = tonumber(value)

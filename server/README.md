@@ -240,6 +240,18 @@ None of the Chaos opcodes collide; no adjustment was needed. 110 was chosen for 
 the client has no fixed value and 110 is free. Storage keys `7100000-7100999` and DB tables
 `chaos_*` are new; the one deliberate overlap is autoloot's storage base 80000 (shared on purpose).
 
+### Extended opcode size limit (`extended_opcode.lua`, `Chaos.sendChunked`)
+One extended opcode message carries at most 8192 bytes (`NetworkMessage::addString` refuses longer strings without an
+error). The base `Player.sendExtendedOpcode` wrote `0x32` and the opcode first, so a longer payload went out as the two
+bytes `32 <opcode>`: the client read the next two bytes as the length, logged `ProtocolGame parse message exception (...
+3 unread, last opcode is 0x32 ...)` and dropped the rest of that network message. At every admin login this lost the
+whole admin catalog (opcode 120, about 20 KB, so the admin panel never appeared) and whatever was bundled after it (the
+ancestral points push 89, sometimes the loot filter settings 238 and name plates 248). `extended_opcode.lua` replaces
+`Player.sendExtendedOpcode`: a payload over 8192 bytes is not sent and a `[Warning - Chaos] extended opcode ...` line names
+it. Big JSON goes through `Chaos.sendChunked(player, opcode, json)` (parts `S...`, `P...`, `E...` of 8000 bytes, joined by
+the client's `ProtocolGame.registerExtendedJSONOpcode`); the admin panel uses it. `tests/extended_opcode_test.lua`; tested in
+game (admin and player logins without the exception, admin panel filled and running actions).
+
 ## Player commands: the menu (`commands_ui.lua`, `commands_ui_core.lua`, `tools/install_commands.py`)
 
 Players type no commands. Every player command of the server is in the client's top menu (`client_chaos_topbar`):
