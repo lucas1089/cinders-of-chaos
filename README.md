@@ -113,6 +113,10 @@ Balance is measured on test dummies at levels 300 and 1000, so every class keeps
   less damage from monsters. Every modifier has a cap for your whole equipment. They show with their tier in the item's
   description, in the loot channel and on the Crafting Bench.
 - **About 50 uniques** with fixed, build-defining stats. Some only drop from bosses.
+- **Map overlay:** press **Tab** to lay a see-through map over the game view, centred on your character, with icons for your
+  party, the temple, depots and NPCs, rift exits and guardians, treasure goblins, world bosses and invasions. Mouse wheel or
+  +/- zooms; opacity and the corner-box mode are in Hunt > Map Overlay Settings. Inside a rift the layout fills in as you
+  explore it.
 - **Rich item tooltips:** hover an item to see its rarity, item level, its prefixes and suffixes, every modifier with
   its tier ("T5") and the value range of that tier,
   sockets and gems, unique set and requirements. Hold **Ctrl** to compare it with what you are wearing, stat by stat in
