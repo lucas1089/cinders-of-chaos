@@ -21,7 +21,7 @@ function onCastSpell(creature, variant, isHotkey)
 	end
 	local min, max = MonkSpell.values(player, ChaosMonk.formula.whirlingHeel, ChaosMonk.finisherScale(spent))
 	local pos = player:getPosition()
-	ChaosSpell.fx(pos, "shockwave", CONST_ME_GROUNDSHAKER)
+	ChaosSpell.vfxOr(pos, "whirlwind", "shockwave", CONST_ME_GROUNDSHAKER)
 	doAreaCombat(player, COMBAT_PHYSICALDAMAGE, pos, AREA, -min, -max, CONST_ME_HITAREA, ORIGIN_SPELL)
 	return true
 end

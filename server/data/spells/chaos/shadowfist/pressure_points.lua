@@ -32,6 +32,7 @@ function onCastSpell(creature, variant, isHotkey)
 	-- the stack first, so this strike already counts it
 	addStack(target)
 	ChaosSpell.fx(target:getPosition(), "void_eye", CONST_ME_MAGIC_RED)
+	ChaosSpell.vfx(target:getPosition(), "punch_hit_violet")
 	MonkSpell.strike(player, target, ChaosMonk.formula.pressurePoints, 1, CONST_ME_HITAREA)
 	ChaosMonk.addChi(player, ChaosMonk.cfg.chi.pressurePoints)
 	return true

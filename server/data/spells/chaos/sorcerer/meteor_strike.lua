@@ -29,8 +29,13 @@ function onCastSpell(creature, variant, isHotkey)
 	local pos = target:getPosition()
 	local min, max = ChaosSpell.mlValues(player, 6.6, 10.8, 145, 265, 1.2)
 
-	ChaosSpell.shoot(player:getPosition(), pos, "fire_bolt", CONST_ANI_FIRE)
-	ChaosSpell.fx(pos, "arcane_circle", CONST_ME_MAGIC_RED)
+	ChaosSpell.vshoot(player:getPosition(), pos, "fireball", "fire_bolt", CONST_ANI_FIRE)
+	if ChaosSpell.vfx(pos, "infernal_seal") then
+		-- the meteor art falls for about 0.66 s before it hits the ground
+		addEvent(function(p) ChaosSpell.vfx(p, "meteor_strike") end, DELAY - 660, {x = pos.x, y = pos.y, z = pos.z})
+	else
+		ChaosSpell.fx(pos, "arcane_circle", CONST_ME_MAGIC_RED)
+	end
 	addEvent(impact, DELAY, player:getId(), {x = pos.x, y = pos.y, z = pos.z}, min, max)
 	return true
 end

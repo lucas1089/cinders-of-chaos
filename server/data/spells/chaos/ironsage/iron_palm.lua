@@ -20,7 +20,7 @@ local function stun(target, spent)
 	if locks then
 		c:setParameter(CONDITION_PARAM_SUBID, M.ids.subId.stun)
 		c:setFormula(-1, 0, -1, 0)
-		ChaosSpell.fx(target:getPosition(), "ground_slam", CONST_ME_STUN)
+		ChaosSpell.vfxOr(target:getPosition(), "punch_hit_gold", "ground_slam", CONST_ME_STUN)
 	else
 		c:setFormula(-M.cfg.stun.bossSlow, 0, -M.cfg.stun.bossSlow, 0)
 	end

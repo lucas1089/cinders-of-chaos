@@ -126,7 +126,6 @@ return {
 			}
 		},
 		{
-		{
 			-- pets (pets.lua): per character; the unlock keys are pets_config.lua `store` (look = the pet's outfit, shown
 			-- instead of an item icon)
 			name = "Pets", icon = {outfit = {type = 294, rotating = true}},
@@ -137,6 +136,7 @@ return {
 					description = "A pet that finds more gold in your kills and later more items. Call it with !pet."}
 			}
 		},
+		{
 			-- class unlocks (class_unlocks.lua): account-wide; offer names and prices must match
 			-- ChaosClassUnlocksCore.config (class_unlocks_core.lua). PLACEHOLDER PRICES (750 each), to be decided.
 			name = "Classes", icon = {item = 2523},
@@ -189,7 +189,27 @@ return {
 			name = "Auras", icon = {outfit = preview({aura = 932})},
 			offers = {
 				{kind = "aura", id = 1, cost = 200}, {kind = "aura", id = 2, cost = 200}, {kind = "aura", id = 3, cost = 200},
-				{kind = "aura", id = 4, cost = 150}, {kind = "aura", id = 5, cost = 200}
+				{kind = "aura", id = 4, cost = 150}, {kind = "aura", id = 5, cost = 200},
+				-- Chaos auras (data/XML/chaos_auras.csv, server/tools/install_auras.py); names from auras.xml
+				{kind = "aura", id = 6, cost = 300, description = "A golden flame of ki that burns round you."},
+				{kind = "aura", id = 7, cost = 300, description = "A spiky crimson flame, the look of a powered-up fighter."},
+				{kind = "aura", id = 8, cost = 300, description = "Blue lightning crawls up your sides."},
+				{kind = "aura", id = 9, cost = 300, description = "Heavy smoke with dark veins wraps round you."},
+				{kind = "aura", id = 10, cost = 300, description = "Violet streaks race round your body."},
+				{kind = "aura", id = 11, cost = 250, description = "A calm white glow with rising sparks and a halo on the ground."},
+				{kind = "aura", id = 12, cost = 250, description = "Runes orbit you in a violet ring."},
+				{kind = "aura", id = 13, cost = 250, description = "A pulsing circle of blood and fangs at your feet."},
+				{kind = "aura", id = 14, cost = 250, description = "A golden dome of dawn light."},
+				{kind = "aura", id = 15, cost = 250, description = "A crown of embers burns round you."},
+				{kind = "aura", id = 16, cost = 250, description = "A ring of ice crystals guards you."},
+				{kind = "aura", id = 17, cost = 250, description = "Gusts and leaves circle you."},
+				{kind = "aura", id = 18, cost = 250, description = "A green mist rises round you."},
+				{kind = "aura", id = 19, cost = 250, description = "A breathing cloak of shadow."},
+				{kind = "aura", id = 20, cost = 250, description = "Stars fall round you in a slow crown."},
+				{kind = "aura", id = 21, cost = 250, description = "Stones orbit you."},
+				{kind = "aura", id = 22, cost = 250, description = "A crackling storm mantle."},
+				{kind = "aura", id = 23, cost = 250, description = "Leaves and blossoms bloom at your feet."},
+				{kind = "aura", id = 24, cost = 250, description = "A violet rift of the void opens under you."}
 			}
 		},
 		{
@@ -220,6 +240,8 @@ return {
 			offers = {
 				{kind = "mount", id = 121, clientid = 1236, cost = 690, name = "Crimson Fang", description = "A blood-red war beast."},
 				{kind = "mount", id = 119, clientid = 1234, cost = 690, name = "Glacier Wyrm", description = "A wyrm of living ice."},
+				-- Chaos mount (mounts.xml block of server/tools/install_outfits.py; client outfit 1561, donor B first set)
+				{kind = "mount", id = 141, clientid = 1561, cost = 690, name = "Bone Steed", description = "A skeletal horse wreathed in grave-light."},
 				{kind = "mount", id = 120, clientid = 1235, cost = 690, name = "Bog Tyrant", description = "A tyrant of the swamps."},
 				{kind = "mount", id = 104, clientid = 928, cost = 450, name = "Spirit of Purity", description = "A radiant spirit steed."}
 			}

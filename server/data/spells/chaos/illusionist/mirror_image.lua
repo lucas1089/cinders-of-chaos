@@ -30,6 +30,6 @@ function onCastSpell(creature, variant, isHotkey)
 	if made == 0 then
 		return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHROOM)
 	end
-	ChaosSpell.fx(pos, "arcane_circle", CONST_ME_MAGIC_BLUE)
+	ChaosSpell.vfxOr(pos, "arcane_sigil", "arcane_circle", CONST_ME_MAGIC_BLUE)
 	return true
 end

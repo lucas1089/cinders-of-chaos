@@ -13,7 +13,9 @@ local function hit(playerId, targetId, left)
 		player:getPosition():sendDistanceEffect(target:getPosition(), CONST_ANI_SMALLHOLY)
 		MonkSpell.strike(player, target, ChaosMonk.formula.flurryHit, 1, CONST_ME_HITAREA)
 	else
-		target:getPosition():sendMagicEffect(CONST_ME_POFF)
+		if not ChaosSpell.vfx(target:getPosition(), "punch_hit_violet") then
+			target:getPosition():sendMagicEffect(CONST_ME_POFF)
+		end
 	end
 	if left > 1 then
 		addEvent(hit, ChaosMonk.cfg.flurry.intervalMs, playerId, targetId, left - 1)

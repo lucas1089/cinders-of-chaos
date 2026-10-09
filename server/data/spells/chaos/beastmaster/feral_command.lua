@@ -46,6 +46,8 @@ function onCastSpell(creature, variant, isHotkey)
 		s:setTarget(target)
 		ChaosSpell.damageTarget(player, target, COMBAT_PHYSICALDAMAGE, min * cfg.mauls, max * cfg.mauls, CONST_ME_DRAWBLOOD)
 	end
-	target:getPosition():sendMagicEffect(CONST_ME_HITAREA)
+	if not ChaosSpell.vfxDir(target:getPosition(), "claw_rake", ChaosSpell.dirTo(player:getPosition(), target:getPosition())) then
+		target:getPosition():sendMagicEffect(CONST_ME_HITAREA)
+	end
 	return true
 end

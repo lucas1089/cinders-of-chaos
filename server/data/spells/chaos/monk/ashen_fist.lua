@@ -12,7 +12,7 @@ function onCastSpell(creature, variant, isHotkey)
 	if not target then
 		return false
 	end
-	ChaosSpell.fx(target:getPosition(), "ground_slam", CONST_ME_HITAREA)
+	ChaosSpell.vfxOr(target:getPosition(), "punch_hit_gold", "ground_slam", CONST_ME_HITAREA)
 	MonkSpell.strike(player, target, ChaosMonk.formula.ashenFist, 1, CONST_ME_HITAREA)
 	ChaosMonk.addChi(player, ChaosMonk.cfg.chi.ashenFist)
 	return true

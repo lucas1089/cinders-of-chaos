@@ -32,6 +32,7 @@ function onCastSpell(creature, variant, isHotkey)
 	local pos = pick.pos
 	L.dismiss(pick.creature)
 	ChaosSpell.fx(pos, "bone_burst", CONST_ME_GROUNDSHAKER)
+	ChaosSpell.vfx(pos, "px633_indigo")
 	for _, e in ipairs(L.enemiesAround(player, pos, o.radius, true)) do
 		L.damage(player, e, COMBAT_PHYSICALDAMAGE, min, max, CONST_ME_HITAREA, ORIGIN_SPELL)
 	end

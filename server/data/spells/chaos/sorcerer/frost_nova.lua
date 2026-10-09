@@ -21,5 +21,9 @@ combat:setCallback(CALLBACK_PARAM_LEVELMAGICVALUE, "onGetFormulaValues")
 combat:setCallback(CALLBACK_PARAM_TARGETCREATURE, "onFrostNovaTarget")
 
 function onCastSpell(creature, variant, isHotkey)
-	return combat:execute(creature, variant)
+	if not combat:execute(creature, variant) then
+		return false
+	end
+	ChaosSpell.vfx(creature:getPosition(), "frost_nova")
+	return true
 end

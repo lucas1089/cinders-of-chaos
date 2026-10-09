@@ -16,6 +16,6 @@ function onCastSpell(creature, variant, isHotkey)
 		return false
 	end
 	TemplarSpell.addTimer(player, T.cfg.ids.subId.aegis, T.cfg.aegis.durationMs)
-	ChaosSpell.fx(player:getPosition(), "reflect_aegis", CONST_ME_BLOCKHIT)
+	ChaosSpell.vfxOr(player:getPosition(), "dawn_aegis", "reflect_aegis", CONST_ME_BLOCKHIT)
 	return true
 end

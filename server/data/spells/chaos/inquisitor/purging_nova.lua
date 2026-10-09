@@ -34,6 +34,9 @@ function onCastSpell(creature, variant, isHotkey)
 	end
 	hits = 0
 	local ok = combat:execute(player, variant)
+	if ok then
+		ChaosSpell.vfx(player:getPosition(), "dome_blast_holy")
+	end
 	if ok and hits > 0 then
 		local min, max = TemplarSpell.values(player, 0.08, 0.13, 1.0, 1.5, 20, 40)
 		local heal = ChaosTemplar.novaHeal(hits * (min + max) / 2, player:getMaxHealth())

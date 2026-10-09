@@ -22,9 +22,9 @@ function onCastSpell(creature, variant, isHotkey)
 		return ChaosSpell.cancel(player)
 	end
 
-	ChaosSpell.fx(from, "shadow_smoke", CONST_ME_POFF)
+	ChaosSpell.vfxOr(from, "blink_vanish", "shadow_smoke", CONST_ME_POFF)
 	player:teleportTo(dest)
-	ChaosSpell.fx(dest, "shadow_smoke", CONST_ME_TELEPORT)
+	ChaosSpell.vfxOr(dest, "blink_appear", "shadow_smoke", CONST_ME_TELEPORT)
 
 	local haste = Condition(CONDITION_HASTE)
 	haste:setParameter(CONDITION_PARAM_SUBID, ChaosSpell.SUBID.dash)

@@ -20,7 +20,8 @@ function onCastSpell(creature, variant, isHotkey)
 		return false
 	end
 	local w = NecroSpell.cfg.witheringCurse
-	ChaosSpell.shoot(player:getPosition(), target:getPosition(), "skull_orb", CONST_ANI_DEATH)
+	ChaosSpell.vshoot(player:getPosition(), target:getPosition(), "shadow_orb", "skull_orb", CONST_ANI_DEATH)
+	ChaosSpell.vfx(target:getPosition(), "cursed")
 	NecroSpell.curse(player, classKey, target)
 	local more = w.spread[classKey] or 0
 	if more > 0 then

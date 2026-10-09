@@ -22,7 +22,7 @@ function onCastSpell(creature, variant, isHotkey)
 	local center = {x = p.x, y = p.y, z = p.z}
 	local min, max = ChaosSpell.mlValues(player, 3.35, 6.0, 72, 132, 1.4)
 
-	ChaosSpell.fx(p, "arcane_circle", CONST_ME_MAGIC_BLUE)
+	ChaosSpell.vfxOr(p, "void_rift", "arcane_circle", CONST_ME_MAGIC_BLUE)
 	for _, c in ipairs(ChaosSpell.enemiesAround(player, p, 5)) do
 		if c:getMaxHealth() <= MAX_PULLED_HEALTH then
 			local spots = ChaosSpell.freeAround(p, c:getPosition())

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Goblin Warlock" nameDescription="a goblin warlock" race="blood" experience="750" speed="200" manacost="0">
+	<health now="900" max="900" />
+	<look type="2013" head="61" body="76" legs="95" feet="71" corpse="36074" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="4" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-97" />
+		<attack name="fire" interval="2000" chance="30" range="7" min="-84" max="-220">
+			<attribute key="shootEffect" value="fire" />
+		</attack>
+		<attack name="death" interval="2000" chance="15" radius="3" target="0" min="-105" max="-260">
+			<attribute key="areaEffect" value="mortarea" />
+		</attack>
+	</attacks>
+	<defenses armor="18" defense="18">
+		<defense name="healing" interval="2000" chance="15" min="140" max="280">
+			<attribute key="areaEffect" value="blueshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+		<element earthPercent="-5" />
+		<element deathPercent="-5" />
+		<element holyPercent="5" />
+	</elements>
+	<summons maxSummons="2">
+		<summon name="Goblin Grunt" interval="2000" chance="8" />
+	</summons>
+	<voices interval="5000" chance="10">
+		<voice sentence="Burn, burn!" />
+		<voice sentence="The skulls hunger!" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="100" chance="60000" /><!-- gold coin -->
+		<item id="2152" countmax="1" chance="40000" /><!-- platinum coin -->
+		<item id="36011" countmax="2" chance="18000" /><!-- goblin skull -->
+		<item id="36015" countmax="1" chance="8000" /><!-- carved bone -->
+		<item id="36013" countmax="1" chance="8000" /><!-- pouch of black powder -->
+		<item id="36059" countmax="2" chance="12000" /><!-- bowl of mushroom stew -->
+		<item id="7618" countmax="2" chance="6000" /><!-- health potion -->
+		<item id="7620" countmax="2" chance="6000" /><!-- mana potion -->
+		<item id="7588" chance="4000" /><!-- strong health potion -->
+		<item id="7589" chance="4000" /><!-- strong mana potion -->
+		<item id="2389" chance="4000" /><!-- spear -->
+		<item id="2406" chance="3000" /><!-- short sword -->
+		<item id="2511" chance="1500" /><!-- brass shield -->
+		<item id="2473" chance="1000" /><!-- viking helmet -->
+	</loot>
+</monster>

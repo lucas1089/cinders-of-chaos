@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Goblin Grunt" nameDescription="a goblin grunt" race="blood" experience="60" speed="190" manacost="0">
+	<health now="120" max="120" />
+	<look type="2000" head="62" body="58" legs="116" feet="75" corpse="36061" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="12" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-51" />
+	</attacks>
+	<defenses armor="10" defense="10">
+	</defenses>
+	<elements>
+		<element earthPercent="-5" />
+		<element deathPercent="-5" />
+		<element holyPercent="5" />
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="Me smash!" />
+		<voice sentence="Grunt grunt!" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="15" chance="60000" /><!-- gold coin -->
+		<item id="36010" countmax="2" chance="18000" /><!-- goblin tooth -->
+		<item id="36012" countmax="1" chance="8000" /><!-- piece of scrap metal -->
+		<item id="36039" countmax="2" chance="12000" /><!-- loaf of rye bread -->
+		<item id="36043" countmax="2" chance="12000" /><!-- wedge of cheese -->
+		<item id="2389" chance="4000" /><!-- spear -->
+		<item id="2406" chance="3000" /><!-- short sword -->
+		<item id="2511" chance="1500" /><!-- brass shield -->
+		<item id="2473" chance="1000" /><!-- viking helmet -->
+	</loot>
+</monster>

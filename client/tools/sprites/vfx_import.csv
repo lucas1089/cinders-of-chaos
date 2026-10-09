@@ -1,0 +1,161 @@
+kind,name,src,src_id,var,tint,frames,ms,place,note
+effect,arcane_orbit,spells,arcane_orbit,,,,83,feet,arcane: runes orbiting the target
+effect,blood_pact,spells,blood_pact,,,,83,feet,blood: pulsing blood circle
+effect,dawn_aegis,spells,dawn_aegis,,,,83,feet,holy: golden dome of light
+effect,ember_crown,spells,ember_crown,,,,83,feet,fire: crown of embers
+effect,frost_bastion,spells,frost_bastion,,,,83,feet,ice: ring of ice crystals
+effect,gale_ring,spells,gale_ring,,,,83,feet,wind: circling gusts
+effect,plague_mist,spells,plague_mist,,,,83,feet,poison: rising green mist
+effect,shadow_shroud,spells,shadow_shroud,,,,83,feet,shadow: cloak of shadow
+effect,starfall_crown,spells,starfall_crown,,,,83,feet,arcane: falling stars
+effect,stone_ward,spells,stone_ward,,,,83,feet,earth: orbiting stones
+effect,storm_mantle,spells,storm_mantle,,,,83,feet,energy: crackling mantle
+effect,verdant_bloom,spells,verdant_bloom,,,,83,feet,nature: blooming leaves
+effect,void_rift,spells,void_rift,,,,83,feet,shadow: violet void rift
+effect,arcane_sigil,spells,arcane_sigil,,,,83,feet,arcane: ground sigil
+effect,frost_glyph,spells,frost_glyph,,,,83,feet,ice: ground glyph
+effect,grove_glyph,spells,grove_glyph,,,,83,feet,nature: ground glyph
+effect,holy_seal,spells,holy_seal,,,,83,feet,holy: ground seal
+effect,infernal_seal,spells,infernal_seal,,,,83,feet,fire: ground seal
+effect,necro_seal,spells,necro_seal,,,,83,feet,death: ground seal
+effect,storm_ring,spells,storm_ring,,,,83,feet,energy: ground ring
+effect,void_maw,spells,void_maw,,,,83,feet,shadow: opening maw
+effect,warning_fill,spells,warning_fill,,,,83,feet,neutral: red warning area filling
+effect,warning_zone,spells,warning_zone,,,,83,feet,neutral: red warning area pulse
+effect,earth_spikes,spells,earth_spikes,,,,83,feet,earth: spikes erupt
+effect,fire_explosion,spells,fire_explosion,,,,83,feet,fire: explosion
+effect,frost_nova,spells,frost_nova,,,,83,feet,ice: nova
+effect,healing_bloom,spells,healing_bloom,,,,83,feet,heal: blooming light
+effect,holy_smite,spells,holy_smite,,,,83,feet,holy: column of light
+effect,level_up,spells,level_up,,,,83,feet,neutral: level up pillar
+effect,lightning_strike,spells,lightning_strike,,,,83,feet,energy: bolt from the sky
+effect,meteor_strike,spells,meteor_strike,,,,83,feet,fire: meteor impact
+effect,shadow_eruption,spells,shadow_eruption,,,,83,feet,shadow: eruption
+effect,teleport_in,spells,teleport_in,,,,83,feet,arcane: teleport in
+effect,teleport_out,spells,teleport_out,,,,83,feet,arcane: teleport out
+effect,toxic_burst,spells,toxic_burst,,,,83,feet,poison: toxic burst
+effect,arcane_hit,spells,arcane_hit,,,,83,feet,arcane: hit
+effect,fireball_hit,spells,fireball_hit,,,,83,feet,fire: hit
+effect,gale_hit,spells,gale_hit,,,,83,feet,wind: hit
+effect,holy_hit,spells,holy_hit,,,,83,feet,holy: hit
+effect,ice_shatter,spells,ice_shatter,,,,83,feet,ice: shatter
+effect,lightning_hit,spells,lightning_hit,,,,83,feet,energy: hit
+effect,shadow_hit,spells,shadow_hit,,,,83,feet,shadow: hit
+effect,venom_splash,spells,venom_splash,,,,83,feet,poison: splash
+effect,asleep,spells,asleep,,,,83,feet,status: asleep
+effect,bleeding,spells,bleeding,,,,83,feet,status: bleeding
+effect,burning,spells,burning,,,,83,feet,status: burning
+effect,cursed,spells,cursed,,,,83,feet,status: cursed
+effect,frozen,spells,frozen,,,,83,feet,status: frozen
+effect,hasted,spells,hasted,,,,83,feet,status: hasted
+effect,poisoned,spells,poisoned,,,,83,feet,status: poisoned
+effect,regenerating,spells,regenerating,,,,83,feet,status: regenerating
+effect,shield_bubble,spells,shield_bubble,,,,83,feet,status: shield bubble
+effect,stunned,spells,stunned,,,,83,feet,status: stunned
+effect,blunt_smash,spells,blunt_smash,,,,83,feet,physical: blunt smash
+effect,whirlwind,spells,whirlwind,,,,83,feet,physical: spinning slash round the caster
+effect,sword_slash_n,spells,sword_slash,n,,,83,feet,"physical: sword slash, towards n"
+effect,sword_slash_ne,spells,sword_slash,ne,,,83,feet,"physical: sword slash, towards ne"
+effect,sword_slash_e,spells,sword_slash,e,,,83,feet,"physical: sword slash, towards e"
+effect,sword_slash_se,spells,sword_slash,se,,,83,feet,"physical: sword slash, towards se"
+effect,sword_slash_s,spells,sword_slash,s,,,83,feet,"physical: sword slash, towards s"
+effect,sword_slash_sw,spells,sword_slash,sw,,,83,feet,"physical: sword slash, towards sw"
+effect,sword_slash_w,spells,sword_slash,w,,,83,feet,"physical: sword slash, towards w"
+effect,sword_slash_nw,spells,sword_slash,nw,,,83,feet,"physical: sword slash, towards nw"
+effect,heavy_cleave_n,spells,heavy_cleave,n,,,83,feet,"physical: heavy cleave, towards n"
+effect,heavy_cleave_ne,spells,heavy_cleave,ne,,,83,feet,"physical: heavy cleave, towards ne"
+effect,heavy_cleave_e,spells,heavy_cleave,e,,,83,feet,"physical: heavy cleave, towards e"
+effect,heavy_cleave_se,spells,heavy_cleave,se,,,83,feet,"physical: heavy cleave, towards se"
+effect,heavy_cleave_s,spells,heavy_cleave,s,,,83,feet,"physical: heavy cleave, towards s"
+effect,heavy_cleave_sw,spells,heavy_cleave,sw,,,83,feet,"physical: heavy cleave, towards sw"
+effect,heavy_cleave_w,spells,heavy_cleave,w,,,83,feet,"physical: heavy cleave, towards w"
+effect,heavy_cleave_nw,spells,heavy_cleave,nw,,,83,feet,"physical: heavy cleave, towards nw"
+effect,thrust_n,spells,thrust,n,,,83,feet,"physical: thrust, towards n"
+effect,thrust_ne,spells,thrust,ne,,,83,feet,"physical: thrust, towards ne"
+effect,thrust_e,spells,thrust,e,,,83,feet,"physical: thrust, towards e"
+effect,thrust_se,spells,thrust,se,,,83,feet,"physical: thrust, towards se"
+effect,thrust_s,spells,thrust,s,,,83,feet,"physical: thrust, towards s"
+effect,thrust_sw,spells,thrust,sw,,,83,feet,"physical: thrust, towards sw"
+effect,thrust_w,spells,thrust,w,,,83,feet,"physical: thrust, towards w"
+effect,thrust_nw,spells,thrust,nw,,,83,feet,"physical: thrust, towards nw"
+effect,claw_rake_n,spells,claw_rake,n,,,83,feet,"physical: claw rake, towards n"
+effect,claw_rake_ne,spells,claw_rake,ne,,,83,feet,"physical: claw rake, towards ne"
+effect,claw_rake_e,spells,claw_rake,e,,,83,feet,"physical: claw rake, towards e"
+effect,claw_rake_se,spells,claw_rake,se,,,83,feet,"physical: claw rake, towards se"
+effect,claw_rake_s,spells,claw_rake,s,,,83,feet,"physical: claw rake, towards s"
+effect,claw_rake_sw,spells,claw_rake,sw,,,83,feet,"physical: claw rake, towards sw"
+effect,claw_rake_w,spells,claw_rake,w,,,83,feet,"physical: claw rake, towards w"
+effect,claw_rake_nw,spells,claw_rake,nw,,,83,feet,"physical: claw rake, towards nw"
+effect,fang_bite_n,spells,fang_bite,n,,,83,feet,"physical: fang bite, towards n"
+effect,fang_bite_ne,spells,fang_bite,ne,,,83,feet,"physical: fang bite, towards ne"
+effect,fang_bite_e,spells,fang_bite,e,,,83,feet,"physical: fang bite, towards e"
+effect,fang_bite_se,spells,fang_bite,se,,,83,feet,"physical: fang bite, towards se"
+effect,fang_bite_s,spells,fang_bite,s,,,83,feet,"physical: fang bite, towards s"
+effect,fang_bite_sw,spells,fang_bite,sw,,,83,feet,"physical: fang bite, towards sw"
+effect,fang_bite_w,spells,fang_bite,w,,,83,feet,"physical: fang bite, towards w"
+effect,fang_bite_nw,spells,fang_bite,nw,,,83,feet,"physical: fang bite, towards nw"
+effect,aura_burst_gold,ki,aura_burst,,super_gold,,50,feet,"power-up burst, gold"
+effect,aura_burst_red,ki,aura_burst,,kaio_red,,50,feet,"power-up burst, red"
+effect,aura_burst_violet,ki,aura_burst,,demon_violet,,50,feet,"power-up burst, violet"
+effect,aura_burst_god,ki,aura_burst,,blue_god,,50,feet,"power-up burst, blue"
+effect,dome_blast_fire,ki,explosion_dome,,ff8a3c,,50,ground,"big dome explosion, fire"
+effect,dome_blast_violet,ki,explosion_dome,,b070ff,,50,ground,"big dome explosion, violet"
+effect,dome_blast_holy,ki,explosion_dome,,ffe9a0,,50,ground,"big dome explosion, holy"
+effect,ki_hit_gold,ki,ki_blast_hit,,ffd248,,50,centre,"small energy impact, gold"
+effect,ki_hit_blue,ki,ki_blast_hit,,60b4ff,,50,centre,"small energy impact, blue"
+effect,punch_hit_gold,ki,punch_impact,,ffc850,,50,centre,"fist impact, gold"
+effect,punch_hit_red,ki,punch_impact,,ff5a3c,,50,centre,"fist impact, red"
+effect,punch_hit_violet,ki,punch_impact,,a46cff,,50,centre,"fist impact, violet"
+effect,solar_flash,ki,solar_flash,,fff0b4,,50,feet,blinding holy flash
+effect,blink_vanish,ki,teleport,vanish,blue_god,,50,feet,"light pillar, vanish"
+effect,blink_appear,ki,teleport,appear,blue_god,,50,feet,"light pillar, appear"
+effect,shade_vanish,ki,teleport,vanish,shadow,,50,feet,"shadow pillar, vanish"
+effect,shade_appear,ki,teleport,appear,shadow,,50,feet,"shadow pillar, appear"
+effect,chi_charge,ki,ki_charge,,ffc850,,50,chest,"chi gathering at the chest, gold"
+effect,stone_rise,ki,power_rocks,,ffffff,step2,100,feet,rocks rise round the caster
+effect,energy_sphere,ki,energy_ball,,b070ff,,50,centre,"swirling energy sphere, violet"
+effect,px03_arcane,fx,03,1,,,60,centre,arcane: vortex ring
+effect,px03_ice,fx,03,2,,,60,centre,ice: vortex ring
+effect,px195_arcane,fx,195,1,,,80,centre,energy: branching lightning
+effect,px195_ice,fx,195,2,,,80,centre,"energy: branching lightning, blue"
+effect,px197_crimson,fx,197,7,,,80,centre,blood: spiky burst
+effect,px286_green,fx,286,3,,,100,centre,nature: petal burst
+effect,px396_indigo,fx,396,8,,,100,centre,shadow: dark ring
+effect,px448_crimson,fx,448,7,,,100,centre,blood: splash
+effect,px448_green,fx,448,3,,,100,centre,poison: splash
+effect,px586_fire,fx,586,0,,,80,centre,fire: sun ring
+effect,px586_white,fx,586,5,,,80,centre,holy: sun ring
+effect,px633_indigo,fx,633,8,,,60,centre,death: skull
+effect,px633_green,fx,633,3,,,60,centre,necrotic: green skull
+effect,px652_white,fx,652,5,,,60,centre,holy: radiant rays
+effect,px674_arcane,fx,674,1,,,60,centre,arcane: hexagon sigil
+missile,arcane_bolt,spells,arcane_bolt,,,,83,centre,arcane bolt
+missile,fireball,spells,fireball,,,,83,centre,fireball
+missile,gale_arrow,spells,gale_arrow,,,,83,centre,wind arrow
+missile,holy_spear,spells,holy_spear,,,,83,centre,holy spear
+missile,ice_lance,spells,ice_lance,,,,83,centre,ice lance
+missile,lightning_orb,spells,lightning_orb,,,,83,centre,lightning orb
+missile,shadow_orb,spells,shadow_orb,,,,83,centre,shadow orb
+missile,venom_glob,spells,venom_glob,,,,83,centre,venom glob
+missile,ki_blast_gold,ki,ki_blast,,ffd248,,50,centre,"energy blast, gold"
+missile,ki_blast_blue,ki,ki_blast,,60b4ff,,50,centre,"energy blast, blue"
+missile,razor_disc,ki,energy_disc,,c8a0ff,,50,centre,"spinning razor disc, violet"
+aura,ki_ki,ki,aura_ki,,super_gold,step2,100,feet,Golden Ki
+aura,ki_blaze,ki,aura_blaze,,kaio_red,step2,100,feet,Crimson Blaze
+aura,ki_lightning,ki,aura_lightning,,blue_god,step2,100,feet,Storm Surge
+aura,ki_dark,ki,aura_dark,,shadow,step2,100,feet,Umbral Smoke
+aura,ki_wind,ki,aura_wind,,demon_violet,step2,100,feet,Violet Gale
+aura,ki_sparkle,ki,aura_sparkle,,holy_white,step2,100,feet,Starlight
+aura,aura_arcane_orbit,spells,arcane_orbit,,,,83,feet,Arcane Orbit
+aura,aura_blood_pact,spells,blood_pact,,,,83,feet,Blood Pact
+aura,aura_dawn_aegis,spells,dawn_aegis,,,,83,feet,Dawn Aegis
+aura,aura_ember_crown,spells,ember_crown,,,,83,feet,Ember Crown
+aura,aura_frost_bastion,spells,frost_bastion,,,,83,feet,Frost Bastion
+aura,aura_gale_ring,spells,gale_ring,,,,83,feet,Gale Ring
+aura,aura_plague_mist,spells,plague_mist,,,,83,feet,Plague Mist
+aura,aura_shadow_shroud,spells,shadow_shroud,,,,83,feet,Shadow Shroud
+aura,aura_starfall_crown,spells,starfall_crown,,,,83,feet,Starfall Crown
+aura,aura_stone_ward,spells,stone_ward,,,,83,feet,Stone Ward
+aura,aura_storm_mantle,spells,storm_mantle,,,,83,feet,Storm Mantle
+aura,aura_verdant_bloom,spells,verdant_bloom,,,,83,feet,Verdant Bloom
+aura,aura_void_rift,spells,void_rift,,,,83,feet,Void Rift

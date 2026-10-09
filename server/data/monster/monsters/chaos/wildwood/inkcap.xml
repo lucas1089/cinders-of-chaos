@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Inkcap Creeper" nameDescription="an inkcap creeper" race="venom" experience="220" speed="170" manacost="0">
+	<health now="300" max="300" />
+	<look type="2024" head="0" body="0" legs="57" feet="95" corpse="36085" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="30" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-95" />
+		<attack name="death" interval="2000" chance="18" radius="2" target="0" min="-48" max="-127">
+			<attribute key="areaEffect" value="mortarea" />
+		</attack>
+	</attacks>
+	<defenses armor="14" defense="14">
+	</defenses>
+	<elements>
+		<element earthPercent="40" />
+		<element firePercent="-15" />
+		<element icePercent="10" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="*drip*" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="55" chance="60000" /><!-- gold coin -->
+		<item id="36033" countmax="2" chance="18000" /><!-- drop of inky ichor -->
+		<item id="36022" countmax="1" chance="8000" /><!-- spore sack -->
+		<item id="7618" countmax="2" chance="6000" /><!-- health potion -->
+		<item id="7620" countmax="2" chance="6000" /><!-- mana potion -->
+	</loot>
+</monster>

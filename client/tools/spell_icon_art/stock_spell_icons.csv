@@ -1,0 +1,181 @@
+cell,spell,kind,element,set,index
+1,Ultimate Healing,heal,heal,Nature,21
+2,Divine Healing,heal,holy,Fire,2
+3,Wound Cleansing,heal,physical,Steel,2
+4,Intense Wound Cleansing,heal,physical,Steel,3
+5,Fair Wound Cleansing,heal,physical,Steel,4
+6,Light Healing,heal,heal,Nature,14
+7,Intense Healing,heal,heal,Nature,36
+8,Nature's Embrace,heal,heal,Nature,19
+9,Mass Healing,heal,heal,Water,4
+10,Cure Poison,cure,poison,Nature,1
+11,Cure Curse,cure,death,Blood,29
+12,Cure Bleeding,cure,blood,Blood,1
+13,Cure Burning,cure,fire,Fire,4
+14,Cure Electrification,cure,energy,Water,27
+15,Recovery,regen,heal,Water,7
+16,Intense Recovery,regen,heal,Nature,3
+17,Physical Strike,strike,physical,Steel,17
+18,Ethereal Spear,spear,physical,Steel,31
+19,Whirlwind Throw,melee,physical,Steel,6
+20,Front Sweep,melee,physical,Steel,9
+21,Berserk,melee,physical,Steel,11
+22,Fierce Berserk,melee,physical,Steel,15
+23,Brutal Strike,melee,blood,Blood,8
+24,Annihilation,melee,blood,Blood,39
+25,Groundshaker,melee,earth,Nature,11
+26,Flame Strike,strike,fire,Fire,11
+27,Strong Flame Strike,strike,fire,Fire,18
+28,Ultimate Flame Strike,strike,fire,Fire,21
+29,Energy Strike,strike,energy,Arcane,4
+30,Strong Energy Strike,strike,energy,Arcane,6
+31,Ultimate Energy Strike,strike,energy,Arcane,12
+32,Ice Strike,strike,ice,Water,1
+33,Strong Ice Strike,strike,ice,Water,15
+34,Ultimate Ice Strike,strike,ice,Water,20
+35,Terra Strike,strike,earth,Nature,26
+36,Strong Terra Strike,strike,earth,Nature,28
+37,Ultimate Terra Strike,strike,earth,Nature,4
+38,Death Strike,strike,death,Blood,6
+39,Divine Missile,strike,holy,Fire,6
+40,Divine Caldera,area,holy,Fire,7
+41,Energy Beam,beam,energy,Arcane,7
+42,Great Energy Beam,beam,energy,Arcane,14
+43,Energy Wave,wave,energy,Arcane,40
+44,Fire Wave,wave,fire,Fire,16
+45,Ice Wave,wave,ice,Water,3
+46,Strong Ice Wave,wave,ice,Water,5
+47,Terra Wave,wave,earth,Nature,8
+48,Wrath of Nature,area,earth,Nature,38
+49,Hell's Core,area,fire,Fire,28
+50,Eternal Winter,area,ice,Water,6
+51,Lightning,strike,energy,Arcane,21
+52,Rage of the Skies,area,energy,Arcane,17
+53,Holy Flash,dot,holy,Fire,34
+54,Curse,dot,death,Blood,14
+55,Ignite,dot,fire,Fire,30
+56,Electrify,dot,energy,Arcane,16
+57,Inflict Wound,dot,blood,Blood,24
+58,Envenom,dot,poison,Nature,12
+59,Strong Ethereal Spear,spear,physical,Steel,12
+60,Salvation,heal,holy,Fire,8
+61,Wild Growth,rune,nature,Nature,16
+62,Ultimate Healing Rune,rune,heal,Nature,22
+63,Thunderstorm,rune,energy,Arcane,10
+64,Sudden Death,rune,death,Blood,40
+65,Stone Shower,rune,earth,Nature,5
+66,Stalagmite,rune,earth,Nature,6
+67,Soulfire,rune,fire,Fire,23
+68,Poison Wall,rune,poison,Nature,7
+69,Poison Field,rune,poison,Nature,17
+70,Poisonbomb,rune,poison,Nature,18
+71,Paralyze,rune,shadow,Arcane,27
+72,Magic Wall,rune,arcane,Arcane,2
+73,Light Magic Missile,rune,energy,Water,9
+74,Intense Healing Rune,rune,heal,Nature,20
+75,Icicle,rune,ice,Water,8
+76,Holy Missile,rune,holy,Fire,40
+77,Heavy Magic Missile,rune,energy,Arcane,3
+78,Great Fireball,rune,fire,Fire,12
+79,Fireball,rune,fire,Fire,15
+80,Fire Wall,rune,fire,Fire,17
+81,Fire Field,rune,fire,Fire,19
+82,Firebomb,rune,fire,Fire,20
+83,Explosion,rune,physical,Steel,22
+84,Energy Wall,rune,energy,Arcane,5
+85,Energy Field,rune,energy,Arcane,9
+86,Energybomb,rune,energy,Arcane,13
+87,Destroy Field,rune,arcane,Arcane,15
+88,Disintegrate,rune,earth,Nature,23
+89,Cure Poison Rune,rune,poison,Nature,29
+90,Convince Creature,rune,holy,Fire,24
+91,Chameleon,rune,shadow,Arcane,19
+92,Avalanche,rune,ice,Water,10
+93,Animate Dead,rune,death,Blood,4
+94,Invisibility,invis,shadow,Arcane,23
+95,Cancel Invisibility,reveal,light,Fire,29
+96,Blood Rage,buff,blood,Blood,5
+97,Challenge,challenge,blood,Blood,22
+98,Charge,haste,blood,Blood,28
+99,Food,food,food,Nature,37
+100,Creature Illusion,illusion,shadow,Blood,35
+101,Haste,haste,arcane,Arcane,20
+102,Strong Haste,haste,arcane,Arcane,25
+103,Great Fire Wave,wave,fire,Fire,35
+104,Enchant Spear,spear,holy,Steel,32
+105,Magic Rope,rope,earth,Nature,30
+106,Conjure Arrow,ammo,physical,Steel,10
+108,Restoration,heal,heal,Nature,32
+109,Conjure Explosive Arrow,ammo,physical,Steel,13
+110,Expose Weakness,melee,arcane,Arcane,34
+111,Sap Strength,melee,blood,Blood,26
+112,Chivalrous Challenge,challenge,blood,Blood,32
+113,Enchant Party,party,energy,Arcane,28
+114,Find Person,find,holy,Fire,38
+115,Ultimate Light,light,light,Water,37
+116,Great Light,light,light,Fire,26
+117,Light,light,light,Fire,21
+118,Summon Creature,summon,death,Blood,10
+119,Swift Foot,haste,holy,Steel,39
+120,Train Party,party,blood,Blood,7
+121,Sharpshooter,buff,holy,Fire,24
+122,Protector,shield,physical,Steel,18
+123,Protect Party,party,arcane,Arcane,30
+124,Magic Shield,shield,arcane,Arcane,31
+125,Levitate,levitate,arcane,Arcane,35
+126,Heal Party,party,heal,Nature,33
+127,Apprentice's Strike,melee,physical,Steel,40
+128,Practise Healing,heal,heal,Nature,34
+129,Practise Fire Wave,wave,fire,Fire,6
+130,Lightest Magic Missile,rune,energy,Arcane,10
+132,Scorch,wave,fire,Fire,16
+133,Buzz,strike,energy,Water,24
+134,Magic Patch,heal,heal,Nature,35
+135,Bruise Bane,heal,physical,Steel,20
+136,Chill Out,wave,ice,Water,21
+137,Mud Attack,strike,earth,Nature,40
+138,Arrow Call,ammo,physical,Steel,21
+139,Divine Dazzle,flash,holy,Steel,35
+142,Conjure Wand of Darkness,wand,death,Blood,15
+143,Summon Knight Familiar,summon,physical,Steel,30
+144,Summon Druid Familiar,summon,nature,Nature,6
+145,Summon Paladin Familiar,summon,holy,Fire,12
+146,Summon Sorcerer Familiar,summon,energy,Arcane,31
+147,Cancel Magic Shield,shield,arcane,Arcane,2
+148,Find Fiend,find,blood,Blood,9
+149,Avatar of Steel,avatar,physical,Steel,33
+150,Avatar of Nature,avatar,nature,Nature,20
+151,Avatar of Light,avatar,holy,Fire,32
+152,Avatar of Storm,avatar,energy,Arcane,28
+153,Executioner Throw,melee,blood,Blood,11
+154,Ice Burst,burst,ice,Water,26
+155,Terra Burst,burst,earth,Nature,38
+156,Divine Grenade,area,holy,Fire,2
+158,Great Death Beam,beam,death,Blood,20
+159,Divine Empowerment,holyground,holy,Fire,39
+160,Lesser Ethereal Spear,spear,physical,Steel,34
+161,Lesser Front Sweep,melee,physical,Steel,6
+162,Spirit Mend,heal,harmony,Water,11
+163,Virtue of Harmony,virtue,harmony,Water,12
+164,Virtue of Justice,virtue,holy,Fire,10
+165,Virtue of Sustain,virtue,heal,Nature,10
+166,Mentor Other,party,harmony,Water,16
+167,Enlighten Party,party,light,Fire,33
+169,Balanced Brawl,area,harmony,Water,29
+170,Focus Serenity,shield,harmony,Water,17
+171,Summon Monk Familiar,summon,harmony,Water,19
+172,Avatar of Balance,avatar,harmony,Water,22
+173,Swift Jab,fist,monk,Fire,5
+174,Double Jab,fist,monk,Fire,8
+175,Forceful Uppercut,fist,monk,Fire,9
+176,Flurry of Blows,fist,monk,Fire,29
+177,Chained Penance,fist,monk,Steel,38
+178,Greater Flurry of Blows,fist,monk,Steel,9
+179,Mystic Repulse,fist,monk,Steel,11
+180,Tiger Clash,claw,spirit,Fire,15
+181,Greater Tiger Clash,claw,spirit,Fire,20
+182,Devastating Knockout,claw,spirit,Fire,15
+183,Sweeping Takedown,melee,spirit,Fire,8
+184,Spiritual Outburst,area,spirit,Fire,4
+185,Mass Spirit Mend,heal,spirit,Fire,37
+186,Restore Balance,heal,harmony,Water,23

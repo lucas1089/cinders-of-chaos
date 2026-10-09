@@ -4,7 +4,8 @@ base-patches/ is skipped: its context lines are copied from the client tree and 
 import os, re, subprocess, sys
 
 DENY = re.compile(r'hellgrave|tenkaiser|drakantos|exodus|evolisca|black ?talon|magic ?heard|luminaris|zerion|fonticak|\bastra|archlight|'
-                  r'demolidores|crystalserver|fortibia|balrog|rubinot|medivia|ravendawn|otservbr|mordragor', re.I)
+                  r'demolidores|crystalserver|fortibia|balrog|rubinot|medivia|ravendawn|otservbr|mordragor|'
+                  r'\bwst(_|\b)|raven ?fantasy|jfranci|pixel ?spellcraft|anime ?ki ?auras', re.I)
 SKIP = ('client/base-patches/', 'tools/ci/check_names.py')
 files = subprocess.check_output(['git', 'ls-files'], text=True).split('\n')
 bad = 0

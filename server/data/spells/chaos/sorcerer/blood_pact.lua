@@ -23,6 +23,7 @@ function onCastSpell(creature, variant, isHotkey)
 
 	local pos = player:getPosition()
 	ChaosSpell.fx(pos, "blood_rune", CONST_ME_DRAWBLOOD)
+	ChaosSpell.vfx(pos, "blood_pact")
 	pos:sendMagicEffect(CONST_ME_MAGIC_RED)
 	return true
 end

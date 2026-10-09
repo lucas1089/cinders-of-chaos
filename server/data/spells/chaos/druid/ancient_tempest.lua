@@ -3,9 +3,9 @@ dofile('data/spells/scripts/chaos/_common.lua')
 
 local area = createCombatArea(AREA_CIRCLE5X5)
 local WAVES = {
-	{COMBAT_EARTHDAMAGE, "poison_cloud", CONST_ME_POISONAREA},
-	{COMBAT_ICEDAMAGE, "frost_burst", CONST_ME_ICEAREA},
-	{COMBAT_EARTHDAMAGE, "poison_cloud", CONST_ME_POISONAREA},
+	{COMBAT_EARTHDAMAGE, "poison_cloud", CONST_ME_POISONAREA, "earth_spikes"},
+	{COMBAT_ICEDAMAGE, "frost_burst", CONST_ME_ICEAREA, "frost_nova"},
+	{COMBAT_EARTHDAMAGE, "poison_cloud", CONST_ME_POISONAREA, "earth_spikes"},
 }
 
 function onCastSpell(creature, variant, isHotkey)
@@ -20,6 +20,7 @@ function onCastSpell(creature, variant, isHotkey)
 	ChaosSpell.pulse(player:getId(), #WAVES, 800, function(caster, step)
 		local w = WAVES[step]
 		local pos = Position(center)
+		ChaosSpell.vfx(pos, w[4])
 		doAreaCombat(caster, w[1], pos, area, -math.floor(min), -math.floor(max), Fx(w[2], w[3]))
 		if w[1] == COMBAT_ICEDAMAGE then
 			for _, c in ipairs(ChaosSpell.enemiesAround(caster, pos, 5)) do

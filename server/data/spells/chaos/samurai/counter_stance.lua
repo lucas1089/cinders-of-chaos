@@ -15,6 +15,8 @@ function onCastSpell(creature, variant, isHotkey)
 	c:setParameter(CONDITION_PARAM_SUBID, cfg.subId.counter)
 	c:setParameter(CONDITION_PARAM_TICKS, cfg.counter.windowMs)
 	player:addCondition(c)
-	player:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT)
+	if not ChaosSpell.vfx(player:getPosition(), "shield_bubble") then
+		player:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT)
+	end
 	return true
 end

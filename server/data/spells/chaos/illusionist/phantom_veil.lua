@@ -18,7 +18,7 @@ function onCastSpell(creature, variant, isHotkey)
 	player:addCondition(haste)
 
 	local pos = player:getPosition()
-	ChaosSpell.fx(pos, "shadow_smoke", CONST_ME_MORTAREA)
+	ChaosSpell.vfxOr(pos, "shadow_shroud", "shadow_smoke", CONST_ME_MORTAREA)
 	pos:sendMagicEffect(CONST_ME_MAGIC_BLUE)
 	return true
 end

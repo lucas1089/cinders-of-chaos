@@ -60,7 +60,7 @@ function onCastSpell(creature, variant, isHotkey)
 	local amount = M.wardAmount(player:getLevel(), player:getEffectiveSkillLevel(SKILL_FIST), spent)
 	target:setStorageValue(M.ids.storage.wardAmount, amount)
 	MonkSpell.timer(target, M.ids.subId.ward, M.cfg.ward.durationMs)
-	ChaosSpell.fx(target:getPosition(), "reflect_aegis", CONST_ME_MAGIC_BLUE)
+	ChaosSpell.vfxOr(target:getPosition(), "shield_bubble", "reflect_aegis", CONST_ME_MAGIC_BLUE)
 	if target ~= player then
 		player:getPosition():sendDistanceEffect(target:getPosition(), CONST_ANI_SMALLHOLY)
 		target:sendTextMessage(MESSAGE_STATUS_SMALL, string.format("%s wards you with chi (%d).", player:getName(), amount))

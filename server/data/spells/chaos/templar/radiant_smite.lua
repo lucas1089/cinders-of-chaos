@@ -19,6 +19,7 @@ function onCastSpell(creature, variant, isHotkey)
 	local min, max = TemplarSpell.values(player, 0.10, 0.16, 1.0, 1.5, 30, 60)
 	ChaosSpell.shoot(player:getPosition(), target:getPosition(), "holy_arrow", CONST_ANI_SMALLHOLY)
 	ChaosSpell.fx(target:getPosition(), "holy_smite", CONST_ME_HOLYAREA)
+	ChaosSpell.vfx(target:getPosition(), "px652_white")
 	TemplarSpell.holyStrike(player, target, min, max, CONST_ME_HOLYDAMAGE)
 	return true
 end

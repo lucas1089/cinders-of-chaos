@@ -132,3 +132,36 @@ run with `--first-item 28000` after `gen_dark_tiles.py`; it writes `donor_items.
 Donor B centres big creatures with negative displacements; the 1098 profile enables `GameNegativeOffset`
 (base-patches/0006) for that. Catalogue rows tagged "named character" (donor C) are recognisable characters of other
 works: library only, never live. Not checked in the test client yet.
+
+## Spell icons from the element icon sets (new)
+The three spell icon sheets now use pixel-art ability icons (six element sets of 40, 32x32 with an element-coloured
+frame, owned by the project) instead of the generated drawings in 259 of the 280 cells: the 79 Chaos spells (cells
+201..279, one icon per spell chosen by element and role, `tools/spell_icon_art/chaos_spell_icons.csv`) and the 180 cells
+the client's `SpellIcons` table names (stock spells and runes, picked by element and kind from the icon tags in
+`tools/spell_icon_art/icon_tags.csv`, written to `stock_spell_icons.csv`; 225 different icons, a few repeat). The 22x24
+and 20x20 cells are redrawn from the inner art with a crisp 1 px frame. `tools/build_spell_icon_art.py --src <icon sets>
+--spells-lua <client>/modules/gamelib/spells.lua` writes `tools/spell_icon_art/spell_icons_32.png`;
+`tools/gen_all_spell_icons.py` uses it for every cell it covers and keeps the generated drawings for the rest (and for
+all cells with `--no-art`, which reproduces the earlier sheets exactly). Shown in the spellbook and the action bar in
+game. Unused icons and the sets' other variants (transparent, locked, borders) are kept outside the repository.
+
+## Pack items and monsters (new, `tools/sprites/import_art_things.py`, `tools/sprites/art_import/`)
+Art from the October 2026 art sets (permission given by the owner), converted once to our format and stored in
+`tools/sprites/art_import/`: `things.csv` (one row per thing, in id order: kind, name, atlas rectangle, size, patterns,
+phases, dat flags, server id for new looks, extra data) and the atlases `icons.png`, `grounds.png`, `water.png`,
+`shores.png`, `lake.png`, `trees.png` and `creatures/<key>.png`. 16 px icons were upscaled to 32 px with Scale2x (crisp,
+no blur); creatures, trees, lake and shore art are 32 px grid art at their drawn size. The grounds come from dual-grid
+templates: the fill tile and 12 border pieces (4 edges, 4 outer and 4 inner corners) are composed from the template's
+16 corner tiles; a border piece goes on the neighbour tile like a stock border and carries the rim. Waters are 3x3
+patterns with 8 synchronised frames, shore pieces 8 frames (straight pieces with 3 variants as patterns).
+- 651 items (client 33000-33650) and 39 outfits (2000-2038): idle (2 phases) and walking (4 phases) frame groups,
+  4 directions, base + colour mask layer (the pack's head/body/legs/feet regions), sizes 2x2 to 4x4.
+- Run it last in the rebuild chain (after gen_dark_tiles.py, import_vfx.py and the donor B import):
+  `python3 -I client/tools/sprites/import_art_things.py --ours-dat <pair>/Tibia.dat --ours-spr <pair>/Tibia.spr --out-dir OUT
+  --first-item 33000 --first-outfit 2000 --manifest-out server/data/items/art_items.csv --outfits-out server/data/items/art_outfits.csv`.
+  `--first-item` / `--first-outfit` pad with blank entries so the ids stay fixed (the run stops if the input already has
+  more items or outfits). Deterministic; verified on every run: the output re-parses, every sprite slot of the new
+  things is pixel-identical to the art, the padding is blank, every old entry byte-identical, 3000 old sprites unchanged.
+  On the live pair of 2026-10-09 (dat d22381be..., spr 998ea340...) it gives dat 5b2e13ab5c052b7f9922c12b5ae67da9,
+  spr dfaf88d98291c2a9be2f10ad541b3c41.
+- Server side: server/README.md "Pack items and monsters". Checked in the Linux client at normal size.

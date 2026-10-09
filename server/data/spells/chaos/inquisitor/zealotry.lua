@@ -11,6 +11,6 @@ function onCastSpell(creature, variant, isHotkey)
 		return false
 	end
 	TemplarSpell.addTimer(player, T.cfg.ids.subId.zealotry, T.cfg.zealotry.durationMs)
-	ChaosSpell.fx(player:getPosition(), "holy_spiral", CONST_ME_YELLOWENERGY)
+	ChaosSpell.vfxOr(player:getPosition(), "aura_burst_gold", "holy_spiral", CONST_ME_YELLOWENERGY)
 	return true
 end

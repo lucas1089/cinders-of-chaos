@@ -24,7 +24,8 @@ Adaptations (`adapt_report.txt`): 147 changes, mostly the donor server's corpse 
 - 36 outfits were appended to a copy of our dat/spr as ids 1466 to 1501 and 12 monsters were pointed at an equal outfit already in our dat. `outfit_mapping.csv` lists every old to new lookType, and the monster XML files here already use the new ids.
 - **You must build the merged dat/spr** (the spr is 494 MB, too big for git): `python3 -I client/tools/sprites/merge_outfits.py --src-dat <donor client Tibia.dat> --src-spr <donor client Tibia.spr> --ours-dat <base server Tibia.dat> --ours-spr <base server Tibia.spr> --report server/data/monster/sprite_report.csv --out-dir out/merged`, then use `out/merged/Tibia.dat` and `Tibia.spr` as the `data/things/1098` pair of the client. Without them the remapped monsters show wrong art.
 - Verified in the sandbox: the merged dat parses (1501 outfits), the 36 new outfits render pixel-identical to the source, and 60 random original outfits are unchanged. Not verified in a real client. Six custom dat flags (39, 41, 42, 43, 46, 62) were stripped from the copied entries; their meaning is a guess.
-- Still without a sprite: Golden Dragon (kept on our outfit 1445 in `outfit_mapping.csv`), Scaleborn (art rejected), both in `needs_sprites.txt`, and 5 names with no lookType.
+- Golden Dragon and Scaleborn have donor B looks since 2026-10 (outfits 1530 and 1531, the first donor set below); 5 names
+  still have no lookType.
 - **Mercenary, Mercenary Ranger, Mortal Illusion: outfits 1502, 1503, 1504.** Their art comes from a second donor sprite set
   in the OLD 8.60 dat flag layout (dat signature 0x4C2C7993 with frame groups and u32 sprite ids, alpha spr 0x4C220594,
   2799 outfits; donor lookTypes 1719, 1718, 1656). Its entries cannot be copied byte for byte, so
@@ -52,3 +53,11 @@ Adaptations (`adapt_report.txt`): 147 changes, mostly the donor server's corpse 
 test client). Its health, speed, experience and loot are set by `data/scripts/chaos/treasure_goblin.lua` from the area level, and
 its `runonhealth` must stay equal to `runThreshold` in `treasure_goblin_config.lua` (the flee-on-first-hit trick). It spawns only
 by replacing a rare natural respawn; never put it in a spawn file. See `server/README.md` "Treasure goblins".
+
+**Goblins and the wildwood (`monsters/chaos/goblins/`, `monsters/chaos/wildwood/`).** 39 monsters of our own on the new
+outfits 2000-2038 (client `import_art_things.py`, server/README.md "Pack items and monsters"), each with its own corpse
+(36061-36099) and loot of creature products and food (36010-36060, step `packitems`). They have no `<level>` tag (normal
+hunting monsters, no level skull). Not in a spawn file yet: they come with the invasion factions Goblin Tribe and Wildwood
+Uprising. Cunning Hyaena now uses the Forest Wolf outfit 2015 (sand colours) instead of the wrong art at 1051. The XML
+files were generated from a table (stats per monster: health, experience, speed, armor, attacks scaled by hunting level);
+edit them by hand from now on.

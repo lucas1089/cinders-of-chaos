@@ -1,0 +1,113 @@
+client_id,server_id,key,name,kind,piece,size,patterns,phases,frame_ms,speed,otb_group,otb_flags,top_order,light_level,light_color,minimap,dat_flags
+28000,40000,donor_b_28000,claw 1,object,,1x1,1x1,1,0,0,0,96,0,0,0,,pickupable
+28001,40001,donor_b_28001,claw 2,object,,1x1,1x1,1,0,0,0,96,0,0,0,,pickupable
+28002,40002,donor_b_28002,claw 3,object,,1x1,1x1,1,0,0,0,96,0,0,0,,pickupable
+28003,40003,donor_b_28003,claw 4,object,,1x1,1x1,1,0,0,0,96,0,0,0,,pickupable
+28004,40004,donor_b_28004,claw 5,object,,1x1,1x1,1,0,0,0,96,0,0,0,,pickupable
+28005,40005,donor_b_28005,claw 6,object,,1x1,1x1,1,0,0,0,96,0,0,0,,pickupable
+28006,40006,donor_b_28006,claw 7,object,,1x1,1x1,1,0,0,0,96,0,0,0,,pickupable
+28007,40007,donor_b_28007,claw 8,object,,1x1,1x1,1,0,0,0,96,0,0,0,,pickupable
+28008,40008,donor_b_28008,claw 9,object,,1x1,1x1,1,0,0,0,96,0,0,0,,pickupable
+28009,40009,donor_b_28009,claw 10,object,,1x1,1x1,1,0,0,0,96,0,0,0,,pickupable
+28010,40010,donor_b_28010,claw 11,object,,1x1,1x1,1,0,0,0,96,0,0,0,,pickupable
+28011,40011,donor_b_28011,claw 12,object,,1x1,1x1,1,0,0,0,96,0,0,0,,pickupable
+28012,40012,donor_b_28012,claw 13,object,,1x1,1x1,1,0,0,0,96,0,0,0,,pickupable
+28013,40013,donor_b_28013,claw 14,object,,1x1,1x1,1,0,0,0,96,0,0,0,,pickupable
+28014,40014,donor_b_28014,claw 15,object,,1x1,1x1,1,0,0,0,96,0,0,0,,pickupable
+28015,40015,donor_b_28015,dungeon floor 1,ground,,1x1,2x2,1,0,100,1,0,0,0,0,,ground fullground
+28016,40016,donor_b_28016,dungeon floor 2,ground,,1x1,2x2,1,0,100,1,0,0,0,0,,ground fullground
+28017,40017,donor_b_28017,dungeon floor 3,ground,,1x1,2x2,1,0,100,1,0,0,0,0,,ground fullground
+28018,40018,donor_b_28018,dungeon floor 4,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28019,40019,donor_b_28019,dungeon floor 5,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28020,40020,donor_b_28020,dungeon floor 6,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28021,40021,donor_b_28021,dungeon floor 7,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28022,40022,donor_b_28022,dungeon floor 8,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28023,40023,donor_b_28023,dungeon floor 9,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28024,40024,donor_b_28024,dungeon floor 10,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28025,40025,donor_b_28025,dungeon floor 11,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28026,40026,donor_b_28026,dungeon floor 12,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28027,40027,donor_b_28027,dungeon floor 13,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28028,40028,donor_b_28028,dungeon floor 14,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28029,40029,donor_b_28029,dungeon floor 15,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28030,40030,donor_b_28030,dungeon floor 16,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28031,40031,donor_b_28031,dungeon floor 17,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28032,40032,donor_b_28032,dungeon floor 18,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28033,40033,donor_b_28033,dungeon floor 19,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28034,40034,donor_b_28034,dungeon floor 20,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28035,40035,donor_b_28035,dungeon floor 21,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28036,40036,donor_b_28036,dungeon floor 22,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28037,40037,donor_b_28037,dungeon floor 23,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28038,40038,donor_b_28038,dungeon floor 24,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28039,40039,donor_b_28039,dungeon floor 25,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28040,40040,donor_b_28040,dungeon floor 26,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28041,40041,donor_b_28041,dungeon floor 27,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28042,40042,donor_b_28042,dungeon floor 28,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28043,40043,donor_b_28043,dungeon floor 29,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28044,40044,donor_b_28044,dungeon floor 30,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28045,40045,donor_b_28045,dungeon floor 31,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28046,40046,donor_b_28046,dungeon floor 32,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28047,40047,donor_b_28047,dungeon floor 33,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28048,40048,donor_b_28048,dungeon floor 34,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28049,40049,donor_b_28049,dungeon floor 35,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28050,40050,donor_b_28050,dungeon floor 36,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28051,40051,donor_b_28051,dungeon floor 37,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28052,40052,donor_b_28052,dungeon floor 38,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28053,40053,donor_b_28053,dungeon floor 39,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28054,40054,donor_b_28054,dungeon floor 40,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28055,40055,donor_b_28055,dungeon floor 41,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28056,40056,donor_b_28056,dungeon floor 42,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28057,40057,donor_b_28057,dungeon floor 43,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28058,40058,donor_b_28058,dungeon floor 44,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28059,40059,donor_b_28059,dungeon floor 45,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28060,40060,donor_b_28060,dungeon floor 46,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28061,40061,donor_b_28061,dungeon floor 47,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28062,40062,donor_b_28062,dungeon floor 48,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28063,40063,donor_b_28063,dungeon floor 49,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28064,40064,donor_b_28064,dungeon floor 50,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28065,40065,donor_b_28065,dungeon floor 51,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28066,40066,donor_b_28066,dungeon floor 52,ground,,1x1,1x1,1,0,100,1,0,0,0,0,,ground fullground
+28067,40067,donor_b_28067,gothic door or window 1,object,,1x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable blockpath
+28068,40068,donor_b_28068,gothic door or window 2,object,,1x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable blockpath
+28069,40069,donor_b_28069,gothic door or window 3,object,,1x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable blockpath
+28070,40070,donor_b_28070,gothic door or window 4,object,,1x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable blockpath
+28071,40071,donor_b_28071,gothic door or window 5,object,,1x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable blockpath
+28072,40072,donor_b_28072,gothic door or window 6,object,,1x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable blockpath
+28073,40073,donor_b_28073,gothic door or window 7,object,,1x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable blockpath
+28074,40074,donor_b_28074,gothic door or window 8,object,,1x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable blockpath
+28075,40075,donor_b_28075,gothic door or window 9,object,,1x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable blockpath
+28076,40076,donor_b_28076,gothic door or window 10,object,,1x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable blockpath
+28077,40077,donor_b_28077,gothic door or window 11,object,,1x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable blockpath
+28078,40078,donor_b_28078,gothic door or window 12,object,,1x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable blockpath
+28079,40079,donor_b_28079,gothic door or window 13,object,,1x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable blockpath
+28080,40080,donor_b_28080,gothic door or window 14,object,,1x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable blockpath
+28081,40081,donor_b_28081,gothic door or window 15,object,,1x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable blockpath
+28082,40082,donor_b_28082,gothic door or window 16,object,,1x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable blockpath
+28083,40083,donor_b_28083,gothic door or window 17,object,,1x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable blockpath
+28084,40084,donor_b_28084,gothic door or window 18,object,,1x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable blockpath
+28085,40085,donor_b_28085,gothic door or window 19,object,,1x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable blockpath
+28086,40086,donor_b_28086,gothic door or window 20,object,,2x2,1x1,1,0,0,0,0,0,0,0,,
+28087,40087,donor_b_28087,gothic door or window 21,object,,2x2,1x1,1,0,0,0,0,0,0,0,,
+28088,40088,donor_b_28088,gothic door or window 22,object,,2x2,1x1,1,0,0,0,0,0,0,0,,
+28089,40089,donor_b_28089,gothic door or window 23,object,,1x2,1x1,1,0,0,0,0,0,0,0,,
+28090,40090,donor_b_28090,gothic door or window 24,object,,1x2,1x1,1,0,0,0,0,0,0,0,,
+28091,40091,donor_b_28091,gothic door or window 25,object,,1x2,1x1,1,0,0,0,0,0,0,0,,
+28092,40092,donor_b_28092,gothic door or window 26,object,,1x2,1x1,1,0,0,0,0,0,0,0,,
+28093,40093,donor_b_28093,gothic door or window 27,object,,1x2,1x1,1,0,0,0,0,0,0,0,,
+28094,40094,donor_b_28094,gothic door or window 28,object,,1x2,1x1,1,0,0,0,0,0,0,0,,
+28095,40095,donor_b_28095,gothic door or window 29,object,,1x2,1x1,1,0,0,0,0,0,0,0,,
+28096,40096,donor_b_28096,gothic door or window 30,object,,1x2,1x1,1,0,0,0,0,0,0,0,,
+28097,40097,donor_b_28097,gothic door or window 31,object,,1x2,1x1,1,0,0,0,0,0,0,0,,
+28098,40098,donor_b_28098,gothic door or window 32,object,,1x2,1x1,1,0,0,0,0,0,0,0,,
+28099,40099,donor_b_28099,gothic door or window 33,object,,1x2,1x1,1,0,0,0,0,0,0,0,,
+28100,40100,donor_b_28100,gothic door or window 34,object,,1x2,1x1,1,0,0,0,0,0,0,0,,
+28101,40101,donor_b_28101,gothic door or window 35,object,,1x2,1x1,1,0,0,0,0,0,0,0,,
+28102,40102,donor_b_28102,gothic door or window 36,object,,1x2,1x1,1,0,0,0,0,0,0,0,,
+28103,40103,donor_b_28103,gothic door or window 37,object,,1x2,1x1,1,0,0,0,0,0,0,0,,
+28104,40104,donor_b_28104,gothic door or window 38,object,,1x2,1x1,1,0,0,0,0,0,0,0,,
+28105,40105,donor_b_28105,gothic door or window 39,object,,1x2,1x1,1,0,0,0,0,0,0,0,,
+28106,40106,donor_b_28106,gothic door or window 40,object,,1x2,1x1,1,0,0,0,0,0,0,0,,
+28107,40107,donor_b_28107,gothic door or window 41,object,,1x2,1x1,1,0,0,0,0,0,0,0,,
+28108,40108,donor_b_28108,gothic door or window 42,object,,1x2,1x1,1,0,0,0,0,0,0,0,,
+28109,40109,donor_b_28109,gothic door or window 43,object,,1x2,1x1,1,0,0,0,0,0,0,0,,
+28110,40110,donor_b_28110,gothic door or window 44,object,,1x1,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable blockpath
+28111,40111,donor_b_28111,gothic door or window 45,object,,1x1,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable blockpath

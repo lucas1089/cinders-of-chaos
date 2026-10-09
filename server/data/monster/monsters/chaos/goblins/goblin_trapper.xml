@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Goblin Trapper" nameDescription="a goblin trapper" race="blood" experience="95" speed="200" manacost="0">
+	<health now="160" max="160" />
+	<look type="2006" head="61" body="76" legs="95" feet="58" corpse="36067" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="16" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-74" />
+		<attack name="speed" interval="2000" chance="12" range="7" speedchange="-246" duration="5000">
+			<attribute key="shootEffect" value="smallstone" />
+			<attribute key="areaEffect" value="redspark" />
+		</attack>
+	</attacks>
+	<defenses armor="12" defense="12">
+	</defenses>
+	<elements>
+		<element earthPercent="-5" />
+		<element deathPercent="-5" />
+		<element holyPercent="5" />
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="Net you good!" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="23" chance="60000" /><!-- gold coin -->
+		<item id="36014" countmax="2" chance="18000" /><!-- frayed rope -->
+		<item id="36019" countmax="1" chance="8000" /><!-- wolf pelt -->
+		<item id="36045" countmax="2" chance="12000" /><!-- roast chicken leg -->
+		<item id="2389" chance="4000" /><!-- spear -->
+		<item id="2406" chance="3000" /><!-- short sword -->
+		<item id="2511" chance="1500" /><!-- brass shield -->
+		<item id="2473" chance="1000" /><!-- viking helmet -->
+	</loot>
+</monster>

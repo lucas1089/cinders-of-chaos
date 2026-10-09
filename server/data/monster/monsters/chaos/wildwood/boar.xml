@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Wild Boar" nameDescription="a wild boar" race="blood" experience="120" speed="210" manacost="0">
+	<health now="220" max="220" />
+	<look type="2017" head="40" body="39" legs="39" feet="95" corpse="36078" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="22" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-70" />
+	</attacks>
+	<defenses armor="12" defense="12">
+		<defense name="speed" interval="2000" chance="10" speedchange="250" duration="4000">
+			<attribute key="areaEffect" value="redshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+		<element earthPercent="-5" />
+		<element deathPercent="-5" />
+		<element holyPercent="5" />
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="Oink!" />
+		<voice sentence="Snort!" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="30" chance="60000" /><!-- gold coin -->
+		<item id="36017" countmax="2" chance="18000" /><!-- boar hide -->
+		<item id="36057" countmax="2" chance="12000" /><!-- grilled sausage -->
+	</loot>
+</monster>

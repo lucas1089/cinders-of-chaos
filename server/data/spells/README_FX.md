@@ -80,3 +80,70 @@ To rebuild the client pair with them, run the two commands above (the dat must c
 server needs the updated `server/data/lib/chaos_fx.lua` (committed) loaded before `combat_fx.lua` (the script
 `dofile`s it when `ChaosFx` is missing). Without the new pair the client ignores the ids 415..423 ("invalid effect id"
 in its log) and only the text labels and the engine's own hit effects show.
+
+## Animated pack effects (effects 429..558, missiles 126..136, auras)
+
+Hand-drawn animated effects from three art sets the project owns, appended after the procedural ids by
+`client/tools/sprites/import_vfx.py` (spec table `client/tools/sprites/vfx_import.csv`; catalogue with sizes and send
+offsets: `vfx_catalog.csv`; Lua names: `server/data/lib/chaos_vfx.lua`, written by the tool):
+
+- 130 magic effects: 95 oblique spell effects (13 auras, 10 ground circles, 12 bursts, 8 impacts, 10 status loops, 2
+  melee, and 40 directional melee hits: 5 hits x 8 directions named `<hit>_n` .. `<hit>_nw`), 20 tinted energy effects
+  (power-up bursts, dome blasts, small hits, fist hits, a holy flash, light / shadow teleport pillars, chi charge,
+  rising stones, an energy sphere) and 15 pixel bursts (`px<sheet>_<colour>`). Frame timing as drawn (83 ms, 50 ms, or
+  the bursts' 50..100 ms); effects play once.
+- 11 missiles (8 directions each, missile patterns 3x3): arcane bolt, fireball, wind arrow, holy spear, ice lance,
+  lightning orb, shadow orb, venom glob, two energy blasts and a razor disc.
+- 19 auras (outfit things 1511..1529 on the current pair; auras.xml ids 6..24, `server/data/XML/chaos_auras.csv`,
+  installed by `server/tools/install_auras.py`, step `auras` of install_all.py; sold in the store's Auras category).
+
+**Send offset.** The client draws a thing with its bottom-right tile on the map tile, so art bigger than a tile that
+reaches right of / below the target cannot be centred there. Each pack effect is built so that its bottom-right tile is
+the target tile + (dx, dy) (0..3 tiles, per effect in `vfx_catalog.csv`) and must be sent there: always use
+`Vfx(pos, name)`, `VfxDir(pos, base, direction)` and `VfxShoot(fromPos, toPos, name)` from chaos_vfx.lua (spells:
+`ChaosSpell.vfx`, `vfxDir`, `vfxOr`, `vshoot` in `_common.lua`; `vfxOr` / `vshoot` fall back to the chaos effect when
+chaos_vfx.lua is missing). Sending the raw id with `sendMagicEffect` puts it one or more tiles up-left. A side effect: an
+effect whose offset tile is outside the player's view near the bottom/right edge of the screen is not shown.
+
+**Ids and limits.** Magic effects are u16 on the wire (GameMagicEffectU16, see above); the client reads the effect
+count from the dat, so 558 is fine and far from 65535. Missiles are u8 (`sendDistanceShoot`): 136 of 255 used.
+Aura look types are u16 (GameLooktypeU16); auras.xml ids are u8 (1..255) and the store marks ownership in a storage
+per 31 auras (base server `Player::addAura`).
+
+**Client features.** The auras are 2..3 tiles wide and reach into the tiles right of / below the creature. With the
+per-tile painter order those tiles' ground was drawn over them (cut edges); `GameMapDrawGroundFirst` (base patch
+0006, 10.98 profile) draws every ground first, so the auras show whole. Effects need no feature: their offset anchor
+keeps them over tiles that are drawn earlier.
+
+**Wired into the spells** (one pack effect at the cast point or impact; the per-tile area effects stay the procedural
+ones): Rime Bloom frost_nova; Witchfire Bolt fireball missile + fireball_hit; Forked Storm lightning_orb missile +
+lightning_hit; Crimson Covenant blood_pact; Falling Pyre infernal_seal at the mark, meteor_strike timed to land with the
+damage; Frozen Crypt ice_lance + frost_glyph; Doomtide dome_blast_fire / storm_ring / fire_explosion per wave;
+Blightswarm toxic_burst; Purifying Wellspring healing_bloom; Ironbark Hide stone_ward; Briar Prison earth_spikes;
+Moonfang Pack / Wild Bond teleport_in; Verdant Sanctuary grove_glyph; Primordial Squall earth_spikes / frost_nova;
+Dawnpiercer holy_spear + holy_hit; Skewering Line thrust (by facing); Blessed Earth / Consecration holy_seal;
+Lightward / Aegis of Faith dawn_aegis; Final Verdict / Judgement holy_spear + holy_smite; Reaping Gyre / Whirling Heel
+whirlwind; Earthbreaker earth_spikes; Red Frenzy / Bloodrage aura_burst_red; Iron Bellow / Banner Call / Bushido Focus /
+Zealotry aura_burst_gold; Vaulting Cleave / Skyfall Cleave heavy_cleave and Iaijutsu sword_slash and Feral Command
+claw_rake (towards the target); Colossus Fall earth_spikes + blunt_smash; Hall of Mirrors arcane_sigil; Umbral Stride /
+Shadow Step / Shadow Veil shade_vanish / shade_appear; Flickerdash blink_vanish / blink_appear; Shattered Psyche
+arcane_bolt + cursed; Wraithshroud shadow_shroud; Nightburst void_maw; Tear in the Weave void_rift; Lucid Reverie
+starfall_crown; Mirror Mend regenerating; Soulward / Counter Stance / Chi Ward shield_bubble; Hunter's Instinct gale_ring;
+Poison Blades poisoned; Smoke Bomb stunned; Raise Dead / Banner of Bones / Bone Golem necro_seal; Withering Curse
+shadow_orb + cursed; Corpse Explosion / Bone Offering px633_indigo; Soul Rot px633_green; Life Siphon px448_crimson;
+Ashen Fist / Iron Palm punch_hit_gold; Sundering Palm punch_hit_red; Pressure Points / Shadowfist Flurry
+punch_hit_violet; Kindled Breath chi_charge; Mistborne Step gale_hit; Mantra of Stone stone_rise; Radiant Smite
+px652_white; Vow of Mending / Lay on Hands healing_bloom; Purging Nova dome_blast_holy; Rebuke solar_flash.
+
+**Building** (after every other step that appends to the pair; the ids depend on the counts of the input pair):
+```
+python3 -I import_vfx.py --ours-dat IN/Tibia.dat --ours-spr IN/Tibia.spr --out-dir out/vfx \
+    --src-spells <oblique effect set> --src-ki <tintable energy set> --src-fx <pixel burst set> \
+    --expect-first-effect 429 --expect-first-missile 126 --expect-first-outfit 1511 \
+    --lua-out ../../../server/data/lib/chaos_vfx.lua --catalog-out ../../../server/data/spells/vfx_catalog.csv \
+    --auras-out ../../../server/data/XML/chaos_auras.csv [--preview DIR]
+```
+The art sets are not in the repository. A pair with more outfits before this step moves the aura look types: pass the
+new `--expect-first-outfit` and keep the regenerated `chaos_auras.csv` (the auras.xml ids 6..24 stay the same). The tool
+verifies its output like `import_outfits.py` (re-parse, every new frame / pattern / layer pixel-exact, all old entries
+byte-identical, 3000 sampled old sprites) and is deterministic.

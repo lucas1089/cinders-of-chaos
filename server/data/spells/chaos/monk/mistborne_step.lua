@@ -26,6 +26,7 @@ function onCastSpell(creature, variant, isHotkey)
 	ChaosSpell.fx(from, "dodge_whoosh", CONST_ME_POFF)
 	player:teleportTo(dest)
 	ChaosSpell.fx(dest, "dodge_whoosh", CONST_ME_POFF)
+	ChaosSpell.vfx(dest, "gale_hit")
 	MonkSpell.timer(player, M.ids.subId.roll, M.cfg.evasion.rollMs)
 	return true
 end

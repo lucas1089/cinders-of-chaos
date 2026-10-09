@@ -146,6 +146,9 @@ server/
 5e. Gems: `python3 -I server/tools/install_gems.py <server>/data [--dry-run]` (idempotent; `install_all.py` step `gems`)
    adds the 35 gems (32001-32035) to `items.otb` / `items.xml` and names the Orb of Sockets (24692). The client needs the
    multi-use flag on the small diamond: `client/tools/sprites/set_multiuse.py`. See "Gems and sockets".
+5f. Auras: `python3 -I server/tools/install_auras.py <server>/data [--dry-run]` (idempotent; `install_all.py` step `auras`)
+   adds the 19 Chaos auras of `data/XML/chaos_auras.csv` (ids 6..24) to `auras.xml`; the store sells them (category Auras).
+   The client needs the pair from `client/tools/sprites/import_vfx.py`. See `data/spells/README_FX.md` "Animated pack effects".
 6. Restart the server (or `/reload scripts`). Check the console for Lua errors.
 7. Autoloot only: if `data/talkactions/talkactions.xml` registers `!autoloot` (the legacy
    `talkactions/scripts/autoloot.lua`), TFS 1.4.2 keeps the XML one and silently ignores
@@ -2958,3 +2961,42 @@ is in `bestiary_config.lua`; the pure rules in `bestiary_core.lua`.
   experience with the bonus, 45,150 without, x1.01; 360 holy damage -> 363) and the damage event registered by real melee,
   the achievement counters. **Not tested in game:** party credit with two players (unit-tested), the 06:00 day change and
   the weekly limit (unit-tested), multi-client tasks.
+
+## Pack items and monsters (`tools/install_pack_items.py`, `data/lib/chaos_pack_items.lua`, `scripts/chaos/pack_items.lua`)
+
+Art from the October 2026 art sets, converted to our 32 px format once and kept in `client/tools/sprites/art_import/`
+(atlases + `things.csv`); `client/tools/sprites/import_art_things.py` appends it to the client pair (client/MANIFEST.md
+"Pack items and monsters") and writes `data/items/art_items.csv` (items) and `data/items/art_outfits.csv` (outfits).
+
+- Ids: client items 33000-33650 (the importer pads the item list up to 32999 with blank entries, so the ids do not move
+  when other tools append items first), server id = client id + 3000 (36010-36650); outfits 2000-2038 (padded the same
+  way). Clear of the base items (up to 29926), dark tiles (30484-30557), gems (32001-32035) and donor items (40000-40111).
+- Install: step `packitems` of `install_all.py` (`python3 -I server/tools/install_pack_items.py DATA_DIR [--dry-run]`):
+  items.otb nodes and an items.xml block for the new items, the new looks, and the creature products in Yasir's
+  `shop_sellable` list (`data/npc/Yasir.xml`, at the prices of the manifest). Idempotent. After a change of the manifest:
+  `install_pack_items.py --lua` rewrites `data/lib/chaos_pack_items.lua`.
+- New looks (mode `replace`: only the client id of the existing items.otb node changes, names and scripts stay): Orb of
+  Alchemy 24691, Orb of Annulment 24697, Orb of Scouring 24688 (they were plain rune stones), and the seven ore pieces of
+  the mining profession 26398-26404 (they were small dots).
+- Creature products 36010-36036 (27, stackable, loot of the new monsters, sold to Yasir for 8-120 gold) and food
+  36037-36060 (24, eaten like the stock food by `pack_items.lua`: food x 12 s of regeneration, "You are full" at 1200 s).
+- Corpses 36061-36099: one per new monster, the creature's last death frame with its colours, a container of 20 that
+  disappears after 10 minutes.
+- Environment for the map editor: 100 trees and 100 stumps (36100-36299, tree and stump of the same species next to each
+  other, blocking, 2x2 or 3x2), 12 grounds each followed by its 12 border pieces (36300-36455; see docs/MAP_GUIDE.md),
+  8 animated water grounds (36456-36463; deep, lagoon, murky and mountain lake are not walkable, the four shallows are,
+  speed 250), 6 animated shore sets (36464-36577, border pieces that go on the water tile), 49 lake objects (36578-36626,
+  reeds and rocks block, pads and plants under water do not) and 24 dock props (36627-36650).
+- Monsters (`data/monster/monsters/chaos/goblins/`, `wildwood/`, registered by the `monsters` step): 15 goblins (Goblin
+  Grunt to Goblin Chieftain, hunting levels 15-80) and 24 forest creatures (Forest Wolf to Ancient Treant, 10-140), each
+  on its own outfit (2000-2038: idle and walking animation, 4 directions, colour mask; small ones 2x2, large ones 3x3 or
+  4x4) with palette colours set in the XML. Loot: gold, their creature products and food, potions from hunting level 25,
+  stock weapons for goblins. Bosses with summons: Goblin Chieftain (Goblin Grunts), Mushroom King (Shroomlings), Ancient
+  Treant (Treant Saplings). They are not in a spawn file yet; they come with the two new invasion factions
+  (`invasion_config.lua`): Goblin Tribe (boss Goblin Chieftain) and Wildwood Uprising (bosses Mushroom King, Ancient Treant).
+- Cunning Hyaena (late game, wrong art before) uses the Forest Wolf outfit 2015 in sand colours.
+- Tested in game (test server, client with the appended pair): every new monster spawned and drawn in all directions,
+  kills leave the new corpse with loot (Goblin Chieftain, Goblin Grunt, Mushroom King, Forest Wolf, Owlbear, Myconid
+  Shaman), food eaten ("Yum."), the orb and ore looks in the backpack, grounds with borders, waters with shores, lake
+  objects, docks, trees and stumps placed on runtime tiles. Not tested: an invasion of the new factions (the cropped test
+  map has no valid town area; `tests/invasion_test.lua` passes with them), selling to Yasir (he is not on the test map).

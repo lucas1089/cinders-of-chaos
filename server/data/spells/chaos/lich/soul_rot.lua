@@ -20,7 +20,7 @@ function onCastSpell(creature, variant, isHotkey)
 	local r = NecroSpell.cfg.soulRot
 	local min, max = ChaosNecro.values(player, r.tick)
 	ChaosSpell.shoot(player:getPosition(), target:getPosition(), "skull_orb", CONST_ANI_DEATH)
-	ChaosSpell.fx(target:getPosition(), "shadow_smoke", CONST_ME_SMALLCLOUDS)
+	ChaosSpell.vfxOr(target:getPosition(), "px633_green", "shadow_smoke", CONST_ME_SMALLCLOUDS)
 	NecroSpell.dot(player:getId(), target:getId(), "soulrot", r.ticks, r.tickMs, min, max, COMBAT_DEATHDAMAGE,
 		CONST_ME_MORTAREA, r.jumpRadius)
 	return true

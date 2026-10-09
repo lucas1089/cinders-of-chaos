@@ -44,6 +44,55 @@ function ChaosSpell.shoot(fromPos, toPos, name, fallback)
 	Position(fromPos):sendDistanceEffect(Position(toPos), FxMissile(name, fallback))
 end
 
+-- Animated pack effects and missiles (data/lib/chaos_vfx.lua, client/tools/sprites/import_vfx.py). They are bigger
+-- than a tile and are sent at an offset tile by Vfx/VfxShoot. Without chaos_vfx.lua these send nothing (vfx/vfxDir)
+-- or fall back to the named chaos effect (vfxOr/vshoot).
+if not ChaosVfx then
+	pcall(dofile, 'data/lib/chaos_vfx.lua')
+end
+
+-- direction (NORTH .. NORTHWEST) from one position to another, for the directional effects (VfxDir)
+function ChaosSpell.dirTo(fromPos, toPos)
+	local dx, dy = toPos.x - fromPos.x, toPos.y - fromPos.y
+	if dx == 0 and dy == 0 then
+		return SOUTH
+	end
+	local sx = dx > 0 and 1 or (dx < 0 and -1 or 0)
+	local sy = dy > 0 and 1 or (dy < 0 and -1 or 0)
+	if math.abs(dx) >= 2 * math.abs(dy) then
+		sy = 0
+	elseif math.abs(dy) >= 2 * math.abs(dx) then
+		sx = 0
+	end
+	for dir, step in pairs(DIR_STEP) do
+		if step[1] == sx and step[2] == sy then
+			return dir
+		end
+	end
+	return SOUTH
+end
+
+function ChaosSpell.vfx(pos, name)
+	return Vfx ~= nil and pos ~= nil and Vfx(Position(pos), name)
+end
+
+function ChaosSpell.vfxDir(pos, base, direction)
+	return VfxDir ~= nil and pos ~= nil and VfxDir(Position(pos), base, direction)
+end
+
+-- pack effect, or the chaos effect `name` / stock `fallback` when the pack effect is not there
+function ChaosSpell.vfxOr(pos, vname, name, fallback)
+	if not ChaosSpell.vfx(pos, vname) then
+		ChaosSpell.fx(pos, name, fallback)
+	end
+end
+
+function ChaosSpell.vshoot(fromPos, toPos, vname, name, fallback)
+	if not (VfxShoot ~= nil and VfxShoot(Position(fromPos), Position(toPos), vname)) then
+		ChaosSpell.shoot(fromPos, toPos, name, fallback)
+	end
+end
+
 -- Damage helper: returns positive min, max from the usual TFS level/magic-level formula, times `scale` (default 1,
 -- the per-spell balance factor: the whole value scales, the level part included).
 function ChaosSpell.mlValues(player, mlMin, mlMax, baseMin, baseMax, scale)

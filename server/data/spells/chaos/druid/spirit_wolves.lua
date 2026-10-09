@@ -39,7 +39,7 @@ function onCastSpell(creature, variant, isHotkey)
 		local wolf = Game.createMonster(monsterName, free[i].pos)
 		if wolf then
 			wolf:setMaster(player)
-			ChaosSpell.fx(free[i].pos, "summon_portal", CONST_ME_TELEPORT)
+			ChaosSpell.vfxOr(free[i].pos, "teleport_in", "summon_portal", CONST_ME_TELEPORT)
 			addEvent(ChaosSpell.removeLater, DURATION, wolf:getId())
 			created = created + 1
 		end

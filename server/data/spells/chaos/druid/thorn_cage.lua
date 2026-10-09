@@ -20,7 +20,7 @@ function onCastSpell(creature, variant, isHotkey)
 	ChaosSpell.pulse(player:getId(), 3, 1000, function(caster, step)
 		local pos = Position(center)
 		doAreaCombat(caster, COMBAT_EARTHDAMAGE, pos, area, -math.floor(min), -math.floor(max), Fx("poison_cloud", CONST_ME_POISONAREA))
-		ChaosSpell.fx(pos, "ground_slam", CONST_ME_GROUNDSHAKER)
+		ChaosSpell.vfxOr(pos, "earth_spikes", "ground_slam", CONST_ME_GROUNDSHAKER)
 		if step == 1 then
 			for _, c in ipairs(ChaosSpell.enemiesAround(caster, pos, 1)) do
 				ChaosSpell.slow(c, 5000, 0.9)

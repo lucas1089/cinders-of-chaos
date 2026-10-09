@@ -58,7 +58,9 @@ function onCastSpell(creature, variant, isHotkey)
 			ChaosSpell.slow(m, BLIND_MS, 0.3)
 			blind(m:getId(), BLIND_MS)
 		end
-		m:getPosition():sendMagicEffect(CONST_ME_STUN)
+		if not ChaosSpell.vfx(m:getPosition(), "stunned") then
+			m:getPosition():sendMagicEffect(CONST_ME_STUN)
+		end
 	end
 	return true
 end

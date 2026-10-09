@@ -17,6 +17,8 @@ function onCastSpell(creature, variant, isHotkey)
 	c:setParameter(CONDITION_PARAM_SUBID, cfg.subId.bushido)
 	c:setParameter(CONDITION_PARAM_TICKS, cfg.bushido.durationMs)
 	player:addCondition(c)
-	player:getPosition():sendMagicEffect(CONST_ME_HOLYDAMAGE)
+	if not ChaosSpell.vfx(player:getPosition(), "aura_burst_gold") then
+		player:getPosition():sendMagicEffect(CONST_ME_HOLYDAMAGE)
+	end
 	return true
 end

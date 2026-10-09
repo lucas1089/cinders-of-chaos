@@ -25,5 +25,6 @@ function onCastSpell(creature, variant, isHotkey)
 	for i = 2, 6, 2 do
 		ChaosSpell.shoot(from, ChaosSpell.stepPos(from, dir, i), "blood_spear", CONST_ANI_SPEAR)
 	end
+	ChaosSpell.vfxDir(from, "thrust", dir)
 	return combat:execute(creature, variant)
 end

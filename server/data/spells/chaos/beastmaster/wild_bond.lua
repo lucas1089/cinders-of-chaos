@@ -79,7 +79,7 @@ function onCastSpell(creature, variant, isHotkey)
 				if speed > 0 then
 					m:changeSpeed(speed)
 				end
-				ChaosSpell.fx(spot.pos, "summon_portal", CONST_ME_TELEPORT)
+				ChaosSpell.vfxOr(spot.pos, "teleport_in", "summon_portal", CONST_ME_TELEPORT)
 				created = created + 1
 			end
 		end

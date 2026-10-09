@@ -121,6 +121,28 @@ return {
 			{name = "Moohtant", level = 82}
 		}, bosses = {
 			{name = "Bullwark", level = 250, rename = "Bullwark the Gorer"}
+		}},
+		-- the pack monsters (data/monster/monsters/chaos/goblins, wildwood; server/README.md "Pack items and monsters")
+		goblins = {name = "Goblin Tribe", color = "#8fbf3f", monsters = {
+			{name = "Goblin Grunt", level = 15}, {name = "Goblin Spearman", level = 18}, {name = "Goblin Archer", level = 18},
+			{name = "Goblin Sneak", level = 20}, {name = "Goblin Bomber", level = 22}, {name = "Goblin Sapper", level = 22},
+			{name = "Goblin Trapper", level = 24}, {name = "Goblin War-Drummer", level = 25}, {name = "Goblin Shaman", level = 28},
+			{name = "Goblin Witch", level = 30}, {name = "Goblin Brute", level = 50}, {name = "Goblin Wolf Rider", level = 55},
+			{name = "Hobgoblin Captain", level = 65}, {name = "Goblin Warlock", level = 70}
+		}, bosses = {
+			{name = "Goblin Chieftain", level = 80}
+		}},
+		wildwood = {name = "Wildwood Uprising", color = "#5fa860", monsters = {
+			{name = "Forest Wolf", level = 10}, {name = "Shroomling", level = 12}, {name = "Wild Boar", level = 18},
+			{name = "Giant Hornet", level = 20}, {name = "Morel Imp", level = 22}, {name = "Moss Slime", level = 22},
+			{name = "Forest Pixie", level = 25}, {name = "Glowcap Cluster", level = 28}, {name = "Treant Sapling", level = 30},
+			{name = "Inkcap Creeper", level = 32}, {name = "Myconid Shaman", level = 38}, {name = "Grove Dryad", level = 40},
+			{name = "Dire Bear", level = 60}, {name = "Giant Thornback Toad", level = 65}, {name = "Owlbear", level = 70},
+			{name = "Giant Forest Spider", level = 70}, {name = "Giant Stag Beetle", level = 75}, {name = "Snapjaw Flytrap", level = 80},
+			{name = "Puffball Brute", level = 85}, {name = "Bracket Fungus Golem", level = 95}, {name = "Elk Guardian", level = 110},
+			{name = "Mycelium Horror", level = 120}
+		}, bosses = {
+			{name = "Mushroom King", level = 100}, {name = "Ancient Treant", level = 140}
 		}}
 	},
 

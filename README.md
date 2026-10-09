@@ -367,6 +367,13 @@ The bestiary (`!bestiary`, or Hunt -> Bestiary) has a page for every monster in 
 The **task tracker** at the bottom right of the screen lists your kill tasks and bounty contracts with their progress,
 updated with every kill. Click its title to fold it; switch it off in the bestiary window or in the Hunt menu.
 
+## Goblins and the wildwood
+
+Two new invasion factions bring new monsters: the **Goblin Tribe** (grunts, archers, bombers, witches, wolf riders, a
+hobgoblin captain and the Goblin Chieftain) and the **Wildwood Uprising** (wolves, boars, mushroom folk, dryads, owlbears,
+giant beetles and spiders, the Mushroom King and the Ancient Treant). They drop creature products you can sell to Yasir
+and food you can eat. The Orbs of Alchemy, Annulment and Scouring and the mining ore pieces have new pictures.
+
 ## Quality of life
 
 > *"Count your kills, count your coin, and come back tomorrow. The Chaos is patient. So are its rewards."*

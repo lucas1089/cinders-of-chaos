@@ -21,8 +21,8 @@ function onCastSpell(creature, variant, isHotkey)
 	TemplarSpell.addTimer(target, T.cfg.ids.subId.judgement, T.cfg.judgement.durationMs)
 	target:registerEvent("ChaosTemplarCombat")
 	local min, max = TemplarSpell.values(player, 0.08, 0.12, 1.0, 1.5, 20, 40)
-	ChaosSpell.shoot(player:getPosition(), target:getPosition(), "holy_arrow", CONST_ANI_HOLY)
-	ChaosSpell.fx(target:getPosition(), "holy_cross", CONST_ME_HOLYAREA)
+	ChaosSpell.vshoot(player:getPosition(), target:getPosition(), "holy_spear", "holy_arrow", CONST_ANI_HOLY)
+	ChaosSpell.vfxOr(target:getPosition(), "holy_smite", "holy_cross", CONST_ME_HOLYAREA)
 	TemplarSpell.holyStrike(player, target, min, max, CONST_ME_HOLYDAMAGE)
 	return true
 end

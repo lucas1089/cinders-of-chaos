@@ -3,9 +3,9 @@ dofile('data/spells/scripts/chaos/_common.lua')
 
 local area = createCombatArea(AREA_CIRCLE6X6)
 local WAVES = {
-	{COMBAT_FIREDAMAGE, "fire_nova", CONST_ME_FIREAREA},
-	{COMBAT_ENERGYDAMAGE, "chain_lightning", CONST_ME_ENERGYAREA},
-	{COMBAT_FIREDAMAGE, "fire_nova", CONST_ME_FIREAREA},
+	{COMBAT_FIREDAMAGE, "fire_nova", CONST_ME_FIREAREA, "dome_blast_fire"},
+	{COMBAT_ENERGYDAMAGE, "chain_lightning", CONST_ME_ENERGYAREA, "storm_ring"},
+	{COMBAT_FIREDAMAGE, "fire_nova", CONST_ME_FIREAREA, "fire_explosion"},
 }
 
 function onCastSpell(creature, variant, isHotkey)
@@ -19,6 +19,7 @@ function onCastSpell(creature, variant, isHotkey)
 
 	ChaosSpell.pulse(player:getId(), #WAVES, 700, function(caster, step)
 		local w = WAVES[step]
+		ChaosSpell.vfx(center, w[4])
 		doAreaCombat(caster, w[1], Position(center), area, -math.floor(min), -math.floor(max), Fx(w[2], w[3]))
 		return true
 	end)

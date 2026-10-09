@@ -58,6 +58,7 @@ function onCastSpell(creature, variant, isHotkey)
 		ChaosSpell.shoot(pos, primary:getPosition(), "arcane_orb", CONST_ANI_SMALLHOLY)
 	end
 	ChaosSpell.healTarget(player, primary, amount, amount, Fx("heal_sparkle", CONST_ME_MAGIC_BLUE))
+	ChaosSpell.vfx(primary:getPosition(), "regenerating")
 	local mirror = mirrorId and Creature(mirrorId)
 	if mirror then
 		local m = math.floor(amount * cfg.mirror)

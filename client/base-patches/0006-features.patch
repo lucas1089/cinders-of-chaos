@@ -1,6 +1,6 @@
 --- a/modules/game_features/features.lua
 +++ b/modules/game_features/features.lua
-@@ -67,6 +67,84 @@
+@@ -67,6 +67,89 @@
      g_game.enableFeature(GameNegativeOffset)
      -- GameShopCountU16 is negotiated dynamically via GameServerFeatures (0x43).
      -- GameAstraExtendedSpellIds is also negotiated; legacy 0xA4 keeps U8 ids.
@@ -14,6 +14,9 @@
 +    g_game.enableFeature(GameExtendedOpcode)
 +    g_game.enableFeature(GameAuraFrontAndBack)
 +    g_game.enableFeature(GameBigAurasCenter)
++    -- ground of every tile first: auras / big effects that reach into the tiles right of and below a creature are not
++    -- painted over by those tiles' ground (import_vfx.py auras)
++    g_game.enableFeature(GameMapDrawGroundFirst)
 +    g_game.enableFeature(GameDiagonalAnimatedText)
 +    g_game.enableFeature(GameDontMergeAnimatedText)
 +    g_game.enableFeature(GameDoubleHealth)
@@ -82,6 +85,8 @@
 +    g_game.enableFeature(GameAdditionalSkills)
 +    g_game.enableFeature(GameOutfitShaders)
 +    g_game.enableFeature(GameChaosCraftingSkills)
++    -- signed dat displacements: the 64px donor art centres big creatures with negative offsets (import_donor_things.py)
++    g_game.enableFeature(GameNegativeOffset)
    elseif version == 1524 then
      -- Reserved for the future 15.24 profile.
    end

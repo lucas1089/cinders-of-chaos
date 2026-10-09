@@ -12,7 +12,7 @@ local function pulse(caster, step)
 			MonkSpell.timer(c, M.ids.subId.mantra, M.cfg.mantra.pulseMs + 1000)
 		end
 	end
-	ChaosSpell.fx(pos, "arcane_aura", CONST_ME_YELLOW_RINGS)
+	ChaosSpell.vfxOr(pos, "stone_rise", "arcane_aura", CONST_ME_YELLOW_RINGS)
 	return true
 end
 

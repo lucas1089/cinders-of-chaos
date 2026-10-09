@@ -182,6 +182,36 @@ Measured around every spawn (13 tiles around each monster) on the live map, with
 Layout rule: build a loop of rooms (5-10 wide, 25-70 tiles) joined by 3-4 wide corridors. Add 1-2 dead-end pockets
 per 50x50 area as safe spots. Put 1 monster per spawn point every 4-7 tiles. Give each room 1-3 lights.
 
+## Pack items in the map editor (palette)
+
+The map editor reads our items.otb / items.xml, so the pack items (server/README.md "Pack items and monsters") are in
+its item list by id and name. Each ground is followed by its 12 border pieces in this order: north, south, east and west
+edge, north-west, north-east, south-west and south-east corner, then the four inner corners (named after where the higher
+ground lies: the "north edge" goes on a tile with the ground to its north). A border piece goes on the
+lower neighbour tile, like a stock border, and draws the rim of the higher ground; rules 1-4 above apply.
+
+| ground | id | speed | border pieces |
+|---|---|---|---|
+| thick lush grass | 36300 | 150 | 36301-36312 |
+| dense grass | 36313 | 150 | 36314-36325 |
+| dry prairie grass | 36326 | 150 | 36327-36338 |
+| meadow grass | 36339 | 150 | 36340-36351 |
+| bright grass | 36352 | 150 | 36353-36364 |
+| loam | 36365 | 110 | 36366-36377 |
+| flagstone floor | 36378 | 100 | 36379-36390 |
+| jade tile floor | 36391 | 100 | 36392-36403 |
+| violet slate floor | 36404 | 100 | 36405-36416 |
+| red clay | 36417 | 110 | 36418-36429 |
+| fine sand | 36430 | 120 | 36431-36442 |
+| fresh snow | 36443 | 150 | 36444-36455 |
+
+Other pack items: water 36456-36463 (deep lake water, shallows over sand, pebbles and weeds, lagoon, murky, mountain lake,
+mountain shallows; animated, the four shallows walkable), shores 36464-36577 (border pieces placed on the water tile next to
+land: grass, sand, rock, snow, stone rim, mud; pieces named after the land sides, `in_` pieces for two or more sides,
+straight pieces vary along the shore by themselves), lake objects 36578-36626 (reeds, lilies, rocks, logs, buoys: use them
+like rule 5), dock props 36627-36650, trees 36100-36298 (even ids) with their stumps one id higher (36101-36299). Monsters:
+goblins and forest creatures in the editor's creature list (tools/windows/rme_creatures.py reads monsters/chaos).
+
 ## Pictures
 
 Coordinates are the top-left tile. Each shot is 30 x 20 tiles.

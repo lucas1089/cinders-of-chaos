@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Goblin Sapper" nameDescription="a goblin sapper" race="blood" experience="95" speed="180" manacost="0">
+	<health now="180" max="180" />
+	<look type="2005" head="57" body="57" legs="76" feet="78" corpse="36066" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="18" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-83" />
+	</attacks>
+	<defenses armor="14" defense="14">
+	</defenses>
+	<elements>
+		<element earthPercent="-5" />
+		<element deathPercent="-5" />
+		<element holyPercent="5" />
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="Dig dig!" />
+		<voice sentence="Me find shiny!" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="23" chance="60000" /><!-- gold coin -->
+		<item id="36012" countmax="2" chance="18000" /><!-- piece of scrap metal -->
+		<item id="36013" countmax="1" chance="8000" /><!-- pouch of black powder -->
+		<item id="36056" countmax="2" chance="12000" /><!-- baked potato -->
+		<item id="2389" chance="4000" /><!-- spear -->
+		<item id="2406" chance="3000" /><!-- short sword -->
+		<item id="2511" chance="1500" /><!-- brass shield -->
+		<item id="2473" chance="1000" /><!-- viking helmet -->
+	</loot>
+</monster>

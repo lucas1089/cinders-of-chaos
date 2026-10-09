@@ -40,5 +40,6 @@ function onCastSpell(creature, variant, isHotkey)
 	local amount = T.layOnHandsAmount(target:getMaxHealth(), player:getMagicLevel())
 	ChaosSpell.shoot(player:getPosition(), target:getPosition(), "holy_arrow", CONST_ANI_SMALLHOLY)
 	ChaosSpell.healTarget(player, target, amount, amount, Fx("holy_spiral", CONST_ME_HOLYAREA))
+	ChaosSpell.vfx(target:getPosition(), "healing_bloom")
 	return true
 end

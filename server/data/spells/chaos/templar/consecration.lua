@@ -19,7 +19,9 @@ function onCastSpell(creature, variant, isHotkey)
 	local min, max = TemplarSpell.values(player, 0.025, 0.04, 0.4, 0.6, 10, 20)
 	ChaosSpell.pulse(player:getId(), c.pulses, c.intervalMs, function(caster, step)
 		local pos = Position(center)
-		ChaosSpell.fx(pos, "holy_cross", CONST_ME_HOLYAREA)
+		if step % 2 == 1 then
+			ChaosSpell.vfxOr(pos, "holy_seal", "holy_cross", CONST_ME_HOLYAREA)
+		end
 		for _, enemy in ipairs(ChaosSpell.enemiesAround(caster, pos, c.radius)) do
 			enemy:registerEvent("ChaosTemplarCombat")
 		end

@@ -10,7 +10,7 @@ function onCastSpell(creature, variant, isHotkey)
 		return false
 	end
 	local pos = player:getPosition()
-	ChaosSpell.fx(pos, "holy_cross", CONST_ME_HOLYAREA)
+	ChaosSpell.vfxOr(pos, "solar_flash", "holy_cross", CONST_ME_HOLYAREA)
 	for _, c in ipairs(ChaosSpell.enemiesAround(player, pos, r.radius)) do
 		doChallengeCreature(player, c)
 		ChaosSpell.slow(c, r.durationMs, r.slow)

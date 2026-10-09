@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Goblin Spearman" nameDescription="a goblin spearman" race="blood" experience="75" speed="190" manacost="0">
+	<health now="140" max="140" />
+	<look type="2001" head="62" body="2" legs="39" feet="75" corpse="36062" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="2" />
+		<flag staticattack="90" />
+		<flag runonhealth="14" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-47" />
+		<attack name="physical" interval="2000" chance="30" range="4" min="-21" max="-64">
+			<attribute key="shootEffect" value="spear" />
+		</attack>
+	</attacks>
+	<defenses armor="11" defense="11">
+	</defenses>
+	<elements>
+		<element earthPercent="-5" />
+		<element deathPercent="-5" />
+		<element holyPercent="5" />
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="Poke poke!" />
+		<voice sentence="Stay there, tall one!" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="18" chance="60000" /><!-- gold coin -->
+		<item id="36010" countmax="2" chance="18000" /><!-- goblin tooth -->
+		<item id="36015" countmax="1" chance="8000" /><!-- carved bone -->
+		<item id="36057" countmax="2" chance="12000" /><!-- grilled sausage -->
+		<item id="2389" chance="4000" /><!-- spear -->
+		<item id="2406" chance="3000" /><!-- short sword -->
+		<item id="2511" chance="1500" /><!-- brass shield -->
+		<item id="2473" chance="1000" /><!-- viking helmet -->
+	</loot>
+</monster>

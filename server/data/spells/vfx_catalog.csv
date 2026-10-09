@@ -1,0 +1,161 @@
+kind,id,name,size,send_offset,patterns,layers,frames,ms,note
+effect,429,arcane_orbit,2x3,"0,1",1x1,1,24,83,arcane: runes orbiting the target
+effect,430,blood_pact,3x3,"1,1",1x1,1,24,83,blood: pulsing blood circle
+effect,431,dawn_aegis,3x3,"1,1",1x1,1,24,83,holy: golden dome of light
+effect,432,ember_crown,3x3,"1,1",1x1,1,24,83,fire: crown of embers
+effect,433,frost_bastion,3x3,"1,1",1x1,1,24,83,ice: ring of ice crystals
+effect,434,gale_ring,3x3,"1,1",1x1,1,24,83,wind: circling gusts
+effect,435,plague_mist,3x3,"1,1",1x1,1,24,83,poison: rising green mist
+effect,436,shadow_shroud,3x3,"1,1",1x1,1,24,83,shadow: cloak of shadow
+effect,437,starfall_crown,4x4,"1,1",1x1,1,24,83,arcane: falling stars
+effect,438,stone_ward,3x3,"1,1",1x1,1,24,83,earth: orbiting stones
+effect,439,storm_mantle,3x3,"1,1",1x1,1,24,83,energy: crackling mantle
+effect,440,verdant_bloom,3x3,"1,1",1x1,1,24,83,nature: blooming leaves
+effect,441,void_rift,3x3,"1,1",1x1,1,24,83,shadow: violet void rift
+effect,442,arcane_sigil,3x3,"1,1",1x1,1,24,83,arcane: ground sigil
+effect,443,frost_glyph,3x4,"1,2",1x1,1,24,83,ice: ground glyph
+effect,444,grove_glyph,3x3,"1,1",1x1,1,24,83,nature: ground glyph
+effect,445,holy_seal,3x3,"1,1",1x1,1,24,83,holy: ground seal
+effect,446,infernal_seal,3x3,"1,1",1x1,1,24,83,fire: ground seal
+effect,447,necro_seal,3x3,"1,1",1x1,1,24,83,death: ground seal
+effect,448,storm_ring,3x3,"1,1",1x1,1,24,83,energy: ground ring
+effect,449,void_maw,3x4,"1,2",1x1,1,24,83,shadow: opening maw
+effect,450,warning_fill,3x4,"1,2",1x1,1,16,83,neutral: red warning area filling
+effect,451,warning_zone,3x3,"1,1",1x1,1,16,83,neutral: red warning area pulse
+effect,452,earth_spikes,4x3,"1,1",1x1,1,16,83,earth: spikes erupt
+effect,453,fire_explosion,4x3,"1,1",1x1,1,16,83,fire: explosion
+effect,454,frost_nova,4x3,"1,1",1x1,1,16,83,ice: nova
+effect,455,healing_bloom,3x3,"1,1",1x1,1,16,83,heal: blooming light
+effect,456,holy_smite,4x4,"1,1",1x1,1,17,83,holy: column of light
+effect,457,level_up,4x5,"1,2",1x1,1,14,83,neutral: level up pillar
+effect,458,lightning_strike,4x4,"1,1",1x1,1,16,83,energy: bolt from the sky
+effect,459,meteor_strike,6x5,"1,1",1x1,1,20,83,fire: meteor impact
+effect,460,shadow_eruption,4x3,"1,1",1x1,1,16,83,shadow: eruption
+effect,461,teleport_in,4x3,"1,1",1x1,1,11,83,arcane: teleport in
+effect,462,teleport_out,4x4,"1,1",1x1,1,14,83,arcane: teleport out
+effect,463,toxic_burst,4x4,"1,1",1x1,1,18,83,poison: toxic burst
+effect,464,arcane_hit,3x3,"1,1",1x1,1,12,83,arcane: hit
+effect,465,fireball_hit,2x3,"0,1",1x1,1,12,83,fire: hit
+effect,466,gale_hit,3x3,"1,1",1x1,1,12,83,wind: hit
+effect,467,holy_hit,3x3,"1,1",1x1,1,12,83,holy: hit
+effect,468,ice_shatter,3x3,"1,1",1x1,1,12,83,ice: shatter
+effect,469,lightning_hit,3x3,"1,1",1x1,1,12,83,energy: hit
+effect,470,shadow_hit,2x3,"0,1",1x1,1,12,83,shadow: hit
+effect,471,venom_splash,3x3,"1,1",1x1,1,12,83,poison: splash
+effect,472,asleep,2x4,"0,1",1x1,1,24,83,status: asleep
+effect,473,bleeding,3x2,"1,1",1x1,1,24,83,status: bleeding
+effect,474,burning,2x4,"0,1",1x1,1,16,83,status: burning
+effect,475,cursed,3x3,"1,1",1x1,1,24,83,status: cursed
+effect,476,frozen,3x3,"1,1",1x1,1,24,83,status: frozen
+effect,477,hasted,3x2,"1,1",1x1,1,24,83,status: hasted
+effect,478,poisoned,3x3,"1,1",1x1,1,24,83,status: poisoned
+effect,479,regenerating,3x3,"1,1",1x1,1,24,83,status: regenerating
+effect,480,shield_bubble,3x3,"1,1",1x1,1,24,83,status: shield bubble
+effect,481,stunned,2x2,"0,0",1x1,1,16,83,status: stunned
+effect,482,blunt_smash,3x3,"1,1",1x1,1,12,83,physical: blunt smash
+effect,483,whirlwind,4x3,"1,1",1x1,1,12,83,physical: spinning slash round the caster
+effect,484,sword_slash_n,3x2,"1,0",1x1,1,10,83,"physical: sword slash, towards n"
+effect,485,sword_slash_ne,3x3,"1,1",1x1,1,10,83,"physical: sword slash, towards ne"
+effect,486,sword_slash_e,2x3,"0,1",1x1,1,10,83,"physical: sword slash, towards e"
+effect,487,sword_slash_se,2x3,"0,1",1x1,1,10,83,"physical: sword slash, towards se"
+effect,488,sword_slash_s,3x3,"1,1",1x1,1,10,83,"physical: sword slash, towards s"
+effect,489,sword_slash_sw,3x3,"1,1",1x1,1,10,83,"physical: sword slash, towards sw"
+effect,490,sword_slash_w,2x3,"0,1",1x1,1,10,83,"physical: sword slash, towards w"
+effect,491,sword_slash_nw,2x3,"0,1",1x1,1,10,83,"physical: sword slash, towards nw"
+effect,492,heavy_cleave_n,3x2,"1,0",1x1,1,12,83,"physical: heavy cleave, towards n"
+effect,493,heavy_cleave_ne,3x2,"1,0",1x1,1,12,83,"physical: heavy cleave, towards ne"
+effect,494,heavy_cleave_e,3x3,"1,1",1x1,1,12,83,"physical: heavy cleave, towards e"
+effect,495,heavy_cleave_se,3x3,"1,1",1x1,1,12,83,"physical: heavy cleave, towards se"
+effect,496,heavy_cleave_s,3x3,"1,1",1x1,1,12,83,"physical: heavy cleave, towards s"
+effect,497,heavy_cleave_sw,2x3,"0,1",1x1,1,12,83,"physical: heavy cleave, towards sw"
+effect,498,heavy_cleave_w,2x3,"0,1",1x1,1,12,83,"physical: heavy cleave, towards w"
+effect,499,heavy_cleave_nw,3x3,"0,1",1x1,1,12,83,"physical: heavy cleave, towards nw"
+effect,500,thrust_n,2x3,"0,1",1x1,1,10,83,"physical: thrust, towards n"
+effect,501,thrust_ne,3x3,"1,1",1x1,1,10,83,"physical: thrust, towards ne"
+effect,502,thrust_e,3x2,"1,0",1x1,1,10,83,"physical: thrust, towards e"
+effect,503,thrust_se,3x3,"1,1",1x1,1,10,83,"physical: thrust, towards se"
+effect,504,thrust_s,2x3,"0,1",1x1,1,10,83,"physical: thrust, towards s"
+effect,505,thrust_sw,2x3,"0,1",1x1,1,10,83,"physical: thrust, towards sw"
+effect,506,thrust_w,4x2,"1,0",1x1,1,10,83,"physical: thrust, towards w"
+effect,507,thrust_nw,2x3,"0,1",1x1,1,10,83,"physical: thrust, towards nw"
+effect,508,claw_rake_n,2x2,"0,0",1x1,1,10,83,"physical: claw rake, towards n"
+effect,509,claw_rake_ne,3x3,"1,1",1x1,1,10,83,"physical: claw rake, towards ne"
+effect,510,claw_rake_e,2x3,"0,1",1x1,1,10,83,"physical: claw rake, towards e"
+effect,511,claw_rake_se,2x3,"0,1",1x1,1,10,83,"physical: claw rake, towards se"
+effect,512,claw_rake_s,2x3,"0,1",1x1,1,10,83,"physical: claw rake, towards s"
+effect,513,claw_rake_sw,2x3,"0,1",1x1,1,10,83,"physical: claw rake, towards sw"
+effect,514,claw_rake_w,2x3,"0,1",1x1,1,10,83,"physical: claw rake, towards w"
+effect,515,claw_rake_nw,2x3,"0,1",1x1,1,10,83,"physical: claw rake, towards nw"
+effect,516,fang_bite_n,2x3,"0,1",1x1,1,12,83,"physical: fang bite, towards n"
+effect,517,fang_bite_ne,3x3,"1,1",1x1,1,12,83,"physical: fang bite, towards ne"
+effect,518,fang_bite_e,3x3,"1,1",1x1,1,12,83,"physical: fang bite, towards e"
+effect,519,fang_bite_se,3x3,"1,1",1x1,1,12,83,"physical: fang bite, towards se"
+effect,520,fang_bite_s,2x3,"0,1",1x1,1,12,83,"physical: fang bite, towards s"
+effect,521,fang_bite_sw,2x3,"0,1",1x1,1,12,83,"physical: fang bite, towards sw"
+effect,522,fang_bite_w,2x2,"0,0",1x1,1,12,83,"physical: fang bite, towards w"
+effect,523,fang_bite_nw,2x3,"0,1",1x1,1,12,83,"physical: fang bite, towards nw"
+effect,524,aura_burst_gold,4x4,"1,1",1x1,1,12,50,"power-up burst, gold"
+effect,525,aura_burst_red,4x4,"1,1",1x1,1,12,50,"power-up burst, red"
+effect,526,aura_burst_violet,4x4,"1,1",1x1,1,12,50,"power-up burst, violet"
+effect,527,aura_burst_god,4x4,"1,1",1x1,1,12,50,"power-up burst, blue"
+effect,528,dome_blast_fire,6x4,"2,1",1x1,1,23,50,"big dome explosion, fire"
+effect,529,dome_blast_violet,6x4,"2,1",1x1,1,23,50,"big dome explosion, violet"
+effect,530,dome_blast_holy,6x4,"2,1",1x1,1,23,50,"big dome explosion, holy"
+effect,531,ki_hit_gold,2x2,"0,0",1x1,1,6,50,"small energy impact, gold"
+effect,532,ki_hit_blue,2x2,"0,0",1x1,1,6,50,"small energy impact, blue"
+effect,533,punch_hit_gold,3x2,"1,0",1x1,1,8,50,"fist impact, gold"
+effect,534,punch_hit_red,3x2,"1,0",1x1,1,8,50,"fist impact, red"
+effect,535,punch_hit_violet,3x2,"1,0",1x1,1,8,50,"fist impact, violet"
+effect,536,solar_flash,4x4,"1,1",1x1,1,18,50,blinding holy flash
+effect,537,blink_vanish,2x4,"0,0",1x1,1,10,50,"light pillar, vanish"
+effect,538,blink_appear,3x4,"1,0",1x1,1,10,50,"light pillar, appear"
+effect,539,shade_vanish,2x4,"0,0",1x1,1,10,50,"shadow pillar, vanish"
+effect,540,shade_appear,3x4,"1,0",1x1,1,10,50,"shadow pillar, appear"
+effect,541,chi_charge,2x3,"0,1",1x1,1,12,50,"chi gathering at the chest, gold"
+effect,542,stone_rise,3x3,"1,0",1x1,1,24,100,rocks rise round the caster
+effect,543,energy_sphere,3x3,"1,1",1x1,1,24,50,"swirling energy sphere, violet"
+effect,544,px03_arcane,3x3,"1,1",1x1,1,13,60,arcane: vortex ring
+effect,545,px03_ice,3x3,"1,1",1x1,1,13,60,ice: vortex ring
+effect,546,px195_arcane,3x3,"1,1",1x1,1,14,80,energy: branching lightning
+effect,547,px195_ice,3x3,"1,1",1x1,1,14,80,"energy: branching lightning, blue"
+effect,548,px197_crimson,3x3,"1,1",1x1,1,14,80,blood: spiky burst
+effect,549,px286_green,3x3,"1,1",1x1,1,9,100,nature: petal burst
+effect,550,px396_indigo,3x3,"1,1",1x1,1,8,100,shadow: dark ring
+effect,551,px448_crimson,3x3,"1,1",1x1,1,10,100,blood: splash
+effect,552,px448_green,3x3,"1,1",1x1,1,10,100,poison: splash
+effect,553,px586_fire,3x3,"1,1",1x1,1,14,80,fire: sun ring
+effect,554,px586_white,3x3,"1,1",1x1,1,14,80,holy: sun ring
+effect,555,px633_indigo,2x3,"0,1",1x1,1,15,60,death: skull
+effect,556,px633_green,2x3,"0,1",1x1,1,15,60,necrotic: green skull
+effect,557,px652_white,3x3,"1,1",1x1,1,16,60,holy: radiant rays
+effect,558,px674_arcane,3x3,"1,1",1x1,1,18,60,arcane: hexagon sigil
+missile,126,arcane_bolt,3x3,"1,1",3x3,1,8,83,arcane bolt
+missile,127,fireball,3x3,"1,1",3x3,1,8,83,fireball
+missile,128,gale_arrow,3x3,"1,1",3x3,1,8,83,wind arrow
+missile,129,holy_spear,3x3,"1,1",3x3,1,8,83,holy spear
+missile,130,ice_lance,3x3,"1,1",3x3,1,8,83,ice lance
+missile,131,lightning_orb,3x3,"1,1",3x3,1,8,83,lightning orb
+missile,132,shadow_orb,3x3,"1,1",3x3,1,8,83,shadow orb
+missile,133,venom_glob,3x3,"1,1",3x3,1,8,83,venom glob
+missile,134,ki_blast_gold,3x3,"1,1",3x3,1,8,50,"energy blast, gold"
+missile,135,ki_blast_blue,3x3,"1,1",3x3,1,8,50,"energy blast, blue"
+missile,136,razor_disc,2x1,"0,0",3x3,1,8,50,"spinning razor disc, violet"
+aura,1511,ki_ki,2x4,"0,0",4x1,2,24,100,Golden Ki
+aura,1512,ki_blaze,3x4,"0,0",4x1,2,24,100,Crimson Blaze
+aura,1513,ki_lightning,2x3,"0,0",4x1,2,24,100,Storm Surge
+aura,1514,ki_dark,2x3,"0,0",4x1,2,24,100,Umbral Smoke
+aura,1515,ki_wind,2x3,"0,0",4x1,2,24,100,Violet Gale
+aura,1516,ki_sparkle,2x3,"0,0",4x1,2,24,100,Starlight
+aura,1517,aura_arcane_orbit,2x2,"0,0",4x1,2,24,83,Arcane Orbit
+aura,1518,aura_blood_pact,3x3,"0,0",4x1,2,24,83,Blood Pact
+aura,1519,aura_dawn_aegis,3x3,"0,0",4x1,2,24,83,Dawn Aegis
+aura,1520,aura_ember_crown,2x2,"0,0",4x1,2,24,83,Ember Crown
+aura,1521,aura_frost_bastion,3x3,"0,0",4x1,2,24,83,Frost Bastion
+aura,1522,aura_gale_ring,3x3,"0,0",4x1,2,24,83,Gale Ring
+aura,1523,aura_plague_mist,2x2,"0,0",4x1,2,24,83,Plague Mist
+aura,1524,aura_shadow_shroud,3x3,"0,0",4x1,2,24,83,Shadow Shroud
+aura,1525,aura_starfall_crown,3x3,"0,0",4x1,2,24,83,Starfall Crown
+aura,1526,aura_stone_ward,3x3,"0,0",4x1,2,24,83,Stone Ward
+aura,1527,aura_storm_mantle,2x2,"0,0",4x1,2,24,83,Storm Mantle
+aura,1528,aura_verdant_bloom,3x3,"0,0",4x1,2,24,83,Verdant Bloom
+aura,1529,aura_void_rift,2x3,"0,0",4x1,2,24,83,Void Rift

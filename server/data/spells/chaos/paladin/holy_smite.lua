@@ -4,7 +4,8 @@ dofile('data/spells/scripts/chaos/_common.lua')
 local combat = Combat()
 combat:setParameter(COMBAT_PARAM_TYPE, COMBAT_HOLYDAMAGE)
 combat:setParameter(COMBAT_PARAM_EFFECT, Fx("holy_smite", CONST_ME_HOLYDAMAGE))
-combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, FxMissile("holy_arrow", CONST_ANI_HOLY))
+-- with the animated missiles (data/lib/chaos_vfx.lua) the spear is shot by onCastSpell instead
+combat:setParameter(COMBAT_PARAM_DISTANCEEFFECT, ChaosVfxMissile and CONST_ANI_NONE or FxMissile("holy_arrow", CONST_ANI_HOLY))
 
 function onGetFormulaValues(player, level, magicLevel)
 	local power = player:getEffectiveSkillLevel(SKILL_DISTANCE) * ChaosSpell.distanceAttack(player)
@@ -19,5 +20,13 @@ function onCastSpell(creature, variant, isHotkey)
 	if not creature:isPlayer() then
 		return false
 	end
-	return combat:execute(creature, variant)
+	if not combat:execute(creature, variant) then
+		return false
+	end
+	local target = ChaosSpell.targetOf(variant)
+	if target and ChaosVfxMissile then
+		VfxShoot(creature:getPosition(), target:getPosition(), "holy_spear")
+		ChaosSpell.vfx(target:getPosition(), "holy_hit")
+	end
+	return true
 end

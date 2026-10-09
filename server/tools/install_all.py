@@ -20,10 +20,15 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   lategame     tools/late_game.py                experience stages in config.lua + late game spawns (README "Install" 5)
   crafting     tools/install_crafting.py         crafting orb items and the reroll guard (README "Crafting")
   darktiles    tools/install_dark_tiles.py       the dark tile set in items.otb / items.xml (README "Dark tile set")
-  gems         tools/install_gems.py             the gems and the Orb of Sockets in items.otb / items.xml (README "Gems and sockets")
   outfits      tools/install_outfits.py          the Ninja / Samurai class outfits in outfits.xml (docs/CLASSES.md)
+  auras        tools/install_auras.py            the Chaos auras in auras.xml (data/XML/chaos_auras.csv, written by
+               client/tools/sprites/import_vfx.py; spells/README_FX.md "Animated pack effects")
   donoritems   tools/install_donor_items.py      the items imported from donor B art in items.otb / items.xml (server ids
                40000..; nothing to do while data/items/donor_items.csv is absent or empty)
+  packitems    tools/install_pack_items.py       the pack items (new looks of the rune-stone orbs and ore pieces, creature
+               products, food, corpses, trees, grounds, water, shores, lake objects) in items.otb / items.xml and the
+               products in Yasir's shop (README "Pack items and monsters")
+  gems         tools/install_gems.py             the gems and the Orb of Sockets in items.otb / items.xml (README "Gems and sockets")
   monsters     tools/register_monsters.py        every folder under data/monster/monsters/chaos (world bosses, goblin, ...)
   spells       tools/register_spells.py          the Chaos spells (README "Install" 3)
                CLASS HOOK: every tools/install_class_*.py (sorted), called as `install_class_X.py DATA_DIR [--dry-run]`;
@@ -59,7 +64,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'vocations', 'events', 'weapons', 'lategame', 'crafting', 'darktiles', 'gems', 'outfits', 'donoritems', 'monsters', 'spells', 'autoloot', 'sql']
+STEPS = ['files', 'lib', 'vocations', 'events', 'weapons', 'lategame', 'crafting', 'darktiles', 'gems', 'outfits', 'auras', 'donoritems', 'packitems', 'monsters', 'spells', 'autoloot', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -233,16 +238,24 @@ def step_darktiles(server, data, ctx):
     return tool_result(run_tool([tool('install_dark_tiles.py'), data], 'install_dark_tiles.py'))
 
 
-def step_gems(server, data, ctx):
-    return tool_result(run_tool([tool('install_gems.py'), data], 'install_gems.py'))
-
-
 def step_outfits(server, data, ctx):
     return tool_result(run_tool([tool('install_outfits.py'), data], 'install_outfits.py'))
 
 
+def step_auras(server, data, ctx):
+    return tool_result(run_tool([tool('install_auras.py'), data], 'install_auras.py'))
+
+
 def step_donoritems(server, data, ctx):
     return tool_result(run_tool([tool('install_donor_items.py'), data], 'install_donor_items.py'))
+
+
+def step_packitems(server, data, ctx):
+    return tool_result(run_tool([tool('install_pack_items.py'), data], 'install_pack_items.py'))
+
+
+def step_gems(server, data, ctx):
+    return tool_result(run_tool([tool('install_gems.py'), data], 'install_gems.py'))
 
 
 def step_monsters(server, data, ctx):

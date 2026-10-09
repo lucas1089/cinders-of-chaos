@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Owlbear" nameDescription="an owlbear" race="blood" experience="950" speed="220" manacost="0">
+	<health now="1300" max="1300" />
+	<look type="2029" head="41" body="76" legs="95" feet="2" corpse="36090" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-291" />
+		<attack name="physical" interval="2000" chance="10" length="5" spread="2" min="-112" max="-300">
+			<attribute key="areaEffect" value="blackspark" />
+		</attack>
+	</attacks>
+	<defenses armor="28" defense="28">
+	</defenses>
+	<elements>
+		<element earthPercent="-5" />
+		<element deathPercent="-5" />
+		<element holyPercent="5" />
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="HOOO-RAAARGH!" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="100" chance="60000" /><!-- gold coin -->
+		<item id="2152" countmax="2" chance="40000" /><!-- platinum coin -->
+		<item id="36028" countmax="2" chance="18000" /><!-- owl feather -->
+		<item id="36018" countmax="1" chance="8000" /><!-- bear pelt -->
+		<item id="36045" countmax="2" chance="12000" /><!-- roast chicken leg -->
+		<item id="7618" countmax="2" chance="6000" /><!-- health potion -->
+		<item id="7620" countmax="2" chance="6000" /><!-- mana potion -->
+		<item id="7588" chance="4000" /><!-- strong health potion -->
+		<item id="7589" chance="4000" /><!-- strong mana potion -->
+	</loot>
+</monster>

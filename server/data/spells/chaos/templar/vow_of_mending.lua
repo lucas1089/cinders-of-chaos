@@ -9,5 +9,6 @@ function onCastSpell(creature, variant, isHotkey)
 	end
 	local amount = ChaosTemplar.vowAmount(player:getMaxHealth(), player:getLevel(), player:getMagicLevel())
 	ChaosSpell.healTarget(player, player, amount * 0.9, amount * 1.1, Fx("holy_spiral", CONST_ME_MAGIC_BLUE))
+	ChaosSpell.vfx(player:getPosition(), "healing_bloom")
 	return true
 end

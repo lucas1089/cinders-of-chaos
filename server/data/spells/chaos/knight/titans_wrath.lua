@@ -26,6 +26,7 @@ local function secondBlow(creatureId, variant)
 	local c = Creature(creatureId)
 	if c and c:getHealth() > 0 then
 		combat:execute(c, variant)
+		ChaosSpell.vfx(c:getPosition(), "blunt_smash")
 	end
 end
 
@@ -36,6 +37,7 @@ function onCastSpell(creature, variant, isHotkey)
 	if not combat:execute(creature, variant) then
 		return false
 	end
+	ChaosSpell.vfx(creature:getPosition(), "earth_spikes")
 	addEvent(secondBlow, 600, creature:getId(), variant)
 	return true
 end

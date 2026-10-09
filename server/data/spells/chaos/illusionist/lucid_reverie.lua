@@ -27,7 +27,7 @@ function onCastSpell(creature, variant, isHotkey)
 		end
 	end
 	local min, max = H.values(player:getLevel(), player:getMagicLevel(), cfg)
-	ChaosSpell.fx(player:getPosition(), "aura_ring", CONST_ME_PURPLEENERGY)
+	ChaosSpell.vfxOr(player:getPosition(), "starfall_crown", "aura_ring", CONST_ME_PURPLEENERGY)
 	ChaosSpell.pulse(player:getId(), cfg.pulses, cfg.intervalMs, function(caster, step)
 		local cpos = caster:getPosition()
 		for _, id in ipairs(ids) do

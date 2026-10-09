@@ -1,0 +1,18 @@
+--- a/modules/game_outfit/outfit.lua
++++ b/modules/game_outfit/outfit.lua
+@@ -261,6 +261,15 @@
+ 
+   loadSettings()
+ 
++  -- Chaos (10.98): the wings-and-auras outfit packet gives each aura as {clientId, name}; this window reads
++  -- {id, category, clientId, name} (the 12.x layout), so the auras showed with no picture and no name
++  for i = 1, #auraList do
++    local a = auraList[i]
++    if a[3] == nil and type(a[2]) == "string" then
++      auraList[i] = {a[1], 0, a[1], a[2]}
++    end
++  end
++
+   for i = 1, #auraList do
+     local auraData = auraList[i]
+     if auraData[3] == currentOutfit.aura then

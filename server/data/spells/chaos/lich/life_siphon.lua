@@ -16,6 +16,7 @@ local function pulse(playerId, targetId, min, max, left)
 		return
 	end
 	tpos:sendDistanceEffect(ppos, FxMissile("blood_spear", CONST_ANI_DEATH))
+	ChaosSpell.vfx(tpos, "px448_crimson")
 	local dealt = ChaosNecro.damage(player, target, COMBAT_DEATHDAMAGE, min, max, CONST_ME_MAGIC_RED, ORIGIN_SPELL)
 	local heal = ChaosNecroCore.siphonHeal(NecroSpell.cfg, dealt)
 	if heal > 0 then

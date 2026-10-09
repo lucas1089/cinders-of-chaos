@@ -17,6 +17,7 @@ function onCastSpell(creature, variant, isHotkey)
 	local heal, tick = M.breathHeal(player:getLevel(), player:getEffectiveSkillLevel(SKILL_FIST), spent,
 		M.isIronSage(player:getVocation():getId()))
 	ChaosSpell.healTarget(player, player, heal, heal, Fx("heal_sparkle", CONST_ME_MAGIC_BLUE))
+	ChaosSpell.vfx(player:getPosition(), "chi_charge")
 	if tick > 0 then
 		local c = Condition(CONDITION_REGENERATION)
 		c:setParameter(CONDITION_PARAM_SUBID, M.ids.subId.breath)

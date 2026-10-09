@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Golden Dragon" nameDescription="a golden dragon" race="fire" experience="950000" evented = "8" speed="650" skulled="1" looting="1" manacost="0">
 	<health now="700000" max="700000" />
-	<look type="2366" corpse="6068" />
+	<look type="1530" corpse="6068" />
 	<level min="3000" max="3500"/>
 	<targetchange interval="4000" chance="0" />
 	<levelconfig experience="250" health="100" damage="0" speed="50" />

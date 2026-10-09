@@ -21,7 +21,8 @@ function onCastSpell(creature, variant, isHotkey)
 	if target:getHealth() < target:getMaxHealth() * 0.25 then
 		min, max = min * 1.5, max * 1.5
 	end
-	ChaosSpell.shoot(player:getPosition(), target:getPosition(), "holy_arrow", CONST_ANI_HOLY)
+	ChaosSpell.vshoot(player:getPosition(), target:getPosition(), "holy_spear", "holy_arrow", CONST_ANI_HOLY)
+	ChaosSpell.vfx(target:getPosition(), "holy_smite")
 	ChaosSpell.damageTarget(player, target, COMBAT_HOLYDAMAGE, min, max, Fx("holy_smite", CONST_ME_HOLYDAMAGE))
 	return true
 end

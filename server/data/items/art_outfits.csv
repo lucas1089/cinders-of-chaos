@@ -1,0 +1,40 @@
+look_type,key,name,size,head,body,legs,feet
+2000,outfit_goblin_grunt,Goblin Grunt,2x2,62,58,116,75
+2001,outfit_goblin_spearman,Goblin Spearman,2x2,62,2,39,75
+2002,outfit_goblin_archer,Goblin Archer,2x2,62,40,76,75
+2003,outfit_goblin_sneak,Goblin Sneak,2x2,57,76,95,117
+2004,outfit_goblin_bomber,Goblin Bomber,2x2,62,22,76,39
+2005,outfit_goblin_sapper,Goblin Sapper,2x2,57,57,76,78
+2006,outfit_goblin_trapper,Goblin Trapper,2x2,61,76,95,58
+2007,outfit_goblin_drummer,Goblin War-Drummer,2x2,56,95,95,19
+2008,outfit_goblin_shaman,Goblin Shaman,2x2,61,76,95,73
+2009,outfit_goblin_witch,Goblin Witch,2x2,61,52,76,76
+2010,outfit_goblin_brute,Goblin Brute,4x4,62,39,95,22
+2011,outfit_goblin_wolf_rider,Goblin Wolf Rider,3x3,62,20,58,75
+2012,outfit_hobgoblin_captain,Hobgoblin Captain,4x4,56,76,115,59
+2013,outfit_goblin_warlock,Goblin Warlock,4x4,61,76,95,71
+2014,outfit_goblin_chieftain,Goblin Chieftain,4x4,56,95,95,19
+2015,outfit_wolf,Forest Wolf,2x2,40,39,22,2
+2016,outfit_shroomling,Shroomling,2x2,58,2,1,41
+2017,outfit_boar,Wild Boar,2x2,40,39,39,95
+2018,outfit_giant_hornet,Giant Hornet,2x2,78,79,116,19
+2019,outfit_morel_imp,Morel Imp,2x2,22,2,1,95
+2020,outfit_moss_slime,Moss Slime,2x2,61,44,44,56
+2021,outfit_pixie,Forest Pixie,2x2,1,43,10,18
+2022,outfit_glowcap,Glowcap Cluster,2x2,66,76,10,19
+2023,outfit_treant_sapling,Treant Sapling,2x2,62,59,39,41
+2024,outfit_inkcap,Inkcap Creeper,2x2,0,0,57,95
+2025,outfit_myconid_shaman,Myconid Shaman,2x2,58,118,21,2
+2026,outfit_dryad,Grove Dryad,2x2,61,45,40,62
+2027,outfit_dire_bear,Dire Bear,3x3,39,58,116,22
+2028,outfit_thornback_toad,Giant Thornback Toad,3x3,43,62,118,1
+2029,outfit_owlbear,Owlbear,4x4,41,76,95,2
+2030,outfit_forest_spider,Giant Forest Spider,3x3,18,58,116,22
+2031,outfit_stag_beetle,Giant Stag Beetle,3x3,58,39,76,18
+2032,outfit_flytrap,Snapjaw Flytrap,4x4,42,62,43,39
+2033,outfit_puffball_brute,Puffball Brute,3x3,3,22,22,40
+2034,outfit_bracket_golem,Bracket Fungus Golem,3x3,40,58,58,43
+2035,outfit_mushroom_king,Mushroom King,3x3,71,2,76,60
+2036,outfit_elk_guardian,Elk Guardian,4x4,1,58,43,2
+2037,outfit_mycelium_horror,Mycelium Horror,3x3,59,0,19,37
+2038,outfit_ancient_treant,Ancient Treant,4x4,59,58,95,40

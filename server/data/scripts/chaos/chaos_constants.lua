@@ -593,15 +593,49 @@ Chaos.classes = {
 		oldNames = {[1] = "Sorcerer", [2] = "Druid", [3] = "Paladin", [4] = "Knight", [5] = "Master Sorcerer",
 			[6] = "Elder Druid", [7] = "Royal Paladin", [8] = "Elite Knight", [9] = "Illusionist", [10] = "Arch Illusionist"}
 	},
-	-- class outfits (look types 1505-1510 of the client pair, client/tools/sprites/import_outfits.py; added to
-	-- data/XML/outfits.xml for both sexes by server/tools/install_outfits.py): ascending to the class gives them,
-	-- and they stay when the character changes class again. Names must match outfits.xml.
-	outfits = {
-		[12] = {{lookType = 1505, name = "Shadow Ninja"}, {lookType = 1506, name = "Crimson Ninja"},
-			{lookType = 1507, name = "Masked Ninja"}},
-		[13] = {{lookType = 1508, name = "Oni Samurai"}, {lookType = 1509, name = "Ronin"},
-			{lookType = 1510, name = "Dark Samurai"}}
-	},
+	-- class outfits, by vocation id (client pair outfits 1505-1510: client/tools/sprites/import_outfits.py; 1551-1560: the
+	-- donor B first set, import_donor_things.py; added to data/XML/outfits.xml for both sexes by
+	-- server/tools/install_outfits.py). The class's list is given at a class change (ascension.lua puts on the first one
+	-- when the character had none of them) and at login; outfits stay after a later class change. Names must be unique
+	-- and match outfits.xml.
+	outfits = (function()
+		local O = {
+			warrior = {lookType = 1551, name = "Warborn"},
+			thief = {lookType = 1556, name = "Hooded Thief"},
+			ninja = {{lookType = 1505, name = "Shadow Ninja"}, {lookType = 1506, name = "Crimson Ninja"},
+				{lookType = 1507, name = "Masked Ninja"}, {lookType = 1555, name = "Nightblade"}},
+			samurai = {{lookType = 1508, name = "Oni Samurai"}, {lookType = 1509, name = "Ronin"},
+				{lookType = 1510, name = "Dark Samurai"}, {lookType = 1554, name = "Wandering Blade"}},
+			ranger = {lookType = 1558, name = "Wildwood Ranger"},
+			mystic = {lookType = 1559, name = "Archmage"},
+			monk = {lookType = 1557, name = "Brawler"},
+			necromancer = {lookType = 1560, name = "Plague Doctor"},
+			templar = {lookType = 1552, name = "Golden Templar"},
+			seraph = {lookType = 1553, name = "Seraph"}
+		}
+		local function list(...)
+			local out = {}
+			for _, part in ipairs({...}) do
+				if part.lookType then
+					out[#out + 1] = part
+				else
+					for _, o in ipairs(part) do
+						out[#out + 1] = o
+					end
+				end
+			end
+			return out
+		end
+		return {
+			[4] = list(O.warrior), [8] = list(O.warrior), [14] = list(O.warrior),
+			[11] = list(O.thief), [12] = list(O.ninja, O.thief), [13] = list(O.samurai, O.thief),
+			[3] = list(O.ranger), [7] = list(O.ranger), [15] = list(O.ranger),
+			[1] = list(O.mystic), [5] = list(O.mystic), [10] = list(O.mystic),
+			[17] = list(O.monk), [18] = list(O.monk), [19] = list(O.monk),
+			[20] = list(O.necromancer), [21] = list(O.necromancer), [22] = list(O.necromancer),
+			[23] = list(O.templar), [24] = list(O.seraph, O.templar), [25] = list(O.seraph, O.templar)
+		}
+	end)(),
 	storage = {
 		dualWield = 7100200, -- 1 while the character may hold an off-hand sword (read by server/src-patches/0002)
 		ascended = 7100201, -- os.time of the ascension (information only)

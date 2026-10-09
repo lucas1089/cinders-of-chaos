@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Goblin Archer" nameDescription="a goblin archer" race="blood" experience="70" speed="190" manacost="0">
+	<health now="110" max="110" />
+	<look type="2002" head="62" body="40" legs="76" feet="75" corpse="36063" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="4" />
+		<flag staticattack="90" />
+		<flag runonhealth="11" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-29" />
+		<attack name="physical" interval="2000" chance="40" range="7" min="-21" max="-64">
+			<attribute key="shootEffect" value="arrow" />
+		</attack>
+	</attacks>
+	<defenses armor="8" defense="8">
+	</defenses>
+	<elements>
+		<element earthPercent="-5" />
+		<element deathPercent="-5" />
+		<element holyPercent="5" />
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="Hehe, pin cushion!" />
+	</voices>
+	<loot>
+		<item id="2148" countmax="17" chance="60000" /><!-- gold coin -->
+		<item id="36010" countmax="2" chance="18000" /><!-- goblin tooth -->
+		<item id="36016" countmax="1" chance="8000" /><!-- tribal feather -->
+		<item id="36039" countmax="2" chance="12000" /><!-- loaf of rye bread -->
+		<item id="2389" chance="4000" /><!-- spear -->
+		<item id="2406" chance="3000" /><!-- short sword -->
+		<item id="2511" chance="1500" /><!-- brass shield -->
+		<item id="2473" chance="1000" /><!-- viking helmet -->
+	</loot>
+</monster>

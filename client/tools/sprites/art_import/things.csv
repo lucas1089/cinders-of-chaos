@@ -1,0 +1,691 @@
+key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
+orb_alchemy,item,look,Orb of Alchemy,icons,0,0,1,1,1,1,copy:22035,replace,24691,
+orb_annulment,item,look,Orb of Annulment,icons,32,0,1,1,1,1,copy:22041,replace,24697,
+orb_scouring,item,look,Orb of Scouring,icons,64,0,1,1,1,1,copy:22032,replace,24688,
+ore_bronze,item,look,piece of bronze,icons,96,0,1,1,1,1,copy:23742,replace,26398,
+ore_silver,item,look,piece of silver,icons,128,0,1,1,1,1,copy:23743,replace,26399,
+ore_amethyst,item,look,piece of amethyst,icons,160,0,1,1,1,1,copy:23744,replace,26400,
+ore_gold,item,look,piece of gold,icons,192,0,1,1,1,1,copy:23745,replace,26401,
+ore_ruby,item,look,piece of ruby,icons,224,0,1,1,1,1,copy:23746,replace,26402,
+ore_emerald,item,look,piece of emerald,icons,256,0,1,1,1,1,copy:23747,replace,26403,
+ore_sapphire,item,look,piece of sapphire,icons,288,0,1,1,1,1,copy:23748,replace,26404,
+goblin_tooth,item,product,goblin tooth,icons,320,0,1,1,1,1,stackable pickupable,new,,plural=goblin teeth|weight=20|description=A yellowed fang pulled from a goblin.|sell=15
+goblin_skull,item,product,goblin skull,icons,352,0,1,1,1,1,stackable pickupable,new,,plural=goblin skulls|weight=300|description=Goblin shamans paint these and hang them from their staffs.|sell=40
+scrap_metal,item,product,piece of scrap metal,icons,384,0,1,1,1,1,stackable pickupable,new,,plural=pieces of scrap metal|weight=400|description=Rusty plates and nails the goblins pry from wagons.|sell=20
+black_powder,item,product,pouch of black powder,icons,416,0,1,1,1,1,stackable pickupable,new,,plural=pouches of black powder|weight=100|description=Keep it away from torches.|sell=35
+frayed_rope,item,product,frayed rope,icons,448,0,1,1,1,1,stackable pickupable,new,,"plural=frayed ropes|weight=150|description=A goblin snare, chewed through.|sell=12"
+carved_bone,item,product,carved bone,icons,480,0,1,1,1,1,stackable pickupable,new,,plural=carved bones|weight=120|description=Crude runes are scratched into it.|sell=25
+tribal_feather,item,product,tribal feather,icons,512,0,1,1,1,1,stackable pickupable,new,,plural=tribal feathers|weight=10|description=A dyed feather from a goblin headdress.|sell=30
+boar_hide,item,product,boar hide,icons,544,0,1,1,1,1,stackable pickupable,new,,plural=boar hides|weight=600|description=Bristly and thick.|sell=30
+bear_pelt,item,product,bear pelt,icons,576,0,1,1,1,1,stackable pickupable,new,,plural=bear pelts|weight=900|description=A heavy pelt from a forest bear.|sell=60
+wolf_pelt,item,product,wolf pelt,icons,608,0,1,1,1,1,stackable pickupable,new,,plural=wolf pelts|weight=500|description=Soft grey fur.|sell=35
+elk_antler,item,product,elk antler,icons,640,0,1,1,1,1,stackable pickupable,new,,plural=elk antlers|weight=700|description=Moss still clings to the tines.|sell=80
+heartwood,item,product,piece of heartwood,icons,672,0,1,1,1,1,stackable pickupable,new,,plural=pieces of heartwood|weight=900|description=Dense wood from the core of a walking tree.|sell=50
+spore_sack,item,product,spore sack,icons,704,0,1,1,1,1,stackable pickupable,new,,plural=spore sacks|weight=60|description=It puffs a green cloud when squeezed.|sell=25
+moss_gel,item,product,lump of moss gel,icons,736,0,1,1,1,1,stackable pickupable,new,,"plural=lumps of moss gel|weight=150|description=Cold, green and wobbly.|sell=20"
+hornet_stinger,item,product,hornet stinger,icons,768,0,1,1,1,1,stackable pickupable,new,,plural=hornet stingers|weight=30|description=As long as a dagger blade.|sell=35
+pixie_dust,item,product,pouch of pixie dust,icons,800,0,1,1,1,1,stackable pickupable,new,,plural=pouches of pixie dust|weight=20|description=It glitters even in the dark.|sell=45
+spider_silk,item,product,tuft of spider silk,icons,832,0,1,1,1,1,stackable pickupable,new,,plural=tufts of spider silk|weight=40|description=Strong as wire.|sell=40
+beetle_horn,item,product,stag beetle horn,icons,864,0,1,1,1,1,stackable pickupable,new,,plural=stag beetle horns|weight=300|description=A curved horn of hard chitin.|sell=60
+owl_feather,item,product,owl feather,icons,896,0,1,1,1,1,stackable pickupable,new,,"plural=owl feathers|weight=10|description=A broad, silent flight feather.|sell=30"
+dryad_leaf,item,product,dryad leaf,icons,928,0,1,1,1,1,stackable pickupable,new,,plural=dryad leaves|weight=10|description=It stays green long after it was picked.|sell=25
+withered_leaf,item,product,withered leaf,icons,960,0,1,1,1,1,stackable pickupable,new,,plural=withered leaves|weight=10|description=A dry leaf from an old treant.|sell=10
+treant_seeds,item,product,handful of treant seeds,icons,992,0,1,1,1,1,stackable pickupable,new,,plural=handfuls of treant seeds|weight=20|description=Plant them and a forest might listen.|sell=20
+moss_clump,item,product,moss clump,icons,0,32,1,1,1,1,stackable pickupable,new,,plural=moss clumps|weight=60|description=Damp forest moss.|sell=15
+inky_ichor,item,product,drop of inky ichor,icons,32,32,1,1,1,1,stackable pickupable,new,,plural=drops of inky ichor|weight=30|description=It stains everything it touches.|sell=40
+toad_venom,item,product,drop of toad venom,icons,64,32,1,1,1,1,stackable pickupable,new,,plural=drops of toad venom|weight=30|description=Do not lick.|sell=40
+royal_spores,item,product,cloud of royal spores,icons,96,32,1,1,1,1,stackable pickupable,new,,plural=clouds of royal spores|weight=30|description=The Mushroom King breathes these.|sell=120
+pinecone,item,product,pinecone,icons,128,32,1,1,1,1,stackable pickupable,new,,plural=pinecones|weight=40|description=A pinecone from the wild woods.|sell=8
+berries,item,food,handful of berries,icons,160,32,1,1,1,1,stackable pickupable,new,,plural=handfuls of berries|weight=30|food=3|sound=Yum.
+blueberry,item,food,giant blueberry,icons,192,32,1,1,1,1,stackable pickupable,new,,plural=giant blueberries|weight=40|food=3|sound=Yum.
+rye_bread,item,food,loaf of rye bread,icons,224,32,1,1,1,1,stackable pickupable,new,,plural=loaves of rye bread|weight=300|food=10|sound=Crunch.
+sweet_bun,item,food,sweet bun,icons,256,32,1,1,1,1,stackable pickupable,new,,plural=sweet buns|weight=100|food=8|sound=Mmmm.
+honey_cake,item,food,honey cake,icons,288,32,1,1,1,1,stackable pickupable,new,,plural=honey cakes|weight=400|food=15|sound=Mmmm.
+wild_carrot,item,food,wild carrot,icons,320,32,1,1,1,1,stackable pickupable,new,,plural=wild carrots|weight=80|food=4|sound=Crunch.
+cheese_wedge,item,food,wedge of cheese,icons,352,32,1,1,1,1,stackable pickupable,new,,plural=wedges of cheese|weight=200|food=9|sound=Smack.
+cherries,item,food,bunch of cherries,icons,384,32,1,1,1,1,stackable pickupable,new,,plural=bunches of cherries|weight=20|food=2|sound=Yum.
+roast_chicken,item,food,roast chicken leg,icons,416,32,1,1,1,1,stackable pickupable,new,,plural=roast chicken legs|weight=300|food=12|sound=Munch.
+oat_cookie,item,food,oat cookie,icons,448,32,1,1,1,1,stackable pickupable,new,,plural=oat cookies|weight=30|food=3|sound=Crunch.
+fried_fish,item,food,fried fish,icons,480,32,1,1,1,1,stackable pickupable,new,,plural=fried fish|weight=400|food=12|sound=Munch.
+wild_grapes,item,food,bunch of wild grapes,icons,512,32,1,1,1,1,stackable pickupable,new,,plural=bunches of wild grapes|weight=120|food=5|sound=Yum.
+honeycomb,item,food,wild honeycomb,icons,544,32,1,1,1,1,stackable pickupable,new,,plural=wild honeycombs|weight=200|food=8|sound=Mmmm.
+berry_jam,item,food,jar of berry jam,icons,576,32,1,1,1,1,stackable pickupable,new,,plural=jars of berry jam|weight=400|food=10|sound=Mmmm.
+roast_lamb,item,food,roast lamb,icons,608,32,1,1,1,1,stackable pickupable,new,,plural=roast lambs|weight=500|food=15|sound=Munch.
+wild_pear,item,food,wild pear,icons,640,32,1,1,1,1,stackable pickupable,new,,plural=wild pears|weight=120|food=5|sound=Yum.
+apple_pie,item,food,slice of apple pie,icons,672,32,1,1,1,1,stackable pickupable,new,,plural=slices of apple pie|weight=200|food=10|sound=Mmmm.
+cherry_pie,item,food,slice of cherry pie,icons,704,32,1,1,1,1,stackable pickupable,new,,plural=slices of cherry pie|weight=200|food=10|sound=Mmmm.
+meat_pie,item,food,slice of meat pie,icons,736,32,1,1,1,1,stackable pickupable,new,,plural=slices of meat pie|weight=250|food=12|sound=Munch.
+baked_potato,item,food,baked potato,icons,768,32,1,1,1,1,stackable pickupable,new,,plural=baked potatoes|weight=200|food=8|sound=Munch.
+grilled_sausage,item,food,grilled sausage,icons,800,32,1,1,1,1,stackable pickupable,new,,plural=grilled sausages|weight=150|food=9|sound=Munch.
+grilled_steak,item,food,grilled steak,icons,832,32,1,1,1,1,stackable pickupable,new,,plural=grilled steaks|weight=400|food=15|sound=Munch.
+mushroom_stew,item,food,bowl of mushroom stew,icons,864,32,1,1,1,1,stackable pickupable,new,,plural=bowls of mushroom stew|weight=500|food=14|sound=Slurp.
+hunters_platter,item,food,hunter's platter,icons,896,32,1,1,1,1,stackable pickupable,new,,plural=hunter's platters|weight=700|food=18|sound=Munch.
+outfit_goblin_grunt,outfit,creature,Goblin Grunt,creatures/goblin_grunt,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=62|body=58|legs=116|feet=75
+outfit_goblin_spearman,outfit,creature,Goblin Spearman,creatures/goblin_spearman,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=62|body=2|legs=39|feet=75
+outfit_goblin_archer,outfit,creature,Goblin Archer,creatures/goblin_archer,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=62|body=40|legs=76|feet=75
+outfit_goblin_sneak,outfit,creature,Goblin Sneak,creatures/goblin_sneak,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=76|legs=95|feet=117
+outfit_goblin_bomber,outfit,creature,Goblin Bomber,creatures/goblin_bomber,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=62|body=22|legs=76|feet=39
+outfit_goblin_sapper,outfit,creature,Goblin Sapper,creatures/goblin_sapper,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=57|legs=76|feet=78
+outfit_goblin_trapper,outfit,creature,Goblin Trapper,creatures/goblin_trapper,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=61|body=76|legs=95|feet=58
+outfit_goblin_drummer,outfit,creature,Goblin War-Drummer,creatures/goblin_drummer,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=56|body=95|legs=95|feet=19
+outfit_goblin_shaman,outfit,creature,Goblin Shaman,creatures/goblin_shaman,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=61|body=76|legs=95|feet=73
+outfit_goblin_witch,outfit,creature,Goblin Witch,creatures/goblin_witch,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=61|body=52|legs=76|feet=76
+outfit_goblin_brute,outfit,creature,Goblin Brute,creatures/goblin_brute,0,0,4,4,4,2+4,,new,,idle_ms=333|walk_ms=125|head=62|body=39|legs=95|feet=22
+outfit_goblin_wolf_rider,outfit,creature,Goblin Wolf Rider,creatures/goblin_wolf_rider,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=62|body=20|legs=58|feet=75
+outfit_hobgoblin_captain,outfit,creature,Hobgoblin Captain,creatures/hobgoblin_captain,0,0,4,4,4,2+4,,new,,idle_ms=333|walk_ms=125|head=56|body=76|legs=115|feet=59
+outfit_goblin_warlock,outfit,creature,Goblin Warlock,creatures/goblin_warlock,0,0,4,4,4,2+4,,new,,idle_ms=333|walk_ms=125|head=61|body=76|legs=95|feet=71
+outfit_goblin_chieftain,outfit,creature,Goblin Chieftain,creatures/goblin_chieftain,0,0,4,4,4,2+4,,new,,idle_ms=333|walk_ms=125|head=56|body=95|legs=95|feet=19
+outfit_wolf,outfit,creature,Forest Wolf,creatures/wolf,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=40|body=39|legs=22|feet=2
+outfit_shroomling,outfit,creature,Shroomling,creatures/shroomling,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=58|body=2|legs=1|feet=41
+outfit_boar,outfit,creature,Wild Boar,creatures/boar,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=40|body=39|legs=39|feet=95
+outfit_giant_hornet,outfit,creature,Giant Hornet,creatures/giant_hornet,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=78|body=79|legs=116|feet=19
+outfit_morel_imp,outfit,creature,Morel Imp,creatures/morel_imp,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=22|body=2|legs=1|feet=95
+outfit_moss_slime,outfit,creature,Moss Slime,creatures/moss_slime,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=61|body=44|legs=44|feet=56
+outfit_pixie,outfit,creature,Forest Pixie,creatures/pixie,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=1|body=43|legs=10|feet=18
+outfit_glowcap,outfit,creature,Glowcap Cluster,creatures/glowcap,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=66|body=76|legs=10|feet=19
+outfit_treant_sapling,outfit,creature,Treant Sapling,creatures/treant_sapling,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=62|body=59|legs=39|feet=41
+outfit_inkcap,outfit,creature,Inkcap Creeper,creatures/inkcap,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=0|body=0|legs=57|feet=95
+outfit_myconid_shaman,outfit,creature,Myconid Shaman,creatures/myconid_shaman,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=58|body=118|legs=21|feet=2
+outfit_dryad,outfit,creature,Grove Dryad,creatures/dryad,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=61|body=45|legs=40|feet=62
+outfit_dire_bear,outfit,creature,Dire Bear,creatures/dire_bear,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=39|body=58|legs=116|feet=22
+outfit_thornback_toad,outfit,creature,Giant Thornback Toad,creatures/thornback_toad,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=43|body=62|legs=118|feet=1
+outfit_owlbear,outfit,creature,Owlbear,creatures/owlbear,0,0,4,4,4,2+4,,new,,idle_ms=333|walk_ms=125|head=41|body=76|legs=95|feet=2
+outfit_forest_spider,outfit,creature,Giant Forest Spider,creatures/forest_spider,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=18|body=58|legs=116|feet=22
+outfit_stag_beetle,outfit,creature,Giant Stag Beetle,creatures/stag_beetle,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=58|body=39|legs=76|feet=18
+outfit_flytrap,outfit,creature,Snapjaw Flytrap,creatures/flytrap,0,0,4,4,4,2+4,,new,,idle_ms=333|walk_ms=125|head=42|body=62|legs=43|feet=39
+outfit_puffball_brute,outfit,creature,Puffball Brute,creatures/puffball_brute,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=3|body=22|legs=22|feet=40
+outfit_bracket_golem,outfit,creature,Bracket Fungus Golem,creatures/bracket_golem,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=40|body=58|legs=58|feet=43
+outfit_mushroom_king,outfit,creature,Mushroom King,creatures/mushroom_king,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=71|body=2|legs=76|feet=60
+outfit_elk_guardian,outfit,creature,Elk Guardian,creatures/elk_guardian,0,0,4,4,4,2+4,,new,,idle_ms=333|walk_ms=125|head=1|body=58|legs=43|feet=2
+outfit_mycelium_horror,outfit,creature,Mycelium Horror,creatures/mycelium_horror,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=59|body=0|legs=19|feet=37
+outfit_ancient_treant,outfit,creature,Ancient Treant,creatures/ancient_treant,0,0,4,4,4,2+4,,new,,idle_ms=333|walk_ms=125|head=59|body=58|legs=95|feet=40
+corpse_goblin_grunt,item,corpse,dead goblin grunt,creatures/goblin_grunt,0,416,2,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_goblin_spearman,item,corpse,dead goblin spearman,creatures/goblin_spearman,0,384,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_goblin_archer,item,corpse,dead goblin archer,creatures/goblin_archer,0,384,1,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_goblin_sneak,item,corpse,dead goblin sneak,creatures/goblin_sneak,0,416,2,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_goblin_bomber,item,corpse,dead goblin bomber,creatures/goblin_bomber,0,384,1,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_goblin_sapper,item,corpse,dead goblin sapper,creatures/goblin_sapper,0,384,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_goblin_trapper,item,corpse,dead goblin trapper,creatures/goblin_trapper,0,384,1,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_goblin_drummer,item,corpse,dead goblin war-drummer,creatures/goblin_drummer,0,416,2,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_goblin_shaman,item,corpse,dead goblin shaman,creatures/goblin_shaman,0,384,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_goblin_witch,item,corpse,dead goblin witch,creatures/goblin_witch,0,384,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_goblin_brute,item,corpse,dead goblin brute,creatures/goblin_brute,0,800,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_goblin_wolf_rider,item,corpse,dead goblin wolf rider,creatures/goblin_wolf_rider,0,608,3,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_hobgoblin_captain,item,corpse,dead hobgoblin captain,creatures/hobgoblin_captain,0,800,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_goblin_warlock,item,corpse,dead goblin warlock,creatures/goblin_warlock,0,800,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_goblin_chieftain,item,corpse,dead goblin chieftain,creatures/goblin_chieftain,0,800,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_wolf,item,corpse,dead forest wolf,creatures/wolf,0,384,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_shroomling,item,corpse,dead shroomling,creatures/shroomling,0,416,1,1,1,1,container forceuse notmoveable usable,new,,race=venom
+corpse_boar,item,corpse,dead wild boar,creatures/boar,0,384,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_giant_hornet,item,corpse,dead giant hornet,creatures/giant_hornet,0,384,2,2,1,1,container forceuse notmoveable usable,new,,race=venom
+corpse_morel_imp,item,corpse,dead morel imp,creatures/morel_imp,0,384,2,2,1,1,container forceuse notmoveable usable,new,,race=venom
+corpse_moss_slime,item,corpse,dead moss slime,creatures/moss_slime,0,416,1,1,1,1,container forceuse notmoveable usable,new,,race=venom
+corpse_pixie,item,corpse,dead forest pixie,creatures/pixie,0,384,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_glowcap,item,corpse,dead glowcap cluster,creatures/glowcap,0,416,1,1,1,1,container forceuse notmoveable usable,new,,race=venom
+corpse_treant_sapling,item,corpse,dead treant sapling,creatures/treant_sapling,0,384,2,2,1,1,container forceuse notmoveable usable,new,,race=venom
+corpse_inkcap,item,corpse,dead inkcap creeper,creatures/inkcap,0,416,2,1,1,1,container forceuse notmoveable usable,new,,race=venom
+corpse_myconid_shaman,item,corpse,dead myconid shaman,creatures/myconid_shaman,0,384,2,2,1,1,container forceuse notmoveable usable,new,,race=venom
+corpse_dryad,item,corpse,dead grove dryad,creatures/dryad,0,384,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_dire_bear,item,corpse,dead dire bear,creatures/dire_bear,0,576,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_thornback_toad,item,corpse,dead giant thornback toad,creatures/thornback_toad,0,576,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_owlbear,item,corpse,dead owlbear,creatures/owlbear,0,800,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_forest_spider,item,corpse,dead giant forest spider,creatures/forest_spider,0,576,3,3,1,1,container forceuse notmoveable usable,new,,race=venom
+corpse_stag_beetle,item,corpse,dead giant stag beetle,creatures/stag_beetle,0,576,3,3,1,1,container forceuse notmoveable usable,new,,race=venom
+corpse_flytrap,item,corpse,dead snapjaw flytrap,creatures/flytrap,0,800,3,3,1,1,container forceuse notmoveable usable,new,,race=venom
+corpse_puffball_brute,item,corpse,dead puffball brute,creatures/puffball_brute,0,608,2,2,1,1,container forceuse notmoveable usable,new,,race=venom
+corpse_bracket_golem,item,corpse,dead bracket fungus golem,creatures/bracket_golem,0,576,3,3,1,1,container forceuse notmoveable usable,new,,race=venom
+corpse_mushroom_king,item,corpse,dead mushroom king,creatures/mushroom_king,0,576,3,3,1,1,container forceuse notmoveable usable,new,,race=venom
+corpse_elk_guardian,item,corpse,dead elk guardian,creatures/elk_guardian,0,800,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_mycelium_horror,item,corpse,dead mycelium horror,creatures/mycelium_horror,0,608,2,2,1,1,container forceuse notmoveable usable,new,,race=undead
+corpse_ancient_treant,item,corpse,dead ancient treant,creatures/ancient_treant,0,800,3,3,1,1,container forceuse notmoveable usable,new,,race=venom
+tree_001,item,tree,summer oak,trees,0,0,3,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=broadleaf
+stump_001,item,stump,summer oak stump,trees,96,0,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=broadleaf
+tree_002,item,tree,stone oak,trees,128,0,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=stone
+stump_002,item,stump,stone oak stump,trees,192,0,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=stone
+tree_003,item,tree,crimson maple,trees,224,0,3,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=autumn
+stump_003,item,stump,crimson maple stump,trees,320,0,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=autumn
+tree_004,item,tree,wild elm,trees,352,0,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=broadleaf
+stump_004,item,stump,wild elm stump,trees,416,0,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=broadleaf
+tree_005,item,tree,bushy oak,trees,448,0,3,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=broadleaf
+stump_005,item,stump,bushy oak stump,trees,544,0,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=broadleaf
+tree_006,item,tree,frost coral tree,trees,576,0,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=frost
+stump_006,item,stump,frost coral tree stump,trees,640,0,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=frost
+tree_007,item,tree,red rowan,trees,672,0,3,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=fruit
+stump_007,item,stump,red rowan stump,trees,768,0,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=fruit
+tree_008,item,tree,old oak,trees,800,0,3,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=broadleaf
+stump_008,item,stump,old oak stump,trees,896,0,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=broadleaf
+tree_009,item,tree,bristle fir,trees,928,0,3,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=conifer
+stump_009,item,stump,bristle fir stump,trees,0,64,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=conifer
+tree_010,item,tree,frost oak,trees,32,64,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=frost
+stump_010,item,stump,frost oak stump,trees,96,64,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=frost
+tree_011,item,tree,ember maple,trees,128,64,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=autumn
+stump_011,item,stump,ember maple stump,trees,192,64,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=autumn
+tree_012,item,tree,golden gnarlwood,trees,224,64,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=fantasy
+stump_012,item,stump,golden gnarlwood stump,trees,288,64,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=fantasy
+tree_013,item,tree,cloud oak,trees,320,64,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=broadleaf
+stump_013,item,stump,cloud oak stump,trees,384,64,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=broadleaf
+tree_014,item,tree,dead oak,trees,416,64,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=dead
+stump_014,item,stump,dead oak stump,trees,480,64,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=dead
+tree_015,item,tree,red coral tree,trees,512,64,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=coral
+stump_015,item,stump,red coral tree stump,trees,576,64,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=coral
+tree_016,item,tree,great canopy oak,trees,608,64,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=broadleaf
+stump_016,item,stump,great canopy oak stump,trees,672,64,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=broadleaf
+tree_017,item,tree,puffball tree,trees,704,64,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=broadleaf
+stump_017,item,stump,puffball tree stump,trees,768,64,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=broadleaf
+tree_018,item,tree,dead snag,trees,800,64,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=dead
+stump_018,item,stump,dead snag stump,trees,864,64,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=dead
+tree_019,item,tree,coral branch,trees,896,64,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=coral
+stump_019,item,stump,coral branch stump,trees,960,64,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=coral
+tree_020,item,tree,broad oak,trees,0,128,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=broadleaf
+stump_020,item,stump,broad oak stump,trees,64,128,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=broadleaf
+tree_021,item,tree,round oak,trees,96,128,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=broadleaf
+stump_021,item,stump,round oak stump,trees,160,128,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=broadleaf
+tree_022,item,tree,charred tree,trees,192,128,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=ash
+stump_022,item,stump,charred tree stump,trees,256,128,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=ash
+tree_023,item,tree,autumn oak,trees,288,128,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=autumn
+stump_023,item,stump,autumn oak stump,trees,352,128,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=autumn
+tree_024,item,tree,emerald laurel,trees,384,128,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=jungle
+stump_024,item,stump,emerald laurel stump,trees,448,128,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=jungle
+tree_025,item,tree,green linden,trees,480,128,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=broadleaf
+stump_025,item,stump,green linden stump,trees,544,128,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=broadleaf
+tree_026,item,tree,teal crystal tree,trees,576,128,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=crystal
+stump_026,item,stump,teal crystal tree stump,trees,640,128,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=crystal
+tree_027,item,tree,ochre oak,trees,672,128,3,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=autumn
+stump_027,item,stump,ochre oak stump,trees,768,128,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=autumn
+tree_028,item,tree,bare elm,trees,800,128,3,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=dead
+stump_028,item,stump,bare elm stump,trees,896,128,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=dead
+tree_029,item,tree,dewdrop tree,trees,928,128,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=fantasy
+stump_029,item,stump,dewdrop tree stump,trees,992,128,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=fantasy
+tree_030,item,tree,amber tree,trees,0,192,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=fantasy
+stump_030,item,stump,amber tree stump,trees,64,192,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=fantasy
+tree_031,item,tree,amber oak,trees,96,192,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=fantasy
+stump_031,item,stump,amber oak stump,trees,160,192,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=fantasy
+tree_032,item,tree,rune deadwood,trees,192,192,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=crystal
+stump_032,item,stump,rune deadwood stump,trees,256,192,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=crystal
+tree_033,item,tree,blossom linden,trees,288,192,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=broadleaf
+stump_033,item,stump,blossom linden stump,trees,352,192,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=broadleaf
+tree_034,item,tree,brushwood tree,trees,384,192,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=dead
+stump_034,item,stump,brushwood tree stump,trees,448,192,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=dead
+tree_035,item,tree,golden larch,trees,480,192,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=conifer
+stump_035,item,stump,golden larch stump,trees,544,192,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=conifer
+tree_036,item,tree,ember heart tree,trees,576,192,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=fantasy
+stump_036,item,stump,ember heart tree stump,trees,640,192,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=fantasy
+tree_037,item,tree,green elm,trees,672,192,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=broadleaf
+stump_037,item,stump,green elm stump,trees,736,192,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=broadleaf
+tree_038,item,tree,ice shard tree,trees,768,192,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=crystal
+stump_038,item,stump,ice shard tree stump,trees,832,192,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=crystal
+tree_039,item,tree,autumn beech,trees,864,192,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=autumn
+stump_039,item,stump,autumn beech stump,trees,928,192,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=autumn
+tree_040,item,tree,bare beech,trees,960,192,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=dead
+stump_040,item,stump,bare beech stump,trees,0,256,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=dead
+tree_041,item,tree,tall coconut palm,trees,32,256,3,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=palm
+stump_041,item,stump,coconut palm stump,trees,128,256,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=palm
+tree_042,item,tree,driftwood snag,trees,160,256,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=dead
+stump_042,item,stump,driftwood snag stump,trees,224,256,2,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=dead
+tree_043,item,tree,crimson palm,trees,288,256,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=palm
+stump_043,item,stump,crimson palm stump,trees,352,256,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=palm
+tree_044,item,tree,withered palm,trees,384,256,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=palm
+stump_044,item,stump,withered palm stump,trees,448,256,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=palm
+tree_045,item,tree,tropical palm,trees,480,256,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=palm
+stump_045,item,stump,tropical palm stump,trees,544,256,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=palm
+tree_046,item,tree,hooked deadwood,trees,576,256,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=dead
+stump_046,item,stump,hooked deadwood stump,trees,640,256,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=dead
+tree_047,item,tree,coiled red palm,trees,672,256,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=palm
+stump_047,item,stump,coiled red palm stump,trees,736,256,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=palm
+tree_048,item,tree,coiled palm,trees,768,256,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=palm
+stump_048,item,stump,coiled palm stump,trees,832,256,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=palm
+tree_049,item,tree,date palm,trees,864,256,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=palm
+stump_049,item,stump,date palm stump,trees,928,256,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=palm
+tree_050,item,tree,young palm,trees,960,256,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=palm
+stump_050,item,stump,young palm stump,trees,0,320,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=palm
+tree_051,item,tree,dry palm,trees,32,320,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=palm
+stump_051,item,stump,dry palm stump,trees,96,320,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=palm
+tree_052,item,tree,island palm,trees,128,320,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=palm
+stump_052,item,stump,island palm stump,trees,192,320,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=palm
+tree_053,item,tree,shady palm,trees,224,320,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=palm
+stump_053,item,stump,shady palm stump,trees,288,320,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=palm
+tree_054,item,tree,dwarf palm,trees,320,320,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=palm
+stump_054,item,stump,dwarf palm stump,trees,384,320,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=palm
+tree_055,item,tree,rose palm,trees,416,320,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=palm
+stump_055,item,stump,rose palm stump,trees,480,320,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=palm
+tree_056,item,tree,lagoon palm,trees,512,320,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=palm
+stump_056,item,stump,lagoon palm stump,trees,576,320,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=palm
+tree_057,item,tree,green beech,trees,608,320,3,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=broadleaf
+stump_057,item,stump,green beech stump,trees,704,320,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=broadleaf
+tree_058,item,tree,black snag,trees,736,320,3,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=dead
+stump_058,item,stump,black snag stump,trees,832,320,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=dead
+tree_059,item,tree,fire maple,trees,864,320,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=autumn
+stump_059,item,stump,fire maple stump,trees,928,320,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=autumn
+tree_060,item,tree,redvein oak,trees,960,320,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=fantasy
+stump_060,item,stump,redvein oak stump,trees,0,384,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=fantasy
+tree_061,item,tree,shrub oak,trees,32,384,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=broadleaf
+stump_061,item,stump,shrub oak stump,trees,96,384,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=broadleaf
+tree_062,item,tree,thorn snag,trees,128,384,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=dead
+stump_062,item,stump,thorn snag stump,trees,192,384,2,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=dead
+tree_063,item,tree,autumn maple,trees,256,384,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=autumn
+stump_063,item,stump,autumn maple stump,trees,320,384,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=autumn
+tree_064,item,tree,bog mangrove,trees,352,384,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=swamp
+stump_064,item,stump,bog mangrove stump,trees,416,384,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=swamp
+tree_065,item,tree,ashen pine,trees,448,384,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=ash
+stump_065,item,stump,ashen pine stump,trees,512,384,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=ash
+tree_066,item,tree,bramble tree,trees,544,384,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=fantasy
+stump_066,item,stump,bramble tree stump,trees,608,384,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=fantasy
+tree_067,item,tree,ember ball tree,trees,640,384,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=fantasy
+stump_067,item,stump,ember ball tree stump,trees,704,384,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=fantasy
+tree_068,item,tree,withered ball tree,trees,736,384,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=dead
+stump_068,item,stump,withered ball tree stump,trees,800,384,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=dead
+tree_069,item,tree,fern tree,trees,832,384,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=jungle
+stump_069,item,stump,fern tree stump,trees,896,384,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=jungle
+tree_070,item,tree,broken deadwood,trees,928,384,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=dead
+stump_070,item,stump,broken deadwood stump,trees,992,384,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=dead
+tree_071,item,tree,bloodleaf tree,trees,0,448,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=fantasy
+stump_071,item,stump,bloodleaf tree stump,trees,64,448,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=fantasy
+tree_072,item,tree,holly tree,trees,96,448,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=fruit
+stump_072,item,stump,holly tree stump,trees,160,448,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=fruit
+tree_073,item,tree,sago palm,trees,192,448,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=palm
+stump_073,item,stump,sago palm stump,trees,256,448,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=palm
+tree_074,item,tree,dead sapling,trees,288,448,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=dead
+stump_074,item,stump,dead sapling stump,trees,352,448,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=dead
+tree_075,item,tree,dead palm,trees,384,448,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=palm
+stump_075,item,stump,dead palm stump,trees,448,448,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=palm
+tree_076,item,tree,jungle palm,trees,480,448,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=palm
+stump_076,item,stump,jungle palm stump,trees,544,448,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=palm
+tree_077,item,tree,moss oak,trees,576,448,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=swamp
+stump_077,item,stump,moss oak stump,trees,640,448,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=swamp
+tree_078,item,tree,frost deadwood,trees,672,448,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=frost
+stump_078,item,stump,frost deadwood stump,trees,736,448,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=frost
+tree_079,item,tree,gall oak,trees,768,448,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=fantasy
+stump_079,item,stump,gall oak stump,trees,832,448,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=fantasy
+tree_080,item,tree,witch oak,trees,864,448,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=fantasy
+stump_080,item,stump,witch oak stump,trees,928,448,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=fantasy
+tree_081,item,tree,forked oak,trees,960,448,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=broadleaf
+stump_081,item,stump,forked oak stump,trees,0,512,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=broadleaf
+tree_082,item,tree,granite oak,trees,32,512,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=stone
+stump_082,item,stump,granite oak stump,trees,96,512,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=stone
+tree_083,item,tree,copper oak,trees,128,512,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=autumn
+stump_083,item,stump,copper oak stump,trees,192,512,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=autumn
+tree_084,item,tree,spring oak,trees,224,512,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=broadleaf
+stump_084,item,stump,spring oak stump,trees,288,512,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=broadleaf
+tree_085,item,tree,apple tree,trees,320,512,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=fruit
+stump_085,item,stump,apple tree stump,trees,384,512,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=fruit
+tree_086,item,tree,starlit shade,trees,416,512,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=fantasy
+stump_086,item,stump,starlit shade stump,trees,480,512,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=fantasy
+tree_087,item,tree,sand oak,trees,512,512,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=autumn
+stump_087,item,stump,sand oak stump,trees,576,512,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=autumn
+tree_088,item,tree,meadow oak,trees,608,512,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=broadleaf
+stump_088,item,stump,meadow oak stump,trees,672,512,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=broadleaf
+tree_089,item,tree,limeberry tree,trees,704,512,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=fruit
+stump_089,item,stump,limeberry tree stump,trees,768,512,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=fruit
+tree_090,item,tree,soot tree,trees,800,512,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=ash
+stump_090,item,stump,soot tree stump,trees,864,512,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=ash
+tree_091,item,tree,sunspot tree,trees,896,512,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=fantasy
+stump_091,item,stump,sunspot tree stump,trees,960,512,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=fantasy
+tree_092,item,tree,spiky oak,trees,0,576,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=broadleaf
+stump_092,item,stump,spiky oak stump,trees,64,576,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=broadleaf
+tree_093,item,tree,emerald oak,trees,96,576,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=broadleaf
+stump_093,item,stump,emerald oak stump,trees,160,576,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=broadleaf
+tree_094,item,tree,mahogany tree,trees,192,576,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=jungle
+stump_094,item,stump,mahogany tree stump,trees,256,576,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=jungle
+tree_095,item,tree,crimson bristle,trees,288,576,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=fantasy
+stump_095,item,stump,crimson bristle stump,trees,352,576,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=fantasy
+tree_096,item,tree,green puff oak,trees,384,576,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=broadleaf
+stump_096,item,stump,green puff oak stump,trees,448,576,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=broadleaf
+tree_097,item,tree,starroot oak,trees,480,576,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=broadleaf
+stump_097,item,stump,starroot oak stump,trees,544,576,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=broadleaf
+tree_098,item,tree,coal tree,trees,576,576,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=ash
+stump_098,item,stump,coal tree stump,trees,640,576,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=ash
+tree_099,item,tree,lantern tree,trees,672,576,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=fantasy
+stump_099,item,stump,lantern tree stump,trees,736,576,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=fantasy
+tree_100,item,tree,grove oak,trees,768,576,2,2,1,1,bottom notwalkable notmoveable minimap:12,new,,family=broadleaf
+stump_100,item,stump,grove oak stump,trees,832,576,1,1,1,1,bottom notwalkable notmoveable minimap:129,new,,family=broadleaf
+ground_lush_grass,item,ground,thick lush grass,grounds,0,0,1,1,1,1,ground:150 notmoveable minimap:24 fullground,new,,
+border_lush_grass_n,item,border,thick lush grass (north edge),grounds,32,0,1,1,1,1,clip notmoveable,new,,piece=n
+border_lush_grass_s,item,border,thick lush grass (south edge),grounds,64,0,1,1,1,1,clip notmoveable,new,,piece=s
+border_lush_grass_e,item,border,thick lush grass (east edge),grounds,96,0,1,1,1,1,clip notmoveable,new,,piece=e
+border_lush_grass_w,item,border,thick lush grass (west edge),grounds,128,0,1,1,1,1,clip notmoveable,new,,piece=w
+border_lush_grass_nw,item,border,thick lush grass (north-west corner),grounds,160,0,1,1,1,1,clip notmoveable,new,,piece=nw
+border_lush_grass_ne,item,border,thick lush grass (north-east corner),grounds,192,0,1,1,1,1,clip notmoveable,new,,piece=ne
+border_lush_grass_sw,item,border,thick lush grass (south-west corner),grounds,224,0,1,1,1,1,clip notmoveable,new,,piece=sw
+border_lush_grass_se,item,border,thick lush grass (south-east corner),grounds,256,0,1,1,1,1,clip notmoveable,new,,piece=se
+border_lush_grass_in_nw,item,border,thick lush grass (north-west inner corner),grounds,288,0,1,1,1,1,clip notmoveable,new,,piece=in_nw
+border_lush_grass_in_ne,item,border,thick lush grass (north-east inner corner),grounds,320,0,1,1,1,1,clip notmoveable,new,,piece=in_ne
+border_lush_grass_in_sw,item,border,thick lush grass (south-west inner corner),grounds,352,0,1,1,1,1,clip notmoveable,new,,piece=in_sw
+border_lush_grass_in_se,item,border,thick lush grass (south-east inner corner),grounds,384,0,1,1,1,1,clip notmoveable,new,,piece=in_se
+ground_dense_grass,item,ground,dense grass,grounds,416,0,1,1,1,1,ground:150 notmoveable minimap:24 fullground,new,,
+border_dense_grass_n,item,border,dense grass (north edge),grounds,448,0,1,1,1,1,clip notmoveable,new,,piece=n
+border_dense_grass_s,item,border,dense grass (south edge),grounds,480,0,1,1,1,1,clip notmoveable,new,,piece=s
+border_dense_grass_e,item,border,dense grass (east edge),grounds,512,0,1,1,1,1,clip notmoveable,new,,piece=e
+border_dense_grass_w,item,border,dense grass (west edge),grounds,544,0,1,1,1,1,clip notmoveable,new,,piece=w
+border_dense_grass_nw,item,border,dense grass (north-west corner),grounds,576,0,1,1,1,1,clip notmoveable,new,,piece=nw
+border_dense_grass_ne,item,border,dense grass (north-east corner),grounds,608,0,1,1,1,1,clip notmoveable,new,,piece=ne
+border_dense_grass_sw,item,border,dense grass (south-west corner),grounds,640,0,1,1,1,1,clip notmoveable,new,,piece=sw
+border_dense_grass_se,item,border,dense grass (south-east corner),grounds,672,0,1,1,1,1,clip notmoveable,new,,piece=se
+border_dense_grass_in_nw,item,border,dense grass (north-west inner corner),grounds,704,0,1,1,1,1,clip notmoveable,new,,piece=in_nw
+border_dense_grass_in_ne,item,border,dense grass (north-east inner corner),grounds,736,0,1,1,1,1,clip notmoveable,new,,piece=in_ne
+border_dense_grass_in_sw,item,border,dense grass (south-west inner corner),grounds,768,0,1,1,1,1,clip notmoveable,new,,piece=in_sw
+border_dense_grass_in_se,item,border,dense grass (south-east inner corner),grounds,800,0,1,1,1,1,clip notmoveable,new,,piece=in_se
+ground_dry_grass,item,ground,dry prairie grass,grounds,832,0,1,1,1,1,ground:150 notmoveable minimap:30 fullground,new,,
+border_dry_grass_n,item,border,dry prairie grass (north edge),grounds,864,0,1,1,1,1,clip notmoveable,new,,piece=n
+border_dry_grass_s,item,border,dry prairie grass (south edge),grounds,896,0,1,1,1,1,clip notmoveable,new,,piece=s
+border_dry_grass_e,item,border,dry prairie grass (east edge),grounds,928,0,1,1,1,1,clip notmoveable,new,,piece=e
+border_dry_grass_w,item,border,dry prairie grass (west edge),grounds,960,0,1,1,1,1,clip notmoveable,new,,piece=w
+border_dry_grass_nw,item,border,dry prairie grass (north-west corner),grounds,992,0,1,1,1,1,clip notmoveable,new,,piece=nw
+border_dry_grass_ne,item,border,dry prairie grass (north-east corner),grounds,0,32,1,1,1,1,clip notmoveable,new,,piece=ne
+border_dry_grass_sw,item,border,dry prairie grass (south-west corner),grounds,32,32,1,1,1,1,clip notmoveable,new,,piece=sw
+border_dry_grass_se,item,border,dry prairie grass (south-east corner),grounds,64,32,1,1,1,1,clip notmoveable,new,,piece=se
+border_dry_grass_in_nw,item,border,dry prairie grass (north-west inner corner),grounds,96,32,1,1,1,1,clip notmoveable,new,,piece=in_nw
+border_dry_grass_in_ne,item,border,dry prairie grass (north-east inner corner),grounds,128,32,1,1,1,1,clip notmoveable,new,,piece=in_ne
+border_dry_grass_in_sw,item,border,dry prairie grass (south-west inner corner),grounds,160,32,1,1,1,1,clip notmoveable,new,,piece=in_sw
+border_dry_grass_in_se,item,border,dry prairie grass (south-east inner corner),grounds,192,32,1,1,1,1,clip notmoveable,new,,piece=in_se
+ground_meadow_grass,item,ground,meadow grass,grounds,224,32,1,1,1,1,ground:150 notmoveable minimap:30 fullground,new,,
+border_meadow_grass_n,item,border,meadow grass (north edge),grounds,256,32,1,1,1,1,clip notmoveable,new,,piece=n
+border_meadow_grass_s,item,border,meadow grass (south edge),grounds,288,32,1,1,1,1,clip notmoveable,new,,piece=s
+border_meadow_grass_e,item,border,meadow grass (east edge),grounds,320,32,1,1,1,1,clip notmoveable,new,,piece=e
+border_meadow_grass_w,item,border,meadow grass (west edge),grounds,352,32,1,1,1,1,clip notmoveable,new,,piece=w
+border_meadow_grass_nw,item,border,meadow grass (north-west corner),grounds,384,32,1,1,1,1,clip notmoveable,new,,piece=nw
+border_meadow_grass_ne,item,border,meadow grass (north-east corner),grounds,416,32,1,1,1,1,clip notmoveable,new,,piece=ne
+border_meadow_grass_sw,item,border,meadow grass (south-west corner),grounds,448,32,1,1,1,1,clip notmoveable,new,,piece=sw
+border_meadow_grass_se,item,border,meadow grass (south-east corner),grounds,480,32,1,1,1,1,clip notmoveable,new,,piece=se
+border_meadow_grass_in_nw,item,border,meadow grass (north-west inner corner),grounds,512,32,1,1,1,1,clip notmoveable,new,,piece=in_nw
+border_meadow_grass_in_ne,item,border,meadow grass (north-east inner corner),grounds,544,32,1,1,1,1,clip notmoveable,new,,piece=in_ne
+border_meadow_grass_in_sw,item,border,meadow grass (south-west inner corner),grounds,576,32,1,1,1,1,clip notmoveable,new,,piece=in_sw
+border_meadow_grass_in_se,item,border,meadow grass (south-east inner corner),grounds,608,32,1,1,1,1,clip notmoveable,new,,piece=in_se
+ground_bright_grass,item,ground,bright grass,grounds,640,32,1,1,1,1,ground:150 notmoveable minimap:24 fullground,new,,
+border_bright_grass_n,item,border,bright grass (north edge),grounds,672,32,1,1,1,1,clip notmoveable,new,,piece=n
+border_bright_grass_s,item,border,bright grass (south edge),grounds,704,32,1,1,1,1,clip notmoveable,new,,piece=s
+border_bright_grass_e,item,border,bright grass (east edge),grounds,736,32,1,1,1,1,clip notmoveable,new,,piece=e
+border_bright_grass_w,item,border,bright grass (west edge),grounds,768,32,1,1,1,1,clip notmoveable,new,,piece=w
+border_bright_grass_nw,item,border,bright grass (north-west corner),grounds,800,32,1,1,1,1,clip notmoveable,new,,piece=nw
+border_bright_grass_ne,item,border,bright grass (north-east corner),grounds,832,32,1,1,1,1,clip notmoveable,new,,piece=ne
+border_bright_grass_sw,item,border,bright grass (south-west corner),grounds,864,32,1,1,1,1,clip notmoveable,new,,piece=sw
+border_bright_grass_se,item,border,bright grass (south-east corner),grounds,896,32,1,1,1,1,clip notmoveable,new,,piece=se
+border_bright_grass_in_nw,item,border,bright grass (north-west inner corner),grounds,928,32,1,1,1,1,clip notmoveable,new,,piece=in_nw
+border_bright_grass_in_ne,item,border,bright grass (north-east inner corner),grounds,960,32,1,1,1,1,clip notmoveable,new,,piece=in_ne
+border_bright_grass_in_sw,item,border,bright grass (south-west inner corner),grounds,992,32,1,1,1,1,clip notmoveable,new,,piece=in_sw
+border_bright_grass_in_se,item,border,bright grass (south-east inner corner),grounds,0,64,1,1,1,1,clip notmoveable,new,,piece=in_se
+ground_loam,item,ground,loam,grounds,32,64,1,1,1,1,ground:110 notmoveable minimap:121 fullground,new,,
+border_loam_n,item,border,loam (north edge),grounds,64,64,1,1,1,1,clip notmoveable,new,,piece=n
+border_loam_s,item,border,loam (south edge),grounds,96,64,1,1,1,1,clip notmoveable,new,,piece=s
+border_loam_e,item,border,loam (east edge),grounds,128,64,1,1,1,1,clip notmoveable,new,,piece=e
+border_loam_w,item,border,loam (west edge),grounds,160,64,1,1,1,1,clip notmoveable,new,,piece=w
+border_loam_nw,item,border,loam (north-west corner),grounds,192,64,1,1,1,1,clip notmoveable,new,,piece=nw
+border_loam_ne,item,border,loam (north-east corner),grounds,224,64,1,1,1,1,clip notmoveable,new,,piece=ne
+border_loam_sw,item,border,loam (south-west corner),grounds,256,64,1,1,1,1,clip notmoveable,new,,piece=sw
+border_loam_se,item,border,loam (south-east corner),grounds,288,64,1,1,1,1,clip notmoveable,new,,piece=se
+border_loam_in_nw,item,border,loam (north-west inner corner),grounds,320,64,1,1,1,1,clip notmoveable,new,,piece=in_nw
+border_loam_in_ne,item,border,loam (north-east inner corner),grounds,352,64,1,1,1,1,clip notmoveable,new,,piece=in_ne
+border_loam_in_sw,item,border,loam (south-west inner corner),grounds,384,64,1,1,1,1,clip notmoveable,new,,piece=in_sw
+border_loam_in_se,item,border,loam (south-east inner corner),grounds,416,64,1,1,1,1,clip notmoveable,new,,piece=in_se
+ground_flagstone_floor,item,ground,flagstone floor,grounds,448,64,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,
+border_flagstone_floor_n,item,border,flagstone floor (north edge),grounds,480,64,1,1,1,1,clip notmoveable,new,,piece=n
+border_flagstone_floor_s,item,border,flagstone floor (south edge),grounds,512,64,1,1,1,1,clip notmoveable,new,,piece=s
+border_flagstone_floor_e,item,border,flagstone floor (east edge),grounds,544,64,1,1,1,1,clip notmoveable,new,,piece=e
+border_flagstone_floor_w,item,border,flagstone floor (west edge),grounds,576,64,1,1,1,1,clip notmoveable,new,,piece=w
+border_flagstone_floor_nw,item,border,flagstone floor (north-west corner),grounds,608,64,1,1,1,1,clip notmoveable,new,,piece=nw
+border_flagstone_floor_ne,item,border,flagstone floor (north-east corner),grounds,640,64,1,1,1,1,clip notmoveable,new,,piece=ne
+border_flagstone_floor_sw,item,border,flagstone floor (south-west corner),grounds,672,64,1,1,1,1,clip notmoveable,new,,piece=sw
+border_flagstone_floor_se,item,border,flagstone floor (south-east corner),grounds,704,64,1,1,1,1,clip notmoveable,new,,piece=se
+border_flagstone_floor_in_nw,item,border,flagstone floor (north-west inner corner),grounds,736,64,1,1,1,1,clip notmoveable,new,,piece=in_nw
+border_flagstone_floor_in_ne,item,border,flagstone floor (north-east inner corner),grounds,768,64,1,1,1,1,clip notmoveable,new,,piece=in_ne
+border_flagstone_floor_in_sw,item,border,flagstone floor (south-west inner corner),grounds,800,64,1,1,1,1,clip notmoveable,new,,piece=in_sw
+border_flagstone_floor_in_se,item,border,flagstone floor (south-east inner corner),grounds,832,64,1,1,1,1,clip notmoveable,new,,piece=in_se
+ground_jade_tile_floor,item,ground,jade tile floor,grounds,864,64,1,1,1,1,ground:100 notmoveable minimap:30 fullground,new,,
+border_jade_tile_floor_n,item,border,jade tile floor (north edge),grounds,896,64,1,1,1,1,clip notmoveable,new,,piece=n
+border_jade_tile_floor_s,item,border,jade tile floor (south edge),grounds,928,64,1,1,1,1,clip notmoveable,new,,piece=s
+border_jade_tile_floor_e,item,border,jade tile floor (east edge),grounds,960,64,1,1,1,1,clip notmoveable,new,,piece=e
+border_jade_tile_floor_w,item,border,jade tile floor (west edge),grounds,992,64,1,1,1,1,clip notmoveable,new,,piece=w
+border_jade_tile_floor_nw,item,border,jade tile floor (north-west corner),grounds,0,96,1,1,1,1,clip notmoveable,new,,piece=nw
+border_jade_tile_floor_ne,item,border,jade tile floor (north-east corner),grounds,32,96,1,1,1,1,clip notmoveable,new,,piece=ne
+border_jade_tile_floor_sw,item,border,jade tile floor (south-west corner),grounds,64,96,1,1,1,1,clip notmoveable,new,,piece=sw
+border_jade_tile_floor_se,item,border,jade tile floor (south-east corner),grounds,96,96,1,1,1,1,clip notmoveable,new,,piece=se
+border_jade_tile_floor_in_nw,item,border,jade tile floor (north-west inner corner),grounds,128,96,1,1,1,1,clip notmoveable,new,,piece=in_nw
+border_jade_tile_floor_in_ne,item,border,jade tile floor (north-east inner corner),grounds,160,96,1,1,1,1,clip notmoveable,new,,piece=in_ne
+border_jade_tile_floor_in_sw,item,border,jade tile floor (south-west inner corner),grounds,192,96,1,1,1,1,clip notmoveable,new,,piece=in_sw
+border_jade_tile_floor_in_se,item,border,jade tile floor (south-east inner corner),grounds,224,96,1,1,1,1,clip notmoveable,new,,piece=in_se
+ground_slate_floor,item,ground,violet slate floor,grounds,256,96,1,1,1,1,ground:100 notmoveable minimap:87 fullground,new,,
+border_slate_floor_n,item,border,violet slate floor (north edge),grounds,288,96,1,1,1,1,clip notmoveable,new,,piece=n
+border_slate_floor_s,item,border,violet slate floor (south edge),grounds,320,96,1,1,1,1,clip notmoveable,new,,piece=s
+border_slate_floor_e,item,border,violet slate floor (east edge),grounds,352,96,1,1,1,1,clip notmoveable,new,,piece=e
+border_slate_floor_w,item,border,violet slate floor (west edge),grounds,384,96,1,1,1,1,clip notmoveable,new,,piece=w
+border_slate_floor_nw,item,border,violet slate floor (north-west corner),grounds,416,96,1,1,1,1,clip notmoveable,new,,piece=nw
+border_slate_floor_ne,item,border,violet slate floor (north-east corner),grounds,448,96,1,1,1,1,clip notmoveable,new,,piece=ne
+border_slate_floor_sw,item,border,violet slate floor (south-west corner),grounds,480,96,1,1,1,1,clip notmoveable,new,,piece=sw
+border_slate_floor_se,item,border,violet slate floor (south-east corner),grounds,512,96,1,1,1,1,clip notmoveable,new,,piece=se
+border_slate_floor_in_nw,item,border,violet slate floor (north-west inner corner),grounds,544,96,1,1,1,1,clip notmoveable,new,,piece=in_nw
+border_slate_floor_in_ne,item,border,violet slate floor (north-east inner corner),grounds,576,96,1,1,1,1,clip notmoveable,new,,piece=in_ne
+border_slate_floor_in_sw,item,border,violet slate floor (south-west inner corner),grounds,608,96,1,1,1,1,clip notmoveable,new,,piece=in_sw
+border_slate_floor_in_se,item,border,violet slate floor (south-east inner corner),grounds,640,96,1,1,1,1,clip notmoveable,new,,piece=in_se
+ground_red_clay,item,ground,red clay,grounds,672,96,1,1,1,1,ground:110 notmoveable minimap:121 fullground,new,,
+border_red_clay_n,item,border,red clay (north edge),grounds,704,96,1,1,1,1,clip notmoveable,new,,piece=n
+border_red_clay_s,item,border,red clay (south edge),grounds,736,96,1,1,1,1,clip notmoveable,new,,piece=s
+border_red_clay_e,item,border,red clay (east edge),grounds,768,96,1,1,1,1,clip notmoveable,new,,piece=e
+border_red_clay_w,item,border,red clay (west edge),grounds,800,96,1,1,1,1,clip notmoveable,new,,piece=w
+border_red_clay_nw,item,border,red clay (north-west corner),grounds,832,96,1,1,1,1,clip notmoveable,new,,piece=nw
+border_red_clay_ne,item,border,red clay (north-east corner),grounds,864,96,1,1,1,1,clip notmoveable,new,,piece=ne
+border_red_clay_sw,item,border,red clay (south-west corner),grounds,896,96,1,1,1,1,clip notmoveable,new,,piece=sw
+border_red_clay_se,item,border,red clay (south-east corner),grounds,928,96,1,1,1,1,clip notmoveable,new,,piece=se
+border_red_clay_in_nw,item,border,red clay (north-west inner corner),grounds,960,96,1,1,1,1,clip notmoveable,new,,piece=in_nw
+border_red_clay_in_ne,item,border,red clay (north-east inner corner),grounds,992,96,1,1,1,1,clip notmoveable,new,,piece=in_ne
+border_red_clay_in_sw,item,border,red clay (south-west inner corner),grounds,0,128,1,1,1,1,clip notmoveable,new,,piece=in_sw
+border_red_clay_in_se,item,border,red clay (south-east inner corner),grounds,32,128,1,1,1,1,clip notmoveable,new,,piece=in_se
+ground_fine_sand,item,ground,fine sand,grounds,64,128,1,1,1,1,ground:120 notmoveable minimap:207 fullground,new,,
+border_fine_sand_n,item,border,fine sand (north edge),grounds,96,128,1,1,1,1,clip notmoveable,new,,piece=n
+border_fine_sand_s,item,border,fine sand (south edge),grounds,128,128,1,1,1,1,clip notmoveable,new,,piece=s
+border_fine_sand_e,item,border,fine sand (east edge),grounds,160,128,1,1,1,1,clip notmoveable,new,,piece=e
+border_fine_sand_w,item,border,fine sand (west edge),grounds,192,128,1,1,1,1,clip notmoveable,new,,piece=w
+border_fine_sand_nw,item,border,fine sand (north-west corner),grounds,224,128,1,1,1,1,clip notmoveable,new,,piece=nw
+border_fine_sand_ne,item,border,fine sand (north-east corner),grounds,256,128,1,1,1,1,clip notmoveable,new,,piece=ne
+border_fine_sand_sw,item,border,fine sand (south-west corner),grounds,288,128,1,1,1,1,clip notmoveable,new,,piece=sw
+border_fine_sand_se,item,border,fine sand (south-east corner),grounds,320,128,1,1,1,1,clip notmoveable,new,,piece=se
+border_fine_sand_in_nw,item,border,fine sand (north-west inner corner),grounds,352,128,1,1,1,1,clip notmoveable,new,,piece=in_nw
+border_fine_sand_in_ne,item,border,fine sand (north-east inner corner),grounds,384,128,1,1,1,1,clip notmoveable,new,,piece=in_ne
+border_fine_sand_in_sw,item,border,fine sand (south-west inner corner),grounds,416,128,1,1,1,1,clip notmoveable,new,,piece=in_sw
+border_fine_sand_in_se,item,border,fine sand (south-east inner corner),grounds,448,128,1,1,1,1,clip notmoveable,new,,piece=in_se
+ground_fresh_snow,item,ground,fresh snow,grounds,480,128,1,1,1,1,ground:150 notmoveable minimap:215 fullground,new,,
+border_fresh_snow_n,item,border,fresh snow (north edge),grounds,512,128,1,1,1,1,clip notmoveable,new,,piece=n
+border_fresh_snow_s,item,border,fresh snow (south edge),grounds,544,128,1,1,1,1,clip notmoveable,new,,piece=s
+border_fresh_snow_e,item,border,fresh snow (east edge),grounds,576,128,1,1,1,1,clip notmoveable,new,,piece=e
+border_fresh_snow_w,item,border,fresh snow (west edge),grounds,608,128,1,1,1,1,clip notmoveable,new,,piece=w
+border_fresh_snow_nw,item,border,fresh snow (north-west corner),grounds,640,128,1,1,1,1,clip notmoveable,new,,piece=nw
+border_fresh_snow_ne,item,border,fresh snow (north-east corner),grounds,672,128,1,1,1,1,clip notmoveable,new,,piece=ne
+border_fresh_snow_sw,item,border,fresh snow (south-west corner),grounds,704,128,1,1,1,1,clip notmoveable,new,,piece=sw
+border_fresh_snow_se,item,border,fresh snow (south-east corner),grounds,736,128,1,1,1,1,clip notmoveable,new,,piece=se
+border_fresh_snow_in_nw,item,border,fresh snow (north-west inner corner),grounds,768,128,1,1,1,1,clip notmoveable,new,,piece=in_nw
+border_fresh_snow_in_ne,item,border,fresh snow (north-east inner corner),grounds,800,128,1,1,1,1,clip notmoveable,new,,piece=in_ne
+border_fresh_snow_in_sw,item,border,fresh snow (south-west inner corner),grounds,832,128,1,1,1,1,clip notmoveable,new,,piece=in_sw
+border_fresh_snow_in_se,item,border,fresh snow (south-east inner corner),grounds,864,128,1,1,1,1,clip notmoveable,new,,piece=in_se
+water_deep,item,water,deep lake water,water,0,0,1,1,9,8,ground:0 notmoveable minimap:51 fullground notwalkable,new,,px=3|py=3|ms=140
+water_shallow_sand,item,water,shallow water over sand,water,256,0,1,1,9,8,ground:250 notmoveable minimap:40 fullground,new,,px=3|py=3|ms=140
+water_shallow_pebbles,item,water,shallow water over pebbles,water,512,0,1,1,9,8,ground:250 notmoveable minimap:40 fullground,new,,px=3|py=3|ms=140
+water_shallow_weeds,item,water,shallow water over weeds,water,768,0,1,1,9,8,ground:250 notmoveable minimap:40 fullground,new,,px=3|py=3|ms=140
+water_lagoon,item,water,lagoon water,water,0,288,1,1,9,8,ground:0 notmoveable minimap:51 fullground notwalkable,new,,px=3|py=3|ms=140
+water_murky,item,water,murky water,water,256,288,1,1,9,8,ground:0 notmoveable minimap:51 fullground notwalkable,new,,px=3|py=3|ms=140
+water_alpine_lake,item,water,mountain lake water,water,512,288,1,1,9,8,ground:0 notmoveable minimap:51 fullground notwalkable,new,,px=3|py=3|ms=140
+water_alpine_shallow,item,water,mountain shallows,water,768,288,1,1,9,8,ground:250 notmoveable minimap:40 fullground,new,,px=3|py=3|ms=140
+shore_grass_bank_e,item,shore,grass shore (e),shores,0,0,1,1,3,8,clip notmoveable,new,,px=1|py=3|ms=140|piece=e
+shore_grass_bank_in_ew,item,shore,grass shore (inner ew),shores,256,0,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_ew
+shore_grass_bank_in_ne,item,shore,grass shore (inner ne),shores,512,0,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_ne
+shore_grass_bank_in_new,item,shore,grass shore (inner new),shores,768,0,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_new
+shore_grass_bank_in_ns,item,shore,grass shore (inner ns),shores,0,96,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_ns
+shore_grass_bank_in_nse,item,shore,grass shore (inner nse),shores,256,96,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nse
+shore_grass_bank_in_nsew,item,shore,grass shore (inner nsew),shores,512,96,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nsew
+shore_grass_bank_in_nsw,item,shore,grass shore (inner nsw),shores,768,96,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nsw
+shore_grass_bank_in_nw,item,shore,grass shore (inner nw),shores,0,128,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nw
+shore_grass_bank_in_se,item,shore,grass shore (inner se),shores,256,128,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_se
+shore_grass_bank_in_sew,item,shore,grass shore (inner sew),shores,512,128,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_sew
+shore_grass_bank_in_sw,item,shore,grass shore (inner sw),shores,768,128,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_sw
+shore_grass_bank_n,item,shore,grass shore (n),shores,0,160,1,1,3,8,clip notmoveable,new,,px=3|py=1|ms=140|piece=n
+shore_grass_bank_ne,item,shore,grass shore (ne),shores,256,160,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=ne
+shore_grass_bank_nw,item,shore,grass shore (nw),shores,512,160,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=nw
+shore_grass_bank_s,item,shore,grass shore (s),shores,768,160,1,1,3,8,clip notmoveable,new,,px=3|py=1|ms=140|piece=s
+shore_grass_bank_se,item,shore,grass shore (se),shores,0,256,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=se
+shore_grass_bank_sw,item,shore,grass shore (sw),shores,256,256,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=sw
+shore_grass_bank_w,item,shore,grass shore (w),shores,512,256,1,1,3,8,clip notmoveable,new,,px=1|py=3|ms=140|piece=w
+shore_sand_beach_e,item,shore,sand beach (e),shores,768,256,1,1,3,8,clip notmoveable,new,,px=1|py=3|ms=140|piece=e
+shore_sand_beach_in_ew,item,shore,sand beach (inner ew),shores,0,352,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_ew
+shore_sand_beach_in_ne,item,shore,sand beach (inner ne),shores,256,352,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_ne
+shore_sand_beach_in_new,item,shore,sand beach (inner new),shores,512,352,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_new
+shore_sand_beach_in_ns,item,shore,sand beach (inner ns),shores,768,352,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_ns
+shore_sand_beach_in_nse,item,shore,sand beach (inner nse),shores,0,384,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nse
+shore_sand_beach_in_nsew,item,shore,sand beach (inner nsew),shores,256,384,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nsew
+shore_sand_beach_in_nsw,item,shore,sand beach (inner nsw),shores,512,384,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nsw
+shore_sand_beach_in_nw,item,shore,sand beach (inner nw),shores,768,384,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nw
+shore_sand_beach_in_se,item,shore,sand beach (inner se),shores,0,416,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_se
+shore_sand_beach_in_sew,item,shore,sand beach (inner sew),shores,256,416,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_sew
+shore_sand_beach_in_sw,item,shore,sand beach (inner sw),shores,512,416,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_sw
+shore_sand_beach_n,item,shore,sand beach (n),shores,768,416,1,1,3,8,clip notmoveable,new,,px=3|py=1|ms=140|piece=n
+shore_sand_beach_ne,item,shore,sand beach (ne),shores,0,512,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=ne
+shore_sand_beach_nw,item,shore,sand beach (nw),shores,256,512,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=nw
+shore_sand_beach_s,item,shore,sand beach (s),shores,512,512,1,1,3,8,clip notmoveable,new,,px=3|py=1|ms=140|piece=s
+shore_sand_beach_se,item,shore,sand beach (se),shores,768,512,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=se
+shore_sand_beach_sw,item,shore,sand beach (sw),shores,0,608,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=sw
+shore_sand_beach_w,item,shore,sand beach (w),shores,256,608,1,1,3,8,clip notmoveable,new,,px=1|py=3|ms=140|piece=w
+shore_rock_e,item,shore,rocky shore (e),shores,512,608,1,1,3,8,clip notmoveable,new,,px=1|py=3|ms=140|piece=e
+shore_rock_in_ew,item,shore,rocky shore (inner ew),shores,768,608,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_ew
+shore_rock_in_ne,item,shore,rocky shore (inner ne),shores,0,704,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_ne
+shore_rock_in_new,item,shore,rocky shore (inner new),shores,256,704,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_new
+shore_rock_in_ns,item,shore,rocky shore (inner ns),shores,512,704,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_ns
+shore_rock_in_nse,item,shore,rocky shore (inner nse),shores,768,704,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nse
+shore_rock_in_nsew,item,shore,rocky shore (inner nsew),shores,0,736,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nsew
+shore_rock_in_nsw,item,shore,rocky shore (inner nsw),shores,256,736,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nsw
+shore_rock_in_nw,item,shore,rocky shore (inner nw),shores,512,736,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nw
+shore_rock_in_se,item,shore,rocky shore (inner se),shores,768,736,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_se
+shore_rock_in_sew,item,shore,rocky shore (inner sew),shores,0,768,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_sew
+shore_rock_in_sw,item,shore,rocky shore (inner sw),shores,256,768,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_sw
+shore_rock_n,item,shore,rocky shore (n),shores,512,768,1,1,3,8,clip notmoveable,new,,px=3|py=1|ms=140|piece=n
+shore_rock_ne,item,shore,rocky shore (ne),shores,768,768,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=ne
+shore_rock_nw,item,shore,rocky shore (nw),shores,0,864,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=nw
+shore_rock_s,item,shore,rocky shore (s),shores,256,864,1,1,3,8,clip notmoveable,new,,px=3|py=1|ms=140|piece=s
+shore_rock_se,item,shore,rocky shore (se),shores,512,864,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=se
+shore_rock_sw,item,shore,rocky shore (sw),shores,768,864,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=sw
+shore_rock_w,item,shore,rocky shore (w),shores,0,960,1,1,3,8,clip notmoveable,new,,px=1|py=3|ms=140|piece=w
+shore_snow_bank_e,item,shore,snow shore (e),shores,256,960,1,1,3,8,clip notmoveable,new,,px=1|py=3|ms=140|piece=e
+shore_snow_bank_in_ew,item,shore,snow shore (inner ew),shores,512,960,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_ew
+shore_snow_bank_in_ne,item,shore,snow shore (inner ne),shores,768,960,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_ne
+shore_snow_bank_in_new,item,shore,snow shore (inner new),shores,0,1056,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_new
+shore_snow_bank_in_ns,item,shore,snow shore (inner ns),shores,256,1056,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_ns
+shore_snow_bank_in_nse,item,shore,snow shore (inner nse),shores,512,1056,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nse
+shore_snow_bank_in_nsew,item,shore,snow shore (inner nsew),shores,768,1056,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nsew
+shore_snow_bank_in_nsw,item,shore,snow shore (inner nsw),shores,0,1088,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nsw
+shore_snow_bank_in_nw,item,shore,snow shore (inner nw),shores,256,1088,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nw
+shore_snow_bank_in_se,item,shore,snow shore (inner se),shores,512,1088,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_se
+shore_snow_bank_in_sew,item,shore,snow shore (inner sew),shores,768,1088,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_sew
+shore_snow_bank_in_sw,item,shore,snow shore (inner sw),shores,0,1120,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_sw
+shore_snow_bank_n,item,shore,snow shore (n),shores,256,1120,1,1,3,8,clip notmoveable,new,,px=3|py=1|ms=140|piece=n
+shore_snow_bank_ne,item,shore,snow shore (ne),shores,512,1120,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=ne
+shore_snow_bank_nw,item,shore,snow shore (nw),shores,768,1120,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=nw
+shore_snow_bank_s,item,shore,snow shore (s),shores,0,1216,1,1,3,8,clip notmoveable,new,,px=3|py=1|ms=140|piece=s
+shore_snow_bank_se,item,shore,snow shore (se),shores,256,1216,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=se
+shore_snow_bank_sw,item,shore,snow shore (sw),shores,512,1216,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=sw
+shore_snow_bank_w,item,shore,snow shore (w),shores,768,1216,1,1,3,8,clip notmoveable,new,,px=1|py=3|ms=140|piece=w
+shore_stone_rim_e,item,shore,stone rim (e),shores,0,1312,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=e
+shore_stone_rim_in_ew,item,shore,stone rim (inner ew),shores,256,1312,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_ew
+shore_stone_rim_in_ne,item,shore,stone rim (inner ne),shores,512,1312,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_ne
+shore_stone_rim_in_new,item,shore,stone rim (inner new),shores,768,1312,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_new
+shore_stone_rim_in_ns,item,shore,stone rim (inner ns),shores,0,1344,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_ns
+shore_stone_rim_in_nse,item,shore,stone rim (inner nse),shores,256,1344,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nse
+shore_stone_rim_in_nsew,item,shore,stone rim (inner nsew),shores,512,1344,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nsew
+shore_stone_rim_in_nsw,item,shore,stone rim (inner nsw),shores,768,1344,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nsw
+shore_stone_rim_in_nw,item,shore,stone rim (inner nw),shores,0,1376,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nw
+shore_stone_rim_in_se,item,shore,stone rim (inner se),shores,256,1376,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_se
+shore_stone_rim_in_sew,item,shore,stone rim (inner sew),shores,512,1376,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_sew
+shore_stone_rim_in_sw,item,shore,stone rim (inner sw),shores,768,1376,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_sw
+shore_stone_rim_n,item,shore,stone rim (n),shores,0,1408,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=n
+shore_stone_rim_ne,item,shore,stone rim (ne),shores,256,1408,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=ne
+shore_stone_rim_nw,item,shore,stone rim (nw),shores,512,1408,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=nw
+shore_stone_rim_s,item,shore,stone rim (s),shores,768,1408,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=s
+shore_stone_rim_se,item,shore,stone rim (se),shores,0,1440,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=se
+shore_stone_rim_sw,item,shore,stone rim (sw),shores,256,1440,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=sw
+shore_stone_rim_w,item,shore,stone rim (w),shores,512,1440,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=w
+shore_mud_bank_e,item,shore,mud bank (e),shores,768,1440,1,1,3,8,clip notmoveable,new,,px=1|py=3|ms=140|piece=e
+shore_mud_bank_in_ew,item,shore,mud bank (inner ew),shores,0,1536,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_ew
+shore_mud_bank_in_ne,item,shore,mud bank (inner ne),shores,256,1536,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_ne
+shore_mud_bank_in_new,item,shore,mud bank (inner new),shores,512,1536,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_new
+shore_mud_bank_in_ns,item,shore,mud bank (inner ns),shores,768,1536,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_ns
+shore_mud_bank_in_nse,item,shore,mud bank (inner nse),shores,0,1568,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nse
+shore_mud_bank_in_nsew,item,shore,mud bank (inner nsew),shores,256,1568,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nsew
+shore_mud_bank_in_nsw,item,shore,mud bank (inner nsw),shores,512,1568,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nsw
+shore_mud_bank_in_nw,item,shore,mud bank (inner nw),shores,768,1568,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_nw
+shore_mud_bank_in_se,item,shore,mud bank (inner se),shores,0,1600,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_se
+shore_mud_bank_in_sew,item,shore,mud bank (inner sew),shores,256,1600,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_sew
+shore_mud_bank_in_sw,item,shore,mud bank (inner sw),shores,512,1600,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=in_sw
+shore_mud_bank_n,item,shore,mud bank (n),shores,768,1600,1,1,3,8,clip notmoveable,new,,px=3|py=1|ms=140|piece=n
+shore_mud_bank_ne,item,shore,mud bank (ne),shores,0,1696,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=ne
+shore_mud_bank_nw,item,shore,mud bank (nw),shores,256,1696,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=nw
+shore_mud_bank_s,item,shore,mud bank (s),shores,512,1696,1,1,3,8,clip notmoveable,new,,px=3|py=1|ms=140|piece=s
+shore_mud_bank_se,item,shore,mud bank (se),shores,768,1696,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=se
+shore_mud_bank_sw,item,shore,mud bank (sw),shores,0,1792,1,1,1,8,clip notmoveable,new,,px=1|py=1|ms=140|piece=sw
+shore_mud_bank_w,item,shore,mud bank (w),shores,256,1792,1,1,3,8,clip notmoveable,new,,px=1|py=3|ms=140|piece=w
+lake_cattail_single,item,lake,cattail single,lake,0,0,2,2,1,8,notmoveable notwalkable,new,,ms=140
+lake_cattail_small,item,lake,cattail small,lake,512,0,2,2,1,8,notmoveable notwalkable,new,,ms=140
+lake_cattail_clump,item,lake,cattail clump,lake,0,64,2,2,1,8,notmoveable notwalkable,new,,ms=140
+lake_cattail_large,item,lake,cattail large,lake,512,64,2,2,1,8,notmoveable notwalkable,new,,ms=140
+lake_reed_small,item,lake,reed small,lake,0,128,2,2,1,8,notmoveable notwalkable,new,,ms=140
+lake_reed_clump,item,lake,reed clump,lake,512,128,2,2,1,8,notmoveable notwalkable,new,,ms=140
+lake_reed_tall,item,lake,reed tall,lake,0,192,2,2,1,8,notmoveable notwalkable,new,,ms=140
+lake_reeds_dry,item,lake,reeds dry,lake,512,192,2,2,1,8,notmoveable notwalkable,new,,ms=140
+lake_reed_bed_h,item,lake,reed bed (east-west),lake,0,256,2,2,1,8,notmoveable notwalkable,new,,ms=140
+lake_rush_clump,item,lake,rush clump,lake,512,256,2,2,1,8,notmoveable notwalkable,new,,ms=140
+lake_sedge_tuft,item,lake,sedge tuft,lake,0,320,2,2,1,8,notmoveable notwalkable,new,,ms=140
+lake_bulrush_tall,item,lake,bulrush tall,lake,512,320,2,2,1,8,notmoveable notwalkable,new,,ms=140
+lake_lily_pad_small,item,lake,lily pad small,lake,0,384,1,1,1,8,notmoveable,new,,ms=140
+lake_lily_pad_large,item,lake,lily pad large,lake,256,384,1,1,1,8,notmoveable,new,,ms=140
+lake_lily_white,item,lake,lily white,lake,512,384,1,1,1,8,notmoveable,new,,ms=140
+lake_lily_pink,item,lake,lily pink,lake,768,384,1,1,1,8,notmoveable,new,,ms=140
+lake_lily_yellow,item,lake,lily yellow,lake,0,416,1,1,1,8,notmoveable,new,,ms=140
+lake_lily_pads_group,item,lake,lily pads group,lake,256,416,2,2,1,8,notmoveable,new,,ms=140
+lake_lotus,item,lake,lotus,lake,0,480,2,2,1,8,notmoveable,new,,ms=140
+lake_duckweed_patch_s,item,lake,duckweed patch (small),lake,512,480,1,1,1,1,notmoveable,new,,ms=140
+lake_duckweed_patch_l,item,lake,duckweed patch (large),lake,544,480,2,2,1,1,notmoveable,new,,ms=140
+lake_algae_mat,item,lake,algae mat,lake,608,480,2,2,1,1,notmoveable,new,,ms=140
+lake_floating_leaves,item,lake,floating leaves,lake,672,480,1,1,1,1,notmoveable,new,,ms=140
+lake_water_hyacinth,item,lake,water hyacinth,lake,704,480,1,1,1,8,notmoveable,new,,ms=140
+lake_seaweed_green,item,lake,seaweed green,lake,0,544,1,1,1,8,notmoveable,new,,ms=140
+lake_kelp_tall,item,lake,kelp tall,lake,256,544,2,2,1,8,notmoveable,new,,ms=140
+lake_waterweed_tuft,item,lake,waterweed tuft,lake,768,544,1,1,1,8,notmoveable,new,,ms=140
+lake_eelgrass,item,lake,eelgrass,lake,0,608,1,1,1,8,notmoveable,new,,ms=140
+lake_coral_pink,item,lake,coral pink,lake,256,608,1,1,1,1,notmoveable,new,,ms=140
+lake_coral_blue,item,lake,coral blue,lake,288,608,1,1,1,1,notmoveable,new,,ms=140
+lake_sea_fan,item,lake,sea fan,lake,320,608,1,1,1,8,notmoveable,new,,ms=140
+lake_shells_pile,item,lake,shells pile,lake,576,608,1,1,1,1,notmoveable,new,,ms=140
+lake_water_stakes,item,lake,water stakes,lake,0,640,2,2,1,8,notmoveable notwalkable,new,,ms=140
+lake_stake_single,item,lake,stake single,lake,512,640,2,1,1,8,notmoveable notwalkable,new,,ms=140
+lake_floating_log,item,lake,floating log,lake,0,704,2,1,1,8,notmoveable notwalkable,new,,ms=140
+lake_driftwood,item,lake,driftwood,lake,512,704,2,2,1,8,notmoveable notwalkable,new,,ms=140
+lake_reed_raft,item,lake,reed raft,lake,0,768,2,2,1,8,notmoveable notwalkable,new,,ms=140
+lake_buoy_red,item,lake,buoy red,lake,512,768,1,1,1,8,notmoveable notwalkable,new,,ms=140
+lake_buoy_lantern,item,lake,buoy lantern,lake,0,832,2,1,1,8,notmoveable notwalkable light:3:208,new,,ms=140
+lake_rock_in_water_s,item,lake,rock in water (small),lake,512,832,1,1,1,8,notmoveable notwalkable,new,,ms=140
+lake_rock_in_water_m,item,lake,rock in water (medium),lake,768,832,1,1,1,8,notmoveable notwalkable,new,,ms=140
+lake_rock_in_water_l,item,lake,rock in water (large),lake,0,864,2,1,1,8,notmoveable notwalkable,new,,ms=140
+lake_stepping_stones_h,item,lake,stepping stones (east-west),lake,512,864,2,1,1,8,notmoveable notwalkable,new,,ms=140
+lake_fishing_net_floats,item,lake,fishing net floats,lake,0,896,3,2,1,8,notmoveable notwalkable,new,,ms=140
+lake_water_splash,item,lake,water splash,lake,768,896,1,1,1,4,notmoveable notwalkable,new,,ms=140
+lake_ripple_ring_s,item,lake,ripple ring (small),lake,0,960,1,1,1,8,notmoveable,new,,ms=140
+lake_ripple_ring_l,item,lake,ripple ring (large),lake,256,960,1,1,1,8,notmoveable,new,,ms=140
+lake_reed_bed_v,item,lake,reed bed (north-south),lake,512,960,2,2,1,8,notmoveable notwalkable,new,,ms=140
+lake_stepping_stones_v,item,lake,stepping stones (north-south),lake,0,1024,1,2,1,8,notmoveable notwalkable,new,,ms=140
+dock_rowboat_h,item,dock,rowboat (east-west),lake,256,1024,2,1,1,1,notmoveable notwalkable,new,,
+dock_rowboat_v,item,dock,rowboat (north-south),lake,320,1024,1,2,1,1,notmoveable notwalkable,new,,
+dock_post,item,dock,post,lake,352,1024,1,1,1,1,notmoveable notwalkable,new,,
+dock_post_pair,item,dock,post pair,lake,384,1024,1,1,1,1,notmoveable notwalkable,new,,
+dock_post_rope,item,dock,post rope,lake,416,1024,1,1,1,1,notmoveable notwalkable,new,,
+dock_post_stumps,item,dock,post stumps,lake,448,1024,1,1,1,1,notmoveable notwalkable,new,,
+dock_crates,item,dock,crates,lake,480,1024,2,2,1,1,notmoveable notwalkable,new,,
+dock_crates_ground,item,dock,crates (on land),lake,544,1024,2,1,1,1,notmoveable notwalkable,new,,
+dock_crate,item,dock,dock crate,lake,608,1024,2,2,1,1,notmoveable notwalkable,new,,
+dock_crate_ground,item,dock,crate (on land),lake,672,1024,1,1,1,1,notmoveable notwalkable,new,,
+dock_barrel,item,dock,dock barrel,lake,704,1024,2,1,1,1,notmoveable notwalkable,new,,
+dock_barrel_ground,item,dock,barrel (on land),lake,768,1024,1,1,1,1,notmoveable notwalkable,new,,
+dock_rope_coil,item,dock,rope coil,lake,800,1024,1,1,1,1,notmoveable notwalkable,new,,
+dock_rope_coil_ground,item,dock,rope coil (on land),lake,832,1024,1,1,1,1,notmoveable notwalkable,new,,
+dock_net_pile,item,dock,net pile,lake,864,1024,2,1,1,1,notmoveable notwalkable,new,,
+dock_net_pile_ground,item,dock,net pile (on land),lake,928,1024,1,1,1,1,notmoveable notwalkable,new,,
+dock_net_rack,item,dock,net rack,lake,960,1024,2,2,1,1,notmoveable notwalkable,new,,
+dock_net_rack_ground,item,dock,net rack (on land),lake,0,1088,2,1,1,1,notmoveable notwalkable,new,,
+dock_fish_basket,item,dock,fish basket,lake,64,1088,2,1,1,1,notmoveable notwalkable,new,,
+dock_fish_basket_ground,item,dock,fish basket (on land),lake,128,1088,1,1,1,1,notmoveable notwalkable,new,,
+dock_bollard,item,dock,dock bollard,lake,160,1088,1,1,1,1,notmoveable notwalkable,new,,
+dock_bollard_ground,item,dock,bollard (on land),lake,192,1088,1,1,1,1,notmoveable notwalkable,new,,
+dock_lantern_post,item,dock,lantern post,lake,224,1088,2,2,1,1,notmoveable notwalkable light:3:208,new,,
+dock_lantern_post_ground,item,dock,lantern post (on land),lake,288,1088,2,2,1,1,notmoveable notwalkable light:3:208,new,,

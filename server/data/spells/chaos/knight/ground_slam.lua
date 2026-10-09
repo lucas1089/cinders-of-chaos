@@ -26,5 +26,9 @@ function onCastSpell(creature, variant, isHotkey)
 	if not creature:isPlayer() then
 		return false
 	end
-	return combat:execute(creature, variant)
+	if not combat:execute(creature, variant) then
+		return false
+	end
+	ChaosSpell.vfx(creature:getPosition(), "earth_spikes")
+	return true
 end

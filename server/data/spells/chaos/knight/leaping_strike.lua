@@ -38,5 +38,6 @@ function onCastSpell(creature, variant, isHotkey)
 		player:teleportTo(spots[1].pos)
 		ChaosSpell.fx(spots[1].pos, "ground_slam", CONST_ME_GROUNDSHAKER)
 	end
+	ChaosSpell.vfxDir(tpos, "heavy_cleave", ChaosSpell.dirTo(player:getPosition(), tpos))
 	return combat:execute(player, variant)
 end

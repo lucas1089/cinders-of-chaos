@@ -42,6 +42,6 @@ function onCastSpell(creature, variant, isHotkey)
 	if not spots[1] or not L.raise(player, "golem", spots[1].pos) then
 		return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHROOM)
 	end
-	ChaosSpell.fx(spots[1].pos, "ground_slam", CONST_ME_GROUNDSHAKER)
+	ChaosSpell.vfxOr(spots[1].pos, "necro_seal", "ground_slam", CONST_ME_GROUNDSHAKER)
 	return true
 end

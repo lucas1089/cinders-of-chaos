@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Moss Slime" nameDescription="a moss slime" race="venom" experience="150" speed="150" manacost="0">
+	<health now="250" max="250" />
+	<look type="2020" head="61" body="44" legs="44" feet="56" corpse="36081" />
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="25" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="0" max="-69" />
+		<attack name="speed" interval="2000" chance="12" range="7" speedchange="-238" duration="5000">
+			<attribute key="areaEffect" value="greenbubble" />
+		</attack>
+	</attacks>
+	<defenses armor="12" defense="12">
+		<defense name="healing" interval="2000" chance="10" min="44" max="88">
+			<attribute key="areaEffect" value="blueshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+		<element earthPercent="40" />
+		<element firePercent="-15" />
+		<element icePercent="10" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Blubb." />
+	</voices>
+	<loot>
+		<item id="2148" countmax="37" chance="60000" /><!-- gold coin -->
+		<item id="36023" countmax="2" chance="18000" /><!-- lump of moss gel -->
+		<item id="36032" countmax="1" chance="8000" /><!-- moss clump -->
+	</loot>
+</monster>

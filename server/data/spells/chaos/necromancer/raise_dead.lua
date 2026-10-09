@@ -35,7 +35,7 @@ function onCastSpell(creature, variant, isHotkey)
 			return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHROOM)
 		end
 		player:addMana(-plan.extraMana)
-		ChaosSpell.fx(pos, "summon_portal", CONST_ME_MORTAREA)
+		ChaosSpell.vfxOr(pos, "necro_seal", "summon_portal", CONST_ME_MORTAREA)
 		return true
 	end
 	local raised = 0

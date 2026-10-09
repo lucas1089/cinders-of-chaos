@@ -17,6 +17,7 @@ function onCastSpell(creature, variant, isHotkey)
 		return false
 	end
 	ChaosSpell.fx(target:getPosition(), "shockwave", CONST_ME_GROUNDSHAKER)
+	ChaosSpell.vfx(target:getPosition(), "punch_hit_red")
 	MonkSpell.strike(player, target, ChaosMonk.formula.sunderingPalm, ChaosMonk.finisherScale(spent), CONST_ME_HITAREA)
 	return true
 end
