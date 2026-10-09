@@ -125,7 +125,31 @@ donor: 31,330 things, 535,781 sprites, 0.86 GB spr) and donor C (29,006 things, 
 with `catalogue.csv` (library id, source id, size, frames, flags, short description, sprite hash) and contact sheets
 with the library ids. Only things whose art is not already in our pair are kept (pixel compare), exact duplicates and
 empty entries are dropped. `import_donor_things.py import` appends chosen library ids to a live pair (verified: old
-entries byte-identical, new ones pixel-identical to the library). `donor_b_selection.csv` is the recommended first
+entries byte-identical, new ones pixel-identical to the library).
+Twelve more libraries (October 2026, same layout, outside git; each deduped against our pair and every earlier library,
+by decoded sprite pixels; pass the earlier sprs with `--known-spr`, `--key-cache` keeps their pixel keys):
+
+| library | source format (`--source`) | outfits | items | effects | missiles | sprites | spr |
+|---|---|---|---|---|---|---|---|
+| donor D | 10.98, RGB spr re-encoded with alpha (`v1098`) | 1,255 | 20,098 | 351 | 76 | 427,376 | 493 MB |
+| donor E | 7.72 art-only dat, no flags (`v772`); every row "library only: commercial server art" | 992 | 30,430 | 340 | 146 | 250,007 | 328 MB |
+| donor F | 10.98 + extra bytes 39/41 (`v1098 --extra-flags`) | 457 | 5,846 | 266 | 23 | 103,147 | 146 MB |
+| donor G | 10.98, own signature (`v1098`) | 675 | 3,746 | 199 | 17 | 67,334 | 104 MB |
+| donor H | 7.72 with frame groups and animators (`v772`) | 253 | 6,122 | 65 | 35 | 53,298 | 89 MB |
+| donor I | 8.60, no frame groups (`v860`): wings, auras | 297 | 14 | 28 | 0 | 20,176 | 27 MB |
+| donor J | 10.10-style, no frame groups, RGB spr (`v1098`); its dark walls and lava grounds kept with `--include` | 372 | 6,682 | 111 | 38 | 46,307 | 81 MB |
+| donor K | 8.60 with frame groups (`v860`), monster names in the catalogue (`--names`) | 88 | 250 | 106 | 45 | 8,261 | 10 MB |
+| donor M | scrambled 8.x flag bytes (`donor-m`: only light and displacement kept), RGB spr | 361 | 5,035 | 116 | 34 | 50,069 | 83 MB |
+| donor N | 15.11 protobuf appearances + LZMA sprite sheets (`v1511`, 64 px sprites cut into tiles) | 13 | 156 | 0 | 0 | 6,426 | 8 MB |
+| donor O | newer build of donor G: only what G lacks | 0 | 29 | 0 | 0 | 28 | 0.06 MB |
+| donor Q | 10.98 native dat, byte 40 read as displacement where the outfit has none (`--map-flags`); retail-style rows tagged "library only: retail-style art" | 495 | 2,077 | 508 | 107 | 181,398 | 287 MB |
+
+Older layouts are converted: outfits without frame groups get an idle group (phase 0, the old standing frame) and a
+walking group (the walk frames), or one walking group when they animate always; animated groups without animator data
+get the old client's timing (items 500 ms, effects 75 ms once, missiles 100 ms, walking 300 ms). Flags are mapped by
+name; flags our table lacks (7.72 floor change, 15.x corpse, cyclopedia, ...) are listed in the `stripped` column.
+Rows tagged "named character (do not use live)" are characters of other franchises (donors D, F, G, J, K); donor E,
+named characters and "retail-style" rows are library only. `donor_b_selection.csv` is the recommended first
 live set (32 outfits incl. Golden Dragon and Scaleborn looks and class outfits, 24 effects, 16 missiles, 112 items),
 run with `--first-item 28000` after `gen_dark_tiles.py`; it writes `donor_items.csv`, which goes to
 `server/data/items/donor_items.csv` for `server/tools/install_donor_items.py` (install_all step `donoritems`).

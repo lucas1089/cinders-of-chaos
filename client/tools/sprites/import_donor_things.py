@@ -5,6 +5,12 @@ Sources (--source, default by the dat signature): donor-b (donor B, the 64px don
 donor-c (a 10.98 extended dat whose items carry extra flag bytes without payload, which are stripped, and repeated
 flags, of which the last is kept as the client does; frame groups without sprites are dropped; --extra-items
 reads its extended-items file, items numbered after the dat's last item) and library (a pair this tool wrote).
+Generic readers: v1098 (10.10-10.98 flag table), v860 (8.60), v772 (7.55-7.72, byte 23 = floor change) with the
+layout (u16/u32 sprite ids, frame groups, animator) found by trial parse, alpha or RGB sprs; donor-m (scrambled 8.x
+flag bytes, see SRC_TABLES); v1511 (15.x protobuf appearances + LZMA sprite sheets, --src-spr = catalog-content.json).
+Library options for them: --extra-flags (source bytes outside the table, stripped), --map-flags (an extra byte read as
+one of our flags where missing), --known-spr (earlier libraries: their art counts as present; --key-cache keeps the
+pixel keys), --include (keep listed things even when their art is known), --names (catalogue names), --tag.
 
 Two commands:
 
@@ -63,7 +69,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import numpy as np  # noqa: E402
 from PIL import Image, ImageDraw  # noqa: E402
-from datspr import Dat, Spr, TABLE_NEW, _DATA, DEFAULT_EXTRA  # noqa: E402
+from datspr import Dat, Spr, TABLE_NEW, TABLE_OLD, _DATA, DEFAULT_EXTRA  # noqa: E402
 
 DONOR_SIG = 0x542535F9
 CATS = ('item', 'outfit', 'effect', 'missile')
@@ -85,6 +91,25 @@ NON_ITEM_KEEP = {'light', 'displacement'}
 DONORC_KINDS = {0: 2, 8: 2, 9: 2, 22: 4, 25: 4, 26: 2, 29: 2, 30: 2, 33: 2, 34: 'm', 35: 2}
 MAX_WH, MAX_LAYERS = 16, 8                      # datspr's bounds (our other tools must still read the pair)
 
+# Generic readers (--source v1098 / v860 / v772): the source's flag bytes are read by NAME from that era's table and
+# written with our byte; names our table has no byte for (7.72 floor change, ...) and --extra-flags bytes are stripped.
+# The dat layout (u16 / u32 sprite ids, outfit frame groups, animator) is found by trial parse (must end at EOF; exactly
+# one layout may fit), the spr may be alpha or RGB (RGB sprites are re-encoded as alpha records).
+_V772 = {b: TABLE_OLD[b] for b in range(32)}
+_V772[23] = 'floorchange'                       # 7.55-7.72: byte 23 is floor change (no payload), no translucent
+SRC_TABLES = {'v1098': dict(TABLE_NEW), 'v860': dict(TABLE_OLD), 'v772': _V772,
+              # donor M: an 8.x-layout dat with scrambled flag bytes; payload lengths learned from the file structure,
+              # only light (21: level, colour index) and displacement (24: signed offsets, -32 on big creatures) are
+              # certain; the other bytes are read and stripped (25 has a u16 and sits on furniture, stones, crates)
+              'donor-m': {21: 'light', 24: 'displacement'}}
+MAP_FLAGS = {}                                     # --map-flags: extra source byte -> our flag name
+SRC_EXTRA = {'donor-m': {0: 0, 1: 0, 2: 0, 7: 0, 12: 0, 14: 0, 25: 2, 27: 0, 44: 0, 50: 0, 200: 0}}
+_PAYLOAD = {None: 0, 'u16': 2, 'u16x2': 4, 'market': 'm'}
+# animator written for animated groups of sources without one: the timings of the legacy client
+# (items 500 ms a phase, synchronous, endless; effects 75 ms, once; missiles 100 ms; walking 300 ms as in our pair)
+LEGACY_ANIM = {'item': ((0, 0, 0), 500), 'effect': ((0, 1, 0), 75), 'missile': ((0, 0, 0), 100),
+               'outfit': ((0, 0, 0), 300)}
+
 
 class ParseError(Exception):
     pass
@@ -92,12 +117,15 @@ class ParseError(Exception):
 
 # ============================================================================================== dat reading / writing
 class Thing:
-    __slots__ = ('cat', 'id', 'flags', 'groups', 'raw')
+    __slots__ = ('cat', 'id', 'flags', 'groups', 'raw', 'notes', 'always', 'name')
 
 
-def parse_thing(data, pos, cat, tid, kinds, default=None):
-    """one entry at pos -> (Thing, end).  A flag byte missing from kinds raises, or carries `default` payload bytes."""
-    t = Thing(); t.cat = cat; t.id = tid; t.flags = []; start = pos
+def parse_thing(data, pos, cat, tid, kinds, default=None, layout=(True, True, True)):
+    """one entry at pos -> (Thing, end).  A flag byte missing from kinds raises, or carries `default` payload bytes.
+    layout (u32 sprite ids, outfit frame groups, animator) is all True for 10.98; older dats lack some of them (an
+    animated group without animator then has anim None, see legacy_layout)."""
+    u32, fg, animator = layout
+    t = Thing(); t.cat = cat; t.id = tid; t.flags = []; t.notes = []; t.always = False; t.name = None; start = pos
     while True:
         b = data[pos]; pos += 1
         if b == 0xFF:
@@ -111,12 +139,14 @@ def parse_thing(data, pos, cat, tid, kinds, default=None):
             k = 1 + 16 * data[pos]
         t.flags.append((b, bytes(data[pos:pos + k]))); pos += k
     ng = 1
-    if cat == 'outfit':
+    if cat == 'outfit' and fg:
         ng = data[pos]; pos += 1
+        if layout != (True, True, True) and not 1 <= ng <= 2:
+            raise ParseError(f'bad group count {ng} ({cat} {tid})')
     t.groups = []
     for _ in range(ng):
         g = {'gtype': 0}
-        if cat == 'outfit':
+        if cat == 'outfit' and fg:
             g['gtype'] = data[pos]; pos += 1
         g['w'], g['h'] = data[pos], data[pos + 1]; pos += 2
         g['exact'] = 32
@@ -124,25 +154,28 @@ def parse_thing(data, pos, cat, tid, kinds, default=None):
             g['exact'] = data[pos]; pos += 1
         g['layers'], g['px'], g['py'], g['pz'], g['phases'] = data[pos:pos + 5]; pos += 5
         g['anim'] = None
-        if g['phases'] > 1:
+        if g['phases'] > 1 and animator:
             head = struct.unpack_from('<Bib', data, pos); pos += 6
             durs = struct.unpack_from('<%dI' % (2 * g['phases']), data, pos); pos += 8 * g['phases']
             g['anim'] = (head, durs)
         ns = g['w'] * g['h'] * g['layers'] * g['px'] * g['py'] * g['pz'] * g['phases']
-        g['sprites'] = struct.unpack_from('<%dI' % ns, data, pos); pos += 4 * ns
+        if u32:
+            g['sprites'] = struct.unpack_from('<%dI' % ns, data, pos); pos += 4 * ns
+        else:
+            g['sprites'] = struct.unpack_from('<%dH' % ns, data, pos); pos += 2 * ns
         t.groups.append(g)
     t.raw = (start, pos)
     return t, pos
 
 
-def parse_dat(data, kinds, default=None):
-    """things of a 10.98-layout dat (outfits with frame groups, u32 sprites, animator); must end exactly at EOF.
-    flags: [(byte, payload bytes)]; groups: [dict]; raw: (start, end)."""
+def parse_dat(data, kinds, default=None, layout=(True, True, True)):
+    """things of a 10.98-layout dat (outfits with frame groups, u32 sprites, animator; other layouts see parse_thing);
+    must end exactly at EOF.  flags: [(byte, payload bytes)]; groups: [dict]; raw: (start, end)."""
     sig, ni, no, ne, nm = struct.unpack_from('<IHHHH', data, 0)
     pos, out = 12, {c: [] for c in CATS}
     for cat, n in zip(CATS, (ni - 99, no, ne, nm)):
         for i in range(n):
-            t, pos = parse_thing(data, pos, cat, FIRST[cat] + i, kinds, default)
+            t, pos = parse_thing(data, pos, cat, FIRST[cat] + i, kinds, default, layout)
             out[cat].append(t)
     if pos != len(data):
         raise ParseError(f'parse ended at {pos}, file has {len(data)} bytes')
@@ -202,6 +235,27 @@ def convert_flags(t, profile):
     """(our flag list, stripped names).  Library things are already in our table and pass unchanged."""
     if profile == 'library':
         return list(t.flags), []
+    if profile == 'v1511':                            # converted by name while reading (read_1511)
+        return list(t.flags), list(t.notes)
+    if profile in SRC_TABLES:
+        tab, last, stripped = SRC_TABLES[profile], {}, []
+        for b, v in t.flags:
+            if b in MAP_FLAGS:
+                continue
+            nb = NEW_BYTE.get(tab.get(b))
+            if nb is None:
+                stripped.append(tab.get(b) or f'd{b}'); continue
+            if nb in last:                            # repeated flag: the client keeps the last value read
+                stripped.append(f'dup{b}')
+            last[nb] = v
+        for b, v in t.flags:                          # --map-flags: only where the thing lacks that flag
+            if b in MAP_FLAGS:
+                nb = NEW_BYTE[MAP_FLAGS[b]]
+                if nb in last:
+                    stripped.append(f'x{b}={struct.unpack("<%dh" % (len(v) // 2), v) if len(v) % 2 == 0 else v.hex()}')
+                else:
+                    last[nb] = v; stripped.append(f'x{b}->{MAP_FLAGS[b]}')
+        return sorted(last.items()), stripped + t.notes
     out, stripped = [], []
     if profile == 'donor-c':
         last = {}
@@ -248,7 +302,7 @@ def record(spr, sid):
     a = spr.sprite(sid)
     if a is None or not a[:, :, 3].any():
         return None
-    if spr._record_ok(sid, spr.alpha):
+    if spr.alpha and spr._record_ok(sid, spr.alpha):     # alpha record: copied; RGB record: re-encoded below
         o = int(spr.offs[sid - 1]); ln = struct.unpack_from('<H', spr.m, o + 3)[0]
         return bytes(spr.m[o:o + 5 + ln])
     from gen_effects import encode_sprite
@@ -274,6 +328,22 @@ def spr_pixel_keys(spr, log=None):
             if log:
                 log(f'  pixel keys: {sid}/{spr.count}')
     spr._cache.clear()
+    return keys
+
+
+def cached_pixel_keys(spr, path, log, cache_dir):
+    """spr_pixel_keys, stored in cache_dir (one .npy per spr file, keyed by its path, size and mtime) when given."""
+    if not cache_dir:
+        return spr_pixel_keys(spr, log)
+    st = os.stat(path)
+    name = hashlib.md5(f'{os.path.abspath(path)}|{st.st_size}|{st.st_mtime_ns}'.encode()).hexdigest()
+    f = os.path.join(cache_dir, name + '.npy')
+    if os.path.exists(f):
+        b = np.load(f).tobytes()
+        return {b[i:i + 16] for i in range(0, len(b), 16)}
+    keys = spr_pixel_keys(spr, log)
+    os.makedirs(cache_dir, exist_ok=True)
+    np.save(f, np.frombuffer(b''.join(sorted(keys)), np.uint8).reshape(-1, 16))
     return keys
 
 
@@ -462,13 +532,402 @@ def verify_things(pairs, src_spr, out_spr, log, sample_every=25):
     return nslots, nframes
 
 
-def open_source(dat_path, spr_path, profile=None, extra_items=None):
+def parse_extra_flags(spec):
+    """'39:16,41:0,42:c' -> {byte: payload length, or 'c' for a count byte + 16 bytes per entry} (source flag bytes
+    outside the era's table; read and stripped)."""
+    out = {}
+    for part in (spec or '').split(','):
+        if part.strip():
+            b, n = part.split(':'); out[int(b)] = n.strip() if n.strip() == 'c' else int(n)
+    return out
+
+
+def parse_generic(data, profile, extra):
+    """a dat of the era `profile` (SRC_TABLES) in whichever layout parses it to EOF -> (things, layout)."""
+    kinds = {b: _PAYLOAD[_DATA.get(n)] for b, n in SRC_TABLES[profile].items()}
+    kinds.update(SRC_EXTRA.get(profile, {}))
+    kinds.update(extra)
+    fits, err = [], None
+    if profile == 'v1098':                            # the 10.98 layout first; 10.10-10.41 dats lack frame groups
+        try:
+            return parse_dat(data, kinds), (True, True, True)
+        except (ParseError, struct.error, IndexError) as e:
+            err = e
+    for layout in [(u, f, an) for u in (True, False) for f in (False, True) for an in (False, True)
+                   if (u, f, an) != (True, True, True) or profile != 'v1098']:
+        try:
+            fits.append((parse_dat(data, kinds, None, layout), layout))
+        except (ParseError, struct.error, IndexError) as e:
+            err = e
+    if len(fits) != 1:
+        raise SystemExit(f'{profile}: {len(fits)} layouts parse this dat ({[f[1] for f in fits]}); last error {err}')
+    return fits[0]
+
+
+def _anim(cat, n, head=None, durs=None):
+    if durs is not None:
+        return (head, durs)
+    h, ms = LEGACY_ANIM[cat]
+    return (h, (ms, ms) * n)
+
+
+def legacy_layout(t, layout):
+    """bring a thing of an older layout to ours: animated groups without animator get the legacy client's timing
+    (LEGACY_ANIM); an outfit without frame groups gets an idle group (phase 0, the legacy standing frame) and, when
+    it has more phases, a walking group (phases 1.., the legacy walk frames), or, when it animates always, one
+    walking group with all phases (the client cycles it).  Sprite order is unchanged (phase is the outermost index):
+    the groups' sprites concatenated are the source's sprites.  Notes go to t.notes."""
+    _u32, fg, animator = layout
+    before = [s for g in t.groups for s in g['sprites']]
+    if t.cat == 'outfit' and not fg and t.groups[0]['phases'] > 1:
+        g = t.groups[0]; n = g['phases']
+        per = len(g['sprites']) // n
+        if t.always:
+            w = dict(g, gtype=1)
+            w['anim'] = g['anim'] or _anim('outfit', n, (0, 0, 0), (1000 // n,) * (2 * n))
+            t.groups = [w]; t.notes.append('one walking group (animate always)')
+        else:
+            idle = dict(g, gtype=0, phases=1, anim=None, sprites=g['sprites'][:per])
+            walk = dict(g, gtype=1, phases=n - 1, sprites=g['sprites'][per:])
+            if n - 1 == 1:
+                walk['anim'] = None
+            elif g['anim']:
+                (asyn, loop, start), durs = g['anim']
+                walk['anim'] = ((asyn, loop, max(-1, start - 1) if start > 0 else start), durs[2:])
+            else:
+                walk['anim'] = _anim('outfit', n - 1)
+            t.groups = [idle, walk]; t.notes.append('idle + walking groups')
+    if not animator:
+        for g in t.groups:
+            if g['phases'] > 1 and g['anim'] is None:
+                g['anim'] = _anim(t.cat, g['phases'])
+                if 'animator added' not in t.notes:
+                    t.notes.append('animator added')
+    after = [s for g in t.groups for s in g['sprites']]
+    assert before == after and all(len(g['sprites']) == g['w'] * g['h'] * g['layers'] * g['px'] * g['py'] * g['pz']
+                                   * g['phases'] for g in t.groups), (t.cat, t.id, 'layout change lost sprites')
+
+
+# ============================================================================================== 15.x reader (v1511)
+# --source v1511: --src-dat is the protobuf appearances file, --src-spr the catalog-content.json beside the sprite sheets
+# (CipSoft LZMA-wrapped 384x384 BMPs, BGRA bottom-up, transparent = alpha 0; sprites 32x32, 32x64, 64x32 or 64x64).
+# A sprite bigger than 32 px becomes w x h of our tiles, anchored bottom-right as the client draws it; every tile is a
+# virtual sprite id of SheetSpr (sheet sprite, x, y), so the library code works on 32x32 tiles as for any spr.
+# Flags are converted by name (AppearanceFlags field -> our byte), animations keep their phases, durations, loop type
+# (ping-pong -> loop count -1), start phase (random -> -1) and synchronisation; names go to the catalogue.
+def _pb(buf):
+    """protobuf wire format -> [(field, value)] (varint int, or bytes for length-delimited; fixed ints as int)."""
+    out, p, n = [], 0, len(buf)
+    while p < n:
+        key = 0; sh = 0
+        while True:
+            c = buf[p]; p += 1; key |= (c & 0x7F) << sh; sh += 7
+            if not c & 0x80:
+                break
+        f, wt = key >> 3, key & 7
+        if wt == 0:
+            v = 0; sh = 0
+            while True:
+                c = buf[p]; p += 1; v |= (c & 0x7F) << sh; sh += 7
+                if not c & 0x80:
+                    break
+        elif wt == 2:
+            ln = 0; sh = 0
+            while True:
+                c = buf[p]; p += 1; ln |= (c & 0x7F) << sh; sh += 7
+                if not c & 0x80:
+                    break
+            v = bytes(buf[p:p + ln]); p += ln
+        elif wt == 5:
+            v = struct.unpack_from('<I', buf, p)[0]; p += 4
+        elif wt == 1:
+            v = struct.unpack_from('<Q', buf, p)[0]; p += 8
+        else:
+            raise ParseError(f'protobuf wire type {wt}')
+        out.append((f, v))
+    return out
+
+
+def _pbd(buf):
+    d = {}
+    for f, v in _pb(buf):
+        d.setdefault(f, []).append(v)
+    return d
+
+
+def _varints(vals):
+    """repeated uint32 field, packed (bytes) or not (ints)"""
+    out = []
+    for v in vals:
+        if isinstance(v, bytes):
+            p = 0
+            while p < len(v):
+                x = 0; sh = 0
+                while True:
+                    c = v[p]; p += 1; x |= (c & 0x7F) << sh; sh += 7
+                    if not c & 0x80:
+                        break
+                out.append(x)
+        else:
+            out.append(v)
+    return out
+
+
+def _i32(v):
+    return v - (1 << 64) if v >= 1 << 63 else v
+
+
+_F1511_BOOL = {2: 'clip', 3: 'bottom', 4: 'top', 5: 'container', 6: 'stackable', 7: 'usable', 8: 'forceuse',
+               9: 'multiuse', 12: 'splash', 13: 'notwalkable', 14: 'notmoveable', 15: 'blockmissile', 16: 'blockpath',
+               17: 'nomoveanim', 18: 'pickupable', 19: 'fluid', 20: 'hangable', 22: 'rotateable', 24: 'donthide',
+               25: 'translucent', 28: 'lying', 29: 'animateAlways', 32: 'fullground', 33: 'look', 37: 'wrappable',
+               38: 'unwrappable', 39: 'topeffect'}
+# message flags with one u16 payload: field -> (our name, sub-field)
+_F1511_U16 = {1: ('ground', 1), 10: ('writable', 1), 11: ('writableonce', 1), 27: ('elevation', 1),
+              30: ('minimap', 1), 31: ('lenshelp', 1), 34: ('cloth', 1), 35: ('defaultaction', 1)}
+_F1511_NAMES = {40: 'npcsaledata', 41: 'changedtoexpire', 42: 'corpse', 43: 'player_corpse', 44: 'cyclopediaitem',
+                45: 'ammo', 46: 'show_off_socket', 47: 'reportable', 48: 'upgradeclassification',
+                49: 'reverse_addons_east', 50: 'reverse_addons_west', 51: 'reverse_addons_south',
+                52: 'reverse_addons_north', 53: 'wearout',
+                54: 'clockexpire', 55: 'expire', 56: 'expirestop', 57: 'decoitemkit'}
+
+
+def _flags_1511(fb, name):
+    out, stripped = {}, []
+    for f, v in _pb(fb):
+        if f in _F1511_BOOL:
+            if v:
+                out[NEW_BYTE[_F1511_BOOL[f]]] = b''
+        elif f in _F1511_U16:
+            nm, sub = _F1511_U16[f]
+            x = _pbd(v).get(sub, [0])[0]
+            out[NEW_BYTE[nm]] = struct.pack('<H', min(x, 0xFFFF))
+        elif f == 21:                                  # hook: direction 1 south, 2 east
+            dr = _pbd(v).get(1, [0])[0]
+            out[NEW_BYTE['hookS' if dr == 1 else 'hookE']] = b''
+        elif f == 23:                                  # light: brightness, colour
+            m = _pbd(v); out[NEW_BYTE['light']] = struct.pack('<HH', m.get(1, [0])[0] & 0xFFFF, m.get(2, [0])[0] & 0xFFFF)
+        elif f == 26:                                  # shift: x, y
+            m = _pbd(v); out[NEW_BYTE['displacement']] = struct.pack('<HH', _i32(m.get(1, [0])[0]) & 0xFFFF,
+                                                                     _i32(m.get(2, [0])[0]) & 0xFFFF)
+        elif f == 36:                                  # market: category, trade as, show as, (vocations), level
+            m = _pbd(v); nm = (name or '').encode('latin-1', 'replace')[:200]
+            out[NEW_BYTE['market']] = (struct.pack('<HHHH', m.get(1, [0])[0] & 0xFFFF, m.get(2, [0])[0] & 0xFFFF,
+                                                   m.get(3, [0])[0] & 0xFFFF, len(nm)) + nm
+                                       + struct.pack('<HH', 0, m.get(6, [0])[0] & 0xFFFF))
+        elif not (isinstance(v, int) and v == 0):
+            stripped.append(_F1511_NAMES.get(f, f'f{f}'))
+    return sorted(out.items()), sorted(set(stripped))
+
+
+SHEET_DIMS = {0: (32, 32), 1: (32, 64), 2: (64, 32), 3: (64, 64)}
+
+
+class SheetSpr:
+    """15.x sprite sheets as a spr of 32x32 tiles (virtual ids from 1, see tile_id); the interface the library code
+    uses: count, offs, alpha (False: records are re-encoded), sprite(id), _cache."""
+    signature = 0
+    alpha = False
+    u32count = True
+
+    def __init__(self, catalog_path, max_sheets=1500):
+        import bisect, json  # noqa: E401
+        self._bisect = bisect.bisect_right
+        self.dir = os.path.dirname(os.path.abspath(catalog_path))
+        cat = [e for e in json.load(open(catalog_path)) if e.get('type') == 'sprite']
+        cat.sort(key=lambda e: e['firstspriteid'])
+        self.sheets = cat; self.firsts = [e['firstspriteid'] for e in cat]
+        self.tiles, self.tile_ids = [None], {}
+        self._cache, self._sheets, self.max_sheets = {}, {}, max_sheets
+
+    def info(self, sid):
+        """(sheet entry, width, height) of a source sprite id, or None"""
+        i = self._bisect(self.firsts, sid) - 1
+        if i < 0 or sid > self.sheets[i]['lastspriteid']:
+            return None
+        e = self.sheets[i]
+        return (e,) + SHEET_DIMS[e['spritetype']]
+
+    def tile_id(self, sid, ox, oy):
+        k = (sid, ox, oy)
+        if k not in self.tile_ids:
+            self.tiles.append(k); self.tile_ids[k] = len(self.tiles) - 1
+        return self.tile_ids[k]
+
+    @property
+    def count(self):
+        return len(self.tiles) - 1
+
+    @property
+    def offs(self):
+        return _Ones()
+
+    def sheet(self, e):
+        im = self._sheets.get(e['file'])
+        if im is None:
+            import lzma
+            d = open(os.path.join(self.dir, e['file']), 'rb').read(); p = 0
+            while d[p] == 0:
+                p += 1
+            p += 5                                     # constant 70 0a fa 80 24
+            while d[p] & 0x80:                         # compressed size, 7-bit varint
+                p += 1
+            p += 1; props = d[p:p + 5]; p += 13        # lzma properties, 8-byte size
+            b = props[0]
+            flt = [{'id': lzma.FILTER_LZMA1, 'lc': b % 9, 'lp': (b // 9) % 5, 'pb': b // 45,
+                    'dict_size': struct.unpack('<I', props[1:5])[0]}]
+            bmp = lzma.LZMADecompressor(lzma.FORMAT_RAW, filters=flt).decompress(d[p:])
+            off = struct.unpack_from('<I', bmp, 10)[0]; w, h = struct.unpack_from('<ii', bmp, 18)
+            if bmp[:2] != b'BM' or struct.unpack_from('<H', bmp, 28)[0] != 32 or \
+                    struct.unpack_from('<IIII', bmp, 54) != (0xFF0000, 0xFF00, 0xFF, 0xFF000000):
+                raise ParseError(f'{e["file"]}: not a 32-bit BGRA bmp')
+            a = np.frombuffer(bmp, np.uint8, w * abs(h) * 4, off).reshape(abs(h), w, 4)
+            if h > 0:
+                a = a[::-1]
+            im = a[:, :, [2, 1, 0, 3]].copy()
+            im[im[:, :, 3] == 0] = 0                   # transparent: colour key ignored
+            if len(self._sheets) >= self.max_sheets:
+                self._sheets.pop(next(iter(self._sheets)))
+            self._sheets[e['file']] = im
+        return im
+
+    def full(self, sid):
+        """a whole source sprite (h, w, 4) RGBA"""
+        e, w, h = self.info(sid)
+        cols = 384 // w; i = sid - e['firstspriteid']
+        x, y = (i % cols) * w, (i // cols) * h
+        return self.sheet(e)[y:y + h, x:x + w]
+
+    def sprite(self, vid):
+        if not 0 < vid < len(self.tiles):
+            return None
+        sid, ox, oy = self.tiles[vid]
+        return np.ascontiguousarray(self.full(sid)[oy:oy + 32, ox:ox + 32])
+
+
+class _Ones:
+    def __getitem__(self, i):
+        return 1
+
+
+def read_1511(app_path, spr):
+    """appearances -> things {cat: [Thing]} (ids as in the file), sprites as SheetSpr tile ids."""
+    top = _pbd(open(app_path, 'rb').read())
+    things = {c: [] for c in CATS}
+    for cat, fno in (('item', 1), ('outfit', 2), ('effect', 3), ('missile', 4)):
+        for raw in top.get(fno, []):
+            a = _pbd(raw)
+            t = Thing(); t.cat = cat; t.id = a.get(1, [0])[0]; t.notes = []; t.always = False; t.raw = None
+            t.name = (a.get(4, [b''])[0] or b'').decode('utf-8', 'replace').strip() or None
+            t.flags, stripped = _flags_1511(a.get(3, [b''])[0], t.name)
+            t.notes += stripped
+            t.groups = []
+            fgs = a.get(2, [])
+            if cat != 'outfit' and len(fgs) > 1:
+                t.notes.append(f'{len(fgs) - 1} extra frame group(s)'); fgs = fgs[:1]
+            for fg in fgs:
+                f = _pbd(fg); si = _pbd(f.get(3, [b''])[0])
+                pw, ph, pd, ly = (si.get(k, [1])[0] or 1 for k in (1, 2, 3, 4))
+                sids = _varints(si.get(5, []))
+                anim = _pbd(si[6][0]) if 6 in si else None
+                phases = len(anim.get(6, [])) if anim else 1
+                base = pw * ph * pd * ly
+                if not sids or len(sids) != base * max(phases, 1):
+                    if sids and len(sids) % base == 0:
+                        phases = len(sids) // base; anim = None
+                    else:
+                        raise ParseError(f'{cat} {t.id}: {len(sids)} sprites for {pw}x{ph}x{pd} L{ly} F{phases}')
+                infos = [spr.info(s) for s in sids]
+                if any(i is None for i in infos):
+                    raise ParseError(f'{cat} {t.id}: sprite id outside the catalogue')
+                W = max(i[1] for i in infos); H = max(i[2] for i in infos)
+                w, h = W // 32, H // 32
+                g = {'gtype': f.get(1, [0])[0] if cat == 'outfit' else 0, 'w': w, 'h': h,
+                     'exact': max(32, min(255, si.get(7, [max(W, H)])[0] or max(W, H))) if (w > 1 or h > 1) else 32,
+                     'layers': ly, 'px': pw, 'py': ph, 'pz': pd, 'phases': phases, 'anim': None}
+                if anim and phases > 1:
+                    lt = _i32(anim.get(4, [0])[0])
+                    loop = -1 if lt < 0 else (anim.get(5, [0])[0] if lt == 1 else 0)
+                    start = -1 if anim.get(3, [0])[0] else anim.get(1, [0])[0]
+                    durs = []
+                    for ph_ in anim.get(6, []):
+                        q = _pbd(ph_); durs += [q.get(1, [0])[0], q.get(2, [0])[0]]
+                    g['anim'] = ((0 if anim.get(2, [0])[0] else 1, loop, max(-1, min(127, start))), tuple(durs))
+                elif phases > 1:
+                    g['anim'] = _anim(cat, phases); t.notes.append('animator added')
+                tiles = []
+                for s, (e, sw, sh) in zip(sids, infos):
+                    for hh in range(h):
+                        for ww in range(w):
+                            ox = (w - 1 - ww) * 32 - (W - sw); oy = (h - 1 - hh) * 32 - (H - sh)
+                            tiles.append(spr.tile_id(s, ox, oy) if 0 <= ox < sw and 0 <= oy < sh else 0)
+                g['sprites'] = tuple(tiles)
+                t.groups.append(g)
+            if not t.groups:
+                continue
+            if cat == 'outfit':
+                t.groups.sort(key=lambda g: g['gtype'])
+            things[cat].append(t)
+    for c in CATS:
+        things[c].sort(key=lambda t: t.id)
+    return things
+
+
+def check_1511(things, spr, log, every=1):
+    """composed first frame of every `every`-th thing (all groups, layers) == the source sprites pasted bottom-right."""
+    n = 0
+    for c in CATS:
+        for k, t in enumerate(things[c]):
+            if k % every:
+                continue
+            for g in t.groups:
+                for l in range(g['layers']):
+                    W, H = g['w'] * 32, g['h'] * 32
+                    a = np.asarray(compose(g, spr, layer=l))
+                    # the source sprite of this slot (x, y, z, phase 0): any of its tiles names it
+                    i0 = sprite_index(g, layer=l)
+                    sl = [v for v in g['sprites'][i0:i0 + g['w'] * g['h']] if v]
+                    ref = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+                    if sl:
+                        sid = spr.tiles[sl[0]][0]; f = spr.full(sid)
+                        ref.alpha_composite(Image.fromarray(np.ascontiguousarray(f), 'RGBA'), (W - f.shape[1], H - f.shape[0]))
+                    if not np.array_equal(a, np.asarray(ref)):
+                        raise SystemExit(f'MISMATCH 15.x tiles {c} {t.id} layer {l}')
+                    n += 1
+    log(f'  15.x check: {n} first-frame layers composed from tiles identical to the source sprites')
+    return n
+
+
+def open_source(dat_path, spr_path, profile=None, extra_items=None, extra_flags=None, map_flags=None):
     """profile: 'donor-b' (flag table of donor B, signed displacements), 'donor-c' (10.98 table plus flag bytes without
     payload, stripped) or 'library' (our table); default: donor-b for donor B's dat signature, else library."""
     data = open(dat_path, 'rb').read()
     sig = struct.unpack_from('<I', data, 0)[0]
     if profile is None:
         profile = 'donor-b' if sig == DONOR_SIG else 'library'
+    if profile == 'v1511':
+        spr = SheetSpr(spr_path)
+        things = read_1511(dat_path, spr)
+        check_1511(things, spr, lambda s: print(s, flush=True))
+        return open(dat_path, 'rb').read(), things, spr, profile
+    if profile in SRC_TABLES:
+        extra = parse_extra_flags(extra_flags)
+        for part in (map_flags or '').split(','):
+            if part.strip():
+                b, nm = part.split(':'); b = int(b); nm = nm.strip()
+                if nm not in NEW_BYTE or b in SRC_TABLES[profile]:
+                    raise SystemExit(f'--map-flags {part}: unknown flag name or byte already in the table')
+                MAP_FLAGS[b] = nm; extra.setdefault(b, _PAYLOAD[_DATA.get(nm)])
+        things, layout = parse_generic(data, profile, extra)
+        tab = SRC_TABLES[profile]
+        for c in CATS:
+            for t in things[c]:
+                t.always = any(tab.get(b) == 'animateAlways' for b, _ in t.flags)
+                legacy_layout(t, layout)
+        spr = Spr(spr_path)
+        print(f'{profile}: layout u32 sprites / frame groups / animator = {layout}; spr alpha {spr.alpha}, '
+              f'u32 count {spr.u32count}', flush=True)
+        return data, things, spr, profile
     kinds, default = {'donor-b': (DONOR_KINDS, None), 'donor-c': (DONORC_KINDS, 0), 'library': (OUR_KINDS, None)}[profile]
     things = parse_dat(data, kinds, default)
     if extra_items:
@@ -478,6 +937,20 @@ def open_source(dat_path, spr_path, profile=None, extra_items=None):
     if not spr.alpha or not spr.u32count:
         raise SystemExit('source spr: expected alpha sprites with a u32 count')
     return data, things, spr, profile
+
+
+def read_names(path):
+    """CSV/TSV rows category,source_id,name (e.g. monster names by looktype) -> {(cat, id): 'name1 / name2'}"""
+    out = {}
+    if not path:
+        return out
+    with open(path, newline='') as fh:
+        for row in csv.reader(fh, delimiter='\t' if path.endswith('.tsv') else ','):
+            if len(row) >= 3 and row[0] in CATS and row[1].strip().isdigit():
+                lst = out.setdefault((row[0], int(row[1])), [])
+                if row[2].strip() and row[2].strip() not in lst:
+                    lst.append(row[2].strip())
+    return {k: ' / '.join(v[:3]) + (' ...' if len(v) > 3 else '') for k, v in out.items() if v}
 
 
 def parse_ranges(spec):
@@ -495,14 +968,25 @@ def parse_ranges(spec):
 
 # ============================================================================================== library
 def cmd_library(a, log):
-    data, things, sspr, profile = open_source(a.src_dat, a.src_spr, a.source, a.extra_items)
+    data, things, sspr, profile = open_source(a.src_dat, a.src_spr, a.source, a.extra_items, a.extra_flags, a.map_flags)
     named = parse_ranges(a.named)
+    include, forced = parse_ranges(a.include), set()
+    names = read_names(a.names)
+    for c in CATS:                                    # names carried by the source (15.x appearances)
+        for t in things[c]:
+            if t.name and (c, t.id) not in names:
+                names[c, t.id] = t.name
     log(f'{profile}: dat {struct.unpack_from("<I", data, 0)[0]:#x} ' + ', '.join(f'{len(things[c])} {c}s' for c in CATS)
         + f'; spr {sspr.signature:#x} {sspr.count} sprites')
     ospr = Spr(a.ours_spr)
     log('hashing our sprites (pixel keys)...')
-    ours = spr_pixel_keys(ospr, log)
+    ours = cached_pixel_keys(ospr, a.ours_spr, log, a.key_cache)
     log(f'  {len(ours)} distinct visible sprites in ours')
+    known = set()                                     # --known-spr: earlier libraries; their art counts as present
+    for path in a.known_spr or []:
+        n0 = len(known)
+        known |= cached_pixel_keys(Spr(path), path, log, a.key_cache) - ours
+        log(f'  {len(known) - n0} more distinct visible sprites in {path}')
 
     dkey = {}                                         # donor sprite id -> pixel key (None = empty)
 
@@ -530,9 +1014,13 @@ def cmd_library(a, log):
                 vis = [k for k in keys if k is not None]
                 if not vis:
                     reason = 'empty'
-                elif all(k in ours for k in vis):
+                elif all(k in ours for k in vis) and (cat, t.id) not in include:
                     reason = 'already in ours'
+                elif known and all(k in ours or k in known for k in vis) and (cat, t.id) not in include:
+                    reason = 'already in an earlier library'
                 else:
+                    if all(k in ours or k in known for k in vis):
+                        forced.add((cat, t.id))
                     flags, stripped = convert_flags(t, profile)
                     if dropped:
                         stripped.append(f'{dropped} empty group(s)')
@@ -611,6 +1099,12 @@ def cmd_library(a, log):
                 desc = describe(o, flags, im)
                 if (cat, t.id) in named:
                     desc = 'named character (do not use live), ' + desc
+                if (cat, t.id) in names:
+                    desc = f'"{names[cat, t.id]}", ' + desc
+                if (cat, t.id) in forced:
+                    desc = 'requested (art also in our pair or an earlier library), ' + desc
+                if a.tag:
+                    desc = a.tag + ', ' + desc
                 w.writerow([cat, o.id, t.id, size_of(o), frames_text(o), ' '.join(flag_names(flags)), ' '.join(stripped),
                             desc, h])
             lspr._cache.clear()
@@ -693,7 +1187,7 @@ def read_selection(path):
 
 
 def cmd_import(a, log):
-    sdata, things, sspr, profile = open_source(a.src_dat, a.src_spr, a.source, a.extra_items)
+    sdata, things, sspr, profile = open_source(a.src_dat, a.src_spr, a.source, a.extra_items, a.extra_flags)
     log(f'source ({profile}): ' + ', '.join(f'{len(things[c])} {c}s' for c in CATS))
     for p in (a.ours_dat, a.ours_spr):
         assert os.path.abspath(os.path.dirname(p)) != os.path.abspath(a.out_dir), 'out-dir must differ from the input dir'
@@ -846,17 +1340,29 @@ def main():
     sub = ap.add_subparsers(dest='cmd', required=True)
     lb = sub.add_parser('library')
     lb.add_argument('--src-dat', required=True); lb.add_argument('--src-spr', required=True)
-    lb.add_argument('--source', choices=('donor-b', 'donor-c'), default=None, help='default: by the dat signature')
+    lb.add_argument('--source', choices=('donor-b', 'donor-c', 'v1098', 'v860', 'v772', 'donor-m', 'v1511'), default=None,
+                    help='default: by the dat signature')
     lb.add_argument('--extra-items', default=None, help='extended-items file of the source (items after 65535)')
+    lb.add_argument('--extra-flags', default=None, help="generic readers: '39:2,41:0' extra source flag bytes "
+                    "(payload length), read and stripped")
+    lb.add_argument('--map-flags', default=None, help="generic readers: '40:displacement' an extra source flag byte read "
+                    "as one of our flags, used where the thing lacks that flag (else stripped with its values)")
     lb.add_argument('--named', default=None, help="'outfit:4080-4159;item:..': tagged 'named character' in the catalogue")
+    lb.add_argument('--include', default=None, help="'item:14000-14540;outfit:..': kept even when their art is already "
+                    "in ours or an earlier library (tagged 'requested' in the catalogue)")
+    lb.add_argument('--names', default=None, help='CSV (or .tsv) rows category,source_id,name: names put in the catalogue')
+    lb.add_argument('--tag', default=None, help='text put in front of every catalogue description')
     lb.add_argument('--ours-spr', required=True, help='our spr: things whose sprites are all in it are skipped')
+    lb.add_argument('--known-spr', action='append', help='earlier library spr (repeatable): its art counts as present')
+    lb.add_argument('--key-cache', default=None, help='directory for cached sprite pixel keys of --ours-spr / --known-spr')
     lb.add_argument('--ours-dat', default=None, help='optional: check the library parses as the same variant as ours')
     lb.add_argument('--out-dir', required=True); lb.add_argument('--sheets', default=None)
     im = sub.add_parser('import')
     im.add_argument('--src-dat', required=True); im.add_argument('--src-spr', required=True)
-    im.add_argument('--source', choices=('donor-b', 'donor-c', 'library'), default=None,
+    im.add_argument('--source', choices=('donor-b', 'donor-c', 'library', 'v1098', 'v860', 'v772', 'donor-m', 'v1511'), default=None,
                     help='default: donor-b for its dat signature, else library')
     im.add_argument('--extra-items', default=None)
+    im.add_argument('--extra-flags', default=None)
     im.add_argument('--ours-dat', required=True); im.add_argument('--ours-spr', required=True)
     im.add_argument('--select', required=True, help='CSV: category,src_id[,name,purpose]')
     im.add_argument('--out-dir', required=True)
