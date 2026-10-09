@@ -117,7 +117,8 @@ local function decorate(widget, info, allowDim, gone)
   else
     glow:hide()
   end
-  if color and not gone then
+  -- one frame per slot: game_itemrarity draws one from the item's custom attributes (widget.irColor)
+  if color and not gone and not widget.irColor then
     frame:setImageColor(color)
     frame:show()
   else

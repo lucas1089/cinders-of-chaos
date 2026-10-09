@@ -47,12 +47,29 @@ ChaosOpcodes = {
 	season = 246, -- seasons window (client game_season, !season; season.lua, season_config.lua)
 	patchnotes = 244,
 	hunt = 241, -- hunt tracker window, exp/h and profit/h (client game_hunt, !hunt; hunt.lua, hunt_core.lua, hunt_config.lua)
+	itemTooltip = 242, -- rich item tooltips with the equipped-item compare (client game_itemtooltip; item_tooltip*.lua)
 	achievements = 250, -- achievements window and unlocks (client game_achievements, !achievements; achievements*.lua)
 	invasion = 251, -- invasion HUD and upcoming events window, server -> client (client game_invasion, !invasion; invasion*.lua, worldevents.lua)
 	guild = 252, -- Guild window: level, perks, members, guild bank, guild hall, depot, top guilds (client game_guild, !guild; guild*.lua)
 	bestiary = 253, -- bestiary, kill tasks and the task tracker HUD (client game_bestiary, !bestiary, !tasks; bestiary*.lua)
 	pets = 254, -- pets window: owned pets, summon / dismiss / rename, levels and abilities (client game_pets, !pet; pets*.lua)
 	spellbook = 219 -- spell list window (client game_spellbook, !spells)
+}
+
+-- ---------------------------------------------------------------------------
+-- Item custom attributes in item packets (engine patch server/src-patches/0003-item-custom-attributes.patch, client
+-- feature GameItemCustomAttributes = 126): after every item the client gets u16 count, then u16 key + u64 value per
+-- entry. The keys are the same numbers as ChaosItemAttrKey in the engine's const.h and ChaosItemAttr in the client
+-- (modules/game_itemrarity); tests/item_tooltip_test.lua checks the three. item:getClientAttributes() returns them.
+-- ---------------------------------------------------------------------------
+Chaos.itemAttr = {
+	rarity = 1, -- custom attribute "rarity" (1..15)
+	level = 2, -- custom attribute "combatPowerLevel" (item level)
+	locked = 3, -- custom attribute "chaos_locked" (the item lock)
+	unique = 4, -- custom attribute "chaos_unique" present
+	sockets = 5, -- custom attribute "chaos_sockets" (socket count; a unique's fixed socket is not stored)
+	id = 6, -- custom attribute "chaos_iid": per-item id, given by the engine the first time the item is sent
+	version = 7 -- hash of the item's attributes: changes when the item changes (orbs, gems, upgrades)
 }
 
 -- ---------------------------------------------------------------------------

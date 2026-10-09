@@ -528,6 +528,7 @@ function C.rewriteDescription(item)
 	end
 	text = G.append(text, item)
 	item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, text)
+	M.sendUpdate(item) -- every change of the modifiers ends here: the client gets the new attributes
 	return text
 end
 

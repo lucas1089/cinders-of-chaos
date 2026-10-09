@@ -268,6 +268,15 @@ function M.syncAttackSpeed(item)
 	end
 end
 
+-- send the item again to the clients that see it (engine patch 0003, item:sendUpdate): a client that reads item custom
+-- attributes (rarity frame, tooltip version) keeps the old ones otherwise, because the engine sends an item only when
+-- it moves or its id or count changes. Does nothing without the patch or outside a container / inventory / tile.
+function M.sendUpdate(item)
+	if item and type(item.sendUpdate) == "function" then
+		pcall(item.sendUpdate, item)
+	end
+end
+
 function M.set(item, key, value)
 	item:setCustomAttribute(M.attr(key), floor(value))
 	if key == "attackspeed" then

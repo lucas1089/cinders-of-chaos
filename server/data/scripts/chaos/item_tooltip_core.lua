@@ -1,0 +1,468 @@
+-- Rich item tooltips, the pure part (ChaosItemTooltip): what a tooltip says about an item, which equipped items it is
+-- compared with, which client positions a request may name, and the request budget per player. No engine calls apart
+-- from reading the item and its ItemType; data/scripts/chaos/item_tooltip.lua does the protocol and finds the items.
+-- Tested by server/tests/item_tooltip_test.lua. Lua 5.1 / LuaJIT and Lua 5.3 compatible.
+--
+-- The tooltip reuses the item readers of data/lib/chaos_crafting.lua (rarity, item level, the engine's modifiers and
+-- the Chaos modifiers with their roll ranges, uniques), data/lib/chaos_item_mods.lua (ranges and tiers) and
+-- data/lib/chaos_gems.lua (sockets and the effect of each gem in this item).
+--
+-- One tooltip (JSON object, see item_tooltip.lua for the protocol):
+--   key        "<item id>:<version>" from the item's client attributes (Chaos.itemAttr ID / VERSION), nil without them
+--   id, name, count, kind ("weapon", "shield", "helmet", ...), slot (what it is worn as, "Two-handed weapon")
+--   rarity, rarityName, tier (1..5), level        rarity 0 = normal item
+--   unique = {name, set = {name, have, total}}    uniques only
+--   base = [{k, l, v, fmt}]                        attack, defense, armour, hit chance, range, attack speed, element,
+--                                                  the item type's own bonuses (skills, protections, speed, ...)
+--   mods = [{k, l, t, v, g, lo, hi, l2, v2}]       every modifier: attribute key, label, text, value, group, roll range
+--   sockets = {count, max, list = [{name, text, color}]}   empty sockets have no name
+--   req = {level, magic, voc}, weight (oz), desc (flavour text), locked
+--   stats = [{k, l, v, fmt, low}]                  every number the compare view adds up (low = lower is better)
+--   cmp = [slot, ...]                              inventory slots worn the same way (the client compares with them)
+
+ChaosItemTooltip = ChaosItemTooltip or {}
+local T = ChaosItemTooltip
+
+T.config = {
+	maxItems = 3, -- items per request: the hovered one and up to two equipped ones to compare
+	bucketSize = 12, -- request budget per player: up to 12 at once, then 6 per second
+	bucketPerSecond = 6,
+	mapRangeX = 8, -- map items: same floor, at most this far from the player, and visible
+	mapRangeY = 6,
+	maxNameLength = 64
+}
+
+local floor = math.floor
+
+local function num(v)
+	if type(v) == "number" then
+		return v
+	end
+	if type(v) == "userdata" or type(v) == "table" then
+		local ok, n = pcall(function() return tonumber(v.value) end)
+		return ok and n or nil
+	end
+	return tonumber(v)
+end
+
+local function call(obj, method, ...)
+	if not obj then
+		return nil
+	end
+	local fn = obj[method]
+	if type(fn) ~= "function" then
+		return nil
+	end
+	local ok, v = pcall(fn, obj, ...)
+	if ok then
+		return v
+	end
+	return nil
+end
+
+local function int(v)
+	return floor(num(v) or 0)
+end
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- positions: what a client may ask about
+-- ---------------------------------------------------------------------------------------------------------------
+T.SLOT_FIRST, T.SLOT_LAST = 1, 10 -- head .. ammo: the inventory the 10.98 client shows
+
+-- a position from the client -> {kind = "slot", slot} | {kind = "container", cid, index} | {kind = "map", x, y, z,
+-- stackpos} or nil (malformed). Only the shape is checked here; item_tooltip.lua checks access.
+function T.decodePos(p)
+	if type(p) ~= "table" then
+		return nil
+	end
+	local x, y, z = tonumber(p.x), tonumber(p.y), tonumber(p.z)
+	if not x or not y or not z or x ~= floor(x) or y ~= floor(y) or z ~= floor(z) then
+		return nil
+	end
+	if x == 0xFFFF then
+		if y >= 0x40 and y < 0x50 then
+			if z < 0 or z > 255 then
+				return nil
+			end
+			return {kind = "container", cid = y - 0x40, index = z}
+		end
+		if y >= T.SLOT_FIRST and y <= T.SLOT_LAST and z == 0 then
+			return {kind = "slot", slot = y}
+		end
+		return nil
+	end
+	local s = tonumber(p.s) or 0
+	if x < 0 or x > 0xFFFE or y < 0 or y > 0xFFFE or z < 0 or z > 15 or s < 0 or s > 9 or s ~= floor(s) then
+		return nil
+	end
+	return {kind = "map", x = x, y = y, z = z, stackpos = s}
+end
+
+-- a map position the player may ask about: same floor, near, and the player can see it (canSee = engine answer)
+function T.mapAllowed(playerPos, pos, canSee)
+	if not playerPos or not pos then
+		return false
+	end
+	if playerPos.z ~= pos.z then
+		return false
+	end
+	if math.abs(playerPos.x - pos.x) > T.config.mapRangeX or math.abs(playerPos.y - pos.y) > T.config.mapRangeY then
+		return false
+	end
+	return canSee == true
+end
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- request budget (token bucket per player)
+-- ---------------------------------------------------------------------------------------------------------------
+-- state = {tokens, at} (kept by the caller per player); cost = items in the request. true when allowed.
+function T.allow(state, now, cost)
+	local size, rate = T.config.bucketSize, T.config.bucketPerSecond
+	cost = cost or 1
+	if state.at == nil then
+		state.tokens, state.at = size, now
+	end
+	if now > state.at then
+		state.tokens = math.min(size, state.tokens + (now - state.at) * rate / 1000)
+	end
+	state.at = now
+	if state.tokens < cost then
+		return false
+	end
+	state.tokens = state.tokens - cost
+	return true
+end
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- slots
+-- ---------------------------------------------------------------------------------------------------------------
+local SLOTP = {head = 1, necklace = 2, backpack = 4, armor = 8, right = 16, left = 32, legs = 64, feet = 128, ring = 256,
+	ammo = 512, twohand = 2048}
+local INV = {head = 1, necklace = 2, backpack = 3, armor = 4, right = 5, left = 6, legs = 7, feet = 8, ring = 9, ammo = 10}
+
+local function hasBit(value, b)
+	return floor((value or 0) / b) % 2 == 1
+end
+
+-- inventory slots an item of this type is worn in (the compare view looks there) and what it is worn as
+function T.slotsOf(slotPosition, kind)
+	local sp = int(slotPosition)
+	-- every item may be held in the hands (the engine's default slot position), so the hands count only for weapons
+	-- and shields
+	if kind == "weapon" or kind == "shield" then
+		local name = kind == "shield" and "Shield" or (hasBit(sp, SLOTP.twohand) and "Two-handed weapon" or "Weapon")
+		return {INV.left, INV.right}, name
+	end
+	local order = {
+		{SLOTP.head, INV.head, "Helmet"}, {SLOTP.necklace, INV.necklace, "Amulet"}, {SLOTP.armor, INV.armor, "Armour"},
+		{SLOTP.legs, INV.legs, "Legs"}, {SLOTP.feet, INV.feet, "Boots"}, {SLOTP.ring, INV.ring, "Ring"},
+		{SLOTP.ammo, INV.ammo, "Ammunition"}, {SLOTP.backpack, INV.backpack, "Container"}
+	}
+	for _, o in ipairs(order) do
+		if hasBit(sp, o[1]) then
+			return {o[2]}, o[3]
+		end
+	end
+	return {}, nil
+end
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- base stats
+-- ---------------------------------------------------------------------------------------------------------------
+-- engine combat index (bit number of the combat type) -> label; arrays from ItemType:getAbilities() are 1-based
+T.COMBAT_LABELS = {[1] = "Physical", [2] = "Energy", [3] = "Earth", [4] = "Fire", [6] = "Life Drain", [7] = "Mana Drain",
+	[9] = "Drown", [10] = "Ice", [11] = "Holy", [12] = "Death", [13] = "Water", [14] = "Arcane"}
+T.SKILL_LABELS = {"Fist", "Club", "Sword", "Axe", "Distance", "Shielding", "Fishing", "Crafting", "Woodcutting", "Mining",
+	"Herbalism", "Armorsmithing", "Weaponsmithing", "Jewelsmithing"}
+-- element bit -> label (ItemType:getElementType returns the combat type value)
+T.ELEMENT_LABELS = {[2] = "Energy", [4] = "Earth", [8] = "Fire", [512] = "Ice", [1024] = "Holy", [2048] = "Death",
+	[4096] = "Water", [8192] = "Arcane"}
+
+local function attrOr(item, attrType, fallback)
+	if attrType and call(item, "hasAttribute", attrType) then
+		return int(call(item, "getAttribute", attrType))
+	end
+	return int(fallback)
+end
+
+-- the base numbers of an item: its attributes (the rarity roll raises them) over its ItemType
+function T.baseStats(item, it)
+	local out = {}
+	local function add(k, l, v, fmt, low)
+		if v and v ~= 0 then
+			out[#out + 1] = {k = k, l = l, v = v, fmt = fmt, low = low}
+		end
+	end
+	add("attack", "Attack", attrOr(item, ITEM_ATTRIBUTE_ATTACK, call(it, "getAttack")))
+	add("defense", "Defense", attrOr(item, ITEM_ATTRIBUTE_DEFENSE, call(it, "getDefense")))
+	add("extradefense", "Extra Defense", attrOr(item, ITEM_ATTRIBUTE_EXTRADEFENSE, call(it, "getExtraDefense")))
+	add("armor", "Armour", attrOr(item, ITEM_ATTRIBUTE_ARMOR, call(it, "getArmor")))
+	add("hitchance", "Hit Chance", attrOr(item, ITEM_ATTRIBUTE_HITCHANCE, call(it, "getHitChance")), "pct")
+	local range = attrOr(item, ITEM_ATTRIBUTE_SHOOTRANGE, call(it, "getShootRange"))
+	if range > 1 then -- melee weapons have range 1
+		add("range", "Range", range)
+	end
+	local speed = attrOr(item, ITEM_ATTRIBUTE_ATTACK_SPEED, call(it, "getAttackSpeed"))
+	if speed > 0 then
+		add("attackspeed", "Attack Interval", floor(speed / 10 + 0.5) / 100, "sec", true)
+	end
+	local elementDamage = int(call(it, "getElementDamage"))
+	if elementDamage > 0 then
+		local label = T.ELEMENT_LABELS[int(call(it, "getElementType"))] or "Element"
+		add("element", label .. " Damage", elementDamage)
+	end
+	local ab = call(it, "getAbilities")
+	if type(ab) == "table" then
+		if type(ab.skills) == "table" then
+			for i, label in ipairs(T.SKILL_LABELS) do
+				add("skill" .. i, label, int(ab.skills[i]))
+			end
+		end
+		if type(ab.stats) == "table" then
+			add("maxhealth", "Max Health", int(ab.stats[1]))
+			add("maxmana", "Max Mana", int(ab.stats[2]))
+			add("maglevel", "Magic Level", int(ab.stats[4]))
+		end
+		if type(ab.absorbPercent) == "table" then
+			for i = 1, 14 do
+				local label = T.COMBAT_LABELS[i]
+				if label then
+					add("protect" .. i, label .. " Protection", int(ab.absorbPercent[i]), "pct")
+				end
+			end
+		end
+		add("speed", "Speed", int(ab.speed))
+	end
+	return out
+end
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- modifiers with tiers and roll ranges
+-- ---------------------------------------------------------------------------------------------------------------
+-- the range a modifier of this item rolls in (nil for uniques / items without a rarity)
+function T.modRange(m, rarity, level)
+	local C, M = ChaosCrafting, ChaosItemMods
+	if rarity <= 0 or not C then
+		return nil
+	end
+	if m.group == "chaos" then
+		local def = M and M.byKey[m.chaosKey]
+		if def then
+			local r = M.range(def, rarity, level)
+			return r[1], r[2]
+		end
+		return nil
+	end
+	local ranges = m.group == "element" and C.config.elementRange or C.config.absorbRange
+	local r = ranges[rarity]
+	if r and m.group == "special" and C.specialChance then
+		return C.specialChance(r[1]), C.specialChance(r[2]) -- the chance part of a critical / leech pair
+	end
+	if r then
+		return r[1], r[2]
+	end
+	return nil
+end
+
+local function modFmt(m)
+	if m.group == "skill" then
+		return nil
+	elseif m.group == "chaos" then
+		local def = ChaosItemMods and ChaosItemMods.byKey[m.chaosKey]
+		return def and def.fmt ~= "flat" and "pct" or nil
+	end
+	return "pct"
+end
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- the tooltip
+-- ---------------------------------------------------------------------------------------------------------------
+-- set info of a unique: {name, have, total}; equippedIds = {[server id] = true} of the player's equipped items
+function T.setInfo(itemId, equippedIds)
+	if type(ChaosSets) ~= "table" then
+		return nil
+	end
+	for _, set in pairs(ChaosSets) do
+		local member = false
+		for _, id in ipairs(set.pieces or {}) do
+			if id == itemId then
+				member = true
+				break
+			end
+		end
+		if member then
+			local have = 0
+			for _, id in ipairs(set.pieces) do
+				if equippedIds and equippedIds[id] then
+					have = have + 1
+				end
+			end
+			return {name = set.name, have = have, total = #set.pieces}
+		end
+	end
+	return nil
+end
+
+local function clip(s, n)
+	s = tostring(s or "")
+	if #s > n then
+		return s:sub(1, n)
+	end
+	return s
+end
+
+-- the key the client caches a tooltip under: "<item id>:<version>" from item:getClientAttributes() (engine patch
+-- 0003); nil when the item has none (plain items) or the engine lacks the method
+function T.cacheKey(attrs)
+	if type(attrs) ~= "table" then
+		return nil
+	end
+	local A = Chaos and Chaos.itemAttr or {}
+	local iid, ver = num(attrs[A.id or 6]), num(attrs[A.version or 7])
+	if not iid or iid <= 0 or not ver then
+		return nil
+	end
+	return string.format("%.0f:%.0f", iid, ver)
+end
+
+-- everything the tooltip shows. opts = {equippedIds = {[server id] = true}, attrs = item:getClientAttributes()}
+function T.build(item, opts)
+	opts = opts or {}
+	local C, M, G = ChaosCrafting, ChaosItemMods, ChaosGems
+	local id = item:getId()
+	local it = ItemType and ItemType(id) or nil
+	local tip = {id = int(call(it, "getClientId")), count = math.max(1, int(call(item, "getCount")))}
+	tip.key = T.cacheKey(opts.attrs)
+	tip.name = clip(C and C.itemName(item) or call(item, "getName") or "item", T.config.maxNameLength)
+
+	local kind = M and M.kindOf(item) or nil
+	tip.kind = kind
+	local slots, slotName = T.slotsOf(call(it, "getSlotPosition"), kind)
+	tip.slot = slotName
+	if kind then
+		tip.cmp = slots
+	end
+
+	local rarity = C and C.rarityOf(item) or 0
+	local level = C and floor(C.customNumber(item, "combatPowerLevel")) or 0
+	tip.rarity = rarity
+	tip.rarityName = rarity > 0 and C.rarityName(rarity) or nil
+	tip.tier = (rarity > 0 and M) and M.tierOf(rarity) or nil
+	tip.level = level > 0 and level or nil
+
+	local unique = C and C.isUnique(item) or false
+	local uniqueEntry = ChaosUniqueById and ChaosUniqueById[id] or nil
+	if unique then
+		tip.unique = {name = tip.name, set = T.setInfo(id, opts.equippedIds)}
+	end
+
+	tip.base = T.baseStats(item, it)
+
+	local stats = {}
+	local function stat(k, l, v, fmt, low)
+		for _, s in ipairs(stats) do
+			if s.k == k then
+				s.v = s.v + v
+				return
+			end
+		end
+		stats[#stats + 1] = {k = k, l = l, v = v, fmt = fmt, low = low}
+	end
+	for _, b in ipairs(tip.base) do
+		stat(b.k, b.l, b.v, b.fmt, b.low)
+	end
+
+	tip.mods = {}
+	if C then
+		for _, m in ipairs(C.readMods(item)) do
+			local row = {k = m.key, l = m.label, t = C.modText(m), v = m.value, g = m.group, l2 = m.label2, v2 = m.value2}
+			row.lo, row.hi = T.modRange(m, rarity, level)
+			tip.mods[#tip.mods + 1] = row
+			local fmt = modFmt(m)
+			if m.group == "special" then
+				stat(m.key, m.label, m.value, "pct")
+				stat(m.key2, m.label2, m.value2 or 0, "pct")
+			elseif m.group == "element" then
+				stat(m.key, m.label .. " Damage", m.value, "pct")
+			elseif m.group == "absorb" then
+				stat(m.key, m.label .. " Protection", m.value, "pct")
+			else
+				stat(m.key, m.label, m.value, fmt)
+			end
+		end
+	end
+
+	if G then
+		local s = G.read(item)
+		if s.count > 0 then
+			local group = G.groupOf(item)
+			local list = {}
+			for i = 1, s.count do
+				local gid = s.gems[i]
+				if gid and gid > 0 then
+					local g = G.gemOf(gid)
+					local e = G.effectOf(gid, group)
+					list[i] = {name = G.gemName(gid), text = e and G.effectText(e.key, e.value, e.value2) or "",
+						color = g and g.type.color or nil}
+					if e and e.def then
+						stat("gem_" .. e.key, e.def.label, e.value, e.def.fmt ~= "flat" and "pct" or nil)
+						if e.value2 and e.def.label2 then
+							stat("gem_" .. e.key .. "2", e.def.label2, e.value2, "pct")
+						end
+					end
+				else
+					list[i] = {}
+				end
+			end
+			tip.sockets = {count = s.count, max = G.maxSockets(item), list = list}
+		end
+	end
+	tip.stats = stats
+
+	local req = {}
+	local reqLevel = int(call(it, "getMinReqLevel"))
+	if uniqueEntry and unique and int(uniqueEntry.level) > reqLevel then
+		reqLevel = int(uniqueEntry.level)
+	end
+	if reqLevel > 0 then
+		req.level = reqLevel
+	end
+	local magic = int(call(it, "getMinReqMagicLevel"))
+	if magic > 0 then
+		req.magic = magic
+	end
+	local voc = call(it, "getVocationString")
+	if type(voc) == "string" and voc ~= "" then
+		req.voc = clip(voc, 120)
+	end
+	if next(req) then
+		tip.req = req
+	end
+
+	local weight = num(call(item, "getWeight"))
+	if weight and weight > 0 then
+		tip.weight = floor(weight + 0.5) / 100
+	end
+
+	-- flavour text: a unique's own text (its spec), else the item type's; a rolled item's description is its modifiers
+	local desc
+	if unique and ChaosUniqueSpecs and ChaosUniqueSpecs[id] then
+		desc = ChaosUniqueSpecs[id].description
+		if G and G.strip then
+			desc = G.strip(desc)
+		end
+	elseif rarity == 0 then
+		desc = call(it, "getDescription")
+	end
+	if type(desc) == "string" and desc ~= "" then
+		tip.desc = clip(desc, 300)
+	end
+
+	local locked = C and C.customNumber(item, "chaos_locked") or 0
+	if locked ~= 0 then
+		tip.locked = true
+	end
+	return tip
+end
+
+return T

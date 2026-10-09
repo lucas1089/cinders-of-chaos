@@ -1,12 +1,34 @@
 -- game_itemrarity: single source of truth for item rarity visuals.
 --
--- Every rarity is one row in the RARITY table below (name, label color, frame
--- image, and an optional "metal" shader style). Everything else derives from it,
--- so adding a rarity = adding one row.
+-- Every rarity is one row in the RARITY table below (name, label color, and an
+-- optional "metal" shader style). Everything else derives from it, so adding a
+-- rarity = adding one row.
 --
--- How the client knows an item's rarity: the server (item.cpp getDescription)
--- prefixes the item name with an uppercase "[NAME]" tag, e.g. "[MYTHIC] Sword".
--- item:getTooltip() returns that description, and we read the tag from it.
+-- How the client knows an item's rarity:
+--   1. the item's custom attributes (ChaosItemAttr below). A server with engine
+--      patch 0003 (server/src-patches) announces feature GameItemCustomAttributes
+--      (126) at login and sends, after every item, u16 count + {u16 key, u64 value}
+--      entries; the engine stores them on the item (item:getCustomAttribute(key)).
+--   2. fallback for servers without it: an uppercase "[NAME]" tag in the item
+--      description (item:getTooltip()), e.g. "[MYTHIC] Sword".
+-- Inventory and container slots get a frame in the rarity colour (uniques in the
+-- unique colour) from the attribute (onItemChange of every UIItem).
+
+-- Keys of the item custom attributes. Same numbers as ChaosItemAttrKey in the
+-- engine (server/src-patches/0003-item-custom-attributes.patch) and Chaos.itemAttr
+-- in server/data/scripts/chaos/chaos_constants.lua (server/tests/item_tooltip_test.lua
+-- checks all three).
+ChaosItemAttr = {
+	RARITY = 1, -- 1..15 (Common .. Transcendent)
+	LEVEL = 2, -- item level
+	LOCKED = 3, -- 1 = locked
+	UNIQUE = 4, -- 1 = unique item
+	SOCKETS = 5, -- socket count
+	ID = 6, -- per-item id (tooltip cache key)
+	VERSION = 7, -- changes whenever the item changes (tooltip cache key)
+}
+
+local FEATURE_ITEM_ATTRIBUTES = 126 -- GameItemCustomAttributes (gamelib const.lua)
 
 -- ===========================================================================
 -- Rarity data
@@ -36,27 +58,40 @@ local worldShadersEnabled     = true
 --   tint        : hex multiplied into sprite / smoke / frame
 --   textBase/Hi : base and highlight colors of the rarity-name font shimmer
 --   label       : color of the rarity-name label
+-- the 15 rarities of the server (chaos_crafting.lua rarityNames); colours as the loot filter's
 local RARITY = {
-	[1] = { name = "Strange",   color = "#c4cebc", image = "/images/ui/rarity_square_strange",   sprite = "item_outline_strange" },
-	[2] = { name = "Rare",      color = "#1e963e", image = "/images/ui/rarity_square_rare",      sprite = "item_outline_rare" },
-	[3] = { name = "Epic",      color = "#e32121", image = "/images/ui/rarity_square_epic",      sprite = "item_outline_epic" },
-	[4] = { name = "Legendary", color = "#f6fa07", image = "/images/ui/rarity_square_legendary", sprite = "item_outline_legendary" },
-	[5] = { name = "Mythic",    color = "#a30ff6", image = "/images/ui/rarity_square_mythic",
+	[1]  = { name = "Common",       color = "#c8c8c8" },
+	[2]  = { name = "Uncommon",     color = "#5ccf5c" },
+	[3]  = { name = "Rare",         color = "#4a90ff" },
+	[4]  = { name = "Epic",         color = "#a35cf0" },
+	[5]  = { name = "Legendary",    color = "#ffd040" },
+	[6]  = { name = "Exotic",       color = "#f5b13a" },
+	[7]  = { name = "Mythic",       color = "#ff5a5a",
 		metal = { -- purple, parallel-waves glow
 			itemShader = "item_metal_purple", spriteWhite = true, strength = 0.5,
 			tint = "#a30ff6", textBase = "#c98bff", textHi = "#f0e0ff", label = "#d5a5ff",
 		},
 	},
-	[6] = { name = "Divine",    color = "#22e5ff", image = "/images/ui/rarity_square_blue",
+	[8]  = { name = "Chaos",        color = "#e02424" },
+	[9]  = { name = "Eternal",      color = "#ff8a70" },
+	[10] = { name = "Divine",       color = "#c8e8ff",
 		metal = { -- cyan, big outline glow
 			itemShader = "item_metal_cyan", spriteWhite = true, strength = 0.5,
 			tint = "#22e5ff", textBase = "#79e6ff", textHi = "#e8ffff", label = "#8ff2ff",
 		},
 	},
+	[11] = { name = "Phantasmal",   color = "#9ad8ff" },
+	[12] = { name = "Celestial",    color = "#e4f2ff" },
+	[13] = { name = "Cosmic",       color = "#b878ff" },
+	[14] = { name = "Abyssal",      color = "#9a4ce0" },
+	[15] = { name = "Transcendent", color = "#e070ff" },
 }
+local UNIQUE_COLOR = "#e07b24"
+local FRAME_IMAGES = { "/modules/game_lootfilter/images/lf_frame", "/modules/game_itemrarity/images/frame" }
 
 -- Uppercase "[NAME]" tag -> id, derived from RARITY (for parsing descriptions).
-local TAG_TO_ID = {}
+-- Older servers tagged six rarities with other names; they map to the nearest.
+local TAG_TO_ID = { STRANGE = 1, RARE = 3, EPIC = 4, LEGENDARY = 5, MYTHIC = 7, DIVINE = 10 }
 for id, r in pairs(RARITY) do
 	TAG_TO_ID[r.name:upper()] = id
 end
@@ -65,19 +100,64 @@ end
 -- Detection
 -- ===========================================================================
 
--- Rarity id of an item (0 = none). Reads the "[NAME]" tag the server prepends
--- to the item description; ignores any other bracketed uppercase tags.
+-- Value of an item custom attribute (0 when missing or when the server does not
+-- send them).
+function getItemAttribute(item, key)
+	if not item or not item.getCustomAttribute then
+		return 0
+	end
+	local ok, v = pcall(item.getCustomAttribute, item, key)
+	return ok and tonumber(v) or 0
+end
+
+-- true when this connection carries item custom attributes
+function hasItemAttributes()
+	return g_game ~= nil and g_game.getFeature ~= nil and g_game.getFeature(FEATURE_ITEM_ATTRIBUTES) == true
+end
+
+-- Rarity id of an item (0 = none): the custom attribute, else the "[NAME]" tag
+-- the server prepends to the item description (any other bracketed uppercase
+-- tag is ignored).
 function getItemRarityId(item)
 	if not item then
 		return 0
 	end
-	for tag in item:getTooltip():gmatch("%[(%u+)%]") do
+	local r = getItemAttribute(item, ChaosItemAttr.RARITY)
+	if r > 0 then
+		return RARITY[r] and r or 0
+	end
+	if hasItemAttributes() then
+		return 0 -- the server sends attributes: no attribute = no rarity
+	end
+	local ok, text = pcall(function() return item:getTooltip() end)
+	if not ok or type(text) ~= "string" then
+		return 0
+	end
+	for tag in text:gmatch("%[(%u+)%]") do
 		local id = TAG_TO_ID[tag]
 		if id then
 			return id
 		end
 	end
 	return 0
+end
+
+function isUniqueItem(item)
+	return getItemAttribute(item, ChaosItemAttr.UNIQUE) > 0
+end
+
+function getRarityName(rarityId)
+	local r = RARITY[rarityId]
+	return r and r.name or nil
+end
+
+function getRarityColor(rarityId)
+	local r = RARITY[rarityId]
+	return r and r.color or nil
+end
+
+function getUniqueColor()
+	return UNIQUE_COLOR
 end
 
 -- ===========================================================================
@@ -336,11 +416,137 @@ function debugGroundRarity()
 	g_logger.info(string.format("[rarity] scanned %d ground items, %d with a shader", total, withShader))
 end
 
+-- ===========================================================================
+-- Rarity frames on item slots (from the item custom attributes)
+-- ===========================================================================
+
+local frameImage = nil
+local function getFrameImage()
+	if frameImage == nil then
+		frameImage = FRAME_IMAGES[#FRAME_IMAGES]
+		for _, path in ipairs(FRAME_IMAGES) do
+			if not g_resources or not g_resources.fileExists or g_resources.fileExists(path .. ".png") then
+				frameImage = path
+				break
+			end
+		end
+	end
+	return frameImage
+end
+
+-- frame colour of an item: unique colour, rarity colour, or nil
+function getItemFrameColor(item)
+	if not item then
+		return nil
+	end
+	if isUniqueItem(item) then
+		return UNIQUE_COLOR
+	end
+	return getRarityColor(getItemRarityId(item))
+end
+
+-- draw (or hide) the rarity frame of an item widget. widget.irColor tells other
+-- modules (the loot filter) that the slot already has a rarity frame.
+function updateRarityFrame(widget)
+	if not widget or widget:isDestroyed() then
+		return
+	end
+	local color = getItemFrameColor(widget:getItem())
+	local frame = widget:getChildById("irFrame")
+	if not color then
+		if frame then
+			frame:hide()
+		end
+		widget.irColor = nil
+		return
+	end
+	if not frame then
+		frame = g_ui.createWidget("UIWidget", widget)
+		frame:setId("irFrame")
+		frame:setPhantom(true)
+		frame:setFocusable(false)
+		frame:fill("parent")
+		frame:setImageSource(getFrameImage())
+	end
+	frame:setImageColor(color)
+	frame:show()
+	widget.irColor = color
+	local lf = widget:getChildById("lfFrame") -- one frame per slot: the loot filter's goes
+	if lf then
+		lf:hide()
+	end
+end
+
+local function onItemChange(widget)
+	if hasItemAttributes() then
+		updateRarityFrame(widget)
+	elseif widget.irColor then
+		updateRarityFrame(widget)
+	end
+end
+
+local function refreshContainers()
+	for _, container in pairs(g_game.getContainers() or {}) do
+		local panel = container.itemsPanel
+		if panel and not panel:isDestroyed() then
+			for _, child in ipairs(panel:getChildren()) do
+				if child.getItem then
+					updateRarityFrame(child)
+				end
+			end
+		end
+	end
+end
+
+-- inventory slots: game_inventory's slot style has its own onItemChange, which hides the UIItem class hook, so
+-- the slot is framed after game_inventory has put the item in (next event)
+local function inventoryWidget(slot)
+	local inv = modules.game_inventory
+	local panel = inv and inv.getInventoryPanel and inv.getInventoryPanel()
+	return panel and panel:getChildById("slot" .. slot) or nil
+end
+
+local function onInventoryChange(player, slot, item)
+	addEvent(function()
+		local widget = inventoryWidget(slot)
+		if widget and (hasItemAttributes() or widget.irColor) then
+			updateRarityFrame(widget)
+		end
+	end)
+end
+
+local function refreshInventory()
+	for slot = 1, 10 do
+		local widget = inventoryWidget(slot)
+		if widget then
+			updateRarityFrame(widget)
+		end
+	end
+end
+
+-- the feature is announced by the server at every login; a later login to a
+-- server that does not announce it must not read attributes it never sends
+local function onGameEnd()
+	if g_game.disableFeature then
+		g_game.disableFeature(FEATURE_ITEM_ATTRIBUTES)
+	end
+end
+
 function init()
+	connect(UIItem, { onItemChange = onItemChange })
+	connect(g_game, { onGameEnd = onGameEnd })
+	connect(LocalPlayer, { onInventoryChange = onInventoryChange })
+	if g_game.isOnline() then
+		refreshContainers()
+		refreshInventory()
+	end
 	return true
 end
 
 function terminate()
+	disconnect(UIItem, { onItemChange = onItemChange })
+	disconnect(g_game, { onGameEnd = onGameEnd })
+	disconnect(LocalPlayer, { onInventoryChange = onInventoryChange })
 	if prismaticEvent then
 		removeEvent(prismaticEvent)
 		prismaticEvent = nil

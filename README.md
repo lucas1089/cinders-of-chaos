@@ -100,6 +100,9 @@ Balance is measured on test dummies at levels 300 and 1000, so every class keeps
   damage from monsters. Higher rarities roll bigger values, and every modifier has a cap for your whole equipment. They
   show in the item's description, in the loot channel and on the Crafting Bench.
 - **About 50 uniques** with fixed, build-defining stats. Some only drop from bosses.
+- **Rich item tooltips:** hover an item to see its rarity, item level, every modifier with its tier and roll range,
+  sockets and gems, unique set and requirements. Hold **Ctrl** to compare it with what you are wearing, stat by stat in
+  green and red. Item slots are framed in their rarity colour.
 - **Monster tiers:** every spawn can roll **Magic, Rare or Legendary**, each tougher and better-rewarded. Tiered
   monsters get modifiers such as *Blazing, Chilling, Venomous, Vampiric* or *Berserker*. Killing one can trigger an
   **ambush**.

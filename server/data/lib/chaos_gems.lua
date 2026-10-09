@@ -480,6 +480,7 @@ function G.writeDescription(item)
 	end
 	local text = G.append(old, item)
 	item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, text)
+	M.sendUpdate(item) -- the client gets the new socket count (client attributes)
 	return text
 end
 

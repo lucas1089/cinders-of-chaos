@@ -50,6 +50,10 @@ server/
   src-patches/0001-critical-hit-to-lua.patch   engine: onHealthChange gets `critical` (combat_fx.lua)
   src-patches/0002-dual-wield-and-vocation-attack-speed.patch   engine: a Ninja may hold a sword in the shield hand;
                                       weapon attack speed scaled by the vocation's (thief_combat.lua)
+  src-patches/0003-item-custom-attributes.patch   engine: item custom attributes in every item packet for our client
+                                      (rarity, item level, lock, unique, sockets, per-item id, version); item:sendUpdate(),
+                                      item:getClientAttributes() (see "Item attributes in packets and rich tooltips")
+    item_tooltip.lua  item_tooltip_core.lua (rich item tooltips with the equipped-item compare, client game_itemtooltip)
     shop.lua  shop_config.lua  shop_services.lua  autosell.lua  sell_prices.lua (store, see "Store services")
     bounty.lua  bounty_core.lua  bounty_config.lua  bounty_pool.lua (bounty board; pool from tools/gen_bounty_pool.py)
     rift.lua  rift_core.lua  rift_config.lua (rifts: keys, runtime-built instances, run HUD; see "Rifts")
@@ -193,9 +197,10 @@ working directory, as with the rest of the base server libs).
 | game_achievements | `achievements.lua`, `achievements_core.lua`, `achievements_data.lua` | 250, `!achievements` | Achievements: 100 in 9 categories with points, titles and rewards, progress fed by the other systems, retroactive at login; tested in game (see "Achievements"). |
 | game_pets | `pets.lua`, `pets_core.lua`, `pets_config.lua` | 254, `!pet` / `/pet` | Pets: one companion out at a time that follows its owner, levels from kills, two small abilities per species; drops, store and achievements; tested in game (see "Pets"). |
 | game_bestiary | `bestiary.lua`, `bestiary_core.lua`, `bestiary_config.lua`, `bestiary_spawns.lua` | 253, `!bestiary [name]` / `/bestiary`, `!tasks` / `/tasks` | Bestiary (an entry per monster, four stages by kills, completion bonus, points and ranks), personal kill tasks with daily / weekly limits, task tracker HUD with the bounty contracts; tested in game (see "Bestiary and kill tasks"). |
+| game_itemtooltip | `item_tooltip.lua`, `item_tooltip_core.lua` (client also `game_itemrarity`) | 242 | Rich item tooltips on hover (inventory, open containers): rarity, item level, base stats, every modifier with its tier and roll range, sockets and gems, unique and set, requirements; Ctrl compares with the equipped item(s) of the same slot. Rarity frames from the item custom attributes of engine patch 0003; tested in game (see "Item attributes in packets and rich tooltips"). |
 | game_invasion | `invasion.lua`, `invasion_core.lua`, `invasion_config.lua`, `worldevents.lua` | 251 (server -> client; `query` / `calendar` back), `!invasion`, `/invasion` | Invasions (waves at a town or hunting ground, breach meter, boss, contribution rewards, Defender board, Victory buff, occupation) and the world events Chaos Storm, Wandering Merchant and Golden Hour; HUD and upcoming events window; toasts with action `invasion` on 79; tested in game on a test area (see "Invasions and world events"). |
 
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 228, 229, 232, 233, 236, 241, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
+Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 228, 229, 232, 233, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
 
 ### Opcode collision check
@@ -1692,6 +1697,96 @@ sell list with the rarity opt-in: the unlocked one sold (4000 gold to the bank),
 locked sword (new copy, still locked). Unit tests: yields, orb roll, checks, the lock, batch cap and skips, signature,
 combine, the economy average, and `salvage.lua` single / batch / lock / combine / full backpack / look text against
 mocks; `tests/shop_services_test.lua`: the auto seller keeps a locked item.
+
+## Item attributes in packets and rich tooltips (`src-patches/0003-item-custom-attributes.patch`, `item_tooltip.lua`, `item_tooltip_core.lua`, client `game_itemrarity`, `game_itemtooltip`)
+
+**Item custom attributes in item packets (engine patch 0003).** Our client already parses per-item custom attributes
+when the feature `GameItemCustomAttributes` (126) is on: after each item (after the animation phase byte) it reads a
+u16 count, then per entry a u16 key and a u64 value, and stores them on the item (`item:getCustomAttribute(key)`).
+The feature is negotiated, not part of the client's 10.98 profile: our client sends, after `OTCv8` and its version in
+the login packet, the strings `OTCv8TierByte` and `A`; only for such a connection does the server add feature 126 to
+its feature packet (0x43, sent before any item) and write the attributes. Other OTC-family clients keep the plain item
+format, and our client against a server without the patch never enables the feature (rarity falls back to the
+description tag). The client turns the feature off at every logout (`game_itemrarity`), so a later login to another
+server starts without it.
+
+Every item the client reads with its item parser goes through `ProtocolGame::AddItem`: map tiles (also the login map
+description), inventory, open containers (and the last item of a removed container slot), trade windows, text windows.
+The market sends item ids only. A plain item costs 2 bytes (count 0); an item with any of the attributes below gets
+its keys, 10 bytes each (a rolled rare with sockets: 52 bytes). The Lua `NetworkMessage:addItem` is unchanged (no
+script uses it; a script that sends items by hand to our client would have to add the count itself).
+
+| key | name | source (custom attribute) | value |
+|---|---|---|---|
+| 1 | rarity | `rarity` (else the item type's) | 1..15 |
+| 2 | level | `combatPowerLevel` | item level |
+| 3 | locked | `chaos_locked` | 1 (the item lock of salvage.lua) |
+| 4 | unique | `chaos_unique` present | 1 |
+| 5 | sockets | `chaos_sockets` | socket count (a unique's fixed socket is not stored, so 0) |
+| 6 | id | `chaos_iid` | per-item id |
+| 7 | version | (computed) | 32-bit hash, never 0 |
+
+The keys are defined three times with the same numbers: `ChaosItemAttrKey` in the engine's `const.h` (patch 0003),
+`Chaos.itemAttr` in `chaos_constants.lua`, `ChaosItemAttr` in the client (`game_itemrarity/itemrarity.lua`);
+`tests/item_tooltip_test.lua` reads all three and fails when they differ. Keys 6 and 7 are sent only with at least one
+of keys 1-5. Key 6: the engine has no per-item id (the `getRealUID` of the base server is never set), so the first
+time an item with any of keys 1-5 is sent it gets the custom attribute `chaos_iid` = (unix time of the block) << 20 |
+counter, saved with the item; a new block starts every 2^20 ids and at every start, so ids stay unique across
+restarts and below 2^53 (exact as a Lua number). A clone of an item (`Item::clone`) keeps the id; the tooltip request
+checks the item at the position anyway. Key 7 hashes the item id, every custom attribute (order-independent), the
+attack / defense / extra defense / armour / hit chance / range / attack speed attributes and the name and description:
+it changes whenever an orb, a gem or an upgrade changes the item.
+
+The engine sends an item again only when it moves or its id or count changes, so a script that changes attributes
+calls the new `item:sendUpdate()` (inventory slot, container page of every player who has it open, or the tile's
+spectators; touches nothing on the item, unlike a transform to the same id, which would reset durations).
+`ChaosItemMods.sendUpdate(item)` wraps it (no-op without the patch); `ChaosCrafting.rewriteDescription` and
+`ChaosGems.writeDescription` call it, and every orb, socket and gem change ends there. `item:getClientAttributes()`
+returns `{[key] = value}` as the client gets them (the tooltip uses keys 6 and 7 for its cache key).
+
+Build: apply 0001, 0002 and 0003 in the server source root and rebuild everything (0003 adds members to
+`ProtocolGame`, so objects built before it must not be linked with it). Built on the test server with a fresh CMake
+build of the base source plus the three patches.
+
+**Rich tooltips (extended opcode 242).** Hovering an item in the inventory or an open container asks the server for
+its tooltip; holding Ctrl adds the equipped item(s) worn the same way (both hands for weapons and shields, the same kind
+only: a weapon is not compared with a shield) as plates next to it, and the hovered tooltip lists the differences per
+number in green (better) or red (worse); a shorter attack interval counts as better.
+
+- client -> server `get {items = [{pos = {x, y, z, s}, iid}]}`, at most 3 items; `iid` is the decimal string of key 6
+  (JSON numbers lose digits past 14).
+- server -> client `tips {items = [{pos, iid, tip} | {pos, iid, gone = true}]}`.
+- Positions: `{0xFFFF, slot, 0}` inventory (slots 1-10), `{0xFFFF, 0x40 + container id, slot}` a container the engine
+  has open for this player (`player:getContainerById`, slot on the current page), or a map position with the stack
+  position `s` on the player's floor, at most 8 x 6 tiles away and visible (`player:canSee`); the client asks only
+  about inventory and containers. Anything else, or an item whose `chaos_iid` differs from `iid`, answers `gone`.
+- Budget: a token bucket per player, 12 tokens, 6 per second, one per item; a request over it is dropped (the client
+  asks again on the next hover).
+- The tooltip (`ChaosItemTooltip.build`, pure, `tests/item_tooltip_test.lua`): name, client id, count, kind and slot,
+  rarity name, tier (1-5) and item level, base numbers (attack, defense, extra defense, armour, hit chance, range,
+  attack interval, element, and the item type's own skills, protections, max health / mana, magic level, speed),
+  every modifier as `ChaosCrafting.readMods` lists it with its text, group and roll range (`absorbRange` /
+  `elementRange` of the rarity for the engine's modifiers, `ChaosItemMods.range` for the Chaos modifiers, none for
+  uniques), sockets with each gem's effect in this item, unique and set (pieces of `ChaosSets` equipped), requirements
+  (level, the unique's level, magic level, vocations), weight, flavour text (a unique's text, else the item type's; a
+  rolled item's description is its modifiers and is not repeated), the lock, a flat list of numbers for the compare and
+  the compare slots.
+- Client cache: by `<id>:<version>` (keys 6 and 7), so an orb that changes an item (new version through
+  `sendUpdate`) makes the next hover ask again; items without the keys are cached for 30 s under position, id and count.
+
+**Rarity frames.** `game_itemrarity` reads the rarity from key 1 (unique: key 4) and draws a frame in the rarity colour
+(unique orange) on container and inventory slots; without the feature it falls back to the `[NAME]` tag of the
+description. The loot filter keeps its glow and dim and leaves the frame to `game_itemrarity` where it drew one.
+
+**Tested in game** (srv16 built from the base source with 0001-0003, client with the overlay): the feature negotiated at
+login and every inventory, container and ground item carrying its keys (a rolled Chaos sword: rarity 8, level 73,
+sockets 2, id, version); frames from the attribute in the backpack (Chaos red, Divine, unique orange) and on the
+equipped unique; tooltips of a rolled rare weapon (modifiers with ranges, Chaos modifiers, a Flawless Ruby), of a
+unique (Soulreaper) and of Divine armour with two gems; Ctrl compare of the rare sword against the equipped Soulreaper
+with green and red rows; an Orb of Annulment on the sword: the version changed at once and the next hover showed one
+modifier less; the budget (12 of 20 requests at once answered), unopened container, slot 11, far map position and a
+wrong `iid` all answered `gone`; the same client against the engine without the patch: feature off, no errors from it.
+Screenshots: scratchpad `tooltips/`. Not tested: two players watching the same container, trade windows.
 
 ## Seasons (`season.lua`, `season_core.lua`, `season_config.lua`, `sql/chaos_season.sql`, `tools/patch_season_events.py`)
 

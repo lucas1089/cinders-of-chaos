@@ -11,7 +11,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | game_stash | extended opcode 110 + `!stash` talk | none after port | Ported off `client_manager`; replaces the base client's own stash; untested |
 | game_bank | extended opcode 60 | none | Needs server script |
 | game_autoloot | extended opcode 216 | none | Needs server script (base server has a partial autoloot) |
-| game_itemrarity | none | optional `g_game.setRarityShaderEnabled` (guarded) | Client-only; frames work without the shader. Server must send item rarity somehow (see base server rarity customs) |
+| game_itemrarity | item custom attributes (server engine patch 0003, client feature 126 negotiated at login) | none (the engine already parses the attributes) | Rarity of an item from its custom attribute (keys `ChaosItemAttr`, same numbers as the server's `Chaos.itemAttr`), description tag as fallback; 15 rarities; frame in the rarity colour (unique orange) on container and inventory slots; turns feature 126 off at logout. `itemrarity_test.lua`; tested in game |
 | game_battlepass | raw game opcode 39 via `ProtocolGame.registerOpcode` (not extended) | needs custom C++ packet parsing | Needs engine and server work |
 | game_passivetree | extended opcode 65 | none | Needs server script. Paragon panel (`paragon.lua`, `paragon.otui`, `paragonmath.lua`) on the same opcode |
 | game_shop | extended opcode 218 (JSON) | none | Chaos store: categories, pages, purchase, coin gifts, history; server `data/scripts/chaos/shop.lua`; tested in game |
@@ -38,7 +38,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | game_healthcircle | none | none | In `alternates/`: the base client's own is used |
 | game_mainpanel | none | none | In `alternates/`: the base client's own is used |
 | game_chaosnotify (was game_notifications) | extended opcodes 79, 151, 152 | none | Needs server script |
-| game_itemtooltip | none | none | Client-only. A richer version would need opcode 52 |
+| game_itemtooltip | extended opcode 242 (JSON), server `item_tooltip.lua` | none | Rewritten: server-driven rich tooltip on hover over inventory and container items (rarity, item level and tier, base stats, modifiers with roll ranges, sockets and gems, unique and set, requirements) on the Chaos tooltip plate; Ctrl shows the equipped item(s) of the same slot side by side with green/red differences; cached by per-item id and version. View logic `tooltiplogic.lua` (tested by `tooltiplogic_test.lua`); tested in game (server/README.md "Item attributes in packets and rich tooltips") |
 | game_sidebars | none | none | Not in the overlay: it is the base client's own module |
 | game_realminimap | none | none | Not in the overlay: it is the base client's own module |
 | game_nameshaders | extended opcode 96 | also hooks `onOpenOutfitWindow` with extra shader lists | Needs engine and server work |
