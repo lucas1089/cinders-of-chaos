@@ -628,10 +628,10 @@ function C.recreate(item, rarity)
 		return nil, "This item cannot carry a rarity."
 	end
 	G.copy(item, newItem) -- sockets and gems survive every orb (chaos_gems.lua)
-	if rarity > 0 then
 	if ChaosSalvage and ChaosSalvage.copyLock then
 		ChaosSalvage.copyLock(item, newItem) -- the item lock too (salvage.lua)
 	end
+	if rarity > 0 then
 		C.rollDropMods(newItem) -- the Chaos modifiers a drop of this rarity gets
 	end
 	if G.count(newItem) > 0 then

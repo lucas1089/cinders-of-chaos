@@ -363,11 +363,6 @@ On login, a preset holding more nodes than the character's points is emptied for
 characters made under the old 1-point-per-level rate). Past the tree's budget, the Paragon track (below) gives small capped
 bonuses.
 
-## Passive tree effects (`passivetree_effects.lua`)
-The tree now has an effect: after every save, reset and login the summed node stats are applied.
-- **Character stats** (strength, intelligence, dexterity, vitality, spirit, wisdom), capped per stat (`charStatCap`), get the
-  engine's effect without being written into the character's stats (those are the stat window's points and are saved with the
-  player; writing them made the bonus stack on every login and let the stat window refund it as free points): strength /
 ### Boss passive points (`bosspoints.lua`, `bosspoints_core.lua`, `bosspoints_config.lua`)
 
 The first kill of each major boss gives the character +1 passive point, once per boss (10 points in all): the five world
@@ -395,6 +390,11 @@ TYPE name, so renamed spawns count.
 - `server/tests/bosspoints_test.lua`: the list (the five world bosses of `Chaos.worldBoss`, the Trial guardian type and stage
   storage), counting, damage-map and party credit, first kill only, the Trial Warden, the tree budget, the old kills once.
 
+## Passive tree effects (`passivetree_effects.lua`)
+The tree now has an effect: after every save, reset and login the summed node stats are applied.
+- **Character stats** (strength, intelligence, dexterity, vitality, spirit, wisdom), capped per stat (`charStatCap`), get the
+  engine's effect without being written into the character's stats (those are the stat window's points and are saved with the
+  player; writing them made the bonus stack on every login and let the stat window refund it as free points): strength /
   intelligence multiply damage dealt by `1 + value/230` (physical / other types, the engine formula), dexterity multiplies weapon
   hits by `1 / (1 - value/100)` (the damage equal of the engine's faster attacks, which a script cannot set), vitality / spirit
   are +value% max health / mana conditions, wisdom has no effect in the engine. Characters whose stats an older version
@@ -1614,38 +1614,6 @@ The damage test used `Combat:execute` (the spell path, which runs onTargetCombat
 registered by hand. Not tested in game: a bounty payout and the weekly chest (unit tests of the rolls only), melee hits,
 life leech and attack speed from gems in a fight.
 
-## Seasons (`season.lua`, `season_core.lua`, `season_config.lua`, `sql/chaos_season.sql`, `tools/patch_season_events.py`)
-
-Roadmap item 12, phase 1: fresh-start season characters with their own ladder, season-only uniques and an account-wide
-cosmetic reward track that is kept after the season. Client `game_season` (Chaos -> Season in the top menu, or `!season`),
-extended opcode 246 (`ChaosOpcodes.season`). Every rule and number is in `season_config.lua`.
-
-**Install.** Run `sql/chaos_season.sql` (4 tables) and `python3 -I server/tools/patch_season_events.py <server>/data`
-(idempotent, `--dry-run`). The tool enables `onTradeRequest` / `onTradeAccept` in `data/events/events.xml` (shipped
-disabled, so no script could see a trade) and makes `Player:onMoveItem` (`data/events/scripts/player.lua`) ask
-`ChaosSeason.onMoveItem` first: a script callback cannot refuse a move reliably, because the base dispatcher keeps only
-the return value of the last `onMoveItem` callback. Without the tool the server logs a warning at startup and only the
-party, bank and unique rules apply.
-
-**How a character joins (and why this way).** Characters are created on the website: the base server has no account
-manager, no in-game creation and the client has no creation screen (the base ships `ADD_DEPOT_BOXES_NEW_PLAYERS.txt`,
-a snippet for the website's `users.php`). A creation option would need website work, so a fresh character opts in in
-game: `!season join` (or Join in the window), then `!season join confirm` (or the window's confirmation) within 60 s.
-Allowed while a season runs for a character of level 7 or lower (`join.maxLevel`; level 8 comes within minutes) that never
-joined a season, has an empty depot, inbox and store inbox, is not in a party and owns no house. Joining destroys every
-carried item, empties the bank balance, the Chaos bank stars and the supply stash (so nothing a standard character handed
-over before the join comes along), then gives the new-player kit again when the character had received it. The flag is a
-row in `chaos_season_players`; the look text says "He is a Season of Ash character [S1]." (after the season: "a veteran
-of ...").
-
-**Season record.** `seasons = {{id, name, tag, start, finish, hour, modifier}}`: dates as YYYYMMDD (at `hour`, server
-time) or unix time. The modifier is shown in the window; `expMult` multiplies the monster experience of that season's
-characters (an `onGainExperience` callback, so it needs `patch_base_events.py` like every Chaos experience bonus).
-Gods (account type god): `/season start [id]` starts the next season now, `/season end` ends the running one now (both
-stored as `server_config` rows `chaos_season_<id>_start|_end`, which win over the config dates), `/season status`.
-
-**Isolation.** While a season runs, a character's realm is its season id (standard characters: 0). Different realms
-cannot exchange anything; gamemasters and up (`isolation.exemptGroup`) are never blocked.
 ## Salvage (`salvage.lua`, `salvage_core.lua`, `salvage_config.lua`, `tools/install_salvage.py`, client `game_crafting`)
 
 Rolled gear you do not want becomes crafting currency instead of NPC gold. A **Salvage** tab on the crafting bench
@@ -1725,6 +1693,38 @@ locked sword (new copy, still locked). Unit tests: yields, orb roll, checks, the
 combine, the economy average, and `salvage.lua` single / batch / lock / combine / full backpack / look text against
 mocks; `tests/shop_services_test.lua`: the auto seller keeps a locked item.
 
+## Seasons (`season.lua`, `season_core.lua`, `season_config.lua`, `sql/chaos_season.sql`, `tools/patch_season_events.py`)
+
+Roadmap item 12, phase 1: fresh-start season characters with their own ladder, season-only uniques and an account-wide
+cosmetic reward track that is kept after the season. Client `game_season` (Chaos -> Season in the top menu, or `!season`),
+extended opcode 246 (`ChaosOpcodes.season`). Every rule and number is in `season_config.lua`.
+
+**Install.** Run `sql/chaos_season.sql` (4 tables) and `python3 -I server/tools/patch_season_events.py <server>/data`
+(idempotent, `--dry-run`). The tool enables `onTradeRequest` / `onTradeAccept` in `data/events/events.xml` (shipped
+disabled, so no script could see a trade) and makes `Player:onMoveItem` (`data/events/scripts/player.lua`) ask
+`ChaosSeason.onMoveItem` first: a script callback cannot refuse a move reliably, because the base dispatcher keeps only
+the return value of the last `onMoveItem` callback. Without the tool the server logs a warning at startup and only the
+party, bank and unique rules apply.
+
+**How a character joins (and why this way).** Characters are created on the website: the base server has no account
+manager, no in-game creation and the client has no creation screen (the base ships `ADD_DEPOT_BOXES_NEW_PLAYERS.txt`,
+a snippet for the website's `users.php`). A creation option would need website work, so a fresh character opts in in
+game: `!season join` (or Join in the window), then `!season join confirm` (or the window's confirmation) within 60 s.
+Allowed while a season runs for a character of level 7 or lower (`join.maxLevel`; level 8 comes within minutes) that never
+joined a season, has an empty depot, inbox and store inbox, is not in a party and owns no house. Joining destroys every
+carried item, empties the bank balance, the Chaos bank stars and the supply stash (so nothing a standard character handed
+over before the join comes along), then gives the new-player kit again when the character had received it. The flag is a
+row in `chaos_season_players`; the look text says "He is a Season of Ash character [S1]." (after the season: "a veteran
+of ...").
+
+**Season record.** `seasons = {{id, name, tag, start, finish, hour, modifier}}`: dates as YYYYMMDD (at `hour`, server
+time) or unix time. The modifier is shown in the window; `expMult` multiplies the monster experience of that season's
+characters (an `onGainExperience` callback, so it needs `patch_base_events.py` like every Chaos experience bonus).
+Gods (account type god): `/season start [id]` starts the next season now, `/season end` ends the running one now (both
+stored as `server_config` rows `chaos_season_<id>_start|_end`, which win over the config dates), `/season status`.
+
+**Isolation.** While a season runs, a character's realm is its season id (standard characters: 0). Different realms
+cannot exchange anything; gamemasters and up (`isolation.exemptGroup`) are never blocked.
 
 | Way | Rule | Hook |
 |---|---|---|
@@ -2290,6 +2290,26 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   | Withering | players get no health regeneration (food regeneration is swapped for one with mana only; restored on leaving) | +15% experience, +15% quantity |
   | Swarm | +1-3 monsters in every pack | quantity 8x, experience 5x |
 
+  Map modifiers (second set). These have a roll weight (the first eight weigh 100) and a lowest key tier; keys below
+  that tier never roll them, from drops or from orbs (`R.addMods`). Boons are pure rewards with no bonus of their own,
+  shown in gold on the HUD:
+
+  | Modifier | Effect | Weight, tier | Reward bonus |
+  |---|---|---|---|
+  | Teeming | +20-50% packs | 80, 1+ | quantity 0.5x, experience 0.3x |
+  | Gilded Trail (boon) | 30-70% chance that the existing Treasure Goblin (`ChaosTreasureGoblin.spawn`) appears in a random open room after 25-60% of the kills, at the level of the strongest type | 40, 1+ | - |
+  | Warbands | 10-30% of packs: every member rare, the first legendary | 60, 2+ | rarity 1x, quantity 0.3x |
+  | Sealed Coffer (boon) | 40-100% chance of a coffer (treasure chest 1746, action id 47403) in an open room. Using it wakes 5 (+1 per extra player) magic+ rift monsters, which do not count towards the guardian. Once they are dead it opens with coins worth 4,000 x tier^2, Chaos 1 + 0.25 x tier, Divine 0.1 x tier and 2 + 0.25 x tier item rolls, all x quantity. An unwoken coffer crumbles at the seal | 50, 1+ | - |
+  | Twin Guardians | two guardians, each with 55-75% of the guardian health; both must die | 50, 3+ | rarity 0.25x, quantity 0.2x |
+  | Echoing Spoils (boon) | 5-15% of kills: every corpse item is copied once (onDropLoot 1.5, before the loot snapshot so rays and autoloot see the copies; Rift Keys are not copied) | 35, 2+ | - |
+  | Cinderdeath | 1.5 s after a kill, players within 1 sqm take fire damage: 5-15% of the monster's max health, at most 300 + 150 x tier | 70, 3+ | quantity 1.2x, rarity 0.8x |
+  | Blighted Mending | players receive 20-50% less healing (spells, potions, runes) | 70, 2+ | rarity 0.5x, experience 0.3x, quantity 0.2x |
+  | Waning Veil | the time limit is 15-30% shorter | 70, 1+ | quantity 1x, experience 0.5x |
+  | Dread Guardian | the guardian(s) +50-150% health and damage | 60, 4+ | rarity 0.2x, quantity 0.1x |
+
+  The summed bonuses of a key are capped (`bonusCap`): quantity 80%, rarity 75%, experience 60%. These caps sit above
+  every three-modifier sum of the first eight modifiers.
+
   Quantity multiplies the Chaos loot rate of the rift's kills (`loot_config.lua` rateMult) and the chest's gold, orbs
   and rolls; rarity raises the chest's gear rarity; experience multiplies the kill experience in the rift.
 - **Tiers.** Tier N picks its monsters from the bounty pool (`bounty_pool.lua`, only monsters that spawn on the map, no
@@ -2322,26 +2342,6 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   player is put back at their entry position and is out of the run. A run whose last player left fails.
 - **The chest** (per finisher): gold to the bank 10,000 x tier^2, Chaos Orbs 1 + 0.5 x tier, Divine Orbs 0.25 x tier,
   item rolls 2 + 0.5 x tier (each draws one entry of a random rift monster's loot table weighted by its chance; gear gets
-  Map modifiers (second set). These have a roll weight (the first eight weigh 100) and a lowest key tier; keys below
-  that tier never roll them, from drops or from orbs (`R.addMods`). Boons are pure rewards with no bonus of their own,
-  shown in gold on the HUD:
-
-  | Modifier | Effect | Weight, tier | Reward bonus |
-  |---|---|---|---|
-  | Teeming | +20-50% packs | 80, 1+ | quantity 0.5x, experience 0.3x |
-  | Gilded Trail (boon) | 30-70% chance that the existing Treasure Goblin (`ChaosTreasureGoblin.spawn`) appears in a random open room after 25-60% of the kills, at the level of the strongest type | 40, 1+ | - |
-  | Warbands | 10-30% of packs: every member rare, the first legendary | 60, 2+ | rarity 1x, quantity 0.3x |
-  | Sealed Coffer (boon) | 40-100% chance of a coffer (treasure chest 1746, action id 47403) in an open room. Using it wakes 5 (+1 per extra player) magic+ rift monsters, which do not count towards the guardian. Once they are dead it opens with coins worth 4,000 x tier^2, Chaos 1 + 0.25 x tier, Divine 0.1 x tier and 2 + 0.25 x tier item rolls, all x quantity. An unwoken coffer crumbles at the seal | 50, 1+ | - |
-  | Twin Guardians | two guardians, each with 55-75% of the guardian health; both must die | 50, 3+ | rarity 0.25x, quantity 0.2x |
-  | Echoing Spoils (boon) | 5-15% of kills: every corpse item is copied once (onDropLoot 1.5, before the loot snapshot so rays and autoloot see the copies; Rift Keys are not copied) | 35, 2+ | - |
-  | Cinderdeath | 1.5 s after a kill, players within 1 sqm take fire damage: 5-15% of the monster's max health, at most 300 + 150 x tier | 70, 3+ | quantity 1.2x, rarity 0.8x |
-  | Blighted Mending | players receive 20-50% less healing (spells, potions, runes) | 70, 2+ | rarity 0.5x, experience 0.3x, quantity 0.2x |
-  | Waning Veil | the time limit is 15-30% shorter | 70, 1+ | quantity 1x, experience 0.5x |
-  | Dread Guardian | the guardian(s) +50-150% health and damage | 60, 4+ | rarity 0.2x, quantity 0.1x |
-
-  The summed bonuses of a key are capped (`bonusCap`): quantity 80%, rarity 75%, experience 60%. These caps sit above
-  every three-modifier sum of the first eight modifiers.
-
   a rarity from `ChaosLoot.upgradeRarity` at magic (tiers 1-3) / rare (4-6) / legendary (7-10) / boss (11+), x the
   rarity bonus), one Chaos currency roll and one unique roll at that tier; gold, orbs and rolls x (1 + quantity bonus).
   Measured: tier 1 10k gold, 2 Chaos, 1 Divine, a few items; tier 7 (+40% quantity) 686k gold, 6 Chaos, 3 Divine,
