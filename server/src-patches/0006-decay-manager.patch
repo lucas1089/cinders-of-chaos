@@ -1,0 +1,695 @@
+# Decay manager. The base engine kept every decaying item in four lists and walked one of them every 250 ms,
+# subtracting the elapsed time from each item's duration (so a field, corpse or ring cost CPU every second, and the
+# remaining time was only accurate to a few hundred ms). Decaying items now sit in a map keyed by the time they decay
+# (src/decay.cpp, the idea and copyright header are TFS's own later "decay" class); one scheduler event waits for the
+# earliest entry and nothing runs while nothing is due.
+#   * a decaying item carries ITEM_ATTRIBUTE_DURATION_TIMESTAMP (runtime only, never saved); Item::getDuration() returns
+#     the time left from it, so descriptions ("will expire in ..."), item:getAttribute(ITEM_ATTRIBUTE_DURATION), the
+#     saves of players and houses and the client duration all see the exact remaining time; stopping a decay writes the
+#     remaining time back to ITEM_ATTRIBUTE_DURATION (rings taken off with stopduration, items leaving the world,
+#     players logging out), so durations are kept across logout and server restart exactly as before.
+#   * unchanged rules: decayTo chains, canDecay(), startDecay()/item:decay(), items in containers (Container::
+#     startDecaying), transformDeEquipTo / transformEquipTo, setID() restarting the duration of a transformed item,
+#     clones continuing from the original's remaining time, items without a world (removed with a logged-out player)
+#     stop decaying and keep their remaining time (a 10 s sweep covers items whose parent chain was removed).
+#   * Game::stopDecay is called wherever an item leaves the game (internalRemoveItem, merges, transforms) so the map
+#     never holds an item that was freed.
+#   * item:setAttribute / removeAttribute of ITEM_ATTRIBUTE_DURATION on a decaying item restart the countdown with the
+#     new value; the timestamp attribute itself is not readable or writable from Lua.
+# Adds src/decay.cpp and src/decay.h (listed in src/CMakeLists.txt; a Visual Studio project needs the two files added by hand).
+# Apply in the server source root after 0001-0005: patch -p1 < 0006-decay-manager.patch, then rebuild everything
+# (game.h and item.h change).
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -17,6 +17,7 @@
+ 	${CMAKE_CURRENT_LIST_DIR}/database.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/databasemanager.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/databasetasks.cpp
++	${CMAKE_CURRENT_LIST_DIR}/decay.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/depotchest.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/depotlocker.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/events.cpp
+--- /dev/null
++++ b/src/decay.cpp
+@@ -0,0 +1,181 @@
++/**
++ * The Forgotten Server - a free and open-source MMORPG server emulator
++ * Copyright (C) 2020  Mark Samman <mark.samman@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++#include "otpch.h"
++
++#include "decay.h"
++#include "game.h"
++#include "scheduler.h"
++
++extern Game g_game;
++
++Decay g_decay;
++
++namespace {
++
++// Decaying items that can no longer decay (removed from the world, e.g. with a logged-out character, or given a
++// unique id) are frozen by this sweep, keeping their remaining time; the stock countdown did the same within a second.
++// Items that stop decaying through the engine (taken off, transformed, removed) are frozen at once, not here.
++constexpr int32_t DECAY_SWEEP_INTERVAL = 10 * 1000;
++
++// longest single wait; a later item is simply checked again
++constexpr int64_t DECAY_MAX_WAIT = 60 * 60 * 1000;
++
++}
++
++void Decay::startDecay(Item* item, int64_t duration)
++{
++	// already decaying: move it to its new time, keeping the reference the map holds
++	if (!erase(item)) {
++		item->incrementReferenceCounter();
++	}
++
++	const int64_t timestamp = OTSYS_TIME() + std::max<int64_t>(0, duration);
++	item->setIntAttr(ITEM_ATTRIBUTE_DURATION_TIMESTAMP, timestamp);
++	item->setDecaying(DECAYING_TRUE);
++	decayMap[timestamp].push_back(item);
++
++	scheduleCheck();
++	if (sweepEventId == 0) {
++		sweepEventId = g_scheduler.addEvent(createSchedulerTask(DECAY_SWEEP_INTERVAL, std::bind(&Decay::sweep, this)));
++	}
++}
++
++void Decay::stopDecay(Item* item)
++{
++	if (!item->hasAttribute(ITEM_ATTRIBUTE_DURATION_TIMESTAMP)) {
++		return;
++	}
++
++	const uint32_t remaining = item->getDuration();
++	if (!erase(item)) {
++		// being processed by checkDecay right now (taken out of the map there); it handles the item
++		return;
++	}
++
++	item->setDuration(remaining);
++	item->setDecaying(DECAYING_FALSE);
++	g_game.ReleaseItem(item);
++}
++
++bool Decay::erase(Item* item)
++{
++	if (!item->hasAttribute(ITEM_ATTRIBUTE_DURATION_TIMESTAMP)) {
++		return false;
++	}
++
++	auto it = decayMap.find(item->getIntAttr(ITEM_ATTRIBUTE_DURATION_TIMESTAMP));
++	if (it == decayMap.end()) {
++		return false;
++	}
++
++	std::vector<Item*>& items = it->second;
++	auto pos = std::find(items.begin(), items.end(), item);
++	if (pos == items.end()) {
++		return false;
++	}
++
++	*pos = items.back();
++	items.pop_back();
++	if (items.empty()) {
++		decayMap.erase(it);
++	}
++
++	item->removeAttribute(ITEM_ATTRIBUTE_DURATION_TIMESTAMP);
++	return true;
++}
++
++void Decay::scheduleCheck()
++{
++	if (decayMap.empty()) {
++		return;
++	}
++
++	const int64_t first = decayMap.begin()->first;
++	if (checkEventId != 0) {
++		if (checkEventTime <= first) {
++			return;
++		}
++		g_scheduler.stopEvent(checkEventId);
++	}
++
++	const int64_t now = OTSYS_TIME();
++	const int64_t delay = std::min<int64_t>(DECAY_MAX_WAIT, std::max<int64_t>(SCHEDULER_MINTICKS, first - now));
++	checkEventTime = now + delay;
++	checkEventId = g_scheduler.addEvent(createSchedulerTask(static_cast<uint32_t>(delay), std::bind(&Decay::checkDecay, this)));
++}
++
++void Decay::checkDecay()
++{
++	checkEventId = 0;
++	checkEventTime = 0;
++
++	// take every due item out first: decaying one item can start or stop the decay of others
++	const int64_t now = OTSYS_TIME();
++	std::vector<std::pair<int64_t, Item*>> due;
++	auto it = decayMap.begin();
++	while (it != decayMap.end() && it->first <= now) {
++		for (Item* item : it->second) {
++			due.emplace_back(it->first, item);
++		}
++		it = decayMap.erase(it);
++	}
++
++	for (const auto& entry : due) {
++		Item* item = entry.second;
++		if (!item->hasAttribute(ITEM_ATTRIBUTE_DURATION_TIMESTAMP) || item->getIntAttr(ITEM_ATTRIBUTE_DURATION_TIMESTAMP) != entry.first) {
++			// started again meanwhile (it holds its own reference for that)
++			g_game.ReleaseItem(item);
++			continue;
++		}
++
++		item->removeAttribute(ITEM_ATTRIBUTE_DURATION_TIMESTAMP);
++		item->setDuration(0);
++		item->setDecaying(DECAYING_FALSE);
++		if (item->canDecay()) {
++			g_game.internalDecayItem(item);
++		}
++		g_game.ReleaseItem(item);
++	}
++
++	scheduleCheck();
++	g_game.cleanup();
++}
++
++void Decay::sweep()
++{
++	sweepEventId = 0;
++
++	std::vector<Item*> stale;
++	for (const auto& entry : decayMap) {
++		for (Item* item : entry.second) {
++			if (!item->canDecay()) {
++				stale.push_back(item);
++			}
++		}
++	}
++
++	for (Item* item : stale) {
++		stopDecay(item);
++	}
++
++	if (!decayMap.empty()) {
++		sweepEventId = g_scheduler.addEvent(createSchedulerTask(DECAY_SWEEP_INTERVAL, std::bind(&Decay::sweep, this)));
++	}
++}
+--- /dev/null
++++ b/src/decay.h
+@@ -0,0 +1,56 @@
++/**
++ * The Forgotten Server - a free and open-source MMORPG server emulator
++ * Copyright (C) 2020  Mark Samman <mark.samman@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++#ifndef FS_DECAY_H_5D6B2E3C9A1F4E0B8C7D2A9F1E3B4C5D
++#define FS_DECAY_H_5D6B2E3C9A1F4E0B8C7D2A9F1E3B4C5D
++
++#include <cstdint>
++#include <map>
++#include <vector>
++
++class Item;
++
++// Items that are decaying, keyed by the time (OTSYS_TIME, ms) at which they decay. One scheduler event waits for the
++// earliest entry, so nothing walks the whole list while no item is due. A decaying item carries
++// ITEM_ATTRIBUTE_DURATION_TIMESTAMP (its key here) and DECAYING_TRUE, and the map holds one reference to it.
++// Item::getDuration() reads the remaining time from the timestamp; stopping the decay writes it back to
++// ITEM_ATTRIBUTE_DURATION, so saves, descriptions and scripts see the same value as with the stock countdown.
++class Decay
++{
++	public:
++		// starts the countdown: the item decays in `duration` ms (0 = on the next check)
++		void startDecay(Item* item, int64_t duration);
++		// stops the countdown and keeps the remaining time in ITEM_ATTRIBUTE_DURATION (no-op if not decaying)
++		void stopDecay(Item* item);
++
++	private:
++		void checkDecay();
++		void sweep();
++		void scheduleCheck();
++		bool erase(Item* item);
++
++		std::map<int64_t, std::vector<Item*>> decayMap;
++		uint32_t checkEventId = 0;
++		int64_t checkEventTime = 0;
++		uint32_t sweepEventId = 0;
++};
++
++extern Decay g_decay;
++
++#endif
+--- a/src/enums.h
++++ b/src/enums.h
+@@ -79,6 +79,7 @@
+ 	ITEM_ATTRIBUTE_ATTACK_SPEED = 1 << 26,
+ 	ITEM_ATTRIBUTE_RARITY = 1 << 27,
+ 	ITEM_ATTRIBUTE_UNWRAPID = 1 << 28,
++	ITEM_ATTRIBUTE_DURATION_TIMESTAMP = 1 << 29, // runtime only (decay.h): when a decaying item decays, never saved
+ 	ITEM_ATTRIBUTE_CUSTOM = 1U << 31
+ };
+ 
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -11,6 +11,7 @@
+ #include "creature.h"
+ #include "creatureevent.h"
+ #include "databasetasks.h"
++#include "decay.h"
+ #include "events.h"
+ #include "game.h"
+ #include "globalevent.h"
+@@ -72,7 +73,6 @@
+ 		g_scheduler.addEvent(createSchedulerTask(EVENT_LIGHTINTERVAL, std::bind(&Game::checkLight, this)));
+ 	}
+ 	g_scheduler.addEvent(createSchedulerTask(EVENT_CREATURE_THINK_INTERVAL, std::bind(&Game::checkCreatures, this, 0)));
+-	g_scheduler.addEvent(createSchedulerTask(EVENT_DECAYINTERVAL, std::bind(&Game::checkDecay, this)));
+ }
+ 
+ GameState_t Game::getGameState() const
+@@ -1216,6 +1216,7 @@
+ 		}
+ 
+ 		if (item->isRemoved()) {
++			stopDecay(item);
+ 			ReleaseItem(item);
+ 		}
+ 	}
+@@ -1257,11 +1258,7 @@
+ 	}
+ 
+ 	if (moveItem && moveItem->getDuration() > 0) {
+-		if (moveItem->getDecaying() != DECAYING_TRUE) {
+-			moveItem->incrementReferenceCounter();
+-			moveItem->setDecaying(DECAYING_TRUE);
+-			toDecayItems.push_front(moveItem);
+-		}
++		startDecay(moveItem);
+ 	}
+ 
+ 	if (actorPlayer && fromPos && toPos) {
+@@ -1342,6 +1339,7 @@
+ 		} else {
+ 			//fully merged with toItem, item will be destroyed
+ 			item->onRemoved();
++			stopDecay(item);
+ 			ReleaseItem(item);
+ 
+ 			int32_t itemIndex = toCylinder->getThingIndex(toItem);
+@@ -1359,9 +1357,7 @@
+ 	}
+ 
+ 	if (item->getDuration() > 0) {
+-		item->incrementReferenceCounter();
+-		item->setDecaying(DECAYING_TRUE);
+-		toDecayItems.push_front(item);
++		startDecay(item);
+ 	}
+ 
+ 	return RETURNVALUE_NOERROR;
+@@ -1404,9 +1400,7 @@
+ 
+ 		if (item->isRemoved()) {
+ 			item->onRemoved();
+-			if (item->canDecay()) {
+-				decayItems->remove(item);
+-			}
++			stopDecay(item);
+ 			ReleaseItem(item);
+ 		}
+ 
+@@ -1676,6 +1670,7 @@
+ 
+ 		Cylinder* newParent = item->getParent();
+ 		if (newParent == nullptr) {
++			stopDecay(item);
+ 			ReleaseItem(item);
+ 			return nullptr;
+ 		}
+@@ -1711,6 +1706,7 @@
+ 
+ 					item->setParent(nullptr);
+ 					cylinder->postRemoveNotification(item, cylinder, itemIndex);
++					stopDecay(item);
+ 					ReleaseItem(item);
+ 					return newItem;
+ 				} else {
+@@ -1757,14 +1753,11 @@
+ 
+ 	item->setParent(nullptr);
+ 	cylinder->postRemoveNotification(item, cylinder, itemIndex);
++	stopDecay(item);
+ 	ReleaseItem(item);
+ 
+ 	if (newItem->getDuration() > 0) {
+-		if (newItem->getDecaying() != DECAYING_TRUE) {
+-			newItem->incrementReferenceCounter();
+-			newItem->setDecaying(DECAYING_TRUE);
+-			toDecayItems.push_front(newItem);
+-		}
++		startDecay(newItem);
+ 	}
+ 
+ 	return newItem;
+@@ -4602,24 +4595,35 @@
+ 
+ void Game::startDecay(Item* item)
+ {
+-	if (!item || !item->canDecay()) {
++	if (!item) {
+ 		return;
+ 	}
+ 
+-	ItemDecayState_t decayState = item->getDecaying();
+-	if (decayState == DECAYING_TRUE) {
++	if (!item->canDecay()) {
++		// e.g. a ring taken off (transformDeEquipTo with stopduration): keeps its remaining time
++		stopDecay(item);
+ 		return;
+ 	}
+ 
+-	if (item->getDuration() > 0) {
+-		item->incrementReferenceCounter();
+-		item->setDecaying(DECAYING_TRUE);
+-		toDecayItems.push_front(item);
++	if (item->hasAttribute(ITEM_ATTRIBUTE_DURATION_TIMESTAMP)) {
++		return; // already decaying
++	}
++
++	const uint32_t duration = item->getDuration();
++	if (duration > 0) {
++		g_decay.startDecay(item, duration);
+ 	} else {
+ 		internalDecayItem(item);
+ 	}
+ }
+ 
++void Game::stopDecay(Item* item)
++{
++	if (item) {
++		g_decay.stopDecay(item);
++	}
++}
++
+ void Game::internalDecayItem(Item* item)
+ {
+ 	const ItemType& it = Item::items[item->getID()];
+@@ -4634,50 +4638,6 @@
+ 	}
+ }
+ 
+-void Game::checkDecay()
+-{
+-	g_scheduler.addEvent(createSchedulerTask(EVENT_DECAYINTERVAL, std::bind(&Game::checkDecay, this)));
+-
+-	size_t bucket = (lastBucket + 1) % EVENT_DECAY_BUCKETS;
+-
+-	auto it = decayItems[bucket].begin(), end = decayItems[bucket].end();
+-	while (it != end) {
+-		Item* item = *it;
+-		if (!item->canDecay()) {
+-			item->setDecaying(DECAYING_FALSE);
+-			ReleaseItem(item);
+-			it = decayItems[bucket].erase(it);
+-			continue;
+-		}
+-
+-		int32_t duration = item->getDuration();
+-		int32_t decreaseTime = std::min<int32_t>(EVENT_DECAYINTERVAL * EVENT_DECAY_BUCKETS, duration);
+-
+-		duration -= decreaseTime;
+-		item->decreaseDuration(decreaseTime);
+-
+-		if (duration <= 0) {
+-			it = decayItems[bucket].erase(it);
+-			internalDecayItem(item);
+-			ReleaseItem(item);
+-		} else if (duration < EVENT_DECAYINTERVAL * EVENT_DECAY_BUCKETS) {
+-			it = decayItems[bucket].erase(it);
+-			size_t newBucket = (bucket + ((duration + EVENT_DECAYINTERVAL / 2) / 1000)) % EVENT_DECAY_BUCKETS;
+-			if (newBucket == bucket) {
+-				internalDecayItem(item);
+-				ReleaseItem(item);
+-			} else {
+-				decayItems[newBucket].push_back(item);
+-			}
+-		} else {
+-			++it;
+-		}
+-	}
+-
+-	lastBucket = bucket;
+-	cleanup();
+-}
+-
+ void Game::checkLight()
+ {
+ 	g_scheduler.addEvent(createSchedulerTask(EVENT_LIGHTINTERVAL, std::bind(&Game::checkLight, this)));
+@@ -4747,16 +4707,6 @@
+ 		item->decrementReferenceCounter();
+ 	}
+ 	ToReleaseItems.clear();
+-
+-	for (Item* item : toDecayItems) {
+-		const uint32_t dur = item->getDuration();
+-		if (dur >= EVENT_DECAYINTERVAL * EVENT_DECAY_BUCKETS) {
+-			decayItems[lastBucket].push_back(item);
+-		} else {
+-			decayItems[(lastBucket + 1 + dur / 1000) % EVENT_DECAY_BUCKETS].push_back(item);
+-		}
+-	}
+-	toDecayItems.clear();
+ }
+ 
+ void Game::ReleaseCreature(Creature* creature)
+--- a/src/game.h
++++ b/src/game.h
+@@ -50,8 +50,6 @@
+ 
+ static constexpr int32_t EVENT_LIGHTINTERVAL = 10000;
+ static constexpr int32_t EVENT_WORLDTIMEINTERVAL = 2500;
+-static constexpr int32_t EVENT_DECAYINTERVAL = 250;
+-static constexpr int32_t EVENT_DECAY_BUCKETS = 4;
+ 
+ /**
+   * Main Game class.
+@@ -450,6 +448,8 @@
+ 		bool saveAccountStorageValues() const;
+ 
+ 		void startDecay(Item* item);
++		void stopDecay(Item* item);
++		void internalDecayItem(Item* item);
+ 
+ 		int16_t getWorldTime() { return worldTime; }
+ 		void updateWorldTime();
+@@ -501,8 +501,6 @@
+ 		Wings wings;
+ 		Shaders shaders;
+ 
+-		std::forward_list<Item*> toDecayItems;
+-
+ 		std::unordered_set<Tile*> getTilesToClean() const {
+ 			return tilesToClean;
+ 		}
+@@ -523,9 +521,6 @@
+ 		bool playerSpeakTo(Player* player, SpeakClasses type, const std::string& receiver, const std::string& text);
+ 		void playerSpeakToNpc(Player* player, const std::string& text);
+ 
+-		void checkDecay();
+-		void internalDecayItem(Item* item);
+-
+ 		std::unordered_map<uint32_t, Player*> players;
+ 		std::unordered_map<std::string, Player*> mappedPlayerNames;
+ 		std::unordered_map<uint32_t, Player*> mappedPlayerGuids;
+@@ -534,13 +529,11 @@
+ 		std::map<uint32_t, uint32_t> stages;
+ 		std::unordered_map<uint32_t, std::unordered_map<uint32_t, int32_t>> accountStorageMap;
+ 
+-		std::list<Item*> decayItems[EVENT_DECAY_BUCKETS];
+ 		std::list<Creature*> checkCreatureLists[EVENT_CREATURECOUNT];
+ 
+ 		std::vector<Creature*> ToReleaseCreatures;
+ 		std::vector<Item*> ToReleaseItems;
+ 
+-		size_t lastBucket = 0;
+ 
+ 		WildcardTreeNode wildcardTree { false };
+ 
+--- a/src/item.cpp
++++ b/src/item.cpp
+@@ -11,6 +11,7 @@
+ #include "house.h"
+ #include "game.h"
+ #include "bed.h"
++#include "decay.h"
+ #include <vector>
+ #include <cstdlib>
+ #include <ctime>
+@@ -498,10 +499,12 @@
+ 	Item* item = Item::CreateItem(id, count);
+ 	if (attributes) {
+ 		item->attributes.reset(new ItemAttributes(*attributes));
+-		if (item->getDuration() > 0) {
+-			item->incrementReferenceCounter();
+-			item->setDecaying(DECAYING_TRUE);
+-			g_game.toDecayItems.push_front(item);
++		// the copy counts down from the remaining time of the original (as the stock copy did)
++		const uint32_t remaining = getDuration();
++		item->removeAttribute(ITEM_ATTRIBUTE_DURATION_TIMESTAMP);
++		if (remaining > 0) {
++			item->setDuration(remaining);
++			g_decay.startDecay(item, remaining);
+ 		}
+ 	}
+ 	return item;
+@@ -576,6 +579,13 @@
+ 
+ void Item::setID(uint16_t newid)
+ {
++	// a decaying item keeps decaying across a transform (as with the stock countdown), with the duration the stock
++	// rules below give it; if the new type cannot decay it keeps its remaining time (a ring taken off)
++	const bool wasDecaying = hasAttribute(ITEM_ATTRIBUTE_DURATION_TIMESTAMP);
++	if (wasDecaying) {
++		g_decay.stopDecay(this);
++	}
++
+ 	const ItemType& prevIt = Item::items[id];
+ 	id = newid;
+ 
+@@ -593,6 +603,10 @@
+ 		setDecaying(DECAYING_FALSE);
+ 		setDuration(newDuration);
+ 	}
++
++	if (wasDecaying && canDecay()) {
++		g_decay.startDecay(this, getDuration());
++	}
+ }
+ 
+ Cylinder* Item::getTopParent()
+@@ -1120,7 +1134,7 @@
+ 
+ 	if (hasAttribute(ITEM_ATTRIBUTE_DURATION)) {
+ 		propWriteStream.write<uint8_t>(ATTR_DURATION);
+-		propWriteStream.write<uint32_t>(getIntAttr(ITEM_ATTRIBUTE_DURATION));
++		propWriteStream.write<uint32_t>(getDuration());
+ 	}
+ 
+ 	ItemDecayState_t decayState = getDecaying();
+--- a/src/item.h
++++ b/src/item.h
+@@ -502,7 +502,7 @@
+ 			| ITEM_ATTRIBUTE_ARMOR | ITEM_ATTRIBUTE_HITCHANCE | ITEM_ATTRIBUTE_SHOOTRANGE | ITEM_ATTRIBUTE_OWNER
+ 			| ITEM_ATTRIBUTE_DURATION | ITEM_ATTRIBUTE_DECAYSTATE | ITEM_ATTRIBUTE_CORPSEOWNER | ITEM_ATTRIBUTE_CHARGES
+ 			| ITEM_ATTRIBUTE_FLUIDTYPE | ITEM_ATTRIBUTE_DOORID | ITEM_ATTRIBUTE_DECAYTO | ITEM_ATTRIBUTE_WRAPID | ITEM_ATTRIBUTE_STOREITEM | ITEM_ATTRIBUTE_UNWRAPID
+-			| ITEM_ATTRIBUTE_ATTACK_SPEED | ITEM_ATTRIBUTE_RARITY;
++			| ITEM_ATTRIBUTE_ATTACK_SPEED | ITEM_ATTRIBUTE_RARITY | ITEM_ATTRIBUTE_DURATION_TIMESTAMP;
+ 		const static uint32_t stringAttributeTypes = ITEM_ATTRIBUTE_DESCRIPTION | ITEM_ATTRIBUTE_TEXT | ITEM_ATTRIBUTE_WRITER
+ 			| ITEM_ATTRIBUTE_NAME | ITEM_ATTRIBUTE_ARTICLE | ITEM_ATTRIBUTE_PLURALNAME;
+ 
+@@ -766,10 +766,15 @@
+ 		void decreaseDuration(int32_t time) {
+ 			increaseIntAttr(ITEM_ATTRIBUTE_DURATION, -time);
+ 		}
++		// remaining time in ms; while decaying it is counted from the decay time (decay.h), else the stored value
+ 		uint32_t getDuration() const {
+ 			if (!attributes) {
+ 				return 0;
+ 			}
++			if (hasAttribute(ITEM_ATTRIBUTE_DURATION_TIMESTAMP)) {
++				const int64_t remaining = getIntAttr(ITEM_ATTRIBUTE_DURATION_TIMESTAMP) - OTSYS_TIME();
++				return remaining > 0 ? static_cast<uint32_t>(remaining) : 0;
++			}
+ 			return getIntAttr(ITEM_ATTRIBUTE_DURATION);
+ 		}
+ 
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -21,6 +21,7 @@
+ #include "monster.h"
+ #include "scheduler.h"
+ #include "databasetasks.h"
++#include "decay.h"
+ #include "events.h"
+ #include "movement.h"
+ #include "globalevent.h"
+@@ -6658,7 +6659,11 @@
+ 		attribute = ITEM_ATTRIBUTE_NONE;
+ 	}
+ 
+-	if (ItemAttributes::isIntAttrType(attribute)) {
++	if (attribute == ITEM_ATTRIBUTE_DURATION) {
++		lua_pushnumber(L, item->getDuration()); // remaining time, also while decaying
++	} else if (attribute == ITEM_ATTRIBUTE_DURATION_TIMESTAMP) {
++		lua_pushnil(L);
++	} else if (ItemAttributes::isIntAttrType(attribute)) {
+ 		lua_pushnumber(L, item->getIntAttr(attribute));
+ 	} else if (ItemAttributes::isStrAttrType(attribute)) {
+ 		pushString(L, item->getStrAttr(attribute));
+@@ -6691,9 +6696,16 @@
+ 			reportErrorFunc(L, "Attempt to set protected key \"uid\"");
+ 			pushBoolean(L, false);
+ 			return 1;
++		} else if (attribute == ITEM_ATTRIBUTE_DURATION_TIMESTAMP) {
++			pushBoolean(L, false);
++			return 1;
+ 		}
+ 
+ 		item->setIntAttr(attribute, getNumber<int32_t>(L, 3));
++		if (attribute == ITEM_ATTRIBUTE_DURATION && item->hasAttribute(ITEM_ATTRIBUTE_DURATION_TIMESTAMP)) {
++			// a decaying item: the new value is its remaining time
++			g_decay.startDecay(item, std::max<int32_t>(0, getNumber<int32_t>(L, 3)));
++		}
+ 		pushBoolean(L, true);
+ 	} else if (ItemAttributes::isStrAttrType(attribute)) {
+ 		item->setStrAttr(attribute, getString(L, 3));
+@@ -6722,10 +6734,14 @@
+ 		attribute = ITEM_ATTRIBUTE_NONE;
+ 	}
+ 
+-	bool ret = attribute != ITEM_ATTRIBUTE_UNIQUEID;
++	bool ret = attribute != ITEM_ATTRIBUTE_UNIQUEID && attribute != ITEM_ATTRIBUTE_DURATION_TIMESTAMP;
+ 	if (ret) {
+ 		item->removeAttribute(attribute);
+-	} else {
++		if (attribute == ITEM_ATTRIBUTE_DURATION && item->hasAttribute(ITEM_ATTRIBUTE_DURATION_TIMESTAMP)) {
++			// as with the stock countdown: a decaying item without a duration decays on the next check
++			g_decay.startDecay(item, 0);
++		}
++	} else if (attribute == ITEM_ATTRIBUTE_UNIQUEID) {
+ 		reportErrorFunc(L, "Attempt to erase protected key \"uid\"");
+ 	}
+ 	pushBoolean(L, ret);

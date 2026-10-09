@@ -58,6 +58,11 @@ server/
                                       (see "Critical and leech chances")
   src-patches/0005-passable-pets.patch   engine: monster flag `passable`: players, monsters and NPCs walk and path through
                                       the creature (the pets, see "Pets")
+  src-patches/0006-decay-manager.patch   engine: decaying items in a timestamp map (one scheduler event, exact remaining
+                                      time) instead of four lists walked every 250 ms (see "Engine: decay manager, hardening, spell events")
+  src-patches/0007-hardening-fixes.patch   engine: zeroed XTEA key and network buffer; a bad globalevent time no longer aborts
+  src-patches/0008-spell-events.patch   engine: Player:onSpellCost / onSpellPreCast / onSpellCast / onSpellCooldown
+                                      (off by default; tools/patch_base_events.py --enable-spell-events)
   src-patches/0009-locked-items-never-sold.patch   engine: locked items (`chaos_locked`) are never sold, taken by id,
                                       put on the market or thrown into a trash holder (see "Salvage", "The item lock")
   src-patches/0011-attack-speed-cap.patch   engine: attack interval floor, cap on all attack speed bonuses together,
@@ -449,6 +454,63 @@ Measured on a test server (engine built from the base source + patches 0001-0011
 | Ninja, two swords, main hand -20%, dexterity 20 | 2.20 | 1.93 | 2.20 | 0.93 |
 | Shadowfist, sword -20%, dexterity 20 | 1.20 | 0.97 | 1.20 | 0.97 |
 | Shadowfist unarmed, dexterity 20 (1040 ms, under the caps) | 0.97 | 0.97 | 0.97 | 0.93 |
+
+## Engine: decay manager, hardening, spell events (`src-patches/0006`, `0007`, `0008`)
+
+**Decay manager (0006).** The base engine kept every decaying item (fields, corpses, rings and amulets with a duration,
+summons' remains) in four lists and walked one of them every 250 ms, subtracting the elapsed time from each item's
+duration. Now `src/decay.cpp` keeps a `std::map<decay time, items>`; one scheduler event waits for the earliest entry
+(at most an hour), so the cost is nothing while nothing is due and one map operation per start / stop. A decaying item
+carries the runtime attribute `ITEM_ATTRIBUTE_DURATION_TIMESTAMP`; `Item::getDuration()` returns the time left from it, so
+the description ("will expire in ..."), `item:getAttribute(ITEM_ATTRIBUTE_DURATION)`, the player and house saves and
+the client see the exact remaining time (the old countdown was off by up to a second). What is unchanged: decayTo chains,
+`item:decay()`, `canDecay()`, containers (a corpse's contents decay with their own timers), `transformEquipTo` /
+`transformDeEquipTo` with `stopduration` (a time ring keeps its remaining time when taken off), saved durations across
+logout and restart, an item in a depot or whose owner logged out stops and keeps its remaining time (a 10 s sweep plus the
+checks at every move / remove), clones continue from the original's remaining time. Lua: `setAttribute` /
+`removeAttribute` of `ITEM_ATTRIBUTE_DURATION` on a decaying item restart the countdown with the new value; the timestamp
+attribute is not exposed. Verified on a test server: fire field and corpse chains with shortened durations, a ring equipped
+and taken off, a corpse with a decaying item inside in the backpack and on the ground (also cloned), a transformed
+decaying item, an item removed before it expired, logout / login (remaining time frozen while offline, within 1 s),
+server restart with an equipped time ring, a backpack corpse and a depot item (all kept).
+
+**Hardening (0007).** `Protocol::key` and the `NetworkMessage` buffer start zeroed. A `globalevent` time that is empty,
+not a number or has more than three parts, or an hour / minute / second out of range, is rejected with an error line
+(`GlobalEvent::configureEvent` and `globalevent:time()` share `parseGlobalEventTime`); before, an empty or non-numeric time
+was an uncaught exception at startup, and a failing `localtime()` a null dereference. Not ported: the debug logging of
+closed connections and failed async queries behind a `debugMode` key (it only adds console noise).
+
+**Spell events (0008).** Four optional `Player` events in `data/events/events.xml`, all with `self` = the player and
+`(spellName, spellId, spellGroup, aggressive, ...)` (`spellGroup` is `SPELLGROUP_NONE / ATTACK / HEALING / SUPPORT /
+SPECIAL`, new Lua constants):
+
+| Event | Extra arguments | Return |
+|---|---|---|
+| `onSpellCost` | `manaCost` | `manaCost[, healthCost]`: the mana that must be available and is paid (and trains magic level); a health cost is paid on top, never lethal |
+| `onSpellPreCast` | `manaCost, healthCost` | `false` cancels the cast (nothing paid, no cooldown) |
+| `onSpellCast` | `manaCost, healthCost` | none; runs after the spell, the payment and the cooldowns |
+| `onSpellCooldown` | `cooldownType` ("spell", "group", "secondary"), `cooldown` (ms) | the cooldown to set in ms (0 sets none); once per cooldown the cast sets |
+
+`tools/patch_base_events.py DATA` adds the four entries to `events.xml` **disabled** and the four stubs to
+`events/scripts/player.lua`; a stub calls `ChaosSpellEvents.<event>` when a script defines that table and otherwise
+returns the unchanged value, so enabling them without a script changes nothing. `--enable-spell-events` switches the entries
+on (only for an engine with patch 0008: the base engine warns about unknown methods). Verified: a test script got all four
+events with the right arguments, raised the mana cost by 7 and added 3 health (paid), halved both cooldowns (the cooldown
+condition held 1000 of 2000 ms), and `onSpellPreCast` returning `false` cost nothing.
+
+How the supports and the item modifiers could use them (their Lua is not changed): `ChaosSupportsSpell`
+(`data/spells/chaos/_supports.lua`) wraps `onCastSpell` and, one tick after a cast, gives mana back (Thrift) and rewrites the
+cooldown condition (Quickening). With the events the same effects become exact and need no wrapper timing: a
+`ChaosSpellEvents.onSpellCost(player, name, id, group, aggressive, mana)` returning `mana - floor(mana * thrift / 100)` makes
+Thrift a real discount (no refund tick, and the check "enough mana" sees it); `onSpellCooldown(..., cooldown)` returning
+`max(cooldownMinMs, cooldown - floor(cooldown * quick / 100))` replaces the condition juggling of Quickening, and the same
+function is where "spell cooldown reduction" of the item modifiers (README "Item modifiers": "no engine hook") plugs in, per
+`cooldownType` ("spell" for the spell's own cooldown, "group" for the shared one). `onSpellCast` is the place for effects
+that follow a cast (Reprisal's remembered spell and time, the cast context storage now written by the wrapper before
+the script runs), `onSpellPreCast` for casting restrictions (return `false`), and the second return value of `onSpellCost`
+for a future "costs health instead of mana" modifier. Spell id and name come straight from the engine, so `spells.xml` does not have to be parsed
+(`spellsByScript`). One `ChaosSpellEvents` table is shared by everything that wants a hook: it holds one function per
+event and chains the callers itself.
 
 ## Passive tree points
 
@@ -1578,7 +1640,8 @@ Mythic-Eternal 3, Divine-Celestial 4, Cosmic-Transcendent 5); cap = the most a c
 The item level moves the roll inside the tier: the low end rises by up to half the range at the top of the tier's
 level window (`levelPull` 0.5). The numbers sit next to the passive tree's (a node gives +1-3% of a stat; the tree's
 experience reaches about +15%, its speed +80 flat). Not done: spell cooldown reduction (spell cooldowns are set inside
-the engine's spell code; no hook a script can change), mana-shield damage (dodge, reflect and the reduction act on
+the engine's spell code; patch 0008's `Player:onSpellCooldown` is the hook for it, see "Engine: decay manager, hardening,
+spell events"), mana-shield damage (dodge, reflect and the reduction act on
 health damage only).
 
 **Rolling.** New drops: the Chaos loot layer (`loot.lua` step 2b) rolls on every gear item with a rarity in the corpse:

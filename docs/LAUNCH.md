@@ -23,8 +23,9 @@ test accounts with known passwords: local play only.
 
 1. Build the engine from the base sources with our patches applied, in the source root:
    every `server/src-patches/*.patch` in order (`for p in server/src-patches/*.patch; do patch -p1 < "$p"; done`:
-   0001 crit to Lua, 0002 dual wield, 0003 item attributes, 0004 uniform crit / leech chance rolls), then the usual
-   CMake build (a full one: 0003 adds members to `ProtocolGame`). The Windows binary in the download has none of them (no "CRIT!" visual, no off-hand sword for the
+   0001 crit to Lua, 0002 dual wield, 0003 item attributes, 0004 uniform crit / leech chance rolls, 0006 decay manager
+   (adds `src/decay.cpp`, which `src/CMakeLists.txt` lists: re-run CMake), 0007 hardening, 0008 spell events), then the
+   usual CMake build (a full one: 0003 adds members to `ProtocolGame`, 0006 changes `Game` and `Item`). The Windows binary in the download has none of them (no "CRIT!" visual, no off-hand sword for the
    Ninja, and crit / leech chances fire less often than the rescaled values say).
 2. Put the binary into the server folder as `/opt/chaos/server/tfs` (the path the service file uses).
 

@@ -1,0 +1,494 @@
+# Spell events for scripts. data/events/events.xml (Player) gets four optional hooks, all called with the player as
+# self and the spell as (spellName, spellId, spellGroup, aggressive); spellGroup is SPELLGROUP_NONE/ATTACK/HEALING/
+# SUPPORT/SPECIAL (now Lua constants):
+#   Player:onSpellCost(spellName, spellId, spellGroup, aggressive, manaCost) -> manaCost[, healthCost]
+#       called while the cast is checked; the returned mana is what must be available and what is paid (also added to
+#       magic level training), the second value is an extra health cost (never lethal: the player needs more health than
+#       it, else "You do not have enough health.")
+#   Player:onSpellPreCast(spellName, spellId, spellGroup, aggressive, manaCost, healthCost) -> false cancels the cast
+#       (nothing is paid, no cooldown); any other return value lets it go on
+#   Player:onSpellCast(spellName, spellId, spellGroup, aggressive, manaCost, healthCost)
+#       after the spell ran, its costs were paid and the cooldowns set
+#   Player:onSpellCooldown(spellName, spellId, spellGroup, aggressive, cooldownType, cooldown) -> cooldown in ms
+#       once per cooldown the cast sets: cooldownType "spell", "group" or "secondary" (group of the spell, second group);
+#       0 sets none; not called for players with PlayerFlag_HasNoExhaustion
+# Without an enabled event nothing changes. Instant spells and runes are covered (players only). The cooldown
+# conditions the spell code set in three places are now set by Spell::addCooldowns. Enable the events with
+# server/tools/patch_base_events.py DATA --enable-spell-events (adds the entries disabled and the Lua stubs).
+# Apply in the server source root after 0007: patch -p1 < 0008-spell-events.patch, then rebuild.
+--- a/src/events.cpp
++++ b/src/events.cpp
+@@ -7,6 +7,7 @@
+ #include "tools.h"
+ #include "item.h"
+ #include "player.h"
++#include "spells.h"
+ 
+ #include <set>
+ 
+@@ -106,6 +107,14 @@
+ 				info.playerOnGainSkillTries = event;
+ 			} else if (methodName == "onWrapItem") {
+ 				info.playerOnWrapItem = event;
++			} else if (methodName == "onSpellCost") {
++				info.playerOnSpellCost = event;
++			} else if (methodName == "onSpellPreCast") {
++				info.playerOnSpellPreCast = event;
++			} else if (methodName == "onSpellCast") {
++				info.playerOnSpellCast = event;
++			} else if (methodName == "onSpellCooldown") {
++				info.playerOnSpellCooldown = event;
+ 			} else {
+ 				std::cout << "[Warning - Events::load] Unknown player method: " << methodName << std::endl;
+ 			}
+@@ -988,6 +997,150 @@
+ 	scriptInterface.callVoidFunction(2);
+ }
+ 
++namespace {
++
++// self, spellName, spellId, spellGroup (SPELLGROUP_*), aggressive
++void pushSpellArguments(lua_State* L, Player* player, const Spell* spell)
++{
++	LuaScriptInterface::pushUserdata<Player>(L, player);
++	LuaScriptInterface::setMetatable(L, -1, "Player");
++	LuaScriptInterface::pushString(L, spell->getName());
++	lua_pushnumber(L, spell->getId());
++	lua_pushnumber(L, spell->getGroup());
++	LuaScriptInterface::pushBoolean(L, spell->getAggressive());
++}
++
++uint32_t toCost(lua_State* L, int32_t arg, uint32_t value)
++{
++	if (!LuaScriptInterface::isNumber(L, arg)) {
++		return value;
++	}
++	return static_cast<uint32_t>(std::max<int64_t>(0, LuaScriptInterface::getNumber<int64_t>(L, arg)));
++}
++
++}
++
++void Events::eventPlayerOnSpellCost(Player* player, const Spell* spell, uint32_t& manaCost, uint32_t& healthCost)
++{
++	// Player:onSpellCost(spellName, spellId, spellGroup, aggressive, manaCost) -> manaCost[, healthCost]
++	if (info.playerOnSpellCost == -1) {
++		return;
++	}
++
++	if (!scriptInterface.reserveScriptEnv()) {
++		std::cout << "[Error - Events::eventPlayerOnSpellCost] Call stack overflow" << std::endl;
++		return;
++	}
++
++	ScriptEnvironment* env = scriptInterface.getScriptEnv();
++	env->setScriptId(info.playerOnSpellCost, &scriptInterface);
++
++	lua_State* L = scriptInterface.getLuaState();
++	scriptInterface.pushFunction(info.playerOnSpellCost);
++	pushSpellArguments(L, player, spell);
++	lua_pushnumber(L, manaCost);
++
++	if (scriptInterface.protectedCall(L, 6, 2) != 0) {
++		LuaScriptInterface::reportError(nullptr, LuaScriptInterface::popString(L));
++	} else {
++		manaCost = toCost(L, -2, manaCost);
++		healthCost = toCost(L, -1, healthCost);
++		lua_pop(L, 2);
++	}
++
++	scriptInterface.resetScriptEnv();
++}
++
++bool Events::eventPlayerOnSpellPreCast(Player* player, const Spell* spell, uint32_t manaCost, uint32_t healthCost)
++{
++	// Player:onSpellPreCast(spellName, spellId, spellGroup, aggressive, manaCost, healthCost) -> false cancels the cast
++	if (info.playerOnSpellPreCast == -1) {
++		return true;
++	}
++
++	if (!scriptInterface.reserveScriptEnv()) {
++		std::cout << "[Error - Events::eventPlayerOnSpellPreCast] Call stack overflow" << std::endl;
++		return true;
++	}
++
++	ScriptEnvironment* env = scriptInterface.getScriptEnv();
++	env->setScriptId(info.playerOnSpellPreCast, &scriptInterface);
++
++	lua_State* L = scriptInterface.getLuaState();
++	scriptInterface.pushFunction(info.playerOnSpellPreCast);
++	pushSpellArguments(L, player, spell);
++	lua_pushnumber(L, manaCost);
++	lua_pushnumber(L, healthCost);
++
++	bool allowed = true;
++	if (scriptInterface.protectedCall(L, 7, 1) != 0) {
++		LuaScriptInterface::reportError(nullptr, LuaScriptInterface::popString(L));
++	} else {
++		// only an explicit false cancels; nil (no return) lets the cast go on
++		allowed = !(lua_isboolean(L, -1) && !lua_toboolean(L, -1));
++		lua_pop(L, 1);
++	}
++
++	scriptInterface.resetScriptEnv();
++	return allowed;
++}
++
++void Events::eventPlayerOnSpellCast(Player* player, const Spell* spell, uint32_t manaCost, uint32_t healthCost)
++{
++	// Player:onSpellCast(spellName, spellId, spellGroup, aggressive, manaCost, healthCost)
++	if (info.playerOnSpellCast == -1) {
++		return;
++	}
++
++	if (!scriptInterface.reserveScriptEnv()) {
++		std::cout << "[Error - Events::eventPlayerOnSpellCast] Call stack overflow" << std::endl;
++		return;
++	}
++
++	ScriptEnvironment* env = scriptInterface.getScriptEnv();
++	env->setScriptId(info.playerOnSpellCast, &scriptInterface);
++
++	lua_State* L = scriptInterface.getLuaState();
++	scriptInterface.pushFunction(info.playerOnSpellCast);
++	pushSpellArguments(L, player, spell);
++	lua_pushnumber(L, manaCost);
++	lua_pushnumber(L, healthCost);
++
++	scriptInterface.callVoidFunction(7);
++}
++
++uint32_t Events::eventPlayerOnSpellCooldown(Player* player, const Spell* spell, const std::string& cooldownType, uint32_t cooldown)
++{
++	// Player:onSpellCooldown(spellName, spellId, spellGroup, aggressive, cooldownType, cooldown) -> cooldown (ms)
++	if (info.playerOnSpellCooldown == -1) {
++		return cooldown;
++	}
++
++	if (!scriptInterface.reserveScriptEnv()) {
++		std::cout << "[Error - Events::eventPlayerOnSpellCooldown] Call stack overflow" << std::endl;
++		return cooldown;
++	}
++
++	ScriptEnvironment* env = scriptInterface.getScriptEnv();
++	env->setScriptId(info.playerOnSpellCooldown, &scriptInterface);
++
++	lua_State* L = scriptInterface.getLuaState();
++	scriptInterface.pushFunction(info.playerOnSpellCooldown);
++	pushSpellArguments(L, player, spell);
++	LuaScriptInterface::pushString(L, cooldownType);
++	lua_pushnumber(L, cooldown);
++
++	if (scriptInterface.protectedCall(L, 7, 1) != 0) {
++		LuaScriptInterface::reportError(nullptr, LuaScriptInterface::popString(L));
++	} else {
++		cooldown = toCost(L, -1, cooldown);
++		lua_pop(L, 1);
++	}
++
++	scriptInterface.resetScriptEnv();
++	return cooldown;
++}
++
+ void Events::eventMonsterOnDropLoot(Monster* monster, Container* corpse)
+ {
+ 	// Monster:onDropLoot(corpse)
+--- a/src/events.h
++++ b/src/events.h
+@@ -8,6 +8,7 @@
+ #include "const.h"
+ 
+ class Party;
++class Spell;
+ class ItemType;
+ class Tile;
+ 
+@@ -49,6 +50,10 @@
+ 		int32_t playerOnLoseExperience = -1;
+ 		int32_t playerOnGainSkillTries = -1;
+ 		int32_t playerOnWrapItem = -1;
++		int32_t playerOnSpellCost = -1;
++		int32_t playerOnSpellPreCast = -1;
++		int32_t playerOnSpellCast = -1;
++		int32_t playerOnSpellCooldown = -1;
+ 
+ 		// Monster
+ 		int32_t monsterOnDropLoot = -1;
+@@ -91,6 +96,10 @@
+ 		void eventPlayerOnLoseExperience(Player* player, uint64_t& exp);
+ 		void eventPlayerOnGainSkillTries(Player* player, skills_t skill, uint64_t& tries);
+ 		void eventPlayerOnWrapItem(Player* player, Item* item);
++		void eventPlayerOnSpellCost(Player* player, const Spell* spell, uint32_t& manaCost, uint32_t& healthCost);
++		bool eventPlayerOnSpellPreCast(Player* player, const Spell* spell, uint32_t manaCost, uint32_t healthCost);
++		void eventPlayerOnSpellCast(Player* player, const Spell* spell, uint32_t manaCost, uint32_t healthCost);
++		uint32_t eventPlayerOnSpellCooldown(Player* player, const Spell* spell, const std::string& cooldownType, uint32_t cooldown);
+ 
+ 		// Monster
+ 		void eventMonsterOnDropLoot(Monster* monster, Container* corpse);
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -1198,6 +1198,12 @@
+ 	registerEnum(CONDITION_SPELLCOOLDOWN)
+ 	registerEnum(CONDITION_SPELLGROUPCOOLDOWN)
+ 
++	registerEnum(SPELLGROUP_NONE)
++	registerEnum(SPELLGROUP_ATTACK)
++	registerEnum(SPELLGROUP_HEALING)
++	registerEnum(SPELLGROUP_SUPPORT)
++	registerEnum(SPELLGROUP_SPECIAL)
++
+ 	registerEnum(CONDITIONID_DEFAULT)
+ 	registerEnum(CONDITIONID_COMBAT)
+ 	registerEnum(CONDITIONID_HEAD)
+--- a/src/spells.cpp
++++ b/src/spells.cpp
+@@ -5,12 +5,45 @@
+ 
+ #include "combat.h"
+ #include "configmanager.h"
++#include "events.h"
+ #include "game.h"
+ #include "monster.h"
+ #include "pugicast.h"
+ #include "spells.h"
+ 
+ extern Game g_game;
++extern Events* g_events;
++
++namespace {
++
++// The cost of the cast a player is making: what Player:onSpellCost chose in playerSpellCheck, paid in postCastSpell.
++// A cast is checked and finished in one dispatcher call, so at most one entry per player is ever in use.
++struct SpellCost {
++	const Spell* spell = nullptr;
++	uint32_t mana = 0;
++	uint32_t health = 0;
++};
++
++std::unordered_map<uint32_t, SpellCost> spellCosts;
++
++SpellCost getSpellCost(Player* player, const Spell* spell, bool take)
++{
++	SpellCost cost;
++	auto it = spellCosts.find(player->getID());
++	if (it != spellCosts.end() && it->second.spell == spell) {
++		cost = it->second;
++	} else {
++		cost.spell = spell;
++		cost.mana = spell->getManaCost(player);
++	}
++
++	if (take && it != spellCosts.end()) {
++		spellCosts.erase(it);
++	}
++	return cost;
++}
++
++}
+ extern Spells* g_spells;
+ extern Monsters g_monsters;
+ extern Vocations g_vocations;
+@@ -552,6 +585,8 @@
+ 
+ bool Spell::playerSpellCheck(Player* player) const
+ {
++	spellCosts.erase(player->getID());
++
+ 	if (player->hasFlag(PlayerFlag_CannotUseSpells)) {
+ 		return false;
+ 	}
+@@ -602,12 +637,26 @@
+ 		return false;
+ 	}
+ 
+-	if (player->getMana() < getManaCost(player) && !player->hasFlag(PlayerFlag_HasInfiniteMana)) {
++	uint32_t manaCost = getManaCost(player);
++	uint32_t healthCost = 0;
++	if (g_events) {
++		g_events->eventPlayerOnSpellCost(player, this, manaCost, healthCost);
++	}
++
++	if (player->getMana() < manaCost && !player->hasFlag(PlayerFlag_HasInfiniteMana)) {
+ 		player->sendCancelMessage(RETURNVALUE_NOTENOUGHMANA);
+ 		g_game.addMagicEffect(player->getPosition(), CONST_ME_POFF);
+ 		return false;
+ 	}
+ 
++	if (healthCost > 0 && static_cast<uint32_t>(std::max<int32_t>(0, player->getHealth())) <= healthCost) {
++		player->sendCancelMessage("You do not have enough health.");
++		g_game.addMagicEffect(player->getPosition(), CONST_ME_POFF);
++		return false;
++	}
++
++	spellCosts[player->getID()] = {this, manaCost, healthCost};
++
+ 	if (player->getSoul() < soul && !player->hasFlag(PlayerFlag_HasInfiniteSoul)) {
+ 		player->sendCancelMessage(RETURNVALUE_NOTENOUGHSOUL);
+ 		g_game.addMagicEffect(player->getPosition(), CONST_ME_POFF);
+@@ -759,22 +808,10 @@
+ 
+ void Spell::postCastSpell(Player* player, bool finishedCast /*= true*/, bool payCost /*= true*/) const
+ {
++	const SpellCost cost = getSpellCost(player, this, true);
+ 	if (finishedCast) {
+ 		if (!player->hasFlag(PlayerFlag_HasNoExhaustion)) {
+-			if (cooldown > 0) {
+-				Condition* condition = Condition::createCondition(CONDITIONID_DEFAULT, CONDITION_SPELLCOOLDOWN, cooldown, 0, false, spellId);
+-				player->addCondition(condition);
+-			}
+-
+-			if (groupCooldown > 0) {
+-				Condition* condition = Condition::createCondition(CONDITIONID_DEFAULT, CONDITION_SPELLGROUPCOOLDOWN, groupCooldown, 0, false, group);
+-				player->addCondition(condition);
+-			}
+-
+-			if (secondaryGroupCooldown > 0) {
+-				Condition* condition = Condition::createCondition(CONDITIONID_DEFAULT, CONDITION_SPELLGROUPCOOLDOWN, secondaryGroupCooldown, 0, false, secondaryGroup);
+-				player->addCondition(condition);
+-			}
++			addCooldowns(player);
+ 		}
+ 
+ 		if (aggressive) {
+@@ -783,10 +820,56 @@
+ 	}
+ 
+ 	if (payCost) {
+-		Spell::postCastSpell(player, getManaCost(player), getSoulCost());
++		Spell::postCastSpell(player, cost.mana, getSoulCost());
++
++		// a health cost (Player:onSpellCost) never kills: playerSpellCheck required more health than it
++		const int32_t healthLoss = std::min<int32_t>(static_cast<int32_t>(std::min<uint32_t>(cost.health, INT32_MAX)), player->getHealth() - 1);
++		if (healthLoss > 0) {
++			player->changeHealth(-healthLoss);
++		}
++	}
++
++	if (finishedCast && g_events) {
++		g_events->eventPlayerOnSpellCast(player, this, payCost ? cost.mana : 0, payCost ? cost.health : 0);
+ 	}
+ }
+ 
++bool Spell::playerSpellPreCast(Player* player) const
++{
++	if (!g_events) {
++		return true;
++	}
++
++	const SpellCost cost = getSpellCost(player, this, false);
++	if (!g_events->eventPlayerOnSpellPreCast(player, this, cost.mana, cost.health)) {
++		spellCosts.erase(player->getID());
++		return false;
++	}
++	return true;
++}
++
++void Spell::addCooldowns(Player* player) const
++{
++	auto add = [this, player](ConditionType_t type, uint32_t ticks, uint32_t subId, const std::string& cooldownType) {
++		if (ticks == 0) {
++			return;
++		}
++
++		if (g_events) {
++			ticks = g_events->eventPlayerOnSpellCooldown(player, this, cooldownType, ticks);
++		}
++
++		if (ticks > 0) {
++			ticks = std::min<uint32_t>(ticks, INT32_MAX);
++			player->addCondition(Condition::createCondition(CONDITIONID_DEFAULT, type, static_cast<int32_t>(ticks), 0, false, subId));
++		}
++	};
++
++	add(CONDITION_SPELLCOOLDOWN, cooldown, spellId, "spell");
++	add(CONDITION_SPELLGROUPCOOLDOWN, groupCooldown, group, "group");
++	add(CONDITION_SPELLGROUPCOOLDOWN, secondaryGroupCooldown, secondaryGroup, "secondary");
++}
++
+ void Spell::postCastSpell(Player* player, uint32_t manaCost, uint32_t soulCost)
+ {
+ 	if (manaCost > 0) {
+@@ -880,20 +963,7 @@
+ 			target = playerTarget;
+ 			if (!target || target->getHealth() <= 0) {
+ 				if (!casterTargetOrDirection) {
+-					if (cooldown > 0) {
+-						Condition* condition = Condition::createCondition(CONDITIONID_DEFAULT, CONDITION_SPELLCOOLDOWN, cooldown, 0, false, spellId);
+-						player->addCondition(condition);
+-					}
+-
+-					if (groupCooldown > 0) {
+-						Condition* condition = Condition::createCondition(CONDITIONID_DEFAULT, CONDITION_SPELLGROUPCOOLDOWN, groupCooldown, 0, false, group);
+-						player->addCondition(condition);
+-					}
+-
+-					if (secondaryGroupCooldown > 0) {
+-						Condition* condition = Condition::createCondition(CONDITIONID_DEFAULT, CONDITION_SPELLGROUPCOOLDOWN, secondaryGroupCooldown, 0, false, secondaryGroup);
+-						player->addCondition(condition);
+-					}
++					addCooldowns(player);
+ 
+ 					player->sendCancelMessage(ret);
+ 					g_game.addMagicEffect(player->getPosition(), CONST_ME_POFF);
+@@ -944,20 +1014,7 @@
+ 			ReturnValue ret = g_game.getPlayerByNameWildcard(param, playerTarget);
+ 
+ 			if (ret != RETURNVALUE_NOERROR) {
+-				if (cooldown > 0) {
+-					Condition* condition = Condition::createCondition(CONDITIONID_DEFAULT, CONDITION_SPELLCOOLDOWN, cooldown, 0, false, spellId);
+-					player->addCondition(condition);
+-				}
+-
+-				if (groupCooldown > 0) {
+-					Condition* condition = Condition::createCondition(CONDITIONID_DEFAULT, CONDITION_SPELLGROUPCOOLDOWN, groupCooldown, 0, false, group);
+-					player->addCondition(condition);
+-				}
+-
+-				if (secondaryGroupCooldown > 0) {
+-					Condition* condition = Condition::createCondition(CONDITIONID_DEFAULT, CONDITION_SPELLGROUPCOOLDOWN, secondaryGroupCooldown, 0, false, secondaryGroup);
+-					player->addCondition(condition);
+-				}
++				addCooldowns(player);
+ 
+ 				player->sendCancelMessage(ret);
+ 				g_game.addMagicEffect(player->getPosition(), CONST_ME_POFF);
+@@ -984,9 +1041,15 @@
+ 		}
+ 	}
+ 
++	if (!playerSpellPreCast(player)) {
++		return false;
++	}
++
+ 	bool result = internalCastSpell(player, var);
+ 	if (result) {
+ 		postCastSpell(player);
++	} else {
++		spellCosts.erase(player->getID());
+ 	}
+ 
+ 	return result;
+@@ -1190,7 +1253,12 @@
+ 		var.pos = toPosition;
+ 	}
+ 
++	if (!playerSpellPreCast(player)) {
++		return false;
++	}
++
+ 	if (!internalCastSpell(player, var, isHotkey)) {
++		spellCosts.erase(player->getID());
+ 		return false;
+ 	}
+ 
+--- a/src/spells.h
++++ b/src/spells.h
+@@ -278,6 +278,9 @@
+ 
+ 	protected:
+ 		bool playerSpellCheck(Player* player) const;
++		// spell events (events.xml Player onSpellPreCast / onSpellCooldown)
++		bool playerSpellPreCast(Player* player) const;
++		void addCooldowns(Player* player) const;
+ 		bool playerInstantSpellCheck(Player* player, const Position& toPos);
+ 		bool playerRuneSpellCheck(Player* player, const Position& toPos);
+ 

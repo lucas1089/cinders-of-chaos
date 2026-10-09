@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Small, idempotent fixes to base server scripts that are not part of this repository.
 
-usage: python3 -I patch_base_events.py DATA_DIR [--dry-run]
+usage: python3 -I patch_base_events.py DATA_DIR [--dry-run] [--enable-spell-events]
 
 1. data/events/scripts/player.lua: make Player:onGainExperience run the script callbacks
    (EventCallback onGainExperience).
@@ -41,6 +41,13 @@ pet share, so the bonuses multiply the staged experience and the pet gets its sh
 
 7. data/scripts/customs/waystone_system/character_upgrades.lua: the waystone upgrades "Critical Chance",
    "Life Chance" and "Mana Chance" give about two thirds of their level as chance (same rule as 6).
+
+8. Spell events (engine patch 0008-spell-events.patch): data/events/events.xml gets the Player entries onSpellCost,
+   onSpellPreCast, onSpellCast and onSpellCooldown, shipped DISABLED (enabled="0": an engine without the patch warns
+   about unknown methods only when they are enabled), and data/events/scripts/player.lua gets the four stubs. A stub
+   calls ChaosSpellEvents.<name> when a script defines that table and otherwise does nothing (the cost and the cooldown
+   come back unchanged), so enabling them without a script changes no behaviour. `--enable-spell-events` sets the four
+   entries to enabled="1" (run it only where the engine has patch 0008); without the flag an existing value is kept.
 
 Idempotent: every inserted block carries a marker comment and is not added twice.
 """
@@ -218,6 +225,74 @@ def patch_waystone_chances(text):
     return text[:m.start()] + block + text[m.end():], 'patched'
 
 
+SPELL_MARKER = '-- Chaos: spell events (engine patch 0008, patch_base_events.py)'
+SPELL_METHODS = ('onSpellCost', 'onSpellPreCast', 'onSpellCast', 'onSpellCooldown')
+SPELL_STUBS = (
+    '\n' + SPELL_MARKER + '\n'
+    '-- A script sets ChaosSpellEvents.onSpellCost / onSpellPreCast / onSpellCast / onSpellCooldown to take part;\n'
+    '-- the arguments are the ones the engine passes (self first). Without a function the defaults apply.\n'
+    'function Player:onSpellCost(spellName, spellId, spellGroup, aggressive, manaCost)\n'
+    '\tlocal hook = ChaosSpellEvents and ChaosSpellEvents.onSpellCost\n'
+    '\tif hook then\n'
+    '\t\treturn hook(self, spellName, spellId, spellGroup, aggressive, manaCost)\n'
+    '\tend\n'
+    '\treturn manaCost, 0\n'
+    'end\n\n'
+    'function Player:onSpellPreCast(spellName, spellId, spellGroup, aggressive, manaCost, healthCost)\n'
+    '\tlocal hook = ChaosSpellEvents and ChaosSpellEvents.onSpellPreCast\n'
+    '\tif hook then\n'
+    '\t\treturn hook(self, spellName, spellId, spellGroup, aggressive, manaCost, healthCost)\n'
+    '\tend\n'
+    '\treturn true\n'
+    'end\n\n'
+    'function Player:onSpellCast(spellName, spellId, spellGroup, aggressive, manaCost, healthCost)\n'
+    '\tlocal hook = ChaosSpellEvents and ChaosSpellEvents.onSpellCast\n'
+    '\tif hook then\n'
+    '\t\thook(self, spellName, spellId, spellGroup, aggressive, manaCost, healthCost)\n'
+    '\tend\n'
+    'end\n\n'
+    'function Player:onSpellCooldown(spellName, spellId, spellGroup, aggressive, cooldownType, cooldown)\n'
+    '\tlocal hook = ChaosSpellEvents and ChaosSpellEvents.onSpellCooldown\n'
+    '\tif hook then\n'
+    '\t\treturn hook(self, spellName, spellId, spellGroup, aggressive, cooldownType, cooldown)\n'
+    '\tend\n'
+    '\treturn cooldown\n'
+    'end\n'
+)
+
+
+def patch_spell_stubs(text):
+    """returns (new text, status)"""
+    if SPELL_MARKER in text:
+        return text, 'already'
+    if 'function Player:onSpellCost(' in text:
+        return text, 'player.lua already defines Player:onSpellCost'
+    if not text.endswith('\n'):
+        text += '\n'
+    return text + SPELL_STUBS, 'patched'
+
+
+def make_spell_events(enable):
+    """patch function for events.xml: adds the four entries (disabled) and, with enable, turns them on"""
+    def patch_spell_events(text):
+        out = text
+        for method in SPELL_METHODS:
+            pat = re.compile(r'(<event class="Player" method="%s" enabled=")(\d)(" */>)' % method)
+            m = pat.search(out)
+            if not m:
+                line = '\t<event class="Player" method="%s" enabled="%d" />\n' % (method, 1 if enable else 0)
+                at = out.rfind('\t<!-- Monster methods -->')
+                if at < 0:
+                    at = out.rfind('</events>')
+                if at < 0:
+                    return text, '</events> not found in events.xml'
+                out = out[:at] + line + out[at:]
+            elif enable and m.group(2) != '1':
+                out = out[:m.start()] + m.group(1) + '1' + m.group(3) + out[m.end():]
+        return out, ('patched' if out != text else 'already')
+    return patch_spell_events
+
+
 def apply(path, fn, dry):
     text = open(path, encoding='utf-8', errors='surrogateescape').read()
     new, status = fn(text)
@@ -242,6 +317,9 @@ def main():
     ok = apply(os.path.join(args[0], 'items', 'items.xml'), patch_item_chances, dry) and ok
     ok = apply(os.path.join(args[0], 'scripts', 'customs', 'waystone_system', 'character_upgrades.lua'),
                patch_waystone_chances, dry) and ok
+    ok = apply(os.path.join(args[0], 'events', 'scripts', 'player.lua'), patch_spell_stubs, dry) and ok
+    ok = apply(os.path.join(args[0], 'events', 'events.xml'),
+               make_spell_events('--enable-spell-events' in sys.argv), dry) and ok
     return 0 if ok else 1
 
 
