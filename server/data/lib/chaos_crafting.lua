@@ -826,7 +826,7 @@ function C.keyCheck(orbKey, item)
 	return true
 end
 
--- `count` new modifiers the key does not have yet (in the order of the config)
+-- `count` new modifiers the key does not have yet: weighted and gated by the key's tier, as on drops (rift_core.lua)
 local function addKeyMods(key, count)
 	local R, cfg = rift()
 	return R.addMods(cfg, key, count, C.random)
@@ -863,7 +863,7 @@ function C.keyApply(orbKey, item)
 		addKeyMods(key, math.min(C.keyMaxMods(), R.rollModCount(cfg, C.random)))
 	elseif orbKey == "divine" then
 		for _, m in ipairs(key.mods) do
-			m.value = R.rollValue(R.modDef(cfg, m.key), C.random)
+			m.value = R.rollValue(R.modDef(cfg, m.key), C.random, key.tier, cfg) -- inside the tier window of the key
 		end
 	else
 		return false, C.reasons.unknownOrb

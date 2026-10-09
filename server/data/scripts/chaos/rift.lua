@@ -7,7 +7,11 @@
 --   with Game.createTile (the footprint must be empty on first use, as worldboss.lua checks) or reused, themed, 2-4 of
 --   its side rooms opened -> packs from the bounty pool's level window of the tier (elites through monster_tiers.lua)
 --   -> after bossAt % of the kills the boss appears -> boss dead in time: reward chest (each finisher once), maybe a
---   new key; time up: everyone out, key lost. Death inside: normal death; logout inside: removed from the run.
+--   new key, Omen Fragments from tier 6; time up: everyone out, key lost. Shared lives (3, +1 per extra player): a
+--   death inside is the normal death and costs one; the next login puts the character back at the rift's entrance;
+--   the last life lost collapses the rift. Logout inside: removed from the run.
+--   Omens: 60 Omen Fragments bind an Omen Key (item 32072, attribute omen_kind) that opens a guardian arena in the
+--   same slot grid (every side room shut, one guardian, the same lives, timer and chest flow).
 --   The key is consumed at the start; a "run in progress" marker (storages Chaos.storage.riftRun ..+4) refunds it at
 --   the next login when the server stopped or crashed during the run.
 --
@@ -77,6 +81,7 @@ RF.pending = RF.pending or {} -- guid -> list of {run data} rewards for finisher
 RF.nextId = RF.nextId or 0
 RF.echo = RF.echo or {} -- monster id -> true: Echoing Spoils copies its loot (set at death, used by onDropLoot)
 RF.noRefund = RF.noRefund or {} -- guid -> true: the key of an interrupted run was spent (left without a logout event)
+RF.revive = RF.revive or {} -- guid -> run: died inside with lives left; the next login puts the character back
 
 -- ======================================================================== pool
 local rawPool = dofile("data/scripts/chaos/bounty_pool.lua")
@@ -219,9 +224,57 @@ function RF.giveKey(player, key, why)
 	return inbox
 end
 
+-- ======================================================================== omen fragments and keys
+local function omenItemReady(id)
+	local it = id and ItemType(id)
+	return it ~= nil and it:getId() ~= 0
+end
+RF.omenItemReady = omenItemReady
+
+-- the kind key ("bloodmoon") of an Omen Key item, or nil
+function RF.readOmenKey(item)
+	local o = C().omen
+	if not item or item:getId() ~= o.key.id then
+		return nil
+	end
+	local kind = item:getCustomAttribute("omen_kind")
+	return R.omenKind(C(), kind) and kind or nil
+end
+
+function RF.applyOmenKey(item, kind)
+	local cfg = C()
+	local d = R.omenKind(cfg, kind)
+	item:setCustomAttribute("omen_kind", d.key)
+	item:setAttribute(ITEM_ATTRIBUTE_NAME, R.omenKeyName(cfg, d.key))
+	item:setAttribute(ITEM_ATTRIBUTE_ARTICLE, "an")
+	item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, string.format("It hums with the name %s. Opens the %s guardian's arena " ..
+		"(level %d+, %d minutes). Use it in a protection zone; your party within %d sqm comes along.", d.boss, d.name,
+		cfg.omen.minLevel, math.floor(cfg.omen.timeLimit / 60), cfg.partyRange))
+	return item
+end
+
+-- gives an Omen Key of `kind` (nil: a random kind); returns the kind or nil
+function RF.giveOmenKey(player, kind, why)
+	local cfg = C()
+	if not omenItemReady(cfg.omen.key.id) then
+		player:sendTextMessage(MESSAGE_STATUS_SMALL, "Omen Keys are not installed on this server (tools/install_omens.py).")
+		return nil
+	end
+	kind = kind or cfg.omen.kinds[rand(1, #cfg.omen.kinds)].key
+	local item = Game.createItem(cfg.omen.key.id, 1)
+	if not item then
+		return nil
+	end
+	RF.applyOmenKey(item, kind)
+	local inbox = giveEx(player, item)
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s: %s.%s", why or "You received an Omen Key",
+		R.omenKeyName(cfg, kind), inbox and " It is in your inbox." or ""))
+	return kind
+end
+
 -- ======================================================================== crash refund marker
 local function setMarker(player, key)
-	player:setStorageValue(ST, key.tier)
+	player:setStorageValue(ST, key.omen and R.markerTier(C(), key.omen) or key.tier)
 	for i = 1, 3 do
 		player:setStorageValue(ST + i, key.mods[i] and R.packMod(C(), key.mods[i]) or 0)
 	end
@@ -243,7 +296,7 @@ local function refundMarker(player)
 	if tier <= 0 then
 		return false
 	end
-	if RF.noRefund[player:getGuid()] or RF.runOf[player:getId()] then
+	if RF.noRefund[player:getGuid()] or RF.runOf[player:getId()] or RF.revive[player:getGuid()] then
 		RF.noRefund[player:getGuid()] = nil
 		clearMarker(player)
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You left your rift: its key is spent.")
@@ -259,8 +312,13 @@ local function refundMarker(player)
 	for i = 0, 4 do
 		player:setStorageValue(ST + i, 0)
 	end
-	RF.giveKey(player, {tier = R.clampTier(C(), tier), mods = mods},
-		"Your last rift was interrupted by a server restart, so its key is returned")
+	local omen = R.markerOmen(C(), tier)
+	if omen then
+		RF.giveOmenKey(player, omen, "Your last omen arena was interrupted by a server restart, so its key is returned")
+	else
+		RF.giveKey(player, {tier = R.clampTier(C(), tier), mods = mods},
+			"Your last rift was interrupted by a server restart, so its key is returned")
+	end
 	player:save()
 	return true
 end
@@ -408,7 +466,8 @@ local function hudData(run)
 	local mods = {}
 	for _, m in ipairs(run.key.mods) do
 		local def = R.modDef(C(), m.key)
-		mods[#mods + 1] = {name = def and def.name or m.key, text = R.modText(C(), m), boon = def and def.boon or nil}
+		mods[#mods + 1] = {name = def and def.name or m.key, text = R.modText(C(), m), boon = def and def.boon or nil,
+			tier = def and R.modTier(def, m.value) or nil}
 	end
 	-- live lines of the map modifiers (coffer, goblin, twin guardians)
 	local notes = {}
@@ -431,9 +490,18 @@ local function hudData(run)
 	if (run.guardians or 1) > 1 and run.boss == "alive" then
 		notes[#notes + 1] = string.format("Guardians left: %d.", run.guardians - (run.guardiansKilled or 0))
 	end
+	local waiting = 0
+	for _ in pairs(run.revive or {}) do
+		waiting = waiting + 1
+	end
+	if waiting > 0 and run.state == "running" then
+		notes[#notes + 1] = string.format("%d fallen player%s may still return.", waiting, waiting == 1 and "" or "s")
+	end
 	return {tier = run.key.tier, theme = run.themeName, left = R.timeLeft(run, os.time()), limit = run.limit or C().timeLimit,
 		total = run.total, killed = run.killed, bossAt = run.bossAt, boss = run.boss, state = run.state,
-		bossName = run.plan.boss, mods = mods, bonus = run.bonus, notes = notes}
+		bossName = run.plan.boss, mods = mods, bonus = run.bonus, notes = notes, lives = run.lives,
+		livesMax = run.livesMax, omen = run.omen and R.omenKind(C(), run.omen).name or nil,
+		title = run.omen and ("Omen - " .. R.omenKind(C(), run.omen).name) or nil}
 end
 
 local function sendHud(run, action, player)
@@ -510,8 +578,12 @@ local function removePlayer(run, id, mode)
 		end
 		if mode ~= "logout" then
 			local running = run.state == "running"
-			Chaos.send(player, OPCODE, "end", {result = running and "left" or run.state,
-				text = running and (mode == "dead" and "You fell in the rift." or "You left the rift.") or run.endText})
+			local text = running and (mode == "dead" and "You fell in the rift." or "You left the rift.") or run.endText
+			if mode == "dead" and running and RF.revive[entry.guid] == run then
+				text = string.format("You fell: %d %s left. You return at the rift's entrance when you log in again.",
+					run.lives, run.lives == 1 and "life" or "lives")
+			end
+			Chaos.send(player, OPCODE, "end", {result = running and "left" or run.state, text = text})
 		end
 		if entry.guid == run.openerGuid then
 			clearMarker(player) -- the key is spent once its owner leaves the run (or the run ended)
@@ -521,7 +593,8 @@ local function removePlayer(run, id, mode)
 		-- only a crash or a restart (which empties this table) refunds the key
 		RF.noRefund[entry.guid] = true
 	end
-	if next(run.players) == nil and not run.ended then
+	-- a fallen player who may still return keeps a running rift open (until the time runs out)
+	if next(run.players) == nil and not run.ended and not (run.state == "running" and next(run.revive or {}) ~= nil) then
 		if run.state == "running" then
 			run.state = "failed"
 			run.endText = "Everyone left the rift."
@@ -546,11 +619,18 @@ finishExit = function(run)
 					RF.deliver(p, run, true)
 				else
 					RF.pending[guid] = RF.pending[guid] or {}
-					table.insert(RF.pending[guid], {tier = run.key.tier, bonus = run.bonus, types = run.typeNames, boss = run.plan.boss})
+					table.insert(RF.pending[guid], {tier = run.key.tier, bonus = run.bonus, types = run.typeNames, boss = run.plan.boss,
+						omen = run.omen})
 				end
 			end
 		end
 	end
+	for guid in pairs(run.revive or {}) do
+		if RF.revive[guid] == run then
+			RF.revive[guid] = nil
+		end
+	end
+	run.revive = {}
 	for id in pairs(run.players) do
 		removePlayer(run, id, "out")
 	end
@@ -568,18 +648,41 @@ end
 
 local function fail(run, text)
 	run.state = "failed"
-	run.endText = text .. " The rift collapses and the key is lost."
+	run.endText = text .. (run.omen and " The arena collapses and the key is lost." or " The rift collapses and the key is lost.")
 	say(run, run.endText)
 	finishExit(run)
 end
 RF._fail = fail
 
 -- ======================================================================== rewards
+-- every unique of ChaosUniqueItems without its monster list (the omen guardians' pool); rebuilt when the list changes
+local omenUniqueCache, omenUniqueFrom
+local function omenUniques()
+	if omenUniqueFrom ~= ChaosUniqueItems then
+		omenUniqueFrom = ChaosUniqueItems
+		omenUniqueCache = {}
+		for k, e in pairs(ChaosUniqueItems or {}) do
+			if type(e) == "table" then
+				local c = {}
+				for f, v in pairs(e) do
+					c[f] = v
+				end
+				c.monsters = nil
+				c.name = c.name or (type(k) == "string" and k) or nil
+				omenUniqueCache[#omenUniqueCache + 1] = c
+			end
+		end
+	end
+	return omenUniqueCache
+end
+
 -- one finisher's chest. auto = true when it was not opened before the exit
 function RF.deliver(player, run, auto)
 	local cfg = C()
-	local data = run.key and {tier = run.key.tier, bonus = run.bonus, types = run.typeNames, boss = run.plan.boss} or run
-	local r = R.reward(cfg, data.tier, data.bonus, rand)
+	local data = run.key and {tier = run.key.tier, bonus = run.bonus, types = run.typeNames, boss = run.plan.boss,
+		omen = run.omen} or run
+	local r = data.omen and R.omenReward(cfg) or R.reward(cfg, data.tier, data.bonus, rand)
+	local asTier = data.omen and cfg.omen.reward.asTier or data.tier
 	local inbox = false
 	if r.gold > 0 then
 		player:setBankBalance(player:getBankBalance() + r.gold)
@@ -631,14 +734,26 @@ function RF.deliver(player, run, auto)
 			stack(c.id, c.count)
 		end
 		-- gems (data/lib/chaos_gems_config.lua rewards.rift: count and quality by the rift tier)
-		for _, g in ipairs(ChaosGems and ChaosGems.rewardGems("rift", {tier = data.tier}, rand) or {}) do
+		for _, g in ipairs(ChaosGems and ChaosGems.rewardGems("rift", {tier = asTier}, rand) or {}) do
 			stack(g.id, g.count)
 		end
 		-- spell support runes (data/lib/chaos_supports_config.lua rewards.rift)
-		for _, g in ipairs(ChaosSupports and ChaosSupports.rewardRunes("rift", {tier = data.tier}, rand) or {}) do
+		for _, g in ipairs(ChaosSupports and ChaosSupports.rewardRunes("rift", {tier = asTier}, rand) or {}) do
 			stack(g.id, g.count)
 		end
-		for _, e in ipairs(L.rollUniques(r.lootTier, data.boss, 0, itemFind * r.rarityMult)) do
+		local uniques = {}
+		if data.omen then
+			-- the guardian: uniqueRolls rolls at the boss tier over every unique, x uniqueFind
+			for _ = 1, r.uniqueRolls do
+				for _, e in ipairs(L.rollUniques("boss", data.boss, 0, itemFind * r.rarityMult * r.uniqueFind, omenUniques(),
+						player)) do
+					uniques[#uniques + 1] = e
+				end
+			end
+		else
+			uniques = L.rollUniques(r.lootTier, data.boss, 0, itemFind * r.rarityMult)
+		end
+		for _, e in ipairs(uniques) do
 			local item = Game.createItem(e.id, 1)
 			if item then
 				if ChaosMakeUnique then
@@ -648,6 +763,11 @@ function RF.deliver(player, run, auto)
 				found[#found + 1] = "{" .. e.name .. "}"
 			end
 		end
+	end
+	-- Omen Fragments from a sealed rift of omen.minTier or more
+	local frags = not data.omen and R.omenFragments(cfg, data.tier, data.bonus, rand) or 0
+	if frags > 0 and omenItemReady(cfg.omen.fragment.id) then
+		stack(cfg.omen.fragment.id, frags)
 	end
 	for _, id in ipairs(order) do
 		local n = stacks[id]
@@ -665,7 +785,8 @@ function RF.deliver(player, run, auto)
 	end
 	local list = table.concat(found, ", ", 1, math.min(#found, 25)) .. (#found > 25 and (" and " .. (#found - 25) .. " more") or "")
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s: %d gold to your bank, %d Chaos Orb%s, %d Divine Orb%s%s%s.%s",
-		auto and "Rift reward (the chest was not opened, it was sent to you)" or "Rift chest",
+		auto and ((data.omen and "Guardian's reward" or "Rift reward") .. " (the chest was not opened, it was sent to you)")
+			or (data.omen and "Guardian's chest" or "Rift chest"),
 		r.gold, r.chaos, r.chaos == 1 and "" or "s", r.divine, r.divine == 1 and "" or "s",
 		#found > 0 and ", " or "", list, inbox and " Your backpack was full: the rest is in your inbox." or ""))
 	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
@@ -674,7 +795,8 @@ end
 
 local function success(run, pos)
 	local cfg = C()
-	run.endText = string.format("The rift is sealed! Open the chest within %d seconds.", cfg.exitDelay)
+	run.endText = string.format(run.omen and "The guardian falls! Open its chest within %d seconds."
+		or "The rift is sealed! Open the chest within %d seconds.", cfg.exitDelay)
 	-- what is left of the rift dies with it
 	for mid, r in pairs(RF.monsterRun) do
 		if r == run then
@@ -688,9 +810,19 @@ local function success(run, pos)
 	end
 	RF.cofferOnSeal(run)
 	run.finishers, run.claimed = {}, {}
+	-- fallen players who could still return count as finishers (their share comes at the exit or the next login)
+	for guid, f in pairs(run.revive or {}) do
+		run.finishers[guid] = {name = f.name}
+	end
 	for id, e in pairs(run.players) do
 		run.finishers[e.guid] = {name = e.name}
-		if ChaosLeaderboard and ChaosLeaderboard.record then
+		if run.omen then
+			if ChaosAchievements and ChaosAchievements.progress then
+				local p = Player(id)
+				pcall(ChaosAchievements.progress, p, "omen_kills", 1)
+				pcall(ChaosAchievements.progress, p, "omen_" .. run.omen, 1)
+			end
+		elseif ChaosLeaderboard and ChaosLeaderboard.record then
 			pcall(ChaosLeaderboard.record, "rift", Player(id) or {guid = e.guid, name = e.name}, run.key.tier) -- weekly Rifts board
 		end
 	end
@@ -700,11 +832,12 @@ local function success(run, pos)
 	local chest = Game.createItem(cfg.chest.itemId, 1, chestPos)
 	if chest then
 		chest:setActionId(cfg.chest.actionId)
-		chest:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, "The spoils of the rift. Every finisher may open it once.")
+		chest:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, run.omen and "The guardian's hoard. Every finisher may open it once."
+			or "The spoils of the rift. Every finisher may open it once.")
 		chestPos:sendMagicEffect(CONST_ME_FIREWORK_RED)
 	end
 	-- the next key: to the player who used the key, else a random finisher
-	local drop = R.rollKeyDrop(cfg, run.key.tier, #run.key.mods, rand)
+	local drop = not run.omen and R.rollKeyDrop(cfg, run.key.tier, #run.key.mods, rand) or nil
 	if drop then
 		local target
 		for id, e in pairs(run.players) do
@@ -727,7 +860,12 @@ local function success(run, pos)
 		end
 	end
 	local secs = os.time() - run.startTime
-	say(run, string.format("Rift tier %d sealed in %d:%02d. %s", run.key.tier, math.floor(secs / 60), secs % 60, run.endText))
+	if run.omen then
+		say(run, string.format("The %s guardian falls in %d:%02d. %s", R.omenKind(cfg, run.omen).name, math.floor(secs / 60),
+			secs % 60, run.endText))
+	else
+		say(run, string.format("Rift tier %d sealed in %d:%02d. %s", run.key.tier, math.floor(secs / 60), secs % 60, run.endText))
+	end
 	sendHud(run, "update")
 	for id, e in pairs(run.players) do
 		Chaos.send(Player(id), OPCODE, "end", {result = "success", text = run.endText, exitIn = cfg.exitDelay})
@@ -759,7 +897,9 @@ local function spawnOne(run, name, pos, tier, boss)
 		ChaosApplyTier(m, tier)
 	end
 	local hp
-	if boss then
+	if boss and run.omen then
+		hp = math.floor(base * R.omenHealthMult(C(), run.size))
+	elseif boss then
 		hp = math.floor(base * R.guardianHealthMult(C(), run.fx, run.size)) -- + Dread Guardian, Twin Guardians share
 	else
 		hp = math.floor(m:getMaxHealth() * run.fx.health)
@@ -804,13 +944,24 @@ local function spawnBoss(run)
 		if i > 1 then
 			at = {x = at.x + cfg.twin.offset, y = at.y, z = at.z}
 		end
-		local m = spawnOne(run, run.plan.boss, at, cfg.boss.tier, true)
+		local m = spawnOne(run, run.plan.boss, at, not run.omen and cfg.boss.tier or nil, true)
 		if m then
 			run.bossIds[m:getId()] = true
 			run.bossId = run.bossId or m:getId()
 			first = first or m
 			P(at):sendMagicEffect(CONST_ME_MORTAREA)
 		end
+	end
+	if not first and run.omen then
+		print("[ChaosRift] omen guardian " .. tostring(run.plan.boss) .. " could not be created; the key is returned")
+		for _, e in pairs(run.players) do
+			if e.guid == run.openerGuid and Player(e.id) then
+				RF.giveOmenKey(Player(e.id), run.omen, "The guardian did not answer, so your key is returned")
+			end
+		end
+		run.omen = nil
+		fail(run, "The guardian did not answer.")
+		return
 	end
 	if not first then
 		print("[ChaosRift] boss " .. tostring(run.plan.boss) .. " could not be created; the rift counts as sealed")
@@ -826,7 +977,9 @@ local function spawnBoss(run)
 		made = made + 1
 	end
 	run.guardians = made -- a twin that could not be created does not have to be killed
-	if made > 1 then
+	if run.omen then
+		say(run, string.format("%s answers the omen!", first:getName()))
+	elseif made > 1 then
 		say(run, string.format("Twin guardians %s tear through the veil!", first:getName()))
 	else
 		say(run, string.format("The rift guardian %s tears through the veil!", first:getName()))
@@ -1070,6 +1223,14 @@ local function tick(slot, rid)
 		fail(run, "Time is up!")
 		return
 	end
+	-- the omen guardian comes startDelay seconds after the party arrived
+	if run.omen and run.boss == "waiting" and now >= (run.bossDueAt or 0) then
+		run.boss = "alive"
+		spawnBoss(run)
+		if run.ended then
+			return
+		end
+	end
 	-- players who left the instance some other way (GM teleport, ...) are out of the run
 	for id, entry in pairs(run.players) do
 		local p = Player(id)
@@ -1101,11 +1262,12 @@ local function insideOther(player)
 end
 
 local function memberProblem(m, t)
-	if RF.runOf[m:getId()] then
+	if RF.runOf[m:getId()] or RF.revive[m:getGuid()] then
 		return "is already inside a rift"
 	end
 	if m:getLevel() < t.minLevel then
-		return string.format("needs level %d for a tier %d rift", t.minLevel, t.tier)
+		return t.omen and string.format("needs level %d for an omen arena", t.minLevel)
+			or string.format("needs level %d for a tier %d rift", t.minLevel, t.tier)
 	end
 	if Chaos.isMultiClient(m) then
 		return "has another character from the same connection online"
@@ -1142,19 +1304,16 @@ local function groupOf(player)
 	return members
 end
 
-function RF.open(player, item)
+-- the rules of the key user; t = {minLevel, tier} or {minLevel, omen = true}. Returns true or false (message sent)
+local function openerOk(player, t)
 	local cfg = C()
-	local key = RF.readKey(item)
-	if not key then
-		player:sendCancelMessage("This rift key is broken.")
-		return false
-	end
-	if RF.runOf[player:getId()] then
+	if RF.runOf[player:getId()] or RF.revive[player:getGuid()] then
 		player:sendCancelMessage("You are already inside a rift.")
 		return false
 	end
 	if cfg.needProtectionZone and not inProtectionZone(player) then
-		player:sendCancelMessage("You must stand in a protection zone to open a rift.")
+		player:sendCancelMessage(t.omen and "You must stand in a protection zone to open an omen arena."
+			or "You must stand in a protection zone to open a rift.")
 		return false
 	end
 	if inCombat(player) then
@@ -1169,11 +1328,16 @@ function RF.open(player, item)
 		player:sendCancelMessage("You cannot open a rift from here.")
 		return false
 	end
-	local t = R.tierInfo(cfg, key.tier)
 	if player:getLevel() < t.minLevel then
-		player:sendCancelMessage(string.format("You need level %d to open a tier %d rift.", t.minLevel, t.tier))
+		player:sendCancelMessage(t.omen and string.format("You need level %d to open an omen arena.", t.minLevel)
+			or string.format("You need level %d to open a tier %d rift.", t.minLevel, t.tier))
 		return false
 	end
+	return true
+end
+
+-- the opener and the members of the party who may come along (the others are told why not)
+local function gather(player, t)
 	local group = {player}
 	for i, m in ipairs(groupOf(player)) do
 		if i > 1 then
@@ -1187,26 +1351,64 @@ function RF.open(player, item)
 			end
 		end
 	end
+	return group
+end
+
+-- a free slot, built (or buildable); L or nil (message sent)
+local function takeSlot(player)
+	local cfg = C()
+	while true do
+		local slot = R.allocSlot(cfg, RF.runs, RF.bad)
+		if not slot then
+			player:sendCancelMessage("Every rift is open right now. Try again in a moment.")
+			return nil
+		end
+		local L, why = buildSlot(slot)
+		if L then
+			return slot, L
+		end
+		RF.bad[slot] = why
+		print(string.format("[ChaosRift] slot %d not usable: %s", slot, why))
+	end
+end
+
+-- teleports the group in and registers the run's events
+local function enter(run, group)
+	local L = run.L
+	for i, m in ipairs(group) do
+		local entryPos = m:getPosition()
+		run.players[m:getId()] = {id = m:getId(), guid = m:getGuid(), name = m:getName(), entry = entryPos, xp = {base = 0}}
+		RF.runOf[m:getId()] = run
+		m:registerEvent("ChaosRiftPlayerDeath")
+		m:registerEvent("ChaosRiftPlayerHit")
+		m:registerEvent("ChaosRiftPlayerMana")
+		entryPos:sendMagicEffect(CONST_ME_TELEPORT)
+		local off = ({{0, 0}, {1, 0}, {-1, 0}, {0, 1}})[i] or {0, 0}
+		m:teleportTo(Position(L.start.x + off[1], L.start.y + off[2], L.start.z))
+		m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+	end
+end
+
+function RF.open(player, item)
+	local cfg = C()
+	local key = RF.readKey(item)
+	if not key then
+		player:sendCancelMessage("This rift key is broken.")
+		return false
+	end
+	local t = R.tierInfo(cfg, key.tier)
+	if not openerOk(player, t) then
+		return false
+	end
+	local group = gather(player, t)
 	local types = R.pickTypes(cfg, rawPool.hunt, key.tier, rand, known)
 	if #types == 0 then
 		player:sendCancelMessage("No monsters answer this rift. Tell a gamemaster.")
 		return false
 	end
-	-- a slot: free, and built (or buildable)
-	local slot, L
-	while true do
-		slot = R.allocSlot(cfg, RF.runs, RF.bad)
-		if not slot then
-			player:sendCancelMessage("Every rift is open right now. Try again in a moment.")
-			return false
-		end
-		local why
-		L, why = buildSlot(slot)
-		if L then
-			break
-		end
-		RF.bad[slot] = why
-		print(string.format("[ChaosRift] slot %d not usable: %s", slot, why))
+	local slot, L = takeSlot(player)
+	if not slot then
+		return false
 	end
 	cleanSlot(L)
 	local th = cfg.themes[rand(1, #cfg.themes)]
@@ -1227,6 +1429,8 @@ function RF.open(player, item)
 	run.id, run.slot, run.L, run.key, run.fx, run.plan = RF.nextId, slot, L, key, fx, plan
 	run.bonus = R.bonuses(cfg, key.mods, key.tier)
 	run.players, run.size, run.themeName, run.rooms = {}, #group, th.name, rooms
+	run.lives = R.startLives(cfg, #group, fx)
+	run.livesMax, run.deaths, run.revive = run.lives, 0, {}
 	run.openerGuid = player:getGuid()
 	run.typeNames = {}
 	for _, e in ipairs(types) do
@@ -1234,18 +1438,7 @@ function RF.open(player, item)
 	end
 	RF.runs[slot] = run
 
-	for i, m in ipairs(group) do
-		local entryPos = m:getPosition()
-		run.players[m:getId()] = {id = m:getId(), guid = m:getGuid(), name = m:getName(), entry = entryPos, xp = {base = 0}}
-		RF.runOf[m:getId()] = run
-		m:registerEvent("ChaosRiftPlayerDeath")
-		m:registerEvent("ChaosRiftPlayerHit")
-		m:registerEvent("ChaosRiftPlayerMana")
-		entryPos:sendMagicEffect(CONST_ME_TELEPORT)
-		local off = ({{0, 0}, {1, 0}, {-1, 0}, {0, 1}})[i] or {0, 0}
-		m:teleportTo(Position(L.start.x + off[1], L.start.y + off[2], L.start.z))
-		m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
-	end
+	enter(run, group)
 	local spawned = spawnPacks(run)
 	run.total = spawned
 	run.bossAt = math.max(1, math.ceil(spawned * cfg.bossAt / 100))
@@ -1255,10 +1448,10 @@ function RF.open(player, item)
 	placeCoffer(run)
 	local names = {}
 	for _, m in ipairs(key.mods) do
-		names[#names + 1] = R.modText(cfg, m)
+		names[#names + 1] = R.modLabel(cfg, m) .. ": " .. R.modText(cfg, m)
 	end
-	say(run, string.format("Rift tier %d (%s): %d monsters, the guardian appears after %d kills. %d minutes. Modifiers: %s.",
-		key.tier, th.name, run.total, run.bossAt, math.floor(run.limit / 60),
+	say(run, string.format("Rift tier %d (%s): %d monsters, the guardian appears after %d kills. %d minutes, %d shared lives. Modifiers: %s.",
+		key.tier, th.name, run.total, run.bossAt, math.floor(run.limit / 60), run.lives,
 		#names > 0 and table.concat(names, "; ") or "none"))
 	sendHud(run, "start")
 	run.hudAt = os.time() + cfg.hudEvery
@@ -1271,6 +1464,67 @@ function RF.open(player, item)
 		run.boss = "alive"
 		spawnBoss(run)
 	end
+	return true
+end
+
+-- an Omen Key: the guardian arena (the hub of a slot, every side room shut)
+function RF.openOmen(player, item)
+	local cfg = C()
+	local o = cfg.omen
+	local kind = RF.readOmenKey(item)
+	local def = kind and R.omenKind(cfg, kind)
+	if not def then
+		player:sendCancelMessage("This omen key is silent.")
+		return false
+	end
+	local t = {minLevel = o.minLevel, omen = true}
+	if not openerOk(player, t) then
+		return false
+	end
+	if not MonsterType(def.boss) then
+		player:sendCancelMessage("The guardian does not answer. Tell a gamemaster.")
+		return false
+	end
+	local group = gather(player, t)
+	local slot, L = takeSlot(player)
+	if not slot then
+		return false
+	end
+	cleanSlot(L)
+	local th = cfg.themes[def.theme] or cfg.themes[1]
+	theme(L, th, {})
+	if not item:remove(1) then
+		player:sendCancelMessage("The key could not be used.")
+		return false
+	end
+	local key = {tier = cfg.maxTier, mods = {}, omen = def.key}
+	setMarker(player, key)
+
+	RF.nextId = RF.nextId + 1
+	local fx = R.effects(cfg, {}, 1)
+	local now = os.time()
+	local run = R.newRun(cfg, now, 0, 0, fx)
+	run.limit = o.timeLimit
+	run.deadline = now + o.timeLimit
+	run.bossDueAt = now + o.startDelay
+	run.id, run.slot, run.L, run.key, run.fx = RF.nextId, slot, L, key, fx
+	run.plan = {types = {}, packs = {}, total = 0, bossAt = 0, boss = def.boss, guardians = 1}
+	run.omen = def.key
+	run.bonus = {quantity = 0, rarity = 0, experience = 0}
+	run.players, run.size, run.themeName, run.rooms = {}, #group, th.name, {}
+	run.lives = R.startLives(cfg, #group, fx)
+	run.livesMax, run.deaths, run.revive = run.lives, 0, {}
+	run.openerGuid = player:getGuid()
+	run.typeNames = {def.boss}
+	RF.runs[slot] = run
+	enter(run, group)
+	say(run, string.format("The %s omen: %s comes in %d seconds. %d minutes, %d shared lives.", def.name, def.boss,
+		o.startDelay, math.floor(run.limit / 60), run.lives))
+	sendHud(run, "start")
+	run.hudAt = now + cfg.hudEvery
+	addEvent(tick, 1000, slot, run.id)
+	print(string.format("[ChaosRift] %s opened omen run %d: slot %d, %s, %d player(s)", player:getName(), run.id, slot,
+		def.key, #group))
 	return true
 end
 
@@ -1303,9 +1557,13 @@ function RF.status(player)
 		return nil
 	end
 	local left = R.timeLeft(run, os.time())
-	return string.format("Rift tier %d (%s): %s, %d:%02d left, %d / %d monsters, guardian %s.",
+	if run.omen then
+		return string.format("Omen arena (%s): %s, %d:%02d left, guardian %s, %d / %d lives.", R.omenKind(C(), run.omen).name,
+			run.state, math.floor(left / 60), left % 60, run.boss, run.lives or 0, run.livesMax or 0)
+	end
+	return string.format("Rift tier %d (%s): %s, %d:%02d left, %d / %d monsters, guardian %s, %d / %d lives.",
 		run.key.tier, run.themeName, run.state, math.floor(left / 60), left % 60, run.killed, run.total,
-		run.boss == "waiting" and ("after " .. run.bossAt .. " kills") or run.boss)
+		run.boss == "waiting" and ("after " .. run.bossAt .. " kills") or run.boss, run.lives or 0, run.livesMax or 0)
 end
 
 -- ======================================================================== events
@@ -1324,6 +1582,64 @@ function keyAction.onUse(player, item, fromPosition, target, toPosition, isHotke
 end
 keyAction:aid(C().key.actionId)
 keyAction:register()
+
+-- Omen Fragments: using them (with keyCost or more in the backpack) binds an Omen Key of a random kind
+function RF.useFragments(player)
+	local o = C().omen
+	local have = player:getItemCount(o.fragment.id)
+	if have < o.keyCost then
+		player:sendCancelMessage(string.format("You need %d omen fragments to bind an Omen Key (you carry %d).", o.keyCost, have))
+		return false
+	end
+	if not omenItemReady(o.key.id) then
+		player:sendCancelMessage("Omen Keys are not installed on this server.")
+		return false
+	end
+	if not player:removeItem(o.fragment.id, o.keyCost) then
+		player:sendCancelMessage("The fragments could not be bound.")
+		return false
+	end
+	local kind = RF.giveOmenKey(player, nil, string.format("%d omen fragments bind together", o.keyCost))
+	player:getPosition():sendMagicEffect(CONST_ME_MAGIC_RED)
+	return kind ~= nil
+end
+
+if omenItemReady(C().omen.fragment.id) then
+	local fragmentAction = Action()
+	function fragmentAction.onUse(player, item, fromPosition, target, toPosition, isHotkey)
+		local now = os.time()
+		if (exhaust[player:getId()] or 0) > now then
+			player:sendCancelMessage("You are exhausted.")
+			return true
+		end
+		exhaust[player:getId()] = now + 1
+		RF.useFragments(player)
+		return true
+	end
+	fragmentAction:id(C().omen.fragment.id)
+	fragmentAction:register()
+end
+
+if omenItemReady(C().omen.key.id) then
+	local omenAction = Action()
+	function omenAction.onUse(player, item, fromPosition, target, toPosition, isHotkey)
+		local now = os.time()
+		if (exhaust[player:getId()] or 0) > now then
+			player:sendCancelMessage("You are exhausted.")
+			return true
+		end
+		exhaust[player:getId()] = now + C().useCooldown
+		if not RF.openOmen(player, item) then
+			player:getPosition():sendMagicEffect(CONST_ME_POFF)
+		end
+		return true
+	end
+	omenAction:id(C().omen.key.id)
+	omenAction:register()
+else
+	print("[ChaosRift] the omen items (" .. C().omen.fragment.id .. ", " .. C().omen.key.id ..
+		") are not in items.otb: run tools/install_omens.py; omens are off")
+end
 
 -- the reward chest: every finisher takes their share once
 function RF.useChest(player, item)
@@ -1404,6 +1720,12 @@ function monsterDeath.onDeath(creature, corpse, killer, mostDamageKiller)
 			RF.applyKey(item, key)
 			say(run, string.format("The %s monster dropped a %s!", tierName, R.keyName(C(), key.tier)))
 		end
+	end
+	-- rare / legendary monsters of a rift of omen.minTier or more may carry an Omen Fragment
+	local o = C().omen
+	local fp = run.key.tier >= o.minTier and o.eliteChance[tierName]
+	if fp and corpse and corpse.addItem and omenItemReady(o.fragment.id) and R.chance(fp, rand) then
+		corpse:addItem(o.fragment.id, 1)
 	end
 	local spawnGuardian = R.onKill(run) == "boss"
 	if run.plan.gildedAt and not run.goblin and run.killed >= run.plan.gildedAt then
@@ -1493,6 +1815,11 @@ monsterHealth:register()
 local function scaleHit(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType)
 	local run = attacker and not reflecting and RF.monsterRun[attacker:getId()]
 	if run and primaryType ~= COMBAT_HEALING then
+		-- a player back from a lost life: rift monsters cannot hurt it for lives.shieldSeconds
+		local entry = run.players[creature:getId()]
+		if entry and (entry.shieldUntil or 0) > os.time() then
+			return 0, primaryType, 0, secondaryType
+		end
 		local mult = run.fx.damage
 		if run.bossIds and run.bossIds[attacker:getId()] then
 			mult = mult * run.fx.boss -- Dread Guardian
@@ -1525,15 +1852,78 @@ function playerMana.onManaChange(creature, attacker, primaryDamage, primaryType,
 end
 playerMana:register()
 
+-- a death inside: the normal death of the engine (losses, blessings, the death window), one shared life less. With lives
+-- left the character comes back at the rift's entrance at its next login (login below); the last life collapses it.
 local playerDeath = CreatureEvent("ChaosRiftPlayerDeath")
 function playerDeath.onDeath(player)
 	local run = RF.runOf[player:getId()]
-	if run then
+	if not run then
+		return true
+	end
+	local left = R.loseLife(run)
+	local guid = player:getGuid()
+	if left and left > 0 then
+		run.revive[guid] = {name = player:getName(), entry = run.players[player:getId()].entry}
+		RF.revive[guid] = run
+		say(run, string.format("%s has fallen: %d shared %s left.", player:getName(), left, left == 1 and "life" or "lives"))
+		sendHud(run, "update") -- the fallen player too (removed next)
+		removePlayer(run, player:getId(), "dead")
+	elseif left == 0 then
+		say(run, player:getName() .. " has fallen, and with them the rift's last life.")
+		-- the dying player leaves first (no teleport inside the death event), then the rift collapses
+		run.state = "failed"
+		run.endText = "No lives are left!" .. (run.omen and " The arena collapses and the key is lost."
+			or " The rift collapses and the key is lost.")
+		say(run, run.endText)
+		sendHud(run, "update")
+		removePlayer(run, player:getId(), "dead")
+		if not run.ended then
+			finishExit(run)
+		end
+	else
 		say(run, player:getName() .. " has fallen in the rift.")
-		removePlayer(run, player:getId(), "dead") -- normal death rules; the engine sends them to the temple
+		removePlayer(run, player:getId(), "dead") -- after the seal: normal death rules, the engine sends them to the temple
 	end
 	return true
 end
+
+-- the next login after a death with lives left: back at the rift's entrance
+local function revive(player)
+	local guid = player:getGuid()
+	local run = RF.revive[guid]
+	if not run then
+		return false
+	end
+	RF.revive[guid] = nil
+	local f = run.revive and run.revive[guid]
+	if run.revive then
+		run.revive[guid] = nil
+	end
+	if not f or run.ended or run.state ~= "running" or RF.runs[run.slot] ~= run then
+		return false
+	end
+	local id = player:getId()
+	run.players[id] = {id = id, guid = guid, name = player:getName(), entry = f.entry, xp = {base = 0},
+		shieldUntil = os.time() + C().lives.shieldSeconds}
+	RF.runOf[id] = run
+	player:registerEvent("ChaosRiftPlayerDeath")
+	player:registerEvent("ChaosRiftPlayerHit")
+	player:registerEvent("ChaosRiftPlayerMana")
+	local L = run.L
+	player:teleportTo(Position(L.start.x, L.start.y, L.start.z))
+	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+	say(run, string.format("%s returns to the rift (%d shared %s left).", player:getName(), run.lives,
+		run.lives == 1 and "life" or "lives"))
+	-- the client asks for the HUD at game start too; this one covers a client that is already loaded
+	addEvent(function(cid, slot, rid)
+		local p, r = Player(cid), RF.runs[slot]
+		if p and r and r.id == rid and not r.ended then
+			sendHud(r, "start", p)
+		end
+	end, 1000, id, run.slot, run.id)
+	return true
+end
+RF._revive = revive
 playerDeath:register()
 
 local logout = CreatureEvent("ChaosRiftLogout")
@@ -1551,6 +1941,7 @@ local login = CreatureEvent("ChaosRiftLogin")
 function login.onLogin(player)
 	player:registerEvent("ChaosRiftLogout")
 	player:registerEvent("ChaosRiftExtended")
+	revive(player)
 	if R.slotOfPos(C(), player:getPosition()) and not RF.runOf[player:getId()] then
 		local temple = player:getTown():getTemplePosition()
 		player:teleportTo(temple)
@@ -1711,6 +2102,24 @@ local function onRift(player, words, param)
 			fail(run, "A gamemaster closed the rift.")
 		end
 		return false
+	elseif gm and args[1] == "omen" then
+		local kind = args[2] and (R.omenKind(cfg, tonumber(args[2]) or args[2])) or nil
+		RF.giveOmenKey(player, kind and kind.key or nil, "GM omen key")
+		return false
+	elseif gm and args[1] == "fragments" then
+		local n = math.max(1, math.min(1000, tonumber(args[2]) or cfg.omen.keyCost))
+		if omenItemReady(cfg.omen.fragment.id) then
+			giveStack(player, cfg.omen.fragment.id, n)
+			player:sendTextMessage(MESSAGE_INFO_DESCR, n .. " omen fragments.")
+		end
+		return false
+	elseif gm and args[1] == "lives" then
+		local run = RF.runOf[player:getId()]
+		if run and tonumber(args[2]) then
+			run.lives = math.max(1, math.floor(tonumber(args[2])))
+			sendHud(run, "update")
+		end
+		return false
 	end
 	local lines = {}
 	local status = RF.status(player)
@@ -1727,6 +2136,11 @@ local function onRift(player, words, param)
 	end
 	if #keys == 0 then
 		lines[#lines + 1] = "You carry no Rift Key. Tier 1 keys drop from monsters of your level and from bounties; a sealed rift may leave a key of its tier or the next."
+	end
+	local o = cfg.omen
+	if omenItemReady(o.fragment.id) then
+		lines[#lines + 1] = string.format("Omen fragments: %d / %d (rifts of tier %d+ give them; use %d to bind an Omen Key " ..
+			"that opens a guardian's arena).", player:getItemCount(o.fragment.id), o.keyCost, o.minTier, o.keyCost)
 	end
 	player:showTextDialog(cfg.key.itemId, table.concat(lines, "\n\n"))
 	return false

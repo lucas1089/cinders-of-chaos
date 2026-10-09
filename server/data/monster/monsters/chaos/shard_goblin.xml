@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Shard Goblin: a treasure goblin variant (data/scripts/chaos/treasure_goblin.lua, cfg.variants) that carries
+     rune shards and orbs. Same behaviour as the Treasure Goblin: replaces a rare natural respawn, never attacks, flees and
+     blinks once hit, escapes after ~18 s. Health, speed, experience and loot are set by the script from the area level:
+     the values here are only placeholders. runonhealth must equal runThreshold of treasure_goblin_config.lua. -->
+<monster name="Shard Goblin" nameDescription="a shard goblin" race="blood" experience="0" speed="220" manacost="0">
+	<health now="300" max="300" />
+	<look type="61" corpse="6002" />
+	<targetchange interval="2000" chance="20" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="0" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="4" />
+		<flag staticattack="50" />
+		<flag runonhealth="100000000" />
+		<flag canwalkonenergy="0" />
+		<flag canwalkonfire="0" />
+		<flag canwalkonpoison="0" />
+	</flags>
+	<script>
+		<event name="ChaosTreasureGoblinHit" />
+		<event name="ChaosTreasureGoblinDeath" />
+	</script>
+	<defenses armor="15" defense="15" />
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Crunchy shards!" />
+		<voice sentence="Hee hee hee!" />
+		<voice sentence="All mine!" />
+	</voices>
+	<loot>
+	</loot>
+</monster>

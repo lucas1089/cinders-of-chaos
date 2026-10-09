@@ -28,15 +28,11 @@ return {
 	name = {min = 2, max = 16}, -- letters and single spaces, starts and ends with a letter
 	thinkMs = 500, -- the follow / leash / ability tick
 	leashRange = 6, -- farther (or another floor): the pet is put next to its owner
-	-- anti-block: a monster that targets the owner, stands within `range` of the pet, is not next to the owner and cannot
-	-- push creatures (monsters that can push simply push the pet away) for `afterSeconds` in a row makes the pet step
-	-- away (hide) for `hideSeconds`; it comes back next to its owner by itself. A monster that has no path to the owner
-	-- counts up to `pathRange` from the pet: the engine makes a monster without a path wander, so it rarely stays next
-	-- to the pet for `afterSeconds` in a row (a 1-wide corridor with the pet in it held a troll back for 34 s)
-	block = {range = 1, pathRange = 4, afterSeconds = 1.5, hideSeconds = 6},
+	-- no anti-block: a pet is passable (flag in its monster type, engine patch in server/src-patches), so players and
+	-- monsters walk through it and it never stands in anyone's way
 	-- the pet only exists next to its owner outside protection zones; it waits (despawned) while the owner is in one and
 	-- comes back when the owner leaves (also after a teleport too far for the engine, which removes summons)
-	-- hide: how a pet that rests (protection zone, banned zone, other summons, anti-block) shows: it is removed with a
+	-- hide: how a pet that rests (protection zone, banned zone, other summons) shows: it is removed with a
 	-- puff and put back next to its owner when the reason ends; its XP and abilities wait meanwhile (utility abilities
 	-- keep working while it rests, combat abilities do not)
 	-- other summons: a pet rests while its owner has a summon that is not a class companion (Call Thrall, Moonfang Pack),

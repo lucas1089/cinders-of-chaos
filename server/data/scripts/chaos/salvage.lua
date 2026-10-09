@@ -469,7 +469,7 @@ local function lockAction(player, data)
 	S.setLocked(item, on)
 	local name = C.itemName(item)
 	logRows(player, {{orb = "Lock", item = name, text = on and "locked" or "unlocked"}})
-	local msg = on and string.format("%s is locked: salvage and the auto seller skip it.", name)
+	local msg = on and string.format("%s is locked: it cannot be sold, salvaged or thrown away.", name)
 		or string.format("%s is unlocked.", name)
 	b.sendResult(player, true, "salvage", msg)
 	b.sendState(player, false)
@@ -542,7 +542,7 @@ end
 local look = EventCallback
 look.onLook = function(self, thing, position, distance, description)
 	if thing and thing.isItem and thing:isItem() and S.isLocked(thing) then
-		description = (description or "") .. "\nIt is locked: salvage and the auto seller skip it."
+		description = (description or "") .. "\nIt is locked: it cannot be sold, salvaged or thrown away."
 	end
 	return description
 end

@@ -266,4 +266,23 @@ local odd = newItem(2400)
 odd:setCustomAttribute("rarity", "x")
 eq(T.build(odd).rarity, 0)
 
+-- ---------------------------------------------------------------- the viewer's attack interval (attack speed cap)
+local function yours(t)
+	for _, s in ipairs(t.base) do
+		if s.k == "yourinterval" then
+			return s
+		end
+	end
+end
+eq(yours(T.build(axe)), nil, "no viewer: no line")
+local fast = newItem(2400)
+fast:setAttribute(ITEM_ATTRIBUTE_ATTACK_SPEED, 1600) -- attack speed +20% (no own interval: from 2000)
+local y = yours(T.build(fast, {wielder = {voc = 2000, dex = 0}}))
+eq(y.v, 1.6) eq(y.l, "Your Attack Interval") eq(y.low, true)
+y = yours(T.build(fast, {wielder = {voc = 1300, dex = 20}}))
+eq(y.v, 1.0, "Shadowfist with dexterity: the floor") eq(y.l, "Your Attack Interval (capped)")
+y = yours(T.build(fast, {wielder = {voc = 2000, dex = 20}}))
+eq(y.v, 1.5, "weapon + dexterity: at most -25%") eq(y.l, "Your Attack Interval (capped)")
+eq(yours(T.build(armor, {wielder = {voc = 2000, dex = 0}})), nil, "only weapons")
+
 print(string.format("item_tooltip_test: %d checks OK", checks))

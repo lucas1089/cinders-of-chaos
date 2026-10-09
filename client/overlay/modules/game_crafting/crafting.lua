@@ -133,8 +133,8 @@ local function showItem(item)
   window.lockButton:setVisible(item ~= nil)
   if item then
     window.lockButton:setText(item.locked and tr('Unlock') or tr('Lock'))
-    window.lockButton:setTooltip(item.locked and tr('Locked: salvage and the auto seller skip this item. Click to unlock.')
-      or tr('Lock the item: salvage and the auto seller will skip it.'))
+    window.lockButton:setTooltip(item.locked and tr('Locked: it cannot be sold, salvaged or thrown away. Click to unlock.')
+      or tr('Lock the item: it cannot be sold, salvaged or thrown away.'))
   end
   if not item then
     window.itemSlot:setItemId(0)

@@ -175,7 +175,8 @@ reg{id = "remove_item", name = "Remove item", description = "Remove items (id or
 		if not t then return false, err end
 		local it, e2 = ChaosAdmin.resolveItem(p.item)
 		if not it then return false, e2 end
-		if t:removeItem(it:getId(), p.count) then
+		-- includeLocked (engine patch 0009): staff remove locked items too
+		if t:removeItem(it:getId(), p.count, -1, false, true) then
 			return true, string.format("Removed %dx %s from %s.", p.count, it:getName(), t:getName())
 		end
 		return false, "Player does not have that many."

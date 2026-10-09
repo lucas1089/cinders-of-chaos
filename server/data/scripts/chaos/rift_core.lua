@@ -83,9 +83,64 @@ function R.modAllowed(def, tier)
 	return tier == nil or tier >= (def.minTier or 1)
 end
 
-local function rollValue(def, rand)
-	local steps = floor((def.range[2] - def.range[1]) / def.step)
-	return def.range[1] + rand(0, steps) * def.step
+-- ---------------------------------------------------------------- modifier tiers (I-V)
+-- def.tiers = the highest value of each tier; tier 1 starts at range[1], tier t at tiers[t - 1] + step. A modifier
+-- without `tiers` has none (R.modTier is nil).
+function R.tierBounds(def, t)
+	local tiers = def.tiers
+	if not tiers or #tiers == 0 then
+		return def.range[1], def.range[2]
+	end
+	t = clamp(floor(t), 1, #tiers)
+	local lo = t == 1 and def.range[1] or tiers[t - 1] + def.step
+	return lo, tiers[t]
+end
+
+function R.modTier(def, value)
+	if not def or not def.tiers then
+		return nil
+	end
+	for t, top in ipairs(def.tiers) do
+		if value <= top then
+			return t
+		end
+	end
+	return #def.tiers
+end
+
+-- {lowest, highest} modifier tier a key of `tier` rolls (no tier or no table: I-III, the ranges before the tiers)
+function R.modTierWindow(cfg, tier)
+	local mt = cfg and cfg.modTiers
+	if not mt or not tier then
+		return 1, 3
+	end
+	for _, row in ipairs(mt.window) do
+		if tier <= row[1] then
+			return row[2], row[3]
+		end
+	end
+	local last = mt.window[#mt.window]
+	return last[2], last[3]
+end
+
+function R.tierName(cfg, t)
+	local names = cfg and cfg.modTiers and cfg.modTiers.names
+	return t and (names and names[t] or tostring(t)) or nil
+end
+
+-- a value for a modifier on a key of `tier`: evenly on the step grid from the bottom of the lowest to the top of the
+-- highest tier of the window (one rand call; keys of tier 1-5 and calls without a tier roll exactly the I-III range)
+local function rollValue(def, rand, tier, cfg)
+	local lo, hi = def.range[1], def.range[2]
+	if def.tiers then
+		local a, b = R.modTierWindow(cfg, tier)
+		b = math.min(b, #def.tiers)
+		a = math.min(a, b)
+		lo = (R.tierBounds(def, a))
+		hi = select(2, R.tierBounds(def, b))
+	end
+	local steps = floor((hi - lo) / def.step)
+	return lo + rand(0, steps) * def.step
 end
 R.rollValue = rollValue
 
@@ -128,7 +183,7 @@ function R.rollMods(cfg, count, rand, tier)
 	local mods = {}
 	for _, i in ipairs(drawMods(cfg, modPool(cfg, tier), count, rand)) do
 		local m = cfg.mods[i]
-		mods[#mods + 1] = {key = m.key, value = rollValue(m, rand)}
+		mods[#mods + 1] = {key = m.key, value = rollValue(m, rand, tier, cfg)}
 	end
 	return mods
 end
@@ -143,7 +198,7 @@ function R.addMods(cfg, key, count, rand)
 	local added = {}
 	for _, i in ipairs(drawMods(cfg, modPool(cfg, key.tier, have), count, rand)) do
 		local def = cfg.mods[i]
-		local m = {key = def.key, value = rollValue(def, rand)}
+		local m = {key = def.key, value = rollValue(def, rand, key.tier, cfg)}
 		key.mods[#key.mods + 1] = m
 		added[#added + 1] = m
 	end
@@ -213,6 +268,16 @@ function R.modText(cfg, m)
 	return (def.text:find("%%d") and string.format(def.text, m.value) or def.text)
 end
 
+-- "Vitality III" (the name and the tier of a modifier; the name alone without a tier)
+function R.modLabel(cfg, m)
+	local def = R.modDef(cfg, m.key)
+	if not def then
+		return m.key
+	end
+	local t = R.modTier(def, m.value)
+	return t and (def.name .. " " .. R.tierName(cfg, t)) or def.name
+end
+
 -- reward bonuses in percent {quantity, rarity, experience} from the modifiers (+ tiers above the table)
 function R.bonuses(cfg, mods, tier)
 	local b = {quantity = 0, rarity = 0, experience = 0}
@@ -230,7 +295,7 @@ function R.bonuses(cfg, mods, tier)
 			end
 		end
 	end
-	local cap = cfg.bonusCap or {}
+	local cap = R.bonusCaps(cfg, mods)
 	for k, v in pairs(b) do
 		b[k] = floor(v + 0.5)
 		if cap[k] and b[k] > cap[k] then
@@ -240,10 +305,34 @@ function R.bonuses(cfg, mods, tier)
 	return b
 end
 
+-- the caps of the summed bonuses: bonusCap + modTiers.capRaise of every tier IV / V modifier
+function R.bonusCaps(cfg, mods)
+	local cap = {}
+	for k, v in pairs(cfg.bonusCap or {}) do
+		cap[k] = v
+	end
+	local raise = cfg.modTiers and cfg.modTiers.capRaise
+	if raise then
+		for _, m in ipairs(mods or {}) do
+			local t = R.modTier(R.modDef(cfg, m.key), m.value)
+			local r = t and raise[t]
+			if r then
+				for k, v in pairs(r) do
+					if cap[k] then
+						cap[k] = cap[k] + v
+					end
+				end
+			end
+		end
+	end
+	return cap
+end
+
 function R.describe(cfg, key)
 	local lines = {}
 	for _, m in ipairs(key.mods or {}) do
-		lines[#lines + 1] = R.modText(cfg, m)
+		local t = R.modTier(R.modDef(cfg, m.key), m.value)
+		lines[#lines + 1] = R.modText(cfg, m) .. (t and (" (" .. R.tierName(cfg, t) .. ")") or "")
 	end
 	local b = R.bonuses(cfg, key.mods, key.tier)
 	local bonus = {}
@@ -283,7 +372,7 @@ function R.effects(cfg, mods, tier)
 	local t = R.tierInfo(cfg, tier)
 	local fx = {health = t.health, damage = t.damage, speed = 0, elite = 1, reflect = 0, resist = 0, noRegen = false, packBonus = 0,
 		packMult = 1, gilded = 0, warband = 0, coffer = 0, twin = 0, echo = 0, cinder = 0, healMult = 1, timeMult = 1,
-		boss = 1}
+		boss = 1, fragile = 0}
 	for _, m in ipairs(mods or {}) do
 		local v = m.value
 		if m.key == "vitality" then
@@ -322,6 +411,8 @@ function R.effects(cfg, mods, tier)
 			fx.timeMult = fx.timeMult * (1 - v / 100)
 		elseif m.key == "dread" then
 			fx.boss = fx.boss * (1 + v / 100) -- guardian health and damage
+		elseif m.key == "fragile" then
+			fx.fragile = fx.fragile + v -- fewer lives
 		end
 	end
 	return fx
@@ -757,6 +848,83 @@ function R.tick(run, now)
 		return "fail"
 	end
 	return nil
+end
+
+-- ===================================================================== lives
+-- shared lives of a run: lives.base + perExtraPlayer x (players - 1) - Fragile, at least lives.min
+function R.startLives(cfg, players, fx)
+	local l = cfg.lives or {base = 3, perExtraPlayer = 1, min = 1}
+	local n = l.base + l.perExtraPlayer * (math.max(1, players or 1) - 1) - (fx and fx.fragile or 0)
+	return math.max(l.min or 1, n)
+end
+
+-- a player died inside a running run: one life less. Returns the lives left (0: the rift collapses), or nil when the
+-- run is not running (the death costs nothing then)
+function R.loseLife(run)
+	if run.state ~= "running" then
+		return nil
+	end
+	run.deaths = (run.deaths or 0) + 1
+	run.lives = math.max(0, (run.lives or 1) - 1)
+	return run.lives
+end
+
+-- ===================================================================== omens
+-- a kind by its key ("bloodmoon") or index; returns def, index
+function R.omenKind(cfg, k)
+	local kinds = cfg.omen and cfg.omen.kinds or {}
+	if type(k) == "number" then
+		return kinds[k], kinds[k] and k or nil
+	end
+	for i, d in ipairs(kinds) do
+		if d.key == k then
+			return d, i
+		end
+	end
+	return nil
+end
+
+function R.omenKeyName(cfg, kind)
+	local d = R.omenKind(cfg, kind)
+	return "Omen Key (" .. (d and d.name or "?") .. ")"
+end
+
+-- fragments of one finisher's chest of a sealed rift of `tier` (0 below omen.minTier)
+function R.omenFragments(cfg, tier, bonus, rand)
+	local o = cfg.omen
+	if not o or tier < o.minTier then
+		return 0
+	end
+	local q = 1 + (bonus and bonus.quantity or 0) / 100
+	return roundChance((o.chest.base + o.chest.perTier * (tier - o.minTier)) * q, rand)
+end
+
+-- the guardian's health multiplier for `players`
+function R.omenHealthMult(cfg, players)
+	return 1 + cfg.omen.healthPerExtraPlayer * (math.max(1, players or 1) - 1)
+end
+
+-- one finisher's guardian chest: {gold, chaos, divine, rolls, countMult, lootTier, rarityMult, uniqueRolls, uniqueFind}
+function R.omenReward(cfg)
+	local r = cfg.omen.reward
+	return {gold = r.gold, chaos = r.chaos, divine = r.divine, rolls = r.rolls, countMult = 1, lootTier = "boss",
+		rarityMult = r.rarityMult, uniqueRolls = r.uniqueRolls, uniqueFind = r.uniqueFind}
+end
+
+-- the crash refund marker stores a rift key's tier (1..maxTier) or omenMarker + the kind's index
+R.omenMarker = 1000
+function R.markerTier(cfg, kind)
+	local _, i = R.omenKind(cfg, kind)
+	return R.omenMarker + (i or 1)
+end
+
+function R.markerOmen(cfg, value)
+	value = tonumber(value) or 0
+	if value <= R.omenMarker then
+		return nil
+	end
+	local d = R.omenKind(cfg, value - R.omenMarker)
+	return d and d.key or nil
 end
 
 -- ===================================================================== experience cap

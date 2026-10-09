@@ -3,9 +3,10 @@
 -- Overview and numbers: server/README.md "Pets".
 --
 -- A pet is a small companion that cannot fight and cannot be fought: one out at a time, it follows its owner as the
--- owner's summon (monster types in data/monster/monsters/chaos/pets/: not attackable, no attacks, pushable), levels
+-- owner's summon (monster types in data/monster/monsters/chaos/pets/: not attackable, no attacks, passable: players and
+-- monsters walk through it, server/src-patches), levels
 -- from the owner's kills and has two small abilities (pets_config.lua `abilities`). Everything it does is done here:
---   think (cfg.thinkMs)   leash, rest (protection zone, banned zone, other summons, anti-block), Mend, Ward, Spark Aura
+--   think (cfg.thinkMs)   leash, rest (protection zone, banned zone, other summons), Mend, Ward, Spark Aura
 --   kill event            pet XP; pet drops (rolled for every kill of the character, pet out or not)
 --   onDropLoot 2          Gold Sniffer (more coins in the corpse)        } corpses the owner owns
 --   onDropLoot 2.45       Fetch (coins of corpses near the pet -> bank)  } (hunt tracker reads at 1.9 / 2.4)
@@ -476,7 +477,7 @@ function P.callOut(player, key, silent)
 	row.active = 1
 	saveRow(guid, row)
 	cool.summon = t + cfg.summonCooldown
-	P.live[player:getId()] = {species = key, nextMend = 0, nextWard = 0, wardUntil = 0, nextAura = 0, hiddenUntil = 0}
+	P.live[player:getId()] = {species = key, nextMend = 0, nextWard = 0, wardUntil = 0, nextAura = 0}
 	P.think(player)
 	refresh(player)
 	return true
@@ -620,37 +621,7 @@ function P.think(player)
 	local pet = petCreature(player)
 	local opos = player:getPosition()
 	local rule, zone = K.zoneRule(zoneFlags(player), cfg)
-	-- anti-block: a monster after the owner that the pet keeps from it (one that cannot push the pet away) for
-	-- cfg.block.afterSeconds in a row makes the pet step out of the way
-	if pet then
-		local stuck = {}
-		local ppos = pet:getPosition()
-		for _, t in ipairs(threatsOf(player, ppos, math.max(cfg.block.range, cfg.block.pathRange or 0))) do
-			local mt = t.creature:getType()
-			local ok, pushes = pcall(function() return mt and mt:canPushCreatures() end)
-			if not (ok and pushes) then
-				-- farther than block.range: only a monster that cannot find a way to the owner counts
-				if K.distance(t.pos, ppos) > cfg.block.range and K.distance(t.pos, opos) > 1 then
-					local okPath, path = pcall(function()
-						return t.creature:getPathTo(opos, 0, 1, true, true, 3 * (cfg.block.pathRange or 4))
-					end)
-					t.noPath = okPath and not path
-				end
-				stuck[#stuck + 1] = t
-			end
-		end
-		if K.blocking(pet:getPosition(), opos, stuck, cfg) then
-			live.blockedSince = live.blockedSince or ms
-			if ms - live.blockedSince >= cfg.block.afterSeconds * 1000 then
-				live.hiddenUntil = ms + cfg.block.hideSeconds * 1000
-				live.blockedSince = nil
-			end
-		else
-			live.blockedSince = nil
-		end
-	end
-	local reason = K.restReason({inPz = inPz(opos), zone = rule, otherSummons = otherSummons(player, pet),
-		hiddenUntil = live.hiddenUntil, now = ms})
+	local reason = K.restReason({inPz = inPz(opos), zone = rule, otherSummons = otherSummons(player, pet)})
 	if reason then
 		if pet then
 			despawn(player)
@@ -660,7 +631,7 @@ function P.think(player)
 			live.rest = reason
 			local text = reason == "zone" and ("Pets are not allowed in " .. (ZONE_NAMES[zone] or "this place") ..
 				"; yours waits until you leave.") or K.restText(reason)
-			if reason ~= "hidden" and text then
+			if text then
 				player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR, text)
 			end
 			refresh(player)

@@ -2,7 +2,9 @@
 -- the player is in. Server: server/data/scripts/chaos/rift.lua, extended opcode 228 (JSON {action, data}).
 --   server -> client  start / update {tier, theme, left, limit, total, killed, bossAt, boss = waiting|alive|dead,
 --                                     state, bossName, mods = [{name, text, boon}], bonus = {quantity, rarity, experience},
---                                     notes = [text] (live lines: sealed coffer, goblin, twin guardians)}
+--                                     notes = [text] (live lines: sealed coffer, goblin, twin guardians, fallen players),
+--                                     lives, livesMax (shared lives), mods[].tier (modifier tier 1-5 or none),
+--                                     omen (kind name) and title (an Omen Key arena)}
 --                     end {result = success|failed, text, exitIn}
 --   client -> server  query (after a module reload: the server answers with start when the player is in a rift)
 -- !rift (server talkaction) shows the keys the player carries and the run status.
@@ -60,12 +62,21 @@ end
 
 local function render()
   if not hud or not data then return end
-  child('title'):setText(tr('Rift - Tier %d', tonumber(data.tier) or 1))
+  child('title'):setText(data.title and tostring(data.title) or tr('Rift - Tier %d', tonumber(data.tier) or 1))
+  local lives = child('lives')
+  local livesText = RiftMath.livesLine(data.lives, data.livesMax)
+  lives:setText(livesText)
+  lives:setColor(RiftMath.livesColor(data.lives, data.livesMax))
+  lives:setVisible(livesText ~= '')
   child('theme'):setText(tostring(data.theme or ''))
   local total, killed = tonumber(data.total) or 0, tonumber(data.killed) or 0
   local bar = child('progress')
   bar:setPercent(RiftMath.bossPercent(killed, data.bossAt, data.boss))
-  bar:setText(tr('%s / %s slain, %s left', short(killed), short(total), short(math.max(0, total - killed))))
+  if data.omen then
+    bar:setText(tr('Omen: %s', tostring(data.omen)))
+  else
+    bar:setText(tr('%s / %s slain, %s left', short(killed), short(total), short(math.max(0, total - killed))))
+  end
   bar:setBackgroundColor(data.boss == 'waiting' and '#6a2ab0' or '#8a1010')
   child('boss'):setText(RiftMath.bossLine(data))
   local mods = child('mods')
@@ -82,6 +93,7 @@ local function render()
     g_ui.createWidget('RiftNoteLabel', notes):setText(tostring(text))
   end
   child('modsHeader'):setText(#list > 0 and tr('Modifiers') or tr('No modifiers'))
+  child('modsHeader'):setVisible(#list > 0 or not data.omen) -- an omen arena has no modifiers to speak of
   local bonus = RiftMath.bonusLine(data.bonus)
   child('bonus'):setText(bonus ~= '' and tr('Rewards: %s', bonus) or '')
   child('bonus'):setVisible(bonus ~= '')

@@ -1,0 +1,163 @@
+# Passable monsters (the Chaos pets): a monster type with <flag passable="1" /> blocks no creature. Players walk
+# through it (Player::canWalkthrough, and canWalkthroughEx so the creature packets mark it passable and the client
+# pre-walks through it); monsters and NPCs may step onto its tile (Tile::queryAdd), path through it at no extra cost
+# (AStar tile cost, monster random/dance steps) and a monster that pushes creatures never pushes or crushes it. The
+# passable creature itself still needs a free tile to move to. Creature::isPassable() (false) / Monster::isPassable().
+# data/monster/monsters/chaos/pets/*.xml set the flag; pets.lua has no anti-block logic any more.
+# Apply in the server source root after 0001-0004: patch -p1 < 0005-passable-pets.patch, then rebuild.
+--- a/src/creature.h
++++ b/src/creature.h
+@@ -342,6 +342,10 @@
+ 		virtual uint32_t getConditionSuppressions() const {
+ 			return 0;
+ 		}
++		// players, monsters and npcs walk through (and path through) a passable creature
++		virtual bool isPassable() const {
++			return false;
++		}
+ 		virtual bool isAttackable() const {
+ 			return true;
+ 		}
+--- a/src/map.cpp
++++ b/src/map.cpp
+@@ -917,7 +917,7 @@
+ int_fast32_t AStarNodes::getTileWalkCost(const Creature& creature, const Tile* tile)
+ {
+ 	int_fast32_t cost = 0;
+-	if (tile->getTopVisibleCreature(&creature) != nullptr) {
++	if (tile->getTopVisibleBlockingCreature(&creature) != nullptr) {
+ 		//destroy creature cost
+ 		cost += MAP_NORMALWALKCOST * 3;
+ 	}
+--- a/src/monster.cpp
++++ b/src/monster.cpp
+@@ -1223,7 +1223,7 @@
+ 
+ 		for (size_t i = 0; i < creatures->size();) {
+ 			Monster* monster = creatures->at(i)->getMonster();
+-			if (monster && monster->isPushable()) {
++			if (monster && monster->isPushable() && !monster->isPassable()) {
+ 				if (monster != lastPushedMonster && Monster::pushCreature(monster)) {
+ 					lastPushedMonster = monster;
+ 					continue;
+@@ -1904,7 +1904,7 @@
+ 		}
+ 
+ 		Tile* tile = g_game.map.getTile(pos);
+-		if (tile && tile->getTopVisibleCreature(this) == nullptr && tile->queryAdd(0, *this, 1, FLAG_PATHFINDING) == RETURNVALUE_NOERROR) {
++		if (tile && tile->getTopVisibleBlockingCreature(this) == nullptr && tile->queryAdd(0, *this, 1, FLAG_PATHFINDING) == RETURNVALUE_NOERROR) {
+ 			return true;
+ 		}
+ 	}
+--- a/src/monster.h
++++ b/src/monster.h
+@@ -89,6 +89,9 @@
+ 		bool isAttackable() const override {
+ 			return mType->info.isAttackable;
+ 		}
++		bool isPassable() const override {
++			return mType->info.isPassable;
++		}
+ 
+ 		bool canPushItems() const;
+ 		bool canPushCreatures() const {
+--- a/src/monsters.cpp
++++ b/src/monsters.cpp
+@@ -965,6 +965,8 @@
+ 				mType->info.runAwayHealth = pugi::cast<int32_t>(attr.value());
+ 			} else if (strcasecmp(attrName, "hidehealth") == 0) {
+ 				mType->info.hiddenHealth = attr.as_bool();
++			} else if (strcasecmp(attrName, "passable") == 0) {
++				mType->info.isPassable = attr.as_bool();
+ 			} else if (strcasecmp(attrName, "canwalkonenergy") == 0) {
+ 				mType->info.canWalkOnEnergy = attr.as_bool();
+ 			} else if (strcasecmp(attrName, "canwalkonfire") == 0) {
+--- a/src/monsters.h
++++ b/src/monsters.h
+@@ -142,6 +142,7 @@
+ 		bool isIllusionable = false;
+ 		bool isSummonable = false;
+ 		bool hiddenHealth = false;
++		bool isPassable = false; // <flag passable="1" />: no creature is blocked by it (pets)
+ 		bool noMove = false;
+ 		bool canWalkOnEnergy = true;
+ 		bool canWalkOnFire = true;
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -745,7 +745,7 @@
+ 
+ bool Player::canWalkthrough(const Creature* creature) const
+ {
+-	if (group->access || creature->isInGhostMode()) {
++	if (group->access || creature->isInGhostMode() || creature->isPassable()) {
+ 		return true;
+ 	}
+ 
+@@ -781,7 +781,7 @@
+ 
+ bool Player::canWalkthroughEx(const Creature* creature) const
+ {
+-	if (group->access) {
++	if (group->access || creature->isPassable()) {
+ 		return true;
+ 	}
+ 
+--- a/src/tile.cpp
++++ b/src/tile.cpp
+@@ -230,6 +230,18 @@
+ 	return nullptr;
+ }
+ 
++Creature* Tile::getTopVisibleBlockingCreature(const Creature* creature) const
++{
++	if (const CreatureVector* creatures = getCreatures()) {
++		for (Creature* tileCreature : *creatures) {
++			if (!tileCreature->isPassable() && creature->canSeeCreature(tileCreature)) {
++				return tileCreature;
++			}
++		}
++	}
++	return nullptr;
++}
++
+ const Creature* Tile::getBottomCreature() const
+ {
+ 	if (const CreatureVector* creatures = getCreatures()) {
+@@ -502,7 +514,7 @@
+ 			if (monster->canPushCreatures() && !monster->isSummon()) {
+ 				if (creatures) {
+ 					for (Creature* tileCreature : *creatures) {
+-						if (tileCreature->getPlayer() && tileCreature->getPlayer()->isInGhostMode()) {
++						if (tileCreature->isPassable() || (tileCreature->getPlayer() && tileCreature->getPlayer()->isInGhostMode())) {
+ 							continue;
+ 						}
+ 
+@@ -515,7 +527,7 @@
+ 				}
+ 			} else if (creatures && !creatures->empty()) {
+ 				for (const Creature* tileCreature : *creatures) {
+-					if (!tileCreature->isInGhostMode()) {
++					if (!tileCreature->isInGhostMode() && !tileCreature->isPassable()) {
+ 						return RETURNVALUE_NOTENOUGHROOM;
+ 					}
+ 				}
+@@ -594,7 +606,7 @@
+ 			}
+ 		} else if (creatures && !creatures->empty() && !hasBitSet(FLAG_IGNOREBLOCKCREATURE, flags)) {
+ 			for (const Creature* tileCreature : *creatures) {
+-				if (!tileCreature->isInGhostMode()) {
++				if (!tileCreature->isInGhostMode() && !tileCreature->isPassable()) {
+ 					return RETURNVALUE_NOTENOUGHROOM;
+ 				}
+ 			}
+--- a/src/tile.h
++++ b/src/tile.h
+@@ -167,6 +167,8 @@
+ 		Creature* getTopCreature() const;
+ 		const Creature* getBottomCreature() const;
+ 		Creature* getTopVisibleCreature(const Creature* creature) const;
++		// like getTopVisibleCreature, skipping passable creatures (they block no one)
++		Creature* getTopVisibleBlockingCreature(const Creature* creature) const;
+ 		const Creature* getBottomVisibleCreature(const Creature* creature) const;
+ 		Item* getTopTopItem() const;
+ 		Item* getTopDownItem() const;

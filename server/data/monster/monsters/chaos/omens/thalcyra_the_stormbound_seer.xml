@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Omen guardian of the Stormcall (rift.lua, Omen Keys). A storm seer: energy beams, chain lightning, a shocking curse. Numbers: server/README.md "Rifts", Omens. -->
+<monster name="Thalcyra the Stormbound Seer" nameDescription="Thalcyra the Stormbound Seer" race="energy" experience="2000000" speed="280" manacost="0">
+	<health now="500000" max="500000" />
+	<look type="842" head="86" body="87" legs="86" feet="114" addons="3" corpse="9780" />
+	<targetchange interval="5000" chance="12" />
+	<flags>
+		<flag isboss="1" />
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="3" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-600" max="-1300" />
+		<!-- Stormlance: narrow, long beam -->
+		<attack name="energy" interval="2000" chance="20" length="8" spread="0" min="-1400" max="-2600">
+			<attribute key="areaEffect" value="purpleenergy" />
+		</attack>
+		<!-- Thunderhead: thrown at a target, splashes radius 3 -->
+		<attack name="energy" interval="2000" chance="18" range="7" target="1" radius="3" min="-1100" max="-2100">
+			<attribute key="shootEffect" value="energy" />
+			<attribute key="areaEffect" value="energyarea" />
+		</attack>
+		<!-- Tempest: everything around her, the telegraphed big hit -->
+		<attack name="energy" interval="2000" chance="9" radius="6" min="-1800" max="-3200">
+			<attribute key="areaEffect" value="bigclouds" />
+		</attack>
+		<!-- Static: a shocking curse, total 2-3.5k -->
+		<attack name="energycondition" interval="2000" chance="12" range="7" target="1" min="-2000" max="-3500" tick="2000">
+			<attribute key="shootEffect" value="energyball" />
+			<attribute key="areaEffect" value="energy" />
+		</attack>
+	</attacks>
+	<defenses armor="70" defense="70">
+		<defense name="healing" interval="2000" chance="7" min="7000" max="12000">
+			<attribute key="areaEffect" value="blueshimmer" />
+		</defense>
+		<defense name="speed" interval="2000" chance="10" speedchange="450" duration="4000">
+			<attribute key="areaEffect" value="energy" />
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="5" />
+		<element firePercent="0" />
+		<element energyPercent="50" />
+		<element earthPercent="-15" />
+		<element icePercent="10" />
+		<element holyPercent="0" />
+		<element deathPercent="0" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+		<immunity lifedrain="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="The sky remembers every name. Yours is next." yell="1" />
+		<voice sentence="STORM, ANSWER ME!" yell="1" />
+		<voice sentence="I have seen your end. It is very loud." yell="1" />
+	</voices>
+	<loot>
+		<item id="2160" countmax="25" chance="100000" /><!-- crystal coin -->
+		<item id="29856" countmax="4" chance="100000" /><!-- Chaos Orb -->
+		<item id="29857" countmax="2" chance="60000" /><!-- Divine Orb -->
+		<item id="29869" chance="9000" /><!-- Seraphic Helmet -->
+		<item id="29870" chance="9000" /><!-- Seraphic Tabard -->
+		<item id="29871" chance="9000" /><!-- Seraphic Greaves -->
+		<item id="29872" chance="8000" /><!-- Seraphic Boots -->
+		<item id="29873" chance="7000" /><!-- Seraphic Quiver -->
+		<item id="29875" chance="7000" /><!-- Seraphic Piercer -->
+		<item id="29876" chance="6000" /><!-- Seraphic Necklace -->
+		<item id="29877" chance="6000" /><!-- Seraphic Ring -->
+	</loot>
+</monster>

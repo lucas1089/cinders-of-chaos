@@ -3,7 +3,7 @@ Module
   description: Spell supports (support runes in spell sockets; !supports, extended opcode 243; action bar pips)
   author: project-chaos
   sandboxed: true
-  scripts: [ spellsupports ]
+  scripts: [ supportstext, spellsupports ]
   dependencies:
     - client_chaos_theme
     - game_interface

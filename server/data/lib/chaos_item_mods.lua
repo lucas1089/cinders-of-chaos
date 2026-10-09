@@ -1,6 +1,6 @@
 -- Chaos item modifiers (ChaosItemMods): modifier types the engine's rarity roll does not have (attack speed, movement
 -- speed, damage to elites and bosses, life / mana on kill, dodge, reflect, thorns, experience, gold / item / rarity
--- find, healing done, damage taken from monsters).
+-- find, healing done, damage taken from monsters, treasure goblin chance).
 --
 -- This file is the pure part (no engine calls apart from reading and writing item attributes): the catalogue, the
 -- value tiers per rarity, the rolls, the caps, the description text and the per-player totals. It is loaded by
@@ -57,7 +57,11 @@ M.config = {
 		{key = "healing", label = "Healing Done", fmt = "pct", weight = 8, cap = 20,
 			kinds = {weapon = true, shield = true, jewel = true}, tiers = {{1, 2}, {2, 3}, {3, 5}, {4, 6}, {5, 8}}},
 		{key = "monsterreduction", label = "Damage Taken from Monsters", fmt = "less", weight = 8, cap = 12,
-			kinds = {armor = true, helmet = true, legs = true, shield = true}, tiers = {{1, 1}, {1, 2}, {1, 2}, {2, 3}, {2, 4}}}
+			kinds = {armor = true, helmet = true, legs = true, shield = true}, tiers = {{1, 1}, {1, 2}, {1, 2}, {2, 3}, {2, 4}}},
+		-- the treasure goblin roll of a respawn near the player (treasure_goblin.lua: the highest total of the players
+		-- around the spawn point counts; +100% = twice the odds)
+		{key = "goblinchance", label = "Treasure Goblin Chance", fmt = "pct", weight = 5, cap = 100,
+			kinds = {helmet = true, jewel = true}, tiers = {{10, 15}, {14, 20}, {18, 27}, {22, 33}, {28, 40}}}
 	},
 	raritiesPerTier = 3, -- tier = ceil(rarity / 3)
 	levelsPerTier = 30, -- item levels of a tier window (the engine gives rarity r levels 10r-9 .. 10r)
@@ -244,6 +248,45 @@ function M.attackInterval(base, pct)
 		base = M.config.defaultAttackSpeed
 	end
 	return math.max(M.config.minAttackSpeed, floor(base * (100 - (tonumber(pct) or 0)) / 100 + 1e-9))
+end
+
+-- Attack speed cap (engine patch 0011; server/README.md "Attack speed cap"). The engine owns the numbers (config.lua
+-- minPlayerAttackInterval, maxPlayerAttackSpeedBonus); these are its defaults, used where configManager is missing.
+M.attackCap = {minInterval = 1000, maxBonus = 25}
+
+function M.attackCapConfig()
+	local cap = {minInterval = M.attackCap.minInterval, maxBonus = M.attackCap.maxBonus}
+	if configManager and configKeys and configKeys.MIN_PLAYER_ATTACK_INTERVAL then
+		local ok, a = pcall(configManager.getNumber, configKeys.MIN_PLAYER_ATTACK_INTERVAL)
+		local ok2, b = pcall(configManager.getNumber, configKeys.MAX_PLAYER_ATTACK_SPEED_BONUS)
+		cap.minInterval = ok and tonumber(a) or cap.minInterval
+		cap.maxBonus = ok2 and tonumber(b) or cap.maxBonus
+	end
+	return cap
+end
+
+-- the interval (ms) a character swings at, as the engine's Player::getAttackSpeed computes it: typeSpeed = the weapon
+-- type's own interval (0 = none), itemSpeed = the weapon's interval (its attribute, else typeSpeed; 0 / nil = no
+-- weapon or none), vocSpeed = the vocation's attackspeed, dexterity = the stat window's points. Returns the interval,
+-- whether the cap raised it, and the interval without the cap.
+function M.effectiveInterval(typeSpeed, itemSpeed, vocSpeed, dexterity, cap)
+	cap = cap or M.attackCapConfig()
+	vocSpeed = tonumber(vocSpeed) or 2000
+	itemSpeed, typeSpeed = tonumber(itemSpeed) or 0, tonumber(typeSpeed) or 0
+	local ret, base = vocSpeed, vocSpeed
+	if itemSpeed > 0 then
+		ret = floor(itemSpeed * vocSpeed / 2000)
+		base = floor((typeSpeed > 0 and typeSpeed or M.config.defaultAttackSpeed) * vocSpeed / 2000)
+	end
+	local dex = math.min(100, math.max(0, tonumber(dexterity) or 0))
+	local uncapped = floor(ret - ret * dex / 100 + 1e-9)
+	local interval = ret - ret * dex / 100
+	local maxBonus = tonumber(cap.maxBonus) or 0
+	if maxBonus > 0 and maxBonus < 100 then
+		interval = math.max(interval, base * (100 - maxBonus) / 100)
+	end
+	interval = floor(math.max(interval, math.max(0, tonumber(cap.minInterval) or 0)) + 1e-9)
+	return interval, interval > uncapped, uncapped
 end
 
 -- keep the weapon's attack interval in line with its attack speed modifier and its topaz gems (chaos_gems.lua: both

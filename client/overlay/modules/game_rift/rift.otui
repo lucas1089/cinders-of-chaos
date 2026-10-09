@@ -47,6 +47,12 @@ ChaosPanelDark
     phantom: true
     margin-top: 2
 
+  RiftHudLabel
+    id: lives
+    color: #9fd89f
+    text-align: center
+    margin-top: 2
+
   ChaosProgressBar
     id: progress
     margin-top: 4

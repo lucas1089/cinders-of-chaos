@@ -271,11 +271,23 @@ local function showDetails(spell)
   if spell.premium then addStat(tr('Premium'), tr('Yes')) end
 
   local text = spell.description or ''
-  -- the spell's support runes (game_spellsupports), when that module knows the spell
-  local supports = modules.game_spellsupports and modules.game_spellsupports.spellbookLine
-  local ok, line = pcall(function() return supports and supports(spell.words) end)
-  if ok and line then text = text .. '\n\n' .. line end
-  d.description:setText(text)
+  -- the spell's support runes (game_spellsupports), when that module knows the spell: a short line here, the effects
+  -- in the tooltip; that module also shortens a description too long for its box (full text in the tooltip)
+  local sup = modules.game_spellsupports
+  local ok, line, effects = pcall(function()
+    if sup and sup.spellbookLine then return sup.spellbookLine(spell.words) end
+  end)
+  local tip
+  if ok and line then
+    text = text .. '\n\n' .. line
+    if effects then tip = (spell.description or '') .. '\n\n' .. effects end
+  end
+  if sup and sup.fitText then
+    sup.fitText(d.description, text, tip)
+  else
+    d.description:setText(text)
+    d.description:setTooltip(tip)
+  end
   drawArea(spell)
 end
 

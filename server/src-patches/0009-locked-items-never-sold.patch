@@ -1,0 +1,338 @@
+# The item lock in the engine: locked items (custom attribute "chaos_locked" != 0, the crafting bench's Lock button,
+# salvage.lua) are never sold, taken by id or thrown away.
+# - Item::isChaosLocked() / Item::holdsChaosLocked() (locked, or a container with a locked item inside).
+# - Player::removeItemOfType (Lua player:removeItem) skips them: NPC selling, quest and NPC turn-ins, every script that
+#   removes by item id. player:removeItem(id, count[, subType[, ignoreEquipped[, includeLocked = false]]]).
+# - Lua player:getItemCount(id[, subType[, includeLocked = false]]) does not count them (turn-in checks).
+# - The NPC trade window's sale list (ProtocolGame::sendSaleItemList) does not offer them; Game::playerSellItem
+#   refuses a sale that only locked copies could fill ("Locked items cannot be sold."), before the NPC script runs.
+# - Market: Item::hasMarketAttributes() is false for a locked item (no sell offer, no accepting a buy offer with it).
+# - Trash holders (trash cans, lava): the tile refuses a locked item, and TrashHolder::addThing never destroys one.
+# Apply after 0001-0008: patch -p1 < 0009-locked-items-never-sold.patch (in the server folder, next to src/).
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -3093,6 +3093,18 @@
+ 		subType = count;
+ 	}
+ 
++	// Chaos: locked items (custom attribute "chaos_locked") are never sold. player:removeItem skips them anyway; refuse
++	// here with a clear message (and before any NPC script pays) when the unlocked copies are not enough.
++	const int32_t countSubType = (it.isSplash() || it.isFluidContainer()) ? subType : -1;
++	const uint32_t unlocked = player->countRemovableItemsOfType(it.id, countSubType, ignoreEquipped, false, nullptr, amount);
++	if (unlocked < amount) {
++		if (player->countRemovableItemsOfType(it.id, countSubType, ignoreEquipped, true, nullptr, amount) >= amount) {
++			player->sendTextMessage(MESSAGE_STATUS_SMALL, "Locked items cannot be sold.");
++			player->sendSaleItemList();
++			return;
++		}
++	}
++
+ 	merchant->onPlayerTrade(player, onSell, it.id, subType, amount, ignoreEquipped);
+ }
+ 
+--- a/src/item.cpp
++++ b/src/item.cpp
+@@ -2150,8 +2150,58 @@
+ 	g_game.startDecay(this);
+ }
+ 
++bool Item::isChaosLocked() const
++{
++	if (!attributes || !attributes->hasAttribute(ITEM_ATTRIBUTE_CUSTOM)) {
++		return false;
++	}
++
++	const ItemAttributes::Attribute* attr = attributes->getExistingAttr(ITEM_ATTRIBUTE_CUSTOM);
++	if (!attr || !attr->value.custom) {
++		return false;
++	}
++
++	auto it = attr->value.custom->find("chaos_locked");
++	if (it == attr->value.custom->end()) {
++		return false;
++	}
++
++	const ItemAttributes::CustomAttribute::VariantAttribute& v = it->second.value;
++	if (const int64_t* i = boost::get<int64_t>(&v)) {
++		return *i != 0;
++	} else if (const double* d = boost::get<double>(&v)) {
++		return *d != 0;
++	} else if (const bool* b = boost::get<bool>(&v)) {
++		return *b;
++	} else if (const std::string* s = boost::get<std::string>(&v)) {
++		return !s->empty() && *s != "0";
++	}
++	return false;
++}
++
++bool Item::holdsChaosLocked() const
++{
++	if (isChaosLocked()) {
++		return true;
++	}
++
++	if (const Container* container = getContainer()) {
++		for (ContainerIterator it = container->iterator(); it.hasNext(); it.advance()) {
++			if ((*it)->isChaosLocked()) {
++				return true;
++			}
++		}
++	}
++	return false;
++}
++
+ bool Item::hasMarketAttributes() const
+ {
++	// Chaos: a locked item never goes on the market (any custom attribute already keeps an item off it)
++	if (isChaosLocked()) {
++		return false;
++	}
++
+ 	if (attributes == nullptr) {
+ 		return true;
+ 	}
+--- a/src/item.h
++++ b/src/item.h
+@@ -1034,6 +1034,10 @@
+ 		}
+ 
+ 		bool hasMarketAttributes() const;
++		// Chaos: the item lock (custom attribute "chaos_locked" != 0, the crafting bench's Lock button)
++		bool isChaosLocked() const;
++		// locked itself, or a container with a locked item anywhere inside
++		bool holdsChaosLocked() const;
+ 
+ 		std::unique_ptr<ItemAttributes>& getAttributes() {
+ 			if (!attributes) {
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -9134,7 +9134,8 @@
+ 
+ int LuaScriptInterface::luaPlayerGetItemCount(lua_State* L)
+ {
+-	// player:getItemCount(itemId[, subType = -1])
++	// player:getItemCount(itemId[, subType = -1[, includeLocked = false]])
++	// Chaos: locked items (custom attribute "chaos_locked") are not counted unless includeLocked
+ 	Player* player = getUserdata<Player>(L, 1);
+ 	if (!player) {
+ 		lua_pushnil(L);
+@@ -9153,7 +9154,11 @@
+ 	}
+ 
+ 	int32_t subType = getNumber<int32_t>(L, 3, -1);
+-	lua_pushnumber(L, player->getItemTypeCount(itemId, subType));
++	if (getBoolean(L, 4, false)) {
++		lua_pushnumber(L, player->getItemTypeCount(itemId, subType));
++	} else {
++		lua_pushnumber(L, player->countRemovableItemsOfType(itemId, subType, false, false));
++	}
+ 	return 1;
+ }
+ 
+@@ -9682,7 +9687,8 @@
+ 
+ int LuaScriptInterface::luaPlayerRemoveItem(lua_State* L)
+ {
+-	// player:removeItem(itemId, count[, subType = -1[, ignoreEquipped = false]])
++	// player:removeItem(itemId, count[, subType = -1[, ignoreEquipped = false[, includeLocked = false]]])
++	// Chaos: locked items (custom attribute "chaos_locked") are skipped unless includeLocked
+ 	Player* player = getUserdata<Player>(L, 1);
+ 	if (!player) {
+ 		lua_pushnil(L);
+@@ -9703,7 +9709,8 @@
+ 	uint32_t count = getNumber<uint32_t>(L, 3);
+ 	int32_t subType = getNumber<int32_t>(L, 4, -1);
+ 	bool ignoreEquipped = getBoolean(L, 5, false);
+-	pushBoolean(L, player->removeItemOfType(itemId, count, subType, ignoreEquipped));
++	bool includeLocked = getBoolean(L, 6, false);
++	pushBoolean(L, player->removeItemOfType(itemId, count, subType, ignoreEquipped, includeLocked));
+ 	return 1;
+ }
+ 
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -2992,14 +2992,10 @@
+ 	return count;
+ }
+ 
+-bool Player::removeItemOfType(uint16_t itemId, uint32_t amount, int32_t subType, bool ignoreEquipped/* = false*/) const
++uint32_t Player::countRemovableItemsOfType(uint16_t itemId, int32_t subType, bool ignoreEquipped, bool includeLocked,
++	std::vector<Item*>* itemList/* = nullptr*/, uint32_t limit/* = max*/) const
+ {
+-	if (amount == 0) {
+-		return true;
+-	}
+-
+-	std::vector<Item*> itemList;
+-
++	// the same walk as the stock removeItemOfType; Chaos: a locked item, or a container holding one, is never taken
+ 	uint32_t count = 0;
+ 	for (int32_t i = CONST_SLOT_FIRST; i <= CONST_SLOT_LAST; i++) {
+ 		Item* item = inventory[i];
+@@ -3007,40 +3003,80 @@
+ 			continue;
+ 		}
+ 
+-		if (!ignoreEquipped && item->getID() == itemId) {
++		if (!ignoreEquipped && item->getID() == itemId && (includeLocked || !item->holdsChaosLocked())) {
+ 			uint32_t itemCount = Item::countByType(item, subType);
+ 			if (itemCount == 0) {
+ 				continue;
+ 			}
+ 
+-			itemList.push_back(item);
++			if (itemList) {
++				itemList->push_back(item);
++			}
+ 
+ 			count += itemCount;
+-			if (count >= amount) {
+-				g_game.internalRemoveItems(std::move(itemList), amount, Item::items[itemId].stackable);
+-				return true;
++			if (count >= limit) {
++				return count;
+ 			}
+ 		} else if (Container* container = item->getContainer()) {
+ 			for (ContainerIterator it = container->iterator(); it.hasNext(); it.advance()) {
+ 				Item* containerItem = *it;
+-				if (containerItem->getID() == itemId) {
++				if (containerItem->getID() == itemId && (includeLocked || !containerItem->holdsChaosLocked())) {
+ 					uint32_t itemCount = Item::countByType(containerItem, subType);
+ 					if (itemCount == 0) {
+ 						continue;
+ 					}
+ 
+-					itemList.push_back(containerItem);
++					if (itemList) {
++						itemList->push_back(containerItem);
++					}
+ 
+ 					count += itemCount;
+-					if (count >= amount) {
+-						g_game.internalRemoveItems(std::move(itemList), amount, Item::items[itemId].stackable);
+-						return true;
++					if (count >= limit) {
++						return count;
+ 					}
+ 				}
+ 			}
+ 		}
+ 	}
+-	return false;
++	return count;
++}
++
++bool Player::removeItemOfType(uint16_t itemId, uint32_t amount, int32_t subType, bool ignoreEquipped/* = false*/, bool includeLocked/* = false*/) const
++{
++	if (amount == 0) {
++		return true;
++	}
++
++	std::vector<Item*> itemList;
++	if (countRemovableItemsOfType(itemId, subType, ignoreEquipped, includeLocked, &itemList, amount) < amount) {
++		return false;
++	}
++
++	g_game.internalRemoveItems(std::move(itemList), amount, Item::items[itemId].stackable);
++	return true;
++}
++
++std::map<uint32_t, uint32_t>& Player::getAllUnlockedItemTypeCount(std::map<uint32_t, uint32_t>& countMap) const
++{
++	for (int32_t i = CONST_SLOT_FIRST; i <= CONST_SLOT_LAST; i++) {
++		Item* item = inventory[i];
++		if (!item) {
++			continue;
++		}
++
++		if (!item->holdsChaosLocked()) {
++			countMap[item->getID()] += Item::countByType(item, -1);
++		}
++
++		if (Container* container = item->getContainer()) {
++			for (ContainerIterator it = container->iterator(); it.hasNext(); it.advance()) {
++				if (!(*it)->holdsChaosLocked()) {
++					countMap[(*it)->getID()] += Item::countByType(*it, -1);
++				}
++			}
++		}
++	}
++	return countMap;
+ }
+ 
+ std::map<uint32_t, uint32_t>& Player::getAllItemTypeCount(std::map<uint32_t, uint32_t>& countMap) const
+--- a/src/player.h
++++ b/src/player.h
+@@ -473,7 +473,13 @@
+ 		void addMessageBuffer();
+ 		void removeMessageBuffer();
+ 
+-		bool removeItemOfType(uint16_t itemId, uint32_t amount, int32_t subType, bool ignoreEquipped = false) const;
++		// Chaos: removal by type skips locked items (custom attribute "chaos_locked") unless includeLocked
++		bool removeItemOfType(uint16_t itemId, uint32_t amount, int32_t subType, bool ignoreEquipped = false, bool includeLocked = false) const;
++		// how many removeItemOfType could take (collects the items into itemList up to limit when given)
++		uint32_t countRemovableItemsOfType(uint16_t itemId, int32_t subType, bool ignoreEquipped, bool includeLocked,
++			std::vector<Item*>* itemList = nullptr, uint32_t limit = std::numeric_limits<uint32_t>::max()) const;
++		// getAllItemTypeCount without locked items (the NPC sale list)
++		std::map<uint32_t, uint32_t>& getAllUnlockedItemTypeCount(std::map<uint32_t, uint32_t>& countMap) const;
+ 
+ 		uint32_t getCapacity() const {
+ 			if (hasFlag(PlayerFlag_CannotPickupItem)) {
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -1684,7 +1684,8 @@
+ 				subtype = (shopInfo.subType == 0 ? -1 : shopInfo.subType);
+ 			}
+ 
+-			uint32_t count = player->getItemTypeCount(shopInfo.itemId, subtype);
++			// Chaos: locked items (custom attribute "chaos_locked") are not offered for sale
++			uint32_t count = player->countRemovableItemsOfType(shopInfo.itemId, subtype, false, false);
+ 			if (count > 0) {
+ 				saleMap[shopInfo.itemId] = count;
+ 			}
+@@ -1694,7 +1695,7 @@
+ 		// We need a temporary map since the finished map should only contain items
+ 		// available in the shop
+ 		std::map<uint32_t, uint32_t> tempSaleMap;
+-		player->getAllItemTypeCount(tempSaleMap);
++		player->getAllUnlockedItemTypeCount(tempSaleMap); // Chaos: without locked items
+ 
+ 		// We must still check manually for the special items that require subtype matches
+ 		// (That is, fluids such as potions etc., actually these items are very few since
+@@ -1714,7 +1715,7 @@
+ 			if (subtype != -1) {
+ 				uint32_t count;
+ 				if (itemType.isFluidContainer() || itemType.isSplash()) {
+-					count = player->getItemTypeCount(shopInfo.itemId, subtype); // This shop item requires extra checks
++					count = player->countRemovableItemsOfType(shopInfo.itemId, subtype, false, false); // This shop item requires extra checks
+ 				} else {
+ 					count = subtype;
+ 				}
+--- a/src/tile.cpp
++++ b/src/tile.cpp
+@@ -649,6 +649,11 @@
+ 			return RETURNVALUE_ITEMCANNOTBEMOVEDTHERE;
+ 		}
+ 
++		// Chaos: a locked item (custom attribute "chaos_locked") is never thrown into a trash holder (trash can, lava)
++		if (hasFlag(TILESTATE_TRASHHOLDER) && item->holdsChaosLocked()) {
++			return RETURNVALUE_ITEMCANNOTBEMOVEDTHERE;
++		}
++
+ 		bool itemIsHangable = item->isHangable();
+ 		if (ground == nullptr && !itemIsHangable) {
+ 			return RETURNVALUE_NOTPOSSIBLE;
+--- a/src/trashholder.cpp
++++ b/src/trashholder.cpp
+@@ -45,6 +45,11 @@
+ 		return;
+ 	}
+ 
++	// Chaos: a locked item (custom attribute "chaos_locked") is never destroyed; it stays on the tile
++	if (item->holdsChaosLocked()) {
++		return;
++	}
++
+ 	const ItemType& it = Item::items[id];
+ 	if (item->isHangable() && it.isGroundTile()) {
+ 		Tile* tile = dynamic_cast<Tile*>(getParent());

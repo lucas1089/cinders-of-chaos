@@ -56,6 +56,10 @@ server/
   src-patches/0004-uniform-chance-rolls.patch   engine: critical hit, life / mana leech and spawn-set chances rolled
                                       uniformly (were a bell curve); rarity crit / leech chance = 2/3 of the roll
                                       (see "Critical and leech chances")
+  src-patches/0005-passable-pets.patch   engine: monster flag `passable`: players, monsters and NPCs walk and path through
+                                      the creature (the pets, see "Pets")
+  src-patches/0009-locked-items-never-sold.patch   engine: locked items (`chaos_locked`) are never sold, taken by id,
+                                      put on the market or thrown into a trash holder (see "Salvage", "The item lock")
     item_tooltip.lua  item_tooltip_core.lua (rich item tooltips with the equipped-item compare, client game_itemtooltip)
     shop.lua  shop_config.lua  shop_services.lua  autosell.lua  sell_prices.lua (store, see "Store services")
     bounty.lua  bounty_core.lua  bounty_config.lua  bounty_pool.lua (bounty board; pool from tools/gen_bounty_pool.py)
@@ -1056,6 +1060,30 @@ scavenger with its sack, drawn with the golden outfit shader 12). It never attac
   64x64 cell per floor every 30 minutes. On a hit the replaced spawn is cancelled (its spawn block retries after its
   normal interval) and the goblin appears on that tile. The roll is multiplied by an event bonus `goblin`
   (`ChaosEvents.bonus("goblin")`) if the event calendar ever defines one.
+- **Treasure Goblin Chance** (item modifier `goblinchance`, helmets and amulets / rings, "Treasure Goblin Chance +N%":
+  tiers 10-15, 14-20, 18-27, 22-33, 28-40, weight 5, cap +100% per character). A respawn's roll becomes 1 in
+  `oneIn / (1 + bonus)`: +100% = 1 in 1500. The bonus is the **highest** total among the players within `spoor.radius`
+  (24) tiles on the same floor of the spawn point (they do not add up, so a group gains nothing from stacking). Natural
+  respawns happen out of sight but within that radius, so the player hunting there counts. The roll is done in two
+  stages (`G.rollWithSpoor`: a first roll with the maximum bonus, players looked up only on its hit, then kept with the
+  exact share), so the common miss costs nothing. `maxAlive` 3 and the per-cell cooldown are unchanged. Event bonus
+  multiplies on top. Staff: `/goblin dry <monster>, <n>` measures the odds, `/goblin roll <monster>, <n>` rolls for real.
+- **Variants** (`cfg.variants`, weights 70 / 20 / 10, one monster XML each, stock look types, distinct outfit shader):
+  Treasure Goblin (Hoarder, look 297, shader 12, the hoard below), **Gem Goblin** (look 296, shader 9), **Shard Goblin**
+  (look 61, shader 10). Same behaviour, experience, leaderboard (all variants count for Goblin Slayer and the goblin
+  achievements) and loot rays. The announce, escape and kill texts use the variant's name. `/goblin [hoarder|gem|shard]
+  [level]` spawns one. Variant loot overrides parts of the shared table (`variants[i].loot`):
+  - Gem Goblin: half the gold, no Chaos / Divine Orbs, 2-3 gems (+1 per 250 levels, max 5; type random, tier by
+    `ChaosGems.levelWeights(level)`, 25% one tier better), 1 Orb of Sockets (+25% for a second), 1 gear item, unique
+    roll x1, no hoard roll.
+  - Shard Goblin: half the gold, 1-2 Chaos Orbs (+1 per 300 levels, max 4), (10 + level / 10) x 80-120% Rune Shards
+    (item 32051, max 60), 1 random crafting orb (salvage orb weights), 1 gear item, unique roll x1.
+  - Expected per goblin (level 100 / 300): Gem Goblin 2.5 / 3.5 gems and 1.25 Orbs of Sockets; Shard Goblin 20 / 40
+    shards. Over all goblins (70/20/10): about 0.5 gems and 2 / 4 shards per goblin. 25 shards make a Chaos Orb at the
+    bench, so a Shard Goblin is worth about a Hoarder's orbs without its gear; goblins stay rare (1 in 3000, at most 1 in
+    1500 with the cap), so the effect on the economy is small.
+  Not done: **Goblin's Purse** (one-use vault item). The rift room builder is bound to a rift run (key, slot, lives,
+  rewards); a clean standalone vault would need its own slot builder, which is not small.
 - **Area level and health.** The replaced monster's level (`getMonsterLevel`), else the average level of the players
   within 30 tiles, else its max health / 20. Health = 300 + 40 x level, at least 3x the replaced monster's health.
 - **Announce.** Players who come within 10 tiles get "A Treasure Goblin appears!" (once each) plus a toast through
@@ -1499,6 +1527,7 @@ Mythic-Eternal 3, Divine-Celestial 4, Cosmic-Transcendent 5); cap = the most a c
 | rarityfind | Rarity Find +N% | helmet, jewel | 2-4 | 3-6 | 5-8 | 6-10 | 8-14 | 40 | the loot layer's bonus rarity chance x (1 + N%) |
 | healing | Healing Done +N% | weapon, shield, jewel | 1-2 | 2-3 | 3-5 | 4-6 | 5-8 | 20 | heals the player casts on any player (onHealthChange of the healed player) |
 | monsterreduction | Damage Taken from Monsters -N% | armor, helmet, legs, shield | 1 | 1-2 | 1-2 | 2-3 | 2-4 | 12 | health damage from monsters |
+| goblinchance | Treasure Goblin Chance +N% | helmet, jewel | 10-15 | 14-20 | 18-27 | 22-33 | 28-40 | 100 | raises the treasure goblin roll of respawns near the player (treasure_goblin.lua; highest player within 24 tiles counts) |
 
 The item level moves the roll inside the tier: the low end rises by up to half the range at the top of the tier's
 level window (`levelPull` 0.5). The numbers sit next to the passive tree's (a node gives +1-3% of a stat; the tree's
@@ -1707,14 +1736,31 @@ previewed items (paths and item signatures); when anything changed in between th
 confirm again").
 
 **The item lock.** The bench's Lock / Unlock button (gear and Rift Keys in the backpack) sets the custom attribute
-`chaos_locked` = 1. A locked item is refused by salvage, skipped by "salvage all", and never sold by the **Auto Seller**,
-even with `!autosell rarity on` (`autosell.lua` reads the attribute, `ChaosShopServices.sellBlocked` returns "locked";
-"Auto seller: kept a locked item."). The look text says "It is locked: salvage and the auto seller skip it." (EventCallback
-onLook, index 120); the gear grid shows locked items dimmed, the rich tooltips (engine patch 0003, key 3) show "Locked".
-The lock survives the orbs that make a new copy (Transmutation, Alchemy, Scouring, Chaos, Divine: `C.recreate` calls
-`ChaosSalvage.copyLock`). Orbs and gems still work on a locked item: the lock protects from destruction and selling, not
-from crafting. Not covered: the NPC trade window (the engine removes items by id; it would need an engine change or a
-wrapper around the stock NPC sell).
+`chaos_locked` = 1. **Locked items cannot be sold nor melted.** A locked item is refused by salvage, skipped by "salvage
+all", and never sold by the **Auto Seller**, even with `!autosell rarity on` (`autosell.lua` reads the attribute,
+`ChaosShopServices.sellBlocked` returns "locked"; "Auto seller: kept a locked item."). The look text says "It is locked:
+it cannot be sold, salvaged or thrown away." (EventCallback onLook, index 120); the gear grid shows locked items dimmed,
+the rich tooltips (engine patch 0003, key 3) show "Locked". The lock survives the orbs that make a new copy
+(Transmutation, Alchemy, Scouring, Chaos, Divine: `C.recreate` calls `ChaosSalvage.copyLock`). Orbs and gems still work
+on a locked item: the lock protects from destruction and selling, not from crafting.
+
+Engine patch `src-patches/0009-locked-items-never-sold.patch` closes the paths the scripts cannot see (an item is
+"locked" when `chaos_locked` is non-zero; a container with a locked item anywhere inside counts as locked too, so a bag
+is never sold or trashed with a locked item in it):
+
+| Path | With 0009 |
+|---|---|
+| NPC trade window (every NPC with `module_shop`, Yasir, the Wandering Merchant, NPCs with their own `onSell`) | The sale list does not count locked items (a locked-only item is not offered). A sale only locked copies could fill is refused by the engine before the NPC script runs: "Locked items cannot be sold." With one locked and one unlocked copy, selling 1 takes the unlocked one, selling 2 is refused. |
+| `player:removeItem(id, n)` (NPC selling, quest and NPC turn-ins, exchanges, any script removing by id) | Skips locked items. Fifth argument `includeLocked = true` takes them too (only the staff panel's "Remove item" uses it). |
+| `player:getItemCount(id)` (turn-in checks) | Does not count locked items; third argument `includeLocked = true` counts them. A turn-in with only locked copies fails as if the player had none. |
+| Market (sell offer, accepting a buy offer) | Never takes a locked item (`Item::hasMarketAttributes()`; any custom attribute already kept rolled items off the market). |
+| Trash holders (trash cans, lava, ...) | A locked item cannot be moved onto one ("This item cannot be moved there."), and a trash holder never destroys one. |
+
+Unchanged on purpose: scripts that act on one specific item object (`item:remove()`: using a Rift Key or a scroll,
+the guild depot and the stash, which keep the item; salvage itself checks the lock), player-to-player trade and mail
+(the item and its lock move to the other character), the season join's inventory wipe (confirmed by the player, "this
+cannot be undone") and staff tools. Without the patch the NPC trade window and turn-ins still take locked items. The lock
+never stops crafting.
 
 **Protocol** (extended opcode 232, `ChaosOpcodes.crafting`, new actions handed from `crafting.lua` to `salvage.lua`):
 client -> server `salvage {path, id, sig}`, `lock {path, id, on}`, `salvageScope {bag, maxRarity, mode}`,
@@ -2448,6 +2494,35 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
 
   Quantity multiplies the Chaos loot rate of the rift's kills (`loot_config.lua` rateMult) and the chest's gold, orbs
   and rolls; rarity raises the chest's gear rarity; experience multiplies the kill experience in the rift.
+- **Modifier tiers (I-V; higher is better).** Every modifier but Withering has five tiers inside its value range
+  (`tiers` = the top value of each, rift_config.lua). Tiers I-III are exactly the old ranges (keys saved before decode
+  unchanged, nothing new is stored: the tier follows from the value); IV and V extend them (Vitality 20-90, Brutality
+  15-60, Haste 40-180, Elites 50-300, Reflection 5-22, Warding 10-40, Swarm 1-5, Teeming 20-70, Gilded 30-100, Warbands
+  10-40, Twin 55-85, Echo 5-25, Cinderdeath 5-25, Blight 20-70, Waning 15-40, Dread 50-250; the Coffer stays at 3 tiers
+  because it is a chance). A key rolls tiers by its own tier (`modTiers.window`): keys 1-5 I-III (as before), 6-10
+  I-IV, 11-15 II-V; Divine Orbs reroll inside the same window. Names show on keys and HUD ("Vitality IV"). Each tier IV /
+  V modifier raises the bonus caps (+8/+8/+6 and +16/+16/+12).
+- **Lives.** A run has shared lives: 3, +1 per extra player who entered, minus Fragile (new modifier, key tier 4+,
+  1-2 fewer lives, quantity 7x / rarity 7x / experience 5x the value), at least 1. A death inside is the engine's
+  normal death (experience / skill / item loss with blessings and the amulet exactly as anywhere, no reduction) and costs
+  one life; the next login of that character puts it back at the rift's entrance with 5 s in which rift monsters do
+  not hurt it. The death that takes the last life collapses the rift (everyone out, no chest, key spent). Fallen players
+  who may still return keep a run open and share the chest. HUD shows "Lives: n / max". The Flawless Seal achievement now needs no deaths.
+- **Omens.** Sealed rifts of tier 6+ add Omen Fragments (item 32071, copy of the red crystal fragment) to every finisher's
+  chest: 2 + 1 per tier above 6, x quantity; rare / legendary monsters of those rifts carry one 8% / 25%. Using 60
+  fragments binds an Omen Key (item 32072, copy of the eye of the storm; attribute omen_kind) of a random kind. The key
+  opens a guardian arena: a rift slot with every side room shut, level 800+, 10 minutes, the rift lives, the guardian
+  after 5 s, health from its XML (+75% per extra player). Guardians (outfits 591, 12, 842 of the client pair, 500k
+  health each, `monsters/chaos/omens/`): Sangrith the Bloodmoon Herald, Morvane the Hollow Crown, Thalcyra the
+  Stormbound Seer. Chest per finisher: 5M gold, 12 Chaos, 6 Divine, 8 item rolls (boss tier, x1.5 rarity), gems and
+  supports as a tier 15 rift, and 2 unique rolls over every unique at boss tier x2 find. Achievements omen_1 / omen_10
+  and one per kind. Install: `tools/install_omens.py DATA_DIR` (items.otb / items.xml) and register the omens monster
+  folder. `/rift omen [kind]`, `/rift fragments [n]`, `/rift lives n` for gamemasters.
+- **Dungeon difficulty** (`dungeons_difficulty.lua`): the six difficulties now do what the client panel says (the test
+  compares both): monster health 100/200/320/500/800/1300%, damage to the players 100/130/190/280/400/600%, experience
+  +0/75/100/200/300/400%, gold coins +0/75/100/200/300/400%, extra loot roll +0/0/15/30/45/60% of each entry's chance.
+  Applied to every monster in the dungeon box during a run (also respawns). Also fixed: the queue called a missing
+  Game.getPlayerByGUID, so queued runs never started.
 - **Tiers.** Tier N picks its monsters from the bounty pool (`bounty_pool.lua`, only monsters that spawn on the map, no
   bosses, at least 100 health) in a level window, and needs a level: 1: 80-180 (level 100), 2: 140-240 (150),
   3: 200-320 (200), 4: 280-420 (300), 5: 380-520 (400), 6: 480-640 (500), 7: 580-740 (600), 8: 680-840 (700),
@@ -3045,14 +3120,15 @@ is in `pets_config.lua`; the pure rules in `pets_core.lua`.
 - **The creature.** The pet is a monster type of `data/monster/monsters/chaos/pets/` (registered by the installer's
   monsters step), created next to the owner and made the owner's summon, so the engine makes it follow. The types are not
   attackable, have no attacks, no loot, 40 health (below the monster tiers' minimum, and `pets.lua` puts them in
-  `ChaosTierConfig.skip`), every immunity and speed 600; they are pushable, so players and monsters that push can move
-  them. A renamed pet carries its name (`Monster:rename`); its look text says whose pet it is.
+  `ChaosTierConfig.skip`), every immunity and speed 600. They are **passable** (`<flag passable="1" />`, engine patch
+  `src-patches/0005-passable-pets.patch`): players (the owner and everyone else), monsters and NPCs walk through a pet and
+  path through it, so a pet never blocks anyone; the pet itself still moves only to free tiles. Without the patch the
+  engine warns "Unknown flag attribute: passable" for the eight types and pets block as ordinary monsters. A renamed pet
+  carries its name (`Monster:rename`); its look text says whose pet it is.
 - **Following.** Every 500 ms (`thinkMs`): a pet farther than 6 squares from its owner or on another floor is put next to
   it; a pet the engine removed (a long teleport) comes back next to its owner. The pet **rests** (removed with a puff,
   back by itself when the reason ends) while the owner stands in a protection zone, in a banned zone, or has another
-  summon that is not a class companion. **Anti-block:** a monster that targets the owner, stands next to the pet (or
-  within 4 squares of it without a path to the owner: a blocked monster wanders), is not next to the owner and cannot
-  push creatures for 1.5 s in a row makes the pet step out of the way for 6 s.
+  summon that is not a class companion. No anti-block step-aside: pets are passable for players and monsters (patch 0005).
 - **Coexistence with class summons.** Beastmaster companions (`Chaos.classes.companion.monsters`) and Necromancer
   minions (`ChaosNecroConfig.minions`) count only their own monster types, so a pet never lowers their caps, and the
   pet stays out next to them. Any other summon (the stock summon spells and Convince Creature, Moonfang Pack, the base
@@ -3113,7 +3189,8 @@ is in `pets_config.lua`; the pure rules in `pets_core.lua`.
   `shop_services.lua` (`unlockEntry` asks `ChaosPets.storeUnlock`), `shop.lua` (an unlock offer with `look` shows that
   outfit), `shop_config.lua` (category "Pets").
 - **Tests:** `tests/pets_test.lua` (config sanity, the curve numbers above, kill XP, ability values and unlocks, zone rules,
-  drops with a seeded run, names, cooldowns, gold, anti-block, rest reasons, the window view) and
+  drops with a seeded run, names, cooldowns, gold, rest reasons, the window view, every pet monster file passable and not
+  attackable) and
   `game_pets/petsview_test.lua` (list, texts, buttons).
 - **Tested in game** (test server with the scripts of this repo, one client): staff give; summon from the window (the pet
   follows); rename (`!pet rename`) shown over the pet; kill XP (Dragon Lords and Heroes count at level 500, Dragons do
@@ -3126,7 +3203,7 @@ is in `pets_config.lua`; the pure rules in `pets_core.lua`.
   arena)"; leash after a teleport; owner death: pet gone, "still recovering from your death: 34 s" after the respawn;
   store purchase (400 coins taken, pet owned, second purchase refused); achievement pet (Ash Cat after `bounty_25`);
   logout and server restart: name, XP and the pet that was out come back. **Not tested in game:** the protection-zone
-  rest (the test map has no protection-zone tile; same code path as the other rests), the anti-block step-aside, PvP
+  rest (the test map has no protection-zone tile; same code path as the other rests), PvP
   pause, the rift / tower / world boss / dungeon utility rule, two players. The stock loot message ("Loot of ...") is
   written before Fetch runs, so it still lists the coins the pet carried to the bank.
 

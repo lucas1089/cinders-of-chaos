@@ -1,6 +1,6 @@
 -- Run from the server/ folder: luajit tests/rift_test.lua (CI runs it with LuaJIT and Lua 5.3)
--- Pure rift logic (rift_core.lua + rift_config.lua): modifier rolling, key format, reward scaling, key drop odds,
--- slot allocation and layout, the run timer / fail / boss bookkeeping and the experience cap.
+-- Pure rift logic (rift_core.lua + rift_config.lua): modifier rolling and tiers, key format, reward scaling, key drop odds,
+-- slot allocation and layout, the run timer / fail / boss bookkeeping, lives, omens and the experience cap.
 local cfg = dofile("data/scripts/chaos/rift_config.lua")
 dofile("data/scripts/chaos/rift_core.lua")
 local R = ChaosRiftCore
@@ -88,7 +88,7 @@ do
 			swarm = m
 		end
 	end
-	eq(swarm and swarm.value, 3, "decode clamps down to the range")
+	eq(swarm and swarm.value, R.modDef(cfg, "swarm").range[2], "decode clamps down to the range")
 	eq(#R.decodeMods(cfg, nil), 0, "decode nil")
 	for _, m in ipairs(key.mods) do
 		local u = R.unpackMod(cfg, R.packMod(cfg, m))
@@ -489,7 +489,8 @@ do
 			for c = bb + 1, 8 do
 				local mods = {}
 				for _, i in ipairs({a, bb, c}) do
-					mods[#mods + 1] = {key = old[i].key, value = old[i].range[2]}
+					-- the top of tier III = the old top of the range
+					mods[#mods + 1] = {key = old[i].key, value = select(2, R.tierBounds(old[i], 3))}
 				end
 				local raw = R.bonuses({mods = cfg.mods, tiers = cfg.tiers, beyond = cfg.beyond, maxTier = cfg.maxTier}, mods)
 				for k, v in pairs(raw) do
@@ -602,6 +603,198 @@ do
 		ok(c[2] <= 100 and c[2] > 0, "coin stack size")
 	end
 	eq(total, 1234567, "coins sum")
+end
+
+
+-- ------------------------------------------------------------------ modifier tiers
+do
+	-- tiers I-III are exactly the ranges of before the tiers (old keys keep their values and roll the same)
+	local before = {vitality = {20, 60}, brutality = {15, 40}, haste = {40, 120}, elites = {50, 200}, reflection = {5, 15},
+		warding = {10, 30}, swarm = {1, 3}, teeming = {20, 50}, gilded = {30, 70}, warband = {10, 30}, coffer = {40, 100},
+		twin = {55, 75}, echo = {5, 15}, cinder = {5, 15}, blight = {20, 50}, waning = {15, 30}, dread = {50, 150}}
+	for key, r in pairs(before) do
+		local d = R.modDef(cfg, key)
+		eq(R.tierBounds(d, 1), r[1], "tier I starts at the old bottom: " .. key)
+		eq(select(2, R.tierBounds(d, 3)), r[2], "tier III ends at the old top: " .. key)
+		-- every old value decodes unchanged and has a tier of I-III
+		for v = r[1], r[2], d.step do
+			local m = R.decodeMods(cfg, key .. ":" .. v)[1]
+			eq(m and m.value, v, "old value decodes unchanged: " .. key .. v)
+			local t = R.modTier(d, v)
+			ok(t and t >= 1 and t <= 3, "old value is tier I-III: " .. key .. v)
+		end
+	end
+	for _, d in ipairs(cfg.mods) do
+		if d.tiers then
+			-- tiers are contiguous on the step grid, increasing, and end at the top of the range
+			eq(d.tiers[#d.tiers], d.range[2], "last tier ends the range: " .. d.key)
+			for t = 1, #d.tiers do
+				local lo, hi = R.tierBounds(d, t)
+				ok(lo <= hi, "tier bounds ordered: " .. d.key .. t)
+				eq((lo - d.range[1]) % d.step, 0, "tier start on a step: " .. d.key .. t)
+				eq(R.modTier(d, lo), t, "tier of its bottom: " .. d.key .. t)
+				eq(R.modTier(d, hi), t, "tier of its top: " .. d.key .. t)
+			end
+		else
+			eq(R.modTier(d, d.range[1]), nil, "no tiers: " .. d.key)
+		end
+	end
+	-- windows
+	local a, b = R.modTierWindow(cfg, 1)
+	eq(a .. b, "13", "tier 1 keys roll I-III")
+	a, b = R.modTierWindow(cfg, 5)
+	eq(a .. b, "13", "tier 5 keys roll I-III")
+	a, b = R.modTierWindow(cfg, 8)
+	eq(a .. b, "14", "tier 8 keys roll I-IV")
+	a, b = R.modTierWindow(cfg, 15)
+	eq(a .. b, "25", "tier 15 keys roll II-V")
+	a, b = R.modTierWindow(cfg, nil)
+	eq(a .. b, "13", "no tier: I-III")
+	-- rolls per key tier
+	local r = rng(77)
+	local seen = {[1] = {}, [8] = {}, [15] = {}}
+	for _, kt in ipairs({1, 8, 15}) do
+		for _ = 1, 4000 do
+			for _, m in ipairs(R.rollMods(cfg, 3, r, kt)) do
+				local d = R.modDef(cfg, m.key)
+				ok(m.value >= d.range[1] and m.value <= d.range[2], "tiered value in range")
+				eq((m.value - d.range[1]) % d.step, 0, "tiered value on a step")
+				local t = R.modTier(d, m.value)
+				if t then
+					seen[kt][t] = (seen[kt][t] or 0) + 1
+				end
+			end
+		end
+	end
+	ok(seen[1][4] == nil and seen[1][5] == nil, "tier 1 keys never roll IV / V")
+	ok((seen[8][4] or 0) > 500 and seen[8][5] == nil, "tier 8 keys roll IV, never V")
+	ok((seen[15][5] or 0) > 500 and seen[15][1] == nil, "tier 15 keys roll V, never I")
+	-- the coffer has three tiers: a tier 15 key rolls II-III there
+	for _ = 1, 300 do
+		local v = R.rollValue(R.modDef(cfg, "coffer"), r, 15, cfg)
+		ok(v >= 60 and v <= 100, "coffer on a tier 15 key: II-III")
+	end
+	-- the old rolls: a key of tier 1-5 rolls the old range with the same single rand call
+	local d = R.modDef(cfg, "vitality")
+	local calls = 0
+	local v = R.rollValue(d, function(x, y) calls = calls + 1; eq(x .. "-" .. y, "0-8", "one call over the old 9 steps"); return 8 end, 4, cfg)
+	eq(v, 60, "old top")
+	eq(calls, 1, "one rand call")
+	eq(R.rollValue(d, function(x, y) return y end, nil, nil), 60, "no tier, no cfg: old range")
+	eq(R.rollValue(d, function(x, y) return y end, 15, cfg), 90, "tier 15: top of V")
+	eq(R.rollValue(d, function(x, y) return x end, 15, cfg), 35, "tier 15: bottom of II")
+	-- labels and descriptions
+	eq(R.modLabel(cfg, {key = "vitality", value = 85}), "Vitality V", "label V")
+	eq(R.modLabel(cfg, {key = "withering", value = 1}), "Withering", "label without tier")
+	local desc = R.describe(cfg, {tier = 12, mods = {{key = "vitality", value = 70}}})
+	ok(desc:find("%+70%% health %(IV%)") ~= nil, "description names the tier: " .. desc)
+	-- caps rise with tier IV / V modifiers
+	local caps = R.bonusCaps(cfg, {{key = "vitality", value = 90}, {key = "swarm", value = 4}})
+	eq(caps.quantity, cfg.bonusCap.quantity + 16 + 8, "cap + V + IV")
+	local big = R.bonuses(cfg, {{key = "vitality", value = 90}, {key = "waning", value = 40}, {key = "swarm", value = 5}})
+	eq(big.quantity, math.min(45 + 40 + 40, cfg.bonusCap.quantity + 48), "three tier V modifiers: raised cap")
+	ok(big.quantity > cfg.bonusCap.quantity, "tier V beats the old cap")
+	-- packing high values for the crash refund marker
+	local u = R.unpackMod(cfg, R.packMod(cfg, {key = "elites", value = 300}))
+	eq(u.key .. u.value, "elites300", "pack / unpack elites V")
+	-- effects of the new top values
+	local fx = R.effects(cfg, {{key = "vitality", value = 90}, {key = "swarm", value = 5}}, 15)
+	ok(math.abs(fx.health - 1.9 * R.tierInfo(cfg, 15).health) < 1e-9, "vitality V x1.9")
+	eq(fx.packBonus, 5, "swarm V +5")
+end
+
+-- ------------------------------------------------------------------ lives
+do
+	local none = R.effects(cfg, {}, 4)
+	eq(R.startLives(cfg, 1, none), 3, "solo: 3 lives")
+	eq(R.startLives(cfg, 2, none), 4, "two players: 4")
+	eq(R.startLives(cfg, 4, none), 6, "four players: 6")
+	local fr = R.effects(cfg, {{key = "fragile", value = 2}}, 6)
+	eq(fr.fragile, 2, "fragile -2")
+	eq(R.startLives(cfg, 1, fr), 1, "fragile solo: 1")
+	eq(R.startLives(cfg, 1, R.effects(cfg, {{key = "fragile", value = 2}, {key = "fragile", value = 2}}, 6)), cfg.lives.min,
+		"never below the minimum")
+	eq(R.startLives(cfg, 3, fr), 3, "fragile with 3 players: 5 - 2")
+	local fb = R.bonuses(cfg, {{key = "fragile", value = 2}})
+	eq(fb.quantity .. "/" .. fb.rarity .. "/" .. fb.experience, "14/14/10", "fragile bonuses")
+	eq(R.modDef(cfg, "fragile").minTier, 4, "fragile from tier 4")
+	local run = R.newRun(cfg, 0, 10, 8)
+	run.lives = 2
+	eq(R.loseLife(run), 1, "one life lost")
+	eq(run.deaths, 1, "deaths counted")
+	eq(R.loseLife(run), 0, "last life")
+	eq(R.loseLife(run), 0, "never negative")
+	run.state = "success"
+	eq(R.loseLife(run), nil, "after the seal a death costs nothing")
+	eq(run.deaths, 3, "no death counted after the seal")
+	-- the fragile modifier is appended: keys of before still decode, the refund marker index is new
+	local _, idx = R.modDef(cfg, "fragile")
+	eq(idx, #cfg.mods, "fragile is the last modifier")
+	local u = R.unpackMod(cfg, R.packMod(cfg, {key = "fragile", value = 2}))
+	eq(u.key .. u.value, "fragile2", "pack / unpack fragile")
+end
+
+-- ------------------------------------------------------------------ omens
+do
+	local o = cfg.omen
+	eq(R.omenFragments(cfg, o.minTier - 1, nil, rng(1)), 0, "no fragments below the omen tier")
+	eq(R.omenFragments(cfg, o.minTier, nil, rng(1)), o.chest.base, "fragments at the omen tier")
+	eq(R.omenFragments(cfg, 10, nil, rng(1)), o.chest.base + 4 * o.chest.perTier, "fragments at tier 10")
+	-- +50% quantity: 2 x 1.5 = 3 exactly; 3 x 1.5 = 4.5 -> 4 or 5
+	eq(R.omenFragments(cfg, o.minTier, {quantity = 50}, rng(1)), 3, "fragments x quantity")
+	local r, fives = rng(12), 0
+	for _ = 1, 2000 do
+		local n = R.omenFragments(cfg, o.minTier + 1, {quantity = 50}, r)
+		ok(n == 4 or n == 5, "fragments 4.5 -> 4 or 5")
+		if n == 5 then
+			fives = fives + 1
+		end
+	end
+	ok(math.abs(fives / 2000 - 0.5) < 0.04, "fraction is a chance")
+	-- runs to a key: tier 6 ~30, tier 10 ~10, tier 15 ~6 (solo, no quantity bonus, chest only)
+	ok(o.keyCost / R.omenFragments(cfg, 6, nil, rng(1)) <= 30, "tier 6: at most 30 rifts per key")
+	ok(o.keyCost / R.omenFragments(cfg, 15, nil, rng(1)) <= 6, "tier 15: at most 6 rifts per key")
+	-- kinds
+	eq(#o.kinds, 3, "three omen kinds")
+	local names = {}
+	for i, k in ipairs(o.kinds) do
+		local d, idx = R.omenKind(cfg, k.key)
+		eq(d, k, "kind by key")
+		eq(idx, i, "kind index")
+		eq(R.omenKind(cfg, i), k, "kind by index")
+		ok(cfg.themes[k.theme] ~= nil, "kind theme exists")
+		ok(not names[k.boss], "one guardian per kind")
+		names[k.boss] = true
+		eq(R.markerOmen(cfg, R.markerTier(cfg, k.key)), k.key, "marker round trip " .. k.key)
+		ok(R.markerTier(cfg, k.key) > cfg.maxTier, "an omen marker is no rift tier")
+		-- the guardian's XML exists, with an outfit of the client pair and the same name
+		local fn = "data/monster/monsters/chaos/omens/" .. k.boss:lower():gsub(" ", "_") .. ".xml"
+		local f = io.open(fn, "r")
+		ok(f ~= nil, "guardian XML " .. fn)
+		if f then
+			local t = f:read("*a")
+			f:close()
+			ok(t:find('<monster name="' .. k.boss .. '"', 1, true) ~= nil, "guardian name in " .. fn)
+			local look = tonumber(t:match('<look type="(%d+)"'))
+			ok(look and look <= 2038, "guardian look in the client pair")
+		end
+	end
+	eq(R.omenKind(cfg, "nope"), nil, "unknown kind")
+	eq(R.markerOmen(cfg, 7), nil, "a rift tier is no omen")
+	eq(R.markerOmen(cfg, 0), nil, "no marker")
+	eq(R.omenKeyName(cfg, "hollow"), "Omen Key (Hollow)", "omen key name")
+	ok(math.abs(R.omenHealthMult(cfg, 1) - 1) < 1e-9, "guardian solo x1")
+	ok(math.abs(R.omenHealthMult(cfg, 4) - (1 + 3 * o.healthPerExtraPlayer)) < 1e-9, "guardian 4 players")
+	local rw = R.omenReward(cfg)
+	eq(rw.lootTier, "boss", "guardian chest at the boss loot tier")
+	ok(rw.gold > R.reward(cfg, 15, nil, rng(1)).gold, "the guardian pays more than a tier 15 rift")
+	ok(rw.uniqueRolls >= 1, "unique rolls")
+	-- the items are new server ids, apart from each other and from the other Chaos items
+	ok(o.fragment.id ~= o.key.id, "two item ids")
+	for _, id in ipairs({o.fragment.id, o.key.id}) do
+		ok(not (id >= 32001 and id <= 32035) and id ~= 32051 and not (id >= 32101 and id <= 32200)
+			and not (id >= 30484 and id <= 30557), "omen id clear of the gem / salvage / support / dark tile ids: " .. id)
+	end
 end
 
 print(string.format("rift tests: %d checks, %d failed", checks, fails))

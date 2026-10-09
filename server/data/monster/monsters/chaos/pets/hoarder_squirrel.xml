@@ -2,7 +2,8 @@
 <!-- Hoarder Squirrel: a pet (data/scripts/chaos/pets.lua; species, numbers and abilities in pets_config.lua).
      Created by pets.lua as its owner's summon, so the engine makes it follow its owner. It cannot be attacked, never
      attacks and gives nothing when it dies (it cannot die: no damage reaches it). Health below the monster tiers'
-     minimum (no tier roll at creation). Pushable, so players and monsters can push it out of the way; pets.lua also
+     minimum (no tier roll at creation). Passable (flag "passable", engine patch
+     in server/src-patches): players walk through it, monsters stay blocked; still pushable; pets.lua also
      moves it aside when it would block a monster. pets.lua renames it to the name its owner gave it. -->
 <monster name="Hoarder Squirrel" nameDescription="a hoarder squirrel" race="blood" experience="0" speed="600" manacost="0">
 	<health now="40" max="40" />
@@ -15,6 +16,7 @@
 		<flag illusionable="0" />
 		<flag convinceable="0" />
 		<flag pushable="1" />
+		<flag passable="1" />
 		<flag canpushitems="0" />
 		<flag canpushcreatures="0" />
 		<flag targetdistance="1" />

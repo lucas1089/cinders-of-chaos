@@ -357,6 +357,15 @@ function T.build(item, opts)
 	end
 
 	tip.base = T.baseStats(item, it)
+	-- weapons: the interval the viewer swings this one at (vocation, dexterity), with the attack speed cap of engine
+	-- patch 0011; "(capped)" when the cap raised it. opts.wielder = {voc = vocation attackspeed, dex = dexterity}
+	local w = opts.wielder
+	if w and kind == "weapon" and M and M.effectiveInterval then
+		local own = attrOr(item, ITEM_ATTRIBUTE_ATTACK_SPEED, call(it, "getAttackSpeed"))
+		local ms, capped = M.effectiveInterval(int(call(it, "getAttackSpeed")), own, w.voc, w.dex, w.cap)
+		tip.base[#tip.base + 1] = {k = "yourinterval", l = capped and "Your Attack Interval (capped)" or
+			"Your Attack Interval", v = floor(ms / 10 + 0.5) / 100, fmt = "sec", low = true}
+	end
 
 	local stats = {}
 	local function stat(k, l, v, fmt, low)

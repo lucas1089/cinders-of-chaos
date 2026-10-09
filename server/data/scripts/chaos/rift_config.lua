@@ -61,49 +61,69 @@ return {
 	-- experience: kill experience in the rift (on top of the cap, see `exp`).
 	modCount = {{1, 50}, {2, 35}, {3, 15}}, -- {count, weight}
 	modCountBetter = {{1, 25}, {2, 45}, {3, 30}}, -- weights for a next-tier key from a completed rift
+	-- Modifier tiers I-V: `tiers` = the highest value of each tier (tier 1 starts at range[1], tier t at tiers[t - 1] +
+	-- step). Tiers I-III are the value ranges the modifiers had before the tiers (old keys decode unchanged), IV and V
+	-- extend them; `range` covers all of them. The tier of a modifier follows from its value (nothing new is stored on
+	-- the key). A modifier without `tiers` has no tier (Withering, Fragile). See `modTiers` below for who rolls which.
 	mods = {
-		{key = "vitality", name = "Vitality", text = "Monsters have +%d%% health", range = {20, 60}, step = 5,
-			reward = {quantity = 0.5, experience = 0.25}},
-		{key = "brutality", name = "Brutality", text = "Monsters deal +%d%% damage", range = {15, 40}, step = 5,
-			reward = {rarity = 0.75, experience = 0.25}},
-		{key = "haste", name = "Haste", text = "Monsters move +%d faster", range = {40, 120}, step = 10,
-			reward = {quantity = 0.15}},
-		{key = "elites", name = "Elites", text = "+%d%% magic, rare and legendary monsters", range = {50, 200}, step = 25,
-			reward = {rarity = 0.15, quantity = 0.1}},
-		{key = "reflection", name = "Reflection", text = "Monsters reflect %d%% of the damage they take", range = {5, 15}, step = 1,
-			reward = {experience = 1.5, quantity = 1.0}},
-		{key = "warding", name = "Warding", text = "Monsters resist %d%% elemental damage", range = {10, 30}, step = 5,
-			reward = {quantity = 0.75, rarity = 0.5}},
+		{key = "vitality", name = "Vitality", text = "Monsters have +%d%% health", range = {20, 90}, step = 5,
+			tiers = {30, 45, 60, 75, 90}, reward = {quantity = 0.5, experience = 0.25}},
+		{key = "brutality", name = "Brutality", text = "Monsters deal +%d%% damage", range = {15, 60}, step = 5,
+			tiers = {20, 30, 40, 50, 60}, reward = {rarity = 0.75, experience = 0.25}},
+		{key = "haste", name = "Haste", text = "Monsters move +%d faster", range = {40, 180}, step = 10,
+			tiers = {60, 90, 120, 150, 180}, reward = {quantity = 0.15}},
+		{key = "elites", name = "Elites", text = "+%d%% magic, rare and legendary monsters", range = {50, 300}, step = 25,
+			tiers = {75, 125, 200, 250, 300}, reward = {rarity = 0.15, quantity = 0.1}},
+		{key = "reflection", name = "Reflection", text = "Monsters reflect %d%% of the damage they take", range = {5, 22},
+			step = 1, tiers = {8, 11, 15, 18, 22}, reward = {experience = 1.5, quantity = 1.0}},
+		{key = "warding", name = "Warding", text = "Monsters resist %d%% elemental damage", range = {10, 40}, step = 5,
+			tiers = {15, 20, 30, 35, 40}, reward = {quantity = 0.75, rarity = 0.5}},
 		{key = "withering", name = "Withering", text = "Players do not regenerate health", range = {1, 1}, step = 1,
 			reward = {fixed = {experience = 15, quantity = 15}}},
-		{key = "swarm", name = "Swarm", text = "+%d monsters in every pack", range = {1, 3}, step = 1,
-			reward = {quantity = 8, experience = 5}},
+		{key = "swarm", name = "Swarm", text = "+%d monsters in every pack", range = {1, 5}, step = 1,
+			tiers = {1, 2, 3, 4, 5}, reward = {quantity = 8, experience = 5}},
 		-- map modifiers (second set). weight: relative roll weight (the first eight have the default 100); minTier: the
 		-- lowest key tier that rolls it (a key of a lower tier never gets it from a drop or an orb); boon = true: a pure
 		-- reward without a bonus of its own (shown in gold on the HUD). Effects in rift.lua, numbers in the blocks below.
-		{key = "teeming", name = "Teeming", text = "+%d%% monster packs", range = {20, 50}, step = 10,
-			weight = 80, reward = {quantity = 0.5, experience = 0.3}},
+		{key = "teeming", name = "Teeming", text = "+%d%% monster packs", range = {20, 70}, step = 10,
+			tiers = {20, 30, 50, 60, 70}, weight = 80, reward = {quantity = 0.5, experience = 0.3}},
 		{key = "gilded", name = "Gilded Trail", text = "%d%% chance of a fleeing Treasure Goblin",
-			range = {30, 70}, step = 10, weight = 40, boon = true},
+			range = {30, 100}, step = 10, tiers = {40, 50, 70, 80, 100}, weight = 40, boon = true},
 		{key = "warband", name = "Warbands", text = "%d%% of packs are rare warbands",
-			range = {10, 30}, step = 5, weight = 60, minTier = 2, reward = {rarity = 1.0, quantity = 0.3}},
+			range = {10, 40}, step = 5, tiers = {15, 20, 30, 35, 40}, weight = 60, minTier = 2,
+			reward = {rarity = 1.0, quantity = 0.3}},
+		-- a chance cannot pass 100%: the coffer has three tiers
 		{key = "coffer", name = "Sealed Coffer", text = "%d%% chance of a guarded coffer",
-			range = {40, 100}, step = 20, weight = 50, boon = true},
-		{key = "twin", name = "Twin Guardians", text = "Twin guardians, %d%% health each", range = {55, 75},
-			step = 5, weight = 50, minTier = 3, reward = {rarity = 0.25, quantity = 0.2}},
+			range = {40, 100}, step = 20, tiers = {40, 60, 100}, weight = 50, boon = true},
+		{key = "twin", name = "Twin Guardians", text = "Twin guardians, %d%% health each", range = {55, 85},
+			step = 5, tiers = {60, 65, 75, 80, 85}, weight = 50, minTier = 3, reward = {rarity = 0.25, quantity = 0.2}},
 		{key = "echo", name = "Echoing Spoils", text = "%d%% chance of double loot",
-			range = {5, 15}, step = 5, weight = 35, minTier = 2, boon = true},
+			range = {5, 25}, step = 5, tiers = {5, 10, 15, 20, 25}, weight = 35, minTier = 2, boon = true},
 		{key = "cinder", name = "Cinderdeath", text = "Slain monsters burst for %d%% health",
-			range = {5, 15}, step = 5, weight = 70, minTier = 3, reward = {quantity = 1.2, rarity = 0.8}},
-		{key = "blight", name = "Blighted Mending", text = "Players receive %d%% less healing", range = {20, 50}, step = 10,
-			weight = 70, minTier = 2, reward = {rarity = 0.5, experience = 0.3, quantity = 0.2}},
-		{key = "waning", name = "Waning Veil", text = "The rift closes %d%% sooner", range = {15, 30}, step = 5,
-			weight = 70, reward = {quantity = 1.0, experience = 0.5}},
-		{key = "dread", name = "Dread Guardian", text = "Guardian +%d%% health and damage", range = {50, 150},
-			step = 25, weight = 60, minTier = 4, reward = {rarity = 0.2, quantity = 0.1}}
+			range = {5, 25}, step = 5, tiers = {5, 10, 15, 20, 25}, weight = 70, minTier = 3,
+			reward = {quantity = 1.2, rarity = 0.8}},
+		{key = "blight", name = "Blighted Mending", text = "Players receive %d%% less healing", range = {20, 70}, step = 10,
+			tiers = {20, 30, 50, 60, 70}, weight = 70, minTier = 2, reward = {rarity = 0.5, experience = 0.3, quantity = 0.2}},
+		{key = "waning", name = "Waning Veil", text = "The rift closes %d%% sooner", range = {15, 40}, step = 5,
+			tiers = {15, 20, 30, 35, 40}, weight = 70, reward = {quantity = 1.0, experience = 0.5}},
+		{key = "dread", name = "Dread Guardian", text = "Guardian +%d%% health and damage", range = {50, 250},
+			step = 25, tiers = {75, 100, 150, 200, 250}, weight = 60, minTier = 4, reward = {rarity = 0.2, quantity = 0.1}},
+		-- lives (see `lives`): the run starts with fewer shared lives (never fewer than lives.min)
+		{key = "fragile", name = "Fragile", text = "%d fewer shared lives", range = {1, 2}, step = 1,
+			weight = 50, minTier = 4, reward = {quantity = 7, rarity = 7, experience = 5}}
+	},
+	-- which modifier tiers a key rolls: {up to key tier, lowest, highest}. A value is drawn evenly from the bottom of the
+	-- lowest to the top of the highest tier (a modifier with fewer tiers stops at its last). Keys of tier 1-5 (and orbs
+	-- without a key tier) roll exactly the ranges of before the tiers.
+	modTiers = {
+		names = {"I", "II", "III", "IV", "V"},
+		window = {{5, 1, 3}, {10, 1, 4}, {15, 2, 5}},
+		-- every modifier of tier IV / V raises the caps of the summed bonuses (bonusCap) by this much
+		capRaise = {[4] = {quantity = 8, rarity = 8, experience = 6}, [5] = {quantity = 16, rarity = 16, experience = 12}}
 	},
 	-- caps of the summed reward bonuses of a key (percent). The highest three-modifier sums of the first eight
-	-- modifiers (quantity 77, rarity 75, experience 53) stay under them, so they only bound the new combinations.
+	-- modifiers at tier III (quantity 77, rarity 75, experience 53) stay under them, so they only bound the new
+	-- combinations; tier IV / V modifiers raise them (modTiers.capRaise).
 	bonusCap = {quantity = 80, rarity = 75, experience = 60},
 	-- Gilded Trail: the goblin (treasure_goblin.lua, ChaosTreasureGoblin.spawn) appears in a random open room once
 	-- this percent range of the rift's kills is done (rolled per run), at the level of the rift's strongest type
@@ -122,6 +142,50 @@ return {
 	-- Twin Guardians: the second guardian appears this many sqm east of the first
 	twin = {offset = 2},
 	-- Withering keeps mana regeneration: the food regeneration condition is replaced by one without health gain.
+
+	-- ------------------------------------------------------------------ lives
+	-- A run has shared lives: base + perExtraPlayer x (players who entered - 1), minus the Fragile modifier, at least
+	-- min. A death inside costs one: the normal death of the engine (experience / skill / item loss, blessings and the
+	-- amulet as anywhere else, the death window), and the next login of that character puts it back at the rift's
+	-- entrance (the south of the hub) with shieldSeconds in which rift monsters cannot hurt it. The death that takes
+	-- the last life collapses the rift: everyone out, no chest, the key is spent (as when the time runs out).
+	lives = {base = 3, perExtraPlayer = 1, min = 1, shieldSeconds = 5},
+
+	-- ------------------------------------------------------------------ omens (the boss-key chain)
+	-- Sealed rifts of tier minTier or more give every finisher Omen Fragments (chest.base + chest.perTier x (tier -
+	-- minTier), x (1 + quantity bonus), fractions a chance of one more); rare / legendary rift monsters of those tiers
+	-- carry one in the corpse eliteChance % of the time. Using keyCost fragments (anywhere in the backpack) binds an
+	-- Omen Key of a random kind; the key opens that kind's guardian arena: the same runtime-built rift slot with every
+	-- side room shut, the guardian appears startDelay seconds after the party arrives, timeLimit seconds, the rift's lives.
+	-- The guardian has the health of its XML (data/monster/monsters/chaos/omens/) x (1 + healthPerExtraPlayer x
+	-- (players - 1)). Killed in time: a chest for every finisher (`reward`). The two items are new items.otb nodes
+	-- (tools/install_omens.py): copies of the stock nodes sourceId (red crystal fragment, stackable; eye of the storm)
+	-- with new server ids, so the client needs no change.
+	omen = {
+		minTier = 6,
+		chest = {base = 2, perTier = 1},
+		eliteChance = {rare = 8, legendary = 25},
+		keyCost = 60,
+		fragment = {id = 32071, sourceId = 18420, article = "an", name = "omen fragment", plural = "omen fragments",
+			weight = 10, description = "A splinter of a rift's dying breath. Use 60 of them to bind an Omen Key."},
+		key = {id = 32072, sourceId = 21703, article = "an", name = "omen key", plural = "omen keys", weight = 50,
+			description = "It hums with a guardian's name. Use it in a protection zone to open its arena."},
+		minLevel = 800,
+		timeLimit = 600,
+		startDelay = 5,
+		healthPerExtraPlayer = 0.75,
+		-- theme: index of `themes` for the arena floor
+		kinds = {
+			{key = "bloodmoon", name = "Bloodmoon", boss = "Sangrith the Bloodmoon Herald", theme = 3},
+			{key = "hollow", name = "Hollow", boss = "Morvane the Hollow Crown", theme = 2},
+			{key = "storm", name = "Stormcall", boss = "Thalcyra the Stormbound Seer", theme = 1}
+		},
+		-- the guardian's chest, per finisher: gold to the bank, orbs, item rolls from the guardian's loot table (gear at
+		-- the "boss" loot tier, x rarityMult), the Chaos currency roll, gems and supports of a tier `asTier` rift, and
+		-- uniqueRolls unique rolls at the boss tier over every unique (no monster list), x uniqueFind
+		reward = {gold = 5000000, chaos = 12, divine = 6, rolls = 8, rarityMult = 1.5, uniqueRolls = 2, uniqueFind = 2,
+			asTier = 15}
+	},
 
 	-- ------------------------------------------------------------------ rewards (the chest, per player)
 	-- gold (bank) = goldPerTier2 x tier^2; orbs = base + perTier x tier (fractions are a chance of one more);

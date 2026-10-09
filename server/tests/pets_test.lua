@@ -1,6 +1,7 @@
 -- Run from the server/ folder: luajit tests/pets_test.lua (and lua5.3; CI runs both)
 -- Pure logic of the pets (pets_core.lua) with the real pets_config.lua: XP curve, kill XP, abilities and their
--- unlocks, zone rules, drops, names, cooldowns, gold, anti-block, rest reasons and the window view.
+-- unlocks, zone rules, drops, names, cooldowns, gold, rest reasons and the window view; the pet monster
+-- files (passable, not attackable).
 dofile("data/scripts/chaos/pets_core.lua")
 local K = ChaosPetsCore
 local cfg = dofile("data/scripts/chaos/pets_config.lua")
@@ -31,6 +32,16 @@ for _, s in ipairs(cfg.species) do
 	if src.store then
 		eq(cfg.store[src.store], s.key, "store map of " .. s.key)
 	end
+end
+-- every pet's monster type: named as in the config, players walk through it, it cannot be attacked
+for _, s in ipairs(cfg.species) do
+	local path = "data/monster/monsters/chaos/pets/" .. s.key .. ".xml"
+	local f = assert(io.open(path, "r"), "monster file " .. path)
+	local xml = f:read("*a")
+	f:close()
+	assert(xml:find('<monster name="' .. s.monster .. '"', 1, true), "monster name in " .. path)
+	assert(xml:find('<flag passable="1" />', 1, true), "passable flag in " .. path)
+	assert(xml:find('<flag attackable="0" />', 1, true), "not attackable: " .. path)
 end
 for unlock, key in pairs(cfg.store) do
 	assert(K.species(key, cfg), "store unlock " .. unlock .. " -> " .. key)
@@ -181,26 +192,14 @@ eq(K.goldBonus(500, 2.5, function() return 0.1 end), 13, "12.5 rounds up when th
 eq(K.goldBonus(500, 2.5, function() return 0.9 end), 12)
 eq(K.goldBonus(0, 5), 0); eq(K.goldBonus(100, 0), 0)
 
--- ---------------------------------------------------------------- following, blocking, rest
+-- ---------------------------------------------------------------- following, rest
 local P = function(x, y, z) return {x = x, y = y, z = z or 7} end
 eq(K.distance(P(1, 1), P(4, 2)), 3)
 eq(K.distance(P(1, 1), P(1, 1, 8)), math.huge)
--- owner at 10,10, pet at 11,10: a monster at 12,10 targets the owner but cannot reach it -> the pet blocks
-assert(K.blocking(P(11, 10), P(10, 10), {{pos = P(12, 10)}}, cfg), "pet in the way")
-assert(not K.blocking(P(11, 10), P(10, 10), {{pos = P(11, 11)}}, cfg), "monster already next to the owner")
-assert(not K.blocking(P(11, 10), P(10, 10), {{pos = P(14, 10)}}, cfg), "monster far from the pet")
-assert(not K.blocking(P(11, 10), P(10, 10), {}, cfg))
--- a monster without a path to the owner (it wanders in the corridor behind the pet) counts within block.pathRange
-assert(K.blocking(P(11, 10), P(10, 10), {{pos = P(14, 10), noPath = true}}, cfg), "no path, 3 from the pet")
-assert(not K.blocking(P(11, 10), P(10, 10), {{pos = P(16, 10), noPath = true}}, cfg), "no path, beyond pathRange")
-assert(not K.blocking(P(11, 10), P(10, 10), {{pos = P(14, 10), noPath = false}}, cfg), "has a path: it is coming")
-assert(not K.blocking(P(11, 10), P(10, 10), {{pos = P(9, 11), noPath = true}}, cfg), "no path but next to the owner")
-eq(K.restReason({now = 1}), nil)
-eq(K.restReason({inPz = true, zone = "banned", now = 1}), "zone", "zone first")
-eq(K.restReason({inPz = true, otherSummons = true, now = 1}), "pz")
-eq(K.restReason({otherSummons = true, now = 1}), "summons")
-eq(K.restReason({hiddenUntil = 5, now = 1}), "hidden")
-eq(K.restReason({hiddenUntil = 5, now = 6}), nil)
+eq(K.restReason({}), nil)
+eq(K.restReason({inPz = true, zone = "banned"}), "zone", "zone first")
+eq(K.restReason({inPz = true, otherSummons = true}), "pz")
+eq(K.restReason({otherSummons = true}), "summons")
 assert(K.restText("pz"):find("protection zone"))
 eq(K.restText(nil), nil)
 

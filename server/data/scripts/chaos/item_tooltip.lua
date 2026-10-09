@@ -84,6 +84,10 @@ local function answer(player, data)
 		return
 	end
 	local equipped = equippedIds(player)
+	-- the viewer's attack speed inputs for "Your Attack Interval" on weapons (attack speed cap, engine patch 0011)
+	local voc = player:getVocation()
+	local wielder = {voc = voc and voc:getAttackSpeed() or 2000,
+		dex = CHARSTAT_DEXTERITY and player.getCharacterStat and player:getCharacterStat(CHARSTAT_DEXTERITY) or 0}
 	local out = {}
 	for i = 1, n do
 		local req = type(list[i]) == "table" and list[i] or {}
@@ -102,7 +106,7 @@ local function answer(player, data)
 				local ok, a = pcall(item.getClientAttributes, item)
 				attrs = ok and a or nil
 			end
-			local ok, tip = pcall(T.build, item, {equippedIds = equipped, attrs = attrs})
+			local ok, tip = pcall(T.build, item, {equippedIds = equipped, attrs = attrs, wielder = wielder})
 			if ok then
 				row.tip = tip
 			else

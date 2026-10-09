@@ -12,7 +12,7 @@ local index = K.build(data)
 
 -- ------------------------------------------------------------------ the list
 eq(#index.problems, 0, "no problems in achievements_data.lua: " .. table.concat(index.problems, "; "))
-eq(#index.list >= 60 and #index.list <= 100, true, "60-100 achievements (" .. #index.list .. ")")
+eq(#index.list >= 60 and #index.list <= 120, true, "60-120 achievements (" .. #index.list .. ")")
 local perCat, titles, rewards, hidden = {}, 0, 0, 0
 for _, def in ipairs(index.list) do
 	perCat[def.cat] = (perCat[def.cat] or 0) + 1

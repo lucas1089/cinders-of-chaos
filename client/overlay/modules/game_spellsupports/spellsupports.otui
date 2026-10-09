@@ -29,6 +29,7 @@ SupportSpellRow < UIWidget
     anchors.top: parent.top
     margin-left: 6
     margin-top: 2
+    height: 16
     text-align: left
     font: verdana-11px-rounded
     color: #d6c9ae
@@ -51,6 +52,7 @@ SupportSpellRow < UIWidget
     anchors.right: parent.right
     anchors.verticalCenter: pips.verticalCenter
     margin-left: 4
+    height: 14
     text-align: left
     font: verdana-11px-antialised
     color: #8c8070
@@ -64,7 +66,7 @@ SupportPip < UIWidget
   background-color: #2a2226
 
 SupportSocket < UIWidget
-  height: 58
+  height: 66
   phantom: false
   background-color: #0d0b0e66
   padding: 3
@@ -87,21 +89,25 @@ SupportSocket < UIWidget
     anchors.top: parent.top
     anchors.right: buttons.left
     margin-left: 8
+    margin-right: 6
     margin-top: 2
+    height: 16
     text-align: left
     font: verdana-11px-rounded
     color: #d6c9ae
     phantom: true
 
+  // three lines; spellsupports.lua shortens a longer text (full text in the row tooltip)
   UILabel
     id: text
     anchors.left: name.left
     anchors.top: name.bottom
     anchors.right: buttons.left
     margin-top: 2
+    margin-right: 6
     text-align: topleft
     text-wrap: true
-    height: 30
+    height: 42
     font: verdana-11px-antialised
     color: #8c8070
     phantom: true
@@ -157,7 +163,7 @@ SupportRuneCell < UIWidget
 
 ChaosMainWindow
   id: supportsWindow
-  size: 720 556
+  size: 760 616
   !text: tr('Spell Supports')
   @onEscape: modules.game_spellsupports.hide()
 
@@ -206,7 +212,7 @@ ChaosMainWindow
     anchors.top: parent.top
     anchors.left: listFrame.right
     anchors.right: parent.right
-    height: 270
+    height: 294
     margin-left: 8
 
     UIWidget
@@ -223,9 +229,11 @@ ChaosMainWindow
       anchors.right: parent.right
       margin-left: 8
       margin-top: 1
+      height: 16
       text-align: left
       font: verdana-11px-rounded
       color: #e8b84a
+      phantom: false
 
     UILabel
       id: info
@@ -238,6 +246,7 @@ ChaosMainWindow
       text-wrap: true
       font: verdana-11px-antialised
       color: #8c8070
+      phantom: false
 
     ChaosSeparator
       id: headerSeparator
@@ -313,40 +322,44 @@ ChaosMainWindow
     text-auto-resize: true
     visible: false
 
+  // the selected rune and the last answer: three lines each; spellsupports.lua shortens a longer text (full text
+  // in the tooltip)
   UILabel
     id: runeInfo
     anchors.top: runesFrame.bottom
     anchors.left: runesFrame.left
-    anchors.right: combineButton.left
+    anchors.right: runesFrame.right
     margin-top: 4
-    margin-right: 6
-    height: 30
+    height: 42
     text-align: topleft
     text-wrap: true
     font: verdana-11px-antialised
     color: #d6c9ae
-
-  ChaosButton
-    id: combineButton
-    anchors.top: runesFrame.bottom
-    anchors.right: runesFrame.right
-    margin-top: 4
-    width: 110
-    !text: tr('Combine 3')
-    enabled: false
-    @onClick: modules.game_spellsupports.combineSelected()
+    phantom: false
 
   UILabel
     id: resultLabel
     anchors.left: details.left
     anchors.right: parent.right
     anchors.bottom: closeButton.top
-    margin-bottom: 4
-    height: 28
+    margin-bottom: 6
+    height: 42
     text-align: topleft
     text-wrap: true
     font: verdana-11px-antialised
     color: #9fdc7f
+    phantom: false
+
+  ChaosButton
+    id: combineButton
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    width: 110
+    !text: tr('Combine 3')
+    !tooltip: tr('Three runes of the selected support and level become one of the next level')
+    enabled: false
+    @onClick: modules.game_spellsupports.combineSelected()
 
   ChaosButton
     id: closeButton

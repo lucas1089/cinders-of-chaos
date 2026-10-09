@@ -152,7 +152,7 @@ local M = ChaosItemMods
 local C = ChaosCrafting
 
 -- ---------------------------------------------------------------- catalogue
-eq(#M.config.mods, 14, "fourteen modifiers")
+eq(#M.config.mods, 15, "fifteen modifiers")
 for _, def in ipairs(M.config.mods) do
 	eq(#def.tiers, 5, def.key .. ": five tiers")
 	assert(def.cap > 0 and def.weight > 0, def.key)
@@ -266,6 +266,36 @@ eq(M.speedBonus(437, 7), 30)
 eq(M.scale(100, 10), 110); eq(M.scale(-100, 10), -110); eq(M.scale(100, -3), 97)
 eq(M.reflected(250, 6), 15)
 eq(M.experience(1000, 4), 1040)
+
+-- ---------------------------------------------------------------- Treasure Goblin Chance (treasure_goblin.lua)
+do
+	local gc = M.byKey.goblinchance
+	eq(gc.label, "Treasure Goblin Chance"); eq(gc.fmt, "pct"); eq(gc.cap, 100)
+	eq(gc.tiers[1][1], 10, "+10% at the bottom"); eq(gc.tiers[5][2], 40, "+40% at the top")
+	eq(M.text("goblinchance", 25), "Treasure Goblin Chance +25%")
+	eq(addableKeys(newItem(2471)).goblinchance, true, "on helmets")
+	eq(addableKeys(newItem(2171)).goblinchance, true, "on amulets")
+	eq(addableKeys(newItem(2123)).goblinchance, true, "on rings")
+	eq(addableKeys(newItem(2466)).goblinchance, nil, "not on armor")
+	eq(addableKeys(newItem(2400)).goblinchance, nil, "not on weapons")
+	eq(addableKeys(newItem(2195)).goblinchance, nil, "not on boots")
+	-- rolls: tier 1 at Common, tier 5 at Transcendent with the level pull
+	local lo = M.rollValue(gc, 1, 1, function(a, b) return a end)
+	local hi = M.rollValue(gc, 15, 150, function(a, b) return b end)
+	eq(lo, 10); eq(hi, 40)
+	eq(M.range(gc, 15, 150)[1], 34, "28 + floor(12 x 0.5) at the top of the window")
+	-- an Exalted-style add on a helmet can pick it (weighted pick: force the last row)
+	local helm = newItem(2471)
+	local rows = M.addable(helm)
+	local last = rows[#rows].entry
+	eq(last.key, "goblinchance", "last in catalogue order (stored keys of older items unchanged)")
+	-- cap: helmet 40 + amulet 40 + ring 40 = 120 -> 100
+	local h, am, rg = newItem(2471), newItem(2171), newItem(2123)
+	M.set(h, "goblinchance", 40); M.set(am, "goblinchance", 40); M.set(rg, "goblinchance", 40)
+	eq(M.totals({h, am, rg}).goblinchance, 100, "capped at +100% per character")
+	eq(M.totals({h, am}).goblinchance, 80)
+	eq(M.summary(h), "Treasure Goblin Chance +40%")
+end
 
 -- ---------------------------------------------------------------- on the character
 local player = newCreature("player", {baseSpeed = 400, health = 500})
@@ -411,6 +441,13 @@ math.random = realRandom
 eq(#added, 1, "extra coins")
 eq(added[1][1], 2148); eq(added[1][2], 5, "10% of 50 gold")
 eq(M.playerBonus(player, "itemfind"), 0, "item find read by the loot layer")
+-- Treasure Goblin Chance on the character: read by treasure_goblin.lua through playerBonus
+M.set(ring, "goblinchance", 30)
+M.refresh(player)
+eq(M.playerBonus(player, "goblinchance"), 30, "goblin chance read by the goblin respawn roll")
+M.remove(ring, "goblinchance")
+M.refresh(player)
+eq(M.playerBonus(player, "goblinchance"), 0)
 
 -- after a drop: the engine appends its rarity text after the Lua callbacks; the marked corpse is rewritten next tick
 local dropped = newItem(2466)

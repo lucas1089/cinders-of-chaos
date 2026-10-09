@@ -27,6 +27,7 @@
 --   wb_kills, wb_top, wb_kaelgor, wb_skaldra, wb_rotmother, wb_nyxareth, wb_vharok      world boss rewards
 --   wb_heal_top, wb_tank_top, wb_role_podium                         world boss roles (worldboss.lua distribute)
 --   rift_tier, rift_runs, rift_flawless, rift_three, rift_mod_<modifier key>           sealed rifts
+--   omen_kills, omen_<kind>                                                            omen guardians (rift.lua)
 --   bounty_done, bounty_weeks                                        bounty board (retroactive from chaos_bounty)
 --   bestiary_known, bestiary_completed, bestiary_points, bestiary_tasks   bestiary and kill tasks (bestiary.lua)
 --   unique_found, rarity_max, orbs_used, orb_exalted, mods_max       loot and the crafting bench
@@ -182,6 +183,16 @@ return {
 			stat = "rift_mod_brutality"},
 		{id = "rift_swarm", cat = "rifts", name = "Swarm Breaker", desc = "Seal a rift with the Swarm modifier.", points = 10,
 			stat = "rift_mod_swarm"},
+		-- omen guardians (rift.lua, the Omen Key arenas): omen_kills, omen_<kind>
+		{id = "omen_1", cat = "rifts", name = "Omen Breaker", desc = "Slay an omen guardian.", points = 25, stat = "omen_kills"},
+		{id = "omen_bloodmoon", cat = "rifts", name = "Red Night Ends", desc = "Slay Sangrith the Bloodmoon Herald.",
+			points = 15, stat = "omen_bloodmoon"},
+		{id = "omen_hollow", cat = "rifts", name = "Uncrowned", desc = "Slay Morvane the Hollow Crown.", points = 15,
+			stat = "omen_hollow"},
+		{id = "omen_storm", cat = "rifts", name = "Eye of the Storm", desc = "Slay Thalcyra the Stormbound Seer.", points = 15,
+			stat = "omen_storm"},
+		{id = "omen_10", cat = "rifts", name = "Herald of Omens", desc = "Slay 10 omen guardians.", points = 50,
+			stat = "omen_kills", target = 10, title = "Omenbreaker", reward = {items = orbs(10, 5)}},
 
 		-- ------------------------------------------------------------------ Bounties
 		{id = "bounty_1", cat = "bounties", name = "Contract Signed", desc = "Complete a bounty contract.", points = 5,

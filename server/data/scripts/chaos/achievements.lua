@@ -513,7 +513,7 @@ local function onRecord(board, who, value)
 			for _ in pairs(run.players or {}) do
 				inside = inside + 1
 			end
-			if run.size and inside >= run.size then
+			if run.size and inside >= run.size and (run.deaths or 0) == 0 then -- rift lives: nobody fell
 				A.progress(player, "rift_flawless", 1)
 			end
 		end
@@ -689,7 +689,8 @@ function kill.onKill(player, target)
 				A.progress(player, "witching_legendary", 1)
 			end
 		end
-		if name == "treasure goblin" then
+		if name == "treasure goblin" or (ChaosTreasureGoblin and ChaosTreasureGoblin.isGoblinName
+			and ChaosTreasureGoblin.isGoblinName(name)) then
 			A.progress(player, "goblin_kills", 1)
 		elseif name == "rat" and player:getLevel() >= 500 then
 			A.progress(player, "rat_500", 1)

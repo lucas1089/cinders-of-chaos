@@ -52,10 +52,72 @@ local function gold(n)
   return tostring(n)
 end
 
+-- tooltips do not wrap: long lines are broken here
+local TIP_CHARS = 64
+local function tipText(text)
+  local out = {}
+  for line in (tostring(text or '') .. '\n'):gmatch('(.-)\n') do
+    out[#out + 1] = SupportsText.wrap(line, TIP_CHARS, '  ')
+  end
+  return table.concat(out, '\n')
+end
+
+-- ---------------------------------------------------------------- text that fits its box
+-- fitLabel(label, text, tip, tipText): shows `text` in the label, shortened with "..." when it does not fit the
+-- label's box (the height for a wrapped label, the width for a one-line one). The widget `tip` (the label itself
+-- by default; a phantom label passes its row) then shows tipText (default: the full text) as its tooltip; its own
+-- tooltip (tip.fitBaseTip) otherwise. The label refits whenever it is resized (rows are laid out after creation).
+local function textFits(label, text)
+  label:setText(text)
+  local size = label:getTextSize()
+  local width = label:getWidth() - label:getTextOffset().x - label:getPaddingLeft() - label:getPaddingRight()
+  if size.width > width then return false end
+  if not label:getTextWrap() then return true end
+  return size.height <= label:getHeight() - label:getPaddingTop() - label:getPaddingBottom()
+end
+
+local function updateFitTip(tip)
+  local cut = false
+  for _, c in pairs(tip.fitCuts or {}) do cut = cut or c end
+  local text = cut and tip.fitTipText or tip.fitBaseTip
+  if text and text ~= '' then
+    tip:setTooltip(tipText(text))
+  else
+    tip:removeTooltip()
+  end
+end
+
+local function refit(label)
+  local text = label.fitText or ''
+  local cut = false
+  if label:getWidth() > 1 and label:getHeight() > 1 then
+    text, cut = SupportsText.shorten(text, function(candidate) return textFits(label, candidate) end)
+  end
+  label:setText(text)
+  local tip = label.fitTip
+  if tip and not tip:isDestroyed() then
+    tip.fitCuts = tip.fitCuts or {}
+    tip.fitCuts[label:getId()] = cut
+    updateFitTip(tip)
+  end
+end
+
+local function fitLabel(label, text, tip, fullTip)
+  label.fitText = tostring(text or '')
+  tip = tip or label
+  label.fitTip = tip
+  tip.fitTipText = fullTip or label.fitText
+  if not label.fitHooked then
+    label.fitHooked = true
+    connect(label, { onGeometryChange = function(self) refit(self) end })
+  end
+  refit(label)
+end
+
 local function setResult(text, ok)
   if not window then return end
-  window.resultLabel:setText(text or '')
   window.resultLabel:setColor(ok == false and '#e03a1e' or '#9fdc7f')
+  fitLabel(window.resultLabel, text or '')
 end
 
 local function setSpellIcon(widget, words)
@@ -100,7 +162,7 @@ local function runeAt(spell, slot)
 end
 
 local function runeTooltip(r)
-  return string.format('%s\n%s.\nFits: %s spells.', r.name or '', r.text or '', r.fits or '')
+  return tipText(string.format('%s\n%s.\nFits: %s spells.', r.name or '', r.text or '', r.fits or ''))
 end
 
 -- ---------------------------------------------------------------- pips (list rows and action bar)
@@ -154,8 +216,8 @@ local function showDetails(spell)
   d.emptyText:setVisible(not has)
   if not spell then return end
   setSpellIcon(d.icon, spell.words)
-  d.name:setText(string.format('%s  (%s)', spell.name or '', spell.words or ''))
-  d.info:setText(string.format('%s spell, level %d. Sockets open: %d of %d (2nd at level %d, 3rd at level %d with %d %s).',
+  fitLabel(d.name, string.format('%s  (%s)', spell.name or '', spell.words or ''))
+  fitLabel(d.info, string.format('%s spell, level %d. Sockets open: %d of %d (2nd at level %d, 3rd at level %d with %d %s).',
     spell.kindName or spell.kind or '', tonumber(spell.level) or 0, tonumber(spell.count) or 0,
     tonumber(spell.max) or 3, tonumber(spell.secondLevel) or 0, tonumber(spell.thirdLevel) or 0,
     tonumber(state.orbsNeeded) or 2, tr('Orbs of Sockets')))
@@ -164,14 +226,15 @@ local function showDetails(spell)
     local row = g_ui.createWidget('SupportSocket', d.sockets)
     local r = runeAt(spell, slot)
     local b1, b2 = row.buttons.first, row.buttons.second
+    local name, text = '', ''
     row.slot.onDrop = socketDrop(spell.id, slot)
     row.onDrop = row.slot.onDrop
     if r then
       setRuneIcon(row.slot.icon, r)
       row.slot:setTooltip(runeTooltip(r))
-      row.name:setText(r.name .. (r.inactive and tr(' (socket closed: no effect)') or ''))
+      name = r.name .. (r.inactive and tr(' (socket closed)') or '')
       row.name:setColor(r.color or '#d6c9ae')
-      row.text:setText(r.text or '')
+      text = r.text or ''
       b1:setText(tr('Remove') .. ' (' .. gold(r.cost) .. ')')
       b1:setTooltip(tr('The rune comes back for this much gold (bank first, then backpack).'))
       b1.onClick = function() send('remove', { spell = spell.id, slot = slot, keep = true }) end
@@ -190,9 +253,9 @@ local function showDetails(spell)
         end
       end
     elseif slot <= count then
-      row.name:setText(tr('Empty socket'))
+      name = tr('Empty socket')
       row.name:setColor('#d6c9ae')
-      row.text:setText(tr('Select a rune below and press Socket, or drag a rune here.'))
+      text = tr('Select a rune below and press Socket, or drag a rune here.')
       b1:setText(tr('Socket'))
       b1:setEnabled(selectedRune ~= nil)
       b1.onClick = function()
@@ -204,20 +267,23 @@ local function showDetails(spell)
       row.name:setColor('#6b6258')
       b2:setVisible(false)
       if slot == 3 and not spell.opened then
-        row.name:setText(tr('Locked socket'))
-        row.text:setText(string.format('%s %d %s (%s %d). %s %d.', tr('Opens with'), tonumber(state.orbsNeeded) or 2,
+        name = tr('Locked socket')
+        text = string.format('%s %d %s (%s %d). %s %d.', tr('Opens with'), tonumber(state.orbsNeeded) or 2,
           tr('Orbs of Sockets'), tr('you have'), tonumber(state.orbCount) or 0, tr('Needs level'),
-          tonumber(spell.thirdLevel) or 0))
+          tonumber(spell.thirdLevel) or 0)
         b1:setText(tr('Open'))
         b1:setEnabled(spell.canOpen == true and (tonumber(state.orbCount) or 0) >= (tonumber(state.orbsNeeded) or 2))
         b1.onClick = function() send('unlock', { spell = spell.id }) end
       else
-        row.name:setText(tr('Locked socket'))
-        row.text:setText(string.format('%s %d.', tr('Opens at level'), slot == 2 and (tonumber(spell.secondLevel) or 0)
-          or (tonumber(spell.thirdLevel) or 0)))
+        name = tr('Locked socket')
+        text = string.format('%s %d.', tr('Opens at level'), slot == 2 and (tonumber(spell.secondLevel) or 0)
+          or (tonumber(spell.thirdLevel) or 0))
         b1:setVisible(false)
       end
     end
+    local full = name .. '\n' .. text .. (r and r.inactive and ('\n' .. tr('No effect until the socket is open again.')) or '')
+    fitLabel(row.name, name, row, full)
+    fitLabel(row.text, text, row, full)
   end
 end
 
@@ -230,8 +296,10 @@ local function buildSpells()
     local row = g_ui.createWidget('SupportSpellRow', listWidget)
     row.spellId = spell.id
     setSpellIcon(row.icon, spell.words)
-    row.name:setText(spell.name or '')
-    row.kind:setText(string.format('%s, level %d', KIND_SHORT[spell.kind] or spell.kind or '', tonumber(spell.level) or 0))
+    local kind = string.format('%s, level %d', KIND_SHORT[spell.kind] or spell.kind or '', tonumber(spell.level) or 0)
+    local full = (spell.name or '') .. '\n' .. kind
+    fitLabel(row.name, spell.name or '', row, full)
+    fitLabel(row.kind, kind, row, full)
     fillPips(row.pips, spell)
     if (tonumber(state.level) or 0) < (tonumber(spell.level) or 0) then
       row.name:setColor('#6b6258')
@@ -259,13 +327,13 @@ local function showRuneInfo()
   local r = selectedRune and runeById(selectedRune)
   if not r then
     selectedRune = nil
-    window.runeInfo:setText('')
+    fitLabel(window.runeInfo, '')
     window.combineButton:setEnabled(false)
     return
   end
-  window.runeInfo:setText(string.format('%s (x%d): %s. Fits %s spells.', r.name, tonumber(r.count) or 0, r.text or '',
-    r.fits or ''))
   window.runeInfo:setColor(r.color or '#d6c9ae')
+  fitLabel(window.runeInfo, string.format('%s (x%d): %s. Fits %s spells.', r.name, tonumber(r.count) or 0,
+    r.text or '', r.fits or ''))
   window.combineButton:setEnabled(r.combine == true and (tonumber(r.count) or 0) >= 3)
 end
 
@@ -336,7 +404,7 @@ local function decorateButton(button)
     pip:setSize({ width = 5, height = 5 })
     pip:setPhantom(true)
     pip:setBackgroundColor(r.color or '#d6c9ae')
-    lines[#lines + 1] = string.format('  %s: %s', r.name or '', r.text or '')
+    lines[#lines + 1] = '  ' .. SupportsText.wrap(string.format('%s: %s', r.name or '', r.text or ''), TIP_CHARS, '    ')
   end
   local tip = item:getTooltip() or ''
   tip = tip:gsub('\n\nSupports:.*$', '')
@@ -386,7 +454,8 @@ local function unhookActionBar()
   pcall(refreshActionBar)
 end
 
--- one line for the spellbook's description (game_spellbook calls it with the shown spell's words)
+-- the spellbook's description (game_spellbook calls it with the shown spell's words): a short line (the rune names)
+-- and the effects for its tooltip
 function spellbookLine(words)
   lastBookWords = words
   local id = words and barWords[words]
@@ -395,11 +464,20 @@ function spellbookLine(words)
   if not runes or #runes == 0 then
     return tr('Supports: none socketed (Spell Supports window, !supports).')
   end
-  local parts = {}
+  local names, effects = {}, {}
   for _, r in ipairs(runes) do
-    parts[#parts + 1] = string.format('%s (%s)', r.name or '', r.text or '')
+    names[#names + 1] = r.name or ''
+    effects[#effects + 1] = string.format('  %s: %s', r.name or '', r.text or '')
   end
-  return tr('Supports') .. ': ' .. table.concat(parts, '; ') .. '.'
+  return tr('Supports') .. ': ' .. table.concat(names, ', ') .. '.',
+    tr('Supports') .. ':\n' .. table.concat(effects, '\n')
+end
+
+-- for other windows (the spellbook): `text` in `label`, shortened with "..." when it does not fit the label's box;
+-- `tip` is the label's tooltip (default: the full text when it was shortened)
+function fitText(label, text, tip)
+  label.fitBaseTip = tip
+  fitLabel(label, text, label, tip)
 end
 
 function openFor(words)

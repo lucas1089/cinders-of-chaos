@@ -27,8 +27,7 @@
 --   K.goldBonus(value, pct, rand)        extra gold of Gold Sniffer for a corpse
 -- Following
 --   K.distance(a, b)                     squares between two positions (math.huge on another floor)
---   K.blocking(petPos, ownerPos, threats, cfg)   anti-block: should the pet step away
---   K.restReason(s), K.restText(reason)  why the pet rests now (pz, zone, summons, hidden) and the message
+--   K.restReason(s), K.restText(reason)  why the pet rests now (pz, zone, summons) and the message
 -- Rules and texts
 --   K.validName(raw, cfg, reserved)      name or nil, reason
 --   K.cooldownLeft(readyAt, now)         whole seconds left (0 when ready)
@@ -272,7 +271,7 @@ function K.goldBonus(value, pct, rand)
 	return whole
 end
 
--- ---------------------------------------------------------------- following and blocking
+-- ---------------------------------------------------------------- following
 function K.distance(a, b)
 	if not a or not b or a.z ~= b.z then
 		return math.huge
@@ -280,25 +279,11 @@ function K.distance(a, b)
 	return math.max(math.abs(a.x - b.x), math.abs(a.y - b.y))
 end
 
--- anti-block: true when a monster that targets the owner stands within block.range of the pet but is not next to
--- the owner (the pet may be in its way). threats = {{pos = position, noPath = true when it has no path to the owner},
--- ...} of monsters targeting the owner; one without a path counts up to block.pathRange from the pet.
-function K.blocking(petPos, ownerPos, threats, cfg)
-	for _, t in ipairs(threats or {}) do
-		local reach = t.noPath and math.max(cfg.block.range, cfg.block.pathRange or 0) or cfg.block.range
-		if K.distance(t.pos, petPos) <= reach and K.distance(t.pos, ownerPos) > 1 then
-			return true
-		end
-	end
-	return false
-end
-
--- why the pet rests now (nil = it may be out). s = {inPz, zone = "banned"|..., zoneName, otherSummons, hiddenUntil, now}
+-- why the pet rests now (nil = it may be out). s = {inPz, zone = "banned"|..., zoneName, otherSummons}
 local REST_TEXT = {
 	pz = "Your pet waits for you outside the protection zone.",
 	zone = "Pets are not allowed here; yours waits until you leave.",
-	summons = "Your pet stays back while you have other summons.",
-	hidden = "Your pet steps out of the way."
+	summons = "Your pet stays back while you have other summons."
 }
 function K.restReason(s)
 	if s.zone == "banned" then
@@ -307,8 +292,6 @@ function K.restReason(s)
 		return "pz"
 	elseif s.otherSummons then
 		return "summons"
-	elseif (s.hiddenUntil or 0) > (s.now or 0) then
-		return "hidden"
 	end
 	return nil
 end
