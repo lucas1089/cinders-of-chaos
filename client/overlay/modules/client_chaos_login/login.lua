@@ -3,32 +3,44 @@
 -- The stock client builds the login screen from two modules: client_background (the full-screen picture, the
 -- event / boosted / cast panels) and client_entergame (the account window). This module leaves both in place
 -- (their code and every function stay as they are) and restyles them at runtime:
---   * the background picture (data/images/title.png, one replaceable 1920x1080 file) is cropped to cover the
---     window, with an optional flickering glow overlay, rising embers and falling ash on top of it;
---   * the "Cinders of Chaos" wordmark smoulders: its glow image (chaos/login/logo_hot.png) breathes over the charred
---     letters (chaos/logo.png) and sparks leave the letters;
---   * the logo, a framed sign-in panel with two rune medallions, SIGN IN / CREATE ACCOUNT and OPTIONS / CREDITS /
---     EXIT GAME buttons are laid out under it; the stock fields, check boxes and buttons are moved into the panel;
---   * the server drop-down, recordings button, status and version sit in the corners;
---   * "Press any key to start" shows first and reveals the panel (skipped when auto login is on).
+--   * the background picture (data/images/title.png: the login artwork, 1920x1536 with the artwork in a band in the
+--     middle) is cropped to cover the window, with a flickering glow overlay, rising embers and falling ash on top;
+--   * the logo layer (chaos/logo.png, cut out of the artwork) sits exactly on the logo painted in the picture; its
+--     glow image (chaos/login/logo_hot.png) breathes over the letters and sparks leave them;
+--   * the widgets sit where the artwork painted its mock interface: "Press any key to start" on its dark bar, the
+--     server status and a spinner under it, then the framed sign-in panel at the bottom centre (SIGN IN / CREATE
+--     ACCOUNT, OPTIONS / CREDITS / EXIT GAME; the stock fields, check boxes and buttons are moved into the panel);
+--   * the server drop-down, recordings button, server status and version sit in the top corners; the stock event /
+--     boosted / cast panels go under the sign-in panel or beside it when there is room;
+--   * the small four-pointed mark in the artwork's bottom right corner (left by the image generator) stays visible:
+--     no widget is placed on it and particles are not drawn over it.
 -- Art: client/tools/gen_login_art.py (data/images/title.png and data/images/chaos/login/).
 
 ChaosLogin = {}
 
 local IMG = '/images/chaos/login/'
-local BG_W, BG_H = 1920, 1080          -- size of data/images/title.png
+local BG_W, BG_H = 1920, 1536          -- size of data/images/title.png
+local BAND_Y, BAND_H = 232, 1072       -- the artwork's rows in title.png (above and below: darkened extension)
+local ART_K = 1920 / 1376              -- title.png pixels per artwork pixel (the boxes below are artwork pixels)
+local LOGO_BOX = { 396, 196, 980, 566 }      -- the logo; chaos/logo.png covers exactly this box
+local PRESS_BOX = { 520, 569, 856, 608 }     -- the painted "press any key" bar
+local STATUS_Y, SPIN_X, SPIN_Y, SPIN_D = 624, 687.5, 657, 30   -- painted "connecting..." line and spinner
+local MARK_BOX = { 1284, 678, 1356, 746 }    -- the generator's sparkle mark: kept free of widgets and particles
+local PANEL_Y = 540                    -- top of the sign-in panel (just under the logo's lower spike)
 local PANEL_W, PANEL_H = 540, 180
-local LOGO_W, LOGO_H = 1000, 560       -- size of data/images/chaos/logo.png (the wordmark)
-local EMBER_COUNT = 30                 -- embers rising through the scene
-local ASH_COUNT = 16                   -- ash flakes falling through it
+local EMBER_COUNT = 22                 -- embers rising through the scene (the picture has its own)
+local ASH_COUNT = 10                   -- ash flakes falling through it
 local SPARK_COUNT = 12                 -- sparks rising off the burning letters
-local USE_GLOW = true                  -- flicker overlay chaos/login/glow.png (made for the generated picture)
+local USE_GLOW = true                  -- flicker overlay chaos/login/glow.png (lava and windows of title.png)
 local SPLASH = true                    -- "Press any key to start" before the panel
 
 local root, bg, enterGame
-local logo, logoHot, halo, glowW, emberLayer, sparkLayer, pressW, splashW
+local logo, logoHot, glowW, emberLayer, sparkLayer, pressW, splashW, spinner
 local medL, medR, crestT, crestB
 local verLabel, statusLabel, statusDot, serverCaption
+local view = { cx = 0, cy = 0, sx = 1, sy = 1 }   -- crop of title.png and its scale on screen
+local mark = { x0 = -1, y0 = -1, x1 = -1, y1 = -1 } -- the sparkle mark on screen (relative to bg)
+local statusChecking = true
 local moved = {}                        -- stock widgets moved out of the window: { widget, original parent }
 local embers, ashes, sparks = {}, {}, {}
 local animEvent, fadeEvent
@@ -74,44 +86,63 @@ local function findByTooltip(parent, text)
 end
 
 -- ---------------------------------------------------------------- background
--- cover crop of the 1920x1080 picture for any window shape: the horizon stays at the same height
+-- cover crop of title.png for any window shape: from 16:9 to 5:4 the whole width of the artwork shows (the extension
+-- above and below fills the height); wider windows crop rows of the artwork, keeping its bottom; narrower ones crop
+-- the sides
 local function coverClip(w, h)
   local ar = w / math.max(1, h)
   local cw, ch, cx, cy = BG_W, BG_H, 0, 0
-  if ar > BG_W / BG_H then
+  if ar >= BG_W / BAND_H then
     ch = math.floor(BG_W / ar)
-    cy = math.floor((BG_H - ch) * 0.65)
+    cy = BAND_Y + BAND_H - ch
+  elseif ar >= BG_W / BG_H then
+    ch = math.floor(BG_W / ar)
+    cy = math.floor(BAND_Y + (BAND_H - ch) / 2)
   else
     cw = math.floor(BG_H * ar)
-    cx = math.floor((BG_W - cw) * 0.5)
+    cx = math.floor((BG_W - cw) / 2)
   end
-  return string.format('%d %d %d %d', cx, cy, cw, ch)
+  return cx, cy, cw, ch
 end
+
+-- artwork pixel -> position on screen relative to bg
+local function artX(ax) return math.floor((ax * ART_K - view.cx) * view.sx + 0.5) end
+local function artY(ay) return math.floor((BAND_Y + ay * ART_K - view.cy) * view.sy + 0.5) end
+local function artBox(b) return artX(b[1]), artY(b[2]), artX(b[3]) - artX(b[1]), artY(b[4]) - artY(b[2]) end
+
+local function inMark(x, y, r)
+  r = r or 0
+  return x + r >= mark.x0 and x - r <= mark.x1 and y + r >= mark.y0 and y - r <= mark.y1
+end
+
+local layoutInfo, placeStatus
 
 local function relayout()
   if not alive(bg) then return end
   local w, h = bg:getWidth(), bg:getHeight()
   if w < 100 or h < 100 then return end
-  local clip = coverClip(w, h)
+  local cx, cy, cw, ch = coverClip(w, h)
+  view.cx, view.cy, view.sx, view.sy = cx, cy, w / cw, h / ch
+  local clip = string.format('%d %d %d %d', cx, cy, cw, ch)
   bg:setImageClip(clip)
   if alive(glowW) then glowW:setImageClip(clip) end
 
-  local lh = math.max(160, math.min(440, math.floor(h * 0.40)))
-  local lw = math.floor(lh * LOGO_W / LOGO_H)
-  if lw > w - 40 then
-    lw = w - 40
-    lh = math.floor(lw * LOGO_H / LOGO_W)
-  end
-  local lmt = math.floor(h * 0.03)
-  logo:setSize({ width = lw, height = lh })
-  logo:setMarginTop(lmt)
-  halo:setSize({ width = math.floor(lw * 1.15), height = math.floor(lh * 1.1) })
-  halo:setMarginTop(lmt - math.floor(lh * 0.05))
+  -- the logo layer on the logo of the picture
+  local x, y, lw, lh = artBox(LOGO_BOX)
+  place(logo, x, y, lw, lh)
+  mark.x0, mark.y0, mark.x1, mark.y1 = artX(MARK_BOX[1]), artY(MARK_BOX[2]), artX(MARK_BOX[3]), artY(MARK_BOX[4])
 
-  local top = math.max(math.floor(h * 0.50), lmt + lh + 16)
-  top = math.min(top, h - PANEL_H - 100)
-  enterGame:setMarginTop(top)
-  pressW:setMarginBottom(math.floor(h * 0.06))
+  -- splash: the bar, the status line and the spinner where the artwork painted them
+  local px, py, pw, ph = artBox(PRESS_BOX)
+  place(pressW, px, py, pw, ph)
+  local d = math.max(16, math.floor(SPIN_D * ART_K * view.sx))
+  place(spinner, artX(SPIN_X) - math.floor(d / 2), artY(SPIN_Y) - math.floor(d / 2), d, d)
+
+  -- the sign-in panel at the bottom centre, under the logo
+  local top = math.min(artY(PANEL_Y), h - PANEL_H - 10)
+  enterGame:setMarginTop(math.max(0, top))
+  if placeStatus then placeStatus() end
+  if layoutInfo then layoutInfo() end
 end
 
 -- ---------------------------------------------------------------- panel
@@ -314,33 +345,55 @@ local function layoutCorners()
   local ver = tostring(g_app.getVersion() or '')
   verLabel:setText(tr('Version') .. ' ' .. (GameInfo and GameInfo.strVersion or '') .. (ver ~= '' and ('  -  client ' .. ver) or ''))
 
-  statusLabel = newWidget('ChaosLoginCorner', bg, 'chaosStatus')
-  statusLabel:addAnchor(AnchorRight, 'parent', AnchorRight)
-  statusLabel:addAnchor(AnchorBottom, 'parent', AnchorBottom)
-  statusLabel:setMarginRight(14)
-  statusLabel:setMarginBottom(14)
+  -- server status: the artwork's "CONNECTING..." line under the splash bar, under the server box once the panel shows
+  statusLabel = newWidget('ChaosLoginStatus', bg, 'chaosStatus')
   statusDot = newWidget('UIWidget', bg, 'chaosStatusDot')
-  statusDot:setSize({ width = 8, height = 8 })
+  statusDot:setSize({ width = 7, height = 7 })
   statusDot:setPhantom(true)
   statusDot:addAnchor(AnchorRight, 'chaosStatus', AnchorLeft)
   statusDot:addAnchor(AnchorVerticalCenter, 'chaosStatus', AnchorVerticalCenter)
   statusDot:setMarginRight(6)
 end
 
+placeStatus = function()
+  if not alive(statusLabel) or not alive(bg) then return end
+  statusLabel:breakAnchors()
+  if state.splash then
+    statusLabel:setText(statusLabel.chaosText and statusLabel.chaosText:upper() or '')
+    statusLabel:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
+    statusLabel:addAnchor(AnchorTop, 'parent', AnchorTop)
+    statusLabel:setMarginLeft(artX(688) - math.floor(bg:getWidth() / 2))
+    statusLabel:setMarginTop(artY(STATUS_Y) - 7)
+  else
+    statusLabel:setText(statusLabel.chaosText or '')
+    statusLabel:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+    statusLabel:addAnchor(AnchorTop, 'parent', AnchorTop)
+    statusLabel:setMarginLeft(28)
+    statusLabel:setMarginTop(38)
+  end
+  if alive(spinner) then spinner:setVisible(state.splash and statusChecking) end
+  if alive(statusDot) then statusDot:setVisible(not (state.splash and statusChecking)) end
+end
+
 local function updateStatus()
   if not alive(statusLabel) then return end
-  local text, color = tr('Server status: checking...'), '#7a6e60'
+  local text, color = tr('Connecting...'), '#7a6e60'
+  local checking = true
   local tm = modules.client_topmenu
   local top = tm and type(rawget(tm, 'getTopMenu')) == 'function' and tm.getTopMenu() or nil
   local lbl = top and top:recursiveGetChildById('onlineLabel')
   local n = lbl and lbl:getText():match('(%d+)')
   if n then
     text, color = tr('Server online') .. ' - ' .. n .. ' ' .. tr('players'), '#4fae5a'
+    checking = false
   elseif not (Services and type(Services.status) == 'table' and #Services.status > 0) then
     text = tr('Server status: unknown')
+    checking = false
   end
-  statusLabel:setText(text)
+  statusLabel.chaosText = text
+  statusChecking = checking
   statusDot:setBackgroundColor(color)
+  placeStatus()
 end
 
 -- the corner widgets follow the panel (login screen only, not the character list)
@@ -362,6 +415,9 @@ local function syncVisibility()
     end
   end
   if alive(serverCaption) then serverCaption:setVisible(corner) end
+  local la = alive(bg) and bg:getChildById('loadAfter')
+  if la and (state.splash or la.chaosHidden) then la:setVisible(false) end
+  placeStatus()
 end
 
 -- ---------------------------------------------------------------- decoration around the panel
@@ -408,19 +464,12 @@ local function createBackgroundLayers()
   emberLayer:lower()
   if alive(glowW) then glowW:lower() end
 
-  halo = newWidget('UIWidget', bg, 'chaosLogoHalo')
-  halo:setImageSource(IMG .. 'logo_halo')
-  halo:setImageSmooth(true)
-  halo:setPhantom(true)
-  halo:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
-  halo:addAnchor(AnchorTop, 'parent', AnchorTop)
+  -- the logo, cut out of the artwork: placed exactly on the logo painted in title.png (see relayout)
   logo = newWidget('UIWidget', bg, 'chaosLogo')
   logo:setImageSource('/images/chaos/logo')
   logo:setImageSmooth(true)
   logo:setPhantom(true)
-  logo:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
-  logo:addAnchor(AnchorTop, 'parent', AnchorTop)
-  -- the glow of the cracks: same frame as the logo, its opacity smoulders in tick()
+  -- the hottest parts of the letters: same frame as the logo, its opacity breathes in tick()
   logoHot = newWidget('UIWidget', logo, 'chaosLogoHot')
   logoHot:fill('parent')
   logoHot:setImageSource(IMG .. 'logo_hot')
@@ -437,7 +486,7 @@ local function createBackgroundLayers()
     e:setPhantom(true)
     e:addAnchor(AnchorLeft, 'parent', AnchorLeft)
     e:addAnchor(AnchorTop, 'parent', AnchorTop)
-    embers[i] = { w = e, x = math.random(0, 1920), y = math.random(0, 1080), size = math.random(5, 12),
+    embers[i] = { w = e, x = math.random(0, 1920), y = math.random(0, 1080), size = math.random(4, 10),
                   vy = math.random(14, 46), vx = math.random(4, 22), ph = math.random() * 6.28, fl = 2 + math.random() * 3 }
     e:setSize({ width = embers[i].size, height = embers[i].size })
   end
@@ -464,10 +513,53 @@ local function createBackgroundLayers()
   end
 
   pressW = newWidget('ChaosLoginPress', bg, 'chaosPressKey')
-  pressW:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
-  pressW:addAnchor(AnchorBottom, 'parent', AnchorBottom)
-  pressW:getChildById('text'):setText(tr('Press any key to start'))
+  -- the words are an image (serif lettering); a translated text shows on the plate as a label instead
+  local pressText = tr('Press any key to start')
+  if pressText ~= 'Press any key to start' then
+    pressW:getChildById('words'):setVisible(false)
+    pressW:getChildById('text'):setText(pressText:upper())
+    pressW:getChildById('text'):setVisible(true)
+  end
   pressW:setVisible(false)
+  spinner = newWidget('UIWidget', bg, 'chaosSpinner')
+  spinner:setImageSource(IMG .. 'spinner')
+  spinner:setImageClip('0 0 32 32')
+  spinner:setImageSmooth(true)
+  spinner:setPhantom(true)
+  spinner:setVisible(false)
+end
+
+-- the stock event schedule / boosted / casts panels (client_background): under the sign-in panel when they fit,
+-- else beside it (schedule and boosted bottom left, casts bottom right above the corner mark), else hidden
+layoutInfo = function()
+  local la = alive(bg) and bg:getChildById('loadAfter')
+  if not la or not alive(enterGame) then return end
+  local info, boost, cast = la:getChildById('informationScroll'), la:getChildById('boostedScroll'), la:getChildById('castScroll')
+  if not (info and boost and cast) then return end
+  local w, h = bg:getWidth(), bg:getHeight()
+  local panelBottom = enterGame:getMarginTop() + PANEL_H + 8
+  local IH, gap = 117, 8
+  la:breakAnchors()
+  la:fill('parent')
+  la:setPhantom(true)
+  la.chaosHidden = false
+  local function at(wd, x, y)
+    wd:breakAnchors()
+    wd:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+    wd:addAnchor(AnchorTop, 'parent', AnchorTop)
+    wd:setMarginLeft(x) wd:setMarginTop(y) wd:setMarginRight(0) wd:setMarginBottom(0)
+  end
+  local iw, bw, cw = info:getWidth(), boost:getWidth(), cast:getWidth()
+  local side = math.floor((w - PANEL_W - 64) / 2)       -- room beside the panel and its medallions
+  if panelBottom + IH + 4 <= h then
+    local x = math.floor((w - (iw + bw + cw + 2)) / 2)
+    at(info, x, h - IH - 2) at(boost, x + iw + 1, h - IH - 2) at(cast, x + iw + bw + 2, h - IH - 2)
+  elseif side >= math.max(iw, bw, cw) + 24 and mark.y0 - IH - gap >= 40 and h - 2 * IH - 10 - gap >= 40 then
+    at(info, 12, h - IH - 10) at(boost, 12, h - 2 * IH - 10 - gap)
+    at(cast, w - cw - 12, mark.y0 - IH - gap)
+  else
+    la.chaosHidden = true
+  end
 end
 
 -- ---------------------------------------------------------------- animation
@@ -489,7 +581,7 @@ local function tick()
     end
     e.w:setMarginLeft(math.floor(e.x))
     e.w:setMarginTop(math.floor(e.y))
-    e.w:setOpacity(0.35 + 0.65 * math.abs(math.sin(clock * e.fl + e.ph)))
+    e.w:setOpacity(inMark(e.x, e.y, e.size) and 0 or (0.35 + 0.65 * math.abs(math.sin(clock * e.fl + e.ph))))
   end
   for _, a in ipairs(ashes) do
     a.y = a.y + a.vy * 0.05
@@ -500,8 +592,9 @@ local function tick()
     end
     a.w:setMarginLeft(math.floor(a.x))
     a.w:setMarginTop(math.floor(a.y))
+    a.w:setOpacity(inMark(a.x, a.y, a.size) and 0 or a.op)
   end
-  -- the wordmark smoulders: its crack glow breathes, sparks leave the letters
+  -- the logo smoulders: the glow of its letters breathes, sparks leave the letters
   if alive(logoHot) then
     logoHot:setOpacity(math.max(0.2, math.min(1, 0.58 + 0.2 * math.sin(clock * 1.3) + 0.12 * math.sin(clock * 4.1 + 0.8)
       + 0.08 * (math.random() - 0.5))))
@@ -512,9 +605,10 @@ local function tick()
     for _, s in ipairs(sparks) do
       s.age = s.age + 0.05
       if s.age >= s.life then
-        -- a new spark from the upper edge of one of the two lines of letters (the tops of CINDERS and CHAOS)
-        local line = math.random() < 0.55 and { 0.10, 0.17 } or { 0.53, 0.60 }
-        s.x = lx + lw * (0.1 + 0.8 * math.random())
+        -- a new spark from the upper edge of one of the two lines of letters (the tops of CINDERS and CHAOS,
+        -- as fractions of the logo box)
+        local line = math.random() < 0.55 and { 0.25, 0.31, 0.18, 0.82 } or { 0.535, 0.585, 0.26, 0.77 }
+        s.x = lx + lw * (line[3] + (line[4] - line[3]) * math.random())
         s.y = ly + lh * (line[1] + (line[2] - line[1]) * math.random())
         s.vy = math.random(28, 70)
         s.vx = math.random(-14, 14)
@@ -527,14 +621,19 @@ local function tick()
       s.w:setMarginLeft(math.floor(s.x))
       s.w:setMarginTop(math.floor(s.y))
       local t = s.age / s.life
-      s.w:setOpacity(math.max(0, (1 - t)) * (0.7 + 0.3 * math.random()))
+      s.w:setOpacity(inMark(s.x, s.y, 8) and 0 or math.max(0, (1 - t)) * (0.7 + 0.3 * math.random()))
     end
   end
   if state.splash and alive(pressW) then
-    pressW:setOpacity(0.6 + 0.4 * math.sin(clock * 2.4))
-    local la = bg:getChildById('loadAfter')
-    if la and la:isVisible() then la:setVisible(false) end
+    local o = 0.62 + 0.38 * math.sin(clock * 2.4)
+    pressW:getChildById('words'):setOpacity(o)
+    pressW:getChildById('text'):setOpacity(o)
   end
+  if alive(spinner) and spinner:isVisible() then
+    spinner:setImageClip(string.format('%d 0 32 32', (math.floor(clock * 16) % 12) * 32))
+  end
+  local la = bg:getChildById('loadAfter')
+  if la and la:isVisible() and (state.splash or la.chaosHidden) then la:setVisible(false) end
 end
 
 local function fadeIn()
@@ -565,8 +664,10 @@ local function reveal()
     splashW = nil
   end
   if alive(pressW) then pressW:setVisible(false) end
+  if alive(spinner) then spinner:setVisible(false) end
   if modules.client_background and modules.client_background.showPanel then modules.client_background.showPanel() end
   if EnterGame and EnterGame.show then EnterGame.show() end
+  relayout()
   syncVisibility()
   fadeIn()
 end
@@ -658,8 +759,8 @@ function terminate()
   for _, m in ipairs(moved) do
     if alive(m[1]) and alive(m[2]) then m[1]:setParent(m[2]) end
   end
-  for _, w in ipairs({ medL, medR, crestT, crestB, logo, halo, glowW, emberLayer, sparkLayer, pressW, splashW, verLabel,
-                       statusLabel, statusDot, serverCaption }) do
+  for _, w in ipairs({ medL, medR, crestT, crestB, logo, glowW, emberLayer, sparkLayer, pressW, spinner, splashW,
+                       verLabel, statusLabel, statusDot, serverCaption }) do
     if alive(w) then w:destroy() end
   end
   ChaosLogin = nil

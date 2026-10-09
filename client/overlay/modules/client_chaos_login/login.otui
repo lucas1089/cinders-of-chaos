@@ -59,15 +59,33 @@ ChaosLoginLink < UILabel
   $hover:
     color: #e0b36a
 
+// the artwork's "PRESS ANY KEY TO START" bar: dark translucent band with thin gold-iron edges; the words are an
+// image in pale parchment serif capitals (the label is used instead when the text is translated); login.lua sizes it
 ChaosLoginPress < UIWidget
-  size: 460 54
+  size: 336 39
   image-source: /images/chaos/login/presskey
+  image-smooth: true
   phantom: true
+
+  UIWidget
+    id: words
+    anchors.fill: parent
+    image-source: /images/chaos/login/presskey_text
+    image-smooth: true
+    phantom: true
 
   UILabel
     id: text
     anchors.centerIn: parent
     font: sans-bold-16px
-    color: #e6d6b8
+    color: #e9dcc0
     text-auto-resize: true
     phantom: true
+    visible: false
+
+// server status under the bar ("CONNECTING..." in the artwork), top left once the panel shows
+ChaosLoginStatus < UILabel
+  font: verdana-11px-rounded
+  color: #cdbf9f
+  text-auto-resize: true
+  phantom: true
