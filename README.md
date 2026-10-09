@@ -445,6 +445,22 @@ and food you can eat. The Orbs of Alchemy, Annulment and Scouring and the mining
 - **Hunt tracker** (Hunt > Hunt Tracker): experience, loot, supplies and profit per hour for your session, counted by the server.
   It also shows kills per monster, every item looted and its value, damage and healing per second, and your Chaos
   drops. Pause, reset or copy a summary.
+- **Buff bar** (Character > Buff Bar): your buffs and debuffs as small icons with a countdown and a stack count, buffs on
+  the top row and debuffs on a second row with a red border; hover an icon for its name, what it does and the time left.
+  It covers haste, regeneration, food, poison, burning, freezing, drowning, energy, bleeding, slows, drunkenness, mana
+  shield, invisibility, the fight and skull timers, your class buffs (Bushido Focus shows its stacks), world buffs, the
+  Victory buff, Golden Hour and the Chaos Storm while you stand in them, the day's events, double experience, the
+  stacking nodes of the Vocation Trials, the Monk's chi, the Berserker's Rage and Reprisal. Grab the strip on top to move
+  it; the gear opens the size, icons per row, lock, countdown and hide-when-empty settings. Everything is shown by the
+  server, so it is always right.
+- **Party frames** (Hunt > Party Frames): a small movable panel with a frame for every member of your party: outfit, name
+  in the class colour, level, a crown for the leader, health and mana bars with the numbers, a floor arrow and the
+  distance, in a fight / dead / connection lost, and their first buffs and debuffs, updated twice a second. Members
+  near you (50 squares, two floors) show exact numbers; members far away show a rough health bar. Left click selects a
+  member and follows them (switch off in the gear window), shift+click looks, right click opens a menu: message, follow,
+  look, pass the leadership and remove from the party (leader), invite a player by name, leave the party. The panel
+  shows up when you join a party and hides when you leave; your own frame is optional. The old Hunt > Party window is
+  still there.
 - **Daily rewards and login streaks:** one claim a day per account. Your streak counter shows your current and best
   streak. Milestones at 7, 14, 30, 60, 100 and 180 days pay orbs, and titles at 30, 100 and 180 days ("the Devoted",
   "the Relentless", "the Undying"). Grace charges save your streak when you miss a day.

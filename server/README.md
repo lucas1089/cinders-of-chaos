@@ -89,6 +89,8 @@ server/
     guild.lua  guild_hall.lua  guild_core.lua  guild_config.lua (guild levels, perks, guild bank, guild halls; sql/chaos_guild.sql)
     achievements.lua  achievements_core.lua  achievements_data.lua (achievements, points, titles, rewards; sql/chaos_achievements.sql)
     pets.lua  pets_core.lua  pets_config.lua (pets: companions that level from kills, small abilities; sql/chaos_pets.sql)
+    buffbar.lua (buff / debuff bar, client game_buffbar; registry and rules in data/lib/chaos_buffs.lua)
+    partyframes.lua  partyframes_core.lua (party frames, client game_partyframes; see "Buff bar and party frames")
     bestiary.lua  bestiary_core.lua  bestiary_config.lua  bestiary_spawns.lua (bestiary, kill tasks, task tracker;
                                       sql/chaos_bestiary.sql; spawn data from tools/gen_bestiary_spawns.py)
   data/monster/monsters/chaos/pets/   the pet monster types (not attackable, no attacks)
@@ -215,14 +217,16 @@ working directory, as with the rest of the base server libs).
 | game_guild | `guild.lua`, `guild_hall.lua`, `guild_core.lua`, `guild_config.lua` | 252, Social > Guild | Guild levels (guild XP from the members, perks), guild bank, guild halls (runtime instance, upgrades, rent, depot), weekly top guilds; tested in game with two members (see "Guild levels and guild halls"). |
 | game_achievements | `achievements.lua`, `achievements_core.lua`, `achievements_data.lua` | 250, Character > Achievements | Achievements: 100 in 9 categories with points, titles and rewards, progress fed by the other systems, retroactive at login; tested in game (see "Achievements"). |
 | game_pets | `pets.lua`, `pets_core.lua`, `pets_config.lua` | 254, Character > Pets / `/pet` | Pets: one companion out at a time that follows its owner, levels from kills, two small abilities per species; drops, store and achievements; tested in game (see "Pets"). |
+| game_buffbar | `buffbar.lua`, `data/lib/chaos_buffs.lua` | 234 (server -> client), Character > Buff Bar | Buff / debuff bar: icons with a countdown and stacks for the engine conditions, the Chaos class buffs, world buffs, the Victory buff, world events, trial kill stacks, chi, Rage and Reprisal; diffs only; tested in game (see "Buff bar and party frames"). |
+| game_partyframes | `partyframes.lua`, `partyframes_core.lua` | 235, Hunt > Party Frames | Party frames: health, mana, level, floor, distance, state and buffs of the party members every 500 ms, exact numbers only in range; kick / pass leadership / invite actions checked on the server; tested in game with three characters (see "Buff bar and party frames"). |
 | game_bestiary | `bestiary.lua`, `bestiary_core.lua`, `bestiary_config.lua`, `bestiary_spawns.lua` | 253, Hunt > Bestiary, Hunt > Kill Tasks | Bestiary (an entry per monster, four stages by kills, completion bonus, points and ranks), personal kill tasks with daily / weekly limits, task tracker HUD with the bounty contracts; tested in game (see "Bestiary and kill tasks"). |
 | game_itemtooltip | `item_tooltip.lua`, `item_tooltip_core.lua` (client also `game_itemrarity`) | 242 | Rich item tooltips on hover (inventory, open containers): rarity, item level, base stats, every modifier with its tier and roll range, sockets and gems, unique and set, requirements; Ctrl compares with the equipped item(s) of the same slot. Rarity frames from the item custom attributes of engine patch 0003; tested in game (see "Item attributes in packets and rich tooltips"). |
-| game_invasion | `invasion.lua`, `invasion_core.lua`, `invasion_config.lua`, `worldevents.lua` | 251 (server -> client; `query` / `calendar` back), Adventure > Events, `/invasion` | Invasions (waves at a town or hunting ground, breach meter, boss, contribution rewards, Defender board, Victory buff, occupation) and the world events Chaos Storm, Wandering Merchant and Golden Hour; HUD and upcoming events window; toasts with action `invasion` on 79; tested in game on a test area (see "Invasions and world events"). |
-
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 228, 229, 232, 233, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
-`ChaosOpcodes` table in `chaos_constants.lua`.
 | game_chatlinks | `itemlink.lua`, `itemlink_core.lua` (client also `game_itemtooltip`) | 249, Shift+click an item | Item links in chat: the server checks the player carries the item and keeps a snapshot of its tooltip for 10 minutes under a random id; the link travels as ordinary speech `[Item Name]{<r><id>}` in every channel; receivers ask for the snapshot on hover. Limits, Help channel rule (`tools/patch_help_itemlinks.py`); tested in game with two clients (see "Item links in chat"). |
 | game_playerinspect | `inspect.lua`, `inspect_core.lua` | 240, Social > Inspect Player, right-click a player | Inspect Player: outfit, level, class, guild, achievement points, rift and trial records and the equipment with full tooltips; right-click within 10 tiles or any online player by name; privacy setting per character (storage `Chaos.storage.inspectOff`); tested in game with two clients (see "Inspect Player"). |
+| game_invasion | `invasion.lua`, `invasion_core.lua`, `invasion_config.lua`, `worldevents.lua` | 251 (server -> client; `query` / `calendar` back), Adventure > Events, `/invasion` | Invasions (waves at a town or hunting ground, breach meter, boss, contribution rewards, Defender board, Victory buff, occupation) and the world events Chaos Storm, Wandering Merchant and Golden Hour; HUD and upcoming events window; toasts with action `invasion` on 79; tested in game on a test area (see "Invasions and world events"). |
+
+Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 228, 229, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
+`ChaosOpcodes` table in `chaos_constants.lua`.
 
 ### Opcode collision check
 Searched the reference server for every `onExtendedOpcode`, `sendExtendedOpcode(` and opcode
@@ -2213,10 +2217,6 @@ modifier less; the budget (12 of 20 requests at once answered), unopened contain
 wrong `iid` all answered `gone`; the same client against the engine without the patch: feature off, no errors from it.
 Screenshots: scratchpad `tooltips/`. Not tested: two players watching the same container, trade windows.
 
-## Seasons (`season.lua`, `season_core.lua`, `season_config.lua`, `sql/chaos_season.sql`, `tools/patch_season_events.py`)
-
-Roadmap item 12, phase 1: fresh-start season characters with their own ladder, season-only uniques and an account-wide
-cosmetic reward track that is kept after the season. Client `game_season` (Adventure > Season in the top menu),
 ## Item links in chat (`itemlink.lua`, `itemlink_core.lua`, `tools/patch_help_itemlinks.py`, client `game_chatlinks`)
 
 Players link items they carry into chat. Extended opcode `ChaosOpcodes.itemLink` = **249**. The server has no hook on every
@@ -2322,6 +2322,10 @@ request refused with the name in the text and no stale data in the window. Not t
 out of range (unit tests), a character with a guild (the guild line is the stock `getGuild`), rift / trial records of a
 character that has them (the fields were 0).
 
+## Seasons (`season.lua`, `season_core.lua`, `season_config.lua`, `sql/chaos_season.sql`, `tools/patch_season_events.py`)
+
+Roadmap item 12, phase 1: fresh-start season characters with their own ladder, season-only uniques and an account-wide
+cosmetic reward track that is kept after the season. Client `game_season` (Adventure > Season in the top menu),
 extended opcode 246 (`ChaosOpcodes.season`). Every rule and number is in `season_config.lua`.
 
 **Install.** Run `sql/chaos_season.sql` (4 tables) and `python3 -I server/tools/patch_season_events.py <server>/data`
@@ -3789,3 +3793,82 @@ Art from the October 2026 art sets, converted to our 32 px format once and kept 
   Shaman), food eaten ("Yum."), the orb and ore looks in the backpack, grounds with borders, waters with shores, lake
   objects, docks, trees and stumps placed on runtime tiles. Not tested: an invasion of the new factions (the cropped test
   map has no valid town area; `tests/invasion_test.lua` passes with them), selling to Yasir (he is not on the test map).
+
+## Buff bar and party frames (`buffbar.lua`, `data/lib/chaos_buffs.lua`, `partyframes.lua`, `partyframes_core.lua`, client `game_buffbar`, `game_partyframes`)
+
+Two client HUDs fed by the server. Opcodes (`ChaosOpcodes` in `chaos_constants.lua`): **234** `buffs` and **235** `partyFrames`
+(both were free: 224-227, 230, 231, 234 and 235 were unused; 249 and 240 went to the chat links and the inspect window in the
+meantime). The server is the authority: the client draws what it is told and counts the time down by itself.
+
+### Buff bar (opcode 234)
+- `data/lib/chaos_buffs.lua` is the registry (`ChaosBuffs.entries`: `key`, `name`, `kind` buff / debuff, `icon`, `desc`, `prio`)
+  and the rules (`collect`, `diff`, `full`, `wire`, `brief`, `validate`). An entry is backed either by a **condition**
+  (`cond = {type, sub, ids}`: found with `player:getCondition(type, id, sub)`, the time left is the condition's ticks, -1 = no
+  timer) or by a **source** (`B.sources[name](player, nowMs, def)`, a function that returns a list of items; it reads the other
+  modules' globals guarded, so a module that is not loaded adds nothing). To add a buff: one `cond(...)` or `source(...)` line,
+  its icon name in `client/tools/gen_buff_icons.py` (the tool refuses to run when the two disagree), done.
+- Covered (58 entries): the engine conditions haste, regeneration, food ("Well Fed", regeneration with the default id), mana
+  shield, invisible, light, spell / potion buffs (attributes without a sub id), poison, burning, energy, bleeding, drowning,
+  freezing, dazzled, cursed, paralyze (shown as "Slowed"), drunk, pacified, muted, in fight (also the PZ lock, the engine keeps
+  one condition for both), white / red / black skull with the time the engine keeps it; the class buffs by sub id (Crimson
+  Covenant, Red Frenzy, Banner Call, Ironbark Hide, Lightward, Soulward, Wraithshroud, Flickerdash, Iron Bellow, Shadow Veil,
+  Poison Blades, Counter Stance, Bushido Focus with its stacks, Bloodrage, Banner of Bones, Bone Offering, the Monk's Focus /
+  Chi Ward / Mantra of Stone / Mistborne Step / Kindled Breath, Zealotry, Aegis of Faith); the sources: the three world buffs
+  (global storages of `shop_services.lua`), the Victory buff (server-wide, or only inside its area), Golden Hour and Chaos Storm
+  (only for a character standing in the area, `ChaosWorldEvents.active`), the day's events with a bonus (no timer),
+  the double experience potion (storage 6000), Vocation Trials kill stacks (Bloodlust, Zeal and the other stack nodes: the stacks
+  from `ChaosTrials.nodeState`, named after the held node, the timer is the oldest kill falling off), the Monk's chi (stacks =
+  chi, timer = the decay), the Berserker's Rage (a passive: stacks = the bonus percent, no timer) and the Reprisal window
+  (storage of `supports.lua`). `tests/buffs_test.lua` checks the sub ids against the spell files and the class configs.
+- Not on the bar: the passive tree's own conditions (permanent, sub ids 7200-7240); the item ailments of `item_mods.lua`
+  (bleed, ignite, poison, chill, shock), which are only ever put on monsters, so they cannot appear on a player; what a monster
+  does to a player (poison, burning, slow ...) is an engine condition and is covered. Hex / Brand marks sit on monsters (the
+  `hexes` table of `supports.lua` is local to it): the optional row under the monster bar for the player's own marks is **not done**.
+- Icons (`icon` of an entry): `spell:<words>` (the client's spell icon sheet through `Spells.getSpellIcon`, so the class spells
+  and the stock haste / mana shield / invisible / light spells show their own art), `cond:<NN>` (the stock condition icons,
+  `/images/arcs/conditions/player-state-flags-NN`) and `buff:<name>` (our own, `client/overlay/data/images/game/buffs/`, 59
+  procedural 32x32 icons from `client/tools/gen_buff_icons.py`, one per registry key, also the fallback of the other two).
+- Protocol: client -> server `sync` (start, or ask for the full list; at most one per `cfg.requestMs` = 2 s) and `off`; server ->
+  client `full {list}` and `diff {add, upd, del}`, an entry `{k, n, d, i, t (0 buff / 1 debuff), l (ms left; none = no timer),
+  s (stacks)}`. Only a client that sent `sync` is looked at, once per `cfg.tickMs` (1 s); a diff is sent only when something
+  changed (stacks changed, the end moved by more than `cfg.toleranceMs` = 1.5 s, a new or gone buff), so a quiet bar costs no
+  traffic; a full list goes out every `cfg.resyncMs` = 30 s (a lost message heals itself). The list is cached for 0.9 s per
+  character, so the bar and the party frames never collect it twice. At most `cfg.maxEntries` = 24 entries.
+
+### Party frames (opcode 235)
+- Every `cfg.tickMs` = 500 ms a character whose client sent `open {buffs}` is told the state of its **own** party
+  (`P.state` in `partyframes_core.lua`): per member the id, name, level, vocation, outfit, health and mana, floor difference,
+  distance, flags (leader, in fight, dead, connection lost, you) and the first `cfg.partyEntries` = 5 buffs / debuffs
+  (debuffs first; only when the client asked for them). **Range rule:** a member within `rangeSqm` = 50 squares and
+  `rangeFloors` = 2 floors gets exact health, mana, distance and buffs; a farther one only a health percent in steps of
+  `farStep` = 10 and the floor difference (the minimap already shows where party members are), no mana, no distance, no
+  buffs. Nothing is ever sent about a character outside the viewer's party, and a viewer without a party gets one empty
+  state (the client hides the frames). An unchanged state is repeated only every `heartbeatMs` = 2 s (the client calls a
+  state older than 4.5 s "connection lost"); within one tick every member is read once, whoever of the party asks.
+- Actions (`kick {id}`, `lead {id}`, `invite {name}`; at most one per 0.5 s, an invitation per 2 s, `ChaosRateLimit`): the
+  leader removes a member (`party:removeMember`), a member cannot; the leader passes the leadership (the client uses the
+  engine's own `g_game.partyPassLeadership` from the menu, `lead` is the same check for other callers); `invite` takes a
+  name, starts a party for a character that has none (`Party(player)`) and refuses yourself, a character already in a party
+  or already invited, an unknown name and a full party (20). The checks are `P.canKick`, `P.canPassLeadership`,
+  `P.canInvite`. Accepting an invitation stays the engine's (the invite window of `game_chaosnotify`, or `partyJoin`).
+- The engine removes a character from its party when it logs out, so "offline" on a frame means a lost connection (IP 0, the
+  character still in the game) or no state for 4.5 s; "dead" is health 0 for a moment (a dying character leaves the map).
+
+### Tests and checks
+- `tests/buffs_test.lua` (registry, conditions by type / id / sub id, every source, order and cap, wire, diff, cache),
+  `tests/partyframes_test.lua` (range, far health, flags, state, signature, action checks) and
+  `tests/buffparty_glue_test.lua` (the two scripts loaded against a mocked engine: login, opcode, ticks, what a viewer is and
+  is not told, kick / lead / invite) run with luajit and lua5.3 from `server/`. Client: `game_buffbar/buffmath_test.lua`,
+  `game_partyframes/partymath_test.lua`.
+- Tested in game on a test server (the engine with patches 0001-0011, the cropped test map) with three characters in one
+  party: the bar with about 20 buffs and debuffs at once (stack number on Bushido Focus, countdown, red borders, tooltips with the
+  live time left), dragging and the saved position, the gear window, hiding from the top menu (the server stops sending), a
+  world buff, the Victory buff, Golden Hour; the frames with three members, a member on another floor (arrow and count), one
+  70 squares away (rough health, no mana), left click follows and a second click stops, shift+click, the right-click menu,
+  removing a member and passing the leadership, inviting by name, the leader crown moving, the frames hiding on leaving the
+  party. Not tested in game: Vocation Trials stacks (the test server runs with the trials off; the source is covered by the
+  unit test), Chaos Storm, the Monk's chi and the Berserker's Rage on a real character, skull timers, a dead member.
+- Limits: the client's stock status icons (the arcs around the character and the row under the plate) are the base client's
+  and stay as they are, so the stock states show twice; the order of the icons is the server's after a full list and the
+  order of arrival between two (nothing jumps about); the party frames' outfit is the character's whole outfit in a small
+  square (class outfits are larger than a tile, so they are drawn small); Hex / Brand marks on the target are not done.

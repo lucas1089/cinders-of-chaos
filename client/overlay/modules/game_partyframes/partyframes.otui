@@ -1,0 +1,357 @@
+// Party frames (client game_partyframes; server partyframes.lua, extended opcode 235). Styles from client_chaos_theme.
+// Marks: /images/game/partyframes/<name>.png (client/tools/gen_partyframe_art.py).
+
+PartyBar < ChaosProgressBar
+  height: 11
+  font: Verdana-9px-antialiased
+  text-offset: 0 0
+  phantom: true
+
+PartyMark < UIWidget
+  size: 14 14
+  image-smooth: true
+  phantom: true
+
+PartyBuffIcon < UIWidget
+  size: 14 14
+  border-width: 1
+  border-color: #b8923a
+  image-smooth: true
+  phantom: true
+
+PartyFrame < UIWidget
+  size: 200 44
+  background-color: #0d0b0ed8
+  border-width: 1
+  border-color: #3a3339
+  focusable: false
+
+  UICreature
+    id: outfit
+    size: 34 34
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-left: 3
+    margin-top: 3
+    phantom: true
+
+  UILabel
+    id: level
+    font: Verdana-8px-antialiased
+    color: #f6cf72
+    background-color: #000000b4
+    anchors.left: outfit.left
+    anchors.right: outfit.right
+    anchors.bottom: outfit.bottom
+    height: 9
+    text-align: center
+    phantom: true
+
+  PartyMark
+    id: crown
+    image-source: /images/game/partyframes/crown
+    anchors.left: outfit.right
+    anchors.top: parent.top
+    margin-left: 4
+    margin-top: 2
+    visible: false
+
+  UILabel
+    id: name
+    font: verdana-11px-rounded
+    color: #e8dcc0
+    anchors.left: outfit.right
+    anchors.top: parent.top
+    margin-left: 4
+    margin-top: 2
+    width: 86
+    height: 12
+    text-align: left
+    clipping: true
+    phantom: true
+
+  PartyMark
+    id: state
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin-right: 3
+    margin-top: 2
+    visible: false
+
+  UILabel
+    id: dist
+    font: Verdana-8px-antialiased
+    color: #8c8070
+    anchors.right: state.left
+    anchors.top: parent.top
+    margin-right: 2
+    margin-top: 4
+    width: 34
+    text-align: right
+    phantom: true
+
+  PartyMark
+    id: floor
+    anchors.right: dist.left
+    anchors.top: parent.top
+    margin-right: 1
+    margin-top: 2
+    visible: false
+
+  UILabel
+    id: floorCount
+    font: Verdana-8px-antialiased
+    color: #9ecdff
+    anchors.right: floor.left
+    anchors.top: parent.top
+    margin-top: 4
+    text-auto-resize: true
+    phantom: true
+
+  PartyBar
+    id: hp
+    anchors.left: outfit.right
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin-left: 4
+    margin-right: 4
+    margin-top: 16
+    background-color: #3a9a48
+
+  PartyBar
+    id: mp
+    anchors.left: outfit.right
+    anchors.right: parent.right
+    anchors.top: hp.bottom
+    margin-left: 4
+    margin-right: 4
+    margin-top: 2
+    background-color: #2f5fc4
+
+  UIWidget
+    id: buffs
+    anchors.left: outfit.right
+    anchors.right: parent.right
+    anchors.top: mp.bottom
+    margin-left: 4
+    margin-top: 2
+    height: 14
+    phantom: true
+
+PartyFrames < UIWidget
+  id: partyFrames
+  size: 200 24
+  background-color: #0d0b0e66
+  anchors.top: parent.top
+  anchors.left: parent.left
+  margin-top: 296
+  margin-left: 40
+  focusable: false
+
+  UIWidget
+    id: header
+    height: 12
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    background-color: #1a1418cc
+    cursor: pointer
+
+    UILabel
+      id: grip
+      text: ::::
+      font: Verdana-9px-antialiased
+      color: #7d7176
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 3
+      text-auto-resize: true
+      phantom: true
+
+    UILabel
+      id: title
+      text: Party
+      font: Verdana-9px-antialiased
+      color: #d6c9ae
+      anchors.left: grip.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 6
+      text-auto-resize: true
+      phantom: true
+
+    UIButton
+      id: gear
+      text: *
+      size: 12 10
+      font: Verdana-9px-antialiased
+      color: #b9ab8c
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-right: 1
+      change-cursor-image: true
+      cursor: pointer
+      @onClick: modules.game_partyframes.toggleSettings()
+      $hover:
+        color: #f6cf72
+
+    UIButton
+      id: invite
+      text: +
+      size: 12 10
+      font: Verdana-9px-antialiased
+      color: #b9ab8c
+      anchors.right: gear.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-right: 3
+      change-cursor-image: true
+      cursor: pointer
+      @onClick: modules.game_partyframes.openInvite()
+      $hover:
+        color: #f6cf72
+
+PartyFramesSettings < ChaosMainWindow
+  id: partyFramesSettings
+  !text: tr('Party Frames')
+  size: 310 360
+
+  ChaosLabel
+    id: scaleLabel
+    !text: tr('Frame size')
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 6
+    width: 90
+  ChaosButton
+    id: scaleMinus
+    text: -
+    size: 22 20
+    anchors.left: scaleLabel.right
+    anchors.verticalCenter: scaleLabel.verticalCenter
+    @onClick: modules.game_partyframes.stepScale(-1)
+  ChaosLabel
+    id: scaleValue
+    width: 52
+    text-align: center
+    anchors.left: scaleMinus.right
+    anchors.verticalCenter: scaleLabel.verticalCenter
+  ChaosButton
+    id: scalePlus
+    text: +
+    size: 22 20
+    anchors.left: scaleValue.right
+    anchors.verticalCenter: scaleLabel.verticalCenter
+    @onClick: modules.game_partyframes.stepScale(1)
+
+  ChaosCheckBox
+    id: shownBox
+    !text: tr('Show the party frames')
+    anchors.top: scaleLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 14
+    @onCheckChange: modules.game_partyframes.setOption('shown', self:isChecked())
+  ChaosCheckBox
+    id: selfBox
+    !text: tr('Show my own frame')
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    @onCheckChange: modules.game_partyframes.setOption('showSelf', self:isChecked())
+  ChaosCheckBox
+    id: buffsBox
+    !text: tr('Show members\' buffs')
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    @onCheckChange: modules.game_partyframes.setOption('showBuffs', self:isChecked())
+  ChaosCheckBox
+    id: numbersBox
+    !text: tr('Show health and mana numbers')
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    @onCheckChange: modules.game_partyframes.setOption('showNumbers', self:isChecked())
+  ChaosCheckBox
+    id: followBox
+    !text: tr('Clicking a member follows')
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    @onCheckChange: modules.game_partyframes.setOption('follow', self:isChecked())
+  ChaosCheckBox
+    id: lockBox
+    !text: tr('Lock the position')
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    @onCheckChange: modules.game_partyframes.setOption('locked', self:isChecked())
+
+  ChaosLabelDim
+    id: note
+    !text: tr('Shown while you are in a party. Grab the strip on top to move them. Left click selects, shift+click looks, right click opens the menu.')
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 10
+    text-wrap: true
+    text-auto-resize: true
+    text-align: left
+
+  ChaosButton
+    id: inviteButton
+    !text: tr('Invite a player...')
+    width: 150
+    anchors.bottom: resetButton.top
+    anchors.left: parent.left
+    margin-bottom: 6
+    @onClick: modules.game_partyframes.openInvite()
+  ChaosButton
+    id: resetButton
+    !text: tr('Reset position')
+    width: 110
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    @onClick: modules.game_partyframes.resetPosition()
+  ChaosButton
+    id: closeButton
+    !text: tr('Close')
+    width: 80
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    @onClick: modules.game_partyframes.toggleSettings()
+
+PartyInviteWindow < ChaosMainWindow
+  id: partyInviteWindow
+  !text: tr('Invite to party')
+  size: 280 130
+
+  ChaosLabel
+    !text: tr('Player name')
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 2
+  ChaosTextEdit
+    id: name
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    max-length: 30
+    @onEnter: modules.game_partyframes.sendInvite()
+  ChaosButton
+    !text: tr('Invite')
+    width: 90
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    @onClick: modules.game_partyframes.sendInvite()
+  ChaosButton
+    !text: tr('Cancel')
+    width: 80
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    @onClick: modules.game_partyframes.closeInvite()

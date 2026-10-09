@@ -175,6 +175,7 @@ local function has(name) return function() return getModule(name) ~= nil end end
 local CATEGORIES = {
   { id = 'character', text = 'Character', icon = 'skills', entries = {
     entry('Skills',          'skills',      { modules = { 'game_skills' },    fns = { 'toggle' } }),
+    entry('Buff Bar',        'skills',      { modules = { 'game_buffbar' },   fns = { 'toggle' } }),
     entry('Spellbook',       'spells',      { modules = { 'game_spellbook' }, fns = { 'toggle' }, key = 'Alt+S' }),
     -- the base spell list only where the Chaos spellbook is missing
     entry('Spell List',      'spells',      { modules = { 'game_tibia_spelllist', 'game_spells', 'game_spelllist' }, fns = { 'toggle' },
@@ -197,6 +198,7 @@ local CATEGORIES = {
   { id = 'hunt', text = 'Hunt', icon = 'battlelist', entries = {
     entry('Battle List',     'battlelist',  { modules = { 'game_battle' },    fns = { 'toggle' } }),
     entry('Party',           'vip',         { modules = { 'game_party_list' }, fns = { 'toggle' } }),
+    entry('Party Frames',    'vip',         { modules = { 'game_partyframes' }, fns = { 'toggle' } }),
     entry('Hunt Tracker',    'ranking',     { modules = { 'game_hunt' },      fns = { 'toggle' }, key = 'Alt+H' }),
     -- the base hunt analyser only where the Chaos hunt tracker is missing
     entry('Hunt Analyser',   'ranking',     { modules = { 'game_analyser' },  fns = { 'toggle' }, unless = has('game_hunt') }),
@@ -245,9 +247,9 @@ local CATEGORIES = {
     entry('Guild',           'vip',         { modules = { 'game_guild' },     fns = { 'toggle' }, key = 'Alt+G' }),
     entry('VIP List',        'vip',         { modules = { 'game_viplist' },   fns = { 'toggle' } }),
     entry('Leaderboards',    'ranking',     { modules = { 'game_leaderboard' }, fns = { 'toggle' } }),
+    entry('Inspect Player',  'skills',      { modules = { 'game_playerinspect' },   fns = { 'toggle' } }),
     entry('Quest Log',       'quests',      { custom = openQuestLog, available = has('game_questlog') }),
     entry('Quest Tracker',   'quests',      { modules = { 'game_questlog' },  fns = { 'toggleTracker' } }),
-    entry('Inspect Player',  'skills',      { modules = { 'game_playerinspect' },   fns = { 'toggle' } }),
     entry('Notifications',   'notifications', { modules = { 'game_chaosnotify' }, fns = { 'toggle', 'showAll' } }),
     entry('Patch Notes',     'events',      { modules = { 'game_patchnotes' }, fns = { 'toggle' } }),
   } },

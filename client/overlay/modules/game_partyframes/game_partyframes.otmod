@@ -1,0 +1,13 @@
+Module
+  name: game_partyframes
+  description: Party frames (members' health, mana, level, floor, buffs; extended opcode 235, server partyframes.lua)
+  author: project-chaos
+  sandboxed: true
+  scripts: [ partymath, partyframes ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

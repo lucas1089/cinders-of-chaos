@@ -1,0 +1,207 @@
+// Buff / debuff bar (client game_buffbar; server buffbar.lua, extended opcode 234). Styles from client_chaos_theme.
+// Icons: spell sheet / stock condition art / /images/game/buffs/<name>.png (client/tools/gen_buff_icons.py).
+
+BuffBarIcon < UIWidget
+  size: 26 26
+  border-width: 1
+  border-color: #b8923a
+  image-smooth: true
+  focusable: false
+
+  UILabel
+    id: time
+    font: Verdana-9px-antialiased
+    color: #f2e8d0
+    background-color: #000000b4
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    height: 10
+    text-align: center
+    phantom: true
+
+  UILabel
+    id: count
+    font: Verdana-9px-antialiased
+    color: #ffd966
+    background-color: #000000b4
+    anchors.top: parent.top
+    anchors.right: parent.right
+    text-auto-resize: true
+    padding-left: 2
+    padding-right: 2
+    phantom: true
+
+BuffBarButton < UIButton
+  size: 12 10
+  font: Verdana-9px-antialiased
+  color: #b9ab8c
+  text-offset: 0 0
+  change-cursor-image: true
+  cursor: pointer
+
+  $hover:
+    color: #f6cf72
+
+BuffBar < UIWidget
+  id: buffBar
+  size: 90 38
+  background-color: #0d0b0e99
+  border-width: 1
+  border-color: #3a3339
+  anchors.top: parent.top
+  anchors.left: parent.left
+  margin-top: 124
+  margin-left: 335
+  focusable: false
+
+  // the strip above the icons: grab it to move the bar, the gear opens the settings
+  UIWidget
+    id: header
+    height: 10
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    background-color: #1a1418cc
+    cursor: pointer
+
+    UILabel
+      id: grip
+      text: ::::
+      font: Verdana-9px-antialiased
+      color: #7d7176
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 3
+      text-auto-resize: true
+      phantom: true
+
+    BuffBarButton
+      id: gear
+      text: *
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-right: 1
+      @onClick: modules.game_buffbar.toggleSettings()
+
+  UILabel
+    id: empty
+    text: No active effects
+    font: Verdana-9px-antialiased
+    color: #6b6258
+    anchors.left: parent.left
+    anchors.top: header.bottom
+    margin-left: 4
+    margin-top: 3
+    text-auto-resize: true
+    phantom: true
+    visible: false
+
+BuffBarSettings < ChaosMainWindow
+  id: buffBarSettings
+  !text: tr('Buff Bar')
+  size: 270 236
+
+  ChaosLabel
+    id: scaleLabel
+    !text: tr('Icon size')
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 6
+    width: 104
+  ChaosButton
+    id: scaleMinus
+    text: -
+    size: 22 20
+    anchors.left: scaleLabel.right
+    anchors.verticalCenter: scaleLabel.verticalCenter
+    @onClick: modules.game_buffbar.stepScale(-1)
+  ChaosLabel
+    id: scaleValue
+    width: 52
+    text-align: center
+    anchors.left: scaleMinus.right
+    anchors.verticalCenter: scaleLabel.verticalCenter
+  ChaosButton
+    id: scalePlus
+    text: +
+    size: 22 20
+    anchors.left: scaleValue.right
+    anchors.verticalCenter: scaleLabel.verticalCenter
+    @onClick: modules.game_buffbar.stepScale(1)
+
+  ChaosLabel
+    id: rowLabel
+    !text: tr('Icons per row')
+    anchors.top: scaleLabel.bottom
+    anchors.left: parent.left
+    margin-top: 12
+    width: 104
+  ChaosButton
+    id: rowMinus
+    text: -
+    size: 22 20
+    anchors.left: rowLabel.right
+    anchors.verticalCenter: rowLabel.verticalCenter
+    @onClick: modules.game_buffbar.stepPerRow(-1)
+  ChaosLabel
+    id: rowValue
+    width: 52
+    text-align: center
+    anchors.left: rowMinus.right
+    anchors.verticalCenter: rowLabel.verticalCenter
+  ChaosButton
+    id: rowPlus
+    text: +
+    size: 22 20
+    anchors.left: rowValue.right
+    anchors.verticalCenter: rowLabel.verticalCenter
+    @onClick: modules.game_buffbar.stepPerRow(1)
+
+  ChaosCheckBox
+    id: shownBox
+    !text: tr('Show the buff bar')
+    anchors.top: rowLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 14
+    @onCheckChange: modules.game_buffbar.setOption('shown', self:isChecked())
+  ChaosCheckBox
+    id: lockBox
+    !text: tr('Lock the position')
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    @onCheckChange: modules.game_buffbar.setOption('locked', self:isChecked())
+  ChaosCheckBox
+    id: timersBox
+    !text: tr('Show the countdown')
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    @onCheckChange: modules.game_buffbar.setOption('timers', self:isChecked())
+  ChaosCheckBox
+    id: hideBox
+    !text: tr('Hide it when empty')
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    @onCheckChange: modules.game_buffbar.setOption('hideEmpty', self:isChecked())
+
+  ChaosButton
+    id: resetButton
+    !text: tr('Reset position')
+    width: 110
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    @onClick: modules.game_buffbar.resetPosition()
+  ChaosButton
+    id: closeButton
+    !text: tr('Close')
+    width: 80
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    @onClick: modules.game_buffbar.toggleSettings()
