@@ -22,10 +22,12 @@ Restore one library (X = B, C, D, ...):
 | donorI | 8.60 donor I | 297 / 14 / 28 / 0 | wings and auras |
 | donorJ | 10.10-style donor J | 372 / 6,682 / 111 / 38 | dark walls and lava grounds (tagged requested) |
 | donorK | 8.60 donor K | 88 / 250 / 106 / 45 | |
-| donorM | scrambled 8.x donor M | 361 / 5,035 / 116 / 34 | most flags unknown: set ground/wall flags before use |
+| donorM | Frontiers of Fantasy (confirmed): scrambled 8.x donor M | 361 / 5,035 / 116 / 34 | most flags unknown: set ground/wall flags before use |
 | donorN | 15.x donor N | 13 / 156 / 0 / 0 | |
 | donorO | newer build of donor G | 0 / 29 / 0 / 0 | only what G lacks |
 | donorQ | 10.98 donor Q | 495 / 2,077 / 508 / 107 | 2,197 rows: library only (retail-style art) |
+| donorR | Cyntara: 10.98 donor R (XOR'd dat, keyless spr) | 233 / 3,997 / 45 / 28 | 4,217 rows: library only (retail-style art); usable: wings (outfits 171-209), footstep trails (210-233), effects 34-45, missiles 11-19, 22, 27 |
+| donorS | Exodus-Online: 10.98 donor S | 56 / 751 / 23 / 11 | 447 rows: library only (retail-style art); usable: upgrade items 203-343, gem/orb icons 580-799, items 843-850, 14 effects, all missiles |
 
 Each library is deduplicated against the live client pair and every library above it. LIBRARY_MD5 has the md5 of
 each Tibia.dat / Tibia.spr; SHA256SUMS lists the parts.
