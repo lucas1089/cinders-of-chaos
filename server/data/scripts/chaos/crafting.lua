@@ -119,6 +119,17 @@ local function clientIdOf(id)
 end
 
 -- ---------------------------------------------------------------- history (table chaos_crafting_log)
+-- at most `max` characters (the state message must stay small): a longer text is cut at a word and ends with "..."
+local function shortText(text, max)
+	text = tostring(text or "")
+	if #text <= max then
+		return text
+	end
+	local cut = text:sub(1, max - 3)
+	local word = cut:match("^(.*%S)%s") -- up to the last whole word
+	return ((word or cut):gsub("[%s,;:%.%(]+$", "")) .. "..."
+end
+
 local function history(player)
 	local rows = Chaos.select(string.format(
 		"SELECT `created_at`, `orb`, `item`, `result` FROM `%s` WHERE `player_id` = %d ORDER BY `id` DESC LIMIT %d",
@@ -126,7 +137,7 @@ local function history(player)
 		{{"created_at", "n"}, {"orb", "s"}, {"item", "s"}, {"result", "s"}})
 	local out = {}
 	for _, r in ipairs(rows) do
-		out[#out + 1] = {time = r.created_at, orb = r.orb, item = r.item, text = (r.result or ""):sub(1, 110)}
+		out[#out + 1] = {time = r.created_at, orb = r.orb, item = r.item, text = shortText(r.result, 110)}
 	end
 	return out
 end

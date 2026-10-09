@@ -145,7 +145,7 @@ local function register()
 	-- Orb of Binding
 	it = itemOf("binding")
 	C.addOrb({key = "binding", id = it.id, name = it.name,
-		text = "Binds one modifier: the orbs that change modifiers leave it alone. Choose it on the bench; used directly it binds a random one.",
+		text = "Binds one modifier: the orbs that change modifiers leave it alone. Pick it on the bench (used directly: a random one).",
 		pick = function(item)
 			return keysOf(freeMods(item))
 		end,
@@ -178,7 +178,7 @@ local function register()
 	-- Orb of Excision
 	it = itemOf("excision")
 	C.addOrb({key = "excision", id = it.id, name = it.name,
-		text = "Removes the modifier you choose on the bench; used directly it removes a random one that is not bound.",
+		text = "Removes the modifier you pick on the bench (used directly: a random one that is not bound).",
 		keyText = "Removes one modifier of a Rift Key.",
 		pick = function(item)
 			return keysOf(freeMods(item))
@@ -234,7 +234,7 @@ local function register()
 	-- Orb of Reforging
 	it = itemOf("reforging")
 	C.addOrb({key = "reforging", id = it.id, name = it.name,
-		text = "Rolls the tier (by the item level) and the value of the modifier you choose again; used directly it takes a random one that is not bound.",
+		text = "Rolls the tier (by item level) and value of the modifier you pick again (used directly: a random unbound one).",
 		pick = function(item)
 			return keysOf(freeMods(item))
 		end,
@@ -264,7 +264,7 @@ local function register()
 	-- Orb of Ruin
 	it = itemOf("ruin")
 	C.addOrb({key = "ruin", id = it.id, name = it.name,
-		text = string.format("A gamble: %d%% the item improves (one tier more on every modifier that is not bound, or an extra modifier), %d%% nothing happens, %d%% the item is ruined for good.",
+		text = string.format("A gamble: %d%% it improves (a tier more on every unbound modifier, or an extra one), %d%% nothing, %d%% ruined for good.",
 			R.improve, R.nothing, R.ruin),
 		check = function(item)
 			local ok, why = needRarity(item)

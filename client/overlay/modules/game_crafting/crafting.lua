@@ -26,6 +26,9 @@
 -- salvageScope {bag, maxRarity, mode} | salvageBatch {bag, maxRarity, sig} | combine {key, count}.
 -- The server checks everything (orb owned, item in the backpack, orb fits the item, no uniques); the buttons here only
 -- mirror its answer. The top menu (Economy > Crafting Bench, Economy > Salvage) calls toggle() and openSalvage().
+-- Long texts are never cut at the window edge: they wrap (crafting.otui CraftWrapLabel) and the row or box around them
+-- takes the height (followHeight); the lists scroll; tooltips are broken into lines (tipText, SupportsText.wrap of
+-- game_spellsupports/supportstext.lua); only the status line has a cap (RESULT_LINES, the rest in its tooltip).
 
 local OPCODE = 232
 
@@ -50,6 +53,12 @@ local updatingUi = false -- filling the salvage combo boxes: no requests
 local selectedMod -- the modifier key picked on the bench (aims Binding, Excision, Reforging), nil = none
 local confirmBox -- the "salvage all" confirmation
 local batchPaths -- path -> true for the items the "salvage all" preview takes
+local expanded = {} -- orb key -> true: the row shows the orb's full description (a click on the row toggles it)
+local RESULT_LINES = 4 -- the status line wraps over at most this many lines
+
+-- the text helpers of the spell supports window (shorten at a word, wrap at spaces); plain text without them
+local okText, Text = pcall(dofile, '/modules/game_spellsupports/supportstext.lua')
+if not okText or type(Text) ~= 'table' then Text = nil end
 
 -- ---------------------------------------------------------------- helpers
 local function send(action, data)
@@ -77,10 +86,93 @@ local function short(n)
   return tostring(n)
 end
 
+-- tooltips do not wrap: long lines are broken here
+local TIP_CHARS = 64
+local function tipText(text)
+  text = tostring(text or '')
+  if not Text then return text end
+  local out = {}
+  for line in (text .. '\n'):gmatch('(.-)\n') do
+    local lead = line:match('^%s*')
+    out[#out + 1] = lead .. Text.wrap(line, TIP_CHARS - #lead, lead .. '  ')
+  end
+  return table.concat(out, '\n')
+end
+
+local function setTip(widget, text)
+  if text and text ~= '' then
+    widget:setTooltip(tipText(text))
+  else
+    widget:removeTooltip()
+  end
+end
+
+-- the box (a row, a panel) ends `bottom` pixels below its child, at least `minHeight` high; the child is a wrapping
+-- label or a stack of them that changes its height with its text and width
+local function followHeight(box, child, bottom, minHeight)
+  local function fit()
+    if box:isDestroyed() or child:isDestroyed() then return end
+    local h = child:getY() + child:getHeight() - box:getY() + (bottom or 0)
+    h = math.max(minHeight or 0, h)
+    if h ~= box:getHeight() then box:setHeight(h) end
+  end
+  connect(child, { onGeometryChange = fit })
+  fit()
+end
+
+-- a one-line label in a fixed cell: the text, shortened at a word with "..." when it is wider than the label (the
+-- caller puts the whole text in a tooltip); refitted when the label is resized
+local function fitText(label, text)
+  label.fitText = tostring(text or '')
+  local function refit()
+    if label:isDestroyed() then return end
+    local full = label.fitText or ''
+    local width = label:getWidth() - label:getPaddingLeft() - label:getPaddingRight()
+    if not Text or width <= 1 then
+      label:setText(full)
+      return
+    end
+    label:setText((Text.shorten(full, function(candidate)
+      label:setText(candidate)
+      return label:getTextSize().width <= width
+    end)))
+  end
+  if not label.fitHooked then
+    label.fitHooked = true
+    connect(label, { onGeometryChange = refit })
+  end
+  refit()
+end
+
+-- the status line: wrapped, at most RESULT_LINES lines; a longer text ends with "..." and is whole in the tooltip
+local function fitResult()
+  local label = window and window.resultLabel
+  if not label then return end
+  local full = label.fullText or ''
+  label.fitWidth = label:getWidth()
+  if label:getWidth() <= 1 then
+    label:setText(full)
+    return
+  end
+  label:setText('Ag')
+  local maxHeight = label:getTextSize().height * RESULT_LINES
+  local text, cut = full, false
+  if Text then
+    text, cut = Text.shorten(full, function(candidate)
+      label:setText(candidate)
+      return label:getTextSize().height <= maxHeight
+    end)
+  end
+  label:setText(text)
+  label:setHeight(math.max(22, label:getTextSize().height + 2))
+  setTip(label, cut and full or '')
+end
+
 local function setResult(text, ok)
   if not window then return end
-  window.resultLabel:setText(text or '')
+  window.resultLabel.fullText = text or ''
   window.resultLabel:setColor(ok == false and '#e03a1e' or '#9fdc7f')
+  fitResult()
 end
 
 -- ---------------------------------------------------------------- sockets
@@ -115,9 +207,9 @@ local function showSockets(item)
       w.name:setText(row.name or '?')
       w.name:setColor(row.color or '#d6c9ae')
       w.text:setText(row.text or '')
-      w:setTooltip(tr('%s\n%s', row.name or '', row.text or ''))
+      setTip(w, tr('%s\n%s', row.name or '', row.text or ''))
       w.removeButton:setText(gold(row.cost))
-      w.removeButton:setTooltip(tr('Take the gem out for %d gold (bank first, then the backpack). It comes back to you.', tonumber(row.cost) or 0))
+      setTip(w.removeButton, tr('Take the gem out for %d gold (bank first, then the backpack). It comes back to you.', tonumber(row.cost) or 0))
       w.shatterButton:setTooltip(tr('Take the gem out for free: it is destroyed.'))
       w.removeButton.onClick = function()
         w.removeButton:setEnabled(false)
@@ -136,6 +228,7 @@ local function showSockets(item)
       w.removeButton:setVisible(false)
       w.shatterButton:setVisible(false)
     end
+    followHeight(w, w.text, 2, 30)
   end
 end
 
@@ -159,7 +252,7 @@ local function showQuality(item)
   bar:setVisible(true)
   bar:setPercent(math.floor(100 * q / cap))
   bar:setText(tr('Quality +%d%% / %d%%', q, cap))
-  bar:setTooltip(tr('Item quality: every modifier value is multiplied by it. A Whetstone adds 1%% (up to %d%%).', cap))
+  setTip(bar, tr('Item quality: every modifier value is multiplied by it. A Whetstone adds 1%% (up to %d%%).', cap))
 end
 
 local function showItem(item)
@@ -170,7 +263,7 @@ local function showItem(item)
   showQuality(item)
   if item then
     window.lockButton:setText(item.locked and tr('Unlock') or tr('Lock'))
-    window.lockButton:setTooltip(item.locked and tr('Locked: it cannot be sold, salvaged or thrown away. Click to unlock.')
+    setTip(window.lockButton, item.locked and tr('Locked: it cannot be sold, salvaged or thrown away. Click to unlock.')
       or tr('Lock the item: it cannot be sold, salvaged or thrown away.'))
   end
   if not item then
@@ -187,12 +280,12 @@ local function showItem(item)
   window.itemName:setText(item.name or '?')
   local rarity = tonumber(item.rarity) or 0
   window.itemName:setColor(rarity > 0 and rarityColor(rarity) or '#d6c9ae')
-  window.itemRarity:setTooltip('')
+  window.itemRarity:removeTooltip()
   if item.kind == 'riftkey' then
     window.itemName:setColor(KEY_COLOR)
     window.itemRarity:setText(tr('Rift Key, tier %d (level %d+)', tonumber(item.tier) or 0, tonumber(item.level) or 0))
     window.itemRarity:setColor(KEY_COLOR)
-    window.itemRarity:setTooltip(item.rewards and tr('Rewards: %s', item.rewards) or '')
+    setTip(window.itemRarity, item.rewards and tr('Rewards: %s', item.rewards) or '')
   elseif item.unique then
     window.itemRarity:setText(tr('Unique item: orbs cannot change it'))
     window.itemRarity:setColor('#e8582a')
@@ -209,13 +302,15 @@ local function showItem(item)
   local pre, suf = item.prefixes, item.suffixes
   if rarity > 0 and type(pre) == 'table' and type(suf) == 'table' then
     local binds = type(item.binds) == 'table' and item.binds or nil
-    window.itemSlots:setText(tr('Mods %d/%d  P%d/%d  S%d/%d', #mods,
-      tonumber(item.maxMods) or 0, tonumber(pre[1]) or 0, tonumber(pre[2]) or 0, tonumber(suf[1]) or 0,
-      tonumber(suf[2]) or 0) .. (binds and tr('  B%d/%d', tonumber(binds[1]) or 0, tonumber(binds[2]) or 0) or ''))
-    window.itemSlots:setTooltip(tr('Modifiers on the item / the most it can have, prefixes (P), suffixes (S), bound modifiers (B).'))
+    window.itemSlots:setText(tr('Modifiers %d/%d (prefixes %d/%d, suffixes %d/%d', #mods, tonumber(item.maxMods) or 0,
+      tonumber(pre[1]) or 0, tonumber(pre[2]) or 0, tonumber(suf[1]) or 0, tonumber(suf[2]) or 0)
+      .. (binds and tr(', bound %d/%d', tonumber(binds[1]) or 0, tonumber(binds[2]) or 0) or '') .. ')')
+    setTip(window.itemSlots, tr('Modifiers on the item / the most it can have; prefixes, suffixes and bound modifiers the same way.'))
   elseif rarity > 0 or item.kind == 'riftkey' then
+    window.itemSlots:removeTooltip()
     window.itemSlots:setText(tr('Modifiers: %d / %d', #mods, tonumber(item.maxMods) or 0))
   else
+    window.itemSlots:removeTooltip()
     window.itemSlots:setText(#mods > 0 and tr('Modifiers: %d', #mods) or tr('No modifiers'))
   end
   local side
@@ -239,10 +334,11 @@ local function showItem(item)
     row.mark:setText(m.bound and tr('bound') or '')
     row.modKey = m.key
     if m.power then
-      row:setTooltip((m.text or '') .. '\n' .. tr('Legendary power: it changes what your character does.'))
+      setTip(row, (m.text or '') .. '\n' .. tr('Legendary power: it changes what your character does.'))
     elseif m.bound then
-      row:setTooltip(tr('Bound: the orbs that change modifiers leave it alone. Only an Orb of Erasure frees it.'))
+      setTip(row, tr('Bound: the orbs that change modifiers leave it alone. Only an Orb of Erasure frees it.'))
     end
+    followHeight(row, row.text, 2, 17)
     if m.key and m.key == selectedMod then row:setBackgroundColor(SELECT_BG) end
     row.onMouseRelease = function(self, mousePos, button)
       if button ~= MouseLeftButton or not self:containsPoint(mousePos) or not self.modKey then return false end
@@ -263,20 +359,22 @@ local function showItem(item)
 end
 
 -- ---------------------------------------------------------------- orbs
+-- one orb row: "name  xCount", then what the orb would do to the item on the bench (green), why it cannot be used, or
+-- (empty bench) what it does; the full description under it when the row is expanded. Every line wraps.
 function updateOrbs()
   local item = state and state.item
   for _, orb in ipairs(list(state and state.orbs)) do
     local row = orbRows[orb.key]
     if row then
+      local body = row.body
       local count = tonumber(orb.count) or 0
+      local name = orb.name or orb.key
       row.icon:setItemId(tonumber(orb.clientId) or 0)
       row.icon:setItemCount(math.max(1, math.min(count, 100)))
-      row.name:setText(orb.name or orb.key)
-      row.count:setText(tr('You have %s', short(count)))
-      row.count:setColor(count > 0 and '#8c8070' or '#6b6258')
+      body.name:setColoredText({ name, '#e8b84a', '  x' .. short(count), count > 0 and '#8c8070' or '#6b6258' })
       local why = ''
       if count <= 0 then
-        why = tr('You have no %s.', orb.name or 'orb')
+        why = tr('You have no %s.', name)
       elseif not item then
         why = tr('Put an item on the bench first.')
       elseif type(item.orbs) == 'table' and item.orbs[orb.key] and item.orbs[orb.key] ~= '' then
@@ -297,15 +395,25 @@ function updateOrbs()
       end
       -- what the orb would do to the item on the bench (the server's preview)
       local preview = why == '' and item and type(item.preview) == 'table' and item.preview[orb.key] or ''
-      if preview ~= '' then
-        row.count:setText(tr('You have %s', short(count)) .. '  |  ' .. preview)
-        row.count:setColor('#9fdc7f')
-      end
       local text = (item and item.kind == 'riftkey' and orb.keyText) or orb.text or ''
+      local line, color, isText = why, '#a89074', false
+      if preview ~= '' then
+        line, color = preview, '#9fdc7f'
+      elseif why == '' then
+        line, color, isText = text, '#8c8070', true
+      elseif not item and count > 0 then
+        line, color, isText = text, '#8c8070', true -- nothing on the bench: what the orb does
+      end
+      body.text:setText(line)
+      body.text:setColor(color)
+      local showDesc = expanded[orb.key] and not isText and text ~= ''
+      body.desc:setText(showDesc and text or '')
+      body.desc:setVisible(showDesc and true or false)
       row.use:setEnabled(why == '')
-      row.use:setTooltip(why)
-      row:setTooltip(text .. (preview ~= '' and ('\n' .. tr('Preview: %s', preview)) or '')
-        .. (why ~= '' and ('\n' .. why) or ''))
+      setTip(row.use, why)
+      setTip(row, name .. '\n' .. text .. (preview ~= '' and ('\n' .. tr('Preview: %s', preview)) or '')
+        .. (why ~= '' and ('\n' .. why) or '') .. (isText and '' or ('\n' .. (expanded[orb.key]
+        and tr('Click: hide the description.') or tr('Click: show the description in the row.')))))
       row:setOpacity(why == '' and 1.0 or 0.75)
     end
   end
@@ -325,6 +433,13 @@ local function buildOrbs()
       local picks = type(item.pick) == 'table' and type(item.pick[key]) == 'table' and #item.pick[key] > 0
       send('apply', { orb = key, path = item.path, id = item.id, sig = item.sig, mod = picks and selectedMod or nil })
     end
+    row.onMouseRelease = function(self, mousePos, button)
+      if button ~= MouseLeftButton or not self:containsPoint(mousePos) then return false end
+      expanded[key] = not expanded[key] or nil
+      updateOrbs()
+      return true
+    end
+    followHeight(row, row.body, 6 + 3, 44) -- the panel's padding below the text
     orbRows[key] = row
   end
   updateOrbs()
@@ -347,7 +462,6 @@ local function buildGear()
     elseif rarity > 0 then
       tip = tip .. '\n' .. (it.rarityName or tr('Rarity %d', rarity))
     end
-    slot:setTooltip(tip)
     if rarity > 0 or it.unique or it.key then
       slot:setBorderWidth(1)
       slot:setBorderColor(it.unique and '#e8582a' or it.key and KEY_COLOR or rarityColor(rarity))
@@ -361,7 +475,7 @@ local function buildGear()
       slot:setBorderColor('#e03a1e') -- "salvage all" takes it
       tip = tip .. '\n' .. tr('In the salvage batch')
     end
-    slot:setTooltip(tip)
+    setTip(slot, tip)
     if current and current.path == it.path then
       slot:setBorderWidth(1)
       slot:setBorderColor('#ffffff') -- the item on the bench
@@ -383,19 +497,19 @@ end
 
 -- ---------------------------------------------------------------- history
 local function buildHistory()
-  window.historyPanel:destroyChildren()
+  window.historyList:destroyChildren()
   local rows = list(state and state.history)
   if #rows == 0 then
-    local label = g_ui.createWidget('CraftHistoryLabel', window.historyPanel)
+    local label = g_ui.createWidget('CraftHistoryLabel', window.historyList)
     label:setText(tr('Nothing crafted yet.'))
     label:setColor('#8c8070')
     return
   end
   for _, h in ipairs(rows) do
-    local label = g_ui.createWidget('CraftHistoryLabel', window.historyPanel)
+    local label = g_ui.createWidget('CraftHistoryLabel', window.historyList)
     local when = tonumber(h.time) and os.date('%d.%m %H:%M', tonumber(h.time)) or ''
     label:setText(string.format('%s  %s: %s', when, h.orb or '?', h.text or ''))
-    label:setTooltip(string.format('%s\n%s: %s', h.item or '', h.orb or '?', h.text or ''))
+    setTip(label, string.format('%s\n%s: %s', h.item or '', h.orb or '?', h.text or ''))
   end
 end
 
@@ -465,10 +579,11 @@ local function updateRecipes(sv)
     local row = g_ui.createWidget('CraftRecipeRow', panel)
     local cost = tonumber(r.cost) or 0
     row.icon:setItemId(tonumber(r.clientId) or 0)
-    row.name:setText(((r.name or r.key):gsub('^Orb of ', ''))) -- the full name is in the tooltip
-    row.cost:setText(tr('%d shards', cost))
+    -- the full name is in the tooltip; a name too long for the cell is shortened at a word
+    fitText(row.name, ((r.name or r.key):gsub('^Orb of ', '')))
+    fitText(row.cost, tr('%d shards', cost))
     row.cost:setColor(shards >= cost and '#c0a0ff' or '#6b6258')
-    row:setTooltip(tr('%d %s -> 1 %s (you have %d).\nCtrl+click: as many as you can, up to %d.', cost,
+    setTip(row, tr('%d %s -> 1 %s (you have %d).\nCtrl+click: as many as you can, up to %d.', cost,
       sv.shardName or 'shards', r.name or r.key, tonumber(r.count) or 0, tonumber(sv.maxCombine) or 1))
     row.make:setEnabled(sv.installed ~= false and shards >= cost)
     local key = r.key
@@ -491,9 +606,8 @@ local function updateSalvage()
   local panel = window.salvagePanel
   panel.shardRow.shardIcon:setItemId(tonumber(sv.shardClientId) or 0)
   panel.shardRow.shardCount:setText(tr('Rune shards: %s', short(sv.shards)))
-  if sv.installed == false then
-    panel.shardRow.shardHint:setText(tr('Salvage is not installed on this server.'))
-  end
+  panel.shardRow.shardHint:setText(sv.installed == false and tr('Salvage is not installed on this server.')
+    or tr('Salvage gear into shards, shards into orbs.'))
   -- the item on the bench
   local item = state.item
   local box = panel.itemBox
@@ -695,6 +809,22 @@ function init()
   end
   window.salvagePanel.batchBox.bagCombo.onOptionChange = onScopeChange
   window.salvagePanel.batchBox.rarityCombo.onOptionChange = onScopeChange
+  -- wrapped texts: the boxes around them grow with them
+  local sp = window.salvagePanel
+  followHeight(sp.shardRow, sp.shardRow.shardHint, 4, 36)
+  followHeight(sp.itemBox, sp.itemBox.itemText, 6, 50)
+  followHeight(sp.batchBox, sp.batchBox.batchButton, 6, 60)
+  -- the item header: the separator goes below the slot or the header, whichever ends lower
+  local function placeSeparator()
+    local slot, last = window.itemSlot, window.itemSlots
+    local bottom = math.max(slot:getY() + slot:getHeight(), last:getY() + last:getHeight())
+    local margin = bottom - window.itemPanel:getY() + 6
+    if margin ~= window.itemSep:getMarginTop() then window.itemSep:setMarginTop(margin) end
+  end
+  connect(window.itemSlots, { onGeometryChange = placeSeparator })
+  connect(window.resultLabel, { onGeometryChange = function(self)
+    if self:getWidth() ~= self.fitWidth then fitResult() end
+  end })
   showMode()
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
   connect(g_game, { onGameEnd = onGameEnd })
@@ -708,5 +838,5 @@ function terminate()
     window = nil
   end
   if confirmBox then confirmBox:destroy() confirmBox = nil end
-  state, orbRows = nil, {}
+  state, orbRows, expanded = nil, {}, {}
 end
