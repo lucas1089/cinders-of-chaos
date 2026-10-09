@@ -175,7 +175,7 @@ local function has(name) return function() return getModule(name) ~= nil end end
 local CATEGORIES = {
   { id = 'character', text = 'Character', icon = 'skills', entries = {
     entry('Skills',          'skills',      { modules = { 'game_skills' },    fns = { 'toggle' } }),
-    entry('Spellbook',       'spells',      { modules = { 'game_spellbook' }, fns = { 'toggle' }, key = 'Alt+L' }),
+    entry('Spellbook',       'spells',      { modules = { 'game_spellbook' }, fns = { 'toggle' }, key = 'Alt+S' }),
     -- the base spell list only where the Chaos spellbook is missing
     entry('Spell List',      'spells',      { modules = { 'game_tibia_spelllist', 'game_spells', 'game_spelllist' }, fns = { 'toggle' },
                                               unless = has('game_spellbook') }),

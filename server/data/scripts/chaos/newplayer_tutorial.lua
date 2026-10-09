@@ -275,7 +275,7 @@ local function poll(pid)
 		if castSpell(player) and not NP.hasBit(flagsOf(player), 2) then
 			setFlag(player, 2)
 			if not NP.hasBit(flagsOf(player), 1) then
-				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Well cast! Now open your spellbook: Character > Spellbook (Alt+L).")
+				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Well cast! Now open your spellbook: Character > Spellbook (Alt+S).")
 			end
 		end
 		if NP.spellTaskDone(flagsOf(player), spellOf(player) ~= nil) then

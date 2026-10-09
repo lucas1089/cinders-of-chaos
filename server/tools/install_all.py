@@ -39,6 +39,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                tools/rename_spells.py --sql      Chaos names of the stock spells and runes (+ the player_spells UPDATEs)
   autoloot     data/talkactions/talkactions.xml: the stock XML "!autoloot" line is commented out, so autoloot.lua's own
                talkaction runs and the window refreshes (README "Install" 7)
+  commands     tools/install_commands.py         the players' spoken "!" commands of the base server commented out (every one is in the
+               client's menu now; README "Player commands: the menu")
   sql          server/sql/chaos.sql, then every other server/sql/*.sql (sorted), then the rename_spells UPDATEs, against
                the game database (CREATE TABLE IF NOT EXISTS / plain UPDATEs, safe to repeat)
 
@@ -67,7 +69,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'vocations', 'events', 'weapons', 'lategame', 'crafting', 'darktiles', 'gems', 'salvage', 'omens', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'monsters', 'spells', 'autoloot', 'sql']
+STEPS = ['files', 'lib', 'vocations', 'events', 'weapons', 'lategame', 'crafting', 'darktiles', 'gems', 'salvage', 'omens', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'monsters', 'spells', 'autoloot', 'commands', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -308,6 +310,10 @@ def step_spells(server, data, ctx):
         ctx['rename_sql'] = sql_out
     warn = unregistered_spell_fragments(data)
     return ok, lines, warn
+
+
+def step_commands(server, data, ctx):
+    return tool_result(run_tool([tool('install_commands.py'), data], 'install_commands.py'))
 
 
 def step_autoloot(server, data, ctx):

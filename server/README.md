@@ -246,7 +246,7 @@ base server (idempotent; `--dry-run` lists the changes).
 | `!hunt [pause/resume/reset]` | Hunt > Hunt Tracker (Alt+H, its buttons) |
 | `!bestiary [name]`, `!tasks` | Hunt > Bestiary (Alt+B, search box), Hunt > Kill Tasks |
 | `!lootfilter [preset]`, `!autoloot`, `!autolootclient` | Hunt > Loot Filter (presets), Hunt > Auto Loot (the window's opcode) |
-| `!spells`, `!supports` | Character > Spellbook (Alt+L), Character > Spell Supports |
+| `!spells`, `!supports` | Character > Spellbook (Alt+S), Character > Spell Supports |
 | `!build export/import/confirm/cancel` | Character > Passive Tree (Alt+P), Build Code panel |
 | `!achievements`, `!title [name]` | Character > Achievements (title selector: every title held, over the opcode) |
 | `!pet [summon/dismiss/rename]` | Character > Pets |

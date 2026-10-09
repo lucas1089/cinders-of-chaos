@@ -96,7 +96,11 @@ local function helperShortcutsOffOnce()
   local shortcut = helper and helper.Shortcut
   if shortcut and type(shortcut.toggle) == 'function' then
     pcall(shortcut.toggle, false)
-    g_settings.set(HELPER_DEFAULT_KEY, true)
+    -- the Helper reads its saved settings a few seconds after login and may turn the column back on: remember the
+    -- default as applied only when it stuck
+    if type(shortcut.isVisible) ~= 'function' or not shortcut.isVisible() then
+      g_settings.set(HELPER_DEFAULT_KEY, true)
+    end
   end
 end
 
@@ -117,6 +121,7 @@ local function online()
   scheduleEvent(refresh, 500)
   -- after the stock modules (and the Helper's own 1 s start) have built their panels
   scheduleEvent(tidyHud, 1500)
+  scheduleEvent(tidyHud, 6000)
 end
 
 local function offline()
