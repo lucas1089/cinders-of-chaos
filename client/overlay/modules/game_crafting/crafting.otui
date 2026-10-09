@@ -113,6 +113,57 @@ CraftSocketRow < UIWidget
     font: verdana-11px-antialised
     !text: tr('Shatter')
 
+// one recipe of the Salvage tab: shards -> an orb
+CraftRecipeRow < ChaosPanelDark
+  size: 166 32
+  padding: 1
+  phantom: false
+
+  UIItem
+    id: icon
+    size: 28 28
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 2
+    virtual: true
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: icon.right
+    anchors.right: make.left
+    anchors.top: parent.top
+    height: 14
+    margin-left: 4
+    margin-right: 2
+    margin-top: 2
+    text-align: topLeft
+    font: verdana-11px-antialised
+    color: #e8b84a
+    phantom: true
+
+  UILabel
+    id: cost
+    anchors.left: icon.right
+    anchors.right: make.left
+    anchors.bottom: parent.bottom
+    height: 14
+    margin-left: 4
+    margin-bottom: 2
+    text-align: bottomLeft
+    font: verdana-11px-antialised
+    color: #c0a0ff
+    phantom: true
+
+  ChaosButton
+    id: make
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 3
+    width: 36
+    height: 22
+    !text: tr('Make')
+
 CraftHistoryLabel < UILabel
   height: 14
   text-align: left
@@ -144,11 +195,23 @@ ChaosMainWindow
     virtual: true
     !tooltip: tr('Drag an item from your backpack here.')
 
+  ChaosButton
+    id: lockButton
+    anchors.top: itemPanel.top
+    anchors.right: itemPanel.right
+    margin-top: 8
+    margin-right: 8
+    width: 58
+    height: 20
+    !text: tr('Lock')
+    visible: false
+    @onClick: modules.game_crafting.toggleLock()
+
   UILabel
     id: itemName
     anchors.top: itemSlot.top
     anchors.left: itemSlot.right
-    anchors.right: itemPanel.right
+    anchors.right: lockButton.left
     margin-left: 10
     margin-right: 8
     text-align: left
@@ -253,13 +316,30 @@ ChaosMainWindow
     visible: false
 
   // ------------------------------------------------------------ orbs
-  ChaosLabel
+  UIWidget
     id: orbLabel
     anchors.top: parent.top
     anchors.left: itemPanel.right
+    anchors.right: parent.right
     margin-left: 12
-    text-auto-resize: true
+    height: 24
+    phantom: true
+
+  ChaosTabButton
+    id: orbsTab
+    anchors.top: orbLabel.top
+    anchors.left: orbLabel.left
     !text: tr('Orbs')
+    @onClick: modules.game_crafting.setMode('orbs')
+
+  ChaosTabButton
+    id: salvageTab
+    anchors.top: orbLabel.top
+    anchors.left: orbsTab.right
+    margin-left: 4
+    !text: tr('Salvage')
+    !tooltip: tr('Break rolled gear down into rune shards and combine the shards into orbs.')
+    @onClick: modules.game_crafting.setMode('salvage')
 
   UIWidget
     id: orbList
@@ -271,6 +351,176 @@ ChaosMainWindow
     phantom: true
     layout:
       type: verticalBox
+
+  // ------------------------------------------------------------ salvage (the Salvage tab, in the place of the orbs)
+  UIWidget
+    id: salvagePanel
+    anchors.top: orbLabel.bottom
+    anchors.left: orbLabel.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 378
+    visible: false
+    phantom: true
+
+    ChaosPanelDark
+      id: shardRow
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 36
+      padding: 1
+
+      UIItem
+        id: shardIcon
+        size: 32 32
+        anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        margin-left: 4
+        virtual: true
+        phantom: true
+
+      UILabel
+        id: shardCount
+        anchors.left: shardIcon.right
+        anchors.right: parent.right
+        anchors.top: parent.top
+        margin-left: 8
+        margin-top: 3
+        height: 15
+        text-align: topLeft
+        font: verdana-11px-rounded
+        color: #c0a0ff
+
+      UILabel
+        id: shardHint
+        anchors.left: shardIcon.right
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        margin-left: 8
+        margin-bottom: 3
+        height: 14
+        text-align: bottomLeft
+        font: verdana-11px-antialised
+        color: #8c8070
+        !text: tr('Salvage gear into shards, shards into orbs.')
+
+    ChaosPanelDark
+      id: itemBox
+      anchors.top: shardRow.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      height: 50
+      padding: 1
+
+      UILabel
+        id: itemText
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: salvageButton.left
+        anchors.bottom: parent.bottom
+        margin: 4 6 4 6
+        text-align: topLeft
+        text-wrap: true
+        font: verdana-11px-antialised
+        color: #d6c9ae
+
+      ChaosButton
+        id: salvageButton
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        margin-right: 6
+        width: 70
+        !text: tr('Salvage')
+        @onClick: modules.game_crafting.salvageItem()
+
+    ChaosPanelDark
+      id: batchBox
+      anchors.top: itemBox.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      height: 112
+      padding: 1
+
+      UILabel
+        id: batchInLabel
+        anchors.top: parent.top
+        anchors.left: parent.left
+        margin: 8 0 0 6
+        text-auto-resize: true
+        font: verdana-11px-antialised
+        color: #d6c9ae
+        !text: tr('Salvage all in')
+
+      ChaosComboBox
+        id: bagCombo
+        anchors.top: parent.top
+        anchors.left: batchInLabel.right
+        margin: 4 0 0 6
+        width: 106
+
+      UILabel
+        id: batchUpLabel
+        anchors.top: parent.top
+        anchors.left: bagCombo.right
+        margin: 8 0 0 6
+        text-auto-resize: true
+        font: verdana-11px-antialised
+        color: #d6c9ae
+        !text: tr('up to')
+
+      ChaosComboBox
+        id: rarityCombo
+        anchors.top: parent.top
+        anchors.left: batchUpLabel.right
+        anchors.right: parent.right
+        margin: 4 6 0 6
+
+      UILabel
+        id: batchText
+        anchors.top: bagCombo.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: batchButton.top
+        margin: 4 6 2 6
+        text-align: topLeft
+        text-wrap: true
+        font: verdana-11px-antialised
+        color: #d6c9ae
+
+      ChaosButton
+        id: batchButton
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        margin: 0 6 5 0
+        width: 150
+        height: 22
+        !text: tr('Salvage all')
+        @onClick: modules.game_crafting.salvageAll()
+
+    ChaosLabel
+      id: combineTitle
+      anchors.top: batchBox.bottom
+      anchors.left: parent.left
+      margin-top: 5
+      text-auto-resize: true
+      !text: tr('Combine shards into orbs (Ctrl: up to 10)')
+
+    UIWidget
+      id: recipeList
+      anchors.top: combineTitle.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 4
+      phantom: true
+      layout:
+        type: grid
+        cell-size: 166 32
+        cell-spacing: 2
+        flow: true
 
   // ------------------------------------------------------------ history
   ChaosLabel

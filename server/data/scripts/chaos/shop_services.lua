@@ -152,6 +152,9 @@ end
 -- info = {unique = bool, rarity = number, attributes = bool (custom name/description/text/modifiers)}
 -- allowRarity = the player opted in with "!autosell rarity on" (uniques are never sold).
 function S.sellBlocked(info, allowRarity)
+	if info.locked then
+		return "locked" -- the item lock (salvage.lua), whatever the opt-in
+	end
 	if info.unique then
 		return "unique"
 	end

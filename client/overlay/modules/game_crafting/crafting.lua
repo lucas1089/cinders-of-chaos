@@ -12,6 +12,11 @@
 --                     gem {op = "remove"|"shatter", socket, path, id, sig} | clear
 -- Sockets (gems, server data/lib/chaos_gems.lua) are listed under the modifiers: a gem can be taken out for gold
 -- (Remove, it comes back) or destroyed (Shatter); socketing and combining are done by Use with on the gem.
+-- Salvage tab (server data/scripts/chaos/salvage.lua, same opcode): state.salvage = {installed, shardClientId,
+-- shardName, shards, rarityNames, recipes = [{key, name, clientId, cost, count}], bags = [{path, name}], batch = {bag,
+-- maxRarity, count, shards, orbs, capped, cap, skipped, sig, paths}, mode}; state.items[i].locked, state.item.locked,
+-- state.item.salvage = {ok, why, shards, orbChance}. Client -> server: salvage {path, id, sig} | lock {path, id, on} |
+-- salvageScope {bag, maxRarity, mode} | salvageBatch {bag, maxRarity, sig} | combine {key, count}.
 -- The server checks everything (orb owned, item in the backpack, orb fits the item, no uniques); the buttons here only
 -- mirror its answer. !craft opens it from the chat; the top menu (Chaos -> Crafting Bench) calls toggle().
 
@@ -29,6 +34,10 @@ local KEY_COLOR = '#c0a0ff' -- Rift Keys
 local window
 local state        -- last state from the server
 local orbRows = {} -- orb key -> row widget
+local mode = 'orbs' -- 'orbs' | 'salvage' (the tabs)
+local updatingUi = false -- filling the salvage combo boxes: no requests
+local confirmBox -- the "salvage all" confirmation
+local batchPaths -- path -> true for the items the "salvage all" preview takes
 
 -- ---------------------------------------------------------------- helpers
 local function send(action, data)
@@ -121,6 +130,12 @@ end
 -- ---------------------------------------------------------------- item panel
 local function showItem(item)
   window.modList:destroyChildren()
+  window.lockButton:setVisible(item ~= nil)
+  if item then
+    window.lockButton:setText(item.locked and tr('Unlock') or tr('Lock'))
+    window.lockButton:setTooltip(item.locked and tr('Locked: salvage and the auto seller skip this item. Click to unlock.')
+      or tr('Lock the item: salvage and the auto seller will skip it.'))
+  end
   if not item then
     window.itemSlot:setItemId(0)
     window.itemName:setText(tr('Empty bench'))
@@ -245,6 +260,16 @@ local function buildGear()
       slot:setBorderWidth(1)
       slot:setBorderColor(it.unique and '#e8582a' or it.key and KEY_COLOR or rarityColor(rarity))
     end
+    if it.locked then
+      tip = tip .. '\n' .. tr('Locked')
+      slot:setOpacity(0.55)
+    end
+    if mode == 'salvage' and batchPaths and batchPaths[it.path] then
+      slot:setBorderWidth(2)
+      slot:setBorderColor('#e03a1e') -- "salvage all" takes it
+      tip = tip .. '\n' .. tr('In the salvage batch')
+    end
+    slot:setTooltip(tip)
     if current and current.path == it.path then
       slot:setBorderWidth(1)
       slot:setBorderColor('#ffffff') -- the item on the bench
@@ -282,13 +307,204 @@ local function buildHistory()
   end
 end
 
+-- ---------------------------------------------------------------- salvage tab
+local SKIP_TEXT = { locked = 'locked', unique = 'unique', gems = 'with gems', above = 'above the rarity',
+  cap = 'over the limit of %d', notBackpack = 'not in the backpack' }
+
+local function shardWord(sv, n)
+  if tonumber(n) == 1 then return sv.shardSingular or 'shard' end
+  return sv.shardName or 'shards'
+end
+
+local function salvageView()
+  return state and type(state.salvage) == 'table' and state.salvage or nil
+end
+
+local function showMode()
+  if not window then return end
+  window.orbsTab:setChecked(mode == 'orbs')
+  window.salvageTab:setChecked(mode == 'salvage')
+  window.orbList:setVisible(mode == 'orbs')
+  window.salvagePanel:setVisible(mode == 'salvage')
+end
+
+function setMode(m)
+  if m ~= 'orbs' and m ~= 'salvage' then return end
+  mode = m
+  showMode()
+  send('salvageScope', { mode = m }) -- the answer (a state) brings the "salvage all" preview
+end
+
+local function fillCombos(sv)
+  local batch = type(sv.batch) == 'table' and sv.batch or {}
+  updatingUi = true
+  local bags = list(sv.bags)
+  local bagCombo = window.salvagePanel.batchBox.bagCombo
+  bagCombo:clearOptions()
+  local current = 1
+  for i, b in ipairs(bags) do
+    bagCombo:addOption(b.name or '?', b.path or '')
+    if (b.path or '') == (batch.bag or '') then current = i end
+  end
+  if #bags > 0 then bagCombo:setCurrentIndex(current) end
+  local rarityCombo = window.salvagePanel.batchBox.rarityCombo
+  rarityCombo:clearOptions()
+  for i, name in ipairs(list(sv.rarityNames)) do
+    rarityCombo:addOption(name, i)
+  end
+  local r = tonumber(batch.maxRarity) or 1
+  if #list(sv.rarityNames) >= r then rarityCombo:setCurrentIndex(r) end
+  updatingUi = false
+end
+
+local function onScopeChange()
+  if updatingUi or not window then return end
+  local box = window.salvagePanel.batchBox
+  local bag = box.bagCombo:getCurrentOption()
+  local rarity = box.rarityCombo:getCurrentOption()
+  send('salvageScope', { bag = bag and bag.data or '', maxRarity = rarity and tonumber(rarity.data) or 1 })
+end
+
+local function updateRecipes(sv)
+  local panel = window.salvagePanel.recipeList
+  panel:destroyChildren()
+  local shards = tonumber(sv.shards) or 0
+  for _, r in ipairs(list(sv.recipes)) do
+    local row = g_ui.createWidget('CraftRecipeRow', panel)
+    local cost = tonumber(r.cost) or 0
+    row.icon:setItemId(tonumber(r.clientId) or 0)
+    row.name:setText(((r.name or r.key):gsub('^Orb of ', ''))) -- the full name is in the tooltip
+    row.cost:setText(tr('%d shards', cost))
+    row.cost:setColor(shards >= cost and '#c0a0ff' or '#6b6258')
+    row:setTooltip(tr('%d %s -> 1 %s (you have %d).\nCtrl+click: as many as you can, up to %d.', cost,
+      sv.shardName or 'shards', r.name or r.key, tonumber(r.count) or 0, tonumber(sv.maxCombine) or 1))
+    row.make:setEnabled(sv.installed ~= false and shards >= cost)
+    local key = r.key
+    row.make.onClick = function()
+      local n = 1
+      if g_keyboard and g_keyboard.isCtrlPressed and g_keyboard.isCtrlPressed() and cost > 0 then
+        n = math.max(1, math.min(tonumber(sv.maxCombine) or 1, math.floor(shards / cost)))
+      end
+      row.make:setEnabled(false)
+      send('combine', { key = key, count = n })
+    end
+  end
+end
+
+local function updateSalvage()
+  local sv = salvageView()
+  batchPaths = nil
+  if not window or not sv then return end
+  if mode ~= 'salvage' then return end
+  local panel = window.salvagePanel
+  panel.shardRow.shardIcon:setItemId(tonumber(sv.shardClientId) or 0)
+  panel.shardRow.shardCount:setText(tr('Rune shards: %s', short(sv.shards)))
+  if sv.installed == false then
+    panel.shardRow.shardHint:setText(tr('Salvage is not installed on this server.'))
+  end
+  -- the item on the bench
+  local item = state.item
+  local box = panel.itemBox
+  if not item then
+    box.itemText:setText(tr('Put an item on the bench, or salvage a whole bag below.'))
+    box.itemText:setColor('#8c8070')
+    box.salvageButton:setEnabled(false)
+  else
+    local s = type(item.salvage) == 'table' and item.salvage or {}
+    if s.ok then
+      box.itemText:setText(tr('%s: %d %s, %s%% chance of an orb.', item.name or '?', tonumber(s.shards) or 0,
+        shardWord(sv, s.shards), tostring(s.orbChance or 0)))
+      box.itemText:setColor('#9fdc7f')
+    else
+      box.itemText:setText(tr('%s: %s', item.name or '?', s.why or tr('cannot be salvaged.')))
+      box.itemText:setColor('#e8582a')
+    end
+    box.salvageButton:setEnabled(s.ok == true)
+  end
+  -- salvage all
+  fillCombos(sv)
+  local batch = type(sv.batch) == 'table' and sv.batch or nil
+  local bbox = panel.batchBox
+  if batch then
+    batchPaths = {}
+    for _, p in ipairs(list(batch.paths)) do batchPaths[p] = true end
+    local count = tonumber(batch.count) or 0
+    local lines = {}
+    if count > 0 then
+      lines[#lines + 1] = tr('%d %s -> %d %s, %s%% orb chance in total.', count, count == 1 and tr('item') or tr('items'),
+        tonumber(batch.shards) or 0, shardWord(sv, batch.shards), tostring(batch.orbs or 0))
+    else
+      lines[#lines + 1] = tr('Nothing to salvage there.')
+    end
+    local skipped = {}
+    for key, n in pairs(type(batch.skipped) == 'table' and batch.skipped or {}) do
+      local text = SKIP_TEXT[key] or key
+      skipped[#skipped + 1] = string.format('%d %s', tonumber(n) or 0, text:format(tonumber(batch.cap) or 50))
+    end
+    table.sort(skipped)
+    if #skipped > 0 then lines[#lines + 1] = tr('Skipped: %s.', table.concat(skipped, ', ')) end
+    bbox.batchText:setText(table.concat(lines, '\n'))
+    bbox.batchButton:setText(count > 1 and tr('Salvage %d items', count) or count == 1 and tr('Salvage 1 item')
+      or tr('Salvage all'))
+    bbox.batchButton:setEnabled(sv.installed ~= false and count > 0)
+  else
+    bbox.batchText:setText('')
+    bbox.batchButton:setEnabled(false)
+  end
+  updateRecipes(sv)
+end
+
+function salvageItem()
+  local item = state and state.item
+  if not item then return end
+  window.salvagePanel.itemBox.salvageButton:setEnabled(false)
+  send('salvage', { path = item.path, id = item.id, sig = item.sig })
+end
+
+function toggleLock()
+  local item = state and state.item
+  if not item then return end
+  send('lock', { path = item.path, id = item.id, on = not item.locked })
+end
+
+function salvageAll()
+  local sv = salvageView()
+  local batch = sv and type(sv.batch) == 'table' and sv.batch or nil
+  if not batch or (tonumber(batch.count) or 0) <= 0 then return end
+  if confirmBox then confirmBox:destroy() confirmBox = nil end
+  local request = { bag = batch.bag or '', maxRarity = batch.maxRarity, sig = batch.sig }
+  local function yes()
+    if confirmBox then confirmBox:destroy() confirmBox = nil end
+    send('salvageBatch', request)
+  end
+  local function no()
+    if confirmBox then confirmBox:destroy() confirmBox = nil end
+  end
+  local names = list(sv.rarityNames)
+  local text = tr('Salvage %d item(s) (rarity up to %s) into %d %s?\nLocked items, uniques and items with gems are kept.\nThis cannot be undone.',
+    tonumber(batch.count) or 0, names[tonumber(batch.maxRarity) or 1] or '?', tonumber(batch.shards) or 0,
+    sv.shardName or 'shards')
+  if displayGeneralBox then
+    confirmBox = displayGeneralBox(tr('Salvage all'), text,
+      { { text = tr('Salvage'), callback = yes }, { text = tr('Cancel'), callback = no }, anchor = AnchorHorizontalCenter }, yes, no)
+  else
+    yes()
+  end
+end
+
 -- ---------------------------------------------------------------- protocol
 local function onState(data)
   local orbsChanged = not state or #list(state.orbs) ~= #list(data.orbs)
   state = data
+  -- opened in the Salvage tab (!salvage, a shard used): follow the server's mode
+  if data.open and type(data.salvage) == 'table' and (data.salvage.mode == 'salvage' or data.salvage.mode == 'orbs') then
+    mode = data.salvage.mode
+  end
+  showMode()
   if orbsChanged then buildOrbs() end
   showItem(data.item)
   updateOrbs()
+  updateSalvage()
   buildGear()
   buildHistory()
   if data.open then
@@ -349,6 +565,8 @@ end
 local function onGameEnd()
   hide()
   state = nil
+  mode = 'orbs'
+  if confirmBox then confirmBox:destroy() confirmBox = nil end
   if window then setResult('') end
 end
 
@@ -363,6 +581,9 @@ function init()
     end
     return false
   end
+  window.salvagePanel.batchBox.bagCombo.onOptionChange = onScopeChange
+  window.salvagePanel.batchBox.rarityCombo.onOptionChange = onScopeChange
+  showMode()
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
   connect(g_game, { onGameEnd = onGameEnd })
 end
@@ -374,5 +595,6 @@ function terminate()
     window:destroy()
     window = nil
   end
+  if confirmBox then confirmBox:destroy() confirmBox = nil end
   state, orbRows = nil, {}
 end

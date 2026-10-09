@@ -162,6 +162,15 @@ At the Crafting Bench you can take a gem out for gold, or shatter it for free. G
 higher levels, elites and bosses), and come from bounties, rift chests and world bosses. Uniques have one socket of
 their own.
 
+### Salvage
+
+Gear you will never wear is not just vendor trash. The **Salvage** tab of the Crafting Bench (`!salvage`) breaks an
+item with a rarity into **Rune Shards** (more for higher rarities and item levels, one more per Chaos modifier and per
+empty socket) with a small chance of a whole orb, and turns shards into orbs: 12 for an Orb of Transmutation, 25 for a
+Chaos Orb, up to 100 for an Exalted Orb. Salvage one item, or a whole bag up to the rarity you choose (50 items at a
+time, after a confirmation). **Lock** the pieces you want to keep on the bench: salvage and the Auto Seller never touch
+a locked item. Uniques and items with gems in their sockets are never salvaged.
+
 ## Endgame
 
 > *"Five came through the first wound. Whenever the portals open at the temples, they come back, and never weaker."*

@@ -143,6 +143,8 @@ eq(S.sellBlocked({rarity = 3}, false), "rarity", "rarity kept")
 eq(S.sellBlocked({attributes = true}, false), "rarity", "modifiers kept")
 eq(S.sellBlocked({rarity = 3}, true), nil, "rarity sold after opt-in")
 eq(S.sellBlocked({unique = true, rarity = 9}, true), "unique", "uniques never sold")
+eq(S.sellBlocked({locked = true, rarity = 3}, true), "locked", "locked items never sold (salvage.lua lock)")
+eq(S.sellBlocked({locked = true, rarity = 0}, false), "locked", "a locked plain item is kept too")
 local generated = dofile("data/scripts/chaos/sell_prices.lua")
 local count = 0
 for id, gold in pairs(generated) do
@@ -293,6 +295,10 @@ seller.storage[Chaos.storage.autosellRarity] = 1
 callback("onDropLoot", 2)(nil, corpseOf("seller", {rare, unique}))
 eq(seller.bank, 120, "rarity item sold after opt-in")
 eq(unique.removed, false, "unique still kept")
+local locked = newItem(100, 1, {custom = {rarity = 2, chaos_locked = 1}})
+callback("onDropLoot", 2)(nil, corpseOf("seller", {locked}))
+eq(locked.removed, false, "a locked item is never sold, even after the opt-in (salvage.lua lock)")
+eq(seller.bank, 120, "nothing paid for the locked item")
 seller.storage[Chaos.storage.autosellPaused] = 1
 local again = newItem(100, 1)
 callback("onDropLoot", 2)(nil, corpseOf("seller", {again}))

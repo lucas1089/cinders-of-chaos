@@ -58,6 +58,7 @@ server/
     treasure_goblin.lua  treasure_goblin_core.lua  treasure_goblin_config.lua (treasure goblins, see "Treasure goblins")
     invasion.lua  invasion_core.lua  invasion_config.lua  worldevents.lua (invasions and the small world events, see "Invasions and world events";
                                       the Wandering Merchant NPC is data/npc/Wandering Merchant.xml + npc/scripts/wandering_merchant.lua)
+    salvage.lua  salvage_core.lua  salvage_config.lua (salvage into rune shards, the item lock; installer tools/install_salvage.py)
     leaderboard.lua  leaderboard_core.lua  leaderboard_config.lua (weekly boards with titles, class ladder)
     season.lua  season_core.lua  season_config.lua (seasons; sql/chaos_season.sql, tools/patch_season_events.py)
     hunt.lua  hunt_core.lua  hunt_config.lua  hunt_supplies.lua (hunt tracker; supply prices from tools/gen_supply_prices.py)
@@ -182,7 +183,7 @@ working directory, as with the rest of the base server libs).
 | game_arena | `arena.lua`, `arena_core.lua`, `arena_config.lua` | 236, `!arena` / `/arena` | Ranked PvP arena, 1v1 and 2v2 with Elo per mode, runtime instances, no death / skull / frag inside, tested in game with two clients (see "Arena"). |
 | game_siege | `siege.lua`, `siege_core.lua`, `siege_config.lua` | 233, `!siege` / `/siege` | Weekly guild siege for the Chaos Obelisk: sign-ups, runtime arena, HUD, rewards and the champion title, tested in game (see "Guild siege"). |
 | game_leaderboard | `leaderboard.lua`, `leaderboard_core.lua`, `leaderboard_config.lua` | 229, `!leaderboard` | Weekly World Boss / Bounty Hunter / Rifts / Goblin Slayer / Guild Siege / Arena boards with titles and orbs for the top 3, all-time class ladder, tested in game (see "Leaderboards"). |
-| game_crafting | `crafting.lua`, `data/lib/chaos_crafting.lua` | 232, `!craft` / `/craft` | Crafting bench and the crafting orbs (Transmutation, Alchemy, Exalted, Annulment, Scouring, plus Chaos and Divine), tested in game (see "Crafting"). |
+| game_crafting | `crafting.lua`, `data/lib/chaos_crafting.lua` | 232, `!craft` / `/craft` | Crafting bench and the crafting orbs (Transmutation, Alchemy, Exalted, Annulment, Scouring, plus Chaos and Divine), tested in game (see "Crafting"). Salvage tab and the item lock: `salvage.lua`, `salvage_core.lua`, `salvage_config.lua`, `!salvage` (see "Salvage"). |
 | game_hunt | `hunt.lua`, `hunt_core.lua`, `hunt_config.lua`, `hunt_supplies.lua` | 241, `!hunt` / `/hunt` | Hunt tracker: session time with pause/reset, exp/h, time to level, loot and profit/h, supplies, kills, damage/healing, Chaos drops; tested in game (see "Hunt tracker"). |
 | game_season | `season.lua`, `season_core.lua`, `season_config.lua` | 246, `!season` / `/season` | Seasons: fresh-start season characters isolated from standard ones, season ladder view, season uniques, account-wide reward track, end-of-season migration; tested in game with two clients (see "Seasons"). |
 | game_patchnotes | `patchnotes.lua`, `patchnotes_core.lua`, `data/patchnotes/*.md` | 244, `!patchnotes` / `/patchnotes` | Weekly patch notes read from Markdown files on the server, opened once per new week at login (after the Daily Reward), per-account "Don't show automatically"; tested in game (see "Patch notes"). |
@@ -1618,6 +1619,85 @@ stored as `server_config` rows `chaos_season_<id>_start|_end`, which win over th
 
 **Isolation.** While a season runs, a character's realm is its season id (standard characters: 0). Different realms
 cannot exchange anything; gamemasters and up (`isolation.exemptGroup`) are never blocked.
+## Salvage (`salvage.lua`, `salvage_core.lua`, `salvage_config.lua`, `tools/install_salvage.py`, client `game_crafting`)
+
+Rolled gear you do not want becomes crafting currency instead of NPC gold. A **Salvage** tab on the crafting bench
+(`!craft`, then the tab; or `!salvage`, or use a Rune Shard) breaks an item with a rarity into **Rune Shards**, with a
+small chance of a whole orb, and turns shards into the existing orbs. Every number is in `salvage_config.lua`; the pure
+rules are `salvage_core.lua` (tests: `tests/salvage_test.lua`, which also drives `salvage.lua` against a mocked engine).
+
+**Install.** `python3 -I server/tools/install_salvage.py <server>/data [--dry-run]` (idempotent; `install_all.py` step
+`salvage`, after `gems`). It adds one items.otb node, the **rune shard** (server id **32051**), a copy of the stock node
+of the violet crystal shard (18414, client 16120: stackable, so the client needs no change), and its items.xml entry
+between marker comments. Without it the bench says salvage is not installed and refuses. No SQL: salvage writes to
+`chaos_crafting_log`.
+
+**What can be salvaged.** Gear with a rarity, in the backpack or a bag inside it (never equipped, never the ground),
+not locked, not unique, no gem in a socket (take gems out first on the bench: Remove for gold or Shatter; empty sockets
+are fine and pay a shard each). Normal items, Rift Keys, stacks and containers are refused. **Uniques are never
+salvaged** (`allowUniques = false`): they are chase items with their own drop table and no rarity tier to price them,
+and a duplicate is still worth keeping for a season or a trade.
+
+**Yield** (deterministic, so the preview is exact):
+- shards = floor(base x (1 + 0.5 x position of the item level in its rarity's window)) + 1 per Chaos modifier + 1 per
+  empty socket. The engine rolls rarity r with item level 10r-9..10r, so the top of the window gives up to +50%.
+- base by rarity (Common .. Transcendent): 1, 1, 2, 2, 3, 3, 4, 5, 6, 7, 8, 10, 12, 14, 18 (a Transcendent at the top
+  of its window: 27).
+- whole orb on top, per item: 0.5, 0.5, 0.75, 0.75, 1, 1, 1.5, 1.5, 2, 2, 2.5, 3, 3.5, 4, 5%; which orb by weight:
+  Transmutation 35, Chaos 25, Scouring 12, Alchemy 10, Annulment 8, Divine 5, Sockets 3, Exalted 2.
+
+**Shards into orbs** (one click makes 1, Ctrl+click up to 10): Transmutation 12, Chaos 25, Scouring 30, Alchemy 40,
+Annulment 50, Divine 60, Sockets 60, Exalted 100 shards, about 2.5 shards per Chaos Coin of the store price (5, 10, 12,
+15, 20, 25, 25, 40).
+
+**Why these numbers.** With the stock rarity roll (70% of gear drops pass, then each rarity in order with its own chance)
+an average rolled drop gives about 2.8 shards before modifiers and sockets (about 3.3 with them) and a 0.9% orb chance:
+roughly a tenth of a Chaos Orb. Rolled drops come a few times more often than orbs from the loot layer (a normal monster
+drops an orb on about 1.4% of kills), so salvaging everything adds a modest share to a player's orb income instead of
+replacing the orb drops, and it competes with selling the item: salvage is a sink for unwanted rarity gear, not a mint.
+`tests/salvage_test.lua` checks the average (2.2-3.5 shards, about 1% orbs) and that a Chaos Orb takes at least 8 rolled
+items.
+
+**Salvage all.** Choose a container (the backpack or one bag in it, its direct contents) and the highest rarity; the bench
+shows how many items it takes, the shards, the summed orb chance and what it skips (locked, unique, with gems, above the
+rarity, over the limit) and marks the items in the gear grid. The button asks for a confirmation. At most **50 items per
+action** (`batchCap`); the rest is listed as over the limit for the next one. The confirmation carries a signature of the
+previewed items (paths and item signatures); when anything changed in between the server refuses ("check the list and
+confirm again").
+
+**The item lock.** The bench's Lock / Unlock button (gear and Rift Keys in the backpack) sets the custom attribute
+`chaos_locked` = 1. A locked item is refused by salvage, skipped by "salvage all", and never sold by the **Auto Seller**,
+even with `!autosell rarity on` (`autosell.lua` reads the attribute, `ChaosShopServices.sellBlocked` returns "locked";
+"Auto seller: kept a locked item."). The look text says "It is locked: salvage and the auto seller skip it." (EventCallback
+onLook, index 120); the gear grid shows locked items dimmed, the rich tooltips (engine patch 0003, key 3) show "Locked".
+The lock survives the orbs that make a new copy (Transmutation, Alchemy, Scouring, Chaos, Divine: `C.recreate` calls
+`ChaosSalvage.copyLock`). Orbs and gems still work on a locked item: the lock protects from destruction and selling, not
+from crafting. Not covered: the NPC trade window (the engine removes items by id; it would need an engine change or a
+wrapper around the stock NPC sell).
+
+**Protocol** (extended opcode 232, `ChaosOpcodes.crafting`, new actions handed from `crafting.lua` to `salvage.lua`):
+client -> server `salvage {path, id, sig}`, `lock {path, id, on}`, `salvageScope {bag, maxRarity, mode}`,
+`salvageBatch {bag, maxRarity, sig}`, `combine {key, count}`; the bench state gains `salvage` (shards, recipes, bags,
+rarity names, the batch preview while the tab is open, the tab) and `locked` / `salvage` (preview) on the items. Answers
+are the bench's `result` (orb `"salvage"`) and `state`.
+
+**Server checks.** The item is found by its backpack path plus id and signature (moved or changed -> "put it on the bench
+again"); `inBackpack` again before anything is removed; all rules again on every item of a batch; 300 ms between single
+actions and locks, 2 s between batches, 300 ms between combines; shards and orbs go to the backpack, else the inbox (a
+message says so), else the floor. **Log**: every salvaged item is one row of `chaos_crafting_log` (orb `Salvage`, item
+name, "Rare (level 26): 2 rune shards [+ 1 Chaos Orb]"; a batch writes its rows in one INSERT), combines are `Shards`
+rows ("75 rune shards -> 3x Chaos Orb"), lock changes `Lock` rows; the bench's Recent crafts shows them.
+
+**Tested in game** (test server, client with the new tab): a single Common salvaged from the bench (1 shard, log row);
+"salvage all" in the backpack up to Uncommon with the cap lowered to 5 (5 taken, 6 over the limit, the socketed and the
+higher ones skipped), then a bag up to Legendary (4 Commons and a Rare: 6 shards; the locked Uncommon skipped); the
+confirmation box; Transmutation (12 shards) and Ctrl+click Chaos (3 orbs for 75 shards); Lock / Unlock from the bench,
+the refusal of a locked item, the look text; a monster kill with a locked and an unlocked rarity fire sword on the auto
+sell list with the rarity opt-in: the unlocked one sold (4000 gold to the bank), the locked one kept; a Chaos Orb on a
+locked sword (new copy, still locked). Unit tests: yields, orb roll, checks, the lock, batch cap and skips, signature,
+combine, the economy average, and `salvage.lua` single / batch / lock / combine / full backpack / look text against
+mocks; `tests/shop_services_test.lua`: the auto seller keeps a locked item.
+
 
 | Way | Rule | Hook |
 |---|---|---|

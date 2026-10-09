@@ -18,6 +18,7 @@
 --                            items = [{path, id, clientId, name, rarity, rarityName, unique, key}],
 --                            history = [{time, orb, item, text}]}
 --                     result {ok, orb, text}
+--   salvage | lock | salvageScope | salvageBatch | combine are handed to salvage.lua (the bench's Salvage mode)
 -- Lua 5.1 / LuaJIT compatible.
 
 if not Chaos then
@@ -182,6 +183,9 @@ local function sendState(player, open)
 			selected[pid] = nil
 		end
 	end
+	if ChaosSalvage and ChaosSalvage.benchState then
+		ChaosSalvage.benchState(player, data) -- salvage.lua: shards, recipes, lock marks, the "salvage all" preview
+	end
 	Chaos.send(player, OPCODE, "state", data)
 end
 
@@ -328,6 +332,11 @@ local function apply(player, data)
 	sendState(player, false)
 end
 
+-- the bench's Salvage mode (salvage.lua) works on the same backpack paths, selection and answers
+ChaosCraftingBench = {itemAt = itemAt, walk = walk, pathOf = pathOf, inBackpack = inBackpack, backpackOf = backpackOf,
+	sendState = sendState, sendResult = sendResult,
+	select = function(player, sel) selected[player:getId()] = sel end}
+
 -- ---------------------------------------------------------------- events
 local ext = CreatureEvent("ChaosCraftingExtended")
 function ext.onExtendedOpcode(player, opcode, buffer)
@@ -340,6 +349,10 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	end
 	local data = type(msg.data) == "table" and msg.data or {}
 	-- every answer walks the backpack and reads the history from the database; "apply" has its own MIN_INTERVAL
+	if ChaosSalvage and ChaosSalvage.actions and ChaosSalvage.actions[msg.action] then
+		ChaosSalvage.onAction(player, msg.action, data) -- salvage.lua, with its own rate limits
+		return
+	end
 	if msg.action ~= "apply" and msg.action ~= "gem" and ChaosRateLimit and not ChaosRateLimit.allow(player, "crafting.state", 150) then
 		return
 	end

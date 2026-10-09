@@ -68,6 +68,7 @@ local function itemInfo(item)
 	return {
 		unique = customAttr(item, "chaos_unique") ~= nil,
 		rarity = tonumber(customAttr(item, "rarity")) or 0,
+		locked = (tonumber(customAttr(item, "chaos_locked")) or 0) ~= 0, -- the item lock (salvage.lua): never sold
 		attributes = item:hasAttribute(ITEM_ATTRIBUTE_NAME) or item:hasAttribute(ITEM_ATTRIBUTE_DESCRIPTION)
 			or item:hasAttribute(ITEM_ATTRIBUTE_TEXT) or item:hasAttribute(CUSTOM)
 	}
@@ -88,14 +89,17 @@ local function autoSell(monster, corpse)
 		return
 	end
 	local allowRarity = owner:getStorageValue(ST.autosellRarity) == 1
-	local sold, total, kept = {}, 0, 0
+	local sold, total, kept, keptLocked = {}, 0, 0, 0
 	for _, item in ipairs(corpse:getItems()) do
 		local id = item:getId()
 		if set[id] and not item:getType():isContainer() then
 			local count = item:getCount()
 			local gold = services().sellPrice(id, count, PRICES)
 			if gold > 0 then
-				if services().sellBlocked(itemInfo(item), allowRarity) then
+				local blocked = services().sellBlocked(itemInfo(item), allowRarity)
+				if blocked == "locked" then
+					keptLocked = keptLocked + 1
+				elseif blocked then
 					kept = kept + 1
 				else
 					local name = item:getType():getName()
@@ -115,6 +119,9 @@ local function autoSell(monster, corpse)
 	if kept > 0 then
 		owner:sendTextMessage(MESSAGE_LOOT or MESSAGE_INFO_DESCR,
 			"Auto seller: kept an item with a rarity or modifiers (\"!autosell rarity on\" sells those too).")
+	end
+	if keptLocked > 0 then
+		owner:sendTextMessage(MESSAGE_LOOT or MESSAGE_INFO_DESCR, "Auto seller: kept a locked item.")
 	end
 end
 
