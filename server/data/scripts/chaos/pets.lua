@@ -624,10 +624,18 @@ function P.think(player)
 	-- cfg.block.afterSeconds in a row makes the pet step out of the way
 	if pet then
 		local stuck = {}
-		for _, t in ipairs(threatsOf(player, pet:getPosition(), cfg.block.range)) do
+		local ppos = pet:getPosition()
+		for _, t in ipairs(threatsOf(player, ppos, math.max(cfg.block.range, cfg.block.pathRange or 0))) do
 			local mt = t.creature:getType()
 			local ok, pushes = pcall(function() return mt and mt:canPushCreatures() end)
 			if not (ok and pushes) then
+				-- farther than block.range: only a monster that cannot find a way to the owner counts
+				if K.distance(t.pos, ppos) > cfg.block.range and K.distance(t.pos, opos) > 1 then
+					local okPath, path = pcall(function()
+						return t.creature:getPathTo(opos, 0, 1, true, true, 3 * (cfg.block.pathRange or 4))
+					end)
+					t.noPath = okPath and not path
+				end
 				stuck[#stuck + 1] = t
 			end
 		end

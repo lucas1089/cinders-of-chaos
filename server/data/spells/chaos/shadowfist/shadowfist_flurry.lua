@@ -11,11 +11,10 @@ local function hit(playerId, targetId, left)
 	end
 	if MonkSpell.isAdjacent(player, target) then
 		player:getPosition():sendDistanceEffect(target:getPosition(), CONST_ANI_SMALLHOLY)
+		ChaosSpell.vfx(target:getPosition(), "punch_hit_violet") -- every landed blow, as Pressure Points
 		MonkSpell.strike(player, target, ChaosMonk.formula.flurryHit, 1, CONST_ME_HITAREA)
 	else
-		if not ChaosSpell.vfx(target:getPosition(), "punch_hit_violet") then
-			target:getPosition():sendMagicEffect(CONST_ME_POFF)
-		end
+		target:getPosition():sendMagicEffect(CONST_ME_POFF) -- the target stepped away: the blow misses
 	end
 	if left > 1 then
 		addEvent(hit, ChaosMonk.cfg.flurry.intervalMs, playerId, targetId, left - 1)

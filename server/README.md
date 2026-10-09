@@ -2787,8 +2787,9 @@ is in `pets_config.lua`; the pure rules in `pets_core.lua`.
 - **Following.** Every 500 ms (`thinkMs`): a pet farther than 6 squares from its owner or on another floor is put next to
   it; a pet the engine removed (a long teleport) comes back next to its owner. The pet **rests** (removed with a puff,
   back by itself when the reason ends) while the owner stands in a protection zone, in a banned zone, or has another
-  summon that is not a class companion. **Anti-block:** a monster that targets the owner, stands next to the pet, is not
-  next to the owner and cannot push creatures for 1.5 s in a row makes the pet step out of the way for 6 s.
+  summon that is not a class companion. **Anti-block:** a monster that targets the owner, stands next to the pet (or
+  within 4 squares of it without a path to the owner: a blocked monster wanders), is not next to the owner and cannot
+  push creatures for 1.5 s in a row makes the pet step out of the way for 6 s.
 - **Coexistence with class summons.** Beastmaster companions (`Chaos.classes.companion.monsters`) and Necromancer
   minions (`ChaosNecroConfig.minions`) count only their own monster types, so a pet never lowers their caps, and the
   pet stays out next to them. Any other summon (the stock summon spells and Convince Creature, Moonfang Pack, the base

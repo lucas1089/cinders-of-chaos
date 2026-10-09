@@ -190,6 +190,11 @@ assert(K.blocking(P(11, 10), P(10, 10), {{pos = P(12, 10)}}, cfg), "pet in the w
 assert(not K.blocking(P(11, 10), P(10, 10), {{pos = P(11, 11)}}, cfg), "monster already next to the owner")
 assert(not K.blocking(P(11, 10), P(10, 10), {{pos = P(14, 10)}}, cfg), "monster far from the pet")
 assert(not K.blocking(P(11, 10), P(10, 10), {}, cfg))
+-- a monster without a path to the owner (it wanders in the corridor behind the pet) counts within block.pathRange
+assert(K.blocking(P(11, 10), P(10, 10), {{pos = P(14, 10), noPath = true}}, cfg), "no path, 3 from the pet")
+assert(not K.blocking(P(11, 10), P(10, 10), {{pos = P(16, 10), noPath = true}}, cfg), "no path, beyond pathRange")
+assert(not K.blocking(P(11, 10), P(10, 10), {{pos = P(14, 10), noPath = false}}, cfg), "has a path: it is coming")
+assert(not K.blocking(P(11, 10), P(10, 10), {{pos = P(9, 11), noPath = true}}, cfg), "no path but next to the owner")
 eq(K.restReason({now = 1}), nil)
 eq(K.restReason({inPz = true, zone = "banned", now = 1}), "zone", "zone first")
 eq(K.restReason({inPz = true, otherSummons = true, now = 1}), "pz")

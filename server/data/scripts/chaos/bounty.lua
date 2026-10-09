@@ -203,21 +203,28 @@ local function giveWeekly(player, bandIndex)
 		chest:setAttribute(ITEM_ATTRIBUTE_NAME, cfg.weeklyChestName)
 	end
 	local container = Container(chest:getUniqueId())
+	-- the chest holds only a few stacks (a present: 5): what does not fit goes to the backpack / inbox afterwards
+	local overflow = {}
+	local function put(id, count)
+		if not container:addItem(id, count) then
+			overflow[#overflow + 1] = {id = id, count = count}
+		end
+	end
 	if r.chaos > 0 then
-		container:addItem(cfg.items.chaos, r.chaos)
+		put(cfg.items.chaos, r.chaos)
 	end
 	if r.divine > 0 then
-		container:addItem(cfg.items.divine, r.divine)
+		put(cfg.items.divine, r.divine)
 	end
 	local extra = {}
 	for _, e in ipairs(cfg.weeklyExtra or {}) do
-		container:addItem(e.id, e.count)
+		put(e.id, e.count)
 		extra[#extra + 1] = string.format(", %d %s", e.count, e.name)
 	end
 	-- gems (data/lib/chaos_gems_config.lua rewards.bountyWeekly)
 	local gems = ChaosGems and ChaosGems.rewardGems("bountyWeekly", {band = bandIndex}) or {}
 	for _, g in ipairs(gems) do
-		container:addItem(g.id, g.count)
+		put(g.id, g.count)
 	end
 	if #gems > 0 then
 		extra[#extra + 1] = ", " .. ChaosGems.listText(gems)
@@ -229,6 +236,9 @@ local function giveWeekly(player, bandIndex)
 			box:addItemEx(chest, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
 			inbox = true
 		end
+	end
+	for _, o in ipairs(overflow) do
+		inbox = giveStack(player, o.id, o.count) or inbox
 	end
 	player:setStorageValue(Chaos.storage.bountyWeekBonus, B.week(os.time(), cfg))
 	local text = string.format("Weekly bounty bonus: a %s with %d Chaos Orbs and %d Divine Orbs%s.%s",

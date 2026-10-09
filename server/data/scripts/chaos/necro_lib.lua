@@ -201,8 +201,10 @@ function M.usableCorpses(player, center, radius, count)
 end
 
 function M.consumeCorpse(c)
-	if c.item and not c.item:isRemoved() then
-		c.item:remove()
+	-- Item has no isRemoved in this engine (only Creature has): remove() of an item already gone is harmless
+	local item = c.item
+	if item and not (item.isRemoved and item:isRemoved()) then
+		item:remove()
 	end
 end
 

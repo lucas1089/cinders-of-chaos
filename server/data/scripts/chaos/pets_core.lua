@@ -281,10 +281,12 @@ function K.distance(a, b)
 end
 
 -- anti-block: true when a monster that targets the owner stands within block.range of the pet but is not next to
--- the owner (the pet may be in its way). threats = {{pos = position}, ...} of monsters targeting the owner.
+-- the owner (the pet may be in its way). threats = {{pos = position, noPath = true when it has no path to the owner},
+-- ...} of monsters targeting the owner; one without a path counts up to block.pathRange from the pet.
 function K.blocking(petPos, ownerPos, threats, cfg)
 	for _, t in ipairs(threats or {}) do
-		if K.distance(t.pos, petPos) <= cfg.block.range and K.distance(t.pos, ownerPos) > 1 then
+		local reach = t.noPath and math.max(cfg.block.range, cfg.block.pathRange or 0) or cfg.block.range
+		if K.distance(t.pos, petPos) <= reach and K.distance(t.pos, ownerPos) > 1 then
 			return true
 		end
 	end

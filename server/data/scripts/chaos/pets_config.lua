@@ -30,8 +30,10 @@ return {
 	leashRange = 6, -- farther (or another floor): the pet is put next to its owner
 	-- anti-block: a monster that targets the owner, stands within `range` of the pet, is not next to the owner and cannot
 	-- push creatures (monsters that can push simply push the pet away) for `afterSeconds` in a row makes the pet step
-	-- away (hide) for `hideSeconds`; it comes back next to its owner by itself
-	block = {range = 1, afterSeconds = 1.5, hideSeconds = 6},
+	-- away (hide) for `hideSeconds`; it comes back next to its owner by itself. A monster that has no path to the owner
+	-- counts up to `pathRange` from the pet: the engine makes a monster without a path wander, so it rarely stays next
+	-- to the pet for `afterSeconds` in a row (a 1-wide corridor with the pet in it held a troll back for 34 s)
+	block = {range = 1, pathRange = 4, afterSeconds = 1.5, hideSeconds = 6},
 	-- the pet only exists next to its owner outside protection zones; it waits (despawned) while the owner is in one and
 	-- comes back when the owner leaves (also after a teleport too far for the engine, which removes summons)
 	-- hide: how a pet that rests (protection zone, banned zone, other summons, anti-block) shows: it is removed with a
