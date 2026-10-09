@@ -29,6 +29,10 @@ if not ChaosItemMods then
 	dofile("data/lib/chaos_item_mods.lua")
 end
 local M = ChaosItemMods
+if not ChaosGems then
+	dofile("data/lib/chaos_gems.lua") -- sockets and gems (server/README.md "Gems and sockets")
+end
+local G = ChaosGems
 
 -- ---------------------------------------------------------------------------------------------------------------
 -- configuration
@@ -57,7 +61,11 @@ C.config = {
 			keyText = "Rerolls the modifiers of a Rift Key (one to three new ones)."},
 		{key = "divine", id = 29857, name = "Divine Orb",
 			text = "Rolls a new random rarity for the item, often none (the stock Divine Orb).",
-			keyText = "Rerolls the values of a Rift Key's modifiers inside their ranges."}
+			keyText = "Rerolls the values of a Rift Key's modifiers inside their ranges."},
+		-- gems and sockets (chaos_gems_config.lua socketOrb; install_gems.py names the rune stone)
+		{key = "sockets", id = ChaosGems.config.socketOrb.id, name = ChaosGems.config.socketOrb.name,
+			text = ChaosGems.config.socketOrb.text,
+			keyText = "Rift Keys have no sockets."}
 	},
 
 	-- rarity names (same as the stock look text, default_onLook.lua)
@@ -385,7 +393,8 @@ C.reasons = {
 	keyNeedNone = "This orb works only on a Rift Key without modifiers.",
 	keyNoMods = "This Rift Key has no modifiers.",
 	keyFull = "This Rift Key has the most modifiers a key can have.",
-	keyNothing = "There is no modifier left that this Rift Key could get."
+	keyNothing = "There is no modifier left that this Rift Key could get.",
+	keySockets = "Rift Keys have no sockets."
 }
 
 -- can this orb be used on this item? returns true or false, reasonCode
@@ -399,6 +408,13 @@ function C.check(orbKey, item)
 	end
 	if not item or not C.isGear(item) then
 		return false, "notGear"
+	end
+	if orbKey == "sockets" then
+		local okS, why = G.orbCheck(item)
+		if not okS then
+			return false, C.reasons[why] and why or (G.reasons[why] or why) -- unique, notGear, stack: the orbs' own codes
+		end
+		return true
 	end
 	if C.isUnique(item) then
 		return false, "unique"
@@ -490,7 +506,7 @@ end
 -- rewrite the rarity part of the description from the item's attributes. Text in front of "Level: N" and
 -- bracketed upgrade slots behind it ("[Attack+2]", customs/upgrade) are kept.
 function C.rewriteDescription(item)
-	local old = descriptionOf(item)
+	local old = G.strip(descriptionOf(item)) -- the sockets section is written again at the end
 	local prefix, rest = old, ""
 	local s = old:find("Level:%s*%-?%d+")
 	if s then
@@ -510,6 +526,7 @@ function C.rewriteDescription(item)
 	if #slots > 0 then
 		text = text .. " " .. table.concat(slots, ", ")
 	end
+	text = G.append(text, item)
 	item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, text)
 	return text
 end
@@ -610,8 +627,12 @@ function C.recreate(item, rarity)
 		newItem:remove()
 		return nil, "This item cannot carry a rarity."
 	end
+	G.copy(item, newItem) -- sockets and gems survive every orb (chaos_gems.lua)
 	if rarity > 0 then
 		C.rollDropMods(newItem) -- the Chaos modifiers a drop of this rarity gets
+	end
+	if G.count(newItem) > 0 then
+		G.writeDescription(newItem)
 	end
 	local parent = item:getParent()
 	if not parent or not parent.addItemEx then
@@ -641,6 +662,12 @@ function C.apply(orbKey, item)
 		return C.keyApply(orbKey, item)
 	end
 	local name = C.itemName(item)
+	if orbKey == "sockets" then
+		local n, old = G.orbApply(item, C.random)
+		G.writeDescription(item)
+		return true, {item = item, text = string.format("%s now has %d socket%s (had %d).", name, n, n == 1 and "" or "s",
+			old), sockets = n}
+	end
 	if orbKey == "exalted" then
 		local m = C.exalt(item)
 		if not m then
@@ -762,6 +789,9 @@ function C.writeKey(item, key)
 end
 
 function C.keyCheck(orbKey, item)
+	if orbKey == "sockets" then
+		return false, "keySockets"
+	end
 	local _, cfg = rift()
 	local key = C.readKey(item)
 	local n = #key.mods
@@ -889,6 +919,9 @@ function C.preview(orbKey, item)
 		end
 		return ""
 	end
+	if orbKey == "sockets" then
+		return G.orbPreview(item)
+	end
 	local rarity = C.rarityOf(item)
 	local n = #C.readMods(item)
 	if orbKey == "transmutation" then
@@ -932,6 +965,11 @@ function C.signature(item)
 	for _, m in ipairs(C.readMods(item)) do
 		parts[#parts + 1] = m.key .. "=" .. tostring(m.value)
 	end
+	local s = G.read(item)
+	parts[#parts + 1] = "s" .. s.count
+	for i = 1, s.count do
+		parts[#parts + 1] = tostring(s.gems[i])
+	end
 	return table.concat(parts, ";")
 end
 
@@ -963,8 +1001,32 @@ function C.describe(item)
 		unique = C.isUnique(item),
 		orbs = orbs, -- orb key -> "" when usable, else why not
 		preview = preview, -- orb key -> what it would do ("" when not usable)
+		sockets = C.describeSockets(item),
 		sig = C.signature(item)
 	}
+end
+
+-- the sockets of an item for the bench: {count, max, list = {{index, id, clientId, name, text, color, cost}}}
+-- (id 0 = empty socket; cost = gold to take the gem out unharmed)
+function C.describeSockets(item)
+	local s = G.read(item)
+	local group = G.groupOf(item)
+	local list = {}
+	for i = 1, s.count do
+		local id = s.gems[i]
+		local row = {index = i, id = id}
+		if id > 0 then
+			local g = G.gemOf(id)
+			row.clientId = G.clientIdOf(g.type.index, g.tier)
+			row.name = G.gemName(id)
+			local e = G.effectOf(id, group)
+			row.text = e and G.effectText(e.key, e.value, e.value2) or ""
+			row.color = g.type.color
+			row.cost = G.removeCost(id)
+		end
+		list[i] = row
+	end
+	return {count = s.count, max = G.maxSockets(item), list = list}
 end
 
 -- the bench view of a Rift Key (kind = "riftkey"; mods in the rift group, the reward bonuses as one line)

@@ -156,6 +156,11 @@ local function itemInfo(item)
 	if ChaosItemMods and info.category == "equipment" then
 		local ok, text = pcall(ChaosItemMods.summary, item)
 		info.mods = ok and text ~= "" and text or nil
+		-- sockets and gems ("Sockets 1/2: Flawless Ruby (Fire Damage +9%), empty", data/lib/chaos_gems.lua)
+		local okG, gems = pcall(function() return ChaosGems and ChaosGems.summary(item) or "" end)
+		if okG and gems ~= "" then
+			info.mods = info.mods and (info.mods .. "; " .. gems) or gems
+		end
 	end
 	return info
 end

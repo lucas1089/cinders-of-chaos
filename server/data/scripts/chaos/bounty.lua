@@ -214,6 +214,14 @@ local function giveWeekly(player, bandIndex)
 		container:addItem(e.id, e.count)
 		extra[#extra + 1] = string.format(", %d %s", e.count, e.name)
 	end
+	-- gems (data/lib/chaos_gems_config.lua rewards.bountyWeekly)
+	local gems = ChaosGems and ChaosGems.rewardGems("bountyWeekly", {band = bandIndex}) or {}
+	for _, g in ipairs(gems) do
+		container:addItem(g.id, g.count)
+	end
+	if #gems > 0 then
+		extra[#extra + 1] = ", " .. ChaosGems.listText(gems)
+	end
 	local inbox = false
 	if player:addItemEx(chest, false) ~= RETURNVALUE_NOERROR then
 		local box = player:getInbox()
@@ -241,6 +249,11 @@ local function payContract(player, c, e)
 	end
 	local inbox = giveStack(player, cfg.items.chaos, r.chaos)
 	inbox = giveStack(player, cfg.items.divine, r.divine) or inbox
+	-- gems (data/lib/chaos_gems_config.lua rewards.bounty: chance by contract type, quality by the level band)
+	local gems = ChaosGems and ChaosGems.rewardGems("bounty", {type = c.type, band = c.band}) or {}
+	for _, g in ipairs(gems) do
+		inbox = giveStack(player, g.id, g.count) or inbox
+	end
 	if r.exp > 0 then
 		player:addExperience(r.exp, true)
 	end
@@ -253,6 +266,9 @@ local function payContract(player, c, e)
 	end
 	if r.divine > 0 then
 		parts[#parts + 1] = r.divine .. " Divine Orb" .. (r.divine > 1 and "s" or "")
+	end
+	if #gems > 0 then
+		parts[#parts + 1] = ChaosGems.listText(gems)
 	end
 	if r.exp > 0 then
 		parts[#parts + 1] = r.exp .. " experience"

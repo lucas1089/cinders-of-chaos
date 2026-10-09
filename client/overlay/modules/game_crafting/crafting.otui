@@ -57,6 +57,62 @@ CraftModLabel < UILabel
   color: #7fa8ff
   phantom: true
 
+// one socket of the item on the bench: the gem (or "empty"), its effect, take it out for gold or shatter it
+CraftSocketRow < UIWidget
+  height: 30
+  margin-top: 2
+  phantom: false
+
+  UIItem
+    id: icon
+    size: 28 28
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    virtual: true
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: icon.right
+    anchors.right: removeButton.left
+    anchors.top: parent.top
+    margin-left: 5
+    margin-right: 4
+    text-align: left
+    font: verdana-11px-rounded
+    color: #d6c9ae
+    phantom: true
+
+  UILabel
+    id: text
+    anchors.left: icon.right
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-left: 5
+    margin-right: 4
+    text-align: left
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    phantom: true
+
+  ChaosButton
+    id: removeButton
+    anchors.right: shatterButton.left
+    anchors.top: parent.top
+    margin-right: 3
+    width: 46
+    height: 15
+    font: verdana-11px-antialised
+
+  ChaosButton
+    id: shatterButton
+    anchors.right: parent.right
+    anchors.top: parent.top
+    width: 50
+    height: 15
+    font: verdana-11px-antialised
+    !text: tr('Shatter')
+
 CraftHistoryLabel < UILabel
   height: 14
   text-align: left
@@ -67,7 +123,7 @@ CraftHistoryLabel < UILabel
 
 ChaosMainWindow
   id: craftingWindow
-  size: 700 560
+  size: 700 664
   !text: tr('Crafting Bench')
   @onEscape: modules.game_crafting.hide()
 
@@ -77,7 +133,7 @@ ChaosMainWindow
     anchors.top: parent.top
     anchors.left: parent.left
     width: 320
-    height: 236
+    height: 340
 
   ChaosItemSlot
     id: itemSlot
@@ -143,7 +199,7 @@ ChaosMainWindow
     text-wrap: true
     text-align: center
     height: 72
-    !text: tr('Drag an item or a Rift Key from your backpack onto the slot, or click one below. Orbs also work without the bench: Use with on the orb, then click the item.')
+    !text: tr('Drag an item or a Rift Key from your backpack onto the slot, or click one below. Orbs and gems also work without the bench: Use with on the orb or the gem, then click the item.')
 
   // ------------------------------------------------------------ gear in the backpack
   ChaosLabel
@@ -211,7 +267,7 @@ ChaosMainWindow
     anchors.left: orbLabel.left
     anchors.right: parent.right
     margin-top: 4
-    height: 330
+    height: 378
     phantom: true
     layout:
       type: verticalBox

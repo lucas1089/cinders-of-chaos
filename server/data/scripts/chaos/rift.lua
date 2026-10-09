@@ -608,6 +608,10 @@ function RF.deliver(player, run, auto)
 		for _, c in ipairs(L.rollCurrency(r.lootTier, ctx)) do
 			stack(c.id, c.count)
 		end
+		-- gems (data/lib/chaos_gems_config.lua rewards.rift: count and quality by the rift tier)
+		for _, g in ipairs(ChaosGems and ChaosGems.rewardGems("rift", {tier = data.tier}, rand) or {}) do
+			stack(g.id, g.count)
+		end
 		for _, e in ipairs(L.rollUniques(r.lootTier, data.boss, 0, itemFind * r.rarityMult)) do
 			local item = Game.createItem(e.id, 1)
 			if item then

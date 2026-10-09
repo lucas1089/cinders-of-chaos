@@ -4,6 +4,7 @@
 --   1. extra loot rolls from the monster's own loot table by tier (magic x1, rare x2, legendary x3, boss x2)
 --   2. gear quality: floor + bonus rarity per tier, items replaced via Game.createItemWithRarity
 --   3. currency / crafting drops (stock orbs 29856 / 29857 + configurable list)
+--   3b. gems (data/lib/chaos_gems_config.lua drop) and, in step 2b, sockets on gear with a rarity (chaos_gems.lua)
 --   4. unique items from the global ChaosUniqueItems (contract in LOOT.md)
 --   5. item find (player storage) multiplies the chances
 --   6. ChaosLootRoll(monsterName, tier, kills): pure simulation for balance tuning
@@ -673,12 +674,16 @@ function L.finalizeRarity(item)
 	for _, m in ipairs(mods) do
 		ChaosItemMods.set(newItem, m.key, m.value)
 	end
+	local sockets = ChaosGems and ChaosGems.count(item) or 0
+	if sockets > 0 then
+		ChaosGems.copy(item, newItem)
+	end
 	if parent:addItemEx(newItem, INDEX_WHEREEVER or -1, FLAG_NOLIMIT or 1) ~= (RETURNVALUE_NOERROR or 0) then
 		newItem:remove()
 		return item
 	end
 	item:remove()
-	if #mods > 0 and ChaosCrafting and ChaosCrafting.rewriteDescription then
+	if (#mods > 0 or sockets > 0) and ChaosCrafting and ChaosCrafting.rewriteDescription then
 		ChaosCrafting.rewriteDescription(newItem)
 	end
 	return newItem
@@ -786,6 +791,10 @@ local function processKill(monster, corpse)
 			local item = corpse:getItem(slot)
 			if item and itemRarityOf(item) > 0 and L.isGearId(item:getId()) then
 				rolled = #ChaosCrafting.rollDropMods(item) > 0 or rolled
+				-- sockets (data/lib/chaos_gems.lua): 0-3 by rarity, the item's maximum
+				if ChaosGems and ChaosGems.rollDropSockets(item) > 0 then
+					rolled = true
+				end
 			end
 		end
 		if rolled and ChaosItemMods.afterDrop then
@@ -798,6 +807,18 @@ local function processKill(monster, corpse)
 		local item = corpse:addItem(drop.id, drop.count)
 		if item then
 			bonus[#bonus + 1] = (drop.count > 1 and (drop.count .. "x ") or "") .. drop.name
+		end
+	end
+
+	-- 3b. gems (data/lib/chaos_gems_config.lua drop): chance by monster tier x the layer's rate x item find, the tier
+	-- by the monster's level (the killer's when the monster has none)
+	if ChaosGems then
+		local gemLevel = level > 0 and level or owner:getLevel()
+		for _, id in ipairs(ChaosGems.rollDrop(tier, gemLevel, rateMult(ctx) * ctx.itemFind, rnd)) do
+			local item = corpse:addItem(id, 1)
+			if item then
+				bonus[#bonus + 1] = ChaosGems.gemName(id)
+			end
 		end
 	end
 

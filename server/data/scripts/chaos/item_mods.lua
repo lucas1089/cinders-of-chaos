@@ -15,6 +15,9 @@
 --   experience         EventCallback onGainExperience
 --   gold find          EventCallback onDropLoot (priority 2, as Paragon's gold find)
 --   item / rarity find read by loot.lua (ChaosItemMods.playerBonus)
+-- The gems in the sockets of the same items (data/lib/chaos_gems.lua) are summed on the same path: their totals
+-- (ChaosGems.totals) are worked out here with the modifiers' and handed to gems.lua (ChaosGems.applyTotals); gem
+-- Movement Speed is added to the modifier's under the modifier's cap.
 -- Lua 5.1 / LuaJIT compatible.
 
 if not Chaos then
@@ -70,10 +73,16 @@ local function equipped(player)
 		local item = player:getSlotItem(slot)
 		if item and fits(item, slot) then
 			local mods = M.read(item)
-			if #mods > 0 then
+			local gems = ChaosGems and ChaosGems.read(item)
+			if #mods > 0 or (gems and gems.filled > 0) then
 				items[#items + 1] = item
 				for _, m in ipairs(mods) do
 					sig[#sig + 1] = slot .. m.key .. m.value
+				end
+				for i = 1, gems and gems.count or 0 do
+					if gems.gems[i] > 0 then
+						sig[#sig + 1] = slot .. "g" .. i .. ":" .. gems.gems[i]
+					end
 				end
 			end
 		end
@@ -101,6 +110,14 @@ function M.refresh(player, force)
 	end
 	state.sig = sig
 	local totals = M.totals(items)
+	if ChaosGems and ChaosGems.totals then
+		local gemTotals = ChaosGems.totals(items)
+		local def = M.byKey.movespeed
+		totals.movespeed = math.min(def and def.cap or 12, (totals.movespeed or 0) + (gemTotals.movespeed or 0))
+		if ChaosGems.applyTotals then
+			ChaosGems.applyTotals(player, gemTotals)
+		end
+	end
 	cache[id] = totals
 	applySpeed(player, state, totals)
 	return totals
@@ -353,7 +370,7 @@ function M.fixCorpses(pos)
 		if corpse:isContainer() and corpse:getCustomAttribute(PENDING) then
 			corpse:removeCustomAttribute(PENDING)
 			for _, item in ipairs(corpse:getItems(true)) do
-				if #M.read(item) > 0 then
+				if #M.read(item) > 0 or (ChaosGems and ChaosGems.count(item) > 0) then
 					ChaosCrafting.rewriteDescription(item)
 				end
 			end
@@ -387,6 +404,9 @@ local logout = CreatureEvent("ChaosItemModsLogout")
 function logout.onLogout(player)
 	applied[player:getId()] = nil
 	cache[player:getId()] = nil
+	if ChaosGems and ChaosGems.forget then
+		ChaosGems.forget(player)
+	end
 	return true
 end
 logout:register()

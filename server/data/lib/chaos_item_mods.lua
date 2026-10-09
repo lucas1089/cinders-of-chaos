@@ -246,12 +246,20 @@ function M.attackInterval(base, pct)
 	return math.max(M.config.minAttackSpeed, floor(base * (100 - (tonumber(pct) or 0)) / 100 + 1e-9))
 end
 
--- keep the weapon's attack interval in line with its attack speed modifier
+-- keep the weapon's attack interval in line with its attack speed modifier and its topaz gems (chaos_gems.lua: both
+-- together at most the gems' attackspeed cap)
 function M.syncAttackSpeed(item)
 	if not ITEM_ATTRIBUTE_ATTACK_SPEED then
 		return
 	end
 	local pct = M.value(item, "attackspeed")
+	if ChaosGems and ChaosGems.attackSpeedOf then
+		local gems = ChaosGems.attackSpeedOf(item)
+		if gems > 0 then
+			local cap = ChaosGems.config.effects.attackspeed.cap or 20
+			pct = math.min(math.max(pct, cap), pct + gems) -- the modifier alone may sit at its own cap
+		end
+	end
 	if pct > 0 then
 		local it = typeOf(item)
 		item:setAttribute(ITEM_ATTRIBUTE_ATTACK_SPEED, M.attackInterval(it and typeNumber(it, "getAttackSpeed") or 0, pct))

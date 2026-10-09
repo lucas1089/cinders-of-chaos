@@ -89,7 +89,10 @@ return {
 			{id = 24688, name = "Orb of Scouring", weight = 10, count = {1, 1},
 				chance = {normal = 15, magic = 100, rare = 400, legendary = 1500, boss = 2500}},
 			{id = 29855, name = "Exalted Orb", weight = 5, count = {1, 1},
-				chance = {normal = 4, magic = 30, rare = 120, legendary = 600, boss = 1000}}
+				chance = {normal = 4, magic = 30, rare = 120, legendary = 600, boss = 1000}},
+			-- gems and sockets (data/lib/chaos_gems_config.lua socketOrb; the gems drop through chaos_gems_config.lua)
+			{id = 24692, name = "Orb of Sockets", weight = 8, count = {1, 1},
+				chance = {normal = 8, magic = 60, rare = 250, legendary = 1000, boss = 1500}}
 			-- add more: {id = 12345, name = "Soul Shard", weight = 50, count = {1, 3}, chance = {...}}
 		},
 		-- guaranteed number of entries drawn by weight (in addition to the chances above)

@@ -3,11 +3,15 @@
 -- Server: server/data/scripts/chaos/crafting.lua and data/lib/chaos_crafting.lua, extended opcode 232 (JSON).
 --   server -> client  state {open, orbs = [{key, id, clientId, name, text, keyText, count}], item = {path, clientId,
 --                            name, kind, rarity, rarityName, level, mods = [{group, text}], maxMods, rewards, unique,
---                            orbs = {key -> ""|why}, preview = {key -> text}, sig} | nil,
+--                            orbs = {key -> ""|why}, preview = {key -> text},
+--                            sockets = {count, max, list = [{index, id, clientId, name, text, color, cost}]}, sig} | nil,
 --                            items = [{path, id, clientId, name, rarity, rarityName, unique, key}],
 --                            history = [{time, orb, item, text}]}
 --                     result {ok, orb, text}
---   client -> server  open | select {path, id} | select {pos, clientId} | apply {orb, path, id, sig} | clear
+--   client -> server  open | select {path, id} | select {pos, clientId} | apply {orb, path, id, sig} |
+--                     gem {op = "remove"|"shatter", socket, path, id, sig} | clear
+-- Sockets (gems, server data/lib/chaos_gems.lua) are listed under the modifiers: a gem can be taken out for gold
+-- (Remove, it comes back) or destroyed (Shatter); socketing and combining are done by Use with on the gem.
 -- The server checks everything (orb owned, item in the backpack, orb fits the item, no uniques); the buttons here only
 -- mirror its answer. !craft opens it from the chat; the top menu (Chaos -> Crafting Bench) calls toggle().
 
@@ -56,6 +60,62 @@ local function setResult(text, ok)
   if not window then return end
   window.resultLabel:setText(text or '')
   window.resultLabel:setColor(ok == false and '#e03a1e' or '#9fdc7f')
+end
+
+-- ---------------------------------------------------------------- sockets
+local function gold(n)
+  n = tonumber(n) or 0
+  if n >= 1000000 then return string.format('%.1fM', n / 1000000) end
+  if n >= 1000 then return string.format('%dk', math.floor(n / 1000)) end
+  return tostring(n)
+end
+
+local function showSockets(item)
+  local s = type(item.sockets) == 'table' and item.sockets or nil
+  local count = s and tonumber(s.count) or 0
+  if not s or (count == 0 and (tonumber(s.max) or 0) == 0) then return end
+  local filled = 0
+  for _, row in ipairs(list(s.list)) do
+    if (tonumber(row.id) or 0) > 0 then filled = filled + 1 end
+  end
+  local head = g_ui.createWidget('CraftModLabel', window.modList)
+  head:setColor('#e8b84a')
+  if count == 0 then
+    head:setText(tr('No sockets (an Orb of Sockets gives up to %d)', tonumber(s.max) or 0))
+    return
+  end
+  head:setText(tr('Sockets: %d / %d', filled, count))
+  for _, row in ipairs(list(s.list)) do
+    local w = g_ui.createWidget('CraftSocketRow', window.modList)
+    local id = tonumber(row.id) or 0
+    local index = row.index
+    if id > 0 then
+      w.icon:setItemId(tonumber(row.clientId) or 0)
+      w.name:setText(row.name or '?')
+      w.name:setColor(row.color or '#d6c9ae')
+      w.text:setText(row.text or '')
+      w:setTooltip(tr('%s\n%s', row.name or '', row.text or ''))
+      w.removeButton:setText(gold(row.cost))
+      w.removeButton:setTooltip(tr('Take the gem out for %d gold (bank first, then the backpack). It comes back to you.', tonumber(row.cost) or 0))
+      w.shatterButton:setTooltip(tr('Take the gem out for free: it is destroyed.'))
+      w.removeButton.onClick = function()
+        w.removeButton:setEnabled(false)
+        send('gem', { op = 'remove', socket = index, path = item.path, id = item.id, sig = item.sig })
+      end
+      w.shatterButton.onClick = function()
+        w.shatterButton:setEnabled(false)
+        send('gem', { op = 'shatter', socket = index, path = item.path, id = item.id, sig = item.sig })
+      end
+    else
+      w.icon:setVisible(false)
+      w.name:setText(tr('Empty socket'))
+      w.name:setColor('#8c8070')
+      w.text:setText(tr('Use a gem with the item to fill it'))
+      w.text:setColor('#6b6258')
+      w.removeButton:setVisible(false)
+      w.shatterButton:setVisible(false)
+    end
+  end
 end
 
 -- ---------------------------------------------------------------- item panel
@@ -107,6 +167,7 @@ local function showItem(item)
     label:setText(tr('Rewards: %s', item.rewards))
     label:setColor('#9fdc7f')
   end
+  showSockets(item)
 end
 
 -- ---------------------------------------------------------------- orbs

@@ -39,6 +39,8 @@ The tier comes from `ChaosTierDead[monster:getId()].tier` (set by monster_tiers.
    failure the original stays.
 3. **Currency**: `currency.entries` (stock orbs 29857 Divine, 29856 Chaos; add your own) with `chance[tier]` per 10000,
    plus `guaranteed[tier]` weighted draws (legendary 1, boss 1), count scaled by `countMult[tier]`.
+   3b. **Gems** (`data/lib/chaos_gems_config.lua` `drop`): chance by tier per 10000 x the rate x item find, quality by the
+   monster's level; gear with a rarity also gets its sockets in step 2b. See server/README.md "Gems and sockets".
 4. **Uniques**: see contract below.
 5. **Item find**: `player:getStorageValue(ChaosLootConfig.itemFindStorage)` (default 7100040) = +N % (clamped to
    `itemFindMaxPercent`, 300) on extra-roll chance, currency chance, unique chance, gear bonus chance. Corpse owner only.

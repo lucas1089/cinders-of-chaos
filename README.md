@@ -28,7 +28,7 @@ than days.
 | Classes | 4 base classes, each with 2 ascensions (8 ascended classes) |
 | Level cap | 1000, then Paragon levels. Reaching 1000 takes roughly 100 hours of hunting |
 | Items | 15 rarities from Common to Transcendent, item levels, random modifiers, about 50 uniques |
-| Endgame | world bosses, bounties, rifts with keys and modifiers, the Infinity Tower, dungeons, arena, guild siege, guild levels and guild halls, invasions and world events, weekly leaderboards |
+| Endgame | world bosses, bounties, a bestiary with kill tasks, rifts with keys and modifiers, the Infinity Tower, dungeons, arena, guild siege, guild levels and guild halls, invasions and world events, weekly leaderboards |
 | Fair play | multi-client rules, staff characters left out of every leaderboard |
 | World art | our own dark tile set (cracked obsidian, ash, bones, wet rock, glowing fungus, braziers) in rifts, the world boss arena and the ascension trial |
 
@@ -139,6 +139,28 @@ modifiers and a preview of what each orb would do before you use it.
 A Rift Key's modifiers make the rift harder and its rewards better, so crafting a key is how you push for more loot.
 Items must sit in your backpack (not equipped). Orbs drop from monsters (more from tiered ones and bosses), from
 bounties and the weekly chest, and can be bought in the store. Uniques can't be crafted, so they stay unique.
+
+### Gems and sockets
+
+Gear can have up to three **sockets**: more on two-handed weapons and body armour, more at higher rarities. They drop
+on rarity gear, and the **Orb of Sockets** rolls a new number for any piece. **Gems** come in seven kinds and five
+qualities (Chipped, Flawed, Polished, Flawless, Perfect). Each gem does something different in a weapon, in armour and
+in jewellery:
+
+| Gem | Weapon | Armour | Jewellery |
+|---|---|---|---|
+| Ruby | fire damage | max health | fire resistance |
+| Sapphire | ice damage | max mana | ice resistance |
+| Emerald | earth damage | movement speed | earth resistance |
+| Amethyst | critical hits | death resistance | death damage |
+| Topaz | attack speed | energy resistance | energy damage |
+| Diamond | holy damage | all elemental resistances | holy resistance |
+| Onyx | life leech | physical resistance | physical damage |
+
+"Use with" a gem on your gear to socket it, or on a gem of the same kind to turn three into one of the next quality.
+At the Crafting Bench you can take a gem out for gold, or shatter it for free. Gems drop from monsters (better ones from
+higher levels, elites and bosses), and come from bounties, rift chests and world bosses. Uniques have one socket of
+their own.
 
 ## Endgame
 
@@ -313,6 +335,37 @@ only one is out at a time.
   other summons out your pet stays back; class companions (wolves, minions) do not mind it.
 - If you die, your pet runs off and needs a minute before you can call it again. Log out with it at your side and it is
   back when you return.
+
+## Bestiary and kill tasks
+
+> *"Write down what it eats, where it sleeps and what it fears. Then go and kill a thousand of them."*
+> (the Chronicler, to a new hunter)
+
+![The bestiary window and the task tracker](docs/images/feature_bestiary.png)
+
+The bestiary (`!bestiary`, or Hunt -> Bestiary) has a page for every monster in the world, and it fills in as you hunt:
+- **Stages:** your kills unlock each monster in four stages: **Discovered**, **Studied**, **Mastered** and **Completed**.
+  How many kills each stage needs depends on how dangerous the monster is: a rat is done after 250, a dragon lord after
+  1,000, a boss after 5 kills. Rare monsters that only live in a few places need fewer.
+- **What you learn:** Discovered shows its picture, level, health and experience. Studied adds its weaknesses and
+  immunities, where it lives and its rarest loot. Mastered shows its whole loot list and the Chaos uniques it can drop.
+- **Completion bonus:** a completed monster takes 1-3% more damage from you and gives you 1-3% more experience.
+- **Bestiary points and ranks:** every stage gives points, and so do kill tasks. Points raise your bestiary rank, from
+  Novice to Monster Sage, and each rank adds a little experience from every monster (up to +3%).
+- **Search** by name, browse by family (dragons, demons, undead, beasts, bosses, Chaos monsters and more), and see your
+  completion in each.
+
+**Kill tasks** (`!tasks`, or Hunt -> Kill Tasks) are your own hunting orders:
+- **The board** offers a few hunts and family tasks for your level every day ("kill 150 Hellspawn", "kill 270 dragons
+  of level 85-189"). You can also take a hunt task from any monster you have discovered, if it suits your level.
+- **Rewards:** gold to your bank, Chaos Orbs (Divine Orbs for family tasks at high levels), experience and bestiary
+  points. You can hold 3 tasks at once and finish 4 a day and 20 a week.
+- **Party:** kills by party members near you count for your tasks and your bestiary too.
+- The **bounty board** stays the big daily board shared by everyone; kill tasks are the smaller, personal ones, and a
+  kill counts for both.
+
+The **task tracker** at the bottom right of the screen lists your kill tasks and bounty contracts with their progress,
+updated with every kill. Click its title to fold it; switch it off in the bestiary window or in the Hunt menu.
 
 ## Quality of life
 

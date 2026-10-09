@@ -52,6 +52,7 @@ return {
 				{kind = "item", id = 24691, count = 1, cost = 15, name = "Orb of Alchemy", description = "Turns a normal item into a Rare, Epic or Legendary one."},
 				{kind = "item", id = 24688, count = 1, cost = 12, name = "Orb of Scouring", description = "Removes the rarity and all modifiers of an item."},
 				{kind = "item", id = 24697, count = 1, cost = 20, name = "Orb of Annulment", description = "Removes one random modifier from an item."},
+				{kind = "item", id = 24692, count = 1, cost = 25, name = "Orb of Sockets", description = "Rolls a new number of sockets (1 to 3 by item and rarity) for a piece of gear; socketed gems stay."},
 				{kind = "item", id = 29855, count = 1, cost = 40, name = "Exalted Orb", description = "Adds one random modifier to an item with a free modifier slot."}
 			}
 		},

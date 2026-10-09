@@ -63,6 +63,15 @@ local NOTIFICATION_TYPES = {
         borderColor = "#6a5632",
         duration = 12000,
     },
+    -- bestiary and kill tasks (server data/scripts/chaos/bestiary.lua): new stages, completed tasks
+    BESTIARY = {
+        icon = "images/notifications/task.png",
+        title = "BESTIARY",
+        titleColor = "#b08a4a",
+        backgroundColor = "#ccbebb",
+        borderColor = "#6a5632",
+        duration = 7000,
+    },
     -- achievements (server data/scripts/chaos/achievements.lua): one toast per unlock
     ACHIEVEMENT = {
         icon = "images/notifications/task.png",
@@ -1078,6 +1087,13 @@ function onExtendedOpcode(protocol, opcode, buffer)
         newplayer = function(data)
             if data.message then
                 addNotification("NEW_PLAYER", data.message)
+            end
+        end,
+
+        -- bestiary and kill tasks (server data/scripts/chaos/bestiary.lua)
+        bestiary = function(data)
+            if data.message then
+                addNotification("BESTIARY", data.message, nil, data.monsterLookType)
             end
         end,
 

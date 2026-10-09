@@ -75,6 +75,7 @@ Chaos.storage = {
 	riftRun = 7100400, -- rifts (rift.lua): 7100400 - 7100409 reserved; +0 tier of the key of a run in progress, +1..+3 its modifiers, +4 start
 	lootFilter = 7100500, -- loot filter settings of the character, packed in one value (lootfilter_core.lua F.pack); 7100500 - 7100509 reserved
 	newPlayer = 7100250, -- new-player kit, welcome, milestones and tutorial island (newplayer*.lua): 7100250 - 7100269 reserved
+	bestiary = 7100870, -- bestiary (bestiary_config.lua taskPointsStorage): 7100870 - 7100879 reserved; bestiary points from kill tasks
 	monk = 7100800, -- the Monk line (ChaosMonk.ids.storage in monk_chi_core.lua): 7100800 - 7100809 reserved; chi, its time, focus, Chi Ward
 
 	-- store: one-time cosmetics owned (base + id of the wings / aura / shader)

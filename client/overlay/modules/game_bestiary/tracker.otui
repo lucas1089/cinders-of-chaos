@@ -1,0 +1,65 @@
+// Task tracker HUD (game_bestiary): the active kill tasks and bounty contracts, at the bottom right of the visible map
+// (left of the right side panels, above the chat; anchored in bestiary.lua). The other HUDs sit top left (character
+// plate, rift, invasion), top centre (siege, arena, monster bar), top right (toasts) and bottom centre (monk chi); the
+// status messages are centred. Click the title to fold it; the window's "Task tracker" box (or the Hunt menu) hides it.
+BestiaryTrackerRow < UIWidget
+  height: 26
+  phantom: true
+
+  UILabel
+    id: kind
+    anchors.left: parent.left
+    anchors.top: parent.top
+    width: 14
+    text-align: left
+    font: verdana-11px-rounded
+    color: #8c8070
+    phantom: true
+
+  UILabel
+    id: label
+    anchors.left: kind.right
+    anchors.right: parent.right
+    anchors.top: parent.top
+    text-align: left
+    font: verdana-11px-antialised
+    color: #e8dcc2
+    phantom: true
+
+  ChaosProgressBar
+    id: bar
+    anchors.left: kind.right
+    anchors.right: parent.right
+    anchors.top: label.bottom
+    margin-top: 1
+    height: 6
+    background-color: #8a1010
+    phantom: true
+
+ChaosPanelDark
+  id: bestiaryTracker
+  width: 210
+  padding: 6
+  focusable: false
+  visible: false
+  opacity: 0.92
+  layout:
+    type: verticalBox
+    fit-children: true
+
+  UILabel
+    id: title
+    height: 16
+    font: verdana-11px-rounded
+    color: #e8b84a
+    text-align: left
+    !text: tr('Tasks')
+    phantom: false
+    @onClick: modules.game_bestiary.foldTracker()
+
+  UIWidget
+    id: rows
+    phantom: true
+    layout:
+      type: verticalBox
+      fit-children: true

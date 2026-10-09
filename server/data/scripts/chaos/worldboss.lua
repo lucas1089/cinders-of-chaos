@@ -312,6 +312,12 @@ function W.computeRewards(shares, r, boss, uniquePool, rng)
 		for _, it in ipairs(r.pool or {}) do
 			addItem(map, order, it.id, math.floor(it.count * s.share))
 		end
+		-- gems (data/lib/chaos_gems_config.lua rewards.worldboss: a count plus more by share)
+		if ChaosGems and ChaosGems.rewardGems then
+			for _, g in ipairs(ChaosGems.rewardGems("worldboss", {share = s.share}, function(a, b) return rng(a, b) end)) do
+				addItem(map, order, g.id, g.count)
+			end
+		end
 		local titles, uniqueRolls = {}, {}
 		for _, cat in ipairs(cats) do
 			local place = s.places and s.places[cat.key]

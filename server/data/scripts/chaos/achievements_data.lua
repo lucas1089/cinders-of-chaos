@@ -28,6 +28,7 @@
 --   wb_heal_top, wb_tank_top, wb_role_podium                         world boss roles (worldboss.lua distribute)
 --   rift_tier, rift_runs, rift_flawless, rift_three, rift_mod_<modifier key>           sealed rifts
 --   bounty_done, bounty_weeks                                        bounty board (retroactive from chaos_bounty)
+--   bestiary_known, bestiary_completed, bestiary_points, bestiary_tasks   bestiary and kill tasks (bestiary.lua)
 --   unique_found, rarity_max, orbs_used, orb_exalted, mods_max       loot and the crafting bench
 --   arena1v1_wins, arena1v1_rating, arena2v2_wins, arena2v2_rating   arena (retroactive from chaos_arena_ratings)
 --   siege_played, siege_wins                                         guild siege
@@ -118,6 +119,15 @@ return {
 			stat = "goblin_kills", target = 50, title = "Goblinbane"},
 		{id = "goblin_escaped", cat = "monsters", name = "Ha Ha!", desc = "Hit a Treasure Goblin and watch it escape anyway.",
 			points = 5, stat = "goblin_escaped", hidden = true},
+		-- bestiary (bestiary.lua: discovered / completed entries, kill tasks done)
+		{id = "bestiary_25", cat = "monsters", name = "Field Notes", desc = "Discover 25 bestiary entries.", points = 5,
+			stat = "bestiary_known", target = 25},
+		{id = "bestiary_done_1", cat = "monsters", name = "Know Thy Enemy", desc = "Complete a bestiary entry.", points = 10,
+			stat = "bestiary_completed", target = 1},
+		{id = "bestiary_done_50", cat = "monsters", name = "Monster Scholar", desc = "Complete 50 bestiary entries.", points = 25,
+			stat = "bestiary_completed", target = 50, title = "Lorekeeper", reward = {items = orbs(0, 2)}},
+		{id = "tasks_50", cat = "monsters", name = "Exterminator", desc = "Complete 50 kill tasks.", points = 25,
+			stat = "bestiary_tasks", target = 50, title = "Exterminator"},
 
 		-- ------------------------------------------------------------------ World Bosses
 		{id = "wb_kaelgor", cat = "bosses", name = "Warlord Unmade", desc = "Help slay Kaelgor the Infernal Warlord.", points = 25,

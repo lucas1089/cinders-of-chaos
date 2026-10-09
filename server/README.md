@@ -67,6 +67,8 @@ server/
     guild.lua  guild_hall.lua  guild_core.lua  guild_config.lua (guild levels, perks, guild bank, guild halls; sql/chaos_guild.sql)
     achievements.lua  achievements_core.lua  achievements_data.lua (achievements, points, titles, rewards; sql/chaos_achievements.sql)
     pets.lua  pets_core.lua  pets_config.lua (pets: companions that level from kills, small abilities; sql/chaos_pets.sql)
+    bestiary.lua  bestiary_core.lua  bestiary_config.lua  bestiary_spawns.lua (bestiary, kill tasks, task tracker;
+                                      sql/chaos_bestiary.sql; spawn data from tools/gen_bestiary_spawns.py)
   data/monster/monsters/chaos/pets/   the pet monster types (not attackable, no attacks)
 ```
 
@@ -141,6 +143,9 @@ server/
 5d. Dark tile set: `python3 -I server/tools/install_dark_tiles.py <server>/data [--dry-run]` (idempotent; `install_all.py` step
    `darktiles`) adds the 74 items of `data/items/dark_tiles.csv` to `items.otb` / `items.xml`. The client needs the matching
    `Tibia.dat` / `Tibia.spr` (`client/tools/sprites/gen_dark_tiles.py`). See "Dark tile set".
+5e. Gems: `python3 -I server/tools/install_gems.py <server>/data [--dry-run]` (idempotent; `install_all.py` step `gems`)
+   adds the 35 gems (32001-32035) to `items.otb` / `items.xml` and names the Orb of Sockets (24692). The client needs the
+   multi-use flag on the small diamond: `client/tools/sprites/set_multiuse.py`. See "Gems and sockets".
 6. Restart the server (or `/reload scripts`). Check the console for Lua errors.
 7. Autoloot only: if `data/talkactions/talkactions.xml` registers `!autoloot` (the legacy
    `talkactions/scripts/autoloot.lua`), TFS 1.4.2 keeps the XML one and silently ignores
@@ -181,11 +186,12 @@ working directory, as with the rest of the base server libs).
 | game_monkchi | `monk_chi_core.lua`, `monk_combat.lua` | 247 (server -> client) | The Monk's chi HUD: five pips over the map, plain text `chi:<chi>:<max>:<decaySec>`; only the Monk line (17-19) sees it. Built, not tested in game yet (see docs/CLASSES.md "Monk"). |
 | game_nameplate | `nameplate.lua`, `nameplate_core.lua`, `titles.lua` | 248, `!title` | Name plates over players: active title, `{guild}` and the name on a frame (client base patch 0022); title registry `ChaosTitles.register`; tested in game (see "Name plates and titles"). |
 | game_guild | `guild.lua`, `guild_hall.lua`, `guild_core.lua`, `guild_config.lua` | 252, `!guild` | Guild levels (guild XP from the members, perks), guild bank, guild halls (runtime instance, upgrades, rent, depot), weekly top guilds; tested in game with two members (see "Guild levels and guild halls"). |
-| game_achievements | `achievements.lua`, `achievements_core.lua`, `achievements_data.lua` | 250, `!achievements` | Achievements: 93 in 9 categories with points, titles and rewards, progress fed by the other systems, retroactive at login; tested in game (see "Achievements"). |
+| game_achievements | `achievements.lua`, `achievements_core.lua`, `achievements_data.lua` | 250, `!achievements` | Achievements: 100 in 9 categories with points, titles and rewards, progress fed by the other systems, retroactive at login; tested in game (see "Achievements"). |
 | game_pets | `pets.lua`, `pets_core.lua`, `pets_config.lua` | 254, `!pet` / `/pet` | Pets: one companion out at a time that follows its owner, levels from kills, two small abilities per species; drops, store and achievements; tested in game (see "Pets"). |
+| game_bestiary | `bestiary.lua`, `bestiary_core.lua`, `bestiary_config.lua`, `bestiary_spawns.lua` | 253, `!bestiary [name]` / `/bestiary`, `!tasks` / `/tasks` | Bestiary (an entry per monster, four stages by kills, completion bonus, points and ranks), personal kill tasks with daily / weekly limits, task tracker HUD with the bounty contracts; tested in game (see "Bestiary and kill tasks"). |
 | game_invasion | `invasion.lua`, `invasion_core.lua`, `invasion_config.lua`, `worldevents.lua` | 251 (server -> client; `query` / `calendar` back), `!invasion`, `/invasion` | Invasions (waves at a town or hunting ground, breach meter, boss, contribution rewards, Defender board, Victory buff, occupation) and the world events Chaos Storm, Wandering Merchant and Golden Hour; HUD and upcoming events window; toasts with action `invasion` on 79; tested in game on a test area (see "Invasions and world events"). |
 
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 228, 229, 232, 233, 236, 241, 244, 246, 247, 248, 250, 251, 252 are all registered in the global
+Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 228, 229, 232, 233, 236, 241, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
 
 ### Opcode collision check
@@ -1305,7 +1311,8 @@ Transmutation, Alchemy, Scouring, Chaos and Divine make a new copy (like the sto
 are lost; Exalted and Annulment change the item in place and rewrite only the rarity part of the description (text in
 front of "Level:" and `[...]` upgrade slots behind it are kept). Never touched: uniques (also an old unique without the
 marker, recognised by its spec name), stacks, containers, non-gear, the boat items, equipped items, items outside the
-backpack. No Vaal-style orb.
+backpack. No Vaal-style orb. The eighth orb on the bench, the Orb of Sockets, changes the number of sockets: see "Gems
+and sockets".
 
 **The orbs on Rift Keys** (the map way; `C.keyCheck` / `C.keyApply`). The rift's own modifier pool, value ranges and
 reward bonuses (`rift_config.lua` `mods`, `rift_core.lua`); the tier never changes; the key's `rift_mods` attribute,
@@ -1453,6 +1460,128 @@ copy in the same container, Chaos modifiers kept): the base autoloot (patched by
 the Rarity Autoloot of the loot filter and the Bottomless Loot Pouch. Tested on the test server, 30 kills per path with a
 forced rarity 9 upgrade: before, 30 of 30 corpse items were rolled twice; after, every copy was rolled exactly once in the
 corpse, through the autoloot list and through the Rarity Autoloot.
+
+## Gems and sockets (`data/lib/chaos_gems.lua`, `chaos_gems_config.lua`, `gems.lua`, `tools/install_gems.py`)
+
+Install: `python3 -I server/tools/install_gems.py <server>/data` (idempotent, `--dry-run`; `install_all.py` step
+`gems`). It adds 35 items.otb nodes and an items.xml block (the gems and the Orb of Sockets). The client needs the
+multi-use flag on the small diamond sprite: `client/tools/sprites/set_multiuse.py <client>/data/things/1098/Tibia.dat`
+(its default list now holds client 3028 next to the two orbs). All numbers: `chaos_gems_config.lua`; tests:
+`tests/gems_test.lua` (ids, effects, socket counts, socketing, totals and caps, description, the Orb of Sockets and the
+other orbs, combining, drop and reward rolls, and `gems.lua` against a mocked engine).
+
+**Items.** Seven gem types in five tiers, Chipped, Flawed, Polished, Flawless and Perfect. Each type and tier has its
+own server id, 32001..32035 = 32001 + (type - 1) x 5 + (tier - 1): ruby 32001-05, sapphire 32006-10, emerald 32011-15,
+amethyst 32016-20, topaz 32021-25, diamond 32026-30, onyx 32031-35. They are new items.otb nodes, each a copy of the
+stock node of its sprite (same group and flags, plus "useable" for use-with). So the client needs no new sprite. Chipped
+to Polished use the stock small gem (ruby 3030, sapphire 3029, emerald 3032, amethyst 3033, topaz 9057, diamond 3028,
+onyx chip 22193); Flawless and Perfect ruby, sapphire, emerald and amethyst use the small enchanted gems (676, 675, 677,
+678). Gems stack per tier, NPCs do not buy them as stock gems, and nothing in the stock data knows the ids. The dark
+tile set uses 30484..30557 (client id + 3000), so the two id ranges stay apart. The Orb of Sockets is the unused
+stackable use-with rune stone 24692 (named by the installer, like the crafting orbs).
+
+**Sockets on an item**: custom attributes `chaos_sockets` (count) and `chaos_gem1..3` (the gem's server id). The most
+sockets is the lower of two limits. By kind: one-handed weapon 2, two-handed weapon 3, armour 3, shield, helmet and
+legs 2, boots, amulets, rings and other gear 1. By rarity: none, Common-Rare 1; Epic-Exotic, Mythic-Eternal 2;
+Divine-Celestial, Cosmic-Transcendent 3. Sockets come from:
+- drops: the Chaos loot layer (`loot.lua` step 2b) rolls them on every gear drop with a rarity. Weights for 0/1/2/3 by
+  rarity tier: 80/18/2/0, 60/30/9/1, 45/35/16/4, 35/38/20/7, 25/40/25/10, then capped by the item's maximum. The
+  text is written once the engine's rarity pass is done (`ChaosItemMods.afterDrop`).
+- the **Orb of Sockets** (eighth orb on the bench, use-with like the others): a new count from at least the number of
+  socketed gems up to the item's maximum, weights 50/35/15 for 1/2/3. Gems stay and move to the front. It is refused
+  when nothing could change. It drops from the loot layer (8/60/250/1000/1500 per 10000 kills, normal to boss), and the
+  store sells it for 25 Chaos Currency.
+
+Sockets and gems survive every orb that remakes an item (Transmutation, Alchemy, Scouring, Chaos, Divine: `C.recreate`
+copies them) and the loot layer's rolled copy (`ChaosLoot.finalizeRarity`). **Uniques** have one fixed socket
+(`uniqueSockets`) without the attribute: gems can be socketed and taken out, no orb changes the count. The socket shows
+in the look text from the moment the unique is made (`ChaosMakeUnique` is wrapped by `gems.lua`).
+
+**The effects**: one per gem, by the group of the item it sits in (weapon; jewellery = amulets and rings; armour =
+everything else, shields included). The values below are for Chipped / Flawed / Polished / Flawless / Perfect. The cap is the
+most a character gets from all gems.
+
+| gem | in a weapon | in armour | in jewellery |
+|---|---|---|---|
+| ruby | Fire Damage +2/4/6/9/12% | Max Health +20/45/80/130/200 | Fire Resistance +2/3/4/6/8% |
+| sapphire | Ice Damage +2/4/6/9/12% | Max Mana +15/35/60/100/150 | Ice Resistance +2/3/4/6/8% |
+| emerald | Earth Damage +2/4/6/9/12% | Movement Speed +1/1/2/2/3% | Earth Resistance +2/3/4/6/8% |
+| amethyst | Critical Chance +1..5%, Critical Hit +5..25% | Death Resistance +2/3/4/6/8% | Death Damage +2/4/6/9/12% |
+| topaz | Attack Speed +1/2/3/4/5% | Energy Resistance +2/3/4/6/8% | Energy Damage +2/4/6/9/12% |
+| diamond | Holy Damage +2/4/6/9/12% | Elemental Resistances +1/1/2/3/4% (fire, ice, earth, death, energy, holy) | Holy Resistance +2/3/4/6/8% |
+| onyx | Life Leech Chance +2..10%, Amount +1..5% | Physical Resistance +1/1/2/3/4% | Physical Damage +1/2/3/4/6% |
+
+Caps: element damage 40% each, physical damage 12%, element resistances 30% each, physical resistance 10%, max health
+2000, max mana 1500, critical 15% chance / 75% damage, life leech 30% / 15%, movement speed 12% (together with the
+Movement Speed modifier, whose cap it shares), attack speed 20% on the weapon (modifier and gems together).
+An offensive theme (critical, life leech, attack speed) sits in weapons with the gem's element damage in jewellery;
+otherwise the element damage sits in weapons and the theme in armour.
+
+**Applied on the same path as the item modifiers** (`item_mods.lua` works out `ChaosGems.totals` of the equipped items
+whenever it works out the modifiers: equip / unequip, login, the 3 s check), handed to `ChaosGems.applyTotals`
+(`gems.lua`):
+- max health, max mana, critical chance and damage, life leech: one `CONDITION_ATTRIBUTES`, sub id 7240, replaced when
+  the values change.
+- element and physical damage: onHealthChange on the target, registered by onTargetCombat: hits by the player or their
+  summons of that combat type, primary and secondary part.
+- resistances: onHealthChange on the player.
+- movement speed: added to the Chaos modifier in `item_mods.lua`.
+- attack speed: the weapon's own attack interval (`ChaosItemMods.syncAttackSpeed`, modifier and topaz together).
+
+Nothing is stored; the totals live in memory (`ChaosGemsCache`).
+
+**Using gems** (all by "Use with" on the gem, `gems.lua`):
+- on gear you carry (backpack or equipped): into the first free socket. The description, the weapon's interval and,
+  for equipped gear, the totals are updated at once. An item without sockets says that an Orb of Sockets gives some;
+  a full item points at the bench.
+- on a gem of the same kind and quality: three become one of the next quality (Perfect does not combine). Different
+  gems are refused.
+- plain use: the gem's three effects and how to use it.
+
+Every action is logged in `chaos_crafting_log` (the bench's "Recent crafts").
+
+**Taking gems out** (crafting bench, `!craft`: the sockets are listed under the modifiers, extended opcode 232 action
+`gem`): **Remove** returns the gem for 2000 / 6000 / 20000 / 60000 / 200000 gold by tier (bank first, then the
+backpack); **Shatter** is free and destroys it. The 3-to-1 combining, the removal cost and shattering are the gem sinks.
+
+**Description**: one section at the end, "Sockets (1/2): Flawless Ruby (Fire Damage +9%), empty." After the engine's
+text it follows a full stop. `C.rewriteDescription` strips it and writes it again last, so it is never doubled. Items
+without a rarity keep their own text (the items.xml description) in front. The loot filter's tooltip data (`x`) gets
+"Sockets 1/2: ..." after the modifiers. The bench shows each socket: gem, effect, Remove (cost) and Shatter.
+
+**Drops and rewards** (`chaos_gems_config.lua` `drop` / `rewards`):
+- monster kills (`loot.lua` step 3b): chance per 10000 kills 25 / 150 / 500 / 1500 / 3000 (normal / magic / rare /
+  legendary / boss), times the loot layer's rate and item find. Tier weights by the monster's level (the killer's when
+  it has none): up to 49: 85/15/0/0/0, 149: 60/32/8/0/0, 299: 35/40/20/5/0, 599: 15/35/35/13/2, above: 5/25/40/24/6.
+  Legendary monsters have a 25% chance, bosses 40%, that the gem is one tier better. Simulated in the engine (100,000
+  kills each): normal 0.25%, magic 1.5%, rare 5%, legendary 15%, boss 30%. At level 700, a boss drops
+  959/5020/10129/9140/4777 per tier.
+- bounty contracts: a gem at 30% (hunt), 50% (elite), 100% (boss); tier weights by the level band (80/20 for band 1
+  up to 0/10/40/38/12 for band 6). The weekly chest has 2 gems of the band's weights.
+- rift chest: 1 + 0.2 x tier gems (the fraction is the chance of one more). Tier weights by rift tier: up to 3:
+  50/40/10, up to 6: 20/45/30/5, up to 10: 5/30/45/17/3, above: 0/15/45/30/10.
+- world boss: every rewarded participant gets 2 + 4 x share gems, weights 0/10/45/35/10 (`W.computeRewards`, so
+  offline delivery includes them).
+
+**Tested in game** (test server with the cropped map, client with the patched dat):
+- socketing by mouse (right click on the gem, then the item: "Perfect Ruby socketed into magic sword (socket 1): Fire
+  Damage +12%.") and by `g_game.useWith`; a full item refused.
+- the look text of socketed gear and of a gem.
+- equipping armour with two Perfect Rubies and a Perfect Diamond: max health 8487 -> 8887, critical from the armour's
+  own rarity plus the amethyst; taking it off: back to 8487.
+- 200 fire damage from the player on a Behemoth (through `Combat:execute`): 168 -> 188 with a Perfect Ruby in the
+  weapon (+12%); 300 fire damage taken: 250 -> 230 with a Perfect Ruby in the amulet (-8%).
+- combining three Chipped Rubies; on the bench, Remove (200k from the bank; refused without the gold) and Shatter.
+- the Orb of Sockets on the bench (3 -> 1, the gem kept and moved to the front) and by use-with (an axe with no
+  sockets got 1). The Chaos Orb on socketed armour: sockets and gem kept.
+- a unique: one socket, a gem socketed, the orb refused.
+- gem drops with a raised chance, sockets on rarity drops (5 of 8 gear drops of 100 demons had sockets, written after
+  the engine's text), the rift chest and world boss rewards with gems.
+
+The damage test used `Combat:execute` (the spell path, which runs onTargetCombat and so registers the event);
+`doTargetCombatHealth` skips onTargetCombat (see "Open decisions" in ROADMAP.md) and showed no bonus until the event was
+registered by hand. Not tested in game: a bounty payout and the weekly chest (unit tests of the rolls only), melee hits,
+life leech and attack speed from gems in a fight.
 
 ## Seasons (`season.lua`, `season_core.lua`, `season_config.lua`, `sql/chaos_season.sql`, `tools/patch_season_events.py`)
 
@@ -2392,8 +2521,8 @@ account storage, which is only saved at server save).
 
 ## Achievements (`achievements.lua`, `achievements_core.lua`, `achievements_data.lua`, client `game_achievements`)
 
-Long-term goals across every system: 96 achievements in 9 categories (Combat & Leveling, Monsters, World Bosses, Rifts,
-Bounties, Items & Crafting, PvP, Exploration & Social, Secrets), 2225 points in all. Client `game_achievements` (Chaos ->
+Long-term goals across every system: 100 achievements in 9 categories (Combat & Leveling, Monsters, World Bosses, Rifts,
+Bounties, Items & Crafting, PvP, Exploration & Social, Secrets), 2290 points in all. Client `game_achievements` (Chaos ->
 Achievements in the top menu, or `!achievements`), extended opcode 250 (`ChaosOpcodes.achievements`), tables
 `chaos_achievements` and `chaos_achievement_stats` (`sql/chaos_achievements.sql`; also created at startup).
 
@@ -2422,6 +2551,8 @@ Achievements in the top menu, or `!achievements`), extended opcode 250 (`ChaosOp
   - an `onDropLoot` callback at index 2.4 (before the loot filter's snapshot and the base autoloot): uniques found, best
     rarity, modifiers. Only monster corpses count (not rift chests, goblin hoards or world boss rewards);
   - the weekly bounty chest: `Chaos.storage.bountyWeekBonus` holds the week of the last chest; a newer week = one more.
+  - the bestiary (`bestiary.lua`, guarded calls): `bestiary_known`, `bestiary_completed`, `bestiary_points` (set at a new
+    stage and 2 s after login, so they are retroactive) and `bestiary_tasks` (a completed kill task);
   Any other script: `if ChaosAchievements then ChaosAchievements.progress(player, "my_stat", 1) end` and an entry with
   `stat = "my_stat"`.
 - **Retroactive** at every login (quietly, one summary toast): level, Paragon, ascension, tutorial, guild, completed contracts
@@ -2731,3 +2862,99 @@ is in `pets_config.lua`; the pure rules in `pets_core.lua`.
   rest (the test map has no protection-zone tile; same code path as the other rests), the anti-block step-aside, PvP
   pause, the rift / tower / world boss / dungeon utility rule, two players. The stock loot message ("Loot of ...") is
   written before Fetch runs, so it still lists the coins the pet carried to the bank.
+
+## Bestiary and kill tasks (`bestiary.lua`, `bestiary_core.lua`, `bestiary_config.lua`, `bestiary_spawns.lua`, client `game_bestiary`)
+
+A bestiary entry for every monster the server knows, unlocked by kills, plus personal kill tasks and a task tracker HUD.
+Client `game_bestiary` (Hunt -> Bestiary / Kill Tasks / Task Tracker in the top menu, `!bestiary [name]`, `!tasks`),
+extended opcode 253 (`ChaosOpcodes.bestiary`), tables `chaos_bestiary` (kills per character and monster) and
+`chaos_bestiary_tasks` (accepted and finished tasks) in `sql/chaos_bestiary.sql` (also created at startup), storages
+7100870-7100879 (`Chaos.storage.bestiary`: +0 task points, +1 / +2 the day and level of the day's board). Every number
+is in `bestiary_config.lua`; the pure rules in `bestiary_core.lua`.
+
+- **The catalogue** is built at startup from every name in `monster/monsters.xml` plus the Lua-registered types
+  (`MonsterType(name)` loads each one: this engine loads monster files on first use, so `Game.getMonsterTypes()` alone
+  lists only those already spawned). Left out: experience below 1, no outfit, `excludeNames` / `excludePatterns`
+  (dummies, spell summons). When two registered names show the same name (the quest copy "Demon (Goblin)" is called
+  "Demon"), the type registered under that name wins. On the test server: 1,396 entries. Loading every monster at
+  startup also prints the base server's broken `monsters.xml` lines once (missing files such as Charger, Vexclaw).
+- **Categories:** Bosses (boss flag), Chaos (defined under `monsters/chaos/`), then by the words of the name from the last
+  one (the head noun: "Giant Spider" is vermin, "Frost Dragon" a dragon) against the category word lists (`word*` prefix,
+  `*word` suffix), else by race (undead, fire / energy -> Elementals, venom -> Insects & Arachnids), else Other. 18
+  categories.
+- **Difficulty and stages.** The estimated hunting level is the bounty pool's (`<level min max>` middle, else
+  1.6 x sqrt(experience), raised by health), capped at 1500. Kills for stage 1 Discovered / 2 Studied / 3 Mastered /
+  4 Completed and the bestiary points of each stage:
+
+  | Difficulty | Level | Kills | Points | Completion bonus |
+  |---|---|---|---|---|
+  | Harmless | up to 14 | 1 / 10 / 50 / 250 | 1 / 1 / 2 / 4 | +1% damage, +1% experience |
+  | Easy | 15-49 | 1 / 25 / 100 / 500 | 1 / 2 / 3 / 6 | +1% / +1% |
+  | Medium | 50-149 | 1 / 25 / 250 / 1000 | 2 / 3 / 5 / 10 | +2% / +2% |
+  | Hard | 150-399 | 1 / 25 / 200 / 800 | 2 / 4 / 6 / 12 | +2% / +2% |
+  | Challenging | 400-799 | 1 / 20 / 150 / 600 | 3 / 5 / 8 / 15 | +3% / +3% |
+  | Deadly | 800+ | 1 / 15 / 100 / 400 | 3 / 6 / 10 / 20 | +3% / +3% |
+  | Boss | boss flag | 1 / 2 / 3 / 5 | 5 / 5 / 10 / 20 | +3% / +3% |
+
+  Monsters with 1-5 spawn entries on the map (`bestiary_spawns.lua`) need x0.2 of the kills (at least the stage number).
+  Stage 1 shows the outfit, level, health and experience; 2 the elements (as damage taken), immunities, where it lives
+  (the 3 busiest 160x160 squares of its spawns, named after the nearest temple, with the depth) and the 4 rarest loot
+  items; 3 the whole loot (40 at most, with chances) and the Chaos uniques that list the monster (`ChaosLoot.uniqueList`);
+  4 activates the bonus. The bonus: damage through a healthchange event on the monster (registered from
+  `onTargetCombat`, like `item_mods.lua`), experience through `onGainExperience` (needs the experience dispatch of
+  `tools/patch_base_events.py`).
+- **Ranks.** Bestiary points (stages + kill tasks) give a rank with experience from every monster: Novice 0, Tracker 100
+  (+0.5%), Hunter 300 (+1%), Slayer 750 (+1.5%), Lorekeeper 1500 (+2%), Bestiarch 3000 (+2.5%), Monster Sage 6000 (+3%).
+- **Kills.** A death event on every monster without a master (EventCallback `onSpawn`); the last hit and the most damage
+  (summons count for their master) and their party members within 30 tiles on the same floor (`ChaosBounty.credit`) each
+  get the kill once. Kills are kept in memory and written every 120 s, at a new stage and at logout.
+- **Kill tasks.** A hunt task (kill N of one monster) comes from the daily board or from a discovered entry whose level is
+  in the character's take window (0.4 x level to 1.5 x level + 20; up to level 30 anything below that). A family task
+  (kill N of a category within a level window) only from the board. The board: 3 hunts and 3 families from monsters that
+  spawn in the board window (0.6 x level to 1.25 x level + 10), seeded by task day and character, rolled for the level
+  of the character's first look that day. Kills needed: harmless 100, easy / medium 150, hard 120, challenging 100,
+  deadly 80 (half, rounded to 5, for monsters with fewer than 20 spawn entries); families 1.8 x the hunt count of the
+  window's middle level. Limits: 3 at once, 4 completed a day, 20 a week (done + held; the task day starts at 06:00 like
+  the bounty board, the week on Monday). No expiry: a task stays until done or abandoned; progress is written every
+  10 kills, at the milestones (25/50/75%) and at logout.
+- **Rewards** (paid at once; gold to the bank, orbs to the backpack or the inbox): a share of the bounty board's hunt
+  reward of the band of min(task level, character level) (`bounty_config.lua` bands): hunt 40% gold, 50% Chaos Orbs, 1.5%
+  of a level's experience, 5 x the difficulty's stage-1 points; family 60% gold, 75% Chaos, 50% Divine, 2% experience,
+  8 x points. So: level 120, hunt 20k gold, 1 Chaos Orb, 10.7k experience, 10 points; family 30k, 1 Chaos, 14.3k, 16
+  points; band 800+: hunt 800k, 3 Chaos; family 1.2M, 4 Chaos, 1 Divine. Four a day pay at most 4.8M gold at 800+,
+  against 24M for the twelve bounty contracts of a day. Multi-client: as the bounty board, a task that got a kill while
+  multi-clienting pays nothing (`mcReward = false`).
+- **Bounty board split.** The bounty board (`bounty.lua`) stays the shared daily board per level band with the big
+  rewards and the weekly chest. Kill tasks are personal, longer-lived, smaller and pay bestiary points; a kill counts for
+  both. Nothing in `bounty.lua` was changed: `bestiary.lua` wraps `ChaosBounty.sendBoard` (accept, abandon, completion)
+  and `ChaosBounty.onKill` at runtime to refresh the tracker, and reads `ChaosBounty.players` for the tracker rows.
+- **Task tracker HUD**: kill tasks (T), then the active bounty contracts (B), 8 rows at most, pushed after every change
+  (one push per player per 150 ms). Client side it sits at the bottom right of the visible map: left of the right side
+  panels, above the chat (the rift / invasion HUDs are top left, siege / arena / monster bar top centre, toasts top right,
+  monk chi bottom centre).
+- **Achievements** (guarded `ChaosAchievements.set` / `.progress`): `bestiary_known`, `bestiary_completed`,
+  `bestiary_points`, `bestiary_tasks`; 4 entries in the Monsters category (Field Notes, Know Thy Enemy, Monster Scholar
+  with the title Lorekeeper, Exterminator with its title).
+- **Protocol** (opcode 253, JSON `{action, data}`): client `open | summary | list | entry {id} | board | take {id} |
+  accept {key} | abandon {key} | query`; server `summary` (totals, categories, rank, limits), `list` (rows `[id, name,
+  category, difficulty, level, kills, stage, lookType]` in parts of about 6.5 KB, one per 50 ms), `entry` (what the stage
+  reveals, the task offer), `kill` (one entry's kills and stage after each kill), `board`, `tracker`, `show {tab}`.
+- **Spawn data:** `bestiary_spawns.lua` is generated by `python3 -I server/tools/gen_bestiary_spawns.py <server>/data` from
+  the loaded map's spawn file (871 names from the full map in the repo). Rerun it after spawn changes, with
+  `gen_bounty_pool.py`.
+- **Shared-file lines.** `chaos_constants.lua` (`bestiary = 253`, `Chaos.storage.bestiary`), `achievements_data.lua` (4
+  entries and the stats comment), client `client_chaos_topbar` (3 Hunt entries), `game_chaosnotify` (toast type
+  `BESTIARY`, action `bestiary`), `docs/tools/gen_readme_art.py` (the README card).
+- **Tests:** `tests/bestiary_test.lua` (config sanity, levels, difficulties, thresholds with few spawns, stages and points,
+  ranks, categories, the catalogue and summary, task windows, the seeded board, matching, party credit, milestones, the
+  accept limits, rewards against the bounty bands, views, packets, the spawn data) and the client's
+  `game_bestiary/bestiaryview_test.lua`.
+- **Tested in game** (test server with the scripts of this repo, cropped map, monsters created next to the character,
+  one client): discovery and stage messages and toasts, the window (categories, search, pages, an undiscovered, a studied
+  and a completed entry with elements, areas and loot icons), the board, accepting hunt and family tasks, progress on the
+  tracker with every kill, completion (20,000 gold to the bank, 1 Chaos Orb, 10,711 experience = 1.5% at level 120, 10
+  points), the active cap and the daily limit (Accept greyed with the reason; a forced accept refused), progress kept
+  over relog and restart, bounty contracts on the tracker and gone when completed, the completion bonus (a dragon: 45,601
+  experience with the bonus, 45,150 without, x1.01; 360 holy damage -> 363) and the damage event registered by real melee,
+  the achievement counters. **Not tested in game:** party credit with two players (unit-tested), the 06:00 day change and
+  the weekly limit (unit-tested), multi-client tasks.

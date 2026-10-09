@@ -10,10 +10,11 @@
 --
 -- Protocol (JSON {action, data}):
 --   client -> server  open | select {path, id} | select {pos = {x, y, z}, clientId} (dragged from a container) |
---                     apply {orb, path, id, sig} | clear
+--                     apply {orb, path, id, sig} | gem {op = "remove"|"shatter", socket, path, id, sig} | clear
 --   server -> client  state {open, orbs = [{key, id, clientId, name, text, keyText, count}], item = {path, clientId,
 --                            name, kind ("riftkey" for a key), rarity, rarityName, level, mods = [{group, text}], maxMods,
---                            rewards (keys), unique, orbs = {key -> ""|why}, preview = {key -> text}, sig} | nil,
+--                            rewards (keys), unique, orbs = {key -> ""|why}, preview = {key -> text},
+--                            sockets = {count, max, list = [{index, id, clientId, name, text, color, cost}]}, sig} | nil,
 --                            items = [{path, id, clientId, name, rarity, rarityName, unique, key}],
 --                            history = [{time, orb, item, text}]}
 --                     result {ok, orb, text}
@@ -127,6 +128,11 @@ local function logCraft(player, orb, itemName, text)
 	db.query(string.format("INSERT INTO `%s` (`player_id`, `created_at`, `orb`, `item`, `result`) VALUES (%d, %d, %s, %s, %s)",
 		cfg.historyTable, player:getGuid(), os.time(), db.escapeString(orb.name), db.escapeString(itemName:sub(1, 80)),
 		db.escapeString(text:sub(1, 255))))
+end
+
+-- other crafting actions (gems.lua: socketing, combining, taking gems out) write the same log
+function ChaosCraftingLog(player, what, itemName, text)
+	logCraft(player, {name = what}, itemName or "", text or "")
 end
 
 -- ---------------------------------------------------------------- state
@@ -271,6 +277,31 @@ local function selectItem(player, data)
 	sendState(player, false)
 end
 
+-- take a gem out of the item on the bench ("remove": it comes back for gold, "shatter": it is destroyed)
+local function gemAction(player, data)
+	local pid = player:getId()
+	local now = nowMs()
+	if lastAction[pid] and now - lastAction[pid] < MIN_INTERVAL then
+		sendState(player, false)
+		return
+	end
+	lastAction[pid] = now
+	local item = itemAt(player, data.path)
+	local id = Chaos.toInt(data.id, 1, 65535)
+	if not item or item:getId() ~= id or (data.sig and C.signature(item) ~= data.sig) then
+		selected[pid] = nil
+		sendResult(player, false, "gem", "The item moved or changed. Put it on the bench again.")
+		sendState(player, false)
+		return
+	end
+	if not ChaosGems or not ChaosGems.unsocket then
+		return
+	end
+	local ok, text = ChaosGems.unsocket(player, item, Chaos.toInt(data.socket, 1, 3), data.op == "remove")
+	sendResult(player, ok, "gem", text)
+	sendState(player, false)
+end
+
 local function apply(player, data)
 	local pid = player:getId()
 	local now = nowMs()
@@ -309,7 +340,7 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	end
 	local data = type(msg.data) == "table" and msg.data or {}
 	-- every answer walks the backpack and reads the history from the database; "apply" has its own MIN_INTERVAL
-	if msg.action ~= "apply" and ChaosRateLimit and not ChaosRateLimit.allow(player, "crafting.state", 150) then
+	if msg.action ~= "apply" and msg.action ~= "gem" and ChaosRateLimit and not ChaosRateLimit.allow(player, "crafting.state", 150) then
 		return
 	end
 	if msg.action == "open" then
@@ -318,6 +349,8 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		selectItem(player, data)
 	elseif msg.action == "apply" then
 		apply(player, data)
+	elseif msg.action == "gem" then
+		gemAction(player, data)
 	elseif msg.action == "clear" then
 		selected[player:getId()] = nil
 		sendState(player, false)
@@ -357,7 +390,8 @@ for _, words in ipairs({"!craft", "/craft"}) do
 end
 
 -- ---------------------------------------------------------------- use-with on every orb
--- All seven orbs are "use with" items: "Use with" on the orb, then click the item (or the Rift Key) in the backpack.
+-- All eight orbs (the seven crafting orbs and the Orb of Sockets) are "use with" items: "Use with" on the orb, then
+-- click the item (or the Rift Key) in the backpack.
 -- The Orb of Transmutation and the Exalted Orb are made use-with by server/tools/install_crafting.py (items.otb flag
 -- "useable") and client/tools/sprites/set_multiuse.py (the client dat's multi-use flag). The Chaos and Divine Orbs are
 -- registered here too, so they follow the same rules and logging (crafting.lua loads before the base server's

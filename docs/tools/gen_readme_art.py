@@ -791,6 +791,8 @@ SHOTS = {
     "achievements": [("achievements/07_window_rifts.png", (278, 118, 1007, 687))],
     "pets": [("pets/16_window_final.png", (352, 140, 1018, 622)), ("pets/03_spark_aura_on_heroes.png", (560, 180, 920, 400))],
     "qol": [("hunt/tab_loot.png", (419, 118, 866, 677)), ("daily/day7_milestone.png", (359, 153, 921, 637))],
+    "bestiary": [("bestiary/02-bestiary-dragon-lord-studied.png", (232, 110, 1054, 690)),
+                 ("bestiary/05-tracker-bounty-complete.png", (770, 392, 992, 500))],
 }
 
 
@@ -875,6 +877,9 @@ SHOT_CARDS = {
     "pets": ("feature_pets.png", "Pets",
              "A companion at your side that levels with your kills: it mends, wards, burns and fetches gold.",
              (1.0, 1.0), hexc("#2a1a10")),
+    "bestiary": ("feature_bestiary.png", "Bestiary and Kill Tasks",
+                 "Every monster has a page that fills in as you hunt it. Kill tasks pay orbs and bestiary points.",
+                 (1.0, 1.0), hexc("#2a1a10")),
     "qol": ("feature_qol.png", "Quality of Life",
             "A hunt tracker counted by the server, daily rewards and streaks, and patch notes in the client.",
             (1.0, 1.0), hexc("#1a2a1a")),
@@ -1045,6 +1050,7 @@ TASKS = {
     "leaderboards": lambda sd: card_from_shots(sd, "leaderboards"),
     "achievements": lambda sd: card_from_shots(sd, "achievements"),
     "pets": lambda sd: card_from_shots(sd, "pets"),
+    "bestiary": lambda sd: card_from_shots(sd, "bestiary"),
     "qol": lambda sd: card_from_shots(sd, "qol"),
 }
 
