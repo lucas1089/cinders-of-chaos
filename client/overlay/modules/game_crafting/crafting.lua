@@ -15,7 +15,7 @@
 --                     gem {op = "remove"|"shatter", socket, path, id, sig} | clear
 -- Modifier rows (item.mods[i] = {key, text, tier, side, lo, hi, bound, power, group}) are clickable: the orbs that are aimed
 -- at one modifier (item.pick = {orb key -> [modifier keys]}: Binding, Excision, Reforging) are enabled once you picked
--- one of those, and send it as `mod`. item.quality / qualityCap fill the quality bar, item.ruined and item.binds show in
+-- one of those, and send it as `mod`. A right-click on a modifier row opens its page in the Codex (game_codex). item.quality / qualityCap fill the quality bar, item.ruined and item.binds show in
 -- the header.
 -- Sockets (gems, server data/lib/chaos_gems.lua) are listed under the modifiers: a gem can be taken out for gold
 -- (Remove, it comes back) or destroyed (Shatter); socketing and combining are done by Use with on the gem.
@@ -333,14 +333,23 @@ local function showItem(item)
     row.text:setColor(m.power and POWER_COLOR or GROUP_COLOR[m.group] or '#d6c9ae')
     row.mark:setText(m.bound and tr('bound') or '')
     row.modKey = m.key
+    local codexTip = (modules.game_codex and modules.game_codex.openModifier) and tr('Right-click: its page in the Codex.') or nil
     if m.power then
-      setTip(row, (m.text or '') .. '\n' .. tr('Legendary power: it changes what your character does.'))
+      setTip(row, (m.text or '') .. '\n' .. tr('Legendary power: it changes what your character does.') .. (codexTip and '\n' .. codexTip or ''))
     elseif m.bound then
-      setTip(row, tr('Bound: the orbs that change modifiers leave it alone. Only an Orb of Erasure frees it.'))
+      setTip(row, tr('Bound: the orbs that change modifiers leave it alone. Only an Orb of Erasure frees it.') .. (codexTip and '\n' .. codexTip or ''))
+    elseif codexTip then
+      setTip(row, codexTip)
     end
     followHeight(row, row.text, 2, 17)
     if m.key and m.key == selectedMod then row:setBackgroundColor(SELECT_BG) end
+    row.modGroup = m.group
     row.onMouseRelease = function(self, mousePos, button)
+      -- right-click: the modifier's page in the Codex (game_codex)
+      if button == MouseRightButton and self:containsPoint(mousePos) and self.modKey then
+        local codex = modules.game_codex
+        return codex and codex.openModifier and codex.openModifier(self.modKey, self.modGroup) or false
+      end
       if button ~= MouseLeftButton or not self:containsPoint(mousePos) or not self.modKey then return false end
       selectedMod = (selectedMod ~= self.modKey) and self.modKey or nil
       for _, child in ipairs(window.modList:getChildren()) do

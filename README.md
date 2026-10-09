@@ -221,6 +221,14 @@ Orb of Upheaval, up to 100 for an Orb of Grafting. Salvage one item, or a whole 
 time, after a confirmation). **Lock** the pieces you want to keep on the bench: salvage and the Auto Seller never touch
 a locked item. Uniques and items with gems in their sockets are never salvaged.
 
+### The Codex
+
+- **The Codex** (Economy > Codex, or **Alt+K**) looks up the whole item system in the client: every modifier with its
+  tiers T1-T8, value ranges, the item level each tier needs and what it rolls on, the legendary powers, every orb and
+  where it comes from, gems, uniques and where they drop, rift modifiers and spell supports, plus a short "How items
+  work". Search by name or stat, filter by prefix / suffix, item kind and item level. Right-click a modifier on the
+  Crafting Bench to open its page.
+
 ## Endgame
 
 > *"Five came through the first wound. Whenever the portals open at the temples, they come back, and never weaker."*

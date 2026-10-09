@@ -18,6 +18,7 @@ server/
   README.md
   sql/chaos.sql                       CREATE TABLE IF NOT EXISTS for 13 tables
   tools/gen_passivetree_data.lua      regenerates passivetree_data.lua from the client tree
+  tools/gen_codex_data.lua            regenerates the client Codex data (client game_codex/codex_data.lua), see "Codex data"
   tools/late_game.py, late_game_spawns.csv   late game stages and spawns (see "Late game")
   data/scripts/chaos/
     chaos_constants.lua               ALL opcodes, storage keys, table names, tunables, shared helpers
@@ -1876,7 +1877,7 @@ level (Erasure and Fate too); an item without any level gets one from the item t
 **Tiers.** Eight per modifier, T1 the lowest, T8 the highest. A tier needs an item level (`tierLevels`): T1 1, T2 15, T3 30,
 T4 50, T5 70, T6 95, T7 120, T8 140. A modifier rolls among the best five tiers the item level allows
 (`tierWindow`), weighted 100, 90, 80, 65, 50, 35, 22, 12 for T1..T8 (higher tiers are rarer): at item level 150 T8 comes
-6.5%, T4 35%; at item level 40 T3 40%, T2 33%, T1 27%. The five ranges the modifiers had before (tier = ceil(rarity / 3))
+6.5%, T4 35%; at item level 40 T1 37%, T2 33%, T3 30%. The five ranges the modifiers had before (tier = ceil(rarity / 3))
 are T2-T6 now, so old items keep their meaning. The tier is stored next to the value as `ct_<attribute key, lower case>`
 (`ct_chaos_mod_dodge`, `ct_rarity_swordskill`); an item without it (every item from before) reads its tier from the value:
 the lowest of T2-T6 whose range holds it, above T6 the top. The pair attributes (critical, leech) store one tier for both.
@@ -2047,6 +2048,28 @@ Rush, Arc Lightning (energy on the monsters nearby) and Crimson Burst (+384 = 4%
 powers' procs (Echo Shot, Critical Echo, Bloodrush, Shatter Splash, Ember Step, Glacial Ward, Smoldering Aura) and every
 cooldown. `tests/powers_test.lua` (240 checks) covers the catalogue, the maths, each handler against a mocked engine, the
 cooldowns, the guard and the dodge hook; `tests/orbs_test.lua` the rarity gate, one power per item and the side limits.
+
+## Codex data (`tools/gen_codex_data.lua`, client `game_codex`)
+
+The client's Codex (Economy > Codex, Alt+K; `client/MANIFEST.md` "game_codex") shows the item system without asking the
+server: its data is one generated Lua table, `client/overlay/modules/game_codex/codex_data.lua`. `tools/gen_codex_data.lua`
+builds it from the real data files, loaded as the server loads them (`chaos_item_mods.lua` with the legendary powers,
+`chaos_crafting.lua` with the orbs v2 and the gems, `chaos_unique_items.lua` / `chaos_unique_specs.lua`,
+`chaos_supports*.lua`, `rift_core.lua` and `loot_config.lua`, `salvage_config.lua`, `shop_config.lua`,
+`bounty_config.lua`, `rift_config.lua`, `chaos_constants.lua` for the world bosses); only a few `ITEM_ATTRIBUTE_*`
+constants are stubbed. Every name, number and source in the Codex comes from those tables (orb names from
+`ChaosCrafting.config.orbs`, drop chances from the loot layer, shard costs from salvage, prices from the store), so the
+Codex follows a change of the data once it is regenerated:
+
+    cd server && luajit tools/gen_codex_data.lua            # writes the client file
+    cd server && luajit tools/gen_codex_data.lua --check    # exit 1 when the client file is stale
+
+The output has no clock and no `pairs()` order, and Lua 5.3 writes the same bytes as LuaJIT. CI (`.github/workflows/ci.yml`,
+"Codex data is up to date") regenerates it with LuaJIT, checks Lua 5.3 gives the same file, and fails on `git diff` of
+`codex_data.lua`, like the client spell data and the unique specs. `tests/codex_gen_test.lua` covers the pure helpers (number
+and percent texts, the Lua writer, modifier value texts) and the build on the real data (every modifier, power, orb,
+currency item, gem, unique, rift modifier and support present, unique ids, every link and shared section resolvable, eight
+tiers per modifier, no old orb names in the player texts).
 
 ## Gems and sockets (`data/lib/chaos_gems.lua`, `chaos_gems_config.lua`, `gems.lua`, `tools/install_gems.py`)
 

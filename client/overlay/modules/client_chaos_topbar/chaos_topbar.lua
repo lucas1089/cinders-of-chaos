@@ -231,6 +231,7 @@ local CATEGORIES = {
   { id = 'economy', text = 'Economy', icon = 'market', entries = {
     entry('Crafting Bench',  'proficiency', { modules = { 'game_crafting' },  fns = { 'toggle' }, key = 'Alt+C' }),
     entry('Salvage',         'proficiency', { modules = { 'game_crafting' },  fns = { 'openSalvage' } }),
+    entry('Codex',           'help',        { modules = { 'game_codex' },     fns = { 'toggle' }, key = 'Alt+K' }),
     entry('Store',           'market',      { modules = { 'game_shop' },      fns = { 'toggle' } }),
     entry('Market',          'market',      { modules = { 'game_tibia_market', 'game_market' }, fns = { 'toggle' } }),
     entry('Bank',            'bank',        { modules = { 'game_bank' },      fns = { 'bankWindowtoggle', 'toggle' } }),
