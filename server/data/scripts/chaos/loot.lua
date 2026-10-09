@@ -838,7 +838,7 @@ local function processKill(monster, corpse)
 		local forged = false
 		for slot = 0, corpse:getSize() - 1 do
 			local item = corpse:getItem(slot)
-			if item and L.isGearId(item:getId()) and not L.isRolled(item) then
+			if item and (L.isGearId(item:getId()) or ChaosCrafting.isGear(item)) and not L.isRolled(item) then
 				if itemRarityOf(item) > 0 then
 					if ChaosGems then
 						ChaosGems.rollDropSockets(item)

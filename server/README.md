@@ -1610,18 +1610,18 @@ its own two registrations when `ChaosCrafting.ownsStockOrbs` is set (otherwise t
 and keeps the first one, ours). The installer still adds the unique guard to its `isRerollable`.
 
 **The orbs on gear.** A modifier is one line of the description (a leech or critical pair is one modifier, a Chaos
-modifier is one). The maximum per rarity is one more than a weapon of that rarity rolls: 3, 4, 4, 5, 5, 6, 6, 6, 7, 7,
-7, 7, 7, 9, 9 (`maxMods`), Chaos modifiers included.
+modifier is one). The maximum per rarity is two prefixes' worth of each side (2, 2, 4, 4, 4, 4, 6 ... 6, see "Item
+modifiers"), Chaos modifiers included.
 
 | orb | id | on gear |
 |---|---|---|
-| Orb of Transmutation | 29851 (existing currency item) | normal item (no rarity, no modifiers, no item level) -> Common 65% / Uncommon 35%, engine roll + Chaos modifier roll |
-| Orb of Alchemy | 24691 (rune stone, named by the installer) | normal item -> Rare 55% / Epic 30% / Legendary 15%, engine roll + Chaos modifier roll |
-| Exalted Orb | 29855 (existing currency item) | item with a rarity and a free slot: one new modifier it does not have yet. Group weights absorb 30, skill 30, leech/critical 25, element 15 (weapons only, one at most), Chaos modifiers 25 (those the item's kind may get); combat skills weigh 4, profession skills 1; value from the rarity's range (item.cpp tables, `chaos_item_mods.lua` tiers) |
-| Orb of Annulment | 24697 (rune stone) | item with a rarity: one random modifier goes, Chaos ones included (rarity and level stay) |
-| Orb of Scouring | 24688 (rune stone) | item with a rarity: a plain copy of the base item (no Chaos modifiers either) |
-| Chaos Orb | 29856 | item with a rarity: a new copy of the same rarity (new level, engine modifiers and Chaos modifier roll) |
-| Divine Orb | 29857 | a new copy with a new random rarity, none 85% of the time (the stock roll), plus the Chaos modifier roll |
+| Orb of Transmutation | 29851 (existing currency item) | normal item (no rarity, no modifiers) -> Common 65% / Uncommon 35%, rolled by `forge` at the item's level |
+| Orb of Alchemy | 24691 (rune stone, named by the installer) | normal item -> Rare 55% / Epic 30% / Legendary 15%, rolled by `forge` at the item's level |
+| Exalted Orb | 29855 (existing currency item) | item with a rarity and an open prefix or suffix: one new modifier it does not have yet, on an open side, its tier by the item level (weights per type in `ChaosCrafting.affixes()`) |
+| Orb of Annulment | 24697 (rune stone) | item with a rarity: one random modifier goes (rarity and item level stay) |
+| Orb of Scouring | 24688 (rune stone) | item with a rarity: a plain copy of the base item (no modifiers; the item level stays) |
+| Chaos Orb | 29856 | item with a rarity: a new copy of the same rarity and item level with a new set of modifiers |
+| Divine Orb | 29857 | a new copy with a new random rarity, none 85% of the time (the stock roll); the item level stays |
 
 Transmutation, Alchemy, Scouring, Chaos and Divine make a new copy (like the stock orbs), so upgrade levels on the item
 are lost; Exalted and Annulment change the item in place and rewrite only the rarity part of the description (text in

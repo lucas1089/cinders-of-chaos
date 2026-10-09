@@ -219,7 +219,9 @@ def step_vocations(server, data, ctx):
 
 
 def step_events(server, data, ctx):
-    ok, lines = run_tool([tool('patch_base_events.py'), data], 'patch_base_events.py')
+    # --enable-spell-events: the cooldown / mana-cost reductions run through the engine's spell events (engine patch
+    # 0008); without that patch the engine only warns about the four unknown events and the Lua fallbacks apply
+    ok, lines = run_tool([tool('patch_base_events.py'), data, '--enable-spell-events'], 'patch_base_events.py')
     if ok and os.path.isfile(tool('patch_season_events.py')):
         ok2, more = run_tool([tool('patch_season_events.py'), data], 'patch_season_events.py')
         ok, lines = ok2, lines + more
