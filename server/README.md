@@ -858,14 +858,14 @@ client module needed no change.
 | | Sex Change | 100 | at once; every owned outfit and addon is copied to the other sex (pairs by name in `data/XML/outfits.xml`) |
 | | Frag & Skull Remover | 150 | skull time (the engine's unjustified-kill counter) to 0, red/black skull removed; not in combat |
 | | Passive Tree Reset | 60 | empties every preset for free (the in-window reset costs level x 250 gold) |
-| Convenience | Temple Teleport Scroll / 25 uses | 5 / 80 | see below |
+| Convenience | (the Temple Teleport Scroll is no longer sold) | | see below |
 | | Bottomless Loot Pouch | 500 | unlock, see below |
 | | Auto Seller | 500 | unlock, see below |
 | Training | 21 exercise weapon chests | 25 / 75 / 450 | the base server's chests: sword, axe, club, bow, rod, wand, shield with 500 / 1800 / 14400 charges |
 
 Premium (250 for 30 days) stays where it was.
 
-**Temple Teleport Scroll.** An ordinary "scroll" (item 6119, used by no other script) with action id 47301, the name
+**Temple Teleport Scroll (retired from the store).** Every character has the free Town Portal now ("Town Portal" below), so the store no longer offers the scroll or the 25-use scroll. Scrolls bought earlier keep working: the handler, `S.teleportBlocked` and the action id stay in `shop_services.lua`, and `shop_config.lua` keeps the `templeScroll` service kind. The old description: an ordinary "scroll" (item 6119, used by no other script) with action id 47301, the name
 "temple teleport scroll", a description and the uses left in the custom attribute `chaos_uses`; no new item id. Using it
 takes you to your town's temple. Refused with a battle sign or PZ lock, inside a dungeon run (`ChaosDungeonIsInside`), the
 Infinity Tower (`ChaosTowerRun.isInside`) and the world boss lobby/arena (`ChaosWorldBoss.inside`). 2 s cooldown. The stash
@@ -941,6 +941,69 @@ seller sold plain items to the bank and kept rarity/unique items (rarity sold af
 the loot pouch sent a stackable to the stash and gear to the inbox with a full backpack; Character > Services renamed the
 character (and its dungeon run entry) and back; a vocation change paladin -> knight -> paladin returned exactly the
 original health, mana and capacity.
+
+## Town Portal (`townportal.lua`, `townportal_core.lua`, `townportal_config.lua`, spell `shared/town_portal.lua`, client `game_townportal`)
+
+An ability, not an item: every character has it from creation (the spell "Town Portal", id 254, words `ash domh`, level 1, no mana, every
+vocation; `needlearn="0"`, so existing characters have it at the next login after `register_spells.py`). The menu entries Character > Town Portal
+(cast) and Character > Portal Style (window) call the same code. Numbers: `townportal_config.lua`.
+
+- **Cast:** `ChaosTownPortal.cast(player)` refuses at once (reason below) or starts a 3 s channel (`castMs`, polled every 250 ms). A step or any
+  damage (health change, or a mana hit from an attacker) ends it with nothing spent. At the end the rules are checked again, then the pair opens:
+  a portal on the first free tile around the caster (`fieldOffsets`, action id 47810) leading to the temple of the character's town, and a return
+  portal on the first free tile in rings 1..4 around the temple (action id 47811) leading to the exact tile of the cast (a creature standing there
+  moves the arrival to the nearest free tile). Tiles must be walkable, no house, floor change, teleport, field or creature; two pairs never share a tile.
+- **Cooldown:** 60 s from the moment the portal opens (storage `7101601` = os.time of the next cast, plus the spell cooldown condition so the action
+  bar shows it). A refused or interrupted cast costs nothing.
+- **Lifetime:** 5 min (`portalMinutes`, checked by a 2 s think), or when the owner steps through the return portal. A new cast closes the old pair first.
+  Logging out keeps the pair until it fades.
+- **Who:** the owner and the owner's party members (`partyCanUse`, at the moment of the step); others are pushed back with a message. A party
+  member who uses the return portal arrives at the owner's spot and leaves the pair open; only the owner's return closes it.
+- **Refused to cast:** already channelling, cooldown, tutorial island (`ChaosNewPlayer.onIsland`), arena match, world boss lobby/arena, guild siege
+  (`ChaosSiege.locate`), inside a rift or omen arena, a dungeon, the Infinity Tower, pz-lock, white/red/black skull, inside a protection zone.
+  The field portal refuses a pz-locked or skulled player at the step as well.
+- **Instances (decision):** the portal cannot be opened inside rifts, dungeons or the tower, and so there is no pair that could point into one: the
+  return portal always puts the player back on an open-world tile. (A portal opened outside stays usable while a run is going on elsewhere, but its
+  target is the open world, so it can never lead into a finished run.) Leaving an instance uses its own exit, as before.
+- **Temple Teleport Scroll (decision):** removed from the store (no new sales; old scrolls still work, see Store services). Starter kits that listed a
+  scroll are unchanged (it is the same item).
+
+**Portal Style.** `townportal_config.lua` `styles`: id, key, name, route, item (the portal's look: a stock teleport item of the base server), and
+open / close / loop / travel effect lists. An effect entry is a `ChaosVfx` name, a `ChaosFx` name or a stock `CONST_ME_*` number, tried in order
+(the last one must be a stock number, so a client without the effect art shows something). The selected id is in storage `7101600`; the style
+is read at cast time and stored in the pair, so everybody sees the owner's style. A style that is no longer owned falls back to the default.
+Exactly one route per style: `default` (Waygate), `store` (6, ids 1..6, `shop_config.lua` category "Portal Styles", offer `unlock = "portal_<key>"`,
+owned in storage `7101610 + id`, resolved by `ChaosTownPortal.storeUnlock` from `shop_services.lua`) or `achievement` (6, ids 31..36, owned while
+the character has the achievement whose `reward` is `{portal = {key, name}}` in `achievements_data.lua`, so older unlocks count too).
+`ChaosTownPortalCore.validate` (run by `tests/townportal_test.lua` and printed at startup) fails a style with no route, with both, a store offer for a
+non-store style, an achievement reward for a non-achievement style, or a missing effect name. No drops.
+
+| Style | Route | Price / achievement | Look and effects |
+|---|---|---|---|
+| Waygate | everyone | | blue force ring; teleport_in / teleport_out |
+| Emberforge Gate | store | 250 | molten lava gate; infernal_seal, fire_explosion, inferno_burst |
+| Rimeglass Gate | store | 250 | ice-blue crystal gate; frost_glyph, ice_shatter, frost_ripple |
+| Verdant Gate | store | 250 | overgrown green gate; grove_glyph, healing_bloom, heal_sparkle |
+| Gilded Gate | store | 300 | golden arch; holy_seal, solar_flash, holy_spiral |
+| Bloodmoon Gate | store | 300 | red gate; blood_rune, blood_nova, blood_ring |
+| Sanctum Gate | store | 300 | white palace door; px586_white, px652_white, arcane_aura |
+| Abyssal Maw | achievement | Colossus Hunter (`wb_all`, all five world bosses) | violet maw with demons; void_maw, void_rift, void_eye |
+| Riftwalker's Gate | achievement | Keybearer (`rift_25`, seal 25 rifts) | torn rift doorway; px03_arcane, teleport_out, summon_portal |
+| Hellmouth Gate | achievement | Herald of Omens (`omen_10`, 10 omen guardians) | demon jaw; infernal_seal, dome_blast_fire, shadow_flame |
+| Hoarder's Gate | achievement | Hoardbreaker (`goblin_50`, 50 Treasure Goblins) | royal gold gate; aura_burst_gold, loot_ray_legendary, arcane_burst |
+| Warbanner Gate | achievement | Siege Champion (`siege_win`, win a guild siege) | old stone siege gate; stone_rise, earth_spikes, stone_ward |
+| Gravecall Gate | achievement | Death Is a Teacher (`deaths_50`, hidden) | dark crypt door; necro_seal, px633_indigo, shadow_cloud |
+
+Store prices are in the range of the auras (200..300). All visuals come from items and effects already in the client pair (`things_custom7`,
+`vfx_catalog.csv`); no new art. **Follow-up:** the sprite libraries R and S on the sprite-libraries branch have portal and gate effects (swirl,
+arch, rune circles) that would give styles their own effect art instead of recoloured shared ones.
+
+Protocol (opcode `ChaosOpcodes.townPortal` = 239, JSON): client -> server `open | get | select {id} | cast`; server -> client `state {open,
+selected, cooldown, cooldownTotal, styles}`, `cast {ms}`, `castEnd {result}`. The client cast bar is in `game_townportal`.
+
+Install: `register_spells.py` (already in `install_all.py`, step `spells`) installs the spell; no other installer. Client: regenerate
+`gen_spell_data.py` and the spell icon sheets (`gen_all_spell_icons.py`, cell 280 is the Town Portal icon). Tests: `tests/townportal_test.lua`.
+Not verified: a real party of two clients using the return portal while the owner is away; very crowded temples (80 return spots).
 
 ## Spellbook (`spellbook.lua`)
 Character > Spellbook in the client menu opens the client window `game_spellbook` on extended opcode 219 (`ChaosOpcodes.spellbook`). The list is read from the running server's own files, so renamed stock spells, the Chaos spells and anything added later show up without a client update:

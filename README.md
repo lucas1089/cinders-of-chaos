@@ -420,8 +420,19 @@ and food you can eat. The Orbs of Alchemy, Annulment and Scouring and the mining
   "the Relentless", "the Undying"). Grace charges save your streak when you miss a day.
 - **Waystones** with account upgrades (experience, loot, rarity), and toast notifications for
   everything that matters.
+- **Town Portal:** every character has it from the start, with unlimited uses. Cast it from the action bar (the spell
+  Town Portal, `ash domh`) or from Character > Town Portal. After a 3 second channel (moving or taking damage breaks it)
+  a portal opens beside you that leads to your town's temple, and a return portal opens beside the temple that brings you
+  back to the exact spot. One pair per character (a new one replaces the old), open for 5 minutes or until you walk back
+  through it; 60 second cooldown. You and your party members can use it. It does not work in a protection zone, after PvP,
+  with a skull, on the tutorial island, in arenas, the world boss arena and sieges, or inside rifts, dungeons and the
+  Infinity Tower (those have their own exits).
+- **Portal Style** (Character > Portal Style): pick the look of your portal and its opening and closing effects; everybody
+  sees it. Six styles are sold in the store (Portal Styles) and six are earned only through achievements: Abyssal Maw
+  (Colossus Hunter), Riftwalker's Gate (Keybearer), Hellmouth Gate (Herald of Omens), Hoarder's Gate (Hoardbreaker),
+  Warbanner Gate (Siege Champion) and Gravecall Gate (Death Is a Teacher, a secret). A style comes by one route only.
 - **Store** (Chaos Coins):
-  - stamina refill, temple teleport, bottomless loot pouch, auto seller
+  - stamina refill, bottomless loot pouch, auto seller, portal styles
   - training weapons, server-wide world buffs
   - name, vocation and sex change, blessings, skull removal
   - passive tree reset, crafting orbs
