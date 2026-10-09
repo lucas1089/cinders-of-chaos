@@ -30,6 +30,7 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                products in Yasir's shop (README "Pack items and monsters")
   gems         tools/install_gems.py             the gems and the Orb of Sockets in items.otb / items.xml (README "Gems and sockets")
   salvage      tools/install_salvage.py          the salvage Rune Shard in items.otb / items.xml (README "Salvage")
+  omens        tools/install_omens.py            the Omen Fragment and Omen Key in items.otb / items.xml (README "Rifts", Omens)
   supports     tools/install_supports.py         the spell support runes in items.otb / items.xml and the spell-library hook (scripts/chaos/SUPPORTS.md)
   monsters     tools/register_monsters.py        every folder under data/monster/monsters/chaos (world bosses, goblin, ...)
   spells       tools/register_spells.py          the Chaos spells (README "Install" 3)
@@ -66,7 +67,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'vocations', 'events', 'weapons', 'lategame', 'crafting', 'darktiles', 'gems', 'salvage', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'monsters', 'spells', 'autoloot', 'sql']
+STEPS = ['files', 'lib', 'vocations', 'events', 'weapons', 'lategame', 'crafting', 'darktiles', 'gems', 'salvage', 'omens', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'monsters', 'spells', 'autoloot', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -262,6 +263,10 @@ def step_gems(server, data, ctx):
 
 def step_salvage(server, data, ctx):
     return tool_result(run_tool([tool('install_salvage.py'), data], 'install_salvage.py'))
+
+
+def step_omens(server, data, ctx):
+    return tool_result(run_tool([tool('install_omens.py'), data], 'install_omens.py'))
 
 
 def step_supports(server, data, ctx):
