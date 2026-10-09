@@ -15,6 +15,9 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `setup/router.php` | router for PHP's built-in server (local tests only) |
 | `overlay/layouts/chaos/` | our layout: a child of ZnoteX's purple layout "Void", re-coloured to the client |
 | `overlay/plugins/chaos/` | our plugin: class names and class lock, starter depot boxes, Leaderboards / Patch Notes / Seasons pages |
+| `overlay/engine/function/chaos_password.php` | salted PBKDF2 passwords, the game server's format (see "Passwords") |
+| `patches/znotex-chaos-passwords.patch` | ZnoteX's password and login code switched to it, per-account login throttling |
+| `tests/chaos_password_test.php` | `php website/tests/chaos_password_test.php` (php-cli only) |
 | `tools/recolor_layout.py` | turns Void's stylesheets into ours at install time |
 | `tools/gen_site_art.py` | draws the site art and the promotion material |
 | `art/` | promotion material: banners, social image, Discord banner and icon, class showcase, features infographic |
@@ -43,6 +46,8 @@ What it does, in order:
    checked against a SHA-256, and goes to `layouts/void/` (only when the pin changed).
 3. **Our overlay** (`overlay/`) is copied over the checkout; `layouts/chaos/` and `plugins/chaos/` are replaced as a
    whole, so nothing else of ZnoteX is touched. `tools/recolor_layout.py` then writes the re-coloured stylesheets.
+   `patches/*.patch` are applied to the checkout (skipped when already in; a ZnoteX file changed by hand stops the
+   installer), see "Passwords".
 4. **`config.local.php`** (mode 600; ZnoteX reads it after its own `config.php`) is written from the environment:
    database, site title "Cinders of Chaos", site URL, admin accounts, the classes, the towns, new characters, the
    download links and our plugin's settings. Credentials only ever live there and in the env files, never here.
@@ -57,7 +62,7 @@ Settings (`site.env.example` has them all): `CHAOS_SITE_DIR`, `CHAOS_SITE_URL`, 
 with the admin panel), `CHAOS_SERVER_DATA` (the game server's `data/` folder: patch notes, season and leaderboard
 settings; default `server/data` of this repository), `CHAOS_START_TOWNS`, `CHAOS_GAME_HOST`, `CHAOS_GAME_PORT`,
 `CHAOS_DISCORD_URL`, `CHAOS_CLIENT_WINDOWS_URL`, `CHAOS_CLIENT_LINUX_URL`, `CHAOS_WEB_USER`, `CHAOS_LAYOUT`
-(`void` shows the original purple layout), `CHAOS_DEPOT_BOXES`.
+(`void` shows the original purple layout), `CHAOS_DEPOT_BOXES`, `CHAOS_PASSWORD_ITERATIONS` (see "Passwords").
 
 **Placeholders the owner sets before launch:** the site address (`CHAOS_SITE_URL`), the game address shown on the
 downloads page (`CHAOS_GAME_HOST`), the client download links (empty = "Coming soon"), the Discord invite (empty =
@@ -95,6 +100,34 @@ Local test (what was used to check it): `php -S 127.0.0.1:8095 -t "$CHAOS_SITE_D
 
 All plugin queries are prepared statements through ZnoteX's `db()`, none is built from request input, and every value
 printed is escaped.
+
+## Passwords
+
+Accounts use the game server's salted password format (engine patch 0014, `server/README.md` "Account passwords"):
+`pbkdf2-sha256$<iterations>$<salt base64>$<key base64>` in `accounts.password`, PBKDF2-HMAC-SHA256 with a 16-byte
+`random_bytes` salt, compared with `hash_equals`. `overlay/engine/function/chaos_password.php` has the functions;
+`patches/znotex-chaos-passwords.patch` points ZnoteX's code at them:
+
+- **Writes**: registration (`user_create_account`), password change and the admin panel's reset (`user_change_password`),
+  the e-mailed new password of `recovery.php`. The password is hashed as typed: ZnoteX used to hash the HTML-escaped
+  form (`array_sanitize`), so a password with `< > & ' "` never worked in the game.
+- **Checks**: login, the current password on the change page, `recovery.php`, the character auction, and the JSON login
+  service (`login_web_service`, for 12.x clients; switched off in `config.local.php`, ours log in through the game's
+  login server). An old 40-hex-digit SHA-1 still works and is replaced by a PBKDF2 hash at that login, as in the game.
+  ZnoteX's website-only bcrypt copy (`znote_accounts.password_hash`) is no longer used and is cleared whenever a
+  password is written, so `accounts.password` is the one password of an account.
+- **Unknown accounts**: the login answers "Username and password combination is wrong." (ZnoteX said the account was
+  not found) after a dummy hash of the same cost, so neither the text nor the time shows which names exist.
+- **Throttling**: ZnoteX's login guard (`znote_login_attempts`) locks an IP out after 5 failures in 15 minutes; the
+  patch adds a lock per account name after 10 failures from any address in 15 minutes (website login only; the game is
+  not locked). Settings in `config.local.php` (`login_guard`, written by `setup/write_config.php`); the setup adds an
+  index on the account name. The IP is `REMOTE_ADDR`: behind a reverse proxy every visitor has the proxy's address, so
+  pass the client address through to PHP there.
+- `CHAOS_PASSWORD_ITERATIONS` (default 120000) is the cost of new hashes; keep it equal to `passwordHashIterations` in
+  the server's config.lua. `setup/chaos_setup.php` widens `accounts.password` to VARCHAR(255) if the server's
+  `server/sql/chaos_passwords.sql` was not imported yet.
+- `serverinfo.php`: ZnoteX 2.0.5 already parses config.lua values without `eval()` (`serverdata_eval_number`, digits
+  and `+ - * / ( )` only), and none of our files uses `eval()`.
 
 ## Layout
 

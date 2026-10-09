@@ -106,6 +106,7 @@ foreach ($classes as $id => $name) {
 	$skills[$id] = array('magic' => 0, 'fist' => 10, 'club' => 10, 'axe' => 10, 'sword' => 10, 'dist' => 10, 'shield' => 10, 'fishing' => 10);
 }
 
+$iterations = max(1000, min(10000000, (int)env('CHAOS_PASSWORD_ITERATIONS', '120000')));
 $admins = array_values(array_filter(array_map('trim', explode(',', env('CHAOS_ADMIN_ACCOUNTS')))));
 $serverData = env('CHAOS_SERVER_DATA');
 $winUrl = env('CHAOS_CLIENT_WINDOWS_URL', '#download-coming-soon');
@@ -128,6 +129,13 @@ $out = "<?php\n"
 	. "\$config['cache']['memory'] = false; // no APCu needed\n"
 	. "\$config['language_selector'] = false; // the site is written in English\n"
 	. "\$config['page_admin_access'] = " . export($admins) . "; // account NAMES with the admin panel\n\n"
+	. "// Passwords: salted PBKDF2-SHA256 shared with the game server (engine patch 0014, README \"Passwords\");\n"
+	. "// the same number as passwordHashIterations in the server's config.lua\n"
+	. "\$config['chaos_password_iterations'] = " . export($iterations) . ";\n"
+	. "// Failed website logins: 5 per IP or 10 per account name in 15 minutes lock that IP / name out for 15 minutes\n"
+	. "\$config['login_guard'] = " . export(array('enabled' => true, 'threshold' => 5, 'account_threshold' => 10, 'window_minutes' => 15, 'lockout_minutes' => 15)) . ";\n"
+	. "// The JSON login service is for 12.x clients; ours (10.98) logs in through the game's login server\n"
+	. "\$config['login_web_service'] = false;\n\n"
 	. "// Classes, not the stock vocations\n"
 	. "\$config['vocations'] = " . export($vocations) . ";\n"
 	. "\$config['vocations_gain'] = " . export($vocGains) . ";\n"

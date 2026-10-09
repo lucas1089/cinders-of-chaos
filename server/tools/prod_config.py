@@ -37,6 +37,11 @@ What it sets, and why (docs/LAUNCH.md has the full checklist):
   mapName                 checked, not set: a cropped test map (a name starting with "zcrop") is refused
   startupDatabaseOptimization = false, showScriptsLogInConsole = false
                           faster start; quiet console (the log file is the console output)
+  passwordType = "pbkdf2-sha256", passwordHashIterations = 120000
+                          account passwords are salted PBKDF2-HMAC-SHA256 (engine patch 0014, the website the same);
+                          passwordHashIterations is what the engine uses for new hashes (keep CHAOS_PASSWORD_ITERATIONS
+                          of the website equal), passwordType only documents the scheme (the engine does not read it).
+                          Old SHA-1 passwords keep working and are re-hashed at the next login
 
 Exit status 1 (nothing written) when --ip is missing or the map is a cropped test map.
 """
@@ -80,6 +85,8 @@ def settings(opts):
         ('serverSaveCleanMap', 'false'),
         ('startupDatabaseOptimization', 'false'),
         ('showScriptsLogInConsole', 'false'),
+        ('passwordType', '"pbkdf2-sha256"'),
+        ('passwordHashIterations', '120000'),
     ]
     for key, env, default in ENV_DB:
         expr = 'os.getenv("%s")' % env

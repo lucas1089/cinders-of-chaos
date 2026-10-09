@@ -71,6 +71,8 @@ server/
                                       still holds (use-after-free on every later method call, e.g. `spell:name()`)
   src-patches/0011-attack-speed-cap.patch   engine: attack interval floor, cap on all attack speed bonuses together,
                                       life / mana leech at most once per 900 ms each (see "Attack speed cap")
+  src-patches/0014-salted-password-hashes.patch   engine: salted PBKDF2-SHA256 account passwords, old SHA-1 upgraded at
+                                      login, checks on a login worker thread (see "Account passwords"; sql/chaos_passwords.sql)
     item_tooltip.lua  item_tooltip_core.lua (rich item tooltips with the equipped-item compare, client game_itemtooltip)
     shop.lua  shop_config.lua  shop_services.lua  autosell.lua  sell_prices.lua (store, see "Store services")
     bounty.lua  bounty_core.lua  bounty_config.lua  bounty_pool.lua (bounty board; pool from tools/gen_bounty_pool.py)
@@ -526,6 +528,39 @@ Measured on a test server (engine built from the base source + patches 0001-0011
 | Ninja, two swords, main hand -20%, dexterity 20 | 2.20 | 1.93 | 2.20 | 0.93 |
 | Shadowfist, sword -20%, dexterity 20 | 1.20 | 0.97 | 1.20 | 0.97 |
 | Shadowfist unarmed, dexterity 20 (1040 ms, under the caps) | 0.97 | 0.97 | 0.97 | 0.93 |
+
+## Account passwords (`src-patches/0014-salted-password-hashes.patch`, `sql/chaos_passwords.sql`)
+
+The stock engine (and the stock website) stored an unsalted SHA-1 of every password. Now `accounts.password` holds
+
+```
+pbkdf2-sha256$<iterations>$<salt, base64>$<key, base64>      e.g. pbkdf2-sha256$120000$XUwE...aQ==$exa6...m0zU=
+```
+
+PBKDF2-HMAC-SHA256, a 16-byte random salt per password, a 32-byte key, about 90 characters. The engine computes it
+with Crypto++ (already linked for RSA; there is no OpenSSL in the engine), the website (`website/`, section
+"Passwords" of its README) with PHP's `hash_pbkdf2`; both read each other's hashes (checked on the test server in both
+directions).
+
+- **Migration, nothing to run by hand**: a 40-hex-digit value is the old SHA-1. It still logs in (game and website); on
+  the first successful login it is replaced by a PBKDF2 hash (only if the stored value did not change meanwhile). A hash
+  with fewer iterations than configured is upgraded the same way. `sql/chaos_passwords.sql` widens the column from
+  CHAR(40) to VARCHAR(255) (idempotent; `tools/install_all.py` runs it with the other `sql/*.sql`, and the website's
+  installer makes the same change). Until it ran, old passwords keep working but stay SHA-1 (one console warning).
+  Accounts inserted with `SHA1(...)` (the Windows package's `test_accounts.sql`, `tools/loadtest.py`) work the same way.
+- **Where it is checked**: the login server (character list) and the game server (entering the game: the client's
+  session key carries the password, so it is checked a second time). The engine has no other password path, and no
+  Lua script reads or writes passwords (the admin panel's account lookup never shows them), so there is no Lua binding.
+- **Timing**: an unknown account, a wrong password on an old SHA-1 account and a wrong authenticator token each cost one
+  PBKDF2 run, so the answer time does not show whether an account exists (test server, 12 logins each: wrong password
+  206 ms, unknown account 208 ms, right password 231 ms median, on a loaded 4-core machine).
+- **Threads**: one hash at 120000 iterations took ~150 ms on the test machine (no SHA CPU extensions; a few times less
+  on CPUs with them), far too long for the dispatcher. The check (database lookup + hash) runs on a login worker
+  (2 threads, at most 64 waiting logins; more are refused with "Too many logins at the moment") and the answer goes back
+  to the dispatcher. With 100 parallel wrong logins the dispatcher (status protocol round trip) kept a median of 1.8 ms.
+- **config.lua**: `passwordHashIterations = 120000` (iterations of new hashes; 1000 .. 10000000; the website's
+  `CHAOS_PASSWORD_ITERATIONS` should be the same). `passwordType` is not read by the engine; `tools/prod_config.py`
+  sets it to `"pbkdf2-sha256"` as a reminder of the scheme.
 
 ## Engine: decay manager, hardening, spell events (`src-patches/0006`, `0007`, `0008`)
 

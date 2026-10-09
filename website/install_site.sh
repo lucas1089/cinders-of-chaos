@@ -100,6 +100,20 @@ rm -rf "$SITE/layouts/chaos" "$SITE/plugins/chaos"
 cp -R "$HERE/overlay/." "$SITE/"
 python3 -I "$HERE/tools/recolor_layout.py" "$SITE/layouts/void" "$SITE/layouts/chaos"
 
+# ---------------------------------------------------------------- 3b. salted passwords (patches/, README "Passwords")
+# ZnoteX files changed in place by patches/*.patch (the pinned checkout, so they always apply); a patch that is
+# already in is skipped, a file changed by hand stops the install.
+for p in "$HERE"/patches/*.patch; do
+  if git -C "$SITE" apply --check "$p" 2>/dev/null; then
+    git -C "$SITE" apply "$p"
+    echo "Applied $(basename "$p")"
+  elif git -C "$SITE" apply --reverse --check "$p" 2>/dev/null; then
+    echo "$(basename "$p") already applied"
+  else
+    echo "$(basename "$p") does not apply to $SITE (a ZnoteX file was changed by hand?)" >&2; exit 1
+  fi
+done
+
 # ---------------------------------------------------------------- 4. config.local.php (secrets stay on this machine)
 umask 077
 "$PHP" "$HERE/setup/write_config.php" > "$SITE/config.local.php.new"

@@ -66,6 +66,7 @@ python3 -I server/tools/prod_config.py /opt/chaos/server --ip play.example.org -
 | Server Save time | `--save-time 06:00` | `data/globalevents/globalevents.xml`; the download uses 08:00. Keep the backup timer 15 minutes after it |
 | `mysqlHost` ... `mysqlDatabase` | `os.getenv("CHAOS_DB_*") or ...` | the engine runs `config.lua` as Lua, so the credentials come from `/etc/chaos/chaos.env`; no password in any file of the repo or the server folder |
 | `startupDatabaseOptimization`, `showScriptsLogInConsole` | false | faster start, quieter console |
+| `passwordType`, `passwordHashIterations` | `"pbkdf2-sha256"`, 120000 | salted PBKDF2 account passwords (engine patch 0014, `server/README.md` "Account passwords"); the iterations are the engine's, `passwordType` only names the scheme |
 
 The tool refuses to run while `mapName` is a cropped test map (`zcrop_*`): set the real map name first.
 Rates stay as the download has them: `rateExp` is not used (experience stages, written by `late_game.py`),
@@ -73,7 +74,11 @@ Rates stay as the download has them: `rateExp` is not used (experience stages, w
 
 Also check by hand:
 - `freePremium` (false in the download): premium gates spells, items, outfits and the autoloot list size.
-- `passwordType = "sha1"`: the website must hash passwords the same way.
+- Passwords: `passwordType = "pbkdf2-sha256"`. The engine needs patch 0014 (`server/src-patches/0014-salted-password-hashes.patch`)
+  and the website its password patch (`website/install_site.sh` applies it); both write
+  `pbkdf2-sha256$<iterations>$<salt>$<key>` into `accounts.password` (`server/sql/chaos_passwords.sql` widens the column
+  to VARCHAR(255)). Old unsalted SHA-1 passwords still log in and are re-hashed at that login. Keep the website's
+  `CHAOS_PASSWORD_ITERATIONS` equal to `passwordHashIterations` (both 120000 by default).
 - `client`: the client's `init.lua` points at 127.0.0.1 (client/base-patches/0001-init.patch). Build the release client
   with the Windows workflow's `server_host` input (section 8) or edit `host`, `status` and `clientServicesLink` there.
 - `ChaosTopBar.COMMUNITY_URL` (`client/overlay/modules/client_chaos_topbar/chaos_topbar.lua`): the Discord link.
@@ -153,7 +158,8 @@ sudo ufw default deny incoming && sudo ufw allow 22/tcp && sudo ufw allow 7171/t
     this wrong produces unplayable characters, not a bypass;
   - create level 1 characters with `lastlogin = 0` and no starting items: the server gives the class kit and runs
     the tutorial island at the first login (`newplayer*.lua`);
-  - hash passwords with SHA-1 (`passwordType`), and never show or log them.
+  - hash passwords with salted PBKDF2-SHA256 in the engine's format (`passwordType`, section 3; the website in
+    `website/` does), and never show or log them.
   The website in `website/` (being built at the time of writing) has a Chaos plugin that reads `chaos_class_unlocks`;
   check its character creation against this list before launch.
 - **Staff**: group 4 (gamemaster) to 6 (god) on `players.group_id`, account type 5 for gods. The admin panel (opcode 120)

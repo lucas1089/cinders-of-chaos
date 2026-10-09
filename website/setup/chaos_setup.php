@@ -52,6 +52,16 @@ foreach (array('accounts', 'players') as $t) {
 		finish("The game database has no `$t` table. Import the game server's schema.sql (and server/sql/*.sql) first.\n", 1);
 	}
 }
+// salted password hashes (about 90 characters) need more than the stock CHAR(40); the same as
+// server/sql/chaos_passwords.sql, here too in case the site is installed before that file was imported
+$col = $link->query("SHOW COLUMNS FROM `accounts` LIKE 'password'");
+$colType = $col ? strtolower((string)($col->fetch_assoc()['Type'] ?? '')) : '';
+if ($colType !== 'varchar(255)') {
+	if (!$link->query('ALTER TABLE `accounts` MODIFY `password` VARCHAR(255) NOT NULL')) {
+		finish('accounts.password: ' . $link->error . "\n", 1);
+	}
+	$out .= "accounts.password: $colType -> varchar(255) (salted password hashes)\n";
+}
 
 // 2. ZnoteX schema
 $fresh = !$tableExists('znote_config');
@@ -121,6 +131,12 @@ foreach (znote_migrations_files() as $name => $f) {
 	$n++;
 }
 $out .= "migrations: $n run" . ($fresh ? ' (fresh install)' : '') . "\n";
+// the per-account login throttling (patches/znotex-chaos-passwords.patch) counts failures by account name
+$r = $link->query("SHOW INDEX FROM `znote_login_attempts` WHERE `Key_name` = 'username_time'");
+if ($r && $r->num_rows === 0) {
+	$link->query('ALTER TABLE `znote_login_attempts` ADD KEY `username_time` (`username`, `created_at`)');
+	$out .= "znote_login_attempts: key username_time added\n";
+}
 
 // 4. our plugin
 $err = znote_plugin_install('chaos');
