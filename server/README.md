@@ -71,6 +71,10 @@ server/
                                       still holds (use-after-free on every later method call, e.g. `spell:name()`)
   src-patches/0011-attack-speed-cap.patch   engine: attack interval floor, cap on all attack speed bonuses together,
                                       life / mana leech at most once per 900 ms each (see "Attack speed cap")
+  src-patches/0012-reload-keeps-live-event-pointers.patch   engine: reloads never free a creature event or a spell that
+                                      players / monsters still point to (crash after /reload; see "Engine: reloads and oversize messages")
+  src-patches/0013-oversize-messages-are-dropped.patch   engine: a network message that did not fit is dropped with a console
+                                      line instead of sent cut off (see "Engine: reloads and oversize messages")
   src-patches/0014-salted-password-hashes.patch   engine: salted PBKDF2-SHA256 account passwords, old SHA-1 upgraded at
                                       login, checks on a login worker thread (see "Account passwords"; sql/chaos_passwords.sql)
     item_tooltip.lua  item_tooltip_core.lua (rich item tooltips with the equipped-item compare, client game_itemtooltip)
@@ -629,6 +633,42 @@ dangled: `action:clearItemIdRange()` inside the engine's own register call, a se
 registration, or `spell:name()` after `spell:register()` read and wrote freed memory (18 AddressSanitizer reports per
 script load; arbitrary crashes when the block had been reused, e.g. after a `/lua` test that created a Spell). The engine
 now registers a copy and leaves the script's object alone. Scripts need no change.
+
+## Engine: reloads and oversize messages (`src-patches/0012`, `0013`)
+
+**Reloads keep what creatures point to (0012).** A player or monster holds raw pointers to its registered creature events.
+After `/reload creaturescripts`, `/reload scripts` or `/reload all` (also the admin panel's "Reload system"),
+`CreatureEvents::removeInvalidEvents()` freed every event left without a script (an XML event whose file no longer loads or
+was removed, a revscript that no longer registers it) and kept iterating over the erased entry; the next extended opcode,
+kill, death, health change ... of a logged-in player then read freed memory. Reproduced on an AddressSanitizer build: a
+syntax error in `creaturescripts/scripts/game_store.lua` + `/reload creaturescripts` + one extended opcode, and a syntax error in
+`scripts/chaos/hunt.lua` + `/reload scripts` + a kill, each gave `heap-use-after-free` in `Creature::getCreatureEvents`. Now an
+event without a script stays, unloaded and skipped; when a later reload brings the script back, the same object is reused
+and works again for players who are still online (checked: 47 -> 48 extended opcode events on the player after fixing the
+file). A name that comes back with another event type gets a new entry and the old one is kept, never freed. Monster spells
+had the same flaw: an attack or defense that names a spell (`soulroots`, `renegade knight`, `vorgrunwave`, ... in many base
+monsters) kept a pointer into the spell list, which `/reload scripts` and `/reload all` (revscript spells), `/reload spells`
+(for monster types made in Lua) and the SIGHUP reload (spells after monsters) freed: a Rotten Golem next to a player after
+`/reload scripts` gave `heap-use-after-free` in `Monster::doAttacking`. Monster types now re-resolve these spells by name after
+each of those reloads. The same build with 0012 had no report through the three cases, a death and a kill with broken
+scripts, `/reload spells`, `/reload all`, logout / login and a name re-registered with another type. Actions, movements,
+talkactions, globalevents and weapons are looked up at each use, nothing keeps their pointers; no change there.
+
+**Oversize network messages are dropped, not cut (0013).** `NetworkMessage::add*` returned silently when the buffer was full
+and `addString` / `addBytes` refused more than 8192 bytes, so the message went out without its tail and the client misread the
+rest of the packet (the `0x32` parse error of "Extended opcode size limit"). A message now remembers that something did not fit
+(`isOverflow()`); `ProtocolGame::writeToOutputBuffer` and `Protocol::send` drop it and print one line, e.g.
+`[Warning - Protocol] network message too big, not sent: opcode 0x32 (extended opcode 120), 2 bytes written before it
+overflowed, to player Tester`. The packet length on the wire is 16 bits, but this base's buffer is 90459 bytes: a message, or a
+batch of small messages collected for one send, past 65535 bytes wrapped its length (seen before the patch: a 64 KB extended
+opcode reached the client as a 6492-byte packet and a parse error). Messages and batches now stop at 65522 bytes of body.
+`extended_opcode.lua` and `Chaos.sendChunked` still keep scripts under the limit; this is the engine's safety net. Tested on a
+server built with 0001-0014 and the full map: logins (the admin catalog in three chunks, 8192-byte opcode 92 parts), teleports
+to ten floors and eight towns, walking up and down stairs, a browse field of 255 items with item attributes and a backpack of
+20, the crafting bench, 7600- and 8192-byte extended opcodes, ten 8192-byte opcodes in one dispatcher task (all ten arrived) and
+a market browse of 1200 offers (25 KB, arrived whole; the client has no market window, it logs "unhandled opcode 249" with or
+without the patch): no message dropped, no client parse error. A 9000-byte string and a 72 KB message were dropped with the line
+above and the client went on without an error.
 
 ## Passive tree points
 

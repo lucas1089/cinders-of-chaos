@@ -1,0 +1,425 @@
+# Reloads no longer free event objects that live creatures still point to.
+#  1. Creature events: Creature::eventsList holds raw pointers into CreatureEvents' map. After a reload of creaturescripts,
+#     scripts or everything, CreatureEvents::removeInvalidEvents() erased every entry left without a script (an XML
+#     event whose file now fails to load or was removed, a revscript that no longer registers it) while logged-in players
+#     and spawned monsters still held it, and it went on with the erased iterator. The next think / kill / death /
+#     health change / extended opcode / modal window ... of such a creature read freed memory (AddressSanitizer:
+#     heap-use-after-free in Creature::getCreatureEvents). Now nothing is erased: an event without a script stays in the
+#     map, unloaded (getCreatureEvents and the global login / logout / advance loops skip it), and a later reload that
+#     brings the script back reuses the same object, so it works again for the creatures that hold it. An event whose name
+#     comes back with another type is moved out of the map but kept alive (never freed). The execute functions return
+#     at once for an unloaded event (a reload run from inside an event, e.g. the admin panel's "Reload system" from an
+#     extended opcode, can unload the events after it in the list being walked).
+#  2. Monster spells: a monster attack / defense that names a registered spell (spells.xml or a revscript Spell) keeps a
+#     pointer into Spells' maps. A reload of scripts (or everything) frees the revscript spells and the SIGHUP reload
+#     reloads spells after monsters; monster types made by scripts are not in a monsters reload at all. The next cast
+#     used freed memory (Monster::doAttacking). The block now keeps the spell's name and Monsters::updateSpellLinks()
+#     points it at the spell registered under that name after every reload that clears spells (none: the block is skipped).
+# Actions, movements, talkactions, globalevents and weapons are looked up at each use; nothing keeps their pointers.
+# Apply in the server source root after 0001-0011: patch -p1 < 0012-reload-keeps-live-event-pointers.patch, then rebuild.
+--- a/src/creatureevent.cpp
++++ b/src/creatureevent.cpp
+@@ -26,11 +26,39 @@ void CreatureEvents::clear(bool fromLua)
+ 
+ void CreatureEvents::removeInvalidEvents()
+ {
+-	for (auto it = creatureEvents.begin(); it != creatureEvents.end(); ++it) {
+-		if (it->second.getScriptId() == 0) {
+-			creatureEvents.erase(it->second.getName());
++	// Creatures keep raw pointers to these entries (Creature::eventsList), so an event left without a script by a reload
++	// is never freed here: it stays in the map, unloaded (getCreatureEvents and the global events skip it), and a later
++	// reload that brings the script back reuses it, which makes it work again for the creatures that still hold it.
++	for (auto& it : creatureEvents) {
++		if (it.second.getScriptId() == 0 && it.second.isLoaded()) {
++			it.second.clearEvent();
++		}
++	}
++}
++
++bool CreatureEvents::addEvent(CreatureEvent_ptr creatureEvent)
++{
++	auto it = creatureEvents.find(creatureEvent->getName());
++	if (it != creatureEvents.end()) {
++		CreatureEvent& oldEvent = it->second;
++		if (oldEvent.isLoaded()) {
++			// a second event with the same name is ignored, as before
++			return false;
+ 		}
++
++		if (oldEvent.getEventType() == creatureEvent->getEventType()) {
++			//an event with the same name and type that is not loaded (happens when reloading) is reused
++			oldEvent.copyEvent(creatureEvent.get());
++			return false;
++		}
++
++		// the name now has another type: creatures may still hold the old entry, so it is moved out of the map (kept
++		// alive, unloaded) instead of being freed, and the new event takes the name
++		retiredEvents.push_back(creatureEvents.extract(it));
+ 	}
++
++	creatureEvents.emplace(creatureEvent->getName(), std::move(*creatureEvent));
++	return true;
+ }
+ 
+ LuaScriptInterface& CreatureEvents::getScriptInterface()
+@@ -59,20 +87,7 @@ bool CreatureEvents::registerEvent(Event_ptr event, const pugi::xml_node&)
+ 		return false;
+ 	}
+ 
+-	CreatureEvent* oldEvent = getEventByName(creatureEvent->getName(), false);
+-	if (oldEvent) {
+-		//if there was an event with the same that is not loaded
+-		//(happens when reloading), it is reused
+-		if (!oldEvent->isLoaded() && oldEvent->getEventType() == creatureEvent->getEventType()) {
+-			oldEvent->copyEvent(creatureEvent.get());
+-		}
+-
+-		return false;
+-	} else {
+-		//if not, register it normally
+-		creatureEvents.emplace(creatureEvent->getName(), std::move(*creatureEvent));
+-		return true;
+-	}
++	return addEvent(std::move(creatureEvent));
+ }
+ 
+ bool CreatureEvents::registerLuaEvent(CreatureEvent* event)
+@@ -83,20 +98,7 @@ bool CreatureEvents::registerLuaEvent(CreatureEvent* event)
+ 		return false;
+ 	}
+ 
+-	CreatureEvent* oldEvent = getEventByName(creatureEvent->getName(), false);
+-	if (oldEvent) {
+-		//if there was an event with the same that is not loaded
+-		//(happens when reloading), it is reused
+-		if (!oldEvent->isLoaded() && oldEvent->getEventType() == creatureEvent->getEventType()) {
+-			oldEvent->copyEvent(creatureEvent.get());
+-		}
+-
+-		return false;
+-	} else {
+-		//if not, register it normally
+-		creatureEvents.emplace(creatureEvent->getName(), std::move(*creatureEvent));
+-		return true;
+-	}
++	return addEvent(std::move(creatureEvent));
+ }
+ 
+ CreatureEvent* CreatureEvents::getEventByName(const std::string& name, bool forceLoaded /*= true*/)
+@@ -114,7 +116,7 @@ bool CreatureEvents::playerLogin(Player* player) const
+ {
+ 	//fire global event if is registered
+ 	for (const auto& it : creatureEvents) {
+-		if (it.second.getEventType() == CREATURE_EVENT_LOGIN) {
++		if (it.second.getEventType() == CREATURE_EVENT_LOGIN && it.second.isLoaded()) {
+ 			if (!it.second.executeOnLogin(player)) {
+ 				return false;
+ 			}
+@@ -127,7 +129,7 @@ bool CreatureEvents::playerLogout(Player* player) const
+ {
+ 	//fire global event if is registered
+ 	for (const auto& it : creatureEvents) {
+-		if (it.second.getEventType() == CREATURE_EVENT_LOGOUT) {
++		if (it.second.getEventType() == CREATURE_EVENT_LOGOUT && it.second.isLoaded()) {
+ 			if (!it.second.executeOnLogout(player)) {
+ 				return false;
+ 			}
+@@ -140,7 +142,7 @@ bool CreatureEvents::playerAdvance(Player* player, skills_t skill, uint32_t oldL
+                                        uint32_t newLevel)
+ {
+ 	for (auto& it : creatureEvents) {
+-		if (it.second.getEventType() == CREATURE_EVENT_ADVANCE) {
++		if (it.second.getEventType() == CREATURE_EVENT_ADVANCE && it.second.isLoaded()) {
+ 			if (!it.second.executeAdvance(player, skill, oldLevel, newLevel)) {
+ 				return false;
+ 			}
+@@ -270,6 +272,11 @@ void CreatureEvent::clearEvent()
+ 
+ bool CreatureEvent::executeOnLogin(Player* player) const
+ {
++	if (!loaded) {
++		// unloaded by a reload that ran while the caller was walking its event list
++		return true;
++	}
++
+ 	//onLogin(player)
+ 	if (!scriptInterface->reserveScriptEnv()) {
+ 		std::cout << "[Error - CreatureEvent::executeOnLogin] Call stack overflow" << std::endl;
+@@ -289,6 +296,11 @@ bool CreatureEvent::executeOnLogin(Player* player) const
+ 
+ bool CreatureEvent::executeOnLogout(Player* player) const
+ {
++	if (!loaded) {
++		// unloaded by a reload that ran while the caller was walking its event list
++		return true;
++	}
++
+ 	//onLogout(player)
+ 	if (!scriptInterface->reserveScriptEnv()) {
+ 		std::cout << "[Error - CreatureEvent::executeOnLogout] Call stack overflow" << std::endl;
+@@ -308,6 +320,11 @@ bool CreatureEvent::executeOnLogout(Player* player) const
+ 
+ bool CreatureEvent::executeOnThink(Creature* creature, uint32_t interval)
+ {
++	if (!loaded) {
++		// unloaded by a reload that ran while the caller was walking its event list
++		return true;
++	}
++
+ 	//onThink(creature, interval)
+ 	if (!scriptInterface->reserveScriptEnv()) {
+ 		std::cout << "[Error - CreatureEvent::executeOnThink] Call stack overflow" << std::endl;
+@@ -329,6 +346,11 @@ bool CreatureEvent::executeOnThink(Creature* creature, uint32_t interval)
+ 
+ bool CreatureEvent::executeOnPrepareDeath(Creature* creature, Creature* killer)
+ {
++	if (!loaded) {
++		// unloaded by a reload that ran while the caller was walking its event list
++		return true;
++	}
++
+ 	//onPrepareDeath(creature, killer)
+ 	if (!scriptInterface->reserveScriptEnv()) {
+ 		std::cout << "[Error - CreatureEvent::executeOnPrepareDeath] Call stack overflow" << std::endl;
+@@ -357,6 +379,11 @@ bool CreatureEvent::executeOnPrepareDeath(Creature* creature, Creature* killer)
+ 
+ bool CreatureEvent::executeOnDeath(Creature* creature, Item* corpse, Creature* killer, Creature* mostDamageKiller, bool lastHitUnjustified, bool mostDamageUnjustified)
+ {
++	if (!loaded) {
++		// unloaded by a reload that ran while the caller was walking its event list
++		return true;
++	}
++
+ 	//onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjustified, mostDamageUnjustified)
+ 	if (!scriptInterface->reserveScriptEnv()) {
+ 		std::cout << "[Error - CreatureEvent::executeOnDeath] Call stack overflow" << std::endl;
+@@ -397,6 +424,11 @@ bool CreatureEvent::executeOnDeath(Creature* creature, Item* corpse, Creature* k
+ bool CreatureEvent::executeAdvance(Player* player, skills_t skill, uint32_t oldLevel,
+                                        uint32_t newLevel)
+ {
++	if (!loaded) {
++		// unloaded by a reload that ran while the caller was walking its event list
++		return true;
++	}
++
+ 	//onAdvance(player, skill, oldLevel, newLevel)
+ 	if (!scriptInterface->reserveScriptEnv()) {
+ 		std::cout << "[Error - CreatureEvent::executeAdvance] Call stack overflow" << std::endl;
+@@ -420,6 +452,11 @@ bool CreatureEvent::executeAdvance(Player* player, skills_t skill, uint32_t oldL
+ 
+ void CreatureEvent::executeOnKill(Creature* creature, Creature* target)
+ {
++	if (!loaded) {
++		// unloaded by a reload that ran while the caller was walking its event list
++		return;
++	}
++
+ 	//onKill(creature, target)
+ 	if (!scriptInterface->reserveScriptEnv()) {
+ 		std::cout << "[Error - CreatureEvent::executeOnKill] Call stack overflow" << std::endl;
+@@ -441,6 +478,11 @@ void CreatureEvent::executeOnKill(Creature* creature, Creature* target)
+ 
+ void CreatureEvent::executeModalWindow(Player* player, uint32_t modalWindowId, uint8_t buttonId, uint8_t choiceId)
+ {
++	if (!loaded) {
++		// unloaded by a reload that ran while the caller was walking its event list
++		return;
++	}
++
+ 	//onModalWindow(player, modalWindowId, buttonId, choiceId)
+ 	if (!scriptInterface->reserveScriptEnv()) {
+ 		std::cout << "[Error - CreatureEvent::executeModalWindow] Call stack overflow" << std::endl;
+@@ -465,6 +507,11 @@ void CreatureEvent::executeModalWindow(Player* player, uint32_t modalWindowId, u
+ 
+ bool CreatureEvent::executeTextEdit(Player* player, Item* item, const std::string& text)
+ {
++	if (!loaded) {
++		// unloaded by a reload that ran while the caller was walking its event list
++		return true;
++	}
++
+ 	//onTextEdit(player, item, text)
+ 	if (!scriptInterface->reserveScriptEnv()) {
+ 		std::cout << "[Error - CreatureEvent::executeTextEdit] Call stack overflow" << std::endl;
+@@ -488,6 +535,11 @@ bool CreatureEvent::executeTextEdit(Player* player, Item* item, const std::strin
+ 
+ void CreatureEvent::executeHealthChange(Creature* creature, Creature* attacker, CombatDamage& damage)
+ {
++	if (!loaded) {
++		// unloaded by a reload that ran while the caller was walking its event list
++		return;
++	}
++
+ 	//onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+ 	if (!scriptInterface->reserveScriptEnv()) {
+ 		std::cout << "[Error - CreatureEvent::executeHealthChange] Call stack overflow" << std::endl;
+@@ -532,6 +584,11 @@ void CreatureEvent::executeHealthChange(Creature* creature, Creature* attacker,
+ }
+ 
+ void CreatureEvent::executeManaChange(Creature* creature, Creature* attacker, CombatDamage& damage) {
++	if (!loaded) {
++		// unloaded by a reload that ran while the caller was walking its event list
++		return;
++	}
++
+ 	//onManaChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+ 	if (!scriptInterface->reserveScriptEnv()) {
+ 		std::cout << "[Error - CreatureEvent::executeManaChange] Call stack overflow" << std::endl;
+@@ -570,6 +627,11 @@ void CreatureEvent::executeManaChange(Creature* creature, Creature* attacker, Co
+ 
+ void CreatureEvent::executeExtendedOpcode(Player* player, uint8_t opcode, const std::string& buffer)
+ {
++	if (!loaded) {
++		// unloaded by a reload that ran while the caller was walking its event list
++		return;
++	}
++
+ 	//onExtendedOpcode(player, opcode, buffer)
+ 	if (!scriptInterface->reserveScriptEnv()) {
+ 		std::cout << "[Error - CreatureEvent::executeExtendedOpcode] Call stack overflow" << std::endl;
+--- a/src/creatureevent.h
++++ b/src/creatureevent.h
+@@ -101,6 +101,8 @@ class CreatureEvents final : public BaseEvents
+ 		void removeInvalidEvents();
+ 
+ 	private:
++		bool addEvent(CreatureEvent_ptr creatureEvent);
++
+ 		LuaScriptInterface& getScriptInterface() override;
+ 		std::string getScriptBaseName() const override;
+ 		Event_ptr getEvent(const std::string& nodeName) override;
+@@ -109,6 +111,8 @@ class CreatureEvents final : public BaseEvents
+ 		//creature events
+ 		using CreatureEventMap = std::map<std::string, CreatureEvent>;
+ 		CreatureEventMap creatureEvents;
++		// entries replaced by an event of another type under the same name; never freed (creatures may point to them)
++		std::vector<CreatureEventMap::node_type> retiredEvents;
+ 
+ 		LuaScriptInterface scriptInterface;
+ };
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -5786,6 +5786,7 @@ bool Game::reload(ReloadTypes_t reloadType)
+ 				std::cout << "[Error - Game::reload] Failed to reload monsters." << std::endl;
+ 				std::terminate();
+ 			}
++			g_monsters.updateSpellLinks(); // monster types made by scripts are not in the monsters reload
+ 			return true;
+ 		}
+ 
+@@ -5809,6 +5810,7 @@ bool Game::reload(ReloadTypes_t reloadType)
+ 			g_spells->clear(true);
+ 			g_scripts->loadScripts("scripts", false, true);
+ 			g_creatureEvents->removeInvalidEvents();
++			g_monsters.updateSpellLinks();
+ 			/*
+ 			Npcs::reload();
+ 			raids.reload() && raids.startup();
+@@ -5862,6 +5864,7 @@ bool Game::reload(ReloadTypes_t reloadType)
+ 			g_spells->clear(true);
+ 			g_scripts->loadScripts("scripts", false, true);
+ 			g_creatureEvents->removeInvalidEvents();
++			g_monsters.updateSpellLinks();
+ 			return true;
+ 		}
+ 	}
+--- a/src/monster.cpp
++++ b/src/monster.cpp
+@@ -1024,7 +1024,7 @@ void Monster::onThinkDefense(uint32_t interval)
+ 			continue;
+ 		}
+ 
+-		if ((spellBlock.chance >= static_cast<uint32_t>(uniform_random(1, 100)))) {
++		if (spellBlock.spell && (spellBlock.chance >= static_cast<uint32_t>(uniform_random(1, 100)))) {
+ 			minCombatValue = spellBlock.minCombatValue;
+ 			maxCombatValue = spellBlock.maxCombatValue;
+ 			spellBlock.spell->castSpell(this, this);
+--- a/src/monsters.cpp
++++ b/src/monsters.cpp
+@@ -78,6 +78,20 @@ bool Monsters::reload()
+ 	return loadFromXml(true);
+ }
+ 
++void Monsters::updateSpellLinks()
++{
++	for (auto& it : monsters) {
++		for (auto spells : {&it.second.info.attackSpells, &it.second.info.defenseSpells}) {
++			for (spellBlock_t& sb : *spells) {
++				if (!sb.combatSpell && !sb.spellName.empty()) {
++					// nullptr when no spell has that name any more: Monster skips the block
++					sb.spell = g_spells->getSpellByName(sb.spellName);
++				}
++			}
++		}
++	}
++}
++
+ ConditionDamage* Monsters::getDamageCondition(ConditionType_t conditionType,
+         int32_t maxDamage, int32_t minDamage, int32_t startDamage, uint32_t tickInterval)
+ {
+@@ -147,6 +161,7 @@ bool Monsters::deserializeSpell(const pugi::xml_node& node, spellBlock_t& sb, co
+ 
+ 	if (auto spell = g_spells->getSpellByName(name)) {
+ 		sb.spell = spell;
++		sb.spellName = name;
+ 		return true;
+ 	}
+ 
+@@ -570,6 +585,7 @@ bool Monsters::deserializeSpell(MonsterSpell* spell, spellBlock_t& sb, const std
+ 
+ 	sb.spell = g_spells->getSpellByName(spell->name);
+ 	if (sb.spell) {
++		sb.spellName = spell->name;
+ 		return true;
+ 	}
+ 
+--- a/src/monsters.h
++++ b/src/monsters.h
+@@ -50,7 +50,7 @@ struct summonBlock_t {
+ 
+ class BaseSpell;
+ struct spellBlock_t {
+-	constexpr spellBlock_t() = default;
++	spellBlock_t() = default;
+ 	~spellBlock_t();
+ 	spellBlock_t(const spellBlock_t& other) = delete;
+ 	spellBlock_t& operator=(const spellBlock_t& other) = delete;
+@@ -62,7 +62,8 @@ struct spellBlock_t {
+ 		minCombatValue(other.minCombatValue),
+ 		maxCombatValue(other.maxCombatValue),
+ 		combatSpell(other.combatSpell),
+-		isMelee(other.isMelee) {
++		isMelee(other.isMelee),
++		spellName(std::move(other.spellName)) {
+ 		other.spell = nullptr;
+ 	}
+ 
+@@ -74,6 +75,9 @@ struct spellBlock_t {
+ 	int32_t maxCombatValue = 0;
+ 	bool combatSpell = false;
+ 	bool isMelee = false;
++	// set when spell is a spell of g_spells found by this name (not owned): a spells / scripts reload frees that
++	// object, Monsters::updateSpellLinks() points the block at the one registered under the name afterwards
++	std::string spellName;
+ };
+ 
+ struct voiceBlock_t {
+@@ -226,6 +230,8 @@ class Monsters
+ 			return loaded;
+ 		}
+ 		bool reload();
++		// after spells were cleared and loaded again (reload of spells, scripts or everything)
++		void updateSpellLinks();
+ 
+ 		MonsterType* getMonsterType(const std::string& name, bool loadFromFile = true);
+ 		bool deserializeSpell(MonsterSpell* spell, spellBlock_t& sb, const std::string& description = "");
+--- a/src/signals.cpp
++++ b/src/signals.cpp
+@@ -80,6 +80,7 @@ void sighupHandler()
+ 	std::cout << "Reloaded monsters." << std::endl;
+ 
+ 	g_spells->reload();
++	g_monsters.updateSpellLinks();
+ 	std::cout << "Reloaded spells." << std::endl;
+ 
+ 	g_talkActions->reload();
