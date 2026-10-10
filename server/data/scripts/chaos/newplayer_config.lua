@@ -79,7 +79,7 @@ return {
 				{id = 7618, count = 10},
 				{id = 7620, count = 5}
 			},
-			role = "thief"
+			role = "ranged" -- the Royal Paladin's potions (add_vocations.py)
 		},
 		monk = { -- the Monk line fights unarmed: no weapon, the light armour the Ranger may wear (add_vocations.py)
 			equip = {
@@ -92,7 +92,7 @@ return {
 				{id = 7618, count = 10},
 				{id = 7620, count = 5}
 			},
-			role = "thief" -- the unrestricted potions
+			role = "ranged" -- the Royal Paladin's potions (add_vocations.py)
 		},
 		necromancer = { -- the Necromancer line wields and wears what the Mystic does (add_vocations.py): the caster kit
 			base = "mystic"
@@ -173,16 +173,16 @@ return {
 
 	-- ------------------------------------------------------------------ milestone gifts (one time per character)
 	-- potions by kit role; the base potions script refuses the strong ones to some vocations, so each role gets what
-	-- it may drink (the Thief line only the unrestricted ones, see docs/CLASSES.md "Limits of phase 1")
+	-- it may drink (add_vocations.py: the Thief and Monk lines drink the Royal Paladin's, "ranged")
 	milestones = {
 		{level = 20, orbs = 1, potions = {
-			melee = {{7618, 50}}, ranged = {{7618, 25}, {7620, 25}}, caster = {{7620, 50}}, thief = {{7618, 40}, {7620, 10}}}},
+			melee = {{7618, 50}}, ranged = {{7618, 25}, {7620, 25}}, caster = {{7620, 50}}}},
 		{level = 50, orbs = 2, potions = {
-			melee = {{7588, 50}}, ranged = {{7588, 25}, {7589, 25}}, caster = {{7589, 50}}, thief = {{7618, 75}, {7620, 25}}}},
+			melee = {{7588, 50}}, ranged = {{7588, 25}, {7589, 25}}, caster = {{7589, 50}}}},
 		{level = 100, orbs = 3, items = {{27990, 2}}, -- Stamina Extension (the store item, +2 h of stamina each)
-			potions = {melee = {{7591, 50}}, ranged = {{8472, 50}}, caster = {{7590, 50}}, thief = {{7618, 100}, {7620, 50}}}},
+			potions = {melee = {{7591, 50}}, ranged = {{8472, 50}}, caster = {{7590, 50}}}},
 		{level = 200, orbs = 5, potions = {
-			melee = {{8473, 50}}, ranged = {{26030, 50}}, caster = {{26029, 50}}, thief = {{7618, 150}, {7620, 50}}}}
+			melee = {{8473, 50}}, ranged = {{26030, 50}}, caster = {{26029, 50}}}}
 	},
 	orbId = 29856, -- Orb of Upheaval
 

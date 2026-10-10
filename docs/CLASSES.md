@@ -65,7 +65,7 @@ their owner, so their damage counts for it.
 **Monk** (base): fights unarmed (or with a staff), builds chi with basic strikes (max 5) and spends it on finishers that
 grow with the chi spent; evasion; light armour.
 - **Shadowfist**: Pressure Points (a stacking debuff: the target takes more from Monks), Shadowfist Flurry (2 + 1 hit per chi),
-  focus: after a finisher, crit chance 8% per chi spent for 4 s.
+  focus: after a finisher, crit chance 2.5% per chi spent for 4 s (12.5% at 5 chi).
 - **Iron Sage**: Chi Ward (an absorb shield on a party member or itself), Iron Palm (a stun), Mantra of Stone (party aura: -8%
   damage taken), Kindled Breath also heals over time; more health and armour.
 
@@ -151,8 +151,9 @@ Limits of phase 1:
   (and end it). A monster that sees invisible creatures is handled the same way.
 - Dual wield needs the engine patch; without it a Ninja fights with one blade and gets no off-hand strike. Both blades' item bonuses
   count. A character that stops being a Ninja keeps a sword already in the shield hand until it moves it (it then cannot put it back).
-- The line has no healing spells of its own and the base server's potions script (`actions/scripts/other/potions.lua`) does not list
-  vocations 11-13, so the strongest potions refuse them; the shared Chaos spells (Flickerdash, Banner Call, Soulward, Hunter's
+- The line has no healing spells of its own. Potions: since the class pass of 2026-10 `add_vocations.py` adds the line (11-13) to
+  the Royal Paladin's potion lists (the line wears what the Paladin wears; see "Item, spell and potion lists"); before, the
+  strongest potions refused it. The shared Chaos spells (Flickerdash, Banner Call, Soulward, Hunter's
   Instinct) and the stock spells do not list the line either. These were left alone in phase 1 (existing spells and base scripts).
 - Spell strikes have a level factor (`Chaos.classes.spellLevelScale`) that stands in for the missing passive tree.
 
@@ -184,7 +185,12 @@ Limits of phase 1:
   Elementalist; Master Sorcerer -> Elementalist; Druid -> Mystic, Illusionist; Elder Druid -> Illusionist; Illusionist (old 9) ->
   Mystic, Illusionist; Arch Illusionist -> Illusionist. The Berserker is only added to two-handed swords, axes and clubs among the
   weapons and hand items and never to shields; the Beastmaster only to bows and arrows among weapons, hand items and ammunition.
-  `potions.lua`: a potion of the Elite Knight (8) also lists the Berserker (14), one of the Royal Paladin (7) the Beastmaster (15);
+  `potions.lua`: a potion of the Elite Knight (8) also lists the Berserker (14), one of the Royal Paladin (7) the Beastmaster (15),
+  the Thief line (11-13) and the Monk line (17-19), one of either the Templar line (23-25), one of the Elementalist (5) the
+  Necromancer line (20-22); the refusal texts name our classes ("Only Warriors and Templars of level 80 or above may drink this
+  fluid."). The mastermind potion (`strengthening_potions.lua`, `Player.isMage`: Sorcerer and Druid ids only) also takes the
+  Illusionist and the Necromancer line ("Only Mystics and Necromancers ..."). Unit test `server/tests/potions_patch_test.lua`;
+  in game: a Ninja, a Necromancer and a Templar drink theirs and are refused the others;
   `lib/core/player.lua`: `Player.isKnight` / `isPaladin` count them too. Weapons without a vocation list stay open to everyone.
 - **Ascension**: the Ascendant Oracle (Warrior), `deadeye|beastmaster` (Ranger), `elementalist|illusionist` (Mystic),
   `ninja|samurai` (Thief); level 100, protection zone, out of combat, final. The store's Character > Services takes the new words
@@ -275,8 +281,9 @@ Open for the Necromancer:
   `client/overlay/modules/game_monkchi/chimath_test.lua`.
 
 Open for the Monk:
-- Balance: measured at level 300 (`server/data/spells/README.md` "Monk line"): the Shadowfist is ~26% above the Ninja on one
-  target (the focus crit on the auto attack); level 1000 not measured yet.
+- Balance: measured at level 300 (`server/data/spells/README.md` "Monk line"): the Shadowfist was ~26% above the Ninja on one
+  target (the focus crit, 8% per chi, on the auto attack); with 2.5% per chi it is 1078 against the Ninja's 1001 (+8%, a
+  burst class's lead). Level 1000 by formula only (~3060 against the Ninja's 2837), not measured yet.
 - **Passive tree**: no per-class trees exist yet. Proposal when the tree is reworked: a Monk start, a Shadowfist path ending in a keystone
   "Hundred Hands" (focus crits also add a chi) and an Iron Sage path ending in "Stone Body" (Chi Ward on yourself is 50% stronger and
   Mantra of Stone also gives 10% attack speed). Until then `keystoneKey` is nil for 17-19 and the level factor stands in for the tree.
@@ -405,7 +412,7 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
   shadow; Samurai: crit, parry, Bushido). Until then the vocation has no class entry in the tree. When it exists, re-tune or drop
   `Chaos.classes.spellLevelScale` and measure again at levels 300 and 1000. Per-ascended keystone variants (Juggernaut vs Berserker,
   Deadeye vs Beastmaster) would need new variants in the tree data; today both classes of a line share their old vocation's.
-- Healing for the Thief line (a spell or the potions script's vocation lists), starting gear for every class,
+- Healing for the Thief line (a spell; the potions are done: the Royal Paladin's), starting gear for every class,
   outfits, the classes in `admin/testkit.lua` (it already sorts Berserker / Beastmaster with the knight / paladin kits).
 - The full rebalance at levels 300 and 1000 with passive trees; the client's passive tree class texts (`vocationSpecials`) still
   describe the old vocations; base server scripts that test vocation ids by number (e.g. the familiar system, `firstitems.lua`, NPCs

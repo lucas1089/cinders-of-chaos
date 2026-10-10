@@ -1,7 +1,7 @@
 -- Shadowfist Flurry: spend all chi on a flurry of blows at the target next to you: 2 + 1 per chi spent.
 --
 -- Finisher. One hit every 0.2 s while the target stays next to you; every hit is a Monk strike, so it crits in the
--- focus window this finisher opens (8% per chi spent, x1.5) and counts the target's Pressure Points.
+-- focus window this finisher opens (2.5% per chi spent, x1.5) and counts the target's Pressure Points.
 dofile('data/spells/scripts/chaos/_monk.lua')
 
 local function hit(playerId, targetId, left)

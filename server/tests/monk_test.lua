@@ -119,8 +119,12 @@ near(M.attackFactor(1), 1); near(M.attackFactor(2), 1.2); near(M.attackFactor(3)
 eq(M.fistPower(300, 110), 110 * 47.5)
 
 -- ------------------------------------------------------------------ shadowfist focus, pressure points
-near(M.focusCritChance(5), 0.40); near(M.focusCritChance(0), 0)
-eq(select(2, M.focusRoll(5, 0.39)), true, "crit"); eq(select(2, M.focusRoll(5, 0.40)), false, "no crit")
+near(M.focusCritChance(5), 0.125); near(M.focusCritChance(1), 0.025); near(M.focusCritChance(0), 0)
+near(M.focusCritChance(9), 0.125) -- capped at the chi maximum
+eq(select(2, M.focusRoll(5, 0.12)), true, "crit"); eq(select(2, M.focusRoll(5, 0.13)), false, "no crit")
+-- the balance bound (server/data/spells/README.md "Monk line"): the window covers ~all the rotation's damage, so the
+-- expected uplift at 5 chi, crit chance x (multiplier - 1), stays a small burst lead (<= 10%), not the former +20%
+assert(M.focusCritChance(5) * (cfg.focus.critMultiplier - 1) <= 0.10, "focus crit uplift at most 10%")
 eq(M.focusRoll(5, 0.1), cfg.focus.critMultiplier)
 eq(select(2, M.focusRoll(0, 0)), false, "no chi, no crit")
 near(M.pressureMultiplier(0), 1); near(M.pressureMultiplier(5), 1.25); near(M.pressureMultiplier(9), 1.25)

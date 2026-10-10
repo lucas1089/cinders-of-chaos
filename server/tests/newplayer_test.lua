@@ -105,7 +105,8 @@ do
 	eq(slotOf(nj, "left").id, 2379, "ninja inherits the dagger")
 	eq(bpCount(nj, 2399), 30, "ninja inherits the stars")
 	eq(bpCount(nj, 2379), 1, "ninja off-hand dagger")
-	eq(nj.role, "thief", "ninja role inherited")
+	eq(nj.role, "ranged", "ninja role inherited (the Royal Paladin's potions)")
+	eq(NP.kitFor(17).role, "ranged", "monk: the Royal Paladin's potions")
 
 	-- copies: changing a returned kit does not change the config
 	k.equip[1].id = 1
@@ -184,10 +185,14 @@ do
 	eq(orbs, 3, "level 100: 3 Orbs of Upheaval")
 	ok(stamina > 0, "level 100: stamina refill item")
 	ok(potions > 0, "level 100: potions")
-	local thief = NP.milestoneItems(2, "thief")
-	for _, it in ipairs(thief) do
-		ok(it.id == 7618 or it.id == 7620 or it.id == cfg.orbId, "thief potions are the unrestricted ones")
+	-- the Thief and Monk lines drink the Royal Paladin's potions (add_vocations.py): the ranged gifts
+	local thiefRole = NP.kitFor(11).role
+	eq(thiefRole, "ranged", "thief role")
+	local has = false
+	for _, it in ipairs(NP.milestoneItems(3, thiefRole)) do
+		has = has or it.id == 8472
 	end
+	ok(has, "thief level 100: great spirit potions")
 	ok(#NP.milestoneItems(1, "nonsense") > 0, "an unknown role falls back to melee potions")
 	eq(#NP.milestoneItems(9, "melee"), 0, "unknown milestone")
 end

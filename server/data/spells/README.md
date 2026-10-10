@@ -458,10 +458,11 @@ Ascension at level 100 (the Ascendant Oracle), behind the store unlock of the Mo
   it and do x(0.30 + 0.14 x chi) of their 5-chi value (0.44 at 1 chi). The kit's damage is ORIGIN_SPELL; physical, blocked like a spell.
 - **Strike formula** (like the Thief line's): (level / 5 + power x a + b) x the level factor (Chaos.classes.spellLevelScale, x2 at level 1000),
   power = fist skill x fist attack (a staff: club skill x its attack).
-- **Shadowfist**: a finisher opens a 4 s focus: weapon hits and strikes crit (x1.5) with 8% per chi spent. Pressure Points: +5% per stack.
+- **Shadowfist**: a finisher opens a 4 s focus: weapon hits and strikes crit (x1.5) with 2.5% per chi spent (was 8%, see the
+  measurement below). Pressure Points: +5% per stack.
 - **Evasion**: 6% Monk, 8% Shadowfist, 4% Iron Sage against melee and ranged hits; +25% for 2 s after Mistborne Step.
 
-**Estimate, not measured** (`ztest`-style rotation computed from the formulas: 90 s, the auto attack averaged from the formula, dexterity 20,
+**Estimate, not measured, with the former focus crit (8% per chi)** (`ztest`-style rotation computed from the formulas: 90 s, the auto attack averaged from the formula, dexterity 20,
 the 2 s group cooldown, best ready spell, finishers at 4+ chi, Pressure Points kept at 5 stacks; no passive tree; skill 110 at level 300, 140 at
 level 1000; no armour on the target). The "5 targets" column is the area-first rotation (Whirling Heel before the single-target finishers).
 
@@ -477,7 +478,9 @@ level 1000; no armour on the target). The "5 targets" column is the area-first r
 Target: the Shadowfist in the single-target bracket with the Ninja (1050 / 2837) and the crossbow Deadeye (1074 / 2770); the Iron Sage tanky with
 modest damage, below the knight (639 / 1957), paid back by Chi Ward (~1630 absorb at level 300, ~3620 at level 1000, every 12 s), Mantra of
 Stone (-8% for the party) and the stun. The Shadowfist's area value at level 1000 (~4020, Whirling Heel with the focus crit) is above the
-Ninja's 3710: watch it in phase B (lower `whirlingHeel` or exclude area strikes from the focus crit if it holds).
+Ninja's 3710: watch it in phase B (lower `whirlingHeel` or exclude area strikes from the focus crit if it holds). With 2.5% per chi
+the same estimate gives Shadowfist 383 / ~930 / ~1210 at level 300 and 687 / ~2660 / ~3620 at level 1000 (auto / one target /
+5 targets): the area value is below the Ninja's 3710 now.
 
 **Measured in game (phase B, 2026-10-09/10)**, the same way for the three lines: level 300 test characters without passive tree
 points (stat window 20 in every stat, as for the tables above), every spell cast through the client (words, cooldowns and mana as
@@ -491,19 +494,34 @@ first for the Iron Sage; Whirling Heel first on 5 targets), Pressure Points on c
 
 | Level | Class | Auto attack | Total single target | Total 5 targets | Mana/min | Max health (no gear) |
 |---|---|---|---|---|---|---|
-| 300 | Shadowfist | 467 | **1258** | 1258 (area rotation 1228) | 3400 | 3689 |
+| 300 | Shadowfist (focus crit 8% per chi, before) | 467 | 1258 | 1258 (area rotation 1228) | 3400 | 3689 |
+| 300 | Shadowfist (2.5% per chi, now; see below) | 395 | **1076** | 1076 (area rotation 1023) | 3400 | 3689 |
 | 300 | Monk | 282 | 708 | 802 | 1400 | 3689 |
 | 300 | Iron Sage | 220 | 602 | 662 | 2170 | 4273 |
 
 Against the estimate (1020 / 1340, 590 / 880, 530 / 750): every Monk deals ~15-25% more on one target than estimated, the area
-numbers are lower (Whirling Heel only reaches the dummies next to the Monk: 3 of the 5). **The Shadowfist is above its bracket**:
-1258 against the Ninja's 1001 in the same harness (+26%), most of it the focus crit on the auto attack (467 per second). Not
-changed in this pass; candidates: `focus` crit per chi, or the focus window off the auto attack. Max health: the Monk's gain is the
+numbers are lower (Whirling Heel only reaches the dummies next to the Monk: 3 of the 5). **The Shadowfist was above its bracket**:
+1258 against the Ninja's 1001 in the same harness (+26%), most of it the focus crit on the auto attack (467 per second). Max health: the Monk's gain is the
 Thief's (12 per level), 3689 at level 300 without gear, not the ~4430 the estimate assumed. Seen in game: the chi HUD under the
 character (pips, tooltip "Chi n / 5"), chi +1 per melee hit (one per 2 s), +2 Ashen Fist, +1 Pressure Points, gone after 12 s on
 the server and the HUD; finishers spend all of it; Chi Ward on a named party member (1630 at level 300, ~1630 estimated) or the
 most hurt one, Mantra of Stone -8% on the party member, Iron Palm stops a Behemoth's attacks for the stun, Mistborne Step rolls
 3 sqm, Kindled Breath ~1790 at 5 chi (level 400).
+
+**Shadowfist focus crit lowered (2026-10-10)**: `ChaosMonk.cfg.focus.critPerChi` 0.08 -> 0.025 (12.5% at 5 chi instead of 40%),
+the auto attack still in the window. The math, same harness (fresh test server, level 300, single-target rotation, 60 s):
+- Crit-free total B0 (critPerChi set to 0 live): 1007, 1008 -> **B0 ~ 1008**.
+- 0.08: 1253, 1172, 1173 here and 1258 above, mean 1214 = B0 x 1.20. Counted rolls: 123 hits in the focus window in 72 s, 45
+  crits (37%), average chi spent 5.0, i.e. the window covers nearly every hit (a finisher every ~6 s, 4 s window, the
+  flurry and the next strikes inside it). So total ~ B0 x (1 + 0.5 x 5 x critPerChi), and 0.08 gives +20%.
+- Target: a small lead over the Ninja's 1001, ~1050-1100: critPerChi = (T / B0 - 1) / 2.5 = 0.017-0.037; 0.025 for ~1071.
+- Measured with 0.025: 1061, 1114, 1062, 1075 (set live) and 1125, 1038, 1057 (the repo value after a restart): **mean 1076**
+  (+8% over the Ninja; the run-to-run spread is +-40, the auto attack's random rolls). 0.03 measured 1103 (6 runs).
+  Area rotation on 5 dummies: 1023 total (was 1228); the single-target rotation stays the best on 5 (~1076).
+- Level 1000 (formula, not measured): the estimate above without crit gives 2535 on one target; scaled by the level 300
+  measured / estimated ratio without crit (1008 / 887 = 1.14) that is ~2880, x 1.0625 for the crit = **~3060** against the
+  Ninja's 2837 and the Deadeye's 2770 (+8% / +10%, the same lead as at level 300; with 8% it was ~3450, +22%). Area: ~3620
+  estimated, below the Ninja's 3710.
 
 ### Templar line (Templar, Inquisitor, Sentinel)
 

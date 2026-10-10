@@ -37,11 +37,18 @@ usage: python3 -I add_vocations.py DATA_DIR [--dry-run]
    of the Mystic in spells.xml get it too (healing, haste, magic shield, light, cures, party spells; not rune
    conjuring, not the stock summon, which would bypass the minion caps, not other classes' custom spells).
    A list that already names the line's base class is left as it is, so every run after the first changes nothing.
-4. data/actions/scripts/other/potions.lua: a potion that the Elite Knight (8) may drink also lists the Berserker (14),
-   one the Royal Paladin (7) may drink the Beastmaster (15) and the Monk line (17, 18, 19), one the Elite Knight or
-   the Royal Paladin may drink the Templar line (23, 24, 25), one the Elementalist (5) may drink the Necromancer line
-   (20, 21, 22). data/lib/core/player.lua: Player.isKnight also counts the
-   Berserker and Player.isPaladin the Beastmaster (base scripts and NPCs ask them). Both are skipped when missing.
+4. data/actions/scripts/other/potions.lua: every class drinks the potions of its role (docs/CLASSES.md, POTION_RULES):
+   a list that names the Elite Knight (8) also gets the Berserker (14), one that names the Royal Paladin (7) the
+   Beastmaster (15), the Thief line (11, 12, 13) and the Monk line (17, 18, 19), one that names either the Templar line
+   (23, 24, 25), one that names the Elementalist (5) the Necromancer line (20, 21, 22); lists are sorted, so a re-run
+   (also on an install of the former rule) changes nothing. Each refusal text is rebuilt from its list with our class
+   names ("Only Warriors and Templars of level 80 or above may drink this fluid."; a line by its base class when all
+   three are in the list; "Only characters of level 50 or above ..." when every class is).
+   data/actions/scripts/other/strengthening_potions.lua: the mastermind potion asks Player.isMage (Sorcerer and Druid
+   ids only); it gets the stock mastermind list plus the Necromancer line (Mystic, Elementalist, Illusionist,
+   Necromancer, Lich, Bone Lord) and the text "Only Mystics and Necromancers may drink this fluid.".
+   data/lib/core/player.lua: Player.isKnight also counts the
+   Berserker and Player.isPaladin the Beastmaster (base scripts and NPCs ask them). Each file is skipped when missing.
 
 The engine adds a promoted vocation to a weapon's list by itself only for the first vocation that names the base one
 as its fromvoc, so every class is written out.
@@ -393,29 +400,100 @@ def patch_spells_necro(text):
 
 
 # ------------------------------------------------------------------------------------------------ base scripts
-def patch_potions(text):
-    """vocations = {...} lists: + 14 where 8 is, + 15 and the Monk line where 7 is, the Templar line where 7 or 8 is,
-    the Necromancer line where 5 is"""
+# potions.lua: the stock vocation whose potions a class drinks (docs/CLASSES.md): a list that names the stock id gets the
+# class ids. Melee lines drink the knight's, hybrids the paladin's, casters the mage's.
+POTION_RULES = [
+    (('8',), ('14',)),                 # Berserker: the Elite Knight's
+    (('7',), ('15',)),                 # Beastmaster: the Royal Paladin's
+    (('7',), ('11', '12', '13')),      # Thief line: the Royal Paladin's (it wears what the Paladin wears)
+    (('7',), ('17', '18', '19')),      # Monk line: the Royal Paladin's
+    (('7', '8'), ('23', '24', '25')),  # Templar line: the Elite Knight's and the Royal Paladin's
+    (('5',), ('20', '21', '22')),      # Necromancer line: the Elementalist's (the casters' mana potions)
+]
+PLURAL = {'Thief': 'Thieves', 'Samurai': 'Samurai', 'Lich': 'Liches'}
+POTION_ENTRY = re.compile(r'(\n[ \t]*\[\d+\]\s*=\s*\{)')
+POTION_LIST = re.compile(r'vocations\s*=\s*\{([\d,\s]*)\}')
+POTION_TEXT = re.compile(r'(description\s*=\s*")Only .*?( of level \d+ or above)? may drink this (fluid|potion)\.(")')
+
+
+def potion_names(ids, names):
+    """the classes of a potion's vocation list in words: a whole line by its base class ("Warriors"), else each class"""
+    have = {names[i] for i in ids if i in names}
+    lines = [n for n in ORDER if n not in BASE_OF]
+    out = []
+    for base in lines:
+        members = [base] + [n for n in ORDER if BASE_OF.get(n) == base]
+        present = [n for n in members if n in have]
+        if len(present) == len(members):
+            out.append(base)
+        else:
+            out += present
+    words = [PLURAL.get(n, n + 's') for n in out]
+    if out == lines:
+        return None  # every class
+    if len(words) > 1:
+        return ', '.join(words[:-1]) + ' and ' + words[-1]
+    return words[0] if words else 'nobody'
+
+
+def patch_potions(text, names=None):
+    """per potion entry: the vocation list gets the class ids of POTION_RULES (sorted, so a re-run changes nothing), and
+    the refusal text names the classes of the list ("Only Warriors, Rangers and Templars of level 50 or above ...")"""
+    if names is None:
+        names = dict(table_entries()[1])
     count = [0]
 
-    def repl(m):
+    def patch_list(m):
         ids = [x.strip() for x in m.group(1).split(',') if x.strip()]
-        new = list(ids)
-        if '8' in ids and '14' not in ids:
-            new.append('14')
-        if '7' in ids and '15' not in ids:
-            new.append('15')
-        if '7' in ids and '17' not in ids:
-            new += ['17', '18', '19']
-        if ('8' in ids or '7' in ids) and '23' not in ids:
-            new += ['23', '24', '25']
-        if '5' in ids and '20' not in ids:
-            new += ['20', '21', '22']
-        if new == ids:
-            return m.group(0)
-        count[0] += 1
+        new = set(ids)
+        for keys, add in POTION_RULES:
+            if any(k in ids for k in keys):
+                new.update(add)
+        new = sorted(new, key=int)
         return 'vocations = {' + ', '.join(new) + '}'
-    return re.sub(r'vocations\s*=\s*\{([\d,\s]*)\}', repl, text), count[0]
+
+    parts = POTION_ENTRY.split(text)
+    for i in range(2, len(parts), 2):
+        chunk = POTION_LIST.sub(patch_list, parts[i], count=1)
+        m = POTION_LIST.search(chunk)
+        if m:
+            ids = [x.strip() for x in m.group(1).split(',') if x.strip()]
+            who = potion_names(ids, names)
+
+            def text_repl(t):
+                level = t.group(2) or ''
+                if who is None:
+                    return '%s%s may drink this %s.%s' % (
+                        t.group(1), ('Only characters' + level) if level else 'Anyone', t.group(3), t.group(4))
+                return '%sOnly %s%s may drink this %s.%s' % (t.group(1), who, level, t.group(3), t.group(4))
+            chunk = POTION_TEXT.sub(text_repl, chunk, count=1)
+        if chunk != parts[i]:
+            count[0] += 1
+            parts[i] = chunk
+    return ''.join(parts), count[0]
+
+
+# strengthening_potions.lua: the mastermind potion (7440) asks Player.isMage, which knows the Sorcerer and the Druid
+# ids only (1, 2, 5, 6): the Illusionist (10) and the Necromancer line were refused. The stock mastermind list of
+# potions.lua with the Necromancer line instead, and our class names in the text.
+MASTERMIND_IDS = ['1', '2', '5', '6', '9', '10', '20', '21', '22']
+
+
+def patch_strengthening(text, names=None):
+    """the mastermind check: player:isMage() -> the mage ids and the Necromancer line; the refusal text"""
+    if names is None:
+        names = dict(table_entries()[1])
+    count = 0
+    check = 'table.contains({%s}, player:getVocation():getId())' % ', '.join(MASTERMIND_IDS)
+    if 'not player:isMage()' in text:
+        text = text.replace('not player:isMage()', 'not ' + check, 1)
+        count += 1
+    words = 'Only %s may drink this fluid.' % potion_names(MASTERMIND_IDS, names)
+    new, n = re.subn(r"'Only [^'\n]* may drink this fluid\.'", "'%s'" % words, text, count=1)
+    if n and new != text:
+        text = new
+        count += 1
+    return text, count
 
 
 def patch_player_lib(text):
@@ -475,6 +553,8 @@ def main():
         changes[paths['moves']] = moves
     for what, rel, fn in (('the Berserker / Beastmaster / the new class lines', ('actions', 'scripts', 'other', 'potions.lua'),
                            patch_potions),
+                          ('the Illusionist and the Necromancer line (mastermind)',
+                           ('actions', 'scripts', 'other', 'strengthening_potions.lua'), patch_strengthening),
                           ('the Berserker / Beastmaster', ('lib', 'core', 'player.lua'), patch_player_lib)):
         p = os.path.join(data, *rel)
         if os.path.exists(p):

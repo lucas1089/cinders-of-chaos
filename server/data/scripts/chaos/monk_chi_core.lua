@@ -88,8 +88,11 @@ M.cfg = {
 	spellLevelScale = {from = 300, per = 700, max = 2.2},
 	-- dodge chance against melee / ranged hits, per vocation; Mistborne Step adds `roll` for rollMs
 	evasion = {[17] = 0.06, [18] = 0.08, [19] = 0.04, roll = 0.25, rollMs = 2000},
-	-- Shadowfist: a finisher opens a focus window; weapon hits and Monk strikes in it crit with critPerChi x chi spent
-	focus = {durationMs = 4000, critPerChi = 0.08, critMultiplier = 1.5},
+	-- Shadowfist: a finisher opens a focus window; weapon hits and Monk strikes in it crit with critPerChi x chi spent.
+	-- Measured (server/data/spells/README.md "Monk line"): the window covers nearly all of the rotation's damage at
+	-- 5 chi, so the total is about (crit-free total) x (1 + 0.5 x 5 x critPerChi): 0.08 gave +20% (1258 at level 300,
+	-- 26% above the Ninja), 0.025 gives +6% (1078 measured, the Ninja 1001 in the same harness).
+	focus = {durationMs = 4000, critPerChi = 0.025, critMultiplier = 1.5},
 	-- Pressure Points: each stack makes the target take +perStack damage from Monks, maxStacks, each stack lasts
 	pressure = {perStack = 0.05, maxStacks = 5, durationMs = 8000},
 	-- Shadowfist Flurry: baseHits + chi hits, one every intervalMs
