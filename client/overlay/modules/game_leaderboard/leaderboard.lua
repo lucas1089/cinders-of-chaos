@@ -201,6 +201,45 @@ local function showBoard()
   updateTimer()
 end
 
+-- the tabs of `items` ({text, tooltip, onClick, checked}) in rows inside container (tabrows.lua), each as wide as its
+-- label in the tab's font; returns the tab widgets in order and sets the container's height
+local TAB_GAP, ROW_GAP = 4, 3
+
+local function buildTabRows(container, style, items, maxWidth)
+  container:destroyChildren()
+  local avail = container:getWidth()
+  if avail <= 0 then avail = window:getWidth() - window:getPaddingLeft() - window:getPaddingRight() end
+  local probe = g_ui.createWidget(style, container)
+  local rowHeight = probe:getHeight()
+  local pad = probe:getPaddingLeft() + probe:getPaddingRight() + 8
+  local widths = {}
+  for i, item in ipairs(items) do
+    probe:setText(item.text)
+    widths[i] = probe:getTextSize().width + pad
+  end
+  probe:destroy()
+  local out = {}
+  local rows = TabRows.layout(widths, avail, TAB_GAP, maxWidth)
+  for _, cells in ipairs(rows) do
+    local row = g_ui.createWidget('LeaderboardTabRow', container)
+    row:setHeight(rowHeight)
+    for k, cell in ipairs(cells) do
+      local item = items[cell.index]
+      local tab = g_ui.createWidget(style, row)
+      tab:setWidth(cell.width)
+      tab:setHeight(rowHeight)
+      tab:setMarginRight(k < #cells and TAB_GAP or 0)
+      tab:setText(item.text)
+      if item.tooltip then tab:setTooltip(item.tooltip) end
+      tab:setChecked(item.checked and true or false)
+      tab.onClick = item.onClick
+      out[cell.index] = tab
+    end
+  end
+  container:setHeight(math.max(1, #rows) * rowHeight + math.max(0, #rows - 1) * ROW_GAP)
+  return out
+end
+
 local function buildGroupTabs()
   window.groupTabs:destroyChildren()
   groupTabs = {}
@@ -210,17 +249,17 @@ local function buildGroupTabs()
   window.groupTabs:setHeight(visible and 22 or 0)
   window.groupTabs:setMarginTop(visible and 4 or 0)
   if not visible then return end
-  for _, g in ipairs(list(meta.groups)) do
-    local tab = g_ui.createWidget('LeaderboardGroupTab', window.groupTabs)
-    tab:setText(g.name or '?')
+  local groups, items = list(meta.groups), {}
+  for i, g in ipairs(groups) do
     local key = g.key
-    tab:setChecked(key == selectedGroup)
-    tab.onClick = function()
+    items[i] = { text = g.name or '?', checked = key == selectedGroup, onClick = function()
       selectedGroup = key
       for k, t in pairs(groupTabs) do t:setChecked(k == key) end
       send('get', { board = selected, group = key })
-    end
-    groupTabs[key] = tab
+    end }
+  end
+  for i, tab in pairs(buildTabRows(window.groupTabs, 'LeaderboardGroupTab', items, 124)) do
+    groupTabs[groups[i].key] = tab
   end
 end
 
@@ -234,19 +273,15 @@ local function selectBoard(key)
 end
 
 local function buildTabs()
-  window.tabs:destroyChildren()
   tabs = {}
-  local boards = list(meta.boards)
-  -- share the row between the boards (124 px each at most, as in the .otui)
-  local width = math.min(124, math.floor((window.tabs:getWidth() - 4 * #boards) / math.max(1, #boards)))
-  for _, b in ipairs(boards) do
-    local tab = g_ui.createWidget('LeaderboardTab', window.tabs)
-    if width > 40 then tab:setWidth(width) end
-    tab:setText(b.name or b.key)
-    tab:setTooltip(b.weekly and tr('Weekly: %s', b.info or '') or (b.info or ''))
+  local boards, items = list(meta.boards), {}
+  for i, b in ipairs(boards) do
     local key = b.key
-    tab.onClick = function() selectBoard(key) end
-    tabs[key] = tab
+    items[i] = { text = b.name or b.key, checked = key == selected, onClick = function() selectBoard(key) end,
+                 tooltip = b.weekly and tr('Weekly: %s', b.info or '') or (b.info or '') }
+  end
+  for i, tab in pairs(buildTabRows(window.tabs, 'LeaderboardTab', items)) do
+    tabs[boards[i].key] = tab
   end
 end
 

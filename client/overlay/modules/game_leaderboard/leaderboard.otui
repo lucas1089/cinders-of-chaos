@@ -59,14 +59,19 @@ LeaderboardRow < UIWidget
     color: #f6cf72
     phantom: false
 
+// Tab widths and rows are set by leaderboard.lua (tabrows.lua): every tab is as wide as its label in the font it
+// is drawn with, in as many rows as needed.
 LeaderboardTab < ChaosTabButton
   width: 124
-  margin-right: 4
 
 LeaderboardGroupTab < ChaosTabButton
   width: 92
   height: 22
-  margin-right: 3
+
+LeaderboardTabRow < UIWidget
+  phantom: true
+  layout:
+    type: horizontalBox
 
 HeaderLabel < UILabel
   font: verdana-11px-rounded
@@ -113,7 +118,8 @@ ChaosMainWindow
     height: 24
     phantom: true
     layout:
-      type: horizontalBox
+      type: verticalBox
+      spacing: 3
 
   UIWidget
     id: groupTabs
@@ -124,7 +130,8 @@ ChaosMainWindow
     height: 22
     phantom: true
     layout:
-      type: horizontalBox
+      type: verticalBox
+      spacing: 3
 
   ChaosPanelDark
     id: championPanel

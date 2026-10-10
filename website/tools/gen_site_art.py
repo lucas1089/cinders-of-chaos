@@ -10,7 +10,8 @@ Output: website/overlay/layouts/chaos/assets/img/ (site), website/overlay/plugin
         website/art/ (banners and material to post elsewhere).
 Needs Pillow + numpy. Reads the client's generated art (client/overlay/data/images/chaos/) and reuses the client
 generator's code, so the site and the client stay one look. Text uses a serif TrueType font: the first found of
-FONTS below, searched in $CHAOS_ART_FONTS and the system font folders; the result is deterministic for a given font.
+FONTS below, searched in client/fonts-src/ (the client's OFL fonts: Cinzel, Alegreya SC, Alegreya Sans, IM Fell
+English), $CHAOS_ART_FONTS and the system font folders; the result is deterministic for a given font.
 All text and art here is original: no third-party logos, screenshots or names.
 """
 import math
@@ -40,11 +41,17 @@ MUTED = gta.hexc("#8c8070")
 TAGLINE = "The world was not ended. It was broken, and the pieces still bleed."
 
 # ---------------------------------------------------------------- fonts
+# The client's OFL fonts (client/fonts-src/, as on the README cards of client/tools/gen_readme_images.py) come first:
+# Cinzel Bold for titles, Alegreya SC for names, Alegreya Sans for body text, IM Fell English for the italic voice.
+FONTS_SRC = os.path.join(REPO, "client", "fonts-src")
 FONTS = {
-    "display": ["Cinzel-Bold.ttf", "CinzelDecorative-Bold.ttf", "CrimsonPro-Bold.ttf", "LiberationSerif-Bold.ttf",
+    "display": ["Cinzel-VariableFont_wght.ttf", "Cinzel-Bold.ttf", "CrimsonPro-Bold.ttf", "LiberationSerif-Bold.ttf",
                 "DejaVuSerif-Bold.ttf", "FreeSerifBold.ttf"],
-    "text": ["CrimsonPro-Regular.ttf", "LiberationSerif-Regular.ttf", "DejaVuSerif.ttf", "FreeSerif.ttf"],
-    "italic": ["CrimsonPro-Italic.ttf", "LiberationSerif-Italic.ttf", "DejaVuSerif-Italic.ttf", "FreeSerifItalic.ttf"],
+    "heading": ["AlegreyaSC-Bold.ttf", "CrimsonPro-Bold.ttf", "LiberationSerif-Bold.ttf", "DejaVuSerif-Bold.ttf"],
+    "text": ["AlegreyaSans-Medium.ttf", "CrimsonPro-Regular.ttf", "LiberationSerif-Regular.ttf", "DejaVuSerif.ttf",
+             "FreeSerif.ttf"],
+    "italic": ["IMFeENrm28P.ttf", "CrimsonPro-Italic.ttf", "LiberationSerif-Italic.ttf", "DejaVuSerif-Italic.ttf",
+               "FreeSerifItalic.ttf"],
 }
 _FONT_INDEX = None
 _FONT_CACHE = {}
@@ -54,7 +61,7 @@ def _font_index():
     global _FONT_INDEX
     if _FONT_INDEX is None:
         _FONT_INDEX = {}
-        dirs = [d for d in os.environ.get("CHAOS_ART_FONTS", "").split(os.pathsep) if d]
+        dirs = [FONTS_SRC] + [d for d in os.environ.get("CHAOS_ART_FONTS", "").split(os.pathsep) if d]
         dirs += ["/usr/share/fonts", "/usr/local/share/fonts", os.path.expanduser("~/.fonts"),
                  os.path.expanduser("~/.local/share/fonts"), "/Library/Fonts", "C:/Windows/Fonts"]
         for d in dirs:
@@ -70,11 +77,25 @@ def font(size, kind="display"):
         idx = _font_index()
         for name in FONTS[kind]:
             if name in idx:
-                _FONT_CACHE[key] = ImageFont.truetype(idx[name], size)
+                f = ImageFont.truetype(idx[name], size)
+                if "VariableFont_wght" in name:
+                    try:
+                        f.set_variation_by_axes([700])          # Cinzel Bold
+                    except (OSError, AttributeError):
+                        pass
+                _FONT_CACHE[key] = f
                 break
         else:
             _FONT_CACHE[key] = ImageFont.load_default(size)
     return _FONT_CACHE[key]
+
+
+def fit(size, kind, text, width, low=9):
+    """the font of that kind, shrunk until text fits in width"""
+    d = ImageDraw.Draw(Image.new("L", (1, 1)))
+    while size > low and d.textlength(text, font=font(size, kind)) > width:
+        size -= 1
+    return font(size, kind)
 
 
 # ---------------------------------------------------------------- helpers
@@ -404,7 +425,7 @@ def glyph_letter_c(g):
 
 
 # ---------------------------------------------------------------- promotion material
-FEATURE_CHIPS = ["4 classes, 8 ascensions", "600+ node passive tree", "Rifts, world bosses, seasons"]
+FEATURE_CHIPS = ["7 classes, 14 ascensions", "600+ node passive tree", "Rifts, world bosses, seasons"]
 
 
 def chip(img, cx, y, text, fnt):
@@ -440,11 +461,14 @@ def gen_discord():
     W, H = 960, 540
     img = backdrop(W, H, focus_y=0.25, dark=0.4, seed=4)
     lg = make_wordmark(700)
-    img.alpha_composite(lg, ((W - lg.width) // 2, 90))
-    x = W // 2 - 4 * 70 // 2 - 3 * 14 // 2
-    for name in ("warrior", "ranger", "mystic", "thief"):
-        img.alpha_composite(badge(name, 70), (x, 420))
-        x += 84
+    img.alpha_composite(lg, ((W - lg.width) // 2, 70))
+    size, gap = 62, 14
+    x = (W - (len(CLASSES) * size + (len(CLASSES) - 1) * gap)) // 2
+    for name, _ in CLASSES:
+        img.alpha_composite(badge(name, size), (x, 400))
+        x += size + gap
+    plain_text(img, (W // 2, 494), "7 classes  |  14 ascensions  |  rifts, world bosses, seasons", font(20, "heading"),
+               fill=GOLD_3, anchor="mm")
     save(img.convert("RGB"), OUT_ART, "discord-banner-960x540.png", colors=128)
     icon = gta.render_icon(glyph_letter_c, True).crop((10, 10, gta.N - 10, gta.N - 10)).resize((512, 512), Image.LANCZOS)
     bg = Image.new("RGBA", (512, 512), BLACK + (255,))
@@ -464,7 +488,7 @@ def gen_otlist():
     img.alpha_composite(w, (12, (H - w.height) // 2))
     tx = 12 + w.width + 14
     plain_text(img, (tx, 19), "Dark fantasy  |  10.98  |  own client", font(13, "display"), fill=GOLD_3, anchor="lm")
-    plain_text(img, (tx, 40), "4 classes, 8 ascensions, rifts, seasons", font(12, "text"), fill=TEXT, anchor="lm")
+    plain_text(img, (tx, 40), "7 classes, 14 ascensions, rifts, seasons", font(12, "text"), fill=TEXT, anchor="lm")
     bx0, bx1 = W - 86, W - 10
     d.rectangle([bx0, 14, bx1, 46], fill=BLOOD_2 + (255,), outline=GOLD_2 + (255,))
     d.rectangle([bx0 + 2, 16, bx1 - 2, 44], outline=BLOOD_4 + (255,))
@@ -483,53 +507,82 @@ def gen_otlist():
     save(img.convert("RGB"), OUT_ART, "otlist-88x31.png", colors=64)
 
 
+ROLE_COLOR = {"Tank": (110, 160, 230), "Off-tank": (110, 160, 230), "Healer": (110, 210, 120),
+              "Single target": (235, 110, 80), "Burst": (235, 110, 80), "Area damage": (245, 165, 60),
+              "Pets": (190, 140, 245)}
+# class line, plays as, store unlock, (ascension, role, role label, what it does) x 2 (roles: README "Roles in a group")
 SHOWCASE = [
-    ("warrior", "Warrior", "Melee, heavy armour, the most health",
-     [("Juggernaut", "The tank: taunts, damage reduction, block and reflect"),
-      ("Berserker", "Two-handed area damage; Rage grows as health drops")]),
-    ("ranger", "Ranger", "Bows and crossbows",
-     [("Deadeye", "The best single-target damage: crossbows, marks, crits"),
-      ("Beastmaster", "Fights beside a War Wolf that grows with you")]),
-    ("mystic", "Mystic", "Spells, wands and rods",
-     [("Elementalist", "The best area damage: fire, ice and energy combos"),
-      ("Illusionist", "The support: party attack buffs, debuffs and heals")]),
-    ("thief", "Thief", "Fast light blades, shurikens and stealth",
-     [("Ninja", "Dual daggers, Shadow Step, Smoke Bomb"),
-      ("Samurai", "One sword, Counter Stance, Iaijutsu, Bushido")]),
+    ("warrior", "Warrior", "Melee, heavy armour, the most health", False,
+     [("Juggernaut", "Tank", "Tank", "The tankiest: taunts, damage reduction, block, reflect"),
+      ("Berserker", "Area damage", "Area damage", "Two-handed sweeps; Rage grows as health drops")]),
+    ("ranger", "Ranger", "Bows and crossbows", False,
+     [("Deadeye", "Single target", "Single target", "The best single target: crossbows, marks, crits"),
+      ("Beastmaster", "Pets", "Pets", "Fights beside a War Wolf that grows with you")]),
+    ("mystic", "Mystic", "Spells, wands and rods", False,
+     [("Elementalist", "Area damage", "Area damage", "The best area damage: fire, ice and energy combos"),
+      ("Illusionist", "Healer", "Healer", "The best healer, with party attack buffs")]),
+    ("thief", "Thief", "Light blades, shurikens, stealth", False,
+     [("Ninja", "Burst", "Burst", "Dual daggers, Shadow Step, Smoke Bomb"),
+      ("Samurai", "Off-tank", "Duelist off-tank", "Parries, Counter Stance, Iaijutsu, Bushido")]),
+    ("necromancer", "Necromancer", "Summoner, curses, corpses", True,
+     [("Lich", "Burst", "Single target", "Curses, damage over time, life drain"),
+      ("Bone Lord", "Pets", "Pets, area damage", "The army: skeletons, the Bone Golem")]),
+    ("monk", "Monk", "Unarmed, chi and evasion", True,
+     [("Shadowfist", "Burst", "Burst", "Pressure Points, Flurry, crits from spent chi"),
+      ("Iron Sage", "Healer", "Second healer", "A melee chi healer: Kindled Breath, Mantra of Stone")]),
+    ("templar", "Templar", "Holy melee, a party aura", True,
+     [("Inquisitor", "Area damage", "Area damage", "Holy area: Judgement, Purging Nova, Zealotry"),
+      ("Sentinel", "Tank", "Tank, support", "A stronger aura, Rebuke, Aegis of Faith, Lay on Hands")]),
 ]
 
 
 def gen_showcase():
     W, H = 1400, 900
     img = backdrop(W, H, focus_y=0.2, dark=0.6, seed=8)
-    gold_text(img, (W // 2, 70), "CHOOSE YOUR PATH", font(54), anchor="mm", spacing=6, glow=0.5)
-    plain_text(img, (W // 2, 122), "Four base classes. At level 100 each ascends into one of two specialisations.",
-               font(24, "italic"), fill=TEXT, anchor="mm")
-    divider(img, W // 2, 152, 300)
-    colw, gap, top = 316, 24, 190
-    x = (W - (4 * colw + 3 * gap)) // 2
-    for key, name, plays, ascs in SHOWCASE:
-        panel(img, (x, top, x + colw, top + 610), corner=34, crest=True)
-        img.alpha_composite(badge(key, 120), (x + (colw - 120) // 2, top + 34))
-        gold_text(img, (x + colw // 2, top + 186), name.upper(), font(36), anchor="mm", spacing=4, glow=0.3)
-        for i, line in enumerate(wrap(plays, font(19, "italic"), colw - 50)):
-            plain_text(img, (x + colw // 2, top + 222 + i * 24), line, font(19, "italic"), fill=MUTED, anchor="mm")
-        y = top + 280
-        for aname, adesc in ascs:
+    gold_text(img, (W // 2, 62), "CHOOSE YOUR PATH", font(52), anchor="mm", spacing=6, glow=0.5)
+    plain_text(img, (W // 2, 112), "Seven class lines. At level 100 each ascends into one of two paths, each with its own role.",
+               font(25, "italic"), fill=TEXT, anchor="mm")
+    divider(img, W // 2, 140, 300)
+    n, gap, top, bot = len(SHOWCASE), 12, 182, 812
+    colw = (W - 2 * 22 - (n - 1) * gap) // n
+    x = (W - (n * colw + (n - 1) * gap)) // 2
+    for key, name, plays, store, ascs in SHOWCASE:
+        panel(img, (x, top, x + colw, bot), corner=26, crest=True)
+        cx = x + colw // 2
+        img.alpha_composite(badge(key, 84), (cx - 42, top + 28))
+        gold_text(img, (cx, top + 140), name.upper(), fit(25, "display", name.upper(), colw - 28), anchor="mm",
+                  glow=0.3)
+        for i, line in enumerate(wrap(plays, font(17, "italic"), colw - 30)[:2]):
+            plain_text(img, (cx, top + 170 + i * 20), line, font(17, "italic"), fill=MUTED, anchor="mm")
+        if store:
+            tag = "STORE UNLOCK"
+            f = font(14, "heading")
             d = ImageDraw.Draw(img)
-            d.rectangle([x + 22, y, x + colw - 22, y + 140], fill=(12, 8, 10, 200), outline=BLOOD_2 + (255,))
-            d.line([(x + 22, y), (x + colw - 22, y)], fill=GOLD_2 + (255,), width=1)
-            gold_text(img, (x + colw // 2, y + 28), aname, font(28), anchor="mm", colors=(GOLD_4, GOLD_3, GOLD_2))
-            for i, line in enumerate(wrap(adesc, font(19, "text"), colw - 70)):
-                plain_text(img, (x + colw // 2, y + 66 + i * 24), line, font(19, "text"), fill=TEXT, anchor="mm")
-            y += 158
+            tw = d.textlength(tag, font=f)
+            ty = bot - 34
+            d.rectangle([cx - tw / 2 - 10, ty - 10, cx + tw / 2 + 10, ty + 10], fill=BLOOD_2 + (255,),
+                        outline=GOLD_2 + (255,))
+            plain_text(img, (cx, ty), tag, f, fill=GOLD_4, anchor="mm", shadow=False)
+        y = top + 222
+        for aname, role, label, adesc in ascs:
+            d = ImageDraw.Draw(img)
+            d.rectangle([x + 14, y, x + colw - 14, y + 176], fill=(12, 8, 10, 200), outline=BLOOD_2 + (255,))
+            d.line([(x + 14, y), (x + colw - 14, y)], fill=GOLD_2 + (255,), width=1)
+            gold_text(img, (cx, y + 26), aname, fit(25, "heading", aname, colw - 40), anchor="mm",
+                      colors=(GOLD_4, GOLD_3, GOLD_2))
+            plain_text(img, (cx, y + 54), label, fit(17, "heading", label, colw - 36), fill=ROLE_COLOR[role],
+                       anchor="mm")
+            for i, line in enumerate(wrap(adesc, font(17, "text"), colw - 40)[:4]):
+                plain_text(img, (cx, y + 84 + i * 21), line, font(17, "text"), fill=TEXT, anchor="mm")
+            y += 190
         x += colw + gap
-    plain_text(img, (W // 2, 845), "Unlockable classes: Monk  |  Necromancer  |  Templar", font(24, "display"), fill=GOLD_3, anchor="mm")
+    plain_text(img, (W // 2, 850), "Warrior, Ranger, Mystic and Thief from the start  |  Necromancer, Monk and Templar "
+               "unlocked in the store", font(24, "heading"), fill=GOLD_3, anchor="mm")
     save(img.convert("RGB"), OUT_ART, "class-showcase-1400x900.png", colors=128)
 
 
 FEATURES = [
-    ("Classes and ascensions", ["4 base classes, 2 ascensions each", "Own Chaos spells, icons and effects",
+    ("Classes and ascensions", ["7 class lines, 2 ascensions each", "Own Chaos spells, icons and effects",
                                 "Balanced at levels 300 and 1000"]),
     ("Passive tree and Paragon", ["Over 600 nodes, class keystones", "Build codes to share, priced respec",
                                   "Paragon points after level 1000"]),

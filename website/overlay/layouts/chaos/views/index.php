@@ -45,7 +45,7 @@ $latest = $plugin && function_exists('chaos_patchnotes') ? (chaos_patchnotes()[0
 	<?php if ($lines): ?>
 	<section class="chaos-box">
 		<h2 class="chaos-heading">Choose your path</h2>
-		<p class="chaos-lead">Start as one of four base classes. At level 100 you ascend into one of two specialisations (<code>!ascend</code>).</p>
+		<p class="chaos-lead">Start as one of seven classes (four free, three unlocked in the store). At level 100 you ascend into one of two specialisations (<code>!ascend</code>).</p>
 		<div class="chaos-classes">
 			<?php foreach ($lines as $base => $line): ?>
 				<div class="chaos-class<?= $line['lock'] !== '' ? ' is-locked' : '' ?>">
