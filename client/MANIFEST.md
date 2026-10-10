@@ -63,6 +63,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | game_creatureinformation | none | engine APIs this client lacks | Not included |
 | client_chaos_numbers | none | none | Short-number formatter for every module (`formatShortNumber`, `shortNumbersIn`); self test `numbers_test.lua` runs in CI; not run in a client |
 | client_chaos_login | none | none | Login screen layout (see "Login screen" below); art from `tools/gen_login_art.py` (from the login artwork in `tools/art_src/`); tested in the Linux client at 1280x720, 1366x768, 1920x1080 and 1024x768 |
+| client_chaos_updater | none (HTTPS from the website) | base patch 0031 | Signed updater on the login screen (see "Signed updater" below); `updater_core_test.lua` runs in CI; tested in the Linux client |
 
 Opcode numbers above do not collide with the ones the base server already uses (106, 91, 181, 107, 202, 1, 136, 99, 201, 92, 89). The stash uses 110 and the season pass (game_battlepass) 227.
 
@@ -385,3 +386,96 @@ Checked in the Linux build at 1280x720 and 1920x1080 (login splash, Codex, craft
 Glyphs 32..255 and patch 0028 checked in the Linux client at 1280x720: every role with accents and cp1252 symbols, the
 ASCII lines compared pixel by pixel with the previous sheets, a server modal dialog (title in the title font) and an
 NPC line in the bubble's style through `InputMessage::getString` (no server: the bytes were fed in from Lua).
+
+## Signed updater (new, `client_chaos_updater`, base patch 0031)
+
+Before login the client fetches a signed manifest from the website, compares SHA-256 hashes, downloads what changed
+in parallel, checks every file and applies the whole update at once. Operator side: docs/LAUNCH.md "Client updates";
+website side: website/README.md "Client updates".
+
+**Trust.** `manifest.json` is an envelope `{format, key, signature, payload}`; `payload` is the manifest's JSON text and
+the Ed25519 signature covers its exact bytes. The public key is in `init.lua` (`Services.update.publicKey`, not
+updatable by an update); the private key stays with the operator (`tools/make_update_manifest.py keygen`, refused
+inside a git work tree). The client refuses: a missing or bad signature, another key, a manifest older than the
+version it applied (no replay of an old signed manifest), another product, and any path that is absolute, has `..`,
+`.` or an empty segment, a backslash, a colon, a Windows device name, a character outside `[A-Za-z0-9 ._()+,-]` or
+lies outside `modules/ mods/ data/ layouts/`, or names native code (`.exe .dll .so .dylib .bat .cmd .ps1 .sh ...`).
+Files are fetched by hash (`files/<xx>/<sha256>`) and each one's SHA-256 must match before it counts. The C++ helpers
+write only inside `chaos_update/` of the write dir (`chaosupdate::isSafeUpdatePath`).
+
+**Native code is never downloaded.** Choice: binary (exe/DLL) updates go only through the Windows package
+(`windows-package.yml`), not through a staged swap by a launcher. Reasons: a launcher that replaces the running exe is
+new native code that itself cannot be updated safely, Windows locks the running exe and DLLs (swap logic and rollback
+on a half-written exe are where updaters brick installs), antivirus tools flag self-replacing executables, and the
+signing key would then be able to run arbitrary native code on every PC instead of the Lua the client already
+sandboxes to its modules. An update that needs a new exe sets `min_package`: older packages show "A new client
+download is required" (with `Services.update.download`) and cannot log in.
+
+**Flow.**
+1. `init.lua` (patch 0031) runs `bootstrap.lua` before `g_modules.discoverModules()`: when `chaos_update/state.txt` says
+   `status=ok` for this client package (hash of `init.lua` and the build date/commit), `chaos_update/files` is mounted
+   in front of the client's own folder. A half-applied update (`status=applying`) or a tree made for another package
+   is not mounted: the client starts with its own, consistent install files.
+2. On the login screen (`autoload-priority` 1110, after `client_chaos_login`) a Chaos-styled panel over a dimmed screen
+   blocks the login (`EnterGame.doLogin` is guarded) while it: fetches the manifest (`?t=` against caches), checks the
+   signature and the payload, hashes the files the client sees (time-sliced, 12 ms per frame, with a cache of
+   real dir + path, mtime and size in `chaos_update/hashcache.txt`), and decides per file: keep, download, or drop a stale
+   tree copy that hides a right install file.
+3. Download pool (`updater_core.lua` `M.download`): N requests at once (`parallel` in the manifest, default 4, the client
+   setting `chaos-update-parallel` wins, 1..8); one blob per distinct hash, largest first; a blob over 8 MB goes in
+   8 MB `Range` parts that run in parallel too (the 570 MB `Tibia.spr` does not sit on one connection), each part a
+   file `<sha>.c<i>`, so an interrupted run resumes with the parts it has; a server ignoring `Range` answers 200 with
+   the whole file (up to 512 MB, the engine's body limit). Each request retries 5 times with backoff 0.5, 1, 2, 4,
+   8 s; a blob's SHA-256 is checked as soon as its last part is on disk, a mismatch deletes it and refetches it (5
+   tries), then the update is refused. Progress: files done / total, bytes done / total across all requests (parts
+   in flight counted by their percent), speed, parallel count.
+4. Apply only when every blob is in and verified: `state.txt` `status=applying`, stale and dropped tree files removed,
+   staged blobs renamed into `chaos_update/files/<path>` (copied for a second path with the same content), then
+   `status=ok` with the new version. Then the client restarts (`g_app.restart`; if that fails it asks the player
+   to start it again).
+5. Fallback: server unreachable, or the update refused: "You can play with the current files" with Retry and Play,
+   unless `Services.update.required`, a `min_version` above the applied version, or a `min_package` above this package.
+
+**Files.** `updater_core.lua` (no client API: a linear JSON decoder (corelib's `json.decode` builds strings by
+repeated concatenation and took minutes and gigabytes on the 0.8 MB manifest), paths, envelope, manifest, diff,
+pool, apply; `updater_core_test.lua`, 192 checks, LuaJIT and Lua 5.3, fake HTTP server and disk), `bootstrap.lua`, `updater.lua` + `updater.otui` (panel),
+`signature_vectors.lua` (`ChaosUpdater.selfTest()` runs them through `g_crypt` in the client).
+Tools: `tools/make_update_manifest.py` (keygen / build / verify; `cryptography` when installed, else
+`tools/ed25519_ref.py`, the RFC 8032 reference code), `tools/make_update_manifest_test.py`, `tools/chaosupdate_test.cpp`
+(native vectors), `tools/set_update_config.py` (writes `Services.update` into an assembled `init.lua`),
+`tools/serve_updates.py` (local test server: ranges, per-connection rate, latency, dropped connections; tests only).
+CI (`ci.yml`): the Python tests, an unsigned dry run over the overlay, the C++ vectors, the Lua tests;
+`windows-package.yml` dry-runs the real package folder (dat/spr included).
+
+**Tested in the Linux client** (base patches 0001-0029 + 0031, 1280x720, `tools/serve_updates.py` over plain HTTP on
+127.0.0.1; production is HTTPS). Manifest of the whole client: 5741 files, 802 MB, Tibia.spr 563-570 MB.
+- Up to date: the first check (no hash cache, Tibia.spr hashed) answered in about 8 s after start; later checks in
+  about 1 s. A module file changed by hand was found, fetched again, applied, and the client restarted itself
+  (`g_app.restart` works on Linux) with "update 1 mounted".
+- Update applied: update 2 (new Tibia.dat/.spr pair, the login background, a module, a new file; 551.6 MB in 6
+  files) downloaded, applied, restarted; the new background shows, the module's log line appears, the client reads
+  `Tibia.dat` from `chaos_update/files` (same SHA-256 as the new pair) and `g_things.loadDat` loads it.
+- Tampered file (same size, one byte changed on the server): five tries, then "Update refused
+  (data/update_test/marker.txt: hash mismatch (file refused))"; state and files stay at update 2, staging empty.
+- Bad signature (one file's hash swapped in the payload, old signature kept): "Update refused (bad signature)",
+  nothing downloaded.
+- Offline: "Update server unreachable", Retry / Play; with `required = true`: Retry only, `EnterGame.doLogin` refused.
+- Interrupted: the client killed with 33 of 70 parts on disk; the next start fetched only the missing parts, while
+  the server cut every 9th response mid-body (each retried and finished).
+- `ChaosUpdater.selfTest()` in the client: RFC 8032 vectors, the manifest vector and SHA-256 all pass.
+
+Download time of update 2 (551.6 MB), 1 request at a time against the default 4 (the test machine was shared and
+loaded, about 14 on 4 cores, so the client itself tops out near 24 MB/s):
+
+| Server link (per connection) | 1 at a time | 4 parallel (default) | 8 parallel |
+|---|---|---|---|
+| 4 MB/s, 40 ms latency | 171.6 s | 54.6 s (3.1x) | |
+| 16 MB/s, 30 ms latency | 61.0 / 65.9 s | 22.0 / 30.5 s | 35.6 s |
+| unlimited (local) | 22.8 / 32.7 s | 23.9 / 20.5 s | |
+
+Parallel requests pay off whenever one connection is slower than the client can write and hash; on a fast local
+link the client's own copy and hash work is the limit and more requests change nothing.
+Screenshots of the runs: `01-up-to-date`, `02-downloading`, `02-update-applied`, `02-after-restart-update-loaded`,
+`03-tampered-file-refused`, `04-bad-signature-refused`, `05-offline-fallback`, `06-offline-required-blocked`,
+`07-download-progress` (kept outside the repository with the test session's files).
+

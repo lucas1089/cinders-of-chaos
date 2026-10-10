@@ -23,6 +23,14 @@ on:
         description: "Branch of the base server, base client and dat/spr"
         required: false
         default: "windows-assets"
+      update_manifest:
+        description: "Signed updater: https URL of updates/live/manifest.json on the website (empty: updater off)"
+        required: false
+        default: ""
+      update_public_key:
+        description: "Signed updater: the operator's Ed25519 public key, 64 hex digits (never the private key)"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -33,6 +41,8 @@ concurrency:
 
 env:
   ASSETS_REF: ${{ inputs.assets_ref || 'windows-assets' }}
+  UPDATE_MANIFEST: ${{ inputs.update_manifest }}
+  UPDATE_PUBLIC_KEY: ${{ inputs.update_public_key }}
   # vcpkg registry state for the engine's libraries (tag 2023.12.12: Boost 1.83); fmt is pinned to 9.1.0 below
   ENGINE_VCPKG_BASELINE: c8696863d371ab7f46e213d8f5ca923c4aef2a00
   MARIADB_VERSION: "10.11.14"
@@ -340,6 +350,14 @@ jobs:
           (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
           mkdir -p "$P/client/data/things/1098"
           tar -xJf assets/things/things-1098.tar.xz -C "$P/client/data/things/1098"
+
+          # signed updater (client/MANIFEST.md "Signed updater"): turn it on when both inputs are set, and check that
+          # make_update_manifest.py accepts this exact client folder, dat/spr included (unsigned dry run)
+          if [ -n "$UPDATE_MANIFEST" ] && [ -n "$UPDATE_PUBLIC_KEY" ]; then
+            python3 -I chaos/client/tools/set_update_config.py "$P/client" \
+              --manifest "$UPDATE_MANIFEST" --public-key "$UPDATE_PUBLIC_KEY"
+          fi
+          python3 -I chaos/client/tools/make_update_manifest.py build "$P/client" --dry-run
 
           # the map editor (10.98): our items.otb / items.xml (with every Chaos item the installers added) and our
           # monsters in its creature list; it reads the sprites from client\data\things\1098 (README.txt)

@@ -208,6 +208,8 @@ and rows).
   vcpkg (x64-windows-static) and uploads `Chaos.exe` and a runnable folder. Set `server_host` to the public host.
   It only runs when started by hand, never on pushes or pull requests.
 - Ship the client with the merged 10.98 `Tibia.dat` / `Tibia.spr` in `data/things/1098/`.
+- Client updates after launch: the signed updater (section "Client updates" below). Turn it on in the package
+  (`windows-package.yml` inputs `update_manifest` and `update_public_key`) before the first public download.
 
 ## 9. Monitoring
 
@@ -365,4 +367,47 @@ Mercado Pago in BRL, PayPal in USD; one USD price table (`shop_coins_config.lua`
    id, secret and webhook id, `CHAOS_PAYPAL_ENV=live`; `sudo systemctl restart chaos-payworker`. One small real donation
    of each kind, refunded afterwards.
 8. Watch `/var/log/chaos/payworker.log` and `CHAOS_PAY_LOG` the first days (order ids and amounts only, no personal data).
+
+## Client updates (signed updater)
+
+The client checks the website for a signed manifest before login and downloads changed modules, images, fonts and
+the dat/spr pair (client/MANIFEST.md "Signed updater"; files on the site: website/README.md "Client updates").
+The exe and its DLLs are never updated this way: a new exe is a new Windows package (below).
+
+**Keys (once).** On the operator's own machine, never on the game or web server and never in the repository:
+
+```
+python3 -I client/tools/make_update_manifest.py keygen --private ~/chaos-keys/update.key --public ~/chaos-keys/update.pub
+```
+
+- `update.key` is the Ed25519 private key (mode 600). Anyone holding it can ship code to every player: keep it
+  offline (an encrypted USB stick and a second copy in a safe place), never in a CI secret, a chat or a cloud drive.
+  The tool refuses to write or read a key inside a git work tree.
+- `update.pub` (64 hex digits) goes into the client: `windows-package.yml` input `update_public_key`, or
+  `client/tools/set_update_config.py <client> --manifest https://<site>/updates/live/manifest.json --public-key <hex>`.
+- Lost key: make a new pair and ship a new package with the new public key; clients with the old key keep
+  playing with their files but get no more updates. Leaked key: the same, at once, and tell the players to
+  download the new package; a leaked key can sign anything the old clients accept.
+
+**Publishing an update.**
+
+1. Assemble the client as for a package (`client/tools/assemble_client.sh`, the dat/spr pair in `data/things/1098/`).
+2. Dry run: `python3 -I client/tools/make_update_manifest.py build <client> --dry-run` (no key, writes nothing).
+3. Publish: `CHAOS_UPDATE_KEY=~/chaos-keys/update.key python3 -I client/tools/make_update_manifest.py build <client>
+   --out <CHAOS_SITE_DIR>/updates/live` (or `--out` to a local folder and rsync it up: blobs first, `manifest.json`
+   last). The version goes up by one each time; clients refuse an older manifest.
+4. Check: `python3 -I client/tools/make_update_manifest.py verify <CHAOS_SITE_DIR>/updates/live --public <hex>`.
+5. Start a client: it says "Update applied" and restarts, or "Your client is up to date".
+
+Options: `--min-version N` (clients below update N may not play offline), `--min-package N` (clients whose
+package number, `Services.update.package`, is below N are told to download the new package and cannot log in),
+`--parallel N` (download requests at once, default 4; a player can set `chaos-update-parallel` in the client
+settings). `Services.update.required = true` in a package makes the update server mandatory to play.
+
+**When a new package is needed** (the exe changed: a new base patch, an engine fix): build it with
+`windows-package.yml`, raise `Services.update.package` in it, then publish an update with `--min-package` set to
+that number so older clients send their players to the download page (`Services.update.download`).
+
+**Production is HTTPS.** The updater warns in the client log when the manifest URL is plain HTTP;
+`client/tools/serve_updates.py` (HTTP, local) is only for tests.
 

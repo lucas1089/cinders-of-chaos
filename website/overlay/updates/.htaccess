@@ -1,0 +1,32 @@
+# Client updates (client/MANIFEST.md "Signed updater"; website/README.md "Client updates").
+# client/tools/make_update_manifest.py publishes <channel>/manifest.json and <channel>/files/<xx>/<sha256> here.
+# Static files only: nothing in this folder is ever run, listed or rewritten to PHP.
+Options -Indexes -ExecCGI -Includes
+DirectoryIndex disabled
+<IfModule mod_rewrite.c>
+  RewriteEngine Off
+</IfModule>
+<IfModule mod_php.c>
+  php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+  php_flag engine off
+</IfModule>
+RemoveHandler .php .phtml .phar .cgi .pl .py
+RemoveType .php .phtml .phar
+<FilesMatch "\.(php|phtml|phar|cgi|pl|py|sh)$">
+  Require all denied
+</FilesMatch>
+# the manifest changes with every update; blobs are named by their hash and never change
+<FilesMatch "^manifest\.json$">
+  ForceType application/json
+  <IfModule mod_headers.c>
+    Header set Cache-Control "no-cache"
+  </IfModule>
+</FilesMatch>
+<FilesMatch "^[0-9a-f]{64}$">
+  ForceType application/octet-stream
+  <IfModule mod_headers.c>
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </IfModule>
+</FilesMatch>

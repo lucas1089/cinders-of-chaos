@@ -77,6 +77,25 @@ jobs:
       - name: Bitmap font tool (make_fonts.py pure parts and the font atlas model)
         run: python3 client/tools/make_fonts_test.py  # not -I: Pillow from the user site (installed above)
 
+      - name: Client updater tools (manifest builder, signer, path rules)
+        run: python3 -I client/tools/make_update_manifest_test.py
+
+      - name: Client update manifest (unsigned dry run over the overlay)
+        run: |
+          d=$(mktemp -d)
+          echo '-- CI stand-in for an assembled client' > "$d/init.lua"
+          cp -r client/overlay/modules client/overlay/data "$d/"
+          python3 -I client/tools/make_update_manifest.py build "$d" --dry-run
+
+      - name: Client updater signature vectors (C++, OpenSSL; header from base patch 0031)
+        run: |
+          d=$(mktemp -d)
+          awk '/^--- a\/src\/framework\/util\/chaosupdate\.h/{p=1} p&&/^--- a\//&&!/chaosupdate\.h/{p=0} p' \
+            client/base-patches/0031-signed-updater.patch > "$d/h.patch"
+          patch -p1 -d "$d" < "$d/h.patch"
+          g++ -std=c++17 -I "$d/src" client/tools/chaosupdate_test.cpp -lcrypto -o "$d/chaosupdate_test"
+          "$d/chaosupdate_test"
+
       - name: Unique item specs are up to date with chaos_items.xml
         run: |
           cd server && python3 -I tools/gen_unique_specs.py

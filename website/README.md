@@ -17,6 +17,7 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `overlay/plugins/chaos/` | our plugin: class names and class lock, character slots, starter depot boxes, the referral code field (`referral.php`), Leaderboards / Patch Notes / Seasons pages |
 | `overlay/engine/function/chaos_password.php` | salted PBKDF2 passwords, the game server's format (see "Passwords") |
 | `patches/znotex-chaos-passwords.patch` | ZnoteX's password and login code switched to it, per-account login throttling |
+| `overlay/updates/.htaccess` | the client update folder: static files only, cache headers (see "Client updates") |
 | `tests/chaos_password_test.php` | `php website/tests/chaos_password_test.php` (php-cli only) |
 | `tests/chaos_slots_test.php` | `php website/tests/chaos_slots_test.php`: the character slot limit (php-cli only, a fake database) |
 | `tests/chaos_referral_test.php` | `php website/tests/chaos_referral_test.php`: the referral code field (php-cli only, a fake database) |
@@ -299,6 +300,43 @@ idempotency, expiry, cancel, refunds and chargebacks before and after crediting,
 loader); `php website/tests/chaos_donation_page_test.php` (the page: the notice in both languages before the packs,
 "Donate" and never "Buy", a Pix donation, the thank-you, the history labelled "Donation", CSRF);
 `php website/tests/chaos_coins_test.php`.
+
+## Client updates
+
+The client's signed updater (client/MANIFEST.md "Signed updater", docs/LAUNCH.md "Client updates") downloads from a
+plain static folder of the site. Nothing in it runs on the server: no PHP, no database.
+
+```
+<CHAOS_SITE_DIR>/updates/.htaccess                 (from overlay/, Apache: static only, cache headers)
+<CHAOS_SITE_DIR>/updates/live/manifest.json         the signed manifest, the only file that changes per update
+<CHAOS_SITE_DIR>/updates/live/files/ab/ab12...ef    one file per distinct content, named by its SHA-256
+```
+
+The client's `init.lua` points at `https://<site>/updates/live/manifest.json` (`Services.update.manifest`,
+`client/tools/set_update_config.py`). Publish with `client/tools/make_update_manifest.py build <client> --out
+<CHAOS_SITE_DIR>/updates/live --key <private key outside the site and the repository>`: it copies new blobs first and
+writes `manifest.json` last, so a client never sees a manifest whose files are not there yet. Old blobs can stay
+(clients in the middle of an update still find them); delete blobs no manifest names any more after a day or two.
+
+- **HTTPS only in production.** The manifest is signed and every file is hash-checked, so a changed file is refused
+  anyway, but HTTPS keeps the update private and stops a network from cutting it off. The client warns in its log when
+  the manifest URL is plain HTTP; `client/tools/serve_updates.py` (plain HTTP, local) is for tests only.
+- **Range requests** must work (Apache and nginx serve them for static files by default): the large `Tibia.spr` is
+  fetched in 8 MB parts, in parallel, and an interrupted download resumes. Files over 512 MB cannot come in one piece.
+- **Caching**: `manifest.json` no-cache; blobs `immutable` (their name is their hash). A CDN in front is fine.
+- nginx (the `.htaccess` is Apache only):
+
+```
+location ^~ /updates/ {
+    location ~ \.(php|phtml|phar)$ { deny all; }
+    location ~ /manifest\.json$ { add_header Cache-Control "no-cache"; default_type application/json; }
+    location ~ /files/[0-9a-f]{2}/[0-9a-f]{64}$ { add_header Cache-Control "public, max-age=31536000, immutable";
+                                                  default_type application/octet-stream; }
+    autoindex off;
+}
+```
+
+`install_site.sh` copies `overlay/updates/.htaccess` and never touches `updates/live/`.
 
 ## Not done / for later
 
