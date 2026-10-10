@@ -1,0 +1,13 @@
+Module
+  name: game_antibot
+  description: Presence check modal and Report Player dialog (server antibot.lua, reports.lua, extended opcode 211)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ antibot_logic, antibot ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1002
+  @onLoad: init()
+  @onUnload: terminate()

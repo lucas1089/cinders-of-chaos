@@ -191,6 +191,10 @@ function LB.rankedBoard(board)
 	local cur = ensureWeek()
 	if not LB.ranked[board] then
 		LB.ranked[board] = LB.rank(cur.scores[board] or {}, cfg.staffGroup)
+		-- accounts held off the boards pending an anti-bot review (antibot.lua; off unless log.holdLeaderboards)
+		if ChaosAntibot and ChaosAntibot.filterRanked then
+			LB.ranked[board] = ChaosAntibot.filterRanked(LB.ranked[board])
+		end
 	end
 	return LB.ranked[board]
 end
@@ -247,6 +251,9 @@ function LB.checkReset(force)
 	local ranked = {}
 	for _, b in ipairs(cfg.boards) do
 		ranked[b.key] = LB.rank(scores[b.key], cfg.staffGroup)
+		if ChaosAntibot and ChaosAntibot.filterRanked then -- no titles or orbs while held for an anti-bot review
+			ranked[b.key] = ChaosAntibot.filterRanked(ranked[b.key])
+		end
 	end
 	local awards = LB.awards(cfg.boards, ranked, cfg)
 	for _, a in ipairs(awards) do
@@ -343,7 +350,7 @@ end
 
 local function ladderWhere(g)
 	return string.format("`vocation` IN (%s) AND `group_id` < %d AND `deletion` = 0", table.concat(g.ids, ","),
-		cfg.staffGroup)
+		cfg.staffGroup) .. (ChaosAntibot and ChaosAntibot.heldClause and ChaosAntibot.heldClause("") or "")
 end
 
 local function ladderRows(g)

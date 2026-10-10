@@ -149,6 +149,13 @@ Chaos.storage = {
 	autosellBase = 7100110 -- + 1 .. + Chaos.shopServices.autosellSlots: item ids on the auto-sell list
 }
 
+-- Anti-bot and player reports (client game_antibot; antibot*.lua, reports*.lua, sql/chaos_reports.sql): presence check
+-- modal and the report dialog on one opcode; storages 7100890 - 7100899 reserved (antibot.lua: +0 last presence check,
+-- +1 day key, +2 checks that day, +3 grace until, +4 suspicion score x 10)
+ChaosOpcodes.antibot = 211
+Chaos.storage.antibot = 7100890
+Chaos.antibotTables = {reports = "chaos_reports", log = "chaos_antibot_log", holds = "chaos_antibot_holds"}
+
 -- ---------------------------------------------------------------------------
 -- Database tables (created by server/sql/chaos.sql)
 -- ---------------------------------------------------------------------------

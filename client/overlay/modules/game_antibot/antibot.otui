@@ -1,0 +1,202 @@
+// game_antibot: the presence check modal and the Report Player dialog (server antibot.lua, reports.lua, opcode 211).
+// Styles from client_chaos_theme; the picture tiles use the buff icon frame (1 px #b8923a on a dark plate).
+
+AntibotChoice < UIWidget
+  size: 72 72
+  margin-right: 10
+  background-color: #1a151a
+  border-width: 1
+  border-color: #b8923a
+  phantom: false
+  focusable: false
+  change-cursor-image: true
+  cursor: pointer
+
+  $hover:
+    background-color: #2a2128
+    border-color: #f6cf72
+
+  $disabled:
+    opacity: 0.5
+
+  UIItem
+    id: item
+    size: 64 64
+    anchors.centerIn: parent
+    virtual: true
+    phantom: true
+    focusable: false
+
+PresenceCheckWindow < ChaosStaticMainWindow
+  id: presenceCheckWindow
+  size: 400 290
+  !text: tr('Presence Check')
+
+  ChaosLabel
+    id: intro
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    text-align: center
+    text-wrap: true
+    text-auto-resize: true
+    !text: tr('A quick check that you are at the keyboard.')
+
+  ChaosPanelDark
+    id: wordPanel
+    anchors.top: intro.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    height: 30
+
+    ChaosLabel
+      id: word
+      anchors.fill: parent
+      text-align: center
+      font: verdana-11px-rounded
+      color: #f6cf72
+
+  UIWidget
+    id: choices
+    anchors.top: wordPanel.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 12
+    size: 318 72
+    phantom: true
+    layout:
+      type: horizontalBox
+
+  ChaosProgressBar
+    id: timeBar
+    anchors.top: choices.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 14
+    height: 14
+    background-color: #8a6a1a
+
+  ChaosLabel
+    id: status
+    anchors.top: timeBar.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    height: 16
+    text-align: center
+
+  ChaosButton
+    id: retryButton
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    width: 140
+    !text: tr('Another picture')
+    !tooltip: tr('Show a different picture and word (once).')
+    @onClick: modules.game_antibot.another()
+
+  ChaosLabelDim
+    id: footnote
+    anchors.bottom: parent.bottom
+    anchors.left: retryButton.right
+    anchors.right: parent.right
+    margin-left: 10
+    text-wrap: true
+    text-auto-resize: true
+    !text: tr('Never asked in PvP or boss fights.')
+
+ReportWindow < ChaosMainWindow
+  id: reportWindow
+  size: 380 350
+  !text: tr('Report Player')
+  @onEscape: modules.game_antibot.hideReport()
+
+  ChaosLabel
+    id: nameLabel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 6
+    width: 70
+    !text: tr('Player')
+
+  ChaosTextEdit
+    id: nameEdit
+    anchors.left: nameLabel.right
+    anchors.right: parent.right
+    anchors.verticalCenter: nameLabel.verticalCenter
+    max-length: 29
+
+  ChaosLabel
+    id: reasonLabel
+    anchors.top: nameLabel.bottom
+    anchors.left: parent.left
+    margin-top: 16
+    width: 70
+    !text: tr('Reason')
+
+  ChaosComboBox
+    id: reasonBox
+    anchors.left: reasonLabel.right
+    anchors.right: parent.right
+    anchors.verticalCenter: reasonLabel.verticalCenter
+
+  ChaosLabel
+    id: noteLabel
+    anchors.top: reasonLabel.bottom
+    anchors.left: parent.left
+    margin-top: 16
+    !text: tr('Note (what happened, where, when)')
+
+  ChaosLabelDim
+    id: noteCounter
+    anchors.top: noteLabel.top
+    anchors.right: parent.right
+    text-auto-resize: true
+
+  ChaosMultilineTextEdit
+    id: noteEdit
+    anchors.top: noteLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 70
+    text-wrap: true
+    max-length: 200
+
+  ChaosPanelDark
+    id: privacyPanel
+    anchors.top: noteEdit.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    height: 60
+
+    ChaosLabelDim
+      id: privacy
+      anchors.fill: parent
+      text-wrap: true
+      !text: tr('Staff see your report, the position and the player\'s last lines in public channels. Private messages are never included.')
+
+  ChaosLabel
+    id: status
+    anchors.top: privacyPanel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 16
+    text-align: center
+
+  ChaosButton
+    id: cancelButton
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    !text: tr('Cancel')
+    @onClick: modules.game_antibot.hideReport()
+
+  ChaosButton
+    id: sendButton
+    anchors.bottom: parent.bottom
+    anchors.right: cancelButton.left
+    margin-right: 8
+    !text: tr('Send Report')
+    @onClick: modules.game_antibot.sendReport()

@@ -141,6 +141,17 @@ function chaos_rows(string $sql, array $params = array()): array {
 	return is_array($rows) ? $rows : array();
 }
 
+/**
+ * Accounts held off the boards pending an anti-bot review (chaos_antibot_holds, written by the game server's
+ * antibot.lua only with log.holdLeaderboards = true): SQL that leaves them out, for the players table alias `p`.
+ */
+function chaos_antibot_hold_sql(): string {
+	if (!chaos_table_exists('chaos_antibot_holds')) {
+		return '';
+	}
+	return ' AND NOT EXISTS (SELECT 1 FROM `chaos_antibot_holds` `h` WHERE `h`.`account_id` = `p`.`account_id` AND `h`.`cleared_at` = 0)';
+}
+
 // ---------------------------------------------------------------------------
 // Class lock (class_unlocks_core.lua, table chaos_class_unlocks)
 // ---------------------------------------------------------------------------
@@ -374,7 +385,7 @@ function chaos_leaderboard_rows(string $board, int $week, int $limit = 20): arra
 		SELECT `p`.`name`, `p`.`vocation`, `p`.`level`, `l`.`value`, `l`.`count`
 		FROM `chaos_leaderboard` `l`
 		JOIN `players` `p` ON `p`.`id` = `l`.`player_id`
-		WHERE `l`.`board` = ? AND `l`.`week` = ? AND `l`.`value` > 0 AND `p`.`group_id` < ?
+		WHERE `l`.`board` = ? AND `l`.`week` = ? AND `l`.`value` > 0 AND `p`.`group_id` < ?' . chaos_antibot_hold_sql() . '
 		ORDER BY `l`.`value` DESC, `l`.`updated_at` ASC, `l`.`player_id` ASC
 		LIMIT ?;', [$board, $week, (int)chaos_cfg('staff_group', 4), $limit]);
 }
@@ -420,7 +431,7 @@ function chaos_class_ladder(int $base, int $limit = 10, int $season = 0): array 
 	return chaos_rows("
 		SELECT `p`.`name`, `p`.`level`, `p`.`vocation`, `p`.`experience`
 		FROM `players` `p` $join
-		WHERE `p`.`vocation` IN ($in) AND `p`.`group_id` < ? AND `p`.`deletion` = 0
+		WHERE `p`.`vocation` IN ($in) AND `p`.`group_id` < ? AND `p`.`deletion` = 0" . chaos_antibot_hold_sql() . "
 		ORDER BY `p`.`experience` DESC, `p`.`id` ASC
 		LIMIT ?;", $params);
 }

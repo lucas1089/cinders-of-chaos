@@ -941,7 +941,8 @@ end
 
 local function ladderWhere(g, seasonId)
 	return string.format("p.`vocation` IN (%s) AND p.`group_id` < %d AND p.`deletion` = 0 AND sp.`season` = %d AND " ..
-		"sp.`migrated_at` = 0", table.concat(g.ids, ","), cfg.ladder.staffGroup, seasonId)
+		"sp.`migrated_at` = 0", table.concat(g.ids, ","), cfg.ladder.staffGroup, seasonId) ..
+		(ChaosAntibot and ChaosAntibot.heldClause and ChaosAntibot.heldClause("p.") or "") -- anti-bot review holds (antibot.lua)
 end
 
 local function seasonLadderRows(g, seasonId)

@@ -288,8 +288,9 @@ working directory, as with the rest of the base server libs).
 | game_bossspawns | `bossspawns.lua`, `bossspawns_core.lua`, `bossspawns_config.lua`, `sql/chaos_boss_spawns.sql` | **217**, Adventure > Boss Spawns | Every boss by category with place and respawn status, live alive state and last kills (see "Boss spawns"). Unit and mocked-engine tests; not run on a live server. |
 | game_riftatlas | `atlas.lua`, `atlas_core.lua`, `atlas_config.lua`, `sql/chaos_rift_atlas.sql` (hooks in `rift_core.lua`) | **210**, Adventure > Rift Atlas, the rift HUD | Rift Atlas: completion grid of first completions (theme x tier, flawless, swift, omens; 96 points), a map of 81 nodes in a core and four theme branches with 4 keystones, allocate / refund for gold or an orb; effects applied in `rift_core.lua` (see "Rift Atlas"). Unit and mocked-engine tests; not run on a live server. |
 | game_partyfinder | `party_finder.lua`, `party_finder_core.lua`, `party_finder_config.lua` | **208**, Social > Party Finder | Party Finder (LFG): listings with activity, wanted tank / healer / DPS slots, minimum level, note, expiry; browse with filters, apply with a role, the leader accepts (engine party invite) or declines; "Join as" quick-join queue; realm and staff rules; in memory (see "Party Finder"). Unit and mocked-engine tests; not run on a live server. |
+| game_antibot | `antibot.lua`, `antibot_core.lua`, `antibot_config.lua`, `reports.lua`, `reports_core.lua`, `sql/chaos_reports.sql`, `tools/patch_report_chat.py` | **211**, right-click a player > Report Player, System > Report a Player, `/reports` (staff) | Behaviour detection (action rhythm, instant reactions, walked loops, loot timing, nonstop play) with a decaying suspicion score, the presence check modal (four pictures, one retry, 75 s, deferred in PvP and boss fights), player reports with public chat lines and limits, the staff log and command, an admin page on the website; never bans by itself (see "Anti-bot and player reports"). Unit, synthetic-trace and mocked-engine tests; not run on a live server. |
 
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 208, 209, 214, 216, 217, 218, 219, 221, 222, 223, 224 (sent by the engine, patch 0015), 225, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
+Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 208, 209, 211, 214, 216, 217, 218, 219, 221, 222, 223, 224 (sent by the engine, patch 0015), 225, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
 Extended opcode 210 (Rift Atlas) is registered there too, as `ChaosOpcodes.riftAtlas` below the table.
 
@@ -350,11 +351,11 @@ base server (idempotent; `--dry-run` lists the changes).
 | `!ancestralstore <group>, <n>` | Economy > More > Ancestral Store |
 | `!online`, `!uptime`, `!serverinfo` | System > Server Info |
 | `!commands` | removed (the menu is the list) |
-| `!report <text>` | removed: System > Report a Bug |
+| `!report <text>` | removed: System > Report a Bug; a player: System > Report a Player, right-click > Report Player (`game_antibot`) |
 
 Kept as typed commands: every staff command (`/` words with an access check: `/rift`, `/season`, `/arena`, `/daily`,
 `/leaderboard`, `/patchnotes`, `/spells reload`, `/supports reload`, `/achievements`, `/invasion`, `/worldboss`,
-`/siege`, `/guild`, `/pet`, `/classunlock`, `/ascendset`, `/towerrun`, `/goblin`, `/coins`, `/gmnotify`,
+`/siege`, `/guild`, `/pet`, `/reports`, `/classunlock`, `/ascendset`, `/towerrun`, `/goblin`, `/coins`, `/gmnotify`,
 `/newplayerkit` and the base server's `/` commands); for a player those words are plain chat. The base server's Help
 channel words `!mute` / `!unmute` stay: they are tutor tools inside that channel, not player commands.
 
@@ -5935,3 +5936,126 @@ the note filter, every post / apply / decide refusal, the reconcile cases, realm
 `party_finder.lua` against a mocked engine (post, apply, toast and badge, decline, accept with the party invite, join,
 quick join, full, staff close, logout). Client: `game_partyfinder/partyfinderview_test.lua`. The window was rendered in
 the Linux client with payloads built by the core (offline); not run against a live server.
+
+## Anti-bot and player reports (`antibot.lua`, `antibot_core.lua`, `antibot_config.lua`, `reports.lua`, `reports_core.lua`, `sql/chaos_reports.sql`, `tools/patch_report_chat.py`, client `game_antibot`)
+
+Extended opcode **211** (`ChaosOpcodes.antibot`; free: not in the base server's list under "Opcode collision check", not
+used by any Chaos module, `tests/antibot_test.lua` checks both). Storages 7100890 - 7100899 (`Chaos.storage.antibot`:
++0 last presence check, +1 its day, +2 checks that day, +3 grace until, +4 score x 10). Tables `chaos_reports`,
+`chaos_antibot_log`, `chaos_antibot_holds` (`sql/chaos_reports.sql`; the scripts also create them at startup).
+**Nothing here bans or punishes on its own.** The detection asks for a presence check and writes a staff log; staff decide.
+The client base had its bot, cavebot and script modules removed already (client base patch 0015); there was no
+anti-cheat or player report feature on the server before this (the base server's `Player:onReportRuleViolation` now
+lands in `chaos_reports` too, reason "other").
+
+### Behaviour detection (`antibot_core.lua`, numbers in `antibot_config.lua`)
+
+Per online character a few bounded ring buffers, filled by cheap hooks; staff (group >= 4) are never sampled.
+
+| Signal | Samples (hook) | 0 (human) .. 1 (bot) |
+|---|---|---|
+| timing | per kind of action (each spell id from the spell events of engine patch 0008, own heals from `healthchange`): the intervals, at most 32 per kind, 8 kinds. A cast within 150 ms of its spell / group cooldown ending (a held hotkey, from the engine's `onSpellCooldown`) gives no interval; own heals without the events: intervals within 120 ms of a multiple of 1 s are left out | robust spread 1.4826 x MAD / median of the most regular kind: >= 0.15 -> 0, <= 0.05 -> 1 (20 intervals needed) |
+| reaction | an own heal with no own heal in the 2.5 s before it, within 1.5 s of a hit taken: its latency (server side, so ping included), 24 kept | share under 250 ms (0.5 -> 0, 0.9 -> 1) times tightness (standard deviation 90 ms -> 0, 40 ms -> 1); 10 needed |
+| loop | position every 2 s (`GlobalEvent`), 8 x 8 tile cells per floor, only cell changes, none while fighting (a hit or an action in the last 4 s), 192 kept | for each step between two cells the distance back to its last occurrence; the share of repeated steps that come back after about 1, 2 or 3 laps of the most common lap (4 - 60 steps, at least 5 cells, at least 40% of the steps repeated): 0.7 -> 0, 0.92 -> 1. Runs at most every 5 minutes |
+| loot | items moved by hand out of a corpse into the inventory (`EventCallback onItemMoved`): the gaps inside one looting burst (< 2.5 s), 32 kept | CV >= 0.22 -> 0, <= 0.08 -> 1 (16 needed) |
+| nonstop | activity minutes (any action, move, loot); a streak ends after 20 minutes without activity or offline | one streak 8 h -> 0, 14 h -> 1; or active hours in the last 24: 18 -> 0, 22 -> 1 |
+
+**Score.** Every 60 s per character: `score = score x 0.5^(60 s / 60 min) + sum(weight x signal)`, weights timing 1.2,
+reaction 1.2, loop 0.8, loot 0.8, nonstop 0.6; when fewer than two signals are at 0.5 or more, the add is multiplied by
+0.35. The steady score of a constant add is about 87 x add, so **one signal alone, even at 1, stays at most near 37**,
+under every threshold (a human with one odd habit: a fixed route, very long sessions, fast reflexes). Thresholds:
+**60** asks for a presence check, **120** writes a `score` entry in `chaos_antibot_log` (again after 6 h or when the score
+doubled). Online staff get a console line for every log entry.
+
+**Cost.** Memory: about 300 numbers and short strings per online character, kept 30 minutes after logout (a relog keeps
+the stats; a restart clears them, the score survives in a storage). CPU: one `getPosition` per character every 2 s, a
+table write per hook event, one evaluation per character per minute (rings of at most 32 numbers per kind; the loop
+search, at most every 5 minutes, is one pass over 192 cells with a table lookup each). The healthchange event on every
+character is one more Lua call per hit or heal.
+
+### The presence check (client `game_antibot`)
+
+A small modal: "Click the picture of: Fishing Rod" and four item pictures (stock items, `check.pool`: food, tools,
+weapons, potions; two of one group, like Bag and Backpack, never together), positions shuffled. The client gets client
+ids and random keys only; which key is right stays on the server, and the client has no item names. 75 s
+(`timeLimitSeconds`), the bar counts down. **Accessibility:** one retry: a wrong click shows a new picture (at least 45 s
+more), or "Another picture" before choosing. A pass multiplies the score by 0.4 and starts an 8 h grace; a failure (wrong
+twice or no answer) adds 40 and runs `failAction`: `"temple"` (default: teleported to the temple), `"kick"` or `"log"`,
+always with a `check_fail` log entry. **Never during PvP or boss fights:** a hit from or on a player in the last 60 s
+(also summons, also a PZ lock or a player as target), a hit from or on a boss in the last 45 s (the boss points list,
+the world bosses, `MonsterType:isBoss()`), or a rift run in progress defer it; a check deferred 30 minutes is dropped.
+**Rate limits:** at least 4 h between two checks, at most 2 a day per character. Logging out during a check is no
+failure: it comes again after the next login. Staff: `/reports check <name>` sends one at once (for tests).
+
+### Player reports (`reports.lua`, `reports_core.lua`)
+
+Report Player (right-click a player or System > Report a Player; no spoken command, see "Player commands: the menu"): name, reason (botting, cheating /
+exploiting, harassment, scam, offensive name, other) and a note (200 characters; "other" needs one). The server checks
+the name (online or offline character, not staff, not yourself), the reporter's level (8+) and the limits: 60 s between
+two reports, 5 a day per account, one report per target per 24 h. The row: reporter, target, reason, note, the target's
+position when online (else the reporter's; `target_online` says which), time, the target's suspicion score and its last
+10 lines in **public channels only** (World Chat, English Chat, Advertising, Help; `tools/patch_report_chat.py` adds one
+line to those channel scripts; private messages and the default local chat are never read). The lines live in memory and
+leave 30 minutes after the target's logout. Optional Discord webhook: `reports.discordWebhook` is empty in the repository;
+set the environment variable `CHAOS_REPORTS_WEBHOOK` (only `https://discord.com/api/webhooks/...` URLs; the post carries
+the report id, reason and the two names, never chat or note; sent with `curl` in the background).
+
+**Leaderboards.** `log.holdLeaderboards = true` (off by default): a `score` or `check_fail` entry holds the account in
+`chaos_antibot_holds` until staff clear it; held accounts are left out of the weekly boards and their titles / orbs
+(`leaderboard.lua`), the class ladder, the season ladder (`season.lua`) and the website boards. Switching it off again:
+clear the open holds too (`/reports clear <name>` or `UPDATE chaos_antibot_holds SET cleared_at = UNIX_TIMESTAMP()`),
+the website does not read the flag.
+
+### Staff guide
+
+1. **New report:** online staff see `[Report #12] A reported B: botting. /reports show 12`. In game: `/reports` (open
+   reports), `/reports list closed|all`, `/reports show <id>` (note, position, public chat lines). The admin panel has
+   the same under Accounts & Security (Player reports, Show report, Close report, Anti-bot log, Anti-bot score); the
+   website has `page.php?plugin=chaos&p=reports` for the admin accounts (filters, close / note / reopen, the anti-bot log).
+2. **Look before deciding:** `/reports score <name>` shows the score and each signal with its numbers (`timing 1.00 cv
+   0.006` = an action at a fixed delay; `reaction 1.00 fast 1.00 sd 6` = heals within a few ms of every hit; `loop 0.95
+   period 43` = the same 43-cell route again and again; `loot 1.00 cv 0.02`; `nonstop streak 16.2h`). `/reports log
+   <name>` lists its log entries (scores, checks passed / failed). One signal alone is never evidence; a failed check
+   can be someone who stepped away.
+3. **Watch** the character, talk to it, `/reports check <name>` for a fresh presence check.
+4. **Decide** with the normal staff tools (admin panel: kick, ban, notes), then `/reports close <id>, <what you
+   found>`. `/reports clear <name>` resets the score and lifts a leaderboard hold after a review that found nothing.
+
+### Protocol (JSON `{action, data}` on 211)
+
+- server -> client: `check {t, w, o = [{k, c}], s, a, r}` (token, word, options with key and client id, seconds left,
+  attempt, retries left), `checkResult {ok, retry, text}`, `reportOpen {name, reasons = [{k, n}], noteMax}`,
+  `reportResult {ok, text}`
+- client -> server: `answer {t, k}`, `another {t}`, `reportOpen {name}`, `report {name, reason, note}` (rate limited)
+
+### Tests and checks
+
+`tests/antibot_test.lua` (luajit and lua5.3, about 2700 checks): helpers, each signal on small traces (fixed rhythm,
+held hotkey left out, instant reactions, heal trains, a 10-cell loop, walking between two cells, a 15 h streak and a
+break), the single-signal bound, the decisions (PvP / boss deferral, drop after 30 min, gap, grace, daily limit, log
+cooldown), the pictures (200 challenges: four distinct, groups apart, the payload without words or the answer), answer /
+retry / fail / timeout, reports (validation, limits, chat lines and their expiry, webhook URL and body), and
+`antibot.lua` + `reports.lua` against a mocked engine (login, healthchange, cooldown-aware casts, loot moves, a check
+passed, a check unanswered -> temple + log + staff told, logout during a check, report rows with the public lines,
+refusals, `/reports close`, leaderboard filtering). Synthetic traces (a position every 2 s, fights, hits,
+heals, attack spells, looting, an evaluation every minute) with the real config:
+
+| Trace | Runs | Reached the check | Highest score |
+|---|---|---|---|
+| normal human, 6 h | 24 | 0 | 0.2 |
+| heal-spamming tryhard (held hotkeys), 6 h | 16 | 0 | 0.4 |
+| fast reflexes on a 15 ms ping, 6 h | 16 | 0 | 19 |
+| human walking one fixed circle (loop at 1.0 alone), 6 h | 12 | 0 | 24 |
+| 14 h grinder with breaks | 8 | 0 | 0.3 |
+| bot: fixed delays, instant heals, waypoint loop, 6 h | 12 | 12 (median 24 min) | 336 |
+| bot with fixed loot timing, 6 h | 6 | 6 (median 23 min) | 333 |
+| bot with jittered attack and loot timing, 16 h | 6 | 6 (median 59 min, by reactions + loop + nonstop) | 216 |
+
+`luajit tests/antibot_test.lua -v` prints this table with the signals of the worst run of each trace. Client:
+`game_antibot/antibot_logic_test.lua`. Website: `website/tests/chaos_reports_page_test.php`.
+
+**Not verified on a live server** (no TFS in this environment): the hooks' real event rates, `onItemMoved` with corpse
+containers, `MonsterType:isBoss()`, the channel scripts after `patch_report_chat.py` (checked on a copy of the base
+scripts: patched, idempotent, `luac -p` clean), the webhook post. The synthetic traces are models, not recordings:
+real false-positive rates have to be watched in the log after launch (raise `check.at` or lower a weight if needed). A
+careful bot with human-like random delays on every signal is not caught by this; reports and staff are the answer there.

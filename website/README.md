@@ -25,6 +25,8 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `overlay/chaos_pay_webhook.php` | the Mercado Pago / PayPal webhook of the donations |
 | `payments.env.example` | the donation settings (the credentials stay outside the repository) |
 | `tests/chaos_pay_test.php`, `tests/chaos_donation_page_test.php` | the donation flow and page (php-cli with pdo_sqlite, a mocked provider) |
+| `overlay/plugins/chaos/pages/reports.php`, `reports_lib.php` | staff only (the admin accounts of `CHAOS_ADMIN_ACCOUNTS`): player reports from the game (filters, close / note / reopen with a CSRF token) and the anti-bot log (server/README.md "Anti-bot and player reports"); the leaderboards leave out accounts held for an anti-bot review (`chaos_antibot_hold_sql`, only when the server's `holdLeaderboards` wrote holds) |
+| `tests/chaos_reports_page_test.php` | `php website/tests/chaos_reports_page_test.php`: the reports page (php-cli with pdo_sqlite) |
 | `tools/recolor_layout.py` | turns Void's stylesheets into ours at install time |
 | `tools/gen_site_art.py` | draws the site art and the promotion material |
 | `art/` | promotion material: banners, social image, Discord banner and icon, class showcase, features infographic |
