@@ -287,8 +287,8 @@ copy the dat flags of the stock bags (`copy:8861`, `copy:7343`, `copy:10325`: co
   (dat 5b2e13ab..., spr of 699,745 sprites) it gives dat b243485112b7bea43016d7dd49097472, spr cfd09de9f81c8f2ffdd29db1e01fa69b
   (699,748 sprites), twice identical.
 - **Windows package pair:** the package takes the merged pair from the private branch `windows-assets`
-  (one archive `things/things-1098.tar.xz`, `SHA256SUMS.parts`, its README). Since 2026-10-10 that archive holds things_custom12
-  (windows-assets 4975d74: the pouches, fist weapons, class looks, monster looks and the bone effects), so servers no longer need `install_pouches.py --stock-looks`. Keep that flag only for
+  (one archive `things/things-1098.tar.xz`, `SHA256SUMS.parts`, its README). Since 2026-10-10 that archive holds things_custom13
+  (windows-assets 0810c26: the pouches, fist weapons, class looks, monster looks, the bone effects and the Cinderheart look), so servers no longer need `install_pouches.py --stock-looks`. Keep that flag only for
   clients still on an older pair: a pair without 33651-33653 shows nothing for a pouch.
 - Checked in the Linux client with the new pair: in a bag next to the stock bags, in the store (Convenience), in the container
   window titles, and on the kill routing screenshots.
@@ -359,8 +359,8 @@ tracing: `monster_looks/sources.csv`. Server side: server/README.md "Rifts" (loo
 - CI: `tools/ci/check_content.py` takes its outfit limit (MAX_OUTFIT) from the highest `look` in `picks.csv` (at least
   2081, the end of things_custom10b). It is 2125 now, so new picks raise it without an edit there. A monster file with
   a lookType above it fails unless it is listed in `needs_sprites.txt` (checked: 2126 is flagged, 2125 passes).
-  things_custom12 ("Necromancer line effects" below) is the live pair (windows-assets 4975d74); it only adds effects, so it also has 2125
-  outfits.
+  things_custom12 ("Necromancer line effects" below) was the live pair (windows-assets 4975d74); it only adds effects, so it also has 2125
+  outfits. The live pair is now things_custom13 ("The Cinderheart look" below, windows-assets 0810c26).
 - Checked in the Linux client on a test server: each world and omen monster spawned, and one tier 8 rift of each
   theme with its packs and its guardian (screenshots and boards in the session scratchpad `monsters/`).
 
@@ -388,7 +388,7 @@ per spell); only these had no fitting donor. No pixel of the owner's style refer
   this spec's ones; re-running gives the same files. (`gen_necro_fx.py shapes` / `paint` remake the sheet and repaint it;
   only needed to change the art.)
 - Input things_custom11 (things_custom10b + outfits 2100-2125): dat 74aa990f1ed43d6ac30812001c8662c9, spr
-  c2223fe12f35f3532536db1339de8523 (719,970 sprites). Output **things_custom12** (the live pair, windows-assets 4975d74): dat
+  c2223fe12f35f3532536db1339de8523 (719,970 sprites). Output **things_custom12** (live pair until windows-assets 0810c26; was 4975d74): dat
   4712f7484d391e66c04b7ecf72c940e7, spr dc92483b0744a6389151d8c7b85d9342 (720,098 sprites), twice identical. The same
   step on things_custom10b (dat 7ba1d479..., spr ade7204f...) gives the test pair things_custom10b_fx: dat
   fc9a9adbfac0845e34ebe1b2b6117f8e, spr 11a82c220f271f0cd4400cb93d7b857b (716,162 sprites).
@@ -415,8 +415,8 @@ Output **things_custom13**: dat 945753ee2f4661865a4705896fb4958b, spr 41566d5652
 720,569 sprites (471 appended), built twice with identical md5s. Verified by the importer: 1,600 sprite slots and 64
 frames pixel-identical to the donor, the 2125 old outfits and every item, effect and missile byte-identical, 3000
 sampled old sprites unchanged. Checked in the Linux client with this pair on a test server (the boss spawned, walking,
-in its arena). **To do on the release side:** things_custom13 replaces things_custom12 on the `windows-assets` branch
-(not done here); a pair without outfit 2126 draws nothing for the Cinderheart. CI: `check_content.py` reads 2126 from
+in its arena). things_custom13 is the live pair on the `windows-assets` branch (0810c26, replacing things_custom12); a pair without
+outfit 2126 draws nothing for the Cinderheart. CI: `check_content.py` reads 2126 from
 picks.csv, so the monster file passes.
 
 ## Leaderboards: fastest-time boards with class tabs (`game_leaderboard`)
