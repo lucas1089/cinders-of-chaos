@@ -58,7 +58,7 @@ systems built for weeks of play rather than days.
 > *"Steel, string, spell or shadow. Bone, fist or faith. Choose one. At the hundredth step I will ask you to choose again."*
 > (the Ascendant Oracle)
 
-![Classes and ascensions: Warrior, Ranger, Mystic and Thief](docs/images/feature_classes.png)
+![The seven classes and their fourteen ascensions: Warrior, Ranger, Mystic, Thief, Necromancer, Monk and Templar](docs/images/feature_classes.png)
 
 You start as one of seven base classes. At level 100 you **ascend** into one of two specialisations. Every class has its
 own Chaos spells with custom names, icons and effects, and the spellbook (Character > Spellbook) lists them all.
@@ -327,6 +327,8 @@ and the Auto Seller never touch a locked item. Uniques and items with gems in th
 
 ### The Codex
 
+![The Codex window](docs/images/feature_codex.png)
+
 **The Codex** (Economy > Codex, or **Alt+K**) looks up the whole item system in the client: every modifier with its
 tiers T1-T8, value ranges, the item level each tier needs and what it rolls on, the legendary powers, every orb and
 where it comes from, gems, uniques and where they drop, rift modifiers and spell supports, plus a short "How items
@@ -356,7 +358,7 @@ Crafting Bench to open its page.
 > *"Five came through the first wound. Whenever the portals open at the temples, they come back, and never weaker."*
 > (from the Chronicle of the Broken World, the Book of the Five)
 
-![The five world bosses and a sealed rift](docs/images/feature_endgame.png)
+![A world boss, a rift run and the Infinity Tower](docs/images/feature_endgame.png)
 
 ### World bosses
 
@@ -577,6 +579,8 @@ only one is out at a time.
 > *"Everything has a price in the broken world. Even the things that glow."*
 > (a broker of the lower city)
 
+![The market and an offer's tooltip](docs/images/feature_market.png)
+
 Sell and buy with other players at **Economy > Market** (Alt+E), or by using the market in any depot.
 - **Gold or Chaos Coins:** put a price in gold, in Chaos Coins or both; the buyer picks. Gold is paid from and to the
   bank, coins from and to your account.
@@ -593,6 +597,8 @@ Sell and buy with other players at **Economy > Market** (Alt+E), or by using the
   it sold while you were away. A server crash in the middle of a purchase loses nothing.
 
 ## The store and the pouches
+
+![The store and the three store pouches](docs/images/feature_store.png)
 
 The store (Economy > Store) is paid in **Chaos Coins**. It sells convenience, cosmetics and time, and **no gear**.
 - **Classes:** the Necromancer, the Monk and the Templar, for your whole account.
@@ -611,7 +617,7 @@ The store (Economy > Store) is paid in **Chaos Coins**. It sells convenience, co
 > *"Count your kills, count your coin, and come back tomorrow. The Chaos is patient. So are its rewards."*
 > (from the Chronicle of the Broken World)
 
-![The hunt tracker and the daily reward](docs/images/feature_qol.png)
+![The hunt tracker, the daily reward and the Town Portal](docs/images/feature_qol.png)
 
 - **Town Portal:** every character has it from the start, with unlimited uses. Cast it from the action bar (the spell
   Town Portal, `ash domh`) or from Character > Town Portal. After a 3 second channel a portal opens beside you that leads
@@ -643,6 +649,8 @@ The store (Economy > Store) is paid in **Chaos Coins**. It sells convenience, co
   gear private.
 
 ### Our client
+
+![The character plate, buff bar, party frames, cast bar and an NPC conversation](docs/images/feature_client.png)
 
 Cinders of Chaos ships its own client, built for these systems:
 - **Ornate UI skin:** iron, gold trim, blood-red and arcane-blue gems on every window, button and bar, with titles and NPC
