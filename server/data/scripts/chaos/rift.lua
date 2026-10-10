@@ -1539,6 +1539,9 @@ function RF.open(player, item)
 		return false
 	end
 	setMarker(player, key)
+	-- the week's world modifier (community.lua, R.hooks.world): Ember Tides adds modifiers to this run only (the refund
+	-- marker above keeps the key as it was)
+	R.worldKeyMods(cfg, player, key, rand)
 
 	RF.nextId = RF.nextId + 1
 	local fx = R.effects(cfg, key.mods, key.tier)

@@ -49,3 +49,21 @@ CREATE TABLE IF NOT EXISTS `chaos_season_log` (
   PRIMARY KEY (`id`),
   KEY `chaos_season_log_player` (`player_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Season modes (season_modes.lua): the mode a season character picked at the join. Kept after the season (history,
+-- the fallen graves of the ladder). ssf / hc = Self-Found / Hardcore; fallen_at = the unix time a Hardcore character
+-- died (0 = alive), with its level and the cause; reset_at = when the end of the season reset the mode (0 = running).
+CREATE TABLE IF NOT EXISTS `chaos_season_modes` (
+  `player_id` int(11) NOT NULL,
+  `season` smallint(5) unsigned NOT NULL,
+  `ssf` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `hc` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `chosen_at` int(10) unsigned NOT NULL,
+  `fallen_at` int(10) unsigned NOT NULL DEFAULT 0,
+  `fallen_level` int(10) unsigned NOT NULL DEFAULT 0,
+  `fallen_cause` varchar(64) NOT NULL DEFAULT '',
+  `reset_at` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`player_id`),
+  KEY `chaos_season_modes_season` (`season`, `fallen_at`),
+  CONSTRAINT `chaos_season_modes_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

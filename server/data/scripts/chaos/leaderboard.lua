@@ -390,7 +390,8 @@ local function ladderBoard(player, g)
 	local rows = {}
 	for _, r in ipairs(ladderRows(g)) do
 		rows[#rows + 1] = {rank = r.rank, name = r.name, value = r.level, level = r.level,
-			vocation = vocationName(r.vocation), title = firstTitle(r.id)}
+			vocation = vocationName(r.vocation), title = firstTitle(r.id),
+			fallen = ChaosSeason and ChaosSeason.fallenMark and ChaosSeason.fallenMark(r.id) or nil} -- season_modes.lua
 	end
 	local own
 	local mine = groupOfPlayer(player)
@@ -427,9 +428,9 @@ local function sendMeta(player, open)
 		season = ChaosSeason and ChaosSeason.leaderboardMeta and ChaosSeason.leaderboardMeta(player) or nil}) -- season.lua
 end
 
-function LB.sendBoard(player, key, groupKey, season)
-	-- the "Season" view (season.lua): only the running season's characters
-	if season and ChaosSeason and ChaosSeason.sendBoard and ChaosSeason.sendBoard(player, key, groupKey) then
+function LB.sendBoard(player, key, groupKey, season, mode)
+	-- the "Season" view (season.lua): only the running season's characters (mode: a tab of season_modes.lua)
+	if season and ChaosSeason and ChaosSeason.sendBoard and ChaosSeason.sendBoard(player, key, groupKey, mode) then
 		return
 	end
 	local now = LB.now()
@@ -549,7 +550,8 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		sendMeta(player, true)
 		LB.sendBoard(player, key or cfg.boards[1].key)
 	elseif msg.action == "get" then
-		LB.sendBoard(player, key or cfg.boards[1].key, data.group, data.season == true)
+		LB.sendBoard(player, key or cfg.boards[1].key, data.group, data.season == true,
+			type(data.mode) == "string" and data.mode:sub(1, 12) or nil)
 	end
 end
 ext:type("extendedopcode")

@@ -582,6 +582,29 @@ def m_skull(c):
     skull(c, 6, 6)
 
 
+def m_self_found(c):
+    c.rect(4, 13, 22, 22, B)                                    # a closed chest, chained shut
+    c.poly([(4, 13), (6, 9), (20, 9), (22, 13)], BD)
+    c.rect(4, 15, 22, 16, A); c.rect(11, 13, 15, 20, A)           # gold bands, a padlock
+    c.ell(11.5, 10, 14.5, 14, C); c.ell(12.4, 11, 13.6, 13, 0)   # the shackle
+    c.px(['k', 'k'], 13, 16, {'k': KK})                           # the keyhole
+    star(c, 13, 5, 3.6, 1.5, AH)                                  # one star above: found alone
+    c.px(['W'], 13, 4, {'W': W})
+
+
+def m_hardcore_ward(c):
+    shield(c, 4, 3, 22, 24, B)                                    # a ward shield with a skull: one life, guarded
+    shield(c, 6, 5, 20, 21, BD)
+    c.px(['.#####.',
+          '#######',
+          '#kk#kk#',
+          '#kk#kk#',
+          '.##k##.',
+          '..###..',
+          '..#.#..'], 10, 8, {'#': A, 'k': KK})
+    c.px(['h'], 11, 9, {'h': AH})
+
+
 def m_skull_black(c):
     skull(c, 6, 6, eye=C)
 
@@ -605,6 +628,7 @@ MOTIFS = {  # name: (function, ramps A, B, C)
     'paralyze': (m_paralyze, 'steel', 'coal'), 'drunk': (m_drunk, 'bone', 'wood'),
     'pacified': (m_pacified, 'steel', 'gold', 'blood'), 'muted': (m_muted, 'arcane', 'steel', 'bone'),
     'infight': (m_infight, 'steel', 'wood', 'blood'),
+    'self_found': (m_self_found, 'gold', 'wood', 'steel'), 'hardcore_ward': (m_hardcore_ward, 'bone', 'holy'),
     'skull_white': (m_skull, 'bone'), 'skull_red': (m_skull, 'blood'), 'skull_black': (m_skull_black, 'obsidian', 'obsidian', 'blood'),
 }
 
@@ -690,6 +714,11 @@ def check():
     # the Ember Descent's entries and icons (descent_*) are drawn by gen_descent_icons.py
     names = {n for n in names if not n.startswith('descent_')}
     debuffs = {n for n in debuffs if not n.startswith('descent_')}
+    # the raid's (raid_*) by gen_raid_icons.py
+    names = {n for n in names if not n.startswith('raid_')}
+    debuffs = {n for n in debuffs if not n.startswith('raid_')}
+    # the community goal stages (community_*) and the world modifiers (wmod_*) by gen_community_icons.py
+    names = {n for n in names if not n.startswith(('community_', 'wmod_'))}
     mine = set(ICONS)
     if names != mine:
         raise SystemExit('ICONS does not match chaos_buffs.lua: missing %s, unused %s' %

@@ -4,9 +4,12 @@
 --   server -> client  state {open, season = {id, name, tag, status, startsIn, endsIn, modifier = {name, description}},
 --                            mine = {realm, seasonal, veteran, eligible, reason, level},
 --                            track = [{key, name, stat, value, progress, reward, kind, unlocked, by}], titles = [..]}
---                     confirm {text, seconds}    the join terms: Join asks to confirm
+--                     confirm {text, seconds, modes = [{key, name, short, ssf, hc, warning}]}   the join terms and the
+--                                                modes (season_modes.lua): the join dialog (seasonjoin.otui)
 --                     notice {text}              why a join was refused
---   client -> server  open | join {confirm}
+--   client -> server  open | join {confirm, mode} | beat (a Hardcore character's heartbeat, mine.heartbeat seconds) |
+--                     sync (after the game starts: the server answers a Hardcore character with its state)
+-- The pure parts of the dialog and the modes: seasonjoin.lua (SeasonJoin, seasonjoin_test.lua).
 -- The top menu (Adventure > Season) calls toggle().
 
 local OPCODE = 246
@@ -16,6 +19,9 @@ local state         -- last state received
 local stateAt = 0   -- g_clock.seconds() when it arrived
 local tickEvent
 local confirmBox
+local joinWindow    -- the join dialog (seasonjoin.otui)
+local joinChoices, joinChoice, joinAcked, modeButtons = {}, nil, false, {}
+local beatEvent, beatSeconds
 
 local function send(action, data)
   local protocol = g_game.getProtocolGame()
@@ -97,6 +103,8 @@ local function showState()
   else
     text = tr('The season has ended. Its rewards stay on your account.')
   end
+  local modeLine = SeasonJoin.modeLine(mine)
+  if modeLine then text = text .. " " .. modeLine end
   window.minePanel.mineLabel:setText(text)
   window.minePanel.joinButton:setVisible(mine.eligible == true)
 
@@ -124,34 +132,89 @@ local function showState()
   updateTimer()
 end
 
--- the general box does not wrap: break the text into lines of about `width` characters
-local function wrap(text, width)
-  local lines, line = {}, ''
-  for word in tostring(text or ''):gmatch('%S+') do
-    if line ~= '' and #line + 1 + #word > width then
-      lines[#lines + 1] = line
-      line = word
-    else
-      line = line == '' and word or (line .. ' ' .. word)
-    end
-  end
-  if line ~= '' then lines[#lines + 1] = line end
-  return table.concat(lines, '\n')
+-- ---------------------------------------------------------------- the join dialog
+local function closeJoin()
+  if joinWindow then joinWindow:destroy() joinWindow = nil end
+  modeButtons, joinChoice, joinAcked = {}, nil, false
+  if confirmBox then confirmBox:destroy() confirmBox = nil end
 end
 
--- ---------------------------------------------------------------- protocol
+local function refreshJoin()
+  if not joinWindow then return end
+  for key, b in pairs(modeButtons) do b:setChecked(joinChoice ~= nil and key == joinChoice.key) end
+  joinWindow.warningPanel.warningLabel:setText(SeasonJoin.warningText(joinChoice))
+  local ask = SeasonJoin.needsAck(joinChoice)
+  joinWindow.ackBox:setVisible(ask)
+  if not ask then joinWindow.ackBox:setChecked(false) end
+  joinWindow.warningPanel.warningLabel:setColor(joinChoice and joinChoice.hc and '#ff7a5a' or '#d6c9ae')
+  joinWindow.joinButton:setText(SeasonJoin.joinLabel(joinChoice))
+  joinWindow.joinButton:setEnabled(SeasonJoin.canJoin(joinChoice, joinAcked))
+end
+
+function selectMode(key)
+  joinChoice = SeasonJoin.find(joinChoices, key) or joinChoice
+  joinAcked = false
+  if joinWindow then joinWindow.ackBox:setChecked(false) end
+  refreshJoin()
+end
+
+function onJoinAck(checked)
+  joinAcked = checked == true
+  refreshJoin()
+end
+
+function confirmJoin()
+  local data = SeasonJoin.payload(joinChoice, joinAcked)
+  if not data then return end
+  closeJoin()
+  send('join', data)
+end
+
+function cancelJoin()
+  closeJoin()
+end
+
 local function onConfirm(data)
-  if confirmBox then confirmBox:destroy() confirmBox = nil end
-  local function yes()
-    if confirmBox then confirmBox:destroy() confirmBox = nil end
-    send('join', { confirm = true })
+  closeJoin()
+  joinChoices = SeasonJoin.choices(data)
+  joinWindow = g_ui.displayUI('seasonjoin')
+  if not joinWindow then return end
+  joinWindow.termsLabel:setText(tostring(data.text or ''))
+  for _, c in ipairs(joinChoices) do
+    local b = g_ui.createWidget('SeasonModeButton', joinWindow.modeRow)
+    b:setText(c.short)
+    b:setTooltip(c.warning)
+    local key = c.key
+    b.onClick = function() selectMode(key) end
+    modeButtons[key] = b
   end
-  local function no()
-    if confirmBox then confirmBox:destroy() confirmBox = nil end
-  end
-  if displayGeneralBox then
-    confirmBox = displayGeneralBox(tr('Join the season'), wrap(data.text, 64),
-      { { text = tr('Join'), callback = yes }, { text = tr('Cancel'), callback = no }, anchor = AnchorHorizontalCenter }, yes, no)
+  joinChoice = SeasonJoin.find(joinChoices, SeasonJoin.DEFAULT)
+  refreshJoin()
+  joinWindow:show()
+  joinWindow:raise()
+  joinWindow:focus()
+end
+
+-- ---------------------------------------------------------------- the Hardcore heartbeat
+local function stopBeat()
+  if beatEvent then removeEvent(beatEvent) beatEvent = nil end
+  beatSeconds = nil
+end
+
+local function beat()
+  beatEvent = nil
+  if not beatSeconds or not g_game.isOnline() then return end
+  send('beat')
+  beatEvent = scheduleEvent(beat, beatSeconds * 1000)
+end
+
+local function updateBeat(mine)
+  local s = SeasonJoin.heartbeat(mine)
+  if s == beatSeconds then return end
+  stopBeat()
+  if s then
+    beatSeconds = s
+    beat()
   end
 end
 
@@ -163,10 +226,10 @@ local function onExtendedOpcode(protocol, opcode, buffer)
   end
   local data = type(msg.data) == 'table' and msg.data or {}
   if msg.action == 'state' then
-    if confirmBox and type(data.mine) == 'table' and not data.mine.eligible then
-      confirmBox:destroy() -- joined (or no longer eligible): the question is answered
-      confirmBox = nil
+    if (confirmBox or joinWindow) and type(data.mine) == 'table' and not data.mine.eligible then
+      closeJoin() -- joined (or no longer eligible): the question is answered
     end
+    updateBeat(type(data.mine) == 'table' and data.mine or nil)
     state = data
     stateAt = g_clock.seconds()
     showState()
@@ -196,7 +259,7 @@ end
 function hide()
   if window then window:hide() end
   if tickEvent then removeEvent(tickEvent) tickEvent = nil end
-  if confirmBox then confirmBox:destroy() confirmBox = nil end
+  closeJoin()
 end
 
 function toggle()
@@ -210,20 +273,27 @@ end
 
 local function onGameEnd()
   hide()
+  stopBeat()
   state = nil
+end
+
+-- the state (and with it the Hardcore heartbeat) also after a reconnect, which brings no login state from the server
+local function onGameStart()
+  scheduleEvent(function() if g_game.isOnline() then send('sync') end end, 3000)
 end
 
 function init()
   window = g_ui.displayUI('season')
   window:hide()
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
-  connect(g_game, { onGameEnd = onGameEnd })
+  connect(g_game, { onGameEnd = onGameEnd, onGameStart = onGameStart })
 end
 
 function terminate()
-  disconnect(g_game, { onGameEnd = onGameEnd })
+  disconnect(g_game, { onGameEnd = onGameEnd, onGameStart = onGameStart })
   ProtocolGame.unregisterExtendedOpcode(OPCODE)
   hide()
+  stopBeat()
   if window then
     window:destroy()
     window = nil

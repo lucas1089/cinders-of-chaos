@@ -225,7 +225,8 @@ local function trophyTexts(gid)
 	return {
 		string.format("Guild Siege: %d win%s in %d siege%s.", s.siegeWins or 0, (s.siegeWins or 0) == 1 and "" or "s",
 			s.sieges or 0, (s.sieges or 0) == 1 and "" or "s"),
-		string.format("World bosses: %d victories shared by the members.", s.worldboss or 0),
+		string.format("World bosses: %d victories shared by the members.%s", s.worldboss or 0,
+			(s.raidClears or 0) > 0 and string.format(" The Ashen Sepulchre: %d raid trophies.", s.raidClears) or ""),
 		string.format("Records: highest rift tier %d, %d rifts sealed, %d bounties, %d invasions defended.", s.riftBest or 0,
 			s.rift or 0, s.bounty or 0, s.invasion or 0),
 		string.format("Guild level %d (%s GXP). Top contributors: %s.", r.level, C.money(r.xp),

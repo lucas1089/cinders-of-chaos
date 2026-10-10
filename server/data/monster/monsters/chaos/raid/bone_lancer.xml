@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Trash of the Ashen Sepulchre (raid.lua): a pack monster of the corridors; the script gives it a tier (magic / rare) and scales its health by the raid size; the stock look 298. -->
+<monster name="Bone Lancer" nameDescription="a bone lancer" race="undead" experience="24000" speed="240" manacost="0">
+	<health now="52000" max="52000" />
+	<look type="298" corpse="6068" />
+	<targetchange interval="4000" chance="15" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-550" max="-1100" />
+		<attack name="physical" interval="2000" chance="18" range="5" target="1" min="-450" max="-900">
+			<attribute key="shootEffect" value="spear" />
+			<attribute key="areaEffect" value="hitarea" />
+		</attack>
+	</attacks>
+	<defenses armor="65" defense="65" />
+	<elements>
+		<element physicalPercent="10" />
+		<element firePercent="0" />
+		<element energyPercent="0" />
+		<element earthPercent="0" />
+		<element icePercent="0" />
+		<element holyPercent="-25" />
+		<element deathPercent="50" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+	</immunities>
+	<loot>
+		<item id="2160" countmax="2" chance="40000" /><!-- crystal coin -->
+		<item id="29856" chance="6000" /><!-- Orb of Upheaval -->
+	</loot>
+</monster>

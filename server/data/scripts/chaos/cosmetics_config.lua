@@ -183,6 +183,9 @@ return {
 		-- ------------------------------------------------------------------ the Cinderheart (uber.lua; last, so the list
 		-- positions the tests use stay)
 		{id = 108, key = "kill_cinderheart", kind = "killfx", icon = 2353, source = "achievement", achievement = "cinder_1",
-			vfx = "ember_crown", name = "Cinderheart Crown", desc = "A crown of embers burns over your kills. Achievement: Cinderbreaker."}
+			vfx = "ember_crown", name = "Cinderheart Crown", desc = "A crown of embers burns over your kills. Achievement: Cinderbreaker."},
+		-- the Ashen Sepulchre's final boss (raid.lua; the achievement raid_sovereign)
+		{id = 109, key = "kill_sovereign", kind = "killfx", icon = 2498, source = "achievement", achievement = "raid_sovereign",
+			vfx = "dome_blast_violet", name = "Sovereign's Pyre", desc = "A pyre of violet ash rises from your kills. Achievement: The Last Door."}
 	}
 }

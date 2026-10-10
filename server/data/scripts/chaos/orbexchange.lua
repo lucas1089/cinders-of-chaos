@@ -667,6 +667,11 @@ function X.place(player, d)
 	if not ok then
 		return refuse(player, why)
 	end
+	-- season modes (season_modes.lua): Self-Found characters place no orders
+	why = ChaosSeason and ChaosSeason.modesOrbRefusal and ChaosSeason.modesOrbRefusal(player, "place")
+	if why then
+		return refuse(player, why)
+	end
 	if not rate(player, "place") then
 		return refuse(player, MSG.slow)
 	end

@@ -62,7 +62,9 @@ return {
 		{key = "rare", name = "Rare Spawns", color = "#f6cf72",
 			text = "May replace any natural respawn while you hunt."},
 		{key = "descent", name = "The Ember Descent", color = "#ff7a2a",
-			text = "A roguelike trial: 8-12 rooms, the boss in the last."}
+			text = "A roguelike trial: 8-12 rooms, the boss in the last."},
+		{key = "sepulchre", name = "The Ashen Sepulchre (Raid)", color = "#c8503a",
+			text = "Weekly raid for 5-15: each boss's loot once a week per character."}
 	},
 
 	-- read from the systems above (false = leave that category out)
@@ -237,6 +239,26 @@ return {
 		{key = "descent_boss", category = "descent", name = "Ember Descent Boss", loc = "Ember Descent (instance)", level = 100,
 			look = {type = 2107}, rule = {type = "ondemand", how = "The portal next to the temple: one free run a day, " ..
 			"one free weekly run, more with Ember Sigils", short = "Descent portal", cooldown = 7100411}},
+
+		-- ------------------------------------------------------------------ the Ashen Sepulchre (raid_config.lua)
+		-- the raid's bosses in order; the cooldown column shows the weekly loot lockout of the character (storage
+		-- 7100441 + boss index - 1: the time of the reset while the boss is looted this week)
+		{key = "raid_ulthar", category = "sepulchre", name = "Gravewarden Ulthar", monster = "Gravewarden Ulthar", anywhere = true,
+			loc = "Ashen Sepulchre (raid)", level = 800, rule = {type = "ondemand",
+			how = "The raid portal next to the temple, a party of 5-15; loot once a week", short = "Raid, weekly loot",
+			cooldown = 7100441}},
+		{key = "raid_morwen", category = "sepulchre", name = "Morwen the Ash-Sister", monster = "Morwen the Ash-Sister",
+			anywhere = true, loc = "Ashen Sepulchre (raid)", level = 800, rule = {type = "ondemand",
+			how = "The raid's second boss; loot once a week", short = "Raid, weekly loot", cooldown = 7100442}},
+		{key = "raid_colossus", category = "sepulchre", name = "The Marrow Colossus", monster = "The Marrow Colossus",
+			anywhere = true, loc = "Ashen Sepulchre (raid)", level = 800, rule = {type = "ondemand",
+			how = "The raid's third boss; loot once a week", short = "Raid, weekly loot", cooldown = 7100443}},
+		{key = "raid_hexmaw", category = "sepulchre", name = "Vhoss the Hexmaw", monster = "Vhoss the Hexmaw", anywhere = true,
+			loc = "Ashen Sepulchre (raid)", level = 800, rule = {type = "ondemand",
+			how = "The raid's fourth boss; loot once a week", short = "Raid, weekly loot", cooldown = 7100444}},
+		{key = "raid_sovereign", category = "sepulchre", name = "Varkhul the Ashen Sovereign", monster = "Varkhul the Ashen Sovereign",
+			anywhere = true, loc = "Ashen Sepulchre (raid)", level = 800, rule = {type = "ondemand",
+			how = "The raid's last boss; loot once a week", short = "Raid, weekly loot", cooldown = 7100445}},
 
 		-- ------------------------------------------------------------------ rare spawns (treasure_goblin_config.lua)
 		{key = "treasure_goblin", category = "rare", name = "Treasure Goblin", monster = "Treasure Goblin", anywhere = true,

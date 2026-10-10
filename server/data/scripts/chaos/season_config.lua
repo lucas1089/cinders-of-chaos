@@ -153,6 +153,54 @@ return {
 		staffGroup = 4 -- left out of the season ladder (as on the leaderboards)
 	},
 
+	-- ------------------------------------------------------------------ modes (Self-Found, Hardcore)
+	-- season_modes.lua (engine glue), season_modes_core.lua (rules). A character picks its mode in the join
+	-- confirmation; it cannot be changed until the season ends. The end-of-season migration resets it (the character
+	-- keeps its items). Table chaos_season_modes (sql/chaos_season.sql). See README "Season modes".
+	modes = {
+		table = "chaos_season_modes",
+		ownerKey = "chaos_owner", -- custom item attribute: guid of the character an item on the ground / a corpse is from
+		list = {
+			{key = "standard", name = "Standard", short = "Standard", ssf = false, hc = false,
+				warning = "Trade, party and loot with every character of the season."},
+			{key = "ssf", name = "Self-Found", short = "Self-Found", ssf = true, hc = false,
+				warning = "Self-Found: no trading of any kind (trade window, market, Orb Exchange, mail, bank transfers, " ..
+					"items of other players on the ground), parties only with Self-Found characters, loot stays your own. " ..
+					"Reward: +25% Item Find and +25% Rarity Find, and the Self-Found ladder."},
+			{key = "hc", name = "Hardcore", short = "Hardcore", ssf = false, hc = true,
+				warning = "Hardcore: one life. If this character dies it falls: it leaves the Hardcore ladder for good, " ..
+					"becomes a standard character at once and its grave stays on the ladder."},
+			{key = "hcssf", name = "Hardcore Self-Found", short = "HC Self-Found", ssf = true, hc = true,
+				warning = "Hardcore Self-Found: one life AND no trading. Both sets of rules at once."}
+		},
+		ssf = {
+			itemFind = 25, -- percent added to the character's Item Find (loot.lua itemFindMult)
+			rarityFind = 25 -- percent added to its Rarity Find (loot.lua, the bonus rarity chance)
+		},
+		hc = {
+			loginSeconds = 10, -- no damage for this long after every login
+			heartbeatSeconds = 2, -- the client (game_season) sends a heartbeat this often while playing Hardcore
+			pingLossSeconds = 6, -- no heartbeat for this long = the connection is lost (the client still attached)
+			pingLossPerHour = 3, -- ping-loss protections per hour; a real disconnect is always protected
+			pullSeconds = 8, -- without a client (or silent) this long: pulled to the temple
+			restartGuardSeconds = 120, -- before the daily restart (the base server save) no Hardcore character can die
+			announce = true -- broadcast a fall
+		},
+		messages = {
+			trade = "Self-Found characters cannot trade.",
+			party = "Self-Found characters can only be in a party with other Self-Found characters.",
+			bank = "Self-Found characters cannot send or receive gold.",
+			market = "Self-Found characters cannot buy or sell on the market.",
+			orbs = "Self-Found characters cannot use the Orb Exchange.",
+			mail = "Self-Found characters cannot send mail.",
+			mailTo = "That character is Self-Found: it cannot receive mail.",
+			loot = "Self-Found: you can only take your own items and your own loot.",
+			give = "Self-Found: you cannot hand items to other players.",
+			item = "That item belongs to a Self-Found character.",
+			house = "Self-Found characters keep their items to themselves (house)."
+		}
+	},
+
 	checkSeconds = 60, -- the season start / end check (migration) and the member cache refresh
 	staffGroup = 4
 }

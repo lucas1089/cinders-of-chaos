@@ -76,6 +76,15 @@ $latest = $plugin && function_exists('chaos_patchnotes') ? (chaos_patchnotes()[0
 		</div>
 	</section>
 
+	<?php $community = function_exists('chaos_community_state') ? chaos_community_block_html(chaos_community_state(time())) : ''; ?>
+	<?php if ($community !== ''): // the community goal and the week's world modifiers (plugins/chaos/community_lib.php) ?>
+	<section class="chaos-box">
+		<h2 class="chaos-heading">The Great Brazier</h2>
+		<?= $community ?>
+		<a class="chaos-btn chaos-btn--ghost" href="page.php?plugin=chaos&amp;p=community">Community goal and contributors</a>
+	</section>
+	<?php endif; ?>
+
 	<?php if ($latest !== null): ?>
 	<section class="chaos-box">
 		<h2 class="chaos-heading">Latest patch notes <small><?= $h($latest['date'] ?? '') ?></small></h2>

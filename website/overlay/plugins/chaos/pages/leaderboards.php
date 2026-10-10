@@ -17,6 +17,7 @@ $week = chaos_week_key(time(), 6);
 $rows = chaos_leaderboard_rows($board, $week, 20);
 list($titleWeek, $titleRows) = chaos_leaderboard_titles();
 $def = $boards[$board];
+$fallenMarks = chaos_fallen_marks(); // season modes: the skull of a fallen Hardcore character on the Class Ladder
 $url = static function (string $key): string {
 	return 'page.php?plugin=chaos&p=leaderboards&board=' . rawurlencode($key);
 };
@@ -85,7 +86,7 @@ $url = static function (string $key): string {
 					<ol class="chaos-ladder__list">
 						<?php if (!$ladder): ?><li class="chaos-empty">Nobody yet.</li><?php endif; ?>
 						<?php foreach ($ladder as $r): ?>
-							<li><a href="characterprofile.php?name=<?= rawurlencode((string)$r['name']) ?>"><?= chaos_h($r['name']) ?></a>
+							<li><a href="characterprofile.php?name=<?= rawurlencode((string)$r['name']) ?>"><?= chaos_h($r['name']) ?></a><?= chaos_fallen_html($fallenMarks, (string)$r['name']) ?>
 								<span class="chaos-muted"><?= chaos_h(chaos_class_name((int)$r['vocation'])) ?></span>
 								<span class="chaos-ladder__lvl"><?= (int)$r['level'] ?></span></li>
 						<?php endforeach; ?>

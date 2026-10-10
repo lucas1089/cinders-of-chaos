@@ -1,0 +1,13 @@
+Module
+  name: game_community
+  description: Community window - the community goal with its stages and the Great Brazier, and the week's world modifiers (server community.lua, extended opcode 203)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ communityview, community ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1002
+  @onLoad: init()
+  @onUnload: terminate()

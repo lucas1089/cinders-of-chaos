@@ -1043,10 +1043,46 @@ R.hooks = R.hooks or {}
 function R.atlasMods(player, ctx)
 	local f = R.hooks.atlasMods
 	if not f or not player then
-		return nil
+		return R.mergeWorld(nil, R.worldMods(player, ctx))
 	end
 	local ok, am = pcall(f, player, ctx or {})
-	return ok and type(am) == "table" and am or nil
+	return R.mergeWorld(ok and type(am) == "table" and am or nil, R.worldMods(player, ctx))
+end
+
+-- The community goal and the weekly world modifier (community.lua) plug in through R.hooks.world(player, ctx) ->
+-- nil or wm = {keyChance = percentage points, rewardMult = percent, extraMods = n}. With no hook, or a nil answer, every
+-- function here returns its input unchanged.
+function R.worldMods(player, ctx)
+	local f = R.hooks.world
+	if not f or not player then
+		return nil
+	end
+	local ok, wm = pcall(f, player, ctx or {})
+	return ok and type(wm) == "table" and wm or nil
+end
+
+-- am (the atlas modifiers, may be nil) with wm's key chance and chest bonus added; a copy, never am itself
+function R.mergeWorld(am, wm)
+	if not wm or ((wm.keyChance or 0) <= 0 and (wm.rewardMult or 0) <= 0) then
+		return am
+	end
+	local out = {}
+	for k, v in pairs(am or {}) do
+		out[k] = v
+	end
+	out.keyChance = (out.keyChance or 0) + math.max(0, wm.keyChance or 0)
+	out.rewardMult = (out.rewardMult or 0) + math.max(0, wm.rewardMult or 0)
+	return out
+end
+
+-- a key about to be opened gets wm.extraMods more modifiers (Ember Tides); returns the added ones (none: {})
+function R.worldKeyMods(cfg, player, key, rand)
+	local wm = R.worldMods(player, {tier = key and key.tier})
+	local n = wm and math.floor(wm.extraMods or 0) or 0
+	if n <= 0 or not key or not key.mods then
+		return {}
+	end
+	return R.addMods(cfg, key, n, rand)
 end
 
 function R.atlasSealed(info)

@@ -392,6 +392,11 @@ end
 -- "worldBoss" | "contract". quiet: no message (kills). Returns the K.gain result.
 function F.gain(player, key, amount, source, quiet)
 	local P = stateOf(player)
+	-- community goal's reputation stage and the week's Banner Week (community.lua); 1 when neither is active
+	local cm = ChaosCommunity and ChaosCommunity.repMult and tonumber(ChaosCommunity.repMult(player)) or 1
+	if cm ~= 1 and (tonumber(amount) or 0) > 0 then
+		amount = math.floor(amount * cm + 0.5)
+	end
 	local res = K.gain(cfg, idx, P.st, key, amount, {day = day(), week = week(), contract = source == "contract", now = now()})
 	local f = idx.byKey[key]
 	if not f then

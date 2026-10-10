@@ -40,7 +40,10 @@
 --   arena1v1_wins, arena1v1_rating, arena2v2_wins, arena2v2_rating   arena (retroactive from chaos_arena_ratings)
 --   siege_played, siege_wins                                         guild siege
 --   faction_exalted_<vigil|compact|choir|circle>, faction_exalted   factions (factions.lua: 1 once Exalted; how many are)
+--   raid_kills, raid_<boss key>, raid_clears, raid_flawless, raid_speed   the Ashen Sepulchre (raid.lua: every raider present
+--                                                                    at a kill, looted or not)
 --   points                                                           the character's own achievement points
+--   season_hc_level, season_ssf_level, season_hc_survived, season_ssf_finished   season modes (season_modes.lua)
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible; no engine calls (also read by server/tests/achievements_test.lua).
 
 local CHAOS, DIVINE, EXALTED = 29856, 29857, 29855
@@ -59,6 +62,7 @@ return {
 		{key = "monsters", name = "Monsters"},
 		{key = "bosses", name = "World Bosses"},
 		{key = "rifts", name = "Rifts"},
+		{key = "raids", name = "Raids"},
 		{key = "bounties", name = "Bounties"},
 		{key = "items", name = "Items & Crafting"},
 		{key = "pvp", name = "PvP"},
@@ -237,6 +241,27 @@ return {
 		{id = "cinder_10", cat = "rifts", name = "Keeper of the Ashes", desc = "Slay the Cinderheart 10 times.", points = 50,
 			stat = "cinder_kills", target = 10, title = "Ashkeeper", frame = "ember"},
 
+		-- ------------------------------------------------------------------ Raids: the Ashen Sepulchre (raid.lua)
+		-- raid_sovereign unlocks the kill effect Sovereign's Pyre (cosmetics_config.lua id 109)
+		{id = "raid_first", cat = "raids", name = "Into the Sepulchre", desc = "Slay a boss of the Ashen Sepulchre.", points = 10,
+			stat = "raid_kills"},
+		{id = "raid_ulthar", cat = "raids", name = "The First Gate Falls", desc = "Slay Gravewarden Ulthar.", points = 10,
+			stat = "raid_ulthar"},
+		{id = "raid_morwen", cat = "raids", name = "Lullaby's End", desc = "Slay Morwen the Ash-Sister.", points = 15,
+			stat = "raid_morwen"},
+		{id = "raid_colossus", cat = "raids", name = "Bone to Dust", desc = "Slay the Marrow Colossus.", points = 15,
+			stat = "raid_colossus"},
+		{id = "raid_hexmaw", cat = "raids", name = "No Curse Spoken", desc = "Slay Vhoss the Hexmaw.", points = 25,
+			stat = "raid_hexmaw"},
+		{id = "raid_sovereign", cat = "raids", name = "The Last Door", desc = "Slay Varkhul the Ashen Sovereign.", points = 50,
+			stat = "raid_sovereign", title = "Sovereign's Bane", reward = {items = orbs(20, 10, 1)}},
+		{id = "raid_flawless", cat = "raids", name = "Nobody Kneels", desc = "Slay Varkhul with nobody falling in the fight.",
+			points = 50, stat = "raid_flawless", hidden = true, title = "the Unbowed"},
+		{id = "raid_speed", cat = "raids", name = "Through Every Door", desc = "Clear the Sepulchre in one sitting in under 30 minutes.",
+			points = 50, stat = "raid_speed", hidden = true},
+		{id = "raid_clears_10", cat = "raids", name = "Keeper of the Sepulchre", desc = "Slay Varkhul 10 times.", points = 50,
+			stat = "raid_clears", target = 10, title = "Sepulchre Keeper"},
+
 		-- ------------------------------------------------------------------ Bounties
 		{id = "bounty_1", cat = "bounties", name = "Contract Signed", desc = "Complete a bounty contract.", points = 5,
 			stat = "bounty_done"},
@@ -340,6 +365,23 @@ return {
 			points = 25, stat = "faction_exalted_circle", reward = {items = orbs(0, 3, 1)}},
 		{id = "faction_all", cat = "explore", name = "Oath of Four Banners", desc = "Become Exalted with all four factions.",
 			points = 50, stat = "faction_exalted", target = 4, title = "Oathbound", reward = {items = orbs(0, 5, 2)}},
+
+		-- ------------------------------------------------------------------ Season modes (season_modes.lua)
+		-- season_hc_level / season_ssf_level: the level of a character while it plays Hardcore / Self-Found (alive);
+		-- season_hc_survived / season_ssf_finished: 1 when its season ends and it still plays the mode
+		{id = "season_hc_50", cat = "combat", name = "One Life", desc = "Reach level 50 in a Hardcore season.", points = 10,
+			stat = "season_hc_level", target = 50},
+		{id = "season_hc_100", cat = "combat", name = "Walking the Knife's Edge", desc = "Reach level 100 in a Hardcore season.",
+			points = 25, stat = "season_hc_level", target = 100, title = "the Unfallen"},
+		{id = "season_hc_250", cat = "combat", name = "Death Waits Elsewhere", desc = "Reach level 250 in a Hardcore season.",
+			points = 50, stat = "season_hc_level", target = 250, title = "Deathless"},
+		{id = "season_hc_survived", cat = "combat", name = "Survivor of the Season",
+			desc = "Be alive in Hardcore when your season ends.", points = 50, stat = "season_hc_survived",
+			title = "Season Survivor"},
+		{id = "season_ssf_100", cat = "combat", name = "By My Own Hand", desc = "Reach level 100 in a Self-Found season.",
+			points = 25, stat = "season_ssf_level", target = 100, title = "the Self-Made"},
+		{id = "season_ssf_finished", cat = "combat", name = "Needed No One",
+			desc = "Still be Self-Found when your season ends.", points = 25, stat = "season_ssf_finished"},
 
 		-- ------------------------------------------------------------------ Secrets
 		{id = "rat_500", cat = "secrets", name = "Overqualified", desc = "Kill a rat at level 500 or higher.", points = 10,

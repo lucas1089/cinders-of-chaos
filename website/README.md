@@ -20,6 +20,7 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `overlay/updates/.htaccess` | the client update folder: static files only, cache headers (see "Client updates") |
 | `tests/chaos_password_test.php` | `php website/tests/chaos_password_test.php` (php-cli only) |
 | `tests/chaos_slots_test.php` | `php website/tests/chaos_slots_test.php`: the character slot limit (php-cli only, a fake database) |
+| `tests/chaos_season_modes_test.php` | `php website/tests/chaos_season_modes_test.php`: the season mode tabs and fallen marks of the Seasons page (php-cli only, a fake database) |
 | `tests/chaos_referral_test.php` | `php website/tests/chaos_referral_test.php`: the referral code field (php-cli only, a fake database) |
 | `overlay/plugins/chaos/pay/`, `pages/coins.php` | donations for Chaos Coins: Pix (Mercado Pago) and PayPal, the worker, the donation page (see "Donations") |
 | `overlay/chaos_pay_webhook.php` | the Mercado Pago / PayPal webhook of the donations |
@@ -27,6 +28,8 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `tests/chaos_pay_test.php`, `tests/chaos_donation_page_test.php` | the donation flow and page (php-cli with pdo_sqlite, a mocked provider) |
 | `overlay/plugins/chaos/pages/reports.php`, `reports_lib.php` | staff only (the admin accounts of `CHAOS_ADMIN_ACCOUNTS`): player reports from the game (filters, close / note / reopen with a CSRF token) and the anti-bot log (server/README.md "Anti-bot and player reports"); the leaderboards leave out accounts held for an anti-bot review (`chaos_antibot_hold_sql`, only when the server's `holdLeaderboards` wrote holds) |
 | `tests/chaos_reports_page_test.php` | `php website/tests/chaos_reports_page_test.php`: the reports page (php-cli with pdo_sqlite) |
+| `overlay/plugins/chaos/community_lib.php`, `pages/community.php` | the community goal and the week's world modifiers (read only, from the game's `chaos_community_*` tables): a block on the front page and `page.php?plugin=chaos&p=community` (menu The World > Community) |
+| `tests/chaos_community_page_test.php` | `php website/tests/chaos_community_page_test.php`: the block and the page (php-cli with pdo_sqlite) |
 | `tools/recolor_layout.py` | turns Void's stylesheets into ours at install time |
 | `tools/gen_site_art.py` | draws the site art and the promotion material |
 | `art/` | promotion material: banners, social image, Discord banner and icon, class showcase, features infographic |
@@ -64,7 +67,7 @@ What it does, in order:
 5. **The database**, with `setup/chaos_setup.php`: ZnoteX's `znote_*` tables (`CREATE TABLE IF NOT EXISTS`, seed rows
    only into empty tables), every pending ZnoteX migration (recorded with its checksum), our plugin installed and
    enabled (its `install.sql` creates `chaos_class_unlocks` if the server has not yet), the layout switched on, the
-   menu entries "The World" (Server Info, Patch Notes, Leaderboards, Seasons, Rules) and "Donate" (the donation page
+   menu entries "The World" (Server Info, Patch Notes, Leaderboards, Seasons, Rules, Community) and "Donate" (the donation page
    `page.php?plugin=chaos&p=coins`) and the Rules page added once.
    Menu entries and the Rules page are never overwritten, so the owner's edits in the admin panel stay.
 
@@ -114,7 +117,15 @@ Local test (what was used to check it): `php -S 127.0.0.1:8095 -t "$CHAOS_SITE_D
   `Date:`, intro, the New / Changes / Fixes / Balance sections and their colours, bullets, sub-bullets, bold leads,
   comments, the same limits), newest first.
 - **Seasons** come from the server's `season_config.lua` (names, dates, modifier, reward track) with the
-  `/season start|end` overrides of `server_config`; the season ladder reads `chaos_season_players`.
+  `/season start|end` overrides of `server_config`; the season ladder reads `chaos_season_players`, with a tab per season
+  mode (`&mode=all|standard|ssf|hc|hcssf|fallen`, table `chaos_season_modes`) and a skull for fallen Hardcore characters
+  (also on the Leaderboards page's Class Ladder). Test: `php website/tests/chaos_season_modes_test.php` (php-cli, a fake
+  database).
+- **Community goal** (`community_lib.php`): the goal of the running period (`chaos_community_goal`, one bar per realm when the
+  server counts Season realms separately), the stage buffs open now (`chaos_community_buffs`), the top contributors
+  (`chaos_community_contrib`), the week's world modifiers (`chaos_community_week`, seeded or set by staff) and the latest stage
+  and period lines (`chaos_community_history`). The game server writes every table (server/README.md "Community goals and
+  the weekly world modifier"); the site only reads them, so the block shows nothing until the server has written a goal.
 
 All plugin queries are prepared statements through ZnoteX's `db()`, none is built from request input, and every value
 printed is escaped.

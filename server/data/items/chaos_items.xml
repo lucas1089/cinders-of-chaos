@@ -713,4 +713,71 @@
 		<attribute key="description" value="Carried out of the burning hall by the one who put the Tyrant down. (Requires level 300.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
+	<!-- the Ashen Sepulchre's raid uniques (raid_config.lua uniques): only a raid boss's personal loot rolls them -->
+	<!-- 7422: stock "jade hammer", client id 7422 -->
+	<item id="7422" article="the" name="Gravewarden's Verdict">
+		<attribute key="weight" value="3200" />
+		<attribute key="weaponType" value="club" />
+		<attribute key="attack" value="54" />
+		<attribute key="defense" value="26" />
+		<attribute key="extraDef" value="3" />
+		<attribute key="skillClub" value="5" />
+		<attribute key="skillShield" value="3" />
+		<attribute key="absorbPercentPhysical" value="5" />
+		<attribute key="description" value="The warden's flail broke every shield brought to the first gate. Now it answers you. (Requires level 800.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 8865: stock "dark lord's cape", client id 8037 -->
+	<item id="8865" article="the" name="Shroud of the Ash-Sister">
+		<attribute key="weight" value="2900" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="14" />
+		<attribute key="magicPoints" value="5" />
+		<attribute key="absorbPercentFire" value="10" />
+		<attribute key="absorbPercentDeath" value="6" />
+		<attribute key="manaLeechChance" value="6" />
+		<attribute key="manaLeechAmount" value="6" />
+		<attribute key="description" value="Woven from the ash of every lullaby she sang. It is warm, and it should not be. (Requires level 800.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2504: stock "dwarven legs", client id 3398 -->
+	<item id="2504" name="Marrowforged Greaves">
+		<attribute key="weight" value="4900" />
+		<attribute key="slotType" value="legs" />
+		<attribute key="armor" value="13" />
+		<attribute key="absorbPercentPhysical" value="8" />
+		<attribute key="absorbPercentDeath" value="6" />
+		<attribute key="skillShield" value="3" />
+		<attribute key="description" value="Plated with the Colossus's own bones. They creak when you stand still. (Requires level 800.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2124: stock "crystal ring", client id 3007 -->
+	<item id="2124" article="the" name="Eye of the Hexmaw">
+		<attribute key="weight" value="90" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="absorbPercentDeath" value="8" />
+		<attribute key="magicPoints" value="3" />
+		<attribute key="skillDist" value="3" />
+		<attribute key="criticalHitChance" value="5" />
+		<attribute key="criticalHitAmount" value="20" />
+		<attribute key="description" value="An effigy's eye, set in crystal. Every curse you hear, it hears first. (Requires level 800.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2498: stock "royal helmet", client id 3392 -->
+	<item id="2498" article="the" name="Crown of the Last Sovereign">
+		<attribute key="weight" value="4800" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="15" />
+		<attribute key="magicPoints" value="4" />
+		<attribute key="skillSword" value="3" />
+		<attribute key="skillAxe" value="3" />
+		<attribute key="skillClub" value="3" />
+		<attribute key="skillDist" value="3" />
+		<attribute key="absorbPercentFire" value="6" />
+		<attribute key="absorbPercentDeath" value="6" />
+		<attribute key="lifeLeechChance" value="6" />
+		<attribute key="lifeLeechAmount" value="6" />
+		<attribute key="description" value="Varkhul wore it to the end of the world and back. It still expects a throne. (Requires level 800.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
 </items>

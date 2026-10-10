@@ -98,3 +98,14 @@ its own look 2126, a donor-library creature (donor F 200, picks.csv row `cinderh
 Cinderheart look"); `apply_monster_looks.py` writes it like the omen rows. The adds Bloodmoon Thrall (555), Hollow
 Wraith (241), Storm Shard (293) and Cinderspawn (242) use stock looks; their health and count come from the script.
 Numbers: server/README.md "Ascended Omens and the Cinderheart".
+
+**The Ashen Sepulchre (`monsters/chaos/raid/`, raid.lua).** The weekly raid's five bosses, their adds and the corridor
+trash, our own files (registered by the `monsters` step like every folder under `monsters/chaos/`). The bosses' health is
+the five-player value (Gravewarden Ulthar 4.0M, Morwen the Ash-Sister 4.4M, The Marrow Colossus 4.8M, Vhoss the Hexmaw
+5.0M, Varkhul the Ashen Sovereign 7.2M); the script scales it by the raid size and runs the telegraphed mechanics. Their
+looks are existing outfits of the client pair that no monster, NPC, mount or outfit of the server used: 1281, 354, 863,
+1369, 1445 (no new sprites; `tests/raid_test.lua` checks that no other file in `monsters/chaos/` uses them and that none is
+a rift / omen look). The add Cinder Acolyte (look 9), the immobile, non-hostile Hex Effigy (look 995) and the six trash
+monsters (Sepulchre Ghoul 18, Bone Lancer 298, Hex Cultist 9, Cinder Hound 240, Marrow Knight 37, Ashen Reaper 300) use
+stock looks; the script sets their tier and scales their health. The bosses' corpses hold only coins: the loot is personal
+and scripted (lockout). Numbers: server/README.md "The Ashen Sepulchre, the weekly raid".

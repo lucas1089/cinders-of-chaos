@@ -263,6 +263,25 @@ function PartyMath.column(members, settings, headerH, gap)
   return ys, y
 end
 
+-- a raid (up to 15 frames) does not fit one column: the frames wrap into more columns when the next one would end below
+-- maxH (the height left for the panel). Returns xs, ys, the width and the height of the panel; one column (the old
+-- layout, xs all 0) while they fit.
+function PartyMath.grid(members, settings, headerH, gap, maxH)
+  local xs, ys = {}, {}
+  local colW = PartyMath.scaled(PartyMath.FRAME_W, settings.scale) + gap
+  local x, y, bottom, cols = 0, headerH + gap, headerH + gap, 1
+  for i, m in ipairs(members) do
+    local h = PartyMath.frameHeight(m, settings) + gap
+    if maxH and i > 1 and y + h > maxH and y > headerH + gap then
+      x, y, cols = x + colW, headerH + gap, cols + 1
+    end
+    xs[i], ys[i] = x, y
+    y = y + h
+    if y > bottom then bottom = y end
+  end
+  return xs, ys, cols * colW - gap, bottom
+end
+
 function PartyMath.tooltip(m, now)
   local voc = PartyMath.vocation(m.voc)
   local lines = { m.name .. '  Lv ' .. m.level .. '  ' .. voc }

@@ -116,5 +116,28 @@ local _, y = M.defaultPosition(free, 200, 400, 0, 0)
 eq(y + 400 <= 520 - 44 - 8, true, 'big party above the strip')
 eq(select(2, M.defaultPosition({ x = 0, y = 40, width = 300, height = 100 }, 200, 400, 0, 0)), 48, 'never above the free area')
 
+-- a raid of 15: the frames wrap into columns inside the height left for the panel; a party keeps one column
+do
+  local list = {}
+  for i = 1, 14 do list[i] = { id = i, buffs = {}, far = false } end
+  local st = M.sanitize(nil)
+  local xs, ys, w, h = M.grid(list, st, 14, 2, 400)
+  eq(xs[1], 0, 'grid: first column'); eq(ys[1], 16, 'grid: under the header')
+  local cols, maxBottom = 0, 0
+  for i = 1, #list do
+    if ys[i] == 16 then cols = cols + 1 end
+    maxBottom = math.max(maxBottom, ys[i] + M.frameHeight(list[i], st))
+  end
+  eq(cols, 2, 'grid: 14 frames in two columns of 400 px')
+  eq(maxBottom <= 400, true, 'grid: every frame inside the height')
+  eq(w, 2 * (M.FRAME_W + 2) - 2, 'grid: two columns wide')
+  eq(h <= 400, true, 'grid: panel height')
+  local cx, cy, cw = M.grid({ list[1], list[2], list[3] }, st, 14, 2, 400)
+  local oy = M.column({ list[1], list[2], list[3] }, st, 14, 2)
+  eq(cx[3], 0, 'grid: a party stays one column'); eq(cy[3], oy[3], 'grid: same rows as the column'); eq(cw, M.FRAME_W, 'grid: one frame wide')
+  local nx = M.grid(list, st, 14, 2, nil)
+  eq(nx[14], 0, 'grid: no height limit, one column')
+end
+
 if fails > 0 then os.exit(1) end
 print('party frames tests OK (' .. checks .. ' checks)')

@@ -273,10 +273,14 @@ local function craft(player, orbKey, item, orbItem, opts)
 	if not ok then
 		return false, res
 	end
-	if orbItem then
-		orbItem:remove(1)
-	else
-		player:removeItem(orb.id, 1)
+	-- community goal (community.lua): an orb used feeds the goal, and the week's Forgefire may keep it
+	local kept = ChaosCommunity and ChaosCommunity.onOrbUsed and ChaosCommunity.onOrbUsed(player, orbKey) or false
+	if not kept then
+		if orbItem then
+			orbItem:remove(1)
+		else
+			player:removeItem(orb.id, 1)
+		end
 	end
 	logCraft(player, orb, name, res.text)
 	local pos = player:getPosition()

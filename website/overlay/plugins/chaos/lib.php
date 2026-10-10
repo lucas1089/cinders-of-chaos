@@ -408,8 +408,10 @@ function chaos_leaderboard_titles(): array {
 		ORDER BY `t`.`board`, `t`.`rank`;', [$week]));
 }
 
-/** Class Ladder: the highest characters of one class line. */
-function chaos_class_ladder(int $base, int $limit = 10, int $season = 0): array {
+/** Class Ladder: the highest characters of one class line. With a season: only its characters; $mode is a season
+ * mode tab (chaos_season_mode_tabs, season_modes.lua): 'all' and the mode tabs list living (unmigrated) characters,
+ * 'fallen' the fallen Hardcore ones by the level they fell at. Rows carry fallen_level / fallen_cause when known. */
+function chaos_class_ladder(int $base, int $limit = 10, int $season = 0, string $mode = 'all'): array {
 	$ids = chaos_line_ids($base);
 	if (!$ids) {
 		return array();
@@ -420,20 +422,87 @@ function chaos_class_ladder(int $base, int $limit = 10, int $season = 0): array 
 	$in = implode(',', array_fill(0, count($ids), '?'));
 	$params = array_merge($ids, array((int)chaos_cfg('staff_group', 4)));
 	$join = '';
+	$where = '';
+	$cols = '';
+	$order = '`p`.`experience` DESC, `p`.`id` ASC';
 	if ($season > 0) {
 		if (!chaos_table_exists('chaos_season_players')) {
 			return array();
 		}
 		$join = 'JOIN `chaos_season_players` `s` ON `s`.`player_id` = `p`.`id` AND `s`.`season` = ?';
 		array_unshift($params, $season);
+		// season modes (season_modes.lua): the mode tab, the fallen marks
+		$clause = chaos_season_mode_clause($mode);
+		if ($clause === null) {
+			return array();
+		}
+		if (chaos_table_exists('chaos_season_modes')) {
+			$join .= ' LEFT JOIN `chaos_season_modes` `m` ON `m`.`player_id` = `p`.`id`';
+			$cols = ', `m`.`fallen_level`, `m`.`fallen_cause`';
+			$where = ' AND ' . $clause;
+		} elseif ($mode !== 'all' && $mode !== 'standard') {
+			return array();
+		}
+		if ($mode === 'fallen') {
+			$order = '`m`.`fallen_level` DESC, `m`.`fallen_at` ASC';
+		} else {
+			$where .= ' AND `s`.`migrated_at` = 0';
+		}
 	}
 	$params[] = $limit;
 	return chaos_rows("
-		SELECT `p`.`name`, `p`.`level`, `p`.`vocation`, `p`.`experience`
+		SELECT `p`.`name`, `p`.`level`, `p`.`vocation`, `p`.`experience`$cols
 		FROM `players` `p` $join
-		WHERE `p`.`vocation` IN ($in) AND `p`.`group_id` < ? AND `p`.`deletion` = 0" . chaos_antibot_hold_sql() . "
-		ORDER BY `p`.`experience` DESC, `p`.`id` ASC
+		WHERE `p`.`vocation` IN ($in) AND `p`.`group_id` < ? AND `p`.`deletion` = 0$where" . chaos_antibot_hold_sql() . "
+		ORDER BY $order
 		LIMIT ?;", $params);
+}
+
+// ---------------------------------------------------------------------------
+// Season modes (season_modes.lua, season_config.lua `modes`, table chaos_season_modes)
+// ---------------------------------------------------------------------------
+
+/** The mode tabs of the season ladder, key => label (the game's leaderboard window has the same). */
+function chaos_season_mode_tabs(): array {
+	return array('all' => 'All', 'standard' => 'Standard', 'ssf' => 'Self-Found', 'hc' => 'Hardcore',
+		'hcssf' => 'HC Self-Found', 'fallen' => 'Fallen');
+}
+
+/** SQL condition of a mode tab on `m` (chaos_season_modes, LEFT JOINed: NULL = no mode row); null = unknown tab.
+ * The same rules as ChaosSeasonModes.ladderClause (season_modes_core.lua). */
+function chaos_season_mode_clause(string $mode): ?string {
+	$c = array(
+		'all'      => '1 = 1',
+		'standard' => '(`m`.`player_id` IS NULL OR (`m`.`ssf` = 0 AND `m`.`hc` = 0))',
+		'ssf'      => '`m`.`ssf` = 1 AND `m`.`hc` = 0',
+		'hc'       => '`m`.`hc` = 1 AND `m`.`ssf` = 0 AND `m`.`fallen_at` = 0',
+		'hcssf'    => '`m`.`hc` = 1 AND `m`.`ssf` = 1 AND `m`.`fallen_at` = 0',
+		'fallen'   => '`m`.`fallen_at` > 0',
+	);
+	return $c[$mode] ?? null;
+}
+
+/** Fallen Hardcore characters (every season): name => {level, cause}, for the skull on the ladders. */
+function chaos_fallen_marks(): array {
+	if (!chaos_table_exists('chaos_season_modes')) {
+		return array();
+	}
+	$out = array();
+	foreach (chaos_rows('SELECT `p`.`name`, `m`.`fallen_level`, `m`.`fallen_cause` FROM `chaos_season_modes` `m`
+		JOIN `players` `p` ON `p`.`id` = `m`.`player_id` WHERE `m`.`fallen_at` > 0;') as $r) {
+		$out[(string)$r['name']] = array('level' => (int)$r['fallen_level'], 'cause' => (string)$r['fallen_cause']);
+	}
+	return $out;
+}
+
+/** The skull of a fallen character (an inline mark with the fall as its tooltip), or '' */
+function chaos_fallen_html(array $marks, string $name): string {
+	if (!isset($marks[$name])) {
+		return '';
+	}
+	$f = $marks[$name];
+	return ' <span class="chaos-fallen" title="' . chaos_h(sprintf('Fallen in Hardcore at level %d (%s)', $f['level'], $f['cause']))
+		. '">&#9760;</span>';
 }
 
 // ---------------------------------------------------------------------------

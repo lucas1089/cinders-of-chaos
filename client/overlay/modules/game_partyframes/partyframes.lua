@@ -253,7 +253,10 @@ updateAllFrames = function()
   local stale = PartyMath.stale(state, t)
   local members = PartyMath.visible(state, settings.showSelf)
   local keep = {}
-  local ys, total = PartyMath.column(members, settings, HEADER, GAP)
+  -- a raid of up to 15 wraps into columns within the height of the game view (PartyMath.grid)
+  local parent = panel:getParent()
+  local maxH = parent and math.max(200, parent:getHeight() - 140) or nil
+  local xs, ys, width, total = PartyMath.grid(members, settings, HEADER, GAP, maxH)
   for i, m in ipairs(members) do
     local f = frameFor(m)
     keep[m.id] = true
@@ -261,7 +264,7 @@ updateAllFrames = function()
     f:addAnchor(AnchorTop, 'parent', AnchorTop)
     f:addAnchor(AnchorLeft, 'parent', AnchorLeft)
     f:setMarginTop(ys[i])
-    f:setMarginLeft(0)
+    f:setMarginLeft(xs[i])
   end
   for id, f in pairs(frames) do
     if not keep[id] then
@@ -270,7 +273,7 @@ updateAllFrames = function()
     end
   end
   if selectedId and not keep[selectedId] then selectedId = nil end
-  panel:setSize({ width = PartyMath.scaled(PartyMath.FRAME_W, settings.scale), height = math.max(total, HEADER + 1) })
+  panel:setSize({ width = math.max(PartyMath.scaled(PartyMath.FRAME_W, settings.scale), width), height = math.max(total, HEADER + 1) })
   local title = panel:getChildById('header'):getChildById('title')
   title:setText(#members > 0 and tr('Party (%d)', #(state.members or {})) or tr('Party'))
   local inParty = PartyMath.inParty(state)

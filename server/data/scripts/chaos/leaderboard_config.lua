@@ -55,7 +55,11 @@ return {
 			byClass = true, format = "time", info = "Fastest Cinderheart kill in a party of 4 or 5 this week."},
 		-- the Ember Descent (descent.lua): the deepest room of this week's seeded run (the same rooms for everyone)
 		{key = "descent", name = "Ember Descent", mode = "max", value = "Depth", count = "Runs", title = "Emberlord",
-			info = "Deepest room reached in this week's seeded Ember Descent."}
+			info = "Deepest room reached in this week's seeded Ember Descent."},
+		-- the Ashen Sepulchre (raid.lua): the fastest full clear this week in seconds (first pull to the final kill, all
+		-- bosses in one sitting; mode "min": lower is better), every raider present at the final kill
+		{key = "raid_clear", name = "Sepulchre Clear", mode = "min", value = "Fastest", count = "Clears", title = "Sepulchre Breaker",
+			format = "time", info = "Fastest full clear of the Ashen Sepulchre this week (all five bosses in one sitting)."}
 	},
 	top = 3,
 	rewards = {

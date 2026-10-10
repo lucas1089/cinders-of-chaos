@@ -265,6 +265,7 @@ working directory, as with the rest of the base server libs).
 | game_crafting | `crafting.lua`, `data/lib/chaos_crafting.lua` | 232, Economy > Crafting Bench | Crafting bench and the crafting orbs (Awakening, Gilding, Grafting, Unmaking, Erasure, Upheaval, Fate, and the orbs v2: Tempering, Binding, Excision, Reforging, Ruin, Whetstone), tested in game (see "Crafting" and "Crafting orbs v2"). Salvage tab and the item lock: `salvage.lua`, `salvage_core.lua`, `salvage_config.lua`, Economy > Salvage (see "Salvage"). |
 | game_hunt | `hunt.lua`, `hunt_core.lua`, `hunt_config.lua`, `hunt_supplies.lua` | 241, Hunt > Hunt Tracker | Hunt tracker: session time with pause/reset, exp/h, time to level, loot and profit/h, supplies, kills, damage/healing, Chaos drops; tested in game (see "Hunt tracker"). |
 | game_season | `season.lua`, `season_core.lua`, `season_config.lua` | 246, Adventure > Season / `/season` | Seasons: fresh-start season characters isolated from standard ones, season ladder view, season uniques, account-wide reward track, end-of-season migration; tested in game with two clients (see "Seasons"). |
+| game_season (modes) | `season_modes.lua`, `season_modes_core.lua`, `season_config.lua` `modes` | 246 (join dialog, `beat` / `sync`), leaderboard 229 (mode tabs) | Season modes: Self-Found and Hardcore (and both) picked at the join; SSF trade isolation and loot bonus, Hardcore fall and protections, per-mode ladder tabs with the fallen; tested in game (see "Season modes"). |
 | game_battlepass | `seasonpass.lua`, `seasonpass_core.lua`, `seasonpass_config.lua`, `seasonpass_store.lua` | 227, Adventure > Season Pass | Season pass: account-wide free and premium track of 50 tiers per season, pass XP from play, daily and weekly challenges, claims safe against double claims, the premium pass and three season packs in the store and the pass window (upgrades pay the difference, gifts); tested in game with two clients (see "Season pass"). |
 | game_market | `market.lua`, `market_core.lua`, `market_orders_core.lua`, `market_config.lua` | **221**, Economy > Market (Alt+E) | Our player market for gold and Chaos Coins: escrow of the listed item in its offer row (engine patch 0017), fees, tax, expiry, seasons kept apart, crash-safe transactions, a modifier search (up to 6 rows of modifier / value / tier, all or at least N, sockets, quality, free affix slots; table `chaos_market_offer_mods`), buy orders with the payment escrowed at posting, partial fills, refunds and the same filter language (table `chaos_market_orders`); the stock market off (`tools/patch_market.py`); tested in game with two clients and a season character (see "Market"). |
 | game_orbexchange | `orbexchange.lua`, `orbexchange_core.lua`, `orbexchange_config.lua`, `sql/chaos_orbx.sql` | **209**, Economy > Orb Exchange (and a button in the Market window) | Currency order book for the crafting orbs: orb for orb and orb for gold, limit orders with the offered stack escrowed in the order row (crash-safe like the market), price-time matching at the resting order's ratio, partial fills, cancel / expiry refunds, inbox / bank delivery, gold-leg fee and orb-for-orb placing fee, season books apart; book, chart, My Orders. Unit, randomized and in-game tests (see "Orb Exchange"). |
@@ -291,6 +292,8 @@ working directory, as with the rest of the base server libs).
 | game_antibot | `antibot.lua`, `antibot_core.lua`, `antibot_config.lua`, `reports.lua`, `reports_core.lua`, `sql/chaos_reports.sql`, `tools/patch_report_chat.py` | **211**, right-click a player > Report Player, System > Report a Player, `/reports` (staff) | Behaviour detection (action rhythm, instant reactions, walked loops, loot timing, nonstop play) with a decaying suspicion score, the presence check modal (four pictures, one retry, 75 s, deferred in PvP and boss fights), player reports with public chat lines and limits, the staff log and command, an admin page on the website; never bans by itself (see "Anti-bot and player reports"). Unit, synthetic-trace and mocked-engine tests; not run on a live server. |
 | game_factions | `factions.lua`, `factions_core.lua`, `factions_config.lua`, `sql/chaos_factions.sql`, `tools/install_factions.py`, `data/npc/` (four NPCs) | **215**, Adventure > Factions, the faction NPCs | Four factions with reputation ranks (Hostile .. Exalted): daily / weekly contracts by seed, kills of their monster families, bounties, rift seals of their theme, invasions, world bosses and faction tokens; daily diminishing returns, weekly cap, rivals; quartermasters with fixed gear, orb bundles, a recipe, the tabard aura and a mount; rank titles, Exalted achievements, a weekly Reputation board (see "Factions"). Unit and mocked-engine tests; not run on a live server. |
 | game_descent | `descent.lua`, `descent_core.lua`, `descent_config.lua`, `sql/chaos_descent.sql` (buff source in `data/lib/chaos_buffs.lua`) | **205**, Adventure > Ember Descent, the portal next to the temple | The Ember Descent: a roguelike trial of 8-12 seeded rooms (combat, elite, treasure, shrine, merchant, boss) in a runtime-built hall; three boon cards after a room, curses for more rewards, run HUD with the boons and curses, merchant window, entry window with the free runs and the Ember Sigil forge; a weekly seeded run with its leaderboard (see "The Ember Descent"). Unit tests; full runs on a live test server. |
+| game_raid | `raid.lua`, `raid_core.lua`, `raid_config.lua`, `sql/chaos_raid.sql` (buff source in `data/lib/chaos_buffs.lua`), monsters `monsters/chaos/raid/` | **213**, Adventure > Raid: Ashen Sepulchre, the portal next to the temple | The Ashen Sepulchre: a weekly raid for 5-15 players, five bosses with coordinated mechanics (tank swap, cleaves, soak circles, adds, spread, effigies, a hex to cleanse) behind trash in a runtime-built zone; personal loot once a week per boss and character, saved raids continued later the same week, Sepulchre Marks for a seeded weekly vendor, raid uniques, a guild trophy, a weekly fastest-clear board; window (lockouts, journal, vendor), HUD and call-outs (see "The Ashen Sepulchre, the weekly raid"). Unit and mocked-engine tests; tested alone on a live test server. |
+| game_community | `community.lua`, `community_core.lua`, `community_config.lua`, `sql/chaos_community.sql` (buff source in `data/lib/chaos_buffs.lua`; hooks in `rift_core.lua`, `rift.lua`, `loot_config.lua`, `factions.lua`, `crafting.lua`) | **203**, Adventure > Community, the Great Brazier next to the main temple, `/community` | Community goal: a server-wide bar fed by kills, rifts, invasion waves, world bosses, crafting orbs and gold given to the Brazier, per-character daily caps, four stages that light buffs for everyone, rewards for the top and everyone past a threshold; the weekly world modifier (one or two of nine, by the week's seed or set by staff) (see "Community goals and the weekly world modifier"). Unit and mocked-engine tests; not run on a live server. |
 
 Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 208, 209, 211, 214, 216, 217, 218, 219, 221, 222, 223, 224 (sent by the engine, patch 0015), 225, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
@@ -300,6 +303,11 @@ reference server's list below, every Chaos script (`ChaosOpcodes`, `tests/factio
 Extended opcode 205 (The Ember Descent) is registered there too, as `ChaosOpcodes.descent` below the table; checked free
 against the reference server's list below, its scripts and client modules (grep for `sendExtendedOpcode`,
 `registerExtended*Opcode` and opcode constants) and every Chaos script (`tests/descent_test.lua`).
+Extended opcode 213 (the Ashen Sepulchre raid) is registered there too, as `ChaosOpcodes.raid` below the table; checked
+free the same way (`tests/raid_test.lua`).
+Extended opcode 203 (Community goals) is registered there too, as `ChaosOpcodes.community` below the table; checked free
+against the reference server's list below, every Chaos script and client module (grep for `sendExtendedOpcode`,
+`registerExtended*Opcode` and opcode constants; `tests/community_test.lua` checks `ChaosOpcodes` and that list).
 
 ### Opcode collision check
 Searched the reference server for every `onExtendedOpcode`, `sendExtendedOpcode(` and opcode
@@ -1537,7 +1545,7 @@ sold through `ChaosCosmetics.storeUnlock` (`shop_services.lua` `unlockEntry`); s
 | Kind | What | Store (coins) | Achievement |
 |---|---|---|---|
 | Spell effect skins | a class line's listed spells (2-3) show recoloured variants of their effects; everyone sees them | 12 skins, 250 each: Warrior Voidborn / Stormborn War Cries (Iron Bellow, Red Frenzy, Bloodrage), Ranger Sunfire Hunt (Skewering Line, Feral Command, Wild Bond), Mystic Voidfire (Doomtide, Forked Storm, Falling Pyre) / Bloodfire, Thief Dawnstep (Shadow Veil, Shadow Step, Shadow Mend) / Venom Smoke, Monk Crimson / Void / Gilded Palms (Ashen Fist, Sundering Palm, Pressure Points, Shadowfist Flurry), Templar Umbral Rite (Zealotry, Purging Nova, Vow of Mending) / Pyre Rite | none |
-| Kill effects | an effect on the monster's tile when the character lands the killing blow (the engine's last hit, not most damage, not a summon's) | Soul Spark, Sun Ring, Frost Shatter, Blood Bloom, Radiant Ring, 200 each | Void Ring (Legend's Bane), Harbinger's Toll (Chaos Culler) |
+| Kill effects | an effect on the monster's tile when the character lands the killing blow (the engine's last hit, not most damage, not a summon's) | Soul Spark, Sun Ring, Frost Shatter, Blood Bloom, Radiant Ring, 200 each | Void Ring (Legend's Bane), Harbinger's Toll (Chaos Culler), Sovereign's Pyre (The Last Door, the raid) |
 | Loot label accents | the background of the character's own highlighted ground loot labels (`game_groundlabels`); text and border keep the rarity colour, the corpse loot rays keep theirs | Ember, Verdant, Azure, Royal Labels, 150 each | Gilded Labels (Greed Is Good) |
 | Chat name colours | the character's name in chat, for every viewer (player lines only, the name only; item link colours stay) | Cinder, Frost, Verdant, Amethyst, Rose Name, 200 each | Veteran's Gold (Veteran of the Wastes) |
 
@@ -3472,7 +3480,7 @@ Roadmap item 12, phase 1: fresh-start season characters with their own ladder, s
 cosmetic reward track that is kept after the season. Client `game_season` (Adventure > Season in the top menu),
 extended opcode 246 (`ChaosOpcodes.season`). Every rule and number is in `season_config.lua`.
 
-**Install.** Run `sql/chaos_season.sql` (4 tables) and `python3 -I server/tools/patch_season_events.py <server>/data`
+**Install.** Run `sql/chaos_season.sql` (4 tables, and a fifth for "Season modes") and `python3 -I server/tools/patch_season_events.py <server>/data`
 (idempotent, `--dry-run`). The tool enables `onTradeRequest` / `onTradeAccept` in `data/events/events.xml` (shipped
 disabled, so no script could see a trade) and makes `Player:onMoveItem` (`data/events/scripts/player.lua`) ask
 `ChaosSeason.onMoveItem` first: a script callback cannot refuse a move reliably, because the base dispatcher keeps only
@@ -3585,6 +3593,113 @@ and taken by the standard one, the season market refused a coin listing, a coin 
 gold listing, World Loot and World Training skipped the season character (loot x1.00 / x1.25, skill tries 2000 / 2500).
 Fixed: the window did not follow level ups (track progress and the Join button stayed at the join level until reopened).
 Not verified in game: a gift queued for a character that joins a season before its next login (unit test only).
+
+## Season modes (`season_modes.lua`, `season_modes_core.lua`, `season_config.lua` `modes`, `sql/chaos_season.sql`)
+
+Roadmap item 62. Self-Found and Hardcore for season characters, on top of "Seasons" (the realm rules stay; the modes add
+rules inside a realm). The rules are pure functions in `season_modes_core.lua` (`ChaosSeasonModes`); the engine glue is
+`season_modes.lua`, which `season.lua` calls through `ChaosSeason.modes*` hooks (small hunks marked "season modes").
+Every number and text is in `season_config.lua` `modes`.
+
+**Install.** Nothing new: `sql/chaos_season.sql` has the table `chaos_season_modes` (the script also creates it at
+startup), the hooks of `tools/patch_season_events.py` are the ones the realm rules use. Small hunks elsewhere:
+`loot.lua` (the loot bonus), `orbexchange.lua` (`X.place`), `leaderboard.lua` (the mode tab and the fallen mark),
+`data/lib/chaos_buffs.lua` (two buff bar entries), `achievements_data.lua` (six achievements).
+
+**Joining.** The join confirmation (client `seasonjoin.otui`) offers Standard, Self-Found, Hardcore and Hardcore
+Self-Found, each with its warning; a Hardcore choice needs "I understand" ticked. The server checks the key
+(`ChaosSeasonModes.pick`; no key from an older client = Standard) and stores one row per character in
+`chaos_season_modes` (`ssf`, `hc`, `chosen_at`). The mode cannot be changed until the season ends. The Season window
+says "Mode: Self-Found." (or the fall); the look text "He is playing Hardcore Self-Found." / "He fell in Hardcore at
+level 88 (killed by a dragon lord)."
+
+**Self-Found (SSF).** Item origin is tracked with the custom attribute `chaos_owner` (guid): an item a player drops (or
+puts into a container lying in the world) gets the dropper's guid; a monster corpse gets its owner (the engine's corpse
+owner); a player corpse the dead character. An item that reaches an inventory loses the tag (it is the holder's now;
+own items stack again), items in the own depot are not tagged, a tagged item keeps its first owner when others move it.
+
+| Way | Rule | Hook |
+|---|---|---|
+| Trade window | refused both ways (also SSF with SSF) | EventCallback `onTradeRequest` / `onTradeAccept` (season_modes.lua) |
+| Ground / corpses | an SSF character moves only items whose chain (the item and every container around it) carries no other owner: map items, quest and chest rewards, its own drops and its own monsters' corpses. Another player's drop, another player's corpse (also an SSF party member's: loot stays personal) are refused ("loot"); putting an item into someone else's container or corpse is refused ("give"; dropping on a tile counts as into the container on top of it). Nobody else takes an item carrying an SSF owner, or puts one into an SSF character's container ("item") | `ChaosSeason.modesMove` (from `ChaosSeason.onMoveItem`), EventCallback `onItemMoved` / `onDropLoot`, death event |
+| Mail | an SSF character sends no parcel or letter (also to itself); mail to an SSF receiver is refused | `ChaosSeason.modesMove` |
+| Houses | items of a house owned by someone else (and into it) are refused for SSF; nobody moves items in an SSF owner's house | `ChaosSeason.modesMove` |
+| Chaos bank / NPC bank transfer | refused from and to an SSF character | `ChaosSeason.transferBlocked` (season.lua) asks `modesTransferBlocked` |
+| Market | listing, buying, buy orders and filling buy orders refused (cancel and collect stay open) | season.lua's market wrapper asks `modesMarketRefusal` (also wraps `fill` now) |
+| Orb Exchange | no new orders | `orbexchange.lua` `X.place` asks `modesOrbRefusal` |
+| Party | only with SSF characters (Hardcore SSF included); the realm rule stays | EventCallback `onJoin` |
+| Store gifts with power | already refused for every season character (cosmetics and services only, "Seasons") | `shop.lua` |
+| Guild bank and depot | already refused for every season character | `guild.lua` |
+| Depot | per character in this engine (the stash too: `player_id`); no account-wide item storage exists, so characters of one account exchange items only through the ways above | - |
+
+Reward: +25% Item Find and +25% Rarity Find (`modes.ssf`), added in `loot.lua` (`L.itemFindMult`, the bonus rarity
+chance), shown on the buff bar as "Self-Found" (icon `buff:self_found`, `client/tools/gen_buff_icons.py`), and the
+Self-Found ladder tab. Achievements: Self-Found level 100 (title the Self-Made), still Self-Found at the season end.
+
+**Hardcore (HC).** One life: a real death (the death event; deaths that arena, siege, trials and the like cancel are no
+deaths) makes the character fallen. `fallen_at`, `fallen_level` and `fallen_cause` ("killed by Dragon Lord", "slain by
+Name") are written once, the character is migrated at once with the season's own migration (`ChaosSeason.migrateRow`,
+reason "fallen"): from then on it is a standard character with everything it has; its corpse is put in the standard
+realm so it can take its items back. The fall is broadcast (`modes.hc.announce`) and logged (`chaos_season_log`
+event "fallen"). Achievements: Hardcore level 50 / 100 (the Unfallen) / 250 (Deathless), alive at the season end
+(Season Survivor).
+
+Protections against unfair deaths (`modes.hc`), each one a health-change event that drops the damage and a
+prepare-death event that cancels a lethal hit (a safety net after other scripts), shown as "Hardcore Ward" on the buff
+bar with the reason:
+- **Login:** no damage for `loginSeconds` (10) after every login, and after a client takes over a character that was
+  left without one.
+- **Disconnect:** the engine keeps a character in the world without a client while it may not log out (in fight).
+  When it has no client (`player:getIp() == 0`) it takes no damage, and after `pullSeconds` (8) it is pulled to its
+  temple.
+- **Ping loss:** a Hardcore character's client (`game_season`) sends a heartbeat every `heartbeatSeconds` (2). No
+  heartbeat for `pingLossSeconds` (6) while the client is still attached counts as a lost connection (protected,
+  pulled after `pullSeconds`), at most `pingLossPerHour` (3) times an hour. A client that never sent a heartbeat
+  (an older client) is judged by the disconnect only. After a reconnect the client asks for its state (`sync`) and the
+  server sends it, so the heartbeat starts again.
+- **Restart:** no damage while the game state is not normal (closing / shutdown) and during `restartGuardSeconds` (120)
+  before the daily restart, which is read at startup from `data/globalevents/globalevents.xml` (`serversave.lua`'s
+  time) plus `serverSaveNotifyDuration`; at the start of that window and at shutdown every Hardcore character is saved.
+
+Limits, honestly: the protections do not see the moment a connection breaks. Until the server notices (the socket
+closes, or `pingLossSeconds` of silence) the character fights normally and can die, so a stall of a few seconds in a
+dangerous fight is still dangerous. Pulling the cable is also an escape to the temple; for a real disconnect that is
+accepted (the character could not act anyway), the ping-loss path has its hourly budget so a client that stops its
+heartbeat on purpose cannot hide behind it for long (and it would be pulled out of its hunt each time). A crash of the
+server (no shutdown event, no warning) is not covered: what happened since the last save is lost, and a death in that
+time may or may not be kept. Damage to mana (mana drain, a mana shield) is not blocked, only health; a script that
+kills outside the damage path (e.g. a GM command) still kills, and the death counts. A heartbeat is a client feature, so a
+client without `game_season` gets the disconnect and login protections only.
+
+**Ladders.** The Season view of the leaderboard window has mode tabs: All (as before), Standard, Self-Found, Hardcore,
+HC Self-Found and Fallen (`ChaosSeasonModes.ladderTabs`, sent in the leaderboard meta). The class ladder of a tab
+LEFT JOINs `chaos_season_modes` (`ladderClause`): the Hardcore tabs list living characters only, Fallen lists the
+fallen ones of the season by the level they fell at, with the cause; the weekly boards filter their scores the same way.
+A fallen character gets a skull next to its name on every ladder (also the all-time class ladder: `ChaosSeason.fallenMark`,
+cached 5 minutes), the tooltip says the level and cause. The website's Seasons page has the same tabs and skulls
+(`chaos_class_ladder($base, $limit, $season, $mode)`, `chaos_fallen_marks()`; the Leaderboards page shows the skulls).
+
+**End of season.** The normal migration resets the mode (`reset_at`), the character keeps its items; a character still
+playing Hardcore alive gets `season_hc_survived`, one still Self-Found `season_ssf_finished` (achievements, also
+offline). Fallen rows stay for the ladder history.
+
+**Tests.** `tests/season_modes_test.lua` (LuaJIT and Lua 5.3): the rules (every blocked trade / party / gold / market /
+orb / move / mail / house path, the owner tags, rewards, the fall, every protection with its timing and the hourly
+budget, the restart window, the ladder clauses and tabs) and `season_modes.lua` against a mocked engine (the join, the
+callbacks, real item chains, a fall with its migration, protected hits, the pull, a reconnect, the shutdown save, the end
+of season, the mode tabs). Client: `game_season/seasonjoin_test.lua` (the dialog's choices and the Hardcore
+confirmation). Website: `website/tests/chaos_season_modes_test.php`.
+
+Verified on a test server with two clients: the join dialog with the four modes (Join disabled for Hardcore until
+"I understand" is ticked), an SSF join (row stored, Mode line, Self-Found buff), a trade request from the SSF character
+refused ("Self-Found characters cannot trade."), a standard season character's drop refused to the SSF character (and
+taken back by its owner, tag gone), a party join refused, the market / Orb Exchange / bank hooks refusing the SSF
+character and its Item Find x1.25; Hardcore: 3000-damage hits absorbed during the login protection and while the
+restart guard was on (the Hardcore Ward shown), a client killed in fight: the character took no damage without a
+client and was pulled to the temple after 8 s; deaths after the protection: fallen at once (migrated, broadcast, the
+Fallen tab with skulls, the Season window's fallen line); `/season end`-style migration: modes reset, Season Survivor
+and Needed No One unlocked. Not verified in game: the ping-loss path with a real stalled connection (a heartbeat gap was
+seen protecting a character while its client was attached), a real server save restart, mail between modes.
 
 ## Season pass (`seasonpass.lua`, `seasonpass_core.lua`, `seasonpass_config.lua`, `seasonpass_store.lua`, `sql/chaos_seasonpass.sql`, client `game_battlepass`)
 
@@ -6373,3 +6488,244 @@ rewards, wiring of opcode, storages, action ids, specs, board, Boss Spawns row, 
 runs to the boss and to a fall, the shrine, the merchant (Boon Cache), curses, the buff bar icons, the HUD, the end
 summary, the database rows, the weekly board and the Boss Spawns row. Not tested in game: a party of 2-4, the
 crash marker, a clean shutdown during a run.
+
+## The Ashen Sepulchre, the weekly raid (`raid.lua`, `raid_core.lua`, `raid_config.lua`, `sql/chaos_raid.sql`, client `game_raid`)
+
+Guild content for 5 to 15 players (roadmap item 61): five bosses in sequence in one instanced raid zone, trash between
+them, a loot lockout per character, boss and week, and a raid that is saved so a group can continue it another day of
+the same week. Every number is in `raid_config.lua`; the pure logic (the lockout week, lockouts and loot eligibility, the
+saved raid and its doors, scaling, the layout, cones and circles, the mechanic state machines, loot, the seeded vendor,
+the journal, the HUD payload) is `raid_core.lua`, tested by `tests/raid_test.lua` (LuaJIT and Lua 5.3) together with
+`raid.lua` against a mocked engine. Extended opcode **213** (`ChaosOpcodes.raid`). Storages 7100440-7100449
+(`Chaos.storage.raid`: +0 inside a raid instance, the crash marker; +1 .. +5 the end of this week's lockout of boss 1 .. 5,
+the Boss Spawns cooldown). Monsters: `data/monster/monsters/chaos/raid/` (registered by the `monsters` step).
+
+**Entry.** A portal (magic forcefield 1387, action id 47801) next to the temple of town 1 (the first free tile of
+`portal.offsets`) and Adventure > Raid: Ashen Sepulchre open the raid window. "Open New Raid" (or "Continue" on a saved
+raid of this week) in a protection zone, out of combat, level 800+, not multi-clienting: the opener's party within 12 sqm
+comes along, 5 to 15 of them (fewer are refused; staff may open with any number: `/raid open[, id]`). Each member's own
+problem (level, a fight, another instance) leaves only that member behind. "Join" puts a member of a raid that is open
+right now (or the party of someone inside) into it, up to 15.
+
+**The zone.** The rift slot functions of `rift_core.lua` (`slotCenter`, `allocSlot`, `slotOfPos`) on the raid's own grid:
+x 10400-10911, y 10000-10511, z 7, 2 x 2 slots of 256 (checked free of the tower, island, world boss, siege, arena,
+ascension trial, Ascended, rift, trials, guild hall and Ember Descent areas by the test; no map tiles there). One slot is a
+row west to east, 176 tiles long: the entry hall (11 x 11, the exit portal, where players land and the fallen wake), then
+per boss a corridor (10 x 5, the trash) and the boss room (23 x 23). Tiles are built with `Game.createTile` like the rift
+slots and painted with the dark tile set (style "hall") when it is installed. Doors (iron bars, 1546) close the
+corridors: a corridor's west door opens when the boss before it is slain, its east door when its trash is cleared; a boss
+fight seals its room. The rooms of the bosses that cast hexes have a Font of Ash (fountain 1360, action id 47803) in each
+corner. A slot nobody stands in closes after 10 minutes (its progress stays saved).
+
+**Trash.** Each corridor holds 2-3 packs of the raid's trash (Sepulchre Ghoul, Bone Lancer, Hex Cultist, Cinder Hound,
+Marrow Knight, Ashen Reaper; stock looks, 42-60k health, level 900 hits), 3 + 1 per 3 raiders each (at most 8: 4 at five,
+8 at fifteen), health x(1 + 0.12 per raider over 5), 30% magic and 10% rare (monster_tiers.lua). A corridor's trash wakes
+when its west door opens; clearing it is saved.
+
+**The fight.** A raider within 8 sqm of a boss in its room (or damage to it with the door open) pulls it: raiders in the
+corridor in front are drawn in, the room seals, the boss takes the raid's size into its health: the XML's (set for five)
+x(1 + 0.18 per raider over 5). Phases at health thresholds, each entered once and in order (a yell, a call-out); every
+mechanic of the phase runs on its own timer. Telegraphs are uber_core.lua's: the tiles are marked at once and every 1.1 s
+until the hit 2.2 s after the first mark (circles of radius 1 get the 3 x 3 warning picture on their centre). A lethal hit is
+caught: the raider lands in the entry hall, healed, and stays out of the fight until it ends (no death, no loss). Nobody left
+standing in the room for 4 s is a wipe: the boss heals, its adds and effigies go, the doors open. Enrage (time after the
+pull): boss and add hits x1.75, mechanics 40% more often, 10% of max health on everyone every 4 s.
+
+| Mechanic | What to do | Numbers (share = of the hit player's max health) |
+|---|---|---|
+| Sundering Blows (tank swap) | Two tanks: the boss's melee stacks Sundered on its target (buff bar, 20 s). At 4 stacks the boss turns to the raider in melee range with the fewest stacks; with nobody there, Crushing Verdict falls on its target | +15% damage taken from the boss per stack (up to 8); Verdict 55% x (1 + 15% per stack), 2 s warning; turning away in time avoids it |
+| Frontal Cleave (positional) | Stand beside or behind | a cone 7 long in front, every 11 s, 60% to everyone in it but the target |
+| Rear Sweep (positional) | Never stand behind | a cone 6 long behind, every 9 s, 55% |
+| Ember Brand (split soak) | Groups stack in the circles | every 17 s one circle per 7 raiders (1 / 2 / 3 at 5 / 10 / 15) near players, 4 s warning; 150% split among those inside; fewer than 3 inside (+1 per 5 raiders over 5) and everyone else in the room takes 35% |
+| Cinder Acolytes (add priority) | Kill them first | 1 + 1 per 4 raiders every 40 s (90k health, +10% per raider over 5); each living one: the boss takes 15% less damage (at most 60%) and heals 1% every 5 s |
+| Bone Bloom (spread) | Step out of your circle, not onto another's | a 3 x 3 circle under every raider, 45% |
+| Hex Effigy (kill the totem) | A kill team | 1 + 1 per 8 raiders every 38 s (70k health); each living one adds a Hexed stack (buff bar) to everyone in the room every 3 s, 2% per stack (at most 10), the stacks fall when none lives; not killed in 22 s it detonates for 60% on everyone |
+| Withering Hex (dispel) | Cleanse: a cure curse spell (an engine curse, sub id 71060) or use the Font of Ash | 1 + 1 per 5 raiders every 26 s; not lifted in 8 s it bursts for 45% on everyone within 2 sqm of the hexed |
+
+| Boss | Look | Phases (health) | Mechanics | Enrage |
+|---|---|---|---|---|
+| Gravewarden Ulthar | 1281 (armoured flail knight) | The Watch 100%, Last Watch 40% | sunder, cleave; + Bone Bloom | 8:00 |
+| Morwen the Ash-Sister | 354 (tentacled witch) | The Ash Choir 100%, Requiem 50% | soak, Cinder Acolytes; + Bone Bloom | 8:00 |
+| The Marrow Colossus | 863 (bone mass) | Grinding Bones 100%, Shattering 50% | sweep, Bone Bloom; + cleave | 8:00 |
+| Vhoss the Hexmaw | 1369 (horned beast) | The Effigies 100%, Hexfall 45% | Hex Effigies, Withering Hex; + cleave | 8:30 |
+| Varkhul the Ashen Sovereign (final) | 1445 (crystal-bone titan) | The Throne 100% (sunder, cleave), Court of Ash 70% (sunder, soak, acolytes), The Last Sovereign 40% (sunder, effigies, hex, sweep) | seven | 13:00 |
+
+The looks are existing outfits of the client pair that no monster, NPC, mount or outfit of the server used (no new
+sprites; an exclusive look would be a follow-up). Health and kill times (the balance model `K.killTime`: a well-geared level
+1000 character deals 3,000 to one target, a fifth of the raid supports at 60% of that, 75% of the fight is spent hitting):
+
+| Boss | 5 players | 10 players | 15 players |
+|---|---|---|---|
+| Gravewarden Ulthar | 4.00M, 6:26 | 7.60M, 6:07 | 11.20M, 6:00 |
+| Morwen the Ash-Sister | 4.40M, 7:05 | 8.36M, 6:43 | 12.32M, 6:36 |
+| The Marrow Colossus | 4.80M, 7:43 | 9.12M, 7:20 | 13.44M, 7:12 |
+| Vhoss the Hexmaw | 5.00M, 8:03 | 9.50M, 7:38 | 14.00M, 7:30 |
+| Varkhul the Ashen Sovereign | 7.20M, 11:35 | 13.68M, 11:00 | 20.16M, 10:49 |
+
+Not measured: a real raid's kill times and the boss melee against a full set of tanks (the XML hits are first estimates
+near the Ascended Omens').
+
+**The lockout and the saved raid.** The lockout week starts Monday 06:00 (`resetDay` / `resetHour`, the rule of every
+other weekly reset). A character may loot each boss once a week: at a kill every raider in the room (or fallen in that
+fight) whose lockout of that boss is free gets personal loot and the lockout (`chaos_raid_lockouts`, one row per
+character, week and boss); the others helped (a line, no loot). The kill counts for the raid either way. A raid
+(`chaos_raid_instances`: week, opener, bosses slain and corridors cleared as bits, cleared) and its members
+(`chaos_raid_members`) are saved at every kill and trash clear; its leader or any member may continue it later the same
+week (the slain bosses stay dead, the cleared corridors stay empty, the next boss waits); a new week ends it. A crash: the
+marker storage puts the character in the temple at the next login ("continue it from the raid window"); a clean shutdown
+closes every instance first.
+
+**Loot** (personal, into the backpack, the rest to the inbox): bosses 1-4: 2,500,000 gold to the bank, 6 Orbs of Upheaval,
+2 Orbs of Fate, 2 gear rolls, 20 Sepulchre Marks; the final boss: 6,000,000 gold, 12 Upheaval, 5 Fate, 1 Exalted Orb, 3
+gear rolls, 45 marks. A gear roll is one of the boss's base items (the late-game sets 29861-29890: Myst Regalia, Seraphic,
+Dawnforged, a different mix per boss) made by `ChaosCrafting.createItem` at item level 120-130 with the boss-tier rarity
+roll x1.5 (so tiers and modifier counts follow chaos_item_mods.lua). A unique roll: 1.5% (the final boss 4%) for one of
+the five raid uniques that name the boss (`chaos_items.xml` -> `gen_unique_specs.py`; never in `ChaosUniqueItems`, so no
+monster or chest drops them): Gravewarden's Verdict (club, Ulthar), Shroud of the Ash-Sister (armor, Morwen), Marrowforged
+Greaves (legs, the Colossus), Eye of the Hexmaw (ring, Vhoss), Crown of the Last Sovereign (helmet, Varkhul only); the
+final boss can give all five; level 800. A unique is broadcast. The corpse holds only coins.
+
+**The final boss** also gives: the achievement The Last Door (title Sovereign's Bane), which unlocks the kill effect
+**Sovereign's Pyre** (cosmetics id 109, `dome_blast_violet`); a guild trophy for the guild of every eligible raider, once
+per guild and kill (`ChaosGuild.addStat(gid, "raidClears")`, shown on the trophy room's second statue, and 300 guild XP
+that also count for the weekly top guilds); a broadcast; and, when all five bosses fell in one sitting (a raid that was
+not continued), the weekly board **Sepulchre Clear** (`raid_clear`, mode `min`, m:ss; title Sepulchre Breaker) gets the
+time from the first pull for everyone present. Achievements (category Raids): Into the Sepulchre, one per boss, The Last
+Door, Nobody Kneels (nobody fell in the final fight, hidden, title the Unbowed), Through Every Door (a clear under 30
+minutes, hidden), Keeper of the Sepulchre (10 clears, title Sepulchre Keeper); stats `raid_kills`, `raid_<boss key>`,
+`raid_clears`, `raid_flawless`, `raid_speed` for every raider present.
+
+**The vendor** (the window's Vendor tab, in a protection zone or inside the raid): Sepulchre Marks are a per-character
+balance (`chaos_raid_players`, with bosses looted, clears and the best clear; spent with one conditional UPDATE). Each week
+it shows the two orb bundles (10 Upheaval for 40, 3 Fate for 60) and five of the gear offers picked by the week's seed
+(the same for everyone; `K.vendorStock`), each at most `weekly` times a week (`chaos_raid_purchases`). Gear is fixed like
+the faction quartermasters' (Epic, item level 130, three T7 modifiers at the middle of their range, `factions_core.lua`
+`gearProblems` checks every offer against chaos_item_mods.lua): helm, plate, legs, boots, a two-handed cleaver, a wand,
+an amulet, a shield (100-180 marks); and an Exalted Orb for 150. A catch-up below the world boss drops (item level 145).
+
+**Window, HUD, buff bar.** Client `game_raid`: This Week (the lockouts with the time to the reset, the raids of the week
+with Continue / Join), Boss Journal (per boss its intro, the role hint, phases, every mechanic with its numbers from
+`raid_core.lua` `K.mechText`, the loot preview), Vendor. Inside: a HUD under the character plate (raid id, the boss and
+its health, phase, enrage clock, bosses slain, raiders / fallen / adds / effigies, the player's own Sundered / Hexed /
+Withering Hex, the last call-outs) and the call-outs over the map ("TANK SWAP", "SOAK the circles", "Hex Effigy rises: KILL
+IT!"). The buff bar source `raid` (`data/lib/chaos_buffs.lua`, icons `buff:raid_*` by `client/tools/gen_raid_icons.py`)
+shows Sundered and Hexed with stacks and the hex with its timer. Party frames: a raid of 15 wraps into columns
+(`PartyMath.grid`). Boss Spawns: the category "The Ashen Sepulchre (Raid)", a row per boss with the character's lockout as
+its cooldown. Party Finder: the activity Raid offers "The Ashen Sepulchre" (`party_finder.lua` `src.raids`); a listing still
+holds at most 10 (`maxParty`).
+
+**Protocol** (JSON `{action, data}`, `Chaos.sendChunked`): client -> server `open | start | continue {id} | join {id} |
+leave | buy {key} | journal | query`; server -> client `info` (lockouts, saved raids, marks, records, the vendor's stock),
+`journal {bosses}`, `hud` (`K.hud`), `alert {text, kind}`, `loot {boss, eligible, lines}`, `end {text}`, `msg {text, ok}`,
+`closeInfo`.
+
+**Staff.** `/raid status | open[, id] | trash | kill | phase, n | mech, <cleave|sweep|soak|adds|marks|totem|hex> |
+stacks[, n] | reset | marks[, n] | close | portal`.
+
+**Opcode.** 213 is free in the reference server (its opcodes: "Opcode collision check"), in every Chaos script
+(`ChaosOpcodes`, `tests/raid_test.lua`) and in the client modules (a search for `sendExtendedOpcode`,
+`registerExtended*Opcode` and opcode constants).
+
+**Tested.** `tests/raid_test.lua` (674 checks): the week and the reset (the bounty board's week for Monday 06:00 over two
+weeks of hours), lockouts, eligibility and helpers, the saved raid, continuation and expiry, doors, the session clear,
+scaling, the layout inside its slot (and `slotOfPos` agreeing), cones and circles, every mechanic, loot and uniques, the
+vendor's stock and every gear offer against chaos_item_mods.lua, the journal, the wiring (opcode, storages, tables, SQL,
+grid, XMLs and looks, specs, board, Boss Spawns rows, achievements, cosmetic, buff registry and icons, Party Finder); and
+`raid.lua` on a mocked engine with 5 raiders: the size rule, trash and doors, the pull and the seal, the tank swap and the
+Verdict, a cleave, a caught lethal hit, a wipe, a kill with loot and lockouts, a member continuing two days later, a
+second raid the same week without loot, the new week, the vendor, a full clear (board, guild trophy, achievements) and the
+hex with the Font of Ash. Client `game_raid/raidview_test.lua`, `game_partyframes/partymath_test.lua` (the grid). On a
+live test server (one character, opened by staff): the portal and the window (lockouts, journal, vendor buys of orbs and
+fixed gear), a raid opened and joined, trash and doors, pulls, Sundered stacks on the buff bar and the HUD, the Verdict, a
+cleave, phase 2 and Bone Bloom, an Ember Brand circle and its overflow, the hex and an effigy with the Hexed stacks, a
+caught lethal hit and wipes, a kill with personal loot (gear at item level 125-127) and the lockout (window and Boss Spawns
+cooldown), a continued raid after a restart, the database rows. Not tested in game: a real group of 5-15, the guild trophy
+and the board (unit tested only), the Font of Ash by hand, the Party Finder pick.
+
+## Community goals and the weekly world modifier (`community.lua`, `community_core.lua`, `community_config.lua`, `sql/chaos_community.sql`, client `game_community`)
+
+One bar the whole server fills together, and a world that changes every week. Every number is in `community_config.lua`;
+the pure logic (weeks and periods, points and caps, stages and their buff windows, the ranking and rewards, the seeded
+draw of the week, every hook value) is `community_core.lua`; `tests/community_test.lua` checks it (LuaJIT and Lua 5.3 must
+draw the same weeks) and runs `community.lua` against a mocked engine. Extended opcode 203. No player storages: five
+tables (`chaos_community_goal`, `_buffs`, `_contrib`, `_week`, `_history`), also created at startup, so a restart keeps
+the goal, the open buff windows, every contribution and the week.
+
+**The goal** ("Fuel the Brazier", target 1,500,000 points, `goal.periodDays` = 7: the week of the leaderboards, Monday
+06:00; any other number of days counts periods from `goal.epoch`):
+
+| Source | Points | Daily cap (per character) | Hook |
+|---|---|---|---|
+| Monsters slain | 1 (magic 2, rare 4, legendary 8) | 4,000 | a `kill` event on every player; summons and monsters under 40% of the character's level (bestiary level) give nothing |
+| Rifts sealed | 120 + 15 x tier | 3,000 | `ChaosLeaderboard.record("rift", ...)` wrapped (every finisher) |
+| Invasion waves repelled | 40 per wave of a won invasion | 2,500 | `ChaosLeaderboard.record("defender", ...)` wrapped (every rewarded defender; liberations do not count) |
+| World bosses slain | 400 | 2,000 | `ChaosLeaderboard.recordShares` wrapped (every share) |
+| Crafting orbs used | 12 | 1,500 | `crafting.lua` craft() calls `ChaosCommunity.onOrbUsed` |
+| Gold given to the Brazier | 1 per 1,000 gold | 5,000 (5,000,000 gold) | the Brazier dialog |
+
+All sources together count at most 12,000 points per character and day (the day turns at 06:00). Only characters online
+at the moment are credited (an offline world boss share or invasion reward adds nothing). Staff (group 4+) add nothing,
+cannot give gold and are never ranked.
+
+**Stages** (each opens its buff for everyone for `hours` from the moment it is reached, on the buff bar with its own icon,
+broadcast in chat and listed on the website; a window outlives the period it came from):
+
+| Stage | Buff | Hours | Applied through |
+|---|---|---|---|
+| 25% Kindled Brazier | +10% experience from monsters | 24 | `community.lua`'s `onGainExperience` callback |
+| 50% Ashen Bounty | +10% Chaos loot quantity | 24 | `loot_config.lua` `rateMult` (`ChaosCommunity.lootMult`) |
+| 75% Rift Beacon | +5% Rift Key chance on a sealed rift | 24 | `rift_core.lua` `R.hooks.world` (merged into the key user's atlas modifiers) |
+| 100% Brazier Ablaze | +20% faction reputation, +5% experience | 48 | `factions.lua` `F.gain` (`ChaosCommunity.repMult`), the experience callback |
+
+Steps of 10% and 90% are broadcast too. Staff: `/community add <points>` and `/community stage <n>` (tests, events).
+
+**Rewards** when a period ends (handed out at the character's next login, marked on its `chaos_community_contrib` row):
+the top 3 get the title "Keeper of the Flame" for 7 days (name plates, `ChaosTitles.register("community")`); everyone with
+1,500 points or more gets 2 Orbs of Upheaval and an Orb of Fate (backpack, else the inbox). The end is broadcast with the
+top three and written to the history.
+
+**Season realms** (`goal.realms`): `"together"` (the default) is one goal; season characters add to it and get its buffs
+like everyone else. `"separate"` gives every realm (0 = standard, the season id for season characters, `season.lua`
+`ChaosSeason.realmOf`) its own goal, ranking, stage buffs and rewards; the website shows each realm's bar. The weekly
+modifier is always the same for every realm.
+
+**The Great Brazier**: a coal basin (the dark tile set's brazier when installed) placed at startup on the first free tile
+of `brazier.offsets` around the temple of town `brazier.townId` (or exactly at `brazier.pos`), action id 47901. Using it
+opens the donate dialog; gold is taken from the backpack and the bank (`removeTotalMoney`), in whole thousands, 1,000 to
+10,000,000 per donation, while the character stands within 4 tiles. Every donation is logged.
+
+**The weekly world modifier**: one (55%) or two (45%) modifiers of the pool, drawn by the week's seed (Park-Miller over a
+hash of the week key: the same draw on every start, in LuaJIT and Lua 5.3; never two of one group). Staff override for the
+current week: `/community modifier <key>[,<key>]` (stored in `server_config` `chaos_community_override`, ignored once the
+week is over), `/community modifier auto` goes back to the seed. The week is announced at login (as runtime events of the
+event calendar, so `!events` and the calendar's login lines name it), in the window, on the buff bar (with the week's time
+left) and on the website (`chaos_community_week`).
+
+| Modifier | Effect | Hook |
+|---|---|---|
+| Ember Tides | rifts open with one more modifier, chests 15% richer | `R.worldKeyMods` in `rift.lua` (after the refund marker, so a crash refunds the key as it was); `rewardMult` through `R.hooks.world` |
+| Bloodmoon Week | magic / rare / legendary monsters x1.5 as often | `ChaosEvents.dynamic` bonus `tierChance` (`monster_tiers.lua`) |
+| Restless Dead | undead +30% experience and +30% Chaos loot | the experience callback, `ChaosCommunity.lootMult`; the family is the bestiary's (`ChaosBestiary.cat()`), else `week.familyWords` |
+| Gilded Week | treasure goblins x2 | `ChaosEvents.dynamic` bonus `goblin` (`treasure_goblin.lua`) |
+| Forgefire | crafting orb cost -20%: each orb used has a 20% chance to be kept | `ChaosCommunity.onOrbUsed` in `crafting.lua` |
+| Dragonfall | dragons +25% experience and loot | as Restless Dead |
+| Ambush Season | ambush chance x1.5 | `ChaosEvents.dynamic` bonus `ambush` (`monster_tiers.lua`) |
+| Banner Week | +20% faction reputation | `F.gain` |
+| Tower Echoes | Infinity Tower points x1.5 | `ChaosEvents.dynamic` bonus `towerPoints` (`infinitytower.lua`) |
+
+Every hook is a guarded call that returns 1 / nil / false when no stage window is open and no modifier is active; the test
+checks each modifier alone against every hook and the shared hook points with no hook installed.
+
+**Protocol** (opcode 203, JSON `{action, data}`; the state with `Chaos.sendChunked`): client `open | close | donate {gold}`;
+server `state {now, goal, stages, sources, mine, top, week, brazier}` (`community_core.lua` `C.payload`, again every 20 s
+while the window is open and at every stage) | `msg {text, ok}` | `brazier {}` (the Brazier was used: the client opens its
+dialog).
+
+**Edits to shared files** (small guarded hunks): `chaos_constants.lua` (`ChaosOpcodes.community = 203`), `data/lib/chaos_buffs.lua`
+(entries `community_goal`, `wmod_week`, source `community`), `loot_config.lua` (`rateMult`), `rift_core.lua` (`R.hooks.world`,
+`R.mergeWorld`, `R.worldKeyMods`; `R.atlasMods` merges the world answer), `rift.lua` (one call before the run's effects),
+`factions.lua` (`F.gain`), `crafting.lua` (craft(): the orb hook), `client/tools/gen_buff_icons.py` (leaves `community_*` /
+`wmod_*` to `client/tools/gen_community_icons.py`).
+
+Assumptions (not run on a live server): the base server's `kill` CreatureEvent fires for the killer; `Player:removeTotalMoney`
+takes from the backpack and the bank; town 1's temple has a free tile at one of the offsets (else set `brazier.pos`).

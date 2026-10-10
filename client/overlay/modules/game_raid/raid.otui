@@ -1,0 +1,266 @@
+// The Ashen Sepulchre (game_raid): the raid window (lockouts, saved raids, journal, vendor), the in-raid HUD and the
+// mechanic call-outs. Styles only (raid.lua creates the widgets); theme styles from client_chaos_theme (styles.otui).
+
+RaidText < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: left
+  text-auto-resize: true
+  phantom: true
+
+RaidDim < RaidText
+  color: #8c8070
+
+RaidWrap < RaidText
+  text-wrap: true
+  text-auto-resize: false
+  text-vertical-auto-resize: true
+
+RaidHead < RaidText
+  font: verdana-11px-rounded
+  color: #e8b84a
+  margin-top: 6
+
+RaidHudLabel < RaidText
+  font: verdana-11px-rounded
+  text-wrap: true
+  text-auto-resize: false
+  text-vertical-auto-resize: true
+  margin-top: 2
+
+// a row of the lists (lockouts, saved raids, vendor): a title, a sub line and a button on the right
+RaidRow < ChaosPanelDark
+  height: 40
+  margin-bottom: 3
+
+  RaidText
+    id: title
+    anchors.top: parent.top
+    anchors.left: parent.left
+    color: #e8b84a
+
+  RaidDim
+    id: sub
+    anchors.top: title.bottom
+    anchors.left: parent.left
+    anchors.right: button.left
+    margin-top: 2
+    margin-right: 6
+    text-auto-resize: false
+    height: 14
+
+  RaidDim
+    id: state
+    anchors.top: parent.top
+    anchors.right: button.left
+    margin-right: 8
+
+  ChaosButton
+    id: button
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    size: 96 22
+
+RaidTab < ChaosTabButton
+  size: 120 24
+  anchors.top: parent.top
+
+RaidBossTab < ChaosTabButton
+  height: 22
+  margin-right: 3
+
+// ---------------------------------------------------------------- the window
+RaidWindow < ChaosMainWindow
+  id: raidWindow
+  size: 660 500
+  !text: tr('The Ashen Sepulchre')
+  @onEscape: modules.game_raid.hide()
+
+  UIWidget
+    id: tabs
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 24
+
+    RaidTab
+      id: tabLock
+      anchors.left: parent.left
+      !text: tr('This Week')
+      @onClick: modules.game_raid.showTab('lock')
+
+    RaidTab
+      id: tabJournal
+      anchors.left: prev.right
+      margin-left: 4
+      !text: tr('Boss Journal')
+      @onClick: modules.game_raid.showTab('journal')
+
+    RaidTab
+      id: tabVendor
+      anchors.left: prev.right
+      margin-left: 4
+      !text: tr('Vendor')
+      @onClick: modules.game_raid.showTab('vendor')
+
+  RaidDim
+    id: record
+    anchors.top: tabs.bottom
+    anchors.left: parent.left
+    margin-top: 6
+
+  ChaosPanelDark
+    id: frame
+    anchors.top: record.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: message.top
+    margin-top: 4
+    margin-bottom: 6
+
+  UIScrollArea
+    id: list
+    anchors.top: frame.top
+    anchors.left: frame.left
+    anchors.right: listScroll.left
+    anchors.bottom: frame.bottom
+    margin: 6
+    vertical-scrollbar: listScroll
+    layout:
+      type: verticalBox
+
+  ChaosScrollBar
+    id: listScroll
+    anchors.top: frame.top
+    anchors.right: frame.right
+    anchors.bottom: frame.bottom
+    margin: 4
+    step: 24
+    pixels-scroll: true
+
+  RaidText
+    id: message
+    anchors.bottom: buttons.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: false
+    height: 16
+    margin-bottom: 6
+    color: #f6cf72
+
+  UIWidget
+    id: buttons
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 24
+
+    ChaosButton
+      id: startButton
+      anchors.left: parent.left
+      anchors.top: parent.top
+      size: 140 24
+      @onClick: modules.game_raid.start()
+
+    ChaosButton
+      id: leaveButton
+      anchors.left: startButton.right
+      anchors.top: parent.top
+      margin-left: 6
+      size: 110 24
+      !text: tr('Leave Raid')
+      !tooltip: tr('Leave the raid instance (not in the middle of a boss fight). Its progress stays saved for the week.')
+      @onClick: modules.game_raid.leave()
+
+    ChaosButton
+      id: closeButton
+      anchors.right: parent.right
+      anchors.top: parent.top
+      size: 70 24
+      !text: tr('Close')
+      @onClick: modules.game_raid.hide()
+
+// ---------------------------------------------------------------- the HUD (left of the map, under the character plate)
+RaidHud < ChaosPanelDark
+  id: raidHud
+  width: 250
+  anchors.top: parent.top
+  anchors.left: parent.left
+  margin-top: 192
+  margin-left: 40
+  padding: 8
+  phantom: true
+  focusable: false
+  layout:
+    type: verticalBox
+    fit-children: true
+
+  ChaosTitle
+    id: title
+    phantom: true
+
+  RaidHudLabel
+    id: boss
+    text-align: center
+    color: #e8b84a
+
+  ChaosProgressBar
+    id: bossBar
+    margin-top: 3
+    phantom: true
+
+  RaidHudLabel
+    id: phase
+    text-align: center
+    color: #d6c9ae
+
+  UILabel
+    id: clock
+    font: sans-bold-16px
+    color: #f4d27a
+    text-align: center
+    height: 22
+    phantom: true
+    margin-top: 2
+
+  ChaosProgressBar
+    id: progress
+    margin-top: 3
+    phantom: true
+
+  RaidHudLabel
+    id: counts
+    color: #b8ab92
+    margin-top: 4
+
+  RaidHudLabel
+    id: stacks
+    color: #ff9a30
+    margin-top: 2
+
+  UIWidget
+    id: alerts
+    phantom: true
+    margin-top: 4
+    layout:
+      type: verticalBox
+      fit-children: true
+
+RaidAlertLabel < RaidHudLabel
+  color: #f6cf72
+  margin-top: 1
+
+// a mechanic call-out over the middle of the map
+RaidCallout < UILabel
+  id: raidCallout
+  font: sans-bold-16px
+  color: #f6cf72
+  text-align: center
+  anchors.top: parent.top
+  anchors.horizontalCenter: parent.horizontalCenter
+  margin-top: 120
+  width: 640
+  height: 26
+  phantom: true
+  focusable: false
+  background-color: #10080880

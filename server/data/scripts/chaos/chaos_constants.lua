@@ -195,6 +195,17 @@ Chaos.tables.descentRuns = "chaos_descent_runs"
 -- sql/chaos_factions.sql): SQL only, no player storages
 ChaosOpcodes.factions = 215
 Chaos.tables.factions = "chaos_factions"
+-- Community goals and the weekly world modifier (client game_community; community.lua, community_core.lua,
+-- community_config.lua, sql/chaos_community.sql): SQL only, no player storages
+ChaosOpcodes.community = 203
+Chaos.tables.communityGoal = "chaos_community_goal"
+-- The Ashen Sepulchre, the weekly raid (client game_raid; raid.lua, raid_core.lua, raid_config.lua, sql/chaos_raid.sql):
+-- the raid window, journal, vendor and in-raid HUD on one opcode; storages 7100440 - 7100449 reserved (+0 inside a raid
+-- instance, +1 .. +5 the end of this week's lockout of boss 1 .. 5: the Boss Spawns cooldown)
+ChaosOpcodes.raid = 213
+Chaos.storage.raid = 7100440
+Chaos.tables.raidLockouts = "chaos_raid_lockouts"
+Chaos.tables.raidInstances = "chaos_raid_instances"
 
 -- ---------------------------------------------------------------------------
 -- Module settings

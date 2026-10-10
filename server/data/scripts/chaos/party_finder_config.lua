@@ -33,8 +33,9 @@ return {
 	-- key, name, and what a listing names about it:
 	--   range = {min, max, label, short}: a from-to range (rift tiers, tower floors); the engine file takes the rift max
 	--           tier from rift_config.lua (maxTier)
-	--   targets = "dungeons" | "worldBosses" | "omens" | "trials": a pick list the engine file fills from the live configs
-	--           (Chaos.dungeons.extra, Chaos.worldBoss.bosses, rift_config.lua omen.kinds, trials_config.lua tiers);
+	--   targets = "dungeons" | "worldBosses" | "omens" | "trials" | "raids": a pick list the engine file fills from the live
+	--           configs (Chaos.dungeons.extra, Chaos.worldBoss.bosses, rift_config.lua omen.kinds, trials_config.lua tiers,
+	--           raid_config.lua name);
 	--           `fallback` when that config is not loaded. "Any" is always offered first.
 	--   title = true: a short free text title is required ("other")
 	activities = {
@@ -45,7 +46,7 @@ return {
 		{key = "omen", name = "Omen", targets = "omens",
 			fallback = {"Sangrith the Bloodmoon Herald", "Morvane the Hollow Crown", "Thalcyra the Stormbound Seer"}},
 		{key = "tower", name = "Infinity Tower", range = {min = 1, max = 200, label = "Floor", short = "F"}},
-		{key = "raid", name = "Raid"},
+		{key = "raid", name = "Raid", targets = "raids", fallback = {"The Ashen Sepulchre"}}, -- raid_config.lua name
 		{key = "trial", name = "Trial", targets = "trials", fallback = {"Normal", "Cruel", "Merciless"}},
 		{key = "other", name = "Other", title = true}
 	},

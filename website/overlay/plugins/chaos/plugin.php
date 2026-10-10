@@ -26,6 +26,8 @@ if (!is_array($config)) {
 require_once __DIR__ . '/lib.php';
 // referral code on the account creation form (referral.php registers its own hooks)
 require_once __DIR__ . '/referral.php';
+// the community goal and the week's world modifiers (read only: the front page block and pages/community.php)
+require_once __DIR__ . '/community_lib.php';
 
 // ---------------------------------------------------------------- class lock
 // Session user, not $user_data: init.php loads the plugins before it reads the account.

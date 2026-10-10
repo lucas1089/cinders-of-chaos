@@ -1,0 +1,80 @@
+// The Brazier dialog (game_community): give gold to the Great Brazier in the main temple. Opened by using the Brazier
+// or from the Community window; the server checks the distance, the amount and the daily limit again.
+
+ChaosMainWindow
+  id: brazierWindow
+  size: 340 276
+  !text: tr('The Great Brazier')
+  @onEscape: modules.game_community.hideBrazier()
+
+  UIWidget
+    id: icon
+    size: 26 26
+    anchors.top: parent.top
+    anchors.left: parent.left
+    image-source: /images/game/buffs/community_goal
+
+  ChaosLabel
+    id: introLabel
+    anchors.top: parent.top
+    anchors.left: icon.right
+    anchors.right: parent.right
+    margin-left: 8
+    height: 44
+    text-align: topLeft
+    text-wrap: true
+    !text: tr('Gold given to the Great Brazier feeds the community goal: one point for every 1,000 gold.')
+
+  ChaosLabelDim
+    id: goldLabel
+    anchors.top: introLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 42
+    text-align: topLeft
+    text-wrap: true
+
+  ChaosTextEdit
+    id: amountEdit
+    anchors.top: goldLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 24
+    max-length: 14
+
+  UIWidget
+    id: quickRow
+    anchors.top: amountEdit.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 24
+    layout:
+      type: horizontalBox
+      spacing: 6
+
+  ChaosLabel
+    id: previewLabel
+    anchors.top: quickRow.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    height: 30
+    text-align: topLeft
+    text-wrap: true
+
+  ChaosButton
+    id: donateButton
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    !text: tr('Give gold')
+    @onClick: modules.game_community.donate()
+
+  ChaosButton
+    id: cancelButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    !text: tr('Close')
+    @onClick: modules.game_community.hideBrazier()

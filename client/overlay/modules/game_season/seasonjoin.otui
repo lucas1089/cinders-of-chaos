@@ -1,0 +1,84 @@
+// Season join dialog (game_season): the join terms, the mode (Standard / Self-Found / Hardcore / Hardcore Self-Found)
+// with its warning, "I understand" for Hardcore, Join / Cancel. Built by season.lua from the server's confirm message.
+
+SeasonModeButton < ChaosTabButton
+  width: 114
+  height: 24
+
+ChaosMainWindow
+  id: seasonJoinWindow
+  size: 500 360
+  !text: tr('Join the season')
+  @onEscape: modules.game_season.cancelJoin()
+
+  ChaosLabel
+    id: termsLabel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 80
+    text-align: topLeft
+    text-wrap: true
+
+  ChaosLabel
+    id: modeTitle
+    anchors.top: termsLabel.bottom
+    anchors.left: parent.left
+    margin-top: 6
+    text-auto-resize: true
+    font: verdana-11px-rounded
+    color: #e8b84a
+    !text: tr('Choose a mode (it cannot be changed until the season ends):')
+
+  UIWidget
+    id: modeRow
+    anchors.top: modeTitle.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 24
+    phantom: true
+    layout:
+      type: horizontalBox
+      spacing: 4
+
+  ChaosPanelDark
+    id: warningPanel
+    anchors.top: modeRow.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    height: 92
+
+    ChaosLabel
+      id: warningLabel
+      anchors.fill: parent
+      margin: 6
+      text-align: topLeft
+      text-wrap: true
+
+  ChaosCheckBox
+    id: ackBox
+    anchors.top: warningPanel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    !text: tr('I understand: if this character dies once, it falls for good.')
+    @onCheckChange: modules.game_season.onJoinAck(self:isChecked())
+
+  ChaosButton
+    id: joinButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 140
+    !text: tr('Join')
+    @onClick: modules.game_season.confirmJoin()
+
+  ChaosButton
+    id: cancelButton
+    anchors.right: joinButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    width: 90
+    !text: tr('Cancel')
+    @onClick: modules.game_season.cancelJoin()

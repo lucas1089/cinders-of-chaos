@@ -22,6 +22,8 @@ local tabs, groupTabs = {}, {}
 local tickEvent
 local refreshAsked = false
 local seasonView = false -- the Season toggle (server season.lua): only the running season's characters
+local seasonMode = 'all' -- its mode tab (server season_modes.lua): all | standard | ssf | hc | hcssf | fallen
+local modeTabs = {}
 
 -- ---------------------------------------------------------------- helpers
 local function send(action, data)
@@ -29,6 +31,7 @@ local function send(action, data)
   if action == 'get' and seasonView then
     data = data or {}
     data.season = true
+    if seasonMode ~= 'all' then data.mode = seasonMode end
   end
   if protocol then
     protocol:sendExtendedOpcode(OPCODE, json.encode({ action = action, data = data or {} }))
@@ -109,6 +112,17 @@ local function createRow(r, b, ownName)
   else
     row.title:setText('')
   end
+  -- a fallen Hardcore character: the skull, the fall in the tooltip
+  local fallen = type(r.fallen) == 'table' and r.fallen or nil
+  row.fallen:setVisible(fallen ~= nil)
+  row.fallen:setWidth(fallen and 14 or 0)
+  row.fallen:setMarginLeft(fallen and 4 or 0)
+  if fallen then
+    local tip = tr('Fallen in Hardcore at level %d (%s).', tonumber(fallen.level) or 0, tostring(fallen.cause or ''))
+    row.fallen:setTooltip(tip)
+    row:setTooltip(tip)
+    row.name:setColor('#a09080')
+  end
   if b.weekly then
     row.value:setText(valueText(r.value, b))
     row.value:setTooltip(valueText(r.value, b, true) .. ' ' .. (b.value or ''):lower())
@@ -184,9 +198,13 @@ local function showBoard()
   local season = type(current.season) == 'table' and current.season or nil
   if season then
     window.championPanel.championNames:setTooltip('')
-    window.championPanel.championTitle:setText(tr('%s %s: season characters only', season.name or '', season.tag or ''))
+    window.championPanel.championTitle:setText(season.modeName and tr('%s %s: %s', season.name or '', season.tag or '', season.modeName)
+      or tr('%s %s: season characters only', season.name or '', season.tag or ''))
     window.championPanel.championNames:setText(b.weekly and tr('This week\'s scores of the season\'s characters. Titles are won on the normal boards.')
       or tr('Highest level of the season\'s characters in the %s line.', groupName(current.group)))
+    if season.mode == 'fallen' then
+      window.championPanel.championNames:setText(tr('Hardcore characters that died, highest level first, with what killed them.'))
+    end
   end
 
   window.emptyText:setText(b.weekly and tr('No scores on this board yet this week.') or tr('No characters of this class yet.'))
@@ -205,8 +223,9 @@ local function showBoard()
     end
     window.ownPanel.ownLabel:setText(text)
   else
-    window.ownPanel.ownLabel:setText(b.weekly and tr('You have no score on this board this week.')
-      or tr('Your class is not on this ladder.'))
+    local tab = type(current.season) == 'table' and current.season.mode or nil
+    window.ownPanel.ownLabel:setText(tab and tr('This character is not on this tab.')
+      or (b.weekly and tr('You have no score on this board this week.') or tr('Your class is not on this ladder.')))
   end
 
   if b.weekly then
@@ -289,6 +308,31 @@ local function buildGroupTabs()
   end
 end
 
+-- the mode tabs of the Season view (meta.season.modes), shown while the Season toggle is on
+local function buildModeTabs()
+  window.modeTabs:destroyChildren()
+  modeTabs = {}
+  local season = meta and type(meta.season) == 'table' and meta.season or nil
+  local modes = season and list(season.modes) or {}
+  local visible = seasonView and #modes > 0
+  window.modeTabs:setVisible(visible)
+  window.modeTabs:setHeight(visible and 20 or 0)
+  window.modeTabs:setMarginTop(visible and 4 or 0)
+  if not visible then return end
+  local items = {}
+  for i, m in ipairs(modes) do
+    local key = m.key
+    items[i] = { text = tostring(m.name or key), checked = key == seasonMode, onClick = function()
+      seasonMode = key
+      for k, t in pairs(modeTabs) do t:setChecked(k == key) end
+      send('get', { board = selected, group = currentGroup() })
+    end }
+  end
+  for i, tab in pairs(buildTabRows(window.modeTabs, 'LeaderboardModeTab', items, 124)) do
+    modeTabs[modes[i].key] = tab
+  end
+end
+
 local function selectBoard(key)
   selected = key
   for k, tab in pairs(tabs) do tab:setChecked(k == key) end
@@ -314,15 +358,16 @@ end
 -- ---------------------------------------------------------------- protocol
 local function onMeta(data)
   meta = data
-  if data.open then seasonView = false end
+  if data.open then seasonView = false seasonMode = 'all' end
   local season = type(data.season) == 'table' and data.season or nil
-  if not season then seasonView = false end
+  if not season then seasonView = false seasonMode = 'all' end
   window.seasonToggle:setVisible(season ~= nil)
   window.seasonToggle:setText(season and tr('%s only', season.tag or tr('Season')) or '')
   window.seasonToggle:setTooltip(season and tr('Show only the characters of %s.', season.name or '') or '')
   window.seasonToggle:setChecked(seasonView)
   if not selectedGroup then selectedGroup = data.ownGroup end
   buildTabs()
+  buildModeTabs()
   if data.open then show() end
 end
 
@@ -363,7 +408,11 @@ end
 -- ---------------------------------------------------------------- window
 function toggleSeason()
   seasonView = not seasonView
-  if window then window.seasonToggle:setChecked(seasonView) end
+  if not seasonView then seasonMode = 'all' end
+  if window then
+    window.seasonToggle:setChecked(seasonView)
+    buildModeTabs()
+  end
   send('get', { board = selected, group = currentGroup() })
 end
 
@@ -392,7 +441,7 @@ end
 local function onGameEnd()
   hide()
   meta, current, selected, selectedGroup = nil, nil, nil, nil
-  tabs, groupTabs = {}, {}
+  tabs, groupTabs, modeTabs, seasonMode = {}, {}, {}, 'all'
 end
 
 function init()

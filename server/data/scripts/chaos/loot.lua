@@ -119,6 +119,8 @@ function L.itemFindMult(player)
 	v = v + (ChaosItemMods and ChaosItemMods.playerBonus and ChaosItemMods.playerBonus(player, "itemfind") or 0)
 	-- the pet's Treasure Sense (pets.lua)
 	v = v + (ChaosPets and ChaosPets.itemFind and ChaosPets.itemFind(player) or 0)
+	-- the Self-Found loot bonus (season_modes.lua)
+	v = v + (ChaosSeason and ChaosSeason.modesLootBonus and select(1, ChaosSeason.modesLootBonus(player)) or 0)
 	if v <= 0 then
 		return 1
 	end
@@ -815,6 +817,8 @@ local function processKill(monster, corpse)
 	local noError = RETURNVALUE_NOERROR or 0
 	-- the Rarity Find modifier of the equipped items (item_mods.lua) raises the bonus rarity chance
 	local rarityFind = ChaosItemMods and ChaosItemMods.playerBonus and ChaosItemMods.playerBonus(owner, "rarityfind") or 0
+	-- and the Self-Found loot bonus (season_modes.lua)
+	rarityFind = rarityFind + (ChaosSeason and ChaosSeason.modesLootBonus and select(2, ChaosSeason.modesLootBonus(owner)) or 0)
 	-- Only the "rarity" attribute is raised here, as the stock callback sets it: the engine rolls the stats of every
 	-- item that still carries one in the corpse after all onDropLoot callbacks (Monster::dropLoot), once. Rolling here
 	-- too (Game.createItemWithRarity) gave corpse items two sets of stats. Items that leave the corpse before the

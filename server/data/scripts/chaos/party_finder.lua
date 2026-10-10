@@ -83,6 +83,9 @@ function PF.sources()
 	end
 	src.worldBosses = namesOf(Chaos.worldBoss and Chaos.worldBoss.bosses, "name")
 	src.trials = namesOf(Chaos.trials and Chaos.trials.tiers, "name")
+	if type(ChaosRaidConfig) == "table" and ChaosRaidConfig.name then
+		src.raids = {ChaosRaidConfig.name} -- raid.lua: the weekly raid
+	end
 	return src
 end
 

@@ -187,7 +187,8 @@ local function notice(player, key)
 		return
 	end
 	lastNotice[id] = now()
-	player:sendTextMessage(MESSAGE_STATUS_WARNING or MESSAGE_INFO_DESCR, iso.messages[key] or iso.messages.move)
+	player:sendTextMessage(MESSAGE_STATUS_WARNING or MESSAGE_INFO_DESCR, iso.messages[key] or
+		(cfg.modes and cfg.modes.messages[key]) or iso.messages.move) -- modes: season_modes.lua
 end
 
 -- tags of a thing and of every container around it; returns the tile when it lies on the ground (else nil)
@@ -281,6 +282,9 @@ function S.onMoveItem(player, item, count, fromPosition, toPosition, fromCylinde
 		m.houseTo = houseRealm(toTile)
 	end
 	local ok, why = S.moveCheck(m)
+	if ok and S.modesMove then -- season modes (season_modes.lua): Self-Found items, loot and mail
+		ok, why = S.modesMove(player, item, toPosition, toCylinder)
+	end
 	if ok then
 		return NOERR
 	end
@@ -360,6 +364,11 @@ function S.transferBlocked(player, targetGuid)
 	if not S.current() or staff(player) then
 		return false
 	end
+	S.transferBlockedText = iso.messages.bank
+	if S.modesTransferBlocked and S.modesTransferBlocked(player, targetGuid) then -- season modes (season_modes.lua)
+		S.transferBlockedText = cfg.modes.messages.bank
+		return true
+	end
 	return S.realmOf(player) ~= S.realmOfGuid(targetGuid)
 end
 S.transferBlockedText = iso.messages.bank
@@ -425,13 +434,18 @@ end
 local MARKET_CURRENCY = {
 	list = function(d) return (tonumber(d.coins) or 0) > 0 and "coins" or "gold" end,
 	buy = function(d) return d.cur == "coins" and "coins" or "gold" end,
-	orderPost = function(d) return d.cur == "coins" and "coins" or "gold" end
+	orderPost = function(d) return d.cur == "coins" and "coins" or "gold" end,
+	fill = function() return "gold" end -- wrapped for the season modes only (Self-Found: no market)
 }
 S.marketWrapped = S.marketWrapped or {}
 function S.marketRefusal(player, action, d)
 	local pick = MARKET_CURRENCY[action]
 	if not pick or not S.current() or staff(player) then
 		return nil
+	end
+	local modes = S.modesMarketRefusal and S.modesMarketRefusal(player, action) -- season modes (season_modes.lua)
+	if modes then
+		return modes
 	end
 	local ok, currency = pcall(pick, type(d) == "table" and d or {})
 	if ok and not S.marketCurrencyAllowed(S.realmOf(player), currency, cfg.market) then
@@ -657,13 +671,19 @@ end
 
 -- ---------------------------------------------------------------- migration (end of season)
 local function migrateRow(guid, seasonId, why)
+	if S.modesMigrated then -- season modes (season_modes.lua): reset the mode, the end-of-season achievements
+		pcall(S.modesMigrated, guid, seasonId, why)
+	end
 	db.query(string.format("UPDATE `%s` SET `migrated_at` = %d WHERE `player_id` = %d AND `migrated_at` = 0",
 		T.players, now(), guid))
 	S.rows[guid] = nil
 	S.members[guid] = nil
 	logEvent(seasonId, guid, "migrate", why)
 	local p = Player(guid)
-	if p then
+	if p and why == "fallen" then -- a fallen Hardcore character (season_modes.lua tells it)
+		S.rowOf(guid)
+		S.sendState(p, false)
+	elseif p then
 		local season = S.byId(seasons(), seasonId)
 		p:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s has ended. This character is now a standard character: " ..
 			"it keeps its level, skills, items and passive tree and can trade with everyone.", season and season.name or "The season"))
@@ -671,6 +691,8 @@ local function migrateRow(guid, seasonId, why)
 		S.sendState(p, false)
 	end
 end
+
+S.migrateRow = migrateRow -- season modes (season_modes.lua): a fallen Hardcore character migrates at once
 
 -- migrate every season character whose season has ended; idempotent. Returns the number migrated.
 function S.migrateAll(why)
@@ -768,7 +790,7 @@ local function doJoin(player, season)
 end
 
 -- confirm = false: check and ask for the confirmation; true: join when the confirmation is still open
-function S.join(player, confirm)
+function S.join(player, confirm, modeKey)
 	local guid = player:getGuid()
 	local season, reason = S.joinCheck(S.joinInfo(player), cfg, now(), S.ov)
 	if not season then
@@ -778,8 +800,20 @@ function S.join(player, confirm)
 		return false
 	end
 	if confirm and S.pending[guid] and S.pending[guid] >= now() then
+		local mode -- season modes (season_modes.lua): the mode picked in the confirmation (nil key = Standard)
+		if S.modesPick then
+			local why
+			mode, why = S.modesPick(modeKey)
+			if not mode then
+				player:sendTextMessage(MESSAGE_INFO_DESCR, why)
+				return false
+			end
+		end
 		S.pending[guid] = nil
 		doJoin(player, season)
+		if mode and S.modesJoined then
+			S.modesJoined(player, season, mode)
+		end
 		S.sendState(player, false)
 		return true
 	end
@@ -787,7 +821,8 @@ function S.join(player, confirm)
 	local text = joinTerms(season)
 	player:sendTextMessage(MESSAGE_INFO_DESCR, text .. string.format(" Confirm in the Season window within %d seconds.",
 		cfg.join.confirmSeconds))
-	Chaos.send(player, OPCODE, "confirm", {text = text, seconds = cfg.join.confirmSeconds})
+	Chaos.send(player, OPCODE, "confirm", {text = text, seconds = cfg.join.confirmSeconds,
+		modes = S.modesChoices and S.modesChoices() or nil}) -- season modes (season_modes.lua)
 	return false
 end
 
@@ -829,6 +864,9 @@ function S.stateOf(player)
 	local _, reason = S.joinCheck(S.joinInfo(player), cfg, now(), S.ov)
 	local mine = {realm = realm, seasonal = realm > 0, veteran = row and realm == 0 or false,
 		joinedSeason = row and row.season or nil, eligible = reason == nil, reason = reason, level = player:getLevel()}
+	if S.modesMine then -- season modes (season_modes.lua): mode, fallen, heartbeat
+		S.modesMine(player, mine)
+	end
 	local stats = {}
 	if season and realm == season.id then
 		for k, v in pairs(S.stats[guid] or {}) do
@@ -916,7 +954,8 @@ function S.leaderboardMeta(player)
 	if not season or not ChaosLeaderboard or not lbCfg() then
 		return nil
 	end
-	return {id = season.id, name = season.name, tag = season.tag}
+	return {id = season.id, name = season.name, tag = season.tag,
+		modes = S.modesLadderTabs and S.modesLadderTabs() or nil} -- season modes (season_modes.lua)
 end
 
 local function vocationName(id)
@@ -979,12 +1018,16 @@ local function groupOf(player, groupKey)
 	end
 	return own or groups[1], own
 end
+S.ladderHelpers = {where = ladderWhere, groupOf = groupOf, vocationName = vocationName, boardTitle = boardTitle} -- modes
 
 -- the Season view of a leaderboard (called by leaderboard.lua). Returns true when it answered.
-function S.sendBoard(player, key, groupKey)
+function S.sendBoard(player, key, groupKey, mode)
 	local season, LB, lc = S.current(), ChaosLeaderboard, lbCfg()
 	if not season or not LB or not lc then
 		return false
+	end
+	if mode and mode ~= "all" and S.modesSendBoard then -- season modes (season_modes.lua): one mode's tab
+		return S.modesSendBoard(player, key, groupKey, mode)
 	end
 	local data
 	if key == lc.ladder.key then
@@ -1201,7 +1244,7 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	if msg.action == "open" then
 		S.sendState(player, true)
 	elseif msg.action == "join" then
-		S.join(player, data.confirm == true)
+		S.join(player, data.confirm == true, type(data.mode) == "string" and data.mode or nil)
 	end
 end
 ext:type("extendedopcode")

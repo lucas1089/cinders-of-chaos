@@ -87,6 +87,10 @@ source("golden_hour", "worldEvent", "buff", "Golden Hour", "buff:golden_hour", "
 source("chaos_storm", "worldEvent", "buff", "Chaos Storm", "buff:chaos_storm", "Magic, rare and legendary monsters appear far more often in this area.", 15, {event = "storm"})
 source("calendar_event", "calendar", "buff", "Event", "buff:event", "A scheduled event is running.", 16)
 source("double_xp", "doubleXp", "buff", "Double Experience", "buff:double_xp", "A double experience potion doubles the experience you get.", 17)
+-- community goals (data/scripts/chaos/community.lua): an open stage window ("buff:community_<stage>") and the week's
+-- world modifiers ("buff:wmod_<key>"), each with its own icon (client/tools/gen_community_icons.py)
+source("community_goal", "community", "buff", "Community Goal", "buff:community_goal", "A community goal stage blesses everyone online.", 18)
+source("wmod_week", "community", "buff", "World Modifier", "buff:wmod_week", "This week's world modifier.", 19, {week = true})
 
 -- ---- Chaos buffs: class spells (sub ids of ChaosSpell.SUBID, Chaos.classes.subId, necro_config, monk_chi_core, templar_aura_core)
 cond("blood_pact", "CONDITION_ATTRIBUTES", 71001, "buff", "Crimson Covenant", "buff:blood_pact", "A short magic level boost, paid for in health.", 30)
@@ -128,6 +132,10 @@ cond("stun_immune", "CONDITION_ATTRIBUTES", 71035, "buff", "Stun Immunity", "buf
 -- own icon "buff:descent_b_<key>" / "buff:descent_c_<key>" (client/tools/gen_descent_icons.py)
 source("descent_boon", "descent", "buff", "Descent Boon", "buff:descent_boon", "A boon of the Ember Descent, for this run only.", 26)
 source("descent_curse", "descent", "debuff", "Descent Curse", "buff:descent_curse", "A curse of the Ember Descent: more rewards, a harder run.", 39)
+-- season modes (data/scripts/chaos/season_modes.lua): the Self-Found loot bonus, and a Hardcore character's protection
+-- (login, lost connection, restart) while it holds
+source("self_found", "seasonMode", "buff", "Self-Found", "buff:self_found", "No trading; more and better loot.", 27, {mode = "ssf"})
+source("hardcore_ward", "seasonMode", "buff", "Hardcore Ward", "buff:hardcore_ward", "You cannot be hurt for now.", 28, {mode = "ward"})
 
 -- ---- engine conditions: buffs
 cond("haste", "CONDITION_HASTE", 0, "buff", "Haste", "buff:haste", "You move faster.", 50)
@@ -138,6 +146,11 @@ cond("manashield", "CONDITION_MANASHIELD", 0, "buff", "Magic Shield", "buff:mana
 cond("invisible", "CONDITION_INVISIBLE", 0, "buff", "Invisible", "buff:invisible", "Monsters cannot see you.", 50)
 cond("light", "CONDITION_LIGHT", 0, "buff", "Light", "buff:light", "You carry a light.", 55)
 cond("spellbuff", "CONDITION_ATTRIBUTES", 0, "buff", "Spell Buff", "buff:spellbuff", "A spell or potion boosts your skills.", 50)
+
+-- the Ashen Sepulchre (data/scripts/chaos/raid.lua): a raid boss's debuffs on the player in a fight, each with its own
+-- icon: Sundered (the tank swap stacks, "buff:raid_sunder"), Hexed (effigy stacks, "buff:raid_hexed") and Withering Hex
+-- (to cleanse, "buff:raid_hex"); client/tools/gen_raid_icons.py
+source("raid_debuff", "raid", "debuff", "Raid Debuff", "buff:raid_debuff", "A raid boss's mark on you.", 38)
 
 -- ---- engine conditions: debuffs
 cond("poison", "CONDITION_POISON", 0, "debuff", "Poisoned", "buff:poison", "Poison hurts you every few seconds.", 50)
@@ -405,9 +418,51 @@ function S.templarAura(player, now, def)
 	return {it}
 end
 
+-- season modes (season_modes.lua): ChaosSeason.modesBuffItem(player, def) returns the item or nil
+function S.seasonMode(player, now, def)
+	local X = ChaosSeason
+	if not (X and X.modesBuffItem) then
+		return nil
+	end
+	local it = X.modesBuffItem(player, def)
+	if not it then
+		return nil
+	end
+	local out = item(def, it.leftMs)
+	out.name, out.desc = clip(it.name or def.name, B.cfg.maxName), clip(it.desc or def.desc, B.cfg.maxDesc)
+	return {out}
+end
+
+-- community goals (community.lua): ChaosCommunity.buffItems(player, def) -> the open stage windows, or with def.week the
+-- week's world modifiers
+function S.community(player, now, def)
+	local X = ChaosCommunity
+	if not (X and X.buffItems) then
+		return nil
+	end
+	local list = X.buffItems(player, def)
+	for _, it in ipairs(list or {}) do
+		it.name, it.desc = clip(it.name, B.cfg.maxName), clip(it.desc, B.cfg.maxDesc)
+	end
+	return list
+end
+
 -- the Ember Descent's boons (def.kind "buff") and curses ("debuff") of the run the player is in (descent.lua)
 function S.descent(player, now, def)
 	local X = ChaosDescent
+	if not (X and X.buffItems) then
+		return nil
+	end
+	local list = X.buffItems(player, def.kind)
+	for _, it in ipairs(list or {}) do
+		it.name, it.desc = clip(it.name, B.cfg.maxName), clip(it.desc, B.cfg.maxDesc)
+	end
+	return list
+end
+
+-- the Ashen Sepulchre's boss debuffs of the fight the player is in (raid.lua)
+function S.raid(player, now, def)
+	local X = ChaosRaid
 	if not (X and X.buffItems) then
 		return nil
 	end
