@@ -470,6 +470,8 @@ Every magic, rare, legendary and boss monster rolls modifiers: magic 1-2, rare 2
 
 The server also pushes `info` for tiered monsters to players within about 10 tiles every 15 s (from the monster's own 2.5 s tick), so the client can label them in the world without a query.
 
+The `info` answer also carries `role` (`guardian` for a rift guardian, `omen` for an Omen guardian, read from `ChaosRift.monsterRun` and the run's `bossIds`; absent otherwise) and `level` (`ChaosLoot.monsterLevel`, absent when loot.lua is not loaded). The client picks the bar's look from them (`game_monsterbar/monsterbarstyle.lua`). Both are tested in `tests/monster_tiers_test.lua`.
+
 ## Custom spells and spell effects
 36 spells (`data/spells/chaos/`, installer `tools/register_spells.py`, table in `data/spells/README.md`) and 52 extra magic effects plus 10 projectiles (`data/lib/chaos_fx.lua`, catalog `data/spells/effects_catalog.csv`, build commands in `data/spells/README_FX.md`). All spell effects are our own procedurally drawn art (`client/tools/sprites/gen_effects.py`): it appends the 52 + 10 and also redraws, at the same ids, the 83 stock effects and 25 stock missiles that spells and spell hits use, so stock spell scripts need no change. The spells load `chaos_fx.lua` themselves and fall back to standard effects if it is missing, so they work before the generated dat/spr is in use; the custom art shows only with that pair on the client. Effect ids above 255 work because the base server sends them as 16 bits and the client profile enables `GameMagicEffectU16`. Not run on a server. The client spell list and action bar need entries and icons for the new spells (see `data/spells/README.md`).
 

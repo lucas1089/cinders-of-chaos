@@ -220,6 +220,24 @@ creatureEvents.ChaosTierQuery.onExtendedOpcode(player, ChaosOpcodes.monsterbar, 
 eq(sent and sent.data.tier, "legendary", "monster bar: tier")
 eq(sent and sent.data.label, "Legendary", "monster bar: label")
 check(sent and #sent.data.mods >= 3, "monster bar: modifiers")
+eq(sent and sent.data.role, nil, "monster bar: no role outside a rift")
+eq(sent and sent.data.level, nil, "monster bar: no level without the loot script")
+-- a rift guardian and an Omen guardian (rift.lua's run of the monster), the level from loot.lua
+ChaosLoot = {monsterLevel = function(m) return 245.6 end}
+ChaosRift = {monsterRun = {[legend:getId()] = {bossIds = {[legend:getId()] = true}}}}
+creatureEvents.ChaosTierQuery.onExtendedOpcode(player, ChaosOpcodes.monsterbar, "query")
+eq(sent and sent.data.role, "guardian", "monster bar: rift guardian")
+eq(sent and sent.data.level, 245, "monster bar: level")
+ChaosRift.monsterRun[legend:getId()].omen = "storm"
+creatureEvents.ChaosTierQuery.onExtendedOpcode(player, ChaosOpcodes.monsterbar, "query")
+eq(sent and sent.data.role, "omen", "monster bar: omen guardian")
+ChaosRift.monsterRun[legend:getId()] = {bossIds = {}}
+creatureEvents.ChaosTierQuery.onExtendedOpcode(player, ChaosOpcodes.monsterbar, "query")
+eq(sent and sent.data.role, nil, "monster bar: a rift pack monster has no role")
+ChaosLoot.monsterLevel = function() error("no type") end
+creatureEvents.ChaosTierQuery.onExtendedOpcode(player, ChaosOpcodes.monsterbar, "query")
+eq(sent and sent.data.level, nil, "monster bar: a failing level is left out")
+ChaosLoot, ChaosRift = nil, nil
 
 -- the tier damages: a hit from the legendary is doubled (or more)
 local dmg = creatureEvents.ChaosTierHit.onHealthChange({isPlayer = function() return false end}, legend, -100, 1, 0, 1, 0)

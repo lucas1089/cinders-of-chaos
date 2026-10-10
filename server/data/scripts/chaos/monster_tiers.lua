@@ -12,7 +12,8 @@
 -- * Ambush on kill: when a player kills a monster there is a chance that a magic, rare or
 --   legendary copy of it appears next to the corpse (cfg.ambush).
 -- * Client (game_monsterbar): {"action":"query","data":{"cid":N}} when the player targets a creature,
---   answered with {"action":"info","data":{"cid","tier","label","mods":["Blazing",..],"mult":{..}}}.
+--   answered with {"action":"info","data":{"cid","tier","label","role","level","mods":["Blazing",..],"mult":{..}}}
+--   (role: "guardian" for a rift guardian, "omen" for an Omen guardian; level: ChaosLoot.monsterLevel).
 --
 -- Not verified on a running server. Assumed engine API: EventCallback onSpawn (Monster:onSpawn in
 -- data/events/scripts/monster.lua), onGainExperience (arg 3 modifiable), CreatureEvent "death" and
@@ -219,6 +220,26 @@ local function applyMods(monster, mods)
 	monster:registerEvent("ChaosModTaken")
 end
 
+-- the monster bar's role of a creature: "omen" (an Omen guardian) or "guardian" (a rift guardian), read from
+-- rift.lua's run of the monster (ChaosRift.monsterRun, run.bossIds); nil for every other monster
+local function roleOf(creature)
+	local rift = ChaosRift
+	local run = rift and rift.monsterRun and rift.monsterRun[creature:getId()]
+	if run and run.bossIds and run.bossIds[creature:getId()] then
+		return run.omen and "omen" or "guardian"
+	end
+	return nil
+end
+
+-- the level the monster bar shows: the one the item level uses (loot.lua ChaosLoot.monsterLevel)
+local function levelOf(creature)
+	if not (ChaosLoot and ChaosLoot.monsterLevel) then
+		return nil
+	end
+	local ok, level = pcall(ChaosLoot.monsterLevel, creature)
+	return ok and tonumber(level) and math.floor(level) or nil
+end
+
 -- one "info" message for a creature (used for the monster bar query and for the in-world labels)
 local function sendInfo(player, creature)
 	local cid = creature:getId()
@@ -234,6 +255,8 @@ local function sendInfo(player, creature)
 		tier = tier,
 		name = creature:getName(),
 		label = (t and tier ~= "boss") and t.label or nil,
+		role = roleOf(creature),
+		level = levelOf(creature),
 		mods = names,
 		mult = t and {hp = t.hp, damage = t.damage, xp = t.xp} or nil
 	})
