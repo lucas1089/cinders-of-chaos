@@ -3,7 +3,7 @@ Cinders of Chaos - Windows test package
 
 Runs the server and the client on your own computer.
 
-1. Extract the whole zip into a folder (a short path such as C:\ProjectChaos).
+1. Extract the whole zip into a folder (a short path such as C:\CindersOfChaos).
 2. Double-click start-server.bat. The first start creates the database (about a minute); then the game
    server window shows "Server Online". Leave both windows open.
    If Windows asks whether MariaDB and ChaosServer may use the network, "Private networks" is enough.

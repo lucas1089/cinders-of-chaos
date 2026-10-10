@@ -1,4 +1,4 @@
-# Windows package: the whole Cinders of Chaos game for one Windows PC, as one artifact (ProjectChaos-Windows).
+# Windows package: the whole Cinders of Chaos game for one Windows PC, as one artifact (CindersOfChaos-Windows).
 # Download it from the run's page (Summary -> Artifacts), extract it and run start-server.bat, then start-client.bat
 # (tools/windows/package/README.txt is in the zip).
 #
@@ -329,7 +329,7 @@ jobs:
       - name: Put the package together
         run: |
           set -euo pipefail
-          P=ProjectChaos
+          P=CindersOfChaos
           mkdir -p "$P"
           tar -xf parts/server-folder/server.tar -C "$P"
           tar -xf parts/client-folder/client.tar -C "$P"
@@ -376,7 +376,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ProjectChaos-Windows
-          path: ProjectChaos/
+          name: CindersOfChaos-Windows
+          path: CindersOfChaos/
           if-no-files-found: error
           retention-days: 14
