@@ -51,6 +51,8 @@ return {
 			text = "The last wave; the area level picks the boss."},
 		{key = "omen", name = "Rift Guardians and Omens", color = "#9b59d6",
 			text = "Rift Keys; 60 Omen Fragments bind an Omen Key."},
+		{key = "ascended", name = "Ascended Omens", color = "#ff6a3a",
+			text = "4 Ascended Shards bind a sigil; three relics wake the Cinderheart."},
 		{key = "dungeon", name = "Dungeon Bosses", color = "#d6a050",
 			text = "Adventure > Dungeons: queue alone or with a party."},
 		{key = "tower", name = "Infinity Tower Bosses", color = "#2f9fd0",
@@ -58,7 +60,9 @@ return {
 		{key = "trial", name = "Trial and Quest Bosses", color = "#6fd8a8",
 			text = "Personal fights, alone."},
 		{key = "rare", name = "Rare Spawns", color = "#f6cf72",
-			text = "May replace any natural respawn while you hunt."}
+			text = "May replace any natural respawn while you hunt."},
+		{key = "descent", name = "The Ember Descent", color = "#ff7a2a",
+			text = "A roguelike trial: 8-12 rooms, the boss in the last."}
 	},
 
 	-- read from the systems above (false = leave that category out)
@@ -212,6 +216,27 @@ return {
 			anywhere = true, loc = "Omen arena (instance)", level = 800, rule = {type = "ondemand", how = "Hollow Omen Key", short = "Hollow Omen Key"}},
 		{key = "omen_thalcyra", category = "omen", name = "Thalcyra the Stormbound Seer", monster = "Thalcyra the Stormbound Seer",
 			anywhere = true, loc = "Omen arena (instance)", level = 800, rule = {type = "ondemand", how = "Stormcall Omen Key", short = "Stormcall Omen Key"}},
+
+		-- ------------------------------------------------------------------ Ascended Omens and the Cinderheart (uber_config.lua)
+		{key = "ascended_sangrith", category = "ascended", name = "Ascended Sangrith", monster = "Ascended Sangrith",
+			anywhere = true, loc = "Ascended arena (instance)", level = 900, rule = {type = "ondemand",
+			how = "Ascended Sigil of the Bloodmoon (4 shards from Bloodmoon Omen kills and tier 13+ rifts)", short = "Bloodmoon Sigil"}},
+		{key = "ascended_morvane", category = "ascended", name = "Ascended Morvane", monster = "Ascended Morvane",
+			anywhere = true, loc = "Ascended arena (instance)", level = 900, rule = {type = "ondemand",
+			how = "Ascended Sigil of the Hollow Crown (4 shards from Hollow Omen kills and tier 13+ rifts)", short = "Hollow Crown Sigil"}},
+		{key = "ascended_thalcyra", category = "ascended", name = "Ascended Thalcyra", monster = "Ascended Thalcyra",
+			anywhere = true, loc = "Ascended arena (instance)", level = 900, rule = {type = "ondemand",
+			how = "Ascended Sigil of the Storm (4 shards from Stormcall Omen kills and tier 13+ rifts)", short = "Storm Sigil"}},
+		{key = "ascended_cinderheart", category = "ascended", name = "Ysgrath the Cinderheart", monster = "Ysgrath the Cinderheart",
+			anywhere = true, loc = "Ascended arena (instance)", level = 1000, rule = {type = "ondemand",
+			how = "Cinderheart Sigil: one relic of each Ascended Omen", short = "Cinderheart Sigil"}},
+
+		-- ------------------------------------------------------------------ the Ember Descent (descent_config.lua)
+		-- its boss is the strongest monster type of the last room's level window in the rift guardian look of the room's
+		-- theme, so it has no fixed type to track; the cooldown column shows when the free run of the day is ready
+		{key = "descent_boss", category = "descent", name = "Ember Descent Boss", loc = "Ember Descent (instance)", level = 100,
+			look = {type = 2107}, rule = {type = "ondemand", how = "The portal next to the temple: one free run a day, " ..
+			"one free weekly run, more with Ember Sigils", short = "Descent portal", cooldown = 7100411}},
 
 		-- ------------------------------------------------------------------ rare spawns (treasure_goblin_config.lua)
 		{key = "treasure_goblin", category = "rare", name = "Treasure Goblin", monster = "Treasure Goblin", anywhere = true,

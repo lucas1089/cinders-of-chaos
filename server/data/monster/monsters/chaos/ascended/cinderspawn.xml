@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Add of the Cinderheart arena (uber.lua): An ember of the Cinderheart that walks. While it lives, the Last Cinder feeds on it. Health and count are set by the script (x party size, uber_config.lua);
+     the stock look 242 (massive fire elemental). No loot, no experience to speak of: the boss is the prize. -->
+<monster name="Cinderspawn" nameDescription="a cinderspawn" race="fire" experience="1000" speed="250" manacost="0">
+	<health now="60000" max="60000" />
+	<look type="242" corpse="6068" />
+	<targetchange interval="4000" chance="20" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-800" max="-1500" />
+		<attack name="fire" interval="2000" chance="25" range="6" target="1" radius="1" min="-1000" max="-1900">
+			<attribute key="areaEffect" value="firearea" />
+		</attack>
+	</attacks>
+	<defenses armor="60" defense="60" />
+	<elements>
+		<element physicalPercent="10" />
+		<element firePercent="80" />
+		<element energyPercent="0" />
+		<element earthPercent="0" />
+		<element icePercent="-20" />
+		<element holyPercent="0" />
+		<element deathPercent="0" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+	</immunities>
+</monster>

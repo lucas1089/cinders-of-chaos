@@ -736,7 +736,7 @@ local function omenUniques()
 		omenUniqueFrom = ChaosUniqueItems
 		omenUniqueCache = {}
 		for k, e in pairs(ChaosUniqueItems or {}) do
-			if type(e) == "table" then
+			if type(e) == "table" and not e.ascended then -- the Ascended uniques drop only from their bosses (uber.lua)
 				local c = {}
 				for f, v in pairs(e) do
 					c[f] = v
@@ -964,6 +964,10 @@ local function success(run, pos)
 	end
 	R.atlasSealed({theme = run.themeName, tier = run.key.tier, omen = run.omen, deaths = run.deaths or 0, secs = secs,
 		guids = atlasGuids})
+	-- Ascended Shards (uber.lua): Omen guardian kills and rifts of tier 13+ (online finishers)
+	if ChaosAscended and ChaosAscended.onRiftSealed then
+		pcall(ChaosAscended.onRiftSealed, {tier = run.key.tier, omen = run.omen, finishers = run.finishers})
+	end
 	if run.omen then
 		say(run, string.format("The %s guardian falls in %d:%02d. %s", R.omenKind(cfg, run.omen).name, math.floor(secs / 60),
 			secs % 60, run.endText))

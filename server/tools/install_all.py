@@ -40,6 +40,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   gems         tools/install_gems.py             the gems and the Orb of Sockets in items.otb / items.xml (README "Gems and sockets")
   salvage      tools/install_salvage.py          the salvage Rune Shard in items.otb / items.xml (README "Salvage")
   omens        tools/install_omens.py            the Omen Fragment and Omen Key in items.otb / items.xml (README "Rifts", Omens)
+  ascended     tools/install_ascended.py         the Ascended Shards, Sigil and Relic in items.otb / items.xml (README "Ascended
+               Omens and the Cinderheart")
+  factions     tools/install_factions.py         the faction tokens in items.otb / items.xml and the four faction NPCs in data/npc
+               (README "Factions")
   pouches      tools/install_pouches.py          the store pouches in items.otb / items.xml and their move hook in Player:onMoveItem
                (README "Store pouches")
   supports     tools/install_supports.py         the spell support runes in items.otb / items.xml and the spell-library hook (scripts/chaos/SUPPORTS.md)
@@ -80,7 +84,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'vocations', 'events', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'pouches', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spells', 'autoloot', 'commands', 'sql']
+STEPS = ['files', 'lib', 'vocations', 'events', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spells', 'autoloot', 'commands', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -306,6 +310,14 @@ def step_salvage(server, data, ctx):
 
 def step_omens(server, data, ctx):
     return tool_result(run_tool([tool('install_omens.py'), data], 'install_omens.py'))
+
+
+def step_ascended(server, data, ctx):
+    return tool_result(run_tool([tool('install_ascended.py'), data], 'install_ascended.py'))
+
+
+def step_factions(server, data, ctx):
+    return tool_result(run_tool([tool('install_factions.py'), data], 'install_factions.py'))
 
 
 def step_pouches(server, data, ctx):

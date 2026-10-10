@@ -70,13 +70,13 @@ local function loadScores(week)
 		scores[b.key] = {}
 	end
 	local rows = Chaos.select(string.format("SELECT s.`board`, s.`player_id`, s.`value`, s.`count`, s.`updated_at`, " ..
-		"p.`name`, p.`group_id` FROM `%s` s JOIN `players` p ON p.`id` = s.`player_id` WHERE s.`week` = %d",
+		"p.`name`, p.`group_id`, p.`vocation` FROM `%s` s JOIN `players` p ON p.`id` = s.`player_id` WHERE s.`week` = %d",
 		T_SCORES, week), {{"board", "s"}, {"player_id", "n"}, {"value", "n"}, {"count", "n"}, {"updated_at", "n"},
-		{"name", "s"}, {"group_id", "n"}})
+		{"name", "s"}, {"group_id", "n"}, {"vocation", "n"}})
 	for _, r in ipairs(rows) do
 		if scores[r.board] then
 			scores[r.board][r.player_id] = {value = r.value, count = r.count, at = r.updated_at, name = r.name,
-				group = r.group_id}
+				group = r.group_id, voc = r.vocation}
 		end
 	end
 	return scores
@@ -169,6 +169,9 @@ function LB.record(board, who, value, mode)
 	local now = LB.now()
 	local e = LB.merge(cur.scores[board][guid], value, mode or b.mode, now)
 	e.name, e.group = name, group
+	if type(who) == "userdata" then
+		e.voc = who:getVocation():getId() -- the class tabs of byClass boards
+	end
 	cur.scores[board][guid] = e
 	LB.ranked[board] = nil
 	db.asyncQuery(string.format("INSERT INTO `%s` (`board`, `week`, `player_id`, `value`, `count`, `updated_at`) " ..
@@ -190,7 +193,7 @@ end
 function LB.rankedBoard(board)
 	local cur = ensureWeek()
 	if not LB.ranked[board] then
-		LB.ranked[board] = LB.rank(cur.scores[board] or {}, cfg.staffGroup)
+		LB.ranked[board] = LB.rank(cur.scores[board] or {}, cfg.staffGroup, (boardByKey[board] or {}).mode == "min")
 		-- accounts held off the boards pending an anti-bot review (antibot.lua; off unless log.holdLeaderboards)
 		if ChaosAntibot and ChaosAntibot.filterRanked then
 			LB.ranked[board] = ChaosAntibot.filterRanked(LB.ranked[board])
@@ -250,7 +253,7 @@ function LB.checkReset(force)
 	local scores = loadScores(prev)
 	local ranked = {}
 	for _, b in ipairs(cfg.boards) do
-		ranked[b.key] = LB.rank(scores[b.key], cfg.staffGroup)
+		ranked[b.key] = LB.rank(scores[b.key], cfg.staffGroup, b.mode == "min")
 		if ChaosAntibot and ChaosAntibot.filterRanked then -- no titles or orbs while held for an anti-bot review
 			ranked[b.key] = ChaosAntibot.filterRanked(ranked[b.key])
 		end
@@ -411,7 +414,7 @@ local function sendMeta(player, open)
 	local boards = {}
 	for _, b in ipairs(cfg.boards) do
 		boards[#boards + 1] = {key = b.key, name = b.name, weekly = true, value = b.value, count = b.count,
-			title = b.title, info = b.info}
+			title = b.title, info = b.info, byClass = b.byClass, format = b.format}
 	end
 	boards[#boards + 1] = {key = cfg.ladder.key, name = cfg.ladder.name, weekly = false, value = "Level",
 		info = "Highest level per class, all time."}
@@ -440,6 +443,11 @@ function LB.sendBoard(player, key, groupKey, season)
 	else
 		local b = boardByKey[key] or cfg.boards[1]
 		local ranked = LB.rankedBoard(b.key)
+		-- a board with class tabs (byClass): the class group asked for, none = every class
+		local g = b.byClass and groupKey and groupByKey(tonumber(groupKey))
+		if g then
+			ranked = LB.filterClass(ranked, g.ids)
+		end
 		local rows = {}
 		for i = 1, math.min(cfg.rows, #ranked) do
 			local e = ranked[i]
@@ -453,7 +461,7 @@ function LB.sendBoard(player, key, groupKey, season)
 					title = a.title}
 			end
 		end
-		data = {key = b.key, rows = rows, total = #ranked, champions = champions,
+		data = {key = b.key, group = g and g.key or nil, rows = rows, total = #ranked, champions = champions,
 			own = mine and {rank = mine.rank, value = mine.value, count = mine.count} or nil}
 	end
 	data.week = LB.current and LB.current.week or weekNow()

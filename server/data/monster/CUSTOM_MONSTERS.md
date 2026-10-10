@@ -90,3 +90,11 @@ shared 842 with Kroazur). 2100-2115 are the rift family looks that rift.lua puts
 - Rift monsters wear the rift names of `rift_config.lua` `looks.names` ("Abyssal Spawn" ... "Sanctum Warden"); no
   monster file may use one of those names either (`tests/rift_test.lua`).
 
+**Ascended Omens and the Cinderheart (`monsters/chaos/ascended/`, uber.lua).** Ascended Sangrith, Ascended Morvane and
+Ascended Thalcyra are their omens' files ascended: 1.2M health, every hit x1.3, without the omen's untelegraphed radius
+6 hit, self-heal and invisibility (the scripts telegraph the big hits); they keep their omen's look (2116-2118, so
+`tests/rift_test.lua` skips this folder in its one-guardian-per-omen-look check). Ysgrath the Cinderheart (1.65M) has
+its own look 2126, a donor-library creature (donor F 200, picks.csv row `cinderheart`, client/MANIFEST.md "The
+Cinderheart look"); `apply_monster_looks.py` writes it like the omen rows. The adds Bloodmoon Thrall (555), Hollow
+Wraith (241), Storm Shard (293) and Cinderspawn (242) use stock looks; their health and count come from the script.
+Numbers: server/README.md "Ascended Omens and the Cinderheart".

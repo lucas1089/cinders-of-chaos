@@ -141,4 +141,32 @@ eq(table.concat(groups[1].ids, ","), "1,5,10", "group ids")
 eq(table.concat(groups[3].ids, ","), "11,12,13", "thief line")
 eq(groups[4].base, 30, "unmapped vocation")
 
+-- "min" boards (the Cinderheart's fastest kills, uber.lua): the lowest value wins and ranks first
+local f = LB.merge(nil, 300, "min", 10)
+eq(f.value, 300, "min: first time")
+f = LB.merge(f, 420, "min", 20)
+eq(f.value, 300, "min: a slower kill keeps the best")
+eq(f.count, 2, "min: both kills counted")
+local _, ch = LB.merge(f, 250, "min", 30)
+eq(f.value, 250, "min: a faster kill")
+eq(ch, true, "min: changed")
+eq(LB.merge(nil, 0, "min", 1).value, 0, "min: 0 is no time")
+local fast = LB.rank({[1] = {value = 400, at = 1, group = 1, voc = 4}, [2] = {value = 250, at = 2, group = 1, voc = 8},
+	[3] = {value = 250, at = 1, group = 1, voc = 4}, [4] = {value = 0, at = 1, group = 1}}, cfg.staffGroup, true)
+eq(#fast, 3, "min: no time, no row")
+eq(fast[1].guid, 3, "min: fastest first, the earlier on a tie")
+eq(fast[2].guid, 2, "min: second")
+eq(fast[3].guid, 1, "min: slowest last")
+local knights = LB.filterClass(fast, {4, 8})
+eq(#knights, 3, "class filter: both vocations")
+local only4 = LB.filterClass(fast, {4})
+eq(#only4, 2, "class filter")
+eq(only4[1].guid, 3, "class filter keeps the order")
+eq(only4[2].rank, 2, "class filter ranks again")
+for _, b in ipairs(cfg.boards) do
+	if b.mode == "min" then
+		eq(b.format, "time", "a min board shows times: " .. b.key)
+	end
+end
+
 print("leaderboard_test: OK")

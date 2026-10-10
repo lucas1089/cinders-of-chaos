@@ -872,9 +872,12 @@ do
 	local p = io.popen("find data/monster -name '*.xml' -o -name '*.lua'")
 	local users = {}
 	for fn in p:lines() do
-		local f = io.open(fn)
-		local t = f:read("*a")
-		f:close()
+		-- the Ascended Omens (uber.lua) are their omens ascended and wear the omen's look on purpose
+		local f = not fn:find("/chaos/ascended/", 1, true) and io.open(fn) or nil
+		local t = f and f:read("*a") or ""
+		if f then
+			f:close()
+		end
 		for v in t:gmatch('<look%s+type="(%d+)"') do
 			users[tonumber(v)] = (users[tonumber(v)] or 0) + 1
 		end

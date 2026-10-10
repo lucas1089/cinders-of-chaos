@@ -54,3 +54,10 @@ function TabRows.layout(widths, avail, gap, maxWidth)
   end
   return out
 end
+
+-- a board value in its format: "time" (seconds, the Cinderheart's fastest kills) as m:ss, else nil
+function TabRows.valueText(value, format)
+  if format ~= 'time' then return nil end
+  local s = math.max(0, math.floor(tonumber(value) or 0))
+  return string.format('%d:%02d', math.floor(s / 60), s % 60)
+end

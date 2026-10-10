@@ -16,7 +16,8 @@ return {
 	staffGroup = 4,
 	checkSeconds = 60, -- how often the reset is checked
 
-	-- weekly boards, in tab order. mode: how ChaosLeaderboard.record merges a value ("add" sums, "max" keeps the best).
+	-- weekly boards, in tab order. mode: how ChaosLeaderboard.record merges a value ("add" sums, "max" keeps the best,
+	-- "min" keeps the lowest and ranks lowest first).
 	-- value / count: column labels; count = how many times record() was called for the player this week
 	-- (world boss kills participated, contracts, rift runs). title: given to the top `top` of the board for the next
 	-- week (look text and the board). reward: per rank, orbs delivered to the inbox at the reset.
@@ -40,7 +41,21 @@ return {
 		{key = "arena2v2", name = "Arena 2v2", mode = "max", value = "Rating", title = "Gladiator",
 			info = "Best 2v2 arena rating reached this week."},
 		{key = "defender", name = "Defender", mode = "add", value = "Points", count = "Invasions", title = "Defender of the Realm",
-			info = "Invasions defended this week: 10 points each plus your share of the defence in percent."}
+			info = "Invasions defended this week: 10 points each plus your share of the defence in percent."},
+		-- factions.lua: reputation gained with every faction this week (after diminishing returns and caps)
+		{key = "factions", name = "Reputation", mode = "add", value = "Reputation", title = "Banner-Sworn",
+			info = "Faction reputation gained this week (every faction together)."},
+		-- the Cinderheart (uber.lua): fastest kill this week in seconds (mode "min": lower is better), per party size;
+		-- byClass: class tabs (the class the character had at the kill); format "time": shown as m:ss
+		{key = "cinder_solo", name = "Cinderheart Solo", mode = "min", value = "Fastest", count = "Kills", title = "Lone Cinder",
+			byClass = true, format = "time", info = "Fastest Cinderheart kill alone this week."},
+		{key = "cinder_small", name = "Cinderheart 2-3", mode = "min", value = "Fastest", count = "Kills", title = "Emberwarden",
+			byClass = true, format = "time", info = "Fastest Cinderheart kill in a party of 2 or 3 this week."},
+		{key = "cinder_party", name = "Cinderheart 4-5", mode = "min", value = "Fastest", count = "Kills", title = "Ashen Vanguard",
+			byClass = true, format = "time", info = "Fastest Cinderheart kill in a party of 4 or 5 this week."},
+		-- the Ember Descent (descent.lua): the deepest room of this week's seeded run (the same rooms for everyone)
+		{key = "descent", name = "Ember Descent", mode = "max", value = "Depth", count = "Runs", title = "Emberlord",
+			info = "Deepest room reached in this week's seeded Ember Descent."}
 	},
 	top = 3,
 	rewards = {

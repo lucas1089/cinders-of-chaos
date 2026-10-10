@@ -353,6 +353,16 @@ targetCb.onTargetCombat = function(creature, target)
 end
 targetCb:register()
 
+-- every monster gets the event when it appears: an area spell also hits monsters the player never targeted, and their
+-- damage must carry the tree's bonuses too (before, only the attacked target was registered, so area hits on the others
+-- had no tree bonus and no class damage factor)
+local spawnCb = EventCallback
+spawnCb.onSpawn = function(self, position, startup, artificial)
+	self:registerEvent("ChaosPassiveDealt")
+	return true
+end
+spawnCb:register()
+
 -- experience
 local xpCb = EventCallback
 xpCb.onGainExperience = function(self, source, exp, rawExp)

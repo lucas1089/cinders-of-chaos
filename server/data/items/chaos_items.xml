@@ -587,4 +587,130 @@
 		<attribute key="description" value="A saint walked into the pyre and did not stop; only the hand came back out. (Requires level 650, Monks only.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
+	<!-- The Ascended uniques (server/README.md "Ascended Omens and the Cinderheart"): they drop only from the Ascended Omens
+	     and the Cinderheart (chaos_unique_items.lua ascended = true; never in a rift or Omen chest). -->
+	<!-- 2408: stock "warlord sword", client id 3296 -->
+	<item id="2408" article="the" name="Sanguine Crescent">
+		<attribute key="weight" value="6400" />
+		<attribute key="weaponType" value="sword" />
+		<attribute key="slotType" value="two-handed" />
+		<attribute key="attack" value="78" />
+		<attribute key="defense" value="38" />
+		<attribute key="skillSword" value="8" />
+		<attribute key="criticalHitChance" value="8" />
+		<attribute key="criticalHitAmount" value="30" />
+		<attribute key="lifeLeechChance" value="10" />
+		<attribute key="lifeLeechAmount" value="8" />
+		<attribute key="description" value="The red moon's last crescent, cut down and given an edge. It drinks before you do. (Requires level 1000.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2493: stock "demon helmet", client id 3387 -->
+	<item id="2493" article="the" name="Hollow Crown of Morvane">
+		<attribute key="weight" value="2950" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="16" />
+		<attribute key="magicPoints" value="6" />
+		<attribute key="absorbPercentDeath" value="10" />
+		<attribute key="absorbPercentPhysical" value="6" />
+		<attribute key="manaLeechChance" value="6" />
+		<attribute key="manaLeechAmount" value="6" />
+		<attribute key="description" value="A crown with nothing inside it. Wear it and it is still empty. (Requires level 1000.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2171: stock "platinum amulet", client id 3055 -->
+	<item id="2171" article="the" name="Eye of the Unbroken Storm">
+		<attribute key="weight" value="600" />
+		<attribute key="slotType" value="necklace" />
+		<attribute key="armor" value="4" />
+		<attribute key="absorbPercentEnergy" value="12" />
+		<attribute key="magicPoints" value="4" />
+		<attribute key="skillDist" value="5" />
+		<attribute key="criticalHitChance" value="4" />
+		<attribute key="criticalHitAmount" value="15" />
+		<attribute key="description" value="The seer saw every death but her own. The eye still watches for it. (Requires level 1000.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2123: stock "ring of the sky", client id 3006 -->
+	<item id="2123" article="the" name="Cinderheart Signet">
+		<attribute key="weight" value="40" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="absorbPercentFire" value="12" />
+		<attribute key="absorbPercentPhysical" value="5" />
+		<attribute key="criticalHitChance" value="6" />
+		<attribute key="criticalHitAmount" value="25" />
+		<attribute key="lifeLeechChance" value="6" />
+		<attribute key="lifeLeechAmount" value="6" />
+		<attribute key="skillSword" value="3" />
+		<attribute key="skillAxe" value="3" />
+		<attribute key="skillClub" value="3" />
+		<attribute key="skillDist" value="3" />
+		<attribute key="skillFist" value="3" />
+		<attribute key="magicPoints" value="3" />
+		<attribute key="description" value="The last coal of a dead sovereign, set in a ring. It is never cold. (Requires level 1000.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- the Ember Descent's run-exclusive uniques (descent_config.lua rewards.uniques): only a descent's end rolls them -->
+	<!-- 7384: stock "mystic blade", client id 7384 -->
+	<item id="7384" article="the" name="Emberfall Blade">
+		<attribute key="weight" value="3500" />
+		<attribute key="weaponType" value="sword" />
+		<attribute key="attack" value="50" />
+		<attribute key="defense" value="26" />
+		<attribute key="extraDef" value="2" />
+		<attribute key="skillSword" value="4" />
+		<attribute key="criticalHitChance" value="5" />
+		<attribute key="criticalHitAmount" value="25" />
+		<attribute key="absorbPercentFire" value="5" />
+		<attribute key="description" value="Quenched in the ninth hall of the Descent; it still glows where the embers bit. (Requires level 150.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 7891: stock "magma boots", client id 818 -->
+	<item id="7891" name="Ashwalker Treads">
+		<attribute key="weight" value="750" />
+		<attribute key="slotType" value="feet" />
+		<attribute key="armor" value="4" />
+		<attribute key="absorbPercentFire" value="10" />
+		<attribute key="absorbPercentPhysical" value="3" />
+		<attribute key="description" value="They remember every step down, and none back up. (Requires level 150.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2133: stock "ruby necklace", client id 3016 -->
+	<item id="2133" article="the" name="Heart of the Descent">
+		<attribute key="weight" value="570" />
+		<attribute key="slotType" value="necklace" />
+		<attribute key="armor" value="3" />
+		<attribute key="magicPoints" value="4" />
+		<attribute key="absorbPercentFire" value="8" />
+		<attribute key="lifeLeechChance" value="5" />
+		<attribute key="lifeLeechAmount" value="5" />
+		<attribute key="description" value="A coal from the last hall, still beating. (Requires level 200.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2357: stock "ring of wishes", client id 3245 -->
+	<item id="2357" article="the" name="Sigil of the Ninth Room">
+		<attribute key="weight" value="90" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="skillSword" value="2" />
+		<attribute key="skillAxe" value="2" />
+		<attribute key="skillClub" value="2" />
+		<attribute key="skillDist" value="2" />
+		<attribute key="magicPoints" value="2" />
+		<attribute key="criticalHitChance" value="4" />
+		<attribute key="criticalHitAmount" value="20" />
+		<attribute key="description" value="Nine doors, nine boons, one ring to show for them. (Requires level 250.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 7402: stock "dragon slayer", client id 7402 -->
+	<item id="7402" article="the" name="Pyre Cleaver">
+		<attribute key="weight" value="8200" />
+		<attribute key="weaponType" value="sword" />
+		<attribute key="slotType" value="two-handed" />
+		<attribute key="attack" value="56" />
+		<attribute key="defense" value="28" />
+		<attribute key="skillSword" value="5" />
+		<attribute key="criticalHitChance" value="6" />
+		<attribute key="criticalHitAmount" value="30" />
+		<attribute key="description" value="Carried out of the burning hall by the one who put the Tyrant down. (Requires level 300.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
 </items>

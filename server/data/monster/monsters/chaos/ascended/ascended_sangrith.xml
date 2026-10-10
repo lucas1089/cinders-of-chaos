@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Ascended Omen of the Bloodmoon (uber.lua, Ascended Sigils): the Omen guardian ascended. Its hits are x1.3 the omen's;
+     the telegraphed big hits, phases, adds, hazards and the enrage are scripted (uber_config.lua). The untelegraphed
+     radius 6 hit, the self-heal and the invisibility of the omen are gone. Numbers: server/README.md "Ascended Omens and the Cinderheart". -->
+<monster name="Ascended Sangrith" nameDescription="Ascended Sangrith" race="blood" experience="6000000" speed="280" manacost="0">
+	<health now="1200000" max="1200000" />
+	<look type="2116" corpse="22562" />
+	<targetchange interval="5000" chance="12" />
+	<flags>
+		<flag isboss="1" />
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-1170" max="-2470" />
+		<!-- Crimson Wave: a cone in front -->
+		<attack name="physical" interval="2000" chance="20" length="7" spread="3" min="-1560" max="-3120">
+			<attribute key="areaEffect" value="redspark" />
+		</attack>
+		<!-- Hemorrhage: a bleeding curse, total 2-4k -->
+		<attack name="physicalcondition" interval="2000" chance="12" range="7" target="1" min="-2600" max="-5200" tick="2000">
+			<attribute key="shootEffect" value="redstar" />
+			<attribute key="areaEffect" value="redspark" />
+		</attack>
+		<attack name="speed" interval="2000" chance="8" range="7" target="1" speedchange="-500" duration="4000">
+			<attribute key="shootEffect" value="redstar" />
+			<attribute key="areaEffect" value="redsmoke" />
+		</attack>
+	</attacks>
+	<defenses armor="90" defense="90">
+		<defense name="speed" interval="2000" chance="8" speedchange="350" duration="4000">
+			<attribute key="areaEffect" value="redsmoke" />
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="15" />
+		<element firePercent="20" />
+		<element energyPercent="0" />
+		<element earthPercent="0" />
+		<element icePercent="-10" />
+		<element holyPercent="-15" />
+		<element deathPercent="25" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+		<immunity lifedrain="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="THE MOON BLEEDS FOR ME!" yell="1" />
+		<voice sentence="Every drop of you belongs to the red night." yell="1" />
+		<voice sentence="Kneel, and be harvested." yell="1" />
+	</voices>
+	<loot>
+		<item id="2160" countmax="60" chance="100000" /><!-- crystal coin -->
+		<item id="29856" countmax="8" chance="100000" /><!-- Orb of Upheaval -->
+		<item id="29857" countmax="2" chance="60000" /><!-- Orb of Fate -->
+		<item id="29878" chance="9000" /><!-- Dawnforged Helmet -->
+		<item id="29879" chance="9000" /><!-- Dawnforged Plate -->
+		<item id="29880" chance="9000" /><!-- Dawnforged Legs -->
+		<item id="29881" chance="8000" /><!-- Dawnforged Boots -->
+		<item id="29882" chance="8000" /><!-- Dawnforged Shield -->
+		<item id="29884" chance="7000" /><!-- Dawnforged Longsword -->
+		<item id="29885" chance="7000" /><!-- Dawnforged Chopper -->
+		<item id="29886" chance="7000" /><!-- Dawnforged Great Axe -->
+		<item id="29887" chance="7000" /><!-- Dawnforged Mace -->
+		<item id="29888" chance="7000" /><!-- Dawnforged Skull Crusher -->
+		<item id="29889" chance="6000" /><!-- Dawnforged Amulet -->
+		<item id="29890" chance="6000" /><!-- Dawnforged Ring -->
+	</loot>
+</monster>

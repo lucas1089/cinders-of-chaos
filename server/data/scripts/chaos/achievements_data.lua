@@ -13,6 +13,7 @@
 --   all       instead of stat: a list of stats that must each be at least 1 (progress = how many are)
 --   hidden    true: shown as "???" until unlocked
 --   title     optional title for the name plate (titles.lua, source "achievement"; !title or the window to pick it)
+--   frame     optional name plate frame of that title while it is the active one (nameplate_core.lua N.FRAMES)
 --   reward    optional, given once at the unlock (backpack first, inbox when full):
 --               gold   = n                       to the bank
 --               items  = {{id = n, count = n}}   server item ids
@@ -31,12 +32,14 @@
 --   trial_tier_<1-3>, trial_runs, trial_nodes, trial_switches         Vocation Trials (trials.lua)
 --   rift_tier, rift_runs, rift_flawless, rift_three, rift_mod_<modifier key>           sealed rifts
 --   omen_kills, omen_<kind>                                                            omen guardians (rift.lua)
+--   ascended_kills, ascended_<kind>, cinder_kills, cinder_solo, cinder_flawless          Ascended Omens (uber.lua)
 --   bounty_done, bounty_weeks                                        bounty board (retroactive from chaos_bounty)
 --   bestiary_known, bestiary_completed, bestiary_points, bestiary_tasks   bestiary and kill tasks (bestiary.lua)
 --   unique_found, rarity_max, orbs_used, orb_exalted, mods_max       loot and the crafting bench
 --   orb_binding, ruin_improved, ruin_ruined, quality_max, power_found   orbs v2 and legendary powers (the crafting hook, loot)
 --   arena1v1_wins, arena1v1_rating, arena2v2_wins, arena2v2_rating   arena (retroactive from chaos_arena_ratings)
 --   siege_played, siege_wins                                         guild siege
+--   faction_exalted_<vigil|compact|choir|circle>, faction_exalted   factions (factions.lua: 1 once Exalted; how many are)
 --   points                                                           the character's own achievement points
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible; no engine calls (also read by server/tests/achievements_test.lua).
 
@@ -212,6 +215,27 @@ return {
 			stat = "omen_storm"},
 		{id = "omen_10", cat = "rifts", name = "Herald of Omens", desc = "Slay 10 omen guardians.", points = 50,
 			stat = "omen_kills", target = 10, title = "Omenbreaker", reward = {items = orbs(10, 5), portal = {key = "hellmouth", name = "Hellmouth Gate"}}},
+		-- Ascended Omens and the Cinderheart (uber.lua): ascended_kills, ascended_<kind>, cinder_kills, cinder_solo,
+		-- cinder_flawless. frame = the name plate frame of the title while it is the active one (nameplate_core.lua FRAMES)
+		{id = "ascended_1", cat = "rifts", name = "Beyond the Omen", desc = "Slay an Ascended Omen.", points = 25,
+			stat = "ascended_kills"},
+		{id = "ascended_bloodmoon", cat = "rifts", name = "The Moon Sets Red", desc = "Slay Ascended Sangrith.", points = 25,
+			stat = "ascended_bloodmoon"},
+		{id = "ascended_hollow", cat = "rifts", name = "Nothing Left to Crown", desc = "Slay Ascended Morvane.", points = 25,
+			stat = "ascended_hollow"},
+		{id = "ascended_storm", cat = "rifts", name = "The Sky Falls Silent", desc = "Slay Ascended Thalcyra.", points = 25,
+			stat = "ascended_storm"},
+		{id = "ascended_all", cat = "rifts", name = "Three Relics", desc = "Slay all three Ascended Omens.", points = 50,
+			all = {"ascended_bloodmoon", "ascended_hollow", "ascended_storm"}, title = "the Ascendant",
+			reward = {items = orbs(20, 10, 1)}},
+		{id = "cinder_1", cat = "rifts", name = "Cinderbreaker", desc = "Slay Ysgrath the Cinderheart.", points = 50,
+			stat = "cinder_kills", title = "Cinderbreaker", frame = "ember", reward = {items = orbs(30, 15, 2)}},
+		{id = "cinder_solo", cat = "rifts", name = "Alone Against the Ember", desc = "Slay the Cinderheart alone.", points = 50,
+			stat = "cinder_solo", hidden = true, title = "the Last Light", frame = "ember"},
+		{id = "cinder_flawless", cat = "rifts", name = "Not One Spark Lost", desc = "Slay the Cinderheart without losing a life.",
+			points = 50, stat = "cinder_flawless", hidden = true},
+		{id = "cinder_10", cat = "rifts", name = "Keeper of the Ashes", desc = "Slay the Cinderheart 10 times.", points = 50,
+			stat = "cinder_kills", target = 10, title = "Ashkeeper", frame = "ember"},
 
 		-- ------------------------------------------------------------------ Bounties
 		{id = "bounty_1", cat = "bounties", name = "Contract Signed", desc = "Complete a bounty contract.", points = 5,
@@ -304,6 +328,18 @@ return {
 		{id = "points_750", cat = "explore", name = "Living Legend", desc = "Earn 750 achievement points with this character.",
 			points = 25, stat = "points", target = 750, title = "Living Legend",
 			reward = {outfit = {name = "Demon Hunter", female = 288, male = 289, addons = 3}}},
+		-- factions (factions.lua, factions_config.lua): Exalted with a faction, and with all four
+		{id = "faction_vigil", cat = "explore", name = "Keeper of the Pyres", desc = "Become Exalted with the Ashen Vigil.",
+			points = 25, stat = "faction_exalted_vigil", reward = {items = orbs(0, 3, 1)}},
+		{id = "faction_compact", cat = "explore", name = "Hammer of the Compact",
+			desc = "Become Exalted with the Cinderforge Compact.", points = 25, stat = "faction_exalted_compact",
+			reward = {items = orbs(0, 3, 1)}},
+		{id = "faction_choir", cat = "explore", name = "Chorister of the Rift", desc = "Become Exalted with the Veiled Choir.",
+			points = 25, stat = "faction_exalted_choir", reward = {items = orbs(0, 3, 1)}},
+		{id = "faction_circle", cat = "explore", name = "Bound by Thorn", desc = "Become Exalted with the Thornbound Circle.",
+			points = 25, stat = "faction_exalted_circle", reward = {items = orbs(0, 3, 1)}},
+		{id = "faction_all", cat = "explore", name = "Oath of Four Banners", desc = "Become Exalted with all four factions.",
+			points = 50, stat = "faction_exalted", target = 4, title = "Oathbound", reward = {items = orbs(0, 5, 2)}},
 
 		-- ------------------------------------------------------------------ Secrets
 		{id = "rat_500", cat = "secrets", name = "Overqualified", desc = "Kill a rat at level 500 or higher.", points = 10,

@@ -180,6 +180,21 @@ Chaos.tables = {
 }
 -- Rift Atlas: one row per character, completed grid cells and allocated nodes (atlas.lua, sql/chaos_rift_atlas.sql)
 Chaos.tables.riftAtlas = "chaos_rift_atlas"
+-- Ascended Omens and the Cinderheart (uber.lua): player storages 7100460 - 7100469 reserved; +0 the sigil kind of a run
+-- in progress (the crash refund marker), +1 its start, +2 the sigil use exhaust
+Chaos.storage.ascendedRun = 7100460
+
+-- The Ember Descent (client game_descent; descent.lua, descent_core.lua, descent_config.lua, sql/chaos_descent.sql):
+-- the roguelike trial window, run HUD and boon choice on one opcode; storages 7100410 - 7100419 reserved (+0 a run in
+-- progress, +1 when the next free run is ready)
+ChaosOpcodes.descent = 205
+Chaos.storage.descent = 7100410
+Chaos.tables.descentPlayers = "chaos_descent_players"
+Chaos.tables.descentRuns = "chaos_descent_runs"
+-- Factions with reputation (client game_factions; factions.lua, factions_core.lua, factions_config.lua,
+-- sql/chaos_factions.sql): SQL only, no player storages
+ChaosOpcodes.factions = 215
+Chaos.tables.factions = "chaos_factions"
 
 -- ---------------------------------------------------------------------------
 -- Module settings

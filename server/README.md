@@ -289,10 +289,17 @@ working directory, as with the rest of the base server libs).
 | game_riftatlas | `atlas.lua`, `atlas_core.lua`, `atlas_config.lua`, `sql/chaos_rift_atlas.sql` (hooks in `rift_core.lua`) | **210**, Adventure > Rift Atlas, the rift HUD | Rift Atlas: completion grid of first completions (theme x tier, flawless, swift, omens; 96 points), a map of 81 nodes in a core and four theme branches with 4 keystones, allocate / refund for gold or an orb; effects applied in `rift_core.lua` (see "Rift Atlas"). Unit and mocked-engine tests; not run on a live server. |
 | game_partyfinder | `party_finder.lua`, `party_finder_core.lua`, `party_finder_config.lua` | **208**, Social > Party Finder | Party Finder (LFG): listings with activity, wanted tank / healer / DPS slots, minimum level, note, expiry; browse with filters, apply with a role, the leader accepts (engine party invite) or declines; "Join as" quick-join queue; realm and staff rules; in memory (see "Party Finder"). Unit and mocked-engine tests; not run on a live server. |
 | game_antibot | `antibot.lua`, `antibot_core.lua`, `antibot_config.lua`, `reports.lua`, `reports_core.lua`, `sql/chaos_reports.sql`, `tools/patch_report_chat.py` | **211**, right-click a player > Report Player, System > Report a Player, `/reports` (staff) | Behaviour detection (action rhythm, instant reactions, walked loops, loot timing, nonstop play) with a decaying suspicion score, the presence check modal (four pictures, one retry, 75 s, deferred in PvP and boss fights), player reports with public chat lines and limits, the staff log and command, an admin page on the website; never bans by itself (see "Anti-bot and player reports"). Unit, synthetic-trace and mocked-engine tests; not run on a live server. |
+| game_factions | `factions.lua`, `factions_core.lua`, `factions_config.lua`, `sql/chaos_factions.sql`, `tools/install_factions.py`, `data/npc/` (four NPCs) | **215**, Adventure > Factions, the faction NPCs | Four factions with reputation ranks (Hostile .. Exalted): daily / weekly contracts by seed, kills of their monster families, bounties, rift seals of their theme, invasions, world bosses and faction tokens; daily diminishing returns, weekly cap, rivals; quartermasters with fixed gear, orb bundles, a recipe, the tabard aura and a mount; rank titles, Exalted achievements, a weekly Reputation board (see "Factions"). Unit and mocked-engine tests; not run on a live server. |
+| game_descent | `descent.lua`, `descent_core.lua`, `descent_config.lua`, `sql/chaos_descent.sql` (buff source in `data/lib/chaos_buffs.lua`) | **205**, Adventure > Ember Descent, the portal next to the temple | The Ember Descent: a roguelike trial of 8-12 seeded rooms (combat, elite, treasure, shrine, merchant, boss) in a runtime-built hall; three boon cards after a room, curses for more rewards, run HUD with the boons and curses, merchant window, entry window with the free runs and the Ember Sigil forge; a weekly seeded run with its leaderboard (see "The Ember Descent"). Unit tests; full runs on a live test server. |
 
 Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 208, 209, 211, 214, 216, 217, 218, 219, 221, 222, 223, 224 (sent by the engine, patch 0015), 225, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
 Extended opcode 210 (Rift Atlas) is registered there too, as `ChaosOpcodes.riftAtlas` below the table.
+Extended opcode 215 (Factions) is registered there too, as `ChaosOpcodes.factions` below the table; checked free against the
+reference server's list below, every Chaos script (`ChaosOpcodes`, `tests/factions_test.lua`) and a search of the client modules.
+Extended opcode 205 (The Ember Descent) is registered there too, as `ChaosOpcodes.descent` below the table; checked free
+against the reference server's list below, its scripts and client modules (grep for `sendExtendedOpcode`,
+`registerExtended*Opcode` and opcode constants) and every Chaos script (`tests/descent_test.lua`).
 
 ### Opcode collision check
 Searched the reference server for every `onExtendedOpcode`, `sendExtendedOpcode(` and opcode
@@ -2484,6 +2491,10 @@ window, and builds its SQL from client input without checks. So the Chaos window
   Each board shows the top 20 (`rows`), the player's own rank and value, and the time until the weekly reset.
   Ranks are never shared: on equal values the player who reached the value first ranks higher, then the lower id.
   Staff characters (`group_id >= staffGroup`, 4) are left out of every board, title and reward.
+- **Fastest-time boards** (mode `"min"`, the Cinderheart Solo / 2-3 / 4-5 boards of "Ascended Omens and the
+  Cinderheart"): the lowest value (seconds) is kept and ranks first; `format = "time"` shows it as m:ss in the window;
+  `byClass = true` adds class tabs ("All classes" first), filtered by the vocation stored with the score (the
+  character's class at the record, else its current one) and ranked again within the class.
 - **Week.** The weekly boards reset on Monday at 06:00 server time (`resetHour`). This is the bounty board's week rule:
   `ChaosLeaderboard.week` calls `ChaosBounty.week`. The week key is the YYYYMMDD of that Monday.
 - **Sources.** `worldboss.lua` records every rewarded participant's damage when the boss dies (the shares of
@@ -5760,6 +5771,9 @@ meantime). The server is the authority: the client draws what it is told and cou
   timer) or by a **source** (`B.sources[name](player, nowMs, def)`, a function that returns a list of items; it reads the other
   modules' globals guarded, so a module that is not loaded adds nothing). To add a buff: one `cond(...)` or `source(...)` line,
   its icon name in `client/tools/gen_buff_icons.py` (the tool refuses to run when the two disagree), done.
+  The Ember Descent's entries `descent_boon` / `descent_curse` (source `descent`, one item per boon or curse held, icons
+  `descent_b_<key>` / `descent_c_<key>`) are drawn by `client/tools/gen_descent_icons.py`; `gen_buff_icons.py` leaves the
+  `descent_*` names to it.
 - Covered (61 entries): the engine conditions haste, regeneration, food ("Well Fed", regeneration with the default id), mana
   shield, invisible, light, spell / potion buffs (attributes without a sub id), poison, burning, energy, bleeding, drowning,
   freezing, dazzled, cursed, paralyze (shown as "Slowed"), drunk, pacified, muted, in fight (also the PZ lock, the engine keeps
@@ -6059,3 +6073,303 @@ containers, `MonsterType:isBoss()`, the channel scripts after `patch_report_chat
 scripts: patched, idempotent, `luac -p` clean), the webhook post. The synthetic traces are models, not recordings:
 real false-positive rates have to be watched in the log after launch (raise `check.at` or lower a weight if needed). A
 careful bot with human-like random delays on every signal is not caught by this; reports and staff are the answer there.
+
+## Ascended Omens and the Cinderheart (`uber.lua`, `uber_core.lua`, `uber_config.lua`, `tools/install_ascended.py`)
+
+The top challenge above the Omen Keys (roadmap item 57): Ascended versions of the three Omen guardians and one final
+boss, Ysgrath the Cinderheart. ("uber" is only in the file names; players read "Ascended" and "Cinderheart".) Every
+number is in `uber_config.lua`; the pure logic (kinds, the item chain, scaling, the phase machine, enrage, telegraph
+shapes and timing, hazards, the caught lethal hit, rewards, the balance model) is `uber_core.lua`, tested with
+`uber.lua` against a mocked engine by `tests/uber_test.lua`. No opcode of its own: the run shows on the rift HUD
+(opcode 228, `game_rift`). Storages 7100460-7100469 (`Chaos.storage.ascendedRun`). Monsters:
+`data/monster/monsters/chaos/ascended/` (registered by the `monsters` step).
+
+- **Access.** Omen guardian kills give every finisher an Ascended Shard of that omen 40% of the time
+  (`shardChance.omen`); sealed rifts of tier 13 / 14 / 15 give 4 / 7 / 10% of a shard of a random omen (rift.lua calls
+  `ChaosAscended.onRiftSealed` after the Rift Atlas hook; online finishers). Four shards of one omen (use one) bind an
+  **Ascended Sigil** of it. The sigil opens that omen's Ascended arena (protection zone, out of combat, level 900, the
+  party within 8 sqm comes along, up to 5). Every finisher of an Ascended kill gets that omen's **Ascended Relic**; one
+  relic of each omen (use one while carrying all three) binds a **Cinderheart Sigil** (level 1000).
+- **Items** (`install_ascended.py`, step `ascended` after `omens`): items.otb copies of stock nodes with new server ids,
+  so the client needs no change: shards 32073 / 32074 / 32075 (magma clump, violet and blue crystal shard; stackable),
+  the sigil 32076 (soul stone) and the relic 32077 (burning heart), both carrying the custom attribute `ascended_kind`.
+  Without the items the actions are not registered and the console says so.
+- **The arena.** A runtime-built grid (4 slots, x/y 7600-7700, between the ascension trial grid and the rift grid; the
+  footprint must be empty on first use): a 19 x 19 arena and, behind a wall south of it, the antechamber with the
+  **Ember Gate** (a portal tile, action id 47411). The dark tile set paints it when installed.
+- **Lives.** Shared: Ascended 3 + 1 per extra player, the Cinderheart 2 + 1. A lethal hit is caught (the energy shield
+  counts): the player lands in the antechamber, healed, and the run loses a life. The Ember Gate lets the player back
+  after 8 s with 3 s in which the arena cannot hurt them. No real death, no loss: the cost is the life and the time.
+  The fall that takes the last life ends the run (the sigil is spent).
+- **The fight.** The boss comes 8 s after the arrival. Health: the XML's x (1 + healthPerExtraPlayer x (players - 1))
+  (Ascended 0.45, Cinderheart 0.58), adds x (1 + 0.5 x (players - 1)). **Phases** at health thresholds (Ascended
+  100 / 70 / 35%, Cinderheart 100 / 75 / 50 / 25%), each entered once and in order (a big hit through two thresholds
+  enters both): a yell, a burst, adds, a hazard. **Telegraphs** every 9-6 s by phase (a random pattern of the phase):
+  the tiles are marked at once (warning_zone 451) and one turn later (warning_fill 450), and 2 s after the first mark
+  every player still on a marked tile takes 55% of their max health (80%, with only one warning turn of 1 s, when
+  enraged). The 3x3 warning pictures go only on tiles whose neighbours are marked too; the edges get a one-tile effect,
+  so a safe tile never looks marked. Patterns: cone (towards the target), ring (safe next to the boss and far away),
+  circle, marks (under every player: spread out), cross (through the boss), half (one side of the boss), lines (rows /
+  columns), eye (everything but a circle round one tile: stack). **Hazards**: blood / burning pools (move every
+  18-20 s), storm columns (move every 9-10 s), the creeping dark (the arena edge, one ring deeper every 18-20 s, up to
+  3); 7% of max health per second while stood on. **Harvest** (Bloodmoon 35%, the Last Cinder): the boss heals 1%
+  (0.5%) of its health per living add every 5 s. **Enrage** at 10:00 (Cinderheart 15:00): boss and add hits x1.75,
+  telegraphs twice as often, a pulse of 8% of max health on everyone every 4 s; the arena closes at 13:00 (18:00).
+- **The bosses.** Ascended Sangrith (Bloodmoon; look 2116; adds Bloodmoon Thrall): Red Night (cone, ring, marks),
+  Blood Pools (pools, a thrall wave), Harvest (+cross, thralls every 30 s, the heal). Ascended Morvane (Hollow Crown;
+  2117; Hollow Wraith): Empty Throne (cross, circle, half), Wraith Court (wraiths every 35 s), Creeping Dark (+ring, the
+  edge). Ascended Thalcyra (Storm; 2118; Storm Shard): Gathering Storm (marks, lines, eye), Storm Columns, Shattered Sky
+  (+circle, shards every 30 s). Their XML is the omen's with 1.2M health, hits x1.3, without the omen's untelegraphed
+  radius 6 hit, self-heal and invisibility. **Ysgrath the Cinderheart** (its own look 2126, a donor-library creature,
+  client/MANIFEST.md "The Cinderheart look"; adds Cinderspawn): Red Night Remembered (the Bloodmoon set + burning pools),
+  The Hollow Court, Storm of Cinders (fire columns), The Last Cinder (every pattern, the creeping edge, Cinderspawn, the
+  heal). The bosses and adds get no random tier or boss modifiers (`ChaosTierConfig.skip`).
+- **Rewards** (per finisher, into the backpack, the rest to the inbox): Ascended 15,000,000 gold to the bank, 20 Orbs of
+  Upheaval, 10 Orbs of Fate, 1 Exalted Orb, 4 gear rolls of the boss's loot at the boss tier, 2 rolls (x6 find) over
+  the Ascended uniques, the relic; Cinderheart 40,000,000, 40 / 20 / 3, 6 gear rolls, 3 unique rolls (x10 find). The
+  corpse loot (loot.lua) comes on top. **Ascended uniques** (`chaos_items.xml` -> `gen_unique_specs.py`,
+  `chaos_unique_items.lua` with `ascended = true`, never in a rift or Omen chest): Sanguine Crescent (two-handed sword;
+  Sangrith and the Cinderheart), Hollow Crown of Morvane (helmet; Morvane, Cinderheart), Eye of the Unbroken Storm
+  (amulet; Thalcyra, Cinderheart), Cinderheart Signet (ring; the Cinderheart only); level 1000. **Achievements**
+  (rifts category): Beyond the Omen, one per Ascended Omen, Three Relics (title "the Ascendant", orbs), Cinderbreaker
+  (title "Cinderbreaker" with the ember name plate frame, orbs; unlocks the kill effect **Cinderheart Crown**,
+  cosmetics id 108), Alone Against the Ember (solo, title "the Last Light"), Not One Spark Lost (no life lost), Keeper
+  of the Ashes (10 kills, title "Ashkeeper"). A Cinderheart kill is broadcast.
+- **Leaderboards.** Three weekly boards of the fastest Cinderheart kill (mode `min`: the lowest time wins; shown m:ss):
+  Solo, 2-3 and 4-5 players, each with class tabs (the class at the kill; "All classes" first). Titles Lone Cinder,
+  Emberwarden, Ashen Vanguard and the usual orbs for the top 3. See "Leaderboards".
+- **Boss Spawns.** Category "Ascended Omens" (on demand, kill tracking anywhere).
+- **Crash and shutdown.** The sigil is spent at the start; the opener's marker gives it back at the next login after a
+  crash; a clean shutdown ends every run first (everyone to the temple, the sigil back while the boss lives). A login
+  inside a slot without a run goes to the temple. Logout inside: out of the run, back where the player came from.
+- **Staff.** `/ascended` (the runs), `/ascended sigil, <kind>`, `/ascended shards, <kind>[, n]`, `/ascended relic, <kind>`,
+  `/ascended phase, <n>` (your boss to that phase), `/ascended enrage`, `/ascended end`. Kinds: bloodmoon, hollow, storm,
+  cinder.
+
+### Balance
+
+Health and enrage are set from the measured level 1000 damage of the classes (data/spells/README.md "Classes with the
+passive trees": one target 2000-4800, median about 2700): a well-geared level 1000 character with the boss and
+Ascended uniques deals `model.refDps` 3000 to one target, the healer of a party 2000; the share of the fight spent
+hitting (moving out of telegraphs, adds, the gate) is 75% alone and 80% in a party. `U.killTime` (tests/uber_test.lua
+keeps every target within 5%):
+
+| Players | Ascended Omen health | Kill time | Cinderheart health | Kill time |
+|---|---|---|---|---|
+| 1 | 1.20M | 8:53 | 1.65M | 12:13 |
+| 2 | 1.74M | 7:15 | 2.61M | 10:51 |
+| 3 | 2.28M | 5:56 | 3.56M | 9:16 |
+| 4 | 2.82M | 5:20 | 4.52M | 8:33 |
+| 5 | 3.36M | 5:00 | 5.48M | 8:09 |
+
+Targets: Ascended solo 9:00 / party of 5 5:00 (enrage 10:00), Cinderheart solo 12:10 / party 8:00 (enrage 15:00), so a
+well-geared player kills before the enrage and a weaker one meets it. Measured on the test server (2026-10-10, the
+`ztest` harness of "Late game": the boss next to a level 1000 Juggernaut in the best level 1000 set, 17,023 health,
+health sampled every 100 ms for 40 s, telegraphs, hazards and enrage off): the bosses' own attacks deal Sangrith 807,
+Morvane 652, Thalcyra 614, the Cinderheart 996 damage per second (largest single hit 2.4-3.6k). A telegraph that is not
+dodged costs 55% of max health (a Mystic's 5,145 health: 2,830; a Warrior's 15,065: 8,286), the enrage pulse adds 8% every
+4 s. Not measured: a full kill with a real party (the kill times are the model's), the adds' damage.
+
+**Checked in game** (test server copy, the reference client with the things_custom13 pair, 2026-10-10): opening an
+Ascended Sigil, the HUD (phase, health, enrage, lives, players at the gate), a marks and a cross telegraph (warning,
+second turn, hit), a lethal hit caught into the antechamber and the way back through the Ember Gate, phase 2 (storm
+columns) and phase 3 (Storm Shard adds), the kill with its spoils and relic, three relics into the Cinderheart Sigil,
+the Cinderheart on look 2126 with a ring telegraph and burning pools, its kill with the achievements and titles, and
+the Cinderheart Solo board with its time. Not checked in game: a party (2+ players), the creeping edge, the enrage pulse,
+a crash refund, the shutdown path.
+
+## Factions (`factions.lua`, `factions_core.lua`, `factions_config.lua`, `sql/chaos_factions.sql`, `tools/install_factions.py`, client `game_factions`)
+
+Four powers that fight over what the Cinders left, each with a home NPC who is also its quartermaster. Reputation is per
+character (a season character is a character of its own and starts at Neutral everywhere: season isolation needs nothing
+more; its gear and tokens follow the season's trade rules like any item). Every number is in `factions_config.lua`; the
+pure logic (ranks, gains, caps, rivalry, contracts by seed, offer states, gear values, titles, the window payload) is
+`factions_core.lua`; `tests/factions_test.lua` checks it and runs `factions.lua` against a mocked engine. Extended opcode
+215. No player storages: three tables (`chaos_factions` standing, `chaos_faction_contracts` progress,
+`chaos_faction_purchases` unlocks and weekly counts), also created at startup.
+
+| Faction | Lore | Monster families (bestiary) | Rift theme | Invaders | World boss | Rival | NPC (town) | Token |
+|---|---|---|---|---|---|---|---|---|
+| The Ashen Vigil | pyre-wardens who burn what will not stay dead | undead, humans | Ashen Crypt | Undead Legion | Vharok | Veiled Choir | Warden Ysolde (Thais) | pyre ash sigil 32091 |
+| The Cinderforge Compact | smiths and sellswords of the obsidian forges | demons, constructs, humanoids | Obsidian Hall | Orc Warband, Minotaur Horde | Kaelgor | Thornbound Circle | Forgemaster Brannoc (town 1) | cinderforge seal 32092 |
+| The Veiled Choir | seers who listen at the rifts and bargain with what answers | magic, dragons, aquatic, elementals | Abyssal Rift | Infernal Host | Nyxareth, Skaldra | Ashen Vigil | Cantor Velith (Edron) | veiled eye 32093 |
+| The Thornbound Circle | wardens of root and rot who cut the blight out of the Sanctum | plants, beasts, vermin, reptiles, birds, slimes | Forsaken Sanctum | Goblin Tribe, Wildwood Uprising | The Rotmother | Cinderforge Compact | Elder Bramwyn (Carlin) | thornbound leaf 32094 |
+
+**Ranks** (reputation from -6,000 to 36,000; the bar fills to the next threshold): Hostile -6,000, Wary -2,000, Neutral 0,
+Trusted 2,500, Honored 8,000, Revered 18,000, Exalted 36,000 (the ceiling). Nothing locks content: a Hostile faction still
+talks, offers contracts and takes tokens; only its quartermaster's rank offers wait.
+
+**Earning** (`sources`, `contracts`):
+
+| Source | Reputation | Notes |
+|---|---|---|
+| Daily contracts (2 per faction) | 300 each | kill N (120-200) of one of the faction's families at 40%+ of your level; seal a rift of its theme at (your top tier - 1)+; deliver 15-25 rune shards and gold (150 per level, 20k-150k): a material and gold sink |
+| Weekly contract (1 per faction) | 1,200 | take part in a world boss kill; stand against an invasion; seal 3 rifts of its theme at (top tier - 2)+; deliver 60-90 shards and gold (500 per level, 60k-500k) |
+| Kills of its families | 1 per 10 points | points by tier: normal 1, magic 3, rare 8, legendary 25; monster level at least 40% of yours; party members in range share it (the bestiary rule) |
+| Bounty contract | 60 | the contract's monster's family decides the faction |
+| Rift seal of its theme | 30 + 6 x tier | not Omen guardians |
+| Invasion reward | 100 | the factions that fight that invader |
+| World boss share | 150 | the boss's faction |
+| Token turned in at its NPC | 40 each | Turn in button in the window, next to the NPC |
+
+Contracts are generated from a seed of (character, period, faction, slot) with a Park-Miller generator (the same numbers in
+LuaJIT and Lua 5.3, tested), so a character sees the same contracts all day / week; the level at the first look is stored
+with the progress and used again. A kind that cannot be made (no family with monsters in the level window, no rift tier
+yet) is skipped. Contracts reset with the faction day (06:00) and week (Monday 06:00), the bounty board's rule.
+
+**Diminishing returns, cap, rivalry** (`K.gain`). Activity reputation (everything but contracts) of one faction and day:
+the first 600 at full value, the next 600 at half, the rest at a fifth (fractions carry over, so single kill points
+count). Every source together stops at the weekly cap of 7,500 per faction (contracts alone give 5,400 a week; at the cap
+Exalted takes about five weeks per faction). Every gain lowers the rival by a quarter of it (fractions carry), never
+below -2,000 (Wary) and never once the rival holds you Exalted (sworn): choosing a side costs, both sides stay possible.
+
+**Tokens** (`tokenDrop`): per kill of the faction's families at monster level 60+ (and the 40% rule), per 10,000: normal 4,
+magic 25, rare 120, legendary 600, into the corpse (the loot owner's); a rift seal of its theme gives 1 + tier / 5; its
+world boss 5; an invasion of its invaders 2. Tokens are stackable items (copies of stock stackable nodes, client sprites
+unchanged) and can be traded.
+
+**Quartermasters** (`offers`; every purchase needs the faction's NPC within 6 tiles; gold carried or in the bank):
+
+| Rank | Ashen Vigil | Cinderforge Compact | Veiled Choir | Thornbound Circle |
+|---|---|---|---|---|
+| Trusted | 5 Orbs of Upheaval, 150k (3/week) | 10 Whetstones, 120k (3/week) | 3 Orbs of Gilding, 140k (3/week) | 5 Orbs of Awakening, 80k (3/week) |
+| Honored | Recipe: Pyre Distillation 100k (40 shards + 3 tokens + 10k -> 1 Orb of Fate) | Recipe: Cinder Tempering 100k (15 shards + 2 tokens + 5k -> 2 Orbs of Tempering) | Recipe: Veiled Binding 100k (50 shards + 3 tokens + 10k -> 1 Orb of Binding) | Recipe: Thorn Reforging 100k (35 shards + 3 tokens + 10k -> 1 Orb of Reforging) |
+| Honored | helm (crown helmet), ilvl 100, Epic: monster damage taken T5, regeneration T5, life on kill T5; 250k + 10 tokens | sword (warlord sword), ilvl 100: boss damage T5, physical penetration T5, attack speed T5 | circlet (charmer's tiara), ilvl 100: monster damage taken T5, cooldown reduction T5, mana cost T5 | boots (terra boots), ilvl 100: dodge T5, movement speed T5 |
+| Revered | 2 Orbs of Fate, 300k (2/week) | 1 Orb of Grafting, 900k (1/week) | 2 Orbs of Fate, 300k (2/week) | 10 Orbs of Upheaval, 280k (2/week) |
+| Revered | armor (crown armor), ilvl 115: monster damage taken T6, thorns T6, regeneration T6; 600k + 20 tokens | legs (demon legs), ilvl 115: dodge T6, thorns T6, regeneration T6 | amulet (star amulet), ilvl 115: elemental penetration T6, cooldown reduction T6, mana on kill T6 | legs (golden legs), ilvl 115: dodge T6, regeneration T6, gold find T6 |
+| Revered | tabard aura (aura 14), 300k + 15 tokens | aura 15 | aura 24 | aura 23 |
+| Exalted | shield (mastermind shield), ilvl 125: block T7, reflect T7, regeneration T7; 1.5M + 40 tokens | axe (royal axe), ilvl 125: boss damage T7, physical penetration T7, attack speed T7 | wand (wand of starstorm), ilvl 125: elemental penetration T7, damage over time T7, mana on hit T7 | amulet (platinum amulet), ilvl 125: boss damage T7, life on kill T7, healing done T7 |
+| Exalted | mount 46, 2M + 60 tokens | mount 30 | mount 50 | mount 54 |
+
+Gear is deterministic: the base item gets rarity Epic, the item level, the base bonus and exactly these modifiers at these
+tiers, each value the middle of its tier's range, through `ChaosCrafting.writeAffix` (so tooltips, orbs, salvage, the
+market and transmog treat it like any rolled item); it carries the offer's name and `chaos_faction`. The test holds every
+gear offer to `chaos_item_mods.lua` (the kind may carry the modifier, the tier is allowed at the item level, count and
+prefix / suffix limits of the rarity) and to the faction limits (item level 125, Epic, T7 at most): a catch-up and
+target-farm path below the top drops (item level 145-150, up to six modifiers, T8). Orbs can change it afterwards like any
+item. The aura and mount ids are placeholders (existing auras the store also sells, existing mounts nothing else gives)
+until faction art exists; both are given with `addAura` / `addMount` and remembered in `chaos_faction_purchases`.
+
+**Titles, achievements, board.** Rank titles through `ChaosTitles.register("faction")`: Honored, Revered and Exalted each
+give one (Vigil: Pyrewarden, Bellkeeper of the Vigil, Ashen Saint; Compact: Forgesworn, Anvilguard, Cinderlord; Choir:
+Veilsinger, Voice of the Rift, Abyss-Tongued; Circle: Thornwarden, Rootkeeper, Heart of the Thorn); the Exalted title
+brings the faction's plate frame (bone, ember, violet, verdant) and stays once earned. Achievements (category Exploration
+& Social): one per faction for Exalted (25 points, 3 Orbs of Fate and an Orb of Grafting) and Oath of Four Banners for all
+four (50 points, title Oathbound); stats `faction_exalted_<key>` and `faction_exalted`, set at the rank-up and at login.
+The weekly board "Reputation" (`leaderboard_config.lua`, title Banner-Sworn) gets the reputation gained, every minute and
+at logout.
+
+**NPCs and install.** `tools/install_factions.py DATA_DIR [--dry-run]` (`install_all.py` step `factions`, after
+`ascended`) adds the four tokens to `items.otb` / `items.xml` (stackable copies of stock stackable nodes: holy ash 20130,
+copper token 25378, eye of corruption 12627, four-leaf clover 15546; the run stops when a source is not stackable, since
+the client would misread the count) and copies the NPCs (`data/npc/<name>.xml`, their scripts and the shared
+`npc/scripts/chaos_faction_npc.lua`). `factions.lua` places them at startup on the first free tile of `npcOffsets` around
+the temple of their town (by name, else `townId`; a ring further out than the Ascendant Oracle and the Keeper of Trials).
+Their dialogue runs in the NPC state: "contracts", "quartermaster", "tokens", "reputation" (and the like) open the
+client window on that faction (opcode 215, action `npc`); "lore" and the rival's name answer in text. Every action is
+checked again by `factions.lua`, which also checks that the NPC stands close.
+
+**Hooks** (nothing in the other systems was edited): a death event on every monster without a master (family from
+`ChaosBestiary.cat()`, tier from `ChaosTierDead`), `ChaosLeaderboard.record` wrapped for "bounty" and "rift" (the run's
+theme from `ChaosRift.runOf`), `ChaosWorldBoss.computeRewards` and `ChaosInvasion.deliver` wrapped; each wrapped once
+(flag on the table, installed again at login after a /reload) and counted once per event even if wrapped twice.
+Staff: `/faction <character>[, <faction>, <reputation>]` shows or sets a standing.
+
+**Protocol** (JSON `{action, data}`): client -> server `open {f?}`, `close`, `turnin {f}`, `deliver {key}`, `buy {key}`,
+`craft {key}`; server -> client `state` (about 12 KB, `Chaos.sendChunked`; shape in `factions_core.lua` `K.payload` and
+the client's `factionsview.lua`), `msg {text, ok}`, `npc {f}`. Item ids in the payload are client ids.
+
+**Not verified:** nothing ran on a live server (the NPC placement, the extended opcode from the NPC state, `addAura` /
+`addMount`, the gear through the real crafting library). The window was rendered in the reference client with a payload
+from the real core (screenshots kept outside the repository).
+
+## The Ember Descent (`descent.lua`, `descent_core.lua`, `descent_config.lua`, `sql/chaos_descent.sql`, client `game_descent`)
+
+A roguelike trial (roadmap item 59). Every number is in `descent_config.lua`; the pure logic (the seeded generator, the
+room chain, escalation, waves, boon offers, picks, stacks and curses, the hit maths, embers, prices, rewards, titles,
+free runs) is `descent_core.lua`, tested by `tests/descent_test.lua` with LuaJIT and Lua 5.3, including fixed values of
+the generator that both interpreters must give (so a weekly run is the same run everywhere). Extended opcode **205**.
+
+**Entry.** A portal (magic forcefield 1387, action id 47701) is placed next to the temple of town 1 at startup (the first
+free tile of `portal.offsets`); stepping in opens the Descent window, and Adventure > Ember Descent opens it anywhere. The
+window shows the free runs, the sigils carried, the best depths and the forge. A run starts in a protection zone, out of
+combat, level 100+, not multi-clienting; the party within 8 sqm comes along (up to 4). Each member pays for himself:
+the free normal run of the day (server day), the free weekly run of the week (the leaderboard week, Monday 06:00) or one
+**Ember Sigil**. A sigil is a stock "red power core" (10074, used by nothing else) with action id 47710 and the custom
+attribute `descent_sigil`, forged in the window for 25 rune shards (salvage) and 50,000 gold (carried or bank): a sink.
+
+**The hall.** The rift slot functions of `rift_core.lua` (`slotCenter`, `allocSlot`, `slotOfPos`) on the Descent's own
+grid (x 10000-10255, y 10000-10127, z 7, 8 slots; no map tiles there) and the rift way of building (`Game.createTile`,
+walls, lights, the dark tile paint): one square hall of 19 x 19 per slot. Every room re-themes the floor with a rift
+theme (never the same twice in a row) and fills it again, so one slot serves a whole run.
+
+**Rooms.** 8-12 rooms from the run's seed (`generate`): the first is combat, the last the boss, the one before the boss
+a merchant; the others by weight combat 50, elite 18, treasure 10, shrine 12, merchant 8 (no elite before room 3, no
+treasure / shrine / merchant twice in a row).
+
+| Room | What happens |
+| --- | --- |
+| Combat | 2 + depth / 4 waves (up to 4) of 4 + depth / 3 monsters (+2 per extra player, up to 14) |
+| Elite | one wave of 2 + depth / 4 (+1 per extra player) rare or legendary monsters (legendary 25% + 5% per depth), health x1.5 |
+| Treasure | 3 guards (+1 per extra player), then the chest: 40 + 10 x depth embers and 2,000 + 800 x depth gold (bank) per player |
+| Shrine | the altar takes 20% of the maximum health (never the last point) for a boon choice; Continue or the gate goes on |
+| Merchant | Ember Draught (full health and mana, 20 + 3 x depth embers), Boon Cache (a choice, 55 + 5 x depth), Ash Cleanse (the newest curse and its bonus, 40 + 4 x depth), Cinder Shell (a ward of 25% max health, 15 + 2 x depth) |
+| Boss | the strongest type of the room's window, legendary, health x(6 + 2 per extra player), the rift guardian look of the theme and a name of its own (Hollow Archon, Obsidian Tyrant, Pyre Lich, Blighted Matriarch) |
+
+Monster types come from the bounty pool (`bounty_pool.lua`), three per room, in the level window party level x
+(0.55 + 0.05 x depth) .. x (0.8 + 0.05 x depth), clamped to 20-1500 and widened when too few. Health x(1 + 0.08 x
+(depth - 1)), damage to players x(1 + 0.06 x (depth - 1)); the tier mix (monster_tiers.lua) magic 8 + 3 x depth %, rare
+2 + 1.5 x depth %, legendary 0.8 x depth - 3.2 %. Embers (the run currency, per player): 2 a kill (6 in an elite room),
+15 a cleared room. The run has 45 minutes.
+
+**Boons.** After a combat, elite or treasure room every player picks one of three cards (40 s, else the first). Picking a
+boon again stacks it. All numbers per stack; the boons work through the hit and kill events of descent.lua and show on
+the buff bar (source `descent`, icons `buff:descent_b_<key>` / `buff:descent_c_<key>`):
+
+| Boon | Effect | Max |
+| --- | --- | --- |
+| Ember Edge | +12% damage to Descent monsters | 3 |
+| Searing / Rime / Grave Brand | 50% of physical damage becomes fire / ice / death, that part +15% (one brand at a time) | 1 |
+| Blood Drinker | heal 5% of the damage dealt | 3 |
+| Pyre Burst | a slain foe bursts for 20% of its max health as fire within 2 sqm | 3 |
+| Soul Harvest | 3% health and mana a kill | 3 |
+| Echo Strike | 20% chance a hit strikes again for 50% | 3 |
+| Ember Ward | a ward of 10% max health, renewed every 20 s | 3 |
+| Quickstep | +40 speed | 2 |
+| Keen Eye | 10% chance of +60% damage | 3 |
+| Executioner | +35% damage below 30% health | 2 |
+| Stoneskin | 10% less damage taken (60% at most) | 3 |
+| Thornmail | 30% of a monster's hit back | 2 |
+| Phoenix Ember | once a run a lethal blow leaves 40% health | 1 |
+| Ember Tithe | +50% embers | 2 |
+
+From room 2, a combat or elite room's choice carries a curse 30% of the time; taking it with the boon adds its reward
+to the player's final rewards and gives embers at once: Frailty (+20% damage taken; +25%, 30 embers), Withering (healing
+-30%; +20%, 25), Swarm (rooms +30% monsters for the party; +25%, 30), Frenzied Foes (monsters +60 speed; +20%, 25),
+Ashen Purse (-40% embers; +15%).
+
+**The end.** A lethal hit is caught (the health event, `onPrepareDeath` as the safety net): the player is out with
+the rewards of the depth reached, healed, at the place he entered from; nothing is lost. The run ends when nobody is
+left, at the time limit or with the boss (a full clear). Logging out (not in a fight) or Leave ends it for that player
+with his rewards. Rewards per player (x the curse bonuses): gold to the bank (3,000 x depth + 400 x depth^2) x
+(1 + level / 400), Orbs of Upheaval depth / 2, Orbs of Fate depth / 4, Dawn Orbs depth / 6; x1.5 on a full clear; from
+depth 6 a roll for one of five run-exclusive uniques (150 per 10000 per room past 5, +800 for the boss, at most 2500):
+Emberfall Blade (sword, depth 6), Ashwalker Treads (boots, 6), Heart of the Descent (amulet, 8), Sigil of the Ninth Room
+(ring, 9), Pyre Cleaver (two-handed sword, 10). They are in `data/items/chaos_items.xml` (so `gen_unique_specs.py` makes
+their specs) but not in `ChaosUniqueItems`: no monster, chest or boss drops them. Titles (name plate source `descent`):
+Ashwalker (depth 5), Emberdelver (depth 9), Heart of the Descent (a full clear). The weekly run (seed from the week key)
+records its depth on the weekly leaderboard "Ember Descent" (title Emberlord, the board's top 3 rewards).
+
+**Persistence.** `chaos_descent_players` (best depth, full clear, the day / week of the free runs, the weekly best, runs,
+clears) and `chaos_descent_runs` (one row per player and run). Storages 7100410 (a run in progress: the next login after
+a crash goes to the temple) and 7100411 (when the next free run is ready: the Boss Spawns window's cooldown of the new
+row "Ember Descent Boss", category "The Ember Descent"). A clean shutdown ends every run first.
+
+**Staff.** `/descent status | sigil | reset | clear | skip | boon <key> | offer | portal`.
+
+**Tested.** `tests/descent_test.lua` (130,000 checks: 3,000 seeds of room chains, 400 x 12 offers, tier draws, hits,
+rewards, wiring of opcode, storages, action ids, specs, board, Boss Spawns row, buff registry and icons) and
+`game_descent/descentmath_test.lua`. On a live test server with the client: the portal and window, daily, weekly and sigil
+runs to the boss and to a fall, the shrine, the merchant (Boon Cache), curses, the buff bar icons, the HUD, the end
+summary, the database rows, the weekly board and the Boss Spawns row. Not tested in game: a party of 2-4, the
+crash marker, a clean shutdown during a run.

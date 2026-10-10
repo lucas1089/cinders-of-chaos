@@ -116,6 +116,16 @@ ChaosUniqueItems = {
 	{ name = "Veil of the Wraith", id = 29868, minTier = "boss", chance = 20, level = 120, slot = "ring",
 	  bossOnly = true, monsters = {"Ghazbaran", "Morgaroth", "Orshabaal", "Ferumbras", "Zugurosh", "Infernatil", "The Plasmother",
 	    "Kaelgor the Infernal Warlord", "Skaldra the Rime Queen", "The Rotmother", "Nyxareth the Void Archon", "Vharok the Blood Colossus"} },
+	-- the Ascended uniques (uber.lua, server/README.md "Ascended Omens and the Cinderheart"): ascended = true keeps them
+	-- out of the Omen chest pool (rift.lua); corpse drops of the listed bosses (x6 boss tier) and the spoils' unique rolls
+	{ name = "Sanguine Crescent", id = 2408, minTier = "boss", chance = 10, level = 1000, slot = "sword",
+	  bossOnly = true, ascended = true, monsters = {"Ascended Sangrith", "Ysgrath the Cinderheart"} },
+	{ name = "Hollow Crown of Morvane", id = 2493, minTier = "boss", chance = 10, level = 1000, slot = "head",
+	  bossOnly = true, ascended = true, monsters = {"Ascended Morvane", "Ysgrath the Cinderheart"} },
+	{ name = "Eye of the Unbroken Storm", id = 2171, minTier = "boss", chance = 10, level = 1000, slot = "necklace",
+	  bossOnly = true, ascended = true, monsters = {"Ascended Thalcyra", "Ysgrath the Cinderheart"} },
+	{ name = "Cinderheart Signet", id = 2123, minTier = "boss", chance = 8, level = 1000, slot = "ring",
+	  bossOnly = true, ascended = true, monsters = {"Ysgrath the Cinderheart"} },
 }
 
 -- name (and lower-case name) -> entry

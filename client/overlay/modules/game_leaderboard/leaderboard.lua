@@ -1,7 +1,8 @@
 -- Leaderboards window: weekly boards (World Boss, Bounty Hunter, Rifts) with last week's title holders, the all-time
 -- class ladder, the player's own rank and the time to the weekly reset.
 -- Server: server/data/scripts/chaos/leaderboard.lua, extended opcode 229 (JSON {action, data}).
---   server -> client  meta {open, boards = [{key, name, weekly, value, count, title, info}], groups = [{key, name}], ownGroup}
+--   server -> client  meta {open, boards = [{key, name, weekly, value, count, title, info, byClass, format}], groups = [{key, name}], ownGroup}
+--                     (byClass: class tabs on a weekly board, "All classes" first; format "time": values in seconds, shown m:ss)
 --                     board {key, group, week, resetIn, rows = [{rank, name, value, count, level, vocation, title}],
 --                            own = {rank, value, count} | nil, champions = [{rank, rankName, name, value, title}], total}
 --   client -> server  open | get {board, group}
@@ -16,6 +17,7 @@ local current          -- last board received
 local boardAt = 0      -- g_clock.seconds() when it arrived
 local selected         -- board key shown
 local selectedGroup    -- class group shown on the ladder
+local classGroup       -- class tab of the boards with class tabs (byClass); nil = every class
 local tabs, groupTabs = {}, {}
 local tickEvent
 local refreshAsked = false
@@ -62,11 +64,25 @@ local function formatTime(seconds)
   return string.format('%dh %02dm %02ds', h, m, s)
 end
 
+-- a board value as shown: m:ss for the time boards, else short (or exact) numbers
+local function valueText(v, b, exactly)
+  local t = TabRows and TabRows.valueText and TabRows.valueText(v, b and b.format)
+  if t then return t end
+  return exactly and exact(v) or short(v)
+end
+
 local function boardMeta(key)
   for _, b in ipairs(list(meta and meta.boards)) do
     if b.key == key then return b end
   end
   return nil
+end
+
+-- the group to ask for with the board shown: the class tab of a byClass board, else the ladder's class
+local function currentGroup()
+  local b = selected and boardMeta(selected)
+  if b and b.weekly and b.byClass then return classGroup end
+  return selectedGroup
 end
 
 local function groupName(key)
@@ -94,8 +110,8 @@ local function createRow(r, b, ownName)
     row.title:setText('')
   end
   if b.weekly then
-    row.value:setText(short(r.value))
-    row.value:setTooltip(exact(r.value) .. ' ' .. (b.value or ''):lower())
+    row.value:setText(valueText(r.value, b))
+    row.value:setTooltip(valueText(r.value, b, true) .. ' ' .. (b.value or ''):lower())
     row.extra:setText(b.count and exact(r.count) or '')
   else
     row.value:setText(tostring(r.level or r.value or 0))
@@ -118,7 +134,7 @@ local function updateTimer()
   window.timerLabel:setTooltip(tr('The weekly boards reset every Monday at 06:00 server time.'))
   if left <= 0 and not refreshAsked and window:isVisible() then
     refreshAsked = true
-    scheduleEvent(function() send('get', { board = selected, group = selectedGroup }) end, 5000)
+    scheduleEvent(function() send('get', { board = selected, group = currentGroup() }) end, 5000)
   end
 end
 
@@ -154,7 +170,7 @@ local function showBoard()
       for _, c in ipairs(champions) do
         local place = c.rankName or ordinal(tonumber(c.rank) or 0)
         parts[#parts + 1] = place .. ' ' .. (c.name or '?')
-        exacts[#exacts + 1] = string.format('%s %s: %s %s', place, c.name or '?', exact(c.value), (b.value or ''):lower())
+        exacts[#exacts + 1] = string.format('%s %s: %s %s', place, c.name or '?', valueText(c.value, b, true), (b.value or ''):lower())
       end
       window.championPanel.championNames:setText(table.concat(parts, '    '))
       window.championPanel.championNames:setTooltip(table.concat(exacts, '\n'))
@@ -181,7 +197,7 @@ local function showBoard()
     local text
     if b.weekly then
       text = tr('Your rank: #%d of %d   -   %s: %s', tonumber(own.rank) or 0, tonumber(current.total) or 0,
-        b.value or tr('Score'), exact(own.value))
+        b.value or tr('Score'), valueText(own.value, b, true))
       if b.count then text = text .. string.format('   -   %s: %s', b.count, exact(own.count)) end
     else
       text = tr('Your rank in the %s line: #%d   -   level %d', groupName(current.group), tonumber(own.rank) or 0,
@@ -244,18 +260,28 @@ local function buildGroupTabs()
   window.groupTabs:destroyChildren()
   groupTabs = {}
   local ladder = selected and boardMeta(selected)
-  local visible = ladder and not ladder.weekly
+  local byClass = ladder and ladder.weekly and ladder.byClass
+  local visible = ladder and (not ladder.weekly or byClass)
   window.groupTabs:setVisible(visible and true or false)
   window.groupTabs:setHeight(visible and 22 or 0)
   window.groupTabs:setMarginTop(visible and 4 or 0)
   if not visible then return end
   local groups, items = list(meta.groups), {}
+  if byClass then
+    -- a weekly board with class tabs: "All classes" first (key 'all' = no filter)
+    table.insert(groups, 1, { key = 'all', name = tr('All classes') })
+  end
   for i, g in ipairs(groups) do
     local key = g.key
-    items[i] = { text = g.name or '?', checked = key == selectedGroup, onClick = function()
-      selectedGroup = key
+    local checked = byClass and (key == (classGroup or 'all')) or (not byClass and key == selectedGroup)
+    items[i] = { text = g.name or '?', checked = checked, onClick = function()
+      if byClass then
+        classGroup = key ~= 'all' and key or nil
+      else
+        selectedGroup = key
+      end
       for k, t in pairs(groupTabs) do t:setChecked(k == key) end
-      send('get', { board = selected, group = key })
+      send('get', { board = selected, group = byClass and classGroup or key })
     end }
   end
   for i, tab in pairs(buildTabRows(window.groupTabs, 'LeaderboardGroupTab', items, 124)) do
@@ -269,7 +295,7 @@ local function selectBoard(key)
   local b = boardMeta(key)
   if b and not b.weekly and not selectedGroup then selectedGroup = meta.ownGroup end
   buildGroupTabs()
-  send('get', { board = key, group = selectedGroup })
+  send('get', { board = key, group = (b and b.weekly and b.byClass) and classGroup or selectedGroup })
 end
 
 local function buildTabs()
@@ -308,7 +334,11 @@ local function onBoardData(data)
     selected = data.key
     buildGroupTabs()
   end
-  if data.group then
+  local db = boardMeta(data.key)
+  if db and db.weekly and db.byClass then
+    classGroup = data.group
+    for k, t in pairs(groupTabs) do t:setChecked(k == (data.group or 'all')) end
+  elseif data.group then
     selectedGroup = data.group
     for k, t in pairs(groupTabs) do t:setChecked(k == data.group) end
   end
@@ -334,7 +364,7 @@ end
 function toggleSeason()
   seasonView = not seasonView
   if window then window.seasonToggle:setChecked(seasonView) end
-  send('get', { board = selected, group = selectedGroup })
+  send('get', { board = selected, group = currentGroup() })
 end
 
 function show()

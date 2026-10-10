@@ -1,0 +1,13 @@
+Module
+  name: game_factions
+  description: Factions window - four factions with reputation ranks, contracts and quartermasters (server factions.lua, extended opcode 215)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ factionsview, factions ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1002
+  @onLoad: init()
+  @onUnload: terminate()

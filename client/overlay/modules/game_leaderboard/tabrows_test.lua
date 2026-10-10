@@ -53,6 +53,10 @@ eq(rows[2][1].width, 300, 'too wide gets the row')
 eq(#TabRows.layout({}, 590, 4), 0, 'no tabs')
 eq(#TabRows.layout(nil, 590, 4), 0, 'nil tabs')
 
+eq(TabRows.valueText(305, 'time'), '5:05', 'time format')
+eq(TabRows.valueText(59, 'time'), '0:59', 'under a minute')
+eq(TabRows.valueText(305, nil), nil, 'no format: the caller formats')
+
 if fails > 0 then
   print(fails .. ' failure(s)')
   os.exit(1)

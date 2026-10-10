@@ -687,6 +687,9 @@ def check():
     if found is None:
         return
     names, debuffs = found
+    # the Ember Descent's entries and icons (descent_*) are drawn by gen_descent_icons.py
+    names = {n for n in names if not n.startswith('descent_')}
+    debuffs = {n for n in debuffs if not n.startswith('descent_')}
     mine = set(ICONS)
     if names != mine:
         raise SystemExit('ICONS does not match chaos_buffs.lua: missing %s, unused %s' %

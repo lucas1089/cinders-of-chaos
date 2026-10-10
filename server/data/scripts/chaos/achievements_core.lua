@@ -268,7 +268,7 @@ function K.titlesOf(index, unlocked)
 	for id, at in pairs(unlocked or {}) do
 		local def = index.byId[id]
 		if def and def.title then
-			out[#out + 1] = {key = "achievement:" .. id, text = def.title, at = at, order = def.order}
+			out[#out + 1] = {key = "achievement:" .. id, text = def.title, at = at, order = def.order, frame = def.frame}
 		end
 	end
 	table.sort(out, function(a, b) return a.order < b.order end)

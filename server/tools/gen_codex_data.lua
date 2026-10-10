@@ -20,7 +20,8 @@ Gen.SOURCES = {
 	"data/lib/chaos_gems_config.lua", "data/lib/chaos_unique_items.lua", "data/lib/chaos_unique_specs.lua",
 	"data/lib/chaos_supports.lua", "data/lib/chaos_supports_config.lua", "data/scripts/chaos/loot_config.lua",
 	"data/scripts/chaos/salvage_config.lua", "data/scripts/chaos/shop_config.lua", "data/scripts/chaos/bounty_config.lua",
-	"data/scripts/chaos/rift_config.lua", "data/scripts/chaos/rift_core.lua", "data/scripts/chaos/chaos_constants.lua"
+	"data/scripts/chaos/rift_config.lua", "data/scripts/chaos/rift_core.lua", "data/scripts/chaos/chaos_constants.lua",
+	"data/scripts/chaos/uber_config.lua"
 }
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -270,6 +271,7 @@ function Gen.load()
 	D.shop = dofile("data/scripts/chaos/shop_config.lua")
 	D.bounty = dofile("data/scripts/chaos/bounty_config.lua")
 	D.rift = dofile("data/scripts/chaos/rift_config.lua")
+	D.uber = dofile("data/scripts/chaos/uber_config.lua") -- the Ascended Omens and the Cinderheart (uber.lua)
 	D.uniques = ChaosUniqueItems
 	D.specs = ChaosUniqueSpecs
 	D.sets = ChaosSets
@@ -1082,9 +1084,17 @@ function Gen.uniqueEntries(D)
 			sources[#sources + 1] = {"World bosses", table.concat(wbs, ", ") .. string.format(": a corpse drop, and every eligible player has %s (+ share x %s) to get a boss-only unique of that boss.",
 				Gen.per10k(wb.uniqueChance), Gen.per10k(wb.uniqueShareBonus))}
 		end
-		sources[#sources + 1] = {"Rift chest", "One unique roll at the loot tier of the rift (" .. riftLootTiers(D) .. ")."}
-		sources[#sources + 1] = {"Omen guardian chest", string.format("%d unique rolls at the boss tier over every unique, x%s find.",
-			D.rift.omen.reward.uniqueRolls, Gen.num(D.rift.omen.reward.uniqueFind))}
+		if u.ascended and D.uber then
+			-- the Ascended uniques: only their bosses (uber.lua), never a rift or Omen chest
+			local ra, rc = D.uber.reward.ascended, D.uber.reward.cinder
+			sources[#sources + 1] = {"Ascended spoils", string.format("Every finisher of a listed boss: %d unique rolls (x%s find) " ..
+				"after an Ascended Omen, %d (x%s find) after the Cinderheart.", ra.uniqueRolls, Gen.num(ra.uniqueFind),
+				rc.uniqueRolls, Gen.num(rc.uniqueFind))}
+		else
+			sources[#sources + 1] = {"Rift chest", "One unique roll at the loot tier of the rift (" .. riftLootTiers(D) .. ")."}
+			sources[#sources + 1] = {"Omen guardian chest", string.format("%d unique rolls at the boss tier over every unique, x%s find.",
+				D.rift.omen.reward.uniqueRolls, Gen.num(D.rift.omen.reward.uniqueFind))}
+		end
 		local rules = {"A unique keeps its stats: no orb changes it and it is never salvaged.",
 			string.format("%d socket, fixed (gems may be socketed and taken out).", D.G.config.uniqueSockets)}
 		if u.season then

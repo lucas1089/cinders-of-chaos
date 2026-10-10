@@ -44,7 +44,11 @@ function LB.merge(e, value, mode, now)
 	e = e or {value = 0, count = 0, at = now}
 	e.count = (e.count or 0) + 1
 	local before = e.value or 0
-	if mode == "max" then
+	if mode == "min" then -- lower is better (a fastest kill in seconds); 0 = no value yet
+		if value > 0 and (before <= 0 or value < before) then
+			e.value = value
+		end
+	elseif mode == "max" then
 		if value > before then
 			e.value = value
 		end
@@ -74,7 +78,8 @@ LB.before = before
 
 -- scores = {[guid] = {value, count, at, name, group, ...}} -> array of entries (value > 0, below staffGroup), each
 -- with .guid and .rank 1..n. Equal values: the earlier `at` wins, then the lower guid (ranks are never shared).
-function LB.rank(scores, staffGroup)
+-- ascending = true: the lowest value first (boards of mode "min", fastest times)
+function LB.rank(scores, staffGroup, ascending)
 	local list = {}
 	for guid, e in pairs(scores) do
 		if (e.value or 0) > 0 and (not staffGroup or (e.group or 1) < staffGroup) then
@@ -82,11 +87,31 @@ function LB.rank(scores, staffGroup)
 			list[#list + 1] = e
 		end
 	end
-	table.sort(list, before)
+	table.sort(list, ascending and function(a, b)
+		if a.value ~= b.value then
+			return a.value < b.value
+		end
+		return before(a, b)
+	end or before)
 	for i, e in ipairs(list) do
 		e.rank = i
 	end
 	return list
+end
+
+-- the entries of a ranked list whose vocation is one of `ids` (a class tab), ranked again 1..n
+function LB.filterClass(ranked, ids)
+	local set, out = {}, {}
+	for _, id in ipairs(ids or {}) do
+		set[id] = true
+	end
+	for _, e in ipairs(ranked) do
+		if set[e.voc or -1] then
+			out[#out + 1] = {guid = e.guid, name = e.name, value = e.value, count = e.count, at = e.at, voc = e.voc,
+				rank = #out + 1}
+		end
+	end
+	return out
 end
 
 -- rank of guid in a ranked list, or nil

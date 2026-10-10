@@ -136,7 +136,7 @@ return {
 			name = "Pyre Rite", desc = "Zealotry and Purging Nova burn in red and fire.",
 			spells = {250, 199}, vfx = {aura_burst_gold = "aura_burst_red", dome_blast_holy = "dome_blast_fire"}},
 
-		-- ------------------------------------------------------------------ kill effects (store 200, two from achievements)
+		-- ------------------------------------------------------------------ kill effects (store 200, two from achievements; one more at the end)
 		{id = 101, key = "kill_soulspark", kind = "killfx", icon = 5944, source = "store", price = 200, vfx = "px633_indigo",
 			name = "Soul Spark", desc = "A violet skull rises from the monster you finish."},
 		{id = 102, key = "kill_sunring", kind = "killfx", icon = 2304, source = "store", price = 200, vfx = "px586_fire",
@@ -178,6 +178,11 @@ return {
 			name = "Rose Name", desc = "Your name in chat shows rose for everyone."},
 		{id = 306, key = "chat_veteran", kind = "chatcolor", icon = 13531, source = "achievement", achievement = "level_300",
 			color = "#f0cf6a", name = "Veteran's Gold",
-			desc = "Your name in chat shows old gold for everyone. Achievement: Veteran of the Wastes."}
+			desc = "Your name in chat shows old gold for everyone. Achievement: Veteran of the Wastes."},
+
+		-- ------------------------------------------------------------------ the Cinderheart (uber.lua; last, so the list
+		-- positions the tests use stay)
+		{id = 108, key = "kill_cinderheart", kind = "killfx", icon = 2353, source = "achievement", achievement = "cinder_1",
+			vfx = "ember_crown", name = "Cinderheart Crown", desc = "A crown of embers burns over your kills. Achievement: Cinderbreaker."}
 	}
 }

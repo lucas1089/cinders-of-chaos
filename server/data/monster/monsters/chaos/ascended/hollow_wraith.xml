@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Add of the Hollow Crown arena (uber.lua): A courtier of the empty throne. Health and count are set by the script (x party size, uber_config.lua);
+     the stock look 241 (phantasm). No loot, no experience to speak of: the boss is the prize. -->
+<monster name="Hollow Wraith" nameDescription="a hollow wraith" race="undead" experience="1000" speed="250" manacost="0">
+	<health now="60000" max="60000" />
+	<look type="241" corpse="6068" />
+	<targetchange interval="4000" chance="20" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-600" max="-1200" />
+		<attack name="death" interval="2000" chance="25" range="6" target="1" radius="1" min="-900" max="-1700">
+			<attribute key="areaEffect" value="mortarea" />
+		</attack>
+	</attacks>
+	<defenses armor="60" defense="60" />
+	<elements>
+		<element physicalPercent="20" />
+		<element firePercent="0" />
+		<element energyPercent="0" />
+		<element earthPercent="0" />
+		<element icePercent="0" />
+		<element holyPercent="-25" />
+		<element deathPercent="60" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+	</immunities>
+</monster>

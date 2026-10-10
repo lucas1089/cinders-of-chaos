@@ -124,6 +124,10 @@ source("templar_aura", "templarAura", "buff", "Templar Aura", "buff:templar_aura
 source("stunned", "stun", "debuff", "Stunned", "buff:stunned", "You cannot move, attack or cast attack spells. Healing still works.", 40)
 cond("stun_immune", "CONDITION_ATTRIBUTES", 71035, "buff", "Stun Immunity", "buff:stun_immune",
 	"You were stunned: no stun can hold you until this ends, and the next one is shorter.", 25)
+-- the Ember Descent (data/scripts/chaos/descent.lua): one entry per boon / curse a player holds in a run, each with its
+-- own icon "buff:descent_b_<key>" / "buff:descent_c_<key>" (client/tools/gen_descent_icons.py)
+source("descent_boon", "descent", "buff", "Descent Boon", "buff:descent_boon", "A boon of the Ember Descent, for this run only.", 26)
+source("descent_curse", "descent", "debuff", "Descent Curse", "buff:descent_curse", "A curse of the Ember Descent: more rewards, a harder run.", 39)
 
 -- ---- engine conditions: buffs
 cond("haste", "CONDITION_HASTE", 0, "buff", "Haste", "buff:haste", "You move faster.", 50)
@@ -399,6 +403,19 @@ function S.templarAura(player, now, def)
 	end
 	it.desc = clip(text .. ".", B.cfg.maxDesc)
 	return {it}
+end
+
+-- the Ember Descent's boons (def.kind "buff") and curses ("debuff") of the run the player is in (descent.lua)
+function S.descent(player, now, def)
+	local X = ChaosDescent
+	if not (X and X.buffItems) then
+		return nil
+	end
+	local list = X.buffItems(player, def.kind)
+	for _, it in ipairs(list or {}) do
+		it.name, it.desc = clip(it.name, B.cfg.maxName), clip(it.desc, B.cfg.maxDesc)
+	end
+	return list
 end
 
 -- ------------------------------------------------------------------------------------------------ conditions

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Ascended Omen of the Hollow Crown (uber.lua, Ascended Sigils): the Omen guardian ascended. Its hits are x1.3 the omen's;
+     the telegraphed big hits, phases, adds, hazards and the enrage are scripted (uber_config.lua). The untelegraphed
+     radius 6 hit, the self-heal and the invisibility of the omen are gone. Numbers: server/README.md "Ascended Omens and the Cinderheart". -->
+<monster name="Ascended Morvane" nameDescription="Ascended Morvane" race="undead" experience="6000000" speed="280" manacost="0">
+	<health now="1200000" max="1200000" />
+	<look type="2117" corpse="6068" />
+	<targetchange interval="5000" chance="12" />
+	<flags>
+		<flag isboss="1" />
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="3" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-910" max="-1950" />
+		<!-- Hollow Bolt: thrown at a target, splashes radius 2 -->
+		<attack name="death" interval="2000" chance="22" range="7" target="1" radius="2" min="-1560" max="-2990">
+			<attribute key="shootEffect" value="suddendeath" />
+			<attribute key="areaEffect" value="mortarea" />
+		</attack>
+		<!-- Emptiness: drains mana around him -->
+		<attack name="manadrain" interval="2000" chance="12" radius="5" min="-1560" max="-2860">
+			<attribute key="areaEffect" value="purplesmoke" />
+		</attack>
+		<!-- Hollowing curse, total 2-4k -->
+		<attack name="cursecondition" interval="2000" chance="12" range="7" target="1" min="-2600" max="-5200" tick="2000">
+			<attribute key="shootEffect" value="death" />
+			<attribute key="areaEffect" value="smallclouds" />
+		</attack>
+	</attacks>
+	<defenses armor="70" defense="70">
+	</defenses>
+	<elements>
+		<element physicalPercent="-5" />
+		<element firePercent="10" />
+		<element energyPercent="10" />
+		<element earthPercent="10" />
+		<element icePercent="10" />
+		<element holyPercent="-20" />
+		<element deathPercent="40" />
+	</elements>
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+		<immunity lifedrain="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="A crown of nothing for a king of nothing." yell="1" />
+		<voice sentence="I will hollow you out and wear what is left." yell="1" />
+		<voice sentence="THE THRONE IS EMPTY. LIKE YOU." yell="1" />
+	</voices>
+	<loot>
+		<item id="2160" countmax="60" chance="100000" /><!-- crystal coin -->
+		<item id="29856" countmax="8" chance="100000" /><!-- Orb of Upheaval -->
+		<item id="29857" countmax="2" chance="60000" /><!-- Orb of Fate -->
+		<item id="29861" chance="9000" /><!-- Myst Regalia Helmet -->
+		<item id="29862" chance="9000" /><!-- Myst Regalia Mantle -->
+		<item id="29863" chance="9000" /><!-- Myst Regalia Legs -->
+		<item id="29864" chance="8000" /><!-- Myst Regalia Galoshes -->
+		<item id="29865" chance="8000" /><!-- Myst Regalia Spellbook -->
+		<item id="29866" chance="7000" /><!-- Myst Regalia Wand -->
+		<item id="29867" chance="6000" /><!-- Myst Regalia Amulet -->
+		<item id="29868" chance="6000" /><!-- Myst Regalia Ring -->
+	</loot>
+</monster>

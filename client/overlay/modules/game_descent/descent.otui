@@ -1,0 +1,397 @@
+// The Ember Descent (game_descent): the run HUD, the boon choice (three cards), the merchant and the entry window.
+// Styles only (descent.lua creates the widgets); theme styles from client_chaos_theme (styles.otui).
+
+DescentText < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: left
+  text-auto-resize: true
+  phantom: true
+
+DescentDim < DescentText
+  color: #8c8070
+
+DescentWrap < DescentText
+  text-wrap: true
+  text-auto-resize: false
+  text-vertical-auto-resize: true
+
+DescentHudLabel < DescentText
+  font: verdana-11px-rounded
+  text-wrap: true
+  text-auto-resize: false
+  text-vertical-auto-resize: true
+  margin-top: 2
+
+// a held boon or curse on the HUD: its 26 px icon, the stacks in the corner, the tooltip says what it does
+DescentBoonIcon < UIWidget
+  size: 26 26
+  image-smooth: false
+  focusable: false
+  phantom: false
+
+  UILabel
+    id: stacks
+    font: verdana-11px-rounded
+    color: #f6cf72
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-right: 1
+    text-auto-resize: true
+    phantom: true
+
+// ---------------------------------------------------------------- the HUD (left of the map, under the character plate)
+DescentHud < ChaosPanelDark
+  id: descentHud
+  width: 240
+  anchors.top: parent.top
+  anchors.left: parent.left
+  margin-top: 192
+  margin-left: 40
+  padding: 8
+  phantom: true
+  focusable: false
+  layout:
+    type: verticalBox
+    fit-children: true
+
+  ChaosTitle
+    id: title
+    text: The Ember Descent
+    phantom: true
+
+  DescentHudLabel
+    id: room
+    text-align: center
+    color: #e8b84a
+
+  UILabel
+    id: clock
+    font: sans-bold-16px
+    color: #f4d27a
+    text-align: center
+    height: 22
+    phantom: true
+    margin-top: 2
+
+  ChaosProgressBar
+    id: progress
+    margin-top: 4
+    phantom: true
+
+  DescentHudLabel
+    id: state
+    color: #d6c9ae
+    margin-top: 4
+
+  DescentHudLabel
+    id: embers
+    color: #ff9a3c
+    margin-top: 4
+
+  DescentHudLabel
+    id: boonsHeader
+    color: #8c8070
+    text: Boons
+    margin-top: 6
+
+  UIWidget
+    id: boons
+    phantom: true
+    margin-top: 2
+    layout:
+      type: grid
+      cell-size: 26 26
+      cell-spacing: 3
+      flow: true
+      fit-children: true
+
+  DescentHudLabel
+    id: cursesHeader
+    color: #e03a1e
+    text: Curses
+    margin-top: 4
+
+  UIWidget
+    id: curses
+    phantom: true
+    margin-top: 2
+    layout:
+      type: grid
+      cell-size: 26 26
+      cell-spacing: 3
+      flow: true
+      fit-children: true
+
+  UIWidget
+    id: party
+    phantom: true
+    margin-top: 4
+    layout:
+      type: verticalBox
+      fit-children: true
+
+  DescentHudLabel
+    id: result
+    color: #f4d27a
+    margin-top: 6
+    visible: false
+
+  UIWidget
+    id: buttons
+    height: 22
+    margin-top: 6
+    phantom: true
+
+    ChaosButton
+      id: continueButton
+      anchors.left: parent.left
+      anchors.top: parent.top
+      size: 108 22
+      !text: tr('Continue')
+      !tooltip: tr('Go on to the next room (the exit gate does the same).')
+      @onClick: modules.game_descent.ready()
+
+    ChaosButton
+      id: leaveButton
+      anchors.right: parent.right
+      anchors.top: parent.top
+      size: 108 22
+      !text: tr('Leave')
+      !tooltip: tr('Leave the Descent now with the rewards of the depth you reached.')
+      @onClick: modules.game_descent.leave()
+
+DescentPartyLabel < DescentHudLabel
+  color: #9fd89f
+  margin-top: 1
+
+// ---------------------------------------------------------------- the boon card
+DescentCard < ChaosPanel
+  size: 180 248
+  anchors.top: parent.top
+  anchors.left: parent.left
+
+  UIWidget
+    id: icon
+    size: 52 52
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 4
+    image-smooth: false
+    phantom: true
+
+  ChaosTitle
+    id: name
+    anchors.top: icon.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+
+  DescentDim
+    id: note
+    anchors.top: name.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 1
+
+  DescentWrap
+    id: desc
+    anchors.top: note.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    text-align: center
+
+  ChaosButton
+    id: pick
+    anchors.bottom: parent.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    size: 120 24
+    !text: tr('Choose')
+
+DescentOfferWindow < ChaosStaticMainWindow
+  id: descentOffer
+  size: 640 400
+  !text: tr('Choose a Boon')
+
+  DescentText
+    id: subtitle
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    color: #e8b84a
+
+  UIWidget
+    id: cards
+    anchors.top: subtitle.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 250
+    margin-top: 8
+    phantom: true
+
+  ChaosPanelDark
+    id: curseStrip
+    anchors.top: cards.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 50
+    margin-top: 8
+
+    UIWidget
+      id: curseIcon
+      size: 26 26
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      image-smooth: false
+
+    ChaosCheckBox
+      id: curseCheck
+      anchors.left: curseIcon.right
+      anchors.top: parent.top
+      margin-left: 8
+      margin-top: 2
+      width: 200
+      !text: tr('Take the curse too')
+
+    DescentWrap
+      id: curseText
+      anchors.left: curseIcon.right
+      anchors.right: parent.right
+      anchors.top: curseCheck.bottom
+      margin-left: 8
+      margin-top: 3
+      color: #ff8060
+
+// ---------------------------------------------------------------- the merchant
+DescentWareRow < ChaosPanelDark
+  height: 44
+  margin-top: 4
+
+  DescentText
+    id: name
+    anchors.top: parent.top
+    anchors.left: parent.left
+    color: #e8b84a
+
+  DescentWrap
+    id: desc
+    anchors.top: name.bottom
+    anchors.left: parent.left
+    anchors.right: buy.left
+    margin-right: 8
+    color: #b8ab92
+
+  ChaosButton
+    id: buy
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    size: 110 24
+
+DescentShopWindow < ChaosMainWindow
+  id: descentShop
+  size: 420 330
+  !text: tr('The Ember Merchant')
+  @onEscape: modules.game_descent.hideShop()
+
+  DescentText
+    id: embers
+    anchors.top: parent.top
+    anchors.left: parent.left
+    color: #ff9a3c
+
+  UIWidget
+    id: wares
+    anchors.top: embers.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 200
+    layout:
+      type: verticalBox
+      fit-children: true
+
+  ChaosButton
+    id: closeButton
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    !text: tr('Close')
+    @onClick: modules.game_descent.hideShop()
+
+// ---------------------------------------------------------------- the entry window (the city portal)
+DescentInfoWindow < ChaosMainWindow
+  id: descentInfo
+  size: 530 372
+  !text: tr('The Ember Descent')
+  @onEscape: modules.game_descent.hideInfo()
+
+  DescentWrap
+    id: intro
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    color: #b8ab92
+    !text: tr('Eight to twelve rooms of fire below the city. After each room choose one of three boons; take a curse for richer spoils. A fall ends your descent, the boss in the last hall ends it in glory. The deeper you go, the more you carry out.')
+
+  UIWidget
+    id: lines
+    anchors.top: intro.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    height: 120
+    layout:
+      type: verticalBox
+      fit-children: true
+
+  DescentDim
+    id: craftLine
+    anchors.top: lines.bottom
+    anchors.left: parent.left
+    margin-top: 6
+
+  DescentText
+    id: message
+    anchors.bottom: buttons.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-bottom: 6
+    color: #f6cf72
+
+  UIWidget
+    id: buttons
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 24
+
+    ChaosButton
+      id: normalButton
+      anchors.left: parent.left
+      anchors.top: parent.top
+      size: 128 24
+      @onClick: modules.game_descent.start(false)
+
+    ChaosButton
+      id: weeklyButton
+      anchors.left: normalButton.right
+      anchors.top: parent.top
+      margin-left: 6
+      size: 176 24
+      @onClick: modules.game_descent.start(true)
+
+    ChaosButton
+      id: craftButton
+      anchors.left: weeklyButton.right
+      anchors.top: parent.top
+      margin-left: 6
+      size: 100 24
+      !text: tr('Forge Sigil')
+      !tooltip: tr('Forge an Ember Sigil: one more descent.')
+      @onClick: modules.game_descent.craft()
+
+    ChaosButton
+      id: closeButton
+      anchors.right: parent.right
+      anchors.top: parent.top
+      size: 60 24
+      !text: tr('Close')
+      @onClick: modules.game_descent.hideInfo()
