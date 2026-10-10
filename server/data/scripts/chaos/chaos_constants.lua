@@ -68,6 +68,7 @@ ChaosOpcodes = {
 	castbar = 231, -- cast bar of the cast-time spells, both ways (client game_castbar; casting.lua, data/lib/chaos_casting.lua)
 	referral = 220, -- Referral window: own code, enter a code, referred friends (client game_referral; referral*.lua)
 	pact = 222, -- Chaos Pact window: status, limits, daily coins, saved builds (client game_pact; pact.lua, pact_config.lua)
+	transmog = 212, -- Transmog window: wardrobe, apply / remove a look (client game_transmog; transmog.lua, transmog_core.lua, transmog_config.lua)
 	pouches = 226, -- store pouches: the Loot Pouch rules window (client game_pouches; pouches.lua, pouches_core.lua, pouches_config.lua)
 	partyFrames = 235 -- party frames: members' health, mana, level, floor, buffs; client -> server actions (client game_partyframes; partyframes.lua)
 }
@@ -85,7 +86,8 @@ Chaos.itemAttr = {
 	unique = 4, -- custom attribute "chaos_unique" present
 	sockets = 5, -- custom attribute "chaos_sockets" (socket count; a unique's fixed socket is not stored)
 	id = 6, -- custom attribute "chaos_iid": per-item id, given by the engine the first time the item is sent
-	version = 7 -- hash of the item's attributes: changes when the item changes (orbs, gems, upgrades)
+	version = 7, -- hash of the item's attributes: changes when the item changes (orbs, gems, upgrades)
+	appearance = 8 -- custom attribute "chaos_tmog" (transmog look, server id) sent as the look's client id (engine patch 0019)
 }
 
 -- ---------------------------------------------------------------------------

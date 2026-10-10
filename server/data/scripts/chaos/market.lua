@@ -345,7 +345,7 @@ local STD = {"ITEM_ATTRIBUTE_DESCRIPTION", "ITEM_ATTRIBUTE_TEXT", "ITEM_ATTRIBUT
 	"ITEM_ATTRIBUTE_HITCHANCE", "ITEM_ATTRIBUTE_SHOOTRANGE", "ITEM_ATTRIBUTE_CHARGES", "ITEM_ATTRIBUTE_DURATION",
 	"ITEM_ATTRIBUTE_ATTACK_SPEED"}
 local EXTRA_KEYS = {"rarity", "combatPowerLevel", "chaos_unique", "chaos_sockets", "chaos_uses", "omen_kind", "rift_tier",
-	"rift_mods", "prefix", "chaos_mods_pending"}
+	"rift_mods", "prefix", "chaos_mods_pending", "chaos_tmog"}
 
 local keyList
 local function customKeys()

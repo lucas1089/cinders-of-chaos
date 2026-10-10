@@ -1,0 +1,72 @@
+# Transmog: an item may LOOK like another item (appearance only; server/data/scripts/chaos/transmog*.lua). The look is
+# the item's custom attribute "chaos_tmog" (server id of the look item). This adds item custom attribute key 8
+# (CHAOS_ITEM_KEY_APPEARANCE, after the keys of 0003) to every item packet of our client: the look's client id. The
+# client (client/base-patches/0030-transmog-appearance.patch) draws that look wherever the item is drawn (map, inventory,
+# containers, trade, drag) and keeps the item's own id for everything else, so the use / move / trade packets, which
+# the engine checks against the item's own client id, are unchanged; the server-side description, tooltip and stats are
+# the item's own. A look is ignored (the item shows its own) when it does not exist, is the item's own look, or is
+# stackable or a fluid / splash type (its item bytes would differ). An item that has only a look now also gets a
+# per-item id and a version, like an item with a rarity. The version hash already covers every custom attribute, so a
+# look change makes the client refresh its tooltip cache. item:getClientAttributes() returns key 8 too.
+# Keys: const.h ChaosItemAttrKey, Chaos.itemAttr.appearance (chaos_constants.lua), ChaosItemAttr.APPEARANCE (client
+# game_itemrarity); server/tests/item_tooltip_test.lua checks that the three agree.
+# Apply in the server source root after 0001-0018: patch -p1 < 0019-transmog-appearance.patch, then rebuild.
+--- a/src/const.h
++++ b/src/const.h
+@@ -707,6 +707,7 @@ enum ChaosItemAttrKey : uint16_t {
+ 	CHAOS_ITEM_KEY_SOCKETS = 5, // custom attribute "chaos_sockets", the socket count
+ 	CHAOS_ITEM_KEY_ID = 6, // custom attribute "chaos_iid", a per-item id given the first time the item is sent
+ 	CHAOS_ITEM_KEY_VERSION = 7, // hash of the item's id, attributes and custom attributes: changes when the item changes
++	CHAOS_ITEM_KEY_APPEARANCE = 8, // custom attribute "chaos_tmog" (server id of the look, transmog): the client id to draw
+ };
+ 
+ static constexpr int32_t CHANNEL_GUILD = 0x00;
+--- a/src/item.cpp
++++ b/src/item.cpp
+@@ -2609,7 +2609,7 @@ void Item::getChaosClientAttributes(std::vector<std::pair<uint16_t, uint64_t>>&
+ 		return;
+ 	}
+ 
+-	int64_t rarity = 0, level = 0, locked = 0, sockets = 0, itemId = 0;
++	int64_t rarity = 0, level = 0, locked = 0, sockets = 0, itemId = 0, look = 0;
+ 	bool unique = false;
+ 	uint64_t sum = 0; // order-independent: the map has no fixed order
+ 	for (const auto& entry : *custom) {
+@@ -2629,6 +2629,8 @@ void Item::getChaosClientAttributes(std::vector<std::pair<uint16_t, uint64_t>>&
+ 			unique = true;
+ 		} else if (key == "chaos_sockets") {
+ 			sockets = n;
++		} else if (key == "chaos_tmog") {
++			look = n;
+ 		}
+ 		uint64_t h = chaosHash(CHAOS_FNV_OFFSET, key.data(), key.size());
+ 		h = chaosHashAttr(h, entry.second);
+@@ -2637,7 +2639,17 @@ void Item::getChaosClientAttributes(std::vector<std::pair<uint16_t, uint64_t>>&
+ 	if (rarity <= 0) {
+ 		rarity = typeRarity;
+ 	}
+-	if (rarity <= 0 && level <= 0 && locked <= 0 && !unique && sockets <= 0) {
++	// transmog: draw another item's look. Only a look the client draws with the same item bytes (not stackable, no
++	// fluid / splash subtype) and not the item's own look; anything else is ignored, the item keeps its own look.
++	uint16_t appearance = 0;
++	if (look > 0 && look < static_cast<int64_t>(items.size()) && look != id) {
++		const ItemType& lookType = items[static_cast<uint16_t>(look)];
++		if (lookType.clientId != 0 && lookType.clientId != items[id].clientId && !lookType.stackable &&
++		    !lookType.isFluidContainer() && !lookType.isSplash()) {
++			appearance = lookType.clientId;
++		}
++	}
++	if (rarity <= 0 && level <= 0 && locked <= 0 && !unique && sockets <= 0 && appearance == 0) {
+ 		return;
+ 	}
+ 
+@@ -2684,6 +2696,9 @@ void Item::getChaosClientAttributes(std::vector<std::pair<uint16_t, uint64_t>>&
+ 	if (sockets > 0) {
+ 		out.emplace_back(CHAOS_ITEM_KEY_SOCKETS, static_cast<uint64_t>(sockets));
+ 	}
++	if (appearance != 0) {
++		out.emplace_back(CHAOS_ITEM_KEY_APPEARANCE, appearance);
++	}
+ 	out.emplace_back(CHAOS_ITEM_KEY_ID, static_cast<uint64_t>(itemId));
+ 	out.emplace_back(CHAOS_ITEM_KEY_VERSION, version);
+ }

@@ -94,8 +94,11 @@ local function readFile(path)
 	return s
 end
 local engine = {}
-for name, value in readFile("src-patches/0003-item-custom-attributes.patch"):gmatch("CHAOS_ITEM_KEY_(%u+) = (%d+)") do
-	engine[name] = tonumber(value)
+-- 0003 brings keys 1-7, 0019 (transmog) key 8
+for _, patch in ipairs({"0003-item-custom-attributes.patch", "0019-transmog-appearance.patch"}) do
+	for name, value in readFile("src-patches/" .. patch):gmatch("CHAOS_ITEM_KEY_(%u+) = (%d+)") do
+		engine[name] = tonumber(value)
+	end
 end
 local client = {}
 local block = readFile("../client/overlay/modules/game_itemrarity/itemrarity.lua"):match("ChaosItemAttr = (%b{})")
@@ -109,7 +112,7 @@ for key, value in pairs(Chaos.itemAttr) do
 	eq(engine[key:upper()], value, "engine key " .. key)
 	eq(client[key:upper()], value, "client key " .. key)
 end
-eq(n, 7, "seven keys")
+eq(n, 8, "eight keys")
 for name in pairs(engine) do
 	eq(Chaos.itemAttr[name:lower()] ~= nil, true, "engine key " .. name .. " in Chaos.itemAttr")
 end

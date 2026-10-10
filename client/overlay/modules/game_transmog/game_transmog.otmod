@@ -1,0 +1,13 @@
+Module
+  name: game_transmog
+  description: Transmog window - change the look of equipped gear to an unlocked appearance, the account wardrobe and its collection (server transmog.lua, extended opcode 212)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ transmogview, transmog ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1002
+  @onLoad: init()
+  @onUnload: terminate()

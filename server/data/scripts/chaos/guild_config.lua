@@ -142,7 +142,8 @@ return {
 		takePerDay = 20, -- entries a member below the vice-leader rank may take per day
 		-- custom attributes copied with an item (the rarity system's, uniques, keys, scrolls). Standard attributes
 		-- (description, name, text, charges, attack, defense, armor, ...) are always copied.
-		customKeys = {"rarity", "combatPowerLevel", "chaos_unique", "rift_tier", "rift_mods", "chaos_uses", "chaos_realm"},
+		customKeys = {"rarity", "combatPowerLevel", "chaos_unique", "rift_tier", "rift_mods", "chaos_uses", "chaos_realm",
+			"chaos_sockets", "chaos_tmog"}, -- sockets; the transmog look (transmog.lua)
 		customPrefixes = {"rarity_"} -- every key of ChaosCrafting's modifier lists with these prefixes
 	},
 

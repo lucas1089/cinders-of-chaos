@@ -15,7 +15,7 @@
 -- unique colour) from the attribute (onItemChange of every UIItem).
 
 -- Keys of the item custom attributes. Same numbers as ChaosItemAttrKey in the
--- engine (server/src-patches/0003-item-custom-attributes.patch) and Chaos.itemAttr
+-- engine (server/src-patches/0003-item-custom-attributes.patch, key 8: 0019) and Chaos.itemAttr
 -- in server/data/scripts/chaos/chaos_constants.lua (server/tests/item_tooltip_test.lua
 -- checks all three).
 ChaosItemAttr = {
@@ -26,6 +26,7 @@ ChaosItemAttr = {
 	SOCKETS = 5, -- socket count
 	ID = 6, -- per-item id (tooltip cache key)
 	VERSION = 7, -- changes whenever the item changes (tooltip cache key)
+	APPEARANCE = 8, -- transmog: client id of the look drawn instead of the item's own (server patch 0019, client 0030)
 }
 
 local FEATURE_ITEM_ATTRIBUTES = 126 -- GameItemCustomAttributes (gamelib const.lua)

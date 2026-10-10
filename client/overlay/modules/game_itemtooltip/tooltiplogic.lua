@@ -266,6 +266,8 @@ function L.lines(tip, ctx)
     end
   end
   if tip.locked then add('Locked', C.gold, true) end
+  -- a transmog look (server transmog.lua): appearance only, the stats above are the item's own
+  if type(tip.look) == 'table' and tip.look.name then add('Appearance: ' .. tostring(tip.look.name), C.mod, not tip.locked) end
   -- a store pouch (server pouches.lua): what it is and what it collects
   if tip.store then add(tip.store, C.gold, true) end
   if tip.collects then

@@ -1,0 +1,429 @@
+// Transmog (game_transmog): pick an equipped item, browse the unlocked looks of its kind, preview, apply or remove;
+// the Collection page shows the wardrobe progress per kind and the appearance sets. Styles from client_chaos_theme.
+
+TransmogSlotRow < ChaosPanelDark
+  height: 44
+  margin-bottom: 3
+  phantom: false
+  focusable: true
+
+  $focus:
+    background-color: #3a2410
+
+  UIItem
+    id: item
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+    size: 36 36
+    virtual: true
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: item.right
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin-left: 6
+    margin-top: 6
+    margin-right: 4
+    text-align: left
+    font: verdana-11px-rounded
+    color: #f6cf72
+    phantom: true
+
+  UILabel
+    id: sub
+    anchors.left: name.left
+    anchors.right: parent.right
+    anchors.top: name.bottom
+    margin-top: 3
+    margin-right: 4
+    text-align: left
+    font: verdana-11px-antialised
+    color: #a89c86
+    phantom: true
+
+TransmogLook < UIItem
+  size: 38 38
+  virtual: true
+  phantom: false
+  focusable: true
+  border-width: 1
+  border-color: #3a2c20
+  background-color: #120d0b
+
+  $hover:
+    border-color: #8c6a3a
+
+  $focus:
+    border-width: 2
+    border-color: #f6cf72
+
+TransmogKindRow < UIWidget
+  height: 34
+  margin-bottom: 2
+
+  UILabel
+    id: name
+    anchors.left: parent.left
+    anchors.top: parent.top
+    anchors.right: parent.right
+    text-align: left
+    font: verdana-11px-rounded
+    color: #d6c9ae
+
+  ChaosProgressBar
+    id: bar
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: name.bottom
+    margin-top: 2
+    height: 14
+    background-color: #b8862c
+
+TransmogSetRow < ChaosPanelDark
+  height: 80
+  margin-bottom: 3
+
+  UILabel
+    id: name
+    anchors.left: parent.left
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-left: 6
+    margin-top: 4
+    text-align: left
+    font: verdana-11px-rounded
+    color: #f6cf72
+
+  UILabel
+    id: how
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: name.bottom
+    margin-left: 6
+    margin-top: 2
+    text-align: left
+    font: verdana-11px-antialised
+
+  UIWidget
+    id: looks
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: how.bottom
+    anchors.bottom: parent.bottom
+    margin-left: 6
+    margin-top: 4
+    margin-bottom: 4
+    layout:
+      type: horizontalBox
+      spacing: 3
+
+TransmogSetLook < UIItem
+  size: 34 34
+  virtual: true
+  border-width: 1
+  border-color: #3a2c20
+  background-color: #120d0b
+
+ChaosMainWindow
+  id: transmogWindow
+  size: 780 500
+  !text: tr('Transmog')
+  @onEscape: modules.game_transmog.hide()
+
+  // ------------------------------------------------ equipment (left)
+  ChaosTitle
+    id: gearTitle
+    anchors.top: parent.top
+    anchors.left: parent.left
+    width: 220
+    text-align: left
+    !text: tr('Equipment')
+
+  ChaosPanelDark
+    id: gearFrame
+    anchors.top: gearTitle.bottom
+    anchors.left: parent.left
+    anchors.bottom: progressBar.top
+    margin-top: 4
+    margin-bottom: 10
+    width: 220
+    padding: 4
+    layout:
+      type: verticalBox
+
+  // ------------------------------------------------ the selected item (middle)
+  ChaosPanelDark
+    id: detail
+    anchors.top: parent.top
+    anchors.left: gearFrame.right
+    anchors.bottom: progressBar.top
+    margin-left: 8
+    margin-bottom: 10
+    width: 240
+    padding: 8
+
+    ChaosLabelDim
+      id: ownCaption
+      anchors.top: parent.top
+      anchors.left: parent.left
+      width: 104
+      text-align: center
+      !text: tr('Own look')
+
+    ChaosLabelDim
+      id: previewCaption
+      anchors.top: parent.top
+      anchors.right: parent.right
+      width: 104
+      text-align: center
+      !text: tr('Preview')
+
+    UIItem
+      id: ownItem
+      anchors.top: ownCaption.bottom
+      anchors.horizontalCenter: ownCaption.horizontalCenter
+      margin-top: 4
+      size: 80 80
+      virtual: true
+      border-width: 1
+      border-color: #3a2c20
+      background-color: #120d0b
+
+    UIItem
+      id: previewItem
+      anchors.top: previewCaption.bottom
+      anchors.horizontalCenter: previewCaption.horizontalCenter
+      margin-top: 4
+      size: 80 80
+      virtual: true
+      border-width: 1
+      border-color: #8c6a3a
+      background-color: #120d0b
+
+    ChaosTitle
+      id: itemName
+      anchors.top: ownItem.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 10
+      text-align: center
+
+    ChaosLabel
+      id: lookName
+      anchors.top: itemName.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      text-align: center
+      color: #5cc8c0
+
+    ChaosLabelDim
+      id: kindLabel
+      anchors.top: lookName.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      text-align: center
+
+    ChaosSeparator
+      id: sep
+      anchors.top: kindLabel.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 8
+
+    ChaosLabel
+      id: feeLabel
+      anchors.top: sep.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 6
+      text-align: center
+      color: #e8b84a
+
+    ChaosLabelDim
+      id: hintLabel
+      anchors.top: feeLabel.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 6
+      height: 44
+      text-wrap: true
+      text-align: top
+
+    ChaosButton
+      id: applyButton
+      anchors.left: parent.left
+      anchors.bottom: parent.bottom
+      width: 106
+      !text: tr('Apply')
+      @onClick: modules.game_transmog.applySelected()
+
+    ChaosButton
+      id: removeButton
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      width: 106
+      !text: tr('Remove look')
+      @onClick: modules.game_transmog.removeSelected()
+
+  // ------------------------------------------------ wardrobe / collection (right)
+  ChaosTabButton
+    id: wardrobeTab
+    anchors.top: parent.top
+    anchors.left: detail.right
+    margin-left: 8
+    width: 120
+    !text: tr('Wardrobe')
+    @onClick: modules.game_transmog.showPage('wardrobe')
+
+  ChaosTabButton
+    id: collectionTab
+    anchors.top: parent.top
+    anchors.left: wardrobeTab.right
+    margin-left: 4
+    width: 120
+    !text: tr('Collection')
+    @onClick: modules.game_transmog.showPage('collection')
+
+  ChaosPanelDark
+    id: wardrobePanel
+    anchors.top: wardrobeTab.bottom
+    anchors.left: detail.right
+    anchors.right: parent.right
+    anchors.bottom: progressBar.top
+    margin-left: 8
+    margin-top: 4
+    margin-bottom: 10
+    padding: 6
+
+    ChaosLabel
+      id: kindTitle
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      text-align: left
+      color: #f6cf72
+
+    ChaosTextEdit
+      id: searchEdit
+      anchors.top: kindTitle.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      placeholder: Search the wardrobe
+
+    UIScrollArea
+      id: lookList
+      anchors.top: searchEdit.bottom
+      anchors.left: parent.left
+      anchors.right: lookScroll.left
+      anchors.bottom: parent.bottom
+      margin-top: 6
+      vertical-scrollbar: lookScroll
+      auto-focus: none
+      layout:
+        type: grid
+        cell-size: 38 38
+        cell-spacing: 4
+        flow: true
+
+    ChaosScrollBar
+      id: lookScroll
+      anchors.top: searchEdit.bottom
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 6
+      step: 42
+      pixels-scroll: true
+
+    ChaosLabelDim
+      id: emptyLabel
+      anchors.centerIn: lookList
+      width: 220
+      text-wrap: true
+      text-auto-resize: true
+      text-align: center
+      opacity: 0.8
+
+  ChaosPanelDark
+    id: collectionPanel
+    anchors.top: wardrobeTab.bottom
+    anchors.left: detail.right
+    anchors.right: parent.right
+    anchors.bottom: progressBar.top
+    margin-left: 8
+    margin-top: 4
+    margin-bottom: 10
+    padding: 6
+    visible: false
+
+    UIScrollArea
+      id: collectionList
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: collectionScroll.left
+      anchors.bottom: parent.bottom
+      margin-right: 4
+      vertical-scrollbar: collectionScroll
+      auto-focus: none
+      layout:
+        type: verticalBox
+
+    ChaosScrollBar
+      id: collectionScroll
+      anchors.top: parent.top
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      step: 36
+      pixels-scroll: true
+
+  // ------------------------------------------------ bottom
+  ChaosLabel
+    id: progressLabel
+    anchors.left: parent.left
+    anchors.bottom: statusLabel.top
+    margin-bottom: 6
+    height: 16
+    width: 130
+    text-align: left
+    !text: tr('Wardrobe')
+
+  ChaosProgressBar
+    id: progressBar
+    anchors.left: progressLabel.right
+    anchors.right: goldLabel.left
+    anchors.bottom: statusLabel.top
+    margin-bottom: 6
+    margin-right: 10
+    background-color: #b8862c
+
+  ChaosLabel
+    id: goldLabel
+    anchors.right: parent.right
+    anchors.bottom: statusLabel.top
+    margin-bottom: 6
+    height: 16
+    width: 170
+    text-align: right
+    color: #e8b84a
+
+  ChaosLabelDim
+    id: statusLabel
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    height: 22
+    text-align: left
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 80
+    !text: tr('Close')
+    @onClick: modules.game_transmog.hide()

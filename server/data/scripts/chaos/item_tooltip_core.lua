@@ -499,6 +499,13 @@ function T.build(item, opts)
 		end
 	end
 	T.riftKey(item, tip)
+	-- a transmog look (transmog.lua): the item is drawn as another item; the tooltip stays the item's own and names
+	-- the look (look = {cid, name}: windows that draw the item from this data draw the look, e.g. Inspect Player)
+	local lookId = tonumber(call(item, "getCustomAttribute", "chaos_tmog")) or 0
+	local lookType = lookId > 0 and ItemType and ItemType(lookId) or nil
+	if lookType and int(call(lookType, "getId")) ~= 0 then
+		tip.look = {cid = int(call(lookType, "getClientId")), name = clip(call(lookType, "getName") or "?", T.config.maxNameLength)}
+	end
 	return tip
 end
 

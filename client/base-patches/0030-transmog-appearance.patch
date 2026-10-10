@@ -1,0 +1,134 @@
+# Transmog, the client side of server src-patch 0019 (server/README.md "Transmog"): item custom attribute 8 is the client id of a look the item is drawn with instead of its own (appearance only). Item::draw (map tiles, inventory and container slots, trade, market, drag) and Item::drawToImage use that look's thing type with its own patterns and animation; everything else (getId, flags, stack position, packets, tooltips, light) stays the item's own, so moving, using and trading the item are unchanged. A look that is stackable or a fluid / splash type is ignored. Lua: item:getAppearanceId(), item:setAppearanceId(clientId) (windows that build items from server data, e.g. the market, the inspect window and the Transmog previews). Key in game_itemrarity ChaosItemAttr.APPEARANCE.
+--- a/src/client/item.cpp
++++ b/src/client/item.cpp
+@@ -91,6 +91,26 @@ std::string Item::getName()
+     return g_things.findItemTypeByClientId(m_clientId)->getName();
+ }
+ 
++// Chaos transmog: patterns and animation phase of the drawn look (its own pattern and phase counts; equipment has no
++// count or fluid patterns, so only the position patterns and a clock-driven animation apply)
++static void appearancePatterns(ThingType* look, const Position& pos, bool animate, int& xPattern, int& yPattern, int& zPattern, int& animationPhase)
++{
++    xPattern = pos.x % std::max<int>(1, look->getNumPatternX());
++    yPattern = pos.y % std::max<int>(1, look->getNumPatternY());
++    zPattern = pos.z % std::max<int>(1, look->getNumPatternZ());
++    const int phases = look->getAnimationPhases();
++    if (phases <= 1) {
++        animationPhase = 0;
++    } else if (!animate) {
++        animationPhase = phases - 1;
++    } else if (look->getAnimator()) {
++        animationPhase = look->getAnimator()->getPhase();
++    } else {
++        const int ticks = g_game.getFeature(Otc::GameEnhancedAnimations) ? Otc::ITEM_TICKS_PER_FRAME_FAST : Otc::ITEM_TICKS_PER_FRAME;
++        animationPhase = static_cast<int>((g_clock.millis() / ticks) % phases);
++    }
++}
++
+ void Item::draw(const Point& dest, bool animate, LightView* lightView)
+ {
+     if (m_clientId == 0)
+@@ -107,11 +127,16 @@ void Item::draw(const Point& dest, bool animate, LightView* lightView)
+     if (m_color != Color::alpha)
+         color = m_color;
+     size_t drawQueueSize = g_drawQueue->size();
++    ThingType* type = rawGetThingType();
++    if (ThingType* look = getAppearanceThingType()) {
++        type = look;
++        appearancePatterns(look, m_position, animate, xPattern, yPattern, zPattern, animationPhase);
++    }
+     if (!m_shader.empty()) {
+-        rawGetThingType()->drawWithShader(dest, 0, xPattern, yPattern, zPattern, animationPhase, m_shader, color, lightView);
++        type->drawWithShader(dest, 0, xPattern, yPattern, zPattern, animationPhase, m_shader, color, lightView);
+     }
+     else {
+-        rawGetThingType()->draw(dest, 0, xPattern, yPattern, zPattern, animationPhase, color, lightView);
++        type->draw(dest, 0, xPattern, yPattern, zPattern, animationPhase, color, lightView);
+     }
+     if (m_marked) {
+         g_drawQueue->setMark(drawQueueSize, updatedMarkedColor());
+@@ -139,11 +164,16 @@ void Item::draw(const Rect& dest, bool animate)
+     if (m_color != Color::alpha)
+         color = m_color;
+ 
++    ThingType* type = rawGetThingType();
++    if (ThingType* look = getAppearanceThingType()) {
++        type = look;
++        appearancePatterns(look, m_position, animate, xPattern, yPattern, zPattern, animationPhase);
++    }
+     if (!m_shader.empty()) {
+-        rawGetThingType()->drawWithShader(dest, 0, xPattern, yPattern, zPattern, animationPhase, m_shader, color);
++        type->drawWithShader(dest, 0, xPattern, yPattern, zPattern, animationPhase, m_shader, color);
+     }
+     else {
+-        rawGetThingType()->draw(dest, 0, xPattern, yPattern, zPattern, animationPhase, color);
++        type->draw(dest, 0, xPattern, yPattern, zPattern, animationPhase, color);
+     }
+ }
+ 
+@@ -155,9 +185,26 @@ bool Item::drawToImage(const Point& dest, ImagePtr image)
+     int xPattern = 0, yPattern = 0, zPattern = 0;
+     calculatePatterns(xPattern, yPattern, zPattern);
+ 
++    if (ThingType* look = getAppearanceThingType()) {
++        int animationPhase = 0;
++        appearancePatterns(look, m_position, false, xPattern, yPattern, zPattern, animationPhase);
++        return look->drawToImage(dest, xPattern, yPattern, zPattern, image);
++    }
+     return rawGetThingType()->drawToImage(dest, xPattern, yPattern, zPattern, image);
+ }
+ 
++ThingType* Item::getAppearanceThingType()
++{
++    const uint16 look = getAppearanceId();
++    if (look == 0 || look == m_clientId || !g_things.isValidDatId(look, ThingCategoryItem))
++        return nullptr;
++    ThingType* type = g_things.rawGetThingType(look, ThingCategoryItem);
++    // a look with count or fluid patterns would need this item's subtype: the server never sends one (patch 0019)
++    if (!type || type->isStackable() || type->isFluidContainer() || type->isSplash())
++        return nullptr;
++    return type;
++}
++
+ void Item::setId(uint32 id)
+ {
+     if(id == 0 || !g_things.isValidDatId(id, ThingCategoryItem)) {
+--- a/src/client/item.h
++++ b/src/client/item.h
+@@ -71,6 +71,9 @@ enum ItemAttr : uint8
+     ATTR_ATTRIBUTE_MAP = 128
+ };
+ 
++// Chaos: custom attribute key of the transmog look (server ChaosItemAttrKey CHAOS_ITEM_KEY_APPEARANCE, server patch 0019)
++static constexpr uint16 ITEM_CUSTOM_ATTR_APPEARANCE = 8;
++
+ // @bindclass
+ #pragma pack(push,1) // disable memory alignment
+ class Item : public Thing
+@@ -214,6 +217,15 @@ public:
+         return m_customAttribs.get<uint64>(key);
+     }
+ 
++    // Chaos transmog: custom attribute 8 (ChaosItemAttr.APPEARANCE) is the client id of the look to draw. Only the
++    // drawing changes: the id, flags, stack position, light source, packets and tooltips stay the item's own.
++    uint16 getAppearanceId() {
++        const uint64 look = m_customAttribs.get<uint64>(ITEM_CUSTOM_ATTR_APPEARANCE);
++        return look <= 0xFFFF ? static_cast<uint16>(look) : 0;
++    }
++    void setAppearanceId(uint16 id) { m_customAttribs.set(ITEM_CUSTOM_ATTR_APPEARANCE, static_cast<uint64>(id)); }
++    ThingType* getAppearanceThingType();
++
+     AnimatorPtr getAnimator() override { return m_animator; }
+     AnimatorPtr getIdleAnimator() override { return m_idleAnimator; }
+ 
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -860,6 +860,8 @@ void Client::registerLuaFunctions()
+     g_lua.bindClassMemberFunction<Item>("getItemHash", &Item::getItemHash);
+     g_lua.bindClassMemberFunction<Item>("setCustomAttribute", &Item::setCustomAttribute);
+     g_lua.bindClassMemberFunction<Item>("getCustomAttribute", &Item::getCustomAttribute);
++    g_lua.bindClassMemberFunction<Item>("getAppearanceId", &Item::getAppearanceId); // Chaos transmog
++    g_lua.bindClassMemberFunction<Item>("setAppearanceId", &Item::setAppearanceId); // Chaos transmog
+ 
+     g_lua.registerClass<Effect, Thing>();
+     g_lua.bindClassStaticFunction<Effect>("create", []{ return std::make_shared<Effect>(); });

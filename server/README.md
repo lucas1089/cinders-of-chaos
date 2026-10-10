@@ -85,6 +85,10 @@ server/
                                       data/lib/chaos_energy_shield.lua, client game_energyshield)
   src-patches/0016-percent-armour.patch   engine: a player's armour takes armour / (armour + 250) of a physical hit, at most
                                       80% (config armorPercent*; see "Percent armour", tools/armor_sim.py)
+  src-patches/0019-transmog-appearance.patch   engine: item custom attribute 8 = client id of the item's transmog look
+                                      (custom attribute "chaos_tmog"), drawn by client base patch 0030 (see "Transmog")
+    transmog.lua  transmog_core.lua  transmog_config.lua (transmog: account wardrobe, appearance sets, client game_transmog;
+                                      sql/chaos_transmog.sql, see "Transmog")
     item_tooltip.lua  item_tooltip_core.lua (rich item tooltips with the equipped-item compare, client game_itemtooltip)
     shop.lua  shop_config.lua  shop_services.lua  autosell.lua  sell_prices.lua (store, see "Store services")
     bounty.lua  bounty_core.lua  bounty_config.lua  bounty_pool.lua (bounty board; pool from tools/gen_bounty_pool.py)
@@ -1701,6 +1705,61 @@ by sealing the 25th rift -> Riftwalker's Gate "unlocked", selected and cast (fie
 style granted through `storeUnlock` (Emberforge) and the Waygate cast with their effects; the cast bar; an unlock while the
 window is open now refreshes it at once (`achievements.lua` sends the state, `open = false`).
 Not verified: a real party of two clients using the return portal while the owner is away; very crowded temples (80 return spots).
+
+## Transmog (`transmog.lua`, `transmog_core.lua`, `transmog_config.lua`, `sql/chaos_transmog.sql`, engine patch 0019, client `game_transmog`, base patch 0030)
+
+An equipped helmet, armor, legs, boots, weapon or shield can LOOK like another item of the same kind that the account has
+unlocked. Appearance only: id, stats, name, tooltip, weight and every rule stay the item's own. Character > Transmog, or
+right-click an equipped item > Transmog. Numbers and sets: `transmog_config.lua`.
+
+- **The look is an item attribute.** Custom attribute `chaos_tmog` = server id of the look. Engine patch
+  `src-patches/0019-transmog-appearance.patch` sends its client id as item custom attribute 8 (`CHAOS_ITEM_KEY_APPEARANCE`,
+  after the keys of 0003) in every item packet. Client base patch `0030` draws that look in `Item::draw` and
+  `Item::drawToImage`: map tiles, inventory, containers, trade, drag. The client keeps the item's own id for packets, so
+  move / use / trade, which the engine checks against the real client id, are unchanged (no `game.cpp` change). A look that
+  is stackable or a fluid / splash type is ignored by both sides. Decision: attribute + client drawing, not a different id
+  in the packet (that would break the engine's client-id checks, the stack counts and every client module keyed on ids).
+- **It travels with the item.** Moves, trades, depots and logout keep custom attributes; the market escrow keeps it through
+  patch 0017 (or `chaos_tmog` in `market.lua` EXTRA_KEYS without it); the guild depot copies it (`guild_config.lua`
+  `customKeys`). The 0003 version hash covers it, so tooltip caches refresh.
+- **Wherever the item is drawn from server data:** tooltips add "Appearance: <look>" (`item_tooltip_core.lua` `tip.look`,
+  client `tooltiplogic.lua`); Inspect Player draws the look (`tip.look`); market rows, My Offers, History and the sell picker
+  draw it (`market.lua` `addLooks`: one query per page on the tip snapshot, `look` on sellable entries).
+- **Kinds** (`kinds`): weapons by weapon type (sword, axe, club, distance, wand / rod, shield incl. spellbooks), armour by slot
+  bit (head, armor, legs, feet). Not pickupable, stackable (throwing weapons), containers, fluids and ammunition have no kind.
+  The catalogue is every item type up to `scanMaxId` with a kind, minus `exclude` / `excludeRanges` (1454 looks on the test
+  server); collection progress counts it.
+- **Wardrobe** (account-wide, table `chaos_transmog`): an item unlocks its look when it enters the character's inventory
+  (`EventCallback.onItemMoved`, equipment or a carried container, 3 levels deep), at login (equipped items) and when the
+  window opens (equipment and carried containers). Getting a transmogged item unlocks the item's own look, not its look.
+- **Appearance sets** (`sets`, table `chaos_transmog_sets`): looks only the set's source unlocks (carrying such an item unlocks
+  nothing). Sources: `store` (offer `{kind = "unlock", unlock = "transmog_<key>"}`, `ChaosTransmog.storeUnlock`, account-wide),
+  `achievement` (owned while `ChaosAchievements.has` the named achievement; synced at window open), `season`
+  (`ChaosSeasonPass.ownsTransmog(player, key)` when the season pass has that hook), `exclusive` (`ChaosTransmog.grantSet`, staff
+  `/transmog`). Shipped: Falconer's Regalia (store, 300), Lionguard (store, 350), Spiritthorn (`level_500`), Rimebound
+  (`rift_t10`), Arboreal (season), Arcanomancer (exclusive). All are base server art that no monster drops and no NPC sells
+  (the test scans the repo data). `ChaosTransmogCore.validate` runs in the test and at startup.
+- **Fee:** apply 2000 gold + 10 per item level, at most 20000 (backpack, then bank); remove free.
+- **Refused:** empty slot, an item without a kind, another kind, the item's own look, the same look again, a look not
+  unlocked, not enough gold.
+
+Protocol (opcode `ChaosOpcodes.transmog` = 212, JSON, server -> client through `Chaos.sendChunked`): client -> server
+`open | looks {kind} | apply {slot, look} | remove {slot} | close`; server -> client `state {open, money, fee, slots, kinds,
+total, sets}`, `looks {kind, rows}`, `result {ok, text}`. API (other scripts): `ChaosTransmog.lookOf / setLook / clearLook /
+isUnlocked / unlockLook / grantSet / revokeSet / ownsSet / storeUnlock / sendState`. Staff: `/transmog <character>, <set key |
+all | look id>[, revoke]`.
+
+Install: the `files` and `sql` steps of `install_all.py` (no other installer). Engine: build with patches 0001-0019; client:
+base patches 0001-0030. Tests: `tests/transmog_test.lua`, `tests/item_tooltip_test.lua` (key 8 in the engine, the constants and
+the client), client `game_transmog/transmogview_test.lua`, `game_itemtooltip/tooltiplogic_test.lua`.
+**Verified in game** (engine and Linux client built from fresh trees with the new patches, test server on the cropped map, two
+clients): window, preview and apply (fee taken); the look in the inventory slot, a container, on the ground and in the trade
+window of both players; picking it up from the ground and trading it (client sends the real id, the server accepts); the
+receiver sees the look and only the real item enters its wardrobe; the tooltip keeps the real item with the Appearance line;
+a store set granted through `storeUnlock` and an achievement set synced at open; the Collection page; market listing row
+shows the look and cancelling returns the item with its look; Inspect Player draws the looks; refusal of a locked look; remove.
+Not done: the store offers (the store files belong to the payments work: one `unlockEntry` line in `shop_services.lua` and two
+offers in `shop_config.lua`); the season pass hook `ChaosSeasonPass.ownsTransmog`; looks of item links in chat.
 
 ## Cast-time spells (`data/lib/chaos_casting.lua`, `casting.lua`, client `game_castbar`)
 

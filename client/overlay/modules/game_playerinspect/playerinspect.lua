@@ -61,6 +61,10 @@ local function fillSlot(slot, tip)
   if not w then return end
   w:setItemId(tonumber(tip.id) or 0)
   w:setItemCount(tonumber(tip.count) or 1)
+  -- a transmog look (server transmog.lua, tip.look; client base patch 0030): the gear is drawn as it looks
+  local look = type(tip.look) == 'table' and tonumber(tip.look.cid) or 0
+  local item = look > 0 and w:getItem() or nil
+  if item then pcall(function() item:setAppearanceId(look) end) end
   w.tip = tip
   local logic = tooltips() and tooltips().ItemTooltipLogic
   local color = logic and logic.titleColor(tip) or nil
