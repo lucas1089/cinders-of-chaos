@@ -5,7 +5,9 @@
 --   client -> server  open | browse {filter} | tip {id} | buy {id, cur} | sellable | list {ref|pos, sid|cid, iid, count,
 --                     gold, coins, days} | cancel {id} | mine | history | wallet
 --   server -> client  meta | page | tip | sellable | mine | history | wallet | done {what, text} | error {text} | openWindow
--- Tabs: Browse (search, filters, sorting, pages; hover = the full item tooltip of game_itemtooltip, Buy with a
+-- Tabs: Browse (search, filters, sorting, pages; a collapsible Modifiers section: up to 6 rows of modifier (typeahead
+-- over the Codex names) / lowest value / lowest tier, all of them or at least N, sockets, quality, free prefix / suffix,
+-- power, bound; hover = the full item tooltip of game_itemtooltip with the modifiers the search matched, Buy with a
 -- confirmation), Sell (pick an item from the backpack or drag one in, prices, duration, the fee), My Offers (active,
 -- sold, expired, cancelled; Cancel), History (purchases and sales).
 
@@ -23,7 +25,9 @@ local lastFilter = { page = 1 }
 local pageInfo = { page = 1, pages = 1, total = 0 }
 local sellItems = {}
 local selected -- the chosen Sell item: {ref | pos, sid | cid, iid, count, name, stack, rarity, ilvl}
-local modOptions
+local modCatalog -- V.modCatalog of the Codex data
+local modRowWidgets = {}
+local modsOpen = false
 local updating = false
 
 local okText, Text = pcall(dofile, '/modules/game_spellsupports/supportstext.lua')
@@ -36,6 +40,13 @@ local function send(action, data)
   if protocol then
     protocol:sendExtendedOpcode(OPCODE, json.encode({ action = action, data = data or {} }))
   end
+end
+
+-- a Browse request; a refusal of it (an invalid filter) is cleared from the status line by the next page
+local browseWaiting = false
+local function sendBrowse()
+  browseWaiting = true
+  send('browse', lastFilter)
 end
 
 local function tooltips()
@@ -145,11 +156,8 @@ local function fillFilterCombos()
     sorts[#sorts + 1] = { V.SORT_NAMES[s] or s, s }
   end
   fillCombo(window.browsePanel.sortCombo, sorts, lastFilter.sort or 'new')
-  if not modOptions then
-    local codex = modules.game_codex
-    modOptions = V.modOptions(codex and codex.CodexData or CodexData)
-  end
-  fillCombo(window.browsePanel.modCombo, modOptions, lastFilter.mod or '')
+  fillCombo(window.browsePanel.modPanel.modeCombo, { { 'All must match', 'all' }, { 'At least ... match', 'count' } },
+    window.browsePanel.modPanel.modeCombo.mode or 'all')
   local days = {}
   for _, d in ipairs((meta and meta.durations) or { 1, 3, 7 }) do days[#days + 1] = { d == 1 and '1 day' or (d .. ' days'), d } end
   fillCombo(window.sellPanel.daysCombo, days, (meta and meta.defaultDuration) or 3)
@@ -172,6 +180,9 @@ local function showRowTip(row)
   local extra = { { text = 'Seller: ' .. (row.offer.seller or tip.seller or '?'), color = COLORS.dim, sep = true } }
   for _, p in ipairs(V.priceLines(row.offer)) do
     extra[#extra + 1] = { text = p.text, color = p.cur == 'coins' and COLORS.coins or COLORS.gold }
+  end
+  for i, m in ipairs(V.matchedMods(tip, lastFilter)) do
+    extra[#extra + 1] = { text = m.text, color = COLORS.ok, sep = i == 1 or nil }
   end
   tt.showTip(row, 'market:' .. row.offer.id, tip, extra)
 end
@@ -309,12 +320,144 @@ local function addHeading(list, text)
   return h
 end
 
+-- ---------------------------------------------------------------- Browse: the Modifiers section
+local function modLimits()
+  return (meta and meta.modFilter) or V.MOD_LIMITS
+end
+
+local function catalog()
+  if not modCatalog or #modCatalog.list == 0 then
+    local codex = modules.game_codex
+    modCatalog = V.modCatalog(codex and codex.CodexData or CodexData)
+  end
+  return modCatalog
+end
+
+-- the modifier combo of a row: the choices for its search text; keeps the chosen modifier when it still matches, else
+-- takes the first match (a search that matches nothing chooses nothing)
+local function fillModCombo(row, keepKey)
+  local choices, first = V.modChoices(catalog(), row.search:getText())
+  local want = keepKey
+  local has = false
+  for _, o in ipairs(choices) do if want and want ~= '' and o[2] == want then has = true end end
+  if not has then want = row.search:getText() ~= '' and first or '' end
+  updating = true
+  row.mod:clearOptions()
+  local index = 1
+  for i, o in ipairs(choices) do
+    row.mod:addOption(o[1], o[2], true)
+    if want ~= '' and o[2] == want then index = i end
+  end
+  row.mod:setCurrentIndex(index, true)
+  updating = false
+end
+
+local function modForm()
+  local mp = window.browsePanel.modPanel
+  local rows = {}
+  for _, w in ipairs(modRowWidgets) do
+    rows[#rows + 1] = { key = comboValue(w.mod), min = w.min:getText(), tier = comboValue(w.tier) }
+  end
+  return { rows = rows, mode = comboValue(mp.modeCombo), need = mp.needEdit:getText(), sockets = mp.socketsEdit:getText(),
+    quality = mp.qualityEdit:getText(), freeP = mp.freePCheck:isChecked(), freeS = mp.freeSCheck:isChecked(),
+    power = mp.powerCheck:isChecked(), bound = mp.boundCheck:isChecked() }
+end
+
+local function updateModToggle(req)
+  local p = window.browsePanel
+  local n = V.modCount(req or V.modRequest(modForm(), modLimits()) or {})
+  p.modToggle:setText((n > 0 and ('Modifiers (' .. n .. ')') or 'Modifiers') .. (modsOpen and ' [-]' or ' [+]'))
+  local limits = modLimits()
+  p.modPanel.addModButton:setEnabled(#modRowWidgets < (limits.maxRows or 6))
+  p.modPanel.needEdit:setEnabled(comboValue(p.modPanel.modeCombo) == 'count')
+  p.modSummary:setText(not modsOpen and n > 0 and tr('Modifier filters active') or '')
+end
+
+-- the section's height follows its rows (the offer list below takes the rest of the window)
+local function layoutMods()
+  local p = window.browsePanel
+  local mp = p.modPanel
+  mp.modRows:setHeight(#modRowWidgets * 26)
+  if modsOpen then
+    local hint = mp.modHint
+    local hintH = math.max(22, hint:getHeight())
+    mp:setHeight(mp:getPaddingTop() + 22 + 2 + #modRowWidgets * 26 + 6 + hintH + mp:getPaddingBottom())
+    mp:setMarginTop(6)
+    mp:show()
+  else
+    mp:setHeight(0)
+    mp:setMarginTop(0)
+    mp:hide()
+  end
+  updateModToggle()
+end
+
+local function cleanSearch()
+  if not window then return end
+  search(1)
+end
+
+function addModRow(key)
+  if not window then return end
+  local limits = modLimits()
+  if #modRowWidgets >= (limits.maxRows or 6) then
+    setStatus(string.format('At most %d modifiers per search.', limits.maxRows or 6), COLORS.error)
+    return
+  end
+  local row = g_ui.createWidget('MarketModRow', window.browsePanel.modPanel.modRows)
+  modRowWidgets[#modRowWidgets + 1] = row
+  fillCombo(row.tier, V.tierOptions(limits.maxTier or 8), 0)
+  fillModCombo(row, key)
+  row.search.onTextChange = function(w, text)
+    row.searchHint:setVisible(text == '')
+    local before = comboValue(row.mod)
+    fillModCombo(row, before)
+    if comboValue(row.mod) ~= before then cleanSearch() end
+  end
+  row.mod.onOptionChange = function() if not updating then updateModToggle() cleanSearch() end end
+  row.tier.onOptionChange = function() if not updating then cleanSearch() end end
+  row.min.onTextChange = function() if not updating then cleanSearch() end end
+  row.remove.onClick = function()
+    for i, w in ipairs(modRowWidgets) do
+      if w == row then table.remove(modRowWidgets, i) break end
+    end
+    row:destroy()
+    layoutMods()
+    cleanSearch()
+  end
+  layoutMods()
+  return row
+end
+
+function toggleMods()
+  if not window then return end
+  modsOpen = not modsOpen
+  if modsOpen and #modRowWidgets == 0 then addModRow() end
+  layoutMods()
+end
+
+local function clearMods()
+  for _, w in ipairs(modRowWidgets) do w:destroy() end
+  modRowWidgets = {}
+  local mp = window.browsePanel.modPanel
+  updating = true
+  for _, id in ipairs({ 'needEdit', 'socketsEdit', 'qualityEdit' }) do mp[id]:setText('') end
+  for _, id in ipairs({ 'freePCheck', 'freeSCheck', 'powerCheck', 'boundCheck' }) do mp[id]:setChecked(false) end
+  mp.modeCombo:setCurrentIndex(1, true)
+  mp.modeCombo.mode = 'all'
+  updating = false
+end
+
 -- ---------------------------------------------------------------- Browse
+-- the filter of the window's fields, or nil and why (an invalid Modifiers section; shown in the status line)
 local function readFilter(page)
   local p = window.browsePanel
-  return V.filter({ q = p.searchEdit:getText(), cat = comboValue(p.catCombo), rarity = comboValue(p.rarityCombo),
-    cur = comboValue(p.curCombo), sort = comboValue(p.sortCombo), mod = comboValue(p.modCombo), ilvlMin = p.ilvlMin:getText(),
-    ilvlMax = p.ilvlMax:getText(), priceMin = p.priceMin:getText(), priceMax = p.priceMax:getText(), page = page })
+  local f, why = V.filter({ q = p.searchEdit:getText(), cat = comboValue(p.catCombo), rarity = comboValue(p.rarityCombo),
+    cur = comboValue(p.curCombo), sort = comboValue(p.sortCombo), ilvlMin = p.ilvlMin:getText(),
+    ilvlMax = p.ilvlMax:getText(), priceMin = p.priceMin:getText(), priceMax = p.priceMax:getText(), page = page,
+    modForm = modForm(), limits = modLimits() })
+  updateModToggle(f)
+  return f, why
 end
 
 local searchEvent
@@ -326,8 +469,16 @@ function search(page)
   searchEvent = scheduleEvent(function()
     searchEvent = nil
     if not window then return end
-    lastFilter = readFilter(page or 1)
-    send('browse', lastFilter)
+    local f, why = readFilter(page or 1)
+    if not f then
+      setStatus(why, COLORS.error)
+      window.statusLabel.filterError = true
+      return
+    end
+    if window.statusLabel.filterError then setStatus('') end
+    window.statusLabel.filterError = nil
+    lastFilter = f
+    sendBrowse()
   end, 250)
 end
 
@@ -335,8 +486,13 @@ function page(delta)
   local target = (pageInfo.page or 1) + delta
   if target < 1 or target > (pageInfo.pages or 1) then return end
   if not window then return end
-  lastFilter = readFilter(target)
-  send('browse', lastFilter)
+  local f, why = readFilter(target)
+  if not f then
+    setStatus(why, COLORS.error)
+    return
+  end
+  lastFilter = f
+  sendBrowse()
 end
 
 function resetFilters()
@@ -344,12 +500,20 @@ function resetFilters()
   local p = window.browsePanel
   for _, id in ipairs({ 'searchEdit', 'ilvlMin', 'ilvlMax', 'priceMin', 'priceMax' }) do p[id]:setText('') end
   lastFilter = { page = 1 }
+  clearMods()
+  if modsOpen then addModRow() end
   fillFilterCombos()
+  layoutMods()
   search(1)
 end
 
 local function onPage(data)
   local p = window.browsePanel
+  browseWaiting = false
+  if window.statusLabel.filterError then
+    setStatus('')
+    window.statusLabel.filterError = nil
+  end
   clearList(p.offerList)
   pageInfo = { page = data.page or 1, pages = data.pages or 1, total = data.total or 0 }
   for _, offer in ipairs(data.rows or {}) do addRow(p.offerList, offer, 'browse') end
@@ -528,7 +692,7 @@ local function showTab(i)
   local tt = tooltips()
   if hoveredRow and tt and tt.hideTip then tt.hideTip(hoveredRow) hoveredRow = nil end
   if i == 1 then
-    send('browse', lastFilter)
+    sendBrowse()
   elseif i == 2 then
     send('sellable')
     updateFee()
@@ -584,12 +748,16 @@ local function onMessage(protocol, opcode, msg)
       window.sellPanel.coinsEdit:setText('')
       send('sellable')
     elseif data.what == 'buy' then
-      send('browse', lastFilter)
+      sendBrowse()
     elseif data.what == 'cancel' then
-      if tabIndex == 3 then send('mine') else send('browse', lastFilter) end
+      if tabIndex == 3 then send('mine') else sendBrowse() end
     end
   elseif a == 'error' then
     setStatus(data.text, COLORS.error)
+    if browseWaiting then
+      browseWaiting = false
+      window.statusLabel.filterError = true
+    end
   end
 end
 
@@ -615,10 +783,16 @@ function toggle()
   if window:isVisible() then hide() else show() end
 end
 
+-- the filters (the Modifiers section too) stay as they are while the character is logged in; a new login starts clean
 local function onGameEnd()
   hide()
   meta, selected, tipCache, tipAsked, sellItems = nil, nil, {}, {}, {}
   lastFilter = { page = 1 }
+  if window then
+    clearMods()
+    modsOpen = false
+    layoutMods()
+  end
 end
 
 function init()
@@ -640,15 +814,32 @@ function init()
     if keyCode == KeyEnter then search(1) return true end
     return false
   end
-  for _, id in ipairs({ 'catCombo', 'rarityCombo', 'curCombo', 'sortCombo', 'modCombo' }) do
+  for _, id in ipairs({ 'catCombo', 'rarityCombo', 'curCombo', 'sortCombo' }) do
     p[id].onOptionChange = function() if not updating then search(1) end end
   end
+  local mp = p.modPanel
+  mp.modeCombo.onOptionChange = function(w, text, data)
+    w.mode = data
+    if not updating then updateModToggle() search(1) end
+  end
+  for _, id in ipairs({ 'needEdit', 'socketsEdit', 'qualityEdit' }) do
+    mp[id].onTextChange = function() if not updating then search(1) end end
+  end
+  for _, id in ipairs({ 'freePCheck', 'freeSCheck', 'powerCheck', 'boundCheck' }) do
+    local c = mp[id]
+    c:setWidth(c:getTextSize().width + 26)
+    c.onCheckChange = function() if not updating then search(1) end end
+  end
+  mp.modHint:setText(tr('Up to 6 modifiers. Type in the box on the left to find one. Tiers: T1 is the lowest, T8 the best (T5+ = T5 or better). '
+    .. 'Values as on the item.'))
+  connect(mp.modHint, { onGeometryChange = function() if modsOpen then addEvent(layoutMods) end end })
   local s = window.sellPanel
   s.goldEdit.onTextChange = function() updateFee() end
   s.coinsEdit.onTextChange = function() updateFee() end
   s.daysCombo.onOptionChange = function() if not updating then updateFee() end end
   s.sellSlot.onDrop = onDropItem
   fillFilterCombos()
+  layoutMods()
   showSelected()
   updateFee()
   ProtocolGame.registerExtendedJSONOpcode(OPCODE, onMessage)
@@ -664,4 +855,5 @@ function terminate()
     window = nil
   end
   tabs = {}
+  modRowWidgets = {}
 end

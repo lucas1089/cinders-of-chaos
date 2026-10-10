@@ -475,8 +475,11 @@ Sell and buy with other players at **Economy > Market** (Alt+E), or by using the
 - **Any item:** orbs and other stacks (sell part of a stack) and rolled gear with every modifier, tier, socket, gem,
   quality and legendary power exactly as it is. Equipped, locked, store and quest items and bags with something inside
   cannot be listed.
-- **Browse:** search by name, filter by category, rarity, item level, currency, price and modifier (the Codex names),
-  sort, and hover an offer for its full tooltip (Ctrl compares with what you wear).
+- **Browse:** search by name, filter by category, rarity, item level, currency and price, sort, and hover an offer for
+  its full tooltip (Ctrl compares with what you wear; the modifiers your search matched are listed under it).
+- **Modifier search:** open **Modifiers** and add up to 6 rows: a modifier or legendary power (type part of its name),
+  the lowest value and the lowest tier (T1 is the lowest, T8 the best: "T5+" finds T5 to T8). Ask for all rows or for
+  at least some of them, and for sockets, quality, a free prefix or suffix slot, a legendary power or a bound modifier.
 - **Fees:** listing 1% of the gold price (at least 100 gold, not refunded), 5% sales tax when it sells. Offers last 1, 3
   or 7 days; up to 20 at a time. What does not sell comes back to your inbox.
 - **Safe:** bought items and returned items arrive in your inbox (the depot); you see each sale as a message and a toast,

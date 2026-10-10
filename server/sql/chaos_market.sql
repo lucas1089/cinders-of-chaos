@@ -7,6 +7,10 @@
 --   coin sale: the coins are moved in the purchase transaction), applied in
 --   id order when the character is online; the storage 7100971 (deliverSeq) makes it crash safe.
 -- chaos_market_log: every listing, sale, cancel, expiry, delivery, recovery and error.
+-- chaos_market_offer_mods: the modifiers of each active / pending offer (key, value, tier) for the Browse modifier
+--   filter; written with the offer, removed when the offer closes. The offers' columns sockets, quality, free_prefix,
+--   free_suffix, has_power, bound_mods are the other filters; mods_indexed = 1 once the offer's rows are written (the
+--   offers listed before this existed are indexed from their tooltip snapshot at startup, recorded in server_config).
 
 CREATE TABLE IF NOT EXISTS `chaos_market_offers` (`id` int(11) NOT NULL AUTO_INCREMENT,
   `realm` int(11) NOT NULL DEFAULT 0, `state` tinyint(3) unsigned NOT NULL DEFAULT 9,
@@ -20,7 +24,11 @@ CREATE TABLE IF NOT EXISTS `chaos_market_offers` (`id` int(11) NOT NULL AUTO_INC
   `tip` mediumtext NOT NULL, `created` int(10) unsigned NOT NULL, `expires` int(10) unsigned NOT NULL,
   `buyer_id` int(11) NOT NULL DEFAULT 0, `buyer_name` varchar(64) NOT NULL DEFAULT '',
   `paid_currency` varchar(8) NOT NULL DEFAULT '', `paid_amount` bigint(20) unsigned NOT NULL DEFAULT 0,
-  `tax` bigint(20) unsigned NOT NULL DEFAULT 0, `closed_at` int(10) unsigned NOT NULL DEFAULT 0, PRIMARY KEY (`id`),
+  `tax` bigint(20) unsigned NOT NULL DEFAULT 0, `closed_at` int(10) unsigned NOT NULL DEFAULT 0,
+  `sockets` tinyint(3) unsigned NOT NULL DEFAULT 0, `quality` smallint(5) unsigned NOT NULL DEFAULT 0,
+  `free_prefix` tinyint(3) unsigned NOT NULL DEFAULT 0, `free_suffix` tinyint(3) unsigned NOT NULL DEFAULT 0,
+  `has_power` tinyint(1) NOT NULL DEFAULT 0, `bound_mods` tinyint(3) unsigned NOT NULL DEFAULT 0,
+  `mods_indexed` tinyint(1) NOT NULL DEFAULT 0, PRIMARY KEY (`id`),
   KEY `chaos_market_browse` (`state`, `realm`, `expires`), KEY `chaos_market_seller` (`seller_id`, `state`),
   KEY `chaos_market_buyer` (`buyer_id`), KEY `chaos_market_account` (`seller_account`, `state`))
   ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -39,4 +47,19 @@ CREATE TABLE IF NOT EXISTS `chaos_market_log` (`id` int(11) NOT NULL AUTO_INCREM
   `name` varchar(100) NOT NULL DEFAULT '', `currency` varchar(8) NOT NULL DEFAULT '',
   `amount` bigint(20) NOT NULL DEFAULT 0, `fee` bigint(20) NOT NULL DEFAULT 0, `text` varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`), KEY `chaos_market_log_offer` (`offer_id`), KEY `chaos_market_log_player` (`player_id`, `id`))
+  ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- the modifier filter (added after the first version: safe on a database that has the tables already; MariaDB's
+-- ADD COLUMN IF NOT EXISTS)
+ALTER TABLE `chaos_market_offers` ADD COLUMN IF NOT EXISTS `sockets` tinyint(3) unsigned NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `quality` smallint(5) unsigned NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `free_prefix` tinyint(3) unsigned NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `free_suffix` tinyint(3) unsigned NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `has_power` tinyint(1) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `bound_mods` tinyint(3) unsigned NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `mods_indexed` tinyint(1) NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS `chaos_market_offer_mods` (`offer_id` int(11) NOT NULL, `mod_key` varchar(48) NOT NULL,
+  `value` int(11) NOT NULL DEFAULT 0, `tier` tinyint(3) unsigned NOT NULL DEFAULT 0, PRIMARY KEY (`offer_id`, `mod_key`),
+  KEY `chaos_market_mod_value` (`mod_key`, `value`), KEY `chaos_market_mod_tier` (`mod_key`, `tier`))
   ENGINE=InnoDB DEFAULT CHARSET=utf8;

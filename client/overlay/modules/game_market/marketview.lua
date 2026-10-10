@@ -1,7 +1,8 @@
 -- The market window's logic that needs no client API (tested by marketview_test.lua): money and time texts, the
 -- listing fee and the tax as the server computes them (server/data/scripts/chaos/market_core.lua), reading price
 -- inputs ("5k", "2.5m"), the Browse filter from the window's fields, the Sell form check, row texts, the modifier
--- options taken from the Codex data (game_codex CodexData), paging.
+-- filter (up to 6 rows of modifier / lowest value / lowest tier, all or at least N, sockets, quality, free prefix /
+-- suffix, power, bound) with its choices taken from the Codex data (game_codex CodexData), paging.
 
 MarketView = {}
 local V = MarketView
@@ -94,15 +95,176 @@ function V.checkSell(meta, form)
   return { gold = gold, coins = coins, days = tonumber(form.days) or (meta and meta.defaultDuration) or 3, count = count }
 end
 
--- the Browse filter from the window's fields (texts and combo values); numbers that do not read are left out
+-- the Browse filter from the window's fields (texts and combo values); numbers that do not read are left out.
+-- fields.modForm = the Modifiers section (V.modRequest); returns the filter, or nil and why the section is not valid
 function V.filter(fields)
   local f = { q = fields.q or '', cat = fields.cat or '', rarity = tonumber(fields.rarity) or 0, cur = fields.cur or '',
-    mod = fields.mod or '', sort = fields.sort or 'new', page = tonumber(fields.page) or 1 }
+    sort = fields.sort or 'new', page = tonumber(fields.page) or 1 }
   f.ilvlMin = V.parseAmount(fields.ilvlMin) or 0
   f.ilvlMax = V.parseAmount(fields.ilvlMax) or 0
   f.priceMin = V.parseAmount(fields.priceMin) or 0
   f.priceMax = V.parseAmount(fields.priceMax) or 0
+  if fields.modForm then
+    local m, why = V.modRequest(fields.modForm, fields.limits)
+    if not m then return nil, why end
+    for k, v in pairs(m) do f[k] = v end
+  elseif fields.mod and fields.mod ~= '' then
+    f.mods = { { k = fields.mod } }
+  end
   return f
+end
+
+-- ---------------------------------------------------------------- the modifier filter (Browse > Modifiers)
+-- the server's limits (market_config.lua modFilter; the `meta` message sends them)
+V.MOD_LIMITS = { maxRows = 6, maxTier = 8, maxValue = 1000000, maxSockets = 8, maxQuality = 30 }
+V.MOD_GROUPS = { { 'prefix', 'Prefixes' }, { 'suffix', 'Suffixes' }, { 'power', 'Legendary powers' } }
+
+-- every modifier and legendary power of the Codex data: { list = { {key, name, group = prefix | suffix | power,
+-- side} } (by group, then name), byKey }. A power is stored as the modifier chaos_mod_<power>
+function V.modCatalog(codexData)
+  local cat = { list = {}, byKey = {} }
+  if type(codexData) ~= 'table' or type(codexData.tabs) ~= 'table' then return cat end
+  for _, tab in ipairs(codexData.tabs) do
+    for _, e in ipairs(tab.entries or {}) do
+      local key = type(e.id) == 'string' and e.id:match('^mod:(.+)$')
+      local power = type(e.id) == 'string' and e.id:match('^power:(.+)$')
+      if power then key = 'chaos_mod_' .. power end
+      if key and not cat.byKey[key] then
+        local side = e.side == 'prefix' and 'prefix' or 'suffix'
+        local m = { key = key, name = tostring(e.name or key), side = side, group = power and 'power' or side,
+          tiers = type(e.tv) == 'table' and e.tv or nil }
+        cat.byKey[key] = m
+        cat.list[#cat.list + 1] = m
+      end
+    end
+  end
+  -- two modifiers of one name (a flat and a percent one): the best tier's value tells them apart (a combo picks by text)
+  local count = {}
+  for _, m in ipairs(cat.list) do count[m.name] = (count[m.name] or 0) + 1 end
+  for _, m in ipairs(cat.list) do
+    if count[m.name] > 1 then m.name = m.name .. ' (' .. tostring(m.tiers and m.tiers[#m.tiers] or m.key) .. ')' end
+  end
+  local order = { prefix = 1, suffix = 2, power = 3 }
+  table.sort(cat.list, function(a, b)
+    if a.group ~= b.group then return order[a.group] < order[b.group] end
+    return a.name < b.name
+  end)
+  return cat
+end
+
+-- the choices of a modifier combo for what was typed in its search box: { {text, key} } with a heading per group
+-- (key '' = no modifier); every word typed must be in the name. Also returns the key of the first match
+function V.modChoices(cat, query)
+  local words = {}
+  for w in tostring(query or ''):lower():gmatch('%S+') do words[#words + 1] = w end
+  local out = { { #words > 0 and 'Matching modifiers...' or 'Choose a modifier...', '' } }
+  local first
+  for _, g in ipairs(V.MOD_GROUPS) do
+    local head = false
+    for _, m in ipairs(cat and cat.list or {}) do
+      if m.group == g[1] then
+        local name, hit = m.name:lower(), true
+        for _, w in ipairs(words) do
+          if not name:find(w, 1, true) then hit = false break end
+        end
+        if hit then
+          if not head then
+            out[#out + 1] = { '-- ' .. g[2] .. ' --', '' }
+            head = true
+          end
+          out[#out + 1] = { m.name, m.key }
+          first = first or m.key
+        end
+      end
+    end
+  end
+  if #words > 0 and not first then out[1] = { 'No modifier matches', '' } end
+  return out, first
+end
+
+-- the minimum tier choices: T1 is the lowest, T8 the best; "T5+" = T5 or better
+function V.tierOptions(maxTier)
+  local out = { { 'Any tier', 0 } }
+  for t = 1, maxTier or 8 do out[#out + 1] = { 'T' .. t .. (t < (maxTier or 8) and '+' or ''), t } end
+  return out
+end
+
+-- a whole number from a box: '' = 0, else nil when it does not read
+local function whole(text)
+  text = tostring(text or ''):gsub('%s', '')
+  if text == '' then return 0 end
+  if not text:match('^%d+$') then return nil end
+  return tonumber(text)
+end
+
+-- the Modifiers section -> the filter fields the server reads (market_core.lua C.modFilter), or nil, why.
+-- form = { rows = { {key, min (text), tier} }, mode = 'all' | 'count', need (text), sockets, quality (texts),
+--          freeP, freeS, power, bound (booleans) }; rows without a modifier are left out
+function V.modRequest(form, limits)
+  limits = limits or V.MOD_LIMITS
+  form = form or {}
+  local mods, seen = {}, {}
+  for i, r in ipairs(form.rows or {}) do
+    if r.key and r.key ~= '' then
+      if seen[r.key] then return nil, 'Each modifier only once per search.' end
+      seen[r.key] = true
+      local min = whole(r.min)
+      if not min then return nil, 'Row ' .. i .. ': the minimum value is a whole number.' end
+      if min > (limits.maxValue or 1000000) then min = limits.maxValue or 1000000 end
+      local tier = math.max(0, math.min(tonumber(r.tier) or 0, limits.maxTier or 8))
+      local row = { k = r.key }
+      if min > 0 then row.min = min end
+      if tier > 0 then row.t = tier end
+      mods[#mods + 1] = row
+    end
+  end
+  if #mods > (limits.maxRows or 6) then return nil, 'At most ' .. (limits.maxRows or 6) .. ' modifiers per search.' end
+  local out = { mods = mods }
+  if form.mode == 'count' and #mods > 0 then
+    local need = whole(form.need)
+    if not need or need < 1 or need > #mods then
+      return nil, string.format('"At least" needs a number from 1 to %d (the modifiers chosen).', #mods)
+    end
+    if need < #mods then out.need = need end
+  end
+  local sockets, quality = whole(form.sockets), whole(form.quality)
+  if not sockets then return nil, 'Sockets: a whole number.' end
+  if not quality then return nil, 'Quality: a whole number.' end
+  if sockets > 0 then out.sockets = math.min(sockets, limits.maxSockets or 8) end
+  if quality > 0 then out.quality = math.min(quality, limits.maxQuality or 30) end
+  if form.freeP then out.freeP = true end
+  if form.freeS then out.freeS = true end
+  if form.power then out.power = true end
+  if form.bound then out.bound = true end
+  return out
+end
+
+-- how many conditions the Modifiers section holds (shown on its toggle button)
+function V.modCount(req)
+  if type(req) ~= 'table' then return 0 end
+  local n = #(req.mods or {})
+  for _, k in ipairs({ 'sockets', 'quality', 'freeP', 'freeS', 'power', 'bound' }) do
+    if req[k] then n = n + 1 end
+  end
+  return n
+end
+
+-- the lines of an offer's tooltip that the modifier rows of the search matched: { {text} }, best first
+function V.matchedMods(tip, req)
+  local out = {}
+  if type(tip) ~= 'table' or type(tip.mods) ~= 'table' or type(req) ~= 'table' or type(req.mods) ~= 'table' then return out end
+  local want = {}
+  for _, r in ipairs(req.mods) do want[tostring(r.k):lower()] = r end
+  for _, m in ipairs(tip.mods) do
+    local r = want[tostring(m.k):lower()] -- the item keeps some keys in mixed case (rarity_herbalistSkill)
+    if r then
+      local value = (m.g == 'special' and (tonumber(m.v2) or 0) ~= 0) and tonumber(m.v2) or (tonumber(m.v) or 0)
+      if value >= (r.min or 0) and (tonumber(m.tr) or 0) >= (r.t or 0) then
+        out[#out + 1] = { text = 'Matches: ' .. tostring(m.t or m.l or m.k) .. ((m.tr or 0) > 0 and (' (T' .. m.tr .. ')') or '') }
+      end
+    end
+  end
+  return out
 end
 
 -- price lines of a row: { {text, currency} ... }
@@ -152,30 +314,6 @@ function V.historyLine(row)
     return string.format('Bought from %s for %s %s', row.seller or '?', V.money(row.paid), cur)
   end
   return string.format('Sold to %s for %s %s (tax %s)', row.buyer or '?', V.money(row.paid), cur, V.money(row.tax or 0))
-end
-
--- the modifier filter's options from the Codex data: { {text, value} } sorted by name, value = the attribute key
-function V.modOptions(codexData)
-  local out = { { 'Any modifier', '' } }
-  if type(codexData) ~= 'table' or type(codexData.tabs) ~= 'table' then return out end
-  local list, seen = {}, {}
-  for _, tab in ipairs(codexData.tabs) do
-    for _, e in ipairs(tab.entries or {}) do
-      local key = type(e.id) == 'string' and e.id:match('^mod:(.+)$')
-      local power = type(e.id) == 'string' and e.id:match('^power:(.+)$')
-      if power then
-        -- a legendary power is stored as the modifier chaos_mod_<power> (game_codex codexview.lua idForMod)
-        key = 'chaos_mod_' .. power
-      end
-      if key and not seen[key] then
-        seen[key] = true
-        list[#list + 1] = { (e.name or key) .. (power and ' (power)' or ''), key }
-      end
-    end
-  end
-  table.sort(list, function(a, b) return a[1] < b[1] end)
-  for _, o in ipairs(list) do out[#out + 1] = o end
-  return out
 end
 
 function V.pageText(page, pages, total)

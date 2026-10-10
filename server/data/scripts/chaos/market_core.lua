@@ -5,7 +5,9 @@
 --   ChaosMarketCore.checkPrices(cfg, gold, coins, days)      normalized prices + days, or nil and the refusal
 --   ChaosMarketCore.itemRefusal(info, cfg)                   why an item cannot be listed (nil = it can)
 --   ChaosMarketCore.realmOf(storedRealm, currentSeason)      the market an offer is on (0 = standard)
---   ChaosMarketCore.browseQuery(filter, realm, now, cfg, esc, season)  WHERE / ORDER BY of a Browse page
+--   ChaosMarketCore.browseQuery(filter, realm, now, cfg, esc, season, known)  WHERE / ORDER BY of a Browse page
+--   ChaosMarketCore.offerIndex(tip)                          the searchable facts of an offer (modifiers, sockets, ...)
+--   ChaosMarketCore.modFilter(filter, cfg, known)            the checked modifier filter of a Browse request
 --   ChaosMarketCore.deliveryPlan(rows, mark)                 which owed rows are already applied, which to apply
 --   ChaosMarketCore.pendingAction(offerId, listSeq)          a half-done listing after a crash: activate or drop
 --   ChaosMarketCore.hex / unhex, encodeAttrs / decodeAttrs   the escrow codecs' text forms
@@ -188,6 +190,172 @@ function C.modsField(keys)
 	return s
 end
 
+-- ------------------------------------------------------------------ the modifier index (chaos_market_offer_mods)
+local function clampInt(v, lo, hi)
+	v = int(v) or lo
+	if v < lo then
+		return lo
+	end
+	if v > hi then
+		return hi
+	end
+	return v
+end
+C.clampInt = clampInt
+
+-- the searchable facts of an offer from its tooltip snapshot (ChaosItemTooltip.build): every modifier with its value and
+-- tier ({key, value, tier}; a critical / leech pair by its amount, the number its tiers are made of; a unique's
+-- modifiers have tier 0), sockets, quality, the free prefix / suffix slots (the rarity's limit, plus the Orb of Ruin's
+-- extra slot, minus what is there; none on a unique or a ruined item: no orb changes those), whether it has a
+-- legendary power and how many bound modifiers
+function C.offerIndex(tip)
+	tip = type(tip) == "table" and tip or {}
+	local out = {mods = {}, sockets = 0, quality = 0, freePrefix = 0, freeSuffix = 0, hasPower = 0, bound = 0}
+	local seen = {}
+	for _, m in ipairs(type(tip.mods) == "table" and tip.mods or {}) do
+		local key = tostring(m.k or ""):lower():gsub("[^%w_]", "")
+		if key ~= "" and #key <= 48 and not seen[key] then
+			seen[key] = true
+			local value = m.g == "special" and (int(m.v2) or 0) ~= 0 and int(m.v2) or (int(m.v) or 0)
+			out.mods[#out.mods + 1] = {key = key, value = clampInt(value, -1000000000, 1000000000),
+				tier = clampInt(m.tr, 0, 99)}
+			if m.pw then
+				out.hasPower = 1
+			end
+			if m.bd then
+				out.bound = out.bound + 1
+			end
+		end
+	end
+	if type(tip.sockets) == "table" then
+		out.sockets = clampInt(tip.sockets.count, 0, 99)
+	end
+	if type(tip.quality) == "table" then
+		out.quality = clampInt(tip.quality.q, 0, 999)
+	end
+	local sd = tip.sides
+	if type(sd) == "table" and not tip.unique and not tip.ruined then
+		out.freePrefix = clampInt((int(sd.mp) or int(sd.max) or 0) - (int(sd.p) or 0), 0, 9)
+		out.freeSuffix = clampInt((int(sd.ms) or int(sd.max) or 0) - (int(sd.s) or 0), 0, 9)
+	end
+	return out
+end
+
+local function flag(v)
+	return v == true or v == 1 or v == "1" or v == "true"
+end
+
+-- the modifier part of a Browse filter, checked: up to cfg.modFilter.maxRows rows {k = modifier key, min = lowest
+-- value, t = lowest tier (T1 lowest .. T8 best; "T5" = T5 or better)}, need = how many of the rows must match (0 / nil
+-- = all), sockets, quality (lowest), freeP / freeS (a free prefix / suffix slot), power (a legendary power), bound (a
+-- bound modifier). Unknown keys, a modifier twice and too many rows are refused; numbers are clamped. A Browse of the
+-- old client (`mod` = one key) is one row. Returns the normalized filter or nil, why
+function C.modFilter(filter, cfg, known)
+	filter = type(filter) == "table" and filter or {}
+	local L = cfg.modFilter or {}
+	local maxRows, maxTier = L.maxRows or 6, L.maxTier or 8
+	local rows = filter.mods
+	if rows == nil and filter.mod ~= nil and filter.mod ~= "" then
+		rows = {{k = filter.mod}}
+	end
+	if rows ~= nil and type(rows) ~= "table" then
+		return nil, "That modifier filter is not valid."
+	end
+	local out = {mods = {}}
+	local seen = {}
+	local n = 0
+	for _ in pairs(rows or {}) do
+		n = n + 1
+	end
+	if n > maxRows then
+		return nil, string.format("At most %d modifiers per search.", maxRows)
+	end
+	for i = 1, n do
+		local r = rows[i]
+		if type(r) ~= "table" then
+			return nil, "That modifier filter is not valid."
+		end
+		local raw = tostring(r.k or "")
+		local key = raw:lower()
+		if key == "" or #key > 48 or key:find("[^%w_]") then
+			return nil, "Unknown modifier."
+		end
+		if known and not known[key] then
+			return nil, "Unknown modifier."
+		end
+		if seen[key] then
+			return nil, "Each modifier only once per search."
+		end
+		seen[key] = true
+		out.mods[#out.mods + 1] = {key = key, min = clampInt(r.min, 0, L.maxValue or 1000000), tier = clampInt(r.t, 0, maxTier)}
+	end
+	local need = int(filter.need) or 0
+	if need <= 0 or need > #out.mods then
+		need = #out.mods
+	end
+	out.need = need
+	out.sockets = clampInt(filter.sockets, 0, L.maxSockets or 8)
+	out.quality = clampInt(filter.quality, 0, L.maxQuality or 30)
+	out.freePrefix = flag(filter.freeP)
+	out.freeSuffix = flag(filter.freeS)
+	out.power = flag(filter.power)
+	out.bound = flag(filter.bound)
+	return out
+end
+
+-- SQL conditions of a checked modifier filter (on the offers table; the rows through the child table). Every row
+-- needed: one EXISTS per row (an index lookup on the primary key offer_id, mod_key); at least `need` of them: the
+-- offer ids with that many matching rows (GROUP BY ... HAVING COUNT(*), the (mod_key, value) / (mod_key, tier) indexes)
+function C.modClauses(mf, cfg, esc)
+	local T = cfg.tables
+	local mt, ot = T.offerMods or "chaos_market_offer_mods", T.offers
+	local out = {}
+	local function cond(m)
+		local c = {"`mod_key` = " .. esc(m.key)}
+		if m.min > 0 then
+			c[#c + 1] = "`value` >= " .. m.min
+		end
+		if m.tier > 0 then
+			c[#c + 1] = "`tier` >= " .. m.tier
+		end
+		return table.concat(c, " AND ")
+	end
+	local rows = mf.mods
+	if #rows > 0 then
+		if mf.need >= #rows then
+			for _, m in ipairs(rows) do
+				out[#out + 1] = string.format("EXISTS (SELECT 1 FROM `%s` WHERE `%s`.`offer_id` = `%s`.`id` AND %s)", mt, mt, ot, cond(m))
+			end
+		else
+			local any = {}
+			for _, m in ipairs(rows) do
+				any[#any + 1] = "(" .. cond(m) .. ")"
+			end
+			out[#out + 1] = string.format("`id` IN (SELECT `offer_id` FROM `%s` WHERE %s GROUP BY `offer_id` HAVING COUNT(*) >= %d)", mt,
+				table.concat(any, " OR "), mf.need)
+		end
+	end
+	if mf.sockets > 0 then
+		out[#out + 1] = "`sockets` >= " .. mf.sockets
+	end
+	if mf.quality > 0 then
+		out[#out + 1] = "`quality` >= " .. mf.quality
+	end
+	if mf.freePrefix then
+		out[#out + 1] = "`free_prefix` > 0"
+	end
+	if mf.freeSuffix then
+		out[#out + 1] = "`free_suffix` > 0"
+	end
+	if mf.power then
+		out[#out + 1] = "`has_power` = 1"
+	end
+	if mf.bound then
+		out[#out + 1] = "`bound_mods` > 0"
+	end
+	return out
+end
+
 -- ------------------------------------------------------------------ Browse
 local SORTS = {
 	new = "`id` DESC",
@@ -204,8 +372,10 @@ function C.likeEscape(s)
 	return (tostring(s or ""):gsub("[\\%%_]", "\\%0"))
 end
 
--- filter = {q, cat, rarity, ilvlMin, ilvlMax, cur ("gold" | "coins" | ""), priceMin, priceMax, mod, sort, page}
--- esc(text) quotes a string for SQL (db.escapeString). Returns where, orderBy, page (1-based), offset
+-- filter = {q, cat, rarity, ilvlMin, ilvlMax, cur ("gold" | "coins" | ""), priceMin, priceMax, sort, page, and the
+-- modifier filter (C.modFilter): mods = {{k, min, t}, ...}, need, sockets, quality, freeP, freeS, power, bound}
+-- esc(text) quotes a string for SQL (db.escapeString); known = {[modifier key] = true} (nil: any well-formed key).
+-- Returns where, orderBy, page (1-based), offset; or nil and the refusal when the modifier filter is invalid
 -- realm = the viewer's market (C.realmOf), season = the running season id (0 = none): a season character sees its
 -- season's offers; everybody else every offer not of the running season (an ended season's offers are standard)
 function C.realmClause(realm, season)
@@ -219,7 +389,7 @@ function C.realmClause(realm, season)
 	return "`realm` >= 0"
 end
 
-function C.browseQuery(filter, realm, now, cfg, esc, season)
+function C.browseQuery(filter, realm, now, cfg, esc, season, known)
 	filter = type(filter) == "table" and filter or {}
 	local w = {"`state` = 0", C.realmClause(realm, season), "`expires` > " .. (int(now) or 0)}
 	local q = tostring(filter.q or ""):gsub("^%s+", ""):gsub("%s+$", "")
@@ -256,9 +426,13 @@ function C.browseQuery(filter, realm, now, cfg, esc, season)
 	if cur and pmax and pmax > 0 then
 		w[#w + 1] = col .. " <= " .. pmax
 	end
-	local mod = tostring(filter.mod or ""):lower():gsub("[^%w_]", "")
-	if mod ~= "" then
-		w[#w + 1] = "`mods` LIKE " .. esc("%," .. C.likeEscape(mod) .. ",%")
+	local mf, why = C.modFilter(filter, cfg, known)
+	if not mf then
+		return nil, why
+	end
+	local clauses = C.modClauses(mf, cfg, esc)
+	for _, c in ipairs(clauses) do
+		w[#w + 1] = c
 	end
 	local sort = tostring(filter.sort or "new")
 	local order = SORTS[sort]

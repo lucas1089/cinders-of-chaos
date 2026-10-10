@@ -7,7 +7,8 @@ return {
 	tables = {
 		offers = "chaos_market_offers", -- one row per offer, the listed item kept in it (escrow) until it is delivered
 		deliveries = "chaos_market_deliveries", -- what the market owes a character: an item, gold, or the notice of a coin sale
-		log = "chaos_market_log" -- every listing, sale, cancel, expiry, delivery and refusal worth keeping
+		log = "chaos_market_log", -- every listing, sale, cancel, expiry, delivery and refusal worth keeping
+		offerMods = "chaos_market_offer_mods" -- the modifiers of each active offer (key, value, tier) for the Browse filter
 	},
 
 	-- player storages (inside the Chaos range 7100000-7100999; 7100970-7100979 reserved for the market). They are saved
@@ -49,6 +50,12 @@ return {
 	historyRows = 40, -- rows in My Offers (sold / expired / cancelled) and History
 	sellableMax = 120, -- items listed in the Sell tab's picker
 	sorts = {"new", "price", "price_desc", "ilvl", "rarity", "name", "ending"},
+	-- the Browse modifier filter (market_core.lua C.modFilter): rows per search, the best tier (T1 lowest, T8 best),
+	-- and the clamps of the numbers a client sends
+	modFilter = {maxRows = 6, maxTier = 8, maxValue = 1000000, maxSockets = 8, maxQuality = 30},
+	-- the modifier index of the offers listed before it existed is built from their tooltip snapshots once at startup;
+	-- this row of the engine's server_config table records that it was done (raise the number to build it again)
+	modIndexVersion = 1,
 	categories = {"weapon", "shield", "helmet", "armor", "legs", "boots", "jewel", "other", "orb", "gem", "key", "misc"},
 
 	-- rate limits per character (ms between two requests of the kind)

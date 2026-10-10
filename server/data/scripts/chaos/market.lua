@@ -22,7 +22,7 @@
 --             below the saved deliverSeq is only marked (it reached the character before a crash).
 --
 -- Protocol (JSON {action, data}) on ChaosOpcodes.market; big answers go through Chaos.sendChunked:
---   client -> server  open | browse {filter} | tip {id} | buy {id, cur} | sellable | list {ref|pos, sid, iid, count,
+--   client -> server  open | browse {filter: market_core.lua C.browseQuery, modifier rows C.modFilter} | tip {id} | buy {id, cur} | sellable | list {ref|pos, sid, iid, count,
 --                     gold, coins, days} | cancel {id} | mine | history
 --   server -> client  meta {...} | page {rows, page, pages, total} | tip {id, tip, seller} | sellable {items} |
 --                     mine {active, closed, owed} | history {rows} | wallet {gold, coins} | done {what, text} |
@@ -117,7 +117,11 @@ local SCHEMA = {
 	`tip` mediumtext NOT NULL, `created` int(10) unsigned NOT NULL, `expires` int(10) unsigned NOT NULL,
 	`buyer_id` int(11) NOT NULL DEFAULT 0, `buyer_name` varchar(64) NOT NULL DEFAULT '',
 	`paid_currency` varchar(8) NOT NULL DEFAULT '', `paid_amount` bigint(20) unsigned NOT NULL DEFAULT 0,
-	`tax` bigint(20) unsigned NOT NULL DEFAULT 0, `closed_at` int(10) unsigned NOT NULL DEFAULT 0, PRIMARY KEY (`id`),
+	`tax` bigint(20) unsigned NOT NULL DEFAULT 0, `closed_at` int(10) unsigned NOT NULL DEFAULT 0,
+	`sockets` tinyint(3) unsigned NOT NULL DEFAULT 0, `quality` smallint(5) unsigned NOT NULL DEFAULT 0,
+	`free_prefix` tinyint(3) unsigned NOT NULL DEFAULT 0, `free_suffix` tinyint(3) unsigned NOT NULL DEFAULT 0,
+	`has_power` tinyint(1) NOT NULL DEFAULT 0, `bound_mods` tinyint(3) unsigned NOT NULL DEFAULT 0,
+	`mods_indexed` tinyint(1) NOT NULL DEFAULT 0, PRIMARY KEY (`id`),
 	KEY `chaos_market_browse` (`state`, `realm`, `expires`), KEY `chaos_market_seller` (`seller_id`, `state`),
 	KEY `chaos_market_buyer` (`buyer_id`), KEY `chaos_market_account` (`seller_account`, `state`))
 	ENGINE=InnoDB DEFAULT CHARSET=utf8]],
@@ -134,8 +138,21 @@ local SCHEMA = {
 	`name` varchar(100) NOT NULL DEFAULT '', `currency` varchar(8) NOT NULL DEFAULT '',
 	`amount` bigint(20) NOT NULL DEFAULT 0, `fee` bigint(20) NOT NULL DEFAULT 0, `text` varchar(255) NOT NULL DEFAULT '',
 	PRIMARY KEY (`id`), KEY `chaos_market_log_offer` (`offer_id`), KEY `chaos_market_log_player` (`player_id`, `id`))
+	ENGINE=InnoDB DEFAULT CHARSET=utf8]],
+	-- the modifier filter (a database of the first version gets the columns; MariaDB's ADD COLUMN IF NOT EXISTS)
+	[[ALTER TABLE `chaos_market_offers` ADD COLUMN IF NOT EXISTS `sockets` tinyint(3) unsigned NOT NULL DEFAULT 0,
+	ADD COLUMN IF NOT EXISTS `quality` smallint(5) unsigned NOT NULL DEFAULT 0,
+	ADD COLUMN IF NOT EXISTS `free_prefix` tinyint(3) unsigned NOT NULL DEFAULT 0,
+	ADD COLUMN IF NOT EXISTS `free_suffix` tinyint(3) unsigned NOT NULL DEFAULT 0,
+	ADD COLUMN IF NOT EXISTS `has_power` tinyint(1) NOT NULL DEFAULT 0,
+	ADD COLUMN IF NOT EXISTS `bound_mods` tinyint(3) unsigned NOT NULL DEFAULT 0,
+	ADD COLUMN IF NOT EXISTS `mods_indexed` tinyint(1) NOT NULL DEFAULT 0]],
+	[[CREATE TABLE IF NOT EXISTS `chaos_market_offer_mods` (`offer_id` int(11) NOT NULL, `mod_key` varchar(48) NOT NULL,
+	`value` int(11) NOT NULL DEFAULT 0, `tier` tinyint(3) unsigned NOT NULL DEFAULT 0, PRIMARY KEY (`offer_id`, `mod_key`),
+	KEY `chaos_market_mod_value` (`mod_key`, `value`), KEY `chaos_market_mod_tier` (`mod_key`, `tier`))
 	ENGINE=InnoDB DEFAULT CHARSET=utf8]]
 }
+local MT = T.offerMods or "chaos_market_offer_mods"
 
 local function logRow(action, o)
 	o = o or {}
@@ -155,6 +172,99 @@ local OFFER_SELECT = "`id`, `realm`, `state`, `seller_id`, `seller_account`, `se
 
 local function offerById(id)
 	return sql(string.format("SELECT %s FROM `%s` WHERE `id` = %d", OFFER_SELECT, T.offers, id), OFFER_COLS)[1]
+end
+
+-- ------------------------------------------------------------------ the modifier index (Browse modifier filter)
+-- the modifier rows of an offer (MC.offerIndex) as one INSERT, or nil when it has none
+local function indexInsert(id, idx)
+	if #idx.mods == 0 then
+		return nil
+	end
+	local vals = {}
+	for _, m in ipairs(idx.mods) do
+		vals[#vals + 1] = string.format("(%d, %s, %d, %d)", id, esc(m.key), m.value, m.tier)
+	end
+	return string.format("INSERT INTO `%s` (`offer_id`, `mod_key`, `value`, `tier`) VALUES %s", MT, table.concat(vals, ", "))
+end
+
+local function dropIndex(id)
+	return exec(string.format("DELETE FROM `%s` WHERE `offer_id` = %d", MT, id))
+end
+
+-- (re)writes the index of an existing offer: its rows and its filter columns; true when written
+local function writeIndex(id, idx)
+	if dropIndex(id) < 0 then
+		return false
+	end
+	local ins = indexInsert(id, idx)
+	if ins and exec(ins) ~= #idx.mods then
+		return false
+	end
+	return exec(string.format("UPDATE `%s` SET `sockets` = %d, `quality` = %d, `free_prefix` = %d, `free_suffix` = %d, `has_power` = %d, "
+		.. "`bound_mods` = %d, `mods_indexed` = 1 WHERE `id` = %d", T.offers, idx.sockets, idx.quality, idx.freePrefix, idx.freeSuffix,
+		idx.hasPower, math.min(idx.bound, 255), id)) >= 0
+end
+MK.writeIndex = writeIndex
+
+-- the offers listed before the index existed (or before cfg.modIndexVersion was raised): indexed once at startup from
+-- their tooltip snapshots, in batches; server_config `chaos_market_modindex` records the version that was built (a
+-- crash part way leaves it unset: the offers still marked mods_indexed = 0 are done at the next startup)
+local INDEX_CONFIG = "chaos_market_modindex"
+function MK.backfillIndex()
+	local want = cfg.modIndexVersion or 1
+	local r = sql(string.format("SELECT `value` FROM `server_config` WHERE `config` = %s", esc(INDEX_CONFIG)), {{"value", "s"}})[1]
+	local have = r and tonumber(r.value) or 0
+	if have >= want then
+		return 0
+	end
+	if have > 0 then
+		exec(string.format("UPDATE `%s` SET `mods_indexed` = 0 WHERE `state` IN (0, 9)", T.offers))
+	end
+	local n, last = 0, 0
+	while true do
+		local rows = sql(string.format("SELECT `id`, `tip` FROM `%s` WHERE `state` IN (0, 9) AND `mods_indexed` = 0 AND `id` > %d ORDER BY `id` LIMIT 200",
+			T.offers, last), {{"id", "n"}, {"tip", "s"}})
+		if #rows == 0 then
+			break
+		end
+		for _, o in ipairs(rows) do
+			last = o.id
+			local ok, tip = pcall(json.decode, o.tip)
+			if writeIndex(o.id, MC.offerIndex(ok and tip or nil)) then
+				n = n + 1
+			else
+				log("could not index offer " .. o.id)
+			end
+		end
+	end
+	db.query(string.format("INSERT INTO `server_config` (`config`, `value`) VALUES (%s, %s) ON DUPLICATE KEY UPDATE `value` = %s",
+		esc(INDEX_CONFIG), esc(tostring(want)), esc(tostring(want))))
+	log(string.format("modifier index built for %d offers (version %d)", n, want))
+	return n
+end
+
+-- the modifier keys a Browse filter may name: every modifier and legendary power of the item mods (ChaosCrafting's
+-- affix list, the same keys the Codex shows); nil when that list is not there (then any well-formed key)
+local knownMods
+function MK.knownMods()
+	if knownMods then
+		return knownMods
+	end
+	local set, any = {}, false
+	if ChaosCrafting and ChaosCrafting.affixes then
+		local ok, list = pcall(ChaosCrafting.affixes)
+		for _, a in ipairs(ok and type(list) == "table" and list or {}) do
+			if type(a.key) == "string" then
+				set[a.key:lower()] = true
+				any = true
+			end
+		end
+	end
+	if not any then
+		return nil
+	end
+	knownMods = set
+	return set
 end
 
 -- ------------------------------------------------------------------ seasons
@@ -572,8 +682,8 @@ local function resolvePending(id, sellerId, listSeq)
 	local action = MC.pendingAction(id, listSeq)
 	if action == "activate" then
 		exec(string.format("UPDATE `%s` SET `state` = 0 WHERE `id` = %d AND `state` = 9", T.offers, id))
-	else
-		exec(string.format("DELETE FROM `%s` WHERE `id` = %d AND `state` = 9", T.offers, id))
+	elseif exec(string.format("DELETE FROM `%s` WHERE `id` = %d AND `state` = 9", T.offers, id)) == 1 then
+		dropIndex(id)
 	end
 	logRow("recover", {offer = id, player = sellerId, text = "pending listing: " .. action})
 	return action
@@ -660,18 +770,27 @@ function MK.list(player, d)
 	local codec, data = MK.encode(item)
 	local realm = realmOf(player)
 	local t = now()
+	local idx = MC.offerIndex(tip)
 
 	-- 1. the offer row, pending
 	if exec(string.format("INSERT INTO `%s` (`realm`, `state`, `seller_id`, `seller_account`, `seller_name`, `item_id`, `client_id`, `count`, "
 			.. "`name`, `category`, `rarity`, `ilvl`, `unique_item`, `mods`, `price_gold`, `price_coins`, `fee`, `codec`, `data`, `tip`, `created`, "
-			.. "`expires`) VALUES (%d, 9, %d, %d, %s, %d, %d, %d, %s, %s, %d, %d, %d, %s, %d, %d, %d, %s, %s, %s, %d, %d)", T.offers, realm, guid,
+			.. "`expires`, `sockets`, `quality`, `free_prefix`, `free_suffix`, `has_power`, `bound_mods`, `mods_indexed`) VALUES (%d, 9, %d, %d, %s, "
+			.. "%d, %d, %d, %s, %s, %d, %d, %d, %s, %d, %d, %d, %s, %s, %s, %d, %d, %d, %d, %d, %d, %d, %d, 1)", T.offers, realm, guid,
 			account, esc(player:getName()), item:getId(), it:getClientId(), count, esc(name), esc(category), tip.rarity or 0, tip.level or 0,
 			tip.unique and 1 or 0, esc(MC.modsField(modKeys)), gold, coins, fee, esc(codec), esc(data), esc(json.encode(tip)), t,
-			t + days * 86400)) ~= 1 then
+			t + days * 86400, idx.sockets, idx.quality, idx.freePrefix, idx.freeSuffix, idx.hasPower, math.min(idx.bound, 255))) ~= 1 then
 		return refuse(player, MSG.busy)
 	end
 	local id = lastId()
 	if id <= 0 then
+		return refuse(player, MSG.busy)
+	end
+	-- the modifier rows of the Browse filter (dropped with the row when the listing does not go through)
+	local ins = indexInsert(id, idx)
+	if ins and exec(ins) ~= #idx.mods then
+		dropIndex(id)
+		exec(string.format("DELETE FROM `%s` WHERE `id` = %d AND `state` = 9", T.offers, id))
 		return refuse(player, MSG.busy)
 	end
 
@@ -684,6 +803,7 @@ function MK.list(player, d)
 		removed = item:remove()
 	end
 	if not removed then
+		dropIndex(id)
 		exec(string.format("DELETE FROM `%s` WHERE `id` = %d AND `state` = 9", T.offers, id))
 		return refuse(player, MSG.noItem)
 	end
@@ -700,6 +820,7 @@ function MK.list(player, d)
 		if back then
 			player:addItemEx(back, true)
 		end
+		dropIndex(id)
 		exec(string.format("DELETE FROM `%s` WHERE `id` = %d AND `state` = 9", T.offers, id))
 		log("save failed while listing for " .. player:getName())
 		return refuse(player, MSG.busy)
@@ -780,6 +901,9 @@ function MK.buy(player, d)
 					.. "`tax` = %d, `closed_at` = %d WHERE `id` = %d AND `state` = 0 AND `expires` > %d", T.offers, guid, esc(name), price, tax, t, id, t)) ~= 1 then
 				return false
 			end
+			if dropIndex(id) < 0 then
+				return false
+			end
 			if exec(string.format("INSERT INTO `%s` (`player_id`, `offer_id`, `kind`, `amount`, `reason`, `created`) VALUES (%d, %d, 'item', 0, 'bought', %d)",
 					T.deliveries, guid, id, t)) ~= 1 then
 				return false
@@ -803,6 +927,9 @@ function MK.buy(player, d)
 			end
 			if exec(string.format("UPDATE `%s` SET `state` = 1, `buyer_id` = %d, `buyer_name` = %s, `paid_currency` = 'coins', `paid_amount` = %d, "
 					.. "`tax` = %d, `closed_at` = %d WHERE `id` = %d AND `state` = 0 AND `expires` > %d", T.offers, guid, esc(name), price, tax, t, id, t)) ~= 1 then
+				return false
+			end
+			if dropIndex(id) < 0 then
 				return false
 			end
 			if net > 0 and exec(string.format("INSERT INTO `%s` (`account_id`, `coins`) VALUES (%d, %d) ON DUPLICATE KEY UPDATE `coins` = `coins` + %d",
@@ -848,6 +975,9 @@ local function closeOffer(id, state, reason, sellerId)
 	local t = now()
 	return transaction(function()
 		if exec(string.format("UPDATE `%s` SET `state` = %d, `closed_at` = %d WHERE `id` = %d AND `state` = 0", T.offers, state, t, id)) ~= 1 then
+			return false
+		end
+		if dropIndex(id) < 0 then
 			return false
 		end
 		return exec(string.format("INSERT INTO `%s` (`player_id`, `offer_id`, `kind`, `amount`, `reason`, `created`) VALUES (%d, %d, 'item', 0, %s, %d)",
@@ -896,7 +1026,7 @@ function MK.meta(player)
 	return {
 		categories = cfg.categories, durations = cfg.durations, defaultDuration = cfg.defaultDuration, sorts = cfg.sorts,
 		fee = {pct = fee.pct, min = fee.minFee, max = fee.maxFee, coinGold = fee.coinFeeGold}, tax = cfg.tax,
-		price = cfg.price, maxActive = cfg.maxActive, pageSize = cfg.pageSize,
+		price = cfg.price, maxActive = cfg.maxActive, pageSize = cfg.pageSize, modFilter = cfg.modFilter,
 		realm = realm, realmName = realm > 0 and s and ((s.tag and (s.tag .. " ") or "") .. (s.name or "Season")) or "Standard",
 		gold = player:getBankBalance(), coins = coinsOf(player:getAccountId()), blob = HAS_BLOB
 	}
@@ -908,7 +1038,10 @@ function MK.browse(player, filter)
 	end
 	local realm = realmOf(player)
 	local t = now()
-	local where, order, page, offset = MC.browseQuery(filter, realm, t, cfg, esc, (currentSeason()))
+	local where, order, page, offset = MC.browseQuery(filter, realm, t, cfg, esc, (currentSeason()), MK.knownMods())
+	if not where then
+		return refuse(player, order)
+	end
 	local total = (sql(string.format("SELECT COUNT(*) AS `n` FROM `%s` WHERE %s", T.offers, where), {{"n", "n"}})[1] or {n = 0}).n
 	local pages = MC.pages(total, cfg)
 	if page > pages then
@@ -1059,6 +1192,7 @@ function startup.onStartup()
 		db.query(q)
 	end
 	MK.recoverAll()
+	MK.backfillIndex()
 	if not HAS_BLOB then
 		print("[Warning - Chaos market] engine patch 0017 (item:serializeAttributes) missing: listed items are copied by a key list")
 	end

@@ -248,7 +248,7 @@ working directory, as with the rest of the base server libs).
 | game_crafting | `crafting.lua`, `data/lib/chaos_crafting.lua` | 232, Economy > Crafting Bench | Crafting bench and the crafting orbs (Awakening, Gilding, Grafting, Unmaking, Erasure, Upheaval, Fate, and the orbs v2: Tempering, Binding, Excision, Reforging, Ruin, Whetstone), tested in game (see "Crafting" and "Crafting orbs v2"). Salvage tab and the item lock: `salvage.lua`, `salvage_core.lua`, `salvage_config.lua`, Economy > Salvage (see "Salvage"). |
 | game_hunt | `hunt.lua`, `hunt_core.lua`, `hunt_config.lua`, `hunt_supplies.lua` | 241, Hunt > Hunt Tracker | Hunt tracker: session time with pause/reset, exp/h, time to level, loot and profit/h, supplies, kills, damage/healing, Chaos drops; tested in game (see "Hunt tracker"). |
 | game_season | `season.lua`, `season_core.lua`, `season_config.lua` | 246, Adventure > Season / `/season` | Seasons: fresh-start season characters isolated from standard ones, season ladder view, season uniques, account-wide reward track, end-of-season migration; tested in game with two clients (see "Seasons"). |
-| game_market | `market.lua`, `market_core.lua`, `market_config.lua` | **221**, Economy > Market (Alt+E) | Our player market for gold and Chaos Coins: escrow of the listed item in its offer row (engine patch 0017), fees, tax, expiry, seasons kept apart, crash-safe transactions; the stock market off (`tools/patch_market.py`); tested in game with two clients and a season character (see "Market"). |
+| game_market | `market.lua`, `market_core.lua`, `market_config.lua` | **221**, Economy > Market (Alt+E) | Our player market for gold and Chaos Coins: escrow of the listed item in its offer row (engine patch 0017), fees, tax, expiry, seasons kept apart, crash-safe transactions, a modifier search (up to 6 rows of modifier / value / tier, all or at least N, sockets, quality, free affix slots; table `chaos_market_offer_mods`); the stock market off (`tools/patch_market.py`); tested in game with two clients and a season character (see "Market"). |
 | game_patchnotes | `patchnotes.lua`, `patchnotes_core.lua`, `data/patchnotes/*.md` | 244, Social > Patch Notes / `/patchnotes` | Weekly patch notes read from Markdown files on the server, opened once per new week at login (after the Daily Reward), per-account "Don't show automatically"; tested in game (see "Patch notes"). |
 | game_monkchi | `monk_chi_core.lua`, `monk_combat.lua` | 247 (server -> client) | The Monk's chi HUD: five pips over the map, plain text `chi:<chi>:<max>:<decaySec>`; only the Monk line (17-19) sees it. Tested in game: under the character (the bottom of the map lies under the chat in the Chaos layout), fills and empties with the server's chi, empties after 12 s. |
 | game_nameplate | `nameplate.lua`, `nameplate_core.lua`, `titles.lua` | 248, the Achievements window | Name plates over players: active title, `{guild}` and the name on a frame (client base patch 0022); title registry `ChaosTitles.register`; tested in game (see "Name plates and titles"). |
@@ -3131,8 +3131,9 @@ Every number is in `market_config.lua`; the pure rules are in `market_core.lua` 
 
 **Install.** `install_all.py` does all of it: the `files` step copies the scripts, the `events` step runs
 `tools/patch_market.py` (comments out the `function="market"` line of `data/actions/actions.xml`, idempotent, marker
-`Chaos: stock market off`), the `sql` step runs `sql/chaos_market.sql` (3 tables; `market.lua` also creates them at
-startup when missing). Engine patch `src-patches/0017-item-serialization-lua.patch` (two Lua methods, only
+`Chaos: stock market off`), the `sql` step runs `sql/chaos_market.sql` (4 tables and the columns of the modifier search,
+safe to run again: `CREATE TABLE IF NOT EXISTS`, MariaDB's `ADD COLUMN IF NOT EXISTS`; `market.lua` runs the same
+statements at startup). Engine patch `src-patches/0017-item-serialization-lua.patch` (two Lua methods, only
 `luascript.cpp` / `luascript.h`) gives the exact escrow below; without it the market still works with a key list and
 says so at startup.
 
@@ -3165,7 +3166,33 @@ the patch). On purchase, cancel or expiry the item is created again (`Game.creat
 a stackable keeps the count it was created with) and its per-item id `chaos_iid` is removed, so the engine gives the
 copy a new one when it is first sent: chat links and cached tooltips of the old copy never point at it. The offer also
 keeps a tooltip snapshot (`ChaosItemTooltip.build`, JSON), the name, category (gear kind, orb, gem, key, misc), rarity,
-item level and the modifier keys (`,key1,key2,`) for the filters.
+item level and what the modifier search reads (below).
+
+**Modifier search** (Browse > Modifiers, `ChaosMarketCore.offerIndex / modFilter / modClauses`). Per offer, written with
+the offer row from its tooltip snapshot:
+- `chaos_market_offer_mods (offer_id, mod_key, value, tier)`, primary key `(offer_id, mod_key)`, keys
+  `(mod_key, value)` and `(mod_key, tier)`: one row per modifier and legendary power (key in lower case, a power as
+  `chaos_mod_<power>`; value as the tooltip shows it, quality included; a critical / leech pair by its amount, the number
+  its tiers are made of; a unique's modifiers tier 0). The rows of an offer are removed in the transaction that sells,
+  cancels or expires it (and with a dropped pending listing), so the table holds only what is on the market.
+- columns of `chaos_market_offers`: `sockets`, `quality`, `free_prefix` / `free_suffix` (the rarity's limit, plus the Orb
+  of Ruin's extra slot, minus what is there; 0 on a unique or a ruined item: no orb changes those), `has_power`,
+  `bound_mods`, `mods_indexed`.
+- the offers listed before this existed are indexed once at startup from their snapshots (`ChaosMarket.backfillIndex`,
+  batches of 200, the offers still `mods_indexed = 0`), recorded in `server_config` `chaos_market_modindex` = the
+  version (`market_config.lua modIndexVersion`; raise it to build the index again).
+
+A search has up to 6 rows (modifier, lowest value, lowest tier: T1 lowest, T8 best, "T5" = T5 or better) and needs all
+of them (one `EXISTS (SELECT 1 FROM chaos_market_offer_mods WHERE offer_id = offers.id AND mod_key = ... AND value >= ...
+AND tier >= ...)` per row; MariaDB turns them into semi-joins on the `(mod_key, ...)` keys) or at least N of them
+(`id IN (SELECT offer_id ... WHERE (row 1) OR (row 2) ... GROUP BY offer_id HAVING COUNT(*) >= N)`, materialized once),
+plus `sockets >=`, `quality >=`, a free prefix / suffix, a power, a bound modifier; the other filters, sorting and pages
+are unchanged. The server refuses (the client says why) more than 6 rows, a modifier twice, rows that are not a list and
+any key that is not a modifier or power of `ChaosCrafting.affixes()` (the same 81 keys as the Codex); numbers are
+clamped (value 0 - 1,000,000, tier 0 - 8, sockets 0 - 8, quality 0 - 30, N 1 - rows; `market_config.lua modFilter`);
+keys are checked before they reach SQL and quoted with `db.escapeString`, numbers are integers. A Browse of the old
+client (`mod` = one key) is one row. The request stays far below the extended opcode limit (6 rows of a key and two
+numbers); the answer is the usual page.
 
 **Buying.** Gold comes from the bank (`players.balance`), coins from the account's Chaos Coins (`chaos_shop_coins`). The
 item always goes to the buyer's inbox; the seller gets the gold minus the tax in the bank, the coins minus the tax on
@@ -3199,26 +3226,35 @@ and get tooltips of only their season's offers), the standard market otherwise; 
 the standard market with their sellers. A purchase checks the buyer's, the offer's and the seller's current realm.
 
 **Client** (`game_market`, Chaos skin, 900 x 600, fits 1280x720): Browse (search by name, category, lowest rarity,
-currency, sort, item level and price ranges, a modifier filter with the Codex's modifier and power names, pages of 10;
+currency, sort, item level and price ranges, pages of 10, a collapsible Modifiers section: up to 6 rows of modifier (a
+search box filters the Codex names; the list is grouped into prefixes, suffixes and legendary powers and scrolls),
+lowest value and lowest tier, "All must match" or "At least N match", sockets, quality, free prefix, free suffix, power,
+bound; checked in the client before it is sent (`MarketView.modRequest`) and kept while the character is logged in;
 item rows with icon, rarity frame and colour, name, rarity / item level / category / seller / time left and the prices;
-hovering a row shows the full rich tooltip through `game_itemtooltip.showTip` with the seller and the prices under it,
-Ctrl compares; Buy asks which currency to pay with), Sell (the backpack's items, greyed with the reason when they cannot
+hovering a row shows the full rich tooltip through `game_itemtooltip.showTip` with the seller, the prices and the
+modifiers the search matched ("Matches: ...") under it, Ctrl compares; Buy asks which currency to pay with), Sell (the backpack's items, greyed with the reason when they cannot
 be listed; amount, prices, duration, the fee and the tax as the server computes them), My Offers (active with Cancel,
 sold / expired / cancelled) and History (purchases and sales). Long names are shortened at a word with "..."
 (`SupportsText.shorten`), other texts wrap. Logic without client API: `marketview.lua` (`marketview_test.lua`).
 
-**Protocol.** client -> server `open | browse {filter} | tip {id} | buy {id, cur} | sellable | list {ref|pos, sid|cid,
+**Protocol.** client -> server `open | browse {filter: q, cat, rarity, cur, priceMin, priceMax, ilvlMin, ilvlMax,
+sort, page, mods = [{k, min, t}], need, sockets, quality, freeP, freeS, power, bound} | tip {id} | buy {id, cur} | sellable | list {ref|pos, sid|cid,
 iid, count, gold, coins, days} | cancel {id} | mine | history | wallet`; server -> client `meta | page {rows, page, pages,
 total} | tip {id, tip, seller} | sellable {items} | mine {active, closed, owed} | history {rows} | wallet {gold, coins} |
 done {what, text} | error {text} | openWindow`. `ref` is the server's path to an item in the backpack (`s3.0.5`), `pos`
 the client position of a dragged item; both are checked against the item id and the per-item id.
 
 **Tests.** `tests/market_test.lua` (LuaJIT and Lua 5.3, a mocked engine with a small SQL interpreter): fees, tax, prices,
-every refusal, seasons, the Browse query (escaping, filters, sorting, pages), both codecs, listing a rolled legendary and
+every refusal, seasons, the Browse query (escaping, filters, sorting, pages), the modifier search (the index of an offer,
+rows with value and tier, all rows and at least N, sockets, quality, free prefix / suffix, power, bound, refused keys /
+seven rows / a modifier twice / an injection attempt, the rows removed on sale and cancel, the backfill once and again
+for a new version), both codecs, listing a rolled legendary and
 part of a stack, browse and filters, tooltips, buying with gold and with coins (money and tax, the item identical but
 for a new per-item id), own offer / own account / other season / not enough money / sold twice, cancel, expiry online and
-offline, a rolled-back transaction, failed saves, a crash between save and mark, interrupted listings.
-`client/.../game_market/marketview_test.lua`.
+offline, a rolled-back transaction, failed saves, a crash between save and mark, interrupted listings. The mocked SQL
+runs the real statements (`EXISTS`, `IN (SELECT ... GROUP BY ... HAVING COUNT(*))`, `table`.`column`).
+`client/.../game_market/marketview_test.lua` (the catalog and typeahead choices, the form -> request and its checks,
+the matched lines).
 
 **Tested in game** (test server built with 0001-0014 + 0017, two clients and a season character): a Legendary magic
 sword (four modifiers with tiers, a bound modifier, a legendary power, quality 15%, two sockets with a gem) listed for
@@ -3232,7 +3268,17 @@ season isolation (each market sees only its own offers, buying across refused) a
 season character (a gamemaster is exempt, as for the other season rules); `kill -9` right after a purchase commit (after
 the restart the buyer got the item once and the seller the gold once), between the pending row and the save (row
 dropped, item kept), between the save and the activation (offer activated), and between a delivery's save and its mark
-(one item, row marked at the next login). Screenshots at 1280x720 and 1920x1080. Not verified in game: the key-list
+(one item, row marked at the next login). Screenshots at 1280x720 and 1920x1080.
+The modifier search (test server with 0017, a copy of that database with the first market schema): the startup added
+the columns and the table and indexed the two active offers once (`server_config` row written); five rolled items
+listed (a Legendary sword with a power, a bound modifier, quality 15% and two sockets; a Legendary sword with a socket;
+a Rare plate armor; a Mythic helmet with three sockets; an Uncommon sword) and searched from another client: two rows
+all (Herbalism T5+ and Distance: 2 offers), a lowest value (Herbalism 3+: 1), at least 2 of 3 (Herbalism T7+,
+Distance T4+, Smoldering Aura: 1) and at least 1 (2), an invalid "at least 4 of 3" (refused in the client), sockets 2+,
+free suffix, free suffix + a socket, power + quality, bound, free prefix; the typeahead, the scrolling list (picking
+with the mouse), six rows, the matched lines in the tooltip; an unknown key and seven rows sent by hand (refused by the
+server); the rows removed on a purchase and a cancel; `EXPLAIN` of both query shapes (semi-join on the `(mod_key,
+...)` keys; the count mode materialized). `sql/chaos_market.sql` run twice on the first schema and on an empty database. Not verified in game: the key-list
 codec on a real engine (unit-tested), the per-account offer limit, a listing price at the limits, the base client's
 account with several characters on the copy used (its login parser lacked base patch 0025; patched for the test).
 

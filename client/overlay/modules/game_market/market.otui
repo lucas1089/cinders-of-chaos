@@ -127,6 +127,98 @@ MarketNumber < ChaosTextEdit
   height: 22
   max-length: 14
 
+// the modifier combo of a filter row: 80+ choices, so its list scrolls (the client builds it from
+// "<style>PopupScrollMenu" and "<style>PopupScrollMenuButton")
+MarketModComboPopupScrollMenuButton < ComboBoxPopupScrollMenuButton
+  height: 18
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-offset: 6 1
+
+  $hover !disabled:
+    color: #f6cf72
+    background-color: #3a2410
+
+MarketModComboPopupScrollMenu < ComboBoxPopupScrollMenu
+  image-source: /images/chaos/panel_dark
+  image-clip: 0 0 0 0
+  image-border: 6
+  padding: 3
+
+MarketModCombo < MarketCombo
+  menu-scroll: true
+  menu-height: 320
+  menu-scroll-step: 18
+
+MarketCheck < ChaosCheckBox
+  height: 16
+
+// one row of the Modifiers section: search box (filters the combo), modifier, lowest value, lowest tier, remove
+MarketModRow < UIWidget
+  height: 22
+  margin-top: 4
+  phantom: true
+
+  ChaosTextEdit
+    id: search
+    anchors.top: parent.top
+    anchors.left: parent.left
+    size: 140 22
+    max-length: 30
+    !tooltip: tr('Type part of a modifier name: the list on the right shows only the matches')
+
+  MarketTextDim
+    id: searchHint
+    anchors.verticalCenter: search.verticalCenter
+    anchors.left: search.left
+    margin-left: 7
+    text-auto-resize: true
+    color: #6b6258
+    !text: tr('Find modifier...')
+
+  MarketModCombo
+    id: mod
+    anchors.top: parent.top
+    anchors.left: search.right
+    anchors.right: minLabel.left
+    margin-left: 6
+    margin-right: 10
+    !tooltip: tr('Modifier (prefixes, suffixes, legendary powers; the names of the Codex)')
+
+  MarketTextDim
+    id: minLabel
+    anchors.verticalCenter: search.verticalCenter
+    anchors.right: min.left
+    margin-right: 6
+    text-auto-resize: true
+    !text: tr('Min')
+
+  MarketNumber
+    id: min
+    anchors.top: parent.top
+    anchors.right: tier.left
+    margin-right: 8
+    width: 60
+    max-length: 7
+    !tooltip: tr('Lowest value (leave empty for any)')
+
+  MarketCombo
+    id: tier
+    anchors.top: parent.top
+    anchors.right: remove.left
+    margin-right: 6
+    width: 84
+    !tooltip: tr('Lowest tier: T1 is the lowest, T8 the best; T5+ means T5 or better')
+
+  ChaosButton
+    id: remove
+    anchors.top: parent.top
+    anchors.right: parent.right
+    size: 24 22
+    padding: 0
+    text: x
+    !tooltip: tr('Remove this modifier')
+
 ChaosMainWindow
   id: chaosMarketWindow
   size: 900 600
@@ -297,17 +389,148 @@ ChaosMainWindow
       width: 80
       !tooltip: tr('Highest price in the chosen currency (5k, 2.5m work)')
 
-    MarketCombo
-      id: modCombo
+    ChaosButton
+      id: modToggle
       anchors.top: ilvlMin.top
       anchors.left: priceMax.right
-      anchors.right: parent.right
       margin-left: 14
-      !tooltip: tr('Has this modifier (the names of the Codex)')
+      size: 170 22
+      !text: tr('Modifiers [+]')
+      !tooltip: tr('Search by modifiers, value and tier, sockets, quality and free affix slots')
+      @onClick: modules.game_market.toggleMods()
+
+    MarketTextDim
+      id: modSummary
+      anchors.verticalCenter: ilvlMin.verticalCenter
+      anchors.left: modToggle.right
+      anchors.right: parent.right
+      margin-left: 8
+      height: 16
+
+    // the Modifiers section (collapsed: no height); its height follows its rows (market.lua layoutMods)
+    ChaosPanelDark
+      id: modPanel
+      anchors.top: ilvlMin.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 0
+      padding: 6 8 6 8
+      visible: false
+
+      MarketCombo
+        id: modeCombo
+        anchors.top: parent.top
+        anchors.left: parent.left
+        width: 150
+        !tooltip: tr('Every modifier row must match, or at least the number on the right')
+
+      MarketNumber
+        id: needEdit
+        anchors.top: parent.top
+        anchors.left: modeCombo.right
+        margin-left: 6
+        width: 34
+        max-length: 1
+        !tooltip: tr('How many of the modifier rows must match')
+
+      MarketTextDim
+        id: socketsLabel
+        anchors.verticalCenter: modeCombo.verticalCenter
+        anchors.left: needEdit.right
+        margin-left: 14
+        text-auto-resize: true
+        !text: tr('Sockets')
+
+      MarketNumber
+        id: socketsEdit
+        anchors.top: parent.top
+        anchors.left: socketsLabel.right
+        margin-left: 6
+        width: 34
+        max-length: 1
+        !tooltip: tr('Lowest number of sockets')
+
+      MarketTextDim
+        id: qualityLabel
+        anchors.verticalCenter: modeCombo.verticalCenter
+        anchors.left: socketsEdit.right
+        margin-left: 14
+        text-auto-resize: true
+        !text: tr('Quality')
+
+      MarketNumber
+        id: qualityEdit
+        anchors.top: parent.top
+        anchors.left: qualityLabel.right
+        margin-left: 6
+        width: 34
+        max-length: 2
+        !tooltip: tr('Lowest quality in percent')
+
+      MarketCheck
+        id: freePCheck
+        anchors.verticalCenter: modeCombo.verticalCenter
+        anchors.left: qualityEdit.right
+        margin-left: 14
+        !text: tr('Free prefix')
+        !tooltip: tr('Room for another prefix (its rarity allows more than it has; not on uniques or ruined items)')
+
+      MarketCheck
+        id: freeSCheck
+        anchors.verticalCenter: modeCombo.verticalCenter
+        anchors.left: freePCheck.right
+        margin-left: 10
+        !text: tr('Free suffix')
+        !tooltip: tr('Room for another suffix (its rarity allows more than it has; not on uniques or ruined items)')
+
+      MarketCheck
+        id: powerCheck
+        anchors.verticalCenter: modeCombo.verticalCenter
+        anchors.left: freeSCheck.right
+        margin-left: 10
+        !text: tr('Power')
+        !tooltip: tr('Has a legendary power')
+
+      MarketCheck
+        id: boundCheck
+        anchors.verticalCenter: modeCombo.verticalCenter
+        anchors.left: powerCheck.right
+        margin-left: 10
+        !text: tr('Bound')
+        !tooltip: tr('Has a bound modifier (Orb of Binding)')
+
+      UIWidget
+        id: modRows
+        anchors.top: modeCombo.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 2
+        height: 0
+        phantom: true
+        layout:
+          type: verticalBox
+
+      ChaosButton
+        id: addModButton
+        anchors.top: modRows.bottom
+        anchors.left: parent.left
+        margin-top: 6
+        size: 120 22
+        !text: tr('Add modifier')
+        @onClick: modules.game_market.addModRow()
+
+      MarketWrap
+        id: modHint
+        anchors.top: addModButton.top
+        anchors.left: addModButton.right
+        anchors.right: parent.right
+        margin-left: 10
+        margin-top: 4
+        color: #8c8070
 
     ChaosPanelDark
       id: listFrame
-      anchors.top: ilvlMin.bottom
+      anchors.top: modPanel.bottom
       anchors.left: parent.left
       anchors.right: parent.right
       anchors.bottom: pagePrev.top

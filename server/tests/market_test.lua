@@ -1,7 +1,8 @@
 -- Run from the server/ folder: luajit tests/market_test.lua (CI runs it with LuaJIT and Lua 5.3).
 -- The Chaos market (data/scripts/chaos/market_core.lua and market.lua) against a mocked engine with a small in-memory
 -- SQL database (the statements market.lua writes: SELECT / INSERT / UPDATE / DELETE with WHERE, ORDER BY, LIMIT,
--- transactions and unique keys). Covers the pure rules (fees, tax, prices, listing refusals, seasons, the Browse query,
+-- transactions and unique keys; table.column names, EXISTS and IN subqueries, GROUP BY ... HAVING COUNT(*), INSERT of
+-- several rows). Covers the pure rules (fees, tax, prices, listing refusals, seasons, the Browse query,
 -- the codecs, the crash-safety plans) and the flows: listing a rolled legendary item for gold and part of a stack of
 -- orbs for coins, browse and filters, tooltips, buying with gold and with coins (money moved with the tax, the item
 -- delivered with every attribute and a new per-item id), refusals (own offer, own account, other season, not enough
@@ -26,9 +27,13 @@ local function tbl(name)
 	return DB.tables[name]
 end
 DB.unique["chaos_market_deliveries"] = {{"offer_id", "kind"}}
+DB.unique["chaos_market_offer_mods"] = {{"offer_id", "mod_key"}}
+DB.unique["server_config"] = {{"config"}}
 -- column defaults of the market tables (sql/chaos_market.sql)
 DB.defaults = {
-	chaos_market_offers = {buyer_id = 0, buyer_name = "", paid_currency = "", paid_amount = 0, tax = 0, closed_at = 0},
+	chaos_market_offers = {buyer_id = 0, buyer_name = "", paid_currency = "", paid_amount = 0, tax = 0, closed_at = 0, sockets = 0,
+		quality = 0, free_prefix = 0, free_suffix = 0, has_power = 0, bound_mods = 0, mods_indexed = 0},
+	chaos_market_offer_mods = {value = 0, tier = 0},
 	chaos_market_deliveries = {delivered = 0, delivered_at = 0, amount = 0, reason = ""}
 }
 DB.unique["chaos_shop_coins"] = {{"account_id"}}
@@ -78,7 +83,7 @@ local function tokenize(s)
 		elseif s:sub(i, i + 1) == ">=" or s:sub(i, i + 1) == "<=" or s:sub(i, i + 1) == "<>" then
 			toks[#toks + 1] = {t = "op", v = s:sub(i, i + 1)}
 			i = i + 2
-		elseif c:match("[%(%),=<>%+%-%*]") then
+		elseif c:match("[%(%),=<>%+%-%*%.]") then
 			toks[#toks + 1] = {t = "op", v = c}
 			i = i + 1
 		else
@@ -125,7 +130,26 @@ function P:term()
 	elseif t.t == "str" then
 		return function() return t.v end
 	elseif t.t == "id" then
+		if self:is(".") and self:peek(1) and self:peek(1).t == "id" then
+			-- table.column: the row of that table in the scope (an outer query's row inside a subquery)
+			self:next()
+			local tname, col = t.v, self:next().v
+			return function(r)
+				for i = #DB.scope, 1, -1 do
+					if DB.scope[i].name == tname then
+						return DB.scope[i].row[col]
+					end
+				end
+				return r[col]
+			end
+		end
 		return function(r) return r[t.v] end
+	elseif t.t == "kw" and t.v == "EXISTS" then
+		self:expect("(")
+		self:expect("SELECT")
+		local sub = self:select()
+		self:expect(")")
+		return function() return #sub() > 0 end
 	elseif t.t == "op" and t.v == "(" then
 		local e = self:expr()
 		self:expect(")")
@@ -135,7 +159,8 @@ function P:term()
 		if t.v == "COUNT" then
 			self:expect("*")
 			self:expect(")")
-			return function() return "__count" end
+			-- the count of a GROUP BY group (HAVING), else a marker: SELECT COUNT(*) counts the rows
+			return function(r) return r and r.__groupCount or "__count" end
 		elseif t.v == "GREATEST" then
 			local a = self:expr()
 			self:expect(",")
@@ -184,6 +209,20 @@ function P:cmp()
 	local a = self:arith()
 	if self:accept("IN") then
 		self:expect("(")
+		if self:accept("SELECT") then
+			local sub, fields = self:select()
+			self:expect(")")
+			local col = fields[1][2]
+			return function(r)
+				local v = a(r)
+				for _, row in ipairs(sub()) do
+					if row[col] == v then
+						return true
+					end
+				end
+				return false
+			end
+		end
 		local list = {}
 		repeat
 			list[#list + 1] = self:arith()
@@ -235,6 +274,114 @@ function P:expr()
 	return e
 end
 
+-- SELECT ... (after the keyword): returns a function that runs it (inside the rows of the queries around it) and
+-- the fields {expression, alias}
+DB.scope = {}
+function P:select()
+	local p = self
+	local fields = {}
+	repeat
+		local e = p:arith()
+		local alias
+		local tok = p:peek(-1)
+		if p:accept("AS") then
+			alias = p:next().v
+		elseif tok.t == "id" then
+			alias = tok.v
+		end
+		fields[#fields + 1] = {e, alias}
+	until not p:accept(",")
+	local from
+	if p:accept("FROM") then
+		from = p:next().v
+	end
+	local where = p:accept("WHERE") and p:expr() or function() return true end
+	local groupBy, having
+	if p:accept("GROUP") then
+		p:expect("BY")
+		groupBy = p:arith()
+		if p:accept("HAVING") then
+			having = p:expr()
+		end
+	end
+	local keys
+	if p:accept("ORDER") then
+		p:expect("BY")
+		keys = {}
+		repeat
+			local e = p:arith()
+			local desc = p:accept("DESC")
+			p:accept("ASC")
+			keys[#keys + 1] = {e, desc}
+		until not p:accept(",")
+	end
+	local limit, offset = nil, 0
+	if p:accept("LIMIT") then
+		limit = p:next().v
+		if p:accept("OFFSET") then
+			offset = p:next().v
+		end
+	end
+	return function()
+		local rows = from and tbl(from) or {{}}
+		local out = {}
+		for _, r in ipairs(rows) do
+			DB.scope[#DB.scope + 1] = {name = from, row = r}
+			local okw, hit = pcall(where, r)
+			DB.scope[#DB.scope] = nil
+			if not okw then error(hit) end
+			if hit then
+				out[#out + 1] = r
+			end
+		end
+		if groupBy then
+			local groups, order = {}, {}
+			for _, r in ipairs(out) do
+				local k = groupBy(r)
+				if not groups[k] then
+					groups[k] = copy(r)
+					groups[k].__groupCount = 0
+					order[#order + 1] = k
+				end
+				groups[k].__groupCount = groups[k].__groupCount + 1
+			end
+			out = {}
+			for _, k in ipairs(order) do
+				if not having or having(groups[k]) then
+					out[#out + 1] = groups[k]
+				end
+			end
+		end
+		if keys then
+			table.sort(out, function(x, y)
+				for _, k in ipairs(keys) do
+					local a, b = k[1](x), k[1](y)
+					if type(a) == "boolean" then a = a and 1 or 0 end
+					if type(b) == "boolean" then b = b and 1 or 0 end
+					if a ~= b then
+						if k[2] then return a > b end
+						return a < b
+					end
+				end
+				return false
+			end)
+		end
+		local res = {}
+		if fields[1][1]({}) == "__count" then
+			res[1] = {[fields[1][2]] = #out}
+		else
+			for i = offset + 1, limit and math.min(#out, offset + limit) or #out do
+				local r = {}
+				for _, f in ipairs(fields) do
+					r[f[2] or "_"] = f[1](out[i])
+				end
+				res[#res + 1] = r
+			end
+		end
+		return res
+	end, fields
+end
+
 local function uniqueClash(name, row, except)
 	for _, key in ipairs(DB.unique[name] or {}) do
 		for _, r in ipairs(tbl(name)) do
@@ -272,7 +419,7 @@ local function run(sql, wantRows)
 			DB.tables, DB.auto, DB.tx = DB.tx, DB.txAuto, nil
 		end
 		return true
-	elseif p:accept("CREATE") then
+	elseif p:accept("CREATE") or p:accept("ALTER") then
 		return true
 	elseif p:accept("INSERT") then
 		p:expect("INTO")
@@ -284,17 +431,42 @@ local function run(sql, wantRows)
 		until not p:accept(",")
 		p:expect(")")
 		p:expect("VALUES")
-		p:expect("(")
-		local row = {}
-		local n = 0
+		local tuples = {}
 		repeat
-			n = n + 1
-			row[cols[n]] = p:arith()({})
+			p:expect("(")
+			local r = {}
+			local n = 0
+			repeat
+				n = n + 1
+				r[cols[n]] = p:arith()({})
+			until not p:accept(",")
+			p:expect(")")
+			for k, v in pairs(DB.defaults[name] or {}) do
+				if r[k] == nil then r[k] = v end
+			end
+			tuples[#tuples + 1] = r
 		until not p:accept(",")
-		p:expect(")")
-		for k, v in pairs(DB.defaults[name] or {}) do
-			if row[k] == nil then row[k] = v end
+		if #tuples > 1 then
+			for i, r in ipairs(tuples) do
+				if uniqueClash(name, r) then
+					return false
+				end
+				for j = 1, i - 1 do
+					local same = true
+					for _, key in ipairs(DB.unique[name] or {}) do
+						for _, c in ipairs(key) do
+							if tuples[j][c] ~= r[c] then same = false end
+						end
+					end
+					if same and DB.unique[name] then return false end
+				end
+			end
+			local t = tbl(name)
+			for _, r in ipairs(tuples) do t[#t + 1] = r end
+			DB.rowCount = #tuples
+			return true
 		end
+		local row = tuples[1]
 		local clash = uniqueClash(name, row)
 		if clash then
 			if p:accept("ON") then
@@ -311,7 +483,7 @@ local function run(sql, wantRows)
 			return false -- duplicate key
 		end
 		DB.auto[name] = (DB.auto[name] or 0) + 1
-		if row.id == nil and name:find("^chaos_market") then
+		if row.id == nil and name:find("^chaos_market") and name ~= "chaos_market_offer_mods" then
 			row.id = DB.auto[name]
 			DB.lastId = row.id
 		end
@@ -368,71 +540,7 @@ local function run(sql, wantRows)
 		DB.rowCount = n
 		return true
 	elseif p:accept("SELECT") then
-		local fields = {}
-		repeat
-			local e = p:arith()
-			local alias
-			local tok = p:peek(-1)
-			if p:accept("AS") then
-				alias = p:next().v
-			elseif tok.t == "id" then
-				alias = tok.v
-			end
-			fields[#fields + 1] = {e, alias}
-		until not p:accept(",")
-		local rows = {{}}
-		if p:accept("FROM") then
-			rows = tbl(p:next().v)
-		end
-		local where = p:accept("WHERE") and p:expr() or function() return true end
-		local out = {}
-		for _, r in ipairs(rows) do
-			if where(r) then
-				out[#out + 1] = r
-			end
-		end
-		if p:accept("ORDER") then
-			p:expect("BY")
-			local keys = {}
-			repeat
-				local e = p:arith()
-				local desc = p:accept("DESC")
-				p:accept("ASC")
-				keys[#keys + 1] = {e, desc}
-			until not p:accept(",")
-			table.sort(out, function(x, y)
-				for _, k in ipairs(keys) do
-					local a, b = k[1](x), k[1](y)
-					if type(a) == "boolean" then a = a and 1 or 0 end
-					if type(b) == "boolean" then b = b and 1 or 0 end
-					if a ~= b then
-						if k[2] then return a > b end
-						return a < b
-					end
-				end
-				return false
-			end)
-		end
-		local limit, offset = nil, 0
-		if p:accept("LIMIT") then
-			limit = p:next().v
-			if p:accept("OFFSET") then
-				offset = p:next().v
-			end
-		end
-		local res = {}
-		if fields[1][1]({}) == "__count" then
-			res[1] = {[fields[1][2]] = #out}
-		else
-			for i = offset + 1, limit and math.min(#out, offset + limit) or #out do
-				local r = {}
-				for _, f in ipairs(fields) do
-					r[f[2]] = f[1](out[i])
-				end
-				res[#res + 1] = r
-			end
-		end
-		return res
+		return (p:select())()
 	end
 	error("SQL: unknown statement " .. sql:sub(1, 40))
 end
@@ -747,14 +855,35 @@ ChaosCrafting = {
 }
 ChaosItemMods = {itemLevelOf = function(item) return tonumber(item:getCustomAttribute("chaos_ilvl")) or 0 end}
 ChaosGems = {ATTR_GEM = "chaos_gem", isGem = function(id) return id == 40001 end}
+-- the modifiers the mocked tooltip knows: key, label, side, power (value in the attribute, tier in <key>_t, bound <key>_b)
+local MOCK_MODS = {{"rarity_firedamage", "Fire Damage", "p"}, {"chaos_mod_attackspeed", "Attack Speed", "p"},
+	{"rarity_swordskill", "Sword Fighting", "s"}, {"chaos_mod_life", "Life", "s"}, {"chaos_mod_deathblast", "Death Blast", "s", true}}
+ChaosCrafting.affixes = function()
+	local out = {}
+	for _, m in ipairs(MOCK_MODS) do out[#out + 1] = {key = m[1]} end
+	out[#out + 1] = {key = "rarity_criticalhitchance"}
+	return out
+end
 ChaosItemTooltip = {
 	build = function(item)
 		local mods = {}
-		if item:getCustomAttribute("rarity_firedamage") then mods[#mods + 1] = {k = "rarity_firedamage", l = "Fire Damage"} end
-		if item:getCustomAttribute("chaos_mod_attackspeed") then mods[#mods + 1] = {k = "chaos_mod_attackspeed", l = "Attack Speed"} end
+		local p, sx = 0, 0
+		for _, m in ipairs(MOCK_MODS) do
+			local v = item:getCustomAttribute(m[1])
+			if v then
+				mods[#mods + 1] = {k = m[1], l = m[2], v = v, tr = item:getCustomAttribute(m[1] .. "_t") or 1, sd = m[3],
+					bd = item:getCustomAttribute(m[1] .. "_b") == 1 or nil, pw = m[4]}
+				if m[3] == "p" then p = p + 1 else sx = sx + 1 end
+			end
+		end
 		local r = tonumber(item:getCustomAttribute("rarity")) or 0
+		local lim = r >= 5 and 3 or (r >= 3 and 2 or 1)
+		local q = tonumber(item:getCustomAttribute("chaos_quality")) or 0
+		local so = tonumber(item:getCustomAttribute("chaos_sockets")) or 0
 		return {id = item.id, name = item:getName(), count = item.count, rarity = r, level = tonumber(item:getCustomAttribute("chaos_ilvl")),
 			kind = item.id == 2400 and "weapon" or (item.id == 2463 and "armor" or nil), mods = mods,
+			sides = r > 0 and {p = p, s = sx, max = lim, mp = lim, ms = lim} or nil, quality = q > 0 and {q = q, cap = 20} or nil,
+			sockets = so > 0 and {count = so, max = 3} or nil,
 			unique = item:getCustomAttribute("chaos_unique") and {name = item:getName()} or nil, key = "x:y"}
 	end,
 	decodePos = function() return nil end
@@ -836,7 +965,7 @@ eq(MC.modsField({}), "", "no mods")
 
 local esc = db.escapeString
 local where, order, page, offset = MC.browseQuery({q = "50%_ off", cat = "weapon", rarity = 5, ilvlMin = 100, ilvlMax = 200, cur = "gold",
-	priceMin = 10, priceMax = 900, mod = "Chaos_Mod_AttackSpeed'", sort = "price", page = 3}, 1, 1000, cfg, esc)
+	priceMin = 10, priceMax = 900, mod = "Chaos_Mod_AttackSpeed", sort = "price", page = 3}, 1, 1000, cfg, esc)
 ok(where:find("`realm` = 1", 1, true), "realm in the query")
 eq(MC.realmClause(0, 1), "`realm` <> 1", "standard view during a season: every offer but the season's")
 eq(MC.realmClause(0, 0), "`realm` >= 0", "no season: every offer")
@@ -844,12 +973,68 @@ eq(MC.realmClause(1, 1), "`realm` = 1", "season view")
 ok(where:find("`name` LIKE '%50\\\\%\\\\_ off%'", 1, true), "LIKE escaped: " .. where)
 ok(where:find("`category` = 'weapon'", 1, true), "category")
 ok(where:find("`price_gold` >= 10", 1, true) and where:find("`price_gold` <= 900", 1, true), "price range")
-ok(where:find("`mods` LIKE '%,chaos\\\\_mod\\\\_attackspeed,%'", 1, true), "mod key sanitized and escaped: " .. where)
+ok(where:find("EXISTS (SELECT 1 FROM `chaos_market_offer_mods` WHERE `chaos_market_offer_mods`.`offer_id` = `chaos_market_offers`.`id` "
+	.. "AND `mod_key` = 'chaos_mod_attackspeed')", 1, true), "the old client's one modifier: one row, key in lower case: " .. where)
 eq(order, "`price_gold` ASC, `id` DESC", "sort by gold price")
 eq(page .. "/" .. offset, "3/20", "page offset")
 where = MC.browseQuery({cat = "nonsense'; DROP", sort = "x", page = -4}, 0, 5, cfg, esc)
 ok(not where:find("category"), "unknown category ignored")
 eq(select(3, MC.browseQuery({page = 99999}, 0, 5, cfg, esc)), 1000, "page clamped")
+
+-- the modifier filter (C.modFilter / C.modClauses)
+local known = {rarity_firedamage = true, chaos_mod_attackspeed = true, rarity_swordskill = true, chaos_mod_deathblast = true,
+	rarity_criticalhitchance = true, rarity_arcaneabsorb = true, chaos_mod_life = true}
+local mf, why = MC.modFilter({mods = {{k = "rarity_firedamage", min = 10, t = 5}, {k = "Chaos_Mod_AttackSpeed"}}}, cfg, known)
+eq(#mf.mods .. "/" .. mf.need, "2/2", "two rows, all needed by default")
+eq(mf.mods[1].min .. "/" .. mf.mods[1].tier, "10/5", "min value and tier")
+eq(mf.mods[2].key, "chaos_mod_attackspeed", "key in lower case")
+mf = MC.modFilter({mods = {{k = "rarity_firedamage", min = -5, t = 99}, {k = "rarity_swordskill", min = "1e400", t = "x"}}, need = 7,
+	sockets = 500, quality = -3, freeP = true, freeS = 1, power = "1", bound = "no"}, cfg, known)
+eq(mf.mods[1].min .. "/" .. mf.mods[1].tier, "0/8", "negative value and tier above T8 clamped")
+eq(mf.mods[2].min .. "/" .. mf.mods[2].tier, "0/0", "unreadable numbers: no limit")
+eq(mf.need, 2, "need above the rows: all")
+eq(mf.sockets .. "/" .. mf.quality, "8/0", "sockets and quality clamped")
+eq(tostring(mf.freePrefix) .. tostring(mf.freeSuffix) .. tostring(mf.power) .. tostring(mf.bound), "truetruetruefalse", "flags")
+local seven = {}
+for i = 1, 7 do seven[i] = {k = "rarity_firedamage"} end
+eq(MC.modFilter({mods = seven}, cfg, known), nil, "seven rows refused")
+ok(select(2, MC.modFilter({mods = seven}, cfg, known)):find("6"), "says the limit")
+eq(MC.modFilter({mods = {{k = "rarity_firedamage"}, {k = "RARITY_FIREDAMAGE"}}}, cfg, known), nil, "a modifier twice refused")
+eq(MC.modFilter({mods = {{k = "rarity_nothing"}}}, cfg, known), nil, "unknown key refused")
+eq(MC.modFilter({mods = {{k = "x' OR 1=1 --"}}}, cfg, nil), nil, "a key with other characters refused (no known list)")
+eq(MC.modFilter({mods = {{k = "rarity_nothing"}}}, cfg, nil).mods[1].key, "rarity_nothing", "no known list: any well-formed key")
+eq(MC.modFilter({mods = "rarity_firedamage"}, cfg, known), nil, "rows that are not a list refused")
+eq(MC.modFilter({mods = {"rarity_firedamage"}}, cfg, known), nil, "a row that is not a table refused")
+eq(MC.modFilter({mods = {{k = string.rep("a", 60)}}}, cfg, nil), nil, "a key too long refused")
+eq(#MC.modFilter({}, cfg, known).mods, 0, "no rows")
+eq(select(2, MC.browseQuery({mods = {{k = "rarity_nothing"}}}, 0, 5, cfg, esc, 0, known)), "Unknown modifier.", "Browse refuses it")
+local cl = MC.modClauses(MC.modFilter({mods = {{k = "rarity_firedamage", min = 10, t = 5}, {k = "chaos_mod_attackspeed"}}}, cfg, known), cfg, esc)
+eq(#cl, 2, "all rows: one EXISTS each")
+eq(cl[1], "EXISTS (SELECT 1 FROM `chaos_market_offer_mods` WHERE `chaos_market_offer_mods`.`offer_id` = `chaos_market_offers`.`id` "
+	.. "AND `mod_key` = 'rarity_firedamage' AND `value` >= 10 AND `tier` >= 5)", "EXISTS with value and tier")
+cl = MC.modClauses(MC.modFilter({mods = {{k = "rarity_firedamage", t = 3}, {k = "chaos_mod_attackspeed", min = 5}, {k = "chaos_mod_life"}},
+	need = 2, sockets = 2, quality = 10, freeS = true, power = true, bound = true}, cfg, known), cfg, esc)
+eq(cl[1], "`id` IN (SELECT `offer_id` FROM `chaos_market_offer_mods` WHERE (`mod_key` = 'rarity_firedamage' AND `tier` >= 3) OR "
+	.. "(`mod_key` = 'chaos_mod_attackspeed' AND `value` >= 5) OR (`mod_key` = 'chaos_mod_life') GROUP BY `offer_id` HAVING COUNT(*) >= 2)",
+	"count mode: GROUP BY HAVING")
+eq(table.concat(cl, " AND ", 2), "`sockets` >= 2 AND `quality` >= 10 AND `free_suffix` > 0 AND `has_power` = 1 AND `bound_mods` > 0",
+	"the other filters")
+
+-- the searchable facts of an offer from its tooltip snapshot (C.offerIndex)
+local ix = MC.offerIndex({rarity = 5, mods = {{k = "rarity_firedamage", v = 12, tr = 3, sd = "p"},
+	{k = "chaos_mod_attackspeed", v = 9, tr = 2, sd = "p", bd = true}, {k = "chaos_mod_deathblast", v = 13, tr = 6, sd = "s", pw = true},
+	{k = "rarity_criticalhitchance", g = "special", v = 2, v2 = 6, tr = 7, sd = "p"}, {k = "Rarity_FireDamage", v = 99}},
+	sides = {p = 3, s = 1, max = 3, mp = 3, ms = 4}, quality = {q = 18, cap = 20}, sockets = {count = 2, max = 3}})
+eq(#ix.mods, 4, "four modifiers (a key once)")
+eq(ix.mods[4].value .. "/" .. ix.mods[4].tier, "6/7", "a critical pair by its amount")
+eq(ix.sockets .. "/" .. ix.quality .. "/" .. ix.freePrefix .. "/" .. ix.freeSuffix .. "/" .. ix.hasPower .. "/" .. ix.bound, "2/18/0/3/1/1",
+	"sockets, quality, free slots (the extra suffix of the Orb of Ruin counted), power, bound")
+ix = MC.offerIndex({rarity = 5, ruined = true, sides = {p = 0, s = 0, max = 3, mp = 3, ms = 3}})
+eq(ix.freePrefix .. "/" .. ix.freeSuffix, "0/0", "a ruined item has no free slot")
+ix = MC.offerIndex({unique = {name = "x"}, mods = {{k = "rarity_firedamage", v = 5}}, sides = {p = 0, s = 0, mp = 3, ms = 3}})
+eq(ix.freePrefix .. "/" .. ix.mods[1].tier, "0/0", "a unique: no free slot, its modifiers have no tier")
+eq(#MC.offerIndex(nil).mods, 0, "no tooltip: nothing")
+eq(MC.offerIndex({mods = {{k = "bad key'; --", v = 1}}}).mods[1].key, "badkey", "keys sanitized")
 eq(MC.pages(0, cfg), 1, "pages of nothing")
 eq(MC.pages(25, cfg), 3, "pages")
 
@@ -966,7 +1151,18 @@ local row = tbl("chaos_market_offers")[1]
 eq(row.state, 0, "offer active")
 eq(row.codec, "blob", "escrow codec blob")
 eq(row.category, "weapon", "category")
-eq(row.mods, ",rarity_firedamage,chaos_mod_attackspeed,", "mods field stored")
+eq(row.mods, ",rarity_firedamage,chaos_mod_attackspeed,chaos_mod_deathblast,", "mods field stored")
+local function modRows(offerId)
+	local out = {}
+	for _, r in ipairs(tbl("chaos_market_offer_mods")) do
+		if r.offer_id == offerId then out[r.mod_key] = r.value .. "/T" .. r.tier end
+	end
+	return out
+end
+local mr = modRows(swordOffer)
+eq(mr.rarity_firedamage .. " " .. mr.chaos_mod_attackspeed .. " " .. mr.chaos_mod_deathblast, "12/T3 9/T2 13/T1", "modifier rows of the offer")
+eq(row.sockets .. "/" .. row.quality .. "/" .. row.free_prefix .. "/" .. row.free_suffix .. "/" .. row.has_power .. "/" .. row.bound_mods
+	.. "/" .. row.mods_indexed, "2/18/1/2/1/1/1", "the filter columns (sockets, quality, free prefix / suffix, power, bound, indexed)")
 eq(row.rarity .. "/" .. row.ilvl, "5/150", "rarity and item level stored")
 eq(row.expires - row.created, 3 * 86400, "3 days")
 
@@ -1002,6 +1198,86 @@ eq(lastSent(Cs, "page").total, 0, "season character: the standard offers are not
 op(B, "browse", {})
 eq(lastSent(B, "page").total, 2, "standard market unchanged")
 
+-- the modifier filter: a third seller lists two more rolled items
+local D = newPlayer(5, 50, "Smith", 900000)
+login(D)
+local bagD = D.slots[CONST_SLOT_BACKPACK]
+local function listD(id, attrs, gold)
+	local it = newItem(id)
+	for k, v in pairs(attrs) do it.custom[k] = v end
+	addTo(bagD, it)
+	op(D, "list", {ref = "s3." .. (#bagD.children - 1), sid = id, iid = "0", gold = gold, days = 3})
+	local d2 = lastSent(D, "done")
+	return d2 and d2.id
+end
+-- an axe: Fire Damage 20 (T6), Attack Speed 4 (T1), no sockets; a free prefix and every suffix free
+local axeOffer = listD(2400, {rarity = 5, chaos_ilvl = 140, rarity_firedamage = 20, rarity_firedamage_t = 6, chaos_mod_attackspeed = 4,
+	chaos_mod_attackspeed_t = 1}, 30000)
+-- an armor: Fire Damage 8 (T2), Sword Fighting 3 (T4), Life 50 (T8), one socket; suffixes full
+local armorOffer = listD(2463, {rarity = 3, chaos_ilvl = 120, rarity_firedamage = 8, rarity_firedamage_t = 2, rarity_swordskill = 3,
+	rarity_swordskill_t = 4, chaos_mod_life = 50, chaos_mod_life_t = 8, chaos_sockets = 1}, 20000)
+ok(axeOffer and armorOffer, "two more offers")
+local function found(filter)
+	op(B, "browse", filter)
+	local pg2 = lastSent(B, "page")
+	local ids = {}
+	for _, r in ipairs(pg2.rows) do ids[#ids + 1] = r.id end
+	table.sort(ids)
+	local names = {}
+	for _, id in ipairs(ids) do
+		names[#names + 1] = id == swordOffer and "sword" or id == axeOffer and "axe" or id == armorOffer and "armor" or id == orbOffer and "orbs" or tostring(id)
+	end
+	return table.concat(names, ","), pg2.total
+end
+eq(found({mods = {{k = "rarity_firedamage"}}}), "sword,axe,armor", "one modifier")
+eq(found({mods = {{k = "rarity_firedamage"}, {k = "chaos_mod_attackspeed"}}}), "sword,axe", "two modifiers, all of them")
+eq(found({mods = {{k = "rarity_firedamage"}, {k = "chaos_mod_attackspeed"}, {k = "chaos_mod_life"}}}), "", "three, all: none has them all")
+eq(found({mods = {{k = "rarity_firedamage", min = 15}}}), "axe", "min value")
+eq(found({mods = {{k = "rarity_firedamage", min = 12}}}), "sword,axe", "min value is inclusive")
+eq(found({mods = {{k = "rarity_firedamage", t = 3}}}), "sword,axe", "T3 or better")
+eq(found({mods = {{k = "rarity_firedamage", t = 6}, {k = "chaos_mod_attackspeed"}}}), "axe", "T6 or better and a second row")
+eq(found({mods = {{k = "rarity_firedamage", t = 5}, {k = "chaos_mod_attackspeed"}, {k = "rarity_swordskill"}}, need = 2}), "axe",
+	"at least 2 of 3")
+eq(found({mods = {{k = "rarity_firedamage", t = 5}, {k = "chaos_mod_attackspeed"}, {k = "rarity_swordskill"}}, need = 1}),
+	"sword,axe,armor", "at least 1 of 3")
+eq(found({mods = {{k = "chaos_mod_life", min = 40, t = 8}, {k = "rarity_swordskill", min = 5}}, need = 1}), "armor",
+	"count mode with value and tier limits")
+eq(found({mods = {{k = "chaos_mod_life", min = 40, t = 8}, {k = "rarity_swordskill", min = 5}}, need = 2}), "", "count mode: 2 of 2")
+eq(found({sockets = 1}), "sword,armor", "a socket or more")
+eq(found({sockets = 2}), "sword", "two sockets")
+eq(found({quality = 10}), "sword", "quality")
+eq(found({freeP = true}), "sword,axe,armor", "a free prefix")
+eq(found({freeS = true}), "sword,axe", "a free suffix (the armor's are full)")
+eq(found({power = true}), "sword", "a legendary power")
+eq(found({bound = true}), "sword", "a bound modifier")
+eq(found({mods = {{k = "chaos_mod_deathblast", t = 1}}}), "sword", "a power as a modifier row")
+eq(found({mods = {{k = "rarity_firedamage"}}, freeS = true, cur = "gold", sort = "price"}), "sword,axe", "with the other filters")
+op(B, "browse", {mods = {{k = "rarity_firedamage"}}, sort = "price", cur = "gold"})
+eq(lastSent(B, "page").rows[1].id, armorOffer, "sorting unchanged: cheapest first")
+local okRows = {}
+for i = 1, 6 do okRows[i] = {k = MOCK_MODS[(i - 1) % 5 + 1][1]} end
+okRows[6] = {k = "rarity_criticalhitchance"}
+eq(select(2, found({mods = okRows, need = 1})), 3, "six rows work")
+local nPages = #B.sent
+op(B, "browse", {mods = {{k = "rarity_nothing"}}})
+eq(lastSent(B, "error").text, "Unknown modifier.", "an unknown modifier is refused")
+okRows[7] = {k = "chaos_mod_life"}
+op(B, "browse", {mods = okRows})
+ok(lastSent(B, "error").text:find("At most 6"), "seven rows refused")
+op(B, "browse", {mods = {{k = "chaos_mod_life"}, {k = "chaos_mod_life", t = 2}}})
+ok(lastSent(B, "error").text:find("once"), "a modifier twice refused")
+op(B, "browse", {mods = {{k = "rarity_firedamage' OR '1'='1"}}})
+eq(lastSent(B, "error").text, "Unknown modifier.", "an injection attempt is refused")
+local pagesAfter = 0
+for i = nPages + 1, #B.sent do if B.sent[i].msg.action == "page" then pagesAfter = pagesAfter + 1 end end
+eq(pagesAfter, 0, "no page for a refused filter")
+-- the axe is cancelled: its rows leave the index
+op(D, "cancel", {id = axeOffer})
+eq(next(modRows(axeOffer)), nil, "a cancelled offer's rows are removed")
+eq(found({mods = {{k = "rarity_firedamage", t = 6}}}), "", "and it is not found any more")
+op(D, "cancel", {id = armorOffer})
+
+
 -- tooltip
 op(B, "tip", {id = swordOffer})
 local tp = lastSent(B, "tip")
@@ -1027,7 +1303,10 @@ eq(lastSent(B, "error").text, cfg.messages.notFound, "failed purchase refused")
 eq(B.bank, 5000000, "buyer's bank untouched in memory")
 eq(tbl("players")[2].balance, 5000000, "buyer's balance untouched in the database (rolled back)")
 eq(tbl("chaos_market_offers")[1].state, 0, "offer still active")
-eq(#tbl("chaos_market_deliveries"), 0, "no delivery rows")
+local swordDeliveries = 0
+for _, r in ipairs(tbl("chaos_market_deliveries")) do if r.offer_id == swordOffer then swordDeliveries = swordDeliveries + 1 end end
+eq(swordDeliveries, 0, "no delivery rows")
+eq(modRows(swordOffer).rarity_firedamage, "12/T3", "the index rows kept (the DELETE rolled back too)")
 
 -- buy the sword with gold
 op(B, "buy", {id = swordOffer, cur = "gold"})
@@ -1036,6 +1315,7 @@ eq(B.bank, 4900000, "price taken from the bank")
 eq(tbl("players")[2].balance, 4900000, "and in the database")
 eq(tbl("chaos_market_offers")[1].state, 1, "offer sold")
 eq(tbl("chaos_market_offers")[1].tax, 5000, "tax recorded")
+eq(next(modRows(swordOffer)), nil, "a sold offer's rows are removed in the purchase transaction")
 local got = B.inbox.children[1]
 ok(got ~= nil, "the sword is in the buyer's inbox")
 eq(got.custom.chaos_iid, nil, "a new per-item id (the old one is not copied)")
@@ -1216,6 +1496,48 @@ op(A, "list", {ref = "s3.0", sid = 29856, iid = "0", count = 1, gold = 2000, day
 op(A, "list", {ref = "s3.0", sid = 29856, iid = "0", count = 1, gold = 2000, days = 1})
 ok(lastSent(A, "error").text:find("active offers"), "max active offers")
 Chaos.marketConfig.maxActive = 20
+
+-- the backfill: offers listed before the modifier index existed are indexed once at startup from their tooltips
+local tNow = os.time()
+local function legacy(id, state, tip)
+	table.insert(tbl("chaos_market_offers"), {id = id, state = state, seller_id = 5, realm = 0, expires = tNow + 9999, price_gold = 777,
+		price_coins = 0, name = "old " .. id, category = "weapon", rarity = 5, ilvl = 100, mods = ",rarity_firedamage,", count = 1,
+		item_id = 2400, client_id = 2400, seller_name = "Smith", seller_account = 50, unique_item = 0, created = tNow, buyer_id = 0,
+		buyer_name = "", paid_currency = "", paid_amount = 0, tax = 0, closed_at = 0, tip = tip, sockets = 0, quality = 0, free_prefix = 0,
+		free_suffix = 0, has_power = 0, bound_mods = 0, mods_indexed = 0})
+end
+legacy(950, 0, json.encode({rarity = 5, mods = {{k = "rarity_firedamage", v = 17, tr = 5, sd = "p"}, {k = "chaos_mod_deathblast", v = 9,
+	tr = 4, sd = "s", pw = true}}, sides = {p = 1, s = 1, max = 3, mp = 3, ms = 3}, sockets = {count = 3}, quality = {q = 7}}))
+legacy(951, 1, json.encode({rarity = 5, mods = {{k = "rarity_firedamage", v = 30, tr = 8}}}))
+legacy(952, 0, "not json")
+DB.tables["server_config"] = {}
+eq(MK.backfillIndex(), 2, "two active offers indexed (the sold one left out)")
+mr = modRows(950)
+eq(mr.rarity_firedamage .. " " .. mr.chaos_mod_deathblast, "17/T5 9/T4", "rows from the tooltip snapshot")
+eq(next(modRows(951)), nil, "a sold offer gets no rows")
+local o950, o952
+for _, r in ipairs(tbl("chaos_market_offers")) do
+	if r.id == 950 then o950 = r elseif r.id == 952 then o952 = r end
+end
+eq(o950.sockets .. "/" .. o950.quality .. "/" .. o950.free_prefix .. "/" .. o950.free_suffix .. "/" .. o950.has_power .. "/" .. o950.mods_indexed,
+	"3/7/2/2/1/1", "columns from the tooltip snapshot")
+eq(o952.mods_indexed, 1, "an unreadable tooltip: indexed as nothing")
+eq(tbl("server_config")[1].value, "1", "the backfill is recorded")
+eq(MK.backfillIndex(), 0, "and runs once")
+op(B, "browse", {mods = {{k = "rarity_firedamage", min = 17}, {k = "chaos_mod_deathblast"}}, sockets = 3})
+eq(lastSent(B, "page").rows[1].id, 950, "a backfilled offer is found")
+Chaos.marketConfig.modIndexVersion = 2
+ok(MK.backfillIndex() >= 2, "a new index version builds it again (every active offer)")
+eq(modRows(950).rarity_firedamage, "17/T5", "same rows")
+eq(tbl("server_config")[1].value, "2", "new version recorded")
+Chaos.marketConfig.modIndexVersion = 1
+-- an interrupted listing that is dropped takes its rows along
+legacy(953, 9, "x")
+table.insert(tbl("chaos_market_offer_mods"), {offer_id = 953, mod_key = "rarity_firedamage", value = 1, tier = 1})
+logout(D)
+MK.recoverAll()
+login(D)
+eq(next(modRows(953)), nil, "a dropped pending listing leaves no rows")
 
 -- the key-list codec (a server without engine patch 0017)
 Items.serializeAttributes, Items.unserializeAttributes, Item.serializeAttributes, Item.unserializeAttributes = nil, nil, nil, nil

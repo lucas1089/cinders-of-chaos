@@ -1,6 +1,7 @@
 -- Run from the repo root: luajit client/overlay/modules/game_market/marketview_test.lua (also lua5.3)
 -- The market window's logic (marketview.lua): texts, fee and tax (the same numbers as the server's market_core.lua for
--- market_config.lua), price input, the Sell form check, the Browse filter, row texts, the Codex modifier options.
+-- market_config.lua), price input, the Sell form check, the Browse filter, row texts, the modifier filter (Codex catalog,
+-- typeahead choices, the form -> request and its checks, matched tooltip lines).
 local here = (arg and arg[0] or ''):match('^(.*)/[^/]*$') or '.'
 dofile(here .. '/marketview.lua')
 local V = MarketView
@@ -59,6 +60,7 @@ eq(V.checkSell(meta, { gold = '1000', count = 1, have = 1 }).days, 3, 'default d
 
 local f = V.filter({ q = 'sword', cat = 'weapon', rarity = '5', cur = 'gold', ilvlMin = '100', ilvlMax = 'x', priceMin = '10k',
   priceMax = '', mod = 'chaos_mod_attackspeed', sort = 'price', page = 2 })
+eq(f.mods and f.mods[1].k, 'chaos_mod_attackspeed', 'one modifier (the old field) becomes a row')
 eq(f.ilvlMin, 100, 'filter ilvl min')
 eq(f.ilvlMax, 0, 'unreadable number left out')
 eq(f.priceMin, 10000, 'filter price min')
@@ -82,18 +84,99 @@ eq(V.historyLine({ side = 'sold', buyer = 'Bob', paid = 1000, tax = 50 }), 'Sold
 eq(V.pageText(2, 5, 57), 'Page 2 / 5  (57 offers)', 'page text')
 eq(V.pageText(1, 1, 1), 'Page 1 / 1  (1 offer)', 'one offer')
 
-local opts = V.modOptions({ tabs = { { entries = { { id = 'mod:rarity_firedamage', name = 'Fire Damage' },
-  { id = 'mod:chaos_mod_attackspeed', name = 'Attack Speed' }, { id = 'orb:x', name = 'Orb' },
-  { id = 'mod:rarity_firedamage', name = 'Fire Damage' }, { id = 'power:deathblast', name = 'Death Blast' } } } } })
-eq(#opts, 4, 'any + two modifiers + a power (no orbs, no duplicates)')
-eq(opts[3][1] .. '=' .. opts[3][2], 'Death Blast (power)=chaos_mod_deathblast', 'a power filters on its chaos_mod_ key')
-eq(opts[2][1] .. '=' .. opts[2][2], 'Attack Speed=chaos_mod_attackspeed', 'sorted by name, value = key')
-eq(#V.modOptions(nil), 1, 'no Codex data: only Any')
 -- the real Codex data, when present
 local okData = pcall(dofile, here .. '/../game_codex/codex_data.lua')
+
+-- the modifier filter: the catalog and the typeahead choices
+local codex = { tabs = { { entries = { { id = 'mod:rarity_firedamage', name = 'Fire Damage', side = 'prefix' },
+  { id = 'mod:rarity_arcaneabsorb', name = 'Arcane Absorb', side = 'suffix' }, { id = 'mod:chaos_mod_es', name = 'Energy Shield',
+  side = 'prefix', tv = { '+1', '+50' } }, { id = 'mod:chaos_mod_espct', name = 'Energy Shield', side = 'prefix', tv = { '+1%', '+9%' } },
+  { id = 'power:deathblast', name = 'Death Blast', side = 'suffix' }, { id = 'orb:x', name = 'Orb' } } } } }
+local cat = V.modCatalog(codex)
+eq(#cat.list, 5, 'catalog: four modifiers and a power')
+eq(cat.list[1].group .. ':' .. cat.list[1].name, 'prefix:Energy Shield (+50)', 'prefixes first, by name; a repeated name tells its value')
+eq(cat.byKey.chaos_mod_deathblast.group, 'power', 'a power is its own group, key chaos_mod_<power>')
+eq(cat.list[5].key, 'chaos_mod_deathblast', 'powers last')
+local ch, first = V.modChoices(cat, '')
+eq(#ch, 1 + 3 + 5, 'no search: a heading per group and every modifier')
+eq(ch[2][1] .. '|' .. ch[2][2], '-- Prefixes --|', 'a heading chooses nothing')
+eq(first, 'chaos_mod_es', 'first match')
+ch, first = V.modChoices(cat, 'ENERGY  shield #')
+eq(#ch, 1, 'every word must be in the name (a # is a plain character)')
+ch, first = V.modChoices(cat, ' energy ')
+eq(#ch, 4, 'search: one heading and two matches')
+eq(first, 'chaos_mod_es', 'the first match is chosen')
+ch, first = V.modChoices(cat, 'blast')
+eq(ch[2][1], '-- Legendary powers --', 'the power heading')
+ch, first = V.modChoices(cat, 'zzz')
+eq(ch[1][1] .. tostring(first), 'No modifier matchesnil', 'nothing found')
+local texts = {}
+for _, o in ipairs(V.modChoices(cat, '')) do
+  eq(texts[o[1]], nil, 'combo texts unique: ' .. o[1])
+  texts[o[1]] = true
+end
+eq(#V.tierOptions(8), 9, 'any tier + T1..T8')
+eq(V.tierOptions(8)[6][1] .. '=' .. V.tierOptions(8)[6][2], 'T5+=5', 'T5 or better')
+eq(V.tierOptions(8)[9][1], 'T8', 'T8 is the best')
+
+-- the form -> the request
+local req, why = V.modRequest({ rows = { { key = 'rarity_firedamage', min = '10', tier = 5 }, { key = '', min = '3' },
+  { key = 'chaos_mod_deathblast', min = '', tier = 0 } }, mode = 'all', sockets = '2', quality = '', freeS = true, power = true })
+eq(#req.mods, 2, 'rows without a modifier left out')
+eq(req.mods[1].k .. '/' .. req.mods[1].min .. '/' .. req.mods[1].t, 'rarity_firedamage/10/5', 'row: key, min value, min tier')
+eq(req.mods[2].min, nil, 'no minimum: not sent')
+eq(req.need, nil, 'all rows: no need sent')
+eq(req.sockets, 2, 'sockets')
+eq(req.quality, nil, 'no quality')
+eq(tostring(req.freeS) .. tostring(req.power) .. tostring(req.freeP), 'truetruenil', 'flags')
+eq(V.modCount(req), 5, 'conditions counted: two rows, sockets, free suffix, power')
+req = V.modRequest({ rows = { { key = 'a' }, { key = 'b' }, { key = 'c' } }, mode = 'count', need = '2' })
+eq(req.need, 2, 'at least 2 of 3')
+req = V.modRequest({ rows = { { key = 'a' }, { key = 'b' } }, mode = 'count', need = '2' })
+eq(req.need, nil, 'at least 2 of 2 = all')
+req, why = V.modRequest({ rows = { { key = 'a' }, { key = 'b' } }, mode = 'count', need = '3' })
+eq(req, nil, 'at least 3 of 2 refused')
+local saysRange = why and why:find('1 to 2') ~= nil
+eq(saysRange, true, 'says the range')
+eq((V.modRequest({ rows = { { key = 'a' } }, mode = 'count', need = 'x' })), nil, 'need not a number')
+eq((V.modRequest({ rows = { { key = 'a' }, { key = 'a', tier = 3 } } })), nil, 'a modifier twice refused')
+eq((V.modRequest({ rows = { { key = 'a', min = '1.5' } } })), nil, 'a fraction refused')
+eq((V.modRequest({ rows = { { key = 'a', min = '-3' } } })), nil, 'a negative refused')
+eq((V.modRequest({ sockets = 'two' })), nil, 'sockets not a number')
+local seven = {}
+for i = 1, 7 do seven[i] = { key = 'k' .. i } end
+req, why = V.modRequest({ rows = seven })
+eq(req, nil, 'seven rows refused')
+eq(why, 'At most 6 modifiers per search.', 'says the limit')
+req = V.modRequest({ rows = { { key = 'a', min = '99999999', tier = 12 } }, sockets = '40', quality = '99' })
+eq(req.mods[1].min .. '/' .. req.mods[1].t .. '/' .. req.sockets .. '/' .. req.quality, '1000000/8/8/30', 'numbers clamped to the server limits')
+eq(#V.modRequest({}).mods, 0, 'empty section')
+-- the whole Browse filter with the section
+f, why = V.filter({ q = 'axe', modForm = { rows = { { key = 'rarity_firedamage', tier = 3 } }, freeP = true }, page = 1 })
+eq(f.mods[1].t .. '/' .. tostring(f.freeP) .. '/' .. f.q, '3/true/axe', 'filter carries the section')
+f, why = V.filter({ modForm = { rows = { { key = 'a', min = 'x' } } } })
+eq(f, nil, 'an invalid section: no filter')
+eq(why, 'Row 1: the minimum value is a whole number.', 'and why')
+-- the tooltip lines the search matched
+local tip = { mods = { { k = 'rarity_fireDamage', t = 'Fire +12% dmg', v = 12, tr = 3 }, { k = 'chaos_mod_life', t = 'Life +50', v = 50, tr = 8 },
+  { k = 'rarity_criticalhitchance', g = 'special', t = 'Critical +2%, +6%', v = 2, v2 = 6, tr = 7 } } }
+local lines = V.matchedMods(tip, { mods = { { k = 'rarity_firedamage', min = 10 }, { k = 'chaos_mod_life', t = 9 },
+  { k = 'rarity_criticalhitchance', min = 5 } } })
+eq(#lines, 2, 'two rows matched (a tier too low is not)')
+eq(lines[1].text, 'Matches: Fire +12% dmg (T3)', 'matched line (a key in mixed case on the item)')
+eq(#V.matchedMods(tip, nil), 0, 'no search: nothing')
+-- the real Codex data: names unique in the combo, every group present
 if okData and CodexData then
-  local real = V.modOptions(CodexData)
-  eq(#real > 30, true, 'the Codex modifiers (' .. #real .. ')')
+  local real = V.modCatalog(CodexData)
+  local seen, groups = {}, {}
+  local dup = false
+  for _, m in ipairs(real.list) do
+    if seen[m.name] then dup = true end
+    seen[m.name] = true
+    groups[m.group] = (groups[m.group] or 0) + 1
+  end
+  eq(dup, false, 'the Codex modifier names are unique in the combo')
+  eq((groups.prefix or 0) > 10 and (groups.suffix or 0) > 10 and (groups.power or 0) >= 12, true, 'prefixes, suffixes and powers')
 end
 
 local sorted = V.sortSellable({ { name = 'b', why = 'locked' }, { name = 'a', rarity = 1 }, { name = 'c', rarity = 5 } })
