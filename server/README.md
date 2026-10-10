@@ -1398,7 +1398,7 @@ non-store style, an achievement reward for a non-achievement style, or a missing
 | Warbanner Gate | achievement | Siege Champion (`siege_win`, win a guild siege) | old stone siege gate; stone_rise, earth_spikes, stone_ward |
 | Gravecall Gate | achievement | Death Is a Teacher (`deaths_50`, hidden) | dark crypt door; necro_seal, px633_indigo, shadow_cloud |
 
-Store prices are in the range of the auras (200..300). All visuals come from items and effects already in the client pair (`things_custom7`,
+Store prices are in the range of the auras (200..300). All visuals come from items and effects already in the client pair (`things_custom8`,
 `vfx_catalog.csv`); no new art. **Follow-up:** the sprite libraries R and S on the sprite-libraries branch have portal and gate effects (swirl,
 arch, rune circles) that would give styles their own effect art instead of recoloured shared ones.
 

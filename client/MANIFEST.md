@@ -234,10 +234,10 @@ copy the dat flags of the stock bags (`copy:8861`, `copy:7343`, `copy:10325`: co
   pixel-identical to the atlas, every old entry byte-identical, 3000 old sprites unchanged). On the live pair of 2026-10-09
   (dat 5b2e13ab..., spr of 699,745 sprites) it gives dat b243485112b7bea43016d7dd49097472, spr cfd09de9f81c8f2ffdd29db1e01fa69b
   (699,748 sprites), twice identical.
-- **Before the next Windows package build:** the Windows package takes the merged pair from the private branch `windows-assets`
-  (parts under 100 MB, `SHA256SUMS.parts`, its README), so that pair must be replaced by the output above and pushed there. Until
-  then a server must install the pouches with `install_pouches.py --stock-looks` (stock bag looks); a client whose pair lacks
-  33651-33653 shows nothing for a pouch.
+- **Windows package pair:** the package takes the merged pair from the private branch `windows-assets`
+  (one archive `things/things-1098.tar.xz`, `SHA256SUMS.parts`, its README). Since 2026-10-10 that archive holds the output
+  above (windows-assets 2f44d84), so servers no longer need `install_pouches.py --stock-looks`. Keep that flag only for
+  clients still on an older pair: a pair without 33651-33653 shows nothing for a pouch.
 - Checked in the Linux client with the new pair: in a bag next to the stock bags, in the store (Convenience), in the container
   window titles, and on the kill routing screenshots.
 
