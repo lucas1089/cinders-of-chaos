@@ -160,6 +160,7 @@ local function showEntry(entry)
       end
       for _, p in ipairs(s.p or {}) do
         local label = g_ui.createWidget('CodexParagraph', page)
+        if theme then theme.applyFont(label, 'body') end
         label:setText(p)
       end
       if s.rows then
@@ -354,7 +355,8 @@ function init()
   data = CodexData
   window = g_ui.displayUI('codex')
   window:hide()
-  -- the optional Fontin fonts (client_chaos_theme ChaosTheme.fonts): the page title and the section headings
+  -- the Chaos fonts (client_chaos_theme ChaosTheme.fonts): the page title, the section headings and, when the trial
+  -- body font is switched on, the paragraphs
   theme = modules.client_chaos_theme and modules.client_chaos_theme.ChaosTheme
   if theme and theme.applyFont then theme.applyFont(window.pageTitle, 'subtitle') else theme = nil end
   if not data then

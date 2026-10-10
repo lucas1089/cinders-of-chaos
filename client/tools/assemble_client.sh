@@ -22,17 +22,20 @@ cp -a "$HERE"/overlay/modules/. "$OUT/modules/"
 cp -a "$HERE"/overlay/data/. "$OUT/data/"
 # (the overlay's data/images/game/spells/spell-icons-*.png are complete generated sheets, Chaos spells at cells
 #  201..277 included, and replace the base ones; regenerate them with tools/gen_all_spell_icons.py)
-# optional Fontin bitmap fonts (client_chaos_theme ChaosTheme.fonts). They are not in the repo: the exljbris free font
-# licence needs its extended licence to ship a font with an application (client/MANIFEST.md "Fontin"). Made locally with
-# tools/make_fonts.py into client/local-fonts/ (git-ignored), they go to data/fonts/chaos/. The client's font atlas
-# (one 2048x2048 texture, framework/graphics/atlas.cpp) has room for one more 256 sheet only, so two fonts nothing uses
-# leave first: the second copy of terminus-14px-bold (data/fonts/otfont/) and Verdana-Strikethrough-11px (a 512 slot).
+# the Chaos bitmap fonts (client_chaos_theme ChaosTheme.fonts), made from the OFL fonts in client/fonts-src/ by
+# tools/make_ofl_fonts.sh, came with the overlay into data/fonts/chaos/ (client/MANIFEST.md "OFL fonts"). The client
+# copies every font into one 2048x2048 atlas texture (framework/graphics/atlas.cpp; out of space is fatal at start);
+# the room comes from four unused stock fonts the overlay's data/fonts/*.otfont replace by a copy of a loaded one.
+# A local override: bitmap fonts in client/local-fonts/ (git-ignored) replace the shipped ones of the same name.
 if ls "$HERE"/local-fonts/*.otfont >/dev/null 2>&1; then
-  rm -rf "$OUT/data/fonts/otfont"
-  rm -f "$OUT/data/fonts/Verdana-Strikethrough-11px.otfont" "$OUT/data/fonts/Verdana-Strikethrough-11px.png"
-  mkdir -p "$OUT/data/fonts/chaos"
   cp "$HERE"/local-fonts/*.otfont "$HERE"/local-fonts/*.png "$OUT/data/fonts/chaos/"
+fi
+# The font atlas check (tools/make_fonts.py, no Pillow needed): a set that does not fit stops the assembly here,
+# since the client would stop at start with "[Atlas] Out of space for new fonts".
+if command -v python3 >/dev/null 2>&1 && python3 -c 'import sys' >/dev/null 2>&1; then
   python3 -I "$HERE/tools/make_fonts.py" --atlas-check "$OUT/data/fonts" | tail -1
+else
+  echo "python3 not found: font atlas check skipped"
 fi
 mkdir -p "$OUT/data/things/1098"
 echo "Done. Put Tibia.spr and Tibia.dat (10.98) in $OUT/data/things/1098/, then build with CMake."

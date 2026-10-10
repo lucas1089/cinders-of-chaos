@@ -218,31 +218,52 @@ patterns with 8 synchronised frames, shore pieces 8 frames (straight pieces with
   spr dfaf88d98291c2a9be2f10ad541b3c41.
 - Server side: server/README.md "Pack items and monsters". Checked in the Linux client at normal size.
 
-## Fontin fonts (optional, `tools/make_fonts.py`)
+## OFL fonts (`fonts-src/`, `tools/make_ofl_fonts.sh`, `tools/make_fonts.py`)
 
-`tools/make_fonts.py` turns a TTF/OTF into OTClient bitmap fonts (`<name>-<size>px.png` glyph sheet + `.otfont`): white glyphs (the
-client tints them), optional outline and baked shadow, glyphs 32..126 by default (`--first/--last/--encoding`), each glyph's advance
-kept with an invisible marker pixel (the client measures a glyph by its last non-transparent column). `--atlas-check DIR` replays the
-client's font atlas: every bitmap font is copied into one 2048x2048 texture (framework `Atlas::cacheFont`, a power-of-two buddy
-allocator; out of space is a fatal error at start). The client's own fonts fill it to 2 free 256x256 slots (`g_atlas.getStats()`
-in game: `0 0 0 2 0 0 0`). Tests: `tools/make_fonts_test.py` (CI).
+The client ships bitmap fonts made from four free fonts under the **SIL Open Font License 1.1** (OFL), all from the
+google/fonts repository (commit bd8f81ddb5c74d5c8897b36ad88b440266245103, 2026-10-09). `client/fonts-src/<Family>/`
+holds the font file used, its `OFL.txt` and a README (source URL, version, upstream commit, SHA-256):
 
-**The Fontin files are not in the repo.** The exljbris free font licence (www.exljbris.com/eula.html) allows free personal and
-commercial use and embedding in documents, but not distributing the font, and the foundry's "Extended licensing" page asks for a
-paid extended licence for embedding in or distributing with software applications; bitmap fonts made from Fontin and shipped in this
-client would be that. So the client is wired for them and works without them: `client_chaos_theme` `ChaosTheme.fonts` /
-`ChaosTheme.font(role)` / `applyFont` give a role its font only when the client has it (`g_fonts.fontExists`); without, every text
-keeps its Verdana. Roles: `title` fontin-sc-14px (every Chaos-skinned window title), `subtitle` fontin-16px (Codex page title,
-the item on the crafting bench), `heading` fontin-sans-12px (Codex section headings), `splash` fontin-sc-20px (the login "press
-any key" words, as a label instead of the image). Body text stays Verdana. With a licence (or after checking it yourself):
+| Family | File (version) | Bitmap fonts | Role (`ChaosTheme.fonts`) | Used for |
+|---|---|---|---|---|
+| Cinzel | Cinzel-VariableFont_wght.ttf (2.000), weight 700 | `chaos-title-15px` (shadow) | `title` | every Chaos-skinned window title |
+| | | `chaos-splash-20px` (outline + shadow, glyphs space..Z) | `splash` | the login "PRESS ANY KEY TO START" |
+| Alegreya SC | AlegreyaSC-Bold.ttf (2.003) | `chaos-subtitle-16px` (shadow) | `subtitle` | Codex page title, the item on the crafting bench |
+| | | `chaos-heading-14px` (shadow) | `heading` | Codex section headings, the NPC's name in the dialogue bubble |
+| IM Fell English | IMFeENrm28P.ttf (3.00) | `chaos-dialogue-15px` | `dialogue` | what NPCs say in the dialogue bubble (`game_npctalk`) |
+| Alegreya Sans | AlegreyaSans-Medium.ttf (2.004) | `chaos-body-13px`, `chaos-body-12px` | `body` (off) | trial body font: Codex paragraphs, only when switched on |
 
-```
-python3 -I client/tools/make_fonts.py Fontin-SmallCaps.ttf --name fontin-sc --sizes 14,20 --outline 1 --shadow 1,1 --out client/local-fonts
-python3 -I client/tools/make_fonts.py Fontin-Regular.ttf --name fontin --sizes 16 --outline 1 --out client/local-fonts
-python3 -I client/tools/make_fonts.py Fontin_Sans_R_45b.otf --name fontin-sans --sizes 12 --out client/local-fonts
-```
+Everything else keeps the stock Verdana. `client_chaos_theme`: `ChaosTheme.font(role[, fallback])` gives the role's
+font name when that font is loaded, `ChaosTheme.applyFont(widget, role)` sets it (nothing changes without the font).
+The `body` role is off unless the setting `chaosBodyFont` (g_settings) names one of its fonts:
+`modules.client_chaos_theme.ChaosTheme.setBodyFont(true)` (13 px), `('chaos-body-12px')` or `(false)`, e.g. from the
+terminal; the Codex uses it from the next page it shows. The bitmap fonts are named by role, not family: the OFL does
+not let a modified (converted) font use a Reserved Font Name, and IM Fell's own copyright string reserves "IM FELL
+English Roman".
 
-`client/local-fonts/` is git-ignored; `tools/assemble_client.sh` copies it to `data/fonts/chaos/` and, to make room in the atlas,
-drops two fonts nothing uses (the second copy of terminus-14px-bold in `data/fonts/otfont/` and Verdana-Strikethrough-11px), then
-prints the atlas check. Measured in game with the four fonts: 2 slots of 256x256 still free (`--atlas-check` agrees). Tested at
-1280x720 and 1920x1080 (login splash, Codex, crafting bench, window titles); keep the licence text next to the fonts if you ship them.
+**Licence.** The OFL allows bundling the fonts and fonts made from them with the game (free or sold) if every copy
+carries the copyright notice and the licence, the fonts are never sold by themselves and stay under the OFL. So
+`data/fonts/chaos/OFL-<Family>.txt` ships with the client, the login screen's Credits box and the README name the
+fonts and their authors.
+
+**Regenerate:** `bash client/tools/make_ofl_fonts.sh` (sizes, weights, outline/shadow and space widths are in it; it
+writes `overlay/data/fonts/chaos/` and copies the licence texts). `tools/make_fonts.py` turns a TTF/OTF into OTClient
+bitmap fonts (`<name>-<size>px.png` glyph sheet + `.otfont`): white glyphs (the client tints them), optional outline
+and baked shadow, `--weight` for a variable font, `--space-width`, glyphs 32..126 by default (`--first/--last/
+--encoding`); each glyph's advance is kept with an invisible marker pixel (the client measures a glyph by its last
+non-transparent column, and the outline and a right shadow are taken back by the `.otfont` spacing). Tests:
+`tools/make_fonts_test.py` (CI). A local override: `.otfont`/`.png` pairs in the git-ignored `client/local-fonts/`
+replace the shipped ones of the same name (`tools/assemble_client.sh`).
+
+**The font atlas.** The client copies every bitmap font into one 2048x2048 texture (framework `Atlas::cacheFont`, a
+power-of-two buddy allocator; out of space is a fatal error at start). `make_fonts.py --atlas-check DIR` replays it;
+like the client (`FontManager::importFont`) it skips a font whose name is loaded already. The stock fonts leave 2
+slots of 256x256, not enough, so the overlay replaces four stock fonts nothing uses (`data/fonts/Verdana-Strikethrough
+-11px.otfont`, `Verdana-11px-italic.otfont`, and `Verdana Bold-10px.otfont` / `Verdana Bold-11px-low-space.otfont`,
+the `vbot-verdana-11px-*` fonts of the removed bot) with a copy of `Icon-VBold-11px`, which then loads once: their
+sheets never reach the atlas, however the overlay is copied in. With the seven Chaos fonts the atlas keeps one
+512x512, one 256x256 and three 128x128 slots free (5.75 slots of 256, about 9% of the atlas): measured in game,
+`g_atlas.getStats()` font part `0 0 3 1 1 0 0` (free per slot size 32..2048), and `--atlas-check` agrees.
+`assemble_client.sh` prints the check. Any new sheet must fit those: a 256 slot holds about 95 glyphs of up to
+~16 px with a 1 px shadow; a bigger font needs fewer glyphs (`--last 90`, as the splash) or a stock font to make room.
+Checked in the Linux build at 1280x720 and 1920x1080 (login splash, Codex, crafting bench, achievements, NPC bubble).

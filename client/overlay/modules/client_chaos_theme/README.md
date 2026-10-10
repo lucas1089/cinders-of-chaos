@@ -76,7 +76,9 @@ Other modules can add entries with `ChaosTopBar.addEntry('adventure', { text = .
 
 - Loaded and checked in the Linux build of the client (see `client/LINUX.md`).
 - Whether the engine draws `ChaosProgressBar` fill under or over the frame image (the frame has a translucent track, so either order is usable but the fill may look slightly dimmed).
-- Fonts: only `verdana-11px-antialised` and `verdana-11px-rounded` are used. `ChaosTitle` could use a bigger stock font if your client has one.
+- Fonts: the Chaos bitmap fonts by role (`ChaosTheme.fonts`, `ChaosTheme.font(role)`, `applyFont`): window titles in
+  Cinzel, Codex / crafting headings in Alegreya SC, NPC dialogue in IM Fell English, a trial body font (off); see
+  client/MANIFEST.md "OFL fonts". Other text uses `verdana-11px-antialised` and `verdana-11px-rounded`.
 - `image-border-left/right` on `ChaosSeparator`/`ChaosComboBox` and `image-border-top` on windows are standard OTClient properties but unverified on your fork.
 - `modules.<name>` function names (`toggle` etc.) come from reading the overlay sources; several of those modules (bank, battlepass, notifications, game_admin, game_guide, game_highscore) have no
   confirmed toggle, so their icon may stay hidden. `game_admin` does not exist in the overlay yet.

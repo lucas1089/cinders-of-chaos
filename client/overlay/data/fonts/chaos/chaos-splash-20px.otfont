@@ -1,0 +1,9 @@
+Font
+  name: chaos-splash-20px
+  texture: chaos-splash-20px
+  height: 31
+  glyph-size: 30 31
+  first-glyph: 32
+  y-offset: 0
+  spacing: -2 0
+  space-width: 7

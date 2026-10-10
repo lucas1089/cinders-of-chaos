@@ -186,7 +186,10 @@ local function openLink(key, title, message)
 end
 
 local function showCredits()
-  displayInfoBox(tr('Credits'), tr('Cinders of Chaos\nA dark-fantasy online adventure.\n\nInterface, art and server: the Cinders of Chaos team.\nThe client runs on the open-source OTClient engine family.'))
+  displayInfoBox(tr('Credits'), tr('Cinders of Chaos\nA dark-fantasy online adventure.\n\nInterface, art and server: the Cinders of Chaos team.\nThe client runs on the open-source OTClient engine family.\n\n' ..
+    'Fonts (SIL Open Font License 1.1, licence texts in data/fonts/chaos):\nCinzel - The Cinzel Project Authors\n' ..
+    'Alegreya SC, Alegreya Sans - The Alegreya (Sans) Project Authors, Huerta Tipografica\n' ..
+    'IM Fell English - Igino Marini'))
 end
 
 local function openOptions()
@@ -515,7 +518,7 @@ local function createBackgroundLayers()
   pressW = newWidget('ChaosLoginPress', bg, 'chaosPressKey')
   -- the words are an image (serif lettering); a translated text shows on the plate as a label instead
   local pressText = tr('Press any key to start')
-  -- with the optional Fontin fonts (client_chaos_theme ChaosTheme.fonts) the words are always that label
+  -- with the Chaos splash font (client_chaos_theme ChaosTheme.fonts) the words are always that label
   local theme = modules.client_chaos_theme and modules.client_chaos_theme.ChaosTheme
   local splashFont = theme and theme.font and theme.font('splash')
   if pressText ~= 'Press any key to start' or splashFont then

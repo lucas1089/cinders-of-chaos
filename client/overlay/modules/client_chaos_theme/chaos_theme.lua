@@ -148,23 +148,43 @@ end
 
 local TITLE_COLOR = '#e8c477'
 
--- Optional Fontin bitmap fonts (client/tools/make_fonts.py; the fonts are not in the repo, see client/MANIFEST.md
--- "Fontin"). A role gives its font only when the client has it, so without them every text keeps its Verdana.
---   title    window titles (every Chaos-skinned window)       subtitle  page titles of the Codex, the crafting item
---   heading  section headings of the Codex                    splash    the login "press any key" words
+-- The Chaos bitmap fonts, made from SIL Open Font License fonts (client/fonts-src/, tools/make_ofl_fonts.sh; see
+-- client/MANIFEST.md "OFL fonts"). They ship in data/fonts/chaos/. A role gives its font only when the client has it
+-- loaded (a client assembled without them keeps its Verdana everywhere).
+--   title     Cinzel Bold 15      every Chaos-skinned window title
+--   splash    Cinzel Bold 20      the login "PRESS ANY KEY TO START" (glyphs space..Z only: upper case text)
+--   subtitle  Alegreya SC Bold 16 the Codex page title, the item on the crafting bench
+--   heading   Alegreya SC Bold 14 Codex section headings, the NPC's name in the dialogue bubble
+--   dialogue  IM Fell English 15  what NPCs say (game_npctalk)
+--   body      Alegreya Sans Medium 13 (or 12): a trial body font for the Codex text, OFF unless the setting
+--             'chaosBodyFont' names it (ChaosTheme.setBodyFont(true | 'chaos-body-12px' | false))
 ChaosTheme.fonts = {
-  title = { name = 'fontin-sc-14px', titleY = 13 },
-  subtitle = { name = 'fontin-16px' },
-  heading = { name = 'fontin-sans-12px' },
-  splash = { name = 'fontin-sc-20px' },
+  title = { name = 'chaos-title-15px', titleDy = -3 }, -- titleDy: moves the title text (the font is taller)
+  splash = { name = 'chaos-splash-20px' },
+  subtitle = { name = 'chaos-subtitle-16px' },
+  heading = { name = 'chaos-heading-14px' },
+  dialogue = { name = 'chaos-dialogue-15px' },
+  body = { name = 'chaos-body-13px', setting = 'chaosBodyFont', choices = { 'chaos-body-13px', 'chaos-body-12px' } },
 }
 
--- the font name of a role, or `fallback` when that font is not loaded
+local function fontLoaded(name)
+  return name and g_fonts and g_fonts.fontExists and g_fonts.fontExists(name) or false
+end
+
+-- the font name of a role, or `fallback` when that font is not loaded (or, for an optional role, not switched on)
 function ChaosTheme.font(role, fallback)
   local f = ChaosTheme.fonts[role]
-  if f and g_fonts and g_fonts.fontExists and g_fonts.fontExists(f.name) then
-    return f.name
+  if not f then return fallback end
+  local name = f.name
+  if f.setting then
+    name = g_settings and g_settings.getString(f.setting) or ''
+    local known = false
+    for _, c in ipairs(f.choices or { f.name }) do
+      if c == name then known = true end
+    end
+    if not known then return fallback end
   end
+  if fontLoaded(name) then return name end
   return fallback
 end
 
@@ -175,6 +195,22 @@ function ChaosTheme.applyFont(widget, role)
   return name ~= nil
 end
 
+-- the trial body font: true (13 px), a font name of its choices, or false / nil (off, the default). Saved in
+-- g_settings; the Codex uses it from the next page it shows.
+function ChaosTheme.setBodyFont(choice)
+  local f = ChaosTheme.fonts.body
+  local name = ''
+  if choice == true then
+    name = f.name
+  elseif type(choice) == 'string' then
+    for _, c in ipairs(f.choices) do
+      if c == choice then name = c end
+    end
+  end
+  g_settings.set(f.setting, name)
+  return name ~= '' and name or nil
+end
+
 local function onStyleApply(widget, styleName, styleNode)
   if not widget.chaosOrnate then return end
   -- many window styles of the base modules move the title for the old 17 px title bar and paint it grey:
@@ -183,7 +219,7 @@ local function onStyleApply(widget, styleName, styleNode)
   local titleFont = ChaosTheme.font('title')
   if titleFont then
     widget:setFont(titleFont)
-    if ty then ty = ChaosTheme.fonts.title.titleY or ty end
+    if ty then ty = ty + (ChaosTheme.fonts.title.titleDy or 0) end
   end
   if ty then
     local off = widget:getTextOffset()

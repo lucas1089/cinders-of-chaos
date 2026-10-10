@@ -196,8 +196,17 @@ end
 
 local sendText -- forward
 
+-- a font of client_chaos_theme (ChaosTheme.fonts) on a widget, only when that font is loaded: the NPC's lines in
+-- 'dialogue' (IM Fell English), its name in 'heading' (Alegreya SC); the player's line, chips and buttons keep the
+-- UI font
+local function applyThemeFont(widget, role)
+  local theme = modules.client_chaos_theme and modules.client_chaos_theme.ChaosTheme
+  if theme and theme.applyFont then theme.applyFont(widget, role) end
+end
+
 local function addReplyLabel(text)
   local label = g_ui.createWidget('NpcTalkText', bubble.textScroll)
+  applyThemeFont(label, 'dialogue')
   local colored, hasKeys = L.coloredText(text, L.COLORS.npc, L.COLORS.keyword, true)
   if hasKeys then
     label:setEventListener(EVENT_TEXT_CLICK)
@@ -831,6 +840,7 @@ function init()
   g_ui.importStyle('npctalk')
   bubble = g_ui.createWidget('NpcTalkBubble', root)
   bubble:setId('npcTalkBubble')
+  applyThemeFont(bubble.npcName, 'heading')
   bubble:hide()
   tail = g_ui.createWidget('NpcTalkTail', root)
   tail:setId('npcTalkTail')

@@ -808,7 +808,7 @@ end
 function init()
   window = g_ui.displayUI('crafting')
   window:hide()
-  -- the optional Fontin fonts (client_chaos_theme ChaosTheme.fonts): the name of the item on the bench
+  -- the Chaos fonts (client_chaos_theme ChaosTheme.fonts): the name of the item on the bench
   local theme = modules.client_chaos_theme and modules.client_chaos_theme.ChaosTheme
   if theme and theme.applyFont and window.itemName then theme.applyFont(window.itemName, 'subtitle') end
   window.itemSlot.onDrop = onSlotDrop

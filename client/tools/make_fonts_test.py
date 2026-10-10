@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests of the pure parts of make_fonts.py (no Pillow needed): atlas slots, sheet layout, glyph range, the .otfont
-text and the font atlas allocator. Run: python3 -I client/tools/make_fonts_test.py"""
-import os, sys, unittest
+text, variable font axes and the font atlas allocator. Run: python3 -I client/tools/make_fonts_test.py"""
+import os, struct, sys, unittest
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import make_fonts as M
 
@@ -69,6 +69,27 @@ class AtlasTest(unittest.TestCase):
         self.assertIsNone(a.place(300, 10))
         self.assertIsNotNone(a.place(200, 200))
 
+    def test_png_size(self):
+        import tempfile, zlib
+        d = tempfile.mkdtemp()
+        p = os.path.join(d, 'a.png')
+        ihdr = struct.pack('>II5B', 300, 17, 8, 6, 0, 0, 0)
+        with open(p, 'wb') as f:
+            crc = struct.pack('>I', zlib.crc32(b'IHDR' + ihdr))
+            f.write(b'\x89PNG\r\n\x1a\n' + struct.pack('>I', 13) + b'IHDR' + ihdr + crc)
+        self.assertEqual(M.png_size(p), (300, 17))
+        open(p, 'wb').write(b'not a png at all, not at all')
+        self.assertIsNone(M.png_size(p))
+
+    def test_axis_values(self):
+        axes = [{'name': b'Weight', 'minimum': 400, 'default': 400, 'maximum': 900},
+                {'name': b'Width', 'minimum': 75, 'default': 100, 'maximum': 100}]
+        self.assertEqual(M.axis_values(axes, {}), [400, 100])
+        self.assertEqual(M.axis_values(axes, {'wght': 600}), [600, 100])
+        self.assertEqual(M.axis_values(axes, {'wght': 1000, 'wdth': 50}), [900, 75])  # clamped to the range
+        with self.assertRaises(KeyError):
+            M.axis_values(axes, {'opsz': 12})
+
     def test_check_folder(self):
         import tempfile
         d = tempfile.mkdtemp()
@@ -82,6 +103,10 @@ class AtlasTest(unittest.TestCase):
         Image.new('RGBA', (100, 100)).save(os.path.join(d, 'sub', 'y.png'))
         open(os.path.join(d, 'sub', 'y.otfont'), 'w').write(M.otfont_text('y', 'y', 10, 10, 10, 3))
         self.assertEqual([os.path.basename(p) for p in M.load_order([d])], ['y.otfont', 'x.otfont'])
+        self.assertTrue(M.atlas_check([d], quiet=True))
+        # a second font of the same name is skipped by the client: it takes no slot, so 63 more 256 sheets still fit
+        Image.new('RGBA', (2048, 2048)).save(os.path.join(d, 'big.png'))
+        open(os.path.join(d, 'z.otfont'), 'w').write(M.otfont_text('x', 'big', 10, 10, 10, 3))
         self.assertTrue(M.atlas_check([d], quiet=True))
 
 

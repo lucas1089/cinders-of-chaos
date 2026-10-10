@@ -565,4 +565,10 @@ The full priority list is in [ROADMAP.md](ROADMAP.md).
 | [docs/LAUNCH.md](docs/LAUNCH.md) | **Running a server**: install (`server/tools/install_all.py`), production config, systemd, backups, monitoring, launch checklist |
 | [website/README.md](website/README.md) | the website (ZnoteX with our layout and plugin): installer, class lock on character creation, leaderboards / patch notes / seasons pages, banners and art |
 
+**Fonts.** The client's titles, headings and NPC dialogue use free fonts under the SIL Open Font License 1.1:
+Cinzel (The Cinzel Project Authors), Alegreya SC (The Alegreya Project Authors), Alegreya Sans (The Alegreya Sans
+Project Authors), both by Huerta Tipográfica, and IM Fell English (Igino Marini). Their sources and licence texts are
+in `client/fonts-src/`, and the licence texts ship with the client in `data/fonts/chaos/`. The OFL lets them ship with
+the game; they may not be sold on their own.
+
 This page is kept up to date as features are merged: new systems move from *Coming soon* into their sections.

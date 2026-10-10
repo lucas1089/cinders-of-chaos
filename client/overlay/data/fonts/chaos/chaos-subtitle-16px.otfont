@@ -1,0 +1,9 @@
+Font
+  name: chaos-subtitle-16px
+  texture: chaos-subtitle-16px
+  height: 24
+  glyph-size: 18 24
+  first-glyph: 32
+  y-offset: 0
+  spacing: -1 0
+  space-width: 5
