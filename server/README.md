@@ -294,6 +294,7 @@ working directory, as with the rest of the base server libs).
 | game_descent | `descent.lua`, `descent_core.lua`, `descent_config.lua`, `sql/chaos_descent.sql` (buff source in `data/lib/chaos_buffs.lua`) | **205**, Adventure > Ember Descent, the portal next to the temple | The Ember Descent: a roguelike trial of 8-12 seeded rooms (combat, elite, treasure, shrine, merchant, boss) in a runtime-built hall; three boon cards after a room, curses for more rewards, run HUD with the boons and curses, merchant window, entry window with the free runs and the Ember Sigil forge; a weekly seeded run with its leaderboard (see "The Ember Descent"). Unit tests; full runs on a live test server. |
 | game_raid | `raid.lua`, `raid_core.lua`, `raid_config.lua`, `sql/chaos_raid.sql` (buff source in `data/lib/chaos_buffs.lua`), monsters `monsters/chaos/raid/` | **213**, Adventure > Raid: Ashen Sepulchre, the portal next to the temple | The Ashen Sepulchre: a weekly raid for 5-15 players, five bosses with coordinated mechanics (tank swap, cleaves, soak circles, adds, spread, effigies, a hex to cleanse) behind trash in a runtime-built zone; personal loot once a week per boss and character, saved raids continued later the same week, Sepulchre Marks for a seeded weekly vendor, raid uniques, a guild trophy, a weekly fastest-clear board; window (lockouts, journal, vendor), HUD and call-outs (see "The Ashen Sepulchre, the weekly raid"). Unit and mocked-engine tests; tested alone on a live test server. |
 | game_community | `community.lua`, `community_core.lua`, `community_config.lua`, `sql/chaos_community.sql` (buff source in `data/lib/chaos_buffs.lua`; hooks in `rift_core.lua`, `rift.lua`, `loot_config.lua`, `factions.lua`, `crafting.lua`) | **203**, Adventure > Community, the Great Brazier next to the main temple, `/community` | Community goal: a server-wide bar fed by kills, rifts, invasion waves, world bosses, crafting orbs and gold given to the Brazier, per-character daily caps, four stages that light buffs for everyone, rewards for the top and everyone past a threshold; the weekly world modifier (one or two of nine, by the week's seed or set by staff) (see "Community goals and the weekly world modifier"). Unit and mocked-engine tests; not run on a live server. |
+| game_dpsmeter | `combatlog.lua`, `combatlog_core.lua`, `combatlog_config.lua` (one hunk in `hunt.lua`) | **204**, Hunt > DPS Meter, the Hunt Tracker's Meter button | DPS meter and combat log: damage, healing, damage taken and healing received per skill (spell, rune, weapon attack, damage over time, proc, summon) and per attacker, the current fight, the last 10 fights (bosses named) and the session, party totals; detail window with hits, crits, average and max (see "DPS meter and combat log"). Unit, mocked-engine and benchmark tests; tested on a live test server. |
 
 Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 208, 209, 211, 214, 216, 217, 218, 219, 221, 222, 223, 224 (sent by the engine, patch 0015), 225, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
@@ -308,6 +309,9 @@ free the same way (`tests/raid_test.lua`).
 Extended opcode 203 (Community goals) is registered there too, as `ChaosOpcodes.community` below the table; checked free
 against the reference server's list below, every Chaos script and client module (grep for `sendExtendedOpcode`,
 `registerExtended*Opcode` and opcode constants; `tests/community_test.lua` checks `ChaosOpcodes` and that list).
+Extended opcode 204 (DPS meter and combat log) is registered there too, as `ChaosOpcodes.combatLog` below the table;
+checked free against the reference server's list below, its client modules and every Chaos script and client module
+(grep for `sendExtendedOpcode`, `registerExtended*Opcode` and opcode constants; `tests/combatlog_test.lua` checks it).
 
 ### Opcode collision check
 Searched the reference server for every `onExtendedOpcode`, `sendExtendedOpcode(` and opcode
@@ -4511,6 +4515,100 @@ Warriors and a treasure goblin):
   goblin.
 - Healing is healing received from any source, not healing done to others. Mana is not tracked.
 - The rates include idle time while the session runs: pause it when you stop hunting.
+
+## DPS meter and combat log (`combatlog.lua`, `combatlog_core.lua`, `combatlog_config.lua`, client `game_dpsmeter`)
+
+Part of the Hunt Tracker family. Client `game_dpsmeter`, extended opcode 204 (`ChaosOpcodes.combatLog`), opened with
+Hunt > DPS Meter or the Meter button of the Hunt Tracker. Settings: `combatlog_config.lua` (`Chaos.combatLogConfig`).
+No DB tables, no storages. The pure logic is `combatlog_core.lua`, tested by `tests/combatlog_test.lua`.
+
+**What it shows.** A compact panel over the game view. It can be moved by its strip, resized by its corner grip and
+locked. It has a bar per source with its icon (the spell's own icon from the spell sheet, a rune's item, the buff bar's
+icons for damage over time, our icons from `client/tools/gen_dpsmeter_icons.py` for the rest), total, per second and
+share. Tabs: Damage, Healing, Taken (by attacker), Received (by healer). A dropdown picks the current fight, the
+session or one of the last 10 fights; boss fights carry the boss's name. Party mode lists every party member's DPS / HPS
+for the current fight or the session. The Combat Log window adds hits, crit rate, average, max and overhealing per
+source and the split by element. Copy puts a summary on the clipboard. "To chat" puts one line into the chat input;
+nothing is sent unless the player sends it. Shown, position, size, tab, party mode, sharing and lock are kept in the
+client's g_settings node `chaosDpsMeter`.
+
+**Attribution** (first match wins, `CL.classify`):
+- **Proc.** `doTargetCombat` and `doAreaCombat` are wrapped once (a `/reload` wraps the original again). A call made by
+  a script listed in `procLabels` labels every hit dealt inside it. The label comes from the first Lua frame that is not
+  `data/global.lua`, so `doTargetCombatHealth` works too. Labels: Spell supports, Keystones, Trial nodes, Thorns (item
+  modifier reflect), Legendary powers, Item elements (rarity element shares), Arrow splash, Bloodrage cleave, Thief
+  strikes, Templar smite, Descent boons, Companion, Pet, Minions, Potions. A helper library (`necro_lib.lua`) and an
+  unlisted file only count outside a cast. Calls from `data/spells/**` are never labelled.
+- **Summon.** The attacker is a summon of the character: the summon's name.
+- **Cast.** The spells supports' cast context (`ChaosSupportsSpell.cast()`): every wrapped spell, also in the addEvent
+  callbacks it starts (pulses, cast-time spells). Otherwise the spell or rune between the engine's `onSpellPreCast` and
+  `onSpellCast` (patch 0008, `ChaosSpellEvents`). A failed cast never reaches `onSpellCast`; the context is cleared one
+  dispatcher tick later. Names, words and rune ids come from `data/spells/spells.xml`.
+- **Origin.** `ORIGIN_CONDITION`: damage over time by element (Bleeding, Burning, Poison, Electrified, Freezing, Dazzled,
+  Cursed, Drowning). The condition owner is the attacker. `ORIGIN_MELEE`: the weapon in hand (sword, axe, club, fist; the
+  Monk's fist weapons count as fist). `ORIGIN_RANGED`: distance. Origin 5 (`ORIGIN_WAND`, no Lua constant): wand.
+- Anything else is **Other** (healing: **Other healing**).
+- **Taken.** By attacker: the monster's or player's name; no attacker (fields, traps) is "Environment". Plus the split by
+  element. Damage a mana shield takes counts too (a `manachange` event; mana drain does not).
+- **Healing.** Done by the healer's source, received by healer (own heals by their spell). Healing counts up to the
+  missing health; the rest is overhealing.
+- Damage counts up to the target's health, so overkill does not count.
+
+**What cannot be attributed.**
+- Hits dealt with `ORIGIN_NONE` run no health events in the engine. The wrapper measures the target's health before
+  and after such a `doTargetCombat` instead (rarity element shares, pets, companion hits). It cannot do this for
+  `doAreaCombat` with `ORIGIN_NONE` or for engine-internal ones.
+- Life and mana leech, regeneration conditions and `addHealth` heals run no events: not counted.
+- Damage over time cannot be traced to the spell that applied it. It is listed by element.
+- Hits of spells the supports do not wrap, when they come later from an addEvent, are "Other".
+- A proc script that kept its own copy of `doTargetCombat` from before the wrap is "Other". None of the listed ones does.
+- The amounts are what the health events see at this script's place in the chain. Handlers registered later on the
+  same creature can still change a hit.
+
+**Fights.** A fight starts with the first damage dealt or taken. It ends `idleMs` (6 s) after the last one. Healing
+alone does not start or extend a fight, nor does damage taken from no attacker. A fight is named by its boss
+(`MonsterType:isBoss()`, the boss points list, the world bosses, the boss tier, `extraBosses`). Otherwise it is named by
+its most damaged target and "+N" others, or by its main attacker. A fight shorter than `minFightMs` (1 s) counts as 1 s.
+The last `keepFights` (10) fights are kept per character. The session follows the hunt session: a Hunt Tracker reset
+starts it over (one hunk in `hunt.lua` `act`). It does not count while the hunt is paused. Its per second is over its
+combat time (the sum of its fights). "Reset the meter" in the panel menu clears fights and session. Numbers are kept in
+memory by character for `keepOfflineMinutes` (30) after a logout, not over a restart.
+
+**Overhead.** A hit costs one Lua call (the health event) and one row update in a per-character buffer. The buffer is
+folded into the fight and the session once per tick (`tickMs`, 1 s). Rows per tab and segment are bounded (`maxRows`
+40, the rest goes to "Other"). Targets per fight (`maxTargets` 16), the buffer and the source cache (`maxSourceCache`)
+are bounded too. An open meter gets a state at most every `pushMs` (1 s), and only when something changed. The state goes
+through `Chaos.sendChunked`; 25 rows per tab are sent. The benchmark in `tests/combatlog_test.lua` runs 20 characters x 10
+hits/s for 10 minutes (132,000 hits), a tick per character per second and a state per character per second. LuaJIT:
+0.08 us per hit in the core, about 1.1 us per hit through the engine glue (mocked getters), 0.3 us per tick, 7 us per
+state. That is about 0.4 ms of CPU per second, 0.04% of one core. Lua 5.3: 0.4 / 2.8 / 2 / 17 us, about 1 ms per second.
+The engine's own cost per call into Lua is not in these numbers.
+
+**Privacy.** Party mode shows totals only, never a breakdown. It lists members of the same party, of the same season
+realm (`ChaosSeason.realmOf` while a season runs), who share. "Share my totals with my party" in the panel menu; the
+default is `shareByDefault` (on). The viewer always sees itself.
+
+**Protocol** (JSON `{action, data}`; server -> client through `Chaos.sendChunked`). Client -> server: `open {seg, party,
+share}`, `close`, `seg {id}` ("c" current or last fight, "s" session, a fight id), `party {on}`, `share {on}`, `reset`.
+Server -> client: `state {sel, segs, v, live, share, party?}`. `segs` = `[[id, label, dur, damage, healing, taken, live,
+boss, received]]`. `v` = `{id, label, dur, live, boss, t = [damage, healing, taken, received]}`, each tab `{tot, ov,
+el = {element = amount}, r = [[key, kind, name, icon, total, hits, crits, max, over]]}`. `party` = `[{n, self, fd, fh,
+ft, fdur, live, sd, sh, st, sdur}]`. Requests are rate limited (150 ms).
+
+**Tests.** `tests/combatlog_test.lua` (LuaJIT and Lua 5.3, 232 checks). It covers the spells.xml index, the attribution
+order, buffer and fights, idle end, boss and target labels, the last 10, the bounds, the session with hunt pause and
+reset, views, party brief and sweep. Against a mocked engine it covers weapons, damage over time, summons, precast and
+supports contexts, a failed cast, runes, procs labelled by file (through `pcall`, `doTargetCombatHealth` and
+`doAreaCombat`), helper libraries, `ORIGIN_NONE` hits measured, thorns, damage taken, mana shield, overkill, bosses,
+healing done / received / overhealing, potions, the opcode actions, party with realms and sharing, pushes only on change
+and logout. It ends with the benchmark. Client: `game_dpsmeter/dpsmath_test.lua`.
+
+**Tested in game** (test server copy, a level 584 Mystic and a level 512 Deadeye in a party). The fight against Demodras
+was labelled "Demodras". Rows: Greater Arc Bolt, Supreme Arc Bolt, Supreme Frostbite, Reaper's Rune (its item icon),
+fist attacks. A spell on a fire-immune Dragon Lord counted nothing, as it dealt nothing. Healing (Grand Mending) showed
+in Healing and Received. Taken by Dragon / Demodras / Environment (fire fields). Party mode showed both members. The
+Combat Log window, the dropdown, To chat (the line in the chat input) and the Hunt Tracker's Meter button were checked.
+Not in game: summons, support, keystone and item-power procs, pets, and a season realm split in a party.
 
 ## Loot filter, loot channel and loot rays (`lootfilter.lua`, `lootfilter_core.lua`, `lootfilter_config.lua`, client `game_lootfilter`)
 

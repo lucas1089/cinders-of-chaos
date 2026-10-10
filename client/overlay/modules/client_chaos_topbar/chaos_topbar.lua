@@ -202,6 +202,7 @@ local CATEGORIES = {
     entry('Party',           'vip',         { modules = { 'game_party_list' }, fns = { 'toggle' } }),
     entry('Party Frames',    'vip',         { modules = { 'game_partyframes' }, fns = { 'toggle' } }),
     entry('Hunt Tracker',    'ranking',     { modules = { 'game_hunt' },      fns = { 'toggle' }, key = 'Alt+H' }),
+    entry('DPS Meter',       'ranking',     { modules = { 'game_dpsmeter' },  fns = { 'toggle' } }),
     -- the base hunt analyser only where the Chaos hunt tracker is missing
     entry('Hunt Analyser',   'ranking',     { modules = { 'game_analyser' },  fns = { 'toggle' }, unless = has('game_hunt') }),
     entry('Bestiary',        'battlelist',  { modules = { 'game_bestiary' },  fns = { 'toggle' }, key = 'Alt+B' }),

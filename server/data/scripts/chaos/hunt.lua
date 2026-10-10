@@ -357,6 +357,10 @@ local function act(player, action)
 		H.resume(s, now)
 	elseif action == "reset" then
 		H.reset(s, now)
+		-- the DPS meter's session follows the hunt session (combatlog.lua)
+		if ChaosCombatLog and ChaosCombatLog.onHuntReset then
+			pcall(ChaosCombatLog.onHuntReset, player)
+		end
 	end
 end
 

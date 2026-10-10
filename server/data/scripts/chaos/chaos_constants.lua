@@ -77,6 +77,8 @@ ChaosOpcodes = {
 }
 -- Rift Atlas window: completion grid, node map, allocate / refund (client game_riftatlas; atlas.lua, atlas_core.lua, atlas_config.lua)
 ChaosOpcodes.riftAtlas = 210
+-- DPS meter and combat log: per-skill damage / healing / taken, fights, party totals (client game_dpsmeter; combatlog*.lua)
+ChaosOpcodes.combatLog = 204
 
 -- ---------------------------------------------------------------------------
 -- Item custom attributes in item packets (engine patch server/src-patches/0003-item-custom-attributes.patch, client

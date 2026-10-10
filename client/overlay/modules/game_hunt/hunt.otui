@@ -212,7 +212,7 @@ ChaosMainWindow
     id: hintLabel
     phantom: false
     anchors.left: parent.left
-    anchors.right: copyButton.left
+    anchors.right: meterButton.left
     anchors.verticalCenter: closeButton.verticalCenter
     margin-right: 8
     text-align: left
@@ -220,6 +220,16 @@ ChaosMainWindow
     height: 28
     !text: tr('Alt+H opens and closes this window.')
     !tooltip: tr('Loot is counted at NPC sell prices (coins at face value), supplies at NPC buy prices.')
+
+  ChaosButton
+    id: meterButton
+    anchors.right: copyButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 4
+    width: 72
+    !text: tr('Meter')
+    !tooltip: tr('DPS meter: damage, healing and damage taken per skill, per fight and for the party.')
+    @onClick: modules.game_dpsmeter.toggle()
 
   ChaosButton
     id: copyButton

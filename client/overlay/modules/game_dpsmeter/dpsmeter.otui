@@ -1,0 +1,443 @@
+// DPS meter (client game_dpsmeter; server combatlog.lua, extended opcode 204). Styles from client_chaos_theme.
+// Row icons: a spell's own icon (spell sheet, by its words), a rune's item, /images/game/buffs/<name> for damage over
+// time, /images/game/dpsmeter/<name> for the rest (client/tools/gen_dpsmeter_icons.py), in the buff bar's gold frame.
+
+DpsMiniButton < UIButton
+  height: 14
+  font: Verdana-9px-antialiased
+  color: #8c8070
+  background-color: #1a1418
+  border-width: 1
+  border-color: #3a3339
+  text-offset: 0 0
+  padding: 0 3 0 3
+  text-auto-resize: true
+  change-cursor-image: true
+  cursor: pointer
+
+  $hover !disabled:
+    color: #f6cf72
+    border-color: #7d7176
+
+  $on:
+    color: #f6cf72
+    border-color: #b8923a
+    background-color: #2a1e14
+
+// the client builds a combo box's popup from "<style>PopupMenu" and "<style>PopupMenuButton"
+DpsSegComboPopupMenuButton < UIButton
+  height: 18
+  font: Verdana-9px-antialiased
+  text-align: left
+  text-offset: 6 2
+  color: #d6c9ae
+  background-color: #1a151a
+
+  $hover !disabled:
+    color: #f6cf72
+    background-color: #3a2410
+
+DpsSegComboPopupMenu < UIPopupMenu
+  image-source: /images/chaos/panel_dark
+  image-border: 6
+  padding: 3
+
+DpsSegCombo < ChaosComboBox
+
+DpsDetailComboPopupMenuButton < DpsSegComboPopupMenuButton
+  height: 20
+  font: verdana-11px-antialised
+
+DpsDetailComboPopupMenu < DpsSegComboPopupMenu
+
+DpsDetailCombo < ChaosComboBox
+
+DpsTabButton < DpsMiniButton
+  margin-right: 2
+
+DpsIcon < UIWidget
+  size: 16 16
+  border-width: 1
+  border-color: #b8923a
+  image-smooth: true
+  phantom: true
+
+DpsBarRow < UIWidget
+  height: 18
+  margin-bottom: 1
+  background-color: #120e12
+  phantom: false
+
+  UIWidget
+    id: fill
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    margin-left: 18
+    width: 1
+    opacity: 0.85
+    phantom: true
+
+  DpsIcon
+    id: icon
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 1
+
+  UIItem
+    id: item
+    size: 16 16
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 1
+    virtual: true
+    phantom: true
+    visible: false
+
+  UILabel
+    id: name
+    anchors.left: icon.right
+    anchors.right: value.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+    margin-right: 4
+    text-align: left
+    font: Verdana-9px-antialiased
+    color: #f2e8d0
+    phantom: true
+
+  UILabel
+    id: value
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 4
+    text-auto-resize: true
+    font: Verdana-9px-antialiased
+    color: #f6cf72
+    phantom: true
+
+DpsMeterPanel < UIWidget
+  id: dpsMeter
+  size: 236 200
+  image-source: /images/chaos/panel_dark
+  image-border: 6
+  anchors.top: parent.top
+  anchors.left: parent.left
+  margin-top: 60
+  margin-left: 40
+  focusable: false
+  phantom: false
+
+  UIWidget
+    id: header
+    height: 14
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 3 3 0 3
+    background-color: #1a1418cc
+    cursor: pointer
+
+    UILabel
+      id: title
+      text: DPS Meter
+      font: Verdana-9px-antialiased
+      color: #e8b84a
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 4
+      text-auto-resize: true
+      phantom: true
+
+    UIWidget
+      id: liveDot
+      size: 6 6
+      anchors.left: title.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 4
+      background-color: #e03a1e
+      visible: false
+      phantom: true
+
+    DpsMiniButton
+      id: closeButton
+      text: x
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      !tooltip: tr('Hide the meter (Hunt > DPS Meter shows it again)')
+      @onClick: modules.game_dpsmeter.hide()
+
+    DpsMiniButton
+      id: detailsButton
+      anchors.right: closeButton.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-right: 2
+      !text: tr('Details')
+      !tooltip: tr('Hits, crits, average and max per skill')
+      @onClick: modules.game_dpsmeter.toggleDetails()
+
+    DpsMiniButton
+      id: partyButton
+      anchors.right: detailsButton.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-right: 2
+      !text: tr('Party')
+      !tooltip: tr('Show the party members instead of your skills')
+      @onClick: modules.game_dpsmeter.toggleParty()
+
+    DpsMiniButton
+      id: menuButton
+      anchors.right: partyButton.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-right: 2
+      text: ...
+      !tooltip: tr('Reset, export, share and lock')
+      @onClick: modules.game_dpsmeter.showMenu()
+
+  UIWidget
+    id: tabs
+    height: 14
+    anchors.top: header.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 3 4 0 4
+    phantom: true
+    layout:
+      type: horizontalBox
+
+  DpsSegCombo
+    id: segCombo
+    anchors.top: tabs.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 3 4 0 4
+    height: 20
+    font: Verdana-9px-antialiased
+    !tooltip: tr('Which fight: the current one, the session or one of the last 10')
+
+  UILabel
+    id: summary
+    anchors.top: segCombo.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 2 5 0 5
+    height: 12
+    font: Verdana-9px-antialiased
+    color: #d6c9ae
+    text-align: left
+    phantom: true
+
+  UIScrollArea
+    id: rows
+    anchors.top: summary.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin: 2 4 6 4
+    layout:
+      type: verticalBox
+    auto-focus: none
+
+  UILabel
+    id: emptyText
+    anchors.centerIn: rows
+    text-auto-resize: true
+    font: Verdana-9px-antialiased
+    color: #8c8070
+    phantom: true
+
+  UIWidget
+    id: grip
+    size: 10 10
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-right: 1
+    margin-bottom: 1
+    image-source: /images/game/dpsmeter/grip
+    cursor: pointer
+    !tooltip: tr('Drag to resize')
+
+DpsDetailRow < UIWidget
+  height: 20
+  margin-bottom: 1
+  background-color: #1a151a
+  phantom: false
+
+  DpsIcon
+    id: icon
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 2
+
+  UIItem
+    id: item
+    size: 16 16
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 2
+    virtual: true
+    phantom: true
+    visible: false
+
+  UILabel
+    id: name
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 22
+    width: 150
+    text-align: left
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    phantom: true
+
+DpsDetailCell < UILabel
+  font: verdana-11px-rounded
+  color: #d6c9ae
+  text-align: right
+  phantom: true
+
+DpsHeaderCell < UILabel
+  font: verdana-11px-antialised
+  color: #8c8070
+  text-align: right
+  phantom: true
+
+DpsTab < ChaosTabButton
+  width: 90
+  margin-right: 4
+
+DpsMeterDetails < ChaosMainWindow
+  id: dpsDetails
+  size: 640 470
+  !text: tr('Combat Log')
+  @onEscape: modules.game_dpsmeter.hideDetails()
+
+  UIWidget
+    id: tabs
+    anchors.top: parent.top
+    anchors.left: parent.left
+    width: 380
+    height: 24
+    phantom: true
+    layout:
+      type: horizontalBox
+
+  DpsDetailCombo
+    id: segCombo
+    anchors.top: parent.top
+    anchors.right: parent.right
+    anchors.left: tabs.right
+    margin-left: 8
+    height: 22
+
+  ChaosPanelHighlight
+    id: headPanel
+    anchors.top: tabs.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 34
+
+    ChaosLabel
+      id: segTitle
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: -4
+      height: 14
+      color: #e8b84a
+      text-align: left
+
+    ChaosLabelDim
+      id: segInfo
+      anchors.top: segTitle.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 14
+      text-align: left
+
+  UIWidget
+    id: header
+    anchors.top: headPanel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    margin-right: 16
+    height: 16
+    phantom: true
+
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: header.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: elements.top
+    margin-top: 2
+    margin-bottom: 4
+    padding: 3
+
+  UIScrollArea
+    id: rowList
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: listScroll.left
+    anchors.bottom: listFrame.bottom
+    margin: 4
+    layout:
+      type: verticalBox
+    vertical-scrollbar: listScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: listScroll
+    anchors.top: listFrame.top
+    anchors.right: listFrame.right
+    anchors.bottom: listFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 21
+    pixels-scroll: true
+
+  ChaosLabelDim
+    id: emptyText
+    anchors.centerIn: listFrame
+    text-auto-resize: true
+    visible: false
+
+  ChaosLabel
+    id: elements
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-bottom: 8
+    height: 16
+    text-align: left
+    color: #e8b84a
+
+  ChaosButton
+    id: chatButton
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    width: 96
+    !text: tr('To chat')
+    !tooltip: tr('Put a one-line summary into the chat input (you decide whether to send it)')
+    @onClick: modules.game_dpsmeter.exportChat()
+
+  ChaosButton
+    id: copyButton
+    anchors.left: chatButton.right
+    anchors.bottom: parent.bottom
+    margin-left: 4
+    width: 96
+    !text: tr('Copy')
+    !tooltip: tr('Copy a summary of this fight to the clipboard')
+    @onClick: modules.game_dpsmeter.exportClipboard()
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 80
+    !text: tr('Close')
+    @onClick: modules.game_dpsmeter.hideDetails()
