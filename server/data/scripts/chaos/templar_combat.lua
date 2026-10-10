@@ -9,8 +9,9 @@
 --   * Zealotry (Inquisitor spell): a timer condition on the Inquisitor; melee weapon hits add stacks, each stack raises
 --     all its damage. The stacks fall off a few seconds after the last hit.
 --   * Aegis of Faith (Sentinel spell): a timer condition on the Sentinel; damage taken is cut for its duration.
--- Scripted strikes (the holy strike) are dealt with origin ORIGIN_NONE inside a guard flag, so they never trigger the
--- weapon-hit rules again.
+-- Scripted strikes (the holy strike) are dealt with origin ORIGIN_SPELL inside a guard flag, so they never trigger the
+-- weapon-hit rules again (nor Zealotry a second time: the strike is a share of a hit Zealotry already raised). Not
+-- ORIGIN_NONE: the engine runs no onHealthChange event for it, so Judgement and the curse never saw the strike.
 
 if not ChaosTemplar then
 	dofile("data/scripts/chaos/templar_aura_core.lua")
@@ -69,14 +70,20 @@ local function auraTick()
 	end
 	local fresh = T.collectAuras(templars, players, now)
 	T.applyAuras(fresh, now)
-	-- the Sentinel's regeneration and the aura's look
+	-- the Sentinel's regeneration and the aura's look. A regeneration condition, refreshed every think, not a heal:
+	-- a heal (doTargetCombat) printed "You heal X for 12 hitpoints" to the Sentinel and "healed by" to every covered
+	-- member once a second (tested in game); the condition's ticks are silent
 	for id, aura in pairs(fresh) do
 		local p = byId[id]
-		local source = Player(aura.source)
-		if p and source then
+		if p and Player(aura.source) then
 			local amount = T.regenAmount(p:getHealth(), p:getMaxHealth(), aura)
 			if amount > 0 then
-				pcall(doTargetCombat, source, p, COMBAT_HEALING, amount, amount, CONST_ME_NONE)
+				local c = Condition(CONDITION_REGENERATION, CONDITIONID_COMBAT)
+				c:setParameter(CONDITION_PARAM_SUBID, SUB.auraRegen)
+				c:setParameter(CONDITION_PARAM_TICKS, cfg().aura.holdMs)
+				c:setParameter(CONDITION_PARAM_HEALTHGAIN, amount)
+				c:setParameter(CONDITION_PARAM_HEALTHTICKS, cfg().aura.thinkMs)
+				p:addCondition(c)
 			end
 		end
 	end
@@ -110,7 +117,7 @@ local function radiantStrike(attackerId, targetId, amount)
 	end
 	scripted = true
 	local ok, err = pcall(doTargetCombat, attacker, target, COMBAT_HOLYDAMAGE, -amount, -amount,
-		CONST_ME_HOLYDAMAGE, ORIGIN_NONE)
+		CONST_ME_HOLYDAMAGE, ORIGIN_SPELL)
 	scripted = false
 	if not ok then
 		print("[ChaosTemplar] " .. tostring(err))
@@ -124,7 +131,7 @@ local function onOffence(creature, player, primaryDamage, secondaryDamage, origi
 		return primaryDamage, secondaryDamage
 	end
 	local amount = math.abs(primaryDamage) + math.abs(secondaryDamage)
-	if amount == 0 then
+	if amount == 0 or scripted then
 		return primaryDamage, secondaryDamage
 	end
 	local now = T.now()

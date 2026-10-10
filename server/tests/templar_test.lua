@@ -183,7 +183,7 @@ local mob = creature({id = 50})
 local p, pt, s = onHealth(mob, tp, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
 eq(p, 1000, "the hit itself is unchanged"); eq(#scheduled, 1, "a holy strike is scheduled")
 scheduled[1].fn((unpack or table.unpack)(scheduled[1].args))
-eq(strikes[1].type, COMBAT_HOLYDAMAGE); eq(strikes[1].min, -150); eq(strikes[1].origin, ORIGIN_NONE)
+eq(strikes[1].type, COMBAT_HOLYDAMAGE); eq(strikes[1].min, -150); eq(strikes[1].origin, ORIGIN_SPELL)
 -- a spell hit gives no strike
 scheduled = {}
 onHealth(mob, tp, 1000, COMBAT_HOLYDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)

@@ -31,8 +31,9 @@ M.cfg = {
 		},
 		-- condition sub ids (CONDITIONID_COMBAT, CONDITION_ATTRIBUTES without attributes = a timer). The spells and
 		-- templar_combat.lua run in different Lua states; the conditions are the state both see.
-		-- Next to chaos_constants.lua (71001-71014), the Necromancer (71020-71023) and the Monk (71030-71044).
-		subId = {judgement = 71050, zealotry = 71051, aegis = 71052},
+		-- Next to chaos_constants.lua (71001-71014), the Necromancer (71020-71023) and the Monk (71030-71044); 71050-71053.
+		-- auraRegen: the Sentinel aura's regeneration on a covered player (CONDITION_REGENERATION, refreshed every second)
+		subId = {judgement = 71050, zealotry = 71051, aegis = 71052, auraRegen = 71053},
 		-- the class key of the store unlock (class_unlocks.lua, ChaosClassUnlocks)
 		unlockKey = "templar"
 	},

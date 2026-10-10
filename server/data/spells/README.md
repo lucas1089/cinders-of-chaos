@@ -3,8 +3,8 @@
 77 custom spells, dark-fantasy flavour: 7 sorcerer, 7 druid, 6 paladin, 6 knight, 6 illusionist, 4 shared utility spells, 9 for the
 Thief line (Thief, Ninja, Samurai; see "Thief line" below), 4 for the Berserker and the Beastmaster (see "Classes" below), 9 for the
 Necromancer line (Necromancer, Lich, Bone Lord; see "Necromancer line"), 10 for the Monk line (Monk, Shadowfist, Iron Sage; see
-"Monk line") and 9 for the Templar line (Templar, Inquisitor, Sentinel; see "Templar line"). The last three lines are built but not
-tested in game yet (phase A); their numbers are formula estimates until measured. Since the
+"Monk line") and 9 for the Templar line (Templar, Inquisitor, Sentinel; see "Templar line"). The last three lines were tested in game
+on 2026-10-09/10 (phase B: every spell cast through the client, 60 s rotations at level 300; their sections below). Since the
 class rework (docs/CLASSES.md) the old kits belong to the new classes; the folder names keep the old vocation names.
 **Status: written and smoke-tested against a hand-written Lua mock only. Nothing has been run on a real TFS server.**
 
@@ -113,7 +113,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 247 | Bloodrage | `vyr sang khar` | B | 120 | 200 | 30s | Costs 10% of the current health; 12 s: Rage +10% and every melee weapon hit also strikes up to 4 other enemies next to you for 40% of it. |
 | 248 | Wild Bond | `vael ferh` | BM | 100 | 300 | 10s | Calls the companion (a War Wolf; 2 from level 400): health 500 + 15 x level; companions already out come back to you and heal 50%. |
 | 249 | Feral Command | `kah ferh` | BM | 110 | 200 | 8s | Every companion leaps to the target (range 7) and mauls it for 1.5 bites. |
-| **necromancer** (N Necromancer, L Lich, BL Bone Lord; formula estimates, not measured) | | | | | | | |
+| **necromancer** (N Necromancer, L Lich, BL Bone Lord; per-cast numbers: formula; rotations measured, see "Necromancer line") | | | | | | | |
 | 180 | Raise Dead | `vael oss` | N, L, BL | 20 | 60 | 2s | Raises a minion from an empty corpse (never one with loot), else one from nothing for twice the mana; skeletons, the Lich's shade. |
 | 181 | Bone Spear | `kah oss lanc` | N, L, BL | 15 | 40 | 2s | The filler: a bone spear at the target (range 5) that pierces to the creature behind. |
 | 182 | Withering Curse | `kah nyx maled` | N, L, BL | 40 | 120 | 8s | The target takes +15% damage from everyone and rots (Lich: +25%, spreads to 2 more; monsters only, players just rot). |
@@ -123,7 +123,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 186 | Bone Golem | `vael gal oss` | BL | 100 | 500 | 30s | Raises the Bone Golem: slams everything next to it, taunts the monsters within 3 sqm. |
 | 187 | Banner of Bones | `tor vas oss` | BL | 120 | 300 | 30s | 20 s: minions +30% damage, -25% damage taken, 3% regeneration per second. |
 | 188 | Bone Offering | `drai sang oss` | BL | 150 | 250 | 12s | A skeleton bursts in 2 sqm; the Bone Lord takes 20% less damage for 6 s. |
-| **monk** (Mo Monk, SF Shadowfist, IS Iron Sage; finishers need 1 chi and spend all, "5 chi" values; formula estimates, not measured) | | | | | | | |
+| **monk** (Mo Monk, SF Shadowfist, IS Iron Sage; finishers need 1 chi and spend all, "5 chi" values; rotations measured, see "Monk line") | | | | | | | |
 | 63 | Ashen Fist | `kah dhun` | Mo, SF, IS | 15 | 30 | 2s | Quick strike at the target next to you; +2 chi. The builder. |
 | 64 | Sundering Palm | `kah gal dhun` | Mo, SF, IS | 30 | 80 | 6s | Finisher: heavy palm strike, x(0.30 + 0.14 per chi). |
 | 65 | Whirling Heel | `drai spir dhun` | Mo, SF, IS | 50 | 120 | 8s | Finisher: spinning kick on everything next to you (3x3), x chi scale. |
@@ -134,7 +134,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 70 | Chi Ward | `tor qhal ["Name"]` | IS | 100 | 200 | 12s | Finisher: shield absorbing (level x 2.5 + fist x 8) x chi scale for 8 s on a party member within 5 sqm (the named one, or the most hurt; you without a party). |
 | 71 | Iron Palm | `kah brak dhun` | IS | 120 | 200 | 8s | Finisher: strike x chi scale; stuns a monster 0.6 s + 0.4 s per chi (cannot move or attack), then 4 s immune; >50000 max health: only slowed 50%. |
 | 72 | Mantra of Stone | `tor vas qhal` | IS | 150 | 400 | 30s | 12 s aura: you and party members within 6 sqm take 8% less damage. |
-| **templar** (T Templar, I Inquisitor, Se Sentinel; P = weapon power, see "Templar line"; formula estimates, not measured) | | | | | | | |
+| **templar** (T Templar, I Inquisitor, Se Sentinel; P = weapon power, see "Templar line"; rotations measured there) | | | | | | | |
 | 189 | Radiant Smite | `kah sol dyr` | T, I, Se | 20 | 60 | 4s | Holy strike on one target within 3 sqm: P x 0.10-0.16 + ml x 1-1.5 + 30-60. The filler. |
 | 190 | Consecration | `drai sol haln` | T, I, Se | 40 | 200 | 20s | Holy ground (circle 2) for 6 pulses: P x 0.025-0.04 + ml x 0.4-0.6 + 10-20 per pulse; allies in it healed 30% of a pulse. |
 | 191 | Vow of Mending | `saen tor fidh` | T, I, Se | 30 | 150 | 8s | Self heal: 8% max health + level/5 + ml x 4 (±10%). |
@@ -354,7 +354,7 @@ The auto attack alone is noisy (a 30 s sample varies by ~15%).
 
 ### Necromancer line (Necromancer, Lich, Bone Lord)
 
-**Phase A: built, not tested in game. Every number below is a formula estimate until measured (phase B).**
+**Tested in game (phase B); the measured rotation is after the formula table.**
 Ascension at level 100 (the Ascendant Oracle), behind the store unlock of the Necromancer (`class_unlocks.lua`). Numbers:
 `data/scripts/chaos/necro_config.lua`, rules: `necro_core.lua`, minions: `necro_minions.lua`, curse and bone shield:
 `necromancer_combat.lua`.
@@ -398,11 +398,37 @@ second), no passive tree, magic level 100 at level 300 and 140 at level 1000. 5 
 
 Against the tables above: the Lich sits in the single-target bracket (Ninja 1050 / 2837, Paladin 1074 / 2770); the Bone
 Lord is second in area damage behind the Elementalist (2815 / 6427) and below the Lich on one target; the Necromancer
-before its ascension is at the Thief's level (728 / 1802). To be measured with the dummy harness (phase B).
+before its ascension is at the Thief's level (728 / 1802).
+
+**Measured in game (phase B, 2026-10-09/10)**, the same way for the three lines: level 300 test characters without passive tree
+points (stat window 20 in every stat, as for the tables above), every spell cast through the client (words, cooldowns and mana as
+the table above; group cooldowns from the server), a 60 s window after a 12-24 s warm-up (minions raised, buffs up), damage =
+health the dummies lost (5 000 000 health, so nothing died), auto attack on the main dummy. 1 target: one dummy; 5 targets: the
+main dummy and four around it (east of the caster: (1,0), (1,-1), (1,1), (2,0), (2,-1)), the same rotation. Mana/min = the
+spells' mana (a caster's wand costs 25 more per hit). Same harness, the Ninja at level 300 (sword 110, two embersage swords):
+**1001** / 1323, mana 4400 (the table above: 1050 / 1385 / 4600), so these numbers sit next to the earlier ones.
+Casters: magic level 100 (104 with the test gear), the gilded eldritch wand (level 250, 95-115 fire). Rotation: curse on cooldown,
+Raise Dead while below the cap (from nothing when no corpse), the class spells, Bone Spear as the filler; Corpse Explosion is
+left out (the dummies leave no corpses).
+
+| Level | Class | Wand | Total single target | Total 5 targets | Mana/min | Max health (no gear) |
+|---|---|---|---|---|---|---|
+| 300 | Lich (with its shade) | 99 | **1113** | 1678 | 4780 | 2229 |
+| 300 | Bone Lord (5 skeletons + golem, Bone Offering on cooldown) | 89 | 928 | **1940** | 4790 | 2813 |
+| 300 | Necromancer (4 skeletons) | 92 | 706 | 735 | 1760 | 2521 |
+
+Against the estimate (1000 / 1280, 830 / 2110, 640 / 640): within ~10% on one target; the Lich's 5-target number is higher (the
+curse spreads to two more, Soul Rot jumps). The Lich is a little above the Ninja on one target (+11%), the Bone Lord below the
+Elementalist's area numbers, the Necromancer at the Thief's level: no change. Single casts (level 400, magic level 109): Bone
+Spear ~430 + ~250 on the creature behind, Withering Curse x1.15 on every later hit (minion hits included), Life Siphon ~1400
+healing 585, Soul Rot ~2860 over 6 s, Corpse Explosion ~1900 + ~540 per neighbour (refused and no mana spent without corpses).
+Seen in game: Raise Dead seals the corpse it used (the green circle) and never touches one with loot, raises from nothing for 120
+mana, refuses past the cap (3 skeletons at level 100, 4 at level 300, the Bone Lord 6 + the golem at level 400); minions rest in a
+protection zone and rise outside; a kill by a minion gives the owner the full experience and the loot.
 
 ### Monk line (Monk, Shadowfist, Iron Sage)
 
-**Phase A: built, not tested in game. Every number below is a formula estimate until measured (phase B).**
+**Tested in game (phase B); the measured rotation is after the estimate table.**
 Ascension at level 100 (the Ascendant Oracle), behind the store unlock of the Monk (`class_unlocks.lua`). Rules and every number:
 `ChaosMonk` in `data/scripts/chaos/monk_chi_core.lua`; combat glue `data/scripts/chaos/monk_combat.lua`.
 
@@ -433,9 +459,35 @@ modest damage, below the knight (639 / 1957), paid back by Chi Ward (~1630 absor
 Stone (-8% for the party) and the stun. The Shadowfist's area value at level 1000 (~4020, Whirling Heel with the focus crit) is above the
 Ninja's 3710: watch it in phase B (lower `whirlingHeel` or exclude area strikes from the focus crit if it holds).
 
+**Measured in game (phase B, 2026-10-09/10)**, the same way for the three lines: level 300 test characters without passive tree
+points (stat window 20 in every stat, as for the tables above), every spell cast through the client (words, cooldowns and mana as
+the table above; group cooldowns from the server), a 60 s window after a 12-24 s warm-up (minions raised, buffs up), damage =
+health the dummies lost (5 000 000 health, so nothing died), auto attack on the main dummy. 1 target: one dummy; 5 targets: the
+main dummy and four around it (east of the caster: (1,0), (1,-1), (1,1), (2,0), (2,-1)), the same rotation. Mana/min = the
+spells' mana (a caster's wand costs 25 more per hit). Same harness, the Ninja at level 300 (sword 110, two embersage swords):
+**1001** / 1323, mana 4400 (the table above: 1050 / 1385 / 4600), so these numbers sit next to the earlier ones.
+Monks: fist 110, unarmed, magic level 15. Rotation: finishers at 4+ chi (Shadowfist Flurry, then Sundering Palm; Iron Palm
+first for the Iron Sage; Whirling Heel first on 5 targets), Pressure Points on cooldown (Shadowfist), Ashen Fist as the builder.
+
+| Level | Class | Auto attack | Total single target | Total 5 targets | Mana/min | Max health (no gear) |
+|---|---|---|---|---|---|---|
+| 300 | Shadowfist | 467 | **1258** | 1258 (area rotation 1228) | 3400 | 3689 |
+| 300 | Monk | 282 | 708 | 802 | 1400 | 3689 |
+| 300 | Iron Sage | 220 | 602 | 662 | 2170 | 4273 |
+
+Against the estimate (1020 / 1340, 590 / 880, 530 / 750): every Monk deals ~15-25% more on one target than estimated, the area
+numbers are lower (Whirling Heel only reaches the dummies next to the Monk: 3 of the 5). **The Shadowfist is above its bracket**:
+1258 against the Ninja's 1001 in the same harness (+26%), most of it the focus crit on the auto attack (467 per second). Not
+changed in this pass; candidates: `focus` crit per chi, or the focus window off the auto attack. Max health: the Monk's gain is the
+Thief's (12 per level), 3689 at level 300 without gear, not the ~4430 the estimate assumed. Seen in game: the chi HUD under the
+character (pips, tooltip "Chi n / 5"), chi +1 per melee hit (one per 2 s), +2 Ashen Fist, +1 Pressure Points, gone after 12 s on
+the server and the HUD; finishers spend all of it; Chi Ward on a named party member (1630 at level 300, ~1630 estimated) or the
+most hurt one, Mantra of Stone -8% on the party member, Iron Palm stops a Behemoth's attacks for the stun, Mistborne Step rolls
+3 sqm, Kindled Breath ~1790 at 5 chi (level 400).
+
 ### Templar line (Templar, Inquisitor, Sentinel)
 
-**Phase A: built, not tested in game. Every number below is a formula estimate until measured (phase B).**
+**Tested in game (phase B); the measured rotation is after the estimate table.**
 Ascension at level 100 (the Ascendant Oracle). Locked behind the store's class unlock (docs/CLASSES.md, "Class lock").
 Mechanics in `data/scripts/chaos/templar_combat.lua`, ids, numbers and rules in `templar_aura_core.lua` (`ChaosTemplar.cfg`).
 Power P = the best of sword, club and axe skill x the main-hand weapon's attack; strikes are
@@ -467,6 +519,29 @@ damage and regenerates 0.4% per second (next to a Templar 6% less).
 Targets for the measurement (phase B): the Inquisitor's 5-target total near the Berserker's, the Templar in the knight's range,
 the Sentinel the lowest damage of the line; and the party test: the same level 300 Mystic among four Behemoths for 60 s without
 healing, alone and with a Sentinel 3 sqm away (expected: ~12% less damage taken plus the regeneration).
+
+**Measured in game (phase B, 2026-10-09/10)**, the same way for the three lines: level 300 test characters without passive tree
+points (stat window 20 in every stat, as for the tables above), every spell cast through the client (words, cooldowns and mana as
+the table above; group cooldowns from the server), a 60 s window after a 12-24 s warm-up (minions raised, buffs up), damage =
+health the dummies lost (5 000 000 health, so nothing died), auto attack on the main dummy. 1 target: one dummy; 5 targets: the
+main dummy and four around it (east of the caster: (1,0), (1,-1), (1,1), (2,0), (2,-1)), the same rotation. Mana/min = the
+spells' mana (a caster's wand costs 25 more per hit). Same harness, the Ninja at level 300 (sword 110, two embersage swords):
+**1001** / 1323, mana 4400 (the table above: 1050 / 1385 / 4600), so these numbers sit next to the earlier ones.
+Templars: sword 110, embersage sword (attack 55) + blessed shield, magic level 25. Rotation: Zealotry, Judgement, Purging Nova,
+Consecration, Radiant Smite (the ones the class has), all on cooldown.
+
+| Level | Class | Auto attack (+ Radiant) | Total single target | Total 5 targets | Mana/min | Max health (no gear) |
+|---|---|---|---|---|---|---|
+| 300 | Inquisitor | 280 | **969** | **1765** | 4950 | 3981 |
+| 300 | Templar | 231 | 652 | 1005 | 1500 | 4273 |
+| 300 | Sentinel | 168 | 558 | 1001 | 1500 | 4273 |
+
+Against the estimate (940 / 1770, 560 / 900, 530 / 870): the Inquisitor as estimated, the Templar and the Sentinel ~5-15%
+higher; the Inquisitor's 5-target number is the Berserker's range, as targeted. No change. Party test (a Sentinel and a level 300
+Elementalist in one party): a hit of 1000 on the Elementalist 2 sqm from the Sentinel took 880 (-12%), 8 sqm away 1000; under the
+aura it regenerated 80 in 10 s (0.4% of 1974 per second), out of it 0, and nobody got a heal message for it; Lay on Hands on the
+named member healed it (35% + magic level x 10 = 941, x1.2 by the stat window's intelligence 20, which every heal gets) while the
+Sentinel itself was lower; Aegis of Faith took a hit of 854 to 512 (-40%); Rebuke slowed and taunted the monsters around.
 
 ### PvP (tested with two characters on the test server)
 

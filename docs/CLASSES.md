@@ -1,7 +1,7 @@
 # Classes (design, agreed; phase 1, the Thief line, and phase 2a, the other three lines, implemented; the Necromancer, Monk and Templar built, phase A)
 
 Four base classes. At promotion each picks one of two ascended classes, like Path of Exile ascendancies.
-The Necromancer, the Monk and the Templar are classes five to seven (phase A built, not tested in game); they are
+The Necromancer, the Monk and the Templar are classes five to seven (tested in game, phase B: level 300 measured); they are
 locked behind a store unlock for now (see "Class lock").
 
 | Base class | Plays as | Ascended choice A | Ascended choice B |
@@ -216,7 +216,7 @@ ids), the login popup of an old Elite Knight and of an old (level 150) Illusioni
 gains), the free switch (refused outside a protection zone, refused for another line's class, then Juggernaut -> Berserker), casting
 Wild Bond by its words, and the level 1000 sanity measurement in `server/data/spells/README.md`.
 
-### Necromancer (C5, phase A: built, not tested in game)
+### Necromancer (C5, phase B: tested in game)
 
 - **Vocations** (`server/data/XML/chaos_vocations_necro.xml`, installed with the other classes by
   `server/tools/add_vocations.py DATA_DIR`): 20 Necromancer (client byte 7; hp 8 / mana 26 / cap 13), 21 Lich (17; 7 / 28 / 12),
@@ -245,7 +245,7 @@ Open for the Necromancer:
 - Outfits, the line in `admin/testkit.lua`.
 - Minions in the arena, the guild siege and rifts follow those modes' summon rules (not checked).
 
-### Monk (C6, phase A: built, not tested in game)
+### Monk (C6, phase B: tested in game)
 
 - **Vocations** (`server/data/XML/chaos_vocations_monk.xml`, installed by `add_vocations.py`):
 
@@ -275,13 +275,14 @@ Open for the Necromancer:
   `client/overlay/modules/game_monkchi/chimath_test.lua`.
 
 Open for the Monk:
-- In-game balance and the dummy measurement at levels 300 and 1000 (phase B). The numbers in the README are formula estimates.
+- Balance: measured at level 300 (`server/data/spells/README.md` "Monk line"): the Shadowfist is ~26% above the Ninja on one
+  target (the focus crit on the auto attack); level 1000 not measured yet.
 - **Passive tree**: no per-class trees exist yet. Proposal when the tree is reworked: a Monk start, a Shadowfist path ending in a keystone
   "Hundred Hands" (focus crits also add a chi) and an Iron Sage path ending in "Stone Body" (Chi Ward on yourself is 50% stronger and
   Mantra of Stone also gives 10% attack speed). Until then `keystoneKey` is nil for 17-19 and the level factor stands in for the tree.
 - Fist weapons (new items), outfits, a stun on players (only monsters are stunned), the line in `admin/testkit.lua`.
 
-### Templar (C7, phase A: built, not tested in game)
+### Templar (C7, phase B: tested in game)
 
 Holy melee with a party defence aura; the tank-support alternative to the Juggernaut. Ascension with the Ascendant Oracle
 at level 100+ (the same rules as the other classes).

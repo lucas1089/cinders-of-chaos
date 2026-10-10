@@ -254,7 +254,8 @@ function login.onLogin(player)
 	end
 	player:sendTextMessage(MESSAGE_STATUS_WARNING, text)
 	if player.popupFYI then
-		player:popupFYI(text)
+		-- one sentence per line: the client sizes the window to the longest line (one long line ran off the screen)
+		player:popupFYI((text:gsub("%. ", ".\n")))
 	end
 	return true
 end

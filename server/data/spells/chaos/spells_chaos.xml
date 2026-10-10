@@ -1,4 +1,6 @@
 <!-- Chaos spells. Script paths are relative to data/spells/scripts (run tools/register_spells.py). -->
+<!-- A spell that takes a name (params="1": Chi Ward, Lay on Hands, Mirror Mend) has no selftarget="1": the engine hands a
+     selftarget spell the caster's id and drops the parameter, so the named player was never chosen. -->
 	<!-- sorcerer kit: Mystic (base) and Elementalist; Frozen Crypt and Doomtide only the Elementalist -->
 	<instant group="attack" spellid="200" name="Rime Bloom" words="drai hyr rhim" level="20" mana="120" premium="0" selftarget="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/frost_nova.lua">
 		<vocation name="Mystic" />
@@ -367,7 +369,7 @@
 		<vocation name="Shadowfist" />
 	</instant>
 	<!-- iron sage -->
-	<instant group="support" spellid="70" name="Chi Ward" words="tor qhal" level="100" mana="200" premium="1" aggressive="0" selftarget="1" params="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/ironsage/chi_ward.lua">
+	<instant group="support" spellid="70" name="Chi Ward" words="tor qhal" level="100" mana="200" premium="1" aggressive="0" params="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/ironsage/chi_ward.lua">
 		<vocation name="Iron Sage" />
 	</instant>
 	<instant group="attack" spellid="71" name="Iron Palm" words="kah brak dhun" level="120" mana="200" premium="1" range="1" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/ironsage/iron_palm.lua">
@@ -409,11 +411,11 @@
 	<instant group="support" spellid="252" name="Aegis of Faith" words="tor gal sol aeg" level="120" mana="150" premium="1" aggressive="0" selftarget="1" cooldown="25000" groupcooldown="2000" needlearn="0" script="chaos/sentinel/aegis_of_faith.lua">
 		<vocation name="Sentinel" />
 	</instant>
-	<instant group="healing" spellid="253" name="Lay on Hands" words="saen gal manh" level="150" mana="400" premium="1" aggressive="0" selftarget="1" params="1" cooldown="60000" groupcooldown="1000" needlearn="0" script="chaos/sentinel/lay_on_hands.lua">
+	<instant group="healing" spellid="253" name="Lay on Hands" words="saen gal manh" level="150" mana="400" premium="1" aggressive="0" params="1" cooldown="60000" groupcooldown="1000" needlearn="0" script="chaos/sentinel/lay_on_hands.lua">
 		<vocation name="Sentinel" />
 	</instant>
 	<!-- illusionist healer pass (Illusionist only; numbers in data/scripts/chaos/healing_rules_core.lua) -->
-	<instant group="healing" spellid="96" name="Mirror Mend" words="saen spek" level="60" mana="180" premium="1" aggressive="0" selftarget="1" params="1" cooldown="2000" groupcooldown="1000" needlearn="0" script="chaos/illusionist/mirror_mend.lua">
+	<instant group="healing" spellid="96" name="Mirror Mend" words="saen spek" level="60" mana="180" premium="1" aggressive="0" params="1" cooldown="2000" groupcooldown="1000" needlearn="0" script="chaos/illusionist/mirror_mend.lua">
 		<vocation name="Illusionist" />
 	</instant>
 	<instant group="healing" spellid="97" name="Lucid Reverie" words="reth vas spek" level="120" mana="300" premium="1" aggressive="0" selftarget="1" cooldown="20000" groupcooldown="1000" needlearn="0" script="chaos/illusionist/lucid_reverie.lua">

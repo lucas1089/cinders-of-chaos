@@ -226,7 +226,7 @@ working directory, as with the rest of the base server libs).
 | game_hunt | `hunt.lua`, `hunt_core.lua`, `hunt_config.lua`, `hunt_supplies.lua` | 241, Hunt > Hunt Tracker | Hunt tracker: session time with pause/reset, exp/h, time to level, loot and profit/h, supplies, kills, damage/healing, Chaos drops; tested in game (see "Hunt tracker"). |
 | game_season | `season.lua`, `season_core.lua`, `season_config.lua` | 246, Adventure > Season / `/season` | Seasons: fresh-start season characters isolated from standard ones, season ladder view, season uniques, account-wide reward track, end-of-season migration; tested in game with two clients (see "Seasons"). |
 | game_patchnotes | `patchnotes.lua`, `patchnotes_core.lua`, `data/patchnotes/*.md` | 244, Social > Patch Notes / `/patchnotes` | Weekly patch notes read from Markdown files on the server, opened once per new week at login (after the Daily Reward), per-account "Don't show automatically"; tested in game (see "Patch notes"). |
-| game_monkchi | `monk_chi_core.lua`, `monk_combat.lua` | 247 (server -> client) | The Monk's chi HUD: five pips over the map, plain text `chi:<chi>:<max>:<decaySec>`; only the Monk line (17-19) sees it. Built, not tested in game yet (see docs/CLASSES.md "Monk"). |
+| game_monkchi | `monk_chi_core.lua`, `monk_combat.lua` | 247 (server -> client) | The Monk's chi HUD: five pips over the map, plain text `chi:<chi>:<max>:<decaySec>`; only the Monk line (17-19) sees it. Tested in game: under the character (the bottom of the map lies under the chat in the Chaos layout), fills and empties with the server's chi, empties after 12 s. |
 | game_nameplate | `nameplate.lua`, `nameplate_core.lua`, `titles.lua` | 248, the Achievements window | Name plates over players: active title, `{guild}` and the name on a frame (client base patch 0022); title registry `ChaosTitles.register`; tested in game (see "Name plates and titles"). |
 | game_guild | `guild.lua`, `guild_hall.lua`, `guild_core.lua`, `guild_config.lua` | 252, Social > Guild | Guild levels (guild XP from the members, perks), guild bank, guild halls (runtime instance, upgrades, rent, depot), weekly top guilds; tested in game with two members (see "Guild levels and guild halls"). |
 | game_achievements | `achievements.lua`, `achievements_core.lua`, `achievements_data.lua` | 250, Character > Achievements | Achievements: 100 in 9 categories with points, titles and rewards, progress fed by the other systems, retroactive at login; tested in game (see "Achievements"). |
@@ -3665,6 +3665,10 @@ account storage, which is only saved at server save).
 - Character > Character Info shows the account's state; staff: `/classunlock <character>, <class>[, revoke]`.
 - Characters are created on the website (the base server has no in-game character creation): it should offer the three classes
   only to unlocked accounts; the login check holds even if it does not.
+- Tested in game (2026-10-09): a locked account's Necromancer logs in to its temple with the warning (also as a window, one
+  sentence per line) and can neither cast nor attack; the Ascendant Oracle refuses a locked Templar; Character > Services refuses
+  a locked class and keeps the Vocation Change token; buying the Necromancer in the store (Classes, 750 coins) unlocks it at once
+  for every character of the account, and the Oracle then ascends it.
 
 ## Achievements (`achievements.lua`, `achievements_core.lua`, `achievements_data.lua`, client `game_achievements`)
 

@@ -52,11 +52,9 @@ local function openWindow(player)
 	return true
 end
 
+-- no window on the greeting: the Keeper stands near the Ascendant Oracle, a "hi" greets both, and the client shows only
+-- one modal window at a time, so a window opened here hid the Oracle's Choice. The window opens on {trials}.
 local function greetCallback(cid)
-	local player = Player(cid)
-	if player and M.cfg().enabled and M.family(player:getVocation():getId()) then
-		openWindow(player)
-	end
 	return true
 end
 

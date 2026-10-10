@@ -94,7 +94,9 @@ local function wake(player, classKey)
 	end
 end
 
--- one hit of a minion on `target`, dealt as the owner
+-- one hit of a minion on `target`, dealt as the owner. ORIGIN_SPELL, not ORIGIN_NONE: the engine runs no
+-- onHealthChange event for ORIGIN_NONE damage (Game::combatChangeHealth), so the curse, the item modifiers and every
+-- other damage rule never saw a minion hit (found in game: no onHealthChange event saw them)
 local function hit(owner, classKey, minion, kind, target, aura)
 	local level, ml = owner:getLevel(), owner:getMagicLevel()
 	local min, max = N.minionHit(cfg(), classKey, kind, level, ml, aura)
@@ -108,7 +110,7 @@ local function hit(owner, classKey, minion, kind, target, aura)
 		-- the golem: every enemy next to it
 		mpos:sendMagicEffect(Fx("ground_slam", CONST_ME_GROUNDSHAKER))
 		for _, e in ipairs(L.enemiesAround(owner, mpos, 1, true)) do
-			L.damage(owner, e, ctype, min, max, CONST_ME_HITAREA, ORIGIN_NONE)
+			L.damage(owner, e, ctype, min, max, CONST_ME_HITAREA, ORIGIN_SPELL)
 		end
 		return
 	end
@@ -117,13 +119,13 @@ local function hit(owner, classKey, minion, kind, target, aura)
 	end
 	local effect = ctype == COMBAT_DEATHDAMAGE and CONST_ME_MORTAREA or CONST_ME_HITAREA
 	local tpos = target:getPosition()
-	local dealt = L.damage(owner, target, ctype, min, max, effect, ORIGIN_NONE)
+	local dealt = L.damage(owner, target, ctype, min, max, effect, ORIGIN_SPELL)
 	local share = N.splashShare(cfg(), classKey, kind)
 	if share > 0 and dealt > 0 then
 		for _, e in ipairs(L.enemiesAround(owner, tpos, 1, false)) do
 			if e ~= target then
 				local v = math.max(1, math.floor(dealt * share))
-				L.damage(owner, e, ctype, v, v, CONST_ME_BLOCKHIT, ORIGIN_NONE)
+				L.damage(owner, e, ctype, v, v, CONST_ME_BLOCKHIT, ORIGIN_SPELL)
 			end
 		end
 	end

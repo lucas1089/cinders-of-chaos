@@ -218,6 +218,13 @@ local ELEMENTS = {
 	LIFEDRAIN = "lifedrain", MANADRAIN = "manadrain", HEALING = "healing"
 }
 
+-- spell helpers that deal damage of an element without a COMBAT_ token in the spell script (pattern, element)
+Book.HELPER_DAMAGE = {
+	{"MonkSpell%.strike%s*%(", "physical"},
+	{"TemplarSpell%.holyStrike%s*%(", "holy"},
+	{"NecroSpell%.curse%s*%(", "death"}
+}
+
 local function elementOf(token)
 	local e = ELEMENTS[token]
 	if e then
@@ -339,6 +346,13 @@ function Book.analyzeScript(src)
 			info.elements[#info.elements + 1] = e
 		end
 	end
+	-- the class helpers that deal the damage themselves (no COMBAT_ token in the spell's own script)
+	for _, h in ipairs(Book.HELPER_DAMAGE) do
+		if code:find(h[1]) and not seen[h[2]] then
+			seen[h[2]] = true
+			info.elements[#info.elements + 1] = h[2]
+		end
+	end
 	-- damage elements, the one set as COMBAT_PARAM_TYPE first
 	info.damage = {}
 	local primary = code:match("COMBAT_PARAM_TYPE%s*,%s*COMBAT_([%u_]+)")
@@ -361,9 +375,15 @@ function Book.analyzeScript(src)
 		info.conjureCount = tonumber(count) or 1
 	end
 	info.summon = code:find("createMonster%s*%(") ~= nil or code:find("summonCreature") ~= nil
-		or code:find("addSummon%s*%(") ~= nil
+		or code:find("addSummon%s*%(") ~= nil or code:find("[%w_]+%.raise%s*%(") ~= nil -- the Necromancer's minions
 
-	if code:find("distanceAttack") then
+	if code:find("MonkSpell%.strike%s*%(") or code:find("MonkSpell%.values%s*%(") then
+		info.scaling = "fist skill x fist attack (or a staff)"
+	elseif code:find("TemplarSpell%.values%s*%(") then
+		info.scaling = "skill x weapon attack, magic level"
+	elseif code:find("[%w_]+%.values%s*%(%s*player%s*,") and code:find("_necro%.lua") then
+		info.scaling = "magic level"
+	elseif code:find("distanceAttack") then
 		info.scaling = "distance skill x weapon attack"
 	elseif code:find("CALLBACK_PARAM_SKILLVALUE") or code:find("skillValues%s*%(") then
 		info.scaling = "skill x weapon attack"
@@ -565,7 +585,7 @@ local function loadVocations()
 	end
 	if not ids then
 		ids = {}
-		for id = 0, 20 do
+		for id = 0, 30 do -- the class ids go up to 25 (Templar line)
 			ids[#ids + 1] = id
 		end
 	end
