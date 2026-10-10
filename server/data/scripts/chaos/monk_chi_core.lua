@@ -42,7 +42,8 @@ M.ids = {
 		chi = 7100800, -- chi points (0 .. cfg.chi.max)
 		chiTime = 7100801, -- os.time of the last chi change
 		focusChi = 7100802, -- Shadowfist: chi spent by the last finisher (the crit of the focus window)
-		wardAmount = 7100803 -- Chi Ward: damage the shield still absorbs (on the player that carries it)
+		wardAmount = 7100803, -- Chi Ward: damage the shield still absorbs (on the player that carries it)
+		palmChi = 7100804 -- Iron Palm on a player: the chi the strike spent, set by the spell while its damage lands
 	},
 	-- condition sub ids (CONDITIONID_COMBAT); CONDITION_ATTRIBUTES timers unless noted
 	subId = {
@@ -51,8 +52,9 @@ M.ids = {
 		mantra = 71032, -- Mantra of Stone: damage taken reduced
 		mantraDeep = 71037, -- Mantra of Stone of an Iron Sage with the passive tree's Deep Mantra (a stronger reduction)
 		roll = 71033, -- Mistborne Step: dodge window
-		stun = 71034, -- Iron Palm stun (CONDITION_PARALYZE on the monster)
-		stunImmune = 71035, -- after a stun the monster cannot be stunned again for a while
+		stun = 71034, -- Iron Palm stun (CONDITION_PARALYZE on a monster, CONDITION_PACIFIED on a player)
+		stunImmune = 71035, -- after a stun the monster / player cannot be stunned again for a while
+		stunDr = 71038, -- a player stunned within this window is stunned for less (diminishing returns)
 		breath = 71036, -- Iron Sage's Kindled Breath heal over time (CONDITION_REGENERATION)
 		pressure = {71040, 71041, 71042, 71043, 71044} -- Pressure Points: one timer per stack, on the target
 	},
@@ -100,7 +102,12 @@ M.cfg = {
 	flurry = {baseHits = 2, intervalMs = 200},
 	-- Iron Palm stun: baseMs + perChiMs x chi; then the monster is immune for immuneMs. Monsters with more than
 	-- bossHealth max health are only slowed (no attack lock).
-	stun = {baseMs = 600, perChiMs = 400, immuneMs = 4000, bossHealth = 50000, bossSlow = 0.5},
+	stun = {baseMs = 600, perChiMs = 400, immuneMs = 4000, bossHealth = 50000, bossSlow = 0.5,
+		-- on a player (PvP; monk_combat.lua, only when the strike's damage landed, so every PvP rule of the engine and the
+		-- scripts applies): baseMs + perChiMs x chi, at most maxMs; no moving, no attacks, no attack spells or runes
+		-- (healing and potions stay). Afterwards immuneMs of immunity; a stun within drWindowMs of the last one lasts
+		-- drFactor of it (at least minMs).
+		pvp = {baseMs = 500, perChiMs = 100, maxMs = 1000, minMs = 300, immuneMs = 6000, drWindowMs = 15000, drFactor = 0.5}},
 	-- Chi Ward: absorb = (level x perLevel + fist x perFist) x finisher scale, for durationMs, range for a party member
 	ward = {perLevel = 2.5, perFist = 8, durationMs = 8000, range = 5},
 	-- Kindled Breath: heal = (level x perLevel + fist x perFist) x finisher scale; Iron Sage: + hotShare over hotTicks s
@@ -381,6 +388,30 @@ function M.stunFor(chi, maxHealth, immune)
 	end
 	local ms = s.baseMs + s.perChiMs * math.min(cfg().chi.max, chi)
 	return ms, (maxHealth or 0) <= s.bossHealth
+end
+
+-- Iron Palm on a player: stun ms for `chi`; 0 while `immune`; `diminished` = a stun within the window of the last one
+function M.pvpStunFor(chi, immune, diminished)
+	local s = cfg().stun.pvp
+	if immune or (chi or 0) < 1 then
+		return 0
+	end
+	local ms = math.min(s.maxMs, s.baseMs + s.perChiMs * math.min(cfg().chi.max, chi))
+	if diminished then
+		ms = math.max(s.minMs, math.floor(ms * s.drFactor))
+	end
+	return ms
+end
+
+-- players under an Iron Palm stun: [player id] = {untilMs, blocked, noMove} (monk_combat.lua; the buff bar reads it)
+M.pvpStun = M.pvpStun or {}
+
+function M.pvpStunLeft(id, now)
+	local s = M.pvpStun[id]
+	if s and now < s.untilMs then
+		return s.untilMs - now
+	end
+	return nil
 end
 
 -- Chi Ward absorb for `chi` spent

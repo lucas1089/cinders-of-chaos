@@ -76,6 +76,13 @@ local ys0, total0 = M.column({}, set, 12, 2); eq(#ys0, 0, 'no frames'); eq(total
 -- tooltip
 eq(M.tooltip(b, 100), 'Boran  Lv 301  Lich\nHealth 120 / 3000\nMana 2900 / 3000\n1 floor above you\nIn a fight', 'tooltip')
 eq(M.tooltip(c, 100), 'Cael  Lv 150  Ranger\nFar away: about 50% health\n2 floors below you', 'far tooltip')
+-- buff names (a Templar's aura) go into the frame tooltip; a name-less buff adds nothing
+local st2 = {}
+M.apply(st2, { leader = 7, members = { { i = 7, n = 'Aria', lv = 312, vc = 8, h = 1, H = 2, m = 1, M = 2, p = 50, dz = 0, d = 0, f = 0,
+  b = { { i = 'buff:templar_aura', t = 0, n = "Brann's Aura" }, { i = 'buff:stunned', t = 1, l = 800, n = 'Stunned' }, { i = 'cond:00', t = 1 } } } } }, 100)
+eq(st2.members[1].buffs[1].name, "Brann's Aura", 'buff name kept')
+eq(st2.members[1].buffs[3].name, nil, 'no name')
+eq(M.tooltip(st2.members[1], 100), "Aria  Lv 312  Juggernaut\nHealth 1 / 2\nMana 1 / 2\nBrann's Aura, Stunned", 'tooltip lists buff names')
 
 -- default position: the layouts measured in the client (map panel, side panel, action bar; invasion HUD, the map
 -- overlay's strip and corner box as drawn there). Four frames with buffs + header = 262 px.

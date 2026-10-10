@@ -1,8 +1,11 @@
--- Iron Palm: spend all chi on an iron-hard palm at the target next to you; it stuns a monster for 1-2.6 s.
+-- Iron Palm: spend all chi on an iron-hard palm at the target next to you; it stuns a monster for 1-2.6 s and a
+-- player for 0.6-1 s.
 --
 -- Finisher: damage x the finisher scale; a stunned monster stands still and cannot attack (monk_combat.lua cancels
 -- its attacks while the stun condition lasts). Stun 0.6 s + 0.4 s per chi; afterwards the monster cannot be stunned
--- for 4 s. A monster with more than 50000 max health is only slowed by 50%. Players are not stunned.
+-- for 4 s. A monster with more than 50000 max health is only slowed by 50%.
+-- A player is stunned by monk_combat.lua when the strike's damage lands on it (ChaosMonk.cfg.stun.pvp: 0.5 s + 0.1 s
+-- per chi, 6 s immunity, half as long within 15 s of the last stun); the spell only tells it the chi spent.
 dofile('data/spells/scripts/chaos/_monk.lua')
 
 local function stun(target, spent)
@@ -41,8 +44,14 @@ function onCastSpell(creature, variant, isHotkey)
 	if not spent then
 		return false
 	end
+	local pvp = target:isPlayer()
+	if pvp then
+		player:setStorageValue(ChaosMonk.ids.storage.palmChi, spent)
+	end
 	MonkSpell.strike(player, target, ChaosMonk.formula.ironPalm, ChaosMonk.finisherScale(spent), CONST_ME_GROUNDSHAKER)
-	if target:getHealth() > 0 then
+	if pvp then
+		player:setStorageValue(ChaosMonk.ids.storage.palmChi, -1)
+	elseif target:getHealth() > 0 then
 		stun(target, spent)
 	end
 	return true

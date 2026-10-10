@@ -113,7 +113,8 @@ local function memberFrom(e, now)
   for _, b in ipairs(type(e.b) == 'table' and e.b or {}) do
     if type(b) == 'table' and type(b.i) == 'string' then
       local left = num(b.l)
-      m.buffs[#m.buffs + 1] = { icon = b.i, debuff = b.t == 1, endAt = left and (now + left / 1000) or nil }
+      m.buffs[#m.buffs + 1] = { icon = b.i, debuff = b.t == 1, endAt = left and (now + left / 1000) or nil,
+        name = type(b.n) == 'string' and b.n:sub(1, 40) or nil }
     end
   end
   return m
@@ -277,5 +278,11 @@ function PartyMath.tooltip(m, now)
   if PartyMath.flag(m, 'fight') then lines[#lines + 1] = 'In a fight' end
   if PartyMath.flag(m, 'dead') then lines[#lines + 1] = 'Dead' end
   if PartyMath.flag(m, 'offline') then lines[#lines + 1] = 'Connection lost' end
+  -- the names of the buffs under the frame (the icons themselves take no mouse): a Templar's aura, a stun ...
+  local names = {}
+  for _, b in ipairs(m.buffs or {}) do
+    if b.name and b.name ~= '' then names[#names + 1] = b.name end
+  end
+  if #names > 0 then lines[#lines + 1] = table.concat(names, ', ') end
   return table.concat(lines, '\n')
 end

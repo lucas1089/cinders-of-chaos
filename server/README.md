@@ -1937,7 +1937,7 @@ item modifiers apply as usual. The cost the engine took is stored per cast: the 
 0008, `Player:onSpellCast` gives the exact mana and health paid); without the events, the mana that went down by the second
 dispatcher tick (after the supports' Thrift refund). The cast is polled every 100 ms (`addEvent`, so the spell supports' cast
 context follows it to the effect). It is interrupted when the caster moves (any position change, floor included), gets a paralysis
-that was not there at the start (`interruptOnParalyze`; players have no stun), casts another spell (any other spell's `cast`
+that was not there at the start (`interruptOnParalyze`), is stunned by an Iron Palm (`monk_combat.lua` interrupts it, result `paralysed`), casts another spell (any other spell's `cast`
 event; without the spell events of patch 0008 this one interrupt is missing), opens a town portal (`townportal.lua` calls `ChaosCasting.interrupt`), dies (`death` event), logs out (`logout`) or cancels
 (client). An interrupt or a failed check gives back the stored mana and health and the spell's own cooldown condition (replaced by a
 100 ms one so the client's icon is told; the group cooldown stays), exactly once (`cast.refunded`; a refund asked before the
@@ -5490,6 +5490,38 @@ attack instead of the level value when it is higher (`ChaosMonk.cfg.unarmed.fist
   `ChaosGiveUnique`, the loot rows, the damage with and without the gauntlet. Not tested: the NPC trade window (the test
   map has no NPCs), a real drop.
 
+## Iron Palm stun on players (`monk_combat.lua`, `monk_chi_core.lua`, spell `ironsage/iron_palm.lua`)
+
+The Iron Sage's Iron Palm stuns a player as well as a monster, built from what the engine already has (no source patch):
+- **When:** only when the strike's damage lands. The spell writes the chi it spent into the caster's storage
+  `ChaosMonk.ids.storage.palmChi` (7100804) for the length of its `doTargetCombat`; the victim's `ChaosMonkCombat`
+  onHealthChange sees physical damage with `ORIGIN_SPELL` from that caster, after the Monk evasion and Chi Ward, and stuns.
+  So every PvP rule that can stop the damage stops the stun: no-PvP world, protection / no-PvP zones, protection level, party
+  members, secure mode, the multi-client rule, the arena guard and the guild siege (`ChaosSpell.canAttack` and the
+  `onTargetCombat` callbacks). A dodged, fully warded or lethal hit does not stun. The hit fight-locks and skulls the Monk as
+  any attack on a player does, and both are then in PvP combat, so the -30% heal rule (`healing_rules.lua`) applies to them.
+- **What:** `creature:setMovementBlocked(true)` (no walking, cannot be pushed) and `creature:setNoMove(true)` (a walk already
+  queued stops), both undone by an `addEvent` at the exact end and only when this file set them (another script's block
+  stays); `CONDITION_PACIFIED` with the default condition id and sub id 0 for the stun's length (the engine's
+  `Creature::hasCondition` only sees sub id 0 and checks the end time to the millisecond): no auto attack
+  (`Player::doAttacking`) and no aggressive spell or rune ("You are exhausted."); healing spells and potions still work. A
+  cast-time spell in progress is interrupted (`ChaosCasting.interrupt`, result `paralysed`). A creature think event
+  (`ChaosMonkStunThink`, registered only while stunned) frees a stun whose timer was lost (a script reload).
+- **Numbers** (`ChaosMonk.cfg.stun.pvp`): 0.5 s + 0.1 s per chi spent, at most 1 s (0.6 s at 1 chi, 1 s at 5). Then 6 s of
+  immunity (condition timer `subId.stunImmune`, 71035) and a 15 s window (`subId.stunDr`, 71038) in which the next stun lasts
+  half as long (at least 0.3 s). Iron Palm's own cooldown is 8 s, so one Monk stuns 1 s, then 0.5 s; a second Monk inside the
+  immunity gets "X cannot be stunned again yet."
+- **Shown:** "Stunned!" over the victim (orange, seen by everyone) and the stun effect; the victim reads "You are stunned for
+  1.0 s by X.", the Monk "X is stunned for 1.0 s."; the buff bar gets the debuff **Stunned** (source `stun`, from
+  `ChaosMonk.pvpStun`) and the buff **Stun Immunity** (condition 71035) at once (the bar is pushed, not left to its 1 s
+  look), and the party frames show them on the member.
+- Tests: `tests/monk_pvp_stun_test.lua` (numbers, and `monk_combat.lua` against a mocked engine: stun, release on time,
+  immunity, the shorter second stun, no stun on a melee hit / heal / lethal / empty hit, another script's block kept, the
+  think fallback, logout), `tests/buffs_test.lua` (the two buff bar rows). Tested in game with two characters (Iron Sage and
+  Sentinel, two clients, local test server and database): the stun at 5 chi, the victim's walk refused during it and allowed
+  after, an attack spell refused ("You are exhausted."), the bar's Stunned row for 1 s, the second stun 8 s later for 0.5 s,
+  a second Iron Palm inside the immunity refused, the multi-client rule refusing the attack before its test switch was on.
+
 ## Buff bar and party frames (`buffbar.lua`, `data/lib/chaos_buffs.lua`, `partyframes.lua`, `partyframes_core.lua`, client `game_buffbar`, `game_partyframes`)
 
 Two client HUDs fed by the server. Opcodes (`ChaosOpcodes` in `chaos_constants.lua`): **234** `buffs` and **235** `partyFrames`
@@ -5503,7 +5535,7 @@ meantime). The server is the authority: the client draws what it is told and cou
   timer) or by a **source** (`B.sources[name](player, nowMs, def)`, a function that returns a list of items; it reads the other
   modules' globals guarded, so a module that is not loaded adds nothing). To add a buff: one `cond(...)` or `source(...)` line,
   its icon name in `client/tools/gen_buff_icons.py` (the tool refuses to run when the two disagree), done.
-- Covered (58 entries): the engine conditions haste, regeneration, food ("Well Fed", regeneration with the default id), mana
+- Covered (61 entries): the engine conditions haste, regeneration, food ("Well Fed", regeneration with the default id), mana
   shield, invisible, light, spell / potion buffs (attributes without a sub id), poison, burning, energy, bleeding, drowning,
   freezing, dazzled, cursed, paralyze (shown as "Slowed"), drunk, pacified, muted, in fight (also the PZ lock, the engine keeps
   one condition for both), white / red / black skull with the time the engine keeps it; the class buffs by sub id (Crimson
@@ -5514,15 +5546,19 @@ meantime). The server is the authority: the client draws what it is told and cou
   (only for a character standing in the area, `ChaosWorldEvents.active`), the day's events with a bonus (no timer),
   the double experience potion (storage 6000), Vocation Trials kill stacks (Bloodlust, Zeal and the other stack nodes: the stacks
   from `ChaosTrials.nodeState`, named after the held node, the timer is the oldest kill falling off), the Monk's chi (stacks =
-  chi, timer = the decay), the Berserker's Rage (a passive: stacks = the bonus percent, no timer) and the Reprisal window
-  (storage of `supports.lua`). `tests/buffs_test.lua` checks the sub ids against the spell files and the class configs.
+  chi, timer = the decay), the Berserker's Rage (a passive: stacks = the bonus percent, no timer), the Reprisal window
+  (storage of `supports.lua`), the Iron Palm stun on a player and its immunity (section "Iron Palm stun on players") and the
+  **Templar aura** (source `templarAura`, from `ChaosTemplar.auraState` of `templar_combat.lua`): "<Templar>'s Aura" (or
+  "Your Sentinel Aura"), stacks = the damage it takes off in percent, the text names the Templar, the class, the reduction,
+  the Sentinel's regeneration and Bastion; no timer (it lasts while the Templar is near), so it is sent when it starts, when
+  another Templar's aura takes over or the numbers change, and when it ends, never while it simply holds. `tests/buffs_test.lua` checks the sub ids against the spell files and the class configs.
 - Not on the bar: the passive tree's own conditions (permanent, sub ids 7200-7240); the item ailments of `item_mods.lua`
   (bleed, ignite, poison, chill, shock), which are only ever put on monsters, so they cannot appear on a player; what a monster
   does to a player (poison, burning, slow ...) is an engine condition and is covered. Hex / Brand marks sit on monsters (the
   `hexes` table of `supports.lua` is local to it): the optional row under the monster bar for the player's own marks is **not done**.
 - Icons (`icon` of an entry): `spell:<words>` (the client's spell icon sheet through `Spells.getSpellIcon`, so the class spells
   and the stock haste / mana shield / invisible / light spells show their own art), `cond:<NN>` (the stock condition icons,
-  `/images/arcs/conditions/player-state-flags-NN`) and `buff:<name>` (our own, `client/overlay/data/images/game/buffs/`, 59
+  `/images/arcs/conditions/player-state-flags-NN`) and `buff:<name>` (our own, `client/overlay/data/images/game/buffs/`, 62
   procedural 32x32 icons from `client/tools/gen_buff_icons.py`, one per registry key, also the fallback of the other two).
 - Protocol: client -> server `sync` (start, or ask for the full list; at most one per `cfg.requestMs` = 2 s) and `off`; server ->
   client `full {list}` and `diff {add, upd, del}`, an entry `{k, n, d, i, t (0 buff / 1 debuff), l (ms left; none = no timer),
@@ -5535,7 +5571,8 @@ meantime). The server is the authority: the client draws what it is told and cou
 - Every `cfg.tickMs` = 500 ms a character whose client sent `open {buffs}` is told the state of its **own** party
   (`P.state` in `partyframes_core.lua`): per member the id, name, level, vocation, outfit, health and mana, floor difference,
   distance, flags (leader, in fight, dead, connection lost, you) and the first `cfg.partyEntries` = 5 buffs / debuffs
-  (debuffs first; only when the client asked for them). **Range rule:** a member within `rangeSqm` = 50 squares and
+  (debuffs first; only when the client asked for them; each with its name, which the frame's tooltip lists, e.g. "Cf
+  Sentinel 300's Aura"). **Range rule:** a member within `rangeSqm` = 50 squares and
   `rangeFloors` = 2 floors gets exact health, mana, distance and buffs; a farther one only a health percent in steps of
   `farStep` = 10 and the floor difference (the minimap already shows where party members are), no mana, no distance, no
   buffs. Nothing is ever sent about a character outside the viewer's party, and a viewer without a party gets one empty

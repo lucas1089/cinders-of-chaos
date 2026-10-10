@@ -38,6 +38,7 @@ ICONS = {  # name: (theme, glyph)
     'zealotry': ('holy', 'flame'), 'aegis_faith': ('holy', 'shield'),
     # counters and windows
     'trial_stacks': ('blood', 'arrowup'), 'chi': ('arcane', 'fist'), 'rage': ('blood', 'burst'), 'reprisal': ('steel', 'twin'),
+    'templar_aura': ('holy', 'cross'), 'stunned': ('light', 'palm'), 'stun_immune': ('steel', 'shield'),
     # engine buffs
     'haste': ('light', 'dash'), 'regen': ('nature', 'leaf'), 'fed': ('ember', 'dots'), 'manashield': ('arcane', 'shield'),
     'invisible': ('shadow', 'ghost'), 'light': ('light', 'burst'), 'spellbuff': ('arcane', 'arrowup'),

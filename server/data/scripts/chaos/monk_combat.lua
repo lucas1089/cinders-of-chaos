@@ -13,7 +13,11 @@
 --   * Evasion: a chance to dodge melee / ranged hits, more while Mistborne Step's window lasts (subId.roll).
 --   * Chi Ward: a shield on any player (subId.ward timer, storage.wardAmount) absorbs damage.
 --   * Mantra of Stone: players under it (subId.mantra) take less damage.
---   * Iron Palm stun: a monster under the stun (subId.stun) cannot attack (onTargetCombat below).
+--   * Iron Palm stun: a monster under the stun (subId.stun) cannot attack (onTargetCombat below). A player hit by an
+--     Iron Palm (the spell sets storage.palmChi while its strike lands) is stunned here, after every PvP rule let the
+--     damage through: the engine's movement block and no-move flag (no walking, not pushed; released by a timer at
+--     the exact time) and CONDITION_PACIFIED (no attacks, no attack spells or runes; it ends on time by itself). Immunity and diminishing returns
+--     are condition timers on the victim (subId.stunImmune, subId.stunDr); the buff bar shows "Stunned".
 -- Scripted damage is not dealt here, so there is no recursion guard; the scaled values are returned to the engine.
 
 if not ChaosMonk then
@@ -187,12 +191,124 @@ local function onDefence(player, attacker, primaryDamage, secondaryDamage, prima
 	return primaryDamage, secondaryDamage
 end
 
+-- ------------------------------------------------------------------------------------------------ Iron Palm on players
+local function timer(creature, subId, ticks)
+	local c = Condition(CONDITION_ATTRIBUTES, CONDITIONID_COMBAT)
+	c:setParameter(CONDITION_PARAM_SUBID, subId)
+	c:setParameter(CONDITION_PARAM_TICKS, ticks)
+	creature:addCondition(c)
+end
+
+-- the buff bar is told at once (a stun is shorter than its once-per-second look)
+local function pushBuffBar(player)
+	local Bar, B = ChaosBuffBar, ChaosBuffs
+	local w = Bar and Bar.watch and Bar.watch[player:getId()]
+	if w and B then
+		B.forget(player:getId())
+		pcall(Bar.update, player, w, B.nowMs(), false)
+	end
+end
+
+-- ends a stun: only what this file set is undone (another script's movement block stays)
+local function releaseStun(id)
+	local s = M.pvpStun[id]
+	M.pvpStun[id] = nil
+	local p = Player(id)
+	if not s or not p then
+		return
+	end
+	if s.blocked then
+		p:setMovementBlocked(false)
+	end
+	if s.noMove then
+		p:setNoMove(false)
+	end
+	p:unregisterEvent("ChaosMonkStunThink")
+	pushBuffBar(p)
+end
+
+local function releaseIfOver(id)
+	local s = M.pvpStun[id]
+	if s and M.now() >= s.untilMs then
+		releaseStun(id)
+	end
+end
+
+local function stunPlayer(victim, monk, chi)
+	local cfgPvp = M.cfg.stun.pvp
+	local immune = hasCond(victim, CONDITION_ATTRIBUTES, ID.subId.stunImmune)
+	local ms = M.pvpStunFor(chi, immune, hasCond(victim, CONDITION_ATTRIBUTES, ID.subId.stunDr))
+	if ms <= 0 then
+		if immune then
+			monk:sendTextMessage(MESSAGE_STATUS_SMALL, victim:getName() .. " cannot be stunned again yet.")
+		end
+		return
+	end
+	local id, now = victim:getId(), M.now()
+	local s = M.pvpStun[id]
+	if not s then
+		s = {}
+		if not victim:isMovementBlocked() then
+			victim:setMovementBlocked(true)
+			s.blocked = true
+		end
+		if victim:canMove() then
+			victim:setNoMove(true) -- also stops a walk already queued
+			s.noMove = true
+		end
+		M.pvpStun[id] = s
+		victim:registerEvent("ChaosMonkStunThink")
+	end
+	s.untilMs = now + ms
+	-- the attack lock: the engine only sees CONDITION_PACIFIED with sub id 0 (Creature::hasCondition), and checks its
+	-- end time to the millisecond, so the condition ends on time by itself. The default condition id: the one the
+	-- engine's own stair-hop delay uses (they merge, the longer one counts), and not the buff bar's "Pacified" row.
+	local c = Condition(CONDITION_PACIFIED, CONDITIONID_DEFAULT)
+	c:setParameter(CONDITION_PARAM_TICKS, ms)
+	victim:addCondition(c)
+	timer(victim, ID.subId.stunImmune, ms + cfgPvp.immuneMs)
+	timer(victim, ID.subId.stunDr, cfgPvp.drWindowMs)
+	addEvent(releaseIfOver, ms, id)
+	if ChaosCasting and ChaosCasting.interrupt then
+		pcall(ChaosCasting.interrupt, victim, "paralysed", "You were stunned: the spell is interrupted.")
+	end
+	local secs = string.format("%.1f", ms / 1000)
+	victim:getPosition():sendMagicEffect(CONST_ME_STUN)
+	victim:say("Stunned!", TALKTYPE_MONSTER_SAY)
+	victim:sendTextMessage(MESSAGE_STATUS_SMALL, "You are stunned for " .. secs .. " s by " .. monk:getName() .. ".")
+	monk:sendTextMessage(MESSAGE_STATUS_SMALL, victim:getName() .. " is stunned for " .. secs .. " s.")
+	pushBuffBar(victim)
+end
+
+-- a fallback if a release timer was lost (a script reload): the creature think frees a stun that is over
+local stunThink = CreatureEvent("ChaosMonkStunThink")
+function stunThink.onThink(creature, interval)
+	local id = creature:getId()
+	if not M.pvpStun[id] then
+		creature:unregisterEvent("ChaosMonkStunThink")
+	else
+		releaseIfOver(id)
+	end
+	return true
+end
+stunThink:register()
+
 local event = CreatureEvent("ChaosMonkCombat")
 function event.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	local ok, a, b = pcall(function()
 		local p, s = onOffence(creature, attacker, primaryDamage, secondaryDamage, primaryType, origin)
 		if creature:isPlayer() then
 			p, s = onDefence(creature, attacker, p, s, primaryType, origin)
+			-- Iron Palm on a player: the stun when its damage lands (not dodged, not fully warded)
+			local monk = attacker and attacker:getPlayer()
+			if monk and monk ~= creature and origin == ORIGIN_SPELL and primaryType == COMBAT_PHYSICALDAMAGE
+					and math.abs(p) + math.abs(s) > 0 and math.abs(p) + math.abs(s) < creature:getHealth() then
+				local chi = monk:getStorageValue(ID.storage.palmChi)
+				if chi > 0 then
+					monk:setStorageValue(ID.storage.palmChi, -1)
+					stunPlayer(creature, monk, chi)
+				end
+			end
 		end
 		return p, s
 	end)
@@ -232,6 +348,7 @@ login:register()
 local logout = CreatureEvent("ChaosMonkLogout")
 function logout.onLogout(player)
 	M.clear(player:getId())
+	M.pvpStun[player:getId()] = nil
 	return true
 end
 logout:register()

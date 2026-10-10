@@ -299,7 +299,14 @@ Open for the Necromancer:
 - **Kit**: 10 spells (ids 63-72; `server/data/spells/chaos/monk|shadowfist|ironsage`, helpers `_monk.lua`), evasion (6% / 8% / 4%, +25% for
   2 s after Mistborne Step), the Shadowfist focus crit, Pressure Points, Chi Ward, Mantra of Stone and the Iron Palm stun in
   `monk_combat.lua`. Spells, numbers and the estimate are in `server/data/spells/README.md` ("Monk line"). Unit tests: `server/tests/monk_test.lua`,
-  `client/overlay/modules/game_monkchi/chimath_test.lua`.
+  `server/tests/monk_pvp_stun_test.lua`, `client/overlay/modules/game_monkchi/chimath_test.lua`.
+- **Iron Palm on players** (since 2026-10; server/README.md "Iron Palm stun on players"): when the strike's damage lands
+  (so every PvP rule applies: zones, party, secure mode, multi-client, arena, siege; the hit fight-locks the Monk and puts
+  both in PvP combat, where heals are -30%), the player cannot move, auto attack or cast attack spells and runes for 0.5 s
+  + 0.1 s per chi (0.6-1 s); healing and potions still work, a cast-time spell is interrupted. Then 6 s of immunity, and a
+  stun within 15 s of the last one lasts half as long, so there are no chain-stuns. Engine features only (movement block,
+  no-move, `CONDITION_PACIFIED`), no source patch. Shown as "Stunned!" over the victim, a message to both and the
+  **Stunned** / **Stun Immunity** rows of the buff bar and party frames. Tested in game with two characters.
 
 Open for the Monk:
 - Balance: measured at level 300 (`server/data/spells/README.md` "Monk line"): the Shadowfist was ~26% above the Ninja on one
@@ -307,7 +314,7 @@ Open for the Monk:
   burst class's lead). Level 1000 by formula only (~3060 against the Ninja's 2837), not measured yet.
 - Passive tree: done in phase 2b (keystones Hundred Hands and, after the role rebalance, Flowing Mercy for the Iron Sage
   healer instead of the proposed Stone Body); the level factor dropped.
-- A stun on players (only monsters are stunned).
+- A stun on players: done (see "Iron Palm on players" above).
 
 ### Templar (C7, phase B: tested in game)
 
@@ -343,7 +350,10 @@ Files: `templar_aura_core.lua` (every id and number, and the rules: aura, strike
 
 Open for the Templar:
 - Passive tree: done in phase 2b (keystones Divine Verdict and Bastion); the level factor dropped.
-- The aura is invisible to the client except for a holy effect every 4 s around the Templar; a status icon needs client work.
+- Aura status icon: done. A covered player has the buff **"<Templar>'s Aura"** (own aura: "Your Sentinel Aura") on the buff bar
+  and under its party frame: stacks = the damage reduction in percent, the tooltip names the Templar, its class, the
+  reduction, the Sentinel's regeneration per second and Bastion; the party frame's tooltip lists it by name. Sent only when it
+  starts, changes (another Templar's aura, other numbers) or ends (server/README.md "Buff bar"). Tested in game in a party.
 
 ### Illusionist healer pass
 

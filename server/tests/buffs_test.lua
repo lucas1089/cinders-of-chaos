@@ -292,6 +292,47 @@ B.sources.chi = function() error("boom") end
 eq(#B.collect(mockPlayer(16), now), 0, "a failing source adds nothing")
 ok(B.lastError ~= nil and B.lastError:find("boom") ~= nil, "and is remembered")
 B.sources.chi = savedSource
+-- the Iron Palm stun on a player: shown while monk_combat.lua holds it, with the time left
+local sv = mockPlayer(17)
+ChaosMonk.pvpStun[17] = {untilMs = now + 800}
+local st = byKey(B.collect(sv, now), "stunned")
+ok(st ~= nil and st.kind == "debuff" and st.leftMs == 800, "stunned debuff with its time")
+ChaosMonk.pvpStun[17] = {untilMs = now - 1}
+eq(byKey(B.collect(sv, now), "stunned"), nil, "a stun that is over is not shown")
+ChaosMonk.pvpStun[17] = nil
+cond(sv, CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, ChaosMonk.ids.subId.stunImmune, 6000)
+eq(byKey(B.collect(sv, now), "stun_immune").leftMs, 6000, "stun immunity shown")
+-- the Templar aura: whose, how much, the Sentinel's regeneration; no timer
+dofile("data/scripts/chaos/templar_aura_core.lua")
+local named = {[30] = mockPlayer(30, nil, {_voc = 25}), [31] = mockPlayer(31, nil, {_voc = 23})}
+named[30].getName = function() return "Brann" end
+named[31].getName = function() return "Odo" end
+Player = function(id) return named[id] end
+local member = mockPlayer(18)
+eq(byKey(B.collect(member, now), "templar_aura"), nil, "no aura, no entry")
+ChaosTemplar.auraState = {[18] = {reduction = 0.12, regenPct = 0.004, source = 30, untilMs = now + 1500}}
+local au = byKey(B.collect(member, now), "templar_aura")
+ok(au ~= nil and au.kind == "buff" and au.leftMs == nil, "aura: a buff without a timer")
+eq(au.stacks, 12, "aura stacks: the reduction in percent"); eq(au.name, "Brann's Aura", "whose aura")
+eq(au.desc, "Under Brann's Sentinel aura: 12% less damage taken, 0.4% of your maximum health back every second.", "aura text")
+ChaosTemplar.auraState = {[31] = {reduction = 0.06, regenPct = 0, source = 31, untilMs = now + 1500}}
+au = byKey(B.collect(named[31], now), "templar_aura")
+eq(au.name, "Your Templar Aura", "own aura"); eq(au.desc, "Under your Templar aura: 6% less damage taken.", "no regeneration text")
+ChaosTemplar.auraState = {[18] = {reduction = 0.16, regenPct = 0, source = 31, untilMs = now + 1500, bastion = true}}
+ok(byKey(B.collect(member, now), "templar_aura").desc:find("Bastion", 1, true) ~= nil, "Bastion named")
+-- no spam: the same aura a second later is no change; another Templar's is
+local sentA = {}
+ChaosTemplar.auraState = {[18] = {reduction = 0.12, regenPct = 0.004, source = 30, untilMs = now + 1500}}
+B.full(sentA, B.collect(member, now), now)
+ChaosTemplar.auraState = {[18] = {reduction = 0.12, regenPct = 0.004, source = 30, untilMs = now + 2500}}
+eq(B.diff(sentA, B.collect(member, now + 1000), now + 1000), nil, "an unchanged aura sends nothing")
+ChaosTemplar.auraState = {[18] = {reduction = 0.06, regenPct = 0, source = 31, untilMs = now + 2500}}
+local ad = B.diff(sentA, B.collect(member, now + 1000), now + 1000)
+ok(ad and ad.add and ad.add[1].k == "templar_aura" and ad.add[1].s == 6, "a different aura is sent")
+ChaosTemplar.auraState = {}
+ad = B.diff(sentA, B.collect(member, now + 2000), now + 2000)
+ok(ad and ad.del and ad.del[1] == "templar_aura", "leaving the aura removes it")
+Player = nil
 
 -- ------------------------------------------------------------------ order and cap
 local many = mockPlayer(17)
@@ -368,6 +409,7 @@ B.collect = origCollect
 B.forget(20)
 local brief = B.brief({{kind = "buff", icon = "a", leftMs = 5000}, {kind = "debuff", icon = "b", leftMs = nil}, {kind = "buff", icon = "c"},
 	{kind = "buff", icon = "d"}, {kind = "buff", icon = "e"}, {kind = "buff", icon = "f"}}, 3)
+eq(B.brief({{kind = "buff", icon = "buff:templar_aura", name = "Brann's Aura"}})[1].n, "Brann's Aura", "brief carries the name")
 eq(#brief, 3, "brief is capped"); eq(brief[1].i, "b", "debuffs first in the brief"); eq(brief[1].t, 1, "brief kind"); eq(brief[2].l, 5000, "brief time")
 
 if fails > 0 then

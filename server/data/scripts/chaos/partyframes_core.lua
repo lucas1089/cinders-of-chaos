@@ -145,7 +145,7 @@ function P.signature(state)
 		local buffs = {}
 		for _, b in ipairs(e.b or {}) do
 			-- a timer ticking down is not a change: the client counts it down
-			buffs[#buffs + 1] = tostring(b.i) .. ":" .. tostring(b.t)
+			buffs[#buffs + 1] = tostring(b.i) .. ":" .. tostring(b.t) .. ":" .. tostring(b.n)
 		end
 		parts[#parts + 1] = table.concat({e.i, e.p, e.h or "-", e.H or "-", e.m or "-", e.M or "-", e.lv, e.f, e.dz,
 			e.d or "-", e.far or 0, table.concat(buffs, ",")}, "/")

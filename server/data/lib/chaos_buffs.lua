@@ -8,7 +8,7 @@
 --   * sources        everything else, a function B.sources[name](player, nowMs, def) that returns a list of items: skull
 --                    timers, world buffs, the Victory buff, the Golden Hour / Chaos Storm world events, the day's events,
 --                    the double experience potion, Vocation Trials kill stacks (Bloodlust and the like), the Monk's
---                    chi, the Berserker's Rage, Reprisal. A source reads the other modules' globals guarded (a module
+--                    chi, the Berserker's Rage, Reprisal, the Iron Palm stun on a player, the Templar aura. A source reads the other modules' globals guarded (a module
 --                    that is not loaded simply adds nothing).
 --   Item ailments (bleed / ignite / poison / chill / shock of item_mods.lua) are only ever put on monsters, so they
 --   never show here; what a monster does to a player (poison, burning, slow ...) is an engine condition above.
@@ -119,6 +119,10 @@ source("trial_stacks", "trialStacks", "buff", "Kill Stacks", "buff:trial_stacks"
 source("chi", "chi", "buff", "Chi", "buff:chi", "Your strikes build chi, finishers spend it.", 21)
 source("rage", "rage", "buff", "Rage", "buff:rage", "You hit harder the lower your health.", 22)
 source("reprisal", "reprisal", "buff", "Reprisal", "buff:reprisal", "Monsters that hit you may be struck back.", 23)
+source("templar_aura", "templarAura", "buff", "Templar Aura", "buff:templar_aura", "A Templar's aura shields you.", 24)
+source("stunned", "stun", "debuff", "Stunned", "buff:stunned", "You cannot move, attack or cast attack spells. Healing still works.", 40)
+cond("stun_immune", "CONDITION_ATTRIBUTES", 71035, "buff", "Stun Immunity", "buff:stun_immune",
+	"You were stunned: no stun can hold you until this ends, and the next one is shorter.", 25)
 
 -- ---- engine conditions: buffs
 cond("haste", "CONDITION_HASTE", 0, "buff", "Haste", "spell:utani hur", "You move faster.", 50)
@@ -357,6 +361,45 @@ function S.reprisal(player, now, def)
 	return left and {item(def, left)} or nil
 end
 
+-- the Iron Palm stun on a player (monk_combat.lua keeps the end in ChaosMonk.pvpStun; the bar is told at once)
+function S.stun(player, now, def)
+	local M = ChaosMonk
+	local left = M and M.pvpStunLeft and M.pvpStunLeft(player:getId(), now)
+	return left and {item(def, left)} or nil
+end
+
+-- the Templar aura the player is under (templar_combat.lua, ChaosTemplar.auraState): whose, the damage it takes off
+-- (also the stacks, in percent) and the Sentinel's regeneration. No timer: it lasts while the Templar is near, and the
+-- text changes only when the aura does, so a quiet aura costs no traffic.
+local AURA_NAMES = {[23] = "Templar", [24] = "Inquisitor", [25] = "Sentinel"}
+function S.templarAura(player, now, def)
+	local T = ChaosTemplar
+	local aura = T and T.activeAura and T.activeAura(player:getId(), now)
+	if not aura then
+		return nil
+	end
+	local pct = math.floor((aura.reduction or 0) * 100 + 0.5)
+	local own = aura.source == player:getId()
+	local source = not own and Player and Player(aura.source) or nil
+	local who = own and "your" or (source and (source:getName() .. "'s") or "a Templar's")
+	local kind = "Templar"
+	local vocOf = own and player or source
+	if vocOf and vocOf.getVocation and vocOf:getVocation() then
+		kind = AURA_NAMES[vocOf:getVocation():getId()] or kind
+	end
+	local it = item(def, nil, pct)
+	it.name = clip(own and ("Your " .. kind .. " Aura") or ((source and source:getName() or "A Templar") .. "'s Aura"), B.cfg.maxName)
+	local text = string.format("Under %s %s aura: %d%% less damage taken", who, kind, pct)
+	if (aura.regenPct or 0) > 0 then
+		text = text .. string.format(", %.1f%% of your maximum health back every second", aura.regenPct * 100)
+	end
+	if aura.bastion then
+		text = text .. " (Bastion)"
+	end
+	it.desc = clip(text .. ".", B.cfg.maxDesc)
+	return {it}
+end
+
 -- ------------------------------------------------------------------------------------------------ conditions
 -- the stacks of a condition buff (def.stacks names the rule)
 B.stackRules = {
@@ -518,7 +561,7 @@ function B.diff(sent, items, nowMs)
 	return {add = #add > 0 and add or nil, upd = #upd > 0 and upd or nil, del = #del > 0 and del or nil}
 end
 
--- the first few buffs / debuffs, for the mini row under a party frame: {{icon, kind (0 buff / 1 debuff), leftMs}}
+-- the first few buffs / debuffs, for the mini row under a party frame: {{icon, kind (0 buff / 1 debuff), leftMs, name}}
 function B.brief(items, limit)
 	local list = {}
 	limit = limit or B.cfg.partyEntries
@@ -526,7 +569,8 @@ function B.brief(items, limit)
 	for _, wantDebuff in ipairs({true, false}) do
 		for _, it in ipairs(items) do
 			if (it.kind == "debuff") == wantDebuff and #list < limit then
-				list[#list + 1] = {i = it.icon, t = wantDebuff and 1 or 0, l = it.leftMs and whole(it.leftMs) or nil}
+				list[#list + 1] = {i = it.icon, t = wantDebuff and 1 or 0, l = it.leftMs and whole(it.leftMs) or nil,
+					n = clip(it.name, B.cfg.maxName)}
 			end
 		end
 	end
