@@ -285,8 +285,9 @@ working directory, as with the rest of the base server libs).
 | game_invasion | `invasion.lua`, `invasion_core.lua`, `invasion_config.lua`, `worldevents.lua` | 251 (server -> client; `query` / `calendar` back), Adventure > Events, `/invasion` | Invasions (waves at a town or hunting ground, breach meter, boss, contribution rewards, Defender board, Victory buff, occupation) and the world events Chaos Storm, Wandering Merchant and Golden Hour; HUD and upcoming events window; toasts with action `invasion` on 79; tested in game on a test area (see "Invasions and world events"). |
 | game_energyshield | `data/lib/chaos_energy_shield.lua`, `item_mods.lua`; engine patch 0015 sends it | 224 (server -> client, from the engine) | Energy shield bar above the health bar of the character plate: plain text `es:<current>:<max>`, max 0 hides it. Tested in game (see "Energy shield"). |
 | game_bossspawns | `bossspawns.lua`, `bossspawns_core.lua`, `bossspawns_config.lua`, `sql/chaos_boss_spawns.sql` | **217**, Adventure > Boss Spawns | Every boss by category with place and respawn status, live alive state and last kills (see "Boss spawns"). Unit and mocked-engine tests; not run on a live server. |
+| game_partyfinder | `party_finder.lua`, `party_finder_core.lua`, `party_finder_config.lua` | **208**, Social > Party Finder | Party Finder (LFG): listings with activity, wanted tank / healer / DPS slots, minimum level, note, expiry; browse with filters, apply with a role, the leader accepts (engine party invite) or declines; "Join as" quick-join queue; realm and staff rules; in memory (see "Party Finder"). Unit and mocked-engine tests; not run on a live server. |
 
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 217, 218, 219, 221, 222, 223, 224 (sent by the engine, patch 0015), 225, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
+Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 208, 214, 216, 217, 218, 219, 221, 222, 223, 224 (sent by the engine, patch 0015), 225, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
 
 ### Opcode collision check
@@ -5706,3 +5707,55 @@ the list with the player's cooldown, rate limit). Client: `game_bossspawns/bosss
 in the Linux client with a payload built by the core; not run against a live server (the island bosses' and raid bosses'
 looks and the lair positions come from the base data and the real map's spawn file: check them on the live server after
 the first install).
+
+## Party Finder (`party_finder.lua`, `party_finder_core.lua`, `party_finder_config.lua`, client `game_partyfinder`)
+
+Looking-for-group window, Social > Party Finder (opcode **208**). A leader posts a listing; others browse it, apply with
+a role, and the leader accepts (a real party invite) or declines.
+
+**Listing.** Activity: Rift (tier range, max from `rift_config.lua` `maxTier`), Dungeon (from `Chaos.dungeons.extra`),
+World Boss (`Chaos.worldBoss.bosses`), Omen (the guardians of `rift_config.lua` `omen.kinds`), Infinity Tower (floor
+range), Raid, Trial (`trials_config.lua` tiers), Other (a free title). Wanted tank / healer / DPS counts (0-6 each, leader +
+party + wanted at most 10), the leader's own role, minimum level, a note (80 printable characters; bad words become
+asterisks, link-like words are cut), expiry (15 / 30 / 60 / 120 min), "auto-accept quick joins". One listing per
+character; posting again updates it (ids and applications kept; a role can not drop below the slots already taken).
+Only a party leader (or a character without a party) can post.
+
+**Roles.** `party_finder_config.lua` `classRoles`, by vocation id, from docs/CLASSES.md "Roles in a group": tanks are the
+Juggernaut, Sentinel and Samurai (and the Warrior and Templar base classes); healers the Illusionist, Iron Sage, Sentinel
+and the Mystic base class; everyone may play DPS except the Sentinel. The first role is the class's main role, used for
+party members who joined without a listing slot. Applications and posts are checked against the character's real class.
+
+**Flow.** Apply (one role, the level, a free slot of that role; at most 5 open applications per character and 20 per
+listing; 120 s before a declined character may apply again to the same listing). The leader gets a toast, a console line
+and a badge (on the Social menu, the menu entry and the My Group tab), also with the window closed. Accept takes the slot,
+withdraws the character's other applications and sends `party:addInvite` (a party is started with `Party(leader)` when
+needed); the invited player has 90 s to join, else the slot opens again. Every 2 s a GlobalEvent compares each listing with
+the engine party: joined (slot filled), left (slot opens), and the listing closes when every slot has joined (full),
+when it expires, when the leader logs out, is no longer the party leader, or the party broke up after members joined.
+Applicants of a closed listing are told. "Join as" (quick join) puts a character in a queue (30 min) for the oldest listing
+with its role open, its level, realm and the chosen activity; the match is an application marked "quick", or a direct
+invite when the listing auto-accepts.
+
+**Seasons and staff.** A listing carries its leader's realm (`ChaosSeason.realmOf` while a season runs): it is shown to and
+joinable by its own realm only, like the season's party rule (`season.lua` onJoin, `ChaosSeason.partyAllowed`). Staff
+(group >= 4, the season's `exemptGroup`) see every realm and can close any listing (`unlist {id}`).
+
+**State.** In memory only (`ChaosPartyFinder.state`): listings are transient and a restart clears them. No storage keys,
+no table. Rate limits: `ChaosRateLimit` 800 ms for open / refresh, 400 ms for every other action, plus 20 s between two new
+listings and 3 s between two updates of one character.
+
+**Protocol (JSON {action, data}).** Client `open`, `hide`, `refresh`, `post {a, lo, hi, t, title, want, minLevel, note, exp,
+role, auto}`, `unlist {id?}`, `apply {id, role}`, `withdraw {id}`, `accept {id, g}`, `decline {id, g}`, `queue {role, a}`,
+`unqueue`. Server `init {acts, roles, my, lv, exp, defExp, lim}`, `list {rows, mine, badge, applied, queue}` (pushed to open
+windows on every change, `Chaos.sendChunked`), `badge {n}`, `notice {text, kind}`.
+
+**Opcode.** 208 is free in the reference server (its opcodes: "Opcode collision check"), in every Chaos script and in every
+client module of the reference client (checked by grep for `sendExtendedOpcode`, `registerExtended*Opcode` and opcode
+constants); `tests/party_finder_test.lua` checks that no two `ChaosOpcodes` share a number.
+
+**Tests.** `tests/party_finder_test.lua` (luajit and lua5.3): roles of every class, the activities from the real configs,
+the note filter, every post / apply / decide refusal, the reconcile cases, realms and staff, the queue, the payloads, and
+`party_finder.lua` against a mocked engine (post, apply, toast and badge, decline, accept with the party invite, join,
+quick join, full, staff close, logout). Client: `game_partyfinder/partyfinderview_test.lua`. The window was rendered in
+the Linux client with payloads built by the core (offline); not run against a live server.

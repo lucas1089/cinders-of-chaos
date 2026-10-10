@@ -1,0 +1,689 @@
+// Party Finder window (game_partyfinder): browse groups, apply with a role, post and run your own listing.
+// Styles from client_chaos_theme. Opened from the menu (Social > Party Finder). Fixed size: laid out for 720 px.
+
+PartyFinderTab < ChaosTabButton
+  width: 110
+  margin-right: 4
+
+PartyFinderSlot < UILabel
+  size: 18 18
+  margin-right: 2
+  text-align: center
+  font: verdana-11px-rounded
+  color: #0d0b0e
+  border-width: 1
+  border-color: #3a3339
+  phantom: false
+
+PartyFinderRow < UIWidget
+  height: 48
+  margin-bottom: 1
+  background-color: #1a151a
+  phantom: false
+  focusable: false
+
+  $hover:
+    background-color: #2a2128
+
+  UILabel
+    id: activity
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 6
+    margin-left: 8
+    text-auto-resize: true
+    font: verdana-11px-rounded
+    color: #f6cf72
+    phantom: true
+
+  UILabel
+    id: note
+    anchors.left: activity.right
+    anchors.right: slots.left
+    anchors.verticalCenter: activity.verticalCenter
+    margin-left: 10
+    margin-right: 8
+    text-align: left
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    phantom: true
+
+  UILabel
+    id: sub
+    anchors.top: activity.bottom
+    anchors.left: activity.left
+    anchors.right: slots.left
+    margin-top: 4
+    margin-right: 8
+    text-align: left
+    font: verdana-11px-antialised
+    color: #8c8070
+    phantom: true
+
+  UIWidget
+    id: slots
+    anchors.top: parent.top
+    anchors.right: action.left
+    margin-top: 6
+    margin-right: 12
+    size: 200 18
+    phantom: false
+    layout:
+      type: horizontalBox
+
+  UILabel
+    id: openText
+    anchors.top: slots.bottom
+    anchors.left: slots.left
+    anchors.right: slots.right
+    margin-top: 4
+    text-align: left
+    font: verdana-11px-antialised
+    color: #8c8070
+    phantom: true
+
+  ChaosButton
+    id: action
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-top: 4
+    margin-right: 6
+    size: 96 21
+
+  UILabel
+    id: state
+    anchors.top: action.bottom
+    anchors.right: parent.right
+    margin-top: 3
+    margin-right: 8
+    text-auto-resize: true
+    font: verdana-11px-antialised
+    color: #6fd86f
+    phantom: true
+
+PartyFinderApplicant < UIWidget
+  height: 40
+  margin-bottom: 1
+  background-color: #1a151a
+  phantom: false
+  focusable: false
+
+  $hover:
+    background-color: #2a2128
+
+  UILabel
+    id: name
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 5
+    margin-left: 8
+    text-auto-resize: true
+    font: verdana-11px-rounded
+    color: #f6cf72
+    phantom: true
+
+  UILabel
+    id: role
+    anchors.top: name.bottom
+    anchors.left: name.left
+    margin-top: 3
+    text-auto-resize: true
+    font: verdana-11px-rounded
+    phantom: true
+
+  UILabel
+    id: info
+    anchors.left: role.right
+    anchors.verticalCenter: role.verticalCenter
+    margin-left: 8
+    text-auto-resize: true
+    font: verdana-11px-antialised
+    color: #8c8070
+    phantom: true
+
+  ChaosButton
+    id: decline
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 6
+    width: 62
+    !text: tr('Decline')
+
+  ChaosButton
+    id: accept
+    anchors.right: decline.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 4
+    width: 62
+    !text: tr('Accept')
+
+PartyFinderFormLabel < ChaosLabelDim
+  width: 78
+  text-align: left
+
+PartyFinderBadge < UILabel
+  size: 16 14
+  text-align: center
+  font: verdana-11px-rounded
+  color: #f6f0e0
+  background-color: #b8160f
+  border-width: 1
+  border-color: #e03a1e
+  phantom: true
+
+PartyFinderToast < ChaosPanelHighlight
+  size: 340 64
+  phantom: false
+  focusable: false
+
+  UILabel
+    id: title
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 14
+    text-align: left
+    font: verdana-11px-rounded
+    color: #e8b84a
+    !text: tr('Party Finder')
+    phantom: true
+
+  UILabel
+    id: text
+    anchors.top: title.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-top: 3
+    text-align: topLeft
+    text-wrap: true
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    phantom: true
+
+ChaosMainWindow
+  id: partyFinderWindow
+  size: 720 560
+  !text: tr('Party Finder')
+  @onEscape: modules.game_partyfinder.hide()
+
+  UIWidget
+    id: tabs
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 24
+    phantom: true
+    layout:
+      type: horizontalBox
+
+  ChaosLabelDim
+    id: hint
+    anchors.verticalCenter: tabs.verticalCenter
+    anchors.right: parent.right
+    text-auto-resize: true
+
+  // ------------------------------------------------------------ Browse
+  UIWidget
+    id: browsePanel
+    anchors.top: tabs.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-top: 8
+    margin-bottom: 8
+    phantom: true
+
+    ChaosComboBox
+      id: activityFilter
+      anchors.top: parent.top
+      anchors.left: parent.left
+      width: 150
+      !tooltip: tr('Show one activity only.')
+
+    ChaosComboBox
+      id: roleFilter
+      anchors.top: parent.top
+      anchors.left: activityFilter.right
+      margin-left: 6
+      width: 130
+      !tooltip: tr('Show groups that still need this role.')
+
+    ChaosCheckBox
+      id: fitsCheck
+      anchors.left: roleFilter.right
+      anchors.verticalCenter: roleFilter.verticalCenter
+      margin-left: 12
+      width: 120
+      !text: tr('Fits my level')
+
+    ChaosLabel
+      id: countLabel
+      anchors.right: parent.right
+      anchors.verticalCenter: roleFilter.verticalCenter
+      text-auto-resize: true
+      color: #8c8070
+
+    ChaosPanelDark
+      id: listFrame
+      anchors.top: activityFilter.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: queuePanel.top
+      margin-top: 8
+      margin-bottom: 6
+      padding: 3
+
+    UIScrollArea
+      id: rowList
+      anchors.top: listFrame.top
+      anchors.left: listFrame.left
+      anchors.right: listScroll.left
+      anchors.bottom: listFrame.bottom
+      margin: 4
+      layout:
+        type: verticalBox
+      vertical-scrollbar: listScroll
+      auto-focus: none
+
+    ChaosScrollBar
+      id: listScroll
+      anchors.top: listFrame.top
+      anchors.right: listFrame.right
+      anchors.bottom: listFrame.bottom
+      margin-top: 3
+      margin-bottom: 3
+      margin-right: 3
+      step: 49
+      pixels-scroll: true
+
+    ChaosLabelDim
+      id: emptyText
+      anchors.centerIn: listFrame
+      text-auto-resize: true
+      !text: tr('Loading...')
+
+    ChaosPanelHighlight
+      id: queuePanel
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      height: 40
+      padding: 8
+
+      ChaosLabel
+        id: queueTitle
+        anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        text-auto-resize: true
+        color: #e8b84a
+        !text: tr('Join as')
+
+      ChaosComboBox
+        id: queueRole
+        anchors.left: queueTitle.right
+        anchors.verticalCenter: parent.verticalCenter
+        margin-left: 8
+        width: 90
+
+      ChaosComboBox
+        id: queueActivity
+        anchors.left: queueRole.right
+        anchors.verticalCenter: parent.verticalCenter
+        margin-left: 6
+        width: 140
+
+      ChaosButton
+        id: queueButton
+        anchors.left: queueActivity.right
+        anchors.verticalCenter: parent.verticalCenter
+        margin-left: 8
+        width: 96
+        !text: tr('Join queue')
+        !tooltip: tr('Wait for the first group that needs your role; you apply to it by yourself.')
+        @onClick: modules.game_partyfinder.toggleQueue()
+
+      ChaosLabelDim
+        id: queueStatus
+        anchors.left: queueButton.right
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        margin-left: 10
+        text-align: left
+
+  // ------------------------------------------------------------ My Group
+  UIWidget
+    id: myPanel
+    anchors.top: tabs.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-top: 8
+    margin-bottom: 8
+    phantom: true
+    visible: false
+
+    ChaosPanelDark
+      id: form
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.bottom: parent.bottom
+      width: 330
+      padding: 10
+
+      PartyFinderFormLabel
+        id: lActivity
+        anchors.top: parent.top
+        anchors.left: parent.left
+        margin-top: 4
+        !text: tr('Activity')
+
+      ChaosComboBox
+        id: activity
+        anchors.left: lActivity.right
+        anchors.verticalCenter: lActivity.verticalCenter
+        width: 224
+
+      PartyFinderFormLabel
+        id: lDetail
+        anchors.top: lActivity.bottom
+        anchors.left: parent.left
+        margin-top: 16
+        !text: tr('Tier')
+
+      ChaosTextEdit
+        id: lo
+        anchors.left: lDetail.right
+        anchors.verticalCenter: lDetail.verticalCenter
+        width: 54
+        max-length: 4
+
+      ChaosLabelDim
+        id: toLabel
+        anchors.left: lo.right
+        anchors.verticalCenter: lDetail.verticalCenter
+        margin-left: 8
+        text-auto-resize: true
+        !text: tr('to')
+
+      ChaosTextEdit
+        id: hi
+        anchors.left: toLabel.right
+        anchors.verticalCenter: lDetail.verticalCenter
+        margin-left: 8
+        width: 54
+        max-length: 4
+
+      ChaosComboBox
+        id: target
+        anchors.left: lDetail.right
+        anchors.verticalCenter: lDetail.verticalCenter
+        width: 224
+
+      ChaosTextEdit
+        id: title
+        anchors.left: lDetail.right
+        anchors.verticalCenter: lDetail.verticalCenter
+        width: 224
+        max-length: 24
+
+      PartyFinderFormLabel
+        id: lRole
+        anchors.top: lDetail.bottom
+        anchors.left: parent.left
+        margin-top: 16
+        !text: tr('My role')
+
+      ChaosComboBox
+        id: role
+        anchors.left: lRole.right
+        anchors.verticalCenter: lRole.verticalCenter
+        width: 110
+
+      PartyFinderFormLabel
+        id: lWant
+        anchors.top: lRole.bottom
+        anchors.left: parent.left
+        margin-top: 16
+        !text: tr('Wanted')
+
+      ChaosComboBox
+        id: wantTank
+        anchors.left: lWant.right
+        anchors.verticalCenter: lWant.verticalCenter
+        width: 40
+
+      ChaosLabel
+        id: lTank
+        anchors.left: wantTank.right
+        anchors.verticalCenter: lWant.verticalCenter
+        margin-left: 4
+        text-auto-resize: true
+        color: #7fb8e8
+        !text: tr('Tank')
+
+      ChaosComboBox
+        id: wantHealer
+        anchors.left: lTank.right
+        anchors.verticalCenter: lWant.verticalCenter
+        margin-left: 8
+        width: 40
+
+      ChaosLabel
+        id: lHealer
+        anchors.left: wantHealer.right
+        anchors.verticalCenter: lWant.verticalCenter
+        margin-left: 4
+        text-auto-resize: true
+        color: #6fd8a8
+        !text: tr('Healer')
+
+      ChaosComboBox
+        id: wantDps
+        anchors.left: lWant.right
+        anchors.top: wantTank.bottom
+        margin-top: 6
+        width: 40
+
+      ChaosLabel
+        id: lDps
+        anchors.left: wantDps.right
+        anchors.verticalCenter: wantDps.verticalCenter
+        margin-left: 4
+        text-auto-resize: true
+        color: #e8846a
+        !text: tr('DPS')
+
+      ChaosLabelDim
+        id: sizeLabel
+        anchors.left: lDps.right
+        anchors.verticalCenter: wantDps.verticalCenter
+        margin-left: 12
+        text-auto-resize: true
+
+      PartyFinderFormLabel
+        id: lLevel
+        anchors.top: wantDps.bottom
+        anchors.left: parent.left
+        margin-top: 16
+        !text: tr('Min level')
+
+      ChaosTextEdit
+        id: minLevel
+        anchors.left: lLevel.right
+        anchors.verticalCenter: lLevel.verticalCenter
+        width: 54
+        max-length: 4
+
+      ChaosLabelDim
+        id: lExp
+        anchors.left: minLevel.right
+        anchors.verticalCenter: lLevel.verticalCenter
+        margin-left: 12
+        text-auto-resize: true
+        !text: tr('Expires')
+
+      ChaosComboBox
+        id: exp
+        anchors.left: lExp.right
+        anchors.verticalCenter: lLevel.verticalCenter
+        margin-left: 6
+        width: 70
+
+      PartyFinderFormLabel
+        id: lNote
+        anchors.top: lLevel.bottom
+        anchors.left: parent.left
+        margin-top: 16
+        !text: tr('Note')
+
+      ChaosTextEdit
+        id: note
+        anchors.left: lNote.right
+        anchors.verticalCenter: lNote.verticalCenter
+        width: 224
+        max-length: 80
+        !tooltip: tr('Short note for the group (80 letters). Links and rude words are removed.')
+
+      ChaosCheckBox
+        id: auto
+        anchors.top: note.bottom
+        anchors.left: lNote.right
+        margin-top: 12
+        width: 200
+        !text: tr('Auto-accept quick joins')
+        !tooltip: tr('Players from the "Join as" queue get the party invite at once.')
+
+      ChaosButton
+        id: postButton
+        anchors.top: auto.bottom
+        anchors.left: lNote.right
+        margin-top: 14
+        width: 96
+        !text: tr('Post')
+        @onClick: modules.game_partyfinder.post()
+
+      ChaosButton
+        id: unlistButton
+        anchors.top: postButton.top
+        anchors.left: postButton.right
+        margin-left: 6
+        width: 96
+        !text: tr('Close listing')
+        @onClick: modules.game_partyfinder.unlist()
+
+      ChaosSeparator
+        id: formSep
+        anchors.top: postButton.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 14
+
+      ChaosLabel
+        id: listedLabel
+        anchors.top: formSep.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 8
+        text-align: left
+        color: #f6cf72
+
+      ChaosLabelDim
+        id: listedSub
+        anchors.top: listedLabel.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 4
+        text-align: left
+        text-wrap: true
+        text-auto-resize: true
+
+      UIWidget
+        id: mySlots
+        anchors.top: listedSub.bottom
+        anchors.left: parent.left
+        margin-top: 6
+        size: 220 18
+        layout:
+          type: horizontalBox
+
+    ChaosTitlePlate
+      id: appsPlate
+      anchors.top: parent.top
+      anchors.left: form.right
+      anchors.right: parent.right
+      margin-left: 8
+
+      UILabel
+        id: appsTitle
+        anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        margin-left: 10
+        text-auto-resize: true
+        font: verdana-11px-rounded
+        color: #e8b84a
+        !text: tr('Applications')
+
+    ChaosPanelDark
+      id: appsFrame
+      anchors.top: appsPlate.bottom
+      anchors.left: appsPlate.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 4
+      padding: 3
+
+    UIScrollArea
+      id: appList
+      anchors.top: appsFrame.top
+      anchors.left: appsFrame.left
+      anchors.right: appScroll.left
+      anchors.bottom: appsFrame.bottom
+      margin: 4
+      layout:
+        type: verticalBox
+      vertical-scrollbar: appScroll
+      auto-focus: none
+
+    ChaosScrollBar
+      id: appScroll
+      anchors.top: appsFrame.top
+      anchors.right: appsFrame.right
+      anchors.bottom: appsFrame.bottom
+      margin-top: 3
+      margin-bottom: 3
+      margin-right: 3
+      step: 41
+      pixels-scroll: true
+
+    ChaosLabelDim
+      id: appsEmpty
+      anchors.centerIn: appsFrame
+      text-auto-resize: true
+      text-align: center
+
+  // ------------------------------------------------------------ bottom
+  ChaosLabel
+    id: messageLabel
+    anchors.left: parent.left
+    anchors.right: refreshButton.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    margin-right: 8
+    text-align: left
+
+  ChaosButton
+    id: refreshButton
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    width: 80
+    !text: tr('Refresh')
+    @onClick: modules.game_partyfinder.refresh()
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 80
+    !text: tr('Close')
+    @onClick: modules.game_partyfinder.hide()
