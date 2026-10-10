@@ -77,5 +77,37 @@ local ys0, total0 = M.column({}, set, 12, 2); eq(#ys0, 0, 'no frames'); eq(total
 eq(M.tooltip(b, 100), 'Boran  Lv 301  Lich\nHealth 120 / 3000\nMana 2900 / 3000\n1 floor above you\nIn a fight', 'tooltip')
 eq(M.tooltip(c, 100), 'Cael  Lv 150  Ranger\nFar away: about 50% health\n2 floors below you', 'far tooltip')
 
+-- default position: the layouts measured in the client (map panel, side panel, action bar; invasion HUD, the map
+-- overlay's strip and corner box as drawn there). Four frames with buffs + header = 262 px.
+local function overlaps(a, b)
+  return a.x < b.x + b.w and b.x < a.x + a.w and a.y < b.y + b.h and b.y < a.y + a.h
+end
+for _, L in ipairs({
+  { win = { width = 1280, height = 720 }, map = { x = 0, y = -80, width = 1280, height = 800 }, right = 1102, bar = 520,
+    inv = { x = 40, y = 112, w = 270, h = 240 }, strip = { x = 758, y = 468, w = 336, h = 44 }, box = { x = 742, y = 48, w = 352, h = 172 }, boxOk = false },
+  { win = { width = 1366, height = 768 }, map = { x = 0, y = -85, width = 1366, height = 853 }, right = 1188, bar = 568,
+    inv = { x = 40, y = 107, w = 270, h = 240 }, strip = { x = 844, y = 516, w = 336, h = 44 }, box = { x = 801, y = 48, w = 379, h = 190 }, boxOk = true },
+  { win = { width = 1920, height = 1080 }, map = { x = 0, y = -120, width = 1920, height = 1200 }, right = 1742, bar = 880,
+    inv = { x = 40, y = 72, w = 270, h = 240 }, strip = { x = 1398, y = 828, w = 336, h = 44 }, box = { x = 1314, y = 48, w = 420, h = 302 }, boxOk = true },
+}) do
+  local free = M.freeArea(L.map, L.win, { { x = L.right, y = -1, width = 178, height = L.win.height + 1 } },
+    { { x = 178, y = L.bar, width = 900, height = 36 } })
+  local tag = L.win.width .. 'x' .. L.win.height
+  eq(free.x + free.width, L.right, tag .. ' free right'); eq(free.y, 40, tag .. ' free top'); eq(free.y + free.height, L.bar, tag .. ' free bottom')
+  for _, h in ipairs({ 24 + 62, 24 + 2 * 62, 262 }) do
+    local mx, my = M.defaultPosition(free, 200, h, L.map.x, L.map.y)
+    local r = { x = mx + L.map.x, y = my + L.map.y, w = 200, h = h }
+    eq(overlaps(r, L.inv), false, tag .. ' clear of the invasion HUD (' .. h .. ')')
+    eq(overlaps(r, L.strip), false, tag .. ' clear of the overlay strip (' .. h .. ')')
+    eq(r.x + r.w <= L.right and r.y >= free.y and r.y + r.h <= L.bar, true, tag .. ' inside the free view (' .. h .. ')')
+    if h < 262 or L.boxOk then eq(overlaps(r, L.box), false, tag .. ' clear of the corner box (' .. h .. ')') end
+  end
+end
+-- a big party slides up to stay above the strip
+local free = { x = 0, y = 40, width = 1102, height = 480 }
+local _, y = M.defaultPosition(free, 200, 400, 0, 0)
+eq(y + 400 <= 520 - 44 - 8, true, 'big party above the strip')
+eq(select(2, M.defaultPosition({ x = 0, y = 40, width = 300, height = 100 }, 200, 400, 0, 0)), 48, 'never above the free area')
+
 if fails > 0 then os.exit(1) end
 print('party frames tests OK (' .. checks .. ' checks)')

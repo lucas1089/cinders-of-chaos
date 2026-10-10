@@ -12,6 +12,7 @@
 -- Opened from the top menu (Economy > Codex, Alt+K) and from the crafting bench (right-click a modifier: open(id)).
 -- Every text wraps; the tooltips are broken into lines with SupportsText.wrap (game_spellsupports/supportstext.lua).
 
+local theme -- ChaosTheme of client_chaos_theme (fonts), set in init
 local window
 local data
 local tabIndex = 1
@@ -154,6 +155,7 @@ local function showEntry(entry)
     if s then
       if s.h and s.h ~= '' then
         local head = g_ui.createWidget('CodexHeading', page)
+        if theme then theme.applyFont(head, 'heading') end
         head:setText(s.h)
       end
       for _, p in ipairs(s.p or {}) do
@@ -352,6 +354,9 @@ function init()
   data = CodexData
   window = g_ui.displayUI('codex')
   window:hide()
+  -- the optional Fontin fonts (client_chaos_theme ChaosTheme.fonts): the page title and the section headings
+  theme = modules.client_chaos_theme and modules.client_chaos_theme.ChaosTheme
+  if theme and theme.applyFont then theme.applyFont(window.pageTitle, 'subtitle') else theme = nil end
   if not data then
     window.pageTitle:setText(tr('The Codex data is missing (codex_data.lua).'))
     return

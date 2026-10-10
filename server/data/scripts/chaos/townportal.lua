@@ -348,6 +348,9 @@ function T.cast(player, source)
 		Chaos.send(player, OPCODE, "castEnd", {result = "refused"})
 		return false
 	end
+	if ChaosCasting then -- a cast-time spell in progress ends (refunded); data/lib/chaos_casting.lua
+		ChaosCasting.interrupt(player, "portal")
+	end
 	token = token + 1
 	local cast = K.castStart(nowMs(), player:getPosition(), cfg.castMs)
 	cast.token = token

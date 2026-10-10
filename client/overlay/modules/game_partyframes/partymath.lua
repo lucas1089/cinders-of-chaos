@@ -47,6 +47,46 @@ function PartyMath.clampPosition(x, y, w, h, pw, ph, keep)
   return clamp(x, keep - w, math.max(keep - w, pw - keep)), clamp(y, 0, math.max(0, ph - math.min(h, keep)))
 end
 
+-- The default spot (no position saved): the right edge of the free part of the game view (free {x, y, width, height}
+-- on screen: the map panel without the side panels and the console / action bars), below the map overlay's corner box
+-- (game_mapoverlay cornerRect: 36% of the free height, 140..320, 8 px from the top) and the toasts, above its control
+-- strip (44 px, 8 px from the bottom). The rift / invasion HUDs and the character plate are top left, so none of them
+-- is under the frames at 1280x720 and up. A party too tall for the space moves up so it stays above the strip (at
+-- 1280x720 four frames with buffs then cover the lower 14 px of the corner box, which only the "corner" mode shows).
+-- Returns the margins inside the parent at (px, py).
+PartyMath.DEFAULT_GAP = 8
+PartyMath.STRIP_H = 44
+function PartyMath.defaultPosition(free, w, h, px, py)
+  local gap = PartyMath.DEFAULT_GAP
+  local boxH = math.floor(clamp(free.height * 0.36, 140, 320))
+  local x = free.x + free.width - w - gap
+  local y = free.y + gap + boxH + 6
+  local stripTop = free.y + free.height - PartyMath.STRIP_H - gap
+  if y + h > stripTop - 6 then
+    y = math.max(free.y + gap, stripTop - 6 - h)
+  end
+  return math.floor(x - (px or 0)), math.floor(y - (py or 0))
+end
+
+-- the free part of the game view: the map panel's rect cut to the window, without the side panel(s) on the right /
+-- left half and the bottom panels. rect {x, y, width, height}; win {width, height}; side and bottom: lists of rects
+-- (a panel that starts above the window, the extended view, loses its top 40 px to the top menu, as in game_mapoverlay)
+function PartyMath.freeArea(rect, win, sides, bottoms)
+  local x1, y1 = math.max(0, rect.x), math.max(0, rect.y)
+  if rect.y < 0 then y1 = math.max(y1, 40) end
+  local x2, y2 = math.min(win.width, rect.x + rect.width), math.min(win.height, rect.y + rect.height)
+  for _, r in ipairs(sides or {}) do
+    if r.width > 0 then
+      if r.x >= win.width / 2 then x2 = math.min(x2, r.x)
+      elseif r.x + r.width <= win.width / 2 then x1 = math.max(x1, r.x + r.width) end
+    end
+  end
+  for _, r in ipairs(bottoms or {}) do
+    if r.height > 0 and r.y > win.height / 2 then y2 = math.min(y2, r.y) end
+  end
+  return { x = x1, y = y1, width = math.max(0, x2 - x1), height = math.max(0, y2 - y1) }
+end
+
 function PartyMath.stepScale(scale, dir)
   return clamp((scale or 100) + dir * PartyMath.SCALE_STEP, PartyMath.SCALE_MIN, PartyMath.SCALE_MAX)
 end

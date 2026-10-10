@@ -245,7 +245,7 @@ working directory, as with the rest of the base server libs).
 | game_invasion | `invasion.lua`, `invasion_core.lua`, `invasion_config.lua`, `worldevents.lua` | 251 (server -> client; `query` / `calendar` back), Adventure > Events, `/invasion` | Invasions (waves at a town or hunting ground, breach meter, boss, contribution rewards, Defender board, Victory buff, occupation) and the world events Chaos Storm, Wandering Merchant and Golden Hour; HUD and upcoming events window; toasts with action `invasion` on 79; tested in game on a test area (see "Invasions and world events"). |
 | game_energyshield | `data/lib/chaos_energy_shield.lua`, `item_mods.lua`; engine patch 0015 sends it | 224 (server -> client, from the engine) | Energy shield bar above the health bar of the character plate: plain text `es:<current>:<max>`, max 0 hides it. Tested in game (see "Energy shield"). |
 
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 224 (sent by the engine, patch 0015), 228, 229, 230, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
+Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 224 (sent by the engine, patch 0015), 228, 229, 230, 231, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
 
 ### Opcode collision check
@@ -1254,6 +1254,34 @@ by sealing the 25th rift -> Riftwalker's Gate "unlocked", selected and cast (fie
 style granted through `storeUnlock` (Emberforge) and the Waygate cast with their effects; the cast bar; an unlock while the
 window is open now refreshes it at once (`achievements.lua` sends the state, `open = false`).
 Not verified: a real party of two clients using the return portal while the owner is away; very crowded temples (80 return spots).
+
+## Cast-time spells (`data/lib/chaos_casting.lua`, `casting.lua`, client `game_castbar`)
+
+A spell script can have a cast time without an engine change: it builds its `onCastSpell` with
+`ChaosCasting.spell({name, spellId, ms, prepare, check, fire, fx})` (`prepare(player, variant)` at the start: nil + text refuses
+and nothing is spent; `check(player, ctx)` when the time is up: false + text fails and refunds; `fire(player, ctx)` the effect;
+`ChaosCasting.targetCheck(player, targetId, range, attack)` is the usual "alive, attackable, same floor, in range, in sight").
+The script returns true at once, so the engine takes the mana and sets the cooldowns as for any spell, and the spell supports and the
+item modifiers apply as usual. The cost the engine took is stored per cast: the `cast` handler on `ChaosSpellEvents` (engine patch
+0008, `Player:onSpellCast` gives the exact mana and health paid); without the events, the mana that went down by the second
+dispatcher tick (after the supports' Thrift refund). The cast is polled every 100 ms (`addEvent`, so the spell supports' cast
+context follows it to the effect). It is interrupted when the caster moves (any position change, floor included), gets a paralysis
+that was not there at the start (`interruptOnParalyze`; players have no stun), casts another spell (any other spell's `cast`
+event; without the spell events of patch 0008 this one interrupt is missing), opens a town portal (`townportal.lua` calls `ChaosCasting.interrupt`), dies (`death` event), logs out (`logout`) or cancels
+(client). An interrupt or a failed check gives back the stored mana and health and the spell's own cooldown condition (replaced by a
+100 ms one so the client's icon is told; the group cooldown stays), exactly once (`cast.refunded`; a refund asked before the
+cost is known is paid when it is known). Damage taken does not interrupt. A new cast-time spell while one is cast replaces it
+(refunded); one cannot start while a town portal channels. Numbers: `ChaosCasting.cfg` (poll, effect interval, paralysis switch,
+cast time 200..5000 ms).
+
+Extended opcode 231 (`ChaosOpcodes.castbar`), JSON `{action, data}`: server -> client `start {s serial, n name, ms, id}`,
+`end {s, r result, t text}` (`done` / `moved` / `paralysed` / `spell` / `portal` / `died` / `logout` / `cancel` / `failed`),
+`other {c creature id, n, ms}` and `otherEnd {c, r}` to the players who see the caster; client -> server `cancel` only (rate
+limited). The client never completes a cast: the server's timer does, so a client can only cancel (refunded like moving). Opcode
+231 was free (224 is the energy shield's, 239 the Town Portal's). Spells with a cast time and their numbers:
+`data/spells/README.md` "Cast times". Tests: `tests/casting_test.lua` (mocked engine: completion, every interrupt, refund once,
+the fallback cost, target checks, the client cannot complete). Tested in game (2026-10-10): completion, moving, a paralysis, another
+spell, death, cancel, target out of range at the end, the Town Portal channel on the same bar.
 
 ## Spellbook (`spellbook.lua`)
 Character > Spellbook in the client menu opens the client window `game_spellbook` on extended opcode 219 (`ChaosOpcodes.spellbook`). The list is read from the running server's own files, so renamed stock spells, the Chaos spells and anything added later show up without a client update:

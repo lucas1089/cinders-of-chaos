@@ -4,7 +4,7 @@
 --                     selected, clientItem}]}     cast {ms}     castEnd {result}
 -- The menu (Character -> Town Portal / Portal Style) calls cast and toggle; the action bar uses the spell
 -- "Town Portal" (game_chaosspells) and lands in the same server code. While the portal opens a cast bar fills
--- above the bottom of the map.
+-- over the character (game_castbar, the bar of the cast-time spells; without that module: above the bottom of the map).
 
 local OPCODE = 239
 
@@ -201,8 +201,16 @@ local function onExtendedOpcode(protocol, opcode, buffer)
     showList()
     if data.open then show() end
   elseif msg.action == 'cast' then
-    startCastBar(data.ms)
+    -- one cast bar for everything: game_castbar draws it over the character when it is loaded
+    local cb = modules.game_castbar
+    if cb and cb.startLocal then
+      cb.startLocal(tr('Town Portal'), tonumber(data.ms) or 3000, 'portal')
+    else
+      startCastBar(data.ms)
+    end
   elseif msg.action == 'castEnd' then
+    local cb = modules.game_castbar
+    if cb and cb.endLocal then cb.endLocal(tostring(data.result or 'done'), nil, 'portal') end
     stopCastBar()
   end
 end

@@ -148,11 +148,43 @@ end
 
 local TITLE_COLOR = '#e8c477'
 
+-- Optional Fontin bitmap fonts (client/tools/make_fonts.py; the fonts are not in the repo, see client/MANIFEST.md
+-- "Fontin"). A role gives its font only when the client has it, so without them every text keeps its Verdana.
+--   title    window titles (every Chaos-skinned window)       subtitle  page titles of the Codex, the crafting item
+--   heading  section headings of the Codex                    splash    the login "press any key" words
+ChaosTheme.fonts = {
+  title = { name = 'fontin-sc-14px', titleY = 13 },
+  subtitle = { name = 'fontin-16px' },
+  heading = { name = 'fontin-sans-12px' },
+  splash = { name = 'fontin-sc-20px' },
+}
+
+-- the font name of a role, or `fallback` when that font is not loaded
+function ChaosTheme.font(role, fallback)
+  local f = ChaosTheme.fonts[role]
+  if f and g_fonts and g_fonts.fontExists and g_fonts.fontExists(f.name) then
+    return f.name
+  end
+  return fallback
+end
+
+-- set the role's font on a widget when it exists (nothing changes otherwise)
+function ChaosTheme.applyFont(widget, role)
+  local name = widget and ChaosTheme.font(role)
+  if name then widget:setFont(name) end
+  return name ~= nil
+end
+
 local function onStyleApply(widget, styleName, styleNode)
   if not widget.chaosOrnate then return end
   -- many window styles of the base modules move the title for the old 17 px title bar and paint it grey:
   -- keep it centred on the skin's title plate, in gold
   local ty = tonumber(widget.chaosTitleY)
+  local titleFont = ChaosTheme.font('title')
+  if titleFont then
+    widget:setFont(titleFont)
+    if ty then ty = ChaosTheme.fonts.title.titleY or ty end
+  end
   if ty then
     local off = widget:getTextOffset()
     if off.y ~= ty then

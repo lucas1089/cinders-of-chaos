@@ -63,6 +63,12 @@ You start as one of four base classes. At level 100 you **ascend** into one of t
 | **Thief** | fast light weapons, shurikens, stealth | **Ninja**: dual-wields daggers with a scripted off-hand strike, plus Shadow Step · **Samurai**: one sword, counter stance, Iaijutsu draw strike and Bushido crit stacks |
 
 Every class has its own Chaos spells with custom names, icons and effects, and the spellbook (Character > Spellbook) lists them all.
+
+- **Cast times for the big spells:** Doomtide and Primordial Squall take 1.5 seconds to cast, Hail of Dawn and Colossus Fall
+  1 second, and hit harder for it. A cast bar over your character counts down (other players see a small one over you).
+  Moving, a paralysis, casting another spell, opening a town portal or dying interrupts the cast and gives you the mana
+  and the cooldown back; so does clicking the bar. If your target is gone, out of range or out of sight when the cast
+  ends, you get them back too. Taking damage does not interrupt.
 Balance is measured on test dummies at levels 300 and 1000, so every class keeps a clear role in a group.
 
 ## Passive tree and Paragon
@@ -489,8 +495,9 @@ and food you can eat. The Orbs of Gilding, Unmaking and Erasure and the mining o
   near you (50 squares, two floors) show exact numbers; members far away show a rough health bar. Left click selects a
   member and follows them (switch off in the gear window), shift+click looks, right click opens a menu: message, follow,
   look, pass the leadership and remove from the party (leader), invite a player by name, leave the party. The panel
-  shows up when you join a party and hides when you leave; your own frame is optional. The old Hunt > Party window is
-  still there.
+  shows up when you join a party and hides when you leave; your own frame is optional. It starts at the right edge of the
+  game view, clear of the invasion and rift panels and the map overlay's controls (drag it anywhere; that spot is kept).
+  The old Hunt > Party window is still there.
 - **Daily rewards and login streaks:** one claim a day per account. Your streak counter shows your current and best
   streak. Milestones at 7, 14, 30, 60, 100 and 180 days pay orbs, and titles at 30, 100 and 180 days ("the Devoted",
   "the Relentless", "the Undying"). Grace charges save your streak when you miss a day.

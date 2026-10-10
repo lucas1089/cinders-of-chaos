@@ -10,7 +10,9 @@
 
 local OPCODE = 235
 local NODE = 'chaosPartyFrames'
-local DEFAULT_X, DEFAULT_Y = 40, 296 -- the margins of the style: the left edge of the map, under the stock condition icons and the rift / invasion HUDs
+-- without a saved position the frames go to the right edge of the game view, between the map overlay's corner box and
+-- its control strip (PartyMath.defaultPosition); the character plate, the buff bar and the rift / invasion HUDs are top
+-- left. Before 2026-10-10 the default was 40, 296 (under the invasion HUD); saved positions are kept as they are.
 local HEADER, GAP = 12, 2
 
 local panel, settingsWindow, inviteWindow
@@ -275,6 +277,29 @@ updateAllFrames = function()
   panel:getChildById('header'):getChildById('invite'):setVisible(true)
   local visible = g_game.isOnline() and settings.shown and #members > 0
   panel:setVisible(visible)
+  if visible then
+    -- above the map overlay (game_mapoverlay draws the explored map see-through over the game view)
+    local parent = panel:getParent()
+    local overlay = parent and parent:getChildById('mapOverlay')
+    if overlay and parent:getChildIndex(overlay) > parent:getChildIndex(panel) then panel:raise() end
+  end
+end
+
+-- the default margins for the current layout (side panels and console can change)
+local function defaultMargins(parent)
+  local gi = modules.game_interface
+  local sides, bottoms = {}, {}
+  local function rectOf(name, list)
+    local ok, w = pcall(function() return gi[name] and gi[name]() end)
+    if ok and w and w:isVisible() then list[#list + 1] = w:getRect() end
+  end
+  rectOf('getRightPanel', sides)
+  rectOf('getLeftPanel', sides)
+  rectOf('getBottomPanel', bottoms)
+  rectOf('getBottomActionPanel', bottoms)
+  local free = PartyMath.freeArea(parent:getRect(), { width = g_window.getWidth(), height = g_window.getHeight() }, sides, bottoms)
+  local pr = parent:getRect()
+  return PartyMath.defaultPosition(free, panel:getWidth(), panel:getHeight(), pr.x, pr.y)
 end
 
 local function clampPanel()
@@ -282,7 +307,8 @@ local function clampPanel()
   if dragOffset then return end -- the hand is moving it
   local parent = panel:getParent()
   if not parent then return end
-  local x, y = settings.x or DEFAULT_X, settings.y or DEFAULT_Y
+  local x, y = settings.x, settings.y
+  if not x or not y then x, y = defaultMargins(parent) end
   x, y = PartyMath.clampPosition(x, y, panel:getWidth(), panel:getHeight(), parent:getWidth(), parent:getHeight())
   panel:setMarginLeft(x)
   panel:setMarginTop(y)
@@ -354,10 +380,7 @@ end
 function resetPosition()
   settings.x, settings.y = nil, nil
   saveSettings()
-  if alive(panel) then
-    panel:setMarginLeft(DEFAULT_X)
-    panel:setMarginTop(DEFAULT_Y)
-  end
+  clampPanel()
 end
 
 function openInvite()

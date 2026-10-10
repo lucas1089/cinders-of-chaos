@@ -1,0 +1,13 @@
+Module
+  name: game_castbar
+  description: Cast bar of the cast-time spells and the Town Portal channel (extended opcode 231, server casting.lua)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ castbarmath, castbar ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

@@ -61,7 +61,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 203 | Crimson Covenant | `tor nyx cruor` | M, E | 90 | 50 | 30s | Sacrifice 15% max health: restore 1.5x that as mana and +15% magic level for 12s. |
 | 204 | Falling Pyre | `drai gal vas infr` | M, E | 150 | 700 | 20s | Marks the target position; 1.2s later a meteor hits a 5x5 area for heavy fire damage and ignites enemies. |
 | 205 | Frozen Crypt | `drai gal vas hyr krypt` | E | 220 | 900 | 30s | Ice zone (5x5) on the target for 6 pulses over 5s; enemies inside are slowed 70%. |
-| 206 | Doomtide | `drai zhul infr doma` | E | 300 | 1500 | 45s | Three waves (fire, energy, fire) over a 13x13 circle around you. |
+| 206 | Doomtide | `drai zhul infr doma` | E | 300 | 1500 | 45s | **Cast time 1.5 s.** Three waves (fire, energy, fire) over a 13x13 circle around you. |
 | **druid** | | | | | | | |
 | 207 | Blightswarm | `drai vex kriv` | M, I | 25 | 110 | 8s | Poison cloud (7x7) around you: earth damage plus a poison condition. |
 | 208 | Purifying Wellspring | `saen vas aquen` | M, I | 40 | 160 | 6s | Heals you, party members and your summons within 3 sqm and cures poison/fire/energy/bleeding/curse/freeze/dazzle/drown. |
@@ -69,21 +69,21 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 210 | Briar Prison | `drai thral brin` | I | 70 | 240 | 14s | Thorns erupt around the target (3x3, 3 pulses) and root enemies (90% slow) for 5s. |
 | 211 | Moonfang Pack | `vael luth wyrd` | I | 120 | 450 | 30s | Summons 2 wolves (3 from level 200) for 40s; max 4 summons. |
 | 212 | Verdant Sanctuary | `saen gal vas vert` | I | 180 | 600 | 30s | Healing zone on your tile: 8 pulses (1/s) heal allies within 3 sqm. |
-| 213 | Primordial Squall | `drai gal vas stoma` | I | 250 | 1200 | 35s | Three waves (earth, ice, earth) over an 11x11 circle; the ice wave slows 50%. |
+| 213 | Primordial Squall | `drai gal vas stoma` | I | 250 | 1200 | 35s | **Cast time 1.5 s.** Three waves (earth, ice, earth) over an 11x11 circle; the ice wave slows 50%. |
 | **paladin** | | | | | | | |
 | 214 | Dawnpiercer | `kah sol aurr` | R, D, BM | 30 | 60 | 3s | Holy bolt at one target, the paladin filler; scales mainly with distance skill. |
 | 215 | Skewering Line | `kah sag lanc` | R, D, BM | 60 | 150 | 8s | 7 sqm line of spears in your facing direction; scales with distance skill. |
 | 216 | Blessed Earth | `drai vas sol hal` | R, D, BM | 100 | 350 | 24s | Consecrates your tile for 6s: holy damage to enemies within 2 sqm each second, allies are healed half as much. |
 | 217 | Lightward | `tor sol ghar` | R, D, BM | 140 | 300 | 30s | Cleanses harmful conditions (incl. paralyze) and gives 8s of strong health/mana regeneration. |
 | 218 | Final Verdict | `kah gal sol judh` | D | 200 | 450 | 14s | Heavy holy strike (distance skill); +50% damage against targets under 25% health. |
-| 219 | Hail of Dawn | `drai gal vas sol volv` | R, D | 280 | 800 | 24s | 3 volleys of 4 holy arrows, every arrow strikes the target (distance skill). |
+| 219 | Hail of Dawn | `drai gal vas sol volv` | R, D | 280 | 800 | 24s | **Cast time 1 s.** 3 volleys of 4 holy arrows, every arrow strikes the target (distance skill). |
 | **knight** | | | | | | | |
 | 220 | Reaping Gyre | `kah spir` | W, J, B | 30 | 80 | 6s | Three spinning strikes (0/0.4/0.8s) against adjacent enemies; uses weapon attack and skill. |
 | 221 | Earthbreaker | `kah grund krak` | W, J, B | 60 | 150 | 10s | Shockwave (5x5) with physical damage; staggers enemies (60% slow, 3s). |
 | 222 | Red Frenzy | `vyr ira cruor` | W, J, B | 100 | 300 | 40s | +30% melee skill, -30% shield skill for 12s. |
 | 223 | Iron Bellow | `vok vas rhov` | W, J | 120 | 200 | 20s | Taunts all monsters within 4 sqm and slows them 25% for 6s; Iron Will: you take 25% less damage and get +15% shielding for 8s. |
 | 224 | Vaulting Cleave | `kah brak skai` | W, J, B | 170 | 250 | 12s | Jump next to the target and strike it with weapon attack and skill. |
-| 225 | Colossus Fall | `kah gal vas tyr` | W, J, B | 260 | 650 | 30s | Two crushing blows (0/0.6s) in a 7x7 circle; enemies slowed 70% for 4s. |
+| 225 | Colossus Fall | `kah gal vas tyr` | W, J, B | 260 | 650 | 30s | **Cast time 1 s** (wind-up). Two crushing blows (0/0.6s) in a 7x7 circle; enemies slowed 70% for 4s. |
 | **illusionist** | | | | | | | |
 | 226 | Hall of Mirrors | `drai spek` | M, I | 40 | 250 | 30s | Up to 3 decoy clones in your outfit for 10s (needs the Clone monster). |
 | 227 | Umbral Stride | `ruan nyx umh` | M, I | 70 | 120 | 8s | Teleport to the far side of the target and stab it for death damage. |
@@ -147,6 +147,26 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 
 Damage formulas follow the stock style: `level/5 + magicLevel*a + b` (min/max with different a, b); knight spells use the stock
 skill*attack callback, paladin spells scale mainly with the distance skill (plus a little magic level).
+
+### Cast times (2026-10-10)
+
+Four heavy spells have a cast time (`data/lib/chaos_casting.lua`, server/README.md "Cast-time spells"; client `game_castbar`).
+The mana and the cooldown are taken when the cast starts; moving, a new paralysis, casting another spell, opening a town portal,
+dying, logging out or cancelling (click the bar) interrupts the cast and gives the mana, health cost and the spell's own cooldown back
+(the 2 s group cooldown stays). When the time is up the effect fires; a targeted spell checks its target again (alive, attackable,
+in range, in sight) and refunds when it fails. Damage taken does not interrupt. To make up for the wait each got more power:
+
+| Spell | Cast time | Power before | Power now |
+|---|---|---|---|
+| Doomtide (206, Elementalist) | 1.5 s | x1.20 (`mlValues` scale) | x1.38 (+15%) |
+| Primordial Squall (213, Illusionist) | 1.5 s | x0.85 | x0.98 (+15%) |
+| Hail of Dawn (219, Ranger, Deadeye) | 1.0 s | x1.00 | x1.10 (+10%) |
+| Colossus Fall (225, Warrior, Juggernaut, Berserker) | 1.0 s | x0.70 (skill formula) | x0.77 (+10%) |
+
+Mana, cooldowns and levels are unchanged (`spells_chaos.xml` and the client's `spelldata.lua` are the same). The per-cast numbers in
+"Classes" and "PvP" below were measured before this change. Tested in game (Elementalist, Deadeye, Juggernaut, Illusionist):
+completion, interrupt by moving / a new paralysis / another spell / death / cancel, target moved out of range at the end; every
+interrupt gave the mana and cooldown back once.
 
 ### Classes (Berserker, Beastmaster; the class rework, docs/CLASSES.md)
 

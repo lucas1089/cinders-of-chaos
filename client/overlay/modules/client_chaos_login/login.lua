@@ -515,8 +515,12 @@ local function createBackgroundLayers()
   pressW = newWidget('ChaosLoginPress', bg, 'chaosPressKey')
   -- the words are an image (serif lettering); a translated text shows on the plate as a label instead
   local pressText = tr('Press any key to start')
-  if pressText ~= 'Press any key to start' then
+  -- with the optional Fontin fonts (client_chaos_theme ChaosTheme.fonts) the words are always that label
+  local theme = modules.client_chaos_theme and modules.client_chaos_theme.ChaosTheme
+  local splashFont = theme and theme.font and theme.font('splash')
+  if pressText ~= 'Press any key to start' or splashFont then
     pressW:getChildById('words'):setVisible(false)
+    if splashFont then pressW:getChildById('text'):setFont(splashFont) end
     pressW:getChildById('text'):setText(pressText:upper())
     pressW:getChildById('text'):setVisible(true)
   end
