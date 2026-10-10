@@ -229,7 +229,7 @@ ChaosMainWindow
     id: tabBar
     anchors.top: parent.top
     anchors.left: parent.left
-    width: 420
+    width: 500
     height: 24
     phantom: true
     layout:
@@ -859,6 +859,433 @@ ChaosMainWindow
       margin: 3 3 3 0
       step: 42
       pixels-scroll: true
+
+  // ---------------------------------------------------------- Buy Orders: the open orders (left), post / fill (right)
+  UIWidget
+    id: ordersPanel
+    anchors.top: tabBar.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: statusLabel.top
+    margin-top: 8
+    margin-bottom: 4
+    phantom: true
+    visible: false
+
+    ChaosTextEdit
+      id: orderSearch
+      anchors.top: parent.top
+      anchors.left: parent.left
+      width: 150
+      height: 22
+      max-length: 40
+      !tooltip: tr('Search the wanted items by name')
+
+    MarketTextDim
+      id: orderSearchHint
+      anchors.verticalCenter: orderSearch.verticalCenter
+      anchors.left: orderSearch.left
+      margin-left: 7
+      text-auto-resize: true
+      color: #6b6258
+      !text: tr('Search orders...')
+
+    MarketCombo
+      id: orderCurCombo
+      anchors.top: parent.top
+      anchors.left: orderSearch.right
+      margin-left: 6
+      width: 100
+      !tooltip: tr('Currency')
+
+    MarketCombo
+      id: orderSortCombo
+      anchors.top: parent.top
+      anchors.left: orderCurCombo.right
+      margin-left: 6
+      width: 110
+      !tooltip: tr('Sort by')
+
+    MarketCheck
+      id: orderMineCheck
+      anchors.verticalCenter: orderSearch.verticalCenter
+      anchors.left: orderSortCombo.right
+      margin-left: 10
+      width: 100
+      !text: tr('My orders')
+      !tooltip: tr('Only your own open orders (and the ones that ended, below them)')
+
+    ChaosPanelDark
+      id: orderFrame
+      anchors.top: orderSearch.bottom
+      anchors.left: parent.left
+      anchors.bottom: orderPrev.top
+      margin-top: 8
+      margin-bottom: 6
+      width: 500
+
+    UIScrollArea
+      id: orderList
+      anchors.top: orderFrame.top
+      anchors.left: orderFrame.left
+      anchors.right: orderScroll.left
+      anchors.bottom: orderFrame.bottom
+      margin: 5 3 5 5
+      vertical-scrollbar: orderScroll
+      layout:
+        type: verticalBox
+
+    ChaosScrollBar
+      id: orderScroll
+      anchors.top: orderFrame.top
+      anchors.right: orderFrame.right
+      anchors.bottom: orderFrame.bottom
+      margin: 3 3 3 0
+      step: 42
+      pixels-scroll: true
+
+    ChaosLabelDim
+      id: orderEmpty
+      anchors.top: orderFrame.top
+      anchors.left: orderFrame.left
+      anchors.right: orderFrame.right
+      margin: 30 20 0 20
+      height: 40
+      text-wrap: true
+      text-align: center
+      visible: false
+      !text: tr('No buy orders match. Post one on the right: sellers fill it from their backpacks.')
+
+    ChaosButton
+      id: orderPrev
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      size: 70 22
+      !text: tr('< Prev')
+      @onClick: modules.game_market.orderPage(-1)
+
+    MarketText
+      id: orderPageLabel
+      anchors.verticalCenter: orderPrev.verticalCenter
+      anchors.left: orderPrev.right
+      margin-left: 10
+      width: 240
+      height: 16
+
+    ChaosButton
+      id: orderNext
+      anchors.bottom: parent.bottom
+      anchors.left: orderPageLabel.right
+      margin-left: 10
+      size: 70 22
+      !text: tr('Next >')
+      @onClick: modules.game_market.orderPage(1)
+
+    // ---------------------------------------------------- post an order
+    ChaosPanelDark
+      id: postFrame
+      anchors.top: parent.top
+      anchors.left: orderFrame.right
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-left: 10
+      padding: 10
+
+      MarketText
+        id: postHeader
+        anchors.top: parent.top
+        anchors.left: parent.left
+        height: 16
+        width: 300
+        font: verdana-11px-rounded
+        color: #e8b84a
+        !text: tr('Post a buy order')
+
+      ChaosTextEdit
+        id: findEdit
+        anchors.top: postHeader.bottom
+        anchors.left: parent.left
+        margin-top: 6
+        width: 200
+        height: 22
+        max-length: 40
+        !tooltip: tr('Part of the item name (or its exact name): items you carry and items ever listed are found')
+
+      MarketTextDim
+        id: findHint
+        anchors.verticalCenter: findEdit.verticalCenter
+        anchors.left: findEdit.left
+        margin-left: 7
+        text-auto-resize: true
+        color: #6b6258
+        !text: tr('Item you want...')
+
+      ChaosButton
+        id: findButton
+        anchors.verticalCenter: findEdit.verticalCenter
+        anchors.left: findEdit.right
+        margin-left: 6
+        size: 60 22
+        !text: tr('Find')
+        @onClick: modules.game_market.orderFind()
+
+      UIWidget
+        id: findList
+        anchors.top: findEdit.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 6
+        height: 36
+        layout:
+          type: grid
+          cell-size: 34 34
+          cell-spacing: 3
+          flow: true
+
+      ChaosItemSlot
+        id: orderSlot
+        anchors.top: findList.bottom
+        anchors.left: parent.left
+        margin-top: 6
+        size: 36 36
+        virtual: true
+        border-width: 0
+
+      MarketWrap
+        id: orderItemName
+        anchors.verticalCenter: orderSlot.verticalCenter
+        anchors.left: orderSlot.right
+        anchors.right: parent.right
+        margin-left: 8
+        font: verdana-11px-rounded
+        color: #e8b84a
+        !text: tr('No item chosen')
+
+      MarketText
+        id: qtyLabel
+        anchors.top: orderSlot.bottom
+        anchors.left: parent.left
+        margin-top: 12
+        width: 100
+        height: 16
+        !text: tr('How many')
+
+      MarketNumber
+        id: qtyEdit
+        anchors.verticalCenter: qtyLabel.verticalCenter
+        anchors.left: qtyLabel.right
+        width: 70
+
+      MarketCombo
+        id: orderDaysCombo
+        anchors.verticalCenter: qtyLabel.verticalCenter
+        anchors.left: qtyEdit.right
+        margin-left: 8
+        width: 80
+        !tooltip: tr('How long the order stays open')
+
+      MarketText
+        id: priceLabel
+        anchors.top: qtyLabel.bottom
+        anchors.left: parent.left
+        margin-top: 14
+        width: 100
+        height: 16
+        !text: tr('Price each')
+
+      MarketNumber
+        id: priceEdit
+        anchors.verticalCenter: priceLabel.verticalCenter
+        anchors.left: priceLabel.right
+        width: 90
+        !tooltip: tr('Price per item (5k, 2.5m work)')
+
+      MarketCombo
+        id: orderPayCombo
+        anchors.verticalCenter: priceLabel.verticalCenter
+        anchors.left: priceEdit.right
+        margin-left: 8
+        width: 110
+        !tooltip: tr('Pay in gold (bank) or in Chaos Coins (account)')
+
+      MarketText
+        id: rarityLabel
+        anchors.top: priceLabel.bottom
+        anchors.left: parent.left
+        margin-top: 14
+        width: 100
+        height: 16
+        !text: tr('Lowest rarity')
+
+      MarketCombo
+        id: orderRarityCombo
+        anchors.verticalCenter: rarityLabel.verticalCenter
+        anchors.left: rarityLabel.right
+        width: 120
+
+      MarketTextDim
+        id: ilvlOrderLabel
+        anchors.verticalCenter: rarityLabel.verticalCenter
+        anchors.left: orderRarityCombo.right
+        margin-left: 8
+        text-auto-resize: true
+        !text: tr('iLvl')
+
+      MarketNumber
+        id: orderIlvlEdit
+        anchors.verticalCenter: rarityLabel.verticalCenter
+        anchors.left: ilvlOrderLabel.right
+        margin-left: 6
+        width: 44
+        max-length: 4
+        !tooltip: tr('Lowest item level (empty = any)')
+
+      ChaosButton
+        id: modsFromBrowse
+        anchors.top: rarityLabel.bottom
+        anchors.left: parent.left
+        margin-top: 12
+        size: 150 22
+        !text: tr('Use Browse modifiers')
+        !tooltip: tr('Take the modifier rows, sockets, quality and the other checks of the Browse tab as this order\'s filter')
+        @onClick: modules.game_market.orderModsFromBrowse()
+
+      ChaosButton
+        id: modsClear
+        anchors.verticalCenter: modsFromBrowse.verticalCenter
+        anchors.left: modsFromBrowse.right
+        margin-left: 6
+        size: 60 22
+        !text: tr('Clear')
+        @onClick: modules.game_market.orderModsClear()
+
+      MarketWrap
+        id: orderModsText
+        anchors.top: modsFromBrowse.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 6
+        color: #8c8070
+
+      MarketWrap
+        id: orderCostText
+        anchors.top: orderModsText.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 10
+
+      ChaosButton
+        id: postButton
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        size: 140 26
+        !text: tr('Post the order')
+        @onClick: modules.game_market.postOrder()
+
+    // ---------------------------------------------------- fill an order (over the post form)
+    ChaosPanelDark
+      id: fillFrame
+      anchors.top: parent.top
+      anchors.left: orderFrame.right
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-left: 10
+      padding: 10
+      visible: false
+
+      MarketWrap
+        id: fillHeader
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        font: verdana-11px-rounded
+        color: #e8b84a
+
+      MarketWrap
+        id: fillFilter
+        anchors.top: fillHeader.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 4
+        color: #8c8070
+
+      MarketWrap
+        id: fillHint
+        anchors.top: fillFilter.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 8
+        !text: tr('Your items of this kind (backpack). Greyed ones do not fit: hover for why.')
+
+      UIScrollArea
+        id: fillList
+        anchors.top: fillHint.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 6
+        height: 120
+        layout:
+          type: grid
+          cell-size: 34 34
+          cell-spacing: 4
+          flow: true
+
+      ChaosItemSlot
+        id: fillSlot
+        anchors.top: fillList.bottom
+        anchors.left: parent.left
+        margin-top: 8
+        size: 36 36
+        virtual: true
+        border-width: 0
+
+      MarketWrap
+        id: fillName
+        anchors.verticalCenter: fillSlot.verticalCenter
+        anchors.left: fillSlot.right
+        anchors.right: parent.right
+        margin-left: 8
+        font: verdana-11px-rounded
+        !text: tr('Click one of your items')
+
+      MarketText
+        id: fillCountLabel
+        anchors.top: fillSlot.bottom
+        anchors.left: parent.left
+        margin-top: 12
+        width: 100
+        height: 16
+        !text: tr('How many')
+
+      MarketNumber
+        id: fillCountEdit
+        anchors.verticalCenter: fillCountLabel.verticalCenter
+        anchors.left: fillCountLabel.right
+        width: 70
+
+      MarketWrap
+        id: fillPayText
+        anchors.top: fillCountLabel.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 10
+
+      ChaosButton
+        id: fillButton
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        size: 120 26
+        !text: tr('Sell to the order')
+        @onClick: modules.game_market.fillOrder()
+
+      ChaosButton
+        id: fillBack
+        anchors.bottom: parent.bottom
+        anchors.left: fillButton.right
+        margin-left: 8
+        size: 80 26
+        !text: tr('Back')
+        @onClick: modules.game_market.closeFill()
 
   MarketWrap
     id: statusLabel

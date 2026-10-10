@@ -75,6 +75,21 @@ reg{id = "market_offers", name = "Player market offers", description = "List act
 		return true, #lines .. " offer(s).", lines
 	end}
 
+reg{id = "market_buy_orders", name = "Market buy orders", description = "Buy orders of the Chaos market (read only): every active one, or every order of one character, with the escrow held.",
+	params = {{name = "player", label = "Player (empty = all active)", type = "player", required = false}},
+	handler = function(actor, p)
+		local MK = ChaosMarket
+		if not MK or not MK.ordersReport then return false, "The Chaos market is not loaded." end
+		local guid
+		if p.player and p.player ~= "" then
+			local d = ChaosAdmin.dbPlayer(p.player)
+			if not d then return false, "Player not found." end
+			guid = d.id
+		end
+		local lines, sums = MK.ordersReport(guid, 50)
+		return true, string.format("%d buy order(s); active escrow: %d gold, %d Chaos Coins.", #lines, sums.gold or 0, sums.coins or 0), lines
+	end}
+
 reg{id = "stash_give", name = "Add to stash", description = "Add items to a player's stash if the server build supports it (Player:addItemStash).",
 	params = {{name = "player", label = "Player", type = "player"}, {name = "item", label = "Item id or name", type = "string", max = 60},
 		{name = "count", label = "Count", type = "int", min = 1, max = 100000, default = 1}},

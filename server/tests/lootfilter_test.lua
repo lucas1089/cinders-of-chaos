@@ -152,4 +152,62 @@ eq(F.dropLine({name = "Soulreaper", unique = true, category = "equipment"}, hunt
 local quiet = F.applyPreset("hunter"); quiet.notify = false
 eq(F.dropLine({name = "X", rarity = 9, category = "equipment"}, quiet), nil, "notify off")
 
+-- ---------------------------------------------------------------- rule counters and sounds
+local rs = F.sanitize({highlight = 5, tier = 6})
+local function hitList(info, set)
+	return table.concat(F.ruleHits(info, set or rs), ",")
+end
+eq(hitList({unique = true, rarity = 9, power = true, category = "equipment"}), "unique", "a unique counts once, as unique")
+eq(hitList({rarity = 6, power = true, bestTier = 7, category = "equipment"}), "power,rarity,tier", "every rule it matches")
+eq(hitList({rarity = 4, bestTier = 5, category = "equipment"}), "", "below both thresholds")
+eq(hitList({rarity = 9, category = "equipment"}, F.sanitize({highlight = 0, tier = 0})), "", "rarity and tier rules off")
+eq(hitList({orb = true, count = 3, category = "currency"}), "orb", "orb")
+eq(hitList({rarity = 9, category = "supplies"}), "", "only gear counts for rarity")
+local hits = F.countHits({{orb = true, count = 3, category = "currency"}, {rarity = 5, category = "equipment"},
+	{unique = true, category = "equipment"}, {rarity = 1, category = "equipment"}, {orb = true, category = "currency"}}, rs)
+eq(hits.orb, 4, "orbs counted as items (a stack of 3 and one)")
+eq(hits.rarity, 1, "one Legendary")
+eq(hits.unique, 1, "one unique")
+eq(hits.tier, nil, "no tier hit")
+local c = F.addCounts(F.counts(nil), hits)
+eq(c.orb .. "/" .. c.rarity .. "/" .. c.power, "4/1/0", "added")
+F.addCounts(c, {orb = 2, bogus = 9})
+eq(c.orb, 6, "added again")
+eq(c.bogus, nil, "unknown rule ignored")
+eq(F.addCounts({orb = 1999999999}, {orb = 5}).orb, 2000000000, "capped below the int32 limit")
+eq(F.counts({orb = -4, tier = 2.6}).orb .. "/" .. F.counts({tier = 2.6}).tier, "0/2", "counts read clean")
+
+local sd = F.soundDefaults()
+local snd = F.unpackSound(F.packSound(sd))
+eq(snd.rules.unique .. snd.rules.power .. snd.rules.rarity .. "/" .. snd.vol .. "/" .. tostring(snd.mute) .. tostring(snd.hunt),
+	"510/70/falsetrue", "defaults round trip")
+eq(F.unpackSound(-1).vol, 70, "unset storage = defaults")
+local full = {rules = {unique = 5, power = 4, rarity = 3, tier = 2, orb = 1}, vol = 100, mute = true, hunt = false}
+local back = F.unpackSound(F.packSound(full))
+eq(back.rules.unique .. back.rules.power .. back.rules.rarity .. back.rules.tier .. back.rules.orb, "54321", "every rule round trip")
+eq(back.vol .. tostring(back.mute) .. tostring(back.hunt), "100truefalse", "volume, mute, hunt")
+assert(F.packSound(full) < 2 ^ 31, "sound settings fit an int32 storage")
+local bad = F.sanitizeSound({rules = {unique = 99, orb = -1, tier = "x", bogus = 3}, vol = 400, mute = "1"})
+eq(bad.rules.unique .. bad.rules.orb .. bad.rules.tier .. "/" .. bad.vol .. tostring(bad.mute), "000/100true", "client input clamped")
+eq(bad.rules.bogus, nil, "unknown rule dropped")
+
+eq(F.pickSound({orb = 2, unique = 1}, sd), "fanfare", "the first rule in priority order with a sound")
+eq(select(2, F.pickSound({orb = 2, unique = 1}, sd)), "unique", "and its rule")
+eq(F.pickSound({orb = 2}, sd), nil, "orbs have no sound by default")
+eq(F.pickSound({power = 1, rarity = 1}, F.sanitizeSound({rules = {power = 0, rarity = 3}})), "ping", "a rule without sound is skipped")
+eq(F.pickSound({unique = 1}, F.sanitizeSound({mute = true})), nil, "mute all")
+eq(F.pickSound({unique = 1}, F.sanitizeSound({vol = 0})), nil, "volume 0")
+eq(F.pickSound({}, sd), nil, "nothing matched")
+
+local plan = F.resetPlan("session")
+eq(#plan.rules .. tostring(plan.session) .. tostring(plan.total), "5truefalse", "reset the session of every rule")
+plan = F.resetPlan("all", "orb")
+eq(plan.rules[1] .. #plan.rules .. tostring(plan.session) .. tostring(plan.total), "orb1truetrue", "reset one rule")
+eq(F.resetPlan("total").total, true, "reset totals")
+eq(F.resetPlan("everything"), nil, "unknown scope")
+eq(F.resetPlan("all", "bogus"), nil, "unknown rule")
+eq(cfg.soundStorage >= 7100500 and cfg.soundStorage <= 7100509 and cfg.totalStorageBase + #F.RULES - 1 <= 7100509, true,
+	"storages inside the loot filter's reserved range")
+eq(cfg.totalStorageBase > cfg.soundStorage, true, "no overlap")
+
 print("lootfilter tests OK")

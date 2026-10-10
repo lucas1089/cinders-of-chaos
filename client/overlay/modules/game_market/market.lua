@@ -4,12 +4,17 @@
 -- marketview.lua (marketview_test.lua).
 --   client -> server  open | browse {filter} | tip {id} | buy {id, cur} | sellable | list {ref|pos, sid|cid, iid, count,
 --                     gold, coins, days} | cancel {id} | mine | history | wallet
+--                     buy orders: orders {q, cur, sort, mine, page} | myOrders | orderFind {q} | orderPost {sid, quantity,
+--                     price, cur, days, filter} | orderCancel {id} | fillable {id} | fill {id, ref, sid, iid, count}
 --   server -> client  meta | page | tip | sellable | mine | history | wallet | done {what, text} | error {text} | openWindow
+--                     | orders | myOrders | orderFind | fillable
 -- Tabs: Browse (search, filters, sorting, pages; a collapsible Modifiers section: up to 6 rows of modifier (typeahead
 -- over the Codex names) / lowest value / lowest tier, all of them or at least N, sockets, quality, free prefix / suffix,
 -- power, bound; hover = the full item tooltip of game_itemtooltip with the modifiers the search matched, Buy with a
 -- confirmation), Sell (pick an item from the backpack or drag one in, prices, duration, the fee), My Offers (active,
--- sold, expired, cancelled; Cancel), History (purchases and sales).
+-- sold, expired, cancelled; Cancel), History (purchases and sales), Buy Orders (the open orders of every buyer with Sell
+-- to fill them from the backpack, your own with Cancel; on the right the form to post one: item, how many, price each in
+-- gold or Chaos Coins, duration, lowest rarity / item level and the Browse tab's modifier filter).
 
 local OPCODE = 221
 local V = MarketView
@@ -120,8 +125,23 @@ local function updateWallet(gold, coins)
   if gold then meta = meta or {}; meta.gold = gold end
   if coins then meta = meta or {}; meta.coins = coins end
   local m = meta or {}
-  window.walletLabel:setText(string.format('%s market   Bank: %s gold   Chaos Coins: %s', m.realmName or 'Standard',
-    V.money(m.gold or 0), V.money(m.coins or 0)))
+  if m.coinsOk == false then
+    -- a season market trades for gold only (server season.lua): no coin balance to show
+    window.walletLabel:setText(string.format('%s market   Bank: %s gold', m.realmName or 'Standard', V.money(m.gold or 0)))
+  else
+    window.walletLabel:setText(string.format('%s market  Bank: %s gold  Chaos Coins: %s', m.realmName or 'Standard',
+      V.money(m.gold or 0), V.money(m.coins or 0)))
+  end
+end
+
+-- season markets trade for gold only (meta.coinsOk = false): the coin price of the Sell tab is hidden
+local function applyCoinRule()
+  if not window then return end
+  local off = meta and meta.coinsOk == false
+  local s = window.sellPanel
+  s.coinsLabel:setVisible(not off)
+  s.coinsEdit:setVisible(not off)
+  if off then s.coinsEdit:setText('') end
 end
 
 local function fillCombo(combo, options, current)
@@ -258,12 +278,20 @@ local function confirmCancel(offer)
   end
 end
 
+-- a transmog look (server transmog.lua; client base patch 0030): draw the item widget's item as that client id
+local function showLook(widget, look)
+  look = tonumber(look) or 0
+  local item = look > 0 and widget:getItem() or nil
+  if item then pcall(function() item:setAppearanceId(look) end) end
+end
+
 -- one offer row; mode = 'browse' | 'mine' | 'closed' | 'history'
 local function addRow(list, offer, mode)
   local row = g_ui.createWidget('MarketRow', list)
   row.offer = offer
   local icon = row:getChildById('icon')
   icon:setItemId(tonumber(offer.item) or 0)
+  showLook(icon, offer.look)
   if (offer.count or 1) > 1 then icon:setItemCount(offer.count) end
   local color = rarityColor(offer)
   if (offer.rarity or 0) > 0 or offer.unique then
@@ -278,7 +306,7 @@ local function addRow(list, offer, mode)
   if mode == 'browse' then
     subText = V.subLine(offer)
   elseif mode == 'history' then
-    subText = V.historyLine(offer)
+    subText = V.historyLine(offer) .. (offer.order and ' (buy order)' or '')
   else
     subText = V.stateLine(offer)
   end
@@ -561,6 +589,7 @@ local function showSelected()
     return
   end
   s.sellSlot:setItemId(selected.item or 0)
+  showLook(s.sellSlot, selected.look)
   s.sellSlot:setItemCount(selected.count or 1)
   local color = rarityColor(selected)
   if (selected.rarity or 0) > 0 then
@@ -587,7 +616,7 @@ local function choose(entry)
     return
   end
   selected = { ref = entry.ref, sid = entry.sid, iid = entry.iid, count = entry.count, item = entry.item, name = entry.name,
-    stack = entry.stack, rarity = entry.rarity, ilvl = entry.ilvl }
+    stack = entry.stack, rarity = entry.rarity, ilvl = entry.ilvl, look = entry.look }
   showSelected()
   setStatus('')
 end
@@ -599,6 +628,7 @@ local function onSellable(data)
   for _, entry in ipairs(sellItems) do
     local w = g_ui.createWidget('MarketPick', s.pickList)
     w:setItemId(tonumber(entry.item) or 0)
+    showLook(w, entry.look)
     if (entry.count or 1) > 1 then w:setItemCount(entry.count) end
     local tip = (entry.count or 1) > 1 and (entry.count .. 'x ' .. entry.name) or entry.name
     if entry.why then
@@ -631,7 +661,8 @@ local function onDropItem(self, widget, mousePos)
     end
   end
   selected = { pos = { x = pos.x, y = pos.y, z = pos.z }, cid = item:getId(), iid = string.format('%.0f', iid), count = item:getCount(),
-    item = item:getId(), name = tr('Dropped item'), stack = item:isStackable() }
+    item = item:getId(), name = tr('Dropped item'), stack = item:isStackable(),
+    look = item.getAppearanceId and item:getAppearanceId() or nil }
   showSelected()
   return true
 end
@@ -653,7 +684,8 @@ end
 local function onMine(data)
   local list = window.minePanel.mineList
   clearList(list)
-  addHeading(list, string.format('Active offers (%d / %d)', #(data.active or {}), data.max or 20))
+  addHeading(list, string.format('Active offers (%d; listings used with buy orders: %d / %d)', #(data.active or {}),
+    tonumber(data.used) or #(data.active or {}), data.max or 20))
   for _, offer in ipairs(data.active or {}) do addRow(list, offer, 'mine') end
   if #(data.active or {}) == 0 then
     local t = g_ui.createWidget('MarketTextDim', list)
@@ -682,8 +714,392 @@ local function onHistory(data)
   end
 end
 
+-- ---------------------------------------------------------------- Buy Orders
+local orderFilter = { page = 1 }
+local orderPageInfo = { page = 1, pages = 1, total = 0 }
+local chosenKind     -- {sid, item, name, stack}: the item the order form asks for
+local orderMods      -- the modifier part of the order filter (V.modRequest of the Browse tab's Modifiers section)
+local fillState      -- {order = row, items = {...}, chosen = item}
+local orderSearchEvent
+
+local function modName(key)
+  local cat = catalog()
+  local m = cat and cat.byKey[key]
+  return m and m.name or nil
+end
+
+local function fillOrderCombos()
+  local p = window.ordersPanel
+  fillCombo(p.orderCurCombo, { { 'Any currency', '' }, { 'Gold', 'gold' }, { 'Chaos Coins', 'coins' } }, orderFilter.cur or '')
+  local sorts = {}
+  for _, s in ipairs((meta and meta.orders and meta.orders.sorts) or { 'new', 'price', 'ending', 'name' }) do
+    sorts[#sorts + 1] = { V.ORDER_SORT_NAMES[s] or s, s }
+  end
+  fillCombo(p.orderSortCombo, sorts, orderFilter.sort or 'new')
+  local f = p.postFrame
+  local days = {}
+  for _, d in ipairs((meta and meta.durations) or { 1, 3, 7 }) do days[#days + 1] = { d == 1 and '1 day' or (d .. ' days'), d } end
+  fillCombo(f.orderDaysCombo, days, (meta and meta.defaultDuration) or 3)
+  local pay = { { 'Gold', 'gold' } }
+  if not (meta and meta.coinsOk == false) then pay[2] = { 'Chaos Coins', 'coins' } end -- season markets: gold only
+  local cur = comboValue(f.orderPayCombo)
+  fillCombo(f.orderPayCombo, pay, (cur == 'coins' and #pay > 1) and 'coins' or 'gold')
+  local rar = { { 'Any rarity', 0 } }
+  for i, name in ipairs(V.RARITIES) do rar[#rar + 1] = { name .. ' +', i } end
+  fillCombo(f.orderRarityCombo, rar, tonumber(comboValue(f.orderRarityCombo)) or 0)
+end
+
+local function sendOrders()
+  if orderFilter.mine then
+    send('myOrders')
+  else
+    send('orders', orderFilter)
+  end
+end
+
+local function readOrderFilter(page)
+  local p = window.ordersPanel
+  return { q = p.orderSearch:getText(), cur = comboValue(p.orderCurCombo), sort = comboValue(p.orderSortCombo),
+    mine = p.orderMineCheck:isChecked() or nil, page = page or 1 }
+end
+
+function orderSearch(page)
+  if not window then return end
+  if orderSearchEvent then removeEvent(orderSearchEvent) end
+  orderSearchEvent = scheduleEvent(function()
+    orderSearchEvent = nil
+    if not window then return end
+    orderFilter = readOrderFilter(page)
+    sendOrders()
+  end, 250)
+end
+
+function orderPage(delta)
+  local target = (orderPageInfo.page or 1) + delta
+  if not window or target < 1 or target > (orderPageInfo.pages or 1) then return end
+  orderFilter = readOrderFilter(target)
+  sendOrders()
+end
+
+local function confirmOrderCancel(row)
+  local box
+  local function close() if box then box:destroy() box = nil end end
+  local function yes() close() send('orderCancel', { id = row.id }) end
+  local msg = string.format('Cancel your buy order for %s? The %s %s still held come back to you; the listing fee is not refunded.',
+    row.name or 'item', V.money(row.escrow or 0), row.cur == 'coins' and 'Chaos Coins' or 'gold')
+  if displayGeneralBox then
+    box = displayGeneralBox(tr('Cancel buy order'), msg, { { text = tr('Yes'), callback = yes }, { text = tr('No'), callback = close },
+      anchor = AnchorHorizontalCenter }, yes, close)
+    widenButtons(box)
+  else
+    yes()
+  end
+end
+
+local function addOrderRow(list, row)
+  local w = g_ui.createWidget('MarketRow', list)
+  w:setId('order' .. tostring(row.id))
+  w.order = row
+  local icon = w:getChildById('icon')
+  icon:setItemId(tonumber(row.item) or 0)
+  local left = (tonumber(row.qty) or 0) - (tonumber(row.filled) or 0)
+  if row.stack and left > 1 then icon:setItemCount(math.min(left, 100)) end
+  local f = row.filter or {}
+  local color = (tonumber(f.rarity) or 0) > 0 and rarityColor({ rarity = f.rarity }) or COLORS.text
+  local name = w:getChildById('name')
+  name:setColor(color)
+  fitText(name, string.format('Wanted: %s%s', left > 1 and (V.money(left) .. 'x ') or '', row.name or '?'))
+  local sub = w:getChildById('sub')
+  fitText(sub, V.orderSubLine(row, modName))
+  local prow = w:getChildById('prices')
+  local slots = { prow:getChildById('gold'), prow:getChildById('coins') }
+  for i, pl in ipairs(V.orderPriceLines(row)) do
+    slots[i]:setText(pl.text)
+    slots[i]:setColor(pl.cur == 'coins' and COLORS.coins or COLORS.gold)
+  end
+  local button = w:getChildById('buttons'):getChildById('action')
+  if row.state ~= 'active' then
+    button:hide()
+  elseif row.mine then
+    button:setText(tr('Cancel'))
+    button.onClick = function() confirmOrderCancel(row) end
+  else
+    button:setText(tr('Sell'))
+    button:setTooltip(tr('Sell your items to this order'))
+    button.onClick = function() openFill(row) end
+  end
+  return w
+end
+
+local function showOrderPage(rows, info, emptyText)
+  local p = window.ordersPanel
+  p.orderList:destroyChildren()
+  for _, r in ipairs(rows or {}) do addOrderRow(p.orderList, r) end
+  orderPageInfo = info
+  p.orderEmpty:setText(emptyText)
+  p.orderEmpty:setVisible(#(rows or {}) == 0)
+  local total = tonumber(info.total) or 0
+  p.orderPageLabel:setText(string.format('Page %d / %d  (%d order%s)', info.page or 1, math.max(1, info.pages or 1), total, total == 1 and '' or 's'))
+  p.orderPrev:setEnabled((info.page or 1) > 1)
+  p.orderNext:setEnabled((info.page or 1) < (info.pages or 1))
+  p.orderScroll:setValue(0)
+end
+
+local function onOrders(data)
+  showOrderPage(data.rows, { page = data.page or 1, pages = data.pages or 1, total = data.total or 0 },
+    tr('No buy orders match. Post one on the right: sellers fill it from their backpacks.'))
+end
+
+local function onMyOrders(data)
+  local p = window.ordersPanel
+  showOrderPage({}, { page = 1, pages = 1, total = #(data.active or {}) }, '')
+  p.orderEmpty:hide()
+  addHeading(p.orderList, string.format('Your open buy orders (listings used: %d / %d)', tonumber(data.used) or 0, tonumber(data.max) or 20))
+  for _, r in ipairs(data.active or {}) do addOrderRow(p.orderList, r) end
+  if #(data.active or {}) == 0 then
+    local t = g_ui.createWidget('MarketTextDim', p.orderList)
+    t:setHeight(18)
+    t:setText(tr('No open buy orders.'))
+  end
+  addHeading(p.orderList, tr('Filled, expired and cancelled'))
+  for _, r in ipairs(data.closed or {}) do addOrderRow(p.orderList, r) end
+end
+
+-- ---- the post form
+local function showChosenKind()
+  local f = window.ordersPanel.postFrame
+  if not chosenKind then
+    f.orderSlot:setItemId(0)
+    f.orderItemName:setText(tr('No item chosen: type its name and press Find.'))
+    return
+  end
+  f.orderSlot:setItemId(tonumber(chosenKind.item) or 0)
+  f.orderItemName:setText(chosenKind.name or '?')
+end
+
+local function orderForm()
+  local f = window.ordersPanel.postFrame
+  return { sid = chosenKind and chosenKind.sid, quantity = f.qtyEdit:getText(), price = f.priceEdit:getText(),
+    cur = comboValue(f.orderPayCombo), days = comboValue(f.orderDaysCombo), rarity = comboValue(f.orderRarityCombo),
+    ilvl = f.orderIlvlEdit:getText(), mods = orderMods }
+end
+
+function updateOrderCost()
+  if not window then return end
+  local f = window.ordersPanel.postFrame
+  f.orderModsText:setText(orderMods and ('Modifiers: ' .. V.orderFilterText(orderMods, modName))
+    or tr('Modifiers: any. Set rows in the Browse tab\'s Modifiers section, then press Use Browse modifiers.'))
+  local req, total, fee = V.checkOrder(meta, orderForm())
+  if req then
+    f.orderCostText:setText(V.orderCostText(meta, req, total, fee))
+    f.orderCostText:setColor(COLORS.text)
+  else
+    f.orderCostText:setText(total or '')
+    f.orderCostText:setColor(COLORS.dim)
+  end
+  f.postButton:setEnabled(req ~= nil)
+end
+
+local function chooseKind(entry)
+  chosenKind = { sid = entry.sid, item = entry.item, name = entry.name, stack = entry.stack }
+  showChosenKind()
+  updateOrderCost()
+end
+
+function orderFind()
+  if not window then return end
+  local q = window.ordersPanel.postFrame.findEdit:getText()
+  if q:gsub('%s', '') == '' then
+    setStatus(tr('Type the name of the item you want.'), COLORS.error)
+    return
+  end
+  send('orderFind', { q = q })
+end
+
+local function onOrderFind(data)
+  local f = window.ordersPanel.postFrame
+  f.findList:destroyChildren()
+  local items = data.items or {}
+  for _, e in ipairs(items) do
+    local w = g_ui.createWidget('MarketPick', f.findList)
+    w:setItemId(tonumber(e.item) or 0)
+    w:setTooltip(e.name or '?')
+    w.onClick = function() chooseKind(e) end
+  end
+  if #items == 1 then chooseKind(items[1]) end
+  if #items == 0 then
+    setStatus(tr('No item of that name. Try another part of the name, or the exact name.'), COLORS.error)
+  else
+    setStatus(string.format(tr('%d item kinds found: click the one you want.'), #items))
+  end
+end
+
+function orderModsFromBrowse()
+  if not window then return end
+  local req, why = V.modRequest(modForm(), modLimits())
+  if not req then
+    setStatus(why, COLORS.error)
+    return
+  end
+  if V.modCount(req) == 0 then
+    setStatus(tr('The Browse tab\'s Modifiers section is empty: add rows there first.'), COLORS.error)
+    return
+  end
+  orderMods = req
+  updateOrderCost()
+end
+
+function orderModsClear()
+  orderMods = nil
+  updateOrderCost()
+end
+
+function postOrder()
+  if not window then return end
+  local req, why = V.checkOrder(meta, orderForm())
+  if not req then
+    setStatus(why, COLORS.error)
+    return
+  end
+  send('orderPost', req)
+end
+
+-- ---- filling an order
+local function showFillChoice()
+  local f = window.ordersPanel.fillFrame
+  local c = fillState and fillState.chosen
+  if not c then
+    f.fillSlot:setItemId(0)
+    f.fillName:setText(tr('Click one of your items'))
+    f.fillName:setColor(COLORS.text)
+    f.fillCountEdit:setText('')
+    f.fillCountEdit:setEnabled(false)
+    f.fillPayText:setText('')
+    f.fillButton:setEnabled(false)
+    return
+  end
+  f.fillSlot:setItemId(tonumber(c.item) or 0)
+  f.fillSlot:setItemCount(c.count or 1)
+  f.fillName:setText(((c.count or 1) > 1 and (c.count .. 'x ') or '') .. (c.name or '?'))
+  f.fillName:setColor(rarityColor(c))
+  f.fillCountEdit:setEnabled(c.stack == true)
+  f.fillCountEdit:setText(tostring(c.fill or 1))
+  f.fillPayText:setText(V.fillText(meta, fillState.order, c.fill or 1))
+  f.fillButton:setEnabled(true)
+end
+
+function openFill(row)
+  if not window then return end
+  local p = window.ordersPanel
+  fillState = { order = row, items = {} }
+  p.postFrame:hide()
+  p.fillFrame:show()
+  local f = p.fillFrame
+  local left = (tonumber(row.qty) or 0) - (tonumber(row.filled) or 0)
+  f.fillHeader:setText(string.format('%s wants %s%s at %s %s each', row.buyer or '?', left > 1 and (V.money(left) .. 'x ') or '',
+    row.name or '?', V.money(row.price or 0), row.cur == 'coins' and 'Chaos Coins' or 'gold'))
+  f.fillFilter:setText('Must be: ' .. V.orderFilterText(row.filter, modName))
+  f.fillList:destroyChildren()
+  showFillChoice()
+  send('fillable', { id = row.id })
+end
+
+function closeFill()
+  if not window then return end
+  fillState = nil
+  window.ordersPanel.fillFrame:hide()
+  window.ordersPanel.postFrame:show()
+end
+
+local function onFillable(data)
+  if not fillState or fillState.order.id ~= data.id then return end
+  if type(data.order) == 'table' then fillState.order = data.order end
+  local f = window.ordersPanel.fillFrame
+  f.fillList:destroyChildren()
+  fillState.items = V.sortFillable(data.items or {})
+  fillState.chosen = nil
+  showFillChoice()
+  for _, e in ipairs(fillState.items) do
+    local w = g_ui.createWidget('MarketPick', f.fillList)
+    w:setId('fill_' .. tostring(e.ref))
+    w:setItemId(tonumber(e.item) or 0)
+    showLook(w, e.look)
+    if (e.count or 1) > 1 then w:setItemCount(e.count) end
+    if (e.rarity or 0) > 0 then
+      w:setBorderWidth(1)
+      w:setBorderColor(rarityColor(e))
+    end
+    local tip = ((e.count or 1) > 1 and (e.count .. 'x ') or '') .. (e.name or '?')
+    if e.why then
+      w:setOpacity(0.35)
+      tip = tip .. '\n' .. e.why
+    end
+    w:setTooltip(wrapTip(tip))
+    w.onClick = function()
+      if e.why then setStatus(e.why, COLORS.error) return end
+      fillState.chosen = e
+      showFillChoice()
+      setStatus('')
+    end
+  end
+  if #fillState.items == 0 then
+    f.fillName:setText(tr('You carry none of this item in your backpack.'))
+  else
+    local fits
+    for _, e in ipairs(fillState.items) do if not e.why then fits = fits or e end end
+    if fits then
+      fillState.chosen = fits
+      showFillChoice()
+    end
+  end
+end
+
+function fillOrder()
+  if not window or not fillState or not fillState.chosen then return end
+  local c = fillState.chosen
+  local n = c.stack and tonumber(window.ordersPanel.fillFrame.fillCountEdit:getText()) or 1
+  if not n or n < 1 or n > (c.count or 1) then
+    setStatus(tr('How many: from 1 to what the stack holds.'), COLORS.error)
+    return
+  end
+  send('fill', { id = fillState.order.id, ref = c.ref, sid = c.sid, iid = c.iid, count = n })
+end
+
+local function initOrders()
+  local p = window.ordersPanel
+  p.orderSearch.onTextChange = function(w, text)
+    p.orderSearchHint:setVisible(text == '')
+    if not updating then orderSearch(1) end
+  end
+  for _, id in ipairs({ 'orderCurCombo', 'orderSortCombo' }) do
+    p[id].onOptionChange = function() if not updating then orderSearch(1) end end
+  end
+  p.orderMineCheck:setWidth(p.orderMineCheck:getTextSize().width + 26)
+  p.orderMineCheck.onCheckChange = function() orderSearch(1) end
+  local f = p.postFrame
+  f.findEdit.onTextChange = function(w, text) f.findHint:setVisible(text == '') end
+  f.findEdit.onKeyPress = function(w, keyCode)
+    if keyCode == KeyEnter then orderFind() return true end
+    return false
+  end
+  for _, id in ipairs({ 'qtyEdit', 'priceEdit', 'orderIlvlEdit' }) do
+    f[id].onTextChange = function() updateOrderCost() end
+  end
+  for _, id in ipairs({ 'orderDaysCombo', 'orderPayCombo', 'orderRarityCombo' }) do
+    f[id].onOptionChange = function() if not updating then updateOrderCost() end end
+  end
+  p.fillFrame.fillCountEdit.onTextChange = function(w, text)
+    if fillState and fillState.chosen then
+      p.fillFrame.fillPayText:setText(V.fillText(meta, fillState.order, tonumber(text) or 0))
+    end
+  end
+  fillOrderCombos()
+  showChosenKind()
+  updateOrderCost()
+end
+
 -- ---------------------------------------------------------------- tabs
-local PANELS = { 'browsePanel', 'sellPanel', 'minePanel', 'historyPanel' }
+local PANELS = { 'browsePanel', 'sellPanel', 'minePanel', 'historyPanel', 'ordersPanel' }
 
 local function showTab(i)
   tabIndex = i
@@ -700,6 +1116,9 @@ local function showTab(i)
     send('mine')
   elseif i == 4 then
     send('history')
+  elseif i == 5 then
+    sendOrders()
+    updateOrderCost()
   end
 end
 
@@ -711,12 +1130,15 @@ local function onMessage(protocol, opcode, msg)
   if a == 'meta' then
     meta = data
     fillFilterCombos()
+    fillOrderCombos()
+    applyCoinRule()
     updateWallet()
     local s = window.sellPanel
     s.rulesText:setText(string.format('Locked, equipped, store and quest items and bags with something inside cannot be listed. '
       .. 'Bought items and items that come back arrive in your inbox (the depot); gold goes to your bank, Chaos Coins to your '
       .. 'account. Up to %d offers at a time.%s', meta.maxActive or 20,
-      (meta.realm or 0) > 0 and ' Season characters trade on their own season market.' or ''))
+      (meta.realm or 0) > 0 and (meta.coinsOk == false and ' Season characters trade on their own season market, for gold only.'
+        or ' Season characters trade on their own season market.') or ''))
     updateFee()
     if not window:isVisible() then return end
     showTab(tabIndex)
@@ -739,6 +1161,14 @@ local function onMessage(protocol, opcode, msg)
     onHistory(data)
   elseif a == 'wallet' then
     updateWallet(data.gold, data.coins)
+  elseif a == 'orders' then
+    onOrders(data)
+  elseif a == 'myOrders' then
+    onMyOrders(data)
+  elseif a == 'orderFind' then
+    onOrderFind(data)
+  elseif a == 'fillable' then
+    onFillable(data)
   elseif a == 'done' then
     setStatus(data.text, COLORS.ok)
     if data.what == 'list' then
@@ -751,6 +1181,11 @@ local function onMessage(protocol, opcode, msg)
       sendBrowse()
     elseif data.what == 'cancel' then
       if tabIndex == 3 then send('mine') else sendBrowse() end
+    elseif data.what == 'orderPost' or data.what == 'orderCancel' then
+      sendOrders()
+    elseif data.what == 'fill' then
+      sendOrders()
+      if fillState then send('fillable', { id = fillState.order.id }) end
     end
   elseif a == 'error' then
     setStatus(data.text, COLORS.error)
@@ -788,6 +1223,7 @@ local function onGameEnd()
   hide()
   meta, selected, tipCache, tipAsked, sellItems = nil, nil, {}, {}, {}
   lastFilter = { page = 1 }
+  orderFilter, chosenKind, orderMods, fillState = { page = 1 }, nil, nil, nil
   if window then
     clearMods()
     modsOpen = false
@@ -798,12 +1234,19 @@ end
 function init()
   window = g_ui.displayUI('market')
   window:hide()
-  for i, name in ipairs({ tr('Browse'), tr('Sell'), tr('My Offers'), tr('History') }) do
+  for i, name in ipairs({ tr('Browse'), tr('Sell'), tr('My Offers'), tr('History'), tr('Buy Orders') }) do
     local b = g_ui.createWidget('ChaosTabButton', window.tabBar)
     b:setText(name)
     b.onClick = function() showTab(i) end
     tabs[i] = b
   end
+  -- five tabs: each as wide as its text, so the wallet line on the right keeps its room
+  local barWidth = 0
+  for _, b in ipairs(tabs) do
+    b:setWidth(math.max(64, b:getTextSize().width + 24))
+    barWidth = barWidth + b:getWidth() + 4
+  end
+  window.tabBar:setWidth(barWidth)
   tabs[1]:setChecked(true)
   local p = window.browsePanel
   p.searchEdit.onTextChange = function(w, text)
@@ -842,6 +1285,7 @@ function init()
   layoutMods()
   showSelected()
   updateFee()
+  initOrders()
   ProtocolGame.registerExtendedJSONOpcode(OPCODE, onMessage)
   connect(g_game, { onGameEnd = onGameEnd })
 end
@@ -849,6 +1293,7 @@ end
 function terminate()
   disconnect(g_game, { onGameEnd = onGameEnd })
   if searchEvent then removeEvent(searchEvent) searchEvent = nil end
+  if orderSearchEvent then removeEvent(orderSearchEvent) orderSearchEvent = nil end
   pcall(ProtocolGame.unregisterExtendedJSONOpcode, OPCODE)
   if window then
     window:destroy()

@@ -128,7 +128,7 @@ use a supervisor), cancel_countdown, set_state (open/close), online, stats.
 World: spawn_monster, spawn_npc, create_item, remove_items (movable items on a tile), clean_map, set_time (only if
 `Game.setWorldTime` exists), set_weather (rain storage from `customs/globalevents/rain.lua`), town_teleport, list_towns, start_raid.
 
-Economy: give_gold, remove_gold, give_bank, item_price (item info + market table stats), market_offers, stash_give, stash_info
+Economy: give_gold, remove_gold, give_bank, item_price (item info + market table stats), market_offers, market_buy_orders (Chaos market buy orders and the escrow they hold, read only), stash_give, stash_info
 (stash ones only if the build exposes the stash API).
 
 Events: list, start, stop (hooks), broadcast_template, set_exp (experience multiplier through `EventCallback.onGainExperience`).

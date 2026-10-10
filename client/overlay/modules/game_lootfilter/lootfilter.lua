@@ -4,7 +4,13 @@
 --                     peek {cid, corpse, items = [{i, id, c, r, u, o, g}]}      rarity data of an open container
 --                     kill {k, m, p, items = [{n, id, c, r, u, o, g, nm, left}], drops = [{text, color, rank}]}
 --                     update {k, left = [...]}   decay {k}   msg {text}
+--                     settings also carry snd (sound per rule, vol, mute, hunt) and counts {session, total};
+--                     kill carries hits {rule = items} and counts when a rule matched; counts {session, total}
 --   client -> server  open | sync | set {s} | preset {name} | peek {cid} | take {k, n, id, one}
+--                     sound {s = snd} | reset {scope = session | total | all, rule}
+-- Rule counters and sounds: the server counts the drops of your kills per filter rule (lootfilter_core.lua F.RULES);
+-- this module shows them (filter window, optionally the Hunt Tracker's Chaos Drops tab) and plays the rule's sound
+-- (sounds/*.ogg, made by client/tools/gen_lootfilter_sounds.py) on the Effect sound channel.
 -- The rules used for drawing are in lootfilterlogic.lua (a mirror of the server's lootfilter_core.lua).
 
 local OPCODE = 238
@@ -16,6 +22,12 @@ local GONE_OPACITY = 0.6 -- with the dark veil and the check mark
 local PEEK_DELAY = 60
 
 local settings = L.defaults()
+local snd = L.soundDefaults()
+local counts = { session = L.counts(nil), total = L.counts(nil) }
+local ruleRows = {}   -- [rule key] = row widget of the counters panel
+local soundSaveEvent
+local lastPlayed      -- {file, gain, rule, at}: the last alert played (for the in-game check)
+local onCounts, playKillSound -- defined with the counters panel below (used by the loot channel)
 local unlocked = false
 local presets = {}
 local samples = {}
@@ -302,6 +314,8 @@ end
 local function onKill(data)
   local drops = list(data.drops)
   showFlash(drops)
+  if type(data.counts) == 'table' then onCounts(data.counts) end
+  if type(data.hits) == 'table' then playKillSound(data.hits) end
   local panel = ensureLootPanel()
   if not panel then return end
   ensureLootTab()
@@ -374,6 +388,145 @@ local function clearRows()
   for k in pairs(rows) do dropRow(k) end
   rows, rowOrder = {}, {}
   if lootPanel and not lootPanel:isDestroyed() then lootPanel.hint:show() end
+end
+
+-- ---------------------------------------------------------------- rule counters and sounds
+local noSoundLogged = false
+local function playFile(file, gain, rule)
+  if not file then return false end
+  lastPlayed = { file = file, gain = gain, rule = rule, at = os.time(), played = false }
+  if not g_sounds then
+    -- a client built without its sound framework (CMake FRAMEWORK_SOUND, client base-patch 0032)
+    if not noSoundLogged then
+      noSoundLogged = true
+      g_logger.warning('[lootfilter] this client has no sound support (g_sounds): rule sounds are not played')
+    end
+    return false
+  end
+  local channel = g_sounds.getChannel and SoundChannels and g_sounds.getChannel(SoundChannels.Effect)
+  local ok, err
+  if channel then
+    ok, err = pcall(channel.play, channel, file, 0, gain)
+  else
+    ok, err = pcall(g_sounds.play, file, 0, gain)
+  end
+  if not ok then g_logger.warning('[lootfilter] sound ' .. file .. ': ' .. tostring(err)) end
+  lastPlayed.played = ok and err ~= nil -- the source (nil when audio is off or the channel disabled)
+  return ok
+end
+
+playKillSound = function(hits)
+  local file, gain, rule = L.pickSound(hits, snd)
+  if file then playFile(file, gain, rule) end
+end
+
+local function notifyHunt()
+  local hunt = modules.game_hunt
+  if hunt and hunt.onLootFilterCounts then pcall(hunt.onLootFilterCounts) end
+end
+
+local function refreshRules()
+  if not window or not window.rulesPanel then return end
+  local p = window.rulesPanel
+  updatingUi = true
+  for _, r in ipairs(L.RULES) do
+    local row = ruleRows[r.key]
+    if row then
+      row.count:setText(L.countLine(counts, r.key))
+      row.sound:setCurrentIndex((snd.rules[r.key] or 0) + 1)
+    end
+  end
+  p.volumeCombo:setCurrentIndex(math.floor((snd.vol or 0) / 10) + 1)
+  p.muteCheck:setChecked(snd.mute)
+  p.huntCheck:setChecked(snd.hunt)
+  for _, row in pairs(ruleRows) do row.play:setEnabled(not snd.mute and (snd.vol or 0) > 0) end
+  updatingUi = false
+end
+
+local function scheduleSoundSave()
+  if soundSaveEvent then removeEvent(soundSaveEvent) end
+  soundSaveEvent = scheduleEvent(function()
+    soundSaveEvent = nil
+    send('sound', { s = snd })
+  end, 250)
+end
+
+local function onSoundUi()
+  if updatingUi or not window then return end
+  local p = window.rulesPanel
+  for _, r in ipairs(L.RULES) do
+    local row = ruleRows[r.key]
+    local o = row and row.sound:getCurrentOption()
+    if o then snd.rules[r.key] = tonumber(o.data) or 0 end
+  end
+  local v = p.volumeCombo:getCurrentOption()
+  snd.vol = v and tonumber(v.data) or snd.vol
+  snd.mute = p.muteCheck:isChecked()
+  snd.hunt = p.huntCheck:isChecked()
+  refreshRules()
+  notifyHunt()
+  scheduleSoundSave()
+end
+
+local function buildRules()
+  if not window or not window.rulesPanel then return end
+  local p = window.rulesPanel
+  p.ruleRows:destroyChildren()
+  ruleRows = {}
+  updatingUi = true
+  for _, r in ipairs(L.RULES) do
+    local row = g_ui.createWidget('LootFilterRuleRow', p.ruleRows)
+    row:setId('rule_' .. r.key)
+    row.name:setText(tr(r.name))
+    row.name:setColor(r.color)
+    row.sound:addOption(tr('No sound'), 0)
+    for i, x in ipairs(L.SOUNDS) do row.sound:addOption(tr(x.name), i) end
+    local key = r.key
+    row.sound.onOptionChange = safe('ui', onSoundUi)
+    row.play.onClick = function()
+      playFile(L.soundFile(snd.rules[key]), (snd.vol or 0) / 100, key)
+    end
+    row.reset.onClick = function() send('reset', { scope = 'all', rule = key }) end
+    ruleRows[key] = row
+  end
+  p.volumeCombo:clearOptions()
+  for v = 0, 100, 10 do p.volumeCombo:addOption(v .. '%', v) end
+  updatingUi = false
+  p.volumeCombo.onOptionChange = safe('ui', onSoundUi)
+  p.muteCheck.onCheckChange = safe('ui', onSoundUi)
+  p.huntCheck.onCheckChange = safe('ui', onSoundUi)
+  refreshRules()
+end
+
+onCounts = function(data)
+  counts = { session = L.counts(data.session), total = L.counts(data.total) }
+  refreshRules()
+  notifyHunt()
+end
+
+function resetCounters(scope)
+  if scope ~= 'total' then
+    send('reset', { scope = 'session' })
+    return
+  end
+  local box
+  local function close() if box then box:destroy() box = nil end end
+  local function yes() close() send('reset', { scope = 'total' }) end
+  if displayGeneralBox then
+    box = displayGeneralBox(tr('Reset totals'), tr('Set the total of every rule back to zero?'),
+      { { text = tr('Yes'), callback = yes }, { text = tr('No'), callback = close }, anchor = AnchorHorizontalCenter }, yes, close)
+  else
+    yes()
+  end
+end
+
+-- the counters for the Hunt Tracker: {show, rows = L.huntRows}
+function getCounters()
+  return { show = snd.hunt and true or false, rows = L.huntRows(counts) }
+end
+
+function getLastSound()
+  return lastPlayed
 end
 
 -- ---------------------------------------------------------------- window
@@ -503,6 +656,12 @@ local function onSettings(data)
   unlocked = data.unlocked and true or false
   presets = list(data.presets)
   if type(data.samples) == 'table' then samples = data.samples end
+  if type(data.snd) == 'table' then snd = L.normalizeSound(data.snd) end
+  if type(data.counts) == 'table' then
+    counts = { session = L.counts(data.counts.session), total = L.counts(data.counts.total) }
+  end
+  refreshRules()
+  notifyHunt()
   redrawContainers()
   redrawRows()
   ensureLootPanel()
@@ -527,6 +686,7 @@ local function onExtendedOpcode(protocol, opcode, buffer)
   elseif msg.action == 'update' then onUpdate(data)
   elseif msg.action == 'decay' then onDecay(data)
   elseif msg.action == 'msg' then showFlash({ { text = data.text or '', color = '#ff7a5a' } })
+  elseif msg.action == 'counts' then onCounts(data)
   end
 end
 
@@ -604,6 +764,8 @@ function init()
     end
     hook(window.icons, 'onCheckChange', onUiChange)
     hook(window.notify, 'onCheckChange', onUiChange)
+    local okR, errR = pcall(buildRules)
+    if not okR then g_logger.warning('[lootfilter] rule counters panel: ' .. tostring(errR)) end
   else
     window = nil
     g_logger.warning('[lootfilter] window not loaded (theme styles missing?): ' .. tostring(ui))
@@ -621,6 +783,8 @@ function terminate()
   for _, e in pairs(peekEvents) do removeEvent(e) end
   peekEvents = {}
   if saveEvent then removeEvent(saveEvent) saveEvent = nil end
+  if soundSaveEvent then removeEvent(soundSaveEvent) soundSaveEvent = nil end
+  ruleRows = {}
   if flashEvent then removeEvent(flashEvent) flashEvent = nil end
   local chat = getChat()
   if chat and chat.tabBar and handlers.tab then pcall(disconnect, chat.tabBar, { onTabChange = handlers.tab }) end

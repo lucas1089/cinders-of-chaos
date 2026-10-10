@@ -472,7 +472,7 @@ function C.rowView(r, now)
 		seller = r.seller_name, left = math.max(0, (r.expires or 0) - (now or 0)), state = C.STATE_NAME[r.state] or "?",
 		buyer = r.buyer_name ~= "" and r.buyer_name or nil, paid = (r.paid_amount or 0) > 0 and r.paid_amount or nil,
 		cur = r.paid_currency ~= "" and r.paid_currency or nil, tax = (r.tax or 0) > 0 and r.tax or nil,
-		at = r.closed_at ~= 0 and r.closed_at or r.created
+		at = r.closed_at ~= 0 and r.closed_at or r.created, order = (r.order_id or 0) > 0 and r.order_id or nil
 	}
 end
 

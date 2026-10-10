@@ -24,9 +24,22 @@
 -- Protocol (JSON {action, data}) on ChaosOpcodes.market; big answers go through Chaos.sendChunked:
 --   client -> server  open | browse {filter: market_core.lua C.browseQuery, modifier rows C.modFilter} | tip {id} | buy {id, cur} | sellable | list {ref|pos, sid, iid, count,
 --                     gold, coins, days} | cancel {id} | mine | history
+--                     buy orders: orders {q, cat, cur, mine, sort, page, seq} | myOrders | orderFind {q} |
+--                     orderPost {sid, quantity, price, cur, days, filter {rarity, ilvl, mods, need, sockets, quality, freeP,
+--                     freeS, power, bound}} | orderCancel {id} | fillable {id} | fill {id, ref, sid, iid, count}
 --   server -> client  meta {...} | page {rows, page, pages, total} | tip {id, tip, seller} | sellable {items} |
 --                     mine {active, closed, owed} | history {rows} | wallet {gold, coins} | done {what, text} |
---                     error {text}
+--                     error {text} | orders {rows, page, pages, total} | myOrders {active, closed, max} |
+--                     orderFind {items} | fillable {id, order, items}
+--
+-- Buy orders (market_orders_core.lua, table chaos_market_orders): the payment is escrowed in the order row at posting
+-- (gold: player:save(), then ONE transaction takes price x quantity + the fee from players.balance and writes the order;
+-- coins: the same transaction takes the coins from chaos_shop_coins). A fill is written like a listing that sells at
+-- once: 1. a chaos_market_offers row (order_id = the order) "pending"  2. the item and listSeq change in memory
+-- 3. player:save()  4. ONE transaction (MK.completeFill) moves the units on the order (filled, escrow), marks the row
+-- sold and writes the deliveries (item -> buyer's inbox, gold -> seller's bank or coins -> seller's account). A
+-- pending fill found later is completed (or its item returned when the order closed). Cancel / expiry refunds the
+-- escrow left: gold as a delivery row (offer_id = -order id, reason refund), coins straight to the account.
 -- Lua 5.1 / LuaJIT compatible.
 
 if not Chaos then
@@ -34,6 +47,9 @@ if not Chaos then
 end
 if not ChaosMarketCore then
 	dofile("data/scripts/chaos/market_core.lua")
+end
+if not ChaosMarketOrders then
+	dofile("data/scripts/chaos/market_orders_core.lua")
 end
 if not ChaosCrafting then
 	dofile("data/lib/chaos_crafting.lua")
@@ -45,6 +61,7 @@ end
 Chaos.marketConfig = dofile("data/scripts/chaos/market_config.lua")
 local cfg = Chaos.marketConfig
 local MC = ChaosMarketCore
+local MO = ChaosMarketOrders
 ChaosMarket = ChaosMarket or {}
 local MK = ChaosMarket
 local OPCODE = ChaosOpcodes.market or 221
@@ -63,6 +80,34 @@ function MK.maxActive(player)
 	return cfg.maxActive, cfg.maxActivePerAccount
 end
 -- <<< Chaos Pact listing slots
+
+-- active listings of a character and of its account: sell offers (fills of buy orders are not listings) and buy
+-- orders together; both count against MK.maxActive
+function MK.activeCounts(guid, account)
+	local function count(q)
+		local r = Chaos.select(q, {{"n", "n"}})[1]
+		return r and r.n or 0
+	end
+	local T0 = cfg.tables
+	local char = count(string.format("SELECT COUNT(*) AS `n` FROM `%s` WHERE `seller_id` = %d AND `state` IN (0, 9) AND `order_id` = 0", T0.offers, guid))
+		+ count(string.format("SELECT COUNT(*) AS `n` FROM `%s` WHERE `buyer_id` = %d AND `state` = 0", T0.orders, guid))
+	local acc = count(string.format("SELECT COUNT(*) AS `n` FROM `%s` WHERE `seller_account` = %d AND `state` IN (0, 9) AND `order_id` = 0", T0.offers, account))
+		+ count(string.format("SELECT COUNT(*) AS `n` FROM `%s` WHERE `buyer_account` = %d AND `state` = 0", T0.orders, account))
+	return char, acc
+end
+
+-- why this character cannot add another offer or order (nil = it can)
+function MK.limitRefusal(player)
+	local maxChar, maxAccount = MK.maxActive(player)
+	local char, acc = MK.activeCounts(player:getGuid(), player:getAccountId())
+	if char >= maxChar then
+		return string.format(cfg.messages.maxActive, maxChar)
+	end
+	if acc >= maxAccount then
+		return string.format(cfg.messages.maxAccount, maxAccount)
+	end
+	return nil
+end
 
 local function now()
 	return os.time()
@@ -161,7 +206,24 @@ local SCHEMA = {
 	[[CREATE TABLE IF NOT EXISTS `chaos_market_offer_mods` (`offer_id` int(11) NOT NULL, `mod_key` varchar(48) NOT NULL,
 	`value` int(11) NOT NULL DEFAULT 0, `tier` tinyint(3) unsigned NOT NULL DEFAULT 0, PRIMARY KEY (`offer_id`, `mod_key`),
 	KEY `chaos_market_mod_value` (`mod_key`, `value`), KEY `chaos_market_mod_tier` (`mod_key`, `tier`))
-	ENGINE=InnoDB DEFAULT CHARSET=utf8]]
+	ENGINE=InnoDB DEFAULT CHARSET=utf8]],
+	-- buy orders (sql/chaos_market.sql has the same statements)
+	[[CREATE TABLE IF NOT EXISTS `chaos_market_orders` (`id` int(11) NOT NULL AUTO_INCREMENT,
+	`realm` int(11) NOT NULL DEFAULT 0, `state` tinyint(3) unsigned NOT NULL DEFAULT 0,
+	`buyer_id` int(11) NOT NULL, `buyer_account` int(11) NOT NULL, `buyer_name` varchar(64) NOT NULL DEFAULT '',
+	`item_id` int(11) NOT NULL, `client_id` int(11) NOT NULL DEFAULT 0, `name` varchar(100) NOT NULL DEFAULT '',
+	`category` varchar(16) NOT NULL DEFAULT 'misc', `stackable` tinyint(1) NOT NULL DEFAULT 0,
+	`quantity` int(11) NOT NULL DEFAULT 1, `filled` int(11) NOT NULL DEFAULT 0, `currency` varchar(8) NOT NULL DEFAULT 'gold',
+	`price` bigint(20) unsigned NOT NULL DEFAULT 0, `escrow` bigint(20) unsigned NOT NULL DEFAULT 0,
+	`refunded` bigint(20) unsigned NOT NULL DEFAULT 0, `fee` bigint(20) unsigned NOT NULL DEFAULT 0,
+	`filter` varchar(1000) NOT NULL DEFAULT '', `created` int(10) unsigned NOT NULL, `expires` int(10) unsigned NOT NULL,
+	`closed_at` int(10) unsigned NOT NULL DEFAULT 0, PRIMARY KEY (`id`),
+	KEY `chaos_market_orders_list` (`state`, `realm`, `expires`), KEY `chaos_market_orders_buyer` (`buyer_id`, `state`),
+	KEY `chaos_market_orders_account` (`buyer_account`, `state`), KEY `chaos_market_orders_item` (`item_id`, `state`))
+	ENGINE=InnoDB DEFAULT CHARSET=utf8]],
+	-- a fill of a buy order is an offer row that sold at once (order_id = the order; 0 = a sell offer)
+	[[ALTER TABLE `chaos_market_offers` ADD COLUMN IF NOT EXISTS `order_id` int(11) NOT NULL DEFAULT 0,
+	ADD INDEX IF NOT EXISTS `chaos_market_offer_order` (`order_id`)]]
 }
 local MT = T.offerMods or "chaos_market_offer_mods"
 
@@ -176,10 +238,10 @@ end
 local OFFER_COLS = {{"id", "n"}, {"realm", "n"}, {"state", "n"}, {"seller_id", "n"}, {"seller_account", "n"}, {"seller_name", "s"},
 	{"item_id", "n"}, {"client_id", "n"}, {"count", "n"}, {"name", "s"}, {"category", "s"}, {"rarity", "n"}, {"ilvl", "n"},
 	{"unique_item", "n"}, {"price_gold", "n"}, {"price_coins", "n"}, {"created", "n"}, {"expires", "n"}, {"buyer_id", "n"},
-	{"buyer_name", "s"}, {"paid_currency", "s"}, {"paid_amount", "n"}, {"tax", "n"}, {"closed_at", "n"}}
+	{"buyer_name", "s"}, {"paid_currency", "s"}, {"paid_amount", "n"}, {"tax", "n"}, {"closed_at", "n"}, {"order_id", "n"}}
 local OFFER_SELECT = "`id`, `realm`, `state`, `seller_id`, `seller_account`, `seller_name`, `item_id`, `client_id`, `count`, `name`, "
 	.. "`category`, `rarity`, `ilvl`, `unique_item`, `price_gold`, `price_coins`, `created`, `expires`, `buyer_id`, `buyer_name`, "
-	.. "`paid_currency`, `paid_amount`, `tax`, `closed_at`"
+	.. "`paid_currency`, `paid_amount`, `tax`, `closed_at`, `order_id`"
 
 local function offerById(id)
 	return sql(string.format("SELECT %s FROM `%s` WHERE `id` = %d", OFFER_SELECT, T.offers, id), OFFER_COLS)[1]
@@ -566,6 +628,11 @@ local function sellable(player)
 				out[#out + 1] = {ref = r, sid = item:getId(), item = it:getClientId(), count = item:getCount(),
 					name = ChaosCrafting and ChaosCrafting.itemName(item) or item:getName(), rarity = ChaosCrafting and ChaosCrafting.rarityOf(item) or 0,
 					ilvl = itemLevel(item), iid = string.format("%.0f", iidOf(item)), stack = it:isStackable() or nil, why = why}
+				-- a transmog look (transmog.lua): the picker draws the item as it looks
+				local look = tonumber(item:getCustomAttribute("chaos_tmog")) or 0
+				if look > 0 then
+					out[#out].look = ItemType(look):getClientId()
+				end
 				if isContainer(item) and depth < 4 then
 					walk(item, r, depth + 1)
 				end
@@ -607,7 +674,8 @@ local function deliveryRows(guid)
 		T.deliveries, guid), {{"id", "n"}, {"offer_id", "n"}, {"kind", "s"}, {"amount", "n"}, {"reason", "s"}})
 end
 
-local REASON_TEXT = {bought = "bought", cancelled = "offer cancelled", expired = "offer expired", sold = "sold"}
+local REASON_TEXT = {bought = "bought", cancelled = "offer cancelled", expired = "offer expired", sold = "sold",
+	order = "from your buy order", returned = "the buy order closed before your fill"}
 
 -- applies everything the market owes this (online) character; returns how many rows were applied now
 function MK.deliver(player)
@@ -640,6 +708,13 @@ function MK.deliver(player)
 				break
 			end
 			lines[#lines + 1] = string.format("%s%s in your inbox (%s)", o.count > 1 and (o.count .. "x ") or "", o.name, REASON_TEXT[r.reason] or r.reason)
+		elseif (r.kind == "gold" or r.kind == "coins") and r.reason == "refund" then
+			-- what a closed buy order did not spend (offer_id = -order id; coins were already put back on the account)
+			if r.kind == "gold" then
+				player:setBankBalance(player:getBankBalance() + r.amount)
+			end
+			lines[#lines + 1] = string.format("+%s %s back from your buy order %d", MC.money(r.amount), r.kind == "gold" and "gold" or "Chaos Coins",
+				-r.offer_id)
 		elseif r.kind == "gold" or r.kind == "coins" then
 			if r.kind == "gold" then
 				player:setBankBalance(player:getBankBalance() + r.amount)
@@ -688,10 +763,14 @@ local function deliverIfOnline(guid)
 	end
 end
 
--- a listing interrupted by a crash (state pending): activate it or drop it (MC.pendingAction)
-local function resolvePending(id, sellerId, listSeq)
+-- a listing interrupted by a crash (state pending): activate it or drop it (MC.pendingAction). A buy order fill
+-- (orderId > 0) whose item left the seller is completed instead (or its item returned when the order is closed)
+local function resolvePending(id, sellerId, listSeq, orderId)
 	local action = MC.pendingAction(id, listSeq)
-	if action == "activate" then
+	if action == "activate" and (orderId or 0) > 0 then
+		local done = MK.completeFill(id)
+		action = done and "fill" or "fill returned"
+	elseif action == "activate" then
 		exec(string.format("UPDATE `%s` SET `state` = 0 WHERE `id` = %d AND `state` = 9", T.offers, id))
 	elseif exec(string.format("DELETE FROM `%s` WHERE `id` = %d AND `state` = 9", T.offers, id)) == 1 then
 		dropIndex(id)
@@ -701,20 +780,22 @@ local function resolvePending(id, sellerId, listSeq)
 end
 
 function MK.recoverPlayer(player)
-	local rows = sql(string.format("SELECT `id` FROM `%s` WHERE `seller_id` = %d AND `state` = 9", T.offers, player:getGuid()), {{"id", "n"}})
+	local rows = sql(string.format("SELECT `id`, `order_id` FROM `%s` WHERE `seller_id` = %d AND `state` = 9", T.offers, player:getGuid()),
+		{{"id", "n"}, {"order_id", "n"}})
 	for _, r in ipairs(rows) do
-		resolvePending(r.id, player:getGuid(), player:getStorageValue(S_LIST))
+		resolvePending(r.id, player:getGuid(), player:getStorageValue(S_LIST), r.order_id)
 	end
 end
 
 -- at startup every character is offline: the saved storage decides
 function MK.recoverAll()
-	local rows = sql(string.format("SELECT `id`, `seller_id` FROM `%s` WHERE `state` = 9", T.offers), {{"id", "n"}, {"seller_id", "n"}})
+	local rows = sql(string.format("SELECT `id`, `seller_id`, `order_id` FROM `%s` WHERE `state` = 9", T.offers),
+		{{"id", "n"}, {"seller_id", "n"}, {"order_id", "n"}})
 	for _, r in ipairs(rows) do
 		if not Player(r.seller_id) then
 			local s = sql(string.format("SELECT `value` FROM `player_storage` WHERE `player_id` = %d AND `key` = %d", r.seller_id, S_LIST),
 				{{"value", "n"}})[1]
-			resolvePending(r.id, r.seller_id, s and s.value or 0)
+			resolvePending(r.id, r.seller_id, s and s.value or 0, r.order_id)
 		end
 	end
 end
@@ -749,14 +830,9 @@ function MK.list(player, d)
 		return refuse(player, refusal)
 	end
 	local guid, account = player:getGuid(), player:getAccountId()
-	local maxChar, maxAccount = MK.maxActive(player)
-	local active = sql(string.format("SELECT COUNT(*) AS `n` FROM `%s` WHERE `seller_id` = %d AND `state` IN (0, 9)", T.offers, guid), {{"n", "n"}})[1]
-	if active and active.n >= maxChar then
-		return refuse(player, string.format(MSG.maxActive, maxChar))
-	end
-	local perAccount = sql(string.format("SELECT COUNT(*) AS `n` FROM `%s` WHERE `seller_account` = %d AND `state` IN (0, 9)", T.offers, account), {{"n", "n"}})[1]
-	if perAccount and perAccount.n >= maxAccount then
-		return refuse(player, string.format(MSG.maxAccount, maxAccount))
+	local limitRefusal = MK.limitRefusal(player)
+	if limitRefusal then
+		return refuse(player, limitRefusal)
 	end
 	local fee = MC.fee(cfg, gold, coins)
 	local balance = player:getBankBalance()
@@ -1030,6 +1106,565 @@ function MK.sweep()
 	return n
 end
 
+-- ------------------------------------------------------------------ buy orders
+local ORDER_COLS = {{"id", "n"}, {"realm", "n"}, {"state", "n"}, {"buyer_id", "n"}, {"buyer_account", "n"}, {"buyer_name", "s"},
+	{"item_id", "n"}, {"client_id", "n"}, {"name", "s"}, {"category", "s"}, {"stackable", "n"}, {"quantity", "n"}, {"filled", "n"},
+	{"currency", "s"}, {"price", "n"}, {"escrow", "n"}, {"refunded", "n"}, {"fee", "n"}, {"filter", "s"}, {"created", "n"},
+	{"expires", "n"}, {"closed_at", "n"}}
+local ORDER_SELECT = "`id`, `realm`, `state`, `buyer_id`, `buyer_account`, `buyer_name`, `item_id`, `client_id`, `name`, `category`, "
+	.. "`stackable`, `quantity`, `filled`, `currency`, `price`, `escrow`, `refunded`, `fee`, `filter`, `created`, `expires`, `closed_at`"
+local OC = cfg.orders or {}
+
+local function orderById(id)
+	return sql(string.format("SELECT %s FROM `%s` WHERE `id` = %d", ORDER_SELECT, T.orders, id), ORDER_COLS)[1]
+end
+MK.orderById = orderById
+
+local function curName(cur)
+	return cur == "coins" and "Chaos Coins" or "gold"
+end
+
+-- the item kinds an order may name: pickupable, movable, not money
+local function orderableType(sid)
+	sid = MC.int(sid)
+	if not sid or sid <= 0 or cfg.blockedIds[sid] then
+		return nil
+	end
+	local it = ItemType(sid)
+	if not it or (it.getId and it:getId() ~= sid) or call(it, "isPickupable") == false or call(it, "isMovable") == false then
+		return nil
+	end
+	return it
+end
+
+-- the order form's search: item kinds by name (the exact name, a server id, the player's own items and every kind ever
+-- listed on the market whose name contains the text)
+function MK.orderFind(player, q)
+	q = tostring(q or ""):gsub("^%s+", ""):gsub("%s+$", ""):sub(1, 40)
+	local out, seen = {}, {}
+	local function add(sid)
+		if #out >= (OC.findMax or 20) or seen[sid] then
+			return
+		end
+		local it = orderableType(sid)
+		if it then
+			seen[sid] = true
+			out[#out + 1] = {sid = sid, item = it:getClientId(), name = it:getName(), stack = it:isStackable() or nil}
+		end
+	end
+	if q == "" then
+		return out
+	end
+	local num = tonumber(q)
+	if num then
+		add(num)
+	else
+		-- the engine's ItemType(name): the exact item name, case-insensitive (0 when there is none)
+		local ok, sid = pcall(function() return ItemType(q):getId() end)
+		sid = ok and tonumber(sid) or nil
+		if sid and sid > 0 then
+			add(sid)
+		end
+	end
+	local low = q:lower()
+	local bag = player:getSlotItem(BACKPACK)
+	local function walk(container, depth)
+		for i = 0, (call(container, "getSize") or 0) - 1 do
+			local item = container:getItem(i)
+			if item then
+				if ItemType(item:getId()):getName():lower():find(low, 1, true) then
+					add(item:getId())
+				end
+				if isContainer(item) and depth < 4 then
+					walk(item, depth + 1)
+				end
+			end
+		end
+	end
+	if bag and isContainer(bag) then
+		walk(bag, 1)
+	end
+	for _, r in ipairs(sql(string.format("SELECT `item_id` FROM `%s` WHERE `name` LIKE %s ORDER BY `id` DESC LIMIT 200", T.offers,
+			esc("%" .. MC.likeEscape(q) .. "%")), {{"item_id", "n"}})) do
+		add(r.item_id)
+	end
+	return out
+end
+
+-- post a buy order: the whole payment and the fee leave the character in one transaction
+function MK.orderPost(player, d)
+	local ok, why = canUse(player)
+	if not ok then
+		return refuse(player, why)
+	end
+	if not rate(player, "orderPost") then
+		return refuse(player, MSG.slow)
+	end
+	local it = orderableType(d.sid)
+	if not it then
+		return refuse(player, MSG.orderKind)
+	end
+	local o, refusal = MO.checkOrder(cfg, d, MK.knownMods())
+	if not o then
+		return refuse(player, refusal)
+	end
+	local limit = MK.limitRefusal(player)
+	if limit then
+		return refuse(player, limit)
+	end
+	local guid, account = player:getGuid(), player:getAccountId()
+	local sid = MC.int(d.sid)
+	local name = it:getName():sub(1, cfg.nameMax)
+	local kind = ChaosItemMods and ChaosItemMods.kindOfType and ChaosItemMods.kindOfType(it) or nil
+	local isGem = ChaosGems and ChaosGems.isGem and ChaosGems.isGem(sid) or false
+	local category = MC.category(kind, name, isGem, name:lower():find("key$") ~= nil, o.filter.rarity)
+	local goldTaken = o.cur == "gold" and (o.total + o.fee) or o.fee
+	local balance = player:getBankBalance()
+	if balance < goldTaken then
+		if o.cur == "gold" then
+			return refuse(player, string.format(MSG.orderGold, MC.money(goldTaken), MC.money(o.total), MC.money(o.fee)))
+		end
+		return refuse(player, string.format(MSG.orderCoins, MC.money(o.total), MC.money(o.fee)))
+	end
+	if o.cur == "coins" and coinsOf(account) < o.total then
+		return refuse(player, string.format(MSG.orderCoins, MC.money(o.total), MC.money(o.fee)))
+	end
+	-- the database must hold exactly what the character holds before the money is taken there
+	if not player:save() then
+		return refuse(player, MSG.busy)
+	end
+	local realm = realmOf(player)
+	local t = now()
+	local filterText = MO.encodeFilter(o.filter)
+	local id = 0
+	local posted = transaction(function()
+		if exec(string.format("UPDATE `players` SET `balance` = `balance` - %d WHERE `id` = %d AND `balance` >= %d", goldTaken, guid, goldTaken)) ~= 1 then
+			return false
+		end
+		if o.cur == "coins" and exec(string.format("UPDATE `%s` SET `coins` = `coins` - %d WHERE `account_id` = %d AND `coins` >= %d", COINS,
+				o.total, account, o.total)) ~= 1 then
+			return false
+		end
+		if exec(string.format("INSERT INTO `%s` (`realm`, `state`, `buyer_id`, `buyer_account`, `buyer_name`, `item_id`, `client_id`, `name`, "
+				.. "`category`, `stackable`, `quantity`, `filled`, `currency`, `price`, `escrow`, `refunded`, `fee`, `filter`, `created`, `expires`, "
+				.. "`closed_at`) VALUES (%d, 0, %d, %d, %s, %d, %d, %s, %s, %d, %d, 0, %s, %d, %d, 0, %d, %s, %d, %d, 0)", T.orders, realm, guid, account,
+				esc(player:getName()), sid, it:getClientId(), esc(name), esc(category), it:isStackable() and 1 or 0, o.quantity, esc(o.cur), o.price,
+				o.total, o.fee, esc(filterText), t, t + o.days * 86400)) ~= 1 then
+			return false
+		end
+		id = lastId()
+		return id > 0
+	end)
+	if not posted then
+		sendWallet(player)
+		return refuse(player, MSG.busy)
+	end
+	player:setBankBalance(balance - goldTaken)
+	logRow("order", {offer = -id, player = guid, item = sid, count = o.quantity, name = name, currency = o.cur, amount = o.total, fee = o.fee,
+		text = string.format("buy order %d: %d x %d %s, days %d, realm %d, filter %s", id, o.quantity, o.price, o.cur, o.days, realm, filterText)})
+	send(player, "done", {what = "orderPost", id = id, text = string.format("Buy order posted: %dx %s at %s %s each. %s %s are held for it; "
+		.. "listing fee: %s gold.", o.quantity, name, MC.money(o.price), curName(o.cur), MC.money(o.total), curName(o.cur), MC.money(o.fee))})
+	sendWallet(player)
+	return true
+end
+
+-- close an active order (cancelled or expired) and give back what its escrow still holds; true when closed
+local function closeOrder(o, state)
+	local t = now()
+	local amount = o.escrow
+	return transaction(function()
+		if exec(string.format("UPDATE `%s` SET `state` = %d, `closed_at` = %d, `refunded` = `escrow`, `escrow` = 0 WHERE `id` = %d AND `state` = 0 "
+				.. "AND `escrow` = %d", T.orders, state, t, o.id, amount)) ~= 1 then
+			return false
+		end
+		if amount <= 0 then
+			return true
+		end
+		if o.currency == "coins" and exec(string.format("INSERT INTO `%s` (`account_id`, `coins`) VALUES (%d, %d) ON DUPLICATE KEY UPDATE `coins` = `coins` + %d",
+				COINS, o.buyer_account, amount, amount)) < 1 then
+			return false
+		end
+		-- gold: the delivery puts it in the bank; coins: the row only tells the buyer (now or at the next login)
+		return exec(string.format("INSERT INTO `%s` (`player_id`, `offer_id`, `kind`, `amount`, `reason`, `created`) VALUES (%d, %d, %s, %d, 'refund', %d)",
+			T.deliveries, o.buyer_id, -o.id, esc(o.currency == "coins" and "coins" or "gold"), amount, t)) == 1
+	end)
+end
+
+function MK.orderCancel(player, d)
+	if not rate(player, "orderCancel") then
+		return refuse(player, MSG.slow)
+	end
+	local id = MC.int(d.id)
+	local o = id and orderById(id)
+	if not o or o.buyer_id ~= player:getGuid() or o.state ~= MO.STATE.active then
+		return refuse(player, MSG.orderGone)
+	end
+	if not closeOrder(o, MO.STATE.cancelled) then
+		return refuse(player, MSG.orderGone)
+	end
+	logRow("ordercancel", {offer = -id, player = o.buyer_id, item = o.item_id, count = o.quantity - o.filled, name = o.name, currency = o.currency,
+		amount = o.escrow})
+	send(player, "done", {what = "orderCancel", id = id, text = string.format("Buy order cancelled: %s %s come back to you; the listing fee is not refunded.",
+		MC.money(o.escrow), curName(o.currency))})
+	MK.deliver(player)
+	sendWallet(player)
+	return true
+end
+
+function MK.sweepOrders()
+	local t = now()
+	local rows = sql(string.format("SELECT %s FROM `%s` WHERE `state` = 0 AND `expires` <= %d ORDER BY `id` LIMIT %d", ORDER_SELECT, T.orders, t,
+		cfg.sweepBatch), ORDER_COLS)
+	local n = 0
+	for _, o in ipairs(rows) do
+		if closeOrder(o, MO.STATE.expired) then
+			n = n + 1
+			logRow("orderexpire", {offer = -o.id, player = o.buyer_id, item = o.item_id, count = o.quantity - o.filled, name = o.name,
+				currency = o.currency, amount = o.escrow})
+			local p = Player(o.buyer_id)
+			if p then
+				tell(p, string.format("your buy order for %s expired (%d of %d bought).", o.name, o.filled, o.quantity))
+				MK.deliver(p)
+				sendWallet(p)
+			end
+		end
+	end
+	return n
+end
+
+-- may a market of this realm trade in Chaos Coins? (season.lua: season markets are gold only; season_config.lua market)
+local function coinsAllowed(realm)
+	local S = ChaosSeason
+	if (realm or 0) == 0 or not S or not S.marketCurrencyAllowed then
+		return true
+	end
+	return S.marketCurrencyAllowed(realm, "coins", Chaos.seasonConfig and Chaos.seasonConfig.market) and true or false
+end
+MK.coinsAllowed = coinsAllowed
+
+-- may this character fill this order at all? (nil = yes)
+local function fillRefusal(player, o, t)
+	if not o or o.state ~= MO.STATE.active or o.expires <= t or o.quantity - o.filled <= 0 then
+		return MSG.orderGone
+	end
+	if o.buyer_id == player:getGuid() then
+		return MSG.ownOrder
+	end
+	if o.buyer_account == player:getAccountId() then
+		return MSG.ownAccountOrder
+	end
+	local realm = realmOf(player)
+	if MC.realmOf(o.realm, (currentSeason())) ~= realm or realmOfGuid(o.buyer_id) ~= realm then
+		return MSG.orderRealm
+	end
+	if o.currency == "coins" and not coinsAllowed(realm) then
+		-- a coins order on a season market (posted before the gold-only rule): season characters take no coins
+		return Chaos.seasonConfig and Chaos.seasonConfig.market and Chaos.seasonConfig.market.message or MSG.orderRealm
+	end
+	return nil
+end
+
+-- what the order filter reads from an item: rarity, item level and the searchable facts of its tooltip
+local function itemFacts(item)
+	local okTip, tip = pcall(ChaosItemTooltip.build, item, {})
+	if not okTip or type(tip) ~= "table" then
+		tip = {id = ItemType(item:getId()):getClientId(), name = item:getName()}
+	end
+	return {rarity = tonumber(tip.rarity) or 0, ilvl = tonumber(tip.level) or 0, index = MC.offerIndex(tip)}, tip
+end
+
+-- the seller's items (backpack and the bags in it) of the kind an order asks for, with why each cannot fill it
+function MK.fillable(player, d)
+	if not rate(player, "fillable") then
+		return
+	end
+	local id = MC.int(d.id)
+	local o = id and orderById(id)
+	local t = now()
+	local why = fillRefusal(player, o, t)
+	if why then
+		return refuse(player, why)
+	end
+	local f = MO.decodeFilter(o.filter)
+	local out = {}
+	local function walk(container, ref, depth)
+		for i = 0, (call(container, "getSize") or 0) - 1 do
+			if #out >= (OC.fillableMax or 40) then
+				return
+			end
+			local item = container:getItem(i)
+			if item then
+				local r = ref .. "." .. i
+				if item:getId() == o.item_id then
+					local n = MO.fillCount(o, item:getCount(), nil, ItemType(item:getId()):isStackable())
+					local refusal = MC.itemRefusal(itemInfo(player, item, math.max(1, n), false), cfg)
+					local facts = itemFacts(item)
+					local okMatch, missing = MO.matches(f, facts)
+					out[#out + 1] = {ref = r, sid = item:getId(), item = ItemType(item:getId()):getClientId(), count = item:getCount(), fill = n,
+						name = ChaosCrafting and ChaosCrafting.itemName(item) or item:getName(), rarity = facts.rarity, ilvl = facts.ilvl,
+						iid = string.format("%.0f", iidOf(item)), stack = ItemType(item:getId()):isStackable() or nil,
+						why = refusal or (not okMatch and missing) or nil}
+					local look = tonumber(item:getCustomAttribute("chaos_tmog")) or 0
+					if look > 0 then
+						out[#out].look = ItemType(look):getClientId() -- a transmog look: the picker draws the item as it looks
+					end
+				end
+				if isContainer(item) and depth < 4 then
+					walk(item, r, depth + 1)
+				end
+			end
+		end
+	end
+	local bag = player:getSlotItem(BACKPACK)
+	if bag and isContainer(bag) then
+		walk(bag, "s" .. BACKPACK, 1)
+	end
+	send(player, "fillable", {id = id, order = MO.rowView(o, t, player:getGuid()), items = out})
+end
+
+-- step 4 of a fill (and of a fill found pending after a crash): ONE transaction moves the units on the order, marks
+-- the fill row sold and writes the deliveries. When the order cannot take them any more the item goes back to the
+-- seller's inbox. Returns true (filled) or false (returned / nothing to do)
+function MK.completeFill(fillId)
+	local f = sql(string.format("SELECT `id`, `order_id`, `seller_id`, `seller_account`, `seller_name`, `count`, `price_gold`, `price_coins`, `name` "
+		.. "FROM `%s` WHERE `id` = %d AND `state` = 9", T.offers, fillId), {{"id", "n"}, {"order_id", "n"}, {"seller_id", "n"},
+		{"seller_account", "n"}, {"seller_name", "s"}, {"count", "n"}, {"price_gold", "n"}, {"price_coins", "n"}, {"name", "s"}})[1]
+	if not f or f.order_id <= 0 then
+		return false
+	end
+	local o = orderById(f.order_id)
+	local t = now()
+	local filled = o and transaction(function()
+		local cur = o.currency
+		local total = cur == "coins" and f.price_coins or f.price_gold
+		local tax, net = MC.tax(cfg, cur, total)
+		if exec(string.format("UPDATE `%s` SET `filled` = `filled` + %d, `escrow` = `escrow` - %d WHERE `id` = %d AND `state` = 0 AND "
+				.. "`quantity` - `filled` >= %d AND `escrow` >= %d", T.orders, f.count, total, o.id, f.count, total)) ~= 1 then
+			return false
+		end
+		if exec(string.format("UPDATE `%s` SET `state` = 1, `closed_at` = %d WHERE `id` = %d AND `state` = 0 AND `filled` = `quantity`",
+				T.orders, t, o.id)) < 0 then
+			return false
+		end
+		if exec(string.format("UPDATE `%s` SET `state` = 1, `buyer_id` = %d, `buyer_name` = %s, `paid_currency` = %s, `paid_amount` = %d, `tax` = %d, "
+				.. "`closed_at` = %d WHERE `id` = %d AND `state` = 9", T.offers, o.buyer_id, esc(o.buyer_name), esc(cur), total, tax, t, f.id)) ~= 1 then
+			return false
+		end
+		if exec(string.format("INSERT INTO `%s` (`player_id`, `offer_id`, `kind`, `amount`, `reason`, `created`) VALUES (%d, %d, 'item', 0, 'order', %d)",
+				T.deliveries, o.buyer_id, f.id, t)) ~= 1 then
+			return false
+		end
+		if cur == "gold" then
+			if net > 0 and exec(string.format("INSERT INTO `%s` (`player_id`, `offer_id`, `kind`, `amount`, `reason`, `created`) VALUES (%d, %d, 'gold', %d, 'sold', %d)",
+					T.deliveries, f.seller_id, f.id, net, t)) ~= 1 then
+				return false
+			end
+		else
+			if net > 0 and exec(string.format("INSERT INTO `%s` (`account_id`, `coins`) VALUES (%d, %d) ON DUPLICATE KEY UPDATE `coins` = `coins` + %d",
+					COINS, f.seller_account, net, net)) < 1 then
+				return false
+			end
+			if exec(string.format("INSERT INTO `%s` (`player_id`, `offer_id`, `kind`, `amount`, `reason`, `created`) VALUES (%d, %d, 'coins', %d, 'sold', %d)",
+					T.deliveries, f.seller_id, f.id, net, t)) ~= 1 then
+				return false
+			end
+		end
+		return true
+	end)
+	if filled then
+		logRow("fill", {offer = f.id, player = f.seller_id, other = o.buyer_id, count = f.count, name = f.name, currency = o.currency,
+			amount = o.currency == "coins" and f.price_coins or f.price_gold, text = "buy order " .. o.id})
+		return true
+	end
+	-- the order is gone (or full): the item goes back to the seller
+	local back = transaction(function()
+		if exec(string.format("UPDATE `%s` SET `state` = 2, `closed_at` = %d WHERE `id` = %d AND `state` = 9", T.offers, t, f.id)) ~= 1 then
+			return false
+		end
+		return exec(string.format("INSERT INTO `%s` (`player_id`, `offer_id`, `kind`, `amount`, `reason`, `created`) VALUES (%d, %d, 'item', 0, 'returned', %d)",
+			T.deliveries, f.seller_id, f.id, t)) == 1
+	end)
+	logRow(back and "fillback" or "error", {offer = f.id, player = f.seller_id, count = f.count, name = f.name,
+		text = back and ("buy order " .. f.order_id .. " closed: item returned") or ("fill " .. f.id .. " stays pending")})
+	return false
+end
+
+-- fill a buy order with an item of the backpack (a stack in part: d.count)
+function MK.fill(player, d)
+	local ok, why = canUse(player)
+	if not ok then
+		return refuse(player, why)
+	end
+	if not rate(player, "fill") then
+		return refuse(player, MSG.slow)
+	end
+	local id = MC.int(d.id)
+	local o = id and orderById(id)
+	local t = now()
+	local refusal = fillRefusal(player, o, t)
+	if refusal then
+		return refuse(player, refusal)
+	end
+	local item, equipped
+	if d.ref then
+		item, equipped = resolveRef(player, d.ref)
+	elseif d.pos then
+		item, equipped = resolvePos(player, d.pos)
+	end
+	if not item or (d.sid and tonumber(d.sid) ~= item:getId()) or (tonumber(d.iid) or 0) ~= iidOf(item) then
+		return refuse(player, MSG.noItem)
+	end
+	if item:getId() ~= o.item_id then
+		return refuse(player, MSG.orderItem)
+	end
+	local it = ItemType(item:getId())
+	local n = MO.fillCount(o, item:getCount(), d.count, it:isStackable())
+	if n <= 0 then
+		return refuse(player, MSG.orderGone)
+	end
+	refusal = MC.itemRefusal(itemInfo(player, item, n, equipped), cfg)
+	if refusal then
+		return refuse(player, refusal)
+	end
+	local facts, tip = itemFacts(item)
+	local fits, missing = MO.matches(MO.decodeFilter(o.filter), facts)
+	if not fits then
+		return refuse(player, "That item does not fit the order: " .. missing)
+	end
+	local total, tax, net = MO.payment(cfg, o.currency, o.price, n)
+	if o.escrow < total then
+		return refuse(player, MSG.orderGone)
+	end
+	tip.count = n
+	tip.key = nil
+	local modKeys = {}
+	for _, m in ipairs(tip.mods or {}) do
+		modKeys[#modKeys + 1] = m.k
+	end
+	local name = (ChaosCrafting and ChaosCrafting.itemName(item) or item:getName()):sub(1, cfg.nameMax)
+	local codec, data = MK.encode(item)
+	local guid = player:getGuid()
+
+	-- 1. the fill row (an offer row that sells at once), pending
+	if exec(string.format("INSERT INTO `%s` (`realm`, `state`, `seller_id`, `seller_account`, `seller_name`, `item_id`, `client_id`, `count`, "
+			.. "`name`, `category`, `rarity`, `ilvl`, `unique_item`, `mods`, `price_gold`, `price_coins`, `fee`, `codec`, `data`, `tip`, `created`, "
+			.. "`expires`, `buyer_id`, `buyer_name`, `mods_indexed`, `order_id`) VALUES (%d, 9, %d, %d, %s, %d, %d, %d, %s, %s, %d, %d, %d, %s, %d, %d, 0, "
+			.. "%s, %s, %s, %d, %d, %d, %s, 1, %d)", T.offers, o.realm, guid, player:getAccountId(), esc(player:getName()), item:getId(), it:getClientId(),
+			n, esc(name), esc(o.category), facts.rarity, facts.ilvl, tip.unique and 1 or 0, esc(MC.modsField(modKeys)),
+			o.currency == "gold" and total or 0, o.currency == "coins" and total or 0, esc(codec), esc(data), esc(json.encode(tip)), t, t,
+			o.buyer_id, esc(o.buyer_name), o.id)) ~= 1 then
+		return refuse(player, MSG.busy)
+	end
+	local fid = lastId()
+	if fid <= 0 then
+		return refuse(player, MSG.busy)
+	end
+	-- 2. the item and the marker change in memory
+	local itemId = item:getId()
+	local removed
+	if it:isStackable() and n < item:getCount() then
+		removed = item:remove(n)
+	else
+		removed = item:remove()
+	end
+	if not removed then
+		exec(string.format("DELETE FROM `%s` WHERE `id` = %d AND `state` = 9", T.offers, fid))
+		return refuse(player, MSG.noItem)
+	end
+	local oldSeq = player:getStorageValue(S_LIST)
+	player:setStorageValue(S_LIST, fid)
+	-- 3. one save
+	if not player:save() then
+		player:setStorageValue(S_LIST, oldSeq)
+		local back = MK.decode(itemId, n, codec, data)
+		if back then
+			player:addItemEx(back, true)
+		end
+		exec(string.format("DELETE FROM `%s` WHERE `id` = %d AND `state` = 9", T.offers, fid))
+		log("save failed while filling for " .. player:getName())
+		return refuse(player, MSG.busy)
+	end
+	-- 4. the money and the item move
+	if not MK.completeFill(fid) then
+		send(player, "done", {what = "fill", id = id, text = "The order closed before your fill went through: the item is back in your inbox."})
+		MK.deliver(player)
+		return false
+	end
+	send(player, "done", {what = "fill", id = id, text = string.format("Sold %s%s to %s's buy order for %s %s (tax %s): %s %s %s.",
+		n > 1 and (n .. "x ") or "", name, o.buyer_name, MC.money(total), curName(o.currency), MC.money(tax), MC.money(net), curName(o.currency),
+		o.currency == "coins" and "added to your account" or "to your bank")})
+	MK.deliver(player)
+	sendWallet(player)
+	local buyer = Player(o.buyer_id)
+	if buyer then
+		tell(buyer, string.format("%s filled your buy order: %s%s for %s %s.", player:getName(), n > 1 and (n .. "x ") or "", name, MC.money(total),
+			curName(o.currency)))
+		MK.deliver(buyer)
+	end
+	return true
+end
+
+function MK.orders(player, f)
+	if not rate(player, "orders") then
+		return
+	end
+	f = type(f) == "table" and f or {}
+	local t = now()
+	local guid = player:getGuid()
+	local where, order, page, offset, size = MO.ordersQuery(f, realmOf(player), t, cfg, esc, (currentSeason()), guid)
+	local total = (sql(string.format("SELECT COUNT(*) AS `n` FROM `%s` WHERE %s", T.orders, where), {{"n", "n"}})[1] or {n = 0}).n
+	local pages = total <= 0 and 1 or math.floor((total + size - 1) / size)
+	if page > pages then
+		page = pages
+		offset = (page - 1) * size
+	end
+	local rows = {}
+	for _, r in ipairs(sql(string.format("SELECT %s FROM `%s` WHERE %s ORDER BY %s LIMIT %d OFFSET %d", ORDER_SELECT, T.orders, where, order, size,
+			offset), ORDER_COLS)) do
+		rows[#rows + 1] = MO.rowView(r, t, guid)
+	end
+	send(player, "orders", {rows = rows, page = page, pages = pages, total = total, seq = f.seq, mine = f.mine and true or nil})
+end
+
+function MK.myOrders(player)
+	if not rate(player, "mine") then
+		return
+	end
+	local guid, t = player:getGuid(), now()
+	local active, closed = {}, {}
+	for _, r in ipairs(sql(string.format("SELECT %s FROM `%s` WHERE `buyer_id` = %d AND `state` = 0 ORDER BY `expires`", ORDER_SELECT, T.orders, guid),
+			ORDER_COLS)) do
+		active[#active + 1] = MO.rowView(r, t, guid)
+	end
+	for _, r in ipairs(sql(string.format("SELECT %s FROM `%s` WHERE `buyer_id` = %d AND `state` IN (1, 2, 3) ORDER BY `closed_at` DESC, `id` DESC LIMIT %d",
+			ORDER_SELECT, T.orders, guid, cfg.historyRows), ORDER_COLS)) do
+		closed[#closed + 1] = MO.rowView(r, t, guid)
+	end
+	local char = MK.activeCounts(guid, player:getAccountId())
+	send(player, "myOrders", {active = active, closed = closed, used = char, max = (MK.maxActive(player))})
+end
+
+-- staff and the admin panel: the active buy orders (all, or one character's), newest first
+function MK.ordersReport(buyerGuid, limit)
+	local where = "`state` = 0"
+	if buyerGuid and buyerGuid > 0 then
+		where = "`buyer_id` = " .. buyerGuid
+	end
+	local lines = {}
+	local sums = {gold = 0, coins = 0}
+	for _, o in ipairs(sql(string.format("SELECT %s FROM `%s` WHERE %s ORDER BY `id` DESC LIMIT %d", ORDER_SELECT, T.orders, where, limit or 50),
+			ORDER_COLS)) do
+		if o.state == 0 then
+			sums[o.currency] = (sums[o.currency] or 0) + o.escrow
+		end
+		lines[#lines + 1] = string.format("#%d %s %s: %d/%d x %s at %s %s, escrow %s, realm %d, %s%s", o.id, MO.STATE_NAME[o.state] or "?",
+			o.buyer_name, o.filled, o.quantity, o.name, MC.money(o.price), o.currency, MC.money(o.escrow), o.realm,
+			o.state == 0 and ("expires in " .. math.max(0, o.expires - now()) .. "s") or ("closed " .. o.closed_at),
+			o.filter ~= "" and (" [" .. o.filter .. "]") or "")
+	end
+	return lines, sums
+end
+
 -- ------------------------------------------------------------------ views
 function MK.meta(player)
 	local season, s = currentSeason()
@@ -1040,9 +1675,37 @@ function MK.meta(player)
 		fee = {pct = fee.pct, min = fee.minFee, max = fee.maxFee, coinGold = fee.coinFeeGold}, tax = cfg.tax,
 		price = cfg.price, maxActive = (MK.maxActive(player)), pageSize = cfg.pageSize, modFilter = cfg.modFilter,
 		realm = realm, realmName = realm > 0 and s and ((s.tag and (s.tag .. " ") or "") .. (s.name or "Season")) or "Standard",
-		gold = player:getBankBalance(), coins = coinsOf(player:getAccountId()), blob = HAS_BLOB
+		gold = player:getBankBalance(), coins = coinsOf(player:getAccountId()), blob = HAS_BLOB,
+		orders = {maxQuantity = OC.maxQuantity, maxTotal = OC.maxTotal, sorts = OC.sorts, pageSize = OC.pageSize},
+		coinsOk = coinsAllowed(realm) -- false on a gold-only season market: the window hides the coin prices
 	}
 end
+
+-- transmog looks of the rows (their tip snapshot holds look = {cid, name}, item_tooltip_core.lua): row.look = the
+-- look's client id, so the list draws the item as it looks (client base patch 0030). One query per page.
+local function addLooks(list)
+	local ids = {}
+	for _, v in ipairs(list) do
+		ids[#ids + 1] = string.format("%d", v.id)
+	end
+	if #ids == 0 then
+		return list
+	end
+	local rows = sql(string.format("SELECT `id`, `tip` FROM `%s` WHERE `id` IN (%s) AND `tip` LIKE '%%\"look\"%%'", T.offers,
+		table.concat(ids, ",")), {{"id", "n"}, {"tip", "s"}})
+	local byId = {}
+	for _, r in ipairs(rows) do
+		local ok, tip = pcall(json.decode, r.tip)
+		if ok and type(tip) == "table" and type(tip.look) == "table" then
+			byId[r.id] = tonumber(tip.look.cid)
+		end
+	end
+	for _, v in ipairs(list) do
+		v.look = byId[v.id]
+	end
+	return list
+end
+MK.addLooks = addLooks
 
 function MK.browse(player, filter)
 	if not rate(player, "browse") then
@@ -1068,7 +1731,7 @@ function MK.browse(player, filter)
 		v.mine = r.seller_id == player:getGuid() or nil
 		list[#list + 1] = v
 	end
-	send(player, "page", {rows = list, page = page, pages = pages, total = total, seq = filter and filter.seq})
+	send(player, "page", {rows = addLooks(list), page = page, pages = pages, total = total, seq = filter and filter.seq})
 end
 
 function MK.tip(player, d)
@@ -1106,7 +1769,8 @@ function MK.mine(player)
 		closed[#closed + 1] = MC.rowView(r, t)
 	end
 	local owed = (sql(string.format("SELECT COUNT(*) AS `n` FROM `%s` WHERE `player_id` = %d AND `delivered` = 0", T.deliveries, guid), {{"n", "n"}})[1] or {n = 0}).n
-	send(player, "mine", {active = active, closed = closed, owed = owed, max = (MK.maxActive(player))})
+	local used = MK.activeCounts(guid, player:getAccountId()) -- sell offers and buy orders
+	send(player, "mine", {active = addLooks(active), closed = addLooks(closed), owed = owed, max = (MK.maxActive(player)), used = used})
 end
 
 function MK.history(player)
@@ -1121,7 +1785,7 @@ function MK.history(player)
 		v.side = r.buyer_id == guid and "bought" or "sold"
 		rows[#rows + 1] = v
 	end
-	send(player, "history", {rows = rows})
+	send(player, "history", {rows = addLooks(rows)})
 end
 
 function MK.open(player)
@@ -1168,6 +1832,22 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		MK.history(player)
 	elseif a == "wallet" then
 		sendWallet(player)
+	elseif a == "orders" then
+		MK.orders(player, d)
+	elseif a == "myOrders" then
+		MK.myOrders(player)
+	elseif a == "orderFind" then
+		if rate(player, "orderFind") then
+			send(player, "orderFind", {q = tostring(d.q or ""):sub(1, 40), items = MK.orderFind(player, d.q)})
+		end
+	elseif a == "orderPost" then
+		MK.orderPost(player, d)
+	elseif a == "orderCancel" then
+		MK.orderCancel(player, d)
+	elseif a == "fillable" then
+		MK.fillable(player, d)
+	elseif a == "fill" then
+		MK.fill(player, d)
 	end
 end
 ext:type("extendedopcode")
@@ -1215,6 +1895,7 @@ startup:register()
 local sweep = GlobalEvent("ChaosMarketSweep")
 function sweep.onThink(interval)
 	MK.sweep()
+	MK.sweepOrders()
 	return true
 end
 sweep:interval(cfg.sweepSeconds * 1000)
@@ -1230,7 +1911,7 @@ end
 marketItem:id(cfg.marketItemId)
 marketItem:register()
 
--- staff: /market sweep | info <offer id>
+-- staff: /market sweep | info <offer id> | orders [character]
 local staffCmd = TalkAction("/market")
 function staffCmd.onSay(player, words, param)
 	if not player:getGroup():getAccess() then
@@ -1238,13 +1919,30 @@ function staffCmd.onSay(player, words, param)
 	end
 	local p = tostring(param or ""):gsub("^%s+", "")
 	if p == "sweep" then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Market sweep: " .. MK.sweep() .. " offers expired.")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, "Market sweep: " .. MK.sweep() .. " offers and " .. MK.sweepOrders() .. " buy orders expired.")
+	elseif p:match("^orders") then
+		local name = p:match("^orders%s+(.+)$")
+		local guid
+		if name then
+			local r = sql(string.format("SELECT `id` FROM `players` WHERE `name` = %s", esc(name)), {{"id", "n"}})[1]
+			if not r then
+				player:sendTextMessage(MESSAGE_INFO_DESCR, "No such character.")
+				return false
+			end
+			guid = r.id
+		end
+		local lines, sums = MK.ordersReport(guid, 30)
+		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Buy orders%s: %d shown; escrow held by active ones: %s gold, %s coins",
+			name and (" of " .. name) or " (active)", #lines, MC.money(sums.gold or 0), MC.money(sums.coins or 0)))
+		for _, l in ipairs(lines) do
+			player:sendTextMessage(MESSAGE_INFO_DESCR, l)
+		end
 	elseif p:match("^info") then
 		local o = offerById(MC.int(p:match("(%d+)")) or 0)
 		player:sendTextMessage(MESSAGE_INFO_DESCR, o and string.format("Offer %d: %s x%d state %s seller %s realm %d gold %d coins %d expires in %ds",
 			o.id, o.name, o.count, MC.STATE_NAME[o.state] or "?", o.seller_name, o.realm, o.price_gold, o.price_coins, o.expires - now()) or "No such offer.")
 	else
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "/market sweep | info <offer id>    (escrow codec: " .. (HAS_BLOB and "blob" or "attrs") .. ")")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, "/market sweep | info <offer id> | orders [character]    (escrow codec: " .. (HAS_BLOB and "blob" or "attrs") .. ")")
 	end
 	return false
 end

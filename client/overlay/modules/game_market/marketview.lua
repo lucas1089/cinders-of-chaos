@@ -333,4 +333,140 @@ function V.sortSellable(items)
   return out
 end
 
+-- ---------------------------------------------------------------- buy orders (the Buy Orders tab)
+-- the server's limits (market_config.lua orders; the `meta` message sends them)
+V.ORDER_LIMITS = { maxQuantity = 1000, maxTotal = { gold = 2000000000, coins = 1000000 } }
+V.ORDER_SORT_NAMES = { new = 'Newest', price = 'Best price', ending = 'Ending soon', name = 'Name' }
+
+-- the order form: form = {sid, quantity, price (texts), cur, days, rarity, ilvl (text), mods = a V.modRequest result
+-- or nil}. Returns the orderPost request {sid, quantity, price, cur, days, filter} and its total and fee, or nil, why
+function V.checkOrder(meta, form)
+  form = form or {}
+  if not tonumber(form.sid) or tonumber(form.sid) <= 0 then return nil, 'Choose the item you want: search for it first.' end
+  local qty = V.parseAmount(form.quantity)
+  if not qty or qty < 1 then return nil, 'How many do you want? A whole number of 1 or more.' end
+  local limits = meta and meta.orders or V.ORDER_LIMITS
+  local maxQ = limits.maxQuantity or V.ORDER_LIMITS.maxQuantity
+  if qty > maxQ then return nil, 'At most ' .. V.money(maxQ) .. ' per order.' end
+  local cur = form.cur == 'coins' and 'coins' or 'gold'
+  local price = V.parseAmount(form.price)
+  local p = meta and meta.price or {}
+  local lim = (p[cur]) or (cur == 'coins' and { min = 1, max = 100000 } or { min = 100, max = 2000000000 })
+  if not price or price < lim.min or price > lim.max then
+    return nil, string.format('The price per item in %s must be between %s and %s.', cur == 'coins' and 'Chaos Coins' or 'gold',
+      V.money(lim.min), V.money(lim.max))
+  end
+  local total = price * qty
+  local maxT = (limits.maxTotal or V.ORDER_LIMITS.maxTotal)[cur]
+  if maxT and total > maxT then
+    return nil, 'One order may hold at most ' .. V.money(maxT) .. (cur == 'coins' and ' Chaos Coins.' or ' gold.')
+  end
+  local ilvl = V.parseAmount(form.ilvl)
+  if not ilvl then return nil, 'Item level: a whole number.' end
+  local filter = { rarity = (tonumber(form.rarity) or 0) > 0 and tonumber(form.rarity) or nil, ilvl = ilvl > 0 and ilvl or nil }
+  for k, v in pairs(form.mods or {}) do filter[k] = v end
+  if filter.mods and #filter.mods == 0 then filter.mods = nil end
+  local fee = V.fee(meta, cur == 'gold' and total or 0, cur == 'coins' and total or 0)
+  return { sid = tonumber(form.sid), quantity = qty, price = price, cur = cur,
+    days = tonumber(form.days) or (meta and meta.defaultDuration) or 3, filter = filter }, total, fee
+end
+
+-- what posting holds and costs, for the form's text
+function V.orderCostText(meta, req, total, fee)
+  if not req then return '' end
+  local curName = req.cur == 'coins' and 'Chaos Coins' or 'gold'
+  local lines = {}
+  if req.cur == 'coins' then
+    lines[#lines + 1] = string.format('Held now: %s Chaos Coins from your account, and the listing fee of %s gold from your bank.', V.money(total), V.money(fee))
+  else
+    lines[#lines + 1] = string.format('Held now: %s gold from your bank (%s for the items + %s listing fee).', V.money(total + fee),
+      V.money(total), V.money(fee))
+  end
+  local tax = V.tax(meta, req.cur, req.price)
+  lines[#lines + 1] = string.format('Sellers get %s %s per item (%s sales tax). What is not bought comes back when the order ends; the fee does not.',
+    V.money(req.price - tax), curName, V.money(tax))
+  return table.concat(lines, '\n')
+end
+
+-- the filter of an order in words; modName(key) gives a modifier's name (the Codex catalog), else the key is shown
+function V.orderFilterText(f, modName)
+  if type(f) ~= 'table' then return 'Any' end
+  local parts = {}
+  if (tonumber(f.rarity) or 0) > 0 then parts[#parts + 1] = (V.rarityName(f.rarity) or ('Rarity ' .. f.rarity)) .. '+' end
+  if (tonumber(f.ilvl) or 0) > 0 then parts[#parts + 1] = 'iLvl ' .. f.ilvl .. '+' end
+  local mods = {}
+  for _, m in ipairs(f.mods or {}) do
+    local name = (modName and modName(m.k)) or tostring(m.k)
+    local t = name
+    if (tonumber(m.min) or 0) > 0 then t = t .. ' ' .. m.min .. '+' end
+    if (tonumber(m.t) or 0) > 0 then t = t .. ' T' .. m.t .. '+' end
+    mods[#mods + 1] = t
+  end
+  if #mods > 0 then
+    if f.need and tonumber(f.need) < #mods then
+      parts[#parts + 1] = string.format('%d of: %s', f.need, table.concat(mods, ', '))
+    else
+      parts[#parts + 1] = table.concat(mods, ', ')
+    end
+  end
+  if (tonumber(f.sockets) or 0) > 0 then parts[#parts + 1] = f.sockets .. '+ socket' .. (tonumber(f.sockets) > 1 and 's' or '') end
+  if (tonumber(f.quality) or 0) > 0 then parts[#parts + 1] = 'quality ' .. f.quality .. '%+' end
+  if f.freeP then parts[#parts + 1] = 'free prefix' end
+  if f.freeS then parts[#parts + 1] = 'free suffix' end
+  if f.power then parts[#parts + 1] = 'legendary power' end
+  if f.bound then parts[#parts + 1] = 'bound modifier' end
+  if #parts == 0 then return 'Any' end
+  return table.concat(parts, ' - ')
+end
+
+-- the line under an order's name
+function V.orderSubLine(row, modName)
+  local parts = { string.format('%s/%s bought', V.money(row.filled or 0), V.money(row.qty or 0)) }
+  if row.buyer and not row.mine then parts[#parts + 1] = 'by ' .. row.buyer end
+  if row.state == 'active' then
+    parts[#parts + 1] = V.timeLeft(row.left) .. ' left'
+  else
+    parts[#parts + 1] = row.state or ''
+  end
+  local f = V.orderFilterText(row.filter, modName)
+  if f ~= 'Any' then parts[#parts + 1] = f end
+  return table.concat(parts, ' - ')
+end
+
+-- the price column of an order: {each, held}
+function V.orderPriceLines(row)
+  local cur = row.cur == 'coins' and 'coins' or 'gold'
+  local out = { { text = V.money(row.price or 0) .. ' ' .. cur .. ' each', cur = cur } }
+  if row.state == 'active' then
+    out[#out + 1] = { text = V.money(row.escrow or 0) .. ' held', cur = cur }
+  elseif (row.refunded or 0) > 0 then
+    out[#out + 1] = { text = V.money(row.refunded) .. ' back', cur = cur }
+  end
+  return out
+end
+
+-- what a fill of `n` pays the seller
+function V.fillText(meta, row, n)
+  n = tonumber(n) or 0
+  if n <= 0 then return '' end
+  local cur = row.cur == 'coins' and 'coins' or 'gold'
+  local total = (tonumber(row.price) or 0) * n
+  local tax, net = V.tax(meta, cur, total)
+  return string.format('Sell %s for %s %s: tax %s, you receive %s %s%s.', n > 1 and (n .. ' items') or '1 item', V.money(total),
+    cur == 'coins' and 'Chaos Coins' or 'gold', V.money(tax), V.money(net), cur == 'coins' and 'Chaos Coins' or 'gold',
+    cur == 'coins' and ' on your account' or ' in your bank')
+end
+
+-- the seller's items for an order: those that fit first
+function V.sortFillable(items)
+  local out = {}
+  for _, it in ipairs(items or {}) do out[#out + 1] = it end
+  table.sort(out, function(a, b)
+    if (a.why == nil) ~= (b.why == nil) then return a.why == nil end
+    if (a.rarity or 0) ~= (b.rarity or 0) then return (a.rarity or 0) > (b.rarity or 0) end
+    return (a.count or 0) > (b.count or 0)
+  end)
+  return out
+end
+
 return V

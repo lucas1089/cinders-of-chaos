@@ -182,5 +182,42 @@ end
 local sorted = V.sortSellable({ { name = 'b', why = 'locked' }, { name = 'a', rarity = 1 }, { name = 'c', rarity = 5 } })
 eq(sorted[1].name .. sorted[2].name .. sorted[3].name, 'cab', 'listable first, by rarity')
 
+-- buy orders
+local ometa = { fee = meta.fee, tax = meta.tax, price = meta.price, defaultDuration = 3,
+  orders = { maxQuantity = 1000, maxTotal = { gold = 2000000000, coins = 1000000 } } }
+local req, total, fee = V.checkOrder(ometa, { sid = 29856, quantity = '30', price = '2k', cur = 'gold', days = 1, rarity = 0, ilvl = '' })
+eq(req.quantity .. '/' .. req.price .. '/' .. total .. '/' .. fee .. '/' .. req.days, '30/2000/60000/600/1', 'gold order')
+eq(req.filter.rarity, nil, 'no filter')
+eq(V.orderCostText(ometa, req, total, fee):match('^[^\n]+'), 'Held now: 60,600 gold from your bank (60,000 for the items + 600 listing fee).',
+  'what posting holds')
+req, total, fee = V.checkOrder(ometa, { sid = 2400, quantity = '10', price = '50', cur = 'coins', rarity = 5, ilvl = '100',
+  mods = { mods = { { k = 'rarity_firedamage', min = 10, t = 3 } }, sockets = 1 } })
+eq(total .. '/' .. fee .. '/' .. req.filter.rarity .. '/' .. req.filter.ilvl .. '/' .. req.filter.mods[1].k .. '/' .. req.filter.sockets,
+  '500/500/5/100/rarity_firedamage/1', 'coins order with a filter')
+eq(select(2, V.checkOrder(ometa, { quantity = '1', price = '500' })), 'Choose the item you want: search for it first.', 'no item')
+eq(select(2, V.checkOrder(ometa, { sid = 1, quantity = '0', price = '500' })), 'How many do you want? A whole number of 1 or more.', 'zero')
+eq(select(2, V.checkOrder(ometa, { sid = 1, quantity = '1001', price = '500' })), 'At most 1,000 per order.', 'too many')
+eq(select(2, V.checkOrder(ometa, { sid = 1, quantity = '1', price = '50' })), 'The price per item in gold must be between 100 and 2,000,000,000.', 'price')
+eq(select(2, V.checkOrder(ometa, { sid = 1, quantity = '1000', price = '5000', cur = 'coins' })), 'One order may hold at most 1,000,000 Chaos Coins.', 'escrow max')
+eq(select(2, V.checkOrder(ometa, { sid = 1, quantity = '1', price = '500', ilvl = 'x' })), 'Item level: a whole number.', 'ilvl')
+local names = { rarity_firedamage = 'Fire Damage' }
+local function modName(k) return names[k] end
+eq(V.orderFilterText({ rarity = 5, ilvl = 100, mods = { { k = 'rarity_firedamage', min = 10, t = 3 }, { k = 'chaos_mod_x' } }, need = 1,
+  sockets = 2, quality = 10, freeS = true, power = true }, modName),
+  'Legendary+ - iLvl 100+ - 1 of: Fire Damage 10+ T3+, chaos_mod_x - 2+ sockets - quality 10%+ - free suffix - legendary power', 'filter text')
+eq(V.orderFilterText({}), 'Any', 'no filter')
+local orow = { qty = 30, filled = 12, buyer = 'Wanter', state = 'active', left = 3600, price = 2000, cur = 'gold', escrow = 36000,
+  filter = { rarity = 5 } }
+eq(V.orderSubLine(orow), '12/30 bought - by Wanter - 1h 0m left - Legendary+', 'order line')
+orow.mine = true
+eq(V.orderSubLine(orow), '12/30 bought - 1h 0m left - Legendary+', 'my order line')
+local pl = V.orderPriceLines(orow)
+eq(pl[1].text .. ' | ' .. pl[2].text, '2,000 gold each | 36,000 held', 'order prices')
+eq(V.orderPriceLines({ price = 50, cur = 'coins', state = 'expired', refunded = 450 })[2].text, '450 back', 'refunded')
+eq(V.fillText(ometa, orow, 12), 'Sell 12 items for 24,000 gold: tax 1,200, you receive 22,800 gold in your bank.', 'fill text')
+eq(V.fillText(ometa, { price = 50, cur = 'coins' }, 1), 'Sell 1 item for 50 Chaos Coins: tax 2, you receive 48 Chaos Coins on your account.', 'fill coins')
+local fs = V.sortFillable({ { why = 'x', rarity = 9 }, { rarity = 1, count = 2 }, { rarity = 5 } })
+eq(tostring(fs[1].rarity) .. tostring(fs[3].why), '5x', 'fitting items first')
+
 print(string.format('marketview_test: %d checks, %d failed', n, fails))
 os.exit(fails == 0 and 0 or 1)

@@ -8,6 +8,10 @@
 -- delivered with every attribute and a new per-item id), refusals (own offer, own account, other season, not enough
 -- money, sold twice), cancel, expiry with the seller online and offline, a failed transaction rolled back, a save that
 -- fails, a crash between save and mark (no duplicate), interrupted listings recovered, and the key-list codec.
+-- Buy orders (market_orders_core.lua): order checks, the filter text and matching, fill counts, the list query; posting
+-- with the escrow (gold and coins), fills in part and whole with the tax, refusals (own order, own account, other kind,
+-- season, a filter that does not fit), cancel and expiry refunds, a failed fill transaction, a failed save, pending
+-- fills recovered after a crash, the shared listing limit and the admin report.
 local checks, fails = 0, 0
 local function ok(cond, what)
 	checks = checks + 1
@@ -32,7 +36,8 @@ DB.unique["server_config"] = {{"config"}}
 -- column defaults of the market tables (sql/chaos_market.sql)
 DB.defaults = {
 	chaos_market_offers = {buyer_id = 0, buyer_name = "", paid_currency = "", paid_amount = 0, tax = 0, closed_at = 0, sockets = 0,
-		quality = 0, free_prefix = 0, free_suffix = 0, has_power = 0, bound_mods = 0, mods_indexed = 0},
+		quality = 0, free_prefix = 0, free_suffix = 0, has_power = 0, bound_mods = 0, mods_indexed = 0, order_id = 0},
+	chaos_market_orders = {filled = 0, refunded = 0, closed_at = 0},
 	chaos_market_offer_mods = {value = 0, tier = 0},
 	chaos_market_deliveries = {delivered = 0, delivered_at = 0, amount = 0, reason = ""}
 }
@@ -150,6 +155,10 @@ function P:term()
 		local sub = self:select()
 		self:expect(")")
 		return function() return #sub() > 0 end
+	elseif t.t == "op" and t.v == "-" then
+		-- a negative number (a buy order refund row's offer_id is minus the order id)
+		local e = self:term()
+		return function(r) return -e(r) end
 	elseif t.t == "op" and t.v == "(" then
 		local e = self:expr()
 		self:expect(")")
@@ -1538,6 +1547,320 @@ logout(D)
 MK.recoverAll()
 login(D)
 eq(next(modRows(953)), nil, "a dropped pending listing leaves no rows")
+
+-- ====================================================================== buy orders (market_orders_core.lua + market.lua)
+local MO = ChaosMarketOrders
+ok(MO ~= nil, "buy orders core loaded by market.lua")
+-- pure rules
+local mcfg = Chaos.marketConfig
+local o1 = MO.checkOrder(mcfg, {quantity = 100, price = 2000, cur = "gold", days = 3})
+eq(o1.total .. "/" .. o1.fee .. "/" .. o1.days, "200000/2000/3", "gold order: total and the fee of a sell offer of that price")
+local oc = MO.checkOrder(mcfg, {quantity = 10, price = 50, cur = "coins", days = 1})
+eq(oc.total .. "/" .. oc.fee, "500/500", "coins order: 500 coins x 100 gold x 1%")
+eq(MO.checkOrder(mcfg, {quantity = 10, price = 50, days = 1}), nil, "no currency")
+eq(MO.checkOrder(mcfg, {quantity = 0, price = 50, cur = "gold", days = 1}), nil, "nothing ordered")
+ok(select(2, MO.checkOrder(mcfg, {quantity = 1001, price = 500, cur = "gold", days = 1})):find("1,000"), "too many: says the limit")
+ok(select(2, MO.checkOrder(mcfg, {quantity = 1, price = 50, cur = "gold", days = 1})):find("between"), "gold price under the minimum")
+ok(select(2, MO.checkOrder(mcfg, {quantity = 1000, price = 100000, cur = "coins", days = 1})):find("at most"), "escrow over the maximum")
+eq(MO.checkOrder(mcfg, {quantity = 1, price = 500, cur = "gold", days = 5}), nil, "5 days is not an option")
+eq(MO.checkOrder(mcfg, {quantity = 1, price = 500, cur = "gold", days = 1, filter = {mods = {{k = "rarity_nothing"}}}}, known), nil,
+	"an unknown modifier in the filter")
+eq(MO.checkOrder(mcfg, {quantity = "1e400", price = 500, cur = "gold", days = 1}), nil, "an infinite quantity")
+local of = MO.checkOrder(mcfg, {quantity = 2, price = 500, cur = "gold", days = 1, filter = {rarity = 22, ilvl = 120,
+	mods = {{k = "rarity_firedamage", min = 10, t = 3}, {k = "chaos_mod_attackspeed"}}, need = 1, sockets = 2, quality = 5, freeS = true,
+	power = 1, bound = "1"}}, known).filter
+eq(of.rarity .. "/" .. of.ilvl .. "/" .. of.need, "15/120/1", "filter clamped (rarity 15 at most), at least one of two rows")
+local text = MO.encodeFilter(of)
+eq(text, "r=15;l=120;n=1;s=2;q=5;fs=1;pw=1;bd=1;m=rarity_firedamage:10:3,chaos_mod_attackspeed:0:0", "filter text")
+local back = MO.decodeFilter(text)
+eq(MO.encodeFilter(back), text, "filter round trip")
+eq(back.freePrefix, false, "no free prefix asked")
+eq(MO.encodeFilter(MO.decodeFilter("")), "", "no filter")
+eq(MO.decodeFilter("m=rarity_firedamage:1:0").need, 1, "need defaults to every row")
+local wire = MO.filterWire(back)
+eq(wire.mods[1].k .. wire.mods[1].min .. wire.mods[1].t .. tostring(wire.mods[2].min) .. wire.need .. tostring(wire.freeP), "rarity_firedamage103nil1nil",
+	"the filter as the Browse request's fields")
+local function facts(r, l, mods, extra)
+	local idx = {mods = mods or {}, sockets = 0, quality = 0, freePrefix = 0, freeSuffix = 0, hasPower = 0, bound = 0}
+	for k, v in pairs(extra or {}) do idx[k] = v end
+	return {rarity = r, ilvl = l, index = idx}
+end
+local fire = {key = "rarity_firedamage", value = 12, tier = 3}
+local full = facts(15, 130, {fire}, {sockets = 2, quality = 5, freeSuffix = 1, hasPower = 1, bound = 1})
+eq(MO.matches(back, full), true, "everything matches")
+eq(select(2, MO.matches(back, facts(14, 130, {fire}, {sockets = 2, quality = 5, freeSuffix = 1, hasPower = 1, bound = 1}))),
+	"Its rarity is too low.", "rarity")
+eq(select(2, MO.matches(back, facts(15, 119, {fire}, {sockets = 2, quality = 5, freeSuffix = 1, hasPower = 1, bound = 1}))),
+	"Its item level is too low.", "item level")
+eq(select(2, MO.matches(back, facts(15, 130, {{key = "rarity_firedamage", value = 9, tier = 3}}, {sockets = 2, quality = 5, freeSuffix = 1,
+	hasPower = 1, bound = 1}))), "Its modifiers do not match.", "value under the minimum")
+eq(MO.matches(back, facts(15, 130, {{key = "chaos_mod_attackspeed", value = 1, tier = 1}}, {sockets = 2, quality = 5, freeSuffix = 1,
+	hasPower = 1, bound = 1})), true, "one of two rows is enough (need 1)")
+local all = MO.decodeFilter("m=rarity_firedamage:10:4,chaos_mod_attackspeed:0:0")
+eq(MO.matches(all, facts(0, 0, {fire, {key = "chaos_mod_attackspeed", value = 1, tier = 1}})), false, "T3 is under T4+")
+eq(select(2, MO.matches(MO.decodeFilter("s=3"), facts(0, 0, {}, {sockets = 2}))), "Not enough sockets.", "sockets")
+eq(select(2, MO.matches(MO.decodeFilter("fp=1"), facts(0, 0))), "It has no free prefix.", "free prefix")
+eq(select(2, MO.matches(MO.decodeFilter("pw=1"), facts(0, 0))), "It has no legendary power.", "power")
+eq(select(2, MO.matches(MO.decodeFilter("bd=1"), facts(0, 0))), "It has no bound modifier.", "bound")
+eq(MO.matches(MO.decodeFilter(""), facts(0, 0)), true, "no filter: any item of the kind")
+eq(MO.fillCount({quantity = 30, filled = 0}, 12, nil, true), 12, "a stack gives what it has")
+eq(MO.fillCount({quantity = 30, filled = 25}, 12, nil, true), 5, "up to what the order still wants")
+eq(MO.fillCount({quantity = 30, filled = 0}, 12, 4, true), 4, "or what the seller asks")
+eq(MO.fillCount({quantity = 3, filled = 0}, 1, 5, false), 1, "a single item fills one")
+eq(MO.fillCount({quantity = 3, filled = 3}, 9, nil, true), 0, "a full order takes nothing")
+local pt, ptax, pnet = MO.payment(mcfg, "gold", 2000, 12)
+eq(pt .. "/" .. ptax .. "/" .. pnet, "24000/1200/22800", "a fill pays the seller minus the tax")
+local ow = MO.ordersQuery({q = "orb_", cur = "coins", cat = "orb", sort = "price", page = 0}, 0, 77, mcfg, db.escapeString, 1, 9)
+ok(ow:find("`realm` <> 1", 1, true) and ow:find("`expires` > 77", 1, true), "standard view during a season")
+ok(ow:find("`currency` = 'coins'", 1, true) and ow:find("`category` = 'orb'", 1, true) and ow:find("orb\\\\_", 1, true), "filters: " .. ow)
+eq(select(2, MO.ordersQuery({sort = "price"}, 0, 1, mcfg, db.escapeString, 0, 9)), "`price` DESC, `id` ASC", "best paying first")
+ok(MO.ordersQuery({mine = true}, 0, 1, mcfg, db.escapeString, 0, 9):find("`buyer_id` = 9", 1, true), "my orders")
+
+-- flows: fresh characters
+local E = newPlayer(10, 100, "Wanter", 1000000)
+local F = newPlayer(11, 110, "Filler", 0)
+local G = newPlayer(12, 100, "WanterAlt", 1000)
+local S = newPlayer(13, 130, "Seasoned", 1000)
+for _, p in ipairs({E, F, G, S}) do login(p) end
+table.insert(tbl("chaos_shop_coins"), {account_id = 110, coins = 1000})
+table.insert(tbl("chaos_shop_coins"), {account_id = 100, coins = 0})
+local function coinsAcc(acc)
+	for _, r in ipairs(tbl("chaos_shop_coins")) do if r.account_id == acc then return r.coins end end
+	return 0
+end
+local function orderRow(id)
+	for _, r in ipairs(tbl("chaos_market_orders")) do if r.id == id then return r end end
+end
+local function dbBalance(guid)
+	for _, r in ipairs(tbl("players")) do if r.id == guid then return r.balance end end
+end
+local function countIn(container, id)
+	local n = 0
+	for _, it in ipairs(container.children) do if it.id == id then n = n + it.count end end
+	return n
+end
+
+-- the order form's search
+op(E, "orderFind", {q = "29856"})
+eq(lastSent(E, "orderFind").items[1].sid, 29856, "a server id")
+op(E, "orderFind", {q = "upheaval"})
+local found = lastSent(E, "orderFind").items
+eq(#found >= 1 and found[1].sid, 29856, "a kind ever listed on the market, by part of its name")
+op(E, "orderFind", {q = "2160"})
+eq(#lastSent(E, "orderFind").items, 0, "money cannot be ordered")
+
+-- post a gold order: 30 orbs at 2,000 each
+op(E, "orderPost", {sid = 2160, quantity = 1, price = 500, cur = "gold", days = 1})
+eq(lastSent(E, "error").text, mcfg.messages.orderKind, "crystal coins refused")
+op(E, "orderPost", {sid = 29856, quantity = 30, price = 2000, cur = "gold", days = 1})
+local goldOrder = lastSent(E, "done").id
+ok(goldOrder and goldOrder > 0, "gold order posted")
+eq(E.bank, 1000000 - 60000 - 600, "escrow (30 x 2,000) and the fee (1%) left the bank")
+eq(dbBalance(10), E.bank, "the database holds the same balance")
+local row = orderRow(goldOrder)
+eq(row.state .. "/" .. row.escrow .. "/" .. row.fee .. "/" .. row.quantity .. "/" .. row.currency .. "/" .. row.category, "0/60000/600/30/gold/orb",
+	"the order row")
+op(E, "orderPost", {sid = 29856, quantity = 1000, price = 2000000, cur = "gold", days = 1})
+ok(lastSent(E, "error").text:find("at most") or lastSent(E, "error").text:find("needs"), "more than the bank holds is refused")
+eq(#tbl("chaos_market_orders"), 1, "and writes nothing")
+
+-- the list
+op(F, "orders", {})
+local page = lastSent(F, "orders")
+eq(page.total .. "/" .. page.rows[1].id .. "/" .. tostring(page.rows[1].mine), "1/" .. goldOrder .. "/nil", "the buyer's order is listed")
+eq(page.rows[1].qty .. "/" .. page.rows[1].filled .. "/" .. page.rows[1].price .. "/" .. page.rows[1].cur, "30/0/2000/gold", "row fields")
+op(E, "orders", {mine = true})
+eq(lastSent(E, "orders").rows[1].mine, true, "my orders")
+
+-- fills: 12 orbs, then 5 of a stack of 20
+local bagF = F.slots[CONST_SLOT_BACKPACK]
+addTo(bagF, newItem(29856, 12))
+op(F, "fillable", {id = goldOrder})
+local fl = lastSent(F, "fillable")
+eq(#fl.items .. "/" .. fl.items[1].fill .. "/" .. tostring(fl.items[1].why), "1/12/nil", "the seller's matching stack")
+op(F, "fill", {id = goldOrder, ref = "s3.0", sid = 29856, iid = "0"})
+ok(lastSent(F, "done") and lastSent(F, "done").text:find("22,800"), "fill done: 24,000 minus the 5% tax")
+eq(F.bank, 22800, "the seller's gold is in the bank")
+eq(countIn(bagF, 29856), 0, "the orbs left the seller")
+eq(countIn(E.inbox, 29856), 12, "and reached the buyer's inbox")
+row = orderRow(goldOrder)
+eq(row.filled .. "/" .. row.escrow .. "/" .. row.state, "12/36000/0", "the order: 12 of 30, escrow 18 x 2,000 left")
+local fillRow
+for _, r in ipairs(tbl("chaos_market_offers")) do if r.order_id == goldOrder then fillRow = r end end
+eq(fillRow.state .. "/" .. fillRow.buyer_id .. "/" .. fillRow.paid_amount .. "/" .. fillRow.tax .. "/" .. fillRow.count, "1/10/24000/1200/12",
+	"the fill is a sold offer row")
+addTo(bagF, newItem(29856, 20))
+op(F, "fill", {id = goldOrder, ref = "s3.0", sid = 29856, iid = "0", count = 5})
+eq(countIn(bagF, 29856) .. "/" .. countIn(E.inbox, 29856) .. "/" .. orderRow(goldOrder).filled, "15/17/17", "part of a stack")
+op(F, "mine")
+eq(lastSent(F, "mine").used, 0, "fills are not active listings")
+op(F, "history")
+eq(lastSent(F, "history").rows[1].side .. "/" .. lastSent(F, "history").rows[1].order, "sold/" .. goldOrder, "fills in the history")
+
+-- refusals
+op(E, "fill", {id = goldOrder, ref = "s3.0", sid = 29856, iid = "0"})
+eq(lastSent(E, "error").text, mcfg.messages.ownOrder, "own order")
+addTo(G.slots[CONST_SLOT_BACKPACK], newItem(29856, 3))
+op(G, "fill", {id = goldOrder, ref = "s3.0", sid = 29856, iid = "0"})
+eq(lastSent(G, "error").text, mcfg.messages.ownAccountOrder, "own account")
+addTo(G.slots[CONST_SLOT_BACKPACK], newItem(2400))
+F.sent = {}
+addTo(bagF, newItem(2400))
+op(F, "fill", {id = goldOrder, ref = "s3.1", sid = 2400, iid = "0"})
+eq(lastSent(F, "error").text, mcfg.messages.orderItem, "another item kind")
+season = 1
+ChaosSeason.rows[13] = 1
+addTo(S.slots[CONST_SLOT_BACKPACK], newItem(29856, 3))
+op(S, "fill", {id = goldOrder, ref = "s3.0", sid = 29856, iid = "0"})
+eq(lastSent(S, "error").text, mcfg.messages.orderRealm, "a season character cannot fill a standard order")
+op(S, "orders", {})
+eq(lastSent(S, "orders").total, 0, "nor sees it")
+-- a coins order on the season market (posted before season.lua made season markets gold only) cannot be filled
+ChaosSeason.marketCurrencyAllowed = function(realm, cur) return realm == 0 or cur ~= "coins" end
+Chaos.seasonConfig = {market = {message = "Season markets trade for gold only."}}
+table.insert(tbl("chaos_market_orders"), {id = 990, realm = 1, state = 0, buyer_id = 3, buyer_account = 30, buyer_name = "Ashen",
+	item_id = 29856, client_id = 29856, name = "Orb of Upheaval", category = "orb", stackable = 1, quantity = 5, filled = 0,
+	currency = "coins", price = 5, escrow = 25, refunded = 0, fee = 100, filter = "", created = os.time(), expires = os.time() + 999, closed_at = 0})
+op(S, "fill", {id = 990, ref = "s3.0", sid = 29856, iid = "0"})
+eq(lastSent(S, "error").text, "Season markets trade for gold only.", "no coins on a season market")
+op(S, "open")
+eq(lastSent(S, "meta").coinsOk, false, "the window is told: gold only")
+op(F, "open")
+eq(lastSent(F, "meta").coinsOk, true, "standard market: coins too")
+ChaosSeason.marketCurrencyAllowed, Chaos.seasonConfig = nil, nil
+for i, r in ipairs(tbl("chaos_market_orders")) do if r.id == 990 then table.remove(tbl("chaos_market_orders"), i) break end end
+season = 0
+
+-- a coins order with a filter: Legendary+, item level 100+, Fire Damage 10+ T3+
+F.bank = 22800
+op(F, "orderPost", {sid = 2400, quantity = 10, price = 50, cur = "coins", days = 3,
+	filter = {rarity = 5, ilvl = 100, mods = {{k = "rarity_firedamage", min = 10, t = 3}}}})
+local coinOrder = lastSent(F, "done").id
+eq(coinsAcc(110) .. "/" .. F.bank, "500/22300", "500 coins escrowed, the 500 gold fee from the bank")
+local bagE = E.slots[CONST_SLOT_BACKPACK]
+local good = newItem(2400)
+for k, v in pairs({rarity = 5, chaos_ilvl = 150, rarity_firedamage = 12, rarity_firedamage_t = 3, chaos_iid = 4242, chaos_sockets = 1}) do good.custom[k] = v end
+good.std[ITEM_ATTRIBUTE_NAME] = "Emberfang"
+local weak = newItem(2400)
+for k, v in pairs({rarity = 3, chaos_ilvl = 150, rarity_firedamage = 12, rarity_firedamage_t = 3, chaos_iid = 4243}) do weak.custom[k] = v end
+addTo(bagE, good)
+addTo(bagE, weak)
+local goodSer = ser(good)
+op(E, "fillable", {id = coinOrder})
+fl = lastSent(E, "fillable")
+eq(#fl.items .. "/" .. tostring(fl.items[1].why) .. "/" .. fl.items[2].why, "2/nil/Its rarity is too low.", "the seller's swords, one fits")
+eq(fl.order.filter.rarity .. "/" .. fl.order.filter.mods[1].k, "5/rarity_firedamage", "the order's filter is sent")
+op(E, "fill", {id = coinOrder, ref = "s3.1", sid = 2400, iid = "4243"})
+eq(lastSent(E, "error").text, "That item does not fit the order: Its rarity is too low.", "a sword that does not fit")
+op(E, "fill", {id = coinOrder, ref = "s3.0", sid = 2400, iid = "1"})
+eq(lastSent(E, "error").text, mcfg.messages.noItem, "the per-item id must match")
+op(E, "fill", {id = coinOrder, ref = "s3.0", sid = 2400, iid = "4242"})
+ok(lastSent(E, "done").text:find("magic sword"), "filled with the fitting sword")
+eq(coinsAcc(100), 48, "the seller's account: 50 coins minus the 5% tax (2)")
+local got
+for _, it in ipairs(F.inbox.children) do if it.id == 2400 then got = it end end
+ok(got ~= nil, "the sword is in the buyer's inbox")
+eq(got.custom.chaos_iid, nil, "with a new per-item id")
+got.custom.chaos_iid = 4242
+eq(ser(got), goodSer, "and every attribute")
+eq(orderRow(coinOrder).filled .. "/" .. orderRow(coinOrder).escrow, "1/450", "1 of 10")
+
+-- cancel: the coins left go back to the account at once
+op(E, "orderCancel", {id = coinOrder})
+eq(lastSent(E, "error").text, mcfg.messages.orderGone, "only the buyer cancels")
+op(F, "orderCancel", {id = coinOrder})
+ok(lastSent(F, "done").text:find("450"), "cancelled")
+eq(coinsAcc(110), 950, "450 coins refunded")
+row = orderRow(coinOrder)
+eq(row.state .. "/" .. row.escrow .. "/" .. row.refunded, "2/0/450", "closed, the refund recorded")
+op(F, "orderCancel", {id = coinOrder})
+eq(lastSent(F, "error").text, mcfg.messages.orderGone, "a second cancel refunds nothing")
+eq(coinsAcc(110), 950, "still 950")
+
+-- a fill whose transaction fails: rolled back, the item goes back to the seller's inbox
+addTo(bagF, newItem(29856, 2))
+local escrowBefore = orderRow(goldOrder).escrow
+DB.failOn = "'item', 0, 'order'"
+op(F, "fill", {id = goldOrder, ref = "s3.0", sid = 29856, iid = "0", count = 2})
+ok(lastSent(F, "done").text:find("back in your inbox"), "the seller is told")
+eq(orderRow(goldOrder).escrow .. "/" .. orderRow(goldOrder).filled, escrowBefore .. "/17", "the order is unchanged")
+eq(countIn(F.inbox, 29856), 2, "the orbs are in the seller's inbox")
+-- a save that fails while filling: nothing moves
+F.failSave = true
+local inBagF = countIn(bagF, 29856)
+op(F, "fill", {id = goldOrder, ref = "s3.0", sid = 29856, iid = "0", count = 1})
+eq(lastSent(F, "error").text, mcfg.messages.busy, "refused")
+eq(countIn(bagF, 29856), inBagF, "the orbs are given back")
+local pend = 0
+for _, r in ipairs(tbl("chaos_market_offers")) do if r.state == 9 then pend = pend + 1 end end
+eq(pend, 0, "no pending fill row left")
+F.failSave = false
+
+-- a crash after the seller's save: the pending fill is completed at the next startup (or returned when the order closed)
+local tc = os.time()
+table.insert(tbl("chaos_market_offers"), {id = 970, state = 9, realm = 0, seller_id = 11, seller_account = 110, seller_name = "Filler",
+	item_id = 29856, client_id = 29856, count = 2, name = "Orb of Upheaval", category = "orb", rarity = 0, ilvl = 0, unique_item = 0, mods = "",
+	price_gold = 4000, price_coins = 0, fee = 0, codec = "blob", data = MC.hex(ser(newItem(29856, 2))), tip = "x", created = tc, expires = tc,
+	buyer_id = 10, buyer_name = "Wanter", paid_currency = "", paid_amount = 0, tax = 0, closed_at = 0, order_id = goldOrder})
+table.insert(tbl("chaos_market_offers"), {id = 971, state = 9, realm = 0, seller_id = 11, seller_account = 110, seller_name = "Filler",
+	item_id = 2400, client_id = 2400, count = 1, name = "magic sword", category = "misc", rarity = 5, ilvl = 150, unique_item = 0, mods = "",
+	price_gold = 0, price_coins = 50, fee = 0, codec = "blob", data = MC.hex(ser(newItem(2400))), tip = "x", created = tc, expires = tc,
+	buyer_id = 11, buyer_name = "Filler", paid_currency = "", paid_amount = 0, tax = 0, closed_at = 0, order_id = coinOrder})
+logout(F)
+F.storage[cfg.storage.listSeq] = 971
+F:save()
+MK.recoverAll()
+local r970, r971
+for _, r in ipairs(tbl("chaos_market_offers")) do
+	if r.id == 970 then r970 = r elseif r.id == 971 then r971 = r end
+end
+eq(r970.state .. "/" .. orderRow(goldOrder).filled, "1/19", "a pending fill of an open order is completed")
+eq(r971.state, 2, "a pending fill of a closed order is returned")
+login(F)
+local bankF = F.bank
+MK.deliver(F)
+eq(F.bank - bankF, 3800, "the recovered fill's gold (4,000 minus tax)")
+eq(countIn(F.inbox, 2400), 2, "the returned sword (next to the one it bought)")
+
+-- expiry: what is left goes back to the buyer (offline: at the next login)
+logout(E)
+local bankE = E.bank
+clock = clock + 2 * 86400
+eq(MK.sweepOrders(), 1, "the gold order expired")
+row = orderRow(goldOrder)
+eq(row.state .. "/" .. row.escrow .. "/" .. row.refunded, "3/0/22000", "11 x 2,000 refunded")
+login(E)
+events.ChaosMarketLogin.onLogin(E)
+runEvents()
+eq(E.bank - bankE, 22000, "the refund is in the bank after login")
+ok(E.msgs[#E.msgs]:find("back from your buy order"), "and the buyer is told")
+op(E, "myOrders")
+local mo = lastSent(E, "myOrders")
+eq(#mo.active .. "/" .. mo.closed[1].state .. "/" .. mo.closed[1].refunded, "0/expired/22000", "my orders: closed with the refund")
+
+-- buy orders and sell offers share the active-listing limit (Chaos Pact slots included)
+Chaos.marketConfig.maxActive = 1
+op(E, "orderPost", {sid = 29856, quantity = 1, price = 500, cur = "gold", days = 1})
+local limited = lastSent(E, "done").id
+op(E, "orderPost", {sid = 29856, quantity = 1, price = 500, cur = "gold", days = 1})
+ok(lastSent(E, "error").text:find("active offers and buy orders"), "a second order over the limit")
+addTo(bagE, newItem(29856, 4))
+local nOffers = #tbl("chaos_market_offers")
+op(E, "list", {ref = "s3.1", sid = 29856, iid = "0", count = 1, gold = 2000, days = 1})
+ok(lastSent(E, "error").text:find("active offers and buy orders"), "and a sell offer")
+eq(#tbl("chaos_market_offers"), nOffers, "nothing listed")
+Chaos.marketConfig.maxActive = 20
+op(E, "orderCancel", {id = limited})
+
+-- admin visibility
+local lines, sums = MK.ordersReport(nil, 50)
+eq(#lines .. "/" .. sums.gold, "0/0", "no active order left")
+lines = MK.ordersReport(10, 50)
+ok(#lines >= 2 and lines[1]:find("Wanter"), "one character's orders, every state: " .. tostring(lines[1]))
+-- money check: everything E paid into its gold order went to the sellers, the tax or back to E
+local paid = 0
+for _, r in ipairs(tbl("chaos_market_offers")) do if r.order_id == goldOrder and r.state == 1 then paid = paid + r.paid_amount end end
+eq(paid + orderRow(goldOrder).refunded, 60000, "fills + refund = the escrow")
 
 -- the key-list codec (a server without engine patch 0017)
 Items.serializeAttributes, Items.unserializeAttributes, Item.serializeAttributes, Item.unserializeAttributes = nil, nil, nil, nil

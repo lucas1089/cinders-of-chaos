@@ -63,3 +63,25 @@ CREATE TABLE IF NOT EXISTS `chaos_market_offer_mods` (`offer_id` int(11) NOT NUL
   `value` int(11) NOT NULL DEFAULT 0, `tier` tinyint(3) unsigned NOT NULL DEFAULT 0, PRIMARY KEY (`offer_id`, `mod_key`),
   KEY `chaos_market_mod_value` (`mod_key`, `value`), KEY `chaos_market_mod_tier` (`mod_key`, `tier`))
   ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- buy orders (market_orders_core.lua; see server/README.md "Market", Buy orders): what a buyer wants (item kind, a filter
+--   in the Browse modifier filter's language as text, quantity, price per unit in gold OR coins), the escrowed payment
+--   (`escrow`: price x the units not bought yet), the fee, and on close what went back (`refunded`).
+--   state 0 active, 1 filled, 2 cancelled, 3 expired. A fill is a chaos_market_offers row with `order_id` = the order
+--   (state 1 sold, 9 while it is written); a refund is a chaos_market_deliveries row with `offer_id` = -order id.
+CREATE TABLE IF NOT EXISTS `chaos_market_orders` (`id` int(11) NOT NULL AUTO_INCREMENT,
+  `realm` int(11) NOT NULL DEFAULT 0, `state` tinyint(3) unsigned NOT NULL DEFAULT 0,
+  `buyer_id` int(11) NOT NULL, `buyer_account` int(11) NOT NULL, `buyer_name` varchar(64) NOT NULL DEFAULT '',
+  `item_id` int(11) NOT NULL, `client_id` int(11) NOT NULL DEFAULT 0, `name` varchar(100) NOT NULL DEFAULT '',
+  `category` varchar(16) NOT NULL DEFAULT 'misc', `stackable` tinyint(1) NOT NULL DEFAULT 0,
+  `quantity` int(11) NOT NULL DEFAULT 1, `filled` int(11) NOT NULL DEFAULT 0, `currency` varchar(8) NOT NULL DEFAULT 'gold',
+  `price` bigint(20) unsigned NOT NULL DEFAULT 0, `escrow` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `refunded` bigint(20) unsigned NOT NULL DEFAULT 0, `fee` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `filter` varchar(1000) NOT NULL DEFAULT '', `created` int(10) unsigned NOT NULL, `expires` int(10) unsigned NOT NULL,
+  `closed_at` int(10) unsigned NOT NULL DEFAULT 0, PRIMARY KEY (`id`),
+  KEY `chaos_market_orders_list` (`state`, `realm`, `expires`), KEY `chaos_market_orders_buyer` (`buyer_id`, `state`),
+  KEY `chaos_market_orders_account` (`buyer_account`, `state`), KEY `chaos_market_orders_item` (`item_id`, `state`))
+  ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+ALTER TABLE `chaos_market_offers` ADD COLUMN IF NOT EXISTS `order_id` int(11) NOT NULL DEFAULT 0,
+  ADD INDEX IF NOT EXISTS `chaos_market_offer_order` (`order_id`);

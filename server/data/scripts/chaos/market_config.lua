@@ -8,7 +8,8 @@ return {
 		offers = "chaos_market_offers", -- one row per offer, the listed item kept in it (escrow) until it is delivered
 		deliveries = "chaos_market_deliveries", -- what the market owes a character: an item, gold, or the notice of a coin sale
 		log = "chaos_market_log", -- every listing, sale, cancel, expiry, delivery and refusal worth keeping
-		offerMods = "chaos_market_offer_mods" -- the modifiers of each active offer (key, value, tier) for the Browse filter
+		offerMods = "chaos_market_offer_mods", -- the modifiers of each active offer (key, value, tier) for the Browse filter
+		orders = "chaos_market_orders" -- buy orders: what a buyer wants, the price per unit and the escrowed payment
 	},
 
 	-- player storages (inside the Chaos range 7100000-7100999; 7100970-7100979 reserved for the market). They are saved
@@ -58,8 +59,27 @@ return {
 	modIndexVersion = 1,
 	categories = {"weapon", "shield", "helmet", "armor", "legs", "boots", "jewel", "other", "orb", "gem", "key", "misc"},
 
+	-- ------------------------------------------------------------------ buy orders (market_orders_core.lua)
+	-- A buyer posts what it wants (an item kind, optional rarity / item level / modifier filters in the Browse modifier
+	-- filter's language), how many and the price per unit in gold OR Chaos Coins. The whole payment (price x quantity)
+	-- leaves the bank / the account at posting (escrow, in the order row); the listing fee is charged like a sell
+	-- offer's (1% of the total gold, coins x coinFeeGold for a coins order; gold from the bank, not refunded). Sellers
+	-- fill from their backpack (a stack in part, one single item per fill); every fill pays the seller from the escrow
+	-- minus the sales tax and sends the item to the buyer's inbox. Expiry or cancel refunds what is left. Buy orders
+	-- count against the same active-listing limits as sell offers (MK.maxActive, Chaos Pact slots included).
+	orders = {
+		maxQuantity = 1000, -- units per order
+		maxTotal = {gold = 2000000000, coins = 1000000}, -- the escrow of one order
+		maxIlvl = 1000,
+		pageSize = 10,
+		findMax = 20, -- item kinds the order form's search returns
+		fillableMax = 40, -- items of the seller shown for one order
+		sorts = {"new", "price", "ending", "name"}
+	},
+
 	-- rate limits per character (ms between two requests of the kind)
-	rate = {browse = 150, tip = 60, list = 1500, buy = 800, cancel = 800, mine = 400, sellable = 600},
+	rate = {browse = 150, tip = 60, list = 1500, buy = 800, cancel = 800, mine = 400, sellable = 600, orders = 150, orderPost = 1500,
+		orderCancel = 800, fill = 800, fillable = 400, orderFind = 300},
 
 	-- the expiry sweep (globalevent) and how many offers it closes at most per run
 	sweepSeconds = 60,
@@ -81,9 +101,17 @@ return {
 		noCoins = "You do not have enough Chaos Coins.",
 		noCurrency = "That offer is not sold for that currency.",
 		busy = "The market is busy, please try again.",
-		maxActive = "You already have %d active offers.",
-		maxAccount = "Your account already has %d active offers.",
+		maxActive = "You already have %d active offers and buy orders.",
+		maxAccount = "Your account already has %d active offers and buy orders.",
 		noItem = "That item is no longer where it was.",
-		feeGold = "The listing fee is %s gold; you do not have it in your bank account."
+		feeGold = "The listing fee is %s gold; you do not have it in your bank account.",
+		orderGone = "That buy order is no longer open.",
+		ownOrder = "That is your own buy order.",
+		ownAccountOrder = "You cannot fill a buy order of your own account.",
+		orderRealm = "That buy order is not on your market.",
+		orderItem = "That is not the item the order asks for.",
+		orderKind = "That item cannot be ordered on the market.",
+		orderGold = "The order needs %s gold in your bank (%s for the items, %s listing fee).",
+		orderCoins = "The order needs %s Chaos Coins on your account and the %s gold listing fee in your bank."
 	}
 }

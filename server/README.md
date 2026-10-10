@@ -253,7 +253,7 @@ working directory, as with the rest of the base server libs).
 | game_infinitytower | `infinitytower.lua` | 214 | Seasons, points, best floor/time, ranking, milestone claim, Adventure > Infinity Tower, `/towerrun` staff test helper. **The tower gameplay does not exist**; a future script reports results with `ChaosTower.recordRun`. Season-end top 3 chests not implemented. |
 | game_stash | `stash.lua` | **110** (new), Economy > Supply Stash | Deposit by drag, redeem, categories, block list, the Stash All button, DB persistence. Stash tabs per account limit (free / Chaos Pact / bought), Orbs / Gems / Keys tabs; tested in game (see "Chaos Pact and account storage"). |
 | game_spellbook | `spellbook.lua` | 219, Character > Spellbook / `/spells` | Spell list window: every player spell of `data/spells/spells.xml` with its data, a short description and its area of effect (see "Spellbook" below). |
-| game_lootfilter | `lootfilter.lua`, `lootfilter_core.lua`, `lootfilter_config.lua` | 238, Hunt > Loot Filter | Loot filter (glow/dim by rarity in corpses), loot channel with click-to-loot icons, rare-drop lines, loot rays, Rarity Autoloot store unlock. Tested in game (see "Loot filter"). |
+| game_lootfilter | `lootfilter.lua`, `lootfilter_core.lua`, `lootfilter_config.lua` | 238, Hunt > Loot Filter | Loot filter (glow/dim by rarity in corpses), loot channel with click-to-loot icons, rare-drop lines, loot rays, Rarity Autoloot store unlock, a counter (session / total) and an alert sound per filter rule. Tested in game (see "Loot filter"). |
 | game_groundlabels | `groundloot.lua`, `groundloot_core.lua` (client also `game_lootfilter`, `game_itemtooltip`) | 230 | Ground loot labels: names, rarity, category and decay of the items on the tiles in view and a short list of what lootable corpses hold; tooltips of ground items; `raise` puts an item lower in a pile on top so the normal move can pick it up. Tested in game (see "Ground loot labels") |
 | game_bounty | `bounty.lua`, `bounty_core.lua`, `bounty_config.lua`, `bounty_pool.lua` | 223, Adventure > Bounty Board | Daily rotating kill contracts per level band, tested in game (see "Bounty board"). |
 | game_rift | `rift.lua`, `rift_core.lua`, `rift_config.lua` | 228 (server -> client), Adventure > Rifts / `/rift` | Rift Keys open timed instances with modifiers; run HUD; tested in game (see "Rifts"). |
@@ -264,7 +264,7 @@ working directory, as with the rest of the base server libs).
 | game_hunt | `hunt.lua`, `hunt_core.lua`, `hunt_config.lua`, `hunt_supplies.lua` | 241, Hunt > Hunt Tracker | Hunt tracker: session time with pause/reset, exp/h, time to level, loot and profit/h, supplies, kills, damage/healing, Chaos drops; tested in game (see "Hunt tracker"). |
 | game_season | `season.lua`, `season_core.lua`, `season_config.lua` | 246, Adventure > Season / `/season` | Seasons: fresh-start season characters isolated from standard ones, season ladder view, season uniques, account-wide reward track, end-of-season migration; tested in game with two clients (see "Seasons"). |
 | game_battlepass | `seasonpass.lua`, `seasonpass_core.lua`, `seasonpass_config.lua`, `seasonpass_store.lua` | 227, Adventure > Season Pass | Season pass: account-wide free and premium track of 50 tiers per season, pass XP from play, daily and weekly challenges, claims safe against double claims, the premium pass and three season packs in the store and the pass window (upgrades pay the difference, gifts); tested in game with two clients (see "Season pass"). |
-| game_market | `market.lua`, `market_core.lua`, `market_config.lua` | **221**, Economy > Market (Alt+E) | Our player market for gold and Chaos Coins: escrow of the listed item in its offer row (engine patch 0017), fees, tax, expiry, seasons kept apart, crash-safe transactions, a modifier search (up to 6 rows of modifier / value / tier, all or at least N, sockets, quality, free affix slots; table `chaos_market_offer_mods`); the stock market off (`tools/patch_market.py`); tested in game with two clients and a season character (see "Market"). |
+| game_market | `market.lua`, `market_core.lua`, `market_orders_core.lua`, `market_config.lua` | **221**, Economy > Market (Alt+E) | Our player market for gold and Chaos Coins: escrow of the listed item in its offer row (engine patch 0017), fees, tax, expiry, seasons kept apart, crash-safe transactions, a modifier search (up to 6 rows of modifier / value / tier, all or at least N, sockets, quality, free affix slots; table `chaos_market_offer_mods`), buy orders with the payment escrowed at posting, partial fills, refunds and the same filter language (table `chaos_market_orders`); the stock market off (`tools/patch_market.py`); tested in game with two clients and a season character (see "Market"). |
 | game_pact | `pact.lua`, `pact_core.lua`, `pact_config.lua`, `sql/chaos_pact.sql` | **222**, Character > Chaos Pact | Chaos Pact subscription (30 days, stacks, daily Chaos Coins, title; no premium days) and account limits (stash tabs, market listings, saved builds, loot rules, character slots) from one config; one-time extras in the store; saved passive tree builds per account; tested in game (see "Chaos Pact and account storage"). |
 | game_referral | `referral.lua`, `referral_core.lua`, `referral_config.lua`, `sql/chaos_referral.sql` | **220**, Character > Referral | Referral program: an account's code, a friend's code entered at account creation (website) or in game in the first 7 days, a welcome gift for the friend (potions, a title), titles and a few Chaos Coins for the referrer at the friend's levels 50 and 150; anti-abuse checks; tested in game (see "Referral program"). |
 | game_transmog | `transmog.lua`, `transmog_core.lua`, `transmog_config.lua`, `sql/chaos_transmog.sql` | **212**, Character > Transmog | Transmog: equipped gear takes the look of an unlocked item of its kind (appearance only), account-wide wardrobe with collection progress, appearance sets (store, achievement, season, exclusive), small gold fee; engine patch 0019 + client base patch 0030 draw the look everywhere; tested in game (see "Transmog"). |
@@ -3684,7 +3684,8 @@ or in both (the buyer chooses), and 1, 3 or 7 days. A stack can be listed in par
 checks, `ChaosMarketCore.itemRefusal`): equipped items, locked items (`chaos_locked`), store items (`isStoreItem`) and the
 store pouches (`ChaosPouches.isPouch(item)` or the custom attribute `chaos_storebound`), containers with something inside
 (an empty bag is fine), items that cannot be picked up or moved, quest items (a map unique id; `blockedActionIds`), items
-that are wearing off (decay state), gold / platinum / crystal coins. Rolled gear is sold whole; there are no buy orders.
+that are wearing off (decay state), gold / platinum / crystal coins. Rolled gear is sold whole. Players who want an item
+they cannot find post a buy order (below).
 
 | Setting | Value |
 |---|---|
@@ -3692,7 +3693,7 @@ that are wearing off (decay state), gold / platinum / crystal coins. Rolled gear
 | Sales tax | 5% of what the buyer pays (gold and coins), rounded down, taken from the seller's share |
 | Prices | gold 100 - 2,000,000,000; coins 1 - 100,000 |
 | Duration | 1, 3 or 7 days (default 3); then the item goes back to the seller's inbox |
-| Limits | 20 active offers per character, 40 per account; level 8 to list or buy; you cannot buy from your own account |
+| Limits | 20 active listings per character, 40 per account (sell offers and buy orders together; Chaos Pact slots raise both); level 8 to list or buy; you cannot buy from your own account |
 | Rate limits | per character: browse 150 ms, list 1.5 s, buy / cancel 0.8 s, tooltip 60 ms (`ChaosRateLimit`) |
 
 **Escrow.** The listed item leaves the seller and lives in its offer row (`chaos_market_offers.data`): with engine patch
@@ -3781,6 +3782,51 @@ total} | tip {id, tip, seller} | sellable {items} | mine {active, closed, owed} 
 done {what, text} | error {text} | openWindow`. `ref` is the server's path to an item in the backpack (`s3.0.5`), `pos`
 the client position of a dragged item; both are checked against the item id and the per-item id.
 
+**Buy orders** (`market_orders_core.lua` pure rules, the engine part in `market.lua`, table `chaos_market_orders`,
+Market > Buy Orders). A buyer posts what it wants: an item kind (found by name in the order form: the exact name, a part
+of the name of an item it carries or of any item ever listed), optionally the lowest rarity, the lowest item level and the
+Browse tab's modifier filter (the same language: up to 6 rows of modifier / lowest value / lowest tier, all or at least N,
+sockets, quality, free prefix / suffix, power, bound; checked by `C.modFilter`, stored as one text column,
+`MO.encodeFilter`), how many (1 - 1,000) and the price per unit in gold OR Chaos Coins, for 1, 3 or 7 days.
+- **Escrow at posting.** The whole payment (price x quantity; at most 2,000,000,000 gold or 1,000,000 coins per order)
+  leaves the buyer when the order is posted and lives in the order row (`escrow`): gold from the bank, coins from the
+  account. The listing fee is a sell offer's (1% of the total gold, a coins order: coins x 100 gold x 1%; at least 100,
+  at most 1,000,000; gold from the bank, not refunded). `player:save()` first, then ONE transaction takes the gold
+  (`players.balance`), the coins (`chaos_shop_coins`) and writes the order.
+- **Filling.** Market > Buy Orders lists the open orders of the viewer's market (best price, newest, ending, name;
+  currency; name search); *Sell* opens the seller's items of that kind from the backpack (and the bags in it), greyed
+  with the reason when they do not fit the filter or cannot be listed (`ChaosMarketCore.itemRefusal`, the same rules as a
+  sell offer). A stack fills in part (up to what the order still wants or what the seller types), a single item fills
+  one. A fill is written like a listing that sells at once (crash safe the same way): an offer row with `order_id` =
+  the order (pending), the item leaves the seller (escrow of the item: engine patch 0017 blob, as for offers),
+  `player:save()`, then ONE transaction (`MK.completeFill`) adds the units to the order, takes their price from the
+  escrow, marks the row sold and writes the deliveries: the item to the buyer's inbox (a new per-item id), the gold
+  minus the 5% sales tax to the seller's bank (a delivery row) or the coins minus the tax straight to the seller's
+  account (plus a notice row). A pending fill found later (login, startup) is completed, or its item goes back to the
+  seller's inbox when the order closed meanwhile. Fills show in both characters' History (`(buy order)`), and the
+  seller's My Offers.
+- **End.** The buyer can cancel; at the end of its duration the sweep (`MK.sweepOrders`, the market globalevent) expires
+  it. Both refund what the escrow still holds: gold as a delivery row (`offer_id` = minus the order id, reason
+  `refund`; online at once, else at the next login), coins straight back to the account (plus a notice row). An order
+  whose units are all bought closes as filled.
+- **Rules.** Not on your own order or one of your own account; seasons apart as for offers (an order is on its buyer's
+  market; season characters see and fill only their season's orders; season markets trade for gold only: season.lua
+  wraps `orderPost`, a fill of a coins order on a season market is refused too, and `meta.coinsOk = false` makes the
+  window hide the coin price and offer gold only); level 8; money (gold / platinum / crystal coins)
+  cannot be ordered. **Listing limits:** buy orders count against the same active-listing limits as sell offers
+  (`MK.activeCounts`, `MK.limitRefusal`; the Chaos Pact block `MK.maxActive` is unchanged and still sets the numbers),
+  so a player cannot open 20 offers and 20 orders on a free account.
+- **Admin.** The admin panel's Economy > *Market buy orders* (every active order, or every order of one character, with
+  the escrow held), staff `/market orders [character]`, `/market sweep` expires offers and orders; every post, fill,
+  cancel and expiry is a `chaos_market_log` row (`order`, `fill`, `ordercancel`, `orderexpire`, `fillback`).
+- **Protocol** (221): `orders {q, cat, cur, mine, sort, page}` -> `orders {rows, page, pages, total}`, `myOrders` ->
+  `myOrders {active, closed, used, max}`, `orderFind {q}` -> `orderFind {items}`, `orderPost {sid, quantity, price, cur,
+  days, filter}`, `orderCancel {id}`, `fillable {id}` -> `fillable {id, order, items}`, `fill {id, ref, sid, iid,
+  count}`; answers `done {what = orderPost | orderCancel | fill}` or `error`. Rate limits: list 150 ms, post 1.5 s, fill /
+  cancel 0.8 s, search 300 ms.
+- **Install:** `sql/chaos_market.sql` (the table and the `order_id` column of `chaos_market_offers`, both
+  `IF NOT EXISTS`); `market.lua` runs the same statements at startup.
+
 **Tests.** `tests/market_test.lua` (LuaJIT and Lua 5.3, a mocked engine with a small SQL interpreter): fees, tax, prices,
 every refusal, seasons, the Browse query (escaping, filters, sorting, pages), the modifier search (the index of an offer,
 rows with value and tier, all rows and at least N, sockets, quality, free prefix / suffix, power, bound, refused keys /
@@ -3791,7 +3837,14 @@ for a new per-item id), own offer / own account / other season / not enough mone
 offline, a rolled-back transaction, failed saves, a crash between save and mark, interrupted listings. The mocked SQL
 runs the real statements (`EXISTS`, `IN (SELECT ... GROUP BY ... HAVING COUNT(*))`, `table`.`column`).
 `client/.../game_market/marketview_test.lua` (the catalog and typeahead choices, the form -> request and its checks,
-the matched lines).
+the matched lines). Buy orders in both: the order checks and limits, the filter text round trip and matching (rarity,
+item level, rows all / at least N, sockets, quality, free slots, power, bound), fill counts, payment and tax, the list
+query; posting with gold and with coins (escrow and fee in the database and in memory), parts of a stack, a filtered
+coins order filled by a fitting sword (every attribute kept, new per-item id), refusals (own order, own account, money,
+another kind, a season character, a sword that does not fit, a wrong per-item id), cancel and expiry refunds (offline
+buyer refunded at login), a failed fill transaction (item returned), a failed save, pending fills completed / returned
+at startup, the shared listing limit, the admin report and the money balance (fills + refund = escrow); the client's
+order form check, cost text, filter text and order lines.
 
 **Tested in game** (test server built with 0001-0014 + 0017, two clients and a season character): a Legendary magic
 sword (four modifiers with tiers, a bound modifier, a legendary power, quality 15%, two sockets with a gem) listed for
@@ -3818,6 +3871,17 @@ server); the rows removed on a purchase and a cancel; `EXPLAIN` of both query sh
 ...)` keys; the count mode materialized). `sql/chaos_market.sql` run twice on the first schema and on an empty database. Not verified in game: the key-list
 codec on a real engine (unit-tested), the per-account offer limit, a listing price at the limits, the base client's
 account with several characters on the copy used (its login parser lacked base patch 0025; patched for the test).
+Buy orders (test server with 0017, a copy of the test database, two clients on two accounts): the order form found Orb
+of Upheaval by part of its name and the magic sword by its name; a gold order for 30 orbs at 2,000 (bank -60,600: 60,000
+held + 600 fee, the same in `players.balance`) and a coins order for 2 Legendary+ iLvl 100+ magic swords with Execute 5+
+T5+ taken from the Browse modifiers (account -100 coins, bank -100 fee); the other character saw both, filled 5 of a
+stack of 12 orbs (+9,500 gold: 10,000 minus 500 tax), then 7 more; its two swords listed, the Rare one greyed ("Its
+rarity is too low."), the server refused it when sent by hand, the Legendary one filled (+48 coins) and reached the
+buyer's inbox with every modifier and tier; cancel of the coins order (50 coins back), expiry of the orb order by the
+sweep (36,000 gold back at once: 12 bought); My orders with the listings used, History with "(buy order)", the admin
+action listing both orders. Money balanced to the gold piece on both sides. `sql/chaos_market.sql` run twice on the copy.
+Not verified in game: a crash in the middle of a fill (unit-tested), season characters filling (unit-tested), the
+per-account limit.
 
 ## Guild levels and guild halls (`guild.lua`, `guild_hall.lua`, `guild_core.lua`, `guild_config.lua`, `sql/chaos_guild.sql`)
 
@@ -4188,11 +4252,44 @@ stayed in the corpse; after buying (Strict) it was picked up and a Common list s
   in `data/spells/README_FX.md`; `data/lib/chaos_fx.lua` and `effects_catalog.csv` are regenerated. Without the new dat the
   ids show nothing (the server does not check).
 
+### Rule counters and sounds
+- **Rules** (`F.RULES`, the reasons an item glows, in this priority order): *Uniques*, *Legendary powers* (not on a
+  unique), *Rarity glow* (gear at or above "Glow on gear from"; off when that is Off), *Modifier tier* (gear with a
+  modifier of the "Glow on a modifier" tier or better; off when Off), *Orbs*. An item can match several rules (a Legendary
+  with a power counts for both); a unique counts only as a unique. Counts are items: a stack of 3 orbs adds 3.
+- **Counters.** In `finish` (4.5) the server counts what the kill dropped (the snapshot at 2.5, so also what the base
+  autoloot or the Rarity Autoloot took; what the auto seller sold at 2 is not counted) with `F.countHits`, per rule:
+  *session* (in memory per character, cleared at login and logout, survives `/reload scripts`) and *total* (player
+  storages 7100502 - 7100506, `totalStorageBase` + rule index, capped at 2,000,000,000). The kill message carries
+  `hits {rule = items}` and `counts {session, total}` when a rule matched.
+- **Reset**: `reset {scope = session | total | all, rule}`: the window's *Reset session*, *Reset totals* (with a
+  confirmation) and the x of a rule (both counters of that rule); the server answers `counts`.
+- **Sounds.** Per rule one of five alert sounds or none (Chime, Bell, Ping, Drum, Fanfare), a volume (0 - 100 %) and *Mute
+  all*, saved per character (the filter is per character) in storage 7100501 (`F.packSound`: 3 bits per rule, volume,
+  mute, the hunt tracker flag). Defaults: Uniques Fanfare, Legendary powers Chime, the rest none, 70 %. A kill plays one
+  sound: the first rule in priority order that matched and has a sound (`F.pickSound`, mirrored by the client's
+  `LootFilterLogic.pickSound`), on the client's Effect sound channel (`g_sounds`). The sounds are our own: synthesised
+  sine waves and noise, `client/tools/gen_lootfilter_sounds.py` -> `game_lootfilter/sounds/*.ogg` (no recorded or base
+  client audio). The client must be built with its sound framework (client base-patch 0032, `FRAMEWORK_SOUND` ON); a
+  client without it logs one warning and stays silent.
+- **Hunt tracker.** *Show the counters in the Hunt Tracker* (default on) lists every rule with its session count (total
+  in the tooltip) at the top of Hunt Tracker > Chaos Drops.
+- Protocol additions on 238: `sound {s = {rules = {rule = sound id}, vol, mute, hunt}}`, `reset {scope, rule}`; the
+  `settings` message carries `snd`, `rules`, `sounds` and `counts`.
+
 **Tests:** `server/tests/lootfilter_test.lua` (packing, sanitizing, presets, glow/dim rules, Rarity Autoloot decisions,
-ray choice with the real config, reconcile, reach, labels, drop lines) and the client's
+ray choice with the real config, reconcile, reach, labels, drop lines; the rule hits and counts, the sound settings
+packing and clamping, the sound pick, the reset plans, the storages inside the reserved range) and the client's
 `game_lootfilter/lootfilter_test.lua`. Checked in game on the test server: glow / frame / dim in a corpse window and in the
 loot channel, presets, the setting surviving a relog, click to loot (all, Shift = one, refused with a full backpack),
 autoloot greying icons, decay greying a row, the store purchase, Rarity Autoloot hold-back and pickup, the rays of every band.
+Rule counters and sounds (test server, a client built with base patch 0032): a kill with a unique, a Legendary with a
+power, an Epic, 3 orbs and plain items counted Uniques 1, Legendary powers 1, Rarity glow 2, Orbs 3 in the window;
+sounds and volume changed in the window, kept over a relog (session back to 0, totals kept); the next kill picked Bell
+at 50% for the rarity rule and a unique Fanfare (`g_sounds` returned a playing source; every one of the five files
+loads); Mute all: counted, no sound; reset of one rule, Reset totals with its confirmation; the counters in the Hunt
+Tracker's Chaos Drops tab. The container has no sound card: the client ran with `ALSOFT_DRIVERS=null` (client/LINUX.md),
+so nothing was heard; the base build without the sound framework logs one warning and stays silent.
 **Not verified:** party members looting (rows and rays go to the corpse owner only; party members can click-loot only
 corpses of their own kills), corpses moved by a player (the row greys as decayed), many players at once.
 

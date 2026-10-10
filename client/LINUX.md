@@ -9,10 +9,14 @@ sudo apt-get install -y cmake g++ libboost-all-dev libphysfs-dev libogg-dev libv
   libbz2-dev libssl-dev libopenal-dev libglew-dev libluajit-5.1-dev libgl1-mesa-dev libglu1-mesa-dev libx11-dev
 tools/assemble_client.sh <base-client-dir> <game-dir>       # patches (C++ and Lua) + overlay (incl. spell icon sheets)
 mkdir build && cd build
-cmake <game-dir> -DCMAKE_BUILD_TYPE=Release -DLUAJIT=ON -DPHYSFS_LIBRARY=/usr/lib/x86_64-linux-gnu/libphysfs.so
+cmake <game-dir> -DCMAKE_BUILD_TYPE=Release -DLUAJIT=ON -DPHYSFS_LIBRARY=/usr/lib/x86_64-linux-gnu/libphysfs.so \
+  -DOPENAL_LIBRARY=/usr/lib/x86_64-linux-gnu/libopenal.so
 make -j$(nproc)
 ```
 `-DPHYSFS_LIBRARY=...so`: Ubuntu's static `libphysfs.a` has no archive index and the link fails without it.
+`-DOPENAL_LIBRARY=...so`: the sound framework is on (base patch 0032) and the base's `FindOpenAL.cmake` finds no
+`libopenal.a` on Ubuntu (there is none). With no sound card (a container, a server without ALSA devices) OpenAL's
+device probe aborted the client at start in our test; run it with `ALSOFT_DRIVERS=null` there (OpenAL's silent backend).
 
 ## Run
 Put `Tibia.dat`/`Tibia.spr` (10.98) in `<game-dir>/data/things/1098/`, copy or link the client binary that CMake built into

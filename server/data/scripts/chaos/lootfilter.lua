@@ -7,9 +7,13 @@
 --                   {"action":"preset","data":{"name":"hunter"}}
 --                   {"action":"peek","data":{"cid":N}}         rarity data of an open container (client container id)
 --                   {"action":"take","data":{"k":kill,"n":entry,"id":clientId,"one":bool}}   click to loot
--- server -> client  settings {s, unlocked, presets, samples, open}
+--                   {"action":"sound","data":{"s":{rules = {rule = sound id}, vol, mute, hunt}}}   rule sounds (saved)
+--                   {"action":"reset","data":{"scope":"session"|"total"|"all","rule":key or nil}}   rule counters
+-- server -> client  settings {s, unlocked, presets, samples, open, snd, rules, sounds, counts = {session, total}}
+--                   counts {session, total}   (after a reset)
 --                   peek {cid, corpse, items = [{i (0-based index), id (client id), r, u, o, g, x}]}
---                   kill {k, m (monster), p (corpse position), items = [{n, id, c, r, u, o, g, x, nm, left}], drops = [{text, color, rank}]}
+--                   kill {k, m (monster), p (corpse position), items = [{n, id, c, r, u, o, g, x, nm, left}], drops = [{text, color, rank}],
+--                         hits = {rule = items} and counts = {session, total} when a rule matched (the client plays the sound)}
 --                   (x = the item's Chaos modifiers as one line, item_mods.lua; absent when it has none)
 --                   update {k, left = [remaining count per entry]}      decay {k}      msg {text} (a refused click)
 --
@@ -38,6 +42,7 @@ end
 -- state survives /reload scripts
 ChaosLootFilterState = ChaosLootFilterState or {kills = {}, byGuid = {}, nextId = 1, tick = 0, event = nil}
 local state = ChaosLootFilterState
+state.session = state.session or {} -- guid -> rule counters since login (or the last session reset)
 
 -- ---------------------------------------------------------------- settings
 local function settingsOf(player)
@@ -46,6 +51,62 @@ end
 
 local function unlocked(player)
 	return player:getStorageValue(ST.shopRarityAutoloot) > 0
+end
+
+-- ---------------------------------------------------------------- rule counters and sounds
+local function soundOf(player)
+	return F.unpackSound(player:getStorageValue(cfg().soundStorage))
+end
+
+local function totalsOf(player)
+	local out = {}
+	for i, r in ipairs(F.RULES) do
+		out[r.key] = math.max(0, player:getStorageValue(cfg().totalStorageBase + i - 1))
+	end
+	return out
+end
+
+local function sessionOf(player)
+	local guid = player:getGuid()
+	state.session[guid] = state.session[guid] or F.counts(nil)
+	return state.session[guid]
+end
+
+local function countsOf(player)
+	return {session = F.counts(sessionOf(player)), total = F.counts(totalsOf(player))}
+end
+
+-- a kill's rule hits into the session and the saved totals; returns the counters
+local function addHits(player, hits)
+	F.addCounts(sessionOf(player), hits)
+	local totals = F.addCounts(totalsOf(player), hits)
+	for i, r in ipairs(F.RULES) do
+		if (hits[r.key] or 0) > 0 then
+			player:setStorageValue(cfg().totalStorageBase + i - 1, totals[r.key])
+		end
+	end
+	return countsOf(player)
+end
+
+local function resetCounts(player, scope, rule)
+	local plan = F.resetPlan(scope, rule)
+	if not plan then
+		return false
+	end
+	local session = sessionOf(player)
+	for _, key in ipairs(plan.rules) do
+		if plan.session then
+			session[key] = 0
+		end
+		if plan.total then
+			for i, r in ipairs(F.RULES) do
+				if r.key == key then
+					player:setStorageValue(cfg().totalStorageBase + i - 1, 0)
+				end
+			end
+		end
+	end
+	return true
 end
 
 local function sendSettings(player, open)
@@ -60,8 +121,16 @@ local function sendSettings(player, open)
 	end
 	local samples = {gear = cid(2392), unique = cid(ChaosUniqueItems and ChaosUniqueItems[1] and ChaosUniqueItems[1].id or 2400),
 		orb = cid(29856), coin = cid(2152), supply = cid(7618), other = cid(2229)}
+	local rules, sounds = {}, {}
+	for _, r in ipairs(F.RULES) do
+		rules[#rules + 1] = {key = r.key, name = r.name}
+	end
+	for i, x in ipairs(F.SOUNDS) do
+		sounds[#sounds + 1] = {id = i, key = x.key, name = x.name}
+	end
 	Chaos.send(player, OPCODE, "settings", {s = settingsOf(player), unlocked = unlocked(player), presets = presets,
-		samples = samples, open = open and true or false})
+		samples = samples, open = open and true or false, snd = soundOf(player), rules = rules, sounds = sounds,
+		counts = countsOf(player)})
 end
 
 local function saveSettings(player, s)
@@ -557,7 +626,11 @@ local function finish(monster, corpse)
 		kill.rayUntil = os.time() + c.rayDurationS
 		emitRay(kill, owner)
 	end
-	Chaos.send(owner, OPCODE, "kill", {k = id, m = drop.monster, p = drop.pos, items = rows, drops = drops})
+	-- the rule counters (everything the kill dropped, also what the autoloot already took)
+	local hits = F.countHits(drop.entries, drop.s)
+	local counts = next(hits) and addHits(owner, hits) or nil
+	Chaos.send(owner, OPCODE, "kill", {k = id, m = drop.monster, p = drop.pos, items = rows, drops = drops,
+		hits = counts and hits or nil, counts = counts})
 	ensureTimer()
 end
 
@@ -678,6 +751,7 @@ end
 -- ---------------------------------------------------------------- events
 local LoginEvent = CreatureEvent("ChaosLootFilterLogin")
 function LoginEvent.onLogin(player)
+	state.session[player:getGuid()] = nil -- a new session of the rule counters
 	player:registerEvent("ChaosLootFilterExtended")
 	player:registerEvent("ChaosLootFilterLogout")
 	addEvent(function(cid)
@@ -698,6 +772,7 @@ function LogoutEvent.onLogout(player)
 		state.kills[id] = nil
 	end
 	state.byGuid[guid] = nil
+	state.session[guid] = nil
 	return true
 end
 LogoutEvent:type("logout")
@@ -729,6 +804,13 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 				saveSettings(player, s)
 			end
 			sendSettings(player, false)
+		elseif msg.action == "sound" then
+			player:setStorageValue(cfg().soundStorage, F.packSound(data.s or data))
+			sendSettings(player, false)
+		elseif msg.action == "reset" then
+			if resetCounts(player, data.scope, data.rule) then
+				Chaos.send(player, OPCODE, "counts", countsOf(player))
+			end
 		elseif msg.action == "peek" then
 			peek(player, data)
 		elseif msg.action == "take" then

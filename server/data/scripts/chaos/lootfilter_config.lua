@@ -7,8 +7,12 @@ ChaosLootFilterConfig = {
 	pickupIndex = 3.5,   -- Rarity Autoloot: pick up rarity gear / uniques that are not on the autoloot list
 	finishIndex = 4.5,   -- put the held items back, send the loot row, the rare-drop lines, start the rays
 
+	-- rule counters and sounds (player storages inside the loot filter's reserved 7100500 - 7100509)
+	soundStorage = 7100501,    -- sound per rule, volume, mute, hunt tracker flag (lootfilter_core.lua F.packSound)
+	totalStorageBase = 7100502, -- + rule index - 1 (F.RULES order: unique, power, rarity, tier, orb): drops counted in total
+
 	-- loot channel
-	historySize = 50,          -- kills remembered per character (older ones are dropped and greyed on the client)
+	historySize = 50,         -- kills remembered per character (older ones are dropped and greyed on the client)
 	reach = {x = 7, y = 5},    -- click-to-loot: same floor and within this many squares of the corpse (the visible screen)
 	sweepMs = 1000,            -- one timer for rays and decay checks while anything is tracked
 	decayCheckEvery = 5,       -- check tracked corpses for decay every N sweeps

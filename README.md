@@ -246,7 +246,9 @@ sockets (the second opens 60 levels after you learn the spell, the third 150 lev
   framed in their rarity colour.
 - **Loot filter** (Hunt > Loot Filter): items glow in their rarity colour in corpses, and junk below your chosen rarity is
   dimmed. You can switch whole categories off, make gear glow when it carries a modifier of a chosen tier (say T7+)
-  whatever its rarity, or pick a preset: Show all, Hunter or Strict.
+  whatever its rarity, or pick a preset: Show all, Hunter or Strict. Every rule counts what it caught this session and
+  in total (uniques, legendary powers, rarity, modifier tier, orbs; also in the Hunt Tracker if you like), and each rule
+  can play its own short alert sound, with a volume and a mute switch.
 - **Loot channel with icons:** every kill gets a row of item icons. Click an icon to loot it (Shift+click for one from
   a stack). Looted items grey out.
 - **Loot rays:** a beam of light rises from corpses holding a unique or a Legendary-or-better item, coloured by
@@ -592,8 +594,12 @@ Sell and buy with other players at **Economy > Market** (Alt+E), or by using the
 - **Modifier search:** add up to 6 rows, each a modifier or legendary power with the lowest value and the lowest tier
   ("T5+" finds T5 to T8). Ask for all rows or for some of them, and for sockets, quality, a free prefix or suffix slot, a
   legendary power or a bound modifier.
+- **Buy orders:** ask for what you cannot find: an item, how many, the lowest rarity, item level or modifiers (the same
+  search as above) and your price per item in gold or Chaos Coins. The money is held when you post; sellers fill the
+  order from their backpack, all at once or a few at a time, and what is not bought comes back when it ends.
 - **Fees:** listing 1% of the gold price (at least 100 gold, not refunded), 5% sales tax when it sells. Offers last 1, 3
-  or 7 days; up to 20 at a time. What does not sell comes back to your inbox.
+  or 7 days; up to 20 offers and buy orders at a time. What does not sell comes back to your inbox. Buy orders pay the
+  same fee on their total.
 - **Safe:** bought and returned items arrive in your inbox, and every sale is reported as a message and a toast, also if
   it sold while you were away. A server crash in the middle of a purchase loses nothing.
 
@@ -692,7 +698,6 @@ Cinders of Chaos ships its own client, built for these systems:
 
 Being built right now:
 - **Level 1000 balance pass** for the Necromancer, Monk and Templar lines (level 300 is measured and tuned).
-- **Buy orders** on the market.
 - **The goblin and wildwood factions** on the live map, and more of our own art across the world.
 
 The full priority list is in [ROADMAP.md](ROADMAP.md).
