@@ -6,6 +6,6 @@ Module
   autoload: true
   autoload-priority: 900
   dependencies: [ game_interface ]
-  scripts: [ monsterbar ]
+  scripts: [ monsterbarmath, monsterbar ]
   @onLoad: init()
   @onUnload: terminate()

@@ -3,6 +3,7 @@ Panel
   size: 420 86
   anchors.top: parent.top
   anchors.horizontalCenter: parent.horizontalCenter
+  // margin-top and margin-left are set by place() (monsterbar.lua): the map panel can start above the window
   margin-top: 44
   phantom: true
   visible: false

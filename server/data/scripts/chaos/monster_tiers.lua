@@ -7,7 +7,8 @@
 --   boss 4-5, see cfg.modCount) from ChaosMods: burning hits, venom, vampiric, stoneskin, ...
 -- * Shaders: the monster is drawn with the outfit shader of its strongest modifier (ids 1-17 of
 --   data/XML/shaders.xml, registered by the client). A rotating magic effect shows the others.
--- * Roll on spawn: every spawned monster rolls cfg.spawnChance (per 10000).
+-- * Roll on spawn: every spawned monster rolls cfg.spawnChance (per 10000). The tier is applied at its first think,
+--   after the placement (the engine gives a monster its id there); see "natural roll on spawn" below.
 -- * Ambush on kill: when a player kills a monster there is a chance that a magic, rare or
 --   legendary copy of it appears next to the corpse (cfg.ambush).
 -- * Client (game_monsterbar): {"action":"query","data":{"cid":N}} when the player targets a creature,
@@ -329,12 +330,31 @@ nameCb.onSpawn = function(self, position, startup, artificial)
 end
 nameCb:register(-100)
 
--- natural roll on spawn
+-- natural roll on spawn. The engine runs onSpawn before the placement and gives a monster its id at the placement, so
+-- the roll is decided here and applied at the monster's first think (a think event per tier that removes itself), where
+-- the monster has its id: tier state, the modifier tick and the monster bar are keyed by that id. A map respawn thinks
+-- right after it is placed; a startup spawn once a player comes near.
+local rollEvent = {}
+for _, tier in ipairs({"magic", "rare", "legendary", "boss"}) do
+	local name = "ChaosTierRoll" .. tier:sub(1, 1):upper() .. tier:sub(2)
+	rollEvent[tier] = name
+	local ev = CreatureEvent(name)
+	function ev.onThink(creature, interval)
+		creature:unregisterEvent(name)
+		-- a tier set in between (ChaosApplyTier: rift, invasion, tower) wins over the natural roll
+		if creature:isMonster() and creature:getId() ~= 0 and not state[creature:getId()]
+				and (tier == "boss" or eligible(creature)) then
+			applyTier(creature, tier, 0)
+		end
+		return true
+	end
+	ev:register()
+end
+
 local spawnCb = EventCallback
 spawnCb.onSpawn = function(self, position, startup, artificial)
 	if pendingTier then
-		-- an ambush copy: no roll of its own; the ambush applies its tier once it is placed (the engine gives a monster
-		-- its id at the placement, after onSpawn, so tier state written here would sit under id 0)
+		-- an ambush copy: no roll of its own; the ambush applies its tier once it is placed
 		pendingTier = nil
 		return true
 	end
@@ -344,22 +364,23 @@ spawnCb.onSpawn = function(self, position, startup, artificial)
 		eventMult = eventMult * (ChaosWorldEvents and ChaosWorldEvents.tierMult and ChaosWorldEvents.tierMult(position or self:getPosition()) or 1) -- Chaos Storm (worldevents.lua)
 		for _, tier in ipairs({"legendary", "rare", "magic"}) do
 			if roll <= cfg.spawnChance[tier] * eventMult then
-				applyTier(self, tier, 0)
+				self:registerEvent(rollEvent[tier])
 				return true
 			end
 		end
 	elseif cfg.bossMods and not self:getMaster() and not cfg.skip[typeNameOf(self):lower()] and isBoss(self) then
-		applyTier(self, "boss", 0)
+		self:registerEvent(rollEvent.boss)
 	end
 	return true
 end
 spawnCb:register()
 
--- applyTier registers the death event for tiered monsters; normal ones get it here so that
--- killing a normal monster can also bring an ambush.
+-- applyTier registers the death event for tiered monsters; every eligible one gets it here as well (a second
+-- registration is a no-op), so that killing a normal monster can also bring an ambush. No tier state is read here:
+-- the monster has no id yet.
 local normalDeath = EventCallback
 normalDeath.onSpawn = function(self, position, startup, artificial)
-	if not state[self:getId()] and eligible(self) then
+	if eligible(self) then
 		self:registerEvent("ChaosTierDeath")
 	end
 	return true

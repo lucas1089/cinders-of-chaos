@@ -1,6 +1,7 @@
 -- game_monsterbar: top-of-map health bar for the creature you are attacking.
 -- The tier comes from the server (monster_tiers.lua, opcode 125); until the answer arrives the
--- bar looks like a normal monster's.
+-- bar looks like a normal monster's. It sits at the top of the part of the game view on screen
+-- (monsterbarmath.lua): in the extended view the map panel starts above the window.
 
 local OPCODE = 125
 local TIERS = {
@@ -65,6 +66,48 @@ local function labelCreature(creature, tier, mods)
   end
 end
 
+-- at the top of the part of the game view that is on screen (MonsterBarMath.place)
+local function place()
+  local gi = modules.game_interface
+  local mapPanel = window and window:getParent()
+  local root = gi and gi.getRootPanel and gi.getRootPanel()
+  if not mapPanel or not root then
+    return
+  end
+  local limits = MonsterBarMath.screenLimits(root:getRect(), function(id)
+    local w = root:getChildById(id)
+    if w and w:isVisible() and w:getWidth() > 0 and w:getHeight() > 0 then
+      return w:getRect()
+    end
+  end)
+  local avoid = {}
+  local plate = rootWidget:recursiveGetChildById('chaosHud') -- the character plate (game_chaoshud)
+  if plate and plate:isVisible() then
+    avoid[#avoid + 1] = plate:getRect()
+  end
+  local top, offset = MonsterBarMath.place(mapPanel:getRect(), limits, window:getWidth(), window:getHeight(), nil, avoid)
+  if window:getMarginTop() ~= top then
+    window:setMarginTop(top)
+  end
+  if window:getMarginLeft() ~= offset then
+    window:setMarginLeft(offset)
+  end
+end
+
+-- the map panel moves and resizes with the window, the extended view and the side panels: place again a frame later
+local placeEvent
+local function schedulePlace()
+  if placeEvent then
+    return
+  end
+  placeEvent = scheduleEvent(function()
+    placeEvent = nil
+    if window and window:isVisible() then
+      place()
+    end
+  end, 50)
+end
+
 local function updateHealth(creature, percent)
   if not window or creature ~= current then
     return
@@ -88,6 +131,7 @@ local function onAttackingCreatureChange(creature)
   current = creature
   paint(creature, tierOf[creature:getId()] or 'normal', nil, modsOf[creature:getId()])
   updateHealth(creature, creature:getHealthPercent())
+  place()
   window:show()
   if not tierOf[creature:getId()] then
     send('query', { cid = creature:getId() })
@@ -135,6 +179,7 @@ end
 
 function init()
   window = g_ui.loadUI('monsterbar', modules.game_interface.getMapPanel())
+  connect(modules.game_interface.getMapPanel(), { onGeometryChange = schedulePlace })
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
   connect(g_game, { onAttackingCreatureChange = onAttackingCreatureChange, onGameEnd = onGameEnd })
   connect(Creature, { onHealthPercentChange = updateHealth, onAppear = onAppear, onDisappear = onDisappear })
@@ -144,7 +189,15 @@ function terminate()
   disconnect(g_game, { onAttackingCreatureChange = onAttackingCreatureChange, onGameEnd = onGameEnd })
   disconnect(Creature, { onHealthPercentChange = updateHealth, onAppear = onAppear, onDisappear = onDisappear })
   ProtocolGame.unregisterExtendedOpcode(OPCODE)
+  if placeEvent then
+    removeEvent(placeEvent)
+    placeEvent = nil
+  end
   if window then
+    local mapPanel = window:getParent()
+    if mapPanel then
+      disconnect(mapPanel, { onGeometryChange = schedulePlace })
+    end
     window:destroy()
     window = nil
   end
