@@ -13,6 +13,7 @@
 --   ChaosLootFilter.ruleHits / countHits      which filter rules (F.RULES) an item / a kill matched (the rule counters)
 --   ChaosLootFilter.packSound / unpackSound   sound per rule, volume, mute, hunt tracker flag <-> one int32 storage value
 --   ChaosLootFilter.pickSound(hits, snd)      the alert sound of a kill;  resetPlan(scope, rule)  what a reset clears
+--   ChaosLootFilter.look(outfit, shaders, fallback) / parseShaders(xml)   the monster icon of a loot row (client outfit table)
 -- info = {id, rarity = 0..15, unique = bool, orb = bool, power = bool (a legendary power: always glows), category = "equipment"|"currency"|"supplies"|"other", name, count,
 --         level = item level, bestTier = the best modifier tier on it (0 = none)}
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
@@ -482,6 +483,53 @@ function F.resetPlan(scope, rule)
 		end
 	end
 	return {session = scope ~= "total", total = scope ~= "session", rules = rules}
+end
+
+-- ---------------------------------------------------------------- the monster icon of a loot row
+-- data/XML/shaders.xml text -> {[id] = name} (the client knows a shader by its name; the engine's Lua has no lookup)
+function F.parseShaders(xml)
+	local out = {}
+	if type(xml) ~= "string" then
+		return out
+	end
+	for tag in xml:gmatch("<shader%s[^>]*>") do
+		local id = tonumber(tag:match('%sid%s*=%s*"(%d+)"'))
+		local name = tag:match('%sname%s*=%s*"([^"]*)"')
+		if id and name and name ~= "" then
+			out[id] = name
+		end
+	end
+	return out
+end
+
+-- the look of a killed monster for the client's UICreature (outfit table names), from Creature:getOutfit()
+-- (or MonsterType:getOutfit()); nil when it has none. `fallback` is used when `o` has neither a look type nor an item look.
+-- Item looks (lookTypeEx) go as auxType; mounts are left out (the icon is item sized); a tier shader goes by name.
+function F.look(o, shaderNames, fallback)
+	local function n(v, max)
+		v = math.floor(tonumber(v) or 0)
+		if v ~= v or v < 0 or v > max then
+			return 0
+		end
+		return v
+	end
+	if type(o) ~= "table" or (n(o.lookType, 65535) == 0 and n(o.lookTypeEx, 65535) == 0) then
+		if fallback ~= nil then
+			return F.look(fallback, shaderNames)
+		end
+		return nil
+	end
+	local t = {type = n(o.lookType, 65535), head = n(o.lookHead, 255), body = n(o.lookBody, 255),
+		legs = n(o.lookLegs, 255), feet = n(o.lookFeet, 255), addons = n(o.lookAddons, 3)}
+	local aux = n(o.lookTypeEx, 65535)
+	if aux > 0 then
+		t.type, t.auxType = 0, aux
+	end
+	local shader = n(o.lookShader, 65535)
+	if shader > 0 and type(shaderNames) == "table" and shaderNames[shader] then
+		t.shader = shaderNames[shader]
+	end
+	return t
 end
 
 return F

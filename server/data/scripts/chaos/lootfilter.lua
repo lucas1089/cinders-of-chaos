@@ -12,7 +12,9 @@
 -- server -> client  settings {s, unlocked, presets, samples, open, snd, rules, sounds, counts = {session, total}}
 --                   counts {session, total}   (after a reset)
 --                   peek {cid, corpse, items = [{i (0-based index), id (client id), r, u, o, g, x}]}
---                   kill {k, m (monster), p (corpse position), items = [{n, id, c, r, u, o, g, x, nm, left}], drops = [{text, color, rank}],
+--                   kill {k, m (monster), look (its outfit as the client's UICreature takes it: type, auxType, head, body, legs,
+--                         feet, addons, shader; F.look), p (corpse position), items = [{n, id, c, r, u, o, g, x, nm, left}] (empty for
+--                         an empty corpse), drops = [{text, color, rank}],
 --                         hits = {rule = items} and counts = {session, total} when a rule matched (the client plays the sound)}
 --                   (x = the item's Chaos modifiers as one line, item_mods.lua; absent when it has none)
 --                   update {k, left = [remaining count per entry]}      decay {k}      msg {text} (a refused click)
@@ -506,6 +508,29 @@ end
 -- ---------------------------------------------------------------- onDropLoot steps
 local current -- the drop in progress (one onDropLoot chain; all steps run in the same dispatcher task)
 
+-- tier shader names by id (data/XML/shaders.xml, read once; the engine's Lua has no lookup by id)
+local shaderNames
+local function shaders()
+	if not shaderNames then
+		shaderNames = {}
+		local f = io.open("data/XML/shaders.xml", "r")
+		if f then
+			shaderNames = F.parseShaders(f:read("*a"))
+			f:close()
+		end
+	end
+	return shaderNames
+end
+
+-- the monster's look as it died (rift looks, tier shaders), else its type's
+local function lookOf(monster)
+	local ok, look = pcall(function()
+		local mt = monster:getType()
+		return F.look(monster:getOutfit(), shaders(), mt and mt:getOutfit() or nil)
+	end)
+	return ok and look or nil
+end
+
 local function snapshot(monster, corpse)
 	current = nil
 	if not corpse:getType():isContainer() then
@@ -527,7 +552,7 @@ local function snapshot(monster, corpse)
 	end
 	local pos = corpse:getPosition()
 	current = {ownerId = owner:getId(), pos = {x = pos.x, y = pos.y, z = pos.z}, corpseId = corpse:getId(),
-		monster = monster:getName(), entries = entries, s = s, unlock = unlock}
+		monster = monster:getName(), look = lookOf(monster), entries = entries, s = s, unlock = unlock}
 	if #keep > 0 then
 		-- the bag lies on the corpse tile for the rest of this chain only; if a later callback raised an error the
 		-- items would stay in that bag on the ground instead of vanishing
@@ -587,12 +612,17 @@ local function finish(monster, corpse)
 		drop.bag:remove()
 	end
 	local owner = Player(drop.ownerId)
-	if not owner or #drop.entries == 0 then
+	if not owner then
 		return
 	end
 	local c = cfg()
 	local id = state.nextId
 	state.nextId = id + 1
+	if #drop.entries == 0 then
+		-- an empty corpse: a row with the monster only, nothing to track
+		Chaos.send(owner, OPCODE, "kill", {k = id, m = drop.monster, look = drop.look, p = drop.pos, items = {}, drops = {}})
+		return
+	end
 	corpse:setCustomAttribute(c.corpseAttribute, id)
 
 	local kill = {id = id, guid = owner:getGuid(), ownerId = drop.ownerId, pos = drop.pos, entries = {}, left = {}}
@@ -629,7 +659,7 @@ local function finish(monster, corpse)
 	-- the rule counters (everything the kill dropped, also what the autoloot already took)
 	local hits = F.countHits(drop.entries, drop.s)
 	local counts = next(hits) and addHits(owner, hits) or nil
-	Chaos.send(owner, OPCODE, "kill", {k = id, m = drop.monster, p = drop.pos, items = rows, drops = drops,
+	Chaos.send(owner, OPCODE, "kill", {k = id, m = drop.monster, look = drop.look, p = drop.pos, items = rows, drops = drops,
 		hits = counts and hits or nil, counts = counts})
 	ensureTimer()
 end

@@ -1,8 +1,9 @@
--- Loot filter (Hunt -> Loot Filter), corpse highlights and the loot channel with item icons.
+-- Loot filter (Hunt -> Loot Filter), corpse highlights and the loot feed (monster and item icons over the Loot tab).
 -- Server: server/data/scripts/chaos/lootfilter.lua, extended opcode 238 (JSON {action, data}).
 --   server -> client  settings {s, unlocked, presets, samples, open}
 --                     peek {cid, corpse, items = [{i, id, c, r, u, o, g}]}      rarity data of an open container
---                     kill {k, m, p, items = [{n, id, c, r, u, o, g, nm, left}], drops = [{text, color, rank}]}
+--                     kill {k, m, look, p, items = [{n, id, c, r, u, o, g, nm, left}], drops = [{text, color, rank}]}
+--                       one loot feed row: the monster's icon (look, a UICreature) and the item icons, no text
 --                     update {k, left = [...]}   decay {k}   msg {text}
 --                     settings also carry snd (sound per rule, vol, mute, hunt) and counts {session, total};
 --                     kill carries hits {rule = items} and counts when a rule matched; counts {session, total}
@@ -96,6 +97,8 @@ local function child(widget, id, style)
       setImage(c, '/modules/game_lootfilter/images/lf_glow')
     elseif style == 'frame' then
       setImage(c, '/modules/game_lootfilter/images/lf_frame')
+    elseif style == 'empty' then
+      setImage(c, '/modules/game_lootfilter/images/lf_empty')
     elseif style == 'gone' then
       c:setBackgroundColor('#0a080cc8')
       setImage(c, '/modules/game_lootfilter/images/lf_taken')
@@ -253,10 +256,9 @@ end
 
 local function setIconState(icon)
   local info = icon.info
-  local left = tonumber(info.left) or tonumber(info.c) or 1
-  local count = tonumber(info.c) or 1
-  icon.w:setItemCount(left > 0 and left or count)
-  decorate(icon.w, info, true, left <= 0)
+  local count, gone = L.iconCount(info)
+  icon.w:setItemCount(count)
+  decorate(icon.w, info, true, gone)
   icon.w:setTooltip(L.tooltip(info))
 end
 
@@ -271,9 +273,6 @@ local function dropRow(k)
   rows[k] = nil
   if row and row.widget and not row.widget:isDestroyed() then
     row.widget:destroy()
-  end
-  for _, w in ipairs(row and row.lines or {}) do
-    if not w:isDestroyed() then w:destroy() end
   end
 end
 
@@ -319,27 +318,35 @@ local function onKill(data)
   local panel = ensureLootPanel()
   if not panel then return end
   ensureLootTab()
-  local k = tonumber(data.k)
-  if not k then return end
-  local items = list(data.items)
-  panel.hint:hide() -- the how-to line only while the tab is empty
-  local lines = {}
-  for _, d in ipairs(drops) do
-    local line = g_ui.createWidget('LootChannelLine', panel.list)
-    line:setText(L.clock(os.time()) .. '  ' .. (d.text or ''))
-    line:setColor(d.color or '#ffffff')
-    lines[#lines + 1] = line
+  local r = L.feedRow(data, os.time())
+  if not r then return end
+  local k = r.k
+  if rows[k] then -- the same id again (the server's counter restarted): the new row replaces the old one
+    dropRow(k)
+    for i = #rowOrder, 1, -1 do
+      if rowOrder[i] == k then table.remove(rowOrder, i) end
+    end
   end
+  panel.hint:hide() -- the how-to line only while the tab is empty
+  -- one row: the monster's icon, then the item icons (no text; names, counts and times are in the tooltips)
   local widget = g_ui.createWidget('LootChannelRow', panel.list)
-  local head = g_ui.createWidget('LootChannelHead', widget)
-  head:setText(L.clock(os.time()) .. ' ' .. (data.m or '?') .. (#items == 0 and ': nothing' or ':'))
-  local row = { k = k, widget = widget, icons = {}, lines = lines }
-  for _, info in ipairs(items) do
+  local mob = g_ui.createWidget('LootChannelMonster', widget)
+  -- fit the look's own size into the cell, centred: a rat stays 1:1, a dragon is scaled down (not a fixed 64 px box)
+  pcall(mob.setOldScaling, mob, true)
+  pcall(mob.setCenter, mob, true)
+  if r.outfit then
+    local ok = pcall(mob.setOutfit, mob, r.outfit)
+    if not ok then pcall(mob.setOutfit, mob, { type = r.outfit.type, auxType = r.outfit.auxType }) end
+  end
+  mob:setTooltip(r.tip)
+  if r.empty then child(mob, 'lfEmpty', 'empty'):show() end -- a veil and a small empty mark, no text
+  local row = { k = k, widget = widget, icons = {} }
+  for _, info in ipairs(r.items) do
     local w = g_ui.createWidget('LootChannelItem', widget)
     w:setItemId(tonumber(info.id) or 0)
     w:setVirtual(true)
     local icon = { w = w, info = info }
-    row.icons[tonumber(info.n) or (#row.icons + 1)] = icon
+    row.icons[info.n] = icon
     w.onMouseRelease = function(self, mousePos, button)
       if button == MouseLeftButton and self:containsPoint(mousePos) then
         onIconClick(row, icon)

@@ -210,4 +210,26 @@ eq(cfg.soundStorage >= 7100500 and cfg.soundStorage <= 7100509 and cfg.totalStor
 	"storages inside the loot filter's reserved range")
 eq(cfg.totalStorageBase > cfg.soundStorage, true, "no overlap")
 
+-- ---------------------------------------------------------------- the monster icon of a loot row
+local shaders = F.parseShaders('<shaders>\n <shader id="1" name="blue_loohs" premium="no" />\n'
+	.. '   <shader id="14" name="orange_energizer" premium="no" />\n<shader id="x" name="bad" /><shader id="3" name="" /></shaders>')
+eq(shaders[1] .. "/" .. shaders[14], "blue_loohs/orange_energizer", "shader names by id")
+eq(shaders[3], nil, "empty name skipped")
+eq(next(F.parseShaders(nil)), nil, "no file")
+local lk = F.look({lookType = 34, lookHead = 10, lookBody = 20, lookLegs = 30, lookFeet = 40, lookAddons = 3, lookMount = 368})
+eq(lk.type .. "," .. lk.head .. "," .. lk.body .. "," .. lk.legs .. "," .. lk.feet .. "," .. lk.addons, "34,10,20,30,40,3",
+	"a creature look in the client's outfit names")
+eq(lk.mount, nil, "no mount on an item sized icon")
+eq(lk.auxType, nil, "no item look")
+eq(lk.shader, nil, "no shader")
+lk = F.look({lookType = 0, lookTypeEx = 2148}, shaders)
+eq(lk.type .. "/" .. lk.auxType, "0/2148", "an item look goes as auxType")
+eq(F.look({lookType = 1203, lookShader = 14}, shaders).shader, "orange_energizer", "a tier shader by name")
+eq(F.look({lookType = 1203, lookShader = 99}, shaders).shader, nil, "an unknown shader is left out")
+eq(F.look({lookType = 0, lookTypeEx = 0}), nil, "no look")
+eq(F.look({lookType = 0}, nil, {lookType = 35}).type, 35, "falls back to the monster type's look")
+eq(F.look(nil, nil, {lookType = 0}), nil, "no look anywhere")
+eq(F.look({lookType = 99999, lookHead = -4}), nil, "out of range")
+eq(F.look({lookType = 40, lookHead = 400}).head, 0, "colour out of range")
+
 print("lootfilter tests OK")

@@ -76,34 +76,31 @@ LootFilterRuleRow < UIWidget
     size: 92 22
     !tooltip: tr('The sound when a drop of your kill matches this rule')
 
-// one kill in the loot channel: time + monster, then the item icons
+// one loot feed row: the monster's icon, then the item icons (wrapping to more lines); no text
 LootChannelRow < UIWidget
-  height: 34
-  margin-bottom: 2
+  margin-bottom: 3
   phantom: true
   layout:
-    type: horizontalBox
-    spacing: 2
+    type: grid
+    cell-size: 32 32
+    cell-spacing: 2
+    flow: true
+    fit-children: true
 
-LootChannelHead < UILabel
-  width: 118
-  height: 32
-  font: verdana-11px-antialised
-  color: #b8a88a
-  text-align: left
-  text-wrap: true
-  phantom: true
+// the killed monster, drawn from its look (server kill.look) facing south, scaled into the cell
+LootChannelMonster < UICreature
+  size: 32 32
+  fixed-creature-size: true
+  padding: 1
+  background-color: #120c0a
+  border-width: 1
+  border-color: #4a3426
+  phantom: false
 
 LootChannelItem < Item
   size: 32 32
   virtual: true
   phantom: false
-
-LootChannelLine < UILabel
-  height: 14
-  font: verdana-11px-rounded
-  text-align: left
-  phantom: true
 
 // covers the console text while the Loot tab is selected
 LootChannelPanel < UIWidget
@@ -134,7 +131,7 @@ LootChannelPanel < UIWidget
     margin-top: 3
     margin-right: 3
     margin-bottom: 3
-    step: 36
+    step: 35
     pixels-scroll: true
 
   UILabel

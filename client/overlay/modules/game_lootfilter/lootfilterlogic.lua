@@ -129,9 +129,60 @@ function L.trim(list, max)
   return dropped
 end
 
--- "HH:MM" of a unix time
+-- "HH:MM:SS" of a unix time
 function L.clock(t)
-  return os.date('%H:%M', t)
+  return os.date('%H:%M:%S', t)
+end
+
+-- ---------------------------------------------------------------- loot feed rows (icons only)
+-- A row is the killed monster's icon followed by the item icons; no text. The server sends the monster's look
+-- (kill.look, lootfilter_core.lua F.look) in the outfit names the client's UICreature takes.
+local OUTFIT_FIELDS = { type = 65535, auxType = 65535, head = 255, body = 255, legs = 255, feet = 255, addons = 3 }
+
+-- the outfit table for UICreature:setOutfit, or nil when there is nothing to draw
+function L.outfit(look)
+  if type(look) ~= 'table' then return nil end
+  local out = {}
+  for k, max in pairs(OUTFIT_FIELDS) do
+    local v = tonumber(look[k]) or 0
+    v = math.floor(v)
+    out[k] = (v == v and v >= 0 and v <= max) and v or 0
+  end
+  if out.type == 0 and out.auxType == 0 then return nil end
+  if type(look.shader) == 'string' and look.shader ~= '' then out.shader = look.shader end
+  return out
+end
+
+-- tooltip of the monster icon: its name and the kill time
+function L.killTip(name, t, empty)
+  local lines = { (type(name) == 'string' and name ~= '') and name or 'Unknown creature', 'Killed at ' .. L.clock(t) }
+  if empty then lines[#lines + 1] = 'Nothing to loot' end
+  return table.concat(lines, '\n')
+end
+
+-- what one row draws: {k, outfit, tip, empty, items = [info in the server's order, every n set]}; nil without a kill id
+function L.feedRow(data, now)
+  if type(data) ~= 'table' then return nil end
+  local k = tonumber(data.k)
+  if not k then return nil end
+  local items = {}
+  if type(data.items) == 'table' then
+    for _, info in ipairs(data.items) do
+      if type(info) == 'table' then
+        info.n = tonumber(info.n) or (#items + 1)
+        items[#items + 1] = info
+      end
+    end
+  end
+  local empty = #items == 0
+  return { k = k, outfit = L.outfit(data.look), tip = L.killTip(data.m, now, empty), empty = empty, items = items }
+end
+
+-- the count an item icon shows (what is left in the corpse; the dropped count once all of it is gone) and whether it is gone
+function L.iconCount(info)
+  local count = tonumber(info.c) or 1
+  local left = tonumber(info.left) or count
+  return left > 0 and left or count, left <= 0
 end
 
 -- ---------------------------------------------------------------- rule counters and sounds

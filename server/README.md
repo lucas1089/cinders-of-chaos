@@ -4326,7 +4326,8 @@ Treasure goblins add their hoard in their death event, which the engine runs bef
   selected: one row per kill, icons only, no text: the monster icon (hover: name and kill time; an empty corpse gets a small
   mark) and the item icons (count, rarity glow / frame / dim, hover: name, rarity and how to loot). The rare-drop lines go over
   the map only. Uncheck "Loot tab shows item icons" to get the plain text back. The last 50 rows are kept (`historySize`,
-  client `MAX_ROWS`).
+  client `MAX_ROWS`). Checked in game: normal, tiered (shader drawn on the icon), a rift look (2102, 2106), empty corpses,
+  a unique, click and Shift+click looting.
 - The corpse gets the custom attribute `lf_kill = <kill id>` so it can be found again on its tile (it survives
   container-to-container decay stages). Entries are matched to corpse items by `id:rarity:unique name`
   (`F.signature`, `F.reconcile`); identical items are interchangeable.
