@@ -415,8 +415,17 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
 - Healing for the Thief line (a spell; the potions are done: the Royal Paladin's), starting gear for every class,
   outfits, the classes in `admin/testkit.lua` (it already sorts Berserker / Beastmaster with the knight / paladin kits).
 - The full rebalance at levels 300 and 1000 with passive trees; the client's passive tree class texts (`vocationSpecials`) still
-  describe the old vocations; base server scripts that test vocation ids by number (e.g. the familiar system, `firstitems.lua`, NPCs
-  with `isDruid`) were not reviewed.
+  describe the old vocations. (Done: the base server scripts that test vocation ids, see "Base scripts" below.)
+
+### Base scripts
+
+The base server's own scripts (NPCs, quests, familiars, exercise weapons, the vocation Oracles, ...) know the stock vocations
+only. `server/tools/patch_base_classes.py` (install step 5b) makes every class count as one stock vocation: the Warrior and
+Templar lines as Knight, the Ranger, Thief and Monk lines as Paladin, Mystic, Elementalist and the Necromancer line as
+Sorcerer, the Illusionist as Druid (ascended classes as the promoted one). Per-case choices: familiars (Templar: Paladin
+Familiar, Monk: Druid Familiar, Illusionist: Illusionist Familiar), exercise weapons by skill, NPC spell teachers follow
+`spells.xml`, the Oracles offer Warrior / Ranger / Mystic / Thief, the party bonus counts at most 5 lines. Details, the
+reviewed scripts and the tests: server/README.md "Base scripts and the classes".
 
 ## More class ideas for later
 

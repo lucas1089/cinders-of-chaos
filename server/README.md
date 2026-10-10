@@ -44,6 +44,7 @@ server/
                                       the Monk (17-19), Necromancer (20-22) and Templar (23-25) lines, installed with them
   tools/add_vocations.py              writes them into data/XML/vocations.xml (2, 6, 9 retired) and converts the vocation lists
                                       of spells.xml / weapons.xml / movements.xml (+ potions.lua, lib/core/player.lua)
+  tools/patch_base_classes.py         the base server's vocation checks (NPCs, quests, familiars, ...) know the classes
     paragon.lua (Paragon track past the passive tree, see "Paragon")
     buildshare.lua  buildshare_core.lua (passive tree build codes, see "Build sharing")
     respec.lua  respec_core.lua  respec_config.lua (respec prices, single-node refund, see "Respec")
@@ -193,6 +194,9 @@ server/
    one-handed swords and clubs and what the Warrior may wear (shields too), the Necromancer line every wand and rod, what the
    casters may wear and the Mystic's stock healing and support instants (no rune conjuring, no stock summon); the potions follow
    (Monk: the Royal Paladin's, Templar: the Elite Knight's and the Royal Paladin's, Necromancer: the Elementalist's).
+   Then `python3 -I server/tools/patch_base_classes.py <server>/data [--dry-run]` (idempotent; `install_all.py` runs it in the
+   vocations step): the base server's own vocation checks (NPCs, quests, familiars, exercise weapons, ...) learn the classes.
+   See "Base scripts and the classes".
 5c. Classes five to seven: their spells come with step 3 (`spells_chaos.xml`), their scripts with step 1. The Necromancer's minions
    are monsters: copy `data/monster/monsters/chaos/necro_*.xml` with the other Chaos monsters (step 5) and register them with
    `python3 -I server/tools/register_monsters.py <server>/data/monster/monsters.xml <server>/data/monster/monsters/chaos`.
@@ -4128,6 +4132,56 @@ of every line are read at run time from `Chaos.classes.ascension`, so a new clas
   Trial twice (lethal hit caught, experience unchanged, cooldown), won it and became a Berserker; a Thief became a Ninja
   (dual-wield storage set); a locked Templar was refused at the confirmation; the Ascendant Oracle and `/ascendset` as documented.
   Not measured: the guardian's balance against geared characters (the numbers are first estimates).
+
+## Base scripts and the classes (`tools/patch_base_classes.py`)
+
+The base server's scripts test the stock vocation ids (1-10) by number or with `Player.isSorcerer / isDruid / isKnight /
+isPaladin / isMage`. The new lines (Thief 11-13, Berserker 14, Beastmaster 15, Monk 17-19, Necromancer 20-22, Templar 23-25)
+were refused, indexed nil (script errors) or, at the vocation Oracles, put on the retired ids 2 and 9. The tool (install step
+5b, run by `install_all.py` after `add_vocations.py`; exact match on the stock lines, idempotent, `--dry-run`) makes every
+class count as one stock vocation:
+
+| Class line | Counts as | Familiar |
+|---|---|---|
+| Warrior 4 / Juggernaut 8 / Berserker 14 | Knight / Elite Knight | Knight Familiar |
+| Templar 23 / Inquisitor 24 / Sentinel 25 | Knight / Elite Knight | Paladin Familiar (holy) |
+| Ranger 3 / Deadeye 7 / Beastmaster 15 | Paladin / Royal Paladin | Paladin Familiar |
+| Thief 11 / Ninja 12 / Samurai 13 | Paladin / Royal Paladin | Paladin Familiar |
+| Monk 17 / Shadowfist 18 / Iron Sage 19 | Paladin / Royal Paladin | Druid Familiar |
+| Mystic 1 / Elementalist 5 | Sorcerer / Master Sorcerer | Sorcerer Familiar |
+| Necromancer 20 / Lich 21 / Bone Lord 22 | Sorcerer / Master Sorcerer | Sorcerer Familiar |
+| Illusionist 10 | Elder Druid | Illusionist Familiar |
+
+- `lib/core/player.lua`: `CHAOS_STOCK_VOCATION` (the table), `Player.getStockVocationId()`, `Player.getStockBaseVocationId()`
+  (1-4); the six `is...` functions answer by it (`isIllusionist` is always false: the base server's own Illusionist is retired).
+  Everything that asks them follows: Bozo, the mirror image boss, Arkulius, the free first wand.
+- By the stock id instead of the vocation id: the elemental spheres (lever, machine, soils, enchanting gems), the desert
+  dungeon (one of each vocation), the Pits of Inferno fire tiles, the sorcerer guild tiles, the shrine, Daram and soil
+  portals, the free first wand / rod (Magido, Asima, Rachel, Topsy, Alexander, Xodet, Fenech, `runes.lua`), the monster
+  spell Astro Wave (the new lines were immune to it). Refusal texts name our classes.
+- NPC spell teachers (`KeywordHandler:addSpellKeyword`): the spell's own list in `spells.xml` decides (the NPC's stock
+  vocation only when the spell is unknown). All player spells are `needlearn="0"`, so this is about the offer only.
+- Exercise weapons: sword Warrior / Thief / Templar lines, axe and shield Warrior / Templar, club Warrior / Monk / Templar,
+  bow Ranger / Thief, rod and wand Mystic / Necromancer (the Berserker was refused before).
+- Party shared experience: the bonus for different vocations counts the class lines, at most 5 (the stock x2.5).
+- The vocation Oracles (The Oracle, The Oracle3, Captain Dreadnought): Warrior, Ranger, Mystic, Thief (the old words choose
+  the matching class); the locked lines stay with the store's class unlock. Before: druid / illusionist set ids 2 / 9, and
+  the equipment lookup by the stock name failed after the vocation was set.
+- The Dead Bureaucrats (Pits of Inferno) know the new base classes; Arkulius gives the frozen plate instead of the
+  ironworker crossbow to the Beastmaster, Thief and Monk lines (they cannot fire it).
+- Item upgrade slots read our class names from the item text; the opcode 73 highscores filter takes numbers only (it went
+  into the SQL as sent) and a stock id also lists the classes that count as it.
+- Reviewed, unchanged: `firstitems.lua` and the starter chest (vocation 0 / old ids; the class kits come from
+  `newplayer_config.lua`), vocation 0 checks (rook advance, chat channels, droploot), offline training, party icons and
+  inspect (names), the promotion paths (`patch_promotion.py`), potions (`add_vocations.py`).
+- After the edits the tool lists every other vocation check it finds outside the Chaos folders (none on this base server).
+
+Tests: `server/tests/base_classes_test.lua` (the tool on condensed stock files, then every class on a mock engine).
+Verified on the test server (bots over the game protocol, all 21 classes): the stock helpers and the familiar of every class;
+Magido gives a Necromancer the wand, an Illusionist the rod and refuses a Thief; Gregor teaches Bloodtrail to a Berserker and
+a Ranger, not to a Templar; The Oracle3 makes a vocation-less character a Thief with the equipment; the Dead Bureaucrat
+accepts a Thief ("Thief", then the Pumin storage); Arkulius gives a Thief the frozen plate, a Ranger the ironworker and a
+Templar the windborn colossus armor. No Lua errors.
 
 ## Class lock (`class_unlocks.lua`, `class_unlocks_core.lua`, `sql/chaos_class_unlocks.sql`)
 

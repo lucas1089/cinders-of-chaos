@@ -14,6 +14,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                files in SERVER_DIR/data/scripts/chaos that the repo no longer has are listed, never deleted.
   lib          data/lib/lib.lua loads chaos_unique_items.lua (data/items/README.md, "Install" 1)
   vocations    tools/add_vocations.py            the classes (README "Install" 5b, docs/CLASSES.md)
+               tools/patch_base_classes.py       the base server's vocation checks (NPCs, quests, familiars, ...) know
+                                                 the classes (README "Install" 5b, docs/CLASSES.md "Base scripts")
   events       tools/patch_base_events.py        experience / loot / siege / login hooks (README "Install" 4)
                tools/patch_season_events.py      season isolation hooks (when the tool exists)
                tools/patch_help_itemlinks.py     no item links in the Help channel (when the tool exists)
@@ -221,7 +223,11 @@ def step_lib(server, data, ctx):
 
 
 def step_vocations(server, data, ctx):
-    return tool_result(run_tool([tool('add_vocations.py'), data], 'add_vocations.py'))
+    ok, lines = run_tool([tool('add_vocations.py'), data], 'add_vocations.py')
+    if ok and os.path.isfile(tool('patch_base_classes.py')):
+        ok2, more = run_tool([tool('patch_base_classes.py'), data], 'patch_base_classes.py')
+        ok, lines = ok2, lines + more
+    return tool_result((ok, lines))
 
 
 def step_events(server, data, ctx):
