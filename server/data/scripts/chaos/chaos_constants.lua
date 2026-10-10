@@ -62,6 +62,7 @@ ChaosOpcodes = {
 	itemLink = 249, -- items linked into chat: register / get a snapshot (client game_chatlinks; itemlink.lua, itemlink_core.lua)
 	inspect = 240, -- Inspect Player window: equipment and public stats of another player (client game_playerinspect; inspect.lua, inspect_core.lua)
 	market = 221, -- player market for gold and Chaos Coins (client game_market; market.lua, market_core.lua, market_config.lua)
+	orbExchange = 209, -- Orb Exchange: order book for the crafting orbs, orb for orb and orb for gold (client game_orbexchange; orbexchange*.lua)
 	buffs = 234, -- buff / debuff bar, server -> client diffs (client game_buffbar; buffbar.lua, data/lib/chaos_buffs.lua)
 	energyShield = 224, -- energy shield bar, server -> client, sent by the engine (patch 0015, config energyShieldOpcode), plain text "es:<current>:<max>" (client game_energyshield)
 	groundLoot = 230, -- ground loot labels: names, rarity and decay of the items on the tiles in view (client game_groundlabels; groundloot.lua)
@@ -122,6 +123,7 @@ Chaos.storage = {
 	monk = 7100800, -- the Monk line (ChaosMonk.ids.storage in monk_chi_core.lua): 7100800 - 7100809 reserved; chi, its time, focus, Chi Ward
 	inspectOff = 7100960, -- 1 = this character does not allow others to inspect it (inspect.lua; default on, so unset)
 	-- market (market_config.lua storage): 7100970 - 7100979 reserved; listSeq, deliverSeq (crash-safe escrow markers)
+	-- orb exchange (orbexchange_config.lua storage): 7100950 - 7100954 reserved; placeSeq, deliverSeq (crash-safe escrow markers)
 	-- season pass (seasonpass_config.lua storage): 7100980 - 7100984 reserved; 7100980 = the season name frame is hidden
 	-- cosmetics (cosmetics_config.lua storage): 7100940 - 7100949 reserved; the chosen kill effect, loot label accent,
 	-- chat name colour, then one spell skin per class line (7100943 + slot)

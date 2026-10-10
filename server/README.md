@@ -267,6 +267,7 @@ working directory, as with the rest of the base server libs).
 | game_season | `season.lua`, `season_core.lua`, `season_config.lua` | 246, Adventure > Season / `/season` | Seasons: fresh-start season characters isolated from standard ones, season ladder view, season uniques, account-wide reward track, end-of-season migration; tested in game with two clients (see "Seasons"). |
 | game_battlepass | `seasonpass.lua`, `seasonpass_core.lua`, `seasonpass_config.lua`, `seasonpass_store.lua` | 227, Adventure > Season Pass | Season pass: account-wide free and premium track of 50 tiers per season, pass XP from play, daily and weekly challenges, claims safe against double claims, the premium pass and three season packs in the store and the pass window (upgrades pay the difference, gifts); tested in game with two clients (see "Season pass"). |
 | game_market | `market.lua`, `market_core.lua`, `market_orders_core.lua`, `market_config.lua` | **221**, Economy > Market (Alt+E) | Our player market for gold and Chaos Coins: escrow of the listed item in its offer row (engine patch 0017), fees, tax, expiry, seasons kept apart, crash-safe transactions, a modifier search (up to 6 rows of modifier / value / tier, all or at least N, sockets, quality, free affix slots; table `chaos_market_offer_mods`), buy orders with the payment escrowed at posting, partial fills, refunds and the same filter language (table `chaos_market_orders`); the stock market off (`tools/patch_market.py`); tested in game with two clients and a season character (see "Market"). |
+| game_orbexchange | `orbexchange.lua`, `orbexchange_core.lua`, `orbexchange_config.lua`, `sql/chaos_orbx.sql` | **209**, Economy > Orb Exchange (and a button in the Market window) | Currency order book for the crafting orbs: orb for orb and orb for gold, limit orders with the offered stack escrowed in the order row (crash-safe like the market), price-time matching at the resting order's ratio, partial fills, cancel / expiry refunds, inbox / bank delivery, gold-leg fee and orb-for-orb placing fee, season books apart; book, chart, My Orders. Unit, randomized and in-game tests (see "Orb Exchange"). |
 | game_pact | `pact.lua`, `pact_core.lua`, `pact_config.lua`, `sql/chaos_pact.sql` | **222**, Character > Chaos Pact | Chaos Pact subscription (30 days, stacks, daily Chaos Coins, title; no premium days) and account limits (stash tabs, market listings, saved builds, loot rules, character slots) from one config; one-time extras in the store; saved passive tree builds per account; tested in game (see "Chaos Pact and account storage"). |
 | game_referral | `referral.lua`, `referral_core.lua`, `referral_config.lua`, `sql/chaos_referral.sql` | **220**, Character > Referral | Referral program: an account's code, a friend's code entered at account creation (website) or in game in the first 7 days, a welcome gift for the friend (potions, a title), titles and a few Chaos Coins for the referrer at the friend's levels 50 and 150; anti-abuse checks; tested in game (see "Referral program"). |
 | game_transmog | `transmog.lua`, `transmog_core.lua`, `transmog_config.lua`, `sql/chaos_transmog.sql` | **212**, Character > Transmog | Transmog: equipped gear takes the look of an unlocked item of its kind (appearance only), account-wide wardrobe with collection progress, appearance sets (store, achievement, season, exclusive), small gold fee; engine patch 0019 + client base patch 0030 draw the look everywhere; tested in game (see "Transmog"). |
@@ -288,7 +289,7 @@ working directory, as with the rest of the base server libs).
 | game_riftatlas | `atlas.lua`, `atlas_core.lua`, `atlas_config.lua`, `sql/chaos_rift_atlas.sql` (hooks in `rift_core.lua`) | **210**, Adventure > Rift Atlas, the rift HUD | Rift Atlas: completion grid of first completions (theme x tier, flawless, swift, omens; 96 points), a map of 81 nodes in a core and four theme branches with 4 keystones, allocate / refund for gold or an orb; effects applied in `rift_core.lua` (see "Rift Atlas"). Unit and mocked-engine tests; not run on a live server. |
 | game_partyfinder | `party_finder.lua`, `party_finder_core.lua`, `party_finder_config.lua` | **208**, Social > Party Finder | Party Finder (LFG): listings with activity, wanted tank / healer / DPS slots, minimum level, note, expiry; browse with filters, apply with a role, the leader accepts (engine party invite) or declines; "Join as" quick-join queue; realm and staff rules; in memory (see "Party Finder"). Unit and mocked-engine tests; not run on a live server. |
 
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 208, 214, 216, 217, 218, 219, 221, 222, 223, 224 (sent by the engine, patch 0015), 225, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
+Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 208, 209, 214, 216, 217, 218, 219, 221, 222, 223, 224 (sent by the engine, patch 0015), 225, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
 Extended opcode 210 (Rift Atlas) is registered there too, as `ChaosOpcodes.riftAtlas` below the table.
 
@@ -3998,6 +3999,107 @@ sweep (36,000 gold back at once: 12 bought); My orders with the listings used, H
 action listing both orders. Money balanced to the gold piece on both sides. `sql/chaos_market.sql` run twice on the copy.
 Not verified in game: a crash in the middle of a fill (unit-tested), season characters filling (unit-tested), the
 per-account limit.
+
+## Orb Exchange (`orbexchange.lua`, `orbexchange_core.lua`, `orbexchange_config.lua`, `sql/chaos_orbx.sql`, client `game_orbexchange`)
+
+The crafting orbs are the economy's currency; the Orb Exchange is their order book. Pairs: any orb against gold (the
+bank balance) and any orb against any other orb. Client `game_orbexchange` (Economy > Orb Exchange in the top menu, and
+an "Orb Exchange" button in the Market window), extended opcode **209** (`ChaosOpcodes.orbExchange`, JSON
+`{action, data}`, answers through `Chaos.sendChunked`). Numbers in `orbexchange_config.lua`; the pure rules in
+`orbexchange_core.lua` (`tests/orbexchange_test.lua`).
+
+**Install.** Nothing beyond `install_all.py`: the `files` step copies the scripts, the `sql` step runs
+`sql/chaos_orbx.sql` (4 tables, safe to run again; `orbexchange.lua` creates the same tables at startup). No engine
+patch, no base data change. The orbs on the exchange are every entry of `ChaosCrafting.config.orbs` (orbs v2 and the Orb
+of Sockets included; 14 on the test server) that is a stackable item; `orbs` / `exclude` in the config narrow it.
+
+**Orders.** An order gives `giveQty` of one currency and wants at least `wantQty` of another; its ratio (what it
+wants per unit it gives) is its limit. The window shows a pair as base (an orb) / quote (gold or another orb) and turns
+Buy / Sell, quantity and price each into that (a buyer's total is rounded up, a seller's down, by less than one unit).
+The order is done when it has given everything: a better price means it receives more (a buyer of 50 Awakening at 0.05
+Upheaval each who meets an ask at 0.04 gets 75 for the same 3 Upheaval).
+
+| Setting | Value |
+|---|---|
+| Sizes | orbs 1 - 100,000 per side, gold 1,000 - 2,000,000,000 per side (all products stay below 2^53) |
+| Fees (gold sinks) | 2% (`goldBps` 200) of the gold leg of every fill, rounded down, paid by the side that receives the gold; 500 gold from the bank for every orb-for-orb order when it is placed; never refunded |
+| Duration | 1, 3, 7 or 14 days (default 7); then the rest goes back |
+| Limits | 20 open orders per character, 40 per account; level 8; characters with `players.save = 0` cannot trade |
+| Rate limits | per character: place 1 s, cancel 0.5 s, book 150 ms, my orders 300 ms, open 400 ms (`ChaosRateLimit`) |
+
+**Matching** (`ChaosOrbExchangeCore.match`, `fillAmounts`). A new order (the taker) meets the open orders that give what
+it wants and want what it gives and whose ratio crosses its own, cheapest first and the older first at the same ratio
+(price-time priority; the database query reads the best `matchBatch` candidates, the exact order is made with integer
+cross-products). Every fill is at the resting order's ratio: what a resting order has received since it went on the book
+is `ceil(given since then x wantQty / giveQty)`, so it never gets less than its ratio and gets exactly `wantQty` when it
+started on the book and gives everything. The taker's limit is checked on every fill (what it gets per unit it pays is
+never worse than its own ratio); when the largest fill would break it by the rounding, smaller fills are tried. A fill
+moves `a` from the resting order's escrow to the taker and `b` from the taker's escrow to the resting order, minus the
+gold fee: nothing is created. What a taker had given before it went on the book is kept in `rest_given`, so a buyer that
+bought cheaper keeps that price and its rest is priced at its own ratio again (found in the game test: the first version
+paid the improvement back to the next seller). An order whose rest cannot buy one whole unit at its own ratio (a buyer
+with a few coins left after better prices) closes as filled and the rest is refunded in the same transaction. Orders of
+the same account never trade with each other (`selfTrade = false`); they are skipped and stay on the book.
+
+**Escrow and crash safety** (the market's method and order of steps):
+- An orb order: (1) the order row is written as pending (state 9); (2) the orbs leave the backpack (stacks of that orb
+  in the backpack and the bags in it, locked orbs not), the orb-for-orb fee leaves the bank and the storage 7100950
+  (placeSeq) = the order id, all in memory; (3) `player:save()` writes all three in one database transaction; (4) one
+  transaction activates the row and matches it. A pending row found at login or startup is activated and matched when
+  the owner's saved placeSeq reached its id, else deleted (the orbs never left in a saved state). Tested by a real
+  `kill -9` with one pending order whose marker was saved (activated and matched at startup) and one whose was not
+  (dropped), and with stale pending rows dropped at login.
+- A gold order: `player:save()` first, then one transaction takes the gold from `players.balance` (only when it is
+  there), writes the active order and matches it; then the same gold leaves the bank in memory.
+- Matching, cancel and expiry run inside one transaction each: every resting order is updated only when its `given` is
+  still what was read, every fill writes its trade row and the deliveries; any failure rolls all of it back.
+- Deliveries (`chaos_orbx_deliveries`, unique per order, trade and reason): orbs to the inbox in stacks of 100 (all of a
+  row or nothing), gold to the bank, in id order, with the storage 7100951 (deliverSeq) = the row id, then
+  `player:save()`, then the rows are marked; a row at or below the saved deliverSeq is only marked. Offline characters
+  get theirs at the next login (tested).
+
+**Seasons.** An order carries its owner's realm (`ChaosSeason.realmOfGuid`). While a season runs, its characters trade
+on the season's own book and see only its orders and trades; standard characters never see or meet them
+(`ChaosMarketCore.realmClause`, the market's rule). When the season ends its open orders join the standard book: the
+sweep (`ChaosOrbExchange.mergeEndedSeasons`) matches each once as a new order against the standard book and sets its
+realm to 0 (tested: a season bid at 6,000 did not touch the standard asks at 5,200 while the season ran, and bought
+from them after the end, the rest refunded).
+
+**The window.** Book tab: a strip of the orbs (item sprites, the count you carry in the tooltip) picks the base,
+"priced in" picks gold or another orb; the book (asks above the spread line, bids below, price / quantity / orders /
+total with depth bars; a click on a level fills the form to buy at an ask or sell at a bid, with the price rounded so it
+crosses), last price, 24h change, high / low, volume and turnover, an hourly average price chart (step line and volume
+bars), the last 20 trades, and the order form with the totals and fees before placing. My Orders tab: open orders with
+progress and Cancel, my fills (what I gave and got, the fee), closed orders. The book is asked again every 5 s while
+it is open.
+
+**Protocol.** client -> server `open | book {base, quote, seq} | place {give, giveQty, want, wantQty, days} |
+cancel {id} | mine | wallet`; server -> client `meta {orbs [{k, n, item}], fees, min, max, durations, defaultDuration,
+maxOpen, realm, realmName, gold, have, hours} | book {base, quote, asks, bids, last, open, high, low, change, vol,
+volQuote, points [{h, p, v}], trades [{ago, p, q, side}], mine} | mine {open, closed, fills, owed, max} |
+wallet {gold, have} | done {what, id, text} | error {text}`.
+
+**Tables.** `chaos_orbx_orders` (state 0 active, 1 filled, 2 cancelled, 3 expired, 9 pending; `given`, `got`,
+`rest_given`, `refunded`, `fee`), `chaos_orbx_trades` (one row per fill, the price history), `chaos_orbx_deliveries`,
+`chaos_orbx_log` (place, take, fill, cancel, expire, deliver, recover, merge, error). Storages 7100950 - 7100954 are
+reserved (two used). Staff: `/orbx sweep` (expiry and season merge now), `/orbx info <order id>`, `/orbx escrow`
+(what the open orders hold per currency).
+
+**Opcode.** 209 is free in the reference server (its opcodes: "Opcode collision check"), in every Chaos script and in
+every client module of the reference client (grep for `sendExtendedOpcode`, `registerExtended*Opcode` and opcode
+constants).
+
+**Tests.** `tests/orbexchange_test.lua` (LuaJIT and Lua 5.3): order checks, exact integer division near 2^53, crossing
+and priority, single fills (the maker's rounding, the taker's limit, the smaller fill found), whole matches (several
+makers, self-trade skipped, fees on the gold leg, a buyer that rests after a better price), dust, the book levels in
+both orientations, the price history, the makers query and the limits; then randomized runs (thousands of orders
+between 2 to 6 traders over four currencies, and tiny orb-for-orb orders where rounding is the common case) that count
+every orb and every gold coin after each step (holdings + escrow + fees never change), and check that no order trades
+worse than its ratio and that no amount goes negative. Client `game_orbexchange/orbexchangeview_test.lua`. In game
+(test server copy with MariaDB, two characters on two accounts): sells and buys against gold with partial fills,
+the fee, selling into a bid, an orb-for-orb trade with the placing fee, cancel and expiry refunds, offline delivery at
+login, a real crash with pending orders, rate limit and size refusals, a season character's book, and the totals of
+gold and of every orb checked after each step (equal to the start minus the fees).
 
 ## Guild levels and guild halls (`guild.lua`, `guild_hall.lua`, `guild_core.lua`, `guild_config.lua`, `sql/chaos_guild.sql`)
 
