@@ -42,9 +42,11 @@ return {
 		{"whetstone", 14}, {"tempering", 12}, {"reforging", 4}, {"excision", 3}, {"binding", 2}, {"ruin", 1}
 	},
 
-	-- shards -> one orb. Store prices (shop_config.lua, Chaos Coins): Awakening (transmutation) 5, Upheaval (chaos) 10,
-	-- Erasure (scouring) 12, Gilding (alchemy) 15, Unmaking (annulment) 20, Fate (divine) 25, Sockets 25, Grafting
-	-- (exalted) 40, Whetstone 2, Tempering 8, Reforging 20, Excision 25, Binding 30; the Orb of Ruin is not sold.
+	-- shards -> one orb, about 2.5 shards per Chaos Coin of a reference price: Awakening (transmutation) 5, Upheaval
+	-- (chaos) 10, Erasure (scouring) 12, Gilding (alchemy) 15, Unmaking (annulment) 20, Fate (divine) 25, Sockets 25,
+	-- Grafting (exalted) 40, Whetstone 2, Tempering 8, Reforging 20, Excision 25, Binding 30, Ruin 60. The store
+	-- (shop_config.lua) sells only Whetstones, the Orb of Excision and the Orb of Binding, with weekly limits; the
+	-- other prices are reference values for the shard costs, not store offers.
 	recipes = {
 		{key = "transmutation", cost = 12},
 		{key = "chaos", cost = 25},

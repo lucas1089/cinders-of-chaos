@@ -304,7 +304,7 @@ return {
 				text = "Keystones are the big nodes at the edge of the passive tree: they change your class (Cleaving Arc, " ..
 					"Ricochet, Arcane Echo...). Plan your path towards one.\n\n" ..
 					"The bounty board (Adventure > Bounty Board) gives daily contracts per level band that pay gold and orbs. The store (top menu, Economy) sells " ..
-					"temple scrolls, stamina and services. Dungeons, the Infinity Tower and the dailies are under Adventure in " ..
+					"cosmetics, stamina and services. Dungeons, the Infinity Tower and the dailies are under Adventure in " ..
 					"the top menu.\n\n" ..
 					"Step into the forcefield to the east: you get your starter kit and arrive at the temple.",
 				toast = "Station 5: step into the forcefield to leave the island."}

@@ -293,7 +293,8 @@ item's modifiers, pick a modifier for the aimed orbs and preview what each orb w
 On the bench, click a modifier to pick it, then press Use on an orb that takes a modifier; used directly with "Use with",
 those orbs pick a modifier at random. A Rift Key's modifiers make the rift harder and its rewards better, so crafting a
 key is how you push for more loot. Orbs drop from monsters (more from tiered ones and bosses), from bounties, rifts and
-the weekly chest, and many can be bought in the store. Uniques can't be crafted, so they stay unique.
+the weekly chest, and can be made from rune shards (Salvage). The store sells only Whetstones, the Orb of Excision and
+the Orb of Binding, with weekly limits; no orb with a random result is sold. Uniques can't be crafted, so they stay unique.
 
 ### Gems and sockets
 
@@ -610,7 +611,9 @@ The store (Economy > Store) is paid in **Chaos Coins**. It sells convenience, co
   and training buffs.
 - **Services:** name, class and sex change, frag and skull removal, a passive tree and Paragon reset.
 - **Cosmetics:** outfits, mounts, wings, auras, outfit shaders, portal styles and pets.
-- **Crafting orbs** (but never the Orb of Ruin), the Orb of Sockets, Whetstones, and training weapons.
+- **Crafting supplies with weekly limits:** Whetstones, the Orb of Excision and the Orb of Binding. No orb with a random
+  result is sold (no Upheaval, Fate, Gilding, Awakening, Erasure, Unmaking, Grafting, Sockets, Tempering, Reforging or Ruin).
+- **Training weapons.**
 
 ## Quality of life
 

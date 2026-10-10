@@ -43,9 +43,10 @@ for _, r in ipairs(cfg.recipes) do
 	seen[r.key] = true
 	assert(r.cost >= 5, "no orb for less than 5 shards")
 end
--- recipe costs follow the store prices (about 2.5 shards per coin): the cheap orbs cheap, the Grafting dearest
+-- recipe costs follow reference coin prices (about 2.5 shards per coin): the cheap orbs cheap, the Grafting dearest. The
+-- store sells only Whetstones, Excision and Binding; the other values are reference prices, not store offers
 local store = {transmutation = 5, chaos = 10, scouring = 12, alchemy = 15, annulment = 20, divine = 25, sockets = 25, exalted = 40,
-	whetstone = 2, tempering = 8, reforging = 20, excision = 25, binding = 30, ruin = 60} -- the Orb of Ruin is not sold: its price is the weight of its rarity
+	whetstone = 2, tempering = 8, reforging = 20, excision = 25, binding = 30, ruin = 60}
 for _, r in ipairs(cfg.recipes) do
 	local ratio = r.cost / store[r.key]
 	assert(ratio >= 2.3 and ratio <= 2.7, "shards per coin for " .. r.key .. ": " .. ratio)

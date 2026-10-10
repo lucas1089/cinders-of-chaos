@@ -66,6 +66,7 @@ ChaosOpcodes = {
 	energyShield = 224, -- energy shield bar, server -> client, sent by the engine (patch 0015, config energyShieldOpcode), plain text "es:<current>:<max>" (client game_energyshield)
 	groundLoot = 230, -- ground loot labels: names, rarity and decay of the items on the tiles in view (client game_groundlabels; groundloot.lua)
 	castbar = 231, -- cast bar of the cast-time spells, both ways (client game_castbar; casting.lua, data/lib/chaos_casting.lua)
+	referral = 220, -- Referral window: own code, enter a code, referred friends (client game_referral; referral*.lua)
 	pact = 222, -- Chaos Pact window: status, limits, daily coins, saved builds (client game_pact; pact.lua, pact_config.lua)
 	pouches = 226, -- store pouches: the Loot Pouch rules window (client game_pouches; pouches.lua, pouches_core.lua, pouches_config.lua)
 	partyFrames = 235 -- party frames: members' health, mana, level, floor, buffs; client -> server actions (client game_partyframes; partyframes.lua)

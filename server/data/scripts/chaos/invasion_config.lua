@@ -187,14 +187,16 @@ return {
 		golden = {weight = 30, minutes = 30, lootMult = 1.25, name = "Golden Hour"}, -- loot_config.lua rateMult x1.25
 		merchant = {weight = 30, minutes = 20, name = "Wandering Merchant", npc = "Wandering Merchant",
 			kinds = {"town"}, -- only in town areas
-			-- what the NPC sells (gold): orbs and rare consumables a little below the usual value
+			-- what the NPC sells (gold): orbs and rare consumables a little below the usual value. seasonBlocked = true:
+			-- not sold to season characters (season.lua realm > 0), e.g. the double experience potion does nothing for them
+			seasonBlockedText = "Season characters gain nothing from a %s, so I will not sell you one.",
 			items = {
 				{id = 29856, price = 40000, name = "orb of upheaval"},
 				{id = 29857, price = 120000, name = "orb of fate"},
 				{id = 29855, price = 200000, name = "orb of grafting"},
 				{id = 24691, price = 60000, name = "orb of gilding"},
 				{id = 24697, price = 80000, name = "orb of unmaking"},
-				{id = 28095, price = 350000, name = "double experience potion"},
+				{id = 28095, price = 350000, name = "double experience potion", seasonBlocked = true},
 				{id = 26031, price = 900, name = "supreme health potion"}
 			}}
 	}

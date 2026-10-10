@@ -24,7 +24,7 @@ $sections = array(
 	)),
 	'crafting' => array('Crafting', array(
 		'Orbs reshape your gear at the <strong>Crafting Bench</strong> (Economy > Crafting Bench): Awakening and Gilding turn normal items magic, Grafting adds a modifier, Unmaking removes one, Erasure makes an item normal again, Upheaval rerolls it with the same rarity and Fate with a new one. Tempering, Binding, Excision, Reforging, Ruin and Whetstones let you aim: new values, bind or cut a modifier of your choice, a risky gamble, and item quality.',
-		'Orbs drop from monsters (more from tiered ones and bosses), from bounties and the weekly chest, and are sold in the store. Uniques cannot be crafted.',
+		'Orbs drop from monsters (more from tiered ones and bosses), from bounties and the weekly chest, and can be made from rune shards. The store sells only Whetstones, the Orb of Excision and the Orb of Binding, a few each week. Uniques cannot be crafted.',
 	)),
 	'endgame' => array('Endgame', array(
 		'<strong>World bosses:</strong> a portal opens at every temple and one of five colossal bosses appears: Kaelgor the Infernal Warlord, Skaldra the Rime Queen, The Rotmother, Nyxareth the Void Archon or Vharok the Blood Colossus. Everyone who does real damage gets a reward.',

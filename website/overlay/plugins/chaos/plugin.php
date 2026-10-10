@@ -24,6 +24,8 @@ if (!is_array($config)) {
 }
 
 require_once __DIR__ . '/lib.php';
+// referral code on the account creation form (referral.php registers its own hooks)
+require_once __DIR__ . '/referral.php';
 
 // ---------------------------------------------------------------- class lock
 // Session user, not $user_data: init.php loads the plugins before it reads the account.

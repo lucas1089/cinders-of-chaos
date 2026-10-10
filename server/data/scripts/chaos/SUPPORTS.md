@@ -18,8 +18,8 @@ id and a `spells.xml` line to get sockets.
 | 3rd | character level >= spell level + 150, at least 200 | 2 Orbs of Sockets, once per spell and character |
 
 Examples: Witchfire Bolt (level 30): 2nd at 90, 3rd at 200. Doomtide (level 300): 2nd at 360, 3rd at 450.
-The Orb of Sockets is the gem orb (24692, `chaos_gems_config.lua socketOrb`, sold in the store for 25 Chaos Currency
-and dropped by the loot layer), so the third socket costs the same currency as re-rolling gear sockets.
+The Orb of Sockets is the gem orb (24692, `chaos_gems_config.lua socketOrb`, dropped by the loot layer and made from
+rune shards; the store does not sell it), so the third socket costs the same currency as re-rolling gear sockets.
 
 Rules at socketing (all on the server):
 - the rune must fit the spell's kind (table below);
@@ -87,7 +87,7 @@ hit. Brand, Sunder, Keen Edge, Hex and Mercy work on the spell's own hits, in Pv
 - **Rift chest** (`rift.lua`): 0.3 + 0.1 x tier runes (a fraction is the chance of one more), levels by rift tier.
 - **Bounties** (`bounty.lua`, see "Hooks" below): 10 / 20 / 50% for a hunt / elite / boss contract, level by the
   contract's band (the gems' band table).
-- **Store**: no runes. Gems are not sold either; the store keeps selling the Orb of Sockets, which opens third sockets.
+- **Store**: no runes. Gems are not sold either, nor the Orb of Sockets (third sockets): it drops and is made from rune shards.
 
 ## How it works
 

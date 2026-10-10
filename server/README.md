@@ -259,6 +259,8 @@ working directory, as with the rest of the base server libs).
 | game_battlepass | `seasonpass.lua`, `seasonpass_core.lua`, `seasonpass_config.lua`, `seasonpass_store.lua` | 227, Adventure > Season Pass | Season pass: account-wide free and premium track of 50 tiers per season, pass XP from play, daily and weekly challenges, claims safe against double claims, the premium pass and three season packs in the store and the pass window (upgrades pay the difference, gifts); tested in game with two clients (see "Season pass"). |
 | game_market | `market.lua`, `market_core.lua`, `market_config.lua` | **221**, Economy > Market (Alt+E) | Our player market for gold and Chaos Coins: escrow of the listed item in its offer row (engine patch 0017), fees, tax, expiry, seasons kept apart, crash-safe transactions, a modifier search (up to 6 rows of modifier / value / tier, all or at least N, sockets, quality, free affix slots; table `chaos_market_offer_mods`); the stock market off (`tools/patch_market.py`); tested in game with two clients and a season character (see "Market"). |
 | game_pact | `pact.lua`, `pact_core.lua`, `pact_config.lua`, `sql/chaos_pact.sql` | **222**, Character > Chaos Pact | Chaos Pact subscription (30 days, stacks, daily Chaos Coins, title; no premium days) and account limits (stash tabs, market listings, saved builds, loot rules, character slots) from one config; one-time extras in the store; saved passive tree builds per account; tested in game (see "Chaos Pact and account storage"). |
+| game_referral | `referral.lua`, `referral_core.lua`, `referral_config.lua`, `sql/chaos_referral.sql` | **220**, Character > Referral | Referral program: an account's code, a friend's code entered at account creation (website) or in game in the first 7 days, a welcome gift for the friend (potions, a title), titles and a few Chaos Coins for the referrer at the friend's levels 50 and 150; anti-abuse checks; tested in game (see "Referral program"). |
+| game_transmog | `transmog.lua`, `transmog_core.lua`, `transmog_config.lua`, `sql/chaos_transmog.sql` | **212**, Character > Transmog | Transmog: equipped gear takes the look of an unlocked item of its kind (appearance only), account-wide wardrobe with collection progress, appearance sets (store, achievement, season, exclusive), small gold fee; engine patch 0019 + client base patch 0030 draw the look everywhere; tested in game (see "Transmog"). |
 | game_patchnotes | `patchnotes.lua`, `patchnotes_core.lua`, `data/patchnotes/*.md` | 244, Social > Patch Notes / `/patchnotes` | Weekly patch notes read from Markdown files on the server, opened once per new week at login (after the Daily Reward), per-account "Don't show automatically"; tested in game (see "Patch notes"). |
 | game_monkchi | `monk_chi_core.lua`, `monk_combat.lua` | 247 (server -> client) | The Monk's chi HUD: five pips over the map, plain text `chi:<chi>:<max>:<decaySec>`; only the Monk line (17-19) sees it. Tested in game: under the character (the bottom of the map lies under the chat in the Chaos layout), fills and empties with the server's chi, empties after 12 s. |
 | game_nameplate | `nameplate.lua`, `nameplate_core.lua`, `titles.lua` | 248, the Achievements window | Name plates over players: active title, `{guild}` and the name on a frame (client base patch 0022); title registry `ChaosTitles.register`; tested in game (see "Name plates and titles"). |
@@ -1563,6 +1565,46 @@ that item moves it to tab 2), builds 3-4 read-only (a forged save refused), a re
 `grantDays` from a bundle; the Pactbound name plate; a sixth character refused at login, then let in after a Character Slot
 was bought; the window from another character of the account; the autoloot window with 20 rules.
 
+## Referral program (`referral.lua`, `referral_core.lua`, `referral_config.lua`, `sql/chaos_referral.sql`, client `game_referral`)
+
+A player shares a code; a new account that takes it gets a welcome gift, and the code's owner gets cosmetic rewards when
+the new account's first character levels. Approved by the owner. Nothing in it gives power. Every number and text is in
+`referral_config.lua`; the rules are pure functions in `referral_core.lua` (tested by `tests/referral_test.lua`).
+
+- **Codes.** An account gets its code (8 characters without look-alikes, shown `XXXX-XXXX`; `chaos_referral_codes`) when the
+  window opens and one of its characters reached `minReferrerLevel` (20). Staff accounts have none.
+- **Entering a code.** On the website's account creation form (optional field, pre-filled from `register.php?ref=CODE`;
+  website/README.md "Referral codes") or in game in Character > Referral within `entryDays` (7) of the account's creation
+  (`accounts.creation`, else `znote_accounts.created`). The website only checks the format and that the code exists, then
+  writes a `pending` row; the server checks it at the account's first login. One referrer per account; a rejected code can be
+  replaced by another while the account is new.
+- **Anti-abuse** (`antiAbuse`, each refusal logged): not the own code; no staff on either side (account type >= 2 or a
+  character of group >= 2); referrer not banned; no referring back; no shared IP (`sameIp`: login IPs of every character of
+  both accounts, online characters and the website registration IP); no shared e-mail domain unless it is a public one
+  (`sameEmailDomain`, `publicDomains`); at most `monthlyLinks` (10) new friends per referrer and calendar month.
+- **The friend's gift** (`starterGift`): 50 health and 50 mana potions (backpack, the rest into the depot inbox) and the
+  account-wide title Kindled, once, to the character that logs in after the link is accepted.
+- **The referrer's rewards** (`milestones`): when the referred account's first character (the lowest character id, fixed when
+  the link is accepted; another character does not count) reaches level 50: the title Torchbearer and 25 Chaos Coins; level
+  150: the title Ember Herald and 50 Chaos Coins. Rows in `chaos_referral_rewards`: `paid` at once; `void` when the referred
+  account is banned; `due` (waiting) when the referrer is banned or already had `monthlyRewards` (10) rewards this month.
+  Waiting rewards are tried again at every login of the referrer, at startup and every `retryMinutes` (30). Coins go to
+  `chaos_shop_coins`; titles come from the paid rows (`ChaosTitles` source `referral`). The referrer is told at once or at
+  the next login.
+- **Client** (`game_referral`, opcode 220 `ChaosOpcodes.referral`; `open` / `sync` / `enter {code}` out, `status` /
+  `message` back): the code with Copy code, what both sides get, the code box while the account may enter one (or who
+  referred it), the referred friends with level and each milestone (rewarded / waiting / no reward), this month's counts.
+- **Staff:** `/referral <player>` (code, link, counts), `/referral <player>, unlink` (removes the link and the unpaid rows).
+  Every link, refusal, gift and payment is in `chaos_referral_log`.
+- **Tests:** `tests/referral_test.lua` (config sanity, codes, IP byte orders, e-mail domains, every refusal, milestones, the
+  reward decision, titles, the client view), the client's `referralview_test.lua`, `website/tests/chaos_referral_test.php`.
+- **Tested in game** (test server, cropped map, own DB copy): codes for a level 60 account; a code entered in game by a one-day
+  old account refused for the shared IP, then (IP check off for the test) accepted with the gift and the Kindled title; level
+  50 paid 25 coins and Torchbearer; level 150 with the monthly cap set to 1 waited, then was paid at the next start (Ember
+  Herald, 75 coins); an account made on the website with a wrong code was refused on the form, with the right one it got a
+  pending row, accepted at its first login with the gift; its level 50 waited for the cap, the account was banned, and the
+  reward became void; the referrer's window showed both friends. Screenshots are not in the repository.
+
 ## Town Portal (`townportal.lua`, `townportal_core.lua`, `townportal_config.lua`, spell `shared/town_portal.lua`, client `game_townportal`)
 
 An ability, not an item: every character has it from creation (the spell "Town Portal", id 254, words `ash domh`, level 1, no mana, every
@@ -2094,7 +2136,12 @@ Adventure > Events while it runs (`ChaosEvents.dynamic.worldEvent`).
   spawn roll by `ChaosWorldEvents.tierMult(position)`. Lightning and clouds around the players inside every 2 s.
 - **Wandering Merchant** (20 min, town areas only): the NPC "Wandering Merchant" at a random free tile of the area (or
   one of `merchantSpots`). Only the area is announced. Goods: Orb of Upheaval 40k, Orb of Fate 120k, Orb of Grafting 200k, Orb of
-  Gilding 60k, Orb of Unmaking 80k, Double Experience Potion 350k, supreme health potion 900 (no stock limit).
+  Gilding 60k, Orb of Unmaking 80k, Double Experience Potion 350k, supreme health potion 900 (no stock limit). An item with
+  `seasonBlocked = true` (the Double Experience Potion: it does nothing for season characters) is refused to a character of a
+  running season, in the trade window and by "buy <name>", with the merchant's `seasonBlockedText` and a cancel message;
+  the NPC reads the realm itself (`chaos_season_players`, `season_core.lua`, the `/season` overrides). Tested in game: a
+  season character was refused the potion both ways and bought an orb; a standard character bought the potion
+  (`tests/wandering_merchant_test.lua` covers both paths and a migrated character).
 - **Golden Hour** (30 min): +25% Chaos loot in the area. `loot_config.lua` `rateMult` multiplies by
   `ChaosWorldEvents.lootMult(ctx)`, as for the rifts; golden rings around the players inside.
 
@@ -2329,8 +2376,7 @@ go at startup); use-with crafts are logged too.
 boss): Awakening 30/200/700/2500/3500 (1-2), Gilding and Unmaking 10/80/300/1200/2000, Erasure
 15/100/400/1500/2500, Grafting 4/30/120/600/1000; weights for the guaranteed legendary/boss draw 20/10/10/10/5 (Upheaval 70,
 Fate 30). Simulated 10000 legendary kills: Upheaval 8513, Fate 4380, Awakening 7607, Gilding 1862, Unmaking 1864,
-Erasure 2110, Grafting 945. Store (Chaos Currency): Awakening 5, Erasure 12, Gilding 15, Unmaking 20, Grafting 40
-coins. Weekly bounty chest: + 3 Orbs of Awakening, 1 Orb of Unmaking, 5 Whetstones and 2 Orbs of Tempering (`weeklyExtra` in `bounty_config.lua`).
+Erasure 2110, Grafting 945. The store does not sell these orbs (no orb with a random result is sold; see "Store"). Weekly bounty chest: + 3 Orbs of Awakening, 1 Orb of Unmaking, 5 Whetstones and 2 Orbs of Tempering (`weeklyExtra` in `bounty_config.lua`).
 
 **Tested in game** (test server, cropped map, client with the patched dat): use-with of all seven orbs on items with no
 bench open (the Orb of Awakening and the Orb of Grafting with the mouse: right click, then click the item; the others
@@ -2378,12 +2424,12 @@ list of these names; the old ones are gone from the player-facing text.
 
 | orb | id (sprite) | what it does | source |
 |---|---|---|---|
-| Orb of Tempering | 32251 (blue inlay stone) | rolls the values of every modifier that is not bound again, inside the current tiers; on a Rift Key: new values | store 8, drops, salvage 20 shards |
-| Orb of Binding | 32252 (violet crystal) | binds one modifier (chosen on the bench; a random one by use-with): Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone. At most 1 bound modifier up to Epic, 2 from Legendary (`ChaosItemMods.config.bind.max`). Only an Orb of Erasure frees it | store 30, drops (rare), salvage 75 |
-| Orb of Excision | 32253 (red crystal) | removes the modifier you choose (a random one that is not bound by use-with); on a Rift Key: one modifier | store 25, drops, salvage 60 |
-| Orb of Reforging | 32254 (gold crystal) | rolls the tier (by the item level) and the value of the one modifier you choose again | store 20, drops, salvage 50 |
+| Orb of Tempering | 32251 (blue inlay stone) | rolls the values of every modifier that is not bound again, inside the current tiers; on a Rift Key: new values | drops, salvage 20 shards (not in the store) |
+| Orb of Binding | 32252 (violet crystal) | binds one modifier (chosen on the bench; a random one by use-with): Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone. At most 1 bound modifier up to Epic, 2 from Legendary (`ChaosItemMods.config.bind.max`). Only an Orb of Erasure frees it | store 30 (3 a week), drops (rare), salvage 75 |
+| Orb of Excision | 32253 (red crystal) | removes the modifier you choose (a random one that is not bound by use-with); on a Rift Key: one modifier | store 25 (3 a week), drops, salvage 60 |
+| Orb of Reforging | 32254 (gold crystal) | rolls the tier (by the item level) and the value of the one modifier you choose again | drops, salvage 50 (not in the store) |
 | Orb of Ruin | 32255 (black stone) | the gamble, below | drops (very rare), salvage 150, no store |
-| Whetstone | 32256 (moonlight crystals) | +1% item quality, up to 20% (30% from Divine rarity) | store 2 each (10 for 20), bounty chest (5), drops, salvage 5 |
+| Whetstone | 32256 (moonlight crystals) | +1% item quality, up to 20% (30% from Divine rarity) | store 10 for 20 (5 packs a week), bounty chest (5), drops, salvage 5 |
 
 The sprites are the stock multi-use inlay stones, essence crystals and moonlight crystals (clients 24483, 25047, 25049, 25048,
 24477, 22083): they have the multi-use flag in `Tibia.dat` already, so **no client dat change and no `set_multiuse.py` run**
@@ -2427,10 +2473,10 @@ under 7600 bytes (opcode 232 documentation in `crafting.lua` / `game_crafting/cr
 
 **Sources.** Drops: `loot_config.lua` currency entries with weights 18 / 14 / 6 / 5 / 3 / 1 (Whetstone, Tempering, Reforging,
 Excision, Binding, Ruin) and chances per 10000 kills per monster tier (the Whetstone 25/180/600/2000/3000, Ruin 0/4/18/80/160 for
-normal / magic / rare / legendary / boss); rifts and Omen guardians pay through the same currency roll. Store (Chaos Currency, 2
-pages): Whetstone 10 for 20 coins, Tempering 8, Reforging 20, Excision 25, Binding 30; the Orb of Ruin is not sold. Weekly bounty
+normal / magic / rare / legendary / boss); rifts and Omen guardians pay through the same currency roll. Store (Chaos Currency): Whetstone 10 for 20 coins
+(5 a week), Excision 25 and Binding 30 (3 a week each); Tempering, Reforging and Ruin are not sold. Weekly bounty
 chest: + 5 Whetstones and 2 Orbs of Tempering. Salvage: recipes (shards) Whetstone 5, Tempering 20, Reforging 50, Excision 60,
-Binding 75, Ruin 150 (about 2.5 shards per store coin, the Orb of Ruin priced like a 60 coin item), and the whole-orb chance of a
+Binding 75, Ruin 150 (about 2.5 shards per coin of a reference price, the Orb of Ruin priced like a 60 coin item), and the whole-orb chance of a
 salvaged item picks them with weights 14 / 12 / 4 / 3 / 2 / 1. Loot filter: orbs glow as before (the filter finds them in the
 currency list); an item with a legendary power always glows.
 
@@ -2446,7 +2492,7 @@ unchanged live dat): bench with 14 orbs (scrolling), an Orb of Awakening on a pl
 the other, Excision of the chosen one, Reforging (T4 -> T5), 9 Whetstones (quality bar, values x1.09), Ruin forced to improve
 tiers (3 modifiers one tier up), improve slot (an extra prefix on a full Epic item, limit 3/3) and ruin (RUINED, every orb
 disabled), Upheaval on a bound item (in place, the bound one stayed), Binding and Whetstone by use-with without the bench,
-the tooltip with quality / bound / power, the store (page 2 with the new orbs), the Salvage tab recipes. Not tested in game:
+the tooltip with quality / bound / power, the store (page 2 with the new orbs, since cut to Whetstones, Excision and Binding), the Salvage tab recipes. Not tested in game:
 orbs on a Rift Key (unit-tested), the drops of the new orbs (the loot simulation only), the weekly chest.
 
 ## Dark tile set (`data/lib/chaos_dark_tiles.lua`, `data/lib/chaos_dark_paint.lua`, `tools/install_dark_tiles.py`)
@@ -2499,7 +2545,7 @@ raised by health / 60, the estimate of `tools/gen_bounty_pool.py`) along the cur
 inside a rift +1 per rift tier (at most +15), an Omen guardian arena +15 more; capped at 150. World boss drops and rewards
 are fixed at 145 (`worldBoss`), the tutorial's gear at 5 (`tutorial`), rift chest and coffer gear use the rift boss's
 level (else the top of the tier's window) with the rift bonuses, the treasure goblin its area level as a Legendary.
-`store` (60) is the fixed level for Chaos-store gear; the store sells orbs and no gear today, so nothing uses it yet
+`store` (60) is the fixed level for Chaos-store gear; the store sells no gear today, so nothing uses it yet
 (`ChaosCrafting.createItem(id, rarity, ChaosItemMods.config.itemLevel.store)` is the call). Plain gear without a rarity
 gets `chaos_ilvl` too, so an Orb of Awakening or Gilding on it uses the level it dropped with. Orbs keep the item's
 level (Erasure and Fate too); an item without any level gets one from the item type's required level.
@@ -2732,8 +2778,8 @@ Divine-Celestial, Cosmic-Transcendent 3. Sockets come from:
   text is written once the engine's rarity pass is done (`ChaosItemMods.afterDrop`).
 - the **Orb of Sockets** (eighth orb on the bench, use-with like the others): a new count from at least the number of
   socketed gems up to the item's maximum, weights 50/35/15 for 1/2/3. Gems stay and move to the front. It is refused
-  when nothing could change. It drops from the loot layer (8/60/250/1000/1500 per 10000 kills, normal to boss), and the
-  store sells it for 25 Chaos Currency.
+  when nothing could change. It drops from the loot layer (8/60/250/1000/1500 per 10000 kills, normal to boss) and is made from rune shards
+  (Salvage, 60 shards); the store does not sell it.
 
 Sockets and gems survive every orb that remakes an item (Awakening, Gilding, Erasure, Upheaval, Fate: `C.recreate`
 copies them) and the loot layer's rolled copy (`ChaosLoot.finalizeRarity`). **Uniques** have one fixed socket
@@ -2873,8 +2919,9 @@ and a duplicate is still worth keeping for a season or a trade.
   Awakening 35, Upheaval 25, Erasure 12, Gilding 10, Unmaking 8, Fate 5, Sockets 3, Grafting 2, Whetstone 14, Tempering 12, Reforging 4, Excision 3, Binding 2, Ruin 1.
 
 **Shards into orbs** (one click makes 1, Ctrl+click up to 10): Awakening 12, Upheaval 25, Erasure 30, Gilding 40,
-Unmaking 50, Fate 60, Sockets 60, Grafting 100, Whetstone 5, Tempering 20, Reforging 50, Excision 60, Binding 75, Ruin 150 shards, about 2.5 shards per Chaos Coin of the store price (5, 10, 12,
-15, 20, 25, 25, 40; Whetstone 2, Tempering 8, Reforging 20, Excision 25, Binding 30).
+Unmaking 50, Fate 60, Sockets 60, Grafting 100, Whetstone 5, Tempering 20, Reforging 50, Excision 60, Binding 75, Ruin 150 shards, about 2.5 shards per Chaos Coin of a reference price (5, 10, 12,
+15, 20, 25, 25, 40; Whetstone 2, Tempering 8, Reforging 20, Excision 25, Binding 30). The store sells only Whetstones,
+Excision and Binding, with weekly limits; the other prices are reference values.
 
 **Why these numbers.** With the stock rarity roll (70% of gear drops pass, then each rarity in order with its own chance)
 an average rolled drop gives about 2.8 shards before modifiers and sockets (about 3.3 with them) and a 0.9% orb chance:
@@ -3187,7 +3234,7 @@ cannot exchange anything; gamemasters and up (`isolation.exemptGroup`) are never
 | PvP: open world, arena, guild siege | **allowed** between realms. Nothing changes hands: player corpses keep the dead character's realm, arena and siege rewards come from the server, and 2v2 arena teams are parties (same realm). Season characters can be in guilds (a guild shares no items) | - |
 | Depot | per character, nothing to share | - |
 
-Not blocked (open): the account-wide **store coins** (season characters can buy orbs and supplies in the store, and pay
+Not blocked (open): the account-wide **store coins** (season characters can buy supplies, Whetstones and the Orbs of Excision and Binding in the store, and pay
 with them on their season's market). Items on the ground before a season starts are untagged (free). The stock market
 is off for everybody (`tools/patch_market.py`); our market keeps the seasons apart (see "Market").
 

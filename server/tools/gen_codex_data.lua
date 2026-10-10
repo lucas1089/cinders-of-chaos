@@ -670,7 +670,11 @@ local function shopOffers(D, id)
 	for _, cat in ipairs(D.shop.categories) do
 		for _, o in ipairs(cat.offers) do
 			if o.kind == "item" and o.id == id then
-				out[#out + 1] = string.format("%d for %d Chaos Coins", o.count, o.cost)
+				local text = string.format("%d for %d Chaos Coins", o.count, o.cost)
+				if o.weeklyLimit then
+					text = text .. string.format(", %d a week per account", o.weeklyLimit)
+				end
+				out[#out + 1] = text
 			end
 		end
 	end
