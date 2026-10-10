@@ -21,6 +21,10 @@ if not ChaosSpell then
 	pcall(dofile, "data/spells/scripts/chaos/_common.lua")
 end
 local T = ChaosTemplar
+if not ChaosClassTree then
+	dofile("data/scripts/chaos/class_tree.lua") -- the class nodes of the passive tree
+end
+local CT = ChaosClassTree
 local function cfg()
 	return T.cfg
 end
@@ -61,6 +65,14 @@ local function auraTick()
 		players[#players + 1] = entry
 		byId[entry.id] = p
 		if T.isTemplarLine(entry.voc) and not entry.dead then
+			-- the passive tree: Sanctuary (more regeneration), Bastion (a stronger, wider aura; Aegis covers the party)
+			local regen = CT.value(p, "ctSanctuary", "regen")
+			local bastion = CT.has(p, "ksBastion") and CT.fx.ksBastion or nil
+			if regen > 0 or bastion then
+				entry.bonus = {regenPct = T.auraOf(entry.voc).regenPct > 0 and regen or 0,
+					reduction = bastion and bastion.reduction or 0, radius = bastion and bastion.radius or 0,
+					bastion = bastion ~= nil}
+			end
 			templars[#templars + 1] = entry
 		end
 	end
@@ -115,6 +127,14 @@ local function radiantStrike(attackerId, targetId, amount)
 	if target:isPlayer() and ChaosSpell and not ChaosSpell.canAttack(attacker, target) then
 		return
 	end
+	-- Divine Verdict (the passive tree): the strike may judge its target (before it lands, so it counts already)
+	if CT.has(attacker, "ksDivineVerdict") and math.random() < CT.fx.ksDivineVerdict.chance then
+		local c = Condition(CONDITION_ATTRIBUTES, CONDITIONID_COMBAT)
+		c:setParameter(CONDITION_PARAM_SUBID, SUB.judgement)
+		c:setParameter(CONDITION_PARAM_TICKS, cfg().judgement.durationMs)
+		target:addCondition(c)
+		fx(target:getPosition(), "holy_spiral", CONST_ME_HOLYAREA)
+	end
 	scripted = true
 	local ok, err = pcall(doTargetCombat, attacker, target, COMBAT_HOLYDAMAGE, -amount, -amount,
 		CONST_ME_HOLYDAMAGE, ORIGIN_SPELL)
@@ -149,7 +169,7 @@ local function onOffence(creature, player, primaryDamage, secondaryDamage, origi
 		end
 	end
 	if isMeleeHit then
-		local value = T.radiantDamage(voc, amount, creature:isPlayer())
+		local value = T.radiantDamage(voc, amount, creature:isPlayer(), CT.value(player, "ctBurningZeal", "share"))
 		if value > 0 then
 			addEvent(radiantStrike, cfg().radiant.delayMs, player:getId(), creature:getId(), value)
 		end
@@ -178,7 +198,16 @@ function event.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		if creature:isPlayer() then
 			local voc = creature:getVocation():getId()
 			local aegis = T.isSentinel(voc) and hasTimer(creature, SUB.aegis)
-			local f = T.damageTakenFactor(T.activeAura(creature:getId(), T.now()), aegis)
+			local aura = T.activeAura(creature:getId(), T.now())
+			local share = 1
+			-- Bastion (the passive tree): the Sentinel's Aegis of Faith also covers the members under its aura, at half
+			if not aegis and aura and aura.bastion and aura.source ~= creature:getId() then
+				local source = Player(aura.source)
+				if source and hasTimer(source, SUB.aegis) then
+					aegis, share = true, CT.fx.ksBastion.partyShare
+				end
+			end
+			local f = T.damageTakenFactor(aura, aegis, share)
 			if f ~= 1 then
 				p, s = T.scale(p, f), T.scale(s, f)
 			end

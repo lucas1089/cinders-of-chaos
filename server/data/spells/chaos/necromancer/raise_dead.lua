@@ -22,7 +22,7 @@ function onCastSpell(creature, variant, isHotkey)
 	local kind = N.raiseKind(cfg, classKey)
 	local pos = player:getPosition()
 	local corpses = L.usableCorpses(player, pos, cfg.raiseDead.radius, cfg.raiseDead.perCast[classKey] or 1)
-	local plan, why = N.raisePlan(cfg, classKey, player:getLevel(), L.count(player, kind), #corpses)
+	local plan, why = N.raisePlan(cfg, classKey, player:getLevel(), L.count(player, kind), #corpses, L.capBonus(player))
 	if not plan then
 		return ChaosSpell.cancel(player, why)
 	end

@@ -410,7 +410,8 @@ notifications
 - `/gmnotify` is allowed for any group with `Group:getAccess()`.
 
 passivetree
-- Tree shape comes from the client's `nodes.lua` (624 nodes; the generator records 951 stat entries, per-vocation keystone variants included).
+- Tree shape comes from the client's `nodes.lua` (664 nodes, 660 on the server: the four class section start nodes fold into the root;
+  the generator records 1025 stat entries, per-class keystone variants included).
   Regenerate `passivetree_data.lua` with `tools/gen_passivetree_data.lua` whenever the client tree changes.
 - Points formula is invented: `(level - 8) * 1` plus storage `7100020`. Change `Chaos.passive`.
 - Only one preset slot exists in the client UI; presets 0 and 1 are the same slot. `refund` is just a resync.
@@ -1100,6 +1101,36 @@ variant the server applies (the client's own vocation number did not match: an E
 - `server/tests/passivetree_keystones_test.lua`: chance maths, cleave and ricochet target choice, echo cooldown, overload priming, party
   bonus, the engine glue against mocked creatures, the recursion guard, the per-vocation data and that the client tooltips state the
   server's numbers.
+
+## Passive tree: class sections and per-class keystones (`class_tree.lua`, docs/CLASSES.md "Phase 2b")
+- **Per-class variants** on 621 / 624 (`ChaosClasses.keystoneKey`): Warrior `knight` (Cleaving Arc, Bulwark), Juggernaut
+  `juggernaut` (Immovable: -8% damage taken, -16% below 50% health; Bulwark), Berserker `berserker` (Cleaving Arc; Undying Rage:
+  melee weapon hits heal 4% of the damage, 8% below 50% health), Ranger `paladin` (Ricochet, Deadeye), Deadeye `deadeye`
+  (Hunter's Focus: bow / crossbow hits on the same target +4% each, at most +20%, reset by another target or 6 s; Deadeye),
+  Beastmaster `beastmaster` (Ricochet; Pack Alpha: companion bites and Feral Command +35%, companions take 20% less), Mystic /
+  Elementalist `sorcerer`, Illusionist `illusionist`. Only these nine classes may take 621 / 624 (`c` in the data).
+- **Class sections** (nodes 625-664, top left of the tree; the four lines share the place, the client shows only the player's
+  line): a start node (not a server node: the generator links its first node to the root), three line nodes for the whole line and
+  two ascended paths of two notables and a keystone. Thief: Light Feet, Venom Craft, Shadow-born; Ninja: Twin Fangs (off-hand 65%),
+  Fleet Shadow (evasion +4%), **Living Shadow** (a dodge or the first hit out of Shadow Veil: 4 s of +25% weapon damage); Samurai
+  (the duelist off-tank): Steel Discipline, Iron Parry (Counter Stance answers +50%, +1 s), **Way of the Blade** (the stance
+  parries every melee hit while it lasts, a hit keeps half of the Bushido stacks). Necromancer: Grave Lore, Bone Craft, Dark Pact; Lich: Spreading Blight (the curse spreads to one more), Lingering Rot
+  (Soul Rot +25%), **Hoarded Souls** (Soul Hoard +40% per empty slot, +15% with the shade out); Bone Lord: Legion (+1 skeleton),
+  Banner Bearer (Banner of Bones +45%), **Bone Colossus** (the golem +60% hits, +50% health). Monk: Iron Fist, Centered, Flowing
+  Chi; Shadowfist: Precise Strikes, Nerve Strike (Pressure Points 6% a stack), **Hundred Hands** (a focus crit gives a chi, one per
+  second); Iron Sage (the second healer): Healing Hands, Deep Mantra (Mantra of Stone -11%), **Flowing Mercy** (Kindled Breath also
+  heals the next most hurt party member for 40%). Templar: Holy Vigor, Shield of Faith, Righteous Arm; Inquisitor: Sacred
+  Fire, Burning Zeal (Radiant Strikes 30%), **Divine Verdict** (a Radiant Strike judges its target 20% of the time); Sentinel:
+  Steadfast, Sanctuary (aura regeneration 0.5%/s), **Bastion** (aura -16% and 6 sqm; Aegis of Faith covers the party members under
+  the aura at half strength, -20%).
+- Rules: a node with `c` can only be taken by those classes (save, build import, `getBonuses`); at login every preset loses, for
+  free and with a message, the nodes the class may not hold, unknown ids and the nodes only connected through them
+  (`ChaosClassTree.sanitize`; a class change through the store resets the tree anyway). The flags (`ks...`, `ct...`) and every number
+  are in `class_tree.lua`; after each apply they are written as bits to storage 7100022 (`Chaos.storage.passiveClassFx`), which the
+  class scripts and the spells (another Lua state) read with `ChaosClassTree.has / value`. `sendNodes` also carries `cls` and
+  `line` for the client. Points: unchanged (1 per 4 levels, 248 at level 1000; every class can hold 600+ nodes).
+- Tests: `server/tests/class_tree_test.lua` (flags, sanitize, the generated data, tooltips against the numbers, the class rules),
+  `passivetree_keystones_test.lua`, `buildshare_test.lua`, `classes_test.lua`.
 
 ## Build sharing (`buildshare.lua`, `buildshare_core.lua`)
 A build can be exported as a short text code and imported on another character (or after a reset). The server encodes, decodes,

@@ -21,6 +21,10 @@ if not ChaosMonk then
 end
 local M = ChaosMonk
 local ID = M.ids
+if not ChaosClassTree then
+	dofile("data/scripts/chaos/class_tree.lua") -- the class nodes of the passive tree
+end
+local CT = ChaosClassTree
 
 local function hasCond(creature, ctype, subId)
 	return creature:getCondition(ctype, CONDITIONID_COMBAT, subId) ~= nil
@@ -105,7 +109,7 @@ local function onOffence(creature, attacker, primaryDamage, secondaryDamage, pri
 	if isStrike then
 		local stacks = pressureStacks(creature)
 		if stacks > 0 then
-			mult = mult * M.pressureMultiplier(stacks)
+			mult = mult * M.pressureMultiplier(stacks, CT.value(player, "ctNerveStrike", "perStack"))
 		end
 	end
 
@@ -117,8 +121,16 @@ local function onOffence(creature, attacker, primaryDamage, secondaryDamage, pri
 			if ChaosCombatFx then
 				ChaosCombatFx.crit(creature:getPosition(), player:getId())
 			end
+			-- Hundred Hands (the passive tree): a focus crit gives a chi
+			if CT.has(player, "ksHundredHands") then
+				local f = CT.fx.ksHundredHands
+				if M.critGivesChi(player:getId(), M.now(), f.icdMs) then
+					M.addChi(player, f.chi)
+				end
+			end
 		end
 	end
+
 
 	if mult ~= 1 then
 		primaryDamage = scale(primaryDamage, mult)
@@ -149,9 +161,10 @@ local function onDefence(player, attacker, primaryDamage, secondaryDamage, prima
 		end
 	end
 
-	-- Mantra of Stone (anyone under it)
-	if hasCond(player, CONDITION_ATTRIBUTES, ID.subId.mantra) then
-		local f = M.mantraDamage(amount) / amount
+	-- Mantra of Stone (anyone under it; the Deep Mantra one is stronger)
+	local deep = hasCond(player, CONDITION_ATTRIBUTES, ID.subId.mantraDeep)
+	if deep or hasCond(player, CONDITION_ATTRIBUTES, ID.subId.mantra) then
+		local f = M.mantraDamage(amount, deep and CT.fx.ctDeepMantra.reduction or nil) / amount
 		primaryDamage, secondaryDamage = scale(primaryDamage, f), scale(secondaryDamage, f)
 		amount = math.abs(primaryDamage) + math.abs(secondaryDamage)
 	end

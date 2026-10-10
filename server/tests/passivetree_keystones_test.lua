@@ -302,8 +302,10 @@ eq(heals[1].amount, math.floor(1200 * cfg.phantasm.leech) + math.floor(1120 * cf
 -- ---------------------------------------------------------------- per-vocation stats in the generated data
 local data = dofile("data/scripts/chaos/passivetree_data.lua")
 local expected = {
-  [621] = {knight = "ksCleavingArc", paladin = "ksRicochet", sorcerer = "ksArcaneEcho", druid = "ksOvergrowth", illusionist = "ksSharedPhantasm"},
-  [624] = {knight = "ksBulwark", paladin = "ksDeadeye", sorcerer = "ksOverload", druid = "ksThorns", illusionist = "ksInspiringIllusion"},
+  [621] = {knight = "ksCleavingArc", paladin = "ksRicochet", sorcerer = "ksArcaneEcho", druid = "ksOvergrowth", illusionist = "ksSharedPhantasm",
+    juggernaut = "ksImmovable", berserker = "ksCleavingArc", deadeye = "ksHuntersFocus", beastmaster = "ksRicochet"},
+  [624] = {knight = "ksBulwark", paladin = "ksDeadeye", sorcerer = "ksOverload", druid = "ksThorns", illusionist = "ksInspiringIllusion",
+    juggernaut = "ksBulwark", berserker = "ksUndyingRage", deadeye = "ksDeadeye", beastmaster = "ksPackAlpha"},
 }
 for id, byVoc in pairs(expected) do
   local node = data.nodes[id]
@@ -313,26 +315,35 @@ for id, byVoc in pairs(expected) do
 end
 eq(data.nodes[600].n[3], 619, "Wrath path starts at node 600"); eq(data.nodes[489].n[3], 622, "Resolve path starts at 489")
 
--- passivetree.lua picks the vocation's variant
-Chaos = {passive = {}, tables = {passiveTree = "chaos_passive_tree"}, storage = {}, load = function(f) return dofile("data/scripts/chaos/" .. f) end,
+-- passivetree.lua picks the class's variant (the real class table: class keys)
+local savedChaos = Chaos
+Chaos = nil
+dofile("data/scripts/chaos/chaos_constants.lua")
+local realClasses = Chaos.classes
+Chaos = savedChaos
+Chaos = {classes = realClasses, passive = {}, tables = {passiveTree = "chaos_passive_tree"}, storage = {}, load = function(f) return dofile("data/scripts/chaos/" .. f) end,
   select = function() return {{preset = 1, name = "p", nodes = "619,620,621,622,623,624"}} end}
 ChaosOpcodes = {}
 db = {escapeString = function(s) return "'" .. s .. "'" end, query = function() end}
 dofile("data/scripts/chaos/passivetree.lua")
 local function voc(id) return {getGuid = function() return 1 end, getVocation = function() return {getId = function() return id end} end} end
 local b = ChaosPassiveTree.getBonuses(voc(8))
-eq(b.ksCleavingArc, 1, "juggernaut wrath"); eq(b.ksBulwark, 1, "juggernaut resolve"); eq(b.ksRicochet, nil, "no paladin keystone")
+eq(b.ksImmovable, 1, "juggernaut wrath"); eq(b.ksBulwark, 1, "juggernaut resolve"); eq(b.ksRicochet, nil, "no paladin keystone")
+eq(b.ksCleavingArc, nil, "the juggernaut swapped Cleaving Arc")
 eq(b.incrementPhysical, 7, "the path notables count for everyone")
-b = ChaosPassiveTree.getBonuses(voc(14)); eq(b.ksCleavingArc, 1, "berserker: the knight variant")
+b = ChaosPassiveTree.getBonuses(voc(14)); eq(b.ksCleavingArc, 1, "berserker wrath"); eq(b.ksUndyingRage, 1, "berserker resolve")
+eq(b.ksBulwark, nil, "the berserker swapped Bulwark")
 b = ChaosPassiveTree.getBonuses(voc(4)); eq(b.ksBulwark, 1, "warrior: the knight variant")
-b = ChaosPassiveTree.getBonuses(voc(7)); eq(b.ksRicochet, 1, "deadeye"); eq(b.ksDeadeye, 1, "deadeye resolve")
-b = ChaosPassiveTree.getBonuses(voc(15)); eq(b.ksRicochet, 1, "beastmaster: the paladin variant")
+b = ChaosPassiveTree.getBonuses(voc(7)); eq(b.ksHuntersFocus, 1, "deadeye"); eq(b.ksDeadeye, 1, "deadeye resolve")
+b = ChaosPassiveTree.getBonuses(voc(15)); eq(b.ksRicochet, 1, "beastmaster wrath"); eq(b.ksPackAlpha, 1, "beastmaster resolve")
+b = ChaosPassiveTree.getBonuses(voc(3)); eq(b.ksRicochet, 1, "ranger: the paladin variant"); eq(b.ksDeadeye, 1, "ranger")
 b = ChaosPassiveTree.getBonuses(voc(5)); eq(b.ksArcaneEcho, 1, "elementalist"); eq(b.ksOverload, 1, "elementalist resolve")
 b = ChaosPassiveTree.getBonuses(voc(1)); eq(b.ksArcaneEcho, 1, "mystic: the sorcerer variant")
 b = ChaosPassiveTree.getBonuses(voc(10)); eq(b.ksSharedPhantasm, 1, "illusionist"); eq(b.ksInspiringIllusion, 1, "illusionist resolve")
 eq(b.ksOvergrowth, nil, "the druid variant is no class's")
 b = ChaosPassiveTree.getBonuses(voc(0)); assert(not K.hasKeystone(b), "no vocation: no keystone")
-b = ChaosPassiveTree.getBonuses(voc(12)); assert(not K.hasKeystone(b), "the Thief line has no tree entry yet")
+b = ChaosPassiveTree.getBonuses(voc(12)); assert(not K.hasKeystone(b), "621 / 624 are not the Thief line's")
+eq(b.incrementPhysical, 7, "a Ninja still gets the shared notables of those paths")
 
 -- ---------------------------------------------------------------- the client tooltips state the server numbers
 local nodesFile = "../client/overlay/modules/game_passivetree/treedata/nodes.lua"
@@ -365,4 +376,14 @@ if f then
     end
   end
 end
+-- ---------------------------------------------------------------- the per-ascended keystones (numbers: class_tree.lua)
+local near = function(a, b, m) assert(math.abs(a - b) < 1e-9, (m or "") .. ": " .. tostring(a) .. " ~= " .. tostring(b)) end
+near(K.immovableFactor(900, 1000), 0.92, "Immovable"); near(K.immovableFactor(400, 1000), 0.84, "Immovable below half")
+eq(K.undyingHeal(-1000, 900, 1000), 40, "Undying Rage"); eq(K.undyingHeal(1000, 300, 1000), 80, "Undying Rage low")
+local fs = {}
+near(K.focusStep(fs, 5, 0), 1, "first hit"); near(K.focusStep(fs, 5, 100), 1.04); near(K.focusStep(fs, 5, 200), 1.08)
+for t = 3, 9 do K.focusStep(fs, 5, t * 100) end
+near(K.focusStep(fs, 5, 1000), 1.20, "capped at +20%")
+near(K.focusStep(fs, 6, 1100), 1, "another target starts again")
+K.focusStep(fs, 6, 1200); near(K.focusStep(fs, 6, 9000), 1, "6 s without a hit starts again")
 print("passive keystones: all asserts passed")

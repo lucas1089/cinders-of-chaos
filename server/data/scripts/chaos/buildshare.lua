@@ -62,7 +62,8 @@ local function context(T, player)
 	local ctx = {
 		classId = classOf(player), className = className, current = active and active.nodes or {},
 		points = T.totalPoints(player),
-		keystoneKey = ChaosPassiveTree.vocationKey and ChaosPassiveTree.vocationKey(player) or nil
+		keystoneKey = ChaosPassiveTree.vocationKey and ChaosPassiveTree.vocationKey(player) or nil,
+		classKey = ChaosPassiveTree.classKey and ChaosPassiveTree.classKey(player) or nil
 	}
 	local P = ChaosParagon
 	if P and P.defs then

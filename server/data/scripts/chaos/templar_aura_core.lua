@@ -89,9 +89,9 @@ M.cfg = {
 	-- healed allyHeal x a pulse
 	consecration = {pulses = 6, intervalMs = 1000, radius = 2, allyHeal = 0.3},
 
-	-- spell strikes x (1 + (level - from) / per), at most max: the stand-in for the passive tree the line does not
-	-- have yet (the same numbers as the Thief line's Chaos.classes.spellLevelScale); re-tune or drop it with the tree
-	spellLevelScale = {from = 300, per = 700, max = 2.2}
+	-- (spellLevelScale, a level factor of the strikes that stood in for the passive tree, was dropped with the class
+	-- trees: M.levelScale is 1 unless one is set here)
+	spellLevelScale = nil
 }
 
 local function cfg()
@@ -121,8 +121,14 @@ function M.baseOf(vocId)
 end
 
 -- ------------------------------------------------------------------------------------------------ the aura
-function M.auraOf(vocId)
-	return cfg().aura.byVocation[vocId]
+-- the aura of a vocation; bonus = the passive tree's changes {reduction, radius, regenPct, bastion} or nil
+function M.auraOf(vocId, bonus)
+	local a = cfg().aura.byVocation[vocId]
+	if not a or not bonus then
+		return a
+	end
+	return {radius = a.radius + (bonus.radius or 0), reduction = a.reduction + (bonus.reduction or 0),
+		regenPct = (a.regenPct or 0) + (bonus.regenPct or 0), bastion = bonus.bastion}
 end
 
 -- distance in sqm (the larger of the two axes), math.huge on another floor
@@ -136,7 +142,7 @@ end
 -- which of `players` a Templar covers. templar = {id, voc, pos, party}, players = list of {id, pos, party, dead};
 -- `party` is any value that is equal for members of one party (nil = no party). The Templar always covers itself.
 function M.coveredBy(templar, players)
-	local aura = M.auraOf(templar.voc)
+	local aura = M.auraOf(templar.voc, templar.bonus)
 	local out = {}
 	if not aura then
 		return out
@@ -170,10 +176,11 @@ function M.collectAuras(templars, players, now)
 	local hold = cfg().aura.holdMs
 	local best = {}
 	for _, t in ipairs(templars) do
-		local aura = M.auraOf(t.voc)
+		local aura = M.auraOf(t.voc, t.bonus)
 		if aura then
 			for _, id in ipairs(M.coveredBy(t, players)) do
-				local candidate = {reduction = aura.reduction, regenPct = aura.regenPct or 0, source = t.id, untilMs = now + hold}
+				local candidate = {reduction = aura.reduction, regenPct = aura.regenPct or 0, source = t.id, untilMs = now + hold,
+					bastion = aura.bastion}
 				if M.stronger(candidate, best[id]) then
 					best[id] = candidate
 				end
@@ -216,14 +223,15 @@ function M.scale(value, factor)
 	return (value or 0) < 0 and -v or v
 end
 
--- the factor on damage a player takes: the aura and Aegis of Faith multiply
-function M.damageTakenFactor(aura, aegisActive)
+-- the factor on damage a player takes: the aura and Aegis of Faith multiply. aegisShare: the share of Aegis of Faith
+-- that counts (1 = the Sentinel's own; Bastion's party cover: partyShare)
+function M.damageTakenFactor(aura, aegisActive, aegisShare)
 	local f = 1
 	if aura then
 		f = f * (1 - aura.reduction)
 	end
 	if aegisActive then
-		f = f * (1 - cfg().aegis.reduction)
+		f = f * (1 - cfg().aegis.reduction * (aegisShare or 1))
 	end
 	return f
 end
@@ -240,12 +248,13 @@ end
 -- ------------------------------------------------------------------------------------------------ weapon hits
 -- the holy strike after a melee weapon hit of `hit`. The engine halves damage between players before
 -- onHealthChange sees it and halves the scripted strike again, so against a player it is computed from the unhalved hit.
-function M.radiantDamage(vocId, hit, targetIsPlayer)
+function M.radiantDamage(vocId, hit, targetIsPlayer, extraShare)
 	local share = cfg().radiant.share[vocId]
 	hit = math.abs(hit or 0)
 	if not share or hit <= 0 then
 		return 0
 	end
+	share = share + (extraShare or 0)
 	local value = hit * share
 	if targetIsPlayer then
 		value = value * 2
@@ -330,6 +339,9 @@ end
 -- the level factor of the line's spell strikes
 function M.levelScale(level)
 	local s = cfg().spellLevelScale
+	if not s then
+		return 1
+	end
 	return math.min(s.max, 1 + math.max(0, (level or 0) - s.from) / s.per)
 end
 

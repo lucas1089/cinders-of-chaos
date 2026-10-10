@@ -29,7 +29,7 @@ local function connected(n)
 		local id = queue[head]
 		head = head + 1
 		for _, nb in ipairs(tree.nodes[id].n) do
-			if not seen[nb] and not tree.nodes[nb].v and #out < n then
+			if not seen[nb] and not tree.nodes[nb].v and not tree.nodes[nb].c and #out < n then
 				seen[nb] = true
 				out[#out + 1] = nb
 				queue[#queue + 1] = nb
@@ -144,8 +144,17 @@ end
 local ksBuild = assert(B.decode(B.encode({classId = 11, nodes = path})))
 plan, err = B.plan(tree, ksBuild, {classId = 11, current = {}, points = 300, keystoneKey = nil})
 check(not plan and err:find("keystone"), "keystone without a variant: " .. tostring(err))
-plan = B.plan(tree, ksBuild, {classId = 11, current = {}, points = 300, keystoneKey = "knight"})
+plan, err = B.plan(tree, ksBuild, {classId = 11, current = {}, points = 300, keystoneKey = "knight"})
+check(not plan and err:find("another class"), "keystone 621 is not for the Thief line: " .. tostring(err))
+plan = B.plan(tree, ksBuild, {classId = 11, current = {}, points = 300, keystoneKey = "knight", classKey = "warrior"})
 check(plan and plan.applied == #path, "keystone with a variant")
+
+-- class sections: a Ninja path build imports for a Ninja, not for a Samurai (same line)
+local ninja = assert(B.decode(B.encode({classId = 4, nodes = {626, 627, 628, 629, 630, 631}})))
+plan = B.plan(tree, ninja, {classId = 4, current = {}, points = 300, keystoneKey = "ninja", classKey = "ninja"})
+check(plan and plan.applied == 6, "ninja path for a ninja")
+plan, err = B.plan(tree, ninja, {classId = 4, current = {}, points = 300, keystoneKey = "samurai", classKey = "samurai"})
+check(not plan and err:find("629"), "ninja path refused for a samurai: " .. tostring(err))
 
 -- too many points: the first N nodes in path order, always connected
 plan = assert(B.plan(tree, build, {classId = 4, current = {}, points = 10}))

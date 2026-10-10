@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Procedural icons for the passive tree keystones (game_passivetree, nodes 621 and 624).
+"""Procedural icons for the passive tree keystones (game_passivetree: nodes 621 and 624, and the keystones of the
+class sections, 625-664) and the start images of the class sections.
 Run: python3 -I client/tools/gen_keystone_icons.py client/overlay/data/images/passivetree/keystones.png
 Writes one row of 64x64 cells, in the order of ICONS below; treedata/icons.lua points at each cell
-(x = index * 64). Same plate, glow and glyph style as the Chaos spell icons (gen_spell_icons.py). Needs Pillow."""
+(x = index * 64). Next to the sheet: classstart_<line>.png (START below, 150x150), the start node of a class
+section. Same plate, glow and glyph style as the Chaos spell icons (gen_spell_icons.py). Needs Pillow."""
 import math, os, sys
 from PIL import Image
 
@@ -110,7 +112,36 @@ ICONS = [  # (icon key in treedata/icons.lua, theme, glyph)
     ('ksArcaneEcho', 'arcane', 'echo'), ('ksOverload', 'fire', 'overload'),
     ('ksOvergrowth', 'nature', 'overgrowth'), ('ksThorns', 'poison', 'thorns'),
     ('ksSharedPhantasm', 'shadow', 'phantasm'), ('ksInspiringIllusion', 'holy', 'inspire'),
+    # per-ascended variants (621 / 624) of the Juggernaut, Berserker, Deadeye and Beastmaster
+    ('ksImmovable', 'steel', 'slam'), ('ksUndyingRage', 'blood', 'greataxe'),
+    ('ksHuntersFocus', 'ember', 'eye'), ('ksPackAlpha', 'nature', 'paw'),
+    # the class sections: Ninja, Samurai, Lich, Bone Lord, Shadowfist, Iron Sage, Inquisitor, Sentinel
+    ('ksLivingShadow', 'shadow', 'hood'), ('ksWayOfTheBlade', 'ember', 'katana'),
+    ('ksHoardedSouls', 'necrotic', 'ghost'), ('ksBoneColossus', 'bone', 'golem'),
+    ('ksHundredHands', 'shadow', 'fist'), ('ksFlowingMercy', 'light', 'flame'),
+    ('ksDivineVerdict', 'holy', 'eye'), ('ksBastion', 'light', 'shield'),
 ]
+
+START = [  # (line, theme, glyph): the start node of each class section
+    ('thief', 'shadow', 'daggers'), ('necromancer', 'necrotic', 'skull'), ('monk', 'ember', 'fist'),
+    ('templar', 'holy', 'cross'),
+]
+START_SIZE = 150
+
+
+def start_image(theme, glyph):
+    # a round medallion: the icon cut to a circle inside a bronze ring (the root's start node is round too)
+    from PIL import ImageDraw
+    n = START_SIZE * 2
+    icon = base.render(theme, glyph).resize((n, n), Image.LANCZOS)
+    mask = Image.new('L', (n, n), 0)
+    ImageDraw.Draw(mask).ellipse((14, 14, n - 15, n - 15), fill=255)
+    out = Image.new('RGBA', (n, n), (0, 0, 0, 0))
+    out.paste(icon, (0, 0), mask)
+    d = ImageDraw.Draw(out)
+    d.ellipse((6, 6, n - 7, n - 7), outline=(92, 66, 34, 255), width=14)
+    d.ellipse((10, 10, n - 11, n - 11), outline=(196, 158, 88, 255), width=6)
+    return out.resize((START_SIZE, START_SIZE), Image.LANCZOS)
 
 
 def main():
@@ -120,6 +151,11 @@ def main():
         sheet.alpha_composite(base.render(theme, glyph).resize((CELL, CELL), Image.LANCZOS), (i * CELL, 0))
     sheet.save(out)
     print(len(ICONS), 'keystone icons written to', out)
+    folder = os.path.dirname(os.path.abspath(out))
+    for line, theme, glyph in START:
+        path = os.path.join(folder, 'classstart_%s.png' % line)
+        start_image(theme, glyph).save(path)
+    print(len(START), 'class start images written next to it')
 
 
 if __name__ == '__main__':

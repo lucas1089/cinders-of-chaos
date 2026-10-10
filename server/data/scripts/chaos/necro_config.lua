@@ -32,9 +32,8 @@ return {
 		boneShield = 71023 -- Bone Offering's shield on the Bone Lord (timer)
 	},
 
-	-- spell strikes (not minions) x (1 + (level - from) / per), at most max. Stands in for the passive tree the line
-	-- does not have yet; re-tune it with the tree.
-	levelScale = {from = 300, per = 2800, max = 1.25},
+	-- levelScale = {from, per, max}: spell strikes (not minions) x (1 + (level - from) / per), at most max. It stood in for
+	-- the passive tree and was dropped with the class trees (no entry: 1).
 
 	-- ---------------------------------------------------------------- minions
 	-- Minions are real monster types (data/monster/monsters/chaos/necro_*.xml) summoned as the player's summons. They

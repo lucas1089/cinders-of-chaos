@@ -423,9 +423,9 @@ end
 -- A weapon strike dealt by a spell: physical damage with a weapon origin (ORIGIN_MELEE or ORIGIN_RANGED), so the
 -- weapon-hit rules of data/scripts/chaos/thief_combat.lua apply to it (stealth ambush crit, Poison Blades, Bushido
 -- crit, the Ninja's off-hand strike after a melee strike). PvP rules as ChaosSpell.damageTarget.
--- Level factor of the Thief line's spell strikes (Chaos.classes.spellLevelScale): 1 up to level `from`, then +1 per
--- `per` levels, at most `max`. It stands in for the passive tree the Thief line does not have yet (the other classes'
--- level 1000 numbers carry 248 tree points); re-tune or drop it with the Thief-line tree (docs/CLASSES.md, phase 2).
+-- Level factor of the Thief line's spell strikes (Chaos.classes.spellLevelScale, when set): 1 up to level `from`, then +1
+-- per `per` levels, at most `max`. It stood in for the passive tree and was dropped with the class trees (docs/CLASSES.md
+-- "Phase 2b"): unset, so 1; the line's damage is scaled by class_tree.lua classDamage instead.
 function ChaosSpell.thiefLevelScale(player)
 	local s = Chaos and Chaos.classes and Chaos.classes.spellLevelScale
 	if not s or not player.getLevel then

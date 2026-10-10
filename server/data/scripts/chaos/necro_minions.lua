@@ -87,7 +87,7 @@ local function wake(player, classKey)
 	if not list then
 		return
 	end
-	list = N.restFilter(cfg(), classKey, player:getLevel(), list)
+	list = N.restFilter(cfg(), classKey, player:getLevel(), list, L.capBonus(player))
 	local pos = player:getPosition()
 	for _, m in ipairs(list) do
 		L.raise(player, m.kind, pos, m.ratio)
@@ -99,7 +99,8 @@ end
 -- other damage rule never saw a minion hit (found in game: no onHealthChange event saw them)
 local function hit(owner, classKey, minion, kind, target, aura)
 	local level, ml = owner:getLevel(), owner:getMagicLevel()
-	local min, max = N.minionHit(cfg(), classKey, kind, level, ml, aura)
+	local min, max = N.minionHit(cfg(), classKey, kind, level, ml, aura and L.bannerBonus(owner) or false,
+		L.minionFactor(owner, kind, "hit"))
 	if max <= 0 then
 		return
 	end
@@ -162,7 +163,7 @@ local function think(player, t)
 		list = L.minions(player)
 	end
 	-- caps (vocation change, level loss)
-	for _, i in ipairs(N.overCap(cfg(), classKey, player:getLevel(), list)) do
+	for _, i in ipairs(N.overCap(cfg(), classKey, player:getLevel(), list, L.capBonus(player))) do
 		M.nextHit[list[i].creature:getId()] = nil
 		L.dismiss(list[i].creature)
 		table.remove(list, i)

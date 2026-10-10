@@ -112,8 +112,11 @@ local function sendNodes(player, rows)
 		preset = active and active.preset or 0,
 		presetsTable = presetsTable,
 		nodes = active and active.nodes or {},
-		-- which per-vocation node variants (keystones) the client must show: the ones the server applies
-		vocation = ChaosPassiveTree.vocationKey and ChaosPassiveTree.vocationKey(player) or nil
+		-- which per-class node variants (keystones) the client must show: the ones the server applies
+		vocation = ChaosPassiveTree.vocationKey and ChaosPassiveTree.vocationKey(player) or nil,
+		-- the class (which class nodes it may take) and its line (whose class section the client shows)
+		cls = ChaosPassiveTree.classKey(player),
+		line = ChaosPassiveTree.lineKey(player)
 	})
 end
 
@@ -128,6 +131,9 @@ local function validateNodes(player, rawNodes)
 		local id = Chaos.toInt(raw, 1)
 		if not id or not tree.nodes[id] then
 			return nil, "Unknown node in request."
+		end
+		if not ChaosClassTree.allowed(tree.nodes[id], ChaosPassiveTree.classKey(player)) then
+			return nil, "That node belongs to another class."
 		end
 		if id ~= tree.root and not seen[id] then
 			seen[id] = true
@@ -158,15 +164,29 @@ local function validateNodes(player, rawNodes)
 	return ids
 end
 
--- vocation key of the per-vocation node variants (keystones): by class (ChaosClasses.keystoneKey, classes.lua):
--- Warrior / Juggernaut / Berserker "knight", Ranger / Deadeye / Beastmaster "paladin", Mystic / Elementalist
--- "sorcerer", Illusionist "illusionist" (the "druid" variants are no class's any more since the class rework)
+-- key of the per-class node variants (keystones 621 / 624): ChaosClasses.keystoneKey (classes.lua): Warrior "knight",
+-- Juggernaut "juggernaut", Berserker "berserker", Ranger "paladin", Deadeye "deadeye", Beastmaster "beastmaster",
+-- Mystic / Elementalist "sorcerer", Illusionist "illusionist"; the other lines their class key (no variant there).
+-- The class sections and the restricted nodes use the class key (class_tree.lua).
 if not ChaosClasses then
 	dofile("data/scripts/chaos/classes.lua")
+end
+if not ChaosClassTree then
+	dofile("data/scripts/chaos/class_tree.lua")
 end
 function ChaosPassiveTree.vocationKey(player)
 	local vocation = player:getVocation()
 	return vocation and ChaosClasses.keystoneKey(vocation:getId()) or nil
+end
+
+function ChaosPassiveTree.classKey(player)
+	local vocation = player:getVocation()
+	return vocation and ChaosClasses.classKey(vocation:getId()) or nil
+end
+
+function ChaosPassiveTree.lineKey(player)
+	local vocation = player:getVocation()
+	return vocation and ChaosClasses.lineKey(vocation:getId()) or nil
 end
 
 -- stats a node gives this vocation: its own variant (node.v) if it has one, else the shared stats
@@ -180,10 +200,12 @@ function ChaosPassiveTree.getBonuses(player)
 	local active = activePreset(rows)
 	local bonuses = {}
 	local vocationKey = ChaosPassiveTree.vocationKey(player)
+	local classKey = ChaosPassiveTree.classKey(player)
 	if active then
 		for _, id in ipairs(active.nodes) do
 			local node = tree.nodes[id]
-			local stats = node and ChaosPassiveTree.nodeStats(node, vocationKey)
+			-- a node of another class (a vocation change before the next login check) gives nothing
+			local stats = node and ChaosClassTree.allowed(node, classKey) and ChaosPassiveTree.nodeStats(node, vocationKey)
 			if stats then
 				for stat, value in pairs(stats) do
 					bonuses[stat] = (bonuses[stat] or 0) + value
@@ -210,6 +232,8 @@ local function applyBonuses(player)
 		ChaosTrials.addBonuses(player, bonuses)
 	end
 	ChaosPassiveCache[player:getId()] = bonuses
+	-- the class nodes' flags, for the class scripts and the spells (another Lua state): one storage
+	ChaosClassTree.write(player, bonuses)
 	for stat, applier in pairs(ChaosPassiveTree.appliers) do
 		applier(player, bonuses[stat] or 0)
 	end
@@ -340,8 +364,32 @@ local function refundOverBudget(player)
 	end
 end
 
+-- presets that hold nodes the class may not hold (another class's section after a class change, the keystones 621 /
+-- 624 for a class without a variant there) or nodes the tree no longer has: those nodes, and the ones that only
+-- connected through them, are refunded for free and the player is told how many (never a silent wipe)
+local function refundForeignNodes(player)
+	local tree = getTree()
+	local classKey = ChaosPassiveTree.classKey(player)
+	local total = 0
+	for _, row in ipairs(loadPresets(player:getGuid())) do
+		local kept, removed = ChaosClassTree.sanitize(tree, row.nodes, classKey)
+		if #removed > 0 then
+			savePreset(player:getGuid(), row.preset, row.name, kept)
+			total = total + #removed
+		end
+	end
+	if total > 0 then
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+			"Your passive tree: %d node%s your class cannot hold (or that left the tree) %s refunded for free.",
+			total, total == 1 and "" or "s", total == 1 and "was" or "were"))
+	end
+	return total
+end
+ChaosPassiveTree.refundForeignNodes = refundForeignNodes
+
 function LoginEvent.onLogin(player)
 	player:registerEvent("ChaosPassiveTreeExtended")
+	refundForeignNodes(player)
 	refundOverBudget(player)
 	applyBonuses(player)
 	return true

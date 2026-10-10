@@ -25,6 +25,7 @@ function onCastSpell(creature, variant, isHotkey)
 	NecroSpell.curse(player, classKey, target)
 	local more = w.spread[classKey] or 0
 	if more > 0 then
+		more = more + ChaosClassTree.value(player, "ctSpreadingBlight", "spread") -- the passive tree (Lich)
 		local tpos = target:getPosition()
 		for _, e in ipairs(ChaosNecro.enemiesAround(player, tpos, w.spreadRadius, false)) do
 			if more <= 0 then

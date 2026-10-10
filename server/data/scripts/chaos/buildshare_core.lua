@@ -228,6 +228,7 @@ end
 -- ------------------------------------------------------------------------------------------------ import plan
 -- tree: passivetree_data.lua; build: decode(); ctx:
 --   classId, className (function(id) -> name, optional), keystoneKey (the importer's variant key, nil = none),
+--   classKey (the importer's class key: nodes marked for other classes are refused; nil = only unmarked nodes),
 --   current = {ids allocated now}, points = passive points owned,
 --   paragon = nil (no Paragon part handled) or {unlocked, total, current = {key = n}, max = {key = maxPoints}}
 -- Returns plan {nodes (to save, path order), wanted, applied, skipped, added, removed, treeChange, treeReset,
@@ -253,6 +254,9 @@ function B.plan(tree, build, ctx)
 			wanted = wanted + 1
 			if node.v and not node.s and not (ctx.keystoneKey and node.v[ctx.keystoneKey]) then
 				return nil, string.format("This build takes keystone node %d, which your class has no version of.", id)
+			end
+			if node.c and not (ctx.classKey and node.c[ctx.classKey]) then
+				return nil, string.format("This build takes node %d of another class's path.", id)
 			end
 		end
 	end

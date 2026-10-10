@@ -152,10 +152,10 @@ eq(jump.id, 5, "the rot jumps to the nearest living enemy")
 eq(N.rotJump({{id = 4, pos = P(4, 0), alive = true}}, P(0, 0), 3), nil, "out of reach")
 
 -- ------------------------------------------------------------------ spells
-eq(N.levelScale(cfg, 100), 1, "no scale below level 300")
-eq(N.levelScale(cfg, 300), 1, "1 at level 300")
-ok(N.levelScale(cfg, 1000) > 1.2 and N.levelScale(cfg, 1000) <= cfg.levelScale.max, "level 1000 scale")
-eq(N.levelScale(cfg, 5000), cfg.levelScale.max, "capped")
+-- the level scale stood in for the passive tree: dropped with the class trees (1 everywhere), still honoured when set
+eq(N.levelScale(cfg, 300), 1, "no level scale"); eq(N.levelScale(cfg, 1000), 1, "no level scale at 1000")
+local withScale = {levelScale = {from = 300, per = 700, max = 2.2}}
+eq(N.levelScale(withScale, 1000), 2, "a configured scale still works"); eq(N.levelScale(withScale, 5000), 2.2, "capped")
 local sa, sb = N.values(cfg, cfg.boneSpear, 300, 100)
 eq(sa, math.floor(60 + 100 * 1.6 + 20), "bone spear min at 300")
 eq(sb, math.floor(60 + 100 * 2.6 + 40), "bone spear max at 300")

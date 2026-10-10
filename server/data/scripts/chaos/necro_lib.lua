@@ -15,6 +15,11 @@ if not ChaosSpell then
 	pcall(dofile, "data/spells/scripts/chaos/_common.lua")
 end
 
+if not ChaosClassTree then
+	dofile("data/scripts/chaos/class_tree.lua") -- the class nodes of the passive tree
+end
+local CT = ChaosClassTree
+
 ChaosNecro = ChaosNecro or {}
 local M = ChaosNecro
 local N = ChaosNecroCore
@@ -126,7 +131,7 @@ function M.raise(player, kind, pos, ratio)
 	m:setDropLoot(false)
 	m:registerEvent("ChaosNecroMinionGuard")
 	local level, ml = player:getLevel(), player:getMagicLevel()
-	local hp = N.minionHealth(cfg(), classKey, kind, level, ml)
+	local hp = N.minionHealth(cfg(), classKey, kind, level, ml, M.minionFactor(player, kind, "health"))
 	m:setMaxHealth(hp)
 	local want = math.max(1, math.floor(hp * math.min(1, ratio or 1)))
 	if want > m:getHealth() then
@@ -208,6 +213,25 @@ function M.consumeCorpse(c)
 	end
 end
 
+-- ------------------------------------------------------------------ the passive tree (class_tree.lua)
+-- more skeletons (Legion)
+function M.capBonus(player)
+	return CT.value(player, "ctLegion", "skeletons")
+end
+
+-- the Banner of Bones bonus of this owner's minions (the banner's, + Banner Bearer)
+function M.bannerBonus(player)
+	return cfg().bannerOfBones.damage + CT.value(player, "ctBannerBearer", "damage")
+end
+
+-- Bone Colossus: the golem's hit / health factor (field "hit" | "health"), 1 for other kinds
+function M.minionFactor(player, kind, field)
+	if kind ~= "golem" then
+		return 1
+	end
+	return 1 + CT.value(player, "ksBoneColossus", field)
+end
+
 -- ------------------------------------------------------------------ damage
 -- positive min, max of a formula of necro_config for the caster (level scale, Soul Hoard of the Lich, extra)
 function M.hoard(player)
@@ -216,7 +240,8 @@ function M.hoard(player)
 		return 1
 	end
 	local kind = N.raiseKind(cfg(), classKey)
-	return N.soulHoard(cfg(), classKey, N.minionCap(cfg(), classKey, kind, player:getLevel()), M.count(player, kind))
+	local tree = CT.has(player, "ksHoardedSouls") and CT.fx.ksHoardedSouls or nil
+	return N.soulHoard(cfg(), classKey, N.minionCap(cfg(), classKey, kind, player:getLevel()), M.count(player, kind), tree)
 end
 
 function M.values(player, f, extra)

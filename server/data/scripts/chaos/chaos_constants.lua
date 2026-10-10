@@ -105,6 +105,7 @@ Chaos.storage = {
 	stashRemote = 7100010, -- >0 : player may keep the stash window open while walking
 	passiveExtraPoints = 7100020, -- bonus passive points granted by quests/GM
 	passiveStatsFixed = 7100021, -- 1 once the stats older passive tree versions wrote into the character are clamped
+	passiveClassFx = 7100022, -- the class nodes of the passive tree the character holds, a bit each (class_tree.lua)
 	dungeonQueueLock = 7100030, -- (os.time of the last queue join; anti spam)
 	bountyWeekBonus = 7100300, -- bounty board (bounty.lua): 7100300 - 7100309 reserved; week key of the last weekly bonus
 	riftRun = 7100400, -- rifts (rift.lua): 7100400 - 7100409 reserved; +0 tier of the key of a run in progress, +1..+3 its modifiers, +4 start
@@ -712,9 +713,10 @@ Chaos.classes = {
 	-- Ninja dual wield: each main-hand weapon hit adds an off-hand strike of `share` of the hit, scaled by the
 	-- off-hand weapon's attack against the main hand's (clamped to minRatio..maxRatio)
 	dualWield = {share = 0.5, minRatio = 0.5, maxRatio = 1.25, delayMs = 150},
-	-- Samurai Counter Stance: the next melee hit taken within windowMs is parried (no damage) and answered with a
-	-- strike of `multiplier` x the parried hit
-	counter = {windowMs = 2000, multiplier = 1.5},
+	-- Samurai Counter Stance (the duelist off-tank, docs/CLASSES.md): the next melee hit taken within windowMs is parried
+	-- (no damage) and answered with a strike of `multiplier` x the parried hit; while the stance lasts every other hit
+	-- taken is `guard` smaller; the cast taunts the monsters within tauntRadius sqm
+	counter = {windowMs = 3000, multiplier = 1.5, guard = 0.30, tauntRadius = 3},
 	-- Samurai Bushido Focus: while the buff lasts, every second without taking damage adds a stack;
 	-- each stack is +perStack critical chance on weapon hits and Iaijutsu, a critical hit does critMultiplier
 	bushido = {durationMs = 30000, stackMs = 1000, perStack = 0.03, maxStacks = 10, startStacks = 3, critMultiplier = 1.5},
@@ -724,9 +726,8 @@ Chaos.classes = {
 	shadowMend = {perLevel = 1.0, perMagicLevel = 10, maxHealthShare = 0.04, veiledMultiplier = 1.3, spread = 0.1},
 	-- shurikens: the throwing stars of the base server; the attack a shuriken spell uses without one in hand
 	shuriken = {items = {2399, 7368}, defaultAttack = 50},
-	-- spell strikes x (1 + (level - from) / per), at most max (ChaosSpell.thiefLevelScale). A stand-in for the
-	-- passive tree the Thief line does not have yet: re-tune or drop it with the tree (phase 2)
-	spellLevelScale = {from = 300, per = 700, max = 2.2},
+	-- (spellLevelScale, the level factor of the line's spell strikes, stood in for the passive tree until the class trees
+	-- of phase 2b; dropped: the tree and class_tree.lua classDamage scale the line now)
 	-- Berserker Rage (passive): every damage the Berserker deals gets up to +maxBonus, growing linearly from 0 at full
 	-- health to maxBonus at `fullBelow` of the maximum health and below
 	rage = {maxBonus = 0.30, fullBelow = 0.30},

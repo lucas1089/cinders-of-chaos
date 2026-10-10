@@ -6,6 +6,10 @@ dofile('data/spells/scripts/chaos/_common.lua')
 if not ChaosMonk then
 	dofile('data/scripts/chaos/monk_chi_core.lua')
 end
+-- the class nodes of the passive tree (class_tree.lua: their flags, read from a player storage)
+if not ChaosClassTree then
+	dofile('data/scripts/chaos/class_tree.lua')
+end
 if MonkSpell then
 	return
 end

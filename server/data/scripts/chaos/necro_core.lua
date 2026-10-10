@@ -41,8 +41,9 @@ function N.raiseKind(cfg, classKey)
 	return c and c.kind or nil
 end
 
--- how many minions of `kind` a class of `level` may have out (the golem: Bone Lord only)
-function N.minionCap(cfg, classKey, kind, level)
+-- how many minions of `kind` a class of `level` may have out (the golem: Bone Lord only); bonus: more of a kind the class
+-- raises at all (the passive tree's Legion)
+function N.minionCap(cfg, classKey, kind, level, bonus)
 	if kind == "golem" then
 		return classKey == "bonelord" and cfg.minions.golemClass.count or 0
 	end
@@ -55,6 +56,9 @@ function N.minionCap(cfg, classKey, kind, level)
 		if (level or 0) >= step[1] then
 			count = step[2]
 		end
+	end
+	if count > 0 then
+		count = count + (bonus or 0)
 	end
 	return count
 end
@@ -71,19 +75,21 @@ local function factors(cfg, classKey, kind)
 	return c.hit, c.health
 end
 
-function N.minionHealth(cfg, classKey, kind, level, ml)
+-- extra: a factor on top (the passive tree's Bone Colossus for the golem)
+function N.minionHealth(cfg, classKey, kind, level, ml, extra)
 	local h = cfg.minions[kind].health
 	local _, f = factors(cfg, classKey, kind)
-	return max(1, floor((h.base + (level or 0) * h.perLevel + (ml or 0) * h.perMl) * f))
+	return max(1, floor((h.base + (level or 0) * h.perLevel + (ml or 0) * h.perMl) * f * (extra or 1)))
 end
 
--- positive min, max of one minion hit; `aura` = Banner of Bones is up on the owner
-function N.minionHit(cfg, classKey, kind, level, ml, aura)
+-- positive min, max of one minion hit; `aura` = Banner of Bones is up on the owner (true: the banner's bonus; a number:
+-- that bonus, the passive tree's Banner Bearer included); extra: a factor on top (Bone Colossus for the golem)
+function N.minionHit(cfg, classKey, kind, level, ml, aura, extra)
 	local h = cfg.minions[kind].hit
 	local f = factors(cfg, classKey, kind)
-	local avg = ((level or 0) * h.a + (ml or 0) * h.b) * f
+	local avg = ((level or 0) * h.a + (ml or 0) * h.b) * f * (extra or 1)
 	if aura then
-		avg = avg * (1 + cfg.bannerOfBones.damage)
+		avg = avg * (1 + (type(aura) == "number" and aura or cfg.bannerOfBones.damage))
 	end
 	local s = cfg.minions.spread
 	return floor(avg * (1 - s)), floor(avg * (1 + s))
@@ -109,12 +115,12 @@ end
 
 -- How a Raise Dead cast goes: classKey, level, have = minions of the raised kind out, corpses = usable corpses in
 -- reach. Returns {raise = n minions, fromCorpses = n corpses used, fromNothing = bool, extraMana = n} or nil, reason.
-function N.raisePlan(cfg, classKey, level, have, corpses)
+function N.raisePlan(cfg, classKey, level, have, corpses, bonus)
 	local kind = N.raiseKind(cfg, classKey)
 	if not kind then
 		return nil, "Only a necromancer can raise the dead."
 	end
-	local free = N.minionCap(cfg, classKey, kind, level) - (have or 0)
+	local free = N.minionCap(cfg, classKey, kind, level, bonus) - (have or 0)
 	if free <= 0 then
 		return nil, "Your army is complete."
 	end
@@ -218,15 +224,23 @@ end
 -- ------------------------------------------------------------------ spells
 function N.levelScale(cfg, level)
 	local s = cfg.levelScale
+	if not s then
+		return 1
+	end
 	return min(s.max, 1 + max(0, (level or 0) - s.from) / s.per)
 end
 
--- Lich Soul Hoard: spell damage factor for `have` shades out of `cap`
-function N.soulHoard(cfg, classKey, cap, have)
+-- Lich Soul Hoard: spell damage factor for `have` shades out of `cap`. tree = the passive tree's Hoarded Souls
+-- ({perFreeSlot, withShade}) or nil: a higher bonus per empty slot, and withShade while every slot is taken
+function N.soulHoard(cfg, classKey, cap, have, tree)
 	if classKey ~= "lich" then
 		return 1
 	end
-	return 1 + max(0, (cap or 0) - (have or 0)) * cfg.soulHoard.perFreeSlot
+	local free = max(0, (cap or 0) - (have or 0))
+	if tree then
+		return 1 + (free > 0 and free * tree.perFreeSlot or tree.withShade)
+	end
+	return 1 + free * cfg.soulHoard.perFreeSlot
 end
 
 -- positive min, max of a formula f = {mlMin, mlMax, baseMin, baseMax, scale} for level and magic level, with the
@@ -322,11 +336,11 @@ function N.restTake(cfg, rest, playerId, now)
 end
 
 -- which of the resting minions may rise for the class now (caps may have changed: vocation change, level loss)
-function N.restFilter(cfg, classKey, level, list)
+function N.restFilter(cfg, classKey, level, list, bonus)
 	local out, count = {}, {}
 	for _, m in ipairs(list or {}) do
 		local c = count[m.kind] or 0
-		if c < N.minionCap(cfg, classKey, m.kind, level) then
+		if c < N.minionCap(cfg, classKey, m.kind, level, bonus) then
 			out[#out + 1] = m
 			count[m.kind] = c + 1
 		end
@@ -336,12 +350,12 @@ end
 
 -- minions over the cap or of a kind the class does not raise (after a vocation change or a level loss): returns
 -- the indexes of `list` ({kind}) to dismiss, newest (last) first
-function N.overCap(cfg, classKey, level, list)
+function N.overCap(cfg, classKey, level, list, bonus)
 	local count, out = {}, {}
 	for i, m in ipairs(list or {}) do
 		local c = (count[m.kind] or 0) + 1
 		count[m.kind] = c
-		if c > N.minionCap(cfg, classKey, m.kind, level) then
+		if c > N.minionCap(cfg, classKey, m.kind, level, bonus) then
 			out[#out + 1] = i
 		end
 	end

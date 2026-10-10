@@ -102,9 +102,9 @@ eq(M.flurryHits(1), 3); eq(M.flurryHits(5), 7); eq(M.flurryHits(8), 7, "clamped"
 local a1, b1 = M.strikeValues(300, 5000, M.formula.sunderingPalm, M.finisherScale(5))
 local a2, b2 = M.strikeValues(300, 5000, M.formula.sunderingPalm, M.finisherScale(1))
 near(a2 / a1, 0.44, "min scales"); near(b2 / b1, 0.44, "max scales")
-near(M.levelScale(300), 1); near(M.levelScale(1000), 2); near(M.levelScale(5000), Chaos.classes.spellLevelScale.max)
+near(M.levelScale(300), 1); near(M.levelScale(1000), 1, "the level factor was dropped with the class trees")
 local lo, hi = M.strikeValues(1000, 5000, M.formula.ashenFist)
-near(lo, (200 + 5000 * 0.04 + 20) * 2, "level 1000 strike x2")
+near(lo, 200 + 5000 * 0.04 + 20, "level 1000 strike: no level factor")
 
 -- ------------------------------------------------------------------ unarmed
 near(M.fistAttack(300), 47.5); eq(M.fistAttack(1000), cfg.unarmed.attackMax); eq(M.fistAttack(8), 40.2)

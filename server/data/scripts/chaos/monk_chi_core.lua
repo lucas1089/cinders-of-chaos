@@ -49,6 +49,7 @@ M.ids = {
 		focus = 71030, -- Shadowfist focus window after a finisher (crit chance from focusChi)
 		ward = 71031, -- Chi Ward shield (timer; the amount is storage.wardAmount)
 		mantra = 71032, -- Mantra of Stone: damage taken reduced
+		mantraDeep = 71037, -- Mantra of Stone of an Iron Sage with the passive tree's Deep Mantra (a stronger reduction)
 		roll = 71033, -- Mistborne Step: dodge window
 		stun = 71034, -- Iron Palm stun (CONDITION_PARALYZE on the monster)
 		stunImmune = 71035, -- after a stun the monster cannot be stunned again for a while
@@ -84,9 +85,8 @@ M.cfg = {
 		-- with an attack; server/tools/install_fist_weapons.py, data/lib/chaos_fist_weapons.lua, tests/fist_weapons_test.lua)
 		fistWeapons = {36654, 36655, 36656, 36657, 36658, 36659}
 	},
-	-- spell strikes x (1 + (level - from) / per), at most max: stands in for the passive tree, like the Thief line
-	-- (Chaos.classes.spellLevelScale when it exists)
-	spellLevelScale = {from = 300, per = 700, max = 2.2},
+	-- (spellLevelScale, a level factor of the strikes that stood in for the passive tree, was dropped with the class trees:
+	-- M.levelScale is 1 unless one is set here or in Chaos.classes)
 	-- dodge chance against melee / ranged hits, per vocation; Mistborne Step adds `roll` for rollMs
 	evasion = {[17] = 0.06, [18] = 0.08, [19] = 0.04, roll = 0.25, rollMs = 2000},
 	-- Shadowfist: a finisher opens a focus window; weapon hits and Monk strikes in it crit with critPerChi x chi spent.
@@ -105,8 +105,13 @@ M.cfg = {
 	ward = {perLevel = 2.5, perFist = 8, durationMs = 8000, range = 5},
 	-- Kindled Breath: heal = (level x perLevel + fist x perFist) x finisher scale; Iron Sage: + hotShare over hotTicks s
 	breath = {perLevel = 2.0, perFist = 6, hotShare = 0.6, hotTicks = 6},
-	-- Mantra of Stone: party members within radius take `reduction` less damage while it lasts
-	mantra = {reduction = 0.08, durationMs = 12000, pulseMs = 2000, radius = 6},
+	-- the Iron Sage, the second healer (docs/CLASSES.md): its Kindled Breath heals the most hurt party member within
+	-- `range` sqm (itself without a party) for (level x perLevel + fist x perFist) x the finisher scale, + hotShare over
+	-- hotTicks s. Below the Illusionist, above every non-healer: server/data/spells/README.md "Healing".
+	sageBreath = {perLevel = 0.5, perFist = 27, range = 5},
+	-- Mantra of Stone: party members within radius take `reduction` less damage while it lasts; every pulse also heals
+	-- them (and the Iron Sage) for level x heal.perLevel + fist x heal.perFist
+	mantra = {reduction = 0.08, durationMs = 12000, pulseMs = 2000, radius = 6, heal = {perLevel = 1.0, perFist = 24}},
 	-- Mistborne Step: dash range
 	step = {maxSteps = 3}
 }
@@ -308,6 +313,9 @@ end
 
 function M.levelScale(level)
 	local s = (Chaos and Chaos.classes and Chaos.classes.spellLevelScale) or cfg().spellLevelScale
+	if not s then
+		return 1
+	end
 	return math.min(s.max, 1 + math.max(0, (level or 0) - s.from) / s.per)
 end
 
@@ -348,9 +356,9 @@ function M.focusRoll(chi, roll)
 	return 1, false
 end
 
--- Pressure Points: damage multiplier on a target with `stacks`
-function M.pressureMultiplier(stacks)
-	return 1 + math.max(0, math.min(cfg().pressure.maxStacks, stacks or 0)) * cfg().pressure.perStack
+-- Pressure Points: damage multiplier on a target with `stacks` (extraPerStack: the passive tree's Nerve Strike)
+function M.pressureMultiplier(stacks, extraPerStack)
+	return 1 + math.max(0, math.min(cfg().pressure.maxStacks, stacks or 0)) * (cfg().pressure.perStack + (extraPerStack or 0))
 end
 
 -- which stack slot a new stack takes: `present` = list of booleans (slot i has a stack). Returns the first free
@@ -399,9 +407,34 @@ function M.breathHeal(level, fistSkill, chi, ironSage)
 	return heal, tick
 end
 
--- damage taken with the Mantra of Stone
-function M.mantraDamage(damage)
-	return math.floor(math.abs(damage or 0) * (1 - cfg().mantra.reduction) + 0.5)
+-- the Iron Sage's Kindled Breath on a party member: instant heal and heal per tick (hotShare over hotTicks)
+function M.sageBreathHeal(level, fistSkill, chi)
+	local s, b = cfg().sageBreath, cfg().breath
+	local heal = math.floor(((level or 0) * s.perLevel + (fistSkill or 0) * s.perFist) * M.finisherScale(chi))
+	local tick = heal > 0 and math.floor(heal * b.hotShare / b.hotTicks) or 0
+	return heal, tick
+end
+
+-- the heal of a Mantra of Stone pulse on each covered player
+function M.mantraHeal(level, fistSkill)
+	local h = cfg().mantra.heal
+	return math.floor((level or 0) * h.perLevel + (fistSkill or 0) * h.perFist)
+end
+
+-- damage taken with the Mantra of Stone (reduction: the Deep Mantra one, else the spell's)
+function M.mantraDamage(damage, reduction)
+	return math.floor(math.abs(damage or 0) * (1 - (reduction or cfg().mantra.reduction)) + 0.5)
+end
+
+-- Hundred Hands (Shadowfist keystone): a focus crit gives a chi when the last one was at least icdMs ago
+M.lastCritChi = M.lastCritChi or {}
+function M.critGivesChi(id, now, icdMs)
+	local last = M.lastCritChi[id]
+	if last and now - last < icdMs then
+		return false
+	end
+	M.lastCritChi[id] = now
+	return true
 end
 
 -- dodge chance of a Monk (rolling: Mistborne Step's window)
@@ -422,6 +455,7 @@ end
 M.lastWeaponChi = M.lastWeaponChi or {}
 function M.clear(id)
 	M.lastWeaponChi[id] = nil
+	M.lastCritChi[id] = nil
 end
 
 return M

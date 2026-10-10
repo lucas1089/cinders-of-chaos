@@ -11,6 +11,11 @@
 --                ksOverload     a spell hit of one element primes the others: the next spell of another element +20% (8 s)
 --   druid        ksOvergrowth   heals on others also heal 30% of the heal again over 6 s (3 pulses)
 --                ksThorns       melee/ranged attackers take 30% of their hit + 2 x magic level back as earth damage
+--   juggernaut   ksImmovable    damage taken -8%, -16% while below 50% health (and Bulwark, as the knight)
+--   berserker    ksUndyingRage  melee weapon hits heal 4% of the damage dealt, 8% below 50% health (and Cleaving Arc)
+--   deadeye      ksHuntersFocus bow / crossbow hits on the same target +4% each, up to +20% (and Deadeye)
+--   beastmaster  ksPackAlpha    companions: bites and Feral Command +35%, 20% less damage taken (beastmaster.lua,
+--                               classes.lua biteValues; and Ricochet). Numbers of these four: class_tree.lua (fx).
 --   illusionist  (support: makes the party hit harder, never the illusionist)
 --                ksSharedPhantasm    the illusionist's hits mark the enemy for 6 s: other party members deal +12% to it
 --                                    and heal for 4% of the damage they deal to it (the illusionist heals them)
@@ -537,8 +542,44 @@ local function reflect(ownerId, attackerId, ctype, amount, missile, effect)
 	end
 end
 
+if not ChaosClassTree then
+	dofile("data/scripts/chaos/class_tree.lua")
+end
+local CT = ChaosClassTree
+
+-- Juggernaut, Immovable: the damage factor at `health` of `maxHealth` (pure)
+function K.immovableFactor(health, maxHealth)
+	local f = CT.fx.ksImmovable
+	if (maxHealth or 0) > 0 and health / maxHealth < f.lowHealth then
+		return 1 - f.lowReduction
+	end
+	return 1 - f.reduction
+end
+
+-- Berserker, Undying Rage: the heal for a melee weapon hit of `amount` (pure)
+function K.undyingHeal(amount, health, maxHealth)
+	local f = CT.fx.ksUndyingRage
+	local share = ((maxHealth or 0) > 0 and health / maxHealth < f.lowHealth) and f.lowHeal or f.heal
+	return math.floor(math.abs(amount or 0) * share)
+end
+
+-- Deadeye, Hunter's Focus: state = {target, hits, at}; returns the multiplier of this hit on `targetId` at `now` (pure)
+function K.focusStep(state, targetId, now)
+	local f = CT.fx.ksHuntersFocus
+	if state.target ~= targetId or now - (state.at or 0) > f.resetMs then
+		state.target, state.hits = targetId, 0
+	end
+	local m = 1 + math.min(f.maxBonus, state.hits * f.perHit)
+	state.hits, state.at = state.hits + 1, now
+	return m
+end
+
 -- keystones of the creature that is hit (it is a player)
 local function defend(player, b, attacker, pd, pt, sd, st, origin)
+	if b.ksImmovable then
+		local m = K.immovableFactor(player:getHealth(), player:getMaxHealth())
+		pd, sd = K.scale(pd, m), K.scale(sd, m)
+	end
 	if origin ~= ORIGIN_MELEE and origin ~= ORIGIN_RANGED then
 		return pd, sd
 	end
@@ -577,12 +618,31 @@ local function attack(player, b, creature, pd, pt, sd, st, origin)
 	end
 
 	if origin == ORIGIN_MELEE or origin == ORIGIN_RANGED then
-		if not (b.ksCleavingArc or b.ksRicochet or b.ksDeadeye) then
+		if not (b.ksCleavingArc or b.ksRicochet or b.ksDeadeye or b.ksUndyingRage or b.ksHuntersFocus) then
 			return pd, sd
 		end
 		local weapon = handWeapon(player)
 		if not weapon then
 			return pd, sd
+		end
+		if b.ksHuntersFocus and origin == ORIGIN_RANGED and weapon:getWeaponType() == WEAPON_DISTANCE then
+			local s = stateOf(pid)
+			s.focus = s.focus or {}
+			local m = K.focusStep(s.focus, creature:getId(), now())
+			if m ~= 1 then
+				pd, sd = K.scale(pd, m), K.scale(sd, m)
+			end
+		end
+		if b.ksUndyingRage and origin == ORIGIN_MELEE and MELEE_WEAPON[weapon:getWeaponType()] then
+			local heal = K.undyingHeal(math.abs(pd) + math.abs(sd), player:getHealth(), player:getMaxHealth())
+			if heal > 0 then
+				addEvent(function()
+					local p = Player(pid)
+					if p and p:getHealth() > 0 and Chaos and Chaos.heal then
+						Chaos.heal(p, heal)
+					end
+				end, 0)
+			end
 		end
 		if b.ksDeadeye and origin == ORIGIN_RANGED and shootsBolts(player, weapon) and K.roll(cfg.deadeye.chance) then
 			pd, sd = K.scale(pd, cfg.deadeye.multiplier), K.scale(sd, cfg.deadeye.multiplier)
@@ -642,7 +702,7 @@ function event.onHealthChange(creature, attacker, pd, pt, sd, st, origin)
 	end
 	if creature:isPlayer() then
 		local b = ChaosPassiveCache[creature:getId()]
-		if b and (b.ksBulwark or b.ksThorns) then
+		if b and (b.ksBulwark or b.ksThorns or b.ksImmovable) then
 			pd, sd = defend(creature, b, attacker, pd, pt, sd, st, origin)
 			if pd == 0 and sd == 0 then
 				return pd, pt, sd, st

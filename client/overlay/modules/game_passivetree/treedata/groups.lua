@@ -724,8 +724,17 @@ function getTreeGroups()
 			y = 2330,
 			nodes = {}
 		},
-		  
-		  
+		--- groups 104-113: the class sections (625-664), shown only to a line that has one (`section`) ---
+		{ orbit = 0, x = -1400, y = -2150, nodes = {}, section = true }, -- 104
+		{ orbit = 0, x = -1580, y = -2230, nodes = {}, section = true }, -- 105
+		{ orbit = 0, x = -1760, y = -2310, nodes = {}, section = true }, -- 106
+		{ orbit = 0, x = -1940, y = -2390, nodes = {}, section = true }, -- 107
+		{ orbit = 0, x = -1900, y = -2570, nodes = {}, section = true }, -- 108
+		{ orbit = 0, x = -1720, y = -2640, nodes = {}, section = true }, -- 109
+		{ orbit = 260, x = -1520, y = -2650, nodes = {}, section = true }, -- 110
+		{ orbit = 0, x = -2120, y = -2300, nodes = {}, section = true }, -- 111
+		{ orbit = 0, x = -2280, y = -2190, nodes = {}, section = true }, -- 112
+		{ orbit = 261, x = -2420, y = -2060, nodes = {}, section = true }, -- 113
 	}
 end
 

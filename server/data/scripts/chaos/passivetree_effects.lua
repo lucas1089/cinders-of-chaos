@@ -304,6 +304,19 @@ function ChaosPassiveRefreshSpeed(player)
 	end
 end
 
+-- the class factor of a player's damage (class_tree.lua classDamage by class or line, and level), 1 for the others
+if not ChaosClasses then
+	dofile("data/scripts/chaos/classes.lua")
+end
+function ChaosPassiveLineFactor(player)
+	local vocation = player.getVocation and player:getVocation()
+	if not vocation or not ChaosClassTree or not player.getLevel then
+		return 1
+	end
+	local id = vocation:getId()
+	return ChaosClassTree.damageFactor(ChaosClasses.classKey(id), ChaosClasses.lineKey(id), player:getLevel())
+end
+
 -- ---------------------------------------------------------------- damage dealt / healing
 local dealt = CreatureEvent("ChaosPassiveDealt")
 function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
@@ -312,10 +325,12 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 	if attacker and attacker:isPlayer() and not procActive then
 		local bonuses = ChaosPassiveCache[attacker:getId()]
 		if bonuses then
+			-- the factor of the classes tuned without a tree (class_tree.lua classDamage); not on healing
+			local line = ChaosPassiveLineFactor(attacker)
 			local m1 = (1 + ChaosPassiveDamagePercent(bonuses, primaryType) / 100) * ChaosPassiveStatMultiplier(bonuses, primaryType, origin)
-				* ChaosParagonDamageMultiplier(bonuses, primaryType)
+				* ChaosParagonDamageMultiplier(bonuses, primaryType) * (primaryType == COMBAT_HEALING and 1 or line)
 			local m2 = (1 + ChaosPassiveDamagePercent(bonuses, secondaryType) / 100) * ChaosPassiveStatMultiplier(bonuses, secondaryType, origin)
-				* ChaosParagonDamageMultiplier(bonuses, secondaryType)
+				* ChaosParagonDamageMultiplier(bonuses, secondaryType) * (secondaryType == COMBAT_HEALING and 1 or line)
 			if m1 ~= 1 then
 				primaryDamage = scale(primaryDamage, m1)
 			end

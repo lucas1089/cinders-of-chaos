@@ -121,11 +121,11 @@ eq(T.vowAmount(10000, 300, 20), 800 + 60 + 80)
 eq(T.pickHealTarget({{id = 1, health = 50, maxHealth = 100}, {id = 2, health = 30, maxHealth = 100},
 	{id = 3, health = 30, maxHealth = 100}}), 2, "lowest share, first on a tie")
 eq(T.pickHealTarget({}), nil)
-near(T.levelScale(100), 1); near(T.levelScale(300), 1); near(T.levelScale(1000), 2); near(T.levelScale(3000), 2.2)
+near(T.levelScale(100), 1); near(T.levelScale(300), 1); near(T.levelScale(1000), 1, "dropped with the class trees")
 local mn, mx = T.strikeValues(300, 5500, 20, 0.10, 0.16, 1.0, 1.5, 30, 60)
 near(mn, 60 + 550 + 20 + 30); near(mx, 60 + 880 + 30 + 60)
 mn = T.strikeValues(1000, 5500, 20, 0.10, 0.16, 1.0, 1.5, 30, 60)
-near(mn, (200 + 550 + 20 + 30) * 2, "level factor at 1000")
+near(mn, 200 + 550 + 20 + 30, "no level factor at 1000")
 
 -- ================================================================== the combat glue (mocks)
 local events, callbacks, scheduled = {}, {}, {}

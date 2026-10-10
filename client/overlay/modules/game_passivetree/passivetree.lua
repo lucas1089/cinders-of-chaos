@@ -29,24 +29,71 @@ local m_sqrt = math.sqrt
 local m_max = math.max
 
 
--- the vocation whose node variants (keystones) are shown; the server names it in sendNodes, because the
+-- the variant key of the node variants (keystones 621 / 624) shown; the server names it in sendNodes, because the
 -- number the client's player:getVocation() returns does not follow one scheme (an Elite Knight reports 4)
 local serverVocation = nil
+-- the class (which class nodes it may take: node.classes) and its line (whose class section is shown: node.line),
+-- also from sendNodes (class keys of the server: ChaosClasses.classKey / lineKey)
+local serverClass, serverLine = nil, nil
+
+-- fallback before the server named them: the client reports server vocation ids (base patch 0016)
+local CLASS_OF = { [4] = "warrior", [8] = "juggernaut", [14] = "berserker", [3] = "ranger", [7] = "deadeye",
+  [15] = "beastmaster", [1] = "mystic", [5] = "elementalist", [10] = "illusionist", [11] = "thief", [12] = "ninja",
+  [13] = "samurai", [17] = "monk", [18] = "shadowfist", [19] = "ironsage", [20] = "necromancer", [21] = "lich",
+  [22] = "bonelord", [23] = "templar", [24] = "inquisitor", [25] = "sentinel" }
+local LINE_OF = { warrior = "warrior", juggernaut = "warrior", berserker = "warrior", ranger = "ranger", deadeye = "ranger",
+  beastmaster = "ranger", mystic = "mystic", elementalist = "mystic", illusionist = "mystic", thief = "thief", ninja = "thief",
+  samurai = "thief", monk = "monk", shadowfist = "monk", ironsage = "monk", necromancer = "necromancer",
+  lich = "necromancer", bonelord = "necromancer", templar = "templar", inquisitor = "templar", sentinel = "templar" }
+local VARIANT_OF = { warrior = "knight", ranger = "paladin", mystic = "sorcerer", elementalist = "sorcerer" }
+
+local function getPlayerClass()
+  if serverClass then
+    return serverClass
+  end
+  local player = g_game.getLocalPlayer()
+  return CLASS_OF[player and player:getVocation() or 0]
+end
+
+local function getPlayerLine()
+  if serverLine then
+    return serverLine
+  end
+  return LINE_OF[getPlayerClass() or ""]
+end
 
 local function getPlayerVocation()
   if serverVocation then
     return serverVocation
   end
-  -- fallback before the server named it: the client reports server vocation ids (base patch 0016)
-  local player = g_game.getLocalPlayer()
-  local id = player and player:getVocation() or 0
-  local keys = { [4] = "knight", [8] = "knight", [14] = "knight", [3] = "paladin", [7] = "paladin", [15] = "paladin",
-    [1] = "sorcerer", [5] = "sorcerer", [10] = "illusionist" }
-  if keys[id] then
-    return keys[id]
-  end
-  return nil
+  local class = getPlayerClass()
+  return class and (VARIANT_OF[class] or class) or nil
 end
+
+-- class nodes: shown only to their line (node.line); taken only by their classes (node.classes)
+local function nodeShown(node)
+  return not node.line or node.line == getPlayerLine()
+end
+
+local function nodeAllowed(node)
+  if not node.classes then
+    return true
+  end
+  local class = getPlayerClass()
+  for _, key in ipairs(node.classes) do
+    if key == class then
+      return true
+    end
+  end
+  return false
+end
+
+-- the class names for "Requires: ..." on a locked node
+local CLASS_NAMES = { warrior = "Warrior", juggernaut = "Juggernaut", berserker = "Berserker", ranger = "Ranger",
+  deadeye = "Deadeye", beastmaster = "Beastmaster", mystic = "Mystic", elementalist = "Elementalist",
+  illusionist = "Illusionist", thief = "Thief", ninja = "Ninja", samurai = "Samurai", monk = "Monk",
+  shadowfist = "Shadowfist", ironsage = "Iron Sage", necromancer = "Necromancer", lich = "Lich", bonelord = "Bone Lord",
+  templar = "Templar", inquisitor = "Inquisitor", sentinel = "Sentinel" }
 
 local orbitDist = {
 	[0] = 0,
@@ -277,7 +324,7 @@ local function scaleDecoWidget(child)
 end
 
 local function treeKey()
-	return string.format("%.4f|%s", SCALE, tostring(getPlayerVocation()))
+	return string.format("%.4f|%s|%s", SCALE, tostring(getPlayerVocation()), tostring(getPlayerClass()))
 end
 
 local function destroyChildrenJob(parent)
@@ -319,9 +366,19 @@ local function buildTree()
 
 	local widget = nil
 
+	-- the class section's groups only when the player's line has a section
+	local hasSection = false
+	for _, node in pairs(treeData.nodes) do
+		if node.line and node.line == getPlayerLine() then
+			hasSection = true
+			break
+		end
+	end
 	local groups = {}
 	for key, group in pairs(treeData.groups) do
-		t_insert(groups, {key, group})
+		if not group.section or hasSection then
+			t_insert(groups, {key, group})
+		end
 	end
 	t_insert(jobs, slicedJob(groups, function(entry)
 		local _, group = entry[1], entry[2]
@@ -367,8 +424,9 @@ local function buildTree()
 
 	local NODES_MAX = 700
 	local ids = {}
+	nodeMap = {}
 	for id = 1, NODES_MAX, 1 do
-		if treeData.nodes[id] then
+		if treeData.nodes[id] and nodeShown(treeData.nodes[id]) then
 			t_insert(ids, id)
 		end
 	end
@@ -388,6 +446,7 @@ local function buildTree()
 			node.id = id
 			node.linkedId = {}
 			node.groupX = group
+			node.locked = not nodeAllowed(node)
 
 			if node.isStartNode then
 				node.alloc = true
@@ -460,14 +519,31 @@ local function buildTree()
 
 				if customStats then
 					local texts = getCustomStatString(customStats)
-					-- keystones: the vocation's own description lines under the stats
-					for _, line in ipairs((vocationNode and vocationNode.stats) or {}) do
+					-- keystones: the class's own description lines under the stats (a class node: its own lines)
+					for _, line in ipairs((vocationNode and vocationNode.stats) or (node.classes and node.stats) or {}) do
 						table.insert(texts, line)
+					end
+					if node.locked then
+						local names = {}
+						for _, key in ipairs(node.classes) do
+							table.insert(names, CLASS_NAMES[key] or key)
+						end
+						table.insert(texts, "Requires: " .. table.concat(names, ", ") .. ".")
 					end
 
 					widget.setExtendedTooltip(widget, nodeName .. ((DEBUG and " (ID: " .. id .. ")") or ""), texts, tooltipType)
 				elseif node.stats then
-					widget.setExtendedTooltip(widget, nodeName .. ((DEBUG and " (ID: " .. id .. ")") or ""), node.stats, tooltipType)
+					local texts = {}
+					for _, line in ipairs(node.stats) do
+						table.insert(texts, line)
+					end
+					if node.locked then
+						table.insert(texts, "Your class has no keystone here.")
+					end
+					widget.setExtendedTooltip(widget, nodeName .. ((DEBUG and " (ID: " .. id .. ")") or ""), texts, tooltipType)
+				end
+				if node.locked then
+					widget.setOpacity(widget, 0.45)
 				end
 
 				widget.onClick = onClickNode
@@ -572,14 +648,19 @@ local function buildTree()
 		t_insert(nodes, node)
 	end
 	t_insert(jobs, slicedJob(nodes, function(node)
+		if not nodeMap[node.id] then
+			return -- a node not shown to this class (another line's section)
+		end
 		for _, otherId in pairs(node.out or {}) do
 			local other = nodeMap[otherId]
 
-			t_insert(node.linkedId, otherId)
-			t_insert(other.linkedId, node.id)
+			if other then
+				t_insert(node.linkedId, otherId)
+				t_insert(other.linkedId, node.id)
 
-			if not node.isStartNode and not other.isStartNode then
-				BuildConnector(node, other)
+				if not node.isStartNode and not other.isStartNode then
+					BuildConnector(node, other)
+				end
 			end
 		end
 	end))
@@ -887,6 +968,12 @@ function updateNodes(data)
 	if type(data.vocation) == "string" then
 		serverVocation = data.vocation
 	end
+	if type(data.cls) == "string" then
+		serverClass = data.cls
+	end
+	if type(data.line) == "string" then
+		serverLine = data.line
+	end
 	currentPreset = data.preset
 	currentSelected = currentPreset
 
@@ -978,6 +1065,12 @@ function onClickNode(widget)
 end
 
 function canAllocate(node)
+	if node.locked then
+		sendMessageBox("Error Allocating node", "This node belongs to another class.")
+
+		return false
+	end
+
 	if allocNodes[node.exclude] then
 		sendMessageBox("Error Allocating node", "You can not allocate 2 big nodes of the same path")
 
@@ -1009,6 +1102,23 @@ function canAllocate(node)
 	return false
 end
 
+-- a node next to a start node (the root, or the line's class section start): it connects on its own
+function isStartLink(id)
+	local node = nodeMap[id]
+	if not node then
+		return false
+	end
+	for _, list in ipairs({node.out or {}, node.inputs or {}}) do
+		for _, otherId in pairs(list) do
+			local other = nodeMap[otherId]
+			if other and other.isStartNode then
+				return true
+			end
+		end
+	end
+	return false
+end
+
 function hasPathToStart(node, visited)
 	if visited[node.id] then
 		return false
@@ -1021,7 +1131,7 @@ function hasPathToStart(node, visited)
 	for _, otherId in slot2(slot3) do
 		local other = nodeMap[otherId]
 
-		if other and other.alloc and ((2 <= otherId and otherId <= 7) or hasPathToStart(other, visited)) then
+		if other and other.alloc and ((isStartLink(otherId)) or hasPathToStart(other, visited)) then
 			return true
 		end
 	end
@@ -1032,7 +1142,7 @@ function hasPathToStart(node, visited)
 	for _, otherId in slot2(slot3) do
 		local other = nodeMap[otherId]
 
-		if other and other.alloc and ((2 <= otherId and otherId <= 7) or hasPathToStart(other, visited)) then
+		if other and other.alloc and ((isStartLink(otherId)) or hasPathToStart(other, visited)) then
 			return true
 		end
 	end
@@ -1050,7 +1160,7 @@ function canUnAllocate(node)
 		local other = nodeMap[otherId]
 
 		if other and other.alloc and not other.isStartNode then
-			if 2 <= otherId and otherId <= 7 then
+			if isStartLink(otherId) then
 				node.alloc = true
 				allocNodes[node.id] = node
 
@@ -1073,7 +1183,7 @@ function canUnAllocate(node)
 		local other = nodeMap[otherId]
 
 		if other and other.alloc and not other.isStartNode then
-			if 2 <= otherId and otherId <= 7 then
+			if isStartLink(otherId) then
 				node.alloc = true
 				allocNodes[node.id] = node
 
@@ -1098,7 +1208,7 @@ function canUnAllocate(node)
 		end
 	end
 
-	if 2 <= node.id and node.id <= 7 then
+	if isStartLink(node.id) then
 		node.alloc = true
 		allocNodes[node.id] = node
 
@@ -1230,74 +1340,34 @@ function getSkillTreeBonuses()
 	return bonusTable
 end
 
-local vocationSpecials = {
+-- the class text at the top of "Info & Bonuses" (by class key, the server's sendNodes `cls`): what the class plays as and
+-- where its keystones are (short lines: the panel is narrow)
+local function special(title, color, lines)
+	return { { { title .. ":", color, "\n" .. table.concat(lines, "\n"), "#f8f8f8" }, height = 14 * (#lines + 1) + 4 } }
+end
 
-	knight = {
-		{
-			{
-				"Knights & Elite Knights: ",
-				"#FFA500",
-				"\nKnights & Elite Knights embody timeless \nvalor and chivalry on the battlefield.",
-				"#f8f8f8"
-			},
-			height = 55
-		}
-	},
-	paladin = {
-        {
-            {
-                "Paladins & Royal Paladins: ",
-                "#FFFF00",
-                "\nPaladins & Royal Paladins embody noble honor \nand unwavering courage on the battlefield.",
-                "#f8f8f8"
-            },
-            height = 55
-        }
-    },
-	sorcerer = {
-        {
-            {
-                "Sorcerers & Master Sorcerers: ",
-                "#00FFFF",
-                "\nSorcerers & Master Sorcerers command elemental forces with unparalleled mystical\nprowess.",
-                "#f8f8f8"
-            },
-            height = 55
-        }
-    },
-    druid = {
-        {
-            {
-                "Druids & Elder Druids: ",
-                "#32CD32",
-                "\nDruids & Elder Druids embody nature's \nresilience and healing power in every battle.",
-                "#f8f8f8"
-            },
-            height = 55
-        }
-    },
-    illusionist = {
-        {
-            {
-                "Illusionist & Arch Illusionist: ",
-                "#800080",
-                "\nIllusionists & Arch Illusionists weave \narcane illusions to confound their foes.",
-                "#f8f8f8"
-            },
-            height = 55
-        }
-    },
-	monk = {
-		{
-			{
-				"Monk & Exalted Monk: ",
-				"FFECA41F",
-				"\nMasters of unarmed combat, Monks channel inner strength through disciplined strikes.\nTheir fists become weapons of pure focus and spiritual energy.",
-				"#f8f8f8"
-			},
-			height = 55
-		}
-    }
+local vocationSpecials = {
+	warrior = special("Warrior", "#FFA500", {"Melee, heavy armour, the most health.", "Keystones: Cleaving Arc, Bulwark.", "Ascends: Juggernaut or Berserker."}),
+	juggernaut = special("Juggernaut", "#FFA500", {"The tank: taunts, damage reduction,", "shield block. Keystones: Immovable,", "Bulwark."}),
+	berserker = special("Berserker", "#FFA500", {"Two-handed area damage, rage as", "health drops. Keystones: Cleaving Arc,", "Undying Rage."}),
+	ranger = special("Ranger", "#FFFF00", {"Bows and crossbows. Keystones:", "Ricochet, Deadeye.", "Ascends: Deadeye or Beastmaster."}),
+	deadeye = special("Deadeye", "#FFFF00", {"The top single-target damage.", "Keystones: Hunter's Focus,", "Deadeye."}),
+	beastmaster = special("Beastmaster", "#FFFF00", {"Companions beside you, bow with", "arrow splash. Keystones: Ricochet,", "Pack Alpha."}),
+	mystic = special("Mystic", "#00FFFF", {"Spells, wands and rods. Keystones:", "Arcane Echo, Elemental Overload.", "Ascends: Elementalist or Illusionist."}),
+	elementalist = special("Elementalist", "#00FFFF", {"The top area damage. Keystones:", "Arcane Echo, Elemental Overload."}),
+	illusionist = special("Illusionist", "#B070FF", {"The best healer, party attack buffs.", "Keystones: Shared Phantasm,", "Inspiring Illusion."}),
+	thief = special("Thief", "#C0C0C0", {"Light blades, shurikens, stealth.", "Class section (top left): Ninja", "and Samurai paths after ascension."}),
+	ninja = special("Ninja", "#C0C0C0", {"Dual daggers, evasion, shadow.", "Class section (top left), keystone", "Living Shadow."}),
+	samurai = special("Samurai", "#C0C0C0", {"Duelist off-tank: parries, counters,", "taunts. Class section (top left),", "keystone Way of the Blade."}),
+	necromancer = special("Necromancer", "#7FFF9F", {"Skeletons, curses and corpses.", "Class section (top left): Lich and", "Bone Lord paths after ascension."}),
+	lich = special("Lich", "#7FFF9F", {"Curses, rot, life drain, one shade.", "Class section (top left), keystone", "Hoarded Souls."}),
+	bonelord = special("Bone Lord", "#7FFF9F", {"The army, the Bone Golem, a banner.", "Class section (top left), keystone", "Bone Colossus."}),
+	monk = special("Monk", "#FFD27F", {"Unarmed strikes build chi, finishers", "spend it. Class section (top left):", "Shadowfist and Iron Sage paths."}),
+	shadowfist = special("Shadowfist", "#FFD27F", {"Single-target burst, focus crits.", "Class section (top left), keystone", "Hundred Hands."}),
+	ironsage = special("Iron Sage", "#FFD27F", {"Chi healer: Kindled Breath, Mantra,", "Chi Ward. Class section (top left),", "keystone Flowing Mercy."}),
+	templar = special("Templar", "#FFF4B0", {"Holy melee, shield, a defence aura.", "Class section (top left): Inquisitor", "and Sentinel paths after ascension."}),
+	inquisitor = special("Inquisitor", "#FFF4B0", {"Holy area damage, Judgement, Zealotry.", "Class section (top left), keystone", "Divine Verdict."}),
+	sentinel = special("Sentinel", "#FFF4B0", {"Tank-support, the strongest aura.", "Class section (top left), keystone", "Bastion."})
 }
 
 function calculateStats()
@@ -1308,8 +1378,8 @@ function calculateStats()
 
 	labels.destroyChildren(labels)
 
-	if vocationSpecials[getPlayerVocation()] then
-		for _, sp in pairs(vocationSpecials[getPlayerVocation()]) do
+	if vocationSpecials[getPlayerClass() or ""] then
+		for _, sp in pairs(vocationSpecials[getPlayerClass()]) do
 			local label = g_ui.createWidget("InfoLabel", labels)
 
 			label.setColoredText(label, sp[1])
@@ -1350,7 +1420,8 @@ function calculateStats()
 end
 
 function destroy()
-	serverVocation = nil -- the next character may have another vocation
+	serverVocation = nil -- the next character may have another class
+	serverClass, serverLine = nil, nil
 	destroyParagon() -- paragon.lua
 	destroyTrials() -- trials.lua
 	cancelBuild()
@@ -1597,11 +1668,23 @@ function sendMessageBox(title, message)
 	return 
 end
 
--- keystone stats (nodes 621 and 624, one per vocation); effects on the server in passivetree_keystones.lua
+-- keystone stats (nodes 621 and 624, one per class of the Warrior, Ranger and Mystic lines, and the keystones of the
+-- class sections); effects on the server in passivetree_keystones.lua and the class scripts (class_tree.lua)
 KEYSTONE_NAMES = {
 	ksCleavingArc = "Cleaving Arc", ksBulwark = "Bulwark", ksRicochet = "Ricochet", ksDeadeye = "Deadeye",
 	ksArcaneEcho = "Arcane Echo", ksOverload = "Elemental Overload", ksOvergrowth = "Overgrowth", ksThorns = "Thorns",
-	ksSharedPhantasm = "Shared Phantasm", ksInspiringIllusion = "Inspiring Illusion"
+	ksSharedPhantasm = "Shared Phantasm", ksInspiringIllusion = "Inspiring Illusion",
+	ksImmovable = "Immovable", ksUndyingRage = "Undying Rage", ksHuntersFocus = "Hunter's Focus", ksPackAlpha = "Pack Alpha",
+	ksLivingShadow = "Living Shadow", ksWayOfTheBlade = "Way of the Blade", ksHoardedSouls = "Hoarded Souls",
+	ksBoneColossus = "Bone Colossus", ksHundredHands = "Hundred Hands", ksFlowingMercy = "Flowing Mercy",
+	ksDivineVerdict = "Divine Verdict", ksBastion = "Bastion"
+}
+-- class notables of the class sections (their effect is in the node's own tooltip lines)
+CLASS_NOTABLE_NAMES = {
+	ctTwinFangs = "Twin Fangs", ctFleetShadow = "Fleet Shadow", ctIronParry = "Iron Parry",
+	ctSpreadingBlight = "Spreading Blight", ctLingeringRot = "Lingering Rot", ctLegion = "Legion",
+	ctBannerBearer = "Banner Bearer", ctNerveStrike = "Nerve Strike", ctDeepMantra = "Deep Mantra",
+	ctBurningZeal = "Burning Zeal", ctSanctuary = "Sanctuary"
 }
 
 -- withKeystones: also list the allocated keystones by name (the bonus summary; a node's tooltip has the name as title)
@@ -1618,6 +1701,16 @@ function getCustomStatString(t, withKeystones)
 		table.sort(names)
 		for _, name in ipairs(names) do
 			table.insert(texts, "Keystone: " .. name)
+		end
+		names = {}
+		for key, name in pairs(CLASS_NOTABLE_NAMES) do
+			if t[key] then
+				table.insert(names, name)
+			end
+		end
+		table.sort(names)
+		for _, name in ipairs(names) do
+			table.insert(texts, "Class: " .. name)
 		end
 	end
 

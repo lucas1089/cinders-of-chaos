@@ -9,19 +9,22 @@ locked behind a store unlock for now (see "Class lock").
 | **Warrior** | melee, heavy armour, most health | **Juggernaut**: tank. Taunts, damage reduction, shield block/reflect | **Berserker**: two-handed area damage. Cleave, rage that grows as health drops |
 | **Ranger** | bows and crossbows | **Deadeye**: top single-target damage. Crossbow, marks, crit | **Beastmaster**: pets that fight beside you, bow with arrow splash |
 | **Mystic** | spells, wands and rods | **Elementalist**: top area damage. Fire/ice/energy combos | **Illusionist**: the best healer, plus party attack buffs. Mirror Mend, Lucid Reverie, weakens targets |
-| **Thief** | fast light-weapon attacks, shurikens, stealth | **Ninja**: dual-wields daggers, very fast hits, shadow step | **Samurai**: one katana-style sword, slower heavy strikes, counters and parries |
+| **Thief** | fast light-weapon attacks, shurikens, stealth | **Ninja**: the line's burst single target. Dual-wields daggers, very fast hits, shadow step | **Samurai**: duelist off-tank. One katana-style sword, a counter stance that parries, guards and taunts |
 | **Necromancer** | summoner: skeletons and spirits, curses, corpses | **Lich**: curses, damage over time, life drain, corpse explosion; one strong shade or none | **Bone Lord**: the army: more skeletons, the Bone Golem, an aura, sacrifices |
-| **Monk** | unarmed (or a staff), chi / combo points, evasion | **Shadowfist**: single-target burst. Pressure Points, Flurry, crits from spent chi | **Iron Sage**: bruiser and support. Chi Ward on a party member, stuns, Mantra of Stone aura |
+| **Monk** | unarmed (or a staff), chi / combo points, evasion | **Shadowfist**: single-target burst. Pressure Points, Flurry, crits from spent chi | **Iron Sage**: the second healer, a melee chi healer with some bruiser toughness. Kindled Breath on the most hurt ally, Mantra of Stone heals and shields the party, Chi Ward |
 | **Templar** | holy melee: sword or mace and shield, heavy armour, a party defence aura | **Inquisitor**: holy area damage. Judgement, Purging Nova, Zealotry | **Sentinel**: tank-support. A stronger aura with regeneration, Rebuke (taunt), Aegis of Faith, Lay on Hands |
 
 ## Roles in a group
 
-- Tank: Juggernaut; Sentinel (tank-support: a little less tough, the party takes less damage); Iron Sage (off-tank, party
-  chi shield and damage-reduction aura)
-- Single target: Deadeye, Ninja, Samurai, Lich, Shadowfist
-- Area damage: Elementalist, Berserker, Bone Lord, Inquisitor
-- Healer and support: Illusionist (the best healer, for one ally and for the party, plus party attack buffs); the Templar
-  line's aura (all three: party damage reduction; the Sentinel's also heals, and Lay on Hands is the biggest emergency heal)
+Agreed with the owner (2026-10, the role rebalance): the Iron Sage is the second healer, the Samurai a duelist off-tank.
+
+- Tank: Juggernaut (the tankiest); Sentinel (tank-support: a little less tough, the party takes less damage); Samurai (duelist
+  off-tank: parries, a guard while countering, taunts; below the Juggernaut and the Sentinel)
+- Single target: Deadeye (the best), Ninja, Lich, Shadowfist (the burst classes lead), Beastmaster
+- Area damage: Elementalist (the best), Berserker, Bone Lord, Inquisitor
+- Healer: Illusionist (the best healer, for one ally and for the party, plus party attack buffs); Iron Sage (the second
+  healer: a melee chi healer, below the Illusionist and above every non-healer); the Templar line's aura (all three: party
+  damage reduction; the Sentinel's also heals, and Lay on Hands is the biggest emergency heal)
 - Pets: Beastmaster, Bone Lord (the army)
 
 Balance target, as today: Deadeye best single target, Elementalist best area damage, Juggernaut the tankiest;
@@ -35,8 +38,9 @@ stealth crits); poison blades; evasion (dodge chance).
 - **Ninja**: dual wield, where the off-hand dagger adds a second, weaker strike on each attack (scripted:
   the engine has no dual wield); Shadow Step (teleport behind the target); smoke bomb (area blind); a
   shuriken barrage that hits several targets.
-- **Samurai**: one sword; Iaijutsu (charged draw strike, big single hit); counter stance (parry the next melee
-  hit and strike back); Bushido focus (crit stacks while not taking damage).
+- **Samurai** (duelist off-tank): one sword; Iaijutsu (charged draw strike, big single hit); Counter Stance (3 s: parry the
+  next melee hit and strike back, every other hit taken 30% smaller, the monsters within 3 sqm turn on the Samurai);
+  Bushido focus (crit stacks while not taking damage).
 
 **Warrior** (base): today's Knight kit.
 - **Juggernaut**: Iron Will, Bulwark (block/reflect), taunts.
@@ -66,8 +70,9 @@ their owner, so their damage counts for it.
 grow with the chi spent; evasion; light armour.
 - **Shadowfist**: Pressure Points (a stacking debuff: the target takes more from Monks), Shadowfist Flurry (2 + 1 hit per chi),
   focus: after a finisher, crit chance 2.5% per chi spent for 4 s (12.5% at 5 chi).
-- **Iron Sage**: Chi Ward (an absorb shield on a party member or itself), Iron Palm (a stun), Mantra of Stone (party aura: -8%
-  damage taken), Kindled Breath also heals over time; more health and armour.
+- **Iron Sage** (the second healer): Kindled Breath heals the most hurt party member (level x 0.5 + fist x 27 at 5 chi, +60%
+  over 6 s), Mantra of Stone (party aura: -8% damage taken, and every 2 s a heal of level + fist x 24 on the party), Chi Ward
+  (an absorb shield on a party member or itself), Iron Palm (a stun); more health and armour.
 
 **Templar** (base): holy melee with a one-handed sword or mace and a shield; a party defence aura and Radiant Strikes (each
 melee hit adds a holy strike). Radiant Smite, Consecration, Vow of Mending.
@@ -159,7 +164,8 @@ Limits of phase 1:
   strongest potions refused it. The shared Chaos spells (Flickerdash, Banner Call, Soulward, Hunter's
   Instinct) and the stock spells did not list the line either in phase 1; both do now (stock utility spells: see "Item, spell and
   potion lists").
-- Spell strikes have a level factor (`Chaos.classes.spellLevelScale`) that stands in for the missing passive tree.
+- Spell strikes had a level factor (`Chaos.classes.spellLevelScale`) that stood in for the missing passive tree; dropped with
+  the class trees (phase 2b).
 
 ### Phase 2a (done): Warrior, Ranger and Mystic on the framework, the migration, Berserker and Beastmaster
 
@@ -207,7 +213,8 @@ Limits of phase 1:
   (`warrior|juggernaut|berserker|ranger|deadeye|beastmaster|mystic|elementalist|illusionist|thief|ninja|samurai`; the base word asks
   an ascended character to name the ascended class). The passive tree's keystone variant follows the line
   (`ChaosClasses.keystoneKey`): Warrior line knight, Ranger line paladin, Mystic / Elementalist sorcerer, Illusionist illusionist;
-  the druid variants (Overgrowth, Thorns) belong to no class now.
+  the druid variants (Overgrowth, Thorns) belong to no class now. Since phase 2b the Juggernaut, Berserker, Deadeye and Beastmaster
+  have their own variants.
 - **Migration** (`server/data/scripts/chaos/class_migration.lua`, rules in `classes.lua`, numbers in `Chaos.classes.migration`):
   at startup, once (server_config `chaos_class_migration` = 1), before anyone can log in, it runs `ChaosClasses.migrationSql`:
   1. `player_storage` 7100202 = the old vocation, for every character of vocations 1-10;
@@ -253,10 +260,7 @@ Wild Bond by its words, and the level 1000 sanity measurement in `server/data/sp
 - **Balance**: planned numbers in `server/data/spells/README.md` ("Necromancer line"); measured in phase B.
 
 Open for the Necromancer:
-- **Passive tree for the Necromancer, Lich and Bone Lord** (a start and two ascended paths with keystones:
-  Lich: curse / DoT / Soul Hoard; Bone Lord: army size / aura / golem). The tree has per-vocation keystone variants
-  only (`ChaosClasses.keystoneKey`), no per-class starts yet, so the line has no tree entry, like the Thief line.
-  Until then `necro_config.lua levelScale` stands in for it.
+- Passive tree: done in phase 2b (the class section, keystones Hoarded Souls and Bone Colossus); `levelScale` dropped.
 - Effects (our own art, client/MANIFEST.md "Fist weapons and bone effects"): Bone Spear flies as the `bone_spear` missile and
   splinters on the target (`bone_spear` effect), Corpse Explosion and Bone Offering burst with `bone_burst`, Banner of Bones
   (each minion) and Bone Offering (the caster) show `bone_aura`. Ids in `data/lib/chaos_vfx_art.lua`; without that file or
@@ -301,9 +305,8 @@ Open for the Monk:
 - Balance: measured at level 300 (`server/data/spells/README.md` "Monk line"): the Shadowfist was ~26% above the Ninja on one
   target (the focus crit, 8% per chi, on the auto attack); with 2.5% per chi it is 1078 against the Ninja's 1001 (+8%, a
   burst class's lead). Level 1000 by formula only (~3060 against the Ninja's 2837), not measured yet.
-- **Passive tree**: no per-class trees exist yet. Proposal when the tree is reworked: a Monk start, a Shadowfist path ending in a keystone
-  "Hundred Hands" (focus crits also add a chi) and an Iron Sage path ending in "Stone Body" (Chi Ward on yourself is 50% stronger and
-  Mantra of Stone also gives 10% attack speed). Until then `keystoneKey` is nil for 17-19 and the level factor stands in for the tree.
+- Passive tree: done in phase 2b (keystones Hundred Hands and, after the role rebalance, Flowing Mercy for the Iron Sage
+  healer instead of the proposed Stone Body); the level factor dropped.
 - A stun on players (only monsters are stunned).
 
 ### Templar (C7, phase B: tested in game)
@@ -339,10 +342,7 @@ Files: `templar_aura_core.lua` (every id and number, and the rules: aura, strike
 `server/data/spells/chaos/templar|inquisitor|sentinel` with `_templar.lua`.
 
 Open for the Templar:
-- Passive tree: no per-class start or ascended paths yet, so the Templar has no tree entry (like the Thief line). Planned: a
-  Templar start and two paths with a keystone each: Inquisitor "Divine Verdict" (Radiant Strikes have a chance to apply
-  Judgement), Sentinel "Bastion" (aura +4% and +1 sqm, Aegis of Faith also covers the party at half strength). Until then the
-  line's spells carry the level factor of the Thief line (x1 at level 300 to x2 at level 1000).
+- Passive tree: done in phase 2b (keystones Divine Verdict and Bastion); the level factor dropped.
 - The aura is invisible to the client except for a holy effect every 4 s around the Templar; a status icon needs client work.
 
 ### Illusionist healer pass
@@ -357,7 +357,8 @@ other classes' heals (numbers and the measurement: `server/data/spells/README.md
   siege arena) is -30%, for every class, so healers do not make fights endless.
 - Measured lead: party healing +32% / +41% (level 300 / 1000) over the next class (the base Mystic) and +58% / +66% over the
   next ascended one (the Lich), single target on another player +22% / +33%. The Sentinel keeps the biggest emergency heal
-  (Lay on Hands) and stays a tank-support, the Iron Sage a bruiser.
+  (Lay on Hands) and stays a tank-support. Since the role rebalance the Iron Sage is the second healer (1591 / 2375 per second on an
+  ally, between the Mystic and the Illusionist).
 - Open: the Necromancer line has the Mystic's stock heals (Circle of Mending, Kindred Mend, Heartwood Embrace) and is the
   second healer through them; worth a look when that line is balanced.
 
@@ -421,63 +422,72 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
 - Tests: `server/tests/ascension_quest_test.lua`. Tested in game: see server/README.md "Ascension quest". The guardian's numbers
   are first estimates, not yet measured against geared characters.
 
-### Phase 2b (todo)
+### Phase 2b (done): per-class passive trees (C4)
 
-- **Passive tree for the Thief, Ninja and Samurai** (`game_passivetree`, `passivetree_data.lua`, `passivetree*.lua`,
-  `server/tools/gen_passivetree_data.lua`): a Thief start and two ascended paths with keystones (Ninja: off-hand share, evasion,
-  shadow; Samurai: crit, parry, Bushido). Until then the vocation has no class entry in the tree. When it exists, re-tune or drop
-  `Chaos.classes.spellLevelScale` and measure again at levels 300 and 1000. Per-ascended keystone variants (Juggernaut vs Berserker,
-  Deadeye vs Beastmaster) would need new variants in the tree data; today both classes of a line share their old vocation's.
-- Done: healing for the Thief line, class looks, starting gear for every class, every class in `admin/testkit.lua`
-  (see "Class looks, starting gear, test kit and Thief healing (phase 2b)" below).
-- The full rebalance at levels 300 and 1000 with passive trees; the client's passive tree class texts (`vocationSpecials`) still
-  describe the old vocations. (Done: the base server scripts that test vocation ids, see "Base scripts" below.)
+- **Per-class keystone variants** on the two keystone nodes 621 (Wrath) and 624 (Resolve), for the Warrior, Ranger and Mystic lines
+  (`ChaosClasses.keystoneKey`): the base classes keep the old pair; each ascended class of the Warrior and Ranger lines swaps the
+  keystone that does not fit it:
 
-### Base scripts
+  | Class | Wrath (621) | Resolve (624) |
+  |---|---|---|
+  | Warrior | Cleaving Arc | Bulwark |
+  | Juggernaut | **Immovable**: 8% less damage taken, 16% below 50% health | Bulwark |
+  | Berserker | Cleaving Arc | **Undying Rage**: melee weapon hits heal 4% of the damage, 8% below 50% health |
+  | Ranger | Ricochet | Deadeye |
+  | Deadeye | **Hunter's Focus**: bow / crossbow hits on one target +4% each, up to +20% | Deadeye |
+  | Beastmaster | Ricochet | **Pack Alpha**: companion bites and Feral Command +35%, companions take 20% less |
+  | Mystic, Elementalist | Arcane Echo | Elemental Overload |
+  | Illusionist | Shared Phantasm | Inspiring Illusion |
 
-The base server's own scripts (NPCs, quests, familiars, exercise weapons, the vocation Oracles, ...) know the stock vocations
-only. `server/tools/patch_base_classes.py` (install step 5b) makes every class count as one stock vocation: the Warrior and
-Templar lines as Knight, the Ranger, Thief and Monk lines as Paladin, Mystic, Elementalist and the Necromancer line as
-Sorcerer, the Illusionist as Druid (ascended classes as the promoted one). Per-case choices: familiars (Templar: Paladin
-Familiar, Monk: Druid Familiar, Illusionist: Illusionist Familiar), exercise weapons by skill, NPC spell teachers follow
-`spells.xml`, the Oracles offer Warrior / Ranger / Mystic / Thief, the party bonus counts at most 5 lines. Details, the
-reviewed scripts and the tests: server/README.md "Base scripts and the classes".
+  Only these classes may take 621 / 624 (the druid variants stay in the data, used by no class).
+- **Class sections** for the Thief, Necromancer, Monk and Templar lines (nodes 625-664, top left of the tree; the four lines
+  share the place, each player sees only its line's section): a start node of the line, three line nodes (for the base class
+  and both ascended classes) and two ascended paths, two notables and a keystone each. A base class sees both paths locked
+  ("Requires: Ninja"); after the ascension it may take its own. Six points reach a keystone.
 
-### Class looks, starting gear, test kit and Thief healing (phase 2b)
+  | Ascended | Notables | Keystone |
+  |---|---|---|
+  | Ninja | Twin Fangs (the off-hand strike 65% instead of 50%), Fleet Shadow (evasion +4%) | **Living Shadow**: a dodge, or the first hit out of Shadow Veil, opens 4 s of +25% weapon hits and strikes |
+  | Samurai (off-tank) | Steel Discipline (health, physical absorb), Iron Parry (Counter Stance answers +50%, the stance +1 s) | **Way of the Blade**: Counter Stance parries every melee hit while it lasts; a hit keeps half of the Bushido stacks |
+  | Lich | Spreading Blight (the curse spreads to one more), Lingering Rot (Soul Rot +25%) | **Hoarded Souls**: Soul Hoard +40% per empty shade slot, +15% with the shade out |
+  | Bone Lord | Legion (one more skeleton), Banner Bearer (Banner of Bones +45% instead of +30%) | **Bone Colossus**: the Bone Golem hits 60% harder, +50% health |
+  | Shadowfist | Precise Strikes (crit), Nerve Strike (Pressure Points 6% a stack) | **Hundred Hands**: focus crits also give a chi (one per second) |
+  | Iron Sage (healer) | Healing Hands (healing +8%, health), Deep Mantra (Mantra of Stone -11%) | **Flowing Mercy**: Kindled Breath also heals the next most hurt party member for 40% |
+  | Inquisitor | Sacred Fire (holy damage, magic level), Burning Zeal (Radiant Strikes 30%) | **Divine Verdict**: Radiant Strikes judge their target 20% of the time |
+  | Sentinel | Steadfast (absorbs), Sanctuary (aura regeneration 0.5%/s) | **Bastion**: aura -16% and 6 sqm; Aegis of Faith covers the party under the aura at half strength (-20%) |
 
-- **Thief healing**: Shadow Mend (spell 98, `saen umh`, level 25, 80 mana, cooldown 2 s; Thief, Ninja, Samurai): a self heal of
-  level + magic level x 10 + 4% of the maximum health, 30% more while Shadow Veil is up (healing does not end the veil). Numbers in
-  `Chaos.classes.shadowMend`, rule `ChaosClasses.shadowMendRange`, script `server/data/spells/chaos/thief/shadow_mend.lua`, icon cell
-  281 (`client/tools/gen_spell_icons.py`). Measured: 466 / 1201 per second on itself at levels 300 / 1000 (Ranger line 798 / 1180,
-  Illusionist 1538 / 2317); it heals nobody else, so the Illusionist stays the best healer (`server/data/spells/README.md` "Healing").
-- **Class looks** (`server/data/scripts/chaos/class_looks_core.lua`, glue `class_looks.lua`): every class has a stock outfit of the
-  base server (no new art; in its outfits.xml for both sexes and in the 10.98 client's dat; only `premium="no"` outfits, since
-  `freePremium` is off, and none that the store, achievements or seasons give):
+  Line nodes: Thief Light Feet, Venom Craft, Shadow-born; Necromancer Grave Lore, Bone Craft, Dark Pact; Monk Iron Fist, Centered,
+  Flowing Chi; Templar Holy Vigor, Shield of Faith, Righteous Arm (plain tree stats).
+- **Points** are unchanged (1 per 4 levels: 73 at level 300, 248 at level 1000); every class can hold more than 600 nodes, so
+  the tree still cannot be completed. The Paragon track and the Vocation Trials nodes are separate bonus channels and unchanged.
+- **Save data**: no node id changed (the new nodes are 625-664). At login every preset loses, for free and with a message, the
+  nodes the class may not hold (another line's section, 621 / 624 for the four new lines), unknown ids and the nodes only connected
+  through them (`ChaosClassTree.sanitize`). Build codes refuse nodes of another class.
+- **Code**: numbers and flags in `server/data/scripts/chaos/class_tree.lua` (a storage bit per flag, read by the scripts and the
+  spells); effects in `passivetree_keystones.lua` (Juggernaut, Berserker, Deadeye), `beastmaster.lua` / `classes.lua` (Pack
+  Alpha), `thief_combat.lua` / `classes.lua`, `necro_core.lua` / `necro_lib.lua` / `necro_minions.lua` and the Lich spells,
+  `monk_combat.lua` / `monk_chi_core.lua` and the Iron Sage spells, `templar_combat.lua` / `templar_aura_core.lua`. Client:
+  `game_passivetree` (class sections, locked nodes, the class texts of "Info & Bonuses" per class), icons by
+  `client/tools/gen_keystone_icons.py`. Tests: `server/tests/class_tree_test.lua`. server/README.md "Passive tree: class sections".
+- **Balance**: see "Balance with the trees" below.
+- **Role rebalance** (2026-10-10, the owner): the Iron Sage path became a healer path (Healing Hands, Deep Mantra, Flowing Mercy) and
+  the Samurai path a duelist off-tank path (Steel Discipline, Iron Parry, Way of the Blade: the stance parries every melee hit).
 
-  | Line | Base class | Ascended A | Ascended B |
-  |---|---|---|---|
-  | Warrior | Warrior: Knight (131 / 139) | Juggernaut: Champion (633 / 632) | Berserker: Lion of War (919 / 920) |
-  | Ranger | Ranger: Ranger (684 / 683) | Deadeye: Armoured Archer (915 / 916) | Beastmaster: Beastmaster (637 / 636) |
-  | Mystic | Mystic: Mage (130 / 138) | Elementalist: Flamefury Mage (925 / 926) | Illusionist: Conjurer (634 / 635) |
-  | Thief | Thief: Frost Tracer (913 / 914) | Ninja: Skullhunter (1206 / 1205) | Samurai: Decaying Defender (921 / 922) |
-  | Monk | Monk: Ancient Aucar (911 / 912) | Shadowfist: Fiend Slayer (1373 / 1372) | Iron Sage: Winter Warden (853 / 852) |
-  | Necromancer | Necromancer: Spirit Caller (699 / 698) | Lich: Darklight Evoker (923 / 924) | Bone Lord: Puppeteer (697 / 696) |
-  | Templar | Templar: Herald (984 / 985) | Inquisitor: Hand of Inquisition (1014 / 1015) | Sentinel: Celestial Avenger (1188 / 1189) |
+### Balance with the trees
 
-  (male / female look types). Hooks: the first login of a character (character creation: the website and the engine only set a
-  generic look) gives the class's look and puts it on; every class change (`ChaosClasses.afterVocationChange`: ascension, the free
-  switch, the store's Vocation Change) gives the new class's look and puts it on, colours and mount kept, no addons; every other
-  login only gives missing looks of the class and its base class, the worn look stays. Nothing is ever taken away. The donor art
-  outfits of `Chaos.classes.outfits` (Ninja and Samurai sets, Warborn, Hooded Thief, ...) are still given, but no longer put on at a
-  class change: the stock look is the default. Tested in game (fresh characters of every new line, a free account; the class
-  change Thief -> Ninja).
-- **Starting gear** (`newplayer_config.lua`, server/README.md "New players"): every class id has a row. New: the Berserker gets a
-  battle axe (two-handed) and no shield, the Samurai a katana instead of the dagger. Monk line unarmed in light armour, Necromancer
-  line the Mystic's kit, Templar line the Warrior's. Tested in game for the Berserker, Samurai, Monk, Necromancer and Templar.
-- **Test kit** (`admin/testkit.lua`, server/README.md "Test kit"): kinds by vocation (`ChaosTestKit.kindByVocation`): `berserker`
-  (two-handed, no shield), `beastmaster` (bow and arrows), `thief` (Thief, Samurai), `ninja` (second blade), `monk`, `necromancer`,
-  `templar`, besides `mage`, `knight`, `paladin`.
-- Tests: `server/tests/class_kit_test.lua`, `server/tests/newplayer_test.lua`.
+Every class measured the same way at levels 300 and 1000 with a tree build (`server/data/spells/README.md` "Classes with the
+passive trees"). The level factors that stood in for the tree are dropped; the four new lines' damage is scaled by a per-class
+factor (`ChaosClassTree.classDamage`, level 300 to 1000), and the Berserker by 0.92 at level 300 (its area damage had passed the
+Elementalist's). Result: Deadeye the best single target (1351 / 4769), Shadowfist, Ninja and Lich next; Elementalist the best area
+(3349 / 10097); Illusionist the best healer, Iron Sage the second (1591 / 2375 per second on an ally, Mystic 1473 / 2039); Samurai
+about the Juggernaut's damage with off-tank toughness (about 15.4 effective health per level, Sentinel 17.3, Juggernaut 19.6).
+
+### Phase 2b (open)
+
+- Healing for the Thief line (a spell; the potions are done: the Royal Paladin's), starting gear for every class,
+  outfits, the classes in `admin/testkit.lua` (other work).
+- Base server scripts that test vocation ids by number (e.g. the familiar system, `firstitems.lua`, NPCs with `isDruid`) were not
+  reviewed (other work).
 
 ## More class ideas for later
 

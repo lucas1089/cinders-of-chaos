@@ -1,8 +1,8 @@
 -- Bone Spear: hurl a spear of bone at the target (range 5). Physical damage; the creature right behind the target
 -- (seen from you) takes half of it. The Necromancer line's filler.
 --
--- (level / 5 + magic level x 1.6..2.6 + 20..40) x the line's level scale (necro_config.lua boneSpear, levelScale);
--- the Lich's Soul Hoard adds to it.
+-- (level / 5 + magic level x 1.6..2.6 + 20..40) (necro_config.lua boneSpear; the level scale was dropped with the class
+-- trees); the Lich's Soul Hoard adds to it.
 dofile('data/spells/scripts/chaos/_necro.lua')
 
 function onCastSpell(creature, variant, isHotkey)

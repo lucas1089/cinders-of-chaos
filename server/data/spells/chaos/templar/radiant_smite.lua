@@ -1,7 +1,7 @@
 -- Radiant Smite: a hammer-blow of light on one target within 3 sqm. The Templar line's holy filler.
 --
 -- Holy damage from the melee weapon (best of sword, club and axe skill x the main-hand attack) and a little magic
--- level, times the line's level factor (ChaosTemplar.cfg.spellLevelScale). A judged target takes more of it.
+-- level (the line's level factor was dropped with the class trees). A judged target takes more of it.
 dofile('data/spells/scripts/chaos/_templar.lua')
 
 function onCastSpell(creature, variant, isHotkey)
