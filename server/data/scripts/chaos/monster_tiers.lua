@@ -384,11 +384,16 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 	end
 	local newTier = pickWeighted(cfg.ambushTier)
 	local pos = creature:getPosition()
-	addEvent(function(name, position, nt, d)
+	addEvent(function(name, position, nt, d, look)
 		pendingTier, pendingDepth = nt, d
-		Game.createMonster(name, position, true, false)
+		local copy = Game.createMonster(name, position, true, false)
 		pendingTier = nil
-	end, 600, creature:getName(), pos, newTier, depth + 1)
+		-- the copy wears what the original wore (a rift look), with its own tier's shader
+		if copy and look and copy:getOutfit().lookType ~= look.lookType then
+			look.lookShader = copy:getOutfit().lookShader
+			copy:setOutfit(look)
+		end
+	end, 600, creature:getName(), pos, newTier, depth + 1, creature:getOutfit())
 	pos:sendMagicEffect(CONST_ME_TELEPORT)
 	return true
 end

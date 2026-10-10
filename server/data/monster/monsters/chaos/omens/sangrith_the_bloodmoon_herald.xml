@@ -2,7 +2,7 @@
 <!-- Omen guardian of the Bloodmoon (rift.lua, Omen Keys). A red-winged herald: heavy melee, blood waves, a bleeding curse. Numbers: server/README.md "Rifts", Omens. -->
 <monster name="Sangrith the Bloodmoon Herald" nameDescription="Sangrith the Bloodmoon Herald" race="blood" experience="2000000" speed="280" manacost="0">
 	<health now="500000" max="500000" />
-	<look type="591" head="94" body="94" legs="113" feet="94" corpse="22562" />
+	<look type="2116" corpse="22562" />
 	<targetchange interval="5000" chance="12" />
 	<flags>
 		<flag isboss="1" />

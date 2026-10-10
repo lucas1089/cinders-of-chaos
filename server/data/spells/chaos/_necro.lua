@@ -18,6 +18,21 @@ local L = ChaosNecro
 local N = ChaosNecroCore
 S.cfg = ChaosNecroConfig
 
+-- The line's effect at pos: the first of the pack / own-art effects `vnames` the server knows (chaos_vfx.lua,
+-- chaos_vfx_art.lua; e.g. {"bonelord_ward", "bone_aura"}: the new art, then the older one), else the chaos effect
+-- `name` / stock `fallback` (nothing when both are nil). Returns the effect name sent, or nil for the fallback.
+function S.fx(pos, vnames, name, fallback)
+	for _, v in ipairs(vnames) do
+		if ChaosSpell.vfx(pos, v) then
+			return v
+		end
+	end
+	if name or fallback then
+		ChaosSpell.fx(pos, name, fallback)
+	end
+	return nil
+end
+
 -- running damage-over-time effects: key -> token (a recast replaces the running one)
 S.dots = {}
 local tokens = 0
@@ -86,7 +101,11 @@ function S.dot(casterId, targetId, key, ticks, tickMs, min, max, ctype, effect, 
 			return step(nxt.id, left)
 		end
 		lastPos = host:getPosition()
-		L.damage(caster, host, ctype, min, max, effect, ORIGIN_SPELL)
+		local hitFx = effect -- a stock id, or {vfx = <pack effect name>, fx = <stock id without it>}
+		if type(effect) == "table" then
+			hitFx = ChaosSpell.vfx(lastPos, effect.vfx) and CONST_ME_NONE or effect.fx
+		end
+		L.damage(caster, host, ctype, min, max, hitFx, ORIGIN_SPELL)
 		if left > 1 then
 			addEvent(step, tickMs, hostId, left - 1)
 		else

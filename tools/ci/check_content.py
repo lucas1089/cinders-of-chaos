@@ -9,7 +9,17 @@ Usage: python3 tools/ci/check_content.py"""
 import glob, os, re, subprocess, sys
 import xml.dom.minidom as minidom
 
-MAX_OUTFIT = 2038  # outfits of the live client pair after import_art_things.py (see server/data/monster/CUSTOM_MONSTERS.md)
+# the outfit count of the newest client pair: the pairs up to things_custom10b end at 2081; the monster looks
+# (client/tools/sprites/monster_looks/picks.csv, imported at fixed ids with import_outfits.py --first-outfit) end the
+# list since things_custom11 (things_custom12 only adds effects). Read from picks.csv so new looks need no edit here.
+BASE_OUTFIT = 2081
+def _max_outfit():
+    import csv
+    p = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'client', 'tools', 'sprites',
+                     'monster_looks', 'picks.csv')
+    looks = [int(r['look']) for r in csv.DictReader(open(p, newline=''))] if os.path.exists(p) else []
+    return max([BASE_OUTFIT] + looks)
+MAX_OUTFIT = _max_outfit()  # 2125 with things_custom11 / things_custom12 (see server/data/monster/CUSTOM_MONSTERS.md)
 bad = 0
 
 def fail(msg):

@@ -18,9 +18,9 @@ function onCastSpell(creature, variant, isHotkey)
 		return ChaosSpell.cancel(player, "You have no minions to rally.")
 	end
 	L.addTimer(player, cfg.subId.boneAura, cfg.bannerOfBones.durationMs)
-	ChaosSpell.vfxOr(player:getPosition(), "necro_seal", "bone_aura", CONST_ME_MAGIC_BLUE)
+	NecroSpell.fx(player:getPosition(), {"bonelord_banner", "necro_seal"}, "bone_aura", CONST_ME_MAGIC_BLUE)
 	for _, m in ipairs(list) do
-		ChaosSpell.vfxOr(m.creature:getPosition(), "bone_aura", "bone_aura", CONST_ME_MAGIC_BLUE)
+		NecroSpell.fx(m.creature:getPosition(), {"bonelord_rally", "bone_aura"}, "bone_aura", CONST_ME_MAGIC_BLUE)
 	end
 	return true
 end

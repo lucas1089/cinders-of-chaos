@@ -2,7 +2,7 @@
 <!-- Omen guardian of the Stormcall (rift.lua, Omen Keys). A storm seer: energy beams, chain lightning, a shocking curse. Numbers: server/README.md "Rifts", Omens. -->
 <monster name="Thalcyra the Stormbound Seer" nameDescription="Thalcyra the Stormbound Seer" race="energy" experience="2000000" speed="280" manacost="0">
 	<health now="500000" max="500000" />
-	<look type="842" head="86" body="87" legs="86" feet="114" addons="3" corpse="9780" />
+	<look type="2118" corpse="9780" />
 	<targetchange interval="5000" chance="12" />
 	<flags>
 		<flag isboss="1" />

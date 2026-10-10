@@ -314,6 +314,75 @@ and four shards rise from a violet ground ring, circle once, sink, 14 x 90 ms). 
   its rarity frame), look texts, a Monk fighting with the ossuary gauntlet, the three effects and the missile cast by
   the Necromancer line.
 
+## Monster looks pair (things_custom11, new, `tools/sprites/donor_pick.py`, `tools/sprites/monster_looks/`)
+26 creature outfits for the rift-exclusive looks and the monsters that had no art, all donor-library creatures (owner
+rule: donated sprites first; no new art was needed): 2100-2115 the four rift families (minion, brute, elite, guardian of
+Abyssal Rift, Obsidian Hall, Ashen Crypt, Forsaken Sanctum), 2116-2118 the Omen guardians, 2119-2125 Saga, Gloomfire,
+Zaoan Badger, Dawn Strayer, Plant, Tarrasque, Cunning Hyaena. Picks: `tools/sprites/monster_looks/picks.csv`; licence
+tracing: `monster_looks/sources.csv`. Server side: server/README.md "Rifts" (looks) and
+`server/data/monster/CUSTOM_MONSTERS.md`.
+- `donor_pick.py` (new) cuts the picks from the libraries into one small pair in pick order, three of them recoloured
+  (rule `green>ember`: green glows turn ember orange, alpha kept). It checks every sprite slot against the donor (the
+  recolour recomputed), that no pick is already in the live pair (same art, shifted or not), and that no pick has the
+  silhouette of a stock outfit 1..1465 (mean IoU of the four idle masks >= 0.9 stops the run). That check found four
+  first picks that were recoloured stock creatures; they were replaced. Libraries C, D, H and J were surveyed but not used:
+  much of their art is older stock art. Donor B, named-character and library-only rows were skipped.
+- `import_outfits.py` got `--first-outfit N`: blank outfits pad the list so the first new id is N on any smaller input
+  pair. The ids stay 2100-2125 whatever class looks come before (the blank entries are verified blank).
+
+      python3 -I client/tools/sprites/donor_pick.py --picks client/tools/sprites/monster_looks/picks.csv --lib-dir L \
+          --out-dir MINI --base-dat things_custom10b/Tibia.dat --base-spr things_custom10b/Tibia.spr
+      python3 -I client/tools/sprites/import_outfits.py --src-dat MINI/Tibia.dat --src-spr MINI/Tibia.spr \
+          --ours-dat things_custom10b/Tibia.dat --ours-spr things_custom10b/Tibia.spr \
+          --looks 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26 --first-outfit 2100 --out-dir things_custom11
+
+  (L = the donor library folder, md5s as on the sprite-libraries branch.) MINI: dat 59f9ff75b7ac65066dda1a2f49e595dc, spr
+  2cda2c434b98a14e3b46d4a7d422401f (26 outfits, 3,936 sprites). Input things_custom10b (things_custom10 + class looks
+  2073-2081): dat 7ba1d4794c09c7d76dc943ff23e60a78, spr ade7204ff0c9393d6aa4836507515c0d. Output **things_custom11**:
+  dat 74aa990f1ed43d6ac30812001c8662c9, spr c2223fe12f35f3532536db1339de8523, 2125 outfits (2082-2099 blank), 719,970
+  sprites; built twice with identical md5s. Verified by the importer: 7,396 sprite slots and 780 frames of the 26
+  outfits pixel-identical to MINI, flags and animators equal, the 2081 old outfits and every item, effect and missile
+  byte-identical, 3000 sampled old sprites unchanged. Only outfits were added: no corpse items.
+- CI: `tools/ci/check_content.py` takes its outfit limit (MAX_OUTFIT) from the highest `look` in `picks.csv` (at least
+  2081, the end of things_custom10b). It is 2125 now, so new picks raise it without an edit there. A monster file with
+  a lookType above it fails unless it is listed in `needs_sprites.txt` (checked: 2126 is flagged, 2125 passes).
+  things_custom12 ("Necromancer line effects" below) is the newest pair; it only adds effects, so it also has 2125
+  outfits.
+- Checked in the Linux client on a test server: each world and omen monster spawned, and one tier 8 rift of each
+  theme with its packs and its guardian (screenshots and boards in the session scratchpad `monsters/`).
+
+## Necromancer line effects (new, `tools/sprites/gen_necro_fx.py`, `art_import/necro_fx.csv`)
+Seven effects in the owner-approved Necromancer style sample, our own art: the bone spear's impact and the Bone Lord's
+bone effects (golem rise, banner, minion rally, offering burst, bone ward) are shapes drawn in Python and repainted by
+one PixelLab "Edit images (Pro)" call over one 512x384 sheet of all their frames (`art_import/necro_fx_src/sheet_shape.png`
+-> `sheet_paint.png`, seed 4102 of two calls; 50 generations, balance 1835 -> 1785); `lich_soul_drain` is the style
+sample's own effect (`soul_drain_paint.png`, its shape and call scripts kept next to it). The effects already in the pair
+and the donor libraries were surveyed first (server/data/spells/README_FX.md "Necromancer line effects": the choice
+per spell); only these had no fitting donor. No pixel of the owner's style reference sheets is used.
+- Client ids on things_custom12: effects 586..592 (necro_spear_hit, lich_soul_drain, bonelord_golem_rise,
+  bonelord_banner, bonelord_rally, bonelord_offering, bonelord_ward); 2x2 effects send at the target (offset 0,0), the
+  rally is 1x1. No missile (the bone spear missile 153 is kept). Lua names and catalogue rows are merged into
+  `server/data/lib/chaos_vfx_art.lua` / `server/data/spells/vfx_art_catalog.csv`.
+- A separate, re-runnable step (its own spec) after the fist weapons and bone effects and the monster looks import; it only
+  appends effects, so it runs on any pair with 585 effects (`--expect-first-effect 586` stops it otherwise):
+  ```
+  python3 -I client/tools/sprites/gen_necro_fx.py build        # strips from the checked-in shape + painting (deterministic)
+  python3 -I client/tools/sprites/import_fx_art.py --ours-dat things_custom11/Tibia.dat --ours-spr things_custom11/Tibia.spr \
+      --out-dir things_custom12 --spec client/tools/sprites/art_import/necro_fx.csv --expect-first-effect 586 \
+      --lua-out server/data/lib/chaos_vfx_art.lua --catalog-out server/data/spells/vfx_art_catalog.csv --merge
+  ```
+  `--merge` (new in `import_fx_art.py`) keeps the bone effects' entries in the Lua and catalogue files and replaces only
+  this spec's ones; re-running gives the same files. (`gen_necro_fx.py shapes` / `paint` remake the sheet and repaint it;
+  only needed to change the art.)
+- Input things_custom11 (things_custom10b + outfits 2100-2125): dat 74aa990f1ed43d6ac30812001c8662c9, spr
+  c2223fe12f35f3532536db1339de8523 (719,970 sprites). Output **things_custom12** (the next live candidate): dat
+  4712f7484d391e66c04b7ecf72c940e7, spr dc92483b0744a6389151d8c7b85d9342 (720,098 sprites), twice identical. The same
+  step on things_custom10b (dat 7ba1d479..., spr ade7204f...) gives the test pair things_custom10b_fx: dat
+  fc9a9adbfac0845e34ebe1b2b6117f8e, spr 11a82c220f271f0cd4400cb93d7b857b (716,162 sprites).
+- Checked in the Linux client with things_custom12 on a test server: every spell of the line cast at a target dummy
+  (Necromancer, Lich, Bone Lord at level 300); the new effects show on the target or caster tile, the pack effects at
+  their offsets, the Soul Rot ticks each second.
+
 ## OFL fonts (`fonts-src/`, `tools/make_ofl_fonts.sh`, `tools/make_fonts.py`)
 
 The client ships bitmap fonts made from four free fonts under the **SIL Open Font License 1.1** (OFL), all from the

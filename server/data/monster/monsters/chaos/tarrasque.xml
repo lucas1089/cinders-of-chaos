@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Tarrasque" nameDescription="a tarrasque" race="blood" experience="155000" skulled="2" looting="1" speed="650">
 	<health now="2000000" max="2000000" />
-	<look type="268" head="133" body="133" legs="133" feet="133" addons="3" corpse="6068" />
+	<look type="2124" corpse="6068" />
 	<targetchange interval="4000" chance="10" />
 	<flags>
 		<flag bestiary="1" />

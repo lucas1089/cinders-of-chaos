@@ -3,3 +3,10 @@ effect,583,bone_spear,3x3,"1,1",1x1,7,70,necrotic: a bone spear strikes and spli
 effect,584,bone_burst,3x3,"1,1",1x1,9,80,necrotic: bone shards burst from a corpse
 effect,585,bone_aura,3x3,"1,1",1x1,14,90,necrotic: skulls and shards rise and circle
 missile,153,bone_spear,1x1,"0,0",3x3,2,100,bone spear
+effect,586,necro_spear_hit,2x2,"0,0",1x1,7,70,bone: the bone spear strikes; splinters and a violet snap
+effect,587,lich_soul_drain,2x2,"0,0",1x1,8,100,necrotic: souls spiral out of the target into a ghost skull (Life Siphon)
+effect,588,bonelord_golem_rise,2x2,"0,0",1x1,8,90,bone: spikes erupt into a ribcage; a skull flares (Bone Golem)
+effect,589,bonelord_banner,2x2,"0,0",1x1,8,90,bone: shards circle up into a crown and rain back (Banner of Bones)
+effect,590,bonelord_rally,1x1,"0,0",1x1,6,90,bone: shards spiral up a rallied minion (Banner of Bones)
+effect,591,bonelord_offering,2x2,"0,0",1x1,8,85,bone: a skeleton bursts into ribs; bones and ash (Bone Offering)
+effect,592,bonelord_ward,2x2,"0,0",1x1,8,90,bone: rib plates close over the caster and crumble (Bone Offering ward)

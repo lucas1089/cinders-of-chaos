@@ -129,8 +129,9 @@ claw_rake (towards the target); Colossus Fall earth_spikes + blunt_smash; Hall o
 Shadow Step / Shadow Veil shade_vanish / shade_appear; Flickerdash blink_vanish / blink_appear; Shattered Psyche
 arcane_bolt + cursed; Wraithshroud shadow_shroud; Nightburst void_maw; Tear in the Weave void_rift; Lucid Reverie
 starfall_crown; Mirror Mend regenerating; Soulward / Counter Stance / Chi Ward shield_bubble; Hunter's Instinct gale_ring;
-Poison Blades poisoned; Smoke Bomb stunned; Raise Dead / Banner of Bones / Bone Golem necro_seal; Withering Curse
-shadow_orb + cursed; Corpse Explosion / Bone Offering bone_burst + px633_indigo (bone_burst: see "Bone effects" below); Soul Rot px633_green; Life Siphon px448_crimson;
+Poison Blades poisoned; Smoke Bomb stunned; Raise Dead necro_seal; Withering Curse shadow_orb + cursed; Corpse
+Explosion px448_green + px633_indigo; Soul Rot toxic_burst (each tick px633_green); the rest of the Necromancer line:
+see "Necromancer line effects" below;
 Ashen Fist / Iron Palm punch_hit_gold; Sundering Palm punch_hit_red; Pressure Points / Shadowfist Flurry
 punch_hit_violet; Kindled Breath chi_charge; Mistborne Step gale_hit; Mantra of Stone stone_rise; Radiant Smite
 px652_white; Vow of Mending / Lay on Hands healing_bloom; Purging Nova dome_blast_holy; Rebuke solar_flash.
@@ -158,10 +159,49 @@ repainted). Lua names: `server/data/lib/chaos_vfx_art.lua` (written by the tool;
 
 | id | name | size, offset | frames | use |
 |---|---|---|---|---|
-| 583 | bone_spear | 3x3, +1,+1 | 7 x 70 ms | Bone Spear: a violet snap and six splinters on the target |
-| 584 | bone_burst | 3x3, +1,+1 | 9 x 80 ms | Corpse Explosion (each corpse), Bone Offering (the sacrificed minion): eight shards thrown out, a broken ring, dust |
-| 585 | bone_aura | 3x3, +1,+1 | 14 x 90 ms | Banner of Bones (each minion), Bone Offering (the caster): three skulls and four shards rise and circle once |
+| 583 | bone_spear | 3x3, +1,+1 | 7 x 70 ms | fallback of Bone Spear's impact (replaced by necro_spear_hit) |
+| 584 | bone_burst | 3x3, +1,+1 | 9 x 80 ms | fallback of Bone Offering's burst and Corpse Explosion (replaced by bonelord_offering / px448_green): eight shards thrown out, a broken ring, dust |
+| 585 | bone_aura | 3x3, +1,+1 | 14 x 90 ms | fallback of Banner of Bones (each minion) and Bone Offering (the caster) (replaced by bonelord_rally / bonelord_ward): three skulls and four shards rise and circle once |
 | missile 153 | bone_spear | 1x1, 3x3 directions | 2 x 100 ms | Bone Spear's flight (`ChaosSpell.vshoot`) |
 
 Like the pack effects they must be sent with `Vfx` / `VfxShoot` (the spells use `vfxOr` / `vshoot`, which fall back to the
 stock effect when `chaos_vfx_art.lua` is missing). Build order and md5s: client/MANIFEST.md "Fist weapons and bone effects".
+
+## Necromancer line effects (effects 586..592; style sample art)
+
+The line's effects follow the owner-approved style sample (oblique view, light from the top-left, ash and bone with
+sickly green and violet soul light, a dark outline). **Donor art first:** before drawing anything, the effects already
+in the pair (this file, `vfx_catalog.csv`, `effects_catalog.csv`) and the unconverted libraries (the donor libraries'
+effect sheets, the raw VFX packs of the `sprite-libraries` branch, the pixel burst set) were surveyed for each spell. Pair
+effects fit the Lich (curses, rot, drain) and Raise Dead; the libraries' bone-coloured effects are dust and smoke puffs
+(no bones) in a flat, unoutlined style, and the raw packs are flat top-down pastel art, so the bone effects of the Bone
+Lord and the bone spear's impact are new. Choice per spell (pair ids on things_custom12):
+
+| spell | effects sent (first one known wins, then the older one, then the stock fallback) | source |
+|---|---|---|
+| Bone Spear | missile bone_spear 153 (kept); impact **necro_spear_hit 586**, then bone_spear 583 | our art (gen_necro_fx.py) |
+| Raise Dead | skull_orb missile 125, necro_seal 447 (kept) | pair: pack and procedural |
+| Withering Curse | shadow_orb 132, cursed 475, rot ticks stock 39 (all kept) | pair |
+| Soul Rot | skull_orb 125, toxic_burst 463 (was px633_green), each tick px633_green 556 (was the stock cloud) | pair: pack |
+| Life Siphon | skull_orb 125 (was blood_spear), **lich_soul_drain 587** (was px448_crimson), heal: heal_sparkle 412 (was red) | the style sample itself; pair |
+| Corpse Explosion | px448_green 552 (was bone_burst), px633_indigo 555 | pair: pixel bursts |
+| Bone Golem | **bonelord_golem_rise 588**, then necro_seal | our art |
+| Banner of Bones | caster **bonelord_banner 589**, then necro_seal; each minion **bonelord_rally 590**, then bone_aura | our art |
+| Bone Offering | the skeleton **bonelord_offering 591**, then bone_burst + px633_indigo; the caster **bonelord_ward 592**, then bone_aura | our art |
+
+| id | name | size, offset | frames | look |
+|---|---|---|---|---|
+| 586 | necro_spear_hit | 2x2, 0,0 | 7 x 70 ms | a violet snap, six bone splinters thrown out and falling |
+| 587 | lich_soul_drain | 2x2, 0,0 | 8 x 100 ms | the style sample: a rune circle, souls spiral up into an orb, a ghost skull |
+| 588 | bonelord_golem_rise | 2x2, 0,0 | 8 x 90 ms | the ground cracks, a crown of bone spikes, a ribcage and a skull with green eyes, they sink |
+| 589 | bonelord_banner | 2x2, 0,0 | 8 x 90 ms | a violet ring, six bone shards circle up into a crown, a green flare, they rain back |
+| 590 | bonelord_rally | 1x1, 0,0 | 6 x 90 ms | three shards spiral up a minion, a green spark |
+| 591 | bonelord_offering | 2x2, 0,0 | 8 x 85 ms | a skeleton bursts: ribs, long bones and the skull in a ring of ash, scattered |
+| 592 | bonelord_ward | 2x2, 0,0 | 8 x 90 ms | six rib plates grow over the caster, a violet rim, they crumble |
+
+The 2x2 effects have the target as their bottom-right tile (offset 0,0). Art: `client/tools/sprites/gen_necro_fx.py`
+(shapes in Python, one PixelLab "Edit images (Pro)" repaint of the whole sheet, moved back onto the shapes; sources in
+`art_import/necro_fx_src/`, strips in `art_import/necro_fx/`, spec `art_import/necro_fx.csv`), imported by
+`import_fx_art.py --merge` (the Lua names and catalogue rows are added to `chaos_vfx_art.lua` / `vfx_art_catalog.csv`).
+The spells send them through `NecroSpell.fx` (`_necro.lua`): a server without these Lua names sends the older effect or
+the stock one. Build commands and md5s: client/MANIFEST.md "Necromancer line effects". Test: `server/tests/necro_fx_test.lua`.

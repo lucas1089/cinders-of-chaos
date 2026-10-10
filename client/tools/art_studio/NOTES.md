@@ -70,3 +70,22 @@ shape is the art (no repaint yet): every frame is the posed shape rendered again
   woman gets an open-faced helm.
 - `top` (where rays start) must clear the raised riding pose, or the head renders from inside (a dark disc).
 - PixelLab repaint (`repaint.py edit`): written, not run (the session's permission check refused the paid call).
+
+## Rift bestiary trial: ashen thrall, bone hound, crypt wraith, ossuary knight (2026-10-10, not used)
+
+Request: "Rift monsters must be exclusive and custom". Started as new art (`creatures/rift_bestiary.py`: one file and
+shared builders for many creatures). Then the owner ruled that donated sprites come first. Every rift look found a donor
+creature (client/MANIFEST.md "Monster looks pair"), so none of these four was imported. The paintings stay in
+`out/rift/`.
+- Bipeds drawn with the kit's 45 degree lean read as lying down. `rift_bestiary.py` shears the body upright (UPRIGHT 0.8,
+  local patch of `Facing.to_body` / `rest_pixel`). The projection is then no longer symmetric about the diagonal, so all
+  four views are rendered and painted (one Edit call over a 4-view canvas) instead of transposing south to east.
+- Cost: one Edit images (Pro) call over a 256x64 or 384x96 canvas = 10 generations. Six calls in all, balance 1905 -> 1835
+  (other sessions spent in parallel too).
+- PixelLab kept the silhouette only sometimes (thrall v1: overlap 1.00). Mostly it repainted bigger and better
+  (hound, wraith: overlap 0.12-0.55; the knight came out a dull blob). `fit` registers each painted view on the shape by
+  a whole-pixel shift and prints the scale for K. A painting that fills its cell needs a bigger animation frame
+  (`anim_frame` 96: the cells are padded, nothing is scaled). Painted pieces cross cell borders (a tail in the next
+  cell), so pieces are given to the cell holding most of their pixels.
+- The 96 frame animation of the hound did not finish in 10 minutes (ray marching at 4x supersampling over 16 frames x 4
+  views); use ss 2 for big frames.

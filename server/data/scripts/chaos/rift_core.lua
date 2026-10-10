@@ -470,6 +470,40 @@ local function eliteTier(cfg, fx, tier, rand)
 end
 R.eliteTier = eliteTier
 
+-- the looks of a run (rift-exclusive outfits, cfg.looks): {byName = {[lowercase type name] = lookType}, guardian =
+-- lookType}, or nil (looks off, or a theme without a family). `types` sorted by level (R.pickTypes): the weakest is the
+-- minion, the strongest the elite, the rest brutes; one type is the elite, two are brute and elite.
+function R.lookPlan(cfg, themeName, types)
+	local L = cfg.looks
+	local fam = L and L.enabled and L.families and L.families[themeName]
+	if not fam then
+		return nil
+	end
+	local plan = {byName = {}, guardian = fam.guardian}
+	local n = #types
+	for i, e in ipairs(types) do
+		local rank = "brute"
+		if i == n then
+			rank = "elite"
+		elseif i == 1 and n >= 3 then
+			rank = "minion"
+		end
+		plan.byName[e.name:lower()] = fam[rank]
+	end
+	return plan
+end
+
+-- the look a rift monster wears: the guardian's for a guardian, else its type's; nil = its own
+function R.lookOf(plan, name, boss)
+	if not plan then
+		return nil
+	end
+	if boss then
+		return plan.guardian
+	end
+	return plan.byName[tostring(name):lower()]
+end
+
 -- the run plan: {types, packs = {{room, name, count, elites = {tier or false, ...}}}, total, bossAt, boss}
 -- rooms = list of room names the packs may use (open side rooms; "hub" gets at most one pack)
 function R.plan(cfg, tier, fx, players, types, rooms, rand)

@@ -15,12 +15,13 @@ local function pulse(playerId, targetId, min, max, left)
 	if ChaosNecroCore.distance(ppos, tpos) > 7 then
 		return
 	end
-	tpos:sendDistanceEffect(ppos, FxMissile("blood_spear", CONST_ANI_DEATH))
-	ChaosSpell.vfx(tpos, "px448_crimson")
-	local dealt = ChaosNecro.damage(player, target, COMBAT_DEATHDAMAGE, min, max, CONST_ME_MAGIC_RED, ORIGIN_SPELL)
+	tpos:sendDistanceEffect(ppos, FxMissile("skull_orb", CONST_ANI_DEATH))
+	local drained = NecroSpell.fx(tpos, {"lich_soul_drain", "px448_crimson"}, "shadow_smoke", CONST_ME_MAGIC_RED)
+	local dealt = ChaosNecro.damage(player, target, COMBAT_DEATHDAMAGE, min, max,
+		drained == "lich_soul_drain" and CONST_ME_NONE or CONST_ME_MAGIC_RED, ORIGIN_SPELL)
 	local heal = ChaosNecroCore.siphonHeal(NecroSpell.cfg, dealt)
 	if heal > 0 then
-		ChaosSpell.healTarget(player, player, heal, heal, CONST_ME_MAGIC_RED)
+		ChaosSpell.healTarget(player, player, heal, heal, Fx("heal_sparkle", CONST_ME_MAGIC_GREEN))
 	end
 	if left > 1 then
 		addEvent(pulse, NecroSpell.cfg.lifeSiphon.pulseMs, playerId, targetId, min, max, left - 1)

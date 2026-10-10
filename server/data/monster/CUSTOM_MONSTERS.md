@@ -61,3 +61,23 @@ hunting monsters, no level skull). Not in a spawn file yet: they come with the i
 Uprising. Cunning Hyaena now uses the Forest Wolf outfit 2015 (sand colours) instead of the wrong art at 1051. The XML
 files were generated from a table (stats per monster: health, experience, speed, armor, attacks scaled by hunting level);
 edit them by hand from now on.
+
+**Monster looks 2100-2125 (things_custom11).** A sprite audit against things_custom10 found every lookType inside the
+pair, but seven monsters without real art. Saga 1487 showed only a few specks. Gloomfire 1197 and Zaoan Badger 1249 sat
+on unrelated stock player outfits (the source pair had no sprite for them). Dawn Strayer 1036 drew broken. Plant 353
+was a stock worm, Tarrasque 268 a stock player outfit, and Cunning Hyaena borrowed the Forest Wolf 2015. They now have
+donor-library creatures: Saga 2119, Gloomfire 2120, Zaoan Badger 2121, Dawn Strayer 2122, Plant 2123, Tarrasque 2124,
+Cunning Hyaena 2125. The Omen guardians got rift-exclusive looks: Sangrith 2116, Morvane 2117, Thalcyra 2118 (Thalcyra
+shared 842 with Kroazur). 2100-2115 are the rift family looks that rift.lua puts on rift monsters (server/README.md
+"Rifts"). No monster file may use them.
+- Picks and sources: `client/tools/sprites/monster_looks/picks.csv` and `sources.csv`; the client pair is built by
+  `donor_pick.py` + `import_outfits.py --first-outfit 2100` (client/MANIFEST.md "Monster looks pair").
+- `python3 -I server/tools/apply_monster_looks.py` (new) writes the looks of picks.csv into the monster XML files by
+  monster name. It removes the colour attributes, which these looks do not use, and keeps the corpse. It is idempotent.
+  `--check` changes nothing and also checks that no file uses a rift family look and that `rift_config.lua` matches.
+- Shared looks left as they are, on purpose: the elite variants share their base monster's look (Elite Ice Dragon,
+  Elite Twisted Shaper, Elite Ice Witch / Frost Maiden), Trial / Ascension Warden 1540, Warden Shade / Trial Thrall 233,
+  Phantom Shade / Alptramun 1479, the Gilded Goblin pet / Shard Goblin 61.
+- Corpses are unchanged: the generic 6068 for most, and the old stock corpses for Sangrith (22562) and Thalcyra (9780).
+  Dawn Strayer now has art but is still not in a spawn file (`late_game.py` left it out because of the broken look).
+

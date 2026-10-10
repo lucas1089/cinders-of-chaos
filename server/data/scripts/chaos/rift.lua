@@ -975,6 +975,11 @@ local function spawnOne(run, name, pos, tier, boss)
 		return nil
 	end
 	local base = m:getMaxHealth()
+	-- the rift-exclusive look (rift_config.lua looks), before the tier so its shader goes on that look
+	local look = R.lookOf(run.looks, name, boss)
+	if look then
+		m:setOutfit({lookType = look})
+	end
 	if tier and ChaosApplyTier then
 		ChaosApplyTier(m, tier)
 	end
@@ -1514,6 +1519,7 @@ function RF.open(player, item)
 	run.lives = R.startLives(cfg, #group, fx)
 	run.livesMax, run.deaths, run.revive = run.lives, 0, {}
 	run.openerGuid = player:getGuid()
+	run.looks = R.lookPlan(cfg, th.name, types)
 	run.typeNames = {}
 	for _, e in ipairs(types) do
 		run.typeNames[#run.typeNames + 1] = e.name

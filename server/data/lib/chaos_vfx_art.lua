@@ -11,3 +11,10 @@ ChaosVfx.bone_spear = {id = 583, dx = 1, dy = 1, ms = 490}  -- necrotic: a bone 
 ChaosVfx.bone_burst = {id = 584, dx = 1, dy = 1, ms = 720}  -- necrotic: bone shards burst from a corpse
 ChaosVfx.bone_aura = {id = 585, dx = 1, dy = 1, ms = 1260}  -- necrotic: skulls and shards rise and circle
 ChaosVfxMissile.bone_spear = {id = 153, dx = 0, dy = 0}  -- bone spear
+ChaosVfx.necro_spear_hit = {id = 586, dx = 0, dy = 0, ms = 490}  -- bone: the bone spear strikes; splinters and a violet snap
+ChaosVfx.lich_soul_drain = {id = 587, dx = 0, dy = 0, ms = 800}  -- necrotic: souls spiral out of the target into a ghost skull (Life Siphon)
+ChaosVfx.bonelord_golem_rise = {id = 588, dx = 0, dy = 0, ms = 720}  -- bone: spikes erupt into a ribcage; a skull flares (Bone Golem)
+ChaosVfx.bonelord_banner = {id = 589, dx = 0, dy = 0, ms = 720}  -- bone: shards circle up into a crown and rain back (Banner of Bones)
+ChaosVfx.bonelord_rally = {id = 590, dx = 0, dy = 0, ms = 540}  -- bone: shards spiral up a rallied minion (Banner of Bones)
+ChaosVfx.bonelord_offering = {id = 591, dx = 0, dy = 0, ms = 680}  -- bone: a skeleton bursts into ribs; bones and ash (Bone Offering)
+ChaosVfx.bonelord_ward = {id = 592, dx = 0, dy = 0, ms = 720}  -- bone: rib plates close over the caster and crumble (Bone Offering ward)

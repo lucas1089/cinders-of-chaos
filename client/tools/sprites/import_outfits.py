@@ -17,7 +17,10 @@ converts each entry instead:
   otherwise they are decoded and re-encoded with gen_effects.encode_sprite.  Identical records are written once,
   empty donor sprites become id 0.  New records are appended to our spr (offset table grows, old records copied).
 * new outfit ids = our outfit count + 1, +2, ... in the order of --looks.  --expect-first makes the run fail when the
-  input pair is not the one the ids were planned for (the server monster XML files use these ids).
+  input pair is not the one the ids were planned for (the server monster XML files use these ids).  --first-outfit N
+  instead pads the outfit list with blank outfits (no sprite, as import_art_things.py) so the first new id is N on any
+  input pair with fewer outfits: stable ids when other looks were appended before (the run stops when the input already
+  has N or more outfits).
 Outputs in --out-dir: Tibia.dat, Tibia.spr, import_outfits.csv (donor lookType -> new lookType).  Inputs are never
 modified.  Deterministic: the same inputs give byte-identical outputs.
 Verification (always run): the output is re-parsed; every sprite slot of every group/frame/direction/addon/layer of
@@ -33,6 +36,7 @@ from datspr import Dat, Spr, TABLE_NEW, _DATA, sprite_index
 from set_multiuse import flag_spans
 
 NEW_BYTE = {name: b for b, name in TABLE_NEW.items()}
+BLANK_OUTFIT = b'\xff' + bytes([1, 0, 1, 1, 1, 1, 1, 1, 1]) + struct.pack('<I', 0)   # one idle group, 1x1, no sprite
 
 
 class Group:
@@ -158,6 +162,8 @@ def main():
     ap.add_argument('--ours-dat', required=True); ap.add_argument('--ours-spr', required=True)
     ap.add_argument('--looks', required=True, help='donor lookTypes, in the order the new ids are given')
     ap.add_argument('--expect-first', type=int, default=None, help='fail unless the first new id is this')
+    ap.add_argument('--first-outfit', type=int, default=None,
+                    help='pad with blank outfits so the first new id is this (stable ids on any smaller input pair)')
     ap.add_argument('--out-dir', required=True)
     ap.add_argument('--preview', default=None, help='directory for PNG sheets of the imported outfits')
     a = ap.parse_args()
@@ -176,8 +182,13 @@ def main():
     print(f'donor: dat {sd.signature:#x} {sd.variant} outfits {len(sd.outfits)}; spr {sspr.signature:#x} {sspr.count} '
           f'sprites alpha={sspr.alpha}')
     nours = len(od.outfits)
-    if a.expect_first is not None and nours + 1 != a.expect_first:
-        sys.exit(f'first new id would be {nours + 1}, expected {a.expect_first}: wrong input pair (or already imported)')
+    pad = 0
+    if a.first_outfit is not None:
+        if a.first_outfit <= nours:
+            sys.exit(f'--first-outfit {a.first_outfit} is not above the last outfit {nours} of the input (wrong pair, or already imported)')
+        pad = a.first_outfit - nours - 1
+    if a.expect_first is not None and nours + pad + 1 != a.expect_first:
+        sys.exit(f'first new id would be {nours + pad + 1}, expected {a.expect_first}: wrong input pair (or already imported)')
 
     # --- 1. donor entries
     src = []
@@ -217,7 +228,7 @@ def main():
                 sid_map[sid] = recs[rec]
 
     # --- 3. dat
-    entries = [build_entry(flags, groups, sid_map) for look, t, groups, flags, stripped in src]
+    entries = [BLANK_OUTFIT] * pad + [build_entry(flags, groups, sid_map) for look, t, groups, flags, stripped in src]
     d = od.data
     ins = od.effects[0].raw[0]
     assert od.outfits[-1].raw[1] == ins
@@ -246,12 +257,12 @@ def main():
     with open(os.path.join(a.out_dir, 'import_outfits.csv'), 'w', newline='') as fh:
         w = csv.writer(fh); w.writerow(['donor_lookType', 'new_lookType', 'groups', 'sprites', 'stripped_flags'])
         for i, (look, t, groups, flags, stripped) in enumerate(src):
-            w.writerow([look, nours + 1 + i, ' '.join(f'{g.w}x{g.h}L{g.layers}P{g.px}{g.py}{g.pz}F{g.phases}' for g in groups),
+            w.writerow([look, nours + pad + 1 + i, ' '.join(f'{g.w}x{g.h}L{g.layers}P{g.px}{g.py}{g.pz}F{g.phases}' for g in groups),
                         sum(len(g.sprites) for g in groups), ' '.join(stripped)])
-            print(f'  donor {look} -> {nours + 1 + i}: ' + ', '.join(
+            print(f'  donor {look} -> {nours + pad + 1 + i}: ' + ', '.join(
                 f'group {g.gtype} {g.w}x{g.h} layers {g.layers} patterns {g.px}x{g.py}x{g.pz} phases {g.phases}' for g in groups)
                 + (f'; flags {sorted(t.flags)}' if t.flags else '; no flags') + (f'; stripped {stripped}' if stripped else ''))
-    print(f'dat: outfits {nours} -> {nours + len(entries)}; spr: {copied} records copied, {reenc} re-encoded, '
+    print(f'dat: outfits {nours} -> {nours + len(entries)} ({pad} blank padding); spr: {copied} records copied, {reenc} re-encoded, '
           f'{nn} appended ({cnt} -> {cnt + nn})')
 
     # --- 5. verification
@@ -266,7 +277,7 @@ def main():
         assert md.data[tm.raw[0]:tm.raw[1]] == d[to.raw[0]:to.raw[1]], to.id
     nslots = nframes = 0
     for i, (look, t, groups, flags, stripped) in enumerate(src):
-        nid = nours + 1 + i
+        nid = nours + pad + 1 + i
         tm = md.outfit(nid)
         mg = parse_body(md, tm)
         assert {k: v for k, v in tm.flags.items() if k not in stripped} == {k: v for k, v in t.flags.items() if k not in stripped}, nid
@@ -285,19 +296,22 @@ def main():
                     if not np.array_equal(frame(g, sspr, x, y, z, ph, layer), frame(h, ms, x, y, z, ph, layer)):
                         sys.exit(f'MISMATCH new outfit {nid} (donor {look}) group {g.gtype} x{x} y{y} z{z} phase {ph} layer {layer}')
                 nframes += 1
+    for k in range(pad):
+        tb = md.outfit(nours + 1 + k)
+        assert md.data[tb.raw[0]:tb.raw[1]] == BLANK_OUTFIT, ('padding', nours + 1 + k)
     random.seed(1)
     for sid in random.sample(range(1, cnt + 1), min(3000, cnt)) + [1, cnt]:
         x, y = ospr.sprite(sid), ms.sprite(sid)
         assert (x is None) == (y is None) and (x is None or (x == y).all()), sid
     print(f'verified: output dat parses ({md.variant}), {len(md.outfits)} outfits, {ms.count} sprites; '
-          f'{len(entries)} imported outfits: {nslots} sprite slots and {nframes} frames (every group, phase, direction, '
+          f'{pad} blank padding outfits; {len(entries) - pad} imported outfits: {nslots} sprite slots and {nframes} frames (every group, phase, direction, '
           f'addon) pixel-identical to the donor, flags/animator equal; {nours} old outfits and all items/effects/missiles '
           f'byte-identical; 3000 sampled old sprites unchanged')
 
     if a.preview:
         os.makedirs(a.preview, exist_ok=True)
         for i, (look, t, groups, flags, stripped) in enumerate(src):
-            nid = nours + 1 + i
+            nid = nours + pad + 1 + i
             p = os.path.join(a.preview, f'outfit_{nid}.png')
             preview_sheet(parse_body(md, md.outfit(nid)), ms, p)
             print('preview', p)

@@ -21,7 +21,7 @@ function onCastSpell(creature, variant, isHotkey)
 	local min, max = L.values(player, f)
 	local ppos, tpos = player:getPosition(), target:getPosition()
 	ChaosSpell.vshoot(ppos, tpos, "bone_spear", "bone_spear", CONST_ANI_ETHEREALSPEAR) -- our bone spear (chaos_vfx_art.lua)
-	ChaosSpell.vfx(tpos, "bone_spear") -- it splinters on the target
+	NecroSpell.fx(tpos, {"necro_spear_hit", "bone_spear"}) -- it splinters on the target
 	local dealt = L.damage(player, target, COMBAT_PHYSICALDAMAGE, min, max, CONST_ME_HITAREA, ORIGIN_SPELL)
 	-- the tile behind the target, one step further along the line from the caster
 	local dx, dy = tpos.x - ppos.x, tpos.y - ppos.y

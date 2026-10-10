@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Dawn Strayer" nameDescription="dawn strayer" race="blood" experience="104000" speed="390" power = "1" evented = "5" skulled="1" looting="1" manacost="0">
 	<health now="110000" max="110000"/>
-	<look type="1036" corpse="6068"/>
+	<look type="2122" corpse="6068"/>
 	<level min="1150" max="1250"/>
 	<targetchange interval="3000" chance="50"/>
 	<strategy attack="130" defense="0"/>

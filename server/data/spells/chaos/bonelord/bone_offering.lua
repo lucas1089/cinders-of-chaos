@@ -31,12 +31,13 @@ function onCastSpell(creature, variant, isHotkey)
 	local min, max = N.offeringValues(cfg, player:getLevel(), player:getMagicLevel(), pick.creature:getHealth())
 	local pos = pick.pos
 	L.dismiss(pick.creature)
-	ChaosSpell.vfxOr(pos, "bone_burst", "bone_burst", CONST_ME_GROUNDSHAKER)
-	ChaosSpell.vfx(pos, "px633_indigo")
+	if NecroSpell.fx(pos, {"bonelord_offering", "bone_burst"}, "bone_burst", CONST_ME_GROUNDSHAKER) ~= "bonelord_offering" then
+		ChaosSpell.vfx(pos, "px633_indigo")
+	end
 	for _, e in ipairs(L.enemiesAround(player, pos, o.radius, true)) do
 		L.damage(player, e, COMBAT_PHYSICALDAMAGE, min, max, CONST_ME_HITAREA, ORIGIN_SPELL)
 	end
 	L.addTimer(player, cfg.subId.boneShield, o.shieldMs)
-	ChaosSpell.vfxOr(player:getPosition(), "bone_aura", "bone_aura", CONST_ME_BLOCKHIT)
+	NecroSpell.fx(player:getPosition(), {"bonelord_ward", "bone_aura"}, "bone_aura", CONST_ME_BLOCKHIT)
 	return true
 end

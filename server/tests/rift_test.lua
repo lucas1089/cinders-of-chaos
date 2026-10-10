@@ -776,7 +776,8 @@ do
 			f:close()
 			ok(t:find('<monster name="' .. k.boss .. '"', 1, true) ~= nil, "guardian name in " .. fn)
 			local look = tonumber(t:match('<look type="(%d+)"'))
-			ok(look and look <= 2038, "guardian look in the client pair")
+			ok(look and look <= 2125, "guardian look in the client pair (things_custom11: outfits up to 2125)")
+			ok(look and look >= 2116 and look <= 2118, "omen guardian on its own rift-exclusive look (2116-2118)")
 		end
 	end
 	eq(R.omenKind(cfg, "nope"), nil, "unknown kind")
@@ -794,6 +795,64 @@ do
 	for _, id in ipairs({o.fragment.id, o.key.id}) do
 		ok(not (id >= 32001 and id <= 32035) and id ~= 32051 and not (id >= 32101 and id <= 32200)
 			and not (id >= 30484 and id <= 30557), "omen id clear of the gem / salvage / support / dark tile ids: " .. id)
+	end
+end
+
+-- ------------------------------------------------------------------ rift-exclusive looks
+do
+	local L = cfg.looks
+	ok(L and L.enabled, "rift looks on")
+	local all = {}
+	for _, th in ipairs(cfg.themes) do
+		local fam = L.families[th.name]
+		ok(fam ~= nil, "a look family for the theme " .. th.name)
+		for _, rank in ipairs({"minion", "brute", "elite", "guardian"}) do
+			local v = fam and fam[rank]
+			ok(type(v) == "number" and v >= 2100 and v <= 2125, th.name .. " " .. rank .. " look in 2100-2125")
+			ok(v and not all[v], th.name .. " " .. rank .. ": a look of its own")
+			if v then
+				all[v] = th.name .. " " .. rank
+			end
+		end
+	end
+	local types = {{name = "Weak One", level = 100}, {name = "Middle", level = 150}, {name = "Strong", level = 200}}
+	local plan = R.lookPlan(cfg, "Abyssal Rift", types)
+	local fam = L.families["Abyssal Rift"]
+	eq(R.lookOf(plan, "weak one", false), fam.minion, "weakest type: minion")
+	eq(R.lookOf(plan, "MIDDLE", false), fam.brute, "middle type: brute (any case)")
+	eq(R.lookOf(plan, "Strong", false), fam.elite, "strongest type: elite")
+	eq(R.lookOf(plan, "Strong", true), fam.guardian, "guardian: the guardian look")
+	eq(R.lookOf(plan, "Treasure Goblin", false), nil, "a monster of no rift type keeps its look")
+	local two = R.lookPlan(cfg, "Ashen Crypt", {types[1], types[3]})
+	eq(R.lookOf(two, "weak one", false), L.families["Ashen Crypt"].brute, "two types: brute")
+	eq(R.lookOf(two, "strong", false), L.families["Ashen Crypt"].elite, "two types: elite")
+	local one = R.lookPlan(cfg, "Obsidian Hall", {types[2]})
+	eq(R.lookOf(one, "middle", false), L.families["Obsidian Hall"].elite, "one type: elite")
+	eq(R.lookPlan(cfg, "No Such Theme", types), nil, "no family: no looks")
+	eq(R.lookOf(nil, "x", true), nil, "no plan: own look")
+	L.enabled = false
+	eq(R.lookPlan(cfg, "Abyssal Rift", types), nil, "looks off")
+	L.enabled = true
+	-- exclusive: no monster definition uses a rift family look; each omen look only by its guardian
+	local p = io.popen("find data/monster -name '*.xml' -o -name '*.lua'")
+	local users = {}
+	for fn in p:lines() do
+		local f = io.open(fn)
+		local t = f:read("*a")
+		f:close()
+		for v in t:gmatch('<look%s+type="(%d+)"') do
+			users[tonumber(v)] = (users[tonumber(v)] or 0) + 1
+		end
+		for v in t:gmatch("lookType%s*=%s*(%d+)") do
+			users[tonumber(v)] = (users[tonumber(v)] or 0) + 1
+		end
+	end
+	p:close()
+	for v, what in pairs(all) do
+		eq(users[v], nil, what .. " look used by no monster file")
+	end
+	for _, v in ipairs({2116, 2117, 2118}) do
+		eq(users[v], 1, "omen look " .. v .. " used once")
 	end
 end
 

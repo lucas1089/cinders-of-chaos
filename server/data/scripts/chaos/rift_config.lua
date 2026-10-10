@@ -255,5 +255,22 @@ return {
 		{name = "Obsidian Hall", grounds = {407}, darkStyle = "hall"}, -- black marble floor
 		{name = "Ashen Crypt", grounds = {13189, 12237}, darkStyle = "crypt"}, -- dark sandy floor, rutted stone floor
 		{name = "Forsaken Sanctum", grounds = {415}, darkStyle = "sanctum"} -- gilded stone floor
+	},
+
+	-- ------------------------------------------------------------------ rift-exclusive looks
+	-- Inside a rift every monster wears a look nothing outside the rifts uses (client outfits 2100-2115, donor creature
+	-- art: client/tools/sprites/monster_looks/picks.csv; server/README.md "Rifts"). The theme picks the family; the run's
+	-- monster types (sorted by level) get minion / brute / elite (one type: elite; two: brute and elite), the guardian
+	-- (and both twins) the family's guardian look. Only the look changes: stats, spells, loot and corpse stay the type's.
+	-- Coffer waves and ambush copies wear the look too. Omen arenas keep their guardian's own look (its XML).
+	-- enabled = false: every rift monster shows its world look again (a client pair without 2100+ shows nothing).
+	looks = {
+		enabled = true,
+		families = {
+			["Abyssal Rift"] = {minion = 2100, brute = 2101, elite = 2102, guardian = 2103}, -- eldritch
+			["Obsidian Hall"] = {minion = 2104, brute = 2105, elite = 2106, guardian = 2107}, -- obsidian and magma
+			["Ashen Crypt"] = {minion = 2108, brute = 2109, elite = 2110, guardian = 2111}, -- undead, ember-lit
+			["Forsaken Sanctum"] = {minion = 2112, brute = 2113, elite = 2114, guardian = 2115} -- fungus blight
+		}
 	}
 }

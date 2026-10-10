@@ -27,7 +27,7 @@ function onCastSpell(creature, variant, isHotkey)
 	for _, corpse in ipairs(corpses) do
 		local pos = corpse.pos
 		L.consumeCorpse(corpse)
-		ChaosSpell.vfxOr(pos, "bone_burst", "bone_burst", CONST_ME_MORTAREA)
+		NecroSpell.fx(pos, {"px448_green", "bone_burst"}, "poison_burst", CONST_ME_MORTAREA)
 		ChaosSpell.vfx(pos, "px633_indigo")
 		for _, e in ipairs(L.enemiesAround(player, pos, c.burstRadius, true)) do
 			L.damage(player, e, COMBAT_DEATHDAMAGE, min, max, CONST_ME_MORTAREA, ORIGIN_SPELL)

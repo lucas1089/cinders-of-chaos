@@ -4417,7 +4417,7 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   chest: 2 + 1 per tier above 6, x quantity; rare / legendary monsters of those rifts carry one 8% / 25%. Using 60
   fragments binds an Omen Key (item 32072, copy of the eye of the storm; attribute omen_kind) of a random kind. The key
   opens a guardian arena: a rift slot with every side room shut, level 800+, 10 minutes, the rift lives, the guardian
-  after 5 s, health from its XML (+75% per extra player). Guardians (outfits 591, 12, 842 of the client pair, 500k
+  after 5 s, health from its XML (+75% per extra player). Guardians (rift-exclusive outfits 2116, 2117, 2118 of things_custom11, see "Rift looks" below; 500k
   health each, `monsters/chaos/omens/`): Sangrith the Bloodmoon Herald, Morvane the Hollow Crown, Thalcyra the
   Stormbound Seer. Chest per finisher: 5M gold, 12 Chaos, 6 Divine, 8 item rolls (boss tier, x1.5 rarity), gems and
   supports as a tier 15 rift, and 2 unique rolls over every unique at boss tier x2 find. Achievements omen_1 / omen_10
@@ -4428,6 +4428,27 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   +0/75/100/200/300/400%, gold coins +0/75/100/200/300/400%, extra loot roll +0/0/15/30/45/60% of each entry's chance.
   Applied to every monster in the dungeon box during a run (also respawns). Also fixed: the queue called a missing
   Game.getPlayerByGUID, so queued runs never started.
+- **Rift looks** (`rift_config.lua` `looks`, `R.lookPlan` / `R.lookOf` in `rift_core.lua`). Inside a rift every
+  monster wears a look that nothing outside the rifts uses (client outfits 2100-2115 of things_custom11, donor creature
+  art; `client/tools/sprites/monster_looks/picks.csv`). The theme sets the family; the run's types, sorted by level, become
+  minion, brute and elite (one type: elite; two: brute and elite). The guardian and both Twin Guardians get the family's
+  guardian look:
+
+  | Theme | Family | Minion | Brute | Elite | Guardian |
+  |---|---|---|---|---|---|
+  | Abyssal Rift | eldritch | 2100 void eel | 2101 tentacled eye | 2102 tentacled shade | 2103 void spectre |
+  | Obsidian Hall | obsidian and magma | 2104 burning-tailed hound | 2105 lava beast | 2106 molten maned beast | 2107 magma golem |
+  | Ashen Crypt | undead, ember-lit | 2108 ember skeleton | 2109 bone golem | 2110 ember reaper | 2111 black plate knight |
+  | Forsaken Sanctum | fungus blight | 2112 cap sprout | 2113 blight tendrils | 2114 blight boulder | 2115 moss golem |
+
+  `spawnOne` (rift.lua) sets the look before the monster's tier, so tier shaders go on it. Coffer waves wear it. An
+  ambush copy (monster_tiers.lua) now wears what the killed monster wore. Only the look changes: name, stats, spells, loot
+  and corpse stay the pool type's. The Gilded Trail goblin keeps the Treasure Goblin look. Omen arenas use their
+  guardian's own exclusive look: Sangrith 2116 (horned crimson skull demon), Morvane 2117 (robed lich with green soul
+  fire), Thalcyra 2118 (white storm seer). `looks.enabled = false` brings back the world looks; a client pair without
+  outfits 2100+ needs it. `tests/rift_test.lua` checks the ranks, that every look is distinct, and that no monster file
+  uses a family look. `server/tools/apply_monster_looks.py --check` compares the config with picks.csv. Checked in game:
+  a tier 8 rift of each theme, the packs and the guardian.
 - **Tiers.** Tier N picks its monsters from the bounty pool (`bounty_pool.lua`, only monsters that spawn on the map, no
   bosses, at least 100 health) in a level window, and needs a level: 1: 80-180 (level 100), 2: 140-240 (150),
   3: 200-320 (200), 4: 280-420 (300), 5: 380-520 (400), 6: 480-640 (500), 7: 580-740 (600), 8: 680-840 (700),
@@ -4504,7 +4525,8 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
 
 **Edits to shared files** (one line or block each): `chaos_constants.lua` (`ChaosOpcodes.rift = 228`,
 `Chaos.storage.riftRun = 7100400`), `loot_config.lua` (rateMult x `ChaosRift.lootMult(ctx)`), `shop_services.lua`
-(`S.teleportBlocked`), `multiclient.lua` (`insideInstance`), `bounty.lua` (`payContract` calls `ChaosRift.onBountyPaid`).
+(`S.teleportBlocked`), `multiclient.lua` (`insideInstance`), `bounty.lua` (`payContract` calls `ChaosRift.onBountyPaid`),
+`monster_tiers.lua` (an ambush copy wears the killed monster's outfit, so a rift look carries over).
 
 **Verified on the test server** (cropped map, level 1000 test characters): open a rift from a key (and the refusals: no
 protection zone, in a fight, multi-client); the build and the four themes; the HUD (start, live updates, the guardian,

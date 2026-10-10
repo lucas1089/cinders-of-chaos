@@ -2,7 +2,7 @@
 <!-- Omen guardian of the Hollow (rift.lua, Omen Keys). A crowned void lord: death bolts, mana drain, a hollowing curse. Numbers: server/README.md "Rifts", Omens. -->
 <monster name="Morvane the Hollow Crown" nameDescription="Morvane the Hollow Crown" race="undead" experience="2000000" speed="280" manacost="0">
 	<health now="500000" max="500000" />
-	<look type="12" head="0" body="114" legs="95" feet="114" corpse="6068" />
+	<look type="2117" corpse="6068" />
 	<targetchange interval="5000" chance="12" />
 	<flags>
 		<flag isboss="1" />

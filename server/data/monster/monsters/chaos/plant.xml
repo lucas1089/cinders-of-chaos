@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Plant" nameDescription="a plant" race="venom" experience="0" speed="0" manacost="0" damagereduction="10" damagepenetration="35" evented = "25" skulled="2" looting="1">
 	<health now="55000" max="55000"/>
-	<look type="353" corpse="0"/>
+	<look type="2123" corpse="0"/>
 	<targetchange interval="5000" chance="8"/>
 	<strategy attack="100" defense="0"/>
 	<flags>

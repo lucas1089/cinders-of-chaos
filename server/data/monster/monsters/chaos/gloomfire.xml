@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Gloomfire" nameDescription="a gloomfire" race="blood" experience="600000000" power = "2" speed="800" manacost="0" damagereduction="20" damagepenetration="28" evented = "25" skulled="2" looting="1">
 	<health now="510000000" max="510000000"/>
-	<look type="1197" corpse="6068" />
+	<look type="2120" corpse="6068" />
 	<targetchange interval="4000" chance="10" />
 	<flags>
 		<flag bestiary="1" />

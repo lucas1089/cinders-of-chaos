@@ -4,6 +4,7 @@
 python3 -I import_fx_art.py --ours-dat Tibia.dat --ours-spr Tibia.spr --out-dir OUT \
         [--spec art_import/fx_art.csv] [--expect-first-effect N] [--expect-first-missile N] \
         [--lua-out ../../../server/data/lib/chaos_vfx_art.lua] [--catalog-out ../../../server/data/spells/vfx_art_catalog.csv]
+        [--merge]
 
 The spec (one row per thing, in id order within its kind): kind (effect | missile), name, file (PNG under art_import/),
 w, h (tiles), phases, ms (per frame), dx, dy (send offset: the bottom-right tile of the art is the target tile +
@@ -18,6 +19,9 @@ New ids = the input's effect / missile counts + 1.. in spec order; --expect-firs
 Outputs in --out-dir: Tibia.dat, Tibia.spr, chaos_vfx_art.lua, vfx_art_catalog.csv. --lua-out writes the Lua names:
 entries merged into ChaosVfx / ChaosVfxMissile (chaos_vfx.lua), so Vfx(pos, name) / VfxShoot(from, to, name) and the
 spells' ChaosSpell.vfx / vfxOr / vshoot send them at their offset. Inputs are never modified; deterministic.
+--merge (for a second spec run on top of the first one's output, e.g. art_import/necro_fx.csv after fx_art.csv): the
+--lua-out / --catalog-out files keep their other entries; this spec's entries replace the ones of the same names or
+are appended (a re-run gives the same files). It stops if another entry already uses one of the new ids.
 Verification (always): the output dat re-parses; every frame / pattern of every new thing is rendered back from the
 output spr and compared pixel-exact with the art; every old dat entry is byte-identical; 3000 sampled old sprites
 (plus the first and last) are unchanged.
@@ -103,6 +107,42 @@ def write_catalog(rows, gens, ids, path):
                         f"{g['px']}x{g['py']}", g['phases'], g['ms'], r['note']])
 
 
+def merge_lua(path, rows, gens, ids):
+    """keep the other entries of an existing chaos_vfx_art.lua, (re)write this spec's ones at the end"""
+    ours = lua_text(rows, gens, ids).splitlines()
+    ours = [l for l in ours if l.startswith('ChaosVfx.') or l.startswith('ChaosVfxMissile.')]
+    names = {l.split(' = ')[0] for l in ours}
+    old = open(path).read().splitlines() if os.path.exists(path) else lua_text([], [], {}).splitlines()
+    keep = [l for l in old if l.split(' = ')[0] not in names]
+    taken = {}
+    for l in keep:
+        if l.startswith('ChaosVfx') and ' = {id = ' in l:
+            taken[(l.startswith('ChaosVfxMissile.'), int(l.split('{id = ')[1].split(',')[0]))] = l.split(' = ')[0]
+    for l in ours:
+        k = (l.startswith('ChaosVfxMissile.'), int(l.split('{id = ')[1].split(',')[0]))
+        assert k not in taken, f'id {k[1]} of {l.split(" = ")[0]} is already {taken[k]} in {path}'
+    return '\n'.join(keep + ours) + '\n'
+
+
+def merge_catalog(path, rows, gens, ids):
+    tmp = path + '.new'
+    write_catalog(rows, gens, ids, tmp)
+    with open(tmp, newline='') as fh:
+        new = list(csv.reader(fh))
+    os.remove(tmp)
+    old = []
+    if os.path.exists(path):
+        with open(path, newline='') as fh:
+            old = list(csv.reader(fh))[1:]
+    keys = {(r[0], r[2]) for r in new[1:]}
+    rows_ = [r for r in old if (r[0], r[2]) not in keys]
+    for r in new[1:]:
+        assert not any(o[0] == r[0] and o[1] == r[1] for o in rows_), f'id {r[1]} of {r[2]} is already used in {path}'
+    with open(path, 'w', newline='') as fh:
+        w = csv.writer(fh, lineterminator='\n')
+        w.writerows([new[0]] + rows_ + new[1:])
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--ours-dat', required=True); ap.add_argument('--ours-spr', required=True)
@@ -111,6 +151,8 @@ def main():
     ap.add_argument('--expect-first-effect', type=int, default=None)
     ap.add_argument('--expect-first-missile', type=int, default=None)
     ap.add_argument('--lua-out', default=None); ap.add_argument('--catalog-out', default=None)
+    ap.add_argument('--merge', action='store_true',
+                    help='keep the other entries of --lua-out / --catalog-out (a second spec on top of the first)')
     a = ap.parse_args()
     t0 = time.time()
     os.makedirs(a.out_dir, exist_ok=True)
@@ -181,9 +223,14 @@ def main():
     open(os.path.join(a.out_dir, 'chaos_vfx_art.lua'), 'w').write(lua)
     write_catalog(rows, gens, ids, os.path.join(a.out_dir, 'vfx_art_catalog.csv'))
     if a.lua_out:
-        open(a.lua_out, 'w').write(lua); print('wrote', a.lua_out)
+        text = merge_lua(a.lua_out, rows, gens, ids) if a.merge else lua
+        open(a.lua_out, 'w').write(text); print('wrote', a.lua_out, '(merged)' if a.merge else '')
     if a.catalog_out:
-        write_catalog(rows, gens, ids, a.catalog_out); print('wrote', a.catalog_out)
+        if a.merge:
+            merge_catalog(a.catalog_out, rows, gens, ids)
+        else:
+            write_catalog(rows, gens, ids, a.catalog_out)
+        print('wrote', a.catalog_out, '(merged)' if a.merge else '')
 
     # verification
     md = Dat(os.path.join(a.out_dir, 'Tibia.dat')); ms = Spr(os.path.join(a.out_dir, 'Tibia.spr'))

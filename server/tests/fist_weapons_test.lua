@@ -102,13 +102,24 @@ for _ in pairs(ChaosVfx) do before = before + 1 end
 dofile("data/lib/chaos_vfx_art.lua")
 local after = 0
 for _ in pairs(ChaosVfx) do after = after + 1 end
-eq(after, before + 3, "three effects added")
+-- every effect of the art catalogue (bone effects, then the Necromancer line's own art: art_import/necro_fx.csv)
+local art, artCount = {}, 0
+for line in io.lines("data/spells/vfx_art_catalog.csv") do
+	local kind, id, name = line:match("^(%a+),(%d+),([%w_]+),")
+	if kind == "effect" then
+		art[name] = tonumber(id)
+		artCount = artCount + 1
+	end
+end
+eq(after, before + artCount, "every catalogue effect added")
 eq(ChaosVfx.necro_seal ~= nil, true, "pack effects kept")
 local maxId = 0
 for name, e in pairs(ChaosVfx) do
-	if name:sub(1, 5) ~= "bone_" then maxId = math.max(maxId, e.id) end
+	if not art[name] then maxId = math.max(maxId, e.id) end
 end
-for _, n in ipairs({"bone_spear", "bone_burst", "bone_aura"}) do
+for _, n in ipairs({"bone_spear", "bone_burst", "bone_aura", "necro_spear_hit", "lich_soul_drain",
+		"bonelord_golem_rise", "bonelord_banner", "bonelord_rally", "bonelord_offering", "bonelord_ward"}) do
+	eq(ChaosVfx[n] ~= nil and ChaosVfx[n].id == art[n], true, n .. " in the Lua names with its catalogue id")
 	eq(ChaosVfx[n].id > maxId, true, n .. " after the pack ids")
 end
 eq(ChaosVfxMissile.bone_spear ~= nil and ChaosVfxMissile.bone_spear.id <= 255, true, "missile id fits a byte")
