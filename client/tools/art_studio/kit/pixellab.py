@@ -1,7 +1,8 @@
 """PixelLab's public REST API (v2): the token, the balance, Edit images (Pro) and Create image (Pro).
 
 The token: the environment variable PIXELLAB_API_TOKEN, or the first line of the file `.pixellab_token` at the root of
-the studio (it is in .gitignore). Never print it. Every call is a background job: POST, then poll
+the studio (it is in .gitignore). Never print it. Without either, calls go out with no Authorization header (for a
+proxy that injects the credential). Every call is a background job: POST, then poll
 GET /background-jobs/<id> every 5 s until `completed`. The account runs a few jobs at once (HTTP 429 = wait).
 Docs: https://api.pixellab.ai/v2/llms.txt and https://api.pixellab.ai/v2/docs
 """
@@ -26,15 +27,16 @@ def token():
     path = os.path.join(STUDIO, ".pixellab_token")
     if not t and os.path.exists(path):
         t = open(path, encoding="utf-8").readline().strip()
-    if not t:
-        raise SystemExit("No PixelLab token: set PIXELLAB_API_TOKEN or write it in %s" % path)
-    return t
+    return t or None        # none: the session's proxy may add the credential itself (no local token needed)
 
 
 def call(method, path, body=None, timeout=60):
     data = json.dumps(body).encode() if body is not None else None
-    req = urllib.request.Request(API + path, data=data, method=method,
-                                 headers={"Authorization": "Bearer " + token(), "Content-Type": "application/json"})
+    headers = {"Content-Type": "application/json"}
+    t = token()
+    if t:
+        headers["Authorization"] = "Bearer " + t
+    req = urllib.request.Request(API + path, data=data, method=method, headers=headers)
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.load(r)
 

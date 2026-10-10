@@ -53,3 +53,20 @@ not an image: at 32 px one call gives 64 candidates, at 16 px also 64).
 - Picks are in `client/tools/sprites/art_import/fistfx_src/` (unchanged PNGs); `out/items/fistfx/` holds every candidate
   (ignored by git).
 
+
+## Class outfits, phase 1: the Warrior line (2026-10-10)
+
+Request: custom outfits for every class, male and female, "following the vibe of the game"; phase 1 is the Warrior
+line only. Code: `client/tools/outfit_art/` (rig, body, gear, palette, warrior_line, build, repaint, importer). The
+shape is the art (no repaint yet): every frame is the posed shape rendered again, so the colour template follows it.
+
+- The stock player layout (look 131): 2x2 tiles, displacement 8,8, idle 1 phase, walk 8 phases at 300 ms, 2 layers,
+  3 addon patterns, 2 mount patterns. Copied exactly; addons empty.
+- A level or bowed face disappears from above (only a band at the bottom of the head showed). Heads tilt BACK 10
+  degrees and the hairline sits high, so the face shows in the south and east views.
+- Tinted materials must be bright greys (the client multiplies): the first ramps (34..236) read muddy once tinted.
+- Thick horns read as one pale blob over the head; thin horns and a skull cap with ember eye sockets read as a skull.
+- Females read as males at 1x until the hair framed the face (side locks) and fell down the back; the Juggernaut
+  woman gets an open-faced helm.
+- `top` (where rays start) must clear the raised riding pose, or the head renders from inside (a dark disc).
+- PixelLab repaint (`repaint.py edit`): written, not run (the session's permission check refused the paid call).
