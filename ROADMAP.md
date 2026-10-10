@@ -123,5 +123,9 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 - The Windows server binary has no `server/src-patches/` applied: no "CRIT!" visual there until it is rebuilt.
 - Illusionist: decided, a support class (party attack buffs and some healing), the Mystic's second ascension.
 - Community (Discord) invite link: `ChaosTopBar.COMMUNITY_URL` in `client/overlay/modules/client_chaos_topbar/chaos_topbar.lua` is empty until there is one.
-- Optional: swap the client's xBRZ for version 1.8 (fixes artifacts on transparent sprite edges; same GPL-3 license; needs testing).
+- Done: the client's xBRZ is 1.8 (was 1.4), `client/base-patches/0027-xbrz-1.8.patch`, GPL-3 as before. 1.8 reads outside the
+  image as transparent, which cut notches and holes into the seams of multi-sprite outfits, so each sprite is padded with
+  its edge pixels first; it also drops the 64 MB colour table (and a ~0.1 s stall on the first sprite). Compared with 1.4
+  at x2/x3/x4 in the Linux client and over 50000 sprites: nearly the same picture (under 0.15% of pixels differ, slightly
+  more consistent edges), same speed (40-110 us per sprite). Windows build not run.
 - The base server's own world-boss timer (`data/scripts/customs/worldbosses/`) stays next to the Chaos world bosses: nine weekly open-world island bosses with their own loot, at other times (the closest: 20:00 vs the Chaos 21:00), places, monsters and rewards than the Chaos arena event, no shared board or broadcast; why, and how to remove it if wanted: server/README.md "World bosses".
