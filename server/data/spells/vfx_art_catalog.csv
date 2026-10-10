@@ -1,0 +1,5 @@
+kind,id,name,size,send_offset,patterns,frames,ms,note
+effect,583,bone_spear,3x3,"1,1",1x1,7,70,necrotic: a bone spear strikes and splinters
+effect,584,bone_burst,3x3,"1,1",1x1,9,80,necrotic: bone shards burst from a corpse
+effect,585,bone_aura,3x3,"1,1",1x1,14,90,necrotic: skulls and shards rise and circle
+missile,153,bone_spear,1x1,"0,0",3x3,2,100,bone spear

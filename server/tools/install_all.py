@@ -34,6 +34,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   packitems    tools/install_pack_items.py       the pack items (new looks of the rune-stone orbs and ore pieces, creature
                products, food, corpses, trees, grounds, water, shores, lake objects) in items.otb / items.xml and the
                products in Yasir's shop (README "Pack items and monsters")
+  fistweapons  tools/install_fist_weapons.py     the Monk line's fist weapons in items.otb / items.xml, their Monk-only equip
+               entries in movements.xml and the weapon dealers' / Yasir's shops (README "Fist weapons")
   gems         tools/install_gems.py             the gems and the Orb of Sockets in items.otb / items.xml (README "Gems and sockets")
   salvage      tools/install_salvage.py          the salvage Rune Shard in items.otb / items.xml (README "Salvage")
   omens        tools/install_omens.py            the Omen Fragment and Omen Key in items.otb / items.xml (README "Rifts", Omens)
@@ -77,7 +79,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'vocations', 'events', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'pouches', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'monsters', 'spells', 'autoloot', 'commands', 'sql']
+STEPS = ['files', 'lib', 'vocations', 'events', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'pouches', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spells', 'autoloot', 'commands', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -284,6 +286,10 @@ def step_donoritems(server, data, ctx):
 
 def step_packitems(server, data, ctx):
     return tool_result(run_tool([tool('install_pack_items.py'), data], 'install_pack_items.py'))
+
+
+def step_fistweapons(server, data, ctx):
+    return tool_result(run_tool([tool('install_fist_weapons.py'), data], 'install_fist_weapons.py'))
 
 
 def step_gems(server, data, ctx):

@@ -255,7 +255,10 @@ Open for the Necromancer:
   Lich: curse / DoT / Soul Hoard; Bone Lord: army size / aura / golem). The tree has per-vocation keystone variants
   only (`ChaosClasses.keystoneKey`), no per-class starts yet, so the line has no tree entry, like the Thief line.
   Until then `necro_config.lua levelScale` stands in for it.
-- New effects (`bone_spear`, `bone_burst`, `bone_aura`) are proposed, not generated; the spells use existing ones.
+- Effects (our own art, client/MANIFEST.md "Fist weapons and bone effects"): Bone Spear flies as the `bone_spear` missile and
+  splinters on the target (`bone_spear` effect), Corpse Explosion and Bone Offering burst with `bone_burst`, Banner of Bones
+  (each minion) and Bone Offering (the caster) show `bone_aura`. Ids in `data/lib/chaos_vfx_art.lua`; without that file or
+  the new pair the spells fall back to the stock effects as before.
 - Minions in the arena, the guild siege and rifts follow those modes' summon rules (not checked).
 
 ### Monk (C6, phase B: tested in game)
@@ -271,13 +274,18 @@ Open for the Necromancer:
   Skills: fist fighting and club 1.1, sword / axe / distance 1.3, shielding 1.2 (Iron Sage 1.1), magic level 2.0. the Ascendant Oracle
   at level 100. All ids (vocations, client bytes, spells 63-72, storages 7100800-7100809, condition sub ids 71030-71044, opcode 247) are in
   `ChaosMonk.ids` (`server/data/scripts/chaos/monk_chi_core.lua`). Equipment (`add_vocations.py`): two-handed clubs (staves) and
-  whatever the Ranger may wear; the Royal Paladin's potions. New-player kit: light armour, no weapon.
+  whatever the Ranger may wear, and the fist weapons; the Royal Paladin's potions. New-player kit: light armour, no weapon.
 - **Unarmed combat on this engine**: without a weapon the engine hits with fists (`Weapon::useFist`): fist fighting skill, a fixed attack
   value of 7, the vocation's attackspeed (minus the dexterity stat), the usual weapon formula and the fight mode factor, but **not** the
   vocation's meleeDamage multiplier, and there is no "fist" weapon type in the item types. So the Monk's unarmed damage is scripted on the
   weapon hook, without an engine patch: `monk_combat.lua` scales a Monk's fist hit (melee origin, nothing in the hands) by (formula with
   the Monk's fist attack x meleeDamage) / (formula with attack 7). The fist attack grows with level: 40 + level x 0.025, at most 60
-  (level 300: 47.5). Fist weapons: listed in `ChaosMonk.cfg.unarmed.fistWeapons` (none exist yet: they need new items). Staves are
+  (level 300: 47.5). Fist weapons (`ChaosMonk.cfg.unarmed.fistWeapons`, server/README.md "Fist weapons"): six hand items of weaponType
+  "shield" with an attack, worn in the shield hand by the Monk line only; their attack replaces the level value when higher
+  (charred hand wraps 42 at level 8, ashbound cestus 44 / 60, ember knuckles 46 / 150, ossuary gauntlet 50 / 300,
+  cinderforged talons 55 / 500, the legendary unique Grasp of the Pyre Saint 64 / 650, the only one above the bare cap 60).
+  About +5% damage over bare fists at each one's level (level 300: x1.047 by formula, 979 against 933 per hit measured
+  on a dummy). Staves are
   ordinary weapons (club skill, the two-handed factor of `weapon_styles.lua`, the attack speed patch 0002).
 - **Chi**: a player storage (shared by the spells' and the scripts' Lua states) with the time of its last change; gone after 12 s untouched.
   +1 per melee hit (at most one per 2 s), +2 Ashen Fist, +1 Pressure Points; a finisher needs 1 chi and spends all of it, x(0.30 + 0.14 per
@@ -294,7 +302,7 @@ Open for the Monk:
 - **Passive tree**: no per-class trees exist yet. Proposal when the tree is reworked: a Monk start, a Shadowfist path ending in a keystone
   "Hundred Hands" (focus crits also add a chi) and an Iron Sage path ending in "Stone Body" (Chi Ward on yourself is 50% stronger and
   Mantra of Stone also gives 10% attack speed). Until then `keystoneKey` is nil for 17-19 and the level factor stands in for the tree.
-- Fist weapons (new items), a stun on players (only monsters are stunned).
+- A stun on players (only monsters are stunned).
 
 ### Templar (C7, phase B: tested in game)
 

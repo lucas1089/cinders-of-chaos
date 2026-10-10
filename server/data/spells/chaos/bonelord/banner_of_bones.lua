@@ -20,7 +20,7 @@ function onCastSpell(creature, variant, isHotkey)
 	L.addTimer(player, cfg.subId.boneAura, cfg.bannerOfBones.durationMs)
 	ChaosSpell.vfxOr(player:getPosition(), "necro_seal", "bone_aura", CONST_ME_MAGIC_BLUE)
 	for _, m in ipairs(list) do
-		ChaosSpell.fx(m.creature:getPosition(), "bone_aura", CONST_ME_MAGIC_BLUE)
+		ChaosSpell.vfxOr(m.creature:getPosition(), "bone_aura", "bone_aura", CONST_ME_MAGIC_BLUE)
 	end
 	return true
 end

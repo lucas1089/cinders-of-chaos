@@ -4700,6 +4700,43 @@ Art from the October 2026 art sets, converted to our 32 px format once and kept 
   objects, docks, trees and stumps placed on runtime tiles. Not tested: an invasion of the new factions (the cropped test
   map has no valid town area; `tests/invasion_test.lua` passes with them), selling to Yasir (he is not on the test map).
 
+## Fist weapons (`tools/install_fist_weapons.py`, `data/lib/chaos_fist_weapons.lua`, `scripts/chaos/fist_weapons.lua`)
+The Monk line's fist weapons (docs/CLASSES.md "Monk"): six new items of our own art (client ids 33654..33659, server ids
+36654..36659; client/MANIFEST.md "Fist weapons and bone effects"). A fist weapon is a hand item of weaponType "shield"
+with an attack (no stock shield has one): on this server the left hand only takes real weapons, so it goes in the shield
+hand; the engine still hits with fists (`Weapon::useFist`), and `monk_combat.lua` and the Monk spells (`_monk.lua`) use its
+attack instead of the level value when it is higher (`ChaosMonk.cfg.unarmed.fistWeapons`). Its defense is a shield's.
+
+| item | level | attack | defense | where |
+|---|---|---|---|---|
+| pair of charred hand wraps | 8 | 42 | 4 | weapon dealers 400 gp (buy back 80); Monk 0.9%, Dark Monk 0.7% |
+| ashbound cestus | 60 | 44 | 8 | weapon dealers 7,000 gp (buy back 1,400); Undead Gladiator 0.4%, Renegade Knight 0.3% |
+| pair of ember knuckles | 150 | 46 | 12 | Burning Gladiator 0.35%, Hellfire Fighter 0.3%; Yasir buys 4,500 |
+| ossuary gauntlet | 300 | 50 | 16 | Bonecleaver, Doombone, Bonelich, Grimbone, Bonecrusher 0.25%; Yasir buys 12,000 |
+| pair of cinderforged talons | 500 | 55 | 20 | Inferno Juggernaut, Nightflare Dreadknight, Malofur Mangrinder 0.15%, Orclops Ravager 0.12%; Yasir buys 28,000 |
+| Grasp of the Pyre Saint (unique, base "pyre saint's grasp") | 650 | 64 | 24 | legendary unique only (`chaos_unique_items.lua`): fist skill +5, crit 4% / +15%, fire absorb 6% |
+
+- Balance: bare fists are 40 + level x 0.025 (at most 60), so each tier is about 2 attack above them at its level: x1.04
+  .. x1.06 damage (level 300 with the ossuary gauntlet: x1.047 by formula; on the test server 979 against 933 per hit
+  over 64 / 76 hits on a dummy). The unique is the only fist weapon above the bare cap (60, level 800).
+- Rarities, item levels, modifiers: drops get the stock rarity roll and the chaos gear pass like any gear;
+  `chaos_item_mods.lua` treats a shield with an attack as a weapon, so they roll weapon modifiers (attack speed,
+  ailments, penetration, ...). The unique is a copy of its own base item with the attributes of `chaos_items.xml`
+  (`gen_unique_specs.py` now maps `skillFist` to the stock rarity attribute `rarity_fistSkill`).
+- Install: step `fistweapons` of `install_all.py` (`python3 -I server/tools/install_fist_weapons.py DATA_DIR [--dry-run]`):
+  items.otb nodes, an items.xml block, a movements.xml block (Equip / DeEquip, slot shield, the level, Monk / Shadowfist /
+  Iron Sage), and the NPC shops: every weapon dealer (an XML buy list with the battle hammer, 17 NPCs) sells the first two
+  and buys them back, Yasir buys the rest. `install_fist_weapons.py --lua` rewrites `data/lib/chaos_fist_weapons.lua` from
+  `data/items/fist_items.csv` (the importer's manifest). `add_vocations.py` gives the Monk line any fist weapon equip entry
+  (rule `fist`), so a re-run never changes these entries.
+- Loot: `fist_weapons.lua` adds the rows of `ChaosFistWeapons.loot` to the monster types at startup
+  (`MonsterType:addLoot`, chance per 100,000); no monster file changes. The console prints `[Chaos fist weapons] 15 loot
+  rows added to the monster types (0 skipped)`.
+- Tested (`tests/fist_weapons_test.lua`; in game on a test server with the pair `things_custom9_fx`): equip in the shield
+  hand, the look text ("It can only be wielded properly by monks of level 300 or higher"), the unique given with
+  `ChaosGiveUnique`, the loot rows, the damage with and without the gauntlet. Not tested: the NPC trade window (the test
+  map has no NPCs), a real drop.
+
 ## Buff bar and party frames (`buffbar.lua`, `data/lib/chaos_buffs.lua`, `partyframes.lua`, `partyframes_core.lua`, client `game_buffbar`, `game_partyframes`)
 
 Two client HUDs fed by the server. Opcodes (`ChaosOpcodes` in `chaos_constants.lua`): **234** `buffs` and **235** `partyFrames`

@@ -11,7 +11,7 @@ import re
 ITEM_ATTR = {'attack': 'ITEM_ATTRIBUTE_ATTACK', 'defense': 'ITEM_ATTRIBUTE_DEFENSE', 'extraDef': 'ITEM_ATTRIBUTE_EXTRADEFENSE',
              'armor': 'ITEM_ATTRIBUTE_ARMOR', 'hitChance': 'ITEM_ATTRIBUTE_HITCHANCE', 'range': 'ITEM_ATTRIBUTE_SHOOTRANGE'}
 # keys read on equip by the stock rarity scripts (scripts/customs/rarity/base_rarity.lua)
-CUSTOM = {'skillSword': 'rarity_swordSkill', 'skillAxe': 'rarity_axeSkill', 'skillClub': 'rarity_clubSkill',
+CUSTOM = {'skillFist': 'rarity_fistSkill', 'skillSword': 'rarity_swordSkill', 'skillAxe': 'rarity_axeSkill', 'skillClub': 'rarity_clubSkill',
           'skillDist': 'rarity_distanceSkill', 'skillShield': 'rarity_shieldSkill', 'magicPoints': 'rarity_maglevelSkill',
           'criticalHitChance': 'rarity_criticalHitChance', 'criticalHitAmount': 'rarity_criticalHitAmount',
           'lifeLeechChance': 'rarity_lifeLeechChance', 'lifeLeechAmount': 'rarity_lifeLeechAmount',

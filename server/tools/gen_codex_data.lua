@@ -965,9 +965,9 @@ end
 -- ---------------------------------------------------------------------------------------------------------------
 -- uniques
 -- ---------------------------------------------------------------------------------------------------------------
-local SLOT_KIND = {sword = "weapon", axe = "weapon", club = "weapon", distance = "weapon", wand = "weapon",
+local SLOT_KIND = {sword = "weapon", axe = "weapon", club = "weapon", distance = "weapon", wand = "weapon", fist = "weapon",
 	head = "helmet", body = "armor", legs = "legs", feet = "boots", necklace = "jewel", ring = "jewel", shield = "shield"}
-local SLOT_NAME = {sword = "Sword", axe = "Axe", club = "Club", distance = "Distance weapon", wand = "Wand / rod",
+local SLOT_NAME = {sword = "Sword", axe = "Axe", club = "Club", distance = "Distance weapon", wand = "Wand / rod", fist = "Fist weapon",
 	head = "Helmet", body = "Body armour", legs = "Legs", feet = "Boots", necklace = "Amulet", ring = "Ring", shield = "Shield"}
 local ATTR_ORDER = {"Attack", "Defense", "Extra Defense", "Armor", "Hit Chance", "Range"}
 

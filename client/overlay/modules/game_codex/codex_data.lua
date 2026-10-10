@@ -6177,6 +6177,48 @@ CodexData = {
 					}
 				},
 				{
+					id = "unique:36659",
+					name = "Grasp of the Pyre Saint",
+					color = "#ff9c3a",
+					sub = "Fist weapon, level 650. Attack 64, Defense 24, Critical Hit: chance +4%, damage +15%, Fire Absorb +6%, Fist +5",
+					f = {kind = {"weapon"}, level = 650, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"A saint walked into the pyre and did not stop; only the hand came back out. (Requires level 650, Monks only.)"}
+						},
+						{
+							h = "Stats",
+							p = {"Attack 64", "Defense 24", "Critical Hit: chance +4%, damage +15%", "Fire Absorb +6%", "Fist +5"}
+						},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Fist weapon"},
+								{"Required level", "650"},
+								{"Drops from", "Legendary monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.32%, Boss 0.48% (x item find)."},
+								{"Monsters", "Inferno Juggernaut, Nightflare Dreadknight, Orclops Ravager, Malofur Mangrinder, Royal Man, Grove Keeper, Garack, Alptramun."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					}
+				},
+				{
 					id = "unique:10301",
 					name = "Harvester of Sorrows",
 					color = "#ff9c3a",

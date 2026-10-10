@@ -56,6 +56,10 @@ end
 if not ChaosVfx then
 	pcall(dofile, 'data/lib/chaos_vfx.lua')
 end
+-- effects of our own art appended after them (bone_spear, bone_burst, bone_aura; client/tools/sprites/import_fx_art.py)
+if ChaosVfx and not ChaosVfx.bone_burst then
+	pcall(dofile, 'data/lib/chaos_vfx_art.lua')
+end
 
 -- direction (NORTH .. NORTHWEST) from one position to another, for the directional effects (VfxDir)
 function ChaosSpell.dirTo(fromPos, toPos)

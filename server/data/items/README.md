@@ -1,6 +1,6 @@
 # Chaos unique items
 
-48 unique/legendary items. Each one is a **normal copy of an existing base item** that gets its own name, description
+49 unique/legendary items. Each one is a **normal copy of an existing base item** that gets its own name, description
 and stats as item attributes when it drops or is given (`ChaosMakeUnique`). `items.xml` is not touched.
 
 Why not override `items.xml`: a first run of the server showed that 28 of the 48 base items are found **by their stock name**
@@ -81,6 +81,7 @@ Columns: server id / client id, the stock item that was overridden, required lev
 | Cinderclaw Band | ring | 10314 / 9397 | claw of 'The Noxious Spawn' | 80 | rare (set) | skillSword 3, skillAxe 3, skillClub 3, absorbPercentFire 8, magicPoints 1 |
 | Widow's Last Vow | ring | 10510 / 9593 | broken wedding ring | 90 | rare | lifeLeechChance 4, lifeLeechAmount 5, manaLeechChance 4, manaLeechAmount 5, maxHitPoints 100 |
 | Veil of the Wraith | ring | 29868 / 27212 | Myst Regalia Ring | 120 | boss | Arm 4, skillShield 5, magicPoints 2, absorbPercentPhysical 5 |
+| Grasp of the Pyre Saint | fist | 36659 / 33659 | our own "pyre saint's grasp" (server/README.md "Fist weapons") | 650 | legendary | Atk 64, Def 24, skillFist 5, criticalHitChance 4, criticalHitAmount 15, absorbPercentFire 6 |
 
 Drop chances (per 10000 per kill before the tier multiplier x1/x2/x4/x6 for magic/rare/legendary/boss; normal tier never drops uniques)
 are 4-6 (magic), 4-6 (rare), 7-9 (legendary) and 20 (boss-only items) and are in `chaos_unique_items.lua`. Measured with the

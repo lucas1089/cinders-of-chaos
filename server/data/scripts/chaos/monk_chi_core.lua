@@ -80,8 +80,9 @@ M.cfg = {
 		meleeDamage = {[17] = 1.2, [18] = 1.2, [19] = 1.1},
 		engineAttack = 7,
 		-- fist weapons: hand items with an attack and no weapon type (the engine still fights with fists); their
-		-- attack counts when it is higher than the level value. Item ids, empty until such items exist.
-		fistWeapons = {}
+		-- attack counts when it is higher than the level value. Server ids of the fist weapons (shield-type hand items
+		-- with an attack; server/tools/install_fist_weapons.py, data/lib/chaos_fist_weapons.lua, tests/fist_weapons_test.lua)
+		fistWeapons = {36654, 36655, 36656, 36657, 36658, 36659}
 	},
 	-- spell strikes x (1 + (level - from) / per), at most max: stands in for the passive tree, like the Thief line
 	-- (Chaos.classes.spellLevelScale when it exists)

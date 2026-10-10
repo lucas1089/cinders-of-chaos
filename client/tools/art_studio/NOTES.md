@@ -35,3 +35,21 @@ Request: "one small creature shape + idle/walk preview, e.g. a bone-golem-like o
 ~31x25 px. First version: too dark a skin ramp (it read as a black blob) and arms spread so wide it sprawled; then
 the head lowered and pushed forward (a hunch) to shorten the diagonal lean of a tall biped. The walk: alternating legs
 16 degrees, arms against them; the idle: a breath (1 px) and a claw twitch, face still. Not repainted (no token).
+
+## Items: Monk fist weapons + Necromancer bone effect pieces (2026-10-10)
+
+Request: "a small set of fist weapons for the Monk, 5 tiers up to level ~500+, plus a legendary; 32x32, oblique, top-left
+light, dark outline, grimdark (charred iron, embers, ash, bone)" and "the bone_spear / bone_burst / bone_aura effects".
+Prompts: `prompts/items/fist-weapons.md` (the 32x32 VARIANT for ONE item per call), `bone-spear.md` (32), `bone-shards.md`
+and `bone-skulls.md` (16). Balance 2000 -> 1920 generations: 8 calls, 10 generations each (Create image Pro bills a call,
+not an image: at 32 px one call gives 64 candidates, at 16 px also 64).
+
+- One item per call at 32 px beats a sheet: 64 candidates of the right size, ~26x27 px each, nothing to cut apart.
+- The legendary did not need its own call: one ossuary gauntlet candidate had a skull on the knuckles; its eye sockets
+  were recoloured to embers in `gen_fistfx_art.py` (9 pixels).
+- PixelLab painted every spear diagonally, as asked; the straight directions come from RotSprite (Scale2x x3, nearest
+  rotation, nearest sampling back) and need a smaller scale (0.6 against 0.78) or they cross the tile.
+- The 16 px skulls come without a hard outline; at 0.72 scale over the violet ring they still read at 1x.
+- Picks are in `client/tools/sprites/art_import/fistfx_src/` (unchanged PNGs); `out/items/fistfx/` holds every candidate
+  (ignored by git).
+

@@ -50,7 +50,8 @@ SOLID, MISSILE, PATH, USEABLE, PICKUP, MOVE, STACK = 1, 2, 4, 16, 32, 64, 128
 ONTOP, ANIM, FORCEUSE = 1 << 13, 1 << 24, 1 << 26
 OTB = {'product': (0, PICKUP | MOVE | STACK, 0), 'food': (0, PICKUP | MOVE | STACK, 0), 'corpse': (2, FORCEUSE, 0),
        'tree': (0, SOLID | ONTOP, 2), 'stump': (0, SOLID | ONTOP, 2), 'ground': (1, 0, 0), 'water': (1, 0, 0),
-       'border': (0, ONTOP, 1), 'shore': (0, ONTOP, 1), 'lake': (0, 0, 0), 'dock': (0, 0, 0)}
+       'border': (0, ONTOP, 1), 'shore': (0, ONTOP, 1), 'lake': (0, 0, 0), 'dock': (0, 0, 0),
+       'weapon': (0, PICKUP | MOVE, 0)}   # weapon: hand items (the Monk's fist weapons, art_import/fist_weapons.csv)
 
 
 def extra_of(r):

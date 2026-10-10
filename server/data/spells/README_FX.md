@@ -130,7 +130,7 @@ Shadow Step / Shadow Veil shade_vanish / shade_appear; Flickerdash blink_vanish 
 arcane_bolt + cursed; Wraithshroud shadow_shroud; Nightburst void_maw; Tear in the Weave void_rift; Lucid Reverie
 starfall_crown; Mirror Mend regenerating; Soulward / Counter Stance / Chi Ward shield_bubble; Hunter's Instinct gale_ring;
 Poison Blades poisoned; Smoke Bomb stunned; Raise Dead / Banner of Bones / Bone Golem necro_seal; Withering Curse
-shadow_orb + cursed; Corpse Explosion / Bone Offering px633_indigo; Soul Rot px633_green; Life Siphon px448_crimson;
+shadow_orb + cursed; Corpse Explosion / Bone Offering bone_burst + px633_indigo (bone_burst: see "Bone effects" below); Soul Rot px633_green; Life Siphon px448_crimson;
 Ashen Fist / Iron Palm punch_hit_gold; Sundering Palm punch_hit_red; Pressure Points / Shadowfist Flurry
 punch_hit_violet; Kindled Breath chi_charge; Mistborne Step gale_hit; Mantra of Stone stone_rise; Radiant Smite
 px652_white; Vow of Mending / Lay on Hands healing_bloom; Purging Nova dome_blast_holy; Rebuke solar_flash.
@@ -147,3 +147,21 @@ The art sets are not in the repository. A pair with more outfits before this ste
 new `--expect-first-outfit` and keep the regenerated `chaos_auras.csv` (the auras.xml ids 6..24 stay the same). The tool
 verifies its output like `import_outfits.py` (re-parse, every new frame / pattern / layer pixel-exact, all old entries
 byte-identical, 3000 sampled old sprites) and is deterministic.
+
+## Bone effects (effects 583..585, missile 153; our own art)
+
+The Necromancer line's own effects, appended after everything above by `client/tools/sprites/import_fx_art.py` (spec
+`client/tools/sprites/art_import/fx_art.csv`, frame strips in `art_import/bone_fx/` built by `gen_fistfx_art.py` from
+PixelLab paintings of a bone spear, bone shards and skulls; the pieces are moved, flipped and turned per frame, never
+repainted). Lua names: `server/data/lib/chaos_vfx_art.lua` (written by the tool; merged into `ChaosVfx` /
+`ChaosVfxMissile`, loaded by `_common.lua`), catalogue `vfx_art_catalog.csv`.
+
+| id | name | size, offset | frames | use |
+|---|---|---|---|---|
+| 583 | bone_spear | 3x3, +1,+1 | 7 x 70 ms | Bone Spear: a violet snap and six splinters on the target |
+| 584 | bone_burst | 3x3, +1,+1 | 9 x 80 ms | Corpse Explosion (each corpse), Bone Offering (the sacrificed minion): eight shards thrown out, a broken ring, dust |
+| 585 | bone_aura | 3x3, +1,+1 | 14 x 90 ms | Banner of Bones (each minion), Bone Offering (the caster): three skulls and four shards rise and circle once |
+| missile 153 | bone_spear | 1x1, 3x3 directions | 2 x 100 ms | Bone Spear's flight (`ChaosSpell.vshoot`) |
+
+Like the pack effects they must be sent with `Vfx` / `VfxShoot` (the spells use `vfxOr` / `vshoot`, which fall back to the
+stock effect when `chaos_vfx_art.lua` is missing). Build order and md5s: client/MANIFEST.md "Fist weapons and bone effects".

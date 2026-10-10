@@ -29,7 +29,8 @@ usage: python3 -I add_vocations.py DATA_DIR [--dry-run]
    item is a one-handed sword or a throwing weapon. A list that names "Thief" already is left as it is.
    The Monk line (Monk, Shadowfist, Iron Sage) fights unarmed or with a staff: weapon entries of two-handed clubs get
    the three; equip events get them when the slot is not a hand and the Ranger may wear it (light armour), or the slot
-   is a hand and the item is a two-handed club.
+   is a hand and the item is a two-handed club, or the item is a fist weapon (items.xml weaponType "shield" with an
+   attack: no stock shield has one; the fist weapons and their Monk-only equip entries come from install_fist_weapons.py).
    The Templar line (Templar, Inquisitor, Sentinel) gets one-handed swords and clubs, and every non-hand equip entry
    (shields too) that the Warrior may wear.
    The Necromancer line (Necromancer, Lich, Bone Lord) wields and wears what the Mystic does: every <wand> and every
@@ -176,6 +177,8 @@ def item_info(items_xml):
             flags.add('melee2h')
         if wt == 'distance' and not ammo:
             flags.add('throwing')
+        if wt == 'shield' and re.search(r'key="attack"\s+value="[1-9]', body, re.I):
+            flags.add('fist')            # a shield with an attack: the Monk line's fist weapons (install_fist_weapons.py)
         if wt == 'distance' and ammo == 'arrow':
             flags.add('bow')
         if wt == 'ammunition' and ammo == 'arrow':
@@ -316,7 +319,7 @@ def thief_ok(fl):
 
 
 def monk_ok(fl):
-    return 'staff' in fl
+    return 'staff' in fl or 'fist' in fl
 
 
 def templar_ok(fl):
@@ -380,8 +383,8 @@ def patch_movements(text, info):
         light = re.search(r'<vocation\s+name="(?:Paladin|Ranger)"', el) is not None
         heavy = re.search(r'<vocation\s+name="(?:Knight|Warrior)"', el) is not None
         caster = caster_list(el)
-        if slot == 'hand':
-            fl = flags_of(tag, info)
+        fl = flags_of(tag, info)
+        if slot == 'hand' or 'fist' in fl:          # fist weapons are equipped in the shield slot
             thief, monk, templar = thief_ok(fl), monk_ok(fl), templar_ok(fl)
         else:
             thief = monk = light

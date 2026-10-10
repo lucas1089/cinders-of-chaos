@@ -193,4 +193,8 @@ ChaosUniqueSpecs = {
 		attributes = {  },
 		custom = { rarity_lifeLeechAmount = 5, rarity_lifeLeechChance = 4, rarity_manaLeechAmount = 5, rarity_manaLeechChance = 4 },
 		skipped = { "maxHitPoints" } },
+	[36659] = { name = "Grasp of the Pyre Saint", article = "the", description = "A saint walked into the pyre and did not stop; only the hand came back out. (Requires level 650, Monks only.)",
+		attributes = { [ITEM_ATTRIBUTE_ATTACK] = 64, [ITEM_ATTRIBUTE_DEFENSE] = 24 },
+		custom = { rarity_FireAbsorb = 6, rarity_criticalHitAmount = 15, rarity_criticalHitChance = 4, rarity_fistSkill = 5 },
+		skipped = {  } },
 }

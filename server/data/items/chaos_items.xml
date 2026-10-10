@@ -574,4 +574,17 @@
 		<attribute key="description" value="A promise made to the grave, kept in blood. (Requires level 90.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
+	<!-- 36659: our "pyre saint's grasp" (the Monk's fist weapon, server/tools/install_fist_weapons.py), client id 33659 -->
+	<item id="36659" article="the" name="Grasp of the Pyre Saint">
+		<attribute key="weight" value="2400" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="attack" value="64" />
+		<attribute key="defense" value="24" />
+		<attribute key="skillFist" value="5" />
+		<attribute key="criticalHitChance" value="4" />
+		<attribute key="criticalHitAmount" value="15" />
+		<attribute key="absorbPercentFire" value="6" />
+		<attribute key="description" value="A saint walked into the pyre and did not stop; only the hand came back out. (Requires level 650, Monks only.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
 </items>

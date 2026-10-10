@@ -299,6 +299,11 @@ function M.kindOfType(it)
 	end
 	local weapon = typeNumber(it, "getWeaponType")
 	if weapon == (WEAPON_SHIELD or 4) then
+		-- a shield with an attack is a Monk's fist weapon (server/tools/install_fist_weapons.py; no stock shield has
+		-- one): it rolls weapon modifiers
+		if typeNumber(it, "getAttack") > 0 then
+			return "weapon"
+		end
 		return "shield"
 	end
 	if weapon ~= 0 and weapon ~= (WEAPON_AMMO or 7) then

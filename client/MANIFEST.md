@@ -241,6 +241,40 @@ copy the dat flags of the stock bags (`copy:8861`, `copy:7343`, `copy:10325`: co
 - Checked in the Linux client with the new pair: in a bag next to the stock bags, in the store (Convenience), in the container
   window titles, and on the kill routing screenshots.
 
+## Fist weapons and bone effects (new, `tools/sprites/gen_fistfx_art.py`, `art_import/fist_weapons.csv`, `art_import/fx_art.csv`)
+Six item things for the Monk line's fist weapons and four things for the Necromancer line, our own art: PixelLab paintings
+(Create image Pro, prompts in `tools/art_studio/prompts/items/fist-weapons.md`, `bone-spear.md`, `bone-shards.md`,
+`bone-skulls.md`; 8 calls, 80 generations) picked unchanged into `tools/sprites/art_import/fistfx_src/`.
+`gen_fistfx_art.py` turns them into `art_import/fist_weapons.png` (the six 32 px icons; the unique's skull gets ember eye
+sockets) and the frame strips of `art_import/bone_fx/`: the bone spear missile (8 directions from one painting by
+RotSprite and flips, 2 frames with a violet mote trail), `bone_spear` (impact: a violet snap and six splinters, 7 x 70 ms),
+`bone_burst` (eight shards thrown out and falling, dust, a broken violet ring, 9 x 80 ms) and `bone_aura` (three skulls
+and four shards rise from a violet ground ring, circle once, sink, 14 x 90 ms). Effects are 3x3 tiles sent at the target
++ (1, 1); nothing is repainted per frame (the pieces are moved, flipped and turned), alpha 0 / 255, last frame empty.
+- Client ids: items 33654..33659 (charred hand wraps, ashbound cestus, ember knuckles, ossuary gauntlet, cinderforged
+  talons, pyre saint's grasp; server ids +3000, `server/data/items/fist_items.csv`, `server/tools/install_fist_weapons.py`);
+  effects 583..585 (bone_spear, bone_burst, bone_aura), missile 153 (bone_spear); Lua names
+  `server/data/lib/chaos_vfx_art.lua`, catalogue `server/data/spells/vfx_art_catalog.csv` (both written by the import).
+- Two steps, last in the rebuild chain (after the store pouch looks); `import_fx_art.py` is new (effects and missiles
+  from frame strips, verified like `import_vfx.py`):
+  ```
+  python3 -I client/tools/sprites/gen_fistfx_art.py                      # only after changing the sources
+  python3 -I client/tools/sprites/import_art_things.py --ours-dat <pair>/Tibia.dat --ours-spr <pair>/Tibia.spr --out-dir STAGE \
+      --things client/tools/sprites/art_import/fist_weapons.csv --first-item 33654 --expect-items 33653 \
+      --manifest-out server/data/items/fist_items.csv
+  python3 -I client/tools/sprites/import_fx_art.py --ours-dat STAGE/Tibia.dat --ours-spr STAGE/Tibia.spr --out-dir OUT \
+      --expect-first-effect 583 --expect-first-missile 153 \
+      --lua-out server/data/lib/chaos_vfx_art.lua --catalog-out server/data/spells/vfx_art_catalog.csv
+  ```
+  On the live pair of 2026-10-09 (dat b243485112b7bea43016d7dd49097472, spr cfd09de9f81c8f2ffdd29db1e01fa69b, 699,748
+  sprites): STAGE dat 169d841aa41243f7804cc74a474584b5, spr 92a7862ccb45e83aabce07fadf33d76a (699,754 sprites); OUT (the
+  test pair `things_custom9_fx`) dat 9cd3c674f57427fd3afe1c3cc481e599, spr 3271f98791957e4a5802b64f353ea474 (699,924
+  sprites), twice identical. Both runs check their input (`--expect-*`), so on a pair with more items, effects or
+  missiles (e.g. after the class outfit import, which only adds outfits and keeps these ids) the ids must be re-planned.
+- Checked in the Linux client (assembled fresh, this pair): the six icons in the inventory and a backpack (the unique in
+  its rarity frame), look texts, a Monk fighting with the ossuary gauntlet, the three effects and the missile cast by
+  the Necromancer line.
+
 ## OFL fonts (`fonts-src/`, `tools/make_ofl_fonts.sh`, `tools/make_fonts.py`)
 
 The client ships bitmap fonts made from four free fonts under the **SIL Open Font License 1.1** (OFL), all from the

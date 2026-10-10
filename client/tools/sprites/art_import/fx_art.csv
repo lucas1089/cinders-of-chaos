@@ -1,0 +1,5 @@
+kind,name,file,w,h,phases,ms,dx,dy,note
+effect,bone_spear,bone_fx/bone_spear.png,3,3,7,70,1,1,necrotic: a bone spear strikes and splinters
+effect,bone_burst,bone_fx/bone_burst.png,3,3,9,80,1,1,necrotic: bone shards burst from a corpse
+effect,bone_aura,bone_fx/bone_aura.png,3,3,14,90,1,1,necrotic: skulls and shards rise and circle
+missile,bone_spear,bone_fx/bone_spear_missile.png,1,1,2,100,0,0,bone spear
