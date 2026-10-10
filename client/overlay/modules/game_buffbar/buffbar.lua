@@ -69,26 +69,15 @@ local function stopWatching()
 end
 
 -- ---------------------------------------------------------------- icons
--- the image of an icon spec ("spell:<words>", "cond:<NN>", "buff:<name>"); `key` names the fallback. Also used by the
--- party frames (modules.game_buffbar.iconFor).
+-- the image of an icon spec: always our own 26 px icon (/images/game/buffs/<name>, BuffMath.ownName: "buff:<name>",
+-- else the key's own icon); `key` names the fallback. Also used by the party frames (modules.game_buffbar.iconFor),
+-- so the clip is always given.
 function iconFor(spec, key)
   spec = tostring(spec or '')
   key = key or 'spellbuff'
   local hit = iconCache[spec .. '|' .. key]
   if hit then return hit end
-  local kind, arg = BuffMath.parseIcon(spec)
-  local found
-  if kind == 'spell' and Spells and Spells.getSpellIcon then
-    local ok, folder, clip = pcall(Spells.getSpellIcon, arg)
-    if ok and folder and clip then found = { src = folder, clip = clip } end
-  elseif kind == 'cond' then
-    local path = BuffMath.condPath(arg)
-    if path and g_resources.fileExists(path .. '.png') then found = { src = path } end
-  elseif kind == 'buff' then
-    local path = BuffMath.ownPath(arg)
-    if path then found = { src = path } end
-  end
-  if not found then found = { src = BuffMath.ownPath(key) or '/images/game/buffs/spellbuff' } end
+  local found = { src = BuffMath.ownPath(BuffMath.ownName(spec, key)), clip = BuffMath.OWN_CLIP }
   iconCache[spec .. '|' .. key] = found
   return found
 end
@@ -96,7 +85,7 @@ end
 local function applyIcon(widget, entry)
   local icon = iconFor(entry.icon, entry.key)
   widget:setImageSource(icon.src)
-  if icon.clip then widget:setImageClip(icon.clip) else widget:setImageClip('0 0 32 32') end
+  widget:setImageClip(icon.clip or BuffMath.OWN_CLIP)
 end
 
 -- ---------------------------------------------------------------- layout

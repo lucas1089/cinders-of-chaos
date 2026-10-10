@@ -16,8 +16,9 @@
 --
 -- An item (what collect returns): {key, name, desc, icon, kind = "buff" | "debuff", leftMs = ms or nil (no timer),
 -- stacks = n or nil, prio}. The wire entry (B.wire): {k, n, d, i, t = 0 | 1, l = ms left or nil, s = stacks or nil}.
--- icon: "spell:<words>" (the client's spell icon sheet), "cond:<NN>" (the stock condition icons) or "buff:<name>" (our
--- own icons, client/tools/gen_buff_icons.py: one for every key of the registry, also the fallback of the others).
+-- icon: "buff:<name>", our own 26 px pixel-art icon (client/overlay/data/images/game/buffs/<name>.png, drawn by
+-- client/tools/gen_buff_icons.py: one for every key of the registry; a class buff shows its spell's art in the buff
+-- frame). The client still reads the older "spell:<words>" / "cond:<NN>" forms, but draws the key's own icon for them.
 --
 -- Messages (server -> client, JSON {action, data}):
 --   full  {list = [entry ...]}                          the whole bar (login, `sync`, every cfg.resyncMs)
@@ -88,31 +89,31 @@ source("calendar_event", "calendar", "buff", "Event", "buff:event", "A scheduled
 source("double_xp", "doubleXp", "buff", "Double Experience", "buff:double_xp", "A double experience potion doubles the experience you get.", 17)
 
 -- ---- Chaos buffs: class spells (sub ids of ChaosSpell.SUBID, Chaos.classes.subId, necro_config, monk_chi_core, templar_aura_core)
-cond("blood_pact", "CONDITION_ATTRIBUTES", 71001, "buff", "Crimson Covenant", "spell:tor nyx cruor", "A short magic level boost, paid for in health.", 30)
-cond("red_frenzy", "CONDITION_ATTRIBUTES", 71002, "buff", "Red Frenzy", "spell:vyr ira cruor", "More melee skill, less shielding.", 30)
-cond("rally", "CONDITION_ATTRIBUTES", 71003, "buff", "Banner Call", "spell:tor vas vant", "Melee, distance and magic are stronger, and you are faster.", 30)
-cond("barkskin", "CONDITION_ATTRIBUTES", 71004, "buff", "Ironbark Hide", "spell:tor ael skar", "More maximum health and steady regeneration.", 30)
-cond("divine_ward", "CONDITION_REGENERATION", 71005, "buff", "Lightward", "spell:tor sol ghar", "Strong health and mana regeneration.", 30)
-cond("soul_aegis", "CONDITION_MANASHIELD", 71006, "buff", "Soulward", "spell:tor anh", "Damage is taken from mana first, and mana regenerates.", 30)
-cond("phantom_veil", "CONDITION_INVISIBLE", 71007, "buff", "Wraithshroud", "spell:fen wrai", "You are invisible and faster.", 30)
-cond("dash", "CONDITION_HASTE", 71008, "buff", "Flickerdash", "spell:ash flik", "A short burst of speed.", 31)
-cond("iron_will", "CONDITION_ATTRIBUTES", 71009, "buff", "Iron Will", "spell:vok vas rhov", "Less damage taken and more shielding.", 30)
-cond("stealth", "CONDITION_INVISIBLE", 71010, "buff", "Shadow Veil", "spell:fen umh", "Monsters lose you. Your first weapon hit out of it is a critical hit.", 30)
-cond("poison_blades", "CONDITION_ATTRIBUTES", 71011, "buff", "Poison Blades", "spell:vyr vex thyss", "Your weapon hits poison the target.", 30)
-cond("counter", "CONDITION_ATTRIBUTES", 71012, "buff", "Counter Stance", "spell:tor ryx", "The next melee hit you take is parried and answered.", 30)
-cond("bushido", "CONDITION_ATTRIBUTES", 71013, "buff", "Bushido Focus", "spell:vyr mynd",
+cond("blood_pact", "CONDITION_ATTRIBUTES", 71001, "buff", "Crimson Covenant", "buff:blood_pact", "A short magic level boost, paid for in health.", 30)
+cond("red_frenzy", "CONDITION_ATTRIBUTES", 71002, "buff", "Red Frenzy", "buff:red_frenzy", "More melee skill, less shielding.", 30)
+cond("rally", "CONDITION_ATTRIBUTES", 71003, "buff", "Banner Call", "buff:rally", "Melee, distance and magic are stronger, and you are faster.", 30)
+cond("barkskin", "CONDITION_ATTRIBUTES", 71004, "buff", "Ironbark Hide", "buff:barkskin", "More maximum health and steady regeneration.", 30)
+cond("divine_ward", "CONDITION_REGENERATION", 71005, "buff", "Lightward", "buff:divine_ward", "Strong health and mana regeneration.", 30)
+cond("soul_aegis", "CONDITION_MANASHIELD", 71006, "buff", "Soulward", "buff:soul_aegis", "Damage is taken from mana first, and mana regenerates.", 30)
+cond("phantom_veil", "CONDITION_INVISIBLE", 71007, "buff", "Wraithshroud", "buff:phantom_veil", "You are invisible and faster.", 30)
+cond("dash", "CONDITION_HASTE", 71008, "buff", "Flickerdash", "buff:dash", "A short burst of speed.", 31)
+cond("iron_will", "CONDITION_ATTRIBUTES", 71009, "buff", "Iron Will", "buff:iron_will", "Less damage taken and more shielding.", 30)
+cond("stealth", "CONDITION_INVISIBLE", 71010, "buff", "Shadow Veil", "buff:stealth", "Monsters lose you. Your first weapon hit out of it is a critical hit.", 30)
+cond("poison_blades", "CONDITION_ATTRIBUTES", 71011, "buff", "Poison Blades", "buff:poison_blades", "Your weapon hits poison the target.", 30)
+cond("counter", "CONDITION_ATTRIBUTES", 71012, "buff", "Counter Stance", "buff:counter", "The next melee hit you take is parried and answered.", 30)
+cond("bushido", "CONDITION_ATTRIBUTES", 71013, "buff", "Bushido Focus", "buff:bushido",
 	"Critical chance grows every second you take no damage. A hit taken starts the stacks again.", 29,
 	{stacks = "bushido"})
-cond("bloodrage", "CONDITION_ATTRIBUTES", 71014, "buff", "Bloodrage", "spell:vyr sang khar", "More Rage, and every melee hit also strikes enemies next to you.", 29)
-cond("bone_aura", "CONDITION_ATTRIBUTES", 71022, "buff", "Banner of Bones", "spell:tor vas oss", "Your bone minions are empowered.", 30)
-cond("bone_shield", "CONDITION_ATTRIBUTES", 71023, "buff", "Bone Offering", "spell:drai sang oss", "A shield of bone guards you.", 30)
+cond("bloodrage", "CONDITION_ATTRIBUTES", 71014, "buff", "Bloodrage", "buff:bloodrage", "More Rage, and every melee hit also strikes enemies next to you.", 29)
+cond("bone_aura", "CONDITION_ATTRIBUTES", 71022, "buff", "Banner of Bones", "buff:bone_aura", "Your bone minions are empowered.", 30)
+cond("bone_shield", "CONDITION_ATTRIBUTES", 71023, "buff", "Bone Offering", "buff:bone_shield", "A shield of bone guards you.", 30)
 cond("focus", "CONDITION_ATTRIBUTES", 71030, "buff", "Focus", "buff:focus", "Critical chance from the chi your last finisher spent.", 30)
-cond("chi_ward", "CONDITION_ATTRIBUTES", 71031, "buff", "Chi Ward", "spell:tor qhal", "A ward absorbs damage.", 30)
-cond("mantra", "CONDITION_ATTRIBUTES", 71032, "buff", "Mantra of Stone", "spell:tor vas qhal", "Damage taken is reduced.", 30)
-cond("roll", "CONDITION_ATTRIBUTES", 71033, "buff", "Mistborne Step", "spell:ash qhal", "You may slip the next blow.", 30)
-cond("breath", "CONDITION_REGENERATION", 71036, "buff", "Kindled Breath", "spell:saen qhal", "Heals you over time.", 30)
-cond("zealotry", "CONDITION_ATTRIBUTES", 71051, "buff", "Zealotry", "spell:vyr sol zel", "A fervour that strengthens your strikes.", 30)
-cond("aegis_faith", "CONDITION_ATTRIBUTES", 71052, "buff", "Aegis of Faith", "spell:tor gal sol aeg", "Faith shields you.", 30)
+cond("chi_ward", "CONDITION_ATTRIBUTES", 71031, "buff", "Chi Ward", "buff:chi_ward", "A ward absorbs damage.", 30)
+cond("mantra", "CONDITION_ATTRIBUTES", 71032, "buff", "Mantra of Stone", "buff:mantra", "Damage taken is reduced.", 30)
+cond("roll", "CONDITION_ATTRIBUTES", 71033, "buff", "Mistborne Step", "buff:roll", "You may slip the next blow.", 30)
+cond("breath", "CONDITION_REGENERATION", 71036, "buff", "Kindled Breath", "buff:breath", "Heals you over time.", 30)
+cond("zealotry", "CONDITION_ATTRIBUTES", 71051, "buff", "Zealotry", "buff:zealotry", "A fervour that strengthens your strikes.", 30)
+cond("aegis_faith", "CONDITION_ATTRIBUTES", 71052, "buff", "Aegis of Faith", "buff:aegis_faith", "Faith shields you.", 30)
 
 -- ---- Chaos counters and windows (sources)
 source("trial_stacks", "trialStacks", "buff", "Kill Stacks", "buff:trial_stacks", "Each kill adds damage for a short time.", 20)
@@ -125,29 +126,29 @@ cond("stun_immune", "CONDITION_ATTRIBUTES", 71035, "buff", "Stun Immunity", "buf
 	"You were stunned: no stun can hold you until this ends, and the next one is shorter.", 25)
 
 -- ---- engine conditions: buffs
-cond("haste", "CONDITION_HASTE", 0, "buff", "Haste", "spell:utani hur", "You move faster.", 50)
+cond("haste", "CONDITION_HASTE", 0, "buff", "Haste", "buff:haste", "You move faster.", 50)
 cond("regen", "CONDITION_REGENERATION", 0, "buff", "Regeneration", "buff:regen", "Health and mana come back faster.", 51)
 cond("fed", "CONDITION_REGENERATION", 0, "buff", "Well Fed", "buff:fed", "Food makes health and mana regenerate.", 52,
 	{cond = {type = "CONDITION_REGENERATION", sub = 0, ids = {"CONDITIONID_DEFAULT"}}})
-cond("manashield", "CONDITION_MANASHIELD", 0, "buff", "Magic Shield", "spell:utamo vita", "Damage is taken from mana first.", 50)
-cond("invisible", "CONDITION_INVISIBLE", 0, "buff", "Invisible", "spell:utana vid", "Monsters cannot see you.", 50)
-cond("light", "CONDITION_LIGHT", 0, "buff", "Light", "spell:utevo lux", "You carry a light.", 55)
-cond("spellbuff", "CONDITION_ATTRIBUTES", 0, "buff", "Spell Buff", "spell:utito tempo", "A spell or potion boosts your skills.", 50)
+cond("manashield", "CONDITION_MANASHIELD", 0, "buff", "Magic Shield", "buff:manashield", "Damage is taken from mana first.", 50)
+cond("invisible", "CONDITION_INVISIBLE", 0, "buff", "Invisible", "buff:invisible", "Monsters cannot see you.", 50)
+cond("light", "CONDITION_LIGHT", 0, "buff", "Light", "buff:light", "You carry a light.", 55)
+cond("spellbuff", "CONDITION_ATTRIBUTES", 0, "buff", "Spell Buff", "buff:spellbuff", "A spell or potion boosts your skills.", 50)
 
 -- ---- engine conditions: debuffs
-cond("poison", "CONDITION_POISON", 0, "debuff", "Poisoned", "cond:00", "Poison hurts you every few seconds.", 50)
-cond("burning", "CONDITION_FIRE", 0, "debuff", "Burning", "cond:01", "Fire burns you every few seconds.", 50)
-cond("energy", "CONDITION_ENERGY", 0, "debuff", "Electrified", "cond:02", "Energy hurts you every few seconds.", 50)
-cond("bleeding", "CONDITION_BLEEDING", 0, "debuff", "Bleeding", "cond:15", "You bleed, taking damage over time.", 50)
-cond("drowning", "CONDITION_DROWN", 0, "debuff", "Drowning", "cond:08", "You are drowning and take damage.", 49)
-cond("freezing", "CONDITION_FREEZING", 0, "debuff", "Freezing", "cond:09", "Cold hurts you every few seconds.", 50)
-cond("dazzled", "CONDITION_DAZZLED", 0, "debuff", "Dazzled", "cond:10", "Holy light hurts you every few seconds.", 50)
-cond("cursed", "CONDITION_CURSED", 0, "debuff", "Cursed", "cond:11", "A curse drains your health.", 50)
-cond("paralyze", "CONDITION_PARALYZE", 0, "debuff", "Slowed", "cond:05", "Your movement is slowed.", 48)
-cond("drunk", "CONDITION_DRUNK", 0, "debuff", "Drunk", "cond:03", "You stumble when you walk.", 55)
+cond("poison", "CONDITION_POISON", 0, "debuff", "Poisoned", "buff:poison", "Poison hurts you every few seconds.", 50)
+cond("burning", "CONDITION_FIRE", 0, "debuff", "Burning", "buff:burning", "Fire burns you every few seconds.", 50)
+cond("energy", "CONDITION_ENERGY", 0, "debuff", "Electrified", "buff:energy", "Energy hurts you every few seconds.", 50)
+cond("bleeding", "CONDITION_BLEEDING", 0, "debuff", "Bleeding", "buff:bleeding", "You bleed, taking damage over time.", 50)
+cond("drowning", "CONDITION_DROWN", 0, "debuff", "Drowning", "buff:drowning", "You are drowning and take damage.", 49)
+cond("freezing", "CONDITION_FREEZING", 0, "debuff", "Freezing", "buff:freezing", "Cold hurts you every few seconds.", 50)
+cond("dazzled", "CONDITION_DAZZLED", 0, "debuff", "Dazzled", "buff:dazzled", "Holy light hurts you every few seconds.", 50)
+cond("cursed", "CONDITION_CURSED", 0, "debuff", "Cursed", "buff:cursed", "A curse drains your health.", 50)
+cond("paralyze", "CONDITION_PARALYZE", 0, "debuff", "Slowed", "buff:paralyze", "Your movement is slowed.", 48)
+cond("drunk", "CONDITION_DRUNK", 0, "debuff", "Drunk", "buff:drunk", "You stumble when you walk.", 55)
 cond("pacified", "CONDITION_PACIFIED", 0, "debuff", "Pacified", "buff:pacified", "You cannot attack.", 48)
 cond("muted", "CONDITION_MUTED", 0, "debuff", "Silenced", "buff:muted", "You cannot cast spells.", 48)
-cond("infight", "CONDITION_INFIGHT", 0, "debuff", "In Fight", "cond:07",
+cond("infight", "CONDITION_INFIGHT", 0, "debuff", "In Fight", "buff:infight",
 	"You cannot log out or enter a protection zone until the timer ends.", 40,
 	{cond = {type = "CONDITION_INFIGHT", sub = 0, ids = {"CONDITIONID_DEFAULT", "CONDITIONID_COMBAT"}}})
 source("skull_white", "skull", "debuff", "White Skull", "buff:skull_white", "You attacked a player. Others may attack you freely.", 41, {skull = "SKULL_WHITE"})
@@ -577,14 +578,14 @@ function B.brief(items, limit)
 	return list
 end
 
--- registry check (tests, tools): every key unique, a known kind, a known icon form, a name and a description
+-- registry check (tests, tools): every key unique, a known kind, an own "buff:<name>" icon, a name and a description
 function B.validate()
 	local problems = {}
 	for _, def in ipairs(B.entries) do
 		if def.kind ~= "buff" and def.kind ~= "debuff" then
 			problems[#problems + 1] = def.key .. ": kind"
 		end
-		if not (def.icon or ""):match("^spell:.+") and not (def.icon or ""):match("^cond:%d%d$") and not (def.icon or ""):match("^buff:[%w_]+$") then
+		if not (def.icon or ""):match("^buff:[%w_]+$") then
 			problems[#problems + 1] = def.key .. ": icon " .. tostring(def.icon)
 		end
 		if (def.name or "") == "" or (def.desc or "") == "" then

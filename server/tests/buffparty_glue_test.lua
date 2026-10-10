@@ -151,7 +151,7 @@ local sent = take(A)
 eq(#sent, 1, "sync is answered once"); eq(sent[1].op, 234, "on the buffs opcode"); eq(sent[1].msg.action, "full", "with the full list")
 local list = sent[1].msg.data.list
 eq(#list, 2, "two entries"); eq(list[1].k, "haste", "haste first"); eq(list[1].t, 0, "buff"); eq(list[2].k, "poison", "poison next"); eq(list[2].t, 1, "debuff")
-eq(list[1].l, 12000, "ms left"); eq(list[1].n, "Haste", "name"); ok(list[1].d ~= "", "description"); ok(list[1].i:find("spell:", 1, true) == 1, "icon spec")
+eq(list[1].l, 12000, "ms left"); eq(list[1].n, "Haste", "name"); ok(list[1].d ~= "", "description"); eq(list[1].i, "buff:haste", "icon spec")
 -- a second sync straight away is refused by the rate limit
 ext(A, ChaosOpcodes.buffs, "sync")
 eq(#take(A), 0, "sync is rate limited")

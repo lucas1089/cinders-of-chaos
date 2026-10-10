@@ -209,12 +209,20 @@ function BuffMath.parseIcon(spec)
   return nil
 end
 
-function BuffMath.condPath(arg)
-  if not tostring(arg):match('^%d%d$') then return nil end
-  return '/images/arcs/conditions/player-state-flags-' .. arg
-end
+-- our own icons (client/tools/gen_buff_icons.py): 26 x 26 pixel art, the bar's cell size, drawn 1:1
+BuffMath.OWN_CLIP = '0 0 26 26'
 
 function BuffMath.ownPath(name)
   if not tostring(name):match('^[%w_]+$') then return nil end
   return '/images/game/buffs/' .. name
+end
+
+-- the own icon a spec draws: "buff:<name>" is that name; anything else (an older server's "cond:<NN>" or
+-- "spell:<words>", an unknown spec) draws the key's own icon; 'spellbuff' when neither is a valid name. Neither the
+-- stock condition art nor the spell sheet is used: every icon on the bar is one of ours, in the same frame.
+function BuffMath.ownName(spec, key)
+  local kind, arg = BuffMath.parseIcon(spec)
+  if kind == 'buff' and BuffMath.ownPath(arg) then return arg end
+  if key and BuffMath.ownPath(key) then return key end
+  return 'spellbuff'
 end

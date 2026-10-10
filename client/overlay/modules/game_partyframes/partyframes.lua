@@ -74,7 +74,7 @@ local function setIcon(widget, spec)
     if ok and icon then src, clip = icon.src, icon.clip end
   end
   widget:setImageSource(src)
-  widget:setImageClip(clip or '0 0 32 32')
+  widget:setImageClip(clip or '0 0 26 26') -- our own buff icons are 26 x 26 (game_buffbar BuffMath.OWN_CLIP)
 end
 
 local function creatureOf(id)

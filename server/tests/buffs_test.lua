@@ -96,6 +96,33 @@ for _, key in ipairs({"haste", "regen", "fed", "poison", "burning", "freezing", 
 		"bushido", "blood_pact", "bone_shield", "chi_ward", "rally"}) do
 	ok(B.byKey[key] ~= nil, "registry has " .. key)
 end
+-- every entry draws our own icon: "buff:<name>", and that PNG (and the key's, the client's fallback) is in the client
+-- overlay at the bar's cell size, 26 x 26 (client/tools/gen_buff_icons.py; the width and height sit at bytes 17..24)
+local ICONS = "../client/overlay/data/images/game/buffs/"
+local function pngSize(path)
+	local f = io.open(path, "rb")
+	if not f then
+		return nil
+	end
+	local head = f:read(24)
+	f:close()
+	if not head or #head < 24 or head:sub(2, 4) ~= "PNG" then
+		return nil
+	end
+	local function u32(i)
+		local a, b, c, d = head:byte(i, i + 3)
+		return ((a * 256 + b) * 256 + c) * 256 + d
+	end
+	return u32(17), u32(21)
+end
+for _, def in ipairs(B.entries) do
+	local name = def.icon:match("^buff:([%w_]+)$")
+	ok(name ~= nil, "own icon form " .. def.key .. ": " .. tostring(def.icon))
+	for _, n in ipairs({name or "?", def.key}) do
+		local w, h = pngSize(ICONS .. n .. ".png")
+		ok(w == 26 and h == 26, "icon " .. n .. ".png of " .. def.key .. " exists at 26x26: " .. tostring(w) .. "x" .. tostring(h))
+	end
+end
 eq(B.byKey.poison.kind, "debuff", "poison is a debuff"); eq(B.byKey.haste.kind, "buff", "haste is a buff")
 eq(B.byKey.paralyze.name, "Slowed", "paralyze is shown as slowed")
 

@@ -1,11 +1,11 @@
 // Buff / debuff bar (client game_buffbar; server buffbar.lua, extended opcode 234). Styles from client_chaos_theme.
-// Icons: spell sheet / stock condition art / /images/game/buffs/<name>.png (client/tools/gen_buff_icons.py).
+// Icons: our own 26 x 26 pixel art, /images/game/buffs/<name>.png (client/tools/gen_buff_icons.py), drawn 1:1 and unsmoothed.
 
 BuffBarIcon < UIWidget
   size: 26 26
   border-width: 1
   border-color: #b8923a
-  image-smooth: true
+  image-smooth: false
   focusable: false
   anchors.top: parent.top
   anchors.left: parent.left

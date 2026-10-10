@@ -103,7 +103,10 @@ local k, a = M.parseIcon('spell:utani hur'); eq(k, 'spell', 'spell kind'); eq(a,
 k, a = M.parseIcon('cond:05'); eq(k, 'cond', 'cond'); eq(a, '05', 'cond number')
 k, a = M.parseIcon('buff:world_xp'); eq(k, 'buff', 'own'); eq(a, 'world_xp', 'own name')
 eq(M.parseIcon('http:evil'), nil, 'unknown scheme'); eq(M.parseIcon(nil), nil, 'nil icon'); eq(M.parseIcon(''), nil, 'empty icon')
-eq(M.condPath('05'), '/images/arcs/conditions/player-state-flags-05', 'cond path'); eq(M.condPath('../x'), nil, 'cond path is checked')
+eq(M.ownName('buff:world_xp', 'x'), 'world_xp', 'own icon'); eq(M.ownName('cond:00', 'poison'), 'poison', 'cond: the key')
+eq(M.ownName('spell:utani hur', 'haste'), 'haste', 'spell: the key'); eq(M.ownName('buff:../x', 'regen'), 'regen', 'bad name: the key')
+eq(M.ownName('junk', '../x'), 'spellbuff', 'nothing valid'); eq(M.ownName(nil, nil), 'spellbuff', 'no spec, no key')
+eq(M.OWN_CLIP, '0 0 ' .. M.ICON_SIZE .. ' ' .. M.ICON_SIZE, 'own icons are drawn 1:1 at the cell size')
 eq(M.ownPath('world_xp'), '/images/game/buffs/world_xp', 'own path'); eq(M.ownPath('../../x'), nil, 'own path is checked')
 
 if fails > 0 then os.exit(1) end

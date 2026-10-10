@@ -5561,10 +5561,13 @@ meantime). The server is the authority: the client draws what it is told and cou
   (bleed, ignite, poison, chill, shock), which are only ever put on monsters, so they cannot appear on a player; what a monster
   does to a player (poison, burning, slow ...) is an engine condition and is covered. Hex / Brand marks sit on monsters (the
   `hexes` table of `supports.lua` is local to it): the optional row under the monster bar for the player's own marks is **not done**.
-- Icons (`icon` of an entry): `spell:<words>` (the client's spell icon sheet through `Spells.getSpellIcon`, so the class spells
-  and the stock haste / mana shield / invisible / light spells show their own art), `cond:<NN>` (the stock condition icons,
-  `/images/arcs/conditions/player-state-flags-NN`) and `buff:<name>` (our own, `client/overlay/data/images/game/buffs/`, 62
-  procedural 32x32 icons from `client/tools/gen_buff_icons.py`, one per registry key, also the fallback of the other two).
+- Icons (`icon` of an entry): always `buff:<name>`, our own 26x26 pixel art at the bar's cell size
+  (`client/overlay/data/images/game/buffs/`, 62 icons from `client/tools/gen_buff_icons.py`, one per registry key). Buffs sit in
+  an ember-gold frame, debuffs in a blood-red frame with thorns in the corners (the same colours as the client's border). The
+  class buffs that come from a Chaos spell show that spell's pixel-art icon inside the buff frame; everything else is drawn by
+  the tool. No stock condition art and no spell sheet lookup any more: `validate` refuses any other form, and
+  `tests/buffs_test.lua` checks that every entry's icon and key PNG exist at 26x26. The client still reads an older server's
+  `spell:` / `cond:` spec, but draws the key's own icon for it.
 - Protocol: client -> server `sync` (start, or ask for the full list; at most one per `cfg.requestMs` = 2 s) and `off`; server ->
   client `full {list}` and `diff {add, upd, del}`, an entry `{k, n, d, i, t (0 buff / 1 debuff), l (ms left; none = no timer),
   s (stacks)}`. Only a client that sent `sync` is looked at, once per `cfg.tickMs` (1 s); a diff is sent only when something
