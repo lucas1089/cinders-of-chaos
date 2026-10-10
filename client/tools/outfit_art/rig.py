@@ -395,3 +395,18 @@ def colourize(base, tmpl, head, body, legs, feet):
         m = m & (t[..., 3] > 0)
         out[m, :3] = out[m, :3] * np.array(outfit_color(cidx)) / 255.0
     return out.astype(np.uint8)
+
+
+def overflow(rig, view, pose, ground, frame=64, margin=12, ss=2, top=62.0):
+    """How many pixels of the posed figure fall right of or below the outfit frame (the client draws a 2x2 outfit
+    up and left of its tile: nothing can show past the frame's right or bottom edge, so such pixels are cut off)."""
+    W = rig.world(pose)
+    sdf = posed(rig, W)
+    fc = pt.Facing(view, ground)
+    n = frame + margin
+    jj, ii = np.meshgrid(np.arange(n * ss), np.arange(n * ss))
+    sx, sy = (jj.ravel() + 0.5) / ss, (ii.ravel() + 0.5) / ss
+    sel = (sx >= frame) | (sy >= frame)
+    origins = np.stack([sx[sel] + top / 1.5, sy[sel] + top / 1.5, np.full(sel.sum(), top)], 1)
+    hit, _ = pt.march(fc, origins, -pt.TOWARD_VIEW, max_t=(top + 1) / pt.TOWARD_VIEW[2], sdf=sdf, steps=100)
+    return int(hit.sum()) // (ss * ss)

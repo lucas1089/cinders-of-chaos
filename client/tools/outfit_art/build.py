@@ -47,14 +47,22 @@ def get_rig(line, cls, sex):
     return _cache[k]
 
 
+CHECK_EDGES = True
+OVERFLOW = [0]
+
+
 def render_one(job):
     line, cls, sex, view, kind, k = job
     rg, st = get_rig(line, cls, sex)
     p = pose(st, k=k, mount=(kind == "mount"))
     r = rig.render(rg, view, p, ground=GROUND)
     base, tmpl = rig.paint(rg, r)
+    ov = rig.overflow(rg, view, p, GROUND)
+    if ov:
+        OVERFLOW_LOG.append((job, ov))
+        print("OVERFLOW: %s %s %s %s %s: %d px past the frame's right/bottom edge (cut off in the client)" % (cls, sex, view, kind, k, ov), flush=True)
     m = r["maps"]
-    return job, base, tmpl, (m["part"] + 1) * m["on"] - m["ring"].astype(np.int16), m["rest"]
+    return job, base, tmpl, (m["part"] + 1) * m["on"] - m["ring"].astype(np.int16), m["rest"], ov
 
 
 def jobs_for(line, cls, sex, full=True):
@@ -71,12 +79,14 @@ def jobs_for(line, cls, sex, full=True):
 def run(jobs, procs=4):
     with Pool(procs) as pool:
         out = {}
-        for j, b, t, part, rest in pool.imap_unordered(render_one, jobs, chunksize=1):
+        for j, b, t, part, rest, ov in pool.imap_unordered(render_one, jobs, chunksize=1):
             out[j] = (b, t)
+            OVERFLOW[0] += 1 if ov else 0
             MAPS[j] = (part, rest)
         return out
 
 
+OVERFLOW_LOG = []
 MAPS = {}   # job -> (part map: part index + 1 inside, -1 outline ring, 0 empty; rest coordinates)
 
 
@@ -180,6 +190,9 @@ def cmd_frames(line):
     t0 = time.time()
     res = run(J)
     print("rendered %d frames in %.0fs" % (len(J), time.time() - t0))
+    if CHECK_EDGES and OVERFLOW:
+        raise SystemExit("frames left unsaved: %d frames reach past the outfit frame (see OVERFLOW lines); move the gear "
+                         "up/left or shorten it" % OVERFLOW[0])
     for c in LINES[line]:
         for sx in SEXES:
             idle, walk = frames_array(res, line, c, sx)
