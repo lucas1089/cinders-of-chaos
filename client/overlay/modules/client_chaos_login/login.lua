@@ -176,17 +176,29 @@ local function exitClient()
   g_app.exit()
 end
 
+-- corelib's message box takes the skinned window style (client_chaos_theme sets its title font and offset) and then
+-- puts its own Verdana back on the title: give the title the Chaos title font again, like the other skinned windows
+local function infoBox(title, message)
+  local box = displayInfoBox(title, message)
+  local theme = modules.client_chaos_theme and modules.client_chaos_theme.ChaosTheme
+  if box and theme and theme.applyFont and theme.applyFont(box, 'title') then
+    local w = box:getTextSize().width + box:getPaddingLeft() + box:getPaddingRight()
+    if box:getWidth() < w then box:setWidth(w) end
+  end
+  return box
+end
+
 local function openLink(key, title, message)
   local url = Services and Services[key]
   if type(url) == 'string' and #url > 4 then
     g_platform.openUrl(url)
   else
-    displayInfoBox(title, message)
+    infoBox(title, message)
   end
 end
 
 local function showCredits()
-  displayInfoBox(tr('Credits'), tr('Cinders of Chaos\nA dark-fantasy online adventure.\n\nInterface, art and server: the Cinders of Chaos team.\nThe client runs on the open-source OTClient engine family.\n\n' ..
+  infoBox(tr('Credits'), tr('Cinders of Chaos\nA dark-fantasy online adventure.\n\nInterface, art and server: the Cinders of Chaos team.\nThe client runs on the open-source OTClient engine family.\n\n' ..
     'Fonts (SIL Open Font License 1.1, licence texts in data/fonts/chaos):\nCinzel - The Cinzel Project Authors\n' ..
     'Alegreya SC, Alegreya Sans - The Alegreya (Sans) Project Authors, Huerta Tipografica\n' ..
     'IM Fell English - Igino Marini'))

@@ -420,6 +420,12 @@ function hideAllNotifications()
     pinnedNotifications = {}
 end
 
+-- the toast title: the Chaos heading font (client_chaos_theme ChaosTheme.fonts) when the client has it, stock Verdana otherwise
+local function titleFont()
+    local theme = modules.client_chaos_theme and modules.client_chaos_theme.ChaosTheme
+    return theme and theme.font and theme.font('heading', 'verdana-11px-antialised') or 'verdana-11px-antialised'
+end
+
 -- FUNÇÃO CORRIGIDA: Criar notificação com botões para party invite e catacomb free
 local function createCompactNotification(data, isPinned)
     local gameRootPanel = modules.game_interface.getRootPanel()
@@ -539,7 +545,7 @@ local function createCompactNotification(data, isPinned)
         pcall(function()
             titleLabel:setId('titleLabel')
             titleLabel:setText(data.title or 'NOTIFICATION')
-            titleLabel:setFont('verdana-11px-antialised')
+            titleLabel:setFont(titleFont())
             titleLabel:setColor('#a3844b')
             titleLabel:setTextAlign(AlignCenter)
             titleLabel:setHeight(18)
