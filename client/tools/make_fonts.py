@@ -4,16 +4,22 @@
 usage:
   python3 -I client/tools/make_fonts.py FONT.ttf --name chaos-title --sizes 14,16,20 --out DIR
           [--outline 1] [--outline-color 0,0,0,200] [--shadow 1,1] [--shadow-color 0,0,0,160]
-          [--first 32] [--last 126] [--encoding cp1252] [--tracking 0] [--weight 600]
-          [--space-width 4]
+          [--first 32] [--last 255] [--encoding cp1252] [--tracking 0] [--weight 600]
+          [--space-width 4] [--tight]
   python3 -I client/tools/make_fonts.py --atlas-check CLIENT_DATA_FONTS_DIR [EXTRA_DIR ...]
 
 Glyphs are white (the client tints a font with the widget's colour), with an optional dark outline and a baked drop
 shadow. The client reads a glyph's width from its sheet (the last column with any pixel, BitmapFont::
 calculateGlyphsWidthsAutomatically) and puts the next glyph right after it, so each glyph is drawn at the left of its
 cell and its advance width is marked with one pixel of alpha 1 (invisible) in the top row: the spacing then follows
-the font's own metrics. Glyphs first..last are byte values in `encoding` (the client draws bytes, cp1252 / Latin-1);
-the default 32..126 keeps a sheet small (see the atlas below). --weight picks the weight of a variable font (its
+the font's own metrics. Glyphs first..last are byte values in `encoding`: the client draws a string byte by byte, each
+byte the glyph of that number (BitmapFont, glyphs first-glyph..255, laid out row by row from the sheet's top left like
+the stock 16x14-cell cp1252 Verdana sheets), so the default is the whole printable cp1252 range 32..255 (accents,
+"€ – — ‘ ’ “ ” …"; the no-break space advances like a space, the soft hyphen is a hyphen, 127 and the 5 bytes cp1252
+leaves undefined stay empty). A byte past the sheet has no glyph and is not drawn. The cell is as tall as all glyphs
+need: an accented capital that reaches above the font's line box makes it taller (the text then sits that much
+lower), empty rows above are cut and given back by the .otfont y-offset (the text does not move), --tight also cuts
+the empty rows below (a smaller sheet, a one-line text box that much shorter). --weight picks the weight of a variable font (its
 `wght` axis, e.g. Cinzel[wght].ttf 400..900); --space-width sets the space of a font whose own is very narrow.
 Names: <name>-<size>px, files <name>-<size>px.png/.otfont.
 
@@ -185,9 +191,38 @@ def parse_rgba(text):
     return tuple(parts[:4])
 
 
-def render(font_file, size, name, out_dir, first=32, last=126, encoding='cp1252', outline=0,
+def glyph_text(ch):
+    """what is drawn for a character: None for a cell left empty (control, undefined), '' for an invisible glyph that
+    only advances (the no-break space), the soft hyphen as a hyphen (as Windows fonts show it)"""
+    if ch is None:
+        return None
+    if ch == '\xa0':
+        return ''
+    if ch == '\xad':
+        return '-'
+    return ch if ch.isprintable() else None
+
+
+def vertical_fit(rows_used, line_height, tight=False):
+    """the cell rows of a sheet and the .otfont values that keep every glyph where the font puts it.
+    rows_used: (top, bottom) of all painted rows, relative to the top of the font's line box of `line_height` rows
+    (top < 0: a glyph reaches above it, e.g. an accented capital; bottom > line_height: below it).
+    Empty rows above are cut and given back by y-offset (the text does not move); a glyph reaching above the line
+    box makes it taller instead (the text moves down by that much, never cut). Empty rows below stay (a text box
+    keeps its height) unless `tight` (a smaller sheet; a one-line text box is that much shorter). The line advance
+    (height + spacing height) stays the line box, or grows by what is added. Returns (first_row, height, y_offset,
+    spacing_height)."""
+    top, bottom = rows_used
+    if not tight:
+        bottom = max(bottom, line_height)
+    advance = max(line_height, bottom) - min(0, top)
+    height = bottom - top
+    return top, height, max(0, top), advance - height
+
+
+def render(font_file, size, name, out_dir, first=32, last=255, encoding='cp1252', outline=0,
            outline_color=(0, 0, 0, 200), shadow=(0, 0), shadow_color=(0, 0, 0, 160), tracking=0, weight=None,
-           space_width=None):
+           space_width=None, tight=False):
     from PIL import Image, ImageDraw, ImageFont
     font = ImageFont.truetype(font_file, size)
     if weight:
@@ -201,54 +236,73 @@ def render(font_file, size, name, out_dir, first=32, last=126, encoding='cp1252'
     # the .otfont spacing takes it back, so every glyph advances by its own width (else the client, which measures a
     # glyph by its last painted column, would space the letters by their shadow)
     right = outline + max(0, shadow[0])
+    space = (space_width if space_width else int(round(font.getlength(' '))) + tracking)
     chars = glyph_chars(first, last, encoding)
     metrics = {}
     cell_w = 1
     for b, ch in chars:
-        if not ch or not ch.isprintable():
+        text = glyph_text(ch)
+        if text is None:
             continue
-        l, t, r, bt = font.getbbox(ch)
-        adv = int(round(font.getlength(ch))) + tracking
+        if text == '':  # no-break space: only the advance of the space
+            metrics[b] = (text, 0, pad_l + max(1, space) + right, 0)
+            continue
+        l, t, r, bt = font.getbbox(text)
+        adv = int(round(font.getlength(text))) + tracking
         shift = max(0, -l)  # a glyph that starts left of its origin is moved right by that much
         ink_w = max(r + shift, adv + shift)
-        metrics[b] = (shift, pad_l + shift + adv + right, ink_w)  # spacing -right in the .otfont
+        metrics[b] = (text, shift, pad_l + shift + adv + right, ink_w)  # spacing -right in the .otfont
         cell_w = max(cell_w, pad_l + ink_w + pad_r)
-    height = ascent + descent + pad_t + pad_b
-    cell_h = height
+    line_h = ascent + descent + pad_t + pad_b
+    # each glyph is drawn into a tall canvas first: the rows all glyphs use decide the cell height (vertical_fit)
+    margin = size + outline + abs(shadow[1]) + 2
+    canvas_h = line_h + 2 * margin
+    glyphs, top, bottom = {}, None, None
+    for b, (text, shift, adv, _) in metrics.items():
+        glyph = Image.new('RGBA', (cell_w, canvas_h), (0, 0, 0, 0))
+        if text:
+            mask = Image.new('L', (cell_w, canvas_h), 0)
+            ImageDraw.Draw(mask).text((pad_l + shift, margin + pad_t), text, font=font, fill=255)
+            if shadow != (0, 0):
+                sh = Image.new('L', (cell_w, canvas_h), 0)
+                sh.paste(mask, (shadow[0], shadow[1]))
+                if outline:
+                    sh = _dilate(sh, outline)
+                glyph.paste(Image.new('RGBA', (cell_w, canvas_h), shadow_color), (0, 0),
+                            sh.point(lambda v: v * shadow_color[3] // 255))
+            if outline:
+                glyph = Image.alpha_composite(glyph, _colored(_dilate(mask, outline), outline_color))
+            glyph = Image.alpha_composite(glyph, _colored(mask, (255, 255, 255, 255)))
+            box = glyph.getchannel('A').getbbox()
+            if box:
+                top = box[1] if top is None else min(top, box[1])
+                bottom = box[3] if bottom is None else max(bottom, box[3])
+        glyphs[b] = glyph
+    if top is None:
+        top, bottom = margin, margin + line_h
+    first_row, cell_h, y_offset, spacing_h = vertical_fit((top - margin, bottom - margin), line_h, tight)
     cols, rows, w, h, slot = layout(len(chars), cell_w, cell_h)
     sheet = Image.new('RGBA', (w, h), (0, 0, 0, 0))
     for i, (b, ch) in enumerate(chars):
-        if b not in metrics:
+        if b not in glyphs:
             continue
-        shift, adv, _ = metrics[b]
-        cx, cy = (i % cols) * cell_w, (i // cols) * cell_h
-        glyph = Image.new('RGBA', (cell_w, cell_h), (0, 0, 0, 0))
-        mask = Image.new('L', (cell_w, cell_h), 0)
-        ImageDraw.Draw(mask).text((pad_l + shift, pad_t), ch, font=font, fill=255)
-        if shadow != (0, 0):
-            sh = Image.new('L', (cell_w, cell_h), 0)
-            sh.paste(mask, (shadow[0], shadow[1]))
-            if outline:
-                sh = _dilate(sh, outline)
-            glyph.paste(Image.new('RGBA', (cell_w, cell_h), shadow_color), (0, 0), sh.point(lambda v: v * shadow_color[3] // 255))
-        if outline:
-            ring = _dilate(mask, outline)
-            glyph = Image.alpha_composite(glyph, _colored(ring, outline_color))
-        glyph = Image.alpha_composite(glyph, _colored(mask, (255, 255, 255, 255)))
+        adv = metrics[b][2]
+        glyph = glyphs[b].crop((0, margin + first_row, cell_w, margin + first_row + cell_h))
         # the advance: one invisible pixel in the last column of the glyph's width
         px = glyph.load()
         x = min(cell_w - 1, max(1, adv) - 1)
-        r_, g_, b_, a_ = px[x, 0]
-        if a_ == 0:
+        if px[x, 0][3] == 0:
             px[x, 0] = (255, 255, 255, 1)
-        sheet.paste(glyph, (cx, cy))
+        sheet.paste(glyph, ((i % cols) * cell_w, (i // cols) * cell_h))
     base = '%s-%dpx' % (name, size)
     os.makedirs(out_dir, exist_ok=True)
-    sheet.save(os.path.join(out_dir, base + '.png'))
-    space = (space_width if space_width else int(round(font.getlength(' '))) + tracking) + right
+    sheet.save(os.path.join(out_dir, base + '.png'), optimize=True)
     with open(os.path.join(out_dir, base + '.otfont'), 'w', encoding='utf-8') as f:
-        f.write(otfont_text(base, base, height, cell_w, cell_h, max(1, space), first=first, spacing=(-right, 0)))
-    return {'name': base, 'size': (w, h), 'cell': (cell_w, cell_h), 'slot': slot, 'glyphs': len(metrics)}
+        f.write(otfont_text(base, base, cell_h, cell_w, cell_h, max(1, space + right), first=first,
+                            y_offset=y_offset, spacing=(-right, spacing_h)))
+    return {'name': base, 'size': (w, h), 'cell': (cell_w, cell_h), 'slot': slot,
+            'glyphs': sum(1 for b in metrics if metrics[b][0]), 'range': (first, last), 'y_offset': y_offset,
+            'line': cell_h + spacing_h, 'old_line': line_h}
 
 
 def _dilate(mask, radius):
@@ -306,7 +360,7 @@ def main(argv):
     ap.add_argument('--sizes', default='12')
     ap.add_argument('--out', default='.')
     ap.add_argument('--first', type=int, default=32)
-    ap.add_argument('--last', type=int, default=126)
+    ap.add_argument('--last', type=int, default=255)
     ap.add_argument('--encoding', default='cp1252')
     ap.add_argument('--outline', type=int, default=0)
     ap.add_argument('--outline-color', default='0,0,0,200')
@@ -315,6 +369,7 @@ def main(argv):
     ap.add_argument('--tracking', type=int, default=0)
     ap.add_argument('--weight', type=int, help='weight of a variable font (wght axis)')
     ap.add_argument('--space-width', type=int, help='width of the space in px (default: the font\'s own)')
+    ap.add_argument('--tight', action='store_true', help='cut the empty rows below the glyphs too (a smaller sheet)')
     ap.add_argument('--atlas-check', nargs='+', metavar='DIR')
     a = ap.parse_args(argv)
     if a.atlas_check:
@@ -324,9 +379,10 @@ def main(argv):
     shadow = tuple(int(x) for x in a.shadow.split(','))
     for size in [int(s) for s in a.sizes.split(',') if s.strip()]:
         r = render(a.font, size, a.name, a.out, a.first, a.last, a.encoding, a.outline, parse_rgba(a.outline_color),
-                   shadow, parse_rgba(a.shadow_color), a.tracking, a.weight, a.space_width)
-        print('%s: %dx%d sheet, cell %dx%d, %d glyphs, atlas slot %d' % (r['name'], r['size'][0], r['size'][1],
-              r['cell'][0], r['cell'][1], r['glyphs'], r['slot']))
+                   shadow, parse_rgba(a.shadow_color), a.tracking, a.weight, a.space_width, a.tight)
+        print('%s: %dx%d sheet, cell %dx%d, glyphs %d..%d (%d drawn), y-offset %d, line %d, atlas slot %d' % (
+              r['name'], r['size'][0], r['size'][1], r['cell'][0], r['cell'][1], r['range'][0], r['range'][1],
+              r['glyphs'], r['y_offset'], r['line'], r['slot']))
     return 0
 
 

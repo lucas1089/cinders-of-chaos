@@ -1,0 +1,75 @@
+# Text from the server that is UTF-8 ("ç" sent as C3 A7) is turned into cp1252, the encoding the client's fonts draw (InputMessage::getString); Latin-1 text and anything not valid UTF-8 stay as they are.
+diff -ru a/src/framework/net/inputmessage.cpp b/src/framework/net/inputmessage.cpp
+--- a/src/framework/net/inputmessage.cpp	2026-10-10 04:29:33.351544681 +0000
++++ b/src/framework/net/inputmessage.cpp	2026-10-10 04:29:38.746648432 +0000
+@@ -100,13 +100,69 @@
+     return v;
+ }
+ 
++// Chaos: the client draws text byte by byte as cp1252 (its bitmap fonts hold glyphs 32..255) and Tibia servers send
++// Latin-1, but a server script saved as UTF-8 sends "\xC3\xA7" for "ç", which showed as "Ã§". A string that is valid
++// UTF-8 and has a non-ASCII character is turned into cp1252 here ("ç" -> E7, "€" -> 80, "—" -> 97; a character
++// cp1252 lacks becomes '?', a byte order mark is dropped). Anything else (ASCII, Latin-1 text, binary data that is
++// not valid UTF-8) is returned as it is.
++static std::string chaosUtf8ToCp1252(std::string text)
++{
++    size_t i = 0;
++    while (i < text.size() && (uint8)text[i] < 0x80)
++        ++i;
++    if (i == text.size())
++        return text;
++    std::string out = text.substr(0, i);
++    out.reserve(text.size());
++    while (i < text.size()) {
++        const uint8 c = text[i];
++        if (c < 0x80) {
++            out += (char)c;
++            ++i;
++            continue;
++        }
++        const int extra = (c & 0xE0) == 0xC0 ? 1 : (c & 0xF0) == 0xE0 ? 2 : (c & 0xF8) == 0xF0 ? 3 : -1;
++        if (extra < 0 || i + extra >= text.size())
++            return text; // not a lead byte, or the sequence is cut off: not UTF-8
++        uint32 cp = c & (0x3F >> extra);
++        for (int k = 1; k <= extra; ++k) {
++            const uint8 cc = text[i + k];
++            if ((cc & 0xC0) != 0x80)
++                return text;
++            cp = (cp << 6) | (cc & 0x3F);
++        }
++        static const uint32 minimum[4] = { 0, 0x80, 0x800, 0x10000 };
++        if (cp < minimum[extra] || cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF))
++            return text; // overlong, out of range or a surrogate: not UTF-8
++        i += extra + 1;
++        if (cp <= 0xFF) {
++            out += (char)cp;
++            continue;
++        }
++        if (cp == 0xFEFF)
++            continue;
++        static const uint16 high[32] = { // cp1252 0x80..0x9F
++            0x20AC, 0, 0x201A, 0x0192, 0x201E, 0x2026, 0x2020, 0x2021, 0x02C6, 0x2030, 0x0160, 0x2039, 0x0152, 0, 0x017D, 0,
++            0, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 0x2013, 0x2014, 0x02DC, 0x2122, 0x0161, 0x203A, 0x0153, 0, 0x017E, 0x0178 };
++        char byte = '?';
++        for (int k = 0; k < 32; ++k) {
++            if (high[k] == cp) {
++                byte = (char)(0x80 + k);
++                break;
++            }
++        }
++        out += byte;
++    }
++    return out;
++}
++
+ std::string InputMessage::getString()
+ {
+     uint16 stringLength = getU16();
+     checkRead(stringLength);
+     char* v = (char*)(m_buffer + m_readPos);
+     m_readPos += stringLength;
+-    return std::string(v, stringLength);
++    return chaosUtf8ToCp1252(std::string(v, stringLength));
+ }
+ 
+ double InputMessage::getDouble()

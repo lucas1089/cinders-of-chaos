@@ -1,8 +1,8 @@
 Font
   name: chaos-body-13px
   texture: chaos-body-13px
-  height: 14
-  glyph-size: 12 14
+  height: 16
+  glyph-size: 16 16
   first-glyph: 32
   y-offset: 0
   spacing: 0 0

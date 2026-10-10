@@ -272,21 +272,44 @@ fonts and their authors.
 **Regenerate:** `bash client/tools/make_ofl_fonts.sh` (sizes, weights, outline/shadow and space widths are in it; it
 writes `overlay/data/fonts/chaos/` and copies the licence texts). `tools/make_fonts.py` turns a TTF/OTF into OTClient
 bitmap fonts (`<name>-<size>px.png` glyph sheet + `.otfont`): white glyphs (the client tints them), optional outline
-and baked shadow, `--weight` for a variable font, `--space-width`, glyphs 32..126 by default (`--first/--last/
---encoding`); each glyph's advance is kept with an invisible marker pixel (the client measures a glyph by its last
-non-transparent column, and the outline and a right shadow are taken back by the `.otfont` spacing). Tests:
+and baked shadow, `--weight` for a variable font, `--space-width`, glyphs 32..255 by default (`--first/--last/
+--encoding`, `--tight`); each glyph's advance is kept with an invisible marker pixel (the client measures a glyph by
+its last non-transparent column, and the outline and a right shadow are taken back by the `.otfont` spacing). Tests:
 `tools/make_fonts_test.py` (CI). A local override: `.otfont`/`.png` pairs in the git-ignored `client/local-fonts/`
 replace the shipped ones of the same name (`tools/assemble_client.sh`).
+
+**Characters.** The client draws a string byte by byte: byte N is glyph N of the font (`BitmapFont`, glyphs
+first-glyph..255 laid out row by row from the sheet's top left, as in the stock 16x14-cell `_cp1252` Verdana sheets),
+and a byte past the sheet has no glyph and is not drawn. There is no UTF-8 in the text path: typed text comes in as
+Latin-1, servers send Latin-1. So every Chaos font holds the printable cp1252 range 32..255 (á é í ó ú â ê ô ã õ ç à ü
+ñ and the capitals, º ª « » ¿ ¡ ° ± × ÷ © ®, and cp1252's € ‚ „ … ‘ ’ “ ” – — ™ • Œ œ in 128..159; the no-break space
+advances like a space, the soft hyphen is a hyphen, 127 and the five bytes cp1252 leaves undefined stay empty), except
+the splash (space..Z: with the accented capitals it would need a 512 slot). Accented capitals reaching above a font's
+line box get room: the dialogue text sits 1 px lower (line 20 -> 21 px), the trial body font 1 / 2 px lower (13 px:
+line 14 -> 16, 12 px: 13 -> 16), title, splash, subtitle and heading draw ASCII exactly as before (same pixels in the
+client; the heading's one-line text box is 1 px shorter, `--tight`). Server scripts saved as UTF-8 (many base NPC
+lines, e.g. "isn´t", "jalapeño") sent "Ã§" for "ç" in every font: base patch `0028-utf8-server-text-to-cp1252.patch`
+(`InputMessage::getString`) turns a server string that is valid UTF-8 with non-ASCII characters into cp1252 (a
+character cp1252 lacks becomes `?`); Latin-1 text and anything not valid UTF-8 pass unchanged. UTF-8 in the client's
+own .lua/.otui text is not converted (keep it ASCII).
 
 **The font atlas.** The client copies every bitmap font into one 2048x2048 texture (framework `Atlas::cacheFont`, a
 power-of-two buddy allocator; out of space is a fatal error at start). `make_fonts.py --atlas-check DIR` replays it;
 like the client (`FontManager::importFont`) it skips a font whose name is loaded already. The stock fonts leave 2
-slots of 256x256, not enough, so the overlay replaces four stock fonts nothing uses (`data/fonts/Verdana-Strikethrough
+slots of 256x256, not enough, so the overlay replaces nine stock fonts nothing uses (`data/fonts/Verdana-Strikethrough
 -11px.otfont`, `Verdana-11px-italic.otfont`, and `Verdana Bold-10px.otfont` / `Verdana Bold-11px-low-space.otfont`,
-the `vbot-verdana-11px-*` fonts of the removed bot) with a copy of `Icon-VBold-11px`, which then loads once: their
-sheets never reach the atlas, however the overlay is copied in. With the seven Chaos fonts the atlas keeps one
-512x512, one 256x256 and three 128x128 slots free (5.75 slots of 256, about 9% of the atlas): measured in game,
-`g_atlas.getStats()` font part `0 0 3 1 1 0 0` (free per slot size 32..2048), and `--atlas-check` agrees.
-`assemble_client.sh` prints the check. Any new sheet must fit those: a 256 slot holds about 95 glyphs of up to
-~16 px with a 1 px shadow; a bigger font needs fewer glyphs (`--last 90`, as the splash) or a stock font to make room.
+the `vbot-verdana-11px-*` fonts of the removed bot; and, for the full glyph range, `Verdana-8px.otfont`,
+`Verdana-8px-antialiased-espaco.otfont` ("Verdana 8px-anti-espaco"), `verdana-9px-italic.otfont`,
+`terminus-10px.otfont` (only the removed bot used it) and `var-cip-font.otfont` ("cipSoft", a second atlas copy of the
+Verdana 11 sheet): no module, style or engine code names them) with a copy of `Icon-VBold-11px`, which then loads
+once: their sheets never reach the atlas, however the overlay is copied in. The Chaos sheets with glyphs 32..255:
+title, subtitle and dialogue take a 512 slot each, heading, both body sizes and the splash a 256 slot each. The atlas
+keeps one 256x256 slot free (1.6%): measured in game, `g_atlas.getStats()` font part `0 0 0 1 0 0 0` (free per slot
+size 32..2048), and `--atlas-check` agrees; without the five new replacements the sheets do not fit (`--atlas-check`)
+and the client would stop at start ("[Atlas] Out of space for new fonts"). `assemble_client.sh` prints the check. Any
+new sheet must fit that one slot (a 256 slot holds 224 glyphs of at most 16x18 px, or fewer glyphs: `--last 90`, as
+the splash) or a stock font must make room.
 Checked in the Linux build at 1280x720 and 1920x1080 (login splash, Codex, crafting bench, achievements, NPC bubble).
+Glyphs 32..255 and patch 0028 checked in the Linux client at 1280x720: every role with accents and cp1252 symbols, the
+ASCII lines compared pixel by pixel with the previous sheets, a server modal dialog (title in the title font) and an
+NPC line in the bubble's style through `InputMessage::getString` (no server: the bytes were fed in from Lua).

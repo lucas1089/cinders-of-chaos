@@ -150,7 +150,8 @@ local TITLE_COLOR = '#e8c477'
 
 -- The Chaos bitmap fonts, made from SIL Open Font License fonts (client/fonts-src/, tools/make_ofl_fonts.sh; see
 -- client/MANIFEST.md "OFL fonts"). They ship in data/fonts/chaos/. A role gives its font only when the client has it
--- loaded (a client assembled without them keeps its Verdana everywhere).
+-- loaded (a client assembled without them keeps its Verdana everywhere). They hold the glyphs 32..255 (cp1252: the
+-- accented letters, the euro sign, dashes, curly quotes; the client draws text byte by byte), the splash only space..Z.
 --   title     Cinzel Bold 15      every Chaos-skinned window title
 --   splash    Cinzel Bold 20      the login "PRESS ANY KEY TO START" (glyphs space..Z only: upper case text)
 --   subtitle  Alegreya SC Bold 16 the Codex page title, the item on the crafting bench

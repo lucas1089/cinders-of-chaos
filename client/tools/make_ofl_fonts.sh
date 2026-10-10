@@ -15,13 +15,15 @@ rm -f "$OUT"/chaos-*.otfont "$OUT"/chaos-*.png
 mkdir -p "$OUT"
 # title: window titles (Cinzel Bold, its lower case is small capitals)
 "${MK[@]}" "$CINZEL" --weight 700 --name chaos-title --sizes 15 --shadow 1,1 --out "$OUT"
-# splash: the login "PRESS ANY KEY TO START" (upper case: glyphs space..Z only, which keeps the sheet in a 256 slot)
+# Every font holds the glyphs 32..255 (cp1252: accents, € – — “ ” …), the client draws a string byte by byte.
+# splash: the login "PRESS ANY KEY TO START" (upper case: glyphs space..Z only, which keeps the sheet in a 256 slot;
+# with the accented capitals it would need a 512 slot the font atlas does not have)
 "${MK[@]}" "$CINZEL" --weight 700 --name chaos-splash --sizes 20 --last 90 --outline 1 --shadow 1,1 --out "$OUT"
 # subtitle and heading: the Codex page title / crafting item name, the Codex section headings (Alegreya SC Bold;
-# its own space is 0.17 em, 2 px at these sizes)
+# its own space is 0.17 em, 2 px at these sizes; the heading --tight: its sheet then fits a 256 slot)
 ASC="$SRC/AlegreyaSC/AlegreyaSC-Bold.ttf"
 "${MK[@]}" "$ASC" --name chaos-subtitle --sizes 16 --shadow 1,1 --space-width 4 --out "$OUT"
-"${MK[@]}" "$ASC" --name chaos-heading --sizes 14 --shadow 1,1 --space-width 4 --out "$OUT"
+"${MK[@]}" "$ASC" --name chaos-heading --sizes 14 --tight --shadow 1,1 --space-width 4 --out "$OUT"
 # dialogue: what NPCs say (IM Fell English Roman; plain, the bubble's plate is dark)
 "${MK[@]}" "$SRC/IMFellEnglish/IMFeENrm28P.ttf" --name chaos-dialogue --sizes 15 --space-width 4 --out "$OUT"
 # body: a trial body font, off by default (Alegreya Sans Medium)

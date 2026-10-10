@@ -1,9 +1,9 @@
 Font
   name: chaos-heading-14px
   texture: chaos-heading-14px
-  height: 21
-  glyph-size: 16 21
+  height: 18
+  glyph-size: 16 18
   first-glyph: 32
-  y-offset: 0
-  spacing: -1 0
+  y-offset: 2
+  spacing: -1 3
   space-width: 5
