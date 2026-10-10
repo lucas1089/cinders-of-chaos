@@ -141,6 +141,18 @@ eq(found['Set: Embers of Aranoth (2/6)'] ~= nil, true, 'set line')
 eq(found['Locked'] ~= nil, true, 'locked line')
 eq(L.titleColor({ rarity = 0 }), L.COLORS.normal, 'normal item colour')
 
+-- a store pouch (server pouches.lua): the store line in gold and what it collects, no lock line
+local pouch = { name = 'orbs pouch', rarity = 0, store = 'Store item: cannot be traded',
+  collects = 'Auto-collects orbs, whetstones, rune shards and gems while you carry it.', weight = 1 }
+lines = L.lines(pouch)
+found = {}
+for _, l in ipairs(lines) do found[l.text] = l end
+eq(found['Store item: cannot be traded'] ~= nil and found['Store item: cannot be traded'].color, L.COLORS.gold, 'store line in gold')
+eq(found['Locked'], nil, 'no lock line on a pouch')
+local joined = {}
+for _, l in ipairs(lines) do joined[#joined + 1] = l.text end
+eq(table.concat(joined, ' '):find('Auto-collects orbs', 1, true) ~= nil, true, 'collects line')
+
 -- ---------------------------------------------------------------- compare
 local equipped = {
   key = '9:9', name = 'fire sword', kind = 'weapon',

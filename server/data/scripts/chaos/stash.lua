@@ -399,7 +399,7 @@ LoginEvent:register()
 ExtendedEvent:type("extendedopcode")
 ExtendedEvent:register()
 
--- used by autosell.lua (Bottomless Loot Pouch): put a loose item (e.g. in a corpse) into the stash.
+-- put a loose item (e.g. in a corpse) into the stash (for scripts; the retired Bottomless Loot Pouch used it).
 -- Returns true when it was stashed; false when the item is not stashable, blocked or the entry is full.
 ChaosStash = ChaosStash or {}
 function ChaosStash.storeItem(player, item)

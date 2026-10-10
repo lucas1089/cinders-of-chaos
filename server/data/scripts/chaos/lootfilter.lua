@@ -14,7 +14,7 @@
 --                   update {k, left = [remaining count per entry]}      decay {k}      msg {text} (a refused click)
 --
 -- onDropLoot (lower index first): 0 stock loot, 1 Chaos loot layer, 2 auto seller, 2.5 SNAPSHOT + hold back list items
--- below the Rarity Autoloot minimum, 3 base autoloot, 3.5 RARITY PICKUP, 4 loot pouch, 4.5 FINISH (held items back into
+-- below the Rarity Autoloot minimum, 2.7 store pouches (pouches.lua), 3 base autoloot, 3.5 RARITY PICKUP, 4.5 FINISH (held items back into
 -- the corpse, loot row, rare-drop lines, rays). Every step runs in pcall and returns nothing, so the chain never stops.
 
 if not Chaos then
@@ -478,7 +478,7 @@ local function pickup(monster, corpse)
 		return
 	end
 	local list = autolootSet(owner)
-	local taken, stashed, failed = {}, 0, 0
+	local taken, failed = {}, 0
 	for _, item in ipairs(corpse:getItems()) do
 		local info = itemInfo(item)
 		if F.autoloot(info, current.s, list[info.id], true) == "take" then
@@ -489,18 +489,13 @@ local function pickup(monster, corpse)
 			end
 			if intoBags(owner, item) then
 				taken[#taken + 1] = label
-			elseif owner:getStorageValue(ST.shopLootPouch) > 0 and ((ChaosStash and ChaosStash.storeItem(owner, item))
-				or (owner:getInbox() and item:moveTo(owner:getInbox()))) then
-				stashed = stashed + 1
-				taken[#taken + 1] = label
 			else
 				failed = failed + 1
 			end
 		end
 	end
 	if #taken > 0 then
-		owner:sendTextMessage(MESSAGE_INFO_DESCR, "Rarity autoloot: " .. table.concat(taken, ", ")
-			.. (stashed > 0 and string.format(" (%d to your stash or inbox)", stashed) or "") .. ".")
+		owner:sendTextMessage(MESSAGE_INFO_DESCR, "Rarity autoloot: " .. table.concat(taken, ", ") .. ".")
 	end
 	if failed > 0 then
 		owner:sendTextMessage(MESSAGE_INFO_DESCR, "Rarity autoloot: no room or capacity, left in the corpse.")
@@ -643,14 +638,8 @@ local function take(player, data)
 			return reply(player, "Sorry, not possible.")
 		end
 	end
-	local ok = intoBags(player, moving)
-	if not ok and player:getStorageValue(ST.shopLootPouch) > 0 then
-		ok = (ChaosStash and ChaosStash.storeItem(player, moving))
-			or (player:getInbox() and moving:moveTo(player:getInbox())) or false
-		if ok then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, "Loot pouch: your backpack is full, sent to your stash or inbox.")
-		end
-	end
+	-- a carried store pouch that collects this kind of item first (pouches.lua), else the backpack
+	local ok = (ChaosPouches and ChaosPouches.stow and ChaosPouches.stow(player, moving)) or intoBags(player, moving)
 	if not ok then
 		if moving ~= item then
 			moving:moveTo(corpse) -- the split part goes back onto its stack

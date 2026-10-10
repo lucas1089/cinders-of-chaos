@@ -1,0 +1,20 @@
+-- luajit pouchesview_test.lua (CI runs every client *_test.lua)
+dofile((arg and arg[0] and arg[0]:match('^(.*[/\\])') or '') .. 'pouchesview.lua')
+local V = PouchesView
+local n = 0
+local function eq(a, b, m) n = n + 1 if a ~= b then error((m or '') .. ': ' .. tostring(a) .. ' ~= ' .. tostring(b), 2) end end
+
+local r = V.normalize({ list = true, gold = 1, gear = true, minRarity = 40 })
+eq(r.list, true, 'list on') eq(r.gold, false, 'only true counts') eq(r.minRarity, 15, 'rarity clamped')
+eq(V.normalize(nil).minRarity, 5, 'default rarity') eq(V.normalize({ minRarity = 0 }).minRarity, 1, 'at least 1')
+eq(V.statusText({ loot = true }):find('You have a Loot Pouch') ~= nil, true, 'owned text')
+eq(V.statusText({}):find('Store') ~= nil, true, 'not owned: points to the store')
+eq(V.statusText(nil), '', 'no data yet')
+local ids = { loot = 3925, orbs = 3926 }
+eq(V.isLootPouch(3925, 1, ids), true, 'pouch: look and lock flag')
+eq(V.isLootPouch(3925, 0, ids), false, 'a stock bag of the same look')
+eq(V.isLootPouch(3926, 1, ids), false, 'another pouch')
+eq(V.isLootPouch(3925, 1, {}), false, 'ids not known yet')
+local opts = V.rarityOptions({ 'Common', 'Uncommon' })
+eq(#opts, 15, '15 options') eq(opts[2], 'Uncommon', 'names used') eq(opts[3], 'Rarity 3', 'fallback name')
+print('pouchesview_test: ' .. n .. ' checks OK')

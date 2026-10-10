@@ -7,7 +7,7 @@ Status: `todo`, `in progress`, `done`.
 
 | # | Item | Status | Notes |
 |---|---|---|---|
-| 1 | Store additions: stamina refill, temple teleport, bottomless loot pouch, auto seller, training weapons, world buffs, name change, vocation change, extras (double exp potion, blessings, frag/skull removal, sex change, respec) | done | `server/data/scripts/chaos/shop*.lua` |
+| 1 | Store additions: stamina refill, temple teleport, bottomless loot pouch (retired, replaced by the store pouches, #41), auto seller, training weapons, world buffs, name change, vocation change, extras (double exp potion, blessings, frag/skull removal, sex change, respec) | done | `server/data/scripts/chaos/shop*.lua` |
 | 2 | Passive tree keystones per vocation (knight Cleaving Arc, paladin Ricochet, sorcerer Arcane Echo, druid Overgrowth, illusionist support) | done | measured on the test dummies so the role order holds |
 | 3 | Combat visuals: elemental weapon damage as its own coloured number + element sprite; crit, dodge and reflect sprites | done | server module `ChaosCombatFx` |
 
@@ -69,6 +69,7 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 | 17 | In-client hunt tracker: exp/h and profit/h | done | `chaos/hunt*.lua`, client `game_hunt` (Hunt > Hunt Tracker, opcode 241): server-counted session with pause/reset, exp/h, time to level, loot (NPC sell prices) and profit/h minus supplies (NPC buy prices, `tools/gen_supply_prices.py`), kills, damage/healing, Chaos drops; checked in game against the real numbers; see server/README.md "Hunt tracker" |
 | 18 | Build sharing: export/import a passive tree code | done | `buildshare.lua`, `buildshare_core.lua`: versioned checksummed code (`CB1-...`, stable node ids), Build Code panel with tree preview; short on points = first N nodes in path order; taking points back costs the full reset price. Tested in game |
 | 19 | Respec cost that scales with level | done | `respec.lua`, `respec_config.lua`: full reset ~37.5 min of hunting gold (225k at 100, 3.95M at 600, 5.95M at 1000), right-click single-node refund ~1.5 min, free below 50 and once after a class change; income measured with `tools/respec_income.py` (README "Respec") |
+| 41 | Store pouches: Loot Pouch (own autoloot rules), Orbs Pouch, Rift Key Pouch | done | `chaos/pouches*.lua`, `tools/install_pouches.py` (items 32081-32083), client `game_pouches` (opcode 226): store-bound containers that collect their loot at `onDropLoot` 2.7 while carried; one per character; trade, ground, mail and NPC sale refused; back after a death; replace the Bottomless Loot Pouch unlock (its owners get a free Loot Pouch). Server README "Store pouches" |
 
 ## Then: polish and retention
 

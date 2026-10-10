@@ -10,7 +10,7 @@
 -- the coins on an error.
 --
 -- Also here: the Temple Teleport Scroll (action id), world buffs (experience / Chaos loot / skill training for
--- everybody, !worldbuffs), !changename and !changevocation for the tokens. Auto Seller and Loot Pouch: autosell.lua.
+-- everybody, !worldbuffs), !changename and !changevocation for the tokens. Auto Seller: autosell.lua; store pouches: pouches.lua.
 -- Settings: Chaos.shopServices in chaos_constants.lua. Pure helpers at the top are covered by
 -- server/tests/shop_services_test.lua. Lua 5.1 / LuaJIT compatible.
 
@@ -318,8 +318,8 @@ end
 -- ======================================================================== services
 
 S.unlocks = {
-	lootPouch = {storage = ST.shopLootPouch, name = "the Bottomless Loot Pouch",
-		done = "Autolooted items that do not fit now go to your stash (stackables) or your inbox."},
+	-- (lootPouch, the Bottomless Loot Pouch, is retired: storage 7100100 stays reserved, pouches.lua gives its owners a
+	-- Loot Pouch item; the store pouches are the "pouch" service below)
 	autoSeller = {storage = ST.shopAutoSeller, name = "the Auto Seller",
 		done = "Mark the items to sell in Economy > Auto Seller."},
 	rarityAutoloot = {storage = ST.shopRarityAutoloot, name = "Rarity Autoloot",
@@ -518,6 +518,19 @@ S.services = {
 			player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
 				"Your passive tree and Paragon points were reset. All points are free to spend again.")
 			return true
+		end
+	},
+
+	-- the store pouches (pouches.lua): {service = "pouch", pouch = "loot" | "orbs" | "keys"}; one of each per character
+	pouch = {
+		check = function(player, offer)
+			if not ChaosPouches then
+				return "This offer is not available."
+			end
+			return ChaosPouches.storeCheck(player, offer.pouch)
+		end,
+		apply = function(player, offer)
+			return ChaosPouches.storeGive(player, offer.pouch)
 		end
 	}
 }

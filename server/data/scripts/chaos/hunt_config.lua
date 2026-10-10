@@ -15,7 +15,7 @@ return {
 	countSuppliesInPz = false,
 
 	-- EventCallback indexes (lower runs first). onDropLoot: 0 stock loot, 1 Chaos loot layer, 2 paragon gold /
-	-- rift key / AUTO SELLER, 2.5 loot filter snapshot, 3 autoloot, 4 loot pouch. The corpse is read twice, before and
+	-- rift key / AUTO SELLER, 2.5 loot filter snapshot, 2.7 store pouches, 3 autoloot. The corpse is read twice, before and
 	-- after the index-2 callbacks, and per item the larger count is kept: items the auto seller takes out and the coins
 	-- or keys added at 2 both count.
 	lootBeforeIndex = 1.9,

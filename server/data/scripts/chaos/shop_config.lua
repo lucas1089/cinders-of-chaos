@@ -11,7 +11,8 @@
 --   {kind = "service", service = "<handler>", icon = <item id>, ...}  done right away by shop_services.lua
 --       stamina | templeScroll (uses = n) | worldBuff (buff = "xp" | "loot" | "skill") | nameToken |
 --       vocationToken | blessings | skullRemover | sexChange | passiveReset
---   {kind = "unlock", unlock = "lootPouch" | "autoSeller" | "rarityAutoloot", icon = <item id>}   permanent, per character
+--       pouch (pouch = "loot" | "orbs" | "keys": a store pouch item, one per character; pouches.lua)
+--   {kind = "unlock", unlock = "autoSeller" | "rarityAutoloot", icon = <item id>}   permanent, per character
 --   {kind = "unlock", unlock = "unlockNecromancer" | "unlockMonk" | "unlockTemplar", ...}  a class, per account (class_unlocks.lua)
 --   {kind = "unlock", unlock = "<pets_config.lua store key>", look = <looktype>, ...}  a pet, per character (pets.lua)
 --   Services and unlocks need name and description; the icon is only a picture (iconCount for a coin pile).
@@ -121,8 +122,13 @@ return {
 			offers = {
 				-- the Temple Teleport Scroll is no longer sold: every character has the free Town Portal (townportal.lua);
 				-- scrolls bought earlier keep working (shop_services.lua)
-				{kind = "unlock", unlock = "lootPouch", icon = 10518, cost = 500, name = "Bottomless Loot Pouch",
-					description = "Permanent: autoloot that does not fit your backpack goes to your stash or inbox."},
+				-- store pouches (pouches.lua, pouches_config.lua): items, one of each per character, store-bound
+				{kind = "service", service = "pouch", pouch = "loot", icon = 32081, cost = 350, name = "Loot Pouch",
+					description = "60 slots, store-bound. Collects loot by its own rules while carried (Loot Filter > Loot Pouch)."},
+				{kind = "service", service = "pouch", pouch = "orbs", icon = 32082, cost = 300, name = "Orbs Pouch",
+					description = "40 slots, store-bound. Collects orbs, whetstones, rune shards and gems while carried."},
+				{kind = "service", service = "pouch", pouch = "keys", icon = 32083, cost = 250, name = "Rift Key Pouch",
+					description = "30 slots, store-bound. Collects Rift Keys, Omen Keys and omen fragments while carried."},
 				{kind = "unlock", unlock = "autoSeller", icon = 2160, iconCount = 100, cost = 500, name = "Auto Seller",
 					description = "Permanent: loot on your auto-sell list (Economy > Auto Seller) is sold at NPC prices, gold to your bank."},
 				{kind = "unlock", unlock = "rarityAutoloot", icon = 2472, cost = 400, name = "Rarity Autoloot",

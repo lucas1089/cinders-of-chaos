@@ -7,7 +7,7 @@
 --    mods = [{k, l, t, v, g, lo, hi, tr, sd, bd, pw}] (prefixes first; tr = tier 1..8, sd = 'p' / 's', bd = bound,
 --    pw = a legendary power),
 --    sockets = {count, max, list = [{name, text, color}]},
---    req = {level, magic, voc}, weight, desc, locked, stats = [{k, l, v, fmt, low}], cmp = [slot, ...]}
+--    req = {level, magic, voc}, weight, desc, locked, store, collects (a store pouch), stats = [{k, l, v, fmt, low}], cmp = [slot, ...]}
 
 ItemTooltipLogic = {}
 local L = ItemTooltipLogic
@@ -266,8 +266,13 @@ function L.lines(tip, ctx)
     end
   end
   if tip.locked then add('Locked', C.gold, true) end
+  -- a store pouch (server pouches.lua): what it is and what it collects
+  if tip.store then add(tip.store, C.gold, true) end
+  if tip.collects then
+    for _, line in ipairs(L.wrap(tip.collects, L.WRAP)) do add(line, C.dim) end
+  end
   if tip.weight then
-    add(string.format('Weight %s oz', trim(tip.weight)), C.dim, not tip.locked)
+    add(string.format('Weight %s oz', trim(tip.weight)), C.dim, not tip.locked and not tip.store)
   end
   return out
 end

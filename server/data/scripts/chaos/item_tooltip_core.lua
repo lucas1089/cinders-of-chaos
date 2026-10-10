@@ -24,6 +24,7 @@
 --                                                  "s", bd = bound (Orb of Binding), pw = a legendary power
 --   sockets = {count, max, list = [{name, text, color}]}   empty sockets have no name
 --   req = {level, magic, voc}, weight (oz), desc (flavour text), locked
+--   store, collects                                a store pouch (pouches.lua): its two lines, no desc and no lock line
 --   stats = [{k, l, v, fmt, low}]                  every number the compare view adds up (low = lower is better)
 --   cmp = [slot, ...]                              inventory slots worn the same way (the client compares with them)
 
@@ -487,6 +488,15 @@ function T.build(item, opts)
 	local locked = C and C.customNumber(item, "chaos_locked") or 0
 	if locked ~= 0 then
 		tip.locked = true
+	end
+	-- a store pouch (pouches.lua): "Store item: cannot be traded" and what it collects, instead of the lock line
+	local P = rawget(_G, "ChaosPouches")
+	if P and P.tooltipLines then
+		local okP, store, collects = pcall(P.tooltipLines, item)
+		if okP and store then
+			tip.locked, tip.desc, tip.store, tip.collects = nil, nil, store, collects
+			tip.cmp, tip.stats = nil, nil -- a pouch is not compared with worn items
+		end
 	end
 	T.riftKey(item, tip)
 	return tip

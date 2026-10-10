@@ -521,7 +521,9 @@ and food you can eat. The Orbs of Gilding, Unmaking and Erasure and the mining o
   (Colossus Hunter), Riftwalker's Gate (Keybearer), Hellmouth Gate (Herald of Omens), Hoarder's Gate (Hoardbreaker),
   Warbanner Gate (Siege Champion) and Gravecall Gate (Death Is a Teacher, a secret). A style comes by one route only.
 - **Store** (Chaos Coins):
-  - stamina refill, bottomless loot pouch, auto seller, portal styles
+  - stamina refill, auto seller, portal styles
+  - store pouches: a Loot Pouch (its own autoloot rules), an Orbs Pouch and a Rift Key Pouch that collect their loot from
+    your kills while you carry them; one of each per character, they cannot be traded or dropped and come back after a death
   - training weapons, server-wide world buffs
   - name, vocation and sex change, blessings, skull removal
   - passive tree reset, crafting orbs

@@ -1,6 +1,6 @@
 -- Run from the server/ folder: luajit tests/shop_services_test.lua (mock engine API; CI runs it)
 -- Covers the store services: name validation, world buff stacking and effects, the vocation mapping, stat
--- recomputation, the sell-price lookup, the unlock/service checks, the auto seller and the loot pouch callbacks.
+-- recomputation, the sell-price lookup, the unlock/service checks (and the store pouch service), the auto seller.
 local n = 0
 setmetatable(_G, {__index = function(t, k)
   if type(k) == "string" and k:match("^[A-Z_0-9]+$") then n = n + 1; rawset(t, k, n); return n end
@@ -176,11 +176,24 @@ end
 
 -- unlocks: refused when owned, delivered as a storage flag
 local pl = newPlayer()
-local pouchOffer = {kind = "unlock", unlock = "lootPouch"}
-eq(S.check(pl, pouchOffer), nil, "pouch can be bought")
-eq(S.deliver(pl, pouchOffer), true, "pouch delivered")
-eq(pl.storage[Chaos.storage.shopLootPouch], 1, "pouch flag")
-assert(S.check(pl, pouchOffer):find("already own"), "pouch owned")
+local sellerOffer = {kind = "unlock", unlock = "autoSeller"}
+eq(S.check(pl, sellerOffer), nil, "auto seller can be bought")
+eq(S.deliver(pl, sellerOffer), true, "auto seller delivered")
+eq(pl.storage[Chaos.storage.shopAutoSeller], 1, "auto seller flag")
+assert(S.check(pl, sellerOffer):find("already own"), "auto seller owned")
+-- the retired Bottomless Loot Pouch unlock is no longer sold (pouches.lua gives its owners a Loot Pouch item)
+assert(S.check(pl, {kind = "unlock", unlock = "lootPouch"}), "the old loot pouch unlock is gone")
+-- the store pouches are a service handled by pouches.lua (pouches_test.lua covers the rules)
+assert(S.check(pl, {kind = "service", service = "pouch", pouch = "loot"}), "pouch offer refused without pouches.lua")
+do
+	local asked
+	ChaosPouches = {storeCheck = function(_, kind) asked = kind; return nil end,
+		storeGive = function(_, kind) return kind == "orbs" end}
+	eq(S.check(pl, {kind = "service", service = "pouch", pouch = "orbs"}), nil, "pouch offer checked by pouches.lua")
+	eq(asked, "orbs", "the offer's pouch kind is passed on")
+	eq(S.deliver(pl, {kind = "service", service = "pouch", pouch = "orbs"}), true, "pouch delivered by pouches.lua")
+	ChaosPouches = nil
+end
 assert(S.check(pl, {kind = "unlock", unlock = "nope"}), "unknown unlock refused")
 assert(S.check(pl, {kind = "service", service = "nope"}), "unknown service refused")
 
@@ -308,29 +321,13 @@ seller.storage[Chaos.storage.shopAutoSeller] = -1
 callback("onDropLoot", 2)(nil, corpseOf("seller", {again}))
 eq(again.removed, false, "not unlocked: nothing sold")
 
--- ------------------------------------------------------------------ loot pouch (onDropLoot index 4)
-local looter = newPlayer({guid = 11})
-Player = function(id) if id == "looter" then return looter end end
-looter.storage[Chaos.storage.autolootBase + 1] = 300
-looter.storage[Chaos.storage.autolootBase + 2] = 301
-local inbox = {accepts = true}
-function looter:getInbox() return inbox end
-local stashed = {}
-ChaosStash = {storeItem = function(player, item)
-  if item.id == 300 then stashed[#stashed + 1] = item; item.removed = true; return true end
-  return false
-end}
-local a, b, c = newItem(300, 5), newItem(301, 1), newItem(999, 1)
-callback("onDropLoot", 4)(nil, corpseOf("looter", {a, b, c}))
-eq(a.removed, false, "no pouch: leftovers stay")
-looter.storage[Chaos.storage.shopLootPouch] = 1
-callback("onDropLoot", 4)(nil, corpseOf("looter", {a, b, c}))
-eq(stashed[1], a, "stackable leftover -> stash")
-eq(b.movedTo, inbox, "other leftover -> inbox")
-eq(c.removed, false, "item not on the autoloot list stays")
-assert(looter.msgs[#looter.msgs]:find("stash") and looter.msgs[#looter.msgs]:find("inbox"), "player told")
-local before = #looter.msgs
-callback("onDropLoot", 4)(nil, corpseOf("looter", {newItem(300, 1)}))
-eq(#looter.msgs, before, "notice at most once a minute")
+-- ------------------------------------------------------------------ never sold: what the store pouches collect
+ChaosPouches = {neverSell = function(id) return id == 100 end}
+seller.storage[Chaos.storage.shopAutoSeller] = 1
+local orb = newItem(100, 2)
+callback("onDropLoot", 2)(nil, corpseOf("seller", {orb}))
+eq(orb.removed, false, "an orb on the auto-sell list is never sold (ChaosPouches.neverSell)")
+ChaosPouches = nil
+assert(callback("onDropLoot", 4) == nil, "no loot pouch callback at index 4 any more")
 
 print("shop_services_test: ok")

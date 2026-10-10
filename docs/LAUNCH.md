@@ -230,7 +230,7 @@ and rows).
 
 What was read: every `db.query` / `db.storeQuery` / `db.asyncQuery` / `Chaos.select` of `data/scripts/chaos` (157
 call sites), every extended-opcode handler, every talkaction, and the item paths of stash, bank, loot filter (click to
-loot), autoloot, crafting, store, auto seller, loot pouch, daily reward, tower milestones, bounty and rifts.
+loot), autoloot, crafting, store, auto seller, store pouches, daily reward, tower milestones, bounty and rifts.
 
 | Area | Finding | Result |
 |---|---|---|

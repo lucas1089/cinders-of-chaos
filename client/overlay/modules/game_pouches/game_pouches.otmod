@@ -1,0 +1,12 @@
+Module
+  name: game_pouches
+  description: Store pouches - the Loot Pouch rules window (right-click the pouch > Pouch settings, or Loot Filter > Loot Pouch); extended opcode 226
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ pouchesview, pouches ]
+  dependencies:
+    - game_interface
+  autoload: true
+  autoload-priority: 1002
+  @onLoad: init()
+  @onUnload: terminate()

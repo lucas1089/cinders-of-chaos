@@ -64,6 +64,7 @@ ChaosOpcodes = {
 	energyShield = 224, -- energy shield bar, server -> client, sent by the engine (patch 0015, config energyShieldOpcode), plain text "es:<current>:<max>" (client game_energyshield)
 	groundLoot = 230, -- ground loot labels: names, rarity and decay of the items on the tiles in view (client game_groundlabels; groundloot.lua)
 	castbar = 231, -- cast bar of the cast-time spells, both ways (client game_castbar; casting.lua, data/lib/chaos_casting.lua)
+	pouches = 226, -- store pouches: the Loot Pouch rules window (client game_pouches; pouches.lua, pouches_core.lua, pouches_config.lua)
 	partyFrames = 235 -- party frames: members' health, mana, level, floor, buffs; client -> server actions (client game_partyframes; partyframes.lua)
 }
 
@@ -116,13 +117,15 @@ Chaos.storage = {
 	shopShaderBase = 7100700,
 
 	-- store services (shop_services.lua, autosell.lua): 7100100 - 7100159
-	shopLootPouch = 7100100, -- 1 = Bottomless Loot Pouch unlocked (per character)
+	shopLootPouch = 7100100, -- RESERVED: the retired Bottomless Loot Pouch unlock (1 = owned; pouches.lua gives those owners a
+	-- free Loot Pouch once). Never reuse the key.
 	shopAutoSeller = 7100101, -- 1 = Auto Seller unlocked (per character)
 	autosellPaused = 7100102, -- 1 = auto seller switched off with !autosell off
 	autosellRarity = 7100103, -- 1 = opt-in: the auto seller may sell items with a rarity / modifiers
 	nameChangeTokens = 7100104, -- unused name changes bought in the store
 	vocationChangeTokens = 7100105, -- unused vocation changes bought in the store
 	shopRarityAutoloot = 7100106, -- 1 = Rarity Autoloot unlocked (lootfilter.lua: autoloot by rarity)
+	-- store pouches (pouches_config.lua storage): 7100107 Loot Pouch rules, 7100108 free Loot Pouch given, 7100109 pouches to give back
 	autosellBase = 7100110 -- + 1 .. + Chaos.shopServices.autosellSlots: item ids on the auto-sell list
 }
 
@@ -557,8 +560,6 @@ Chaos.shopServices = {
 		.. "|monk|shadowfist|ironsage|necromancer|lich|bonelord|templar|inquisitor|sentinel",
 	vocationBaseLevel = 8, -- health/mana/capacity gains are counted from this level (as the engine does)
 
-	-- Bottomless Loot Pouch: tell the player at most once per this many seconds
-	pouchNoticeSeconds = 60,
 	-- Auto Seller
 	autosellSlots = 40,
 	-- blessings of the "All Blessings" offer (base server: 1-5, see creaturescripts login.lua)

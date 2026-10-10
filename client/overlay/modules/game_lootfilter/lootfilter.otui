@@ -346,10 +346,20 @@ ChaosMainWindow
     !tooltip: tr('Names over the items on the ground, by these rules')
     @onClick: if modules.game_groundlabels then modules.game_groundlabels.toggleSettings() end
 
+  ChaosButton
+    id: pouchButton
+    anchors.right: groundLabelsButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    size: 96 24
+    !text: tr('Loot Pouch')
+    !tooltip: tr('What your Loot Pouch (a store item) collects from your kills')
+    @onClick: if modules.game_pouches then modules.game_pouches.toggleSettings() end
+
   ChaosLabelDim
     id: savedLabel
     anchors.verticalCenter: closeButton.verticalCenter
     anchors.left: parent.left
-    anchors.right: groundLabelsButton.left
+    anchors.right: pouchButton.left
     text-align: left
     !text: tr('Changes are saved on your character at once.')

@@ -2,7 +2,7 @@
 -- The engine also loads this file as a script because it lives under data/scripts; it only returns a table.
 ChaosLootFilterConfig = {
 	-- EventCallback.onDropLoot indexes (lower runs first). Existing: 0 stock loot + "Loot of" text, 1 Chaos loot layer,
-	-- 2 auto seller, 3 base autoloot, 4 loot pouch. Ours go between them, see README "Loot filter".
+	-- 2 auto seller, 2.7 store pouches (pouches.lua), 3 base autoloot. Ours go between them, see README "Loot filter".
 	snapshotIndex = 2.5, -- snapshot of the corpse + hold back autoloot-list items below the Rarity Autoloot minimum
 	pickupIndex = 3.5,   -- Rarity Autoloot: pick up rarity gear / uniques that are not on the autoloot list
 	finishIndex = 4.5,   -- put the held items back, send the loot row, the rare-drop lines, start the rays
