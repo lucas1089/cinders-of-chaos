@@ -15,10 +15,10 @@ ChaosSeasonPassCore = ChaosSeasonPassCore or {}
 local P = ChaosSeasonPassCore
 
 P.KINDS = {item = true, coins = true, title = true, outfit = true, mount = true, shader = true, portal = true,
-	frame = true, tierskips = true, premium = true}
+	frame = true, transmog = true, tierskips = true, premium = true}
 P.TRACK_KINDS = {item = true, coins = true, title = true, outfit = true, mount = true, shader = true, portal = true,
-	frame = true}
-P.COSMETIC = {title = true, outfit = true, mount = true, shader = true, portal = true, frame = true}
+	frame = true, transmog = true}
+P.COSMETIC = {title = true, outfit = true, mount = true, shader = true, portal = true, frame = true, transmog = true}
 P.FREE, P.PREMIUM = 0, 1
 
 -- ---------------------------------------------------------------- tiers
@@ -355,6 +355,8 @@ local function same(a, b)
 		return a.key == b.key
 	elseif a.kind == "frame" then
 		return a.frame == b.frame
+	elseif a.kind == "transmog" then
+		return a.key == b.key
 	elseif a.kind == "title" then
 		return a.title == b.title
 	end
@@ -390,6 +392,8 @@ function P.validate(cfg)
 			bad(where .. ": outfit looks")
 		elseif r.kind == "tierskips" and (type(r.count) ~= "number" or r.count < 1) then
 			bad(where .. ": tier skips count")
+		elseif r.kind == "transmog" and type(r.key) ~= "string" then
+			bad(where .. ": transmog set key")
 		end
 		if P.COSMETIC[r.kind] then
 			local found = false

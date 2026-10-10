@@ -259,6 +259,7 @@ local function decorate(self, label)
   if #p.ranges == 0 then return end
   for _, r in ipairs(p.ranges) do seen[r.id] = true end
   label:setColoredText(p.parts)
+  label.chatParts = p.parts -- game_cosmetics colours the speaker's name on top of these parts
   label.chatLinks = p.ranges
   -- the console's labels are text edits: they send no text hover events and no mouse move events to Lua, only
   -- onHoverChange; while the pointer is over a label with links its position in the text is polled
@@ -274,6 +275,7 @@ end
 local decorateSafe = safe('updateLabel', decorate)
 
 local function wrappedUpdateLabel(self, label, tab)
+  label.chatParts = nil
   if label.chatLinks then
     label.chatLinks, label.onHoverChange = nil, nil
     if pollWidget == label then stopPolling(label) end

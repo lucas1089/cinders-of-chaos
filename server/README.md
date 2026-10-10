@@ -283,7 +283,7 @@ working directory, as with the rest of the base server libs).
 | game_invasion | `invasion.lua`, `invasion_core.lua`, `invasion_config.lua`, `worldevents.lua` | 251 (server -> client; `query` / `calendar` back), Adventure > Events, `/invasion` | Invasions (waves at a town or hunting ground, breach meter, boss, contribution rewards, Defender board, Victory buff, occupation) and the world events Chaos Storm, Wandering Merchant and Golden Hour; HUD and upcoming events window; toasts with action `invasion` on 79; tested in game on a test area (see "Invasions and world events"). |
 | game_energyshield | `data/lib/chaos_energy_shield.lua`, `item_mods.lua`; engine patch 0015 sends it | 224 (server -> client, from the engine) | Energy shield bar above the health bar of the character plate: plain text `es:<current>:<max>`, max 0 hides it. Tested in game (see "Energy shield"). |
 
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 221, 222, 223, 224 (sent by the engine, patch 0015), 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
+Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 221, 222, 223, 224 (sent by the engine, patch 0015), 225, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
 
 ### Opcode collision check
@@ -1260,7 +1260,8 @@ Rules without engine calls are in `shop_core.lua` (tested by `tests/shop_test.lu
 services, unlocks and boosts in `shop_services.lua` (next section).
 
 **Categories (per player, in this order).** Starter (only while one of its packs is for sale to the player), Featured
-(this week's), Bundles, Outfits, Outfit Addons, Mounts, Wings, Auras, Outfit Shaders, Name Plates, Portal Styles, Pets,
+(this week's), Bundles, Outfits, Outfit Addons, Mounts, Wings, Auras, Outfit Shaders, Name Plates, Portal Styles, Spell
+Effects, Kill Effects, Loot Labels, Chat Colours ("Cosmetics" below), Appearances (the transmog store sets), Pets,
 Crafting, Supplies, Boosts, World Buffs, Services, Convenience, Classes, Training, then the categories other systems
 insert in their own marked hunks of `shop_config.lua` (Chaos Pact, Storage & Slots, Season pass), Premium Time. Empty
 categories are left out. Every offer has a stable key (`ChaosShopCore.offerKey`: `wings:4`, `outfit:909`,
@@ -1275,7 +1276,9 @@ categories are left out. Every offer has a stable key (`ChaosShopCore.offerKey`:
 | Wings (`wings.xml`) | 15 | 15 | |
 | Auras (`auras.xml`, 19 from `chaos_auras.csv`) | 24 | 24 | (Fireflies is also the guild aura; it was sold before) |
 | Outfit shaders (`shaders.xml`) | 17 | 16 | green_pixent (16): draws as a coloured checker grid in the test client; 15 and 17, sold before, look the same there (to check in the Windows client) |
-| Name plate frames (`nameplate.lua`) | 5 | violet, frost | default (everyone), gold (staff titles), crimson (Siege Champions) |
+| Name plate frames (`nameplate.lua`) | 8 | violet, frost, ember, verdant, bone | default (everyone), gold (staff titles), crimson (Siege Champions) |
+| Spell effect skins, kill effects, loot label accents, chat name colours (`cosmetics.lua`) | 12 / 7 / 5 / 6 | 12 / 5 / 4 / 5 | Void Ring, Harbinger's Toll, Gilded Labels, Veteran's Gold: achievement rewards ("Cosmetics" below) |
+| Transmog appearance sets (`transmog.lua`) | 6 | Falconer's Regalia 300, Lionguard 350 | achievement, season pass and exclusive sets ("Transmog") |
 | Town Portal styles | see "Town Portal" | 6 (unchanged) | the achievement styles |
 | Titles, name colours | titles of achievements, seasons, leaderboards, arena, the ascension quest, staff | none | all are earned; name colours come with the title's source. The client's `game_nameshaders` needs engine work and has no server side |
 
@@ -1300,12 +1303,13 @@ with names and prices in `shop_config.lua` (200-350; shaders 120-180).
 **Delivery and duplicates.** An outfit gives both looks (male and female) with both addons, so a later sex change keeps
 it; owned = the character's own look with both addons. Outfits and mounts the base XML marks premium need a Premium
 account to wear: the store refuses them to a free account (gifts are allowed). Wings, auras, shaders and frames are
-bought once (storages 7100600+, 7100650+, 7100700+, 7100761-7100762; the engine keeps the cosmetic itself). A purchase
+bought once (storages 7100600+, 7100650+, 7100700+, 7100761-7100765; the engine keeps the cosmetic itself). A purchase
 that fails refunds the coins; a page reads "Owned." with the Buy button off for what the character has, and is sent again
 after a purchase. All of it survives a reload and a restart (the engine and the storages hold the state).
 
 **Name plate frames.** The frame bought last is shown (titles.lua frame source "store"); Info & Services > Services >
-Plate frame switches between the owned frames or back to the title's own (command id `plateframe`).
+Plate frame switches between the owned frames or back to the title's own (command id `plateframe`). Ember, verdant and
+bone (300 each) are drawn by `client/tools/gen_nameplate_art.py` like the others (`shop.lua` FRAMES, storages 7100763-7100765).
 
 **Storefront** (`shop_config.lua` `storefront`, all server side; the client only shows what it gets and echoes title
 and cost, so a changed price is refused, never charged): `featured` = `count` offers of `pool`, a new choice each week
@@ -1500,6 +1504,67 @@ seller sold plain items to the bank and kept rarity/unique items (rarity sold af
 Character > Services renamed the
 character (and its dungeon run entry) and back; a vocation change paladin -> knight -> paladin returned exactly the
 original health, mana and capacity.
+
+## Cosmetics (`cosmetics.lua`, `cosmetics_core.lua`, `cosmetics_config.lua`, `cosmetics_store.lua`, `sql/chaos_cosmetics.sql`, client `game_cosmetics`)
+
+Four cosmetic kinds, cosmetic only (they change a picture or a colour, never damage, area, timing or drops). Unlocks are
+account-wide (table `chaos_cosmetics`, also created at startup); each character chooses what it shows in Character >
+Cosmetics (storages 7100940 - 7100949). Every cosmetic is data in `cosmetics_config.lua` (`id`, `key`, `kind`, `icon`, `name`,
+`desc`, `source` store with `price`, or achievement with `achievement`). The store categories are built from it by
+`cosmetics_store.lua` (the Cosmetics hunk of `shop_config.lua`): `{kind = "unlock", unlock = "cosmetic_<key>"}`, not giftable,
+sold through `ChaosCosmetics.storeUnlock` (`shop_services.lua` `unlockEntry`); season characters may buy them
+(`season_config.lua` `store.unlockPrefixes`). Achievement cosmetics are granted at login and when the window opens.
+
+| Kind | What | Store (coins) | Achievement |
+|---|---|---|---|
+| Spell effect skins | a class line's listed spells (2-3) show recoloured variants of their effects; everyone sees them | 12 skins, 250 each: Warrior Voidborn / Stormborn War Cries (Iron Bellow, Red Frenzy, Bloodrage), Ranger Sunfire Hunt (Skewering Line, Feral Command, Wild Bond), Mystic Voidfire (Doomtide, Forked Storm, Falling Pyre) / Bloodfire, Thief Dawnstep (Shadow Veil, Shadow Step, Shadow Mend) / Venom Smoke, Monk Crimson / Void / Gilded Palms (Ashen Fist, Sundering Palm, Pressure Points, Shadowfist Flurry), Templar Umbral Rite (Zealotry, Purging Nova, Vow of Mending) / Pyre Rite | none |
+| Kill effects | an effect on the monster's tile when the character lands the killing blow (the engine's last hit, not most damage, not a summon's) | Soul Spark, Sun Ring, Frost Shatter, Blood Bloom, Radiant Ring, 200 each | Void Ring (Legend's Bane), Harbinger's Toll (Chaos Culler) |
+| Loot label accents | the background of the character's own highlighted ground loot labels (`game_groundlabels`); text and border keep the rarity colour, the corpse loot rays keep theirs | Ember, Verdant, Azure, Royal Labels, 150 each | Gilded Labels (Greed Is Good) |
+| Chat name colours | the character's name in chat, for every viewer (player lines only, the name only; item link colours stay) | Cinder, Frost, Verdant, Amethyst, Rose Name, 200 each | Veteran's Gold (Veteran of the Wastes) |
+
+**Spell skins.** Only effects of the client pair: every swap stays inside a recolour family of `families` (the same
+procedural style in another palette, or the colour sets of the pack effects: `aura_burst_*`, `dome_blast_*`, `punch_hit_*`,
+`shade_*` / `blink_*`, `px*_*`); the test checks each family against `effects_catalog.csv` (same style) and `vfx_catalog.csv`
+(same size and frames). During a supported cast `_supports.lua` knows the caster and the spell (`ChaosSupportsSpell.cast()`,
+also inside the cast's `addEvent` callbacks); `_common.lua` asks `ChaosCosmetics.swapFor(pid, spellId, type, name)` in
+`ChaosSpell.fx` / `vfx` / `vshoot` and in the global `Fx` / `FxMissile` (wrapped once), so heal and area effects of the cast
+change too. A variant the server does not know sends the default effect. Effects set at load time (a combat's
+`COMBAT_PARAM_EFFECT`) stay the default. A spell belongs to one line; the skin chosen for that line is per character
+(storage 7100943 + line slot). The Necromancer line has no skins yet (its effects were being redrawn).
+
+**Choosing and previews.** Character > Cosmetics: one tab per kind, a Default row, Use, Preview, Open the Store. Preview (and
+the store's SHOW button on a skin or kill effect) plays the effects at the player's tile for that player only
+(`Position:sendMagicEffect(id, player)`), one every 0.7 s, at most one preview per 1.5 s. The store tints a chat colour
+offer's title with the colour and puts a label accent behind the title; the window shows the player's own chat line in the
+colour and three rarity labels on the accent.
+
+**Readable by rule.** `ChaosCosmeticsCore.validate` (startup and the test): ids and keys unique; kinds, sources, prices and
+achievements known; 1-3 spells of the right line; swaps inside one family; kill effects in the pair; accents at least 200/255
+opaque and every label rarity colour at contrast 3 or more on them; chat colours at contrast 4.5 or more on the console
+background; every store cosmetic has its store offer at its price and name, nothing else is sold as a cosmetic.
+
+Protocol (JSON on `ChaosOpcodes.cosmetics` = 225): client -> server `open | select {kind, id, line} (id 0 = the default) |
+preview {id} | close`; server -> client `state {open, line, lineName, rows}`, `style {accent}` (the character's own label
+accent), `colors {names = {[name] = "#rrggbb" | false}, full}` (sent in full at login, a change to everyone online),
+`result {ok, text}`. API: `ChaosCosmetics.swapFor / storeUnlock / storePreview / offerPreview / grant / revoke / owns`.
+Staff: `/cosmetic <character>, <key | all>[, revoke]` (group 4+). Store action `preview {category, page, offer}`
+(`shop.lua`, cosmetic unlocks only).
+
+Install: the `files`, `spells` (the `_common.lua` / `_supports.lua` hook) and `sql` steps of `install_all.py`. Client:
+`game_cosmetics`; `game_groundlabels` (`setAccent`), `game_chatlinks` (keeps its parts on the label), `game_shop` (SHOW and
+the colour previews), `client_chaos_topbar` (Character > Cosmetics).
+**Tests:** `tests/cosmetics_test.lua` (LuaJIT and Lua 5.3: the shipped config against the real effect catalogues, the spells
+of each line, achievements and store; refusals of non-recolours, unknown effects, power fields, unreadable colours, a wrong
+store price; ownership, choosing, the skin lookup; `cosmetics.lua` on a mocked engine: store unlock, choosing, kill effects on
+the last hit only, chat colours to everybody, the accent, previews to the asking player only, achievement grants, `/cosmetic`;
+`_common.lua` swapping during a cast and the default without a cast or without the variant), `season_test.lua` (cosmetics
+allowed to season characters), client `game_cosmetics/cosmeticslogic_test.lua` (name position and recolouring next to item
+links), `game_groundlabels/groundlabels_test.lua` (the accent keeps the rarity colours).
+**Tested in game** (own server and database copy, two Linux clients): the four store categories, SHOW on a skin (seen by the
+buyer only), purchases ("Owned." after), the window and its tabs; Iron Bellow with Voidborn War Cries drawn violet in the
+other client; Frost Shatter on a killing blow seen by the other client; the Frost name colour in the other client's chat next
+to an item link; the Azure accent on Legendary / Rare / Mythic labels; Veteran's Gold granted from the achievement at login;
+the Ember plate frame. Screenshots outside the repository.
 
 ## Store pouches (`pouches.lua`, `pouches_core.lua`, `pouches_config.lua`, `tools/install_pouches.py`, client `game_pouches`)
 
@@ -1852,8 +1917,14 @@ window of both players; picking it up from the ground and trading it (client sen
 receiver sees the look and only the real item enters its wardrobe; the tooltip keeps the real item with the Appearance line;
 a store set granted through `storeUnlock` and an achievement set synced at open; the Collection page; market listing row
 shows the look and cancelling returns the item with its look; Inspect Player draws the looks; refusal of a locked look; remove.
-Not done: the store offers (the store files belong to the payments work: one `unlockEntry` line in `shop_services.lua` and two
-offers in `shop_config.lua`); the season pass hook `ChaosSeasonPass.ownsTransmog`; looks of item links in chat.
+Store offers: category Appearances of `shop_config.lua` (Falconer's Regalia 300, Lionguard 350, not giftable), sold through
+`ChaosTransmog.storeUnlock` from `shop_services.lua` `unlockEntry`; the startup notes and test warnings about them are gone.
+Season set: `ChaosSeasonPass.ownsTransmog(player, key)` (`seasonpass.lua`) is true when the account's season pass holds a
+reward `{kind = "transmog", key}`: the Ember Pack (and so Blaze and Inferno) holds Arboreal; synced when the window opens.
+Item links in chat: the snapshot carries `tip.look`, and the tooltip icon draws it (`game_itemtooltip`, `setAppearanceId`).
+**Tested in game** (cosmetics test server): Falconer's Regalia bought in the store (Owned. after), the Ember Pack granted to an
+account and Arboreal owned at the next window open, a linked transmogged helmet showing the falcon circlet in the other
+client's link tooltip.
 
 ## Cast-time spells (`data/lib/chaos_casting.lua`, `casting.lua`, client `game_castbar`)
 
@@ -3313,6 +3384,9 @@ only 3); a message with its links written out must fit in 250 characters.
   snapshot the pasting player has to own the id of.
 - Spam: the usual chat limits apply to the message itself; the link adds the budgets above.
 
+A transmogged item keeps its look in the snapshot (`tip.look`); the tooltip icon draws the look ("Transmog"). A speaker's chat
+name colour (cosmetic, "Cosmetics") is drawn over the link colours, never instead of them.
+
 Tests: `tests/itemlink_test.lua` (ids, the format and its parser, names, cache limits, budgets, strikes, contexts, the handlers
 against a mocked engine) and the client's `chatlinks_logic_test.lua`.
 
@@ -3542,7 +3616,7 @@ holding the lower ones, only while the season runs, once per account:
 
 | Pack | Price | Holds |
 |---|---|---|
-| Ember | 600 | Brotherhood outfit and addons, Cinderhoof mount, title Emberkin |
+| Ember | 600 | Brotherhood outfit and addons, Cinderhoof mount, title Emberkin, the Arboreal transmog set |
 | Blaze | 1800 | Ember, the premium pass, Doom Knight outfit and addons, Flamesteed mount, Pyre Gate portal style |
 | Inferno | 3200 | Blaze, Chaos Acolyte outfit and addons, Wrathfire Pegasus mount, title Inferno-Crowned (fire red), 500 Chaos Coins, 10 tier skips |
 
@@ -3558,7 +3632,8 @@ entry carries `reward` in the shape of `achievements_data.lua` / `season_config.
 read it). Season of Ash: outfits Everblight (974 / 973), Brotherhood (278 / 279), Doom Knight (1016 / 1017), Chaos
 Acolyte (665 / 664); mounts Magma Skull (106), Cinderhoof (90), Flamesteed (47), Wrathfire Pegasus (116); portal styles
 Cinderfall Gate (item 12509) and Pyre Gate (item 29637), route `season` in `townportal_config.lua` (ids 41, 42);
-titles Kindled, Ashwalker, Cinderborn, Ashbound, Emberkin, Inferno-Crowned. No wings, auras, shaders or name plate
+titles Kindled, Ashwalker, Cinderborn, Ashbound, Emberkin, Inferno-Crowned; the transmog set Arboreal (reward kind `transmog`,
+`ChaosSeasonPass.ownsTransmog` for `transmog.lua`). No wings, auras, shaders or name plate
 frames: every one of those is sold in the store, a later season needs new art for them (the kinds `shader` and `frame`
 are supported). `tests/seasonpass_test.lua` checks that achievements, the season track and the class looks give none of
 them and prints a warning for each one the store still sells.

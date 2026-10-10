@@ -87,8 +87,8 @@ end
 local WINGS = readXml("data/XML/wings.xml", "wing")
 local AURAS = readXml("data/XML/auras.xml", "aura")
 local SHADERS = readXml("data/XML/shaders.xml", "shader")
-local FRAMES = {"violet", "frost"} -- index = storage offset (Chaos.storage.shopFrameBase + i)
-local FRAME_INDEX = {violet = 1, frost = 2}
+local FRAMES = {"violet", "frost", "ember", "verdant", "bone"} -- index = storage offset (Chaos.storage.shopFrameBase + i)
+local FRAME_INDEX = {violet = 1, frost = 2, ember = 3, verdant = 4, bone = 5}
 
 -- ------------------------------------------------------------------ exclusives (checked again at every load)
 local function exclusions()
@@ -211,6 +211,8 @@ function Shop.owns(player, offer)
 		return player:hasOutfit(sexLook(player, offer), 3)
 	elseif offer.kind == "mount" then
 		return player:hasMount(offer.id)
+	elseif offer.kind == "unlock" and ChaosShopServices and ChaosShopServices.owns then
+		return ChaosShopServices.owns(player, offer) -- Cosmetics: unlocks owned show as owned
 	end
 	return false
 end
@@ -397,6 +399,11 @@ local function clientOffer(e, player)
 	end
 	view.title = view.title or "Offer"
 	view.gift = giftable(offer) or nil
+	-- >>> Cosmetics: a preview (an effect only the buyer sees, or the colour) for cosmetic unlocks (cosmetics.lua)
+	if offer.kind == "unlock" and ChaosCosmetics and ChaosCosmetics.offerPreview then
+		view.preview = ChaosCosmetics.offerPreview(offer.unlock)
+	end
+	-- <<< Cosmetics
 	if player and Shop.owns(player, offer) then
 		view.owned = true
 		view.description = "Owned. " .. view.description
@@ -854,6 +861,15 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		if not ChaosRateLimit or ChaosRateLimit.allow(player, "shop.buy", 300) then
 			buy(player, msg.data)
 		end
+	-- >>> Cosmetics: the Preview button of a cosmetic offer (cosmetics.lua shows it to this player only)
+	elseif msg.action == "preview" then
+		local c, p, o = Chaos.toInt(msg.data.category, 1), Chaos.toInt(msg.data.page, 1), Chaos.toInt(msg.data.offer, 1)
+		local page = c and p and pageOf(Shop.view(player), c, p)
+		local e = page and o and page[o]
+		if e and e.offer.kind == "unlock" and ChaosCosmetics and ChaosCosmetics.storePreview then
+			ChaosCosmetics.storePreview(player, e.offer.unlock)
+		end
+	-- <<< Cosmetics
 	elseif msg.action == "history" then
 		-- database reads (ratelimit.lua)
 		if not ChaosRateLimit or ChaosRateLimit.allow(player, "shop.history", 1000) then

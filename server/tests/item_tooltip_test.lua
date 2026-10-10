@@ -336,4 +336,14 @@ y = yours(T.build(fast, {wielder = {voc = 2000, dex = 20}}))
 eq(y.v, 1.5, "weapon + dexterity: at most -25%") eq(y.l, "Your Attack Interval (capped)")
 eq(yours(T.build(armor, {wielder = {voc = 2000, dex = 0}})), nil, "only weapons")
 
+-- a transmog look travels in the tip (also in item link snapshots, itemlink.lua builds them with T.build): the client
+-- draws the tooltip icon with it (game_itemtooltip setAppearanceId) and names it
+local dressed = newItem(3975)
+dressed:setCustomAttribute("chaos_tmog", 2206)
+local lookTip = T.build(dressed)
+eq(type(lookTip.look), "table", "the look is in the tip")
+eq(lookTip.look.cid, 3206, "look client id") eq(lookTip.look.name, "strange ring", "look name")
+eq(lookTip.id, 4975, "the item stays its own")
+eq(T.build(newItem(3975)).look, nil, "no look without a transmog")
+
 print(string.format("item_tooltip_test: %d checks OK", checks))

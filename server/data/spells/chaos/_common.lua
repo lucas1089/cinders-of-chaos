@@ -42,6 +42,51 @@ function ChaosSpell.cancel(creature, message)
 	return false
 end
 
+-- >>> Cosmetics: spell effect skins (data/scripts/chaos/cosmetics.lua). During a cast (the supports wrapper knows the
+-- caster and the spell, also in the cast's addEvent callbacks) an effect name may be swapped for its recoloured variant
+-- the caster chose; every viewer sees the variant. A variant the pair does not have falls back to the default effect.
+local function skinned(kind, name)
+	local C, W = ChaosCosmetics, ChaosSupportsSpell
+	if type(name) ~= "string" or not C or not C.swapFor or not W or not W.cast then
+		return nil
+	end
+	local pid, spellId = W.cast()
+	if not pid then
+		return nil
+	end
+	local ok, alt = pcall(C.swapFor, pid, spellId, kind, name)
+	return ok and alt or nil
+end
+ChaosSpell.skinned = skinned
+
+-- Fx / FxMissile (chaos_fx.lua) are also called inside the casts (heal and area effects): wrapped once
+local function wrapFx()
+	if Fx and Fx ~= ChaosSpellSkinFx then
+		local raw = Fx
+		ChaosSpellSkinFx = function(name, fallback)
+			local alt = skinned("fx", name)
+			if alt and ChaosFx and ChaosFx[alt] then
+				return raw(alt, fallback)
+			end
+			return raw(name, fallback)
+		end
+		Fx = ChaosSpellSkinFx
+	end
+	if FxMissile and FxMissile ~= ChaosSpellSkinFxMissile then
+		local raw = FxMissile
+		ChaosSpellSkinFxMissile = function(name, fallback)
+			local alt = skinned("missile", name)
+			if alt and ChaosFxMissile and ChaosFxMissile[alt] then
+				return raw(alt, fallback)
+			end
+			return raw(name, fallback)
+		end
+		FxMissile = ChaosSpellSkinFxMissile
+	end
+end
+wrapFx()
+-- <<< Cosmetics
+
 function ChaosSpell.fx(pos, name, fallback)
 	Position(pos):sendMagicEffect(Fx(name, fallback))
 end
@@ -83,7 +128,14 @@ function ChaosSpell.dirTo(fromPos, toPos)
 end
 
 function ChaosSpell.vfx(pos, name)
-	return Vfx ~= nil and pos ~= nil and Vfx(Position(pos), name)
+	if Vfx == nil or pos == nil then
+		return false
+	end
+	local alt = skinned("vfx", name) -- Cosmetics: the skin's variant first, the default when the pair lacks it
+	if alt and Vfx(Position(pos), alt) then
+		return true
+	end
+	return Vfx(Position(pos), name)
 end
 
 function ChaosSpell.vfxDir(pos, base, direction)
@@ -98,6 +150,10 @@ function ChaosSpell.vfxOr(pos, vname, name, fallback)
 end
 
 function ChaosSpell.vshoot(fromPos, toPos, vname, name, fallback)
+	local alt = VfxShoot ~= nil and skinned("vmissile", vname) -- Cosmetics: the skin's variant first
+	if alt and VfxShoot(Position(fromPos), Position(toPos), alt) then
+		return
+	end
 	if not (VfxShoot ~= nil and VfxShoot(Position(fromPos), Position(toPos), vname)) then
 		ChaosSpell.shoot(fromPos, toPos, name, fallback)
 	end

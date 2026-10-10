@@ -266,6 +266,9 @@ local function scan(path)
 	if not text then
 		return
 	end
+	-- the store offers of the store sets (shop_config.lua) and the season pass reward of the season set
+	-- (seasonpass_config.lua kind "transmog") show a set look as their icon: the set's own source, a picture
+	text = text:gsub("[^\n]*unlock = \"transmog_[%w_]+\"[^\n]*", ""):gsub("[^\n]*kind = \"transmog\"[^\n]*", "")
 	for num in text:gmatch("%f[%d](%d%d%d%d%d)%f[%D]") do
 		if setLooks[tonumber(num)] then
 			error(path .. " names the set look " .. num .. " (set " .. setLooks[tonumber(num)] .. ")")

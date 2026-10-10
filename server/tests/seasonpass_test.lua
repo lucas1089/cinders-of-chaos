@@ -338,5 +338,30 @@ eq(count(ents3, "mount"), 3, "Inferno: three mounts")
 eq(count(ents3, "coins"), 0, "coins are not cosmetics")
 eq(#P.entitlements(pass, {[0] = {[2] = true}, [1] = {}}, 0), 0, "a potion is no cosmetic")
 
+-- the season transmog set (transmog_config.lua source "season"): every pack owner owns it (Ember holds it)
+eq(count(P.entitlements(pass, {[0] = {}, [1] = {}}, 1), "transmog"), 1, "Ember: the Arboreal transmog set")
+eq(count(P.entitlements(pass, {[0] = {}, [1] = {}}, 3), "transmog"), 1, "Inferno holds it too")
+eq(count(P.entitlements(pass, {[0] = {}, [1] = {}}, 0), "transmog"), 0, "no pack, no set")
+local tm = dofile("data/scripts/chaos/transmog_config.lua")
+local seasonSets = {}
+for _, s in ipairs(tm.sets) do
+	if s.source == "season" then
+		seasonSets[s.key] = true
+	end
+end
+for _, c in ipairs(cfg.cosmetics) do
+	if c.reward.kind == "transmog" then
+		eq(seasonSets[c.reward.key], true, "season pass transmog " .. c.reward.key .. " is a season set")
+		seasonSets[c.reward.key] = nil
+	end
+end
+eq(next(seasonSets), nil, "every season transmog set has a season pass source")
+do
+	local f = io.open("data/scripts/chaos/seasonpass.lua", "r")
+	local text = f:read("*a")
+	f:close()
+	eq(text:find("function SP.ownsTransmog(player, key)", 1, true) ~= nil, true, "transmog.lua's season hook exists")
+end
+
 print(string.format("seasonpass_test: OK (%d tiers, %d packs, %d cosmetics, %d XP to the top)", #pass.tiers, #pass.packs,
 	#cfg.cosmetics, P.maxXp(cfg)))

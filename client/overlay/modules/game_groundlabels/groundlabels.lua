@@ -177,16 +177,11 @@ local function tileSize()
 end
 
 local function styleLabel(label, d, color)
-  label:setColor(color)
-  if d.highlight then
-    label:setBorderWidth(1)
-    label:setBorderColor(color)
-    label:setBackgroundColor('#100c0ef0')
-  else
-    label:setBorderWidth(1)
-    label:setBorderColor('#3a3230')
-    label:setBackgroundColor('#0c0a0cd8')
-  end
+  local st = GL.style(d, color) -- the highlight background may be the player's accent cosmetic (setAccent)
+  label:setColor(st.text)
+  label:setBorderWidth(1)
+  label:setBorderColor(st.border)
+  label:setBackgroundColor(st.background)
   label:setOpacity(d.dim and 0.7 or 1)
   label.baseBackground = label:getBackgroundColor()
 end
@@ -259,7 +254,7 @@ layout = function()
     local box = GL.widgetBox(boxes[b.key])
     local sig = {}
     for _, e in ipairs(b.rows) do sig[#sig + 1] = e.text .. '|' .. tostring(e.d.dim) .. tostring(e.d.highlight) end
-    local render = table.concat(sig, '\n') .. '@' .. box.w .. 'x' .. box.h .. '+' .. box.cx .. ',' .. box.cy .. settings.size
+    local render = table.concat(sig, '\n') .. '@' .. box.w .. 'x' .. box.h .. '+' .. box.cx .. ',' .. box.cy .. settings.size .. (GL.accent or '')
     if t.render ~= render or not t.widget or t.widget:isDestroyed() then
       destroyWidget(t)
       widgetSeq = widgetSeq + 1
@@ -705,6 +700,13 @@ function toggleSettings()
 end
 
 -- for other modules and tests: the labels on screen {text, pos, kind}
+-- the loot label accent cosmetic (game_cosmetics): nil = the default background; labels are redrawn
+function setAccent(color)
+  local before = GL.accent
+  GL.setAccent(color)
+  if GL.accent ~= before and g_game.isOnline() then relayout() end
+end
+
 function getLabels()
   local out = {}
   for _, l in ipairs(labels) do

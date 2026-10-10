@@ -17,7 +17,10 @@
 --   {kind = "unlock", unlock = "<pets_config.lua store key>", look = <looktype>, ...}  a pet, per character (pets.lua)
 --   Services and unlocks need name and description; the icon is only a picture (iconCount for a coin pile).
 --   {kind = "addons", looktype = male, lookfemale = female}   both addons of an outfit everyone has, both sexes
---   {kind = "frame", frame = "violet" | "frost", icon = <item id>}   a name plate frame (nameplate.lua), bought once
+--   {kind = "frame", frame = "violet" | "frost" | "ember" | "verdant" | "bone", icon = <item id>}   a name plate frame
+--       (nameplate.lua), bought once
+--   {kind = "unlock", unlock = "transmog_<set key>", ...}  a transmog appearance set, per account (transmog.lua)
+--   {kind = "unlock", unlock = "cosmetic_<key>", ...}  a cosmetic, per account (cosmetics.lua, cosmetics_store.lua)
 --   {kind = "bundle", parts = {<offer key> | <offer table>, ...}, pct = n | cost = n}   several offers at once, at
 --       pct % off their list prices (or a fixed cost); refused when one part is owned or cannot apply now
 --   {kind = "pact", days = n}  (bundle part only) days of the Chaos Pact when that system is loaded (`pact` below);
@@ -228,7 +231,15 @@ return {
 				{kind = "frame", frame = "violet", icon = 2153, cost = 300, name = "Violet Plate Frame",
 					description = "A violet frame round your name plate, for good. Switch frames in Info & Services > Services."},
 				{kind = "frame", frame = "frost", icon = 2154, cost = 300, name = "Frost Plate Frame",
-					description = "A frost-blue frame round your name plate, for good. Switch frames in Info & Services > Services."}
+					description = "A frost-blue frame round your name plate, for good. Switch frames in Info & Services > Services."},
+				-- >>> Cosmetics: three more frames (client/tools/gen_nameplate_art.py; shop.lua FRAMES)
+				{kind = "frame", frame = "ember", icon = 2156, cost = 300, name = "Ember Plate Frame",
+					description = "A smouldering orange frame round your name plate, for good. Switch frames in Info & Services > Services."},
+				{kind = "frame", frame = "verdant", icon = 2155, cost = 300, name = "Verdant Plate Frame",
+					description = "A leaf-green frame round your name plate, for good. Switch frames in Info & Services > Services."},
+				{kind = "frame", frame = "bone", icon = 2230, cost = 300, name = "Bone Plate Frame",
+					description = "A pale bone frame round your name plate, for good. Switch frames in Info & Services > Services."}
+				-- <<< Cosmetics
 			}
 		},
 		{
@@ -248,6 +259,24 @@ return {
 					description = "Town Portal style: a red gate under a blood moon. Choose it in Character > Portal Style."},
 				{kind = "unlock", unlock = "portal_sanctum", icon = 29636, cost = 300, name = "Sanctum Gate",
 					description = "Town Portal style: a white palace door with a red veil. Choose it in Character > Portal Style."}
+			}
+		},
+		-- >>> Cosmetics (cosmetics.lua): spell effect skins, kill effects, loot label accents, chat name colours; offers,
+		-- prices and texts live in cosmetics_config.lua (cosmetics_store.lua builds each category). Account-wide.
+		dofile("data/scripts/chaos/cosmetics_store.lua")("spellskin"),
+		dofile("data/scripts/chaos/cosmetics_store.lua")("killfx"),
+		dofile("data/scripts/chaos/cosmetics_store.lua")("lootbeam"),
+		dofile("data/scripts/chaos/cosmetics_store.lua")("chatcolor"),
+		-- <<< Cosmetics
+		{
+			-- transmog appearance sets (transmog.lua, transmog_config.lua sets with source "store"): account-wide, appearance
+			-- only; names and prices must match the sets (ChaosTransmogCore.validate)
+			name = "Appearances", icon = {item = 2472},
+			offers = {
+				{kind = "unlock", unlock = "transmog_falconer", icon = 27200, cost = 300, name = "Falconer's Regalia", gift = false,
+					description = "Transmog looks: a crested circlet, plate and greaves of the old falconers. Character > Transmog."},
+				{kind = "unlock", unlock = "transmog_lionguard", icon = 27402, cost = 350, name = "Lionguard", gift = false,
+					description = "Transmog looks: the gilded lion helmet, plate, shield and spellbook. Character > Transmog."}
 			}
 		},
 		{

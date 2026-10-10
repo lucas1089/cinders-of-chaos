@@ -93,7 +93,7 @@ return {
 		-- transmog sets are looks; the season pass and its packs are account-wide (their item rewards: passItems).
 		-- Pets, the Auto Seller and Rarity Autoloot are refused (gameplay unlocks of the character)
 		unlocks = {unlockNecromancer = true, unlockMonk = true, unlockTemplar = true},
-		unlockPrefixes = {"portal_", "transmog_", "seasonPass", "seasonPack"},
+		unlockPrefixes = {"portal_", "transmog_", "seasonPass", "seasonPack", "cosmetic_"}, -- cosmetic_: cosmetics.lua
 		message = "%s is not for season characters: they get only cosmetics and account services from the store. " ..
 			"Buy it with a standard character.",
 		giftMessage = "%s is a season character: only cosmetics and account services can be given to it."

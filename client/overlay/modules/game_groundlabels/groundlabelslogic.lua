@@ -17,6 +17,28 @@ GL.MAX_LABELS = 40
 GL.RARE = 3 -- "Rare+" = rarity 3 (Rare) or better, uniques, orbs and legendary powers
 GL.TEXT_COLOR = '#d8cfbf' -- items without a rarity colour
 GL.DIM_COLOR = '#8c8478'
+GL.HIGHLIGHT_BACKGROUND = '#100c0ef0'
+GL.PLAIN_BACKGROUND = '#0c0a0cd8'
+-- the loot label accent cosmetic (game_cosmetics, server cosmetics.lua): the background of the labels the loot filter
+-- makes glow (the player's own loot highlights). Text and border keep the rarity colour, so the rarity never changes.
+GL.accent = nil
+
+function GL.setAccent(color)
+  if type(color) == 'string' and (color:match('^#%x%x%x%x%x%x$') or color:match('^#%x%x%x%x%x%x%x%x$')) then
+    GL.accent = color
+  else
+    GL.accent = nil
+  end
+  return GL.accent
+end
+
+-- {text, border, background} of a label: d = the decision (GL.decide), color = GL.color(row, d)
+function GL.style(d, color)
+  if d.highlight then
+    return { text = color, border = color, background = GL.accent or GL.HIGHLIGHT_BACKGROUND }
+  end
+  return { text = color, border = '#3a3230', background = GL.PLAIN_BACKGROUND }
+end
 GL.SIZES = {
   small = { font = 'verdana-9px-rounded', pad = 3 },
   normal = { font = 'verdana-11px-rounded', pad = 4 },

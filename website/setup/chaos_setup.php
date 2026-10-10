@@ -175,6 +175,9 @@ $menu('Leaderboards', 'page.php?plugin=chaos&p=leaderboards', 'fa-trophy', 3, $w
 $menu('Seasons', 'page.php?plugin=chaos&p=seasons', 'fa-hourglass-half', 4, $world);
 $menu('Rules', 'page.php?p=rules', 'fa-gavel', 5, $world);
 $out .= "menu: The World (Server Info, Patch Notes, Leaderboards, Seasons, Rules)\n";
+// the donation page (plugins/chaos/pages/coins.php): Chaos Coins are a thank-you for a voluntary donation
+$menu('Donate', 'page.php?plugin=chaos&p=coins', 'fa-heart', 16);
+$out .= "menu: Donate\n";
 
 // the Rules page: an editable page (Admin Panel > Pages), added once and never overwritten
 if (znote_table_exists('znote_pages')) {

@@ -2,7 +2,8 @@
 -- Wire format (server/data/scripts/chaos/nameplate_core.lua): one plate per line "cid|title|color|guild|frame".
 NameplateMath = {}
 
-NameplateMath.FRAMES = { default = true, gold = true, crimson = true, violet = true, frost = true }
+NameplateMath.FRAMES = { default = true, gold = true, crimson = true, violet = true, frost = true, ember = true,
+  verdant = true, bone = true }
 NameplateMath.NAME_COLOR = '#e8c372'      -- the name on its plate: gold
 NameplateMath.GUILD_COLOR = '#d9a441'     -- {Guild}: deep gold
 NameplateMath.WAR_GUILD_COLOR = '#e8643c' -- guild of a war enemy (red emblem)

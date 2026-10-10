@@ -28,6 +28,8 @@ V.PAGES = {
       { label = 'Other', buttons = { { text = 'Leave Tutorial', id = 'skiptutorial' }, { text = 'Claim Web Shop Items', id = 'webshop' } } },
       -- name plate frames bought in the store (server shop.lua, command id plateframe)
       { label = 'Plate frame', buttons = { { text = 'Violet', id = 'plateframe', param = 'violet' }, { text = 'Frost', id = 'plateframe', param = 'frost' },
+                                           { text = 'Ember', id = 'plateframe', param = 'ember' }, { text = 'Verdant', id = 'plateframe', param = 'verdant' },
+                                           { text = 'Bone', id = 'plateframe', param = 'bone' },
                                            { text = 'Title Frame', id = 'plateframe', param = 'off' } } },
     } },
   { id = 'autoseller', title = 'Auto Seller',

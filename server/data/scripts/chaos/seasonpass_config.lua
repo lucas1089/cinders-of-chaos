@@ -18,6 +18,8 @@
 --   {kind = "shader", id = <shaders.xml id>, name = "..."}                       every character
 --   {kind = "portal", key = "<townportal_config.lua style key>", name = "..."}   Town Portal style (route "season")
 --   {kind = "frame", frame = "<name plate frame id>", name = "..."}              name plate frame, can be switched off
+--   {kind = "transmog", key = "<transmog_config.lua set key>", icon = <item id>, name = "..."}  a transmog appearance
+--                                                          set of source "season" (ChaosSeasonPass.ownsTransmog)
 --   {kind = "tierskips", count = n}                        packs only: n tiers of pass XP at once
 --   {kind = "premium"}                                     packs only: the premium track of the pass
 -- Cosmetics are account-wide and kept forever (also after the season); items go to the character that claims.
@@ -206,11 +208,12 @@ return {
 			-- premium pass price already paid counts for a pack that includes the pass).
 			packs = {
 				{id = 1, key = "ember", name = "Ember Pack", price = 600, unlock = "seasonPack1", look = 278,
-					description = "Brotherhood outfit and addons, Cinderhoof mount, title Emberkin. Account-wide, this season only.",
+					description = "Brotherhood outfit and addons, Cinderhoof mount, title Emberkin, Arboreal transmog. Account-wide.",
 					rewards = {
 						{kind = "outfit", male = 278, female = 279, addons = 3, name = "Brotherhood outfit (full)"},
 						{kind = "mount", id = 90, clientid = 851, name = "Cinderhoof mount"},
-						{kind = "title", title = "Emberkin", color = "#ffb05a", name = "Title: Emberkin"}
+						{kind = "title", title = "Emberkin", color = "#ffb05a", name = "Title: Emberkin"},
+						{kind = "transmog", key = "arboreal", icon = 27679, name = "Arboreal transmog looks"}
 					}},
 				{id = 2, key = "blaze", name = "Blaze Pack", price = 1800, unlock = "seasonPack2", look = 1016,
 					description = "Ember Pack, premium Ashen Pass, Doom Knight outfit and addons, Flamesteed, Pyre Gate portal.",
@@ -255,6 +258,7 @@ return {
 		{season = 1, source = "pass premium 35", reward = {kind = "title", title = "Cinderborn"}},
 		{season = 1, source = "pass free 50", reward = {kind = "title", title = "Ashbound"}},
 		{season = 1, source = "Ember Pack", reward = {kind = "title", title = "Emberkin"}},
-		{season = 1, source = "Inferno Pack", reward = {kind = "title", title = "Inferno-Crowned"}}
+		{season = 1, source = "Inferno Pack", reward = {kind = "title", title = "Inferno-Crowned"}},
+		{season = 1, source = "Ember Pack", reward = {kind = "transmog", key = "arboreal", name = "Arboreal"}}
 	}
 }

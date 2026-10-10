@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Name plate frames of game_nameplate (drawn behind player names by base patch 0022 as a 9-slice, border 6):
   plate_<id>.png  16x15: 6 px end caps (rim corners and a small ornament), a 4 px middle that is stretched under the name.
-  ids: default (blackened iron, ember accent), gold (staff), crimson (siege champions), violet and frost (spare,
-  for store or season cosmetics). preview_nameplates.png (not shipped) shows them at 4x.
+  ids: default (blackened iron, ember accent), gold (staff), crimson (siege champions), violet, frost, ember, verdant
+  and bone (store frames). preview_nameplates.png (not shipped) shows them at 4x.
 python3 -I client/tools/gen_nameplate_art.py   (writes into client/overlay/modules/game_nameplate/images/)"""
 import os
 import sys
@@ -19,6 +19,10 @@ FRAMES = {
     'crimson': ((176, 34, 30), (240, 104, 84), (54, 14, 14), (18, 5, 5), (190, 36, 28), (255, 140, 100)),
     'violet':  ((128, 74, 178), (196, 156, 240), (36, 20, 48), (12, 6, 16), (140, 80, 196), (226, 190, 255)),
     'frost':   ((80, 140, 180), (176, 222, 248), (18, 32, 44), (6, 10, 15), (90, 150, 200), (206, 242, 255)),
+    # store frames of the cosmetics update (server shop.lua FRAMES)
+    'ember':   ((200, 96, 32), (255, 180, 110), (50, 22, 10), (16, 7, 4), (224, 110, 36), (255, 214, 140)),
+    'verdant': ((70, 150, 70), (170, 230, 150), (18, 40, 20), (6, 14, 7), (84, 170, 80), (210, 255, 190)),
+    'bone':    ((186, 176, 150), (240, 232, 210), (44, 40, 34), (14, 13, 11), (204, 194, 168), (255, 250, 236)),
 }
 FILL_ALPHA = 225
 

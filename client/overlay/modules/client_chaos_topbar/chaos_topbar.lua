@@ -185,6 +185,7 @@ local CATEGORIES = {
     entry('Achievements',    'ranking',     { modules = { 'game_achievements' }, fns = { 'toggle' } }),
     entry('Pets',            'vip',         { modules = { 'game_pets' },      fns = { 'toggle' } }),
     entry('Transmog',        'inventory',   { modules = { 'game_transmog' },  fns = { 'toggle' } }),
+    entry('Cosmetics',       'inventory',   { modules = { 'game_cosmetics' }, fns = { 'toggle' } }),
     entry('Town Portal',     'minimap',     { modules = { 'game_townportal' }, fns = { 'cast' } }),
     entry('Character Info',  'help',        info('character')),
     entry('Services',        'help',        info('services')),

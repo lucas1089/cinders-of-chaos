@@ -344,6 +344,12 @@ local function unlockEntry(name)
 	if not u and ChaosTownPortal and ChaosTownPortal.storeUnlock then
 		u = ChaosTownPortal.storeUnlock(name) -- a portal style (townportal.lua), per character
 	end
+	if not u and ChaosTransmog and ChaosTransmog.storeUnlock then
+		u = ChaosTransmog.storeUnlock(name) -- an appearance set (transmog.lua), per account
+	end
+	if not u and ChaosCosmetics and ChaosCosmetics.storeUnlock then
+		u = ChaosCosmetics.storeUnlock(name) -- a cosmetic (cosmetics.lua), per account
+	end
 	return u
 end
 
@@ -541,6 +547,18 @@ S.services = {
 }
 
 -- ------------------------------------------------------------------------ entry points for shop.lua
+-- an unlock offer the character (or its account) owns already: the store page shows it as owned
+function S.owns(player, offer)
+	local u = offer and offer.kind == "unlock" and unlockEntry(offer.unlock)
+	if not u then
+		return false
+	end
+	if u.owned then
+		return u.owned(player) == true
+	end
+	return u.storage ~= nil and player:getStorageValue(u.storage) > 0
+end
+
 function S.check(player, offer)
 	if offer.kind == "unlock" then
 		local u = unlockEntry(offer.unlock)

@@ -70,7 +70,8 @@ ChaosOpcodes = {
 	pact = 222, -- Chaos Pact window: status, limits, daily coins, saved builds (client game_pact; pact.lua, pact_config.lua)
 	transmog = 212, -- Transmog window: wardrobe, apply / remove a look (client game_transmog; transmog.lua, transmog_core.lua, transmog_config.lua)
 	pouches = 226, -- store pouches: the Loot Pouch rules window (client game_pouches; pouches.lua, pouches_core.lua, pouches_config.lua)
-	partyFrames = 235 -- party frames: members' health, mana, level, floor, buffs; client -> server actions (client game_partyframes; partyframes.lua)
+	partyFrames = 235, -- party frames: members' health, mana, level, floor, buffs; client -> server actions (client game_partyframes; partyframes.lua)
+	cosmetics = 225 -- Cosmetics window, chat name colours, loot label accent (client game_cosmetics; cosmetics*.lua)
 }
 
 -- ---------------------------------------------------------------------------
@@ -119,6 +120,8 @@ Chaos.storage = {
 	inspectOff = 7100960, -- 1 = this character does not allow others to inspect it (inspect.lua; default on, so unset)
 	-- market (market_config.lua storage): 7100970 - 7100979 reserved; listSeq, deliverSeq (crash-safe escrow markers)
 	-- season pass (seasonpass_config.lua storage): 7100980 - 7100984 reserved; 7100980 = the season name frame is hidden
+	-- cosmetics (cosmetics_config.lua storage): 7100940 - 7100949 reserved; the chosen kill effect, loot label accent,
+	-- chat name colour, then one spell skin per class line (7100943 + slot)
 
 	-- store: one-time cosmetics owned (base + id of the wings / aura / shader)
 	shopWingsBase = 7100600,

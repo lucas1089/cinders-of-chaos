@@ -481,6 +481,30 @@ function addOffer(category, data)
   else
     offer.buyButton:hide()
   end
+  -- a cosmetic's preview (server cosmetics.lua): the SHOW button plays its effects for this player only; a chat colour
+  -- tints the title, a loot label accent sits behind it
+  local preview = type(data["preview"]) == "table" and data["preview"] or nil
+  if preview and category ~= 0 then
+    if preview.effect and offer.previewButton and not data["gift"] then
+      offer.previewButton:setVisible(true)
+      offer.previewButton.onClick = function() previewOffer(offer) end
+      offer.description:setMarginRight(104)
+    end
+    if type(preview.color) == "string" and preview.color:match("^#%x%x%x%x%x%x$") then
+      offer.title:setColor(preview.color)
+    end
+    if type(preview.accent) == "string" and preview.accent:match("^#%x%x%x%x%x%x%x?%x?$") then
+      offer.title:setBackgroundColor(preview.accent)
+    end
+  end
+end
+
+function previewOffer(widget)
+  local parts = widget and widget:getId():split("_") or {}
+  local category = tonumber(parts[2])
+  local row = findWidgetIndex(widget)
+  if not category or not row then return end
+  sendAction("preview", { category = category, page = currentCategoryPage[category] or 1, offer = row })
 end
 
 function changeCategory(widget, newCategory)

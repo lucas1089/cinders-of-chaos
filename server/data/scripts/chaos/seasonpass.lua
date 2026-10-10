@@ -485,6 +485,11 @@ function SP.ownsPortal(player, key)
 	return ownsKind(player, "portal", "key", key)
 end
 
+-- transmog.lua asks for the appearance sets of source "season" (synced when the Transmog window opens)
+function SP.ownsTransmog(player, key)
+	return ownsKind(player, "transmog", "key", key)
+end
+
 function SP.frameOf(player)
 	local acc = SP.acc[player:getAccountId()]
 	if not acc or player:getStorageValue(cfg.storage.frameOff) == 1 then
@@ -1032,6 +1037,9 @@ local function rewardView(r)
 		v.look = r.clientid
 	elseif r.kind == "title" then
 		v.color = r.color
+	elseif r.kind == "transmog" and r.icon then
+		local it = ItemType(r.icon)
+		v.item, v.count = it and it:getClientId() or 0, 1
 	end
 	return v
 end

@@ -118,6 +118,11 @@ local function buildPanel(tip, extra, heading)
   local icon = panel:getChildById('icon')
   icon:setItemId(tip.id or 0)
   if (tip.count or 1) > 1 then icon:setItemCount(tip.count) end
+  -- a transmog look (server transmog.lua, tip.look; client base patch 0030): the icon shows the item as it looks, also
+  -- for item links in chat (their snapshot carries the look)
+  local look = type(tip.look) == 'table' and tonumber(tip.look.cid) or 0
+  local iconItem = look > 0 and icon:getItem() or nil
+  if iconItem then pcall(function() iconItem:setAppearanceId(look) end) end
   if heading then
     local h = panel:getChildById('header')
     h:setText(heading)

@@ -32,7 +32,8 @@ N.COLORS = {
 }
 
 -- frames the client has (game_nameplate/images/plate_<id>.png)
-N.FRAMES = {default = true, gold = true, crimson = true, violet = true, frost = true}
+N.FRAMES = {default = true, gold = true, crimson = true, violet = true, frost = true, ember = true, verdant = true,
+	bone = true}
 
 -- frame a title of this source brings when it is the active title
 N.SOURCE_FRAME = {staff = "gold", champion = "crimson"}

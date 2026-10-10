@@ -264,6 +264,7 @@ local CATEGORY = {
 	["Outfits"] = true, ["Outfit Addons"] = true, ["Mounts"] = true, ["Wings"] = true, ["Auras"] = true,
 	["Outfit Shaders"] = true, ["Name Plates"] = true, ["Portal Styles"] = true, ["Bundles"] = true, ["Classes"] = true,
 	["Chaos Pact"] = true, ["Storage & Slots"] = true, ["Season Pass"] = true, ["Premium Time"] = true,
+	["Spell Effects"] = true, ["Kill Effects"] = true, ["Loot Labels"] = true, ["Chat Colours"] = true, ["Appearances"] = true,
 	["Starter"] = false, ["Crafting"] = false, ["Supplies"] = false, ["Boosts"] = false, ["World Buffs"] = false,
 	["Convenience"] = false, ["Training"] = false, ["Pets"] = false, ["Services"] = "mixed"
 }
@@ -302,6 +303,7 @@ eq(S.storeRefusal({kind = "newthing"}, rules) ~= nil, true, "an unknown kind is 
 eq(S.storeRefusal({kind = "unlock", unlock = "petAnything"}, rules) ~= nil, true, "pets refused")
 eq(S.storeRefusal({kind = "unlock", unlock = "autoSeller"}, rules) ~= nil, true, "Auto Seller refused")
 eq(S.storeRefusal({kind = "unlock", unlock = "transmog_arboreal"}, rules), nil, "transmog sets are looks")
+eq(S.storeRefusal({kind = "unlock", unlock = "cosmetic_kill_soulspark"}, rules), nil, "cosmetics are looks")
 eq(S.storeRefusal({kind = "unlock", unlock = "seasonPassPremium"}, rules), nil, "the premium pass (account-wide)")
 eq(S.storeRefusal({kind = "unlock", unlock = ""}, rules) ~= nil, true, "an empty unlock key")
 eq(S.storeRefusal({kind = "aura", id = 1, seasonBlocked = true}, rules) ~= nil, true, "seasonBlocked still refuses")

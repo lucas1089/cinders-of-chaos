@@ -102,6 +102,16 @@ ctxAddEvent = function(callback, delay, ...)
 	end, delay, ...)
 end
 
+-- >>> Cosmetics (cosmetics.lua): the cast running now, for the spell effect skins of _common.lua
+-- player id and spell id of the supported cast whose code (or addEvent callback) runs now; nil outside a cast
+function W.cast()
+	if current then
+		return current.pid, current.spell
+	end
+	return nil
+end
+-- <<< Cosmetics
+
 -- ---------------------------------------------------------------- item modifiers
 -- the capped Cooldown Reduction and Mana Cost Reduction of the equipped items: {cdr, manacost}. Every engine Lua
 -- interface shares one state, so the totals item_mods.lua keeps per player are read first; without them (tests, a
@@ -224,7 +234,7 @@ local function wrap(spell, original)
 		local fx = S.spellEffects(player, spell.id, spell.level)
 		local serial = (serials[pid] or 0) + 1
 		serials[pid] = serial % 1000000
-		local ctx = {pid = pid, value = S.ctxEncode(serial, spell.id)}
+		local ctx = {pid = pid, value = S.ctxEncode(serial, spell.id), spell = spell.id}
 		local result = runWith(pid, ctx, original, creature, variant, ...)
 		if result then
 			local thrift, quick = 0, 0

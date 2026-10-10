@@ -1,0 +1,14 @@
+Module
+  name: game_cosmetics
+  description: Cosmetics window - spell effect skins, kill effects, loot label accents, chat name colours (server cosmetics.lua, extended opcode 225); colours the speaker's name in chat and hands the label accent to game_groundlabels
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ cosmeticslogic, cosmetics ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+    - game_console
+  autoload: true
+  autoload-priority: 1003
+  @onLoad: init()
+  @onUnload: terminate()

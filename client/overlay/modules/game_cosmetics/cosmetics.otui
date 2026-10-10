@@ -1,0 +1,211 @@
+// Cosmetics (game_cosmetics): spell effect skins, kill effects, loot label accents, chat name colours. Styles from
+// client_chaos_theme.
+
+CosmeticRow < ChaosPanelDark
+  height: 40
+  margin-bottom: 3
+  phantom: false
+  focusable: true
+
+  $focus:
+    background-color: #3a2410
+
+  UIItem
+    id: item
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+    size: 32 32
+    virtual: true
+    phantom: true
+
+  UIWidget
+    id: swatch
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 8
+    size: 24 24
+    border-width: 1
+    border-color: #6a5a48
+    phantom: true
+    visible: false
+
+  UILabel
+    id: name
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin-left: 42
+    margin-top: 5
+    text-align: left
+    font: verdana-11px-rounded
+    color: #f6cf72
+    phantom: true
+
+  UILabel
+    id: sub
+    anchors.left: name.left
+    anchors.right: parent.right
+    anchors.top: name.bottom
+    margin-top: 2
+    text-align: left
+    font: verdana-11px-antialised
+    color: #a89c86
+    phantom: true
+
+CosmeticSampleLabel < UILabel
+  font: verdana-11px-rounded
+  text-auto-resize: true
+  padding: 2 4 2 4
+  border-width: 1
+
+ChaosMainWindow
+  id: cosmeticsWindow
+  size: 660 460
+  !text: tr('Cosmetics')
+  @onEscape: modules.game_cosmetics.hide()
+
+  Panel
+    id: tabs
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 24
+    layout:
+      type: horizontalBox
+      spacing: 4
+
+  ChaosPanelDark
+    id: listFrame
+    anchors.top: tabs.bottom
+    anchors.left: parent.left
+    anchors.bottom: statusLabel.top
+    margin-top: 6
+    margin-bottom: 8
+    width: 270
+    padding: 3
+
+  UIScrollArea
+    id: list
+    anchors.top: listFrame.top
+    anchors.left: listFrame.left
+    anchors.right: listScroll.left
+    anchors.bottom: listFrame.bottom
+    margin: 4
+    layout:
+      type: verticalBox
+    vertical-scrollbar: listScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: listScroll
+    anchors.top: listFrame.top
+    anchors.right: listFrame.right
+    anchors.bottom: listFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 43
+    pixels-scroll: true
+
+  ChaosPanelDark
+    id: detail
+    anchors.top: listFrame.top
+    anchors.left: listFrame.right
+    anchors.right: parent.right
+    anchors.bottom: listFrame.bottom
+    margin-left: 8
+    padding: 8
+
+    UIItem
+      id: item
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.top: parent.top
+      margin-top: 4
+      size: 64 64
+      virtual: true
+
+    ChaosTitle
+      id: nameLabel
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: item.bottom
+      margin-top: 8
+      text-align: center
+
+    ChaosLabel
+      id: descLabel
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: nameLabel.bottom
+      margin-top: 8
+      height: 48
+      text-align: center
+      text-wrap: true
+
+    ChaosLabel
+      id: howLabel
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: descLabel.bottom
+      margin-top: 4
+      height: 18
+      text-align: center
+      color: #5cc8c0
+
+    UIWidget
+      id: sample
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: howLabel.bottom
+      margin-top: 8
+      height: 70
+      background-color: #1c1a18
+      border-width: 1
+      border-color: #3a3230
+      padding: 6
+      layout:
+        type: verticalBox
+        spacing: 4
+        fit-children: false
+
+    ChaosButton
+      id: useButton
+      anchors.left: parent.left
+      anchors.bottom: parent.bottom
+      width: 110
+      !text: tr('Use')
+      @onClick: modules.game_cosmetics.useCurrent()
+
+    ChaosButton
+      id: previewButton
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.bottom: parent.bottom
+      width: 90
+      !text: tr('Preview')
+      @onClick: modules.game_cosmetics.previewCurrent()
+
+    ChaosButton
+      id: storeButton
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      width: 110
+      !text: tr('Open the Store')
+      @onClick: modules.game_cosmetics.openStore()
+
+  ChaosLabelDim
+    id: statusLabel
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    height: 20
+    text-align: left
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 80
+    !text: tr('Close')
+    @onClick: modules.game_cosmetics.hide()

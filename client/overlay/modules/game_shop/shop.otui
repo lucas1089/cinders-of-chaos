@@ -136,6 +136,19 @@ ShopOffer < Panel
     margin-right: 4
     text-align: center
     visible: false
+
+  // a cosmetic's preview (server cosmetics.lua): its effects around you, only you see them; cosmetics are not gifts,
+  // so it takes the gift button's place
+  Button
+    id: previewButton
+    text: SHOW
+    width: 40
+    height: 25
+    anchors.verticalCenter: parent.verticalCenter
+    anchors.right: buyButton.left
+    margin-right: 4
+    text-align: center
+    visible: false
     
 ShopOfferItem < ShopOffer
   UIItem

@@ -75,6 +75,9 @@ check(strpos($html, 'Donation #1') !== false && strpos($html, 'Your donations') 
 // another account cannot see the order
 $SESSION_USER = 78;
 check(strpos(render(array('order' => '1')), 'Your donation:') === false, 'order of another account not shown');
+// the site menu links the page (setup/chaos_setup.php adds the entry once)
+$setup = (string)file_get_contents(__DIR__ . '/../setup/chaos_setup.php');
+check(strpos($setup, "\$menu('Donate', 'page.php?plugin=chaos&p=coins'") !== false, 'menu entry for the donation page');
 @unlink($state);
 echo $failed === 0 ? "chaos_donation_page_test: OK\n" : "chaos_donation_page_test: $failed failed\n";
 exit($failed === 0 ? 0 : 1);

@@ -62,7 +62,8 @@ What it does, in order:
 5. **The database**, with `setup/chaos_setup.php`: ZnoteX's `znote_*` tables (`CREATE TABLE IF NOT EXISTS`, seed rows
    only into empty tables), every pending ZnoteX migration (recorded with its checksum), our plugin installed and
    enabled (its `install.sql` creates `chaos_class_unlocks` if the server has not yet), the layout switched on, the
-   menu entries "The World" (Server Info, Patch Notes, Leaderboards, Seasons, Rules) and the Rules page added once.
+   menu entries "The World" (Server Info, Patch Notes, Leaderboards, Seasons, Rules) and "Donate" (the donation page
+   `page.php?plugin=chaos&p=coins`) and the Rules page added once.
    Menu entries and the Rules page are never overwritten, so the owner's edits in the admin panel stay.
 
 Settings (`site.env.example` has them all): `CHAOS_SITE_DIR`, `CHAOS_SITE_URL`, `CHAOS_ADMIN_ACCOUNTS` (account names
@@ -219,7 +220,8 @@ voluntária! Você recebeu X Chaos Coins como agradecimento.").
 Two methods: **Pix** through Mercado Pago (BRL) and **PayPal** (USD). The packs, bonuses and prices are the game
 server's (`server/data/scripts/chaos/shop_coins_config.lua`): one USD table in integer cents (`usdCents`), Pix =
 USD x `brlPerUsd` (5), so the two prices never drift. The game server credits every paid order (server/README.md
-"Store"). Players donate in the client (Store > Donate) or on the page `page.php?plugin=chaos&p=coins`.
+"Store"). Players donate in the client (Store > Donate) or on the page `page.php?plugin=chaos&p=coins` (menu entry "Donate", added by
+`setup/chaos_setup.php`).
 
 ### How an order flows
 

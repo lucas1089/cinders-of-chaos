@@ -1,0 +1,151 @@
+-- Cosmetics: the rules without client API (tested by cosmeticslogic_test.lua with luajit and lua5.3).
+-- Rows of the window (server server/data/scripts/chaos/cosmetics.lua, cosmetics_core.lua C.rows), the chat name colour
+-- (only the speaker's name, only player messages, only colours the server sent) and the label accent.
+
+CosmeticsLogic = {}
+local CL = CosmeticsLogic
+
+CL.KINDS = {
+  { key = 'spellskin', name = 'Spell Effects' },
+  { key = 'killfx', name = 'Kill Effects' },
+  { key = 'lootbeam', name = 'Loot Labels' },
+  { key = 'chatcolor', name = 'Chat Colours' },
+}
+CL.DEFAULT_TEXT = {
+  spellskin = 'Your spells show their own effects.',
+  killfx = 'No effect on your kills.',
+  lootbeam = 'Your highlighted loot labels keep the dark background.',
+  chatcolor = 'Your name in chat keeps the colour of the message.',
+}
+CL.SAMPLE_RARITY = { { name = 'Legendary', color = '#ffd040' }, { name = 'Rare', color = '#4a90ff' },
+  { name = 'Mythic', color = '#ff5a5a' } }
+
+function CL.validColor(s)
+  return type(s) == 'string' and (s:match('^#%x%x%x%x%x%x$') ~= nil or s:match('^#%x%x%x%x%x%x%x%x$') ~= nil)
+end
+
+-- ---------------------------------------------------------------- window rows
+-- rows = the server's rows; kind = the tab; line = the character's class line (spell skins). Returns the rows of the
+-- tab: the default first (id 0), then for spell skins the character's own line before the other lines.
+function CL.tabRows(rows, kind, line, lineName)
+  local out = {}
+  local anySelected = false
+  local mine, other = {}, {}
+  for _, r in ipairs(type(rows) == 'table' and rows or {}) do
+    if r.kind == kind then
+      if kind == 'spellskin' then
+        if r.line == line then
+          mine[#mine + 1] = r
+          if r.selected then anySelected = true end
+        else
+          other[#other + 1] = r
+        end
+      else
+        mine[#mine + 1] = r
+        if r.selected then anySelected = true end
+      end
+    end
+  end
+  if kind ~= 'spellskin' or line then
+    out[1] = { id = 0, kind = kind, line = line, name = 'Default', owned = true, selected = not anySelected,
+      desc = CL.DEFAULT_TEXT[kind], how = kind == 'spellskin' and ('Every spell of your ' .. (lineName or 'line')) or
+      'Every character' }
+  end
+  for _, r in ipairs(mine) do out[#out + 1] = r end
+  for _, r in ipairs(other) do
+    local copy = {}
+    for k, v in pairs(r) do copy[k] = v end
+    copy.otherLine = true
+    out[#out + 1] = copy
+  end
+  return out
+end
+
+-- the line text of a row in the list
+function CL.subText(r)
+  if r.otherLine then return (r.lineName or 'Another line') .. ' - not your class' end
+  if r.id == 0 then return r.selected and 'In use' or 'Default' end
+  if r.selected then return 'In use' end
+  if r.owned then return 'Unlocked' end
+  return r.how or 'Locked'
+end
+
+-- can the row be chosen now (the server checks again)
+function CL.canUse(r)
+  return r ~= nil and r.owned == true and not r.selected and not r.otherLine
+end
+
+-- ---------------------------------------------------------------- chat name colours
+-- names = {[character name] = '#rrggbb'}; msg = {names | full}: a full list replaces, else entries are added (false
+-- removes one). Only valid colours are kept.
+function CL.mergeColors(current, msg)
+  local out = {}
+  if type(msg) ~= 'table' then return current or {} end
+  if not msg.full then
+    for k, v in pairs(current or {}) do out[k] = v end
+  end
+  for name, color in pairs(type(msg.names) == 'table' and msg.names or {}) do
+    if type(name) == 'string' then
+      if CL.validColor(color) then out[name] = color else out[name] = nil end
+    end
+  end
+  return out
+end
+
+-- where the speaker's name is in a console line: the stock console writes "[time] Name[ [level]]: text"; the head
+-- before the first ": " holds the timestamp (no letters, no ": ") and the name. Returns first, last (1-based).
+function CL.nameRange(text, name)
+  if type(text) ~= 'string' or type(name) ~= 'string' or name == '' then return nil end
+  local stop = text:find(': ', 1, true)
+  local head = stop and text:sub(1, stop - 1) or text
+  local from = 1
+  while true do
+    local s = head:find(' ' .. name, from, true)
+    if not s then return nil end
+    local after = head:sub(s + 1 + #name, s + 2 + #name)
+    if after == '' or after == ' [' then
+      return s + 1, s + #name
+    end
+    from = s + 1
+  end
+end
+
+-- parts = coloured text {text1, color1, text2, color2, ...}; the characters first..last (1-based, over the joined
+-- text) get `color`. Returns new parts.
+function CL.recolor(parts, first, last, color)
+  local out = {}
+  local pos = 0
+  for i = 1, #parts - 1, 2 do
+    local s, c = parts[i], parts[i + 1]
+    local a, b = pos + 1, pos + #s
+    if b < first or a > last then
+      out[#out + 1] = s
+      out[#out + 1] = c
+    else
+      local cutA, cutB = math.max(first, a) - pos, math.min(last, b) - pos
+      if cutA > 1 then
+        out[#out + 1] = s:sub(1, cutA - 1)
+        out[#out + 1] = c
+      end
+      out[#out + 1] = s:sub(cutA, cutB)
+      out[#out + 1] = color
+      if cutB < #s then
+        out[#out + 1] = s:sub(cutB + 1)
+        out[#out + 1] = c
+      end
+    end
+    pos = b
+  end
+  return out
+end
+
+-- msg = {name, level, npc}: player messages only (a level, not an NPC); the colour of `names`. Returns the parts with
+-- the name coloured, or nil when nothing changes.
+function CL.colorLine(parts, text, msg, names)
+  if type(msg) ~= 'table' or msg.npc or (tonumber(msg.level) or 0) <= 0 then return nil end
+  local color = names and names[msg.name]
+  if not CL.validColor(color) then return nil end
+  local first, last = CL.nameRange(text, msg.name)
+  if not first then return nil end
+  return CL.recolor(parts, first, last, color)
+end

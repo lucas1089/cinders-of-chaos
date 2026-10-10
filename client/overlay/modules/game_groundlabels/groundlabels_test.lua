@@ -197,5 +197,18 @@ eq(wb.cy, 36, 'block in the lower half')
 eq(GL.filterKey(filter) ~= GL.filterKey(strict), true, 'filter fingerprint changes')
 eq(GL.filterKey(nil), '', 'no filter')
 
+-- the loot label accent cosmetic: only the background of highlighted labels, the rarity colour stays
+local hl = { kind = 'item', highlight = true, dim = false }
+local plain = { kind = 'item', highlight = false, dim = false }
+local st = GL.style(hl, '#ffd040')
+eq(st.background, GL.HIGHLIGHT_BACKGROUND, 'default highlight background')
+eq(GL.setAccent('#0a1632f0'), '#0a1632f0', 'accent set')
+st = GL.style(hl, '#ffd040')
+eq(st.background, '#0a1632f0', 'accent behind a highlighted label')
+eq(st.text, '#ffd040', 'rarity text colour kept') eq(st.border, '#ffd040', 'rarity border kept')
+eq(GL.style(plain, '#ffd040').background, GL.PLAIN_BACKGROUND, 'labels that do not glow keep theirs')
+eq(GL.setAccent('url(evil)'), nil, 'a bad colour is ignored')
+eq(GL.style(hl, '#4a90ff').background, GL.HIGHLIGHT_BACKGROUND, 'back to the default')
+
 print(string.format('groundlabels_test: %d checks, %d failed', checks, fails))
 if fails > 0 then os.exit(1) end
