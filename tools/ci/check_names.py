@@ -3,7 +3,7 @@
 base-patches/ is skipped: its context lines are copied from the client tree and cannot be edited."""
 import os, re, subprocess, sys
 
-DENY = re.compile(r'hellgrave|tenkaiser|drakantos|exodus|evolisca|black ?talon|magic ?heard|luminaris|zerion|fonticak|\bastra|archlight|'
+DENY = re.compile(r'hellgrave|tenkaiser|drakantos|exodus|evolisca|black ?talon|magic ?heard|luminaris|zerion|fonticak|\bastra(?!l)|archlight|'
                   r'demolidores|crystalserver|fortibia|balrog|rubinot|medivia|ravendawn|otservbr|mordragor|'
                   r'\bwst(_|\b)|raven ?fantasy|jfranci|pixel ?spellcraft|anime ?ki ?auras|'
                   r'amon ?ot|albane|zainox|elythion|\btyron\b|oxygen ?ot|world ?of ?fragment|frontiers? ?of ?fantasy|'

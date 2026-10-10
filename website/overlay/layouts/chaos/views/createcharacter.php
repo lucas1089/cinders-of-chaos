@@ -12,6 +12,9 @@ $lines = function_exists('chaos_class_lines') ? chaos_class_lines() : array();
 $offered = array_map('intval', (array)($config['available_vocations'] ?? array()));
 $towns = (array)($config['available_towns'] ?? array());
 $posted = (int)($_POST['selected_vocation'] ?? ($offered[0] ?? 0));
+// character slots (plugins/chaos/plugin.php sets max_characters per account)
+$slotLimit = (int)($config['max_characters'] ?? 0);
+$slotUsed = (isset($session_user_id) && function_exists('user_character_list_count')) ? (int)user_character_list_count($session_user_id) : -1;
 $hidden = 0;
 foreach ($lines as $base => $line) {
 	if ($line['lock'] !== '' && !in_array($base, $offered, true)) {
@@ -31,6 +34,9 @@ foreach ($lines as $base => $line) {
 			<div class="chaos-msg chaos-msg--error"><?= output_errors($errors) ?></div>
 		<?php endif; ?>
 
+		<?php if ($slotUsed >= 0 && $slotLimit > 0): ?>
+			<p class="chaos-note">Character slots: <?= (int)$slotUsed ?> of <?= (int)$slotLimit ?> used.<?php if ($slotUsed >= $slotLimit): ?> More slots are sold in the game store (Storage &amp; Slots &gt; Character Slot).<?php endif; ?></p>
+		<?php endif; ?>
 		<form action="" method="post" class="chaos-create">
 			<div class="chaos-field">
 				<label for="cc-name"><?= $h(t('createchar.name')) ?></label>

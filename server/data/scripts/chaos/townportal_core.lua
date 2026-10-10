@@ -7,7 +7,8 @@
 --   K.achievementOf(achievementsData, key)  the achievement whose reward is {portal = {key = key}}
 --   K.storePrices(shopConfig)               unlock name -> cost of the "Portal Styles" offers
 --   K.unlockName(style) / K.styleOfUnlock(cfg, name)
---   K.owns(style, facts)                    facts: storeOwned(id) -> bool, hasAchievement(id) -> bool, achievementOf(key)
+--   K.owns(style, facts)                    facts: storeOwned(id) -> bool, hasAchievement(id) -> bool, achievementOf(key),
+--                                           seasonOwned(key) -> bool (route "season": the season pass, seasonpass.lua)
 --   K.blockReason(f)                        why a cast may not start / finish (nil = allowed); f = facts table
 --   K.ringOffsets(radius)                   offsets of the rings 1..radius around a tile, nearest first
 --   K.pickSpot(origin, offsets, isFree)     first origin + offset with isFree(pos) true, or nil
@@ -19,7 +20,7 @@
 ChaosTownPortalCore = ChaosTownPortalCore or {}
 local K = ChaosTownPortalCore
 
-local ROUTES = {default = true, store = true, achievement = true}
+local ROUTES = {default = true, store = true, achievement = true, season = true}
 
 function K.style(cfg, id)
 	id = tonumber(id)
@@ -115,7 +116,7 @@ function K.validate(cfg, data, shop)
 			bad(where .. ": open and close effects are needed")
 		end
 		if not ROUTES[s.route] then
-			bad(where .. ": route must be default, store or achievement")
+			bad(where .. ": route must be default, store, achievement or season")
 		end
 		local rewards = type(s.key) == "string" and rewardsOf(data, s.key) or {}
 		local unlock = type(s.key) == "string" and ("portal_" .. s.key) or "?"
@@ -174,6 +175,8 @@ function K.owns(style, facts)
 	elseif style.route == "achievement" then
 		local a = facts.achievementOf(style.key)
 		return a ~= nil and facts.hasAchievement(a.id) and true or false
+	elseif style.route == "season" then
+		return facts.seasonOwned ~= nil and facts.seasonOwned(style.key) and true or false
 	end
 	return false
 end
@@ -314,6 +317,8 @@ function K.view(cfg, facts, selectedId, prices, data)
 			local a = K.achievementOf(data, s.key)
 			row.how = a and string.format("Achievement: %s (%s)", a.hidden and not row.owned and "???" or a.name,
 				a.hidden and not row.owned and "a secret" or a.desc) or "Achievement"
+		elseif s.route == "season" then
+			row.how = s.how or "Season pass"
 		else
 			row.how = "Every character has it."
 		end

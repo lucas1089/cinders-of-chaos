@@ -24,9 +24,19 @@ local MAX_SLOTS = math.max(cfg.freeLimit, cfg.premiumLimit)
 
 local clientToServerId -- built lazily, see resolveClientId
 
+-- >>> Chaos Pact loot rules (pact.lua, pact_config.lua limits.lootRules): free / Chaos Pact (or premium); rules past
+-- the limit stay stored and come back when the Pact is renewed
 local function getLimit(player)
+	if ChaosPact and ChaosPact.limit then
+		return math.min(MAX_SLOTS, ChaosPact.limit(player, "lootRules"))
+	end
 	return player:isPremium() and cfg.premiumLimit or cfg.freeLimit
 end
+if Chaos.pactConfig then
+	local l = Chaos.pactConfig.limits.lootRules
+	MAX_SLOTS = math.max(MAX_SLOTS, l.free + l.pact + l.maxExtra)
+end
+-- <<< Chaos Pact loot rules
 
 local function readList(player)
 	local items = {}

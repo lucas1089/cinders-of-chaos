@@ -25,7 +25,7 @@ for _, p in ipairs(problems) do
 end
 eq(#problems, 0, "validate")
 
-local routes = {default = 0, store = 0, achievement = 0}
+local routes = {default = 0, store = 0, achievement = 0, season = 0}
 for _, s in ipairs(cfg.styles) do
 	routes[s.route] = routes[s.route] + 1
 	for _, field in ipairs({"open", "close", "loop", "travel"}) do
@@ -45,6 +45,7 @@ end
 eq(routes.default, 1, "one default style")
 eq(routes.store, 6, "six store styles")
 eq(routes.achievement, 6, "six achievement styles")
+eq(routes.season, 2, "two season pass styles (seasonpass_config.lua; checked in seasonpass_test.lua)")
 for _, e in ipairs(cfg.castEffect) do
 	assert(type(e) == "number" or ChaosVfx[e] or ChaosFx[e], "cast effect " .. tostring(e))
 end

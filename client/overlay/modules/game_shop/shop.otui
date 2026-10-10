@@ -54,7 +54,7 @@ ShopCategoryImage < ShopCategory
     
     
 ShopOffer < Panel
-  height: 50
+  height: 60
   background: alpha
   
   $focus:
@@ -63,37 +63,79 @@ ShopOffer < Panel
   Label
     id: title
     anchors.left: parent.left
-    anchors.right: parent.right
     anchors.top: parent.top
     margin-top: 4
     margin-left: 55
     text-align: topleft
+    text-auto-resize: true
     color: white
+    font: verdana-11px-rounded
+
+  // the price before a sale or a bundle discount, struck through (shop.lua sends oldCost)
+  Label
+    id: oldPrice
+    anchors.left: title.right
+    anchors.top: title.top
+    margin-left: 6
+    text-auto-resize: true
+    color: #9a9a9a
+    font: verdana-11px-rounded
+    visible: false
+
+    UIWidget
+      id: strike
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      height: 1
+      background-color: #d24a3a
+      phantom: true
+
+  // Sale / New / Featured / Bundle tags
+  Label
+    id: tags
+    anchors.left: oldPrice.right
+    anchors.top: title.top
+    margin-left: 6
+    text-auto-resize: true
+    color: #f0c050
     font: verdana-11px-rounded
 
   Label
     id: description
-    anchors.top: prev.bottom
+    anchors.top: title.bottom
     anchors.left: parent.left
     anchors.right: parent.right
     anchors.bottom: parent.bottom
     margin-left: 55
-    margin-right: 55
+    margin-right: 104
     text-align: topleft
     text-auto-resize: true
     text-wrap: true
     color: white
     font: verdana-11px-rounded
-    
+
   Button
     id: buyButton
     text: BUY
+    width: 40
     height: 25
     anchors.verticalCenter: parent.verticalCenter
-    anchors.left: prev.right
-    anchors.right: parent.right    
+    anchors.right: parent.right
     margin-right: 15
     text-align: center
+
+  // buy it for another character (shown when the server says the offer can be gifted)
+  Button
+    id: giftButton
+    text: GIFT
+    width: 40
+    height: 25
+    anchors.verticalCenter: parent.verticalCenter
+    anchors.right: buyButton.left
+    margin-right: 4
+    text-align: center
+    visible: false
     
 ShopOfferItem < ShopOffer
   UIItem

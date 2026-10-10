@@ -184,6 +184,50 @@ function chaos_creatable_classes(int $accountId): array {
 }
 
 // ---------------------------------------------------------------------------
+// Character slots (pact_config.lua `characters`, table chaos_account_extras)
+// ---------------------------------------------------------------------------
+
+/** {free, maxExtra} from the server's pact_config.lua, with these defaults when it is not readable. */
+function chaos_character_slot_config(): array {
+	$out = array('free' => 5, 'maxExtra' => 10);
+	$body = chaos_lua_block(chaos_read_server_file('scripts/chaos/pact_config.lua'), 'characters');
+	if ($body !== '') {
+		foreach (array('free', 'maxExtra') as $key) {
+			$v = chaos_lua_field($body, $key);
+			if (is_int($v) || (is_float($v) && $v == (int)$v)) {
+				$out[$key] = max(0, (int)$v);
+			}
+		}
+	}
+	return $out;
+}
+
+/** Pure: free + bought slots (at most maxExtra) + slots granted to older accounts (charSlotsLegacy). */
+function chaos_character_limit_of(array $slotConfig, int $bought, int $legacy): int {
+	return (int)$slotConfig['free'] + min(max(0, $bought), (int)$slotConfig['maxExtra']) + max(0, $legacy);
+}
+
+/**
+ * Characters the account may have: the same number the game server allows at login (pact.lua). Bought in the store
+ * ("Character Slot"); createcharacter.php compares it with the account's character count.
+ */
+function chaos_character_limit(int $accountId): int {
+	$slots = chaos_character_slot_config();
+	$bought = 0;
+	$legacy = 0;
+	if ($accountId > 0 && chaos_table_exists('chaos_account_extras')) {
+		foreach (chaos_rows("SELECT `extra_key`, `amount` FROM `chaos_account_extras` WHERE `account_id` = ? AND `extra_key` IN ('charSlots', 'charSlotsLegacy');", [$accountId]) as $row) {
+			if ($row['extra_key'] === 'charSlots') {
+				$bought = (int)$row['amount'];
+			} else {
+				$legacy = (int)$row['amount'];
+			}
+		}
+	}
+	return chaos_character_limit_of($slots, $bought, $legacy);
+}
+
+// ---------------------------------------------------------------------------
 // Lua settings files of the server (read-only, for names and dates)
 // ---------------------------------------------------------------------------
 
@@ -640,6 +684,101 @@ function chaos_pn_render(array $note): string {
 		$html .= '</ul></section>';
 	}
 	return $html . '</article>';
+}
+
+// ---------------------------------------------------------------------------
+// Chaos Coins (server/data/scripts/chaos/shop_coins_config.lua, table chaos_coin_orders)
+// The game server credits every paid order (shop.lua: pack coins, pack bonus, the one-time first-purchase bonus, the
+// one-time starter pack); the site only shows the packs and records paid orders.
+// ---------------------------------------------------------------------------
+
+/** The coin packs: key, name, coins, bonus_pct, bonus_coins, price, once, starter, total (without the first-purchase bonus). */
+function chaos_coin_packs(): array {
+	$text = chaos_read_server_file('scripts/chaos/shop_coins_config.lua');
+	$out = array();
+	foreach (chaos_lua_entries(chaos_lua_block($text, 'packs')) as $entry) {
+		$key = (string)(chaos_lua_field($entry, 'key') ?? '');
+		if ($key === '') {
+			continue;
+		}
+		$pack = array(
+			'key'         => $key,
+			'name'        => (string)(chaos_lua_field($entry, 'name') ?? $key),
+			'coins'       => (int)(chaos_lua_field($entry, 'coins') ?? 0),
+			'bonus_pct'   => (int)(chaos_lua_field($entry, 'bonusPct') ?? 0),
+			'bonus_coins' => (int)(chaos_lua_field($entry, 'bonusCoins') ?? 0),
+			'price'       => (float)(chaos_lua_field($entry, 'price') ?? 0),
+			'once'        => (bool)preg_match('/\bonce\s*=\s*true\b/', $entry),
+			'starter'     => (bool)preg_match('/\bstarter\s*=\s*true\b/', $entry),
+		);
+		$pack['total'] = chaos_coin_pack_total($pack, false, 0);
+		$out[] = $pack;
+	}
+	return $out;
+}
+
+/** The first-purchase bonus in % and the currency of the prices. */
+function chaos_coin_settings(): array {
+	$text = chaos_read_server_file('scripts/chaos/shop_coins_config.lua');
+	return array(
+		'first_bonus_pct' => (int)(chaos_lua_field(chaos_lua_block($text, 'firstPurchase'), 'bonusPct') ?? 0),
+		'currency'        => (string)(preg_match('/\bcurrency\s*=\s*"([^"]*)"/', $text, $m) ? $m[1] : ''),
+	);
+}
+
+/** Coins a pack credits (same rule as ChaosShopCore.packCredit in shop_core.lua). */
+function chaos_coin_pack_total(array $pack, bool $first, int $firstPct): int {
+	$coins = (int)$pack['coins'];
+	$total = $coins + intdiv($coins * (int)$pack['bonus_pct'], 100) + (int)$pack['bonus_coins'];
+	if ($first && empty($pack['starter'])) {
+		$total += intdiv($coins * $firstPct, 100);
+	}
+	return $total;
+}
+
+/** What an account can still get: ['first' => first-purchase bonus open, 'starter' => starter pack open]. */
+function chaos_coin_account_state(int $accountId): array {
+	$state = array('first' => true, 'starter' => true);
+	if ($accountId <= 0 || !chaos_table_exists('chaos_coin_orders')) {
+		return $state;
+	}
+	$starters = array();
+	foreach (chaos_coin_packs() as $pack) {
+		if ($pack['starter']) {
+			$starters[] = $pack['key'];
+		}
+	}
+	foreach (chaos_rows('SELECT `pack_key` FROM `chaos_coin_orders` WHERE `account_id` = ? AND `status` IN (\'paid\', \'credited\');', [$accountId]) as $row) {
+		if (in_array($row['pack_key'], $starters, true)) {
+			$state['starter'] = false;
+		} else {
+			$state['first'] = false;
+		}
+	}
+	return $state;
+}
+
+/**
+ * HOOK for a payment provider: call it from the provider's confirmed-payment callback (after verifying the provider's
+ * signature there). It only records the order as paid; the game server credits it within a minute. The provider's
+ * own reference makes it idempotent (a repeated callback writes nothing). No provider is connected in this repository.
+ * Returns false for an unknown pack or account.
+ */
+function chaos_coin_order_paid(int $accountId, string $packKey, string $provider, string $providerRef): bool {
+	$known = false;
+	foreach (chaos_coin_packs() as $pack) {
+		$known = $known || $pack['key'] === $packKey;
+	}
+	if (!$known || $accountId <= 0 || $provider === '' || $providerRef === '') {
+		return false;
+	}
+	$account = db()->fetchOne('SELECT `id` FROM `accounts` WHERE `id` = ? LIMIT 1;', [$accountId]);
+	if (!is_array($account)) {
+		return false;
+	}
+	db()->execute('INSERT IGNORE INTO `chaos_coin_orders` (`account_id`, `pack_key`, `provider`, `provider_ref`, `status`, `created`) VALUES (?, ?, ?, ?, \'paid\', ?);',
+		[$accountId, $packKey, substr($provider, 0, 32), substr($providerRef, 0, 128), time()]);
+	return true;
 }
 
 } // function_exists guard

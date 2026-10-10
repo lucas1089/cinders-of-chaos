@@ -11,7 +11,7 @@ mkdir -p "$OUT"; cp -a "$SRC"/. "$OUT"/
 for p in "$HERE"/base-patches/*.patch; do patch -p1 -d "$OUT" < "$p"; done
 # the base client's own stash targets its 8.60 protocol; ours speaks extended opcode 110 to the base server
 rm -rf "$OUT/mods/game_stash" "$OUT/modules/game_stash"
-# the base client's battle pass is for its own server; ours matches the base server (raw opcode 39)
+# the base client's battle pass is for its own server; ours is the Chaos season pass (extended opcode 227)
 rm -rf "$OUT/modules/game_battlepass" "$OUT/mods/game_battlepass"
 # no scripting bot: the vBot module (scripts, cavebot) and the helper's cavebot and script workspace go
 # (patch 0015 removes them from the helper window, its module list and game_interface's load-later list)

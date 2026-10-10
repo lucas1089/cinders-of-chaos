@@ -34,6 +34,7 @@ end
 local function routeText(s)
   if s.route == 'store' then return s.owned and tr('Store - owned') or (tr('Store') .. (s.price and (' - ' .. s.price .. ' coins') or ''))
   elseif s.route == 'achievement' then return s.owned and tr('Achievement - unlocked') or tr('Achievement - locked')
+  elseif s.route == 'season' then return s.owned and tr('Season pass - unlocked') or tr('Season pass - locked')
   end
   return tr('Every character')
 end

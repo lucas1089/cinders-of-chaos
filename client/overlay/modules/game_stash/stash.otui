@@ -62,8 +62,13 @@ SupplyCount < GameLabel
   text: 0
 
 
+StashTabButton < ChaosTabButton
+  size: 40 22
+  padding: 2 4 2 4
+  margin-right: 3
+
 ChaosMainWindow
-  size: 690 430
+  size: 690 470
   text: Supply Stash
   @onEscape: modules.game_stash.toggle()
 
@@ -83,7 +88,7 @@ ChaosMainWindow
     anchors.right: InsideWindow.right
     anchors.top: parent.top
     anchors.bottom: CloseButton.top
-    margin-top: 30
+    margin-top: 58
     margin-bottom: 5
     padding-left: 5
     padding-right: 5
@@ -95,6 +100,29 @@ ChaosMainWindow
       cell-size: 46 46
       cell-spacing: 5
       flow: true
+
+  // stash tabs (Chaos Pact and account storage): All, the general tabs, the special tabs; filled by stash.lua
+  UIWidget
+    id: TabBar
+    anchors.top: parent.top
+    anchors.left: InsideWindow.left
+    anchors.right: InsideWindow.right
+    margin-left: 5
+    height: 22
+    layout:
+      type: horizontalBox
+
+  UILabel
+    id: TabInfo
+    anchors.left: InsideWindow.left
+    anchors.right: StashAllButton.left
+    anchors.bottom: parent.bottom
+    margin-left: 5
+    margin-right: 8
+    margin-bottom: 4
+    font: verdana-11px-rounded
+    color: #a89878
+    text-auto-resize: false
 
   UIWidget
     id: DropHint

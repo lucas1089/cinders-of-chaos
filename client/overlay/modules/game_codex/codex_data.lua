@@ -4518,7 +4518,6 @@ CodexData = {
 								{"Monster drops", "Per kill by monster tier: Normal 0.3%, Magic 2%, Rare 7%, Legendary 25%, Boss 35%; 1-2 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 9.5% of the time."},
 								{"Salvage", "Combine 12 rune shards into one at the crafting bench."},
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 25.7% of those are this one."},
-								{"Store", "1 for 5 Chaos Coins."},
 								{"Bounty chest", "3 in every weekly bounty chest (7 contracts in a week)."}
 							}
 						}
@@ -4547,8 +4546,7 @@ CodexData = {
 							rows = {
 								{"Monster drops", "Per kill by monster tier: Normal 0.1%, Magic 0.8%, Rare 3%, Legendary 12%, Boss 20%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.8% of the time."},
 								{"Salvage", "Combine 40 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 7.4% of those are this one."},
-								{"Store", "1 for 15 Chaos Coins."}
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 7.4% of those are this one."}
 							}
 						}
 					}
@@ -4576,8 +4574,7 @@ CodexData = {
 							rows = {
 								{"Monster drops", "Per kill by monster tier: Normal 0.04%, Magic 0.3%, Rare 1.2%, Legendary 6%, Boss 10%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 2.4% of the time."},
 								{"Salvage", "Combine 100 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 1.5% of those are this one."},
-								{"Store", "1 for 40 Chaos Coins."}
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 1.5% of those are this one."}
 							}
 						}
 					}
@@ -4603,7 +4600,6 @@ CodexData = {
 								{"Monster drops", "Per kill by monster tier: Normal 0.1%, Magic 0.8%, Rare 3%, Legendary 12%, Boss 20%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.8% of the time."},
 								{"Salvage", "Combine 50 rune shards into one at the crafting bench."},
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 5.9% of those are this one."},
-								{"Store", "1 for 20 Chaos Coins."},
 								{"Bounty chest", "1 in every weekly bounty chest (7 contracts in a week)."}
 							}
 						}
@@ -4632,8 +4628,7 @@ CodexData = {
 							rows = {
 								{"Monster drops", "Per kill by monster tier: Normal 0.15%, Magic 1%, Rare 4%, Legendary 15%, Boss 25%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.8% of the time."},
 								{"Salvage", "Combine 30 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 8.8% of those are this one."},
-								{"Store", "1 for 12 Chaos Coins."}
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 8.8% of those are this one."}
 							}
 						}
 					}
@@ -4662,7 +4657,6 @@ CodexData = {
 								{"Monster drops", "Per kill by monster tier: Normal 0.4%, Magic 3%, Rare 12%, Legendary 40%, Boss 50%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 33.3% of the time."},
 								{"Salvage", "Combine 25 rune shards into one at the crafting bench."},
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 18.4% of those are this one."},
-								{"Store", "1 for 10 Chaos Coins; 10 for 90 Chaos Coins; 50 for 400 Chaos Coins."},
 								{"Bounty board", "Per contract by level band: 1/2/3/4/5/6 (x1.5 for elite and boss contracts); weekly chest: 5/6/8/10/12/15."},
 								{"Rift chest", "1 + 0.5 per rift tier (fractions are a chance of one more), x the key's quantity bonus."},
 								{"Sealed Coffer", "1 + 0.25 per rift tier."},
@@ -4699,7 +4693,6 @@ CodexData = {
 								{"Monster drops", "Per kill by monster tier: Normal 0.2%, Magic 1.5%, Rare 6%, Legendary 25%, Boss 40%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 14.3% of the time."},
 								{"Salvage", "Combine 60 rune shards into one at the crafting bench."},
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 3.7% of those are this one."},
-								{"Store", "1 for 25 Chaos Coins; 10 for 225 Chaos Coins."},
 								{"Bounty board", "Per contract by level band: 0/0/0/0/1/2 (x1.5 for elite and boss contracts); weekly chest: 1/1/2/2/3/4."},
 								{"Rift chest", "0 + 0.25 per rift tier (fractions are a chance of one more), x the key's quantity bonus."},
 								{"Sealed Coffer", "0 + 0.1 per rift tier."},
@@ -4732,8 +4725,7 @@ CodexData = {
 							rows = {
 								{"Monster drops", "Per kill by monster tier: Normal 0.08%, Magic 0.6%, Rare 2.5%, Legendary 10%, Boss 15%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 3.8% of the time."},
 								{"Salvage", "Combine 60 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 2.2% of those are this one."},
-								{"Store", "1 for 25 Chaos Coins."}
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 2.2% of those are this one."}
 							}
 						}
 					}
@@ -4765,7 +4757,6 @@ CodexData = {
 								{"Monster drops", "Per kill by monster tier: Normal 0.12%, Magic 0.9%, Rare 3.5%, Legendary 14%, Boss 22%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 6.7% of the time."},
 								{"Salvage", "Combine 20 rune shards into one at the crafting bench."},
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 8.8% of those are this one."},
-								{"Store", "1 for 8 Chaos Coins."},
 								{"Bounty chest", "2 in every weekly bounty chest (7 contracts in a week)."}
 							}
 						}
@@ -4850,8 +4841,7 @@ CodexData = {
 							rows = {
 								{"Monster drops", "Per kill by monster tier: Normal 0.04%, Magic 0.35%, Rare 1.4%, Legendary 6%, Boss 10%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 2.9% of the time."},
 								{"Salvage", "Combine 50 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 2.9% of those are this one."},
-								{"Store", "1 for 20 Chaos Coins."}
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 2.9% of those are this one."}
 							}
 						}
 					}

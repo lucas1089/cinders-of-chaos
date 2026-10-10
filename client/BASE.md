@@ -16,7 +16,7 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
 
 ## What the overlay replaces
 - `game_stash` (the client's own targets a different protocol): ours, extended opcode 110.
-- `game_battlepass`: ours (raw opcode 39).
+- `game_battlepass`: ours, the Chaos season pass (extended opcode 227, server `seasonpass.lua`).
 - Login background: the client's own `client_background` module stays (other modules call its functions); the overlay replaces only its images `data/images/title.png` (the login background) and `data/images/ui/logo.png` (the Cinders of Chaos logo). The overlay module `client_chaos_login` lays the login screen out on top of both stock modules (see `MANIFEST.md`, "Login screen"); `title.png` and the logo are made by `tools/gen_login_art.py` from the login artwork in `tools/art_src/`.
 - `game_mainpanel`, `game_healthcircle`, `game_realminimap` and `game_sidebars` stay the client's own (the first two have alternates in `alternates/`).
 

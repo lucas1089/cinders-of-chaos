@@ -1,5 +1,7 @@
 -- game_shop: the Chaos store (server: data/scripts/chaos/shop.lua, extended opcode 218, JSON).
--- Categories and pages come from the server; prices are in Chaos Coins.
+-- Categories and pages come from the server; prices are in Chaos Coins. The server decides every price: an offer
+-- carries cost, oldCost (struck through), tags (Sale / New / Featured / Bundle), gift (can be bought for another
+-- character) and owned; buying echoes title and cost back, so a price that changed is refused, never charged.
 -- private variables
 local SHOP_EXTENTED_OPCODE = 218
 local currentCategoryPage = {}
@@ -15,6 +17,7 @@ local HISTORY = {}
 local STATUS = {}
 local AD = {}
 local selectedOffer = {}
+local giftWindow = nil
 
 local function sendAction(action, data)
   if not g_game.getFeature(GameExtendedOpcode) then
@@ -69,6 +72,10 @@ function terminate()
   end
   if msgWindow then
     msgWindow:destroy()
+  end
+  if giftWindow then
+    giftWindow:destroy()
+    giftWindow = nil
   end
 end
 
@@ -435,11 +442,32 @@ function addOffer(category, data)
   if cost and (cost >= 1000 or cost <= -1000) then
     offer.title:setTooltip(data["title"] .. " (" .. comma_value(cost) .. " coins)")
   end
+  local oldCost = tonumber(data["oldCost"])
+  if offer.oldPrice and oldCost and cost and oldCost > cost then
+    offer.oldPrice:setText(formatShortNumber(oldCost))
+    offer.oldPrice:setVisible(true)
+  end
+  if offer.tags and type(data["tags"]) == "table" then
+    local parts = {}
+    for _, t in ipairs(data["tags"]) do
+      if type(t) == "string" then parts[#parts + 1] = t end
+    end
+    offer.tags:setText(table.concat(parts, "  "))
+  end
   offer.description:setText(data["description"])  
   offer.offerId = data["id"]
   if category ~= 0 then
     offer.onDoubleClick = buyOffer
     offer.buyButton.onClick = function() buyOffer(offer) end
+    if data["owned"] then
+      offer.buyButton:setEnabled(false)
+    end
+    if offer.giftButton and data["gift"] then
+      offer.giftButton:setVisible(true)
+      offer.giftButton.onClick = function() giftOffer(offer) end
+    else
+      offer.description:setMarginRight(60) -- no gift button: more room for the text
+    end
   else
     offer.buyButton:hide()
   end
@@ -477,6 +505,64 @@ function findWidgetIndex(widget)
     end
   end
   return nil
+end
+
+-- the offer data behind a widget of the current page, or nil
+local function offerOf(widget)
+  local parts = widget:getId():split("_")
+  if #parts ~= 3 then return nil end
+  local category = tonumber(parts[2])
+  local row = findWidgetIndex(widget)
+  local catData = category and CATEGORIES[category]
+  if not row or not catData or type(catData.offers) ~= "table" then return nil end
+  local page = currentCategoryPage[category] or 1
+  local item = type(catData.offers[page]) == "table" and catData.offers[page][row] or nil
+  if not item then return nil end
+  return { category = category, page = page, offer = row, title = item.title, cost = item.cost, id = widget.offerId }
+end
+
+-- Gift: a name, then a confirmation; the server checks the character and the price again
+function giftOffer(widget)
+  if not widget then return end
+  local sel = offerOf(widget)
+  if not sel then return end
+  if giftWindow then giftWindow:destroy() end
+  giftWindow = g_ui.displayUI('giftoffer')
+  giftWindow.selected = sel
+  giftWindow:getChildById('info'):setText("Buy " .. sel.title .. " (" .. sel.cost .. " Chaos Coins) for another character. It gets it at once, or at its next login.")
+  giftWindow:show()
+  giftWindow:raise()
+  giftWindow:focus()
+  giftWindow:getChildById('recipient'):focus()
+end
+
+function hideGiftOffer()
+  if giftWindow then
+    giftWindow:destroy()
+    giftWindow = nil
+  end
+end
+
+function confirmGiftOffer()
+  if not giftWindow then return end
+  local sel = giftWindow.selected
+  local name = giftWindow:getChildById('recipient'):getText():gsub("^%s+", ""):gsub("%s+$", "")
+  hideGiftOffer()
+  if not sel or name == "" then return end
+  sel.gift = name
+  selectedOffer = sel
+  scheduleEvent(function()
+    if msgWindow then msgWindow:destroy() end
+    msgWindow = displayGeneralBox(tr("Gift from the shop"),
+      "Give " .. sel.title .. " to " .. name .. " for " .. sel.cost .. " Chaos Coins?", {
+      { text = tr('Yes'), callback = buyConfirmed },
+      { text = tr('No'),  callback = buyCanceled },
+      anchor = AnchorHorizontalCenter
+    }, buyConfirmed, buyCanceled)
+    msgWindow:show()
+    msgWindow:raise()
+    msgWindow:focus()
+  end, 50)
 end
 
 function buyOffer(widget)

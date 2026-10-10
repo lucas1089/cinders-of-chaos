@@ -112,6 +112,64 @@ CREATE TABLE IF NOT EXISTS `chaos_shop_history` (
   KEY `chaos_shop_history_account` (`account_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+-- Store purchase log (shop.lua; also created at startup): one row per purchase or gift, read by the weekly limits,
+-- the once-per-account starter packs and the admin panel's Store tab
+CREATE TABLE IF NOT EXISTS `chaos_shop_purchases` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `account_id` int(11) NOT NULL,
+  `player_id` int(11) NOT NULL,
+  `player_name` varchar(255) NOT NULL DEFAULT '',
+  `level` int(11) NOT NULL DEFAULT 0,
+  `offer_key` varchar(64) NOT NULL,
+  `category` varchar(64) NOT NULL DEFAULT '',
+  `title` varchar(100) NOT NULL,
+  `price` int(11) NOT NULL,
+  `list_price` int(11) NOT NULL,
+  `gift_account` int(11) NOT NULL DEFAULT 0,
+  `gift_player` int(11) NOT NULL DEFAULT 0,
+  `created` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `chaos_shop_purchases_account` (`account_id`, `offer_key`),
+  KEY `chaos_shop_purchases_created` (`created`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Store gifts to characters that were offline (shop.lua): status 0 waiting, 1 delivered at login, 2 refunded
+CREATE TABLE IF NOT EXISTS `chaos_shop_gifts` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `target_player` int(11) NOT NULL,
+  `offer_key` varchar(64) NOT NULL,
+  `title` varchar(100) NOT NULL,
+  `price` int(11) NOT NULL,
+  `from_account` int(11) NOT NULL,
+  `from_name` varchar(255) NOT NULL DEFAULT '',
+  `status` tinyint(4) NOT NULL DEFAULT 0,
+  `created` int(10) unsigned NOT NULL,
+  `done` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `chaos_shop_gifts_target` (`target_player`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Paid Chaos Coin orders (written by the website hook chaos_coin_order_paid or the admin panel; credited by shop.lua
+-- with the bonuses of shop_coins_config.lua): status paid -> credited | rejected
+CREATE TABLE IF NOT EXISTS `chaos_coin_orders` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `account_id` int(11) NOT NULL,
+  `pack_key` varchar(32) NOT NULL,
+  `provider` varchar(32) NOT NULL DEFAULT '',
+  `provider_ref` varchar(128) NOT NULL,
+  `status` varchar(16) NOT NULL DEFAULT 'paid',
+  `coins` int(11) NOT NULL DEFAULT 0,
+  `bonus` int(11) NOT NULL DEFAULT 0,
+  `first_bonus` int(11) NOT NULL DEFAULT 0,
+  `note` varchar(255) NOT NULL DEFAULT '',
+  `created` int(10) unsigned NOT NULL,
+  `credited` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `chaos_coin_orders_ref` (`provider`, `provider_ref`),
+  KEY `chaos_coin_orders_status` (`status`),
+  KEY `chaos_coin_orders_account` (`account_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 -- Bounty board (data/scripts/chaos/bounty.lua; table name in bounty_config.lua): one row per accepted contract. day = bounty day (YYYYMMDD, the day
 -- starts at the roll hour), contract = "<band>-<slot>" of that day's board, status 0 active / 1 completed,
 -- mc = 1 when a kill was made while multi-clienting (no reward). Unfinished rows of past days and rows older than

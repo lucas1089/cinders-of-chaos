@@ -1,0 +1,12 @@
+Module
+  name: game_pact
+  description: Chaos Pact - subscription status, daily coins, account limits and saved passive tree builds; extended opcode 222
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ pactview, pact ]
+  dependencies:
+    - game_interface
+  autoload: true
+  autoload-priority: 1002
+  @onLoad: init()
+  @onUnload: terminate()

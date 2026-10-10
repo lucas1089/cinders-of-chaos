@@ -199,6 +199,9 @@ end
 -- ---------------------------------------------------------------- corpse helpers
 local function autolootSet(player)
 	local limit = player:isPremium() and Chaos.autoloot.premiumLimit or Chaos.autoloot.freeLimit
+	if ChaosPact and ChaosPact.limit then
+		limit = ChaosPact.limit(player, "lootRules") -- Chaos Pact loot rules (pact.lua)
+	end
 	local set = {}
 	for i = 1, limit do
 		local id = player:getStorageValue(ST.autolootBase + i)

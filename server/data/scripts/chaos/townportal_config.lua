@@ -44,6 +44,8 @@ return {
 	--                 price there; owned per character (storeOwnedBase + id)
 	--   "achievement" owned while the character has the achievement whose reward is {portal = {key = <key>}} in
 	--                 achievements_data.lua (one achievement per style; checked by server/tests/townportal_test.lua)
+	--   "season"      owned while the account has the season pass / season pack reward {kind = "portal", key = <key>}
+	--                 of seasonpass_config.lua (account-wide, kept after the season); `how` is the window's line
 	-- Each style has exactly one route: a store style is never an achievement reward and the other way round.
 	styles = {
 		{id = 0, key = "waygate", name = "Waygate", route = "default", item = 5023,
@@ -100,6 +102,18 @@ return {
 		{id = 36, key = "gravecall", name = "Gravecall Gate", route = "achievement", item = 28013,
 			desc = "A crypt door for those who have died often enough to know the way.",
 			open = {"necro_seal", "necro_skull", ME_DEATH}, close = {"px633_indigo", "necro_skull", ME_DEATH},
-			loop = {"shadow_cloud", ME_DEATH}, travel = {"px633_green", ME_DEATH}}
+			loop = {"shadow_cloud", ME_DEATH}, travel = {"px633_green", ME_DEATH}},
+
+		-- season pass (seasonpass_config.lua): ids 41 and up
+		{id = 41, key = "cinderfall", name = "Cinderfall Gate", route = "season", item = 12509,
+			how = "Season of Ash: Ashen Pass, premium tier 25",
+			desc = "A gate of ash and slag that rains cinders.",
+			open = {"infernal_seal", "fire_ring", ME_FIRE}, close = {"shadow_ring", ME_POFF},
+			loop = {"shadow_flame", ME_FIRE}, travel = {"fire_burst", ME_FIRE}},
+		{id = 42, key = "pyre", name = "Pyre Gate", route = "season", item = 29637,
+			how = "Season of Ash: Blaze Pack or Inferno Pack",
+			desc = "A lion-guarded gate wreathed in the flames of a funeral pyre.",
+			open = {"fire_tornado", "fire_ring", ME_FIRE}, close = {"dome_blast_fire", "fire_explosion", ME_FIRE},
+			loop = {"inferno_burst", ME_FIRE}, travel = {"px197_crimson", ME_RED}}
 	}
 }

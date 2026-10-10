@@ -20,8 +20,15 @@
 --     Toggle {remote=bool}              open/close the window ("!stash")
 --     StashAll {status=bool}            show/hide the progress overlay ("!stash all")
 --
--- Persistence: DB tables chaos_stash(player_id,item_id,count) and chaos_stash_block(player_id,item_id).
+-- Persistence: DB tables chaos_stash(player_id,item_id,count,tab) and chaos_stash_block(player_id,item_id).
 -- Only stackable, pickupable items without action/unique ids or custom text are accepted.
+--
+-- Tabs (Chaos Pact and account storage, pact.lua / pact_core.lua / pact_config.lua): every entry (item type) sits in a
+-- tab. General tabs 1.. hold pact_config.lua stash.tabSize item types; the account's stashTabs limit (free + Chaos Pact
+-- + bought tabs) says how many take new items, the others are withdraw-only. Special tabs (Orbs, Gems, Keys) are bought
+-- once and take only their kind. Entries are never deleted when the limit shrinks. Each addItems entry carries `tab`;
+-- after the list the server sends  tabs {tabs = [{id, name, used, size, locked, special}], limit, pact}.
+-- Without pact.lua the stash works as before (no tab limit).
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -31,6 +38,66 @@ local OPCODE = ChaosOpcodes.stash
 local cfg = Chaos.stash
 local T = Chaos.tables.stash
 local TB = Chaos.tables.stashBlock
+
+-- >>> Chaos Pact stash tabs (pact.lua): the tab column, the account's limits, the tab of a deposit
+local tabColumn -- nil = not checked yet
+local function tabsReady()
+	if tabColumn == nil then
+		db.query("ALTER TABLE `" .. T .. "` ADD COLUMN IF NOT EXISTS `tab` smallint(5) unsigned NOT NULL DEFAULT 0")
+		local rows = Chaos.select("SELECT COUNT(*) AS `n` FROM information_schema.columns WHERE table_schema = DATABASE() AND " ..
+			"table_name = '" .. T .. "' AND column_name = 'tab'", {{"n", "n"}})
+		tabColumn = rows[1] ~= nil and rows[1].n > 0
+	end
+	return tabColumn and ChaosPact ~= nil and ChaosPactCore ~= nil and Chaos.pactConfig ~= nil
+end
+
+-- {{item, tab, kind, count}} of the character, laid out (entries without a tab get one; orbs / gems / keys move into
+-- their owned special tab); the moves are saved
+local function tabEntries(player, lim)
+	local guid = player:getGuid()
+	local entries = Chaos.select("SELECT `item_id`, `count`, `tab` FROM `" .. T .. "` WHERE `player_id` = " .. guid .. " AND `count` > 0",
+		{{"item_id", "n"}, {"count", "n"}, {"tab", "n"}})
+	for _, e in ipairs(entries) do
+		e.item, e.kind = e.item_id, ChaosPact.stashKind(e.item_id)
+	end
+	for _, m in ipairs(ChaosPactCore.layout(Chaos.pactConfig, lim, entries)) do
+		db.query("UPDATE `" .. T .. "` SET `tab` = " .. m.tab .. " WHERE `player_id` = " .. guid .. " AND `item_id` = " .. m.item)
+	end
+	return entries
+end
+
+-- the tab a deposit of itemId goes to, or nil + the refusal text; true when tabs are not in use
+local function depositTab(player, itemId, lim, entries)
+	if not tabsReady() then
+		return true
+	end
+	lim = lim or ChaosPact.limits(player)
+	entries = entries or tabEntries(player, lim)
+	local tab, why = ChaosPactCore.depositTab(Chaos.pactConfig, lim, entries, itemId, ChaosPact.stashKind(itemId))
+	if tab then
+		return tab
+	end
+	local M = Chaos.pactConfig.messages
+	if why == "locked" then
+		return nil, string.format(M.tabLocked, lim.stashTabs)
+	end
+	return nil, string.format(M.tabFull, #entries)
+end
+
+-- keeps the in-memory entry list of a Stash All run up to date
+local function noteDeposit(entries, itemId, tab)
+	if not entries then
+		return
+	end
+	for _, e in ipairs(entries) do
+		if e.item == itemId then
+			e.tab = tab
+			return
+		end
+	end
+	entries[#entries + 1] = {item = itemId, tab = tab, kind = ChaosPact.stashKind(itemId)}
+end
+-- <<< Chaos Pact stash tabs
 
 local CATEGORIES = {
 	{name = "Runes", value = 3},
@@ -81,8 +148,13 @@ local function stashCount(guid, itemId)
 	return count
 end
 
-local function stashAdd(guid, itemId, delta)
-	if delta >= 0 then
+local function stashAdd(guid, itemId, delta, tab)
+	if delta >= 0 and type(tab) == "number" then
+		db.query(
+			"INSERT INTO `" .. T .. "` (`player_id`, `item_id`, `count`, `tab`) VALUES (" .. guid .. ", " .. itemId .. ", " .. delta ..
+				", " .. tab .. ") ON DUPLICATE KEY UPDATE `count` = `count` + " .. delta .. ", `tab` = " .. tab
+		)
+	elseif delta >= 0 then
 		db.query(
 			"INSERT INTO `" .. T .. "` (`player_id`, `item_id`, `count`) VALUES (" .. guid .. ", " .. itemId .. ", " .. delta ..
 				") ON DUPLICATE KEY UPDATE `count` = `count` + " .. delta
@@ -124,10 +196,16 @@ local function sendCategories(player, withBlocks)
 end
 
 local function sendItems(player)
-	local rows = Chaos.select(
-		"SELECT `item_id`, `count` FROM `" .. T .. "` WHERE `player_id` = " .. player:getGuid() .. " AND `count` > 0",
-		{{"item_id", "n"}, {"count", "n"}}
-	)
+	local rows, lim
+	if tabsReady() then
+		lim = ChaosPact.limits(player)
+		rows = tabEntries(player, lim)
+	else
+		rows = Chaos.select(
+			"SELECT `item_id`, `count` FROM `" .. T .. "` WHERE `player_id` = " .. player:getGuid() .. " AND `count` > 0",
+			{{"item_id", "n"}, {"count", "n"}}
+		)
+	end
 	local entries = {}
 	for _, row in ipairs(rows) do
 		local itemType = ItemType(row.item_id)
@@ -139,11 +217,17 @@ local function sendItems(player)
 				tooltip = string.format("%s\nAmount: %d", itemType:getName(), row.count),
 				id = itemType:getId(),
 				uniqueId = itemType:getId(),
-				typee = categoryOf(itemType)
+				typee = categoryOf(itemType),
+				tab = row.tab
 			}
 		end
 	end
 
+	if lim then
+		local P = ChaosPactCore
+		send(player, {make = "tabs", tabs = P.tabsView(Chaos.pactConfig, lim, rows), limit = lim.stashTabs,
+			pact = ChaosPact.active(player), tabSize = Chaos.pactConfig.stash.tabSize})
+	end
 	if #entries == 0 then
 		send(player, {make = "addItems", isFirst = true, isLast = true, items = {}})
 		return
@@ -240,19 +324,26 @@ local function stashItem(player, item)
 		player:sendCancelMessage("Your stash cannot hold that many of this item.")
 		return false
 	end
+	local tab, refusal = depositTab(player, itemId)
+	if not tab then
+		player:sendCancelMessage(refusal)
+		return false
+	end
 	local name = item:getType():getName()
 	if not item:remove(count) then
 		player:sendCancelMessage("Could not take the item.")
 		return false
 	end
-	stashAdd(guid, itemId, count)
+	stashAdd(guid, itemId, count, tab)
 	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Stashed %dx %s.", count, name))
 	return true
 end
 
 local function stashAll(player)
 	send(player, {make = "StashAll", status = true})
-	local moved = 0
+	local moved, full = 0, nil
+	local lim = tabsReady() and ChaosPact.limits(player) or nil
+	local entries = lim and tabEntries(player, lim) or nil
 	local backpack = player:getSlotItem(CONST_SLOT_BACKPACK)
 	if backpack and backpack:isContainer() then
 		-- collect first, remove afterwards (removing while iterating a container is unsafe)
@@ -267,8 +358,15 @@ local function stashAll(player)
 				local count = item:getCount()
 				if stashCount(player:getGuid(), item:getId()) + count <= cfg.maxStackPerEntry then
 					local itemId = item:getId()
-					if item:remove(count) then
-						stashAdd(player:getGuid(), itemId, count)
+					local tab, refusal = true, nil
+					if lim then
+						tab, refusal = depositTab(player, itemId, lim, entries)
+					end
+					if not tab then
+						full = refusal
+					elseif item:remove(count) then
+						stashAdd(player:getGuid(), itemId, count, tab)
+						noteDeposit(entries, itemId, tab)
 						moved = moved + 1
 					end
 				end
@@ -277,6 +375,9 @@ local function stashAll(player)
 	end
 	send(player, {make = "StashAll", status = false})
 	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Stashed %d item stack(s).", moved))
+	if full then
+		player:sendTextMessage(MESSAGE_INFO_DESCR, full)
+	end
 end
 
 -- ---------------------------------------------------------------- actions
@@ -410,9 +511,13 @@ function ChaosStash.storeItem(player, item)
 	if isBlocked(guid, itemId) or stashCount(guid, itemId) + count > cfg.maxStackPerEntry then
 		return false
 	end
+	local tab = depositTab(player, itemId)
+	if not tab then
+		return false
+	end
 	if not item:remove(count) then
 		return false
 	end
-	stashAdd(guid, itemId, count)
+	stashAdd(guid, itemId, count, tab)
 	return true
 end

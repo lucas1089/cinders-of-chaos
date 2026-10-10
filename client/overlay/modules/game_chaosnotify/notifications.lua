@@ -108,6 +108,15 @@ local NOTIFICATION_TYPES = {
         borderColor = "#7a1a12",
         duration = 9000,
     },
+    -- season pass (server data/scripts/chaos/seasonpass.lua): tier up, challenge done, premium and packs
+    SEASON_PASS = {
+        icon = "images/notifications/battlepass.png",
+        title = "SEASON PASS",
+        titleColor = "#ff9a3c",
+        backgroundColor = "#ccbebb",
+        borderColor = "#7a3a12",
+        duration = 9000,
+    },
     -- boss passive points (server data/scripts/chaos/bosspoints.lua): first kill of a major boss, +1 passive point
     BOSS_POINT = {
         icon = "images/notifications/task.png",
@@ -1146,6 +1155,13 @@ function onExtendedOpcode(protocol, opcode, buffer)
         market = function(data)
             if data.message then
                 addNotification("MARKET", data.message)
+            end
+        end,
+
+        -- season pass (server data/scripts/chaos/seasonpass.lua)
+        seasonpass = function(data)
+            if data.message then
+                addNotification("SEASON_PASS", data.message)
             end
         end,
 

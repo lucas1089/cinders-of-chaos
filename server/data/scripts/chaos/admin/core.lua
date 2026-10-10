@@ -16,7 +16,7 @@ ChaosAdminConfig = {
 	-- Default minimum group per category (an individual action may raise it with its own minGroup).
 	categoryMinGroup = {
 		players = 4, server = 5, world = 4, economy = 5,
-		events = 5, content = 5, security = 5, tools = 4,
+		events = 5, content = 5, security = 5, tools = 4, store = 5,
 	},
 	-- Group required for actions flagged "dangerous" (shutdown, reload, set group, ...).
 	dangerousMinGroup = 6,
@@ -43,6 +43,7 @@ ChaosAdmin.categories = {
 	{id = "content",  label = "Content"},
 	{id = "security", label = "Accounts & Security"},
 	{id = "tools",    label = "Tools"},
+	{id = "store",    label = "Store"},
 }
 
 local function categoryExists(id)

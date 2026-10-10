@@ -45,6 +45,7 @@ ChaosOpcodes = {
 	lootfilter = 238, -- loot filter window, corpse highlight data, loot channel rows (client game_lootfilter; lootfilter.lua)
 	nameplate = 248, -- name plates over players: title, guild, frame (client game_nameplate; nameplate.lua, titles.lua)
 	season = 246, -- seasons window (client game_season; season.lua, season_config.lua)
+	seasonPass = 227, -- season pass window: tiers, claims, challenges, packs (client game_battlepass; seasonpass*.lua)
 	patchnotes = 244,
 	hunt = 241, -- hunt tracker window, exp/h and profit/h (client game_hunt; hunt.lua, hunt_core.lua, hunt_config.lua)
 	itemTooltip = 242, -- rich item tooltips with the equipped-item compare (client game_itemtooltip; item_tooltip*.lua)
@@ -65,6 +66,7 @@ ChaosOpcodes = {
 	energyShield = 224, -- energy shield bar, server -> client, sent by the engine (patch 0015, config energyShieldOpcode), plain text "es:<current>:<max>" (client game_energyshield)
 	groundLoot = 230, -- ground loot labels: names, rarity and decay of the items on the tiles in view (client game_groundlabels; groundloot.lua)
 	castbar = 231, -- cast bar of the cast-time spells, both ways (client game_castbar; casting.lua, data/lib/chaos_casting.lua)
+	pact = 222, -- Chaos Pact window: status, limits, daily coins, saved builds (client game_pact; pact.lua, pact_config.lua)
 	pouches = 226, -- store pouches: the Loot Pouch rules window (client game_pouches; pouches.lua, pouches_core.lua, pouches_config.lua)
 	partyFrames = 235 -- party frames: members' health, mana, level, floor, buffs; client -> server actions (client game_partyframes; partyframes.lua)
 }
@@ -112,11 +114,15 @@ Chaos.storage = {
 	monk = 7100800, -- the Monk line (ChaosMonk.ids.storage in monk_chi_core.lua): 7100800 - 7100809 reserved; chi, its time, focus, Chi Ward
 	inspectOff = 7100960, -- 1 = this character does not allow others to inspect it (inspect.lua; default on, so unset)
 	-- market (market_config.lua storage): 7100970 - 7100979 reserved; listSeq, deliverSeq (crash-safe escrow markers)
+	-- season pass (seasonpass_config.lua storage): 7100980 - 7100984 reserved; 7100980 = the season name frame is hidden
 
 	-- store: one-time cosmetics owned (base + id of the wings / aura / shader)
 	shopWingsBase = 7100600,
 	shopAuraBase = 7100650,
 	shopShaderBase = 7100700,
+	-- store name plate frames (shop.lua, kind "frame"): base + 1 violet, + 2 frost; 7100760 - 7100769 reserved
+	shopFrameBase = 7100760,
+	shopFrameActive = 7100769, -- index of the frame shown (0 / unset = the title's own frame)
 
 	-- store services (shop_services.lua, autosell.lua): 7100100 - 7100159
 	shopLootPouch = 7100100, -- RESERVED: the retired Bottomless Loot Pouch unlock (1 = owned; pouches.lua gives those owners a
@@ -145,7 +151,11 @@ Chaos.tables = {
 	dungeonRunPlayers = "chaos_dungeon_run_players",
 	towerPlayers = "chaos_tower_players",
 	shopCoins = "chaos_shop_coins",
-	shopHistory = "chaos_shop_history"
+	shopHistory = "chaos_shop_history",
+	-- store purchase log (also the weekly limits), gifts to offline characters, paid Chaos Coin orders (shop.lua, sql/chaos.sql)
+	shopPurchases = "chaos_shop_purchases",
+	shopGifts = "chaos_shop_gifts",
+	coinOrders = "chaos_coin_orders"
 }
 
 -- ---------------------------------------------------------------------------

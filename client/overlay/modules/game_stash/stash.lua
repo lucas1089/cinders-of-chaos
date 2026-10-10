@@ -7,6 +7,10 @@ Stash.Data = {}
 Stash.Opcode = 110 -- must match ChaosOpcodes.stash on the server
 Stash.CategoryData = nil
 Stash.BlockList = {}
+-- stash tabs (server stash.lua "tabs", Chaos Pact and account storage): Stash.Tabs = {tabs = [{id, name, used, size,
+-- locked, special}], limit, pact, tabSize}; Stash.SelectedTab 0 = every tab
+Stash.Tabs = nil
+Stash.SelectedTab = 0
 
 Stash.Init = function()
 	ProtocolGame.registerExtendedOpcode(Stash.Opcode, Stash.OnExtended)
@@ -118,6 +122,9 @@ Stash.CreateUI = function()
 	Stash.UIConfirm:hide()
 	Stash.UI.onEscape = Stash.Toggle
 	Stash.UI.onDrop = Stash.OnDrop
+	if Stash.FillTabs then
+		Stash.FillTabs()
+	end
 	Stash.UI.SupplyList.onDrop = Stash.OnDrop
 	Stash.Define()
 end
@@ -255,6 +262,9 @@ Stash.DataManager = function(protocol, opcode, buffer)
 				Stash.CreateList(Stash.Data)
 			end
 		end
+	elseif buffer.make == "tabs" then
+		Stash.Tabs = buffer
+		Stash.FillTabs()
 	elseif buffer.make == "Toggle" then
 		Stash.remoteAccess = (buffer.remote == true)
 		Stash.Toggle()
@@ -374,6 +384,9 @@ Stash.Define = function()
 	end
 
 	Stash.CreateItem = function(Data)
+		if Stash.SelectedTab ~= 0 and Data.tab ~= Stash.SelectedTab then
+			return
+		end
 		local itemWidget = g_ui.createWidget('SupplyItem', Stash.UI.SupplyList)
 		itemWidget:setItemId(Data.sprite)
 		itemWidget.countbase:setText(formatShortNumber(Data.count)) -- short (15.3k); the withdraw dialog shows the exact count
@@ -387,7 +400,12 @@ Stash.Define = function()
 		itemWidget:setShowCount(false)
 		itemWidget:setMargin(0)
 		itemWidget:setDraggable(false)
-		itemWidget:buildTooltip(Data.tooltip)
+		-- buildTooltip comes from the donor client's tooltip module, which this client does not have
+		if itemWidget.buildTooltip then
+			itemWidget:buildTooltip(Data.tooltip)
+		else
+			itemWidget:setTooltip(Data.tooltip)
+		end
 		itemWidget.serverId = Data.id
 		itemWidget.uniqueId = Data.uniqueId
 
@@ -446,6 +464,97 @@ Stash.Define = function()
 		Stash.UI.Overlay:setVisible(false)
 	end
 
+end
+
+-- ---------------------------------------------------------------- tabs
+local function tabTooltip(t, pact)
+	local text = string.format("%s: %d of %d item types", t.special and (t.name .. " tab") or ("Tab " .. t.name), t.used or 0, t.size or 0)
+	if t.locked then
+		text = text .. (t.special and "\nWithdraw-only." or
+			(pact and "\nWithdraw-only: beyond your tabs." or "\nWithdraw-only while your Chaos Pact is inactive. Nothing is lost."))
+	end
+	return text
+end
+
+Stash.TabInfoText = function()
+	local d = Stash.Tabs
+	if not d or not d.tabs then
+		return ""
+	end
+	if Stash.SelectedTab ~= 0 then
+		for _, t in ipairs(d.tabs) do
+			if t.id == Stash.SelectedTab then
+				return string.format("%s: %d / %d item types%s", t.special and (t.name .. " tab") or ("Tab " .. t.name), t.used or 0,
+					t.size or 0, t.locked and (d.pact and ", withdraw-only" or ", withdraw-only (no Chaos Pact)") or "")
+			end
+		end
+	end
+	local used, size, locked = 0, 0, 0
+	for _, t in ipairs(d.tabs) do
+		used = used + (t.used or 0)
+		if not t.locked and not t.special then size = size + (t.size or 0) end
+		if t.locked then locked = locked + 1 end
+	end
+	local text = string.format("%d item types. General tabs: %d (%d types each)%s", used, d.limit or 0, d.tabSize or 0,
+		d.pact and ", Chaos Pact active" or "")
+	if locked > 0 then
+		text = text .. string.format(". %d tab%s withdraw-only", locked, locked == 1 and "" or "s")
+	end
+	return text
+end
+
+Stash.SelectTab = function(id)
+	Stash.SelectedTab = id or 0
+	if Stash.UI and Stash.UI.TabBar then
+		for _, b in ipairs(Stash.UI.TabBar:getChildren()) do
+			b:setChecked(b.tabId == Stash.SelectedTab)
+		end
+		Stash.UI.TabInfo:setText(Stash.TabInfoText())
+	end
+	if Stash.UI and Stash.Data and Stash.CreateList then
+		Stash.UI.SupplyList:destroyChildren()
+		local search = Stash.UI.Search and Stash.UI.Search:getText() or ""
+		for i = 1, #Stash.Data do
+			if search == "" or string.find(Stash.Data[i].itemData.name:lower(), search:lower(), 1, true) then
+				Stash.CreateItem(Stash.Data[i].itemData)
+			end
+		end
+	end
+end
+
+Stash.FillTabs = function()
+	if not (Stash.UI and Stash.UI.TabBar) then
+		return
+	end
+	local bar = Stash.UI.TabBar
+	bar:destroyChildren()
+	local d = Stash.Tabs
+	if not d or not d.tabs then
+		Stash.UI.TabInfo:setText("")
+		return
+	end
+	local known = false
+	local function add(id, text, tooltip, locked, width)
+		local b = g_ui.createWidget("StashTabButton", bar)
+		b.tabId = id
+		b:setText(text)
+		if width then b:setWidth(width) end
+		b:setTooltip(tooltip)
+		if locked then b:setColor("#7a4a40") end
+		b.onClick = function() Stash.SelectTab(id) end
+		known = known or id == Stash.SelectedTab
+	end
+	add(0, "All", "Every tab", false)
+	for _, t in ipairs(d.tabs) do
+		add(t.id, t.name, tabTooltip(t, d.pact), t.locked, t.special and 50 or nil)
+	end
+	if not known then
+		Stash.SelectedTab = 0
+	end
+	for _, b in ipairs(bar:getChildren()) do
+		b:setChecked(b.tabId == Stash.SelectedTab)
+	end
+	Stash.UI.TabInfo:setText(Stash.TabInfoText())
 end
 
 Stash.StashAll = function(Data)

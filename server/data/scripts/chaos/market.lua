@@ -53,6 +53,17 @@ local S_LIST, S_DELIVER = cfg.storage.listSeq, cfg.storage.deliverSeq
 local MSG = cfg.messages
 local COINS = (Chaos.tables and Chaos.tables.shopCoins) or "chaos_shop_coins"
 
+-- >>> Chaos Pact listing slots (pact.lua): active offers per character and per account. Offers above a smaller limit
+-- (the Pact ran out) stay on the market until they sell, expire or are cancelled; only new listings are refused.
+function MK.maxActive(player)
+	local P = ChaosPact
+	if P and P.limit then
+		return P.limit(player, "marketListings"), P.limit(player, "marketAccount")
+	end
+	return cfg.maxActive, cfg.maxActivePerAccount
+end
+-- <<< Chaos Pact listing slots
+
 local function now()
 	return os.time()
 end
@@ -738,13 +749,14 @@ function MK.list(player, d)
 		return refuse(player, refusal)
 	end
 	local guid, account = player:getGuid(), player:getAccountId()
+	local maxChar, maxAccount = MK.maxActive(player)
 	local active = sql(string.format("SELECT COUNT(*) AS `n` FROM `%s` WHERE `seller_id` = %d AND `state` IN (0, 9)", T.offers, guid), {{"n", "n"}})[1]
-	if active and active.n >= cfg.maxActive then
-		return refuse(player, string.format(MSG.maxActive, cfg.maxActive))
+	if active and active.n >= maxChar then
+		return refuse(player, string.format(MSG.maxActive, maxChar))
 	end
 	local perAccount = sql(string.format("SELECT COUNT(*) AS `n` FROM `%s` WHERE `seller_account` = %d AND `state` IN (0, 9)", T.offers, account), {{"n", "n"}})[1]
-	if perAccount and perAccount.n >= cfg.maxActivePerAccount then
-		return refuse(player, string.format(MSG.maxAccount, cfg.maxActivePerAccount))
+	if perAccount and perAccount.n >= maxAccount then
+		return refuse(player, string.format(MSG.maxAccount, maxAccount))
 	end
 	local fee = MC.fee(cfg, gold, coins)
 	local balance = player:getBankBalance()
@@ -1026,7 +1038,7 @@ function MK.meta(player)
 	return {
 		categories = cfg.categories, durations = cfg.durations, defaultDuration = cfg.defaultDuration, sorts = cfg.sorts,
 		fee = {pct = fee.pct, min = fee.minFee, max = fee.maxFee, coinGold = fee.coinFeeGold}, tax = cfg.tax,
-		price = cfg.price, maxActive = cfg.maxActive, pageSize = cfg.pageSize, modFilter = cfg.modFilter,
+		price = cfg.price, maxActive = (MK.maxActive(player)), pageSize = cfg.pageSize, modFilter = cfg.modFilter,
 		realm = realm, realmName = realm > 0 and s and ((s.tag and (s.tag .. " ") or "") .. (s.name or "Season")) or "Standard",
 		gold = player:getBankBalance(), coins = coinsOf(player:getAccountId()), blob = HAS_BLOB
 	}
@@ -1094,7 +1106,7 @@ function MK.mine(player)
 		closed[#closed + 1] = MC.rowView(r, t)
 	end
 	local owed = (sql(string.format("SELECT COUNT(*) AS `n` FROM `%s` WHERE `player_id` = %d AND `delivered` = 0", T.deliveries, guid), {{"n", "n"}})[1] or {n = 0}).n
-	send(player, "mine", {active = active, closed = closed, owed = owed, max = cfg.maxActive})
+	send(player, "mine", {active = active, closed = closed, owed = owed, max = (MK.maxActive(player))})
 end
 
 function MK.history(player)

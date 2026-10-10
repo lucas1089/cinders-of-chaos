@@ -8,6 +8,9 @@
  *    unlocked in `chaos_class_unlocks`. createcharacter.php validates the
  *    posted vocation against $config['available_vocations'], so narrowing it
  *    here is a server-side check, not only hidden options.
+ *  - Character slots: $config['max_characters'] is the account's limit (free
+ *    slots of pact_config.lua plus Character Slots bought in the store), so
+ *    createcharacter.php refuses one more character server-side.
  *  - Optional starter depot boxes for new characters (the base server's
  *    ADD_DEPOT_BOXES_NEW_PLAYERS snippet), on the character.created hook. Off by
  *    default ($config['chaos']['depot_boxes']): !season join needs an empty depot.
@@ -26,6 +29,12 @@ require_once __DIR__ . '/lib.php';
 // Session user, not $user_data: init.php loads the plugins before it reads the account.
 $chaosAccountId = function_exists('getSession') ? (int)getSession('user_id') : 0;
 $config['available_vocations'] = chaos_creatable_classes($chaosAccountId);
+// ---------------------------------------------------------------- character slots
+// free + Character Slots bought in the store (pact_config.lua, chaos_account_extras). createcharacter.php and the
+// ZnoteX API refuse past $config['max_characters'] (staff: is_admin); the game server checks it again at login.
+if ($chaosAccountId > 0) {
+	$config['max_characters'] = chaos_character_limit($chaosAccountId);
+}
 unset($chaosAccountId);
 
 // ---------------------------------------------------------------- new characters

@@ -593,7 +593,16 @@ end
 
 -- world buff effects
 local xpCb = EventCallback
+-- season characters (season.lua realm > 0) get neither World Experience nor the double experience potion: the base
+-- player.lua doubled `exp` already while the potion runs (storage 6000), so it is halved back here
+local POTION_STORAGE = 6000
 xpCb.onGainExperience = function(self, source, exp, rawExp)
+	if ChaosSeason and ChaosSeason.realmOf and (ChaosSeason.realmOf(self) or 0) > 0 then
+		if self:getStorageValue(POTION_STORAGE) >= os.time() then
+			return math.floor(exp / 2)
+		end
+		return exp
+	end
 	local mult = S.buffMult("xp")
 	if mult ~= 1 and source and source:isMonster() then
 		return math.floor(exp * mult)

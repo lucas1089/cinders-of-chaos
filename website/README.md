@@ -14,10 +14,11 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `setup/rules.bbcode` | the first version of the Rules page (then edited in the admin panel) |
 | `setup/router.php` | router for PHP's built-in server (local tests only) |
 | `overlay/layouts/chaos/` | our layout: a child of ZnoteX's purple layout "Void", re-coloured to the client |
-| `overlay/plugins/chaos/` | our plugin: class names and class lock, starter depot boxes, Leaderboards / Patch Notes / Seasons pages |
+| `overlay/plugins/chaos/` | our plugin: class names and class lock, character slots, starter depot boxes, Leaderboards / Patch Notes / Seasons pages |
 | `overlay/engine/function/chaos_password.php` | salted PBKDF2 passwords, the game server's format (see "Passwords") |
 | `patches/znotex-chaos-passwords.patch` | ZnoteX's password and login code switched to it, per-account login throttling |
 | `tests/chaos_password_test.php` | `php website/tests/chaos_password_test.php` (php-cli only) |
+| `tests/chaos_slots_test.php` | `php website/tests/chaos_slots_test.php`: the character slot limit (php-cli only, a fake database) |
 | `tools/recolor_layout.py` | turns Void's stylesheets into ours at install time |
 | `tools/gen_site_art.py` | draws the site art and the promotion material |
 | `art/` | promotion material: banners, social image, Discord banner and icon, class showcase, features infographic |
@@ -89,6 +90,14 @@ Local test (what was used to check it): `php -S 127.0.0.1:8095 -t "$CHAOS_SITE_D
   island's exit leads to that town's temple. Home towns: `CHAOS_START_TOWNS`, checked against the `towns` table (the
   server fills it at its first start). The base server's starter depot boxes (its `ADD_DEPOT_BOXES_NEW_PLAYERS`
   snippet) are off: `!season join` needs an empty depot. `CHAOS_DEPOT_BOXES=1` puts one of each box in every town's depot.
+- **Character slots.** Each account may have `characters.free` characters of the server's `pact_config.lua` (5; read
+  when `CHAOS_SERVER_DATA` points at it, else 5), plus the Character Slots bought in the game store and the slots the game
+  server gave once to accounts that already had more (`chaos_account_extras` keys `charSlots`, at most `maxExtra` 10, and
+  `charSlotsLegacy`). The plugin sets `$config['max_characters']` to that number on every request
+  (`chaos_character_limit`), so ZnoteX's `createcharacter.php` (and its API) refuse one more character on the server side;
+  admins (`is_admin`) are not limited, as in ZnoteX. The page shows "Character slots: x of y used" and points to the
+  store when they are all used. The game server checks the same limit at login (`pact.lua`; server/README.md "Chaos Pact
+  and account storage").
 - **Leaderboards** read `chaos_leaderboard` (this week's boards; week key and tie rules of `leaderboard_core.lua`),
   `chaos_leaderboard_titles` (the holders of the last scored week) and the players table (Class Ladder). Board names
   and titles come from the server's `leaderboard_config.lua` when `CHAOS_SERVER_DATA` points at it.
@@ -170,6 +179,22 @@ PNGs were drawn with Crimson Pro. All art is procedural: no screenshots, logos o
 | `art/otlist-468x60.png`, `art/otlist-88x31.png` | 468x60, 88x31 | server list banners |
 | `art/class-showcase-1400x900.png` | 1400x900 | the 4 base classes and their ascensions |
 | `art/features-1200x1560.png` | 1200x1560 | features infographic |
+
+## Chaos Coins
+
+The packs, their bonuses and the one-time starter and first-purchase bonuses live in the game server's
+`server/data/scripts/chaos/shop_coins_config.lua`; the server decides every number and credits every order
+(server/README.md "Store"). The site only shows them and records paid orders:
+
+- Page `page.php?plugin=chaos&p=coins` (`plugins/chaos/pages/coins.php`): the packs with coins, bonus, total and price,
+  the first-purchase bonus and, for a logged-in account, whether it and the starter pack are still open. No menu entry
+  yet: payments are not open.
+- Hook `chaos_coin_order_paid($accountId, $packKey, $provider, $providerRef)` (`plugins/chaos/lib.php`): call it from a
+  payment provider's confirmed-payment callback, after checking the provider's signature there. It writes a `paid` row
+  into `chaos_coin_orders` (`install.sql`; unique per provider and reference, so a repeated callback writes nothing); the
+  game server credits it within 30 s. **No payment provider is connected and no credentials are here.** Until one is,
+  staff record a payment by hand with the in-game admin panel (Store > Record a paid coin order).
+- `php website/tests/chaos_coins_test.php` checks that the site reads the packs as the server credits them.
 
 ## Not done / for later
 

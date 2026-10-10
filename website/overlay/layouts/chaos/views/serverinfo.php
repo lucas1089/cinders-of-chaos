@@ -11,7 +11,7 @@ $sections = array(
 	)),
 	'tree' => array('Passive tree and Paragon', array(
 		'<strong>Passive tree:</strong> over 600 nodes, with points from levels and not enough to take everything, so every build is a choice. Class keystones change how you play: <em>Cleaving Arc</em> (two-handed hits strike everything around you), <em>Ricochet</em> (arrows bounce to another target), <em>Arcane Echo</em> (spells can cast a second time) and the Illusionist party auras.',
-		'<strong>Build codes:</strong> export your tree as a short code (the passive tree's Build Code panel) and import someone else\'s. The tree previews it first.',
+		'<strong>Build codes:</strong> export your tree as a short code (the passive tree\'s Build Code panel) and import someone else\'s. The tree previews it first.',
 		'<strong>Respec:</strong> right-click a node to refund just that node, or reset the whole tree; both are priced by your level. Resets are free below level 50 and once after a class change.',
 		'<strong>Paragon:</strong> after level 1000 every level gives a Paragon point for small, capped bonuses in four categories.',
 	)),
@@ -47,7 +47,7 @@ $sections = array(
 	'qol' => array('Quality of life', array(
 		'<strong>Combat visuals:</strong> crits, dodges and reflects get their own sprites; elemental weapon damage shows as its own coloured number.',
 		'<strong>Patch notes in the client</strong>, a server-counted <strong>hunt tracker</strong> (Hunt > Hunt Tracker), <strong>daily rewards and login streaks</strong> with titles, <strong>waystones</strong> with account upgrades, and toast notifications.',
-		'<strong>Store</strong> (Chaos Coins): stamina refill, temple teleport, bottomless loot pouch, auto seller, training weapons, world buffs, name / vocation / sex change, blessings, passive tree reset, crafting orbs.',
+		'<strong>Store</strong> (Chaos Coins): outfits, mounts, wings, auras, outfit shaders and name plate frames, starter packs and bundles, store pouches, auto seller, training weapons, world buffs, name / vocation / sex change, blessings, passive tree reset. No random crafting orbs; achievement, season and class looks are never sold.',
 	)),
 );
 ?>

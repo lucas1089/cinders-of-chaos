@@ -93,6 +93,11 @@ local function facts(player)
 		end,
 		achievementOf = function(styleKey)
 			return K.achievementOf(achievementData(), styleKey)
+		end,
+		-- route "season": a season pass / season pack reward of the account (seasonpass.lua)
+		seasonOwned = function(styleKey)
+			local SP = ChaosSeasonPass
+			return SP and SP.ownsPortal and SP.ownsPortal(player, styleKey) or false
 		end
 	}
 end

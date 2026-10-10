@@ -254,6 +254,14 @@ eq(S.buffMult("loot"), 1, "other buffs independent")
 local monster = {isMonster = function() return true end}
 eq(callback("onGainExperience", 5)(nil, monster, 1000, 1000), 1250, "xp callback")
 eq(callback("onGainExperience", 5)(nil, {isMonster = function() return false end}, 1000, 1000), 1000, "only monster xp")
+-- season characters: no World Experience, and the base double experience potion (storage 6000) is undone
+ChaosSeason = {realmOf = function(p) return p.realm or 0 end}
+local seasonal = {realm = 1, st = {}, getStorageValue = function(self, k) return self.st[k] or -1 end}
+eq(callback("onGainExperience", 5)(seasonal, monster, 1000, 1000), 1000, "season: no world experience")
+seasonal.st[6000] = os.time() + 3600
+eq(callback("onGainExperience", 5)(seasonal, monster, 2000, 1000), 1000, "season: the potion's doubling undone")
+eq(callback("onGainExperience", 5)({realm = 0}, monster, 1000, 1000), 1250, "standard character keeps the buff")
+ChaosSeason = nil
 now = now + 3 * H + 1
 eq(S.buffMult("xp"), 1, "buff expired")
 eq(callback("onGainExperience", 5)(nil, monster, 1000, 1000), 1000, "expired: no bonus")

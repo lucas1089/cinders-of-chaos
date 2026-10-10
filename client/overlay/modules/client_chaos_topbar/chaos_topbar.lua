@@ -224,6 +224,7 @@ local CATEGORIES = {
     entry('Bounty Board',    'quests',      { modules = { 'game_bounty' },    fns = { 'toggle' } }),
     entry('Daily Reward',    'daily',       { modules = { 'game_daily' },     fns = { 'toggle' } }),
     entry('Season',          'events',      { modules = { 'game_season' },    fns = { 'toggle' } }),
+    entry('Season Pass',     'battlepass',  { modules = { 'game_battlepass' }, fns = { 'toggle' } }),
     entry('Arena',           'pvp',         { modules = { 'game_arena' },     fns = { 'toggle' } }),
     entry('Guild Siege',     'pvp',         { modules = { 'game_siege' },     fns = { 'toggle' } }),
     entry('Events',          'events',      info('events')),
@@ -237,7 +238,6 @@ local CATEGORIES = {
     entry('Bank',            'bank',        { modules = { 'game_bank' },      fns = { 'bankWindowtoggle', 'toggle' } }),
     entry('Supply Stash',    'stash',       { modules = { 'game_stash' },     fns = { 'vipToggle', 'Stash.Toggle', 'toggle' } }),
     entry('Auto Seller',     'autoloot',    info('autoseller')),
-    entry('Battle Pass',     'battlepass',  { modules = { 'game_sidebuttons' }, fns = { 'openBattlePassWindow' } }),
     entry('More',            'market',      { sub = {
       entry('House',            'bank',      info('house')),
       entry('Ancestral Store',  'market',    info('ancestral')),

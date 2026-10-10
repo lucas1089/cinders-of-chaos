@@ -1,0 +1,105 @@
+-- Chaos Pact window: the texts and rows, without client API (tested by pactview_test.lua).
+-- The server (data/scripts/chaos/pact.lua) decides everything; this only formats its `status`:
+--   {active, ends, daysLeft, dailyCoins, canClaim, claimedTotal, premiumDays, coins, title, titleText,
+--    limits = [{key, label, free, pact, extra, maxExtra, total, pactActive}], tabSize, special = [{name, owned}],
+--    buildLimit, builds = [{slot, name, nodes, cls, editable, updated}]}
+
+PactView = {}
+local V = PactView
+
+local function n(v)
+  return math.floor(tonumber(v) or 0)
+end
+
+local function plural(count, word)
+  return count .. ' ' .. word .. (count == 1 and '' or 's')
+end
+
+-- the headline and the line under it
+function V.status(s)
+  if type(s) ~= 'table' then return 'Loading...', '' end
+  if s.active then
+    return 'Chaos Pact active', string.format('Until %s (%s left). Title: %s.', s.ends or '?', plural(n(s.daysLeft), 'day'),
+      s.title ~= '' and s.title or (s.titleText or ''))
+  end
+  if n(s.endsAt) > 0 then
+    return 'Chaos Pact ended', 'Ended ' .. (s.ends or '') .. '. Nothing is lost: extra tabs are withdraw-only, extra builds read-only.'
+  end
+  return 'No Chaos Pact', 'Comfort perks for 30 days: room, slots, ' .. n(s.dailyCoins) .. ' coins a day and a title. No combat power.'
+end
+
+-- the claim button: text and whether it is enabled
+function V.claim(s)
+  if type(s) ~= 'table' or not s.active then
+    return 'Daily coins', false
+  end
+  if s.canClaim then
+    return 'Claim ' .. n(s.dailyCoins) .. ' coins', true
+  end
+  return 'Claimed today', false
+end
+
+-- one row of the limits table: {label, free, pact, bought, total} as texts
+function V.limitRow(r)
+  local pact = n(r.pact) > 0 and ('+' .. n(r.pact)) or '-'
+  if n(r.pact) > 0 and not r.pactActive then
+    pact = pact .. ' (off)'
+  end
+  local bought = '-'
+  if n(r.maxExtra) > 0 or n(r.extra) > 0 then
+    bought = n(r.extra) .. ' / ' .. n(r.maxExtra)
+  end
+  return { r.label or r.key or '?', tostring(n(r.free)), pact, bought, tostring(n(r.total)) }
+end
+
+function V.limitRows(s)
+  local out = {}
+  for _, r in ipairs(type(s) == 'table' and s.limits or {}) do
+    local row = V.limitRow(r)
+    if r.pactActive and not s.active and n(r.pact) > 0 then
+      row[3] = row[3] .. ' (premium)' -- the loot rules: premium alone gives that bonus
+    end
+    out[#out + 1] = row
+  end
+  return out
+end
+
+-- the special stash tabs line
+function V.specialText(s)
+  local parts = {}
+  for _, t in ipairs(type(s) == 'table' and s.special or {}) do
+    parts[#parts + 1] = t.name .. (t.owned and ' (owned)' or ' (store)')
+  end
+  if #parts == 0 then return '' end
+  return 'Special stash tabs: ' .. table.concat(parts, ', ') .. '. General tabs hold ' .. n(s.tabSize) .. ' item types each.'
+end
+
+-- saved builds: one row per slot from 1 to max(limit, highest saved slot); empty editable slots included
+function V.buildRows(s)
+  local bySlot, highest = {}, n(type(s) == 'table' and s.buildLimit)
+  for _, b in ipairs(type(s) == 'table' and s.builds or {}) do
+    bySlot[n(b.slot)] = b
+    highest = math.max(highest, n(b.slot))
+  end
+  local rows = {}
+  for slot = 1, highest do
+    local b = bySlot[slot]
+    local editable = slot <= n(s.buildLimit)
+    if b then
+      local sub = string.format('%s, %s', (b.cls and b.cls ~= '') and (b.cls:sub(1, 1):upper() .. b.cls:sub(2) .. ' line') or 'no class',
+        plural(n(b.nodes), 'node'))
+      if not editable then sub = sub .. ' - read-only' end
+      rows[#rows + 1] = { slot = slot, name = b.name or ('Build ' .. slot), sub = sub, saved = true, editable = editable }
+    else
+      rows[#rows + 1] = { slot = slot, name = 'Empty slot', sub = editable and 'Save your current tree here' or '', saved = false,
+        editable = editable }
+    end
+  end
+  return rows
+end
+
+function V.buildHeader(s)
+  if type(s) ~= 'table' then return '' end
+  local used = #(s.builds or {})
+  return string.format('Saved builds: %d of %d slots (account-wide)', used, n(s.buildLimit))
+end

@@ -26,6 +26,9 @@ V.PAGES = {
       { label = 'Familiar', buttons = { { text = 'Summon', id = 'summonfamiliar' }, { text = 'Level', id = 'familiarlevel' },
                                         { text = 'Choose', id = 'choosefamiliar' } } },
       { label = 'Other', buttons = { { text = 'Leave Tutorial', id = 'skiptutorial' }, { text = 'Claim Web Shop Items', id = 'webshop' } } },
+      -- name plate frames bought in the store (server shop.lua, command id plateframe)
+      { label = 'Plate frame', buttons = { { text = 'Violet', id = 'plateframe', param = 'violet' }, { text = 'Frost', id = 'plateframe', param = 'frost' },
+                                           { text = 'Title Frame', id = 'plateframe', param = 'off' } } },
     } },
   { id = 'autoseller', title = 'Auto Seller',
     text = 'Loot on this list is sold at NPC prices as it drops; the gold goes to your bank. Uniques are never sold.',
