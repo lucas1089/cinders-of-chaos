@@ -1,6 +1,6 @@
 -- Pure helpers of the buff bar (no client calls; tested by buffmath_test.lua): applying the server's messages to a
 -- table of buffs, the time left (counted down here from the milliseconds the server sent), the compact time text, the
--- rows, the tooltip, the icon names and the settings.
+-- order of the icons, the layout under the character plate, the tooltip, the icon names and the settings.
 --
 -- Server messages (extended opcode 234, JSON {action, data}):
 --   full  {list = [entry]}  the whole bar
@@ -10,17 +10,18 @@
 
 BuffMath = {}
 
-BuffMath.BASE_SIZE = 26
-BuffMath.SCALE_MIN, BuffMath.SCALE_MAX, BuffMath.SCALE_STEP = 70, 180, 10
-BuffMath.PER_ROW_MIN, BuffMath.PER_ROW_MAX = 4, 16
+BuffMath.ICON_SIZE, BuffMath.GAP = 26, 2
 BuffMath.GRACE = 1.5 -- seconds past its end a timed buff stays before the client drops it by itself (the server's `del` is late)
 
-BuffMath.DEFAULTS = {scale = 100, locked = false, shown = true, timers = true, hideEmpty = true, perRow = 10}
+-- where the bar sits on the character plate (game_chaoshud, image 300 x 96): the drawn plate starts 7 px in from the
+-- left of its widget and ends 3 px before the right; the bar starts 2 px under the widget (below the level badge)
+BuffMath.PLATE = { left = 7, right = 3, below = 2 }
+-- without the plate module the bar takes the plate's own spot: the top-left of the game view (chaoshud.otui margins)
+BuffMath.FALLBACK = { x = 34, y = 40, width = 300, height = 96 }
 
-local function clamp(v, lo, hi)
-  if v < lo then return lo elseif v > hi then return hi end
-  return v
-end
+-- the settings that are left: the bar is fixed under the plate (no position, size, icons per row or lock any more; old
+-- saved values of those are dropped on the next save)
+BuffMath.DEFAULTS = {shown = true, timers = true}
 
 local function num(v)
   v = tonumber(v)
@@ -28,35 +29,14 @@ local function num(v)
   return v
 end
 
--- the saved settings node -> valid settings (unknown or wrong values fall back to the defaults)
+-- the saved settings node -> valid settings (unknown or wrong values fall back to the defaults; anything else is dropped)
 function BuffMath.sanitize(node)
   node = type(node) == 'table' and node or {}
-  local d = BuffMath.DEFAULTS
   local s = {}
-  local scale = num(node.scale)
-  s.scale = scale and clamp(math.floor(scale / BuffMath.SCALE_STEP + 0.5) * BuffMath.SCALE_STEP, BuffMath.SCALE_MIN, BuffMath.SCALE_MAX) or d.scale
-  for _, k in ipairs({ 'locked', 'shown', 'timers', 'hideEmpty' }) do
-    if type(node[k]) == 'boolean' then s[k] = node[k] else s[k] = d[k] end
+  for k, v in pairs(BuffMath.DEFAULTS) do
+    if type(node[k]) == 'boolean' then s[k] = node[k] else s[k] = v end
   end
-  local per = num(node.perRow)
-  s.perRow = per and clamp(math.floor(per), BuffMath.PER_ROW_MIN, BuffMath.PER_ROW_MAX) or d.perRow
-  local x, y = num(node.x), num(node.y)
-  if x and y then s.x, s.y = math.floor(x), math.floor(y) end
   return s
-end
-
-function BuffMath.iconSize(scale)
-  return math.floor(BuffMath.BASE_SIZE * clamp(scale or 100, BuffMath.SCALE_MIN, BuffMath.SCALE_MAX) / 100 + 0.5)
-end
-
-function BuffMath.stepScale(scale, dir)
-  return clamp((scale or 100) + dir * BuffMath.SCALE_STEP, BuffMath.SCALE_MIN, BuffMath.SCALE_MAX)
-end
-
--- a position that keeps a widget of w x h inside a parent of pw x ph (at least `keep` pixels of it stay visible)
-function BuffMath.clampPosition(x, y, w, h, pw, ph, keep)
-  keep = keep or 24
-  return clamp(x, keep - w, math.max(keep - w, pw - keep)), clamp(y, 0, math.max(0, ph - math.min(h, keep)))
 end
 
 -- ------------------------------------------------------------------ the table of buffs
@@ -149,8 +129,9 @@ function BuffMath.formatLong(sec)
   return s .. 's'
 end
 
--- the entries to draw: {buffs, debuffs}, each in the order the server listed them (stable: nothing jumps about)
-function BuffMath.rows(state)
+-- the entries to draw: the buffs, then the debuffs, each in the order the server listed them (stable: nothing jumps
+-- about); also how many of them are buffs
+function BuffMath.ordered(state)
   local buffs, debuffs = {}, {}
   for _, e in pairs(state.buffs or {}) do
     if e.debuff then debuffs[#debuffs + 1] = e else buffs[#buffs + 1] = e end
@@ -161,7 +142,16 @@ function BuffMath.rows(state)
   end
   table.sort(buffs, bySeq)
   table.sort(debuffs, bySeq)
-  return buffs, debuffs
+  local nBuffs = #buffs
+  for _, e in ipairs(debuffs) do buffs[#buffs + 1] = e end
+  return buffs, nBuffs
+end
+
+-- a key of the drawn order (a new layout is needed when it changes)
+function BuffMath.orderKey(list)
+  local keys = {}
+  for i, e in ipairs(list) do keys[i] = e.key end
+  return table.concat(keys, ',')
 end
 
 function BuffMath.count(state)
@@ -170,15 +160,37 @@ function BuffMath.count(state)
   return n
 end
 
--- positions of icons in rows of `perRow`: {{x, y} ...} for `count` icons, cell = size + gap; also the width and height used
-function BuffMath.grid(count, perRow, size, gap, x0, y0)
+-- icons that fit in a row `rowWidth` wide (at least one)
+function BuffMath.perRow(rowWidth, size, gap)
+  return math.max(1, math.floor(((tonumber(rowWidth) or 0) + gap) / (size + gap)))
+end
+
+-- left to right in rows as wide as the plate, a new row below when one is full: the cells {x, y} of `count` icons
+-- (relative to the bar), the number of rows and the bar's height (0 without icons: an empty bar takes no space)
+function BuffMath.flow(count, rowWidth, size, gap)
+  size, gap = size or BuffMath.ICON_SIZE, gap or BuffMath.GAP
+  local per = BuffMath.perRow(rowWidth, size, gap)
   local cells = {}
   for i = 0, count - 1 do
-    cells[#cells + 1] = { x = x0 + (i % perRow) * (size + gap), y = y0 + math.floor(i / perRow) * (size + gap) }
+    cells[#cells + 1] = { x = (i % per) * (size + gap), y = math.floor(i / per) * (size + gap) }
   end
-  local rows = math.ceil(count / perRow)
-  local cols = math.min(count, perRow)
-  return cells, cols * (size + gap) - (cols > 0 and gap or 0), rows * (size + gap) - (rows > 0 and gap or 0)
+  local rows = math.ceil(count / per)
+  return cells, rows, rows > 0 and rows * (size + gap) - gap or 0
+end
+
+-- where the bar goes: `plate` = {x, y, width, height, visible} of the character plate (nil: no plate module).
+-- Returns {x, y, width, shown}: under the plate and left-aligned with its drawn edge, as wide as the drawn plate; hidden
+-- with the plate; at the plate's own spot (FALLBACK, relative to the game view at `view` {x, y}) without a plate module.
+function BuffMath.attach(plate, view)
+  local P = BuffMath.PLATE
+  if type(plate) ~= 'table' then
+    local F = BuffMath.FALLBACK
+    view = type(view) == 'table' and view or { x = 0, y = 0 }
+    return { x = (view.x or 0) + F.x + P.left, y = (view.y or 0) + F.y + F.height + P.below,
+      width = F.width - P.left - P.right, shown = true }
+  end
+  return { x = plate.x + P.left, y = plate.y + plate.height + P.below,
+    width = math.max(BuffMath.ICON_SIZE, plate.width - P.left - P.right), shown = plate.visible ~= false }
 end
 
 function BuffMath.tooltip(entry, now)

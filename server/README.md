@@ -4297,7 +4297,7 @@ not changed.
   off is dimmed (gear at or above the glow line still glows).
 - Items with a rarity that do not glow get a thin frame in their colour. Corpses dim; other containers only glow/frame.
 - *Rare-drop message*: every glowing item (not orbs) gives a coloured line `Rare drop: [Legendary] Dawnforged Helmet`
-  (`Unique drop: [Unique] ...`) in the loot channel and over the map. TFS text messages have no colour, so these go through the opcode.
+  (`Unique drop: [Unique] ...`) over the map. TFS text messages have no colour, so these go through the opcode.
 - *Rarity Autoloot* (store unlock, see below): *leave list gear below* Z keeps autoloot-list equipment of a lower rarity in
   the corpse; *also pick up gear from* W autoloots equipment with rarity >= W, and uniques, even when they are not on the
   autoloot list. Uniques, orbs and coins are never held back.
@@ -4319,10 +4319,14 @@ Treasure goblins add their hoard in their death event, which the engine runs bef
 (rays included; the old `ChaosLootRays.beam` hook in `treasure_goblin.lua` was removed).
 
 ### Loot channel (icons, click to loot)
-- On each kill the corpse owner gets `kill {k, m, p, items = [{n, id, c, r, u, o, g, nm, left}], drops}`. The client opens
-  the console's **Loot** tab and lays a panel with one row per kill (time, monster, item icons with count, rarity glow /
-  frame / dim, tooltip with name, rarity and how to loot) over that tab's text while it is selected. Uncheck "Loot tab shows
-  item icons" to get the plain text back. The last 50 rows are kept (`historySize`, client `MAX_ROWS`).
+- On each kill the corpse owner gets `kill {k, m, look, p, items = [{n, id, c, r, u, o, g, nm, left}], drops}`; an empty
+  corpse sends `items = {}` (a row, nothing tracked). `look` is the monster's outfit as it died (`F.look`: `getOutfit()`, so
+  rift looks and tier shaders, else its type's; item looks as `auxType`, no mount, the shader by name from
+  `data/XML/shaders.xml`). The client opens the console's **Loot** tab and lays a panel over that tab's text while it is
+  selected: one row per kill, icons only, no text: the monster icon (hover: name and kill time; an empty corpse gets a small
+  mark) and the item icons (count, rarity glow / frame / dim, hover: name, rarity and how to loot). The rare-drop lines go over
+  the map only. Uncheck "Loot tab shows item icons" to get the plain text back. The last 50 rows are kept (`historySize`,
+  client `MAX_ROWS`).
 - The corpse gets the custom attribute `lf_kill = <kill id>` so it can be found again on its tile (it survives
   container-to-container decay stages). Entries are matched to corpse items by `id:rarity:unique name`
   (`F.signature`, `F.reconcile`); identical items are interchangeable.
@@ -5595,7 +5599,8 @@ meantime). The server is the authority: the client draws what it is told and cou
   `game_partyframes/partymath_test.lua`.
 - Tested in game on a test server (the engine with patches 0001-0011, the cropped test map) with three characters in one
   party: the bar with about 20 buffs and debuffs at once (stack number on Bushido Focus, countdown, red borders, tooltips with the
-  live time left), dragging and the saved position, the gear window, hiding from the top menu (the server stops sending), a
+  live time left), dragging and the saved position, the gear window (since replaced: the bar is now fixed under the
+  character plate and follows it, rows as wide as the plate, see client/MANIFEST.md `game_buffbar`), hiding from the top menu (the server stops sending), a
   world buff, the Victory buff, Golden Hour; the frames with three members, a member on another floor (arrow and count), one
   70 squares away (rough health, no mana), left click follows and a second click stops, shift+click, the right-click menu,
   removing a member and passing the leadership, inviting by name, the leader crown moving, the frames hiding on leaving the

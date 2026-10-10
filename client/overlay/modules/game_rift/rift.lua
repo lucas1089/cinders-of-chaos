@@ -52,9 +52,12 @@ local function updateClock()
   end
 end
 
+local place
+
 local function tick()
   tickEvent = nil
   updateClock()
+  place()
   if data and data.state == 'running' then
     tickEvent = scheduleEvent(tick, 500)
   end
@@ -100,14 +103,22 @@ local function render()
   updateClock()
 end
 
--- under the character plate: the map panel starts above the window in the extended view (y -80 at 1280x720, -120 at
+-- under the character plate and the buff bar fixed below it (game_buffbar; it grows a row at a time, so this runs
+-- with the clock too): the map panel starts above the window in the extended view (y -80 at 1280x720, -120 at
 -- 1920x1080), so the fixed margin-top of the style put the HUD on the plate
-local function place()
+place = function()
   local mapPanel = hud and hud:getParent()
   local plate = rootWidget:recursiveGetChildById('chaosHud')
   if not mapPanel or not plate or not plate:isVisible() then return end
   local r = plate:getRect()
-  hud:setMarginTop(r.y + r.height + 8 - mapPanel:getY())
+  local bottom = r.y + r.height
+  local buffs = rootWidget:recursiveGetChildById('buffBar')
+  if buffs and buffs:isVisible() then
+    local b = buffs:getRect()
+    bottom = math.max(bottom, b.y + b.height)
+  end
+  local top = bottom + 8 - mapPanel:getY()
+  if hud:getMarginTop() ~= top then hud:setMarginTop(top) end
 end
 
 local function show()

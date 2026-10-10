@@ -41,9 +41,12 @@ local function updateClock()
   end
 end
 
+local place
+
 local function tick()
   tickEvent = nil
   updateClock()
+  place() -- the buff bar under the plate grows and shrinks a row at a time
   if data and not data.ended then tickEvent = scheduleEvent(tick, 500) end
 end
 
@@ -56,7 +59,7 @@ end
 -- Under the character plate, 40 px from the left of the game view; beside the rift HUD while a rift runs. From there
 -- down to the first spot clear of the plate (and its energy shield bar), the buff bar, the party frames, the map
 -- overlay's corner box and control strip and the character's zone (cast bar), above the console (InvasionMath.place).
-local function place()
+place = function()
   if not hud then return end
   local gi = modules.game_interface
   local mapPanel = gi.getMapPanel()
@@ -87,8 +90,8 @@ local function place()
   end
   local px, py = InvasionMath.place(x, top, hud:getWidth(), hud:getHeight(), obstacles, bottom)
   if not px then px, py = x, top end
-  hud:setMarginLeft(px - view.x)
-  hud:setMarginTop(py - view.y)
+  if hud:getMarginLeft() ~= px - view.x then hud:setMarginLeft(px - view.x) end
+  if hud:getMarginTop() ~= py - view.y then hud:setMarginTop(py - view.y) end
   -- above the map overlay (game_mapoverlay draws the explored map see-through over the game view)
   if overlay and mapPanel:getChildIndex(overlay) > mapPanel:getChildIndex(hud) then hud:raise() end
 end

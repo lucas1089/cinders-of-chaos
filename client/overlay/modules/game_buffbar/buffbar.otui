@@ -7,6 +7,8 @@ BuffBarIcon < UIWidget
   border-color: #b8923a
   image-smooth: true
   focusable: false
+  anchors.top: parent.top
+  anchors.left: parent.left
 
   UILabel
     id: time
@@ -32,148 +34,36 @@ BuffBarIcon < UIWidget
     padding-right: 2
     phantom: true
 
-BuffBarButton < UIButton
-  size: 12 10
-  font: Verdana-9px-antialiased
-  color: #b9ab8c
-  text-offset: 0 0
-  change-cursor-image: true
-  cursor: pointer
-
-  $hover:
-    color: #f6cf72
-
+// fixed under the character plate (anchored by buffbar.lua); phantom, so the space between icons lets clicks through
 BuffBar < UIWidget
   id: buffBar
-  size: 90 38
-  background-color: #0d0b0e99
-  border-width: 1
-  border-color: #3a3339
-  anchors.top: parent.top
-  anchors.left: parent.left
-  margin-top: 124
-  margin-left: 335
+  size: 290 26
+  phantom: true
   focusable: false
-
-  // the strip above the icons: grab it to move the bar, the gear opens the settings
-  UIWidget
-    id: header
-    height: 10
-    anchors.top: parent.top
-    anchors.left: parent.left
-    anchors.right: parent.right
-    background-color: #1a1418cc
-    cursor: pointer
-
-    UILabel
-      id: grip
-      text: ::::
-      font: Verdana-9px-antialiased
-      color: #7d7176
-      anchors.left: parent.left
-      anchors.verticalCenter: parent.verticalCenter
-      margin-left: 3
-      text-auto-resize: true
-      phantom: true
-
-    BuffBarButton
-      id: gear
-      text: *
-      anchors.right: parent.right
-      anchors.verticalCenter: parent.verticalCenter
-      margin-right: 1
-      @onClick: modules.game_buffbar.toggleSettings()
-
-  UILabel
-    id: empty
-    text: No active effects
-    font: Verdana-9px-antialiased
-    color: #6b6258
-    anchors.left: parent.left
-    anchors.top: header.bottom
-    margin-left: 4
-    margin-top: 3
-    text-auto-resize: true
-    phantom: true
-    visible: false
 
 BuffBarSettings < ChaosMainWindow
   id: buffBarSettings
   !text: tr('Buff Bar')
-  size: 270 236
+  size: 270 160
 
   ChaosLabel
-    id: scaleLabel
-    !text: tr('Icon size')
+    id: info
+    !text: tr('The bar sits under the character plate and moves with it.')
     anchors.top: parent.top
     anchors.left: parent.left
-    margin-top: 6
-    width: 104
-  ChaosButton
-    id: scaleMinus
-    text: -
-    size: 22 20
-    anchors.left: scaleLabel.right
-    anchors.verticalCenter: scaleLabel.verticalCenter
-    @onClick: modules.game_buffbar.stepScale(-1)
-  ChaosLabel
-    id: scaleValue
-    width: 52
-    text-align: center
-    anchors.left: scaleMinus.right
-    anchors.verticalCenter: scaleLabel.verticalCenter
-  ChaosButton
-    id: scalePlus
-    text: +
-    size: 22 20
-    anchors.left: scaleValue.right
-    anchors.verticalCenter: scaleLabel.verticalCenter
-    @onClick: modules.game_buffbar.stepScale(1)
-
-  ChaosLabel
-    id: rowLabel
-    !text: tr('Icons per row')
-    anchors.top: scaleLabel.bottom
-    anchors.left: parent.left
-    margin-top: 12
-    width: 104
-  ChaosButton
-    id: rowMinus
-    text: -
-    size: 22 20
-    anchors.left: rowLabel.right
-    anchors.verticalCenter: rowLabel.verticalCenter
-    @onClick: modules.game_buffbar.stepPerRow(-1)
-  ChaosLabel
-    id: rowValue
-    width: 52
-    text-align: center
-    anchors.left: rowMinus.right
-    anchors.verticalCenter: rowLabel.verticalCenter
-  ChaosButton
-    id: rowPlus
-    text: +
-    size: 22 20
-    anchors.left: rowValue.right
-    anchors.verticalCenter: rowLabel.verticalCenter
-    @onClick: modules.game_buffbar.stepPerRow(1)
+    anchors.right: parent.right
+    margin-top: 4
+    text-wrap: true
+    text-auto-resize: true
 
   ChaosCheckBox
     id: shownBox
     !text: tr('Show the buff bar')
-    anchors.top: rowLabel.bottom
+    anchors.top: info.bottom
     anchors.left: parent.left
     anchors.right: parent.right
-    margin-top: 14
+    margin-top: 12
     @onCheckChange: modules.game_buffbar.setOption('shown', self:isChecked())
-  ChaosCheckBox
-    id: lockBox
-    !text: tr('Lock the position')
-    anchors.top: prev.bottom
-    anchors.left: parent.left
-    anchors.right: parent.right
-    margin-top: 6
-    @onCheckChange: modules.game_buffbar.setOption('locked', self:isChecked())
   ChaosCheckBox
     id: timersBox
     !text: tr('Show the countdown')
@@ -182,22 +72,6 @@ BuffBarSettings < ChaosMainWindow
     anchors.right: parent.right
     margin-top: 6
     @onCheckChange: modules.game_buffbar.setOption('timers', self:isChecked())
-  ChaosCheckBox
-    id: hideBox
-    !text: tr('Hide it when empty')
-    anchors.top: prev.bottom
-    anchors.left: parent.left
-    anchors.right: parent.right
-    margin-top: 6
-    @onCheckChange: modules.game_buffbar.setOption('hideEmpty', self:isChecked())
-
-  ChaosButton
-    id: resetButton
-    !text: tr('Reset position')
-    width: 110
-    anchors.bottom: parent.bottom
-    anchors.left: parent.left
-    @onClick: modules.game_buffbar.resetPosition()
   ChaosButton
     id: closeButton
     !text: tr('Close')
