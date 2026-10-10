@@ -54,8 +54,8 @@ return {
 	-- ------------------------------------------------------------------ isolation
 	-- Season characters and standard characters do not exchange anything while the season runs:
 	-- trade window (and house trade), mail (parcels and letters), items on the ground and in corpses, house
-	-- tiles, the Chaos bank transfer, parties. See README "Seasons" for what could not be blocked (the market,
-	-- the NPC bank transfer).
+	-- tiles, the Chaos bank transfer, the NPC bank transfer, the market, parties; the store: `store` below.
+	-- See README "Seasons".
 	isolation = {
 		-- custom item attribute that marks an item on the ground / a corpse with the realm (0 = standard, else the
 		-- season id) of the player who dropped it / killed the monster / died
@@ -73,6 +73,43 @@ return {
 			party = "Season characters can only be in a party with characters of the same season.",
 			bank = "Season characters can only transfer gold to characters of the same season."
 		}
+	},
+
+	-- ------------------------------------------------------------------ store coins (account-wide)
+	-- Chaos Coins belong to the account, so a season character could spend coins its account bought or earned with
+	-- standard characters. The rule: cosmetics and account-wide entitlements are fine on both sides; nothing that
+	-- gives a season character items, gold, experience, power or a head start comes through the store. Refused
+	-- offers go to nobody: the account buys them with a standard character. ChaosSeason.storeRefusal
+	-- (season_core.lua) decides from these lists (anything not listed is refused, so a new offer kind needs a
+	-- decision here); shop.lua asks ChaosSeason.storeProblem for the buyer and for the receiver of a gift.
+	store = {
+		-- offer kinds a season character may get (shop_config.lua kinds; "pact" = the Chaos Pact days of a bundle)
+		kinds = {wings = true, aura = true, shader = true, outfit = true, addons = true, mount = true, frame = true,
+			premium = true, pact = true},
+		-- kind "service": by service. The Chaos Pact and its extras are account comfort (room, slots, coins);
+		-- stamina, blessings, the skull remover, resets, the vocation token, world buffs and pouches are refused
+		services = {nameToken = true, sexChange = true, pact = true, pactExtra = true},
+		-- kind "unlock": by unlock key, or by key prefix. Classes are account-wide anyway; portal styles and
+		-- transmog sets are looks; the season pass and its packs are account-wide (their item rewards: passItems).
+		-- Pets, the Auto Seller and Rarity Autoloot are refused (gameplay unlocks of the character)
+		unlocks = {unlockNecromancer = true, unlockMonk = true, unlockTemplar = true},
+		unlockPrefixes = {"portal_", "transmog_", "seasonPass", "seasonPack"},
+		message = "%s is not for season characters: they get only cosmetics and account services from the store. " ..
+			"Buy it with a standard character.",
+		giftMessage = "%s is a season character: only cosmetics and account services can be given to it."
+	},
+	-- season pass item rewards (gold and potions) come from the account's shared pass (pass XP of every character,
+	-- the premium pass, tier skips): while the season runs only standard characters claim them. They stay claimable
+	-- (also by the season character after the season ends, within the pass's grace days).
+	passItems = {
+		seasonCharacters = false,
+		message = "Season characters cannot claim the pass's items while the season runs: claim them with a standard " ..
+			"character, or after the season."
+	},
+	-- the season markets (market.lua) trade for gold only: Chaos Coins are account-wide
+	market = {
+		coins = false,
+		message = "Season markets trade for gold only: Chaos Coins belong to the whole account."
 	},
 
 	-- ------------------------------------------------------------------ reward track

@@ -234,6 +234,117 @@ eq(S.uniqueAllowed(1, nil, after, seasons), true, "after the season: also withou
 eq(S.uniqueAllowed(true, 1, during, seasons), true, "season = true means season 1")
 eq(S.uniqueAllowed(2, 1, t(2027, 3, 10), seasons), false, "season 1 character during season 2: no season 2 unique")
 
+-- ---------------------------------------------------------------- store coins (account-wide): every real offer
+-- the rule: cosmetics and account services yes; items, boosts, gameplay unlocks and anything holding them no
+local rules = cfg.store
+eq(type(rules), "table", "season_config.lua store rules")
+dofile("data/scripts/chaos/shop_core.lua")
+local K = ChaosShopCore
+local shop = dofile("data/scripts/chaos/shop_config.lua")
+local byKey, offers = {}, {}
+for _, cat in ipairs(shop.categories) do
+	for _, o in ipairs(cat.offers) do
+		o.key = K.offerKey(o)
+		o.category = cat.name
+		byKey[o.key] = byKey[o.key] or o
+		offers[#offers + 1] = o
+	end
+end
+for _, o in ipairs(offers) do
+	if o.kind == "bundle" then
+		o.resolved = {}
+		for _, p in ipairs(o.parts) do
+			o.resolved[#o.resolved + 1] = type(p) == "string" and byKey[p] or p
+			eq(type(o.resolved[#o.resolved]), "table", "bundle part resolves: " .. tostring(p))
+		end
+	end
+end
+-- whole categories, decided once (a new category must be added here: the test fails on an unknown one)
+local CATEGORY = {
+	["Outfits"] = true, ["Outfit Addons"] = true, ["Mounts"] = true, ["Wings"] = true, ["Auras"] = true,
+	["Outfit Shaders"] = true, ["Name Plates"] = true, ["Portal Styles"] = true, ["Bundles"] = true, ["Classes"] = true,
+	["Chaos Pact"] = true, ["Storage & Slots"] = true, ["Season Pass"] = true, ["Premium Time"] = true,
+	["Starter"] = false, ["Crafting"] = false, ["Supplies"] = false, ["Boosts"] = false, ["World Buffs"] = false,
+	["Convenience"] = false, ["Training"] = false, ["Pets"] = false, ["Services"] = "mixed"
+}
+local SERVICES = {["service:nameToken"] = true, ["service:sexChange"] = true, ["service:vocationToken"] = false,
+	["service:skullRemover"] = false, ["service:passiveReset"] = false}
+local seen = {}
+for _, o in ipairs(offers) do
+	local want = CATEGORY[o.category]
+	eq(want ~= nil, true, "store category decided for seasons: " .. o.category)
+	if want == "mixed" then
+		want = SERVICES[o.key]
+		eq(want ~= nil, true, "service decided for seasons: " .. o.key)
+	end
+	eq(S.storeRefusal(o, rules) == nil, want, "season character and " .. o.key .. " (" .. o.category .. ")")
+	seen[o.category] = true
+	-- nothing that holds an item ever reaches a season character
+	for _, p in ipairs(o.resolved or {o}) do
+		if p.kind == "item" then
+			eq(S.storeRefusal(o, rules) ~= nil, true, "an item offer is refused: " .. o.key)
+		end
+	end
+end
+for name, want in pairs(CATEGORY) do
+	if name ~= "Season Pass" then -- built from seasonpass_config.lua: may be empty between passes
+		eq(seen[name], true, "category still sold: " .. name)
+	end
+end
+-- the starter packs and the bundles: the part that is refused
+eq(S.storeRefusal(byKey["starter:novice"], rules).kind, "item", "novice pack: its potions")
+eq(S.storeRefusal(byKey["starter:champion"], rules).kind ~= nil, true, "champion pack refused")
+eq(S.storeRefusal(byKey["bundle:infernal"], rules), nil, "cosmetic bundle allowed")
+eq(S.storeRefusal({kind = "bundle", parts = {"aura:1"}}, rules) ~= nil, true, "an unresolved bundle part: refused")
+eq(S.storeRefusal({kind = "bundle", resolved = {}}, rules) ~= nil, true, "an empty bundle: refused")
+-- default deny and the flags
+eq(S.storeRefusal({kind = "newthing"}, rules) ~= nil, true, "an unknown kind is refused until decided")
+eq(S.storeRefusal({kind = "unlock", unlock = "petAnything"}, rules) ~= nil, true, "pets refused")
+eq(S.storeRefusal({kind = "unlock", unlock = "autoSeller"}, rules) ~= nil, true, "Auto Seller refused")
+eq(S.storeRefusal({kind = "unlock", unlock = "transmog_arboreal"}, rules), nil, "transmog sets are looks")
+eq(S.storeRefusal({kind = "unlock", unlock = "seasonPassPremium"}, rules), nil, "the premium pass (account-wide)")
+eq(S.storeRefusal({kind = "unlock", unlock = ""}, rules) ~= nil, true, "an empty unlock key")
+eq(S.storeRefusal({kind = "aura", id = 1, seasonBlocked = true}, rules) ~= nil, true, "seasonBlocked still refuses")
+eq(S.storeRefusal({kind = "service", service = "worldBuff", buff = "loot"}, rules) ~= nil, true, "world buffs refused")
+eq(S.storeRefusal({kind = "service", service = "pouch", pouch = "loot"}, rules) ~= nil, true, "pouches refused")
+eq(S.storeRefusal({kind = "service", service = "pact"}, rules), nil, "the Chaos Pact (account comfort)")
+-- texts
+eq(S.storeText(0, byKey["item:7590x100"], rules), nil, "standard characters: no text")
+eq(S.storeText(1, byKey["wings:1"], rules), nil, "season character, cosmetic: no text")
+local text = S.storeText(1, byKey["item:7590x100"], rules)
+eq(text ~= nil and text:find("100 Great Mana Potions", 1, true) ~= nil, true, "refusal names the offer: " .. tostring(text))
+text = S.storeText(1, byKey["item:7590x100"], rules, true, "Ashling")
+eq(text ~= nil and text:find("Ashling is a season character", 1, true) == 1, true, "gift refusal names the receiver")
+
+-- season pass claims: items only by standard characters while the season runs; coins and looks by everybody
+eq(S.passClaimAllowed({kind = "item", id = 2152, count = 5}, 0, cfg.passItems), true, "standard character: items")
+eq(S.passClaimAllowed({kind = "item", id = 2152, count = 5}, 1, cfg.passItems), false, "season character: no items")
+eq(S.passClaimAllowed({kind = "coins", amount = 50}, 1, cfg.passItems), true, "season character: coins (account)")
+eq(S.passClaimAllowed({kind = "outfit", male = 974}, 1, cfg.passItems), true, "season character: looks")
+eq(S.passClaimAllowed({kind = "item"}, 1, {seasonCharacters = true}), true, "the rule is configurable")
+local passCfg = dofile("data/scripts/chaos/seasonpass_config.lua")
+local itemTiers = 0
+for _, p in pairs(passCfg.passes) do
+	for _, tier in ipairs(p.tiers or {}) do
+		for _, r in ipairs(tier) do
+			if r.kind == "item" then
+				itemTiers = itemTiers + 1
+				eq(S.passClaimAllowed(r, 1, cfg.passItems), false, "pass item reward kept from season characters")
+				eq(S.passClaimAllowed(r, 0, cfg.passItems), true, "pass item reward for standard characters")
+			else
+				eq(S.passClaimAllowed(r, 1, cfg.passItems), true, "pass " .. tostring(r.kind) .. " reward for season characters")
+			end
+		end
+	end
+end
+eq(itemTiers > 0, true, "the shipped pass has item rewards to keep out")
+
+-- the season markets: gold only
+eq(S.marketCurrencyAllowed(0, "coins", cfg.market), true, "standard market: coins")
+eq(S.marketCurrencyAllowed(1, "coins", cfg.market), false, "season market: no coins")
+eq(S.marketCurrencyAllowed(1, "gold", cfg.market), true, "season market: gold")
+eq(S.marketCurrencyAllowed(1, "coins", {coins = true}), true, "configurable")
+
 -- ---------------------------------------------------------------- look text
 eq(S.lookLine({season = 1, migrated = 0}, during, seasons, nil, "She"), "She is a Season of Ash character [S1].", "look")
 eq(S.lookLine({season = 1, migrated = 0}, during, seasons, nil, "You"), "You are a Season of Ash character [S1].", "own look")

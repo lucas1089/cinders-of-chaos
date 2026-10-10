@@ -219,9 +219,14 @@ function S.buffLeft(id)
 	return math.max(0, S.buffExpiry(id) - os.time())
 end
 
--- multiplier of a world buff (1 when it is not running)
-function S.buffMult(id)
+-- multiplier of a world buff (1 when it is not running). player (optional): the character it is for
+function S.buffMult(id, player)
 	if S.buffLeft(id) > 0 then
+		-- >>> Seasons: world buffs are bought with account-wide coins, so they never reach season characters
+		if player and ChaosSeason and ChaosSeason.realmOf and (ChaosSeason.realmOf(player) or 0) > 0 then
+			return 1
+		end
+		-- <<< Seasons
 		return 1 + S.worldBuffs[id].def.bonus
 	end
 	return 1
@@ -613,7 +618,7 @@ xpCb:register(5)
 
 local skillCb = EventCallback
 skillCb.onGainSkillTries = function(self, skill, tries)
-	local mult = S.buffMult("skill")
+	local mult = S.buffMult("skill", self) -- not for season characters
 	if mult ~= 1 and tries and tries > 0 then
 		local scaled = tries * mult
 		local whole = math.floor(scaled)

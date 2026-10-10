@@ -3354,7 +3354,8 @@ party, bank and unique rules apply.
 **How a character joins (and why this way).** Characters are created on the website: the base server has no account
 manager, no in-game creation and the client has no creation screen (the base ships `ADD_DEPOT_BOXES_NEW_PLAYERS.txt`,
 a snippet for the website's `users.php`). A creation option would need website work, so a fresh character opts in in
-game: Adventure > Season, Join (or Join in the window), then the Season window's Join button (or the window's confirmation) within 60 s.
+game: Adventure > Season, Join, then the confirmation within 60 s (the window is the only way in: there is no chat command for
+players). The window follows level ups, so an open confirmation closes by itself once the character passes `join.maxLevel`.
 Allowed while a season runs for a character of level 7 or lower (`join.maxLevel`; level 8 comes within minutes) that never
 joined a season, has an empty depot, inbox and store inbox, is not in a party and owns no house. Joining destroys every
 carried item, empties the bank balance, the Chaos bank stars and the supply stash (so nothing a standard character handed
@@ -3381,13 +3382,20 @@ cannot exchange anything; gamemasters and up (`isolation.exemptGroup`) are never
 | Party | **not allowed** between realms (the joining character and the leader are told). Chosen over "allowed without shared loot and experience": the party is also what the bounty board, the dungeons and 2v2 arena use, so one rule covers all of them | EventCallback `onJoin` |
 | Chaos bank transfer | refused between realms | `bank.lua` asks `ChaosSeason.transferBlocked` |
 | NPC bank transfer | refused between realms (the NPC says "You cannot transfer money to this account.", the player gets the season reason) | `Player.transferMoneyTo` (`data/lib/core/player.lua`) asks `ChaosSeason.npcTransferBlocked`: put there by `tools/patch_season_events.py` (exact match, idempotent); without the patch `season.lua` wraps the function at runtime and warns |
-| Market | separate markets: season characters list, see and buy only their season's offers; standard characters only the standard ones | `market.lua` (see "Market") |
+| Market | separate markets: season characters list, see and buy only their season's offers; standard characters only the standard ones. Season markets trade for **gold only** (listing, buying and buy orders in Chaos Coins are refused for season characters: coins are account-wide) | `market.lua` (see "Market"); the coin rule: `season.lua` wraps `ChaosMarket.list` / `buy` / `orderPost` (no change in `market.lua`; wrapped again after a reload, as `ChaosLeaderboard.record`) |
+| Store (account-wide Chaos Coins) | a season character gets only **cosmetics and account services**: wings, auras, shaders, outfits, addons, mounts, plate frames, portal styles, transmog sets, premium time, the class unlocks (account-wide anyway), the Chaos Pact and its storage extras, the season pass and packs, name and sex change. Refused: every item offer (supplies, runes, crafting, training, boosts, the Backpack of Holding), the starter packs and any bundle with such a part, stamina, blessings, the skull remover, the passive tree reset, the vocation token, world buffs, pouches, pets, the Auto Seller and Rarity Autoloot. The same rule for a gift to a season character (online, offline, and again when a gift queued before the receiver joined is delivered at login: refunded). Refused offers go to nobody: the account buys them with a standard character. Anything not listed in `season_config.lua` `store` is refused, so a new offer kind needs a decision there | `shop.lua` asks `ChaosSeason.storeProblem` (four small hunks marked "Seasons"), rule `ChaosSeason.storeRefusal` (`season_core.lua`) |
+| Season pass items | the pass is the account's (pass XP of every character, the premium pass, tier skips): while the season runs its item rewards (gold, potions) are claimed by standard characters only; they stay claimable (also by the season character after the season, within the grace days). Coins, titles, looks and portal styles are claimed by anybody | `seasonpass.lua` `SP.claim` asks `ChaosSeason.passClaimProblem` |
+| World buffs | World Experience, World Loot and World Training (bought with account-wide coins) skip season characters | `shop_services.lua` `buffMult(id, player)`, callers in `loot.lua` / `loot_config.lua` pass the corpse owner |
 | PvP: open world, arena, guild siege | **allowed** between realms. Nothing changes hands: player corpses keep the dead character's realm, arena and siege rewards come from the server, and 2v2 arena teams are parties (same realm). Season characters can be in guilds (a guild shares no items) | - |
 | Depot | per character, nothing to share | - |
 
-Not blocked (open): the account-wide **store coins** (season characters can buy supplies, Whetstones and the Orbs of Excision and Binding in the store, and pay
-with them on their season's market). Items on the ground before a season starts are untagged (free). The stock market
-is off for everybody (`tools/patch_market.py`); our market keeps the seasons apart (see "Market").
+Why the coin rules: store coins belong to the account, so a season character could otherwise spend coins its account
+bought or earned with standard characters (the season pass coins, the Pact drip, referrals, market sales) on a head
+start. Cosmetics are fine on both sides; nothing that affects season progress crosses. Not a leak, so left as is: the
+daily reward (one claim a day per account, from the server; the streak counts logins), the new-player and referral
+gifts (from the server, as for any new character), the account-wide Pact limits (stash tabs, listings: room, not items;
+the stash itself is per character and emptied at the join). Items on the ground before a season starts are untagged
+(free). The stock market is off for everybody (`tools/patch_market.py`); our market keeps the seasons apart (see "Market").
 
 **Ladder.** While a season runs the leaderboard window shows a "[S1] only" toggle (`leaderboard.lua` adds
 `ChaosSeason.leaderboardMeta` to its meta and passes `season` to `ChaosSeason.sendBoard`): the class ladder then lists
@@ -3418,7 +3426,11 @@ once even before the row is updated.
 
 **Tests.** `tests/season_test.lua` (LuaJIT and Lua 5.3): the date math and overrides, join eligibility, the trade /
 move / party / mail decisions, realms and item tags, milestone detection and the track view, the migration decisions,
-the season unique rule and the look text.
+the season unique rule and the look text; the coin rules against every real offer of `shop_config.lua` (each category
+decided, every item offer and bundle with an item refused, unknown kinds refused), the season pass item rewards and the
+gold-only season markets. `tests/shop_test.lua` runs the store's season hunks against the real rule (buying, online and
+offline gifts, a queued gift refunded at login after the receiver joined), `tests/shop_services_test.lua` the world
+buffs for season and standard characters.
 
 Verified on the test server with two clients (a season character and a standard one): `/season start` and the
 broadcast, the window (time left, modifier, track, Join), the join confirmation and the wipe (backpack, gold, bank
@@ -3430,8 +3442,21 @@ the outfit, the look text with the title, 25 bounty records -> Revenant outfit, 
 character of the account, the "[S1] only" view of the Bounty Hunter board and the class ladder, the bank transfer and
 unique rules (300 boss rolls: 23 season uniques for the season character, 0 for the standard one and without an owner),
 `/season end` migrating both characters (online and offline) once, a second `/season end` migrating none, and trade
-allowed afterwards. Not verified in game: the experience modifier, the house rules, a player corpse in PvP, the confirm
-box closing by itself after a join from the chat, a natural season start / end from the dates.
+allowed afterwards.
+
+Verified later (two clients, a season character and standard ones, one of them on the same account): the experience
+modifier (the same kills at the same level: dragon 17 325 for the season character, 15 750 for the standard one, x1.10;
+two cyclopes 7 424 / 6 750), the house rules (a season guest in a standard house and a standard guest in a season house
+could neither take an item nor put one down, an untagged item included; the owners could), a player corpse in PvP (a season
+character killed by a standard one: corpse tagged with the season realm, the killer could not loot it), the confirmation
+closing by itself (the character levelled past 7 with it open), a natural start and end from the dates (broadcasts, the
+online and an offline season character migrated once), and the coin rules: the store refused potions and the Novice Pack
+to the season character and sold it an aura, the standard character of the same account bought the potions, a potion gift
+to the season character was refused and a wings gift delivered, a pass item claim was refused to the season character
+and taken by the standard one, the season market refused a coin listing, a coin purchase and a coin buy order and took a
+gold listing, World Loot and World Training skipped the season character (loot x1.00 / x1.25, skill tries 2000 / 2500).
+Fixed: the window did not follow level ups (track progress and the Join button stayed at the join level until reopened).
+Not verified in game: a gift queued for a character that joins a season before its next login (unit test only).
 
 ## Season pass (`seasonpass.lua`, `seasonpass_core.lua`, `seasonpass_config.lua`, `seasonpass_store.lua`, `sql/chaos_seasonpass.sql`, client `game_battlepass`)
 

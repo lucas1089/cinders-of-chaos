@@ -169,6 +169,19 @@ local function isSeason(player)
 	return ChaosSeason and ChaosSeason.realmOf and (ChaosSeason.realmOf(player) or 0) > 0 or false
 end
 
+-- >>> Seasons (season.lua): coins are account-wide, so a season character gets only cosmetics and account services
+-- (season_config.lua `store`). target = a Player, or the guid of an offline gift receiver (name for the text)
+function Shop.seasonProblem(target, offer, gift, name)
+	if ChaosSeason and ChaosSeason.storeProblem then
+		return ChaosSeason.storeProblem(target, offer, gift, name)
+	end
+	if offer.seasonBlocked and type(target) ~= "number" and isSeason(target) then
+		return "Season characters cannot buy " .. tostring(offer.name or offer.key) .. "."
+	end
+	return nil
+end
+-- <<< Seasons
+
 local function storageKey(offer)
 	if offer.kind == "wings" then
 		return S.shopWingsBase + offer.id
@@ -507,10 +520,13 @@ function Shop.partsProblem(target, offer, gift)
 end
 
 local function offerProblem(player, offer, gift)
+	-- >>> Seasons: the buyer, or the receiver of a gift
+	local seasonal = Shop.seasonProblem(gift or player, offer, gift ~= nil)
+	if seasonal then
+		return seasonal
+	end
+	-- <<< Seasons
 	if not gift then
-		if offer.seasonBlocked and isSeason(player) then
-			return "Season characters cannot buy " .. nameOf(offer) .. "."
-		end
 		if offer.maxLevel and player:getLevel() > offer.maxLevel then
 			return nameOf(offer) .. " is for characters up to level " .. offer.maxLevel .. "."
 		end
@@ -651,7 +667,9 @@ function Shop.deliverGifts(player)
 		{{"id", "n"}, {"offer_key", "s"}, {"title", "s"}, {"price", "n"}, {"from_account", "n"}, {"from_name", "s"}})
 	for _, r in ipairs(rows) do
 		local offer = byKey[r.offer_key]
-		local problem = not offer and "it is no longer sold" or Shop.partsProblem(player, offer, true)
+		-- Seasons: a gift sent before the receiver joined a season is checked again (refunded when refused)
+		local problem = not offer and "it is no longer sold" or Shop.seasonProblem(player, offer, true) or
+			Shop.partsProblem(player, offer, true)
 		local result = problem or Shop.deliver(player, offer)
 		if result == true then
 			db.query("UPDATE `" .. T_GIFTS .. "` SET `status` = 1, `done` = " .. now() .. " WHERE `id` = " .. r.id)
@@ -707,6 +725,11 @@ local function buy(player, data)
 		elseif offer.weeklyLimit then
 			problem = offerProblem(player, {key = offer.key, weeklyLimit = offer.weeklyLimit, name = offer.name})
 		end
+		-- >>> Seasons: an offline receiver
+		if not problem and not targetPlayer then
+			problem = Shop.seasonProblem(target.guid, offer, true, target.name)
+		end
+		-- <<< Seasons
 		if problem then
 			return message(player, "Not possible", problem)
 		end

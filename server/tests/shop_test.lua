@@ -313,7 +313,16 @@ ChaosShopServices = {
 	check = function(p, offer) if offer.unlock == "autoSeller" and p.autoSeller then return "You have the Auto Seller already." end end,
 	deliver = function(p, offer) if offer.unlock == "autoSeller" then p.autoSeller = true end; p.services[#p.services + 1] = offer.key or offer.service; return true end
 }
-ChaosSeason = {realmOf = function(p) return p.realm or 0 end}
+-- >>> Seasons: the real store rule (season_core.lua storeText with season_config.lua `store`), as season.lua uses it
+dofile("data/scripts/chaos/season_core.lua")
+local SeasonCore = ChaosSeason
+local offlineRealm = {} -- guid -> realm of offline characters
+ChaosSeason = {realmOf = function(p) return p.realm or 0 end,
+	storeProblem = function(target, offer, gift, name)
+		local realm = type(target) == "number" and (offlineRealm[target] or 0) or (target.realm or 0)
+		return SeasonCore.storeText(realm, offer, season.store, gift, name or (type(target) ~= "number" and target:getName() or nil))
+	end}
+-- <<< Seasons
 ChaosRateLimit = {allow = function() return true end}
 local pactDays = 0
 ChaosPact = {grantDays = function(p, days, source) pactDays = pactDays + days; eq(source, "store", "pact source") end}
@@ -506,6 +515,39 @@ Erin.mounts[120] = true
 local beforeRefund = DB.coins[A.account]
 Shop.deliverGifts(Erin)
 eq(DB.gifts[2].status, 2, "refunded"); eq(DB.coins[A.account], beforeRefund + DB.gifts[2].price, "coins back")
+
+-- >>> Seasons: coins are account-wide; a season character gets only cosmetics and account services
+local Sea = newPlayer("Ashling", {realm = 1, level = 20})
+DB.coins[Sea.account] = 5000
+title, msg = buy(Sea, "item:7590x100")
+eq(title, "Not possible", "season character: no supplies"); ok(msg:find("not for season characters", 1, true), msg)
+eq(buy(Sea, "item:32256x10"), "Not possible", "season character: no whetstones")
+eq(buy(Sea, "starter:novice"), "Not possible", "season character: no starter pack (potions, stamina)")
+eq(buy(Sea, "service:stamina"), "Not possible", "season character: no stamina refill")
+eq(buy(Sea, "unlock:autoSeller"), "Not possible", "season character: no Auto Seller")
+eq(DB.coins[Sea.account], 5000, "nothing taken")
+eq(buy(Sea, "wings:1"), "Purchase complete", "season character: wings")
+eq(buy(Sea, "service:sexChange"), "Purchase complete", "season character: sex change")
+-- gifts: online and offline season receivers get only cosmetics
+title, msg = buy(A, "item:8472x100", "Ashling")
+eq(title, "Not possible", "no supplies as a gift to a season character"); ok(msg:find("Ashling is a season character", 1, true), msg)
+eq(buy(A, "aura:5", "Ashling"), "Gift sent", "a cosmetic gift to a season character"); ok(Sea.auras[5], "delivered")
+DB.offline = {{name = "Cinder", guid = 970, account = 970, group = 1}}
+offlineRealm[970] = 1
+eq(buy(A, "item:8472x100", "Cinder"), "Not possible", "no supplies to an offline season character")
+-- a gift queued for a standard character that joins a season before its next login is refunded
+DB.offline = {{name = "Turncoat", guid = 980, account = 980, group = 1}}
+local gifts0 = #DB.gifts
+eq(buy(A, "item:8472x100", "Turncoat"), "Gift sent", "offline gift to a standard character")
+eq(#DB.gifts, gifts0 + 1, "queued")
+nextGuid = 979
+local Turncoat = newPlayer("Turncoat", {account = 980, realm = 1})
+DB.offline = nil
+local beforeTurn = DB.coins[A.account]
+Shop.deliverGifts(Turncoat)
+eq(DB.gifts[gifts0 + 1].status, 2, "refused at login: the receiver is a season character now")
+eq(DB.coins[A.account], beforeTurn + DB.gifts[gifts0 + 1].price, "coins back"); eq(Turncoat.items[8472], nil, "no potions")
+-- <<< Seasons
 
 -- coin orders: pack bonus, first purchase bonus once, starter once, unknown pack rejected
 DB.orders = {{account = 77, pack = "coins750", status = "paid"}, {account = 77, pack = "coins750", status = "paid"},

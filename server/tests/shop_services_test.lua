@@ -271,6 +271,17 @@ eq(tries, 125, "skill tries +25%")
 local sum = 0
 for _ = 1, 4000 do sum = sum + callback("onGainSkillTries", 5)(nil, 1, 1) end
 assert(sum > 4600 and sum < 5400, "fractional tries kept as a chance: " .. sum)
+-- >>> Seasons: World Training and World Loot skip season characters too (bought with account-wide coins)
+ChaosSeason = {realmOf = function(p) return p.realm or 0 end}
+eq(callback("onGainSkillTries", 5)({realm = 1}, 1, 100), 100, "season: no world training")
+eq(callback("onGainSkillTries", 5)({realm = 0}, 1, 100), 125, "standard: world training")
+S.deliver(pl, {kind = "service", service = "worldBuff", buff = "loot"})
+eq(S.buffMult("loot", {realm = 1}), 1, "season: no world loot")
+eq(S.buffMult("loot", {realm = 0}), 1.25, "standard: world loot")
+eq(S.buffMult("loot"), 1.25, "no player (rifts, goblins): world loot")
+ChaosSeason = nil
+eq(S.buffMult("loot", {realm = 1}), 1.25, "without seasons: everybody")
+-- <<< Seasons
 -- reload after a restart: memory empty, value read back from server_config
 global = {}
 db.storeQuery = function() return 1 end

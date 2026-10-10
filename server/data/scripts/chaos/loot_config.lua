@@ -16,7 +16,8 @@ return {
 	-- (shop_services.lua) while it runs
 	rateMult = function(ctx)
 		local event = ChaosEvents and ChaosEvents.bonus("loot") or 1
-		local buff = ChaosShopServices and ChaosShopServices.buffMult and ChaosShopServices.buffMult("loot") or 1
+		-- the World Loot buff skips season characters (ctx.player, the corpse owner)
+		local buff = ChaosShopServices and ChaosShopServices.buffMult and ChaosShopServices.buffMult("loot", ctx and ctx.player) or 1
 		local rift = ChaosRift and ChaosRift.lootMult and ChaosRift.lootMult(ctx) or 1 -- the rift's Quantity bonus
 		local world = ChaosWorldEvents and ChaosWorldEvents.lootMult and ChaosWorldEvents.lootMult(ctx) or 1 -- Golden Hour (worldevents.lua)
 		return event * buff * rift * world

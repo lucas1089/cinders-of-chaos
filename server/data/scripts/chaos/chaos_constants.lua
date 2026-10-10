@@ -526,11 +526,11 @@ Chaos.shopServices = {
 	-- restart.
 	worldBuffs = {
 		{id = "xp", name = "World Experience", bonus = 0.25, minutes = 60, capMinutes = 180,
-			text = "+25% experience from monsters for every player"},
+			text = "+25% experience from monsters for every standard character"},
 		{id = "loot", name = "World Loot", bonus = 0.25, minutes = 60, capMinutes = 180,
-			text = "+25% Chaos loot (extra loot rolls and currency drops) for every player"},
+			text = "+25% Chaos loot (extra loot rolls and currency drops) for every standard character"},
 		{id = "skill", name = "World Training", bonus = 0.25, minutes = 60, capMinutes = 180,
-			text = "+25% skill and magic level training for every player"}
+			text = "+25% skill and magic level training for every standard character"}
 	},
 	worldBuffStorage = 7100920, -- global storages 7100921.. (expiry unix time per buff, in list order)
 	worldBuffConfigKey = "chaos_worldbuff_", -- server_config rows chaos_worldbuff_<id>

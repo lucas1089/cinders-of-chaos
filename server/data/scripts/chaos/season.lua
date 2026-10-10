@@ -2,9 +2,10 @@
 -- account-wide cosmetic reward track. Rules and numbers: season_config.lua; pure logic: season_core.lua; client
 -- game_season (extended opcode ChaosOpcodes.season); tables sql/chaos_season.sql. Overview: server/README.md "Seasons".
 --
---   !season               info: the season, time left, your milestones (and opens the window)
---   !season join          a fresh character (level <= join.maxLevel, empty depot) opts in; then !season join confirm
+--   Adventure > Season    the window (players): the season, time left, your milestones; Join, then the confirmation
 --   /season start [id]|end|status   gods only: start the next season now, end the running one now (migration), state
+--   (there is no chat join: the window is the only way in, and its confirmation closes by itself once the character
+--   cannot join any more, e.g. after a level up past join.maxLevel)
 --
 -- Isolation while a season runs (realm = 0 for standard characters, the season id for season characters):
 --   trade window and house trade (EventCallback onTradeRequest / onTradeAccept; tools/patch_season_events.py enables
@@ -12,7 +13,9 @@
 --   Player:onMoveItem by the same tool; the realm of whoever dropped an item / killed a monster / died is written on
 --   the item or corpse as the custom attribute chaos_realm), parties (EventCallback onJoin), the Chaos bank transfer
 --   (bank.lua asks ChaosSeason.transferBlocked), the NPC bank transfer (Player.transferMoneyTo asks
---   ChaosSeason.npcTransferBlocked), the market (separate season markets, market.lua). See README.
+--   ChaosSeason.npcTransferBlocked), the market (separate season markets, market.lua; gold only, ChaosMarket wrapped
+--   here). Account-wide Chaos Coins: the store (shop.lua asks ChaosSeason.storeProblem), the season pass items
+--   (seasonpass.lua asks ChaosSeason.passClaimProblem), the world buffs (shop_services.lua). See README.
 -- End of season: once the season's finish has passed (or /season end), its characters are migrated to standard:
 --   chaos_season_players.migrated_at is set (once, logged); they keep everything and trade normally.
 -- Leaderboards: leaderboard.lua asks ChaosSeason.leaderboardMeta / ChaosSeason.sendBoard for the "Season" view.
@@ -387,6 +390,77 @@ end
 function S.uniqueBlocked(uniqueSeason, owner)
 	local realm = owner and S.realmOf(owner) or nil
 	return not S.uniqueAllowed(uniqueSeason, realm, now(), seasons(), S.ov)
+end
+
+-- ---------------------------------------------------------------- account-wide Chaos Coins
+-- the store (shop.lua): why `target` (a Player, or the guid of an offline gift receiver) may not get `offer`, or nil.
+-- gift: bought by another character (name = the receiver's name for the text)
+function S.storeProblem(target, offer, gift, name)
+	if not S.current() or not cfg.store then
+		return nil
+	end
+	local realm
+	if type(target) == "number" then
+		realm = S.realmOfGuid(target)
+	else
+		if staff(target) then
+			return nil
+		end
+		realm = S.realmOf(target)
+		name = name or target:getName()
+	end
+	return S.storeText(realm, offer, cfg.store, gift, name)
+end
+
+-- the season pass (seasonpass.lua): why this character may not claim `reward` now, or nil
+function S.passClaimProblem(player, reward)
+	if not S.current() or staff(player) or S.passClaimAllowed(reward, S.realmOf(player), cfg.passItems) then
+		return nil
+	end
+	return cfg.passItems and cfg.passItems.message or "Season characters cannot claim this now."
+end
+
+-- the market (market.lua, no change there): a season character lists, buys and posts buy orders for gold only.
+-- ChaosMarket.list / buy / orderPost are wrapped (again after a /reload of market.lua), as ChaosLeaderboard.record is
+local MARKET_CURRENCY = {
+	list = function(d) return (tonumber(d.coins) or 0) > 0 and "coins" or "gold" end,
+	buy = function(d) return d.cur == "coins" and "coins" or "gold" end,
+	orderPost = function(d) return d.cur == "coins" and "coins" or "gold" end
+}
+S.marketWrapped = S.marketWrapped or {}
+function S.marketRefusal(player, action, d)
+	local pick = MARKET_CURRENCY[action]
+	if not pick or not S.current() or staff(player) then
+		return nil
+	end
+	local ok, currency = pcall(pick, type(d) == "table" and d or {})
+	if ok and not S.marketCurrencyAllowed(S.realmOf(player), currency, cfg.market) then
+		return cfg.market and cfg.market.message or "Season markets trade for gold only."
+	end
+	return nil
+end
+
+function S.wrapMarket()
+	local MK = ChaosMarket
+	if not MK then
+		return
+	end
+	for action in pairs(MARKET_CURRENCY) do
+		local fn = MK[action]
+		if type(fn) == "function" and fn ~= S.marketWrapped[action] then
+			local original = fn
+			local wrapped = function(player, d, ...)
+				local why = S.marketRefusal(player, action, d)
+				if why then
+					Chaos.sendChunked(player, ChaosOpcodes.market or 221, json.encode({action = "error", data = {text = why}}))
+					return false
+				end
+				return original(player, d, ...)
+			end
+			S.marketWrapped[action] = wrapped
+			MK[action] = wrapped
+		end
+	end
 end
 
 -- season modifier: experience
@@ -975,6 +1049,7 @@ local lastActive -- id of the season running at the last check (start / end anno
 
 local function checkSeasons(startup)
 	S.wrapLeaderboard()
+	S.wrapMarket()
 	local season = S.current()
 	local id = season and season.id or 0
 	if not startup and lastActive ~= nil and id ~= lastActive then
@@ -1091,6 +1166,10 @@ local advance = CreatureEvent("ChaosSeasonAdvance")
 function advance.onAdvance(player, skill, oldLevel, newLevel)
 	if skill == SKILL_LEVEL and newLevel > oldLevel then
 		S.checkMilestones(player)
+		-- the window's level progress and the Join button (level) stay current while it is open
+		if shownSeason() then
+			S.sendState(player, false)
+		end
 	end
 	return true
 end

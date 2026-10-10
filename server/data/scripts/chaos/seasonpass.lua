@@ -537,6 +537,12 @@ function SP.claim(player, tier, track, quiet)
 	if not r then
 		return false, why
 	end
+	-- the pass is the account's: its items (gold, potions) go to standard characters while the season runs
+	-- (season_config.lua passItems); they stay claimable
+	local seasonal = ChaosSeason and ChaosSeason.passClaimProblem and ChaosSeason.passClaimProblem(player, r)
+	if seasonal then
+		return false, seasonal
+	end
 	local tok = token()
 	db.query(string.format("INSERT IGNORE INTO `%s` (`account_id`, `season`, `tier`, `track`, `player_id`, `claimed_at`, `token`) " ..
 		"VALUES (%d, %d, %d, %d, %d, %d, %s)", T.claims, acc.id, acc.season, tier, track, player:getGuid(), now(),
@@ -1156,8 +1162,9 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		local got, why = SP.claimAll(player)
 		if got == 0 then
 			notice(player, why or "Nothing to claim.")
-		elseif why and why:find("room", 1, true) then
-			notice(player, why .. " The other items wait for you.")
+		elseif why then
+			-- no room, or items a season character cannot claim while the season runs: they wait
+			notice(player, why:find("room", 1, true) and (why .. " The other items wait for you.") or why)
 		end
 		SP.sendState(player, false)
 	elseif msg.action == "buy" then

@@ -306,9 +306,9 @@ return {
 				{kind = "service", service = "worldBuff", buff = "xp", icon = 7440, cost = 300, name = "World Experience",
 					description = "+25% experience for every standard (not season) character for 1 hour. Stacks up to 3 hours."},
 				{kind = "service", service = "worldBuff", buff = "loot", icon = 2148, iconCount = 100, cost = 300, name = "World Loot",
-					description = "+25% Chaos loot and an extra loot roll on every monster for everyone, 1 hour. Up to 3 hours."},
+					description = "+25% Chaos loot and an extra loot roll for every standard (not season) character, 1 hour. Up to 3 hours."},
 				{kind = "service", service = "worldBuff", buff = "skill", icon = 7443, cost = 250, name = "World Training",
-					description = "+25% skill and magic level training for every player for 1 hour. Stacks up to 3 hours."}
+					description = "+25% skill and magic level training for every standard (not season) character for 1 hour. Up to 3 hours."}
 			}
 		},
 		{

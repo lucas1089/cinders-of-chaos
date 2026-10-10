@@ -5,6 +5,9 @@
 --              realm(row, now, seasons, ov), tagRealm(tag, now, seasons, ov)
 --   joining    joinCheck(info, cfg, now, ov)
 --   isolation  tradeAllowed(a, b), moveCheck(m), partyAllowed(a, b), mailReceiver(text)
+--   coins      storePartAllowed(offer, rules), storeRefusal(offer, rules), storeText(realm, offer, rules, gift, name),
+--              passClaimAllowed(reward, realm, rules),
+--              marketCurrencyAllowed(realm, currency, rules)
 --   track      mergeStat(mode, old, value), milestonesDue(track, stats, reached, has), trackView(...),
 --              rewardLook(reward, female)
 --   migration  migrationDue(row, now, seasons, ov), migrationPlan(rows, now, seasons, ov)
@@ -225,6 +228,91 @@ function S.mailReceiver(text)
 		return nil
 	end
 	return line
+end
+
+-- ---------------------------------------------------------------- store coins (account-wide)
+-- may a season character get this store offer part (not a bundle)? rules = cfg.store. Not listed = refused.
+function S.storePartAllowed(offer, rules)
+	if type(offer) ~= "table" or type(rules) ~= "table" or offer.seasonBlocked then
+		return false
+	end
+	local kind = offer.kind
+	if kind == "service" then
+		return (rules.services or {})[offer.service] == true
+	end
+	if kind == "unlock" then
+		local key = tostring(offer.unlock or "")
+		if (rules.unlocks or {})[key] then
+			return true
+		end
+		for _, prefix in ipairs(rules.unlockPrefixes or {}) do
+			if key ~= "" and key:sub(1, #prefix) == prefix then
+				return true
+			end
+		end
+		return false
+	end
+	return (rules.kinds or {})[kind] == true
+end
+
+-- nil when a season character may get the offer; else the offer (or the bundle part) that is refused.
+-- A bundle needs every part allowed (offer.resolved: the parts as shop.lua resolved them; else offer.parts tables)
+function S.storeRefusal(offer, rules)
+	if type(offer) ~= "table" then
+		return {}
+	end
+	if offer.kind == "bundle" then
+		local parts = offer.resolved or offer.parts or {}
+		if #parts == 0 then
+			return offer
+		end
+		for _, part in ipairs(parts) do
+			if type(part) ~= "table" then
+				return offer -- an unresolved part: cannot tell
+			end
+			if not S.storePartAllowed(part, rules) then
+				return part
+			end
+		end
+		return nil
+	end
+	if S.storePartAllowed(offer, rules) then
+		return nil
+	end
+	return offer
+end
+
+-- the store's refusal text for a character of this realm (0 = standard: nil), or nil when the offer is allowed.
+-- gift: bought by someone else for that character (name = the receiver)
+function S.storeText(realm, offer, rules, gift, name)
+	if (tonumber(realm) or 0) == 0 or type(rules) ~= "table" or not S.storeRefusal(offer, rules) then
+		return nil
+	end
+	if gift then
+		return string.format(rules.giftMessage or "%s is a season character.", tostring(name or "That character"))
+	end
+	return string.format(rules.message or "%s is not for season characters.", tostring(offer.name or "This offer"))
+end
+
+-- a season pass reward claimed by a character of this realm (0 = standard): true or false.
+-- rules = cfg.passItems: item rewards (gold, potions) only by standard characters while the season runs
+function S.passClaimAllowed(reward, realm, rules)
+	if (tonumber(realm) or 0) == 0 or type(reward) ~= "table" then
+		return true
+	end
+	if reward.kind == "item" then
+		return type(rules) == "table" and rules.seasonCharacters == true
+	end
+	return true
+end
+
+-- a market action of a character of this realm in this currency ("gold" | "coins"): true or false.
+-- rules = cfg.market: the season markets trade for gold only unless rules.coins
+function S.marketCurrencyAllowed(realm, currency, rules)
+	if (tonumber(realm) or 0) == 0 or currency ~= "coins" then
+		return true
+	end
+	return type(rules) == "table" and rules.coins == true
 end
 
 -- ---------------------------------------------------------------- reward track
