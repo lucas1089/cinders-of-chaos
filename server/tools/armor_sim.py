@@ -3,6 +3,7 @@
 # the stock armour formula and with the percent formula, by a Monte Carlo of the real engine rules.
 #
 #   python3 -I server/tools/armor_sim.py <server>/data [--k 250] [--cap 80] [--seconds 20000] [--seed 1]
+#                                           [--damage-config PATH] [--table]
 #
 # What it models, as the engine does it (src/creature.cpp Creature::blockHit, src/game.cpp combatChangeHealth,
 # src/monsters.cpp, src/player.cpp Player::getDefense):
@@ -15,6 +16,11 @@
 #   * stock armour: armour > 3: damage - uniform(armour / 2, armour - (armour % 2 + 1)), at least 0
 #   * percent armour: damage x (1 - min(cap, armour / (armour + K))), physical only, rounded like the engine
 #   * the monster level bonus (config monsterBonusDamage = 0.0015 per level) multiplies the blocked hit
+#   * "percent + boost": the late-game damage boost of data/scripts/chaos/monster_damage.lua on top of the percent armour:
+#     a physical hit that reached the player x (1 + percent / 100), percent by the monster's level from the points of
+#     monster_damage_config.lua (linear in between, flat beyond the ends), rounded to the nearest point like the script;
+#     the level is the one the script uses: <level min max> (middle) of a level-scaled monster, else its hunting level
+#     from the bounty pool
 # Monsters: the bounty pool (data/scripts/chaos/bounty_pool.lua: hunting level and spawn count) of the repo, the 12
 # monsters with the most spawns in each band; the late game band is the 17 level-scaled monsters of late_game_spawns.csv.
 # Players: armour totals from the base items (tools note in the README) plus the rarity armour bonus, see PROFILES.
@@ -45,6 +51,28 @@ PROFILES = {
 }
 
 BONUS_PER_LEVEL = 0.0015
+DAMAGE_CONFIG = os.path.join(REPO_SERVER, "data/scripts/chaos/monster_damage_config.lua")
+
+
+def damage_points(path):
+    """the {level = L, percent = P} points of monster_damage_config.lua (physical boost by monster level)"""
+    text = read(path)
+    block = re.search(r"points\s*=\s*\{(.*?)\n\t\}", text, re.S)
+    pts = [(float(a), float(b)) for a, b in re.findall(
+        r"\{\s*level\s*=\s*([0-9.]+)\s*,\s*percent\s*=\s*(-?[0-9.]+)\s*\}", block.group(1) if block else "")]
+    return sorted(pts)
+
+
+def boost_percent(points, level):
+    """the same piecewise-linear lookup as ChaosMonsterDamageCore.percentFor"""
+    if not points or level <= 0:
+        return 0.0
+    if level <= points[0][0]:
+        return points[0][1]
+    for (l0, p0), (l1, p1) in zip(points, points[1:]):
+        if level <= l1:
+            return p0 + (p1 - p0) * (level - l0) / (l1 - l0)
+    return points[-1][1]
 
 
 def read(path):
@@ -185,8 +213,9 @@ def defend(rng, damage, shield, state):
     return max(0, damage - rng.randint(d // 2, d))
 
 
-def simulate(rng, attacks, level, armor, shield, mode, k, cap, seconds):
-    """damage per second taken from one monster (always in range, every attack fires)"""
+def simulate(rng, attacks, level, armor, shield, mode, k, cap, seconds, boost=0.0):
+    """damage per second taken from one monster (always in range, every attack fires); boost = the physical damage
+    boost in percent (mode "boost": percent armour, then the boost on the physical hit that lands)"""
     bonus = BONUS_PER_LEVEL * level
     total = phys = 0
     state = {"blocks": 2}
@@ -202,6 +231,8 @@ def simulate(rng, attacks, level, armor, shield, mode, k, cap, seconds):
                 if dmg > 0:
                     dmg = stock_armor(rng, dmg, armor) if mode == "stock" else percent_armor(dmg, armor, k, cap)
             dmg += int(round(dmg * bonus))
+            if mode == "boost" and boost and a["kind"] != "element" and dmg > 0:
+                dmg = int(math.floor(dmg * (1 + boost / 100.0) + 0.5))
             total += dmg
             if a["kind"] != "element":
                 phys += dmg
@@ -215,11 +246,18 @@ def main():
     ap.add_argument("--cap", type=float, default=80)
     ap.add_argument("--seconds", type=int, default=20000)
     ap.add_argument("--seed", type=int, default=1)
+    ap.add_argument("--damage-config", default=DAMAGE_CONFIG, help="monster_damage_config.lua (the boost points)")
+    ap.add_argument("--table", action="store_true", help="also print the README table (Markdown)")
     ap.add_argument("-v", action="store_true", help="one line per monster")
     args = ap.parse_args()
 
     files = monster_files(args.data)
     pool = bounty_pool(REPO_SERVER)
+    pool_level = {m["name"].lower(): m["level"] for m in pool}
+    points = damage_points(args.damage_config) if os.path.exists(args.damage_config) else []
+    print("boost points (monster level: physical +%%): %s" % ", ".join("%g: %g" % p for p in points))
+    table = []
+    MODES = ("stock", "percent", "boost")
     print("K = %g, cap = %g%%; reduction armour / (armour + K) at 50 / 100 / 150 / 200 armour: %s" % (
         args.k, args.cap, " / ".join("%.1f%%" % (100 * min(args.cap / 100, a / (a + args.k))) for a in (50, 100, 150, 200))))
     for band, plevel, rng_levels in BANDS:
@@ -236,31 +274,47 @@ def main():
                 continue
             level, attacks = parse_monster(path)
             if attacks:
-                chosen.append((n, level, attacks))
+                # the script's level: getMonsterLevel of a level-scaled monster, else the bounty pool's hunting level
+                blevel = level if level > 0 else pool_level.get(n.lower(), 0)
+                chosen.append((n, level, attacks, boost_percent(points, blevel)))
             if rng_levels and len(chosen) >= 12:
                 break
         print("\n== %s: %d monsters: %s" % (band, len(chosen), ", ".join(c[0] for c in chosen)))
+        boosts = [c[3] for c in chosen]
+        print("  boost per monster: %.1f%% average (%.1f-%.1f%%)" % (sum(boosts) / len(boosts), min(boosts), max(boosts)))
         for prof, armor, shield in PROFILES[plevel]:
-            sums = {"stock": [0, 0], "percent": [0, 0]}
+            sums = dict((m, [0, 0]) for m in MODES)
             rows = []
-            for n, level, attacks in chosen:
+            for n, level, attacks, boost in chosen:
                 r = {}
-                for mode in ("stock", "percent"):
+                for mode in MODES:
                     rng = random.Random(args.seed)
-                    tot, phys = simulate(rng, attacks, level, armor, shield, mode, args.k, args.cap, args.seconds)
+                    tot, phys = simulate(rng, attacks, level, armor, shield, mode, args.k, args.cap, args.seconds, boost)
                     r[mode] = (tot, phys)
                     sums[mode][0] += tot
                     sums[mode][1] += phys
                 rows.append((n, r))
-            s, p = sums["stock"], sums["percent"]
+            s, p, b = sums["stock"], sums["percent"], sums["boost"]
+            pct = lambda x, y: 100.0 * (x - y) / max(1, y)
             print("  %-6s armour %3d%s: damage/s per monster, average over the set: stock %.0f (physical %.0f), "
-                  "percent %.0f (physical %.0f): total %+.1f%%, physical %+.1f%%" % (
+                  "percent %.0f (physical %.0f): total %+.1f%%, physical %+.1f%%; percent + boost %.0f (physical %.0f): "
+                  "total %+.1f%%, physical %+.1f%%" % (
                       prof, armor, (", shield %d / shielding %d" % shield) if shield else "",
                       s[0] / len(chosen), s[1] / len(chosen), p[0] / len(chosen), p[1] / len(chosen),
-                      100.0 * (p[0] - s[0]) / max(1, s[0]), 100.0 * (p[1] - s[1]) / max(1, s[1])))
+                      pct(p[0], s[0]), pct(p[1], s[1]), b[0] / len(chosen), b[1] / len(chosen),
+                      pct(b[0], s[0]), pct(b[1], s[1])))
+            table.append("| %d | %s, armour %d%s | %.1f%% | %.0f | %.0f (%+.0f%%) | %.0f (%+.0f%%) | %+.0f%% |" % (
+                plevel, prof, armor, (", shield %d / shielding %d" % shield) if shield else "", sum(boosts) / len(boosts),
+                s[0] / len(chosen), p[0] / len(chosen), pct(p[0], s[0]), b[0] / len(chosen), pct(b[0], s[0]),
+                pct(b[1], s[1])))
             if args.v:
                 for n, r in rows:
-                    print("      %-24s stock %6.0f  percent %6.0f" % (n, r["stock"][0], r["percent"][0]))
+                    print("      %-24s stock %6.0f  percent %6.0f  percent + boost %6.0f" % (
+                        n, r["stock"][0], r["percent"][0], r["boost"][0]))
+    if args.table:
+        print("\n| Level | Profile | Boost | Stock | Percent | Percent + boost | Physical vs stock |")
+        print("|---|---|---|---|---|---|---|")
+        print("\n".join(table))
     return 0
 
 

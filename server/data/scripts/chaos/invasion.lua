@@ -366,6 +366,7 @@ local function spawnOne(name, pos, tier, scale, info, rename)
 	end
 	scaleMonster(monster, scale)
 	info.scale = scale
+	info.areaLevel = state.area and state.area.level -- monster_damage.lua: an invader counts at least at this level
 	registerInvader(monster, info)
 	return monster
 end

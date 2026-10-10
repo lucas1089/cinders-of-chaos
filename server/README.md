@@ -105,6 +105,8 @@ server/
     partyframes.lua  partyframes_core.lua (party frames, client game_partyframes; see "Buff bar and party frames")
     bestiary.lua  bestiary_core.lua  bestiary_config.lua  bestiary_spawns.lua (bestiary, kill tasks, task tracker;
                                       sql/chaos_bestiary.sql; spawn data from tools/gen_bestiary_spawns.py)
+    monster_damage.lua  monster_damage_core.lua  monster_damage_config.lua (late-game monster damage boost: physical hits
+                                      of high-level monsters on players, see "Percent armour")
   data/monster/monsters/chaos/pets/   the pet monster types (not attackable, no attacks)
 ```
 
@@ -792,7 +794,8 @@ second from one monster, average over the set:
 Other K (total change, tank at 100 / 300 / 1000): K 200: +9% / -11% / -17%; K 300: +17% / -4% / -9%. Nobody becomes
 invulnerable: the cap is 80% and late-game monsters still hit a level 1000 tank for ~660 per second each. The late game
 (tuned for the stock armour, README "Late game") gets 12-16% easier for everyone; a level 1000 tank in the best gear is the
-reference of that tuning, so its monsters' damage could go up ~10% if the owner wants the same pressure. Weak hits are no
+reference of that tuning, so its monsters' damage could go up ~10% if the owner wants the same pressure (done: "Late-game
+damage boost" below). Weak hits are no
 longer blocked completely: a level 100 tank takes ~13% more from level 100 monsters (mostly small melee hits that the flat
 armour used to stop), and high-level characters now feel low-level monsters (a 100 hit on 200 armour: 56 instead of 0).
 
@@ -800,6 +803,54 @@ armour used to stop), and high-level characters now feel low-level monsters (a 1
 hit; the player's armour set by an item attribute): armour 120: percent 270 every hit (30 hits), stock mean 310.3 (281-338,
 29 hits); armour 200: percent 222, stock mean 251.2 (203-299, 30 hits); the fire hit 300 with both. The formula's values:
 400 x (1 - 120 / 370) = 270, 400 x (1 - 200 / 450) = 222; stock 400 - 89.5 = 310.5 and 400 - 149.5 = 250.5.
+
+### Late-game damage boost (`monster_damage.lua`, `monster_damage_core.lua`, `monster_damage_config.lua`)
+
+The percent armour made the late game 7-16% easier (above). The owner's decision: give high-level monsters that damage
+back. Monsters deal more **physical** damage to players by their level, linear between the points of
+`Chaos.monsterDamage.points` (`monster_damage_config.lua`), flat beyond the ends:
+
+| Monster level | 150 and below | 225 | 300 | 475 | 650 and above |
+|---|---|---|---|---|---|
+| Physical damage to players | +0% | +7% | +14% | +22% | +30% |
+
+- **Level**: `ChaosLoot.monsterLevel` (the one the item level uses): `Monster:getMonsterLevel()` of a level-scaled
+  monster (the late-game monsters 650-1000), else its hunting level from `bounty_pool.lua`, else the experience / health
+  estimate. So it covers every monster from one place: base-server monsters (no level of their own; their XMLs are not in
+  the repo), world bosses, Omen guardians, dungeon bosses, rift packs and guardians (picked from the bounty pool by tier),
+  tiered monsters. A monster's summon counts at least at its master's level, an invader at least at its invasion area's
+  level (`invasion.lua` stores it on the invader). The other multipliers (tiers and modifiers, rift tiers and Brutality,
+  invasion scaling, dungeon difficulty) apply on top, unchanged.
+- **Which hits**: a monster's melee and ranged physical attacks (origin melee / ranged: the hits armour reduces) on a
+  player. Elemental damage is unchanged (`elemental = false`): the engine sets blockArmor only on melee and "physical"
+  monster attacks, so armour never reduced a monster's elemental spell and the percent armour did not change them. Not
+  boosted: a player's summons (whatever their level), PvP, scripted damage (reflection, Cinderdeath, boss scripts:
+  origin spell), bleeding and other conditions, healing.
+- **Order**: a `healthchange` event on the player, registered at login by `Chaos0MonsterDamageLogin`. The engine runs the
+  login events in name order and a creature's events in registration order, so the boost comes before every other Chaos
+  `healthchange` of the player (resistances, "Damage Taken from Monsters", dodge, block, Last Breath and the other lethal
+  catches) and before the energy shield; defence and armour come before any script (engine). With the mana shield the
+  engine hands the whole hit to the `manachange` events first: that event scales it (`manaShield = true`) and the rest
+  the mana could not take is not scaled a second time (`tests/monster_damage_test.lua` checks the order and this).
+- **Off**: `enabled = false`; `elemental = true` also scales the elemental part of melee, ranged and spell hits.
+
+Simulation (`armor_sim.py` reads the points from the config; "percent + boost" = the percent armour, then the boost on
+the physical hit that lands; "boost" = the average over the band's monsters; damage taken per second from one monster,
+average over the set):
+
+| Level | Profile | Boost | Stock | Percent | Percent + boost | Physical vs stock |
+|---|---|---|---|---|---|---|
+| 100 | caster, armour 72 | 0.0% | 116 | 120 (+3%) | 120 (+3%) | +4% |
+| 100 | tank, armour 93, shield 37 / shielding 80 | 0.0% | 74 | 83 (+13%) | 83 (+13%) | +25% |
+| 300 | caster, armour 96 | 13.2% | 228 | 208 (-9%) | 226 (-1%) | -1% |
+| 300 | tank, armour 118, shield 39 / shielding 100 | 13.2% | 179 | 167 (-7%) | 180 (+0%) | +1% |
+| 1000 | caster, armour 140 | 30.0% | 983 | 830 (-16%) | 978 (-0%) | -1% |
+| 1000 | tank, armour 200, shield 53 / shielding 130 | 30.0% | 754 | 661 (-12%) | 759 (+1%) | +1% |
+
+The level 100 band (hunting level 80-130) is untouched. The physical share of a late-game hit lost 22-24% to the percent
+armour, so it needs about +30% to come back (1 / 0.77); at level 300 it lost 11-13% (+13% back). Per hit the shape stays
+that of the percent armour: a 2,000 physical hit on 200 armour lands for 1,850 with the stock armour, 1,111 with the
+percent armour and 1,444 with the boost, while small and medium hits land harder than with the stock armour.
 
 ## Passive tree points
 
