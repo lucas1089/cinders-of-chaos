@@ -57,6 +57,11 @@ pet share, so the bonuses multiply the staged experience and the pet gets its sh
    (no bonus at all); every element's % now counts there (mana damage has no element). Exact match on the stock lines;
    anything else is reported and left alone.
 
+10. data/scripts/eventcallbacks/monster/default_onDropLoot.lua: "Loot of ..." names the monster by its type's
+   nameDescription, so a renamed monster (a rift monster wearing its rift name, an invader) showed its pool type there.
+   Both lines now ask Chaos.monsterNameDescription(self) (data/scripts/chaos/chaos_constants.lua), which gives the
+   type's description for a monster that was not renamed; without that helper the stock call is used.
+
 Idempotent: every inserted block carries a marker comment and is not added twice.
 """
 import os, re, sys
@@ -335,6 +340,31 @@ def patch_rarity_elements(text):
     return text, 'patched'
 
 
+LOOTNAME_MARKER = '-- Chaos: loot lines name a renamed monster by its shown name (patch_base_events.py)'
+LOOTNAME_OLD = 'mType:getNameDescription()'
+LOOTNAME_NEW = 'chaosLootName(self, mType)'
+LOOTNAME_HELPER = (
+    LOOTNAME_MARKER + '\n'
+    'local function chaosLootName(monster, mType)\n'
+    '\tif Chaos and Chaos.monsterNameDescription then\n'
+    '\t\treturn Chaos.monsterNameDescription(monster)\n'
+    '\tend\n'
+    '\treturn mType:getNameDescription()\n'
+    'end\n\n'
+)
+
+
+def patch_loot_name(text):
+    """returns (new text, status)"""
+    if LOOTNAME_MARKER in text:
+        return text, 'already'
+    at = text.find('ec.onDropLoot = function(self, corpse)')
+    if at < 0 or text.count(LOOTNAME_OLD) != 2:
+        return text, ('unexpected default_onDropLoot.lua (ec.onDropLoot or the two "Loot of" '
+                      'mType:getNameDescription() calls not found)')
+    body = text[at:].replace(LOOTNAME_OLD, LOOTNAME_NEW)
+    return text[:at] + LOOTNAME_HELPER + body, 'patched'
+
 def apply(path, fn, dry):
     text = open(path, encoding='utf-8', errors='surrogateescape').read()
     new, status = fn(text)
@@ -353,6 +383,8 @@ def main():
     ok = apply(os.path.join(args[0], 'events', 'scripts', 'player.lua'), patch, dry)
     ok = apply(os.path.join(args[0], 'scripts', 'eventcallbacks', 'monster', 'default_onDropLoot.lua'),
                patch_loot, dry) and ok
+    ok = apply(os.path.join(args[0], 'scripts', 'eventcallbacks', 'monster', 'default_onDropLoot.lua'),
+               patch_loot_name, dry) and ok
     ok = apply(os.path.join(args[0], 'events', 'scripts', 'creature.lua'), patch_target_combat, dry) and ok
     ok = apply(os.path.join(args[0], 'creaturescripts', 'scripts', 'login.lua'), patch_login_demotion, dry) and ok
     ok = apply(os.path.join(args[0], 'scripts', 'creaturescripts', 'autoloot.lua'), patch_autoloot, dry) and ok

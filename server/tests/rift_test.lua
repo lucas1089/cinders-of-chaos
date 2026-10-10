@@ -830,9 +830,44 @@ do
 	eq(R.lookOf(one, "middle", false), L.families["Obsidian Hall"].elite, "one type: elite")
 	eq(R.lookPlan(cfg, "No Such Theme", types), nil, "no family: no looks")
 	eq(R.lookOf(nil, "x", true), nil, "no plan: own look")
+	-- names: one per rank and theme, the family word first; credit stays with the type (only the shown name changes)
+	local names = L.names["Abyssal Rift"]
+	eq(R.nameOf(plan, "weak one", false), names.minion, "weakest type: the minion name")
+	eq(R.nameOf(plan, "MIDDLE", false), names.brute, "middle type: the brute name (any case)")
+	eq(R.nameOf(plan, "Strong", false), names.elite, "strongest type: the elite name")
+	eq(R.nameOf(plan, "Strong", true), names.guardian, "guardian: the guardian name")
+	eq(R.nameOf(plan, "Treasure Goblin", false), nil, "a monster of no rift type keeps its name")
+	eq(R.nameOf(two, "weak one", false), L.names["Ashen Crypt"].brute, "two types: brute name")
+	eq(R.nameOf(one, "middle", false), L.names["Obsidian Hall"].elite, "one type: elite name")
+	eq(R.nameOf(nil, "x", true), nil, "no plan: own name")
+	local shown = {}
+	for _, th in ipairs(cfg.themes) do
+		for _, rank in ipairs({"minion", "brute", "elite", "guardian"}) do
+			local v = L.names[th.name] and L.names[th.name][rank]
+			ok(type(v) == "string" and #v >= 3 and #v <= 30 and v:match("^[%a ]+$") ~= nil,
+				th.name .. " " .. rank .. ": a name of letters and spaces")
+			ok(v and not shown[v:lower()], th.name .. " " .. rank .. ": a name of its own")
+			if v then
+				shown[v:lower()] = true
+			end
+		end
+	end
 	L.enabled = false
 	eq(R.lookPlan(cfg, "Abyssal Rift", types), nil, "looks off")
+	eq(R.nameOf(R.lookPlan(cfg, "Abyssal Rift", types), "Strong", true), nil, "looks off: own names")
 	L.enabled = true
+	-- a rift name is no monster type's name (so /m, the bestiary and the bounty board never confuse the two)
+	local pn = io.popen("find data/monster -name '*.xml'")
+	for fn in pn:lines() do
+		local f = io.open(fn)
+		local t = f:read("*a")
+		f:close()
+		local n = t:match('<monster%s+name="([^"]+)"')
+		if n then
+			eq(shown[n:lower()], nil, "rift name " .. n .. " is not a monster type (" .. fn .. ")")
+		end
+	end
+	pn:close()
 	-- exclusive: no monster definition uses a rift family look; each omen look only by its guardian
 	local p = io.popen("find data/monster -name '*.xml' -o -name '*.lua'")
 	local users = {}

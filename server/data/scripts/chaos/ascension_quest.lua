@@ -26,6 +26,11 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+
+-- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
+local function typeNameOf(creature)
+	return Chaos.monsterTypeName and Chaos.monsterTypeName(creature) or creature:getName()
+end
 if not ChaosCommands then
 	dofile("data/scripts/chaos/commands_ui_core.lua")
 end
@@ -208,7 +213,7 @@ local function monsterLevel(monster)
 			end
 		end
 	end
-	local lvl = poolLevels[monster:getName():lower()]
+	local lvl = poolLevels[typeNameOf(monster):lower()]
 	if lvl then
 		return lvl
 	end

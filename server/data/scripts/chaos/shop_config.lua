@@ -218,8 +218,8 @@ return {
 				{kind = "shader", id = 5, cost = 150, name = "Azure Waves", description = "Blue waves rolling over your outfit."},
 				{kind = "shader", id = 7, cost = 150, name = "Ivory Waves", description = "White waves rolling over your outfit."},
 				{kind = "shader", id = 12, cost = 150, name = "Golden Pulse", description = "A pulsing golden glow."}
-				-- shader 16 (green_pixent) is not sold: it draws as a coloured checker grid in the test client (the pixent
-				-- family; 15 and 17 above look the same there, see server/README.md "Store")
+				-- shader 16 (green_pixent) is not sold: it drew as a coloured checker grid in the test client (the pixent
+				-- family, 15 and 17 too; fixed in the client's shader files, see client/MANIFEST.md, so it could be sold)
 			}
 		},
 		{

@@ -41,6 +41,11 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+
+-- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
+local function typeNameOf(creature)
+	return Chaos.monsterTypeName and Chaos.monsterTypeName(creature) or creature:getName()
+end
 if not ChaosAchievementsCore or not ChaosAchievementsCore.unlockMethod then
 	dofile("data/scripts/chaos/achievements_core.lua")
 end
@@ -712,7 +717,7 @@ function kill.onKill(player, target)
 		return true
 	end
 	local ok, err = pcall(function()
-		local name = target:getName():lower()
+		local name = typeNameOf(target):lower()
 		local tier = ChaosTierOf and ChaosTierOf(target) or "normal"
 		if tier == "magic" or tier == "rare" or tier == "legendary" then
 			A.progress(player, "kills_" .. tier, 1)

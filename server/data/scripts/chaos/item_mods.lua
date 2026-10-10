@@ -32,6 +32,11 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+
+-- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
+local function typeNameOf(creature)
+	return Chaos.monsterTypeName and Chaos.monsterTypeName(creature) or creature:getName()
+end
 if not ChaosCrafting then
 	dofile("data/lib/chaos_crafting.lua") -- loads chaos_item_mods.lua
 end
@@ -218,7 +223,7 @@ end
 -- monster resistances (MonsterType:getElementList: combat type -> percent), cached by name
 local resCache = {}
 local function resistance(creature, ctype)
-	local name = creature:getName():lower()
+	local name = typeNameOf(creature):lower()
 	local r = resCache[name]
 	if r == nil then
 		local ok, list = pcall(function()

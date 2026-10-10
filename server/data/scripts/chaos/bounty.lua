@@ -21,6 +21,11 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+
+-- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
+local function typeNameOf(creature)
+	return Chaos.monsterTypeName and Chaos.monsterTypeName(creature) or creature:getName()
+end
 dofile("data/scripts/chaos/bounty_core.lua")
 
 Chaos.bountyConfig = dofile("data/scripts/chaos/bounty_config.lua")
@@ -403,7 +408,7 @@ local function playerOf(creature)
 end
 
 function B.onKill(creature, killer, mostDamageKiller)
-	local list = B.board().byName[creature:getName():lower()]
+	local list = B.board().byName[typeNameOf(creature):lower()]
 	if not list then
 		return
 	end
@@ -430,7 +435,7 @@ function B.onKill(creature, killer, mostDamageKiller)
 		return members
 	end, function(p) return p:getPosition() end, cfg.partyRange, function(p) return p:getId() end)
 	for _, c in ipairs(list) do
-		if B.matches(c, creature:getName(), tier) then
+		if B.matches(c, typeNameOf(creature), tier) then
 			for _, p in ipairs(credited) do
 				creditKill(p, c, tier)
 			end
@@ -448,7 +453,7 @@ death:register()
 -- only monsters of the pool get the death event
 local spawn = EventCallback
 spawn.onSpawn = function(self, position, startup, artificial)
-	if B.names[self:getName():lower()] and not self:getMaster() then
+	if B.names[typeNameOf(self):lower()] and not self:getMaster() then
 		self:registerEvent("ChaosBountyDeath")
 	end
 	return true

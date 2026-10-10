@@ -46,8 +46,9 @@ Adaptations (`adapt_report.txt`): 147 changes, mostly the donor server's corpse 
   donor in every group, phase and direction, all old entries byte-identical, the rebuild reproduces the same md5s
   (dat 6266a15d49e304b6c05c01ecb458d00a, spr 4c66dff2ef6a48870e58d5c30c45707d); checked in the test client (Shadow Ninja worn).
 - Checked in the test client (merged pair: 1501 outfits + the Chaos effects), for the late game set: the 17 spawned monsters
-  render with their art. Dawn Strayer (lookType 1036) draws as a broken striped image, so it is not spawned; Cunning Hyaena
-  (1051) draws a green tentacled creature that does not read as a hyaena, also left out.
+  render with their art. Dawn Strayer (lookType 1036) drew as a broken striped image, so it was not spawned (it has art
+  2122 now and spawns, see below); Cunning Hyaena (1051) draws a green tentacled creature that does not read as a hyaena,
+  also left out.
 
 **Treasure Goblin.** `monsters/chaos/treasure_goblin.xml` is our own (lookType 297, the stock goblin scavenger, checked in the
 test client). Its health, speed, experience and loot are set by `data/scripts/chaos/treasure_goblin.lua` from the area level, and
@@ -79,5 +80,13 @@ shared 842 with Kroazur). 2100-2115 are the rift family looks that rift.lua puts
   Elite Twisted Shaper, Elite Ice Witch / Frost Maiden), Trial / Ascension Warden 1540, Warden Shade / Trial Thrall 233,
   Phantom Shade / Alptramun 1479, the Gilded Goblin pet / Shard Goblin 61.
 - Corpses are unchanged: the generic 6068 for most, and the old stock corpses for Sangrith (22562) and Thalcyra (9780).
-  Dawn Strayer now has art but is still not in a spawn file (`late_game.py` left it out because of the broken look).
+  Dawn Strayer (2122, an armoured beast with a burning mane) now spawns: it was left out of `late_game.py` only for
+  its broken look, and its file was still the donor's (level 1150-1250, 110k health, a 2,000,000 physical area hit, the
+  donor events, "one of" loot lines). It is now tuned like the late-game tier 3 it joins (server/README.md "Late
+  game"): level 960-1000, 22,000 / 13,900 / 50 (health / experience / speed, as Malofur Mangrinder), melee 540-820,
+  a radius 3 physical burst 300-610, an energy bolt 460-840, a fire wave 380-770 (measured next to Malofur in game, see
+  the README table), the late-game elements, the donor events removed, its loot lines split one per item. `late_game_spawns.csv` puts it on 9 Darklight Core entries (three
+  packs of three on floors 12, 13 and 14).
+- Rift monsters wear the rift names of `rift_config.lua` `looks.names` ("Abyssal Spawn" ... "Sanctum Warden"); no
+  monster file may use one of those names either (`tests/rift_test.lua`).
 

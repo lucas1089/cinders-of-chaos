@@ -26,6 +26,11 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+
+-- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
+local function typeNameOf(creature)
+	return Chaos.monsterTypeName and Chaos.monsterTypeName(creature) or creature:getName()
+end
 if not ChaosGems and not ChaosCrafting then
 	pcall(dofile, "data/lib/chaos_crafting.lua") -- loads chaos_gems.lua (reused: give, pickIndex, level weights)
 end
@@ -239,7 +244,7 @@ local function resistances(creature)
 	if not creature or not creature:isMonster() then
 		return nil
 	end
-	local name = creature:getName():lower()
+	local name = typeNameOf(creature):lower()
 	local r = resCache[name]
 	if r == nil then
 		r = false

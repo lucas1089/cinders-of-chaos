@@ -34,6 +34,11 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+
+-- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
+local function typeNameOf(creature)
+	return Chaos.monsterTypeName and Chaos.monsterTypeName(creature) or creature:getName()
+end
 dofile("data/scripts/chaos/pets_core.lua")
 
 ChaosPetsConfig = dofile("data/scripts/chaos/pets_config.lua")
@@ -838,7 +843,7 @@ function kill.onKill(player, target)
 		if live and xp > 0 then
 			P.addXp(player, live.species, xp)
 		end
-		local drop = K.rollDrop(target:getName(), tier, math.random, cfg, xp > 0)
+		local drop = K.rollDrop(typeNameOf(target), tier, math.random, cfg, xp > 0)
 		if drop then
 			local species = K.species(drop, cfg)
 			target:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_GREEN)

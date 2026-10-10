@@ -471,15 +471,17 @@ end
 R.eliteTier = eliteTier
 
 -- the looks of a run (rift-exclusive outfits, cfg.looks): {byName = {[lowercase type name] = lookType}, guardian =
--- lookType}, or nil (looks off, or a theme without a family). `types` sorted by level (R.pickTypes): the weakest is the
--- minion, the strongest the elite, the rest brutes; one type is the elite, two are brute and elite.
+-- lookType, names = {[lowercase type name] = shown name}, guardianName}, or nil (looks off, or a theme without a
+-- family). `types` sorted by level (R.pickTypes): the weakest is the minion, the strongest the elite, the rest brutes;
+-- one type is the elite, two are brute and elite. Each rank shows its name of cfg.looks.names (none: the type's own).
 function R.lookPlan(cfg, themeName, types)
 	local L = cfg.looks
 	local fam = L and L.enabled and L.families and L.families[themeName]
 	if not fam then
 		return nil
 	end
-	local plan = {byName = {}, guardian = fam.guardian}
+	local names = L.names and L.names[themeName] or {}
+	local plan = {byName = {}, guardian = fam.guardian, names = {}, guardianName = names.guardian}
 	local n = #types
 	for i, e in ipairs(types) do
 		local rank = "brute"
@@ -489,11 +491,23 @@ function R.lookPlan(cfg, themeName, types)
 			rank = "minion"
 		end
 		plan.byName[e.name:lower()] = fam[rank]
+		plan.names[e.name:lower()] = names[rank]
 	end
 	return plan
 end
 
--- the look a rift monster wears: the guardian's for a guardian, else its type's; nil = its own
+-- the name a rift monster shows: its rank's name (the guardian's for a guardian); nil = its type's own
+function R.nameOf(plan, name, boss)
+	if not plan then
+		return nil
+	end
+	if boss then
+		return plan.guardianName
+	end
+	return plan.names and plan.names[tostring(name):lower()]
+end
+
+-- the look a rift monster wears: the guardian's for a guardian, else its type's rank's; nil = its own
 function R.lookOf(plan, name, boss)
 	if not plan then
 		return nil

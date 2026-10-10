@@ -261,9 +261,10 @@ return {
 	-- Inside a rift every monster wears a look nothing outside the rifts uses (client outfits 2100-2115, donor creature
 	-- art: client/tools/sprites/monster_looks/picks.csv; server/README.md "Rifts"). The theme picks the family; the run's
 	-- monster types (sorted by level) get minion / brute / elite (one type: elite; two: brute and elite), the guardian
-	-- (and both twins) the family's guardian look. Only the look changes: stats, spells, loot and corpse stay the type's.
+	-- (and both twins) the family's guardian look, and each look its name (`names`). Stats, spells, loot, corpse and
+	-- credit stay the type's.
 	-- Coffer waves and ambush copies wear the look too. Omen arenas keep their guardian's own look (its XML).
-	-- enabled = false: every rift monster shows its world look again (a client pair without 2100+ shows nothing).
+	-- enabled = false: every rift monster shows its world look and name again (a client pair without 2100+ shows nothing).
 	looks = {
 		enabled = true,
 		families = {
@@ -271,6 +272,19 @@ return {
 			["Obsidian Hall"] = {minion = 2104, brute = 2105, elite = 2106, guardian = 2107}, -- obsidian and magma
 			["Ashen Crypt"] = {minion = 2108, brute = 2109, elite = 2110, guardian = 2111}, -- undead, ember-lit
 			["Forsaken Sanctum"] = {minion = 2112, brute = 2113, elite = 2114, guardian = 2115} -- fungus blight
+		},
+		-- the name each look shows (creature packet, look text, damage, kill and loot lines, monster bar), per theme and
+		-- rank. The family word comes first. Credit and drops stay with the pool type (bestiary, bounty, uniques, keys).
+		-- A rank without a name keeps the type's name. Names must not be the name of a monster type (rift_test.lua).
+		names = {
+			["Abyssal Rift"] = {minion = "Abyssal Spawn", brute = "Abyssal Gazer", elite = "Abyssal Shade",
+				guardian = "Abyssal Sovereign"},
+			["Obsidian Hall"] = {minion = "Obsidian Hound", brute = "Obsidian Brute", elite = "Obsidian Ravager",
+				guardian = "Obsidian Colossus"},
+			["Ashen Crypt"] = {minion = "Crypt Thrall", brute = "Crypt Bonehulk", elite = "Crypt Reaper",
+				guardian = "Crypt Dreadknight"},
+			["Forsaken Sanctum"] = {minion = "Sanctum Sporeling", brute = "Sanctum Creeper", elite = "Sanctum Blightstone",
+				guardian = "Sanctum Warden"}
 		}
 	}
 }

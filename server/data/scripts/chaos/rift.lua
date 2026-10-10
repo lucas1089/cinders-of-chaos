@@ -23,6 +23,11 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+
+-- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
+local function typeNameOf(creature)
+	return Chaos.monsterTypeName and Chaos.monsterTypeName(creature) or creature:getName()
+end
 if not ChaosCommands then
 	dofile("data/scripts/chaos/commands_ui_core.lua")
 end
@@ -507,7 +512,8 @@ local function hudData(run)
 	end
 	return {tier = run.key.tier, theme = run.themeName, left = R.timeLeft(run, os.time()), limit = run.limit or C().timeLimit,
 		total = run.total, killed = run.killed, bossAt = run.bossAt, boss = run.boss, state = run.state,
-		bossName = run.plan.boss, mods = mods, bonus = run.bonus, notes = notes, lives = run.lives,
+		bossName = R.nameOf(run.looks, run.plan.boss, true) or run.plan.boss, -- the name the guardian shows
+		mods = mods, bonus = run.bonus, notes = notes, lives = run.lives,
 		livesMax = run.livesMax, omen = run.omen and R.omenKind(C(), run.omen).name or nil,
 		title = run.omen and ("Omen - " .. R.omenKind(C(), run.omen).name) or nil}
 end
@@ -970,7 +976,10 @@ local function randomIn(rect, margin)
 end
 
 local function spawnOne(run, name, pos, tier, boss)
-	local m = Game.createMonster(name, P(pos), true, false) or Game.createMonster(name, P(pos), true, true)
+	-- the rift-exclusive name (rift_config.lua looks.names), set before the placement; credit stays with the type
+	local shown = R.nameOf(run.looks, name, boss)
+	local create = Chaos.createMonsterNamed or function(t, p, e, f) return Game.createMonster(t, p, e, f) end
+	local m = create(name, P(pos), true, false, shown) or create(name, P(pos), true, true, shown)
 	if not m then
 		return nil
 	end
@@ -2116,7 +2125,7 @@ drop.onDropLoot = function(monster, corpse)
 		if not owner or R.slotOfPos(C(), corpse:getPosition()) then
 			return
 		end
-		local level = RF.poolLevel[monster:getName():lower()]
+		local level = RF.poolLevel[typeNameOf(monster):lower()]
 		if not level then
 			return
 		end

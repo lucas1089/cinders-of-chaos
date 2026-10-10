@@ -71,7 +71,8 @@ ChaosOpcodes = {
 	transmog = 212, -- Transmog window: wardrobe, apply / remove a look (client game_transmog; transmog.lua, transmog_core.lua, transmog_config.lua)
 	pouches = 226, -- store pouches: the Loot Pouch rules window (client game_pouches; pouches.lua, pouches_core.lua, pouches_config.lua)
 	partyFrames = 235, -- party frames: members' health, mana, level, floor, buffs; client -> server actions (client game_partyframes; partyframes.lua)
-	cosmetics = 225 -- Cosmetics window, chat name colours, loot label accent (client game_cosmetics; cosmetics*.lua)
+	cosmetics = 225, -- Cosmetics window, chat name colours, loot label accent (client game_cosmetics; cosmetics*.lua)
+	bossSpawns = 217 -- Boss Spawns window: every boss by category, place and respawn (client game_bossspawns; bossspawns*.lua)
 }
 
 -- ---------------------------------------------------------------------------
@@ -952,4 +953,62 @@ function Chaos.heal(creature, amount)
 		creature:addHealth(amount)
 	end
 	return creature:getHealth() - before
+end
+
+-- ---------------------------------------------------------------------------
+-- Monster names
+-- ---------------------------------------------------------------------------
+-- Monster:rename (base engine) changes the name the clients see: the creature packet (look text, the monster bar,
+-- battle list), the damage lines (its nameDescription) and our kill and loot lines. Rift monsters (rift_config.lua
+-- looks.names) and invaders wear such names. What a monster IS stays its type: everything keyed on it (bestiary,
+-- bounty, unique drops, pool levels, resistances, achievements, pets) uses Chaos.monsterTypeName.
+function Chaos.monsterTypeName(creature)
+	if not creature then
+		return nil
+	end
+	local ok, name = pcall(function()
+		local mt = creature:isMonster() and creature:getType()
+		return mt and mt:name()
+	end)
+	if ok and type(name) == "string" and name ~= "" then
+		return name
+	end
+	return creature:getName()
+end
+
+-- "an abyssal spawn" for a shown name; the monster files write their nameDescription the same way
+function Chaos.nameDescriptionOf(name)
+	local lower = tostring(name):lower()
+	return (lower:find("^[aeiou]") and "an " or "a ") .. lower
+end
+
+-- what loot lines call a monster: its type's nameDescription, or the description of the name it was renamed to
+function Chaos.monsterNameDescription(creature)
+	local name = creature:getName()
+	local ok, desc = pcall(function()
+		local mt = creature:isMonster() and creature:getType()
+		return mt and mt:name() == name and mt:getNameDescription() or nil
+	end)
+	if ok and desc then
+		return desc
+	end
+	return Chaos.nameDescriptionOf(name)
+end
+
+-- Game.createMonster under a shown name. The name is set in onSpawn, before the placement (callback in
+-- monster_tiers.lua, index -100, so it runs first), so the first creature packet already carries it: a rename after the
+-- placement does not reach clients that know the creature (the engine resends a known creature by id only, without
+-- its name).
+Chaos.spawnName = nil
+function Chaos.createMonsterNamed(typeName, position, extended, force, shownName)
+	if not shownName or shownName == typeName then
+		return Game.createMonster(typeName, position, extended, force)
+	end
+	Chaos.spawnName = shownName
+	local ok, monster = pcall(Game.createMonster, typeName, position, extended, force)
+	Chaos.spawnName = nil
+	if not ok then
+		error(monster, 0)
+	end
+	return monster
 end

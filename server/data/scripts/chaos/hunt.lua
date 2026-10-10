@@ -99,7 +99,7 @@ function kill.onKill(player, target)
 	end
 	local s = sessionOf(player)
 	if s then
-		H.addKill(s, target:getName())
+		H.addKill(s, target:getName()) -- the name the player saw (a rift monster's rift name)
 	end
 	return true
 end

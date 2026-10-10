@@ -146,6 +146,8 @@ server/
    lost its ascended class (Berserker, Ninja, ...) at every login. The premium branch is left as it was; the engine
    itself never demotes. Verified on the test server: a Berserker on a free and on a premium account stays Berserker
    (before: Warrior after the login, saved so in `players.vocation`).
+   The loot callback's two "Loot of ..." lines name the monster through `Chaos.monsterNameDescription`, so a renamed
+   monster (a rift monster, an invader) shows the name it wears ("Loot of an abyssal gazer"; see "Rift names").
    And the base `scripts/creaturescripts/autoloot.lua` hands each item to `ChaosLoot.finalizeRarity` before moving it,
    so autolooted gear gets its rarity stats (the engine only rolls items still in the corpse; see "Rarity stats are
    rolled once").
@@ -282,8 +284,9 @@ working directory, as with the rest of the base server libs).
 | game_playerinspect | `inspect.lua`, `inspect_core.lua` | 240, Social > Inspect Player, right-click a player | Inspect Player: outfit, level, class, guild, achievement points, rift and trial records and the equipment with full tooltips; right-click within 10 tiles or any online player by name; privacy setting per character (storage `Chaos.storage.inspectOff`); tested in game with two clients (see "Inspect Player"). |
 | game_invasion | `invasion.lua`, `invasion_core.lua`, `invasion_config.lua`, `worldevents.lua` | 251 (server -> client; `query` / `calendar` back), Adventure > Events, `/invasion` | Invasions (waves at a town or hunting ground, breach meter, boss, contribution rewards, Defender board, Victory buff, occupation) and the world events Chaos Storm, Wandering Merchant and Golden Hour; HUD and upcoming events window; toasts with action `invasion` on 79; tested in game on a test area (see "Invasions and world events"). |
 | game_energyshield | `data/lib/chaos_energy_shield.lua`, `item_mods.lua`; engine patch 0015 sends it | 224 (server -> client, from the engine) | Energy shield bar above the health bar of the character plate: plain text `es:<current>:<max>`, max 0 hides it. Tested in game (see "Energy shield"). |
+| game_bossspawns | `bossspawns.lua`, `bossspawns_core.lua`, `bossspawns_config.lua`, `sql/chaos_boss_spawns.sql` | **217**, Adventure > Boss Spawns | Every boss by category with place and respawn status, live alive state and last kills (see "Boss spawns"). Unit and mocked-engine tests; not run on a live server. |
 
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 221, 222, 223, 224 (sent by the engine, patch 0015), 225, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
+Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 217, 218, 219, 221, 222, 223, 224 (sent by the engine, patch 0015), 225, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
 
 ### Opcode collision check
@@ -1275,7 +1278,7 @@ categories are left out. Every offer has a stable key (`ChaosShopCore.offerKey`:
 | Mounts | 141 | 125 | 5 achievement rewards (Doombringer, Siegebreaker, Nightstinger, Rift Runner, Corpsefire Skull), 2 season rewards (Doom Skull, Darklight Devourer), 4 season pass rewards (Magma Skull, Cinderhoof, Flamesteed, Wrathfire Pegasus), 2 base battle pass rewards (Fire Panther, Erect Draptor), 3 rented horses |
 | Wings (`wings.xml`) | 15 | 15 | |
 | Auras (`auras.xml`, 19 from `chaos_auras.csv`) | 24 | 24 | (Fireflies is also the guild aura; it was sold before) |
-| Outfit shaders (`shaders.xml`) | 17 | 16 | green_pixent (16): draws as a coloured checker grid in the test client; 15 and 17, sold before, look the same there (to check in the Windows client) |
+| Outfit shaders (`shaders.xml`) | 17 | 16 | green_pixent (16): drew as a coloured checker grid in the test client, like 15 and 17 (sold before); the pixent shader files are fixed now (client/MANIFEST.md "Outfit shaders for monsters"), 16 could be sold |
 | Name plate frames (`nameplate.lua`) | 8 | violet, frost, ember, verdant, bone | default (everyone), gold (staff titles), crimson (Siege Champions) |
 | Spell effect skins, kill effects, loot label accents, chat name colours (`cosmetics.lua`) | 12 / 7 / 5 / 6 | 12 / 5 / 4 / 5 | Void Ring, Harbinger's Toll, Gilded Labels, Veteran's Gold: achievement rewards ("Cosmetics" below) |
 | Transmog appearance sets (`transmog.lua`) | 6 | Falconer's Regalia 300, Lionguard 350 | achievement, season pass and exclusive sets ("Transmog") |
@@ -4553,13 +4556,43 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   | Forsaken Sanctum | fungus blight | 2112 cap sprout | 2113 blight tendrils | 2114 blight boulder | 2115 moss golem |
 
   `spawnOne` (rift.lua) sets the look before the monster's tier, so tier shaders go on it. Coffer waves wear it. An
-  ambush copy (monster_tiers.lua) now wears what the killed monster wore. Only the look changes: name, stats, spells, loot
-  and corpse stay the pool type's. The Gilded Trail goblin keeps the Treasure Goblin look. Omen arenas use their
-  guardian's own exclusive look: Sangrith 2116 (horned crimson skull demon), Morvane 2117 (robed lich with green soul
-  fire), Thalcyra 2118 (white storm seer). `looks.enabled = false` brings back the world looks; a client pair without
-  outfits 2100+ needs it. `tests/rift_test.lua` checks the ranks, that every look is distinct, and that no monster file
-  uses a family look. `server/tools/apply_monster_looks.py --check` compares the config with picks.csv. Checked in game:
-  a tier 8 rift of each theme, the packs and the guardian.
+  ambush copy (monster_tiers.lua) wears what the killed monster wore. The Gilded Trail goblin keeps the Treasure Goblin
+  look. Omen arenas use their guardian's own exclusive look: Sangrith 2116 (horned crimson skull demon), Morvane 2117
+  (robed lich with green soul fire), Thalcyra 2118 (white storm seer). `looks.enabled = false` brings back the world looks
+  and names; a client pair without outfits 2100+ needs it. `tests/rift_test.lua` checks the ranks, that every look is
+  distinct, and that no monster file uses a family look. `server/tools/apply_monster_looks.py --check` compares the config
+  with picks.csv. Checked in game: a tier 8 rift of each theme, the packs and the guardian.
+- **Rift names** (`rift_config.lua` `looks.names`, `R.nameOf`). Each look shows a name of its own, family word first:
+
+  | Theme | Minion | Brute | Elite | Guardian |
+  |---|---|---|---|---|
+  | Abyssal Rift | Abyssal Spawn | Abyssal Gazer | Abyssal Shade | Abyssal Sovereign |
+  | Obsidian Hall | Obsidian Hound | Obsidian Brute | Obsidian Ravager | Obsidian Colossus |
+  | Ashen Crypt | Crypt Thrall | Crypt Bonehulk | Crypt Reaper | Crypt Dreadknight |
+  | Forsaken Sanctum | Sanctum Sporeling | Sanctum Creeper | Sanctum Blightstone | Sanctum Warden |
+
+  No engine change. The base engine already has `Monster:rename(name[, nameDescription])` (luascript.cpp), but a rename
+  after the placement does not reach clients that already know the creature: `Monster::setName` resends the tile, and a
+  known creature goes out by id only, without its name. So the name is set in onSpawn, before the placement:
+  `Chaos.createMonsterNamed(type, pos, extended, force, name)` (chaos_constants.lua) holds the name in `Chaos.spawnName`,
+  and an onSpawn callback in monster_tiers.lua (index -100, before every other one) renames the monster with
+  `nameDescription` "a crypt thrall" / "an abyssal spawn". The first creature packet then carries the name (with the
+  level, "Crypt Thrall [812]"), and so do the look text, the damage and heal lines, "A legendary ... appears!", the
+  monster bar, the hunt tracker's kill list, the loot channel row, the rift HUD's guardian line and "The rift guardian ...
+  tears through the veil!". Loot lines: the stock "Loot of ..." (`patch_base_events.py` step 10) and "Chaos bonus loot of
+  ..." ask `Chaos.monsterNameDescription`. Ambush copies of a rift monster keep its name.
+  What a monster is stays its pool type: `Chaos.monsterTypeName` (the MonsterType's name) is used by the bestiary, the
+  bounty board, unique drops, rift key drops and pool levels, the ascension quest, pets, resistances (supports, item
+  mods), achievements and the monster tier boss / skip lists. Invaders (invasion.lua renames them the same way) now count
+  for the bestiary too. `tests/rift_test.lua` checks the ranks, that every name is its own and that no monster file has
+  a rift name; `tests/monster_names_test.lua` checks the helpers. Checked in game: an
+  Abyssal Gazer (Blazebringer) shows its name over the look, in the monster bar and in "Loot of an abyssal gazer";
+  killing it credits the Blazebringer bestiary entry; a Grove Keeper spawned as "Crypt Thrall" counted for a Grove Keeper
+  bounty (1/50); the Ashen Crypt and Forsaken Sanctum guardians showed "Crypt Dreadknight" and "Sanctum Warden" in the
+  HUD and their kill credited the Tundra Troll / Lacewing Moth entries; a forced ambush on a rare Crypt Reaper brought a
+  "Magic Crypt Reaper" (monster bar, Brutal) in the rift look.
+  Also fixed: an ambush copy got its tier in onSpawn, where the engine has not given the monster its id yet, so its tier
+  state sat under id 0 (no modifier ticks, no monster bar tier). The ambush now applies the tier after the placement.
 - **Tiers.** Tier N picks its monsters from the bounty pool (`bounty_pool.lua`, only monsters that spawn on the map, no
   bosses, at least 100 health) in a level window, and needs a level: 1: 80-180 (level 100), 2: 140-240 (150),
   3: 200-320 (200), 4: 280-420 (300), 5: 380-520 (400), 6: 480-640 (500), 7: 580-740 (600), 8: 680-840 (700),
@@ -4637,7 +4670,7 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
 **Edits to shared files** (one line or block each): `chaos_constants.lua` (`ChaosOpcodes.rift = 228`,
 `Chaos.storage.riftRun = 7100400`), `loot_config.lua` (rateMult x `ChaosRift.lootMult(ctx)`), `shop_services.lua`
 (`S.teleportBlocked`), `multiclient.lua` (`insideInstance`), `bounty.lua` (`payContract` calls `ChaosRift.onBountyPaid`),
-`monster_tiers.lua` (an ambush copy wears the killed monster's outfit, so a rift look carries over).
+`monster_tiers.lua` (an ambush copy wears the killed monster's outfit and name, so a rift look carries over; the onSpawn rename callback for `Chaos.createMonsterNamed`; the boss and skip lists by type name), and the type-name lookups (`Chaos.monsterTypeName`) in `bestiary.lua`, `bounty.lua`, `loot.lua`, `pets.lua`, `supports.lua`, `item_mods.lua`, `achievements.lua`, `ascension_quest.lua` (see "Rift names").
 
 **Verified on the test server** (cropped map, level 1000 test characters): open a rift from a key (and the refusals: no
 protection zone, in a fight, multi-client); the build and the four themes; the HUD (start, live updates, the guardian,
@@ -5061,8 +5094,8 @@ maxlevel as 0, so the stage never matched and levels 851+ fell back to `rateExp`
 
 ### The monsters
 
-The imported level-scaled monsters of the 650-1300 band that render in the client (Dawn Strayer draws broken, Cunning
-Hyaena's art does not match it, Mercenary and Mercenary Ranger have no sprite; see `data/monster/CUSTOM_MONSTERS.md`).
+The imported level-scaled monsters of the 650-1300 band that render in the client (Dawn Strayer, which drew broken, joined
+later on its new art 2122; Cunning Hyaena's art does not match it, Mercenary and Mercenary Ranger have no sprite; see `data/monster/CUSTOM_MONSTERS.md`).
 The engine scales a monster at level L: health x(1 + 0.0074 L), speed x(1 + 0.0085 L), damage x(1 + 0.0015 L),
 experience x0.03 L (`data/events/scripts/player.lua`), black skull from 401 and loot x2.7 from 501. At their old levels
 (up to 1300) they had 300k-900k health and 3000-7000 speed. Now:
@@ -5104,12 +5137,19 @@ two-handed knight in full level 1000 gear):
 | Jungle Beasts | 920-960 | 21,400 / 13,300 / 49 | 170k | 441 | 2.20 | 1,412 | 6,414 |
 | Lady bug | 940-980 | 20,400 / 12,900 / 52 | 165k | 476 | 2.25 | 1,719 | 7,450 |
 | Malofur Mangrinder | 960-1000 | 22,400 / 14,150 / 49 | 185k | 457 | 2.25 | 1,856 | 5,614 |
+| Dawn Strayer | 960-1000 | 22,000 / 13,900 / 50 | 181k | 465 | 2.25 * | ~1,750 * | - |
 | *existing, for comparison* | | | | | | | |
 | Embermaw Archon | - | 95,000 / 62,000 | 95k | - | 0.65 | 1,543 | 4,145 |
 | Inferno Juggernaut | - | 120,000 / 65,000 | 120k | - | 0.54 | 1,563 | 3,745 |
 | Pitlord Incarnate | - | 44,000 / 42,500 / 450 | 44k | 450 | 0.97 | 1,069 | 2,666 |
 | Aegis Sentinel | - | 40,000 / 58,000 / 350 | 40k | 350 | 1.45 | 783 | 2,231 |
 | Darklight Striker (replaced) | - | - | ~30k | 420 | ~0.69 | 110 | 738 |
+
+\* Dawn Strayer (added later, tuned from its donor file): experience per health is the XML ratio, the same as
+Malofur's. Its damage was measured against a level 1000 test character in a rift (not the knight kit), 60 s each, next
+to Malofur in the same setup: Dawn Strayer 1,332/s, Malofur 1,265-1,551/s (mean ~1,410), so ~1,750/s scaled to
+Malofur's 1,856. Attacks: melee 540-820, a radius 3 physical burst 300-610, an energy bolt (range 7) 460-840, a fire
+wave 380-770. Checked in game on look 2122.
 
 "Largest hit" is the largest health drop in one 100 ms sample, so attacks that land on the same tick add up: Blazebringer's
 12k and Swamp Snapper's 8.9k are such peaks (Blazebringer peaked at 3.4k in an earlier 40 s run with nearly the same
@@ -5122,15 +5162,15 @@ the existing 650-700 hunts. The Chaos monster tiers (magic/rare/legendary) still
 
 ### Spawns (the loaded map's `<mapName>-spawn.xml`)
 
-268 entries of four level 500+ areas (the Bakragore monster set, Darklights task, level 500) are renamed to the new
-monsters. Only weaker monsters were taken (all under 25k experience per kill: the Darklight / pillar / maggot set at
+277 entries of four level 500+ areas (the Bakragore monster set, Darklights task, level 500) are renamed to the new
+monsters (268 at first; Dawn Strayer's 9 Darklight Core entries came later, three packs of three on floors 12-14). Only weaker monsters were taken (all under 25k experience per kill: the Darklight / pillar / maggot set at
 19-23k and were-creatures; no bosses or unique names), spread evenly over each area in packs of three of a kind; the
 positions are the existing spawn positions (walkable, checked in game: tile with ground, not protection zone, not
 blocking, not a floor change). Each changed line carries `lategame="<old name>"`.
 
 | Area | Box (x, y, z) | Spawns there | Replaced | New monsters |
 |---|---|---|---|---|
-| Darklight Core | 34185-34306, 30999-31111, 11-14 | 136 | 68 (Darklight Matter, Striker, Construct, Emitter, Source) | tier 3: Azure Dragon, Golden Lord, Lacewing Moth, Jungle Beasts, Lady bug, Malofur Mangrinder |
+| Darklight Core | 34185-34306, 30999-31111, 11-14 | 136 | 77 (Darklight Matter, Striker, Construct, Emitter, Source) | tier 3: Azure Dragon, Golden Lord, Lacewing Moth, Jungle Beasts, Lady bug, Malofur Mangrinder, Dawn Strayer |
 | Jaded Roots | 34274-34393, 31198-31321, 9-12 | 299 | 119 (Mycobiontic Beetle, Rotten Man-Maggot, Meandering Mushroom, Oozing Corpus, Werecrocodile, ...) | tier 2: Alptramun, Swamp Snapper, Loricate Orger, Frost Maiden, Tundra Troll, Royal Man |
 | Gloom Pillars | 34445-34546, 31191-31303, 9-11 | 149 | 59 (Wandering/Walking Pillar, Sopping Carcass/Corpus, Weretiger) | tier 1: Orclops Ravager, Shaper Matriarch, Grove Keeper, Blazebringer, Garack |
 | Putrefactory | 33981-34065, 31144-31224, 11-12 | 58 | 22 (Bloated Man-Maggot, Converter, Elder Bloodjaw, ...) | tier 1 |
@@ -5614,3 +5654,53 @@ meantime). The server is the authority: the client draws what it is told and cou
   and stay as they are, so the stock states show twice; the order of the icons is the server's after a full list and the
   order of arrival between two (nothing jumps about); the party frames' outfit is the character's whole outfit in a small
   square (class outfits are larger than a tile, so they are drawn small); Hex / Brand marks on the target are not done.
+
+## Boss spawns (`bossspawns.lua`, `bossspawns_core.lua`, `bossspawns_config.lua`, `sql/chaos_boss_spawns.sql`, client `game_bossspawns`)
+
+A window (Adventure > Boss Spawns, extended opcode 217, `ChaosOpcodes.bossSpawns`) with every boss of the server, grouped by
+category, with its place and when it comes back. The list is `bossspawns_config.lua` plus what the owning systems hold, read
+at the first spawn of the map (so they never drift): the world bosses (`Chaos.worldBoss.bosses`), the invasion bosses
+(`invasion_config.lua` factions), the Infinity Tower bosses (`ChaosTowerRunConfig.bosses`), the Vocation Trial bosses
+(`trials_config.lua` families), the Ascension Warden and the dungeon bosses (`Chaos.dungeons.extra` with the base
+`DUNGEON_SYSTEM`: level, entrance, party size, cooldown storage).
+
+| Category | Bosses | Respawn rule shown |
+|---|---|---|
+| World Bosses | Kaelgor, Skaldra, The Rotmother, Nyxareth, Vharok (arena at 5016, 5016, 7; portals at every temple) | rotation slots 03/09/15/21:00: the time of each boss's next slot; "Alive" while the event runs |
+| Island Bosses | Dreadscale (Sun 00:00), Aquatic Overlord Thalassa (Mon 16:00), Drak'thul (Tue 20:00), Thalador (Wed 20:00), Vorondor (Thu 20:00), Azazel (Fri 20:00), Mortis and Dreadbone (Sat 12:00), Tymagron (Sat 20:00), Gor'gul (Sun 20:00) | the base server's weekly timer (they stay until slain): next weekly time |
+| Raid Bosses | 29 single-spawn bosses of the base `data/raids/raids.xml` (Ferumbras, Morgaroth, Orshabaal, Ghazbaran, Gaz'haragoth, Omrafir, Zulazza, The Pale Count, The Old Widow, ...) | "Random", about every `interval2` minutes and at least `margin` after the last raid; numbers and positions read from the installed raid files at startup, raids the server does not have are left out |
+| Lair Bosses | map spawns of the real map: Apocalypse, Gaz'haragoth, Ferumbras Mortal Shell, Orshabaal, Demodras (x3), the seven Inquisition bosses, Koshei, The Collector, Bibby Bloodbath | spawntime after the tracked kill (countdown), "Respawn due" after that (the engine waits while a player sees the spot) |
+| Invasion Bosses | Warchief Grashnak, Goblin Chieftain, Mushroom King, Dracola the Unburied, Ancient Treant, Orshabaal, The Pale Count, Bullwark the Gorer, Ghazbaran | the next announced invasion whose area and faction pick this boss (`invasion_core.lua` upcoming + planBoss), else "Random" |
+| Rift Guardians and Omens | Rift Guardian, Sangrith, Morvane, Thalcyra | on demand (Rift Key, Omen Keys); the Omens' last kill is tracked |
+| Dungeon Bosses | Prince Skeletal, Master of the Elements, Forbidden Chevalier, The Rootkraken | on demand (dungeon queue); the player's own dungeon cooldown counts down |
+| Infinity Tower Bosses | the 12 tower bosses, floor 10, 20 ... 120, repeating every 120 floors | on demand |
+| Trial and Quest Bosses | the seven Vocation Trial bosses and the Ascension Warden | on demand; the player's trial / ascension cooldown counts down |
+| Rare Spawns | Treasure Goblin | 1 in 3000 natural respawns; "Alive" while one is up |
+
+**Tracking.** An `EventCallback onSpawn` sees every monster the engine creates (map spawns, raids, `Game.createMonster`); a
+monster whose type is in the list gets the death event `ChaosBossSpawnsDeath`, and 100 ms later (the creature id exists only
+once the engine has placed it) the monsters of that type within `scanRadius` of the spawn point are matched by
+`ChaosBossSpawnsCore.match`: same type, the shown name for the renamed invasion bosses, and the place (within `radius` sqm and
+one floor of `pos`, inside a dungeon box, or anywhere). So a tower or rift copy of Orshabaal never counts for the raid or the
+lair, and a map Orc Warlord is no Warchief Grashnak (only the running invasion's boss is). The death stores the time, the
+player with the most damage (else the last hit) and the kill count in `chaos_boss_spawns` (one row per boss key, created at
+startup too); a boss removed without dying is dropped from "alive" when the list is built. Lair, island and raid entries
+whose monster type is not loaded on the server are left out (logged once).
+
+**Places.** `loc` from the config; without one, "near <town>" from the closest temple of `Game.getTowns()`. Rows send the
+coordinates of open-world bosses; instance bosses send a note instead.
+
+**Protocol.** Client `open` / `refresh` (rate limited, `requestMs`); server `list {now, refresh, cats, rows}` (about 20 KB, so
+`Chaos.sendChunked`). Times are seconds from the moment of sending (the client counts down by itself) plus "Wed 19:30" for
+waits of 6 hours or more. Fields: server/data/scripts/chaos/bossspawns.lua header.
+
+**Opcode.** 217 is free in the reference server and in every Chaos script and client module (checked by grep, as in "Opcode
+collision check"); `tests/bossspawns_test.lua` checks that no two `ChaosOpcodes` share a number. No player storage is used
+(the cooldowns shown are read from the dungeon's, the Trials' 7101764 and the Ascension Trial's 7101002 storages).
+
+**Tests.** `tests/bossspawns_test.lua` (luajit and lua5.3): the list from the real configs, raid file parsing, matching,
+every rule's status, the payload and its size, and `bossspawns.lua` against a mocked engine (spawn, scan, death, SQL row,
+the list with the player's cooldown, rate limit). Client: `game_bossspawns/bossspawnsview_test.lua`. The window was rendered
+in the Linux client with a payload built by the core; not run against a live server (the island bosses' and raid bosses'
+looks and the lair positions come from the base data and the real map's spawn file: check them on the live server after
+the first install).

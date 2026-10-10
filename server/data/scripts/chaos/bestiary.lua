@@ -38,6 +38,11 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+
+-- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
+local function typeNameOf(creature)
+	return Chaos.monsterTypeName and Chaos.monsterTypeName(creature) or creature:getName()
+end
 dofile("data/scripts/chaos/bestiary_core.lua")
 
 Chaos.bestiaryConfig = dofile("data/scripts/chaos/bestiary_config.lua")
@@ -799,7 +804,7 @@ local function playerOf(creature)
 end
 
 function X.onKill(creature, killer, mostDamageKiller)
-	local e = X.cat().byKey[creature:getName():lower()]
+	local e = X.cat().byKey[typeNameOf(creature):lower()]
 	if not e then
 		return
 	end
@@ -858,7 +863,7 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
 	local p = playerOf(attacker)
-	local b = p and bonusAgainst(p, creature:getName())
+	local b = p and bonusAgainst(p, typeNameOf(creature))
 	if b and (b.damage or 0) > 0 then
 		local function scale(v)
 			local a = math.floor(math.abs(v) * (100 + b.damage) / 100 + 1e-6)
@@ -874,7 +879,7 @@ local targetCb = EventCallback
 targetCb.onTargetCombat = function(creature, target)
 	if creature and target and target:isMonster() then
 		local p = playerOf(creature)
-		if p and bonusAgainst(p, target:getName()) then
+		if p and bonusAgainst(p, typeNameOf(target)) then
 			target:registerEvent("ChaosBestiaryDealt")
 		end
 	end

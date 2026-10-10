@@ -23,6 +23,11 @@ if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
 
+-- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
+local function typeNameOf(creature)
+	return Chaos.monsterTypeName and Chaos.monsterTypeName(creature) or creature:getName()
+end
+
 -- always reloaded so that /reload scripts picks up edits; loot.lua reads the GLOBAL at runtime
 -- (never a captured local), so another script may patch ChaosLootConfig.rateMult etc. later.
 ChaosLootConfig = dofile("data/scripts/chaos/loot_config.lua")
@@ -701,7 +706,7 @@ function L.monsterLevel(monster)
 	if ok and tonumber(lvl) and tonumber(lvl) > 0 then
 		return tonumber(lvl)
 	end
-	local okN, name = pcall(function() return monster:getName() end)
+	local okN, name = pcall(function() return typeNameOf(monster) end)
 	local pl = okN and poolLevel(name)
 	if pl and pl > 0 then
 		return pl
@@ -884,7 +889,7 @@ local function processKill(monster, corpse)
 
 	-- 4. uniques
 	local u = c.unique
-	for _, e in ipairs(L.rollUniques(tier, monster:getName(), level, ctx.itemFind, nil, owner)) do
+	for _, e in ipairs(L.rollUniques(tier, typeNameOf(monster), level, ctx.itemFind, nil, owner)) do
 		local item = corpse:addItem(e.id, 1)
 		if item then
 			if ChaosMakeUnique then
@@ -895,12 +900,12 @@ local function processKill(monster, corpse)
 			corpsePos:sendMagicEffect(effect)
 			announce(owner, corpsePos,
 				string.format(u.broadcastText, owner:getName(), e.name),
-				string.format(u.message, mType:getNameDescription(), e.name))
+				string.format(u.message, Chaos.monsterNameDescription(monster), e.name))
 		end
 	end
 
 	if #bonus > 0 then
-		local text = ("Chaos bonus loot of %s: %s"):format(mType:getNameDescription(), table.concat(bonus, ", "))
+		local text = ("Chaos bonus loot of %s: %s"):format(Chaos.monsterNameDescription(monster), table.concat(bonus, ", "))
 		local party = owner:getParty()
 		if party then
 			party:broadcastPartyLoot(text)
