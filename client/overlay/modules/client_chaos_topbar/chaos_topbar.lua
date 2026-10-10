@@ -233,7 +233,7 @@ local CATEGORIES = {
     entry('Salvage',         'proficiency', { modules = { 'game_crafting' },  fns = { 'openSalvage' } }),
     entry('Codex',           'help',        { modules = { 'game_codex' },     fns = { 'toggle' }, key = 'Alt+K' }),
     entry('Store',           'market',      { modules = { 'game_shop' },      fns = { 'toggle' } }),
-    entry('Market',          'market',      { modules = { 'game_tibia_market', 'game_market' }, fns = { 'toggle' } }),
+    entry('Market',          'market',      { modules = { 'game_market' }, fns = { 'toggle' }, key = 'Alt+E' }), -- our market (gold, Chaos Coins)
     entry('Bank',            'bank',        { modules = { 'game_bank' },      fns = { 'bankWindowtoggle', 'toggle' } }),
     entry('Supply Stash',    'stash',       { modules = { 'game_stash' },     fns = { 'vipToggle', 'Stash.Toggle', 'toggle' } }),
     entry('Auto Seller',     'autoloot',    info('autoseller')),

@@ -300,7 +300,7 @@ a locked item. Uniques and items with gems in their sockets are never salvaged.
 ![Seasons: the Season of Ash and its reward track](docs/images/feature_seasons.png)
 
 Start fresh with a **season character** (Adventure > Season, Join, on a new character) and race on the season ladder.
-- **Own economy:** season characters trade, mail, party and loot only with their own season.
+- **Own economy:** season characters trade, mail, party, loot, send bank gold and use the market only with their own season.
 - **Season uniques:** some uniques drop only for season characters while the season runs, then for everyone.
 - **Reward track:** outfits, addons, mounts and titles for milestones (level 100 / 300 / 600 / 1000, bounties, world
   bosses, rifts), unlocked for your whole account and kept forever.
@@ -466,6 +466,21 @@ Two new invasion factions bring new monsters: the **Goblin Tribe** (grunts, arch
 hobgoblin captain and the Goblin Chieftain) and the **Wildwood Uprising** (wolves, boars, mushroom folk, dryads, owlbears,
 giant beetles and spiders, the Mushroom King and the Ancient Treant). They drop creature products you can sell to Yasir
 and food you can eat. The Orbs of Gilding, Unmaking and Erasure and the mining ore pieces have new pictures.
+
+## The market
+
+Sell and buy with other players at **Economy > Market** (Alt+E), or by using the market in any depot.
+- **Gold or Chaos Coins:** put a price in gold, in Chaos Coins or both; the buyer picks. Gold is paid from and to the
+  bank, coins from and to your account.
+- **Any item:** orbs and other stacks (sell part of a stack) and rolled gear with every modifier, tier, socket, gem,
+  quality and legendary power exactly as it is. Equipped, locked, store and quest items and bags with something inside
+  cannot be listed.
+- **Browse:** search by name, filter by category, rarity, item level, currency, price and modifier (the Codex names),
+  sort, and hover an offer for its full tooltip (Ctrl compares with what you wear).
+- **Fees:** listing 1% of the gold price (at least 100 gold, not refunded), 5% sales tax when it sells. Offers last 1, 3
+  or 7 days; up to 20 at a time. What does not sell comes back to your inbox.
+- **Safe:** bought items and returned items arrive in your inbox (the depot); you see each sale as a message and a toast,
+  also if it sold while you were away. Season characters have their own market.
 
 ## Quality of life
 

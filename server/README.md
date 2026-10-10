@@ -77,6 +77,8 @@ server/
                                       line instead of sent cut off (see "Engine: reloads and oversize messages")
   src-patches/0014-salted-password-hashes.patch   engine: salted PBKDF2-SHA256 account passwords, old SHA-1 upgraded at
                                       login, checks on a login worker thread (see "Account passwords"; sql/chaos_passwords.sql)
+  src-patches/0017-item-serialization-lua.patch   engine: item:serializeAttributes() / item:unserializeAttributes(data),
+                                      every attribute of an item as the engine saves it (the market escrow, see "Market")
   src-patches/0015-energy-shield.patch   engine: per-player energy shield above the health (mana shield -> scripts -> shield ->
                                       health), recharge, Lua bindings, client opcode 224 (see "Energy shield";
                                       data/lib/chaos_energy_shield.lua, client game_energyshield)
@@ -103,6 +105,8 @@ server/
     pets.lua  pets_core.lua  pets_config.lua (pets: companions that level from kills, small abilities; sql/chaos_pets.sql)
     buffbar.lua (buff / debuff bar, client game_buffbar; registry and rules in data/lib/chaos_buffs.lua)
     partyframes.lua  partyframes_core.lua (party frames, client game_partyframes; see "Buff bar and party frames")
+    market.lua  market_core.lua  market_config.lua (our player market for gold and Chaos Coins; sql/chaos_market.sql,
+                                      tools/patch_market.py, engine patch 0017; see "Market")
     bestiary.lua  bestiary_core.lua  bestiary_config.lua  bestiary_spawns.lua (bestiary, kill tasks, task tracker;
                                       sql/chaos_bestiary.sql; spawn data from tools/gen_bestiary_spawns.py)
     monster_damage.lua  monster_damage_core.lua  monster_damage_config.lua (late-game monster damage boost: physical hits
@@ -232,6 +236,7 @@ working directory, as with the rest of the base server libs).
 | game_crafting | `crafting.lua`, `data/lib/chaos_crafting.lua` | 232, Economy > Crafting Bench | Crafting bench and the crafting orbs (Awakening, Gilding, Grafting, Unmaking, Erasure, Upheaval, Fate, and the orbs v2: Tempering, Binding, Excision, Reforging, Ruin, Whetstone), tested in game (see "Crafting" and "Crafting orbs v2"). Salvage tab and the item lock: `salvage.lua`, `salvage_core.lua`, `salvage_config.lua`, Economy > Salvage (see "Salvage"). |
 | game_hunt | `hunt.lua`, `hunt_core.lua`, `hunt_config.lua`, `hunt_supplies.lua` | 241, Hunt > Hunt Tracker | Hunt tracker: session time with pause/reset, exp/h, time to level, loot and profit/h, supplies, kills, damage/healing, Chaos drops; tested in game (see "Hunt tracker"). |
 | game_season | `season.lua`, `season_core.lua`, `season_config.lua` | 246, Adventure > Season / `/season` | Seasons: fresh-start season characters isolated from standard ones, season ladder view, season uniques, account-wide reward track, end-of-season migration; tested in game with two clients (see "Seasons"). |
+| game_market | `market.lua`, `market_core.lua`, `market_config.lua` | **221**, Economy > Market (Alt+E) | Our player market for gold and Chaos Coins: escrow of the listed item in its offer row (engine patch 0017), fees, tax, expiry, seasons kept apart, crash-safe transactions; the stock market off (`tools/patch_market.py`); tested in game with two clients and a season character (see "Market"). |
 | game_patchnotes | `patchnotes.lua`, `patchnotes_core.lua`, `data/patchnotes/*.md` | 244, Social > Patch Notes / `/patchnotes` | Weekly patch notes read from Markdown files on the server, opened once per new week at login (after the Daily Reward), per-account "Don't show automatically"; tested in game (see "Patch notes"). |
 | game_monkchi | `monk_chi_core.lua`, `monk_combat.lua` | 247 (server -> client) | The Monk's chi HUD: five pips over the map, plain text `chi:<chi>:<max>:<decaySec>`; only the Monk line (17-19) sees it. Tested in game: under the character (the bottom of the map lies under the chat in the Chaos layout), fills and empties with the server's chi, empties after 12 s. |
 | game_nameplate | `nameplate.lua`, `nameplate_core.lua`, `titles.lua` | 248, the Achievements window | Name plates over players: active title, `{guild}` and the name on a frame (client base patch 0022); title registry `ChaosTitles.register`; tested in game (see "Name plates and titles"). |
@@ -247,7 +252,7 @@ working directory, as with the rest of the base server libs).
 | game_invasion | `invasion.lua`, `invasion_core.lua`, `invasion_config.lua`, `worldevents.lua` | 251 (server -> client; `query` / `calendar` back), Adventure > Events, `/invasion` | Invasions (waves at a town or hunting ground, breach meter, boss, contribution rewards, Defender board, Victory buff, occupation) and the world events Chaos Storm, Wandering Merchant and Golden Hour; HUD and upcoming events window; toasts with action `invasion` on 79; tested in game on a test area (see "Invasions and world events"). |
 | game_energyshield | `data/lib/chaos_energy_shield.lua`, `item_mods.lua`; engine patch 0015 sends it | 224 (server -> client, from the engine) | Energy shield bar above the health bar of the character plate: plain text `es:<current>:<max>`, max 0 hides it. Tested in game (see "Energy shield"). |
 
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 224 (sent by the engine, patch 0015), 228, 229, 230, 231, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
+Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 221, 223, 224 (sent by the engine, patch 0015), 228, 229, 230, 231, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
 
 ### Opcode collision check
@@ -2924,13 +2929,14 @@ cannot exchange anything; gamemasters and up (`isolation.exemptGroup`) are never
 | Houses | taking items from, or putting items into, a house owned by another realm is refused | `ChaosSeason.onMoveItem` |
 | Party | **not allowed** between realms (the joining character and the leader are told). Chosen over "allowed without shared loot and experience": the party is also what the bounty board, the dungeons and 2v2 arena use, so one rule covers all of them | EventCallback `onJoin` |
 | Chaos bank transfer | refused between realms | `bank.lua` asks `ChaosSeason.transferBlocked` |
+| NPC bank transfer | refused between realms (the NPC says "You cannot transfer money to this account.", the player gets the season reason) | `Player.transferMoneyTo` (`data/lib/core/player.lua`) asks `ChaosSeason.npcTransferBlocked`: put there by `tools/patch_season_events.py` (exact match, idempotent); without the patch `season.lua` wraps the function at runtime and warns |
+| Market | separate markets: season characters list, see and buy only their season's offers; standard characters only the standard ones | `market.lua` (see "Market") |
 | PvP: open world, arena, guild siege | **allowed** between realms. Nothing changes hands: player corpses keep the dead character's realm, arena and siege rewards come from the server, and 2v2 arena teams are parties (same realm). Season characters can be in guilds (a guild shares no items) | - |
 | Depot | per character, nothing to share | - |
 
-Not blocked (open): **the market** (the market item's action is the engine's `function="market"`; Lua cannot refuse the
-market window or an offer, it needs an engine change or the market switched off), **the NPC bank transfer** of the base
-NPC scripts, and the account-wide **store coins** (season characters can buy orbs and supplies in the store). Items on
-the ground before a season starts are untagged (free).
+Not blocked (open): the account-wide **store coins** (season characters can buy orbs and supplies in the store, and pay
+with them on their season's market). Items on the ground before a season starts are untagged (free). The stock market
+is off for everybody (`tools/patch_market.py`); our market keeps the seasons apart (see "Market").
 
 **Ladder.** While a season runs the leaderboard window shows a "[S1] only" toggle (`leaderboard.lua` adds
 `ChaosSeason.leaderboardMeta` to its meta and passes `season` to `ChaosSeason.sendBoard`): the class ladder then lists
@@ -3079,6 +3085,120 @@ the champion look text and the +5% experience; everyone sent out and the arena c
 on the point (contested; covered by the unit test), parallel brackets, the scheduled start at the real time,
 `tests/siege_test.lua` covers the schedule, sign-up rules, brackets, the arena geometry, capture control, standings,
 rewards and the champion title.
+
+## Market (`market.lua`, `market_core.lua`, `market_config.lua`, `sql/chaos_market.sql`, `tools/patch_market.py`, engine patch 0017, client `game_market`)
+
+Our own player market (auction house) for **gold** and **Chaos Coins**; the stock 10.98 market is switched off for
+players. Client `game_market` (Economy > Market in the top menu, **Alt+E**; using the market item of a depot locker opens
+it too), extended opcode **221** (`ChaosOpcodes.market`, JSON `{action, data}`; long answers through `Chaos.sendChunked`).
+Every number is in `market_config.lua`; the pure rules are in `market_core.lua` (`tests/market_test.lua`).
+
+**Install.** `install_all.py` does all of it: the `files` step copies the scripts, the `events` step runs
+`tools/patch_market.py` (comments out the `function="market"` line of `data/actions/actions.xml`, idempotent, marker
+`Chaos: stock market off`), the `sql` step runs `sql/chaos_market.sql` (3 tables; `market.lua` also creates them at
+startup when missing). Engine patch `src-patches/0017-item-serialization-lua.patch` (two Lua methods, only
+`luascript.cpp` / `luascript.h`) gives the exact escrow below; without it the market still works with a key list and
+says so at startup.
+
+**Stock market off.** Without the action nothing puts a character into the stock market, so the client cannot browse,
+create or accept stock offers (the engine refuses those packets outside the market). `market.lua` registers item 14405
+(the depot locker's market item) instead: using it opens this market. The stock `market_offers` rows stay unreachable;
+the base client's own market window (`mods/game_tibia_market`) never opens.
+
+**Offers.** A seller picks an item from the backpack (or drags one onto the Sell tab's slot), a price in gold, in coins
+or in both (the buyer chooses), and 1, 3 or 7 days. A stack can be listed in part (20 of 50 orbs). Never listed (server
+checks, `ChaosMarketCore.itemRefusal`): equipped items, locked items (`chaos_locked`), store items (`isStoreItem`) and the
+store pouches (`ChaosPouches.isPouch(item)` or the custom attribute `chaos_storebound`), containers with something inside
+(an empty bag is fine), items that cannot be picked up or moved, quest items (a map unique id; `blockedActionIds`), items
+that are wearing off (decay state), gold / platinum / crystal coins. Rolled gear is sold whole; there are no buy orders.
+
+| Setting | Value |
+|---|---|
+| Listing fee | gold from the bank, not refunded: 1% of the gold price (a coins-only offer: coins x 100 gold x 1%), at least 100, at most 1,000,000 |
+| Sales tax | 5% of what the buyer pays (gold and coins), rounded down, taken from the seller's share |
+| Prices | gold 100 - 2,000,000,000; coins 1 - 100,000 |
+| Duration | 1, 3 or 7 days (default 3); then the item goes back to the seller's inbox |
+| Limits | 20 active offers per character, 40 per account; level 8 to list or buy; you cannot buy from your own account |
+| Rate limits | per character: browse 150 ms, list 1.5 s, buy / cancel 0.8 s, tooltip 60 ms (`ChaosRateLimit`) |
+
+**Escrow.** The listed item leaves the seller and lives in its offer row (`chaos_market_offers.data`): with engine patch
+0017 as the engine's own binary form of every attribute (`item:serializeAttributes()`, the same bytes the engine saves
+items with; hex in the row, codec `blob`), else as a list of the standard attributes and every custom key the Chaos
+scripts set (codec `attrs`, the guild depot's method; a custom attribute outside the list would be lost, the reason for
+the patch). On purchase, cancel or expiry the item is created again (`Game.createItem` + `item:unserializeAttributes()`;
+a stackable keeps the count it was created with) and its per-item id `chaos_iid` is removed, so the engine gives the
+copy a new one when it is first sent: chat links and cached tooltips of the old copy never point at it. The offer also
+keeps a tooltip snapshot (`ChaosItemTooltip.build`, JSON), the name, category (gear kind, orb, gem, key, misc), rarity,
+item level and the modifier keys (`,key1,key2,`) for the filters.
+
+**Buying.** Gold comes from the bank (`players.balance`), coins from the account's Chaos Coins (`chaos_shop_coins`). The
+item always goes to the buyer's inbox; the seller gets the gold minus the tax in the bank, the coins minus the tax on
+the account, with a text message, a toast (`game_chaosnotify` action `market`) and a line in My Offers. A seller who is
+offline gets the gold, the returned items and the notices at the next login.
+
+**Crash safety.** Every money move is one database transaction, and every item / gold change of a character is tied to
+a marker storage that the engine saves in the same transaction as the items (`player:save()`):
+- listing: (1) the offer row is written as pending (state 9); (2) in memory the item leaves, the fee leaves the bank and
+  storage 7100970 (listSeq) = the offer id; (3) `player:save()` writes all three at once; (4) the offer turns active.
+  A pending row found at startup or at the seller's login is activated when the saved listSeq reached its id, else
+  dropped (the item never left the seller in a saved state). A save that fails gives the item and the fee back.
+- buying with gold: `player:save()` first (the database then holds exactly the character), then one transaction takes
+  the price from `players.balance` (`balance >= price`), marks the offer sold (`state = 0 AND expires > now`, so a second
+  buyer or a double click finds nothing) and writes the deliveries (item -> buyer, gold -> seller); only then the price
+  leaves the bank in memory. Buying with coins: one transaction moves the coins between the accounts, marks the offer
+  sold and writes the deliveries.
+- delivery (`chaos_market_deliveries`, one row per item / gold / coin notice, unique per offer and kind): owed rows are
+  applied in id order (item into the inbox, gold into the bank), storage 7100971 (deliverSeq) = the row id, then
+  `player:save()`, then the rows are marked delivered. A row at or below the saved deliverSeq only gets marked (it
+  reached the character before a crash). Characters with `players.save = 0` cannot use the market (nothing of theirs
+  would be saved).
+- cancel and expiry (a globalevent every 60 s, 200 offers per run): one transaction closes the offer and writes the
+  item delivery; delivered at once when the seller is online.
+
+Every listing, sale (price, tax, net, both characters), cancel, expiry, delivery, recovery and error is a row in
+`chaos_market_log`. Staff: `/market sweep` (run the expiry now), `/market info <offer id>`.
+
+**Seasons.** An offer is on its seller's market: the season market while that season runs (season characters see, buy
+and get tooltips of only their season's offers), the standard market otherwise; when the season ends its offers join
+the standard market with their sellers. A purchase checks the buyer's, the offer's and the seller's current realm.
+
+**Client** (`game_market`, Chaos skin, 900 x 600, fits 1280x720): Browse (search by name, category, lowest rarity,
+currency, sort, item level and price ranges, a modifier filter with the Codex's modifier and power names, pages of 10;
+item rows with icon, rarity frame and colour, name, rarity / item level / category / seller / time left and the prices;
+hovering a row shows the full rich tooltip through `game_itemtooltip.showTip` with the seller and the prices under it,
+Ctrl compares; Buy asks which currency to pay with), Sell (the backpack's items, greyed with the reason when they cannot
+be listed; amount, prices, duration, the fee and the tax as the server computes them), My Offers (active with Cancel,
+sold / expired / cancelled) and History (purchases and sales). Long names are shortened at a word with "..."
+(`SupportsText.shorten`), other texts wrap. Logic without client API: `marketview.lua` (`marketview_test.lua`).
+
+**Protocol.** client -> server `open | browse {filter} | tip {id} | buy {id, cur} | sellable | list {ref|pos, sid|cid,
+iid, count, gold, coins, days} | cancel {id} | mine | history | wallet`; server -> client `meta | page {rows, page, pages,
+total} | tip {id, tip, seller} | sellable {items} | mine {active, closed, owed} | history {rows} | wallet {gold, coins} |
+done {what, text} | error {text} | openWindow`. `ref` is the server's path to an item in the backpack (`s3.0.5`), `pos`
+the client position of a dragged item; both are checked against the item id and the per-item id.
+
+**Tests.** `tests/market_test.lua` (LuaJIT and Lua 5.3, a mocked engine with a small SQL interpreter): fees, tax, prices,
+every refusal, seasons, the Browse query (escaping, filters, sorting, pages), both codecs, listing a rolled legendary and
+part of a stack, browse and filters, tooltips, buying with gold and with coins (money and tax, the item identical but
+for a new per-item id), own offer / own account / other season / not enough money / sold twice, cancel, expiry online and
+offline, a rolled-back transaction, failed saves, a crash between save and mark, interrupted listings.
+`client/.../game_market/marketview_test.lua`.
+
+**Tested in game** (test server built with 0001-0014 + 0017, two clients and a season character): a Legendary magic
+sword (four modifiers with tiers, a bound modifier, a legendary power, quality 15%, two sockets with a gem) listed for
+250,000 gold (fee 2,500) and 20 of 50 Orbs of Upheaval for 100 coins; Browse, the filters (name, currency, a modifier,
+a legendary power) and the hover tooltip; the sword bought by another character: buyer's bank -250,000, seller's
++237,500 (tax 12,500), every attribute identical (attribute dump and serialized size), no per-item id until first sent;
+the orbs bought with coins (buyer's account -100, seller's +95); cancel (orbs back in the inbox); expiry by the
+globalevent with the seller online and offline (delivered at the next login, toast); refusals of a locked item and of a
+bag with items inside (greyed in the picker); a dragged item; the market item of a depot locker opening the window;
+season isolation (each market sees only its own offers, buying across refused) and the NPC bank transfer refused from a
+season character (a gamemaster is exempt, as for the other season rules); `kill -9` right after a purchase commit (after
+the restart the buyer got the item once and the seller the gold once), between the pending row and the save (row
+dropped, item kept), between the save and the activation (offer activated), and between a delivery's save and its mark
+(one item, row marked at the next login). Screenshots at 1280x720 and 1920x1080. Not verified in game: the key-list
+codec on a real engine (unit-tested), the per-account offer limit, a listing price at the limits, the base client's
+account with several characters on the copy used (its login parser lacked base patch 0025; patched for the test).
 
 ## Guild levels and guild halls (`guild.lua`, `guild_hall.lua`, `guild_core.lua`, `guild_config.lua`, `sql/chaos_guild.sql`)
 

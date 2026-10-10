@@ -17,6 +17,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   events       tools/patch_base_events.py        experience / loot / siege / login hooks (README "Install" 4)
                tools/patch_season_events.py      season isolation hooks (when the tool exists)
                tools/patch_help_itemlinks.py     no item links in the Help channel (when the tool exists)
+               tools/patch_market.py             the stock market item opens the Chaos market (when the tool exists)
+               tools/patch_base_npcs.py          the base NPC library: replies as lists of lines, blessing cost tags
   weapons      tools/two_handed.py               two-handed attack speed (README "Weapon styles")
   lategame     tools/late_game.py                experience stages in config.lua + late game spawns (README "Install" 5)
   crafting     tools/install_crafting.py         crafting orb items and the reroll guard (README "Crafting")
@@ -229,6 +231,9 @@ def step_events(server, data, ctx):
     if ok and os.path.isfile(tool('patch_season_events.py')):
         ok2, more = run_tool([tool('patch_season_events.py'), data], 'patch_season_events.py')
         ok, lines = ok2, lines + more
+    if ok and os.path.isfile(tool('patch_market.py')):
+        ok4, more = run_tool([tool('patch_market.py'), data], 'patch_market.py')
+        ok, lines = ok4, lines + more
     if ok and os.path.isfile(tool('patch_help_itemlinks.py')):
         ok3, more = run_tool([tool('patch_help_itemlinks.py'), data], 'patch_help_itemlinks.py')
         ok, lines = ok3, lines + more

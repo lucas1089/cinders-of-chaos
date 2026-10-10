@@ -14,6 +14,12 @@ usage: python3 -I patch_season_events.py DATA_DIR [--dry-run]
    onMoveItem callback (and treats only `false` as a stop, which the engine then reads as 0 = "no error"). The hook
    returns early only when the season rules refuse the move; otherwise the base function runs exactly as before.
 
+3. data/lib/core/player.lua: Player.transferMoneyTo (the money transfer of every NPC bank) asks
+   ChaosSeason.npcTransferBlocked first, so gold cannot go from a season character to a standard one or back while the
+   season runs (the NPC then says "You cannot transfer money to this account." and the player gets the season reason).
+   The patched file also sets ChaosSeasonTransferPatched = true; season.lua wraps the function at runtime only when
+   that flag is missing (an unpatched lib, or a lib reloaded from an unpatched copy).
+
 Idempotent: every change carries a marker and is not made twice. Run it again after replacing the base files.
 """
 import os, re, sys
@@ -28,6 +34,27 @@ HOOK = (
     '\t\tend\n'
     '\tend\n'
 )
+
+
+TRANSFER_MARKER = '-- Chaos: season isolation of the NPC bank transfer (patch_season_events.py)'
+
+
+def patch_lib_player(text):
+    """returns (new text, status): the guard at the top of Player.transferMoneyTo"""
+    if TRANSFER_MARKER in text:
+        return text, 'already'
+    m = re.search(r'function Player\.transferMoneyTo\(self, target, amount\)[ \t]*(\r?\n)', text)
+    if not m:
+        return text, 'Player.transferMoneyTo(self, target, amount) not found'
+    nl = m.group(1)
+    guard = nl.join([
+        '\t' + TRANSFER_MARKER,
+        '\tif target and ChaosSeason and ChaosSeason.npcTransferBlocked and ChaosSeason.npcTransferBlocked(self, target.guid) then',
+        '\t\treturn false',
+        '\tend',
+        ''])
+    flag = nl + 'ChaosSeasonTransferPatched = true ' + TRANSFER_MARKER + nl
+    return text[:m.end()] + guard + text[m.end():].rstrip('\r\n') + nl + flag, 'patched'
 
 
 def patch_player(text):
@@ -63,7 +90,8 @@ def main(argv):
         return 2
     data = args[0]
     status = 0
-    for rel, fn in (('events/events.xml', patch_events), ('events/scripts/player.lua', patch_player)):
+    for rel, fn in (('events/events.xml', patch_events), ('events/scripts/player.lua', patch_player),
+                    ('lib/core/player.lua', patch_lib_player)):
         path = os.path.join(data, rel)
         if not os.path.isfile(path):
             print('%s: not found' % path)

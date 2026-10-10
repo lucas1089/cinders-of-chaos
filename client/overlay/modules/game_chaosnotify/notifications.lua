@@ -91,6 +91,15 @@ local NOTIFICATION_TYPES = {
         duration = 10000,
     },
     -- invasions and world events (server data/scripts/chaos/invasion.lua, worldevents.lua): warnings, waves, the end
+    -- the market (server data/scripts/chaos/market.lua): a sale, a purchase, items and gold delivered
+    MARKET = {
+        icon = "images/notifications/gm.png",
+        title = "MARKET",
+        titleColor = "#e8b84a",
+        backgroundColor = "#ccbebb",
+        borderColor = "#6a5632",
+        duration = 9000,
+    },
     INVASION = {
         icon = "images/notifications/gm.png",
         title = "INVASION",
@@ -1124,6 +1133,13 @@ function onExtendedOpcode(protocol, opcode, buffer)
         ascension = function(data)
             if data.message then
                 addNotification("ASCENSION", data.message)
+            end
+        end,
+
+        -- the market (server data/scripts/chaos/market.lua)
+        market = function(data)
+            if data.message then
+                addNotification("MARKET", data.message)
             end
         end,
 

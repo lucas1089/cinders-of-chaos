@@ -11,7 +11,8 @@
 --   them in events.xml), items on the ground, in corpses, in houses and mail (ChaosSeason.onMoveItem, called first in
 --   Player:onMoveItem by the same tool; the realm of whoever dropped an item / killed a monster / died is written on
 --   the item or corpse as the custom attribute chaos_realm), parties (EventCallback onJoin), the Chaos bank transfer
---   (bank.lua asks ChaosSeason.transferBlocked). Not blocked: the market, the NPC bank transfer (see README).
+--   (bank.lua asks ChaosSeason.transferBlocked), the NPC bank transfer (Player.transferMoneyTo asks
+--   ChaosSeason.npcTransferBlocked), the market (separate season markets, market.lua). See README.
 -- End of season: once the season's finish has passed (or /season end), its characters are migrated to standard:
 --   chaos_season_players.migrated_at is set (once, logged); they keep everything and trade normally.
 -- Leaderboards: leaderboard.lua asks ChaosSeason.leaderboardMeta / ChaosSeason.sendBoard for the "Season" view.
@@ -359,6 +360,28 @@ function S.transferBlocked(player, targetGuid)
 	return S.realmOf(player) ~= S.realmOfGuid(targetGuid)
 end
 S.transferBlockedText = iso.messages.bank
+
+-- the NPC bank transfer (Player.transferMoneyTo of data/lib/core/player.lua, every bank NPC): refused between realms.
+-- tools/patch_season_events.py puts the call into that function; without the patch it is wrapped here at runtime
+function S.npcTransferBlocked(player, targetGuid)
+	local ok, blocked = pcall(S.transferBlocked, player, tonumber(targetGuid) or 0)
+	if ok and blocked then
+		player:sendCancelMessage(S.transferBlockedText or "You cannot transfer gold to that character.")
+		return true
+	end
+	return false
+end
+if not ChaosSeasonTransferPatched and Player and Player.transferMoneyTo and not S.transferWrapped then
+	S.transferWrapped = true
+	local stockTransfer = Player.transferMoneyTo
+	Player.transferMoneyTo = function(self, target, amount)
+		if target and S.npcTransferBlocked(self, target.guid) then
+			return false
+		end
+		return stockTransfer(self, target, amount)
+	end
+	print("[Warning - Chaos season] data/lib/core/player.lua is not patched (tools/patch_season_events.py): the NPC bank transfer is guarded at runtime")
+end
 
 -- season uniques (loot.lua rollUniques): true when this season unique may not drop for `owner` (a Player or nil)
 function S.uniqueBlocked(uniqueSeason, owner)

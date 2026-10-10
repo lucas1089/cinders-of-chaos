@@ -1,0 +1,653 @@
+// Market window (game_market). Styles from client_chaos_theme (styles.otui). 900 x 600: fits a 1280x720 screen with
+// the top bar. Long names are shortened at a word with "..." (SupportsText.shorten) and the full name is in the
+// tooltip; every other text wraps. Nothing is cut at a widget edge.
+
+MarketText < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: left
+  phantom: true
+
+MarketTextDim < MarketText
+  color: #8c8070
+
+MarketWrap < MarketText
+  text-wrap: true
+  text-vertical-auto-resize: true
+  text-align: topLeft
+
+MarketIcon < UIItem
+  size: 34 34
+  virtual: true
+  phantom: true
+  image-source: /images/chaos/itemslot
+  image-border: 4
+  padding: 1
+  border-width: 0
+
+// one offer: icon, name, a line under it, prices, the button(s)
+MarketRow < UIWidget
+  height: 40
+  margin-bottom: 2
+  image-source: /images/chaos/panel_dark
+  image-border: 6
+  phantom: false
+  focusable: false
+
+  MarketIcon
+    id: icon
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+
+  MarketText
+    id: name
+    anchors.top: parent.top
+    anchors.left: icon.right
+    anchors.right: prices.left
+    margin-top: 5
+    margin-left: 8
+    margin-right: 8
+    height: 14
+    font: verdana-11px-rounded
+
+  MarketTextDim
+    id: sub
+    anchors.top: name.bottom
+    anchors.left: name.left
+    anchors.right: name.right
+    margin-top: 2
+    height: 14
+
+  UIWidget
+    id: prices
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.right: buttons.left
+    margin-right: 8
+    width: 130
+    phantom: true
+
+    MarketText
+      id: gold
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 5
+      height: 14
+      text-align: right
+      color: #e8b84a
+
+    MarketText
+      id: coins
+      anchors.top: gold.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 2
+      height: 14
+      text-align: right
+      color: #7fd0ff
+
+  UIWidget
+    id: buttons
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-right: 6
+    width: 70
+    phantom: true
+
+    ChaosButton
+      id: action
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.right: parent.right
+      size: 66 24
+      !text: tr('Buy')
+
+// a heading inside a list
+MarketHeading < MarketText
+  height: 18
+  margin-top: 4
+  font: verdana-11px-rounded
+  color: #e8b84a
+
+// an item of the Sell tab's picker
+MarketPick < UIItem
+  size: 34 34
+  virtual: true
+  image-source: /images/chaos/itemslot
+  image-border: 4
+  padding: 1
+  focusable: false
+
+MarketCombo < ChaosComboBox
+  height: 22
+
+MarketNumber < ChaosTextEdit
+  height: 22
+  max-length: 14
+
+ChaosMainWindow
+  id: chaosMarketWindow
+  size: 900 600
+  !text: tr('Market')
+  @onEscape: modules.game_market.hide()
+
+  UIWidget
+    id: tabBar
+    anchors.top: parent.top
+    anchors.left: parent.left
+    width: 420
+    height: 24
+    phantom: true
+    layout:
+      type: horizontalBox
+      spacing: 4
+
+  MarketText
+    id: walletLabel
+    anchors.verticalCenter: tabBar.verticalCenter
+    anchors.left: tabBar.right
+    anchors.right: parent.right
+    margin-left: 8
+    height: 16
+    text-align: right
+    color: #e8b84a
+
+  // ---------------------------------------------------------- Browse
+  UIWidget
+    id: browsePanel
+    anchors.top: tabBar.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: statusLabel.top
+    margin-top: 8
+    margin-bottom: 4
+    phantom: true
+
+    ChaosTextEdit
+      id: searchEdit
+      anchors.top: parent.top
+      anchors.left: parent.left
+      width: 170
+      height: 22
+      max-length: 40
+      !tooltip: tr('Search item names')
+
+    MarketTextDim
+      id: searchHint
+      anchors.verticalCenter: searchEdit.verticalCenter
+      anchors.left: searchEdit.left
+      margin-left: 7
+      text-auto-resize: true
+      color: #6b6258
+      !text: tr('Search...')
+
+    MarketCombo
+      id: catCombo
+      anchors.top: parent.top
+      anchors.left: searchEdit.right
+      margin-left: 6
+      width: 110
+      !tooltip: tr('Category')
+
+    MarketCombo
+      id: rarityCombo
+      anchors.top: parent.top
+      anchors.left: catCombo.right
+      margin-left: 6
+      width: 120
+      !tooltip: tr('Lowest rarity')
+
+    MarketCombo
+      id: curCombo
+      anchors.top: parent.top
+      anchors.left: rarityCombo.right
+      margin-left: 6
+      width: 100
+      !tooltip: tr('Currency')
+
+    MarketCombo
+      id: sortCombo
+      anchors.top: parent.top
+      anchors.left: curCombo.right
+      margin-left: 6
+      width: 140
+      !tooltip: tr('Sort by')
+
+    ChaosButton
+      id: searchButton
+      anchors.top: parent.top
+      anchors.left: sortCombo.right
+      margin-left: 6
+      size: 80 22
+      !text: tr('Search')
+      @onClick: modules.game_market.search(1)
+
+    ChaosButton
+      id: resetButton
+      anchors.top: parent.top
+      anchors.right: parent.right
+      size: 70 22
+      !text: tr('Reset')
+      @onClick: modules.game_market.resetFilters()
+
+    MarketTextDim
+      id: ilvlLabel
+      anchors.top: searchEdit.bottom
+      anchors.left: parent.left
+      margin-top: 10
+      text-auto-resize: true
+      !text: tr('Item level')
+
+    MarketNumber
+      id: ilvlMin
+      anchors.top: searchEdit.bottom
+      anchors.left: ilvlLabel.right
+      margin-top: 6
+      margin-left: 6
+      width: 50
+      !tooltip: tr('Lowest item level')
+
+    MarketTextDim
+      id: ilvlDash
+      anchors.verticalCenter: ilvlMin.verticalCenter
+      anchors.left: ilvlMin.right
+      margin-left: 4
+      text-auto-resize: true
+      text: -
+
+    MarketNumber
+      id: ilvlMax
+      anchors.top: ilvlMin.top
+      anchors.left: ilvlDash.right
+      margin-left: 4
+      width: 50
+      !tooltip: tr('Highest item level')
+
+    MarketTextDim
+      id: priceLabel
+      anchors.verticalCenter: ilvlMin.verticalCenter
+      anchors.left: ilvlMax.right
+      margin-left: 14
+      text-auto-resize: true
+      !text: tr('Price')
+
+    MarketNumber
+      id: priceMin
+      anchors.top: ilvlMin.top
+      anchors.left: priceLabel.right
+      margin-left: 6
+      width: 80
+      !tooltip: tr('Lowest price in the chosen currency (5k, 2.5m work)')
+
+    MarketTextDim
+      id: priceDash
+      anchors.verticalCenter: ilvlMin.verticalCenter
+      anchors.left: priceMin.right
+      margin-left: 4
+      text-auto-resize: true
+      text: -
+
+    MarketNumber
+      id: priceMax
+      anchors.top: ilvlMin.top
+      anchors.left: priceDash.right
+      margin-left: 4
+      width: 80
+      !tooltip: tr('Highest price in the chosen currency (5k, 2.5m work)')
+
+    MarketCombo
+      id: modCombo
+      anchors.top: ilvlMin.top
+      anchors.left: priceMax.right
+      anchors.right: parent.right
+      margin-left: 14
+      !tooltip: tr('Has this modifier (the names of the Codex)')
+
+    ChaosPanelDark
+      id: listFrame
+      anchors.top: ilvlMin.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: pagePrev.top
+      margin-top: 8
+      margin-bottom: 6
+
+    UIScrollArea
+      id: offerList
+      anchors.top: listFrame.top
+      anchors.left: listFrame.left
+      anchors.right: offerScroll.left
+      anchors.bottom: listFrame.bottom
+      margin: 5 3 5 5
+      vertical-scrollbar: offerScroll
+      layout:
+        type: verticalBox
+
+    ChaosScrollBar
+      id: offerScroll
+      anchors.top: listFrame.top
+      anchors.right: listFrame.right
+      anchors.bottom: listFrame.bottom
+      margin: 3 3 3 0
+      step: 42
+      pixels-scroll: true
+
+    ChaosLabelDim
+      id: emptyLabel
+      anchors.top: listFrame.top
+      anchors.left: listFrame.left
+      anchors.right: listFrame.right
+      margin: 30 20 0 20
+      height: 40
+      text-wrap: true
+      text-align: center
+      visible: false
+      !text: tr('No offers match the search and the filters.')
+
+    ChaosButton
+      id: pagePrev
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      size: 70 22
+      !text: tr('< Prev')
+      @onClick: modules.game_market.page(-1)
+
+    MarketText
+      id: pageLabel
+      anchors.verticalCenter: pagePrev.verticalCenter
+      anchors.left: pagePrev.right
+      margin-left: 10
+      width: 220
+      height: 16
+
+    ChaosButton
+      id: pageNext
+      anchors.bottom: parent.bottom
+      anchors.left: pageLabel.right
+      margin-left: 10
+      size: 70 22
+      !text: tr('Next >')
+      @onClick: modules.game_market.page(1)
+
+    MarketTextDim
+      id: browseHint
+      anchors.verticalCenter: pagePrev.verticalCenter
+      anchors.left: pageNext.right
+      anchors.right: parent.right
+      margin-left: 12
+      height: 16
+      text-align: right
+      !text: tr('Hover an offer for its full tooltip (Ctrl compares).')
+
+  // ---------------------------------------------------------- Sell
+  UIWidget
+    id: sellPanel
+    anchors.top: tabBar.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: statusLabel.top
+    margin-top: 8
+    margin-bottom: 4
+    phantom: true
+    visible: false
+
+    MarketWrap
+      id: pickHint
+      anchors.top: parent.top
+      anchors.left: parent.left
+      width: 400
+      color: #8c8070
+      !text: tr('Your backpack: click an item to sell it, or drag one onto the slot on the right.')
+
+    ChaosPanelDark
+      id: pickFrame
+      anchors.top: pickHint.bottom
+      anchors.left: parent.left
+      anchors.bottom: parent.bottom
+      margin-top: 6
+      width: 400
+
+    UIScrollArea
+      id: pickList
+      anchors.top: pickFrame.top
+      anchors.left: pickFrame.left
+      anchors.right: pickScroll.left
+      anchors.bottom: pickFrame.bottom
+      margin: 6 3 6 6
+      vertical-scrollbar: pickScroll
+      layout:
+        type: grid
+        cell-size: 34 34
+        cell-spacing: 4
+        flow: true
+
+    ChaosScrollBar
+      id: pickScroll
+      anchors.top: pickFrame.top
+      anchors.right: pickFrame.right
+      anchors.bottom: pickFrame.bottom
+      margin: 3 3 3 0
+      step: 38
+      pixels-scroll: true
+
+    ChaosPanelDark
+      id: formFrame
+      anchors.top: parent.top
+      anchors.left: pickFrame.right
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-left: 10
+      padding: 12
+
+    ChaosItemSlot
+      id: sellSlot
+      anchors.top: formFrame.top
+      anchors.left: formFrame.left
+      margin: 12 0 0 12
+      size: 44 44
+      virtual: true
+      border-width: 0
+
+    MarketWrap
+      id: sellName
+      anchors.top: sellSlot.top
+      anchors.left: sellSlot.right
+      anchors.right: formFrame.right
+      margin-left: 10
+      margin-right: 12
+      font: verdana-11px-rounded
+      color: #e8b84a
+      !text: tr('No item chosen')
+
+    MarketWrap
+      id: sellSub
+      anchors.top: sellName.bottom
+      anchors.left: sellName.left
+      anchors.right: sellName.right
+      margin-top: 2
+      color: #8c8070
+
+    MarketText
+      id: countLabel
+      anchors.top: sellSlot.bottom
+      anchors.left: formFrame.left
+      margin: 16 0 0 12
+      width: 150
+      height: 16
+      !text: tr('Amount')
+
+    MarketNumber
+      id: countEdit
+      anchors.verticalCenter: countLabel.verticalCenter
+      anchors.left: countLabel.right
+      width: 80
+
+    MarketTextDim
+      id: countMax
+      anchors.verticalCenter: countLabel.verticalCenter
+      anchors.left: countEdit.right
+      anchors.right: formFrame.right
+      margin-left: 8
+      margin-right: 12
+      height: 16
+
+    MarketText
+      id: goldLabel
+      anchors.top: countLabel.bottom
+      anchors.left: countLabel.left
+      margin-top: 14
+      width: 150
+      height: 16
+      color: #e8b84a
+      !text: tr('Price in gold')
+
+    MarketNumber
+      id: goldEdit
+      anchors.verticalCenter: goldLabel.verticalCenter
+      anchors.left: goldLabel.right
+      width: 130
+
+    MarketText
+      id: coinsLabel
+      anchors.top: goldLabel.bottom
+      anchors.left: countLabel.left
+      margin-top: 14
+      width: 150
+      height: 16
+      color: #7fd0ff
+      !text: tr('Price in Chaos Coins')
+
+    MarketNumber
+      id: coinsEdit
+      anchors.verticalCenter: coinsLabel.verticalCenter
+      anchors.left: coinsLabel.right
+      width: 130
+
+    MarketText
+      id: daysLabel
+      anchors.top: coinsLabel.bottom
+      anchors.left: countLabel.left
+      margin-top: 14
+      width: 150
+      height: 16
+      !text: tr('Duration')
+
+    MarketCombo
+      id: daysCombo
+      anchors.verticalCenter: daysLabel.verticalCenter
+      anchors.left: daysLabel.right
+      width: 130
+
+    MarketWrap
+      id: feeText
+      anchors.top: daysLabel.bottom
+      anchors.left: countLabel.left
+      anchors.right: formFrame.right
+      margin-top: 16
+      margin-right: 12
+
+    ChaosButton
+      id: listButton
+      anchors.top: feeText.bottom
+      anchors.left: countLabel.left
+      margin-top: 12
+      size: 140 26
+      !text: tr('List the item')
+      @onClick: modules.game_market.listItem()
+
+    MarketWrap
+      id: rulesText
+      anchors.top: listButton.bottom
+      anchors.left: countLabel.left
+      anchors.right: formFrame.right
+      margin-top: 14
+      margin-right: 12
+      color: #8c8070
+
+  // ---------------------------------------------------------- My Offers / History (one list each)
+  UIWidget
+    id: minePanel
+    anchors.top: tabBar.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: statusLabel.top
+    margin-top: 8
+    margin-bottom: 4
+    phantom: true
+    visible: false
+
+    ChaosPanelDark
+      id: mineFrame
+      anchors.fill: parent
+
+    UIScrollArea
+      id: mineList
+      anchors.top: mineFrame.top
+      anchors.left: mineFrame.left
+      anchors.right: mineScroll.left
+      anchors.bottom: mineFrame.bottom
+      margin: 5 3 5 5
+      vertical-scrollbar: mineScroll
+      layout:
+        type: verticalBox
+
+    ChaosScrollBar
+      id: mineScroll
+      anchors.top: mineFrame.top
+      anchors.right: mineFrame.right
+      anchors.bottom: mineFrame.bottom
+      margin: 3 3 3 0
+      step: 42
+      pixels-scroll: true
+
+  UIWidget
+    id: historyPanel
+    anchors.top: tabBar.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: statusLabel.top
+    margin-top: 8
+    margin-bottom: 4
+    phantom: true
+    visible: false
+
+    ChaosPanelDark
+      id: historyFrame
+      anchors.fill: parent
+
+    UIScrollArea
+      id: historyList
+      anchors.top: historyFrame.top
+      anchors.left: historyFrame.left
+      anchors.right: historyScroll.left
+      anchors.bottom: historyFrame.bottom
+      margin: 5 3 5 5
+      vertical-scrollbar: historyScroll
+      layout:
+        type: verticalBox
+
+    ChaosScrollBar
+      id: historyScroll
+      anchors.top: historyFrame.top
+      anchors.right: historyFrame.right
+      anchors.bottom: historyFrame.bottom
+      margin: 3 3 3 0
+      step: 42
+      pixels-scroll: true
+
+  MarketWrap
+    id: statusLabel
+    anchors.bottom: closeButton.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-bottom: 4
+
+  ChaosButton
+    id: closeButton
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    size: 80 24
+    !text: tr('Close')
+    @onClick: modules.game_market.hide()
