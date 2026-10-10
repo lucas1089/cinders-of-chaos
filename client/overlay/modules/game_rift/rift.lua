@@ -100,8 +100,19 @@ local function render()
   updateClock()
 end
 
+-- under the character plate: the map panel starts above the window in the extended view (y -80 at 1280x720, -120 at
+-- 1920x1080), so the fixed margin-top of the style put the HUD on the plate
+local function place()
+  local mapPanel = hud and hud:getParent()
+  local plate = rootWidget:recursiveGetChildById('chaosHud')
+  if not mapPanel or not plate or not plate:isVisible() then return end
+  local r = plate:getRect()
+  hud:setMarginTop(r.y + r.height + 8 - mapPanel:getY())
+end
+
 local function show()
   if not hud then return end
+  place()
   if hideEvent then removeEvent(hideEvent) hideEvent = nil end
   child('result'):setVisible(false)
   hud:show()

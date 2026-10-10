@@ -237,6 +237,9 @@ def step_events(server, data, ctx):
     if ok and os.path.isfile(tool('patch_help_itemlinks.py')):
         ok3, more = run_tool([tool('patch_help_itemlinks.py'), data], 'patch_help_itemlinks.py')
         ok, lines = ok3, lines + more
+    if ok:
+        ok5, more = run_tool([tool('patch_base_npcs.py'), data], 'patch_base_npcs.py')
+        ok, lines = ok5, lines + more
     return tool_result((ok, lines))
 
 

@@ -1,5 +1,6 @@
 // Invasion HUD, top left of the map under the character plate, where the rift HUD sits (moved right of it while a rift
-// runs; the toasts use the top right) (server: invasion.lua, opcode 251).
+// runs; the toasts use the top right) (server: invasion.lua, opcode 251). invasion.lua place() sets the margins from the
+// plate and moves the HUD down past the buff bar, party frames, map overlay box / strip and the character's zone.
 // Click it to fold it to the title, the waves and the breach meter.
 InvasionHudLabel < UILabel
   font: verdana-11px-rounded

@@ -81,4 +81,51 @@ function InvasionMath.kindColor(kind)
   return colors[kind] or '#d6c9ae'
 end
 
+-- ---------------------------------------------------------------- where the HUD goes
+-- Rects are {x, y, width, height} in screen pixels. The HUD is a column under the character plate (top left of the
+-- game view); before 2026-10-10 it had fixed margins in the map panel (40, 192), and the map panel starts above the
+-- window in the extended view (y -80 at 1280x720, -120 at 1920x1080), so it sat on the plate.
+
+InvasionMath.GAP = 8
+
+local function hits(x, y, w, h, o, gap)
+  return o.width > 0 and o.height > 0 and x < o.x + o.width + gap and o.x < x + w + gap
+    and y < o.y + o.height + gap and o.y < y + h + gap
+end
+
+-- the top of the HUD column: under the plate, or 40 px into the visible view without one
+function InvasionMath.columnTop(plate, viewTop, gap)
+  gap = gap or InvasionMath.GAP
+  if type(plate) == 'table' and (plate.height or 0) > 0 then return plate.y + plate.height + gap end
+  return math.max(0, viewTop or 0) + 40
+end
+
+-- the column above the character (the centre of the game view) down to its feet: the cast bar (152 px wide) shows
+-- above the character's name, how high depends on the tile size
+function InvasionMath.characterZone(view)
+  local cx, cy = view.x + math.floor(view.width / 2), view.y + math.floor(view.height / 2)
+  local top = math.max(0, view.y)
+  return { x = cx - 80, y = top, width = 160, height = math.max(0, cy + 40 - top) }
+end
+
+-- From (x, top) down: the first spot where a w x h HUD keeps `gap` pixels from every obstacle and ends above `bottom`.
+-- Returns x, y, or nil when there is no such spot (the caller then keeps x, top).
+function InvasionMath.place(x, top, w, h, obstacles, bottom, gap)
+  gap = gap or InvasionMath.GAP
+  local y = top
+  for _ = 1, 64 do
+    if bottom and y + h > bottom then return nil end
+    local below
+    for _, o in ipairs(obstacles or {}) do
+      if hits(x, y, w, h, o, gap) then
+        local b = o.y + o.height + gap
+        if not below or b > below then below = b end
+      end
+    end
+    if not below then return x, y end
+    y = below
+  end
+  return nil
+end
+
 return InvasionMath

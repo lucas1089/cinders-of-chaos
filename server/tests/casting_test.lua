@@ -88,6 +88,8 @@ local function newPlayer(id, name, mana)
 	function p:getMana() return self.mana end
 	function p:addMana(n) self.mana = self.mana + n end
 	function p:getHealth() return self.health end
+	function p:getMaxMana() return self.maxMana or 100000 end
+	function p:getMaxHealth() return self.maxHealth or 100000 end
 	function p:addHealth(n) self.health = self.health + n end
 	function p:getPosition() return Position(self.pos) end
 	function p:sendCancelMessage(t) self.msgs[#self.msgs + 1] = t end
@@ -235,8 +237,43 @@ local function startAndThen(t0, what, reason)
 	eq(lastTo("Ash", "end").data.r, reason, reason .. ": result")
 	eq(C.active[1], nil, reason .. ": not casting")
 end
-startAndThen(40000, function() a.health = 0; registry.ChaosCastingDeath.onDeath(a) end, "died")
-a.health = 1000
+-- death: the cooldown comes back, mana and health do not (the engine fills both to the new maximum after the level
+-- loss; the refund used to show mana above it in the stats sent after the loss)
+do
+	a.conds = {}
+	clock = 40000
+	local before = a.mana
+	engineCast(a, spell, 206, 1500, 45000)
+	advance(40300)
+	a.health = 0
+	registry.ChaosCastingDeath.onDeath(a)
+	advance(43000)
+	eq(fired, 1, "died: no fire"); eq(a.mana, before - 1500, "died: no mana back to a dead player")
+	eq(lastTo("Ash", "end").data.r, "died", "died: result")
+	eq(C.active[1], nil, "died: not casting")
+	ok(a:getCondition(CONDITION_SPELLCOOLDOWN, 0, 206) == nil or a:getCondition(CONDITION_SPELLCOOLDOWN, 0, 206).ticks ~= 45000,
+		"died: cooldown refunded")
+	a.health = 1000
+	a.mana = before
+end
+-- the refund never fills past the maximum
+eq(select(1, C.refundAmounts({mana = 1500, health = 0}, 3000, 4000, 500, 1000)), 1000, "mana refund clamped to the maximum")
+eq(select(2, C.refundAmounts({mana = 0, health = 300}, 0, 0, 900, 1000)), 100, "health refund clamped to the maximum")
+eq(select(1, C.refundAmounts({mana = 1500, health = 0}, 4500, 4000, 500, 1000)), 0, "above the maximum already: nothing")
+eq(select(1, C.refundAmounts({mana = 1500, health = 0}, 100, 4000, 0, 1000)), 0, "dead: nothing")
+do
+	a.conds = {}
+	clock = 45000
+	a.maxMana = a.mana -- full before the cast: the refund brings it back to full, not above
+	local before = a.mana
+	engineCast(a, spell, 206, 1500, 45000)
+	advance(45300)
+	a.mana = a.mana + 1000 -- regeneration during the cast
+	C.interrupt(a, "moved")
+	advance(48000)
+	eq(a.mana, before, "refund clamped: back to full, not above")
+	a.maxMana = nil
+end
 startAndThen(50000, function() registry.ChaosCastingLogout.onLogout(a) end, "logout")
 startAndThen(60000, function() registry.ChaosCastingExtended.onExtendedOpcode(a, 231, {action = "cancel"}) end, "cancel")
 startAndThen(70000, function() E.onSpellCast(a, "Lightward", 217, 3, false, 300, 0) end, "spell")

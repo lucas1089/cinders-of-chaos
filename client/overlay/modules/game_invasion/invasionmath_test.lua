@@ -34,5 +34,43 @@ eq(M.resultColor('win'), '#7fd07f', 'win colour')
 eq(M.resultColor('breach'), '#ff5030', 'loss colour')
 eq(M.kindColor('storm'), '#b07aff', 'kind colour')
 eq(M.kindColor('x'), '#d6c9ae', 'kind default')
+
+-- placement: the measured layouts (screen rects) of 1280x720, 1366x768 and 1920x1080
+local plate = { x = 34, y = 40, width = 300, height = 96 }
+eq(M.columnTop(plate, -120), 144, 'column under the plate')
+eq(M.columnTop(nil, -120), 40, 'no plate: 40 px into the visible view')
+local function overlaps(a, b)
+  return a.x < b.x + b.width and b.x < a.x + a.width and a.y < b.y + b.height and b.y < a.y + a.height
+end
+for _, L in ipairs({
+  { name = '1280x720', view = { x = 0, y = -80, width = 1280, height = 800 }, buff = { x = 335, y = 44, width = 64, height = 42 },
+    party = { x = 894, y = 226, width = 200, height = 120 }, strip = { x = 758, y = 502, width = 336, height = 44 }, bottom = 554 },
+  { name = '1366x768', view = { x = 0, y = -85, width = 1366, height = 853 }, buff = { x = 335, y = 39, width = 64, height = 42 },
+    party = { x = 980, y = 244, width = 200, height = 120 }, strip = { x = 844, y = 550, width = 336, height = 44 }, bottom = 602 },
+  { name = '1920x1080', view = { x = 0, y = -120, width = 1920, height = 1200 }, buff = { x = 335, y = 4, width = 64, height = 42 },
+    party = { x = 1534, y = 356, width = 200, height = 120 }, strip = { x = 1398, y = 862, width = 336, height = 44 }, bottom = 914 },
+}) do
+  local zone = M.characterZone(L.view)
+  local obstacles = { plate, L.buff, L.party, L.strip, zone }
+  local top = M.columnTop(plate, L.view.y)
+  -- alone (40 px from the left) and beside a 230 px rift HUD; folded (110 px) and full with a result (260 px)
+  for _, case in ipairs({ { x = 40, h = 110 }, { x = 40, h = 260 }, { x = 40 + 230 + 8, h = 260 } }) do
+    local x, y = M.place(case.x, top, 270, case.h, obstacles, L.bottom)
+    local what = L.name .. ' x ' .. case.x .. ' h ' .. case.h
+    eq(x ~= nil, true, what .. ': a spot')
+    if x then
+      local r = { x = x, y = y, width = 270, height = case.h }
+      for i, o in ipairs(obstacles) do eq(overlaps(r, o), false, what .. ': clear of obstacle ' .. i) end
+      eq(y + case.h <= L.bottom, true, what .. ': above the console')
+      eq(y, 144, what .. ': right under the plate')
+    end
+  end
+end
+-- an obstacle in the column: the HUD goes below it; no room: nil
+local x, y = M.place(40, 144, 270, 100, { { x = 0, y = 150, width = 400, height = 50 } }, 600)
+eq(y, 208, 'below an obstacle in the column')
+eq(M.place(40, 144, 270, 500, { { x = 0, y = 150, width = 400, height = 50 } }, 600), nil, 'no room')
+eq(select(2, M.place(40, 144, 270, 100, { { x = 400, y = 150, width = 100, height = 50 } }, 600)), 144, 'obstacle beside: no move')
+
 if fails > 0 then os.exit(1) end
 print('invasionmath tests OK')

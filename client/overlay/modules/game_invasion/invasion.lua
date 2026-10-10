@@ -47,16 +47,54 @@ local function tick()
   if data and not data.ended then tickEvent = scheduleEvent(tick, 500) end
 end
 
--- beside the rift HUD (same spot) while a rift runs
+local function shownRect(w)
+  if not w then return nil end
+  local ok, r = pcall(function() return w:isVisible() and w:getRect() or nil end)
+  return ok and r or nil
+end
+
+-- Under the character plate, 40 px from the left of the game view; beside the rift HUD while a rift runs. From there
+-- down to the first spot clear of the plate (and its energy shield bar), the buff bar, the party frames, the map
+-- overlay's corner box and control strip and the character's zone (cast bar), above the console (InvasionMath.place).
 local function place()
-  local mapPanel = modules.game_interface.getMapPanel()
-  local rift = mapPanel and mapPanel:recursiveGetChildById('riftHud')
-  hud:setMarginLeft((rift and rift:isVisible()) and (40 + rift:getWidth() + 8) or 40)
+  if not hud then return end
+  local gi = modules.game_interface
+  local mapPanel = gi.getMapPanel()
+  if not mapPanel then return end
+  local view = mapPanel:getRect()
+  local function byId(id) return rootWidget:recursiveGetChildById(id) end
+  local plate = shownRect(byId('chaosHud'))
+  local top = InvasionMath.columnTop(plate, view.y)
+  local x = view.x + 40
+  local rift = shownRect(mapPanel:recursiveGetChildById('riftHud'))
+  if rift then
+    x = rift.x + rift.width + InvasionMath.GAP
+    top = math.max(top, rift.y)
+  end
+  local obstacles = { InvasionMath.characterZone(view) }
+  for _, r in ipairs({ plate, shownRect(byId('energyShieldBar')), shownRect(byId('buffBar')), shownRect(byId('partyFrames')),
+      shownRect(byId('mapOverlayStrip')) }) do
+    obstacles[#obstacles + 1] = r
+  end
+  local overlay = mapPanel:getChildById('mapOverlay')
+  local box = shownRect(overlay)
+  if box and box.width < view.width * 0.6 then obstacles[#obstacles + 1] = box end -- the corner box (not the full view)
+  local bottom = g_window.getHeight()
+  for _, getter in ipairs({ gi.getBottomPanel, gi.getBottomActionPanel }) do
+    local ok, w = pcall(function() return getter and getter() end)
+    local r = ok and shownRect(w)
+    if r and r.height > 0 and r.y > bottom / 2 then bottom = math.min(bottom, r.y) end
+  end
+  local px, py = InvasionMath.place(x, top, hud:getWidth(), hud:getHeight(), obstacles, bottom)
+  if not px then px, py = x, top end
+  hud:setMarginLeft(px - view.x)
+  hud:setMarginTop(py - view.y)
+  -- above the map overlay (game_mapoverlay draws the explored map see-through over the game view)
+  if overlay and mapPanel:getChildIndex(overlay) > mapPanel:getChildIndex(hud) then hud:raise() end
 end
 
 local function render()
   if not hud or not data then return end
-  place()
   hud.title:setText(InvasionMath.title(data))
   hud.title:setColor(data.color or '#e8b84a')
   hud.subtitle:setText(InvasionMath.subtitle(data))
@@ -86,6 +124,8 @@ local function render()
   hud.you:setText(InvasionMath.youLine(data.you))
   hud.you:setVisible(not folded)
   updateClock()
+  place()
+  scheduleEvent(place, 50) -- again once the layout has the new height
 end
 
 local function hideHud()

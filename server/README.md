@@ -159,6 +159,18 @@ server/
    King Tibianus answers "promotion" with the pointer and "yes" does nothing; a premium Warrior with storage 30018 = 1 stays
    a Warrior at login. The guardian monsters (`data/monster/monsters/chaos/ascension/`) come with step 5 / the monsters
    step. See "Ascension quest".
+4c. Base NPC dialogues: `python3 -I server/tools/patch_base_npcs.py <server>/data [--dry-run]` (idempotent; `install_all.py`
+   runs it with the events step). The base NPC scripts were written for a newer NPC library than the one shipped: replies
+   given as a list of lines (every "twist of fate" priest such as Yberius, Chondur, Myra, A Bearded Woman, the greetings
+   of Al Dee and Umar: 50 replies in 20 scripts) stopped with `npchandler.lua: bad argument #1 to 'gsub' (string
+   expected, got table)`, the blessing priests charged the string `'|BLESSCOST|'` / `'|PVPBLESSCOST|'` ("attempt to compare
+   string with number" on "yes") and `|TIME|` was printed as it is. The tool patches `npc/lib` (exact match on the stock
+   lines): lists of lines are said line by line, the tags are filled (blessing 2000 gold up to level 30, then 200 per
+   level above 20, at most 20000; the twist of fate at most 50000), a node without text says nothing instead of failing
+   (Seymour's dead rats), the delayed lines of a long reply stop when the player logs out. `tools/rename_spells.py` writes
+   an NPC `spellName` with an apostrophe escaped (it broke Ormuhn, Puffels, Thorwulf, Tristan, Uso and Zarak, which did
+   not load) and repairs the lines an older run wrote. Tested by `tests/npc_lib_test.lua`; verified on the test server
+   (Yberius answers "twist of fate" in four lines, "yes" charges the level's cost and gives the blessing).
 5. Late game: copy `server/data/monster/monsters/chaos/*.xml` to `<server>/data/monster/monsters/chaos/` (17 of them
    are tuned for levels 650-1000), then `python3 -I server/tools/late_game.py <server>/data` (idempotent; `--dry-run`
    shows what would change, `--remove` undoes it). It writes the new `experienceStages` into `config.lua` and puts the
@@ -4195,7 +4207,9 @@ experience x0.03 L (`data/events/scripts/player.lua`), black skull from 401 and 
 - attack damage scaled per monster so that a level 1000 knight in the best level 1000 gear takes about as much per second as
   from the strongest existing late-game monsters (Embermaw Archon and Inferno Juggernaut ~1550/s, Pitlord Incarnate ~1070/s,
   Aegis Sentinel ~780/s); player spells used as monster attacks (Reaver's Spin, Thornlash, an unknown "death wave",
-  "arc bolt") became plain combat attacks, `lenght` typos fixed, slows capped at -900, hastes at +300;
+  "arc bolt") became plain combat attacks, `lenght` typos fixed, slows capped at -900, hastes at +300 (that tuning was with
+  the stock armour; with the percent armour, `monster_damage.lua` adds +30% to their physical hits on players at runtime,
+  see "Late-game damage boost", so the XML values stay as measured);
 - elements: physical and holy -15% (weakness), fire, energy, ice and earth +20%, death +10%. This is the lever that gives
   knights and paladins a hunt where they keep up (see the model);
 - the donor events (`auto_loot`, `orb_bonus`, `crusd_chest_bonus`, unknown here, one warning per spawn) were removed, and

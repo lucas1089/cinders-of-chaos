@@ -662,8 +662,12 @@ local function fadeIn()
 end
 
 -- ---------------------------------------------------------------- press any key
-local function reveal()
-  if not state.splash then return end
+local function inGame()
+  return g_game.isOnline() or g_game.isLogging()
+end
+
+-- ends the splash (its keyboard grab too) without showing the login panel
+local function endSplash()
   state.splash = false
   if alive(splashW) then
     splashW:ungrabKeyboard()
@@ -672,6 +676,14 @@ local function reveal()
   end
   if alive(pressW) then pressW:setVisible(false) end
   if alive(spinner) then spinner:setVisible(false) end
+end
+
+local function reveal()
+  if not state.splash then return end
+  endSplash()
+  -- a login that did not go through the splash (a script, a launcher) leaves it waiting with the keyboard grabbed: the
+  -- first key in the game then showed the login panel next to the game
+  if inGame() then return end
   if modules.client_background and modules.client_background.showPanel then modules.client_background.showPanel() end
   if EnterGame and EnterGame.show then EnterGame.show() end
   relayout()
@@ -695,6 +707,12 @@ local function startSplash()
     enterGame:hide()
   end
   syncVisibility()
+end
+
+-- the game started while the splash still waited (no key was pressed: a scripted or launcher login)
+local function onGameStart()
+  if state.splash then endSplash() end
+  if alive(enterGame) and enterGame:isVisible() then enterGame:hide() end
 end
 
 local function shouldSplash()
@@ -740,15 +758,17 @@ function init()
   animEvent = scheduleEvent(tick, 50)
 
   -- EnterGame.show is also called by the error boxes and after a logout: while the splash waits it keeps
-  -- the panel hidden, afterwards it is the stock function
+  -- the panel hidden, afterwards it is the stock function; never while a character is in the game (a late error
+  -- box or timer of the login)
   origShow = EnterGame.show
   EnterGame.show = function(...)
     origShow(...)
-    if state.splash and alive(enterGame) then
+    if (state.splash or g_game.isOnline()) and alive(enterGame) then
       enterGame:hide()
     end
     syncVisibility()   -- also puts the medallions back above the window (the stock show raises the window)
   end
+  connect(g_game, { onGameStart = onGameStart })
 
   if shouldSplash() then
     startSplash()
@@ -758,6 +778,7 @@ function init()
 end
 
 function terminate()
+  disconnect(g_game, { onGameStart = onGameStart })
   removeEvent(animEvent)
   removeEvent(fadeEvent)
   if ChaosLogin and ChaosLogin.statusEvent then removeEvent(ChaosLogin.statusEvent) end

@@ -118,15 +118,28 @@ local function isParalysed(player)
 	return ok and c ~= nil
 end
 
+-- the mana / health a refund gives: at most up to the maximum, and nothing to a dead player (the engine fills both to
+-- the new maximum after the level loss; a refund in the death event only made the stats it sends after the loss show
+-- more mana than the new maximum)
+function C.refundAmounts(r, mana, maxMana, health, maxHealth)
+	if (health or 0) <= 0 then
+		return 0, 0
+	end
+	local m = math.max(0, math.min(r.mana or 0, (maxMana or 0) - (mana or 0)))
+	local h = math.max(0, math.min(r.health or 0, (maxHealth or 0) - health))
+	return m, h
+end
+
 local function giveBack(player, cast, r, withCooldown)
 	if not player or not r then
 		return
 	end
-	if r.mana > 0 then
-		player:addMana(r.mana)
+	local mana, health = C.refundAmounts(r, player:getMana(), player:getMaxMana(), player:getHealth(), player:getMaxHealth())
+	if mana > 0 then
+		player:addMana(mana)
 	end
-	if r.health > 0 then
-		player:addHealth(r.health)
+	if health > 0 then
+		player:addHealth(health)
 	end
 	if withCooldown and cast.spellId and CONDITION_SPELLCOOLDOWN then
 		local c = player:getCondition(CONDITION_SPELLCOOLDOWN, CONDITIONID_DEFAULT, cast.spellId)
