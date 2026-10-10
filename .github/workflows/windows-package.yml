@@ -5,7 +5,8 @@
 # MANUAL ONLY (workflow_dispatch): it never runs on push or pull_request, so it cannot turn PR checks red.
 #
 # Inputs come from the private branch windows-assets (its README.md): the base server download, the base client and
-# the merged Chaos Tibia.dat / Tibia.spr, cut into parts under GitHub's 100 MB file limit.
+# the merged Chaos Tibia.dat / Tibia.spr (one archive, things/things-1098.tar.xz); large files are cut into parts under
+# GitHub's 100 MB file limit.
 #   server   Linux job: tools/windows/prepare_server.sh (engine patches, config.lua, install_all.py, sql-setup/)
 #   engine   Windows job: the patched engine built with MSVC + vcpkg (x64-windows, the libraries the Linux build was
 #            checked with: Boost 1.83, fmt 9.1) -> ChaosServer.exe + DLLs
