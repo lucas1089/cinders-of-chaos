@@ -41,7 +41,7 @@ ChaosSpellData = {
   { id = 236, name = "Shuriken Toss", words = "kah shur", level = 20, mana = 50, group = 1, groupCooldown = 2000, cooldown = 3000, premium = false, needTarget = true, range = 5, vocations = { 11, 12, 13 }, iconKey = "chaos_shurikentoss", clientId = 237 },
   { id = 238, name = "Shadow Veil", words = "fen umh", level = 40, mana = 120, group = 3, groupCooldown = 2000, cooldown = 20000, premium = false, needTarget = false, range = 0, vocations = { 11, 12, 13 }, iconKey = "chaos_shadowveil", clientId = 238 },
   { id = 239, name = "Poison Blades", words = "vyr vex thyss", level = 60, mana = 150, group = 3, groupCooldown = 2000, cooldown = 30000, premium = true, needTarget = false, range = 0, vocations = { 11, 12, 13 }, iconKey = "chaos_poisonblades", clientId = 239 },
-  { id = 98, name = "Shadow Mend", words = "saen umh", level = 25, mana = 80, group = 2, groupCooldown = 1000, cooldown = 2000, premium = false, needTarget = false, range = 0, vocations = { 11, 12, 13 }, iconKey = "chaos_shadowmend", clientId = 281 },
+  { id = 98, name = "Shadow Mend", words = "saen umh", level = 25, mana = 0, group = 2, groupCooldown = 1000, cooldown = 2000, premium = false, needTarget = false, range = 0, vocations = { 11, 12, 13 }, iconKey = "chaos_shadowmend", clientId = 281, manaPercent = 2 },
   { id = 240, name = "Shadow Step", words = "ash umh", level = 100, mana = 150, group = 1, groupCooldown = 2000, cooldown = 8000, premium = true, needTarget = true, range = 5, vocations = { 12 }, iconKey = "chaos_shadowstep", clientId = 240 },
   { id = 241, name = "Smoke Bomb", words = "drai nebh", level = 130, mana = 300, group = 3, groupCooldown = 2000, cooldown = 20000, premium = true, needTarget = false, range = 0, vocations = { 12 }, iconKey = "chaos_smokebomb", clientId = 241 },
   { id = 242, name = "Shuriken Barrage", words = "drai vas shur", level = 180, mana = 400, group = 1, groupCooldown = 2000, cooldown = 10000, premium = true, needTarget = true, range = 5, vocations = { 12 }, iconKey = "chaos_shurikenbarrage", clientId = 242 },
@@ -248,4 +248,20 @@ ChaosSpellNames = {
   ["adito grav"] = { name = "Dispel Rune", words = "rhud mur" },
   ["adori blank"] = { name = "Unscribed Rune", words = "rhun nul" },
   ["adori dis min vis"] = { name = "Novice's Hexdart Rune", words = "rhun nov ti zhul" },
+}
+
+-- stock spells the Thief, Monk and Templar lines get: Chaos words -> class ids (server/tools/add_vocations.py, LINE_STOCK_SPELLS)
+ChaosStockSpellLines = {
+  ["vael lyss"] = { 11, 12, 13, 17, 18, 19, 23, 24, 25 },
+  ["vael gal lyss"] = { 11, 12, 13, 17, 18, 19, 23, 24, 25 },
+  ["ruan ul"] = { 11, 12, 13, 17, 18, 19, 23, 24, 25 },
+  ["sekh"] = { 11, 12, 13, 17, 18, 19, 23, 24, 25 },
+  ["ash ul"] = { 11, 12, 13, 17, 18, 19, 23, 24, 25 },
+  ["ash gor"] = { 11, 12, 13, 17, 18, 19, 23, 24, 25 },
+  ["puir vex"] = { 11, 12, 13, 17, 18, 19, 23, 24, 25 },
+  ["puir lav"] = { 11, 12, 13, 17, 18, 19, 23, 24, 25 },
+  ["puir aeth"] = { 11, 12, 13, 17, 18, 19, 23, 24, 25 },
+  ["ruan gal ul"] = { 11, 12, 13, 17, 18, 19 },
+  ["puir sang"] = { 17, 18, 19, 23, 24, 25 },
+  ["puir nyx"] = { 23, 24, 25 },
 }

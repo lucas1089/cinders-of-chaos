@@ -25,8 +25,11 @@ def main():
         idx = icon_of[name]
         out.append('  {{ id = {id}, name = "{name}", words = "{words}", level = {level}, mana = {mana}, '
                    'group = {g}, groupCooldown = {gcd}, cooldown = {cd}, premium = {prem}, '
-                   'needTarget = {nt}, range = {rng}, vocations = {{ {voc} }}, iconKey = "chaos_{key}", clientId = {cid} }},'.format(
-                       id=a['spellid'], name=name.replace('"', '\\"'), words=a['words'], level=a['level'], mana=a['mana'],
+                   'needTarget = {nt}, range = {rng}, vocations = {{ {voc} }}, iconKey = "chaos_{key}", clientId = {cid}{pct} }},'.format(
+                       id=a['spellid'], name=name.replace('"', '\\"'), words=a['words'], level=a['level'], mana=a.get('mana', '0'),
+                       # manapercent: the cost is that percentage of the maximum mana (the server's Spell::getManaCost
+                       # reads it when mana is 0); chaosspells.lua keeps the entry's mana at the player's current cost
+                       pct=', manaPercent = %s' % a['manapercent'] if a.get('manapercent') and a.get('mana', '0') == '0' else '',
                        g=GROUP[a['group']], gcd=a['groupcooldown'], cd=a['cooldown'], prem='true' if a.get('premium') == '1' else 'false',
                        nt='true' if a.get('needtarget') == '1' else 'false', rng=a.get('range', '0'),
                        voc=', '.join(map(str, voc)), key=re.sub(r'[^a-z0-9]+', '', name.lower()), cid=FIRST_ICON + idx))
@@ -41,6 +44,16 @@ def main():
         if r['words']:
             words = ' '.join(parts[t] for t in r['words'].split())
             out.append('  ["%s"] = { name = "%s", words = "%s" },' % (r['words'], r['new_name'].replace('"', '\\"'), words))
+    out.append('}')
+    # stock utility spells the Thief, Monk and Templar lines get on the server (server/tools/add_vocations.py,
+    # LINE_STOCK_SPELLS); chaosspells.lua adds the ids to the client's stock entries, keyed by the Chaos words
+    sys.path.insert(0, os.path.join('server', 'tools'))
+    from add_vocations import LINE_STOCK_SPELLS
+    out += ['', '-- stock spells the Thief, Monk and Templar lines get: Chaos words -> class ids '
+            '(server/tools/add_vocations.py, LINE_STOCK_SPELLS)', 'ChaosStockSpellLines = {']
+    for _, stock, lines in LINE_STOCK_SPELLS:
+        words = ' '.join(parts[t] for t in stock.split())
+        out.append('  ["%s"] = { %s },' % (words, ', '.join(str(VOC[v]) for line in lines for v in line)))
     out.append('}')
     path = 'client/overlay/modules/game_chaosspells/spelldata.lua'
     os.makedirs(os.path.dirname(path), exist_ok=True)

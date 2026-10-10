@@ -151,10 +151,12 @@ Limits of phase 1:
   (and end it). A monster that sees invisible creatures is handled the same way.
 - Dual wield needs the engine patch; without it a Ninja fights with one blade and gets no off-hand strike. Both blades' item bonuses
   count. A character that stops being a Ninja keeps a sword already in the shield hand until it moves it (it then cannot put it back).
-- The line had no healing spell of its own until Shadow Mend (phase 2b). Potions: since the class pass of 2026-10 `add_vocations.py` adds the line (11-13) to
+- The line had no healing spell of its own until Shadow Mend (phase 2b; since 2026-10 it costs 2% of the maximum mana, not a
+  flat 80: about 13 / 10 healed per mana at level 300 / 1000, server/data/spells/README.md "Healing"). Potions: since the class pass of 2026-10 `add_vocations.py` adds the line (11-13) to
   the Royal Paladin's potion lists (the line wears what the Paladin wears; see "Item, spell and potion lists"); before, the
   strongest potions refused it. The shared Chaos spells (Flickerdash, Banner Call, Soulward, Hunter's
-  Instinct) and the stock spells do not list the line either. These were left alone in phase 1 (existing spells and base scripts).
+  Instinct) and the stock spells did not list the line either in phase 1; both do now (stock utility spells: see "Item, spell and
+  potion lists").
 - Spell strikes have a level factor (`Chaos.classes.spellLevelScale`) that stands in for the missing passive tree.
 
 ### Phase 2a (done): Warrior, Ranger and Mystic on the framework, the migration, Berserker and Beastmaster
@@ -192,6 +194,12 @@ Limits of phase 1:
   Illusionist and the Necromancer line ("Only Mystics and Necromancers ..."). Unit test `server/tests/potions_patch_test.lua`;
   in game: a Ninja, a Necromancer and a Templar drink theirs and are refused the others;
   `lib/core/player.lua`: `Player.isKnight` / `isPaladin` count them too. Weapons without a vocation list stay open to everyone.
+  Stock utility spells (`LINE_STOCK_SPELLS`, since 2026-10): the Thief, Monk and Templar lines get what every other class has
+  (Lantern, Greater Lantern, Fleetfoot, Bloodtrail, Wraith Step, Ghost Rope, Purge Venom, Wash Taint, Break Glamour); the Thief
+  and Monk lines also Galeborne Stride (strong haste), the Monk and Templar lines Staunch Blood (as the Warrior), the Templar
+  line Lift Hex (as the Ranger). The Necromancer line already had them all. NPC teachers and the spellbook follow `spells.xml`;
+  the client's spell list gets the same ids from `ChaosStockSpellLines` (spelldata.lua). Unit test
+  `server/tests/stock_spells_patch_test.lua`; in game a Thief, a Monk and a Templar cast each one (and are refused the others).
 - **Ascension**: the Ascendant Oracle (Warrior), `deadeye|beastmaster` (Ranger), `elementalist|illusionist` (Mystic),
   `ninja|samurai` (Thief); level 100, protection zone, out of combat, final. The store's Character > Services takes the new words
   (`warrior|juggernaut|berserker|ranger|deadeye|beastmaster|mystic|elementalist|illusionist|thief|ninja|samurai`; the base word asks

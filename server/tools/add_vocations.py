@@ -37,6 +37,9 @@ usage: python3 -I add_vocations.py DATA_DIR [--dry-run]
    of the Mystic in spells.xml get it too (healing, haste, magic shield, light, cures, party spells; not rune
    conjuring, not the stock summon, which would bypass the minion caps, not other classes' custom spells).
    A list that already names the line's base class is left as it is, so every run after the first changes nothing.
+   The Thief, Monk and Templar lines get the stock utility spells every other class has (LINE_STOCK_SPELLS: light, great
+   light, haste, find person, levitate, magic rope, the poison / splash / bewitched cures); the Thief and Monk lines also
+   strong haste, the Monk and Templar lines cure bleeding (as the Warrior), the Templar line cure curse (as the Ranger).
 4. data/actions/scripts/other/potions.lua: every class drinks the potions of its role (docs/CLASSES.md, POTION_RULES):
    a list that names the Elite Knight (8) also gets the Berserker (14), one that names the Royal Paladin (7) the
    Beastmaster (15), the Thief line (11, 12, 13) and the Monk line (17, 18, 19), one that names either the Templar line
@@ -73,6 +76,24 @@ CASTERS = ('Mystic', 'Elementalist', 'Illusionist', 'Sorcerer', 'Master Sorcerer
 # the Necromancer's stock spells: the Mystic's healing / support instants, never these scripts
 NECRO_SPELL_FROM = ('Mystic', 'Sorcerer')
 NECRO_SPELL_SKIP = ('conjuring/', 'summon_creature', 'custom/')
+# the stock utility spells of the Thief, Monk and Templar lines (the Warrior, Ranger, Mystic and Necromancer all have
+# the first nine): (spells.xml script, stock words, lines). client/tools/gen_spell_data.py writes the same table into
+# the client's spelldata.lua (ChaosStockSpellLines), so the client's spell list shows them for the three lines.
+THIEF_MONK_TEMPLAR = (LINE, MONK_LINE, TEMPLAR_LINE)
+LINE_STOCK_SPELLS = [
+    ('support/light.lua', 'utevo lux', THIEF_MONK_TEMPLAR),
+    ('support/great_light.lua', 'utevo gran lux', THIEF_MONK_TEMPLAR),
+    ('support/haste.lua', 'utani hur', THIEF_MONK_TEMPLAR),
+    ('support/find_person.lua', 'exiva', THIEF_MONK_TEMPLAR),
+    ('support/levitate.lua', 'exani hur', THIEF_MONK_TEMPLAR),
+    ('support/magic_rope.lua', 'exani tera', THIEF_MONK_TEMPLAR),
+    ('healing/cure_poison.lua', 'exana pox', THIEF_MONK_TEMPLAR),
+    ('healing/cure_splashed.lua', 'exana splash', THIEF_MONK_TEMPLAR),
+    ('healing/cure_bewitched.lua', 'exana arcane', THIEF_MONK_TEMPLAR),
+    ('support/strong_haste.lua', 'utani gran hur', (LINE, MONK_LINE)),       # the mobile lines
+    ('healing/cure_bleeding.lua', 'exana kor', (MONK_LINE, TEMPLAR_LINE)),   # melee lines, as the Warrior
+    ('healing/cure_curse.lua', 'exana mort', (TEMPLAR_LINE,)),               # the holy line, as the Ranger
+]
 
 # old name -> new names; 'B' / 'BM' mark the Berserker / Beastmaster, added only where the item allows it
 CONVERT = {
@@ -399,6 +420,30 @@ def patch_spells_necro(text):
     return re.sub(r'<instant\b([^>]*[^/])>.*?</instant>', repl, text, flags=re.S), count[0]
 
 
+def patch_spells_lines(text):
+    """the stock utility spells of LINE_STOCK_SPELLS get their class lines (not the Chaos block); returns (text, count)"""
+    m = re.search(r'<!-- BEGIN chaos spells.*?<!-- END chaos spells -->', text, re.S)
+    skip = m.span() if m else None
+    lines_of = {script: lines for script, _, lines in LINE_STOCK_SPELLS}
+    count = [0]
+
+    def repl(m):
+        if skip and skip[0] <= m.start() < skip[1]:
+            return m.group(0)
+        el = m.group(0)
+        script = re.search(r'\bscript="([^"]+)"', m.group(1))
+        lines = lines_of.get(script.group(1).lower().replace('\\', '/') if script else '')
+        if not lines or '<vocation' not in el:
+            return el
+        new = el
+        for line in lines:
+            new = add_lines(new, line)
+        if new != el:
+            count[0] += 1
+        return new
+    return re.sub(r'<instant\b([^>]*[^/])>.*?</instant>', repl, text, flags=re.S), count[0]
+
+
 # ------------------------------------------------------------------------------------------------ base scripts
 # potions.lua: the stock vocation whose potions a class drinks (docs/CLASSES.md): a list that names the stock id gets the
 # class ids. Melee lines drink the knight's, hybrids the paladin's, casters the mage's.
@@ -533,14 +578,16 @@ def main():
     weapons, cw = patch_weapons(weapons, info)
     moves, cm = patch_movements(moves, info)
     spells, nsn = patch_spells_necro(spells)
+    spells, nsl = patch_spells_lines(spells)
     nw, nm = sum(cw.values()), sum(cm.values())
-    ns += nsn
+    ns += nsn + nsl
 
     def per_line(c):
         return ', '.join('%d the %s line' % (n, k) for k, n in c.items())
     print('vocations.xml: %s (%s; retired %s)' % (status, ', '.join('%s %s' % i for i in ids), ', '.join(sorted(RETIRED))))
     print('spells.xml: %d vocation lists converted, %d stock healing / support spells get the Necromancer line'
-          % (ns - nsn, nsn))
+          % (ns - nsn - nsl, nsn))
+    print('spells.xml: %d stock utility spells get the Thief / Monk / Templar lines' % nsl)
     print('weapons.xml: %d vocation lists converted; weapon entries: %s' % (nwc, per_line(cw)))
     print('movements.xml: %d vocation lists converted; equip entries: %s' % (nmc, per_line(cm)))
     if status == 'patched':

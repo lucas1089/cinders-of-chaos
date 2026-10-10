@@ -194,6 +194,10 @@ server/
    one-handed swords and clubs and what the Warrior may wear (shields too), the Necromancer line every wand and rod, what the
    casters may wear and the Mystic's stock healing and support instants (no rune conjuring, no stock summon); the potions follow
    (Monk: the Royal Paladin's, Templar: the Elite Knight's and the Royal Paladin's, Necromancer: the Elementalist's).
+   The Thief, Monk and Templar lines also get the stock utility spells of the other classes (`LINE_STOCK_SPELLS`: light, great
+   light, haste, find person, levitate, magic rope, the poison / splash / bewitched cures; strong haste for the Thief and Monk
+   lines, cure bleeding for the Monk and Templar lines, cure curse for the Templar line); `client/tools/gen_spell_data.py`
+   writes the same table into the client's spelldata.lua. Test: `tests/stock_spells_patch_test.lua`.
    Then `python3 -I server/tools/patch_base_classes.py <server>/data [--dry-run]` (idempotent; `install_all.py` runs it in the
    vocations step): the base server's own vocation checks (NPCs, quests, familiars, exercise weapons, ...) learn the classes.
    See "Base scripts and the classes".
