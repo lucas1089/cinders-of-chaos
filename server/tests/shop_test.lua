@@ -33,8 +33,17 @@ dofile("data/scripts/chaos/class_looks_core.lua")
 local achievements = dofile("data/scripts/chaos/achievements_data.lua")
 local season = dofile("data/scripts/chaos/season_config.lua")
 local seasonpass = dofile("data/scripts/chaos/seasonpass_config.lua")
+local retiredLooks = {}
+for _, e in ipairs(ChaosClassLooks.retired) do
+	retiredLooks[#retiredLooks + 1] = e.male
+	retiredLooks[#retiredLooks + 1] = e.female
+end
 local EX = K.exclusions({classLooks = ChaosClassLooks.looks, classOutfits = Chaos.classes.outfits,
-	achievements = achievements, season = season, seasonpass = seasonpass})
+	achievements = achievements, season = season, seasonpass = seasonpass, looks = retiredLooks})
+for _, e in pairs(ChaosClassLooks.looks) do
+	ok(EX.looks[e.male] and EX.looks[e.female], "class look " .. e.name .. " excluded")
+end
+ok(EX.looks[131] and EX.looks[139], "former class looks (the Knight) stay excluded")
 for _, look in ipairs({974, 973, 278, 279, 1016, 1017, 665, 664}) do
 	ok(EX.looks[look], "season pass look " .. look .. " excluded")
 end

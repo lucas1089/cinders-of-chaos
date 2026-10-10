@@ -88,8 +88,28 @@ do
 		end
 	end
 
-	eq(L.lookFor(4, L.MALE), 131, "warrior male"); eq(L.lookFor(4, L.FEMALE), 139, "warrior female")
-	eq(select(2, L.lookFor(15, L.MALE)), "Beastmaster", "name")
+	eq(L.lookFor(4, L.MALE), 1455, "warrior male"); eq(L.lookFor(4, L.FEMALE), 1456, "warrior female")
+	eq(select(2, L.lookFor(15, L.MALE)), "Beastmaster Class", "name")
+	-- the new looks are the class looks' own: never a former class look, and the names are unique
+	local retired, names = {}, {}
+	for _, e in ipairs(L.retired) do retired[e.male] = true; retired[e.female] = true end
+	for vocId, e in pairs(L.looks) do
+		ok(not retired[e.male] and not retired[e.female], "class " .. vocId .. " uses a former class look")
+		ok(not names[e.name], "name " .. e.name .. " used once"); names[e.name] = true
+	end
+	-- the sources CSV lists every look (licence tracing)
+	local csv = io.open("../client/tools/outfit_art/class_looks_sources.csv")
+	if csv then
+		local listed = {}
+		for line in csv:lines() do
+			local look = line:match("^%d+,[^,]*,[^,]*,(%d+),")
+			if look then listed[tonumber(look)] = true end
+		end
+		csv:close()
+		for vocId, e in pairs(L.looks) do
+			ok(listed[e.male] and listed[e.female], "class " .. vocId .. " looks listed in class_looks_sources.csv")
+		end
+	end
 	eq(L.lookFor(0, L.MALE), nil, "vocation 0"); eq(L.lookFor(2, L.MALE), nil, "retired id")
 	-- an ascended class gets its look and its base class's
 	local u = L.unlocksFor(12, L.MALE)
@@ -101,9 +121,9 @@ do
 	-- wearing keeps the colours and the mount, drops the addons
 	local cur = {lookType = 128, lookHead = 78, lookBody = 69, lookLegs = 58, lookFeet = 76, lookAddons = 3, lookMount = 5}
 	local w = L.wearOutfit(cur, 24, L.FEMALE)
-	eq(w.lookType, 1015, "inquisitor female"); eq(w.lookAddons, 0, "no addons"); eq(w.lookHead, 78, "colours kept")
+	eq(w.lookType, 2043, "inquisitor female"); eq(w.lookAddons, 0, "no addons"); eq(w.lookHead, 78, "colours kept")
 	eq(w.lookMount, 5, "mount kept"); eq(cur.lookType, 128, "the given table is not changed")
-	eq(L.wearOutfit({lookType = 1015, lookAddons = 0}, 24, L.FEMALE), nil, "already worn")
+	eq(L.wearOutfit({lookType = 2043, lookAddons = 0}, 24, L.FEMALE), nil, "already worn")
 	eq(L.wearOutfit(cur, 0, L.MALE), nil, "no class look")
 	eq(L.isFirstLogin(0), true, "first login"); eq(L.isFirstLogin(1700000000), false, "later login")
 end

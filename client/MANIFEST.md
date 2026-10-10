@@ -186,6 +186,28 @@ Donor B centres big creatures with negative displacements; the 1098 profile enab
 (base-patches/0006) for that. Catalogue rows tagged "named character" (donor C) are recognisable characters of other
 works: library only, never live. Not checked in the test client yet.
 
+## Class looks pair (things_custom10, new)
+The 21 class looks (male and female, `server/data/scripts/chaos/class_looks_core.lua`) on top of things_custom9_fx (dat
+9cd3c674..., spr 3271f987...: things_custom8 plus fist weapons and bone effects). Picks, sources and edits per look:
+`tools/outfit_art/class_looks_sources.csv` (licence tracing; boards in `tools/outfit_art/out/survey/final_<line>_*.png`,
+made by `tools/outfit_art/survey.py final`). The generated Warrior-line art (`tools/outfit_art/build.py`) is not in it.
+
+    python3 -I tools/sprites/import_outfits.py --src-dat L/donorJ/Tibia.dat --src-spr L/donorJ/Tibia.spr \
+        --ours-dat things_custom9_fx/Tibia.dat --ours-spr things_custom9_fx/Tibia.spr --looks 125,126,63,64,20,18 --expect-first 2039 --out-dir j
+    ... donorD --looks 981,982,1037,1038,182,183,531,532,1015,1016,999,1000 --expect-first 2045 (on j) --out-dir d
+    ... donorF --looks 11,12,224 --expect-first 2057 (on d) --out-dir f
+    ... donorH --looks 133,134,135,136,70,225,226,176,177 --expect-first 2060 (on f) --out-dir h
+    python3 -I tools/outfit_art/add_template.py --ours-dat h/Tibia.dat --ours-spr h/Tibia.spr --looks 1505,1506,1508,1510 \
+        --expect-first 2069 --out-dir things_custom10
+
+(L = the donor library folder.) Each step verifies its output (old entries byte-identical, new sprite slots
+pixel-identical, 3000 sampled old sprites unchanged). `add_template.py` copies one-layer outfits as new look types with a
+colour template: the outfit's accent colour (the commonest saturated hue) becomes grey in the art and is marked head /
+body / legs / feet by its place along the figure. Result: dat 646583fa5a406e774466bf090221c929, spr
+531461f7ab57ecc2f9ad9a33da7cb281, 2072 outfits. Server side: `server/tools/install_outfits.py` writes the class looks
+block of outfits.xml (type 1 male, type 0 female, locked); the store leaves out class looks and the former stock class
+looks (`L.retired`). Checked in game: the test characters got and wore their class look at their first login.
+
 ## Spell icons from the element icon sets (new)
 The three spell icon sheets now use pixel-art ability icons (six element sets of 40, 32x32 with an element-coloured
 frame, owned by the project) instead of the generated drawings in 259 of the 280 cells: the 79 Chaos spells (cells

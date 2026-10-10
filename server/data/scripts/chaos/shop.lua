@@ -95,7 +95,13 @@ local function exclusions()
 	if not ChaosClassLooks or not ChaosClassLooks.looks then
 		pcall(dofile, "data/scripts/chaos/class_looks_core.lua")
 	end
-	local src = {classLooks = ChaosClassLooks and ChaosClassLooks.looks, classOutfits = Chaos.classes and Chaos.classes.outfits}
+	local src = {classLooks = ChaosClassLooks and ChaosClassLooks.looks, classOutfits = Chaos.classes and Chaos.classes.outfits,
+		looks = {}}
+	-- the looks classes wore before: characters own them already
+	for _, e in ipairs(ChaosClassLooks and ChaosClassLooks.retired or {}) do
+		src.looks[#src.looks + 1] = e.male
+		src.looks[#src.looks + 1] = e.female
+	end
 	local ok, data = pcall(dofile, "data/scripts/chaos/achievements_data.lua")
 	src.achievements = ok and data or nil
 	ok, data = pcall(dofile, "data/scripts/chaos/season_config.lua")

@@ -250,6 +250,8 @@ def main():
         cmd_live(a.pair, a.server)
     elif a.cmd == "donors":
         cmd_donors(a.library)
+    elif a.cmd == "final":
+        cmd_finalboards(a.pair)
     elif a.cmd == "boards":
         cmd_lineboards(a.pair, a.library)
     else:
@@ -339,6 +341,49 @@ def cmd_lineboards(pair, library, lines=None):
                 cells.append((im, lab if i == 0 else "", (60, 60, 60) if s != "G" else (120, 60, 30)))
         sheet(cells, 8, 1, os.path.join(OUT, "board_%s_1x.png" % line), label_h=0)
         sheet(cells, 8, 3, os.path.join(OUT, "board_%s_3x.png" % line))
+
+
+# ------------------------------------------------------------------------------------------------ final boards
+LINES_ORDER = [("Warrior", (4, 8, 14)), ("Ranger", (3, 7, 15)), ("Mystic", (1, 5, 10)), ("Thief", (11, 12, 13)),
+               ("Monk", (17, 18, 19)), ("Necromancer", (20, 21, 22)), ("Templar", (23, 24, 25))]
+COLOUR_SETS = [((0, 114, 95, 114), "ash & blood"), ((95, 76, 57, 114), "ember"), ((114, 87, 86, 95), "iron & bone")]
+
+
+def class_looks():
+    text = open(os.path.join(CHAOS, "class_looks_core.lua")).read()
+    block = re.search(r"L\.looks = \{(.*?)\n\}", text, re.S).group(1)
+    return {int(v): (n, int(m), int(f)) for v, n, m, f in
+            re.findall(r'\[(\d+)\] = \{name = "([^"]+)", male = (\d+), female = (\d+)\}', block)}
+
+
+def walk_imgs(F, d, cols=DEFAULT):
+    keys = sorted({k[1] for k in F if k[0] == 1})
+    out = []
+    for ph in keys:
+        G = {(0, 0) + k[2:]: v for k, v in F.items() if k[0] == 1 and k[1] == ph}
+        out.append(outfit_img(G, d=d, cols=cols))
+    return out
+
+
+def cmd_finalboards(pair):
+    d, sp = stockread.load(pair)
+    looks = class_looks()
+    for line, vocs in LINES_ORDER:
+        cells = []
+        for v in vocs:
+            name, m, f = looks[v]
+            for sex, look in (("M", m), ("F", f)):
+                F = stockread.frames(d, sp, look)
+                row = [(outfit_img(F, d=di), "%s %s %d" % (name.replace(" Class", ""), sex, look) if di == 2 else "", (60, 60, 60))
+                       for di in (2, 1, 0, 3)]
+                wk = walk_imgs(F, 2)
+                for i in range(4):
+                    row.append((wk[(i * len(wk)) // 4] if wk else None, "walk" if i == 0 else "", (45, 70, 45)))
+                for cols, cname in COLOUR_SETS:
+                    row.append((outfit_img(F, d=2, cols=cols), cname, (70, 45, 45)))
+                cells += row
+        sheet(cells, 11, 1, os.path.join(OUT, "final_%s_1x.png" % line.lower()), label_h=0)
+        sheet(cells, 11, 3, os.path.join(OUT, "final_%s_3x.png" % line.lower()))
 
 
 if __name__ == "__main__":

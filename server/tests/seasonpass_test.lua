@@ -115,6 +115,7 @@ end
 local ok, classLooks = pcall(dofile, "data/scripts/chaos/class_looks_core.lua")
 if ok and type(ChaosClassLooks) == "table" then
 	addLooks(others, ChaosClassLooks.looks, {})
+	addLooks(others, ChaosClassLooks.retired or {}, {})
 end
 local mine = {looks = {}, mounts = {}, portals = {}, titles = {}}
 for _, c in ipairs(cfg.cosmetics) do

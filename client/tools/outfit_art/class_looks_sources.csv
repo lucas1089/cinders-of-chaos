@@ -1,0 +1,43 @@
+voc_id,class,sex,look_type,source,source_look,source_note,edit
+4,Warrior,male,1455,live pair (stock 10.98 asset of the base client pair),1455,unused by the base server and by Chaos,none
+4,Warrior,female,1456,live pair (stock 10.98 asset of the base client pair),1456,unused by the base server and by Chaos,none
+8,Juggernaut,male,2039,donor J library (10.10-style donor client),125,catalogue: creature walk; not tagged,none (copied by import_outfits.py)
+8,Juggernaut,female,2040,donor J library (10.10-style donor client),126,catalogue: creature walk; not tagged,none
+14,Berserker,male,2057,donor F library (10.98 donor F client),11,catalogue: creature walk; not tagged,none
+14,Berserker,female,2058,donor F library (10.98 donor F client),12,catalogue: creature walk; not tagged,none
+3,Ranger,male,1457,live pair (stock 10.98 asset of the base client pair),1457,unused by the base server and by Chaos,none
+3,Ranger,female,1458,live pair (stock 10.98 asset of the base client pair),1458,unused by the base server and by Chaos,none
+7,Deadeye,male,2045,donor D library (10.98 donor without alpha),981,catalogue: creature walk; not tagged,none
+7,Deadeye,female,2046,donor D library (10.98 donor without alpha),982,catalogue: creature walk; not tagged,none
+15,Beastmaster,male,2047,donor D library (10.98 donor without alpha),1037,catalogue: creature walk; not tagged,none
+15,Beastmaster,female,2048,donor D library (10.98 donor without alpha),1038,catalogue: creature walk; not tagged,none
+1,Mystic,male,2060,donor H library (7.72 donor H client),133,catalogue: creature walk; not tagged,none
+1,Mystic,female,2061,donor H library (7.72 donor H client),134,catalogue: creature walk; not tagged,none
+5,Elementalist,male,2062,donor H library (7.72 donor H client),135,catalogue: creature walk; not tagged,none
+5,Elementalist,female,2063,donor H library (7.72 donor H client),136,catalogue: creature walk; not tagged,none
+10,Illusionist,male,2049,donor D library (10.98 donor without alpha),182,catalogue: creature walk; not tagged,none
+10,Illusionist,female,2050,donor D library (10.98 donor without alpha),183,catalogue: creature walk; not tagged,none
+11,Thief,male,2051,donor D library (10.98 donor without alpha),531,catalogue: creature walk; not tagged,none
+11,Thief,female,2052,donor D library (10.98 donor without alpha),532,catalogue: creature walk; not tagged,none
+12,Ninja,male,2069,live pair look 1505 (third donor sprite set: server/data/monster/CUSTOM_MONSTERS.md),1505,Shadow Ninja class outfit,colour template added (add_template.py: red accent -> grey + template)
+12,Ninja,female,2070,live pair look 1506 (third donor sprite set),1506,Crimson Ninja class outfit,colour template added (red accent)
+13,Samurai,male,2071,live pair look 1508 (third donor sprite set),1508,Oni Samurai class outfit,colour template added (red accent)
+13,Samurai,female,2072,live pair look 1510 (third donor sprite set),1510,Dark Samurai class outfit,colour template added (gold horns)
+17,Monk,male,1464,live pair (stock 10.98 asset of the base client pair),1464,unused by the base server and by Chaos,none
+17,Monk,female,1465,live pair (stock 10.98 asset of the base client pair),1465,unused by the base server and by Chaos,none
+18,Shadowfist,male,2053,donor D library (10.98 donor without alpha),1015,catalogue: creature walk; not tagged,none
+18,Shadowfist,female,2054,donor D library (10.98 donor without alpha),1016,catalogue: creature walk; not tagged,none
+19,Iron Sage,male,2055,donor D library (10.98 donor without alpha),999,catalogue: creature walk; not tagged,none
+19,Iron Sage,female,2056,donor D library (10.98 donor without alpha),1000,catalogue: creature walk; not tagged,none
+20,Necromancer,male,2044,donor J library (10.10-style donor client),18,catalogue: creature walk; not tagged,none
+20,Necromancer,female,2064,donor H library (7.72 donor H client),70,catalogue: creature walk; not tagged; a different outfit than the male (no female of J 18),none
+21,Lich,male,2059,donor F library (10.98 donor F client),224,catalogue: creature walk; not tagged; one look for both sexes,none
+21,Lich,female,2059,donor F library (10.98 donor F client),224,same look as the male (a skull: no female needed),none
+22,Bone Lord,male,2065,donor H library (7.72 donor H client),225,catalogue: creature walk; not tagged,none
+22,Bone Lord,female,2066,donor H library (7.72 donor H client),226,catalogue: creature walk; not tagged,none
+23,Templar,male,2067,donor H library (7.72 donor H client),176,catalogue: creature walk; not tagged,none
+23,Templar,female,2068,donor H library (7.72 donor H client),177,catalogue: creature walk; not tagged,none
+24,Inquisitor,male,2043,donor J library (10.10-style donor client),20,catalogue: creature walk; not tagged; one look for both sexes,none
+24,Inquisitor,female,2043,donor J library (10.10-style donor client),20,same look as the male (skull mask),none
+25,Sentinel,male,2042,donor J library (10.10-style donor client),64,catalogue: creature walk; not tagged,none
+25,Sentinel,female,2041,donor J library (10.10-style donor client),63,catalogue: creature walk; not tagged,none
