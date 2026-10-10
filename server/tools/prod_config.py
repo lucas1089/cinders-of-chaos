@@ -48,6 +48,10 @@ What it sets, and why (docs/LAUNCH.md has the full checklist):
   energyShieldRechargeDelay = 2000, energyShieldOpcode = 224
                           the energy shield (engine patch 0015, README "Energy shield") recharges 2 s after the last hit;
                           its value goes to the client on extended opcode 224 (ChaosOpcodes.energyShield)
+  minPlayerSpeed = 120, maxPlayerSpeed = 2600, playerSpeedBonus = 50, playerSpeedPerTenLevels = 25,
+  playerSpeedSoftLevel = 300, playerSpeedPerTenLevelsAbove = 10
+                          movement speed (engine patch 0018, README "Movement speed"): a player walks between about
+                          1 and 10 tiles/s on normal ground; base speed = vocation + 50, 2.5 per level to 300, 1 after
 
 Exit status 1 (nothing written) when --ip is missing or the map is a cropped test map.
 """
@@ -98,6 +102,12 @@ def settings(opts):
         ('armorPercentMax', '80'),
         ('energyShieldRechargeDelay', '2000'),
         ('energyShieldOpcode', '224'),
+        ('minPlayerSpeed', '120'),
+        ('maxPlayerSpeed', '2600'),
+        ('playerSpeedBonus', '50'),
+        ('playerSpeedPerTenLevels', '25'),
+        ('playerSpeedSoftLevel', '300'),
+        ('playerSpeedPerTenLevelsAbove', '10'),
     ]
     for key, env, default in ENV_DB:
         expr = 'os.getenv("%s")' % env

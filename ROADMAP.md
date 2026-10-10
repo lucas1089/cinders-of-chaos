@@ -100,6 +100,13 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 
 ## Open decisions and loose ends
 
+- Decided: movement speed (engine `server/src-patches/0018-movement-speed.patch`, client
+  `client/base-patches/0029-movement-speed.patch`, server/README.md "Movement speed"). Players walk 15-30% faster:
+  base +50, 2.5 per level to 300, 1 after; 10 ms steps. A diagonal costs 7/5 of a straight step, was 3x on the
+  client. Walk speed is held between 120 and 2600: about 1 to 10 tiles/s on grass. Monsters keep their rules.
+  Tested in game at levels 1-1000 with haste and a paralyze rune: no rubber-banding. Open: the Windows client and
+  server need rebuilds with these patches. Without 0029 a client predicts slower steps: it stutters, but no
+  rubber-banding. The numbers are config keys, so retuning needs no rebuild.
 - Fixed: opening the passive tree window with a large build no longer gets players kicked. The window rebuilt
   ~1,400 widgets four times (a 2-4 s freeze); now built once and in slices. Fixed too: the base client's healing
   helper (`mods/game_helper/helper.lua`) replayed every missed 50 ms cycle after any client stall (the engine's

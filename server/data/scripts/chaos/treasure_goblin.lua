@@ -30,6 +30,9 @@ if not Chaos then
 end
 ChaosTreasureGoblinConfig = dofile("data/scripts/chaos/treasure_goblin_config.lua")
 dofile("data/scripts/chaos/treasure_goblin_core.lua")
+if not ChaosSpeed then
+	dofile("data/lib/chaos_speed.lua") -- the speed a player really walks at (engine patch 0018 clamps it)
+end
 
 ChaosTreasureGoblin = ChaosTreasureGoblin or {}
 local TG = ChaosTreasureGoblin
@@ -338,7 +341,7 @@ local function wake(monster, st, attacker)
 	local c = cfg()
 	monster:setMaxHealth(st.real)
 	monster:setHealth(st.real)
-	local delta = G.fleeSpeedDelta(c, monster:getSpeed(), attacker and attacker:getSpeed() or 0)
+	local delta = G.fleeSpeedDelta(c, monster:getSpeed(), attacker and ChaosSpeed.effective(attacker) or 0)
 	if delta > 0 then
 		monster:changeSpeed(delta)
 	end

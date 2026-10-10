@@ -1,0 +1,94 @@
+# Movement speed, the client side of server src-patch 0018 (server/README.md "Movement speed"): a player's step is rounded up to 10 ms (not the 50 ms beat) and a diagonal step of a player takes 7/5 of a straight one (stock 3x); monsters and NPCs step diagonally in a straight step's time, as the server moves them. The walk offset now moves over the whole step (a diagonal no longer runs a straight step's time and then stands). The path finders cost a diagonal 1.4 (stock 3), so clicked walks take diagonals.
+--- a/src/client/creature.cpp
++++ b/src/client/creature.cpp
+@@ -53,6 +53,14 @@
+ 
+ std::array<double, Otc::LastSpeedFormula> Creature::m_speedFormula = { -1,-1,-1 };
+ 
++// Chaos (base-patch 0029, server src-patch 0018 "Movement speed"): the server rounds a player's step up to 10 ms (not the
++// 50 ms beat) and a player's diagonal step takes 7/5 of a straight one (not 3x); monsters and NPCs keep the beat and
++// step diagonally in the time of a straight step (the server's stock diagonal cost of 1.5 is truncated to 1).
++// Change these together with PLAYER_STEP_ROUNDING / PLAYER_DIAGONAL_STEP_NUM / _DEN of the server's creature.h.
++static constexpr int ChaosPlayerStepRounding = 10;
++static constexpr int ChaosPlayerDiagonalNum = 7;
++static constexpr int ChaosPlayerDiagonalDen = 5;
++
+ namespace
+ {
+ std::unordered_map<std::string, TexturePtr> creatureIconTextureCache;
+@@ -730,13 +738,15 @@ void Creature::nextWalkUpdate()
+         self->m_walkUpdateEvent = nullptr;
+         self->nextWalkUpdate();
+     }, g_game.getFeature(Otc::GameNewUpdateWalk) ? 
+-        std::max(getStepDuration(true) / std::max(g_app.getFps(), 1), 1) : (float)getStepDuration() / g_sprites.spriteSize()
++        std::max(getStepDuration() / std::max(g_app.getFps(), 1), 1) : (float)getStepDuration() / g_sprites.spriteSize()
+     );
+ }
+ 
+ void Creature::updateWalk()
+ {
+-    float walkTicksPerPixel = ((float)(getStepDuration(true) + (g_game.getFeature(Otc::GameNewUpdateWalk) ? 0 : 10))) / (float)g_sprites.spriteSize();
++    // Chaos (base-patch 0029): the offset moves over the whole step, a diagonal one too (stock: over a straight step's
++    // time, then the creature stood until the diagonal's 3x had passed)
++    float walkTicksPerPixel = ((float)(getStepDuration() + (g_game.getFeature(Otc::GameNewUpdateWalk) ? 0 : 10))) / (float)g_sprites.spriteSize();
+     uint8 totalPixelsWalked = std::min<uint8>(m_walkTimer.ticksElapsed() / walkTicksPerPixel, g_sprites.spriteSize());
+     uint8 totalPixelsWalkedInNextFrame = std::min<uint8>((m_walkTimer.ticksElapsed() + (g_game.getFeature(Otc::GameNewUpdateWalk) ? std::max(1000.f / g_app.getFps(), 1.0f) : 15)) / walkTicksPerPixel, g_sprites.spriteSize());
+ 
+@@ -1128,18 +1138,20 @@ uint16 Creature::getStepDuration(bool ignoreDiagonal, Otc::Direction dir)
+     } else
+         interval /= speed;
+ 
++    // Chaos (base-patch 0029): players round to 10 ms, everything else to the server beat (see ChaosPlayerStepRounding)
++    const bool chaosPlayer = isPlayer();
++    const int rounding = chaosPlayer ? ChaosPlayerStepRounding : g_game.getServerBeat();
+     if (g_game.getClientVersion() >= 900 && !g_game.getFeature(Otc::GameNewWalking))
+-        interval = std::ceil((float)interval / (float)g_game.getServerBeat()) * g_game.getServerBeat();
+-
+-    float factor = 3;
+-    if (g_game.getClientVersion() <= 810)
+-        factor = 2;
++        interval = std::ceil((float)interval / (float)rounding) * rounding;
+ 
+-    interval = std::max<int>(interval, g_game.getServerBeat());
++    interval = std::max<int>(interval, rounding);
+ 
+     if (!ignoreDiagonal && (m_lastStepDirection == Otc::NorthWest || m_lastStepDirection == Otc::NorthEast ||
+-                            m_lastStepDirection == Otc::SouthWest || m_lastStepDirection == Otc::SouthEast))
+-        interval *= factor;
++                            m_lastStepDirection == Otc::SouthWest || m_lastStepDirection == Otc::SouthEast)) {
++        // Chaos (base-patch 0029): a player's diagonal 7/5 of a straight step (stock 3x), the rest 1x like the server
++        if (chaosPlayer)
++            interval = interval * ChaosPlayerDiagonalNum / ChaosPlayerDiagonalDen;
++    }
+ 
+     if (!isServerWalking() && g_game.getFeature(Otc::GameSlowerManualWalking)) {
+         interval += 25;
+--- a/src/client/map.cpp
++++ b/src/client/map.cpp
+@@ -988,7 +988,7 @@ std::tuple<std::vector<Otc::Direction>, Otc::PathFindResult> Map::findPath(const
+ 
+                 Otc::Direction walkDir = currentNode->pos.getDirectionFromPosition(neighborPos);
+                 if(walkDir >= Otc::NorthEast)
+-                    walkFactor += 3.0f;
++                    walkFactor += 1.4f; // Chaos (base-patch 0029): a player's diagonal step costs 7/5 (stock 3)
+                 else
+                     walkFactor += 1.0f;
+ 
+@@ -1195,7 +1195,7 @@ PathFindResult_ptr Map::newFindPath(const Position& start, const Position& goal,
+                 if (it->second->unseen > 50)
+                     continue;
+ 
+-                float diagonal = ((i == 0 || j == 0) ? 1.0f : 3.0f);
++                float diagonal = ((i == 0 || j == 0) ? 1.0f : 1.4f); // Chaos (base-patch 0029): stock 3
+                 float cost = it->second->cost * diagonal;
+                 cost += diagonal * (50.0f * std::max<float>(5.0f, it->second->pos.distance(goal))); // heuristic
+                 if (node->totalCost + cost + 50 < it->second->totalCost) {
+@@ -1399,7 +1399,7 @@ std::map<std::string, std::tuple<int, int, int, std::string>> Map::findEveryPath
+                     continue;
+                 }
+ 
+-                float diagonal = ((i == 0 || j == 0) ? 1.0f : 3.0f);
++                float diagonal = ((i == 0 || j == 0) ? 1.0f : 1.4f); // Chaos (base-patch 0029): stock 3
+                 float cost = it->second->cost * diagonal;
+                 if (ignoreCost)
+                     cost = 1;

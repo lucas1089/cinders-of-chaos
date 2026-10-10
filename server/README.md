@@ -85,6 +85,9 @@ server/
                                       data/lib/chaos_energy_shield.lua, client game_energyshield)
   src-patches/0016-percent-armour.patch   engine: a player's armour takes armour / (armour + 250) of a physical hit, at most
                                       80% (config armorPercent*; see "Percent armour", tools/armor_sim.py)
+  src-patches/0018-movement-speed.patch   engine: player base speed +50 and 2.5 per level to 300 (1 after), walk speed held
+                                      between minPlayerSpeed and maxPlayerSpeed, 10 ms step rounding, diagonal 7/5; client
+                                      base-patch 0029 matches (see "Movement speed"; data/lib/chaos_speed.lua)
   src-patches/0019-transmog-appearance.patch   engine: item custom attribute 8 = client id of the item's transmog look
                                       (custom attribute "chaos_tmog"), drawn by client base patch 0030 (see "Transmog")
     transmog.lua  transmog_core.lua  transmog_config.lua (transmog: account wardrobe, appearance sets, client game_transmog;
@@ -576,6 +579,66 @@ Measured on a test server (engine built from the base source + patches 0001-0011
 | Ninja, two swords, main hand -20%, dexterity 20 | 2.20 | 1.93 | 2.20 | 0.93 |
 | Shadowfist, sword -20%, dexterity 20 | 1.20 | 0.97 | 1.20 | 0.97 |
 | Shadowfist unarmed, dexterity 20 (1040 ms, under the caps) | 0.97 | 0.97 | 0.97 | 0.93 |
+
+## Movement speed (`src-patches/0018-movement-speed.patch`, client `base-patches/0029`, `data/lib/chaos_speed.lua`)
+
+Walking was slow early (1.8 tiles/s at level 1), diagonals were broken and nothing bounded speed. The engine's own
+diagonal rule was `lastStepCost = 1.5` stored in an integer, so the server walked a diagonal in a straight step's time
+while the client waited 3x for it: diagonals were 3x slower for players and jerky for everyone. The 50 ms step rounding
+made high speeds come in coarse jumps (a 107 ms step became 150). Patch 0018, for players only:
+
+- Base speed = vocation base + `playerSpeedBonus` (50) + `playerSpeedPerTenLevels` / 10 (2.5) per level up to
+  `playerSpeedSoftLevel` (300), then `playerSpeedPerTenLevelsAbove` / 10 (1) per level. Stock: vocation + 2 per level.
+  The vocation values in `chaos_vocations*.xml` are unchanged (Thief / Monk lines keep their +10 / +12).
+- Walk speed (base + haste, slows, items, mounts, passive tree, Paragon, Lua `changeSpeed`) is held between
+  `minPlayerSpeed` (120) and `maxPlayerSpeed` (2600). The sum is clamped in `Player::getStepSpeed`, so no source can
+  push past it and the client is sent the clamped value. Staff with `PlayerFlag_SetMaxSpeed` keep the stock limits.
+  `creature:getStepSpeed()` returns it in Lua; `getSpeed()` stays the raw sum.
+- A player's step is rounded up to 10 ms, not 50. A diagonal step takes 7/5 of a straight one (about sqrt 2).
+- Below speed 16 the step formula went negative and wrapped to a 0 ms step; now at least 1.
+- Monsters and NPCs keep their rules: 50 ms rounding, diagonal at 1x, no clamp. They hardly ever step diagonally anyway
+  (seen in game: rats chasing walked only straight).
+
+Client patch 0029 predicts the same: 10 ms rounding and 7/5 diagonal for players, 1x diagonal for others. The walk
+offset spans the whole step, so a diagonal glides. Click-walk path finding costs a diagonal 1.4 (was 3), so paths use
+diagonals. The constants must match on both sides; `tests/movement_speed_test.lua` reads both patches.
+
+Tiles per second, ground speed 150 (grass; the engine's default), a 220 vocation, ms per step in brackets:
+
+| Level | Speed before | Before | Speed now | Straight | Diagonal (was 3x on the client) | Strong haste | Paralyze rune |
+|---|---|---|---|---|---|---|---|
+| 1 | 220 | 1.82 (550) | 270 | 2.22 (450) | 1.59 (630; was 1650) | 3.03 (330) | 1.02 (980; was 0.65) |
+| 100 | 418 | 2.86 (350) | 517 | 3.70 (270) | 2.65 (378; was 1050) | 5.26 (190) | 1.02 (980) |
+| 300 | 818 | 5.00 (200) | 1017 | 5.88 (170) | 4.20 (238; was 600) | 7.69 (130) | 1.02 (980) |
+| 1000 | 2218 | 6.67 (150) | 1717 | 7.69 (130) | 5.49 (182; was 450) | 10.0 (100, capped) | 1.02 (980) |
+
+- +15% to +30% on straight lines; level 100 gains most because 312 ms was rounded up to 350 before.
+- Diagonal factor 1.4: a diagonal covers about 1.41 tiles of distance, so walking a slope costs what it should.
+- Floor 120 = about 1 tile/s on grass. The paralyze rune (speed 80) and the siege's downed slow (-90%) stop there.
+  A slow can still take a level 300 player from 5.9 to 1 tile/s, but never freezes anyone.
+- Ceiling 2600 = 100 ms steps, 10 tiles/s on grass. Below about 100 ms one confirmed step per round trip makes
+  latency the limit, and the screen scrolls a tile every 3 frames at 30 fps. A level 1000 with strong haste already
+  reaches it, and so do haste + 10% Paragon + 12% item speed + 80 tree speed. Haste still adds +18% at level 1000.
+- Ground speed scales all of it: on a 100 road level 1000 walks 90 ms (11 tiles/s); the cap still binds in speed.
+- Lua that matches a player's speed should use the effective value: `ChaosSpeed.effective(creature)`; the
+  treasure goblin's flee speed now does. Rift / tier / trial monster speed changes are untouched.
+
+Config (engine defaults, also written by `tools/prod_config.py`): `minPlayerSpeed = 120`, `maxPlayerSpeed = 2600`,
+`playerSpeedBonus = 50`, `playerSpeedPerTenLevels = 25`, `playerSpeedSoftLevel = 300`, `playerSpeedPerTenLevelsAbove =
+10`. 0 for min or max means the engine's 10 / 12000. The stock base formula is `playerSpeedBonus = 0`,
+`playerSpeedPerTenLevels = 20`, `playerSpeedSoftLevel = 1`, `playerSpeedPerTenLevelsAbove = 20`.
+Lua mirror and tests: `ChaosSpeed` (`data/lib/chaos_speed.lua`), `tests/movement_speed_test.lua`.
+
+Tested: engine built from the base source + 0001-0018, Linux client from the base client + 0001-0029, a Warrior at
+levels 1, 100, 300 and 1000 on grass. Server timing, a protocol bot, mean ms between moves straight / diagonal:
+450 / 631, 271 / 378, 172 / 239, 131 / 183 (predicted 450 / 630, 270 / 378, 170 / 238, 130 / 182), autowalk and
+step by step alike. In the client, a held arrow key for 3.5 s per case, plus strong haste and a paralyze rune:
+every step sent was confirmed by the server, 0 walk cancels, 0 position jumps. The client predicted exactly the
+server's step and diagonal times. Measured gaps ran 10-30 ms above prediction from the confirm round trip and
+software rendering. Slowed diagonal steps ran up to 220 ms over, since walk updates come once per frame.
+Level 1000 with strong haste: speed 2862 clamped to 2600, 100 ms predicted, 111 ms measured. Paralyze rune at
+level 1-1000: speed 80 clamped to 120, 980 ms predicted, 1000-1070 ms measured. A clicked walk 6 east, 8 south took
+6 diagonal and 2 straight steps (630 / 450 ms), no cancels.
 
 ## Account passwords (`src-patches/0014-salted-password-hashes.patch`, `sql/chaos_passwords.sql`)
 
