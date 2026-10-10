@@ -7,7 +7,7 @@ PouchCheck < ChaosCheckBox
 
 PouchesWindow < ChaosMainWindow
   id: pouchesWindow
-  size: 420 366
+  size: 420 396
   !text: tr('Loot Pouch')
   @onEscape: modules.game_pouches.hideSettings()
 
@@ -19,7 +19,7 @@ PouchesWindow < ChaosMainWindow
     height: 58
     text-wrap: true
     text-align: topLeft
-    !text: tr('While you carry your Loot Pouch it takes these items from the monsters you kill. Orbs and keys go to their own pouches first. A full pouch passes the item to your backpack.')
+    !text: tr('While you carry your Loot Pouch it takes these items from the monsters you kill. Orbs, gems and keys always go to the Orbs and Rift Key Pouch first. A full pouch passes the item on (below), then to your backpack.')
 
   PouchCheck
     id: list
@@ -60,16 +60,21 @@ PouchesWindow < ChaosMainWindow
   PouchCheck
     id: gems
     anchors.top: supplies.bottom
-    !text: tr('Gems (when your Orbs Pouch is missing or full)')
+    !text: tr('Gems (when you carry no Orbs Pouch)')
 
   PouchCheck
     id: other
     anchors.top: gems.bottom
     !text: tr('Everything else (creature products, valuables)')
 
+  PouchCheck
+    id: overflow
+    anchors.top: other.bottom
+    !text: tr('Overflow: what a full Orbs or Rift Key Pouch passes on')
+
   ChaosLabel
     id: status
-    anchors.top: other.bottom
+    anchors.top: overflow.bottom
     anchors.left: parent.left
     anchors.right: storeButton.left
     margin-top: 12
@@ -81,7 +86,7 @@ PouchesWindow < ChaosMainWindow
 
   ChaosButton
     id: storeButton
-    anchors.top: other.bottom
+    anchors.top: overflow.bottom
     anchors.right: parent.right
     margin-top: 12
     size: 92 24

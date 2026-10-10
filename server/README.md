@@ -1251,11 +1251,17 @@ autoloot list is needed.
 
 | Pouch | Item id (look) | Slots | Coins | Collects |
 |---|---|---|---|---|
-| Loot Pouch | 32081 (expedition bag) | 60 | 350 | its own rules (below); default: the autoloot list, gold, uniques |
-| Orbs Pouch | 32082 (brocade bag) | 40 | 300 | every orb (the currency orbs 29851-29859, Erasure, Gilding, Sockets, Unmaking, orbs v2, the Whetstone, every `loot_config.lua` currency entry), rune shards (32051) and gems (32001-32035) |
-| Rift Key Pouch | 32083 (fur bag) | 30 | 250 | Rift Keys (item 10155 with action id 47401; tier and modifiers kept), Omen Keys (32072) and omen fragments (32071) |
+| Loot Pouch | 32081 (client 33653: a leather sack, gold coins spilling) | 60 | 350 | its own rules (below); default: the autoloot list, gold, uniques |
+| Orbs Pouch | 32082 (client 33651: a violet pouch with a glowing orb) | 40 | 300 | every orb (the currency orbs 29851-29859, Erasure, Gilding, Sockets, Unmaking, orbs v2, the Whetstone, every `loot_config.lua` currency entry), rune shards (32051) and gems (32001-32035) |
+| Rift Key Pouch | 32083 (client 33652: an iron strongbox, gold key, key ring) | 30 | 250 | Rift Keys (item 10155 with action id 47401; tier and modifiers kept), Omen Keys (32072) and omen fragments (32071) |
 
-- **Items.** New items.otb nodes, copies of stock bags (client ids stay the stock ones, so the client needs no new sprites), and
+- **Items.** New items.otb nodes, copies of stock bags (group and flags of the expedition bag, the brocade bag and the fur bag)
+  with their own looks: three item things of our own art, drawn by `client/tools/sprites/gen_pouch_art.py` and appended to the
+  client pair as client ids 33651-33653 (client MANIFEST.md "Store pouch looks"; `clientId` in `pouches_config.lua`). Only the
+  client id of the node changes, the server ids stay 32081-32083, so pouches already owned show the new look after the install;
+  the store icons and the container window icons follow (`ItemType:getClientId()`). **The client pair must have the three things
+  first** (a client without them shows nothing for a pouch); until the Windows package has the new pair, `install_pouches.py
+  --stock-looks` keeps the stock bag looks. And
   items.xml entries with `containerSize` (the protocol sends a container's size as one byte, so up to 255 would work). Installed by
   `tools/install_pouches.py` (step `pouches` of `install_all.py`, after `omens`; idempotent; `items.otb.bak` keeps the original).
   Weight 1 oz; the contents weigh as usual (the engine adds a container's contents to the carried weight; weightless contents
@@ -1266,16 +1272,26 @@ autoloot list is needed.
   item on the auto-sell list is sold first; orbs and keys never are (`ChaosPouches.neverSell`, asked by `autosell.lua`, also
   refuses them on the list). After the snapshot, so the loot channel row shows the items the pouches took as looted. Before the
   base autoloot, so autoloot-list items land in the Loot Pouch instead of the backpack.
-- **Routing.** Each corpse item goes to the first pouch (orbs, keys, loot) that wants it and is carried; a full pouch passes it to
-  the next one that wants it (an orb on the autoloot list: Orbs Pouch, then Loot Pouch), then to the backpack (and the bags in it,
-  capacity checked, never an equipment slot), else it stays in the corpse. Gear is rolled on the way out
+- **Routing and priority** (`ChaosPouchesCore.plan`, `priority = {"orbs", "keys"}` in `pouches_config.lua`). The Orbs Pouch and
+  the Rift Key Pouch always get their kinds of items first: orbs, the whetstone, rune shards and gems go to the Orbs Pouch, Rift
+  Keys, Omen Keys and omen fragments to the Rift Key Pouch, before the Loot Pouch, even when a Loot Pouch rule would match too (its
+  gems rule, the autoloot list). When that pouch is full (or the character cannot carry more), the Loot Pouch takes the item only
+  with its **overflow** rule (on by default, so nothing stays in the corpse that could be stored); with the rule off the item goes
+  to the backpack (and the bags in it, capacity checked, never an equipment slot), else it stays in the corpse. Without the
+  specialist pouch in the inventory, the Loot Pouch rules decide as for any other item (an orb on the autoloot list, a gem with
+  the gems rule). Every other item goes to the Loot Pouch when its rules want it, else it is left to the base autoloot; a full
+  Loot Pouch passes it to the backpack, then the corpse. Click-to-loot in the loot channel (`lootfilter.lua` take ->
+  `ChaosPouches.stow`) follows the same plan, then the backpack. Picking up an item through its ground label (`game_groundlabels`)
+  is the normal move into the backpack and does not route into pouches. Gear is rolled on the way out
   (`ChaosLoot.finalizeRarity`). Containers and pouches are never collected. Only the corpse owner's pouches collect, as the base
   autoloot (party members do not loot each other's corpses here). One chat line per kill: "Pouches: Orbs Pouch +3, Rift Key Pouch
-  +1, Loot Pouch +52 (Orbs Pouch is full; 1 to your backpack)." ("is full" at most once a minute per pouch).
+  +1, Loot Pouch +52 (Orbs Pouch is full; 3 to your Loot Pouch; 1 to your backpack)." ("is full" at most once a minute per
+  pouch; "to your Loot Pouch" counts the overflow).
 - **Loot Pouch rules** (storage 7100107, one packed value; window: right-click the Loot Pouch > "Pouch settings", or the Loot
   Filter's "Loot Pouch" button; extended opcode 226 `ChaosOpcodes.pouches`): items on the autoloot list, gold / platinum /
-  crystal coins, uniques, gear with a rarity of at least N, supplies (potions, runes, ammunition, food), gems (when the Orbs Pouch
-  is missing or full), everything else. Item categories are the loot filter's (`ChaosLootFilter.itemInfo`). The Loot Filter's
+  crystal coins, uniques, gear with a rarity of at least N, supplies (potions, runes, ammunition, food), gems (when the character
+  carries no Orbs Pouch), everything else, and overflow (what a full Orbs or Rift Key Pouch passes on; default on; stored as an
+  inverted bit, 128 set = off, so rules saved before the rule existed read it as on). Item categories are the loot filter's (`ChaosLootFilter.itemInfo`). The Loot Filter's
   Rarity Autoloot minimum still holds list gear back (its snapshot runs first).
 - **Store-bound.** One of each kind per character: the store refuses a second while one is in the inventory, the inbox or a depot
   chest (and while a lost one is owed back); a copy made by a GM collects only when it carries the character's guid
@@ -1296,10 +1312,11 @@ autoloot list is needed.
   7100108), backpack or inbox, with a short message.
 - **Tooltip.** The rich item tooltip shows "Store item: cannot be traded" and what the pouch collects (`item_tooltip_core.lua` asks
   `ChaosPouches.tooltipLines`); the look text is the items.xml description.
-- `server/tests/pouches_test.lua` (LuaJIT and Lua 5.3, mocked engine): rule packing, routing per pouch, the drop step (right pouch,
-  stacking, key attributes kept, full pouch -> next pouch -> backpack -> corpse, capacity, owner only, carried only), the window
-  protocol, click-to-loot, never auto-sold, the store (one per character, inbox fallback, attributes), move / trade refusals, death
-  and the login grants. Client: `game_pouches/pouchesview_test.lua`, `game_itemtooltip/tooltiplogic_test.lua`.
+- `server/tests/pouches_test.lua` (LuaJIT and Lua 5.3, mocked engine): rule packing (overflow default on, old values), routing per
+  pouch, the priority plan (specialist first whatever the Loot Pouch rules, overflow on / off, a pouch not carried), the drop step
+  (right pouch, stacking, key attributes kept, full Orbs Pouch -> Loot Pouch overflow or backpack -> corpse, a gem with the gems
+  rule still to the Orbs Pouch, capacity, owner only, carried only), the window protocol, click-to-loot (same priority), never
+  auto-sold, the store (one per character, inbox fallback, attributes), move / trade refusals, death and the login grants. Client: `game_pouches/pouchesview_test.lua`, `game_itemtooltip/tooltiplogic_test.lua`.
 - Verified in game (test server copy, screenshots in the session scratchpad `pouches/shots`): the three offers with icons; buying
   all three (into the backpack) and the refusal of a second Loot Pouch; a kill whose corpse held orbs, a whetstone, a gem, rune
   shards, a Rift Key, omen fragments, gold and autoloot-list gear filled the right pouches (the key kept its tier and modifiers,
@@ -1309,6 +1326,13 @@ autoloot list is needed.
   without blessings dropped the backpack, the pouches left the corpse with their contents in it, and came back empty at the
   next login; a former Bottomless Loot Pouch owner got the free Loot Pouch (inbox) at login. Not tested in game: the mailbox and
   house paths (the move rule is the same as for the ground), selling to an NPC (the lock and the missing NPC price), the depot.
+- Verified in game for the new looks and the priority (client with the new pair, screenshots in the session scratchpad
+  `pouchlook/`): the three pouches next to the three stock bags in a bag, the store offers and the container window icons with the
+  new looks (existing pouches updated by the install); a kill with two gems, a Rift Key, omen fragments, an orb, gold and Rare
+  gear with the Loot Pouch gems rule on: gems and orb to the Orbs Pouch, key and fragments to the Rift Key Pouch, gold and gear to
+  the Loot Pouch; with the Orbs Pouch full a new orb overflowed into the Loot Pouch ("Orbs Pouch is full; 3 to your Loot Pouch");
+  with overflow off the next orb went to the backpack; click-to-loot (`ChaosPouches.stow`) refused the Loot Pouch with overflow off
+  and used it with overflow on; the overflow checkbox saved on the server both ways.
 
 ## Town Portal (`townportal.lua`, `townportal_core.lua`, `townportal_config.lua`, spell `shared/town_portal.lua`, client `game_townportal`)
 

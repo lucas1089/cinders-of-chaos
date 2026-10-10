@@ -223,9 +223,18 @@ eq(none.list, false, "everything off is kept (not the defaults)")
 eq(P.sanitizeRules(cfg, {gear = true, minRarity = 99}).minRarity, 15, "rarity clamped")
 eq(P.sanitizeRules(cfg, {list = "yes"}).list, false, "only true / 1 switch a rule on")
 eq(P.sanitizeRules(cfg, "junk").list, true, "junk input = defaults")
+eq(d.overflow, true, "default: the Loot Pouch takes the specialist pouches' overflow")
+eq(P.unpackRules(cfg, P.packRules({list = true, overflow = false})).overflow, false, "overflow off is kept")
+eq(P.unpackRules(cfg, P.packRules({list = true, overflow = true})).overflow, true, "overflow on is kept")
+eq(P.unpackRules(cfg, 32768 + 1 + 5 * 256).overflow, true, "rules saved before the overflow rule: overflow on")
+eq(P.sanitizeRules(cfg, {list = true}).overflow, true, "overflow missing from client input: the default")
+ok(P.packRules({list = true, gold = true, uniques = true, gear = true, supplies = true, gems = true, other = true,
+	minRarity = 15}) < 2 ^ 31, "packed rules fit a storage value")
 
 local sets = P.sets(cfg, {12345})
-local function route(info, rules) return table.concat(P.route(info, rules or d, sets, cfg), ",") end
+local dNoSpill = P.sanitizeRules(cfg, {list = true, gold = true, uniques = true, overflow = false})
+-- the kinds that collect the item (overflow off unless the rules say so)
+local function route(info, rules) return table.concat(P.route(info, rules or dNoSpill, sets, cfg), ",") end
 eq(route({id = 29856, category = "currency"}), "orbs", "orb -> Orbs Pouch")
 eq(route({id = 12345, category = "currency"}), "orbs", "loot_config currency entry -> Orbs Pouch")
 eq(route({id = 32051}), "orbs", "rune shard -> Orbs Pouch")
@@ -234,17 +243,43 @@ eq(route({id = 10155, actionId = 47401}), "keys", "Rift Key -> Rift Key Pouch")
 eq(route({id = 10155, actionId = 0}), "", "the stock item behind the key is not a key")
 eq(route({id = 32071}), "keys", "omen fragment -> Rift Key Pouch")
 eq(route({id = 32072}), "keys", "Omen Key -> Rift Key Pouch")
-eq(route({id = 29856, onList = true}), "orbs,loot", "orb on the autoloot list: Orbs Pouch, then Loot Pouch")
+eq(route({id = 29856, onList = true}), "orbs", "orb on the autoloot list, overflow off: the Orbs Pouch only")
+eq(route({id = 29856, onList = true}, d), "orbs,loot", "orb on the autoloot list: Orbs Pouch, then the Loot Pouch (overflow)")
+eq(route({id = 29856}, d), "orbs,loot", "any orb: Orbs Pouch first, the Loot Pouch only as overflow")
 eq(route({id = 2148, category = "currency"}), "loot", "gold -> Loot Pouch (default)")
 eq(route({id = 2400, category = "other", onList = true}), "loot", "autoloot list item -> Loot Pouch")
 eq(route({id = 2400, category = "other"}), "", "other loot: not by default")
 eq(route({id = 2400, category = "equipment", rarity = 9}), "", "gear: off by default")
 eq(route({id = 2400, category = "equipment", unique = true}), "loot", "unique -> Loot Pouch (default)")
-local gearRules = P.sanitizeRules(cfg, {gear = true, minRarity = 5})
+local gearRules = P.sanitizeRules(cfg, {gear = true, minRarity = 5, overflow = false})
 eq(route({id = 2400, category = "equipment", rarity = 5}, gearRules), "loot", "gear at the minimum rarity")
 eq(route({id = 2400, category = "equipment", rarity = 4}, gearRules), "", "gear below the minimum")
 eq(route({id = 1988, container = true, onList = true}), "", "a container is never collected")
 eq(route({id = 32082, pouch = true, container = true, onList = true}), "", "a pouch is never collected")
+
+-- priority (pure): the Orbs Pouch and the Rift Key Pouch always first, the Loot Pouch only as their overflow
+local all = {loot = true, orbs = true, keys = true}
+local function plan(info, rules, carried)
+	local kinds, spill = P.plan(info, rules or d, sets, cfg, carried or all)
+	return table.concat(kinds, ",") .. (spill and (" <" .. spill) or "")
+end
+eq(cfg.priority[1], "orbs", "Orbs Pouch first") eq(cfg.priority[2], "keys", "then the Rift Key Pouch")
+eq(cfg.order[#cfg.order], "loot", "the Loot Pouch last")
+local gemsRules = P.sanitizeRules(cfg, {gems = true, list = true})
+eq(plan({id = 32010, gem = true}, gemsRules), "orbs,loot <orbs", "gem with the Loot Pouch gems rule: Orbs Pouch first")
+eq(plan({id = 32010, gem = true, onList = true}, gemsRules), "orbs,loot <orbs", "a gem on the autoloot list: Orbs Pouch first")
+eq(plan({id = 10155, actionId = 47401, onList = true}), "keys,loot <keys", "a listed Rift Key: Rift Key Pouch first")
+local noSpill = P.sanitizeRules(cfg, {gems = true, list = true, overflow = false})
+eq(plan({id = 32010, gem = true, onList = true}, noSpill), "orbs", "overflow off: never the Loot Pouch, even if its rules match")
+eq(plan({id = 32071}, noSpill), "keys", "overflow off: omen fragment only to the Rift Key Pouch")
+eq(plan({id = 32010, gem = true}, d, {orbs = true}), "orbs", "no Loot Pouch carried: Orbs Pouch only")
+eq(plan({id = 32010, gem = true}, gemsRules, {loot = true}), "loot", "no Orbs Pouch: the Loot Pouch gems rule decides")
+eq(plan({id = 32010, gem = true}, d, {loot = true}), "", "no Orbs Pouch, gems rule off: not the Loot Pouch")
+eq(plan({id = 29856, onList = true}, d, {loot = true, keys = true}), "loot", "no Orbs Pouch: a listed orb to the Loot Pouch")
+eq(plan({id = 29856}, d, {loot = true, keys = true}), "", "no Orbs Pouch: an unlisted orb is not the Loot Pouch's")
+eq(plan({id = 2148, category = "currency"}), "loot", "gold: the Loot Pouch")
+eq(plan({id = 2148, category = "currency"}, d, {orbs = true, keys = true}), "", "gold without a Loot Pouch: nothing")
+eq(plan({id = 32071}, d, {loot = true, orbs = true}), "", "no Rift Key Pouch: omen items are not the Loot Pouch's")
 
 -- move rules (pure)
 eq(P.moveRefusal({holdsPouch = false, toGround = true}), nil, "other items: no rule")
@@ -261,6 +296,8 @@ ok(P.moveRefusal({holdsPouch = true, chain = {"item", "pouch", "self"}}), "a bag
 eq(P.summary(cfg, {}, 0, 0), nil, "nothing happened: no line")
 eq(P.summary(cfg, {orbs = 3, keys = 1}, 0, 0), "Pouches: Orbs Pouch +3, Rift Key Pouch +1.", "short line per kill")
 ok(P.summary(cfg, {}, 2, 1, {loot = true}):find("Loot Pouch is full; 2 to your backpack; 1 left"), "full / backpack / corpse")
+eq(P.summary(cfg, {loot = 2}, 0, 0, {orbs = true}, 2), "Pouches: Loot Pouch +2 (Orbs Pouch is full; 2 to your Loot Pouch).",
+	"overflow told")
 
 -- ------------------------------------------------------------------ engine glue: items
 local hero = newPlayer(7)
@@ -331,8 +368,9 @@ eq(hero.msgs[#hero.msgs], "Pouches: Orbs Pouch +3, Rift Key Pouch +4, Loot Pouch
 drop(nil, corpse(hero.id, {item(29856, {count = 5})}))
 eq(orbsPouch.items[1].count, 7, "orbs stack in the pouch")
 
--- the Orbs Pouch (3 slots here) is full: a new kind of orb goes to the Loot Pouch? no: not on the list -> backpack
+-- the Orbs Pouch (3 slots here) is full and the Loot Pouch overflow rule is off: the orb goes to the backpack
 orbsPouch.items[3] = item(32256, {count = 100}); orbsPouch.items[3].parent = orbsPouch
+hero.storage[ST.lootRules] = P.packRules(P.sanitizeRules(cfg, {overflow = false}))
 local whet, other = item(32253), item(32254)
 drop(nil, corpse(hero.id, {whet}))
 eq(whet.parent, bp, "full Orbs Pouch: the orb goes to the backpack")
@@ -349,11 +387,30 @@ eq(last.parent, c3, "no room anywhere: stays in the corpse")
 ok(hero.msgs[#hero.msgs]:find("left in the corpse"), "player told")
 for i = #bp.items, 4, -1 do table.remove(bp.items, i) end
 
--- an orb on the autoloot list, Orbs Pouch full: the Loot Pouch takes it
+-- overflow off: an orb on the autoloot list, a gem with the gems rule: never the Loot Pouch while the Orbs Pouch is full
 hero.storage[Chaos.storage.autolootBase + 2] = 32251
-local listedOrb = item(32251)
-drop(nil, corpse(hero.id, {listedOrb}))
-eq(listedOrb.parent, lootPouch, "full Orbs Pouch: an autoloot-list orb goes to the Loot Pouch")
+hero.storage[ST.lootRules] = P.packRules(P.sanitizeRules(cfg, {list = true, gems = true, overflow = false}))
+local listedOrb, fullGem = item(32251), item(32011)
+drop(nil, corpse(hero.id, {listedOrb, fullGem}))
+eq(listedOrb.parent, bp, "overflow off: a listed orb goes to the backpack, not the Loot Pouch")
+eq(fullGem.parent, bp, "overflow off: a gem goes to the backpack despite the gems rule")
+for i = #bp.items, 4, -1 do table.remove(bp.items, i) end
+-- overflow on (the default): the Loot Pouch takes what the full Orbs Pouch passes on
+hero.storage[ST.lootRules] = nil
+local spillOrb, spillGem = item(32251), item(32012)
+drop(nil, corpse(hero.id, {spillOrb, spillGem}))
+eq(spillOrb.parent, lootPouch, "full Orbs Pouch: the orb overflows into the Loot Pouch")
+eq(spillGem.parent, lootPouch, "full Orbs Pouch: the gem overflows into the Loot Pouch")
+ok(hero.msgs[#hero.msgs]:find("2 to your Loot Pouch"), "overflow told: " .. hero.msgs[#hero.msgs])
+-- room again in the Orbs Pouch: a gem goes there first even though the Loot Pouch gems rule is on
+hero.storage[ST.lootRules] = P.packRules(P.sanitizeRules(cfg, {list = true, gold = true, gems = true}))
+local o3slot = table.remove(orbsPouch.items, 3); o3slot.parent = nil
+local firstGem = item(32013)
+drop(nil, corpse(hero.id, {firstGem}))
+eq(firstGem.parent, orbsPouch, "Orbs Pouch before the Loot Pouch gems rule")
+table.remove(orbsPouch.items, 3); firstGem.parent = nil
+orbsPouch.items[3] = o3slot; o3slot.parent = orbsPouch
+hero.storage[ST.lootRules] = nil
 
 -- capacity: the engine refuses (too heavy) -> backpack refuses too -> corpse
 hero.freeCap = 0
@@ -402,6 +459,17 @@ eq(sent[#sent].data.ids.loot, 32082, "client id of the Loot Pouch (mock: id + 1)
 local clicked = item(29856, {count = 1})
 corpse(hero.id, {clicked})
 eq(PO.stow(hero, clicked), true, "stow: a clicked orb goes to the Orbs Pouch (merged)")
+eq(clicked.parent == orbsPouch or orbsPouch.items[1].count == 8, true, "into the Orbs Pouch")
+-- click-to-loot follows the same priority: a clicked gem with the Loot Pouch gems rule on goes to the Orbs Pouch;
+-- with the Orbs Pouch full and overflow off it is not stowed (lootfilter.lua then tries the backpack)
+hero.storage[ST.lootRules] = P.packRules(P.sanitizeRules(cfg, {list = true, gems = true, overflow = false}))
+local clickedGem = item(32014)
+corpse(hero.id, {clickedGem})
+eq(PO.stow(hero, clickedGem), false, "stow: Orbs Pouch full, overflow off: not into the Loot Pouch")
+eq(clickedGem.parent == lootPouch, false, "the Loot Pouch did not take it")
+hero.storage[ST.lootRules] = nil
+eq(PO.stow(hero, clickedGem), true, "stow: overflow on (default): the Loot Pouch takes it")
+eq(clickedGem.parent, lootPouch, "into the Loot Pouch as overflow")
 
 -- ------------------------------------------------------------------ moves and trade
 local function move(it, toPos, toCyl) return PO.onMoveItem(hero, it, 1, {x = CONTAINER_POSITION}, toPos, nil, toCyl) end

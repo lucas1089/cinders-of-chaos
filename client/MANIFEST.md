@@ -218,6 +218,29 @@ patterns with 8 synchronised frames, shore pieces 8 frames (straight pieces with
   spr dfaf88d98291c2a9be2f10ad541b3c41.
 - Server side: server/README.md "Pack items and monsters". Checked in the Linux client at normal size.
 
+## Store pouch looks (new, `tools/sprites/gen_pouch_art.py`, `tools/sprites/art_import/pouches.csv`)
+Three item things of our own art for the store pouches, so they cannot be mixed up in a backpack (they were the stock expedition,
+brocade and fur bags): client 33651 Orbs Pouch (a round violet velvet pouch, gold drawstring, a glowing cyan orb), 33652 Rift Key
+Pouch (a dark iron strongbox with riveted bands, a gold key and a key ring), 33653 Loot Pouch (a tall leather sack, gold trim,
+gold coins spilling). `gen_pouch_art.py` draws them at 128 px from shape fields with `darklib.py` (rim light, 1 px outline) and
+downsamples them 4:1 to the 32 px atlas `art_import/pouches.png` (deterministic; no client sprite is read). `pouches.csv` rows
+copy the dat flags of the stock bags (`copy:8861`, `copy:7343`, `copy:10325`: container, pickupable) and name the server ids
+32082 / 32083 / 32081 (mode replace); the server points the pouch nodes at them (`clientId` in `pouches_config.lua`,
+`install_pouches.py`).
+- Append them as the last step of the rebuild chain, after `import_art_things.py` with `things.csv`:
+  `python3 -I client/tools/sprites/import_art_things.py --ours-dat <pair>/Tibia.dat --ours-spr <pair>/Tibia.spr --out-dir OUT
+  --things client/tools/sprites/art_import/pouches.csv --first-item 33651 --expect-items 33650` (`--expect-items`, new: the run
+  stops unless the input has exactly 33650 items). Verified like the art import (output re-parses, the three sprites
+  pixel-identical to the atlas, every old entry byte-identical, 3000 old sprites unchanged). On the live pair of 2026-10-09
+  (dat 5b2e13ab..., spr of 699,745 sprites) it gives dat b243485112b7bea43016d7dd49097472, spr cfd09de9f81c8f2ffdd29db1e01fa69b
+  (699,748 sprites), twice identical.
+- **Before the next Windows package build:** the Windows package takes the merged pair from the private branch `windows-assets`
+  (parts under 100 MB, `SHA256SUMS.parts`, its README), so that pair must be replaced by the output above and pushed there. Until
+  then a server must install the pouches with `install_pouches.py --stock-looks` (stock bag looks); a client whose pair lacks
+  33651-33653 shows nothing for a pouch.
+- Checked in the Linux client with the new pair: in a bag next to the stock bags, in the store (Convenience), in the container
+  window titles, and on the kill routing screenshots.
+
 ## OFL fonts (`fonts-src/`, `tools/make_ofl_fonts.sh`, `tools/make_fonts.py`)
 
 The client ships bitmap fonts made from four free fonts under the **SIL Open Font License 1.1** (OFL), all from the

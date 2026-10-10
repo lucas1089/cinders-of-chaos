@@ -2,7 +2,7 @@
 """Append the prepared art of art_import/ (items and creature outfits) to COPIES of our 10.98 Tibia.dat / Tibia.spr.
 
 python3 -I import_art_things.py --ours-dat Tibia.dat --ours-spr Tibia.spr --out-dir OUT \
-        [--first-item 33000] [--first-outfit 2000] [--server-offset 3000] \
+        [--first-item 33000] [--first-outfit 2000] [--expect-items N] [--server-offset 3000] \
         [--manifest-out ../../../server/data/items/art_items.csv] [--outfits-out ../../../server/data/items/art_outfits.csv] \
         [--sheets DIR]
 
@@ -13,7 +13,8 @@ upscaled 2x with Scale2x, creatures cropped to the tiles they use and anchored b
 Items (cat=item): appended after the last item of the input. --first-item pads the item list with blank entries so the
 first new item gets that id whatever was appended before (stable ids; must be above the last existing item). One item
 per row: size w x h tiles, patterns (px x py from the row's extra, else 1), phases (synchronised animation, ms from the
-row's extra or 140). Flags from the row: dat flag names of the 10.98 table (ground:speed, light:level:colour,
+row's extra or 140). --expect-items N stops the run unless the input has exactly N items (for a things file appended
+to an earlier output, e.g. art_import/pouches.csv: --first-item 33651 --expect-items 33650). Flags from the row: dat flag names of the 10.98 table (ground:speed, light:level:colour,
 minimap:colour, the rest without data) or copy:<client id> (the flags of an existing item, market data dropped: used for
 the new looks of existing server items, so stackable / multi-use / light stay as they were).
 Outfits (cat=outfit): appended after the last outfit, --first-outfit pads with blank outfits the same way. Two frame
@@ -211,6 +212,7 @@ def main():
     ap.add_argument('--out-dir', required=True)
     ap.add_argument('--things', default=os.path.join(ART, 'things.csv'))
     ap.add_argument('--first-item', type=int, default=None); ap.add_argument('--first-outfit', type=int, default=None)
+    ap.add_argument('--expect-items', type=int, default=None, help='the input must have exactly this many items')
     ap.add_argument('--server-offset', type=int, default=3000)
     ap.add_argument('--manifest-out', default=None); ap.add_argument('--outfits-out', default=None)
     ap.add_argument('--sheets', default=None, help='directory for preview sheets of the new things')
@@ -227,6 +229,8 @@ def main():
     assert od.variant[0] == 'new' and all(od.variant[1:]), f'expected our 10.98 dat (animator, u32, frame groups): {od.variant}'
     assert ospr.u32count and ospr.alpha, 'expected an alpha spr with u32 count'
     ni, no = od.counts[0], od.counts[1]
+    if a.expect_items is not None and ni != a.expect_items:
+        sys.exit(f'--expect-items {a.expect_items}: the input has {ni} items (wrong pair, or already imported)')
     first_item = a.first_item or ni + 1
     first_outfit = a.first_outfit or no + 1
     if first_item <= ni:

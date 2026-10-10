@@ -5,7 +5,9 @@
 --   ChaosPouchesCore.sanitizeRules(cfg, t)          rules from client input (booleans, minRarity 1..15)
 --   ChaosPouchesCore.sets(cfg, extraOrbIds)         {orbs = set, omens = set, coins = set} of item ids
 --   ChaosPouchesCore.wants(kind, info, rules, sets, cfg)   true when that pouch collects the corpse item
---   ChaosPouchesCore.route(info, rules, sets, cfg)  the kinds that want it, in cfg.order
+--   ChaosPouchesCore.specialistOf(info, sets, cfg)  the first specialist pouch (cfg.priority: orbs, keys) whose kind it is
+--   ChaosPouchesCore.plan(info, rules, sets, cfg, carried)   the carried pouches to try, in order, and the overflow kind
+--   ChaosPouchesCore.route(info, rules, sets, cfg)  plan() with every pouch carried: the kinds, in order
 --   ChaosPouchesCore.moveRefusal(m)                 nil (allowed) or the reason a pouch move is refused
 --   ChaosPouchesCore.summary(cfg, taken, backpack, left)   the per-kill chat line, or nil
 -- info = {id, actionId, count, category = "equipment"|"currency"|"supplies"|"other", rarity = 0..15, unique = bool,
@@ -16,8 +18,10 @@ ChaosPouchesCore = ChaosPouchesCore or {}
 local P = ChaosPouchesCore
 
 P.MAX_RARITY = 15
-P.FLAGS = {list = 1, gold = 2, uniques = 4, gear = 8, supplies = 16, gems = 32, other = 64}
-P.FLAG_ORDER = {"list", "gold", "uniques", "gear", "supplies", "gems", "other"}
+P.FLAGS = {list = 1, gold = 2, uniques = 4, gear = 8, supplies = 16, gems = 32, other = 64, overflow = 128}
+P.FLAG_ORDER = {"list", "gold", "uniques", "gear", "supplies", "gems", "other", "overflow"}
+-- stored inverted (bit set = off), so rules saved before the overflow rule existed read it as on (its default)
+local INVERTED = {overflow = true}
 local SET_MARK = 32768 -- a stored value always has it (0 = everything off is a valid choice)
 local RARITY_UNIT = 256
 
@@ -46,7 +50,7 @@ end
 function P.packRules(r)
 	local v = SET_MARK
 	for _, k in ipairs(P.FLAG_ORDER) do
-		if r[k] then
+		if (r[k] and true or false) ~= (INVERTED[k] or false) then
 			v = v + P.FLAGS[k]
 		end
 	end
@@ -61,7 +65,7 @@ function P.unpackRules(cfg, v)
 	end
 	local r = {}
 	for _, k in ipairs(P.FLAG_ORDER) do
-		r[k] = hasBit(v, P.FLAGS[k])
+		r[k] = hasBit(v, P.FLAGS[k]) ~= (INVERTED[k] or false)
 	end
 	r.minRarity = math.floor(v / RARITY_UNIT) % 16
 	if r.minRarity < 1 then
@@ -142,14 +146,48 @@ function P.wants(kind, info, rules, sets, cfg)
 	return false
 end
 
-function P.route(info, rules, sets, cfg)
-	local out = {}
-	for _, kind in ipairs(cfg.order) do
-		if P.wants(kind, info, rules, sets, cfg) then
-			out[#out + 1] = kind
+-- the specialist pouch (Orbs Pouch, Rift Key Pouch: cfg.priority, in that order) whose kind the item is, else nil
+function P.specialistOf(info, sets, cfg)
+	for _, kind in ipairs(cfg.priority) do
+		if P.wants(kind, info, nil, sets, cfg) then
+			return kind
 		end
 	end
-	return out
+	return nil
+end
+
+-- carried = {[kind] = truthy} for the pouches the character carries. Returns the kinds to try, in order, and the
+-- specialist kind when the Loot Pouch is in the list only as its overflow (else nil).
+--   1. An item of a specialist kind (orbs, rune shards, gems / Rift Keys, omen items) goes to that pouch first, always,
+--      whatever the Loot Pouch rules say (its "gems" rule, the autoloot list).
+--   2. That pouch full: the Loot Pouch takes it only with its "overflow" rule (default on); else the caller passes it
+--      to the backpack, then leaves it in the corpse.
+--   3. No specialist pouch carried for it: the Loot Pouch rules decide as for any item (gems rule, autoloot list).
+function P.plan(info, rules, sets, cfg, carried)
+	carried = carried or {}
+	rules = rules or P.defaults(cfg)
+	local out = {}
+	local spec = P.specialistOf(info, sets, cfg)
+	if spec and carried[spec] then
+		out[1] = spec
+		if rules.overflow and carried.loot then
+			out[2] = "loot"
+			return out, spec
+		end
+		return out, nil
+	end
+	if carried.loot and P.wants("loot", info, rules, sets, cfg) then
+		out[1] = "loot"
+	end
+	return out, nil
+end
+
+function P.route(info, rules, sets, cfg)
+	local all = {}
+	for kind in pairs(cfg.kinds) do
+		all[kind] = true
+	end
+	return (P.plan(info, rules, sets, cfg, all))
 end
 
 -- m = {holdsPouch = bool (the moved item is a pouch or holds one),
@@ -175,8 +213,9 @@ function P.moveRefusal(m)
 end
 
 -- taken = {[kind] = n}, backpack = n (wanted by a pouch, went to the backpack), left = n (no room anywhere),
--- full = {[kind] = true} (say the pouch is full)
-function P.summary(cfg, taken, backpack, left, full)
+-- full = {[kind] = true} (say the pouch is full), overflow = n (of the Loot Pouch's count: items a full specialist
+-- pouch passed to it)
+function P.summary(cfg, taken, backpack, left, full, overflow)
 	local parts = {}
 	for _, kind in ipairs(cfg.order) do
 		local n = taken[kind] or 0
@@ -189,6 +228,9 @@ function P.summary(cfg, taken, backpack, left, full)
 		if full and full[kind] then
 			notes[#notes + 1] = cfg.kinds[kind].title .. " is full"
 		end
+	end
+	if (overflow or 0) > 0 then
+		notes[#notes + 1] = overflow .. " to your " .. cfg.kinds.loot.title
 	end
 	if backpack > 0 then
 		notes[#notes + 1] = backpack .. " to your backpack"

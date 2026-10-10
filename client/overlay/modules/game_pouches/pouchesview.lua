@@ -1,17 +1,21 @@
 -- Store pouches window: the logic without client API (tested by pouchesview_test.lua).
--- The rules mirror the server's pouches_core.lua: list, gold, uniques, gear (+ minRarity), supplies, gems, other.
+-- The rules mirror the server's pouches_core.lua: list, gold, uniques, gear (+ minRarity), supplies, gems, other,
+-- overflow (take what a full Orbs / Rift Key Pouch passes on; on when the server does not say).
 
 PouchesView = {}
 local V = PouchesView
 
-V.FLAGS = { 'list', 'gold', 'uniques', 'gear', 'supplies', 'gems', 'other' }
+V.FLAGS = { 'list', 'gold', 'uniques', 'gear', 'supplies', 'gems', 'other', 'overflow' }
+V.DEFAULT_ON = { overflow = true }
 V.MAX_RARITY = 15
 
--- rules from the server (missing keys: off, minRarity clamped to 1..15)
+-- rules from the server (missing keys: off, overflow on; minRarity clamped to 1..15)
 function V.normalize(r)
   r = type(r) == 'table' and r or {}
   local out = {}
-  for _, k in ipairs(V.FLAGS) do out[k] = r[k] == true end
+  for _, k in ipairs(V.FLAGS) do
+    if r[k] == nil and V.DEFAULT_ON[k] then out[k] = true else out[k] = r[k] == true end
+  end
   local m = math.floor(tonumber(r.minRarity) or 5)
   out.minRarity = math.max(1, math.min(V.MAX_RARITY, m))
   return out

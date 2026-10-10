@@ -26,26 +26,35 @@ ChaosPouchesConfig = {
 		lock = "chaos_locked" -- 1: the item lock (engine patch 0009): NPCs do not buy it, trash refuses it, stock market too
 	},
 
-	-- the items: new items.otb nodes (install_pouches.py), copies of stock bags; client ids stay the stock ones.
+	-- the items: new items.otb nodes (install_pouches.py), copies of the stock bag `sourceId` (group, flags) with their
+	-- own look `clientId`: our pouch art (client/tools/sprites/gen_pouch_art.py, appended to the client pair by
+	-- import_art_things.py with art_import/pouches.csv). install_pouches.py --stock-looks keeps the stock bag looks.
 	-- capacity = containerSize in items.xml (slots); weight in 1/100 oz (the contents weigh as usual)
 	kinds = {
-		loot = {id = 32081, sourceId = 11242, capacity = 60, weight = 100, title = "Loot Pouch", article = "a",
+		loot = {id = 32081, sourceId = 11242, clientId = 33653,
+			capacity = 60, weight = 100, title = "Loot Pouch", article = "a",
 			name = "loot pouch", plural = "loot pouches",
 			collects = "the loot its rules pick (Loot Filter > Loot Pouch)",
 			description = "Store item: cannot be traded, sold or dropped. Collects the loot your Loot Pouch rules pick " ..
 				"while you carry it (Loot Filter > Loot Pouch)."},
-		orbs = {id = 32082, sourceId = 9775, capacity = 40, weight = 100, title = "Orbs Pouch", article = "an",
+		orbs = {id = 32082, sourceId = 9775, clientId = 33651,
+			capacity = 40, weight = 100, title = "Orbs Pouch", article = "an",
 			name = "orbs pouch", plural = "orbs pouches",
 			collects = "orbs, whetstones, rune shards and gems",
 			description = "Store item: cannot be traded, sold or dropped. Collects orbs, whetstones, rune shards and " ..
 				"gems from your kills while you carry it."},
-		keys = {id = 32083, sourceId = 7343, capacity = 30, weight = 100, title = "Rift Key Pouch", article = "a",
+		keys = {id = 32083, sourceId = 7343, clientId = 33652,
+			capacity = 30, weight = 100, title = "Rift Key Pouch", article = "a",
 			name = "rift key pouch", plural = "rift key pouches",
 			collects = "Rift Keys, Omen Keys and omen fragments",
 			description = "Store item: cannot be traded, sold or dropped. Collects Rift Keys, Omen Keys and omen " ..
 				"fragments from your kills while you carry it."}
 	},
-	order = {"orbs", "keys", "loot"}, -- a corpse item goes to the first kind that wants it (then the next, then the backpack)
+	-- the specialist pouches, in priority order: an item of their kind (orbs, rune shards, gems / Rift Keys, omen items)
+	-- always goes to them first, before the Loot Pouch, whatever the Loot Pouch rules say. Full: the Loot Pouch takes it
+	-- only with its "overflow" rule (default on), else the backpack, else it stays in the corpse (pouches_core.lua plan)
+	priority = {"orbs", "keys"},
+	order = {"orbs", "keys", "loot"}, -- the order of the per-kill chat line
 
 	-- Orbs Pouch: these ids, plus every currency entry of loot_config.lua and the loot filter's orbIds
 	orbIds = {29851, 29852, 29853, 29854, 29855, 29856, 29857, 29858, 29859, -- the currency orbs
@@ -59,8 +68,9 @@ ChaosPouchesConfig = {
 	omenIds = {32071, 32072},
 
 	-- Loot Pouch rule defaults (a character that never opened the settings)
+	-- overflow: take what a full Orbs / Rift Key Pouch passes on (on by default, so nothing stays in the corpse)
 	lootDefaults = {list = true, gold = true, uniques = true, gear = false, minRarity = 5, supplies = false, gems = false,
-		other = false},
+		other = false, overflow = true},
 	coinIds = {2148, 2152, 2160, 28872, 28873},
 
 	-- where a pouch (or a container holding one) may be moved: the character's own inventory, or these containers

@@ -2,17 +2,21 @@
 """Install the store pouches (the Loot Pouch, the Orbs Pouch and the Rift Key Pouch) into a base server: three
 items.otb nodes, three items.xml entries and the move hook in data/events/scripts/player.lua.
 
-usage: python3 -I install_pouches.py DATA_DIR [--dry-run]
+usage: python3 -I install_pouches.py DATA_DIR [--dry-run] [--stock-looks]
 
-Everything is read from server/data/scripts/chaos/pouches_config.lua (`kinds`: id, sourceId, capacity, weight,
-article, name, plural, description), the same file the Lua side uses.
+Everything is read from server/data/scripts/chaos/pouches_config.lua (`kinds`: id, sourceId, clientId, capacity,
+weight, article, name, plural, description), the same file the Lua side uses.
 
-1. data/items/items.otb: per pouch a copy of the stock container node `sourceId` with the server id `id` (loot 32081:
-   the expedition bag, orbs 32082: the brocade bag, keys 32083: the fur bag; containers, not stackable). Their client
-   ids stay the stock ones, so the client needs no change. The nodes are appended at the end of the root; a node
-   already there with the same bytes is left alone, one with other bytes (a changed config) is replaced, and a server
-   id that belongs to another client id stops the script (nothing is written). items.otb.bak keeps the original the
-   first time; the written file is parsed again and the nodes checked.
+1. data/items/items.otb: per pouch a copy of the stock container node `sourceId` (loot 32081: the expedition bag,
+   orbs 32082: the brocade bag, keys 32083: the fur bag; group, flags, every attribute; containers, not stackable)
+   with the server id `id` and the client id `clientId`: our own pouch looks (orbs 33651, keys 33652, loot 33653),
+   appended to the client pair by client/tools/sprites/import_art_things.py with art_import/pouches.csv (client
+   MANIFEST.md "Store pouch looks"). --stock-looks keeps the stock bags' client ids instead (for clients whose pair
+   does not have the pouch looks yet). The nodes are appended at the end of the root; a node already there with the
+   same bytes is left alone, one with other bytes (a changed config, or the stock look of an earlier install: only
+   its client id changes, so existing pouches show the new look at once) is replaced, and a server id that belongs to
+   any other client id stops the script (nothing is written). items.otb.bak keeps the original the first time; the
+   written file is parsed again and the nodes checked.
    Ranges in use: gems 32001..32035, salvage 32051, omens 32071..32072, pouches 32081..32083, supports 32101..32200,
    orbs v2 32251..32256, dark tiles 30484..30557, art 33000.., pack items 36000.., donor items 40000...
 2. data/items/items.xml: the entries (name, plural, description, weight, containerSize = capacity) between two marker
@@ -29,7 +33,8 @@ import os, re, struct, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from install_gems import scan, escape, attr, xml_escape, START, END, A_SERVERID, FLAG_STACKABLE, FLAG_PICKUPABLE, FLAG_MOVEABLE  # noqa: E402
+from install_gems import (scan, escape, attr, xml_escape, START, END, A_SERVERID, A_CLIENTID, FLAG_STACKABLE,  # noqa: E402
+                          FLAG_PICKUPABLE, FLAG_MOVEABLE)
 
 CONFIG = os.path.join(os.path.dirname(HERE), 'data', 'scripts', 'chaos', 'pouches_config.lua')
 XML_BEGIN = '\t<!-- Chaos store pouches (server/tools/install_pouches.py, do not edit by hand) -->\n'
@@ -63,7 +68,7 @@ def read_config(path=CONFIG):
             m = re.search(r'\b%s\s*=\s*((?:"[^"]*"\s*(?:\.\.\s*)?)+)' % key, block, re.S)
             return ''.join(re.findall(r'"([^"]*)"', m.group(1)))
 
-        cfg = {'id': num('id'), 'sourceId': num('sourceId'), 'capacity': num('capacity'), 'weight': num('weight'),
+        cfg = {'id': num('id'), 'sourceId': num('sourceId'), 'clientId': num('clientId'), 'capacity': num('capacity'), 'weight': num('weight'),
                'name': string('name'), 'plural': string('plural'), 'article': string('article'),
                'description': string('description')}
         assert cfg['id'] > 0 and cfg['sourceId'] > 0 and cfg['name'], 'pouches_config.lua: kinds.%s incomplete' % name
@@ -74,19 +79,29 @@ def read_config(path=CONFIG):
     return out
 
 
-def node(stock, cfg):
-    """a copy of the stock container node (group, flags, every attribute) with the new server id"""
+def look_of(stock, cfg, stock_looks=False):
+    """the client id the pouch node gets: its own look, or the stock bag's with --stock-looks"""
+    return stock[3] if stock_looks else cfg['clientId']
+
+
+def node(stock, cfg, client_id):
+    """a copy of the stock container node (group, flags, every attribute) with the new server id and client id"""
     _s, _e, _sid, _cid, group, flags, attrs = stock
     flags = (flags | FLAG_PICKUPABLE | FLAG_MOVEABLE) & ~FLAG_STACKABLE
     body = struct.pack('<I', flags)
+    seen = False
     for k, v in attrs:
         if k == A_SERVERID:
             v = struct.pack('<H', cfg['id'])
+        elif k == A_CLIENTID:
+            v = struct.pack('<H', client_id)
+            seen = True
         body += attr(k, v)
+    assert seen, 'stock node %d has no client id attribute' % cfg['sourceId']
     return bytes([START]) + escape(bytes([group])) + escape(body) + bytes([END])
 
 
-def patch_otb(data, items):
+def patch_otb(data, items, stock_looks=False):
     notes, wanted = [], {}
     out = bytes(data)
     for name in NAMES:
@@ -99,22 +114,26 @@ def patch_otb(data, items):
         if stock[4] != GROUP_CONTAINER:
             raise SystemExit('items.otb: stock node %d is not a container (group %d); nothing written'
                              % (cfg['sourceId'], stock[4]))
-        want = node(stock, cfg)
+        cid = look_of(stock, cfg, stock_looks)
+        if cid != stock[3] and cid in {k[3] for k in kids if k[2] != cfg['id']}:
+            raise SystemExit('items.otb: client id %d (%s pouch look) is already used by another node; nothing written'
+                             % (cid, name))
+        want = node(stock, cfg, cid)
         k = by_sid.get(cfg['id'])
         buf = bytearray(out)
         if k is None:
             buf[root_end:root_end] = want
-            notes.append('items.otb: %s pouch node added (server id %d, client id %d)' % (name, cfg['id'], stock[3]))
-        elif k[3] != stock[3]:
-            raise SystemExit('items.otb: server id %d already belongs to client id %s, not %d; nothing written'
-                             % (cfg['id'], k[3], stock[3]))
+            notes.append('items.otb: %s pouch node added (server id %d, client id %d)' % (name, cfg['id'], cid))
+        elif k[3] not in (stock[3], cfg['clientId']):
+            raise SystemExit('items.otb: server id %d already belongs to client id %s, not %d or %d; nothing written'
+                             % (cfg['id'], k[3], stock[3], cfg['clientId']))
         elif out[k[0]:k[1]] != want:
             buf[k[0]:k[1]] = want
-            notes.append('items.otb: %s pouch node updated' % name)
+            notes.append('items.otb: %s pouch node updated (client id %s -> %d)' % (name, k[3], cid))
         else:
             notes.append('items.otb: %s pouch node present' % name)
         out = bytes(buf)
-        wanted[name] = (want, stock[3])
+        wanted[name] = (want, cid)
     return out, notes, wanted
 
 
@@ -188,6 +207,7 @@ def patch_player(text):
 def main():
     args = sys.argv[1:]
     dry = '--dry-run' in args
+    stock_looks = '--stock-looks' in args
     args = [a for a in args if not a.startswith('--')]
     if len(args) != 1:
         print(__doc__)
@@ -202,11 +222,12 @@ def main():
             print('not found:', path)
             return 1
     raw = open(otb, 'rb').read()
-    new, notes, wanted = patch_otb(raw, items)
+    new, notes, wanted = patch_otb(raw, items, stock_looks)
     n = verify_otb(new, items, wanted)
     for note in notes:
         print(note)
-    print('items.otb: verified (%d item nodes; pouches %s)' % (n, ', '.join(str(items[k]['id']) for k in NAMES)))
+    print('items.otb: verified (%d item nodes; pouches %s)' % (n, ', '.join('%d (client %d)' % (items[k]['id'], wanted[k][1])
+                                                                           for k in NAMES)))
     text = open(xml, encoding='utf-8', errors='surrogateescape').read()
     new_text, xnote = patch_xml(text, items)
     print(xnote)

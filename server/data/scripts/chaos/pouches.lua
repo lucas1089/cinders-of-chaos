@@ -9,9 +9,11 @@
 --
 -- onDropLoot (lower index first): 0 stock loot, 1 Chaos loot layer, 1.5 Echoing Spoils, 2 auto seller + rift key drop
 -- + paragon gold, 2.4 hunt / achievements read, 2.45 pet fetch, 2.5 loot filter snapshot, 2.7 POUCHES, 3 base autoloot,
--- 3.5 Rarity Autoloot pickup, 4.5 loot filter finish. A pouch that is full (or too heavy to carry more) passes the item
--- on: the next pouch that wants it, then the backpack, else it stays in the corpse. Orbs and keys are never auto-sold
--- (autosell.lua asks ChaosPouches.neverSell).
+-- 3.5 Rarity Autoloot pickup, 4.5 loot filter finish. Priority (pouches_core.lua plan): orbs, rune shards and gems go
+-- to the Orbs Pouch, Rift Keys and omen items to the Rift Key Pouch, always before the Loot Pouch. A full (or too
+-- heavy) specialist pouch passes the item to the Loot Pouch only with its "overflow" rule (default on), then to the
+-- backpack, else it stays in the corpse. The same order holds for click-to-loot in the loot channel (PO.stow). Orbs
+-- and keys are never auto-sold (autosell.lua asks ChaosPouches.neverSell).
 --
 -- Store-bound: one of each kind per character (the store refuses a second while one is in the inventory, the inbox
 -- or a depot); only the owner's pouch collects (custom attribute chaos_pouch_owner). Every pouch has the custom
@@ -314,7 +316,7 @@ local function isFull(pouch)
 	return ok and full
 end
 
--- puts one corpse item into the first carried pouch that wants it. Returns "pouch", kind | "full", kind | nil
+-- puts one corpse item into the first pouch of the plan (pouches_core.lua plan) that has room. Returns "pouch", kind | nil
 local function stowInto(pouches, kinds, item, container, notes)
 	for _, kind in ipairs(kinds) do
 		local pouch = pouches[kind]
@@ -337,7 +339,7 @@ function PO.stow(player, item)
 		return false
 	end
 	local info = infoOf(item, autolootSet(player))
-	local kinds = P.route(info, PO.rulesOf(player), sets(), cfg())
+	local kinds = P.plan(info, PO.rulesOf(player), sets(), cfg(), pouches)
 	local parent = item:getParent()
 	local where = stowInto(pouches, kinds, item, parent, {full = {}})
 	return where == "pouch"
@@ -360,16 +362,12 @@ local function collect(monster, corpse)
 	end
 	local c = cfg()
 	local rules, list, s = PO.rulesOf(owner), autolootSet(owner), sets()
-	local taken, backpack, left = {}, 0, 0
+	local taken, backpack, left, overflow = {}, 0, 0, 0
 	local notes = {full = {}}
 	for _, item in ipairs(corpse:getItems() or {}) do
 		local info = infoOf(item, list)
-		local kinds = P.route(info, rules, s, c)
-		local mine = false
-		for _, kind in ipairs(kinds) do
-			mine = mine or pouches[kind] ~= nil
-		end
-		if mine then
+		local kinds, spilled = P.plan(info, rules, s, c, pouches)
+		if #kinds > 0 then
 			-- rolled now: the engine's rarity pass only reaches items still in the corpse (loot.lua finalizeRarity)
 			if info.category == "equipment" and ChaosLoot and ChaosLoot.finalizeRarity then
 				item = ChaosLoot.finalizeRarity(item)
@@ -377,6 +375,9 @@ local function collect(monster, corpse)
 			local where, kind = stowInto(pouches, kinds, item, corpse, notes)
 			if where == "pouch" then
 				taken[kind] = (taken[kind] or 0) + info.count
+				if spilled and kind == "loot" then
+					overflow = overflow + info.count
+				end
 			elseif intoBags(owner, item) and not stillIn(item, corpse) then
 				backpack = backpack + 1
 			else
@@ -393,7 +394,7 @@ local function collect(monster, corpse)
 			lastFull[key] = now
 		end
 	end
-	local text = P.summary(c, taken, backpack, left, notes.full)
+	local text = P.summary(c, taken, backpack, left, notes.full, overflow)
 	if text then
 		owner:sendTextMessage(MESSAGE_LOOT or MESSAGE_INFO_DESCR, text)
 	end
