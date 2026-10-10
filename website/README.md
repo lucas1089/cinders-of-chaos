@@ -14,11 +14,16 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `setup/rules.bbcode` | the first version of the Rules page (then edited in the admin panel) |
 | `setup/router.php` | router for PHP's built-in server (local tests only) |
 | `overlay/layouts/chaos/` | our layout: a child of ZnoteX's purple layout "Void", re-coloured to the client |
-| `overlay/plugins/chaos/` | our plugin: class names and class lock, character slots, starter depot boxes, Leaderboards / Patch Notes / Seasons pages |
+| `overlay/plugins/chaos/` | our plugin: class names and class lock, character slots, starter depot boxes, the referral code field (`referral.php`), Leaderboards / Patch Notes / Seasons pages |
 | `overlay/engine/function/chaos_password.php` | salted PBKDF2 passwords, the game server's format (see "Passwords") |
 | `patches/znotex-chaos-passwords.patch` | ZnoteX's password and login code switched to it, per-account login throttling |
 | `tests/chaos_password_test.php` | `php website/tests/chaos_password_test.php` (php-cli only) |
 | `tests/chaos_slots_test.php` | `php website/tests/chaos_slots_test.php`: the character slot limit (php-cli only, a fake database) |
+| `tests/chaos_referral_test.php` | `php website/tests/chaos_referral_test.php`: the referral code field (php-cli only, a fake database) |
+| `overlay/plugins/chaos/pay/`, `pages/coins.php` | donations for Chaos Coins: Pix (Mercado Pago) and PayPal, the worker, the donation page (see "Donations") |
+| `overlay/chaos_pay_webhook.php` | the Mercado Pago / PayPal webhook of the donations |
+| `payments.env.example` | the donation settings (the credentials stay outside the repository) |
+| `tests/chaos_pay_test.php`, `tests/chaos_donation_page_test.php` | the donation flow and page (php-cli with pdo_sqlite, a mocked provider) |
 | `tools/recolor_layout.py` | turns Void's stylesheets into ours at install time |
 | `tools/gen_site_art.py` | draws the site art and the promotion material |
 | `art/` | promotion material: banners, social image, Discord banner and icon, class showcase, features infographic |
@@ -180,21 +185,120 @@ PNGs were drawn with Crimson Pro. All art is procedural: no screenshots, logos o
 | `art/class-showcase-1400x900.png` | 1400x900 | the 4 base classes and their ascensions |
 | `art/features-1200x1560.png` | 1200x1560 | features infographic |
 
-## Chaos Coins
+## Referral codes
 
-The packs, their bonuses and the one-time starter and first-purchase bonuses live in the game server's
-`server/data/scripts/chaos/shop_coins_config.lua`; the server decides every number and credits every order
-(server/README.md "Store"). The site only shows them and records paid orders:
+The account creation form has an optional **Referral code** field (the game server's referral program, server/README.md
+"Referral program"). A shared link `register.php?ref=CODE` fills it in.
 
-- Page `page.php?plugin=chaos&p=coins` (`plugins/chaos/pages/coins.php`): the packs with coins, bonus, total and price,
-  the first-purchase bonus and, for a logged-in account, whether it and the starter pack are still open. No menu entry
-  yet: payments are not open.
-- Hook `chaos_coin_order_paid($accountId, $packKey, $provider, $providerRef)` (`plugins/chaos/lib.php`): call it from a
-  payment provider's confirmed-payment callback, after checking the provider's signature there. It writes a `paid` row
-  into `chaos_coin_orders` (`install.sql`; unique per provider and reference, so a repeated callback writes nothing); the
-  game server credits it within 30 s. **No payment provider is connected and no credentials are here.** Until one is,
-  staff record a payment by hand with the in-game admin panel (Store > Record a paid coin order).
-- `php website/tests/chaos_coins_test.php` checks that the site reads the packs as the server credits them.
+- `plugins/chaos/referral.php` (loaded by `plugin.php`): reads `enabled`, `code` and `entryDays` from the server's
+  `referral_config.lua` (`CHAOS_SERVER_DATA`; defaults without it), checks the posted code's format and that an account
+  owns it (`chaos_referral_codes`), and after the account is created writes a `pending` row into `chaos_referrals` with the
+  registration IP (`account.registered` hook). Every other rule (staff, same IP, same e-mail domain, monthly caps, bans) is
+  the game server's, at the new account's first login; the player sees the result in game.
+- A wrong code stops the registration with a message. ZnoteX empties `$errors` after the plugins load, so the message is
+  added by our `layouts/chaos/views/register_header.php` (register.php renders it after its own checks and before it
+  creates the account).
+- `layouts/chaos/views/register_form.php` is ZnoteX's default form with the field added; keep it in step with
+  `layouts/default/views/register_form.php` when ZnoteX is updated. With `CHAOS_LAYOUT=void` the field is not shown.
+- Tables: the game server creates them (`server/sql/chaos_referral.sql`, or at its start). Without them no code can be
+  found, so a filled field is refused; an empty field works as before.
+- Tested on a local install (`php -S`, own database copy): the field pre-filled from `?ref=`, an unknown code refused on
+  the form, a known one recorded as pending and accepted by the game server at the first login.
+
+## Donations (Chaos Coins)
+
+**Chaos Coins are a thank-you for a voluntary donation. Nobody is required to donate; the game is fully playable for
+free.** Every payment surface says so before a pack is picked, in English and Portuguese ("Voluntary donation: it helps
+keep the server running. Nobody is required to donate; the game is fully playable for free." / "Doação voluntária:
+ajuda a manter o servidor. Ninguém é obrigado a doar; o jogo é totalmente jogável de graça."). The buttons say "Donate".
+The Mercado Pago and PayPal descriptions say "voluntary donation". The thank-you after the donation repeats it
+("Thank you for your voluntary donation! You received X Chaos Coins as a thank-you." / "Obrigado pela sua doação
+voluntária! Você recebeu X Chaos Coins como agradecimento.").
+
+Two methods: **Pix** through Mercado Pago (BRL) and **PayPal** (USD). The packs, bonuses and prices are the game
+server's (`server/data/scripts/chaos/shop_coins_config.lua`): one USD table in integer cents (`usdCents`), Pix =
+USD x `brlPerUsd` (5), so the two prices never drift. The game server credits every paid order (server/README.md
+"Store"). Players donate in the client (Store > Donate) or on the page `page.php?plugin=chaos&p=coins`.
+
+### How an order flows
+
+1. **Order.** The client asks the game server (opcode 218, `pay_create`), or the logged-in player posts the page. A
+   `pending` row goes into `chaos_coin_orders` (account, pack, method, credit preview) and `chaos_coin_payments`
+   (amount in cents and currency from the server config, a random token). Limits: one open donation per account, six
+   started per hour, the starter pack once (the same rules in `shop_payments_core.lua` and `pay/Service.php`).
+2. **Charge.** The game server has no HTTPS client, so the **worker** (`plugins/chaos/pay/worker.php`, a systemd
+   service) makes the charge. Pix: Mercado Pago `POST /v1/payments` (`X-Idempotency-Key` = token, 30-minute
+   `date_of_expiration`, the account's e-mail as `payer.email`, which Mercado Pago requires; passed through, not stored
+   again). PayPal: `POST /v2/checkout/orders` (item category DONATION, `PayPal-Request-Id` = token). It stores the Pix
+   copy-and-paste code or the PayPal approval link and the expiry, and marks the order `open`. The page makes the
+   charge itself at once.
+3. **QR code.** The client draws the QR code of the Pix code (or of the PayPal link, which it also opens in the browser)
+   with widgets (`game_shop/qrcode.lua`). It shows the copy-and-paste text with a Copy button and a countdown, and asks
+   for the order's state every 3 s.
+4. **Confirmation.** The provider calls `chaos_pay_webhook.php`. Mercado Pago: `x-signature`, HMAC-SHA256 with the
+   webhook secret over `id:<data.id>;request-id:<x-request-id>;ts:<ts>;`. PayPal: `POST /v1/notifications/verify-webhook-signature`
+   with the transmission headers and the webhook id. A bad signature is refused (401), an id we never charged too (404).
+   The charge is then **fetched again** from the provider (`GET /v1/payments/{id}`, `GET /v2/checkout/orders/{id}`;
+   PayPal is captured here once the payer approved). It is checked against the order: provider id, our token, amount in
+   cents, currency, status approved. Only then the order becomes `paid`, with one conditional UPDATE, so a repeated
+   webhook changes nothing. The worker checks open orders every `CHAOS_PAY_RECONCILE_SECONDS` too: a lost webhook only
+   delays.
+5. **Coins.** The game server sees the `paid` row within 3 s (`shop_payments.lua` poll). It credits it in one transaction
+   (`shop.lua` re-reads the row locked first) and pushes the thank-you: toast and balance in the client, no relog.
+6. **Ends.** Not paid by the expiry: `expired` (checked once more first, then cancelled at the provider). Cancelled by
+   the player: `cancelled` (a Mercado Pago charge is cancelled; a PayPal order is simply never captured). A refund or
+   chargeback before crediting: `refunded`. After crediting: flagged on the row; the game server takes back the coins
+   still unspent (`removeCoinsOnReversal`) and staff see it in the admin panel (Store > Donations: refunds and
+   chargebacks). No charge after 10 minutes (worker down): `failed`.
+
+The provider is an adapter (`plugins/chaos/pay/Provider.php`: create, fetch, capture, cancel, webhook). Mercado Pago,
+PayPal and a mock are the three classes. Another PSP (another Pix provider, for example) is one more class and one more
+case in `bootstrap.php`. The hook `chaos_coin_order_paid` (`lib.php`) stays for payments confirmed elsewhere; staff record
+a donation by hand with the admin panel (Store > Record a donation).
+
+### Setup
+
+1. Accounts, the operator's own: a **Mercado Pago** account with Pix keys and an application with the Payments API; a
+   **PayPal Business** account and a REST app. docs/LAUNCH.md "Donations" has the legal notes (taxes, refund policy,
+   PayPal's donation category) and the go-live checklist.
+2. Credentials **never** go into the repository or the web root. Copy `website/payments.env.example` to
+   `/etc/chaos/payments.env` (owner root, group www-data, mode 640; another path in `CHAOS_PAY_ENV`) and fill it in:
+
+   | Variable | What |
+   |---|---|
+   | `CHAOS_PAY_PIX_PROVIDER` | `mercadopago`, `mock` or `off` |
+   | `CHAOS_PAY_PAYPAL_PROVIDER` | `paypal`, `mock` or `off` |
+   | `CHAOS_MP_ACCESS_TOKEN`, `CHAOS_MP_WEBHOOK_SECRET` | Mercado Pago access token, webhook secret |
+   | `CHAOS_MP_NOTIFICATION_URL`, `CHAOS_MP_SIGNATURE_TOLERANCE` | optional: per-payment notification URL; max age of a signature in s |
+   | `CHAOS_PAYPAL_CLIENT_ID`, `CHAOS_PAYPAL_CLIENT_SECRET`, `CHAOS_PAYPAL_WEBHOOK_ID` | PayPal app credentials and its webhook's id |
+   | `CHAOS_PAYPAL_ENV`, `CHAOS_PAYPAL_CATEGORY`, `CHAOS_PAYPAL_BRAND` | `sandbox` / `live`; `DONATION` / `DIGITAL_GOODS`; the name on PayPal's page |
+   | `CHAOS_PAY_SITE_URL` | the site address for PayPal's return links (default `CHAOS_SITE_URL`) |
+   | `CHAOS_PAY_PAYER_EMAIL` | Pix payer e-mail for accounts without one, with `{account}` (e.g. `donor+{account}@your-domain`) |
+   | `CHAOS_PAY_RECONCILE_SECONDS`, `CHAOS_PAY_LOG` | how often open orders are checked (60); log file (order ids and amounts only) |
+   | `CHAOS_PAY_MOCK_*` | the mock provider (tests and demos only) |
+
+   A variable in the real environment wins over the file. The webhook and the worker read the same file.
+3. Webhook URLs, set in each dashboard: `https://<site>/chaos_pay_webhook.php?psp=mercadopago` (Mercado Pago, topic
+   Payments) and `https://<site>/chaos_pay_webhook.php?psp=paypal` (PayPal events CHECKOUT.ORDER.APPROVED,
+   PAYMENT.CAPTURE.COMPLETED / DENIED / PENDING / REFUNDED / REVERSED, CUSTOMER.DISPUTE.CREATED). Without `psp` the
+   endpoint tells the provider by its headers.
+4. The worker: `server/deploy/chaos-payworker.service` (`worker.php --site /var/www/chaos --loop`, a round every 2 s).
+   Cron works too (`* * * * * www-data php /var/www/chaos/plugins/chaos/pay/worker.php --site /var/www/chaos --once`),
+   but then the QR code can take up to a minute to appear. `--status` prints the methods that are on.
+5. Tables: `chaos_coin_orders` and `chaos_coin_payments` (`install.sql`, `server/sql/chaos.sql`; the game server also
+   creates them at startup).
+
+**Mock mode** (`CHAOS_PAY_*_PROVIDER=mock`): no network, no money. A charge approves itself after
+`CHAOS_PAY_MOCK_APPROVE_AFTER` seconds (Pix: a well-formed EMV code with its CRC; PayPal: a fake link, then captured).
+`worker.php --mock-refund <order id>` / `--mock-dispute <order id>` simulate a refund or chargeback after crediting.
+Never on a live server.
+
+**Tests** (php-cli with pdo_sqlite, no network, no credentials): `php website/tests/chaos_pay_test.php` (prices, order
+rules, the charge requests, signatures good / bad / missing, unknown ids, amount / currency / reference checks,
+idempotency, expiry, cancel, refunds and chargebacks before and after crediting, PayPal capture, the mock, the settings
+loader); `php website/tests/chaos_donation_page_test.php` (the page: the notice in both languages before the packs,
+"Donate" and never "Buy", a Pix donation, the thank-you, the history labelled "Donation", CSRF);
+`php website/tests/chaos_coins_test.php`.
 
 ## Not done / for later
 

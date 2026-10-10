@@ -1,5 +1,6 @@
--- Store category (the Chaos store, shop.lua): sales dashboard from chaos_shop_purchases, recent purchases, paid Chaos
--- Coin orders (chaos_coin_orders), recording a paid order by hand and giving coins.
+-- Store category (the Chaos store, shop.lua): sales dashboard from chaos_shop_purchases, recent purchases, Chaos Coin
+-- donations (chaos_coin_orders, the Pix / PayPal ones with chaos_coin_payments: list, refunds and chargebacks),
+-- recording a donation by hand and giving coins.
 ChaosAdminPending = ChaosAdminPending or {}
 local function reg(def) def.category = "store"; def.id = "store." .. def.id; ChaosAdminPending[def.id] = def end
 
@@ -55,21 +56,70 @@ reg{id = "recent", name = "Recent purchases", description = "The last purchases:
 		return true, #lines .. " purchases", lines
 	end}
 
-reg{id = "coin_orders", name = "Coin orders", description = "Paid Chaos Coin orders (chaos_coin_orders): the last ones and the totals.",
+reg{id = "coin_orders", name = "Donations (coin orders)", description = "Chaos Coin donations (chaos_coin_orders): the last ones and the totals per status.",
 	params = {{name = "count", label = "Rows", type = "int", min = 1, max = 100, default = 20}},
 	handler = function(actor, p)
 		local lines = {}
 		for _, r in ipairs(sel("SELECT `status`, COUNT(*) AS `n`, SUM(`coins` + `bonus` + `first_bonus`) AS `c` FROM `" ..
 			T("coinOrders") .. "` GROUP BY `status`", {{"status", "s"}, {"n", "n"}, {"c", "n"}})) do
-			lines[#lines + 1] = string.format("%-9s %5d orders  %8d coins", r.status, r.n, r.c)
+			lines[#lines + 1] = string.format("%-9s %5d donations  %8d coins", r.status, r.n, r.c)
 		end
 		for _, r in ipairs(sel("SELECT `id`, `account_id`, `pack_key`, `provider`, `status`, `coins`, `bonus`, `first_bonus`, `note`, `created` FROM `" ..
 			T("coinOrders") .. "` ORDER BY `id` DESC LIMIT " .. (p.count or 20), {{"id", "n"}, {"account_id", "n"}, {"pack_key", "s"},
 			{"provider", "s"}, {"status", "s"}, {"coins", "n"}, {"bonus", "n"}, {"first_bonus", "n"}, {"note", "s"}, {"created", "n"}})) do
-			lines[#lines + 1] = string.format("#%d %s acc %d %s %s %s %d+%d+%d %s", r.id, os.date("%m-%d %H:%M", r.created), r.account_id,
+			lines[#lines + 1] = string.format("Donation #%d %s acc %d %s %s %s %d+%d+%d %s", r.id, os.date("%m-%d %H:%M", r.created), r.account_id,
 				r.pack_key, r.provider, r.status, r.coins, r.bonus, r.first_bonus, r.note)
 		end
-		return true, "Coin orders", lines
+		return true, "Donations", lines
+	end}
+
+-- Pix / PayPal donations (shop_payments.lua; the website's pay/ worker and webhook)
+local function money(cents, currency)
+	return ChaosPayCore and ChaosPayCore.money(cents, currency) or string.format("%.2f %s", cents / 100, currency)
+end
+
+reg{id = "pay_donations", name = "Donations: Pix / PayPal", description = "Donations made in the client or on the website: totals per method and currency, the last ones with their provider status.",
+	params = {{name = "days", label = "Days", type = "int", min = 1, max = 365, default = 30}, {name = "count", label = "Rows", type = "int", min = 1, max = 100, default = 20}},
+	handler = function(actor, p)
+		local since = os.time() - (p.days or 30) * 86400
+		local lines = {}
+		for _, r in ipairs(sel("SELECT p.`method`, p.`currency`, o.`status`, COUNT(*) AS `n`, SUM(p.`amount_cents`) AS `c` FROM `" .. T("coinPayments") ..
+			"` p JOIN `" .. T("coinOrders") .. "` o ON o.`id` = p.`order_id` WHERE o.`created` >= " .. since .. " GROUP BY p.`method`, p.`currency`, o.`status`",
+			{{"method", "s"}, {"currency", "s"}, {"status", "s"}, {"n", "n"}, {"c", "n"}})) do
+			lines[#lines + 1] = string.format("%-7s %-9s %4d donations  %s", r.method, r.status, r.n, money(r.c, r.currency))
+		end
+		lines[#lines + 1] = "-- last donations"
+		for _, r in ipairs(sel("SELECT o.`id`, o.`created`, o.`account_id`, o.`pack_key`, o.`status`, p.`method`, p.`amount_cents`, p.`currency`, p.`psp`, " ..
+			"p.`psp_status`, p.`source`, p.`note` FROM `" .. T("coinPayments") .. "` p JOIN `" .. T("coinOrders") .. "` o ON o.`id` = p.`order_id` ORDER BY o.`id` DESC LIMIT " ..
+			(p.count or 20), {{"id", "n"}, {"created", "n"}, {"account_id", "n"}, {"pack_key", "s"}, {"status", "s"}, {"method", "s"}, {"amount_cents", "n"},
+			{"currency", "s"}, {"psp", "s"}, {"psp_status", "s"}, {"source", "s"}, {"note", "s"}})) do
+			lines[#lines + 1] = string.format("Donation #%d %s acc %d %s %s %s via %s (%s, %s) %s %s", r.id, os.date("%m-%d %H:%M", r.created), r.account_id,
+				r.pack_key, money(r.amount_cents, r.currency), r.status, r.method, r.psp ~= "" and r.psp or "no charge yet", r.source, r.psp_status, r.note)
+		end
+		return true, "Donations: Pix / PayPal", lines
+	end}
+
+reg{id = "pay_reversals", name = "Donations: refunds and chargebacks", description = "Donations refunded, charged back or disputed after the coins were credited, and the coins taken back (shop_coins_config.lua payments.removeCoinsOnReversal).",
+	params = {{name = "count", label = "Rows", type = "int", min = 1, max = 100, default = 30}},
+	handler = function(actor, p)
+		local lines = {}
+		for _, r in ipairs(sel("SELECT o.`id`, o.`account_id`, o.`pack_key`, o.`coins`, o.`bonus`, o.`first_bonus`, p.`method`, p.`amount_cents`, p.`currency`, " ..
+			"p.`reversal`, p.`reversal_cents`, p.`reversal_done`, p.`reversal_coins`, p.`reversal_at` FROM `" .. T("coinPayments") .. "` p JOIN `" .. T("coinOrders") ..
+			"` o ON o.`id` = p.`order_id` WHERE p.`reversal` <> '' ORDER BY p.`reversal_at` DESC LIMIT " .. (p.count or 30),
+			{{"id", "n"}, {"account_id", "n"}, {"pack_key", "s"}, {"coins", "n"}, {"bonus", "n"}, {"first_bonus", "n"}, {"method", "s"}, {"amount_cents", "n"},
+			{"currency", "s"}, {"reversal", "s"}, {"reversal_cents", "n"}, {"reversal_done", "n"}, {"reversal_coins", "n"}, {"reversal_at", "n"}})) do
+			local credited = r.coins + r.bonus + r.first_bonus
+			lines[#lines + 1] = string.format("Donation #%d %s acc %d %s %s: %s of %s, %s", r.id, os.date("%m-%d %H:%M", r.reversal_at), r.account_id, r.method,
+				r.pack_key, r.reversal, money(r.reversal_cents > 0 and r.reversal_cents or r.amount_cents, r.currency),
+				r.reversal_done == 1 and string.format("%d of %d coins taken back", r.reversal_coins, credited) or "waiting for the game server")
+		end
+		-- refunded before the coins were credited (nothing to take back)
+		for _, r in ipairs(sel("SELECT o.`id`, o.`account_id`, o.`note`, p.`method`, p.`amount_cents`, p.`currency` FROM `" .. T("coinOrders") .. "` o JOIN `" ..
+			T("coinPayments") .. "` p ON p.`order_id` = o.`id` WHERE o.`status` = 'refunded' ORDER BY o.`id` DESC LIMIT 20",
+			{{"id", "n"}, {"account_id", "n"}, {"note", "s"}, {"method", "s"}, {"amount_cents", "n"}, {"currency", "s"}})) do
+			lines[#lines + 1] = string.format("Donation #%d acc %d %s %s before crediting (%s)", r.id, r.account_id, r.method, money(r.amount_cents, r.currency), r.note)
+		end
+		return true, #lines .. " refunds / chargebacks", #lines > 0 and lines or {"None."}
 	end}
 
 local function packOptions()
@@ -82,7 +132,7 @@ local function packOptions()
 	return out
 end
 
-reg{id = "record_order", name = "Record a paid coin order", description = "For a payment confirmed outside the website (bank transfer): writes a paid order; the store credits it with its bonuses within a minute.",
+reg{id = "record_order", name = "Record a donation", description = "For a donation confirmed outside the website (bank transfer): writes a paid coin order; the store credits it with its bonuses within a minute.",
 	confirm = true, minGroup = 6,
 	params = {{name = "player", label = "Character of the account", type = "player"},
 		{name = "pack", label = "Pack", type = "select", options = packOptions()},

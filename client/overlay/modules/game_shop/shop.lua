@@ -2,6 +2,7 @@
 -- Categories and pages come from the server; prices are in Chaos Coins. The server decides every price: an offer
 -- carries cost, oldCost (struck through), tags (Sale / New / Featured / Bundle), gift (can be bought for another
 -- character) and owned; buying echoes title and cost back, so a price that changed is refused, never charged.
+-- The Donate button opens the donation window (pay.lua: Pix / PayPal, Chaos Coins as a thank-you).
 -- private variables
 local SHOP_EXTENTED_OPCODE = 218
 local currentCategoryPage = {}
@@ -77,6 +78,7 @@ function terminate()
     giftWindow:destroy()
     giftWindow = nil
   end
+  destroyPay()
 end
 
 function check()
@@ -85,6 +87,7 @@ function check()
 end
 
 function hide()
+  hidePay()
   if not shop then
     return
   end
@@ -197,6 +200,14 @@ function onExtendedJSONOpcode(protocol, code, json_data)
   local status = json_data['status']
   if not action or not data then
     return false
+  end
+  -- donations (pay.lua)
+  if type(action) == 'string' and action:sub(1, 4) == 'pay_' then
+    onPayAction(action, data)
+    if status then
+      processStatus(status)
+    end
+    return
   end
   
   otcv8shop = true
@@ -326,7 +337,6 @@ function processStatus(data)
     end
   else
     shop.infoPanel.buy:hide()
-    shop.infoPanel:setHeight(20)
   end
 end
 

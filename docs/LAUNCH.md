@@ -273,6 +273,9 @@ Check the server folder before the first start (`ls data/scripts data/scripts/ta
 - `admin/testkit.lua` (`/testkit`: gear kits for admins, a balance-test tool): remove it from the live server, or keep it
   only if staff giving themselves gear is accepted;
 - the load-test bots: `server/tools/loadtest.py cleanup` removes the `loadbot*` accounts.
+- the **mock donation provider**: `CHAOS_PAY_PIX_PROVIDER=mock` / `CHAOS_PAY_PAYPAL_PROVIDER=mock` in
+  `/etc/chaos/payments.env` approve every donation by themselves after a few seconds (free Chaos Coins). Live values:
+  `mercadopago` / `paypal` (or `off`); see "Donations" below.
 
 ## 12. Open loose ends that matter for launch (ROADMAP.md)
 
@@ -296,7 +299,8 @@ Check the server folder before the first start (`ls data/scripts data/scripts/ta
 6. systemd units, logrotate, firewall (section 5); start; read the log: no `Lua Script Error`.
 7. Create the staff account and characters; log in with the release client; check the login screen (boosted creature,
    events, players online), a store purchase, a crafting orb, the bank, the stash.
-8. Website: character creation with the class lock (section 6).
+8. Website: character creation with the class lock (section 6). Donations: the sandbox test of "Donations" below, then
+   the live credentials.
 9. Backups: run `chaos-backup.service` once, restore the dump into a scratch database (section 7).
 10. Load test on the full map, then set `maxPlayers` (section 9).
 11. Open the firewall ports, announce.
@@ -315,3 +319,49 @@ It covers section 6's rules: the four base classes only, the Monk / Necromancer 
 `chaos_class_unlocks` row (checked server-side), level 1 characters with `lastlogin = 0` and no items. Set
 `CHAOS_SERVER_DATA` to `/opt/chaos/server/data` (patch notes, seasons), the site and game addresses, the client
 download links and the Discord invite, and `CHAOS_ADMIN_ACCOUNTS`; then edit the Rules page in the admin panel.
+
+## Donations (Pix / PayPal)
+
+Chaos Coins are a thank-you for a **voluntary donation**: nobody is required to donate and the game is fully playable for
+free. The client (Store > Donate) and the website (`page.php?plugin=chaos&p=coins`) say so in English and Portuguese
+before a pack is picked, every button says "Donate", and the thank-you after the donation repeats it. Pix goes through
+Mercado Pago in BRL, PayPal in USD; one USD price table (`shop_coins_config.lua` `usdCents`), Pix = USD x 5. How it works:
+`website/README.md` "Donations", `server/README.md` "Store".
+
+**Legal and money (the operator's job, not the code's).**
+- The operator needs their own **Mercado Pago** account (Brazil; Pix keys registered) and a **PayPal Business** account.
+  The money goes to those accounts; this repository never holds money or credentials.
+- Taxes, invoices and bookkeeping of the donations are the operator's responsibility (in Brazil: income from the
+  Mercado Pago account; abroad: whatever the operator's country requires).
+- PayPal's donation category (`CHAOS_PAYPAL_CATEGORY=DONATION`) may require a registered charity or nonprofit in some
+  countries; if PayPal refuses it, set `DIGITAL_GOODS`: the item stays labelled "voluntary donation".
+- Publish a refund policy (Rules page): a refund or chargeback after the coins were credited takes back the coins still
+  unspent (`removeCoinsOnReversal` in `shop_coins_config.lua`) and staff see it in the admin panel (Store > Donations:
+  refunds and chargebacks).
+- Set the real prices (`usdCents` of each pack) before launch: the ones in the repository are placeholders.
+
+**Go-live steps.**
+1. Mercado Pago: Your integrations > create an application (Checkout Transparente / Payments API). Copy the **test**
+   access token first. Webhooks > Configure notifications: URL `https://<site>/chaos_pay_webhook.php?psp=mercadopago`,
+   event "Payments"; copy the secret.
+2. PayPal: developer dashboard > Apps & Credentials > create an app (sandbox first): Client ID and Secret. Add a webhook
+   `https://<site>/chaos_pay_webhook.php?psp=paypal` with the events CHECKOUT.ORDER.APPROVED, PAYMENT.CAPTURE.COMPLETED,
+   PAYMENT.CAPTURE.DENIED, PAYMENT.CAPTURE.PENDING, PAYMENT.CAPTURE.REFUNDED, PAYMENT.CAPTURE.REVERSED,
+   CUSTOMER.DISPUTE.CREATED; copy its Webhook ID.
+3. `sudo cp website/payments.env.example /etc/chaos/payments.env && sudo chown root:www-data /etc/chaos/payments.env &&
+   sudo chmod 640 /etc/chaos/payments.env`; fill in the sandbox values (`CHAOS_PAYPAL_ENV=sandbox`), the providers
+   `mercadopago` / `paypal`, `CHAOS_PAY_SITE_URL`. Never commit it (`payments.env` is git-ignored).
+4. Web server: the site must be HTTPS; `chaos_pay_webhook.php` must be reachable from the internet (POST).
+5. Worker: `sudo cp server/deploy/chaos-payworker.service /etc/systemd/system/ && sudo systemctl daemon-reload &&
+   sudo systemctl enable --now chaos-payworker`; `php /var/www/chaos/plugins/chaos/pay/worker.php --site /var/www/chaos
+   --status` prints the methods that are on.
+6. **Sandbox test**, in the client and on the website: a Pix donation with Mercado Pago's test users (the QR code and copy
+   and paste appear, the payment approved in the sandbox credits the coins within seconds, toast + balance without
+   relog); a PayPal donation with a sandbox buyer (browser opens, approval, capture, coins); cancel one; let one expire
+   (30 minutes); refund one in each dashboard after crediting and check Store > Donations: refunds and chargebacks in
+   the admin panel and the coins taken back; send a webhook with a wrong signature (curl) and get 401.
+7. Live: the live access token and webhook secret (Mercado Pago production credentials), the live PayPal app's client
+   id, secret and webhook id, `CHAOS_PAYPAL_ENV=live`; `sudo systemctl restart chaos-payworker`. One small real donation
+   of each kind, refunded afterwards.
+8. Watch `/var/log/chaos/payworker.log` and `CHAOS_PAY_LOG` the first days (order ids and amounts only, no personal data).
+

@@ -156,7 +156,9 @@ Chaos.tables = {
 	-- store purchase log (also the weekly limits), gifts to offline characters, paid Chaos Coin orders (shop.lua, sql/chaos.sql)
 	shopPurchases = "chaos_shop_purchases",
 	shopGifts = "chaos_shop_gifts",
-	coinOrders = "chaos_coin_orders"
+	coinOrders = "chaos_coin_orders",
+	-- the Pix / PayPal donation of an order (shop_payments.lua, the website's pay/ worker and webhook)
+	coinPayments = "chaos_coin_payments"
 }
 
 -- ---------------------------------------------------------------------------

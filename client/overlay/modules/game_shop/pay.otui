@@ -1,0 +1,320 @@
+// Donation window (pay.lua): the voluntary donation notice, the method (Pix / PayPal), the packs with a Donate button;
+// then the QR code, the copy-and-paste code or link, the countdown and the automatic confirmation.
+
+PayPackRow < Panel
+  height: 34
+  background-color: #00000055
+  margin-bottom: 2
+
+  Label
+    id: name
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-left: 8
+    margin-top: 3
+    text-auto-resize: true
+    color: #f0c050
+    font: verdana-11px-rounded
+
+  Label
+    id: line
+    anchors.left: parent.left
+    anchors.top: name.bottom
+    margin-left: 8
+    margin-top: 1
+    text-auto-resize: true
+    color: #d8d8d8
+    font: verdana-11px-rounded
+
+  Button
+    id: donate
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 6
+    width: 130
+    height: 24
+
+PayToast < UIWidget
+  size: 440 92
+  background-color: #1d140cf0
+  border-width: 1
+  border-color: #c89a3c
+  phantom: true
+  focusable: false
+
+  Label
+    id: title
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 6 10 0 10
+    text-align: center
+    color: #f0c050
+    font: verdana-11px-rounded
+    text: Chaos Coins
+
+  Label
+    id: en
+    anchors.top: title.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 3 10 0 10
+    text-align: center
+    text-wrap: true
+    text-auto-resize: true
+    color: #ffffff
+    font: verdana-11px-rounded
+
+  Label
+    id: pt
+    anchors.top: en.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 2 10 0 10
+    text-align: center
+    text-wrap: true
+    text-auto-resize: true
+    color: #c8c8c8
+    font: verdana-11px-rounded
+
+MainWindow
+  id: payWindow
+  !text: tr('Donate - Chaos Coins')
+  size: 580 500
+  @onEscape: modules.game_shop.hidePay()
+
+  Label
+    id: notice
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-wrap: true
+    text-auto-resize: true
+    color: #f0c050
+    font: verdana-11px-rounded
+
+  Label
+    id: noticePt
+    anchors.top: notice.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    text-wrap: true
+    text-auto-resize: true
+    color: #e0c890
+    font: verdana-11px-rounded
+
+  Label
+    id: thanksNote
+    anchors.top: noticePt.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    text-wrap: true
+    text-auto-resize: true
+    color: #b0b0b0
+    font: verdana-11px-rounded
+
+  HorizontalSeparator
+    id: sep
+    anchors.top: thanksNote.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+
+  // ---------------------------------------------------------------- page 1: method and packs
+  Panel
+    id: packsPage
+    anchors.top: sep.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-top: 6
+    margin-bottom: 6
+
+    Label
+      id: methodLabel
+      anchors.top: parent.top
+      anchors.left: parent.left
+      margin-top: 4
+      text-auto-resize: true
+      !text: tr('Donate with:')
+
+    Button
+      id: methodPix
+      anchors.top: parent.top
+      anchors.left: methodLabel.right
+      margin-left: 8
+      width: 120
+      height: 22
+      text: Pix (BRL)
+      @onClick: modules.game_shop.selectPayMethod('pix')
+
+    Button
+      id: methodPaypal
+      anchors.top: parent.top
+      anchors.left: methodPix.right
+      margin-left: 6
+      width: 120
+      height: 22
+      text: PayPal (USD)
+      @onClick: modules.game_shop.selectPayMethod('paypal')
+
+    Label
+      id: firstBonus
+      anchors.top: methodPix.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 6
+      text-auto-resize: true
+      color: #9ad06a
+
+    Panel
+      id: packList
+      anchors.top: firstBonus.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 6
+      layout:
+        type: verticalBox
+
+  // ---------------------------------------------------------------- page 2: the donation
+  Panel
+    id: orderPage
+    anchors.top: sep.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-top: 6
+    margin-bottom: 6
+    visible: false
+
+    UIWidget
+      id: qrBox
+      anchors.top: parent.top
+      anchors.left: parent.left
+      size: 220 220
+      background-color: #ffffff
+
+    Label
+      id: orderTitle
+      anchors.top: parent.top
+      anchors.left: qrBox.right
+      anchors.right: parent.right
+      margin-left: 12
+      text-wrap: true
+      text-auto-resize: true
+      color: #f0c050
+      font: verdana-11px-rounded
+
+    Label
+      id: orderAmount
+      anchors.top: orderTitle.bottom
+      anchors.left: orderTitle.left
+      anchors.right: parent.right
+      margin-top: 4
+      text-auto-resize: true
+      color: #ffffff
+
+    Label
+      id: orderStatus
+      anchors.top: orderAmount.bottom
+      anchors.left: orderTitle.left
+      anchors.right: parent.right
+      margin-top: 8
+      text-wrap: true
+      text-auto-resize: true
+      color: #d8d8d8
+
+    Label
+      id: orderStatusPt
+      anchors.top: orderStatus.bottom
+      anchors.left: orderTitle.left
+      anchors.right: parent.right
+      margin-top: 2
+      text-wrap: true
+      text-auto-resize: true
+      color: #b8b8b8
+
+    Label
+      id: countdown
+      anchors.top: orderStatusPt.bottom
+      anchors.left: orderTitle.left
+      margin-top: 8
+      text-auto-resize: true
+      color: #f0c050
+      font: sans-bold-16px
+
+    Label
+      id: howTo
+      anchors.top: countdown.bottom
+      anchors.left: orderTitle.left
+      anchors.right: parent.right
+      margin-top: 8
+      text-wrap: true
+      text-auto-resize: true
+      color: #b0b0b0
+
+    Label
+      id: codeLabel
+      anchors.top: qrBox.bottom
+      anchors.left: parent.left
+      margin-top: 10
+      text-auto-resize: true
+
+    Button
+      id: copyButton
+      anchors.top: codeLabel.bottom
+      anchors.right: parent.right
+      margin-top: 3
+      width: 70
+      height: 22
+      !text: tr('Copy')
+      @onClick: modules.game_shop.copyPayCode()
+
+    TextEdit
+      id: code
+      anchors.top: codeLabel.bottom
+      anchors.left: parent.left
+      anchors.right: copyButton.left
+      margin-top: 3
+      margin-right: 6
+      height: 22
+      editable: false
+
+    Button
+      id: openButton
+      anchors.top: code.bottom
+      anchors.left: parent.left
+      margin-top: 8
+      width: 160
+      !text: tr('Open PayPal')
+      @onClick: modules.game_shop.openPayUrl()
+
+    Button
+      id: cancelOrder
+      anchors.top: code.bottom
+      anchors.right: parent.right
+      margin-top: 8
+      width: 140
+      !text: tr('Cancel donation')
+      @onClick: modules.game_shop.cancelPayOrder()
+
+    Button
+      id: backButton
+      anchors.top: code.bottom
+      anchors.right: cancelOrder.left
+      margin-top: 8
+      margin-right: 6
+      width: 90
+      !text: tr('Back')
+      @onClick: modules.game_shop.showPayPacks()
+
+  Button
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 64
+    !text: tr('Close')
+    @onClick: modules.game_shop.hidePay()

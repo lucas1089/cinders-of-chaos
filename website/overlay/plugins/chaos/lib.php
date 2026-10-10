@@ -692,7 +692,7 @@ function chaos_pn_render(array $note): string {
 // one-time starter pack); the site only shows the packs and records paid orders.
 // ---------------------------------------------------------------------------
 
-/** The coin packs: key, name, coins, bonus_pct, bonus_coins, price, once, starter, total (without the first-purchase bonus). */
+/** The coin packs: key, name, coins, bonus_pct, bonus_coins, usd_cents, once, starter, total (without the first-purchase bonus). */
 function chaos_coin_packs(): array {
 	$text = chaos_read_server_file('scripts/chaos/shop_coins_config.lua');
 	$out = array();
@@ -707,7 +707,7 @@ function chaos_coin_packs(): array {
 			'coins'       => (int)(chaos_lua_field($entry, 'coins') ?? 0),
 			'bonus_pct'   => (int)(chaos_lua_field($entry, 'bonusPct') ?? 0),
 			'bonus_coins' => (int)(chaos_lua_field($entry, 'bonusCoins') ?? 0),
-			'price'       => (float)(chaos_lua_field($entry, 'price') ?? 0),
+			'usd_cents'   => is_int(chaos_lua_field($entry, 'usdCents')) ? chaos_lua_field($entry, 'usdCents') : 0,
 			'once'        => (bool)preg_match('/\bonce\s*=\s*true\b/', $entry),
 			'starter'     => (bool)preg_match('/\bstarter\s*=\s*true\b/', $entry),
 		);
@@ -717,12 +717,44 @@ function chaos_coin_packs(): array {
 	return $out;
 }
 
-/** The first-purchase bonus in % and the currency of the prices. */
+/** The first-purchase bonus in % and the base currency of the prices (USD: usdCents). */
 function chaos_coin_settings(): array {
 	$text = chaos_read_server_file('scripts/chaos/shop_coins_config.lua');
 	return array(
 		'first_bonus_pct' => (int)(chaos_lua_field(chaos_lua_block($text, 'firstPurchase'), 'bonusPct') ?? 0),
 		'currency'        => (string)(preg_match('/\bcurrency\s*=\s*"([^"]*)"/', $text, $m) ? $m[1] : ''),
+	);
+}
+
+/**
+ * The `payments` block of shop_coins_config.lua (donations: Pix and PayPal): brl_per_usd, expire_minutes, max_open,
+ * max_per_hour, first_bonus_pct, methods => [pix|paypal => enabled, currency, label]. Prices are derived from the packs'
+ * usdCents with ChaosPayService::priceCents (the game server: ChaosPayCore.priceCents), never stored twice.
+ */
+function chaos_pay_config(): array {
+	$text = chaos_read_server_file('scripts/chaos/shop_coins_config.lua');
+	$block = chaos_lua_block($text, 'payments');
+	$int = static function (string $key, int $default) use ($block): int {
+		$v = chaos_lua_field($block, $key);
+		return is_int($v) ? $v : $default;
+	};
+	$methods = array();
+	$list = chaos_lua_block($block, 'methods');
+	foreach (array('pix', 'paypal') as $m) {
+		$body = preg_match('/\b' . $m . '\s*=\s*\{([^}]*)\}/', $list, $mm) ? $mm[1] : '';
+		$methods[$m] = array(
+			'enabled'  => $body !== '' && !preg_match('/\benabled\s*=\s*false\b/', $body),
+			'currency' => (string)(chaos_lua_field($body, 'currency') ?? ''),
+			'label'    => (string)(chaos_lua_field($body, 'label') ?? $m),
+		);
+	}
+	return array(
+		'brl_per_usd'     => $int('brlPerUsd', 0),
+		'expire_minutes'  => $int('expireMinutes', 30),
+		'max_open'        => $int('maxOpenPerAccount', 1),
+		'max_per_hour'    => $int('maxPerHour', 6),
+		'first_bonus_pct' => chaos_coin_settings()['first_bonus_pct'],
+		'methods'         => $methods,
 	);
 }
 

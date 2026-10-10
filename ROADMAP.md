@@ -10,6 +10,7 @@ Status: `todo`, `in progress`, `done`.
 | 1 | Store additions: stamina refill, temple teleport, bottomless loot pouch (retired, replaced by the store pouches, #41), auto seller, training weapons, world buffs, name change, vocation change, extras (double exp potion, blessings, frag/skull removal, sex change, respec) | done | `server/data/scripts/chaos/shop*.lua` |
 | 2 | Passive tree keystones per vocation (knight Cleaving Arc, paladin Ricochet, sorcerer Arcane Echo, druid Overgrowth, illusionist support) | done | measured on the test dummies so the role order holds |
 | 3 | Combat visuals: elemental weapon damage as its own coloured number + element sprite; crit, dodge and reflect sprites | done | server module `ChaosCombatFx` |
+| 47 | Donations for Chaos Coins in the client and on the website: Pix (Mercado Pago, BRL) and PayPal (USD), automatic confirmation | done, live accounts not connected | `shop_payments*.lua`, client `game_shop` (Donate: QR code, copy and paste, countdown, toast), website `plugins/chaos/pay/` (provider adapter, worker, webhook) and `pages/coins.php`; voluntary donation notice in English and Portuguese everywhere; one USD price table, Pix = USD x 5; refunds and chargebacks logged for staff, unspent coins taken back. Tested with the mock provider in game; the owner still needs Mercado Pago and PayPal accounts and a sandbox run (docs/LAUNCH.md "Donations") |
 
 ## Next: fix the late game (players hit a wall after level ~500)
 

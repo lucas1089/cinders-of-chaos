@@ -927,17 +927,27 @@ function Shop.processOrders()
 			local first = orderCount(r.account_id, #starters > 0 and ("`pack_key` NOT IN (" .. table.concat(starters, ",") .. ")") or "1") == 0
 			local credit = K.packCredit(pack, first, coinsCfg)
 			db.query("START TRANSACTION")
-			db.query("UPDATE `" .. T_ORDERS .. "` SET `status` = 'credited', `coins` = " .. credit.coins .. ", `bonus` = " .. credit.bonus ..
-				", `first_bonus` = " .. credit.firstBonus .. ", `credited` = " .. now() .. " WHERE `id` = " .. r.id .. " AND `status` = 'paid'")
-			Shop.addCoins(r.account_id, credit.total)
+			-- the row again, locked: the website may have marked it refunded since the SELECT above
+			local still = Chaos.select("SELECT `status` FROM `" .. T_ORDERS .. "` WHERE `id` = " .. r.id .. " FOR UPDATE", {{"status", "s"}})[1]
+			if still and still.status == "paid" then
+				db.query("UPDATE `" .. T_ORDERS .. "` SET `status` = 'credited', `coins` = " .. credit.coins .. ", `bonus` = " .. credit.bonus ..
+					", `first_bonus` = " .. credit.firstBonus .. ", `credited` = " .. now() .. " WHERE `id` = " .. r.id .. " AND `status` = 'paid'")
+				Shop.addCoins(r.account_id, credit.total)
+			end
 			db.query("COMMIT")
-			log(string.format("coin order %d: %d coins to account %d (%s, bonus %d, first purchase %d)", r.id, credit.total,
-				r.account_id, pack.key, credit.bonus, credit.firstBonus))
-			for _, p in ipairs(Game.getPlayers()) do
-				if p:getAccountId() == r.account_id then
-					p:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%d Chaos Coins were added to your account (%s%s).",
-						credit.total, pack.name or pack.key, credit.firstBonus > 0 and ", first purchase bonus included" or ""))
-					break
+			if still and still.status == "paid" then
+				log(string.format("coin order %d: %d coins to account %d (%s, bonus %d, first purchase %d)", r.id, credit.total,
+					r.account_id, pack.key, credit.bonus, credit.firstBonus))
+				for _, p in ipairs(Game.getPlayers()) do
+					if p:getAccountId() == r.account_id then
+						-- coin packs are donations (shop_payments_core.lua ChaosPayCore.thanks)
+						p:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("Thank you for your voluntary donation! You received %d Chaos Coins as a thank-you (%s%s).",
+							credit.total, pack.name or pack.key, credit.firstBonus > 0 and ", first donation bonus included" or ""))
+						break
+					end
+				end
+				if ChaosShopPay and ChaosShopPay.onCredited then
+					ChaosShopPay.onCredited(r.id, r.account_id, credit, pack)
 				end
 			end
 		end

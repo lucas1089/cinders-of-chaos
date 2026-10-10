@@ -1,0 +1,37 @@
+# Cinders of Chaos donation worker (Pix / PayPal): makes the charge of every new donation order the game server writes
+# (the game server has no HTTPS client), checks open orders with the provider, expires and cancels them. Confirmations
+# come through the webhook (chaos_pay_webhook.php); the game server credits paid orders. website/README.md "Donations".
+#   sudo cp server/deploy/chaos-payworker.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now chaos-payworker
+# /var/www/chaos is CHAOS_SITE_DIR (the installed website: plugins/chaos/pay/worker.php and config.local.php);
+# /etc/chaos/payments.env holds the provider credentials (website/payments.env.example), never the repository.
+
+[Unit]
+Description=Cinders of Chaos donation worker (Pix / PayPal)
+Wants=network-online.target
+After=network-online.target mariadb.service mysql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+EnvironmentFile=-/etc/chaos/payments.env
+ExecStart=/usr/bin/php /var/www/chaos/plugins/chaos/pay/worker.php --site /var/www/chaos --loop --interval 2
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/chaos/payworker.log
+StandardError=append:/var/log/chaos/payworker.log
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ReadWritePaths=/var/log/chaos
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+MemoryMax=128M
+
+[Install]
+WantedBy=multi-user.target

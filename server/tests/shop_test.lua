@@ -288,6 +288,9 @@ Chaos.select = function(q, cols)
 			end
 		end
 		return out
+	elseif q:find("SELECT `status` FROM `chaos_coin_orders` WHERE `id`", 1, true) then
+		local o = DB.orders[tonumber(q:match("`id` = (%d+)"))]
+		return o and {{status = o.status}} or {}
 	elseif q:find("FROM `chaos_coin_orders` WHERE `status` = 'paid'", 1, true) then
 		local out = {}
 		for i, o in ipairs(DB.orders) do if o.status == "paid" then out[#out + 1] = {id = i, account_id = o.account, pack_key = o.pack} end end
@@ -513,6 +516,16 @@ eq(DB.orders[3].total, 500, "starter"); eq(DB.orders[4].status, "rejected", "sec
 eq(DB.orders[5].status, "rejected", "unknown pack"); eq(DB.coins[77], 975 + 825 + 500, "coins credited")
 Shop.processOrders()
 eq(DB.coins[77], 2300, "credited once")
+-- refunded on the website between the crediting step's SELECT and its locked re-read: nothing credited
+DB.orders[#DB.orders + 1] = {account = 77, pack = "coins250", status = "paid"}
+local realSelect = Chaos.select
+Chaos.select = function(q, cols)
+	if q:find("FOR UPDATE", 1, true) then DB.orders[#DB.orders].status = "refunded" end
+	return realSelect(q, cols)
+end
+Shop.processOrders()
+Chaos.select = realSelect
+eq(DB.orders[#DB.orders].status, "refunded", "refunded order left alone"); eq(DB.coins[77], 2300, "no coins for a refunded order")
 
 -- a reload builds the same store and keeps what was bought
 local keysBefore = #Shop.view(A)

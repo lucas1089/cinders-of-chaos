@@ -20,7 +20,8 @@ foreach (chaos_coin_packs() as $p) {
 }
 $s = chaos_coin_settings();
 check(count($packs) >= 5, 'five packs');
-check($s['first_bonus_pct'] === 20 && $s['currency'] === 'EUR', 'settings');
+check($s['first_bonus_pct'] === 20 && $s['currency'] === 'USD', 'settings');
+check($packs['coins750']['usd_cents'] === 1499 && $packs['starter']['usd_cents'] === 299, 'USD prices in integer cents');
 check($packs['coins250']['total'] === 250, '250');
 check($packs['coins750']['total'] === 825, '750 +10%');
 check($packs['coins1500']['total'] === 1725, '1500 +15%');

@@ -1241,17 +1241,46 @@ login; when it cannot be delivered then (owned meanwhile, no room) the sender ge
 **Purchase log and dashboard.** Every purchase and gift is a row of `chaos_shop_purchases` (account, character, name,
 level, offer key, category, title, price, list price, gift account and character, time); `chaos_shop_history` keeps
 feeding the client's history. Admin panel tab "Store" (`admin/actions_store.lua`, group 5+): Sales dashboard (totals, per
-day, per category, top 10 offers over N days), Recent purchases, Coin orders, Record a paid coin order (group 6), Give
-Chaos Coins.
+day, per category, top 10 offers over N days), Recent purchases, Donations (coin orders), Donations: Pix / PayPal,
+Donations: refunds and chargebacks, Record a donation (group 6), Give Chaos Coins.
 
-**Chaos Coin packs** (`shop_coins_config.lua`, read by `shop.lua` and by the website's Chaos Coins page): 250, 750 +10%,
-1500 +15%, 4000 +25%, a one-time Starter Coins pack (250 + 250), and +20% on the first pack an account buys (not the
-starter). Prices there are placeholders. Crediting: the payment side writes a `paid` row into `chaos_coin_orders`
-(website hook `chaos_coin_order_paid`, unique per provider reference; or the admin action); `shop.lua` credits it within
-30 s in one transaction (coins + bonus + first-purchase bonus), rejects unknown packs and a second starter, and tells the
-account's online character. No payment provider is connected (website/README.md "Chaos Coins").
+**Chaos Coin packs** (`shop_coins_config.lua`, read by `shop.lua`, `shop_payments.lua` and the website's donation page):
+250, 750 +10%, 1500 +15%, 4000 +25%, a one-time Starter Coins pack (250 + 250), and +20% on the first pack an account
+gets (not the starter). Chaos Coins are a thank-you for a voluntary donation; the game is fully playable for free.
+Prices: one USD table in integer cents (`usdCents`, placeholders); Pix charges `usdCents * payments.brlPerUsd` (5) in BRL,
+PayPal `usdCents` in USD (`ChaosPayCore.priceCents`; the website derives them the same way). Crediting: the payment side
+marks a row of `chaos_coin_orders` `paid` (the donation flow below, the website hook `chaos_coin_order_paid` or the
+admin action); `shop.lua` re-reads the row locked (`FOR UPDATE`: a refund that came meanwhile is not credited), credits
+it in one transaction (coins + bonus + first-purchase bonus), rejects unknown packs and a second starter, and thanks
+the account's online character ("Thank you for your voluntary donation! ...").
 
-Tables: `chaos_shop_purchases`, `chaos_shop_gifts`, `chaos_coin_orders` (`sql/chaos.sql`, also created at startup).
+**Donations: Pix and PayPal** (`shop_payments.lua`, rules in `shop_payments_core.lua`, numbers in `shop_coins_config.lua`
+`payments`; website/README.md "Donations"). The client's Store has a Donate button: a window with the voluntary donation
+notice (English and Portuguese), the method (Pix (BRL) / PayPal (USD)) and the packs with their price and a Donate
+button. JSON actions on opcode 218 (the store's own; `shop.lua` ignores them): `pay_packs`, `pay_create {pack, method}`,
+`pay_status {id}`, `pay_cancel {id}`; the server answers `pay_packs`, `pay_order` (the order view: status, price text,
+coins, Pix code as hex, PayPal link, seconds left), `pay_error`, and pushes `pay_paid` (the thank-you, with the balance)
+and `pay_reversal`. The client never sends a price: `pay_create` writes a `pending` order with the amount from the
+config into `chaos_coin_orders` + `chaos_coin_payments`. Limits: one open order per account (asking again for the same
+pack and method shows it again), `maxPerHour` (6) started per hour, the starter once, `ChaosRateLimit` on every action.
+The game server has no HTTPS client: the website's payment worker makes the charge (Pix code / PayPal link) and the
+provider's webhook marks the order `paid` after fetching the payment again. A poll every `payments.pollSeconds` (3)
+starts the crediting step as soon as a `paid` row exists (so the client gets its confirmation in seconds, without a
+relog), handles refunds and chargebacks after crediting (`chaos_coin_payments.reversal`, set by the website: the
+refunded share of the credited coins is taken back, at most the balance, when `removeCoinsOnReversal` is on; logged and
+listed in the admin panel) and fails orders that got no charge in 10 minutes (worker not running).
+Table `chaos_coin_payments` (`sql/chaos.sql`, also created at startup): one row per donation order (method, token,
+amount in cents, currency, provider ids, Pix code / link, expiry, reversal). **Tests:** `tests/shop_payments_test.lua`
+(prices derived from the USD table, money texts, the notice and thank-you texts, limits, reuse, starter, views, reversal
+amounts; the engine file on a mocked database: packs, create, reuse, refusal, cancel by the owner only, the thank-you
+push, a refund and a chargeback after crediting), `shop_test.lua` (a refund between the crediting step's read and its
+locked re-read credits nothing). **Tested in game** (own server and database copy, mock providers, Linux client):
+Pix and PayPal donations from the client (QR code drawn and decoded back to the stored code, countdown, link opened),
+automatic confirmation with toast and balance without relog, the first donation bonus, the starter once, a refund and
+a chargeback after crediting (coins taken back) and the admin lists.
+
+Tables: `chaos_shop_purchases`, `chaos_shop_gifts`, `chaos_coin_orders`, `chaos_coin_payments` (`sql/chaos.sql`, also
+created at startup).
 Storages: 7100760-7100769 (frames). **Tests:** `server/tests/shop_test.lua` (LuaJIT and Lua 5.3: keys, exclusives from
 the real files, the generated list, no random orbs, prices and sales, featured rotation, packs, and `shop.lua` on a
 mocked engine and database: every kind bought, duplicates, weekly limit, season, bundles, starter packs, gifts online and

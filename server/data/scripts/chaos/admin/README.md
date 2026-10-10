@@ -30,7 +30,7 @@ mock-API smoke test (catalog build + dispatch path) were done. See "Untested" at
 | `actions_content.lua` | Content category |
 | `actions_security.lua` | Accounts & Security category |
 | `actions_tools.lua` | Tools category |
-| `actions_store.lua` | Store category: sales dashboard (per day, category, top offers), recent purchases, coin orders, record a paid order, give Chaos Coins (`chaos_shop_purchases`, `chaos_coin_orders`; server/README.md "Store") |
+| `actions_store.lua` | Store category: sales dashboard (per day, category, top offers), recent purchases, donations (coin orders; Pix / PayPal with their provider status; refunds and chargebacks with the coins taken back), record a donation, give Chaos Coins (`chaos_shop_purchases`, `chaos_coin_orders`, `chaos_coin_payments`; server/README.md "Store") |
 
 Action files only write into the global `ChaosAdminPending[id]`, so load order inside the folder does not matter.
 
