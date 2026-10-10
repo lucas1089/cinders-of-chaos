@@ -476,6 +476,12 @@ and food you can eat. The Orbs of Gilding, Unmaking and Erasure and the mining o
 
 - **Combat visuals:** crits, dodges and reflects get their own sprites. Elemental weapon damage shows as a separate
   coloured number with its element's effect. Big numbers are shortened (12.4k).
+- **Talk to NPCs in a window:** right-click an NPC (Ctrl + right-click with classic controls) and choose **Talk**, or
+  use it. You walk up to it if it is too far and greet it, and the whole conversation runs in a speech bubble over the
+  NPC: its name and portrait, its latest answer, the highlighted words as buttons (click one to say it), a text field,
+  and **Yes**, **No**, **Trade** and **Bye** when they fit. **Esc** or **Bye** ends it; walking away closes it. Talking
+  to another NPC says goodbye to the first. Works with every NPC. The **...** button can copy the conversation to the
+  console; **Options > Interface > Disable NPC Dialog Window** goes back to talking in the console.
 - **Patch notes in the client:** a window with every week's changes. It opens once at login when there is something
   new, after the daily reward.
 - **Hunt tracker** (Hunt > Hunt Tracker): experience, loot, supplies and profit per hour for your session, counted by the server.

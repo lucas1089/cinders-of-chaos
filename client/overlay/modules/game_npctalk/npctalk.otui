@@ -1,0 +1,199 @@
+// The NPC dialogue window: a speech bubble over the NPC (game_npctalk). npctalk.lua sizes and places it every frame,
+// fills the reply, the keyword chips and the quick buttons.
+
+NpcTalkText < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: topLeft
+  text-wrap: true
+  text-auto-resize: true
+  height: 14
+  margin-bottom: 3
+
+NpcTalkSaid < NpcTalkText
+  color: #8c8070
+  phantom: true
+
+NpcTalkChip < UIButton
+  font: verdana-11px-antialised
+  color: #f6cf72
+  height: 20
+  text-offset: 0 1
+  image-source: /images/chaos/panel_dark
+  image-border: 6
+  change-cursor-image: true
+  cursor: pointer
+
+  $hover !disabled:
+    image-source: /images/chaos/button_hover
+    color: #ffffff
+
+  $pressed:
+    image-source: /images/chaos/button_pressed
+    color: #e03a1e
+
+NpcTalkQuick < ChaosButton
+  height: 22
+  width: 70
+  padding: 2 4 2 4
+
+NpcTalkTail < UIWidget
+  size: 22 12
+  image-source: /modules/game_npctalk/images/tail_down
+  phantom: true
+  focusable: false
+
+NpcTalkBubble < ChaosPanelHighlight
+  size: 340 180
+  padding: 8
+  focusable: true
+  phantom: false
+
+  ChaosPanelDark
+    id: portraitFrame
+    anchors.top: parent.top
+    anchors.left: parent.left
+    size: 40 40
+    padding: 0
+    clipping: true
+
+    // npctalk.lua sizes it: 64 px for the large (2x2) outfits, whose figure sits in the lower right of the frame
+    UICreature
+      id: portrait
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      size: 40 40
+      fixed-creature-size: true
+      phantom: true
+
+  UILabel
+    id: npcName
+    anchors.top: parent.top
+    anchors.left: portraitFrame.right
+    anchors.right: optionsButton.left
+    margin-left: 8
+    margin-right: 4
+    margin-top: 3
+    height: 16
+    font: verdana-11px-rounded
+    color: #e8b84a
+    text-align: left
+
+  UILabel
+    id: status
+    anchors.top: npcName.bottom
+    anchors.left: npcName.left
+    anchors.right: closeButton.right
+    margin-top: 3
+    height: 14
+    font: verdana-11px-antialised
+    color: #8c8070
+    text-align: left
+
+  UIButton
+    id: closeButton
+    anchors.top: parent.top
+    anchors.right: parent.right
+    size: 18 18
+    font: verdana-11px-rounded
+    text: x
+    color: #8c8070
+    image-source: /images/chaos/panel_dark
+    image-border: 4
+    !tooltip: tr('End the conversation (Esc)')
+    $hover:
+      color: #e03a1e
+
+  UIButton
+    id: optionsButton
+    anchors.top: parent.top
+    anchors.right: closeButton.left
+    margin-right: 3
+    size: 18 18
+    font: verdana-11px-rounded
+    text: ...
+    text-offset: 0 -3
+    color: #8c8070
+    image-source: /images/chaos/panel_dark
+    image-border: 4
+    !tooltip: tr('Dialogue window options')
+    $hover:
+      color: #f6cf72
+
+  ScrollablePanel
+    id: textScroll
+    anchors.top: portraitFrame.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 40
+    vertical-scrollbar: textScrollBar
+    layout:
+      type: verticalBox
+
+  ChaosScrollBar
+    id: textScrollBar
+    anchors.top: textScroll.top
+    anchors.bottom: textScroll.bottom
+    anchors.right: textScroll.right
+    step: 14
+    pixels-scroll: true
+    visible: false
+
+  UIWidget
+    id: chips
+    anchors.top: textScroll.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 0
+    phantom: true
+
+  ChaosTextEdit
+    id: input
+    anchors.top: chips.bottom
+    anchors.left: parent.left
+    anchors.right: sayButton.left
+    margin-top: 6
+    margin-right: 4
+    height: 22
+    max-length: 255
+    placeholder: Say something...
+    placeholder-color: #6b6258
+
+  ChaosButton
+    id: sayButton
+    anchors.top: chips.bottom
+    margin-top: 6
+    anchors.right: parent.right
+    size: 48 22
+    padding: 2 4 2 4
+    !text: tr('Say')
+
+  UIWidget
+    id: quickButtons
+    anchors.top: input.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 22
+    phantom: true
+    layout:
+      type: horizontalBox
+      spacing: 4
+
+    NpcTalkQuick
+      id: yes
+      !text: tr('Yes')
+
+    NpcTalkQuick
+      id: no
+      !text: tr('No')
+
+    NpcTalkQuick
+      id: trade
+      !text: tr('Trade')
+
+    NpcTalkQuick
+      id: bye
+      !text: tr('Bye')

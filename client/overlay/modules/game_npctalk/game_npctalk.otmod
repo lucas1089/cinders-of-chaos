@@ -1,0 +1,15 @@
+Module
+  name: game_npctalk
+  description: NPC dialogue window: Talk from the NPC's menu, the whole conversation in a speech bubble over the NPC
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ npctalk_logic, npctalk ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+    - game_console
+    - game_npctrade
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()
