@@ -15,7 +15,7 @@ local floor = math.floor
 
 local OUT_DEFAULT = "../client/overlay/modules/game_codex/codex_data.lua"
 Gen.SOURCES = {
-	"data/lib/chaos_item_mods.lua", "data/lib/chaos_powers.lua", "data/lib/chaos_crafting.lua",
+	"data/lib/chaos_item_mods.lua", "data/lib/chaos_powers.lua", "data/lib/chaos_energy_shield.lua", "data/lib/chaos_crafting.lua",
 	"data/lib/chaos_orbs.lua", "data/lib/chaos_orbs_config.lua", "data/lib/chaos_gems.lua",
 	"data/lib/chaos_gems_config.lua", "data/lib/chaos_unique_items.lua", "data/lib/chaos_unique_specs.lua",
 	"data/lib/chaos_supports.lua", "data/lib/chaos_supports_config.lua", "data/scripts/chaos/loot_config.lua",

@@ -99,6 +99,9 @@ function M.refresh(player, force)
 	end
 	cache[id] = totals
 	applySpeed(player, state, totals)
+	if ChaosEnergyShield and ChaosEnergyShield.apply then
+		ChaosEnergyShield.apply(player, totals) -- maximum and recharge of the energy shield (engine patch 0015)
+	end
 	return totals
 end
 
@@ -450,7 +453,8 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 	local attackerId = attacker:getId()
 	local back = 0
 	if (totals.reflect or 0) > 0 then
-		local landed = math.min(math.abs(primaryDamage) + math.abs(secondaryDamage), creature:getHealth())
+		local landed = math.min(math.abs(primaryDamage) + math.abs(secondaryDamage), creature:getHealth()
+			+ (creature.getEnergyShield and creature:getEnergyShield() or 0)) -- a hit on the energy shield counts
 		back = back + M.reflected(landed, totals.reflect)
 	end
 	if (totals.thorns or 0) > 0 and origin == ORIGIN_MELEE then

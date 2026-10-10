@@ -42,6 +42,12 @@ What it sets, and why (docs/LAUNCH.md has the full checklist):
                           passwordHashIterations is what the engine uses for new hashes (keep CHAOS_PASSWORD_ITERATIONS
                           of the website equal), passwordType only documents the scheme (the engine does not read it).
                           Old SHA-1 passwords keep working and are re-hashed at the next login
+  armorPercent = true, armorPercentConstant = 250, armorPercentMax = 80
+                          a player's armour takes armour / (armour + 250) of a physical hit, at most 80% (engine patch
+                          0016, server/README.md "Percent armour"); armorPercent = false is the stock random flat reduction
+  energyShieldRechargeDelay = 2000, energyShieldOpcode = 224
+                          the energy shield (engine patch 0015, README "Energy shield") recharges 2 s after the last hit;
+                          its value goes to the client on extended opcode 224 (ChaosOpcodes.energyShield)
 
 Exit status 1 (nothing written) when --ip is missing or the map is a cropped test map.
 """
@@ -87,6 +93,11 @@ def settings(opts):
         ('showScriptsLogInConsole', 'false'),
         ('passwordType', '"pbkdf2-sha256"'),
         ('passwordHashIterations', '120000'),
+        ('armorPercent', 'true'),
+        ('armorPercentConstant', '250'),
+        ('armorPercentMax', '80'),
+        ('energyShieldRechargeDelay', '2000'),
+        ('energyShieldOpcode', '224'),
     ]
     for key, env, default in ENV_DB:
         expr = 'os.getenv("%s")' % env

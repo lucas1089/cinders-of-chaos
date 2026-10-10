@@ -67,6 +67,8 @@ python3 -I server/tools/prod_config.py /opt/chaos/server --ip play.example.org -
 | `mysqlHost` ... `mysqlDatabase` | `os.getenv("CHAOS_DB_*") or ...` | the engine runs `config.lua` as Lua, so the credentials come from `/etc/chaos/chaos.env`; no password in any file of the repo or the server folder |
 | `startupDatabaseOptimization`, `showScriptsLogInConsole` | false | faster start, quieter console |
 | `passwordType`, `passwordHashIterations` | `"pbkdf2-sha256"`, 120000 | salted PBKDF2 account passwords (engine patch 0014, `server/README.md` "Account passwords"); the iterations are the engine's, `passwordType` only names the scheme |
+| `armorPercent`, `armorPercentConstant`, `armorPercentMax` | true, 250, 80 | percent armour for players (engine patch 0016, `server/README.md` "Percent armour"); `armorPercent = false` goes back to the stock flat formula |
+| `energyShieldRechargeDelay`, `energyShieldOpcode` | 2000, 224 | the energy shield's recharge delay in ms and its client opcode (engine patch 0015, `server/README.md` "Energy shield") |
 
 The tool refuses to run while `mapName` is a cropped test map (`zcrop_*`): set the real map name first.
 Rates stay as the download has them: `rateExp` is not used (experience stages, written by `late_game.py`),

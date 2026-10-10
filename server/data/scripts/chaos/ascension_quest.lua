@@ -730,7 +730,8 @@ function health.onHealthChange(creature, attacker, primaryDamage, primaryType, s
 		end
 		p, s = math.floor(p * mult + 0.5), math.floor(s * mult + 0.5)
 	end
-	local cp, cs, caught = Q.catchDamage(creature:getHealth(), p, s)
+	-- the energy shield (engine patch 0015) takes its part after this event: a hit is lethal past health + shield
+	local cp, cs, caught = Q.catchDamage(creature:getHealth() + (creature.getEnergyShield and creature:getEnergyShield() or 0), p, s)
 	if caught then
 		addEvent(S.finish, 0, tr.pid, "death", "You have fallen in the Trial. The Oracle pulls you back.")
 	end

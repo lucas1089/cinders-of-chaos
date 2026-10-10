@@ -348,7 +348,9 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 	end
 	local st, t = stateOf(creature), now()
 	if pw.lastbreath then
-		local newDamage, healTo = P.lastBreath(creature:getHealth(), creature:getMaxHealth(), total, pw.lastbreath)
+		-- health + energy shield: the shield (engine patch 0015) takes its part after this event
+		local newDamage, healTo = P.lastBreath(creature:getHealth() + (creature.getEnergyShield and creature:getEnergyShield() or 0),
+			creature:getMaxHealth(), total, pw.lastbreath)
 		local last = tonumber(creature:getStorageValue(CFG.lastbreath.storage)) or -1
 		local ready = last < 0 or os.time() - last >= CFG.lastbreath.cooldownMs / 1000
 		if newDamage and ready then

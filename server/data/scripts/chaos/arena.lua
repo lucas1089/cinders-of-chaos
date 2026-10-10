@@ -939,7 +939,8 @@ function health.onHealthChange(creature, attacker, primaryDamage, primaryType, s
 		return 0, primaryType, 0, secondaryType
 	end
 	local sd = secondaryType == COMBAT_HEALING and 0 or math.abs(secondaryDamage)
-	local p, s, caught = A.catchDamage(creature:getHealth(), math.abs(primaryDamage), sd)
+	-- the energy shield (engine patch 0015) takes its part after this event: a hit is lethal past health + shield
+	local p, s, caught = A.catchDamage(creature:getHealth() + (creature.getEnergyShield and creature:getEnergyShield() or 0), math.abs(primaryDamage), sd)
 	if caught then
 		local a = playerOf(attacker)
 		S.defeat(m, t, "defeated", a and a:getId() ~= creature:getId() and a:getName() or nil)

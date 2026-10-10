@@ -152,7 +152,7 @@ local M = ChaosItemMods
 local C = ChaosCrafting
 
 -- ---------------------------------------------------------------- catalogue
-eq(#M.config.mods, 42, "forty-two modifiers (fifteen old, fifteen new, twelve legendary powers)")
+eq(#M.config.mods, 45, "forty-five modifiers (fifteen old, fifteen new, twelve legendary powers, three energy shield)")
 local sides = {prefix = 0, suffix = 0}
 for _, def in ipairs(M.config.mods) do
 	eq(#def.tiers, 8, def.key .. ": eight tiers")
@@ -168,7 +168,8 @@ for _, def in ipairs(M.config.mods) do
 	assert(def.tiers[8][2] <= def.cap, def.key .. ": one item never beats the cap")
 	assert(next(def.kinds), def.key .. ": allowed somewhere")
 end
-eq(sides.prefix, 22, "fifteen prefixes and seven prefix powers"); eq(sides.suffix, 20, "fifteen suffixes and five suffix powers")
+eq(sides.prefix, 24, "fifteen prefixes, seven prefix powers, two energy shield")
+eq(sides.suffix, 21, "fifteen suffixes, five suffix powers, energy shield recharge")
 -- the five tiers of before are T2 .. T6, so old items keep their meaning
 local OLD = {attackspeed = {{2, 3}, {3, 5}, {4, 6}, {5, 8}, {7, 10}}, lifeonkill = {{5, 10}, {10, 20}, {20, 40}, {35, 60},
 	{50, 90}}, goblinchance = {{10, 15}, {14, 20}, {18, 27}, {22, 33}, {28, 40}}, dodge = {{1, 1}, {1, 2}, {1, 2}, {2, 3},

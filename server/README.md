@@ -77,6 +77,11 @@ server/
                                       line instead of sent cut off (see "Engine: reloads and oversize messages")
   src-patches/0014-salted-password-hashes.patch   engine: salted PBKDF2-SHA256 account passwords, old SHA-1 upgraded at
                                       login, checks on a login worker thread (see "Account passwords"; sql/chaos_passwords.sql)
+  src-patches/0015-energy-shield.patch   engine: per-player energy shield above the health (mana shield -> scripts -> shield ->
+                                      health), recharge, Lua bindings, client opcode 224 (see "Energy shield";
+                                      data/lib/chaos_energy_shield.lua, client game_energyshield)
+  src-patches/0016-percent-armour.patch   engine: a player's armour takes armour / (armour + 250) of a physical hit, at most
+                                      80% (config armorPercent*; see "Percent armour", tools/armor_sim.py)
     item_tooltip.lua  item_tooltip_core.lua (rich item tooltips with the equipped-item compare, client game_itemtooltip)
     shop.lua  shop_config.lua  shop_services.lua  autosell.lua  sell_prices.lua (store, see "Store services")
     bounty.lua  bounty_core.lua  bounty_config.lua  bounty_pool.lua (bounty board; pool from tools/gen_bounty_pool.py)
@@ -238,8 +243,9 @@ working directory, as with the rest of the base server libs).
 | game_chatlinks | `itemlink.lua`, `itemlink_core.lua` (client also `game_itemtooltip`) | 249, Shift+click an item | Item links in chat: the server checks the player carries the item and keeps a snapshot of its tooltip for 10 minutes under a random id; the link travels as ordinary speech `[Item Name]{<r><id>}` in every channel; receivers ask for the snapshot on hover. Limits, Help channel rule (`tools/patch_help_itemlinks.py`); tested in game with two clients (see "Item links in chat"). |
 | game_playerinspect | `inspect.lua`, `inspect_core.lua` | 240, Social > Inspect Player, right-click a player | Inspect Player: outfit, level, class, guild, achievement points, rift and trial records and the equipment with full tooltips; right-click within 10 tiles or any online player by name; privacy setting per character (storage `Chaos.storage.inspectOff`); tested in game with two clients (see "Inspect Player"). |
 | game_invasion | `invasion.lua`, `invasion_core.lua`, `invasion_config.lua`, `worldevents.lua` | 251 (server -> client; `query` / `calendar` back), Adventure > Events, `/invasion` | Invasions (waves at a town or hunting ground, breach meter, boss, contribution rewards, Defender board, Victory buff, occupation) and the world events Chaos Storm, Wandering Merchant and Golden Hour; HUD and upcoming events window; toasts with action `invasion` on 79; tested in game on a test area (see "Invasions and world events"). |
+| game_energyshield | `data/lib/chaos_energy_shield.lua`, `item_mods.lua`; engine patch 0015 sends it | 224 (server -> client, from the engine) | Energy shield bar above the health bar of the character plate: plain text `es:<current>:<max>`, max 0 hides it. Tested in game (see "Energy shield"). |
 
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 228, 229, 230, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
+Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 214, 216, 218, 219, 223, 224 (sent by the engine, patch 0015), 228, 229, 230, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
 
 ### Opcode collision check
@@ -669,6 +675,131 @@ to ten floors and eight towns, walking up and down stairs, a browse field of 255
 a market browse of 1200 offers (25 KB, arrived whole; the client has no market window, it logs "unhandled opcode 249" with or
 without the patch): no message dropped, no client parse error. A 9000-byte string and a 72 KB message were dropped with the line
 above and the client went on without an error.
+
+## Energy shield (`src-patches/0015-energy-shield.patch`, `data/lib/chaos_energy_shield.lua`, client `game_energyshield`)
+
+A second pool above the health that only items give. The engine keeps it per player (monsters have none) and takes a hit
+in this order:
+
+1. the mana shield (utamo vita), as before;
+2. the onHealthChange scripts: resistances, dodge, block, "Damage Taken from Monsters", reflect and thorns, Last Breath and
+   the other lethal-hit catches see the whole hit (what the mana shield left);
+3. the energy shield;
+4. the health.
+
+Everything that takes mana, shield or health restarts the recharge delay (melee, spells, damage over time, fields, PvP).
+`COMBAT_UNDEFINEDDAMAGE` (scripted health costs) bypasses it, as it bypasses the mana shield. Healing never fills it.
+The recharge starts `energyShieldRechargeDelay` ms (config.lua, 2000) after the last hit taken and gives 20% of the maximum
+per second (`ChaosEnergyShield.config.basePerMille`), more with "Faster Energy Shield Recharge"; the engine adds it on the
+player's think (once a second) and counts only the part of the think after the delay. Death empties it, a login starts at 0
+(it is full about 5 s later).
+
+**Modifiers** (`data/lib/chaos_energy_shield.lua`, added to `ChaosItemMods.config.mods` like the legendary powers, so the
+roll, the crafting bench, the orbs, tooltips, the loot filter and the Codex know them; T1-T8 like the others, on armours,
+shields, helmets, amulets and rings):
+
+| Modifier | Side | T1 .. T8 | Cap |
+|---|---|---|---|
+| Maximum Energy Shield +N | prefix | 12-25, 25-50, 50-85, 85-135, 135-195, 195-270, 270-360, 360-480 | 1500 |
+| Maximum Energy Shield +N% | prefix | 2-4, 4-6, 6-9, 8-12, 10-15, 13-19, 16-23, 20-28 | 60 |
+| Faster Energy Shield Recharge +N% | suffix | 5-8, 8-12, 12-16, 16-20, 20-25, 25-30, 30-36, 36-45 | 100 (40%/s) |
+
+Maximum = flat total x (100 + percent total) / 100: the percent raises the flat amount only. Balance (health at level L is
+about 185 + 5 / 10 / 15 x (L - 8) for a Mystic / a 10-per-level class / a Warrior):
+
+| | Rolls | Shield | Mystic | 10 per level | Warrior |
+|---|---|---|---|---|---|
+| level 300 (item level ~74: T1 .. T5) | four flat T4 + one percent T4 | ~480 | 29% of 1,645 | 15% of 3,105 | 11% of 4,565 |
+| level 300 | four flat T5 + one percent T5 | ~740 | 45% | 24% | 16% |
+| level 1000 (item level 128+: T3/T4 .. T7/T8) | four flat T7 + one percent T7 | ~1,500 | 29% of 5,145 | 15% of 10,105 | 10% of 15,065 |
+| cap | 1,500 flat, +60% | 2,400 | 47% | 24% | 16% |
+
+Casters get the largest share of their health from it, as wanted, without a class rule. Five slots can carry the flat
+modifier, so a character that stacks it gives up other prefixes (damage, reflect, thorns ...).
+
+**With the other rules**:
+- life / mana leech: a hit on a shielded player leeches as a hit on the health (`CombatDamage::absorbed` counts for the
+  attacker's leech, single target and area); the mana shield part does not, as before;
+- reflect (`item_mods.lua`): the reflected share is of what the hit takes from health and shield together;
+- the lethal-hit catches count health + shield, so they fire only when the hit really is lethal: Last Breath
+  (`item_powers.lua`), the arena (`arena.lua`), the ascension Trial (`ascension_quest.lua`), the trials' Last Stand
+  (`trials_effects.lua`) and the tutorial island (`newplayer_tutorial.lua`); a caught hit is cut to health + shield - 1,
+  so the shield is used up and the health ends at 1;
+- damage over time and fields hit the shield (each tick restarts the delay); PvP works the same; healing, potions and
+  regeneration never fill it.
+
+**Engine**: `Player` holds the value, the maximum and the recharge (per mille of the maximum per second); Lua
+`player:getEnergyShield()`, `setEnergyShield(n)` (clamped to 0 .. max), `getMaxEnergyShield()`, `setMaxEnergyShield(n)`
+(lowers the current value), `getEnergyShieldRecharge()`, `setEnergyShieldRecharge(perMille)`. `item_mods.lua` sets the
+maximum and the recharge from the equipped items' totals (`ChaosEnergyShield.apply`) whenever they change. A hit on the
+shield shows "You lose N energy shield due to an attack by X." and a light blue-violet number (colour 131). The client gets
+extended opcode `energyShieldOpcode` (config.lua, default 224; `ChaosOpcodes.energyShield`), plain text
+`es:<current>:<max>`, at most every 200 ms (a skipped update goes out with the next think) and at once when the maximum
+changes; `game_energyshield` draws the bar above the health slot of the character plate, eases rises over 0.9 s and hides at
+max 0. Buff bar: no entry (the bar shows the recharge).
+
+Tests: `tests/energy_shield_test.lua` (catalogue, maths, the engine's recharge timeline, item_mods glue, reflect, the
+lethal-hit checks, the opcode), `client/overlay/modules/game_energyshield/shieldmath_test.lua`; `tests/item_mods_test.lua`
+counts 45 modifiers.
+
+**In game** (test server, engine 0001-0016, Warrior level 300, helmet +300, amulet +200 / +20%, armour +25% recharge:
+maximum 600, recharge 250 per mille): a 352 physical hit took the shield to 248 (health unchanged), the next one took 248
+from the shield and 104 from the health, the third all from the health; the recharge started 2-3 s after the last hit (the
+think is once a second) with +150 per second (80 for the part-second) to 600. A fire condition of 6 x 150 took the shield
+600 -> 450 -> 300 -> 150 -> 0, then the health; mana shield on with 200 mana: the first hit took 200 mana and 152 shield, the
+next ones shield, then health. Last Breath (30%): a 700 hit at 300 health + 600 shield left 200 health and did not trigger;
+at 300 + 100 it triggered, left 1 health and healed to 1,405 (30%). Reflect 10% on a 348 hit taken fully by the shield sent
+34 back. The bar, its numbers and the violet hit number: screenshots of the test run. Not tested in game: PvP leech against
+a shield (needs two clients; the engine path is the same as for a monster target).
+
+## Percent armour (`src-patches/0016-percent-armour.patch`, `tools/armor_sim.py`)
+
+The stock formula took a random flat amount off a physical hit, uniform(armour / 2, armour - 1): it blocked weak hits
+completely and hardly mattered against late-game hits (200 armour: -150 of a 2,000 hit). Now a player's armour takes a
+share of every physical hit:
+
+    reduction = armour / (armour + K), at most armorPercentMax      (K = armorPercentConstant)
+
+config.lua: `armorPercent = true` (false = the stock formula for players), `armorPercentConstant = 250`,
+`armorPercentMax = 80` (all optional, these are the defaults; `tools/prod_config.py` writes them). 50 armour 16.7%, 100
+28.6%, 150 37.5%, 200 44.4%, 1,000 80% (cap). Only physical damage that armour blocks (melee, distance weapons, "physical"
+monster spells, spells with `COMBAT_PARAM_BLOCKARMOR`); elemental damage is not reduced by armour any more (the stock
+formula also took its flat amount from an elemental hit with blockArmor, e.g. a few monster spells). Defence (the shield
+or weapon block, two per second at most) is unchanged and still comes first. Monsters keep the stock formula: their armour
+values (25-100) are tuned for it, and a percentage would have cut every player's damage.
+
+**K.** Typical armour totals from the base items (`movements.xml` levels, median of the five best per slot, without a
+shield: ~55-70 at level 100 to 300, 60-100 at 1000) plus the rarity armour bonus the engine adds to each item (item.cpp:
++1-3 at Common-Rare, +3-7 at the middle rarities, +8-19 at the top ones, on 6-8 armour pieces): about 70-95 at level 100,
+95-120 at 300, 140-200 at 1000. The base items stop growing after level 100-150, so no single K gives 15% at 100 and 45%
+at 1000; K = 250 gives 22-27% at 100, 28-32% at 300 and 36-44% at 1000.
+
+**Balance** (`python3 -I server/tools/armor_sim.py <server>/data`: a Monte Carlo of the engine's rules over each monster's
+attacks, 20,000 s per monster: melee and physical spells through defence and armour, elemental attacks untouched, the
+monster level damage bonus, the engine's normal_random hit values; level 100 and 300: the 12 monsters with the most spawns
+of the bounty pool's band (hunting level 80-130 / 250-360), level 1000: the 17 late-game monsters). Damage taken per
+second from one monster, average over the set:
+
+| Level | Profile | Stock | Percent (K 250) | Change | Physical only |
+|---|---|---|---|---|---|
+| 100 | caster, armour 72 | 116 | 120 | +3% | +4% |
+| 100 | tank, armour 93, shield 37 / shielding 80 | 74 | 83 | +13% | +25% |
+| 300 | caster, armour 96 | 228 | 208 | -9% | -13% |
+| 300 | tank, armour 118, shield 39 / shielding 100 | 179 | 167 | -7% | -11% |
+| 1000 | caster, armour 140 | 983 | 830 | -16% | -24% |
+| 1000 | tank, armour 200, shield 53 / shielding 130 | 754 | 661 | -12% | -22% |
+
+Other K (total change, tank at 100 / 300 / 1000): K 200: +9% / -11% / -17%; K 300: +17% / -4% / -9%. Nobody becomes
+invulnerable: the cap is 80% and late-game monsters still hit a level 1000 tank for ~660 per second each. The late game
+(tuned for the stock armour, README "Late game") gets 12-16% easier for everyone; a level 1000 tank in the best gear is the
+reference of that tuning, so its monsters' damage could go up ~10% if the owner wants the same pressure. Weak hits are no
+longer blocked completely: a level 100 tank takes ~13% more from level 100 monsters (mostly small melee hits that the flat
+armour used to stop), and high-level characters now feel low-level monsters (a 100 hit on 200 armour: 56 instead of 0).
+
+**In game** (test server, a dummy monster with a fixed 400 physical spell hit, armour only, and one with a fixed 300 fire
+hit; the player's armour set by an item attribute): armour 120: percent 270 every hit (30 hits), stock mean 310.3 (281-338,
+29 hits); armour 200: percent 222, stock mean 251.2 (203-299, 30 hits); the fire hit 300 with both. The formula's values:
+400 x (1 - 120 / 370) = 270, 400 x (1 - 200 / 450) = 222; stock 400 - 89.5 = 310.5 and 400 - 149.5 = 250.5.
 
 ## Passive tree points
 

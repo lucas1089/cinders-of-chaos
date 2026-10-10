@@ -511,10 +511,11 @@ function health.onHealthChange(creature, attacker, primaryDamage, primaryType, s
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
 	local total = math.abs(primaryDamage) + (secondaryType ~= COMBAT_HEALING and math.abs(secondaryDamage) or 0)
-	if total < creature:getHealth() then
+	local lethal = creature:getHealth() + (creature.getEnergyShield and creature:getEnergyShield() or 0) -- energy shield (patch 0015) after this event
+	if total < lethal then
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
-	local keep = math.max(0, creature:getHealth() - 1)
+	local keep = math.max(0, lethal - 1)
 	local cid = creature:getId()
 	addEvent(function()
 		local p = Player(cid)

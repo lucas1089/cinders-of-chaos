@@ -931,5 +931,9 @@ end
 if not (ChaosPowers and ChaosPowers.keys) then
 	dofile("data/lib/chaos_powers.lua")
 end
+-- and the energy shield modifiers (chaos_energy_shield.lua)
+if not (ChaosEnergyShield and ChaosEnergyShield.keys) then
+	dofile("data/lib/chaos_energy_shield.lua")
+end
 
 return M

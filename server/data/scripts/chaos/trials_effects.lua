@@ -197,7 +197,9 @@ local function defend(player, b, attacker, pd, pt, sd, st, origin)
 		end
 	end
 	if (b.lastStandCd or 0) > 0 and total > 0 then
-		local cut, hit = M.lastStand(b, stateOf(player:getId()), now() / 1000, player:getHealth(), total)
+		-- health + energy shield (engine patch 0015: the shield takes its part after this event)
+		local cut, hit = M.lastStand(b, stateOf(player:getId()), now() / 1000,
+			player:getHealth() + (player.getEnergyShield and player:getEnergyShield() or 0), total)
 		if hit then
 			local keep = total > 0 and cut / total or 0
 			pd, sd = M.scaleDamage(pd, keep), M.scaleDamage(sd, keep)
