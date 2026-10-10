@@ -107,7 +107,7 @@ for free, at the migration.
   - a passive tree (`game_passivetree`, `passivetree_data.lua`)
   - generated spell icons and effects
   - outfits: a class look per class, male and female (October 2026: donor library art and free looks of the pair, look types
-    1455-1458, 1464, 1465, 2039-2072 of things_custom10; list in `class_looks_core.lua`, sources in
+    2039-2081 of things_custom10b, no stock art; list in `class_looks_core.lua`, sources in
     `client/tools/outfit_art/class_looks_sources.csv`, client/MANIFEST.md "Class looks pair")
   - starting gear and a new-player kit: done in `newplayer_config.lua`, keyed by these class ids. A new class adds a row there or
     calls `ChaosNewPlayer.setKit(name, def, {ids})`; `ChaosNewPlayer.kitFor(vocationId)` returns a class's kit (own row, then its

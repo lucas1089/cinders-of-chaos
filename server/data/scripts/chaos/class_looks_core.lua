@@ -1,8 +1,9 @@
 -- class_looks_core.lua: the default look of every class (ChaosClassLooks), no engine calls (tests/class_kit_test.lua).
 --
--- Every class has its own look, male and female, from the donor sprite libraries or free looks of the client pair
--- (client pair things_custom10: look types 2039-2072 imported by client/tools/sprites/import_outfits.py and
--- client/tools/outfit_art/add_template.py; 1455-1458, 1464, 1465 were in the pair already and used by nothing).
+-- Every class has its own look, male and female, from the donor sprite libraries; none is the stock art of the
+-- client pair (client pair things_custom10b: look types 2039-2081 imported by client/tools/sprites/import_outfits.py and
+-- client/tools/outfit_art/add_template.py; 2043, 2057 and 2058 of that pair are left unused: they turned out to be
+-- stock art).
 -- Every one has a colour template, so the player's colours show. Sources per look (licence tracing):
 -- client/tools/outfit_art/class_looks_sources.csv. outfits.xml entries (both sexes, locked) come from
 -- server/tools/install_outfits.py, which reads L.looks below.
@@ -22,11 +23,11 @@ local L = ChaosClassLooks
 -- vocation id -> {name, male, female}: the outfit's name in outfits.xml and its look types (type 1 male, 0 female)
 L.looks = {
 	-- Warrior line
-	[4] = {name = "Warrior Class", male = 1455, female = 1456}, -- plain steel plate
+	[4] = {name = "Warrior Class", male = 2073, female = 2074}, -- horned helm, spear
 	[8] = {name = "Juggernaut Class", male = 2039, female = 2040}, -- Juggernaut: massive spiked plate
-	[14] = {name = "Berserker Class", male = 2057, female = 2058}, -- Berserker: bare-armed, great axe / skull flail
+	[14] = {name = "Berserker Class", male = 2075, female = 2076}, -- Berserker: skull mask, furs, trident
 	-- Ranger line
-	[3] = {name = "Ranger Class", male = 1457, female = 1458}, -- hooded leather
+	[3] = {name = "Ranger Class", male = 2078, female = 2079}, -- leather archers
 	[7] = {name = "Deadeye Class", male = 2045, female = 2046}, -- Deadeye: armoured archer, long bow
 	[15] = {name = "Beastmaster Class", male = 2047, female = 2048}, -- Beastmaster: wolf pelts
 	-- Mystic line
@@ -38,7 +39,7 @@ L.looks = {
 	[12] = {name = "Ninja Class", male = 2069, female = 2070}, -- Ninja: shadow ninja, crimson ninja
 	[13] = {name = "Samurai Class", male = 2071, female = 2072}, -- Samurai: oni samurai, dark samurai
 	-- Monk line
-	[17] = {name = "Monk Class", male = 1464, female = 1465}, -- bare-chested, wraps
+	[17] = {name = "Monk Class", male = 2080, female = 2081}, -- bare-chested / pelt
 	[18] = {name = "Shadowfist Class", male = 2053, female = 2054}, -- Shadowfist: dark spaulders
 	[19] = {name = "Iron Sage Class", male = 2055, female = 2056}, -- Iron Sage: heavy gilded iron, great blade
 	-- Necromancer line
@@ -47,7 +48,7 @@ L.looks = {
 	[22] = {name = "Bone Lord Class", male = 2065, female = 2066}, -- Bone Lord: armed skeletons
 	-- Templar line
 	[23] = {name = "Templar Class", male = 2067, female = 2068}, -- crystal plate
-	[24] = {name = "Inquisitor Class", male = 2043, female = 2043}, -- Inquisitor: skull-masked (one look)
+	[24] = {name = "Inquisitor Class", male = 2077, female = 2077}, -- Inquisitor: witch-hunter hat, gilded staff (one look)
 	[25] = {name = "Sentinel Class", male = 2042, female = 2041} -- Sentinel: white plate
 }
 

@@ -209,6 +209,19 @@ body / legs / feet by its place along the figure. Result: dat 646583fa5a406e7744
 block of outfits.xml (type 1 male, type 0 female, locked); the store leaves out class looks and the former stock class
 looks (`L.retired`). Checked in game: the test characters got and wore their class look at their first login.
 
+**things_custom10b** (the live candidate; things_custom10 plus 9 looks, ids of 10 kept): no class look may be stock art
+of the commercial game. Warrior, Ranger and Monk used free stock looks (1455-1458, 1464, 1465), and a silhouette and
+shading compare against every stock 10.98 outfit (IoU of the standing south frame and the luminance correlation in
+the overlap) showed that donor F 11/12 (Berserker, 2057/2058) are stock look types 255/264 recoloured and donor J 20
+(Inquisitor, 2043) is stock 145 with a skull mask. Replacements, appended on top of things_custom10:
+
+    python3 -I tools/sprites/import_outfits.py --src-dat L/donorD/... --ours-dat things_custom10/... --looks 1033,1034,245,246,1118 --expect-first 2073 --out-dir d
+    python3 -I tools/sprites/import_outfits.py --src-dat L/donorH/... --ours-dat d/... --looks 65,66,86,95 --expect-first 2078 --out-dir things_custom10b
+
+Result: dat 7ba1d4794c09c7d76dc943ff23e60a78, spr ade7204ff0c9393d6aa4836507515c0d, 2081 outfits. 2043, 2057 and 2058
+stay in the pair unused (removing them would move every later id). The compare only knows the 10.98 stock art: a donor
+look ported from a later version of the commercial game would pass it.
+
 ## Spell icons from the element icon sets (new)
 The three spell icon sheets now use pixel-art ability icons (six element sets of 40, 32x32 with an element-coloured
 frame, owned by the project) instead of the generated drawings in 259 of the 280 cells: the 79 Chaos spells (cells

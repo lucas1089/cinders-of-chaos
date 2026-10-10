@@ -88,7 +88,7 @@ do
 		end
 	end
 
-	eq(L.lookFor(4, L.MALE), 1455, "warrior male"); eq(L.lookFor(4, L.FEMALE), 1456, "warrior female")
+	eq(L.lookFor(4, L.MALE), 2073, "warrior male"); eq(L.lookFor(4, L.FEMALE), 2074, "warrior female")
 	eq(select(2, L.lookFor(15, L.MALE)), "Beastmaster Class", "name")
 	-- the new looks are the class looks' own: never a former class look, and the names are unique
 	local retired, names = {}, {}
@@ -96,6 +96,10 @@ do
 	for vocId, e in pairs(L.looks) do
 		ok(not retired[e.male] and not retired[e.female], "class " .. vocId .. " uses a former class look")
 		ok(not names[e.name], "name " .. e.name .. " used once"); names[e.name] = true
+	end
+	-- no stock art of the client pair: every class look is an imported look type (2039 and up)
+	for vocId, e in pairs(L.looks) do
+		ok(e.male >= 2039 and e.female >= 2039, "class " .. vocId .. " uses an imported look")
 	end
 	-- the sources CSV lists every look (licence tracing)
 	local csv = io.open("../client/tools/outfit_art/class_looks_sources.csv")
@@ -121,9 +125,9 @@ do
 	-- wearing keeps the colours and the mount, drops the addons
 	local cur = {lookType = 128, lookHead = 78, lookBody = 69, lookLegs = 58, lookFeet = 76, lookAddons = 3, lookMount = 5}
 	local w = L.wearOutfit(cur, 24, L.FEMALE)
-	eq(w.lookType, 2043, "inquisitor female"); eq(w.lookAddons, 0, "no addons"); eq(w.lookHead, 78, "colours kept")
+	eq(w.lookType, 2077, "inquisitor female"); eq(w.lookAddons, 0, "no addons"); eq(w.lookHead, 78, "colours kept")
 	eq(w.lookMount, 5, "mount kept"); eq(cur.lookType, 128, "the given table is not changed")
-	eq(L.wearOutfit({lookType = 2043, lookAddons = 0}, 24, L.FEMALE), nil, "already worn")
+	eq(L.wearOutfit({lookType = 2077, lookAddons = 0}, 24, L.FEMALE), nil, "already worn")
 	eq(L.wearOutfit(cur, 0, L.MALE), nil, "no class look")
 	eq(L.isFirstLogin(0), true, "first login"); eq(L.isFirstLogin(1700000000), false, "later login")
 end
