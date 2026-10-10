@@ -275,8 +275,8 @@ copy the dat flags of the stock bags (`copy:8861`, `copy:7343`, `copy:10325`: co
   (dat 5b2e13ab..., spr of 699,745 sprites) it gives dat b243485112b7bea43016d7dd49097472, spr cfd09de9f81c8f2ffdd29db1e01fa69b
   (699,748 sprites), twice identical.
 - **Windows package pair:** the package takes the merged pair from the private branch `windows-assets`
-  (one archive `things/things-1098.tar.xz`, `SHA256SUMS.parts`, its README). Since 2026-10-10 that archive holds the output
-  above (windows-assets 2f44d84), so servers no longer need `install_pouches.py --stock-looks`. Keep that flag only for
+  (one archive `things/things-1098.tar.xz`, `SHA256SUMS.parts`, its README). Since 2026-10-10 that archive holds things_custom12
+  (windows-assets 4975d74: the pouches, fist weapons, class looks, monster looks and the bone effects), so servers no longer need `install_pouches.py --stock-looks`. Keep that flag only for
   clients still on an older pair: a pair without 33651-33653 shows nothing for a pouch.
 - Checked in the Linux client with the new pair: in a bag next to the stock bags, in the store (Convenience), in the container
   window titles, and on the kill routing screenshots.
@@ -347,7 +347,7 @@ tracing: `monster_looks/sources.csv`. Server side: server/README.md "Rifts" (loo
 - CI: `tools/ci/check_content.py` takes its outfit limit (MAX_OUTFIT) from the highest `look` in `picks.csv` (at least
   2081, the end of things_custom10b). It is 2125 now, so new picks raise it without an edit there. A monster file with
   a lookType above it fails unless it is listed in `needs_sprites.txt` (checked: 2126 is flagged, 2125 passes).
-  things_custom12 ("Necromancer line effects" below) is the newest pair; it only adds effects, so it also has 2125
+  things_custom12 ("Necromancer line effects" below) is the live pair (windows-assets 4975d74); it only adds effects, so it also has 2125
   outfits.
 - Checked in the Linux client on a test server: each world and omen monster spawned, and one tier 8 rift of each
   theme with its packs and its guardian (screenshots and boards in the session scratchpad `monsters/`).
@@ -376,7 +376,7 @@ per spell); only these had no fitting donor. No pixel of the owner's style refer
   this spec's ones; re-running gives the same files. (`gen_necro_fx.py shapes` / `paint` remake the sheet and repaint it;
   only needed to change the art.)
 - Input things_custom11 (things_custom10b + outfits 2100-2125): dat 74aa990f1ed43d6ac30812001c8662c9, spr
-  c2223fe12f35f3532536db1339de8523 (719,970 sprites). Output **things_custom12** (the next live candidate): dat
+  c2223fe12f35f3532536db1339de8523 (719,970 sprites). Output **things_custom12** (the live pair, windows-assets 4975d74): dat
   4712f7484d391e66c04b7ecf72c940e7, spr dc92483b0744a6389151d8c7b85d9342 (720,098 sprites), twice identical. The same
   step on things_custom10b (dat 7ba1d479..., spr ade7204f...) gives the test pair things_custom10b_fx: dat
   fc9a9adbfac0845e34ebe1b2b6117f8e, spr 11a82c220f271f0cd4400cb93d7b857b (716,162 sprites).

@@ -1583,8 +1583,8 @@ autoloot list is needed.
   client pair as client ids 33651-33653 (client MANIFEST.md "Store pouch looks"; `clientId` in `pouches_config.lua`). Only the
   client id of the node changes, the server ids stay 32081-32083, so pouches already owned show the new look after the install;
   the store icons and the container window icons follow (`ItemType:getClientId()`). **The client pair must have the three things
-  first** (a client without them shows nothing for a pouch); until the Windows package has the new pair, `install_pouches.py
-  --stock-looks` keeps the stock bag looks. And
+  first** (a client without them shows nothing for a pouch); the Windows package pair has had them since 2026-10-10;
+  `install_pouches.py --stock-looks` keeps the stock bag looks only for clients on an older pair. And
   items.xml entries with `containerSize` (the protocol sends a container's size as one byte, so up to 255 would work). Installed by
   `tools/install_pouches.py` (step `pouches` of `install_all.py`, after `omens`; idempotent; `items.otb.bak` keeps the original).
   Weight 1 oz; the contents weigh as usual (the engine adds a container's contents to the carried weight; weightless contents
@@ -1849,7 +1849,7 @@ non-store style, an achievement reward for a non-achievement style, or a missing
 | Warbanner Gate | achievement | Siege Champion (`siege_win`, win a guild siege) | old stone siege gate; stone_rise, earth_spikes, stone_ward |
 | Gravecall Gate | achievement | Death Is a Teacher (`deaths_50`, hidden) | dark crypt door; necro_seal, px633_indigo, shadow_cloud |
 
-Store prices are in the range of the auras (200..300). All visuals come from items and effects already in the client pair (`things_custom8`,
+Store prices are in the range of the auras (200..300). All visuals come from items and effects already in the client pair (`things_custom12`,
 `vfx_catalog.csv`); no new art. **Follow-up:** the sprite libraries R and S on the sprite-libraries branch have portal and gate effects (swirl,
 arch, rune circles) that would give styles their own effect art instead of recoloured shared ones.
 
