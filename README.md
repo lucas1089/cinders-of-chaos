@@ -9,14 +9,15 @@
 > of the deep hunting grounds, into the orbs that reshape steel, into the **rifts** that open wherever a Rift Key turns.
 > Five colossi came with it. Kaelgor, Skaldra, the Rotmother, Nyxareth and Vharok still answer every portal that opens
 > at the temples, and the guilds still bleed for the **Chaos Obelisk**.
-> Against them stand those who take up the sword, the bow, the spell or the shadow. At the hundredth step of their road
-> the **Ascendant Oracle** shows them two paths, and they leave as something more than they came.
+> Against them stand those who take up the sword, the bow, the spell or the shadow, and now the bone, the fist and the
+> flame of faith. At the hundredth step of their road the **Ascendant Oracle** shows them two paths, and they leave as
+> something more than they came.
 > The ash is still falling. This is the **Season of Ash**.
 
 Cinders of Chaos is a dark fantasy Open Tibia server (protocol 10.98) with its own client. It keeps the classic top-down
-hunt-and-loot game and adds the depth of an action RPG: classes with ascensions, a huge passive tree, items with
-rarities and modifiers, crafting orbs, monsters that roll affixes, and endgame systems built for weeks of play rather
-than days.
+hunt-and-loot game and adds the depth of an action RPG: seven class lines with fourteen ascensions, a huge passive tree,
+items with rarities, item levels and modifiers, crafting orbs, spell supports, monsters that roll affixes, and endgame
+systems built for weeks of play rather than days.
 
 ---
 
@@ -24,13 +25,16 @@ than days.
 
 | | |
 |---|---|
-| Protocol | 10.98, with our own client (custom UI skin, top menu, windows for every system) |
-| Classes | 4 base classes, each with 2 ascensions (8 ascended classes) |
+| Protocol | 10.98, with our own client: ornate UI skin, animated login screen, top menu, a window for every system |
+| Classes | 7 class lines (Warrior, Ranger, Mystic, Thief, plus Necromancer, Monk and Templar as a store unlock), each with 2 ascensions: **14 ascended classes**, earned through the ascension quest |
 | Level cap | 1000, then Paragon levels. Reaching 1000 takes roughly 100 hours of hunting |
-| Items | 15 rarities from Common to Transcendent, item levels, random modifiers, about 50 uniques |
-| Endgame | world bosses, bounties, a bestiary with kill tasks, rifts with keys and modifiers, the Infinity Tower, dungeons, arena, guild siege, guild levels and guild halls, invasions and world events, weekly leaderboards |
-| Fair play | multi-client rules, staff characters left out of every leaderboard |
-| World art | our own dark tile set (cracked obsidian, ash, bones, wet rock, glowing fungus, braziers) in rifts, the world boss arena and the ascension trial |
+| Build | a passive tree of over 600 nodes with class keystones and class sections, Vocation Trials, Paragon, spell supports |
+| Items | 15 rarities from Common to Transcendent, item levels 1 to 150, prefixes and suffixes in tiers T1 to T8, legendary powers, about 50 uniques, gems and sockets |
+| Crafting | 14 orbs plus the Orb of Sockets and the Whetstone, item quality, bound modifiers, salvage into Rune Shards |
+| Endgame | world bosses, bounties, a bestiary with kill tasks, rifts with keys, modifiers and Omens, the Infinity Tower, dungeons, arena, guild siege, guild levels and guild halls, invasions and world events, weekly leaderboards |
+| Economy | a player market for gold and Chaos Coins, store pouches, auto seller, a store that sells no gear |
+| Fair play | two characters per IP at most, staff left out of every leaderboard, chances that mean what they say |
+| World art | our own dark tile set (cracked obsidian, ash, bones, wet rock, glowing fungus, braziers) in rifts, the world boss arena, the ascension trial and the guild hall |
 
 ---
 
@@ -39,57 +43,171 @@ than days.
 > *"Nobody dies on the island. It is the last kindness this world will show you."*
 > (from the Chronicle of the Broken World)
 
+- **An account on the website:** accounts and characters are made on the Cinders of Chaos website, which also has the
+  leaderboards, the patch notes, the season pages, the rules and the client download.
 - **Tutorial island:** new characters start on a small island with five stations: fight, cast your first spell, spend
   a passive point, use an Orb of Upheaval, and learn about keystones, bounties and the store. Each station opens the next
   gate. You can skip it any time (Character > Services > Leave Tutorial), and nobody can die there.
-- **Starter kit per class:** weapon, armour, potions, food, tools, a temple teleport scroll and some gold, chosen for
-  your class: arrows for Rangers, a second dagger for Ninjas, and so on.
+- **Starter kit per class:** weapon, armour, potions, food, tools and some gold, chosen for your class: arrows for
+  Rangers, a second dagger for Ninjas, a katana for Samurai, nothing in the hands for Monks, who fight with their fists.
 - **Milestone gifts** at levels 20, 50, 100 and 200: potions for your role and Orbs of Upheaval.
+- **Town Portal** from level 1: a free way home and back again (see Quality of life).
 
 ## Classes
 
-> *"Steel, string, spell or shadow. Choose one. At the hundredth step I will ask you to choose again."*
+> *"Steel, string, spell or shadow. Bone, fist or faith. Choose one. At the hundredth step I will ask you to choose again."*
 > (the Ascendant Oracle)
 
 ![Classes and ascensions: Warrior, Ranger, Mystic and Thief](docs/images/feature_classes.png)
 
-You start as one of four base classes. At level 100 you **ascend** into one of two specialisations through a quest: the Ascendant Oracle in the temple sends you to prove your strength against rare and legendary monsters, then into a trial against your class's guardian, and only then lets you choose.
+You start as one of seven base classes. At level 100 you **ascend** into one of two specialisations. Every class has its
+own Chaos spells with custom names, icons and effects, and the spellbook (Character > Spellbook) lists them all.
 
 | Base class | Plays as | Ascensions |
 |---|---|---|
-| **Warrior** | melee, heavy armour, most health | **Juggernaut**: the tank, with taunts, damage reduction and block/reflect · **Berserker**: two-handed area damage; *Rage* hits harder the lower your health, *Skyfall Cleave* leaps in and slams the ground |
-| **Ranger** | bows and crossbows | **Deadeye**: the best single-target damage in the game, with crossbows, marks and crits · **Beastmaster**: fights beside a *War Wolf* companion that grows with you (two wolves from level 400) |
-| **Mystic** | spells, wands and rods | **Elementalist**: the best area damage, with fire, ice and energy combos · **Illusionist**: the best healer (Mirror Mend, Lucid Reverie, party heals), plus party attack buffs; weakens enemies |
-| **Thief** | fast light weapons, shurikens, stealth | **Ninja**: dual-wields daggers with a scripted off-hand strike, plus Shadow Step · **Samurai**: one sword, counter stance, Iaijutsu draw strike and Bushido crit stacks |
+| **Warrior** | melee, heavy armour, most health | **Juggernaut**: the tankiest class, with taunts, damage reduction and block/reflect · **Berserker**: two-handed area damage; *Rage* hits harder the lower your health, *Skyfall Cleave* leaps in and slams the ground |
+| **Ranger** | bows and crossbows | **Deadeye**: the best single-target damage in the game, with crossbows, marks and crits · **Beastmaster**: fights beside a *War Wolf* companion that grows with you (two wolves from level 400), arrows that splash |
+| **Mystic** | spells, wands and rods | **Elementalist**: the best area damage, with fire, ice and energy combos · **Illusionist**: the best healer, for one ally and for the whole party (Mirror Mend, Lucid Reverie), plus party attack buffs; weakens enemies |
+| **Thief** | fast light weapons, shurikens, stealth, evasion | **Ninja**: the line's burst single target: dual-wields daggers with an off-hand strike, very fast hits, Shadow Step · **Samurai**: a duelist off-tank: one sword, a Counter Stance that parries, guards and taunts, the Iaijutsu draw strike and Bushido crit stacks |
+| **Necromancer** | summoner: skeletons and spirits, curses, corpses | **Lich**: curses, damage over time, life drain and Corpse Explosion, with one strong shade or none · **Bone Lord**: the army: more skeletons, the Bone Golem, an aura and sacrifices |
+| **Monk** | unarmed or with a staff, chi, evasion | **Shadowfist**: single-target burst: Pressure Points, Flurry, crits from spent chi · **Iron Sage**: the second healer, a melee chi healer with some bruiser toughness: Kindled Breath on the most hurt ally, Mantra of Stone heals and shields the party, Chi Ward |
+| **Templar** | holy melee: sword or mace and shield, heavy armour, a party defence aura | **Inquisitor**: holy area damage: Judgement, Purging Nova, Zealotry · **Sentinel**: tank-support: a stronger aura with regeneration, Rebuke, Aegis of Faith and Lay on Hands, the biggest emergency heal |
 
-Every class has its own Chaos spells with custom names, icons and effects, and the spellbook (Character > Spellbook) lists them all.
+**A taste of each line:**
+- The **Thief** hides in *Shadow Veil* (monsters lose track of you, and the first hit out of it crits), coats its blades
+  in poison and mends itself with *Shadow Mend*. The **Samurai's** Counter Stance parries the next melee hit and strikes
+  back, takes every other hit 30% smaller and turns the monsters around it onto the Samurai.
+- The **Necromancer** raises skeletons from empty corpses, throws a piercing *Bone Spear* and lays a *Withering Curse*.
+  Its minions hit as their owner, so their kills give you full experience and loot.
+- The **Monk** builds chi with its strikes (five pips over the map) and spends it on finishers that grow with the chi spent.
+- Every **Templar** covers its party with a defence aura, and each of its melee hits is followed by a holy *Radiant Strike*.
 
-- **Cast times for the big spells:** Doomtide and Primordial Squall take 1.5 seconds to cast, Hail of Dawn and Colossus Fall
-  1 second, and hit harder for it. A cast bar over your character counts down (other players see a small one over you).
-  Moving, a paralysis, casting another spell, opening a town portal or dying interrupts the cast and gives you the mana
-  and the cooldown back; so does clicking the bar. If your target is gone, out of range or out of sight when the cast
-  ends, you get them back too. Taking damage does not interrupt.
-Balance is measured on test dummies at levels 300 and 1000, so every class keeps a clear role in a group.
+### Roles in a group
 
-## Passive tree and Paragon
+| Role | Classes |
+|---|---|
+| Tank | Juggernaut (the tankiest), Sentinel (a little less tough, but the party takes less damage), Samurai (duelist off-tank) |
+| Healer | Illusionist (the best healer), Iron Sage (the second healer, below the Illusionist and above every non-healer); the Templar aura lowers party damage |
+| Single target | Deadeye (the best), then the burst classes Ninja, Lich and Shadowfist, then the Beastmaster |
+| Area damage | Elementalist (the best), Berserker, Bone Lord, Inquisitor |
+| Pets | Beastmaster, Bone Lord |
+
+A party with an Illusionist out-damages the same party without one. Balance is measured on test dummies at levels 300 and
+1000, so every class keeps a clear role.
+
+### The ascension quest
+
+Ascension is earned, not bought. The **Ascendant Oracle** next to the temple leads every class through it:
+
+1. **The Calling:** talk to the Oracle at level 100. It tells you about the two paths of your class.
+2. **Proof of Strength:** slay rare and legendary monsters that are a match for your level (a rare counts 1, a legendary 3;
+   you need 10).
+3. **The Trial:** alone, against your class's guardian, with 180 seconds on the clock: the Warden of Iron, of the Hunt, of
+   the Veil, of Shadows, of the Still Fist, of Bones or of Dawn. Each has its own tricks, such as burning marked tiles,
+   punishing you for standing still, raising skeletons or enraging. Nobody dies in the Trial; a failed attempt can be
+   tried again after 10 minutes.
+4. **The Choice:** back at the Oracle, read both ascended classes and pick one. You get the title "Ascended" with your new
+   class, and the whole server hears of it.
+
+### The three new lines
+
+The Necromancer, the Monk and the Templar are unlocked for your whole account in the store (category Classes). Once
+unlocked, every character on the account can play them.
+
+## Combat
+
+> *"Count the blows you took, not the ones you gave. The Chaos keeps that ledger too."*
+> (a Juggernaut of the ash wastes)
+
+Most of the fight is the classic one. A few rules are our own, and you will notice them:
+
+- **Energy shield:** a second bar above your health that only items give (the *Maximum Energy Shield* and *Faster Energy
+  Shield Recharge* modifiers). Hits take the shield first, then your health. It refills by itself two seconds after the
+  last hit you took; healing never fills it. Casters get the most from it.
+- **Percent armour:** your armour takes a share of every physical hit (100 armour about 29%, 200 armour about 44%, at most
+  80%) instead of a flat amount. Elemental damage is not reduced by armour; resistances handle that. High-level monsters
+  hit a little harder to keep the late game honest.
+- **Crits and leech that mean what they say:** a 10% chance fires on 10% of hits. Critical hits, dodges, blocks and
+  reflects show their own effect over the target.
+- **Attack speed:** nobody swings faster than once a second, and leech heals at most about once a second, however many
+  hits land.
+- **Weapon styles:** two-handed weapons swing slower and hit much harder; arrows splash onto the creatures around the
+  target, bolts hit only their target.
+- **Cast times for the big spells:** Doomtide and Primordial Squall take 1.5 seconds to cast, Hail of Dawn and Colossus
+  Fall 1 second, and hit harder for it. A cast bar over your character counts down (other players see a small one over
+  you). Moving, a paralysis, casting another spell, opening a town portal or dying interrupts the cast and gives you the
+  mana and the cooldown back; so does clicking the bar. Taking damage does not interrupt.
+- **PvP healing:** every heal on a player who is in a PvP fight is 30% weaker, for every class, so fights end.
+
+## Passive tree, Vocation Trials and Paragon
 
 > *"Six hundred stars, and never enough light to reach them all. No two heroes draw the same constellation."*
 > (from the Chronicle of the Broken World)
 
 ![The passive tree and the Paragon window](docs/images/feature_passive_tree.png)
 
-- **Passive tree:** over 600 nodes, with points from levels and not enough to take everything, so every build is a
-  choice. Class **keystones** change how you play:
-  - *Cleaving Arc*: two-handed hits strike everything around you
-  - *Ricochet*: arrows bounce to another target
-  - *Arcane Echo*: spells can cast a second time
-  - Illusionist party auras
-- **Build codes:** export your tree as a short code (the passive tree's Build Code panel) and import someone else's. The tree previews it
-  first, with the points needed against the points you have.
+- **Passive tree:** over 600 nodes and one point every four levels (about 248 at level 1000), so you can never take
+  everything and every build is a choice.
+- **Boss points:** the first kill of each great boss gives one more passive point, ten in all: the five world bosses, your
+  Ascension Trial's warden and four ancient demon lords of the deep world.
+- **Keystones that change how you play.** Two keystones at the edge of the tree take a different form for each class:
+
+  | Class | Wrath | Resolve |
+  |---|---|---|
+  | Warrior | *Cleaving Arc*: two-handed hits strike the enemies around you | *Bulwark*: block with a shield, reflect melee damage |
+  | Juggernaut | *Immovable*: less damage taken, twice as much below half health | *Bulwark* |
+  | Berserker | *Cleaving Arc* | *Undying Rage*: melee hits heal you, more below half health |
+  | Ranger | *Ricochet*: arrows bounce to another target | *Deadeye*: crossbow shots that deal double damage |
+  | Deadeye | *Hunter's Focus*: each hit on the same target hits harder | *Deadeye* |
+  | Beastmaster | *Ricochet* | *Pack Alpha*: your companions bite harder and take less |
+  | Mystic, Elementalist | *Arcane Echo*: area spells can cast a second time | *Elemental Overload*: switch elements for more damage |
+  | Illusionist | *Shared Phantasm*: marked enemies take more from your party, and the party heals from it | *Inspiring Illusion*: a party damage aura |
+
+- **Class sections:** the Thief, Necromancer, Monk and Templar lines each have a section of their own, with three line
+  nodes and a path for each ascension that ends in a keystone. Six points reach one:
+
+  | Ascended class | Keystone |
+  |---|---|
+  | Ninja | *Living Shadow*: a dodge, or the first hit out of Shadow Veil, opens 4 seconds of harder hits |
+  | Samurai | *Way of the Blade*: Counter Stance parries every melee hit while it lasts |
+  | Lich | *Hoarded Souls*: Soul Hoard grows with every empty shade slot |
+  | Bone Lord | *Bone Colossus*: the Bone Golem hits 60% harder and has 50% more health |
+  | Shadowfist | *Hundred Hands*: focus crits also give chi |
+  | Iron Sage | *Flowing Mercy*: Kindled Breath also heals the next most hurt party member |
+  | Inquisitor | *Divine Verdict*: Radiant Strikes judge their target |
+  | Sentinel | *Bastion*: a stronger, wider aura, and Aegis of Faith covers the party |
+
+  Before you ascend, both paths show as locked, so you can plan ahead.
+- **Build codes:** export your tree as a short code (the passive tree's Build Code panel) and import someone else's. The
+  tree previews it first, with the points needed against the points you have.
 - **Respec:** right-click a node to refund just that node, or reset the whole tree. Both are priced by your level: a
   full reset costs about 35-40 minutes of hunting gold. Resets are free below level 50 and once after a class change.
+- **Vocation Trials:** every class has a themed trial (talk to the Keeper of Trials in the temple, or press Trials in
+  the Passive Tree window): a solo, timed arena fight with lives (Normal at level 100, Cruel at 250, Merciless at 400).
+  Each tier you clear opens one pair of special passives, and you hold only one of each pair: Berserker's Bloodlust or
+  Cleaver's Hunger, a Ninja's Twin Fangs or Shadow Flurry, a Mystic's Overchannel or Thrifty Weave... Every choice has a
+  trade-off. Changing your mind costs a Trial Token (earned by repeating a trial) and gold. They don't use passive points
+  and survive tree resets.
 - **Paragon:** after level 1000 every level gives a Paragon point. You spend them on small, capped bonuses in four
-  categories, so there is always something to gain.
+  categories (Offense, Defense, Utility and Fortune: damage, critical damage, health, damage reduction, movement speed,
+  mana, gold find and item find), so there is always something to gain.
+
+## Spell supports
+
+> *"A spell is a promise. A rune in its socket is the fine print."*
+> (a rune-carver of the lower city)
+
+Your class decides which spells you have; **spell supports** decide how they work. Every spell gets up to three support
+sockets (the second opens 60 levels after you learn the spell, the third 150 levels after, for two Orbs of Sockets), and
+**support runes** go into them. Open the window with Character > Spell Supports or the Supports button of the spellbook.
+
+- **Twenty supports**, among them: *brands* that turn part of a spell's damage into fire, ice, holy, death or energy;
+  *Quickening* (shorter cooldown) and *Thrift* (cheaper); *Echo* (the hits strike again), *Fork*, *Breadth*, *Shatter*,
+  *Deathburst* and *Surge* (more targets); *Keen Edge* (crits); *Bloodthirst* and *Siphon* (life and mana); *Sunder*
+  (ignores resistance); *Hex* (marked monsters take more from everyone); *Reprisal* (strikes back); *Mercy* (stronger heals).
+- **Five levels**, from Common to Mythic. Three runes of one support and level combine into one of the next.
+- Runes drop from monsters (more from tiered ones and bosses), from rift chests and from bounties. The store sells none.
+- Your action bar shows a coloured pip for each rune on a spell.
 
 ## Items and loot
 
@@ -105,44 +223,27 @@ Balance is measured on test dummies at levels 300 and 1000, so every class keeps
   boss gear is item level 145. Orbs never change an item's level.
 - **Rarity decides how many modifiers, item level decides how good they are.** A Common item has one prefix and one
   suffix; top rarities carry up to three of each (Rare to Exotic: two of each; Mythic and above: three). **Prefixes** are
-  damage and defence (skills, critical hits, element damage, ailments, penetration, block, dodge, thorns ...),
-  **suffixes** are utility, resistances and speed (absorbs, leech, attack and movement speed, find bonuses, cooldown
-  reduction ...).
+  damage and defence (skills, critical hits, element damage, ailments, penetration, block, dodge, thorns, energy shield
+  ...), **suffixes** are utility, resistances and speed (absorbs, leech, attack and movement speed, find bonuses,
+  cooldown reduction, shield recharge ...).
 - **Modifier tiers T1 to T8:** each modifier rolls a tier, T1 the lowest and T8 the highest, each with its own value range.
   A tier needs an item level (T2 at 15, T3 at 30, T4 at 50, T5 at 70, T6 at 95, T7 at 120, T8 at 140), and higher tiers
-  are rarer, so gear from stronger monsters rolls better. Older items keep their values; their tier is read from the value.
+  are rarer, so gear from stronger monsters rolls better.
 - **The modifiers:** elemental damage, absorbs, skills, critical hits, life and mana leech, attack speed (weapons),
   movement speed (boots), damage to elites and bosses, life and mana on kill, health and mana on hit, dodge, block
   (shields), reflect, thorns, chance to bleed, ignite, poison, chill or shock, physical and elemental penetration, execute
   (monsters below a share of their health die to your hit; never bosses), damage over time, cooldown and mana cost
-  reduction, health regeneration, experience, gold find, item find, rarity find, treasure goblin chance, healing done and
-  less damage from monsters. Every modifier has a cap for your whole equipment. They show with their tier in the item's
-  description, in the loot channel and on the Crafting Bench.
-- **About 50 uniques** with fixed, build-defining stats. Some only drop from bosses.
-- **Vocation Trials:** every vocation has a themed trial (talk to the Keeper of Trials in the temple, or press Trials in
-  the Passive Tree window): a solo, timed arena fight with three lives (Normal at level 100, Cruel at 250, Merciless at 400).
-  Each tier you clear opens one pair of special passives, and you hold only one of each pair: Berserker's Bloodlust or
-  Cleaver's Hunger, a Ninja's Twin Fangs or Shadow Flurry, a Mystic's Overchannel or Thrifty Weave... Every choice has a
-  trade-off. Changing your mind costs a Trial Token (earned by repeating a trial) and gold. They don't use passive points
-  and survive tree resets.
-- **Map overlay:** press **Tab** to lay a see-through map over the game view, centred on your character, with icons for your
-  party, the temple, depots and NPCs, rift exits and guardians, treasure goblins, world bosses and invasions. While it is
-  open: mouse wheel (or +/-) zooms, **Ctrl + wheel** changes the opacity, and holding the **middle mouse button** while
-  dragging pans the map (Shift + arrow keys work too, Ctrl + Shift + arrows while the chat is on). **Home** (Ctrl + Home with
-  chat on) or the **Centre** button of the small control strip in the bottom right returns to your character; the strip also
-  has opacity and zoom buttons and a Close button, and everything else stays click-through so you keep playing. While you are
-  panned the strip says so and your character keeps a marker. The pan resets when the overlay closes or a rift run starts.
-  Opacity, the strip and the corner-box mode are in Hunt > Map Overlay Settings; the Centre key is in Options > Hotkeys.
-  Inside a rift the layout fills in as you explore it.
+  reduction, health regeneration, maximum energy shield and its recharge, experience, gold find, item find, rarity find,
+  treasure goblin chance, healing done and less damage from monsters. Every modifier has a cap for your whole equipment.
+- **Legendary powers** roll on Legendary and better items, one per item, and count as a prefix or a suffix: Death Blast,
+  Glacial Ward, Echo Shot, Critical Echo, Arc Lightning, Bloodrush, Shatter Splash, Crimson Burst, Last Breath, Ember Step,
+  Hunter's Rush and Smoldering Aura. Each has a cooldown or a limit, and each shows as an orange line on the tooltip.
+- **About 50 uniques** with fixed, build-defining stats and a socket of their own. Some only drop from bosses, some only
+  for season characters while the season runs.
 - **Rich item tooltips:** hover an item to see its rarity, item level, its prefixes and suffixes, every modifier with
-  its tier ("T5") and the value range of that tier,
-  sockets and gems, unique set and requirements. Hold **Ctrl** to compare it with what you are wearing, stat by stat in
-  green and red. Item slots are framed in their rarity colour.
-- **Monster tiers:** every spawn can roll **Magic, Rare or Legendary**, each tougher and better-rewarded. Tiered
-  monsters get modifiers such as *Blazing, Chilling, Venomous, Vampiric* or *Berserker*. Killing one can trigger an
-  **ambush**.
-- **Treasure goblins:** a very rare, cowardly goblin that flees, blinks away and taunts you, then escapes 18 seconds
-  after the first hit. Catch it in time for a hoard of gold, orbs and rarity gear.
+  its tier ("T5") and the value range of that tier, quality, bound modifiers, sockets and gems, unique set and
+  requirements. Hold **Ctrl** to compare it with what you are wearing, stat by stat in green and red. Item slots are
+  framed in their rarity colour.
 - **Loot filter** (Hunt > Loot Filter): items glow in their rarity colour in corpses, and junk below your chosen rarity is
   dimmed. You can switch whole categories off, make gear glow when it carries a modifier of a chosen tier (say T7+)
   whatever its rarity, or pick a preset: Show all, Hunter or Strict.
@@ -151,13 +252,11 @@ Balance is measured on test dummies at levels 300 and 1000, so every class keeps
 - **Loot rays:** a beam of light rises from corpses holding a unique or a Legendary-or-better item, coloured by
   rarity.
 - **Ground labels:** loot lying on the ground gets its name over it in its rarity colour ("Rare Fire Sword",
-  "3x Chaos Orb"), following your loot filter. Hold **Alt** to see every item, the ones your filter hides too. Corpses
-  holding loot for you say so ("Corpse: 2 items") with the time left before the loot is gone. Click a label to pick the
-  item up (you walk there), right-click it for the item menu, hover it for the full tooltip. Settings: Loot Filter >
-  Ground Labels.
-- **Rarity Autoloot** (store unlock): pick up gear by rarity even when it isn't on your autoloot list, and leave the
-  junk behind.
-- **Autoloot, auto seller, bank and stash** so you spend your time hunting, not walking.
+  "3x Orb of Upheaval"), following your loot filter. Hold **Alt** to see every item, the ones your filter hides too.
+  Corpses holding loot for you say so ("Corpse: 2 items") with the time left before the loot is gone. Click a label to
+  pick the item up, right-click it for the item menu, hover it for the full tooltip.
+- **Autoloot, Rarity Autoloot, auto seller, bank and stash** so you spend your time hunting, not walking. Rarity Autoloot
+  (store unlock) picks up gear by rarity even when it is not on your autoloot list.
 
 ## Crafting
 
@@ -167,8 +266,8 @@ Balance is measured on test dummies at levels 300 and 1000, so every class keeps
 ![The Crafting Bench and its orbs](docs/images/feature_crafting.png)
 
 Orbs reshape your gear and your Rift Keys. Use them like any other tool: **"Use with" on the orb, then click the item**
-in your backpack. No bench needed. The **Crafting Bench** (Economy > Crafting Bench) is still there when you want to see an item's
-modifiers and a preview of what each orb would do before you use it.
+in your backpack. No bench needed. The **Crafting Bench** (Economy > Crafting Bench) is there when you want to see an
+item's modifiers, pick a modifier for the aimed orbs and preview what each orb would do before you use it.
 
 | Orb | On gear | On a Rift Key |
 |---|---|---|
@@ -180,7 +279,7 @@ modifiers and a preview of what each orb would do before you use it.
 | Orb of Upheaval | rerolls every modifier, same rarity and item level | rerolls the key's modifiers |
 | Orb of Fate | rerolls the item with a new random rarity (same item level) | rerolls the values of the key's modifiers |
 
-**Aim, bind and gamble** (the second set of orbs, from the Crafting Bench and the store):
+**Aim, bind and gamble** (the second set of orbs):
 
 | Orb | What it does |
 |---|---|
@@ -188,18 +287,13 @@ modifiers and a preview of what each orb would do before you use it.
 | Orb of Binding | **binds** one modifier you pick on the bench: the other orbs leave it alone (1 per item, 2 from Legendary). Only an Orb of Erasure frees it |
 | Orb of Excision | removes the **one modifier you pick** (a Rift Key: one modifier) |
 | Orb of Reforging | rolls the tier and the value of the one modifier you pick again |
-| Orb of Ruin | a gamble on an item with modifiers: 40% it improves (one tier more on every modifier that is not bound, or an extra modifier), 45% nothing, 15% it is **ruined**: no orb changes it any more (you can still wear and sell it) |
+| Orb of Ruin | a gamble on an item with modifiers: 40% it improves (one tier more on every modifier that is not bound, or an extra modifier), 45% nothing, 15% it is **ruined**: no orb changes it any more (you can still wear and sell it). Never sold in the store |
 | Whetstone | +1% **quality**: every modifier value is multiplied by it, up to 20% (30% from Divine rarity) |
 
 On the bench, click a modifier to pick it, then press Use on an orb that takes a modifier; used directly with "Use with",
-those orbs pick a modifier at random. Bound modifiers show "bound", quality shows as a bar and in the item's tooltip.
-**Legendary powers** roll on Legendary and better items, one per item, and count as a prefix or a suffix: Death Blast,
-Glacial Ward, Echo Shot, Critical Echo, Arc Lightning, Bloodrush, Shatter Splash, Crimson Burst, Last Breath, Ember Step,
-Hunter's Rush and Smoldering Aura. Each has a cooldown or a limit, and each shows as an orange line on the tooltip.
-
-A Rift Key's modifiers make the rift harder and its rewards better, so crafting a key is how you push for more loot.
-Items must sit in your backpack (not equipped). Orbs drop from monsters (more from tiered ones and bosses), from
-bounties and the weekly chest, and can be bought in the store. Uniques can't be crafted, so they stay unique.
+those orbs pick a modifier at random. A Rift Key's modifiers make the rift harder and its rewards better, so crafting a
+key is how you push for more loot. Orbs drop from monsters (more from tiered ones and bosses), from bounties, rifts and
+the weekly chest, and many can be bought in the store. Uniques can't be crafted, so they stay unique.
 
 ### Gems and sockets
 
@@ -220,25 +314,42 @@ in jewellery:
 
 "Use with" a gem on your gear to socket it, or on a gem of the same kind to turn three into one of the next quality.
 At the Crafting Bench you can take a gem out for gold, or shatter it for free. Gems drop from monsters (better ones from
-higher levels, elites and bosses), and come from bounties, rift chests and world bosses. Uniques have one socket of
-their own.
+higher levels, elites and bosses), and come from bounties, rift chests and world bosses.
 
 ### Salvage
 
 Gear you will never wear is not just vendor trash. The **Salvage** tab of the Crafting Bench (Economy > Salvage) breaks an
 item with a rarity into **Rune Shards** (more for higher rarities and item levels, one more per T6-or-better modifier
-and per empty socket) with a small chance of a whole orb, and turns shards into orbs: 12 for an Orb of Awakening, 25 for a
-Orb of Upheaval, up to 100 for an Orb of Grafting. Salvage one item, or a whole bag up to the rarity you choose (50 items at a
-time, after a confirmation). **Lock** the pieces you want to keep on the bench: salvage and the Auto Seller never touch
-a locked item. Uniques and items with gems in their sockets are never salvaged.
+and per empty socket) with a small chance of a whole orb, and turns shards into orbs: 12 for an Orb of Awakening, 25 for an
+Orb of Upheaval, up to 100 for an Orb of Grafting and 150 for an Orb of Ruin. Salvage one item, or a whole bag up to the
+rarity you choose (50 items at a time, after a confirmation). **Lock** the pieces you want to keep on the bench: salvage
+and the Auto Seller never touch a locked item. Uniques and items with gems in their sockets are never salvaged.
 
 ### The Codex
 
-- **The Codex** (Economy > Codex, or **Alt+K**) looks up the whole item system in the client: every modifier with its
-  tiers T1-T8, value ranges, the item level each tier needs and what it rolls on, the legendary powers, every orb and
-  where it comes from, gems, uniques and where they drop, rift modifiers and spell supports, plus a short "How items
-  work". Search by name or stat, filter by prefix / suffix, item kind and item level. Right-click a modifier on the
-  Crafting Bench to open its page.
+**The Codex** (Economy > Codex, or **Alt+K**) looks up the whole item system in the client: every modifier with its
+tiers T1-T8, value ranges, the item level each tier needs and what it rolls on, the legendary powers, every orb and
+where it comes from, gems, uniques and where they drop, rift modifiers and spell supports, plus a short "How items
+work". Search by name or stat, filter by prefix or suffix, item kind and item level. Right-click a modifier on the
+Crafting Bench to open its page.
+
+## Monsters
+
+> *"It was a wolf this morning. Then the ash settled on it, and now it burns."*
+> (a hunter of the deep hunting grounds)
+
+- **Monster tiers:** every spawn can roll **Magic, Rare or Legendary**, each tougher and better rewarded, with a higher
+  item level on its drops. Tiered monsters and bosses roll modifiers: *Blazing, Chilling, Venomous, Shocking, Vampiric,
+  Berserker, Brutal, Stoneskin, Reflective, Regenerating, Swift, Explosive* and *Juggernaut*. A tiered monster glows in the
+  colour of its strongest modifier, and the monster bar names its tier and modifiers.
+- **Ambushes:** killing a monster can call a tiered copy of it out of the ash, right next to the corpse.
+- **Treasure goblins:** a very rare, cowardly goblin that flees, blinks away and taunts you, then escapes 18 seconds
+  after the first hit. Catch it in time for a hoard of gold, orbs and rarity gear.
+- **Late game:** 17 level-scaled Chaos monsters (levels 650 to 1000) live in the deepest hunting grounds: Darklight Core,
+  Jaded Roots, Gloom Pillars and the Putrefactory. Experience stages are tuned so the road to 1000 stays rewarding.
+- **New factions:** the **Goblin Tribe** (grunts, archers, bombers, witches, wolf riders, a hobgoblin captain and the
+  Goblin Chieftain) and the **Wildwood Uprising** (wolves, boars, mushroom folk, dryads, owlbears, giant beetles and
+  spiders, the Mushroom King and the Ancient Treant). They drop creature products to sell and food to eat.
 
 ## Endgame
 
@@ -247,38 +358,64 @@ a locked item. Uniques and items with gems in their sockets are never salvaged.
 
 ![The five world bosses and a sealed rift](docs/images/feature_endgame.png)
 
-- **World bosses:** a server-wide event. A portal opens at every temple and one of five colossal bosses appears:
-  - Kaelgor the Infernal Warlord
-  - Skaldra the Rime Queen
-  - The Rotmother
-  - Nyxareth the Void Archon
-  - Vharok the Blood Colossus
+### World bosses
 
-  Each has phases and 15 to 24 million health. Everyone who takes real part gets a reward, not only the last hit:
-  damage on the boss, healing other players and tanking the boss's blows all count, so a healer or a tank is
-  rewarded like a damage dealer. The top 3 in damage, in healing and in tanking get extra orbs, a better chance at a
-  boss unique and a title for a week: Bossbreaker, Lifewarden or Bulwark. The weekly Boss Healer and Boss Tank
-  leaderboards rank the best healers and tanks.
-- **Bounty board** (Adventure > Bounty Board): daily "kill X in Y" contracts per level band that pay orbs. Finish seven in a week
-  for the weekly bounty chest.
-- **Rifts** (Adventure > Rifts): use a **Rift Key** to open a 10-minute instance for you and up to 3 party members.
-  - Each key has a tier (1-15) and 1-3 random modifiers, such as *Vitality, Brutality, Haste, Elites, Reflection,
-    Warding, Withering* or *Swarm*. Harder modifiers raise the rewards: item quantity, rarity and experience.
-  - Clear the packs and the **Guardian** appears. Kill it to seal the rift, and its chest pays gold, Orbs of Upheaval and Fate
-    and gear for every finisher.
-  - A sealed rift can drop the next tier's key. Keys also drop from tiered monsters and bounties.
-  - A crash refunds your key.
-- **Infinity Tower** (Adventure > Infinity Tower): climb floor after floor alone or with a party of up to 4, against the clock.
-- **Dungeons:** instanced runs with their own progress.
-- **Late game:** 17 level-scaled Chaos monsters (levels 650-1000) live in the deepest hunting grounds. Experience
-  stages are tuned so the road to 1000 stays rewarding.
+Four times a day a portal opens at every temple and one of five colossal bosses waits behind it:
+Kaelgor the Infernal Warlord, Skaldra the Rime Queen, the Rotmother, Nyxareth the Void Archon and Vharok the Blood Colossus.
+
+- Each has phases, adds and 15 to 24 million health. It is built for a server, not a party.
+- Everyone who takes real part gets a reward, not only the last hit: damage on the boss, healing other players and
+  tanking the boss's blows all count, so a healer or a tank is rewarded like a damage dealer.
+- The top 3 in damage, in healing and in tanking get extra orbs, a better chance at a boss unique and a title for a week:
+  Bossbreaker, Lifewarden or Bulwark.
+- Your first kill of each one gives a passive point.
+
+### Rifts
+
+> *"Turn the key and the wall forgets it was a wall."*
+> (a Riftwalker)
+
+Use a **Rift Key** (Adventure > Rifts) to open a 10-minute instance for you and up to 3 party members.
+
+- **Keys** have a tier (1 to 15) and 1 to 3 modifiers that make the rift harder and its rewards better (item quantity,
+  rarity and experience). Some are plain danger: *Vitality, Brutality, Haste, Elites, Reflection, Warding, Withering,
+  Swarm, Teeming, Warbands, Twin Guardians, Cinderdeath, Blighted Mending, Waning Veil, Dread Guardian* and *Fragile*.
+  Some are pure boons, shown in gold: *Gilded Trail* (a treasure goblin), *Sealed Coffer* (a guarded chest) and
+  *Echoing Spoils* (copied loot). Modifiers roll in tiers I to V; higher keys roll the higher tiers.
+- **The run:** clear the packs and the **Guardian** appears. Kill it in time to seal the rift, and its chest pays gold,
+  orbs, gems, support runes and gear for every finisher. A sealed rift can drop the next tier's key.
+- **Lives:** a run has shared lives (3, plus one for every extra player). A death costs one; the last one collapses the rift.
+- **Omens:** sealed rifts of tier 6 and above give **Omen Fragments**. Sixty of them bind an **Omen Key**, which opens the
+  arena of one of three Omen guardians for players of level 800 and above: Sangrith the Bloodmoon Herald, Morvane the
+  Hollow Crown and Thalcyra the Stormbound Seer. Their chests are the richest in the game, with two unique rolls each.
+- A server restart or a crash never eats your key.
+
+### Infinity Tower
+
+Climb floor after floor alone or with a party of up to 4 (Adventure > Infinity Tower), against the clock. Every floor is a
+wave, every tenth a boss floor, and magic, rare and legendary monsters grow more common as you climb. Your best floor
+counts on the tower ranking, with milestone rewards on the way, and the Tower Ascension days give double tower points.
+
+### Dungeons
+
+Instanced runs for a solo hero or a group, with a queue, a timer and a boss at the end. Six difficulties raise monster
+health and damage, and pay back in experience, gold and extra loot. Speed and flawless challenges and solo and group
+rankings keep score.
+
+### Bounty board
+
+Daily "kill X in Y" contracts per level band (Adventure > Bounty Board) that pay orbs, gems and support runes. Finish
+seven in a week for the weekly bounty chest.
+
+### Invasions and world events
+
 - **Invasions** (Adventure > Events): a few times a week a horde of orcs, undead, demons or minotaurs falls on a town or a
   hunting ground. It comes in five waves and marches on the town's heart, and its warlord leads the last wave.
   - Everyone can defend. The bar at the top left shows the wave, the invaders left, the time and the **breach
     meter**, which fills while invaders stand at the target.
   - Hold it and everyone who fought is paid by their part in the defence: damage, kills, and healing for healers.
-    The pay is gold, Orbs of Upheaval and Fate and a chance at a unique, plus points on the weekly **Defender**
-    leaderboard. The whole world gets +10% experience for an hour.
+    The pay is gold, orbs and a chance at a unique, plus points on the weekly **Defender** leaderboard. The whole world
+    gets +10% experience for an hour.
   - Lose it and the invaders occupy the place for 30 minutes. Slay the occupiers to free it for a smaller reward.
   - Warnings come 30, 10 and 1 minutes before. The calendar shows the fixed invasion days, but some invasions come
     unannounced.
@@ -290,7 +427,36 @@ a locked item. Uniques and items with gems in their sockets are never salvaged.
   - *Blood Moon* weekends: +50% experience
   - *Chaos Rift* Wednesdays: double tiered spawns
   - *Loot Frenzy* Fridays
+  - *Tower Ascension* days twice a month: double Infinity Tower points
   - a daily boosted creature and boss
+- **World buffs:** any player can light one from the store (more experience, loot or skill training for everybody, for an
+  hour). The whole server sees who did.
+
+## Bestiary and kill tasks
+
+> *"Write down what it eats, where it sleeps and what it fears. Then go and kill a thousand of them."*
+> (the Chronicler, to a new hunter)
+
+![The bestiary window and the task tracker](docs/images/feature_bestiary.png)
+
+The bestiary (Hunt > Bestiary) has a page for every monster in the world, and it fills in as you hunt:
+- **Stages:** your kills unlock each monster in four stages: **Discovered**, **Studied**, **Mastered** and **Completed**.
+  How many kills each stage needs depends on how dangerous the monster is: a rat is done after 250, a dragon lord after
+  1,000, a boss after 5 kills. Rare monsters that only live in a few places need fewer.
+- **What you learn:** Discovered shows its picture, level, health and experience. Studied adds its weaknesses and
+  immunities, where it lives and its rarest loot. Mastered shows its whole loot list and the Chaos uniques it can drop.
+- **Completion bonus:** a completed monster takes 1-3% more damage from you and gives you 1-3% more experience.
+- **Bestiary points and ranks:** every stage gives points, and so do kill tasks. Points raise your bestiary rank, from
+  Novice to Monster Sage, and each rank adds a little experience from every monster (up to +3%).
+
+**Kill tasks** (Hunt > Kill Tasks) are your own hunting orders:
+- **The board** offers a few hunts and family tasks for your level every day ("kill 150 Hellspawn", "kill 270 dragons
+  of level 85-189"). You can also take a hunt task from any monster you have discovered, if it suits your level.
+- **Rewards:** gold to your bank, orbs, experience and bestiary points. You can hold 3 tasks at once and finish 4 a day
+  and 20 a week. Kills by party members near you count too, and a kill counts for your tasks and the bounty board alike.
+
+The **task tracker** at the bottom right of the screen lists your kill tasks and bounty contracts with their progress,
+updated with every kill.
 
 ## Seasons
 
@@ -313,13 +479,13 @@ Start fresh with a **season character** (Adventure > Season, Join, on a new char
 
 ![The ranked arena and the guild siege](docs/images/feature_pvp.png)
 
-- **Ranked arena** (Adventure > Arena): **1v1 and 2v2** with an Elo rating per mode.
+- **Ranked arena** (Adventure > Arena): **1v1 and 2v2** with a rating per mode.
   - Matchmaking pairs players of close rating and similar level.
   - Nobody really dies and there are no skulls: a lethal hit sends the loser to the gallery.
-  - Each win pays an Orb of Upheaval, and the first win of the day pays a bonus.
-- **Guild Siege** (Adventure > Guild Siege): every Saturday at 20:00, up to four guilds per arena fight over the **Chaos Obelisk**.
-  - You score by striking enemies down and by holding the obelisk.
-  - Nobody really dies.
+  - Each win pays an orb, and the first win of the day pays a bonus.
+- **Guild Siege** (Adventure > Guild Siege): every Saturday at 20:00, up to four guilds per arena fight over the
+  **Chaos Obelisk**.
+  - You score by striking enemies down and by holding the obelisk. Nobody really dies.
   - The winners become **Siege Champions** for a week: a title and +5% experience.
 
 ## Guilds and guild halls
@@ -341,7 +507,7 @@ what everyone has contributed this week.
   wins, world boss victories and records, and three decoration tiers.
 - **Rent:** the hall costs a weekly rent from the guild bank. If the bank runs dry the upgrades lock until it is paid;
   nothing is ever lost.
-- **Top guilds:** a weekly board of the guilds that earned the most guild XP.
+- **Top guilds:** the Guild window's weekly board of the guilds that earned the most guild XP.
 
 ## Leaderboards and titles
 
@@ -351,7 +517,7 @@ what everyone has contributed this week.
 ![The weekly leaderboards and a title above a name plate](docs/images/feature_leaderboards.png)
 
 Weekly boards (Social > Leaderboards) reset every Monday:
-- World Boss damage
+- World Boss damage, Boss Healer and Boss Tank
 - Bounty Hunter
 - Rifts
 - Goblin Slayer
@@ -360,29 +526,13 @@ Weekly boards (Social > Leaderboards) reset every Monday:
 - Defender (invasions defended)
 
 The top 3 of each board earn a **title** for the next week (Bossbane, Warden of the Hunt, Riftwalker, Goblin Slayer,
-Siegebreaker, Duelist, Gladiator, Defender of the Realm) and orbs. The all-time **Class Ladder** ranks the highest characters of every class.
+Siegebreaker, Duelist, Gladiator, Defender of the Realm) and orbs. The all-time **Class Ladder** ranks the highest
+characters of every class.
 
-### Name plates and titles
-
-Above every player floats a name plate: their **title** on top, their **guild** in braces below it, and their **name**
-on a small framed plate. Titles come from the leaderboards (gold), the guild siege (Siege Champions, orange, with a
-crimson plate), seasons, login streaks and achievements; staff wear red titles on a gold plate. Hold several? Pick one, or none, in
-the Achievements window (Character > Achievements). Monsters and NPCs keep their plain names.
-
-## Chat item links and inspecting players
-
-- **Show off an item:** with the chat input active, **Shift + click** an item in your inventory or a backpack. Its name
-  appears in the message as `[Item Name]` (up to 3 per message); write the rest and send it. Everyone who gets the message
-  (say, party, guild, a channel, a private message) sees the name in the item's rarity colour (uniques in orange). **Hover**
-  it to see the same tooltip you get in your own backpack, and hold **Ctrl** to compare it with what you wear. A link shows
-  the item as it was when you linked it and lasts 10 minutes. You can only link items you carry (not items on the ground or
-  in the depot). Locked items can be linked. Links are not allowed in the Help channel or in NPC conversations.
-- **Inspect a player:** **Ctrl + right-click** (or right-click, depending on your controls) a player and choose
-  **Inspect Player**, or open **Social > Inspect Player** and type the name of anyone who is online. The window shows their
-  outfit, level, class, guild, achievement points, best rift and Vocation Trial, and every worn item with its tooltip.
-  Nothing else is shown: no health, skills or passive tree. Staff who are hidden cannot be inspected.
-- **Privacy:** the checkbox **Allow others to inspect me** in the Inspect Player window switches it off for your character
-  (on by default). Others then see that you do not allow it.
+**Name plates.** Above every player floats a name plate: their **title** on top, their **guild** in braces below it, and
+their **name** on a small framed plate. Titles come from the leaderboards (gold), the guild siege (Siege Champions, orange,
+with a crimson plate), the ascension, seasons, login streaks and achievements; staff wear red titles on a gold plate. Hold
+several? Pick one, or none, in the Achievements window (Character > Achievements).
 
 ## Achievements
 
@@ -393,15 +543,13 @@ the Achievements window (Character > Achievements). Monsters and NPCs keep their
 
 Over 90 achievements (Character > Achievements) give you goals in every corner of the game:
 - **What counts:** levels and Paragon, magic, rare and legendary kills, ambushes, Treasure Goblins, each world boss, rift
-  tiers and modifiers, bounty contracts and weekly chests, uniques and rarities found, orbs used at the Crafting Bench,
-  arena wins and ratings, guild sieges, and a few secrets that stay hidden as **???** until you find them.
+  tiers, modifiers and Omens, bounty contracts and weekly chests, uniques and rarities found, orbs used, arena wins and
+  ratings, guild sieges, and a few secrets that stay hidden as **???** until you find them.
 - **Points:** every achievement is worth points. Your account total counts each achievement once, whichever character
   earned it.
-- **Titles:** many achievements give a title to show above your name. Pick one in the window.
-- **Rewards:** some pay orbs, others an outfit with its addons or a mount.
+- **Rewards:** many give a title; some pay orbs, others an outfit with its addons, a mount, a pet or a portal style.
 - **Already a veteran?** Levels, Paragon, ascension, bounties and arena results you had before are counted the next time
-  you log in.
-- The window shows your progress on each one, and a toast pops up the moment you unlock one.
+  you log in. A toast pops up the moment you unlock one.
 
 ## Pets
 
@@ -416,74 +564,47 @@ only one is out at a time.
   (more often from magic, rare and legendary ones), the Lantern Wisp and the Hoarder Squirrel are in the store (Pets),
   and the Ash Cat, the Gilded Goblin and the Riftling come with achievements. Finding a pet you already have gives yours
   experience instead.
-- **Levels:** your pet levels with your kills, up to level 50. Monsters far below your level do not count; magic, rare,
-  legendary monsters and bosses count more.
+- **Levels:** your pet levels with your kills, up to level 50.
 - **Abilities:** every species has two small ones, the second from level 20: **Mend** (heals you when you drop below half
   health), **Ward** (less damage from monsters for a few seconds when you are hurt), **Spark Aura** (hits the monsters
   next to it that are after you), **Gold Sniffer** (more gold in your kills), **Treasure Sense** (more item find) and
   **Fetch** (carries the gold of your kills straight to your bank).
-- **Names:** give it a name with the window's Rename button.
 - **Where:** pets wait outside protection zones and stay home from the arena, the siege and PvP zones. In rifts, the
-  Infinity Tower, dungeons and the world boss arena only the gold, item find and fetch abilities work. While you have
-  other summons out your pet stays back; class companions (wolves, minions) do not mind it.
-- If you die, your pet runs off and needs a minute before you can call it again. Log out with it at your side and it is
-  back when you return.
-
-## Bestiary and kill tasks
-
-> *"Write down what it eats, where it sleeps and what it fears. Then go and kill a thousand of them."*
-> (the Chronicler, to a new hunter)
-
-![The bestiary window and the task tracker](docs/images/feature_bestiary.png)
-
-The bestiary (Hunt > Bestiary) has a page for every monster in the world, and it fills in as you hunt:
-- **Stages:** your kills unlock each monster in four stages: **Discovered**, **Studied**, **Mastered** and **Completed**.
-  How many kills each stage needs depends on how dangerous the monster is: a rat is done after 250, a dragon lord after
-  1,000, a boss after 5 kills. Rare monsters that only live in a few places need fewer.
-- **What you learn:** Discovered shows its picture, level, health and experience. Studied adds its weaknesses and
-  immunities, where it lives and its rarest loot. Mastered shows its whole loot list and the Chaos uniques it can drop.
-- **Completion bonus:** a completed monster takes 1-3% more damage from you and gives you 1-3% more experience.
-- **Bestiary points and ranks:** every stage gives points, and so do kill tasks. Points raise your bestiary rank, from
-  Novice to Monster Sage, and each rank adds a little experience from every monster (up to +3%).
-- **Search** by name, browse by family (dragons, demons, undead, beasts, bosses, Chaos monsters and more), and see your
-  completion in each.
-
-**Kill tasks** (Hunt > Kill Tasks) are your own hunting orders:
-- **The board** offers a few hunts and family tasks for your level every day ("kill 150 Hellspawn", "kill 270 dragons
-  of level 85-189"). You can also take a hunt task from any monster you have discovered, if it suits your level.
-- **Rewards:** gold to your bank, Orbs of Upheaval (Orbs of Fate for family tasks at high levels), experience and bestiary
-  points. You can hold 3 tasks at once and finish 4 a day and 20 a week.
-- **Party:** kills by party members near you count for your tasks and your bestiary too.
-- The **bounty board** stays the big daily board shared by everyone; kill tasks are the smaller, personal ones, and a
-  kill counts for both.
-
-The **task tracker** at the bottom right of the screen lists your kill tasks and bounty contracts with their progress,
-updated with every kill. Click its title to fold it; switch it off in the bestiary window or in the Hunt menu.
-
-## Goblins and the wildwood
-
-Two new invasion factions bring new monsters: the **Goblin Tribe** (grunts, archers, bombers, witches, wolf riders, a
-hobgoblin captain and the Goblin Chieftain) and the **Wildwood Uprising** (wolves, boars, mushroom folk, dryads, owlbears,
-giant beetles and spiders, the Mushroom King and the Ancient Treant). They drop creature products you can sell to Yasir
-and food you can eat. The Orbs of Gilding, Unmaking and Erasure and the mining ore pieces have new pictures.
+  Infinity Tower, dungeons and the world boss arena only the gold, item find and fetch abilities work.
 
 ## The market
+
+> *"Everything has a price in the broken world. Even the things that glow."*
+> (a broker of the lower city)
 
 Sell and buy with other players at **Economy > Market** (Alt+E), or by using the market in any depot.
 - **Gold or Chaos Coins:** put a price in gold, in Chaos Coins or both; the buyer picks. Gold is paid from and to the
   bank, coins from and to your account.
 - **Any item:** orbs and other stacks (sell part of a stack) and rolled gear with every modifier, tier, socket, gem,
-  quality and legendary power exactly as it is. Equipped, locked, store and quest items and bags with something inside
-  cannot be listed.
+  quality and legendary power exactly as it is.
 - **Browse:** search by name, filter by category, rarity, item level, currency and price, sort, and hover an offer for
-  its full tooltip (Ctrl compares with what you wear; the modifiers your search matched are listed under it).
-- **Modifier search:** open **Modifiers** and add up to 6 rows: a modifier or legendary power (type part of its name),
-  the lowest value and the lowest tier (T1 is the lowest, T8 the best: "T5+" finds T5 to T8). Ask for all rows or for
-  at least some of them, and for sockets, quality, a free prefix or suffix slot, a legendary power or a bound modifier.
+  its full tooltip (Ctrl compares with what you wear).
+- **Modifier search:** add up to 6 rows, each a modifier or legendary power with the lowest value and the lowest tier
+  ("T5+" finds T5 to T8). Ask for all rows or for some of them, and for sockets, quality, a free prefix or suffix slot, a
+  legendary power or a bound modifier.
 - **Fees:** listing 1% of the gold price (at least 100 gold, not refunded), 5% sales tax when it sells. Offers last 1, 3
   or 7 days; up to 20 at a time. What does not sell comes back to your inbox.
-- **Safe:** bought items and returned items arrive in your inbox (the depot); you see each sale as a message and a toast,
-  also if it sold while you were away. Season characters have their own market.
+- **Safe:** bought and returned items arrive in your inbox, and every sale is reported as a message and a toast, also if
+  it sold while you were away. A server crash in the middle of a purchase loses nothing.
+
+## The store and the pouches
+
+The store (Economy > Store) is paid in **Chaos Coins**. It sells convenience, cosmetics and time, and **no gear**.
+- **Classes:** the Necromancer, the Monk and the Templar, for your whole account.
+- **Store pouches:** a **Loot Pouch** with its own autoloot rules, an **Orbs Pouch** (orbs, rune shards and gems) and a
+  **Rift Key Pouch** (Rift Keys, Omen Keys and fragments). They collect their loot from your kills while you carry them.
+  One of each per character; they cannot be traded or dropped and come back after a death.
+- **Convenience:** Auto Seller (sells the junk from your kills straight to your bank), Rarity Autoloot.
+- **Boosts and world buffs:** stamina refill, double experience potions, blessings, and the server-wide experience, loot
+  and training buffs.
+- **Services:** name, class and sex change, frag and skull removal, a passive tree and Paragon reset.
+- **Cosmetics:** outfits, mounts, wings, auras, outfit shaders, portal styles and pets.
+- **Crafting orbs** (but never the Orb of Ruin), the Orb of Sockets, Whetstones, and training weapons.
 
 ## Quality of life
 
@@ -492,65 +613,76 @@ Sell and buy with other players at **Economy > Market** (Alt+E), or by using the
 
 ![The hunt tracker and the daily reward](docs/images/feature_qol.png)
 
-- **Combat visuals:** crits, dodges and reflects get their own sprites. Elemental weapon damage shows as a separate
-  coloured number with its element's effect. Big numbers are shortened (12.4k).
-- **Talk to NPCs in a window:** right-click an NPC (Ctrl + right-click with classic controls) and choose **Talk**, or
-  use it. You walk up to it if it is too far and greet it, and the whole conversation runs in a speech bubble over the
-  NPC: its name and portrait, its latest answer, the highlighted words as buttons (click one to say it), a text field,
-  and **Yes**, **No**, **Trade** and **Bye** when they fit. **Esc** or **Bye** ends it; walking away closes it. Talking
-  to another NPC says goodbye to the first. Works with every NPC. The **...** button can copy the conversation to the
-  console; **Options > Interface > Disable NPC Dialog Window** goes back to talking in the console.
-- **Patch notes in the client:** a window with every week's changes. It opens once at login when there is something
-  new, after the daily reward.
-- **Hunt tracker** (Hunt > Hunt Tracker): experience, loot, supplies and profit per hour for your session, counted by the server.
-  It also shows kills per monster, every item looted and its value, damage and healing per second, and your Chaos
-  drops. Pause, reset or copy a summary.
-- **Buff bar** (Character > Buff Bar): your buffs and debuffs as small icons with a countdown and a stack count, buffs on
-  the top row and debuffs on a second row with a red border; hover an icon for its name, what it does and the time left.
-  It covers haste, regeneration, food, poison, burning, freezing, drowning, energy, bleeding, slows, drunkenness, mana
-  shield, invisibility, the fight and skull timers, your class buffs (Bushido Focus shows its stacks), world buffs, the
-  Victory buff, Golden Hour and the Chaos Storm while you stand in them, the day's events, double experience, the
-  stacking nodes of the Vocation Trials, the Monk's chi, the Berserker's Rage and Reprisal. Grab the strip on top to move
-  it; the gear opens the size, icons per row, lock, countdown and hide-when-empty settings. Everything is shown by the
-  server, so it is always right.
-- **Party frames** (Hunt > Party Frames): a small movable panel with a frame for every member of your party: outfit, name
-  in the class colour, level, a crown for the leader, health and mana bars with the numbers, a floor arrow and the
-  distance, in a fight / dead / connection lost, and their first buffs and debuffs, updated twice a second. Members
-  near you (50 squares, two floors) show exact numbers; members far away show a rough health bar. Left click selects a
-  member and follows them (switch off in the gear window), shift+click looks, right click opens a menu: message, follow,
-  look, pass the leadership and remove from the party (leader), invite a player by name, leave the party. The panel
-  shows up when you join a party and hides when you leave; your own frame is optional. It starts at the right edge of the
-  game view, clear of the invasion and rift panels and the map overlay's controls (drag it anywhere; that spot is kept).
-  The old Hunt > Party window is still there.
-- **Daily rewards and login streaks:** one claim a day per account. Your streak counter shows your current and best
-  streak. Milestones at 7, 14, 30, 60, 100 and 180 days pay orbs, and titles at 30, 100 and 180 days ("the Devoted",
-  "the Relentless", "the Undying"). Grace charges save your streak when you miss a day.
-- **Waystones** with account upgrades (experience, loot, rarity), and toast notifications for
-  everything that matters.
 - **Town Portal:** every character has it from the start, with unlimited uses. Cast it from the action bar (the spell
-  Town Portal, `ash domh`) or from Character > Town Portal. After a 3 second channel (moving or taking damage breaks it)
-  a portal opens beside you that leads to your town's temple, and a return portal opens beside the temple that brings you
-  back to the exact spot. One pair per character (a new one replaces the old), open for 5 minutes or until you walk back
-  through it; 60 second cooldown. You and your party members can use it. It does not work in a protection zone, after PvP,
-  with a skull, on the tutorial island, in arenas, the world boss arena and sieges, or inside rifts, dungeons and the
-  Infinity Tower (those have their own exits).
+  Town Portal, `ash domh`) or from Character > Town Portal. After a 3 second channel a portal opens beside you that leads
+  to your town's temple, and a return portal at the temple brings you back to the exact spot. You and your party members
+  can use it for 5 minutes; 60 second cooldown. It does not work in protection zones, after PvP, with a skull, or inside
+  arenas, sieges, rifts, dungeons and the tower, which have their own exits.
 - **Portal Style** (Character > Portal Style): pick the look of your portal and its opening and closing effects; everybody
-  sees it. Six styles are sold in the store (Portal Styles) and six are earned only through achievements: Abyssal Maw
-  (Colossus Hunter), Riftwalker's Gate (Keybearer), Hellmouth Gate (Herald of Omens), Hoarder's Gate (Hoardbreaker),
-  Warbanner Gate (Siege Champion) and Gravecall Gate (Death Is a Teacher, a secret). A style comes by one route only.
-- **Store** (Chaos Coins):
-  - stamina refill, auto seller, portal styles
-  - store pouches: a Loot Pouch (its own autoloot rules), an Orbs Pouch and a Rift Key Pouch that collect their loot from
-    your kills while you carry them; one of each per character, they cannot be traded or dropped and come back after a death
-  - training weapons, server-wide world buffs
-  - name, vocation and sex change, blessings, skull removal
-  - passive tree reset, crafting orbs
+  sees it. Six styles are sold in the store and six are earned only through achievements.
+- **Hunt tracker** (Hunt > Hunt Tracker): experience, loot, supplies and profit per hour for your session, counted by the
+  server. It also shows kills per monster, every item looted and its value, damage and healing per second, and your
+  Chaos drops. Pause, reset or copy a summary.
+- **Map overlay:** press **Tab** to lay a see-through map over the game view, centred on your character, with icons for
+  your party, the temple, depots and NPCs, rift exits and guardians, treasure goblins, world bosses and invasions. Zoom,
+  pan and change the opacity while you keep playing. Inside a rift the layout fills in as you explore it.
+- **Daily rewards and login streaks:** one claim a day per account. Milestones at 7, 14, 30, 60, 100 and 180 days pay
+  orbs, and titles at 30, 100 and 180 days ("the Devoted", "the Relentless", "the Undying"). Grace charges save your
+  streak when you miss a day.
+- **Waystones** with account upgrades (experience, loot, rarity).
+- **Patch notes in the client:** a window with every week's changes. It opens once at login when there is something new.
+- **Talk to NPCs in a window:** right-click an NPC and choose **Talk**, or use it. You walk up to it and the whole
+  conversation runs in a speech bubble over the NPC: its name and portrait, its latest answer, the highlighted words as
+  buttons, a text field, and **Yes**, **No**, **Trade** and **Bye** when they fit. Works with every NPC.
+- **Show off an item in chat:** with the chat input active, **Shift + click** an item you carry. Its name appears in the
+  message as `[Item Name]` (up to 3 per message), in its rarity colour for everyone who reads it. **Hover** it for the
+  full tooltip, hold **Ctrl** to compare. A link lasts 10 minutes.
+- **Inspect a player:** right-click a player and choose **Inspect Player**, or open **Social > Inspect Player** and type a
+  name. You see their outfit, level, class, guild, achievement points, best rift and Vocation Trial, and every worn item
+  with its tooltip. Nothing else: no health, skills or passive tree. Untick **Allow others to inspect me** to keep your
+  gear private.
+
+### Our client
+
+Cinders of Chaos ships its own client, built for these systems:
+- **Ornate UI skin:** iron, gold trim, blood-red and arcane-blue gems on every window, button and bar, with titles and NPC
+  text set in our own serif fonts.
+- **Animated login screen:** the cathedral city over the lava, with embers, ash and a breathing logo. Press any key to start.
+- **Top menu** with Character, Hunt, Adventure, Economy and Social, and a **character plate** in the corner of the map
+  with your portrait, level, health, mana and experience.
+- **Short numbers everywhere:** 12.4k, 2.45M, with the exact value in tooltips.
+- **Combat feedback:** crits, dodges and reflects get their own effects. Elemental weapon damage shows as a separate
+  coloured number with its element's effect. The energy shield is a bar above your health and has its own hit colour.
+- **Cast bar** for cast-time spells, and the **chi pips** of the Monk.
+- **Buff bar** (Character > Buff Bar): your buffs and debuffs as icons with a countdown and stacks, buffs on top and
+  debuffs with a red border below; hover for what each does. Class buffs, world buffs, events and the Vocation Trial nodes
+  are all there, and it is always right because the server sends it.
+- **Party frames** (Hunt > Party Frames): a movable panel with every member's outfit, name in the class colour, level,
+  health and mana, distance and floor, and their first buffs and debuffs. Click to target and follow, right-click for the
+  party menu.
+- **Monster bar:** the tier, modifiers and health of the monster you fight.
+- **Toasts** for everything that matters: an achievement, a finished bounty, a sale on the market.
+- **Sharp sprites** on large screens, with a smooth upscaling filter.
+
+## Fair play
+
+> *"The ladder is long. Climb it with your own hands."*
+> (the Chronicler)
+
+- **Two characters per IP at most.** While a second character is online from the same IP, neither can queue for a
+  dungeon, enter the Infinity Tower or the arena, attack players, or give and take party bonuses.
+- **Staff characters** are left out of every leaderboard, title and reward.
+- **The store sells no gear.** Gear comes from monsters, rifts, bosses, crafting and other players.
+- **Chances mean what they say,** for crits, leech and every proc.
+- **Accounts are protected** with salted password hashes, and the website locks out repeated failed logins.
+- **Season characters** play in their own economy, so a fresh season is a fair race.
 
 ## Coming soon
 
 Being built right now:
-- **New classes:** the **Necromancer** (Lich / Bone Lord), the **Monk** (Shadowfist / Iron Sage) and the **Templar**
-  (Inquisitor / Sentinel).
+- **Level 1000 balance pass** for the Necromancer, Monk and Templar lines (level 300 is measured and tuned).
+- **Buy orders** on the market.
+- **The goblin and wildwood factions** on the live map, and more of our own art across the world.
 
 The full priority list is in [ROADMAP.md](ROADMAP.md).
 
@@ -562,16 +694,16 @@ The full priority list is in [ROADMAP.md](ROADMAP.md).
 |---|---|
 | [server/README.md](server/README.md) | layout, install steps, every Chaos system and its settings |
 | [client/README.md](client/README.md), [client/MANIFEST.md](client/MANIFEST.md) | client modules, base patches, build |
-| [docs/CLASSES.md](docs/CLASSES.md) | class design and implementation status |
+| [docs/CLASSES.md](docs/CLASSES.md) | class design, roles and implementation status |
 | [server/data/spells/README.md](server/data/spells/README.md) | spells and balance tables |
 | [ROADMAP.md](ROADMAP.md) | what's done, in progress and planned |
-| [docs/LAUNCH.md](docs/LAUNCH.md) | **Running a server**: install (`server/tools/install_all.py`), production config, systemd, backups, monitoring, launch checklist |
-| [website/README.md](website/README.md) | the website (ZnoteX with our layout and plugin): installer, class lock on character creation, leaderboards / patch notes / seasons pages, banners and art |
+| [docs/LAUNCH.md](docs/LAUNCH.md) | running a server: install, production config, services, backups, monitoring, launch checklist |
+| [website/README.md](website/README.md) | the account website: installer, layout, class lock on character creation, leaderboards, patch notes and seasons pages, art |
+| [CLAUDE.md](CLAUDE.md) | the checks CI runs, the architecture and the project rules |
 
 **Fonts.** The client's titles, headings and NPC dialogue use free fonts under the SIL Open Font License 1.1:
 Cinzel (The Cinzel Project Authors), Alegreya SC (The Alegreya Project Authors), Alegreya Sans (The Alegreya Sans
 Project Authors), both by Huerta Tipográfica, and IM Fell English (Igino Marini). Their sources and licence texts are
-in `client/fonts-src/`, and the licence texts ship with the client in `data/fonts/chaos/`. The OFL lets them ship with
-the game; they may not be sold on their own.
+in `client/fonts-src/` and ship with the client. The OFL lets them ship with the game; they may not be sold on their own.
 
 This page is kept up to date as features are merged: new systems move from *Coming soon* into their sections.
