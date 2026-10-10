@@ -1,7 +1,8 @@
 -- Test kit: strong gear, uniques, supplies and skills for a test character.
 --
 --   /testkit                 equip yourself (kit chosen by vocation)
---   /testkit <kind>          kind = mage | knight | paladin
+--   /testkit <kind>          kind = mage | knight | berserker | paladin | beastmaster | thief | ninja | monk |
+--                            necromancer | templar
 --   /testkit <kind>, <name>  give it to another online player
 -- Admins only (ChaosAdmin.isAdmin). Scripts can call ChaosTestKit.give(player[, kind]).
 -- Item bonuses of rarity/unique items are applied by the stock rarity script on login or when the
@@ -69,16 +70,84 @@ K.kits = {
 	}
 }
 
-local function kindOf(player)
-	local base = player:getVocation()
-	local demoted = base and base:getDemotion()
-	local id = (demoted and demoted:getId() > 0) and demoted:getId() or (base and base:getId() or 0)
-	if id == 4 then
-		return "knight"
-	elseif id == 3 then
-		return "paladin"
+-- a kit made from another: the slots of `from` with `slots` changed (false = the slot stays empty), other fields replaced
+local function derive(from, change)
+	local kit = {}
+	for k, v in pairs(K.kits[from]) do
+		kit[k] = v
 	end
-	return "mage" -- sorcerer, druid, illusionist (and no vocation)
+	kit.slots = {}
+	for slot, id in pairs(K.kits[from].slots) do
+		kit.slots[slot] = id
+	end
+	for k, v in pairs(change) do
+		if k == "slots" then
+			for slot, id in pairs(v) do
+				kit.slots[slot] = id or nil
+			end
+		else
+			kit[k] = v
+		end
+	end
+	return kit
+end
+
+-- the Berserker wields two-handed weapons only and no shield (add_vocations.py)
+K.kits.berserker = derive("knight", {slots = {
+	[CONST_SLOT_LEFT] = 2440, -- Executioner's Reckoning (unique, two-handed axe)
+	[CONST_SLOT_RIGHT] = false}})
+-- the Beastmaster shoots bows and arrows only
+K.kits.beastmaster = derive("paladin", {slots = {
+	[CONST_SLOT_LEFT] = 27230}, -- Doomtide Longbow (unique)
+	ammo = {id = 18304, count = 100}}) -- crystalline arrow
+-- the Thief line: one-handed swords, the Ranger's armour, shurikens (docs/CLASSES.md). Samurai: the same kit
+K.kits.thief = derive("paladin", {
+	skills = {[SKILL_SWORD] = 120, [SKILL_DISTANCE] = 110, [SKILL_SHIELD] = 90}, magic = 30,
+	slots = {[CONST_SLOT_LEFT] = 8209}, -- Soulreaper (unique)
+	ammo = false, extra = {{id = 7368, count = 100}}}) -- assassin stars (the shuriken spells use them)
+-- the Ninja: a second blade in the shield hand (dual wield, server/src-patches/0002; without it it goes to the backpack)
+K.kits.ninja = derive("thief", {slots = {[CONST_SLOT_RIGHT] = 11395}}) -- Bloodmoon Edge (unique)
+-- the Monk line fights unarmed in the Ranger's armour
+K.kits.monk = derive("paladin", {
+	skills = {[SKILL_FIST] = 120, [SKILL_CLUB] = 110, [SKILL_SHIELD] = 90}, magic = 30,
+	slots = {[CONST_SLOT_LEFT] = false}, ammo = false})
+-- the Necromancer line: wands, rods and the casters' gear (the mage kit with the wand)
+K.kits.necromancer = derive("mage", {druidWeapon = false})
+-- the Templar line: one-handed sword and shield in the Warrior's armour, some magic level for its holy spells
+K.kits.templar = derive("knight", {
+	skills = {[SKILL_SWORD] = 120, [SKILL_CLUB] = 120, [SKILL_SHIELD] = 110}, magic = 25})
+
+-- vocation id -> kit (Chaos.classes.ids, docs/CLASSES.md)
+K.kindByVocation = {
+	[4] = "knight", [8] = "knight", [14] = "berserker",
+	[3] = "paladin", [7] = "paladin", [15] = "beastmaster",
+	[1] = "mage", [5] = "mage", [10] = "mage",
+	[11] = "thief", [12] = "ninja", [13] = "thief",
+	[17] = "monk", [18] = "monk", [19] = "monk",
+	[20] = "necromancer", [21] = "necromancer", [22] = "necromancer",
+	[23] = "templar", [24] = "templar", [25] = "templar"
+}
+
+-- the kit of a vocation id: its own row, then its base class's (Chaos.classes.baseOf), else the mage kit
+function K.kindFor(vocId)
+	local kind = K.kindByVocation[vocId]
+	if kind then
+		return kind
+	end
+	local base = Chaos.classes and Chaos.classes.baseOf and Chaos.classes.baseOf[vocId]
+	return base and K.kindByVocation[base] or "mage"
+end
+
+local function kindOf(player)
+	local voc = player:getVocation()
+	local id = voc and voc:getId() or 0
+	if not K.kindByVocation[id] and voc then
+		local demoted = voc:getDemotion()
+		if demoted and demoted:getId() > 0 then
+			id = demoted:getId()
+		end
+	end
+	return K.kindFor(id)
 end
 
 -- the Illusionist (10) carries the druid's kit since the class rework (docs/CLASSES.md): it gets the rod
@@ -140,18 +209,28 @@ function K.give(player, kind)
 	end
 
 	local equipped, packed = 0, 0
-	for slot, id in pairs(kit.slots) do
-		if slot == CONST_SLOT_LEFT and kind == "mage" and isDruid(player) then
+	local function pack(id)
+		local item = bag and bag:addItem(id, 1)
+		if item and ChaosMakeUnique then
+			ChaosMakeUnique(item)
+		end
+		packed = packed + 1
+	end
+	-- the weapon hand before the shield hand (a Ninja's off-hand blade needs the main one first)
+	for _, slot in ipairs({CONST_SLOT_HEAD, CONST_SLOT_NECKLACE, CONST_SLOT_ARMOR, CONST_SLOT_LEGS, CONST_SLOT_FEET,
+			CONST_SLOT_RING, CONST_SLOT_LEFT, CONST_SLOT_RIGHT}) do
+		local id = kit.slots[slot]
+		if id and slot == CONST_SLOT_LEFT and kit.druidWeapon and isDruid(player) then
 			id = kit.druidWeapon
 		end
-		if player:getSlotItem(slot) then
-			local item = bag and bag:addItem(id, 1)
-			if item and ChaosMakeUnique then
-				ChaosMakeUnique(item)
-			end
-			packed = packed + 1
+		if not id then
+			-- nothing for this slot
+		elseif player:getSlotItem(slot) then
+			pack(id)
 		elseif makeItem(player, id, 1, slot) then
 			equipped = equipped + 1
+		else
+			pack(id) -- the slot refused it (an off-hand blade without the dual-wield patch)
 		end
 	end
 	if kit.ammo then
@@ -164,6 +243,9 @@ function K.give(player, kind)
 	if bag then
 		local supplies = bag:addItem(2002, 1) -- blue backpack with the supplies
 		for _, s in ipairs(SUPPLIES) do
+			(supplies or bag):addItem(s.id, s.count)
+		end
+		for _, s in ipairs(kit.extra or {}) do
 			(supplies or bag):addItem(s.id, s.count)
 		end
 	end

@@ -385,6 +385,16 @@ function M.bushidoRoll(id, now, roll)
 	return 1, false
 end
 
+-- Shadow Mend (thief/shadow_mend.lua): min and max of the self heal, before the engine's own healing modifiers
+function M.shadowMendRange(maxHealth, level, magicLevel, veiled)
+	local h = cfg().shadowMend
+	local avg = (level or 0) * h.perLevel + (magicLevel or 0) * h.perMagicLevel + (maxHealth or 0) * h.maxHealthShare
+	if veiled then
+		avg = avg * h.veiledMultiplier
+	end
+	return math.floor(avg * (1 - h.spread)), math.floor(avg * (1 + h.spread))
+end
+
 -- keep the dual-wield storage (read by server/src-patches/0002) in line with the vocation: login, ascension,
 -- vocation change
 function M.syncDualWield(player)

@@ -1143,7 +1143,8 @@ The tower exists now. The Enter Tower button of the client window (action `enter
 - `server/tests/events_schedule_test.lua` checks the weekday/month-day rules, the bonus product, the calendar ranges sent to the client and the experience callback.
 
 ## Test kit (`admin/testkit.lua`)
-`/testkit [mage|knight|paladin][, player]` (admins only) equips a strong set for the vocation (uniques where they fit), a backpack of supplies (potions, runes, crystal coins, Orbs of Upheaval and Fate), raises the level to 500 and the main skills (magic level 110 for mages, 120 melee or 125 distance), and resets health and mana to the vocation's values. Relog afterwards so the stock rarity script applies the item bonuses.
+`/testkit [kind][, player]` (admins only) equips a strong set for the class (uniques where they fit), a backpack of supplies (potions, runes, crystal coins, Orbs of Upheaval and Fate), raises the level to 500 and the main skills, and resets health and mana to the vocation's values. Relog afterwards so the stock rarity script applies the item bonuses.
+Kinds (`ChaosTestKit.kindByVocation`, picked from the vocation when none is given): `mage` (Mystic, Elementalist, Illusionist with the rod; magic level 110), `knight` (Warrior, Juggernaut; melee 120, shielding 110), `berserker` (the knight set with Executioner's Reckoning, two-handed, no shield), `paladin` (Ranger, Deadeye; crossbow, distance 125), `beastmaster` (Doomtide Longbow and crystalline arrows), `thief` (Thief, Samurai: Soulreaper and the paladin's armour, sword 120, distance 110, magic level 30, 100 assassin stars), `ninja` (the same plus Bloodmoon Edge in the shield hand; without `src-patches/0002` it goes to the backpack), `monk` (Monk line: no weapon, fist 120, club 110, the paladin's armour), `necromancer` (Necromancer line: the mage set with the wand) and `templar` (Templar line: the knight set, sword and club 120, shielding 110, magic level 25).
 
 ## Store (`shop.lua`, `shop_config.lua`)
 The client's Store (menu Economy > Store, module `game_shop`) talks JSON on extended opcode 218 (`ChaosOpcodes.shop`; the base server's own store script uses 201 and is left alone). Prices are in Chaos Coins, kept per account in `chaos_shop_coins`; purchases go to `chaos_shop_history` (both in `sql/chaos.sql`). Staff give coins with `/coins <player>, <amount>` (negative takes them away). Categories and offers are in `shop_config.lua`: Orbs of Upheaval and Fate, supplies, wings, auras and outfit shaders (names and previews read from `data/XML/wings.xml`, `auras.xml`, `shaders.xml`), outfits, mounts and premium time, plus boosts, world buffs, services, convenience unlocks and training weapons (see "Store services"). The two outfit offers give female characters the female look type (910, 1238; they gave the male one before). Wings, auras and shaders are bought once (storages 7100600+); outfits and mounts check whether the player already has them; a delivery that fails refunds the coins. Tested in game: buying an item and wings, refusing a second purchase of the same wings, coins and history in the database.
@@ -3898,11 +3899,13 @@ milestones at +10..+19). Tested in game on the test server (fresh level 1 charac
 - **Kit** (one time): a character logging in for the very first time (`lastLoginSaved` 0, kit storage unset) gets the kit of
   its class: weapon and armour equipped (into the backpack when the slot is taken), a backpack with potions, 20 brown
   mushrooms, rope, shovel, the store's Temple Teleport Scroll (3 uses, same item and attributes as `shop_services.lua`) and
-  500 gold. Kits by class id (`Chaos.classes.ids`): Warrior / Juggernaut / Berserker 4/8/14 jagged sword + dwarven shield +
-  brass set; Ranger / Deadeye / Beastmaster 3/7/15 bow + 100 arrows + chain helmet, ranger's cloak, studded legs; Mystic /
-  Elementalist / Illusionist 1/5/10 wand of vortex (the scorcher is equipped below level 7, the wand waits in the backpack) +
-  spellbook + magician's robe; Thief / Samurai 11/13 dagger + 30 throwing stars + leather set; Ninja 12 the same plus a second
-  dagger. A vocation without a row falls back to its base class (`Chaos.classes.baseOf`, then the engine's demotion), then to
+  500 gold. Kits by class id (`Chaos.classes.ids`): Warrior / Juggernaut 4/8 jagged sword + dwarven shield + brass set;
+  Berserker 14 battle axe (two-handed: the class takes no shield) + brass set; Ranger / Deadeye / Beastmaster 3/7/15 bow + 100
+  arrows + chain helmet, ranger's cloak, studded legs; Mystic / Elementalist / Illusionist 1/5/10 wand of vortex (the scorcher
+  is equipped below level 7, the wand waits in the backpack) + spellbook + magician's robe; Thief 11 dagger + 30 throwing stars
+  + leather set; Ninja 12 the same plus a second dagger; Samurai 13 the same with a katana instead of the dagger; Monk /
+  Shadowfist / Iron Sage 17-19 leather set, no weapon (they fight unarmed); Necromancer / Lich / Bone Lord 20-22 the Mystic's
+  kit; Templar / Inquisitor / Sentinel 23-25 the Warrior's (one-handed sword and shield). A vocation without a row falls back to its base class (`Chaos.classes.baseOf`, then the engine's demotion), then to
   `default` (short sword, wooden shield). Every kit weighs under ~360 oz (a level 1 character carries 400); what does not fit
   goes to the inbox. Existing characters never get a kit by logging in. Messages read the class name from `Vocation(id)`.
 - **The base server's starting items:** `creaturescripts/firstitems.lua` only equips vocation 0, which the kit skips

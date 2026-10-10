@@ -41,7 +41,7 @@ do
 	local ids = Chaos.classes.ids
 	eq(NP.kitNameFor(ids.warrior), "warrior", "warrior")
 	eq(NP.kitNameFor(ids.juggernaut), "warrior", "juggernaut")
-	eq(NP.kitNameFor(ids.berserker), "warrior", "berserker")
+	eq(NP.kitNameFor(ids.berserker), "berserker", "berserker (two-handed, no shield)")
 	eq(NP.kitNameFor(ids.ranger), "ranger", "ranger")
 	eq(NP.kitNameFor(ids.deadeye), "ranger", "deadeye")
 	eq(NP.kitNameFor(ids.beastmaster), "ranger", "beastmaster")
@@ -50,7 +50,7 @@ do
 	eq(NP.kitNameFor(ids.illusionist), "mystic", "illusionist")
 	eq(NP.kitNameFor(ids.thief), "thief", "thief")
 	eq(NP.kitNameFor(ids.ninja), "ninja", "ninja")
-	eq(NP.kitNameFor(ids.samurai), "thief", "samurai")
+	eq(NP.kitNameFor(ids.samurai), "samurai", "samurai (katana)")
 	eq(NP.kitNameFor(0), nil, "vocation 0 is left to the base firstitems.lua")
 	for _, id in pairs(ids) do
 		ok(NP.kitFor(id) ~= nil, "kit for vocation " .. id)
@@ -107,6 +107,16 @@ do
 	eq(bpCount(nj, 2379), 1, "ninja off-hand dagger")
 	eq(nj.role, "ranged", "ninja role inherited (the Royal Paladin's potions)")
 	eq(NP.kitFor(17).role, "ranged", "monk: the Royal Paladin's potions")
+	local bz = NP.kitFor(14)
+	eq(slotOf(bz, "left").id, 2378, "berserker battle axe (two-handed)")
+	eq(slotOf(bz, "right"), nil, "berserker: no shield")
+	eq(bz.role, "melee", "berserker role")
+	local sm = NP.kitFor(13)
+	eq(slotOf(sm, "left").id, 2412, "samurai katana")
+	eq(bpCount(sm, 2399), 30, "samurai keeps the thief's stars")
+	eq(sm.role, "ranged", "samurai role inherited")
+	eq(slotOf(NP.kitFor(23), "right").id, 2525, "templar: sword and shield (the warrior kit)")
+	eq(slotOf(NP.kitFor(20), "left").id, 2190, "necromancer: the caster kit")
 
 	-- copies: changing a returned kit does not change the config
 	k.equip[1].id = 1

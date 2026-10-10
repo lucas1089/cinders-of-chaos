@@ -313,7 +313,9 @@ ICONS = [  # (spell name, theme, glyph)
     # the Illusionist healer pass (cells 278..279)
     ('Mirror Mend', 'water', 'twin'), ('Lucid Reverie', 'arcane', 'ring'),
     # Town Portal, every class (cell 280)
-    ('Town Portal', 'arcane', 'gate')]
+    ('Town Portal', 'arcane', 'gate'),
+    # the Thief line's self heal (cell 281)
+    ('Shadow Mend', 'shadow', 'drop')]
 
 def render(theme, glyph):
     c = COL[theme]

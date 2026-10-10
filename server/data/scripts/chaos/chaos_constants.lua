@@ -703,6 +703,10 @@ Chaos.classes = {
 	-- Samurai Bushido Focus: while the buff lasts, every second without taking damage adds a stack;
 	-- each stack is +perStack critical chance on weapon hits and Iaijutsu, a critical hit does critMultiplier
 	bushido = {durationMs = 30000, stackMs = 1000, perStack = 0.03, maxStacks = 10, startStacks = 3, critMultiplier = 1.5},
+	-- Shadow Mend (spell 98, `saen umh`): the line's self heal. Restores level x perLevel + magic level x perMagicLevel +
+	-- maxHealthShare of the maximum health (+-spread); x veiledMultiplier while Shadow Veil is up (healing does not end
+	-- the veil). Below the Illusionist and near the Ranger line: server/data/spells/README.md "Healing"
+	shadowMend = {perLevel = 1.0, perMagicLevel = 10, maxHealthShare = 0.04, veiledMultiplier = 1.3, spread = 0.1},
 	-- shurikens: the throwing stars of the base server; the attack a shuriken spell uses without one in hand
 	shuriken = {items = {2399, 7368}, defaultAttack = 50},
 	-- spell strikes x (1 + (level - from) / per), at most max (ChaosSpell.thiefLevelScale). A stand-in for the

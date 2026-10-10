@@ -100,6 +100,27 @@ return {
 		templar = { -- the Templar line: a one-handed sword and a shield, the armour the Warrior wears (add_vocations.py)
 			base = "warrior"
 		},
+		berserker = { -- the Berserker wields two-handed weapons only (add_vocations.py): a battle axe, no shield. Not
+			-- based on "warrior": an inherited row would keep the warrior's shield hand
+			equip = {
+				{slot = "left", id = 2378}, -- battle axe (two-handed, no level)
+				{slot = "head", id = 2460}, -- brass helmet
+				{slot = "armor", id = 2465}, -- brass armor
+				{slot = "legs", id = 2478}, -- brass legs
+				{slot = "feet", id = 2643} -- leather boots
+			},
+			backpack = {
+				{id = 7618, count = 10},
+				{id = 7620, count = 5}
+			},
+			role = "melee"
+		},
+		samurai = { -- one katana-style sword: the base server's katana (a one-handed sword, no level) instead of the dagger
+			base = "thief",
+			equip = {
+				{slot = "left", id = 2412} -- katana
+			}
+		},
 		ninja = { -- like the Thief, with a second dagger for the off hand
 			base = "thief",
 			backpack = {
@@ -131,7 +152,7 @@ return {
 	vocations = {
 		[4] = "warrior", -- Warrior
 		[8] = "warrior", -- Juggernaut
-		[14] = "warrior", -- Berserker
+		[14] = "berserker", -- Berserker
 		[3] = "ranger", -- Ranger
 		[7] = "ranger", -- Deadeye
 		[15] = "ranger", -- Beastmaster
@@ -140,7 +161,7 @@ return {
 		[10] = "mystic", -- Illusionist
 		[11] = "thief", -- Thief
 		[12] = "ninja", -- Ninja
-		[13] = "thief", -- Samurai
+		[13] = "samurai", -- Samurai
 		[17] = "monk", -- Monk
 		[18] = "monk", -- Shadowfist
 		[19] = "monk", -- Iron Sage

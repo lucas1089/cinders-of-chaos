@@ -115,7 +115,12 @@ end
 -- go when the character is no Beastmaster any more, and the client learns the vocation without a relog
 function C.afterVocationChange(player)
 	C.syncDualWield(player)
-	C.giveClassOutfits(player, true)
+	-- the donor art outfits are given; the class's default look (class_looks.lua: a stock outfit, so it shows in any
+	-- 10.98 client) is the one put on
+	C.giveClassOutfits(player, false)
+	if ChaosClassLooks and ChaosClassLooks.apply then
+		ChaosClassLooks.apply(player, true)
+	end
 	if ChaosBeastmaster and ChaosBeastmaster.dismissIfNotBeastmaster then
 		ChaosBeastmaster.dismissIfNotBeastmaster(player)
 	end

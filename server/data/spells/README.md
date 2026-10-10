@@ -313,6 +313,7 @@ Beastmaster's Wild Bond (heals companions only) and the Bone Lord's banner (mini
 | 300 | Sentinel (+ aura 0.4%/s) | 92 | 4.2 | 235 | 1000 | 150 | 2668 |
 | 300 | Iron Sage (Chi Ward = absorb) | 136 | 8.2 | 136 | 1000 | 302 | 1630 |
 | 300 | Ranger line | 0 | 0.0 | 0 | 0 | 798 | 0 |
+| 300 | Thief line (Shadow Mend) | 0 | 11.6 | 0 | 0 | 466 | 0 |
 | 300 | Warrior line | 0 | 0.0 | 0 | 0 | 359 | 0 |
 | 1000 | Illusionist (before) | 2205 | 14.2 | 5738 | 8280 | 2222 | 4595 |
 | 1000 | **Illusionist (after)** | 2722 | 15.7 | 6780 | 9290 | 2317 | 4736 |
@@ -322,7 +323,18 @@ Beastmaster's Wild Bond (heals companions only) and the Bone Lord's banner (mini
 | 1000 | Sentinel (+ aura 0.4%/s) | 309 | 14.2 | 825 | 1000 | 373 | 8218 |
 | 1000 | Iron Sage (Chi Ward = absorb) | 302 | 18.1 | 302 | 1000 | 682 | 3620 |
 | 1000 | Ranger line | 0 | 0.0 | 0 | 0 | 1180 | 0 |
+| 1000 | Thief line (Shadow Mend) | 0 | 30.0 | 0 | 0 | 1201 | 0 |
 | 1000 | Warrior line | 0 | 0.0 | 0 | 0 | 733 | 0 |
+
+**Shadow Mend** (spell 98, `saen umh`, the Thief line's self heal; level 25, 80 mana, cooldown 2 s, healing group 1 s; Thief,
+Ninja, Samurai): level + magic level x 10 + 4% of the maximum health (+-10%), x1.3 while Shadow Veil is up; healing does not
+end the veil (`Chaos.classes.shadowMend`, `ChaosClasses.shadowMendRange`, script `chaos/thief/shadow_mend.lua`). Id 98 is free in
+the base server's spells.xml, the client's stock spell list and the Chaos block. Measured on the test server by its words in the
+game client (a male Thief, intelligence 20, no tree, no gear, hurt to 20% before each cast): level 300 magic level 30 (4485
+health) 932 per cast (12 casts, 878-974), 1250 veiled (5 casts); level 1000 magic level 40 (42 with the stat bonus, 14565
+health) 2401 (12 casts, 2271-2497), 3140 veiled (4 casts). Every 2 s that is 466 / 1201 per second on itself: about the Ranger
+line's self heal (798 / 1180), well below the Illusionist (1538 / 2317 on itself, and the line heals nobody else). Potions stay
+the Royal Paladin's.
 
 Before -> after for the Illusionist: on another player +14% / +23% (level 300 / 1000), the party +12% / +18%, heal per mana up,
 self heal unchanged. Lead after: on another player +22% / +33% over the next class (the Mystic and the Necromancer line share the

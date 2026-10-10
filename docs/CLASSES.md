@@ -106,7 +106,7 @@ for free, at the migration.
   - spells (`server/data/spells/chaos/<class>/`)
   - a passive tree (`game_passivetree`, `passivetree_data.lua`)
   - generated spell icons and effects
-  - outfits: pick existing 10.98 looks first; new art later
+  - outfits: a stock look per class (done, "Class looks" below); new art later
   - starting gear and a new-player kit: done in `newplayer_config.lua`, keyed by these class ids. A new class adds a row there or
     calls `ChaosNewPlayer.setKit(name, def, {ids})`; `ChaosNewPlayer.kitFor(vocationId)` returns a class's kit (own row, then its
     base class, then `default`). See server/README.md "New players".
@@ -136,13 +136,13 @@ for free, at the migration.
   `Chaos.classes.ascension.choices` is keyed by base vocation, so the other base classes are added there in phase 2.
 - **Client** (`client/base-patches/0016-chaos-vocation-ids.patch`): bytes 6 / 16 / 26 become server ids 11 / 12 / 13; Thief, Ninja and
   Samurai are named wherever the client names vocations; the helper treats the line as its class 6.
-- **Kit**: 9 spells (ids 236, 238-245; `server/data/spells/chaos/thief|ninja|samurai`), evasion, stealth, Poison Blades, scripted dual
+- **Kit**: 10 spells (ids 236, 238-245, and 98 Shadow Mend, the self heal of phase 2b; `server/data/spells/chaos/thief|ninja|samurai`), evasion, stealth, Poison Blades, scripted dual
   wield, counter stance, Bushido stacks (`server/data/scripts/chaos/thief_combat.lua`). Spells, numbers and the balance measurement
   are in `server/data/spells/README.md` ("Thief line"). Shurikens are the base server's throwing star (2399) and assassin star (7368),
   open to every vocation already; the shuriken spells use them when they are in hand.
 - **Outfits** (look types 1505-1510, from a third donor sprite set, see `server/data/monster/CUSTOM_MONSTERS.md`): Ninja gets
   Shadow Ninja, Crimson Ninja and Masked Ninja (colourable); Samurai gets Oni Samurai, Ronin and Dark Samurai. Ascending gives the
-  class's three and puts on the first; characters already in the class get them at their next login (look unchanged). They stay
+  class's three (since phase 2b the class's stock look is put on instead, see "Class looks"); characters already in the class get them at their next login (look unchanged). They stay
   after a class change. List in `Chaos.classes.outfits` (`chaos_constants.lua`), code in `ascension.lua`
   (`giveClassOutfits`), outfits.xml entries for both sexes by `server/tools/install_outfits.py` (install step `outfits`).
 
@@ -151,7 +151,7 @@ Limits of phase 1:
   (and end it). A monster that sees invisible creatures is handled the same way.
 - Dual wield needs the engine patch; without it a Ninja fights with one blade and gets no off-hand strike. Both blades' item bonuses
   count. A character that stops being a Ninja keeps a sword already in the shield hand until it moves it (it then cannot put it back).
-- The line has no healing spells of its own. Potions: since the class pass of 2026-10 `add_vocations.py` adds the line (11-13) to
+- The line had no healing spell of its own until Shadow Mend (phase 2b). Potions: since the class pass of 2026-10 `add_vocations.py` adds the line (11-13) to
   the Royal Paladin's potion lists (the line wears what the Paladin wears; see "Item, spell and potion lists"); before, the
   strongest potions refused it. The shared Chaos spells (Flickerdash, Banner Call, Soulward, Hunter's
   Instinct) and the stock spells do not list the line either. These were left alone in phase 1 (existing spells and base scripts).
@@ -248,7 +248,6 @@ Open for the Necromancer:
   only (`ChaosClasses.keystoneKey`), no per-class starts yet, so the line has no tree entry, like the Thief line.
   Until then `necro_config.lua levelScale` stands in for it.
 - New effects (`bone_spear`, `bone_burst`, `bone_aura`) are proposed, not generated; the spells use existing ones.
-- Outfits, the line in `admin/testkit.lua`.
 - Minions in the arena, the guild siege and rifts follow those modes' summon rules (not checked).
 
 ### Monk (C6, phase B: tested in game)
@@ -287,7 +286,7 @@ Open for the Monk:
 - **Passive tree**: no per-class trees exist yet. Proposal when the tree is reworked: a Monk start, a Shadowfist path ending in a keystone
   "Hundred Hands" (focus crits also add a chi) and an Iron Sage path ending in "Stone Body" (Chi Ward on yourself is 50% stronger and
   Mantra of Stone also gives 10% attack speed). Until then `keystoneKey` is nil for 17-19 and the level factor stands in for the tree.
-- Fist weapons (new items), outfits, a stun on players (only monsters are stunned), the line in `admin/testkit.lua`.
+- Fist weapons (new items), a stun on players (only monsters are stunned).
 
 ### Templar (C7, phase B: tested in game)
 
@@ -326,7 +325,6 @@ Open for the Templar:
   Templar start and two paths with a keystone each: Inquisitor "Divine Verdict" (Radiant Strikes have a chance to apply
   Judgement), Sentinel "Bastion" (aura +4% and +1 sqm, Aegis of Faith also covers the party at half strength). Until then the
   line's spells carry the level factor of the Thief line (x1 at level 300 to x2 at level 1000).
-- Outfits, the line in `admin/testkit.lua`.
 - The aura is invisible to the client except for a holy effect every 4 s around the Templar; a status icon needs client work.
 
 ### Illusionist healer pass
@@ -412,8 +410,8 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
   shadow; Samurai: crit, parry, Bushido). Until then the vocation has no class entry in the tree. When it exists, re-tune or drop
   `Chaos.classes.spellLevelScale` and measure again at levels 300 and 1000. Per-ascended keystone variants (Juggernaut vs Berserker,
   Deadeye vs Beastmaster) would need new variants in the tree data; today both classes of a line share their old vocation's.
-- Healing for the Thief line (a spell; the potions are done: the Royal Paladin's), starting gear for every class,
-  outfits, the classes in `admin/testkit.lua` (it already sorts Berserker / Beastmaster with the knight / paladin kits).
+- Done: healing for the Thief line, class looks, starting gear for every class, every class in `admin/testkit.lua`
+  (see "Class looks, starting gear, test kit and Thief healing (phase 2b)" below).
 - The full rebalance at levels 300 and 1000 with passive trees; the client's passive tree class texts (`vocationSpecials`) still
   describe the old vocations. (Done: the base server scripts that test vocation ids, see "Base scripts" below.)
 
@@ -426,6 +424,42 @@ Sorcerer, the Illusionist as Druid (ascended classes as the promoted one). Per-c
 Familiar, Monk: Druid Familiar, Illusionist: Illusionist Familiar), exercise weapons by skill, NPC spell teachers follow
 `spells.xml`, the Oracles offer Warrior / Ranger / Mystic / Thief, the party bonus counts at most 5 lines. Details, the
 reviewed scripts and the tests: server/README.md "Base scripts and the classes".
+
+### Class looks, starting gear, test kit and Thief healing (phase 2b)
+
+- **Thief healing**: Shadow Mend (spell 98, `saen umh`, level 25, 80 mana, cooldown 2 s; Thief, Ninja, Samurai): a self heal of
+  level + magic level x 10 + 4% of the maximum health, 30% more while Shadow Veil is up (healing does not end the veil). Numbers in
+  `Chaos.classes.shadowMend`, rule `ChaosClasses.shadowMendRange`, script `server/data/spells/chaos/thief/shadow_mend.lua`, icon cell
+  281 (`client/tools/gen_spell_icons.py`). Measured: 466 / 1201 per second on itself at levels 300 / 1000 (Ranger line 798 / 1180,
+  Illusionist 1538 / 2317); it heals nobody else, so the Illusionist stays the best healer (`server/data/spells/README.md` "Healing").
+- **Class looks** (`server/data/scripts/chaos/class_looks_core.lua`, glue `class_looks.lua`): every class has a stock outfit of the
+  base server (no new art; in its outfits.xml for both sexes and in the 10.98 client's dat; only `premium="no"` outfits, since
+  `freePremium` is off, and none that the store, achievements or seasons give):
+
+  | Line | Base class | Ascended A | Ascended B |
+  |---|---|---|---|
+  | Warrior | Warrior: Knight (131 / 139) | Juggernaut: Champion (633 / 632) | Berserker: Lion of War (919 / 920) |
+  | Ranger | Ranger: Ranger (684 / 683) | Deadeye: Armoured Archer (915 / 916) | Beastmaster: Beastmaster (637 / 636) |
+  | Mystic | Mystic: Mage (130 / 138) | Elementalist: Flamefury Mage (925 / 926) | Illusionist: Conjurer (634 / 635) |
+  | Thief | Thief: Frost Tracer (913 / 914) | Ninja: Skullhunter (1206 / 1205) | Samurai: Decaying Defender (921 / 922) |
+  | Monk | Monk: Ancient Aucar (911 / 912) | Shadowfist: Fiend Slayer (1373 / 1372) | Iron Sage: Winter Warden (853 / 852) |
+  | Necromancer | Necromancer: Spirit Caller (699 / 698) | Lich: Darklight Evoker (923 / 924) | Bone Lord: Puppeteer (697 / 696) |
+  | Templar | Templar: Herald (984 / 985) | Inquisitor: Hand of Inquisition (1014 / 1015) | Sentinel: Celestial Avenger (1188 / 1189) |
+
+  (male / female look types). Hooks: the first login of a character (character creation: the website and the engine only set a
+  generic look) gives the class's look and puts it on; every class change (`ChaosClasses.afterVocationChange`: ascension, the free
+  switch, the store's Vocation Change) gives the new class's look and puts it on, colours and mount kept, no addons; every other
+  login only gives missing looks of the class and its base class, the worn look stays. Nothing is ever taken away. The donor art
+  outfits of `Chaos.classes.outfits` (Ninja and Samurai sets, Warborn, Hooded Thief, ...) are still given, but no longer put on at a
+  class change: the stock look is the default. Tested in game (fresh characters of every new line, a free account; the class
+  change Thief -> Ninja).
+- **Starting gear** (`newplayer_config.lua`, server/README.md "New players"): every class id has a row. New: the Berserker gets a
+  battle axe (two-handed) and no shield, the Samurai a katana instead of the dagger. Monk line unarmed in light armour, Necromancer
+  line the Mystic's kit, Templar line the Warrior's. Tested in game for the Berserker, Samurai, Monk, Necromancer and Templar.
+- **Test kit** (`admin/testkit.lua`, server/README.md "Test kit"): kinds by vocation (`ChaosTestKit.kindByVocation`): `berserker`
+  (two-handed, no shield), `beastmaster` (bow and arrows), `thief` (Thief, Samurai), `ninja` (second blade), `monk`, `necromancer`,
+  `templar`, besides `mage`, `knight`, `paladin`.
+- Tests: `server/tests/class_kit_test.lua`, `server/tests/newplayer_test.lua`.
 
 ## More class ideas for later
 
