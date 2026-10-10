@@ -671,23 +671,33 @@ function R.coins(value)
 end
 
 -- odds of the next key: {chance = percent of a key, nextTier = percent of those that are tier + 1}
-function R.keyOdds(cfg, modCount)
+-- am (optional): the Rift Atlas modifiers of the key user (R.atlasMods): keyChance adds to the chance and to its cap,
+-- keyUpgrade to nextTier; the Ashen Ascent keystone halves the chance (keyChanceMult) and makes every key tier + 1
+function R.keyOdds(cfg, modCount, am)
 	local k = cfg.keyDrop
 	modCount = modCount or 0
-	return {
-		chance = math.min(k.max, k.base + k.perMod * modCount),
-		nextTier = math.min(100, k.nextTier + k.nextPerMod * modCount)
+	local extra = am and am.keyChance or 0
+	local odds = {
+		chance = math.min(k.max + extra, k.base + k.perMod * modCount + extra),
+		nextTier = math.min(100, k.nextTier + k.nextPerMod * modCount + (am and am.keyUpgrade or 0))
 	}
+	if am and am.keyChanceMult then
+		odds.chance = odds.chance * am.keyChanceMult
+	end
+	if am and am.keyAscend then
+		odds.nextTier = 100
+	end
+	return odds
 end
 
--- nil, or the new key {tier, mods}
-function R.rollKeyDrop(cfg, tier, modCount, rand)
-	local odds = R.keyOdds(cfg, modCount)
+-- nil, or the new key {tier, mods}. am (optional): as R.keyOdds; betterMods rolls the modifier count as a next-tier key
+function R.rollKeyDrop(cfg, tier, modCount, rand, am)
+	local odds = R.keyOdds(cfg, modCount, am)
 	if not chance(odds.chance, rand) then
 		return nil
 	end
 	local up = chance(odds.nextTier, rand) and tier < cfg.maxTier
-	return R.rollKey(cfg, up and tier + 1 or tier, rand, up)
+	return R.rollKey(cfg, up and tier + 1 or tier, rand, up or (am and am.betterMods) or false)
 end
 
 -- per 100000 chance of a tier-1 key from a normal kill (0 when the kill does not qualify)
@@ -903,6 +913,11 @@ end
 function R.startLives(cfg, players, fx)
 	local l = cfg.lives or {base = 3, perExtraPlayer = 1, min = 1}
 	local n = l.base + l.perExtraPlayer * (math.max(1, players or 1) - 1) - (fx and fx.fragile or 0)
+	-- Rift Atlas (R.applyAtlasFx): extra lives, or the Lone Ember keystone's single life
+	if fx and fx.oneLife then
+		return 1
+	end
+	n = n + (fx and fx.atlasLives or 0)
 	return math.max(l.min or 1, n)
 end
 
@@ -1013,6 +1028,128 @@ function R.capFactor(cfg, st, level, base, minutes)
 		return (room + (base - room) * e.overCapMult) / base
 	end
 	return e.overCapMult
+end
+
+-- ===================================================================== rift atlas
+-- The Rift Atlas (atlas.lua, atlas_core.lua, atlas_config.lua) plugs in through R.hooks; with no hook set every
+-- function below leaves the run exactly as before. am = the flat modifiers of atlas_core.lua A.resolve (nil = none):
+-- density, elite, time, modReward, goldMult, keyChance, keyUpgrade, fragments, chaos, divine, rolls, goblin, coffer,
+-- lives, betterMods, themeWeights, and the keystone flags oneLife, rewardMult, guardianMult, orbsMult, keyChanceMult,
+-- keyAscend, timeMult.
+--   hooks.atlasMods(player, ctx) -> am      ctx = {theme = name, tier = number, omen = kind}
+--   hooks.onSealed(info)                    info = {theme, tier, omen, deaths, secs, guids = {guid, ...}}
+R.hooks = R.hooks or {}
+
+function R.atlasMods(player, ctx)
+	local f = R.hooks.atlasMods
+	if not f or not player then
+		return nil
+	end
+	local ok, am = pcall(f, player, ctx or {})
+	return ok and type(am) == "table" and am or nil
+end
+
+function R.atlasSealed(info)
+	local f = R.hooks.onSealed
+	if f then
+		pcall(f, info)
+	end
+end
+
+-- the theme of a new rift: even odds, each theme's weight raised by its attunement (weights = {[name] = percent});
+-- without weights exactly one rand(1, #themes) as before
+function R.pickTheme(cfg, rand, weights)
+	local any = false
+	for _, v in pairs(weights or {}) do
+		if v > 0 then
+			any = true
+		end
+	end
+	if not any then
+		return cfg.themes[rand(1, #cfg.themes)]
+	end
+	local rows = {}
+	for _, th in ipairs(cfg.themes) do
+		rows[#rows + 1] = {th, 100 + floor(weights[th.name] or 0)}
+	end
+	return weighted(rows, rand)
+end
+
+-- the run-shaping part of am on the effects of R.effects (before R.plan / R.newRun / R.startLives)
+function R.applyAtlasFx(fx, am)
+	if not am then
+		return fx
+	end
+	fx.packMult = (fx.packMult or 1) * (1 + (am.density or 0) / 100)
+	fx.elite = (fx.elite or 1) * (1 + (am.elite or 0) / 100)
+	fx.timeMult = (fx.timeMult or 1) * (1 + (am.time or 0) / 100) * (am.timeMult or 1)
+	fx.gilded = math.min(100, (fx.gilded or 0) + (am.goblin or 0))
+	fx.coffer = math.min(100, (fx.coffer or 0) + (am.coffer or 0))
+	fx.boss = (fx.boss or 1) * (am.guardianMult or 1)
+	fx.atlasLives = am.lives or 0
+	fx.oneLife = am.oneLife or nil
+	return fx
+end
+
+-- the modifiers' reward bonuses (R.bonuses) x (1 + modReward / 100)
+function R.atlasBonus(b, am)
+	local m = am and am.modReward or 0
+	if m <= 0 then
+		return b
+	end
+	for k, v in pairs(b) do
+		b[k] = floor(v * (1 + m / 100) + 0.5)
+	end
+	return b
+end
+
+-- one finisher's chest (R.reward) with the atlas: own = the finisher's own am (gold, orbs, item rolls), run = the key
+-- user's am (the keystone's rewardMult and orbsMult, shared by every finisher). Changes and returns r.
+function R.atlasReward(cfg, r, own, run, rand)
+	if not own and not run then
+		return r
+	end
+	local mult = 1 + (run and run.rewardMult or 0) / 100
+	local orbs = run and run.orbsMult or 1
+	own = own or {}
+	r.gold = floor(r.gold * (1 + (own.goldMult or 0) / 100) * mult)
+	r.chaos = roundChance((r.chaos + (own.chaos or 0)) * mult * orbs, rand)
+	r.divine = roundChance((r.divine + (own.divine or 0)) * mult * orbs, rand)
+	r.rolls = math.max(1, roundChance((r.rolls + (own.rolls or 0)) * mult, rand))
+	return r
+end
+
+-- Omen Fragments of a chest x (1 + fragments / 100) (fractions a chance of one more)
+function R.atlasFragments(n, am, rand)
+	local f = am and am.fragments or 0
+	if n <= 0 or f <= 0 then
+		return n
+	end
+	return roundChance(n * (1 + f / 100), rand)
+end
+
+-- the HUD line of a run's atlas ("Atlas: Lone Ember, +12% packs, +1 life"), or nil
+function R.atlasNote(am)
+	if not am then
+		return nil
+	end
+	local parts = {}
+	if am.keystone then
+		parts[#parts + 1] = am.keystone
+	end
+	if (am.density or 0) > 0 then
+		parts[#parts + 1] = "+" .. floor(am.density) .. "% packs"
+	end
+	if (am.time or 0) > 0 then
+		parts[#parts + 1] = "+" .. floor(am.time) .. "% time"
+	end
+	if (am.lives or 0) > 0 then
+		parts[#parts + 1] = "+" .. am.lives .. " " .. (am.lives == 1 and "life" or "lives")
+	end
+	if #parts == 0 then
+		return nil
+	end
+	return "Atlas: " .. table.concat(parts, ", ")
 end
 
 return R

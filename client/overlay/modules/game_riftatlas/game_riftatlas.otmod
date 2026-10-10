@@ -1,0 +1,13 @@
+Module
+  name: game_riftatlas
+  description: Rift Atlas - the rift progression tree, its completion grid and the respec (server atlas.lua, extended opcode 210)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ riftatlasview, riftatlas ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1002
+  @onLoad: init()
+  @onUnload: terminate()

@@ -74,6 +74,8 @@ ChaosOpcodes = {
 	cosmetics = 225, -- Cosmetics window, chat name colours, loot label accent (client game_cosmetics; cosmetics*.lua)
 	bossSpawns = 217 -- Boss Spawns window: every boss by category, place and respawn (client game_bossspawns; bossspawns*.lua)
 }
+-- Rift Atlas window: completion grid, node map, allocate / refund (client game_riftatlas; atlas.lua, atlas_core.lua, atlas_config.lua)
+ChaosOpcodes.riftAtlas = 210
 
 -- ---------------------------------------------------------------------------
 -- Item custom attributes in item packets (engine patch server/src-patches/0003-item-custom-attributes.patch, client
@@ -167,6 +169,8 @@ Chaos.tables = {
 	-- the Pix / PayPal donation of an order (shop_payments.lua, the website's pay/ worker and webhook)
 	coinPayments = "chaos_coin_payments"
 }
+-- Rift Atlas: one row per character, completed grid cells and allocated nodes (atlas.lua, sql/chaos_rift_atlas.sql)
+Chaos.tables.riftAtlas = "chaos_rift_atlas"
 
 -- ---------------------------------------------------------------------------
 -- Module settings

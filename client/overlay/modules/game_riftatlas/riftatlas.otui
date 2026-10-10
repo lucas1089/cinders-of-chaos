@@ -1,0 +1,327 @@
+// Rift Atlas window (game_riftatlas): the node map (drag to pan, wheel or +/- to zoom), the selected node, the
+// completion grid and the totals. Node frames and links are the passive tree's art; icons and the backdrop come from
+// client/tools/gen_riftatlas_art.py. Styles from client_chaos_theme.
+
+RiftAtlasNode < UIWidget
+  anchors.centerIn: parent
+  phantom: false
+  focusable: false
+
+RiftAtlasLinkNormal < UIWidget
+  anchors.centerIn: parent
+  image-source: /images/passivetree/LineConnectorNormal
+  phantom: true
+
+RiftAtlasLinkIntermediate < UIWidget
+  anchors.centerIn: parent
+  image-source: /images/passivetree/LineConnectorIntermediate
+  phantom: true
+
+RiftAtlasLinkActive < UIWidget
+  anchors.centerIn: parent
+  image-source: /images/passivetree/LineConnectorActive
+  phantom: true
+
+RiftAtlasSelect < UIWidget
+  anchors.centerIn: parent
+  border-width: 2
+  border-color: #f6cf72
+  phantom: true
+
+RiftAtlasCell < UIWidget
+  size: 12 12
+  text-align: center
+  background-color: #241e24
+  border-width: 1
+  border-color: #3a3339
+  phantom: false
+  focusable: false
+
+RiftAtlasGridLabel < UILabel
+  font: verdana-11px-antialised
+  color: #8c8070
+  text-auto-resize: true
+  phantom: true
+
+RiftAtlasTotal < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: left
+  text-wrap: true
+  text-auto-resize: true
+  phantom: true
+
+RiftAtlasZoomButton < ChaosButton
+  size: 26 22
+
+ChaosMainWindow
+  id: riftAtlasWindow
+  size: 980 620
+  !text: tr('Rift Atlas')
+  @onEscape: modules.game_riftatlas.hide()
+
+  ChaosPanelDark
+    id: mapFrame
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.bottom: closeButton.top
+    margin-bottom: 8
+    width: 640
+    padding: 0
+
+  UIWidget
+    id: map
+    anchors.fill: mapFrame
+    margin: 3
+    clipping: true
+    phantom: false
+    focusable: false
+    draggable: true
+    background-color: #060508
+
+    UIWidget
+      id: canvas
+      anchors.centerIn: parent
+      size: 100 100
+      phantom: true
+
+      UIWidget
+        id: bg
+        anchors.fill: parent
+        image-source: /images/riftatlas/background
+        phantom: true
+
+      UIWidget
+        id: links
+        anchors.fill: parent
+        phantom: true
+
+      UIWidget
+        id: nodes
+        anchors.fill: parent
+        phantom: true
+
+  RiftAtlasZoomButton
+    id: zoomIn
+    anchors.top: mapFrame.top
+    anchors.right: mapFrame.right
+    margin-top: 8
+    margin-right: 8
+    text: +
+    !tooltip: tr('Zoom in (mouse wheel)')
+    @onClick: modules.game_riftatlas.zoom(1)
+
+  RiftAtlasZoomButton
+    id: zoomOut
+    anchors.top: zoomIn.bottom
+    anchors.right: zoomIn.right
+    margin-top: 4
+    text: -
+    !tooltip: tr('Zoom out (mouse wheel)')
+    @onClick: modules.game_riftatlas.zoom(-1)
+
+  ChaosButton
+    id: centerButton
+    anchors.top: zoomOut.bottom
+    anchors.right: zoomIn.right
+    margin-top: 4
+    size: 56 22
+    !text: tr('Centre')
+    @onClick: modules.game_riftatlas.center()
+
+  ChaosLabelDim
+    id: mapHint
+    anchors.left: mapFrame.left
+    anchors.bottom: mapFrame.bottom
+    margin-left: 10
+    margin-bottom: 8
+    text-auto-resize: true
+    phantom: true
+    !text: tr('Drag to move, wheel to zoom. Click a node to select it.')
+
+  ChaosTitlePlate
+    id: pointsPlate
+    anchors.top: parent.top
+    anchors.left: mapFrame.right
+    anchors.right: parent.right
+    margin-left: 12
+    height: 34
+
+    UILabel
+      id: pointsValue
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 12
+      font: sans-bold-16px
+      color: #f6cf72
+      text-auto-resize: true
+      phantom: true
+
+    UILabel
+      id: pointsText
+      anchors.left: pointsValue.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 8
+      font: verdana-11px-rounded
+      color: #e8b84a
+      text-auto-resize: true
+      phantom: true
+      !text: tr('atlas points to spend')
+
+  ChaosLabelDim
+    id: earnedLabel
+    anchors.top: pointsPlate.bottom
+    anchors.left: pointsPlate.left
+    margin-top: 4
+    margin-left: 4
+    text-auto-resize: true
+
+  ChaosPanel
+    id: nodePanel
+    anchors.top: earnedLabel.bottom
+    anchors.left: pointsPlate.left
+    anchors.right: pointsPlate.right
+    margin-top: 6
+    height: 168
+
+    UILabel
+      id: nodeName
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      font: verdana-11px-rounded
+      color: #f6cf72
+      text-auto-resize: true
+      phantom: true
+
+    ChaosLabelDim
+      id: nodeKind
+      anchors.top: nodeName.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 2
+
+    ChaosLabel
+      id: nodeText
+      anchors.top: nodeKind.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      text-wrap: true
+      text-auto-resize: true
+
+    ChaosLabelDim
+      id: nodeStatus
+      anchors.bottom: allocButton.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-bottom: 4
+      text-wrap: true
+      text-auto-resize: true
+
+    ChaosButton
+      id: allocButton
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      width: 64
+      !text: tr('Allocate')
+      @onClick: modules.game_riftatlas.allocateSelected()
+
+    ChaosButton
+      id: refundGold
+      anchors.bottom: parent.bottom
+      anchors.left: allocButton.right
+      margin-left: 4
+      width: 104
+      @onClick: modules.game_riftatlas.refundSelected('gold')
+
+    ChaosButton
+      id: refundOrb
+      anchors.bottom: parent.bottom
+      anchors.left: refundGold.right
+      anchors.right: parent.right
+      margin-left: 4
+      @onClick: modules.game_riftatlas.refundSelected('orb')
+
+  ChaosLabel
+    id: gridTitle
+    anchors.top: nodePanel.bottom
+    anchors.left: pointsPlate.left
+    margin-top: 8
+    text-auto-resize: true
+    color: #e8b84a
+
+  UIWidget
+    id: grid
+    anchors.top: gridTitle.bottom
+    anchors.left: pointsPlate.left
+    anchors.right: pointsPlate.right
+    margin-top: 4
+    height: 142
+    phantom: true
+
+  ChaosLabel
+    id: totalsTitle
+    anchors.top: grid.bottom
+    anchors.left: pointsPlate.left
+    margin-top: 6
+    text-auto-resize: true
+    color: #e8b84a
+    !text: tr('Your atlas')
+
+  ChaosPanelDark
+    id: totalsFrame
+    anchors.top: totalsTitle.bottom
+    anchors.left: pointsPlate.left
+    anchors.right: pointsPlate.right
+    anchors.bottom: closeButton.top
+    margin-top: 3
+    margin-bottom: 8
+
+  UIScrollArea
+    id: totals
+    anchors.top: totalsFrame.top
+    anchors.left: totalsFrame.left
+    anchors.right: totalsScroll.left
+    anchors.bottom: totalsFrame.bottom
+    margin: 5
+    layout:
+      type: verticalBox
+    vertical-scrollbar: totalsScroll
+    auto-focus: none
+
+  ChaosScrollBar
+    id: totalsScroll
+    anchors.top: totalsFrame.top
+    anchors.right: totalsFrame.right
+    anchors.bottom: totalsFrame.bottom
+    margin: 3
+    step: 14
+    pixels-scroll: true
+
+  UILabel
+    id: statusLabel
+    anchors.left: parent.left
+    anchors.right: resetButton.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    margin-right: 8
+    font: verdana-11px-antialised
+    color: #8c8070
+    text-align: left
+
+  ChaosButton
+    id: resetButton
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    width: 90
+    !text: tr('Reset all')
+    @onClick: modules.game_riftatlas.resetAll()
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 80
+    !text: tr('Close')
+    @onClick: modules.game_riftatlas.hide()

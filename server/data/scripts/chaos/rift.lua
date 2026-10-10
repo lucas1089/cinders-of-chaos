@@ -510,6 +510,9 @@ local function hudData(run)
 	if waiting > 0 and run.state == "running" then
 		notes[#notes + 1] = string.format("%d fallen player%s may still return.", waiting, waiting == 1 and "" or "s")
 	end
+	if run.atlasNote then
+		notes[#notes + 1] = run.atlasNote -- Rift Atlas
+	end
 	return {tier = run.key.tier, theme = run.themeName, left = R.timeLeft(run, os.time()), limit = run.limit or C().timeLimit,
 		total = run.total, killed = run.killed, bossAt = run.bossAt, boss = run.boss, state = run.state,
 		bossName = R.nameOf(run.looks, run.plan.boss, true) or run.plan.boss, -- the name the guardian shows
@@ -643,7 +646,7 @@ finishExit = function(run)
 				else
 					RF.pending[guid] = RF.pending[guid] or {}
 					table.insert(RF.pending[guid], {tier = run.key.tier, bonus = run.bonus, types = run.typeNames, boss = run.plan.boss,
-						omen = run.omen})
+						omen = run.omen, theme = run.themeName, atlasRun = run.atlasRun}) -- theme, atlasRun: Rift Atlas
 				end
 			end
 		end
@@ -771,6 +774,11 @@ function RF.deliver(player, run, auto)
 	local data = run.key and {tier = run.key.tier, bonus = run.bonus, types = run.typeNames, boss = run.plan.boss,
 		omen = run.omen} or run
 	local r = data.omen and R.omenReward(cfg) or R.reward(cfg, data.tier, data.bonus, rand)
+	-- Rift Atlas: the finisher's own atlas (gold, orbs, rolls, fragments) and the run's keystone (shared by all)
+	local atlasOwn = not data.omen and R.atlasMods(player, {theme = run.themeName or run.theme, tier = data.tier}) or nil
+	if not data.omen then
+		R.atlasReward(cfg, r, atlasOwn, run.atlasRun, rand)
+	end
 	local asTier = data.omen and cfg.omen.reward.asTier or data.tier
 	local inbox = false
 	if r.gold > 0 then
@@ -854,6 +862,7 @@ function RF.deliver(player, run, auto)
 	end
 	-- Omen Fragments from a sealed rift of omen.minTier or more
 	local frags = not data.omen and R.omenFragments(cfg, data.tier, data.bonus, rand) or 0
+	frags = R.atlasFragments(frags, atlasOwn, rand) -- Rift Atlas
 	if frags > 0 and omenItemReady(cfg.omen.fragment.id) then
 		stack(cfg.omen.fragment.id, frags)
 	end
@@ -925,7 +934,7 @@ local function success(run, pos)
 		chestPos:sendMagicEffect(CONST_ME_FIREWORK_RED)
 	end
 	-- the next key: to the player who used the key, else a random finisher
-	local drop = not run.omen and R.rollKeyDrop(cfg, run.key.tier, #run.key.mods, rand) or nil
+	local drop = not run.omen and R.rollKeyDrop(cfg, run.key.tier, #run.key.mods, rand, run.atlasRun) or nil
 	if drop then
 		local target
 		for id, e in pairs(run.players) do
@@ -948,6 +957,13 @@ local function success(run, pos)
 		end
 	end
 	local secs = os.time() - run.startTime
+	-- Rift Atlas: first completions (theme x tier, flawless, swift, omen) for every finisher
+	local atlasGuids = {}
+	for guid in pairs(run.finishers) do
+		atlasGuids[#atlasGuids + 1] = guid
+	end
+	R.atlasSealed({theme = run.themeName, tier = run.key.tier, omen = run.omen, deaths = run.deaths or 0, secs = secs,
+		guids = atlasGuids})
 	if run.omen then
 		say(run, string.format("The %s guardian falls in %d:%02d. %s", R.omenKind(cfg, run.omen).name, math.floor(secs / 60),
 			secs % 60, run.endText))
@@ -1507,7 +1523,9 @@ function RF.open(player, item)
 		return false
 	end
 	cleanSlot(L)
-	local th = cfg.themes[rand(1, #cfg.themes)]
+	-- Rift Atlas (atlas.lua): the key user's attunements weigh the theme
+	local atlasPick = R.atlasMods(player, {tier = key.tier})
+	local th = R.pickTheme(cfg, rand, atlasPick and atlasPick.themeWeights)
 	local rooms = R.pickRooms(cfg, rand)
 	theme(L, th, rooms)
 
@@ -1520,10 +1538,14 @@ function RF.open(player, item)
 
 	RF.nextId = RF.nextId + 1
 	local fx = R.effects(cfg, key.mods, key.tier)
+	-- Rift Atlas: the key user's atlas shapes the run (packs, time, lives, boons, guardian, reward bonuses, next key)
+	local am = R.atlasMods(player, {theme = th.name, tier = key.tier})
+	R.applyAtlasFx(fx, am)
 	local plan = R.plan(cfg, key.tier, fx, #group, types, rooms, rand)
 	local run = R.newRun(cfg, os.time(), plan.total, plan.bossAt, fx)
 	run.id, run.slot, run.L, run.key, run.fx, run.plan = RF.nextId, slot, L, key, fx, plan
-	run.bonus = R.bonuses(cfg, key.mods, key.tier)
+	run.bonus = R.atlasBonus(R.bonuses(cfg, key.mods, key.tier), am)
+	run.atlasRun, run.atlasNote = am, R.atlasNote(am)
 	run.players, run.size, run.themeName, run.rooms = {}, #group, th.name, rooms
 	run.lives = R.startLives(cfg, #group, fx)
 	run.livesMax, run.deaths, run.revive = run.lives, 0, {}

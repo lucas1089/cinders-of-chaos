@@ -285,10 +285,12 @@ working directory, as with the rest of the base server libs).
 | game_invasion | `invasion.lua`, `invasion_core.lua`, `invasion_config.lua`, `worldevents.lua` | 251 (server -> client; `query` / `calendar` back), Adventure > Events, `/invasion` | Invasions (waves at a town or hunting ground, breach meter, boss, contribution rewards, Defender board, Victory buff, occupation) and the world events Chaos Storm, Wandering Merchant and Golden Hour; HUD and upcoming events window; toasts with action `invasion` on 79; tested in game on a test area (see "Invasions and world events"). |
 | game_energyshield | `data/lib/chaos_energy_shield.lua`, `item_mods.lua`; engine patch 0015 sends it | 224 (server -> client, from the engine) | Energy shield bar above the health bar of the character plate: plain text `es:<current>:<max>`, max 0 hides it. Tested in game (see "Energy shield"). |
 | game_bossspawns | `bossspawns.lua`, `bossspawns_core.lua`, `bossspawns_config.lua`, `sql/chaos_boss_spawns.sql` | **217**, Adventure > Boss Spawns | Every boss by category with place and respawn status, live alive state and last kills (see "Boss spawns"). Unit and mocked-engine tests; not run on a live server. |
+| game_riftatlas | `atlas.lua`, `atlas_core.lua`, `atlas_config.lua`, `sql/chaos_rift_atlas.sql` (hooks in `rift_core.lua`) | **210**, Adventure > Rift Atlas, the rift HUD | Rift Atlas: completion grid of first completions (theme x tier, flawless, swift, omens; 96 points), a map of 81 nodes in a core and four theme branches with 4 keystones, allocate / refund for gold or an orb; effects applied in `rift_core.lua` (see "Rift Atlas"). Unit and mocked-engine tests; not run on a live server. |
 | game_partyfinder | `party_finder.lua`, `party_finder_core.lua`, `party_finder_config.lua` | **208**, Social > Party Finder | Party Finder (LFG): listings with activity, wanted tank / healer / DPS slots, minimum level, note, expiry; browse with filters, apply with a role, the leader accepts (engine party invite) or declines; "Join as" quick-join queue; realm and staff rules; in memory (see "Party Finder"). Unit and mocked-engine tests; not run on a live server. |
 
 Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 208, 214, 216, 217, 218, 219, 221, 222, 223, 224 (sent by the engine, patch 0015), 225, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
+Extended opcode 210 (Rift Atlas) is registered there too, as `ChaosOpcodes.riftAtlas` below the table.
 
 ### Opcode collision check
 Searched the reference server for every `onExtendedOpcode`, `sendExtendedOpcode(` and opcode
@@ -4808,6 +4810,76 @@ when the daily is already claimed, no second opening at the next login, "Don't s
 week, unticked again from the window), the seen key and setting in the database. Not verified: two characters of one
 account online at once, the Windows `dir` listing and the `index.txt` fallback, the client stepping aside for a daily window that
 appears in the first 20 s (cannot happen with the queue).
+
+## Rift Atlas (`atlas.lua`, `atlas_core.lua`, `atlas_config.lua`, `sql/chaos_rift_atlas.sql`, client `game_riftatlas`)
+
+The long-term progression of the rift loop (roadmap item 54). Sealing rifts fills a finite completion grid; every new
+cell is worth points; points buy nodes of a map of 81 nodes. Every number and the whole graph are in `atlas_config.lua`;
+the pure logic is `atlas_core.lua` (tested by `tests/riftatlas_test.lua`). Extended opcode 210 (`ChaosOpcodes.riftAtlas`),
+table `chaos_rift_atlas`, no storages. Window: Adventure > Rift Atlas, or the Rift Atlas button of the rift HUD.
+
+- **The grid (96 points).** First completions only, credited to every finisher of the run (an offline finisher's row is
+  written straight to the database): each theme x tier (4 x 15 cells, 1 point each), Flawless per tier (sealed without a
+  death, any theme; 15 x 1), Swift per tier (sealed within half of the base time limit, 5:00, whatever the run's own
+  limit; 15 x 1) and each Omen guardian (Sangrith, Morvane, Thalcyra; 3 x 2). A message names the new cells.
+- **The map.** A core (start, four spokes of three small nodes toward the branches, four notables between them) and
+  four theme branches of 16 nodes (gate, attunement notable, two arms with a notable each, a trunk with a notable, a
+  join, the keystone at the far end). Costs: small 1, notable 2, keystone 3; the whole map costs 108. A full grid buys
+  every small node and notable (96) or a keystone and most of the rest: one keystone at a time (`keystoneMax`).
+  Allocating is free; a node must touch the start or a held node.
+- **Respec.** One node: 250,000 gold (carried first, then the bank) or 1 Orb of Upheaval, only when the rest stays
+  connected. Everything: the per-node price x nodes x 0.8. Both are sinks.
+
+| Branch | Small nodes | Notables | Keystone |
+|---|---|---|---|
+| Core | +3% packs (x2), +2% modifier rewards (x3), +4% chest gold, +2% next-key chance (x2), +3% key upgrade, +3% time (x2), +5% fragments | Second Wind (+1 life at tier 8+), Keywright (+4% key, +5% upgrade), Unbroken Line (+1 life at tier 12+, +4% time), Cartographer's Eye (+4% modifier rewards, +4% packs) | - |
+| Abyssal Rift (north) | packs and elites in Abyssal Rifts, fragments, packs | Attunement (+60% theme weight), Teeming Abyss (+15% packs), Eye of the Abyss (+15% elites, +0.5 item rolls), Endless Tide (+8% packs everywhere) | Lone Ember: one shared life, every finisher's chest +60% |
+| Obsidian Hall (east) | chest gold, Orbs of Upheaval, item rolls | Attunement, Guardian's Hoard (+1 Upheaval, +1 Fate per chest in the Hall), Molten Coffers (+10% gold, +0.5 rolls), Forged in Obsidian (+6% modifier rewards in the Hall, +0.5 Fate) | Obsidian Crown: guardian +100% health and damage, the chest's orbs x2 |
+| Ashen Crypt (south) | next-key chance and upgrade, time | Attunement, Rekindled Key (+15% upgrade in the Crypt), Crypt Warden's Mark (+1 life, +8% time in the Crypt), Ember Ward (keys from sealed rifts roll more modifiers) | Ashen Ascent: next-key chance halved, every key that drops is a tier higher |
+| Forsaken Sanctum (west) | time, Treasure Goblin and Sealed Coffer chances | Attunement, Gilded Pilgrims (+20% goblin in the Sanctum), Reliquary (+20% coffer in the Sanctum), Sanctified Hours (+6% time, +3% modifier rewards) | Fleeting Sanctum: 35% less time, +40% packs, every finisher's chest +30% |
+
+- **How it reaches the rifts.** `rift_core.lua` has a hook table, `R.hooks.atlasMods(player, ctx)` -> the flat modifiers of
+  `A.resolve` and `R.hooks.onSealed(info)`; `atlas.lua` sets both. Without the hooks every rift function behaves exactly as
+  before (the tests compare the plans, keys and chests with and without). The key user's atlas shapes the run:
+  attunements weigh the theme pick (`R.pickTheme`), then packs (`packMult`), elites, time (`timeMult`), lives
+  (`R.startLives`: extra lives, or one with Lone Ember), the goblin and coffer chances (on top of the Gilded Trail and
+  Sealed Coffer modifiers, so they can appear without them), the guardian (`boss`, as Dread Guardian), the modifier
+  reward bonuses (`R.atlasBonus`) and the next key (`R.keyOdds` / `R.rollKeyDrop`). Each finisher's own atlas adds to
+  their chest (`R.atlasReward`: gold, orbs, item rolls; `R.atlasFragments`); the keystone's chest multipliers come from
+  the key user and count for every finisher (they share the risk). Stats tied to a theme count only in rifts of that
+  theme; "tier N+" stats only from that tier. Omen arenas take no atlas effects (they still credit their cell). The HUD
+  shows an "Atlas: ..." line (keystone, packs, time, lives).
+- **Caps** (`caps`, on the sum of all nodes; keystones on top): packs 25%, elites 40%, time 25%, modifier rewards 20%,
+  chest gold 25%, next-key chance +15, key upgrade +25, fragments 25%, +2 Upheaval, +1.5 Fate, +1.5 item rolls,
+  goblin 40%, coffer 40%, 2 lives.
+- **Totals and the reward economy.** The chest is `R.reward`: gold 10,000 x tier^2, Orbs of Upheaval 1 + 0.5 x tier, Orbs of
+  Fate 0.25 x tier, item rolls 2 + 0.5 x tier, all x (1 + quantity), tiers 11-15 +10% per tier. A full atlas without a
+  keystone (all 96 points), at tier 15 with +50% quantity: gold 5.06M -> 6.33M (+25%), orbs 27.6 -> 28.3 (Abyss) or
+  30.8 (Hall, Guardian's Hoard), item rolls 21.4 -> 22.4-22.9; +24-25% packs (more kills, more loot from them), +25% time,
+  +20% on the modifiers' bonuses (a +69% quantity key gives +83%: the chest about +8%), next key 50% -> 65% (two
+  modifiers), tier-up 70% -> 84% (95% in the Crypt), +2 lives from tier 12. Roughly +30-40% income per run for a player
+  who has sealed everything up to tier 15 in every theme; a tier-5 player with ~25 points gets about a quarter of it.
+  Lone Ember (+60% chest, one life) and Fleeting Sanctum (+30% chest, +40% packs, 35% less time) are the big bets;
+  Obsidian Crown doubles the chest's orbs (about +13 orbs at tier 15) against a guardian twice as strong.
+- **Persistence and seasons.** One row per character: `done` (cell keys `c<theme>.<tier>`, `f<tier>`, `s<tier>`,
+  `o<kind>`) and `nodes` (ids), both comma lists; `atlas.lua` creates the table when it is missing. Loaded at login and
+  checked against the current config (`A.sanitize`: unknown ids, extra keystones, nodes cut off from the start and nodes
+  over the points are dropped, free). Season characters are characters of their own (season.lua), so each realm has its
+  own atlas without extra rules; a migrated character keeps its atlas as it keeps its levels and items.
+- **Protocol** (JSON {action, data}): client `open {tree}` (tree = true: send the graph again) | `alloc {id}` | `refund {id, pay = gold|orb}` | `reset {pay}`; server
+  `tree` (the graph, positions, costs, tooltip lines, the grid's shape; once per login, through `Chaos.sendChunked`),
+  `state {earned, spent, points, max, alloc, done, refund, reset, orb, totals, msg}`, `credit {cells, points}`.
+- **Staff:** `/atlas grant all` or `/atlas grant <cell key>`, `/atlas clear`, `/atlas` (status).
+- **Opcode check:** 210 is in no Chaos script, no client module and none of the reference server's opcodes (1, 67, 73, 89,
+  91, 92, 99, 106, 107, 136, 181, 201, 202).
+- **Tests:** `tests/riftatlas_test.lua`: graph size and kinds, unique ids, known and symmetric links, no orphan node,
+  keystones as leaves, every node reachable from the start, nodes at least 60 apart and links at least 24 from any
+  other node; grid cells and points, run cells (flawless, swift at exactly half, omen), credit once; allocate / refund /
+  keystone limit / sanitize; resolve (themes, tier gates, caps, keystones); the effects in `rift_core.lua` (plan packs,
+  time, lives, goblin and coffer rates, guardian, bonuses, chest, fragments, key odds and drops, theme pick, the same
+  results without an atlas); `atlas.lua` against a mocked engine (open, credit online and offline, alloc, refund with gold
+  and an orb, reset, relog). Client: `riftatlasview_test.lua`. Rendered in the Linux client from payloads of the real core
+  (offline, login screen); not run on a live server yet.
 
 ## Daily reward and login streaks (`daily.lua`, `daily_core.lua`, `daily_config.lua`)
 
