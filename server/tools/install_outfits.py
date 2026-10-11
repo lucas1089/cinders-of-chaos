@@ -25,7 +25,8 @@ outfits (kind "outfit": male / female look, a third outfits.xml block "Chaos exc
 the script). Base looks of the client pair that no XML line had (exclusives_config.lua lists them).
 
 The look types exist only in the client pair that has them (client/tools/sprites/import_outfits.py, outfits 1505-1510;
-import_donor_things.py, the donor B first set, outfits 1551-1561; the faction mounts 2132-2135, things_custom14);
+import_donor_things.py, the donor B first set, outfits 1551-1561; the faction mounts 2132-2135, things_custom14; the
+achievement wings 2140-2142, things_custom17);
 install both, or they show as nothing in the client.
 """
 import os, re, sys

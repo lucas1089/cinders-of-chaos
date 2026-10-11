@@ -10,6 +10,9 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
   - Open betas on the weekends of 31 Oct and 7 Nov.
   - The Season 1 start (now 1 Nov) moves to the launch date.
 - [ ] **Donation prices in USD (PayPal).** BRL prices for Pix are already set.
+- [ ] **Push sprite pair things_custom17 to `windows-assets`?** It adds the three achievement wings (looks 2140-2142).
+  - dat 8f0dcbfe..., spr 6aee9a34..., `things-1098.tar.xz` sha256 415763cd... (client/MANIFEST.md "Achievement wings").
+  - Built locally only. The server's wings 17-19 need it: on things_custom16 they draw nothing.
 
 ## Accounts and services
 

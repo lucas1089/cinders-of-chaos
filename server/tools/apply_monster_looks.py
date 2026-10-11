@@ -9,7 +9,8 @@ colour attributes (head, body, legs, feet, addons) are removed: these looks have
 ignores them. The corpse and every other attribute stay. The rift family rows (abyss, obsidian, crypt, sanctum) belong
 to no monster file (rift.lua puts them on the rift's monsters); --check makes sure no file uses them, and that
 rift_config.lua `looks.families` holds exactly these ids. Rows of family "faction" (mounts and auras) belong to no
-monster file either (mounts.xml / auras.xml, factions_config.lua); --check makes sure no monster file uses them.
+monster file either (mounts.xml / auras.xml, factions_config.lua), nor do rows of family "exclusive" (the achievement
+wings of exclusives_config.lua, wings.xml); --check makes sure no monster file uses them.
 Idempotent: a second run changes nothing. --check changes nothing and exits 1 when a file is not up to date.
 """
 import csv, os, re, sys
@@ -40,7 +41,7 @@ def main():
     mdir = args[0] if args else os.path.join(REPO, 'server', 'data', 'monster')
     rows = list(csv.DictReader(open(picks, newline='')))
     want = {r['monsters']: int(r['look']) for r in rows if r['family'] in ('world', 'omen', 'raid')}
-    rift = {int(r['look']): r['key'] for r in rows if r['family'] in FAMILY_THEME or r['family'] == 'faction'}
+    rift = {int(r['look']): r['key'] for r in rows if r['family'] in FAMILY_THEME or r['family'] in ('faction', 'exclusive')}
     found, changed, problems = set(), 0, []
     for root, _, files in os.walk(mdir):
         for f in sorted(files):
@@ -54,7 +55,7 @@ def main():
                 continue
             look = re.search(r'\btype\s*=\s*"(\d+)"', lk.group(0))
             if look and int(look.group(1)) in rift:
-                problems.append(f'{p}: uses the rift / faction look {look.group(1)} ({rift[int(look.group(1))]})')
+                problems.append(f'{p}: uses the rift / faction / exclusive look {look.group(1)} ({rift[int(look.group(1))]})')
             name = m.group(1)
             if name not in want:
                 continue

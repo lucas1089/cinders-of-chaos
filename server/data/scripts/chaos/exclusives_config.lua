@@ -117,6 +117,13 @@ return {
 		-- ------------------------------------------------------------------ wings, auras, shaders
 		{key = "wings_cinderplumes", kind = "wings", id = 16, look = 1486, icon = 2353, source = "boss",
 			name = "Cinder Plumes", desc = "Wings of ember-tipped feathers from the Cinderheart's pyre."},
+		-- achievement wings: donor-library looks 2140..2142 of things_custom17 (picks.csv rows wings_*, client/MANIFEST.md)
+		{key = "wings_bloodthorn", kind = "wings", id = 17, look = 2140, icon = 2363, source = "achievement",
+			name = "Bloodthorn Pinions", desc = "Thorned black wings veined with the blood of the five colossi."},
+		{key = "wings_gravecrow", kind = "wings", id = 18, look = 2141, icon = 7433, source = "achievement",
+			name = "Gravecrow Wings", desc = "Grave-black raven wings, a skull mask on each. They never kneel."},
+		{key = "wings_riftglass", kind = "wings", id = 19, look = 2142, icon = 2192, source = "achievement",
+			name = "Riftglass Wings", desc = "Violet crystal wings that splinter and grow back with every seal."},
 		{key = "aura_murmuration", kind = "aura", id = 29, look = 1487, icon = 2229, source = "achievement",
 			name = "Ashen Murmuration", desc = "A flock of black birds circles you at the witching hour."},
 		{key = "aura_scarlet", kind = "aura", id = 30, look = 712, icon = 2156, source = "boss",

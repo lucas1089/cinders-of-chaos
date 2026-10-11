@@ -39,3 +39,6 @@ aura_vigil,2136,I,152,,faction,aura,The Ashen Vigil (factions_config.lua aura),g
 aura_compact,2137,I,147,,faction,aura,The Cinderforge Compact (factions_config.lua aura),forge flame ring,aura-feet
 aura_choir,2138,I,146,,faction,aura,The Veiled Choir (factions_config.lua aura),violet veiled eyes in gold rings,aura-feet
 aura_circle,2139,I,270,,faction,aura,The Thornbound Circle (factions_config.lua aura),green thorn-flame swirl,aura-feet
+wings_bloodthorn,2140,I,286,,exclusive,wings,wings 17 Bloodthorn Pinions (exclusives_config.lua; achievement Colossus Hunter),thorned black wings veined in blood red with a red core,
+wings_gravecrow,2141,I,143,,exclusive,wings,wings 18 Gravecrow Wings (exclusives_config.lua; achievement Nobody Kneels),grave-black raven wings with a skull mask on each,
+wings_riftglass,2142,I,296,,exclusive,wings,wings 19 Riftglass Wings (exclusives_config.lua; achievement Lord of Thresholds),violet crystal wings that splinter and reform,

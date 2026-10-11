@@ -586,6 +586,59 @@ seats. No server change goes with it.
 - Not checked in a live client. The before/after contact sheets of all 145 mounts are offline renders, kept outside
   the repository.
 
+## Achievement wings (things_custom17, outfits 2140-2142, `tools/sprites/monster_looks/`)
+Three donor-library wings for the achievement exclusives (server/README.md "Exclusives"). Before this pair, wings were
+the only kind with no achievement exclusive. The live pair had one unused wings look, 1486, and it is the Cinderheart's
+boss drop. Owner rule: donor sprites first. Donor I (8.60, the wings and auras library of the faction auras) has about
+80 wings. No art was generated and no pixel was changed.
+
+| look | key | wings | achievement | donor | frames |
+|---|---|---|---|---|---|
+| 2140 | wings_bloodthorn | 17 Bloodthorn Pinions | Colossus Hunter (`wb_all`) | I 286 (thorned black wings, blood-red veins, a red core) | 3x3, 8 |
+| 2141 | wings_gravecrow | 18 Gravecrow Wings | Nobody Kneels (`raid_flawless`, hidden) | I 143 (grave-black raven wings, a skull mask on each) | 3x3, 9 |
+| 2142 | wings_riftglass | 19 Riftglass Wings | Lord of Thresholds (`rift_100`) | I 296 (violet crystal wings that splinter and reform) | 3x3, 9 |
+
+- Findings. Wings in the pair are one-layer outfits: 4 directions, no addons, `animateAlways`, one group (or an idle
+  and a walking group), 2x2 or 3x3. The donor I picks have the same layout, so they import with no conversion. The
+  first pick for the raid wings, I 295 (black smoke wings), is the store's Mortis Mirage (stock 1179) recoloured:
+  silhouette IoU 1.00, and `donor_pick.py` stopped the run. I 143 replaced it. Donor I 24, 25, 133 and 136 are stock
+  940 recoloured (IoU 1.00) and were not used.
+- Silhouette check of the three: 0.20 (2140), 0.33 (2142), 2141 has no stock outfit of its size. None is in the live
+  pair. They are not store looks or recolours of one, so no tint was needed.
+- Placement. The donor I wings use the stock convention (no displacement): donor I 24 has exactly the bounding boxes of
+  stock 940. The centre of each new wing over all frames, per direction, is within the range of the stock wings
+  (2140 N (-6, -1), S (-6, -12); 2141 N (-6, 0), S (-2, -18); 2142 N (-7, -4), S (-7, -13); stock 940 N (-6, 12),
+  1181 S (-1, -16)). So no displacement edit.
+- picks.csv rows 41-43 (family `exclusive`, rank `wings`), `sources.csv` rows 2140-2142 (licence tracing).
+  `server/tools/apply_monster_looks.py --check` refuses a monster file with an `exclusive` look.
+
+```
+python3 -I client/tools/sprites/donor_pick.py --picks client/tools/sprites/monster_looks/picks.csv --lib-dir L \
+    --out-dir MINI43 --base-dat things_custom16/Tibia.dat --base-spr things_custom16/Tibia.spr
+python3 -I client/tools/sprites/import_outfits.py --src-dat MINI43/Tibia.dat --src-spr MINI43/Tibia.spr \
+    --ours-dat things_custom16/Tibia.dat --ours-spr things_custom16/Tibia.spr \
+    --looks 41,42,43 --first-outfit 2140 --out-dir things_custom17
+```
+MINI43 (all 43 picks): dat e382de93fee39c1964770266ba6f15e4, spr fad0edab2c4c7fda2603e901b8b77c7b (8,245 sprites;
+22,720 sprite slots and 1,896 frames equal to the donors, recolours and edits recomputed). Input things_custom16 (dat
+fc0bd91246387611e3f5f4489023a492, spr 5aa948775e41748bd885620eeae34e62, 723,857 sprites). Output **things_custom17**:
+dat 8f0dcbfe56be1a6b3f86677e497cdeaa (4,671,492 bytes), spr 6aee9a3429bdb9039787cb7eacf079c8 (587,305,926 bytes,
+724,425 sprites, 568 appended), 2,142 outfits. The spr had to change: new art means new sprites. Built twice with
+identical md5s. Verified by the importer: 936 sprite slots and 104 frames of the three outfits pixel-identical to
+MINI43, flags and animators equal, the 2,139 old outfits and every item, effect and missile byte-identical, 3000 sampled
+old sprites unchanged. The mount seats of things_custom16 are kept (old entries byte-identical).
+- `things-1098.tar.xz` is built like things_custom16's (Tibia.dat and Tibia.spr at the archive root, owner 0/0, GNU tar,
+  `xz -9 -T3`), mtime 2026-10-11 21:00: sha256 415763cd16249264769eba8840c31cd511b19713e50cdd0cfbcbeb0b2b04e01f
+  (65,635,764 bytes). Its two files unpack to the md5s above.
+- **Not pushed to `windows-assets` yet.** It waits for the owner's approval (docs/OWNER_TODO.md). The live pair stays
+  things_custom16 (1cae7c3). A client on things_custom16 draws nothing for 2140-2142: the three wings show as no wings.
+  So the server change and the pair go out together. CI: `check_content.py` reads 2142 from picks.csv.
+- Checked in the Linux client (base client + overlay, offline, data/things pointed at things_custom17): each wing on
+  a Warrior and a Mystic class look in all four directions, animated, and in the wardrobe's Collection tab with the
+  server's own rows (`exclusives_core.lua` `K.rows`): owned and not owned, the hidden achievement as "???". Not checked
+  on a live server. The screenshots are kept outside the repository.
+- The wardrobe's source line (`howLabel`) now wraps to two lines: the longer achievement lines were cut off.
+
 ## Leaderboards: fastest-time boards with class tabs (`game_leaderboard`)
 Boards of mode "min" (the Cinderheart's fastest kills) come with `format = "time"` (values shown m:ss,
 `TabRows.valueText` in `tabrows.lua`, tested by `tabrows_test.lua`) and `byClass = true`: the class tabs of the ladder

@@ -158,8 +158,9 @@ ChaosMainWindow
       anchors.right: parent.right
       anchors.top: descLabel.bottom
       margin-top: 4
-      height: 18
+      height: 34
       text-align: center
+      text-wrap: true
       color: #5cc8c0
 
     UIWidget

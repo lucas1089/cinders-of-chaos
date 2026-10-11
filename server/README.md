@@ -1487,7 +1487,7 @@ categories are left out. Every offer has a stable key (`ChaosShopCore.offerKey`:
 | Outfit shaders (`shaders.xml`) | 17 | 16 | green_pixent (16): drew as a coloured checker grid in the test client, like 15 and 17 (sold before); the pixent shader files are fixed now (client/MANIFEST.md "Outfit shaders for monsters"), 16 could be sold |
 | Name plate frames (`nameplate.lua`) | 19 | violet, frost, ember, verdant, bone, ashen, sapphire, rose, jade, copper, obsidian, amber, storm | default (everyone), gold (staff titles), crimson (Siege Champions), laurel, sepulchre, infernal (exclusives) |
 | Footprints, outlines (`cosmetics.lua`) | 13 / 13 | 9 / 9 | an achievement, a reward track milestone and two boss drops each ("Footprints and outlines") |
-| Exclusives (`exclusives.lua`) | 33 | none | never sold: 5 outfits, 2 addon sets, 6 mounts, wings, 2 auras, 2 shaders, 3 frames and the boss drops of portal styles, transmog sets, pets, footprints and outlines ("Exclusives") |
+| Exclusives (`exclusives.lua`) | 36 | none | never sold: 5 outfits, 2 addon sets, 6 mounts, 4 wings, 2 auras, 2 shaders, 3 frames and the boss drops of portal styles, transmog sets, pets, footprints and outlines ("Exclusives") |
 | Spell effect skins, kill effects, loot label accents, chat name colours (`cosmetics.lua`) | 12 / 7 / 5 / 6 | 12 / 5 / 4 / 5 | Void Ring, Harbinger's Toll, Gilded Labels, Veteran's Gold: achievement rewards ("Cosmetics" below); the 17 reward track cosmetics (achievement points and complete categories, "Achievements") and the PvP ones are never sold either |
 | Transmog appearance sets (`transmog.lua`) | 19 | Falconer's Regalia 300, Lionguard 350, Gravecloak 350, Soulforged 400, Soulstalker 350, Mothwing 350, Cobra Regalia 300, Lionguard Arms 300, Grand Sanguine 350 | achievement, season pass, exclusive and boss sets ("Transmog", "Exclusives") |
 | Pets (`pets.lua`) | 15 | Lantern Wisp, Hoarder Squirrel, Ember Parrot, Rime Penguin, Ashen Hare, Bog Frog, Dusk Moth, 400 each | drops, achievements and two boss drops ("Pets") |
@@ -1889,7 +1889,7 @@ character, `source.boss`), footprints and outlines (`ChaosCosmetics.grant`, sour
 | Outfits | Wingbound 1455/1456 (Unrivalled), Jadeforged 1039/1040 (Master Artificer); before: Death Herald, Rift Warrior, Arena Champion, Demon Hunter | Ashen Seraph 1459 (Varkhul), Omen Lancer 1457/1458 (Ascended Omens), Mirewarden 1464/1465 (the Rotmother) |
 | Outfit addons | Mage addons 130/138 (Monster Scholar) | Knight addons 131/139 (Gorvath, guild boss) |
 | Mounts | Tuskhide Boar 146 / look 1323 (Nothing Surprises Me), Duskcrest Drake 147 / 428 (Untouchable); before: Doombringer, Corpsefire Skull, Rift Runner, Nightstinger, Siegebreaker | Rimebone Stalker 148 / 1444 (Skaldra), Bloodwing Fiend 149 / 1441 (Vharok), Bannerdrake 150 / 596 (Gorvath), Gloomwyrm 151 / 1450 (Nyxareth) |
-| Wings | none yet: needs a sprite pair (below) | Cinder Plumes 16 / look 1486 (the Cinderheart) |
+| Wings | Bloodthorn Pinions 17 / look 2140 (Colossus Hunter), Gravecrow Wings 18 / 2141 (Nobody Kneels), Riftglass Wings 19 / 2142 (Lord of Thresholds) | Cinder Plumes 16 / look 1486 (the Cinderheart) |
 | Auras | Ashen Murmuration 29 / look 1487 (Witching Hour) | Scarlet Glimmer 30 / look 712 (Sepulchre wardens) |
 | Outfit shaders | Verdant Sparks 16 `green_pixent` (Master of the Wilds) | Cinder Sparks 18 `ember_pixent` (Ascended Omens) |
 | Plate frames | Laurel (Keeper of the Flame); category titles bring their frames | Sepulchre (Sepulchre wardens), Infernal (the Cinderheart) |
@@ -1930,18 +1930,21 @@ Staff: `/exclusive <character>, <key | all>[, revoke]` (revoke removes the accou
 characters) and `/exclusive <character>, roll, <kill key>` (group 4+). API: `ChaosExclusives.grant / revoke / owns / sync /
 bossKill / worldBossKill / rows / apply / applyAll`.
 
-**Needs a sprite pair (not done here; things_custom16 is being built for the mount fixes).** Achievement wings: the pair has
-only one unused wings look (1486, the Cinder Plumes). Plan: import two wings outfits from donor I (8.60, "wings, auras",
-the library of the faction auras; `donor_pick.py` + `import_outfits.py`, rows of family `exclusive`, kind `wings`, the
-silhouette and in-pair checks, displacement checked like `aura-feet`), outfit ids after the last one of the pair, then one
-achievement wings entry (for example Colossus Hunter or Absolute) and a wings.xml line through `install_outfits.py`. The
-Scarlet Glimmer aura (look 712) has no displacement in the dat: check it in game; if it draws off the feet, set it in the same
-pair (flags only).
+**Achievement wings (things_custom17).** The three achievement wings are donor I wings (8.60, the wings and auras
+library) imported as looks 2140-2142 (client/MANIFEST.md "Achievement wings": picks.csv rows of family `exclusive`, the
+silhouette and in-pair checks, the stock wings placement, so no displacement edit). Ids 17-19 follow the Cinder Plumes
+(16) in the wings.xml block of `install_outfits.py`. They go to achievements with no exclusive yet: Colossus Hunter
+(`wb_all`), Nobody Kneels (`raid_flawless`, hidden, so the window shows "???" until owned) and Lord of Thresholds
+(`rift_100`). **Needs the new pair:** a client on things_custom16 draws no wings for 2140-2142. Ship the server change
+with things_custom17 (not on `windows-assets` yet; docs/OWNER_TODO.md). Still open from the plan: the Scarlet Glimmer aura
+(look 712) has no displacement in the dat; check it in game, and if it draws off the feet set it in a later pair (flags
+only).
 
 Tests: `tests/exclusives_test.lua` (LuaJIT and Lua 5.3): the shipped config against the store, the generated store list, the
 achievements, the cosmetics, transmog sets, pets, portal styles and frames; refusals (a sold look, a price, a chance too high,
-a boss drop nobody drops, a kill in two groups, wrong names); every kind has an achievement and a boss exclusive (wings: the
-boss one); the looks are no other reward; every world boss, raid boss, Ascended Omen, the Cinderheart and the guild boss has a
+a boss drop nobody drops, a kill in two groups, wrong names); every kind has an achievement and a boss exclusive (wings:
+three achievement ones, ids above the store's 15, each look the picks.csv row of the pair, wings 17-19 refused by the
+store); the looks are no other reward; every world boss, raid boss, Ascended Omen, the Cinderheart and the guild boss has a
 group and its script the guarded hook; the roll (miss, hit, owned skipped, nothing left, rates over 20,000 rolls); the
 achievement sync and the rows; `exclusives.lua` on a mocked engine (a drop for the account and its online characters, the
 frame switched on for the roller only, transmog / pets / cosmetics handed to their systems, the sync and the wrapped

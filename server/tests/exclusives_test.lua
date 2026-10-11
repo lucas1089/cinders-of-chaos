@@ -156,13 +156,24 @@ for _, a in ipairs(achievements.list) do
 	if r.outfit then ach.outfit = (ach.outfit or 0) + 1 end
 	if r.mount then ach.mount = (ach.mount or 0) + 1 end
 end
-for _, kind in ipairs({"outfit", "addons", "mount", "aura", "shader", "frame", "portal", "transmog", "pet", "footprint",
-	"outline"}) do
+for _, kind in ipairs({"outfit", "addons", "mount", "wings", "aura", "shader", "frame", "portal", "transmog", "pet",
+	"footprint", "outline"}) do
 	eq((ach[kind] or 0) > 0, true, kind .. ": an achievement exclusive")
 	eq((boss[kind] or 0) > 0, true, kind .. ": a boss exclusive")
 end
--- wings: one look in the pair that no XML line had (1486), a boss drop; the achievement wings need a new pair (sprite plan)
-eq(boss.wings, 1, "wings: a boss exclusive") eq(ach.wings, nil, "wings: the achievement one waits for the pair")
+-- wings: one look in the pair that no XML line had (1486), a boss drop; three achievement wings of things_custom17
+-- (donor-library looks 2140..2142, picks.csv family "exclusive"), ids after the store's 1..15
+eq(boss.wings, 1, "wings: a boss exclusive") eq(ach.wings, 3, "wings: three achievement exclusives")
+local picks = readFile("../client/tools/sprites/monster_looks/picks.csv")
+for _, e in ipairs(cfg.exclusives) do
+	if e.kind == "wings" then
+		eq(e.id > 15, true, e.key .. ": not a store wings id")
+		if e.source == "achievement" then
+			eq(picks:find("\n" .. e.key .. "," .. e.look .. ",I,%d+,,exclusive,wings,wings " .. e.id .. " " .. e.name) ~= nil, true,
+				e.key .. ": its look is the picks.csv row of the pair")
+		end
+	end
+end
 
 -- the looks are no other source's reward and no store look
 local others = ChaosShopCore.exclusions({classLooks = nil, achievements = achievements,
@@ -188,6 +199,9 @@ end
 local withEx = ChaosShopCore.exclusions({exclusives = cfg})
 eq(ChaosShopCore.excluded({kind = "mount", id = 146}, withEx) ~= nil, true, "shop.lua: mount 146 is excluded")
 eq(ChaosShopCore.excluded({kind = "wings", id = 16}, withEx) ~= nil, true, "shop.lua: wings 16 are excluded")
+for id = 17, 19 do
+	eq(ChaosShopCore.excluded({kind = "wings", id = id}, withEx) ~= nil, true, "shop.lua: wings " .. id .. " are excluded")
+end
 eq(ChaosShopCore.excluded({kind = "frame", frame = "laurel"}, withEx) ~= nil, true, "shop.lua: the laurel frame is excluded")
 eq(ChaosShopCore.excluded({kind = "outfit", looktype = 1455, lookfemale = 1456}, withEx) ~= nil, true,
 	"shop.lua: the Wingbound outfit is excluded")
@@ -271,8 +285,11 @@ end
 local syncs = K.syncs(cfg, achievements, has({ambush_250 = true, witching_hour = true}), {})
 eq(#syncs, 2, "two earned") eq(syncs[1], "mount_tuskhide", "Tuskhide Boar") eq(syncs[2], "aura_murmuration", "the crows")
 eq(#K.syncs(cfg, achievements, has({ambush_250 = true}), {mount_tuskhide = true}), 0, "owned: not again")
-eq(#K.syncs(cfg, achievements, has({cinder_1 = true, raid_sovereign = true, wb_all = true}), {}), 0,
+eq(#K.syncs(cfg, achievements, has({cinder_1 = true, raid_sovereign = true, wb_50 = true}), {}), 0,
 	"a boss exclusive is never synced from achievements")
+local wings = K.syncs(cfg, achievements, has({wb_all = true, raid_flawless = true, rift_100 = true}), {})
+eq(table.concat(wings, " "), "wings_bloodthorn wings_gravecrow wings_riftglass",
+	"the achievement wings: Colossus Hunter, Nobody Kneels, Lord of Thresholds")
 eq(K.achievementOf(achievements, "frame_laurel").id, "mentor_15", "the laurel frame from Keeper of the Flame")
 dofile("data/scripts/chaos/achievements_core.lua")
 local AK = ChaosAchievementsCore
