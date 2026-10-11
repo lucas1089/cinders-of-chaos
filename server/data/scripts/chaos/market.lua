@@ -31,6 +31,7 @@
 --                     mine {active, closed, owed} | history {rows} | wallet {gold, coins} | done {what, text} |
 --                     error {text} | orders {rows, page, pages, total} | myOrders {active, closed, max} |
 --                     orderFind {items} | fillable {id, order, items}
+--   price history (market_history.lua): prices {id | sid, rarity, ilvl} -> prices {gold, coins, marks, warn}
 --
 -- Buy orders (market_orders_core.lua, table chaos_market_orders): the payment is escrowed in the order row at posting
 -- (gold: player:save(), then ONE transaction takes price x quantity + the fee from players.balance and writes the order;
@@ -1042,6 +1043,9 @@ function MK.buy(player, d)
 	end
 	logRow("buy", {offer = id, player = guid, other = o.seller_id, item = o.item_id, count = o.count, name = o.name, currency = cur,
 		amount = price, fee = tax, text = string.format("net %d to %s (account %d)", net, o.seller_name, o.seller_account)})
+	if ChaosMarketHistory then
+		pcall(ChaosMarketHistory.record, id, realm) -- the price history (market_history.lua); never fails the sale
+	end
 	send(player, "done", {what = "buy", id = id, text = string.format("Bought %s%s for %s %s. It is in your inbox.",
 		o.count > 1 and (o.count .. "x ") or "", o.name, MC.money(price), cur == "coins" and "Chaos Coins" or "gold")})
 	MK.deliver(player)
@@ -1474,6 +1478,9 @@ function MK.completeFill(fillId)
 	if filled then
 		logRow("fill", {offer = f.id, player = f.seller_id, other = o.buyer_id, count = f.count, name = f.name, currency = o.currency,
 			amount = o.currency == "coins" and f.price_coins or f.price_gold, text = "buy order " .. o.id})
+		if ChaosMarketHistory then
+			pcall(ChaosMarketHistory.record, f.id, MC.realmOf(o.realm, (currentSeason()))) -- the price history (market_history.lua)
+		end
 		return true
 	end
 	-- the order is gone (or full): the item goes back to the seller
@@ -1731,6 +1738,9 @@ function MK.browse(player, filter)
 		v.mine = r.seller_id == player:getGuid() or nil
 		list[#list + 1] = v
 	end
+	if ChaosMarketHistory then
+		pcall(ChaosMarketHistory.markRows, rows, list, realm) -- typical price marks (market_history.lua)
+	end
 	send(player, "page", {rows = addLooks(list), page = page, pages = pages, total = total, seq = filter and filter.seq})
 end
 
@@ -1848,6 +1858,8 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		MK.fillable(player, d)
 	elseif a == "fill" then
 		MK.fill(player, d)
+	elseif ChaosMarketHistory and ChaosMarketHistory.actions[a] then
+		ChaosMarketHistory.actions[a](player, d) -- prices (market_history.lua)
 	end
 end
 ext:type("extendedopcode")

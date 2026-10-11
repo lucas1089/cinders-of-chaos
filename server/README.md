@@ -4131,6 +4131,52 @@ action listing both orders. Money balanced to the gold piece on both sides. `sql
 Not verified in game: a crash in the middle of a fill (unit-tested), season characters filling (unit-tested), the
 per-account limit.
 
+### Price history (`market_history.lua`, `market_history_core.lua`, `market_history_config.lua`, `sql/chaos_market_history.sql`)
+
+Every completed sale is kept with its price per unit: a bought offer (`MK.buy`) and a buy order fill (`MK.completeFill`)
+call `ChaosMarketHistory.record(offer id, realm)` after their transaction committed (inside `pcall`: a history failure
+never touches a sale; the offer id is unique in the table, so a sale is recorded once). The key of a price is the
+realm (0 = standard, else the season id: season and standard prices never mix), the currency (gold and Chaos Coins
+apart), the item type, the rarity and the item level band (`bandSize` 10: iLvl 60-69; no item level = band 0). A stack
+counts as one sale at its price per unit (rounded down); its units are the volume.
+
+Tables: `chaos_market_history` (one row per sale, kept `rawDays` = 7 full days) and `chaos_market_history_daily` (one row
+per key and day: sales, units, median, low, high, trimmed mean; dropped after `keepDays` = 90). A globalevent
+(`compactSeconds` = 1 hour, and once at startup) aggregates the finished days older than `rawDays` (one key-day per
+transaction: the daily row written, its sales deleted; at most `compactGroups` per run) and drops old rows. At the first
+startup the sold offers of the last 90 days are imported once (`server_config` `chaos_market_history`; their realm is
+the one stored on the offer).
+
+Stats of a key (`market_history_core.lua` `H.stats`, unit tested): last sale and its age; the 7-day median, lowest and
+highest sale, sales and units; the usual range (the 7-day sales without `trimPct` = 10% at each end) and the trimmed
+mean; the daily series of the last 30 days (median of each day, sales as the volume). **Typical price**: the 7-day
+median once there are `minSamples` = 5 sales in 7 days; else the median of the daily medians of the 30 days weighted by
+their sales, once those have 5 sales; else none ("not enough sales"). A median is the mean of the two middle values
+rounded down when the count is even; one fat-finger sale moves neither the median nor the range. Stats are cached per
+key for `cacheSeconds` (300 s); a new sale of the key clears its entry.
+
+Protocol (opcode 221, `MH.actions` from the market's handler): `prices {id}` (the key of an offer) or `prices {sid,
+rarity, ilvl}` (an item of the Sell form) -> `prices {seq, sid, rarity, band, bandText, gold, coins, marks, warn}` for the
+viewer's realm (rate `rateMs`). `MK.browse` hands each page to `MH.markRows` (two queries for the whole page): each row
+gets `typ` (typical price per unit of its first currency), `tcur` and `pm` = "low" / "high" when its price per unit is
+at most `marks.low` (0.6) / at least `marks.high` (1.6) times the typical price.
+
+Client (`game_market`, logic in `marketpriceview.lua`): a click on a Browse offer opens its price history (typical price,
+last sale, 7-day median and volume, usual range with the lowest and highest sale, a 30-day chart of the daily medians
+with the sales as bars, drawn by the Orb Exchange chart code `OrbExchangeView.chart`; a Coin prices / Gold prices
+switch when the other currency has sales). Rows priced well under / over the typical price show "50% under typical"
+(green) / "87% over typical" (red); the hover tooltip adds the typical price. The Sell form asks for the chosen item's
+prices, shows the typical price and a suggested price (the typical price rounded down to 3 significant digits, times the
+amount), a "Use typical" button, and a warning when the asking price per unit is at most `warn.low` (0.5) / at least
+`warn.high` (2.0) times the typical price.
+
+Tests: `tests/market_history_test.lua` (bands, keys, medians, trims, weighted medians, the daily aggregation, stats with
+the minimum sample and the 30-day fallback, outliers, marks, cutoffs, compaction groups and a compaction that keeps the
+series; the engine file compiles and its schema equals the SQL file), `game_market/marketpriceview_test.lua`. The engine
+file was run against MariaDB 10.11 through a test harness (backfill of 44 sales, compaction of 12 key-days with every
+sale kept, stats with an outlier, season and coins apart, a stack per unit, record once, Browse marks, the prices action,
+retention). Screenshots of the item chart and the Sell suggestion: offline client render. Not run on a live server yet.
+
 ## Orb Exchange (`orbexchange.lua`, `orbexchange_core.lua`, `orbexchange_config.lua`, `sql/chaos_orbx.sql`, client `game_orbexchange`)
 
 The crafting orbs are the economy's currency; the Orb Exchange is their order book. Pairs: any orb against gold (the

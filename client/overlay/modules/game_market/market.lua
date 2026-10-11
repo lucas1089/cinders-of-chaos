@@ -201,6 +201,8 @@ local function showRowTip(row)
   for _, p in ipairs(V.priceLines(row.offer)) do
     extra[#extra + 1] = { text = p.text, color = p.cur == 'coins' and COLORS.coins or COLORS.gold }
   end
+  local typical = V.rowTypicalText and V.rowTypicalText(row.offer) -- price history (marketpriceview.lua)
+  if typical then extra[#extra + 1] = { text = typical, color = COLORS.dim } end
   for i, m in ipairs(V.matchedMods(tip, lastFilter)) do
     extra[#extra + 1] = { text = m.text, color = COLORS.ok, sep = i == 1 or nil }
   end
@@ -311,6 +313,16 @@ local function addRow(list, offer, mode)
     subText = V.stateLine(offer)
   end
   if mode == 'closed' and offer.state == 'sold' then sub:setColor(COLORS.ok) end
+  -- price history: a Browse offer priced well under / over the typical price is marked; a click shows the item's prices
+  local mark = mode == 'browse' and V.rowMark and V.rowMark(offer)
+  if mark then
+    local mw = row:getChildById('mark')
+    mw:setText(mark.text)
+    mw:setColor(mark.color)
+    mw:show()
+    sub:setMarginRight(mw:getTextSize().width + 8)
+  end
+  if mode == 'browse' then row.onClick = function() showPrices(offer) return true end end
   fitText(sub, subText)
   local prices = V.priceLines(offer)
   local prow = row:getChildById('prices')
@@ -552,6 +564,150 @@ local function onPage(data)
   p.offerScroll:setValue(0)
 end
 
+-- ---------------------------------------------------------------- price history (marketpriceview.lua; server market_history.lua)
+-- a click on a Browse offer shows the prices of its item key (type, rarity, item level band) with a 30-day chart; the
+-- Sell form asks for the chosen item's prices, suggests one and warns when the asking price is far from the typical one
+local priceState = { seq = 0 }
+
+local function renderPriceChart(points, days)
+  local f = window.priceFrame
+  local chart = f.priceChart
+  chart:destroyChildren()
+  local rects = V.priceChart(points or {}, days or 30, chart:getWidth() - 4, chart:getHeight() - 4)
+  for _, r in ipairs(rects) do
+    local rw = g_ui.createWidget('MarketChartRect', chart)
+    rw:setMarginLeft(r.x + 2)
+    rw:setMarginTop(r.y + 2)
+    rw:setSize({ width = r.w, height = r.h })
+    rw:setBackgroundColor(r.kind == 'line' and V.PRICE_COLORS.line or V.PRICE_COLORS.vol)
+  end
+  f.priceChartEmpty:setVisible(#rects == 0)
+  local sc = V.chartScale(points, days)
+  f.priceHigh:setText(sc and sc.high or '')
+  f.priceLow:setText(sc and sc.low or '')
+  f.priceLow:setMarginBottom(math.floor(chart:getHeight() / 4) + 2) -- the line's bottom (the sales bars are below it)
+end
+
+local function renderPrices()
+  local d = priceState.detail
+  if not window or not d or not d.data then return end
+  local f = window.priceFrame
+  d.cur = V.priceCurrency(d.data, d.cur)
+  local s = d.data[d.cur]
+  f.priceStats:destroyChildren()
+  for _, l in ipairs(V.priceStatsLines(s, d.cur)) do
+    local lab = g_ui.createWidget('MarketText', f.priceStats)
+    lab:setHeight(17)
+    lab:setText(l.text)
+    lab:setColor(l.color)
+  end
+  local other = d.cur == 'gold' and 'coins' or 'gold'
+  local o = d.data[other]
+  f.priceCur:setVisible(o ~= nil and ((o.n30 or 0) > 0 or (o.n7 or 0) > 0))
+  f.priceCur:setText(other == 'coins' and tr('Coin prices') or tr('Gold prices'))
+  renderPriceChart(s and s.points, s and s.days or 30)
+end
+
+function showPrices(offer)
+  if not window or not offer then return end
+  local f = window.priceFrame
+  local tt = tooltips()
+  if hoveredRow and tt and tt.hideTip then tt.hideTip(hoveredRow) end
+  priceState.seq = priceState.seq + 1
+  priceState.detail = { offer = offer, seq = priceState.seq }
+  f.priceIcon:setItemId(tonumber(offer.item) or 0)
+  showLook(f.priceIcon, offer.look)
+  local color = rarityColor(offer)
+  f.priceIcon:setBorderWidth(((offer.rarity or 0) > 0 or offer.unique) and 2 or 0)
+  f.priceIcon:setBorderColor(color)
+  f.priceName:setText(tr('Price history') .. ': ' .. (offer.name or '?'))
+  f.priceName:setColor(color)
+  f.priceKey:setText(tr('Loading...'))
+  f.priceStats:destroyChildren()
+  f.priceChart:destroyChildren()
+  f.priceChartEmpty:setVisible(false)
+  f.priceHigh:setText('')
+  f.priceLow:setText('')
+  f.priceCur:hide()
+  f:show()
+  f:raise()
+  send('prices', { id = offer.id, seq = priceState.seq })
+end
+
+function closePrices()
+  priceState.detail = nil
+  if window then window.priceFrame:hide() end
+end
+
+function togglePriceCurrency()
+  local d = priceState.detail
+  if not d or not d.data then return end
+  d.cur = d.cur == 'gold' and 'coins' or 'gold'
+  renderPrices()
+end
+
+local function updatePriceHint()
+  if not window then return end
+  local s = window.sellPanel
+  local data = priceState.sellFor == selected and priceState.sell or nil
+  if not selected or not data then
+    s.priceHint:setText('')
+    s.priceWarn:setText('')
+    s.suggestButton:hide()
+    priceState.suggest = nil
+    return
+  end
+  local count = selected.stack and (V.parseAmount(s.countEdit:getText()) or selected.count or 1) or 1
+  if count < 1 then count = 1 end
+  local g = data.gold
+  local key = V.priceKeyText(data.rarity, data.bandText)
+  local text = (key ~= '' and (key .. ': ') or '') .. V.typicalLine(g, 'gold').text
+  priceState.suggest = g and g.typical and V.suggestPrice(g.typical, count, meta and meta.price and meta.price.gold and meta.price.gold.min) or nil
+  if priceState.suggest then
+    text = text .. string.format('. Suggested: %s gold%s.', V.money(priceState.suggest), count > 1 and string.format(' for %d', count) or '')
+  end
+  s.priceHint:setText(text)
+  s.suggestButton:setVisible(priceState.suggest ~= nil)
+  local warns = {}
+  for _, cur in ipairs({ 'gold', 'coins' }) do
+    local st = data[cur]
+    local edit = cur == 'gold' and s.goldEdit or s.coinsEdit
+    local w = st and V.sellWarning(V.parseAmount(edit:getText()) or 0, count, st.typical, data.warn, cur)
+    if w then warns[#warns + 1] = w.text end
+  end
+  s.priceWarn:setText(table.concat(warns, '\n'))
+end
+
+local function requestSellPrices()
+  priceState.sell, priceState.sellFor = nil, selected
+  updatePriceHint()
+  if not selected or not selected.sid then return end
+  priceState.seq = priceState.seq + 1
+  priceState.sellSeq = priceState.seq
+  send('prices', { sid = selected.sid, rarity = selected.rarity or 0, ilvl = selected.ilvl or 0, seq = priceState.seq })
+end
+
+function useSuggestedPrice()
+  if window and priceState.suggest then window.sellPanel.goldEdit:setText(tostring(priceState.suggest)) end
+end
+
+local function onPrices(data)
+  local d = priceState.detail
+  if d and data.seq == d.seq then
+    if data.gone then
+      window.priceFrame.priceKey:setText(tr('That offer is gone.'))
+      return
+    end
+    d.data = data
+    local key = V.priceKeyText(data.rarity, data.bandText)
+    window.priceFrame.priceKey:setText((key ~= '' and (key .. '; ') or '') .. tr('sales on your market only'))
+    addEvent(renderPrices)
+  elseif data.seq and data.seq == priceState.sellSeq then
+    priceState.sell = data
+    updatePriceHint()
+  end
+end
+
 -- ---------------------------------------------------------------- Sell
 local function updateFee()
   if not window then return end
@@ -572,6 +728,7 @@ local function updateFee()
   end
   parts[#parts + 1] = string.format('The offer lasts %d day%s; if nothing sells, the item returns to your inbox.', days, days == 1 and '' or 's')
   s.feeText:setText(table.concat(parts, '\n'))
+  updatePriceHint()
 end
 
 local function showSelected()
@@ -618,6 +775,7 @@ local function choose(entry)
   selected = { ref = entry.ref, sid = entry.sid, iid = entry.iid, count = entry.count, item = entry.item, name = entry.name,
     stack = entry.stack, rarity = entry.rarity, ilvl = entry.ilvl, look = entry.look }
   showSelected()
+  requestSellPrices()
   setStatus('')
 end
 
@@ -1105,6 +1263,7 @@ local function showTab(i)
   tabIndex = i
   for k, b in ipairs(tabs) do b:setChecked(k == i) end
   for k, id in ipairs(PANELS) do window[id]:setVisible(k == i) end
+  closePrices()
   local tt = tooltips()
   if hoveredRow and tt and tt.hideTip then tt.hideTip(hoveredRow) hoveredRow = nil end
   if i == 1 then
@@ -1169,6 +1328,8 @@ local function onMessage(protocol, opcode, msg)
     onOrderFind(data)
   elseif a == 'fillable' then
     onFillable(data)
+  elseif a == 'prices' then
+    onPrices(data)
   elseif a == 'done' then
     setStatus(data.text, COLORS.ok)
     if data.what == 'list' then
@@ -1224,6 +1385,8 @@ local function onGameEnd()
   meta, selected, tipCache, tipAsked, sellItems = nil, nil, {}, {}, {}
   lastFilter = { page = 1 }
   orderFilter, chosenKind, orderMods, fillState = { page = 1 }, nil, nil, nil
+  closePrices()
+  priceState = { seq = 0 }
   if window then
     clearMods()
     modsOpen = false
@@ -1279,6 +1442,7 @@ function init()
   local s = window.sellPanel
   s.goldEdit.onTextChange = function() updateFee() end
   s.coinsEdit.onTextChange = function() updateFee() end
+  s.countEdit.onTextChange = function() updatePriceHint() end
   s.daysCombo.onOptionChange = function() if not updating then updateFee() end end
   s.sellSlot.onDrop = onDropItem
   fillFilterCombos()
