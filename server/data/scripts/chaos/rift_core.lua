@@ -526,7 +526,7 @@ function R.plan(cfg, tier, fx, players, types, rooms, rand)
 	if #types == 0 then
 		return plan
 	end
-	local count = cfg.packs.base + floor(tier / cfg.packs.perTiers) + cfg.packs.perExtraPlayer * (players - 1)
+	local count = R.packCount(cfg, tier, players)
 	if (fx.packMult or 1) ~= 1 then
 		count = floor(count * fx.packMult + 0.5) -- Teeming
 	end
@@ -572,6 +572,92 @@ function R.plan(cfg, tier, fx, players, types, rooms, rand)
 		plan.coffer = #rooms > 0 and rooms[rand(1, #rooms)] or "hub"
 	end
 	return plan
+end
+
+-- packs of a run before Teeming: packs.base + tier / packs.perTiers + packs.perExtraPlayer x (players - 1)
+function R.packCount(cfg, tier, players)
+	players = math.max(1, floor(tonumber(players) or 1))
+	return cfg.packs.base + floor(tier / cfg.packs.perTiers) + cfg.packs.perExtraPlayer * (players - 1)
+end
+
+-- ===================================================================== party scaling
+-- cfg.party (rift_config.lua): with n players who entered,
+--   health  the rift's total monster health x (1 + healthPerExtraPlayer x (n - 1))
+--   damage  rift monsters and guardians x (1 + damagePerExtraPlayer x (n - 1))
+--   reward  every finisher's chest x (1 + min(rewardCap, rewardPerExtraPlayer x (n - 1)) / 100)
+--   loot    the kills' Chaos loot rate and the Sealed Coffer x (1 + min(lootCap, lootPerExtraPlayer x (n - 1)) / 100)
+-- Solo (or no cfg.party): every value 1.
+function R.party(cfg, players)
+	local p = cfg and cfg.party
+	local extra = math.max(1, floor(tonumber(players) or 1)) - 1
+	if not p or extra == 0 then
+		return {players = extra + 1, health = 1, damage = 1, reward = 1, loot = 1}
+	end
+	return {
+		players = extra + 1,
+		health = 1 + (p.healthPerExtraPlayer or 0) * extra,
+		damage = 1 + (p.damagePerExtraPlayer or 0) * extra,
+		reward = 1 + math.min(p.rewardCap or 0, (p.rewardPerExtraPlayer or 0) * extra) / 100,
+		loot = 1 + math.min(p.lootCap or 0, (p.lootPerExtraPlayer or 0) * extra) / 100
+	}
+end
+
+-- each pack monster's health multiplier for the party: the packs already grow with the players (R.packCount), so a
+-- monster gets the rest of the total health curve (party.health x solo packs / party packs), never below 1
+function R.partyMonsterHealth(cfg, tier, players)
+	local ps = R.party(cfg, players)
+	if ps.players <= 1 then
+		return 1
+	end
+	return math.max(1, ps.health * R.packCount(cfg, tier, 1) / R.packCount(cfg, tier, ps.players))
+end
+
+-- the party part of a run's effects (after R.effects / R.applyAtlasFx): fx.damage x party damage (every rift monster
+-- and guardian), fx.partyHealth (each pack monster's extra health), fx.party (the R.party table). Omen arenas pass
+-- tier nil (no packs). Changes and returns fx.
+function R.applyParty(cfg, fx, players, tier)
+	local ps = R.party(cfg, players)
+	fx.party = ps
+	fx.damage = (fx.damage or 1) * ps.damage
+	fx.partyHealth = tier and R.partyMonsterHealth(cfg, tier, players) or 1
+	return fx
+end
+
+-- one finisher's chest x the party bonus: gold, orbs and item rolls (fractions a chance of one more). Changes and
+-- returns r; solo leaves it as it was.
+function R.partyReward(cfg, r, players, rand)
+	local m = R.party(cfg, players).reward
+	if m == 1 then
+		return r
+	end
+	r.gold = floor((r.gold or 0) * m)
+	r.chaos = R.roundChance((r.chaos or 0) * m, rand)
+	r.divine = R.roundChance((r.divine or 0) * m, rand)
+	r.rolls = math.max(1, R.roundChance((r.rolls or 1) * m, rand))
+	r.partyMult = m
+	return r
+end
+
+-- a count (Omen Fragments) x the party bonus, fractions a chance of one more
+function R.partyCount(cfg, n, players, rand)
+	local m = R.party(cfg, players).reward
+	if m == 1 or (n or 0) <= 0 then
+		return n
+	end
+	return R.roundChance(n * m, rand)
+end
+
+-- the chat line of a party's scaling ("Party of 3: monster health x3, damage +20%; every chest +20%, loot +10%."),
+-- nil solo. health = the health multiplier to show (the rift total, or the guardian's)
+function R.partyNote(ps, health)
+	if not ps or ps.players <= 1 then
+		return nil
+	end
+	local function pct(x)
+		return floor((x - 1) * 100 + 0.5)
+	end
+	return string.format("Party of %d: monster health x%s, damage +%d%%; every chest +%d%%, loot +%d%%.", ps.players,
+		tostring(floor((health or ps.health) * 100 + 0.5) / 100), pct(ps.damage), pct(ps.reward), pct(ps.loot))
 end
 
 -- the guardian's health multiplier (on its base health): boss.healthMult, players, the modifiers' health, Dread
@@ -638,11 +724,11 @@ function R.reward(cfg, tier, bonus, rand)
 	}
 end
 
--- the Sealed Coffer's contents: {gold, chaos, divine, rolls, countMult, lootTier, rarityMult}
-function R.cofferLoot(cfg, tier, bonus, rand)
+-- the Sealed Coffer's contents: {gold, chaos, divine, rolls, countMult, lootTier, rarityMult}; players = who entered
+function R.cofferLoot(cfg, tier, bonus, rand, players)
 	local t = R.tierInfo(cfg, tier)
 	local q = 1 + (bonus and bonus.quantity or 0) / 100
-	local scale = q * t.reward
+	local scale = q * t.reward * R.party(cfg, players).loot -- the party's loot bonus (one coffer for the party)
 	local c = cfg.coffer
 	return {
 		gold = floor(c.goldPerTier2 * t.tier * t.tier * scale),
@@ -967,10 +1053,16 @@ function R.omenHealthMult(cfg, players)
 	return 1 + cfg.omen.healthPerExtraPlayer * (math.max(1, players or 1) - 1)
 end
 
--- one finisher's guardian chest: {gold, chaos, divine, rolls, countMult, lootTier, rarityMult, uniqueRolls, uniqueFind}
-function R.omenReward(cfg)
-	local r = cfg.omen.reward
-	return {gold = r.gold, chaos = r.chaos, divine = r.divine, rolls = r.rolls, countMult = 1, lootTier = "boss",
+-- one finisher's guardian chest: {gold, chaos, divine, rolls, countMult, lootTier, rarityMult, uniqueRolls, uniqueFind}.
+-- Gold: goldPerLevel x the finisher's level (at least omen.minLevel); a flat `gold` of an older config still works.
+function R.omenReward(cfg, level)
+	local o = cfg.omen
+	local r = o.reward
+	local gold = r.gold
+	if r.goldPerLevel then
+		gold = floor(r.goldPerLevel * math.max(o.minLevel or 1, floor(tonumber(level) or 0)))
+	end
+	return {gold = gold or 0, chaos = r.chaos, divine = r.divine, rolls = r.rolls, countMult = 1, lootTier = "boss",
 		rarityMult = r.rarityMult, uniqueRolls = r.uniqueRolls, uniqueFind = r.uniqueFind}
 end
 
@@ -1140,7 +1232,9 @@ function R.atlasBonus(b, am)
 end
 
 -- one finisher's chest (R.reward) with the atlas: own = the finisher's own am (gold, orbs, item rolls), run = the key
--- user's am (the keystone's rewardMult and orbsMult, shared by every finisher). Changes and returns r.
+-- user's am (the keystone's rewardMult and orbsMult, shared by every finisher). goldMult and rewardMult (Lone Ember,
+-- Fleeting Sanctum, the world modifier) raise gold (rewardMult the item rolls too), never the orbs: only orbsMult
+-- (Obsidian Crown) and the flat orb nodes change those. Changes and returns r.
 function R.atlasReward(cfg, r, own, run, rand)
 	if not own and not run then
 		return r
@@ -1149,8 +1243,8 @@ function R.atlasReward(cfg, r, own, run, rand)
 	local orbs = run and run.orbsMult or 1
 	own = own or {}
 	r.gold = floor(r.gold * (1 + (own.goldMult or 0) / 100) * mult)
-	r.chaos = roundChance((r.chaos + (own.chaos or 0)) * mult * orbs, rand)
-	r.divine = roundChance((r.divine + (own.divine or 0)) * mult * orbs, rand)
+	r.chaos = roundChance((r.chaos + (own.chaos or 0)) * orbs, rand)
+	r.divine = roundChance((r.divine + (own.divine or 0)) * orbs, rand)
 	r.rolls = math.max(1, roundChance((r.rolls + (own.rolls or 0)) * mult, rand))
 	return r
 end

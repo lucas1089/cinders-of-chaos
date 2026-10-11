@@ -2,7 +2,7 @@
 -- ("uber" in the file names only; players read "Ascended" and "Cinderheart".)
 --   kinds      lookup by key / index, names of the sigils, relics and shards
 --   chain      shard drops (Omen kills, high rifts), shards -> sigil, relics -> the Cinderheart sigil
---   scaling    health of the boss and its adds by party size, shared lives
+--   scaling    health of the boss and its adds by party size, the party's damage and reward bonus, shared lives
 --   fight      the phase machine (health thresholds, each phase once and in order), enrage and time limit, the
 --              telegraph timing, adds per wave, the Harvest heal, the caught lethal hit
 --   geometry   the arena slots (layout, slot of a position) and the telegraph / hazard shapes
@@ -88,20 +88,31 @@ function U.shardKind(cfg, id)
 end
 
 -- ===================================================================== chain
--- one finisher of an Omen guardian kill of `omenKind` (the rift's kind keys are ours): the shard kind or nil
-function U.shardFromOmen(cfg, omenKind, rand)
+-- a shard chance (percent) x the party bonus of `players` (who entered), rounded to a whole percent, at most 100
+function U.shardChance(cfg, chance, players)
+	chance = chance or 0
+	local m = U.party(cfg, players).reward
+	if m == 1 or chance <= 0 then
+		return chance
+	end
+	return math.min(100, floor(chance * m + 0.5))
+end
+
+-- one finisher of an Omen guardian kill of `omenKind` (the rift's kind keys are ours): the shard kind or nil.
+-- players = who entered the arena (the party bonus on the chance; nil = solo)
+function U.shardFromOmen(cfg, omenKind, rand, players)
 	if not cfg.items.shards[omenKind or ""] then
 		return nil
 	end
-	if rand(1, 100) <= (cfg.shardChance.omen or 0) then
+	if rand(1, 100) <= U.shardChance(cfg, cfg.shardChance.omen, players) then
 		return omenKind
 	end
 	return nil
 end
 
--- one finisher of a sealed rift of `tier`: the shard kind (a random Ascended Omen) or nil
-function U.shardFromRift(cfg, tier, rand)
-	local chance = cfg.shardChance.rift[tonumber(tier) or 0] or 0
+-- one finisher of a sealed rift of `tier`: the shard kind (a random Ascended Omen) or nil; players as above
+function U.shardFromRift(cfg, tier, rand, players)
+	local chance = U.shardChance(cfg, cfg.shardChance.rift[tonumber(tier) or 0], players)
 	if chance <= 0 or rand(1, 100) > chance then
 		return nil
 	end
@@ -158,6 +169,45 @@ end
 function U.addHealthMult(cfg, players)
 	return 1 + (cfg.addHealthPerExtraPlayer or 0) * (math.max(1, tonumber(players) or 1) - 1)
 end
+
+-- cfg.party (uber_config.lua), n players who entered: damage = the boss's and adds' hits x (1 + damagePerExtraPlayer x
+-- (n - 1)); reward = the spoils x (1 + min(rewardCap, rewardPerExtraPlayer x (n - 1)) / 100); loot = the unique find x
+-- (1 + min(lootCap, lootPerExtraPlayer x (n - 1)) / 100). Solo (or no cfg.party): every value 1.
+function U.party(cfg, players)
+	local p = cfg and cfg.party
+	local extra = math.max(1, floor(tonumber(players) or 1)) - 1
+	if not p or extra == 0 then
+		return {players = extra + 1, damage = 1, reward = 1, loot = 1}
+	end
+	return {
+		players = extra + 1,
+		damage = 1 + (p.damagePerExtraPlayer or 0) * extra,
+		reward = 1 + math.min(p.rewardCap or 0, (p.rewardPerExtraPlayer or 0) * extra) / 100,
+		loot = 1 + math.min(p.lootCap or 0, (p.lootPerExtraPlayer or 0) * extra) / 100
+	}
+end
+
+-- the chat line of a party's scaling ("Party of 3: boss health x3, damage +20%; spoils +20%."), nil solo
+function U.partyNote(cfg, def, players)
+	local ps = U.party(cfg, players)
+	if ps.players <= 1 then
+		return nil
+	end
+	return string.format("Party of %d: boss health x%s, damage +%d%%; spoils +%d%%.", ps.players,
+		tostring(floor(U.healthMult(def, ps.players) * 100 + 0.5) / 100), floor((ps.damage - 1) * 100 + 0.5),
+		floor((ps.reward - 1) * 100 + 0.5))
+end
+
+-- x with a chance for the fraction (2.4 -> 2, 40% 3); no rand: rounded down
+local function roundChance(x, rand)
+	local n = floor(x)
+	local frac = x - n
+	if frac > 0 and rand and rand(1, 10000) <= floor(frac * 10000 + 0.5) then
+		n = n + 1
+	end
+	return n
+end
+U.roundChance = roundChance
 
 function U.livesFor(def, players)
 	local l = def.lives or {base = 3, perExtraPlayer = 1}
@@ -229,9 +279,9 @@ function U.shareDamage(maxHealth, share)
 	return math.max(1, floor((tonumber(maxHealth) or 0) * (share or 0) + 0.5))
 end
 
--- the damage multiplier of a hit by the boss or an add
-function U.damageMult(cfg, enraged)
-	return enraged and cfg.enrage.damageMult or 1
+-- the damage multiplier of a hit by the boss or an add: the enrage x the party's damage (players = who entered)
+function U.damageMult(cfg, enraged, players)
+	return (enraged and cfg.enrage.damageMult or 1) * U.party(cfg, players).damage
 end
 
 -- adds of one wave
@@ -558,11 +608,17 @@ function U.markPlan(tiles)
 end
 
 -- ===================================================================== rewards
--- one finisher's spoils: {gold, chaos, divine, exalted, uniqueRolls, uniqueFind, gearRolls, relic = kind or nil}
-function U.reward(cfg, def)
+-- one finisher's spoils: {gold, chaos, divine, exalted, uniqueRolls, uniqueFind, gearRolls, relic = kind or nil,
+-- partyMult}. players = who entered: gold, orbs and gear rolls x the party bonus (fractions a chance of one more with
+-- rand, else rounded down), uniqueFind x the loot bonus; the relic stays one. Solo: the config's numbers.
+function U.reward(cfg, def, players, rand)
 	local r = def.final and cfg.reward.cinder or cfg.reward.ascended
-	return {gold = r.gold, chaos = r.chaos, divine = r.divine, exalted = r.exalted or 0, uniqueRolls = r.uniqueRolls,
-		uniqueFind = r.uniqueFind, gearRolls = r.gearRolls, relic = (r.relic and not def.final) and def.key or nil}
+	local ps = U.party(cfg, players)
+	local m = ps.reward
+	return {gold = floor(r.gold * m), chaos = roundChance(r.chaos * m, rand), divine = roundChance(r.divine * m, rand),
+		exalted = roundChance((r.exalted or 0) * m, rand), uniqueRolls = r.uniqueRolls, uniqueFind = r.uniqueFind * ps.loot,
+		gearRolls = roundChance(r.gearRolls * m, rand), relic = (r.relic and not def.final) and def.key or nil,
+		partyMult = m}
 end
 
 -- the leaderboard of a Cinderheart kill by party size

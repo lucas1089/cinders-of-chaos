@@ -38,6 +38,16 @@ return {
 		omen = 40, -- percent per finisher of an Omen guardian kill: one shard of that omen
 		rift = {[13] = 4, [14] = 7, [15] = 10} -- percent per finisher of a sealed rift of this tier: a shard of a random omen
 	},
+	-- (both x the party bonus below, by the players who entered the rift or the Omen arena)
+
+	-- ------------------------------------------------------------------ party scaling (uber_core.lua U.party)
+	-- n = the players who entered. Health: each boss's healthPerExtraPlayer (kinds below) and addHealthPerExtraPlayer.
+	--   damagePerExtraPlayer  the boss's and the adds' hits x (1 + this x (n - 1)) (the telegraphs and hazards hit a
+	--                         share of the victim's max health and stay as they are)
+	--   rewardPerExtraPlayer  percent on every finisher's spoils (gold, orbs, gear rolls) and on the shard chances, at
+	--                         most rewardCap; the relic stays one per finisher
+	--   lootPerExtraPlayer    percent on the unique find of the spoils, at most lootCap
+	party = {damagePerExtraPlayer = 0.10, rewardPerExtraPlayer = 12.5, rewardCap = 50, lootPerExtraPlayer = 5, lootCap = 20},
 
 	-- ------------------------------------------------------------------ opening
 	partyRange = 8,
@@ -78,11 +88,13 @@ return {
 	-- enraged: the boss and its adds hit damageMult harder, telegraphs come twice as often, and every pulseMs a pulse
 	-- of pulseShare x max health hits everyone in the arena
 	enrage = {damageMult = 1.75, everyMult = 0.5, pulseShare = 0.08, pulseMs = 4000},
+	-- adds: their count grows with the players too (adds.perPlayer), so their total health grows ~+1.5 per extra player
 	addHealthPerExtraPlayer = 0.5,
 
 	-- ------------------------------------------------------------------ rewards (per finisher, into the backpack / inbox)
 	-- gold to the bank, orbs, uniqueRolls rolls over the Ascended uniques of this boss (ChaosUniqueItems entries with
 	-- ascended = true that list the boss), x uniqueFind; gearRolls items of the boss's loot at the boss loot tier.
+	-- Gold, orbs and gearRolls x the party bonus (`party`), uniqueFind x its loot bonus.
 	reward = {
 		ascended = {gold = 15000000, chaos = 20, divine = 10, exalted = 1, uniqueRolls = 2, uniqueFind = 6, gearRolls = 4,
 			relic = true},
@@ -104,7 +116,7 @@ return {
 	-- level 1000 damage of the classes (data/spells/README.md "Classes with the passive trees"), uber_core.lua U.killTime.
 	kinds = {
 		{key = "bloodmoon", name = "Bloodmoon", boss = "Ascended Sangrith", omenBoss = "Sangrith the Bloodmoon Herald",
-			minLevel = 900, healthPerExtraPlayer = 0.45, enrageAt = 600, limit = 780, lives = {base = 3, perExtraPlayer = 1},
+			minLevel = 900, healthPerExtraPlayer = 1.0, enrageAt = 600, limit = 780, lives = {base = 3, perExtraPlayer = 1},
 			add = "Bloodmoon Thrall", element = "physical", hitEffect = "px197_crimson", unique = "Sanguine Crescent",
 			phases = {
 				{at = 1.0, name = "The Red Night", every = 9000, patterns = {"cone", "ring", "marks"},
@@ -117,7 +129,7 @@ return {
 					yell = "EVERY DROP RETURNS TO ME!"}
 			}},
 		{key = "hollow", name = "Hollow Crown", boss = "Ascended Morvane", omenBoss = "Morvane the Hollow Crown",
-			minLevel = 900, healthPerExtraPlayer = 0.45, enrageAt = 600, limit = 780, lives = {base = 3, perExtraPlayer = 1},
+			minLevel = 900, healthPerExtraPlayer = 1.0, enrageAt = 600, limit = 780, lives = {base = 3, perExtraPlayer = 1},
 			add = "Hollow Wraith", element = "death", hitEffect = "shadow_eruption", unique = "Hollow Crown of Morvane",
 			phases = {
 				{at = 1.0, name = "The Empty Throne", every = 9000, patterns = {"cross", "circle", "half"},
@@ -129,7 +141,7 @@ return {
 					yell = "THE DARK CLOSES IN. THERE IS NOWHERE LEFT."}
 			}},
 		{key = "storm", name = "Storm", boss = "Ascended Thalcyra", omenBoss = "Thalcyra the Stormbound Seer",
-			minLevel = 900, healthPerExtraPlayer = 0.45, enrageAt = 600, limit = 780, lives = {base = 3, perExtraPlayer = 1},
+			minLevel = 900, healthPerExtraPlayer = 1.0, enrageAt = 600, limit = 780, lives = {base = 3, perExtraPlayer = 1},
 			add = "Storm Shard", element = "energy", hitEffect = "lightning_strike", unique = "Eye of the Unbroken Storm",
 			phases = {
 				{at = 1.0, name = "Gathering Storm", every = 9000, patterns = {"marks", "lines", "eye"},
@@ -142,7 +154,7 @@ return {
 			}},
 		-- the Cinderheart: the sigil comes from one relic of each Ascended Omen
 		{key = "cinder", name = "Cinderheart", boss = "Ysgrath the Cinderheart", final = true,
-			minLevel = 1000, healthPerExtraPlayer = 0.58, enrageAt = 900, limit = 1080, lives = {base = 2, perExtraPlayer = 1},
+			minLevel = 1000, healthPerExtraPlayer = 1.0, enrageAt = 900, limit = 1080, lives = {base = 2, perExtraPlayer = 1},
 			add = "Cinderspawn", element = "fire", hitEffect = "meteor_strike", unique = "Cinderheart Signet",
 			phases = {
 				{at = 1.0, name = "Red Night Remembered", every = 8000, patterns = {"cone", "ring", "marks"},
@@ -176,10 +188,11 @@ return {
 	-- median of data/spells/README.md "Classes with the passive trees" plus the Ascended / boss uniques), the healer
 	-- of a party healerDps; uptime = the share of the fight spent hitting the boss (moving out of telegraphs, adds)
 	model = {refDps = 3000, healerDps = 2000, uptimeSolo = 0.75, uptimeParty = 0.8},
-	-- the targets the health and enrage numbers were set for (seconds); tests/uber_test.lua keeps them in line
+	-- the targets the health and enrage numbers were set for (seconds); tests/uber_test.lua keeps them in line. Health
+	-- +100% per extra player: a party of 5 (four damage dealers and a healer) takes as long as one player alone.
 	targets = {
-		ascended = {solo = 540, party5 = 300},
-		cinder = {solo = 730, party5 = 480}
+		ascended = {solo = 540, party5 = 540},
+		cinder = {solo = 730, party5 = 735}
 	},
 
 	staffGroup = 4 -- /ascended

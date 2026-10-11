@@ -217,7 +217,8 @@ function A.giveShard(player, kind, why)
 	return inbox
 end
 
--- rift.lua: a sealed rift or a slain Omen guardian. info = {tier, omen = kind key or nil, finishers = {[guid] = {name}}}
+-- rift.lua: a sealed rift or a slain Omen guardian. info = {tier, omen = kind key or nil, finishers = {[guid] = {name}},
+-- players = who entered (the party bonus on the shard chance)}
 function A.onRiftSealed(info)
 	local cfg = C()
 	if not cfg.enabled then
@@ -228,9 +229,9 @@ function A.onRiftSealed(info)
 		if p and p:getGuid() == guid then
 			local kind
 			if info.omen then
-				kind = U.shardFromOmen(cfg, info.omen, rand)
+				kind = U.shardFromOmen(cfg, info.omen, rand, info.players)
 			else
-				kind = U.shardFromRift(cfg, info.tier, rand)
+				kind = U.shardFromRift(cfg, info.tier, rand, info.players)
 			end
 			if kind then
 				A.giveShard(p, kind, info.omen and "The guardian's death leaves something behind" or "The sealed rift leaves something behind")
@@ -624,7 +625,7 @@ end
 function A.deliver(player, run)
 	local cfg = C()
 	local def = run.def
-	local r = U.reward(cfg, def)
+	local r = U.reward(cfg, def, run.size, rand) -- x the party bonus (uber_config.lua party)
 	local inbox = false
 	if r.gold > 0 then
 		player:setBankBalance(player:getBankBalance() + r.gold)
@@ -1260,6 +1261,10 @@ function A.open(player, item)
 	say(run, string.format("%s: %s comes in %d seconds. %s, %d shared %s. Lethal hits send you to the Ember Gate.",
 		def.final and "The Cinderheart" or ("Ascended Omen of the " .. def.name), def.boss, cfg.startDelay,
 		U.clockText(def.limit), run.lives, run.lives == 1 and "life" or "lives"))
+	local partyNote = U.partyNote(cfg, def, run.size)
+	if partyNote then
+		say(run, partyNote)
+	end
 	sendHud(run, "start")
 	log(string.format("%s opened run %d (%s): slot %d, %d player(s)", player:getName(), run.id, def.key, slot, #group))
 	addEvent(tick, cfg.tickMs, slot, run.id)
@@ -1473,7 +1478,7 @@ function bossDeath.onDeath(creature)
 end
 bossDeath:register()
 
--- the player's side: the boss's and the adds' hits x the enrage, a lethal hit caught (the fall)
+-- the player's side: the boss's and the adds' hits x the enrage and the party's damage, a lethal hit caught (the fall)
 local function scaled(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType)
 	local run = A.runOf[creature:getId()]
 	if not run or primaryType == COMBAT_HEALING or run.state ~= "running" then
@@ -1484,8 +1489,8 @@ local function scaled(creature, attacker, primaryDamage, primaryType, secondaryD
 	if entry and (entry.down or (entry.shieldUntil or 0) > os.time()) and (fromRun or run.scripted) then
 		return 0, primaryType, 0, secondaryType, run
 	end
-	if fromRun and not run.scripted and run.enraged then
-		local mult = U.damageMult(C(), true)
+	local mult = fromRun and not run.scripted and U.damageMult(C(), run.enraged, run.size) or 1 -- enrage x party
+	if mult ~= 1 then
 		primaryDamage = math.floor(primaryDamage * mult)
 		if secondaryType ~= COMBAT_HEALING then
 			secondaryDamage = math.floor(secondaryDamage * mult)

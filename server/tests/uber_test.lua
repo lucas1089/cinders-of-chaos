@@ -205,6 +205,9 @@ check(U.patternEvery(cfg, sang.phases[1], true) < U.patternEvery(cfg, sang.phase
 eq(U.shareDamage(10000, 0.55), 5500, "share of max health")
 eq(U.damageMult(cfg, false), 1, "not enraged: x1")
 eq(U.damageMult(cfg, true), cfg.enrage.damageMult, "enraged multiplier")
+check(math.abs(U.damageMult(cfg, false, 3) - (1 + 2 * cfg.party.damagePerExtraPlayer)) < 1e-9, "3 players hit harder")
+check(math.abs(U.damageMult(cfg, true, 3) - cfg.enrage.damageMult * (1 + 2 * cfg.party.damagePerExtraPlayer)) < 1e-9,
+	"enrage x party")
 eq(U.addCount({base = 1, perPlayer = 1}, 4), 5, "adds: base + per player")
 eq(U.addCount(nil, 4), 0, "no adds")
 eq(U.harvestHeal({perAdd = 0.01}, 3, 1000000), 30000, "Harvest: 1% per add")
@@ -340,7 +343,36 @@ local rf = U.reward(cfg, final)
 eq(rf.relic, nil, "the Cinderheart gives no relic")
 check(rf.gold > ra.gold and rf.uniqueRolls >= ra.uniqueRolls, "the Cinderheart pays more")
 local omenReward = omenCfg.reward
-check(ra.gold > omenReward.gold and ra.chaos > omenReward.chaos, "an Ascended Omen pays more than its omen")
+check(ra.gold > omenReward.goldPerLevel * sang.minLevel and ra.chaos > omenReward.chaos,
+	"an Ascended Omen pays more than its omen (gold at the Ascended level)")
+-- the party bonus (uber_config.lua party): solo the config's numbers, a party more per finisher, bounded
+local pc = cfg.party
+local ps1, ps5 = U.party(cfg, 1), U.party(cfg, 5)
+check(ps1.damage == 1 and ps1.reward == 1 and ps1.loot == 1, "solo: no party scaling")
+check(U.party({}, 5).reward == 1, "no party block: neutral")
+check(math.abs(ps5.damage - (1 + 4 * pc.damagePerExtraPlayer)) < 1e-9, "5 players: damage")
+check(ps5.reward >= 1.4 and ps5.reward <= 1 + pc.rewardCap / 100 + 1e-9, "5 players: +40-50% spoils")
+check(math.abs(U.party(cfg, 8).reward - ps5.reward) < 1e-9, "capped at 5")
+local rsolo = U.reward(cfg, sang, 1)
+eq(rsolo.gold, cfg.reward.ascended.gold, "solo gold unchanged")
+eq(rsolo.chaos, cfg.reward.ascended.chaos, "solo orbs unchanged")
+local r5 = U.reward(cfg, sang, 5, function(a) return a end)
+eq(r5.gold, math.floor(cfg.reward.ascended.gold * ps5.reward), "party gold per finisher")
+eq(r5.chaos, math.ceil(cfg.reward.ascended.chaos * ps5.reward), "party orbs (the fraction rolled in)")
+check(r5.gearRolls >= cfg.reward.ascended.gearRolls and r5.uniqueFind > cfg.reward.ascended.uniqueFind, "party gear rolls and find")
+eq(r5.uniqueRolls, cfg.reward.ascended.uniqueRolls, "unique rolls stay")
+eq(r5.relic, "bloodmoon", "the relic stays one per finisher")
+eq(U.reward(cfg, sang, 5).chaos, math.floor(cfg.reward.ascended.chaos * ps5.reward), "no rand: rounded down")
+eq(U.shardChance(cfg, 40, 1), 40, "solo shard chance")
+eq(U.shardChance(cfg, 40, 5), math.floor(40 * ps5.reward + 0.5), "party shard chance")
+eq(U.shardChance(cfg, 90, 5), 100, "a chance never passes 100")
+eq(U.shardChance(cfg, 0, 5), 0, "no chance stays none")
+check(U.partyNote(cfg, sang, 1) == nil, "no party note solo")
+local pn = U.partyNote(cfg, sang, 5)
+check(pn and pn:find("Party of 5", 1, true) and pn:find("x" .. tostring(U.healthMult(sang, 5)), 1, true), "party note: " .. tostring(pn))
+for _, d in ipairs(cfg.kinds) do
+	check(d.healthPerExtraPlayer >= 1.0, d.key .. ": boss health +100% or more per extra player")
+end
 eq(U.boardFor(cfg, 1), "cinder_solo", "solo board")
 eq(U.boardFor(cfg, 2), "cinder_small", "2 players")
 eq(U.boardFor(cfg, 3), "cinder_small", "3 players")
@@ -389,7 +421,7 @@ for _, d in ipairs(cfg.kinds) do
 	check(near(solo, tg.solo), string.format("%s solo kill time %.0f s near %d", d.key, solo, tg.solo))
 	check(near(party, tg.party5), string.format("%s party kill time %.0f s near %d", d.key, party, tg.party5))
 	check(solo < d.enrageAt, d.key .. ": a well-geared solo player kills before the enrage")
-	check(party < solo, d.key .. ": a party is faster than one")
+	check(party >= solo * 0.95, d.key .. ": a full party is not faster than one (health +100% per extra player)")
 end
 
 -- the HUD (the rift HUD's fields)
@@ -880,7 +912,7 @@ hero.hp = hero.maxhp
 run.players[hero.id].shieldUntil = 0
 local addId = next(run.adds)
 doTargetCombat(addId, hero, COMBAT_PHYSICALDAMAGE, -1000, -1000)
-eq(hero.lastHit, math.floor(1000 * cfg.enrage.damageMult), "enraged adds hit harder")
+eq(hero.lastHit, math.abs(math.floor(-1000 * U.damageMult(cfg, true, 2))), "enraged adds hit harder (x the party of 2)")
 hero.hp = hero.maxhp
 
 -- the kill: spoils, relic, achievements, the end
@@ -889,8 +921,12 @@ registered.ChaosAscendedBossDeath.onDeath(b)
 b:remove()
 runTo(T + 10)
 eq(run.state, "success", "the boss is slain")
-eq(hero:getBankBalance() - bank, cfg.reward.ascended.gold, "gold to the bank")
-eq(hero:getItemCount(29856), cfg.reward.ascended.chaos, "orbs")
+-- the hero and the friend entered: the party bonus of 2
+local pm2 = U.party(cfg, 2).reward
+eq(hero:getBankBalance() - bank, math.floor(cfg.reward.ascended.gold * pm2), "gold to the bank (x the party of 2)")
+local orbs2 = hero:getItemCount(29856)
+check(orbs2 == math.floor(cfg.reward.ascended.chaos * pm2) or orbs2 == math.ceil(cfg.reward.ascended.chaos * pm2),
+	"orbs (x the party of 2): " .. orbs2)
 local relic
 for _, it in ipairs(hero.bag) do
 	if it.id == cfg.items.relic.id then

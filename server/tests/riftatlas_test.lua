@@ -424,6 +424,11 @@ do
 	local lone = A.resolve(cfg, fullAtlas(116), {theme = "Abyssal Rift", tier = tier})
 	local shared = R.atlasReward(rcfg, R.reward(rcfg, tier, {quantity = 0}, rng(9)), nil, lone, rng(1))
 	eq(shared.gold, math.floor(base.gold * 1.6), "Lone Ember +60% gold for every finisher")
+	eq(shared.chaos, base.chaos, "Lone Ember leaves the Orbs of Upheaval alone")
+	eq(shared.divine, base.divine, "Lone Ember leaves the Orbs of Fate alone")
+	ok(shared.rolls >= math.floor(base.rolls * 1.6), "Lone Ember +60% item rolls")
+	local gm = R.atlasReward(rcfg, R.reward(rcfg, tier, {quantity = 0}, rng(9)), {goldMult = 25}, nil, rng(1))
+	ok(gm.chaos == base.chaos and gm.divine == base.divine, "goldMult leaves the orbs alone")
 	local sumC, sumC2 = 0, 0
 	for s = 1, 400 do
 		sumC = sumC + R.atlasReward(rcfg, R.reward(rcfg, tier, {quantity = 0}, rng(s)), nil, nil, rng(s)).chaos

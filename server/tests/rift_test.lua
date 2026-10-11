@@ -183,25 +183,27 @@ end
 -- ------------------------------------------------------------------ rewards
 do
 	local rand = rng(3)
+	local g2 = cfg.reward.goldPerTier2
 	local r4 = R.reward(cfg, 4, {quantity = 0, rarity = 0}, rand)
-	eq(r4.gold, 160000, "tier 4 gold")
+	eq(r4.gold, g2 * 16, "tier 4 gold")
 	eq(r4.lootTier, "rare", "tier 4 loot tier")
 	local r4q = R.reward(cfg, 4, {quantity = 50, rarity = 40}, rand)
-	eq(r4q.gold, 240000, "quantity bonus scales gold")
+	eq(r4q.gold, math.floor(g2 * 16 * 1.5), "quantity bonus scales gold")
 	ok(math.abs(r4q.rarityMult - 1.4) < 1e-9, "rarity bonus multiplier")
-	eq(R.reward(cfg, 10, {quantity = 0}, rand).gold, 1000000, "tier 10 gold")
-	eq(R.reward(cfg, 12, {quantity = 0}, rand).gold, math.floor(10000 * 144 * 1.2), "tier 12 gold with the beyond bonus")
+	eq(R.reward(cfg, 10, {quantity = 0}, rand).gold, g2 * 100, "tier 10 gold")
+	eq(R.reward(cfg, 12, {quantity = 0}, rand).gold, math.floor(g2 * 144 * 1.2), "tier 12 gold with the beyond bonus")
 	eq(R.lootTier(cfg, 2), "magic", "tier 2 loot tier")
 	eq(R.lootTier(cfg, 10), "legendary", "tier 10 loot tier")
 	eq(R.lootTier(cfg, 11), "boss", "tier 11 loot tier")
-	-- expected orbs: (1 + 0.5 t) chaos, 0.25 t divine, x quantity
+	-- expected orbs: (base + perTier x t) x quantity
+	local rc, rd = cfg.reward.chaos, cfg.reward.divine
 	local n, chaos, divine, rolls = 4000, 0, 0, 0
 	for _ = 1, n do
 		local r = R.reward(cfg, 6, {quantity = 20}, rand)
 		chaos, divine, rolls = chaos + r.chaos, divine + r.divine, rolls + r.rolls
 	end
-	ok(math.abs(chaos / n - 4 * 1.2) < 0.08, "mean Orbs of Upheaval tier 6: " .. chaos / n)
-	ok(math.abs(divine / n - 1.5 * 1.2) < 0.06, "mean Orbs of Fate tier 6: " .. divine / n)
+	ok(math.abs(chaos / n - (rc.base + rc.perTier * 6) * 1.2) < 0.05, "mean Orbs of Upheaval tier 6: " .. chaos / n)
+	ok(math.abs(divine / n - (rd.base + rd.perTier * 6) * 1.2) < 0.04, "mean Orbs of Fate tier 6: " .. divine / n)
 	ok(math.abs(rolls / n - (2 + 0.5 * 6) * 1.2) < 0.1, "mean item rolls tier 6: " .. rolls / n)
 	local last = 0
 	for t = 1, cfg.maxTier do
@@ -593,8 +595,8 @@ do
 	eq(R.cofferWaveSize(cfg, 1), cfg.coffer.wave.base, "wave solo")
 	eq(R.cofferWaveSize(cfg, 3), cfg.coffer.wave.base + 2 * cfg.coffer.wave.perExtraPlayer, "wave 3 players")
 	local cl = R.cofferLoot(cfg, 5, {quantity = 20, rarity = 10}, rng(2))
-	eq(cl.gold, math.floor(4000 * 25 * 1.2), "coffer gold tier 5 +20%")
-	ok(cl.rolls >= 1 and cl.chaos >= 2, "coffer rolls / chaos")
+	eq(cl.gold, math.floor(cfg.coffer.goldPerTier2 * 25 * 1.2), "coffer gold tier 5 +20%")
+	ok(cl.rolls >= 1 and cl.chaos >= 0, "coffer rolls / chaos")
 	ok(cl.gold < R.reward(cfg, 5, {quantity = 20}, rng(2)).gold, "coffer below the chest")
 	local coins = R.coins(1234567)
 	local total = 0
@@ -892,6 +894,122 @@ do
 	for _, v in ipairs({2116, 2117, 2118}) do
 		eq(users[v], 1, "omen look " .. v .. " used once")
 	end
+end
+
+-- ------------------------------------------------------------------ party scaling (cfg.party)
+do
+	local p = cfg.party
+	local near = function(a, b) return math.abs(a - b) < 1e-9 end
+	local solo = R.party(cfg, 1)
+	ok(solo.health == 1 and solo.damage == 1 and solo.reward == 1 and solo.loot == 1, "solo: every party value 1")
+	ok(R.party(cfg, nil).players == 1 and R.party(cfg, 0).players == 1, "no or zero players: solo")
+	ok(R.party({}, 5).reward == 1, "no party block: neutral")
+	ok(cfg.maxPlayers == 5, "rifts take a party of 5")
+	-- the curve: health +1.0 or more per extra player, damage up, reward linear up to the cap
+	ok(p.healthPerExtraPlayer >= 1.0, "health +100% or more per extra player")
+	ok(p.damagePerExtraPlayer > 0, "parties take more damage")
+	ok(cfg.boss.perExtraPlayer >= 1.0 and cfg.omen.healthPerExtraPlayer >= 1.0, "guardians +100% per extra player")
+	local last = 1
+	for n = 2, 8 do
+		local ps = R.party(cfg, n)
+		ok(near(ps.health, 1 + p.healthPerExtraPlayer * (n - 1)), "total health " .. n)
+		ok(near(ps.damage, 1 + p.damagePerExtraPlayer * (n - 1)), "damage " .. n)
+		ok(ps.reward >= last and ps.reward <= 1 + p.rewardCap / 100 + 1e-9, "reward grows to the cap " .. n)
+		ok(ps.loot <= 1 + p.lootCap / 100 + 1e-9 and ps.loot > 1, "loot bonus bounded " .. n)
+		last = ps.reward
+	end
+	ok(near(R.party(cfg, 2).reward, 1 + p.rewardPerExtraPlayer / 100), "two players: one step")
+	local full = R.party(cfg, cfg.maxPlayers)
+	ok(full.reward >= 1.4 and full.reward <= 1.5 + 1e-9, "a full party: +40-50% per finisher")
+	ok(near(R.party(cfg, 9).reward, full.reward), "capped at a full party")
+	-- the packs grow with the players; each monster gets the rest, so the total follows the curve
+	for _, tier in ipairs({1, 6, 15}) do
+		eq(R.partyMonsterHealth(cfg, tier, 1), 1, "solo monsters x1, tier " .. tier)
+		for n = 2, 5 do
+			local total = R.partyMonsterHealth(cfg, tier, n) * R.packCount(cfg, tier, n) / R.packCount(cfg, tier, 1)
+			ok(math.abs(total - R.party(cfg, n).health) < 1e-9, string.format("tier %d, %d players: total health x%.2f", tier, n, total))
+			ok(R.partyMonsterHealth(cfg, tier, n) >= 1, "a monster never gets weaker")
+		end
+	end
+	-- R.plan uses the same pack count
+	local plan = R.plan(cfg, 9, R.effects(cfg, {}, 9), 3, {{name = "a", level = 1}}, {"n"}, rng(4))
+	eq(#plan.packs, R.packCount(cfg, 9, 3), "plan packs = R.packCount")
+	-- R.applyParty: damage into fx, the monster share, Brutality kept
+	local fx = R.applyParty(cfg, R.effects(cfg, {{key = "brutality", value = 20}}, 4), 3, 4)
+	ok(near(fx.damage, 1.2 * (1 + 2 * p.damagePerExtraPlayer)), "damage: Brutality x party")
+	ok(near(fx.partyHealth, R.partyMonsterHealth(cfg, 4, 3)), "monster share")
+	eq(fx.party.players, 3, "party kept on fx")
+	local fxs = R.applyParty(cfg, R.effects(cfg, {}, 4), 1, 4)
+	ok(fxs.damage == 1 and fxs.partyHealth == 1, "solo fx unchanged")
+	local fxo = R.applyParty(cfg, R.effects(cfg, {}, 1), 4, nil)
+	ok(fxo.partyHealth == 1 and fxo.damage > 1, "an Omen arena: damage, no pack share")
+	-- the guardian health is not scaled twice by the party
+	ok(near(R.guardianHealthMult(cfg, fx, 3), cfg.boss.healthMult * (1 + 2 * cfg.boss.perExtraPlayer) * fx.health),
+		"guardian health from boss.perExtraPlayer only")
+	-- rewards: solo unchanged, a party more per finisher, every field scaled
+	local base = R.reward(cfg, 12, {quantity = 40}, rng(5))
+	local same = R.partyReward(cfg, R.reward(cfg, 12, {quantity = 40}, rng(5)), 1, rng(1))
+	ok(same.gold == base.gold and same.chaos == base.chaos and same.rolls == base.rolls, "solo chest unchanged")
+	local pr = R.partyReward(cfg, R.reward(cfg, 12, {quantity = 40}, rng(5)), 5, rng(1))
+	eq(pr.gold, math.floor(base.gold * full.reward), "party gold")
+	ok(pr.rolls >= math.floor(base.rolls * full.reward), "party item rolls")
+	local sc, sp, n = 0, 0, 3000
+	local r1, r2 = rng(21), rng(22)
+	for _ = 1, n do
+		sc = sc + R.reward(cfg, 15, {quantity = 100}, r1).chaos
+		sp = sp + R.partyReward(cfg, R.reward(cfg, 15, {quantity = 100}, r2), 5, r2).chaos
+	end
+	ok(math.abs(sp / sc - full.reward) < 0.06, "party orbs x the bonus: " .. sp / sc)
+	eq(R.partyCount(cfg, 20, 1, rng(1)), 20, "solo fragments unchanged")
+	eq(R.partyCount(cfg, 20, 5, rng(1)), math.floor(20 * full.reward), "party fragments")
+	eq(R.partyCount(cfg, 0, 5, rng(1)), 0, "no fragments stay none")
+	-- coffer: one for the party, x the loot bonus
+	local c1 = R.cofferLoot(cfg, 10, {quantity = 0}, rng(2), 1)
+	local c5 = R.cofferLoot(cfg, 10, {quantity = 0}, rng(2), 5)
+	eq(c1.gold, R.cofferLoot(cfg, 10, {quantity = 0}, rng(2)).gold, "coffer: no players = solo")
+	eq(c5.gold, math.floor(c1.gold * full.loot), "coffer gold x the loot bonus")
+	-- the chat line
+	eq(R.partyNote(solo), nil, "no note solo")
+	local note = R.partyNote(R.party(cfg, 3), 3)
+	ok(note and note:find("Party of 3", 1, true) and note:find("x3", 1, true) and note:find("+20%", 1, true), "party note: " .. tostring(note))
+end
+
+-- ------------------------------------------------------------------ the income model (server/README.md "Rifts", Income)
+-- hunting at level 1000 ("Respec" table and the audit): 9.5M gold, 2.5 Orbs of Upheaval, 1.3 Orbs of Fate an hour.
+-- Rifting: four tier 15 chests an hour at +128% quantity (the highest sum with tier V modifiers).
+do
+	local hunt = {gold = 9519711, chaos = 2.5, divine = 1.3}
+	local function hour(players, own, run)
+		local g, c, d, n = 0, 0, 0, 4000
+		local rand = rng(77)
+		for _ = 1, n do
+			local r = R.reward(cfg, 15, {quantity = 128}, rand)
+			R.atlasReward(cfg, r, own, run, rand)
+			R.partyReward(cfg, r, players, rand)
+			g, c, d = g + r.gold, c + r.chaos, d + r.divine
+		end
+		return {gold = 4 * g / n, chaos = 4 * c / n, divine = 4 * d / n}
+	end
+	local solo, party = hour(1), hour(5)
+	ok(solo.gold >= 1.5 * hunt.gold and solo.gold <= 2 * hunt.gold, string.format("solo gold %.1fM: 1.5-2x hunting", solo.gold / 1e6))
+	ok(solo.chaos >= 5 * hunt.chaos and solo.chaos <= 15 * hunt.chaos, string.format("solo Upheaval %.1f: at most 15x hunting", solo.chaos))
+	ok(solo.divine >= 5 * hunt.divine and solo.divine <= 15 * hunt.divine, string.format("solo Fate %.1f: at most 15x hunting", solo.divine))
+	ok(party.chaos <= 15 * hunt.chaos and party.divine <= 15 * hunt.divine, "a full party's orbs per head: at most 15x hunting")
+	local ratio = party.gold / solo.gold
+	ok(ratio >= 1.3 and ratio <= 1.6, string.format("a full party per head: x%.2f solo", ratio))
+	-- the atlas multipliers raise gold, never the orbs
+	local maxed = hour(1, {goldMult = 25}, {rewardMult = 60})
+	ok(math.abs(maxed.gold / solo.gold - 1.25 * 1.6) < 0.01, "goldMult and Lone Ember on the gold")
+	ok(math.abs(maxed.chaos / solo.chaos - 1) < 0.05 and math.abs(maxed.divine / solo.divine - 1) < 0.06,
+		"goldMult and Lone Ember leave the orbs alone")
+	-- the Omen guardian: gold by the finisher's level (at least the arena's level)
+	local o = cfg.omen
+	eq(R.omenReward(cfg, 1000).gold, o.reward.goldPerLevel * 1000, "Omen gold at level 1000")
+	eq(R.omenReward(cfg, 1200).gold, o.reward.goldPerLevel * 1200, "Omen gold grows with the level")
+	eq(R.omenReward(cfg, 10).gold, o.reward.goldPerLevel * o.minLevel, "Omen gold: at least the arena's level")
+	eq(R.omenReward(cfg).gold, o.reward.goldPerLevel * o.minLevel, "Omen gold without a level")
+	ok(R.omenReward(cfg, 1000).gold < hunt.gold / 2, "an Omen kill pays less gold than half an hour of hunting")
+	ok(R.omenReward(cfg, 1000).chaos <= 6 and R.omenReward(cfg, 1000).divine <= 3, "Omen orbs cut to a third")
 end
 
 print(string.format("rift tests: %d checks, %d failed", checks, fails))

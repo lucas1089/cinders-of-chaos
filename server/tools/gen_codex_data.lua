@@ -1371,7 +1371,11 @@ function Gen.riftEntries(D)
 				#cfg.tiers, cfg.beyond.minLevelStep, floor(cfg.beyond.health * 100 + 0.5), floor(cfg.beyond.reward * 100 + 0.5))},
 				cols = {"Tier", "Level to enter", "Monster levels"}, w = {20, 40, 40}, rows = tierRows},
 			{h = "The run", p = {string.format("%d minutes; the guardian comes after %d%% of the monsters; %d shared lives + %d per extra player; up to %d players.",
-				floor(cfg.timeLimit / 60), cfg.bossAt, cfg.lives.base, cfg.lives.perExtraPlayer, cfg.maxPlayers)}},
+				floor(cfg.timeLimit / 60), cfg.bossAt, cfg.lives.base, cfg.lives.perExtraPlayer, cfg.maxPlayers),
+				cfg.party and string.format("Each extra player: +%d%% monster health in total (more packs, tougher monsters), +%d%% guardian health, +%d%% damage taken; every finisher's chest +%s%% (at most +%d%%) and +%s%% kill loot (at most +%d%%).",
+					floor(cfg.party.healthPerExtraPlayer * 100 + 0.5), floor(cfg.boss.perExtraPlayer * 100 + 0.5),
+					floor(cfg.party.damagePerExtraPlayer * 100 + 0.5), Gen.num(cfg.party.rewardPerExtraPlayer), cfg.party.rewardCap,
+					Gen.num(cfg.party.lootPerExtraPlayer), cfg.party.lootCap) or nil}},
 			{h = "Chest (per player)", p = {
 				string.format("Gold: %d x tier squared to the bank.", rw.goldPerTier2),
 				string.format("%s: %s + %s per tier; %s: %s + %s per tier.", orbName(D, "chaos"), Gen.num(rw.chaos.base),
@@ -1393,7 +1397,7 @@ function Gen.riftEntries(D)
 				om.minTier, om.keyCost, om.minLevel, floor(om.timeLimit / 60))}, links = {"cur:omenfragment"}},
 			{h = "Guardians", cols = {"Omen", "Guardian"}, w = {35, 65}, rows = kindRows},
 			{h = "Reward (per finisher)", p = {string.format("%s gold to the bank, %d %s, %d %s, %d item rolls of the guardian's loot (x%s rarity), %d unique rolls (x%d find), gems and supports as a tier %d rift. Drops in the arena get +%d item level.",
-				Gen.num(om.reward.gold), om.reward.chaos, orbName(D, "chaos"), om.reward.divine, orbName(D, "divine"), om.reward.rolls,
+				om.reward.goldPerLevel and (Gen.num(om.reward.goldPerLevel) .. " x your level in") or Gen.num(om.reward.gold), om.reward.chaos, orbName(D, "chaos"), om.reward.divine, orbName(D, "divine"), om.reward.rolls,
 				Gen.num(om.reward.rarityMult), om.reward.uniqueRolls, om.reward.uniqueFind, om.reward.asTier, D.M.config.itemLevel.omen)}}
 		}}
 	return out

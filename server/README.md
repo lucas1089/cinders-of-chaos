@@ -5909,7 +5909,7 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   | Teeming | +20-50% packs | 80, 1+ | quantity 0.5x, experience 0.3x |
   | Gilded Trail (boon) | 30-70% chance that the existing Treasure Goblin (`ChaosTreasureGoblin.spawn`) appears in a random open room after 25-60% of the kills, at the level of the strongest type | 40, 1+ | - |
   | Warbands | 10-30% of packs: every member rare, the first legendary | 60, 2+ | rarity 1x, quantity 0.3x |
-  | Sealed Coffer (boon) | 40-100% chance of a coffer (treasure chest 1746, action id 47403) in an open room. Using it wakes 5 (+1 per extra player) magic+ rift monsters, which do not count towards the guardian. Once they are dead it opens with coins worth 4,000 x tier^2, Orbs of Upheaval 1 + 0.25 x tier, Orbs of Fate 0.1 x tier and 2 + 0.25 x tier item rolls, all x quantity. An unwoken coffer crumbles at the seal | 50, 1+ | - |
+  | Sealed Coffer (boon) | 40-100% chance of a coffer (treasure chest 1746, action id 47403) in an open room. Using it wakes 5 (+1 per extra player) magic+ rift monsters, which do not count towards the guardian. Once they are dead it opens with coins worth 2,000 x tier^2, Orbs of Upheaval 0.25 + 0.05 x tier, Orbs of Fate 0.03 x tier and 2 + 0.25 x tier item rolls, all x quantity and x the party's loot bonus (one coffer for the party). An unwoken coffer crumbles at the seal | 50, 1+ | - |
   | Twin Guardians | two guardians, each with 55-75% of the guardian health; both must die | 50, 3+ | rarity 0.25x, quantity 0.2x |
   | Echoing Spoils (boon) | 5-15% of kills: every corpse item is copied once (onDropLoot 1.5, before the loot snapshot so rays and autoloot see the copies; Rift Keys are not copied) | 35, 2+ | - |
   | Cinderdeath | 1.5 s after a kill, players within 1 sqm take fire damage: 5-15% of the monster's max health, at most 300 + 150 x tier | 70, 3+ | quantity 1.2x, rarity 0.8x |
@@ -5940,10 +5940,12 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   chest: 2 + 1 per tier above 6, x quantity; rare / legendary monsters of those rifts carry one 8% / 25%. Using 60
   fragments binds an Omen Key (item 32072, copy of the eye of the storm; attribute omen_kind) of a random kind. The key
   opens a guardian arena: a rift slot with every side room shut, level 800+, 10 minutes, the rift lives, the guardian
-  after 5 s, health from its XML (+75% per extra player). Guardians (rift-exclusive outfits 2116, 2117, 2118 of things_custom11, see "Rift looks" below; 500k
+  after 5 s, health from its XML (+100% per extra player; was +75%), +10% damage per extra player. Guardians (rift-exclusive outfits 2116, 2117, 2118 of things_custom11, see "Rift looks" below; 500k
   health each, `monsters/chaos/omens/`): Sangrith the Bloodmoon Herald, Morvane the Hollow Crown, Thalcyra the
-  Stormbound Seer. Chest per finisher: 5M gold, 12 Chaos, 6 Divine, 8 item rolls (boss tier, x1.5 rarity), gems and
-  supports as a tier 15 rift, and 2 unique rolls over every unique at boss tier x2 find. Achievements omen_1 / omen_10
+  Stormbound Seer. Chest per finisher: 3,000 gold x the finisher's level (at least 800; 3M at level 1000; was a flat 5M),
+  4 Orbs of Upheaval, 2 Orbs of Fate (were 12 / 6), 8 item rolls (boss tier, x1.5 rarity), gems and supports as a tier
+  15 rift, and 2 unique rolls over every unique at boss tier x2 find; gold, orbs and rolls x the party bonus (see "Party
+  scaling" below). Achievements omen_1 / omen_10
   and one per kind. Install: `tools/install_omens.py DATA_DIR` (items.otb / items.xml) and register the omens monster
   folder. `/rift omen [kind]`, `/rift fragments [n]`, `/rift lives n` for gamemasters.
 - **Dungeon difficulty** (`dungeons_difficulty.lua`): the six difficulties now do what the client panel says (the test
@@ -6009,7 +6011,7 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   +10% rewards per tier (level +25 per tier). A window with fewer than three types is widened.
 - **Opening.** Use the key in a protection zone, out of combat, not multi-clienting (`Chaos.isMultiClient`), not in a
   dungeon, the tower or the world boss arena, at the tier's level. Party members within 8 sqm on the same floor come
-  along (up to 4 players); members who fail a rule stay behind and both are told why.
+  along (up to 5 players; was 4); members who fail a rule stay behind and both are told why.
 - **The instance** is built at runtime with `Game.createTile` in a grid of 16 slots (4 x 4, 64 sqm apart) at
   x/y 8192-8447, z 7, where the map has no tiles (checked in the OTBM; other runtime areas: tower 2000+, tutorial island
   4600+, world boss 5000+, siege 5100+, PvP arena 6000+). The first use of a slot checks every tile of its footprint like
@@ -6023,20 +6025,73 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   the north of the hub, the rest in the open rooms. Every monster rolls magic 10% / rare 3% / legendary 0.6%
   (x (1 + 0.05 tier) x the Elites modifier) through `ChaosApplyTier` (monster_tiers.lua; the natural spawn roll and the
   ambush also still apply). After 75% of the monsters died the guardian appears in the hub: the strongest type of the
-  rift, legendary, with 3x its base health (+100% per extra player). Time limit 10 minutes. The HUD (top left, under the
+  rift, legendary, with 3x its base health (+100% per extra player). With a party every pack monster gets more health
+  too, so the rift's total monster health is +100% per extra player (see "Party scaling"). Time limit 10 minutes. The HUD (top left, under the
   character plate) shows tier, theme, time left, kills / left, the guardian, the modifiers and the bonuses.
 - **End.** Guardian killed in time: the rift is sealed, the remaining monsters vanish, a chest (1740, action id 47402)
   appears where it died and every finisher may open it once within 60 s; whoever did not gets it delivered at the exit
   (or at the next login when offline). Time up: "the rift collapses", everyone is sent back to where they used the key,
   the key is lost. Death inside: the normal death rules (temple, losses), the player is out of the run. Logout inside: the
   player is put back at their entry position and is out of the run. A run whose last player left fails.
-- **The chest** (per finisher): gold to the bank 10,000 x tier^2, Orbs of Upheaval 1 + 0.5 x tier, Orbs of Fate 0.25 x tier,
-  item rolls 2 + 0.5 x tier (each draws one entry of a random rift monster's loot table weighted by its chance; gear gets
-  a rarity from `ChaosLoot.upgradeRarity` at magic (tiers 1-3) / rare (4-6) / legendary (7-10) / boss (11+), x the
-  rarity bonus), one Chaos currency roll and one unique roll at that tier; gold, orbs and rolls x (1 + quantity bonus).
-  Measured: tier 1 10k gold, 2 Chaos, 1 Divine, a few items; tier 7 (+40% quantity) 686k gold, 6 Chaos, 3 Divine,
-  an [Exotic] dragon robe, potions, 11 crystal coins; tier 10 1M+ gold. Finishers are recorded on the weekly Rifts
-  leaderboard (`ChaosLeaderboard.record("rift", player, tier)`).
+- **The chest** (per finisher): gold to the bank 5,000 x tier^2, Orbs of Upheaval 0.5 + 0.085 x tier, Orbs of Fate
+  0.06 x tier, item rolls 2 + 0.5 x tier (each draws one entry of a random rift monster's loot table weighted by its
+  chance; gear gets a rarity from `ChaosLoot.upgradeRarity` at magic (tiers 1-3) / rare (4-6) / legendary (7-10) / boss
+  (11+), x the rarity bonus), one Chaos currency roll and one unique roll at that tier; gold, orbs and rolls x (1 +
+  quantity bonus), then the finisher's Rift Atlas, then the party bonus. Before the reward pass (2026-10-11) it was
+  10,000 x tier^2, 1 + 0.5 x tier and 0.25 x tier. Measured with the old numbers: tier 1 10k gold, 2 Chaos, 1 Divine, a
+  few items; tier 7 (+40% quantity) 686k gold, 6 Chaos, 3 Divine, an [Exotic] dragon robe, potions, 11 crystal coins;
+  tier 10 1M+ gold. Finishers are recorded on the weekly Rifts leaderboard (`ChaosLeaderboard.record("rift", player,
+  tier)`).
+- **Party scaling** (`rift_config.lua` `party`, `R.party` / `R.applyParty` / `R.partyReward` in `rift_core.lua`, tested by
+  `tests/rift_test.lua`). By the players who entered (n), rifts and Omen arenas alike:
+
+  | Players | Total monster health | Guardian health | Damage taken | Chest per finisher | Kill loot and coffer |
+  |---|---|---|---|---|---|
+  | 1 | x1 | x3 (the guardian's base) | x1 | x1 | x1 |
+  | 2 | x2 | x6 | +10% | +12.5% | +5% |
+  | 3 | x3 | x9 | +20% | +25% | +10% |
+  | 4 | x4 | x12 | +30% | +37.5% | +15% |
+  | 5 | x5 | x15 | +40% | +50% (cap) | +20% (cap) |
+
+  - **Health, +100% per extra player.** The packs already grow (+2 per extra player), so each pack monster gets the rest
+    of the curve: x (n x solo packs / party packs), never below 1 (tier 15, 5 players: 19 packs instead of 11, each
+    monster x2.89; tier 1: 14 instead of 6, x2.14). Guardians: +100% per extra player (`boss.perExtraPlayer`, the Omen
+    guardian's `omen.healthPerExtraPlayer`, was +75%). The curve is linear and at least the party's damage: a party of
+    5 (four damage dealers and a healer, the Ascended balance model: 4.98x a solo player's damage) clears a rift in about
+    the time one player needs, so a run per hour per head is the same as solo.
+  - **Damage, +10% per extra player** (`fx.damage`, every rift monster and guardian, Omens too): the extra hits a party
+    soaks are spread over more players, so a bit more damage keeps the pressure.
+  - **Reward, +12.5% per extra player, capped at +50%** (a full party of 5). Every finisher still gets the whole chest, x
+    the bonus: gold, orbs, item rolls and Omen Fragments (`R.partyReward`, `R.partyCount`). Linear because each extra
+    player adds the same work; capped so a full party ends at about 1.5x solo per head, not 5x.
+  - **Loot, +5% per extra player, capped at +20%:** the Chaos loot rate of the rift's kills (`ChaosRift.lootMult`) and the
+    Sealed Coffer. A modest bonus: corpses are shared, so kill loot per head stays lower in a party (tier 15, 5 players:
+    1.7x the monsters for 5 players), and the chest bonus makes up for it.
+  - The run start says it in chat ("Party of 3: monster health x3, damage +20%; every chest +25%, loot +10%.").
+- **Income** (level 1000, per hour; hunting is the "Respec" model: 9.5M gold, and the audit's 2.5 Orbs of Upheaval and
+  1.3 Orbs of Fate). Rifting model: four sealed tier 15 rifts an hour at +128% quantity (the highest key with tier V
+  modifiers), chest only (no coffer, no kill loot). The loop row is three rifts and one Omen kill an hour (three tier 15
+  chests give 75 fragments, more than one key). Per head; the party rows assume the same runs per hour (see the health
+  curve above). Before = the numbers before 2026-10-11 (a party could be 4 at most and cleared faster than solo).
+
+  | Per hour | Gold | Upheaval | Fate | Gold / hunting | Upheaval / hunting | Fate / hunting |
+  |---|---|---|---|---|---|---|
+  | Hunting | 9.5M | 2.5 | 1.3 | 1x | 1x | 1x |
+  | Rifts solo, before | 30.8M | 116 | 51 | 3.2x | 47x | 39x |
+  | Rifts solo, after | 15.4M | 24.3 | 12.3 | 1.6x | 9.7x | 9.5x |
+  | Rifts, party of 5, after | 23.1M | 36.5 | 18.5 | 2.4x | 14.6x | 14.2x |
+  | Loop solo (3 rifts + 1 Omen), before | 28.1M | 99 | 44.5 | 3.0x | 40x | 34x |
+  | Loop solo, after | 14.5M | 22.2 | 11.3 | 1.5x | 8.9x | 8.7x |
+  | Loop, party of 5, after | 21.8M | 33.4 | 16.9 | 2.3x | 13.4x | 13.0x |
+  | Full atlas + Lone Ember solo, before | 61.6M | 197 | 92 | 6.5x | 79x | 71x |
+  | Full atlas + Lone Ember solo, after | 30.8M | 26.5 | 13.8 | 3.2x | 10.6x | 10.6x |
+  | Full Obsidian Hall atlas + Obsidian Crown solo, after | 19.2M | 53 | 27.4 | 2.0x | 21x | 21x |
+
+  Before, a party of 4 got the solo chest each and cleared about 2.5x faster (3.9x the damage against 1.55x the
+  monsters at tier 15), so about 2.5x solo per head; now a party of 5 gets 1.5x solo per head from the chests. The
+  atlas's `goldMult` and the Lone Ember / Fleeting Sanctum `rewardMult` now raise gold and item rolls only, never the
+  orbs. Open: Obsidian Crown still doubles the orbs (21x hunting with a full Hall atlas) for a guardian twice as strong.
+  `tests/rift_test.lua` checks the solo and party rows against these bounds.
 - **Keys.** A sealed rift drops one key (to the player who used the key, else a random finisher) with 30% + 10% per
   modifier (max 60%); of those 50% + 10% per modifier are the next tier (with more modifiers), the rest the same tier.
   Rare / legendary monsters inside a rift carry a key of its tier 2% / 6% of the time. Tier-1 keys: normal kills outside
@@ -6090,7 +6145,7 @@ more restarts; the same with a closed server and after a death and return; a log
 run was active; cleanup (no monsters or items left, tiles kept); Vitality x1.40 health, Reflection 10% of the landed
 damage, Warding -20% fire, Withering (no regeneration inside, back outside); the tier-1 key from a normal kill and from a
 bounty; the temple scroll and the multi-client login refusal; the experience cap. Not verified: a real party (only one
-player per run was tested), the protection-zone rule on a real map (the cropped test map has no protection zone, so the
+player per run was tested; the party scaling and the 5-player limit are unit tested only), the protection-zone rule on a real map (the cropped test map has no protection zone, so the
 rule was switched off after checking the refusal), balance of tiers 8-15 against geared characters.
 
 ## New players (`newplayer.lua`, `newplayer_core.lua`, `newplayer_config.lua`, `newplayer_tutorial.lua`)
@@ -6235,10 +6290,10 @@ table `chaos_rift_atlas`, no storages. Window: Adventure > Rift Atlas, or the Ri
 | Branch | Small nodes | Notables | Keystone |
 |---|---|---|---|
 | Core | +3% packs (x2), +2% modifier rewards (x3), +4% chest gold, +2% next-key chance (x2), +3% key upgrade, +3% time (x2), +5% fragments | Second Wind (+1 life at tier 8+), Keywright (+4% key, +5% upgrade), Unbroken Line (+1 life at tier 12+, +4% time), Cartographer's Eye (+4% modifier rewards, +4% packs) | - |
-| Abyssal Rift (north) | packs and elites in Abyssal Rifts, fragments, packs | Attunement (+60% theme weight), Teeming Abyss (+15% packs), Eye of the Abyss (+15% elites, +0.5 item rolls), Endless Tide (+8% packs everywhere) | Lone Ember: one shared life, every finisher's chest +60% |
-| Obsidian Hall (east) | chest gold, Orbs of Upheaval, item rolls | Attunement, Guardian's Hoard (+1 Upheaval, +1 Fate per chest in the Hall), Molten Coffers (+10% gold, +0.5 rolls), Forged in Obsidian (+6% modifier rewards in the Hall, +0.5 Fate) | Obsidian Crown: guardian +100% health and damage, the chest's orbs x2 |
+| Abyssal Rift (north) | packs and elites in Abyssal Rifts, fragments, packs | Attunement (+60% theme weight), Teeming Abyss (+15% packs), Eye of the Abyss (+15% elites, +0.5 item rolls), Endless Tide (+8% packs everywhere) | Lone Ember: one shared life, every finisher's chest +60% gold and item rolls (not orbs) |
+| Obsidian Hall (east) | chest gold, Orbs of Upheaval, item rolls | Attunement, Guardian's Hoard (+0.25 Upheaval, +0.25 Fate per chest in the Hall), Molten Coffers (+10% gold, +0.5 rolls), Forged in Obsidian (+6% modifier rewards in the Hall, +0.1 Fate); Molten Vein and Glimmering Orb +0.1 Upheaval each | Obsidian Crown: guardian +100% health and damage, the chest's orbs x2 |
 | Ashen Crypt (south) | next-key chance and upgrade, time | Attunement, Rekindled Key (+15% upgrade in the Crypt), Crypt Warden's Mark (+1 life, +8% time in the Crypt), Ember Ward (keys from sealed rifts roll more modifiers) | Ashen Ascent: next-key chance halved, every key that drops is a tier higher |
-| Forsaken Sanctum (west) | time, Treasure Goblin and Sealed Coffer chances | Attunement, Gilded Pilgrims (+20% goblin in the Sanctum), Reliquary (+20% coffer in the Sanctum), Sanctified Hours (+6% time, +3% modifier rewards) | Fleeting Sanctum: 35% less time, +40% packs, every finisher's chest +30% |
+| Forsaken Sanctum (west) | time, Treasure Goblin and Sealed Coffer chances | Attunement, Gilded Pilgrims (+20% goblin in the Sanctum), Reliquary (+20% coffer in the Sanctum), Sanctified Hours (+6% time, +3% modifier rewards) | Fleeting Sanctum: 35% less time, +40% packs, every finisher's chest +30% gold and item rolls |
 
 - **How it reaches the rifts.** `rift_core.lua` has a hook table, `R.hooks.atlasMods(player, ctx)` -> the flat modifiers of
   `A.resolve` and `R.hooks.onSealed(info)`; `atlas.lua` sets both. Without the hooks every rift function behaves exactly as
@@ -6248,21 +6303,26 @@ table `chaos_rift_atlas`, no storages. Window: Adventure > Rift Atlas, or the Ri
   Sealed Coffer modifiers, so they can appear without them), the guardian (`boss`, as Dread Guardian), the modifier
   reward bonuses (`R.atlasBonus`) and the next key (`R.keyOdds` / `R.rollKeyDrop`). Each finisher's own atlas adds to
   their chest (`R.atlasReward`: gold, orbs, item rolls; `R.atlasFragments`); the keystone's chest multipliers come from
-  the key user and count for every finisher (they share the risk). Stats tied to a theme count only in rifts of that
+  the key user and count for every finisher (they share the risk). `goldMult` and the keystones' `rewardMult` raise gold
+  (`rewardMult` the item rolls too), never the orbs; only the flat orb nodes and Obsidian Crown's `orbsMult` change those.
+  The party bonus ("Rifts", Party scaling) applies after the atlas. Stats tied to a theme count only in rifts of that
   theme; "tier N+" stats only from that tier. Omen arenas take no atlas effects (they still credit their cell). The HUD
   shows an "Atlas: ..." line (keystone, packs, time, lives).
 - **Caps** (`caps`, on the sum of all nodes; keystones on top): packs 25%, elites 40%, time 25%, modifier rewards 20%,
-  chest gold 25%, next-key chance +15, key upgrade +25, fragments 25%, +2 Upheaval, +1.5 Fate, +1.5 item rolls,
+  chest gold 25%, next-key chance +15, key upgrade +25, fragments 25%, +0.6 Upheaval, +0.4 Fate (were +2 / +1.5, cut
+  with the chest's orbs), +1.5 item rolls,
   goblin 40%, coffer 40%, 2 lives.
-- **Totals and the reward economy.** The chest is `R.reward`: gold 10,000 x tier^2, Orbs of Upheaval 1 + 0.5 x tier, Orbs of
-  Fate 0.25 x tier, item rolls 2 + 0.5 x tier, all x (1 + quantity), tiers 11-15 +10% per tier. A full atlas without a
-  keystone (all 96 points), at tier 15 with +50% quantity: gold 5.06M -> 6.33M (+25%), orbs 27.6 -> 28.3 (Abyss) or
-  30.8 (Hall, Guardian's Hoard), item rolls 21.4 -> 22.4-22.9; +24-25% packs (more kills, more loot from them), +25% time,
+- **Totals and the reward economy.** The chest is `R.reward`: gold 5,000 x tier^2, Orbs of Upheaval 0.5 + 0.085 x tier,
+  Orbs of Fate 0.06 x tier, item rolls 2 + 0.5 x tier, all x (1 + quantity), tiers 11-15 +10% per tier (the reward pass
+  of 2026-10-11 halved the gold and cut the orbs about 4x; "Rifts", Income). A full atlas without a keystone (all 96
+  points), at tier 15 with +50% quantity: gold 2.53M -> 3.16M (+25%), orbs 6.0 -> 6.2 (Abyss) or 6.9 (Hall, Guardian's
+  Hoard), item rolls 21.4 -> 22.4-22.9; +24-25% packs (more kills, more loot from them), +25% time,
   +20% on the modifiers' bonuses (a +69% quantity key gives +83%: the chest about +8%), next key 50% -> 65% (two
   modifiers), tier-up 70% -> 84% (95% in the Crypt), +2 lives from tier 12. Roughly +30-40% income per run for a player
   who has sealed everything up to tier 15 in every theme; a tier-5 player with ~25 points gets about a quarter of it.
-  Lone Ember (+60% chest, one life) and Fleeting Sanctum (+30% chest, +40% packs, 35% less time) are the big bets;
-  Obsidian Crown doubles the chest's orbs (about +13 orbs at tier 15) against a guardian twice as strong.
+  Lone Ember (+60% chest gold and item rolls, one life) and Fleeting Sanctum (+30% chest gold and item rolls, +40%
+  packs, 35% less time) are the big bets; Obsidian Crown doubles the chest's orbs (about +7 orbs at tier 15) against a
+  guardian twice as strong.
 - **Persistence and seasons.** One row per character: `done` (cell keys `c<theme>.<tier>`, `f<tier>`, `s<tier>`,
   `o<kind>`) and `nodes` (ids), both comma lists; `atlas.lua` creates the table when it is missing. Loaded at login and
   checked against the current config (`A.sanitize`: unknown ids, extra keystones, nodes cut off from the start and nodes
@@ -7420,7 +7480,8 @@ shapes and timing, hazards, the caught lethal hit, rewards, the balance model) i
 
 - **Access.** Omen guardian kills give every finisher an Ascended Shard of that omen 40% of the time
   (`shardChance.omen`); sealed rifts of tier 13 / 14 / 15 give 4 / 7 / 10% of a shard of a random omen (rift.lua calls
-  `ChaosAscended.onRiftSealed` after the Rift Atlas hook; online finishers). Four shards of one omen (use one) bind an
+  `ChaosAscended.onRiftSealed` after the Rift Atlas hook; online finishers). Both chances x the party bonus of the
+  run (below; 40% -> 60% for a party of 5). Four shards of one omen (use one) bind an
   **Ascended Sigil** of it. The sigil opens that omen's Ascended arena (protection zone, out of combat, level 900, the
   party within 8 sqm comes along, up to 5). Every finisher of an Ascended kill gets that omen's **Ascended Relic**; one
   relic of each omen (use one while carrying all three) binds a **Cinderheart Sigil** (level 1000).
@@ -7436,7 +7497,10 @@ shapes and timing, hazards, the caught lethal hit, rewards, the balance model) i
   after 8 s with 3 s in which the arena cannot hurt them. No real death, no loss: the cost is the life and the time.
   The fall that takes the last life ends the run (the sigil is spent).
 - **The fight.** The boss comes 8 s after the arrival. Health: the XML's x (1 + healthPerExtraPlayer x (players - 1))
-  (Ascended 0.45, Cinderheart 0.58), adds x (1 + 0.5 x (players - 1)). **Phases** at health thresholds (Ascended
+  (1.0 for every boss; was Ascended 0.45, Cinderheart 0.58), adds x (1 + 0.5 x (players - 1)) and one more add per
+  player in each wave (so the adds' total health grows about +150% per extra player). The boss's and the adds' hits
+  x (1 + 0.10 x (players - 1)) (`party.damagePerExtraPlayer`), times the enrage; telegraphs, hazards and the enrage
+  pulse hit a share of the victim's max health and do not scale. **Phases** at health thresholds (Ascended
   100 / 70 / 35%, Cinderheart 100 / 75 / 50 / 25%), each entered once and in order (a big hit through two thresholds
   enters both): a yell, a burst, adds, a hazard. **Telegraphs** every 9-6 s by phase (a random pattern of the phase):
   the tiles are marked at once (warning_zone 451) and one turn later (warning_fill 450), and 2 s after the first mark
@@ -7469,6 +7533,19 @@ shapes and timing, hazards, the caught lethal hit, rewards, the balance model) i
   (title "Cinderbreaker" with the ember name plate frame, orbs; unlocks the kill effect **Cinderheart Crown**,
   cosmetics id 108), Alone Against the Ember (solo, title "the Last Light"), Not One Spark Lost (no life lost), Keeper
   of the Ashes (10 kills, title "Ashkeeper"). A Cinderheart kill is broadcast.
+- **Party bonus** (`uber_config.lua` `party`, `U.party` / `U.reward` in `uber_core.lua`). Every finisher still gets the
+  whole spoils and the relic. Gold, orbs (Exalted too) and gear rolls x (1 + 12.5% per extra player, at most +50% at 5
+  players), the unique find x (1 + 5% per extra player, at most +20%); the relic stays one. Per kill and finisher:
+
+  | Players | Ascended gold | Upheaval / Fate / Exalted | Cinderheart gold | Upheaval / Fate / Exalted |
+  |---|---|---|---|---|
+  | 1 | 15M | 20 / 10 / 1 | 40M | 40 / 20 / 3 |
+  | 2 | 16.9M | 22.5 / 11.3 / 1.1 | 45M | 45 / 22.5 / 3.4 |
+  | 5 | 22.5M | 30 / 15 / 1.5 | 60M | 60 / 30 / 4.5 |
+
+  Before, a party of 5 got the solo spoils each and killed 1.8x faster than one player (health x2.8 against 5x the
+  damage); a sigil is spent per run, so each run paid the whole party. Now a party of 5 kills in the solo time and each
+  finisher gets 1.5x. The start of a run says it in chat ("Party of 5: boss health x5, damage +40%; spoils +50%.").
 - **Leaderboards.** Three weekly boards of the fastest Cinderheart kill (mode `min`: the lowest time wins; shown m:ss):
   Solo, 2-3 and 4-5 players, each with class tabs (the class at the kill; "All classes" first). Titles Lone Cinder,
   Emberwarden, Ashen Vanguard and the usual orbs for the top 3. See "Leaderboards".
@@ -7491,13 +7568,15 @@ keeps every target within 5%):
 | Players | Ascended Omen health | Kill time | Cinderheart health | Kill time |
 |---|---|---|---|---|
 | 1 | 1.20M | 8:53 | 1.65M | 12:13 |
-| 2 | 1.74M | 7:15 | 2.61M | 10:51 |
-| 3 | 2.28M | 5:56 | 3.56M | 9:16 |
-| 4 | 2.82M | 5:20 | 4.52M | 8:33 |
-| 5 | 3.36M | 5:00 | 5.48M | 8:09 |
+| 2 | 2.40M | 10:00 | 3.30M | 13:45 |
+| 3 | 3.60M | 9:22 | 4.95M | 12:53 |
+| 4 | 4.80M | 9:05 | 6.60M | 12:30 |
+| 5 | 6.00M | 8:55 | 8.25M | 12:16 |
 
-Targets: Ascended solo 9:00 / party of 5 5:00 (enrage 10:00), Cinderheart solo 12:10 / party 8:00 (enrage 15:00), so a
-well-geared player kills before the enrage and a weaker one meets it. Measured on the test server (2026-10-10, the
+Targets: Ascended solo 9:00 / party of 5 9:00 (enrage 10:00), Cinderheart solo 12:10 / party 12:15 (enrage 15:00), so a
+well-geared player or party kills before the enrage and a weaker one meets it. Health is +100% per extra player since
+the party pass of 2026-10-11 (was +45% / +58%: a party of 5 took 5:00 / 8:09). The model gives every party one healer,
+so a duo of a damage dealer and a healer meets the Ascended enrage (10:00); two damage dealers need 8:20. Measured on the test server (2026-10-10, the
 `ztest` harness of "Late game": the boss next to a level 1000 Juggernaut in the best level 1000 set, 17,023 health,
 health sampled every 100 ms for 40 s, telegraphs, hazards and enrage off): the bosses' own attacks deal Sangrith 807,
 Morvane 652, Thalcyra 614, the Cinderheart 996 damage per second (largest single hit 2.4-3.6k). A telegraph that is not

@@ -72,13 +72,14 @@ local cfg = {
 
 	-- respec: refunding one node costs either gold (carried first, then the bank) or orbs; allocating is free.
 	-- A full reset costs the per-node price x the nodes held x resetShare. A sink, sized against the rift chest:
-	-- 250k gold is about a tier-5 chest (10000 x 5^2), one Orb of Upheaval is the chest's own orb.
+	-- 250k gold is about a tier-7 chest (5000 x 7^2), one Orb of Upheaval is the chest's own orb.
 	respec = {gold = 250000, orbItem = 29856, orbCount = 1, orbName = "Orb of Upheaval", resetShare = 0.8},
 
 	-- the summed effects of every allocated node (all themes and the run's theme together) are capped here, so a full
 	-- atlas stays inside the rift economy (server/README.md "Rift Atlas", the totals). Keystones are applied on top.
+	-- The orb nodes and caps were cut with the chest's orbs (rift_config.lua reward): at most about +15% orbs per chest.
 	caps = {density = 25, elite = 40, time = 25, modReward = 20, goldMult = 25, keyChance = 15, keyUpgrade = 25,
-		fragments = 25, chaos = 2, divine = 1.5, rolls = 1.5, goblin = 40, coffer = 40, themeWeight = 100, lives = 2},
+		fragments = 25, chaos = 0.6, divine = 0.4, rolls = 1.5, goblin = 40, coffer = 40, themeWeight = 100, lives = 2},
 
 	-- how a stat reads in a tooltip (value first; fractions keep two decimals). A stat with `theme` adds " in <theme>",
 	-- one with `minTier` adds " (tier N+)".
@@ -111,7 +112,7 @@ local cfg = {
 
 	-- keystones (atlas_core.lua A.resolve): the run takes them from the player who used the key
 	--   oneLife       the run has exactly one shared life
-	--   rewardMult    every finisher's chest x (1 + value / 100): gold, orbs, item rolls
+	--   rewardMult    every finisher's chest x (1 + value / 100): gold and item rolls (not the orbs, rift_core.lua R.atlasReward)
 	--   guardianMult  guardian health and damage x value (as Dread Guardian)
 	--   orbsMult      Orbs of Upheaval and Fate of the chest x value
 	--   keyChanceMult the next-key chance x value
@@ -206,7 +207,7 @@ add(branch(100, T_ABYSS, "north", shape({
 	n14 = "Keyfinder", s14 = {{stat = "keyChance", value = 2}}, g14 = "key",
 	n15 = "Charted Strain", s15 = {{stat = "modReward", value = 2}}, g15 = "reward",
 	n16 = "Lone Ember", g16 = "ks_ember", ks = "lone_ember",
-	t16 = "Your rifts have one shared life. Every finisher's chest +60% (gold, orbs, item rolls)."
+	t16 = "Your rifts have one shared life. Every finisher's chest +60% gold and item rolls."
 })))
 
 -- Obsidian Hall (east): gold and orbs
@@ -214,15 +215,15 @@ add(branch(200, T_HALL, "east", shape({
 	gate = 7,
 	n1 = "Obsidian Gate", s1 = {{stat = "goldMult", value = 5, theme = true}}, g1 = "gold",
 	n2 = "Obsidian Attunement", s2 = {{stat = "themeWeight", value = 60, theme = true}},
-	n3 = "Molten Vein", s3 = {{stat = "chaos", value = 0.25, theme = true}}, g3 = "orb",
-	n5 = "Guardian's Hoard", s5 = {{stat = "chaos", value = 1, theme = true}, {stat = "divine", value = 1, theme = true}}, g5 = "orb",
+	n3 = "Molten Vein", s3 = {{stat = "chaos", value = 0.1, theme = true}}, g3 = "orb",
+	n5 = "Guardian's Hoard", s5 = {{stat = "chaos", value = 0.25, theme = true}, {stat = "divine", value = 0.25, theme = true}}, g5 = "orb",
 	n6 = "Charted Strain", s6 = {{stat = "modReward", value = 2}}, g6 = "reward",
 	n7 = "Gilded Seal", s7 = {{stat = "goldMult", value = 4}}, g7 = "gold",
 	n9 = "Molten Coffers", s9 = {{stat = "goldMult", value = 10}, {stat = "rolls", value = 0.5}}, g9 = "gold",
 	n10 = "Spoils of the Hall", s10 = {{stat = "rolls", value = 0.25}}, g10 = "rolls",
-	n11 = "Glimmering Orb", s11 = {{stat = "chaos", value = 0.25}}, g11 = "orb",
+	n11 = "Glimmering Orb", s11 = {{stat = "chaos", value = 0.1}}, g11 = "orb",
 	n12 = "Charted Strain", s12 = {{stat = "modReward", value = 2}}, g12 = "reward",
-	n13 = "Forged in Obsidian", s13 = {{stat = "modReward", value = 6, theme = true}, {stat = "divine", value = 0.5}}, g13 = "reward",
+	n13 = "Forged in Obsidian", s13 = {{stat = "modReward", value = 6, theme = true}, {stat = "divine", value = 0.1}}, g13 = "reward",
 	n14 = "Gilded Seal", s14 = {{stat = "goldMult", value = 4}}, g14 = "gold",
 	n15 = "Spoils of the Hall", s15 = {{stat = "rolls", value = 0.25}}, g15 = "rolls",
 	n16 = "Obsidian Crown", g16 = "ks_crown", ks = "obsidian_crown",
@@ -266,7 +267,7 @@ add(branch(400, T_SANCTUM, "west", shape({
 	n14 = "Glint of Gold", s14 = {{stat = "goblin", value = 3}}, g14 = "goblin",
 	n15 = "Hidden Reliquary", s15 = {{stat = "coffer", value = 3}}, g15 = "coffer",
 	n16 = "Fleeting Sanctum", g16 = "ks_hourglass", ks = "fleeting_sanctum",
-	t16 = "Your rifts close 35% sooner, but hold +40% monster packs and every finisher's chest is +30%."
+	t16 = "Your rifts close 35% sooner, but hold +40% monster packs and every finisher's chest has +30% gold and item rolls."
 })))
 
 return cfg

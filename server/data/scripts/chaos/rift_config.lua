@@ -18,7 +18,7 @@ return {
 
 	-- ------------------------------------------------------------------ opening
 	partyRange = 8, -- party members within this many sqm (same floor) of the player using the key come along
-	maxPlayers = 4,
+	maxPlayers = 5,
 	needProtectionZone = true,
 	useCooldown = 3, -- seconds between two key uses of one player (exhaust)
 
@@ -32,7 +32,20 @@ return {
 	-- size = a random number in packs.size, + the Swarm modifier. One monster type per pack.
 	packs = {base = 6, perTiers = 3, perExtraPlayer = 2, size = {3, 4}, types = 3, spread = 2},
 	-- the boss: the strongest of the rift's monster types, made legendary (monster_tiers.lua), its base health x this
+	-- x (1 + perExtraPlayer x (players - 1))
 	boss = {healthMult = 3, perExtraPlayer = 1.0, tier = "legendary"},
+
+	-- ------------------------------------------------------------------ party scaling (rifts and Omen arenas)
+	-- n = the players who entered. Bigger parties face harder content and get more per head, bounded
+	-- (rift_core.lua R.party, server/README.md "Rifts", Party scaling):
+	--   healthPerExtraPlayer  the rift's TOTAL monster health (packs x health) x (1 + this x (n - 1)). The packs already
+	--                         grow (packs.perExtraPlayer), so each monster gets the rest: x total / pack growth, at least 1.
+	--                         The guardians have their own: boss.perExtraPlayer, omen.healthPerExtraPlayer.
+	--   damagePerExtraPlayer  every rift monster and guardian (Omens too) hits x (1 + this x (n - 1))
+	--   rewardPerExtraPlayer  percent on every finisher's chest (gold, orbs, item rolls, Omen Fragments), at most rewardCap
+	--   lootPerExtraPlayer    percent on the Chaos loot rate of the rift's kills and on the Sealed Coffer, at most lootCap
+	party = {healthPerExtraPlayer = 1.0, damagePerExtraPlayer = 0.10, rewardPerExtraPlayer = 12.5, rewardCap = 50,
+		lootPerExtraPlayer = 5, lootCap = 20},
 	-- monster tiers inside a rift (percent per monster, before the Elites modifier; x (1 + perTier x tier))
 	elite = {magic = 10, rare = 3, legendary = 0.6, perTier = 0.05},
 
@@ -134,7 +147,7 @@ return {
 	-- (1 + quantity bonus). Wave kills do not count towards the guardian. A coffer nobody woke crumbles when the rift is
 	-- sealed; a woken one opens then.
 	coffer = {itemId = 1746, actionId = 47403, wave = {base = 5, perExtraPlayer = 1, spread = 2}, waveTier = "magic",
-		goldPerTier2 = 4000, chaos = {base = 1, perTier = 0.25}, divine = {base = 0, perTier = 0.1},
+		goldPerTier2 = 2000, chaos = {base = 0.25, perTier = 0.05}, divine = {base = 0, perTier = 0.03},
 		rolls = {base = 2, perTier = 0.25}},
 	-- Cinderdeath: delayMs after a (non-guardian) monster dies, every player within `radius` sqm of it takes fire damage:
 	-- value % of the monster's max health, at most capBase + capPerTier x tier
@@ -158,7 +171,8 @@ return {
 	-- Omen Key of a random kind; the key opens that kind's guardian arena: the same runtime-built rift slot with every
 	-- side room shut, the guardian appears startDelay seconds after the party arrives, timeLimit seconds, the rift's lives.
 	-- The guardian has the health of its XML (data/monster/monsters/chaos/omens/) x (1 + healthPerExtraPlayer x
-	-- (players - 1)). Killed in time: a chest for every finisher (`reward`). The two items are new items.otb nodes
+	-- (players - 1)). Killed in time: a chest for every finisher (`reward`) x the party bonus (`party`). The two items
+	-- are new items.otb nodes
 	-- (tools/install_omens.py): copies of the stock nodes sourceId (red crystal fragment, stackable; eye of the storm)
 	-- with new server ids, so the client needs no change.
 	omen = {
@@ -173,17 +187,18 @@ return {
 		minLevel = 800,
 		timeLimit = 600,
 		startDelay = 5,
-		healthPerExtraPlayer = 0.75,
+		healthPerExtraPlayer = 1.0,
 		-- theme: index of `themes` for the arena floor
 		kinds = {
 			{key = "bloodmoon", name = "Bloodmoon", boss = "Sangrith the Bloodmoon Herald", theme = 3},
 			{key = "hollow", name = "Hollow", boss = "Morvane the Hollow Crown", theme = 2},
 			{key = "storm", name = "Stormcall", boss = "Thalcyra the Stormbound Seer", theme = 1}
 		},
-		-- the guardian's chest, per finisher: gold to the bank, orbs, item rolls from the guardian's loot table (gear at
-		-- the "boss" loot tier, x rarityMult), the Chaos currency roll, gems and supports of a tier `asTier` rift, and
-		-- uniqueRolls unique rolls at the boss tier over every unique (no monster list), x uniqueFind
-		reward = {gold = 5000000, chaos = 12, divine = 6, rolls = 8, rarityMult = 1.5, uniqueRolls = 2, uniqueFind = 2,
+		-- the guardian's chest, per finisher: gold to the bank goldPerLevel x the finisher's level (at least minLevel), orbs,
+		-- item rolls from the guardian's loot table (gear at the "boss" loot tier, x rarityMult), the Chaos currency roll,
+		-- gems and supports of a tier `asTier` rift, and uniqueRolls unique rolls at the boss tier over every unique (no
+		-- monster list), x uniqueFind. Level 1000: 3M gold (hunting earns ~9.5M an hour there, server/README.md "Respec").
+		reward = {goldPerLevel = 3000, chaos = 4, divine = 2, rolls = 8, rarityMult = 1.5, uniqueRolls = 2, uniqueFind = 2,
 			asTier = 15}
 	},
 
@@ -193,10 +208,13 @@ return {
 	-- quantity bonus); gear gets a rarity from the Chaos loot layer (ChaosLoot.upgradeRarity at the `lootTier` of the
 	-- rift tier, x the rarity bonus); then one currency roll (ChaosLoot.rollCurrency) and one unique roll at that tier.
 	-- Gold, orbs and the number of rolls are x (1 + quantity bonus). Tiers above 10: x (1 + beyond.reward x (t - 10)).
+	-- Then the finisher's atlas (atlas_config.lua) and the party bonus (`party`).
+	-- Sized against hunting at level 1000 (9.5M gold, 2.5 Upheaval, 1.3 Fate an hour; server/README.md "Rifts", Income):
+	-- four tier 15 chests an hour at +128% quantity pay ~15M gold, ~24 Upheaval, ~12 Fate solo.
 	reward = {
-		goldPerTier2 = 10000,
-		chaos = {base = 1, perTier = 0.5},
-		divine = {base = 0, perTier = 0.25},
+		goldPerTier2 = 5000,
+		chaos = {base = 0.5, perTier = 0.085},
+		divine = {base = 0, perTier = 0.06},
 		rolls = {base = 2, perTier = 0.5},
 		lootTier = {{3, "magic"}, {6, "rare"}, {10, "legendary"}, {999, "boss"}}, -- {up to tier, loot layer tier}
 		items = {chaos = 29856, divine = 29857}

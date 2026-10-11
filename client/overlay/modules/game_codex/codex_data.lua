@@ -4658,9 +4658,9 @@ CodexData = {
 								{"Salvage", "Combine 25 rune shards into one at the crafting bench."},
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 18.4% of those are this one."},
 								{"Bounty board", "Per contract by level band: 1/2/3/4/5/6 (x1.5 for elite and boss contracts); weekly chest: 5/6/8/10/12/15."},
-								{"Rift chest", "1 + 0.5 per rift tier (fractions are a chance of one more), x the key's quantity bonus."},
-								{"Sealed Coffer", "1 + 0.25 per rift tier."},
-								{"Omen guardian chest", "12 per finisher."},
+								{"Rift chest", "0.5 + 0.085 per rift tier (fractions are a chance of one more), x the key's quantity bonus."},
+								{"Sealed Coffer", "0.25 + 0.05 per rift tier."},
+								{"Omen guardian chest", "4 per finisher."},
 								{"World boss", "3 for every eligible player, plus a share of 60 split by contribution."}
 							}
 						}
@@ -4694,9 +4694,9 @@ CodexData = {
 								{"Salvage", "Combine 60 rune shards into one at the crafting bench."},
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-5% per item by rarity); 3.7% of those are this one."},
 								{"Bounty board", "Per contract by level band: 0/0/0/0/1/2 (x1.5 for elite and boss contracts); weekly chest: 1/1/2/2/3/4."},
-								{"Rift chest", "0 + 0.25 per rift tier (fractions are a chance of one more), x the key's quantity bonus."},
-								{"Sealed Coffer", "0 + 0.1 per rift tier."},
-								{"Omen guardian chest", "6 per finisher."},
+								{"Rift chest", "0 + 0.06 per rift tier (fractions are a chance of one more), x the key's quantity bonus."},
+								{"Sealed Coffer", "0 + 0.03 per rift tier."},
+								{"Omen guardian chest", "2 per finisher."},
 								{"World boss", "1 for every eligible player, plus a share of 25 split by contribution."}
 							}
 						}
@@ -5063,7 +5063,7 @@ CodexData = {
 					sections = {
 						{
 							h = "What it does",
-							p = {"Use it in a protection zone: you and up to 3 party members within 8 sqm enter a rift of the key's tier (15 tiers). See the Rift tab for its modifiers."}
+							p = {"Use it in a protection zone: you and up to 4 party members within 8 sqm enter a rift of the key's tier (15 tiers). See the Rift tab for its modifiers."}
 						},
 						{
 							h = "More",
@@ -9968,11 +9968,11 @@ CodexData = {
 						},
 						{
 							h = "The run",
-							p = {"10 minutes; the guardian comes after 75% of the monsters; 3 shared lives + 1 per extra player; up to 4 players."}
+							p = {"10 minutes; the guardian comes after 75% of the monsters; 3 shared lives + 1 per extra player; up to 5 players.", "Each extra player: +100% monster health in total (more packs, tougher monsters), +100% guardian health, +10% damage taken; every finisher's chest +12.5% (at most +50%) and +5% kill loot (at most +20%)."}
 						},
 						{
 							h = "Chest (per player)",
-							p = {"Gold: 10000 x tier squared to the bank.", "Orb of Upheaval: 1 + 0.5 per tier; Orb of Fate: 0 + 0.25 per tier.", "Item rolls: 2 + 0.5 per tier from the rift monsters' loot, gear with a rarity; one currency roll and one unique roll.", "Gems and spell supports too (Gems and Supports tabs). Gold, orbs and rolls x (1 + quantity bonus)."}
+							p = {"Gold: 5000 x tier squared to the bank.", "Orb of Upheaval: 0.5 + 0.085 per tier; Orb of Fate: 0 + 0.06 per tier.", "Item rolls: 2 + 0.5 per tier from the rift monsters' loot, gear with a rarity; one currency roll and one unique roll.", "Gems and spell supports too (Gems and Supports tabs). Gold, orbs and rolls x (1 + quantity bonus)."}
 						}
 					}
 				},
@@ -10000,7 +10000,7 @@ CodexData = {
 						},
 						{
 							h = "Reward (per finisher)",
-							p = {"5000000 gold to the bank, 12 Orb of Upheaval, 6 Orb of Fate, 8 item rolls of the guardian's loot (x1.5 rarity), 2 unique rolls (x2 find), gems and supports as a tier 15 rift. Drops in the arena get +15 item level."}
+							p = {"3000 x your level in gold to the bank, 4 Orb of Upheaval, 2 Orb of Fate, 8 item rolls of the guardian's loot (x1.5 rarity), 2 unique rolls (x2 find), gems and supports as a tier 15 rift. Drops in the arena get +15 item level."}
 						}
 					}
 				}

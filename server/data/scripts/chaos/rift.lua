@@ -773,12 +773,14 @@ function RF.deliver(player, run, auto)
 	local cfg = C()
 	local data = run.key and {tier = run.key.tier, bonus = run.bonus, types = run.typeNames, boss = run.plan.boss,
 		omen = run.omen} or run
-	local r = data.omen and R.omenReward(cfg) or R.reward(cfg, data.tier, data.bonus, rand)
+	local r = data.omen and R.omenReward(cfg, player:getLevel()) or R.reward(cfg, data.tier, data.bonus, rand)
 	-- Rift Atlas: the finisher's own atlas (gold, orbs, rolls, fragments) and the run's keystone (shared by all)
 	local atlasOwn = not data.omen and R.atlasMods(player, {theme = run.themeName or run.theme, tier = data.tier}) or nil
 	if not data.omen then
 		R.atlasReward(cfg, r, atlasOwn, run.atlasRun, rand)
 	end
+	-- the party bonus (rift_config.lua party): every finisher, by the players who entered
+	R.partyReward(cfg, r, run.size, rand)
 	local asTier = data.omen and cfg.omen.reward.asTier or data.tier
 	local inbox = false
 	if r.gold > 0 then
@@ -874,6 +876,7 @@ function RF.deliver(player, run, auto)
 	-- Omen Fragments from a sealed rift of omen.minTier or more
 	local frags = not data.omen and R.omenFragments(cfg, data.tier, data.bonus, rand) or 0
 	frags = R.atlasFragments(frags, atlasOwn, rand) -- Rift Atlas
+	frags = R.partyCount(cfg, frags, run.size, rand) -- the party bonus
 	if frags > 0 and omenItemReady(cfg.omen.fragment.id) then
 		stack(cfg.omen.fragment.id, frags)
 	end
@@ -980,7 +983,7 @@ local function success(run, pos)
 		guids = atlasGuids})
 	-- Ascended Shards (uber.lua): Omen guardian kills and rifts of tier 13+ (online finishers)
 	if ChaosAscended and ChaosAscended.onRiftSealed then
-		pcall(ChaosAscended.onRiftSealed, {tier = run.key.tier, omen = run.omen, finishers = run.finishers})
+		pcall(ChaosAscended.onRiftSealed, {tier = run.key.tier, omen = run.omen, finishers = run.finishers, players = run.size})
 	end
 	if run.omen then
 		say(run, string.format("The %s guardian falls in %d:%02d. %s", R.omenKind(cfg, run.omen).name, math.floor(secs / 60),
@@ -1032,7 +1035,7 @@ local function spawnOne(run, name, pos, tier, boss)
 	elseif boss then
 		hp = math.floor(base * R.guardianHealthMult(C(), run.fx, run.size)) -- + Dread Guardian, Twin Guardians share
 	else
-		hp = math.floor(m:getMaxHealth() * run.fx.health)
+		hp = math.floor(m:getMaxHealth() * run.fx.health * (run.fx.partyHealth or 1)) -- + the party's share (R.applyParty)
 	end
 	if hp ~= m:getMaxHealth() and hp > 0 then
 		m:setMaxHealth(hp)
@@ -1227,7 +1230,7 @@ local function openCoffer(run)
 	if not item or not item:isContainer() then
 		return
 	end
-	local r = R.cofferLoot(cfg, run.key.tier, run.bonus, rand)
+	local r = R.cofferLoot(cfg, run.key.tier, run.bonus, rand, run.size)
 	for _, c in ipairs(R.coins(r.gold)) do
 		item:addItem(c[1], c[2], INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
 	end
@@ -1513,7 +1516,7 @@ local function enter(run, group)
 		m:registerEvent("ChaosRiftPlayerHit")
 		m:registerEvent("ChaosRiftPlayerMana")
 		entryPos:sendMagicEffect(CONST_ME_TELEPORT)
-		local off = ({{0, 0}, {1, 0}, {-1, 0}, {0, 1}})[i] or {0, 0}
+		local off = ({{0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}})[i] or {0, 0}
 		m:teleportTo(Position(L.start.x + off[1], L.start.y + off[2], L.start.z))
 		m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 	end
@@ -1562,6 +1565,7 @@ function RF.open(player, item)
 	-- Rift Atlas: the key user's atlas shapes the run (packs, time, lives, boons, guardian, reward bonuses, next key)
 	local am = R.atlasMods(player, {theme = th.name, tier = key.tier})
 	R.applyAtlasFx(fx, am)
+	R.applyParty(cfg, fx, #group, key.tier) -- party scaling: monster health share, damage, rewards
 	local plan = R.plan(cfg, key.tier, fx, #group, types, rooms, rand)
 	local run = R.newRun(cfg, os.time(), plan.total, plan.bossAt, fx)
 	-- the Rift Time of the opener's placed charms (charms.lua)
@@ -1598,6 +1602,10 @@ function RF.open(player, item)
 	say(run, string.format("Rift tier %d (%s): %d monsters, the guardian appears after %d kills. %d minutes, %d shared lives. Modifiers: %s.",
 		key.tier, th.name, run.total, run.bossAt, math.floor(run.limit / 60), run.lives,
 		#names > 0 and table.concat(names, "; ") or "none"))
+	local partyNote = R.partyNote(fx.party, fx.party.health)
+	if partyNote then
+		say(run, partyNote)
+	end
 	sendHud(run, "start")
 	run.hudAt = os.time() + cfg.hudEvery
 	addEvent(tick, 1000, slot, run.id)
@@ -1646,7 +1654,7 @@ function RF.openOmen(player, item)
 	setMarker(player, key)
 
 	RF.nextId = RF.nextId + 1
-	local fx = R.effects(cfg, {}, 1)
+	local fx = R.applyParty(cfg, R.effects(cfg, {}, 1), #group, nil) -- party scaling: damage, rewards
 	local now = os.time()
 	local run = R.newRun(cfg, now, 0, 0, fx)
 	run.limit = o.timeLimit
@@ -1665,6 +1673,10 @@ function RF.openOmen(player, item)
 	enter(run, group)
 	say(run, string.format("The %s omen: %s comes in %d seconds. %d minutes, %d shared lives.", def.name, def.boss,
 		o.startDelay, math.floor(run.limit / 60), run.lives))
+	local partyNote = R.partyNote(fx.party, R.omenHealthMult(cfg, #group))
+	if partyNote then
+		say(run, partyNote)
+	end
 	sendHud(run, "start")
 	run.hudAt = now + cfg.hudEvery
 	addEvent(tick, 1000, slot, run.id)
@@ -1681,14 +1693,14 @@ Chaos.registerInstance("rift", {label = "a rift", inside = RF.isInside, at = fun
 	return ChaosRiftCore.slotOfPos(C(), pos) ~= nil
 end})
 
--- loot_config.lua rateMult: the Quantity bonus of the rift the corpse owner / chest opener is in
+-- loot_config.lua rateMult: the Quantity bonus of the rift the corpse owner / chest opener is in, x the party's loot bonus
 function RF.lootMult(ctx)
 	local p = ctx and ctx.player
 	local run = p and RF.runOf[p:getId()]
 	if not run then
 		return 1
 	end
-	return 1 + (run.bonus.quantity or 0) / 100
+	return (1 + (run.bonus.quantity or 0) / 100) * (run.fx.party and run.fx.party.loot or 1) -- x the party's loot bonus
 end
 
 -- bounty.lua: a completed (paid) contract may give a tier-1 key
