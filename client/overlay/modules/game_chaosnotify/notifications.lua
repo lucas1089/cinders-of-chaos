@@ -104,7 +104,7 @@ local NOTIFICATION_TYPES = {
     -- a listing of the player sold (server market.lua, orbexchange.lua; kind "sale"): item, price, fee and proceeds, or
     -- "While you were away: 3 items sold for 4.2M gold: ..." at login
     SALE = {
-        icon = "/images/chaos/topbutton_market",
+        icon = "images/toast/market.png",
         title = "ITEM SOLD",
         titleColor = "#e8b84a",
         backgroundColor = "#ccbebb",
