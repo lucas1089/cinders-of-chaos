@@ -77,6 +77,10 @@ return {
 		sorts = {"new", "price", "ending", "name"}
 	},
 
+	-- sale notifications (market_notify_core.lua): chat lines of one delivery (one per sale; the rest are counted in the
+	-- toast's total and "... and N more sales"). The sold rows themselves are never dropped: they carry the money.
+	notify = {lines = 5},
+
 	-- rate limits per character (ms between two requests of the kind)
 	rate = {browse = 150, tip = 60, list = 1500, buy = 800, cancel = 800, mine = 400, sellable = 600, orders = 150, orderPost = 1500,
 		orderCancel = 800, fill = 800, fillable = 400, orderFind = 300},

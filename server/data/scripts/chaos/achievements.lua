@@ -223,8 +223,12 @@ local function giveReward(player, reward)
 	return K.rewardText(reward, itemName) .. (inbox and " (your backpack was full: see your inbox)" or "")
 end
 
-local function notify(player, text)
-	player:sendExtendedOpcode(NOTIFY_OPCODE, json.encode({action = "achievement", message = text}))
+-- a toast with the ACHIEVEMENT UNLOCKED header (notifications.lua ChaosNotify.send; the raw packet when it is not loaded)
+local function notify(player, title, text)
+	if ChaosNotify and ChaosNotify.send then
+		return ChaosNotify.send(player, title, text, "achievement")
+	end
+	player:sendExtendedOpcode(NOTIFY_OPCODE, json.encode({action = "achievement", message = title .. ": " .. text}))
 end
 
 local function checkClassUnlocks(player)
@@ -242,11 +246,14 @@ local function checkClassUnlocks(player)
 			and U.grant(player:getAccountId(), key, "achievement") then
 			local class = CK.config.classes[key]
 			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Class unlocked for your account: " .. (class and class.name or key) .. ".")
+			notify(player, "Class unlocked", (class and class.name or key) .. " is open to every character of your account.")
 		end
 	end
 end
 
--- unlock one achievement (it must not be unlocked yet); quiet = no toast (the login summary sends one)
+-- unlock one achievement (it must not be unlocked yet); quiet = no toast (the login summary sends one). Returns true and
+-- the reward text. The unlock row is written first: when that fails nothing is given or shown (a later check retries),
+-- so a relog never finds it locked again and never gives the reward or the toast twice.
 local function unlock(player, def, quiet)
 	local guid = player:getGuid()
 	local unlocked = A.unlocked[guid]
@@ -254,8 +261,11 @@ local function unlock(player, def, quiet)
 		return false
 	end
 	local now = os.time()
+	if db.query(K.sqlUnlock(guid, def.id, now)) == false then
+		log("unlock " .. def.id .. " of " .. player:getName() .. " not stored: tried again at the next check")
+		return false
+	end
 	unlocked[def.id] = now
-	db.query(K.sqlUnlock(guid, def.id, now))
 	local acc = A.accounts[player:getAccountId()]
 	if acc and not acc.ids[def.id] then
 		acc.ids[def.id] = true
@@ -265,36 +275,41 @@ local function unlock(player, def, quiet)
 	if def.title then
 		parts[#parts + 1] = string.format("Title: %s (pick it in the Achievements window).", def.title)
 	end
+	local rewardText = ""
 	if def.reward then
 		local ok, text = pcall(giveReward, player, def.reward)
 		parts[#parts + 1] = ok and ("Reward: " .. text .. ".") or "The reward could not be given; tell the staff."
-		if not ok then
+		if ok then
+			rewardText = text
+		else
 			log("reward of " .. def.id .. " for " .. player:getName() .. " failed: " .. tostring(text))
 		end
 	end
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, table.concat(parts, " "))
 	if not quiet then
-		notify(player, string.format("%s  (+%d)%s", def.name, def.points, def.title and ("  -  title " .. def.title) or ""))
+		notify(player, K.toast(def, rewardText))
 		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_GREEN)
 	end
 	Chaos.send(player, OPCODE, "unlock", {id = def.id, name = def.name, points = def.points, title = def.title})
 	if def.title and ChaosNameplate and ChaosNameplate.refresh then
 		pcall(ChaosNameplate.refresh, player)
 	end
-	return true
+	return true, rewardText
 end
 
--- check every achievement of an online character; returns the list unlocked now
+-- check every achievement of an online character; returns the list unlocked now (done.rewards = {[id] = reward text})
 function A.evaluate(player, quiet)
 	local guid = player:getGuid()
 	local stats, unlocked = A.stats[guid], A.unlocked[guid]
 	if not stats or not unlocked then
 		return {}
 	end
-	local done = {}
+	local done = {rewards = {}}
 	for _, def in ipairs(K.evaluate(index, stats, unlocked)) do
-		if unlock(player, def, quiet) then
+		local ok, rewardText = unlock(player, def, quiet)
+		if ok then
 			done[#done + 1] = def
+			done.rewards[def.id] = rewardText
 		end
 	end
 	if #done > 0 then
@@ -813,23 +828,14 @@ function advance.onAdvance(player, skill, oldLevel, newLevel)
 end
 advance:register()
 
+-- the unlocks of the quiet login check: one toast (achievements_core.lua K.summaryToast) with names, points and rewards
 local function summaryToast(player, list)
-	if #list == 0 then
-		return
+	local title, text = K.summaryToast(list, list.rewards)
+	if title then
+		notify(player, title, text)
 	end
-	local points = 0
-	local names = {}
-	for _, def in ipairs(list) do
-		points = points + def.points
-		if #names < 3 then
-			names[#names + 1] = def.name
-		end
-	end
-	local text = #list == 1 and string.format("%s  (+%d)", list[1].name, points)
-		or string.format("%d achievements (+%d points): %s%s", #list, points, table.concat(names, ", "),
-			#list > 3 and ", ..." or "")
-	notify(player, text)
 end
+A.summaryToast = summaryToast
 
 local login = CreatureEvent("ChaosAchievementsLogin")
 function login.onLogin(player)

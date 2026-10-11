@@ -229,6 +229,11 @@ local function syncAccount(accountId, player)
 	if #names > 0 and player then
 		player:sendTextMessage(MESSAGE_INFO_DESCR, "Cosmetic unlocked: " .. table.concat(names, ", ") ..
 			". Choose it in Character > Cosmetics.")
+		-- the achievement reward track: a toast too (only names granted now: M.grant is false for an owned one)
+		if ChaosNotify and ChaosNotify.send then
+			pcall(ChaosNotify.send, player, "Reward track", table.concat(names, ", ") .. " unlocked. Choose it in Character > Cosmetics.",
+				"achievement")
+		end
 	end
 	return names
 end

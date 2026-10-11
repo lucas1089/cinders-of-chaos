@@ -56,9 +56,12 @@ eq(p.sent[5].payload.message, "Only text", "text only")
 eq(ChaosNotify.send(p, nil, nil), false, "nothing to say: nothing sent")
 eq(#p.sent, 5, "still five packets")
 eq(ChaosNotify.send(nil, "a", "b"), false, "no player: false")
+ChaosNotify.send(p, "While you were away", "3 items sold for 4.2M gold: a, b, c.", "sale")
+eq(p.sent[6].payload.action, "sale", "the sale kind (market.lua, orbexchange.lua) is kept")
+eq(p.sent[6].payload.message, "While you were away: 3 items sold for 4.2M gold: a, b, c.", "sale message")
 -- the callers' guarded pcall form works
 local okCall = pcall(ChaosNotify.send, p, "Guild level 6", "text")
-ok(okCall and #p.sent == 6, "pcall(ChaosNotify.send, p, title, text) as guild.lua / guildwar.lua call it")
+ok(okCall and #p.sent == 7, "pcall(ChaosNotify.send, p, title, text) as guild.lua / guildwar.lua call it")
 
 print(string.format("notify_test: %d checks, %d failures", checks, fails))
 if fails > 0 then

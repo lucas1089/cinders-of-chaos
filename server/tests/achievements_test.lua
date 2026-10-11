@@ -246,7 +246,9 @@ do
 	json = {encode = function(t) return t end}
 	dofile("data/scripts/chaos/chaos_constants.lua")
 	local dbUnlocks = {} -- {player, id}
+	local dbDown = false
 	db = {query = function(q)
+		if dbDown then return false end
 		local guid, id = q:match("VALUES %((%d+), '([%w_]+)'")
 		if guid and q:find("chaos_achievements", 1, true) then dbUnlocks[#dbUnlocks + 1] = {tonumber(guid), id} end
 		return true
@@ -296,6 +298,33 @@ do
 	A.stats[1].level = 300 -- level 50..300: 5 + 10 + 10 + 15 = 40 points (A.set wants an engine Player)
 	A.evaluate(ann)
 	eq(#synced, 1, "new unlocks: the reward track is synced once"); eq(synced[1], "Ann")
+	-- one ACHIEVEMENT UNLOCKED toast per unlock, with the name and the points
+	local toasts = {}
+	for _, m in ipairs(sentMsgs) do if m.op == 79 and m.msg.action == "achievement" then toasts[#toasts + 1] = m.msg.message end end
+	eq(#toasts, 4, "four unlocks, four toasts")
+	eq(toasts[1], "Blooded: +5 points.", "the toast: name and points")
+	eq(#dbUnlocks, 4, "four unlock rows")
+	-- a relog: the unlocks come back from the database, nothing is unlocked or shown again
+	local before = #sentMsgs
+	A.unlocked[1] = {}
+	for _, u in ipairs(dbUnlocks) do if u[1] == 1 then A.unlocked[1][u[2]] = 1 end end
+	eq(#A.evaluate(ann, true), 0, "relog: nothing unlocked twice")
+	eq(#sentMsgs, before, "relog: no toast twice")
+	-- the unlock row cannot be written: no toast, no reward, still locked (the next check tries again)
+	A.stats[1].level = 500
+	dbDown = true
+	eq(#A.evaluate(ann), 0, "database down: nothing unlocked")
+	eq(A.unlocked[1].level_500, nil, "still locked")
+	eq(#sentMsgs, before, "and nothing shown")
+	dbDown = false
+	-- the login summary: the quiet check, then one toast with the reward (giveReward needs the engine: stubbed by a pcall
+	-- failure, so the summary is checked from the list it gets)
+	local list = {index.byId.level_500, index.byId.level_700, rewards = {level_500 = "5 Orb of Fate"}}
+	A.summaryToast(ann, list)
+	local last = sentMsgs[#sentMsgs].msg
+	eq(last.action, "achievement", "the summary toast")
+	eq(last.message, "2 achievements unlocked: +50 points: Shatterborn, Into the Abyss. Rewards: 5 Orb of Fate.", "summary with rewards")
+	A.stats[1].level = 300
 	eq(A.accountOf(ann).points, 40, "account points after the unlocks")
 	eq(A.accountOf(7).points, 40, "by account id")
 	A.evaluate(ann)
@@ -317,6 +346,23 @@ do
 	for _, t in ipairs(titles) do if t.key == "achievement_cat:rifts" then hasCat = true end end
 	eq(hasCat, true, "Ann holds Riftwarden: Bob completed Rifts on the same account")
 	ChaosCosmetics, ChaosTitles, json = nil, nil, nil
+end
+
+-- ------------------------------------------------------------------ toasts
+do
+	local t, x = K.toast(index.byId.level_1000, "mount Doombringer")
+	eq(t, "The Thousandth Step", "toast title: the name")
+	eq(x, "+50 points. Title: the Unbroken. Reward: mount Doombringer.", "toast text: points, title, reward")
+	local t1, x1 = K.toast({id = "x", name = "One", points = 1}, "")
+	eq(t1 .. "|" .. x1, "One|+1 point.", "one point, no reward")
+	eq(K.summaryToast({}), nil, "no unlocks: no toast")
+	local s1, sx = K.summaryToast({index.byId.level_50}, {})
+	eq(s1 .. "|" .. sx, "Blooded|+5 points.", "one unlock: its own toast")
+	local defs = {}
+	for _, id in ipairs({"level_50", "level_100", "level_200", "level_300", "level_500"}) do defs[#defs + 1] = index.byId[id] end
+	local st, stext = K.summaryToast(defs, {level_300 = "a", level_500 = "b", level_200 = "c"})
+	eq(st, "5 achievements unlocked", "summary title")
+	eq(stext, "+65 points: Blooded, Ascendant's Threshold, Hardened and 2 more. Rewards: c, a and 1 more.", "summary text, rewards capped")
 end
 
 -- ------------------------------------------------------------------ SQL

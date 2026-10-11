@@ -15,6 +15,8 @@
 --   K.recent(index, unlocked, n)          -> the newest n unlocks [{id, name, points, at}]
 --   K.titlesOf(index, unlocked)           -> titles for ChaosTitles (source "achievement")
 --   K.rewardText(reward, nameOf)          -> "3 Orb of Upheaval, mount Doombringer" (nameOf(itemId) -> name)
+--   K.toast(def, rewardText)              -> title, text of the unlock toast ("Blooded", "+5 points. Reward: ...")
+--   K.summaryToast(list, rewards)         -> title, text of several unlocks at once (the login summary); nil for none
 --   K.retroStats(facts)                   -> stats that the character's current state proves (level, Paragon, ...)
 --   K.paragonLevel(level, startLevel)
 --   K.unlockMethod()                      -> {describe, check} for ChaosClassUnlocksCore.registerMethod("achievement")
@@ -311,6 +313,47 @@ function K.rewardText(reward, nameOf)
 		parts[#parts + 1] = "portal style " .. tostring(reward.portal.name or "?")
 	end
 	return table.concat(parts, ", ")
+end
+
+-- ------------------------------------------------------------------------------------------------ toasts
+-- the toast of one unlock (notifications.lua ChaosNotify.send, kind "achievement" = the ACHIEVEMENT UNLOCKED header):
+-- title = the name, text = "+15 points. Title: the Unbroken. Reward: mount Doombringer."
+function K.toast(def, rewardText)
+	local parts = {string.format("+%d point%s.", def.points or 0, (def.points or 0) == 1 and "" or "s")}
+	if def.title then
+		parts[#parts + 1] = "Title: " .. def.title .. "."
+	end
+	if rewardText and rewardText ~= "" then
+		parts[#parts + 1] = "Reward: " .. rewardText .. "."
+	end
+	return tostring(def.name or def.id or "Achievement"), table.concat(parts, " ")
+end
+
+-- several unlocks at once (the quiet login check): one toast. rewards = {[id] = reward text}
+function K.summaryToast(list, rewards)
+	if type(list) ~= "table" or #list == 0 then
+		return nil
+	end
+	rewards = rewards or {}
+	if #list == 1 then
+		return K.toast(list[1], rewards[list[1].id])
+	end
+	local points, names, got = 0, {}, {}
+	for _, def in ipairs(list) do
+		points = points + (def.points or 0)
+		if #names < 3 then
+			names[#names + 1] = def.name
+		end
+		local r = rewards[def.id]
+		if r and r ~= "" then
+			got[#got + 1] = r
+		end
+	end
+	local text = string.format("+%d points: %s%s.", points, table.concat(names, ", "), #list > 3 and (" and " .. (#list - 3) .. " more") or "")
+	if #got > 0 then
+		text = text .. " Rewards: " .. table.concat(got, ", ", 1, math.min(#got, 2)) .. (#got > 2 and (" and " .. (#got - 2) .. " more") or "") .. "."
+	end
+	return #list .. " achievements unlocked", text
 end
 
 -- ------------------------------------------------------------------------------------------------ retroactive

@@ -72,9 +72,10 @@ local NOTIFICATION_TYPES = {
         borderColor = "#6a5632",
         duration = 7000,
     },
-    -- achievements (server data/scripts/chaos/achievements.lua): one toast per unlock
+    -- achievements (server data/scripts/chaos/achievements.lua): one toast per unlock (name, points, title, reward), one
+    -- summary for the unlocks of the login check; the reward track and class unlocks
     ACHIEVEMENT = {
-        icon = "images/notifications/task.png",
+        icon = "/images/chaos/topbutton_ranking",
         title = "ACHIEVEMENT UNLOCKED",
         titleColor = "#5cc8c0",
         backgroundColor = "#ccbebb",
@@ -99,6 +100,16 @@ local NOTIFICATION_TYPES = {
         backgroundColor = "#ccbebb",
         borderColor = "#6a5632",
         duration = 9000,
+    },
+    -- a listing of the player sold (server market.lua, orbexchange.lua; kind "sale"): item, price, fee and proceeds, or
+    -- "While you were away: 3 items sold for 4.2M gold: ..." at login
+    SALE = {
+        icon = "/images/chaos/topbutton_market",
+        title = "ITEM SOLD",
+        titleColor = "#e8b84a",
+        backgroundColor = "#ccbebb",
+        borderColor = "#6a5632",
+        duration = 12000,
     },
     INVASION = {
         icon = "images/notifications/gm.png",
@@ -261,35 +272,27 @@ local function calculateOptimalPosition()
     return {marginRight = 30, y = 35}
 end
 
--- Função para posicionar notificações
+-- stack the shown toasts (notifyview.lua ChaosNotifyView.stack): pinned first, then by slot, each below the one above
+-- by its own height, so toasts with buttons (140) and several toasts at once never overlap
 function repositionNotifications()
     local basePos = calculateOptimalPosition()
-    local currentY = basePos.y
     local margin = basePos.marginRight
-
-    -- Posicionar notificações fixadas primeiro
-    for slot, data in pairs(pinnedNotifications) do
-        if data and data.widget and isWidgetValid(data.widget) then
-            pcall(function()
-                -- usar margins e anchors em vez de setPosition
-                data.widget:setMarginRight(margin)
-                data.widget:setMarginTop(currentY + 35)
-                data.widget:raise()
-                currentY = currentY + 120
-            end)
+    local groups = {pinned = {}, active = {}}
+    local sources = {pinned = pinnedNotifications, active = activeNotifications}
+    for name, list in pairs(sources) do
+        for slot, data in pairs(list) do
+            if data and data.widget and isWidgetValid(data.widget) then
+                groups[name][slot] = {type = data.data and data.data.notificationType}
+            end
         end
     end
-
-    -- Posicionar notificações temporárias
-    for slot, data in pairs(activeNotifications) do
-        if data and data.widget and isWidgetValid(data.widget) then
-            pcall(function()
-                data.widget:setMarginRight(margin)
-                data.widget:setMarginTop(currentY + 35)
-                data.widget:raise()
-                currentY = currentY + 120
-            end)
-        end
+    for _, place in ipairs(ChaosNotifyView.stack(groups.pinned, groups.active, basePos.y + 35)) do
+        local data = sources[place.group][place.slot]
+        pcall(function()
+            data.widget:setMarginRight(margin)
+            data.widget:setMarginTop(place.y)
+            data.widget:raise()
+        end)
     end
 end
 
@@ -463,7 +466,7 @@ local function createCompactNotification(data, isPinned)
     local totalPausedTime = 0
     
     -- Altura maior para notificações com botões
-    local notificationHeight = (data.notificationType == "PARTY_INVITE" or data.notificationType == "CATACOMB_FREE") and 140 or 110
+    local notificationHeight = ChaosNotifyView.heightOf(data.notificationType)
     
     -- Configurar o painel principal
     pcall(function()
@@ -564,7 +567,7 @@ local function createCompactNotification(data, isPinned)
             titleLabel:setId('titleLabel')
             titleLabel:setText(data.title or 'NOTIFICATION')
             titleLabel:setFont(titleFont())
-            titleLabel:setColor('#a3844b')
+            titleLabel:setColor(data.titleColor or '#a3844b')
             titleLabel:setTextAlign(AlignCenter)
             titleLabel:setHeight(18)
             titleLabel:setMarginLeft(80)
@@ -587,7 +590,7 @@ local function createCompactNotification(data, isPinned)
             messageLabel:setTextAlign(AlignLeft)
             messageLabel:setTextWrap(true)
             -- four wrapped lines fit above the timer bar; two where Accept/Start buttons sit below the text
-            local hasButtons = data.notificationType == "PARTY_INVITE" or data.notificationType == "CATACOMB_FREE"
+            local hasButtons = ChaosNotifyView.hasButtons(data.notificationType)
             messageLabel:setHeight(hasButtons and 35 or 64)
             messageLabel:setMarginLeft(80)
             messageLabel:setMarginTop(28)
@@ -1079,7 +1082,8 @@ function addNotification(notificationType, message, customIcon, monsterLookType,
         catacombData = catacombData
     }
     
-    table.insert(notificationQueue, notificationData)
+    -- three shown at once, the rest wait in a capped queue (notifyview.lua ChaosNotifyView.enqueue)
+    ChaosNotifyView.enqueue(notificationQueue, notificationData)
     processNotificationQueue()
 end
 
@@ -1166,6 +1170,13 @@ function onExtendedOpcode(protocol, opcode, buffer)
         market = function(data)
             if data.message then
                 addNotification("MARKET", data.message)
+            end
+        end,
+
+        -- a listing of the player sold (server data/scripts/chaos/market.lua, orbexchange.lua)
+        sale = function(data)
+            if data.message then
+                addNotification("SALE", data.message)
             end
         end,
 
@@ -1258,6 +1269,10 @@ function testNotifications()
         }
         addNotification("PARTY_INVITE", "TestPlayer invited you to join their party for catacomb!", nil, nil, inviteData)
     end, 6000)
+    scheduleEvent(function()
+        addNotification("SALE", "While you were away: 3 items sold for 4.2M gold: Doombringer, 20x Orb of Fate, plate armor.")
+        addNotification("ACHIEVEMENT", "The Thousandth Step: +50 points. Title: the Unbroken. Reward: mount Doombringer.")
+    end, 1000)
     scheduleEvent(function()
         -- Teste de catacomb livre
         local catacombData = {

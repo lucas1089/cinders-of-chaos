@@ -20,6 +20,8 @@
 --   delivery  owed rows (chaos_market_deliveries) are applied in id order: the item into the inbox / the gold into the
 --             bank, the storage deliverSeq = row id, then player:save(), then the rows are marked delivered. A row at or
 --             below the saved deliverSeq is only marked (it reached the character before a crash).
+--   sold      the seller's "sold" row is its notification queue too: told when applied (online at once, else at the
+--             next login as "While you were away: ..."), ITEM SOLD toast and chat lines from market_notify_core.lua.
 --
 -- Protocol (JSON {action, data}) on ChaosOpcodes.market; big answers go through Chaos.sendChunked:
 --   client -> server  open | browse {filter: market_core.lua C.browseQuery, modifier rows C.modFilter} | tip {id} | buy {id, cur} | sellable | list {ref|pos, sid, iid, count,
@@ -57,6 +59,9 @@ if not ChaosCrafting then
 end
 if not ChaosItemTooltip then
 	dofile("data/scripts/chaos/item_tooltip_core.lua")
+end
+if not ChaosMarketNotify then
+	dofile("data/scripts/chaos/market_notify_core.lua")
 end
 
 Chaos.marketConfig = dofile("data/scripts/chaos/market_config.lua")
@@ -397,6 +402,16 @@ local function tell(player, text)
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, "Market: " .. text)
 end
 
+-- a toast of the notification module (notifications.lua ChaosNotify.send; kind "sale" = the ITEM SOLD header)
+local function notify(player, title, text, kind)
+	if ChaosNotify and ChaosNotify.send then
+		return ChaosNotify.send(player, title, text, kind)
+	end
+	if ChaosOpcodes.notifications then
+		player:sendExtendedOpcode(ChaosOpcodes.notifications, json.encode({action = kind, message = title ~= "" and (title .. ": " .. text) or text}))
+	end
+end
+
 -- ------------------------------------------------------------------ escrow codec
 local HAS_BLOB = Item ~= nil and Item.serializeAttributes ~= nil and Item.unserializeAttributes ~= nil
 MK.hasBlob = HAS_BLOB
@@ -683,8 +698,11 @@ end
 local REASON_TEXT = {bought = "bought", cancelled = "offer cancelled", expired = "offer expired", sold = "sold",
 	order = "from your buy order", returned = "the buy order closed before your fill"}
 
--- applies everything the market owes this (online) character; returns how many rows were applied now
-function MK.deliver(player)
+-- applies everything the market owes this (online) character; returns how many rows were applied now.
+-- away = the login delivery: sales made while the seller was offline are summed up as "While you were away: ...".
+-- Sales (reason "sold") are told through market_notify_core.lua: one chat line each (capped by cfg.notify.lines) and
+-- one toast; a row is told only when this call applied it, so a row already applied (deliverSeq) is never told twice.
+function MK.deliver(player, away)
 	local guid = player:getGuid()
 	local rows = deliveryRows(guid)
 	if #rows == 0 then
@@ -693,6 +711,7 @@ function MK.deliver(player)
 	local mark = math.max(0, player:getStorageValue(S_DELIVER))
 	local done, todo = MC.deliveryPlan(rows, mark)
 	local applied, lines = {}, {}
+	local sales = ChaosMarketNotify.newBatch(cfg.notify and cfg.notify.lines)
 	local inbox = player:getInbox()
 	for _, r in ipairs(todo) do
 		if r.kind == "item" then
@@ -725,10 +744,16 @@ function MK.deliver(player)
 			if r.kind == "gold" then
 				player:setBankBalance(player:getBankBalance() + r.amount)
 			end
-			local o = sql(string.format("SELECT `name`, `count`, `buyer_name` FROM `%s` WHERE `id` = %d", T.offers, r.offer_id),
-				{{"name", "s"}, {"count", "n"}, {"buyer_name", "s"}})[1] or {name = "an item", count = 1, buyer_name = "?"}
-			lines[#lines + 1] = string.format("+%s %s (sold %s%s to %s)", MC.money(r.amount), r.kind == "gold" and "gold" or "Chaos Coins",
-				o.count > 1 and (o.count .. "x ") or "", o.name, o.buyer_name)
+			local o = sql(string.format("SELECT `name`, `count`, `buyer_name`, `paid_amount`, `tax`, `order_id` FROM `%s` WHERE `id` = %d",
+				T.offers, r.offer_id), {{"name", "s"}, {"count", "n"}, {"buyer_name", "s"}, {"paid_amount", "n"}, {"tax", "n"},
+				{"order_id", "n"}})[1] or {name = "an item", count = 1, buyer_name = "?"}
+			local sale = ChaosMarketNotify.saleOf(r, o)
+			if sale then
+				ChaosMarketNotify.add(sales, sale)
+			else
+				lines[#lines + 1] = string.format("+%s %s (sold %s%s to %s)", MC.money(r.amount), r.kind == "gold" and "gold" or "Chaos Coins",
+					o.count > 1 and (o.count .. "x ") or "", o.name, o.buyer_name)
+			end
 		end
 		player:setStorageValue(S_DELIVER, r.id)
 		applied[#applied + 1] = r
@@ -754,9 +779,18 @@ function MK.deliver(player)
 				text = r.kind .. " " .. r.reason})
 		end
 	end
+	local sold = ChaosMarketNotify.summary(sales, away)
+	if sold then
+		for _, line in ipairs(sold.lines) do
+			tell(player, line)
+		end
+		notify(player, sold.title, sold.text, "sale")
+	end
 	if #lines > 0 then
 		tell(player, table.concat(lines, "; ") .. ". Items are in your inbox, gold in your bank.")
 		toast(player, #lines == 1 and lines[1] or string.format("%d market deliveries: see the Server Log.", #lines))
+	end
+	if sold or #lines > 0 then
 		sendWallet(player)
 	end
 	return #applied
@@ -1055,14 +1089,11 @@ function MK.buy(player, d)
 		o.count > 1 and (o.count .. "x ") or "", o.name, MC.money(price), cur == "coins" and "Chaos Coins" or "gold")})
 	MK.deliver(player)
 	sendWallet(player)
+	-- the seller online: told now by its delivery (the gold or the coins notice: one chat line and the ITEM SOLD toast);
+	-- offline: the "sold" row waits in chaos_market_deliveries and is told at the next login
 	local seller = Player(o.seller_id)
-	local soldText = string.format("%s bought your %s%s for %s %s (tax %s): %s %s %s.", name, o.count > 1 and (o.count .. "x ") or "", o.name,
-		MC.money(price), cur == "coins" and "Chaos Coins" or "gold", MC.money(tax), MC.money(net), cur == "coins" and "Chaos Coins" or "gold",
-		cur == "coins" and "added to your account" or "to your bank")
 	if seller then
-		tell(seller, soldText)
-		MK.deliver(seller) -- the gold (or the coins notice), with its toast
-		sendWallet(seller)
+		MK.deliver(seller)
 	end
 	return true
 end
@@ -1884,7 +1915,7 @@ function login.onLogin(player)
 		local p = Player(pid)
 		if p then
 			MK.recoverPlayer(p)
-			MK.deliver(p)
+			MK.deliver(p, true)
 		end
 	end, 1500, player:getId())
 	return true

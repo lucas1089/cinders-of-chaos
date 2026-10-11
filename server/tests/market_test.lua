@@ -12,6 +12,8 @@
 -- with the escrow (gold and coins), fills in part and whole with the tax, refusals (own order, own account, other kind,
 -- season, a filter that does not fit), cancel and expiry refunds, a failed fill transaction, a failed save, pending
 -- fills recovered after a crash, the shared listing limit and the admin report.
+-- Sale notifications (market_notify_core.lua): the seller online gets one ITEM SOLD toast and one chat line; three sales
+-- while it is offline are queued as sold rows and told once at login ("While you were away"), never again on a relog.
 local checks, fails = 0, 0
 local function ok(cond, what)
 	checks = checks + 1
@@ -1334,6 +1336,20 @@ eq(A.bank, 198900 + 95000, "seller online: 95,000 net to the bank")
 local told = false
 for _, m in ipairs(A.msgs) do if m:find("Buyer bought your") then told = true end end
 ok(told, "seller told")
+local function sentOf(p, action)
+	local out = {}
+	for _, x in ipairs(p.sent) do
+		if x.op == 79 and x.msg and x.msg.action == action then out[#out + 1] = x.msg.message end
+	end
+	return out
+end
+local saleToasts = sentOf(A, "sale")
+eq(#saleToasts, 1, "seller online: one ITEM SOLD toast")
+eq(saleToasts[1], "Buyer bought your magic sword for 100,000 gold (fee 5,000): +95,000 gold to your bank.",
+	"the toast: item, price, fee and proceeds")
+local soldLines = 0
+for _, m in ipairs(A.msgs) do if m:find("bought your magic sword", 1, true) then soldLines = soldLines + 1 end end
+eq(soldLines, 1, "one chat line for the sale (not two)")
 eq(B.storage[cfg.storage.deliverSeq] ~= nil, true, "buyer's deliverSeq set")
 local logs = 0
 for _, r in ipairs(tbl("chaos_market_log")) do if r.action == "buy" then logs = logs + 1 end end
@@ -1406,6 +1422,48 @@ eq(#A.inbox.children, 1, "the orbs stacked onto the cancelled ones")
 eq(A.inbox.children[1].count, 10, "5 + 5 orbs back")
 op(B, "browse", {})
 eq(lastSent(B, "page").total, 0, "expired offers are not listed")
+
+-- sales while the seller is offline: queued as its "sold" delivery rows, summed up once at the next login
+for _ = 1, 3 do addTo(bagA, newItem(2463)) end
+local plateOffers = {}
+for i = 1, 3 do
+	op(A, "list", {ref = "s3.1", sid = 2463, iid = "0", gold = 1000000 + i * 400000, days = 1})
+	plateOffers[i] = lastSent(A, "done").id
+end
+logout(A)
+local toastsBefore, msgsBefore = #sentOf(A, "sale"), #A.msgs
+B.bank = 10000000
+for _, r in ipairs(tbl("players")) do if r.id == 2 then r.balance = B.bank end end
+for i = 1, 3 do
+	op(B, "buy", {id = plateOffers[i], cur = "gold"})
+	eq(lastSent(B, "done").what, "buy", "plate " .. i .. " bought")
+end
+eq(#sentOf(A, "sale"), toastsBefore, "seller offline: nothing sent yet")
+eq(#A.msgs, msgsBefore, "nor told in the chat")
+local queuedSold = 0
+for _, r in ipairs(tbl("chaos_market_deliveries")) do
+	if r.player_id == 1 and r.reason == "sold" and r.delivered == 0 then queuedSold = queuedSold + 1 end
+end
+eq(queuedSold, 3, "three sold rows queued for the seller")
+local bankBefore = A.bank
+login(A)
+events.ChaosMarketLogin.onLogin(A)
+runEvents()
+local away = sentOf(A, "sale")
+eq(#away, toastsBefore + 1, "one summary toast at login")
+-- 1.4M + 1.8M + 2.2M = 5.4M; minus 5% fee = 5,130,000 net (rounded down to 5.1M)
+eq(away[#away], "While you were away: 3 items sold for 5.1M gold: plate armor, plate armor, plate armor.", "the summary")
+eq(A.bank, bankBefore + 5130000, "the proceeds after the fee in the bank")
+local feeLine = false
+for i = msgsBefore + 1, #A.msgs do
+	if A.msgs[i]:find("for 1,400,000 gold (fee 70,000): +1,330,000 gold to your bank.", 1, true) then feeLine = true end
+end
+ok(feeLine, "a chat line per sale with price, fee and proceeds")
+MK.deliver(A, true)
+events.ChaosMarketLogin.onLogin(A)
+runEvents()
+eq(#sentOf(A, "sale"), toastsBefore + 1, "never told twice (relog, another delivery)")
+eq(A.bank, bankBefore + 5130000, "nor paid twice")
 
 -- a save that fails while listing: everything is given back
 A.failSave = true

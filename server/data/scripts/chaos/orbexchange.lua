@@ -33,6 +33,9 @@ end
 if not ChaosOrbExchangeCore then
 	dofile("data/scripts/chaos/orbexchange_core.lua")
 end
+if not ChaosMarketNotify then
+	dofile("data/scripts/chaos/market_notify_core.lua")
+end
 
 Chaos.orbExchangeConfig = dofile("data/scripts/chaos/orbexchange_config.lua")
 local cfg = Chaos.orbExchangeConfig
@@ -412,8 +415,10 @@ local function deliveryRows(guid)
 		{"asset", "s"}, {"item_id", "n"}, {"amount", "n"}})
 end
 
--- applies everything the exchange owes this (online) character; returns how many rows were applied now
-function X.deliver(player)
+-- applies everything the exchange owes this (online) character; returns how many rows were applied now.
+-- away = the login delivery: fills of the player's orders while it was offline get the "While you were away" sale
+-- toast (market_notify_core.lua exchangeToast); rows already applied (deliverSeq) are only marked, never told again.
+function X.deliver(player, away)
 	local guid = player:getGuid()
 	local rows = deliveryRows(guid)
 	if #rows == 0 then
@@ -422,6 +427,7 @@ function X.deliver(player)
 	local mark = math.max(0, player:getStorageValue(S_DELIVER))
 	local done, todo = C.deliveryPlan(rows, mark)
 	local applied, gained = {}, {}
+	local traded = false
 	local inbox = player:getInbox()
 	for _, r in ipairs(todo) do
 		if r.asset == GOLD then
@@ -438,6 +444,7 @@ function X.deliver(player)
 			end
 		end
 		gained[r.asset] = (gained[r.asset] or 0) + r.amount
+		traded = traded or r.reason == "fill"
 		player:setStorageValue(S_DELIVER, r.id)
 		applied[#applied + 1] = r
 	end
@@ -473,7 +480,12 @@ function X.deliver(player)
 		end
 		local text = table.concat(parts, ", ") .. "."
 		tell(player, text)
-		toast(player, "Orb Exchange: " .. text)
+		local title, toastText, kind = ChaosMarketNotify.exchangeToast(text, traded, away)
+		if ChaosNotify and ChaosNotify.send then
+			ChaosNotify.send(player, title, toastText, kind)
+		else
+			toast(player, title .. ": " .. toastText)
+		end
 		sendWallet(player)
 	end
 	return #applied
@@ -1050,7 +1062,7 @@ function login.onLogin(player)
 		local p = Player(pid)
 		if p then
 			X.recoverPlayer(p)
-			X.deliver(p)
+			X.deliver(p, true)
 		end
 	end, 1700, player:getId())
 	return true

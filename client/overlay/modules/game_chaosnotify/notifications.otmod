@@ -4,6 +4,6 @@ Module
   author: Atlas
   sandboxed: true
   autoload: true
-  scripts: [ notifications ]
+  scripts: [ notifyview, notifications ]
   @onLoad: init()
   @onUnload: terminate()

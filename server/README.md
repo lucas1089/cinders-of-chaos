@@ -8439,3 +8439,87 @@ matted pelt; full backpack -> inbox), the broker placed at the temple, "sell" in
 levels kept over a relogin, the bonus on monster experience: Demons 175,500 -> 193,050 with +10% (exactly x1.10).
 Not tested: the real map (the area centres come from the spawn data; the tile picks there are not seen), more than one broker,
 the weekly leaderboard reset and the achievements unlocking at 50 / 100.
+
+## Client guard (engine `src-patches/0021-client-guard.patch`, `clientguard.lua`, `clientguard_core.lua`, `clientguard_config.lua`, client base patch 0035, client `game_chaosguard`)
+
+Only the official Cinders of Chaos client may play. **What it is and is not:** no client check is unbreakable. The key
+the client proves with is inside every client binary (only obfuscated), and a determined attacker can reverse the exe or
+proxy the traffic of a real client. The guard stops stock and third-party clients (other OTClient builds, the base
+client, Tibia clients, bots that speak the protocol themselves) and casually modified clients (edited Lua, a client
+rebuilt without our patches), logs every attempt, and makes the rest work for it. Three layers:
+
+1. **Login gate (engine, both logins).** Both login packets already carry a u32 "client version" field that the engine
+   skipped. Our client (base patch 0035) sends `0x4343 << 16 | build` there (stock clients send 1098). The login server
+   and the game server refuse anything else with **"Please use the official Cinders of Chaos client: <download URL>"**
+   (`clientGuardDownloadUrl`): the account login before the password check, the game login before the character is
+   loaded. The build must be in `clientGuardBuilds` (empty: any build), and when `clientGuardManifest` names the
+   updater's `manifest.json` on this machine, not below its `min_package` (re-read when the file changes).
+2. **Challenge-response (C++ on both sides).** Right after the game login, before the login packets, the server sends a
+   16-byte random nonce on extended opcode **189** (`cg1:<hex>`). The client answers from C++ (the challenge never
+   reaches Lua) with `cg1:<build>:<hex>` of
+   `HMAC-SHA256(key, nonce || u16le #account || account || u16le #character || character || u16le build)` (account =
+   the session key's account, character = the name this login sent; server: Crypto++ and a constant-time compare;
+   client: OpenSSL). A wrong answer, or none within `clientGuardTimeout` seconds (10), is logged and the player gets the
+   same message and is logged out (`Player::kickPlayer`: logout scripts run, the character is saved). Every other
+   extended opcode the client sends before its answer is held back (at most 64) and handed to the scripts right after
+   it, so no module loses its first request; after a failure they are dropped. The official client answers within one
+   round trip, before its modules send anything.
+3. **Module hello (Lua, cheap).** A checked connection must send the hello of client module `game_chaosguard` on
+   extended opcode **190** within 30 s (`clientguard_config.lua` `helloTimeout`): `{"action": "hello", "data": {"build":
+   n, "modules": n}}`, the same build as the login and at least 20 of our modules (`game_*`, `client_chaos_*`) loaded.
+   It catches our exe running with its overlay stripped or replaced. A failure goes through `player:clientGuardFail`.
+
+**Modes** (`clientGuardMode`): `"off"` (the engine's default, so an older config.lua and the test servers change
+nothing), `"log"` (every check runs and every failure is logged, nobody is refused or kicked: for a first week, or an
+emergency) and `"enforce"` (any other value counts as enforce, so a typo does not open the server). Switch with
+`/reload config` or a restart.
+**Staff:** nobody is exempt by default. Accounts of type gamemaster or higher that log in from an IP listed in
+`clientGuardStaffIps` skip the gate, the handshake and the hello (logged as such); from any other IP staff are checked
+like everyone.
+**Log:** one line per refusal, kick, staff pass and log-only pass, on the console and in `clientGuardLogFile`
+(`data/logs/clientguard.log`), e.g. `[ClientGuard] 2026-10-11 16:37:51 kicked ip=1.2.3.4 account=x character=Y build 7:
+wrong answer (another key, or not our client)`. At startup the console shows the mode, how many keys and from where,
+the accepted builds and an HMAC self-test; enforcing without a usable key prints an error (then every handshake fails:
+fail closed).
+
+**Keys.** The key is 32 random bytes as 64 hex digits (`openssl rand -hex 32`). The server takes the first non-empty of
+`clientGuardKey` (config.lua), the file `clientGuardKeyFile`, the environment variable `CHAOS_CLIENT_KEY`; several keys
+separated by commas are all accepted (a key rotation: old and new until every player has the new client). The public
+**development key** (`DEV-KEY-cinders-of-chaos-UNSAFE!`, what a client built without the secret gets) is refused unless
+`clientGuardAllowDevKey = true` (test servers only); an answer made with it says so in the log.
+
+**What the owner must set up (once):**
+1. Make the key on your own machine: `openssl rand -hex 32`. Keep it out of the repository, chats and screenshots.
+2. GitHub: Settings -> Secrets and variables -> Actions -> New repository secret, name **`CHAOS_CLIENT_KEY`**, value the
+   64 hex digits. `windows-package.yml` and `windows-client.yml` build the client with it (without it the run warns and
+   the client gets the development key, which a production server kicks).
+3. Game server: the same value as `CHAOS_CLIENT_KEY=` in `/etc/chaos/chaos.env` (`server/deploy/chaos.env.example`,
+   mode 0600), then `server/tools/prod_config.py ... --url https://<site> [--client-url URL] [--client-builds 4,5]
+   [--client-manifest /path/updates/live/manifest.json] [--client-staff-ips IP,...]`. It writes `clientGuardMode =
+   "enforce"`, `clientGuardKey = os.getenv("CHAOS_CLIENT_KEY") or ""`, `clientGuardAllowDevKey = false`,
+   `clientGuardTimeout = 10` and the four values of the options. Restart and look for `>> Client guard: enforce, 1 key(s)`.
+4. Every new client exe: run the workflow with a higher `client_build` (it also sets `Services.update.package`), then
+   either list both builds (`clientGuardBuilds = "4,5"`) for an update window and drop the old one later, or publish an
+   update with `--min-package 5` and let `clientGuardManifest` follow it (`docs/LAUNCH.md` "Client updates").
+
+**Config keys** (`config.lua`, all read on `/reload config`): `clientGuardMode` ("off"), `clientGuardKey` (""),
+`clientGuardKeyFile` (""), `clientGuardAllowDevKey` (false), `clientGuardBuilds` (""), `clientGuardManifest` (""),
+`clientGuardDownloadUrl` (""), `clientGuardStaffIps` (""), `clientGuardTimeout` (10, 2..120), `clientGuardLogFile`
+("data/logs/clientguard.log", "" = console only).
+**Updater:** the build number is the updater's package number (`Services.update.package`, `--min-package`): the exe is
+what the guard identifies. The Lua update number (`--min-version`) stays a client-side rule of the updater.
+**Lua:** `player:getClientGuard()` -> `{mode, state = "none" | "pending" | "verified" | "bypass" | "logged" | "failed",
+official, build}`; `player:clientGuardFail(reason)` (logged; in "enforce" the message and a logout, returns true).
+**Load test:** `tools/loadtest.py run` sends the stock version by default (a server in "off" or "log" lets the bots in);
+`--dev-key` (with `clientGuardAllowDevKey = true`) or `--client-key HEX` / `CHAOS_CLIENT_KEY` and `--client-build N` make
+the bots send the identifier, answer the challenge and say hello like the client.
+**Opcodes:** 189 (handshake, engine only) and 190 (hello) are free in the base server, in every Chaos script and in every
+client module (`tests/clientguard_test.lua` checks `ChaosOpcodes`).
+**Limits, honestly:** the identifier is plain in the packet (it only stops stock clients); the key can be dug out of a
+client binary with a debugger, after which a custom client can answer; a proxy in front of a real client can inject
+packets after the handshake; Lua-level checks can be faked by anyone who reads `game_chaosguard`. What raises the bar
+further, if ever needed: rotating the key with every client build (old and new key during the window), and server-side
+behaviour checks (the anti-bot system).
+**Tests:** `tests/clientguard_test.lua` (Lua 5.3 and LuaJIT: which states are checked, the hello rules, timeout,
+logout, the engine glue against a mocked engine, the opcodes); `client/tools/chaosguard_test.cpp` (CI: RFC 4231 and the
+handshake vector, the same one `loadtest.py` computes with Python's `hmac`, so client, server and load test agree).

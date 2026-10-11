@@ -8,7 +8,7 @@
 --     {"action":"battlePassComplete","missionName":"..","expPoints":N,"monsterLookType":N (optional)}
 --     {"action":"partyInvite","inviterName":"..","inviterResets":N,"element":"..","level":N}
 --     {"action":"catacombFree","element":"..","level":N}
---     {"action":"achievement" (or another message kind),"message":"title: text"}   ChaosNotify.send
+--     {"action":"achievement" (or another message kind, e.g. "sale"),"message":"title: text"}   ChaosNotify.send
 --   client -> server, opcode 151, plain text (NOT json):
 --     "accept_invite|<inviterName>"
 --     "decline_invite|<inviterName>"
@@ -83,9 +83,10 @@ end
 
 -- A generic toast: send(player, title, text[, kind]). kind is one of the client's message actions (default
 -- "achievement"); the client shows "title: text" under that kind's header. Used by guild.lua (guild level-up) and
--- guildwar.lua (war toasts).
+-- guildwar.lua (war toasts). "sale" (header ITEM SOLD) is a listing of the player that sold: market.lua and the Orb
+-- Exchange (orbexchange.lua), at once or at the next login.
 local SEND_KINDS = {achievement = true, bounty = true, newplayer = true, bestiary = true, bosspoints = true,
-	ascension = true, market = true, seasonpass = true, journey = true, invasion = true}
+	ascension = true, market = true, sale = true, seasonpass = true, journey = true, invasion = true}
 
 function ChaosNotify.send(player, title, text, kind)
 	if not player then
