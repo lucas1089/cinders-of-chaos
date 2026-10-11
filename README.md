@@ -29,15 +29,18 @@ systems built for weeks of play rather than days.
 | Classes | 7 class lines (Warrior, Ranger, Mystic, Thief, plus Necromancer, Monk and Templar as a store unlock), each with 2 ascensions: **14 ascended classes**, earned through the ascension quest |
 | Level cap | 1000, then Paragon levels. Reaching 1000 takes roughly 100 hours of hunting |
 | Build | a passive tree of over 600 nodes with class keystones and class sections, Vocation Trials, Paragon, spell supports, saved Loadouts |
-| Items | 15 rarities from Common to Transcendent, item levels 1 to 150, prefixes and suffixes in tiers T1 to T8, legendary powers, veiled modifiers, uniques, ten item sets, gems and sockets, charms |
-| Crafting | 14 orbs plus the Orb of Unveiling, the Orb of Sockets and the Whetstone, item quality, bound modifiers, salvage into Rune Shards |
-| Endgame | world bosses, bounties, a bestiary with kill tasks, rifts with keys, modifiers and Omens, the Rift Atlas, Ascended Omens and the Cinderheart, the Ember Descent, the weekly raid, the Infinity Tower, dungeons, invasions and world events, community goals, four factions |
+| Items | 15 rarities from Common to Transcendent, item levels 1 to 150, prefixes and suffixes in tiers T1 to T8, legendary powers, veiled modifiers, uniques, ten item sets, gems and sockets, charms, two ring slots, and loot for every monster |
+| Archery | bows and crossbows fire without arrows; quivers are off-hand gear with modifiers of their own |
+| Crafting | 14 orbs plus the Orb of Unveiling, the Orb of Sockets and the Whetstone, item quality, bound modifiers, salvage into Rune Shards, and the crafting tables, whose gear can roll a rarity |
+| Professions | four gathering professions up to level 100; sell the materials to the Material Broker and earn up to +10% monster experience |
+| Endgame | world bosses, bounties, a bestiary with kill tasks, rifts with keys, modifiers and Omens, the Rift Atlas, Ascended Omens and the Cinderheart, the Ember Descent, the weekly raid, the Infinity Tower, dungeons, invasions and world events, community goals, four factions. Rifts, Omens and the Ascended bosses grow harder and richer for parties of up to 5 |
 | PvP | ranked arena 1v1, 2v2 and 3v3 with PvP seasons, the Ember Wells battleground, the Scorched Marches open PvP zone, guild siege and guild wars |
 | Social | guild levels, guild halls and a weekly guild boss, Party Finder, mentors, personal hideouts, weekly leaderboards |
 | Seasons | season characters, Self-Found and Hardcore modes, a seasonal journey, a season pass |
-| Economy | a player market for gold and Chaos Coins with price history, the Orb Exchange, store pouches, auto seller, a store that sells no gear |
-| Fair play | two characters per IP at most, anti-bot checks and player reports, staff left out of every leaderboard, chances that mean what they say |
-| World art | our own dark tile set (cracked obsidian, ash, bones, wet rock, glowing fungus, braziers) in rifts, the world boss arena, the ascension trial and the guild hall |
+| Economy | a player market for gold and Chaos Coins with price history, the Orb Exchange, the Gambler's sealed gear, depot tabs, store pouches, auto seller, a store that sells no gear |
+| Looks | outfits, mounts, wings, auras, footprints, outlines that follow your silhouette, plate frames, transmog and pets, with 33 exclusives that are never sold, and golden wings at every level-up |
+| Fair play | only the official client can play, two characters per IP at most, anti-bot checks and player reports, capped loot and experience bonuses, staff left out of every leaderboard, chances that mean what they say |
+| World | 20 towns with names of our own, hunting grounds filled out for a full server, and our own dark tile set (cracked obsidian, ash, bones, wet rock, glowing fungus, braziers) in rifts, the world boss arena, the ascension trial and the guild hall |
 
 ---
 
@@ -47,12 +50,14 @@ systems built for weeks of play rather than days.
 > (from the Chronicle of the Broken World)
 
 - **An account on the website:** accounts and characters are made on the Cinders of Chaos website, which also has the
-  leaderboards, the patch notes, the season pages, the rules and the client download.
+  leaderboards (with a tab for every class), the patch notes, the season pages, the rules and the client download.
+  Play with the client from there: no other client can log in.
 - **Tutorial island:** new characters start on a small island with five stations: fight, cast your first spell, spend
   a passive point, use an Orb of Upheaval, and learn about keystones, bounties and the store. Each station opens the next
   gate. You can skip it any time (Character > Services > Leave Tutorial), and nobody can die there.
-- **Starter kit per class:** weapon, armour, potions, food, tools and some gold, chosen for your class: arrows for
-  Rangers, a second dagger for Ninjas, a katana for Samurai, nothing in the hands for Monks, who fight with their fists.
+- **Starter kit per class:** weapon, armour, potions, food, tools and some gold, chosen for your class: a bow that
+  needs no arrows for Rangers, a second dagger for Ninjas, a katana for Samurai, nothing in the hands for Monks, who
+  fight with their fists.
 - **Milestone gifts** at levels 20, 50, 100 and 200: potions for your role and Orbs of Upheaval.
 - **Town Portal** from level 1: a free way home and back again (see Quality of life).
 - **A mentor** if you like (Social > Mentors): a veteran guides new characters up to level 79. Hunting together gives
@@ -72,7 +77,7 @@ own Chaos spells with custom names, icons and effects, and the spellbook (Charac
 | Base class | Plays as | Ascensions |
 |---|---|---|
 | **Warrior** | melee, heavy armour, most health | **Juggernaut**: the tankiest class, with taunts, damage reduction and block/reflect · **Berserker**: two-handed area damage; *Rage* hits harder the lower your health, *Skyfall Cleave* leaps in and slams the ground |
-| **Ranger** | bows and crossbows | **Deadeye**: the best single-target damage in the game, with crossbows, marks and crits · **Beastmaster**: fights beside a *War Wolf* companion that grows with you (two wolves from level 400), arrows that splash |
+| **Ranger** | bows and crossbows that need no arrows, a quiver in the off-hand | **Deadeye**: the best single-target damage in the game, with crossbows, marks and crits · **Beastmaster**: fights beside a *War Wolf* companion that grows with you (two wolves from level 400), bow shots that splash |
 | **Mystic** | spells, wands and rods | **Elementalist**: the best area damage, with fire, ice and energy combos · **Illusionist**: the best healer, for one ally and for the whole party (Mirror Mend, Lucid Reverie), plus party attack buffs; weakens enemies |
 | **Thief** | fast light weapons, shurikens, stealth, evasion | **Ninja**: the line's burst single target: dual-wields daggers with an off-hand strike, very fast hits, Shadow Step · **Samurai**: a duelist off-tank: one sword, a Counter Stance that parries, guards and taunts, the Iaijutsu draw strike and Bushido crit stacks |
 | **Necromancer** | summoner: skeletons and spirits, curses, corpses | **Lich**: curses, damage over time, life drain and Corpse Explosion, with one strong shade or none · **Bone Lord**: the army: more skeletons, the Bone Golem, an aura and sacrifices |
@@ -138,13 +143,32 @@ Most of the fight is the classic one. A few rules are our own, and you will noti
   reflects show their own effect over the target.
 - **Attack speed:** nobody swings faster than once a second, and leech heals at most about once a second, however many
   hits land.
-- **Weapon styles:** two-handed weapons swing slower and hit much harder; arrows splash onto the creatures around the
-  target, bolts hit only their target.
+- **Weapon styles:** two-handed weapons swing slower and hit much harder; bow shots splash onto the creatures around
+  the target, crossbow bolts hit only their target. Bows and crossbows never run out of shots (see Archery and quivers).
 - **Cast times for the big spells:** Doomtide and Primordial Squall take 1.5 seconds to cast, Hail of Dawn and Colossus
   Fall 1 second, and hit harder for it. A cast bar over your character counts down (other players see a small one over
   you). Moving, a paralysis, casting another spell, opening a town portal or dying interrupts the cast and gives you the
   mana and the cooldown back; so does clicking the bar. Taking damage does not interrupt.
 - **PvP healing:** every heal on a player who is in a PvP fight is 30% weaker, for every class, so fights end.
+
+## Archery and quivers
+
+> *"I stopped counting arrows the day my bow stopped asking for them."*
+> (a Deadeye of the ash wastes)
+
+![A bow and a quiver in the hands, a second ring slot, and a quiver's tooltip](docs/images/feature_archery.png)
+
+- **No more arrows or bolts.** Bows and crossbows fire on their own. Each one carries the damage of the ammunition its
+  level used to need, so nothing got weaker. Arrows and bolts are gone from shops and loot, and any you had were
+  turned into gold in your bank. Spears, stars and throwing knives stay as they were.
+- **Quivers go in the off-hand,** next to a bow or crossbow. They only work while you hold one, so they are Ranger,
+  Deadeye and Beastmaster gear. Twelve quivers from level 20 to level 1000 each carry a fixed bonus, and on top of that
+  they roll modifiers of their own: *Distance Fighting*, *Critical Strike Chance with Bows*, *Extra Projectile Chance*
+  (a second shot at a nearby monster), fire, ice, energy or earth damage added to your shots, and *Attack Speed with
+  Bows*. Quivers drop like any gear, can be crafted with a rarity and turn up at the Gambler for bow classes.
+- **A second ring slot.** The old ammunition slot now takes a ring. Both rings count in full: modifiers, legendary
+  powers, gems, item sets. Two copies of the same ring are fine, but only one might ring at a time. Drag a ring onto
+  the other slot to swap them.
 
 ## Passive tree, Vocation Trials and Paragon
 
@@ -164,7 +188,7 @@ Most of the fight is the classic one. A few rules are our own, and you will noti
   | Warrior | *Cleaving Arc*: two-handed hits strike the enemies around you | *Bulwark*: block with a shield, reflect melee damage |
   | Juggernaut | *Immovable*: less damage taken, twice as much below half health | *Bulwark* |
   | Berserker | *Cleaving Arc* | *Undying Rage*: melee hits heal you, more below half health |
-  | Ranger | *Ricochet*: arrows bounce to another target | *Deadeye*: crossbow shots that deal double damage |
+  | Ranger | *Ricochet*: bow shots bounce to another target | *Deadeye*: crossbow shots that deal double damage |
   | Deadeye | *Hunter's Focus*: each hit on the same target hits harder | *Deadeye* |
   | Beastmaster | *Ricochet* | *Pack Alpha*: your companions bite harder and take less |
   | Mystic, Elementalist | *Arcane Echo*: area spells can cast a second time | *Elemental Overload*: switch elements for more damage |
@@ -274,6 +298,8 @@ sockets (the second opens 60 levels after you learn the spell, the third 150 lev
   "3x Orb of Upheaval"), following your loot filter. Hold **Alt** to see every item, the ones your filter hides too.
   Corpses holding loot for you say so ("Corpse: 2 items") with the time left before the loot is gone. Click a label to
   pick the item up, right-click it for the item menu, hover it for the full tooltip.
+- **Every monster has loot.** Each monster's loot list was checked, and the ones that dropped nothing got tables of
+  their own, modelled on monsters like them: coins, gems and a small chance at themed gear.
 - **Autoloot, Rarity Autoloot, auto seller, bank and stash** so you spend your time hunting, not walking. Rarity Autoloot
   (store unlock) picks up gear by rarity even when it is not on your autoloot list.
 
@@ -333,6 +359,23 @@ those orbs pick a modifier at random. A Rift Key's modifiers make the rift harde
 key is how you push for more loot. Orbs drop from monsters (more from tiered ones and bosses), from bounties, rifts and
 the weekly chest, and can be made from rune shards (Salvage). The store sells only Whetstones, the Orb of Excision and
 the Orb of Binding, with weekly limits; no orb with a random result is sold. Uniques can't be crafted, so they stay unique.
+
+### Crafting tables
+
+The crafting hall has tables for seven crafts: herbalist, woodcutting, mining, general crafting, armorsmith,
+weaponsmith and jewelsmith (Economy > Crafting Tables tells you where). Use a table and the **Crafting Table window**
+opens on its craft:
+- **Every recipe at a glance:** a tab per craft, a search over recipes and materials, and a *Can craft* filter. Each
+  recipe shows the skill it needs against yours, its gold, and every material as have/need in green or red. Hover the
+  result for its full tooltip.
+- **Craft one or many:** Craft x N keeps going until it is done or something runs out, with a bar for each craft and
+  the answer in the window. You need to stay at the table.
+- **Crafted gear can roll a rarity**, from Common up to Legendary, with an item level and modifiers like a drop. The
+  higher your skill above the recipe's level, the better the odds (up to 35% for any rarity) and the higher the item
+  level (up to 90). A crafted piece never beats a boss drop.
+- **Potions by skill:** potion recipes can give 50% more, or even twice as many, the more your skill is above the
+  recipe's level. The cost stays the same.
+- The window shows the odds before you craft, and names the rarity or the bonus when you get one.
 
 ### Gems and sockets
 
@@ -394,6 +437,11 @@ Crafting Bench to open its page.
 - **New factions:** the **Goblin Tribe** (grunts, archers, bombers, witches, wolf riders, a hobgoblin captain and the
   Goblin Chieftain) and the **Wildwood Uprising** (wolves, boars, mushroom folk, dryads, owlbears, giant beetles and
   spiders, the Mushroom King and the Ancient Treant). They drop creature products to sell and food to eat.
+- **Room to hunt:** the hunting grounds were filled out for a full server. Spawns that never came back now do, 184 new
+  spawns fill 21 thin areas, the level 300-600 grounds refill in 90 seconds, and a pack refills in one or two checks
+  instead of one monster at a time.
+- **Dynamic respawn:** where several players hunt together, monsters come back faster: 85% of the normal time with two
+  hunters, 70% with three, 55% with four and 50% with five or more. Characters on one IP count once.
 
 ## Endgame
 
@@ -419,7 +467,7 @@ Kaelgor the Infernal Warlord, Skaldra the Rime Queen, the Rotmother, Nyxareth th
 > *"Turn the key and the wall forgets it was a wall."*
 > (a Riftwalker)
 
-Use a **Rift Key** (Adventure > Rifts) to open a 10-minute instance for you and up to 3 party members.
+Use a **Rift Key** (Adventure > Rifts) to open a 10-minute instance for you and up to 4 party members.
 
 - **Keys** have a tier (1 to 15) and 1 to 3 modifiers that make the rift harder and its rewards better (item quantity,
   rarity and experience). Some are plain danger: *Vitality, Brutality, Haste, Elites, Reflection, Warding, Withering,
@@ -434,6 +482,10 @@ Use a **Rift Key** (Adventure > Rifts) to open a 10-minute instance for you and 
   Hollow Crown and Thalcyra the Stormbound Seer. Their chests are the richest in the game, with two unique rolls each.
 - **Rift monsters** wear their rift's look and a name of their own by theme and rank, from *Abyssal Spawn* up to
   *Abyssal Sovereign*, on the monster bar and in the loot feed.
+- **Bring a party.** Rifts and Omen arenas scale with the players who enter, up to 5. Each extra player adds 100% to
+  the monsters' and the guardian's health and 10% to their damage. In return every finisher gets the whole chest plus
+  12.5% per extra player (+50% for a party of 5) and kill loot rises 5% per extra player (up to +20%). A party clears
+  about as fast as one player and earns more per head. The run tells you the numbers when it starts.
 - A server restart or a crash never eats your key.
 
 ### The Rift Atlas
@@ -445,6 +497,7 @@ Long-term rift progression (Adventure > Rift Atlas, or the rift HUD).
   points, 96 in all.
 - **The node map:** 81 nodes in theme branches from the Heart of the Atlas: more packs, more chest gold and orbs, a
   better chance at the next key, shared lives. Four keystones change how your rifts play; you hold one at a time.
+  *Obsidian Crown*, for one, makes the guardian twice as strong and raises its chest's orbs by half.
 - **Respec** a node for gold or an Orb of Upheaval. A full atlas is worth roughly a third more income per run.
 
 ### Ascended Omens and the Cinderheart
@@ -453,7 +506,9 @@ Long-term rift progression (Adventure > Rift Atlas, or the rift HUD).
 
 The top challenge, above the Omen Keys.
 - **Ascended Shards** drop from Omen guardians and tier 13-15 rifts. Four bind an **Ascended Sigil**, which opens the
-  Ascended form of Sangrith, Morvane or Thalcyra, alone or with up to 5 players (their health scales).
+  Ascended form of Sangrith, Morvane or Thalcyra, alone or with up to 5 players. Like the rifts, each extra player
+  adds 100% boss health and 10% damage, and 12.5% more spoils for every finisher (+50% for a party of 5), so a full
+  party kills in the solo time and each player takes home more.
 - **Real mechanics:** phases at health thresholds, telegraphed hits with two warning turns, adds, pools, storm columns,
   a creeping edge and an enrage at 10 minutes. Shared lives; the fallen come back through the Ember Gate.
 - **Ysgrath the Cinderheart:** a relic from each Ascended guardian forges the Cinderheart Sigil. Four phases, an enrage
@@ -710,8 +765,9 @@ Weekly boards (Social > Leaderboards) reset every Monday:
 - Guild Siege
 - Arena 1v1 and 2v2
 - Defender (invasions defended)
-- Cinderheart fastest kills (alone, 2-3 and 4-5 players, with class tabs)
+- Cinderheart fastest kills (alone, 2-3 and 4-5 players, with class tabs, also on the website)
 - Reputation
+- Gatherers (materials gathered; a title only)
 
 Other systems keep weekly boards of their own: the raid's fastest clear, the Ember Descent's weekly run, the guild boss,
 the battleground and the Scorched Marches. Season modes get their own tabs, Hardcore graves included.
@@ -734,7 +790,7 @@ several? Pick one, or none, in the Achievements window (Character > Achievements
 
 Over 150 achievements (Character > Achievements) give you goals in every corner of the game:
 - **What counts:** levels and Paragon, magic, rare and legendary kills, ambushes, Treasure Goblins, each world boss, rift
-  tiers, modifiers and Omens, the Ascended bosses, the raid, the Ember Descent, factions, bounty contracts and weekly
+  tiers, modifiers and Omens, the Ascended bosses, the raid, the Ember Descent, factions, professions, bounty contracts and weekly
   chests, uniques and rarities found, orbs used, arena wins and ratings, guild sieges, the battleground and the
   Scorched Marches, Hardcore and Self-Found seasons, and a few secrets that stay hidden as **???** until you find them.
 - **Reward track:** your account's points unlock cosmetics at seven milestones (100 to 3,500 points), and completing a
@@ -743,8 +799,9 @@ Over 150 achievements (Character > Achievements) give you goals in every corner 
 - **Points:** every achievement is worth points. Your account total counts each achievement once, whichever character
   earned it.
 - **Rewards:** many give a title; some pay orbs, others an outfit with its addons, a mount, a pet or a portal style.
+  Some unlock wardrobe exclusives that are never sold (see Cosmetics and the wardrobe).
 - **Already a veteran?** Levels, Paragon, ascension, bounties and arena results you had before are counted the next time
-  you log in. A toast pops up the moment you unlock one.
+  you log in. A toast pops up the moment you unlock one, with its reward on it.
 
 ## Pets
 
@@ -756,9 +813,10 @@ Over 150 achievements (Character > Achievements) give you goals in every corner 
 A pet is a small companion that walks at your side (Character > Pets). It cannot fight and cannot be hurt, and
 only one is out at a time.
 - **Getting one:** whelps drop very rarely from dragons and frost dragons, the Duskwing from any monster worth your time
-  (more often from magic, rare and legendary ones), the Lantern Wisp and the Hoarder Squirrel are in the store (Pets),
-  and the Ash Cat, the Gilded Goblin and the Riftling come with achievements. Finding a pet you already have gives yours
-  experience instead.
+  (more often from magic, rare and legendary ones), the Lantern Wisp, the Hoarder Squirrel and more are in the store
+  (Pets), and the Ash Cat, the Gilded Goblin and the Riftling come with achievements. Two are rare boss drops that are
+  never sold: the Rotling from the Rotmother and the Ashweaver Spiderling from the Sepulchre's wardens. Finding a pet
+  you already have gives yours experience instead.
 - **Levels:** your pet levels with your kills, up to level 50.
 - **Abilities:** every species has two small ones, the second from level 20: **Mend** (heals you when you drop below half
   health), **Ward** (less damage from monsters for a few seconds when you are hurt), **Spark Aura** (hits the monsters
@@ -783,6 +841,34 @@ A room of your own (Character > Hideout), built when you enter it.
 - **Visits:** keep it private or open it to friends, your guild or everyone. Visitors can like it, and the best rooms
   go on a showcase.
 
+## Professions
+
+> *"The ash grows things too. Bitter things, mostly. The Broker pays for bitter."*
+> (a herbwife of the lower city)
+
+Four gathering professions (Economy > Professions), each with its own level from 1 to 100 per character:
+
+| Profession | Gathers | Tool |
+|---|---|---|
+| Delving | ore veins | a pick |
+| Wortcunning | herb patches | a sickle |
+| Flaying | fresh corpses of beasts and reptiles | an obsidian knife |
+| Angling | fish and pearls, on any fishing cast | a fishing rod |
+
+- **Gathering** is a short channel on the cast bar. Moving, attacking or taking damage breaks it. Veins and herb
+  patches stand in eight hunting areas, and each one is yours again 6 minutes after you gather it, so nobody can
+  steal or camp a node. Flay your own kills or your party's, once per corpse.
+- **Five tiers of materials,** from Common to Infernal, each opened by your profession level and your character level.
+  The Professions window lists where to gather each tier and which of your nodes are ready.
+- **The Material Broker** next to every temple buys them all and pays into your bank. Demand changes every week: each
+  profession's five materials pay x1.5, x1.25, x1, x1 and x0.75, in a new order. Per material and day the first 100
+  pay in full and the next 100 pay half. At best, gathering earns about a quarter of what hunting at the same level
+  pays, less at the top tier.
+- **The real prize is experience:** all your profession levels together give up to **+10% experience from monsters**,
+  shown on the buff bar. Every profession at 100 reaches the cap.
+- Professions make no gear and no orbs. They have their own achievements and titles (Master Delver, Master Angler,
+  Master of the Wilds ...), a weekly Gatherers board and a Materials tab in the Codex.
+
 ## The market
 
 > *"Everything has a price in the broken world. Even the things that glow."*
@@ -806,8 +892,9 @@ Sell and buy with other players at **Economy > Market** (Alt+E), or by using the
 - **Fees:** listing 1% of the gold price (at least 100 gold, not refunded), 5% sales tax when it sells. Offers last 1, 3
   or 7 days; up to 20 offers and buy orders at a time. What does not sell comes back to your inbox. Buy orders pay the
   same fee on their total.
-- **Safe:** bought and returned items arrive in your inbox, and every sale is reported as a message and a toast, also if
-  it sold while you were away. A server crash in the middle of a purchase loses nothing.
+- **Safe:** bought and returned items arrive in your inbox. Every sale and every filled buy order pops an *Item sold*
+  toast with the item, the count, the price, the fee and what you got. Sold while you were away? One summary waits for
+  you at login. A server crash in the middle of a purchase loses nothing.
 - **Price history:** every sale is recorded by item kind, rarity and item level. See the last sale, the 7-day median,
   the range, the volume and a 30-day chart. Browse marks offers well under or over the typical price, and the Sell form
   suggests a price and warns you when yours is far off.
@@ -819,6 +906,41 @@ A currency order book for the crafting orbs (Economy > Orb Exchange, or the butt
   Orders fill at the best price, in part or in full; what is left comes back when you cancel or the order ends.
 - **The book** shows its depth, the last trades, 24-hour volume, high and low, and an hourly price chart.
 - A small fee on gold trades and per orb-for-orb order keeps gold leaving the game. Season books are kept apart.
+- A filled order pops a toast too, also while you were away.
+
+## The Gambler
+
+> *"You see the make and the craft, never the luck inside. That you pay to learn."*
+> (Mordecai Ashwager, the Gambler)
+
+![The Gambler's sealed crates and a reveal](docs/images/feature_gambler.png)
+
+Mordecai Ashwager stands next to the temple of Mirewake, the main town, and sells **sealed equipment for gold**
+(talk to him, or Economy > The Gambler).
+- **Your own stock:** 14 sealed pieces made for your character: gear your class can use, at an item level close to
+  what your own kills drop. You see the base, the slot and the item level. The rarity stays hidden until you pay.
+- **New crates every 4 hours,** at 00:00, 04:00, 08:00, 12:00, 16:00 and 20:00 server time, with a countdown in the
+  window. Your stock stays the same through relogs and restarts.
+- **The odds are on the window:** never plain, at least as good as a magic monster's gear drop at every rarity up to
+  Divine, and Legendary or better about one crate in eight. The rarities above Divine stay with the monsters.
+- **Prices** follow your level: an armour piece costs about 18% of an hour of hunting. *Fresh Crates* gives you a new
+  stock at once for half an armour piece, doubling each time, three times per window.
+- A Divine reveal is told to everyone nearby. Bow classes can find quivers in the crates.
+
+## Depot tabs
+
+![The depot window with named, coloured tabs](docs/images/feature_depot.png)
+
+Your depot is a tabbed stash. Use a locker and **one depot window** opens: the tab buttons, the active tab's 100 slots,
+the item count, and buttons for the Inbox, the Market and Buy Tabs.
+- **4 tabs free**, 100 items each. A container counts as itself plus everything in it.
+- **More tabs:** +1 while the Chaos Pact runs, up to 9 more from the store (150 Chaos Coins each, or 500 for 4), and
+  one each for three achievements (Cabinet of Curiosities, Hall of Trophies, Keeper of the Vault). 17 at most.
+- **Name and colour each tab:** right-click a tab to give it a name of up to 16 characters and one of 12 colours. Every
+  character on your account sees the same names.
+- **Nothing is ever lost:** a tab above your count is withdraw-only, and items above a limit stay where they are. Your
+  old depot was sorted into tabs the first time you opened it. Each town keeps its own depot; your tab count is the
+  same in all of them.
 
 ## The store and the pouches
 
@@ -833,13 +955,13 @@ The store (Economy > Store) is paid in **Chaos Coins**. It sells convenience, co
 - **Boosts and world buffs:** stamina refill, double experience potions, blessings, and the server-wide experience, loot
   and training buffs.
 - **Services:** name, class and sex change, frag and skull removal, a passive tree and Paragon reset.
+- **Depot tabs:** 150 Chaos Coins for one, 500 for four (see Depot tabs).
 - **Cosmetics:** outfits, mounts, wings, auras, outfit shaders, portal styles, pets, hideout decorations, spell effect
-  skins, kill effects, loot label accents, chat name colours and plate frames. Unlocks are account-wide, and anything
-  can be sent as a gift.
-- **Transmog** (Character > Transmog): give your gear the look of any item of its kind you have unlocked, in an
-  account-wide wardrobe with appearance sets. Appearance only.
-- **Chaos Pact:** a 30-day subscription that raises the free limits while it runs: stash tabs, market listings, saved
-  builds, loot rules and character slots. When it ends nothing is deleted; extras just become read-only.
+  skins, kill effects, loot label accents, chat name colours, plate frames, footprints and outlines. Unlocks are
+  account-wide. Items and hideout decorations can be sent as a gift.
+- **Transmog sets:** appearance only (see Cosmetics and the wardrobe).
+- **Chaos Pact:** a 30-day subscription that raises the free limits while it runs: stash tabs, depot tabs, market
+  listings, saved builds, loot rules and character slots. When it ends nothing is deleted; extras just become read-only.
 - **Crafting supplies with weekly limits:** Whetstones, the Orb of Excision and the Orb of Binding. No orb with a random
   result is sold (no Upheaval, Fate, Gilding, Awakening, Erasure, Unmaking, Grafting, Sockets, Tempering, Reforging or Ruin).
 - **Training weapons.**
@@ -848,8 +970,36 @@ The store (Economy > Store) is paid in **Chaos Coins**. It sells convenience, co
 playable for free. Donations go through the Store's Donate button or the website, with Pix or PayPal, and are confirmed
 automatically.
 
+**Coin gifts.** You can send Chaos Coins to another account, up to 5,000 a day, but not in the 14 days after your last
+coin order. A charged-back order takes its gifted coins back.
+
 **Referrals** (Character > Referral): give a friend your code. They get a welcome gift, and you get cosmetic titles and a
 few Chaos Coins when they reach levels 50 and 150.
+
+## Cosmetics and the wardrobe
+
+> *"Steel is borrowed from the dead. A look is yours until the ash takes you."*
+> (a tailor of the lower city)
+
+![The wardrobe's Collection tab, and an outline with footprints](docs/images/feature_cosmetics.png)
+
+Choose what your character shows in **Character > Cosmetics**: spell effects, kill effects, loot labels, chat colours,
+footprints, outlines and the Collection. Everything is looks only and unlocks for your whole account.
+- **Footprints:** glowing prints on the tiles you leave behind, fading in about three seconds. Embers, frost, blood,
+  petals, storm sparks and more.
+- **Outlines:** a thin line that follows your character's silhouette, mount and addons included. One colour or a
+  gradient, and some of them pulse.
+- **Everyone sees them,** and you can hide other players' footprints and outlines in the same window.
+- **In the store:** 9 footprints, 9 outlines, name plate frames, transmog sets and pets, besides the outfits, mounts,
+  wings, auras and effects that were there before.
+- **33 exclusives that are never sold.** Every kind of look has some that only an achievement or a rare boss drop
+  gives: outfits and addons, mounts, wings, auras, outfit shaders, plate frames, portal styles, transmog sets, pets,
+  footprints and outlines. Boss drops are personal: every player who earns a world boss, raid, Ascended, Cinderheart
+  or guild boss reward rolls for one of their own, and it unlocks straight for the account. They cannot be traded.
+- **The Collection tab** lists every exclusive, owned or not, with where it comes from and a preview on your own
+  character.
+- **Transmog** (Character > Transmog): give your gear the look of any item of its kind you have unlocked, in an
+  account-wide wardrobe with appearance sets.
 
 ## Quality of life
 
@@ -924,7 +1074,12 @@ Cinders of Chaos ships its own client, built for these systems:
 ![Monster bars, the buff bar and the DPS meter](docs/images/feature_hud.png)
 
 - **Sound:** the client is built with sound, and each loot filter rule can play its own short alert.
-- **Toasts** for everything that matters: an achievement, a finished bounty, a sale on the market.
+- **Toasts** for everything that matters: an achievement with its reward, a finished bounty, an item sold on the
+  market, an invasion, a party invite. Every kind has its own icon, and invitations get iron and gold **Accept** and
+  **Decline** buttons. Toasts stack without covering each other.
+- **Level-up wings:** golden wings open behind a character that gains a level, and everyone on screen sees them.
+  Options > Graphics > Effects turns them off for your own character or for others.
+- **Riders sit right** on every mount, facing any direction.
 - **Sharp sprites** on large screens, with a smooth upscaling filter.
 - **Windows package:** the whole game for one Windows PC in one download, the patched server, the client with sound on,
   the art and a portable database, started with two .bat files. For local play and testing.
@@ -934,6 +1089,8 @@ Cinders of Chaos ships its own client, built for these systems:
 > *"The ladder is long. Climb it with your own hands."*
 > (the Chronicler)
 
+- **Only the official client plays.** Other clients and bots that speak the protocol themselves are refused at login,
+  with a link to the download.
 - **Two characters per IP at most.** While a second character is online from the same IP, neither can queue for a
   dungeon, enter the Infinity Tower or the arena, attack players, or give and take party bonuses.
 - **Anti-bot checks:** the server watches for patterns no human keeps up for long (perfect spell rhythm, instant
@@ -945,7 +1102,13 @@ Cinders of Chaos ships its own client, built for these systems:
 - **Staff characters** are left out of every leaderboard, title and reward.
 - **The store sells no gear.** Gear comes from monsters, rifts, bosses, crafting and other players.
 - **Chances mean what they say,** for crits, leech and every proc.
-- **Accounts are protected** with salted password hashes, and the website locks out repeated failed logins.
+- **Bonuses have ceilings.** However many loot bonuses stack, the loot rate stops at 3x, and a kill never gives more
+  than 4x its base experience. Events and boosts still help; they just cannot run away.
+- **Instances stay closed.** The raid, the Ember Descent, the Ascended arenas, the guild boss and the battleground
+  send strangers out, and no Town Portal, hideout or store teleport works inside any instance.
+- **Accounts are protected** with salted password hashes, and the website locks out repeated failed logins. Sign-up
+  has a captcha and a limit per IP, and the site runs on secure cookies with its pages guarded against script
+  injection.
 - **Season characters** play in their own economy, so a fresh season is a fair race.
 
 ## Coming soon
