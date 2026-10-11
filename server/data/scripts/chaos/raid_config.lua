@@ -223,10 +223,13 @@ return {
 			{key = "v_fate", kind = "orbs", name = "Sealed Fate (3)", price = 60, weekly = 2,
 				items = {{id = FATE, count = 3}}},
 			{key = "v_exalted", kind = "orbs", name = "Sovereign's Exalted Orb", price = 150, weekly = 1,
-				items = {{id = EXALTED, count = 1}}}
+				items = {{id = EXALTED, count = 1}}},
+			-- the weekly Orb of Unveiling bundle (veiled modifiers, data/lib/chaos_veiled_config.lua vendorBundle)
+			{key = "v_unveiling", kind = "orbs", name = "Veilbreaker's Bundle (2)", price = 90, weekly = 1,
+				items = {{id = 32257, count = 2}}}
 		},
 		-- these are always in stock (orb bundles), the rest of the slots come from the gear of the pool by the seed
-		always = {"v_upheaval", "v_fate"},
+		always = {"v_upheaval", "v_fate", "v_unveiling"},
 		gearLimits = {maxLevel = 130, maxRarity = 4}
 	},
 

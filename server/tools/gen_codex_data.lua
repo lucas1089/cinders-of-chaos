@@ -21,7 +21,8 @@ Gen.SOURCES = {
 	"data/lib/chaos_supports.lua", "data/lib/chaos_supports_config.lua", "data/scripts/chaos/loot_config.lua",
 	"data/scripts/chaos/salvage_config.lua", "data/scripts/chaos/shop_config.lua", "data/scripts/chaos/bounty_config.lua",
 	"data/scripts/chaos/rift_config.lua", "data/scripts/chaos/rift_core.lua", "data/scripts/chaos/chaos_constants.lua",
-	"data/scripts/chaos/uber_config.lua", "data/lib/chaos_item_sets.lua", "data/lib/chaos_item_sets_config.lua"
+	"data/scripts/chaos/uber_config.lua", "data/lib/chaos_item_sets.lua", "data/lib/chaos_item_sets_config.lua",
+	"data/lib/chaos_veiled.lua", "data/lib/chaos_veiled_config.lua"
 }
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -768,6 +769,42 @@ local function sourcesOf(D, id, key)
 	return rows
 end
 
+-- the Orb of Unveiling (data/lib/chaos_veiled.lua): where veiled items and the orb come from, and the veiled pool
+function Gen.veiledSections(V)
+	local c = V.config
+	local names = {rift = string.format("Rifts of tier %d+", c.sources.rift.minTier), omen = "Omen guardian arenas",
+		raid = "The raid", descent = string.format("The Descent from depth %d", c.sources.descent.minDepth),
+		ascended = "The Ascended fights"}
+	local rows = {}
+	for _, k in ipairs(c.sourceOrder) do
+		local s = c.sources[k]
+		rows[#rows + 1] = {names[k], string.format("Veiled slot on Rare to Epic gear %s, Legendary and better %s; the orb from kills %s (x%d from bosses).",
+			Gen.per10k(s.chance), Gen.per10k(s.high), Gen.per10k(c.orbDrop.perKill[k]), c.orbDrop.tierMult.boss)}
+	end
+	rows[#rows + 1] = {"Raid vendor", string.format("%d orbs for %d Sepulchre Marks, once a week.", c.vendorBundle.count,
+		c.vendorBundle.price)}
+	local pool = {}
+	for _, def in ipairs(c.pool) do
+		local kinds = {}
+		for _, k in ipairs(Gen.KINDS) do
+			if def.kinds[k[1]] then
+				kinds[#kinds + 1] = KIND_SHORT[k[1]]
+			end
+		end
+		local lo, hi = def.tiers[1][1], def.tiers[#def.tiers][2]
+		pool[#pool + 1] = {def.name, V.rangeText(def, lo, hi), table.concat(kinds, ", "),
+			(def.minLevel or 1) > 1 and Gen.num(def.minLevel) or "-"}
+	end
+	local gates = {}
+	for t, lv in ipairs(c.tiers.levels) do
+		gates[#gates + 1] = string.format("V%d from item level %d", t, lv)
+	end
+	return rows, {h = "The veiled pool", cols = {"Modifier", "V1 to V4", "Gear", "Item level"}, w = {18, 46, 26, 10},
+		rows = pool}, {h = "Veiled tiers", p = {table.concat(gates, ", ") .. string.format(
+		". An offer's tier is one of the best %d the item level allows. Uniques and set pieces never have a veiled slot; every other orb keeps it.",
+		c.tiers.window)}}
+end
+
 local KEY_ORBS = {transmutation = true, alchemy = true, exalted = true, annulment = true, scouring = true, chaos = true,
 	divine = true, tempering = true, excision = true}
 
@@ -790,7 +827,8 @@ function Gen.orbEntries(D)
 		reforging = "Only an item with a rarity and a modifier that is not bound.",
 		ruin = "Only an item with a rarity and a modifier; a ruined item can never be changed again.",
 		whetstone = string.format("Only an item with a rarity and a modifier, below its quality cap (%d%%, %d%% from %s).",
-			M.config.quality.cap, M.config.quality.capHigh, C.rarityName(M.config.quality.highFrom))
+			M.config.quality.cap, M.config.quality.capHigh, C.rarityName(M.config.quality.highFrom)),
+		unveiling = "Only an item with a veiled modifier that is not revealed yet. The three choices are rolled once and stay the same every time the window opens."
 	}
 	for _, orb in ipairs(C.config.orbs) do
 		local p = {orb.text}
@@ -814,7 +852,16 @@ function Gen.orbEntries(D)
 		if orb.keyText then
 			sections[#sections + 1] = {h = "On a Rift Key", p = {orb.keyText}}
 		end
-		sections[#sections + 1] = {h = "Sources", cols = {"Source", "How"}, w = {28, 72}, rows = sourcesOf(D, orb.id, orb.key)}
+		local srcRows = sourcesOf(D, orb.id, orb.key)
+		if orb.key == "unveiling" and ChaosVeiled then
+			local vRows, vPool, vTiers = Gen.veiledSections(ChaosVeiled)
+			for _, r in ipairs(vRows) do
+				srcRows[#srcRows + 1] = r
+			end
+			sections[#sections + 1] = vPool
+			sections[#sections + 1] = vTiers
+		end
+		sections[#sections + 1] = {h = "Sources", cols = {"Source", "How"}, w = {28, 72}, rows = srcRows}
 		out[#out + 1] = {id = "orb:" .. orb.key, name = orb.name, color = COLORS.orb, sub = orb.text,
 			f = {group = "orb"}, sections = sections}
 	end

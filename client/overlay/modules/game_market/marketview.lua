@@ -285,6 +285,7 @@ function V.subLine(row)
   if row.unique then parts[#parts + 1] = 'Unique'
   elseif (row.rarity or 0) > 0 then parts[#parts + 1] = V.rarityName(row.rarity) or ('Rarity ' .. row.rarity) end
   if (row.ilvl or 0) > 0 then parts[#parts + 1] = 'iLvl ' .. row.ilvl end
+  if row.veil then parts[#parts + 1] = row.veil == 'open' and 'Unveiled' or 'Veiled' end -- the veiled slot (server market.lua)
   parts[#parts + 1] = V.CATEGORY_NAMES[row.cat] or row.cat
   if row.seller then parts[#parts + 1] = 'by ' .. row.seller end
   parts[#parts + 1] = V.timeLeft(row.left) .. ' left'

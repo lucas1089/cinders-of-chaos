@@ -23,6 +23,8 @@
 --                                                  text, value, group, the value range of its tier, tier (1..8), side "p" /
 --                                                  "s", bd = bound (Orb of Binding), pw = a legendary power
 --   sockets = {count, max, list = [{name, text, color}]}   empty sockets have no name
+--   veil = {s = "veiled"} | {s = "open", n, t, tr, tn, lo, hi, h}   the veiled slot (chaos_veiled.lua V.tooltip): name,
+--                                                  text, veiled tier 1..4 and its name, its range, h = an effect of its own
 --   req = {level, magic, voc}, weight (oz), desc (flavour text), locked
 --   store, collects                                a store pouch (pouches.lua): its two lines, no desc and no lock line
 --   stats = [{k, l, v, fmt, low}]                  every number the compare view adds up (low = lower is better)
@@ -417,6 +419,15 @@ function T.build(item, opts)
 				stat(m.key, m.label, m.value, fmt)
 			end
 		end
+	end
+	-- the veiled slot (data/lib/chaos_veiled.lua): veil = {s = "veiled"} | {s = "open", n, t, tr, tn, lo, hi, h}
+	local veil = ChaosVeiled and not unique and ChaosVeiled.tooltip(item) or nil
+	if veil then
+		for _, st in ipairs(veil.st or {}) do
+			stat(st.k, st.l, st.v, st.fmt)
+		end
+		veil.st = nil
+		tip.veil = veil
 	end
 
 	if G then

@@ -111,7 +111,7 @@ end
 
 -- ---------------------------------------------------------------- registration
 local cfg = ChaosOrbsConfig
-eq(#cfg.items, 6, "six new items")
+eq(#cfg.items, 7, "six new items and the Orb of Unveiling (chaos_veiled.lua)")
 local ids = {}
 for _, orb in ipairs(C.config.orbs) do
 	ok(not ids[orb.id], "unique id " .. orb.id)

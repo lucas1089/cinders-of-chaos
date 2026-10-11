@@ -8,6 +8,7 @@
 --    mods = [{k, l, t, v, g, lo, hi, tr, sd, bd, pw}] (prefixes first; tr = tier 1..8, sd = 'p' / 's', bd = bound,
 --    pw = a legendary power),
 --    sockets = {count, max, list = [{name, text, color}]},
+--    veil = {s = 'veiled'} | {s = 'open', n, t, tr, tn, lo, hi, h} (the veiled slot: name, text, veiled tier, range, hook),
 --    req = {level, magic, voc}, weight, desc, locked, store, collects (a store pouch), stats = [{k, l, v, fmt, low}], cmp = [slot, ...]}
 
 ItemTooltipLogic = {}
@@ -224,6 +225,11 @@ function L.lines(tip, ctx)
     first = false
   end
 
+  -- the veiled slot (server data/lib/chaos_veiled.lua): its own colour, outside the prefixes and suffixes
+  for _, row in ipairs(L.veilLines(tip.veil)) do
+    add(row.text, row.color, row.sep, row.parts)
+  end
+
   local s = tip.sockets
   if s and (tonumber(s.count) or 0) > 0 then
     local filled = 0
@@ -382,6 +388,38 @@ function L.diffText(row)
   local v = math.abs(d)
   local sign = d > 0 and '+' or '-'
   return string.format('%s%s %s', sign, L.formatValue(v, row.fmt, false), row.l)
+end
+
+-- ---------------------------------------------------------------- veiled modifiers
+L.COLORS.veiled = '#b48cff'
+L.COLORS.veiledText = '#d9c8ff'
+-- veiled tiers V1 .. V4
+L.VEIL_TIER_COLORS = { '#9a8cc0', '#a98cff', '#c070ff', '#ff70e0' }
+
+-- the rows of a tooltip's veil block: {text, color, sep, parts}
+function L.veilLines(veil)
+  local C = L.COLORS
+  local out = {}
+  if type(veil) ~= 'table' then return out end
+  if veil.s == 'veiled' then
+    out[#out + 1] = { text = 'Veiled modifier', color = C.veiled, sep = true }
+    out[#out + 1] = { text = '  Reveal it with an Orb of Unveiling', color = C.dim }
+    return out
+  end
+  if veil.s ~= 'open' then return out end
+  out[#out + 1] = { text = 'Veiled', color = C.veiled, sep = true }
+  local tag = tostring(veil.tn or ('V' .. tostring(veil.tr or 1))) .. ' '
+  local name = tostring(veil.n or '?')
+  local range = ''
+  if veil.lo and veil.hi then
+    range = veil.lo == veil.hi and string.format(' [%d]', veil.lo) or string.format(' [%d-%d]', veil.lo, veil.hi)
+  end
+  local tierColor = L.VEIL_TIER_COLORS[tonumber(veil.tr) or 0] or C.veiled
+  out[#out + 1] = { text = tag .. name .. range, color = C.veiled, parts = { tag, tierColor, name, C.veiled, range, C.dim } }
+  for _, line in ipairs(L.wrap(veil.t, L.WRAP)) do
+    out[#out + 1] = { text = '  ' .. line, color = C.veiledText }
+  end
+  return out
 end
 
 return L

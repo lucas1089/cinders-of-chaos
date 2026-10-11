@@ -58,8 +58,12 @@ local function equipped(player)
 		if item and M.fits(item, slot, SLOT_BITS) then
 			local mods = M.read(item)
 			local gems = ChaosGems and ChaosGems.read(item)
-			if #mods > 0 or (gems and gems.filled > 0) then
+			local veil = ChaosVeiled and ChaosVeiled.read(item) -- an unveiled modifier counts too (veiled.lua)
+			if #mods > 0 or (gems and gems.filled > 0) or (veil and veil.state == "open") then
 				items[#items + 1] = item
+				if veil and veil.state == "open" then
+					sig[#sig + 1] = slot .. "v" .. veil.key .. veil.value
+				end
 				for _, m in ipairs(mods) do
 					sig[#sig + 1] = slot .. m.key .. m.value
 				end
@@ -100,7 +104,17 @@ function M.refresh(player, force)
 		return cache[id]
 	end
 	state.sig = sig
+	-- veiled modifiers (chaos_veiled.lua): catalogue numbers under the catalogue's caps, their own keys capped apart
+	local veilOwn
+	if ChaosVeiled and ChaosVeiled.totals then
+		local veilMods
+		veilMods, veilOwn = ChaosVeiled.totals(items)
+		setMods = ChaosVeiled.merge(setMods, veilMods)
+	end
 	local totals = M.totals(items, setMods)
+	for k, v in pairs(veilOwn or {}) do
+		totals[k] = v
+	end
 	if ChaosGems and ChaosGems.totals then
 		local gemTotals = ChaosGems.totals(items)
 		local def = M.byKey.movespeed
@@ -365,7 +379,7 @@ local function offensive(totals)
 			return true
 		end
 	end
-	return false
+	return ChaosVeiled ~= nil and ChaosVeiled.offensive(totals) -- the veiled damage hooks
 end
 
 -- your hits on a monster (and shocked monsters' hits from anyone)
@@ -387,6 +401,13 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		if origin == ORIGIN_CONDITION and (totals.dot or 0) > 0 then
 			primaryDamage = M.scale(primaryDamage, totals.dot)
 			secondaryDamage = M.scale(secondaryDamage, totals.dot)
+		end
+		-- veiled hooks (chaos_veiled.lua): Veilpiercer on healthy monsters, Last Ember while you are low
+		local vp = ChaosVeiled and creature:isMonster() and ChaosVeiled.dealtPct(totals, {targetHp = creature:getHealth(),
+			targetMax = creature:getMaxHealth(), ownHp = p:getHealth(), ownMax = p:getMaxHealth()}) or 0
+		if vp > 0 then
+			primaryDamage = M.scale(primaryDamage, vp)
+			secondaryDamage = M.scale(secondaryDamage, vp)
 		end
 	end
 	if p and creature:isMonster() and isShocked(creature) then
@@ -462,6 +483,18 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		primaryDamage = M.scale(primaryDamage, -totals.monsterreduction)
 		secondaryDamage = M.scale(secondaryDamage, -totals.monsterreduction)
 	end
+	-- veiled hooks (chaos_veiled.lua): Gravebound while low, Hexbreaker against bosses, Ashen Ward against elements
+	if ChaosVeiled then
+		local mt = attacker:isMonster() and attacker:getType()
+		local okB, boss = pcall(function() return mt and mt:isBoss() end)
+		local vr = ChaosVeiled.takenPct(totals, {hp = creature:getHealth(), maxHp = creature:getMaxHealth(),
+			monster = attacker:isMonster(), boss = okB and boss == true, elemental = primaryType ~= COMBAT_PHYSICALDAMAGE
+			and not NOT_ELEMENTAL[primaryType]})
+		if vr > 0 then
+			primaryDamage = M.scale(primaryDamage, -vr)
+			secondaryDamage = M.scale(secondaryDamage, -vr)
+		end
+	end
 	local attackerId = attacker:getId()
 	local back = 0
 	if (totals.reflect or 0) > 0 then
@@ -503,6 +536,15 @@ function kill.onKill(player, target)
 	end
 	if (totals.manaonkill or 0) > 0 then
 		player:addMana(totals.manaonkill)
+	end
+	if ChaosVeiled and ((totals.veil_bloodharvest or 0) > 0 or (totals.veil_soulharvest or 0) > 0) then -- chaos_veiled.lua
+		local h, mp = ChaosVeiled.killRestore(totals, player:getMaxHealth(), player:getMaxMana())
+		if h > 0 then
+			heal(player, h)
+		end
+		if mp > 0 then
+			player:addMana(mp)
+		end
 	end
 	return true
 end

@@ -3186,6 +3186,80 @@ powers' procs (Echo Shot, Critical Echo, Bloodrush, Shatter Splash, Ember Step, 
 cooldown. `tests/powers_test.lua` (240 checks) covers the catalogue, the maths, each handler against a mocked engine, the
 cooldowns, the guard and the dodge hook; `tests/orbs_test.lua` the rarity gate, one power per item and the side limits.
 
+## Veiled modifiers (`data/lib/chaos_veiled.lua`, `chaos_veiled_config.lua`, `chaos/veiled.lua`, client `game_unveil`)
+
+A hidden modifier slot on rare and better drops of the high content, shown as **Veiled modifier** until an **Orb of
+Unveiling** (item 32257) reveals it. The orb offers three modifiers of the **veiled pool** (stronger numbers, paired
+modifiers, seven effects of their own), the player picks one and the choice is final. Numbers: `chaos_veiled_config.lua`.
+
+- **Which drops.** Gear of rarity Rare or better (`minRarity` 3; `high` chance from Legendary, 5), never uniques, set pieces
+  or Rift Keys. The source is the killer's content (`ChaosVeiled.contextOf`: rift, raid, Ascended, Descent runs), the first
+  that applies in `sourceOrder`. Chance per item (Rare-Epic / Legendary+): raid 15% / 25%, Ascended 12% / 20%, Omen
+  arenas 10% / 18%, Descent from depth 8 6% / 12%, rifts from tier 10 5% / 10%. Kills: `loot.lua` step 2c hands the corpse to
+  `ChaosVeiled.onCorpse` after the forge. Rewards: the rift chest (`rift.lua`), the raid boss gear (`raid.lua`) and the
+  Ascended spoils (`uber.lua`) call `ChaosVeiled.rollReward`.
+- **The orb.** A row of `chaos_orbs_config.lua items` (client sprite 25046, an essence crystal with the multi-use flag), so
+  `install_orbs.py` writes it into items.otb / items.xml with the orbs v2; registered with `ChaosCrafting.addOrb`, so the
+  bench, the use-with action, the crafting log, the Orb Exchange and the Codex know it. Drops from kills in the same content:
+  per 10000 per kill rift 5, Omen 12, raid 25, Descent 8, Ascended 30, times the monster tier (normal 1, magic 2, rare 4,
+  legendary 8, boss 40). The raid vendor has a weekly bundle (`v_unveiling`: 2 orbs for 90 Sepulchre Marks, always in stock).
+- **Tiers.** Veiled tiers V1..V4 need item level 1 / 90 / 115 / 135; an offer's tier is rolled among the best three the item
+  level allows (weights 40 / 30 / 20 / 10). Some modifiers need an item level of their own (`minLevel`).
+- **Offered choices.** The first use of the orb rolls three distinct modifiers for the item's kind and level and stores them
+  (`chaos_veil_offer` = `key:tier:value;...`); every later opening shows the same three, so closing the window never rerolls.
+  A stored text that is not valid for the item (unknown key, wrong kind, tier or value outside the gates) is rolled again.
+- **Unveiling.** `crafting.lua craft()` sends an orb with `dialog` to the window instead of applying it (no orb taken). The
+  client's choice (`choose {path, id, sig, choice}`, opcode **196**, `ChaosOpcodes.veiled`; free in the reference server and
+  client and in every Chaos script, see "Opcode collision check") checks the item's path, id and signature, then runs the
+  bench's `craft()` with `{choice = n}`: one orb taken, the crafting log, the community goal, the look text rewritten.
+- **Item attributes.** `chaos_veil` (1 veiled, 2 unveiled), `chaos_veil_offer`, `chaos_veil_key`, `chaos_veil_tier`,
+  `chaos_veil_val`; in `ChaosCrafting.attributeKeys` (guild depot, market key list). The slot is not a prefix or suffix:
+  `readMods` does not see it, no orb changes it, and `ChaosCrafting.recreate` copies it (Upheaval, Fate, Erasure keep it).
+  Ruined items refuse the orb like every orb.
+- **Totals.** `item_mods.lua` sums the unveiled modifiers of the equipped items (`ChaosVeiled.totals`): catalogue keys go into
+  `ChaosItemMods.totals`' `extra`, so the catalogue caps hold; the hook keys get their own caps (`hookCaps`).
+- **Hooks** (`item_mods.lua`): Veilpiercer and Last Ember scale your hits (target above 80% health, you below 50%); Gravebound,
+  Hexbreaker and Ashen Ward take a share off hits taken (you below 35% / a boss / an elemental hit of a monster; together at
+  most 40%); Blood Harvest and Soul Harvest restore health / mana on a kill.
+- **Display.** The tooltip's `veil` block (`item_tooltip_core.lua`) in its own violet colour, the look text ("Veiled modifier:
+  not revealed" / "Veiled: Wraithstride, ... (V4)"), the market rows (`market.lua addLooks`: "Veiled" / "Unveiled" in the
+  row's sub line), the Codex orb page (sources, the pool with its ranges, the tier gates).
+
+| modifier | gear | item level | V1 .. V4 | cap |
+|---|---|---|---|---|
+| Veilpiercer | weapon, jewel | - | +8-11% .. +18-22% damage to monsters above 80% health | 40% |
+| Last Ember | weapon, jewel, other | - | +10-13% .. +21-26% damage while below 50% health | 40% |
+| Gravebound | armour, helmet, legs, shield, boots | - | 6-8% .. 13-16% less damage from monsters while below 35% health | 25% |
+| Soul Harvest | helmet, jewel, weapon | 100 | kills restore 1% .. 2-3% of maximum mana | 5% |
+| Blood Harvest | armour, jewel, other, boots | 100 | kills restore 1% .. 2-3% of maximum health | 5% |
+| Hexbreaker | armour, helmet, shield | - | 4-6% .. 10-12% less damage from bosses | 20% |
+| Ashen Ward | armour, legs, shield, helmet, boots | - | 3-4% .. 8-10% less elemental damage from monsters | 15% |
+| Doombringer | weapon, jewel | 90 | Damage to Elites and Bosses +12-14% .. +20-24% | catalogue (30%) |
+| Wraithstride | boots | - | Movement Speed +5-6% .. +8-10%, Dodge half of it | catalogue (12%, 10%) |
+| Bloodtithe | weapon, jewel, other | - | Health on Hit +10-14 .. +25-32, Life on Kill 3x | catalogue |
+| Spellweave | helmet, jewel | - | Cooldown and Mana Cost Reduction +3-4% .. +6-8% each | catalogue |
+| Sundering | weapon | - | Physical and Elemental Penetration +5-7% .. +11-13% each | catalogue (25%) |
+| Plaguebearer | weapon, other | - | Damage over Time +12-15% .. +23-28%, Chance to Poison half | catalogue |
+| Stormcaller | weapon | - | Chance to Shock and to Chill +7-9% .. +13-16% each | catalogue (30%) |
+| Gilded Omen | helmet, jewel | - | Rarity Find and Gold Find +8-11% .. +17-20% each | catalogue (40%) |
+| Veiled Insight | helmet, jewel | 90 | Experience +4-5% .. +7-9% | catalogue (15%) |
+| Bastion | shield | - | Block Chance and Reflect Damage +5-7% .. +10-12% each | catalogue (15%) |
+| Briar Shroud | armour, legs, shield | - | Thorns +70-95 .. +150-190, Reflect Damage 4% of it | catalogue |
+| Undying Root | armour, legs, helmet, jewel, shield | - | Health Regeneration +18-24 .. +39-48 per second, Damage Taken from Monsters a tenth | catalogue |
+| Headsman | weapon | 110 | Execute below 3-4% .. 6-8% health, Chance to Bleed 2x | catalogue (10%) |
+
+**Tests:** `tests/veiled_test.lua` (the pool and its caps, chances by source and rarity, uniques / set pieces / low rarity /
+low content excluded, tier and level gates, offers fixed per item and the stored text checked, the orb through
+`ChaosCrafting.check` / `apply`, the slot surviving Upheaval / Erasure / Tempering, totals under the caps, the hook maths, the
+tooltip block, and `veiled.lua` against a mocked engine: contexts, a corpse in the raid, the window, a stale signature, a bad
+choice, the choice); `tests/orbs_test.lua`, `tests/gems_test.lua` (orb counts); client `game_unveil/unveilview_test.lua`
+(cards, confirm, the request, the tooltip block, the market tag). **Tested on a live test server** with the real client:
+the veiled tooltip, the window (the same three after reopening it), two unveilings (orb count 2 -> 1 -> 0, tooltip and look
+text after), Blood Harvest healing 2% of maximum health per kill (+290 of 14506), Plaguebearer's totals (dot 16, poison 8),
+an Orb of Unveiling dropped by a kill in a raid context ("Chaos bonus loot of a rat: Orb of Unveiling"), a veiled item listed
+on the market (row "Epic - iLvl 150 - Veiled", the offer's tooltip shows the veiled slot). Not run live: the rift chest, raid
+boss and Ascended reward hooks (one line each, unit tested through `rollReward`) and the raid vendor bundle.
+
 ## Item sets (`data/lib/chaos_item_sets.lua`, `chaos_item_sets_config.lua`, `chaos/itemsets.lua`)
 
 Ten sets of 4-6 pieces with bonuses at 2, 4 and 6 pieces, two per class family. A set gives a build its identity (a bleed

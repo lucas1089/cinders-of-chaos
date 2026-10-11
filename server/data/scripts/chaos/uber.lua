@@ -664,6 +664,9 @@ function A.deliver(player, run)
 				local rarity = L.upgradeRarity("boss", L.stockRarity(), itemFind * 1.5)
 				local item = ChaosCrafting and ChaosCrafting.createItem and ChaosCrafting.createItem(pick.itemId, rarity,
 					bossLevel(def)) or Game.createItem(pick.itemId, 1)
+				if item and ChaosVeiled and ChaosVeiled.rollReward then
+					ChaosVeiled.rollReward(item, {ascended = true}) -- veiled.lua
+				end
 				if item then
 					inbox = giveEx(player, item) or inbox
 					local names = ChaosLootConfig and ChaosLootConfig.gear and ChaosLootConfig.gear.names

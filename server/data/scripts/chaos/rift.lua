@@ -815,6 +815,9 @@ function RF.deliver(player, run, auto)
 				if L.isGearId(e.itemId) then
 					local rarity = L.upgradeRarity(r.lootTier, L.stockRarity(), itemFind * r.rarityMult)
 					local item = riftGear(e.itemId, rarity, RF.itemLevel(asTier, data.boss, data.omen))
+					if item and ChaosVeiled and ChaosVeiled.rollReward then
+						ChaosVeiled.rollReward(item, {riftTier = asTier, omen = data.omen ~= nil}) -- veiled.lua
+					end
 					if item then
 						inbox = giveEx(player, item) or inbox
 						local names = ChaosLootConfig and ChaosLootConfig.gear and ChaosLootConfig.gear.names

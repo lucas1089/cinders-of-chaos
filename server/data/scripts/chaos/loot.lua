@@ -863,6 +863,12 @@ local function processKill(monster, corpse)
 			ChaosItemMods.afterDrop(corpse)
 		end
 	end
+	-- 2c. veiled modifiers and the Orb of Unveiling (veiled.lua): kills in high content only
+	if ChaosVeiled and ChaosVeiled.onCorpse then
+		for _, text in ipairs(ChaosVeiled.onCorpse(corpse, monster, owner, tier)) do
+			bonus[#bonus + 1] = text
+		end
+	end
 
 	-- 3. currency
 	for _, drop in ipairs(L.rollCurrency(tier, ctx)) do

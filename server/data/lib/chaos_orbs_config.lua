@@ -2,7 +2,7 @@
 -- "Crafting orbs v2"). Plain table, loaded with  ChaosOrbsConfig = dofile("data/lib/chaos_orbs_config.lua").
 -- Lua 5.1 / LuaJIT and 5.3. Keep one entry per line: the installer reads this file with regular expressions.
 --
--- Item ids 32251..32256 are new items.otb nodes (install_orbs.py): copies of the stock node of a client sprite that already
+-- Item ids 32251..32257 are new items.otb nodes (install_orbs.py): copies of the stock node of a client sprite that already
 -- has the multi-use flag in Tibia.dat (the inlay stones and essence crystals, the moonlight crystals), so the client needs
 -- no new sprite and Tibia.dat no change. Ranges in use: gems 32001..32035, salvage 32051, omens 32071..32072, supports
 -- 32101..32200; 32251..32260 are these.
@@ -16,7 +16,8 @@ return {
 		{id = 32253, key = "excision", clientId = 25049, name = "Orb of Excision", plural = "Orbs of Excision", article = "an", weight = 50, description = "Removes the modifier you choose on the crafting bench (a random one that is not bound when used directly). On a Rift Key: one modifier."},
 		{id = 32254, key = "reforging", clientId = 25048, name = "Orb of Reforging", plural = "Orbs of Reforging", article = "an", weight = 50, description = "Rolls the tier (by the item level) and the value of the one modifier you choose on the crafting bench again."},
 		{id = 32255, key = "ruin", clientId = 24477, name = "Orb of Ruin", plural = "Orbs of Ruin", article = "an", weight = 50, description = "A gamble for an item with a rarity: it improves (one tier more on every modifier that is not bound, or an extra modifier), nothing happens, or the item is ruined for good: no orb changes it any more."},
-		{id = 32256, key = "whetstone", clientId = 22083, name = "Whetstone", plural = "Whetstones", article = "a", weight = 10, description = "Use it with an item with a rarity: +1% quality (every modifier value is multiplied), up to 20% (30% from Divine rarity)."}
+		{id = 32256, key = "whetstone", clientId = 22083, name = "Whetstone", plural = "Whetstones", article = "a", weight = 10, description = "Use it with an item with a rarity: +1% quality (every modifier value is multiplied), up to 20% (30% from Divine rarity)."},
+		{id = 32257, key = "unveiling", clientId = 25046, name = "Orb of Unveiling", plural = "Orbs of Unveiling", article = "an", weight = 50, description = "Use it with an item that has a veiled modifier: choose one of three modifiers of the veiled pool. The choice is final."}
 	},
 
 	-- the names of the base server's currency items, changed by install_orbs.py (items.xml names and every name the base

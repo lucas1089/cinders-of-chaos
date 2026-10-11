@@ -1,0 +1,150 @@
+// Unveil window (game_unveil): the three veiled modifiers an Orb of Unveiling offers. Styles from client_chaos_theme.
+
+UnveilCard < ChaosPanelDark
+  size: 200 196
+  phantom: false
+  focusable: true
+
+  $focus:
+    background-color: #2a1838
+
+  UILabel
+    id: tier
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 8 8 0 8
+    text-align: center
+    font: verdana-11px-rounded
+    color: #b48cff
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.top: tier.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 8 8 0 8
+    text-align: center
+    font: verdana-11px-rounded
+    color: #d9c8ff
+    phantom: true
+
+  UIWidget
+    id: rule
+    anchors.top: name.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 8 24 0 24
+    height: 1
+    background-color: #4a3a5a
+    phantom: true
+
+  UILabel
+    id: text
+    anchors.top: rule.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 10 8 0 8
+    height: 70
+    text-align: center
+    text-wrap: true
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    phantom: true
+
+  UILabel
+    id: range
+    anchors.bottom: hook.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 0 8 4 8
+    text-align: center
+    font: verdana-11px-antialised
+    color: #8c8070
+    phantom: true
+
+  UILabel
+    id: hook
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 0 8 10 8
+    text-align: center
+    font: verdana-11px-antialised
+    color: #ff9a3c
+    phantom: true
+
+ChaosMainWindow
+  id: unveilWindow
+  size: 660 352
+  !text: tr('Unveil')
+  @onEscape: modules.game_unveil.hide()
+
+  UIItem
+    id: icon
+    anchors.top: parent.top
+    anchors.left: parent.left
+    size: 40 40
+    virtual: true
+
+  ChaosTitle
+    id: header
+    anchors.top: parent.top
+    anchors.left: icon.right
+    anchors.right: parent.right
+    margin-left: 10
+    margin-top: 4
+    text-align: left
+
+  ChaosLabelDim
+    id: orbsLabel
+    anchors.top: header.bottom
+    anchors.left: header.left
+    anchors.right: parent.right
+    margin-top: 6
+    text-align: left
+
+  UnveilCard
+    id: card1
+    anchors.top: icon.bottom
+    anchors.left: parent.left
+    margin-top: 12
+
+  UnveilCard
+    id: card2
+    anchors.top: card1.top
+    anchors.left: card1.right
+    margin-left: 10
+
+  UnveilCard
+    id: card3
+    anchors.top: card1.top
+    anchors.left: card2.right
+    margin-left: 10
+
+  ChaosLabel
+    id: statusLabel
+    anchors.left: parent.left
+    anchors.right: confirmButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    height: 20
+    text-align: left
+
+  ChaosButton
+    id: confirmButton
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    width: 110
+    !text: tr('Unveil')
+    @onClick: modules.game_unveil.confirm()
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 80
+    !text: tr('Close')
+    @onClick: modules.game_unveil.hide()

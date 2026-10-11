@@ -241,6 +241,9 @@ ChaosOpcodes.mentor = 194
 Chaos.storage.mentor = 7100360
 Chaos.tables.mentors = "chaos_mentors"
 Chaos.tables.mentorLinks = "chaos_mentor_links"
+-- Veiled modifiers: the Unveil window of the Orb of Unveiling (client game_unveil; veiled.lua, data/lib/chaos_veiled*.lua);
+-- no storages, no tables (item attributes only)
+ChaosOpcodes.veiled = 196
 
 -- ---------------------------------------------------------------------------
 -- Module settings

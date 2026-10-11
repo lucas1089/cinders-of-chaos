@@ -1698,17 +1698,22 @@ local function addLooks(list)
 	if #ids == 0 then
 		return list
 	end
-	local rows = sql(string.format("SELECT `id`, `tip` FROM `%s` WHERE `id` IN (%s) AND `tip` LIKE '%%\"look\"%%'", T.offers,
+	local rows = sql(string.format("SELECT `id`, `tip` FROM `%s` WHERE `id` IN (%s) AND (`tip` LIKE '%%\"look\"%%' OR `tip` LIKE '%%\"veil\"%%')", T.offers,
 		table.concat(ids, ",")), {{"id", "n"}, {"tip", "s"}})
-	local byId = {}
+	local byId, veilById = {}, {}
 	for _, r in ipairs(rows) do
 		local ok, tip = pcall(json.decode, r.tip)
 		if ok and type(tip) == "table" and type(tip.look) == "table" then
 			byId[r.id] = tonumber(tip.look.cid)
 		end
+		-- a veiled slot (chaos_veiled.lua): the row's "Veiled" / "Unveiled" tag
+		if ok and type(tip) == "table" and type(tip.veil) == "table" then
+			veilById[r.id] = tip.veil.s == "open" and "open" or "veiled"
+		end
 	end
 	for _, v in ipairs(list) do
 		v.look = byId[v.id]
+		v.veil = veilById[v.id]
 	end
 	return list
 end

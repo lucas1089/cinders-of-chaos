@@ -268,6 +268,14 @@ local function craft(player, orbKey, item, orbItem, opts)
 	if not orbItem and player:getItemCount(orb.id) < 1 then
 		return false, string.format("You have no %s.", orb.name)
 	end
+	-- an orb with a choice window (the Orb of Unveiling, veiled.lua): the window opens, the choice comes back as opts.choice
+	if orb.dialog and not (opts and opts.choice) then
+		local okD, why = C.check(orbKey, item, opts)
+		if not okD then
+			return false, C.reasons[why] or why
+		end
+		return orb.dialog(player, item)
+	end
 	local name = C.itemName(item)
 	local ok, res = C.apply(orbKey, item, opts)
 	if not ok then
@@ -385,7 +393,7 @@ end
 
 -- the bench's Salvage mode (salvage.lua) works on the same backpack paths, selection and answers
 ChaosCraftingBench = {itemAt = itemAt, walk = walk, pathOf = pathOf, inBackpack = inBackpack, backpackOf = backpackOf,
-	sendState = sendState, sendResult = sendResult,
+	sendState = sendState, sendResult = sendResult, craft = craft,
 	select = function(player, sel) selected[player:getId()] = sel end}
 
 -- ---------------------------------------------------------------- events

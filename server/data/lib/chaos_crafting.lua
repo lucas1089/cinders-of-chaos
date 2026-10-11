@@ -239,6 +239,9 @@ function C.attributeKeys()
 		out[#out + 1] = M.rawAttr(a.key)
 		out[#out + 1] = M.bindAttr(a.key)
 	end
+	for _, k in ipairs(ChaosVeiled and ChaosVeiled.ATTRS or {}) do
+		out[#out + 1] = k -- the veiled slot (chaos_veiled.lua)
+	end
 	return out
 end
 
@@ -1004,6 +1007,10 @@ function C.rewriteDescription(item)
 	if modsText ~= "" then
 		body = body .. ". " .. modsText
 	end
+	local veilText = ChaosVeiled and ChaosVeiled.descText(item)
+	if veilText then
+		body = body .. ". " .. veilText -- the veiled slot (chaos_veiled.lua)
+	end
 	local text = prefix ~= "" and (prefix .. ". " .. body) or body
 	if #slots > 0 then
 		text = text .. " " .. table.concat(slots, ", ")
@@ -1099,6 +1106,9 @@ function C.recreate(item, rarity, level)
 	end
 	if ChaosSalvage and ChaosSalvage.copyLock then
 		ChaosSalvage.copyLock(item, newItem) -- the item lock too (salvage.lua)
+	end
+	if ChaosVeiled then
+		ChaosVeiled.copy(item, newItem) -- and the veiled slot (chaos_veiled.lua)
 	end
 	if rarity > 0 then
 		C.forge(newItem, rarity, level, C.random)
@@ -1573,6 +1583,10 @@ end
 -- the orbs of orbs v2 (Tempering, Binding, Excision, Reforging, Ruin, the Whetstone): chaos_orbs.lua adds them
 if not ChaosOrbs then
 	dofile("data/lib/chaos_orbs.lua")
+end
+-- the veiled modifiers and the Orb of Unveiling (chaos_veiled.lua)
+if not ChaosVeiled then
+	dofile("data/lib/chaos_veiled.lua")
 end
 
 return C
