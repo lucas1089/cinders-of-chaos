@@ -65,6 +65,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   gamble       tools/install_gamble.py           the Gambler NPC in data/npc (README "The Gambler")
   supports     tools/install_supports.py         the spell support runes in items.otb / items.xml and the spell-library hook (scripts/chaos/SUPPORTS.md)
   monsters     tools/register_monsters.py        every folder under data/monster/monsters/chaos (world bosses, goblin, ...)
+  spawns       tools/patch_base_spawns.py        spawn density and respawn of the loaded map's spawn file from
+               tools/spawn_tuning.json: dead monster lines of monsters.xml, glitched spawntimes, the 300-600 band's
+               respawn, entries on blocking tiles moved, spawns added in thin areas (README "Spawn density and
+               respawn"; after monsters, which it reads)
   spells       tools/register_spells.py          the Chaos spells (README "Install" 3)
                CLASS HOOK: every tools/install_class_*.py (sorted), called as `install_class_X.py DATA_DIR [--dry-run]`;
                the class lines (Necromancer / Monk / Templar) put their own spell or data installers there
@@ -111,7 +115,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spells', 'archery', 'itemnames', 'towns', 'autoloot', 'commands', 'sql']
+STEPS = ['files', 'lib', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spawns', 'spells', 'archery', 'itemnames', 'towns', 'autoloot', 'commands', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -399,6 +403,11 @@ def step_monsters(server, data, ctx):
         if not ok:
             return False, lines, []
     return True, lines, []
+
+
+def step_spawns(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_spawns.py'), data, '--config', os.path.join(server, 'config.lua')],
+                                'patch_base_spawns.py'))
 
 
 def step_spells(server, data, ctx):

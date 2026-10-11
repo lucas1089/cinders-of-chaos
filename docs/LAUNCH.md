@@ -72,6 +72,7 @@ python3 -I server/tools/prod_config.py /opt/chaos/server --ip play.example.org -
 | `energyShieldRechargeDelay`, `energyShieldOpcode` | 2000, 224 | the energy shield's recharge delay in ms and its client opcode (engine patch 0015, `server/README.md` "Energy shield") |
 | `clientGuardMode`, `clientGuardKey`, `clientGuardAllowDevKey`, `clientGuardTimeout`, `clientGuardDownloadUrl`, `clientGuardBuilds`, `clientGuardManifest`, `clientGuardStaffIps` | `"enforce"`, `os.getenv("CHAOS_CLIENT_KEY") or ""`, false, 10, the options | only the official client plays (engine patch 0021, `server/README.md` "Client guard"): the key is the GitHub secret `CHAOS_CLIENT_KEY` the Windows client is built with, in `/etc/chaos/chaos.env`; without it every player is kicked (the console says so at start). `clientGuardMode = "log"` for a log-only first week or an emergency |
 | `minPlayerSpeed`, `maxPlayerSpeed`, `playerSpeedBonus`, `playerSpeedPerTenLevels`, `playerSpeedSoftLevel`, `playerSpeedPerTenLevelsAbove` | 120, 2600, 50, 25, 300, 10 | movement speed (engine patch 0018, `server/README.md` "Movement speed"): walk speed held between about 1 and 10 tiles/s on normal ground; base speed = vocation + 50, 2.5 per level up to 300, 1 per level after. The client needs base patch 0029 (same step times) |
+| `rateSpawn` | 3 | how many monsters one spawn brings back per check (stock 1: a pack of five took five spawntimes to refill). The timers themselves are in the spawn file (install step `spawns`); engine patch 0022 lets `respawn.lua` shorten them where several players hunt together (`server/README.md` "Spawn density and respawn"). Without patch 0022 the console prints one `[ChaosRespawn]` line and the stock timers apply |
 
 The tool refuses to run while `mapName` is a cropped test map (`zcrop_*`): set the real map name first.
 Rates stay as the download has them: `rateExp` is not used (experience stages, written by `late_game.py`),
@@ -107,6 +108,8 @@ The order (server/README.md "Install" and each system's section), every step ide
 6. `lategame`: `late_game.py` (experience stages in `config.lua`, late game spawns in the map's spawn file)
 7. `crafting`: `install_crafting.py`
 8. `monsters`: `register_monsters.py` for every folder under `monsters/chaos` (world bosses, goblin, ...)
+   then `spawns`: `patch_base_spawns.py` (dead monster registrations, glitched spawntimes, the 300-600 band's respawn,
+   spawns added in thin areas; `server/README.md` "Spawn density and respawn")
 9. `spells`: `register_spells.py`, then the class hook (every `server/tools/install_class_*.py`), then
    `rename_spells.py --sql`
 10. `autoloot`: the stock XML `!autoloot` talkaction is commented out (the Auto Loot window talks to autoloot.lua over its opcode)

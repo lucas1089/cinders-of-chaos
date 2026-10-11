@@ -20,6 +20,7 @@ server/
   tools/gen_passivetree_data.lua      regenerates passivetree_data.lua from the client tree
   tools/gen_codex_data.lua            regenerates the client Codex data (client game_codex/codex_data.lua), see "Codex data"
   tools/late_game.py, late_game_spawns.csv   late game stages and spawns (see "Late game")
+  tools/patch_base_spawns.py, spawn_tuning.json   spawn density and respawn (see "Spawn density and respawn")
   data/scripts/chaos/
     chaos_constants.lua               ALL opcodes, storage keys, table names, tunables, shared helpers
     bank.lua  autoloot.lua  daily.lua  notifications.lua  passivetree.lua  passivetree_data.lua
@@ -95,6 +96,9 @@ server/
   src-patches/0021-client-guard.patch   engine: only the official client plays: login gate on the client version field
                                       of both logins, HMAC challenge on extended opcode 189 after the game login, config
                                       clientGuard* (see "Client guard"; client base patch 0035)
+  src-patches/0022-dynamic-respawn.patch   engine: Game.setSpawnIntervalPercent, a respawn interval in percent per spawn
+                                      (see "Spawn density and respawn")
+    respawn.lua  respawn_core.lua  respawn_config.lua (dynamic respawn: faster where several players hunt together)
     clientguard.lua  clientguard_core.lua  clientguard_config.lua (the client guard's module hello check, opcode 190)
     transmog.lua  transmog_core.lua  transmog_config.lua (transmog: account wardrobe, appearance sets, client game_transmog;
                                       sql/chaos_transmog.sql, see "Transmog")
@@ -266,6 +270,10 @@ server/
 5l. Town names: `python3 -I server/tools/patch_base_towns.py <server>/data [--dry-run]` (idempotent; `install_all.py`
    step `towns`, after `itemnames`) renames the map's towns by id from `tools/base_towns.csv` in the `.otbm` itself
    (`<map>.otbm.bak` keeps the original). See "Town names".
+5m. Spawns: `python3 -I server/tools/patch_base_spawns.py <server>/data [--dry-run] [--remove] [--report]` (idempotent;
+   `install_all.py` step `spawns`, after `monsters`) fixes the dead monster registrations, the glitched spawntimes and the
+   spawns on blocking tiles, shortens the 300-600 band's respawn and adds spawns in thin areas, all from
+   `tools/spawn_tuning.json`. Engine patch 0022 is needed for the dynamic respawn. See "Spawn density and respawn".
 6. Restart the server (or `/reload scripts`). Check the console for Lua errors.
 7. Player commands: `python3 -I server/tools/install_commands.py <server>/data` takes the base server's spoken player
    commands out (talkactions.xml lines with "!" words, the "!" words of base revscripts, the "!commands" login lines);
@@ -7379,6 +7387,153 @@ experience per kill at a level 900 knight = XML exp x 0.03 x level x stage x 1.5
 Experience buff that was active), i.e. exactly 1.875 x the model for all 17. Not measured: real hunting speed (the 0.47
 efficiency and the 3-target assumption), the one-handed knight (~14% less damage than two-handed), druids and
 illusionists (earth/ice/death are resisted too).
+
+## Spawn density and respawn (`tools/patch_base_spawns.py`, `tools/spawn_tuning.json`, `respawn.lua`, `respawn_core.lua`, `respawn_config.lua`, engine patch 0022)
+
+Measured on 2026-10-11 on the loaded map and its spawn file after `late_game.py`, with a one-off script that read the
+`.otbm` tile by tile (not in the repo). Areas are named by id and position only.
+
+### The map
+
+- Map header 34800 x 34200. The world lies in x 30700-34600, y 30900-33850, floors 0-15. A few small test and event
+  areas lie outside it.
+- 5.36 million walkable tiles: floor 7 has 2.86 million, floors 8-15 0.13-0.41 million each, floors 0-6 8,000-200,000.
+  120,000 of them are protection zone and 48,000 are house tiles. 20 towns (ids 1-14, 28, 29, 31-34).
+
+### The spawns
+
+- 50,338 spawn blocks (908 empty), 74,071 monster entries and 960 NPCs. 85% of the entries respawn after 60 s and 15%
+  after 120 s (mostly the level 300+ areas). Some have long timers on purpose (rare spawns, 200-3,600 s).
+- **913 entries never spawned.** `monsters.xml` names 10 monsters twice. The engine keeps the first line of a name, and
+  that line's file name has the wrong case (the base server was made on Windows). On Linux the file is not found, the
+  monster never loads and the console prints 913 "Can not find" warnings. Most of them are level 300-600 monsters.
+- **111 entries had 30,976-32,768 s** (about 9 hours) from the map editor, so in practice they came once a day. Their
+  monsters respawn after 60 s everywhere else.
+- **99 entries sat on a tile that blocks** (a wall, or no ground).
+- No entry is in a protection zone or a house, and every other monster name is defined.
+- 1,688 entries sit in small closed pockets: under 400 walkable tiles with no stairs, ladder, hole or teleport tile.
+  Most are quest rooms reached by a scripted teleport or a lever, so they were left alone (see "Not done").
+- The engine never respawns a monster while a player sees its spot (the timer then starts again), and `rateSpawn`
+  (1 in the base server) is how many monsters one spawn block brings back per check. A pack of five took five
+  spawntimes to refill.
+
+### Level bands and capacity
+
+Spawn blocks on one floor within 12 sqm of each other and of a similar level form an area. Areas with 12+ monsters are
+hunting areas (1,195, with 42,300 monsters that load); the other 28,100 are scattered single spawns. A monster's hunting
+level is twice the bounty pool's "fair hunt" estimate (`gen_bounty_pool.estimate_level`), or the middle of its range for
+a level-scaled monster. That puts the leveling model's hunts at about 85, 250 and 650. Density is monsters per 100
+walkable tiles within 6 sqm of a spawn, as in docs/MAP_GUIDE.md (2.7-4.4 is normal).
+
+Capacity is a simple model: a spot holds N hunters while N x one hunter's kills per hour stays at or below the kills
+per hour its respawn can feed.
+- One hunter: 3600 x 0.47 x the 5-target rotation DPS at the area's level (`data/spells/README.md`, as in "Respec") /
+  (the monster's health x 1.11 for the tier spawns), at most 900 kills per hour. Level-scaled late-game monsters are
+  pulled 3 at a time (x0.75).
+- The respawn of a spawn block: the sum of 1 / spawntime of its monsters, at most rateSpawn / its shortest spawntime,
+  divided by 1.25 for the player-in-view rule.
+- A party of four kills about as fast as three solo hunters, so N hunters is about N / 3 parties.
+- Rule of thumb: under 60% of the capacity a hunter finds a free spot; above 80% players fight over spots.
+
+Before: as the engine ran it (dead monsters, rateSpawn 1). After: install step `spawns` and rateSpawn 3, without the
+dynamic respawn. Only the hunting areas are counted.
+
+| Band | Areas | Monsters | Health of all (M) | Experience of all (M) | Avg respawn s | Kills/h the respawn feeds | Hunters it holds | Monsters / 100 tiles |
+|---|---|---|---|---|---|---|---|---|
+| 1-50 | 570 / 570 | 16,656 / 16,656 | 2.7 / 2.7 | 1.6 / 1.6 | 90 / 61 | 451,000 / 695,000 | 502 / 775 | 3.4 / 3.4 |
+| 50-150 | 298 / 300 | 12,125 / 12,275 | 16.8 / 17.0 | 13.1 / 13.3 | 204 / 68 | 410,000 / 550,000 | 475 / 634 | 3.0 / 3.0 |
+| 150-300 | 168 / 174 | 7,947 / 8,510 | 40.7 / 44.8 | 32.2 / 35.4 | 180 / 83 | 252,000 / 344,000 | 541 / 766 | 3.0 / 3.2 |
+| 300-600 | 49 / 52 | 1,600 / 2,061 | 21.1 / 26.4 | 18.4 / 22.6 | 126 / 92 | 37,000 / 67,000 | **141 / 249** | 3.3 / 3.5 |
+| 600-1000 | 104 / 101 | 3,795 / 3,926 | 140.4 / 146.8 | 155.8 / 161.6 | 121 / 120 | 89,000 / 95,000 | 614 / 653 | 3.0 / 2.9 |
+| 1000+ | 6 / 6 | 158 / 158 | 8.8 / 8.8 | 7.5 / 7.5 | 120 / 120 | 3,800 / 3,800 | 31 / 31 | 2.7 / 2.7 |
+| hunting level 900+ (part of the two rows above) | 41 / 38 | 1,085 / 1,216 | | | | | 226 / 253 | |
+
+Health and experience of all: every monster of the band's areas alive at once, with the engine's level bonus (health
+x(1 + 0.0074 L), experience x0.03 L for level-scaled monsters), before the stage multiplier. The average respawn before
+includes the 9-hour entries.
+
+**Expected population.** No owner estimate was written down, so this assumes 400 online at the evening peak of
+launch (the top of the 150-400 range; `prod_config.py` caps at 300 by default), 85% of them hunting. From the second week
+20-30% of the level 300+ characters are in instanced content at any time (rifts, the Ember Descent, the raid, the
+Scorched Marches, the tower), which hold any number. The level mix follows the leveling model's hours (README "Late
+game": 300 is reached in 3-7 hours of play, 600 in 20-45).
+
+| When | 1-50 | 50-150 | 150-300 | 300-600 | 600-1000 | 1000+ |
+|---|---|---|---|---|---|---|
+| Launch evening (20 Nov): hunters | 51 | 102 | 136 | 51 | 0 | 0 |
+| load before / after | 10% / 7% | 21% / 16% | 25% / 18% | 36% / 20% | | |
+| Week 1 (27 Nov): hunters | 14 | 20 | 51 | 136 | 68 | 0 |
+| load before / after | 3% / 2% | 4% / 3% | 9% / 7% | **96% / 55%** | 11% / 10% | |
+| Weeks 3-4 (December): hunters | 10 | 14 | 20 | 52 | 131 | 24 |
+| load before / after | 2% / 1% | 3% / 2% | 4% / 3% | 37% / 21% | 21% / 20% | 77% / 77% |
+
+The one real shortage was the 300-600 band in the first week: half the players pass through it then, it had the
+fewest areas, and almost a fifth of its monsters never spawned. The 1000+ band has 6 areas: those players also hunt the
+hunting level 900+ areas of the band below (253 hunters) and are pointed at the instanced endgame (rifts of tier 10-15,
+Omens, Ascended Omens, the Ember Descent, the weekly raid). At 150 online every band stays under 40%.
+
+### What the spawns step changes (`tools/patch_base_spawns.py`, `tools/spawn_tuning.json`)
+
+`python3 -I server/tools/patch_base_spawns.py <server>/data [--config PATH] [--spawn PATH] [--tuning PATH] [--dry-run]
+[--remove] [--report]`, install step `spawns` (after `monsters`). Every change carries a marker; a run first undoes the
+last run and then applies the JSON, so a second run changes nothing and `--remove` gives the stock files back.
+`--report` prints the band table of the spawn file as it would be written (monster entries of all spawns, not only
+hunting areas). Monster names are never written in the JSON: entries are named by position, and a new spawn copies
+the monster of an existing entry.
+
+| Change | Count | How |
+|---|---|---|
+| Dead registrations | 10 lines (913 entries) | the dead first line of a monster in `monsters.xml` is commented out when another line of the name has a file |
+| Glitched spawntimes | 111 | an entry with 30,000 s or more gets the median spawntime of the same monster elsewhere (10+ other entries) |
+| Band respawn | 2,539 | entries of a monster with a hunting level of 300-599 and a spawntime of 91-300 s respawn after 90 s (was 120) |
+| Blocking tiles | 99 moved | to the nearest free walkable tile within 3 sqm (no protection zone, house, floor change or teleport) |
+| Thin 300-600 areas | 93 added in 12 areas (`H4-01`..`H4-12`) | raised to 3.0 monsters per 100 walkable tiles, at most +50% |
+| Thin level 900+ areas | 91 added in 9 areas (`H5-01`..`H5-09`) | outdoors at 0.8-1.1 per 100; raised to 1.5, at most +60% |
+
+New spawns hold one monster each and sit on free walkable tiles of their area, at least 3 sqm from any spawn and
+connected to it. Each copies the nearest ordinary entry: no boss, no rare spawn, a monster with 10+ entries on the map.
+`late_game.py` and this tool leave each other's entries alone, in either order.
+
+`prod_config.py` sets `rateSpawn = 3`: most packs come back in one or two spawntimes instead of one monster per
+spawntime. That is the biggest change below level 300 (+20-55% respawn there).
+
+### Dynamic respawn (`respawn.lua`, `respawn_core.lua`, `respawn_config.lua`, `src-patches/0022-dynamic-respawn.patch`)
+
+The stock engine reads a spawn's interval once and has no way to change it, so engine patch 0022 adds
+`Game.setSpawnIntervalPercent(percent[, fromPosition, toPosition])`: every spawn, or every spawn whose centre lies in
+the box, respawns after that percent of its spawntime (10-1000, never under the engine's 10 s). The percent is kept
+per spawn; when it drops, a pending check runs after 1 s. The view rule and rateSpawn stay as they are.
+
+Every 20 s `respawn.lua` counts the hunters: online, not staff, not in a protection zone, in fight. Characters behind
+one IP count once. Where 2 or more hunt within 10 sqm on one floor, the spawns in that 16 x 16 sqm cell (plus 8 sqm
+around it) respawn faster: 2 hunters 85%, 3 70%, 4 55%, 5 or more 50%. When they leave, the cell goes back to 100%.
+The tick makes no engine call while nothing changes. Without patch 0022 it logs one line and does nothing. Every
+number is in `respawn_config.lua`; `globalPercent` (100) changes the whole map, for an event.
+
+### Checked
+
+- `tests/base_spawns_patch_test.lua`: the tool on a fixture with placeholder monsters (every rule, markers, a second run,
+  `--remove` byte for byte, CRLF files, bad positions). `tests/respawn_test.lua`: the percent, the counts, the zones,
+  the plan and the glue against a mocked engine.
+- The real base data: the first run wrote the changes above, the second changed nothing, `--remove` restored both files
+  byte for byte, and `late_game.py` still found its 277 entries.
+- The engine with patches 0001-0022 built and ran on the full map (test database, no players): the 913 "Can not find"
+  spawn warnings dropped to 0, the added, moved and repaired spawns had their monsters at startup. A monster killed in a
+  spawn set to 17% came back after 10.3 s; one at 100% after 60.5 s. With `respawn.lua` fed three hunters next to a
+  spawn, the tick made 2 engine calls (then 0) and the monster came back after 43 s (70% of 60 s).
+- Not checked: real players in the view rule, and the hunting model itself (the 0.47 efficiency, the 900 kills per hour
+  cap). Measure a few hunts with the hunt tracker in the betas and adjust `spawn_tuning.json` or `respawn_config.lua`.
+
+### Not done (proposals)
+
+- **Map expansion:** not needed for launch. If more than about 30 characters of level 1000+ are online after the first
+  month, add 3-4 open-world areas for levels 1000-1300 (about 150-200 monsters) in a content patch.
+- **Walk check:** the 1,688 entries in closed pockets (staff teleport to each pocket from the scratch list) and 88 areas
+  with more than 8 monsters per 100 tiles. Two of them are strips with a monster on every tile (x 31628-31668,
+  y 32253-32259, floors 5 and 6). They may be display rooms or traps; remove them by position in `spawn_tuning.json`
+  if not.
+- **Generated spawn data:** run `tools/gen_bounty_pool.py` and `tools/gen_bestiary_spawns.py` on the installed server
+  after the spawns step. The repo copies were already behind the late game spawns.
 
 ## Name plates and titles (`nameplate.lua`, `nameplate_core.lua`, `titles.lua`, client `game_nameplate`, base patch 0022)
 

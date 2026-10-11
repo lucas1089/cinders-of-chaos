@@ -54,6 +54,10 @@ What it sets, and why (docs/LAUNCH.md has the full checklist):
   playerSpeedSoftLevel = 300, playerSpeedPerTenLevelsAbove = 10
                           movement speed (engine patch 0018, README "Movement speed"): a player walks between about
                           1 and 10 tiles/s on normal ground; base speed = vocation + 50, 2.5 per level to 300, 1 after
+  rateSpawn = 3           how many monsters one spawn may bring back per check (the engine checks a spawn every shortest
+                          spawntime of it). The stock 1 refilled a pack of five in five spawntimes; 3 brings most packs
+                          back in one or two. Not a time multiplier: the timers are in the spawn file
+                          (tools/patch_base_spawns.py, server/README.md "Spawn density and respawn")
   clientGuardMode = "enforce", clientGuardKey = os.getenv("CHAOS_CLIENT_KEY") or "", clientGuardAllowDevKey = false,
   clientGuardTimeout = 10, clientGuardDownloadUrl, clientGuardBuilds, clientGuardManifest, clientGuardStaffIps
                           only the official client plays (engine patch 0021, README "Client guard"): the key is read from
@@ -121,6 +125,7 @@ def settings(opts):
         ('playerSpeedPerTenLevels', '25'),
         ('playerSpeedSoftLevel', '300'),
         ('playerSpeedPerTenLevelsAbove', '10'),
+        ('rateSpawn', '3'),
         ('clientGuardMode', '"enforce"'),
         ('clientGuardKey', 'os.getenv("CHAOS_CLIENT_KEY") or ""'),
         ('clientGuardAllowDevKey', 'false'),
