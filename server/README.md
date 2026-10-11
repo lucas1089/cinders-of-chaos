@@ -100,6 +100,8 @@ server/
     rift.lua  rift_core.lua  rift_config.lua (rifts: keys, runtime-built instances, run HUD; see "Rifts")
     crafting.lua (crafting bench and orbs; rules in data/lib/chaos_crafting.lua, installer tools/install_crafting.py)
     salvage.lua  salvage_core.lua  salvage_config.lua (salvage into rune shards, the item lock; installer tools/install_salvage.py)
+    craft_bonus.lua  craft_bonus_core.lua  craft_bonus_config.lua (the base crafting tables' bonus: rarity of crafted
+                                      equipment, extra potions and runes; tools/patch_base_crafting_bonus.py, see "Crafting bonus")
     item_mods.lua (Chaos item modifiers on the character; catalogue and rolls in data/lib/chaos_item_mods.lua, see "Item modifiers")
     treasure_goblin.lua  treasure_goblin_core.lua  treasure_goblin_config.lua (treasure goblins, see "Treasure goblins")
     invasion.lua  invasion_core.lua  invasion_config.lua  worldevents.lua (invasions and the small world events, see "Invasions and world events";
@@ -189,6 +191,9 @@ server/
 4e. Crafting Table window: `python3 -I server/tools/patch_base_crafting_ui.py <server>/data [--dry-run]` (idempotent;
    `install_all.py` step `basecraftingui`, right after `basecrafting`, whose patch it needs). The base crafting script
    talks to the client's Crafting Table window; see "Crafting Table window".
+4f. Crafting bonus: `python3 -I server/tools/patch_base_crafting_bonus.py <server>/data [--dry-run]` (idempotent;
+   `install_all.py` step `basecraftingbonus`, right after `basecraftingui`, whose patch and the guard's it needs). Crafted
+   equipment rolls a Chaos rarity and item level, potions and runes may give extra pieces; see "Crafting bonus".
 5. Late game: copy `server/data/monster/monsters/chaos/*.xml` to `<server>/data/monster/monsters/chaos/` (17 of them
    are tuned for levels 650-1000), then `python3 -I server/tools/late_game.py <server>/data` (idempotent; `--dry-run`
    shows what would change, `--remove` undoes it). It writes the new `experienceStages` into `config.lua` and puts the
@@ -3027,7 +3032,8 @@ the stock "not enough space" branch never ran.
   made or added, gold and materials are given back (materials with `addItem(id, count, true)`: a full backpack drops
   them at the player's feet).
 - Unchanged: recipes, texts, the 860 ms delay, skill tries, the rarity roll (5% x the stock tier chances; with the
-  duplication closed a rolled craft costs a full set of materials, so it is no cheap salvage source).
+  duplication closed a rolled craft costs a full set of materials, so it is no cheap salvage source). For equipment,
+  potions and runes `patch_base_crafting_bonus.py` replaces that roll later (see "Crafting bonus").
 
 **Anchors.** `local CODE_CRAFTING = 91` (the guard block goes after it), the tables' `function actionEvent.onUse(player)`
 + `player:showCrafting(category)`, and the whole stock `function Crafting:craft` ... `end, 860)` / `end`, compared by
@@ -3042,6 +3048,88 @@ one craft and one set of materials; gold and materials are removed before the it
 the event, a failed gold or material removal and a logout create nothing; a failed `addItemEx` refunds everything.
 Against the stock script the same test gets 5 items for one set of materials.
 
+## Crafting bonus (`tools/patch_base_crafting_bonus.py`, `chaos/craft_bonus*.lua`, `tests/craft_bonus_test.lua`, `tests/base_crafting_bonus_test.lua`)
+
+**The stock roll.** The base script gave every product, potions and tools included, `rollRarity()`: 5% of crafts, then
+the stock chance of each rarity id 1..15 in turn, made with `Game.createItemWithRarity` (the engine's own stats). The ids
+are the same 15 rarities as ours (Common .. Transcendent), but such an item has no item level, no modifier tiers, no
+prefix / suffix split and no sockets: the item_mods layer never rolled it (the comment on `ChaosCrafting.createItem` says
+to stop using that call). It duplicates our roll, so for equipment it is replaced. Any other product (tools, materials,
+the flasks the herbalist makes for the armorsmith) keeps it unchanged; potions and runes keep it too and get the bonus
+below on top.
+
+**Mastery** = the crafter's skill in the recipe's category (`getEffectiveSkillLevel`, skills 7-13) minus the recipe's
+required level, at least 0. Stock recipes need 10-35. All numbers are in `craft_bonus_config.lua`.
+
+**Equipment** (`ChaosCraftBonus.kind`: `ChaosCrafting.isGear` of the result, one piece a craft, not a tool). On the
+stock recipes: 164 of the armorsmith, weaponsmith and jewelsmith results (helmets, armors, legs, boots, weapons, shields,
+rings and amulets, gloves and belts). Not equipment: the profession tools and the mount scroll (`isGear` accepts them for
+their skill bonus, but they are "other" items that fit only the hands: `toolSlots`), the backpacks and the two quivers
+(containers, which our modifiers never roll on), materials. One roll over:
+
+| Rarity | mastery 0 | mastery 25 | mastery 50+ (cap) |
+|---|---|---|---|
+| Common | 12% | 15% | 18% |
+| Uncommon | 6% | 7.5% | 9% |
+| Rare | 3% | 3.75% | 4.5% |
+| Epic | 1.2% | 1.5% | 1.8% |
+| Legendary | 0.4% | 0.5% | 0.6% |
+| plain | 77.4% | 71.75% | 66.1% |
+
+Every chance x (1 + 1% per mastery point), at most x1.5; all together at most 35%; never above Legendary (5). A
+legendary monster's gear has floor 5 and a boss's floor 6 (`loot_config.lua` `gear.minRarity`), so a craft never beats a
+boss drop; the test checks it against the real loot config. The item level is the recipe level + mastery / 2, never
+below what the type's required level gives a plain item (as `ChaosCrafting.orbLevel`), at most 90: modifier tiers up to
+T5 (`chaos_item_mods.lua` tierLevels: T6 needs 95; world boss gear is 145). The piece is made by
+`ChaosCrafting.createItem(id, rarity, level)` (the drop roll: modifiers and tiers by item level) and gets sockets from
+`ChaosGems.rollDropSockets` when it has a rarity. A plain piece gets the item level only.
+
+**Potions and runes** (the herbalist potions 28076-28083 and 28088-28091 in `yield.ids`; any `ItemType:isRune()`; no
+stock recipe makes a rune today). One roll: double the recipe's count with 0.08% per mastery point (at most 8%), else
++50% (rounded up) with 5% + 0.25% per point (at most 25%). Gold and materials stay the same.
+
+| Mastery | +50% | x2 | extra per craft (5-potion recipe) |
+|---|---|---|---|
+| 0 | 5% | 0% | +0.15 |
+| 25 | 11.25% | 2% | +0.44 |
+| 50 | 17.5% | 4% | +0.73 |
+| 75 | 23.75% | 6% | +1.01 |
+| 100+ | 25% | 8% | +1.15 |
+
+The recipe's own count is made and added as before; the extra pieces are given only after that add worked: into the
+backpack (`Chaos.giveItem`), what does not fit to the store inbox (as the bestiary rewards), so a lucky roll never fails a
+craft. A failed add refunds gold and materials and gives no extra.
+
+**Order.** Both rolls run inside the guarded delayed craft (`patch_base_crafting.py`), after `CraftGuard.take` took the
+gold and the materials, before `addItemEx`; a failed make or add gives both back as before, so the dupe fix holds.
+
+**Texts** (window message, "ok"): "You crafted a Rare Crown Shield (item level 32)." / "You crafted a Crown Shield (item
+level 32)." / "You crafted 7 Exalted Health Potions (bonus +2)." (+ "Your backpack was full: N went to your store
+inbox."). Other products keep the stock texts.
+
+**Window.** Each recipe of a `fetch` page carries `bonus` at the player's skill: `{kind = "gear", level, odds = [{rarity,
+name, pct}]}` or `{kind = "stack", odds = [{extra, pct}]}`. The recipe panel shows it under the gold line: "Rarity at
+item level 37: Common 18% / Uncommon 9% / Rare 4.5% / Epic 1.8% / Legendary 0.6%" or "Bonus yield: +3 at 17.5% / +5 at
+4%"; the result's tooltip too.
+
+**What the patch changes** (after both earlier patches, whose markers it needs): a `CraftingBonus` block before `local
+LoginEvent = CreatureEvent("CraftingLogin")` (it calls `ChaosCraftBonus` and falls back to the stock roll and texts when
+that is missing or fails); `bonus = CraftingBonus.odds(...)` after `storageText = craft.storageText or "",` in
+`Crafting:sendCrafts`; the stock product block (`local rarityId = rollRarity()` ... `end`) of the guarded craft becomes
+`CraftingBonus.make` and must come after `CraftGuard.take`; the two success texts become `CraftingBonus.finish` after
+`CraftGuard.added(player:addItemEx(item))`. Each anchor exactly once and in that order, else nothing is written.
+Markers `-- Chaos: crafting bonus (patch_base_crafting_bonus.py) v1 bonus / odds / make / text`.
+
+**Tests.** `tests/craft_bonus_test.lua`: the odds, caps (against `loot_config.lua` and the item level gates), item level,
+roll boundaries and rates, the yield, the texts, then `craft_bonus.lua` on a mock engine (which products count, odds,
+make, finish, the store inbox). `tests/base_crafting_bonus_test.lua`: the tool on the fixture (needs both earlier
+patches, idempotent, CRLF, partly patched, another version) and the patched script with the real `craft_bonus.lua`:
+gold and materials before the roll, five requests give one item, the extra pieces only after the add, a failed add
+refunds without extra, tools the stock way, the odds on the pages, the fallback without `craft_bonus.lua`.
+Live test (full map, armorsmith and herbalist skill 65): 164 equipment and 24 potion recipes found, the tools and
+backpacks stay stock; 15 Plate Legs (recipe level 10) came out at item level 37, 6 of them Common to Rare, each with
+its modifiers and tiers (T1-T3) in the look text; Exalted Health Potion x5 gave 8 (bonus +3) for one set of materials.
+
 ## Crafting Table window (`tools/patch_base_crafting_ui.py`, `tests/base_crafting_ui_test.lua`, client `game_craftingtable`)
 
 The client side of the base crafting tables ("Base crafting script"): using a table opens the Crafting Table window on
@@ -3053,7 +3141,7 @@ its category. The base protocol is kept as it is (extended opcode 91, JSON `{act
 | server -> client | `show` | `{category}`: a table was used (sent with `money` first) |
 | server -> client | `money` | the gold the player carries (`getMoney`), after `show` and after a craft |
 | server -> client | `chunkedFetch` | `{chunkData = {msgID, index, count, payload}}`: 512-byte pieces of the JSON text of `fetch` |
-| (joined) | `fetch` | `{category, page, totalPages, crafts = [{index, name, id, clientId, level, cost, count, storage, playerStorage, storageText, materials = [{id, clientId, count, player, name}]}]}`, 10 recipes a page, `player` = the player's count (`getItemCount`) |
+| (joined) | `fetch` | `{category, page, totalPages, crafts = [{index, name, id, clientId, level, cost, count, storage, playerStorage, storageText, materials = [{id, clientId, count, player, name}], bonus}]}`, 10 recipes a page, `player` = the player's count (`getItemCount`), `bonus` from "Crafting bonus" |
 | server -> client | `craft` | `{success = true}`: accepted, the item comes 860 ms later; the recipe's page is sent again after it |
 | server -> client | `message` | `{kind = "ok" / "error", text}` (this patch) |
 | server -> client | `tip` | `{category, craftId, tip}` (this patch; `tip = false` without the Chaos item tooltip) |
@@ -4681,8 +4769,20 @@ numbers); the answer is the usual page.
 
 **Buying.** Gold comes from the bank (`players.balance`), coins from the account's Chaos Coins (`chaos_shop_coins`). The
 item always goes to the buyer's inbox; the seller gets the gold minus the tax in the bank, the coins minus the tax on
-the account, with a text message, a toast (`game_chaosnotify` action `market`) and a line in My Offers. A seller who is
-offline gets the gold, the returned items and the notices at the next login.
+the account, with a text message, a toast and a line in My Offers. A seller who is offline gets the gold, the returned
+items and the notices at the next login.
+
+**Sale notifications** (`market_notify_core.lua`, `tests/market_notify_test.lua`; flows in `tests/market_test.lua`). The
+queue is the seller's "sold" rows of `chaos_market_deliveries` (one per sold offer or buy order fill; no other table):
+`MK.deliver` tells a sale only when that call applied its row, so the row's deliverSeq / `delivered` mark also stops a
+second notice (relog, a crash after the save). Seller online: at once one chat line and a toast with the header ITEM
+SOLD (`ChaosNotify.send` kind `sale`), e.g. "Buyer bought your 2x Orb of Fate for 100,000 gold (fee 5,000):
++95,000 gold to your bank." Seller offline: at the next login (the market's login delivery, 1.5 s after login) one
+toast "While you were away: 3 items sold for 4.2M gold: Sword, plate armor, 20x Orb of Fate." (proceeds after the fee,
+gold and Chaos Coins summed, one decimal rounded down) and one chat line per sale. The lines are capped at
+`market_config.lua` `notify.lines` (5) plus "... and N more sales (see My Offers)"; the toast's total counts every
+sale. The rows themselves are never dropped (they carry the money). A buy order fill tells its seller the same way
+("Orderer's buy order took your ..."). The Orb Exchange does the same with its own delivery rows (below).
 
 **Crash safety.** Every money move is one database transaction, and every item / gold change of a character is tied to
 a marker storage that the engine saves in the same transaction as the items (`player:save()`):
@@ -4932,7 +5032,9 @@ the same account never trade with each other (`selfTrade = false`); they are ski
 - Deliveries (`chaos_orbx_deliveries`, unique per order, trade and reason): orbs to the inbox in stacks of 100 (all of a
   row or nothing), gold to the bank, in id order, with the storage 7100951 (deliverSeq) = the row id, then
   `player:save()`, then the rows are marked; a row at or below the saved deliverSeq is only marked. Offline characters
-  get theirs at the next login (tested).
+  get theirs at the next login (tested). A delivery with a fill (an order of the player traded) is an ITEM SOLD toast
+  (kind `sale`, `market_notify_core.lua` `exchangeToast`): "Orb Exchange: your orders traded: ..." online, "While you were away: your Orb
+  Exchange orders traded: +1,200 gold in your bank." at login; refunds only keep the plain Orb Exchange toast.
 
 **Seasons.** An order carries its owner's realm (`ChaosSeason.realmOfGuid`). While a season runs, its characters trade
 on the season's own book and see only its orders and trades; standard characters never see or meet them
@@ -6556,7 +6658,13 @@ Achievements in the top menu, or Character > Achievements), extended opcode 250 
   (the higher value is kept); `who` is a Player, a guid or `{guid, name}`. Offline characters are written straight to the
   database and checked at their next login. Online counters are saved every 30 s, at logout and at shutdown; unlocks at once.
   An achievement unlocks once per character (`INSERT IGNORE`), with a chat line, a toast (game_chaosnotify action
-  `achievement`), its reward and its title; the window refreshes if it is open.
+  `achievement`, header ACHIEVEMENT UNLOCKED, trophy icon), its reward and its title; the window refreshes if it is open.
+  The toast (`achievements_core.lua` `K.toast`) reads "The Thousandth Step: +50 points. Title: the Unbroken. Reward:
+  mount Doombringer."; the quiet login check sends one summary (`K.summaryToast`: "3 achievements unlocked: +30 points:
+  A, B, C. Rewards: ..."). Every path toasts: a live counter, the 30 s sweep, level up and a staff grant (one toast each),
+  the login check and offline counters (the summary). The unlock row is written first; when that write fails nothing is
+  given or shown and a later check tries again, so a relog never unlocks, rewards or toasts twice. A class unlocked by
+  achievements ("Class unlocked") and a reward track cosmetic (cosmetics.lua, "Reward track") toast with the same header.
 - **Where the counters come from.** Nothing in the other systems was rewritten:
   - level, Paragon level (`level - Chaos.paragon.startLevel`), ascension, tutorial island finished, guild: login, level up
     and a 30 s sweep of the online characters;

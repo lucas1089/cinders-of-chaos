@@ -9,7 +9,10 @@
 --                     chunkedFetch {chunkData = {msgID, index, count, payload}}   pieces of the JSON text of
 --                                  fetch {category, page, totalPages, crafts = [{index, name, id, clientId, level, cost,
 --                                  count, storage, playerStorage, storageText, materials = [{id, clientId, count,
---                                  player, name}]}]}   (player = how many the player has; name from the UI patch)
+--                                  player, name}], bonus}]}   (player = how many the player has; name from the UI
+--                                  patch; bonus from patch_base_crafting_bonus.py at the player's skill:
+--                                  {kind = "gear", level, odds = [{rarity, name, pct}]} for equipment,
+--                                  {kind = "stack", odds = [{extra, pct}]} for potions and runes, absent otherwise)
 --                     craft {success = true}         accepted: the item is made 860 ms later
 --                     message {kind = ok | error, text}   the answer to a craft (patch_base_crafting_ui.py)
 --                     tip {category, craftId, tip}   the tooltip (false when the server has none)
@@ -109,6 +112,50 @@ local function material(m)
     name = type(m.name) == 'string' and m.name ~= '' and m.name or nil }
 end
 
+-- the crafting bonus of a recipe (server craft_bonus.lua): rarity odds of equipment, extra pieces of potions and runes
+local function bonus(b)
+  if type(b) ~= 'table' or type(b.odds) ~= 'table' then return nil end
+  local odds = {}
+  if b.kind == 'gear' then
+    for _, o in ipairs(b.odds) do
+      if type(o) == 'table' and num(o.pct) > 0 then
+        odds[#odds + 1] = { rarity = num(o.rarity), name = tostring(o.name or ('Rarity ' .. num(o.rarity))), pct = num(o.pct) }
+      end
+    end
+    table.sort(odds, function(a, c) return a.rarity < c.rarity end)
+    return { kind = 'gear', level = num(b.level), odds = odds }
+  elseif b.kind == 'stack' then
+    for _, o in ipairs(b.odds) do
+      if type(o) == 'table' and num(o.pct) > 0 and num(o.extra) > 0 then
+        odds[#odds + 1] = { extra = math.floor(num(o.extra)), pct = num(o.pct) }
+      end
+    end
+    table.sort(odds, function(a, c) return a.extra < c.extra end)
+    return { kind = 'stack', odds = odds }
+  end
+  return nil
+end
+
+-- 12 -> "12%", 0.4 -> "0.4%", 17.25 -> "17.25%"
+function V.pctText(p)
+  local s = string.format('%.2f', num(p)):gsub('0+$', ''):gsub('%.$', '')
+  return s .. '%'
+end
+
+-- the line under the gold: "Rarity at item level 37: Common 18% / ... / Legendary 0.6%" or
+-- "Bonus yield: +3 at 17.5% / +5 at 4%" ('' when the recipe has none)
+function V.bonusText(r)
+  local b = r and r.bonus
+  if not b or #b.odds == 0 then return '' end
+  local parts = {}
+  if b.kind == 'gear' then
+    for _, o in ipairs(b.odds) do parts[#parts + 1] = o.name .. ' ' .. V.pctText(o.pct) end
+    return string.format('Rarity at item level %d: %s', b.level, table.concat(parts, ' / '))
+  end
+  for _, o in ipairs(b.odds) do parts[#parts + 1] = string.format('+%d at %s', o.extra, V.pctText(o.pct)) end
+  return 'Bonus yield: ' .. table.concat(parts, ' / ')
+end
+
 function V.recipe(raw, category)
   if type(raw) ~= 'table' or num(raw.index) < 1 then return nil end
   local r = {
@@ -119,6 +166,7 @@ function V.recipe(raw, category)
   local storage = num(raw.storage)
   r.locked = storage > 0 and num(raw.playerStorage) ~= 1
   r.lockText = type(raw.storageText) == 'string' and raw.storageText or ''
+  r.bonus = bonus(raw.bonus)
   for _, m in ipairs(type(raw.materials) == 'table' and raw.materials or {}) do
     local mm = material(m)
     if mm then r.materials[#r.materials + 1] = mm end
@@ -320,7 +368,8 @@ function V.plainTip(r)
   local lines = { r.name .. (r.count > 1 and (' x' .. r.count) or '') }
   local cat = V.category(r.category)
   lines[#lines + 1] = string.format('%s level %d, %s', V.SKILL_NAMES[cat and cat.skill or 7], r.level, V.goldText(r.cost))
-  lines[#lines + 1] = 'A crafted item may roll a rarity.'
+  local b = V.bonusText(r)
+  lines[#lines + 1] = b ~= '' and b or 'A crafted item may roll a rarity.'
   return table.concat(lines, '\n')
 end
 

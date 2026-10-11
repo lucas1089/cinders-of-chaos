@@ -28,6 +28,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   basecraftingui tools/patch_base_crafting_ui.py  the base crafting script talks to the client's Crafting Table window:
                                                  messages instead of popups, material names, item tooltips (README
                                                  "Crafting Table window"; needs the basecrafting step first)
+  basecraftingbonus tools/patch_base_crafting_bonus.py  crafted equipment rolls a Chaos rarity and item level, potions
+                                                 and runes may give extra pieces, by the crafting skill (README
+                                                 "Crafting bonus"; needs basecrafting and basecraftingui first)
   weapons      tools/two_handed.py               two-handed attack speed (README "Weapon styles")
   lategame     tools/late_game.py                experience stages in config.lua + late game spawns (README "Install" 5)
   crafting     tools/install_crafting.py         crafting orb items and the reroll guard (README "Crafting")
@@ -94,7 +97,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'charms', 'professions', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spells', 'autoloot', 'commands', 'sql']
+STEPS = ['files', 'lib', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'charms', 'professions', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spells', 'autoloot', 'commands', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -275,6 +278,10 @@ def step_basecrafting(server, data, ctx):
 
 def step_basecraftingui(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_crafting_ui.py'), data], 'patch_base_crafting_ui.py'))
+
+
+def step_basecraftingbonus(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_crafting_bonus.py'), data], 'patch_base_crafting_bonus.py'))
 
 
 def step_weapons(server, data, ctx):

@@ -274,9 +274,18 @@ ChaosMainWindow
       text-wrap: true
       text-auto-resize: true
 
+    CraftTableLine
+      id: bonusLine
+      anchors.top: lockLine.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      color: #e8b84a
+      text-wrap: true
+      text-auto-resize: true
+
     UILabel
       id: matTitle
-      anchors.top: lockLine.bottom
+      anchors.top: bonusLine.bottom
       anchors.left: parent.left
       margin-top: 10
       text-auto-resize: true

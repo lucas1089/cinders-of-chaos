@@ -6,6 +6,8 @@
 -- After `craft {success}` a bar runs for the server's 860 ms; the server's answer (`message`, server
 -- patch_base_crafting_ui.py) is shown under the recipe, green or red. Craft x N sends the next request after the
 -- previous one succeeded and the 1 s cooldown passed, and stops at the first refusal.
+-- A recipe's `bonus` (server patch_base_crafting_bonus.py, at the player's skill) is shown under the gold line: the
+-- rarity odds and item level of equipment, the extra-piece odds of potions and runes.
 -- Skills: g_game.onCraftingSkill (base patch 0012), also read from game_craftskills. Menu: Economy > Crafting Tables
 -- only explains where the tables are.
 
@@ -151,6 +153,7 @@ local function renderDetail()
     d.skillLine:setText('')
     d.goldLine:setText('')
     d.lockLine:setText('')
+    d.bonusLine:setText('')
     d.matTitle:setVisible(false)
     d.craftButton:setEnabled(false)
     d.blockText:setText('')
@@ -187,6 +190,7 @@ local function renderDetail()
   else
     d.lockLine:setText('')
   end
+  d.bonusLine:setText(V.bonusText(r))
   d.matTitle:setVisible(true)
   for i, m in ipairs(r.materials) do
     local w = g_ui.createWidget('CraftTableMaterial', d.matList)
@@ -420,7 +424,8 @@ local function showResultTip(widget, hovered)
   local key = V.tipKey(r.category, r.index)
   local tip = tips[key]
   if tip and tt and tt.showTip then
-    local extra = { { text = tr('A crafted item may roll a rarity.'), color = V.COLORS.dim, sep = true } }
+    local b = V.bonusText(r)
+    local extra = { { text = b ~= '' and b or tr('A crafted item may roll a rarity.'), color = V.COLORS.dim, sep = true } }
     pcall(tt.showTip, widget, key, tip, extra)
   elseif tip == nil and not tipAsked[key] then
     tipAsked[key] = true

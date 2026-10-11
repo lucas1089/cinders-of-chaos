@@ -141,6 +141,24 @@ has(V.rowSub({ level = 10, cost = 1500, count = 5 }), 'x5', 'row sub with count'
 has(V.plainTip(r), 'Herbalist level 11', 'plain tip')
 eq(V.tipKey('mining', 4), 'craftingtable:mining:4', 'tip key')
 
+-- crafting bonus (server craft_bonus.lua through patch_base_crafting_bonus.py)
+eq(V.pctText(12), '12%', 'whole percent')
+eq(V.pctText(0.4), '0.4%', 'tenths')
+eq(V.pctText(17.25), '17.25%', 'hundredths')
+eq(V.bonusText(r), '', 'no bonus: no line')
+local g = V.recipe(raw(40, { bonus = { kind = 'gear', level = 37, odds = {
+  { rarity = 5, name = 'Legendary', pct = 0.6 }, { rarity = 3, name = 'Rare', pct = 4.5 },
+  { rarity = 1, name = 'Common', pct = 18 }, { rarity = 2, name = 'junk', pct = 0 }, 'junk' } } }), 'armorsmith')
+eq(V.bonusText(g), 'Rarity at item level 37: Common 18% / Rare 4.5% / Legendary 0.6%', 'gear odds, lowest first')
+has(V.plainTip(g), 'Rarity at item level 37', 'plain tip names the odds')
+local s = V.recipe(raw(41, { bonus = { kind = 'stack', odds = { { extra = 5, pct = 4 }, { extra = 3, pct = 17.5 } } } }),
+  'herbalist')
+eq(V.bonusText(s), 'Bonus yield: +3 at 17.5% / +5 at 4%', 'stack odds')
+eq(V.recipe(raw(42, { bonus = { kind = 'stack', odds = {} } }), 'herbalist').bonus.kind, 'stack', 'empty odds kept')
+eq(V.bonusText(V.recipe(raw(42, { bonus = { kind = 'stack', odds = {} } }), 'herbalist')), '', 'empty odds: no line')
+eq(V.recipe(raw(43, { bonus = { kind = 'other', odds = {} } }), 'herbalist').bonus, nil, 'unknown kind ignored')
+eq(V.recipe(raw(44, { bonus = false }), 'herbalist').bonus, nil, 'false ignored')
+
 -- progress and repeat
 eq(V.progress(nil, 100), 0, 'no craft')
 eq(V.progress(1000, 1430), 50, 'half way')
