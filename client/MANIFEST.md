@@ -486,13 +486,51 @@ pixel-identical to MINI40, flags and animators equal, the 2126 old outfits and e
 byte-identical, 3000 sampled old sprites unchanged.
 - Checked in the Linux client with this pair on a test server: each boss spawned and walking (east) and turned south;
   each mount ridden (walking east, facing south and north); each aura on a character standing and walking (screenshots
-  and a contact sheet kept outside the repository). Known limit, as for the live Bone Steed: donor B mounts are centred
-  with negative displacements, and the client draws a 32 px rider at its usual place, so the rider sits about a tile
-  up-left of the saddle. The fix is client-side (a rider offset for negative-displacement mounts, base patch); not done
-  here.
+  and a contact sheet kept outside the repository). The riders of the four mounts and the Bone Steed sat beside the
+  saddle on this pair: fixed by base patch 0034 and things_custom15 ("Rider seat on donor mounts" below).
 - The live pair stays things_custom13 until things_custom14 is pushed to `windows-assets`; a client on things_custom13
   draws nothing for 2127-2139 (raid bosses invisible, faction mounts and auras empty), so the server change and the pair
   go out together. CI: `check_content.py` reads 2139 from picks.csv.
+
+## Rider seat on donor mounts (things_custom15, base patch 0034, `tools/sprites/set_rider_seat.py`)
+The donor B mounts (Bone Steed 1561, faction mounts 2132-2135: 3x4, 3x5 and 5x4 with displacement (-32, -32), 2134
+(-64, -32)) are centred on their tile with negative displacements. The client draws a negative-displacement mount by its
+own displacement and the rider at its usual place (stock rider displacement (8, 8)), so the rider sat half a tile left of
+the saddle and a little low (it needed 16 px right and 4-8 px up) in every direction. Stock 10.98 mounts have no displacement and
+take the other path (mount and rider share the box), so they were never affected.
+- Why not data only: on the negative path the rider's place does not depend on the mount's dat entry at all, and a
+  non-negative displacement (the other path) moves the mount twice as far as the rider, so a displacement edit cannot
+  seat the rider without moving the mount off its tile (the most it moves the rider is 8 px). Hence base patch 0034
+  (client/BASE.md) plus a seat in the data.
+- The seat is the dat Bones attribute of the mount (10.98 byte 39: four x, y pairs of signed 16-bit pixels, file order
+  north, south, east, west). Patch 0034 moves the rider by the pair of its direction when the mount has a negative
+  displacement and Bones and the rider has none. A client without 0034 ignores a mount-only Bones attribute, so the new
+  pair draws exactly as things_custom14 there (checked: unpatched client + new pair = the before screenshots).
+- Seats (`tools/sprites/monster_looks/rider_seats.csv`, chosen on renders of every direction and checked in game):
+  (16, -8) for 1561, 2132, 2134, 2135; (16, -4) for the lower-backed wolf 2133; the same pair for all four directions.
+- `set_rider_seat.py` (new) inserts the attribute before the entry's 0xFF (or replaces an existing one; a re-run on its
+  output gives the same files), copies the spr, and verifies: the output re-parses with the same counts, each seated
+  entry is its old bytes plus only the attribute (which decodes to the spec; sprites and displacement unchanged), all
+  36,439 other entries are byte-identical, the spr is byte-identical. `datspr.py` now records each entry's flag-list
+  end (`attr_end`).
+
+```
+python3 -I client/tools/sprites/set_rider_seat.py --ours-dat things_custom14/Tibia.dat --ours-spr things_custom14/Tibia.spr \
+    --spec client/tools/sprites/monster_looks/rider_seats.csv --out-dir things_custom15 \
+    --expect-dat-md5 1667a34964182518d2a802638288881a
+```
+Input things_custom14 (dat 1667a34964182518d2a802638288881a, spr 5aa948775e41748bd885620eeae34e62). Output
+**things_custom15**: dat 1a5ff177c24510e28a59dea4436345fb (4,667,486 bytes, +85: 5 x 17), spr
+5aa948775e41748bd885620eeae34e62 (unchanged, 723,857 sprites), 33,659 items, 2,139 outfits, 592 effects, 153 missiles;
+built twice and re-run on its own output with identical md5s. `things-1098.tar.xz` built like things_custom14's
+(Tibia.dat and Tibia.spr at the archive root, owner 0/0, `xz -9 -T3`): sha256
+c7ff0d06dde1b7ff32b3eec1fc51b691bac8bfd72dc8b364284fab952ad36b57 (65,515,220 bytes). Not on `windows-assets` yet:
+the pair and patch 0034 go out together (the Windows package builds the client with all base patches); a client with
+0034 on things_custom14 draws the riders as before.
+- Checked in the Linux client (base client of `windows-assets` + 0001-0034 + overlay, built fresh) on a test server
+  with this pair: each faction mount and the Bone Steed ridden, standing and walking in all four directions, before
+  (old client, things_custom14) and after; the rider sits on the saddle. A stock mount (368) draws pixel-identical
+  with and without 0034. The outfit window preview was not checked.
 
 ## Leaderboards: fastest-time boards with class tabs (`game_leaderboard`)
 Boards of mode "min" (the Cinderheart's fastest kills) come with `format = "time"` (values shown m:ss,

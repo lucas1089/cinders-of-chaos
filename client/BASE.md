@@ -43,6 +43,16 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     Vorbis, VorbisFile, Ogg) missed vcpkg's `.lib` files and the configure step failed (Windows package run 11). MSVC
     keeps `.lib` there now; vcpkg's static `openal-soft` is linked as static (`AL_LIBTYPE_STATIC`, plus `ole32` and `avrt`).
 
+14. `0034` (C++, `src/client/outfit.cpp`): rider seat on negative-displacement mounts (`MANIFEST.md` "Rider seat on
+    donor mounts"). The client draws such a mount by its own displacement and the rider at its usual place, so on the
+    centred donor B mounts the rider sat beside the saddle. A data-only fix is not possible: on that path the rider's
+    place does not depend on the mount's data, and a non-negative displacement moves the mount twice as far as the
+    rider. When the mount has a negative displacement and the Bones attribute and the rider has no Bones, the rider is
+    moved by the mount's Bones pair for its direction (signed pixels, set by `tools/sprites/set_rider_seat.py`).
+    Everything else draws as before (a stock mount was pixel-identical in the test); a client without the patch ignores
+    a mount-only Bones attribute. The chain 0001-0034 applies to the `windows-assets` base client. Built and checked in
+    the Linux client.
+
 ## What the overlay replaces
 - `game_stash` (the client's own targets a different protocol): ours, extended opcode 110.
 - `game_battlepass`: ours, the Chaos season pass (extended opcode 227, server `seasonpass.lua`).

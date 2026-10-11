@@ -1,0 +1,19 @@
+# Rider seat on negative-displacement mounts (client/MANIFEST.md "Rider seat on donor mounts"): a mount with a negative displacement is drawn by its own displacement and the rider at its usual place, so the rider of a large centred donor mount sat half a tile left of the saddle and a little low. When such a mount has the Bones attribute (dat byte 39 in 10.98: four signed 16-bit x, y pairs, north, south, east, west) and the rider has none, the rider is drawn moved by the pair of its direction. Mounts without Bones, positive mounts and riders with Bones draw as before; a client without this patch ignores a mount-only Bones attribute.
+--- a/src/client/outfit.cpp
++++ b/src/client/outfit.cpp
+@@ -241,6 +241,15 @@
+             } else if (type->hasNegativeDisplacement() || negativeMountDisplacement) {
+                 if (!negativeMountDisplacement)
+                     dest += mountDisplacement;
++                // Cinders of Chaos: a mount with a negative displacement is drawn by its own displacement, the
++                // rider at its usual place, so on a large centred mount the rider sat beside the saddle. Such a
++                // mount may carry a rider seat in its Bones attribute (per direction, signed pixels): the rider
++                // is moved by it. Only when the rider has no Bones itself (then the stock bone alignment above
++                // already moved the mount). A mount without Bones draws exactly as before.
++                if (negativeMountDisplacement && mountType->hasBones() && !type->hasBones()) {
++                    const Point& seat = mountType->getBones(direction);
++                    dest += Point(static_cast<int16>(seat.x), static_cast<int16>(seat.y)) * g_sprites.getOffsetFactor();
++                }
+             } else {
+                 // Preserve Astra's legacy rider/mount alignment for untouched
+                 // positive DAT entries, including their Bones metadata.
