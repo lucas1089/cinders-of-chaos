@@ -30,7 +30,7 @@ modifiers on it.
    properly by monks of level N or higher" from it and refuses the item to everyone else.
 4. NPC shops (data/npc/*.xml, `shop_buyable` / `shop_sellable` parameters): every weapon dealer (a buy list with the
    stock battle hammer, 2417: the town weapon shops) sells the rows with a `buy` price and buys back those rows at their
-   `sell` price; Yasir buys every row with a `sell` price that no weapon dealer buys. Entries are added once (found by
+   `sell` price; the desert trader Grimgan buys every row with a `sell` price that no weapon dealer buys. Entries are added once (found by
    their id) and never changed afterwards. tools/gen_sell_prices.py picks the prices up for the Auto Seller.
 
 Loot: data/scripts/chaos/fist_weapons.lua adds the `loot` rows to the monster types at startup (MonsterType:addLoot,
@@ -52,7 +52,8 @@ MOVE_BEGIN = '\t<!-- Chaos fist weapons: Monk line only (server/tools/install_fi
 MOVE_END = '\t<!-- end of the Chaos fist weapons -->\n'
 MONK_LINE = ['Monk', 'Shadowfist', 'Iron Sage']
 DEALER = re.compile(r'battle hammer\s*,\s*2417\s*,', re.I)
-YASIR = 'Yasir.xml'
+# the desert trader of the base server (Grimgan since the npcnames step; sha256 of his old file name)
+TRADER = ('Grimgan', 'e1611e79c955724155c98b4d79dbc11406cd387773935da008cad6e854b36166')
 
 
 def rows_of(path):
@@ -150,11 +151,13 @@ def patch_npcs(npc_dir, rows, dry):
     buy = [r for r in rows if r['ex'].get('buy') and not r['ex'].get('unique')]
     sell = [r for r in rows if r['ex'].get('sell')]
     dealer_sell = [r for r in sell if r['ex'].get('buy')]
-    yasir_sell = [r for r in sell if not r['ex'].get('buy')]
+    trader_sell = [r for r in sell if not r['ex'].get('buy')]
     notes, changed = [], {}
     if not os.path.isdir(npc_dir):
         return ['npc: no data/npc folder, shops skipped'], changed
     dealers = 0
+    import base_rename_lib
+    trader = base_rename_lib.npc_file(npc_dir, *TRADER)
     for fn in sorted(os.listdir(npc_dir)):
         if not fn.endswith('.xml'):
             continue
@@ -170,14 +173,14 @@ def patch_npcs(npc_dir, rows, dry):
             new, b = add_entries(new, 'shop_sellable', [(r['server_id'], '%s,%d,%s' % (shop_name(r), r['server_id'], r['ex']['sell']))
                                                        for r in dealer_sell])
             n = a + b
-        elif fn == YASIR:
+        elif fn == trader:
             new, n = add_entries(new, 'shop_sellable', [(r['server_id'], '%s,%d,%s' % (shop_name(r), r['server_id'], r['ex']['sell']))
-                                                        for r in yasir_sell])
+                                                        for r in trader_sell])
         if new != text:
             changed[path] = new
             notes.append('npc %s: %d shop entries added' % (fn[:-4], n))
-    notes.append('npc: %d weapon dealers sell %s; Yasir buys %s' % (dealers, ', '.join(r['name'] for r in buy),
-                                                                 ', '.join(r['name'] for r in yasir_sell)))
+    notes.append('npc: %d weapon dealers sell %s; Grimgan buys %s' % (dealers, ', '.join(r['name'] for r in buy),
+                                                                 ', '.join(r['name'] for r in trader_sell)))
     return notes, changed
 
 

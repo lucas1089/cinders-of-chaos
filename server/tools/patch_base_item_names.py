@@ -15,7 +15,9 @@ own items.xml at install time.
    by id needs nothing.
 3. Every other mention of an old name in the base data (NPC shop lists, quest and reward texts, scripts; not
    data/scripts/chaos, not data/lib/chaos_*.lua, not data/items) is replaced, case-insensitively and whole words only;
-   an all-lower-case mention gets the new name in lower case.
+   an all-lower-case mention gets the new name in lower case. In Lua files only string literals change, and a new
+   name with an apostrophe is escaped for the quote style of its string; in XML files only attribute values, and
+   paths (script="dir/name.lua") stay.
 
 The engine finds items by name case-insensitively, so without steps 2 and 3 a monster or shop that names a renamed item
 would fail to load it. Run it on the same data folder each time: an old name is only known while items.xml still has
@@ -29,6 +31,8 @@ import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import base_rename_lib as RL  # noqa: E402
 CSV_PATH = os.path.join(os.path.dirname(HERE), 'data', 'items', 'base_item_names.csv')
 REF_DIRS = ('monster', 'npc', 'scripts', 'talkactions', 'actions', 'creaturescripts', 'globalevents', 'movements',
             'lib', 'events', 'raids', 'weapons', 'XML', 'spells')
@@ -236,7 +240,26 @@ def patch_references(data, renamed, names=()):
         new, k = t, 0
         if p.startswith(monster):
             new, k = (patch_monster_lua if p.endswith('.lua') else patch_monster_xml)(new, renamed)
-        new, w = patch_text(new, renamed, longer)
+        if p.endswith('.lua'):
+            # inside string literals only, escaped for their quote style (a new name may have an apostrophe)
+            n = [0]
+
+            def fn(value):
+                v, c = patch_text(value, renamed, longer)
+                n[0] += c
+                return v
+            new, w = RL.patch_lua(new, fn), 0
+            w = n[0]
+        else:
+            # attribute values only; paths (script="dir/name.lua") stay
+            n = [0]
+
+            def fx(value):
+                v, c = patch_text(value, renamed, longer)
+                n[0] += c
+                return v
+            new = RL.patch_xml(new, fx)
+            w = n[0]
         if new != t:
             writes[p] = new
             loot += k

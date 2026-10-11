@@ -5,8 +5,8 @@ usage: python3 -I server/tools/install_all.py SERVER_DIR [--dry-run] [--no-sql] 
                                               [--db NAME] [--db-host HOST] [--db-port PORT] [--db-user USER]
                                               [--mysql PATH] [--quiet | --verbose]
 
-SERVER_DIR is the base server folder: the one with config.lua and data/ (only the towns step reads and changes the map
-.otbm: the names of its towns).
+SERVER_DIR is the base server folder: the one with config.lua and data/ (only the towns and worldtexts steps read and
+change the map .otbm: the names of its towns, the texts of its signs and books).
 
 Steps, in this order (each one is idempotent on its own; a second run of the whole script changes nothing):
   files        copy server/data from this repo into SERVER_DIR/data: scripts/chaos/**, lib/chaos_*.lua,
@@ -47,9 +47,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                40000..; nothing to do while data/items/donor_items.csv is absent or empty)
   packitems    tools/install_pack_items.py       the pack items (new looks of the rune-stone orbs and ore pieces, creature
                products, food, corpses, trees, grounds, water, shores, lake objects) in items.otb / items.xml and the
-               products in Yasir's shop (README "Pack items and monsters")
+               products in Grimgan's shop (README "Pack items and monsters")
   fistweapons  tools/install_fist_weapons.py     the Monk line's fist weapons in items.otb / items.xml, their Monk-only equip
-               entries in movements.xml and the weapon dealers' / Yasir's shops (README "Fist weapons")
+               entries in movements.xml and the weapon dealers' / Grimgan's shops (README "Fist weapons")
   gems         tools/install_gems.py             the gems and the Orb of Sockets in items.otb / items.xml (README "Gems and sockets")
   salvage      tools/install_salvage.py          the salvage Rune Shard in items.otb / items.xml (README "Salvage")
   omens        tools/install_omens.py            the Omen Fragment and Omen Key in items.otb / items.xml (README "Rifts", Omens)
@@ -88,6 +88,14 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                id, other mentions in the base data renamed (README "Base item names"; after archery)
   towns        tools/patch_base_towns.py         Chaos names of the map's towns by town id (tools/base_towns.csv), in the
                towns node of the .otbm; <map>.otbm.bak keeps the original (README "Town names")
+  npcnames     tools/patch_base_npc_names.py     Chaos names of the base NPCs (data/npc/base_npc_names.csv, keyed by the
+               sha256 of the old name): the NPC files and their shown names, the NPC spawn entries, Game.createNpc
+               names (README "Base NPC names"; after towns, monsternames and itemnames)
+  worldtexts   tools/patch_base_texts.py         the old world's names in NPC dialogue and keywords, travel, the quest log,
+               raids, achievements, item descriptions, script messages and the map's signs and books
+               (data/npc/base_world_names.csv + the NPC and monster lists; README "Base world texts"; after npcnames)
+  houses       tools/patch_base_houses.py        Chaos street names of the houses by house id (tools/base_house_names.csv)
+               in the map's house file (README "Base houses")
   autoloot     data/talkactions/talkactions.xml: the stock XML "!autoloot" line is commented out, so autoloot.lua's own
                talkaction runs and the window refreshes (README "Install" 7)
   commands     tools/install_commands.py         the players' spoken "!" commands of the base server commented out (every one is in the
@@ -97,7 +105,7 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
 
 --dry-run runs every step on a temporary copy of SERVER_DIR (config.lua and data/ without *.otbm, logs/, reports/) and
 reports what would change; SERVER_DIR and the database are not touched (the SQL step only lists its files; the towns
-step reads the real map and only reports).
+and worldtexts steps read the real map and only report).
 --quiet prints only the step lines and the changed files, --verbose every line of the tools' own output (else 15 per step).
 
 Database: name, host, port and user default to config.lua's mysqlDatabase / mysqlHost / mysqlPort / mysqlUser. A value
@@ -121,7 +129,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'monsternames', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spawns', 'spells', 'archery', 'itemnames', 'towns', 'autoloot', 'commands', 'sql']
+STEPS = ['files', 'lib', 'monsternames', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spawns', 'spells', 'archery', 'itemnames', 'towns', 'npcnames', 'worldtexts', 'houses', 'autoloot', 'commands', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -453,6 +461,26 @@ def step_towns(server, data, ctx):
         real = os.path.join(ctx['server'], 'data')
         return tool_result(run_tool([tool('patch_base_towns.py'), real, '--dry-run'], 'patch_base_towns.py'))
     return tool_result(run_tool([tool('patch_base_towns.py'), data], 'patch_base_towns.py'))
+
+
+def step_npcnames(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_npc_names.py'), data], 'patch_base_npc_names.py'))
+
+
+def step_worldtexts(server, data, ctx):
+    if ctx['dry']:
+        # the dry copy has no map: the data files on the copy, the map texts read from the real map, nothing written
+        ok, lines = run_tool([tool('patch_base_texts.py'), data, '--no-map'], 'patch_base_texts.py')
+        if ok:
+            real = os.path.join(ctx['server'], 'data')
+            ok, more = run_tool([tool('patch_base_texts.py'), real, '--map-only', '--dry-run'], 'patch_base_texts.py')
+            lines += more
+        return tool_result((ok, lines))
+    return tool_result(run_tool([tool('patch_base_texts.py'), data], 'patch_base_texts.py'))
+
+
+def step_houses(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_houses.py'), data], 'patch_base_houses.py'))
 
 
 def step_commands(server, data, ctx):

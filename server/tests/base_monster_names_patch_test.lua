@@ -59,7 +59,9 @@ writeFile(root .. "/names.csv", "sha256,name,kind\n"
 	.. "dbafe04e9269d73a1891761e14098a0c4fc742aed12a76348cd2cbb72bafad72,Ember Test Beast,monster\n"
 	.. "011c571fbfdbe2208b245550a11701197876449460ec65e49b4378cb0f69f231,Grim Test Lord,monster\n"
 	.. "3cf76eaffad92845368110dc08b0d922743eb6422bd90bc1126d60e5a8cab9dc,Ember Test Mount,look\n"
-	.. "baedb9cb7f88a74800a0d67549a46046d2ba39d70d03a0d9e2659215c5352b5b,Never Used,monster\n")
+	.. "baedb9cb7f88a74800a0d67549a46046d2ba39d70d03a0d9e2659215c5352b5b,Never Used,monster\n"
+	-- sha256 of "quote test fiend": a new name with an apostrophe (regression: it broke single-quoted Lua strings)
+	.. "16363779354d64b265455ec810f4b3e542c25e36c6eba9ec10113e9b189e6bc4,Fiend's Test Revenge,monster\n")
 
 writeFile(data .. "/monster/monsters.xml", [[
 <?xml version="1.0" encoding="UTF-8"?>
@@ -70,6 +72,7 @@ writeFile(data .. "/monster/monsters.xml", [[
 	<monster name="Oldboss Xy" file="monsters/oldboss_a.xml" />
 	<monster name="oldboss xy" file="monsters/oldboss_b.xml" />
 	<monster name="Ember Test Beast" file="monsters/chaos/leftover.xml" />
+	<monster name="Quote Test Fiend" file="monsters/quote.xml" />
 </monsters>
 ]])
 writeFile(data .. "/monster/monsters/placeholder_beast.xml", [[
@@ -150,6 +153,7 @@ function spawn(pos)
 	player:say("Grim'Oldboss Xy is another one, 'Oldboss Xy' is not.")
 	return [[Placeholder Beast]]
 end
+local quoted = {'Quote Test Fiend', "quote test fiend", [[Quote Test Fiend]], 'it\'s the quote test fiend\'s lair'}
 ]=])
 writeFile(data .. "/items/items.xml", [[
 <items>
@@ -186,7 +190,7 @@ has(readFile(data .. "/world/map-spawn.xml"), '"Placeholder Beast"', "dry run wr
 
 local out1 = run()
 has(out1, "file(s) written", "first run writes: " .. out1)
-has(out1, "monsters: 2 names renamed now (3 in the CSV)", "counts the names it renamed")
+has(out1, "monsters: 3 names renamed now (4 in the CSV)", "counts the names it renamed")
 has(out1, "(1 duplicate lines dropped), spawn entries 3, raid spawns 2", "counts registrations, spawns, raids")
 has(out1, "outfits and mounts: 1", "counts the looks")
 
@@ -241,6 +245,9 @@ has(script, 'player:addItem("dead placeholder beast", 1)', "an item name is kept
 has(script, 'You slew A GRIM TEST LORD and a placeholder beast_kills counter.', "upper case and article, but not a key")
 has(script, "return [[Ember Test Beast]]", "long string")
 has(script, "Grim'Oldboss Xy is another one, 'Grim Test Lord' is not.", "a name joined by an apostrophe stays, a quoted one not")
+has(script, [[local quoted = {'Fiend\'s Test Revenge', "fiend's test revenge", [[Fiend's Test Revenge]] .. "]]"
+	.. [[, 'it\'s the fiend\'s test revenge\'s lair'}]], "an apostrophe in a new name is escaped for its quote style")
+ok((loadstring or load)(script) ~= nil, "the patched script still parses")
 
 local items = readFile(data .. "/items/items.xml")
 has(items, 'name="dead placeholder beast"', "item names are for patch_base_item_names.py")

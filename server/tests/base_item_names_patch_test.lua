@@ -51,7 +51,8 @@ writeFile(root .. "/names.csv", "id,article,name,plural\n"
 	.. "30001,an,ember test quiver,\n"
 	.. "30002,a,grim test mask,grim test masks\n"
 	.. "30003,,new plain thing,\n"
-	.. "30099,a,missing entry,\n")
+	.. "30099,a,missing entry,\n"
+	.. "30005,an,ember's test charm,\n")
 
 writeFile(data .. "/items/items.xml", [[
 <?xml version="1.0" encoding="UTF-8"?>
@@ -64,6 +65,7 @@ writeFile(data .. "/items/items.xml", [[
 	</item>
 	<item id="30003" article="an" name="old plain thing" />
 	<item id="30004" article="an" name="old test mask holder" />
+	<item id="30005" article="an" name="old quote charm" />
 </items>
 ]])
 writeFile(data .. "/monster/lua/bosses/boss.lua", [[
@@ -92,7 +94,10 @@ writeFile(data .. "/npc/Trader.xml", [[
 ]])
 writeFile(data .. "/actions/scripts/reward.lua", [[
 player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You have found an Old Test Mask and a placeholder quivers bag.")
+player:say('You got an old quote charm.')
 ]])
+os.execute("mkdir -p '" .. data .. "/movements'")
+writeFile(data .. "/movements/movements.xml", '<movevent event="Equip" itemid="30002" script="old test mask.lua" />\n')
 local ours = "-- old test mask stays in the repository's own scripts\n"
 writeFile(data .. "/scripts/chaos/ours.lua", ours)
 
@@ -134,6 +139,11 @@ ok(reward:find("grim test mask", 1, true) ~= nil and reward:find("Old Test Mask"
 	"a mention in another case gets the new name: " .. reward)
 ok(reward:find("You have found an ", 1, true) ~= nil and reward:find("ember test quiver", 1, true) == nil
 	and reward:find("placeholder quivers bag", 1, true) ~= nil, "a plural form is another word")
+ok(reward:find("player:say('You got an ember\\'s test charm.')", 1, true) ~= nil,
+	"an apostrophe of a new name is escaped in a single-quoted string: " .. reward)
+ok((loadstring or load)(reward) ~= nil, "the patched script parses")
+eq(readFile(data .. "/movements/movements.xml"), '<movevent event="Equip" itemid="30002" script="old test mask.lua" />\n',
+	"script paths in XML stay")
 eq(readFile(data .. "/scripts/chaos/ours.lua"), ours, "data/scripts/chaos untouched")
 
 -- second run: nothing to change

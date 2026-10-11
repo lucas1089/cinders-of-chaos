@@ -5,7 +5,7 @@
 
 return {
 	-- ------------------------------------------------------------------ the key item
-	-- An existing non-stackable item no other script uses ("shadow orb"; one quest NPC lists it, Black Bert) with this
+	-- An existing non-stackable item no other script uses ("shadow orb"; one quest NPC lists it, Black Osric) with this
 	-- action id. Tier and modifiers
 	-- are custom attributes ("rift_tier", "rift_mods" = "key:value,key:value"); the name becomes "Rift Key (Tier N)" and
 	-- the description lists the modifiers and the reward bonuses, so looking at a key shows them.

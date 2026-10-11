@@ -21,7 +21,8 @@ replaced, case-insensitively and as whole words, in:
 3. Lua files (Lua monsters, scripts, actions, creature scripts, libs, ...): inside string literals only, never in
    identifiers or comments (storage keys such as Storage.X.YTeleport keep working); a name joined to other words by "_"
    (a key such as "name_kills") or to a word before it by an apostrophe is not a whole word and stays. Strings that are paths are left
-   alone. "a"/"an" right before a renamed name is corrected.
+   alone (a backslash that escapes a quote is no path). A new name with an apostrophe is escaped for the quote style of
+   its string, so the file still parses. "a"/"an" right before a renamed name is corrected.
 A whole-word match that is part of a longer name (an item of items.xml, such as a corpse "dead <name>", or another
 monster that keeps its name) is left to that name. Not touched: data/npc (dialogue, a later rename), data/XML/quests.xml
 (quest log prose), data/scripts/chaos, data/lib/chaos_*.lua and the Chaos monster folders (they come from this
@@ -40,6 +41,8 @@ import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import base_rename_lib as RL  # noqa: E402
 CSV_PATH = os.path.join(os.path.dirname(HERE), 'data', 'monster', 'base_monster_names.csv')
 KINDS = ('monster', 'look')
 REF_DIRS = ('monster', 'world', 'raids', 'scripts', 'actions', 'creaturescripts', 'globalevents', 'movements', 'lib',
@@ -49,7 +52,6 @@ SKIP_DIRS = (os.path.join('scripts', 'chaos'), os.path.join('monster', 'monsters
 SKIP_FILES = (os.path.join('XML', 'quests.xml'),)
 ROOT_FILES = ('global.lua',)
 LOOK_FILES = (os.path.join('XML', 'outfits.xml'), os.path.join('XML', 'mounts.xml'))
-PATHLIKE = re.compile(r'[/\\]|\.(lua|xml|otbm|ogg|wav|png|txt|json|sql)$', re.I)
 ITEM_OWN_ATTRS = ('name', 'article', 'plural')
 
 
@@ -232,7 +234,7 @@ def patch_xml(text, ren, item_file=False):
     """attribute values of every tag"""
     def attr(m):
         key, value = m.group(2), m.group(5)
-        if PATHLIKE.search(value) or key.lower() in ('file', 'script', 'path'):
+        if RL.is_path(value) or key.lower() in ('file', 'script', 'path'):
             return m.group(0)
         if item_file and key.lower() in ITEM_OWN_ATTRS:
             return m.group(0)
@@ -249,54 +251,13 @@ def patch_xml(text, ren, item_file=False):
 
 def lua_string_spans(text):
     """[(start, end)] of the contents of every string literal, comments skipped"""
-    spans, i, n = [], 0, len(text)
-    while i < n:
-        c = text[i]
-        if c == '-' and text.startswith('--', i):
-            m = re.match(r'--\[(=*)\[', text[i:i + 64])
-            if m:
-                close = ']' + m.group(1) + ']'
-                j = text.find(close, i + m.end())
-                i = n if j < 0 else j + len(close)
-            else:
-                j = text.find('\n', i)
-                i = n if j < 0 else j + 1
-            continue
-        if c in '"\'':
-            j = i + 1
-            while j < n and text[j] != c and text[j] != '\n':
-                j += 2 if text[j] == '\\' else 1
-            spans.append((i + 1, min(j, n)))
-            i = j + 1
-            continue
-        if c == '[':
-            m = re.match(r'\[(=*)\[', text[i:i + 64])
-            if m:
-                close = ']' + m.group(1) + ']'
-                j = text.find(close, i + m.end())
-                j = n if j < 0 else j
-                spans.append((i + m.end(), j))
-                i = j + len(close)
-                continue
-        i += 1
-    return spans
+    return RL.lua_string_spans(text)
 
 
 def patch_lua(text, ren):
-    out, last = [], 0
-    for a, b in lua_string_spans(text):
-        value = text[a:b]
-        if PATHLIKE.search(value):
-            continue
-        new = ren(value)
-        if new != value:
-            out.append(text[last:a])
-            out.append(new)
-            last = b
-    if not out:
-        return text
-    out.append(text[last:])
-    return ''.join(out)
+    """ren(value) inside every string literal that is not a path; a new name with a quote character is escaped for
+    the quote style of its string (a name such as "x's y" in a single-quoted string becomes x\\'s y)"""
+    return RL.patch_lua(text, ren)
 
 
 def patch_registrations(text, mon):

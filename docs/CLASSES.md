@@ -404,7 +404,7 @@ registered with `registerMethod`), without touching the gate code.
 
 ### Ascension quest (C9, done)
 
-Ascension is earned through a quest, not claimed with a command. The stock promotion is off: King Tibianus and every other
+Ascension is earned through a quest, not claimed with a command. The stock promotion is off: King Ormund and every other
 promotion NPC of the base server used to promote premium accounts at level 20 to `Vocation:getPromotion()`, which skipped the
 class system and picked one of the two ascended classes more or less at random. `server/tools/patch_promotion.py` (run by
 `install_class_ascension.py`) makes them refuse with a line that points to the quest (server/README.md, install step 4b).

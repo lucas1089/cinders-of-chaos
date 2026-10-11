@@ -179,28 +179,28 @@ server/
    [--dry-run]` (idempotent; `install_all.py` runs it as a class hook). It copies the Ascendant Oracle
    (`server/data/npc/Ascendant Oracle.xml`, `npc/scripts/ascendant_oracle.lua`) into `<server>/data/npc/` and runs
    `server/tools/patch_promotion.py <server>/data`, which makes every stock promotion path refuse: `StdModule.promotePlayer`
-   in `npc/lib/npcsystem/modules.lua` (King Tibianus, Queen Eloise, the emperors, Ishebad, The Forgotten King, ...) says a
+   in `npc/lib/npcsystem/modules.lua` (King Ormund, Queen Isadora, the emperors, Pellen, The Forgotten King, ...) says a
    short line pointing to the Ascendant Oracle and changes nothing; every NPC script that promotes answers "promotion" with
    that line first (a keyword added right after `NpcSystem.parseParameters`), direct `setVocation(<promotion|demotion>)`
    calls in NPC scripts (the "Promo Bug" NPC) are commented out, and the premium branch of the stock
    `creaturescripts/scripts/login.lua` (promotion storage 30018 -> `setVocation(promotion)`) no longer promotes. The tool
    then lists any other promotion in the data folder for a manual check: none in this base server (no talkaction, action
    or store offer promotes; the Oracle of the starting island only sets the first vocation). Verified on the test server:
-   King Tibianus answers "promotion" with the pointer and "yes" does nothing; a premium Warrior with storage 30018 = 1 stays
+   King Ormund answers "promotion" with the pointer and "yes" does nothing; a premium Warrior with storage 30018 = 1 stays
    a Warrior at login. The guardian monsters (`data/monster/monsters/chaos/ascension/`) come with step 5 / the monsters
    step. See "Ascension quest".
 4c. Base NPC dialogues: `python3 -I server/tools/patch_base_npcs.py <server>/data [--dry-run]` (idempotent; `install_all.py`
    runs it with the events step). The base NPC scripts were written for a newer NPC library than the one shipped: replies
-   given as a list of lines (every "twist of fate" priest such as Yberius, Chondur, Myra, A Bearded Woman, the greetings
-   of Al Dee and Umar: 50 replies in 20 scripts) stopped with `npchandler.lua: bad argument #1 to 'gsub' (string
+   given as a list of lines (every "twist of fate" priest such as Dorrik, Yorvane, Ulette, A Bearded Woman, the greetings
+   of Ald Weyr and Bamir: 50 replies in 20 scripts) stopped with `npchandler.lua: bad argument #1 to 'gsub' (string
    expected, got table)`, the blessing priests charged the string `'|BLESSCOST|'` / `'|PVPBLESSCOST|'` ("attempt to compare
    string with number" on "yes") and `|TIME|` was printed as it is. The tool patches `npc/lib` (exact match on the stock
    lines): lists of lines are said line by line, the tags are filled (blessing 2000 gold up to level 30, then 200 per
    level above 20, at most 20000; the twist of fate at most 50000), a node without text says nothing instead of failing
-   (Seymour's dead rats), the delayed lines of a long reply stop when the player logs out. `tools/rename_spells.py` writes
-   an NPC `spellName` with an apostrophe escaped (it broke Ormuhn, Puffels, Thorwulf, Tristan, Uso and Zarak, which did
+   (Sevias's dead rats), the delayed lines of a long reply stop when the player logs out. `tools/rename_spells.py` writes
+   an NPC `spellName` with an apostrophe escaped (it broke Casnath, Whiskerton, Valon, Jashelm, Korbek and Ixesseth, which did
    not load) and repairs the lines an older run wrote. Tested by `tests/npc_lib_test.lua`; verified on the test server
-   (Yberius answers "twist of fate" in four lines, "yes" charges the level's cost and gives the blessing).
+   (Dorrik answers "twist of fate" in four lines, "yes" charges the level's cost and gives the blessing).
 4d. Base crafting script: `python3 -I server/tools/patch_base_crafting.py <server>/data [--dry-run]` (idempotent;
    `install_all.py` step `basecrafting`, after `events`). Closes the duplication hole of the base crafting tables; see
    "Base crafting script".
@@ -284,6 +284,11 @@ server/
 5l. Town names: `python3 -I server/tools/patch_base_towns.py <server>/data [--dry-run]` (idempotent; `install_all.py`
    step `towns`, after `itemnames`) renames the map's towns by id from `tools/base_towns.csv` in the `.otbm` itself
    (`<map>.otbm.bak` keeps the original). See "Town names".
+5l2. The rest of the base world: `python3 -I server/tools/patch_base_npc_names.py <server>/data`, then
+   `patch_base_texts.py <server>/data`, then `patch_base_houses.py <server>/data` (each idempotent, each with
+   `--dry-run`; `install_all.py` steps `npcnames`, `worldtexts` and `houses`, right after `towns`): the NPCs, every text
+   that names the old world (dialogue, travel, quest log, raids, achievements, books and signs of the map) and the house
+   names. See "Base NPC names", "Base world texts" and "Base houses".
 5m. Spawns: `python3 -I server/tools/patch_base_spawns.py <server>/data [--dry-run] [--remove] [--report]` (idempotent;
    `install_all.py` step `spawns`, after `monsters`) fixes the dead monster registrations, the glitched spawntimes and the
    spawns on blocking tiles, shortens the 300-600 band's respawn and adds spawns in thin areas, all from
@@ -3064,9 +3069,8 @@ names in `Game.getTowns()`.
 
 Our own scripts use the new names: the invasion areas (`cinderhold`, `thornmere`, `mirewake`, `cinderholdfields`,
 `thornmerewilds`), the faction NPCs' towns (Cinderhold, Bellwatch, Thornmere, with the ids as the fallback) and the
-places of the boss spawns window. Still named after the old world (not changed, a later decision): the base NPCs'
-dialogue (travel, quests), the quest log (`data/XML/quests.xml`), house names, base raid folders and messages, and the
-base monster and item names. See ROADMAP.md.
+places of the boss spawns window. The base NPCs' dialogue and travel, the quest log, the raids and the house names
+follow since part two of the rename ("Base NPC names", "Base world texts", "Base houses").
 
 ## Base item names (`tools/patch_base_item_names.py`, `data/items/base_item_names.csv`, `tests/base_item_names_patch_test.lua`)
 
@@ -3102,7 +3106,14 @@ only when `items.xml` gave them the same old name (one item kind with several id
 it writes anything. Bonelord items keep their names (the Necromancer's Bonelord line uses the word; generic). On the
 reference server, run after the whole install: 1,182 ids renamed (700 distinct old names), 801 loot entries by name
 turned into ids, 516 other mentions, 318 files; a second run changes nothing. Item names that name NPCs of the other
-world (letters, keepsakes) got new person names that the later NPC rename should reuse or replace by id.
+world (letters, keepsakes) got new person names; the NPC rename ("Base NPC names") reuses them for those NPCs.
+
+Part two added 18 ids whose names still carried a word of the old world or of another game (the trophies of two
+renamed bosses, a mount's statues, a race of another game, a god's throwing star; 1,200 ids now). Since then the tool
+changes only string literals in Lua files and only attribute values in XML files, never a path: a new name with an
+apostrophe is escaped for the quote style of its Lua string, and a movements.xml script path that happened to contain
+an item's old name no longer changes. Fresh install: 1,200 ids (711 old names), 806 loot entries by name turned into
+ids, 387 other mentions; a second run changes nothing.
 
 ## Base monster names (`tools/patch_base_monster_names.py`, `data/monster/base_monster_names.csv`, `tests/base_monster_names_patch_test.lua`)
 
@@ -3146,6 +3157,97 @@ game spawns, professions areas, unique item sources and the client tests. Still 
 decisions): NPC names and dialogue, the quest log, raid folder and file names, house names, the other outfit and mount
 names, one engine effect name the plant monsters use (an engine constant), one base event name that a Chaos monster
 registers, and the two orb names of another game kept as `old =` keys in `chaos_orbs_config.lua` (install_orbs.py).
+NPC names, dialogue, the quest log, raids and houses followed in part two ("Base NPC names" and the next sections).
+
+**Fixed in part two:** a new name with an apostrophe (one boss's new name has one) was written into a single-quoted
+Lua string of a base script, which then failed to load (`'}' expected near 's'`). String literals are now changed
+through `base_rename_lib.patch_lua`, which escapes a quote of the string's own kind (single, double, long brackets),
+and a string with an escaped quote is no longer mistaken for a path. `tests/base_monster_names_patch_test.lua` checks
+it, and after an install every `.lua` of `data/` compiles with `luajit -b` (3,743 files).
+
+## Base NPC names (`tools/patch_base_npc_names.py`, `data/npc/base_npc_names.csv`, `tests/base_world_names_patch_test.lua`)
+
+Owner decision, part two of the rename: the base NPCs get Cinders of Chaos names. Generic names stay ("A Beggar",
+"The Oracle", "Royal Guard", "Santa Claus", the test NPCs); persons get names by kind: dwarves, elves, djinns, lizards,
+orcs and minotaurs names of their own flavour, the gnomes new gnome names (Gnomsalve, Gnomkettle, ...), women and
+men by their outfit. Titles and roles stay (Captain, Guide, King, "the Worker", ", the guard"); captains got sea names
+(Captain Brinehook, Captain Seawolf, Captain Kelpmane). NPCs named by an item of part one keep that person's name
+(the letter's addressee, the keepsake's owner). Our own NPCs (`server/data/npc`) are not touched.
+
+**The CSV holds no old name.** `data/npc/base_npc_names.csv` has the columns `sha256,name,kind,match`: the SHA-256 of
+the old name in lower case (blanks folded), the new name, `npc` (a shown name, also used for dialogue) or `file` (an
+NPC file name that is not its shown name), and `word` or `cap` (see "Base world texts"). 904 rows: 800 shown names, 69
+name parts that dialogue uses alone (a captain's surname, a family name) and 35 file names.
+
+**What it changes** (step `npcnames` of `install_all.py`, after `towns`): the engine loads an NPC by file name (a spawn
+entry `<npc name="X"/>` loads `data/npc/X.xml`), so the NPC file is renamed with its shown name, every `<npc>` entry of
+the spawn and raid files follows, and a Lua string that is exactly an old file name (`Game.createNpc("X", ...)`) too.
+Script files keep their paths (players never see them; `patch_base_classes.py` patches some by path). A file whose new
+name is taken keeps its name and is listed. Two tools that wrote to one base NPC by file name (the desert trader
+Grimgan of `install_pack_items.py` and `install_fist_weapons.py`) find him by his new name, or before this step by the
+sha256 of his old file name. Fresh install: 827 files renamed, 826 shown names, 798 spawn entries, 30 Lua references;
+the server loads every NPC (960 spawn entries, no new warning).
+
+## Base world texts (`tools/patch_base_texts.py`, `tools/base_rename_lib.py`, `data/npc/base_world_names.csv`)
+
+Every text of the base data that names the old world gets the new names: NPC dialogue and keywords, travel
+destinations, the quest log (`data/XML/quests.xml`), raid messages, the base achievements, item descriptions, script
+messages, outfit and mount names, and the texts of signs, books and plaques on the map. Step `worldtexts` of
+`install_all.py`, after `npcnames`.
+
+**Names.** Three hashed lists: `data/npc/base_world_names.csv` (266 rows: the 20 towns as in "Town names", their
+demonyms, the world itself (Cindral), places (Sarvekh, Vhassa, Jadefen, Brassmoor, Gullhaven, Hagmoor Hills, ...), gods
+(Kaedros, Vorthaal, Verdane, Ilvane, ...), factions, persons the old lore names, coined mount names, and words of other
+games that part one left in texts), the NPC list and the monster list. A phrase of 1 to 5 words of the data is looked
+up by its sha256; when two lists know it, the world list wins, then the NPC list, then the monster list. The world's
+ruling caste of Hollowspire are the Spirekin; a demonym is used as an adjective ("the Cinderhold army").
+
+**Rules.** Whole words, case kept (a lower-case keyword stays lower case, so a player says the new name), `a`/`an`
+fixed, a "the ..." name not doubled and capitalized at a sentence start. `match = cap` rows (old names that are also
+English words, such as a colour or a coin) change only where written with a capital letter, or as a keyword (a whole
+string, a `;`-separated element, a short lower-case phrase such as "x sent me"), and not inside the title-case name of
+an outfit or mount (a mount "Crimson X" stays). In Lua only string literals change (identifiers and comments never), escaped
+for their quote style; paths, strings assigned to a file / map / path key (`mapName = '...'` is loaded as
+`data/world/.../<name>.otbm`), spell and talkaction words, engine effect names (`key="areaEffect"`) and the item names
+of `items.xml` stay. Names the data looks things up by stay too: item, monster and NPC names (an item named like an old
+NPC yields where the NPC is meant, written with a capital letter). Our own files are skipped (`data/scripts/chaos`,
+`data/spells/chaos`, `data/lib/chaos_*.lua`, the Chaos monster folders, `server/data/npc`).
+
+**The map.** Item texts and descriptions are attributes of item nodes in the `.otbm`. The tool finds item nodes with
+attributes by their marker bytes, parses each node's attributes (a node with an attribute it does not know is left
+alone), rewrites the strings with their new lengths, escapes the bytes again and splices the node back; the rest of the
+file is copied as it was. Before writing it checks that the item node count and the node markers are the same and that
+every new text reads back, writes through a temporary file and keeps `<map>.otbm.bak` the first time (the towns step
+usually made it already). Read back with `tools/map/otbm.py`: the same 18,185,071 tiles and 23,317,821 item entries,
+every item id in place, towns and temples the same. Pure Python, about 15 s on the reference map.
+
+**Fresh install:** 1,222 old names found (239 world, 831 NPC, 152 monster rows), 6,268 replacements in 642 files (towns
+1,956, NPCs 2,350, places 739, worlds and demonyms 493, gods 192, monsters 149, factions 103, lore 129, persons 119,
+mount words 38), 564 map texts (1,164 replacements). A second whole install changes nothing (0 files, the map's md5
+unchanged). Every `.lua` of `data/` compiles with `luajit -b` (3,743 files).
+
+**Tested on the full map** (test MariaDB, three bot characters over the game protocol, `tools/loadtest.py` setup): the
+captain of Cinderhold's harbour sails to Mirewake ("Do you seek a passage to Mirewake for 170 gold?", the player lands
+at 32954,32022,6), Thornmere's captain to Cinderhold, Bellwatch's to Wyrmscar; a shop NPC opens the trade window; the
+Lions raid announces "There are more lions than usual west of Scorchveil."; no Lua error; compared with the install of
+part one only one console line differs: the base script that the apostrophe broke loads again.
+
+**Left as they are** (not seen by players, or owned by another name): file and folder names (NPC scripts, raid and
+quest folders, the merchant's town maps, script paths, storage and event identifiers such as `portal_<town>`), the
+names of items and monsters that are also old NPC names or plain English words (a staff, a shield and flowers named
+after plain words, one barbarian boss, one expedition monster and a letter that names its family), common English words
+written in lower case in prose ("skip the tutorial"), one engine effect name, and one of our Chaos monsters with the
+base mount of the same coined name.
+
+## Base houses (`tools/patch_base_houses.py`, `tools/base_house_names.csv`)
+
+All 1,057 houses get street names of their town by house id (`id,name`; ids carry no old names). Each old street became
+one new street of the town's flavour, numbers and suffixes kept ("Tallow Row 4 (Shop)", "Gloom Hollows 3", "Kindle Isle
+Cottage #7", "Sunscour Terrace 2, Flat 07", the guildhalls and clanhalls by their town). Step `houses` of `install_all.py`
+writes the names into `<mapName>-house.xml`; ids, entries, rents, towns and sizes stay, so owners and rents in the
+database are untouched. The server writes the loaded names into the `houses` table at its next save; the website's
+house pages (ZnoteX `houses.php`) read that table. Checked: after a start and a shutdown the table has the 1,057 new
+names.
 
 ## World bosses (`worldboss.lua`, `data/monster/monsters/chaos/world_bosses/`)
 
@@ -4772,7 +4874,7 @@ is never sold or trashed with a locked item in it):
 
 | Path | With 0009 |
 |---|---|
-| NPC trade window (every NPC with `module_shop`, Yasir, the Wandering Merchant, NPCs with their own `onSell`) | The sale list does not count locked items (a locked-only item is not offered). A sale only locked copies could fill is refused by the engine before the NPC script runs: "Locked items cannot be sold." With one locked and one unlocked copy, selling 1 takes the unlocked one, selling 2 is refused. |
+| NPC trade window (every NPC with `module_shop`, Grimgan, the Wandering Merchant, NPCs with their own `onSell`) | The sale list does not count locked items (a locked-only item is not offered). A sale only locked copies could fill is refused by the engine before the NPC script runs: "Locked items cannot be sold." With one locked and one unlocked copy, selling 1 takes the unlocked one, selling 2 is refused. |
 | `player:removeItem(id, n)` (NPC selling, quest and NPC turn-ins, exchanges, any script removing by id) | Skips locked items. Fifth argument `includeLocked = true` takes them too (only the staff panel's "Remove item" uses it). |
 | `player:getItemCount(id)` (turn-in checks) | Does not count locked items; third argument `includeLocked = true` counts them. A turn-in with only locked copies fails as if the player had none. |
 | Market (sell offer, accepting a buy offer) | Never takes a locked item (`Item::hasMarketAttributes()`; any custom attribute already kept rolled items off the market). |
@@ -7414,20 +7516,20 @@ class count as one stock vocation:
 
 - `lib/core/player.lua`: `CHAOS_STOCK_VOCATION` (the table), `Player.getStockVocationId()`, `Player.getStockBaseVocationId()`
   (1-4); the six `is...` functions answer by it (`isIllusionist` is always false: the base server's own Illusionist is retired).
-  Everything that asks them follows: Bozo, the mirror image boss, Arkulius, the free first wand.
+  Everything that asks them follows: Jangles, the mirror image boss, Maran, the free first wand.
 - By the stock id instead of the vocation id: the elemental spheres (lever, machine, soils, enchanting gems), the desert
-  dungeon (one of each vocation), the Pits of Inferno fire tiles, the sorcerer guild tiles, the shrine, Daram and soil
-  portals, the free first wand / rod (Magido, Asima, Rachel, Topsy, Alexander, Xodet, Fenech, `runes.lua`), the monster
+  dungeon (one of each vocation), the Pits of Inferno fire tiles, the sorcerer guild tiles, the shrine, Sarvekh and soil
+  portals, the free first wand / rod (Yoris, Veselle, Belora, Isora, Randan, Odran, Barvin, `runes.lua`), the monster
   spell Astro Wave (the new lines were immune to it). Refusal texts name our classes.
 - NPC spell teachers (`KeywordHandler:addSpellKeyword`): the spell's own list in `spells.xml` decides (the NPC's stock
   vocation only when the spell is unknown). All player spells are `needlearn="0"`, so this is about the offer only.
 - Exercise weapons: sword Warrior / Thief / Templar lines, axe and shield Warrior / Templar, club Warrior / Monk / Templar,
   bow Ranger / Thief, rod and wand Mystic / Necromancer (the Berserker was refused before).
 - Party shared experience: the bonus for different vocations counts the class lines, at most 5 (the stock x2.5).
-- The vocation Oracles (The Oracle, The Oracle3, Captain Dreadnought): Warrior, Ranger, Mystic, Thief (the old words choose
+- The vocation Oracles (The Oracle, The Oracle3, Captain Ironwake): Warrior, Ranger, Mystic, Thief (the old words choose
   the matching class); the locked lines stay with the store's class unlock. Before: druid / illusionist set ids 2 / 9, and
   the equipment lookup by the stock name failed after the vocation was set.
-- The Dead Bureaucrats (Pits of Inferno) know the new base classes; Arkulius gives the frozen plate instead of the
+- The Dead Bureaucrats (Pits of Inferno) know the new base classes; Maran gives the frozen plate instead of the
   ironworker crossbow to the Beastmaster, Thief and Monk lines (they cannot fire it).
 - Item upgrade slots read our class names from the item text; the opcode 73 highscores filter takes numbers only (it went
   into the SQL as sent) and a stock id also lists the classes that count as it.
@@ -7438,9 +7540,9 @@ class count as one stock vocation:
 
 Tests: `server/tests/base_classes_test.lua` (the tool on condensed stock files, then every class on a mock engine).
 Verified on the test server (bots over the game protocol, all 21 classes): the stock helpers and the familiar of every class;
-Magido gives a Necromancer the wand, an Illusionist the rod and refuses a Thief; Gregor teaches Bloodtrail to a Berserker and
+Yoris gives a Necromancer the wand, an Illusionist the rod and refuses a Thief; Brenin teaches Bloodtrail to a Berserker and
 a Ranger, not to a Templar; The Oracle3 makes a vocation-less character a Thief with the equipment; the Dead Bureaucrat
-accepts a Thief ("Thief", then the Pumin storage); Arkulius gives a Thief the frozen plate, a Ranger the ironworker and a
+accepts a Thief ("Thief", then the Velgrim storage); Maran gives a Thief the frozen plate, a Ranger the ironworker and a
 Templar the windborn colossus armor. No Lua errors.
 
 ## Class lock (`class_unlocks.lua`, `class_unlocks_core.lua`, `sql/chaos_class_unlocks.sql`)
@@ -8131,13 +8233,13 @@ Art from the October 2026 art sets, converted to our 32 px format once and kept 
   when other tools append items first), server id = client id + 3000 (36010-36650); outfits 2000-2038 (padded the same
   way). Clear of the base items (up to 29926), dark tiles (30484-30557), gems (32001-32035) and donor items (40000-40111).
 - Install: step `packitems` of `install_all.py` (`python3 -I server/tools/install_pack_items.py DATA_DIR [--dry-run]`):
-  items.otb nodes and an items.xml block for the new items, the new looks, and the creature products in Yasir's
-  `shop_sellable` list (`data/npc/Yasir.xml`, at the prices of the manifest). Idempotent. After a change of the manifest:
+  items.otb nodes and an items.xml block for the new items, the new looks, and the creature products in Grimgan's
+  `shop_sellable` list (`data/npc/Grimgan.xml`, at the prices of the manifest). Idempotent. After a change of the manifest:
   `install_pack_items.py --lua` rewrites `data/lib/chaos_pack_items.lua`.
 - New looks (mode `replace`: only the client id of the existing items.otb node changes, names and scripts stay): Orb of
   Gilding 24691, Orb of Unmaking 24697, Orb of Erasure 24688 (they were plain rune stones), and the seven ore pieces of
   the mining profession 26398-26404 (they were small dots).
-- Creature products 36010-36036 (27, stackable, loot of the new monsters, sold to Yasir for 8-120 gold) and food
+- Creature products 36010-36036 (27, stackable, loot of the new monsters, sold to Grimgan for 8-120 gold) and food
   36037-36060 (24, eaten like the stock food by `pack_items.lua`: food x 12 s of regeneration, "You are full" at 1200 s).
 - Corpses 36061-36099: one per new monster, the creature's last death frame with its colours, a container of 20 that
   disappears after 10 minutes.
@@ -8158,7 +8260,7 @@ Art from the October 2026 art sets, converted to our 32 px format once and kept 
   kills leave the new corpse with loot (Goblin Chieftain, Goblin Grunt, Mushroom King, Forest Wolf, Owlbear, Myconid
   Shaman), food eaten ("Yum."), the orb and ore looks in the backpack, grounds with borders, waters with shores, lake
   objects, docks, trees and stumps placed on runtime tiles. Not tested: an invasion of the new factions (the cropped test
-  map has no valid town area; `tests/invasion_test.lua` passes with them), selling to Yasir (he is not on the test map).
+  map has no valid town area; `tests/invasion_test.lua` passes with them), selling to Grimgan (he is not on the test map).
 
 ## Fist weapons (`tools/install_fist_weapons.py`, `data/lib/chaos_fist_weapons.lua`, `scripts/chaos/fist_weapons.lua`)
 The Monk line's fist weapons (docs/CLASSES.md "Monk"): six new items of our own art (client ids 33654..33659, server ids
@@ -8171,9 +8273,9 @@ attack instead of the level value when it is higher (`ChaosMonk.cfg.unarmed.fist
 |---|---|---|---|---|
 | pair of charred hand wraps | 8 | 42 | 4 | weapon dealers 400 gp (buy back 80); Monk 0.9%, Dark Monk 0.7% |
 | ashbound cestus | 60 | 44 | 8 | weapon dealers 7,000 gp (buy back 1,400); Undead Gladiator 0.4%, Renegade Knight 0.3% |
-| pair of ember knuckles | 150 | 46 | 12 | Burning Gladiator 0.35%, Hellfire Fighter 0.3%; Yasir buys 4,500 |
-| ossuary gauntlet | 300 | 50 | 16 | Bonecleaver, Doombone, Bonelich, Grimbone, Bonecrusher 0.25%; Yasir buys 12,000 |
-| pair of cinderforged talons | 500 | 55 | 20 | Inferno Juggernaut, Nightflare Dreadknight, Grindmaw the Mauler 0.15%, Orclops Ravager 0.12%; Yasir buys 28,000 |
+| pair of ember knuckles | 150 | 46 | 12 | Burning Gladiator 0.35%, Hellfire Fighter 0.3%; Grimgan buys 4,500 |
+| ossuary gauntlet | 300 | 50 | 16 | Bonecleaver, Doombone, Bonelich, Grimbone, Bonecrusher 0.25%; Grimgan buys 12,000 |
+| pair of cinderforged talons | 500 | 55 | 20 | Inferno Juggernaut, Nightflare Dreadknight, Grindmaw the Mauler 0.15%, Orclops Ravager 0.12%; Grimgan buys 28,000 |
 | Grasp of the Pyre Saint (unique, base "pyre saint's grasp") | 650 | 64 | 24 | legendary unique only (`chaos_unique_items.lua`): fist skill +5, crit 4% / +15%, fire absorb 6% |
 
 - Balance: bare fists are 40 + level x 0.025 (at most 60), so each tier is about 2 attack above them at its level: x1.04
@@ -8186,7 +8288,7 @@ attack instead of the level value when it is higher (`ChaosMonk.cfg.unarmed.fist
 - Install: step `fistweapons` of `install_all.py` (`python3 -I server/tools/install_fist_weapons.py DATA_DIR [--dry-run]`):
   items.otb nodes, an items.xml block, a movements.xml block (Equip / DeEquip, slot shield, the level, Monk / Shadowfist /
   Iron Sage), and the NPC shops: every weapon dealer (an XML buy list with the battle hammer, 17 NPCs) sells the first two
-  and buys them back, Yasir buys the rest. `install_fist_weapons.py --lua` rewrites `data/lib/chaos_fist_weapons.lua` from
+  and buys them back, Grimgan buys the rest. `install_fist_weapons.py --lua` rewrites `data/lib/chaos_fist_weapons.lua` from
   `data/items/fist_items.csv` (the importer's manifest). `add_vocations.py` gives the Monk line any fist weapon equip entry
   (rule `fist`), so a re-run never changes these entries.
 - Loot: `fist_weapons.lua` adds the rows of `ChaosFistWeapons.loot` to the monster types at startup

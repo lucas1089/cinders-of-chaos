@@ -1,0 +1,1058 @@
+id,name
+2,Tallow Row 4 (Shop)
+4,Tallow Row 3
+5,Tallow Row 2
+6,Tallow Row 1
+7,Old Beacon
+8,Heronwalk 1
+9,Heronwalk 2
+10,Mistwater Lane 4
+11,Sedge Street 2
+12,Sedge Street 1
+13,Sedge Street 3
+14,Sedge Street 4
+15,Mistwater Lane 3
+16,Mistwater Lane 2
+18,"Rushlight Tenements, Flat 13"
+19,"Rushlight Tenements, Flat 12"
+23,"Rushlight Tenements, Flat 14"
+24,"Rushlight Tenements, Flat 15"
+25,"Rushlight Tenements, Flat 16"
+26,"Rushlight Tenements, Flat 17"
+27,"Rushlight Tenements, Flat 18"
+28,"Rushlight Tenements, Flat 01"
+29,"Rushlight Tenements, Flat 02"
+30,"Rushlight Tenements, Flat 03"
+31,"Rushlight Tenements, Flat 04"
+32,"Rushlight Tenements, Flat 05"
+33,"Rushlight Tenements, Flat 06"
+34,"Rushlight Tenements, Flat 07"
+35,"Rushlight Tenements, Flat 21"
+36,"Rushlight Tenements, Flat 22"
+37,"Rushlight Tenements, Flat 23"
+38,"Rushlight Tenements, Flat 24"
+39,"Rushlight Tenements, Flat 26"
+40,"Rushlight Tenements, Flat 28"
+41,"Rushlight Tenements, Flat 27"
+42,"Rushlight Tenements, Flat 25"
+43,"Rushlight Tenements, Flat 31"
+44,"Rushlight Tenements, Flat 32"
+45,"Rushlight Tenements, Flat 33"
+46,"Rushlight Tenements, Flat 34"
+47,Lanternwick Street 1 (Shop)
+49,Mistwater Lane 1 (Shop)
+50,Peatshield Guildhall
+51,Stiletto Alley 1
+52,Ironreed Home
+53,Rivet Alley 1
+54,Rivet Alley 2
+55,Bogwatch
+57,Lanternwick Street 2
+60,Lanternwick Street 3
+61,Pewter Street 3
+62,Brassaxe Guildhall
+63,Pewter Street 1
+64,Pewter Street 2
+66,Pewter Street 4
+67,Willowisp Lane 2
+69,Willowisp Lane 1
+70,Coffer Lane 1 (Shop)
+71,Tallow Row 6
+72,Tallow Row 7
+73,Tallow Row 5 (Shop)
+194,Fortune Lane 1 (Shop)
+208,Rootdeep 1
+209,Rootdeep 2
+210,Rootdeep 5
+211,Rootdeep 3
+212,Rootdeep 4
+213,Rootdeep 10
+214,Rootdeep 6
+215,Elder Bough 1a
+216,Elder Bough 1b
+217,Elder Bough 1c
+218,Elder Bough 2d
+219,Elder Bough 2c
+220,Elder Bough 2b
+221,Elder Bough 2a
+222,Elder Bough 3d
+223,Elder Bough 3c
+224,Elder Bough 3b
+225,Elder Bough 3a
+226,Elder Bough 4b
+227,Elder Bough 4c
+228,Elder Bough 4d
+229,Elder Bough 4a
+230,Rootdeep 7
+231,Gloom Hollows 3
+232,Gloom Hollows 4
+233,Gloom Hollows 2
+234,Gloom Hollows 1
+235,Gloom Hollows 17
+236,Gloom Hollows 18
+237,Gloom Hollows 15
+238,Gloom Hollows 16
+239,Gloom Hollows 13
+240,Gloom Hollows 14
+241,Gloom Hollows 11
+242,Gloom Hollows 12
+243,Gloom Hollows 27
+244,Gloom Hollows 28
+245,Gloom Hollows 25
+246,Gloom Hollows 26
+247,Gloom Hollows 23
+248,Gloom Hollows 24
+249,Gloom Hollows 21
+250,Gloom Hollows 22
+251,Rootdeep 9
+252,Canopy Rise 13
+254,Rootdeep 8
+255,Saltroot 4
+256,Shorebark 10
+257,Saltroot 1
+258,Shorebark 1
+259,Shorebark 2
+260,Saltroot 2
+262,Saltroot 3
+263,Shorebark 9
+264,Shorebark 8
+265,Shorebark 6 (Shop)
+266,Shorebark 7
+267,Shorebark 5
+268,Shorebark 4
+269,Shorebark 3
+270,Canopy Rise 11
+271,Canopy Rise 5 (Shop)
+272,Canopy Rise 7
+273,Canopy Rise 6
+274,Canopy Rise 8
+275,Canopy Rise 9
+276,Canopy Rise 10
+277,Canopy Rise 4 (Shop)
+278,Canopy Rise 3 (Shop)
+279,Canopy Rise 2
+280,Canopy Rise 1
+281,Canopy Rise 12 (Shop)
+469,"Sunscour Terrace 2, Flat 07"
+470,"Sunscour Terrace 2, Flat 01"
+471,"Sunscour Terrace 2, Flat 02"
+472,"Sunscour Terrace 2, Flat 06"
+473,"Sunscour Terrace 2, Flat 05"
+474,"Sunscour Terrace 2, Flat 04"
+475,"Sunscour Terrace 2, Flat 03"
+476,"Sunscour Terrace 2, Flat 13"
+477,"Sunscour Terrace 2, Flat 12"
+478,"Sunscour Terrace 2, Flat 11"
+479,"Sunscour Terrace 2, Flat 14"
+480,"Sunscour Terrace 2, Flat 15"
+481,"Sunscour Terrace 2, Flat 16"
+482,"Sunscour Terrace 2, Flat 17"
+483,"Sunscour Terrace 2, Flat 18"
+484,"Sunscour Terrace 1, Flat 05"
+485,"Sunscour Terrace 1, Flat 01"
+486,"Sunscour Terrace 1, Flat 04"
+487,"Sunscour Terrace 1, Flat 03"
+488,"Sunscour Terrace 1, Flat 02"
+490,"Sunscour Terrace 1, Flat 12"
+491,"Sunscour Terrace 1, Flat 11"
+492,"Sunscour Terrace 1, Flat 13"
+493,"Sunscour Terrace 1, Flat 14"
+494,"Sunscour Terrace 4, Flat 01"
+495,"Sunscour Terrace 4, Flat 05"
+496,"Sunscour Terrace 4, Flat 04"
+497,"Sunscour Terrace 4, Flat 03"
+498,"Sunscour Terrace 4, Flat 02"
+499,"Sunscour Terrace 4, Flat 13"
+500,"Sunscour Terrace 4, Flat 14"
+501,"Sunscour Terrace 4, Flat 11"
+502,"Sunscour Terrace 4, Flat 12"
+503,"Sunscour Terrace 7, Flat 05"
+504,"Sunscour Terrace 7, Flat 01"
+505,"Sunscour Terrace 7, Flat 02"
+506,"Sunscour Terrace 7, Flat 03"
+507,"Sunscour Terrace 7, Flat 04"
+508,"Sunscour Terrace 7, Flat 14"
+509,"Sunscour Terrace 7, Flat 13"
+510,"Sunscour Terrace 7, Flat 11"
+511,"Sunscour Terrace 7, Flat 12"
+512,"Sunscour Terrace 5, Flat 01"
+513,"Sunscour Terrace 5, Flat 05"
+514,"Sunscour Terrace 5, Flat 02"
+515,"Sunscour Terrace 5, Flat 03"
+516,"Sunscour Terrace 5, Flat 04"
+517,"Sunscour Terrace 5, Flat 11"
+518,"Sunscour Terrace 5, Flat 12"
+519,"Sunscour Terrace 5, Flat 13"
+520,"Sunscour Terrace 5, Flat 14"
+521,Sunscour Terrace 6a
+522,Sunscour Terrace 6b
+523,"Sunscour Terrace, Villa"
+525,"Scorchveil, Western Guildhall"
+526,"Sunscour Terrace 3, Flat 01"
+527,"Sunscour Terrace 3, Flat 05"
+529,"Sunscour Terrace 3, Flat 02"
+530,"Sunscour Terrace 3, Flat 03"
+531,"Sunscour Terrace 3, Flat 04"
+532,"Sunscour Terrace 3, Flat 13"
+533,"Sunscour Terrace 3, Flat 14"
+534,"Sunscour Terrace 3, Flat 11"
+535,"Sunscour Terrace 3, Flat 12"
+541,"Sunscour Terrace 8, Flat 11"
+542,"Sunscour Terrace 8, Flat 12"
+544,"Sunscour Terrace 8, Flat 14"
+545,"Sunscour Terrace 8, Flat 13"
+574,Nebet Court I j
+575,Nebet Court I f
+576,Nebet Court I i
+577,Nebet Court I g
+578,Nebet Court I h
+579,Nebet Court I d
+580,Nebet Court I b
+581,Nebet Court I c
+582,Nebet Court I e
+583,Nebet Court I a
+584,Ankhara Hall I
+585,Khepri Row III
+586,Seshet Court I d
+587,Seshet Court I c
+588,Seshet Court I b
+589,Seshet Court I a
+590,Khepri Row II
+591,Duat Court II h
+592,Duat Court II g
+593,Duat Court II f
+594,Duat Court II b
+595,Duat Court II c
+596,Duat Court II d
+597,Duat Court II e
+599,Duat Court II a
+600,Ibisgate Court I c (Shop)
+601,Ibisgate Court I d (Shop)
+602,Ibisgate Court I a (Shop)
+603,Ibisgate Court I b (Shop)
+604,Duat Court I c
+605,Duat Court I d
+606,Duat Court I b
+607,Duat Court I a
+608,Sandreed Hall I
+609,Khepri Row I b
+610,Khepri Row I a
+611,Saffron Court I d
+612,Saffron Court I c
+613,Saffron Court I b
+614,Saffron Court I a
+615,Saffron Court II e
+616,Saffron Court II f
+617,Saffron Court II d
+618,Saffron Court II c
+619,Saffron Court II b
+620,Saffron Court II a
+621,Scarab Hall I
+622,Sekhmet Row I
+623,Saffron Court III d
+624,Saffron Court III c
+625,Saffron Court III e
+626,Saffron Court III f
+627,Saffron Court III b
+628,Saffron Court III a
+629,Lotus Court I d
+630,Lotus Court I e
+631,Lotus Court I g
+632,Lotus Court I f
+633,Lotus Court I c
+634,Lotus Court I b
+635,Lotus Court I a
+636,Sekhmet Row II
+637,Sekhmet Row III
+638,Lotus Court II b
+639,Lotus Court II c
+640,Lotus Court II d
+641,Lotus Court II a
+642,Sekhmet Row IV
+643,Obelisk Court I b
+644,Obelisk Court I c
+645,Obelisk Court I e
+646,Obelisk Court I d
+647,Obelisk Court I a
+648,Obelisk Court II b
+649,Obelisk Court II c
+650,Obelisk Court II d
+651,Obelisk Court II a
+653,Dunewind Court II a
+654,Gilded Court II
+655,Gilded Court I e
+656,Gilded Court I d
+657,Gilded Court I f
+658,Gilded Court I b
+659,Gilded Court I c
+660,Gilded Court I a
+661,Papyrus Court I c
+662,Papyrus Court I e
+663,Papyrus Court I d
+664,Papyrus Court I b
+666,Falcon Hall
+667,Dunewind Court III b
+668,Dunewind Court III a
+669,Dunewind Court IV b
+670,Dunewind Court IV c
+671,Dunewind Court IV d
+672,Dunewind Court IV a
+673,Papyrus Court II e
+674,Papyrus Court II g
+675,Papyrus Court II f
+676,Papyrus Court II d
+677,Papyrus Court II c
+678,Papyrus Court II b
+679,Papyrus Court II a
+680,Papyrus Court III g
+681,Papyrus Court III f
+682,Papyrus Court III h
+683,Papyrus Court III d
+684,Papyrus Court III e
+685,Papyrus Court III b
+686,Papyrus Court III c
+687,Papyrus Court III a
+688,Papyrus Court IV i
+689,Papyrus Court IV h
+690,Papyrus Court IV f
+691,Papyrus Court IV g
+692,Papyrus Court IV c
+693,Papyrus Court IV e
+694,Papyrus Court IV d
+695,Papyrus Court IV b
+696,Papyrus Court IV a
+697,Natron Hall
+698,Plantain Bay 1
+699,Plantain Bay 2
+700,Plantain Bay 3
+701,Plantain Bay 4
+702,Barracuda Manor
+703,Palmnut Quay 1
+704,Palmnut Quay 2
+705,Palmnut Quay 3
+706,Palmnut Quay 4
+707,Caiman Bridge 3
+708,Caiman Bridge 2
+709,Caiman Bridge 1
+710,Canebrake Garden 1
+711,Caiman Bridge 4
+712,Caiman Bridge 5
+713,Lianaway 1
+714,Lianaway 2
+715,Lianaway 3
+716,Lianaway 4
+717,Ibis Flats 5
+718,Canebrake Fortress
+719,Canebrake Garden 3
+720,Canebrake Garden 2
+721,Ibis Flats 4
+722,Ibis Flats 2
+723,Ibis Flats 3
+724,Ibis Flats 1
+725,Vineedge 4
+726,Vineedge 5
+727,Vineedge 6
+728,Vineedge 2
+729,Vineedge 3
+730,Vineedge 1
+731,Barterer's Haunt 6
+732,Barterer's Haunt 5 (Shop)
+733,Barterer's Haunt 4a (Shop)
+734,Barterer's Haunt 4b (Shop)
+735,Barterer's Haunt 3
+736,Barterer's Haunt 2
+737,Barterer's Haunt 1
+738,Fever River Homes 1
+739,Fever River Homes 2a
+740,Fever River Homes 2b
+741,Fever River Homes 3
+742,The Canopy House
+743,Rime Corner Shop (Shop)
+744,Ivory Flats 1
+745,Ivory Flats 2
+746,Ivory Flats 3
+747,Ivory Flats 4
+748,Ivory Flats 6
+749,Ivory Flats 5
+750,Rimeshadow Rocks 5
+751,Rimeshadow Rocks 4 (Shop)
+752,Rimeshadow Rocks 3
+753,Rimeshadow Rocks 2
+754,Rimeshadow Rocks 1
+755,Icicle Glance
+756,Bloodring Walk 3
+757,Bloodring Walk 2
+758,Bloodring Walk 1
+759,Bearclaw 2
+760,Bearclaw 1
+761,Skald Homes 5
+762,Icefall Side 3
+763,Icefall Side 2
+764,Icefall Side 1
+765,Skald Homes 1
+766,Skald Homes 2
+767,Skald Homes 3
+768,Skald Homes 4
+770,Icefall Side 4
+771,Ledge Site
+772,Crowfeather Corner 1
+773,Crowfeather Corner 2
+774,Crowfeather Corner 3
+775,Bearclaw 3
+776,Bearclaw 4
+778,Bearclaw 5
+779,Char Plaza 5 (Shop)
+780,Herring Crates 1
+781,Herring Crates 2
+782,Herring Crates 3
+783,Herring Crates 4
+784,Herring Crates 5
+785,Herring Crates 10
+786,Herring Crates 9
+787,Herring Crates 8
+789,Herring Crates 7
+790,Herring Crates 6
+791,Char Plaza 1
+792,Char Plaza 2
+793,Char Plaza 3
+794,Char Plaza 4
+795,Longboat End 1
+796,Longboat End 2
+797,Pelt Quarter 3
+798,Woolhide Belly
+799,Pelt Quarter 2
+800,Pelt Quarter 1
+801,Hoarfrost Shelf 3
+802,Hoarfrost Shelf 4
+803,Hoarfrost Shelf 2
+804,Hoarfrost Shelf 1
+805,Rime Manor
+831,Basalt Guildhall
+832,Slag Guildhall
+833,The Bellows Market 1 (Shop)
+834,The Bellows Market 3 (Shop)
+835,The Bellows Market 2 (Shop)
+836,The Bellows Market 4 (Shop)
+837,Whetstone Guildhall
+838,Upper Delvings 1
+850,Upper Delvings 13
+851,Thane Quarter 4
+852,Thane Quarter 5
+853,Thane Quarter 7
+854,Thane Quarter 6
+855,Thane Quarter 8
+856,Thane Quarter 9
+857,Thane Quarter 2
+858,Thane Quarter 3
+859,Thane Quarter 1
+863,"The Fungus Terraces 6, Fishing Hut"
+864,The Fungus Terraces 5
+866,The Fungus Terraces 3
+867,The Fungus Terraces 2
+868,The Fungus Terraces 1
+886,Cutpurse Keep
+889,Mosslight Gardens 3
+890,Mosslight Gardens 4
+892,Mosslight Gardens 5
+893,Mosslight Gardens 6
+894,Mosslight Gardens 8
+895,Mosslight Gardens 7
+900,Wargtower
+901,"Rushlight Tenements, Flat 11"
+905,Papyrus Court I a
+906,Dunewind Court I
+907,Dunewind Court II b
+1883,Gildspire Court 1
+1884,Gildspire Court 2
+1885,Gildspire Court 3
+1886,Gildspire Court 4
+1887,Auspice Wing 1
+1888,Auspice Wing 2
+1889,Auspice Wing 3
+1890,Auspice Wing 4
+1891,Lumen Arc 1
+1892,Lumen Arc 2
+1893,Lumen Arc 3
+1894,Lumen Arc 4
+1895,Gleaming Plaza 1
+1896,Gleaming Plaza 2
+1897,Gleaming Plaza 3
+1898,Gleaming Plaza 4
+1899,Spire Palace
+1900,Halls of Stillness
+1901,Cascade Spires
+1902,Warlock's Avenue 5
+1903,Warlock's Avenue 1a
+1904,Warlock's Avenue 1b
+1905,Warlock's Avenue 1c
+1906,"Strand Court, Flat 06"
+1907,"Strand Court, Flat 01"
+1908,"Strand Court, Flat 02"
+1909,"Strand Court, Flat 03"
+1910,"Strand Court, Flat 04"
+1911,"Strand Court, Flat 05"
+1912,"Strand Court, Flat 16"
+1913,"Strand Court, Flat 11"
+1914,"Strand Court, Flat 12"
+1915,"Strand Court, Flat 13"
+1916,"Strand Court, Flat 14"
+1917,"Strand Court, Flat 15"
+1918,Cinderhold Clanhall
+1919,Wharf Street 4
+1920,Cinderhold Hostel
+1921,Lower Fenside Lane 1
+1923,Lower Fenside Lane 3
+1924,"Duskfall Homes, Flat 01"
+1925,"Duskfall Homes, Flat 02"
+1926,"Duskfall Homes, Flat 03"
+1927,"Duskfall Homes, Flat 14"
+1929,"Duskfall Homes, Flat 13"
+1930,"Duskfall Homes, Flat 12"
+1932,"Duskfall Homes, Flat 11"
+1935,"Duskfall Homes, Flat 24"
+1936,"Duskfall Homes, Flat 23"
+1937,"Duskfall Homes, Flat 22"
+1938,"Duskfall Homes, Flat 21"
+1939,Wharf Place 1 (Shop)
+1940,Wharf Place 2 (Shop)
+1941,Blademasters Guildhall
+1942,"Furrow Lane, 1st floor (Shop)"
+1943,"Furrow Lane, Basement (Shop)"
+1944,"Kingsway 9, 1st floor (Shop)"
+1945,"Kingsway 9a, 2nd floor (Shop)"
+1946,"Kingsway 9b, 2nd floor (Shop)"
+1947,"Furrow Lane, 2nd Floor (Shop)"
+1948,Ashen Rampart 5a
+1949,Ashen Rampart 5c
+1950,Ashen Rampart 5e
+1951,Ashen Rampart 5b
+1952,Ashen Rampart 5d
+1953,Ashen Rampart 5f
+1954,Ashen Rampart 3a
+1955,Ashen Rampart 3b
+1956,Ashen Rampart 3c
+1957,Ashen Rampart 3d
+1958,Ashen Rampart 3e
+1959,Ashen Rampart 3f
+1960,Ashen Rampart 1a
+1961,Grindstone Avenue 3
+1962,Ashen Rampart 1b
+1963,Grindstone Avenue 4
+1964,Grindstone Avenue 5
+1965,Grindstone Avenue 1 (Shop)
+1966,Grindstone Avenue 2 (Shop)
+1967,Ashen Rampart 7c
+1968,Ashen Rampart 7a
+1969,Ashen Rampart 7e
+1970,Ashen Rampart 7g
+1971,Ashen Rampart 7d
+1972,Ashen Rampart 7b
+1973,Ashen Rampart 7f
+1974,Ashen Rampart 7h
+1975,Ashen Rampart 9
+1976,Upper Fenside Lane 12
+1977,Upper Fenside Lane 10
+1978,Upper Fenside Lane 8
+1979,Southern Cinderhold Guildhall
+1980,"Emberhall Flats, Flat 04"
+1981,"Emberhall Flats, Flat 05"
+1982,"Emberhall Flats, Flat 06"
+1983,"Emberhall Flats, Flat 07"
+1984,"Emberhall Flats, Flat 08"
+1985,"Emberhall Flats, Flat 03"
+1986,"Emberhall Flats, Flat 01"
+1987,"Emberhall Flats, Flat 02"
+1988,"Emberhall Flats, Flat 14"
+1989,"Emberhall Flats, Flat 15"
+1990,"Emberhall Flats, Flat 16"
+1991,"Emberhall Flats, Flat 17"
+1992,"Emberhall Flats, Flat 18"
+1993,"Emberhall Flats, Flat 13"
+1994,"Emberhall Flats, Flat 12"
+1995,"Emberhall Flats, Flat 11"
+1996,"Emberhall Flats, Flat 24"
+1997,"Emberhall Flats, Flat 25"
+1998,"Emberhall Flats, Flat 26"
+1999,"Emberhall Flats, Flat 27"
+2000,"Emberhall Flats, Flat 28"
+2001,"Emberhall Flats, Flat 23"
+2002,"Emberhall Flats, Flat 22"
+2003,"Emberhall Flats, Flat 21"
+2004,Upper Fenside Lane 4
+2005,Upper Fenside Lane 2
+2006,Warlock's Avenue Labs 2c
+2007,Warlock's Avenue Labs 2d
+2008,Warlock's Avenue Labs 2e
+2009,Warlock's Avenue Labs 2f
+2010,Warlock's Avenue Labs 2b
+2011,Warlock's Avenue Labs 2a
+2012,Whalebone Circle 1
+2013,Commodore's Avenue 3
+2014,Commodore's Avenue 2
+2015,Commodore's Avenue 1
+2016,Molasses Street 5
+2017,Corsair Street 1
+2018,Corsair Street 2
+2019,Chandler's Point 2 (Shop)
+2020,Chandler's Point 3 (Shop)
+2021,Whalebone Circle 2
+2022,The Grog House 1a
+2023,The Grog House 1b
+2024,The Grog House 1c
+2025,The Grog House 1d
+2026,The Grog House 2d
+2027,The Grog House 2c
+2028,The Grog House 2b
+2029,The Grog House 2a
+2030,Wharfrat's Corner 4
+2031,Wharfrat's Corner 3
+2032,Wharfrat's Corner 2
+2033,Driftwood Promenade 5
+2034,Driftwood Promenade 4
+2035,Driftwood Promenade 3
+2036,Driftwood Promenade 2
+2037,Driftwood Promenade 1
+2038,The Lee
+2039,Wharfrat's Corner 6
+2040,Wharfrat's Corner 5
+2042,Grog Alley 3
+2043,Wharfrat's Corner 1
+2044,Grog Alley 2
+2045,Grog Alley 1
+2046,Contraband Yard 3
+2048,Cutlass Trail 3
+2049,Cutlass Trail 1
+2050,Cutlass Trail 2
+2051,Contraband Yard 5
+2052,Contraband Yard 4
+2053,Contraband Yard 2
+2054,Contraband Yard 1
+2055,Molasses Street 2
+2056,Molasses Street 1
+2057,Molasses Street 3a
+2058,Molasses Street 3b
+2059,"Reaper's Rest, Flat 01"
+2060,"Reaper's Rest, Flat 03"
+2061,"Reaper's Rest, Flat 05"
+2062,"Reaper's Rest, Flat 02"
+2063,"Reaper's Rest, Flat 04"
+2064,"Reaper's Rest, Flat 06"
+2065,"Reaper's Rest, Flat 07"
+2066,"Reaper's Rest, Flat 09"
+2067,"Reaper's Rest, Flat 11"
+2068,"Reaper's Rest, Flat 12"
+2069,"Reaper's Rest, Flat 10"
+2070,"Reaper's Rest, Flat 08"
+2071,Coral Lane 4
+2072,Coral Lane 2
+2073,Coral Lane 3
+2074,Coral Lane 1
+2075,Kelp Cottage
+2076,Molasses Street 4d
+2077,Molasses Street 4c
+2078,Molasses Street 4b
+2079,Molasses Street 4a
+2080,Chandler's Point 1
+2081,Cliffside Hideout
+2082,Sootstone Mansion
+2083,Halls of the Wayfarers
+2084,Castle of Greenstrand
+2085,Greenstrand Clanhall
+2086,Greenstrand Village 1
+2087,"Greenstrand Village, Shop"
+2088,"Greenstrand Village, Villa"
+2089,Greenstrand Village 2
+2090,Greenstrand Village 3
+2091,Greenstrand Village 5
+2092,Greenstrand Village 4
+2093,Greenstrand Village 6
+2094,Greenstrand Village 7
+2095,The Cinder Crown
+2097,Gullhaven Village 5
+2098,Gullhaven Village 4
+2099,"Gullhaven Village, Tower Flat"
+2100,Gullhaven Village 1
+2101,Gullhaven Village 2
+2102,Gullhaven Village 3
+2103,Sellsword Tower
+2104,Guildhall of the Ember Thorn
+2105,"Gullhaven Village, Bar"
+2106,"Gullhaven Village, Villa"
+2107,Gullhaven Clanhall
+2108,Wraithkeep
+2109,Adder Tower
+2110,Crimsonhall
+2111,Skarnholm Clanhall
+2112,Skarnholm Village 2
+2113,Skarnholm Village 1a
+2114,Skarnholm Village 1b
+2115,Skarnholm Village 4
+2116,Skarnholm Village 3
+2117,Skarnholm Village 6b
+2118,Skarnholm Village 6a
+2119,Skarnholm Village 5
+2120,Skarnholm Village 10
+2121,Skarnholm Village 11
+2122,Skarnholm Village 9
+2123,Skarnholm Village 8
+2124,Skarnholm Village 7
+2125,Thornbud C
+2127,Thornbud A
+2128,Thornbud B
+2129,Frostborn Stronghold
+2130,Gullport Village 2
+2131,Gullport Village 1
+2132,Gullport Village 3
+2133,Gullport Village 4
+2134,Gullport Village 5
+2135,Gullport Village 6
+2136,Tidewatch
+2137,Gullport Clanhall
+2138,Wardens Retreat D
+2139,Wardens Retreat A
+2140,Wardens Retreat C
+2141,Wardens Retreat B
+2142,Masque Avenue 14 (Shop)
+2143,Masque Avenue 12
+2144,Masque Avenue 10
+2145,Masque Avenue 11c
+2146,Masque Avenue 11b
+2147,Masque Avenue 11a
+2148,Conjurer's Alley 1
+2149,Conjurer's Alley 1a
+2150,Conjurer's Alley 1d
+2151,Conjurer's Alley 1b
+2152,Conjurer's Alley 1c
+2153,Conjurer's Alley 5a
+2154,Conjurer's Alley 5b
+2155,Conjurer's Alley 5d
+2156,Conjurer's Alley 5e
+2157,Conjurer's Alley 5c
+2158,Conjurer's Alley 5f
+2159,Thornmere Clanhall
+2160,Conjurer's Alley 4
+2161,Lonely Shingle Hostel
+2162,Dawnspire
+2163,Quay Lane 3
+2164,"Quay Flats, Flat 11"
+2165,"Quay Flats, Flat 13"
+2166,"Quay Flats, Flat 15"
+2167,"Quay Flats, Flat 17"
+2168,"Quay Flats, Flat 12"
+2169,"Quay Flats, Flat 14"
+2170,"Quay Flats, Flat 16"
+2171,"Quay Flats, Flat 18"
+2172,"Quay Flats, Flat 21"
+2173,"Quay Flats, Flat 22"
+2174,"Quay Flats, Flat 23"
+2175,Quay Lane 2a (Shop)
+2176,Quay Lane 2b (Shop)
+2177,Quay Lane 1 (Shop)
+2178,Masque Avenue 6e
+2179,Masque Avenue 6c
+2180,Masque Avenue 6a
+2181,Masque Avenue 6f
+2182,Masque Avenue 6d
+2183,Masque Avenue 6b
+2184,Dawnward Lane 1a
+2185,Dawnward Lane 1b
+2186,Dawnward Lane 2
+2191,Frostward Street 5
+2192,Frostward Street 7
+2193,Frostward Street 3a
+2194,Frostward Street 3b
+2195,Frostward Street 1c
+2196,Frostward Street 1b
+2197,Frostward Street 1a
+2198,"Masque Avenue 7, Flat 06"
+2199,"Masque Avenue 7, Flat 01"
+2200,"Masque Avenue 7, Flat 05"
+2201,"Masque Avenue 7, Flat 02"
+2202,"Masque Avenue 7, Flat 04"
+2203,"Masque Avenue 7, Flat 03"
+2204,"Masque Avenue 7, Flat 14"
+2205,"Masque Avenue 7, Flat 13"
+2206,"Masque Avenue 7, Flat 15"
+2207,"Masque Avenue 7, Flat 16"
+2208,"Masque Avenue 7, Flat 11"
+2209,"Masque Avenue 7, Flat 12"
+2210,Masque Avenue 8a
+2211,Masque Avenue 8b
+2212,Thorn Plaza 3
+2213,Thorn Plaza 2
+2214,Thorn Plaza 1
+2215,Briar Lane 1a
+2216,Briar Lane 3a
+2217,Briar Lane 1b
+2218,Briar Lane 3b
+2219,Briar Lane 4
+2220,Briar Lane 2
+2221,Conjurer's Alley 8
+2222,Duskkeep
+2225,"Keep, Undercroft, Flat 01"
+2226,"Keep, Undercroft, Flat 02"
+2227,"Keep, Undercroft, Flat 03"
+2228,"Keep, Undercroft, Flat 04"
+2229,"Keep, Undercroft, Flat 07"
+2230,"Keep, Undercroft, Flat 08"
+2231,"Keep, Undercroft, Flat 09"
+2232,"Keep, Undercroft, Flat 06"
+2233,"Keep, Undercroft, Flat 05"
+2234,Keep Shop 1
+2235,Keep Shop 2
+2236,Keep Shop 3
+2237,"Keep, 4th Floor, Flat 09"
+2238,"Keep, 4th Floor, Flat 08"
+2239,"Keep, 4th Floor, Flat 06"
+2240,"Keep, 4th Floor, Flat 07"
+2241,"Keep, 4th Floor, Flat 05"
+2242,"Keep, 4th Floor, Flat 04"
+2243,"Keep, 4th Floor, Flat 03"
+2244,"Keep, 4th Floor, Flat 02"
+2245,"Keep, 4th Floor, Flat 01"
+2246,"Keep, 3rd Floor, Flat 01"
+2247,"Keep, 3rd Floor, Flat 02"
+2248,"Keep, 3rd Floor, Flat 03"
+2249,"Keep, 3rd Floor, Flat 05"
+2250,"Keep, 3rd Floor, Flat 04"
+2251,"Keep, 3rd Floor, Flat 06"
+2252,"Keep, 3rd Floor, Flat 07"
+2253,Keep Street 1
+2254,Keep Street 2
+2255,Keep Street 3
+2256,Keep Street 4
+2257,Keep Street 5
+2258,"Bellwatch Flats, Undercroft Flat 2"
+2259,"Bellwatch Flats, Undercroft Flat 1"
+2260,"Bellwatch Flats, Flat 01"
+2261,"Bellwatch Flats, Flat 02"
+2262,"Bellwatch Flats, Flat 03"
+2263,"Bellwatch Flats, Flat 04"
+2264,"Bellwatch Flats, Flat 06"
+2265,"Bellwatch Flats, Flat 05"
+2266,"Bellwatch Flats, Flat 07"
+2267,"Bellwatch Flats, Flat 08"
+2268,"Bellwatch Flats, Flat 11"
+2269,"Bellwatch Flats, Flat 12"
+2270,"Bellwatch Flats, Flat 14"
+2271,"Bellwatch Flats, Flat 13"
+2272,"Bellwatch Flats, Flat 16"
+2273,"Bellwatch Flats, Flat 15"
+2274,"Bellwatch Flats, Flat 18"
+2275,"Bellwatch Flats, Flat 17"
+2276,"Bellwatch Flats, Flat 22"
+2277,"Bellwatch Flats, Flat 21"
+2278,"Bellwatch Flats, Flat 24"
+2279,"Bellwatch Flats, Flat 23"
+2280,"Bellwatch Flats, Flat 26"
+2281,"Bellwatch Flats, Flat 27"
+2282,"Bellwatch Flats, Flat 28"
+2283,"Bellwatch Flats, Flat 25"
+2284,Bellring Circle 1
+2285,Bellring Circle 2
+2286,Bellring Circle 3
+2287,Bellring Circle 4
+2288,Bellring Circle 5
+2289,Bellring Circle 6 (Shop)
+2290,Bellring Circle 7 (Shop)
+2291,Bellring Circle 8 (Shop)
+2292,Bellring Circle 9a
+2293,Bellring Circle 9b
+2294,"Belfry Lane, Guild 1"
+2295,"Belfry Lane, Guild 2"
+2296,"Belfry Lane, Guild 3"
+2297,"Belfry Lane, Sea Tower"
+2298,Oakward Avenue 6a
+2299,Oakward Avenue 9a
+2300,Oakward Avenue 10a
+2301,Oakward Avenue 11
+2302,Oakward Avenue 8
+2303,Oakward Avenue 7
+2304,Oakward Avenue 6b
+2305,Oakward Avenue 9b
+2306,Oakward Avenue 10b
+2307,Oakward Avenue 5
+2308,Oakward Avenue 4a
+2309,Oakward Avenue 4b
+2310,Oakward Avenue 4c
+2311,Oakward Avenue 4
+2312,Oakward Avenue 3
+2313,Oakward Avenue 2
+2314,Oakward Avenue 1
+2315,"Arcane Collegium, Guild"
+2316,"Arcane Collegium, Flat 1"
+2317,"Arcane Collegium, Flat 2"
+2318,"Arcane Collegium, Flat 3"
+2319,"Arcane Collegium, Flat 4"
+2320,"Arcane Collegium, Flat 5"
+2321,"Arcane Collegium, Shop"
+2322,Stonehearth Village 1
+2323,"Stonehearth Flats, Flat 05"
+2324,"Stonehearth Flats, Flat 04"
+2325,"Stonehearth Flats, Flat 06"
+2326,"Stonehearth Flats, Flat 03"
+2327,"Stonehearth Flats, Flat 01"
+2328,"Stonehearth Flats, Flat 02"
+2329,"Stonehearth Flats, Flat 11"
+2330,"Stonehearth Flats, Flat 12"
+2331,"Stonehearth Flats, Flat 13"
+2332,"Stonehearth Flats, Flat 14"
+2333,"Stonehearth Flats, Flat 16"
+2334,"Stonehearth Flats, Flat 15"
+2335,Stonehearth Village 2
+2336,Stonehearth Village 3
+2337,Stonehearth Village 4
+2338,Stonehearth Village 6
+2339,Stonehearth Village 5
+2340,Stonehearth Village 7
+2341,Stonehearth Village 8
+2342,Stonehearth Village 9
+2343,Stonehearth Clanhall
+2344,Saltmere 1
+2345,Saltmere 2
+2346,"Saltmere Flats, Flat 01"
+2347,"Saltmere Flats, Flat 02"
+2348,"Saltmere Flats, Flat 03"
+2349,"Saltmere Flats, Flat 06"
+2350,"Saltmere Flats, Flat 05"
+2351,"Saltmere Flats, Flat 04"
+2352,"Saltmere Flats, Flat 13"
+2353,"Saltmere Flats, Flat 14"
+2354,"Saltmere Flats, Flat 15"
+2355,"Saltmere Flats, Flat 16"
+2356,"Saltmere Flats, Flat 11"
+2357,"Saltmere Flats, Flat 12"
+2358,Saltmere 3
+2359,Castle of the Pale Wyrm
+2360,Saltmere 4
+2361,Saltmere 5
+2362,Saltmere 6
+2363,Saltmere 7
+2364,Saltmere 8
+2365,Saltmere 9b
+2366,Saltmere 9a
+2367,Saltmere 9c
+2368,Saltmere 9d
+2369,Saltmere 10
+2370,Saltmere 11
+2371,Fiend Tower
+2372,Mariners Lookout
+2373,Deepspring
+2374,House of Leisure
+2375,Valorous Mirewake
+2376,Gloamroot Clanhall
+2377,Castle of the Whispering Leaves
+2378,The Thicket Den
+2379,Gloom Spires
+2380,Crag Hideout
+2381,Gravesand Beach
+2382,"Sunscour Terrace 8, Flat 01"
+2383,"Sunscour Terrace 8, Flat 02"
+2384,"Sunscour Terrace 8, Flat 03"
+2385,"Sunscour Terrace 8, Flat 04"
+2386,"Sunscour Terrace 8, Flat 05"
+2387,"Scorchveil, Eastern Guildhall"
+2388,Masque Avenue 5a
+2389,Masque Avenue 5b
+2390,Masque Avenue 5c
+2391,Masque Avenue 5d
+2392,Cutpurse Camp 1
+2393,Cutpurse Camp 2
+2394,Cutpurse Camp 3
+2395,Cutpurse Camp 4
+2396,Cutpurse Camp 5
+2397,Cutpurse Camp 6
+2398,Cutpurse Camp 7
+2399,Cutpurse Camp 8
+2400,Cutpurse Camp 9
+2401,Cutpurse Camp 10
+2402,Cutpurse Camp 11
+2404,Cutpurse Camp 12 (Shop)
+2405,Cutpurse Camp 13 (Shop)
+2406,Cutpurse Camp 14 (Shop)
+2407,Ashfall Theatre
+2408,The Mirelair
+2409,Upper Delvings 2
+2410,Upper Delvings 3
+2411,Upper Delvings 4
+2412,Upper Delvings 5
+2413,Upper Delvings 6
+2414,Upper Delvings 7
+2415,Upper Delvings 8
+2416,Upper Delvings 9
+2417,Upper Delvings 10
+2418,Upper Delvings 11
+2419,Upper Delvings 12
+2420,Ebbtide Observatory
+2421,Eastern House of Embers
+2422,Woolhide House
+2427,Lower Delvings 1
+2428,Lower Delvings 2
+2429,Lower Delvings 3
+2430,Lower Delvings 4
+2431,Lower Delvings 5
+2432,Lower Delvings 6
+2433,Lower Delvings 7
+2434,Lower Delvings 8
+2435,Lower Delvings 9
+2436,Lower Delvings 10
+2437,Lower Delvings 11
+2438,Lower Delvings 12
+2439,Lower Delvings 13
+2440,Lower Delvings 14
+2441,Lower Delvings 15
+2442,Lower Delvings 16
+2443,Lower Delvings 17
+2444,Lower Delvings 18
+2445,Lower Delvings 19
+2446,Lower Delvings 20
+2447,Lower Delvings 21
+2448,Lower Delvings 22
+2449,Lower Delvings 23
+2450,Lower Delvings 24
+2451,The Fungus Terraces 4
+2452,Mosslight Gardens 1
+2455,Mosslight Gardens 2
+2456,The Tidefall Project
+2460,Badger's Den
+2461,Forgotten Cavern
+2462,Slagdweller Shelter
+2463,Old Sanctuary of the Ash King
+2464,Rampart Lane 1
+2465,Rampart Residence
+2466,Rampart Lane 2
+2467,Cogwheel Lane 3
+2468,Cogwheel Lane 2
+2469,Gearward Flats B
+2470,Gearward Flats A
+2471,Copper Kin Bastion
+2472,Cogwheel Lane 1
+2473,Brassgate Hills Estate
+2474,Brassgate Hills Residence
+2475,Brassgate Plaza 1
+2476,Brassgate Plaza 2
+2478,Cogwheel Lane 4
+2480,Old Foundry Estate
+2481,Boiler Ave
+2482,Brassgate Plaza 4
+2483,Brassgate Plaza 3
+2488,Ibisgate Court V e (Shop)
+2637,Mosslight Gardens 9
+2638,Mosslight Gardens 10
+2639,Mosslight Gardens 11
+2640,Mosslight Gardens 12
+2656,Kindle Isle Cottage #1
+2657,Kindle Isle Cottage #2
+2658,Kindle Isle Cottage #3
+2659,Kindle Isle Cottage #4
+2660,Kindle Isle Cottage #5
+2661,Kindle Isle Cottage #6
+2662,Kindle Isle Cottage #7
+2663,Kindle Isle Cottage #8
+2664,Kindle Isle Cottage #9
+2665,Kindle Isle Cottage #10
+2666,Kindle Isle Cottage #11
+2667,Kindle Isle Cottage #12
+2668,Kindle Isle Cottage #13
+2669,Kindle Isle Cottage #14
+2670,Kindle Isle Cottage #15

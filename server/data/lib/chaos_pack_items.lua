@@ -30,7 +30,7 @@ ChaosPackItems = {
 		[36059] = {14, "Slurp."}, -- bowl of mushroom stew
 		[36060] = {18, "Munch."}, -- hunter's platter
 	},
-	-- key = server id (creature products, loot of the pack monsters; sold to Yasir)
+	-- key = server id (creature products, loot of the pack monsters; sold to Grimgan)
 	products = {
 		goblin_tooth = 36010,
 		goblin_skull = 36011,

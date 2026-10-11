@@ -21,7 +21,7 @@ Without the matching client pair the items show as nothing in the client, so ins
 2. data/items/items.xml: the new items (name, article, plural, weight, description; corpses: container size, decay,
    corpse type) in a block between two marker comments before </items>, rewritten when the manifest changed. An id that
    already has an entry outside the block stops the script. Items with mode=replace keep their entries.
-3. data/npc/Yasir.xml (when present): the creature products (kind=product) are added to his shop_sellable list at
+3. the base desert trader's NPC file, data/npc/Grimgan.xml (or his file of before the npcnames step; when present): the creature products (kind=product) are added to his shop_sellable list at
    their price, so players can sell them (and tools/gen_sell_prices.py picks them up for the Auto Seller).
 
 Idempotent: a second run changes nothing. Lua side: data/lib/chaos_pack_items.lua (food, products by key), loaded by
@@ -38,7 +38,8 @@ DEFAULT_MANIFEST = os.path.join(REPO_DATA, 'items', 'art_items.csv')
 LUA_OUT = os.path.join(REPO_DATA, 'lib', 'chaos_pack_items.lua')
 XML_BEGIN = '\t<!-- Chaos pack items (server/tools/install_pack_items.py, do not edit by hand) -->\n'
 XML_END = '\t<!-- end of the Chaos pack items -->\n'
-NPC_FILE = os.path.join('npc', 'Yasir.xml')
+# the desert trader of the base server (Grimgan since the npcnames step; sha256 of his old file name)
+TRADER = ('Grimgan', 'e1611e79c955724155c98b4d79dbc11406cd387773935da008cad6e854b36166')
 CORPSE = {'blood': ('blood', 'blood'), 'venom': ('venom', 'slime'), 'undead': ('undead', None)}
 
 
@@ -219,7 +220,7 @@ def lua_text(rows):
          '-- Generated; do not edit by hand. The items exist after the "packitems" install step and need the matching',
          '-- client pair (client/tools/sprites/import_art_things.py).', '', 'ChaosPackItems = {', '\t-- [id] = {seconds of food, sound}', '\tfood = {']
     L += ['\t\t[%d] = {%s, "%s"}, -- %s' % (r['server_id'], r['ex']['food'], r['ex']['sound'], r['name']) for r in food]
-    L += ['\t},', '\t-- key = server id (creature products, loot of the pack monsters; sold to Yasir)', '\tproducts = {']
+    L += ['\t},', '\t-- key = server id (creature products, loot of the pack monsters; sold to Grimgan)', '\tproducts = {']
     L += ['\t\t%s = %d,' % (r['key'], r['server_id']) for r in prod]
     L += ['\t},', '\tcorpses = {']
     L += ['\t\t%s = %d,' % (r['key'][len('corpse_'):], r['server_id']) for r in corpse]
@@ -258,14 +259,16 @@ def main():
     text = open(xml, encoding='utf-8', errors='surrogateescape').read()
     new_text, note = patch_xml(text, rows)
     print(note)
-    npc = os.path.join(data_dir, NPC_FILE)
+    import base_rename_lib
+    trader = base_rename_lib.npc_file(os.path.join(data_dir, 'npc'), *TRADER)
+    npc = os.path.join(data_dir, 'npc', trader) if trader else None
     ntext = new_ntext = None
-    if os.path.exists(npc):
+    if npc and os.path.exists(npc):
         ntext = open(npc, encoding='utf-8', errors='surrogateescape').read()
         new_ntext, nnote = patch_npc(ntext, rows)
         print(nnote)
     else:
-        print('npc: %s not found, products not added to a shop' % NPC_FILE)
+        print('npc: the trader %s not found, products not added to a shop' % TRADER[0])
     if dry:
         print('dry run: nothing written')
         return 0
