@@ -29,8 +29,9 @@
 --   footprint  art = a key of `prints`: the prints every viewer's client leaves behind the walking character (client
 --              game_cosmeticfx draws its own generated pictures on the tiles left; no server work per step); color =
 --              the window's swatch
---   outline    art = a key of `glows`: a coloured glow drawn behind the character for every viewer (game_cosmeticfx);
---              pulse = true: it breathes in and out; color = the window's swatch
+--   outline    art = a key of `glows`: a coloured line around the character's silhouette for every viewer
+--              (game_cosmeticfx CF.OUTLINES holds each art's colours; an old client without base patch 0038 shows a
+--              soft glow picture instead); pulse = true: it breathes in and out; color = the window's swatch
 -- Sources also: "boss" (boss = the boss's name for the window): a rare personal drop of that boss, granted by
 -- exclusives.lua (exclusives_config.lua `bosses`), never sold.
 
@@ -300,32 +301,32 @@ return {
 
 		-- ------------------------------------------------------------------ outlines (store 250, pulsing ones too)
 		{id = 501, key = "glow_gold", kind = "outline", icon = 2154, source = "store", price = 250, art = "gold",
-			color = "#ffd040", name = "Gilded Glow", desc = "A warm golden glow around you."},
+			color = "#ffd040", name = "Gilded Glow", desc = "A warm golden line traces your outline."},
 		{id = 502, key = "glow_crimson", kind = "outline", icon = 2156, source = "store", price = 250, art = "crimson",
-			color = "#e03838", name = "Crimson Glow", desc = "A blood-red glow around you."},
+			color = "#e03838", name = "Crimson Glow", desc = "A blood-red line traces your outline."},
 		{id = 503, key = "glow_void", kind = "outline", icon = 2153, source = "store", price = 250, art = "void",
-			color = "#9a4ce0", name = "Void Glow", desc = "A deep violet glow around you."},
+			color = "#9a4ce0", name = "Void Glow", desc = "A deep violet line traces your outline."},
 		{id = 504, key = "glow_frost", kind = "outline", icon = 2146, source = "store", price = 250, art = "frost",
-			color = "#7fc8ff", name = "Frost Glow", desc = "A cold blue glow around you."},
+			color = "#7fc8ff", name = "Frost Glow", desc = "A cold blue line traces your outline."},
 		{id = 505, key = "glow_verdant", kind = "outline", icon = 2149, source = "store", price = 250, art = "verdant",
-			color = "#6ee070", name = "Verdant Glow", desc = "A living green glow around you."},
+			color = "#6ee070", name = "Verdant Glow", desc = "A living green line traces your outline."},
 		{id = 506, key = "glow_ember", kind = "outline", icon = 2187, source = "store", price = 250, art = "ember",
-			color = "#ff7a2a", name = "Ember Gradient", desc = "Red at your feet, burning gold at your crown."},
+			color = "#ff7a2a", name = "Ember Gradient", desc = "Your outline runs red at your feet, burning gold at your crown."},
 		{id = 507, key = "glow_storm", kind = "outline", icon = 7759, source = "store", price = 250, art = "storm",
-			color = "#a8f0ff", name = "Storm Gradient", desc = "Deep blue below, white lightning above."},
+			color = "#a8f0ff", name = "Storm Gradient", desc = "Your outline runs deep blue below, white lightning above."},
 		{id = 508, key = "glow_radiant", kind = "outline", icon = 2145, source = "store", price = 250, art = "radiant",
-			pulse = true, color = "#fff0a0", name = "Radiant Pulse", desc = "A golden light that breathes in and out."},
+			pulse = true, color = "#fff0a0", name = "Radiant Pulse", desc = "A golden outline that breathes in and out."},
 		{id = 509, key = "glow_abyssal", kind = "outline", icon = 6500, source = "store", price = 250, art = "abyssal",
-			pulse = true, color = "#7040c0", name = "Abyssal Pulse", desc = "A violet darkness that swells and fades."},
+			pulse = true, color = "#7040c0", name = "Abyssal Pulse", desc = "A violet outline of darkness that swells and fades."},
 		-- never sold
 		{id = 551, key = "glow_absolute", kind = "outline", icon = 2343, source = "achievement", achievement = "paragon_282",
 			art = "absolute", pulse = true, color = "#fff8e0", name = "Paragon's Radiance",
-			desc = "A white-gold radiance that pulses with every breath. Achievement: Absolute."},
+			desc = "A white-gold outline that pulses with every breath. Achievement: Absolute."},
 		{id = 552, key = "glow_chronicle", kind = "outline", icon = 13531, source = "achievement", points = 2000,
-			art = "chronicle", color = "#5cc8c0", name = "Chronicler's Halo", desc = "A teal halo of old ink. Reward track: 2000 points."},
+			art = "chronicle", color = "#5cc8c0", name = "Chronicler's Halo", desc = "A teal outline of old ink. Reward track: 2000 points."},
 		{id = 553, key = "glow_corona", kind = "outline", icon = 2153, source = "boss", boss = "Nyxareth the Void Archon",
-			art = "corona", pulse = true, color = "#5a2a90", name = "Void Corona", desc = "A black corona with a violet rim, torn from the Void Archon."},
+			art = "corona", pulse = true, color = "#5a2a90", name = "Void Corona", desc = "A dark outline burning to violet, torn from the Void Archon."},
 		{id = 554, key = "glow_cinder", kind = "outline", icon = 2353, source = "boss", boss = "Ysgrath the Cinderheart",
-			art = "cinder", pulse = true, color = "#ff5a1a", name = "Cinderheart Blaze", desc = "The Cinderheart's own fire, flaring round you."}
+			art = "cinder", pulse = true, color = "#ff5a1a", name = "Cinderheart Blaze", desc = "The Cinderheart's own fire, flaring along your outline."}
 	}
 }

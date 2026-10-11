@@ -1777,7 +1777,7 @@ opaque and every label rarity colour at contrast 3 or more on them; chat colours
 background; every store cosmetic has its store offer at its price and name, nothing else is sold as a cosmetic.
 
 Protocol (JSON on `ChaosOpcodes.cosmetics` = 225): client -> server `open | select {kind, id, line} (id 0 = the default) |
-preview {id} | close`; server -> client `state {open, line, lineName, rows}`, `style {accent}` (the character's own label
+preview {id} | hello | close` (`hello`: the client is in the game, the full `style`, `colors` and `looks` again); server -> client `state {open, line, lineName, rows}`, `style {accent}` (the character's own label
 accent), `colors {names = {[name] = "#rrggbb" | false}, full}` (sent in full at login, a change to everyone online),
 `result {ok, text}`. API: `ChaosCosmetics.swapFor / storeUnlock / storePreview / offerPreview / grant / revoke / owns`.
 Staff: `/cosmetic <character>, <key | all>[, revoke]` and `/cosmetic <character>, sync` (group 4+). Store action `preview {category, page, offer}`
@@ -1800,7 +1800,7 @@ other client; Frost Shatter on a killing blow seen by the other client; the Fros
 to an item link; the Azure accent on Legendary / Rare / Mythic labels; Veteran's Gold granted from the achievement at login;
 the Ember plate frame. Screenshots outside the repository.
 
-## Footprints and outlines (`cosmetics*.lua` kinds `footprint` / `outline`, client `game_cosmeticfx`, art `client/tools/gen_cosmeticfx_art.py`)
+## Footprints and outlines (`cosmetics*.lua` kinds `footprint` / `outline`, client `game_cosmeticfx`, client base patch 0038, art `client/tools/gen_cosmeticfx_art.py`)
 
 Two more cosmetic kinds of `cosmetics_config.lua`, account-wide like the others, chosen per character in Character >
 Cosmetics (tabs Footprints and Outlines, a Default row takes them off; storages 7102000 footprint, 7102001 outline, the
@@ -1809,42 +1809,53 @@ wardrobe block 7102000 - 7102049 of `chaos_constants.lua`). Everyone on screen s
 | Kind | What | Store (coins) | Never sold |
 |---|---|---|---|
 | Footprints | prints on the tiles a walking player leaves, turned to the step, fading out in 3.2 s | Ember Steps, Frost Steps, Blood Trail, Ash Prints, Petal Trail, Venom Drips, Shadow Wisps, Gilded Steps, Storm Sparks, 200 each | Hunter's Tracks (Never Off Duty), Inkstep (reward track, 750 points), Rimewalker (boss: Skaldra), Omen Ash (boss: the Ascended Omens) |
-| Outlines | a soft glow behind the character, a colour or a vertical gradient; two of the store's and three earned ones pulse | Gilded, Crimson, Void, Frost, Verdant Glow, Ember Gradient, Storm Gradient, Radiant Pulse, Abyssal Pulse, 250 each | Paragon's Radiance (Absolute), Chronicler's Halo (reward track, 2000 points), Void Corona (boss: Nyxareth), Cinderheart Blaze (boss: the Cinderheart) |
+| Outlines | a 2 px line around the character's silhouette (body, addons, mount and rider, the walking frame), one colour or a vertical gradient; two of the store's and three earned ones pulse | Gilded, Crimson, Void, Frost, Verdant Glow, Ember Gradient, Storm Gradient, Radiant Pulse, Abyssal Pulse, 250 each | Paragon's Radiance (Absolute), Chronicler's Halo (reward track, 2000 points), Void Corona (boss: Nyxareth), Cinderheart Blaze (boss: the Cinderheart) |
 
 **Why client-drawn.** Two ways were weighed for the prints. Server magic effects on the tile left: one effect packet per step
 per spectator (a crowd of 30 walkers on one screen is about 60-80 packets a second to each viewer), effects of the pair that
 are spell art and too loud for a trail, and no way for a viewer to hide them. Client drawing: the server only says who
 wears what (`looks {names = {[name] = {f, o, p}}, full}` on the cosmetics opcode, sent in full at login and as a change to
 everyone online, like the chat colours), and each client draws its own generated pictures: no work per step on the server,
-nothing new in the pair, and a viewer setting. `game_cosmetics` hands `looks` and `tryfx` to `game_cosmeticfx`.
+nothing new in the pair, and a viewer setting. `game_cosmetics` hands `looks` and `tryfx` to `game_cosmeticfx`. Once in the
+game the client sends `hello` and gets the full `style`, `colors` and `looks` again: what the login event sends can reach
+the client before it is in the game and is dropped there, and a reconnect into a character still online runs no login
+event (found in the outline test: after a relogin nobody's outline showed until someone changed theirs).
 
 **How the client draws them.** A print is a tile widget (`Tile:setWidget`, the way `game_groundlabels` draws its labels) on the
 tile the player left, put down once the step is done, turned with `UIWidget:setRotation`, fading out; at most 160 prints on
 screen and 8 per walker; never on a tile that holds another module's widget (ground labels, hideout marks). No new prints
 while the viewer stands in a protection zone (temples and depots are crowded; the client only knows its own zone flag). An
-outline is a creature bottom widget (drawn under the outfit, so it stacks with outfit shaders, wings and auras), the size of
-two tiles, centred on the creature; pulsing ones change their opacity. Bottom widgets of other modules (`game_levelwings`) are
-left alone: ours is cleared only when it is the creature's only bottom widget (the engine's `removeBottomWidget` walks the
-wrong list), else blanked. Character > Cosmetics has "Show other players' footprints / outlines" (this client only; the own
-character always shows). Preview (the window) and SHOW (the store, `tryfx {kind, art, pulse}` to the buyer only) draw the look
-on the own character for 6 s.
+outline is a line the engine draws around the player's silhouette (client base patch 0038, `client/BASE.md`):
+`Creature:setOutline(r, g, b, a, widthPx, pulseMs)` and `setOutlineGradient` for the colour at the top. The colours of each
+art key are on the client (`game_cosmeticfx` `CF.OUTLINES`), so the server still sends only the art key and a client
+without the patch keeps its old picture. Character > Cosmetics has "Show other players' footprints / outlines" (this client
+only; the own character always shows). Preview (the window) and SHOW (the store, `tryfx {kind, art, pulse}` to the buyer
+only) draw the look on the own character for 6 s; the window's sample shows the outline on a small copy of the character.
 
-**Outlines and outfit shaders.** The engine has one shader slot per outfit (`Outfit::m_shader`, the store's Outfit Shaders and the
-monster modifiers use it). An edge outline as an outfit shader (a fragment shader that samples the alpha of the neighbours)
-would be a true silhouette line but would replace the character's outfit shader. `Thing:setMarked` tints the whole sprite,
-only for unshaded outfits, and the map's hover uses it. A UI creature widget under the creature would copy the silhouette but
-not the walking frame. So the shipped outlines are glows behind the character (no engine change, they stack with everything).
-Proposed engine patch (no number taken): a second, outline pass in `Outfit::draw`: after the layers are queued, draw the same
-textured rects again with an outline program (alpha of the 8 neighbours at 1-2 px, the colour from a uniform, an optional
-pulse from `u_Time`), behind the outfit; `Creature:setOutline(color, width, pulse)` bound to Lua; the server would then send
-the colour in the `looks` message instead of an art key.
+**Outlines (owner feedback: "they look like auras, they must follow the contour of the outfit").** The first version was a
+soft glow picture behind the character; it is now a real silhouette line. The outfit queues one outline item before its
+mount and body; at draw time it draws every part again (mount, body, each addon, the rider, the current walking frame,
+shaded or not) as a quad grown by the width, through a program that reads the part's alpha in 8 directions and paints only
+where the part is transparent and a neighbour is not. The parts are drawn over it, so the lines inside the silhouette
+(rider over mount, addons) are covered and only the outer contour stays. It is a separate pass, so the outfit shader still
+draws the body; wings and auras are not outlined (the line runs under the wings), names and bars never. Width: 2 sprite
+pixels, scaled by the sprite size, so HD upscaling (xBRZ) keeps the same look. Gradients (feet to top): Ember (red to gold),
+Storm (deep blue to white), Paragon's Radiance (gold to white), Void Corona (dark violet to violet), Cinderheart Blaze (red
+to gold); pulsing ones (Radiant, Abyssal, Paragon's Radiance, Void Corona, Cinderheart Blaze) breathe between 45% and 100%
+every 1.8 s in the engine. A client whose engine lacks `Creature:setOutline` (checked per creature) shows the old glow
+picture (`client/tools/gen_cosmeticfx_art.py` still makes those for it). Cost: one extra quad per outfit part; 39 outlined
+monsters and two players on one screen measured within the noise of the same scene without outlines (software OpenGL).
 
 Tests: `tests/cosmetics_test.lua` (art keys, one picture per cosmetic, pulse for outlines only, prices, the track milestones,
-the `looks` broadcast to every client, a reconnect keeping the look, `tryfx` to the buyer only, the boss source), client
-`game_cosmeticfx/cosmeticfxlogic_test.lua` (looks merge, preview, settings, step directions, fading, pulsing, the caps, sizes,
-a picture for every art key of the server) and `game_cosmetics/cosmeticslogic_test.lua` (the tabs, the Default rows).
-Tested in game (own server and database copy, two Linux clients): footprints in a walking trail and the glows, the own and the
-other player's, the window tabs and the setting. Screenshots outside the repository.
+the `looks` broadcast to every client, a reconnect keeping the look, the `hello` resend, `tryfx` to the buyer only, the boss
+source), client `game_cosmeticfx/cosmeticfxlogic_test.lua` (looks merge, preview, settings, step directions, fading,
+pulsing, the caps, sizes, a picture and outline colours for every art key of the server, the two store gradients, the
+engine feature check) and `game_cosmetics/cosmeticslogic_test.lua` (the tabs, the Default rows).
+Tested in game (own server built with src-patches 0001-0021, a private database, two Linux clients with base patches
+0001-0038): footprints in a walking trail; outlines on a standing and a walking character, with an outfit shader, on a
+mounted character, gradient and pulsing ones, 39 outlined monsters at once, at sprite scale 1 and 2 (xBRZ); the setting
+hiding the other player's outline; a relogin and a reconnect getting everyone's outline back; an engine without 0038
+showing the glow. Screenshots outside the repository.
 
 ## Exclusives (`exclusives.lua`, `exclusives_core.lua`, `exclusives_config.lua`, `sql/chaos_exclusives.sql`, client `game_cosmetics` Collection tab)
 

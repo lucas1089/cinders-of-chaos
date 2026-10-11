@@ -11,7 +11,7 @@ CF.MAX_PER_CREATURE = 8   -- and this many per walker
 CF.PREVIEW_MS = 6000      -- a store / window preview lasts this long
 CF.PULSE_MS = 1800        -- a pulsing outline breathes once in this long
 CF.PULSE_LOW = 0.45       -- its lowest opacity
-CF.GLOW_TILES = 2         -- the glow picture covers this many tiles each way, centred on the creature
+CF.GLOW_TILES = 2         -- the glow picture (old engines only) covers this many tiles each way, centred on the creature
 CF.PRINT_TILE = 0.9       -- a print covers this much of a tile
 CF.PZ_FLAG = 16384        -- PlayerStates.Pz of the local player: no new prints in a protection zone (crowded towns)
 
@@ -147,6 +147,49 @@ function CF.printPath(art)
   return '/modules/game_cosmeticfx/images/prints/' .. art
 end
 
+-- the glow picture: only for a client whose engine has no outline pass (no Creature:setOutline, base patch 0038)
 function CF.glowPath(art)
   return '/modules/game_cosmeticfx/images/glows/' .. art
+end
+
+-- ---------------------------------------------------------------- outlines (engine line, base patch 0038)
+CF.OUTLINE_WIDTH = 2      -- sprite pixels (the engine scales it with the sprite size, so HD upscaling keeps the look)
+CF.OUTLINE_ALPHA = 235    -- 0-255
+
+-- art key (server cosmetics_config.lua `glows`) -> c = the colour at the feet, top = the colour at the top of the
+-- silhouette (a vertical gradient; none = one colour). The pulse comes with the look (p), like the glows.
+CF.OUTLINES = {
+  gold = { c = { 255, 208, 64 } },
+  crimson = { c = { 232, 52, 48 } },
+  void = { c = { 160, 84, 236 } },
+  frost = { c = { 128, 204, 255 } },
+  verdant = { c = { 110, 228, 112 } },
+  ember = { c = { 228, 48, 12 }, top = { 255, 214, 70 } },
+  storm = { c = { 40, 96, 232 }, top = { 236, 250, 255 } },
+  radiant = { c = { 255, 238, 150 } },
+  abyssal = { c = { 128, 70, 216 } },
+  absolute = { c = { 255, 210, 90 }, top = { 255, 255, 248 } },
+  chronicle = { c = { 92, 204, 194 } },
+  corona = { c = { 70, 20, 120 }, top = { 176, 96, 255 } },
+  cinder = { c = { 230, 60, 0 }, top = { 255, 190, 60 } },
+}
+
+-- the engine call for a look's outline: {r, g, b, a, width, pulseMs, top = {r, g, b, a} | nil}; nil for an unknown art
+function CF.outlineArgs(art, pulse)
+  local spec = validArt(art) and CF.OUTLINES[art] or nil
+  if not spec then return nil end
+  local c = spec.c
+  local out = { c[1], c[2], c[3], CF.OUTLINE_ALPHA, CF.OUTLINE_WIDTH, pulse and CF.PULSE_MS or 0 }
+  if spec.top then
+    out.top = { spec.top[1], spec.top[2], spec.top[3], CF.OUTLINE_ALPHA }
+  end
+  return out
+end
+
+-- does this engine draw outlines? (a creature of a client with base patch 0038 has setOutline; older ones do not,
+-- and they keep the glow picture)
+function CF.hasEngineOutline(creature)
+  if creature == nil then return false end
+  local ok, fn = pcall(function() return creature.setOutline end)
+  return ok and type(fn) == 'function'
 end

@@ -705,6 +705,12 @@ local carl2 = newPlayer(5, "Cid", 30, "Ranger")
 registered.ChaosCosmeticsLogin.onLogin(carl2)
 local fullLooks = lastTo("Cid", "looks")
 eq(fullLooks.full, true, "full looks at login") eq(fullLooks.names.Bob.o, "radiant", "with Bob's outline")
+-- the client's hello once it is in the game: the full lists again (a login send can arrive too early, a reconnect
+-- into a character still online runs no login event)
+opcode(carl2, "hello", {})
+local again = lastTo("Cid", "looks")
+eq(again.full, true, "hello: full looks again") eq(again.names.Bob.o, "radiant", "hello: with Bob's outline")
+eq(lastTo("Cid", "colors").full, true, "hello: full colours again")
 -- a reconnect: the old session of Bob logs out after the new one logged in; Bob's look stays known
 local bob2 = newPlayer(6, "Bob", 20, "Warrior")
 storages[6] = storages[2]

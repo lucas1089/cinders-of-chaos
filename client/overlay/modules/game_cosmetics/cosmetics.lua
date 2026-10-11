@@ -1,5 +1,5 @@
 -- Cosmetics (server: server/data/scripts/chaos/cosmetics.lua, extended opcode 225, JSON {action, data}).
---   client -> server  open | select {kind, id, line} | preview {id} | close
+--   client -> server  open | select {kind, id, line} | preview {id} | hello (once in the game) | close
 --   server -> client  state {open, line, lineName, rows, collection}   style {accent}   colors {names, full}
 --                     looks {names, full}   tryfx {kind, art, pulse}   result {ok, text}
 -- The window (Character > Cosmetics): spell effect skins of the character's class line, kill effects, loot label
@@ -88,28 +88,35 @@ local function showSample(r)
     l:setColoredText(colored)
     box:setBackgroundColor('#1c1a18')
   elseif CL.DRAWN[kind] then
-    -- the character with the glow behind it / a print beside it (the Preview button shows the real thing in the map)
+    -- the character with its outline (the engine line; the glow picture behind it on an engine without one) / a
+    -- print beside it (the Preview button shows the real thing in the map)
     box:setBackgroundColor('#1c1a18')
     local holder = g_ui.createWidget('UIWidget', box)
     holder:setHeight(56)
     holder:setPhantom(true)
     local me = g_game.getLocalPlayer()
     local art = r and r.id ~= 0 and r.art or nil
-    if kind == 'outline' and art then
+    local c
+    if me then
+      c = g_ui.createWidget('UICreature', holder)
+      c:setSize({ width = 56, height = 56 })
+      c:setOutfit(me:getOutfit())
+      c:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
+      c:addAnchor(AnchorVerticalCenter, 'parent', AnchorVerticalCenter)
+      c:setPhantom(true)
+    end
+    local lined = false
+    if kind == 'outline' and art and c and fx() and type(fx().applyOutline) == 'function' then
+      lined = fx().applyOutline(c:getCreature(), art, r.pulse) == true
+    end
+    if kind == 'outline' and art and not lined then
       local glow = g_ui.createWidget('UIWidget', holder)
       glow:setImageSource('/modules/game_cosmeticfx/images/glows/' .. art)
       glow:setSize({ width = 64, height = 64 })
       glow:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
       glow:addAnchor(AnchorVerticalCenter, 'parent', AnchorVerticalCenter)
       glow:setPhantom(true)
-    end
-    if me then
-      local c = g_ui.createWidget('UICreature', holder)
-      c:setSize({ width = 56, height = 56 })
-      c:setOutfit(me:getOutfit())
-      c:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
-      c:addAnchor(AnchorVerticalCenter, 'parent', AnchorVerticalCenter)
-      c:setPhantom(true)
+      if c then holder:lowerChild(glow) end -- behind the character
     end
     if kind == 'footprint' and art then
       for i, off in ipairs({ -70, 70 }) do
@@ -390,6 +397,15 @@ local function onMessage(protocol, opcode, msg)
   end
 end
 
+-- once in the game: ask for the full style, colours and looks (what the server sends from its login event can reach
+-- the client before it is in the game and is dropped, and a reconnect into a character still online runs no login
+-- event: nobody's outline, footprints or chat colour showed until someone changed theirs)
+local function onGameStart()
+  scheduleEvent(function()
+    if g_game.isOnline() then send('hello') end
+  end, 500)
+end
+
 local function onGameEnd()
   hide()
   state, selectedId, rowWidgets = nil, nil, {}
@@ -409,12 +425,13 @@ function init()
     tabButtons[key] = b
   end
   ProtocolGame.registerExtendedJSONOpcode(OPCODE, safe('opcode', onMessage))
-  connect(g_game, { onGameEnd = onGameEnd })
+  connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
   hookConsole()
+  if g_game.isOnline() then onGameStart() end
 end
 
 function terminate()
-  disconnect(g_game, { onGameEnd = onGameEnd })
+  disconnect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
   pcall(ProtocolGame.unregisterExtendedJSONOpcode, OPCODE)
   unhookConsole()
   accent = nil

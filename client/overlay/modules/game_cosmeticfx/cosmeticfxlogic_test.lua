@@ -91,4 +91,39 @@ for _, art in ipairs(cfg.glows) do
 end
 eq(CF.printPath('ember'), '/modules/game_cosmeticfx/images/prints/ember', 'print path')
 
+-- engine outlines (base patch 0038): every outline the server knows has its colours
+for _, art in ipairs(cfg.glows) do
+  local a = CF.outlineArgs(art, false)
+  eq(type(a), 'table', 'outline colours for ' .. art)
+  eq(#a, 6, 'r, g, b, a, width, pulse for ' .. art)
+  for i = 1, 4 do eq(a[i] >= 0 and a[i] <= 255 and a[i] == math.floor(a[i]), true, 'channel ' .. i .. ' of ' .. art) end
+  eq(a[5] >= 1 and a[5] <= 2, true, 'a 1-2 px line for ' .. art)
+  eq(a[6], 0, 'no pulse unless the look says so: ' .. art)
+end
+local pulsing = CF.outlineArgs('radiant', true)
+eq(pulsing[6], CF.PULSE_MS, 'a pulsing look breathes at the glow pace')
+eq(CF.outlineArgs('gold', false).top, nil, 'one colour')
+-- the two gradients of the store (Ember Gradient, Storm Gradient): red at the feet to gold, deep blue to white
+local ember = CF.outlineArgs('ember', false)
+eq(type(ember.top), 'table', 'ember is a gradient')
+eq(ember[1] > ember[2] and ember.top[2] > ember[2], true, 'ember: red below, gold above')
+local storm = CF.outlineArgs('storm', false)
+eq(storm[3] > storm[1] and storm.top[1] > 200 and storm.top[2] > 200, true, 'storm: blue below, white above')
+eq(CF.outlineArgs('nosuchart', false), nil, 'an unknown art draws nothing')
+eq(CF.outlineArgs('../gold', false), nil, 'a path is no art key')
+-- the outline is server art keyed: every key of the client table is one the server can send
+local known = {}
+for _, art in ipairs(cfg.glows) do known[art] = true end
+for art in pairs(CF.OUTLINES) do eq(known[art], true, 'the server knows outline ' .. art) end
+-- the outline kind of the server config carries pulse exactly where the client pulses
+for _, c in ipairs(cfg.cosmetics or {}) do
+  if c.kind == 'outline' then eq(type(CF.OUTLINES[c.art]), 'table', 'outline cosmetic ' .. c.key) end
+end
+
+-- the feature check: an engine with the outline pass, an old one without, and an object that errors on a lookup
+eq(CF.hasEngineOutline({ setOutline = function() end }), true, 'patched engine')
+eq(CF.hasEngineOutline({}), false, 'old engine keeps the glow picture')
+eq(CF.hasEngineOutline(nil), false, 'no creature')
+eq(CF.hasEngineOutline(setmetatable({}, { __index = function() error('no field') end })), false, 'a lookup that errors')
+
 print('cosmeticfxlogic_test: ' .. n .. ' checks OK')

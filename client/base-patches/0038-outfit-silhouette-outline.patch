@@ -1,0 +1,391 @@
+# Silhouette outline (client/MANIFEST.md "game_cosmeticfx", server/README.md "Footprints and outlines"): Creature:setOutline(r, g, b, a, widthPx, pulseMs), setOutlineGradient(r, g, b, a) (the colour at the top, a vertical gradient), clearOutline() and hasOutline() for Lua. The outfit queues one outline item under its mount and body parts (addons, rider, the walking frame) and draws it from their final rects: each part once more as a quad grown by the width, through a program that samples the part's alpha in a ring of 8 directions and paints where the part is transparent and a neighbour is not. The parts draw over it, so only the outer contour of the whole silhouette stays; outfit shaders, wings, auras, names and bars are not touched. The width is in sprite pixels times the sprite size factor (HD upscaling, patch 0027). On the map for every creature with an outline; in a widget only for the widget's own preview creature (id 0), never for map creatures shown in lists. Touches only outfit.h/.cpp, creature.h/.cpp and luafunctions_client.cpp.
+--- a/src/client/outfit.h
++++ b/src/client/outfit.h
+@@ -27,6 +27,16 @@
+ #include "thingtypemanager.h"
+ #include <framework/graphics/drawqueue.h>
+ 
++// Cinders of Chaos (base patch 0038): a silhouette outline around the outfit (body, addons, mount and rider, the
++// walking frames). Set per creature from Lua (Creature:setOutline); the outfit queues it as one item drawn under its
++// own parts, so outfit shaders, wings and auras draw over it as before.
++struct OutfitOutline {
++    Color color = Color::alpha;    // at the feet
++    Color topColor = Color::alpha; // at the top of the outfit (a vertical gradient; the same as color without one)
++    int width = 0;                 // in sprite pixels (1-3); scaled by the sprite size, so HD upscaling keeps the look
++    int pulseMs = 0;               // > 0: the alpha breathes over this period
++};
++
+ class Outfit
+ {
+ public:
+@@ -56,6 +66,8 @@
+     void setHealthBar(uint8 id) { m_healthBar = id; }
+     void setManaBar(uint8 id) { m_manaBar = id; }
+     void setCenter(bool value) { m_center = value; }
++    // the outline the next map draw queues (Creature::draw sets it around its draw call; nullptr = none)
++    void setDrawOutline(const OutfitOutline* outline) { m_drawOutline = outline; }
+ 
+     void resetClothes();
+     void resetShader() { m_shader = ""; }
+@@ -82,6 +94,7 @@
+     int m_healthBar = 0, m_manaBar = 0;
+     std::string m_shader;
+     bool m_center = false;
++    const OutfitOutline* m_drawOutline = nullptr;
+ };
+ 
+ struct DrawQueueItemOutfit : public DrawQueueItemTexturedRect {
+@@ -116,4 +129,30 @@
+     std::string m_shader;
+ };
+ 
++// Cinders of Chaos (base patch 0038): queued before the outfit's parts, drawn from them at draw time (their final
++// rects, after flips and outfit corrections). One textured quad per part, grown by the outline width, through a
++// program that samples the part's alpha in a ring and paints only where the part itself is transparent. The parts
++// are drawn over it afterwards, so where they overlap (rider on mount, addons) the inner lines are hidden and only the
++// outer contour of the whole silhouette stays.
++struct DrawQueueItemOutfitOutline : public DrawQueueItem {
++    DrawQueueItemOutfitOutline(const OutfitOutline& outline, float pixelScale) :
++        DrawQueueItem(nullptr, Color::white), m_outline(outline), m_pixelScale(pixelScale)
++    {};
++
++    void addPart(DrawQueueItem* item)
++    {
++        if (auto* rect = dynamic_cast<DrawQueueItemTexturedRect*>(item))
++            m_parts.push_back(rect);
++    }
++    void draw() override;
++    bool cache() override
++    {
++        return false;
++    }
++
++    OutfitOutline m_outline;
++    float m_pixelScale; // map units per sprite pixel (g_sprites.getOffsetFactor())
++    std::vector<DrawQueueItemTexturedRect*> m_parts; // items of the same queue, drawn after this one
++};
++
+ #endif
+--- a/src/client/outfit.cpp
++++ b/src/client/outfit.cpp
+@@ -34,6 +34,8 @@
+ #include <framework/graphics/image.h>
+ #include <framework/graphics/framebuffermanager.h>
+ #include <framework/graphics/shadermanager.h>
++#include <framework/core/clock.h>
++#include <cmath>
+ #include <memory>
+ 
+ namespace
+@@ -149,6 +151,12 @@
+     }
+ 
+     int zPattern = m_mount > 0 ? std::min<int>(1, type->getNumPatternZ() - 1) : 0;
++    // Cinders of Chaos: the silhouette outline, queued under the mount and the body; collects their parts
++    DrawQueueItemOutfitOutline* outline = nullptr;
++    auto addOutlinePart = [&](DrawQueueItem* item) {
++        if (outline && item)
++            outline->addPart(item);
++    };
+     auto drawMount = [&] {
+         // The isolated editor preview must not depend on the base outfit
+         // exposing a mounted Z pattern. Normal in-game rendering is unchanged.
+@@ -230,6 +238,7 @@
+                 mountDrawItem = mountType->draw(
+                     dest, 0, direction, 0, 0, mountAnimationPhase, Color::white, mountLightView);
+             }
++            addOutlinePart(mountDrawItem);
+ 
+             if (mountDrawItem && lightView && !mountLightView && mountType->hasLight())
+                 lightView->addLight(logicalCreatureCenter, mountType->getLight());
+@@ -344,7 +353,13 @@
+     if (!mountOnly && m_aura && (!g_game.getFeature(Otc::GameDrawAuraOnTop) or g_game.getFeature(Otc::GameAuraFrontAndBack)) ) {
+         drawAura();
+     }
+-  
++
++    if (m_drawOutline && m_drawOutline->width > 0 && !mountOnly && m_category == ThingCategoryCreature) {
++        auto outlineItem = std::make_unique<DrawQueueItemOutfitOutline>(*m_drawOutline, g_sprites.getOffsetFactor());
++        outline = outlineItem.get();
++        g_drawQueue->add(std::move(outlineItem));
++    }
++
+     drawMount();
+     if (mountOnly)
+         return;
+@@ -405,10 +420,12 @@
+                     continue;
+                 if (yPattern == 0)
+                     center = outfitParams->dest.center();
+-                g_drawQueue->add(std::make_unique<DrawQueueItemOutfitWithShader>(outfitParams->dest, outfitParams->texture, outfitParams->src, outfitParams->offset, center, 0, m_shader));
++                auto shaded = std::make_unique<DrawQueueItemOutfitWithShader>(outfitParams->dest, outfitParams->texture, outfitParams->src, outfitParams->offset, center, 0, m_shader);
++                addOutlinePart(shaded.get());
++                g_drawQueue->add(std::move(shaded));
+                 continue;
+             }
+-            type->draw(dest, 0, direction, yPattern, zPattern, animationPhase, Color::white, baseLightView);
++            addOutlinePart(type->draw(dest, 0, direction, yPattern, zPattern, animationPhase, Color::white, baseLightView));
+             continue;
+         }
+ 
+@@ -418,11 +435,15 @@
+             continue;
+ 
+         if (m_shader.empty()) {
+-            g_drawQueue->add(std::make_unique<DrawQueueItemOutfit>(outfitParams->dest, outfitParams->texture, outfitParams->src, outfitParams->offset, colors, outfitParams->color));
++            auto layered = std::make_unique<DrawQueueItemOutfit>(outfitParams->dest, outfitParams->texture, outfitParams->src, outfitParams->offset, colors, outfitParams->color);
++            addOutlinePart(layered.get());
++            g_drawQueue->add(std::move(layered));
+         } else {
+             if (yPattern == 0)
+                 center = outfitParams->dest.center();
+-            g_drawQueue->add(std::make_unique<DrawQueueItemOutfitWithShader>(outfitParams->dest, outfitParams->texture, outfitParams->src, outfitParams->offset, center, colors, m_shader));
++            auto shaded = std::make_unique<DrawQueueItemOutfitWithShader>(outfitParams->dest, outfitParams->texture, outfitParams->src, outfitParams->offset, center, colors, m_shader);
++            addOutlinePart(shaded.get());
++            g_drawQueue->add(std::move(shaded));
+         }
+     }
+ 
+@@ -595,3 +616,157 @@
+         g_framebuffers.getTemporaryFrameBuffer()->draw(m_dest, m_flipDirection);
+     }
+ }
++
++// Cinders of Chaos (base patch 0038): the silhouette outline program and its queue item.
++namespace
++{
++// a_TexCoord stays in texture pixels (the ring is measured in them); v_Pos is the map position for the gradient
++const std::string glslOutlineVertexShader = "\n\
++    attribute vec2 a_Vertex;\n\
++    attribute vec2 a_TexCoord;\n\
++    uniform mat3 u_TransformMatrix;\n\
++    uniform mat3 u_ProjectionMatrix;\n\
++    varying vec2 v_TexCoord;\n\
++    varying vec2 v_Pos;\n\
++    void main()\n\
++    {\n\
++        gl_Position = vec4((u_ProjectionMatrix * u_TransformMatrix * vec3(a_Vertex.xy, 1.0)).xy, 0.0, 1.0);\n\
++        v_TexCoord = a_TexCoord;\n\
++        v_Pos = a_Vertex;\n\
++    }\n";
++
++// alpha of the part at a texture pixel; nothing outside its own frame rect (the texture holds other frames there)
++const std::string glslOutlineFragmentShader = "\n\
++    uniform mat3 u_TextureMatrix;\n\
++    uniform sampler2D u_Tex0;\n\
++    uniform vec4 u_Color;\n\
++    uniform vec4 u_OutlineTop;\n\
++    uniform vec4 u_OutlineSrc;\n\
++    uniform vec3 u_OutlineRing;\n\
++    uniform vec2 u_OutlineSpan;\n\
++    varying vec2 v_TexCoord;\n\
++    varying vec2 v_Pos;\n\
++    float alphaAt(vec2 p)\n\
++    {\n\
++        if (p.x < u_OutlineSrc.x || p.y < u_OutlineSrc.y || p.x >= u_OutlineSrc.z || p.y >= u_OutlineSrc.w)\n\
++            return 0.0;\n\
++        return texture2D(u_Tex0, (u_TextureMatrix * vec3(p, 1.0)).xy).a;\n\
++    }\n\
++    void main()\n\
++    {\n\
++        float inside = alphaAt(v_TexCoord);\n\
++        if (inside > 0.98)\n\
++            discard;\n\
++        float near = 0.0;\n\
++        for (int i = 1; i <= 4; i++) {\n\
++            if (float(i) > u_OutlineRing.z)\n\
++                break;\n\
++            vec2 s = u_OutlineRing.xy * float(i);\n\
++            vec2 d = s * 0.7071;\n\
++            near = max(near, alphaAt(v_TexCoord + vec2(s.x, 0.0)));\n\
++            near = max(near, alphaAt(v_TexCoord - vec2(s.x, 0.0)));\n\
++            near = max(near, alphaAt(v_TexCoord + vec2(0.0, s.y)));\n\
++            near = max(near, alphaAt(v_TexCoord - vec2(0.0, s.y)));\n\
++            near = max(near, alphaAt(v_TexCoord + d));\n\
++            near = max(near, alphaAt(v_TexCoord - d));\n\
++            near = max(near, alphaAt(v_TexCoord + vec2(d.x, -d.y)));\n\
++            near = max(near, alphaAt(v_TexCoord + vec2(-d.x, d.y)));\n\
++        }\n\
++        float a = clamp(near * 2.0, 0.0, 1.0) * (1.0 - inside);\n\
++        if (a < 0.01)\n\
++            discard;\n\
++        float t = clamp((v_Pos.y - u_OutlineSpan.x) / max(1.0, u_OutlineSpan.y - u_OutlineSpan.x), 0.0, 1.0);\n\
++        vec4 c = mix(u_OutlineTop, u_Color, t);\n\
++        gl_FragColor = vec4(c.rgb, c.a * a);\n\
++    }\n";
++
++enum {
++    OUTLINE_TOP_UNIFORM = 20,
++    OUTLINE_SRC_UNIFORM = 21,
++    OUTLINE_RING_UNIFORM = 22,
++    OUTLINE_SPAN_UNIFORM = 23
++};
++
++constexpr float OUTLINE_PULSE_LOW = 0.45f; // the lowest alpha of a pulsing outline (game_cosmeticfx PULSE_LOW)
++constexpr int OUTLINE_MAX_RADII = 4;       // ring samples per direction (the fragment shader's loop)
++
++PainterShaderProgramPtr outlineProgram()
++{
++    static PainterShaderProgramPtr program;
++    static bool failed = false;
++    if (program || failed)
++        return program;
++    program = PainterShaderProgram::create("chaosOutlineProgram", glslOutlineVertexShader, glslOutlineFragmentShader);
++    if (!program) {
++        failed = true;
++        g_logger.error("outline program could not be built; creature outlines are off");
++        return nullptr;
++    }
++    program->bindUniformLocation(OUTLINE_TOP_UNIFORM, "u_OutlineTop");
++    program->bindUniformLocation(OUTLINE_SRC_UNIFORM, "u_OutlineSrc");
++    program->bindUniformLocation(OUTLINE_RING_UNIFORM, "u_OutlineRing");
++    program->bindUniformLocation(OUTLINE_SPAN_UNIFORM, "u_OutlineSpan");
++    return program;
++}
++
++Color scaledAlpha(Color color, float factor)
++{
++    color.setAlpha(std::max(0.f, std::min(1.f, color.aF() * factor)));
++    return color;
++}
++}
++
++void DrawQueueItemOutfitOutline::draw()
++{
++    if (m_parts.empty() || m_outline.width <= 0)
++        return;
++    PainterShaderProgramPtr program = outlineProgram();
++    if (!program)
++        return;
++
++    float alpha = m_color.aF(); // the queue's opacity (setOpacity) applies to the outline too
++    if (m_outline.pulseMs > 0) {
++        const float phase = (float)(g_clock.millis() % m_outline.pulseMs) / m_outline.pulseMs;
++        alpha *= OUTLINE_PULSE_LOW + (1.f - OUTLINE_PULSE_LOW) * (0.5f - 0.5f * std::cos(phase * 6.2831853f));
++    }
++    const Color bottom = scaledAlpha(m_outline.color, alpha);
++    const Color top = scaledAlpha(m_outline.topColor, alpha);
++    if (bottom.aF() <= 0.f && top.aF() <= 0.f)
++        return;
++
++    // the gradient runs over the whole silhouette (the parts' rects are cropped to their opaque pixels)
++    Rect span = m_parts.front()->m_dest;
++    for (auto* part : m_parts)
++        span = span.united(part->m_dest);
++
++    // the width in texture pixels: sprite pixels times the sprite size factor (HD upscaling keeps the same look); a
++    // part drawn scaled (a widget's preview) scales its line with it
++    const float radiusTex = std::max(1.f, m_outline.width * m_pixelScale);
++
++    g_painter->setShaderProgram(program);
++    program->bind();
++    program->setUniformValue(OUTLINE_TOP_UNIFORM, top);
++    program->setUniformValue(OUTLINE_SPAN_UNIFORM, (float)span.top(), (float)(span.bottom() + 1));
++    g_painter->setColor(bottom);
++    for (auto* part : m_parts) {
++        if (!part->m_texture || part->m_dest.isEmpty() || part->m_src.isEmpty())
++            continue;
++        const Rect& src = part->m_src;
++        const Rect& dest = part->m_dest;
++        // texture pixels per destination pixel (1 on the map)
++        const float sx = (float)src.width() / dest.width();
++        const float sy = (float)src.height() / dest.height();
++        // one sample per texture pixel of the radius, at most OUTLINE_MAX_RADII per direction
++        const int radii = std::max(1, std::min(OUTLINE_MAX_RADII, (int)std::ceil(radiusTex)));
++        program->setUniformValue(OUTLINE_SRC_UNIFORM, (float)src.left(), (float)src.top(), (float)(src.right() + 1), (float)(src.bottom() + 1));
++        program->setUniformValue(OUTLINE_RING_UNIFORM, radiusTex / radii, radiusTex / radii, (float)radii);
++        // the quad grows by the radius on each side, in destination pixels and in texture pixels alike
++        const int growX = std::max(1, (int)std::ceil(radiusTex / sx)), growY = std::max(1, (int)std::ceil(radiusTex / sy));
++        const Rect grownDest(Point(dest.left() - growX, dest.top() - growY), Size(dest.width() + 2 * growX, dest.height() + 2 * growY));
++        const int texX = (int)std::ceil(growX * sx), texY = (int)std::ceil(growY * sy);
++        const Rect grownSrc(Point(src.left() - texX, src.top() - texY), Size(src.width() + 2 * texX, src.height() + 2 * texY));
++        g_painter->drawTexturedRect(grownDest, part->m_texture, grownSrc, part->getFlipDirection());
++    }
++    g_painter->resetShaderProgram();
++    g_painter->resetColor();
++}
+--- a/src/client/creature.h
++++ b/src/client/creature.h
+@@ -99,6 +99,12 @@
+     // Chaos: draw the creature bigger (bosses); 1 = normal size, anchored at the creature's feet
+     void setDrawScale(float scale) { m_drawScale = std::max(0.5f, std::min(3.0f, scale)); }
+     float getDrawScale() { return m_drawScale; }
++    // Chaos: a silhouette outline around the outfit (base patch 0038); colour 0-255, width in sprite pixels (1-3, 0
++    // takes it off), pulseMs > 0 breathes the alpha; setOutlineGradient sets the colour at the top (after setOutline)
++    void setOutline(int r, int g, int b, int a, int width, int pulseMs);
++    void setOutlineGradient(int r, int g, int b, int a);
++    void clearOutline() { m_outline = OutfitOutline(); }
++    bool hasOutline() { return m_outline.width > 0; }
+ 
+     void setText(const std::string& text, const Color& color);
+     std::string getText();
+@@ -280,6 +286,7 @@
+     bool m_useCustomInformationColor = false;
+     Point m_informationOffset;
+     float m_drawScale = 1.0f;
++    OutfitOutline m_outline;
+     Color m_outfitColor;
+     ScheduledEventPtr m_outfitColorUpdateEvent;
+     Timer m_outfitColorTimer;
+--- a/src/client/creature.cpp
++++ b/src/client/creature.cpp
+@@ -168,7 +168,9 @@
+         animationOffset -= getDisplacement();
+ 
+     size_t drawQueueSize = g_drawQueue->size();
++    m_outfit.setDrawOutline(m_outline.width > 0 ? &m_outline : nullptr);
+     m_outfit.draw(dest - jumpOffset + animationOffset, m_walking ? m_walkDirection : m_direction, m_walkAnimationPhase, true, lightView);
++    m_outfit.setDrawOutline(nullptr);
+     if (m_drawScale != 1.0f) {
+         // scale around the feet (bottom middle of the creature's tile) so it stays on its square
+         g_drawQueue->setScale(drawQueueSize, creatureCenter + Point(0, sprSize / 2), m_drawScale);
+@@ -194,12 +196,36 @@
+         lightView->addLight(creatureCenter, light);
+ }
+ 
++void Creature::setOutline(int r, int g, int b, int a, int width, int pulseMs)
++{
++    auto channel = [](int v) { return (uint8)std::max(0, std::min(255, v)); };
++    width = std::max(0, std::min(3, width));
++    if (width == 0) {
++        clearOutline();
++        return;
++    }
++    m_outline.color = Color(channel(r), channel(g), channel(b), channel(a));
++    m_outline.topColor = m_outline.color;
++    m_outline.width = width;
++    m_outline.pulseMs = std::max(0, std::min(60000, pulseMs));
++}
++
++void Creature::setOutlineGradient(int r, int g, int b, int a)
++{
++    auto channel = [](int v) { return (uint8)std::max(0, std::min(255, v)); };
++    m_outline.topColor = Color(channel(r), channel(g), channel(b), channel(a));
++}
++
+ void Creature::drawOutfit(const Rect& destRect, Otc::Direction direction, const Color& color, bool animate, bool ui, bool oldScaling, bool mountOnly, bool ignoreDisplacement)
+ {
+     if (direction == Otc::InvalidDirection)
+         direction = m_direction;
+ 
++    // the outline in a widget only for a widget's own preview creature (id 0, UICreature:setOutfit), never for a
++    // creature of the map shown in a list (battle list, party)
++    m_outfit.setDrawOutline(m_id == 0 && m_outline.width > 0 ? &m_outline : nullptr);
+     m_outfit.draw(destRect, direction, 0, animate, ui, oldScaling, mountOnly, ignoreDisplacement);
++    m_outfit.setDrawOutline(nullptr);
+ }
+ 
+ // Chaos name plate: draws a texture as a 9-slice (corners kept, edges and middle stretched) into dest
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -671,6 +671,10 @@
+     g_lua.bindClassMemberFunction<Creature>("getInformationOffset", &Creature::getInformationOffset);
+     g_lua.bindClassMemberFunction<Creature>("setDrawScale", &Creature::setDrawScale);
+     g_lua.bindClassMemberFunction<Creature>("getDrawScale", &Creature::getDrawScale);
++    g_lua.bindClassMemberFunction<Creature>("setOutline", &Creature::setOutline);
++    g_lua.bindClassMemberFunction<Creature>("setOutlineGradient", &Creature::setOutlineGradient);
++    g_lua.bindClassMemberFunction<Creature>("clearOutline", &Creature::clearOutline);
++    g_lua.bindClassMemberFunction<Creature>("hasOutline", &Creature::hasOutline);
+     g_lua.bindClassMemberFunction<Creature>("setText", &Creature::setText);
+     g_lua.bindClassMemberFunction<Creature>("getText", &Creature::getText);
+     g_lua.bindClassMemberFunction<Creature>("clearText", &Creature::clearText);

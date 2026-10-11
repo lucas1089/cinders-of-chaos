@@ -23,7 +23,7 @@ CL.DEFAULT_TEXT = {
   lootbeam = 'Your highlighted loot labels keep the dark background.',
   chatcolor = 'Your name in chat keeps the colour of the message.',
   footprint = 'You leave no footprints.',
-  outline = 'No glow around you.',
+  outline = 'No outline around you.',
 }
 CL.SAMPLE_RARITY = { { name = 'Legendary', color = '#ffd040' }, { name = 'Rare', color = '#4a90ff' },
   { name = 'Mythic', color = '#ff5a5a' } }

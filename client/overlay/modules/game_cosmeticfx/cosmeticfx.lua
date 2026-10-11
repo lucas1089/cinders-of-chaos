@@ -4,11 +4,14 @@
 --   footprints  a print on the tile a player just left (Tile:setWidget, like game_groundlabels), turned to the step's
 --               direction, fading out in CF.PRINT_LIFE_MS; never on a tile that carries another module's widget; no
 --               new prints while the local player stands in a protection zone (temples and depots are crowded)
---   outlines    a soft glow behind the player (a creature bottom widget, drawn under the outfit, so it stacks with
---               outfit shaders, wings and auras); pulsing ones breathe. Other modules' bottom widgets (game_levelwings)
---               are left alone: ours is cleared only when it is the creature's only one (the engine's
---               removeBottomWidget walks the wrong list), else blanked
--- The pictures: client/tools/gen_cosmeticfx_art.py. Rules: cosmeticfxlogic.lua (cosmeticfxlogic_test.lua).
+--   outlines    a line around the player's silhouette (Creature:setOutline, base patch 0038: the engine draws it
+--               under the outfit's parts, so it follows body, addons, mount and the walking frame and stacks with
+--               outfit shaders, wings and auras); colours per art in CF.OUTLINES, pulsing ones breathe (engine side).
+--               An engine without the patch gets the old soft glow picture instead (a creature bottom widget; other
+--               modules' bottom widgets, game_levelwings, are left alone: ours is cleared only when it is the
+--               creature's only one, the engine's removeBottomWidget walks the wrong list, else blanked)
+-- The pictures (prints; glows for old engines): client/tools/gen_cosmeticfx_art.py. Rules: cosmeticfxlogic.lua
+-- (cosmeticfxlogic_test.lua).
 
 local CF = CosmeticFxLogic
 
@@ -20,7 +23,8 @@ local settings = { othersFootprints = true, othersOutlines = true }
 local looks = {}          -- character name -> {f, o, p}
 local preview             -- {look, untilMs}: the local player's store / window preview
 local prints = {}         -- oldest first: {widget, tile, owner, born}
-local glows = {}          -- creature id -> {widget, art, pulse, creature}
+local glows = {}          -- creature id -> {art, pulse, creature, line = true | widget}
+local engineLine          -- nil: not checked yet; true: Creature:setOutline exists (base patch 0038)
 local events = {}
 local handlers = {}
 local mapPanel
@@ -141,6 +145,10 @@ end
 local function dropGlow(cid)
   local g = glows[cid]
   glows[cid] = nil
+  if g and g.line then
+    pcall(function() g.creature:clearOutline() end)
+    return
+  end
   if not g or not g.widget or g.widget:isDestroyed() then return end
   local c = g.creature
   local mine = c and not c:isRemoved() and c:getBottomWidgets() or {}
@@ -152,7 +160,28 @@ local function dropGlow(cid)
   end
 end
 
+-- the engine line (base patch 0038)
+local function setLine(creature, look)
+  local cid = creature:getId()
+  local g = glows[cid]
+  if g and g.line and g.art == look.o and g.pulse == look.p and g.creature == creature then return end
+  if g and not g.line then dropGlow(cid) end
+  local args = CF.outlineArgs(look.o, look.p)
+  if not args then
+    if g then dropGlow(cid) end
+    return
+  end
+  creature:setOutline(args[1], args[2], args[3], args[4], args[5], args[6])
+  if args.top then
+    creature:setOutlineGradient(args.top[1], args.top[2], args.top[3], args.top[4])
+  end
+  glows[cid] = { line = true, art = look.o, pulse = look.p, creature = creature }
+end
+
+-- old engines: the glow picture behind the character
 local function setGlow(creature, look)
+  if engineLine == nil then engineLine = CF.hasEngineOutline(creature) end
+  if engineLine then return setLine(creature, look) end
   local cid = creature:getId()
   local g = glows[cid]
   if g and g.widget and not g.widget:isDestroyed() and g.art == look.o then
@@ -211,7 +240,9 @@ handlers.tick = function()
   prints = keep
   local pulse = CF.pulseOpacity(t)
   for cid, g in pairs(glows) do
-    if not g.widget or g.widget:isDestroyed() then
+    if g.line then
+      -- the engine pulses its own line
+    elseif not g.widget or g.widget:isDestroyed() then
       glows[cid] = nil -- the engine cleared the creature's widgets (it left the screen)
     elseif g.pulse then
       g.widget:setOpacity(pulse)
@@ -245,6 +276,19 @@ end
 
 function getLooks()
   return looks
+end
+
+-- an outline on any creature (game_cosmetics: the window's sample, a widget's own creature); false when this engine
+-- has no outline pass (base patch 0038) or the art is unknown, then the caller shows the glow picture
+function applyOutline(creature, art, pulse)
+  if not CF.hasEngineOutline(creature) then return false end
+  local args = CF.outlineArgs(art, pulse)
+  if not args then return false end
+  creature:setOutline(args[1], args[2], args[3], args[4], args[5], args[6])
+  if args.top then
+    creature:setOutlineGradient(args.top[1], args.top[2], args.top[3], args.top[4])
+  end
+  return true
 end
 
 local function onGameStart()

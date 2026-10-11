@@ -5,9 +5,9 @@
 --   loot label accents  the background of the character's own highlighted ground loot labels (client game_groundlabels);
 --                       the rarity colours stay
 --   chat name colours   the character's name in chat, for every viewer (client game_cosmetics colours the name only)
---   footprints          prints behind the walking character, for every viewer; outlines: a coloured glow behind the
---                       character, for every viewer. Both are drawn by each client (game_cosmeticfx) from the "looks"
---                       this script sends (who wears which art); the server does nothing per step
+--   footprints          prints behind the walking character, for every viewer; outlines: a coloured line around the
+--                       character's silhouette, for every viewer. Both are drawn by each client (game_cosmeticfx)
+--                       from the "looks" this script sends (who wears which art); the server does nothing per step
 -- Data: cosmetics_config.lua. Rules: cosmetics_core.lua (server/tests/cosmetics_test.lua). Unlocks are account-wide
 -- (table chaos_cosmetics, server/sql/chaos_cosmetics.sql, also created here at startup); the choice is per character
 -- (storages 7100940 - 7100949). Store offers: {kind = "unlock", unlock = "cosmetic_<key>"} (shop_services.lua asks
@@ -22,7 +22,7 @@
 -- ==============================================================
 --
 -- Protocol (JSON {action, data}) on ChaosOpcodes.cosmetics (225):
---   client -> server  open | select {kind, id, line} (id 0 = the default; line for spell skins) | preview {id} | close
+--   client -> server  open | select {kind, id, line} (id 0 = the default; line for spell skins) | preview {id} | hello (in the game: the full lists again) | close
 --   server -> client  state {open, line, lineName, rows = [K.rows + item (client id of the icon)]}      style {accent}  (the character's own label accent)
 --                     colors {names = {[name] = "#rrggbb"}, full}  (chat name colours of online characters)
 --                     looks {names = {[name] = {f = print art, o = glow art, p = 1 pulse} | false}, full}  (footprints
@@ -454,6 +454,12 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		if msg.action == "open" then
 			sync(player)
 			M.sendState(player, true)
+		elseif msg.action == "hello" then
+			-- the client is in the game: the full lists again (what onLogin sends can reach the client before it is in
+			-- the game and is dropped there, and a reconnect into a character still online runs no login event)
+			refresh(player, false)
+			send(player, "colors", {names = M.colors, full = true})
+			send(player, "looks", {names = M.looks, full = true})
 		elseif msg.action == "select" then
 			choose(player, tostring(data.kind or ""), data.id, type(data.line) == "string" and data.line or nil)
 		elseif msg.action == "preview" then
