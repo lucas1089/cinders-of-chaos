@@ -254,7 +254,7 @@ ChaosMainWindow
     anchors.left: parent.left
     margin-top: 6
     width: 290
-    !text: tr('Show supplies (potions, runes, ammo)')
+    !text: tr('Show supplies (potions, runes)')
 
   ChaosCheckBox
     id: show_other

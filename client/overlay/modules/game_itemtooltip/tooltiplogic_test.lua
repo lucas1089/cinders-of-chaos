@@ -194,6 +194,25 @@ eq(d[1].k, 'attack', 'hovered order first')
 eq(d[#d].k, 'rarity_elementfire', 'then what only the equipped has')
 eq(#L.diff(sword, nil), 5, 'against nothing: every number')
 
+-- ---------------------------------------------------------------- a quiver: implicit rows and the bow note
+local quiver = { name = 'Seraphic Quiver', kind = 'quiver', slot = 'Quiver', rarity = 3, rarityName = 'Rare', level = 120,
+  base = { { k = 'chaos_mod_bowdistance', l = 'Distance Fighting', v = 4, imp = true },
+    { k = 'chaos_mod_multishot', l = 'Extra Projectile Chance', v = 8, fmt = 'pct', imp = true } },
+  mods = { { k = 'chaos_mod_bowcrit', t = 'Critical Strike Chance with Bows +6%', g = 'chaos', tr = 6, sd = 'p', lo = 6, hi = 7 } },
+  note = 'Works only while you hold a bow or crossbow.', weight = 24.7 }
+local ql = L.lines(quiver)
+local qtext = {}
+for _, row in ipairs(ql) do qtext[#qtext + 1] = row.text end
+qtext = table.concat(qtext, '|')
+eq(ql[1].text, 'Rare Quiver', 'quiver title')
+eq(qtext:find('Distance Fighting: +4', 1, true) ~= nil, true, 'implicit flat, signed')
+eq(qtext:find('Extra Projectile Chance: +8%', 1, true) ~= nil, true, 'implicit percent, signed')
+eq(qtext:find('Works only while you hold a bow or crossbow.', 1, true) ~= nil, true, 'the note')
+for _, row in ipairs(ql) do
+  if row.text:find('^Distance Fighting') then eq(row.color, L.COLORS.chaos, 'implicit colour') end
+  if row.text:find('^Works only') then eq(row.color, L.COLORS.gold, 'note colour') end
+end
+
 if fails > 0 then
   print(fails .. ' failure(s)')
   os.exit(1)

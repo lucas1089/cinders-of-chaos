@@ -46,7 +46,10 @@ stealth crits); poison blades; evasion (dodge chance).
 - **Juggernaut**: Iron Will, Bulwark (block/reflect), taunts.
 - **Berserker**: Cleaving Arc (two-handed hits strike everything adjacent), rage.
 
-**Ranger** (base): today's Paladin kit.
+**Ranger** (base): today's Paladin kit. Bows and crossbows fire without ammunition; the ammunition slot holds a quiver
+(gear with implicit and rolled modifiers that work only while a bow or crossbow is held: distance fighting, attack speed,
+critical strike, extra projectiles, elemental shares; server/README.md "Infinite arrows and quivers"). The new-player kit has
+the bow and no arrows. Only the Ranger, Deadeye and Beastmaster may wear quivers (the launchers' vocations).
 - **Deadeye**: crossbow, Final Verdict, marks.
 - **Beastmaster**: a wolf/bear companion that scales with level, arrow splash, Ricochet.
 
@@ -195,6 +198,8 @@ Limits of phase 1:
   Elementalist; Master Sorcerer -> Elementalist; Druid -> Mystic, Illusionist; Elder Druid -> Illusionist; Illusionist (old 9) ->
   Mystic, Illusionist; Arch Illusionist -> Illusionist. The Berserker is only added to two-handed swords, axes and clubs among the
   weapons and hand items and never to shields; the Beastmaster only to bows and arrows among weapons, hand items and ammunition.
+  (Since "Infinite arrows and quivers", server/README.md, launchers have no ammo type: the tool counts a two-handed distance
+  weapon as a bow or crossbow by its missile, and arrows and bolts are gone.)
   `potions.lua`: a potion of the Elite Knight (8) also lists the Berserker (14), one of the Royal Paladin (7) the Beastmaster (15),
   the Thief line (11-13) and the Monk line (17-19), one of either the Templar line (23-25), one of the Elementalist (5) the
   Necromancer line (20-22); the refusal texts name our classes ("Only Warriors and Templars of level 80 or above may drink this

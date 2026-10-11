@@ -26,6 +26,7 @@
 --   veil = {s = "veiled"} | {s = "open", n, t, tr, tn, lo, hi, h}   the veiled slot (chaos_veiled.lua V.tooltip): name,
 --                                                  text, veiled tier 1..4 and its name, its range, h = an effect of its own
 --   req = {level, magic, voc}, weight (oz), desc (flavour text), locked
+--   note                                           a line of its own (quivers: they work only with a bow or crossbow)
 --   store, collects                                a store pouch (pouches.lua): its two lines, no desc and no lock line
 --   stats = [{k, l, v, fmt, low}]                  every number the compare view adds up (low = lower is better)
 --   cmp = [slot, ...]                              inventory slots worn the same way (the client compares with them)
@@ -78,6 +79,7 @@ end
 -- positions: what a client may ask about
 -- ---------------------------------------------------------------------------------------------------------------
 T.SLOT_FIRST, T.SLOT_LAST = 1, 10 -- head .. ammo: the inventory the 10.98 client shows
+T.QUIVER_NOTE = "Works only while you hold a bow or crossbow."
 
 -- a position from the client -> {kind = "slot", slot} | {kind = "container", cid, index} | {kind = "map", x, y, z,
 -- stackpos} or nil (malformed). Only the shape is checked here; item_tooltip.lua checks access.
@@ -162,6 +164,9 @@ function T.slotsOf(slotPosition, kind)
 	if kind == "weapon" or kind == "shield" then
 		local name = kind == "shield" and "Shield" or (hasBit(sp, SLOTP.twohand) and "Two-handed weapon" or "Weapon")
 		return {INV.left, INV.right}, name
+	end
+	if kind == "quiver" then
+		return {INV.ammo}, "Quiver"
 	end
 	local order = {
 		{SLOTP.head, INV.head, "Helmet"}, {SLOTP.necklace, INV.necklace, "Amulet"}, {SLOTP.armor, INV.armor, "Armour"},
@@ -350,6 +355,16 @@ function T.build(item, opts)
 	end
 
 	tip.base = T.baseStats(item, it)
+	-- a quiver (data/lib/chaos_archery_core.lua): its base's implicit modifiers, and that it works only with a bow or
+	-- crossbow in the hands
+	if kind == "quiver" and ChaosArchery and M then
+		for _, r in ipairs(ChaosArchery.implicitRows(id, M)) do
+			-- the key of the modifier attribute, so the compare view adds an implicit and a rolled one together
+			tip.base[#tip.base + 1] = {k = M.attr(r.key), l = r.def.label, v = r.value,
+				fmt = r.def.fmt ~= "flat" and "pct" or nil, imp = true}
+		end
+		tip.note = T.QUIVER_NOTE
+	end
 	-- weapons: the interval the viewer swings this one at (vocation, dexterity), with the attack speed cap of engine
 	-- patch 0011; "(capped)" when the cap raised it. opts.wielder = {voc = vocation attackspeed, dex = dexterity}
 	local w = opts.wielder
@@ -489,7 +504,7 @@ function T.build(item, opts)
 		if G and G.strip then
 			desc = G.strip(desc)
 		end
-	elseif rarity == 0 then
+	elseif rarity == 0 and kind ~= "quiver" then -- a quiver's type text repeats its implicits and the note above
 		desc = call(it, "getDescription")
 	end
 	if type(desc) == "string" and desc ~= "" then

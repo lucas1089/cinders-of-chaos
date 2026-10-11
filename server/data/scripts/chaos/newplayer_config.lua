@@ -39,7 +39,7 @@ return {
 		ranger = {
 			equip = {
 				{slot = "left", id = 2456}, -- bow (two-handed)
-				{slot = "ammo", id = 2544, count = 100}, -- arrows
+				-- no arrows: bows fire without ammunition (data/lib/chaos_archery_config.lua); quivers come from loot
 				{slot = "head", id = 2458}, -- chain helmet
 				{slot = "armor", id = 2660}, -- ranger's cloak
 				{slot = "legs", id = 2468}, -- studded legs

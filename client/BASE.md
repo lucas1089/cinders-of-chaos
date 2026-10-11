@@ -62,6 +62,31 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     `g_game.getChaosClientId()` / `getChaosClientBuild()` for Lua. The chain 0001-0035 applies to the `windows-assets`
     base client; built and tested in the Linux client.
 
+18. `0038` (C++, `src/client/outfit.h/.cpp`, `creature.h/.cpp`, `luafunctions_client.cpp`): silhouette outlines for the
+    outline cosmetics (`MANIFEST.md` "game_cosmeticfx", server/README.md "Footprints and outlines"). Lua:
+    `creature:setOutline(r, g, b, a, widthPx, pulseMs)` (colour 0-255, width 1-3 sprite pixels, 0 takes it off;
+    `pulseMs > 0` breathes the alpha between 45% and 100%), `creature:setOutlineGradient(r, g, b, a)` (the colour at the
+    top of the silhouette, after `setOutline`; the first colour is at the feet), `clearOutline()`, `hasOutline()`.
+    How: `Outfit::draw` queues one `DrawQueueItemOutfitOutline` before the mount and keeps pointers to the queue items of
+    the mount, the body, each addon and the rider (shaded or not, the walking frame included); at draw time it draws
+    each part once more from that item's final rect and texture, grown by the width, through its own program: the
+    fragment samples the part's alpha in 8 directions at 1-4 radii (clamped to the part's own frame in the sprite sheet)
+    and paints only where the part is transparent and a neighbour is not. The parts are drawn after it, so lines inside
+    the silhouette (rider over mount, addons) are covered and only the outer contour stays. Wings and auras are not
+    outlined (the line goes under the wings); names, bars and the outfit shader are not touched (the shader still
+    draws the body; the outline is a separate pass). The width is in sprite pixels times `g_sprites.getOffsetFactor()`,
+    so with HD upscaling (xBRZ, `0027`) the line keeps its look; queue scaling (`setDrawScale`) and opacity apply.
+    Widgets: only a widget's own preview creature (id 0, `UICreature:setOutfit`) draws it (the Cosmetics window
+    sample), never a map creature shown in the battle list. Why this and not a framebuffer per creature: one extra quad
+    per part with no framebuffer switch, so 40 outlined creatures cost about as much as 40 more sprites; a framebuffer
+    pass would bind, clear and resolve once per creature and break the draw cache batching. Why not 8 offset copies in
+    a flat colour: 8 draws per part (16 for a 2 px line) instead of one, for the same picture.
+    Measured in the Linux client (software OpenGL, Xvfb): 39 outlined monsters and 2 players on screen ran 14.6-17.2 fps
+    against 15.2-18.7 fps without outlines, within the noise of the moving crowd. Applies after 0001-0036 and touches
+    no file a depot window or quiver change would (built and tested in the Linux client, outlines standing, walking,
+    mounted, with an outfit shader, at scale factor 1 and 2, gradient and pulsing ones; screenshots outside the
+    repository).
+
 ### Client guard: the build secret
 
 The key the client proves itself with is read by CMake (`src/client/CMakeLists.txt`, patch 0035) at configure time:

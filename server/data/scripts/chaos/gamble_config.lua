@@ -29,8 +29,10 @@ C.refresh = {hours = 4, utcOffsetHours = nil}
 -- with no base the character can use is drawn again.
 C.stock = {
 	size = 14, seed = 7717,
-	slots = {weapon = 3, armor = 2, helmet = 2, legs = 2, boots = 2, shield = 1, amulet = 1, ring = 1},
-	order = {"weapon", "shield", "helmet", "armor", "legs", "boots", "amulet", "ring"} -- also the display order
+	-- quiver: only for the characters who may wear one (movements.xml: the bow classes); for everyone else the slot has
+	-- no base and is drawn again
+	slots = {weapon = 3, armor = 2, helmet = 2, legs = 2, boots = 2, shield = 1, amulet = 1, ring = 1, quiver = 1},
+	order = {"weapon", "shield", "quiver", "helmet", "armor", "legs", "boots", "amulet", "ring"} -- also the display order
 }
 
 -- the item level of a piece: the gate is the item level a kill of a monster of the character's level gives
@@ -105,6 +107,11 @@ C.pool = {
 	ring = {
 		{28691, 100}, {28125, 300}, {28023, 400}, {28041, 400}, {28049, 400}, -- ring of temptation, forbidden ring, Astro Ring (x2), Mercurial Ring
 		{29890, 1000}, {29877, 1000}, {29868, 1000} -- Dawnforged, Seraphic, Myst Regalia
+	},
+	-- the quiver bases of data/lib/chaos_archery_config.lua (quivers), lv = their required level
+	quiver = {
+		{28693, 20}, {27651, 50}, {27694, 80}, {27696, 120}, {27663, 150}, {27686, 200}, -- candy-coated, jungle, tiers 3-6
+		{27676, 250}, {28379, 300}, {27695, 350}, {29566, 400}, {28050, 500}, {29873, 1000} -- tiers 7-10, Haloed, Mercurial, Seraphic
 	}
 }
 
@@ -118,7 +125,8 @@ C.price = {
 	curve = {{1, 1500}, {4, 3000}, {5, 3600}, {12, 8300}, {18, 13000}, {22, 20000}, {36, 56000}, {54, 97000},
 		{67, 150000}, {74, 300000}, {90, 850000}, {106, 1100000}, {118, 1350000}, {123, 1500000}, {136, 1650000},
 		{150, 1800000}},
-	slot = {weapon = 1.3, armor = 1.15, shield = 1.0, helmet = 1.0, legs = 1.0, boots = 0.9, amulet = 1.1, ring = 1.1},
+	slot = {weapon = 1.3, armor = 1.15, shield = 1.0, helmet = 1.0, legs = 1.0, boots = 0.9, amulet = 1.1, ring = 1.1,
+		quiver = 1.0},
 	round = 100
 }
 C.balance = {

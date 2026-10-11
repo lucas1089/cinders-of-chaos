@@ -6,7 +6,7 @@
 --                ksBulwark      with a shield: 15% to block a melee/ranged attack fully, 30% of melee damage reflected
 --   paladin      ksRicochet     bow/crossbow hits: 30% to bounce to the nearest other enemy (4 sqm) for 65%, then once
 --                               more for 65% of that; never the same target twice
---                ksDeadeye      crossbow + bolts: 15% for a Deadeye shot, double damage
+--                ksDeadeye      crossbow: 15% for a Deadeye shot, double damage
 --   sorcerer     ksArcaneEcho   a spell that hits 2+ enemies: 35% to echo 0.6 s later on the same spots for 50%, 3 s cooldown
 --                ksOverload     a spell hit of one element primes the others: the next spell of another element +20% (8 s)
 --   druid        ksOvergrowth   heals on others also heal 30% of the heal again over 6 s (3 pulses)
@@ -287,12 +287,12 @@ end
 
 local MELEE_WEAPON = {[WEAPON_SWORD] = true, [WEAPON_CLUB] = true, [WEAPON_AXE] = true}
 
+-- a crossbow in the hands (bows and crossbows fire without ammunition: data/lib/chaos_archery_core.lua)
 local function shootsBolts(player, weapon)
-	if weapon:getWeaponType() ~= WEAPON_DISTANCE or weapon:getAmmoType() ~= AMMO_BOLT then
-		return false
+	if not ChaosArchery then
+		pcall(dofile, "data/lib/chaos_archery_core.lua")
 	end
-	local ammo = player:getSlotItem(CONST_SLOT_AMMO)
-	return ammo ~= nil and ItemType(ammo:getId()):getAmmoType() == AMMO_BOLT
+	return ChaosArchery ~= nil and ChaosArchery.kindOfType(weapon) == "crossbow"
 end
 
 local function validTarget(attacker, c)

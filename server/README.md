@@ -255,6 +255,11 @@ server/
    `gamble`, after `professions`) copies the Gambler NPC (`data/npc/Mordecai Ashwager.xml` and its script) into `data/npc`;
    `gamble.lua` places him next to the main temple at startup. No items, no tables, no client change outside `game_gamble`.
    See "The Gambler".
+5j. Infinite arrows and quivers: `python3 -I server/tools/patch_base_archery.py <server>/data [--dry-run]` (idempotent;
+   `install_all.py` step `archery`, after `vocations` and `spells`) gives bows and crossbows the attack, hit chance and
+   missile of their ammunition, makes the quivers equipment (items.xml, items.otb, movements.xml) and takes arrows and bolts
+   out of loot, shops, conjure spells and rewards; then run `server/sql/chaos_archery.sql` once, with the server stopped
+   (the `sql` step does), before the first start with the patched items.otb. See "Infinite arrows and quivers".
 6. Restart the server (or `/reload scripts`). Check the console for Lua errors.
 7. Player commands: `python3 -I server/tools/install_commands.py <server>/data` takes the base server's spoken player
    commands out (talkactions.xml lines with "!" words, the "!" words of base revscripts, the "!commands" login lines);
@@ -401,6 +406,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 80000 + n | autoloot list, shared on purpose with the base autoloot (`Chaos.storage.autolootBase`) |
 | 7100000 - 7100999 | `Chaos.storage` in `chaos_constants.lua` and the `*_config.lua` blocks it lists (daily, stash, passive tree, bounty, rifts, new player, monk, market, store cosmetics, ...) |
 | 7101000 - 7101004 | ascension quest (`ascension_quest_config.lua`) |
+| 7101100 - 7101109 | infinite arrows (`data/lib/chaos_archery_config.lua` `storage`): +0 the ammunition sweep is done, +1 its stash part is done |
 | 7101300 - 7101309 | guilds (`guild_config.lua`; 7101302 guild boss lockout) |
 | 7101400 - 7101419 | boss points (`bosspoints_config.lua`) |
 | 7101600 - 7101639 | Town Portal (`townportal_config.lua`) |
@@ -1261,7 +1267,7 @@ variant the server applies (the client's own vocation number did not match: an E
 | Vocation | Wrath (621) | Resolve (624) |
 |---|---|---|
 | Knight | Cleaving Arc: two-handed melee hits also hit up to 3 other enemies next to you for 40% | Bulwark: with a shield, 15% to block a melee/ranged attack completely; 30% of melee damage taken reflected |
-| Paladin | Ricochet: bow/crossbow hits, 30% to bounce to the nearest other enemy within 4 sqm for 65%, then once more for 42%; never the same target twice | Deadeye: crossbow + bolts, 15% for a shot with double damage |
+| Paladin | Ricochet: bow/crossbow hits, 30% to bounce to the nearest other enemy within 4 sqm for 65%, then once more for 42%; never the same target twice | Deadeye: a crossbow (no ammunition needed), 15% for a shot with double damage |
 | Sorcerer | Arcane Echo: a spell hitting 2+ enemies, 35% to repeat 0.6 s later on the same spots for 50%; 3 s cooldown | Elemental Overload: a spell hit primes the other elements, the next spell of another element within 8 s deals +20% |
 | Druid | Overgrowth: heals on others heal 30% more over 6 s (3 pulses) | Thorns: melee/ranged attackers take 30% of their hit + 2 x magic level as earth damage |
 | Illusionist (support) | Shared Phantasm: your hits mark the enemy for 6 s; other party members deal +12% to it | Inspiring Illusion: other party members within 8 sqm deal +8% damage |
@@ -1436,7 +1442,7 @@ The tower exists now. The Enter Tower button of the client window (action `enter
 
 ## Test kit (`admin/testkit.lua`)
 `/testkit [kind][, player]` (admins only) equips a strong set for the class (uniques where they fit), a backpack of supplies (potions, runes, crystal coins, Orbs of Upheaval and Fate), raises the level to 500 and the main skills, and resets health and mana to the vocation's values. Relog afterwards so the stock rarity script applies the item bonuses.
-Kinds (`ChaosTestKit.kindByVocation`, picked from the vocation when none is given): `mage` (Mystic, Elementalist, Illusionist with the rod; magic level 110), `knight` (Warrior, Juggernaut; melee 120, shielding 110), `berserker` (the knight set with Executioner's Reckoning, two-handed, no shield), `paladin` (Ranger, Deadeye; crossbow, distance 125), `beastmaster` (Doomtide Longbow and crystalline arrows), `thief` (Thief, Samurai: Soulreaper and the paladin's armour, sword 120, distance 110, magic level 30, 100 assassin stars), `ninja` (the same plus Bloodmoon Edge in the shield hand; without `src-patches/0002` it goes to the backpack), `monk` (Monk line: no weapon, fist 120, club 110, the paladin's armour), `necromancer` (Necromancer line: the mage set with the wand) and `templar` (Templar line: the knight set, sword and club 120, shielding 110, magic level 25).
+Kinds (`ChaosTestKit.kindByVocation`, picked from the vocation when none is given): `mage` (Mystic, Elementalist, Illusionist with the rod; magic level 110), `knight` (Warrior, Juggernaut; melee 120, shielding 110), `berserker` (the knight set with Executioner's Reckoning, two-handed, no shield), `paladin` (Ranger, Deadeye; crossbow, distance 125, a Legendary Haloed Quiver rolled at the kit's item level), `beastmaster` (Doomtide Longbow and a Legendary Mercurial Quiver), `thief` (Thief, Samurai: Soulreaper and the paladin's armour, sword 120, distance 110, magic level 30, 100 assassin stars), `ninja` (the same plus Bloodmoon Edge in the shield hand; without `src-patches/0002` it goes to the backpack), `monk` (Monk line: no weapon, fist 120, club 110, the paladin's armour), `necromancer` (Necromancer line: the mage set with the wand) and `templar` (Templar line: the knight set, sword and club 120, shielding 110, magic level 25).
 
 ## Store (`shop.lua`, `shop_core.lua`, `shop_config.lua`, `shop_cosmetics.lua`, `shop_coins_config.lua`)
 The client's Store (menu Economy > Store, module `game_shop`) talks JSON on extended opcode 218 (`ChaosOpcodes.shop`; the
@@ -2615,8 +2621,130 @@ refused entry, a third login was refused.
   per second over one hand + shield). Run `python3 -I server/tools/two_handed.py <server>/data` once: it raises the
   `attackspeed` of the two-handed weapons in items.xml (2000 -> 3000 ms, 1800 -> 2700 ms; idempotent). The extra damage
   is applied by `weapon_styles.lua` to weapon hits only (spells, runes and wands are not affected).
-- Arrows splash: creatures around the target take 50% of the hit (normal PvP / protection zone rules). Bolts hit only
-  their target.
+- Bows splash: creatures around the target take 50% of the hit (normal PvP / protection zone rules). Crossbows hit only
+  their target. Which kind a launcher is comes from `data/lib/chaos_archery_config.lua` (bows and crossbows fire without
+  ammunition: "Infinite arrows and quivers" below).
+
+## Infinite arrows and quivers (`data/lib/chaos_archery_core.lua`, `chaos_archery_config.lua`, `archery.lua`, `weapon_styles.lua`, `tools/patch_base_archery.py`, `sql/chaos_archery.sql`)
+
+Bows and crossbows fire without ammunition. A quiver is gear of the ammunition slot with modifiers for bow and crossbow
+users. Arrows and bolts are gone from the game.
+
+**No engine patch.** The engine asks for ammunition only when the launcher has an ammo type (`Player::getWeapon`), and
+`Weapons::loadDefaults` gives every distance weapon without one a weapon of its own, which fires the launcher itself with
+`WeaponDistance` (its attack, its hit chance, its `shootType` as the missile; nothing is used up, a weapon has no
+`action`). So the install step only changes items.xml; every distance formula, the skill training, the hit and miss
+effects stay the engine's.
+
+**Launchers** (`tools/patch_base_archery.py`, step `archery` of `install_all.py`, after `vocations`, which still reads the
+ammo types, and after `spells`). Every two-handed distance weapon with an `ammoType` loses it and gets the attack, hit
+chance and missile of the ammunition of its level band (`bands` in the config: the best ammunition an NPC sold for that
+level):
+
+| Band (launcher level) | Bow: + attack, hit chance, missile | Crossbow: + attack, hit chance, missile |
+|---|---|---|
+| 0 | +29, 93%, arrow (the arrows of levels 1-39 on average) | +32, 87%, bolt (the bolts of levels 1-44 on average) |
+| 30 / 40 / 55 / 70 | (no bow of the base needs 20-39) 38, 94%, onyx arrow from 40 | 33 piercing (30), 36 vortex (40), 40 power (55), 56 drill (70) |
+| 90 and up | +65, 95%, crystalline arrow | +66, 90%, prismatic bolt |
+
+`hitChance` = the band's + the launcher's own hit bonus, at most 100 (the engine added the bow's bonus to the arrow's
+chance; a non-zero `hitChance` of the weapon is the whole chance now). A name with water, arcane or icicle gives the
+elemental missile. The kind and level come from the config's `launchers` (75 ids; the level is the weapons.xml level, an
+unleveled launcher with an attack of 4 or more counts as 100). A launcher the config does not name (the transmog set looks,
+which only the transmog files may name) is a bow of its weapons.xml level, a crossbow when its name holds crossbow, bolter,
+arbalest or piercer; the tool prints those. The five launcher uniques of `data/items/chaos_items.xml` got the same band on
+their attack and lost their item hit chance (the engine fires with the type's). Rarity rolls no longer raise a launcher's
+hit chance attribute (`ChaosCrafting.applyBaseBonus`), the engine does not read it.
+
+**Old launchers** (`archery.lua`, at login for the inventory and whenever a launcher reaches a hand): an attack attribute
+from before (a rarity roll or a unique) still holds the attack without ammunition. It is below the new type attack (the
+smallest band, 29, beats the biggest rarity bonus, 19) and gets its band once; the hit chance attribute goes. A value at or
+above the type attack is a roll of after the patch and stays. On an unpatched server nothing changes.
+
+**Quivers.** The ammunition slot: bows and crossbows are two-handed, so the shield hand is taken, and the ammunition slot is
+free now. The 12 base quivers (`quivers` in the config: id, level, implicit modifiers) stop being containers: items.otb group
+2 -> 0 (the engine makes containers of that group only; `items.otb.bak` keeps the original), items.xml without container
+size, hand slot and stock abilities, slot ammo, a text with the implicits; movements.xml gets one Equip / DeEquip pair per
+quiver (`onEquipItem`, the quiver's level, the vocations that may fire a launcher: Ranger, Deadeye, Beastmaster). The stock
+hunter's quiver stays a decoration (stackable in the client's data). `sql/chaos_archery.sql` (the `sql` step) moves what
+players kept inside a quiver into the container around it, the backpack, or next to it in a depot or inbox: the engine
+would drop it at login. Arrows and bolts among it are refunded at the next login.
+
+| Quiver | Level | Implicit |
+|---|---|---|
+| 28693 | 20 | Attack Speed with Bows +2% |
+| 27651 | 50 | Distance Fighting +2 |
+| 27694 | 80 | Critical Strike Chance with Bows +3% |
+| 27696 | 120 | Extra Projectile Chance +5% |
+| 27663 | 150 | Adds 8% of Bow Damage as Energy |
+| 27686 | 200 | Adds 8% of Bow Damage as Earth |
+| 27676 | 250 | Critical Strike Chance with Bows +5%, Distance Fighting +2 |
+| 28379 | 300 | Adds 10% of Bow Damage as Ice |
+| 27695 | 350 | Adds 12% of Bow Damage as Fire |
+| 29566 (Haloed) | 400 | Distance Fighting +3, Attack Speed with Bows +4% |
+| 28050 (Mercurial) | 500 | Extra Projectile Chance +10%, Critical Strike Chance with Bows +4% |
+| 29873 (Seraphic) | 1000 | Distance Fighting +4, Extra Projectile Chance +8%, Attack Speed with Bows +5% |
+
+A quiver is its own kind in the item system (`ChaosItemMods.kindOfType` "quiver"). It rolls only the modifiers that name
+it: eight of its own and nine shared ones (Damage to Elites and Bosses, Physical / Elemental Penetration, Health / Mana on
+Hit, Life / Mana on Kill, Chance to Bleed / Poison), never the engine's absorbs, skills, critical or leech pairs (the base
+rarity script would apply those whatever the wearer holds). Weapons never roll the quiver modifiers.
+
+| Modifier | Side | T1 .. T8 | Cap | What it does (`weapon_styles.lua`, `archery.lua`) |
+|---|---|---|---|---|
+| Distance Fighting | prefix | +1 .. +6-8 | 12 | an attribute condition of its own sub id |
+| Critical Strike Chance with Bows | prefix | 1-2% .. 8-10% | 20% | a bow or crossbow hit deals +50% |
+| Extra Projectile Chance | prefix | 2-4% .. 14-20% | 30% | a second missile, 60% of the hit, at the monster closest to the target (3 sqm), else the target |
+| Adds N% of Bow Damage as Fire / Ice / Energy / Earth | prefix | 2-4% .. 20-28% | 40% each | the strongest element of the totals adds that share of the hit as its element, against the monster's resistance, with its hit effect |
+| Attack Speed with Bows | suffix | 1-2% .. 8-10% | 12% | written on the launcher in the hands ("chaos_qspd") and folded into its attack interval (the engine's attack speed cap, patch 0011, applies); off again when the launcher leaves the hands |
+
+A quiver counts only while a bow or crossbow is held (`ChaosItemMods.fits`: the ammunition slot needs a quiver and a
+launcher in a hand); its modifiers and implicits then join the totals like set bonuses, under the same caps. Without a
+launcher it does nothing (the item_mods refresh after every slot move drops it). The engine refuses it to other
+vocations (movements.xml). Quivers drop like other gear (`ChaosLoot.isGearId`; the base monsters already list them),
+roll item levels and tiers like other gear (the item level gates of `chaos_item_mods.lua`), take the crafting bonus
+(the Haloed and Seraphic recipes) and are in the Gambler's pool (a "Quiver" slot, the bow classes only). The tooltip
+names them "Quiver", lists the implicits in the modifier colour and adds "Works only while you hold a bow or crossbow.".
+
+**Ammunition removed** (`patch_base_archery.py`): one-line loot entries of arrows and bolts in the base monsters (XML and
+Lua, by id or by name: 142 entries on the reference server), the NPC shops (XML lists and Lua shop tables,
+buy keywords commented out: 291 offers and rewards), the ten conjure spells (`spells.xml`, commented out; their names left
+`spell_names.csv` and the client's spell data), and ammunition in base script rewards becomes gold coins worth its refund
+(first items, the starter chest, the valuables, an NPC's trade; one postman mission asks 24 gold instead of 12 arrows).
+No crafting recipe of the base makes ammunition, the Chaos store, kits and the Gambler never had any. The new player kit
+and the staff test kit carry no ammunition (the test kits get a rolled quiver). `loot.lua` takes arrows and bolts out of
+every corpse too (a loot table the tool could not read). `hunt_supplies.lua` was generated again (no ammunition is sold).
+Throwing weapons (spears, stars, knives) are not ammunition and stay.
+
+**What players own** (`archery.lua`). At the first login after the update every arrow and bolt in the inventory, the depot
+chests of every town and the inbox goes, and the refund goes to the bank: half the cheapest NPC price (no NPC buys
+ammunition; `ammo` in the config, 1 gold for an unlisted arrow), then the character is saved (`Chaos.saveCharacter`;
+storage 7101100). All of it is in memory and saved as one: a crash before the save keeps nothing, the next login sweeps
+again. The stash (`chaos_stash`) is a step of its own (storage 7101101): refund and mark first, saved, and only then the
+rows are deleted; a failed save takes refund and mark back and leaves the rows. Later logins look at the inventory again
+(a base reward the tool did not know), and ammunition that reaches the inventory by a move (a map chest, a trade) is turned
+into its refund at once. Houses (their tiles are saved apart) and Chaos market listings are not swept; that ammunition
+cannot be fired and turns into gold when a character picks it up.
+
+**Spells.** `ChaosSpell.distanceAttack` (`_common.lua`) is the launcher's own attack (it carries the band); the shuriken
+spells' throwing weapon check also needs a one-handed weapon now. No Chaos spell consumed ammunition. The Deadeye
+keystone needs a crossbow, the bow splash and Ricochet a launcher of that kind.
+
+**Balance** (server/data/spells/README.md "Infinite arrows"): with the ammunition of its band a launcher deals exactly
+what it did (same attack sum, same hit chance). The level 0 bow and crossbow carry the average of what levels 1-39 fired.
+
+Tests: `tests/archery_test.lua` (bands, old items, the balance table, quiver kind, rolls and gates, slot rules, crafting,
+tooltip, refunds, the save-safe sweep, the quiver's skill and speed, the hit: splash by kind, critical strike, element,
+extra projectile, loot, the SQL ids), `tests/base_archery_patch_test.lua` (the tool on a small data folder, idempotent),
+new cases in `gamble_test.lua`, `item_mods_test.lua`, `passivetree_keystones_test.lua`, `hunt_test.lua`,
+`newplayer_test.lua`, `class_kit_test.lua` and the client's `tooltiplogic_test.lua`. Tested in game (base server built
+from source with patches 0001-0021, the full map, client pair things_custom16, a private MariaDB): a level 650 Ranger
+with a sanguine bow and an empty ammunition slot shot crystalline arrows (42 hits, average 423 after the troll's armour,
+highest 686: the bow's attack is 74 now, 9 before); the login sweep took 150 arrows (50 of them out of an old quiver,
+moved to the backpack by the SQL with 7 platinum coins), 20 onyx arrows in the depot and 200 crystalline arrows in the
+stash, and paid 2,210 gold to the bank; a Legendary Haloed Quiver (item level 120) raised distance 114 -> 117 and the bow's
+interval 3.0 -> 2.88 s, and its 19% ice share added 137 ice to hits of 722; the tooltip showed the implicits and the note;
+the Gambler offered the Ranger a quiver and refused one to a Warrior.
 
 ## World bosses (`worldboss.lua`, `data/monster/monsters/chaos/world_bosses/`)
 
@@ -3338,9 +3466,10 @@ required level, at least 0. Stock recipes need 10-35. All numbers are in `craft_
 
 **Equipment** (`ChaosCraftBonus.kind`: `ChaosCrafting.isGear` of the result, one piece a craft, not a tool). On the
 stock recipes: 164 of the armorsmith, weaponsmith and jewelsmith results (helmets, armors, legs, boots, weapons, shields,
-rings and amulets, gloves and belts). Not equipment: the profession tools and the mount scroll (`isGear` accepts them for
-their skill bonus, but they are "other" items that fit only the hands: `toolSlots`), the backpacks and the two quivers
-(containers, which our modifiers never roll on), materials. One roll over:
+rings and amulets, gloves and belts) and the two quivers (Haloed and Seraphic: equipment of the ammunition slot since
+"Infinite arrows and quivers"). Not equipment: the profession tools and the mount scroll (`isGear` accepts them for
+their skill bonus, but they are "other" items that fit only the hands: `toolSlots`), the backpacks, materials. One roll
+over:
 
 | Rarity | mastery 0 | mastery 25 | mastery 50+ (cap) |
 |---|---|---|---|
@@ -3610,6 +3739,11 @@ item level, and a **prefix / suffix** split. The engine's own rarity roll (`Item
 new items. All numbers are in `ChaosItemMods.config`; tests: `tests/item_mods_test.lua` (catalogue, tiers, item level,
 counts, every effect against a mocked engine), `tests/crafting_test.lua` (forge, orbs, prefix / suffix rules, orbs v2 API),
 `tests/item_tooltip_test.lua`, `tests/salvage_test.lua`, `tests/lootfilter_test.lua`, `tests/supports_test.lua`.
+
+Kinds (`M.kindOf`): weapon, shield, helmet, armor, legs, boots, jewel, other, and **quiver** (the quiver bases of
+`data/lib/chaos_archery_config.lua`, equipment of the ammunition slot). A quiver rolls only modifiers whose `kinds` name it
+(its eight of `chaos_archery_config.lua` `mods`, added to the catalogue by `chaos_archery_core.lua`, and the shared ones);
+see "Infinite arrows and quivers".
 
 **Item level** (`M.sourceLevel`, `loot.lua L.dropLevel`). Stored as the custom attribute `chaos_ilvl` (1-150) and mirrored
 into `combatPowerLevel`, which the client frame and the stock scripts read; items from before have only
@@ -6082,7 +6216,7 @@ not changed.
   orbs (teal) always glow.
 - *Dim gear below* rarity Y (0 = off): equipment with a lower rarity (rarity 0 = no rarity) is dimmed. Dimming only, items are
   never hidden (hiding would shift container slot indexes); dimmed items stay lootable.
-- *Show* per category (equipment, currency = orbs and coins, supplies = potions/runes/ammo/food, other): a category switched
+- *Show* per category (equipment, currency = orbs and coins, supplies = potions/runes/food, other): a category switched
   off is dimmed (gear at or above the glow line still glows).
 - Items with a rarity that do not glow get a thin frame in their colour. Corpses dim; other containers only glow/frame.
 - *Rare-drop message*: every glowing item (not orbs) gives a coloured line `Rare drop: [Legendary] Dawnforged Helmet`
@@ -6536,8 +6670,8 @@ milestones at +10..+19). Tested in game on the test server (fresh level 1 charac
   its class: weapon and armour equipped (into the backpack when the slot is taken), a backpack with potions, 20 brown
   mushrooms, rope, shovel, the store's Temple Teleport Scroll (3 uses, same item and attributes as `shop_services.lua`) and
   500 gold. Kits by class id (`Chaos.classes.ids`): Warrior / Juggernaut 4/8 jagged sword + dwarven shield + brass set;
-  Berserker 14 battle axe (two-handed: the class takes no shield) + brass set; Ranger / Deadeye / Beastmaster 3/7/15 bow + 100
-  arrows + chain helmet, ranger's cloak, studded legs; Mystic / Elementalist / Illusionist 1/5/10 wand of vortex (the scorcher
+  Berserker 14 battle axe (two-handed: the class takes no shield) + brass set; Ranger / Deadeye / Beastmaster 3/7/15 bow (no
+  arrows: bows fire without ammunition) + chain helmet, ranger's cloak, studded legs; Mystic / Elementalist / Illusionist 1/5/10 wand of vortex (the scorcher
   is equipped below level 7, the wand waits in the backpack) + spellbook + magician's robe; Thief 11 dagger + 30 throwing stars
   + leather set; Ninja 12 the same plus a second dagger; Samurai 13 the same with a katana instead of the dagger; Monk /
   Shadowfist / Iron Sage 17-19 leather set, no weapon (they fight unarmed); Necromancer / Lich / Bone Lord 20-22 the Mystic's
@@ -8736,8 +8870,10 @@ restart (the test pins one stock). Five player storages (7101900 - 7101904) hold
 and vocation it was made for (frozen at the first look in a window, so a level up does not reshuffle it), the sold slots (a
 bit mask) and the early refreshes. No database rows.
 
-**What is offered.** Each piece draws a slot (weights weapon 3, armour / helmet / legs / boots 2, shield / amulet / ring 1) and
-a base type from `gamble_config.lua` `pool` (234 stock bases of the base server, each with the level it belongs to):
+**What is offered.** Each piece draws a slot (weights weapon 3, armour / helmet / legs / boots 2, shield / amulet / ring /
+quiver 1) and a base type from `gamble_config.lua` `pool` (246 stock bases of the base server, each with the level it
+belongs to; the 12 quiver bases of "Infinite arrows and quivers" since that change, priced like a helmet, offered only to the
+bow classes, whom their movements.xml entries name: for anyone else the slot is drawn again, so their stocks are unchanged):
 the 4 bases with the highest level the character can use (`base.choices`). "Can use" is read from the installed
 `data/movements/movements.xml` (Equip entries: level and vocations, as rewritten by `add_vocations.py`) and
 `data/weapons/weapons.xml` (level, vocations); items with charges or a duration, uniques and non-gear never come. A slot with

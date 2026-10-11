@@ -76,8 +76,8 @@ local function item(id, weaponType, slotPos, ammoType)
 end
 ItemType = function(id)
   local d = items[id]
-  return {getWeaponType = function() return d.wt end, getSlotPosition = function() return d.sp end,
-    getAmmoType = function() return d.at end}
+  return {getId = function() return id end, getWeaponType = function() return d.wt end,
+    getSlotPosition = function() return d.sp end, getAmmoType = function() return d.at end}
 end
 SLOTP_TWO_HAND = 32
 local dealt = {}
@@ -178,11 +178,11 @@ knight.slots[CONST_SLOT_LEFT] = item(500, WEAPON_SWORD, SLOTP_TWO_HAND)
 K.depth = 1; ev.onHealthChange(main, knight, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE); K.depth = 0
 eq(#queue, 0, "guard")
 
--- paladin: deadeye doubles a bolt hit, ricochet bounces to the nearest monsters within 4
+-- paladin: deadeye doubles a crossbow hit (no ammunition: data/lib/chaos_archery_config.lua says 2455 is a crossbow),
+-- ricochet bounces to the nearest monsters within 4
 for id in pairs(creatures) do creatures[id] = nil end
 local pal = mkCreature(2, pos(200, 200), "player")
-pal.slots[CONST_SLOT_LEFT] = item(600, WEAPON_DISTANCE, SLOTP_TWO_HAND, AMMO_BOLT)
-pal.slots[CONST_SLOT_AMMO] = item(601, WEAPON_AMMO, 0, AMMO_BOLT)
+pal.slots[CONST_SLOT_LEFT] = item(2455, WEAPON_DISTANCE, SLOTP_TWO_HAND)
 ChaosPassiveCache[2] = {ksRicochet = 1, ksDeadeye = 1}
 local t1 = mkCreature(20, pos(204, 200), "monster")
 mkCreature(21, pos(206, 200), "monster"); mkCreature(22, pos(207, 201), "monster"); mkCreature(23, pos(212, 200), "monster")
@@ -192,9 +192,10 @@ eq(pd, 1000, "deadeye: double damage"); runEvents()
 eq(#dealt, 2, "two bounces"); eq(dealt[1].target, 21); eq(dealt[2].target, 22)
 eq(dealt[1].amount, -650, "65% of the deadeye hit")
 eq(dealt[2].amount, -422, "65% of that")
-pal.slots[CONST_SLOT_AMMO] = item(602, WEAPON_AMMO, 0, AMMO_ARROW); dealt = {}
+pal.slots[CONST_SLOT_LEFT] = item(2456, WEAPON_DISTANCE, SLOTP_TWO_HAND); dealt = {} -- a bow
 pd = ev.onHealthChange(t1, pal, 500, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED)
-eq(pd, 500, "deadeye needs bolts"); runEvents()
+eq(pd, 500, "deadeye needs a crossbow"); runEvents()
+pal.slots[CONST_SLOT_LEFT] = item(2455, WEAPON_DISTANCE, SLOTP_TWO_HAND)
 math.random = function() return 100 end; dealt = {}
 ev.onHealthChange(t1, pal, 500, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED); runEvents()
 eq(#dealt, 0, "no proc when the roll fails")

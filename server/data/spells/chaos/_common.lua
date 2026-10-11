@@ -175,8 +175,9 @@ function ChaosSpell.skillValues(player, skillId, mult, baseMin, baseMax)
 	return l + s * mult * 0.6 + baseMin, l + s * mult + baseMax
 end
 
--- Attack of the wielded distance weapon, the way the engine adds it up: bow/crossbow attack + ammunition attack,
--- or the attack of a throwing weapon. Item attack attributes (rarity rolls) win over the item type value.
+-- Attack of the wielded distance weapon, the way the engine adds it up: the bow's or crossbow's own attack (they fire
+-- without ammunition and carry its attack themselves: data/lib/chaos_archery_core.lua), or the attack of a throwing
+-- weapon. Item attack attributes (rarity rolls) win over the item type value.
 -- Never below 20 (an empty hand), so the spells still do something without a weapon.
 local function itemAttack(item)
 	local a = item:getAttribute(ITEM_ATTRIBUTE_ATTACK)
@@ -191,14 +192,7 @@ function ChaosSpell.distanceAttack(player)
 		local item = player:getSlotItem(slot)
 		local it = item and ItemType(item:getId())
 		if it and it:getWeaponType() == WEAPON_DISTANCE then
-			local attack = itemAttack(item)
-			if it:getAmmoType() ~= 0 then
-				local ammo = player:getSlotItem(CONST_SLOT_AMMO)
-				if ammo and ItemType(ammo:getId()):getAmmoType() == it:getAmmoType() then
-					attack = attack + itemAttack(ammo)
-				end
-			end
-			return math.max(20, attack)
+			return math.max(20, itemAttack(item))
 		end
 	end
 	return 20
@@ -474,7 +468,9 @@ function ChaosSpell.shurikenPower(player)
 	for _, slot in ipairs({CONST_SLOT_LEFT, CONST_SLOT_RIGHT}) do
 		local item = player:getSlotItem(slot)
 		local it = item and ItemType(item:getId())
-		if it and it:getWeaponType() == WEAPON_DISTANCE and it:getAmmoType() == 0 then
+		-- a throwing weapon: one-handed (a bow or crossbow is two-handed and has no ammunition type any more either)
+		if it and it:getWeaponType() == WEAPON_DISTANCE and it:getAmmoType() == 0
+				and bit.band(it:getSlotPosition(), SLOTP_TWO_HAND) == 0 then
 			attack = math.max(attack, itemAttack(item))
 		end
 	end

@@ -19,6 +19,9 @@
 --                      (earth) deal a share of the hit over a few seconds (conditions owned by you), chill slows, shock
 --                      makes the monster take more damage from everyone for a few seconds
 --   health regeneration  the equipment check every 3 s heals 3 x the total
+--   quiver             counts only while a bow or crossbow is held (ChaosItemMods.fits); its base's implicit modifiers
+--                      join the totals like set bonuses; archery.lua applies Distance Fighting and Attack Speed with
+--                      Bows, weapon_styles.lua the critical strike, element share and extra projectile
 --   cooldown / mana cost reduction  on the spell side (data/spells/chaos/_supports.lua, after a cast, as the
 --                      Quickening and Thrift supports)
 --   experience         EventCallback onGainExperience
@@ -55,7 +58,7 @@ local function equipped(player)
 	local items, sig = {}, {}
 	for slot in pairs(SLOT_BITS) do
 		local item = player:getSlotItem(slot)
-		if item and M.fits(item, slot, SLOT_BITS) then
+		if item and M.fits(item, slot, SLOT_BITS, player) then
 			local mods = M.read(item)
 			local gems = ChaosGems and ChaosGems.read(item)
 			local veil = ChaosVeiled and ChaosVeiled.read(item) -- an unveiled modifier counts too (veiled.lua)
@@ -107,6 +110,13 @@ function M.refresh(player, force)
 		sig = sig .. "|c" .. tostring(charmSig or "")
 		setMods = ChaosCharms.merge(setMods, charmMods)
 	end
+	-- the quiver's implicit modifiers (data/lib/chaos_archery_config.lua quivers), while it counts (a bow or crossbow
+	-- in the hands), added like the set bonuses before the caps
+	local quiver = CONST_SLOT_AMMO and player:getSlotItem(CONST_SLOT_AMMO)
+	if quiver and ChaosArchery and M.fits(quiver, CONST_SLOT_AMMO, SLOT_BITS, player) then
+		setMods = ChaosArchery.merge(ChaosArchery.merge({}, setMods), ChaosArchery.implicits(quiver:getId()))
+		sig = sig .. "|q" .. quiver:getId()
+	end
 	if not force and sig == state.sig then
 		return cache[id]
 	end
@@ -134,6 +144,9 @@ function M.refresh(player, force)
 	applySpeed(player, state, totals)
 	if ChaosEnergyShield and ChaosEnergyShield.apply then
 		ChaosEnergyShield.apply(player, totals) -- maximum and recharge of the energy shield (engine patch 0015)
+	end
+	if ChaosArchery and ChaosArchery.apply then
+		ChaosArchery.apply(player, totals) -- the quiver's Distance Fighting and Attack Speed with Bows (archery.lua)
 	end
 	return totals
 end

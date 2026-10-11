@@ -315,6 +315,52 @@ CodexData = {
 					}
 				},
 				{
+					id = "mod:chaos_mod_bowspeed",
+					name = "Attack Speed with Bows",
+					color = "#ff70c0",
+					sub = "Suffix, Quiver. +1-2% (T1) to +8-10% (T8)",
+					group = "chaos",
+					side = "suffix",
+					f = {group = "chaos", side = "suffix", kind = {"quiver"}},
+					tiers = {{1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 8}, {7, 9}, {8, 10}},
+					tv = {"+1-2%", "+2-3%", "+3-4%", "+4-5%", "+5-6%", "+6-8%", "+7-9%", "+8-10%"},
+					sections = {
+						{
+							h = "Overview",
+							p = {"Chaos modifier, suffix.", "On an item: Attack Speed with Bows +8-10% (T8).", "Cap: at most 12% from all equipped items together."}
+						},
+						{
+							h = "Tiers",
+							cols = {"Tier", "Item level", "Value", "Tier weight"},
+							w = {14, 22, 40, 24},
+							rows = {
+								{"T1", "1+", "+1-2%", "100"},
+								{"T2", "15+", "+2-3%", "90"},
+								{"T3", "30+", "+3-4%", "80"},
+								{"T4", "50+", "+4-5%", "65"},
+								{"T5", "70+", "+5-6%", "50"},
+								{"T6", "95+", "+6-8%", "35"},
+								{"T7", "120+", "+7-9%", "22"},
+								{"T8", "140+", "+8-10%", "12"}
+							},
+							tiers = true
+						},
+						{h = "Rolls on", p = {"Quivers (with a bow or crossbow)."}},
+						{
+							h = "Chance per roll on a fresh item",
+							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
+							cols = {"Kind", "Weight", "Chance"},
+							w = {30, 40, 30},
+							rows = {{"Quiver", "8 of 85", "9.4%"}}
+						},
+						{
+							h = "Rules",
+							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
+						},
+						{ref = "orbs:suffix"}
+					}
+				},
+				{
 					id = "mod:rarity_axeskill",
 					name = "Axe Skill",
 					color = "#9fdc7f",
@@ -420,10 +466,10 @@ CodexData = {
 					id = "mod:chaos_mod_bleedchance",
 					name = "Chance to Bleed",
 					color = "#ff70c0",
-					sub = "Prefix, Weapon, Other. +2-3% (T1) to +12-16% (T8)",
+					sub = "Prefix, Weapon, Other, Quiver. +2-3% (T1) to +12-16% (T8)",
 					group = "chaos",
 					side = "prefix",
-					f = {group = "chaos", side = "prefix", kind = {"weapon", "other"}},
+					f = {group = "chaos", side = "prefix", kind = {"weapon", "other", "quiver"}},
 					tiers = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}, {12, 16}},
 					tv = {"+2-3%", "+3-4%", "+4-6%", "+5-7%", "+6-9%", "+8-11%", "+10-13%", "+12-16%"},
 					sections = {
@@ -447,13 +493,20 @@ CodexData = {
 							},
 							tiers = true
 						},
-						{h = "Rolls on", p = {"Weapons and Other gear (gloves, belts...)."}},
+						{
+							h = "Rolls on",
+							p = {"Weapons, Other gear (gloves, belts...) and Quivers (with a bow or crossbow)."}
+						},
 						{
 							h = "Chance per roll on a fresh item",
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "4 of 171", "2.3%"}, {"Other", "4 of 127", "3.1%"}}
+							rows = {
+								{"Weapon", "4 of 171", "2.3%"},
+								{"Other", "4 of 127", "3.1%"},
+								{"Quiver", "4 of 85", "4.7%"}
+							}
 						},
 						{
 							h = "Rules",
@@ -558,10 +611,10 @@ CodexData = {
 					id = "mod:chaos_mod_poisonchance",
 					name = "Chance to Poison",
 					color = "#ff70c0",
-					sub = "Prefix, Weapon, Other. +2-3% (T1) to +12-16% (T8)",
+					sub = "Prefix, Weapon, Other, Quiver. +2-3% (T1) to +12-16% (T8)",
 					group = "chaos",
 					side = "prefix",
-					f = {group = "chaos", side = "prefix", kind = {"weapon", "other"}},
+					f = {group = "chaos", side = "prefix", kind = {"weapon", "other", "quiver"}},
 					tiers = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}, {12, 16}},
 					tv = {"+2-3%", "+3-4%", "+4-6%", "+5-7%", "+6-9%", "+8-11%", "+10-13%", "+12-16%"},
 					sections = {
@@ -585,13 +638,20 @@ CodexData = {
 							},
 							tiers = true
 						},
-						{h = "Rolls on", p = {"Weapons and Other gear (gloves, belts...)."}},
+						{
+							h = "Rolls on",
+							p = {"Weapons, Other gear (gloves, belts...) and Quivers (with a bow or crossbow)."}
+						},
 						{
 							h = "Chance per roll on a fresh item",
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "4 of 171", "2.3%"}, {"Other", "4 of 127", "3.1%"}}
+							rows = {
+								{"Weapon", "4 of 171", "2.3%"},
+								{"Other", "4 of 127", "3.1%"},
+								{"Quiver", "4 of 85", "4.7%"}
+							}
 						},
 						{
 							h = "Rules",
@@ -874,6 +934,52 @@ CodexData = {
 					}
 				},
 				{
+					id = "mod:chaos_mod_bowcrit",
+					name = "Critical Strike Chance with Bows",
+					color = "#ff70c0",
+					sub = "Prefix, Quiver. +1-2% (T1) to +8-10% (T8)",
+					group = "chaos",
+					side = "prefix",
+					f = {group = "chaos", side = "prefix", kind = {"quiver"}},
+					tiers = {{1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 7}, {7, 8}, {8, 10}},
+					tv = {"+1-2%", "+2-3%", "+3-4%", "+4-5%", "+5-6%", "+6-7%", "+7-8%", "+8-10%"},
+					sections = {
+						{
+							h = "Overview",
+							p = {"Chaos modifier, prefix.", "On an item: Critical Strike Chance with Bows +8-10% (T8).", "Cap: at most 20% from all equipped items together."}
+						},
+						{
+							h = "Tiers",
+							cols = {"Tier", "Item level", "Value", "Tier weight"},
+							w = {14, 22, 40, 24},
+							rows = {
+								{"T1", "1+", "+1-2%", "100"},
+								{"T2", "15+", "+2-3%", "90"},
+								{"T3", "30+", "+3-4%", "80"},
+								{"T4", "50+", "+4-5%", "65"},
+								{"T5", "70+", "+5-6%", "50"},
+								{"T6", "95+", "+6-7%", "35"},
+								{"T7", "120+", "+7-8%", "22"},
+								{"T8", "140+", "+8-10%", "12"}
+							},
+							tiers = true
+						},
+						{h = "Rolls on", p = {"Quivers (with a bow or crossbow)."}},
+						{
+							h = "Chance per roll on a fresh item",
+							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
+							cols = {"Kind", "Weight", "Chance"},
+							w = {30, 40, 30},
+							rows = {{"Quiver", "7 of 85", "8.2%"}}
+						},
+						{
+							h = "Rules",
+							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
+						},
+						{ref = "orbs:prefix"}
+					}
+				},
+				{
 					id = "mod:chaos_mod_monsterreduction",
 					name = "Damage Taken from Monsters",
 					color = "#ff70c0",
@@ -981,10 +1087,10 @@ CodexData = {
 					id = "mod:chaos_mod_bossdamage",
 					name = "Damage to Elites and Bosses",
 					color = "#ff70c0",
-					sub = "Prefix, Weapon, Jewel. +1-3% (T1) to +12-16% (T8)",
+					sub = "Prefix, Weapon, Jewel, Quiver. +1-3% (T1) to +12-16% (T8)",
 					group = "chaos",
 					side = "prefix",
-					f = {group = "chaos", side = "prefix", kind = {"weapon", "jewel"}},
+					f = {group = "chaos", side = "prefix", kind = {"weapon", "jewel", "quiver"}},
 					tiers = {{1, 3}, {2, 4}, {3, 6}, {5, 8}, {6, 10}, {8, 12}, {10, 14}, {12, 16}},
 					tv = {"+1-3%", "+2-4%", "+3-6%", "+5-8%", "+6-10%", "+8-12%", "+10-14%", "+12-16%"},
 					sections = {
@@ -1008,13 +1114,20 @@ CodexData = {
 							},
 							tiers = true
 						},
-						{h = "Rolls on", p = {"Weapons and Jewellery (amulets, rings)."}},
+						{
+							h = "Rolls on",
+							p = {"Weapons, Jewellery (amulets, rings) and Quivers (with a bow or crossbow)."}
+						},
 						{
 							h = "Chance per roll on a fresh item",
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "6 of 171", "3.5%"}, {"Jewel", "6 of 172", "3.5%"}}
+							rows = {
+								{"Weapon", "6 of 171", "3.5%"},
+								{"Jewel", "6 of 172", "3.5%"},
+								{"Quiver", "6 of 85", "7.1%"}
+							}
 						},
 						{
 							h = "Rules",
@@ -1133,6 +1246,52 @@ CodexData = {
 						{
 							h = "Rules",
 							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "At most 1 weapon element per weapon, and only on a weapon with an attack and no element of its own."}
+						},
+						{ref = "orbs:prefix"}
+					}
+				},
+				{
+					id = "mod:chaos_mod_bowdistance",
+					name = "Distance Fighting",
+					color = "#ff70c0",
+					sub = "Prefix, Quiver. +1 (T1) to +6-8 (T8)",
+					group = "chaos",
+					side = "prefix",
+					f = {group = "chaos", side = "prefix", kind = {"quiver"}},
+					tiers = {{1, 1}, {1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}, {6, 8}},
+					tv = {"+1", "+1-2", "+2-3", "+2-4", "+3-5", "+4-6", "+5-7", "+6-8"},
+					sections = {
+						{
+							h = "Overview",
+							p = {"Chaos modifier, prefix.", "On an item: Distance Fighting +6-8 (T8).", "Cap: at most 12 from all equipped items together."}
+						},
+						{
+							h = "Tiers",
+							cols = {"Tier", "Item level", "Value", "Tier weight"},
+							w = {14, 22, 40, 24},
+							rows = {
+								{"T1", "1+", "+1", "100"},
+								{"T2", "15+", "+1-2", "90"},
+								{"T3", "30+", "+2-3", "80"},
+								{"T4", "50+", "+2-4", "65"},
+								{"T5", "70+", "+3-5", "50"},
+								{"T6", "95+", "+4-6", "35"},
+								{"T7", "120+", "+5-7", "22"},
+								{"T8", "140+", "+6-8", "12"}
+							},
+							tiers = true
+						},
+						{h = "Rolls on", p = {"Quivers (with a bow or crossbow)."}},
+						{
+							h = "Chance per roll on a fresh item",
+							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
+							cols = {"Kind", "Weight", "Chance"},
+							w = {30, 40, 30},
+							rows = {{"Quiver", "8 of 85", "9.4%"}}
+						},
+						{
+							h = "Rules",
+							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
 						},
 						{ref = "orbs:prefix"}
 					}
@@ -1370,6 +1529,52 @@ CodexData = {
 					}
 				},
 				{
+					id = "mod:chaos_mod_arrowearth",
+					name = "Earth Damage with Bows",
+					color = "#ff70c0",
+					sub = "Prefix, Quiver. 2-4% (T1) to 20-28% (T8)",
+					group = "chaos",
+					side = "prefix",
+					f = {group = "chaos", side = "prefix", kind = {"quiver"}},
+					tiers = {{2, 4}, {4, 6}, {6, 9}, {8, 12}, {10, 15}, {13, 19}, {16, 23}, {20, 28}},
+					tv = {"2-4%", "4-6%", "6-9%", "8-12%", "10-15%", "13-19%", "16-23%", "20-28%"},
+					sections = {
+						{
+							h = "Overview",
+							p = {"Chaos modifier, prefix.", "On an item: Adds 20-28% of Bow Damage as Earth (T8).", "Cap: at most 40% from all equipped items together."}
+						},
+						{
+							h = "Tiers",
+							cols = {"Tier", "Item level", "Value", "Tier weight"},
+							w = {14, 22, 40, 24},
+							rows = {
+								{"T1", "1+", "2-4%", "100"},
+								{"T2", "15+", "4-6%", "90"},
+								{"T3", "30+", "6-9%", "80"},
+								{"T4", "50+", "8-12%", "65"},
+								{"T5", "70+", "10-15%", "50"},
+								{"T6", "95+", "13-19%", "35"},
+								{"T7", "120+", "16-23%", "22"},
+								{"T8", "140+", "20-28%", "12"}
+							},
+							tiers = true
+						},
+						{h = "Rolls on", p = {"Quivers (with a bow or crossbow)."}},
+						{
+							h = "Chance per roll on a fresh item",
+							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
+							cols = {"Kind", "Weight", "Chance"},
+							w = {30, 40, 30},
+							rows = {{"Quiver", "3 of 85", "3.5%"}}
+						},
+						{
+							h = "Rules",
+							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
+						},
+						{ref = "orbs:prefix"}
+					}
+				},
+				{
 					id = "mod:rarity_elementearth",
 					name = "Earth Weapon Damage",
 					color = "#ff8a5a",
@@ -1428,10 +1633,10 @@ CodexData = {
 					id = "mod:chaos_mod_elepen",
 					name = "Elemental Penetration",
 					color = "#ff70c0",
-					sub = "Prefix, Weapon, Jewel. +1-2% (T1) to +10-13% (T8)",
+					sub = "Prefix, Weapon, Jewel, Quiver. +1-2% (T1) to +10-13% (T8)",
 					group = "chaos",
 					side = "prefix",
-					f = {group = "chaos", side = "prefix", kind = {"weapon", "jewel"}},
+					f = {group = "chaos", side = "prefix", kind = {"weapon", "jewel", "quiver"}},
 					tiers = {{1, 2}, {2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}},
 					tv = {"+1-2%", "+2-3%", "+3-4%", "+4-6%", "+5-7%", "+6-9%", "+8-11%", "+10-13%"},
 					sections = {
@@ -1455,13 +1660,20 @@ CodexData = {
 							},
 							tiers = true
 						},
-						{h = "Rolls on", p = {"Weapons and Jewellery (amulets, rings)."}},
+						{
+							h = "Rolls on",
+							p = {"Weapons, Jewellery (amulets, rings) and Quivers (with a bow or crossbow)."}
+						},
 						{
 							h = "Chance per roll on a fresh item",
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "4 of 171", "2.3%"}, {"Jewel", "4 of 172", "2.3%"}}
+							rows = {
+								{"Weapon", "4 of 171", "2.3%"},
+								{"Jewel", "4 of 172", "2.3%"},
+								{"Quiver", "4 of 85", "4.7%"}
+							}
 						},
 						{
 							h = "Rules",
@@ -1527,6 +1739,52 @@ CodexData = {
 							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
 						},
 						{ref = "orbs:suffix"}
+					}
+				},
+				{
+					id = "mod:chaos_mod_arrowenergy",
+					name = "Energy Damage with Bows",
+					color = "#ff70c0",
+					sub = "Prefix, Quiver. 2-4% (T1) to 20-28% (T8)",
+					group = "chaos",
+					side = "prefix",
+					f = {group = "chaos", side = "prefix", kind = {"quiver"}},
+					tiers = {{2, 4}, {4, 6}, {6, 9}, {8, 12}, {10, 15}, {13, 19}, {16, 23}, {20, 28}},
+					tv = {"2-4%", "4-6%", "6-9%", "8-12%", "10-15%", "13-19%", "16-23%", "20-28%"},
+					sections = {
+						{
+							h = "Overview",
+							p = {"Chaos modifier, prefix.", "On an item: Adds 20-28% of Bow Damage as Energy (T8).", "Cap: at most 40% from all equipped items together."}
+						},
+						{
+							h = "Tiers",
+							cols = {"Tier", "Item level", "Value", "Tier weight"},
+							w = {14, 22, 40, 24},
+							rows = {
+								{"T1", "1+", "2-4%", "100"},
+								{"T2", "15+", "4-6%", "90"},
+								{"T3", "30+", "6-9%", "80"},
+								{"T4", "50+", "8-12%", "65"},
+								{"T5", "70+", "10-15%", "50"},
+								{"T6", "95+", "13-19%", "35"},
+								{"T7", "120+", "16-23%", "22"},
+								{"T8", "140+", "20-28%", "12"}
+							},
+							tiers = true
+						},
+						{h = "Rolls on", p = {"Quivers (with a bow or crossbow)."}},
+						{
+							h = "Chance per roll on a fresh item",
+							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
+							cols = {"Kind", "Weight", "Chance"},
+							w = {30, 40, 30},
+							rows = {{"Quiver", "3 of 85", "3.5%"}}
+						},
+						{
+							h = "Rules",
+							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
+						},
+						{ref = "orbs:prefix"}
 					}
 				},
 				{
@@ -1677,6 +1935,52 @@ CodexData = {
 					}
 				},
 				{
+					id = "mod:chaos_mod_multishot",
+					name = "Extra Projectile Chance",
+					color = "#ff70c0",
+					sub = "Prefix, Quiver. +2-4% (T1) to +14-20% (T8)",
+					group = "chaos",
+					side = "prefix",
+					f = {group = "chaos", side = "prefix", kind = {"quiver"}},
+					tiers = {{2, 4}, {3, 5}, {4, 7}, {6, 9}, {7, 11}, {9, 13}, {11, 16}, {14, 20}},
+					tv = {"+2-4%", "+3-5%", "+4-7%", "+6-9%", "+7-11%", "+9-13%", "+11-16%", "+14-20%"},
+					sections = {
+						{
+							h = "Overview",
+							p = {"Chaos modifier, prefix.", "On an item: Extra Projectile Chance +14-20% (T8).", "Cap: at most 30% from all equipped items together."}
+						},
+						{
+							h = "Tiers",
+							cols = {"Tier", "Item level", "Value", "Tier weight"},
+							w = {14, 22, 40, 24},
+							rows = {
+								{"T1", "1+", "+2-4%", "100"},
+								{"T2", "15+", "+3-5%", "90"},
+								{"T3", "30+", "+4-7%", "80"},
+								{"T4", "50+", "+6-9%", "65"},
+								{"T5", "70+", "+7-11%", "50"},
+								{"T6", "95+", "+9-13%", "35"},
+								{"T7", "120+", "+11-16%", "22"},
+								{"T8", "140+", "+14-20%", "12"}
+							},
+							tiers = true
+						},
+						{h = "Rolls on", p = {"Quivers (with a bow or crossbow)."}},
+						{
+							h = "Chance per roll on a fresh item",
+							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
+							cols = {"Kind", "Weight", "Chance"},
+							w = {30, 40, 30},
+							rows = {{"Quiver", "6 of 85", "7.1%"}}
+						},
+						{
+							h = "Rules",
+							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
+						},
+						{ref = "orbs:prefix"}
+					}
+				},
+				{
 					id = "mod:chaos_mod_esrecharge",
 					name = "Faster Energy Shield Recharge",
 					color = "#ff70c0",
@@ -1784,6 +2088,52 @@ CodexData = {
 							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
 						},
 						{ref = "orbs:suffix"}
+					}
+				},
+				{
+					id = "mod:chaos_mod_arrowfire",
+					name = "Fire Damage with Bows",
+					color = "#ff70c0",
+					sub = "Prefix, Quiver. 2-4% (T1) to 20-28% (T8)",
+					group = "chaos",
+					side = "prefix",
+					f = {group = "chaos", side = "prefix", kind = {"quiver"}},
+					tiers = {{2, 4}, {4, 6}, {6, 9}, {8, 12}, {10, 15}, {13, 19}, {16, 23}, {20, 28}},
+					tv = {"2-4%", "4-6%", "6-9%", "8-12%", "10-15%", "13-19%", "16-23%", "20-28%"},
+					sections = {
+						{
+							h = "Overview",
+							p = {"Chaos modifier, prefix.", "On an item: Adds 20-28% of Bow Damage as Fire (T8).", "Cap: at most 40% from all equipped items together."}
+						},
+						{
+							h = "Tiers",
+							cols = {"Tier", "Item level", "Value", "Tier weight"},
+							w = {14, 22, 40, 24},
+							rows = {
+								{"T1", "1+", "2-4%", "100"},
+								{"T2", "15+", "4-6%", "90"},
+								{"T3", "30+", "6-9%", "80"},
+								{"T4", "50+", "8-12%", "65"},
+								{"T5", "70+", "10-15%", "50"},
+								{"T6", "95+", "13-19%", "35"},
+								{"T7", "120+", "16-23%", "22"},
+								{"T8", "140+", "20-28%", "12"}
+							},
+							tiers = true
+						},
+						{h = "Rolls on", p = {"Quivers (with a bow or crossbow)."}},
+						{
+							h = "Chance per roll on a fresh item",
+							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
+							cols = {"Kind", "Weight", "Chance"},
+							w = {30, 40, 30},
+							rows = {{"Quiver", "3 of 85", "3.5%"}}
+						},
+						{
+							h = "Rules",
+							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
+						},
+						{ref = "orbs:prefix"}
 					}
 				},
 				{
@@ -2119,10 +2469,10 @@ CodexData = {
 					id = "mod:chaos_mod_lifeonhit",
 					name = "Health on Hit",
 					color = "#ff70c0",
-					sub = "Suffix, Weapon, Jewel, Other. +1-2 (T1) to +20-35 (T8)",
+					sub = "Suffix, Weapon, Jewel, Other, Quiver. +1-2 (T1) to +20-35 (T8)",
 					group = "chaos",
 					side = "suffix",
-					f = {group = "chaos", side = "suffix", kind = {"weapon", "jewel", "other"}},
+					f = {group = "chaos", side = "suffix", kind = {"weapon", "jewel", "other", "quiver"}},
 					tiers = {{1, 2}, {2, 4}, {3, 6}, {5, 9}, {7, 13}, {10, 18}, {14, 25}, {20, 35}},
 					tv = {"+1-2", "+2-4", "+3-6", "+5-9", "+7-13", "+10-18", "+14-25", "+20-35"},
 					sections = {
@@ -2148,7 +2498,7 @@ CodexData = {
 						},
 						{
 							h = "Rolls on",
-							p = {"Weapons, Jewellery (amulets, rings) and Other gear (gloves, belts...)."}
+							p = {"Weapons, Jewellery (amulets, rings), Other gear (gloves, belts...) and Quivers (with a bow or crossbow)."}
 						},
 						{
 							h = "Chance per roll on a fresh item",
@@ -2158,7 +2508,8 @@ CodexData = {
 							rows = {
 								{"Weapon", "5 of 171", "2.9%"},
 								{"Jewel", "5 of 172", "2.9%"},
-								{"Other", "5 of 127", "3.9%"}
+								{"Other", "5 of 127", "3.9%"},
+								{"Quiver", "5 of 85", "5.9%"}
 							}
 						},
 						{
@@ -2401,6 +2752,52 @@ CodexData = {
 					}
 				},
 				{
+					id = "mod:chaos_mod_arrowice",
+					name = "Ice Damage with Bows",
+					color = "#ff70c0",
+					sub = "Prefix, Quiver. 2-4% (T1) to 20-28% (T8)",
+					group = "chaos",
+					side = "prefix",
+					f = {group = "chaos", side = "prefix", kind = {"quiver"}},
+					tiers = {{2, 4}, {4, 6}, {6, 9}, {8, 12}, {10, 15}, {13, 19}, {16, 23}, {20, 28}},
+					tv = {"2-4%", "4-6%", "6-9%", "8-12%", "10-15%", "13-19%", "16-23%", "20-28%"},
+					sections = {
+						{
+							h = "Overview",
+							p = {"Chaos modifier, prefix.", "On an item: Adds 20-28% of Bow Damage as Ice (T8).", "Cap: at most 40% from all equipped items together."}
+						},
+						{
+							h = "Tiers",
+							cols = {"Tier", "Item level", "Value", "Tier weight"},
+							w = {14, 22, 40, 24},
+							rows = {
+								{"T1", "1+", "2-4%", "100"},
+								{"T2", "15+", "4-6%", "90"},
+								{"T3", "30+", "6-9%", "80"},
+								{"T4", "50+", "8-12%", "65"},
+								{"T5", "70+", "10-15%", "50"},
+								{"T6", "95+", "13-19%", "35"},
+								{"T7", "120+", "16-23%", "22"},
+								{"T8", "140+", "20-28%", "12"}
+							},
+							tiers = true
+						},
+						{h = "Rolls on", p = {"Quivers (with a bow or crossbow)."}},
+						{
+							h = "Chance per roll on a fresh item",
+							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
+							cols = {"Kind", "Weight", "Chance"},
+							w = {30, 40, 30},
+							rows = {{"Quiver", "3 of 85", "3.5%"}}
+						},
+						{
+							h = "Rules",
+							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
+						},
+						{ref = "orbs:prefix"}
+					}
+				},
+				{
 					id = "mod:rarity_elementice",
 					name = "Ice Weapon Damage",
 					color = "#ff8a5a",
@@ -2623,10 +3020,10 @@ CodexData = {
 					id = "mod:chaos_mod_lifeonkill",
 					name = "Life on Kill",
 					color = "#ff70c0",
-					sub = "Suffix, Weapon, Helmet, Jewel. +2-5 (T1) to +100-150 (T8)",
+					sub = "Suffix, Weapon, Helmet, Jewel, Quiver. +2-5 (T1) to +100-150 (T8)",
 					group = "chaos",
 					side = "suffix",
-					f = {group = "chaos", side = "suffix", kind = {"weapon", "helmet", "jewel"}},
+					f = {group = "chaos", side = "suffix", kind = {"weapon", "helmet", "jewel", "quiver"}},
 					tiers = {{2, 5}, {5, 10}, {10, 20}, {20, 40}, {35, 60}, {50, 90}, {75, 120}, {100, 150}},
 					tv = {"+2-5", "+5-10", "+10-20", "+20-40", "+35-60", "+50-90", "+75-120", "+100-150"},
 					sections = {
@@ -2650,7 +3047,10 @@ CodexData = {
 							},
 							tiers = true
 						},
-						{h = "Rolls on", p = {"Weapons, Helmets and Jewellery (amulets, rings)."}},
+						{
+							h = "Rolls on",
+							p = {"Weapons, Helmets, Jewellery (amulets, rings) and Quivers (with a bow or crossbow)."}
+						},
 						{
 							h = "Chance per roll on a fresh item",
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
@@ -2659,7 +3059,8 @@ CodexData = {
 							rows = {
 								{"Weapon", "6 of 171", "3.5%"},
 								{"Helmet", "6 of 145", "4.1%"},
-								{"Jewel", "6 of 172", "3.5%"}
+								{"Jewel", "6 of 172", "3.5%"},
+								{"Quiver", "6 of 85", "7.1%"}
 							}
 						},
 						{
@@ -2838,10 +3239,10 @@ CodexData = {
 					id = "mod:chaos_mod_manaonhit",
 					name = "Mana on Hit",
 					color = "#ff70c0",
-					sub = "Suffix, Weapon, Jewel, Other. +1 (T1) to +14-22 (T8)",
+					sub = "Suffix, Weapon, Jewel, Other, Quiver. +1 (T1) to +14-22 (T8)",
 					group = "chaos",
 					side = "suffix",
-					f = {group = "chaos", side = "suffix", kind = {"weapon", "jewel", "other"}},
+					f = {group = "chaos", side = "suffix", kind = {"weapon", "jewel", "other", "quiver"}},
 					tiers = {{1, 1}, {1, 2}, {2, 4}, {3, 6}, {5, 8}, {7, 12}, {10, 16}, {14, 22}},
 					tv = {"+1", "+1-2", "+2-4", "+3-6", "+5-8", "+7-12", "+10-16", "+14-22"},
 					sections = {
@@ -2867,7 +3268,7 @@ CodexData = {
 						},
 						{
 							h = "Rolls on",
-							p = {"Weapons, Jewellery (amulets, rings) and Other gear (gloves, belts...)."}
+							p = {"Weapons, Jewellery (amulets, rings), Other gear (gloves, belts...) and Quivers (with a bow or crossbow)."}
 						},
 						{
 							h = "Chance per roll on a fresh item",
@@ -2877,7 +3278,8 @@ CodexData = {
 							rows = {
 								{"Weapon", "5 of 171", "2.9%"},
 								{"Jewel", "5 of 172", "2.9%"},
-								{"Other", "5 of 127", "3.9%"}
+								{"Other", "5 of 127", "3.9%"},
+								{"Quiver", "5 of 85", "5.9%"}
 							}
 						},
 						{
@@ -2891,10 +3293,10 @@ CodexData = {
 					id = "mod:chaos_mod_manaonkill",
 					name = "Mana on Kill",
 					color = "#ff70c0",
-					sub = "Suffix, Weapon, Helmet, Jewel. +1-3 (T1) to +70-100 (T8)",
+					sub = "Suffix, Weapon, Helmet, Jewel, Quiver. +1-3 (T1) to +70-100 (T8)",
 					group = "chaos",
 					side = "suffix",
-					f = {group = "chaos", side = "suffix", kind = {"weapon", "helmet", "jewel"}},
+					f = {group = "chaos", side = "suffix", kind = {"weapon", "helmet", "jewel", "quiver"}},
 					tiers = {{1, 3}, {3, 6}, {6, 12}, {12, 25}, {20, 40}, {30, 60}, {50, 80}, {70, 100}},
 					tv = {"+1-3", "+3-6", "+6-12", "+12-25", "+20-40", "+30-60", "+50-80", "+70-100"},
 					sections = {
@@ -2918,7 +3320,10 @@ CodexData = {
 							},
 							tiers = true
 						},
-						{h = "Rolls on", p = {"Weapons, Helmets and Jewellery (amulets, rings)."}},
+						{
+							h = "Rolls on",
+							p = {"Weapons, Helmets, Jewellery (amulets, rings) and Quivers (with a bow or crossbow)."}
+						},
 						{
 							h = "Chance per roll on a fresh item",
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
@@ -2927,7 +3332,8 @@ CodexData = {
 							rows = {
 								{"Weapon", "6 of 171", "3.5%"},
 								{"Helmet", "6 of 145", "4.1%"},
-								{"Jewel", "6 of 172", "3.5%"}
+								{"Jewel", "6 of 172", "3.5%"},
+								{"Quiver", "6 of 85", "7.1%"}
 							}
 						},
 						{
@@ -3207,10 +3613,10 @@ CodexData = {
 					id = "mod:chaos_mod_physpen",
 					name = "Physical Penetration",
 					color = "#ff70c0",
-					sub = "Prefix, Weapon, Jewel. +1-2% (T1) to +10-13% (T8)",
+					sub = "Prefix, Weapon, Jewel, Quiver. +1-2% (T1) to +10-13% (T8)",
 					group = "chaos",
 					side = "prefix",
-					f = {group = "chaos", side = "prefix", kind = {"weapon", "jewel"}},
+					f = {group = "chaos", side = "prefix", kind = {"weapon", "jewel", "quiver"}},
 					tiers = {{1, 2}, {2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}},
 					tv = {"+1-2%", "+2-3%", "+3-4%", "+4-6%", "+5-7%", "+6-9%", "+8-11%", "+10-13%"},
 					sections = {
@@ -3234,13 +3640,20 @@ CodexData = {
 							},
 							tiers = true
 						},
-						{h = "Rolls on", p = {"Weapons and Jewellery (amulets, rings)."}},
+						{
+							h = "Rolls on",
+							p = {"Weapons, Jewellery (amulets, rings) and Quivers (with a bow or crossbow)."}
+						},
 						{
 							h = "Chance per roll on a fresh item",
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "4 of 171", "2.3%"}, {"Jewel", "4 of 172", "2.3%"}}
+							rows = {
+								{"Weapon", "4 of 171", "2.3%"},
+								{"Jewel", "4 of 172", "2.3%"},
+								{"Quiver", "4 of 85", "4.7%"}
+							}
 						},
 						{
 							h = "Rules",
@@ -3805,7 +4218,8 @@ CodexData = {
 						{"legs", "Legs"},
 						{"boots", "Boots"},
 						{"jewel", "Jewel"},
-						{"other", "Other"}
+						{"other", "Other"},
+						{"quiver", "Quiver"}
 					}
 				},
 				{
@@ -6303,17 +6717,14 @@ CodexData = {
 					id = "unique:27230",
 					name = "Doomtide Longbow",
 					color = "#ff9c3a",
-					sub = "Distance weapon, level 110. Attack 10, Hit Chance 6, Range 6, Death Absorb +6%, Distance +6",
+					sub = "Distance weapon, level 110. Attack 75, Range 6, Death Absorb +6%, Distance +6",
 					f = {kind = {"weapon"}, level = 110, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Strung with something that was once alive; it hums at the dead. (Requires level 110.)"}
 						},
-						{
-							h = "Stats",
-							p = {"Attack 10", "Hit Chance 6", "Range 6", "Death Absorb +6%", "Distance +6"}
-						},
+						{h = "Stats", p = {"Attack 75", "Range 6", "Death Absorb +6%", "Distance +6"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -6801,7 +7212,7 @@ CodexData = {
 					id = "unique:27474",
 					name = "Gallows Arbalest",
 					color = "#ff9c3a",
-					sub = "weapon, level 600. Attack 12, Hit Chance 8, Range 6, Critical Hit: chance +4%, damage +15%, Distance +3",
+					sub = "weapon, level 600. Attack 78, Range 6, Critical Hit: chance +4%, damage +15%, Distance +3",
 					f = {kind = {"other"}, level = 600, source = "boss"},
 					sections = {
 						{
@@ -6810,7 +7221,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 12", "Hit Chance 8", "Range 6", "Critical Hit: chance +4%, damage +15%", "Distance +3"}
+							p = {"Attack 78", "Range 6", "Critical Hit: chance +4%, damage +15%", "Distance +3"}
 						},
 						{
 							h = "Item",
@@ -6948,14 +7359,14 @@ CodexData = {
 					id = "unique:8849",
 					name = "Gallowsbolt Crossbow",
 					color = "#ff9c3a",
-					sub = "Distance weapon, level 60. Hit Chance 4, Range 5, Distance +3",
+					sub = "Distance weapon, level 60. Range 5, Distance +3",
 					f = {kind = {"weapon"}, level = 60, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"A hangman's design: it only needs one shot. (Requires level 60.)"}
 						},
-						{h = "Stats", p = {"Hit Chance 4", "Range 5", "Distance +3"}},
+						{h = "Stats", p = {"Range 5", "Distance +3"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -7269,13 +7680,13 @@ CodexData = {
 					id = "unique:16111",
 					name = "Hellspite Arbalest",
 					color = "#ff9c3a",
-					sub = "Distance weapon, level 100. Attack 14, Hit Chance 6, Range 6, Critical Hit: chance +4%, damage +20%, Distance +4",
+					sub = "Distance weapon, level 100. Attack 80, Range 6, Critical Hit: chance +4%, damage +20%, Distance +4",
 					f = {kind = {"weapon"}, level = 100, season = "season", source = "monster"},
 					sections = {
 						{h = "Description", p = {"Its bolts scream on the way down. (Requires level 100.)"}},
 						{
 							h = "Stats",
-							p = {"Attack 14", "Hit Chance 6", "Range 6", "Critical Hit: chance +4%, damage +20%", "Distance +4"}
+							p = {"Attack 80", "Range 6", "Critical Hit: chance +4%, damage +20%", "Distance +4"}
 						},
 						{
 							h = "Item",
@@ -8439,14 +8850,14 @@ CodexData = {
 					id = "unique:27646",
 					name = "Thornwake Longbow",
 					color = "#ff9c3a",
-					sub = "weapon, level 150. Attack 8, Hit Chance 6, Range 6, Distance +3",
+					sub = "weapon, level 150. Attack 73, Range 6, Distance +3",
 					f = {kind = {"other"}, level = 150, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Briar wood that still grows a thorn after every shot. (Requires level 150.)"}
 						},
-						{h = "Stats", p = {"Attack 8", "Hit Chance 6", "Range 6", "Distance +3"}},
+						{h = "Stats", p = {"Attack 73", "Range 6", "Distance +3"}},
 						{
 							h = "Item",
 							cols = {"", ""},

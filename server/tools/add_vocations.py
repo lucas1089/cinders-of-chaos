@@ -175,6 +175,11 @@ def item_info(items_xml):
             flags.add('staff')
         if wt in ('sword', 'axe', 'club') and two:
             flags.add('melee2h')
+        # a bow or crossbow fires without ammunition once tools/patch_base_archery.py ran (no ammoType, a missile of
+        # its own): it is two-handed, a throwing weapon is not
+        if not ammo and wt == 'distance' and two:
+            shoot = re.search(r'key="shootType"\s+value="([^"]+)"', body, re.I)
+            ammo = 'bolt' if shoot and 'bolt' in shoot.group(1).lower() else 'arrow'
         if wt == 'distance' and not ammo:
             flags.add('throwing')
         if wt == 'shield' and re.search(r'key="attack"\s+value="[1-9]', body, re.I):

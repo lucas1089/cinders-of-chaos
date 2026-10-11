@@ -10,7 +10,7 @@ return {
 
 	-- how often (ms) the supply count runs and the open window gets a fresh state
 	thinkMs = 2000,
-	-- used supplies are counted from the inventory: a potion, rune or arrow less than at the last count is "used".
+	-- used supplies are counted from the inventory: a potion, rune or spear less than at the last count is "used".
 	-- In a protection zone nothing is counted (putting potions in the depot or selling them is not using them).
 	countSuppliesInPz = false,
 

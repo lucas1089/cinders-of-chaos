@@ -9,7 +9,7 @@
 --    pw = a legendary power),
 --    sockets = {count, max, list = [{name, text, color}]},
 --    veil = {s = 'veiled'} | {s = 'open', n, t, tr, tn, lo, hi, h} (the veiled slot: name, text, veiled tier, range, hook),
---    req = {level, magic, voc}, weight, desc, locked, store, collects (a store pouch), stats = [{k, l, v, fmt, low}], cmp = [slot, ...]}
+--    req = {level, magic, voc}, weight, desc, note, locked, store, collects (a store pouch), stats = [{k, l, v, fmt, low}], cmp = [slot, ...]}
 
 ItemTooltipLogic = {}
 local L = ItemTooltipLogic
@@ -184,8 +184,9 @@ function L.lines(tip, ctx)
 
   local first = true
   for _, b in ipairs(tip.base or {}) do
-    add(string.format('%s: %s', b.l, L.formatValue(b.v, b.fmt, b.fmt == 'pct' and b.k:find('^protect') ~= nil)),
-      C.text, first)
+    -- imp: a quiver base's implicit modifier (server chaos_archery_config.lua), signed and in the modifier colour
+    add(string.format('%s: %s', b.l, L.formatValue(b.v, b.fmt, b.imp or (b.fmt == 'pct' and b.k:find('^protect') ~= nil))),
+      b.imp and C.chaos or C.text, first)
     first = false
   end
 
@@ -273,6 +274,12 @@ function L.lines(tip, ctx)
     end
   end
 
+  -- note: a line of its own (a quiver works only while a bow or crossbow is held)
+  if tip.note then
+    for i, line in ipairs(L.wrap(tip.note, L.WRAP)) do
+      add(line, C.gold, i == 1)
+    end
+  end
   if tip.desc then
     for i, line in ipairs(L.wrap(tip.desc, L.WRAP)) do
       add(line, C.dim, i == 1)

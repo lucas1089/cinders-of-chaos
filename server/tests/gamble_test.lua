@@ -25,6 +25,7 @@ end
 
 local cfg = dofile("data/scripts/chaos/gamble_config.lua")
 dofile("data/scripts/chaos/gamble_core.lua")
+ChaosArcheryConfigForTest = dofile("data/lib/chaos_archery_config.lua")
 local K = ChaosGambleCore
 dofile("data/lib/chaos_item_mods.lua")
 local M = ChaosItemMods
@@ -134,6 +135,10 @@ end
 only("warrior", 29883, 29885, 29887, 27458, 27462, 27460, 29882, 29878, 29879, 29880, 29881, 29889, 29890, 29559, 29560, 29561,
 	29562, 29563)
 only("ranger", 29874, 29869, 29870, 29871, 29872, 29876, 29877, 27471)
+-- the quivers: the bow classes only (patch_base_archery.py writes their movements.xml entries so)
+for _, e in ipairs(cfg.pool.quiver) do
+	only("ranger", e[1])
+end
 only("mystic", 29866, 27476, 27479, 29865, 29861, 29862, 29863, 29864, 29867, 29868, 29572, 29573, 29574, 29575, 29576)
 local function canUseAs(line)
 	return function(id)
@@ -161,6 +166,29 @@ do
 		check(e.lv <= 8, "nothing above level 8 for level 8 " .. e.id)
 	end
 	eq(#K.candidates(cfg, "ring", 50, canUseAs("warrior")), 0, "no ring under level 100")
+	-- quivers: in the pool for a ranger, never for a warrior
+	eq(#K.candidates(cfg, "quiver", 1000, canUseAs("warrior")), 0, "no quiver for a warrior")
+	local q = K.candidates(cfg, "quiver", 1000, canUseAs("ranger"))
+	eq(#q, cfg.base.choices, "four quiver choices for a level 1000 ranger")
+	eq(q[1].id, 29873, "the best quiver first")
+	for _, e in ipairs(cfg.pool.quiver) do
+		check(ChaosArcheryConfigForTest.quivers[e[1]] ~= nil, "pool quiver " .. e[1] .. " is a quiver base")
+		eq(e[2], ChaosArcheryConfigForTest.quivers[e[1]][1], "pool level of quiver " .. e[1] .. " is its base level")
+	end
+	eq(#K.candidates(cfg, "quiver", 10, canUseAs("ranger")), 0, "no quiver under level 20")
+	local quivers, pieces = 0, 0
+	for window = 1, 20 do
+		for _, e in ipairs(K.stock(cfg, {guid = 9, window = window, rerolls = 0, level = 600, gate = gate(600),
+				canUse = canUseAs("ranger")})) do
+			pieces = pieces + 1
+			if e.slot == "quiver" then
+				quivers = quivers + 1
+				check(e.lv <= 600, "a quiver of the ranger's level")
+			end
+		end
+	end
+	-- one slot weight of 16: about 6% of the pieces
+	check(quivers > 0 and quivers < pieces / 5, "a ranger's stocks hold some quivers: " .. quivers .. " of " .. pieces)
 end
 
 local ctx = {guid = 4242, window = 123456, rerolls = 0, level = 1000, gate = gate(1000), canUse = canUseAs("warrior")}

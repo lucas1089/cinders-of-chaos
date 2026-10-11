@@ -68,6 +68,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                CLASS HOOK: every tools/install_class_*.py (sorted), called as `install_class_X.py DATA_DIR [--dry-run]`;
                the class lines (Necromancer / Monk / Templar) put their own spell or data installers there
                tools/rename_spells.py --sql      Chaos names of the stock spells and runes (+ the player_spells UPDATEs)
+  archery      tools/patch_base_archery.py       bows and crossbows fire without ammunition (attack, hit chance and missile of
+               their band), quivers become equipment (items.xml, items.otb, movements.xml), arrows and bolts leave
+               loot, shops and quest rewards, the conjure spells go (README "Infinite arrows and quivers"; after
+               vocations, which still reads the launchers' ammo type, and after spells)
   autoloot     data/talkactions/talkactions.xml: the stock XML "!autoloot" line is commented out, so autoloot.lua's own
                talkaction runs and the window refreshes (README "Install" 7)
   commands     tools/install_commands.py         the players' spoken "!" commands of the base server commented out (every one is in the
@@ -100,7 +104,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spells', 'autoloot', 'commands', 'sql']
+STEPS = ['files', 'lib', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spells', 'archery', 'autoloot', 'commands', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -407,6 +411,10 @@ def step_spells(server, data, ctx):
         ctx['rename_sql'] = sql_out
     warn = unregistered_spell_fragments(data)
     return ok, lines, warn
+
+
+def step_archery(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_archery.py'), data], 'patch_base_archery.py'))
 
 
 def step_commands(server, data, ctx):

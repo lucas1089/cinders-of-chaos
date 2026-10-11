@@ -1,4 +1,4 @@
--- Dawnpiercer: single target holy bolt, the paladin's filler. Scales with distance skill x weapon attack (bow + ammo).
+-- Dawnpiercer: single target holy bolt, the paladin's filler. Scales with distance skill x weapon attack (the bow's own).
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local combat = Combat()

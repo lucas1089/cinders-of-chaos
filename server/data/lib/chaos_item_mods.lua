@@ -40,6 +40,7 @@ M.RUINED = "chaos_ruined"
 M.EXTRA = "chaos_ext"
 M.RAW_PREFIX = "cv_"
 M.BIND_PREFIX = "cb_"
+M.QUIVER_SPEED = "chaos_qspd" -- on a launcher: the Attack Speed with Bows of the quiver worn with it (archery.lua)
 
 -- ---------------------------------------------------------------------------------------------------------------
 -- configuration
@@ -309,6 +310,10 @@ function M.kindOfType(it)
 	if weapon ~= 0 and weapon ~= (WEAPON_AMMO or 7) then
 		return "weapon"
 	end
+	-- a quiver (data/lib/chaos_archery_core.lua): equipment of the ammunition slot with modifiers of its own
+	if ChaosArchery and ChaosArchery.isQuiverType(it) then
+		return "quiver"
+	end
 	local slots = typeNumber(it, "getSlotPosition")
 	if hasBit(slots, SLOTP.head) then
 		return "helmet"
@@ -330,7 +335,13 @@ function M.kindOf(item)
 	return M.kindOfType(typeOf(item))
 end
 
+-- a quiver rolls only the modifiers that name it (chaos_archery_config.lua mods and sharedMods), never the ones open
+-- to every kind (the engine's absorbs, skills, critical and leech pairs: the base rarity script would apply those
+-- whatever the wearer holds)
 function M.allowed(def, kind)
+	if kind == "quiver" then
+		return def.kinds ~= nil and def.kinds.quiver == true
+	end
 	return kind ~= nil and (def.kinds == nil or def.kinds[kind] == true)
 end
 
@@ -731,6 +742,8 @@ function M.syncAttackSpeed(item)
 			pct = math.min(math.max(pct, cap), pct + gems) -- the modifier alone may sit at its own cap
 		end
 	end
+	-- the Attack Speed with Bows of the wielder's quiver (archery.lua writes it on the launcher in the hands)
+	pct = pct + (custom(item, M.QUIVER_SPEED) or 0)
 	if pct > 0 then
 		local it = typeOf(item)
 		item:setAttribute(ITEM_ATTRIBUTE_ATTACK_SPEED, M.attackInterval(it and typeNumber(it, "getAttackSpeed") or 0, pct))
@@ -821,15 +834,35 @@ function M.slotBits()
 	add(CONST_SLOT_LEGS, SLOTP_LEGS); add(CONST_SLOT_FEET, SLOTP_FEET); add(CONST_SLOT_RING, SLOTP_RING)
 	add(CONST_SLOT_RIGHT, SLOTP_RIGHT); add(CONST_SLOT_LEFT, SLOTP_LEFT)
 	add(CONST_SLOT_BADGE, SLOTP_BADGE); add(CONST_SLOT_GLOVES, SLOTP_GLOVES); add(CONST_SLOT_BELT, SLOTP_BELT)
+	add(CONST_SLOT_AMMO, SLOTP_AMMO)
 	return bits
 end
 
--- true when the item counts in this slot (worn where it belongs; weapons and shields in a hand)
-function M.fits(item, slot, bits)
+-- the launcher kind of the weapon in the player's hands ("bow" | "crossbow"), nil without one
+function M.handLauncher(player)
+	if not (player and ChaosArchery) then
+		return nil
+	end
+	for _, slot in ipairs({CONST_SLOT_LEFT, CONST_SLOT_RIGHT}) do
+		local ok, item = pcall(function() return player:getSlotItem(slot) end)
+		local kind = ok and item and ChaosArchery.kindOfType(typeOf(item))
+		if kind then
+			return kind, item
+		end
+	end
+	return nil
+end
+
+-- true when the item counts in this slot (worn where it belongs; weapons and shields in a hand). The ammunition slot
+-- counts only for a quiver while `player` holds a bow or crossbow (without a player: never)
+function M.fits(item, slot, bits, player)
 	bits = bits or M.slotBits()
 	local bitValue = bits[slot]
 	if not bitValue then
 		return false
+	end
+	if slot == CONST_SLOT_AMMO then
+		return M.kindOf(item) == "quiver" and M.handLauncher(player) ~= nil
 	end
 	local it = item:getType()
 	if hasBit(it:getSlotPosition(), bitValue) then
@@ -846,7 +879,7 @@ function M.equippedItems(player)
 	local bits, out = M.slotBits(), {}
 	for slot in pairs(bits) do
 		local item = player:getSlotItem(slot)
-		if item and M.fits(item, slot, bits) then
+		if item and M.fits(item, slot, bits, player) then
 			out[#out + 1] = item
 		end
 	end
@@ -942,6 +975,11 @@ end
 if not (ChaosPowers and ChaosPowers.keys) then
 	dofile("data/lib/chaos_powers.lua")
 end
+-- and the quiver modifiers (chaos_archery_core.lua; every load, the catalogue above is new each time)
+if not (ChaosArchery and ChaosArchery.registerMods) then
+	dofile("data/lib/chaos_archery_core.lua")
+end
+ChaosArchery.registerMods(M)
 -- and the energy shield modifiers (chaos_energy_shield.lua)
 if not (ChaosEnergyShield and ChaosEnergyShield.keys) then
 	dofile("data/lib/chaos_energy_shield.lua")

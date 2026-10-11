@@ -66,7 +66,8 @@ K.kits = {
 			[CONST_SLOT_NECKLACE] = 24851, -- Tear of the Void (unique)
 			[CONST_SLOT_RING] = 2206 -- Ring of the Last Ember (unique)
 		},
-		ammo = {id = 6529, count = 100} -- infernal bolt
+		-- bows and crossbows fire without ammunition: a Legendary Haloed Quiver in the ammunition slot (chaos_archery_config.lua)
+		quiver = {id = 29566, rarity = 5}
 	}
 }
 
@@ -96,21 +97,21 @@ end
 K.kits.berserker = derive("knight", {slots = {
 	[CONST_SLOT_LEFT] = 2440, -- Executioner's Reckoning (unique, two-handed axe)
 	[CONST_SLOT_RIGHT] = false}})
--- the Beastmaster shoots bows and arrows only
+-- the Beastmaster shoots bows only
 K.kits.beastmaster = derive("paladin", {slots = {
 	[CONST_SLOT_LEFT] = 27230}, -- Doomtide Longbow (unique)
-	ammo = {id = 18304, count = 100}}) -- crystalline arrow
+	quiver = {id = 28050, rarity = 5}}) -- a Legendary quiver of level 500
 -- the Thief line: one-handed swords, the Ranger's armour, shurikens (docs/CLASSES.md). Samurai: the same kit
 K.kits.thief = derive("paladin", {
 	skills = {[SKILL_SWORD] = 120, [SKILL_DISTANCE] = 110, [SKILL_SHIELD] = 90}, magic = 30,
 	slots = {[CONST_SLOT_LEFT] = 8209}, -- Soulreaper (unique)
-	ammo = false, extra = {{id = 7368, count = 100}}}) -- assassin stars (the shuriken spells use them)
+	quiver = false, extra = {{id = 7368, count = 100}}}) -- assassin stars (the shuriken spells use them)
 -- the Ninja: a second blade in the shield hand (dual wield, server/src-patches/0002; without it it goes to the backpack)
 K.kits.ninja = derive("thief", {slots = {[CONST_SLOT_RIGHT] = 11395}}) -- Bloodmoon Edge (unique)
 -- the Monk line fights unarmed in the Ranger's armour
 K.kits.monk = derive("paladin", {
 	skills = {[SKILL_FIST] = 120, [SKILL_CLUB] = 110, [SKILL_SHIELD] = 90}, magic = 30,
-	slots = {[CONST_SLOT_LEFT] = false}, ammo = false})
+	slots = {[CONST_SLOT_LEFT] = false}, quiver = false})
 -- the Necromancer line: wands, rods and the casters' gear (the mage kit with the wand)
 K.kits.necromancer = derive("mage", {druidWeapon = false})
 -- the Templar line: one-handed sword and shield in the Warrior's armour, some magic level for its holy spells
@@ -233,11 +234,16 @@ function K.give(player, kind)
 			pack(id) -- the slot refused it (an off-hand blade without the dual-wield patch)
 		end
 	end
-	if kit.ammo then
+	if kit.quiver then
+		local q
 		if player:getSlotItem(CONST_SLOT_AMMO) then
-			if bag then bag:addItem(kit.ammo.id, kit.ammo.count) end
+			q = bag and bag:addItem(kit.quiver.id, 1)
 		else
-			makeItem(player, kit.ammo.id, kit.ammo.count, CONST_SLOT_AMMO)
+			q = makeItem(player, kit.quiver.id, 1, CONST_SLOT_AMMO)
+		end
+		-- rolled like a drop of the kit's level (tiers by item level)
+		if q and ChaosCrafting and ChaosCrafting.forge and ChaosItemMods then
+			ChaosCrafting.forge(q, kit.quiver.rarity or 5, ChaosItemMods.sourceLevel({monsterLevel = kit.level or 500}))
 		end
 	end
 	if bag then

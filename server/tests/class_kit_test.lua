@@ -152,9 +152,10 @@ do
 	local b = K.kits.berserker
 	eq(b.slots[CONST_SLOT_RIGHT], nil, "berserker: no shield"); eq(b.slots[CONST_SLOT_LEFT], 2440, "two-handed axe")
 	eq(K.kits.knight.slots[CONST_SLOT_RIGHT], 10318, "the knight kit keeps its shield")
-	eq(K.kits.beastmaster.ammo.id, 18304, "beastmaster arrows"); eq(K.kits.paladin.ammo.id, 6529, "paladin bolts")
+	eq(K.kits.beastmaster.quiver.id, 28050, "beastmaster quiver"); eq(K.kits.paladin.quiver.id, 29566, "paladin quiver")
+	eq(K.kits.beastmaster.ammo, nil, "no arrows"); eq(K.kits.paladin.ammo, nil, "no bolts")
 	eq(K.kits.ninja.slots[CONST_SLOT_RIGHT], 11395, "ninja off-hand"); eq(K.kits.thief.slots[CONST_SLOT_RIGHT], nil, "thief: none")
-	eq(K.kits.thief.ammo, false, "thief: no bolts"); eq(K.kits.thief.extra[1].id, 7368, "assassin stars")
+	eq(K.kits.thief.quiver, false, "thief: no quiver"); eq(K.kits.thief.extra[1].id, 7368, "assassin stars")
 	eq(K.kits.monk.slots[CONST_SLOT_LEFT], nil, "monk: unarmed"); eq(K.kits.monk.skills[SKILL_FIST], 120, "fist")
 	eq(K.kits.necromancer.druidWeapon, false, "necromancer keeps the wand")
 	eq(K.kits.templar.slots[CONST_SLOT_RIGHT], 10318, "templar shield"); eq(K.kits.templar.magic, 25, "templar magic level")

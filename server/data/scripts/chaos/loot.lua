@@ -247,6 +247,10 @@ function L.isGearId(id)
 		if t:isContainer() or t:isStackable() or t:getAmmoType() ~= 0 then
 			return false
 		end
+		-- a quiver (data/lib/chaos_archery_core.lua): its stats are implicit modifiers, not item type values
+		if ChaosItemMods and ChaosItemMods.kindOfType and ChaosItemMods.kindOfType(t) == "quiver" then
+			return true
+		end
 		return relevantType(t)
 	end)
 	return ok and res or false
@@ -808,10 +812,25 @@ local function processKill(monster, corpse)
 	-- upgrades), so stock copies of the same base ids may still be upgraded
 	L.protectedIds = {}
 
+	-- 0. no arrows or bolts any more (bows fire without them: data/lib/chaos_archery_core.lua). The install tool takes
+	-- them out of the base loot tables; a loot table it could not read still drops none.
+	local A = ChaosArchery
+	local function isAmmo(id)
+		return A ~= nil and A.isAmmoId(id, ItemType and ItemType(id) or nil)
+	end
+	if A then
+		for slot = corpse:getSize() - 1, 0, -1 do
+			local item = corpse:getItem(slot)
+			if item and isAmmo(item:getId()) then
+				item:remove()
+			end
+		end
+	end
+
 	-- 1. extra rolls
 	local lootTable = mType and mType:getLoot()
 	for _, drop in ipairs(L.rollExtraLoot(lootTable, tier, ctx)) do
-		local item = corpse:addItem(drop.itemId, drop.count)
+		local item = not isAmmo(drop.itemId) and corpse:addItem(drop.itemId, drop.count) or nil
 		if item then
 			if L.isGearId(drop.itemId) then
 				local r = L.stockRarity()

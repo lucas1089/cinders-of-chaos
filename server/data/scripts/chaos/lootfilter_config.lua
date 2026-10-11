@@ -35,6 +35,6 @@ ChaosLootFilterConfig = {
 	-- item categories (equipment = rarity gear or anything worn/wielded; see lootfilter.lua itemInfo)
 	coinIds = {2148, 2152, 2160, 28872, 28873},
 	orbIds = {29856, 29857},   -- plus every currency entry of ChaosLootConfig and any item named "... Orb" / "Orb of ..."
-	supplyWords = {"potion", "rune", "flask", "arrow", "bolt", "spear", "star", "food", "meat", "ham", "fish", "bread", "cheese", "mushroom"}
+	supplyWords = {"potion", "rune", "flask", "spear", "star", "food", "meat", "ham", "fish", "bread", "cheese", "mushroom"}
 }
 return ChaosLootFilterConfig

@@ -189,6 +189,10 @@ local function categoryOf(itemType, info)
 	if (weapon ~= 0 and weapon ~= WEAPON_AMMO) or itemType:getArmor() > 0 then
 		return "equipment"
 	end
+	-- a quiver (data/lib/chaos_archery_core.lua) is equipment of the ammunition slot
+	if ChaosItemMods and ChaosItemMods.kindOfType and ChaosItemMods.kindOfType(itemType) == "quiver" then
+		return "equipment"
+	end
 	local slots = itemType:getSlotPosition()
 	for _, b in ipairs(GEAR_SLOTS) do
 		if hasBit(slots, b) then

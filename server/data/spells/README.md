@@ -681,6 +681,53 @@ Mystic's 3363 / 4812; "Healing" above). The Samurai deals a bit less than the Ju
 in game: a hit of 727 -> 509) and taunts: about 15.4 effective health per level against the Sentinel's 17.3 and the Juggernaut's
 19.6 (21.3 with Immovable) in the toughness model of "Templar line". The Iron Sage's damage is below the Warrior's.
 
+### Infinite arrows (bows and crossbows without ammunition, 2026-10-11)
+
+Bows and crossbows fire without ammunition (server/README.md "Infinite arrows and quivers"). The install tool gives each
+launcher the attack and hit chance of the ammunition of its level band (`data/lib/chaos_archery_config.lua` `bands`), so the
+engine's sum (launcher attack + ammunition attack, ammunition hit chance + launcher hit bonus) is the same number as before.
+Measured with the engine's formula (weapons.cpp: max = level / 5 + (skill / 4 + 1) x attack / 3 x 1.03, min = level / 5,
+average = (min + max) / 2 x hit chance; the two-handed factor and armour apply alike before and after), a character of each
+level band with the launcher of its band and the best ammunition an NPC sold for its own level
+(`ARCHERY_REPORT=1 luajit tests/archery_test.lua` prints it; the test holds every row within 20% and the matching rows
+equal):
+
+| Level | Distance | Launcher (band level) | Ammunition before | Average hit before | Average hit after | Change |
+|---|---|---|---|---|---|---|
+| 8 | 30 | bow (0) | arrow 25 | 34.6 | 40.9 | +18.3% |
+| 15 | 40 | bow (0) | arrow 25 | 45.5 | 53.9 | +18.5% |
+| 25 | 50 | bow (0) | arrow 28 | 66.5 | 67.0 | +0.7% |
+| 35 | 58 | bow (0) | arrow 33 | 89.3 | 78.1 | -12.5% |
+| 45 | 62 | silkweaver bow (40) | arrow 38 | 113.0 | 113.0 | +0.0% |
+| 65 | 70 | an old bow (60) | arrow 38 | 133.5 | 133.5 | +0.0% |
+| 150 | 88 | umbral bow (150) | arrow 65 | 302.5 | 302.5 | +0.0% |
+| 300 | 102 | falcon bow (300) | arrow 65 | 387.5 | 387.5 | +0.0% |
+| 600 | 115 | sanguine bow (600) | arrow 65 | 498.0 | 498.0 | +0.0% |
+| 1000 | 125 | seraphic bleeder (1000) | arrow 65 | 593.0 | 593.0 | +0.0% |
+| 8 | 30 | crossbow (0) | bolt 30 | 39.6 | 41.8 | +5.5% |
+| 20 | 45 | crossbow (0) | bolt 30 | 58.3 | 62.2 | +6.7% |
+| 35 | 58 | crossbow (0) | bolt 33 | 82.7 | 80.0 | -3.2% |
+| 42 | 60 | crossbow (0) | bolt 36 | 95.7 | 84.0 | -12.2% |
+| 50 | 62 | modified crossbow (45) | bolt 36 | 100.8 | 100.8 | +0.0% |
+| 95 | 80 | crystal crossbow (90) | bolt 66 | 252.5 | 252.5 | +0.0% |
+| 400 | 108 | soulpiercer (400) | bolt 66 | 422.9 | 422.9 | +0.0% |
+| 1000 | 125 | seraphic piercer (1000) | bolt 66 | 587.8 | 587.8 | +0.0% |
+
+- From level 40 (bows) and 45 (crossbows) a launcher of its band deals exactly what it did with that band's ammunition.
+- The level 0 bow and crossbow are the only launchers below that. They carry the average of what levels 1-39 fired: arrows
+  +29 (arrow 25 to level 19, sniper 28 to 29, tarsal 33 to 39), bolts +32 (bolt 30, piercing 33, vortex 36). Levels 1-19
+  hit 18% harder, 20-29 the same, 30-39 12% softer until the level 40 bows; crossbows +6% to -12%.
+- A launcher below the character's band loses what better ammunition gave (a level 300 character with a level 60 bow had
+  crystalline arrows, 65, and gets the onyx band, 38). That is the weapon's level now, like every other weapon.
+- The class tables above were measured with a royal crossbow and infernal bolts (72): its band is the prismatic bolt (66), so
+  that setup is 6.6% softer at level 300 / distance 110 and 5.5% at 1000 / 140. Infernal bolts were not on sale at a real
+  price (300,000 gold each), so the band follows the prismatic bolt. The bow rows (crystalline arrows) are unchanged.
+- In game (level 650 Ranger, sanguine bow, attack 9 -> 74 with the band, empty ammunition slot, distance 114, a troll): 42
+  hits, average 423 after the troll's armour, highest 686. A Legendary Haloed Quiver (distance +3, attack speed +4%, 19% ice)
+  then gave 722 physical and 137 ice per hit (after the two-handed factor).
+- The quiver modifiers are new damage on top (critical strike +50%, extra projectile 60%, elemental shares, distance
+  fighting, attack speed), capped like every item modifier; a quiver works only while a bow or crossbow is held.
+
 ### PvP (tested with two characters on the test server)
 
 - Damage to players is halved by the engine (spell and weapon alike); measured per cast against a level 300 knight with no armour, e.g.

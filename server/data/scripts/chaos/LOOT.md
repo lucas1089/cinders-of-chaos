@@ -32,7 +32,7 @@ The tier comes from `ChaosTierDead[monster:getId()].tier` (set by monster_tiers.
    scales the chance only (rate x count squared the bonus).
    Extra gear gets the stock rarity roll (copied) so it is comparable with stock gear.
 2. **Gear quality**: every top-level corpse item that is gear (weapon/armor/hit/absorb/skill/special stats like the stock
-   `hasRelevantStats`; not ammo, stackable, container, not in `gear.excludedItems` (boats 27797-27802), not a unique
+   `hasRelevantStats`, or a quiver of `data/lib/chaos_archery_config.lua`, which has no stats of its type; not ammo, stackable, container, not in `gear.excludedItems` (boats 27797-27802), not a unique
    from `ChaosUniqueItems`) gets `L.upgradeRarity(tier, current, itemFind)`: floor (rare 3, legendary 5, boss 6, with
    `ensureChance`), then `bonusChance` % for +1..+3 steps (`bonusSteps` weights), capped at `maxRarity` (15). Never
    downgrades. If the target is higher, `Game.createItemWithRarity(id, 1, target)` is made, checked
@@ -113,3 +113,5 @@ only returns a table so this is harmless (loot.lua reads the global `ChaosLootCo
 * `ChaosTierDead` lives 10 s; if the death event does not fire (monster without the registered event) the tier falls back to
   `ChaosTierOf` and then `normal`.
 * Item find storage 7100040 is just a free key in the Chaos range; nothing sets it yet.
+* Arrows and bolts (bows fire without them, server/README.md "Infinite arrows and quivers"): `processKill` removes them from the
+  corpse first and the extra rolls skip them, for a monster whose loot table still lists them.

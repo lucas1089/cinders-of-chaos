@@ -286,10 +286,13 @@ end
 -- ---------------------------------------------------------------------------------------------------------------
 Gen.KINDS = {
 	{"weapon", "Weapons"}, {"shield", "Shields"}, {"helmet", "Helmets"}, {"armor", "Body armour"}, {"legs", "Legs"},
-	{"boots", "Boots"}, {"jewel", "Jewellery (amulets, rings)"}, {"other", "Other gear (gloves, belts...)"}
+	{"boots", "Boots"}, {"jewel", "Jewellery (amulets, rings)"}, {"other", "Other gear (gloves, belts...)"},
+	{"quiver", "Quivers (with a bow or crossbow)"}
 }
 local KIND_SHORT = {weapon = "Weapon", shield = "Shield", helmet = "Helmet", armor = "Armour", legs = "Legs",
-	boots = "Boots", jewel = "Jewel", other = "Other"}
+	boots = "Boots", jewel = "Jewel", other = "Other", quiver = "Quiver"}
+-- a modifier open to every kind (no kinds list) rolls on every kind but quivers (chaos_item_mods.lua M.allowed)
+local ANY_KINDS = #Gen.KINDS - 1
 local TIER_ORDER = {"normal", "magic", "rare", "legendary", "boss"}
 local TIER_NAME = {normal = "Normal", magic = "Magic", rare = "Rare", legendary = "Legendary", boss = "Boss"}
 
@@ -299,7 +302,7 @@ local COLORS = {absorb = "#7fa8ff", skill = "#9fdc7f", special = "#f6cf72", elem
 local function kindsOf(kinds)
 	local out = {}
 	for _, k in ipairs(Gen.KINDS) do
-		if kinds == nil or kinds[k[1]] then
+		if (kinds == nil and k[1] ~= "quiver") or (kinds ~= nil and kinds[k[1]]) then
 			out[#out + 1] = k[1]
 		end
 	end
@@ -547,7 +550,7 @@ function Gen.modifierEntry(D, a)
 	local groupName = ({absorb = "Absorb", skill = "Skill", special = "Critical / leech", element = "Weapon element",
 		chaos = "Chaos modifier"})[a.group]
 	e.sub = string.format("%s, %s. %s (T1) to %s (T8)", a.side == "prefix" and "Prefix" or "Suffix",
-		#kinds == #Gen.KINDS and "any gear" or table.concat(kindNames(kinds, true), ", "), tv[1], tv[#tv])
+		#kinds == ANY_KINDS and "any gear" or table.concat(kindNames(kinds, true), ", "), tv[1], tv[#tv])
 	e.f = {side = a.side, kind = kinds, group = isPower and "power" or a.group}
 	local overview = affixOverview(D, a)
 	if not isPower then
@@ -557,7 +560,7 @@ function Gen.modifierEntry(D, a)
 	if a.group == "element" then
 		rollsOn = {"Weapons with an attack and no element of their own."}
 	else
-		rollsOn = {#kinds == #Gen.KINDS and "Any gear." or (sentenceList(kindNames(kinds)) .. ".")}
+		rollsOn = {#kinds == ANY_KINDS and "Any gear." or (sentenceList(kindNames(kinds)) .. ".")}
 	end
 	-- the orb table is the same for every modifier of one side (and powers): one shared copy (CodexData.shared)
 	local ref = "orbs:" .. a.side .. (isPower and ":power" or "")

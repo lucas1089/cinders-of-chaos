@@ -448,6 +448,10 @@ function C.isGear(item)
 	if typeNumber(it, "getSlotPosition") == 0 and typeNumber(it, "getWeaponType") == 0 then
 		return false
 	end
+	-- a quiver has no stats of its type: its implicit modifiers live in chaos_archery_config.lua
+	if M.kindOfType(it) == "quiver" then
+		return true
+	end
 	if typeNumber(it, "getWeaponType") ~= 0 then
 		return true
 	end
@@ -895,7 +899,11 @@ function C.applyBaseBonus(item, rarity, level)
 	raise(ITEM_ATTRIBUTE_ATTACK, "getAttack")
 	raise(ITEM_ATTRIBUTE_DEFENSE, "getDefense")
 	raise(ITEM_ATTRIBUTE_ARMOR, "getArmor")
-	raise(ITEM_ATTRIBUTE_HITCHANCE, "getHitChance")
+	-- a bow or crossbow fires with its type's own hit chance (the engine reads no item attribute for it any more:
+	-- chaos_archery_core.lua), so a raised value would only show a number it does not use
+	if not (ChaosArchery and ChaosArchery.isLauncherType(it)) then
+		raise(ITEM_ATTRIBUTE_HITCHANCE, "getHitChance")
+	end
 end
 
 -- the whole roll of an item with a rarity: rarity, item level, base bonus (opts.base ~= false), as many modifiers as

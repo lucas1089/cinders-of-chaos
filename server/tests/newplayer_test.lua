@@ -93,7 +93,7 @@ do
 	ok(k.gold > 0, "gold")
 	local r = NP.kitFor(3)
 	eq(slotOf(r, "left").id, 2456, "ranger bow")
-	eq(slotOf(r, "ammo").id, 2544, "ranger arrows")
+	eq(slotOf(r, "ammo"), nil, "ranger: no arrows (bows fire without ammunition)")
 	eq(r.role, "ranged", "ranger role")
 	local s = NP.kitFor(1)
 	eq(slotOf(s, "left").id, 2190, "mystic wand")

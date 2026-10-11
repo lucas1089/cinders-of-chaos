@@ -28,7 +28,7 @@ L.MAX_TIER = 8
 L.UNIQUE_COLOR = '#e07b24'
 L.ORB_COLOR = '#4fd8d0'
 L.CATEGORIES = { 'equipment', 'currency', 'supplies', 'other' }
-L.CATEGORY_NAMES = { equipment = 'Equipment', currency = 'Currency (orbs, coins)', supplies = 'Supplies (potions, runes, ammo)', other = 'Other' }
+L.CATEGORY_NAMES = { equipment = 'Equipment', currency = 'Currency (orbs, coins)', supplies = 'Supplies (potions, runes)', other = 'Other' }
 
 local function flag(v)
   return v == true or v == 1 or v == '1'

@@ -21,7 +21,7 @@ local K = ChaosGambleCore
 local floor, min, max = math.floor, math.min, math.max
 
 K.SLOT_NAMES = {weapon = "Weapon", shield = "Shield", helmet = "Helmet", armor = "Armor", legs = "Legs", boots = "Boots",
-	amulet = "Amulet", ring = "Ring"}
+	amulet = "Amulet", ring = "Ring", quiver = "Quiver"}
 
 -- ---------------------------------------------------------------- generator
 -- Park-Miller: exact in doubles (LuaJIT) and in 5.3 integers

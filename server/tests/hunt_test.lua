@@ -21,7 +21,8 @@ assert(cfg.lootBeforeIndex < 2 and cfg.lootAfterIndex > 2 and cfg.lootAfterIndex
 	"corpse read around the index-2 callbacks and before the loot filter snapshot")
 assert(cfg.expIndex > 100, "experience read after every bonus")
 eq(supplies[7618], 45, "health potion price from the NPCs")
-eq(supplies[2544], 2, "arrow: the cheapest NPC")
+eq(supplies[2389], 2, "spear: the cheapest NPC")
+eq(supplies[2544], nil, "no arrows: bows fire without ammunition")
 eq(supplies[2260], nil, "unscribed runes are not supplies")
 eq(prices[2148], nil, "no NPC buys gold coins: the coin table values them")
 for id, price in pairs(supplies) do
@@ -121,9 +122,9 @@ eq(H.addLoot(s, merged, unit), 0, "no loot while paused")
 H.resume(s, 10)
 
 -- ---------------------------------------------------------------- supplies
-local used = H.supplyUsed({[7618] = 50, [2544] = 200, [7620] = 10}, {[7618] = 42, [2544] = 300})
+local used = H.supplyUsed({[7618] = 50, [2389] = 200, [7620] = 10}, {[7618] = 42, [2389] = 300})
 eq(used[7618], 8, "8 potions used")
-eq(used[2544], nil, "bought arrows are not used")
+eq(used[2389], nil, "bought spears are not used")
 eq(used[7620], 10, "last mana potions used")
 eq(next(H.supplyUsed(nil, {[7618] = 3})), nil, "first count: nothing used")
 eq(H.addSupply(s, 7618, 8, supplies[7618], 266, "health potion"), 8 * 45, "supply value")

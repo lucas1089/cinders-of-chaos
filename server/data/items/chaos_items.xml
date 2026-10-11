@@ -157,10 +157,8 @@
 		<attribute key="weight" value="12600" />
 		<attribute key="weaponType" value="distance" />
 		<attribute key="slotType" value="two-handed" />
-		<attribute key="ammoType" value="bolt" />
 		<attribute key="range" value="6" />
-		<attribute key="attack" value="14" />
-		<attribute key="hitChance" value="6" />
+		<attribute key="attack" value="80" />
 		<attribute key="skillDist" value="4" />
 		<attribute key="criticalHitChance" value="4" />
 		<attribute key="criticalHitAmount" value="20" />
@@ -172,10 +170,8 @@
 		<attribute key="weight" value="4700" />
 		<attribute key="weaponType" value="distance" />
 		<attribute key="slotType" value="two-handed" />
-		<attribute key="ammoType" value="arrow" />
 		<attribute key="range" value="6" />
-		<attribute key="attack" value="10" />
-		<attribute key="hitChance" value="6" />
+		<attribute key="attack" value="75" />
 		<attribute key="skillDist" value="6" />
 		<attribute key="absorbPercentDeath" value="6" />
 		<attribute key="description" value="Strung with something that was once alive; it hums at the dead. (Requires level 110.)" />
@@ -186,9 +182,7 @@
 		<attribute key="weight" value="3500" />
 		<attribute key="weaponType" value="distance" />
 		<attribute key="slotType" value="two-handed" />
-		<attribute key="ammoType" value="bolt" />
 		<attribute key="range" value="5" />
-		<attribute key="hitChance" value="4" />
 		<attribute key="skillDist" value="3" />
 		<attribute key="description" value="A hangman's design: it only needs one shot. (Requires level 60.)" />
 		<attribute key="showattributes" value="1" />
@@ -893,8 +887,7 @@
 		<attribute key="weight" value="4700" />
 		<attribute key="weaponType" value="distance" />
 		<attribute key="slotType" value="two-handed" />
-		<attribute key="attack" value="12" />
-		<attribute key="hitChance" value="8" />
+		<attribute key="attack" value="78" />
 		<attribute key="range" value="6" />
 		<attribute key="skillDist" value="3" />
 		<attribute key="criticalHitChance" value="4" />
@@ -940,8 +933,7 @@
 		<attribute key="weight" value="4700" />
 		<attribute key="weaponType" value="distance" />
 		<attribute key="slotType" value="two-handed" />
-		<attribute key="attack" value="8" />
-		<attribute key="hitChance" value="6" />
+		<attribute key="attack" value="73" />
 		<attribute key="range" value="6" />
 		<attribute key="skillDist" value="3" />
 		<attribute key="set" value="thornwake" />
