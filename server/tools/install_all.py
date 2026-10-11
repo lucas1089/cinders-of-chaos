@@ -46,6 +46,7 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                (README "Factions")
   pouches      tools/install_pouches.py          the store pouches in items.otb / items.xml and their move hook in Player:onMoveItem
                (README "Store pouches")
+  charms       tools/install_charms.py           the charms and the charm shard in items.otb / items.xml (README "Charms")
   supports     tools/install_supports.py         the spell support runes in items.otb / items.xml and the spell-library hook (scripts/chaos/SUPPORTS.md)
   monsters     tools/register_monsters.py        every folder under data/monster/monsters/chaos (world bosses, goblin, ...)
   spells       tools/register_spells.py          the Chaos spells (README "Install" 3)
@@ -84,7 +85,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'vocations', 'events', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spells', 'autoloot', 'commands', 'sql']
+STEPS = ['files', 'lib', 'vocations', 'events', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'charms', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spells', 'autoloot', 'commands', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -322,6 +323,10 @@ def step_factions(server, data, ctx):
 
 def step_pouches(server, data, ctx):
     return tool_result(run_tool([tool('install_pouches.py'), data], 'install_pouches.py'))
+
+
+def step_charms(server, data, ctx):
+    return tool_result(run_tool([tool('install_charms.py'), data], 'install_charms.py'))
 
 
 def step_supports(server, data, ctx):

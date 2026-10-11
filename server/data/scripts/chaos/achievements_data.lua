@@ -47,6 +47,7 @@
 --   points                                                           the character's own achievement points
 --   season_hc_level, season_ssf_level, season_hc_survived, season_ssf_finished   season modes (season_modes.lua)
 --   mentor_graduates, mentor_fledged                                 mentors (mentor.lua, at a graduation)
+--   pvpzone_kills, pvpzone_banked, pvpzone_haul, pvpzone_captures   the Scorched Marches (pvpzone.lua)
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible; no engine calls (also read by server/tests/achievements_test.lua).
 
 local CHAOS, DIVINE, EXALTED = 29856, 29857, 29855
@@ -71,6 +72,22 @@ return {
 		{key = "pvp", name = "PvP"},
 		{key = "explore", name = "Exploration & Social"},
 		{key = "secrets", name = "Secrets"}
+	},
+
+	-- category completion (reward track): an account with every achievement of a category (hidden ones too; any of its
+	-- characters) holds this title (titles.lua source "achievement", key "achievement_cat:<key>", frame while active) and
+	-- the cosmetic of cosmetics_config.lua with category = <key> (granted by cosmetics.lua). See server/README.md.
+	categoryRewards = {
+		combat = {title = "Warmaster", frame = "ember"},
+		monsters = {title = "Beastwarden", frame = "verdant"},
+		bosses = {title = "Titanfeller", frame = "bone"},
+		rifts = {title = "Riftwarden", frame = "violet"},
+		raids = {title = "Sepulchre Lord", frame = "bone"},
+		bounties = {title = "the Relentless", frame = "ember"},
+		items = {title = "Forgewright", frame = "frost"},
+		pvp = {title = "the Unconquered", frame = "violet"},
+		explore = {title = "Wayfarer", frame = "verdant"},
+		secrets = {title = "Keeper of Secrets", frame = "frost"}
 	},
 
 	-- world boss name (lower case, a part of it is enough) -> its stat
@@ -347,6 +364,19 @@ return {
 			points = 25, stat = "pvp_season_tier", target = 4},
 		{id = "pvp_season_sovereign", cat = "pvp", name = "Cinder Sovereign", desc = "Finish a PvP season as a Cinder Sovereign.",
 			points = 50, stat = "pvp_season_tier", target = 6, hidden = true},
+		-- the Scorched Marches (pvpzone.lua)
+		{id = "marches_bank", cat = "pvp", name = "Ash in Hand", desc = "Bank embers at a safe exit of the Scorched Marches.",
+			points = 5, stat = "pvpzone_banked"},
+		{id = "marches_bank10k", cat = "pvp", name = "Ember Hoarder", desc = "Bank 10,000 embers from the Scorched Marches.",
+			points = 15, stat = "pvpzone_banked", target = 10000},
+		{id = "marches_haul", cat = "pvp", name = "Heavy Pockets", desc = "Bank 1,000 embers at one exit of the Scorched Marches.",
+			points = 10, stat = "pvpzone_haul", target = 1000},
+		{id = "marches_kill", cat = "pvp", name = "Blood on the Ash", desc = "Defeat a player in the Scorched Marches (a defeat that counts).",
+			points = 5, stat = "pvpzone_kills"},
+		{id = "marches_kill100", cat = "pvp", name = "Scourge of the Marches", desc = "Defeat 100 players in the Scorched Marches.",
+			points = 25, stat = "pvpzone_kills", target = 100, title = "Scourge of the Marches"},
+		{id = "marches_shrine", cat = "pvp", name = "Shrinebearer", desc = "Stand in the circle when your faction takes the Cinder Shrine.",
+			points = 10, stat = "pvpzone_captures"},
 		{id = "siege_play", cat = "pvp", name = "Under the Banner", desc = "Score in a guild siege.", points = 10,
 			stat = "siege_played"},
 		{id = "siege_win", cat = "pvp", name = "Siege Champion", desc = "Win a guild siege with your guild.", points = 25,

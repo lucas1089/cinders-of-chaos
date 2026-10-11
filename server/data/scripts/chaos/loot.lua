@@ -366,7 +366,7 @@ function L.rollCurrency(tier, ctx)
 	local cur = cfg().currency
 	tier = L.normTier(tier)
 	ctx = ctx or {}
-	local scale = rateMult(ctx) * (ctx.itemFind or 1)
+	local scale = rateMult(ctx) * (ctx.itemFind or 1) * (ctx.orbFind or 1) -- orbFind: charms.lua
 	-- the Ember of the Forge blessing of the corpse owner (blessings.lua): every orb of the list more often
 	scale = scale * (ChaosBlessings and ChaosBlessings.mult and ChaosBlessings.mult(ctx.player, "orb") or 1)
 	local cm = tierValue(cur.countMult, tier, 1)
@@ -785,6 +785,8 @@ local function processKill(monster, corpse)
 		level = tonumber(lvl)
 	end
 	local ctx = {tier = tier, monster = monster, player = owner, level = level, itemFind = L.itemFindMult(owner)}
+	-- the Orb Find of the placed charms (charms.lua): the currency chances only
+	ctx.orbFind = ChaosCharms and ChaosCharms.orbFindMult and ChaosCharms.orbFindMult(owner) or 1
 	local bonus = {} -- text pieces for the bonus-loot message
 	local corpsePos = corpse:getPosition()
 

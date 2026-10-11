@@ -929,6 +929,9 @@ giveRewards = function(mult, contrib, liberation)
 		local player = Player(r.name)
 		if player and player:getGuid() == r.guid then
 			V.deliver(player, r)
+			if ChaosCharms and ChaosCharms.onSource then -- a charm drop (charms.lua)
+				pcall(ChaosCharms.onSource, player, "invasion", {level = r.areaLevel, rank = r.rank})
+			end
 		else
 			V.pending[r.guid] = V.pending[r.guid] or {}
 			table.insert(V.pending[r.guid], r)

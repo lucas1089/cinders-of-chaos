@@ -23,7 +23,8 @@
 --   server -> client  state {open, line, lineName, rows = [K.rows + item (client id of the icon)]}      style {accent}  (the character's own label accent)
 --                     colors {names = {[name] = "#rrggbb"}, full}  (chat name colours of online characters)
 --                     result {ok, text}
--- Staff: /cosmetic <character>, <key | all>[, revoke]
+-- Staff: /cosmetic <character>, <key | all>[, revoke]   /cosmetic <character>, sync   (achievement cosmetics and the
+-- reward track of achievements.lua: granted at login, when the window opens and after new achievement unlocks)
 -- Lua 5.1 / LuaJIT compatible.
 
 if not Chaos then
@@ -196,23 +197,47 @@ local function achievementName(id)
 	return achievementNames[id or ""]
 end
 
-local function sync(player)
+-- the reward track facts of an account: {points, categories} (achievements.lua ChaosAchievements.accountOf)
+local function trackFacts(accountId)
+	local A, AK = ChaosAchievements, ChaosAchievementsCore
+	if not (A and A.accountOf and A.index and AK and AK.completedCategories) then
+		return nil
+	end
+	local ok, acc = pcall(A.accountOf, accountId)
+	if not ok or type(acc) ~= "table" then
+		return nil
+	end
+	return {points = acc.points or 0, categories = AK.completedCategories(A.index, acc.ids or {})}
+end
+M.trackFacts = trackFacts
+
+-- grant every achievement cosmetic the account has earned (idempotent, only adds). player = the character to tell
+-- (nil: nobody, e.g. a staff re-sync of an offline account). Returns the names granted now.
+local function syncAccount(accountId, player)
 	local A = ChaosAchievements
 	if not A or not A.has then
-		return
+		return {}
 	end
-	local accountId = player:getAccountId()
+	accountId = tonumber(accountId) or 0
 	local names = {}
-	for _, key in ipairs(K.syncs(cfg, function(id) return A.has(player, id) end, ownedOf(accountId))) do
+	local facts = trackFacts(accountId)
+	for _, key in ipairs(K.syncs(cfg, function(id) return A.has(player or accountId, id) end, ownedOf(accountId), facts)) do
 		if M.grant(accountId, key, "achievement") then
 			names[#names + 1] = K.byKey(cfg, key).name
 		end
 	end
-	if #names > 0 then
+	if #names > 0 and player then
 		player:sendTextMessage(MESSAGE_INFO_DESCR, "Cosmetic unlocked: " .. table.concat(names, ", ") ..
 			". Choose it in Character > Cosmetics.")
 	end
+	return names
 end
+M.syncAccount = syncAccount
+
+local function sync(player)
+	return syncAccount(player:getAccountId(), player)
+end
+M.sync = sync -- achievements.lua calls it after new unlocks (the reward track)
 
 -- ---------------------------------------------------------------- the window
 local function lineOf(player)
@@ -234,7 +259,12 @@ end
 
 function M.sendState(player, open)
 	local line = lineOf(player)
-	local rows = K.rows(cfg, ownedOf(player:getAccountId()), chosenOf(player), {line = line, achievementName = achievementName})
+	local rows = K.rows(cfg, ownedOf(player:getAccountId()), chosenOf(player), {line = line, achievementName = achievementName,
+		categoryName = function(key)
+			local ix = ChaosAchievements and ChaosAchievements.index
+			local cat = ix and ix.catByKey and ix.catByKey[key]
+			return cat and cat.name or nil
+		end})
 	for _, r in ipairs(rows) do
 		r.item = clientId(K.byId(cfg, r.id).icon)
 	end
@@ -440,7 +470,7 @@ function gm.onSay(player, words, param)
 	end
 	local name, what, mode = param:match("^%s*([^,]+)%s*,%s*([%w_]+)%s*,?%s*(%w*)%s*$")
 	if not name then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Usage: /cosmetic <character>, <key | all>[, revoke]")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, "Usage: /cosmetic <character>, <key | all | sync>[, revoke]")
 		return false
 	end
 	local accountId
@@ -451,6 +481,18 @@ function gm.onSay(player, words, param)
 	end
 	if not accountId then
 		player:sendTextMessage(MESSAGE_INFO_DESCR, "No character named " .. name .. ".")
+		return false
+	end
+	if what == "sync" then
+		-- re-sync the achievement cosmetics (reward track too) of the account; only adds, never takes back
+		local target = Player(name)
+		local granted = syncAccount(accountId, target)
+		if target then
+			refresh(target, true)
+			M.sendState(target, false)
+		end
+		player:sendTextMessage(MESSAGE_INFO_DESCR, #granted > 0 and string.format("Synced the account of %s: %s.", name,
+			table.concat(granted, ", ")) or ("The account of " .. name .. " has every cosmetic it earned."))
 		return false
 	end
 	local keys = {}
@@ -511,7 +553,16 @@ function startup.onStartup()
 			achievements[id] = n
 		end
 	end
-	local problems, warnings = K.validate(cfg, {catalog = catalog(), achievements = achievements, shop = ChaosShopConfig})
+	local categories, maxPoints -- the reward track (achievements.lua loaded)
+	local AI, AK = ChaosAchievements and ChaosAchievements.index, ChaosAchievementsCore
+	if AI and AK and AK.maxPoints then
+		categories, maxPoints = {}, AK.maxPoints(AI)
+		for _, c in ipairs(AI.categories or {}) do
+			categories[c.key] = true
+		end
+	end
+	local problems, warnings = K.validate(cfg, {catalog = catalog(), achievements = achievements, shop = ChaosShopConfig,
+		categories = categories, maxPoints = maxPoints})
 	for _, p in ipairs(problems) do
 		print("[Warning - Chaos cosmetics] " .. p)
 	end

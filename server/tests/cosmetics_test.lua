@@ -147,8 +147,10 @@ for _, c in ipairs(cfg.cosmetics) do
 		eq(c.price, store[c.kind], "one price per kind: " .. c.key)
 	end
 end
-eq(count.spellskin, 12, "12 spell skins") eq(count.killfx, 11, "11 kill effects (the Cinderheart Crown of uber.lua, Sovereign's Pyre of raid.lua, two PvP)")
-eq(count.lootbeam, 7, "7 label accents (two PvP)") eq(count.chatcolor, 8, "8 chat colours (two PvP)")
+eq(count.spellskin, 12, "12 spell skins")
+eq(count.killfx, 20, "20 kill effects (the Cinderheart Crown of uber.lua, Sovereign's Pyre of raid.lua, three PvP, 8 reward track)")
+eq(count.lootbeam, 12, "12 label accents (three PvP, 4 reward track)")
+eq(count.chatcolor, 14, "14 chat colours (three PvP, 5 reward track)")
 eq(store.spellskin, 250, "skins 250") eq(store.killfx, 200, "kill effects 200")
 eq(store.lootbeam, 150, "label accents 150") eq(store.chatcolor, 200, "chat colours 200")
 -- every line but the Necromancer's has 2-3 skins of 2-3 spells
@@ -248,6 +250,113 @@ eq(why, "Void Ring is not unlocked yet.", "achievement cosmetic text")
 -- the achievement syncs
 local syncs = K.syncs(cfg, function(id) return id == "level_300" or id == "goblin_10" end, {loot_gilded = true})
 eq(#syncs, 1, "one to grant") eq(syncs[1], "chat_veteran", "Veteran's Gold")
+
+-- ---------------------------------------------------------------- the reward track (achievement points, categories)
+dofile("data/scripts/chaos/achievements_core.lua")
+local AK = ChaosAchievementsCore
+local aIndex = AK.build(achievementsData)
+local catSet = {}
+for _, cat in ipairs(achievementsData.categories) do
+	catSet[cat.key] = true
+end
+local trackProblems = K.validate(cfg, {achievements = achievements, categories = catSet, maxPoints = AK.maxPoints(aIndex)})
+eq(#trackProblems, 0, "the reward track validates: " .. table.concat(trackProblems, "; "))
+local steps = K.trackSteps(cfg)
+local milestones = {100, 250, 500, 1000, 1750, 2500, 3500}
+eq(#steps, #milestones, "seven point milestones")
+for i, p in ipairs(milestones) do
+	eq(steps[i].points, p, "milestone " .. i)
+	eq(steps[i].cosmetic.source, "achievement", "milestone " .. p .. " is an achievement cosmetic")
+end
+eq(steps[#steps].points <= AK.maxPoints(aIndex), true, "the last milestone can be reached")
+for _, cat in ipairs(achievementsData.categories) do
+	local cc = K.categoryCosmetic(cfg, cat.key)
+	eq(cc ~= nil and cc.source == "achievement", true, "category " .. cat.key .. " gives a cosmetic")
+	eq(aIndex.categoryRewards[cat.key] ~= nil, true, "category " .. cat.key .. " gives a title")
+end
+-- never sold: no price, no store unlock, in no store category (shop_config.lua and cosmetics_store.lua)
+local storeGen = dofile("data/scripts/chaos/cosmetics_store.lua")
+local offered = {}
+for _, cat in ipairs(shop.categories) do
+	for _, o in ipairs(cat.offers or {}) do
+		offered[o.unlock or ""] = true
+	end
+end
+for _, k in ipairs(cfg.kinds) do
+	for _, o in ipairs(storeGen(k.key).offers) do
+		offered[o.unlock] = true
+	end
+end
+local trackCount = 0
+for _, tc in ipairs(cfg.cosmetics) do
+	if tc.points or tc.category then
+		trackCount = trackCount + 1
+		eq(tc.source, "achievement", tc.key .. ": source achievement")
+		eq(tc.price, nil, tc.key .. ": no price")
+		eq(K.ofUnlock(cfg, K.unlockName(tc)), nil, tc.key .. ": no store unlock")
+		eq(offered[K.unlockName(tc)], nil, tc.key .. ": not in the store")
+	end
+end
+eq(trackCount, 17, "17 reward track cosmetics (7 milestones, 10 categories)")
+eq(broken(function(l) l[#l].price = 100 end):find("no price", 1, true) ~= nil, true, "a priced track cosmetic is refused")
+eq(broken(function(l) l[#l].points = 100 end):find("one of achievement, points or category", 1, true) ~= nil, true,
+	"one way to earn it")
+eq(table.concat(K.validate(cfg, {maxPoints = 3000}), "\n"):find("above the 3000", 1, true) ~= nil, true,
+	"an unreachable milestone is refused")
+eq(table.concat(K.validate(cfg, {categories = {combat = true}}), "\n"):find("category rifts does not exist", 1, true) ~= nil,
+	true, "an unknown category is refused")
+-- thresholds: granted at the milestone, not before
+local function track(points, cats, have)
+	return K.syncs(cfg, function() return false end, have or {}, {points = points, categories = cats or {}})
+end
+eq(#track(0), 0, "0 points: nothing") eq(#track(99), 0, "99 points: nothing")
+eq(#track(100), 1, "100 points: one") eq(track(100)[1], "chat_ashen", "Ashen Name at 100")
+eq(#track(999), 3, "999 points: three") eq(#track(1000), 4, "1000 points: four")
+eq(#track(AK.maxPoints(aIndex)), 7, "every milestone at the maximum")
+-- idempotent: what the account owns is not granted again; never taken back (fewer points grant nothing, revoke nothing)
+local have = {}
+for _, key in ipairs(track(1000)) do
+	have[key] = true
+end
+eq(#track(1000, nil, have), 0, "a second sync grants nothing")
+eq(#track(1750, nil, have), 1, "the next milestone only") eq(track(1750, nil, have)[1], "kill_vortex", "Arcane Vortex at 1750")
+eq(#track(0, nil, have), 0, "points went down: nothing to grant")
+eq(K.owns(have, K.byKey(cfg, "chat_ashen")), true, "and nothing taken back")
+-- category completion
+eq(#track(0, {rifts = true}), 1, "one completed category: one cosmetic")
+eq(track(0, {rifts = true})[1], "kill_riftsigil", "Rifts: Rift Sigil")
+eq(#track(0, catSet), 10, "every category: ten")
+eq(K.earned(K.byKey(cfg, "chat_veteran"), function(id) return id == "level_300" end), true, "an achievement cosmetic")
+eq(K.earned(K.byKey(cfg, "kill_sunring"), function() return true end, {points = 99999}), false, "a store one is never earned")
+eq(#K.syncs(cfg, function(id) return id == "level_300" end, {}), 1, "without track facts: the achievement cosmetics only")
+-- the window's view (one message: fits an extended opcode)
+local tv = K.trackView(cfg, 640, {chat_ashen = true, loot_chronicle = true, kill_riftsigil = true},
+	AK.categoryTrack(aIndex, {rift_t1 = true}))
+eq(tv.ap, 640, "account points") eq(#tv.steps, 7, "seven steps") eq(tv.steps[1].p, 100, "lowest first")
+eq(tv.steps[1].o, 1, "owned") eq(tv.steps[3].o, nil, "not owned") eq(tv.steps[1].c, "#cfc4b4", "the colour for the preview")
+eq(tv.steps[2].a, "#0b2626f0", "the accent for the preview") eq(tv.steps[3].k, "killfx", "the kind")
+eq(#tv.cats, #achievementsData.categories, "a row per category")
+local rifts
+for _, e in ipairs(tv.cats) do
+	if e.key == "rifts" then
+		rifts = e
+	end
+end
+eq(rifts.dn, 1, "one rift achievement done") eq(rifts.ti, "Riftwarden", "the title") eq(rifts.n, "Rift Sigil", "the cosmetic")
+eq(rifts.x, nil, "not complete") eq(rifts.o, 1, "owned anyway (granted before)")
+local function jsonSize(v)
+	if type(v) == "table" then
+		local n = 2
+		for k, x in pairs(v) do
+			n = n + #tostring(k) + 4 + jsonSize(x)
+		end
+		return n
+	end
+	return #tostring(v) + 2
+end
+local fullView = K.trackView(cfg, 99999, {}, AK.categoryTrack(aIndex, {}))
+eq(jsonSize({action = "track", data = fullView}) < 7000, true, "the track message fits one opcode (" ..
+	jsonSize({action = "track", data = fullView}) .. ")")
 -- spell skins: only the listed spells, only the swapped effects
 local void = K.byKey(cfg, "skin_warrior_void")
 eq(K.swap(void, 223, "vfx", "aura_burst_gold"), "aura_burst_violet", "Iron Bellow burst")
@@ -284,6 +393,13 @@ eq(byKey.kill_soulspark.selected, true, "chosen kill effect") eq(byKey.skin_warr
 eq(byKey.skin_warrior_void.mine, true, "the character's line") eq(byKey.skin_monk_void.mine, nil, "another line")
 eq(byKey.kill_voidring.how, "Achievement: Legend's Bane", "how to get it")
 eq(byKey.kill_sunring.how, "Store: 200 Chaos Coins", "store price")
+eq(byKey.chat_ashen.how, "Achievements: 100 account points", "reward track: points")
+eq(byKey.kill_riftsigil.how, "Achievements: complete rifts", "reward track: category (no name known)")
+for _, r in ipairs(K.rows(cfg, owned, {}, {categoryName = function(key) return key == "rifts" and "Rifts" or nil end})) do
+	if r.key == "kill_riftsigil" then
+		eq(r.how, "Achievements: complete Rifts", "reward track: the category's name")
+	end
+end
 eq(byKey.chat_frost.color, "#7fc8ff", "colour in the row")
 -- SQL
 eq(K.sqlInsert(cfg, 7, "kill';drop", "st;ore", 1):find("'killdrop', 'store'", 1, true) ~= nil, true, "keys sanitised")
@@ -528,6 +644,45 @@ registered.ChaosCosmeticsLogin.onLogin(vet)
 eq(M.owns(40, "chat_veteran"), true, "Veteran's Gold granted from the achievement")
 eq(M.owns(40, "kill_voidring"), false, "not the other ones")
 
+-- the reward track at login and when the account's achievements change (achievements.lua calls ChaosCosmetics.sync)
+local accounts = {[50] = {ids = {}, points = 120}}
+ChaosAchievements.index = aIndex
+ChaosAchievements.accountOf = function(who)
+	local id = type(who) == "number" and who or who:getAccountId()
+	return accounts[id] or {ids = {}, points = 0}
+end
+local hero = newPlayer(5, "Hero", 50, "Mystic")
+registered.ChaosCosmeticsLogin.onLogin(hero)
+eq(M.owns(50, "chat_ashen"), true, "120 points: Ashen Name at login")
+eq(M.owns(50, "loot_chronicle"), false, "not the 250 one")
+local toldHero = false
+for _, m in ipairs(sent) do
+	if m.to == "Hero" and m.text and m.text:find("Cosmetic unlocked: Ashen Name", 1, true) then
+		toldHero = true
+	end
+end
+eq(toldHero, true, "told in chat")
+accounts[50].points = 260
+local riftIds = {}
+for _, def in ipairs(aIndex.list) do
+	if def.cat == "rifts" then
+		riftIds[def.id] = true
+	end
+end
+accounts[50].ids = riftIds
+local granted = M.sync(hero)
+eq(#granted, 2, "points and a category changed: two") eq(M.owns(50, "loot_chronicle"), true, "Chronicle Labels at 250")
+eq(M.owns(50, "kill_riftsigil"), true, "every rift achievement: Rift Sigil")
+local inserts = #queries
+eq(#M.sync(hero), 0, "a second sync grants nothing") eq(#queries, inserts, "and writes nothing")
+accounts[50].points, accounts[50].ids = 0, {} -- a staff reset of the achievements
+eq(#M.sync(hero), 0, "fewer points: nothing") eq(M.owns(50, "loot_chronicle"), true, "never taken back")
+M.owned = {}
+eq(M.owns(50, "kill_riftsigil"), true, "kept in chaos_cosmetics")
+opcode(hero, "select", {kind = "killfx", id = 118})
+eq(lastTo("Hero", "result").ok, true, "a track kill effect can be chosen")
+eq(M.storeUnlock("cosmetic_kill_riftsigil"), nil, "a track cosmetic is no store unlock")
+
 -- previews: to the asking player only, one after the other, rate limited
 effects = {}
 eq(M.storePreview(ann, "cosmetic_skin_mystic_voidfire"), true, "store preview")
@@ -557,6 +712,13 @@ registered["/cosmetic"].onSay(gm, "/cosmetic", "Carl, kill_sunring")
 eq(M.owns(30, "kill_sunring"), true, "/cosmetic grants")
 registered["/cosmetic"].onSay(gm, "/cosmetic", "Carl, kill_sunring, revoke")
 eq(M.owns(30, "kill_sunring"), false, "/cosmetic revokes")
+-- /cosmetic <character>, sync: the account's achievement cosmetics and reward track (idempotent)
+accounts[30] = {ids = {}, points = 600}
+registered["/cosmetic"].onSay(gm, "/cosmetic", "Carl, sync")
+eq(M.owns(30, "kill_verdigris"), true, "/cosmetic sync grants the 500 milestone")
+eq(sent[#sent].text:find("Synced the account of Carl", 1, true) ~= nil, true, "the staff member is told")
+registered["/cosmetic"].onSay(gm, "/cosmetic", "Carl, sync")
+eq(sent[#sent].text:find("every cosmetic it earned", 1, true) ~= nil, true, "a second sync changes nothing")
 
 -- the client side files exist
 for _, f in ipairs({"game_cosmetics/game_cosmetics.otmod", "game_cosmetics/cosmetics.lua", "game_cosmetics/cosmeticslogic.lua"}) do

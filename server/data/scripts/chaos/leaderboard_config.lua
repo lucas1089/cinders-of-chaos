@@ -64,7 +64,10 @@ return {
 		-- the Ashen Sepulchre (raid.lua): the fastest full clear this week in seconds (first pull to the final kill, all
 		-- bosses in one sitting; mode "min": lower is better), every raider present at the final kill
 		{key = "raid_clear", name = "Sepulchre Clear", mode = "min", value = "Fastest", count = "Clears", title = "Sepulchre Breaker",
-			format = "time", info = "Fastest full clear of the Ashen Sepulchre this week (all five bosses in one sitting)."}
+			format = "time", info = "Fastest full clear of the Ashen Sepulchre this week (all five bosses in one sitting)."},
+		-- the Scorched Marches (pvpzone.lua): embers banked at a safe exit this week
+		{key = "marches", name = "Scorched Marches", mode = "add", value = "Embers", count = "Exits", title = "Marchlord",
+			info = "Embers banked from the Scorched Marches this week."}
 	},
 	top = 3,
 	rewards = {

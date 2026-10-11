@@ -303,6 +303,7 @@ working directory, as with the rest of the base server libs).
 | game_community | `community.lua`, `community_core.lua`, `community_config.lua`, `sql/chaos_community.sql` (buff source in `data/lib/chaos_buffs.lua`; hooks in `rift_core.lua`, `rift.lua`, `loot_config.lua`, `factions.lua`, `crafting.lua`) | **203**, Adventure > Community, the Great Brazier next to the main temple, `/community` | Community goal: a server-wide bar fed by kills, rifts, invasion waves, world bosses, crafting orbs and gold given to the Brazier, per-character daily caps, four stages that light buffs for everyone, rewards for the top and everyone past a threshold; the weekly world modifier (one or two of nine, by the week's seed or set by staff) (see "Community goals and the weekly world modifier"). Unit and mocked-engine tests; not run on a live server. |
 | game_dpsmeter | `combatlog.lua`, `combatlog_core.lua`, `combatlog_config.lua` (one hunk in `hunt.lua`) | **204**, Hunt > DPS Meter, the Hunt Tracker's Meter button | DPS meter and combat log: damage, healing, damage taken and healing received per skill (spell, rune, weapon attack, damage over time, proc, summon) and per attacker, the current fight, the last 10 fights (bosses named) and the session, party totals; detail window with hits, crits, average and max (see "DPS meter and combat log"). Unit, mocked-engine and benchmark tests; tested on a live test server. |
 | game_loadouts | `loadouts.lua`, `loadouts_core.lua`, `loadouts_config.lua`, `sql/chaos_loadouts.sql` | **206**, Character > Loadouts, the Loadouts button of the passive tree window | Loadouts (Armory): save whole builds (passive tree, Paragon, support runes, the vocation, an equipment set by item reference) and switch between them for free; anti-dodge rules, validation against the current tree, crash-safe switch (see "Loadouts (Armory)"). Unit and mocked-engine tests; tested on a live test server. |
+| game_charms | `charms.lua`, `charms_core.lua`, `charms_config.lua`, `sql/chaos_charms.sql`, `tools/install_charms.py` (hooks in `item_mods.lua`, `loot.lua`, `rift.lua`, `bounty.lua`, `invasion.lua`, `dungeons.lua`, `descent.lua`, `factions.lua`, `market.lua`) | **198**, Character > Charms | Charms: a 5x4 grid of small charms with minor bonuses (see "Charms"); tested on a live test server with one client. |
 
 Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 208, 209, 211, 214, 216, 217, 218, 219, 221, 222, 223, 224 (sent by the engine, patch 0015), 225, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
@@ -332,6 +333,11 @@ Extended opcode 200 (the battleground and the PvP seasons, client `game_battlegr
 `ChaosOpcodes.battleground` below the table; checked free against the reference server's list below, every Chaos script and
 client module and the reference client's modules (grep for `sendExtendedOpcode`, `registerExtended*Opcode` and opcode
 constants); `tests/battleground_test.lua` checks it against `ChaosOpcodes` and that list.
+Extended opcode 198 (Charms, client `game_charms`) is registered there too, as `ChaosOpcodes.charms` below the table; checked
+free against the reference server's list below, the reference client's own opcodes (`gamelib` `ExtendedIds` 144-146, 210, 212,
+213, 230, 246 and 140), every Chaos script and client module (grep for `sendExtendedOpcode`, `registerExtended*Opcode` and opcode
+constants: 190-199 had 192 hideout, 194 mentor, 196 veiled, 197 guild wars); `tests/charms_test.lua` checks it against
+`ChaosOpcodes` and those lists.
 
 ### Opcode collision check
 Searched the reference server for every `onExtendedOpcode`, `sendExtendedOpcode(` and opcode
@@ -1333,7 +1339,7 @@ categories are left out. Every offer has a stable key (`ChaosShopCore.offerKey`:
 | Auras (`auras.xml`, 19 from `chaos_auras.csv`) | 24 | 24 | (Fireflies is also the guild aura; it was sold before) |
 | Outfit shaders (`shaders.xml`) | 17 | 16 | green_pixent (16): drew as a coloured checker grid in the test client, like 15 and 17 (sold before); the pixent shader files are fixed now (client/MANIFEST.md "Outfit shaders for monsters"), 16 could be sold |
 | Name plate frames (`nameplate.lua`) | 8 | violet, frost, ember, verdant, bone | default (everyone), gold (staff titles), crimson (Siege Champions) |
-| Spell effect skins, kill effects, loot label accents, chat name colours (`cosmetics.lua`) | 12 / 7 / 5 / 6 | 12 / 5 / 4 / 5 | Void Ring, Harbinger's Toll, Gilded Labels, Veteran's Gold: achievement rewards ("Cosmetics" below) |
+| Spell effect skins, kill effects, loot label accents, chat name colours (`cosmetics.lua`) | 12 / 7 / 5 / 6 | 12 / 5 / 4 / 5 | Void Ring, Harbinger's Toll, Gilded Labels, Veteran's Gold: achievement rewards ("Cosmetics" below); the 17 reward track cosmetics (achievement points and complete categories, "Achievements") and the PvP ones are never sold either |
 | Transmog appearance sets (`transmog.lua`) | 6 | Falconer's Regalia 300, Lionguard 350 | achievement, season pass and exclusive sets ("Transmog") |
 | Town Portal styles | see "Town Portal" | 6 (unchanged) | the achievement styles |
 | Titles, name colours | titles of achievements, seasons, leaderboards, arena, the ascension quest, staff | none | all are earned; name colours come with the title's source. The client's `game_nameshaders` needs engine work and has no server side |
@@ -1594,6 +1600,32 @@ the store's SHOW button on a skin or kill effect) plays the effects at the playe
 offer's title with the colour and puts a label accent behind the title; the window shows the player's own chat line in the
 colour and three rarity labels on the accent.
 
+**Reward track** (cosmetics earned by playing, "Achievements" below). An achievement cosmetic is earned one of three
+ways: `achievement = <id>` (above), `points = N` (the account has N achievement points: each achievement once, whichever
+character earned it) or `category = <key>` (the account has every achievement of that category, hidden ones too). 17 of
+them, all palette variants of effects and colours that already exist (no new art):
+
+| Account points | Cosmetic | Kind |
+|---|---|---|
+| 100 | Ashen Name (#cfc4b4) | chat colour |
+| 250 | Chronicle Labels (deep teal) | label accent |
+| 500 | Verdigris Splash (`px448_green`, the green Honor Brand) | kill effect |
+| 1000 | Chronicler's Teal (#5cc8c0) | chat colour |
+| 1750 | Arcane Vortex (`px03_arcane`) | kill effect |
+| 2500 | Obsidian Labels | label accent |
+| 3500 | Gilded Ascent (`aura_burst_gold`, the gold Cinder Throne) | kill effect |
+
+Category completion: Combat & Leveling War Surge (`aura_burst_red`), Monsters Thornbloom (`px286_green`), World Bosses
+Titan's Pyre (`dome_blast_holy`), Rifts Rift Sigil (`px674_arcane`), Raids Sepulchre Labels, Bounties Huntsman's Copper,
+Items & Crafting Tempered Labels, PvP Bloodsteel Name, Exploration & Social Lantern Name, Secrets Falling Stars
+(`starfall_crown`); the category's title is in "Achievements". `ChaosCosmetics.sync(player)` / `syncAccount(accountId,
+player)` grant what the account earned (`K.syncs` with the facts `{points, categories}` from `ChaosAchievements.accountOf`):
+at login, when the Cosmetics window opens and after every new achievement unlock (achievements.lua `syncTrack`). It only
+adds (`INSERT IGNORE`, the owned set is checked first): fewer points later (a staff reset) take nothing back. Staff:
+`/cosmetic <character>, sync` re-syncs an account (online or not). Never sold: no price, no store unlock (`ofUnlock` is
+store-only), `cosmetics_store.lua` builds store cosmetics only, and the validator refuses a price, an offer, a second way to
+earn it, a milestone used twice or above the points that exist, a category rewarded twice or unknown.
+
 **Readable by rule.** `ChaosCosmeticsCore.validate` (startup and the test): ids and keys unique; kinds, sources, prices and
 achievements known; 1-3 spells of the right line; swaps inside one family; kill effects in the pair; accents at least 200/255
 opaque and every label rarity colour at contrast 3 or more on them; chat colours at contrast 4.5 or more on the console
@@ -1603,7 +1635,7 @@ Protocol (JSON on `ChaosOpcodes.cosmetics` = 225): client -> server `open | sele
 preview {id} | close`; server -> client `state {open, line, lineName, rows}`, `style {accent}` (the character's own label
 accent), `colors {names = {[name] = "#rrggbb" | false}, full}` (sent in full at login, a change to everyone online),
 `result {ok, text}`. API: `ChaosCosmetics.swapFor / storeUnlock / storePreview / offerPreview / grant / revoke / owns`.
-Staff: `/cosmetic <character>, <key | all>[, revoke]` (group 4+). Store action `preview {category, page, offer}`
+Staff: `/cosmetic <character>, <key | all>[, revoke]` and `/cosmetic <character>, sync` (group 4+). Store action `preview {category, page, offer}`
 (`shop.lua`, cosmetic unlocks only).
 
 Install: the `files`, `spells` (the `_common.lua` / `_supports.lua` hook) and `sql` steps of `install_all.py`. Client:
@@ -1613,6 +1645,7 @@ the colour previews), `client_chaos_topbar` (Character > Cosmetics).
 of each line, achievements and store; refusals of non-recolours, unknown effects, power fields, unreadable colours, a wrong
 store price; ownership, choosing, the skin lookup; `cosmetics.lua` on a mocked engine: store unlock, choosing, kill effects on
 the last hit only, chat colours to everybody, the accent, previews to the asking player only, achievement grants, `/cosmetic`;
+the reward track: milestones, categories, idempotent grants that are never taken back, no store exposure, `/cosmetic ..., sync`;
 `_common.lua` swapping during a cast and the default without a cast or without the variant), `season_test.lua` (cosmetics
 allowed to season characters), client `game_cosmetics/cosmeticslogic_test.lua` (name position and recolouring next to item
 links), `game_groundlabels/groundlabels_test.lua` (the accent keeps the rarity colours).
@@ -5157,6 +5190,122 @@ achievement, the DB rows), the release to the start position, the season and ven
 ran on the mocked engine only. Note: scripted damage with `doTargetCombatHealth` and no origin skips `onHealthChange` on
 this engine (as for every Chaos system); real attacks carry an origin.
 
+## The Scorched Marches (open-world PvP zone) (`pvpzone.lua`, `pvpzone_core.lua`, `pvpzone_config.lua`, `sql/chaos_pvpzone.sql`, client `game_pvpzone`)
+
+Roadmap item 77. An open-world PvP zone with risk and reward. Client `game_pvpzone` (Adventure > Scorched Marches),
+extended opcode 193 (`ChaosOpcodes.pvpZone`; 193 is free in the reference server, the reference client's own
+`ExtendedIds` 140 / 144-146 / 210 / 212 / 213 / 230 / 246 and every Chaos module, tested). Every number is in
+`pvpzone_config.lua`; the rules are pure functions in `pvpzone_core.lua` (`ChaosPvpZoneCore`).
+
+**Install.** The scripts load with the others; `pvpzone.lua` creates its three tables at startup (also in
+`sql/chaos_pvpzone.sql`). `tools/patch_base_events.py` step 11 (`install_all.py` step `events`) makes the base
+`Creature:onTargetCombat` ask `ChaosPvpZone.targetCombat` right after the siege hook: the base rules refuse an attack on
+a player whose secure mode is on before any script callback runs, so without it a player could hide behind secure mode
+(the server warns at startup when the hook is missing). Small hunks elsewhere: `loot_config.lua` rateMult,
+`data/spells/chaos/_common.lua` (`ChaosSpell.canAttack` asks `ChaosPvpZone.canAttack` after the siege), `townportal.lua` /
+`townportal_core.lua` (no Town Portal inside), `cosmetics_config.lua` (three vendor cosmetics), `leaderboard_config.lua`
+(board `marches`), `achievements_data.lua` (six achievements), `chaos_constants.lua`. `blessings.lua` asks
+`ChaosPvpZone.isInside(player)` / `.inZone(pos or player)`.
+
+**Where.** Decided: built at runtime (`mode = "build"`), like the battleground and the rifts: no base map edit, and the
+same on the cropped test map and the live map. One instance per realm: standard characters in slot 0, a running season
+in its own slot (season id 1..3, then reused), so season and standard characters never meet here and embers, piles,
+the shrine and its buff never cross realms (the open-world rule of "Seasons" allows PvP between realms; here it is
+simply never possible). Grid x/y 13312 - 13823, z 7 (74 x 58 per instance with the wall), clear of every other runtime
+area (tested). The field: black marble ground, two gate yards (south-west and north-east, 180-degree fair) each with a
+safe exit (a white marble circle by two banners), the Cinder Shrine in the centre (a coal basin in a radius-3 circle),
+ruins and pillars as cover (turned copies, every walkable tile connected, tested), 37 spawn points away from the exits
+and the shrine. `mode = "map"` uses an existing rectangle of the loaded map instead (`area`: its exits, shrine and the
+one realm let in; the map's own monsters inside are scaled when they spawn); not tried on a live map.
+
+**Entering.** Adventure > Scorched Marches: the window (rules, the shrine, the pledge, the vendor, the record), Enter
+opens the confirmation: every rule, "you carry N embers, a defeat drops them all, your killer may take up to 800", an
+"I understand" box; the server checks `accept` too. Level 150+, from a protection zone, out of combat, not
+multi-clienting, not inside another instance (dungeon, tower, rift, siege, descent, raid, Omen, battleground, hideout,
+arena queue or match), no defeat cooldown (90 s). The player arrives next to a random safe exit, protected for 10 s
+(no damage, cannot be attacked; attacking a player ends it). Walking or being teleported in without the confirmation
+(map mode, a staff teleport) puts the player out again with the confirmation.
+
+**Hardcore.** Decided: Hardcore season characters cannot enter at all (`hardcore.allow = false`; the window shows why
+and the Enter button of the confirmation stays disabled). In open PvP a player decides when you fall (ambush, gank),
+which the Hardcore protections are built to avoid; and since nobody dies here, letting them in would also be a
+Hardcore run that cannot end where the risk is highest. With `allow = true` a second box ("a defeat here may end my
+Hardcore run", `hcAccept`) would be needed. Self-Found characters may enter but never take another player's pile.
+
+**Inside.** Open PvP whatever the world type allows through the scripts: `ChaosPvpZone.targetCombat` (base hook,
+an EventCallback and the Chaos spells) lets players of the same instance attack each other regardless of the target's
+secure mode; refused: across the border, protected or held players, party members (allies), a multi-client attacker.
+The client turns its own secure mode off inside (and back on when leaving). No white skull (taken back every second),
+and since the lethal hit is cancelled, no unjustified kill, no frag, no item, experience or blessing loss. PvP damage is
+scaled like the battleground (`normalise` of `battleground_config.lua`, the target's bracket sets the reference level:
+a level 1000 hitting a level 200 deals x0.6, the other way x1.6). Monsters: x1.6 health, x1.35 damage to players,
+x1.5 experience, x1.5 Chaos loot rate; a spawn point refills 90 s after its monster died. World type "no-pvp": the
+engine refuses every player attack before any script is asked (`Combat::canDoCombat`), so the zone has no PvP there
+(monsters, embers and the shrine work; the server says so at startup). The live config is "pvp".
+
+**Embers.** Carried (storage 7100522, at most 2,500) and banked (`chaos_pvpzone_players`, at most 200,000).
+Monster kills inside give the player with the most damage 2 / 6 / 15 / 40 / 150 by tier (normal .. boss), the
+shrine's warden +100, a capture +200 to every pledged player of the capturing faction in the circle.
+A defeat (`onPrepareDeath` cancels the lethal hit): the player is thrown out to where he entered, healed, 90 s
+cooldown; all carried embers fall as a pile (an ashes marker and fire effects) where he stood. The killer (the last
+player hit within 10 s also counts when a monster lands the blow) alone may take it for 30 s, then anyone; at most 800
+per pile and player and 4,000 a day from other players' piles, never past the carry cap; the victim may take his own
+back; after 120 s the rest burns. Pickup: stand on the pile or next to it. Banking: stand in a safe exit circle for 5 s
+without dealing or taking damage (the HUD shows "Leaving... n%"); the carried embers are banked, the player goes back
+to where he entered. Leaving any other way (a teleport, a staff move) burns the carried embers; the Town Portal is
+refused inside. Logged out inside (or a crash or restart): the next login holds the character for 3 s (no damage, not
+attackable), then puts it at the nearest safe exit with 10 s of protection; carried embers are kept. A login script that
+moves the character out during the hold (the tutorial) burns nothing.
+
+**Anti-farming** (as guild wars). A defeat counts only if killer and victim do not share an account or an IP, the
+victim is level 150+ and at least 60% of the killer's level, entered at least 20 s before, and this killer has not had
+a counted defeat of this victim in the last 30 minutes. A defeat that does not count gives nothing and its pile burns at
+once (the victim still loses the carry: feeding embers to an alt is impossible).
+
+**Factions.** A player pledges the Marches to one faction (window, outside the zone): at least Neutral with it, a change
+after 24 h. Unpledged players fight but earn no reputation and cannot take the shrine. A counted defeat of a player
+pledged to another faction gives the killer's faction 40 reputation (sworn rival, `factions_config.lua` `rival`) or 20
+(the two others), same faction nothing, at most 400 a faction day from the Marches; the gain goes through
+`ChaosFactions.gain` (source `pvpzone`: diminishing returns, the weekly cap, the rival's loss).
+
+**The Cinder Shrine.** 15 minutes after the start (or the build) and then every 2 hours the Shrine Warden (a Demon,
+health x9.6) rises next to the shrine; the realm's pledged players and everyone inside are told. While it lives the
+shrine cannot be taken. After it falls, pledged players of one faction alone in the circle raise its progress by
+100 / 60 per second (x1.25 per extra player, at most x2); two factions inside = contested (no change); a faction with
+nobody inside loses 0.5 per second. The first to 100 takes the shrine; a contest not won within 20 minutes ends without
+a holder. The holder's faction (every character pledged to it, in that realm, anywhere) gets +10% experience from
+monsters and +10% loot rate for 60 minutes (`chaos_pvpzone_control`, kept over a restart). Staff: `/marches status |
+contest | window <s> | hold <faction|> | embers <n> | testip on|off | nopz on|off | cooldown` (the test switches are memory
+only).
+
+**Rewards.** The vendor (banked embers): Orbs of Upheaval x3 (300, 5 a week), Awakening x2 (350, 5), Gilding x2 (350,
+5), Fate x1 (500, 3), 50 great health / mana / spirit potions (80), 50 ultimate health potions (150), and three cosmetics
+(source "pvp"): kill effect Marchfire (4,000), loot labels Scorched Earth (3,000), chat name Marchember (3,500). No gear,
+nothing above PvE gear (tested). Weekly board "Scorched Marches" (embers banked, title Marchlord, the boards' orb
+rewards). Achievements: Ash in Hand, Ember Hoarder (10,000 banked), Heavy Pockets (1,000 at one exit), Blood on the Ash,
+Scourge of the Marches (100 counted defeats, title), Shrinebearer (in the circle at a capture).
+
+**Tests.** `tests/pvpzone_test.lua` (LuaJIT and Lua 5.3, 1222 checks): opcode and storages free, the layout (slots per
+realm, clear of every other area, paths, fairness, spawn points), entry rules (Hardcore refused, the confirmation),
+login hold and the exit channel, embers (caps, the pile, owner window, per-kill and daily caps, Self-Found, the own pile,
+banking), anti-farming, reputation and the pledge, PvP scaling equal to the battleground's, the shrine contest, vendor,
+cosmetics, board and achievements; then `pvpzone.lua` on a mocked engine (entering, protection, attack rules, secure mode
+ignored, party allies, damage scaling, monster embers and multipliers, a defeat with its pile, the killer's share and the
+third player's wait, same-IP and repeat defeats, banking with a hit restarting the channel, the vendor, login inside,
+leaving by teleport, a walk-in, the contest, warden, capture and the faction-wide buffs). Client:
+`game_pvpzone/pvpzoneview_test.lua`.
+
+**Tested in game** (test server, cropped map, two clients from one IP with the multi-client block and the same-IP rule
+switched off for the test, level 512 and 702 characters): the window and the entry confirmation, the pledge, entering
+(instance built at startup, arrival next to a safe exit), the HUD, an attack on a player whose secure mode was on, a
+defeat (the lethal hit cancelled, the victim back where he entered with the 90 s cooldown, "640 embers fell"), the
+killer's pickup ("You take 640 embers"), banking at a safe exit (channel, then "640 embers banked"; Ash in Hand and Blood
+on the Ash unlocked), a walk-in thrown out with the confirmation, a Hardcore character refused (season modes stubbed for
+the screenshot), the contest (warden, capture by one Vigil player in ~60 s, "Vigil hold the shrine"), the holder kept
+over a restart, a logout inside and the login at the nearest safe exit with the carry kept. Not in game: two factions
+contesting, the faction buff on real experience and loot, map mode, a season instance, reputation gains (the test
+characters shared an IP).
+
 ## Hunt tracker (`hunt.lua`, `hunt_core.lua`, `hunt_config.lua`, `hunt_supplies.lua`, `tools/gen_supply_prices.py`)
 
 Client `game_hunt` (opcode 241), opened with Hunt > Hunt Tracker in the top menu. `Hunt > Hunt Tracker pause`, `Hunt > Hunt Tracker resume`
@@ -6155,6 +6304,35 @@ Achievements in the top menu, or Character > Achievements), extended opcode 250 
 - **Titles** go to the name plates: `ChaosTitles.register("achievement", ...)` (titles.lua, colour teal), key
   `achievement:<id>`. Players pick one with the Achievements window or the window's title box (it says the Achievements window for them).
   Nothing happens while titles.lua is not loaded.
+- **Reward track** (cosmetics earned by playing, never sold). Account achievement points unlock a cosmetic at 100 / 250 /
+  500 / 1000 / 1750 / 2500 / 3500 points (3880 exist), and a category whose every achievement the account has (any of its
+  characters, hidden ones too) gives a title and a cosmetic. The cosmetics are entries of `cosmetics_config.lua` (source
+  `achievement` with `points` or `category`, table in "Cosmetics"); the titles are `categoryRewards` in
+  `achievements_data.lua` (titles.lua source `achievement`, key `achievement_cat:<key>`, the frame while it is the active
+  title; account-wide, so every character of the account holds them):
+
+  | Category | Title (frame) | Cosmetic |
+  |---|---|---|
+  | Combat & Leveling | Warmaster (ember) | War Surge, kill effect |
+  | Monsters | Beastwarden (verdant) | Thornbloom, kill effect |
+  | World Bosses | Titanfeller (bone) | Titan's Pyre, kill effect |
+  | Rifts | Riftwarden (violet) | Rift Sigil, kill effect |
+  | Raids | Sepulchre Lord (bone) | Sepulchre Labels, label accent |
+  | Bounties | the Relentless (ember) | Huntsman's Copper, chat colour |
+  | Items & Crafting | Forgewright (frost) | Tempered Labels, label accent |
+  | PvP | the Unconquered (violet) | Bloodsteel Name, chat colour |
+  | Exploration & Social | Wayfarer (verdant) | Lantern Name, chat colour |
+  | Secrets | Keeper of Secrets (frost) | Falling Stars, kill effect |
+
+  Grants go through cosmetics.lua (`ChaosCosmetics.sync`): at login, when the Cosmetics window opens and after every new
+  unlock (`ChaosAchievements.syncTrack`, also after a staff `grant`); idempotent and never taken back. Staff re-sync:
+  `/cosmetic <character>, sync`. A new category in the list needs its `categoryRewards` entry and a cosmetic, or it simply
+  has none (the validators name a bad one). Window: a reward track bar under the summary (account points to the next
+  milestone, one pip per milestone with a preview tooltip: name, kind, description, colour or label background, points to
+  go), a "Reward track" entry in the category list (a row per milestone and per category, chat colours drawn in their
+  colour, label accents behind the kind line), and each category's tooltip names its completion reward. Protocol: `track
+  {ap, steps = [{p, n, k, d, c, a, o}], cats = [{key, cn, dn, t, ti, n, k, d, c, a, o, x}]}` after `state`
+  (`ChaosCosmeticsCore.trackView`, one message under 7 KB). Nothing is sent while cosmetics.lua is not loaded.
 - **Class unlock method.** achievements.lua replaces the `achievement` kind of `ChaosClassUnlocksCore` with a superset of it:
   `achievement = {points = 500}` (the account has 500 achievement points), `achievement = {name = "rift_t10"}` (any
   character of the account has that achievement), or both (either is enough). It is checked at login and on level up by
@@ -6168,8 +6346,13 @@ Achievements in the top menu, or Character > Achievements), extended opcode 250 
 - **Commands.** Character > Achievements (summary + window). Staff (`/achievements`, on yourself): `grant <id>`, `stat <key> <value>`,
   `add <key> <n>`, `reset`.
 - **Tests:** `tests/achievements_test.lua` (the list, thresholds, unlocking once, hidden rows, points and account points, the
-  retroactive stats, titles, the class unlock method plugged into class_unlocks_core.lua, SQL) and the client's
-  `game_achievements/achievementsview_test.lua`.
+  retroactive stats, titles, the class unlock method plugged into class_unlocks_core.lua, SQL; the reward track's category
+  completion, titles and frames, and achievements.lua on a mocked engine: the sync after new unlocks only, the track
+  message, a second character's category titles) and the client's `game_achievements/achievementsview_test.lua` (the
+  track bar, pips, tooltips and rows).
+  **Reward track tested in game** (test server copy, one client, a level 1000 character with 62 achievements, 1285 account
+  points): the 4 milestones and 4 complete categories granted at login, the bar and pips, the milestone tooltip, the Reward
+  track view, a category's tooltip, the four category titles in the title box. Screenshots outside the repository.
 
 **Tested in game** (test server, cropped map): retroactive unlocks at login (level 562: levels 50-500, ascension, with the
 level 500 orbs; a level 1000 character: the Doombringer mount, arena 1v1 wins / rating 1200 and bounty contracts read from
@@ -7701,3 +7884,117 @@ and gone after 60 s; the buff bar rows; logout and `/blessing`.
 Tested on a live test server copy with one client: a proc label on a kill, three blessings on the bar with their
 countdowns and tooltip, a refresh of the same kind by a kill (48 s back to 58 s, one icon), the cap replacing the
 weakest, +25% experience (145 to 181) and +25% speed (2228 to 2785) measured. Not run live: the PvP-place fade, ward, gold.
+
+## Charms (`charms.lua`, `charms_core.lua`, `charms_config.lua`, `sql/chaos_charms.sql`, `tools/install_charms.py`, client `game_charms`)
+
+A second, small place for minor bonuses: the 10.98 client has no free equipment slot, so charms go into a per-character
+**charm grid** in a window of its own (Character > Charms, extended opcode **198**, `ChaosOpcodes.charms`). Every number is in
+`charms_config.lua`; the rules are pure in `charms_core.lua` (`tests/charms_test.lua`, LuaJIT and Lua 5.3).
+
+**Items.** `tools/install_charms.py` (`install_all.py` step `charms`) adds copies of stock nodes (their client looks, no client
+change): 32301 small charm (1x1, arcane insignia), 32302 tall charm (1x2, elven brooch), 32303 wide charm (2x1, heavy medal),
+32304 grand charm (2x2, golden figurine), the uniques 32305 Gravewarden's Seal (1x2, frost charm), 32306 Wanderer's Compass
+(2x1, hero's medal), 32307 Eye of the Hoard (2x2, oracle figurine), 32308 Ashen Tally (1x1, royal medal), and the stackable
+32309 charm shard (onyx chip). Charms are never stackable. A rolled charm keeps its rarity, item level and modifiers as custom
+attributes (`charm_r`, `chaos_ilvl`, `charm_k1/charm_v1`, `charm_k2/charm_v2`; a unique only its item level) and a look text
+("Radiant, item level 100, 2x2 cells. Damage to Undead +9%. ..."). They are ordinary items: they trade, and the market lists
+them (its key-list codec carries the charm keys too, `market.lua` customKeys).
+
+**Grid and unlocks.** 5 x 4 cells. Open from the start: columns 1-3 of rows 1-2 (6 cells); level 200: columns 4-5 of rows 1-2
+(+4); level 400: row 3, columns 1-3 (+3); level 600: row 3, columns 4-5 (+2); level 800: row 4, columns 1-3 (+3); the achievement
+"Edge of Ruin" (`rift_t10`, seal a tier 10 rift; account-wide like every achievement): row 4, columns 4-5 (+2). A charm needs
+all its cells open, inside the grid and free; at most 20 charms. A charm on a cell that closes again (a lost level) stays
+placed and gives nothing until it opens again (shown dimmed). Place, move and take out: level 8+, out of combat (no fight
+condition, not PZ-locked), anywhere.
+
+**Rolls.** Shape by weight (small 50, tall 20, wide 20, grand 10); rarity Faint (60, 1 modifier, x0.7), Glowing (30, 1
+modifier, x0.85), Radiant (10, 2 modifiers, x1.0); item level 1-100 scales the roll from x0.5 to x1.0. A modifier rolls its
+1x1 range x the shape (small 1.0, tall / wide 1.7, grand 3.0: bigger charms roll stronger but less per cell) x rarity x item
+level, rounded, at least 1; two modifiers of one charm are never the same key nor two of one group (families, elements).
+
+| Modifier (charm pool) | 1x1 range | Best roll (grand) | Charm cap (all charms) | One gear slot's best | Where it acts |
+|---|---|---|---|---|---|
+| Damage to Dragons / Demons / Undead / Humans / Humanoids / Beasts / Elementals / Insects and Arachnids | 1-3% | 9% | 15% each | 16% (Elites and Bosses T8) | `charms.lua` onHealthChange on the monster; the family is the bestiary category of the monster's type name |
+| Fire / Ice / Energy / Earth / Death / Holy Resistance | 1-2% | 6% | 8% each | 7% (absorb T8) | `charms.lua` onHealthChange on the player, that element only |
+| Life on Kill | 4-10 | 30 | 60 | 150 | the gear totals (`item_mods.lua`), under the gear cap 300 too |
+| Gold Find | 1-2% | 6% | 10% | 20% | the gear totals, under the gear cap 40% too |
+| Orb Find | 1-3% | 9% | 20% | 12% (Item Find T8) | `loot.lua`: the currency layer's chances (orbs, whetstones) x (1 + total) |
+| Movement Speed out of Combat | 1-2% | 6% | 8% | 11% (Movement Speed T8) | a 1 s think: +N% of the base speed while not in combat |
+| Reputation | 1-3% | 9% | 15% | - | `factions.lua` F.gain: positive gains + N% |
+| Rift Time | 5-12 s | 36 s | 90 s | - | `rift.lua`: the opener's total lengthens a new run |
+
+No charm beats a gear slot: `charms_core.lua` C.validate (run at startup and by the test) fails a pool key whose best roll is
+not below its `gearRef` (the matching gear modifier's T8 top, which the test reads from `chaos_item_mods.lua`), and a unique
+whose fixed values are not.
+
+| Unique | Shape | Modifiers | Signature |
+|---|---|---|---|
+| Gravewarden's Seal | 1x2 | Damage to Undead +6%, Death Resistance +4% | Last Ember: once every 10 minutes a hit that would kill you leaves you at 1 health (storage 7100471) |
+| Wanderer's Compass | 2x1 | Movement Speed out of Combat +5%, Rift Time +20 s | Wayfarer's Rest: out of combat 1% of your health and mana every 2 s |
+| Eye of the Hoard | 2x2 | Orb Find +8%, Gold Find +5% | Hoard Sense: +15% Treasure Goblin Chance (gear totals, cap 15 from charms) |
+| Ashen Tally | 1x1 | Life on Kill +12 | Harvester: Mana on Kill = half the charms' Life on Kill (cap 30 from charms) |
+
+**Totals.** The placed charms whose cells are all open are summed per key and capped by the charm cap. The keys of the gear
+catalogue (Life on Kill, Gold Find, Treasure Goblin Chance, Mana on Kill) go to `item_mods.lua` as an extra source of
+`M.refresh` (one guarded hunk, like the item set bonuses: `ChaosCharms.extra`), so the gear caps still hold over items + sets
++ charms; the other keys stay in `ChaosCharms` and are read by the hooks above. The window shows the totals (a capped one is
+marked).
+
+**Drops** (only online characters; backpack, else the store inbox; `ChaosCharms.onSource` from one guarded line per source):
+
+| Source | Chance per player | Item level |
+|---|---|---|
+| A sealed rift of tier 6+ (each finisher; not omens) | 6% + 1% per tier above 6, at most 15% | 40 + 4 x tier |
+| A completed bounty contract | 4% | level / 10, 30-80 |
+| A rewarded invasion defender / liberator | 10% (rank 1: 25%) | area level / 10, 40-90 |
+| A cleared dungeon (each member) | 8% + 2% per difficulty | 50 + 5 x difficulty |
+| An Ember Descent room cleared (each player in the run) | 3% (the boss room 15%) | 40 + 3 x depth |
+
+2% of the charm drops are a unique instead (equal odds). Staff: `/charm give <small|tall|wide|grand|gravewarden|compass|hoard|tally> [rarity] [item level]`.
+
+**Shards.** Salvage (the window's button, a charm of your backpack; a locked item is refused): small 2, tall / wide 4, grand 8
+shards (+2 for Radiant), a unique 15. Reforge: rolls a charm's values again (same modifiers, rarity and item level) for small 6,
+tall / wide 12, grand 24 shards; uniques cannot be reforged.
+
+**Safety: a placed charm is never an item too (no duplication).** The approach of the market's escrow (`market.lua`), the
+safest the repo has for moving an item out of a character: a placed charm leaves the character and lives only in its
+`chaos_charms` row: `data` = the item's attributes in the engine's own binary form (`item:serializeAttributes()`, engine patch
+0017, hex, codec `blob`; without the patch the charm's attribute list, codec `attrs`), `charm` = its summary for the totals.
+Taken out, the item is made again from the row (`unserializeAttributes`, a new per-item id) and the row is deleted. Moving a
+charm only changes the row's x, y. A hidden container was not used: the engine saves a depot chest only after it was opened
+in that session ("Loadouts", Gear), and an item in any container can still be moved, traded or changed by other scripts; a
+row cannot.
+Every place / take is crash safe (`charms_core.lua` C.place / C.take, the market's listing order): 1. the row is written
+"pending" (state 9 placing, 8 taking) with the next serial of storage 7100470; 2. the item leaves (or is made) in memory and
+the storage takes the serial; 3. `player:save()` writes items and storage in one transaction; 4. the row is marked placed (or
+deleted). A failed save puts everything back. At login a pending row is settled by the saved serial (C.recoverAction):
+placing and serial <= saved -> placed, else dropped (the item never left the saved inventory); taking and serial <= saved ->
+dropped (the item reached the saved inventory), else back in the grid. Characters with `players.save = 0` cannot use the grid.
+`tests/charms_test.lua` crashes the simulated world at every step of both operations and checks that exactly one charm
+exists after the login; the mocked-engine part crashes `charms.lua` inside the save and after it, for a place and a take.
+
+**Protocol** (JSON `{action, data}`): client `open`, `place {ref | pos, sid, iid, x, y}` (`ref`: the server's path in the
+backpack, `s3.0.5`; `pos`: an item dragged in from an open container), `move {id, x, y}`, `take {id}`, `salvage {ref, sid,
+iid}`, `reforge {ref, sid, iid}`; server `state {cols, rows, cells, placed, bag, groups, totals, level, shards, max}` (through
+`Chaos.sendChunked`) and `result {ok, text}`. Rate limits per action (`rate`).
+
+**Storages and table.** 7100470 the place / take serial, 7100471 the Last Ember cooldown (7100470 - 7100479 reserved). Table
+`chaos_charms` (id, player_id, state, seq, x, y, item_id, codec, data, charm, placed_at; `sql/chaos_charms.sql`, also created
+by `charms.lua` at startup).
+
+**Client** (`game_charms`, Chaos skin, 640 x 520): the grid (open cells, locked cells with a padlock and the reason as tooltip,
+placed charms sized by their shape with the rarity colour as border and their icon), the Cells list (each unlock, open or
+locked), Your Charms (the charms in the backpack), Totals, Salvage / Reforge / Close. Drag a charm from the list onto the grid
+(the cells it would cover light up green or red under it), drag a placed charm to move it or onto the list to take it out; an
+item dragged in from an open backpack works too. Each charm has a tooltip (name, rarity, item level, shape, modifiers,
+signature, inactive, salvage / reforge cost). Icons: `client/tools/gen_charm_icons.py` (cells of the element ability icon
+sets in a round charm setting, one per modifier and unique; the padlock is drawn). Logic without client API:
+`charmsview.lua` (`charmsview_test.lua`).
+
+**Tested on a live test server** (own server copy and database, one client, a level 1000 character): six charms placed through
+the protocol and by dragging with the mouse (the green preview, a drop on the locked achievement cells refused with the
+reason, a placed charm dragged back onto the list and taken out, then placed again), the rows in `chaos_charms` with codec
+`blob`, the totals (Gold Find reached `ChaosItemMods.playerBonus`, out-of-combat speed +5% applied), the grid kept over a
+server restart, salvage and reforge with shards, the look text, 60 tier 15 rift drops (8 charms). Not run in game: a real
+crash, the drop hooks from real rifts, bounties, invasions, dungeons and Descent rooms (called directly), the market listing of
+a charm.

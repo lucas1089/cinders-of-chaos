@@ -933,6 +933,9 @@ local function success(run, pos)
 		elseif ChaosLeaderboard and ChaosLeaderboard.record then
 			pcall(ChaosLeaderboard.record, "rift", Player(id) or {guid = e.guid, name = e.name}, run.key.tier) -- weekly Rifts board
 		end
+		if not run.omen and ChaosCharms and ChaosCharms.onSource and Player(id) then -- a charm drop (charms.lua)
+			pcall(ChaosCharms.onSource, Player(id), "rift", {tier = run.key.tier})
+		end
 	end
 	-- the chest (on the boss's tile, or the hub centre)
 	local chestPos = pos or P(run.L.bossSpawn)
@@ -1561,6 +1564,11 @@ function RF.open(player, item)
 	R.applyAtlasFx(fx, am)
 	local plan = R.plan(cfg, key.tier, fx, #group, types, rooms, rand)
 	local run = R.newRun(cfg, os.time(), plan.total, plan.bossAt, fx)
+	-- the Rift Time of the opener's placed charms (charms.lua)
+	local charmSec = ChaosCharms and ChaosCharms.riftSeconds and ChaosCharms.riftSeconds(player) or 0
+	if charmSec > 0 then
+		run.limit, run.deadline = run.limit + charmSec, run.deadline + charmSec
+	end
 	run.id, run.slot, run.L, run.key, run.fx, run.plan = RF.nextId, slot, L, key, fx, plan
 	run.bonus = R.atlasBonus(R.bonuses(cfg, key.mods, key.tier), am)
 	run.atlasRun, run.atlasNote = am, R.atlasNote(am)

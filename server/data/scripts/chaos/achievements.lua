@@ -11,7 +11,12 @@
 --   ChaosAchievements.unlockedOf(player)            {id = unlock time} of the character
 --   ChaosAchievements.pointsOf(player)              character points, account points
 --   ChaosAchievements.grant(player, id)             unlock now (staff tools)
---   ChaosAchievements.sendState(player, open)       the window
+--   ChaosAchievements.sendState(player, open)       the window (state, track, list)
+--   ChaosAchievements.accountOf(player | account id) {ids, points} of the account
+--   ChaosAchievements.syncTrack(player)             reward track: cosmetics.lua grants what the account earned
+-- Reward track (server/README.md "Achievements"): account points milestones and category completion give cosmetics of
+-- cosmetics_config.lua (source "achievement", points / category) and category titles (achievements_data.lua
+-- categoryRewards); the window gets them as "track" (cosmetics_core.lua trackView).
 -- A new source is one guarded line in the other script:
 --   if ChaosAchievements then ChaosAchievements.progress(player, "my_counter", 1) end
 -- plus an entry with stat = "my_counter" in achievements_data.lua.
@@ -294,8 +299,20 @@ function A.evaluate(player, quiet)
 	end
 	if #done > 0 then
 		pcall(checkClassUnlocks, player)
+		A.syncTrack(player)
 	end
 	return done
+end
+
+-- the reward track (cosmetics.lua): account points or a completed category may have earned a cosmetic; idempotent
+function A.syncTrack(player)
+	local M = ChaosCosmetics
+	if M and M.sync then
+		local ok, err = pcall(M.sync, player)
+		if not ok then
+			log("reward track sync " .. player:getName() .. ": " .. tostring(err))
+		end
+	end
 end
 
 -- ---------------------------------------------------------------- public API
@@ -345,6 +362,12 @@ function A.has(player, query)
 	return K.has(account(accountId), query)
 end
 
+-- the account's achievements {ids = set, points} (each achievement once, any character); player or account id
+function A.accountOf(who)
+	local accountId = type(who) == "number" and who or who:getAccountId()
+	return account(accountId)
+end
+
 function A.unlockedOf(player)
 	return A.unlocked[player:getGuid()] or {}
 end
@@ -362,6 +385,7 @@ function A.grant(player, id)
 	if ok then
 		A.evaluate(player)
 		pcall(checkClassUnlocks, player)
+		A.syncTrack(player)
 	end
 	return ok
 end
@@ -469,6 +493,23 @@ local function titleInfo(player)
 	return true, active and active.text or nil, held
 end
 
+-- the reward track of the window (cosmetics_core.lua trackView): account points milestones and category completion,
+-- each with its cosmetic and whether the account owns it. Nothing while cosmetics.lua is not loaded.
+function A.sendTrack(player)
+	local M, C = ChaosCosmetics, ChaosCosmeticsCore
+	if not (M and M.ownedOf and M.config and C and C.trackView) then
+		return
+	end
+	local ok, err = pcall(function()
+		local acc = account(player:getAccountId())
+		Chaos.send(player, OPCODE, "track", C.trackView(M.config, acc.points, M.ownedOf(player:getAccountId()),
+			K.categoryTrack(index, acc.ids)))
+	end)
+	if not ok then
+		log("track " .. player:getName() .. ": " .. tostring(err))
+	end
+end
+
 function A.sendState(player, open)
 	local guid = player:getGuid()
 	if not A.unlocked[guid] then
@@ -490,6 +531,7 @@ function A.sendState(player, open)
 		titles = K.titlesOf(index, unlocked),
 		titlesOn = titlesOn, activeTitle = active or "", heldTitles = held or {}
 	})
+	A.sendTrack(player)
 	local rows = K.view(index, stats, unlocked, itemName)
 	for i = 1, #rows, CHUNK do
 		local part = {}
@@ -686,7 +728,15 @@ function A.installHooks()
 	-- name plate titles
 	if ChaosTitles and ChaosTitles.register then
 		ChaosTitles.register("achievement", function(player)
-			return K.titlesOf(index, A.unlocked[player:getGuid()])
+			local list = K.titlesOf(index, A.unlocked[player:getGuid()])
+			-- category completion titles of the reward track (account-wide)
+			local ok, acc = pcall(account, player:getAccountId())
+			if ok and acc then
+				for _, t in ipairs(K.categoryTitles(index, acc.ids)) do
+					list[#list + 1] = t
+				end
+			end
+			return list
 		end)
 	end
 	-- class unlock method "achievement" (points or an achievement id); the classes' configured methods stay as they are

@@ -244,6 +244,18 @@ Chaos.tables.mentorLinks = "chaos_mentor_links"
 -- Veiled modifiers: the Unveil window of the Orb of Unveiling (client game_unveil; veiled.lua, data/lib/chaos_veiled*.lua);
 -- no storages, no tables (item attributes only)
 ChaosOpcodes.veiled = 196
+-- Charms: the charm grid window (client game_charms; charms.lua, charms_core.lua, charms_config.lua, sql/chaos_charms.sql);
+-- storages 7100470 - 7100479 reserved (+0 the place / take serial, the crash marker; +1 the Last Ember cooldown)
+ChaosOpcodes.charms = 198
+Chaos.storage.charms = 7100470
+Chaos.tables.charms = "chaos_charms"
+-- The Scorched Marches, the open-world PvP zone (client game_pvpzone; pvpzone.lua, pvpzone_core.lua, pvpzone_config.lua,
+-- sql/chaos_pvpzone.sql): window, entry confirmation, vendor and HUD on one opcode; storages 7100520 - 7100529 reserved
+-- (pvpzone_config.lua storage: +0 inside, +1 protected until, +2 carried embers, +3..5 return spot, +6 entered at);
+-- map grid x/y 13312 - 13823
+ChaosOpcodes.pvpZone = 193
+Chaos.storage.pvpZone = 7100520
+Chaos.tables.pvpZone = "chaos_pvpzone_players"
 
 -- ---------------------------------------------------------------------------
 -- Module settings

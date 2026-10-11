@@ -62,6 +62,11 @@ pet share, so the bonuses multiply the staged experience and the pet gets its sh
    Both lines now ask Chaos.monsterNameDescription(self) (data/scripts/chaos/chaos_constants.lua), which gives the
    type's description for a monster that was not renamed; without that helper the stock call is used.
 
+11. data/events/scripts/creature.lua: Creature:onTargetCombat also asks ChaosPvpZone.targetCombat (the Scorched Marches,
+   data/scripts/chaos/pvpzone.lua) before the base rules, right after the siege hook: inside the zone the target's secure
+   mode does not protect it (open PvP), protected players and attacks across the zone border are refused. The hook
+   returns nil outside the zone (the base rules then run as before).
+
 Idempotent: every inserted block carries a marker comment and is not added twice.
 """
 import os, re, sys
@@ -164,6 +169,39 @@ def patch_target_combat(text):
     else:
         at = text.find('\n', start) + 1
     return text[:at] + COMBAT_BLOCK + text[at:], 'patched'
+
+
+ZONE_MARKER = '-- Chaos: Scorched Marches PvP rules before the base PvP rules (patch_base_events.py)'
+ZONE_BLOCK = (
+    '\t' + ZONE_MARKER + '\n'
+    '\tif ChaosPvpZone and ChaosPvpZone.targetCombat then\n'
+    '\t\tlocal chaosZoneRet = ChaosPvpZone.targetCombat(self, target)\n'
+    '\t\tif chaosZoneRet then\n'
+    '\t\t\treturn chaosZoneRet\n'
+    '\t\tend\n'
+    '\tend\n'
+)
+
+
+def patch_zone_combat(text):
+    """returns (new text, status): after the siege block (step 3), else where step 3 would put it"""
+    if ZONE_MARKER in text:
+        return text, 'already'
+    start = text.find('function Creature:onTargetCombat(')
+    if start < 0:
+        return text, 'Creature:onTargetCombat not found'
+    end = text.find('\nend', start)
+    body = text[start:end]
+    if COMBAT_MARKER in body:
+        i = body.find(COMBAT_MARKER)
+        j = body.find('\n\tend\n', i)
+        if j < 0:
+            return text, 'siege block of step 3 not recognised'
+        at = start + j + len('\n\tend\n')
+    else:
+        m = re.search(r'\n[ \t]*if self:isMonster\(\) and target:isPlayer\(\) then', body)
+        at = start + m.start() + 1 if m else text.find('\n', start) + 1
+    return text[:at] + ZONE_BLOCK + text[at:], 'patched'
 
 
 DEMOTION_MARKER = '-- Chaos: no demotion without premium, ascended classes stay (patch_base_events.py)'
@@ -386,6 +424,7 @@ def main():
     ok = apply(os.path.join(args[0], 'scripts', 'eventcallbacks', 'monster', 'default_onDropLoot.lua'),
                patch_loot_name, dry) and ok
     ok = apply(os.path.join(args[0], 'events', 'scripts', 'creature.lua'), patch_target_combat, dry) and ok
+    ok = apply(os.path.join(args[0], 'events', 'scripts', 'creature.lua'), patch_zone_combat, dry) and ok
     ok = apply(os.path.join(args[0], 'creaturescripts', 'scripts', 'login.lua'), patch_login_demotion, dry) and ok
     ok = apply(os.path.join(args[0], 'scripts', 'creaturescripts', 'autoloot.lua'), patch_autoloot, dry) and ok
     ok = apply(os.path.join(args[0], 'items', 'items.xml'), patch_item_chances, dry) and ok

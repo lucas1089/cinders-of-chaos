@@ -1,0 +1,175 @@
+-- The Scorched Marches: an open-world PvP zone with risk and reward (pvpzone.lua, pvpzone_core.lua; client game_pvpzone,
+-- extended opcode ChaosOpcodes.pvpZone = 193). Every number of the zone. Loaded with
+--     Chaos.pvpZoneConfig = dofile("data/scripts/chaos/pvpzone_config.lua")
+-- Plain data, no engine calls (tests/pvpzone_test.lua reads it). Lua 5.1 / LuaJIT and Lua 5.3.
+-- Overview: server/README.md "The Scorched Marches (open-world PvP zone)".
+-- Item ids are SERVER ids.
+
+local UPHEAVAL, FATE, AWAKENING, GILDING = 29856, 29857, 29851, 24691
+
+return {
+	enabled = true,
+	opcode = 193, -- ChaosOpcodes.pvpZone (client game_pvpzone)
+	name = "The Scorched Marches",
+	minLevel = 150, -- to enter; also the lowest victim level whose defeat counts (anti-farming)
+
+	-- ------------------------------------------------------------------ where the zone is
+	-- "build": built at runtime with Game.createTile in the empty part of the map (no base map edit), one instance per
+	--          realm (standard = slot 0; a running season gets its own slot, so season and standard characters never
+	--          share embers, piles, the shrine or its buff).
+	-- "map":   an existing area of the loaded map, given by `area` below (its own walls, spawns and monsters; nothing is
+	--          built). One instance only: `area.realm` is the only realm let in. Not tried on a live map yet.
+	mode = "build",
+	-- slot i at origin + (i % cols, i // cols) x spacing; x/y 13312 - 13823 (clear of every other runtime area)
+	grid = {origin = {x = 13312, y = 13312, z = 7}, cols = 4, slots = 4, spacing = 128},
+	field = {innerW = 72, innerH = 56}, -- the walkable inside of an instance (outer wall around it)
+	-- stock things (the battleground uses the same set)
+	ids = {
+		ground = 407, -- black marble floor: the scorched plain
+		gateGround = 413, -- stone floor: the gate yards around the safe exits
+		ring = 406, -- white marble floor: the shrine circle and the exit circles
+		wall = 5648, -- stone wall (outer wall and ruins)
+		pillar = 1514, -- stone pillar (cover)
+		shrine = 1481, -- coal basin: the Cinder Shrine itself (unwalkable)
+		exitMark = 1436, -- castle flag beside an exit circle
+		pile = 2249 -- "ashes": the ember pile a defeated player leaves (a marker; the pile itself lives in the script)
+	},
+	-- map mode: the rectangle (inclusive), its safe exits, the shrine, the spawn points (optional, the map's own spawns
+	-- are scaled anyway) and the realm allowed in (0 = standard characters)
+	area = nil, -- e.g. {x1 = 32000, y1 = 32000, x2 = 32080, y2 = 32060, z = 7, exits = {{x =, y =, z =}}, shrine = {x =, y =, z =},
+	--          spawns = {}, realm = 0}
+
+	-- ------------------------------------------------------------------ entering
+	entry = {
+		needPz = true, -- only from a protection zone (a temple, a depot): no escape from a hunt or a fight
+		protectSeconds = 10, -- after entering: no damage, cannot attack or be attacked players (ends when attacking)
+		cooldownSeconds = 90, -- after a defeat, before entering again
+		-- the confirmation the client shows (the server checks that it was accepted). One line each.
+		rules = {
+			"Open PvP: every player in the Marches can attack you, whatever the world's rules, and you them.",
+			"No skulls and no unjustified kills in here. Nobody really dies: you are defeated and thrown out.",
+			"Your equipment and experience are safe. Your carried Embers are not: they fall where you are defeated, and your killer can take them.",
+			"Embers are only banked when you leave through a safe exit (stand in its circle for a few seconds without fighting).",
+			"Monsters here are stronger and drop more. Logging out inside: you come back at a safe exit."
+		}
+	},
+	-- Hardcore (season mode) characters: a Hardcore life is one life. Decided: NOT allowed in at all (allow = false).
+	-- In here a player decides when you fall (gank, ambush, outnumbered); a death that is not a death would also be a
+	-- hole in the mode. With allow = true they would need a second explicit confirmation (`hcAccept`).
+	hardcore = {allow = false},
+	-- Self-Found (season mode) characters may enter; they never take another player's ember pile.
+	ssf = {takePiles = false},
+
+	-- ------------------------------------------------------------------ inside
+	-- safe exits: stand inside the circle (Chebyshev radius) for channelSeconds without dealing or taking damage
+	exit = {radius = 1, channelSeconds = 5},
+	-- logged in inside (a logout there, a crash, a restart): held for holdSeconds (no damage), then moved to the nearest
+	-- safe exit with protectSeconds of protection
+	login = {holdSeconds = 3, protectSeconds = 10},
+	-- PvP damage and healing between players scale like the battleground (battleground_config.lua `normalise`, the
+	-- bracket of the target sets the reference level); healing from others is not scaled
+	pvpScale = true,
+	assistSeconds = 10, -- a player's hit in the victim's last seconds makes him the killer when a monster lands the last blow
+	hudSeconds = 2, -- HUD refresh while inside
+
+	-- ------------------------------------------------------------------ embers (the zone's currency)
+	carry = {max = 2500}, -- carried at most (more is lost, the player is told)
+	bankMax = 200000, -- banked at most
+	-- per monster killed inside (the player with the most damage), by tier (monster_tiers.lua)
+	monsterEmbers = {normal = 2, magic = 6, rare = 15, legendary = 40, boss = 150},
+	death = {
+		dropShare = 1.0, -- share of the carried embers that fall into the pile (the rest burns)
+		ownerSeconds = 30, -- only the killer may take the pile this long (a monster's victim: anyone at once)
+		pileSeconds = 120, -- then the pile burns out
+		pickupRange = 1 -- stand on the pile or next to it
+	},
+	-- what one player may take from piles of other players
+	pickup = {perKillMax = 800, perDayMax = 4000},
+
+	-- ------------------------------------------------------------------ anti-farming (as guild wars): a defeat counts
+	-- (reputation, the pile for the killer, stats) only if none of these say no; else the pile burns and nothing is given
+	antiFarm = {
+		sameIp = true,
+		sameAccount = true,
+		minLevelRatio = 0.6, -- the victim has at least this share of the killer's level
+		sameVictimMinutes = 30, -- the same victim counts again for the same killer only after this
+		minSecondsInside = 20 -- a victim who entered less than this ago does not count
+	},
+
+	-- ------------------------------------------------------------------ factions: the pledge (flag)
+	-- a player pledges the Marches to one faction (factions_config.lua); unpledged players fight but earn no reputation
+	-- and cannot take the shrine. Defeating a player pledged to another faction gives reputation to the own faction
+	-- (factions.lua gain, source "pvpzone": diminishing returns, weekly cap, rival loss).
+	reputation = {
+		minRank = "neutral", -- pledging needs at least this rank with the faction
+		changeHours = 24, -- a new pledge only this long after the last one
+		perKill = 40,
+		rivalMult = 1.0, -- victim of the faction's sworn rival (factions_config.lua `rival`)
+		otherMult = 0.5, -- victim of one of the two other factions; same faction: nothing
+		dailyCap = 400 -- reputation from Marches kills per character and faction day
+	},
+
+	-- ------------------------------------------------------------------ the Cinder Shrine (zone event)
+	contest = {
+		firstMinutes = 15, -- after the server start (or the instance build) the first contest
+		everyMinutes = 120, -- then one contest every this long (from the start of the last one)
+		windowMinutes = 20, -- a contest not won in this time ends without a holder (the old control runs out)
+		warden = {name = "Demon", title = "Shrine Warden", hpMult = 6}, -- must fall before the shrine can be taken
+		-- capture: pledged players of ONE faction alone in the circle raise its progress by 100 / seconds per second
+		-- x (1 + perExtra x (n - 1)) up to maxRate; two factions inside = contested (no change); a faction with nobody
+		-- inside loses decayPerSecond. First to 100 takes the shrine.
+		capture = {radius = 3, seconds = 60, perExtra = 0.25, maxRate = 2, decayPerSecond = 0.5},
+		holdMinutes = 60, -- the faction-wide buff of the holder (every character pledged to it, in that realm)
+		buff = {exp = 10, loot = 10}, -- percent: experience from monsters and the loot rate, anywhere
+		embers = {capture = 200, warden = 100} -- to every pledged player of the capturing faction in the circle / to the
+		-- warden's killer (most damage)
+	},
+
+	-- ------------------------------------------------------------------ monsters inside
+	monsters = {
+		hpMult = 1.6, -- health
+		damageMult = 1.35, -- their damage to players
+		expMult = 1.5, -- experience
+		lootMult = 1.5, -- the Chaos loot rate (loot_config.lua rateMult)
+		respawnSeconds = 90, -- an empty spawn point (build mode) refills after this
+		-- build mode: one of these per spawn point (picked by the point's number); stock monsters of the base server
+		list = {"Dragon Lord", "Hellhound", "Grim Reaper", "Undead Dragon", "Blightwalker", "Fury", "Destroyer",
+			"Dark Torturer", "Plaguesmith", "Behemoth", "Hellspawn", "Hand of Cursed Fate"},
+		spawnSpacing = 9, -- spawn points on a grid this far apart, away from the exits and the shrine
+		keepAway = {exit = 9, shrine = 7}
+	},
+
+	-- ------------------------------------------------------------------ the vendor (banked embers)
+	-- Orbs, consumables and cosmetics only: never power above PvE gear.
+	--   kind "item": {id, count}; kind "cosmetic": a cosmetics_config.lua key with source "pvp"; weekly = purchases per
+	--   week (Monday 06:00), nil = no limit
+	vendor = {
+		{key = "upheaval", kind = "item", id = UPHEAVAL, count = 3, cost = 300, weekly = 5, name = "3 Orbs of Upheaval"},
+		{key = "awakening", kind = "item", id = AWAKENING, count = 2, cost = 350, weekly = 5, name = "2 Orbs of Awakening"},
+		{key = "gilding", kind = "item", id = GILDING, count = 2, cost = 350, weekly = 5, name = "2 Orbs of Gilding"},
+		{key = "fate", kind = "item", id = FATE, count = 1, cost = 500, weekly = 3, name = "1 Orb of Fate"},
+		{key = "ghp", kind = "item", id = 7591, count = 50, cost = 80, name = "50 great health potions"},
+		{key = "gmp", kind = "item", id = 7590, count = 50, cost = 80, name = "50 great mana potions"},
+		{key = "gsp", kind = "item", id = 8472, count = 50, cost = 80, name = "50 great spirit potions"},
+		{key = "uhp", kind = "item", id = 8473, count = 50, cost = 150, name = "50 ultimate health potions"},
+		{key = "c_kill", kind = "cosmetic", cosmetic = "kill_marchfire", cost = 4000, name = "Kill effect: Marchfire"},
+		{key = "c_loot", kind = "cosmetic", cosmetic = "loot_scorched", cost = 3000, name = "Loot labels: Scorched Earth"},
+		{key = "c_chat", kind = "cosmetic", cosmetic = "chat_marchember", cost = 3500, name = "Chat name: Marchember"}
+	},
+
+	-- ------------------------------------------------------------------ boards, achievements, storage, tables
+	leaderboard = "marches", -- weekly board (leaderboard_config.lua): embers banked
+	-- achievements_data.lua stats: pvpzone_kills (counted defeats of pledged rivals), pvpzone_banked (embers banked in
+	-- total), pvpzone_haul (most embers banked at one exit), pvpzone_captures (shrine captures stood in the circle)
+	-- player storages 7100520 - 7100529 reserved: +0 inside (1; also the crash marker), +1 protected until (os.time),
+	-- +2 carried embers, +3 return x, +4 return y, +5 return z, +6 entered at (os.time)
+	storage = {inside = 7100520, protect = 7100521, carried = 7100522, retX = 7100523, retY = 7100524, retZ = 7100525,
+		enteredAt = 7100526},
+	tables = {
+		players = "chaos_pvpzone_players", -- banked embers, pledge, stats, daily and weekly counters per character
+		control = "chaos_pvpzone_control", -- the shrine holder per realm (survives a restart)
+		purchases = "chaos_pvpzone_purchases" -- vendor purchases (the log and the weekly limits)
+	},
+	tickMs = 1000,
+	staffGroup = 4 -- /marches staff commands
+}

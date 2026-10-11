@@ -12,7 +12,9 @@
 --            cosmetics_store.lua into the store's cosmetic categories, see the Cosmetics hunk of shop_config.lua)
 --   icon     server item id drawn for it in the store and the window (a picture only)
 --   source   "store" (price = the store price; the offer must carry it) | "achievement" (owned once the account has
---            the achievement `achievement` of achievements_data.lua; granted at login and when the window opens) |
+--            the achievement `achievement` of achievements_data.lua; granted at login and when the window opens; or,
+--            the reward track, `points` = N account achievement points / `category` = every achievement of a category,
+--            also granted when the account's achievements change; never sold, never taken back) |
 --            "pvp" (granted by battleground.lua / arena_season.lua: the honor vendor, the season rewards; pvp = how)
 -- Kinds:
 --   spellskin  line = a key of `lines`; spells = spell ids of that line (2-3); swaps per effect type, default name ->
@@ -200,6 +202,52 @@ return {
 		{id = 307, key = "chat_gladiator", kind = "chatcolor", icon = 2392, source = "pvp", pvp = "Battleground vendor (honor)",
 			color = "#b8c4d4", name = "Gladiator Steel", desc = "Your name in chat shows polished steel for everyone."},
 		{id = 308, key = "chat_infernal", kind = "chatcolor", icon = 2343, source = "pvp", pvp = "PvP season reward: Infernal or better",
-			color = "#ff6a4a", name = "Infernal Name", desc = "Your name in chat burns infernal red for everyone. PvP season: Infernal."}
+			color = "#ff6a4a", name = "Infernal Name", desc = "Your name in chat burns infernal red for everyone. PvP season: Infernal."},
+		-- the Scorched Marches vendor (pvpzone.lua; banked embers)
+		{id = 120, key = "kill_marchfire", kind = "killfx", icon = 2353, source = "pvp", pvp = "Scorched Marches vendor (embers)",
+			vfx = "meteor_strike", name = "Marchfire", desc = "A burning star falls where your killing blow lands."},
+		{id = 212, key = "loot_scorched", kind = "lootbeam", icon = 2249, source = "pvp", pvp = "Scorched Marches vendor (embers)",
+			accent = "#2a1608f0", name = "Scorched Earth Labels", desc = "Your highlighted loot labels sit on scorched earth. Rarity colours stay."},
+		{id = 314, key = "chat_marchember", kind = "chatcolor", icon = 1481, source = "pvp", pvp = "Scorched Marches vendor (embers)",
+			color = "#e8925a", name = "Marchember", desc = "Your name in chat glows like a banked ember for everyone."},
+
+		-- ------------------------------------------------------------------ the achievement reward track (source
+		-- "achievement", never sold). points = N: the account has N achievement points (each achievement once, any of its
+		-- characters); category = key: the account has every achievement of that category of achievements_data.lua (the
+		-- category's title is in its categoryRewards). Palette variants of effects and colours that already exist.
+		{id = 309, key = "chat_ashen", kind = "chatcolor", icon = 2147, source = "achievement", points = 100,
+			color = "#cfc4b4", name = "Ashen Name", desc = "Your name in chat shows pale ash for everyone. Reward track: 100 points."},
+		{id = 208, key = "loot_chronicle", kind = "lootbeam", icon = 18415, source = "achievement", points = 250,
+			accent = "#0b2626f0", name = "Chronicle Labels", desc = "Your highlighted loot labels sit on deep teal. Reward track: 250 points."},
+		{id = 112, key = "kill_verdigris", kind = "killfx", icon = 2229, source = "achievement", points = 500,
+			vfx = "px448_green", name = "Verdigris Splash", desc = "A green splash marks your kills. Reward track: 500 points."},
+		{id = 310, key = "chat_chronicler", kind = "chatcolor", icon = 13531, source = "achievement", points = 1000,
+			color = "#5cc8c0", name = "Chronicler's Teal", desc = "Your name in chat shows chronicle teal for everyone. Reward track: 1000 points."},
+		{id = 113, key = "kill_vortex", kind = "killfx", icon = 2153, source = "achievement", points = 1750,
+			vfx = "px03_arcane", name = "Arcane Vortex", desc = "An arcane vortex swallows your kills. Reward track: 1750 points."},
+		{id = 209, key = "loot_obsidian", kind = "lootbeam", icon = 18414, source = "achievement", points = 2500,
+			accent = "#140f1af0", name = "Obsidian Labels", desc = "Your highlighted loot labels sit on obsidian. Reward track: 2500 points."},
+		{id = 114, key = "kill_ascent", kind = "killfx", icon = 2343, source = "achievement", points = 3500,
+			vfx = "aura_burst_gold", name = "Gilded Ascent", desc = "A golden burst crowns your kills. Reward track: 3500 points."},
+		{id = 115, key = "kill_warsurge", kind = "killfx", icon = 2400, source = "achievement", category = "combat",
+			vfx = "aura_burst_red", name = "War Surge", desc = "A red surge rises from your kills. Complete Combat & Leveling."},
+		{id = 116, key = "kill_thornbloom", kind = "killfx", icon = 18415, source = "achievement", category = "monsters",
+			vfx = "px286_green", name = "Thornbloom", desc = "Petals burst over your kills. Complete Monsters."},
+		{id = 117, key = "kill_titanpyre", kind = "killfx", icon = 2498, source = "achievement", category = "bosses",
+			vfx = "dome_blast_holy", name = "Titan's Pyre", desc = "A dome of holy fire rises from your kills. Complete World Bosses."},
+		{id = 118, key = "kill_riftsigil", kind = "killfx", icon = 6500, source = "achievement", category = "rifts",
+			vfx = "px674_arcane", name = "Rift Sigil", desc = "An arcane sigil seals your kills. Complete Rifts."},
+		{id = 210, key = "loot_sepulchre", kind = "lootbeam", icon = 2498, source = "achievement", category = "raids",
+			accent = "#1d1712f0", name = "Sepulchre Labels", desc = "Your highlighted loot labels sit on grave ash. Complete Raids."},
+		{id = 311, key = "chat_huntsman", kind = "chatcolor", icon = 2392, source = "achievement", category = "bounties",
+			color = "#e8a070", name = "Huntsman's Copper", desc = "Your name in chat shows copper for everyone. Complete Bounties."},
+		{id = 211, key = "loot_tempered", kind = "lootbeam", icon = 2154, source = "achievement", category = "items",
+			accent = "#182028f0", name = "Tempered Labels", desc = "Your highlighted loot labels sit on tempered steel. Complete Items & Crafting."},
+		{id = 312, key = "chat_bloodsteel", kind = "chatcolor", icon = 1436, source = "achievement", category = "pvp",
+			color = "#e8848c", name = "Bloodsteel Name", desc = "Your name in chat shows bloodsteel for everyone. Complete PvP."},
+		{id = 313, key = "chat_lantern", kind = "chatcolor", icon = 2145, source = "achievement", category = "explore",
+			color = "#e8d890", name = "Lantern Name", desc = "Your name in chat shows lantern light for everyone. Complete Exploration & Social."},
+		{id = 119, key = "kill_starfall", kind = "killfx", icon = 2150, source = "achievement", category = "secrets",
+			vfx = "starfall_crown", name = "Falling Stars", desc = "Stars fall over your kills. Complete Secrets."}
 	}
 }

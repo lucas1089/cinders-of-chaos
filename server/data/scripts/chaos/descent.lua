@@ -822,6 +822,13 @@ local function roomCleared(run)
 		pe.depth = run.depth
 		pe.st.embers = pe.st.embers + DC.embers(fxOf(pe), C().embers.perRoom)
 	end
+	if ChaosCharms and ChaosCharms.onSource then -- a charm drop per player (charms.lua)
+		for pid in pairs(run.players) do
+			if Player(pid) then
+				pcall(ChaosCharms.onSource, Player(pid), "descent", {depth = run.idx, boss = room.type == "boss"})
+			end
+		end
+	end
 	if room.type == "boss" then
 		finish(run, "cleared")
 		return

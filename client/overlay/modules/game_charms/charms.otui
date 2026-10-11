@@ -1,0 +1,243 @@
+// Charms (game_charms): the charm grid on the left (open and locked cells, the placed charms) with the unlock list
+// under it; your charms (the ones in the backpack) and the totals on the right; Salvage / Reforge / Close below.
+// Styles from client_chaos_theme.
+
+CharmCell < UIWidget
+  size: 44 44
+  anchors.top: parent.top
+  anchors.left: parent.left
+  background-color: #2a1f1a
+  border-width: 1
+  border-color: #3a2c22
+  phantom: false
+
+  UIWidget
+    id: lock
+    anchors.centerIn: parent
+    size: 22 22
+    opacity: 0.55
+    visible: false
+    phantom: true
+
+CharmTile < UIWidget
+  size: 44 44
+  background-color: #1a1214
+  border-width: 1
+  border-color: #e8b84a
+  phantom: false
+  focusable: false
+
+  UIWidget
+    id: icon
+    anchors.centerIn: parent
+    size: 32 32
+    phantom: true
+
+CharmGhost < UIWidget
+  background-color: #1a121499
+  border-width: 1
+  border-color: #e8b84a
+  opacity: 0.8
+  phantom: true
+  focusable: false
+
+  UIWidget
+    id: icon
+    anchors.centerIn: parent
+    size: 32 32
+    phantom: true
+
+CharmLine < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: left
+  text-wrap: true
+  text-auto-resize: true
+  margin-bottom: 2
+  phantom: true
+
+CharmsWindow < ChaosMainWindow
+  id: charmsWindow
+  size: 640 520
+  !text: tr('Charms')
+  @onEscape: modules.game_charms.hide()
+
+  ChaosLabel
+    id: header
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 16
+    text-align: left
+
+  ChaosTitlePlate
+    id: gridPlate
+    anchors.top: header.bottom
+    anchors.left: parent.left
+    margin-top: 4
+    width: 252
+
+    ChaosTitle
+      anchors.fill: parent
+      !text: tr('Charm Grid')
+
+  ChaosPanelDark
+    id: gridFrame
+    anchors.top: gridPlate.bottom
+    anchors.left: parent.left
+    margin-top: 4
+    size: 252 206
+
+    UIWidget
+      id: grid
+      anchors.centerIn: parent
+      size: 228 182
+      phantom: false
+
+  ChaosTitlePlate
+    id: unlockPlate
+    anchors.top: gridFrame.bottom
+    anchors.left: parent.left
+    margin-top: 6
+    width: 252
+
+    ChaosTitle
+      anchors.fill: parent
+      !text: tr('Cells')
+
+  ChaosPanelDark
+    id: unlockFrame
+    anchors.top: unlockPlate.bottom
+    anchors.left: parent.left
+    anchors.bottom: status.top
+    margin-top: 4
+    margin-bottom: 6
+    width: 252
+
+    UIWidget
+      id: unlocks
+      anchors.fill: parent
+      margin: 6
+      layout:
+        type: verticalBox
+
+  ChaosTitlePlate
+    id: bagPlate
+    anchors.top: header.bottom
+    anchors.left: gridPlate.right
+    anchors.right: parent.right
+    margin-top: 4
+    margin-left: 8
+
+    ChaosTitle
+      anchors.fill: parent
+      !text: tr('Your Charms')
+
+  ChaosPanelDark
+    id: bagFrame
+    anchors.top: bagPlate.bottom
+    anchors.left: bagPlate.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 160
+
+    ScrollablePanel
+      id: bagList
+      anchors.fill: parent
+      margin: 6
+      margin-right: 16
+      vertical-scrollbar: bagScroll
+      layout:
+        type: grid
+        cell-size: 44 44
+        cell-spacing: 4
+        flow: true
+
+    ChaosScrollBar
+      id: bagScroll
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      step: 24
+      pixels-scroll: true
+
+    ChaosLabelDim
+      id: empty
+      anchors.centerIn: parent
+      text-align: center
+      !text: tr('No charm in your backpack.\nCharms drop in rifts of tier 6+, bounties,\ninvasions, dungeons and the Ember Descent.')
+      text-auto-resize: true
+      visible: false
+
+  ChaosTitlePlate
+    id: totalsPlate
+    anchors.top: bagFrame.bottom
+    anchors.left: bagPlate.left
+    anchors.right: parent.right
+    margin-top: 6
+
+    ChaosTitle
+      anchors.fill: parent
+      !text: tr('Totals')
+
+  ChaosPanelDark
+    id: totalsFrame
+    anchors.top: totalsPlate.bottom
+    anchors.left: bagPlate.left
+    anchors.right: parent.right
+    anchors.bottom: status.top
+    margin-top: 4
+    margin-bottom: 6
+
+    ScrollablePanel
+      id: totals
+      anchors.fill: parent
+      margin: 6
+      margin-right: 16
+      vertical-scrollbar: totalsScroll
+      layout:
+        type: verticalBox
+
+    ChaosScrollBar
+      id: totalsScroll
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      step: 20
+      pixels-scroll: true
+
+  ChaosLabel
+    id: status
+    anchors.left: parent.left
+    anchors.right: salvageButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    height: 30
+    text-wrap: true
+    text-align: topLeft
+
+  ChaosButton
+    id: salvageButton
+    anchors.right: reforgeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    size: 80 24
+    !text: tr('Salvage')
+    @onClick: modules.game_charms.salvageSelected()
+
+  ChaosButton
+    id: reforgeButton
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    size: 80 24
+    !text: tr('Reforge')
+    @onClick: modules.game_charms.reforgeSelected()
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 80 24
+    !text: tr('Close')
+    @onClick: modules.game_charms.hide()

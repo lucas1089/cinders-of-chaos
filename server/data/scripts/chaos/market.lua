@@ -433,6 +433,11 @@ local function customKeys()
 			add(k)
 		end
 	end
+	if ChaosCharms and ChaosCharms.attributeKeys then -- a charm's modifiers (charms.lua)
+		for _, k in ipairs(ChaosCharms.attributeKeys()) do
+			add(k)
+		end
+	end
 	keyList = list
 	return list
 end

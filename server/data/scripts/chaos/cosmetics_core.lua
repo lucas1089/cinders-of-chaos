@@ -184,15 +184,78 @@ function C.owns(owned, c)
 	return c ~= nil and type(owned) == "table" and owned[c.key] == true
 end
 
--- the achievement cosmetics to grant now: hasAchievement(id) -> bool
-function C.syncs(cfg, hasAchievement, owned)
+-- has the account earned achievement cosmetic c? hasAchievement(id) -> bool; facts (the reward track, optional) =
+-- {points = account achievement points, categories = {[category key] = true} completed by the account}
+function C.earned(c, hasAchievement, facts)
+	if not c or c.source ~= "achievement" then
+		return false
+	end
+	facts = facts or {}
+	if c.points then
+		return (tonumber(facts.points) or 0) >= c.points
+	elseif c.category then
+		return type(facts.categories) == "table" and facts.categories[c.category] == true
+	end
+	return hasAchievement ~= nil and hasAchievement(c.achievement) == true
+end
+
+-- the achievement cosmetics to grant now (keys, config order). Only adds: what the account owns stays owned.
+function C.syncs(cfg, hasAchievement, owned, facts)
 	local out = {}
 	for _, c in ipairs(cfg.cosmetics or {}) do
-		if c.source == "achievement" and not C.owns(owned, c) and hasAchievement(c.achievement) then
+		if c.source == "achievement" and not C.owns(owned, c) and C.earned(c, hasAchievement, facts) then
 			out[#out + 1] = c.key
 		end
 	end
 	return out
+end
+
+-- ---------------------------------------------------------------- the reward track (achievements window)
+-- the point milestones, lowest first: [{points, cosmetic}]
+function C.trackSteps(cfg)
+	local out = {}
+	for _, c in ipairs(cfg.cosmetics or {}) do
+		if c.source == "achievement" and c.points then
+			out[#out + 1] = {points = c.points, cosmetic = c}
+		end
+	end
+	table.sort(out, function(a, b) return a.points < b.points end)
+	return out
+end
+
+-- the cosmetic of a category's completion, or nil
+function C.categoryCosmetic(cfg, catKey)
+	for _, c in ipairs(cfg.cosmetics or {}) do
+		if c.source == "achievement" and c.category == catKey then
+			return c
+		end
+	end
+	return nil
+end
+
+-- what the achievements window shows (short keys, one message): points = the account's achievement points;
+-- categoryTrack = ChaosAchievementsCore.categoryTrack(index, account ids). Per cosmetic: n name, k kind, d desc, c colour,
+-- a accent, o 1 = owned. steps: p points. cats: key, cn category name, dn done, t total, ti title, x 1 = complete.
+function C.trackView(cfg, points, owned, categoryTrack)
+	points = math.floor(tonumber(points) or 0)
+	local function entry(c, into)
+		into.n, into.k, into.d, into.c, into.a = c.name, c.kind, c.desc, c.color, c.accent
+		into.o = C.owns(owned, c) and 1 or nil
+		return into
+	end
+	local view = {ap = points, steps = {}, cats = {}}
+	for _, s in ipairs(C.trackSteps(cfg)) do
+		view.steps[#view.steps + 1] = entry(s.cosmetic, {p = s.points})
+	end
+	for _, t in ipairs(categoryTrack or {}) do
+		local e = {key = t.key, cn = t.name, dn = t.done, t = t.total, ti = t.title, x = t.complete and 1 or nil}
+		local c = C.categoryCosmetic(cfg, t.key)
+		if c then
+			entry(c, e)
+		end
+		view.cats[#view.cats + 1] = e
+	end
+	return view
 end
 
 -- may this character choose cosmetic `id` of `kind` now? id 0 = back to the default. Returns the cosmetic (nil for
@@ -228,11 +291,15 @@ function C.storeCategory(cfg, kind)
 end
 
 -- how a cosmetic is got, for the window
-function C.how(c, achievementName)
+function C.how(c, achievementName, categoryName)
 	if c.source == "store" then
 		return "Store: " .. tostring(c.price) .. " Chaos Coins"
 	elseif c.source == "pvp" then
 		return "PvP: " .. tostring(c.pvp or "battleground")
+	elseif c.points then
+		return "Achievements: " .. tostring(c.points) .. " account points"
+	elseif c.category then
+		return "Achievements: complete " .. tostring(categoryName or c.category)
 	end
 	return "Achievement: " .. tostring(achievementName or c.achievement)
 end
@@ -254,7 +321,8 @@ function C.rows(cfg, owned, chosen, opts)
 		end
 		local row = {id = c.id, key = c.key, kind = c.kind, name = c.name, desc = c.desc, source = c.source,
 			price = c.source == "store" and c.price or nil, owned = C.owns(owned, c), selected = sel or nil,
-			how = C.how(c, opts.achievementName and opts.achievementName(c.achievement) or nil),
+			how = C.how(c, opts.achievementName and c.achievement and opts.achievementName(c.achievement) or nil,
+				opts.categoryName and c.category and opts.categoryName(c.category) or nil),
 			color = c.color, accent = c.accent}
 		if c.kind == "spellskin" then
 			local l = ix.lines[c.line]
@@ -313,7 +381,8 @@ end
 -- ---------------------------------------------------------------- checks
 -- opts.catalog = {fx = {[name] = true}, missile = {...}, vfx = {...}, vmissile = {...}} (names the client pair has;
 -- a missing type is not checked); opts.achievements = {[id] = name} (nil: not checked); opts.shop = shop_config.lua
--- (nil: not checked). Returns problems, warnings.
+-- (nil: not checked); opts.categories = {[category key] = true} and opts.maxPoints (the reward track; nil: not
+-- checked). Returns problems, warnings.
 function C.validate(cfg, opts)
 	opts = opts or {}
 	local problems, warnings = {}, {}
@@ -341,6 +410,7 @@ function C.validate(cfg, opts)
 		end
 	end
 	local ids, keys, spellLine, lines = {}, {}, {}, {}
+	local trackPoints, trackCats = {}, {} -- the reward track: milestones and categories taken
 	for _, l in ipairs(cfg.lines or {}) do
 		if lines[l.key] then
 			bad("line %s listed twice", l.key)
@@ -375,10 +445,35 @@ function C.validate(cfg, opts)
 		elseif c.source == "store" and (type(c.price) ~= "number" or c.price <= 0) then
 			bad("%s: a store cosmetic needs a price", w)
 		elseif c.source == "achievement" then
-			if type(c.achievement) ~= "string" then
+			local ways = (c.achievement ~= nil and 1 or 0) + (c.points ~= nil and 1 or 0) + (c.category ~= nil and 1 or 0)
+			if ways ~= 1 then
+				bad("%s: an achievement cosmetic needs one of achievement, points or category", w)
+			elseif c.points ~= nil then
+				-- the reward track: a whole number of account points, one cosmetic per milestone, reachable
+				if type(c.points) ~= "number" or c.points < 1 or c.points % 1 ~= 0 then
+					bad("%s: points must be a whole number above 0", w)
+				elseif trackPoints[c.points] then
+					bad("%s: milestone %d used twice", w, c.points)
+				elseif opts.maxPoints and c.points > opts.maxPoints then
+					bad("%s: milestone %d is above the %d achievement points that exist", w, c.points, opts.maxPoints)
+				end
+				trackPoints[c.points or -1] = true
+			elseif c.category ~= nil then
+				if type(c.category) ~= "string" then
+					bad("%s: category must be a category key", w)
+				elseif trackCats[c.category] then
+					bad("%s: category %s rewarded twice", w, c.category)
+				elseif opts.categories and not opts.categories[c.category] then
+					bad("%s: category %s does not exist", w, c.category)
+				end
+				trackCats[c.category] = true
+			elseif type(c.achievement) ~= "string" then
 				bad("%s: an achievement cosmetic needs the achievement id", w)
 			elseif opts.achievements and not opts.achievements[c.achievement] then
 				bad("%s: achievement %s does not exist", w, c.achievement)
+			end
+			if c.price ~= nil then
+				bad("%s: an achievement cosmetic has no price (never sold)", w)
 			end
 		end
 		-- never power: only the fields of the kind

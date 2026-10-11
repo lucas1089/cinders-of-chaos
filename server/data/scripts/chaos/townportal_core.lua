@@ -217,6 +217,9 @@ function K.blockReason(f)
 	if f.hideout then -- Hideouts (hideout.lua)
 		return "Leave your hideout through its exit portal."
 	end
+	if f.marches then -- the Scorched Marches (pvpzone.lua)
+		return "The Marches hold you: leave through a safe exit (your embers are banked there)."
+	end
 	if f.pzLocked then
 		return "You cannot open a town portal right after fighting other players."
 	end

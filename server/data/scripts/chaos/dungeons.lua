@@ -580,6 +580,9 @@ local function endRun(run, success, reason)
 		if ChaosSeasonJourney and ChaosSeasonJourney.emit then -- Seasonal Journey (season_journey.lua)
 			ChaosSeasonJourney.emit(p, "dungeon_clears", 1)
 		end
+		if ChaosCharms and ChaosCharms.onSource then -- a charm drop (charms.lua)
+			pcall(ChaosCharms.onSource, p, "dungeon", {difficulty = run.difficulty})
+		end
 
 		local progress = loadProgress(guid, run.dungeonId)
 		if run.difficulty >= progress.difficulty and progress.difficulty < cfg.maxDifficulty then

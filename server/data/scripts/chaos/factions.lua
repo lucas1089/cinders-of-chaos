@@ -397,6 +397,11 @@ function F.gain(player, key, amount, source, quiet)
 	if cm ~= 1 and (tonumber(amount) or 0) > 0 then
 		amount = math.floor(amount * cm + 0.5)
 	end
+	-- the Reputation of the placed charms (charms.lua), percent
+	local charmRep = ChaosCharms and ChaosCharms.repPct and tonumber(ChaosCharms.repPct(player)) or 0
+	if charmRep > 0 and (tonumber(amount) or 0) > 0 then
+		amount = math.floor(amount * (100 + charmRep) / 100 + 0.5)
+	end
 	local res = K.gain(cfg, idx, P.st, key, amount, {day = day(), week = week(), contract = source == "contract", now = now()})
 	local f = idx.byKey[key]
 	if not f then

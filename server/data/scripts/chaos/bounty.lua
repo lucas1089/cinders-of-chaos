@@ -373,6 +373,9 @@ local function creditKill(player, c, tierName)
 			paid and "" or " No reward (multi-client)."), c.look)
 		if paid then
 			if ChaosLeaderboard and ChaosLeaderboard.record then ChaosLeaderboard.record("bounty", player, 1) end -- leaderboard.lua
+			if ChaosCharms and ChaosCharms.onSource then -- a charm drop (charms.lua)
+				pcall(ChaosCharms.onSource, player, "bounty", {level = player:getLevel()})
+			end
 			st.weekDone = st.weekDone + 1
 			local week = B.week(os.time(), cfg)
 			if st.weekDone >= cfg.weeklyNeed and player:getStorageValue(Chaos.storage.bountyWeekBonus) ~= week then

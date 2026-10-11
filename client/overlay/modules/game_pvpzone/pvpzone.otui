@@ -1,0 +1,242 @@
+// The Scorched Marches (game_pvpzone): the window, the entry confirmation and the HUD. Styles only (pvpzone.lua creates
+// the widgets); theme styles from client_chaos_theme.
+
+PzText < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: left
+  text-auto-resize: true
+  phantom: true
+
+PzWrap < PzText
+  text-wrap: true
+  text-auto-resize: false
+  text-vertical-auto-resize: true
+
+PzHead < PzText
+  font: verdana-11px-rounded
+  color: #e8b84a
+  margin-top: 8
+
+// a list row with a button on the right (pledge, vendor)
+PzRow < ChaosPanelDark
+  height: 40
+  margin-bottom: 3
+
+  UIWidget
+    id: icon
+    size: 32 32
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+    phantom: true
+
+  PzText
+    id: title
+    anchors.top: parent.top
+    anchors.left: icon.right
+    margin-top: 4
+    margin-left: 8
+    color: #e8b84a
+
+  PzText
+    id: sub
+    anchors.top: title.bottom
+    anchors.left: title.left
+    anchors.right: button.left
+    margin-top: 2
+    margin-right: 6
+    text-auto-resize: false
+    height: 14
+    color: #8c8070
+
+  ChaosButton
+    id: button
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 6
+    size: 110 22
+
+PzWindow < ChaosMainWindow
+  id: pvpZoneWindow
+  size: 600 520
+  !text: tr('The Scorched Marches')
+  @onEscape: modules.game_pvpzone.hide()
+
+  ChaosPanelDark
+    id: frame
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: message.top
+    margin-bottom: 6
+
+  UIScrollArea
+    id: list
+    anchors.top: frame.top
+    anchors.left: frame.left
+    anchors.right: listScroll.left
+    anchors.bottom: frame.bottom
+    margin: 8
+    vertical-scrollbar: listScroll
+    layout:
+      type: verticalBox
+
+  ChaosScrollBar
+    id: listScroll
+    anchors.top: frame.top
+    anchors.right: frame.right
+    anchors.bottom: frame.bottom
+    margin: 4
+    step: 24
+    pixels-scroll: true
+
+  PzText
+    id: message
+    anchors.bottom: buttons.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: false
+    height: 16
+    margin-bottom: 6
+    color: #f6cf72
+
+  UIWidget
+    id: buttons
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 24
+
+    ChaosButton
+      id: enterButton
+      anchors.left: parent.left
+      anchors.top: parent.top
+      size: 160 24
+      @onClick: modules.game_pvpzone.askEnter()
+
+    ChaosButton
+      id: closeButton
+      anchors.right: parent.right
+      anchors.top: parent.top
+      size: 70 24
+      !text: tr('Close')
+      @onClick: modules.game_pvpzone.hide()
+
+// the entry confirmation: the rules and the risk, "I understand", Enter
+PzConfirm < ChaosMainWindow
+  id: pvpZoneConfirm
+  size: 460 360
+  !text: tr('Enter the Scorched Marches?')
+  @onEscape: modules.game_pvpzone.hideConfirm()
+
+  ChaosPanelDark
+    id: riskFrame
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: accept.top
+    margin-bottom: 8
+
+  PzWrap
+    id: risk
+    anchors.top: riskFrame.top
+    anchors.left: riskFrame.left
+    anchors.right: riskFrame.right
+    margin: 8
+    color: #e8dcc2
+
+  ChaosCheckBox
+    id: hcAccept
+    anchors.bottom: accept.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-bottom: 4
+    !text: tr('Hardcore: I accept that a defeat here may end my Hardcore run.')
+    visible: false
+
+  ChaosCheckBox
+    id: accept
+    anchors.bottom: buttons.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-bottom: 8
+    !text: tr('I understand: open PvP, and my carried embers can be lost.')
+
+  UIWidget
+    id: buttons
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 24
+
+    ChaosButton
+      id: confirmButton
+      anchors.left: parent.left
+      anchors.top: parent.top
+      size: 140 24
+      !text: tr('Enter')
+      @onClick: modules.game_pvpzone.confirmEnter()
+
+    ChaosButton
+      id: cancelButton
+      anchors.right: parent.right
+      anchors.top: parent.top
+      size: 80 24
+      !text: tr('Cancel')
+      @onClick: modules.game_pvpzone.hideConfirm()
+
+// the HUD (game root panel, top centre of the map; the battleground HUD's place, never both at once)
+PzHud < ChaosPanelDark
+  id: pvpZoneHud
+  width: 320
+  anchors.top: parent.top
+  anchors.horizontalCenter: gameMapPanel.horizontalCenter
+  margin-top: 44
+  padding: 8
+  focusable: false
+  layout:
+    type: verticalBox
+    fit-children: true
+
+  ChaosTitle
+    id: title
+    !text: tr('The Scorched Marches')
+    color: #ff7a2a
+    phantom: true
+
+  ChaosProgressBar
+    id: embers
+    height: 16
+    margin-top: 3
+    background-color: #e8a040
+    phantom: true
+
+  PzText
+    id: pledge
+    text-auto-resize: false
+    height: 15
+    margin-top: 3
+    text-align: center
+
+  PzText
+    id: contest
+    text-auto-resize: false
+    height: 15
+    margin-top: 2
+    text-align: center
+    font: verdana-11px-rounded
+
+  PzText
+    id: holder
+    text-auto-resize: false
+    height: 15
+    margin-top: 2
+    text-align: center
+
+  PzText
+    id: status
+    text-auto-resize: false
+    height: 15
+    margin-top: 2
+    text-align: center

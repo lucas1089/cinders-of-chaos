@@ -6,6 +6,8 @@
 --                            titlesOn, activeTitle}
 --                     list {first, last, rows = [{i, n, d, c, p, h, u, v, t, ti, r}]}   (sent in parts after state)
 --                     unlock {id, name, points, title}                                   (the toast comes on opcode 79)
+--                     track {ap, steps, cats}   the reward track (cosmetics_core.lua trackView): account point
+--                            milestones and category completion, each with its cosmetic; sent after state
 --   client -> server  open | get
 -- The top menu (Character > Achievements) calls toggle().
 
@@ -20,6 +22,7 @@ local selected = V.ALL -- category shown
 local categoryButtons = {}
 local updatingCombo = false
 local wantOpen = false
+local track            -- last reward track received (nil: an older server, the track panel stays hidden)
 
 local function send(action, data)
   local protocol = g_game.getProtocolGame()
@@ -62,9 +65,35 @@ local function createRow(r)
   return row
 end
 
+local function createTrackRow(r)
+  local row = g_ui.createWidget('AchievementRow', window.rowList)
+  row.name:setText(r.name)
+  row.points:setText(r.right)
+  row.desc:setText(r.desc)
+  row.extra:setText(r.extra)
+  row.progress:setPercent(r.percent)
+  row.progress:setText(r.progress)
+  row:setTooltip(r.tip)
+  if r.color then row.name:setColor(r.color) end -- a chat colour previews itself
+  if r.accent then row.extra:setBackgroundColor(r.accent) end -- a label accent behind the kind line
+  if r.done then
+    if not r.color then row.name:setColor('#f6cf72') end
+    row.points:setColor('#e8b84a')
+    row.progress:setBackgroundColor('#8a6a1c')
+    row:setBackgroundColor('#2a1e0c')
+  end
+  return row
+end
+
 local function showRows()
   if not window then return end
   window.rowList:destroyChildren()
+  if selected == V.TRACK then
+    local trackRows = V.trackRows(track)
+    for _, r in ipairs(trackRows) do createTrackRow(r) end
+    window.emptyText:setVisible(#trackRows == 0)
+    return
+  end
   local shown = V.filter(rows, selected, selected ~= V.RECENT)
   for _, r in ipairs(shown) do createRow(r) end
   window.emptyText:setVisible(#shown == 0)
@@ -81,9 +110,14 @@ local function buildCategories()
   categoryButtons = {}
   local entries = { { key = V.ALL, label = tr('All  %d/%d', tonumber(state.unlocked) or 0, tonumber(state.total) or 0) },
     { key = V.RECENT, label = tr('Recently unlocked') } }
+  if track then
+    entries[#entries + 1] = { key = V.TRACK, label = tr('Reward track  %d/%d', V.trackReached(track), #list(track.steps)),
+      tip = tr('Cosmetics earned by playing: account point milestones and complete categories. Never sold.') }
+  end
   for _, c in ipairs(list(state.categories)) do
+    local reward = V.categoryReward(track, c.key)
     entries[#entries + 1] = { key = c.key, label = V.categoryLabel(c),
-      tip = tr('%d of %d points', tonumber(c.points) or 0, tonumber(c.max) or 0) }
+      tip = tr('%d of %d points', tonumber(c.points) or 0, tonumber(c.max) or 0) .. (reward and ('\n' .. reward) or '') }
   end
   for _, e in ipairs(entries) do
     local b = g_ui.createWidget('AchievementCategory', window.categoryPanel)
@@ -121,6 +155,33 @@ local function buildTitles()
   updatingCombo = false
 end
 
+-- the reward track strip: a bar to the next milestone and one pip per milestone (tooltip = preview)
+local function showTrack()
+  if not window then return end
+  local panel = window.trackPanel
+  panel:setVisible(track ~= nil)
+  if not track then return end
+  panel.trackBar:setPercent(V.trackPercent(track))
+  panel.trackBar:setText(V.trackText(track))
+  local nxt = V.trackNext(track)
+  panel.trackBar:setTooltip(nxt and V.rewardTooltip(nxt, track.ap) or tr('Every milestone reached.'))
+  local pips = panel.trackPips
+  pips:destroyChildren()
+  local all = list(track.steps)
+  local width = math.floor(math.max(pips:getWidth(), 1) / math.max(#all, 1))
+  for _, s in ipairs(all) do
+    local pip = g_ui.createWidget('AchievementTrackPip', pips)
+    pip:setWidth(width)
+    pip:setText(V.group(tonumber(s.p) or 0))
+    if (tonumber(track.ap) or 0) >= (tonumber(s.p) or 0) then
+      pip:setColor('#f6cf72')
+    elseif s == nxt then
+      pip:setColor('#5cc8c0')
+    end
+    pip:setTooltip(V.rewardTooltip(s, track.ap))
+  end
+end
+
 local function showState()
   if not window or not state then return end
   window.summaryLabel:setText(V.summaryText(state))
@@ -134,6 +195,7 @@ local function showState()
     or tr('Recent: nothing yet. Level up, hunt tiered monsters, seal rifts...'))
   buildCategories()
   buildTitles()
+  showTrack()
 end
 
 -- ---------------------------------------------------------------- protocol
@@ -160,6 +222,13 @@ local function onExtendedOpcode(protocol, opcode, buffer)
         show()
       end
     end
+  elseif msg.action == 'track' then
+    track = data
+    if state then
+      buildCategories()
+      showTrack()
+    end
+    if selected == V.TRACK then showRows() end
   elseif msg.action == 'unlock' then
     if window and window:isVisible() then send('get') end
   end
@@ -194,13 +263,14 @@ end
 
 local function onGameEnd()
   hide()
-  state, rows, pending, selected = nil, {}, {}, V.ALL
+  state, rows, pending, selected, track = nil, {}, {}, V.ALL, nil
 end
 
 function init()
   window = g_ui.displayUI('achievements')
   window:hide()
   window.titleCombo.onOptionChange = onTitleChange
+  window.trackPanel.trackPips.onGeometryChange = function() if track then showTrack() end end
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
   connect(g_game, { onGameEnd = onGameEnd })
 end
@@ -212,5 +282,5 @@ function terminate()
     window:destroy()
     window = nil
   end
-  state, rows, pending, categoryButtons = nil, {}, {}, {}
+  state, rows, pending, categoryButtons, track = nil, {}, {}, {}, nil
 end

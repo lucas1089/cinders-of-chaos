@@ -100,6 +100,13 @@ function M.refresh(player, force)
 		setMods, setSig = ChaosItemSets.refresh(player)
 		sig = sig .. "|" .. tostring(setSig or "")
 	end
+	-- charms (charms.lua): the placed charms' gear-catalogue numbers (already under the charm caps), added like the
+	-- set bonuses before the gear caps
+	if ChaosCharms and ChaosCharms.extra then
+		local charmMods, charmSig = ChaosCharms.extra(player)
+		sig = sig .. "|c" .. tostring(charmSig or "")
+		setMods = ChaosCharms.merge(setMods, charmMods)
+	end
 	if not force and sig == state.sig then
 		return cache[id]
 	end
