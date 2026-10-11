@@ -13,7 +13,8 @@
  *      of them) and recorded
  *   4. the Cinders of Chaos plugin (plugins/chaos): install.sql, enabled
  *   5. the layout: CHAOS_LAYOUT (default "chaos", our child of the purple "void" layout)
- *   6. the menu entries and the editable Rules page, once each (never overwritten)
+ *   6. the menu entries and the editable Rules page, once each (never overwritten); ZnoteX's entries of the pages
+ *      this server does not use (shop, points, creatures, spells, forum) switched off once
  *   7. theme options from the environment (Discord URL)
  */
 if (PHP_SAPI !== 'cli') {
@@ -192,6 +193,36 @@ $out .= "menu: Donate\n";
 $adminEntry = db()->fetchOne('SELECT `id` FROM `znote_menu` WHERE `location` = ? AND `url` = ? AND `parent_id` = 0 LIMIT 1;', ['main', 'admin/index.php']);
 $menu('Player Reports', 'page.php?plugin=chaos&p=reports', 'fa-flag', 17, is_array($adminEntry) ? (int)$adminEntry['id'] : 0, 'admin');
 $out .= "menu: Player Reports (staff only)\n";
+
+// ZnoteX's own entries that lead to pages this server does not use (README "Not used on this server"): the shop and
+// its points, the creature and spell lists (both in the client) and the forum. Switched off once per install, on a
+// fresh install and at the next run on an existing one; the marker keeps an entry the owner switches back on in
+// Admin Panel > Menus on. A parent left with no entry switched on (Library) goes too.
+if (setting('chaos:stock_menu_hidden', '') !== '1') {
+	$hidden = 0;
+	$parents = array();
+	foreach (array('shop.php', 'buypoints.php', 'creatures.php', 'spells.php', 'forum.php') as $url) {
+		foreach ((array)db()->fetchAll('SELECT `id`, `parent_id`, `active` FROM `znote_menu` WHERE `location` = ? AND `url` = ?;', ['main', $url]) as $row) {
+			if ((int)$row['active'] === 1) {
+				db()->execute('UPDATE `znote_menu` SET `active` = 0 WHERE `id` = ?;', [(int)$row['id']]);
+				$hidden++;
+			}
+			if ((int)$row['parent_id'] > 0) {
+				$parents[(int)$row['parent_id']] = true;
+			}
+		}
+	}
+	foreach (array_keys($parents) as $pid) {
+		$on = db()->fetchOne('SELECT COUNT(*) AS `n` FROM `znote_menu` WHERE `parent_id` = ? AND `active` = 1;', [$pid]);
+		$parent = db()->fetchOne('SELECT `active` FROM `znote_menu` WHERE `id` = ? AND `parent_id` = 0;', [$pid]);
+		if (is_array($on) && (int)$on['n'] === 0 && is_array($parent) && (int)$parent['active'] === 1) {
+			db()->execute('UPDATE `znote_menu` SET `active` = 0 WHERE `id` = ?;', [$pid]);
+			$hidden++;
+		}
+	}
+	setting_set('chaos:stock_menu_hidden', '1');
+	$out .= "menu: $hidden stock entries switched off (Shop, Buy points, Library > Creatures / Spells, Community > Forum)\n";
+}
 
 // the Rules page: an editable page (Admin Panel > Pages), added once and never overwritten
 if (znote_table_exists('znote_pages')) {

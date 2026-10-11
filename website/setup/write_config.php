@@ -163,6 +163,13 @@ $out = "<?php\n"
 	)) . ";\n\n"
 	. "// Outfit images are drawn by an external service; off until the owner picks one he trusts.\n"
 	. "\$config['show_outfits'] = array('shop' => false, 'highscores' => false, 'characterprofile' => false, 'onlinelist' => false, 'imageServer' => '');\n\n"
+	. "// Not used on this server (README \"Not used on this server\"): the store is in the game and donations are the Donate\n"
+	. "// page, so no website shop, points or house purchase with points; no forum. Their pages lead to plugins/chaos/pages/notused.php.\n"
+	. "\$config['shop']['enabled'] = false;\n"
+	. "\$config['buypoints_enabled'] = false;\n"
+	. "\$config['houseConfig']['shopPoints']['enabled'] = false;\n"
+	. "\$config['forum']['enabled'] = false;\n"
+	. "\$config['forum']['guildboard'] = false;\n\n"
 	. "// Cinders of Chaos (plugins/chaos)\n"
 	. "\$config['chaos'] = " . export(array(
 		'server_data' => $serverData,

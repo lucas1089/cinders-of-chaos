@@ -347,3 +347,18 @@ html.sn-anim .sh-logo-img { animation: chaosLogo 7s ease-in-out infinite; }
 .chaos-community__text { position: relative; display: block; text-align: center; line-height: 24px; font-size: 13px; color: #fff3d6; text-shadow: 0 1px 2px #000; }
 .chaos-community__buffs, .chaos-community__week ul, .chaos-community__news ul { margin: 8px 0 0; padding-left: 18px; line-height: 1.7; }
 .chaos-community__top { margin-top: 10px; }
+
+/* Leaderboards: the class tabs of a board with byClass (the Cinderheart fastest kills), "All classes" first */
+.chaos-tabs--classes { margin-top: 2px; padding-top: 8px; border-top: 1px solid rgba(87,77,82,.35); }
+.chaos-tabs--classes .chaos-tab { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 11px; }
+.chaos-tabs--classes .chaos-tab img { width: 18px; height: 18px; }
+
+/* Stock ZnoteX leftovers that do not apply here (website/README.md "Not used on this server"): the premium badge and
+   the points / premium figures of the account header, the shop link of the footer, the premium "Account Status" row
+   of the character page, and the staff widget's link into the forum, which is off. */
+.void-acc-badges .void-acc-badge:nth-child(2),
+.void-acc-stats,
+.sh-footer a[href="shop.php"],
+.cp-info-list > .cp-info-row:last-child,
+.sh-sidebar a[href^="forum.php"] { display: none !important; }
+.chaos-notused__links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }

@@ -17,6 +17,8 @@ return array(
 	'downloads.os_step_settings' => 'Start the Cinders of Chaos client.',
 	'downloads.os_step_browse' => 'Log in with your account name and password.',
 	'downloads.os_step_apply' => 'Pick your character and enter the world.',
+	// no premium accounts here: the stock "You have a free account." line of the account page says nothing
+	'acc.free_account' => '',
 	'createchar.vocation' => 'Class',
 	'createchar.male' => 'Male',
 	'createchar.female' => 'Female',

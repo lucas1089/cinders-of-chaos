@@ -14,6 +14,8 @@
  *  - Optional starter depot boxes for new characters (the base server's
  *    ADD_DEPOT_BOXES_NEW_PLAYERS snippet), on the character.created hook. Off by
  *    default ($config['chaos']['depot_boxes']): !season join needs an empty depot.
+ *  - The stock pages this server does not use (shop, points, creatures, spells,
+ *    forum) send the visitor to pages/notused.php.
  */
 
 if (!isset($config)) {
@@ -28,6 +30,18 @@ require_once __DIR__ . '/lib.php';
 require_once __DIR__ . '/referral.php';
 // the community goal and the week's world modifiers (read only: the front page block and pages/community.php)
 require_once __DIR__ . '/community_lib.php';
+
+// ---------------------------------------------------------------- pages not used on this server
+// The stock shop, points, creature / spell library and forum pages (chaos_unused_pages) lead to the short note of
+// pages/notused.php instead: the store is in the game, the forum is off. Only the site's own root scripts; the admin
+// panel is untouched. setup/chaos_setup.php hides their menu entries, setup/write_config.php switches them off.
+$chaosScript = (string)($_SERVER['SCRIPT_FILENAME'] ?? '');
+$chaosWhat = chaos_unused_pages()[strtolower(basename($chaosScript))] ?? null;
+if ($chaosWhat !== null && PHP_SAPI !== 'cli' && realpath(dirname($chaosScript)) === realpath(__DIR__ . '/../..')) {
+	header('Location: page.php?plugin=chaos&p=notused&what=' . $chaosWhat, true, 302);
+	exit;
+}
+unset($chaosScript, $chaosWhat);
 
 // ---------------------------------------------------------------- class lock
 // Session user, not $user_data: init.php loads the plugins before it reads the account.

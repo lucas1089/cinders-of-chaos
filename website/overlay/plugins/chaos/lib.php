@@ -76,6 +76,19 @@ function chaos_class_lines(): array {
 	);
 }
 
+/**
+ * Stock ZnoteX pages this server does not use (website/README.md "Not used on this server"): root script => what
+ * pages/notused.php explains. plugin.php sends a request for one of them there. The store is in the game and
+ * donations are the Donate page; creatures and spells are in the client; there is no forum.
+ */
+function chaos_unused_pages(): array {
+	return array(
+		'shop.php' => 'store', 'buypoints.php' => 'store', 'payment.php' => 'store',
+		'creatures.php' => 'creatures', 'spells.php' => 'spells',
+		'forum.php' => 'forum', 'forum_search.php' => 'forum',
+	);
+}
+
 /** Vocation ids retired by the class rework (class_migration.lua): old id => new id. */
 function chaos_retired_vocations(): array {
 	return array(2 => 1, 6 => 10, 9 => 1);
@@ -308,6 +321,11 @@ function chaos_lua_entries(string $body): array {
 	return $out;
 }
 
+/** A `key = true|false` field of a Lua entry (missing or anything else: false). */
+function chaos_lua_bool(string $entry, string $key): bool {
+	return (bool)preg_match('/\b' . preg_quote($key, '/') . '\s*=\s*true\b/', $entry);
+}
+
 /** A `key = "string"` or `key = number` field of a Lua entry. */
 function chaos_lua_field(string $entry, string $key) {
 	if (preg_match('/\b' . preg_quote($key, '/') . '\s*=\s*"((?:[^"\\\\]|\\\\.)*)"/', $entry, $m)) {
@@ -352,6 +370,8 @@ function chaos_leaderboard_boards(): array {
 				// mode "min": the lowest value ranks first (fastest kills); format "time": seconds shown as m:ss
 				'mode'   => (string)(chaos_lua_field($entry, 'mode') ?? 'add'),
 				'format' => (string)(chaos_lua_field($entry, 'format') ?? ''),
+				// byClass: class tabs, as in the client (the Cinderheart fastest kills)
+				'byClass' => chaos_lua_bool($entry, 'byClass'),
 			);
 		}
 		if ($read) {
@@ -390,18 +410,43 @@ function chaos_leaderboard_value(array $def, $value): string {
 }
 
 /** Top rows of a weekly board (staff left out, ties: who got there first, then the lower id). $ascending: the lowest
- * value first (boards of mode "min", fastest times; LB.rank of leaderboard_core.lua). */
-function chaos_leaderboard_rows(string $board, int $week, int $limit = 20, bool $ascending = false): array {
+ * value first (boards of mode "min", fastest times; LB.rank of leaderboard_core.lua). $vocations: only characters of
+ * these class ids (a class tab, LB.filterClass), ranked again from 1; empty = every class. */
+function chaos_leaderboard_rows(string $board, int $week, int $limit = 20, bool $ascending = false, array $vocations = array()): array {
 	if (!chaos_table_exists('chaos_leaderboard')) {
 		return array();
 	}
+	$vocations = array_values(array_map('intval', $vocations));
+	$class = $vocations ? ' AND `p`.`vocation` IN (' . implode(',', array_fill(0, count($vocations), '?')) . ')' : '';
 	return chaos_rows('
 		SELECT `p`.`name`, `p`.`vocation`, `p`.`level`, `l`.`value`, `l`.`count`
 		FROM `chaos_leaderboard` `l`
 		JOIN `players` `p` ON `p`.`id` = `l`.`player_id`
-		WHERE `l`.`board` = ? AND `l`.`week` = ? AND `l`.`value` > 0 AND `p`.`group_id` < ?' . chaos_antibot_hold_sql() . '
+		WHERE `l`.`board` = ? AND `l`.`week` = ? AND `l`.`value` > 0 AND `p`.`group_id` < ?' . $class . chaos_antibot_hold_sql() . '
 		ORDER BY `l`.`value` ' . ($ascending ? 'ASC' : 'DESC') . ', `l`.`updated_at` ASC, `l`.`player_id` ASC
-		LIMIT ?;', [$board, $week, (int)chaos_cfg('staff_group', 4), $limit]);
+		LIMIT ?;', array_merge([$board, $week, (int)chaos_cfg('staff_group', 4)], $vocations, [$limit]));
+}
+
+/**
+ * The class tabs of a board with byClass, grouped as the game does (LB.classGroups of leaderboard.lua, the client's
+ * game_leaderboard): one tab per base class with its ascensions, ordered by the base class id, named after the base
+ * class. key (the base id) => {name, icon, ids}. The retired ids of the class rework count with the class they move to.
+ * The page puts "All classes" first.
+ */
+function chaos_leaderboard_class_groups(): array {
+	$lines = chaos_class_lines();
+	ksort($lines);
+	$groups = array();
+	foreach ($lines as $base => $line) {
+		$groups[$base] = array('name' => $line['name'], 'icon' => $line['icon'], 'ids' => chaos_line_ids($base));
+	}
+	foreach (chaos_retired_vocations() as $old => $new) {
+		$base = chaos_base_of($new);
+		if ($base !== null && isset($groups[$base])) {
+			$groups[$base]['ids'][] = $old;
+		}
+	}
+	return $groups;
 }
 
 /** The title holders of the most recent scored week: [week, rows]. */

@@ -27,7 +27,9 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `payments.env.example` | the donation settings (the credentials stay outside the repository) |
 | `tests/chaos_pay_test.php`, `tests/chaos_donation_page_test.php` | the donation flow and page (php-cli with pdo_sqlite, a mocked provider) |
 | `overlay/plugins/chaos/pages/reports.php`, `reports_lib.php` | staff only (the admin accounts of `CHAOS_ADMIN_ACCOUNTS`): player reports from the game (filters, close / note / reopen with a CSRF token) and the anti-bot log (server/README.md "Anti-bot and player reports"); the leaderboards leave out accounts held for an anti-bot review (`chaos_antibot_hold_sql`, only when the server's `holdLeaderboards` wrote holds) |
-| `tests/chaos_leaderboards_page_test.php` | `php website/tests/chaos_leaderboards_page_test.php`: the Leaderboards page, fastest-time boards ranked lowest first and shown as m:ss (php-cli with pdo_sqlite) |
+| `tests/chaos_leaderboards_page_test.php` | `php website/tests/chaos_leaderboards_page_test.php`: the Leaderboards page, fastest-time boards ranked lowest first and shown as m:ss, the class tabs of the byClass boards (php-cli with pdo_sqlite) |
+| `overlay/plugins/chaos/pages/notused.php` | the short note shown instead of the stock pages this server does not use (see "Not used on this server") |
+| `tests/chaos_notused_page_test.php` | `php website/tests/chaos_notused_page_test.php`: which stock pages are sent away and the note for each (php-cli only) |
 | `tests/chaos_reports_page_test.php` | `php website/tests/chaos_reports_page_test.php`: the reports page (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/community_lib.php`, `pages/community.php` | the community goal and the week's world modifiers (read only, from the game's `chaos_community_*` tables): a block on the front page and `page.php?plugin=chaos&p=community` (menu The World > Community) |
 | `tests/chaos_community_page_test.php` | `php website/tests/chaos_community_page_test.php`: the block and the page (php-cli with pdo_sqlite) |
@@ -74,7 +76,9 @@ What it does, in order:
    enabled (its `install.sql` creates `chaos_class_unlocks` if the server has not yet), the layout switched on, the
    menu entries "The World" (Server Info, Patch Notes, Leaderboards, Seasons, Rules, Community, Guild Wars) and "Donate" (the donation page
    `page.php?plugin=chaos&p=coins`), "Player Reports" (staff only, under ZnoteX's Admin Panel entry) and the Rules page
-   added once.
+   added once. ZnoteX's own entries of the pages we do not use (Shop, Buy points, Library > Creatures / Spells,
+   Community > Forum, and Library, then empty) are switched off once, on a fresh install and at the next run on an
+   existing one (marker `chaos:stock_menu_hidden` in `znote_config`).
    Menu entries and the Rules page are never overwritten, so the owner's edits in the admin panel stay.
 
 Settings (`site.env.example` has them all): `CHAOS_SITE_DIR`, `CHAOS_SITE_URL`, `CHAOS_ADMIN_ACCOUNTS` (account names
@@ -120,7 +124,11 @@ Local test (what was used to check it): `php -S 127.0.0.1:8095 -t "$CHAOS_SITE_D
   `chaos_leaderboard_titles` (the holders of the last scored week) and the players table (Class Ladder). Board names
   and titles come from the server's `leaderboard_config.lua` when `CHAOS_SERVER_DATA` points at it; boards of mode `min`
   (the fastest Cinderheart kills and Sepulchre clears) rank the lowest value first and `format = "time"` shows m:ss, as
-  in the client.
+  in the client. A board with `byClass = true` (the three Cinderheart boards) has class tabs as in the client
+  (`&class=<base class id>`): "All classes" first, then one tab per base class with its ascensions (the retired ids
+  2, 6, 9 with the class they move to), ordered by the base class id like `LB.classGroups`, each ranked again from 1.
+  The site filters by the character's class now (`players.vocation`); the game counts the class at the kill, which
+  differs only for a character that ascended during the week.
 - **Patch notes** are the server's `data/patchnotes/*.md`, parsed with the rules of `patchnotes_core.lua` (title,
   `Date:`, intro, the New / Changes / Fixes / Balance sections and their colours, bullets, sub-bullets, bold leads,
   comments, the same limits), newest first.
@@ -137,6 +145,24 @@ Local test (what was used to check it): `php -S 127.0.0.1:8095 -t "$CHAOS_SITE_D
 
 All plugin queries are prepared statements through ZnoteX's `db()`, none is built from request input, and every value
 printed is escaped.
+
+## Not used on this server
+
+ZnoteX ships pages this server has no use for. They stay in the checkout (nothing of ZnoteX is deleted) but are off:
+
+- **Shop, Buy points** (and `payment.php`): the store and Chaos Coins are in the game; donations are the Donate page.
+  **Library > Creatures, Spells**: the client has the Bestiary and the Spellbook. **Forum** (and `forum_search.php`):
+  there is none; the stock forum also printed PHP warnings when empty. Houses stay.
+- Their menu entries are switched off by `setup/chaos_setup.php` (see "Install", step 5).
+- `setup/write_config.php` sets `$config['shop']['enabled']`, `buypoints_enabled`, `forum.enabled` and
+  `forum.guildboard` to false, and `houseConfig.shopPoints` (buying a house with points) off.
+- A direct link to one of them (`chaos_unused_pages()` in `lib.php`) is sent by the plugin to
+  `page.php?plugin=chaos&p=notused&what=store|creatures|spells|forum`, a short note in our layout with the right links.
+  The admin panel is not touched.
+- Premium and points: there are none. `layouts/chaos/assets/css/chaos.css` hides the account header's premium badge
+  and its points / premium figures, the footer's Shop link, the character page's "Account Status: Premium inactive"
+  row and the staff widget's forum link; `locale/en.php` empties "You have a free account." on the account page.
+  Recheck these selectors when the Void or ZnoteX pin moves.
 
 ## Passwords
 

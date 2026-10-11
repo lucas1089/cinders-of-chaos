@@ -3,7 +3,8 @@
  * Leaderboards: the weekly boards (chaos_leaderboard), the title holders of
  * the last scored week (chaos_leaderboard_titles) and the all-time Class
  * Ladder (players, grouped by class line). Read-only.
- * page.php?plugin=chaos&p=leaderboards[&board=<key>]
+ * page.php?plugin=chaos&p=leaderboards[&board=<key>][&class=<base class id>|all]
+ * A board with byClass (leaderboard_config.lua) has class tabs, "All classes" first, as in the client.
  */
 if (!isset($config)) { http_response_code(403); die('Direct access denied.'); }
 $GLOBALS['page_title'] = 'Leaderboards';
@@ -13,13 +14,23 @@ $board = (string)($_GET['board'] ?? '');
 if (!isset($boards[$board])) {
 	$board = (string)array_key_first($boards);
 }
-$week = chaos_week_key(time(), 6);
-$rows = chaos_leaderboard_rows($board, $week, 20, ($boards[$board]['mode'] ?? '') === 'min');
-list($titleWeek, $titleRows) = chaos_leaderboard_titles();
 $def = $boards[$board];
+// class tabs (byClass): the class group asked for, anything else = every class (LB.sendBoard)
+$classGroups = !empty($def['byClass']) ? chaos_leaderboard_class_groups() : array();
+$classKey = (string)($_GET['class'] ?? 'all');
+if (!ctype_digit($classKey) || !isset($classGroups[(int)$classKey])) {
+	$classKey = 'all';
+}
+$classIds = $classKey === 'all' ? array() : $classGroups[(int)$classKey]['ids'];
+$week = chaos_week_key(time(), 6);
+$rows = chaos_leaderboard_rows($board, $week, 20, ($def['mode'] ?? '') === 'min', $classIds);
+list($titleWeek, $titleRows) = chaos_leaderboard_titles();
 $fallenMarks = chaos_fallen_marks(); // season modes: the skull of a fallen Hardcore character on the Class Ladder
-$url = static function (string $key): string {
-	return 'page.php?plugin=chaos&p=leaderboards&board=' . rawurlencode($key);
+// the class tab stays picked when moving to another board with class tabs, as in the client
+$url = static function (string $key, ?string $class = null) use ($boards, $classKey): string {
+	$class = $class ?? $classKey;
+	$u = 'page.php?plugin=chaos&p=leaderboards&board=' . rawurlencode($key);
+	return (!empty($boards[$key]['byClass']) && $class !== 'all') ? $u . '&class=' . rawurlencode($class) : $u;
 };
 ?>
 <div class="chaos-page">
@@ -33,13 +44,22 @@ $url = static function (string $key): string {
 			<?php endforeach; ?>
 		</nav>
 
-		<h2 class="chaos-subheading"><?= chaos_h($def['name']) ?> <small>week of <?= chaos_h(chaos_week_label($week)) ?></small></h2>
+		<?php if ($classGroups): ?>
+			<nav class="chaos-tabs chaos-tabs--classes" aria-label="Classes">
+				<a class="chaos-tab<?= $classKey === 'all' ? ' is-active' : '' ?>" href="<?= chaos_h($url($board, 'all')) ?>">All classes</a>
+				<?php foreach ($classGroups as $base => $g): ?>
+					<a class="chaos-tab<?= $classKey === (string)$base ? ' is-active' : '' ?>" href="<?= chaos_h($url($board, (string)$base)) ?>" title="<?= chaos_h(implode(', ', array_map('chaos_class_name', chaos_line_ids($base)))) ?>"><img src="<?= chaos_h(znote_plugin_asset('chaos', 'img/class-' . $g['icon'] . '.png')) ?>" alt="" width="18" height="18"> <?= chaos_h($g['name']) ?></a>
+				<?php endforeach; ?>
+			</nav>
+		<?php endif; ?>
+
+		<h2 class="chaos-subheading"><?= chaos_h($def['name']) ?><?php if ($classKey !== 'all'): ?> &middot; <?= chaos_h($classGroups[(int)$classKey]['name']) ?><?php endif; ?> <small>week of <?= chaos_h(chaos_week_label($week)) ?></small></h2>
 		<?php if ($def['info'] !== ''): ?><p class="chaos-muted"><?= chaos_h($def['info']) ?><?php if ($def['title'] !== ''): ?> Title: <span class="chaos-gold"><?= chaos_h($def['title']) ?></span>.<?php endif; ?></p><?php endif; ?>
 		<table class="chaos-table">
 			<thead><tr><th>#</th><th>Name</th><th>Class</th><th class="num"><?= chaos_h($def['value']) ?></th><?php if ($def['count'] !== ''): ?><th class="num"><?= chaos_h($def['count']) ?></th><?php endif; ?></tr></thead>
 			<tbody>
 			<?php if (!$rows): ?>
-				<tr><td colspan="5" class="chaos-empty">No scores yet this week. Be the first.</td></tr>
+				<tr><td colspan="5" class="chaos-empty"><?= $classKey === 'all' ? 'No scores yet this week. Be the first.' : chaos_h('No ' . $classGroups[(int)$classKey]['name'] . ' on this board yet this week. Be the first.') ?></td></tr>
 			<?php else: foreach ($rows as $i => $r): ?>
 				<tr class="<?= $i < 3 ? 'chaos-top chaos-top-' . ($i + 1) : '' ?>">
 					<td><?= $i + 1 ?></td>
