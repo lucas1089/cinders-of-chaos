@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
 """Turn the base server's stock config.lua into the production config of a public Cinders of Chaos server (idempotent).
 
-usage: python3 -I server/tools/prod_config.py SERVER_DIR --ip HOST [--name NAME] [--motd TEXT] [--max-players N]
+usage: python3 -I server/tools/prod_config.py SERVER_DIR --public-host HOST [--name NAME] [--motd TEXT] [--max-players N]
                                               [--pvp pvp|no-pvp|pvp-enforced] [--save-time HH:MM] [--owner NAME]
                                               [--email ADDRESS] [--url URL] [--location TEXT]
                                               [--client-url URL] [--client-builds LIST] [--client-manifest PATH]
-                                              [--client-staff-ips LIST] [--dry-run]
+                                              [--client-staff-ips LIST] [--proxy-trusted LIST]
+                                              [--proxy-required yes|no] [--dry-run]
 
 SERVER_DIR is the folder with config.lua (and data/globalevents/globalevents.xml for --save-time). Every setting below is
 written as `key = value  -- Chaos production (server/tools/prod_config.py)`; a second run with the same options changes
 nothing, a run with other options updates the same lines. Settings that are not listed stay as the base server has them.
 
 What it sets, and why (docs/LAUNCH.md has the full checklist):
-  ip                      the address players connect to (public IP or DNS name); the login server hands it out in
-                          the character list, so 127.0.0.1 works only on the server machine itself
+  ip                      --public-host (or --ip, the same): the address players connect to for the game world. The
+                          login server hands it out in the character list as text and the client resolves it itself,
+                          so a DNS name works and a DNS change needs no restart. Behind gateways (docs/LAUNCH.md
+                          "Gateways and DDoS") it is the gateways' public name (e.g. play.example.com, DNS round-robin
+                          over the gateways), never this machine's own IP; 127.0.0.1 works only on the server machine
   loginProtocolPort 7171, gameProtocolPort 7172, statusProtocolPort 7171
                           the stock ports; open exactly these (plus the login-screen HTTP port) in the firewall
   serverName, motd        what the character list and the login box show (the base server ships its own name)
@@ -69,8 +73,16 @@ What it sets, and why (docs/LAUNCH.md has the full checklist):
                           min_package then refuses older builds too (default: none); --client-staff-ips the IPs from
                           which staff accounts may use another client (default: none). Without CHAOS_CLIENT_KEY in the
                           environment every player is kicked at the handshake (the console says so at startup)
+  proxyProtocolTrusted, proxyProtocolRequired
+                          the gateways in front of the server (engine patch 0025, README "Gateways and the PROXY
+                          protocol"). --proxy-trusted: the gateways' IPv4 addresses (a.b.c.d or a.b.c.d/nn, comma
+                          separated); a connection from one must start with a PROXY header and the engine takes the
+                          player's real address from it (bans, 2 characters per IP, staff IPs, logs). "" turns it off.
+                          --proxy-required yes: every other address is refused (127.0.0.0/8 excepted: the watchdog and
+                          the health check), so the real server cannot be played directly even if its firewall is
+                          wrong. Not given: the value already in config.lua is kept (off on a first run)
 
-Exit status 1 (nothing written) when --ip is missing or the map is a cropped test map.
+Exit status 1 (nothing written) when --public-host is missing or the map is a cropped test map.
 """
 import os
 import re
@@ -90,9 +102,33 @@ def lua_string(text):
     return '"' + text.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n') + '"'
 
 
-def settings(opts):
+IPV4_RANGE = re.compile(r'^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}(/([12]?\d|3[0-2]))?$')
+YES = ('yes', 'true', 'on', '1')
+NO = ('no', 'false', 'off', '0')
+
+
+def proxy_list(text):
+    """The --proxy-trusted value as the engine reads it ("a, b" -> "a,b"), or None when an entry is not IPv4 / CIDR."""
+    items = [x for x in re.split(r'[\s,;]+', text.strip()) if x]
+    if not all(IPV4_RANGE.match(x) for x in items):
+        return None
+    return ','.join(items)
+
+
+def current(text, key):
+    """The value of `key` in config.lua (the expression after =, without a trailing comment), or None."""
+    m = re.search(r'^[ \t]*%s[ \t]*=[ \t]*(.*?)[ \t]*(--.*)?$' % re.escape(key), text, re.M)
+    return m.group(1) if m else None
+
+
+def settings(opts, text=''):
+    host = opts.get('--public-host', opts.get('--ip'))
+    trusted = (lua_string(proxy_list(opts['--proxy-trusted'])) if '--proxy-trusted' in opts
+               else current(text, 'proxyProtocolTrusted') or '""')
+    required = (('true' if opts['--proxy-required'].lower() in YES else 'false') if '--proxy-required' in opts
+                else current(text, 'proxyProtocolRequired') or 'false')
     s = [
-        ('ip', lua_string(opts['--ip'])),
+        ('ip', lua_string(host)),
         ('loginProtocolPort', '7171'),
         ('gameProtocolPort', '7172'),
         ('statusProtocolPort', '7171'),
@@ -134,6 +170,8 @@ def settings(opts):
         ('clientGuardBuilds', lua_string(opts.get('--client-builds', ''))),
         ('clientGuardManifest', lua_string(opts.get('--client-manifest', ''))),
         ('clientGuardStaffIps', lua_string(opts.get('--client-staff-ips', ''))),
+        ('proxyProtocolTrusted', trusted),
+        ('proxyProtocolRequired', required),
     ]
     for key, env, default in ENV_DB:
         expr = 'os.getenv("%s")' % env
@@ -177,13 +215,17 @@ def main(argv):
         else:
             pos.append(a)
         i += 1
-    if len(pos) != 1 or '--ip' not in opts:
+    if len(pos) != 1 or not (opts.get('--public-host') or opts.get('--ip')):
         print(__doc__)
         return 1
     if opts.get('--pvp', 'pvp') not in ('pvp', 'no-pvp', 'pvp-enforced'):
         sys.exit('--pvp must be pvp, no-pvp or pvp-enforced')
     if '--client-builds' in opts and not re.match(r'^\s*(\d{1,5}\s*(,\s*\d{1,5}\s*)*)?$', opts['--client-builds']):
         sys.exit('--client-builds must be build numbers separated by commas, e.g. 4,5')
+    if '--proxy-trusted' in opts and proxy_list(opts['--proxy-trusted']) is None:
+        sys.exit('--proxy-trusted must be IPv4 addresses or a.b.c.d/nn ranges separated by commas (or "" for off)')
+    if '--proxy-required' in opts and opts['--proxy-required'].lower() not in YES + NO:
+        sys.exit('--proxy-required must be yes or no')
     if '--save-time' in opts and not re.match(r'^([01]\d|2[0-3]):[0-5]\d$', opts['--save-time']):
         sys.exit('--save-time must be HH:MM')
     server = pos[0]
@@ -195,7 +237,7 @@ def main(argv):
         return 1
     new = text
     changed = []
-    for key, value in settings(opts):
+    for key, value in settings(opts, text):
         after = apply(new, key, value)
         if after != new:
             changed.append(key)
@@ -211,6 +253,9 @@ def main(argv):
           'CHAOS_DB_NAME (server/deploy/chaos.env.example).')
     print('The client guard key is read from CHAOS_CLIENT_KEY (the same value as the GitHub secret CHAOS_CLIENT_KEY; '
           'server/README.md "Client guard").')
+    trusted = current(new, 'proxyProtocolTrusted') or '""'
+    if current(new, 'proxyProtocolRequired') == 'true' and trusted in ('""', "''"):
+        print('WARNING: proxyProtocolRequired = true with no proxyProtocolTrusted gateway: only 127.0.0.1 can connect.')
     return 0
 
 

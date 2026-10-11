@@ -101,6 +101,9 @@ server/
                                       (see "Spawn density and respawn")
   src-patches/0024-equip-on-use.patch   engine: a use of equipment without an action of its own puts it on or takes it
                                       off; the equip hotkey runs the Lua move events (see "Right-click equips")
+  src-patches/0025-proxy-protocol.patch   engine: the PROXY protocol (v2 / v1) from trusted gateways gives each
+                                      connection the player's real IP; config proxyProtocolTrusted / proxyProtocolRequired
+                                      (see "Gateways and the PROXY protocol"; deploy/gateway/, deploy/firewall/)
     rightclick_equip.lua  rightclick_equip_core.lua  rightclick_equip_config.lua (the client option and the multi-use
                                       weapon list, opcode 188, see "Right-click equips")
     respawn.lua  respawn_core.lua  respawn_config.lua (dynamic respawn: faster where several players hunt together)
@@ -2708,6 +2711,8 @@ their script repeat the check in `ChaosSpell.canAttack`). A second character can
 dungeon run or the tower. Gamemasters and up are exempt; `Game.setStorageValue(7100990, 1)` switches the blocks off
 (not the login limit). Tested with two live clients on one IP: spells did 0 damage to the other character, the tower
 refused entry, a third login was refused.
+The IP is the player's own one behind the gateways too: engine patch 0025 takes it from the gateway's PROXY header
+(see "Gateways and the PROXY protocol"; tested: 5 bots from one address through HAProxy, 2 got in).
 
 ## Weapon styles (`weapon_styles.lua`, `tools/two_handed.py`)
 
@@ -9768,3 +9773,84 @@ manifest's `min_package` refused, two keys (rotation) both accepted, key from co
 from a staff IP let in and a normal account from that IP refused, enforce without a key fails closed with the startup
 error. Log mode: the stock-id client and the wrong-key client play, every check logged. `loadtest.py`: 6 bots for 40 s in
 log mode (stock id) and in enforce with `--dev-key`, all logged in, no disconnects. Not run: the Windows workflows.
+
+## Gateways and the PROXY protocol (engine `src-patches/0025-proxy-protocol.patch`, `deploy/gateway/`, `deploy/firewall/`)
+
+Owner decision: "put game proxies in front of the game server, and add per-IP connection limits." Players connect to
+2 or 3 DDoS-protected **gateways** (HAProxy in TCP mode) that forward 7171 and 7172 to the real server with a PROXY
+protocol v2 header; the real server's IP is never published and its firewall takes the game ports from the gateways
+only. Owner steps, DNS, limits and how to replace a gateway: docs/LAUNCH.md "Gateways and DDoS".
+**Why the engine needs a patch:** behind a proxy every connection comes from a gateway. The engine uses the connection's
+IP (`Connection::getIP`) for bans, its connection throttle (`Ban::acceptConnection`: 5 quick reconnects block the IP for
+3 s), the status query limit, `player:getIp()` (the 2-characters-per-IP rule of `multiclient.lua`, mentors), the client
+guard's `clientGuardStaffIps`, `players.lastip` and the logs. Without the header, all of that would see 2 or 3 addresses.
+**Config (config.lua, `tools/prod_config.py --proxy-trusted LIST --proxy-required yes|no`):**
+- `proxyProtocolTrusted = "1.2.3.4,5.6.7.0/24"`: the gateways, IPv4 or a.b.c.d/nn, separated by commas or spaces. Empty
+  (the default): off, every connection is direct as before. A bad entry is named at startup and ignored. Read again after
+  `/reload config`.
+- `proxyProtocolRequired = false`: true refuses every address that is not a trusted gateway at accept, except
+  127.0.0.0/8 (`chaos_watchdog.py` and `chaos_health.py` ask the status protocol on 127.0.0.1). Then the real server
+  cannot be played directly even when its firewall is wrong. True with an empty list: only 127.0.0.0/8 can connect (the
+  console says so at startup).
+**What the engine does** (`src/proxyprotocol.cpp`, `connection.cpp`, `server.cpp`):
+- a connection from a trusted address must start with a PROXY header, v2 or v1 (`PROXY TCP4 ...`), within 5 s. It is
+  read in steps (8 bytes, then exactly what the parser asks for), so none of the client's own bytes are taken. Its source
+  address becomes the connection's IP. Only then do the ban and throttle checks run (on the real IP) and the protocol
+  start, so the game port's challenge goes out after the header.
+- LOCAL (HAProxy's health checks), UNSPEC and v1 UNKNOWN keep the gateway's own address. A gateway's own address skips
+  the per-IP throttle: the gateways limit their clients themselves, and each client is throttled by its own IP.
+- IPv6 clients are refused: the engine stores IPv4 addresses only (an IPv4-mapped IPv6 address counts as IPv4). Publish
+  A records only.
+- a trusted address without a valid header is closed: `[PROXY protocol] no valid PROXY header from a trusted gateway,
+  closed: <ip> (<why>)`.
+- from any other address a PROXY header is never believed: a first packet that starts with `\r\n` or `PR` (lengths of
+  2573 and 21072 bytes, which no real first packet has) is closed: `[PROXY protocol] PROXY header from an address that is
+  not in proxyProtocolTrusted, refused: <ip>`. With `proxyProtocolRequired`: `[PROXY protocol] direct connection refused
+  (proxyProtocolRequired): <ip>`.
+- each kind of console line at most once every 10 s, with the number left out, so a flood cannot fill the log.
+- startup: `>> PROXY protocol off ...` or `>> PROXY protocol from N trusted gateway entries (...); direct connections
+  allowed | refused (proxyProtocolRequired), except from 127.0.0.0/8`.
+**Gateway** (`deploy/gateway/setup_gateway.sh BACKEND_IP [--admin-ips LIST|any]`, idempotent, Debian / Ubuntu): installs
+HAProxy and nftables and writes `/etc/haproxy/haproxy.cfg` (from `haproxy.cfg.template`), `/etc/nftables.d/chaos-gateway.nft`
+(from `gateway.nft.template`) and `/etc/sysctl.d/90-chaos-gateway.conf` (SYN cookies, backlogs, conntrack size), each
+checked (`haproxy -c`, `nft -c`) before use. HAProxy: per-IP stick-tables (open connections and new connections per 10 s
+for each port, a silent drop for floods), 5 s for the first bytes on 7171 and 8090 (slow connections), 90 s idle
+timeout (the game pings every few seconds), TCP health checks of both backend ports, tcplog to syslog. 8090 (the
+login-screen services) is forwarded too, without a header, so the client names only the gateways. nftables: drop invalid
+and malformed SYNs, per-IP new-connection rate and open-connection cap on the game ports.
+**Backend** (`deploy/firewall/setup_backend_firewall.sh GATEWAY_IPS --admin-ips LIST|any [--services LIST|any|off]
+[--extra-ips LIST] [--web-ports LIST]`, idempotent): table `inet chaos_backend` from `backend.nft.template`; 7171 / 7172
+from the gateways (at most 300 new connections/s each) and the `--extra-ips` only; 8090 open with a per-IP rate or from
+a list; SSH from the admin addresses; everything else, MariaDB included, closed.
+**World address:** the login server sends `ip` (config.lua) as text in the character list and the client resolves it,
+so it is the gateways' DNS name (`prod_config.py --public-host`), and a DNS change needs no restart. The gateways listen
+on the same ports as `loginProtocolPort` / `gameProtocolPort`, because the client is told the game port.
+**Not covered:** a client-side list of gateway hosts (try the next one when a gateway does not answer) needs a client
+patch: proposal only. The base client's DNS handling (does it try every address of a round-robin answer?) is not in this
+repository and was not checked.
+**Tested** (engine 0001-0025 built on Linux from the `windows-assets` base; the patches apply cleanly in order to a fresh
+base; the full map; MariaDB on a private port; HAProxy 2.8 in front with the rendered gateway config, `send-proxy-v2`,
+backend source address as the only trusted one; `tools/loadtest.py` through it):
+- 20 bots from 20 loopback addresses logged in through the proxy, walked and talked for 40 s, no disconnects;
+  `players.lastip` and `clientguard.log` hold each bot's own address, not the proxy's;
+- 5 bots from one address through the proxy: 2 logged in, 3 refused (the 2-per-IP rule counts the real IP);
+- `clientGuardMode = "enforce"`, `clientGuardStaffIps` = one bot's address, two staff accounts: the one from the staff
+  address got in (account and game login), the other was refused;
+- `proxyProtocolRequired = true`: direct status and game connections from a non-loopback address closed at accept,
+  127.0.0.1 status (the watchdog's own check) answered, status and game through the proxy worked;
+- a forged v2 and v1 header from an untrusted address (login, status and game port): closed, never used; a trusted
+  address without a header: closed; v1 header and v2 LOCAL from the trusted address: status answered; a header cut off
+  after a few bytes: closed after 5 s;
+- the status protocol through the proxy answered; its 5 s limit now applies per real IP;
+- HAProxy: 50 fast connections from one address on 7171: 42 refused by HAProxy, 8 passed (open cap), the flooder stayed
+  refused while another address was served; 7172: 40 of 50 refused; health checks logged `DOWN` while the server
+  restarted and `UP` after; 8090 forwarded;
+- nftables rules (in a network namespace, never on the host): the gateway table, 50 parallel SYNs from one address:
+  20 passed (burst), 30 dropped; a held-connection cap of 24; the backend table: game ports from the gateway and the extra
+  address only, 8090 open, 3306 and SSH from others dropped; both load twice without error (idempotent);
+- `tools/proxyprotocol_test.cpp` (CI builds it from the patch's `proxyprotocol.cpp` with the stand-ins in
+  `tools/proxyprotocol_stubs/`; also run under AddressSanitizer): v1, v2, LOCAL, IPv6 mapped and not, TLVs, a header
+  read in the engine's steps never takes a byte of the client's data, every malformed case, the trusted list with
+  ranges and bad entries, loopback, required. CI also renders and checks both setup scripts with `--dry-run`.
+Not run: `setup_gateway.sh` and `setup_backend_firewall.sh` for real (apt, systemd, files under /etc; their dry runs,
+which render and check every file, were run), a gateway on a real VPS with real DDoS filtering, the Windows build.

@@ -89,6 +89,14 @@ jobs:
       - name: Server health alerts (state changes, error-line rate limit, daily summary)
         run: python3 -I server/tools/chaos_health_test.py
 
+      - name: Incremental save, pure parts (C++; header from server src-patch 0026)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaossave\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0026-incremental-save.patch > "$d/chaossave.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaossave_test.cpp -o "$d/chaossave_test"
+          "$d/chaossave_test"
+
       - name: Backup shell scripts parse
         run: |
           bash -n server/tools/backup.sh
@@ -119,6 +127,23 @@ jobs:
           patch -p1 -d "$d" < "$d/h.patch"
           g++ -std=c++17 -I "$d/src/client" client/tools/chaosguard_test.cpp -lcrypto -o "$d/chaosguard_test"
           "$d/chaosguard_test"
+
+      - name: PROXY protocol parser (C++; source from server src-patch 0025)
+        run: |
+          d=$(mktemp -d)
+          awk '/^--- a\/src\/proxyprotocol\.(cpp|h)/{p=1} p&&/^--- a\//&&!/proxyprotocol\./{p=0} p' \
+            server/src-patches/0025-proxy-protocol.patch > "$d/h.patch"
+          patch -p1 -d "$d" < "$d/h.patch"
+          g++ -std=c++17 -Wall -I server/tools/proxyprotocol_stubs -I "$d/src" "$d/src/proxyprotocol.cpp" \
+            server/tools/proxyprotocol_test.cpp -o "$d/proxyprotocol_test"
+          "$d/proxyprotocol_test"
+
+      - name: Gateway and backend firewall scripts (render and check, no changes)
+        run: |
+          bash -n server/deploy/gateway/setup_gateway.sh
+          bash -n server/deploy/firewall/setup_backend_firewall.sh
+          server/deploy/gateway/setup_gateway.sh 203.0.113.10 --dry-run > /dev/null
+          server/deploy/firewall/setup_backend_firewall.sh 203.0.113.10,203.0.113.11 --admin-ips any --dry-run > /dev/null
 
       - name: Unique item specs are up to date with chaos_items.xml
         run: |

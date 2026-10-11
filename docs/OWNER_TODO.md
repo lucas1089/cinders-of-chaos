@@ -26,6 +26,8 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 
 - [ ] **Domain.** The site address must be `https://...` (`CHAOS_SITE_URL`).
 - [ ] **Hosting with DDoS protection** for the game server, the website and the database.
+- [ ] **2 or 3 gateway VPS** with DDoS filtering in front of the game server, a DNS name with one A record per
+  gateway, and a backend IP that was never public. Steps: [LAUNCH.md](LAUNCH.md) "Gateways and DDoS".
 - [ ] **SMTP** for website mail: account recovery and confirmations.
 - [ ] **reCAPTCHA keys:** `CHAOS_RECAPTCHA_SITE_KEY` and `CHAOS_RECAPTCHA_SECRET` in `site.env`.
 - [ ] **Discord invite link** for the website and the client.

@@ -1,0 +1,83 @@
+#!/usr/sbin/nft -f
+# Cinders of Chaos: firewall of the real game server behind the gateways (docs/LAUNCH.md "Gateways and DDoS").
+# Template: setup_backend_firewall.sh fills in the address sets, the ports and the limits and writes the result to
+# /etc/nftables.d/chaos-backend.nft (included from /etc/nftables.conf, so it comes back after a reboot). Loading it again
+# replaces the whole table: it is idempotent. Check: sudo nft list table inet chaos_backend
+#
+#   * the game ports (login / status and game): from the gateways only, plus the extra sources (a status checker or a
+#     website on another machine), never from anyone else. The engine refuses the rest too when
+#     proxyProtocolRequired = true (the second lock);
+#   * second layer of per-IP limits: a gateway may open at most GATEWAY_RATE new connections a second (all its
+#     players together; HAProxy limits each player first), an extra source EXTRA_RATE;
+#   * the login-screen services (clientservices.py) and the website ports: open to everyone, rate limited per IP, or
+#     only from the listed sources (a reverse proxy / CDN in front);
+#   * SSH: from the admin addresses (or from anywhere, rate limited);
+#   * MariaDB (3306) and everything else: never from outside (MariaDB listens on 127.0.0.1 anyway).
+
+table inet chaos_backend
+delete table inet chaos_backend
+
+table inet chaos_backend {
+	set gateways {
+		type ipv4_addr
+		flags interval
+		@GATEWAY_ELEMENTS@
+	}
+
+	set extra_sources {
+		type ipv4_addr
+		flags interval
+		@EXTRA_ELEMENTS@
+	}
+
+	set gw_rate4 {
+		type ipv4_addr
+		size 1024
+		flags dynamic,timeout
+		timeout 1m
+	}
+
+	set extra_rate4 {
+		type ipv4_addr
+		size 1024
+		flags dynamic,timeout
+		timeout 1m
+	}
+
+	set svc_rate4 {
+		type ipv4_addr
+		size 262144
+		flags dynamic,timeout
+		timeout 1m
+	}
+
+	set web_rate4 {
+		type ipv4_addr
+		size 262144
+		flags dynamic,timeout
+		timeout 1m
+	}
+
+	chain input {
+		type filter hook input priority filter; policy drop;
+
+		iif "lo" accept
+		ct state invalid drop
+		ct state established,related accept
+		tcp flags & (fin | syn | rst | ack) != syn ct state new drop
+
+		ip protocol icmp icmp type echo-request limit rate 5/second burst 10 packets accept
+		ip6 nexthdr icmpv6 icmpv6 type { echo-request, nd-neighbor-solicit, nd-neighbor-advert, nd-router-advert } accept
+
+		@SSH_RULE@
+
+		# the game: gateways and the extra sources only
+		tcp dport { @GAME_PORTS@ } ip saddr @gateways ct state new update @gw_rate4 { ip saddr limit rate over @GATEWAY_RATE@/second burst @GATEWAY_BURST@ packets } counter drop
+		tcp dport { @GAME_PORTS@ } ip saddr @gateways ct state new counter accept
+		tcp dport { @GAME_PORTS@ } ip saddr @extra_sources ct state new update @extra_rate4 { ip saddr limit rate over @EXTRA_RATE@/second burst @EXTRA_BURST@ packets } counter drop
+		tcp dport { @GAME_PORTS@ } ip saddr @extra_sources ct state new counter accept
+		tcp dport { @GAME_PORTS@ } counter drop
+
+		@WEB_RULES@
+	}
+}

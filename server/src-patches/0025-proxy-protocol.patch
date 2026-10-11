@@ -1,0 +1,762 @@
+# The PROXY protocol from trusted gateways (server/README.md "Gateways and the PROXY protocol", docs/LAUNCH.md "Gateways
+# and DDoS"). Owner decision: "put game proxies in front of the game server, and add per-IP connection limits."
+# Players connect to TCP proxies (server/deploy/gateway/: HAProxy with send-proxy-v2) that forward 7171 and 7172 here;
+# the real server's address is never published. The engine must still see each player's own address: bans, the
+# per-IP connection throttle, the status query limit, the 2-characters-per-IP rule (player:getIp(), multiclient.lua),
+# the client guard's staff IPs and every log use Connection::getIP.
+#   * config.lua: proxyProtocolTrusted = "a.b.c.d,e.f.g.h/nn" (the gateways; IPv4 or a CIDR range; empty: off, every
+#     connection is direct as before) and proxyProtocolRequired = false. Re-read after /reload config.
+#   * ServicePort::onAccept: a connection from a trusted address must start with a PROXY header, v2 (binary) or v1
+#     (text). Connection::readProxyHeader reads it in steps (8 bytes, then exactly what the parser asks for), never a
+#     byte of the client's own data; 5 s to deliver it. Its source address becomes Connection::getIP. Only then do the
+#     ban / throttle checks (on the real address) and the protocol start (ServicePort::onConnectionReady, the old
+#     tail of onAccept), so the game port's challenge goes out after the header. LOCAL headers (a gateway's health
+#     check), UNSPEC and v1 UNKNOWN keep the gateway's address; a gateway's own address skips the per-IP throttle (the
+#     gateways limit their clients themselves). IPv6 clients are refused (the engine stores IPv4 only; an IPv4-mapped
+#     IPv6 address is taken as IPv4). A trusted address without a valid header is closed with a console line.
+#   * from any other address a PROXY header is never believed: a first packet that starts with "\r\n" or "PR" (lengths
+#     no real first packet has) is refused with a console line.
+#   * proxyProtocolRequired = true: every address that is not a trusted gateway is refused at accept, except
+#     127.0.0.0/8 (the watchdog and the health check ask the status protocol on 127.0.0.1). The real server then cannot
+#     be played directly even when its firewall is wrong.
+#   * console lines are limited to one per kind every 10 s (a flood cannot fill the log); startup prints the mode.
+# New src/proxyprotocol.cpp / .h (listed in src/CMakeLists.txt; a Visual Studio project needs them added by hand).
+# Apply in the server source root after 0001-0024: patch -p1 < 0025-proxy-protocol.patch, then rebuild.
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -57,6 +57,7 @@ set(tfs_SRC
+ 	${CMAKE_CURRENT_LIST_DIR}/protocollogin.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/protocolold.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/protocolstatus.cpp
++	${CMAKE_CURRENT_LIST_DIR}/proxyprotocol.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/quests.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/raids.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/rsa.cpp
+--- a/src/configmanager.cpp
++++ b/src/configmanager.cpp
+@@ -330,6 +330,12 @@ bool ConfigManager::load()
+ 	string[CLIENT_GUARD_LOG_FILE] = getGlobalString(L, "clientGuardLogFile", "data/logs/clientguard.log");
+ 	integer[CLIENT_GUARD_TIMEOUT] = getGlobalNumber(L, "clientGuardTimeout", 10);
+ 	boolean[CLIENT_GUARD_ALLOW_DEV_KEY] = getGlobalBoolean(L, "clientGuardAllowDevKey", false);
++	// Chaos (patch 0025): the gateways in front of the server (src/proxyprotocol.h, server/README.md "Gateways and the PROXY
++	// protocol"). proxyProtocolTrusted: their addresses (a.b.c.d or a.b.c.d/nn, comma separated); a connection from one
++	// must start with a PROXY header (v2 or v1) and gets the client address from it. Empty: off, as before.
++	// proxyProtocolRequired = true: every other address is refused (127.0.0.0/8 excepted: the watchdog, health checks)
++	string[PROXY_PROTOCOL_TRUSTED] = getGlobalString(L, "proxyProtocolTrusted", "");
++	boolean[PROXY_PROTOCOL_REQUIRED] = getGlobalBoolean(L, "proxyProtocolRequired", false);
+ 
+ 	expStages = loadXMLStages();
+ 	if (expStages.empty()) {
+--- a/src/configmanager.h
++++ b/src/configmanager.h
+@@ -56,6 +56,7 @@ class ConfigManager
+ 			PLAYER_CONSOLE_LOGS,
+ 			ARMOR_PERCENT, // Chaos (patch 0016): percent armour for players
+ 			CLIENT_GUARD_ALLOW_DEV_KEY, // Chaos (patch 0021): client guard
++			PROXY_PROTOCOL_REQUIRED, // Chaos (patch 0025): PROXY protocol from the gateways
+ 
+ 			LAST_BOOLEAN_CONFIG /* this must be the last one */
+ 		};
+@@ -87,6 +88,7 @@ class ConfigManager
+ 			CLIENT_GUARD_DOWNLOAD_URL,
+ 			CLIENT_GUARD_STAFF_IPS,
+ 			CLIENT_GUARD_LOG_FILE,
++			PROXY_PROTOCOL_TRUSTED, // Chaos (patch 0025): PROXY protocol from the gateways
+ 
+ 			LAST_STRING_CONFIG /* this must be the last one */
+ 		};
+--- a/src/connection.cpp
++++ b/src/connection.cpp
+@@ -7,6 +7,7 @@
+ #include "connection.h"
+ #include "outputmessage.h"
+ #include "protocol.h"
++#include "proxyprotocol.h"
+ #include "scheduler.h"
+ #include "server.h"
+ 
+@@ -137,6 +138,14 @@ void Connection::parseHeader(const boost::system::error_code& error)
+ 		packetsSent = 0;
+ 	}
+ 
++	// Chaos (patch 0025): a PROXY header where a first packet should be came from an address that is not a trusted
++	// gateway (a gateway's header was read before); it is refused, never believed
++	if (!receivedFirst && ProxyProtocol::looksLikeHeader(msg.getBuffer())) {
++		ProxyProtocol::logRefused("PROXY header from an address that is not in proxyProtocolTrusted, refused", getIP());
++		close(FORCE_CLOSE);
++		return;
++	}
++
+ 	uint16_t size = msg.getLengthHeader();
+ 	if (size == 0 || size >= NETWORKMESSAGE_MAXSIZE - 16) {
+ 		close(FORCE_CLOSE);
+@@ -251,9 +260,77 @@ void Connection::internalSend(const OutputMessage_ptr& msg)
+ 	}
+ }
+ 
++// Chaos (patch 0025): the PROXY header of a trusted gateway, read in steps (8 bytes, then what ProxyProtocol::parse asks
++// for) so that not one byte of the client's own data is taken; then the protocol starts as for a direct connection
++void Connection::readProxyHeader()
++{
++	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
++	try {
++		readTimer.expires_from_now(std::chrono::seconds(ProxyProtocol::HEADER_TIMEOUT));
++		readTimer.async_wait(std::bind(&Connection::handleTimeout, std::weak_ptr<Connection>(shared_from_this()), std::placeholders::_1));
++
++		boost::asio::async_read(socket, boost::asio::buffer(msg.getBuffer(), ProxyProtocol::FIRST_READ),
++		                        std::bind(&Connection::onProxyRead, shared_from_this(), std::placeholders::_1,
++		                                  ProxyProtocol::FIRST_READ));
++	} catch (boost::system::system_error& e) {
++		std::cout << "[Network error - Connection::readProxyHeader] " << e.what() << std::endl;
++		close(FORCE_CLOSE);
++	}
++}
++
++void Connection::onProxyRead(const boost::system::error_code& error, size_t have)
++{
++	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
++	readTimer.cancel();
++
++	if (error) {
++		close(FORCE_CLOSE);
++		return;
++	} else if (closed) {
++		return;
++	}
++
++	ProxyProtocol::Header header;
++	switch (ProxyProtocol::parse(msg.getBuffer(), have, header)) {
++		case ProxyProtocol::Parse::NeedMore: {
++			if (header.need <= have || header.need > ProxyProtocol::MAX_HEADER) {
++				close(FORCE_CLOSE);
++				return;
++			}
++			try {
++				readTimer.expires_from_now(std::chrono::seconds(ProxyProtocol::HEADER_TIMEOUT));
++				readTimer.async_wait(std::bind(&Connection::handleTimeout, std::weak_ptr<Connection>(shared_from_this()),
++				                               std::placeholders::_1));
++				boost::asio::async_read(socket, boost::asio::buffer(msg.getBuffer() + have, header.need - have),
++				                        std::bind(&Connection::onProxyRead, shared_from_this(), std::placeholders::_1,
++				                                  header.need));
++			} catch (boost::system::system_error& e) {
++				std::cout << "[Network error - Connection::onProxyRead] " << e.what() << std::endl;
++				close(FORCE_CLOSE);
++			}
++			return;
++		}
++
++		case ProxyProtocol::Parse::Invalid:
++			ProxyProtocol::logRefused("no valid PROXY header from a trusted gateway, closed", getIP(), header.error);
++			close(FORCE_CLOSE);
++			return;
++
++		case ProxyProtocol::Parse::Ok:
++			if (!header.local) {
++				proxiedIP = header.ip;
++			}
++			service_port->onConnectionReady(shared_from_this());
++			return;
++	}
++}
++
+ uint32_t Connection::getIP()
+ {
+ 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
++	if (proxiedIP != 0) {
++		return proxiedIP;
++	}
+ 
+ 	// IP-address is expressed in network byte order
+ 	boost::system::error_code error;
+--- a/src/connection.h
++++ b/src/connection.h
+@@ -70,11 +70,16 @@ class Connection : public std::enable_shared_from_this<Connection>
+ 
+ 		void send(const OutputMessage_ptr& msg);
+ 
++		// the client's address: from the PROXY header of a trusted gateway (patch 0025), else the socket's peer
+ 		uint32_t getIP();
++		// Chaos (patch 0025): a connection from a trusted gateway reads its PROXY header first, then the service port
++		// starts the protocol (ServicePort::onConnectionReady)
++		void readProxyHeader();
+ 
+ 	private:
+ 		void parseHeader(const boost::system::error_code& error);
+ 		void parsePacket(const boost::system::error_code& error);
++		void onProxyRead(const boost::system::error_code& error, size_t have);
+ 
+ 		void onWriteOperation(const boost::system::error_code& error);
+ 
+@@ -107,6 +112,7 @@ class Connection : public std::enable_shared_from_this<Connection>
+ 
+ 		bool closed = false;
+ 		bool receivedFirst = false;
++		uint32_t proxiedIP = 0; // Chaos (patch 0025): network byte order, 0 = none
+ };
+ 
+ #endif
+--- a/src/otserv.cpp
++++ b/src/otserv.cpp
+@@ -11,6 +11,7 @@
+ 
+ #include "configmanager.h"
+ #include "clientguard.h"
++#include "proxyprotocol.h"
+ #include "scriptmanager.h"
+ #include "rsa.h"
+ #include "protocolold.h"
+@@ -186,6 +187,7 @@ void mainLoader(int, char*[], ServiceManager* services)
+ 	}
+ 
+ 	ClientGuard::startupReport(); // Chaos (patch 0021): client guard mode, keys and builds
++	ProxyProtocol::startupReport(); // Chaos (patch 0025): trusted gateways
+ 
+ 	std::cout << ">> Establishing database connection..." << std::flush;
+ 
+--- a/src/proxyprotocol.cpp
++++ b/src/proxyprotocol.cpp
+@@ -0,0 +1,382 @@
++// Cinders of Chaos engine patch 0025 (server/src-patches/0025-proxy-protocol.patch). See proxyprotocol.h.
++// Part of the engine, under its GPL-2.0 License (LICENSE in the server source root).
++
++#include "otpch.h"
++
++#include "proxyprotocol.h"
++
++#include "configmanager.h"
++#include "tools.h"
++
++#include <algorithm>
++#include <chrono>
++#include <cstring>
++#include <iostream>
++#include <map>
++#include <mutex>
++#include <vector>
++
++extern ConfigManager g_config;
++
++namespace ProxyProtocol {
++
++namespace {
++
++const uint8_t V2_SIGNATURE[12] = {0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51, 0x55, 0x49, 0x54, 0x0A};
++
++uint32_t fromBytes(const uint8_t* b)
++{
++	uint32_t ip;
++	std::memcpy(&ip, b, 4); // the bytes in wire order: network byte order, as Connection::getIP returns it
++	return ip;
++}
++
++uint32_t hostOrder(uint32_t networkIP)
++{
++	uint8_t b[4];
++	std::memcpy(b, &networkIP, 4);
++	return (static_cast<uint32_t>(b[0]) << 24) | (static_cast<uint32_t>(b[1]) << 16) | (static_cast<uint32_t>(b[2]) << 8) | b[3];
++}
++
++bool parsePort(const std::string& text, uint16_t& port)
++{
++	if (text.empty() || text.size() > 5) {
++		return false;
++	}
++	uint32_t v = 0;
++	for (char c : text) {
++		if (c < '0' || c > '9') {
++			return false;
++		}
++		v = v * 10 + static_cast<uint32_t>(c - '0');
++	}
++	if (v > 65535) {
++		return false;
++	}
++	port = static_cast<uint16_t>(v);
++	return true;
++}
++
++std::vector<std::string> split(const std::string& s, char sep)
++{
++	std::vector<std::string> out;
++	std::string cur;
++	for (char c : s) {
++		if (c == sep) {
++			out.push_back(cur);
++			cur.clear();
++		} else {
++			cur.push_back(c);
++		}
++	}
++	out.push_back(cur);
++	return out;
++}
++
++Parse fail(Header& out, const char* error)
++{
++	out.error = error;
++	return Parse::Invalid;
++}
++
++Parse parseV2(const uint8_t* data, size_t size, Header& out)
++{
++	if (size < V2_HEADER) {
++		out.need = V2_HEADER;
++		return Parse::NeedMore;
++	}
++	if (std::memcmp(data, V2_SIGNATURE, sizeof(V2_SIGNATURE)) != 0) {
++		return fail(out, "bad v2 signature");
++	}
++	const uint8_t verCmd = data[12];
++	if ((verCmd >> 4) != 2) {
++		return fail(out, "unknown v2 version");
++	}
++	const uint8_t command = verCmd & 0x0F;
++	if (command > 1) {
++		return fail(out, "unknown v2 command");
++	}
++	const size_t length = (static_cast<size_t>(data[14]) << 8) | data[15];
++	if (length > V2_MAX_PAYLOAD) {
++		return fail(out, "v2 header too long");
++	}
++	if (size < V2_HEADER + length) {
++		out.need = V2_HEADER + length;
++		return Parse::NeedMore;
++	}
++	out.need = V2_HEADER + length;
++	const uint8_t family = data[13];
++	if (command == 0 || family == 0x00) { // LOCAL (health check) or UNSPEC: the connection's own addresses
++		out.local = true;
++		return Parse::Ok;
++	}
++	const uint8_t* a = data + V2_HEADER;
++	if (family == 0x11) { // TCP over IPv4: src 4, dst 4, src port 2, dst port 2
++		if (length < 12) {
++			return fail(out, "v2 IPv4 block too short");
++		}
++		out.ip = fromBytes(a);
++		out.port = static_cast<uint16_t>((a[8] << 8) | a[9]);
++	} else if (family == 0x21) { // TCP over IPv6: src 16, dst 16, src port 2, dst port 2
++		if (length < 36) {
++			return fail(out, "v2 IPv6 block too short");
++		}
++		static const uint8_t MAPPED[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF};
++		if (std::memcmp(a, MAPPED, sizeof(MAPPED)) != 0) {
++			return fail(out, "IPv6 client (the engine is IPv4 only; publish A records only)");
++		}
++		out.ip = fromBytes(a + 12);
++		out.port = static_cast<uint16_t>((a[32] << 8) | a[33]);
++	} else {
++		return fail(out, "unsupported v2 address family");
++	}
++	if (out.ip == 0) {
++		return fail(out, "source address 0.0.0.0");
++	}
++	return Parse::Ok;
++}
++
++Parse parseV1(const uint8_t* data, size_t size, Header& out)
++{
++	size_t cr = 0;
++	while (cr < size && data[cr] != '\r') {
++		if (data[cr] < 0x20 || data[cr] > 0x7E) {
++			return fail(out, "v1 line is not text");
++		}
++		++cr;
++	}
++	if (cr == size || cr + 1 == size) {
++		if (size >= V1_MAX) {
++			return fail(out, "v1 line too long");
++		}
++		out.need = cr == size ? std::max<size_t>(size + 1, 15) : size + 1;
++		return Parse::NeedMore;
++	}
++	if (data[cr + 1] != '\n') {
++		return fail(out, "v1 line without CRLF");
++	}
++	out.need = cr + 2;
++	const std::vector<std::string> parts = split(std::string(reinterpret_cast<const char*>(data) + 6, cr - 6), ' ');
++	if (parts[0] == "UNKNOWN") {
++		out.local = true;
++		return Parse::Ok;
++	}
++	if (parts.size() != 5 || (parts[0] != "TCP4" && parts[0] != "TCP6")) {
++		return fail(out, "malformed v1 line");
++	}
++	std::string source = parts[1];
++	if (parts[0] == "TCP6") {
++		std::string lower = source;
++		for (char& c : lower) {
++			if (c >= 'A' && c <= 'Z') {
++				c = static_cast<char>(c - 'A' + 'a');
++			}
++		}
++		if (lower.compare(0, 7, "::ffff:") != 0) {
++			return fail(out, "IPv6 client (the engine is IPv4 only; publish A records only)");
++		}
++		source = source.substr(7);
++	}
++	uint32_t prefix = 32;
++	uint16_t dstPort = 0;
++	if (!parseIPv4(source, out.ip, prefix) || prefix != 32 || source.find('/') != std::string::npos ||
++	        !parsePort(parts[3], out.port) || !parsePort(parts[4], dstPort)) {
++		return fail(out, "malformed v1 address");
++	}
++	if (out.ip == 0) {
++		return fail(out, "source address 0.0.0.0");
++	}
++	return Parse::Ok;
++}
++
++struct Range {
++	uint32_t net;  // host byte order
++	uint32_t mask;
++};
++
++std::mutex cacheLock;
++std::string cachedText;
++bool cacheValid = false;
++std::vector<Range> ranges;
++std::vector<std::string> badEntries;
++
++void refresh()
++{
++	// caller holds cacheLock
++	const std::string& text = g_config.getString(ConfigManager::PROXY_PROTOCOL_TRUSTED);
++	if (cacheValid && text == cachedText) {
++		return;
++	}
++	cachedText = text;
++	cacheValid = true;
++	ranges.clear();
++	badEntries.clear();
++	std::string token;
++	auto flush = [&]() {
++		if (token.empty()) {
++			return;
++		}
++		uint32_t ip = 0, prefix = 32;
++		if (parseIPv4(token, ip, prefix)) {
++			const uint32_t mask = prefix == 0 ? 0 : (0xFFFFFFFFu << (32 - prefix));
++			ranges.push_back({hostOrder(ip) & mask, mask});
++		} else {
++			badEntries.push_back(token);
++		}
++		token.clear();
++	};
++	for (char c : text) {
++		if (c == ',' || c == ' ' || c == ';' || c == '\t' || c == '\n' || c == '\r') {
++			flush();
++		} else {
++			token.push_back(c);
++		}
++	}
++	flush();
++}
++
++} // namespace
++
++Parse parse(const uint8_t* data, size_t size, Header& out)
++{
++	out = Header();
++	if (size < FIRST_READ) {
++		out.need = FIRST_READ;
++		return Parse::NeedMore;
++	}
++	if (std::memcmp(data, V2_SIGNATURE, FIRST_READ) == 0) {
++		return parseV2(data, size, out);
++	}
++	if (std::memcmp(data, "PROXY ", 6) == 0) {
++		return parseV1(data, size, out);
++	}
++	return fail(out, "no PROXY header");
++}
++
++bool looksLikeHeader(const uint8_t* lengthBytes)
++{
++	return (lengthBytes[0] == 0x0D && lengthBytes[1] == 0x0A) || (lengthBytes[0] == 'P' && lengthBytes[1] == 'R');
++}
++
++bool parseIPv4(const std::string& text, uint32_t& ip, uint32_t& prefix)
++{
++	std::string address = text;
++	prefix = 32;
++	const size_t slash = text.find('/');
++	if (slash != std::string::npos) {
++		address = text.substr(0, slash);
++		const std::string bits = text.substr(slash + 1);
++		if (bits.empty() || bits.size() > 2 || bits.find_first_not_of("0123456789") != std::string::npos) {
++			return false;
++		}
++		prefix = static_cast<uint32_t>(std::stoul(bits));
++		if (prefix > 32) {
++			return false;
++		}
++	}
++	const std::vector<std::string> parts = split(address, '.');
++	if (parts.size() != 4) {
++		return false;
++	}
++	uint8_t bytes[4];
++	for (size_t i = 0; i < 4; ++i) {
++		const std::string& p = parts[i];
++		if (p.empty() || p.size() > 3 || p.find_first_not_of("0123456789") != std::string::npos) {
++			return false;
++		}
++		const unsigned long v = std::stoul(p);
++		if (v > 255) {
++			return false;
++		}
++		bytes[i] = static_cast<uint8_t>(v);
++	}
++	ip = fromBytes(bytes);
++	return true;
++}
++
++bool isLoopback(uint32_t ip)
++{
++	return (hostOrder(ip) >> 24) == 127;
++}
++
++bool isTrusted(uint32_t peerIP)
++{
++	std::lock_guard<std::mutex> lock(cacheLock);
++	refresh();
++	const uint32_t host = hostOrder(peerIP);
++	for (const Range& r : ranges) {
++		if ((host & r.mask) == r.net) {
++			return true;
++		}
++	}
++	return false;
++}
++
++Peer classify(uint32_t peerIP)
++{
++	if (peerIP != 0 && isTrusted(peerIP)) {
++		return Peer::Gateway;
++	}
++	// loopback always connects directly: the watchdog and the health check ask the status protocol on 127.0.0.1
++	if (isLoopback(peerIP) || !g_config.getBoolean(ConfigManager::PROXY_PROTOCOL_REQUIRED)) {
++		return Peer::Direct;
++	}
++	return Peer::Refused;
++}
++
++void logRefused(const char* what, uint32_t ip, const std::string& detail)
++{
++	struct Seen {
++		std::chrono::steady_clock::time_point last;
++		uint32_t suppressed = 0;
++		bool any = false;
++	};
++	static std::mutex logLock;
++	static std::map<std::string, Seen> seen;
++
++	std::lock_guard<std::mutex> lock(logLock);
++	Seen& s = seen[what];
++	const auto now = std::chrono::steady_clock::now();
++	if (s.any && now - s.last < std::chrono::seconds(10)) {
++		++s.suppressed;
++		return;
++	}
++	std::cout << "[PROXY protocol] " << what << ": " << convertIPToString(ip);
++	if (!detail.empty()) {
++		std::cout << " (" << detail << ')';
++	}
++	if (s.suppressed > 0) {
++		std::cout << " [" << s.suppressed << " more like this in the last " <<
++		          std::chrono::duration_cast<std::chrono::seconds>(now - s.last).count() << " s]";
++	}
++	std::cout << std::endl;
++	s.last = now;
++	s.any = true;
++	s.suppressed = 0;
++}
++
++void startupReport()
++{
++	std::lock_guard<std::mutex> lock(cacheLock);
++	cacheValid = false;
++	refresh();
++	const bool required = g_config.getBoolean(ConfigManager::PROXY_PROTOCOL_REQUIRED);
++	for (const std::string& bad : badEntries) {
++		std::cout << ">> WARNING: proxyProtocolTrusted entry \"" << bad <<
++		          "\" is not an IPv4 address or a.b.c.d/nn range; ignored" << std::endl;
++	}
++	if (ranges.empty()) {
++		if (required) {
++			std::cout << ">> ERROR: proxyProtocolRequired = true but proxyProtocolTrusted has no gateway: only 127.0.0.0/8 "
++			          "can connect" << std::endl;
++		} else {
++			std::cout << ">> PROXY protocol off (proxyProtocolTrusted is empty): players connect directly" << std::endl;
++		}
++		return;
++	}
++	std::cout << ">> PROXY protocol from " << ranges.size() << " trusted gateway entr" << (ranges.size() == 1 ? "y" : "ies") <<
++	          " (" << cachedText << "); direct connections " <<
++	          (required ? "refused (proxyProtocolRequired), except from 127.0.0.0/8" : "allowed") << std::endl;
++}
++
++} // namespace ProxyProtocol
+--- a/src/proxyprotocol.h
++++ b/src/proxyprotocol.h
+@@ -0,0 +1,77 @@
++// Cinders of Chaos engine patch 0025 (server/src-patches/0025-proxy-protocol.patch): the PROXY protocol from trusted
++// gateways. Part of the engine, under its GPL-2.0 License (LICENSE in the server source root).
++//
++// Players connect to TCP proxies ("gateways", server/deploy/gateway/) that forward 7171 and 7172 to this server and put
++// a PROXY protocol header (v2, or the v1 text line) in front of the client's bytes. A connection from an address in
++// proxyProtocolTrusted must start with such a header; its source address becomes the connection's IP (Connection::getIP:
++// bans, the connection rate limit, the status query limit, player:getIp(), the client guard staff IPs, logs).
++// Nobody else may send one: from any other address the header is refused, never believed.
++// config.lua (server/README.md "Gateways and the PROXY protocol"):
++//   proxyProtocolTrusted = "1.2.3.4,5.6.7.8"   gateway addresses, a.b.c.d or a.b.c.d/nn; empty: off (as before)
++//   proxyProtocolRequired = false              true: only gateways (and 127.0.0.0/8) may connect at all
++
++#ifndef FS_PROXYPROTOCOL_H_5B0E2C7D9A3F4E61B8D1C2A3F4E5D6C7
++#define FS_PROXYPROTOCOL_H_5B0E2C7D9A3F4E61B8D1C2A3F4E5D6C7
++
++#include <cstddef>
++#include <cstdint>
++#include <string>
++
++namespace ProxyProtocol {
++
++// bytes read first: enough to tell v1 ("PROXY ") from v2 (12 byte signature) without reading past the shortest header
++// ("PROXY UNKNOWN\r\n", 15 bytes)
++constexpr size_t FIRST_READ = 8;
++constexpr size_t V2_HEADER = 16;
++// the longest v2 address block accepted (addresses 36 bytes for IPv6, the rest TLVs); a gateway sends 12 or 36
++constexpr size_t V2_MAX_PAYLOAD = 512;
++// the longest v1 line, CRLF included (the specification's limit)
++constexpr size_t V1_MAX = 107;
++constexpr size_t MAX_HEADER = V2_HEADER + V2_MAX_PAYLOAD;
++// seconds a gateway connection has to deliver its header (the gateway sends it at once)
++constexpr int32_t HEADER_TIMEOUT = 5;
++
++enum class Parse : uint8_t {
++	NeedMore, // read until `need` bytes in total, then parse again
++	Ok,
++	Invalid,
++};
++
++struct Header {
++	size_t need = FIRST_READ; // NeedMore: total bytes needed; Ok: the header's length
++	bool local = false;        // LOCAL command / UNKNOWN / UNSPEC: keep the real peer address (a gateway health check)
++	uint32_t ip = 0;           // the client's IPv4 address in network byte order, as Connection::getIP
++	uint16_t port = 0;
++	const char* error = "";
++};
++
++// Pure: parses the first `size` bytes of a connection. Never asks for more than MAX_HEADER bytes.
++Parse parse(const uint8_t* data, size_t size, Header& out);
++
++// Does a first packet header (its two length bytes) look like the start of a PROXY header ("\r\n" or "PR")?
++// No real first packet is that long (2573 / 21072 bytes); the login, game and status packets are a few hundred at most.
++bool looksLikeHeader(const uint8_t* lengthBytes);
++
++// a.b.c.d (or a.b.c.d/nn) -> network byte order; false when it is not one
++bool parseIPv4(const std::string& text, uint32_t& ip, uint32_t& prefix);
++
++enum class Peer : uint8_t {
++	Direct,  // as before: the protocol starts at once
++	Gateway, // a trusted gateway: read the PROXY header first
++	Refused, // proxyProtocolRequired and not a gateway or loopback
++};
++
++// what to do with a new connection from `peerIP` (network byte order), from config.lua (re-read after /reload config)
++Peer classify(uint32_t peerIP);
++bool isTrusted(uint32_t peerIP);
++bool isLoopback(uint32_t ip);
++
++// console lines, at most one per kind every 10 s (with the number left out), so a flood cannot fill the log
++void logRefused(const char* what, uint32_t ip, const std::string& detail = std::string());
++
++// at startup: off / the trusted gateways and whether direct connections are refused; bad entries
++void startupReport();
++
++} // namespace ProxyProtocol
++
++#endif
+--- a/src/server.cpp
++++ b/src/server.cpp
+@@ -8,6 +8,7 @@
+ #include "scheduler.h"
+ #include "configmanager.h"
+ #include "ban.h"
++#include "proxyprotocol.h"
+ 
+ extern ConfigManager g_config;
+ Ban g_bans;
+@@ -93,16 +94,20 @@ void ServicePort::onAccept(Connection_ptr connection, const boost::system::error
+ 			return;
+ 		}
+ 
+-		auto remote_ip = connection->getIP();
+-		if (remote_ip != 0 && g_bans.acceptConnection(remote_ip)) {
+-			Service_ptr service = services.front();
+-			if (service->is_single_socket()) {
+-				connection->accept(service->make_protocol(connection));
+-			} else {
+-				connection->accept();
+-			}
+-		} else {
+-			connection->close(Connection::FORCE_CLOSE);
++		// Chaos (patch 0025): a trusted gateway sends a PROXY header first; with proxyProtocolRequired nobody else
++		// but 127.0.0.0/8 may connect (src/proxyprotocol.h)
++		const uint32_t peer_ip = connection->getIP();
++		switch (ProxyProtocol::classify(peer_ip)) {
++			case ProxyProtocol::Peer::Gateway:
++				connection->readProxyHeader();
++				break;
++			case ProxyProtocol::Peer::Refused:
++				ProxyProtocol::logRefused("direct connection refused (proxyProtocolRequired)", peer_ip);
++				connection->close(Connection::FORCE_CLOSE);
++				break;
++			default:
++				onConnectionReady(connection);
++				break;
+ 		}
+ 
+ 		accept();
+@@ -131,6 +136,28 @@ Protocol_ptr ServicePort::make_protocol(bool checksummed, NetworkMessage& msg, c
+ 	return nullptr;
+ }
+ 
++void ServicePort::onConnectionReady(const Connection_ptr& connection) const
++{
++	if (services.empty()) {
++		connection->close(Connection::FORCE_CLOSE);
++		return;
++	}
++
++	// a gateway's own connections (its health checks: PROXY LOCAL) skip the per-IP connection throttle; the gateways
++	// limit their clients themselves, and each client is throttled here by its own address
++	auto remote_ip = connection->getIP();
++	if (remote_ip != 0 && (ProxyProtocol::isTrusted(remote_ip) || g_bans.acceptConnection(remote_ip))) {
++		Service_ptr service = services.front();
++		if (service->is_single_socket()) {
++			connection->accept(service->make_protocol(connection));
++		} else {
++			connection->accept();
++		}
++	} else {
++		connection->close(Connection::FORCE_CLOSE);
++	}
++}
++
+ void ServicePort::onStopServer()
+ {
+ 	close();
+--- a/src/server.h
++++ b/src/server.h
+@@ -64,6 +64,9 @@ class ServicePort : public std::enable_shared_from_this<ServicePort>
+ 
+ 		void onStopServer();
+ 		void onAccept(Connection_ptr connection, const boost::system::error_code& error);
++		// Chaos (patch 0025): the client's address is known (the socket's, or a gateway's PROXY header): ban and rate
++		// checks on it, then the protocol starts
++		void onConnectionReady(const Connection_ptr& connection) const;
+ 
+ 	private:
+ 		void accept();

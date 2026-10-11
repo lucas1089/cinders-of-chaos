@@ -1,0 +1,106 @@
+# Cinders of Chaos gateway: HAProxy in TCP mode in front of the game server (docs/LAUNCH.md "Gateways and DDoS").
+# Template: setup_gateway.sh fills in the backend address, the ports and the limits and writes the
+# result to /etc/haproxy/haproxy.cfg. Edit the template, not the output: the next setup run overwrites it.
+#
+# What it does:
+#   * forwards @LOGIN_PORT@ (login and status) and @GAME_PORT@ (game) to @BACKEND@ with a PROXY protocol v2 header,
+#     so the engine (src-patch 0025, proxyProtocolTrusted) sees each player's real address;
+#   * per source IP limits from stick-tables: concurrent connections and new connections per 10 s per port; a source
+#     far above the limit is dropped silently (no reset sent back) for as long as it keeps going;
+#   * slow clients: a login / status connection must send its first bytes within 5 s (the game port cannot do this:
+#     there the server speaks first), idle connections end after 90 s (the game pings every few seconds);
+#   * health: a TCP check of both backend ports every 3 s; "Server be_game/game is DOWN" in the log when it fails;
+#   * the login-screen services (clientservices.py, HTTP) on @SERVICES_PORT@ too, without a PROXY header (that service
+#     does not need the player's address), so the client needs no address but the gateways' name. setup_gateway.sh
+#     --services-port 0 leaves this part out (the block between the BEGIN / END services lines).
+# Logs go to syslog (Debian / Ubuntu: /var/log/haproxy.log). Live counters, local only:
+#   echo "show table fe_game" | sudo socat stdio /run/haproxy/admin.sock
+#   curl -s http://127.0.0.1:8404/stats\;csv
+
+global
+	log /dev/log local0
+	log /dev/log local1 notice
+	chroot /var/lib/haproxy
+	stats socket /run/haproxy/admin.sock mode 660 level admin
+	stats timeout 30s
+	user haproxy
+	group haproxy
+	daemon
+	# every connection costs two buffers (about 32 KB): 8000 connections fit a 1 GB VPS
+	maxconn @MAXCONN@
+
+defaults
+	mode tcp
+	log global
+	option tcplog
+	option dontlognull
+	timeout connect 5s
+	timeout client 90s
+	timeout server 90s
+	timeout client-fin 10s
+	timeout server-fin 10s
+	timeout check 3s
+	timeout queue 10s
+	retries 2
+
+# local status page (never bind it to a public address)
+frontend stats
+	mode http
+	bind 127.0.0.1:8404
+	stats enable
+	stats uri /stats
+	stats refresh 10s
+
+# login server and status protocol
+frontend fe_login
+	bind 0.0.0.0:@LOGIN_PORT@
+	maxconn @MAXCONN@
+	stick-table type ip size 200k expire 2m store conn_cur,conn_rate(10s)
+	tcp-request connection track-sc0 src
+	tcp-request connection silent-drop if { sc_conn_rate(0) gt @DROP_RATE@ }
+	tcp-request connection reject if { sc_conn_cur(0) gt @LOGIN_CUR@ }
+	tcp-request connection reject if { sc_conn_rate(0) gt @LOGIN_RATE@ }
+	# the client speaks first here: nothing within 5 s is a slow or idle connection, cut before it reaches the server
+	tcp-request inspect-delay 5s
+	tcp-request content accept if { req.len gt 0 }
+	tcp-request content reject
+	default_backend be_login
+
+# game server: the server sends the first packet, so no inspect-delay here
+frontend fe_game
+	bind 0.0.0.0:@GAME_PORT@
+	maxconn @MAXCONN@
+	stick-table type ip size 200k expire 2m store conn_cur,conn_rate(10s)
+	tcp-request connection track-sc0 src
+	tcp-request connection silent-drop if { sc_conn_rate(0) gt @DROP_RATE@ }
+	tcp-request connection reject if { sc_conn_cur(0) gt @GAME_CUR@ }
+	tcp-request connection reject if { sc_conn_rate(0) gt @GAME_RATE@ }
+	default_backend be_game
+
+# BEGIN services
+frontend fe_services
+	bind 0.0.0.0:@SERVICES_PORT@
+	maxconn 2000
+	stick-table type ip size 200k expire 2m store conn_cur,conn_rate(10s)
+	tcp-request connection track-sc0 src
+	tcp-request connection silent-drop if { sc_conn_rate(0) gt @DROP_RATE@ }
+	tcp-request connection reject if { sc_conn_cur(0) gt @LOGIN_CUR@ }
+	tcp-request connection reject if { sc_conn_rate(0) gt @LOGIN_RATE@ }
+	tcp-request inspect-delay 5s
+	tcp-request content accept if { req.len gt 0 }
+	tcp-request content reject
+	timeout client 30s
+	default_backend be_services
+
+backend be_services
+	timeout server 30s
+	server game @BACKEND@:@SERVICES_PORT@ check inter 10s fall 3 rise 2
+# END services
+
+backend be_login
+	# the checks send a PROXY header too (HAProxy's default with send-proxy-v2), so they test the whole path; the engine
+	# lets a gateway's own connections past its per-IP connection throttle
+	server game @BACKEND@:@LOGIN_PORT@ send-proxy-v2 check inter 3s fall 3 rise 2
+
+backend be_game
+	server game @BACKEND@:@GAME_PORT@ send-proxy-v2 check inter 3s fall 3 rise 2

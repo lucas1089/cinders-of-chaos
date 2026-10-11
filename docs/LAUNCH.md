@@ -52,16 +52,18 @@ columns the schema already has) and errors about the website's `znote_*` tables.
 sudo install -d -m 0755 /etc/chaos
 sudo cp server/deploy/chaos.env.example /etc/chaos/chaos.env      # fill in CHAOS_DB_* and CHAOS_CLIENT_KEY (never commit it)
 sudo chmod 600 /etc/chaos/chaos.env
-python3 -I server/tools/prod_config.py /opt/chaos/server --ip play.example.org --name "Cinders of Chaos" \
+python3 -I server/tools/prod_config.py /opt/chaos/server --public-host play.example.org --name "Cinders of Chaos" \
     --motd "Welcome to Cinders of Chaos." --max-players 300 --pvp pvp --save-time 06:00 --owner "..." --url "https://..." \
-    [--client-url https://.../download] [--client-builds 4,5] [--client-manifest /path/updates/live/manifest.json]
+    [--client-url https://.../download] [--client-builds 4,5] [--client-manifest /path/updates/live/manifest.json] \
+    [--proxy-trusted GW1,GW2,GW3 --proxy-required yes]
 ```
+(`--ip` is the old name of `--public-host` and still works.)
 
 `server/tools/prod_config.py` (idempotent; its docstring explains every value) sets:
 
 | Setting | Value | Why |
 |---|---|---|
-| `ip` | the public DNS name or IP | the login server hands it to the client; 127.0.0.1 only works on the machine itself |
+| `ip` | the public DNS name (`--public-host`) | the login server hands it to the client as text and the client resolves it, so a DNS change needs no restart. Behind gateways it is the gateways' name, never the real server's IP (section "Gateways and DDoS"); 127.0.0.1 only works on the machine itself |
 | `loginProtocolPort` / `gameProtocolPort` / `statusProtocolPort` | 7171 / 7172 / 7171 | the stock ports (the test servers use 74xx) |
 | `serverName`, `motd`, `ownerName`, `ownerEmail`, `url`, `location` | ours | the download ships its own name and someone else's contact data |
 | `maxPlayers` | e.g. 300 | 0 means unlimited; pick a number from the load test (section 9) |
@@ -76,6 +78,7 @@ python3 -I server/tools/prod_config.py /opt/chaos/server --ip play.example.org -
 | `energyShieldRechargeDelay`, `energyShieldOpcode` | 2000, 224 | the energy shield's recharge delay in ms and its client opcode (engine patch 0015, `server/README.md` "Energy shield") |
 | `clientGuardMode`, `clientGuardKey`, `clientGuardAllowDevKey`, `clientGuardTimeout`, `clientGuardDownloadUrl`, `clientGuardBuilds`, `clientGuardManifest`, `clientGuardStaffIps` | `"enforce"`, `os.getenv("CHAOS_CLIENT_KEY") or ""`, false, 10, the options | only the official client plays (engine patch 0021, `server/README.md` "Client guard"): the key is the GitHub secret `CHAOS_CLIENT_KEY` the Windows client is built with, in `/etc/chaos/chaos.env`; without it every player is kicked (the console says so at start). `clientGuardMode = "log"` for a log-only first week or an emergency |
 | `minPlayerSpeed`, `maxPlayerSpeed`, `playerSpeedBonus`, `playerSpeedPerTenLevels`, `playerSpeedSoftLevel`, `playerSpeedPerTenLevelsAbove` | 120, 2600, 50, 25, 300, 10 | movement speed (engine patch 0018, `server/README.md` "Movement speed"): walk speed held between about 1 and 10 tiles/s on normal ground; base speed = vocation + 50, 2.5 per level up to 300, 1 per level after. The client needs base patch 0029 (same step times) |
+| `proxyProtocolTrusted`, `proxyProtocolRequired` | the gateways' IPs, true (or `""`, false without gateways) | the gateways in front of the server (engine patch 0025, section "Gateways and DDoS"): a connection from a listed gateway must start with a PROXY header and the engine takes the player's real IP from it; `true` refuses every other address except 127.0.0.0/8. Not given: the value already in `config.lua` stays |
 | `rateSpawn` | 3 | how many monsters one spawn brings back per check (stock 1: a pack of five took five spawntimes to refill). The timers themselves are in the spawn file (install step `spawns`); engine patch 0022 lets `respawn.lua` shorten them where several players hunt together (`server/README.md` "Spawn density and respawn"). Without patch 0022 the console prints one `[ChaosRespawn]` line and the stock timers apply |
 
 The tool refuses to run while `mapName` is a cropped test map (`zcrop_*`): set the real map name first.
@@ -174,6 +177,9 @@ Firewall (ufw example):
 sudo ufw default deny incoming && sudo ufw allow 22/tcp && sudo ufw allow 7171/tcp && sudo ufw allow 7172/tcp \
   && sudo ufw allow 8090/tcp && sudo ufw enable
 ```
+
+Behind gateways (section "Gateways and DDoS") 7171, 7172 and 8090 are open to the gateways only:
+`server/deploy/firewall/setup_backend_firewall.sh` adds that on top of this table.
 
 ## 6. Accounts, staff and the website
 
@@ -541,8 +547,143 @@ credit them again (admin panel, Store > Donations).
    `iptables -I INPUT -p tcp --syn -m multiport --dports 7171,7172 -m connlimit --connlimit-above 10 -j DROP`
    (remove with `-D` instead of `-I` afterwards). A volume attack that fills the uplink can only be stopped by the
    provider.
-4. The website and the login-screen service on 8090 can be put behind a proxy or CDN; the game ports cannot, so the
+4. Behind gateways (section "Gateways and DDoS"): the attack hits a gateway, not this machine. Replace that gateway
+   ("Replace a gateway under attack" there). Without gateways the game ports cannot sit behind a web proxy or CDN, so the
    provider's filtering is what protects them. Tell the players on Discord.
+
+## Gateways and DDoS
+
+Players never connect to the real game server. They connect to 2 or 3 small DDoS-protected VPS, the **gateways**. Each
+gateway runs HAProxy in TCP mode and forwards the game ports to the real server, the **backend**. The backend's IP is
+never published, and its firewall takes the game ports from the gateways only. An attack then hits a gateway, which
+can be filtered by its provider or replaced in minutes.
+
+```
+ players --> play.example.org (DNS: one A record per gateway, TTL 300)
+               |                 |                 |
+          gateway 1          gateway 2         gateway 3       HAProxy + nftables (server/deploy/gateway/)
+          7171 7172 8090     7171 7172 8090    7171 7172 8090  per-IP limits, PROXY v2 header on 7171 / 7172
+               |                 |                 |
+               +-----------------+-----------------+
+                                 |
+                                 v
+                     backend (IP never published)            nftables: 7171 / 7172 / 8090 from the gateways only
+                     game server, MariaDB (127.0.0.1)        (server/deploy/firewall/), engine patch 0025
+```
+
+**How the player's IP survives the proxy.** The engine uses the client's IP for bans, its connection throttle, the
+status query limit, the 2-characters-per-IP rule (`multiclient.lua`), the client guard's staff IPs and the logs. The
+gateways put a PROXY protocol v2 header in front of each connection. Engine patch 0025 reads it, but only from the
+addresses in `proxyProtocolTrusted`, and uses its address as the connection's IP. A PROXY header from any other address
+is refused and never believed. With `proxyProtocolRequired = true` the engine also refuses every connection that does
+not come from a gateway, so a wrong firewall rule cannot expose the game. 127.0.0.0/8 always connects directly (the
+watchdog and the health check ask the status protocol on 127.0.0.1). Details: `server/README.md` "Gateways and the PROXY
+protocol".
+
+**The world address.** The login server tells the client where the game world is: `ip` and `gameProtocolPort` from
+`config.lua`. `ip` must be the gateways' public name (`prod_config.py --public-host play.example.org`), never the
+backend's IP. The engine sends the name as text and the client resolves it itself, so DNS changes need no restart. The
+gateways listen on the same port numbers as the backend (7171, 7172), because the client uses the game port the login
+server names.
+
+**Limits per source IP** (edit the numbers at the top of `setup_gateway.sh`, then run it again):
+
+| Where | Login 7171 | Game 7172 | Services 8090 |
+|---|---|---|---|
+| gateway kernel (nftables) | 10 new connections/s (burst 20), 24 open, both ports together | (same) | 10 new/s (burst 20) |
+| gateway HAProxy | 8 open, 20 new per 10 s; first bytes within 5 s | 10 open, 15 new per 10 s | 8 open, 20 new per 10 s |
+| gateway HAProxy, flood | more than 60 new per 10 s: silently dropped | (same) | (same) |
+| backend kernel (nftables) | a gateway: 300 new/s; others: dropped | (same) | from the gateways only |
+| engine | the stock throttle (5 quick reconnects) and status limit, now per real IP | | |
+
+A household or mobile carrier that puts many players behind one IP (CGNAT) shares these limits. The multi-client rule
+already allows only 2 characters per IP, so the limits leave room for that and for reconnects.
+
+### Setting it up (owner)
+
+1. **Buy 2 or 3 gateway VPS.** 1 vCPU and 1 GB RAM are enough for 300 players. Pick providers that filter DDoS on
+   TCP game traffic, not only on web traffic, and with good routes to the players and to the backend (a gateway adds
+   one hop). Different providers or regions survive more. Debian 12 or Ubuntu 24.04, IPv4.
+2. **Give the backend an IP nobody knows.** If players ever connected to the backend's current IP, an attacker may
+   have it, and a flood can fill its uplink even when the firewall drops it. Ask the host for a new IP (or move to a
+   new machine) before you switch, and never put the new one in DNS, on the website, in the client or in a mail.
+   Run the website on its own host.
+3. **Set up each gateway** (as root, from a copy of the repository's `server/deploy/gateway/` folder):
+   ```
+   scp -r server/deploy/gateway root@GATEWAY:/root/
+   ssh root@GATEWAY /root/gateway/setup_gateway.sh BACKEND_IP --admin-ips YOUR_HOME_IP
+   ```
+   It installs HAProxy and nftables, writes `/etc/haproxy/haproxy.cfg`, `/etc/nftables.d/chaos-gateway.nft` and
+   `/etc/sysctl.d/90-chaos-gateway.conf`, and checks each file before it uses it. It forwards 7171 and 7172 with a
+   PROXY header and 8090 (the login-screen services) without one. Run it again after any change: it is idempotent and
+   reloads HAProxy without dropping players. `--admin-ips any` keeps SSH open to all (rate limited) if your home IP
+   changes.
+4. **Trust the gateways on the backend**, still without locking anything:
+   ```
+   python3 -I server/tools/prod_config.py /opt/chaos/server --public-host play.example.org \
+       --proxy-trusted GW1_IP,GW2_IP,GW3_IP --proxy-required no
+   sudo systemctl restart chaos-server
+   ```
+   The console then says `>> PROXY protocol from 3 trusted gateway entries (...)`.
+5. **Test one gateway by its IP** before DNS: a client built for that IP logs in, and the status check answers:
+   `python3 -I -c "import sys; sys.path.insert(0, 'server/tools'); import chaos_watchdog as w; print(w.ask_status('GW1_IP', 7171, 5))"`.
+6. **DNS:** one A record per gateway for `play.example.org`, TTL 300 seconds (60 if the DNS host allows it). No AAAA
+   record: the engine stores IPv4 addresses only and refuses IPv6 clients. Set the website's `CHAOS_GAME_HOST` to the
+   same name.
+7. **Client:** build it with `server_host` = `play.example.org` (section 8). Its login host and its login-screen
+   services URL (port 8090) then both go through the gateways.
+8. **Lock the backend:**
+   ```
+   sudo server/deploy/firewall/setup_backend_firewall.sh GW1_IP,GW2_IP,GW3_IP --admin-ips YOUR_HOME_IP \
+       --services GW1_IP,GW2_IP,GW3_IP
+   python3 -I server/tools/prod_config.py /opt/chaos/server --public-host play.example.org --proxy-required yes
+   sudo systemctl restart chaos-server
+   ```
+   7171, 7172 and 8090 now answer the gateways only. 3306 stays closed (MariaDB listens on 127.0.0.1). If ufw is on as
+   well (section 5), keep its allow rules: a packet must pass both firewalls, and this table is the narrower one. A
+   website on the same machine: add `--web-ports 80,443`. Another machine that must query the status protocol
+   directly: `--extra-ips`, and keep `--proxy-required no` (or point it at a gateway instead).
+
+### Check it
+
+- **Real IPs reach the engine:** after a few logins, `SELECT name, INET_NTOA(lastip) FROM players ORDER BY lastlogin
+  DESC LIMIT 5;` shows the players' addresses with the bytes reversed (the engine stores them in network order), not
+  the gateways'. `data/logs/clientguard.log` shows `ip=` with the players' addresses. On a gateway,
+  `/var/log/haproxy.log` lists each connection with the player's address.
+- **A direct connection is refused:** from your PC, `nc -vz -w 3 BACKEND_IP 7172` must time out (firewall). With the
+  firewall off for a moment, the console prints `[PROXY protocol] direct connection refused (proxyProtocolRequired)`.
+- **A forged header is refused:** a connection from an address outside `proxyProtocolTrusted` that sends a PROXY header
+  is closed with `[PROXY protocol] PROXY header from an address that is not in proxyProtocolTrusted, refused`.
+- **Health:** on a gateway, `systemctl status haproxy`; `/var/log/haproxy.log` says `Server be_game/game is DOWN` when
+  the backend stops answering and `UP` when it is back. Live counters:
+  `echo "show stat" | sudo socat stdio /run/haproxy/admin.sock` (install `socat`), or
+  `curl -s http://127.0.0.1:8404/stats` on the gateway itself. Per-IP state: `show table fe_game`.
+- Console lines of patch 0025 are limited to one per kind every 10 seconds, so a flood cannot fill the log.
+
+### Replace a gateway under attack
+
+1. Delete its A record. New logins go to the other gateways once the TTL runs out. Players on it lose their connection
+   and log in again through another gateway.
+2. Order a new VPS (another provider or region if the attacker follows) and run `setup_gateway.sh` on it (step 3).
+3. On the backend, put the new IP in place of the old one in both lists, then add its A record:
+   ```
+   python3 -I server/tools/prod_config.py /opt/chaos/server --public-host play.example.org --proxy-trusted GW2_IP,GW3_IP,NEW_IP
+   sudo server/deploy/firewall/setup_backend_firewall.sh GW2_IP,GW3_IP,NEW_IP --admin-ips YOUR_HOME_IP --services GW2_IP,GW3_IP,NEW_IP
+   ```
+   The engine reads `proxyProtocolTrusted` again on `/reload config` (a god character), so no restart is needed; a
+   restart also works.
+4. Cancel the old VPS. Its IP is out of both lists, so it can no longer reach the game.
+
+Keep one spare gateway set up but out of DNS: then step 2 is only a DNS change.
+
+### Failover
+
+DNS round-robin spreads players over the gateways. Expect the client to use one address of the answer and not to try
+the next one when it fails (the base client's network code is not in this repository, so this was not checked). While a
+dead gateway is still in DNS, some logins then fail until the player tries again.
+Delete a dead gateway's record at once (an external uptime check per gateway IP helps). A client-side list of hosts,
+where the login window tries the next host when one does not answer, needs a client change (`init.lua` `Servers` has
+one `host` per entry): a proposal, not built.
 
 ## Website
 
