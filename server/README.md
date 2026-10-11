@@ -3087,8 +3087,8 @@ stops at the first refusal), a bar for the 860 ms and the server's answer under 
 another category's tab, when the player moved more than 1 tile from where the table opened the window, when the table
 use is over 290 s old, and when the counts say something is missing (the counts come from the server: the window asks
 for every page when a table opens it, the page again after a refusal, and on Refresh). Economy > Crafting Tables only
-explains where the tables are: in the crafting hall around x 31650, y 32233; z 4 general crafting, jewelsmith (two
-each), armorsmith, weaponsmith (two each); z 5 mining (three); z 6 woodcutting (three), herbalist (four).
+explains where the tables are: in the crafting hall around x 31650, y 32233; z 4 general crafting, jewelsmith,
+armorsmith and weaponsmith (two tables each); z 5 mining (three); z 6 woodcutting (three) and herbalist (four).
 
 **Tests.** `tests/base_crafting_ui_test.lua` (both tools on the stock fixture: refused without the guard patch,
 idempotent, CRLF, partly patched refused; the patched script on a mock engine: refusal, success, busy, gold and skill

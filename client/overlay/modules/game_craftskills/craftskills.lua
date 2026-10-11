@@ -87,6 +87,12 @@ local function onGameEnd()
   values = {}
 end
 
+-- the last values of profession skill `index` (0..6, the order above) or nil: {level, base, percent}
+function getSkill(index)
+  local v = values[index]
+  return v and { level = v.level, base = v.base, percent = v.percent } or nil
+end
+
 function init()
   -- pushFront: signalcall stops at the first handler that returns a value
   connect(g_game, { onCraftingSkill = onCraftingSkill, onGameEnd = onGameEnd }, true)
