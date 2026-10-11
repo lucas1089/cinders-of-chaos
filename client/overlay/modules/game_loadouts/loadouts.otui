@@ -121,7 +121,6 @@ LoadoutsWindow < ChaosMainWindow
       vertical-scrollbar: summaryScroll
       layout:
         type: verticalBox
-        fit-children: true
 
     ChaosScrollBar
       id: summaryScroll

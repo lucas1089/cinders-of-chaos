@@ -65,6 +65,9 @@ jobs:
       - name: Client modules (otmod name, scripts)
         run: python3 -I tools/ci/check_modules.py
 
+      - name: Client layouts (no fit-children on anchor-sized widgets)
+        run: python3 -I tools/ci/check_layouts.py
+
       - name: Server content (XML, spells, items, monsters)
         run: python3 -I tools/ci/check_content.py
 
