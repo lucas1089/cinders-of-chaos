@@ -2,8 +2,8 @@
 --
 -- Everything is per account: the Pact (chaos_pact), the one-time extras bought in the store (chaos_account_extras) and
 -- the saved passive tree builds (chaos_build_slots). Other systems ask for their limit:
---     ChaosPact.limit(player, key)    key of pact_config.lua `limits` (stashTabs, marketListings, marketAccount,
---                                     buildSlots, lootRules, charSlots)
+--     ChaosPact.limit(player, key)    key of pact_config.lua `limits` (stashTabs, depotTabs, marketListings,
+--                                     marketAccount, buildSlots, lootRules, charSlots)
 --     ChaosPact.limits(player)        every limit + stashSpecial = {orbs = bool, gems = bool, keys = bool}
 --     ChaosPact.stashKind(itemId)     "orbs" | "gems" | "keys" | nil (which special stash tab takes the item)
 --     ChaosPact.state(accountId)      the cached account state (pact_core.lua)
@@ -201,6 +201,9 @@ local function refreshPlayer(player)
 	if ChaosNameplate and ChaosNameplate.refresh then
 		pcall(ChaosNameplate.refresh, player)
 	end
+	if ChaosDepot and ChaosDepot.onLimitsChanged then
+		pcall(ChaosDepot.onLimitsChanged, player) -- depot tabs (depot.lua): the client's lock marks
+	end
 	sendStatus(player, false)
 end
 
@@ -269,25 +272,33 @@ local pactService = {
 	end
 }
 
+-- offer.amount: how many of the extra one purchase adds (default 1; depot_config.lua sells a pack of 4 depot tabs)
+local function offerAmount(offer)
+	return math.max(1, math.floor(tonumber(offer.amount) or 1))
+end
+
 local extraService = {
 	check = function(player, offer)
-		return Core.extraCheck(cfg, Pact.load(player:getAccountId()), offer.extra)
+		return Core.extraCheck(cfg, Pact.load(player:getAccountId()), offer.extra, offerAmount(offer))
 	end,
 	apply = function(player, offer)
 		local accountId = player:getAccountId()
-		local problem = Core.extraCheck(cfg, Pact.load(accountId), offer.extra)
+		local amount = offerAmount(offer)
+		local problem = Core.extraCheck(cfg, Pact.load(accountId), offer.extra, amount)
 		if problem then
 			return problem
 		end
-		if not db.query(string.format("INSERT INTO `%s` (`account_id`, `extra_key`, `amount`, `updated`) VALUES (%d, %s, 1, %d) " ..
-				"ON DUPLICATE KEY UPDATE `amount` = `amount` + 1, `updated` = %d", T.extras, accountId, q(offer.extra), os.time(), os.time())) then
+		if not db.query(string.format("INSERT INTO `%s` (`account_id`, `extra_key`, `amount`, `updated`) VALUES (%d, %s, %d, %d) " ..
+				"ON DUPLICATE KEY UPDATE `amount` = `amount` + %d, `updated` = %d", T.extras, accountId, q(offer.extra), amount, os.time(),
+				amount, os.time())) then
 			return "Something went wrong. Your coins were refunded."
 		end
 		Pact.load(accountId)
-		log(accountId, player:getGuid(), "extra", offer.extra, 1)
+		log(accountId, player:getGuid(), "extra", offer.extra, amount)
 		local x = cfg.extras[offer.extra]
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s added to your account (%d of %d).", x.name,
-			Pact.state(accountId).extras[offer.extra] or 1, Core.extraMax(cfg, offer.extra)))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s added to your account (%d of %d).",
+			amount > 1 and (amount .. " x " .. x.name) or x.name, Pact.state(accountId).extras[offer.extra] or amount,
+			Core.extraMax(cfg, offer.extra)))
 		refreshPlayer(player)
 		return true
 	end
@@ -495,7 +506,7 @@ function login.onLogin(player)
 		end
 		player:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, text)
 	elseif st.pactEnds > 0 and now - st.pactEnds < 14 * 86400 then
-		player:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Your Chaos Pact has ended. Nothing is lost: extra stash tabs are " ..
+		player:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Your Chaos Pact has ended. Nothing is lost: extra stash and depot tabs are " ..
 			"withdraw-only, extra market offers run until they end, extra saved builds can be loaded or deleted.")
 	end
 	return true

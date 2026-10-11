@@ -33,6 +33,9 @@ return {
 	-- key = {label, free, pact (bonus while active), maxExtra (one-time extras that can be bought), unit}
 	limits = {
 		stashTabs = {label = "Stash tabs", free = 2, pact = 2, maxExtra = 6},
+		-- depot tabs (depot.lua, depot_config.lua): 100 items each; achievement tabs come on top (depot_config.lua
+		-- achievementTabs, at most 3): free + pact + maxExtra + 3 = 17, the number of depot boxes
+		depotTabs = {label = "Depot tabs (100 items)", free = 4, pact = 1, maxExtra = 9},
 		marketListings = {label = "Market listings (character)", free = 20, pact = 10, maxExtra = 0},
 		marketAccount = {label = "Market listings (account)", free = 40, pact = 20, maxExtra = 0},
 		buildSlots = {label = "Saved builds", free = 2, pact = 3, maxExtra = 6},
@@ -42,7 +45,7 @@ return {
 		lootRules = {label = "Loot rules (autoloot list)", free = 10, pact = 10, maxExtra = 0, premiumCounts = true},
 		charSlots = {label = "Character slots", free = 5, pact = 0, maxExtra = 10}
 	},
-	order = {"stashTabs", "marketListings", "marketAccount", "buildSlots", "lootRules", "charSlots"},
+	order = {"stashTabs", "depotTabs", "marketListings", "marketAccount", "buildSlots", "lootRules", "charSlots"},
 
 	-- ------------------------------------------------------------------ stash tabs (stash.lua)
 	stash = {
@@ -61,6 +64,7 @@ return {
 	-- above, or 1 for a special tab)
 	extras = {
 		stashTabs = {limit = "stashTabs", name = "Extra Stash Tab"},
+		depotTabs = {limit = "depotTabs", name = "Extra Depot Tab"}, -- sold by depot_config.lua `store` (1 or 4 at once)
 		stashOrbs = {max = 1, name = "Orbs Stash Tab"},
 		stashGems = {max = 1, name = "Gems Stash Tab"},
 		stashKeys = {max = 1, name = "Keys Stash Tab"},
@@ -116,6 +120,7 @@ return {
 	messages = {
 		pactCap = "Your Chaos Pact already runs for more than %d days. Buy more later.",
 		extraMax = "Your account already has the most of %s it can have (%d).",
+		extraOver = "Your account has %d of at most %d %s; this offer adds %d. Buy fewer at once.",
 		claimed = "You claimed today's %d Chaos Coins of your Chaos Pact.",
 		alreadyClaimed = "You already claimed today's Chaos Coins. Come back tomorrow.",
 		noPact = "You have no active Chaos Pact.",

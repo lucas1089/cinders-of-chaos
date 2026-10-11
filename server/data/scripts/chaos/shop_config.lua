@@ -427,6 +427,10 @@ return {
 		dofile("data/scripts/chaos/pact_config.lua").store.pact,
 		dofile("data/scripts/chaos/pact_config.lua").store.storage,
 		-- <<< Chaos Pact and account storage
+		-- >>> Depot tabs (depot.lua): a single tab and a pack of 4 (service pactExtra); offers, prices and texts live in
+		-- depot_config.lua `store`
+		dofile("data/scripts/chaos/depot_config.lua").store,
+		-- <<< Depot tabs
 		-- >>> Season pass (seasonpass.lua): the premium pass and the season packs; offers, prices and texts live in
 		-- seasonpass_config.lua (seasonpass_store.lua builds this category)
 		dofile("data/scripts/chaos/seasonpass_store.lua"),

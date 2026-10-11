@@ -9,7 +9,7 @@
 --   ChaosPactCore.extendPact(cfg, endsAt, now)          new end time of one purchase, or nil + error text
 --   ChaosPactCore.claim(cfg, state, now, dayKey)        coins of today's claim, or nil + error text
 --   ChaosPactCore.extraMax(cfg, key)                    how many of an extra an account may own (nil: no such extra)
---   ChaosPactCore.extraCheck(cfg, state, key)           nil when one more can be bought, else the error text
+--   ChaosPactCore.extraCheck(cfg, state, key, amount)   nil when `amount` (default 1) more can be bought, else the error text
 --   ChaosPactCore.daysLeft(endsAt, now)                 whole days left, rounded up (0 when over)
 --
 -- Stash tabs. An entry is {item = id, tab = n, kind = "orbs" | "gems" | "keys" | nil}. Tabs 1.. are general tabs of
@@ -141,13 +141,18 @@ function P.claim(cfg, state, now, dayKey)
 	return int(cfg.pact.dailyCoins)
 end
 
-function P.extraCheck(cfg, state, key)
+function P.extraCheck(cfg, state, key, amount)
 	local max = P.extraMax(cfg, key)
+	amount = math.max(1, int(amount or 1))
 	if not max or max <= 0 then
 		return "This offer cannot be bought."
 	end
-	if extraOf(state, key) >= max then
+	local owned = extraOf(state, key)
+	if owned >= max then
 		return string.format(cfg.messages.extraMax, cfg.extras[key].name, max)
+	end
+	if owned + amount > max then
+		return string.format(cfg.messages.extraOver, owned, max, cfg.extras[key].name, amount)
 	end
 	return nil
 end

@@ -1988,6 +1988,7 @@ stamina bonus is the one premium effect that is not pure comfort, and it comes w
 | Limit | Free | Chaos Pact | Bought (max) | Used by |
 |---|---|---|---|---|
 | Stash tabs (48 item types each) | 2 | +2 | +6 | `stash.lua` |
+| Depot tabs (100 items each; +1 per depot tab achievement, see "Depot tabs") | 4 | +1 | +9 | `depot.lua` |
 | Market listings per character | 20 | +10 | - | `market.lua` `ChaosMarket.maxActive` |
 | Market listings per account | 40 | +20 | - | `market.lua` |
 | Saved passive tree builds | 2 | +3 | +6 | `pact.lua` |
@@ -2059,6 +2060,88 @@ taking coins; the Pact expired: limits back to the free counts, title gone, tab 
 that item moves it to tab 2), builds 3-4 read-only (a forged save refused), a read-only build loaded into the passive tree;
 `grantDays` from a bundle; the Pactbound name plate; a sixth character refused at login, then let in after a Character Slot
 was bought; the window from another character of the account; the autoloot window with 20 rules.
+
+## Depot tabs (`depot.lua`, `depot_core.lua`, `depot_config.lua`, `tools/patch_base_depot.py`, client `game_depottabs`)
+
+The owner's decision: the depot works like a limited stash with tabs. Every number and text is in `depot_config.lua`; the
+rules are pure functions in `depot_core.lua` (tested by `tests/depot_test.lua`, which also runs `depot.lua` against a
+mocked engine); `depot.lua` is the engine glue.
+
+**What the base has.** TFS 1.4.2 gives every town its own depot chest (`Player::getDepotChest(townId)`) inside the locker,
+next to the shared inbox and the market. The engine never makes depot boxes. The items `depot box I` .. `XXI` (25453-25469,
+29841-29844) exist in `items.otb` / `items.xml` as plain containers (32 slots, not pickupable, not moveable); the base only
+put them into new characters' depots through an optional website SQL snippet (off here: `!season join` needs an empty depot).
+
+**Tabs.** Boxes I-XVII are the tabs 1-17 (`boxIds`). `tools/patch_base_depot.py` (step `depot` of `install_all.py`, after
+`pouches`; idempotent; `items.otb.bak` keeps the original) does four things: the 17 boxes get the pickupable flag in
+`items.otb` (the engine refuses any non-pickupable item in a container, so no script could put a box into a chest; they
+stay not moveable, so a player cannot drag one out), `items.xml` names them `depot tab 1` .. `17` with 100 slots, the base
+locker Action (`data/scripts/customs/actions/sounds/depot.lua`, it plays a sound) calls `ChaosDepot.onOpenLocker` first, and
+`Player:onMoveItem` calls `ChaosDepot.onMoveItem` first. When a locker opens, the missing boxes of that town's chest are
+added (tab 1 first). No engine patch: Lua makes the boxes when the locker opens. `depot.lua` warns at startup when a hook
+is missing, and registers its own locker Action when the base locker script does not exist.
+
+**Limits.** An account may fill `ChaosDepot.tabs(player)` tabs: `pact_config.lua` limit `depotTabs` (4 free, +1 while the
+Chaos Pact runs, up to 9 bought) + one per achievement of `achievementTabs` that any character of the account has, at most
+17. A tab holds 100 items: every item counts once, a container counts as 1 plus everything in it (nested), a stack counts
+as 1. Tabs above the count are withdraw-only. Nothing is ever deleted: contents above a limit stay, only adding is refused.
+The tab count is the same in every town; each town's chest has its own 17 tabs.
+
+| Source | Tabs |
+|---|---|
+| Free | 4 |
+| Chaos Pact (while active) | +1 |
+| Store "Depot Tabs": Extra Depot Tab, 150 coins (a stash tab costs 150 too); 4 Depot Tabs, 500 coins | up to +9 |
+| Achievements: Cabinet of Curiosities (25 unique items), Hall of Trophies (100 bestiary entries), Keeper of the Vault (50 sealed rifts) | +1 each |
+
+The store offers are service `pactExtra` with `extra = "depotTabs"` and `amount` 1 or 4 (`pact.lua` adds `amount`; a pack
+that would pass the cap is refused before the coins are taken). They live in `depot_config.lua` `store`, inserted in
+`shop_config.lua` as their own block:
+
+```lua
+		-- >>> Depot tabs (depot.lua): a single tab and a pack of 4 (service pactExtra); offers, prices and texts live in
+		-- depot_config.lua `store`
+		dofile("data/scripts/chaos/depot_config.lua").store,
+		-- <<< Depot tabs
+```
+
+**Enforcement.** `Player:onMoveItem` runs for every move a player makes (the event is raised in `Game::internalMoveItem`
+with the player as actor): from the inventory or the ground, a throw, dragging a bag in, dropping onto a box icon in the
+chest window or onto the chest in the locker window (the destination is worked out as `Container::queryDestination` does),
+into a bag nested inside a tab, between tabs, and the swap move. The rule (`ChaosDepotCore.decide`): into a tab from outside
+it, the tab must be open and have room for the item and everything in it; inside the same tab every move is allowed (also
+in a locked or over-full tab), except splitting a stack, which needs one free item; nothing new goes loose into the chest
+itself or into an old container lying loose in it. The refusal is a warning line ("Depot tab 5 is locked: ... Buy more
+tabs in the Store", "Depot tab 1 is full: 100 of 100 items, this needs 5 ...", "Put items into a depot tab, not loose into
+the depot chest") and RETURNVALUE_NOTPOSSIBLE / CONTAINERNOTENOUGHROOM. Paths that add items without a player move, checked
+in the base engine and the scripts: the market (sold items leave the depot chest and its tabs, bought and cancelled ones go
+to the inbox), mail and parcels (inbox), the house transfer (inbox), the store and every Chaos script (inbox, or the
+character), our stash (withdraws to the character). The engine never adds to a depot box itself. The inbox stays unlimited
+(players cannot put anything into it; the engine refuses without FLAG_NOLIMIT). A script that ever puts an item straight
+into a container that may be a tab must ask `ChaosDepot.checkAdd(player, container, item, count)` first;
+`Item:moveTo` and `Container:addItem` skip `onMoveItem`. Not covered: such a script that does not ask.
+
+**Old depots.** At the first locker opening with tabs, everything loose in that chest is placed into tabs in chest order:
+open tabs first, then locked ones (withdraw-only), as the stash did with its tabs. An item that fits no tab (a backpack
+holding more than 100 items, or every tab full) stays loose in the chest, withdraw-only. Nothing is deleted or merged
+away. The player gets a line ("Your depot was sorted into tabs: ..."). The sort waits until the engine has put the chest
+into its locker: before that the engine treats the chest's contents as removed and `Item:moveTo` does nothing.
+`!season join` still sees an empty depot (it counts items that are not containers).
+
+**Client.** The tabs are ordinary containers. `game_depottabs` (opcode **111**, `ChaosOpcodes.depotTabs`, server -> client
+`tabs {tabs, max, size, used, ids, chest, hint}`, sent at login, at every locker opening, after every move into or out of
+the depot and after a purchase) only decorates them: a tab's window title "Tab 3 (87/100)" or "Tab 7 (locked)", locked
+tabs dimmed in the chest window, a tooltip with the count or the store hint. Each box's look text says the same ("87 of 100
+items.", "Locked: ... Buy more in the Store."). A locker opening prints "Depot: 4 of 17 tabs open, 100 items each ...". No
+base client file or base patch is changed; without the module the rules and texts are the same, the stock titles stay.
+Opcode 111 was checked free like the others (base server list, base client ExtendedIds, every Chaos opcode;
+`tests/depot_test.lua`). No storages, no tables.
+
+**Tested in game** (own server copy and database, full map, one client): a depot of 133 loose items from before tabs
+(130 items, a backpack of 4 stacks, a backpack holding 147 items) sorted into tab 1 (100) and tab 2 (35), the big backpack
+left loose; tabs 5-17 dimmed; a move into locked tab 5 refused with the store hint; a move into the full tab 1 refused;
+a move into tab 3 accepted and its count updated; the 4 Depot Tabs pack bought through the service (8 tabs), then tab 5
+took an item.
 
 ## Referral program (`referral.lua`, `referral_core.lua`, `referral_config.lua`, `sql/chaos_referral.sql`, client `game_referral`)
 

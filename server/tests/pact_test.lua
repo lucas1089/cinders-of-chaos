@@ -89,6 +89,14 @@ check(P.extraCheck(cfg, {extras = {stashTabs = L.stashTabs.maxExtra}}, "stashTab
 check(P.extraCheck(cfg, {extras = {stashOrbs = 1}}, "stashOrbs") ~= nil, "special tab once")
 check(P.extraCheck(cfg, free, "marketListings") ~= nil, "listings are not sold")
 check(P.extraCheck(cfg, free, "bogus") ~= nil, "unknown extra")
+-- packs (depot_config.lua sells 4 depot tabs at once): the whole pack must fit under maxExtra
+eq(P.extraCheck(cfg, free, "depotTabs", 4), nil, "a pack of 4 depot tabs can be bought")
+eq(P.extraCheck(cfg, {extras = {depotTabs = L.depotTabs.maxExtra - 4}}, "depotTabs", 4), nil, "a pack that just fits")
+check(P.extraCheck(cfg, {extras = {depotTabs = L.depotTabs.maxExtra - 3}}, "depotTabs", 4) ~= nil, "a pack past the cap is refused")
+eq(P.extraCheck(cfg, {extras = {depotTabs = L.depotTabs.maxExtra - 3}}, "depotTabs", 1), nil, "a single tab still fits")
+check(P.extraCheck(cfg, {extras = {depotTabs = L.depotTabs.maxExtra}}, "depotTabs") ~= nil, "depot tabs capped")
+eq(P.limit(cfg, {pactEnds = 0, extras = {depotTabs = 99}}, "depotTabs", NOW), L.depotTabs.free + L.depotTabs.maxExtra, "bought depot tabs capped")
+eq(P.limit(cfg, {pactEnds = NOW + DAY, extras = {}}, "depotTabs", NOW), L.depotTabs.free + L.depotTabs.pact, "Pact depot tab")
 eq(P.extraMax(cfg, "charSlots"), L.charSlots.maxExtra, "character slot max")
 eq(P.extraMax(cfg, "stashGems"), 1, "special tab max")
 
@@ -213,7 +221,8 @@ for _, cat in ipairs(shop.categories) do
 		end
 	end
 end
-eq(#found, #cfg.store.pact.offers + #cfg.store.storage.offers, "every Pact offer is in the store")
+local depotStore = dofile("data/scripts/chaos/depot_config.lua").store
+eq(#found, #cfg.store.pact.offers + #cfg.store.storage.offers + #depotStore.offers, "every Pact and depot tab offer is in the store")
 for key, x in pairs(cfg.extras) do
 	local sold = false
 	for _, o in ipairs(found) do

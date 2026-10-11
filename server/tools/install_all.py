@@ -55,6 +55,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                (README "Factions")
   pouches      tools/install_pouches.py          the store pouches in items.otb / items.xml and their move hook in Player:onMoveItem
                (README "Store pouches")
+  depot        tools/patch_base_depot.py         depot tabs: the depot boxes pickupable in items.otb and named "depot tab n" with
+               100 slots in items.xml, the locker hook and the move hook in Player:onMoveItem (README "Depot tabs")
   charms       tools/install_charms.py           the charms and the charm shard in items.otb / items.xml (README "Charms")
   professions  tools/install_professions.py      the profession materials and gathering nodes in items.otb / items.xml, the
                Material Broker in data/npc and the hooks in the stock pick / sickle / skinning / fishing scripts
@@ -98,7 +100,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spells', 'autoloot', 'commands', 'sql']
+STEPS = ['files', 'lib', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spells', 'autoloot', 'commands', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -348,6 +350,10 @@ def step_factions(server, data, ctx):
 
 def step_pouches(server, data, ctx):
     return tool_result(run_tool([tool('install_pouches.py'), data], 'install_pouches.py'))
+
+
+def step_depot(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_depot.py'), data], 'patch_base_depot.py'))
 
 
 def step_charms(server, data, ctx):
