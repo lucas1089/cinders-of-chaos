@@ -203,6 +203,7 @@ end
 
 -- opens the dialog through the server (it sends the reasons), prefilled with a name
 function report(name)
+  if type(name) ~= 'string' then name = nil end -- a menu call may pass the module table
   if reportWindow and reportWindow:isVisible() then
     showReport(name)
   end
@@ -232,7 +233,7 @@ local function addMenus()
   local api = top and top.ChaosTopBar
   if not menuAdded and api and api.addEntry then
     menuAdded = pcall(api.addEntry, 'system',
-      { text = 'Report a Player', icon = 'help', modules = { 'game_antibot' }, fns = { 'report' } })
+      { text = 'Report a Player', icon = 'help', modules = { 'game_antibot' }, fns = { 'report' }, noSelf = true })
   end
 end
 

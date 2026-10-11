@@ -7,6 +7,10 @@ local function eq(a, b, name)
   n = n + 1
   if a ~= b then fails = fails + 1; print('FAIL ' .. name .. ': got ' .. tostring(a) .. ', want ' .. tostring(b)) end
 end
+-- loaded at module load, before any result() call (the window reads them when it opens)
+eq(type(T.MODE_TITLE), 'table', 'MODE_TITLE at load')
+eq(type(T.seasonLine), 'function', 'seasonLine at load')
+eq(type(T.seasonDelta), 'function', 'seasonDelta at load')
 eq(T.clock(75), '1:15', 'clock')
 eq(T.clock(300), '5:00', 'clock 5 min')
 eq(T.clock(-3), '0:00', 'clock negative')

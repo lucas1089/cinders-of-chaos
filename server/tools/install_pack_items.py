@@ -200,9 +200,13 @@ def patch_npc(text, rows):
     entries = [e.strip() for e in m.group(2).split(';') if e.strip()]
     keep = [e for e in entries if e.split(',')[0].strip() not in ours]
     want = ['%s,%d,%s' % (r['name'].title(), r['server_id'], r['ex']['sell']) for r in prods]
-    if entries[len(keep):] == want and entries[:len(keep)] == keep:
-        return text, 'npc: all creature products already in the sell list'
-    val = '\n\t\t\t\t\t' + ';\n\t\t\t\t\t'.join(keep + want) + ';\n\t\t\t\t'
+    # in order but not necessarily last: a later step (fistweapons) appends its own entries after ours
+    if [e for e in entries if e.split(',')[0].strip() in ours] == want:
+        if m.group(2) == m.group(2).rstrip():
+            return text, 'npc: all creature products already in the sell list'
+        # blanks after the last ';' are one more entry to the NPC library ("Parameter(s) missing for item")
+        return text[:m.start(2)] + m.group(2).rstrip() + text[m.end(2):], 'npc: blank entry at the end of the sell list removed'
+    val = '\n\t\t\t\t\t' + ';\n\t\t\t\t\t'.join(keep + want) + ';'
     return text[:m.start(2)] + val + text[m.end(2):], 'npc: %d creature products in the sell list (%d replaced)' % (
         len(want), len(entries) - len(keep))
 

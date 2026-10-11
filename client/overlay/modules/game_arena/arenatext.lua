@@ -17,7 +17,10 @@ ArenaText.RESULT_TEXT = { win = 'VICTORY', loss = 'DEFEAT', draw = 'DRAW' }
 ArenaText.RESULT_COLOR = { win = '#f6cf72', loss = '#e03a1e', draw = '#d6c9ae' }
 
 function ArenaText.result(r)
-  ArenaText.MODE_TITLE = { ['1v1'] = 'Duel 1v1', ['2v2'] = 'Team 2v2', ['3v3'] = 'Warband 3v3' }
+  return ArenaText.RESULT_TEXT[r] or tostring(r or '?'):upper(), ArenaText.RESULT_COLOR[r] or '#d6c9ae'
+end
+
+ArenaText.MODE_TITLE = { ['1v1'] = 'Duel 1v1', ['2v2'] = 'Team 2v2', ['3v3'] = 'Warband 3v3' }
 
 -- the PvP season line of a mode card: tier and season rating, or the placement progress
 function ArenaText.seasonLine(v, seasonId)
@@ -45,8 +48,6 @@ function ArenaText.seasonDelta(s)
   return text
 end
 
-return ArenaText.RESULT_TEXT[r] or tostring(r or '?'):upper(), ArenaText.RESULT_COLOR[r] or '#d6c9ae'
-end
 
 -- "Rating 1000 -> 1020 (+20)"
 function ArenaText.ratingLine(before, after, delta)
