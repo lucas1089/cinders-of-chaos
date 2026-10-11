@@ -58,16 +58,14 @@ $chaosRefDays = function_exists('chaos_referral_settings') ? (int)chaos_referral
 		?>
 
 		<li><h2><?= t('reg.rules_title') ?></h2>
-			<p><?= t('reg.rule_golden') ?></p>
-			<p><?= t('reg.rule_pwned') ?></p>
-			<p><?= t('reg.rule_no_cheating', ['link' => '<a href="https://en.wikipedia.org/wiki/Cheating_in_video_games" target="_blank">' . t('reg.cheating_word') . '</a>']) ?></p>
-			<p><?= t('reg.rule_no_botting', ['link' => '<a href="https://en.wikipedia.org/wiki/Video_game_bot" target="_blank">' . t('reg.botting_word') . '</a>']) ?></p>
-			<p><?= t('reg.rule_staff_power') ?></p>
+			<?php /* Cinders of Chaos: a summary of our Rules page (page.php?p=rules) instead of ZnoteX's sample rules */ ?>
+			<p>Play fair and be respectful: no bugs used on purpose, no bots, macros or modified clients, no harassment, no selling of accounts, characters or items for real money.</p>
+			<p>Read the full <a href="page.php?p=rules" target="_blank">rules of Cinders of Chaos</a>. Staff decide every case, from a warning to a permanent ban.</p>
 		</li>
 
 		<li><?= t('reg.rules_agree') ?><br>
 			<select name="selected">
-			  <option value="0"><?= t('reg.agree_umh') ?></option>
+			  <option value="0">Choose...</option>
 			  <option value="1"><?= t('reg.agree_yes') ?></option>
 			  <option value="2"><?= t('reg.agree_no') ?></option>
 			</select>

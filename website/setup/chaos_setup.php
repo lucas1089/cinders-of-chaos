@@ -187,6 +187,11 @@ $out .= "menu: The World > Mentors\n";
 // the donation page (plugins/chaos/pages/coins.php): Chaos Coins are a thank-you for a voluntary donation
 $menu('Donate', 'page.php?plugin=chaos&p=coins', 'fa-heart', 16);
 $out .= "menu: Donate\n";
+// the staff's player reports and anti-bot log (plugins/chaos/pages/reports.php): admin accounts only, under ZnoteX's
+// "Admin Panel" entry when it is there
+$adminEntry = db()->fetchOne('SELECT `id` FROM `znote_menu` WHERE `location` = ? AND `url` = ? AND `parent_id` = 0 LIMIT 1;', ['main', 'admin/index.php']);
+$menu('Player Reports', 'page.php?plugin=chaos&p=reports', 'fa-flag', 17, is_array($adminEntry) ? (int)$adminEntry['id'] : 0, 'admin');
+$out .= "menu: Player Reports (staff only)\n";
 
 // the Rules page: an editable page (Admin Panel > Pages), added once and never overwritten
 if (znote_table_exists('znote_pages')) {

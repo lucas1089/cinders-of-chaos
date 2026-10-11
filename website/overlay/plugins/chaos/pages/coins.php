@@ -121,8 +121,10 @@ $waiting = $order && in_array($order['status'], array('pending', 'open', 'paid')
 				<?php if ($order['status'] === 'open' && $order['method'] === 'pix'): ?>
 					<?php if (!empty($order['qr_image'])): ?>
 						<p><img alt="Pix QR code" width="240" height="240" src="data:image/png;base64,<?= chaos_h($order['qr_image']) ?>"></p>
+						<p>Scan the QR code with your bank app, or use Pix copy and paste:</p>
+					<?php else: ?>
+						<p>Use Pix copy and paste in your bank app:</p>
 					<?php endif; ?>
-					<p>Scan the QR code with your bank app, or use Pix copy and paste:</p>
 					<textarea readonly rows="3" style="width:100%;" onclick="this.select()"><?= chaos_h($order['qr_code']) ?></textarea>
 					<p class="chaos-muted">Expires at <?= chaos_h(gmdate('H:i', (int)$order['expires'])) ?> UTC. This page updates by itself.</p>
 				<?php elseif ($order['status'] === 'open' && $order['method'] === 'paypal' && $order['pay_url'] !== ''): ?>

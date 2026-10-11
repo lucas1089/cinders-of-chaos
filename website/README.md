@@ -27,6 +27,7 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `payments.env.example` | the donation settings (the credentials stay outside the repository) |
 | `tests/chaos_pay_test.php`, `tests/chaos_donation_page_test.php` | the donation flow and page (php-cli with pdo_sqlite, a mocked provider) |
 | `overlay/plugins/chaos/pages/reports.php`, `reports_lib.php` | staff only (the admin accounts of `CHAOS_ADMIN_ACCOUNTS`): player reports from the game (filters, close / note / reopen with a CSRF token) and the anti-bot log (server/README.md "Anti-bot and player reports"); the leaderboards leave out accounts held for an anti-bot review (`chaos_antibot_hold_sql`, only when the server's `holdLeaderboards` wrote holds) |
+| `tests/chaos_leaderboards_page_test.php` | `php website/tests/chaos_leaderboards_page_test.php`: the Leaderboards page, fastest-time boards ranked lowest first and shown as m:ss (php-cli with pdo_sqlite) |
 | `tests/chaos_reports_page_test.php` | `php website/tests/chaos_reports_page_test.php`: the reports page (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/community_lib.php`, `pages/community.php` | the community goal and the week's world modifiers (read only, from the game's `chaos_community_*` tables): a block on the front page and `page.php?plugin=chaos&p=community` (menu The World > Community) |
 | `tests/chaos_community_page_test.php` | `php website/tests/chaos_community_page_test.php`: the block and the page (php-cli with pdo_sqlite) |
@@ -72,7 +73,8 @@ What it does, in order:
    only into empty tables), every pending ZnoteX migration (recorded with its checksum), our plugin installed and
    enabled (its `install.sql` creates `chaos_class_unlocks` if the server has not yet), the layout switched on, the
    menu entries "The World" (Server Info, Patch Notes, Leaderboards, Seasons, Rules, Community, Guild Wars) and "Donate" (the donation page
-   `page.php?plugin=chaos&p=coins`) and the Rules page added once.
+   `page.php?plugin=chaos&p=coins`), "Player Reports" (staff only, under ZnoteX's Admin Panel entry) and the Rules page
+   added once.
    Menu entries and the Rules page are never overwritten, so the owner's edits in the admin panel stay.
 
 Settings (`site.env.example` has them all): `CHAOS_SITE_DIR`, `CHAOS_SITE_URL`, `CHAOS_ADMIN_ACCOUNTS` (account names
@@ -116,7 +118,9 @@ Local test (what was used to check it): `php -S 127.0.0.1:8095 -t "$CHAOS_SITE_D
   and account storage").
 - **Leaderboards** read `chaos_leaderboard` (this week's boards; week key and tie rules of `leaderboard_core.lua`),
   `chaos_leaderboard_titles` (the holders of the last scored week) and the players table (Class Ladder). Board names
-  and titles come from the server's `leaderboard_config.lua` when `CHAOS_SERVER_DATA` points at it.
+  and titles come from the server's `leaderboard_config.lua` when `CHAOS_SERVER_DATA` points at it; boards of mode `min`
+  (the fastest Cinderheart kills and Sepulchre clears) rank the lowest value first and `format = "time"` shows m:ss, as
+  in the client.
 - **Patch notes** are the server's `data/patchnotes/*.md`, parsed with the rules of `patchnotes_core.lua` (title,
   `Date:`, intro, the New / Changes / Fixes / Balance sections and their colours, bullets, sub-bullets, bold leads,
   comments, the same limits), newest first.
@@ -217,7 +221,8 @@ The account creation form has an optional **Referral code** field (the game serv
 - A wrong code stops the registration with a message. ZnoteX empties `$errors` after the plugins load, so the message is
   added by our `layouts/chaos/views/register_header.php` (register.php renders it after its own checks and before it
   creates the account).
-- `layouts/chaos/views/register_form.php` is ZnoteX's default form with the field added; keep it in step with
+- `layouts/chaos/views/register_form.php` is ZnoteX's default form with the field added and ZnoteX's sample "Server
+  Rules" replaced by a summary that links our Rules page; keep it in step with
   `layouts/default/views/register_form.php` when ZnoteX is updated. With `CHAOS_LAYOUT=void` the field is not shown.
 - Tables: the game server creates them (`server/sql/chaos_referral.sql`, or at its start). Without them no code can be
   found, so a filled field is refused; an empty field works as before.
@@ -371,4 +376,5 @@ there are, how many apprentices learn now and how many graduated. The page only 
 
 - The outfit images of ZnoteX (an external image service) are off; turn them on in `config.local.php` if wanted.
 - Achievements (`chaos_achievements`) and name plate titles have no page yet.
-- Other languages: the layout's wording is English only (the language selector is off).
+- Other languages: the layout's wording is English only (the language selector is off and `languages_enabled` is `en`
+  only, so `?lang=` does not translate ZnoteX's strings around our English pages).

@@ -14,7 +14,7 @@ if (!isset($boards[$board])) {
 	$board = (string)array_key_first($boards);
 }
 $week = chaos_week_key(time(), 6);
-$rows = chaos_leaderboard_rows($board, $week, 20);
+$rows = chaos_leaderboard_rows($board, $week, 20, ($boards[$board]['mode'] ?? '') === 'min');
 list($titleWeek, $titleRows) = chaos_leaderboard_titles();
 $def = $boards[$board];
 $fallenMarks = chaos_fallen_marks(); // season modes: the skull of a fallen Hardcore character on the Class Ladder
@@ -45,7 +45,7 @@ $url = static function (string $key): string {
 					<td><?= $i + 1 ?></td>
 					<td><a href="characterprofile.php?name=<?= rawurlencode((string)$r['name']) ?>"><?= chaos_h($r['name']) ?></a></td>
 					<td><?= chaos_h(chaos_class_name((int)$r['vocation'])) ?></td>
-					<td class="num"><?= chaos_h(number_format((float)$r['value'])) ?></td>
+					<td class="num"><?= chaos_h(chaos_leaderboard_value($def, $r['value'])) ?></td>
 					<?php if ($def['count'] !== ''): ?><td class="num"><?= (int)$r['count'] ?></td><?php endif; ?>
 				</tr>
 			<?php endforeach; endif; ?>

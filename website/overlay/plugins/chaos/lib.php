@@ -349,6 +349,9 @@ function chaos_leaderboard_boards(): array {
 				'count' => (string)(chaos_lua_field($entry, 'count') ?? ''),
 				'title' => (string)(chaos_lua_field($entry, 'title') ?? ''),
 				'info'  => (string)(chaos_lua_field($entry, 'info') ?? ''),
+				// mode "min": the lowest value ranks first (fastest kills); format "time": seconds shown as m:ss
+				'mode'   => (string)(chaos_lua_field($entry, 'mode') ?? 'add'),
+				'format' => (string)(chaos_lua_field($entry, 'format') ?? ''),
 			);
 		}
 		if ($read) {
@@ -376,8 +379,19 @@ function chaos_week_label(int $week): string {
 	return checkdate($m, $d, $y) ? date('j M Y', mktime(12, 0, 0, $m, $d, $y)) : (string)$week;
 }
 
-/** Top rows of a weekly board (staff left out, ties: who got there first, then the lower id). */
-function chaos_leaderboard_rows(string $board, int $week, int $limit = 20): array {
+/** A board value as shown: m:ss for the time boards (format "time", seconds; TabRows.valueText of the client), else a
+ * grouped number. */
+function chaos_leaderboard_value(array $def, $value): string {
+	if (($def['format'] ?? '') === 'time') {
+		$s = max(0, (int)$value);
+		return sprintf('%d:%02d', intdiv($s, 60), $s % 60);
+	}
+	return number_format((float)$value);
+}
+
+/** Top rows of a weekly board (staff left out, ties: who got there first, then the lower id). $ascending: the lowest
+ * value first (boards of mode "min", fastest times; LB.rank of leaderboard_core.lua). */
+function chaos_leaderboard_rows(string $board, int $week, int $limit = 20, bool $ascending = false): array {
 	if (!chaos_table_exists('chaos_leaderboard')) {
 		return array();
 	}
@@ -386,7 +400,7 @@ function chaos_leaderboard_rows(string $board, int $week, int $limit = 20): arra
 		FROM `chaos_leaderboard` `l`
 		JOIN `players` `p` ON `p`.`id` = `l`.`player_id`
 		WHERE `l`.`board` = ? AND `l`.`week` = ? AND `l`.`value` > 0 AND `p`.`group_id` < ?' . chaos_antibot_hold_sql() . '
-		ORDER BY `l`.`value` DESC, `l`.`updated_at` ASC, `l`.`player_id` ASC
+		ORDER BY `l`.`value` ' . ($ascending ? 'ASC' : 'DESC') . ', `l`.`updated_at` ASC, `l`.`player_id` ASC
 		LIMIT ?;', [$board, $week, (int)chaos_cfg('staff_group', 4), $limit]);
 }
 

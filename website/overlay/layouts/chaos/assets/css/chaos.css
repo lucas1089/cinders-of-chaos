@@ -313,6 +313,11 @@ html.sn-anim .sh-logo-img { animation: chaosLogo 7s ease-in-out infinite; }
   .chaos-box { padding: 16px 14px !important; }
   .chaos-table { font-size: 12px; }
 }
+/* phones: wide tables (donation packs, mentors, wars, stock character / guild / online lists) scroll sideways inside
+   their frame instead of being cut off by the page's overflow-x: hidden */
+@media (max-width: 600px) {
+  .chaos-table, table.table, table.znx-acct-table { display: block; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
 
 /* links and tabs inside our pages: gold, as in the client */
 .chaos-page a:not(.chaos-btn):not(.chaos-tab) { color: var(--c-link) !important; }
