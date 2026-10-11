@@ -18,7 +18,12 @@
 --   D.decide(cfg, m)                          nil = allowed, else {code = "locked" | "full" | "chest", text}
 --   D.layout(cfg, tabs, used, items)          places loose chest items into tabs (migration)
 --   D.tabsView(cfg, tabs, used)               {{tab, used, size, locked}} for the client and the texts
---   D.description(cfg, tab, tabs, used)       the look text of a box
+--   D.description(cfg, tab, tabs, used, name)  the look text of a box (a named tab: the name first)
+--   D.openRefusal(cfg, m)                     nil when the depot window may switch to a tab, else the refusal text
+--   D.cleanName(cfg, raw)                     a tab name as stored ("" = default), or nil, reason
+--   D.colorKey(cfg, key)                      a palette key ("" = default), or nil
+--   D.styleRequest(cfg, d)                    {tab, name, color} of a client request, or nil, reason
+--   D.stylesFromRows(cfg, rows), D.styleLists(cfg, styles)  the stored tab styles; per-tab lists for the client
 --   D.openText(cfg, tabs)                     the line shown when a locker opens
 --
 -- acc (engine accessors, depot.lua; tests pass tables): id(node), parent(node) (a container or nil), isContainer(node),
@@ -224,15 +229,128 @@ function D.tabsView(cfg, tabs, used)
 	return view
 end
 
-function D.description(cfg, tab, tabs, used)
+function D.description(cfg, tab, tabs, used, name)
 	local M = cfg.messages
+	local text
 	if int(tab) <= int(tabs) then
-		return string.format(M.descOpen, int(used), int(cfg.tabSize))
+		text = string.format(M.descOpen, int(used), int(cfg.tabSize))
+	elseif int(used) > 0 then
+		text = string.format(M.descLocked, int(used), int(tabs))
+	else
+		text = string.format(M.descLockedEmpty, int(tabs))
 	end
-	if int(used) > 0 then
-		return string.format(M.descLocked, int(used), int(tabs))
+	if type(name) == "string" and name ~= "" then
+		return string.format(M.descNamed, name, text)
 	end
-	return string.format(M.descLockedEmpty, int(tabs))
+	return text
+end
+
+-- ---------------------------------------------------------------- the depot window: switching tabs
+-- m = {tab, chestOpen (the player has this town's depot chest open), near (next to the locker it was opened at),
+-- hasBox (the chest holds that tab's box)}. nil = the client may open the box, else the refusal text. A locked tab opens
+-- too: it is withdraw-only, the move rule keeps it so.
+function D.openRefusal(cfg, m)
+	local M = cfg.messages
+	local tab = tonumber(m.tab)
+	if not tab or tab ~= math.floor(tab) or tab < 1 or tab > D.maxTabs(cfg) then
+		return M.openNoTab
+	end
+	if not m.chestOpen or not m.near then
+		return M.openFar
+	end
+	if not m.hasBox then
+		return M.openNoTab
+	end
+	return nil
+end
+
+-- ---------------------------------------------------------------- tab names and colours
+-- a UTF-8 sequence of U+00A0 .. U+00FF becomes its Latin-1 byte (the client draws cp1252 / Latin-1)
+local function latin1(s)
+	return (s:gsub("[\194\195][\128-\191]", function(c)
+		local b1, b2 = c:byte(1, 2)
+		local code = (b1 - 192) * 64 + (b2 - 128)
+		if code < 160 then
+			return c -- U+0080 .. U+009F: control characters, refused below
+		end
+		return string.char(code)
+	end))
+end
+
+-- the name a player typed -> the stored name ("" = the default name), or nil and the reason. Trimmed, inner runs of
+-- spaces made one; printable ASCII and Latin-1 only; at most cfg.nameMax characters.
+function D.cleanName(cfg, raw)
+	local M = cfg.messages
+	if raw == nil then
+		return ""
+	end
+	if type(raw) ~= "string" then
+		return nil, M.nameChars
+	end
+	local s = latin1(raw):gsub("%s+", " "):gsub("^ ", ""):gsub(" $", "")
+	if s:find("\0", 1, true) or s:find("[\1-\31\127-\159]") then
+		return nil, M.nameChars
+	end
+	if #s > int(cfg.nameMax) then
+		return nil, string.format(M.nameLong, int(cfg.nameMax))
+	end
+	return s
+end
+
+-- palette key -> entry; "" and "default" -> "" (the default colour); anything else -> nil
+function D.colorKey(cfg, key)
+	if key == nil or key == "" or key == "default" then
+		return ""
+	end
+	for _, p in ipairs(cfg.palette) do
+		if p.key == key then
+			return p.key, p
+		end
+	end
+	return nil
+end
+
+-- a style request {tab, name, color} -> {tab, name, color} or nil and the reason. Any tab of the chest, locked too.
+function D.styleRequest(cfg, d)
+	if type(d) ~= "table" then
+		return nil, cfg.messages.openNoTab
+	end
+	local tab = tonumber(d.tab)
+	if not tab or tab ~= math.floor(tab) or tab < 1 or tab > D.maxTabs(cfg) then
+		return nil, cfg.messages.openNoTab
+	end
+	local name, why = D.cleanName(cfg, d.name)
+	if not name then
+		return nil, why
+	end
+	local color = D.colorKey(cfg, d.color)
+	if not color then
+		return nil, cfg.messages.badColor
+	end
+	return {tab = tab, name = name, color = color}
+end
+
+-- rows {tab, name, color} of the table -> {[tab] = {name, color}}; rows out of range or with a bad value are skipped
+function D.stylesFromRows(cfg, rows)
+	local out = {}
+	for _, r in ipairs(rows or {}) do
+		local s = D.styleRequest(cfg, {tab = r.tab, name = r.name, color = r.color})
+		if s and (s.name ~= "" or s.color ~= "") then
+			out[s.tab] = {name = s.name, color = s.color}
+		end
+	end
+	return out
+end
+
+-- {[tab] = {name, color}} -> names, colors: one string per tab ("" = default), for the client
+function D.styleLists(cfg, styles)
+	local names, colors = {}, {}
+	for t = 1, D.maxTabs(cfg) do
+		local s = styles and styles[t]
+		names[t] = s and s.name or ""
+		colors[t] = s and s.color or ""
+	end
+	return names, colors
 end
 
 function D.openText(cfg, tabs)

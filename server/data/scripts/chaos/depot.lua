@@ -17,9 +17,18 @@
 -- The inbox stays unlimited: the engine (market, mail, house transfer) and the scripts deliver there; the engine never
 -- adds to a depot box itself (server/README.md "Depot tabs", coverage).
 --
--- Protocol (extended opcode ChaosOpcodes.depotTabs = 111, JSON {action, data}), server -> client only:
---   tabs {tabs, max, size, used = [n per tab] (missing: unchanged), ids = [client id per tab], chest = [client ids],
---         hint}
+-- Protocol (extended opcode ChaosOpcodes.depotTabs = 111, JSON {action, data}):
+--   server -> client
+--     tabs {tabs, max, size, used = [n per tab] (missing: unchanged), ids = [client id per tab], chest = [client ids],
+--           lockers = [client ids], inbox, market (client ids), hint, store (the store category), names = [per tab],
+--           colors = [palette key per tab] ("" = default), palette = [{key, name, color}], town (at a locker opening)}
+--     open {tab, ok, text}   the answer to an open request: ok = the client may open that tab's box now
+--   client -> server (the depot window)
+--     open {tab}             switch the window to a tab. The engine has no Lua call that opens a container for a player,
+--                            so the server checks (rate limit, the player has the chest open and stands at its locker,
+--                            the box exists) and the client then opens the box with the engine's own use packet, so
+--                            container ids, the range check and every move rule stay the engine's and depot.lua's.
+--     style {tab, name, color}  rename / colour a tab for the whole account (chaos_depot_tabs), locked tabs too
 -- Lua 5.1 / LuaJIT compatible.
 
 if not Chaos then
@@ -40,6 +49,15 @@ local CONTAINER_POS = CONTAINER_POSITION or 0xFFFF
 local WARN = MESSAGE_STATUS_WARNING or MESSAGE_INFO_DESCR
 
 Depot.achTabs = Depot.achTabs or {} -- account id -> achievement tabs (loaded at login and at every locker opening)
+Depot.styles = Depot.styles or {} -- account id -> {[tab] = {name, color}} (chaos_depot_tabs; loaded at login and locker)
+Depot.at = Depot.at or {} -- player id -> {depotId, pos} of the last locker opened (the depot window's tab switch)
+local TABLE = (Chaos.tables and Chaos.tables.depotTabs) or cfg.table
+
+pcall(function()
+	db.query("CREATE TABLE IF NOT EXISTS `" .. TABLE .. "` (`account_id` int(11) NOT NULL, `tab` tinyint(3) unsigned NOT NULL, " ..
+		"`name` varchar(16) CHARACTER SET latin1 NOT NULL DEFAULT '', `color` varchar(16) NOT NULL DEFAULT '', " ..
+		"PRIMARY KEY (`account_id`, `tab`)) ENGINE=InnoDB DEFAULT CHARSET=utf8")
+end)
 
 -- ------------------------------------------------------------------ engine accessors (depot_core.lua `acc`)
 local function isContainer(n)
@@ -128,6 +146,41 @@ function Depot.tabs(player)
 	return Core.tabCount(cfg, limit, ach)
 end
 
+-- ------------------------------------------------------------------ tab names and colours (per account)
+function Depot.loadStyles(accountId)
+	local rows = Chaos.select(string.format("SELECT `tab`, `name`, `color` FROM `%s` WHERE `account_id` = %d", TABLE, accountId),
+		{{"tab", "n"}, {"name", "s"}, {"color", "s"}})
+	local styles = Core.stylesFromRows(cfg, rows)
+	Depot.styles[accountId] = styles
+	return styles
+end
+
+function Depot.stylesOf(player)
+	local accountId = player:getAccountId()
+	local styles = Depot.styles[accountId]
+	if not styles then
+		local ok, res = pcall(Depot.loadStyles, accountId)
+		styles = ok and res or {}
+		Depot.styles[accountId] = styles
+	end
+	return styles
+end
+
+-- s = {tab, name, color} (Core.styleRequest); every character of the account sees it
+function Depot.saveStyle(player, s)
+	local accountId = player:getAccountId()
+	local styles = Depot.stylesOf(player)
+	if s.name == "" and s.color == "" then
+		styles[s.tab] = nil
+		db.query(string.format("DELETE FROM `%s` WHERE `account_id` = %d AND `tab` = %d", TABLE, accountId, s.tab))
+	else
+		styles[s.tab] = {name = s.name, color = s.color}
+		db.query(string.format("INSERT INTO `%s` (`account_id`, `tab`, `name`, `color`) VALUES (%d, %d, %s, %s) " ..
+			"ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `color` = VALUES(`color`)", TABLE, accountId, s.tab,
+			db.escapeString(s.name), db.escapeString(s.color)))
+	end
+end
+
 -- ------------------------------------------------------------------ the chest
 -- {[tab] = box}, {loose items} of a depot chest
 local function scan(chest)
@@ -204,18 +257,32 @@ end
 local clientIds
 local function ids()
 	if not clientIds then
-		clientIds = {tabs = {}, chest = {}}
+		local function cid(id)
+			return ItemType(id):getClientId()
+		end
+		clientIds = {tabs = {}, chest = {}, lockers = {}, inbox = cid(cfg.inboxId), market = cid(cfg.marketId)}
 		for i, id in ipairs(cfg.boxIds) do
-			clientIds.tabs[i] = ItemType(id):getClientId()
+			clientIds.tabs[i] = cid(id)
 		end
 		for i, id in ipairs(cfg.chestIds) do
-			clientIds.chest[i] = ItemType(id):getClientId()
+			clientIds.chest[i] = cid(id)
+		end
+		for i, id in ipairs(cfg.lockerIds) do
+			clientIds.lockers[i] = cid(id)
 		end
 	end
 	return clientIds
 end
 
-local function sendTabs(player, tabs, used)
+local function townName(depotId)
+	local ok, name = pcall(function()
+		local town = Town(depotId)
+		return town and town:getName() or nil
+	end)
+	return ok and name or nil
+end
+
+local function sendTabs(player, tabs, used, depotId)
 	local list
 	if used then
 		list = {}
@@ -224,22 +291,26 @@ local function sendTabs(player, tabs, used)
 		end
 	end
 	local i = ids()
+	local names, colors = Core.styleLists(cfg, Depot.stylesOf(player))
 	Chaos.send(player, OPCODE, "tabs", {tabs = tabs, max = Core.maxTabs(cfg), size = cfg.tabSize, used = list, ids = i.tabs,
-		chest = i.chest, hint = cfg.messages.hint})
+		chest = i.chest, lockers = i.lockers, inbox = i.inbox, market = i.market, hint = cfg.messages.hint,
+		store = cfg.store.name, names = names, colors = colors, palette = cfg.palette, nameMax = cfg.nameMax,
+		town = depotId and townName(depotId) or nil})
 end
 
 -- box descriptions (look text) and the client's counts
-function Depot.refresh(player, chest, tabs)
+function Depot.refresh(player, chest, tabs, depotId)
 	local boxes = scan(chest)
 	local used = usedOf(boxes)
+	local styles = Depot.stylesOf(player)
 	for t, box in pairs(boxes) do
-		local text = Core.description(cfg, t, tabs, used[t] or 0)
+		local text = Core.description(cfg, t, tabs, used[t] or 0, styles[t] and styles[t].name)
 		local okGet, old = pcall(box.getAttribute, box, ITEM_ATTRIBUTE_DESCRIPTION)
 		if not okGet or old ~= text then
 			box:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, text)
 		end
 	end
-	sendTabs(player, tabs, used)
+	sendTabs(player, tabs, used, depotId)
 	return used
 end
 
@@ -254,6 +325,8 @@ function Depot.onOpenLocker(player, locker)
 			return
 		end
 		loadAchievementTabs(player:getAccountId())
+		pcall(Depot.loadStyles, player:getAccountId())
+		Depot.at[player:getId()] = {depotId = depotId, pos = locker:getPosition()}
 		Depot.ensure(chest)
 		-- the rest waits until the engine has opened the locker: a chest the engine has not put into its locker yet has
 		-- no parent, and the engine treats its contents as removed (Item:moveTo does nothing)
@@ -278,7 +351,7 @@ function Depot.afterOpen(player, depotId)
 		end
 		local tabs = Depot.tabs(player)
 		local counts = Depot.migrate(chest, tabs)
-		Depot.refresh(player, chest, tabs)
+		Depot.refresh(player, chest, tabs, depotId)
 		player:sendTextMessage(MESSAGE_STATUS_DEFAULT or MESSAGE_INFO_DESCR, Core.openText(cfg, tabs))
 		if counts and (counts.open + counts.locked) > 0 then
 			player:sendTextMessage(MESSAGE_INFO_DESCR, Core.sortedText(cfg, counts))
@@ -370,11 +443,102 @@ moved.onItemMoved = function(player, item, count, fromPosition, toPosition, from
 end
 moved:register(13)
 
+-- ------------------------------------------------------------------ the depot window (client requests)
+local function reply(player, tab, ok, text)
+	Chaos.send(player, OPCODE, "open", {tab = tab, ok = ok, text = text})
+end
+
+-- open {tab}: may the client open that tab's box now? (the engine opens it on the client's use packet)
+function Depot.requestOpen(player, d)
+	local tab = Chaos.toInt(d.tab, 1, Core.maxTabs(cfg))
+	local at = Depot.at[player:getId()]
+	local m = {tab = tab}
+	if at then
+		local chest = player:getDepotChest(at.depotId, false)
+		if chest then
+			local okId, cid = pcall(player.getContainerId, player, chest)
+			m.chestOpen = okId and type(cid) == "number" and cid >= 0
+			local pos, lp = player:getPosition(), at.pos
+			m.near = lp ~= nil and pos.z == lp.z and math.abs(pos.x - lp.x) <= 1 and math.abs(pos.y - lp.y) <= 1
+			m.hasBox = tab ~= nil and scan(chest)[tab] ~= nil
+		end
+	end
+	local why = Core.openRefusal(cfg, m)
+	if why then
+		reply(player, tab, false, why)
+		return false
+	end
+	reply(player, tab, true)
+	return true
+end
+
+-- style {tab, name, color}
+function Depot.requestStyle(player, d)
+	local s, why = Core.styleRequest(cfg, d)
+	if not s then
+		player:sendTextMessage(WARN, why)
+		sendTabs(player, Depot.tabs(player), nil) -- the window shows the stored style again
+		return false
+	end
+	Depot.saveStyle(player, s)
+	local at = Depot.at[player:getId()]
+	local chest = at and player:getDepotChest(at.depotId, false)
+	if chest then
+		Depot.refresh(player, chest, Depot.tabs(player)) -- the look texts carry the name
+	else
+		sendTabs(player, Depot.tabs(player), nil)
+	end
+	return true
+end
+
+function Depot.onExtendedOpcode(player, opcode, buffer)
+	if opcode ~= OPCODE then
+		return
+	end
+	local m = Chaos.decode(buffer)
+	if not m or type(m.action) ~= "string" then
+		return
+	end
+	local d = type(m.data) == "table" and m.data or {}
+	local ok, err = pcall(function()
+		if m.action == "open" then
+			if not Chaos.limited(player, "depot.open", cfg.openMs) then
+				Depot.requestOpen(player, d)
+			end
+		elseif m.action == "style" then
+			if not Chaos.limited(player, "depot.style", cfg.styleMs) then
+				Depot.requestStyle(player, d)
+			end
+		end
+	end)
+	if not ok then
+		print("[Chaos depot] request: " .. tostring(err))
+	end
+end
+
+local ext = CreatureEvent("ChaosDepotExtended")
+function ext.onExtendedOpcode(player, opcode, buffer)
+	Depot.onExtendedOpcode(player, opcode, buffer)
+end
+ext:type("extendedopcode")
+ext:register()
+
+local logout = CreatureEvent("ChaosDepotLogout")
+function logout.onLogout(player)
+	Depot.at[player:getId()] = nil
+	return true
+end
+logout:type("logout")
+logout:register()
+
 -- ------------------------------------------------------------------ login, hooks
 local login = CreatureEvent("ChaosDepotLogin")
 function login.onLogin(player)
 	local cid = player:getId()
+	player:registerEvent("ChaosDepotExtended")
+	player:registerEvent("ChaosDepotLogout")
 	pcall(loadAchievementTabs, player:getAccountId())
+	pcall(Depot.loadStyles, player:getAccountId())
 	addEvent(function()
 		local p = Player(cid)
 		if p then

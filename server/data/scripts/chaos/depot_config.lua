@@ -19,6 +19,33 @@ return {
 
 	tabSize = 100, -- items per tab; an item inside a bag counts, a container counts as 1 plus its contents
 
+	-- the inbox and the market item in every locker (the depot window's Inbox and Market buttons use them)
+	inboxId = 14404,
+	marketId = 14405,
+
+	-- ------------------------------------------------------------------ the depot window (client game_depottabs)
+	-- opcode 111 client -> server: open {tab} asks to switch the window to a tab (the client then opens that box with the
+	-- engine's own use packet); style {tab, name, color} renames and colours a tab. Milliseconds between two requests.
+	openMs = 250,
+	styleMs = 1000,
+	nameMax = 16, -- characters of a tab name (printable ASCII and Latin-1; empty = the default name)
+	-- tab colours (key, shown name, colour of the tab's accent); "" = default. No free colours.
+	palette = {
+		{key = "gold", name = "Gold", color = "#e8b84a"},
+		{key = "ember", name = "Ember", color = "#e0752a"},
+		{key = "crimson", name = "Crimson", color = "#c0241c"},
+		{key = "rose", name = "Rose", color = "#d0627a"},
+		{key = "violet", name = "Violet", color = "#9a5ad0"},
+		{key = "frost", name = "Frost", color = "#7cc4e8"},
+		{key = "azure", name = "Azure", color = "#3a74d0"},
+		{key = "jade", name = "Jade", color = "#3fae74"},
+		{key = "moss", name = "Moss", color = "#8aa63a"},
+		{key = "bone", name = "Bone", color = "#e6dcc0"},
+		{key = "ash", name = "Ash Grey", color = "#8c8a86"},
+		{key = "bronze", name = "Bronze", color = "#a8703a"}
+	},
+	table = "chaos_depot_tabs", -- per account and tab: name, colour (sql/chaos_depot_tabs.sql; Chaos.tables.depotTabs)
+
 	limitKey = "depotTabs", -- the pact_config.lua limit (free / Pact / bought)
 
 	-- achievements (achievements_data.lua ids) that each open one more tab for the whole account
@@ -55,6 +82,12 @@ return {
 		leftLoose = " %d item(s) did not fit a tab and stay loose in the depot chest (withdraw-only).",
 		descOpen = "%d of %d items.",
 		descLocked = "Locked: %d item(s) inside, withdraw-only. Your account has %d depot tabs. Buy more in the Store.",
-		descLockedEmpty = "Locked. Your account has %d depot tabs. Buy more in the Store (Depot Tabs)."
+		descLockedEmpty = "Locked. Your account has %d depot tabs. Buy more in the Store (Depot Tabs).",
+		descNamed = "%s. %s", -- a named tab's look text: the name, then one of the three texts above
+		openFar = "Stand at your depot locker to switch tabs.",
+		openNoTab = "That depot tab does not exist.",
+		nameLong = "A tab name has at most %d characters.",
+		nameChars = "A tab name may only use letters, digits, spaces and punctuation.",
+		badColor = "Pick one of the tab colours."
 	}
 }

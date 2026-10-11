@@ -2257,20 +2257,55 @@ away. The player gets a line ("Your depot was sorted into tabs: ..."). The sort 
 into its locker: before that the engine treats the chest's contents as removed and `Item:moveTo` does nothing.
 `!season join` still sees an empty depot (it counts items that are not containers).
 
-**Client.** The tabs are ordinary containers. `game_depottabs` (opcode **111**, `ChaosOpcodes.depotTabs`, server -> client
-`tabs {tabs, max, size, used, ids, chest, hint}`, sent at login, at every locker opening, after every move into or out of
-the depot and after a purchase) only decorates them: a tab's window title "Tab 3 (87/100)" or "Tab 7 (locked)", locked
-tabs dimmed in the chest window, a tooltip with the count or the store hint. Each box's look text says the same ("87 of 100
-items.", "Locked: ... Buy more in the Store."). A locker opening prints "Depot: 4 of 17 tabs open, 100 items each ...". No
-base client file or base patch is changed; without the module the rules and texts are the same, the stock titles stay.
-Opcode 111 was checked free like the others (base server list, base client ExtendedIds, every Chaos opcode;
-`tests/depot_test.lua`). No storages, no tables.
+**Client: the depot window.** `game_depottabs` (opcode **111**, `ChaosOpcodes.depotTabs`). Opening a depot locker
+opens one centred window, "<town> Depot", instead of the stock locker, chest and box windows: 17 tab buttons in rows of 6
+(the tab's name or number, a colour accent, a lock on locked tabs, a tooltip with the count or the store hint) and a
+"+ Tabs" button while tabs can be bought; the active tab's 100 slots in a 10x10 grid; "87/100 items", "4 of 17 tabs";
+Inbox, Market, Buy Tabs (the Store at its Depot Tabs category) and Close. The locker, its chest and one box stay real
+containers: the client opens them with the engine's own use packet and only hides the stock windows (it wraps
+`game_containers`' onOpen handler at runtime; no base file, no base patch). So container ids, the range check and every
+move rule above stay as they were: drag and drop, stacking, use and look in the grid are the stock Item widget's.
+Switching tabs: the client sends `open {tab}`; `ChaosDepot.requestOpen` answers `open {tab, ok, text}` after a rate limit
+(`Chaos.limited`, `openMs` 250) and checks that the player has the chest of the locker last opened (`Depot.at`, set by
+`onOpenLocker`) open (`player:getContainerId(chest)`), stands next to that locker on its floor, and that the box exists
+(`ChaosDepotCore.openRefusal`); then the client opens that box into the tab's container id. A locked tab opens too
+(withdraw-only by the move rule). The engine has no Lua call that opens a container for a player; doing it server-side
+would need an engine patch, so the open itself stays the client's use packet. Walking away closes the containers (the
+engine's own auto-close) and the window with them. Without the module the depot works as before.
+
+**Tab names and colours.** Right-click a tab button (or the pencil above the grid): a dialog with the name (at most 16
+characters; empty = the tab number) and 13 colour swatches (default + `palette` in `depot_config.lua`: gold, ember,
+crimson, rose, violet, frost, azure, jade, moss, bone, ash grey, bronze; no free colours). Client -> server
+`style {tab, name, color}`, rate limited (`styleMs` 1000); `ChaosDepotCore.styleRequest` trims the name, makes runs of
+spaces one, turns UTF-8 Latin-1 letters into Latin-1 (the client draws Latin-1) and refuses control characters, anything
+outside Latin-1, more than 16 characters and unknown colour keys (the refusal is a warning line and the stored style is
+sent back). There is no shared name filter in the scripts to reuse (pet names have their own letters-only rule), so tab
+names allow printable ASCII and Latin-1. Locked tabs can be styled too. Stored per account and tab in
+`chaos_depot_tabs (account_id, tab, name, color)` (`sql/chaos_depot_tabs.sql`, `Chaos.tables.depotTabs`; `depot.lua`
+also creates it at startup; a reset deletes the row), cached per account, loaded at login and at every locker opening:
+every character of the account sees the same names. The name shows on the tab button, in the line above the grid and in
+the box's title and look text ("Potions. 87 of 100 items.").
+
+Server -> client `tabs {tabs, max, size, used, ids, chest, lockers, inbox, market, hint, store, names, colors, palette,
+nameMax, town}` (at login, at every locker opening, after every move into or out of the depot, after a purchase and after
+a style change). Each box's look text says the count ("87 of 100 items.", "Locked: ... Buy more in the Store."). A locker
+opening prints "Depot: 4 of 17 tabs open, 100 items each ...". A box opened in a stock window (with the module off, or
+the window closed) gets "Tab 3 (87/100)" or "Potions (locked)" as its title. Opcode 111 was checked free like the others
+(base server list, base client ExtendedIds, every Chaos opcode; `tests/depot_test.lua`). No storages; one table.
 
 **Tested in game** (own server copy and database, full map, one client): a depot of 133 loose items from before tabs
 (130 items, a backpack of 4 stacks, a backpack holding 147 items) sorted into tab 1 (100) and tab 2 (35), the big backpack
 left loose; tabs 5-17 dimmed; a move into locked tab 5 refused with the store hint; a move into the full tab 1 refused;
 a move into tab 3 accepted and its count updated; the 4 Depot Tabs pack bought through the service (8 tabs), then tab 5
 took an item.
+
+**Depot window, tested in game** (own server copy and database on a private port, full map, the things_custom15 pair,
+one client): the locker opened one window and no stock container windows; items dropped into tab 1 through the grid's
+Item widgets (count 0 -> 6/100); a gold stack moved in with the stock count dialog and stacked to 100; an item dragged
+from the grid to the backpack (6 -> 5); tabs 3 and 6 opened through `open {tab}`; a move into locked tab 6 refused;
+tabs 1, 3 and 6 renamed and coloured (rows in `chaos_depot_tabs`), the names and colours shown on another character of
+the account; Inbox opened the inbox, Market the market, Buy Tabs the Store at Depot Tabs; three steps away from the
+locker closed every depot container and the window.
 
 ## Referral program (`referral.lua`, `referral_core.lua`, `referral_config.lua`, `sql/chaos_referral.sql`, client `game_referral`)
 

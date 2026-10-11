@@ -236,9 +236,10 @@ Chaos.tables.raidInstances = "chaos_raid_instances"
 ChaosOpcodes.loadouts = 206
 Chaos.storage.loadouts = 7100570
 Chaos.tables.loadouts = "chaos_loadouts"
--- Depot tabs (client game_depottabs; depot.lua, depot_core.lua, depot_config.lua, tools/patch_base_depot.py): the tab
--- counts and lock marks of the depot chest, server -> client; no storages, no tables (tabs bought are pact.lua extras)
+-- Depot tabs (client game_depottabs; depot.lua, depot_core.lua, depot_config.lua, tools/patch_base_depot.py): the depot
+-- window (tab counts, tab switch requests, tab names and colours); no storages (tabs bought are pact.lua extras)
 ChaosOpcodes.depotTabs = 111
+Chaos.tables.depotTabs = "chaos_depot_tabs" -- depot tab names and colours per account (depot.lua, sql/chaos_depot_tabs.sql)
 -- Hideouts (client game_hideout; hideout.lua, hideout_core.lua, hideout_config.lua, hideout_store.lua,
 -- sql/chaos_hideout.sql): decoration window, placement, permissions, visits and likes on one opcode; storages
 -- 7100180 - 7100189 reserved (hideout_config.lua storage: the spot a character entered from); map grid x/y 12288 - 12799

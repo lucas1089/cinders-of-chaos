@@ -256,12 +256,38 @@ MESSAGE_STATUS_WARNING, MESSAGE_INFO_DESCR, MESSAGE_STATUS_DEFAULT = 10, 11, 12
 ITEM_ATTRIBUTE_DESCRIPTION = 2
 INDEX_WHEREEVER, FLAG_NOLIMIT = -1, 1
 local callbacks, timers, sent, loginEvent, lockerAction = {}, {}, {}, nil, nil
+local events = {}
 EventCallback = setmetatable({}, {__newindex = function(t, k, v) callbacks[k] = v end,
 	__index = function(t, k) if k == "register" then return function() end end end})
-CreatureEvent = function()
-	local e = {register = function(self) loginEvent = self end}
+CreatureEvent = function(name)
+	local e = {name = name, type = function() end}
+	function e:register()
+		events[self.name] = self
+		if self.onLogin then
+			loginEvent = self
+		end
+	end
 	return e
 end
+-- JSON: the encoded value is kept in a registry (Chaos.decode calls json.decode)
+local jsonRegistry = {}
+json = {
+	encode = function(t) jsonRegistry[#jsonRegistry + 1] = t; return "J" .. #jsonRegistry end,
+	decode = function(text)
+		local v = jsonRegistry[tonumber(tostring(text):match("^J(%d+)$") or -1)]
+		if v == nil then
+			error("bad json")
+		end
+		return v
+	end
+}
+-- the rate limiter (ratelimit.lua) on a clock the test sets
+local clock = 1000000
+os.mtime = function() return clock end
+dofile("data/scripts/chaos/ratelimit.lua")
+-- the database: chaos_depot_tabs rows {account_id, tab, name, color}; queries are parsed just enough
+local dbRows, queries = {}, {}
+Town = function(id) return {getName = function() return id == 3 and "Ashford Hollow" or "Town " .. id end} end
 Action = function()
 	local a = {ids = {}}
 	function a:id(i) self.ids[#self.ids + 1] = i end
@@ -289,12 +315,36 @@ ItemType = function(id)
 		isMovable = function() return not IMMOVABLE[id] end}
 end
 local achRows = 0
-db = {escapeString = function(s) return "'" .. s .. "'" end}
+local function unq(v) return (v:gsub("^'", ""):gsub("'$", ""):gsub("''", "'")) end
+db = {escapeString = function(s) return "'" .. s:gsub("'", "''") .. "'" end}
+function db.query(q)
+	queries[#queries + 1] = q
+	local acc, tab, name, color = q:match("^INSERT INTO `chaos_depot_tabs`.-VALUES %((%d+), (%d+), ('.-'), ('.-')%) ON")
+	if acc then
+		dbRows[acc .. ":" .. tab] = {account_id = tonumber(acc), tab = tonumber(tab), name = unq(name), color = unq(color)}
+		return true
+	end
+	acc, tab = q:match("^DELETE FROM `chaos_depot_tabs` WHERE `account_id` = (%d+) AND `tab` = (%d+)")
+	if acc then
+		dbRows[acc .. ":" .. tab] = nil
+	end
+	return true
+end
 Chaos = nil
 dofile("data/scripts/chaos/chaos_constants.lua")
 Chaos.select = function(q)
 	if q:find("chaos_achievements", 1, true) then
 		return {{n = achRows}}
+	end
+	local acc = q:match("FROM `chaos_depot_tabs` WHERE `account_id` = (%d+)")
+	if acc then
+		local rows = {}
+		for _, r in pairs(dbRows) do
+			if r.account_id == tonumber(acc) then
+				rows[#rows + 1] = {tab = r.tab, name = r.name, color = r.color}
+			end
+		end
+		return rows
 	end
 	return {}
 end
@@ -333,6 +383,7 @@ function Item:getCapacity() return self.cap or 20 end
 function Item:getCount() return self.count end
 function Item:getType() return ItemType(self.id) end
 function Item:getUniqueId() return self.uid or 0 end
+function Item:getPosition() return self.pos or {x = 1000, y = 1000, z = 7} end
 function Item:getAttribute(k) return self.attrs[k] end
 function Item:setAttribute(k, v) self.attrs[k] = v end
 local function detach(it)
@@ -377,7 +428,11 @@ local LOCKER_UID = 70001
 getDepotId = function(uid) return uid == LOCKER_UID and 3 or false end
 
 local function newPlayer(accountId)
-	local p = {account = accountId, messages = {}, chests = {}, id = 268435456 + accountId}
+	local p = {account = accountId, messages = {}, chests = {}, id = 268435456 + accountId, pos = {x = 1000, y = 1001, z = 7},
+		open = {}}
+	function p:getPosition() return self.pos end
+	function p:registerEvent(name) self.registered = self.registered or {} self.registered[name] = true end
+	function p:getContainerId(c) for cid, x in pairs(self.open) do if x == c then return cid end end return -1 end
 	function p:getAccountId() return self.account end
 	function p:getId() return self.id end
 	function p:getName() return "Hero" .. self.account end
@@ -592,6 +647,212 @@ sent = {}
 loginEvent.onLogin(hero)
 runTimers()
 check(#sent >= 1 and sent[#sent].action == "tabs", "tabs at login")
+
+-- ---------------------------------------------------------------- tab names and colours: the rules
+eq(#cfg.palette, 12, "12 tab colours")
+local keysSeen = {}
+for _, c in ipairs(cfg.palette) do
+	check(not keysSeen[c.key], "colour key once: " .. c.key)
+	keysSeen[c.key] = true
+	check(c.color:match("^#%x%x%x%x%x%x$") ~= nil, "colour " .. c.key .. " is #rrggbb")
+	check(type(c.name) == "string" and c.name ~= "", "colour " .. c.key .. " has a name")
+	check(c.key ~= "default" and c.key ~= "", "no palette key looks like the default")
+end
+check(keysSeen.gold and keysSeen.ember and keysSeen.crimson and keysSeen.jade and keysSeen.frost and keysSeen.violet and keysSeen.ash,
+	"the house colours are in the palette")
+eq(cfg.nameMax, 16, "tab names up to 16 characters")
+eq(D.cleanName(cfg, "  Potions  "), "Potions", "name trimmed")
+eq(D.cleanName(cfg, "Runes   and  bolts"), "Runes and bolts", "inner spaces made one")
+eq(D.cleanName(cfg, "1234567890abcdef"), "1234567890abcdef", "16 characters fit")
+local nm, why = D.cleanName(cfg, "1234567890abcdefg")
+eq(nm, nil, "17 characters refused") has(why, "at most 16", "length reason")
+eq(D.cleanName(cfg, "  1234567890abcdef  "), "1234567890abcdef", "length counted after trimming")
+nm, why = D.cleanName(cfg, "Bad\1name")
+eq(nm, nil, "a control character refused") has(why, "letters, digits", "characters reason")
+eq(D.cleanName(cfg, "Tab\127"), nil, "DEL refused")
+eq(D.cleanName(cfg, "Tab\0x"), nil, "a zero byte refused")
+eq(D.cleanName(cfg, "Tab\150"), nil, "a C1 control byte refused")
+eq(D.cleanName(cfg, "Caf\233 & Co. #1!"), "Caf\233 & Co. #1!", "Latin-1 and punctuation allowed")
+eq(D.cleanName(cfg, "Caf\195\169"), "Caf\233", "UTF-8 Latin-1 letters become Latin-1")
+eq(D.cleanName(cfg, "\226\130\172uro"), nil, "characters outside Latin-1 refused")
+eq(D.cleanName(cfg, "Tab\tTwo"), "Tab Two", "a tab character is a space")
+eq(D.cleanName(cfg, "   "), "", "only spaces: the default name")
+eq(D.cleanName(cfg, ""), "", "empty: the default name")
+eq(D.cleanName(cfg, nil), "", "no name: the default name")
+eq(D.cleanName(cfg, 42), nil, "a number is no name")
+eq(D.cleanName(cfg, {}), nil, "a table is no name")
+eq(D.colorKey(cfg, "jade"), "jade", "a palette key")
+eq(D.colorKey(cfg, ""), "", "empty: default colour") eq(D.colorKey(cfg, "default"), "", "default colour")
+eq(D.colorKey(cfg, nil), "", "no colour: default")
+eq(D.colorKey(cfg, "#ff0000"), nil, "no free hex colours") eq(D.colorKey(cfg, "JADE"), nil, "keys are exact")
+eq(D.colorKey(cfg, 3), nil, "a number is no colour")
+local st = D.styleRequest(cfg, {tab = 9, name = " Loot ", color = "ember"})
+eq(st and st.tab, 9, "a locked tab can be styled") eq(st and st.name, "Loot", "style name") eq(st and st.color, "ember", "style colour")
+eq(D.styleRequest(cfg, {tab = 0, name = "x"}), nil, "tab 0 refused")
+eq(D.styleRequest(cfg, {tab = 18, name = "x"}), nil, "tab 18 refused")
+eq(D.styleRequest(cfg, {tab = 2.5, name = "x"}), nil, "tab 2.5 refused")
+eq(D.styleRequest(cfg, {tab = "x"}), nil, "a tab must be a number")
+eq(D.styleRequest(cfg, "junk"), nil, "junk refused")
+st, why = D.styleRequest(cfg, {tab = 2, name = "ok", color = "pink"})
+eq(st, nil, "an unknown colour refused") has(why, "colours", "colour reason")
+st = D.styleRequest(cfg, {tab = 2})
+eq(st and st.name, "", "no name: reset") eq(st and st.color, "", "no colour: reset")
+local fromRows = D.stylesFromRows(cfg, {{tab = 1, name = "Gear", color = ""}, {tab = 20, name = "x", color = ""},
+	{tab = 2, name = "", color = "pink"}, {tab = 3, name = "", color = ""}, {tab = 4, name = "", color = "frost"}})
+eq(fromRows[1] and fromRows[1].name, "Gear", "row of tab 1") eq(fromRows[20], nil, "row out of range skipped")
+eq(fromRows[2], nil, "row with a bad colour skipped") eq(fromRows[3], nil, "an empty row is the default")
+eq(fromRows[4] and fromRows[4].color, "frost", "colour only")
+local names, colors = D.styleLists(cfg, fromRows)
+eq(#names, 17, "a name per tab") eq(names[1], "Gear", "name list") eq(names[2], "", "default name is empty")
+eq(colors[4], "frost", "colour list")
+eq(D.description(cfg, 3, 4, 87, "Potions"), "Potions. 87 of 100 items.", "a named tab's look text")
+eq(D.description(cfg, 3, 4, 87, ""), "87 of 100 items.", "an empty name changes nothing")
+has(D.description(cfg, 9, 4, 2, "Old"), "Old. Locked", "a named locked tab")
+
+-- ---------------------------------------------------------------- switching tabs: the rule
+local function openOk(m) return D.openRefusal(cfg, m) end
+eq(openOk({tab = 3, chestOpen = true, near = true, hasBox = true}), nil, "an open tab at the locker")
+eq(openOk({tab = 12, chestOpen = true, near = true, hasBox = true}), nil, "a locked tab opens (withdraw-only)")
+has(openOk({tab = 3, chestOpen = false, near = true, hasBox = true}), "Stand at your depot locker", "no chest open")
+has(openOk({tab = 3, chestOpen = true, near = false, hasBox = true}), "Stand at your depot locker", "away from the locker")
+has(openOk({tab = 3}), "Stand at your depot locker", "no locker at all")
+has(openOk({tab = 18, chestOpen = true, near = true, hasBox = true}), "does not exist", "tab 18")
+has(openOk({tab = nil, chestOpen = true, near = true, hasBox = true}), "does not exist", "no tab")
+has(openOk({tab = 3, chestOpen = true, near = true, hasBox = false}), "does not exist", "a box missing")
+
+-- ---------------------------------------------------------------- the depot window requests (depot.lua)
+check(events.ChaosDepotExtended ~= nil and events.ChaosDepotExtended.onExtendedOpcode ~= nil, "extended opcode event")
+check(events.ChaosDepotLogout ~= nil, "logout event")
+check(hero.registered and hero.registered.ChaosDepotExtended, "login registers the opcode event")
+local function request(p, action, data)
+	sent = {}
+	p.messages = {}
+	events.ChaosDepotExtended.onExtendedOpcode(p, 111, json.encode({action = action, data = data}))
+	return sent[#sent]
+end
+local function tick(ms) clock = clock + (ms or 1000) end
+-- the locker of the test sits at 1000,1000,7; the hero stands next to it with the chest open in container 5
+lockerItem.pos = {x = 1000, y = 1000, z = 7}
+lockerAction.onUse(hero, lockerItem)
+openLockers(hero)
+runTimers()
+eq(last and last.action, "tabs", "tabs before")
+local tabsMsg = sent[#sent]
+eq(tabsMsg and tabsMsg.data.town, "Ashford Hollow", "the town name at a locker opening")
+eq(tabsMsg and tabsMsg.data.store, "Depot Tabs", "the store category")
+eq(tabsMsg and tabsMsg.data.inbox, 14404 - 1000, "inbox client id") eq(tabsMsg and tabsMsg.data.market, 14405 - 1000, "market client id")
+eq(tabsMsg and tabsMsg.data.lockers and tabsMsg.data.lockers[1], 2589 - 1000, "locker client ids")
+eq(tabsMsg and #tabsMsg.data.palette, 12, "the palette goes to the client")
+eq(tabsMsg and #tabsMsg.data.names, 17, "names for every tab")
+tick()
+local r1 = request(hero, "open", {tab = 3})
+eq(r1 and r1.action, "open", "an answer") eq(r1 and r1.data.ok, false, "chest not open: refused")
+has(r1 and r1.data.text, "Stand at your depot locker", "refusal text")
+hero.open[5] = hero.chests[3]
+tick()
+r1 = request(hero, "open", {tab = 3})
+eq(r1 and r1.data.ok, true, "chest open at the locker: the client may open tab 3") eq(r1 and r1.data.tab, 3, "the tab")
+tick()
+r1 = request(hero, "open", {tab = 12})
+eq(r1 and r1.data.ok, true, "a locked tab still opens for withdrawing")
+-- the rate limit: a second request inside openMs is dropped, one after it is answered
+r1 = request(hero, "open", {tab = 2})
+eq(r1, nil, "a request inside the rate limit is dropped")
+tick(cfg.openMs - 1)
+eq(request(hero, "open", {tab = 2}), nil, "still inside the rate limit")
+tick(2)
+r1 = request(hero, "open", {tab = 2})
+eq(r1 and r1.data.ok, true, "after the rate limit: answered")
+tick()
+r1 = request(hero, "open", {tab = 18})
+eq(r1 and r1.data.ok, false, "tab 18 refused")
+tick()
+r1 = request(hero, "open", {tab = "x"})
+eq(r1 and r1.data.ok, false, "junk tab refused")
+hero.pos = {x = 1003, y = 1000, z = 7}
+tick()
+r1 = request(hero, "open", {tab = 3})
+eq(r1 and r1.data.ok, false, "three steps away: refused")
+hero.pos = {x = 1001, y = 999, z = 7}
+tick()
+eq(request(hero, "open", {tab = 3}).data.ok, true, "diagonal to the locker: fine")
+hero.pos = {x = 1000, y = 1001, z = 6}
+tick()
+eq(request(hero, "open", {tab = 3}).data.ok, false, "another floor: refused")
+hero.pos = {x = 1000, y = 1001, z = 7}
+local stranger = newPlayer(9)
+stranger:getDepotChest(3, true)
+tick()
+r1 = request(stranger, "open", {tab = 1})
+eq(r1 and r1.data.ok, false, "no locker opened: refused")
+-- the other actions and opcodes are ignored
+tick()
+eq(request(hero, "drop", {tab = 1}), nil, "an unknown action")
+sent = {}
+events.ChaosDepotExtended.onExtendedOpcode(hero, 112, json.encode({action = "open", data = {tab = 1}}))
+eq(#sent, 0, "another opcode")
+events.ChaosDepotExtended.onExtendedOpcode(hero, 111, "not json")
+eq(#sent, 0, "junk")
+
+-- ---------------------------------------------------------------- names and colours (depot.lua, chaos_depot_tabs)
+tick()
+local rs = request(hero, "style", {tab = 3, name = "  Potions ", color = "jade"})
+eq(rs and rs.action, "tabs", "the tab list comes back after a style")
+eq(rs and rs.data.names[3], "Potions", "the new name") eq(rs and rs.data.colors[3], "jade", "the new colour")
+eq(dbRows["1:3"] and dbRows["1:3"].name, "Potions", "stored for the account") eq(dbRows["1:3"].color, "jade", "colour stored")
+has(boxes[3].attrs[ITEM_ATTRIBUTE_DESCRIPTION], "Potions. ", "the box look text carries the name")
+-- the rate limit
+eq(request(hero, "style", {tab = 4, name = "Fast"}), nil, "a second style inside the rate limit is dropped")
+eq(dbRows["1:4"], nil, "nothing stored")
+tick(cfg.styleMs)
+rs = request(hero, "style", {tab = 4, name = "Fast"})
+eq(dbRows["1:4"] and dbRows["1:4"].name, "Fast", "after the rate limit: stored")
+-- refusals keep the stored style
+tick()
+rs = request(hero, "style", {tab = 3, name = "A name far too long", color = "jade"})
+eq(dbRows["1:3"].name, "Potions", "a long name is refused") has(hero.messages[1] and hero.messages[1].text, "at most 16", "length warning")
+eq(rs and rs.data.names[3], "Potions", "the client gets the stored name back")
+tick()
+request(hero, "style", {tab = 3, name = "Potions", color = "#00ff00"})
+eq(dbRows["1:3"].color, "jade", "a free colour is refused")
+tick()
+request(hero, "style", {tab = 3, name = "Pot\1ions", color = "jade"})
+eq(dbRows["1:3"].name, "Potions", "a control character is refused")
+tick()
+request(hero, "style", {tab = 40, name = "x"})
+eq(dbRows["1:40"], nil, "tab 40 refused")
+tick()
+request(hero, "style", {tab = 15, name = "Old gear", color = "ash"})
+eq(dbRows["1:15"] and dbRows["1:15"].color, "ash", "a locked tab can be styled")
+tick()
+request(hero, "style", {tab = 4, name = "it's", color = "crimson"})
+eq(dbRows["1:4"].name, "it's", "a quote is stored safely")
+-- reset: an empty name and the default colour remove the row
+tick()
+rs = request(hero, "style", {tab = 4, name = "   ", color = "default"})
+eq(dbRows["1:4"], nil, "reset removes the row") eq(rs and rs.data.names[4], "", "default name again")
+-- persistence: a relog and another character of the account see it, another account does not
+Dp.styles = {}
+local alt = newPlayer(1)
+alt.id = 268435999
+online[alt.id] = alt
+sent = {}
+loginEvent.onLogin(alt)
+runTimers()
+local altMsg = sent[#sent]
+eq(altMsg and altMsg.data.names[3], "Potions", "another character of the account: the name")
+eq(altMsg and altMsg.data.colors[3], "jade", "and the colour")
+eq(altMsg and altMsg.data.names[15], "Old gear", "and the locked tab's name")
+local otherAcc = newPlayer(2)
+online[otherAcc:getId()] = otherAcc
+sent = {}
+loginEvent.onLogin(otherAcc)
+runTimers()
+eq(sent[#sent] and sent[#sent].data.names[3], "", "another account: no name")
+-- logout forgets the locker
+events.ChaosDepotLogout.onLogout(hero)
+tick()
+eq(request(hero, "open", {tab = 1}).data.ok, false, "after a logout the locker is forgotten")
 
 -- opcode 111 is free
 eq(ChaosOpcodes.depotTabs, 111, "opcode constant")
