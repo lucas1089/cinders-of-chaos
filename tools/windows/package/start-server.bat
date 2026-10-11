@@ -52,7 +52,27 @@ echo Database ready. Accounts: chaos / chaos (staff), test / test (one character
 :run
 echo Starting the game server. Close this window to stop it.
 cd /d "%ROOT%server"
+if not exist "%ROOT%crashes" mkdir "%ROOT%crashes"
+set /a crashes=0
+:serve
 ChaosServer.exe
+set "code=%errorlevel%"
+rem a clean exit (code 0: /shutdown, a server save shutdown) ends here; anything else is a crash and starts it again
+if "%code%"=="0" goto stopped
+set /a crashes+=1
+echo %date% %time% exit code %code% >> "%ROOT%crashes\crashes.log"
+echo.
+echo The game server crashed (exit code %code%). Restart %crashes% of 5; see crashes\crashes.log.
+rem five crashes without a clean stop in between: something is wrong with the data, stop retrying
+if %crashes% geq 5 (
+  echo It crashed 5 times. Not restarting again: read the window above and crashes\crashes.log.
+  goto stopped
+)
+timeout /t 5 /nobreak >nul
+echo Restarting the game server...
+goto serve
+
+:stopped
 echo.
 echo The game server stopped. The database keeps running until stop-server.bat.
 pause

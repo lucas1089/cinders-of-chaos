@@ -11,6 +11,8 @@ Runs the server and the client on your own computer.
      account chaos / password chaos   staff character "Chaos Admin" (god: /coins, /worldboss, admin panel)
      account test  / password test    Test Warrior, Test Ranger, Test Mystic, Test Thief (level 1, tutorial)
 4. To stop: close the game server window, then run stop-server.bat.
+   If the game server crashes, start-server.bat starts it again after 5 seconds (each crash is written to
+   crashes\crashes.log); after 5 crashes in a row it stops trying and leaves the window open.
 
 Map editor
   open-map-editor.bat opens the map editor (Remere's Map Editor, version 10.98). The first time it asks where the

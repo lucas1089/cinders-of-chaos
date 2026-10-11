@@ -83,6 +83,9 @@ jobs:
       - name: Client updater tools (manifest builder, signer, path rules)
         run: python3 -I client/tools/make_update_manifest_test.py
 
+      - name: Server hang watchdog (status probe, restart decision)
+        run: python3 -I server/tools/chaos_watchdog_test.py
+
       - name: Client update manifest (unsigned dry run over the overlay)
         run: |
           d=$(mktemp -d)

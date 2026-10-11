@@ -9,7 +9,8 @@
 #
 # The daily server save (data/globalevents/globalevents.xml "Server Save") saves and then shuts the engine down,
 # because config.lua keeps serverSaveShutdown = true (server/tools/prod_config.py). Restart=always starts it again a few
-# seconds later, so every day begins with a fresh process and a clean map. Crashes restart the same way.
+# seconds later, so every day begins with a fresh process and a clean map. Crashes restart the same way, and
+# chaos-watchdog.timer restarts the service when the engine hangs (alive, but the status protocol no longer answers).
 # SIGTERM (systemctl stop / restart) makes the engine save and shut down cleanly; SIGUSR1 saves without stopping
 # (server/tools/backup.sh sends it before a dump): sudo systemctl kill -s SIGUSR1 chaos-server
 
@@ -17,6 +18,8 @@
 Description=Cinders of Chaos game server
 Wants=network-online.target
 After=network-online.target mariadb.service mysql.service
+# never give up restarting: a crash loop keeps retrying every RestartSec (each stop is recorded by chaos_crashlog.sh)
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
@@ -27,6 +30,10 @@ EnvironmentFile=/etc/chaos/chaos.env
 ExecStart=/opt/chaos/server/tfs
 Restart=always
 RestartSec=5
+# after an unclean stop (crash, signal, kill): keep the last 200 log lines in /var/log/chaos/crashes/ and post an alert
+# when CHAOS_ALERT_WEBHOOK is set; "+" runs it as root so it can write there. A clean stop (daily server save,
+# systemctl stop) records nothing. A hang (alive but stuck) is caught by chaos-watchdog.timer.
+ExecStopPost=+/opt/chaos/repo/server/tools/chaos_crashlog.sh
 # a full save of a busy server can take a while; do not SIGKILL it halfway
 TimeoutStopSec=180
 KillSignal=SIGTERM

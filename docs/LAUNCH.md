@@ -127,15 +127,26 @@ sudo useradd --system --home /opt/chaos --shell /usr/sbin/nologin chaos
 sudo chown -R chaos:chaos /opt/chaos/server
 sudo install -d -m 0755 /var/log/chaos
 sudo cp server/deploy/chaos-server.service server/deploy/chaos-clientservices.service \
-        server/deploy/chaos-backup.service server/deploy/chaos-backup.timer /etc/systemd/system/
+        server/deploy/chaos-backup.service server/deploy/chaos-backup.timer \
+        server/deploy/chaos-watchdog.service server/deploy/chaos-watchdog.timer /etc/systemd/system/
 sudo cp server/deploy/chaos.logrotate /etc/logrotate.d/chaos
 sudo systemctl daemon-reload
-sudo systemctl enable --now chaos-server chaos-clientservices chaos-backup.timer
+sudo systemctl enable --now chaos-server chaos-clientservices chaos-backup.timer chaos-watchdog.timer
 ```
 
 - `chaos-server.service`: `Restart=always` brings the engine back after the daily save (which shuts it down on
   purpose) and after a crash. `systemctl stop` sends SIGTERM: the engine saves and shuts down (180 s allowed).
   `systemctl kill -s SIGUSR1 chaos-server` saves without stopping. The console goes to `/var/log/chaos/server.log`.
+- **Crashes and hangs.** A crash (any stop that is not clean) is restarted 5 s later by `Restart=always`, without a
+  retry limit (`StartLimitIntervalSec=0`). Before that `server/tools/chaos_crashlog.sh` (`ExecStopPost`) keeps the
+  last 200 console lines in `/var/log/chaos/crashes/crash-<time>.log` (newest 50 kept) and, when
+  `CHAOS_ALERT_WEBHOOK` is set in `/etc/chaos/chaos.env` (a webhook that takes `{"content": ...}`, such as a Discord
+  channel webhook), posts an alert. A clean stop (the daily server save, `systemctl stop`) records nothing. A hang,
+  where the process lives but the game loop is stuck, is caught by `chaos-watchdog.timer`: once a minute
+  `server/tools/chaos_watchdog.py` asks the status protocol (port 7171) for its info document, which the engine
+  answers from the game's dispatcher; after 3 misses in a row it restarts `chaos-server` and notes it in
+  `/var/log/chaos/crashes/watchdog.log`. The first 5 minutes after a start are skipped (map load). Check:
+  `systemctl list-timers chaos-watchdog.timer`, `journalctl -u chaos-watchdog`.
 - `chaos-clientservices.service`: the login-screen endpoint (`server/tools/clientservices.py`, port 8090) that serves
   `data/chaos_clientservices.json`, which the game server rewrites every 5 minutes.
 - `chaos.logrotate`: daily, 14 days, compressed, `copytruncate` (systemd keeps the files open).
