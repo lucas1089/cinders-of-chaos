@@ -69,7 +69,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | game_pvpzone | extended opcode 193 (JSON through `registerExtendedJSONOpcode`: `open` / `query` / `enter {accept, hcAccept}` / `pledge {faction}` / `buy {key}` out; `state`, `hud`, `enter`, `hide`, `msg` back) + Adventure > Scorched Marches | none (menu entry through `ChaosTopBar.addEntry`; `g_game.setSafeFight`) | The Scorched Marches, the open-world PvP zone: the window (Chaos skin, 600 x 520: the rules, the Cinder Shrine timer and holder, the faction pledge rows, the embers vendor with item icons and weekly limits, the record; Enter), the entry confirmation (460 x 360: every rule, the carried embers at risk, "I understand", a Hardcore line; Enter disabled for Hardcore characters), the HUD at the top of the map in the battleground HUD's place (embers carried / cap bar, the pledge, the shrine line: timer, warden, capture progress or contested, the holder and its time left, protection or the exit channel). Secure mode off inside, restored on leaving. Pure helpers `pvpzoneview.lua` (`pvpzoneview_test.lua` in CI); server `data/scripts/chaos/pvpzone.lua` (server/README.md "The Scorched Marches (open-world PvP zone)"); tested on a live test server with two clients |
 | game_healthcircle | none | none | In `alternates/`: the base client's own is used |
 | game_mainpanel | none | none | In `alternates/`: the base client's own is used |
-| game_chaosnotify (was game_notifications) | extended opcodes 79, 151, 152 | none | Needs server script (`notifications.lua`). Toast types per message kind; `sale` = ITEM SOLD with the market icon (`/images/chaos/topbutton_market`, server market.lua / orbexchange.lua: item, price, fee, proceeds, or "While you were away: ..." at login), `achievement` = ACHIEVEMENT UNLOCKED with the trophy icon (`topbutton_ranking`); titles use each type's colour. Three toasts shown, stacked by their own heights (no overlap with the 140 px invitation toasts), the rest wait in a queue capped at 12 (the oldest message toast gives way). Logic `notifyview.lua` (tested by `notifyview_test.lua`); `testNotifications()` shows a sale and an achievement too |
+| game_chaosnotify (was game_notifications) | extended opcodes 79, 151, 152 | none | Needs server script (`notifications.lua`). Toast types per message kind; `sale` = ITEM SOLD with the market icon (`/images/chaos/topbutton_market`, server market.lua / orbexchange.lua: item, price, fee, proceeds, or "While you were away: ..." at login), `achievement` = ACHIEVEMENT UNLOCKED with the trophy icon (`topbutton_ranking`); titles use each type's colour. Three toasts shown, stacked by their own heights (no overlap with the 140 px invitation toasts), the rest wait in a queue capped at 12 (the oldest message toast gives way). Logic `notifyview.lua` (tested by `notifyview_test.lua`); `testNotifications()` shows a sale and an achievement too. Invitation toasts (PARTY_INVITE: Accept / Decline; CATACOMB_FREE: Start / Cancel) use the styles of `toastbuttons.otui` (`ChaosToastAccept`, `ChaosToastDecline`, 80 x 24, normal / hover / pressed / disabled clips); the label is drawn by the client in the Chaos heading font when loaded. Art `images/toast/` (accept.png, decline.png, party_invite.png 48x48) comes from `client/tools/gen_toast_art.py`: iron plates with a gold rim, an ember-green or muted crimson accent; the old stock yes / no scribbles and the party icon are gone; checked offline in the client (hover and pressed) |
 | game_itemtooltip | extended opcode 242 (JSON), server `item_tooltip.lua` | none | Rewritten: server-driven rich tooltip on hover over inventory and container items (rarity, item level and tier, base stats, modifiers with roll ranges, sockets and gems, unique and set, requirements) on the Chaos tooltip plate; Ctrl shows the equipped item(s) of the same slot side by side with green/red differences; cached by per-item id and version. View logic `tooltiplogic.lua` (tested by `tooltiplogic_test.lua`); tested in game (server/README.md "Item attributes in packets and rich tooltips") The icon draws a transmog look (`tip.look`, `item:setAppearanceId`, base patch 0030), also in item link tooltips. Item set pieces: the title "Set ..." in the set green and a set block (`L.setLines`: pieces that count, every piece worn / below its level / not worn, every bonus active or dim); the cached set pieces are dropped when the equipment changes (`LocalPlayer.onInventoryChange`, `L.dropSetTips`). Tested by `tooltipsets_test.lua`; checked on a live test server (server/README.md "Item sets") |
 | game_chatlinks | extended opcode 249 (JSON), server `itemlink.lua`, `itemlink_core.lua` | none | Item links in chat: Shift+click an item in the inventory or a container (with the chat input active) puts `[Item Name]` in the message, up to 3; the server checks the player carries the item and keeps a snapshot of its tooltip for 10 minutes under a random id; sending writes the chip out as `[Item Name]{<r><id>}` (ASCII, readable in other clients) in ordinary speech, so default channel, party, guild, channels and private messages all carry it. Messages with links are drawn with the name in the rarity colour (unique orange); hovering one asks the server for the snapshot and shows the rich tooltip through `game_itemtooltip` (`showTip` / `hideTip`; Ctrl compares). Wraps three functions of the stock `game_console` (`Message:updateLabel`, `Message:handleMouseRelease`, `Chat:sendMessage`, `Chat:sendMapText`) and puts them back on terminate; hooks `UIItem.onMouseRelease` in front of the stock handler. No links in the Help channel (server patch `tools/patch_help_itemlinks.py` for modified clients), NPC, loot and spell tabs. Logic `chatlinks_logic.lua` (tested by `chatlinks_logic_test.lua`); tested in game with two clients (server/README.md "Item links in chat"). Its wrapped handlers return exactly one value: the engine calls a table of connected handlers (`g_game.onGameStart` / `onGameEnd`, `UIItem.onMouseRelease`) and stops the rest of the table with "function call didn't return the expected number of results" on two, which skipped every onGameStart after it at each login (party frames never asked for their state, the map overlay, rifts, ...) The parts it draws stay on the label (`label.chatParts`) so `game_cosmetics` can colour the speaker's name on top |
 | game_playerinspect | extended opcode 240 (JSON), server `inspect.lua`, `inspect_core.lua` | none | Inspect Player window (Chaos skin): outfit, name, level and class, guild and rank, achievement points, best rift tier, Vocation Trial tier, the ten equipment slots with rarity frames and the rich tooltip on hover (through `game_itemtooltip`). Opened from the top menu (Social > Inspect Player: type a name, any online player) and from the right-click menu of a player (`game_interface.addMenuHook`, within 10 tiles). The checkbox "Allow others to inspect me" is the character's privacy setting (default on). Named `game_playerinspect` because the base client already has a module `game_inspect` (Inspect Object). Logic `playerinspect_logic.lua` (tested by `playerinspect_logic_test.lua`); tested in game with two clients (server/README.md "Inspect Player") |
@@ -495,7 +495,7 @@ byte-identical, 3000 sampled old sprites unchanged.
   draws nothing for 2127-2139 (raid bosses invisible, faction mounts and auras empty), so the server change and the pair
   go out together. CI: `check_content.py` reads 2139 from picks.csv.
 
-## Rider seat on donor mounts (things_custom15, base patch 0034, `tools/sprites/set_rider_seat.py`)
+## Rider seat on donor mounts (things_custom15 and 16, base patch 0034, `tools/sprites/set_rider_seat.py`)
 The donor B mounts (Bone Steed 1561, faction mounts 2132-2135: 3x4, 3x5 and 5x4 with displacement (-32, -32), 2134
 (-64, -32)) are centred on their tile with negative displacements. The client draws a negative-displacement mount by its
 own displacement and the rider at its usual place (stock rider displacement (8, 8)), so the rider sat half a tile left of
@@ -509,8 +509,9 @@ take the other path (mount and rider share the box), so they were never affected
   north, south, east, west). Patch 0034 moves the rider by the pair of its direction when the mount has a negative
   displacement and Bones and the rider has none. A client without 0034 ignores a mount-only Bones attribute, so the new
   pair draws exactly as things_custom14 there (checked: unpatched client + new pair = the before screenshots).
-- Seats (`tools/sprites/monster_looks/rider_seats.csv`, chosen on renders of every direction and checked in game):
-  (16, -8) for 1561, 2132, 2134, 2135; (16, -4) for the lower-backed wolf 2133; the same pair for all four directions.
+- Seats (`tools/sprites/monster_looks/rider_seats.csv`): things_custom15 had one pair for all four directions,
+  (16, -8) for 1561, 2132, 2134, 2135 and (16, -4) for the wolf 2133. That was wrong in several directions; things_custom16
+  below has a pair per direction.
 - `set_rider_seat.py` (new) inserts the attribute before the entry's 0xFF (or replaces an existing one; a re-run on its
   output gives the same files), copies the spr, and verifies: the output re-parses with the same counts, each seated
   entry is its old bytes plus only the attribute (which decodes to the spec; sprites and displacement unchanged), all
@@ -527,13 +528,57 @@ Input things_custom14 (dat 1667a34964182518d2a802638288881a, spr 5aa948775e41748
 5aa948775e41748bd885620eeae34e62 (unchanged, 723,857 sprites), 33,659 items, 2,139 outfits, 592 effects, 153 missiles;
 built twice and re-run on its own output with identical md5s. `things-1098.tar.xz` built like things_custom14's
 (Tibia.dat and Tibia.spr at the archive root, owner 0/0, `xz -9 -T3`): sha256
-c7ff0d06dde1b7ff32b3eec1fc51b691bac8bfd72dc8b364284fab952ad36b57 (65,515,220 bytes). Not on `windows-assets` yet:
-the pair and patch 0034 go out together (the Windows package builds the client with all base patches); a client with
-0034 on things_custom14 draws the riders as before.
+c7ff0d06dde1b7ff32b3eec1fc51b691bac8bfd72dc8b364284fab952ad36b57 (65,515,220 bytes). It went to `windows-assets` at
+c1441a8 ("Windows package pair" above). The pair and patch 0034 go out together (the Windows package builds the client
+with all base patches); a client with 0034 on things_custom14 draws the riders as before.
 - Checked in the Linux client (base client of `windows-assets` + 0001-0034 + overlay, built fresh) on a test server
   with this pair: each faction mount and the Bone Steed ridden, standing and walking in all four directions, before
   (old client, things_custom14) and after; the rider sits on the saddle. A stock mount (368) draws pixel-identical
   with and without 0034. The outfit window preview was not checked.
+
+### things_custom16: a seat per direction (2026-10-11)
+The owner saw misaligned riders on things_custom15. Every mount was checked again: the 140 of the base mounts.xml and
+our 141-145 (`server/tools/install_outfits.py` MOUNTS). The achievement, season, store and faction rewards all use
+these ids. Each was drawn with rider look 128 in all four directions, standing and at walk phase 3. The renders are
+offline and follow the 0001-0034 draw code (`Outfit::draw`, `ThingType::draw`). They match the in-game screenshots
+of things_custom15.
+- The 140 base mounts have no displacement and take the stock path. Their riders sit on the saddle in every direction.
+  No change.
+- All five donor mounts were off, because one pair cannot fit four directions. The rider frame's hips are at a
+  different place in each direction (look 128: north (-1, 5), east (-6, 4), south (4, -6), west (5, -1) from its
+  point), and the art is not symmetric. Found on things_custom15:
+  - north, all five: the rider sat too high, up at the neck, and stuck out left of the spine.
+  - east, all five: the rider sat on the rump and sank into the body. Worst on 2132 and 2134 (12 px low).
+  - west, all five: the rider sank into the body with the torso over the neck. On the wolf 2133 it sat on the head
+    and front legs.
+  - south: the rider floated above the back of 1561. The others were 2 px right; 2134 was 2 px low.
+- New seats (x y in pixels, + is right / down), chosen on candidate renders so the hips sit on the saddle or the back
+  middle. They were also checked with looks 130 and 136:
+
+  | look | mount | north | east | south | west |
+  |---|---|---|---|---|---|
+  | 1561 | 141 Bone Steed | 20 -1 | 22 -16 | 14 -4 | 14 -14 |
+  | 2132 | 142 Pyrewarden Charger | 20 -8 | 25 -20 | 14 -8 | 12 -18 |
+  | 2133 | 143 Forgeborn Emberwolf | 20 0 | 20 -8 | 14 -2 | 13 -8 |
+  | 2134 | 144 Veilrunner | 20 -4 | 24 -20 | 14 -10 | 12 -18 |
+  | 2135 | 145 Thornbound Stag | 20 -4 | 18 -15 | 14 -8 | 14 -16 |
+
+- Data only: no engine change beyond 0034 (it already reads a pair per direction). The stock path needs no seat.
+
+```
+python3 -I client/tools/sprites/set_rider_seat.py --ours-dat things_custom15/Tibia.dat --ours-spr things_custom15/Tibia.spr \
+    --spec client/tools/sprites/monster_looks/rider_seats.csv --out-dir things_custom16 \
+    --expect-dat-md5 1a5ff177c24510e28a59dea4436345fb
+```
+Output **things_custom16**: dat fc0bd91246387611e3f5f4489023a492 (4,667,486 bytes, the same size: only the five Bones
+values change), spr 5aa948775e41748bd885620eeae34e62 (unchanged). The tool's checks passed: 36,439 other entries
+byte-identical, spr byte-identical. The same spec on things_custom14 (`--expect-dat-md5 1667a349...`) gives the same dat.
+A re-run on its own output does too. `things-1098.tar.xz` is built like things_custom15's, mtime 2026-10-11 17:00:
+sha256 5952476dde9fb93f866bb4e41ec7662490560aec777ad891806bc5a110c0e83b (65,521,896 bytes).
+**Not pushed to `windows-assets` yet.** It waits for the owner's approval (docs/OWNER_TODO.md). Until then the live pair
+is things_custom15. A client on things_custom15 keeps the old seats. No server change goes with it.
+- Not checked in a live client. The before/after contact sheets of all 145 mounts are offline renders, kept outside
+  the repository.
 
 ## Leaderboards: fastest-time boards with class tabs (`game_leaderboard`)
 Boards of mode "min" (the Cinderheart's fastest kills) come with `format = "time"` (values shown m:ss,

@@ -51,7 +51,7 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     moved by the mount's Bones pair for its direction (signed pixels, set by `tools/sprites/set_rider_seat.py`).
     Everything else draws as before (a stock mount was pixel-identical in the test); a client without the patch ignores
     a mount-only Bones attribute. The chain 0001-0034 applies to the `windows-assets` base client. Built and checked in
-    the Linux client.
+    the Linux client. Since things_custom16 each direction has its own seat (data only, same patch).
 
 ## What the overlay replaces
 - `game_stash` (the client's own targets a different protocol): ours, extended opcode 110.

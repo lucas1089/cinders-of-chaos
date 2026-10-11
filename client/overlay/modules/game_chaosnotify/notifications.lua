@@ -40,7 +40,7 @@ local NOTIFICATION_TYPES = {
         duration = 10000, -- 10 segundos
     },
     PARTY_INVITE = {
-        icon = "images/notifications/party.png",
+        icon = "images/toast/party_invite.png",
         title = "PARTY INVITATION",
         titleColor = "#a3844b",
         backgroundColor = "#ccbebb",
@@ -369,6 +369,9 @@ function init()
     end
 
     
+    -- the answer button styles (ChaosToastAccept / ChaosToastDecline)
+    pcall(function() g_ui.importStyle('toastbuttons') end)
+
     -- Registrar opcode
     if ProtocolGame and ProtocolGame.registerExtendedOpcode then
         ProtocolGame.registerExtendedOpcode(opcode, onExtendedOpcode)
@@ -445,6 +448,36 @@ end
 local function titleFont()
     local theme = modules.client_chaos_theme and modules.client_chaos_theme.ChaosTheme
     return theme and theme.font and theme.font('heading', 'verdana-11px-antialised') or 'verdana-11px-antialised'
+end
+
+-- the answer buttons of the invitation toasts: generated plates (client/tools/gen_toast_art.py, styles in
+-- toastbuttons.otui) with normal / hover / pressed / disabled states. kind 'yes' (Accept, Start) sits left of the
+-- middle of the text column, 'no' (Decline, Cancel) right of it; both 80 x 24, ANSWER_GAP apart
+local ANSWER_W, ANSWER_GAP, ANSWER_BOTTOM = 80, 12, 33
+local TEXT_LEFT, TEXT_RIGHT, TOAST_W = 80, 30, 340 -- the message label's margins and the toast width
+
+local function createAnswerButton(parent, kind, id, text)
+    local style = kind == 'yes' and 'ChaosToastAccept' or 'ChaosToastDecline'
+    local ok, button = pcall(g_ui.createWidget, style, parent)
+    if not ok or not button then
+        return nil
+    end
+    pcall(function()
+        local mid = TEXT_LEFT + math.floor((TOAST_W - TEXT_LEFT - TEXT_RIGHT) / 2)
+        button:setId(id)
+        button:setText(text)
+        button:setFont(titleFont())
+        button:setMarginBottom(ANSWER_BOTTOM)
+        button:addAnchor(AnchorBottom, 'parent', AnchorBottom)
+        if kind == 'yes' then
+            button:setMarginLeft(mid - math.floor(ANSWER_GAP / 2) - ANSWER_W)
+            button:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+        else
+            button:setMarginRight(TOAST_W - mid - math.ceil(ANSWER_GAP / 2) - ANSWER_W)
+            button:addAnchor(AnchorRight, 'parent', AnchorRight)
+        end
+    end)
+    return button
 end
 
 -- FUNÇÃO CORRIGIDA: Criar notificação com botões para party invite e catacomb free
@@ -604,21 +637,8 @@ local function createCompactNotification(data, isPinned)
     -- NOVO: Criar botões para party invite
     if data.notificationType == "PARTY_INVITE" and data.inviteData then
         -- Botão Aceitar
-        local acceptButton = g_ui.createWidget('UIButton', notification)
+        local acceptButton = createAnswerButton(notification, 'yes', 'acceptButton', 'Accept')
         if acceptButton then
-            pcall(function()
-                acceptButton:setId('acceptButton')
-                acceptButton:setText('Accept')
-                acceptButton:setSize({width = 70, height = 25})
-                acceptButton:setImageSource('images/yes.png')
-                acceptButton:setFont('verdana-11px-antialised')
-                acceptButton:setColor('white')
-                acceptButton:setMarginBottom(35)
-                acceptButton:setMarginLeft(90)
-                acceptButton:addAnchor(AnchorBottom, 'parent', AnchorBottom)
-                acceptButton:addAnchor(AnchorLeft, 'parent', AnchorLeft)
-            end)
-            
             acceptButton.onClick = function()
                 -- CRÍTICO: Aceitar convite de party usando sistema customizado integrado
                 if g_game and g_game.getLocalPlayer then
@@ -645,21 +665,8 @@ local function createCompactNotification(data, isPinned)
         end
         
         -- Botão Recusar
-        local declineButton = g_ui.createWidget('UIButton', notification)
+        local declineButton = createAnswerButton(notification, 'no', 'declineButton', 'Decline')
         if declineButton then
-            pcall(function()
-                declineButton:setId('declineButton')
-                declineButton:setText('Decline')
-                declineButton:setSize({width = 70, height = 25})
-                declineButton:setImageSource('images/no.png')
-                declineButton:setFont('verdana-11px-antialised')
-                declineButton:setColor('white')
-                declineButton:setMarginBottom(35)
-                declineButton:setMarginRight(90)
-                declineButton:addAnchor(AnchorBottom, 'parent', AnchorBottom)
-                declineButton:addAnchor(AnchorRight, 'parent', AnchorRight)
-            end)
-            
             declineButton.onClick = function()
                 -- CRÍTICO: Recusar convite de party usando sistema customizado integrado
                 if g_game and g_game.getLocalPlayer then
@@ -689,21 +696,8 @@ local function createCompactNotification(data, isPinned)
     -- NOVO: Criar botões para catacomb free
     if data.notificationType == "CATACOMB_FREE" and data.catacombData then
         -- Botão Start
-        local startButton = g_ui.createWidget('UIButton', notification)
+        local startButton = createAnswerButton(notification, 'yes', 'startButton', 'Start')
         if startButton then
-            pcall(function()
-                startButton:setId('startButton')
-                startButton:setText('START')
-                startButton:setSize({width = 70, height = 25})
-                startButton:setImageSource('images/yes.png')
-                startButton:setFont('verdana-11px-antialised')
-                startButton:setColor('white')
-                startButton:setMarginBottom(35)
-                startButton:setMarginLeft(90)
-                startButton:addAnchor(AnchorBottom, 'parent', AnchorBottom)
-                startButton:addAnchor(AnchorLeft, 'parent', AnchorLeft)
-            end)
-            
             startButton.onClick = function()
                 -- Verificar se está em PZ antes de iniciar
                 local localPlayer = g_game.getLocalPlayer()
@@ -737,21 +731,8 @@ local function createCompactNotification(data, isPinned)
         end
         
         -- Botão Cancel
-        local cancelButton = g_ui.createWidget('UIButton', notification)
+        local cancelButton = createAnswerButton(notification, 'no', 'cancelButton', 'Cancel')
         if cancelButton then
-            pcall(function()
-                cancelButton:setId('cancelButton')
-                cancelButton:setText('CANCEL')
-                cancelButton:setSize({width = 70, height = 25})
-                cancelButton:setImageSource('images/no.png')
-                cancelButton:setFont('verdana-11px-antialised')
-                cancelButton:setColor('white')
-                cancelButton:setMarginBottom(35)
-                cancelButton:setMarginRight(90)
-                cancelButton:addAnchor(AnchorBottom, 'parent', AnchorBottom)
-                cancelButton:addAnchor(AnchorRight, 'parent', AnchorRight)
-            end)
-            
             cancelButton.onClick = function()
                 -- Remover da fila
                 if g_game and g_game.getProtocolGame then
