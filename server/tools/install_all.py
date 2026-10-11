@@ -100,6 +100,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                talkaction runs and the window refreshes (README "Install" 7)
   commands     tools/install_commands.py         the players' spoken "!" commands of the base server commented out (every one is in the
                client's menu now; README "Player commands: the menu")
+  autosave     tools/patch_base_save.py          the hourly autosave runs Game.saveIncremental (engine src-patch 0026: players
+               in small batches over several ticks, only the changed houses) and keeps the game state (a closed server
+               stays closed); the warnings stay; the logout writes the outfit columns and the skill history row only
+               when they changed (README "Autosave in steps"; after commands, which also edits login.lua)
   sql          server/sql/chaos.sql, then every other server/sql/*.sql (sorted), then the rename_spells UPDATEs, against
                the game database (CREATE TABLE IF NOT EXISTS / plain UPDATEs, safe to repeat)
 
@@ -129,7 +133,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'monsternames', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spawns', 'spells', 'archery', 'itemnames', 'towns', 'npcnames', 'worldtexts', 'houses', 'autoloot', 'commands', 'sql']
+STEPS = ['files', 'lib', 'monsternames', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spawns', 'spells', 'archery', 'itemnames', 'towns', 'npcnames', 'worldtexts', 'houses', 'autoloot', 'commands', 'autosave', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -485,6 +489,10 @@ def step_houses(server, data, ctx):
 
 def step_commands(server, data, ctx):
     return tool_result(run_tool([tool('install_commands.py'), data], 'install_commands.py'))
+
+
+def step_autosave(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_save.py'), data], 'patch_base_save.py'))
 
 
 def step_autoloot(server, data, ctx):

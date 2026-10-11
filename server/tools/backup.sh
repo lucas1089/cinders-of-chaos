@@ -9,8 +9,11 @@
 #   CHAOS_DB_HOST CHAOS_DB_PORT CHAOS_DB_USER CHAOS_DB_PASS CHAOS_DB_NAME   the database (password never on a command line:
 #                                                                           a temporary option file, mode 0600)
 #   CHAOS_BACKUP_DIR (default /var/backups/chaos), CHAOS_BACKUP_KEEP_DAYS (default 14), CHAOS_SERVER_DIR
-# --save-service UNIT / --save-pid PID: send SIGUSR1 first, so the engine saves every online player and house before the
-# dump (the engine answers SIGUSR1 with a full save and keeps running); the script then waits --save-wait seconds (15).
+# --save-service UNIT / --save-pid PID: send SIGUSR1 first, so the engine saves every online player and every changed
+# house before the dump; the script then waits --save-wait seconds (15). With engine src-patch 0026 the engine answers
+# SIGUSR1 with the autosave in steps (a few players per tick, no freeze; about 3.5 s at 200 online, 7-8 s at 400) and keeps
+# running; a dump that starts before the pass ends still holds every character as of its last save (each save is one
+# transaction per character). server/README.md "Autosave in steps".
 #
 # Files: DIR/db/chaos-db-<name>-YYYYmmdd-HHMMSS.sql.gz and DIR/data/chaos-data-YYYYmmdd-HHMMSS.tar.gz (a data archive is
 # only written when config.lua or data/ differ from the newest archive, compared by a checksum list). Every dump is

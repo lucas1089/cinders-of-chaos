@@ -104,6 +104,9 @@ server/
   src-patches/0025-proxy-protocol.patch   engine: the PROXY protocol (v2 / v1) from trusted gateways gives each
                                       connection the player's real IP; config proxyProtocolTrusted / proxyProtocolRequired
                                       (see "Gateways and the PROXY protocol"; deploy/gateway/, deploy/firewall/)
+  src-patches/0026-incremental-save.patch   engine: Game.saveIncremental (the autosave in small steps, also SIGUSR1),
+                                      saves write only the houses that changed (see "Autosave in steps";
+                                      tools/patch_base_save.py, tools/chaossave_test.cpp)
     rightclick_equip.lua  rightclick_equip_core.lua  rightclick_equip_config.lua (the client option and the multi-use
                                       weapon list, opcode 188, see "Right-click equips")
     respawn.lua  respawn_core.lua  respawn_config.lua (dynamic respawn: faster where several players hunt together)
@@ -297,6 +300,10 @@ server/
 7. Player commands: `python3 -I server/tools/install_commands.py <server>/data` takes the base server's spoken player
    commands out (talkactions.xml lines with "!" words, the "!" words of base revscripts, the "!commands" login lines);
    every one of them is in the client menu (see "Player commands: the menu"). It also covers the stock `!autoloot`.
+7a. Autosave: `python3 -I server/tools/patch_base_save.py <server>/data [--dry-run]` (idempotent; `install_all.py` step
+   `autosave`, after `commands`) switches the base hourly autosave to `Game.saveIncremental` and keeps the game state;
+   the logout writes the outfit columns and the skill history row only on a change. Needs engine patch 0026 for the
+   steps (without it the stock full save runs). See "Autosave in steps".
 8. Client: apply the client-side gaps listed below, otherwise bank, autoloot, daily and stash
    cannot talk to the server at all.
 
@@ -3038,6 +3045,92 @@ keys, containers and every item with a use of its own work as before.
   and the rope still start a use with, food is eaten, a bag opens, the machete keeps its use with. Regular Controls:
   right-click opens the menu ("Use" equips), Ctrl + click equips; Left Smart-Click: a click equips and takes off;
   Classic Ctrl + right-click still opens the menu. The option off: a right-click equips nothing; back on: it does.
+
+## Autosave in steps (`src-patches/0026-incremental-save.patch`, `tools/patch_base_save.py`, `tests/base_save_patch_test.lua`, `tools/chaossave_test.cpp`)
+
+Owner request: "Optimize the autosave time. Keep the warnings." The base autosave (`data/globalevents/scripts/save.lua`,
+every hour) broadcast three warnings and then saved every online player and every house in one dispatcher task. The
+game stood still for the whole save: 1.2-1.4 s with 200 loaded players, about 2.1-2.5 s at 400. The backup's SIGUSR1 save
+did the same 4 times a day, and the save set the game state back to normal, which reopened a server closed with
+`/closeserver`.
+
+What players see: the same three warnings at the same times (5, 3 and 1 minute before, same text), then no freeze.
+
+How it works:
+- **Players in steps.** `Game.saveIncremental([playersPerTick = 10[, tickBudgetMs = 25[, tickDelayMs = 50[,
+  housesPerTick = 100]]]])` (engine patch 0026) writes the account storage in the first tick, then the online players
+  one by one while the tick's budget allows: at most 10, and another player only when the time so far plus the last
+  player's time fits 25 ms. Between ticks the game runs for 50 ms (the scheduler's minimum). Then the changed houses.
+  It returns false while a pass runs; `Game.isSaving()` tells. One console line at the end: `> Saved in steps: N
+  players (L logged out before, F failed), H changed house(s); T ticks, longest X ms, total Y s`.
+- **Consistency.** Each player save is the stock one, one transaction per character, so `player:save()` and the
+  "save before credit" rule (`Chaos.saveCharacter`: market, orb exchange, stash, bank, ...) work as before. A player who
+  logs out before his turn was saved by the logout; one who logs in during the pass is not in it (he was just loaded).
+  Characters are written a few seconds apart instead of in the same instant. That is what logouts already do, so a
+  crash right after a pass can leave a trade between two characters half written, exactly as a crash after one of them
+  logged out could before. A shutdown during a pass ends it; the shutdown saves everything.
+- **Houses only when changed.** Every save (the pass and the full save of a shutdown, `/closeserver`, `/save`,
+  `saveServer()`) writes only the houses whose database rows differ from memory: the `houses` row (owner, paid,
+  warnings, name, town, rent, size, beds), the guest, subowner and door lists, and the `tile_store` rows (anything on
+  the house tiles: items added, removed, moved or changed, container contents, texts, beds). The engine compares by
+  content: it serializes each house as the stock save would and compares a signature of the sorted rows with what the
+  database holds. So no change can slip past a missed event; the scan of all 1,057 houses (about 10,500 tile rows)
+  takes about 15 ms and no database work. At startup the engine records what it read per house, so the first save
+  after a start writes only what differs (0 houses on an unchanged map). A database it could not read (a new one)
+  makes the first save write every house. The changed houses go in one transaction per chunk of 100 (one INSERT ... ON
+  DUPLICATE KEY UPDATE for the rows, one DELETE + INSERT for the lists and one for the tile rows). Rows of houses the map
+  no longer has are deleted by the first save, as the stock full rewrite did. A failed write marks those houses unknown,
+  so the next save writes them in full; `house:save()` keeps the record in step. A crash loses what it lost before: the
+  changes since the last save. Note: a house row changed in the database by hand while the server runs is now kept
+  until that house changes in game (before, the next save overwrote it). Edit houses with the server stopped.
+- **The game state.** The base `save.lua` set `GAME_STATE_NORMAL` after every save. `patch_base_save.py` takes that line
+  out, and the pass never changes the state: a closed server stays closed (the stock full save still enters the
+  maintenance state only when the state was normal).
+- **Logout writes.** The base logout wrote two rows every time: the outfit columns (`creaturescripts/scripts/logout.lua`,
+  an UPDATE of `wings_id`, `shader_id`, `aura_id`) and a skill history row (`scripts/customs/znote/player_history.lua`,
+  an INSERT). The outfit UPDATE now runs only when the columns differ from what `login.lua` read; the history row only
+  when level, experience, base magic level, skills, balance, town, skull or blessings changed since the login (the base
+  magic level: equipment put on after the login event changes the effective one). The statement is the stock one,
+  untouched. A character with no history row at its login (a new one; the stock login's INSERT ... SELECT needs the
+  website's `znote_players` table and fails without it, a stock console error) writes its row at the first logout.
+  The row at a death is written as before. Without a login record (a reload in between) both are written as before.
+  On the test server: 20 new characters wrote 20 rows at their first logout; two more sessions with nothing changed
+  wrote none (no SQL or Lua error at logout; before, every logout wrote a row).
+- **SIGUSR1 (backups).** `backup.sh` sends SIGUSR1 at 00:15, 06:15, 12:15 and 18:15, then waits 15 s. SIGUSR1 now starts
+  the same pass instead of the full save, so the noon and evening backups no longer freeze the game. The pass ends well
+  inside the 15 s (3.3-3.9 s at 200 online, about 7-8 s at 400). If a dump starts earlier, every character in it is still
+  whole, as of its last save.
+- **Still full saves:** the daily save (it kicks every player, each saved at the kick, then saves the houses), a
+  shutdown (SIGTERM), `/closeserver` and `/save`. With the house change the house part of those is about 15 ms.
+
+Install: `install_all.py` step `autosave` runs `tools/patch_base_save.py DATA_DIR [--dry-run]` (idempotent, a marker in
+every changed file; a file without the stock lines is reported and the step fails). The engine needs patch 0026;
+without it the patched `save.lua` falls back to the stock full save (still without the state change). Tuning: the
+four parameters of `Game.saveIncremental`; more players per tick or a larger budget makes the pass shorter and the
+ticks longer.
+
+Measured on the full base map with every Chaos system installed, a private MariaDB (default settings, one fsync per
+commit), 200 bot characters (`tools/loadtest.py`: walking every second, talking every 20 s) with a seeded inventory
+(7 worn items, a backpack with two bags, 47 items, about 8 KB of attributes) and depot (4 backpacks and 30 loose items,
+110 items, about 20 KB; every 4th bot opened its depot each session, so its depot is written at each save). The
+longest stall is the longest single dispatcher task (a temporary log of every task over 20 ms). Each line: 3 runs or
+more.
+
+| | before (stock save) | after (in steps) |
+|---|---|---|
+| 0 players: total | 320-372 ms (houses: every row rewritten) | 15 ms full save, 116-118 ms pass (0 changed houses) |
+| 0 players: longest stall | 320-372 ms | 15-17 ms |
+| 200 players: total | 1,218-1,415 ms | 3.3-3.9 s (44-51 ticks) |
+| 200 players: longest stall caused by the save | 1,218-1,415 ms | 26-30 ms (longest task of any kind in the window: 37-123 ms, the game's own; outside saves p90 51 ms, p99 238 ms) |
+| 400 players (extrapolated) | about 2.1-2.5 s stall | about 7-8 s total, ticks still about 30 ms |
+| warnings | 5 min, +120.0 s, +240.0 s, save at +300.0 s | the same |
+
+Tests: `tests/base_save_patch_test.lua` (the tool on the stock lines; the patched scripts against a mocked engine: the
+warnings' text and timing, the save call, no state change, the outfit and history rules, idempotence, dry run, an
+unknown file), `tools/chaossave_test.cpp` in CI (the tick budget, the pass queue, the house signatures, the change
+test). On a live test server: a change on a house tile, a container's contents only, an owner and a guest list were
+each saved by the next pass (1 or 2 changed houses), survived a restart, and the first save after the restart wrote 0
+houses; reverting them was saved the same way.
 
 ## Town names (`tools/patch_base_towns.py`, `tools/base_towns.csv`, `tests/base_towns_patch_test.lua`)
 

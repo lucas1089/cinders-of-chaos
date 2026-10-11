@@ -225,7 +225,12 @@ Behind gateways (section "Gateways and DDoS") 7171, 7172 and 8090 are open to th
 ## 7. Backups
 
 `server/tools/backup.sh` (tested against the test database: dump, data archive, retention, restore):
-- asks the engine to save (`--save-service chaos-server`: SIGUSR1, then 15 s),
+- asks the engine to save (`--save-service chaos-server`: SIGUSR1, then 15 s). With engine src-patch 0026 SIGUSR1 is
+  the autosave in steps (server/README.md "Autosave in steps"): a few players per tick, no freeze, so the backups at
+  12:15 and 18:15 no longer stop the game. The pass takes about 3.5 s at 200 online and 7-8 s at 400, inside the 15 s; a
+  dump that starts earlier still holds every character as of its last save (one transaction per character),
+- the hourly autosave and this one write only the houses that changed; a shutdown, `/closeserver` and `/save` still
+  save everything in one go (the daily 06:00 save: the players are kicked and saved one by one anyway),
 - `mysqldump --single-transaction` of the game database, gzip, `DIR/db/chaos-db-<db>-<timestamp>.sql.gz`, checked with
   `gzip -t` and mysqldump's "Dump completed" line,
 - `config.lua` + `data/` (without the map and logs) as `DIR/data/chaos-data-<timestamp>.tar.gz`, only when it changed,

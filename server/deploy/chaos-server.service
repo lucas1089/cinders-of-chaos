@@ -11,8 +11,8 @@
 # because config.lua keeps serverSaveShutdown = true (server/tools/prod_config.py). Restart=always starts it again a few
 # seconds later, so every day begins with a fresh process and a clean map. Crashes restart the same way, and
 # chaos-watchdog.timer restarts the service when the engine hangs (alive, but the status protocol no longer answers).
-# SIGTERM (systemctl stop / restart) makes the engine save and shut down cleanly; SIGUSR1 saves without stopping
-# (server/tools/backup.sh sends it before a dump): sudo systemctl kill -s SIGUSR1 chaos-server
+# SIGTERM (systemctl stop / restart) makes the engine save and shut down cleanly; SIGUSR1 saves without stopping, in
+# small steps (engine src-patch 0026; server/tools/backup.sh sends it before a dump): sudo systemctl kill -s SIGUSR1 chaos-server
 
 [Unit]
 Description=Cinders of Chaos game server
