@@ -168,6 +168,17 @@ Game = {getPlayers = function() return online end, getSpectators = function(pos,
 	return out
 end}
 
+-- floating labels: like the engine's addByte the colour must be a palette byte (a "#rrggbb" string went out as 0, black)
+local labels, badLabels = {}, {}
+ChaosCombatFx = {label = function(pos, text, color)
+	if type(color) ~= "number" or color % 1 ~= 0 or color < 1 or color > 215 then
+		badLabels[#badLabels + 1] = text .. " " .. tostring(color)
+		error("label colour must be a palette byte: " .. tostring(color))
+	end
+	labels[text] = color
+	return true
+end}
+
 dofile("data/scripts/chaos/item_mods.lua")
 dofile("data/scripts/chaos/item_powers.lua")
 local M, P = ChaosItemMods, ChaosPowers
@@ -511,6 +522,12 @@ timers[1].fn() -- the first tick
 eq(countHits(COMBAT_FIREDAMAGE), CFG.smolderaura.targets, "at most six monsters per tick")
 eq(hits[1].amount, 300, "100 per second x 3 s")
 eq(timers[#timers].ms, CFG.smolderaura.tickMs, "the next tick is scheduled")
+
+-- ---------------------------------------------------------------- floating labels
+eq(#badLabels, 0, "label colours are palette bytes: " .. table.concat(badLabels, ", "))
+for _, text in ipairs({"Death Blast", "Frost Nova", "Echo", "Hunter's Rush", "Ember Step", "Last Breath"}) do
+	ok(labels[text] ~= nil, text .. " label shown")
+end
 
 -- ---------------------------------------------------------------- logout
 events.ChaosPowersLogout.onLogout(p)

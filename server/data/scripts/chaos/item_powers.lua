@@ -92,6 +92,18 @@ local function effect(pos, id)
 	end
 end
 
+-- label colours: one byte of the client's 8-bit palette (combat_fx.lua M.label sends it with opcode 0x84; the client
+-- draws r*36 + g*6 + b, 51 per step). A "#rrggbb" string here went out as byte 0: black text, unreadable on the map.
+local TEXT = {
+	ember = 193, -- #ff6633 (Death Blast, Ember Step)
+	frost = 101, -- #66ccff (Frost Nova)
+	echo = 206, -- #ffcc66 (Echo Shot, Critical Echo)
+	rush = 134, -- #99cc66 (Hunter's Rush)
+	breath = 213, -- #ffff99 (Last Breath)
+	power = 205, -- #ffcc33 (default)
+}
+P.labelColors = TEXT
+
 local function label(pos, text, color)
 	if ChaosCombatFx and ChaosCombatFx.label then
 		pcall(ChaosCombatFx.label, pos, text, color)
@@ -119,7 +131,7 @@ local function heal(creature, amount)
 end
 
 local function powerLabel(player, text, color)
-	label(player:getPosition(), text, color or "#ffb347")
+	label(player:getPosition(), text, color or TEXT.power)
 end
 
 -- ---------------------------------------------------------------- the effects
@@ -131,7 +143,7 @@ local function deathBlast(player, dead)
 	for _, m in ipairs(monstersAround(pos, c.radius, c.targets, dead)) do
 		strike(player, m, COMBAT_FIREDAMAGE, dmg, CONST_ME_FIREAREA)
 	end
-	label(pos, "Death Blast", "#ff7a2a")
+	label(pos, "Death Blast", TEXT.ember)
 end
 
 local function frostNova(player)
@@ -148,7 +160,7 @@ local function frostNova(player)
 			m:addCondition(cond)
 		end
 	end
-	label(pos, "Frost Nova", "#7fd8ff")
+	label(pos, "Frost Nova", TEXT.frost)
 end
 
 local function repeatHit(player, target, damage, ctype, delay, text)
@@ -157,7 +169,7 @@ local function repeatHit(player, target, damage, ctype, delay, text)
 		local p, t = Player(pid), Creature(id)
 		if p and t and t:getHealth() > 0 then
 			strike(p, t, ctype, damage, CONST_ME_NONE)
-			label(t:getPosition(), text, "#f6cf72")
+			label(t:getPosition(), text, TEXT.echo)
 		end
 	end, delay)
 end
@@ -192,7 +204,7 @@ local function haste(player)
 	cond:setParameter(CONDITION_PARAM_SPEED, c.speed)
 	player:addCondition(cond)
 	effect(player:getPosition(), CONST_ME_MAGIC_GREEN)
-	powerLabel(player, "Hunter's Rush", "#9fdc7f")
+	powerLabel(player, "Hunter's Rush", TEXT.rush)
 end
 
 -- a free tile within `range` of the character (not its own), nil when none
@@ -235,7 +247,7 @@ local function emberStep(player)
 	for _, m in ipairs(monstersAround(from, c.radius, c.targets)) do
 		strike(player, m, COMBAT_FIREDAMAGE, dmg, CONST_ME_HITBYFIRE)
 	end
-	powerLabel(player, "Ember Step", "#ff7a2a")
+	powerLabel(player, "Ember Step", TEXT.ember)
 	return true
 end
 
@@ -362,7 +374,7 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 				if p and p:getHealth() > 0 and p:getHealth() < healTo then
 					heal(p, healTo - p:getHealth())
 					effect(p:getPosition(), CONST_ME_HOLYAREA or CONST_ME_MAGIC_BLUE)
-					powerLabel(p, "Last Breath", "#ffe680")
+					powerLabel(p, "Last Breath", TEXT.breath)
 				end
 			end, 50)
 			return primaryDamage, primaryType, secondaryDamage, secondaryType
