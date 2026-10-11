@@ -178,6 +178,8 @@ return {
 				{kind = "aura", id = 1, cost = 200}, {kind = "aura", id = 2, cost = 200}, {kind = "aura", id = 3, cost = 200},
 				{kind = "aura", id = 4, cost = 150}, {kind = "aura", id = 5, cost = 200},
 				-- Chaos auras (data/XML/chaos_auras.csv, server/tools/install_auras.py); names from auras.xml
+				-- (14, 15, 23, 24 were also the faction tabard placeholders; the factions give their own auras 25..28
+				-- since things_custom14, so these are store-only again. 25..28 are never sold.)
 				{kind = "aura", id = 6, cost = 300, description = "A golden flame of ki that burns round you."},
 				{kind = "aura", id = 7, cost = 300, description = "A spiky crimson flame, the look of a powered-up fighter."},
 				{kind = "aura", id = 8, cost = 300, description = "Blue lightning crawls up your sides."},

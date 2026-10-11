@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Boss of the Ashen Sepulchre (raid.lua, raid_config.lua): health is the 5-player value, the script scales it by the raid size; the telegraphed mechanics are scripted. Personal loot is given by the script (lockout); the corpse only holds coins. Look 1369: an existing outfit no other monster uses. Numbers: server/README.md "The Ashen Sepulchre (weekly raid)". -->
+<!-- Boss of the Ashen Sepulchre (raid.lua, raid_config.lua): health is the 5-player value, the script scales it by the raid size; the telegraphed mechanics are scripted. Personal loot is given by the script (lockout); the corpse only holds coins. Look 2130: its own donor-library look (client/tools/sprites/monster_looks/picks.csv, things_custom14). Numbers: server/README.md "The Ashen Sepulchre (weekly raid)". -->
 <monster name="Vhoss the Hexmaw" nameDescription="Vhoss the Hexmaw" race="undead" experience="3100000" speed="250" manacost="0">
 	<health now="5000000" max="5000000" />
-	<look type="1369" corpse="6068" />
+	<look type="2130" corpse="6068" />
 	<targetchange interval="8000" chance="5" />
 	<flags>
 		<flag isboss="1" />

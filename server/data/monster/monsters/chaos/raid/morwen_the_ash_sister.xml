@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Boss of the Ashen Sepulchre (raid.lua, raid_config.lua): health is the 5-player value, the script scales it by the raid size; the telegraphed mechanics are scripted. Personal loot is given by the script (lockout); the corpse only holds coins. Look 354: an existing outfit no other monster uses. Numbers: server/README.md "The Ashen Sepulchre (weekly raid)". -->
+<!-- Boss of the Ashen Sepulchre (raid.lua, raid_config.lua): health is the 5-player value, the script scales it by the raid size; the telegraphed mechanics are scripted. Personal loot is given by the script (lockout); the corpse only holds coins. Look 2128: its own donor-library look (client/tools/sprites/monster_looks/picks.csv, things_custom14). Numbers: server/README.md "The Ashen Sepulchre (weekly raid)". -->
 <monster name="Morwen the Ash-Sister" nameDescription="Morwen the Ash-Sister" race="undead" experience="2700000" speed="240" manacost="0">
 	<health now="4400000" max="4400000" />
-	<look type="354" corpse="6068" />
+	<look type="2128" corpse="6068" />
 	<targetchange interval="8000" chance="5" />
 	<flags>
 		<flag isboss="1" />

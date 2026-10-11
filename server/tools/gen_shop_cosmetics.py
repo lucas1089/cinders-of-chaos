@@ -9,6 +9,7 @@ and leaves out everything that is an exclusive somewhere else:
   - achievement rewards (achievements_data.lua: outfit female/male, mount id)
   - season track rewards (season_config.lua: outfit / addon male/female, mount id)
   - season pass and season pack rewards (seasonpass_config.lua, same shapes)
+  - faction quartermaster mounts (factions_config.lua `kind = "mount"` offers)
   - EXCLUDED below: battle pass rewards of the base server, rented horses
 The ascension quest gives a title only (ascension_quest_config.lua); staff outfits are not in outfits.xml.
 shop.lua checks the same sources again at load (ChaosShopCore.exclusions), so a class look added later is never sold.
@@ -86,6 +87,10 @@ def exclusions():
             mounts.setdefault(int(i), why)
         for i in re.findall(r'kind\s*=\s*"mount"\s*,\s*id\s*=\s*(\d+)', text):
             mounts.setdefault(int(i), why)
+    # faction quartermaster mounts (factions_config.lua offers: kind = "mount", ..., mount = N)
+    text = read(os.path.join(CHAOS, 'factions_config.lua'))
+    for i in re.findall(r'kind\s*=\s*"mount"[^}]*?\bmount\s*=\s*(\d+)', text):
+        mounts.setdefault(int(i), 'faction reward')
     for ls, ms, why in EXCLUDED:
         for t in ls:
             looks.setdefault(t, why)

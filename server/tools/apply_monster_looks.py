@@ -3,12 +3,13 @@
 
 usage: python3 -I apply_monster_looks.py [MONSTER_DIR] [--picks CSV] [--check]
 
-MONSTER_DIR defaults to server/data/monster. Rows of picks.csv with family "world" or "omen" name one monster (column
+MONSTER_DIR defaults to server/data/monster. Rows of picks.csv with family "world", "omen" or "raid" name one monster (column
 `monsters`, the exact <monster name>); its XML gets <look type="LOOK" .../> with LOOK from the `look` column. The
 colour attributes (head, body, legs, feet, addons) are removed: these looks have no colour template, so the client
 ignores them. The corpse and every other attribute stay. The rift family rows (abyss, obsidian, crypt, sanctum) belong
 to no monster file (rift.lua puts them on the rift's monsters); --check makes sure no file uses them, and that
-rift_config.lua `looks.families` holds exactly these ids.
+rift_config.lua `looks.families` holds exactly these ids. Rows of family "faction" (mounts and auras) belong to no
+monster file either (mounts.xml / auras.xml, factions_config.lua); --check makes sure no monster file uses them.
 Idempotent: a second run changes nothing. --check changes nothing and exits 1 when a file is not up to date.
 """
 import csv, os, re, sys
@@ -38,8 +39,8 @@ def main():
         i = args.index('--picks'); picks = args[i + 1]; del args[i:i + 2]
     mdir = args[0] if args else os.path.join(REPO, 'server', 'data', 'monster')
     rows = list(csv.DictReader(open(picks, newline='')))
-    want = {r['monsters']: int(r['look']) for r in rows if r['family'] in ('world', 'omen')}
-    rift = {int(r['look']): r['key'] for r in rows if r['family'] in FAMILY_THEME}
+    want = {r['monsters']: int(r['look']) for r in rows if r['family'] in ('world', 'omen', 'raid')}
+    rift = {int(r['look']): r['key'] for r in rows if r['family'] in FAMILY_THEME or r['family'] == 'faction'}
     found, changed, problems = set(), 0, []
     for root, _, files in os.walk(mdir):
         for f in sorted(files):
@@ -53,7 +54,7 @@ def main():
                 continue
             look = re.search(r'\btype\s*=\s*"(\d+)"', lk.group(0))
             if look and int(look.group(1)) in rift:
-                problems.append(f'{p}: uses the rift look {look.group(1)} ({rift[int(look.group(1))]})')
+                problems.append(f'{p}: uses the rift / faction look {look.group(1)} ({rift[int(look.group(1))]})')
             name = m.group(1)
             if name not in want:
                 continue

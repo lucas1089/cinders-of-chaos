@@ -427,6 +427,68 @@ in its arena). things_custom13 is the live pair on the `windows-assets` branch (
 outfit 2126 draws nothing for the Cinderheart. CI: `check_content.py` reads 2126 from
 picks.csv, so the monster file passes.
 
+## Raid boss and faction looks (things_custom14, outfits 2127-2139, `tools/sprites/monster_looks/`)
+Thirteen more donor-library outfits, ids in the reserved 2127-2160: the five Ashen Sepulchre bosses (they wore unused stock
+looks 1281, 354, 863, 1369, 1445), and an exclusive mount and aura for each faction (they were store mounts and auras).
+Libraries surveyed first (F, G, I, K, M, B; R and S are retail-style, library only): the rift-creature libraries F and G
+have no rideable quadruped that passes the stock silhouette check (their three-headed hounds 513-516 are stock 240
+recoloured, IoU 0.97; the war mammoths 73-77 are standing beast-men), so the mounts are donor B mount art (the library
+of the live Bone Steed 1561); the auras are donor I aura outfits (two-layer rings, back / front). Rows of picks.csv
+(`sources.csv` has the licence tracing):
+
+| look | key | use | donor | edit |
+|---|---|---|---|---|
+| 2127 | raid_ulthar | Gravewarden Ulthar | G 671 (4x4, hooded black plate warden) | none |
+| 2128 | raid_morwen | Morwen the Ash-Sister | F 292 (4x4, hooded robed sister) | green>ember |
+| 2129 | raid_colossus | The Marrow Colossus | G 495 (3x3, many-legged bone colossus) | green>ember |
+| 2130 | raid_hexmaw | Vhoss the Hexmaw | F 395 (2x2, coiled violet maw) | none |
+| 2131 | raid_sovereign | Varkhul the Ashen Sovereign | F 257 (4x4, ash-grey winged sovereign) | none |
+| 2132 | mount_vigil | mount 142 Pyrewarden Charger (Ashen Vigil) | B 1935 (barded warhorse) | none |
+| 2133 | mount_compact | mount 143 Forgeborn Emberwolf (Cinderforge Compact) | B 1943 (molten wolf, light) | none |
+| 2134 | mount_choir | mount 144 Veilrunner (Veiled Choir) | B 3941 (rift steed, light) | none |
+| 2135 | mount_circle | mount 145 Thornbound Stag (Thornbound Circle) | B 4081 (great stag) | none |
+| 2136 | aura_vigil | aura 25 Pyrelight Mantle | I 152 (gold sparks, gold ribbon) | aura-feet |
+| 2137 | aura_compact | aura 26 Forgeflame Ring | I 147 (flame ring) | aura-feet |
+| 2138 | aura_choir | aura 27 Veiled Eyes | I 146 (violet eyes in gold rings) | aura-feet |
+| 2139 | aura_circle | aura 28 Thornfire Wreath | I 270 (green swirl) | aura-feet |
+
+- `donor_pick.py` changes: a pick found in the base pair exactly at its own planned id is an earlier import and passes the
+  in-pair check, so the base is now the live pair itself (all 40 picks checked against things_custom13: no new pick is in
+  it); and no pick may be a catalogue row tagged "named character" or "library only" (new check: the first
+  choice for Vhoss, G 446, is tagged and was replaced). New optional last column `edit` of picks.csv; rule `aura-feet` (flags only, no pixel changed, verified like the
+  recolour): donor I placed auras for a client without `GameBigAurasCenter`, so they drew about a tile off the feet; the
+  displacement is set so the centre of the art lands on the feet point (14, 20), the point `import_vfx.py` uses for our own
+  auras (2136: (20, 11), 2137: (30, 24), 2138: (28, 21), 2139: (11, 3)).
+- Silhouette check of the 13 new looks: below 0.7 but one (Vhoss: 0.71 against stock 720, a werebear: checked by eye,
+  different art; the other bosses up to 0.46; mounts up to 0.32; auras up to 0.56); none is in the live pair. Server side: server/README.md "Factions" (aura and mount ids) and "The
+  Ashen Sepulchre" (looks); `server/tools/apply_monster_looks.py` writes family `raid` rows into the boss XMLs and refuses a
+  monster file with a `faction` look; `install_auras.py` reads `server/data/XML/chaos_auras_donor.csv` after
+  `chaos_auras.csv`; `install_outfits.py` MOUNTS has 142..145.
+
+```
+python3 -I client/tools/sprites/donor_pick.py --picks client/tools/sprites/monster_looks/picks.csv --lib-dir L \
+    --out-dir MINI40 --base-dat things_custom13/Tibia.dat --base-spr things_custom13/Tibia.spr
+python3 -I client/tools/sprites/import_outfits.py --src-dat MINI40/Tibia.dat --src-spr MINI40/Tibia.spr \
+    --ours-dat things_custom13/Tibia.dat --ours-spr things_custom13/Tibia.spr \
+    --looks 28,29,30,31,32,33,34,35,36,37,38,39,40 --first-outfit 2127 --out-dir things_custom14
+```
+MINI40 (all 40 picks): dat 9c1af6a4f24f90ce2017d4fe563420cb, spr 83b5714dfc8f8c8019c47fe57954099e (7,677 sprites; 21,784
+sprite slots and 1,792 frames equal to the donors, recolours and edits recomputed). Input things_custom13 (dat
+945753ee2f4661865a4705896fb4958b, spr 41566d56528cf123446cfffa86d16e6a, 720,569 sprites). Output **things_custom14**: dat
+1667a34964182518d2a802638288881a, spr 5aa948775e41748bd885620eeae34e62, 2139 outfits, 723,857 sprites (3,288 appended),
+built twice with identical md5s. Verified by the importer: 12,788 sprite slots and 852 frames of the 13 outfits
+pixel-identical to MINI40, flags and animators equal, the 2126 old outfits and every item, effect and missile
+byte-identical, 3000 sampled old sprites unchanged.
+- Checked in the Linux client with this pair on a test server: each boss spawned and walking (east) and turned south;
+  each mount ridden (walking east, facing south and north); each aura on a character standing and walking (screenshots
+  and a contact sheet kept outside the repository). Known limit, as for the live Bone Steed: donor B mounts are centred
+  with negative displacements, and the client draws a 32 px rider at its usual place, so the rider sits about a tile
+  up-left of the saddle. The fix is client-side (a rider offset for negative-displacement mounts, base patch); not done
+  here.
+- The live pair stays things_custom13 until things_custom14 is pushed to `windows-assets`; a client on things_custom13
+  draws nothing for 2127-2139 (raid bosses invisible, faction mounts and auras empty), so the server change and the pair
+  go out together. CI: `check_content.py` reads 2139 from picks.csv.
+
 ## Leaderboards: fastest-time boards with class tabs (`game_leaderboard`)
 Boards of mode "min" (the Cinderheart's fastest kills) come with `format = "time"` (values shown m:ss,
 `TabRows.valueText` in `tabrows.lua`, tested by `tabrows_test.lua`) and `byClass = true`: the class tabs of the ladder

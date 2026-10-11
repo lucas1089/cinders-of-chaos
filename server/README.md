@@ -225,6 +225,8 @@ server/
    multi-use flag on the small diamond: `client/tools/sprites/set_multiuse.py`. See "Gems and sockets".
 5f. Auras: `python3 -I server/tools/install_auras.py <server>/data [--dry-run]` (idempotent; `install_all.py` step `auras`)
    adds the 19 Chaos auras of `data/XML/chaos_auras.csv` (ids 6..24) to `auras.xml`; the store sells them (category Auras).
+   It also adds the four faction auras of `data/XML/chaos_auras_donor.csv` (ids 25..28, looks 2136..2139 of things_custom14;
+   quartermaster rewards in `factions_config.lua`, never sold).
    The client needs the pair from `client/tools/sprites/import_vfx.py`. See `data/spells/README_FX.md` "Animated pack effects".
 5g. Crafting orbs v2: `python3 -I server/tools/install_orbs.py <server>/data [--dry-run]` (idempotent; `install_all.py` step
    `orbs`, after `crafting`) adds the six new orbs (32251..32256) to `items.otb` / `items.xml`, gives the base server's
@@ -7087,9 +7089,9 @@ unchanged) and can be traded.
 | Honored | helm (crown helmet), ilvl 100, Epic: monster damage taken T5, regeneration T5, life on kill T5; 250k + 10 tokens | sword (warlord sword), ilvl 100: boss damage T5, physical penetration T5, attack speed T5 | circlet (charmer's tiara), ilvl 100: monster damage taken T5, cooldown reduction T5, mana cost T5 | boots (terra boots), ilvl 100: dodge T5, movement speed T5 |
 | Revered | 2 Orbs of Fate, 300k (2/week) | 1 Orb of Grafting, 900k (1/week) | 2 Orbs of Fate, 300k (2/week) | 10 Orbs of Upheaval, 280k (2/week) |
 | Revered | armor (crown armor), ilvl 115: monster damage taken T6, thorns T6, regeneration T6; 600k + 20 tokens | legs (demon legs), ilvl 115: dodge T6, thorns T6, regeneration T6 | amulet (star amulet), ilvl 115: elemental penetration T6, cooldown reduction T6, mana on kill T6 | legs (golden legs), ilvl 115: dodge T6, regeneration T6, gold find T6 |
-| Revered | tabard aura (aura 14), 300k + 15 tokens | aura 15 | aura 24 | aura 23 |
+| Revered | tabard aura Pyrelight Mantle (aura 25), 300k + 15 tokens | Forgeflame Ring (aura 26) | Veiled Eyes (aura 27) | Thornfire Wreath (aura 28) |
 | Exalted | shield (mastermind shield), ilvl 125: block T7, reflect T7, regeneration T7; 1.5M + 40 tokens | axe (royal axe), ilvl 125: boss damage T7, physical penetration T7, attack speed T7 | wand (wand of starstorm), ilvl 125: elemental penetration T7, damage over time T7, mana on hit T7 | amulet (platinum amulet), ilvl 125: boss damage T7, life on kill T7, healing done T7 |
-| Exalted | mount 46, 2M + 60 tokens | mount 30 | mount 50 | mount 54 |
+| Exalted | Pyrewarden Charger (mount 142), 2M + 60 tokens | Forgeborn Emberwolf (mount 143) | Veilrunner (mount 144) | Thornbound Stag (mount 145) |
 
 Gear is deterministic: the base item gets rarity Epic, the item level, the base bonus and exactly these modifiers at these
 tiers, each value the middle of its tier's range, through `ChaosCrafting.writeAffix` (so tooltips, orbs, salvage, the
@@ -7097,8 +7099,14 @@ market and transmog treat it like any rolled item); it carries the offer's name 
 gear offer to `chaos_item_mods.lua` (the kind may carry the modifier, the tier is allowed at the item level, count and
 prefix / suffix limits of the rarity) and to the faction limits (item level 125, Epic, T7 at most): a catch-up and
 target-farm path below the top drops (item level 145-150, up to six modifiers, T8). Orbs can change it afterwards like any
-item. The aura and mount ids are placeholders (existing auras the store also sells, existing mounts nothing else gives)
-until faction art exists; both are given with `addAura` / `addMount` and remembered in `chaos_faction_purchases`.
+item. Each faction has its own aura and mount (client pair things_custom14, client/MANIFEST.md "Raid boss and faction
+looks"): auras 25..28 (`data/XML/chaos_auras_donor.csv`: Pyrelight Mantle, Forgeflame Ring, Veiled Eyes, Thornfire
+Wreath; looks 2136..2139) and mounts 142..145 (`tools/install_outfits.py` MOUNTS: Pyrewarden Charger, Forgeborn
+Emberwolf, Veilrunner, Thornbound Stag; looks 2132..2135), both given with `addAura` / `addMount` and remembered in
+`chaos_faction_purchases`; none is sold in the store (`gen_shop_cosmetics.py` leaves out the factions_config.lua mounts).
+The former placeholders (auras 14, 15, 24, 23; mounts 46, 30, 50, 54) are store offers only again. A character that
+bought a placeholder keeps it; the offer's key is unchanged, so it cannot buy the new reward again (a staff `addAura` /
+`addMount` of the new id if wanted).
 
 **Titles, achievements, board.** Rank titles through `ChaosTitles.register("faction")`: Honored, Revered and Exalted each
 give one (Vigil: Pyrewarden, Bellkeeper of the Vigil, Ashen Saint; Compact: Forgesworn, Anvilguard, Cinderlord; Choir:
@@ -7279,14 +7287,15 @@ pull): boss and add hits x1.75, mechanics 40% more often, 10% of max health on e
 
 | Boss | Look | Phases (health) | Mechanics | Enrage |
 |---|---|---|---|---|
-| Gravewarden Ulthar | 1281 (armoured flail knight) | The Watch 100%, Last Watch 40% | sunder, cleave; + Bone Bloom | 8:00 |
-| Morwen the Ash-Sister | 354 (tentacled witch) | The Ash Choir 100%, Requiem 50% | soak, Cinder Acolytes; + Bone Bloom | 8:00 |
-| The Marrow Colossus | 863 (bone mass) | Grinding Bones 100%, Shattering 50% | sweep, Bone Bloom; + cleave | 8:00 |
-| Vhoss the Hexmaw | 1369 (horned beast) | The Effigies 100%, Hexfall 45% | Hex Effigies, Withering Hex; + cleave | 8:30 |
-| Varkhul the Ashen Sovereign (final) | 1445 (crystal-bone titan) | The Throne 100% (sunder, cleave), Court of Ash 70% (sunder, soak, acolytes), The Last Sovereign 40% (sunder, effigies, hex, sweep) | seven | 13:00 |
+| Gravewarden Ulthar | 2127 (hooded black plate warden, red ember glow) | The Watch 100%, Last Watch 40% | sunder, cleave; + Bone Bloom | 8:00 |
+| Morwen the Ash-Sister | 2128 (hooded violet-robed sister in ember soul fire) | The Ash Choir 100%, Requiem 50% | soak, Cinder Acolytes; + Bone Bloom | 8:00 |
+| The Marrow Colossus | 2129 (many-legged pale bone colossus) | Grinding Bones 100%, Shattering 50% | sweep, Bone Bloom; + cleave | 8:00 |
+| Vhoss the Hexmaw | 2130 (coiled violet maw with a blue hex glow) | The Effigies 100%, Hexfall 45% | Hex Effigies, Withering Hex; + cleave | 8:30 |
+| Varkhul the Ashen Sovereign (final) | 2131 (ash-grey winged sovereign, 4x4) | The Throne 100% (sunder, cleave), Court of Ash 70% (sunder, soak, acolytes), The Last Sovereign 40% (sunder, effigies, hex, sweep) | seven | 13:00 |
 
-The looks are existing outfits of the client pair that no monster, NPC, mount or outfit of the server used (no new
-sprites; an exclusive look would be a follow-up). Health and kill times (the balance model `K.killTime`: a well-geared level
+The looks are their own donor-library creatures (client pair things_custom14, client/MANIFEST.md "Raid boss and faction
+looks"; picks.csv rows `raid_*`, written into the XMLs by `tools/apply_monster_looks.py`, family `raid`). Until
+2026-10-11 they were the unused stock looks 1281, 354, 863, 1369, 1445; a client on an older pair draws nothing for them. Health and kill times (the balance model `K.killTime`: a well-geared level
 1000 character deals 3,000 to one target, a fifth of the raid supports at 60% of that, 75% of the fight is spent hitting):
 
 | Boss | 5 players | 10 players | 15 players |

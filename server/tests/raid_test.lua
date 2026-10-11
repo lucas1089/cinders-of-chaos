@@ -223,7 +223,7 @@ for _, b in ipairs(cfg.bosses) do
 	local s = xmlOf(b.name) or ""
 	looks[#looks + 1] = tonumber(s:match('<look type="(%d+)"'))
 end
--- the bosses' looks: existing outfits no other monster file uses
+-- the bosses' looks: their own donor-library looks 2127..2131 (picks.csv family "raid"), no other monster file uses them
 local function listXml(dir)
 	local out = {}
 	local p = io.popen and io.popen('find "' .. dir .. '" -name "*.xml" 2>/dev/null')
@@ -246,7 +246,7 @@ if #files > 0 then
 			end
 		end
 		eq(users, 1, "look " .. tostring(look) .. " of " .. cfg.bosses[i].name .. " is its alone")
-		check(look < 2100 or look > 2126, "not a rift / omen look")
+		check(look == 2126 + i, "look " .. tostring(look) .. " is the raid look of picks.csv (" .. (2126 + i) .. ")")
 	end
 end
 for _, b in ipairs(cfg.bosses) do

@@ -5,7 +5,8 @@ python3 -I donor_pick.py --picks monster_looks/picks.csv --lib-dir <donor librar
         [--base-dat <live pair Tibia.dat> --base-spr <live pair Tibia.spr>] [--sheets DIR]
 
 picks.csv (one row per new look, in the order the looks get their ids): key, look (the planned client lookType), lib
-(B, C, D, ...: the library folder donor<lib>), lib_id (its outfit id), recolour (empty, or a rule below).
+(B, C, D, ...: the library folder donor<lib>), lib_id (its outfit id), recolour (empty, or a rule below), and the
+last column edit (empty, or an edit below).
 Output: OUT/Tibia.dat + OUT/Tibia.spr with only these outfits, numbered 1..N in pick order (no items, effects or
 missiles; the signature of the first library), and OUT/picks_resolved.csv. The import into the live pair is then one
 run of import_outfits.py (--looks 1,2,..,N --first-outfit <first planned look>), which converts nothing (the libraries
@@ -17,13 +18,11 @@ Recolour rules (applied to every sprite of the outfit, every group, frame, direc
                 fit the family (the Ashen Crypt's ember eyes, the Obsidian Hall's ember eye)
 Fully transparent pixels stay transparent; alpha is never changed.
 
-Checks (always): every entry of the output re-parses; every sprite slot of every group equals the donor slot (or the
-donor slot through the recolour rule, recomputed independently) pixel for pixel; flags and animator equal the donor's.
-With --base-dat/--base-spr: no pick's first idle frame (south) is already in the live pair (pixel-identical outfit or
-the same art shifted), and no two picks are the same; and no pick has the silhouette of a stock outfit (ids
-1..--stock-last, the commercial art; mean IoU of the idle masks of all four directions >= 0.9: a recolour or retouch
-of stock art; 0.7..0.9 is printed to be checked by eye). Each stops the run (the looks must be new and not stock).
-Deterministic: the same inputs give byte-identical outputs.
+Edits (optional column `edit`; no pixel is changed):
+  aura-feet     an aura outfit from a library whose client placed auras its own way: its displacement is set so the
+                centre of the art (the bounding box of every frame, layer and direction of its first group) lands on
+                the feet point (14, 20) of the creature's tile, the point import_vfx.py puts our own auras on, after
+                the shift our client applies to a w x h aura ((w-1)*16, (h-1)*16; GameBigAurasCenter, base patch 0006)
 """
 import argparse, colorsys, csv, os, struct, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -63,6 +62,43 @@ def recolour_green_ember(a):
 
 
 RULES = {'': None, 'green>ember': recolour_green_ember}
+
+
+class Edited:
+    """a donor thing with edited flags (the `edit` column); everything else read from the donor thing"""
+    def __init__(self, t, flags):
+        self.t, self.flags = t, flags
+
+    def __getattr__(self, k):
+        return getattr(self.t, k)
+
+
+FEET = (14, 20)  # import_vfx.py PLACE['feet']: where our creatures stand on their tile
+
+
+def edit_flags(t, groups, edit, spr=None):
+    """the flags dict of donor thing t after the `edit` rule (a copy; t is not changed); spr: the donor spr"""
+    f = dict(t.flags)
+    if edit == '':
+        return f
+    if edit == 'aura-feet':
+        g = groups[0]
+        box = None
+        for ph in range(g.phases):
+            for x in range(g.px):
+                for layer in range(g.layers):
+                    a = frame(g, spr, x, 0, 0, ph, layer=layer)[:, :, 3] > 0
+                    ys, xs = np.nonzero(a)
+                    if len(ys):
+                        b = (xs.min(), ys.min(), xs.max() + 1, ys.max() + 1)
+                        box = b if box is None else (min(box[0], b[0]), min(box[1], b[1]), max(box[2], b[2]), max(box[3], b[3]))
+        if box is None:
+            sys.exit(f'{t}: aura-feet on an empty outfit')
+        cx, cy = (box[0] + box[2]) // 2, (box[1] + box[3]) // 2
+        nx, ny = cx - (g.w - 1) * 16 - FEET[0], cy - (g.h - 1) * 16 - FEET[1]
+        f['displacement'] = (nx % 65536, ny % 65536)
+        return f
+    sys.exit(f'{t}: unknown edit {edit!r}')
 
 
 def masks(d, s, t):
@@ -110,6 +146,17 @@ def main():
             libs[name] = (Dat(os.path.join(p, 'Tibia.dat')), Spr(os.path.join(p, 'Tibia.spr')))
         return libs[name]
 
+    # rows the library catalogue tags "named character (do not use live)" or "library only" never go live
+    tags = {}
+    for pk in picks:
+        cat = os.path.join(a.lib_dir, 'donor' + pk['lib'], 'catalogue.csv')
+        if pk['lib'] not in tags:
+            tags[pk['lib']] = {r[1]: r[7] for r in csv.reader(open(cat, newline='')) if r and r[0] == 'outfit'} \
+                if os.path.isfile(cat) else {}
+        desc = tags[pk['lib']].get(pk['lib_id'], '')
+        if 'named character' in desc or 'library only' in desc:
+            sys.exit(f"{pk['key']}: donor{pk['lib']} {pk['lib_id']} is tagged in the catalogue: {desc}")
+
     # --- sprites and entries
     records, rec_ids, entries, src = [], {}, [], []
     for pk in picks:
@@ -121,7 +168,8 @@ def main():
         if t is None:
             sys.exit(f"{pk['key']}: donor{pk['lib']} has no outfit {pk['lib_id']}")
         groups = parse_body(d, t)
-        flags, stripped = encode_flags(t, d.extra)
+        edit = pk.get('edit') or ''
+        flags, stripped = encode_flags(Edited(t, edit_flags(t, groups, edit, s)) if edit else t, d.extra)
         sid_map = {0: 0}
         for g in groups:
             for sid in g.sprites:
@@ -142,7 +190,8 @@ def main():
         src.append((pk, d, s, t, groups, rule, stripped))
         print(f"  {len(entries):2d} {pk['key']:<18} donor{pk['lib']} {pk['lib_id']:>4}: "
               + ', '.join(f'{g.w}x{g.h} L{g.layers} P{g.px}{g.py}{g.pz} F{g.phases}' for g in groups)
-              + (f" recolour {pk['recolour']}" if rule else '') + (f' stripped {stripped}' if stripped else ''))
+              + (f" recolour {pk['recolour']}" if rule else '') + (f" edit {pk['edit']}" if pk.get('edit') else '')
+              + (f' stripped {stripped}' if stripped else ''))
 
     # --- dat: header (signature of the first library, items 99 = none), outfits, no effects / missiles
     sig = lib(picks[0]['lib'])[0].signature
@@ -168,7 +217,7 @@ def main():
         tm = md.outfit(i + 1)
         mg = parse_body(md, tm)
         assert {k: v for k, v in tm.flags.items() if k not in stripped} == \
-               {k: v for k, v in t.flags.items() if k not in stripped}, pk['key']
+               {k: v for k, v in edit_flags(t, groups, pk.get('edit') or '', s).items() if k not in stripped}, pk['key']
         assert len(mg) == len(groups), pk['key']
         for g, h in zip(groups, mg):
             assert (g.gtype, g.w, g.h, g.exact, g.layers, g.px, g.py, g.pz, g.phases, g.anim) == \
@@ -208,6 +257,9 @@ def main():
             except Exception:  # noqa: BLE001 -- blank padding entries
                 continue
             if k in seen:
+                own = next(p for p in picks if p['key'] == seen[k])
+                if int(own['look']) == t.id:
+                    continue  # an earlier pick already imported at its planned id (base = the live pair)
                 print(f'  ALREADY IN THE PAIR: {seen[k]} = outfit {t.id}')
                 hits += 1
         if hits:
@@ -239,9 +291,9 @@ def main():
 
     with open(os.path.join(a.out_dir, 'picks_resolved.csv'), 'w', newline='') as fh:
         w = csv.writer(fh)
-        w.writerow(['mini_id', 'key', 'look', 'lib', 'lib_id', 'recolour', 'groups'])
+        w.writerow(['mini_id', 'key', 'look', 'lib', 'lib_id', 'recolour', 'edit', 'groups'])
         for i, (pk, d, s, t, groups, rule, stripped) in enumerate(src):
-            w.writerow([i + 1, pk['key'], pk['look'], pk['lib'], pk['lib_id'], pk['recolour'],
+            w.writerow([i + 1, pk['key'], pk['look'], pk['lib'], pk['lib_id'], pk['recolour'], pk.get('edit') or '',
                         ' '.join(f'{g.w}x{g.h}L{g.layers}P{g.px}{g.py}{g.pz}F{g.phases}' for g in groups)])
     if a.sheets:
         os.makedirs(a.sheets, exist_ok=True)

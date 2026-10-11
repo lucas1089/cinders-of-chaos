@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Boss of the Ashen Sepulchre (raid.lua, raid_config.lua): health is the 5-player value, the script scales it by the raid size; the telegraphed mechanics are scripted. Personal loot is given by the script (lockout); the corpse only holds coins. Look 1281: an existing outfit no other monster uses. Numbers: server/README.md "The Ashen Sepulchre (weekly raid)". -->
+<!-- Boss of the Ashen Sepulchre (raid.lua, raid_config.lua): health is the 5-player value, the script scales it by the raid size; the telegraphed mechanics are scripted. Personal loot is given by the script (lockout); the corpse only holds coins. Look 2127: its own donor-library look (client/tools/sprites/monster_looks/picks.csv, things_custom14). Numbers: server/README.md "The Ashen Sepulchre (weekly raid)". -->
 <monster name="Gravewarden Ulthar" nameDescription="Gravewarden Ulthar" race="undead" experience="2500000" speed="260" manacost="0">
 	<health now="4000000" max="4000000" />
-	<look type="1281" corpse="6068" />
+	<look type="2127" corpse="6068" />
 	<targetchange interval="8000" chance="5" />
 	<flags>
 		<flag isboss="1" />

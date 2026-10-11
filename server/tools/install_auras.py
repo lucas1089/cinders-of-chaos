@@ -10,18 +10,26 @@ between two marker comments before </auras>; the block is rewritten when the man
 that already has an entry outside the block stops the script (nothing is written). Idempotent: a second run changes
 nothing. The store offers them (data/scripts/chaos/shop_config.lua, category Auras). Without the matching client pair
 the auras show as nothing in the client, so install both.
+A second manifest, data/XML/chaos_auras_donor.csv (same columns), is read after it when no --manifest is given: auras
+whose art is a donor-library outfit imported by client/tools/sprites/donor_pick.py + import_outfits.py (picks.csv rows
+of family "faction", kind "aura"), not by import_vfx.py, so re-running import_vfx.py never drops them. They are rewards
+(factions_config.lua), not store offers.
 """
 import csv, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_MANIFEST = os.path.join(os.path.dirname(HERE), 'data', 'XML', 'chaos_auras.csv')
+DONOR_MANIFEST = os.path.join(os.path.dirname(HERE), 'data', 'XML', 'chaos_auras_donor.csv')
 BEGIN = '\t<!-- Chaos auras (server/tools/install_auras.py, do not edit by hand) -->\n'
 END = '\t<!-- end of the Chaos auras -->\n'
 
 
-def read_manifest(path):
-    with open(path, newline='', encoding='utf-8') as fh:
-        rows = [(int(r['aura_id']), int(r['client_id']), r['name']) for r in csv.DictReader(fh)]
+def read_manifest(*paths):
+    rows = []
+    for path in paths:
+        with open(path, newline='', encoding='utf-8') as fh:
+            rows += [(int(r['aura_id']), int(r['client_id']), r['name']) for r in csv.DictReader(fh)]
+    path = ' + '.join(paths)
     ids = [r[0] for r in rows]
     if len(set(ids)) != len(ids) or any(not 1 <= i <= 255 for i in ids):
         sys.exit('%s: aura ids must be unique and 1..255' % path)
@@ -31,11 +39,11 @@ def read_manifest(path):
 def main(argv):
     args = [a for a in argv if not a.startswith('--')]
     dry = '--dry-run' in argv
-    manifest = DEFAULT_MANIFEST
+    manifests = [DEFAULT_MANIFEST] + ([DONOR_MANIFEST] if os.path.isfile(DONOR_MANIFEST) else [])
     if '--manifest' in argv:
         i = argv.index('--manifest')
-        manifest = argv[i + 1]
-        args = [a for a in args if a != manifest]
+        manifests = [argv[i + 1]]
+        args = [a for a in args if a != manifests[0]]
     if len(args) != 1:
         print(__doc__)
         return 2
@@ -43,7 +51,7 @@ def main(argv):
     if not os.path.isfile(path):
         print('missing ' + path)
         return 1
-    rows = read_manifest(manifest)
+    rows = read_manifest(*manifests)
     text = open(path, encoding='utf-8', errors='surrogateescape').read()
     rest = re.sub(re.escape(BEGIN) + r'.*?' + re.escape(END), '', text, flags=re.S)
     taken_ids = {int(x) for x in re.findall(r'<aura\s[^>]*\bid="(\d+)"', rest)}

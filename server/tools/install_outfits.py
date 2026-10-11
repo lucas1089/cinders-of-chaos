@@ -19,7 +19,8 @@ Mounts (MOUNTS below) go into mounts.xml the same way: a marked block before </m
 already has an entry outside the block stops the script.
 
 The look types exist only in the client pair that has them (client/tools/sprites/import_outfits.py, outfits 1505-1510;
-import_donor_things.py, the donor B first set, outfits 1551-1561); install both, or they show as nothing in the client.
+import_donor_things.py, the donor B first set, outfits 1551-1561; the faction mounts 2132-2135, things_custom14);
+install both, or they show as nothing in the client.
 """
 import os, re, sys
 
@@ -32,8 +33,12 @@ CBEGIN = '\t<!-- Chaos class looks (server/tools/install_outfits.py, do not edit
 CEND = '\t<!-- end of the Chaos class looks -->\n'
 MBEGIN = '\t<!-- Chaos mounts (server/tools/install_outfits.py, do not edit by hand) -->\n'
 MEND = '\t<!-- end of the Chaos mounts -->\n'
-# (mount id, client look type, name, speed); sold in the store (shop_config.lua)
-MOUNTS = [(141, 1561, 'Bone Steed', 30)]
+# (mount id, client look type, name, speed). Bone Steed is sold in the store (shop_config.lua); 142..145 are the faction
+# mounts (factions_config.lua quartermasters, Exalted; donor-library looks 2132..2135 of things_custom14, picks.csv rows
+# mount_*), never sold (gen_shop_cosmetics.py excludes factions_config.lua mounts)
+MOUNTS = [(141, 1561, 'Bone Steed', 30),
+          (142, 2132, 'Pyrewarden Charger', 30), (143, 2133, 'Forgeborn Emberwolf', 30),
+          (144, 2134, 'Veilrunner', 30), (145, 2135, 'Thornbound Stag', 30)]
 
 
 def class_outfits(path=CONSTANTS):

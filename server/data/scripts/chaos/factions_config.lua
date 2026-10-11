@@ -143,8 +143,10 @@ return {
 	--            never above item level 125, rarity Epic, T7 (top drops: 145-150, up to 6 modifiers, T8).
 	--   orbs     items = {{id, count}}; weekly = purchases per week
 	--   recipe   bought once; then `craft` = {inputs = {{id, count}}, tokens = n, gold = n, output = {{id, count}}} at the NPC
-	--   aura     the faction tabard aura: an aura of data/XML/auras.xml (a placeholder look until the tabard art exists)
-	--   mount    a mount of data/XML/mounts.xml (a placeholder until the faction mount exists)
+	--   aura     the faction tabard aura: an aura of data/XML/auras.xml, exclusive (ids 25..28, data/XML/chaos_auras_donor.csv,
+	--            looks 2136..2139 of things_custom14; the former placeholders 14, 15, 24, 23 are store auras only again)
+	--   mount    the faction mount: a mount of data/XML/mounts.xml, exclusive (ids 142..145, tools/install_outfits.py,
+	--            looks 2132..2135; the former placeholders 46, 30, 50, 54 stay store mounts only)
 	-- Titles (by rank, with the faction frame at Exalted) are earned, not bought: `titles` above.
 	offers = {
 		vigil = {
@@ -158,10 +160,10 @@ return {
 				items = {{id = FATE, count = 2}}},
 			{key = "vigil_plate", kind = "gear", rank = "revered", name = "Vigil Pyreplate", price = 600000, tokens = 20,
 				id = 2487, itemKind = "armor", rarity = 4, level = 115, mods = {{"monsterreduction", 6}, {"thorns", 6}, {"regen", 6}}},
-			{key = "vigil_aura", kind = "aura", rank = "revered", name = "Vigil Tabard (aura)", price = 300000, tokens = 15, aura = 14},
+			{key = "vigil_aura", kind = "aura", rank = "revered", name = "Vigil Tabard: Pyrelight Mantle (aura)", price = 300000, tokens = 15, aura = 25},
 			{key = "vigil_shield", kind = "gear", rank = "exalted", name = "Bulwark of the Last Pyre", price = 1500000, tokens = 40,
 				id = 2514, itemKind = "shield", rarity = 4, level = 125, mods = {{"block", 7}, {"reflect", 7}, {"regen", 7}}},
-			{key = "vigil_mount", kind = "mount", rank = "exalted", name = "Vigil Mount", price = 2000000, tokens = 60, mount = 46}
+			{key = "vigil_mount", kind = "mount", rank = "exalted", name = "Pyrewarden Charger (mount)", price = 2000000, tokens = 60, mount = 142}
 		},
 		compact = {
 			{key = "compact_whet", kind = "orbs", rank = "trusted", name = "Forge Whetstones", price = 120000, weekly = 3,
@@ -174,10 +176,10 @@ return {
 				items = {{id = GRAFTING, count = 1}}},
 			{key = "compact_legs", kind = "gear", rank = "revered", name = "Anvilguard Greaves", price = 600000, tokens = 20,
 				id = 2495, itemKind = "legs", rarity = 4, level = 115, mods = {{"dodge", 6}, {"thorns", 6}, {"regen", 6}}},
-			{key = "compact_aura", kind = "aura", rank = "revered", name = "Compact Tabard (aura)", price = 300000, tokens = 15, aura = 15},
+			{key = "compact_aura", kind = "aura", rank = "revered", name = "Compact Tabard: Forgeflame Ring (aura)", price = 300000, tokens = 15, aura = 26},
 			{key = "compact_axe", kind = "gear", rank = "exalted", name = "Cinderlord's Cleaver", price = 1500000, tokens = 40,
 				id = 7434, itemKind = "weapon", rarity = 4, level = 125, mods = {{"bossdamage", 7}, {"physpen", 7}, {"attackspeed", 7}}},
-			{key = "compact_mount", kind = "mount", rank = "exalted", name = "Compact Mount", price = 2000000, tokens = 60, mount = 30}
+			{key = "compact_mount", kind = "mount", rank = "exalted", name = "Forgeborn Emberwolf (mount)", price = 2000000, tokens = 60, mount = 143}
 		},
 		choir = {
 			{key = "choir_gild", kind = "orbs", rank = "trusted", name = "Choir Gilding", price = 140000, weekly = 3,
@@ -190,10 +192,10 @@ return {
 				items = {{id = FATE, count = 2}}},
 			{key = "choir_amulet", kind = "gear", rank = "revered", name = "Voice of the Rift", price = 600000, tokens = 20,
 				id = 2131, itemKind = "jewel", rarity = 4, level = 115, mods = {{"elepen", 6}, {"cdr", 6}, {"manaonkill", 6}}},
-			{key = "choir_aura", kind = "aura", rank = "revered", name = "Choir Tabard (aura)", price = 300000, tokens = 15, aura = 24},
+			{key = "choir_aura", kind = "aura", rank = "revered", name = "Choir Tabard: Veiled Eyes (aura)", price = 300000, tokens = 15, aura = 27},
 			{key = "choir_wand", kind = "gear", rank = "exalted", name = "Abyss-Tongue Wand", price = 1500000, tokens = 40,
 				id = 8920, itemKind = "weapon", rarity = 4, level = 125, mods = {{"elepen", 7}, {"dot", 7}, {"manaonhit", 7}}},
-			{key = "choir_mount", kind = "mount", rank = "exalted", name = "Choir Mount", price = 2000000, tokens = 60, mount = 50}
+			{key = "choir_mount", kind = "mount", rank = "exalted", name = "Veilrunner (mount)", price = 2000000, tokens = 60, mount = 144}
 		},
 		circle = {
 			{key = "circle_wake", kind = "orbs", rank = "trusted", name = "Seed Orbs", price = 80000, weekly = 3,
@@ -206,10 +208,10 @@ return {
 				items = {{id = UPHEAVAL, count = 10}}},
 			{key = "circle_legs", kind = "gear", rank = "revered", name = "Rootkeeper's Leggings", price = 600000, tokens = 20,
 				id = 2470, itemKind = "legs", rarity = 4, level = 115, mods = {{"dodge", 6}, {"regen", 6}, {"goldfind", 6}}},
-			{key = "circle_aura", kind = "aura", rank = "revered", name = "Circle Tabard (aura)", price = 300000, tokens = 15, aura = 23},
+			{key = "circle_aura", kind = "aura", rank = "revered", name = "Circle Tabard: Thornfire Wreath (aura)", price = 300000, tokens = 15, aura = 28},
 			{key = "circle_amulet", kind = "gear", rank = "exalted", name = "Heart of the Thorn", price = 1500000, tokens = 40,
 				id = 2171, itemKind = "jewel", rarity = 4, level = 125, mods = {{"bossdamage", 7}, {"lifeonkill", 7}, {"healing", 7}}},
-			{key = "circle_mount", kind = "mount", rank = "exalted", name = "Circle Mount", price = 2000000, tokens = 60, mount = 54}
+			{key = "circle_mount", kind = "mount", rank = "exalted", name = "Thornbound Stag (mount)", price = 2000000, tokens = 60, mount = 145}
 		}
 	},
 	-- the gear rules the tests hold every gear offer to (see `offers`)
