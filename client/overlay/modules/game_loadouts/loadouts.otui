@@ -1,0 +1,221 @@
+// Loadouts / Armory (game_loadouts): the slot list on the left, the selected loadout's summary on the right, name /
+// icon and Save / Load / Rename / Delete below. Styles from client_chaos_theme.
+
+LoadoutRow < ChaosPanelDark
+  height: 46
+  margin-bottom: 3
+  phantom: false
+  focusable: true
+
+  $focus:
+    background-color: #3a2410
+
+  UIWidget
+    id: icon
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    size: 32 32
+    phantom: true
+
+  UILabel
+    id: title
+    anchors.left: icon.right
+    anchors.right: tag.left
+    anchors.top: parent.top
+    margin-left: 6
+    margin-top: 2
+    text-align: left
+    font: verdana-11px-rounded
+    color: #f6cf72
+    phantom: true
+
+  UILabel
+    id: sub
+    anchors.left: title.left
+    anchors.right: parent.right
+    anchors.top: title.bottom
+    margin-top: 3
+    text-align: left
+    font: verdana-11px-antialised
+    color: #a89c86
+    phantom: true
+
+  UILabel
+    id: tag
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin-top: 2
+    width: 52
+    text-align: right
+    font: verdana-11px-rounded
+    phantom: true
+
+LoadoutLine < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: left
+  text-wrap: true
+  text-auto-resize: true
+  margin-bottom: 2
+  phantom: true
+
+LoadoutsWindow < ChaosMainWindow
+  id: loadoutsWindow
+  size: 700 540
+  !text: tr('Loadouts')
+  @onEscape: modules.game_loadouts.hide()
+
+  ChaosTitlePlate
+    id: listPlate
+    anchors.top: parent.top
+    anchors.left: parent.left
+    width: 250
+
+    ChaosTitle
+      anchors.fill: parent
+      !text: tr('Armory')
+
+  ScrollablePanel
+    id: slotList
+    anchors.top: listPlate.bottom
+    anchors.left: parent.left
+    anchors.bottom: hint.top
+    width: 250
+    margin-top: 4
+    margin-bottom: 6
+    layout:
+      type: verticalBox
+
+  ChaosTitlePlate
+    id: detailPlate
+    anchors.top: parent.top
+    anchors.left: listPlate.right
+    anchors.right: parent.right
+    margin-left: 8
+
+    UIWidget
+      id: detailIcon
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 8
+      size: 20 20
+      phantom: true
+
+    ChaosTitle
+      id: detailName
+      anchors.fill: parent
+
+  ChaosPanelDark
+    id: detail
+    anchors.top: detailPlate.bottom
+    anchors.left: detailPlate.left
+    anchors.right: parent.right
+    anchors.bottom: nameLabel.top
+    margin-top: 4
+    margin-bottom: 8
+
+    ScrollablePanel
+      id: summary
+      anchors.fill: parent
+      margin-right: 14
+      vertical-scrollbar: summaryScroll
+      layout:
+        type: verticalBox
+        fit-children: true
+
+    ChaosScrollBar
+      id: summaryScroll
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      step: 20
+      pixels-scroll: true
+
+  ChaosLabelDim
+    id: nameLabel
+    anchors.left: detailPlate.left
+    anchors.bottom: buttons.top
+    margin-bottom: 10
+    width: 40
+    height: 20
+    !text: tr('Name')
+
+  ChaosTextEdit
+    id: nameEdit
+    anchors.left: nameLabel.right
+    anchors.verticalCenter: nameLabel.verticalCenter
+    size: 220 24
+    max-length: 20
+
+  UIButton
+    id: iconButton
+    anchors.left: nameEdit.right
+    anchors.verticalCenter: nameLabel.verticalCenter
+    margin-left: 6
+    size: 28 28
+    !tooltip: tr('Change the icon')
+    @onClick: modules.game_loadouts.cycleIcon()
+
+  UIWidget
+    id: buttons
+    anchors.left: detailPlate.left
+    anchors.right: parent.right
+    anchors.bottom: hint.top
+    margin-bottom: 6
+    height: 26
+    layout:
+      type: horizontalBox
+      spacing: 6
+
+    ChaosButton
+      id: saveButton
+      width: 100
+      !text: tr('Save')
+      !tooltip: tr('Save your current build (passive tree, Paragon, equipped gear) in this slot')
+      @onClick: modules.game_loadouts.saveSelected()
+
+    ChaosButton
+      id: loadButton
+      width: 100
+      !text: tr('Load')
+      !tooltip: tr('Switch to this loadout: free, out of combat, instant in a protection zone')
+      @onClick: modules.game_loadouts.loadSelected()
+
+    ChaosButton
+      id: renameButton
+      width: 100
+      !text: tr('Rename')
+      @onClick: modules.game_loadouts.renameSelected()
+
+    ChaosButton
+      id: deleteButton
+      width: 100
+      !text: tr('Delete')
+      @onClick: modules.game_loadouts.deleteSelected()
+
+  ChaosLabel
+    id: hint
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: status.top
+    margin-bottom: 2
+    height: 16
+    text-align: left
+
+  ChaosLabel
+    id: status
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    height: 44
+    text-wrap: true
+    text-align: topLeft
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 80 24
+    !text: tr('Close')
+    @onClick: modules.game_loadouts.hide()

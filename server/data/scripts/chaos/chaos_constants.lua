@@ -208,6 +208,12 @@ ChaosOpcodes.raid = 213
 Chaos.storage.raid = 7100440
 Chaos.tables.raidLockouts = "chaos_raid_lockouts"
 Chaos.tables.raidInstances = "chaos_raid_instances"
+-- Loadouts / Armory (client game_loadouts; loadouts.lua, loadouts_core.lua, loadouts_config.lua, sql/chaos_loadouts.sql):
+-- save and switch whole builds; storages 7100570 - 7100579 reserved (+0 active slot, +1 switch serial, +2 last switch),
+-- and 7112000 - 7127999 for the support runes each loadout holds (loadouts_config.lua runeMirrorBase)
+ChaosOpcodes.loadouts = 206
+Chaos.storage.loadouts = 7100570
+Chaos.tables.loadouts = "chaos_loadouts"
 
 -- ---------------------------------------------------------------------------
 -- Module settings

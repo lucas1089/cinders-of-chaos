@@ -295,6 +295,7 @@ working directory, as with the rest of the base server libs).
 | game_raid | `raid.lua`, `raid_core.lua`, `raid_config.lua`, `sql/chaos_raid.sql` (buff source in `data/lib/chaos_buffs.lua`), monsters `monsters/chaos/raid/` | **213**, Adventure > Raid: Ashen Sepulchre, the portal next to the temple | The Ashen Sepulchre: a weekly raid for 5-15 players, five bosses with coordinated mechanics (tank swap, cleaves, soak circles, adds, spread, effigies, a hex to cleanse) behind trash in a runtime-built zone; personal loot once a week per boss and character, saved raids continued later the same week, Sepulchre Marks for a seeded weekly vendor, raid uniques, a guild trophy, a weekly fastest-clear board; window (lockouts, journal, vendor), HUD and call-outs (see "The Ashen Sepulchre, the weekly raid"). Unit and mocked-engine tests; tested alone on a live test server. |
 | game_community | `community.lua`, `community_core.lua`, `community_config.lua`, `sql/chaos_community.sql` (buff source in `data/lib/chaos_buffs.lua`; hooks in `rift_core.lua`, `rift.lua`, `loot_config.lua`, `factions.lua`, `crafting.lua`) | **203**, Adventure > Community, the Great Brazier next to the main temple, `/community` | Community goal: a server-wide bar fed by kills, rifts, invasion waves, world bosses, crafting orbs and gold given to the Brazier, per-character daily caps, four stages that light buffs for everyone, rewards for the top and everyone past a threshold; the weekly world modifier (one or two of nine, by the week's seed or set by staff) (see "Community goals and the weekly world modifier"). Unit and mocked-engine tests; not run on a live server. |
 | game_dpsmeter | `combatlog.lua`, `combatlog_core.lua`, `combatlog_config.lua` (one hunk in `hunt.lua`) | **204**, Hunt > DPS Meter, the Hunt Tracker's Meter button | DPS meter and combat log: damage, healing, damage taken and healing received per skill (spell, rune, weapon attack, damage over time, proc, summon) and per attacker, the current fight, the last 10 fights (bosses named) and the session, party totals; detail window with hits, crits, average and max (see "DPS meter and combat log"). Unit, mocked-engine and benchmark tests; tested on a live test server. |
+| game_loadouts | `loadouts.lua`, `loadouts_core.lua`, `loadouts_config.lua`, `sql/chaos_loadouts.sql` | **206**, Character > Loadouts, the Loadouts button of the passive tree window | Loadouts (Armory): save whole builds (passive tree, Paragon, support runes, the vocation, an equipment set by item reference) and switch between them for free; anti-dodge rules, validation against the current tree, crash-safe switch (see "Loadouts (Armory)"). Unit and mocked-engine tests; tested on a live test server. |
 
 Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 208, 209, 211, 214, 216, 217, 218, 219, 221, 222, 223, 224 (sent by the engine, patch 0015), 225, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
@@ -312,6 +313,10 @@ against the reference server's list below, every Chaos script and client module 
 Extended opcode 204 (DPS meter and combat log) is registered there too, as `ChaosOpcodes.combatLog` below the table;
 checked free against the reference server's list below, its client modules and every Chaos script and client module
 (grep for `sendExtendedOpcode`, `registerExtended*Opcode` and opcode constants; `tests/combatlog_test.lua` checks it).
+Extended opcode 206 (Loadouts / Armory) is registered there too, as `ChaosOpcodes.loadouts` below the table; checked free
+against the reference server's list below, every Chaos script and client module and the reference client's modules (grep for
+`sendExtendedOpcode`, `registerExtended*Opcode` and opcode constants: 200 and 206 were both free, 206 was taken);
+`tests/loadouts_test.lua` checks it against `ChaosOpcodes` and that list.
 
 ### Opcode collision check
 Searched the reference server for every `onExtendedOpcode`, `sendExtendedOpcode(` and opcode
@@ -6873,3 +6878,94 @@ dialog).
 
 Assumptions (not run on a live server): the base server's `kill` CreatureEvent fires for the killer; `Player:removeTotalMoney`
 takes from the backpack and the bank; town 1's temple has a free tile at one of the offsets (else set `brazier.pos`).
+
+## Loadouts (Armory) (`loadouts.lua`, `loadouts_core.lua`, `loadouts_config.lua`, `sql/chaos_loadouts.sql`, client `game_loadouts`)
+
+Save a whole build and switch between builds without paying the respec again. Client `game_loadouts` (Character > Loadouts,
+and a Loadouts button the module adds at runtime to the passive tree window), extended opcode 206 (`ChaosOpcodes.loadouts`).
+Every number is in `loadouts_config.lua`; the rules are in `loadouts_core.lua` (pure, `tests/loadouts_test.lua`).
+
+**What a loadout holds.**
+
+| Part | Stored as | On a switch |
+|---|---|---|
+| Passive tree nodes | `tree` column ("2,3,9") | the live tree (`chaos_passive_tree`, the active preset) is replaced |
+| Paragon allocation | `paragon` column ("damage=3,health=4") | `ChaosParagon.save`, then `ChaosPassiveTree.apply` |
+| Support runes in the spells' sockets | the runes themselves: the live sockets for the active loadout, player storages `7112000 + (slot - 1) * 2000 + spell id * 4 + socket` for the others (`supports` column: a summary) | the runes move between the live sockets and the loadout's own storages; never into the backpack, never copied |
+| Class / vocation | `voc` column (vocation id at the save) | a requirement: nodes another class cannot hold are refunded for free on load; ascension itself is not part of a loadout (it changes only through the store's vocation change) |
+| Equipment set | `gear` column: per equipment slot the item's per-item id (`chaos_iid`) or, for a plain item, its type (the de-equipped form: an equipped ring is another id); "empty" for an empty hand | the set's items are moved onto the character (below) |
+| Action bar profile | client only: `g_settings` node `loadouts`, per character and slot | the client switches to the profile after a load (`client_settings.changeActiveHotkeyProfile`) |
+
+Not part of a loadout: the Vocation Trial node picks (`trials.lua`; changing a held node costs a Trial Token and gold, which a free
+switch would dodge) and the trial nodes themselves (they are kept through every tree change anyway).
+
+**Slots.** 3 for everyone, a 4th at level 200 and a 5th at level 500 (`baseSlots`, `earned`, `maxSlots`). They are earned in game,
+never sold: the store's rule is cosmetics and convenience without power ("Store", Fairness), and a loadout slot is worth respec gold
+(each one keeps a tree that would otherwise cost a full reset), so a paid slot would sell gold. A character whose level drops below
+an unlock keeps the loadout in that slot (it can be deleted, not saved or loaded, until the level is back). The Chaos Pact's saved
+builds (`pact.lua`) are a different thing and stay as they are: account-wide build codes that are applied through the build-code
+preview at the respec prices.
+
+**The rules (no respec dodge).** Exactly one loadout is active: the live build is that loadout.
+- Save copies the live build into a slot. The server reads the build itself (tree, Paragon, equipped items); the client never sends
+  nodes or items. The first save makes that slot active. Saving into another slot is a copy; support runes are not copied (a
+  copy keeps the runes it already holds, a new slot holds none).
+- A tree only changes while it is live, in the passive tree window, at the normal prices (adding is free; a single-node refund or a
+  reset costs what `respec.lua` says). So every tree a loadout holds was paid once; switching between saved loadouts costs nothing.
+- Load (switch) parks the live tree, Paragon and runes into the active loadout (nothing is lost, nothing is refunded) and puts the
+  target's live. Without an active loadout a switch is refused while the live build holds anything ("save it first"), so a switch
+  can never drop a build for free.
+- Delete: an inactive loadout that holds support runes cannot be deleted (load it and take them out at the normal price); deleting
+  the active loadout leaves the live build as it is. A save over a slot that holds runes of its own is refused while no loadout is
+  active.
+- The randomized check in `tests/loadouts_test.lua` runs thousands of save / load / delete / priced-edit steps and checks that no
+  tree shape ever appears that a priced edit did not make, and that no rune is created or lost.
+
+**Switching.** Out of combat (no fight condition, not PZ-locked), level 8+, not inside an instance (arena, rift, Vocation Trial,
+raid, Ember Descent, Infinity Tower, Ascended Omen, siege), `cooldownSeconds` (60) after the last switch. In a protection zone it
+is instant; elsewhere it is a `castMs` (3 s) channel: moving or entering combat interrupts it; the bar is drawn by `game_castbar`.
+
+**Validation on load** (against the tree data and the character now; the window shows it before loading). Nodes that left the
+tree, nodes that no longer connect (a balance pass moved them), nodes the class may not hold (`ChaosClassTree.allowed`) and nodes
+over the owned points (the farthest from the start go first, the rest stays connected) are refunded for free and the player is
+told how many and why; Paragon points over the owned points are refunded for free (as at login). Support runes of a spell that
+left the game come back as items; a rune type that left the game is dropped. Item level and vocation requirements are the
+engine's own (the equip check of the movement scripts).
+
+**Gear.** The set's items are looked for in the equipment, the backpack (every container in it) and, while switching in a
+protection zone, the store inbox. First every slot that changes is emptied into the backpack (never merged into a stack), then the
+set's items are put on: the engine places a copy in the slot and the item itself is removed in the same step, so it is one item
+moved (per-item id and attributes kept), never a duplicate. A two-handed weapon the set does not want is put away when it blocks
+the set's shield. Items in a depot are not taken out: the engine saves a depot chest only after the depot was opened in that
+session, so an item taken from an unopened depot could come back after a crash. They are named instead ("sword: in your depot
+(<town>)"); a missing item is reported and its slot keeps what it had. The supply stash only holds stackable plain items, so no
+gear is ever there.
+
+**Season realms.** Loadouts belong to a character (`player_id`); season characters are separate characters, so they have their
+own loadouts, and a season character's set only finds that character's items.
+
+**Crash safety.** A switch writes the database first (the slot 0 row: switch serial + 1 and an undo record with the previous live
+tree, Paragon and the parked slot's row), then the player storages (runes, active slot, serial), then saves the player at once.
+At login a database one serial ahead of the storages (the save never happened) is undone from the undo record; any other mismatch
+(a restored backup) takes the database serial.
+
+**Storages and table.** 7100570 active slot, 7100571 switch serial, 7100572 time of the last switch (7100570 - 7100579 reserved);
+7112000 - 7127999 the runes of the inactive loadouts (8 slots of 2000, above the live sockets 7110000 - 7111999). Table
+`chaos_loadouts`: one row per character and slot (1..5), slot 0 is the character's switch record; `loadouts.lua` also creates it at
+startup.
+
+**Protocol** (JSON `{action, data}`): client `open`, `save {slot, name, icon}`, `load {slot}`, `rename {slot, name, icon}`,
+`delete {slot}`, `cancel`; server `state` (through `Chaos.sendChunked`), `result {ok, text, lines}`, `cast {ms, slot}`,
+`castEnd {result}`. Rate limits per action (`rate`).
+
+**Tests.** `tests/loadouts_test.lua` (LuaJIT and Lua 5.3): slots and unlocks, names and icons, tree validation against the real tree
+data (budget trim stays connected for every budget, unknown, class and moved nodes), Paragon, keystone names, the switching gate
+and channel, the plans and the randomized no-dodge check, crash recovery, rune layouts and the storage ranges, the gear planner
+(per-item id, plain items, one item used once, items from the other hand); then `loadouts.lua` against a mocked engine: save,
+copy, switch in a protection zone and through the channel (moving interrupts it), cooldown, combat, runes parked and back, the
+sword moved back from the backpack (one sword), a missing item named in the depot, free refunds of a changed tree, a crash
+rollback, rename, delete rules, the two-handed weapon put away. Client `game_loadouts/loadoutsview_test.lua`.
+Tested on a live test server copy with the client: two loadouts of a Juggernaut (90 nodes with Immovable and 3 runes, 80 nodes
+with Bulwark, 2 runes and a two-handed sword), switching in the temple and through the channel outside it, runes and gear moving
+both ways without duplicates, the state kept over a server restart, an item left in the depot reported, a saved tree with nodes
+that left the tree refunded for free, the Loadouts button in the passive tree window.
