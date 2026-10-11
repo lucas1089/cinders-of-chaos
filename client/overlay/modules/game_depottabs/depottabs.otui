@@ -7,22 +7,28 @@ DepotTabButton < ChaosTabButton
   padding: 2 4 2 4
   text-offset: 0 0
 
+  // the tab's colour fills the button (a translucent tint over the iron plate); the text sits on a label above it.
+  // Fill alpha, text colour and shadow: DepotTabsView.buttonColors (also on hover, set from depottabs.lua)
   UIWidget
     id: accent
-    anchors.left: parent.left
-    anchors.right: parent.right
-    anchors.bottom: parent.bottom
-    margin: 0 4 2 4
-    height: 3
+    anchors.fill: parent
+    margin: 2
     phantom: true
     visible: false
+
+  UILabel
+    id: label
+    anchors.fill: parent
+    font: verdana-11px-antialised
+    text-align: center
+    text-offset: 0 1
+    phantom: true
 
   UIWidget
     id: lock
     anchors.top: parent.top
     anchors.right: parent.right
     margin-top: 2
-    margin-right: 2
     size: 10 12
     image-source: /images/game/depot/lock
     phantom: true

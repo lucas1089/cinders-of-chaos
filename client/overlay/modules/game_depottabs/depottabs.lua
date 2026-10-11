@@ -119,21 +119,35 @@ local function setStatus(text)
   if W.window then W.window.status:setText(text or '') end
 end
 
+-- the fill and the text colour of a tab button (also on hover: the label does not get the button's hover style)
+local function paintTab(t, b, hovered)
+  local c = V.buttonColors(state, t, W.active, hovered)
+  b.accent:setVisible(c.fill ~= nil)
+  if c.fill then b.accent:setBackgroundColor(c.fill) end
+  b.label:setColor(c.text)
+  b.label:setShadow(c.shadow)
+end
+
 local function renderTabs()
   if not W.window then return end
   for t, b in pairs(tabButtons) do
     if t == 'store' then
       b:setVisible(state.tabs < state.max)
     else
-      local look = V.button(state, t, W.active)
-      b:setText(look.text)
+      local label = b.label
+      local look = V.button(state, t, W.active, nil, function(text)
+        label:setText(text)
+        return label:getTextSize().width + 1 -- the shadow
+      end)
+      label:setText(look.text)
+      -- a locked tab: the text centred in the room left of the lock (the label also takes 3 px of the left padding)
+      label:setMarginLeft(look.locked and -3 or 0)
+      label:setMarginRight(look.locked and 12 or 0)
       b:setChecked(look.checked)
       b:setOpacity(look.opacity)
       b:setTooltip(look.tooltip)
       b.lock:setVisible(look.locked)
-      b.accent:setVisible(look.accent ~= nil)
-      if look.accent then b.accent:setBackgroundColor(look.accent) end
-      b:setColor(look.checked and V.COLORS.bright or (look.locked and V.COLORS.locked or V.COLORS.dim))
+      paintTab(t, b, b:isHovered())
     end
   end
 end
@@ -190,6 +204,7 @@ local function buildWindow()
       b = g_ui.createWidget('DepotTabButton', win.tabsPanel)
       local t = cell.tab
       b.onClick = function() selectTab(t) end
+      b.onHoverChange = function(widget, hovered) paintTab(t, widget, hovered) end
       b.onMouseRelease = function(widget, mousePos, button)
         if button == MouseRightButton then
           local menu = g_ui.createWidget('PopupMenu')

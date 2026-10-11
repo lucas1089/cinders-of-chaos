@@ -263,13 +263,75 @@ function V.blockSize(state)
   return { tabsW = tabsW, tabsH = tabsH, tabRows = rows, gridW = gridW, gridH = gridH, gridRows = gridRows }
 end
 
--- how a tab button looks: {text, checked, locked, opacity, accent, tooltip}; maxChars: of the name (default 7, 5 locked)
-function V.button(state, tab, active, maxChars)
+-- how a tab button looks: {text, checked, locked, opacity, accent, tooltip}; maxChars: of the name (default 7, 5 locked).
+-- measure (optional): text -> pixel width in the button's font; the name is then also cut until it fits the label
+-- (V.LABEL_W: open, or left of the lock).
+V.LABEL_W = { open = 52, locked = 43 } -- TAB_W less the padding; locked: also the lock, with 3 px of the left padding
+
+function V.fitText(state, tab, maxChars, width, measure)
+  local text = V.buttonText(state, tab, maxChars)
+  if not measure or not V.customName(state, tab) then return text end
+  local n = maxChars
+  while n > 3 and measure(text) > width do
+    n = n - 1
+    text = V.buttonText(state, tab, n)
+  end
+  return text
+end
+
+function V.button(state, tab, active, maxChars, measure)
   local locked = V.isLocked(state, tab)
   maxChars = maxChars or (locked and 5 or 7) -- a locked button also shows the lock
-  return { text = V.buttonText(state, tab, maxChars), checked = int(tab) == int(active), locked = locked,
+  local text = V.fitText(state, tab, maxChars, locked and V.LABEL_W.locked or V.LABEL_W.open, measure)
+  return { text = text, checked = int(tab) == int(active), locked = locked,
     opacity = (locked and int(tab) ~= int(active)) and 0.7 or 1, accent = V.accent(state, tab),
     tooltip = V.tooltip(state, tab) }
+end
+
+-- a coloured tab: its colour fills the button as a translucent tint over the iron plate (V.PLATE), stronger when hovered
+-- and strongest on the active tab. The text is dark on a light tint and light on a dark one (the relative luminance of
+-- the tint over the plate against V.DARK_TEXT_ABOVE), with a shadow; hovering does not switch it.
+V.PLATE = '#332c33' -- the middle of the tab_normal plate
+V.FILL_ALPHA = { normal = 0x80, hover = 0x9c, active = 0xd0 }
+V.DARK_TEXT_ABOVE = 0.2
+V.TEXT_ON_FILL = { dark = '#1c1612', light = '#f6ecd6' }
+
+local function rgb(hex)
+  if type(hex) ~= 'string' then return nil end
+  local r, g, b = hex:match('^#(%x%x)(%x%x)(%x%x)')
+  if not r then return nil end
+  return tonumber(r, 16), tonumber(g, 16), tonumber(b, 16)
+end
+
+local function linear(c)
+  c = c / 255
+  if c <= 0.04045 then return c / 12.92 end
+  return ((c + 0.055) / 1.055) ^ 2.4
+end
+
+-- the relative luminance (0..1) of `hex` drawn with `alpha` (0..255) over the plate
+function V.tintLuminance(hex, alpha)
+  local r, g, b = rgb(hex)
+  if not r then return nil end
+  local pr, pg, pb = rgb(V.PLATE)
+  local a = (tonumber(alpha) or 255) / 255
+  local function mix(c, p) return linear(c * a + p * (1 - a)) end
+  return 0.2126 * mix(r, pr) + 0.7152 * mix(g, pg) + 0.0722 * mix(b, pb)
+end
+
+-- the colours of a tab button: {fill = '#rrggbbaa' | nil, text, shadow}
+function V.buttonColors(state, tab, active, hovered)
+  local checked = int(tab) == int(active)
+  local accent = V.accent(state, tab)
+  if not accent then
+    local text = checked and V.COLORS.bright or (hovered and V.COLORS.text)
+      or (V.isLocked(state, tab) and V.COLORS.locked or V.COLORS.dim)
+    return { fill = nil, text = text, shadow = false }
+  end
+  local alpha = checked and V.FILL_ALPHA.active or (hovered and V.FILL_ALPHA.hover or V.FILL_ALPHA.normal)
+  local dark = V.tintLuminance(accent, checked and V.FILL_ALPHA.active or V.FILL_ALPHA.normal) > V.DARK_TEXT_ABOVE
+  return { fill = accent:sub(1, 7) .. string.format('%02x', alpha),
+    text = dark and V.TEXT_ON_FILL.dark or V.TEXT_ON_FILL.light, shadow = not dark }
 end
 
 -- ---------------------------------------------------------------- which part an opened container plays
