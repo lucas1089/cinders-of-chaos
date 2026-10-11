@@ -21,12 +21,15 @@ test accounts with known passwords: local play only.
 
 ## 1. Engine
 
-1. Build the engine from the base sources with our patches applied, in the source root:
-   every `server/src-patches/*.patch` in order (`for p in server/src-patches/*.patch; do patch -p1 < "$p"; done`:
-   0001 crit to Lua, 0002 dual wield, 0003 item attributes, 0004 uniform crit / leech chance rolls, 0006 decay manager
-   (adds `src/decay.cpp`, which `src/CMakeLists.txt` lists: re-run CMake), 0007 hardening, 0008 spell events), then the
-   usual CMake build (a full one: 0003 adds members to `ProtocolGame`, 0006 changes `Game` and `Item`). The Windows binary in the download has none of them (no "CRIT!" visual, no off-hand sword for the
-   Ninja, and crit / leech chances fire less often than the rescaled values say).
+1. Build the engine from the base sources with every engine patch of `server/src-patches/` applied, in number order,
+   in the source root: `for p in server/src-patches/*.patch; do patch -p1 < "$p"; done`. The folder holds the whole
+   numbered chain (`NNNN-<name>.patch`, from 0001 up); each patch says at its top what it changes, and
+   `server/README.md` has a section for each. Patches build on the context of the earlier ones, so apply all of them,
+   in order, and never skip one; a hunk that fails means the base sources are not the ones the chain was made
+   against. Some patches add source files that `src/CMakeLists.txt` lists, so re-run CMake, then do a full build
+   (several change `Game`, `Item`, `Player` and `ProtocolGame`). The Windows binary in the download has none of them
+   (no "CRIT!" visual, no off-hand sword for the Ninja, no client guard, no item lock, crit / leech chances fire less
+   often than the rescaled values say, and more).
 2. Put the binary into the server folder as `/opt/chaos/server/tfs` (the path the service file uses).
 
 ## 2. Database
@@ -184,13 +187,19 @@ sudo ufw default deny incoming && sudo ufw allow 22/tcp && sudo ufw allow 7171/t
     the tutorial island at the first login (`newplayer*.lua`);
   - hash passwords with salted PBKDF2-SHA256 in the engine's format (`passwordType`, section 3; the website in
     `website/` does), and never show or log them.
-  The website in `website/` (being built at the time of writing) has a Chaos plugin that reads `chaos_class_unlocks`;
-  check its character creation against this list before launch.
+  The website in `website/` (ROADMAP #28, done; install: "Website" below) has a Chaos plugin that reads
+  `chaos_class_unlocks`; check its character creation against this list before launch.
 - **Staff**: group 4 (gamemaster) to 6 (god) on `players.group_id`, account type 5 for gods. The admin panel (opcode 120)
-  needs group 4+, some actions more. Staff characters are left out of every leaderboard (`staffGroup = 4`).
-  Use a separate staff account; `/coins` (Chaos Coins), `/classunlock`, `/worldboss`, `/siege`, `/newplayerkit` and
-  `/towerrun` are open to every group with access (4+), `/goblin` to gods only.
-- Start from a **fresh database**: the test databases have accounts with known passwords (`test`, `test2`, ...).
+  needs group 4+, some categories and actions 5 or 6. Staff characters are left out of every leaderboard
+  (`staffGroup = 4`). Use a separate staff account. Commands that create economy value need group 5 or higher
+  (`Chaos.economyMinGroup` in `chaos_constants.lua`, checked by `Chaos.staffCommand`): `/coins`, `/charm give` and
+  `/pact` (all but `info`); so do the admin panel's Economy and Store categories and its Give item / Create item.
+  `/classunlock`, `/worldboss`, `/siege`, `/newplayerkit` and `/towerrun` are open to every group with access (4+);
+  `/goblin`, `/blessing`, `/season start|end`, `/seasonpass` and `/journey` need a god account (type 5). Every staff
+  use of a guarded command goes to the admin audit log. Who may do what, and the rules for staff:
+  [docs/GM_HANDBOOK.md](GM_HANDBOOK.md) (draft).
+- Start from a **fresh database**, or from the beta database after its wipe (docs/BETA.md "Wipe procedure"); never from
+  a test database: those have accounts with known passwords (`test`, `test2`, ...).
 
 ## 7. Backups
 
@@ -347,24 +356,34 @@ loot), autoloot, crafting, store, auto seller, store pouches, daily reward, towe
 | Stash (opcode 110) | **a floor item of a house could be stashed, i.e. taken, from outside the house through the wall** (`Item:remove` skips the engine's house rule); not movable map items were accepted | **fixed** (`stash.lua`, test `server/tests/security_test.lua`) |
 | Stash, dungeons, crafting, store | list / history / state requests read the database or walk the backpack on every packet | **fixed**: per-player rate limits (`ratelimit.lua`) |
 | Dungeons (opcode 109) | **queueing in a fight teleported the player out of it** (no protection-zone rule by design) | **fixed**: refused while in a fight or protection-zone locked, checked again on every queue tick (test) |
-| Bank (opcode 60) | amounts `Chaos.toInt` 1..2e9; balance checked before every change; stars charged only for what was handed over | safe; a rate limit is proposed (the file was being changed by the seasons work) |
+| Bank (opcode 60) | amounts `Chaos.toInt` 1..2e9; balance checked before every change; stars charged only for what was handed over | safe; rate limited: one request per action every 150 ms (`bank.lua`, `ratelimit.lua`) |
 | Loot filter click to loot (238) | the kill record belongs to the requester, corpse owner / party, reach, item signature; a split stack goes back or is lost, never doubled | safe |
 | Crafting (232) | backpack path validated, orb counted before and removed after the roll, 250 ms between orbs | safe |
 | Store (218) | offer by index with title + cost echo, owned check, coins taken with a guarded UPDATE, refund on a failed delivery | safe while only the game spends coins (a website must only add coins) |
 | Passive tree, Paragon, respec, build codes (65) | saves and imports validated (known nodes, connected, point cap; Paragon keys, caps, no take-back) | safe |
 | Daily, tower milestones, bounty | server-side state decides; rewards all or nothing | safe |
 | Party invites (151) | accept only with a pending invitation | safe |
-| Leaderboard (229) | the class ladder counts the players ahead on every request | proposed rate limit (file being changed by other work) |
-| Staff talkactions | every `/` command checks the group's access flag (`/goblin`: gods, admin panel and `/testkit`: group 4+) | safe; see `/coins` below |
+| Leaderboard (229) | the class ladder counts the players ahead on every request | safe; rate limited: one `get` every 150 ms (`leaderboard.lua`) |
+| Staff talkactions | every `/` command checks the group's access flag (`/goblin`: gods, admin panel and `/testkit`: group 4+); `/coins`, `/charm give` and `/pact` (all but `info`) need group 5 (`Chaos.staffCommand`, `Chaos.economyMinGroup`), every use in the admin audit log | safe (`tests/staff_permissions_test.lua`) |
 | `clientservices.py` | no socket timeout (an idle connection held a thread); a negative `Content-Length` blocked a thread | **fixed** |
 | Test servers' `zz_test_lua.lua` | `/lua` runs any Lua for any player | never ship (section 11) |
 
-Open, decide before launch:
-- Rifts refund the key after any restart during a run (`rift.lua` crash marker), the daily save restart included: a
-  run opened just before the save keeps its loot and gets the key back. Either clear the markers in an `onShutdown`
-  global event (only a real crash refunds) or refuse to open a rift in the last 10 minutes before the save.
-- `/coins` is open to every group with access (gamemasters included); restrict it to gods if gamemasters should not mint
-  Chaos Coins.
+Settled since the review:
+- **Rifts at the daily save.** `rift.lua` ends every open run at a clean shutdown or a closed server (the daily save,
+  SIGTERM, `/closeserver`, the admin panel's shutdown) before the players are kicked (`ChaosRift.interrupt`; server/README.md
+  "Rifts", Restart and crash refund; `tests/rift_refund_test.lua`). Everyone goes to the temple and is saved there.
+  - Guardian alive: the key's owner, if still in the run, gets the same key back once (an omen arena its Omen Key).
+  - Guardian dead (chest up): no key; the unclaimed chest shares of the players online are handed out as at a normal
+    exit.
+  - Loot: what a player picked up during the run stays theirs (the character is saved at the temple). Corpses and
+    items still lying in the rift are lost with the instance. Chest shares of finishers who were offline at that
+    moment are lost too (they live only in memory).
+  - A crash (no event) refunds the key at the next login through the run marker.
+  - So a run opened just before the save keeps what it picked up and gets the key back. Owner decides: accept that
+    (recommended: a key is one run of at most 10 minutes, and the save time is public), or add a rule that refuses
+    to open a rift in the last 10 minutes before the save (not built).
+- **`/coins`** needs group 5 or higher (`Chaos.economyMinGroup`), like `/charm give` and `/pact`; gamemasters (group 4)
+  cannot mint Chaos Coins.
 
 ## 11. Never ship (test only)
 
@@ -387,15 +406,28 @@ Check the server folder before the first start (`ls data/scripts data/scripts/ta
 
 ## 12. Open loose ends that matter for launch (ROADMAP.md)
 
-- The base client's healing helper replays missed cycles after a client stall and can flood spell casts until the engine's
-  packet limit kicks the player; needs a base patch (ROADMAP "Open decisions").
-- The base server's rarity element script zeroes damage when a player wears two different rarity elements.
-- `/testkit` health refill (`addHealth`) and the toast background are being fixed.
-- The class lines C2-C8, seasons, login streaks, patch notes and name plates are in progress: launch with what is done
-  and tested, and keep the locked classes locked until they are tested in game.
-- Keystones not verified in game (Overgrowth, the Illusionist ones, arrow Ricochet), weapon numbers to re-measure.
-- Two world-boss timers (the base server's own and the Chaos one): decide which one runs.
-- The community (Discord) link is empty.
+Still open:
+- **The beta weekends.** The plan, the wipe before launch and the test focus per weekend: [docs/BETA.md](BETA.md)
+  (draft, every decision marked "Owner decides"). Most of the open items below are on its test list.
+- Not run with a real group yet: rifts, Omens and the Ascended bosses with a full party, the Ashen Sepulchre raid, the
+  Ember Descent with 2-4 players, the battleground at 5v5 and up, party credit for bounties and the bestiary.
+- Keystones not verified in game: Overgrowth, both Illusionist keystones (need a party), arrow Ricochet, and the
+  visuals of Bulwark / Thorns / Deadeye. The weapon (auto-attack) numbers in `server/data/spells/README.md` need a
+  re-measure (ROADMAP "Open decisions").
+- The load test on the full map with 50-100 bots, then `maxPlayers` (section 9).
+- The class lines: the Necromancer, Monk and Templar are tested in game (phase B) and stay behind the store's class
+  unlock; their price (750 Chaos Coins) is a placeholder (docs/OWNER_TODO.md). C2 / C3 polish and the C4 outfits and
+  effects are still in progress (ROADMAP).
+- The community (Discord) link is empty (`ChaosTopBar.COMMUNITY_URL`, the website's Discord invite).
+- Staff rules, bans and mutes: [docs/GM_HANDBOOK.md](GM_HANDBOOK.md) (draft, decisions for the owner).
+
+Done or decided since the first version of this list (ROADMAP "Open decisions and loose ends"):
+- The base client's healing helper no longer replays missed cycles or floods casts (client base patch 0026).
+- Two different rarity elements no longer zero the damage (`patch_base_events.py` step 9, `rarity_elements.lua`).
+- `/testkit` refills health again (`Chaos.heal`), and the toasts have their background.
+- Seasons, login streaks, patch notes and name plates are done (ROADMAP #12, #20, #23, #25).
+- World-boss timers: decided, both run (the base server's weekly island bosses and the Chaos arena event; server/README.md
+  "World bosses" says how to remove the base one).
 
 ## 13. Launch day, in order
 

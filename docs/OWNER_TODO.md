@@ -9,7 +9,18 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
   - Proposal: launch on 20 Nov 2026 at 15:00 (UTC-3).
   - Open betas on the weekends of 31 Oct and 7 Nov.
   - The Season 1 start (now 1 Nov) moves to the launch date.
-- [ ] **Donation prices in USD (PayPal).** BRL prices for Pix are already set.
+- [ ] **The beta plan.** Who joins, the wipe before launch, coins and donations in the beta, the Season 1 start and
+  the staff schedule: every decision is in [docs/BETA.md](BETA.md) (draft), each marked "Owner decides" with a
+  recommendation.
+- [ ] **Donation prices.** Every coin pack's price is a placeholder in USD (`usdCents` in
+  `server/data/scripts/chaos/shop_coins_config.lua`). Pix is not priced on its own: it charges the USD price x 5 in
+  BRL (`brlPerUsd = 5`). Set the USD prices, and check that `brlPerUsd` gives the BRL prices you want.
+- [ ] **Class unlock price.** The Necromancer, the Monk and the Templar cost 750 Chaos Coins each (account-wide), a
+  placeholder in `server/data/scripts/chaos/class_unlocks_core.lua` and in the store offers of `shop_config.lua`
+  (category "Classes"; change both). Decide the price, or another way to unlock them (the unlock method is
+  pluggable: ROADMAP C8).
+- [ ] **Staff rules.** Groups, ban and mute ladder, what staff may never do: [docs/GM_HANDBOOK.md](GM_HANDBOOK.md)
+  (draft, decisions marked "Owner decides").
 
 ## Accounts and services
 

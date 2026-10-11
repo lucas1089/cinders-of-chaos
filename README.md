@@ -432,7 +432,7 @@ Crafting Bench to open its page.
 - **Ambushes:** killing a monster can call a tiered copy of it out of the ash, right next to the corpse.
 - **Treasure goblins:** a very rare, cowardly goblin that flees, blinks away and taunts you, then escapes 18 seconds
   after the first hit. Catch it in time for a hoard of gold, orbs and rarity gear.
-- **Late game:** 17 level-scaled Chaos monsters (levels 650 to 1000) live in the deepest hunting grounds: Darklight Core,
+- **Late game:** 17 level-scaled Chaos monsters (levels 650 to 1000) live in the deepest hunting grounds: Nightglass Core,
   Jaded Roots, Gloom Pillars and the Putrefactory. Experience stages are tuned so the road to 1000 stays rewarding.
 - **New factions:** the **Goblin Tribe** (grunts, archers, bombers, witches, wolf riders, a hobgoblin captain and the
   Goblin Chieftain) and the **Wildwood Uprising** (wolves, boars, mushroom folk, dryads, owlbears, giant beetles and
@@ -1133,6 +1133,7 @@ The full priority list is in [ROADMAP.md](ROADMAP.md).
 | [server/data/spells/README.md](server/data/spells/README.md) | spells and balance tables |
 | [ROADMAP.md](ROADMAP.md) | what's done, in progress and planned |
 | [docs/LAUNCH.md](docs/LAUNCH.md) | running a server and the Windows package: install, production config, services, backups, monitoring, launch checklist |
+| [docs/BETA.md](docs/BETA.md), [docs/GM_HANDBOOK.md](docs/GM_HANDBOOK.md) | drafts for the owner: the open beta plan and the wipe before launch; staff groups, commands, reports, bans |
 | [website/README.md](website/README.md) | the account website: installer, layout, class lock on character creation, leaderboards, patch notes and seasons pages, art |
 | [CLAUDE.md](CLAUDE.md) | the checks CI runs, the architecture and the project rules |
 
