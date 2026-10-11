@@ -56,7 +56,7 @@ local data = {
   rows = {
     { k = 'a', c = 'world', n = 'Kaelgor', st = 'alive' },
     { k = 'b', c = 'world', n = 'Skaldra', st = 'scheduled' },
-    { k = 'c', c = 'raid', n = 'Ferumbras', loc = 'Liberty Bay', st = 'random' },
+    { k = 'c', c = 'raid', n = 'Ferumbras', loc = 'Saltgrave', st = 'random' },
     { k = 'd', c = 'nope', n = 'Lost' },
   },
 }
@@ -66,7 +66,7 @@ eq(groups[1].cat.k, 'world', 'server order')
 eq(#groups[1].rows, 2, 'rows of a category')
 eq(V.header(groups[1], false), '- World Bosses (2) - 1 alive', 'header')
 eq(V.header(groups[2], true), '+ Raid Bosses (1)', 'collapsed header')
-groups = V.group(data, 'liberty')
+groups = V.group(data, 'saltg')
 eq(#groups, 1, 'filter by place')
 eq(groups[1].rows[1].n, 'Ferumbras', 'filtered row')
 groups = V.group(data, 'SKAL')

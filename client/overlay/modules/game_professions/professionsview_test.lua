@@ -20,7 +20,7 @@ local s = {
     { id = 32366, c = 2667, n = 'mudfin', p = 'angling', t = 1, m = 1, g = 20, l = 10, s = 0, h = 0 },
     { id = 32356, c = 4838, n = 'gravemoss', p = 'wortcunning', t = 1, m = 1.25, g = 25, l = 13, s = 0, h = 3 },
   },
-  areas = { { n = 'Dragon Scar', t = 2, f = true, m = 'dragons', near = 'Venore', x = 33215, y = 31297, z = 7,
+  areas = { { n = 'Dragon Scar', t = 2, f = true, m = 'dragons', near = 'Mirewake', x = 33215, y = 31297, z = 7,
     nodes = { { k = 'delving', r = 7, t = 10 }, { k = 'angling', r = 1, t = 1 } } } },
   broker = true, full = 100, capDay = 200, late = 0.5, nextDay = 3 * 3600 + 120, nextWeek = 2 * 86400 + 5 * 3600, respawn = 6
 }
@@ -83,7 +83,7 @@ eq(#a, 1, 'one area')
 eq(a[1].title, 'Dragon Scar (Fine)', 'area title')
 has(a[1].text, 'Delving 7/10 ready', 'ready nodes')
 has(a[1].text, 'fishing', 'fishing water')
-has(a[1].text, 'near Venore', 'nearest town')
+has(a[1].text, 'near Mirewake', 'nearest town')
 has(a[1].tip, '33215, 31297, 7', 'the position in the tooltip')
 has(a[1].tip, 'hunting ground of dragons', 'the monsters in the tooltip')
 has(V.footer(s), 'Full price for 100 a day', 'footer rule')

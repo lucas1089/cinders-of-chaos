@@ -73,21 +73,21 @@ C.pool = {
 		{29559, 400}, {29572, 400}, {29882, 1000}, {29865, 1000} -- Deathlord Shield, Soulbinder Tome, Dawnforged Shield, Myst Regalia Spellbook
 	},
 	helmet = {
-		{2457, 1}, {8820, 1}, {2491, 20}, {7903, 25}, {2475, 30}, {2498, 50}, {9778, 80}, -- steel helmet, mage hat, crown helmet, terra hood, warrior helmet, royal helmet, yalahari mask
+		{2457, 1}, {8820, 1}, {2491, 20}, {7903, 25}, {2475, 30}, {2498, 50}, {9778, 80}, -- steel helmet, mage hat, crown helmet, terra hood, warrior helmet, royal helmet, hollowspire mask
 		{12645, 100}, {26766, 100}, {26761, 100}, {18403, 150}, {18398, 150}, -- elite draken helmet, varruth helmet, netherwave helmet, prismatic helmet, gill gugel
 		{29470, 220}, {27227, 230}, {27667, 230}, {27668, 230}, {27196, 300}, {29471, 300}, -- hellstalker visor, terra helmet, eldritch cowl / hood, falcon coif, dreadfire headpiece
 		{29560, 400}, {29567, 400}, {29573, 400}, {29878, 1000}, {29869, 1000}, {29861, 1000} -- Deathlord, Haloed, Soulbinder, Dawnforged, Seraphic, Myst Regalia
 	},
 	armor = {
 		{2463, 1}, {8819, 1}, {2476, 25}, {8870, 25}, {8891, 35}, {2487, 35}, -- plate armor, magician's robe, knight armor, spirit cloak, paladin armor, crown armor
-		{7884, 50}, {2466, 50}, {2492, 60}, {8877, 60}, {8867, 75}, {8869, 75}, {9776, 80}, -- terra mantle, golden armor, dragon scale mail, lavos armor, dragon robe, greenwood coat, yalahari armor
+		{7884, 50}, {2466, 50}, {2492, 60}, {8877, 60}, {8867, 75}, {8869, 75}, {9776, 80}, -- terra mantle, golden armor, dragon scale mail, molten scale armor, dragon robe, greenwood coat, hollowspire armor
 		{8888, 100}, {8881, 100}, {8890, 100}, {12643, 100}, {18404, 120}, {18399, 150}, {15407, 150}, -- master archer's, fireborn giant, robe of the underworld, royal scale robe, prismatic, gill coat, depth lorica
 		{15406, 200}, {25186, 200}, {25190, 200}, {27295, 230}, {27660, 270}, {27690, 270}, {27691, 270}, -- ornate chestplate, firesoul tabard, firemind raiment, ghost chestplate, eldritch cuirass, dawnfire sherwani, midnight tunic
 		{28099, 300}, {28107, 300}, {28113, 300}, {29561, 400}, {29568, 400}, {29574, 400}, -- embersage, vigils, shadewalker, Deathlord, Haloed, Soulbinder
 		{29879, 1000}, {29870, 1000}, {29862, 1000} -- Dawnforged Plate, Seraphic Tabard, Myst Regalia Mantle
 	},
 	legs = {
-		{2647, 1}, {2477, 25}, {8923, 30}, {2488, 35}, {7885, 40}, {2470, 60}, {9777, 80}, -- plate legs, knight legs, ranger legs, crown legs, terra legs, golden legs, yalahari leg piece
+		{2647, 1}, {2477, 25}, {8923, 30}, {2488, 35}, {7885, 40}, {2470, 60}, {9777, 80}, -- plate legs, knight legs, ranger legs, crown legs, terra legs, golden legs, hollowspire leg piece
 		{26768, 100}, {26763, 100}, {26776, 100}, {15409, 130}, {18405, 150}, {27287, 180}, {15412, 185}, -- varruth, netherwave, felsinger, depth ocrea, prismatic, soulful, ornate
 		{27664, 250}, {27692, 250}, {27693, 250}, {28100, 300}, {28108, 300}, -- eldritch breeches, dawnfire pantaloons, midnight sarong, embersage legs, vigils legs
 		{29562, 350}, {29569, 350}, {29575, 400}, {27470, 500}, {27475, 500}, -- Deathlord, Haloed, Soulbinder, sanguine legs / greaves
@@ -110,8 +110,8 @@ C.pool = {
 	},
 	-- the quiver bases of data/lib/chaos_archery_config.lua (quivers), lv = their required level
 	quiver = {
-		{28693, 20}, {27651, 50}, {27694, 80}, {27696, 120}, {27663, 150}, {27686, 200}, -- candy-coated, jungle, tiers 3-6
-		{27676, 250}, {28379, 300}, {27695, 350}, {29566, 400}, {28050, 500}, {29873, 1000} -- tiers 7-10, Haloed, Mercurial, Seraphic
+		{28693, 20}, {27651, 50}, {27694, 80}, {27696, 120}, {27663, 150}, {27686, 200}, -- ashwood, thornhide, ravenfeather, splitwind, stormfletch, blightroot
+		{27676, 250}, {28379, 300}, {27695, 350}, {29566, 400}, {28050, 500}, {29873, 1000} -- bonewhisper, rimeshard, cinderflight, Haloed, Mercurial, Seraphic
 	}
 }
 

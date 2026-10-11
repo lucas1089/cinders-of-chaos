@@ -60,7 +60,7 @@ end
 -- ------------------------------------------------------------------ schedule
 do
 	local c = {areas = cfg.areas, factions = cfg.factions, random = {chance = 0},
-		schedule = {{weekdays = {4}, hour = 19, minute = 30, area = "thais", faction = "orcs"}}}
+		schedule = {{weekdays = {4}, hour = 19, minute = 30, area = "cinderhold", faction = "orcs"}}}
 	-- 2026-10-07 is a Wednesday (wday 4)
 	local wed = T(2026, 10, 7, 12)
 	eq(os.date("*t", wed).wday, 4, "test day is a Wednesday")
@@ -72,13 +72,13 @@ do
 	c.schedule = {{hour = 8, minute = 0}}
 	eq(#I.scheduledStarts(c, T(2026, 10, 1, 0), T(2026, 10, 8, 0)), 7, "daily entry: 7 in a week")
 	-- one-off entry
-	c.schedule = {{at = wed + 600, area = "carlin"}}
+	c.schedule = {{at = wed + 600, area = "thornmere"}}
 	local once = I.scheduledStarts(c, wed, wed + 3600)
 	eq(#once, 1, "one-off start")
 	eq(once[1].source, "once", "one-off source")
 	-- resolve: fixed keys and deterministic random picks
-	local ak, fk = I.resolve(cfg, wed, "thais", "undead")
-	eq(ak, "thais", "resolve fixed area")
+	local ak, fk = I.resolve(cfg, wed, "cinderhold", "undead")
+	eq(ak, "cinderhold", "resolve fixed area")
 	eq(fk, "undead", "resolve fixed faction")
 	local a1, f1 = I.resolve(cfg, wed + 999, "random", "random")
 	local a2, f2 = I.resolve(cfg, wed + 999, "random", "random")
@@ -89,7 +89,7 @@ do
 	for k = 1, 200 do
 		local a = I.resolve(cfg, wed + k * 3600, "random")
 		seen[a] = true
-		ok(a ~= "venore", "disabled area never picked")
+		ok(a ~= "mirewake", "disabled area never picked")
 	end
 	local n = 0
 	for _ in pairs(seen) do
@@ -147,7 +147,7 @@ do -- random daily invasion
 		end
 	end
 	-- upcoming: sorted, resolved, random ones marked secret
-	c.schedule = {{weekdays = {1, 2, 3, 4, 5, 6, 7}, hour = 10, minute = 0, area = "thais", faction = "demons"}}
+	c.schedule = {{weekdays = {1, 2, 3, 4, 5, 6, 7}, hour = 10, minute = 0, area = "cinderhold", faction = "demons"}}
 	local up = I.upcoming(c, T(2026, 10, 8, 0), 3 * 86400)
 	ok(#up >= 3, "upcoming lists the scheduled ones")
 	for k = 2, #up do
@@ -209,7 +209,7 @@ end
 
 -- ------------------------------------------------------------------ waves and the boss
 do
-	local area = I.areaByKey(cfg, "thais")
+	local area = I.areaByKey(cfg, "cinderhold")
 	local faction = cfg.factions.undead
 	local rng = I.lcg(11)
 	local total = 0
@@ -401,7 +401,7 @@ do
 	local only = {storm = {weight = 1}, merchant = {weight = 0}, golden = {weight = 0}}
 	eq(I.pickWorldEvent(only, "storm", rng), "storm", "a single kind may repeat")
 	eq(I.pickWorldEvent({storm = {weight = 0}, merchant = {weight = 0}, golden = {weight = 0}}, nil, rng), nil, "none enabled")
-	local towns = I.worldEventAreas({areas = cfg.areas, worldEvents = {merchant = {areas = {"thais", "carlin"}}}}, "merchant")
+	local towns = I.worldEventAreas({areas = cfg.areas, worldEvents = {merchant = {areas = {"cinderhold", "thornmere"}}}}, "merchant")
 	eq(#towns, 2, "a kind's own area list")
 	for _, a in ipairs(I.worldEventAreas(cfg, "storm")) do
 		ok(a.enabled ~= false, "disabled areas never host an event")
@@ -421,7 +421,7 @@ end
 do
 	eq(I.clock(725), "12:05", "clock")
 	eq(I.clock(-5), "0:00", "clock negative")
-	local st = {phase = "running", areaName = "Thais", factionName = "Orc Warband", targetName = "the temple steps",
+	local st = {phase = "running", areaName = "Cinderhold", factionName = "Orc Warband", targetName = "the temple steps",
 		wave = 3, waves = 5, alive = 14, breach = 33.6, endsAt = 1600, slain = 30, planned = 60,
 		bossAlive = false}
 	local list = {{guid = 1, name = "A", share = 0.5, rank = 1, kills = 3}, {guid = 2, name = "B", share = 0.3, rank = 2},

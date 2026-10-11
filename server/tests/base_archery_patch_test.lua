@@ -164,7 +164,14 @@ local shop = {
 addBuyableKeyword('pixo', 2544, 10, 30, 'arrows?')
 local trade = {item1 = {5944, 6529}}
 player:addItem(6529, 6)
+npcHandler:say("The crows took my pigeons. Bring me 12 arrows. Do you have 12 arrows with you?", cid)
 if player:removeItem(2544, 12) then end
+]])
+-- a script patched by the earlier version of the tool: gold asked, the text still names the arrows
+writeFile(data .. "/npc/scripts/Older.lua", [[
+npcHandler:say('Bring me 10 bolts, please.', cid)
+npcHandler:say("I still have 3 arrows of my own.", cid)
+if player:removeMoney(20) then end
 ]])
 writeFile(data .. "/creaturescripts/scripts/firstitems.lua", [[
 local items = {
@@ -255,13 +262,18 @@ ok(seller:find("-- Chaos: no ammunition (patch_base_archery.py) addBuyableKeywor
 ok(seller:find("item1 = {5944, 2148}", 1, true), "trade gives gold")
 ok(seller:find("player:addItem(2148, 60)", 1, true), "6 infernal bolts: 60 gold")
 ok(seller:find("player:removeMoney(24)", 1, true), "12 arrows asked: 24 gold")
+ok(seller:find('"The crows took my pigeons. Bring me 24 gold. Do you have 24 gold with you?"', 1, true),
+	"the dialogue asks for the gold")
+local older = readFile(data .. "/npc/scripts/Older.lua")
+ok(older:find("'Bring me 20 gold, please.'", 1, true), "an earlier patched script: its text asks for the gold")
+ok(older:find("3 arrows of my own", 1, true), "a count that is not the price stays")
 ok(readFile(data .. "/creaturescripts/scripts/firstitems.lua"):find("{2148, 50}", 1, true), "first items: 50 gold")
 ok(readFile(data .. "/actions/scripts/enchanting.lua"):find("{2544, 8905}", 1, true), "an id pair is no reward")
 
 -- a second run changes nothing
 local before = {}
 for _, p in ipairs({"/items/items.xml", "/items/items.otb", "/movements/movements.xml", "/spells/spells.xml",
-		"/monster/monsters/elf.xml", "/monster/lua/orc.lua", "/npc/Seller.xml", "/npc/scripts/Seller.lua",
+		"/monster/monsters/elf.xml", "/monster/lua/orc.lua", "/npc/Seller.xml", "/npc/scripts/Seller.lua", "/npc/scripts/Older.lua",
 		"/creaturescripts/scripts/firstitems.lua"}) do
 	before[p] = readFile(data .. p)
 end

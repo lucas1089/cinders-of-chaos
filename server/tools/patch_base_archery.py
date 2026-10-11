@@ -26,7 +26,8 @@ quivers, mods, ammo, conjureScripts), the same file the Lua side (data/lib/chaos
    and buy keywords for them are commented out.
 8. Base Lua scripts (not data/scripts/chaos, not data/monster): rewards of ammunition become gold coins worth its refund
    ({id, n} pairs with n < 1000, addItem(id, n), itemId = id, count = n); a trade of something for ammunition in an
-   NPC script gives gold coins; removeItem(id, n) asks for gold instead.
+   NPC script gives gold coins; removeItem(id, n) asks for gold instead, and the NPC's texts that asked for
+   "<n> arrows" / "<n> bolts" ask for that gold (also on a script an earlier version of this tool patched).
 
 Idempotent: a second run changes nothing. Unknown file layouts are left alone and listed.
 """
@@ -471,6 +472,30 @@ def patch_rewards(text, cfg, ammo, npc_script=False):
     return out, n[0]
 
 
+def patch_ammo_dialogue(text, cfg):
+    """an NPC script that asks for gold instead of ammunition (removeMoney(M), written by patch_rewards) no longer says
+    "<N> arrows" / "<N> bolts" in its texts when M is the price of N pieces: the text says "<M> gold". Works on a script
+    patched by an earlier version of this tool too. -> new text, changes"""
+    monies = {int(m) for m in re.findall(r'removeMoney\(\s*(\d+)\s*\)', text)}
+    if not monies:
+        return text, 0
+    rates = set(cfg['ammo'].values()) | {cfg['defaultRefund']}
+    n = [0]
+
+    def phrase(m):
+        count = int(m.group(1))
+        price = sorted(g for g in monies if any(g == 2 * max(1, count * r) for r in rates))
+        if len(price) != 1:
+            return m.group(0)
+        n[0] += 1
+        return '%d gold' % price[0]
+
+    def literal(m):
+        return re.sub(r'\b(\d+) (?:arrows?|bolts?)\b', phrase, m.group(0), flags=re.I)
+    out = re.sub(r'"[^"\n]*"|\'[^\'\n]*\'', literal, text)
+    return out, n[0]
+
+
 # ------------------------------------------------------------------------------------------------ files
 def read(path):
     return open(path, encoding='utf-8', errors='surrogateescape', newline='').read()
@@ -558,7 +583,10 @@ def main():
         else:
             new, k = patch_npc_lua(t, set(ammo))
             new, k2 = patch_rewards(new, cfg, set(ammo), npc_script=True)
-            k += k2
+            new, k3 = patch_ammo_dialogue(new, cfg)
+            k += k2 + k3
+            if k3:
+                print('  dialogue: %s (%d text%s ask for gold)' % (os.path.relpath(p, data), k3, '' if k3 == 1 else 's'))
         if k:
             shop += k
             writes[p] = new

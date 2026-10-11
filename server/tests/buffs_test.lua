@@ -254,9 +254,9 @@ ok(byKey(B.collect(w, now), "victory") ~= nil, "area victory buff inside the are
 ChaosInvasion.buff.endsAt = realNow - 1
 eq(byKey(B.collect(w, now), "victory"), nil, "victory buff over")
 -- world events: only inside the area
-ChaosWorldEvents = {active = {kind = "golden", area = {from = {x = 50}, to = {x = 150}, name = "Thais fields"}, endsAt = realNow + 900}}
+ChaosWorldEvents = {active = {kind = "golden", area = {from = {x = 50}, to = {x = 150}, name = "Cinderhold fields"}, endsAt = realNow + 900}}
 local g = byKey(B.collect(w, now), "golden_hour")
-ok(g ~= nil and g.leftMs == 900000, "golden hour inside the area"); ok(g.desc:find("Thais fields", 1, true) ~= nil, "golden hour names the area: " .. g.desc)
+ok(g ~= nil and g.leftMs == 900000, "golden hour inside the area"); ok(g.desc:find("Cinderhold fields", 1, true) ~= nil, "golden hour names the area: " .. g.desc)
 ChaosWorldEvents.active.kind = "storm"
 ok(byKey(B.collect(w, now), "chaos_storm") ~= nil and byKey(B.collect(w, now), "golden_hour") == nil, "chaos storm, not golden hour")
 ChaosWorldEvents.active.area = {from = {x = 500}, to = {x = 600}}

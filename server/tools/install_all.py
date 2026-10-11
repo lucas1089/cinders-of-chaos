@@ -5,7 +5,8 @@ usage: python3 -I server/tools/install_all.py SERVER_DIR [--dry-run] [--no-sql] 
                                               [--db NAME] [--db-host HOST] [--db-port PORT] [--db-user USER]
                                               [--mysql PATH] [--quiet | --verbose]
 
-SERVER_DIR is the base server folder: the one with config.lua and data/ (the map .otbm is never read or changed).
+SERVER_DIR is the base server folder: the one with config.lua and data/ (only the towns step reads and changes the map
+.otbm: the names of its towns).
 
 Steps, in this order (each one is idempotent on its own; a second run of the whole script changes nothing):
   files        copy server/data from this repo into SERVER_DIR/data: scripts/chaos/**, lib/chaos_*.lua,
@@ -72,6 +73,11 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                their band), quivers become equipment (items.xml, items.otb, movements.xml), arrows and bolts leave
                loot, shops and quest rewards, the conjure spells go (README "Infinite arrows and quivers"; after
                vocations, which still reads the launchers' ammo type, and after spells)
+  itemnames    tools/patch_base_item_names.py    Chaos names of some base items by id (data/items/base_item_names.csv: the quivers,
+               the Gambler's gear with names of another world): items.xml, the monsters' loot by old name becomes loot by
+               id, other mentions in the base data renamed (README "Base item names"; after archery)
+  towns        tools/patch_base_towns.py         Chaos names of the map's towns by town id (tools/base_towns.csv), in the
+               towns node of the .otbm; <map>.otbm.bak keeps the original (README "Town names")
   autoloot     data/talkactions/talkactions.xml: the stock XML "!autoloot" line is commented out, so autoloot.lua's own
                talkaction runs and the window refreshes (README "Install" 7)
   commands     tools/install_commands.py         the players' spoken "!" commands of the base server commented out (every one is in the
@@ -80,7 +86,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                the game database (CREATE TABLE IF NOT EXISTS / plain UPDATEs, safe to repeat)
 
 --dry-run runs every step on a temporary copy of SERVER_DIR (config.lua and data/ without *.otbm, logs/, reports/) and
-reports what would change; SERVER_DIR and the database are not touched (the SQL step only lists its files).
+reports what would change; SERVER_DIR and the database are not touched (the SQL step only lists its files; the towns
+step reads the real map and only reports).
 --quiet prints only the step lines and the changed files, --verbose every line of the tools' own output (else 15 per step).
 
 Database: name, host, port and user default to config.lua's mysqlDatabase / mysqlHost / mysqlPort / mysqlUser. A value
@@ -104,7 +111,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spells', 'archery', 'autoloot', 'commands', 'sql']
+STEPS = ['files', 'lib', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spells', 'archery', 'itemnames', 'towns', 'autoloot', 'commands', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -124,7 +131,7 @@ AUTOLOOT_RE = re.compile(r'^([ \t]*)(<talkaction\s+words="!autoloot"[^>]*/>)[ \t
 AUTOLOOT_MARK = 'Chaos: autoloot.lua registers !autoloot (server/tools/install_all.py)'
 
 # hashed for the change report; the map itself is skipped (large and never changed by any step)
-SKIP_HASH = re.compile(r'\.otbm$|(^|/)(logs|reports)/')
+SKIP_HASH = re.compile(r'\.otbm(\.bak|\.tmp)?$|(^|/)(logs|reports)/')
 
 
 # ------------------------------------------------------------------------------------------------ helpers
@@ -417,6 +424,18 @@ def step_archery(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_archery.py'), data], 'patch_base_archery.py'))
 
 
+def step_itemnames(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_item_names.py'), data], 'patch_base_item_names.py'))
+
+
+def step_towns(server, data, ctx):
+    if ctx['dry']:
+        # the dry copy has no map: read the real one, write nothing
+        real = os.path.join(ctx['server'], 'data')
+        return tool_result(run_tool([tool('patch_base_towns.py'), real, '--dry-run'], 'patch_base_towns.py'))
+    return tool_result(run_tool([tool('patch_base_towns.py'), data], 'patch_base_towns.py'))
+
+
 def step_commands(server, data, ctx):
     return tool_result(run_tool([tool('install_commands.py'), data], 'install_commands.py'))
 
@@ -562,7 +581,7 @@ def make_dry_copy(server, tmp):
 
     def ignore(folder, names):
         rel = os.path.relpath(folder, src).replace(os.sep, '/')
-        skip = [n for n in names if n.endswith('.otbm')]
+        skip = [n for n in names if n.endswith(('.otbm', '.otbm.bak', '.otbm.tmp'))]
         if rel == '.':
             skip += [n for n in names if n in ('logs', 'reports')]
         return skip
@@ -617,7 +636,7 @@ def main(argv):
     try:
         target = make_dry_copy(server, tmp) if dry else server
         data = os.path.join(target, 'data')
-        ctx = {'dry': dry, 'no_sql': bool(args.get('--no-sql')), 'tmp': tmp, 'mysql': args.get('--mysql', 'mysql'),
+        ctx = {'dry': dry, 'server': server, 'no_sql': bool(args.get('--no-sql')), 'tmp': tmp, 'mysql': args.get('--mysql', 'mysql'),
                'db': db_settings(server, args)}
         say('Cinders of Chaos install%s' % (' (DRY RUN on a temporary copy; nothing is changed)' if dry else ''))
         say('  server:   %s' % server)

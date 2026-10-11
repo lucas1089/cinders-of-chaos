@@ -260,6 +260,12 @@ server/
    missile of their ammunition, makes the quivers equipment (items.xml, items.otb, movements.xml) and takes arrows and bolts
    out of loot, shops, conjure spells and rewards; then run `server/sql/chaos_archery.sql` once, with the server stopped
    (the `sql` step does), before the first start with the patched items.otb. See "Infinite arrows and quivers".
+5k. Base item names: `python3 -I server/tools/patch_base_item_names.py <server>/data [--dry-run]` (idempotent;
+   `install_all.py` step `itemnames`, after `archery`) gives the base items of `data/items/base_item_names.csv` their
+   Chaos names by id and moves the monster loot that named them to their ids. See "Base item names".
+5l. Town names: `python3 -I server/tools/patch_base_towns.py <server>/data [--dry-run]` (idempotent; `install_all.py`
+   step `towns`, after `itemnames`) renames the map's towns by id from `tools/base_towns.csv` in the `.otbm` itself
+   (`<map>.otbm.bak` keeps the original). See "Town names".
 6. Restart the server (or `/reload scripts`). Check the console for Lua errors.
 7. Player commands: `python3 -I server/tools/install_commands.py <server>/data` takes the base server's spoken player
    commands out (talkactions.xml lines with "!" words, the "!" words of base revscripts, the "!commands" login lines);
@@ -2683,15 +2689,15 @@ would drop it at login. Arrows and bolts among it are refunded at the next login
 
 | Quiver | Level | Implicit |
 |---|---|---|
-| 28693 | 20 | Attack Speed with Bows +2% |
-| 27651 | 50 | Distance Fighting +2 |
-| 27694 | 80 | Critical Strike Chance with Bows +3% |
-| 27696 | 120 | Extra Projectile Chance +5% |
-| 27663 | 150 | Adds 8% of Bow Damage as Energy |
-| 27686 | 200 | Adds 8% of Bow Damage as Earth |
-| 27676 | 250 | Critical Strike Chance with Bows +5%, Distance Fighting +2 |
-| 28379 | 300 | Adds 10% of Bow Damage as Ice |
-| 27695 | 350 | Adds 12% of Bow Damage as Fire |
+| 28693 (ashwood) | 20 | Attack Speed with Bows +2% |
+| 27651 (thornhide) | 50 | Distance Fighting +2 |
+| 27694 (ravenfeather) | 80 | Critical Strike Chance with Bows +3% |
+| 27696 (splitwind) | 120 | Extra Projectile Chance +5% |
+| 27663 (stormfletch) | 150 | Adds 8% of Bow Damage as Energy |
+| 27686 (blightroot) | 200 | Adds 8% of Bow Damage as Earth |
+| 27676 (bonewhisper) | 250 | Critical Strike Chance with Bows +5%, Distance Fighting +2 |
+| 28379 (rimeshard) | 300 | Adds 10% of Bow Damage as Ice |
+| 27695 (cinderflight) | 350 | Adds 12% of Bow Damage as Fire |
 | 29566 (Haloed) | 400 | Distance Fighting +3, Attack Speed with Bows +4% |
 | 28050 (Mercurial) | 500 | Extra Projectile Chance +10%, Critical Strike Chance with Bows +4% |
 | 29873 (Seraphic) | 1000 | Distance Fighting +4, Extra Projectile Chance +8%, Attack Speed with Bows +5% |
@@ -2721,7 +2727,9 @@ names them "Quiver", lists the implicits in the modifier colour and adds "Works 
 Lua, by id or by name: 142 entries on the reference server), the NPC shops (XML lists and Lua shop tables,
 buy keywords commented out: 291 offers and rewards), the ten conjure spells (`spells.xml`, commented out; their names left
 `spell_names.csv` and the client's spell data), and ammunition in base script rewards becomes gold coins worth its refund
-(first items, the starter chest, the valuables, an NPC's trade; one postman mission asks 24 gold instead of 12 arrows).
+(first items, the starter chest, the valuables, an NPC's trade; one postman mission asks 24 gold instead of 12 arrows,
+and the NPC's texts say so: a string of an NPC script that names "<n> arrows" or "<n> bolts" when the script asks
+`removeMoney` for the price of that many pieces names the gold instead, also on a script an earlier version patched).
 No crafting recipe of the base makes ammunition, the Chaos store, kits and the Gambler never had any. The new player kit
 and the staff test kit carry no ammunition (the test kits get a rolled quiver). `loot.lua` takes arrows and bolts out of
 every corpse too (a loot table the tool could not read). `hunt_supplies.lua` was generated again (no ammunition is sold).
@@ -2756,6 +2764,64 @@ moved to the backpack by the SQL with 7 platinum coins), 20 onyx arrows in the d
 stash, and paid 2,210 gold to the bank; a Legendary Haloed Quiver (item level 120) raised distance 114 -> 117 and the bow's
 interval 3.0 -> 2.88 s, and its 19% ice share added 137 ice to hits of 722; the tooltip showed the implicits and the note;
 the Gambler offered the Ranger a quiver and refused one to a Warrior.
+
+## Town names (`tools/patch_base_towns.py`, `tools/base_towns.csv`, `tests/base_towns_patch_test.lua`)
+
+The base map came with the towns of another world. `patch_base_towns.py` (step `towns` of `install_all.py`) gives them
+Chaos names by town id, from `tools/base_towns.csv` (columns `id,name`; the old names are in no repository file). It
+rewrites the towns node of the `.otbm` (`<mapName>` of `config.lua`, else the only map in `data/world`, or `--map`):
+town names are length-prefixed strings in that node, so the node is rebuilt and spliced in, and every other byte of the
+map stays the same. Ids, temple positions and the town order are kept, so `players.town_id`, houses, depots (the depot
+id is the town id) and every script that uses `Town(id)` are unaffected. The tool parses the rebuilt node again before
+it writes, writes through a temporary file and keeps `<map>.otbm.bak` the first time. `--list PATH.otbm` prints the
+towns of a map. On the reference map: 20 towns, all renamed; the map loads with the same 18,185,071 tiles, the same
+23,317,821 item stack entries and the same temples (parsed with `tools/map/otbm.py`), and a test server showed the new
+names in `Game.getTowns()`.
+
+| Id | Name | Temple | | Id | Name | Temple |
+|---|---|---|---|---|---|---|
+| 1 | Mirewake | 32957,32076,7 | | 13 | Hollowspire | 32787,31276,7 |
+| 2 | Cinderhold | 32369,32241,7 | | 14 | Slagdelve | 33023,31521,11 |
+| 3 | Anvildeep | 32649,31925,11 | | 28 | Ashstrand | 33447,31323,9 |
+| 4 | Thornmere | 32360,31782,7 | | 29 | Nightwrack | 33513,32363,6 |
+| 5 | Gloamroot | 32732,31634,7 | | 31 | Isle of Hush | 32316,31942,7 |
+| 6 | Kindle Isle | 32097,32219,7 | | 32 | Isle of Oaths | 32091,32027,7 |
+| 7 | Saltgrave | 32317,32826,7 | | 33 | Brassgate | 33594,31899,6 |
+| 8 | Fevergate | 32594,32745,7 | | 34 | Wyrmscar | 33657,31665,8 |
+| 9 | Dunescar | 33194,32853,8 | | | | |
+| 10 | Scorchveil | 33213,32454,1 | | | | |
+| 11 | Bellwatch | 33217,31814,8 | | | | |
+| 12 | Rimeholt | 32212,31132,7 | | | | |
+
+Our own scripts use the new names: the invasion areas (`cinderhold`, `thornmere`, `mirewake`, `cinderholdfields`,
+`thornmerewilds`), the faction NPCs' towns (Cinderhold, Bellwatch, Thornmere, with the ids as the fallback) and the
+places of the boss spawns window. Still named after the old world (not changed, a later decision): the base NPCs'
+dialogue (travel, quests), the quest log (`data/XML/quests.xml`), house names, base raid folders and messages, and the
+base monster and item names. See ROADMAP.md.
+
+## Base item names (`tools/patch_base_item_names.py`, `data/items/base_item_names.csv`, `tests/base_item_names_patch_test.lua`)
+
+Base items that our systems show (quivers, the Gambler's pool) and that carried names from another world get Chaos names
+by id: `data/items/base_item_names.csv` (columns `id,article,name,plural`; an empty article or plural removes it; only
+ids and new names are in the repository). `patch_base_item_names.py` (step `itemnames` of `install_all.py`, after
+`archery`) reads the old name from the server's `items.xml`, writes the new name, article and plural, turns every monster
+loot entry that named the item (`id = "old name"` in Lua, `<item name="old name"/>` in XML) into loot by id, and renames
+the other mentions in the base data, whole words and case-insensitively, but not inside the name of another item
+(`data/scripts/chaos`, `data/lib/chaos_*.lua` and `data/items` are not touched). The engine finds loot by name, so a
+renamed item would otherwise drop out of the loot lists. On the reference server: 13 items, 122 loot entries by name
+turned into ids, 9 other mentions (an NPC shop, a quest reward text, comments), 30 files.
+
+| Id | New name | | Id | New name |
+|---|---|---|---|---|
+| 28693 | ashwood quiver | | 27676 | bonewhisper quiver |
+| 27651 | thornhide quiver | | 28379 | rimeshard quiver |
+| 27694 | ravenfeather quiver | | 27695 | cinderflight quiver |
+| 27696 | splitwind quiver | | 9778 | hollowspire mask |
+| 27663 | stormfletch quiver | | 9776 | hollowspire armor |
+| 27686 | blightroot quiver | | 9777 | hollowspire leg piece |
+| | | | 8877 | molten scale armor |
+
+The Haloed, Mercurial and Seraphic quivers keep their names: they belong to the base server's own late-game sets.
 
 ## World bosses (`worldboss.lua`, `data/monster/monsters/chaos/world_bosses/`)
 
@@ -3186,13 +3252,13 @@ on this map: target tile, valid border tiles and why the others are refused), `a
 The areas in `invasion_config.lua` were read from the real map file (town temples from its towns list, tiles of
 the rectangles from the map nodes, blocking from `items.otb`). The test server runs a cropped map, so they were not
 walked in game.
-- `thais` (level 80): x 32324-32414, y 32196-32286, z 7, target 32365,32245 (the first walkable tile outside the temple's
+- `cinderhold` (level 80): x 32324-32414, y 32196-32286, z 7, target 32365,32245 (the first walkable tile outside the temple's
   protection zone; the whole rectangle is one connected walkable area reaching all four borders).
-- `carlin` (level 60): x 32315-32405, y 31737-31827, target 32355,31782.
-- `thaisfields` (hunting, level 150): x 32290-32400, y 32292-32338, target 32345,32315 (south of Thais).
-- `carlinwilds` (hunting, level 100): x 32300-32440, y 31685-31735, target 32370,31710 (north of Carlin).
-- `venore` (level 120) is **disabled**. The streets are bridges over water, and the largest connected walkable piece
-  around the temple holds only ~370 tiles. Try it with `/invasion check venore` and set `edges` / `target` before enabling it.
+- `thornmere` (level 60): x 32315-32405, y 31737-31827, target 32355,31782.
+- `cinderholdfields` (hunting, level 150): x 32290-32400, y 32292-32338, target 32345,32315 (south of Cinderhold).
+- `thornmerewilds` (hunting, level 100): x 32300-32440, y 31685-31735, target 32370,31710 (north of Thornmere).
+- `mirewake` (level 120) is **disabled**. The streets are bridges over water, and the largest connected walkable piece
+  around the temple holds only ~370 tiles. Try it with `/invasion check mirewake` and set `edges` / `target` before enabling it.
 On the live server run `/invasion check` once: it lists every area with its problems. Levels are guesses: set them to
 the hunting level around each area.
 
@@ -8170,10 +8236,10 @@ pure logic (ranks, gains, caps, rivalry, contracts by seed, offer states, gear v
 
 | Faction | Lore | Monster families (bestiary) | Rift theme | Invaders | World boss | Rival | NPC (town) | Token |
 |---|---|---|---|---|---|---|---|---|
-| The Ashen Vigil | pyre-wardens who burn what will not stay dead | undead, humans | Ashen Crypt | Undead Legion | Vharok | Veiled Choir | Warden Ysolde (Thais) | pyre ash sigil 32091 |
+| The Ashen Vigil | pyre-wardens who burn what will not stay dead | undead, humans | Ashen Crypt | Undead Legion | Vharok | Veiled Choir | Warden Ysolde (Cinderhold) | pyre ash sigil 32091 |
 | The Cinderforge Compact | smiths and sellswords of the obsidian forges | demons, constructs, humanoids | Obsidian Hall | Orc Warband, Minotaur Horde | Kaelgor | Thornbound Circle | Forgemaster Brannoc (town 1) | cinderforge seal 32092 |
-| The Veiled Choir | seers who listen at the rifts and bargain with what answers | magic, dragons, aquatic, elementals | Abyssal Rift | Infernal Host | Nyxareth, Skaldra | Ashen Vigil | Cantor Velith (Edron) | veiled eye 32093 |
-| The Thornbound Circle | wardens of root and rot who cut the blight out of the Sanctum | plants, beasts, vermin, reptiles, birds, slimes | Forsaken Sanctum | Goblin Tribe, Wildwood Uprising | The Rotmother | Cinderforge Compact | Elder Bramwyn (Carlin) | thornbound leaf 32094 |
+| The Veiled Choir | seers who listen at the rifts and bargain with what answers | magic, dragons, aquatic, elementals | Abyssal Rift | Infernal Host | Nyxareth, Skaldra | Ashen Vigil | Cantor Velith (Bellwatch) | veiled eye 32093 |
+| The Thornbound Circle | wardens of root and rot who cut the blight out of the Sanctum | plants, beasts, vermin, reptiles, birds, slimes | Forsaken Sanctum | Goblin Tribe, Wildwood Uprising | The Rotmother | Cinderforge Compact | Elder Bramwyn (Thornmere) | thornbound leaf 32094 |
 
 **Ranks** (reputation from -6,000 to 36,000; the bar fills to the next threshold): Hostile -6,000, Wary -2,000, Neutral 0,
 Trusted 2,500, Honored 8,000, Revered 18,000, Exalted 36,000 (the ceiling). Nothing locks content: a Hostile faction still

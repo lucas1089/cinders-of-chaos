@@ -155,22 +155,22 @@ return {
 	-- The coordinates are for the real map (realmap): check them with `/invasion check <key>` on the live server.
 	areas = {
 		-- towns: the temple +- 45 tiles; the target is the first walkable tile outside the temple's protection zone
-		{key = "thais", name = "Thais", kind = "town", level = 80, town = 2,
+		{key = "cinderhold", name = "Cinderhold", kind = "town", level = 80, town = 2,
 			from = {x = 32324, y = 32196}, to = {x = 32414, y = 32286}, z = 7,
 			target = {x = 32365, y = 32245, z = 7}, targetName = "the temple steps"},
-		{key = "carlin", name = "Carlin", kind = "town", level = 60, town = 4,
+		{key = "thornmere", name = "Thornmere", kind = "town", level = 60, town = 4,
 			from = {x = 32315, y = 31737}, to = {x = 32405, y = 31827}, z = 7,
 			target = {x = 32355, y = 31782, z = 7}, targetName = "the temple steps"},
-		-- Venore: its streets are bridges over water, split into small pieces (no long walkable way from the border to
-		-- the temple was found in the map file); enable it only after `/invasion check venore` on the live map
-		{key = "venore", name = "Venore", kind = "town", level = 120, town = 1, enabled = false,
+		-- Mirewake: its streets are bridges over water, split into small pieces (no long walkable way from the border to
+		-- the temple was found in the map file); enable it only after `/invasion check mirewake` on the live map
+		{key = "mirewake", name = "Mirewake", kind = "town", level = 120, town = 1, enabled = false,
 			from = {x = 32912, y = 32031}, to = {x = 33002, y = 32121}, z = 7,
 			target = {x = 32959, y = 32069, z = 7}, targetName = "the temple bridge", edges = {"south", "east"}},
 		-- hunting grounds
-		{key = "thaisfields", name = "the Thais fields", kind = "hunt", level = 150,
+		{key = "cinderholdfields", name = "the Cinderhold fields", kind = "hunt", level = 150,
 			from = {x = 32290, y = 32292}, to = {x = 32400, y = 32338}, z = 7,
 			target = {x = 32345, y = 32315, z = 7}, targetName = "the old crossroads"},
-		{key = "carlinwilds", name = "the Carlin wilds", kind = "hunt", level = 100,
+		{key = "thornmerewilds", name = "the Thornmere wilds", kind = "hunt", level = 100,
 			from = {x = 32300, y = 31685}, to = {x = 32440, y = 31735}, z = 7,
 			target = {x = 32370, y = 31710, z = 7}, targetName = "the hunters' camp"}
 	},

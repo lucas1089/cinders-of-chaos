@@ -31,7 +31,7 @@ K.kits = {
 	mage = {
 		level = 500, skills = {[SKILL_SHIELD] = 60}, magic = 110,
 		slots = {
-			[CONST_SLOT_HEAD] = 9778, -- yalahari mask (falcon coif is knight/paladin only)
+			[CONST_SLOT_HEAD] = 9778, -- hollowspire mask (falcon coif is knight/paladin only)
 			[CONST_SLOT_ARMOR] = 11355, -- spellweaver's robe
 			[CONST_SLOT_LEGS] = 18400, -- gill legs
 			[CONST_SLOT_FEET] = 26133, -- Voidwalker Boots (unique)

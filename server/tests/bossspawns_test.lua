@@ -118,8 +118,8 @@ local raidsXml = [[
 <raids>
 	<!-- <raid name="Old" file="old.xml" interval2="10" margin="1" /> -->
 	<raid name="Ferumbras" file="liberty_bay/ferumbras.xml" interval2="720" margin="60" />
-	<raid name="Ghazbaran" file="svargrond/ghazbaran.xml" interval2="1440" margin="100" enabled="0" />
-	<raid name="Rats" file="thais/rats.xml" interval2="500" margin="70" />
+	<raid name="Ghazbaran" file="rimeholt/ghazbaran.xml" interval2="1440" margin="100" enabled="0" />
+	<raid name="Rats" file="cinderhold/rats.xml" interval2="500" margin="70" />
 </raids>]]
 local list = K.parseRaidList(raidsXml)
 eq(#list, 3, "commented raid skipped")
@@ -242,10 +242,10 @@ ctx.worldBoss = {enabled = false, count = 5}
 eq(status("world_3").st, "ondemand", "schedule off")
 -- invasion
 eq(status("invasion_warchief_grashnak").st, "random", "no invasion planned")
-ctx.invasions = {{at = wed + 9 * 3600, boss = "Warchief Grashnak", text = "Orc Warband invades Thais"}}
+ctx.invasions = {{at = wed + 9 * 3600, boss = "Warchief Grashnak", text = "Orc Warband invades Cinderhold"}}
 s = status("invasion_warchief_grashnak")
 eq(s.st, "scheduled", "invasion planned")
-eq(s.text, "Orc Warband invades Thais", "invasion text")
+eq(s.text, "Orc Warband invades Cinderhold", "invasion text")
 ctx.invasionActive = {boss = "Warchief Grashnak"}
 eq(status("invasion_warchief_grashnak").st, "alive", "invasion running")
 -- on demand and the player's cooldown
@@ -381,7 +381,7 @@ Game = {getSpectators = function(pos, _, _, r)
 	end
 	return out
 end, getTowns = function()
-	return {{getName = function() return "Thais" end, getTemplePosition = function() return {x = 32369, y = 32241, z = 7} end}}
+	return {{getName = function() return "Cinderhold" end, getTemplePosition = function() return {x = 32369, y = 32241, z = 7} end}}
 end, getStorageValue = function() return -1 end}
 DUNGEON_SYSTEM = nil
 ChaosTowerRunConfig = {bosses = tNames, bossEvery = tEvery}
@@ -449,7 +449,7 @@ for _, r in ipairs(msg.data.rows) do rowsByKey[r.k] = r end
 eq(rowsByKey.raid_ferumbras.by, "Hero", "kill in the list")
 eq(rowsByKey.lair_bibby.st, "unknown", "left without dying: not alive, no kill")
 eq(rowsByKey.lair_bibby.loc, "Orc fortress", "configured place")
-eq(rowsByKey.lair_apocalypse.loc, "near Thais", "nearest town for a place without a name")
+eq(rowsByKey.lair_apocalypse.loc, "near Cinderhold", "nearest town for a place without a name")
 eq(rowsByKey.ascension_warden.st, "cooldown", "the player's own cooldown")
 eq(rowsByKey.raid_morgaroth, nil, "missing raid not sent")
 eq(rowsByKey.raid_ferumbras.o.type, 35, "outfit from the monster type")

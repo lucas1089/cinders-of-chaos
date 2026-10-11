@@ -450,7 +450,7 @@ ItemType = function(id)
 	return {getId = function() return id end, getName = function() return "item" .. id end,
 		getPluralName = function() return "items" .. id end}
 end
-local temples = {Thais = {x = 100, y = 100, z = 7}, Carlin = {x = 300, y = 100, z = 7}, Edron = {x = 500, y = 100, z = 7}}
+local temples = {Cinderhold = {x = 100, y = 100, z = 7}, Thornmere = {x = 300, y = 100, z = 7}, Bellwatch = {x = 500, y = 100, z = 7}}
 Town = function(x)
 	local t = temples[x] or (x == 1 and {x = 700, y = 100, z = 7}) or nil
 	return t and {getTemplePosition = function() return t end} or nil
@@ -507,8 +507,8 @@ globals.ChaosFactionsStartup.onStartup()
 runEvents()
 local npcs = {}
 for _, c in pairs(creatures) do if c.isNpc and c:isNpc() then npcs[c.name] = c end end
-check(npcs["Warden Ysolde"] and npcs["Warden Ysolde"].pos.x == 104, "Vigil NPC in Thais")
-check(npcs["Cantor Velith"] and npcs["Cantor Velith"].pos.x == 504, "Choir NPC in Edron")
+check(npcs["Warden Ysolde"] and npcs["Warden Ysolde"].pos.x == 104, "Vigil NPC in Cinderhold")
+check(npcs["Cantor Velith"] and npcs["Cantor Velith"].pos.x == 504, "Choir NPC in Bellwatch")
 check(npcs["Forgemaster Brannoc"] and npcs["Elder Bramwyn"], "all four placed")
 -- a player at level 300 next to the Vigil NPC, partied with a friend
 local hero = mkPlayer("Hero", 501, 300, Position(104, 98, 7))
