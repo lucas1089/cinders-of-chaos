@@ -10,7 +10,6 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
   - Open betas on the weekends of 31 Oct and 7 Nov.
   - The Season 1 start (now 1 Nov) moves to the launch date.
 - [ ] **Donation prices in USD (PayPal).** BRL prices for Pix are already set.
-- [ ] **Sprite pair 16 (mount rider seats).** When it is ready, approve the push to the `windows-assets` branch.
 
 ## Accounts and services
 
@@ -39,5 +38,10 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 - [ ] Behind a proxy, pass the real client address through to PHP. The register limit and the login lock use it.
 
 ## Decided
+
+- Sprite pair 16 (mount rider seats): approved and pushed to `windows-assets` (1cae7c3).
+- Rift atlas: the orb nodes stay cut about 3x (a full Hall atlas with Lone Ember lands at about 10.6x hunting orbs).
+- Lone Ember and Fleeting Sanctum raise gold and item rolls, not orbs: kept.
+- Guild boss orbs (3 Upheaval + 1 Fate per participant): kept.
 
 - Crafting: when a removal fails partway, the craft gives back what that attempt took, and gives no item. This is already implemented, see server/README.md "Base crafting script".

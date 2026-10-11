@@ -579,8 +579,8 @@ values change), spr 5aa948775e41748bd885620eeae34e62 (unchanged). The tool's che
 byte-identical, spr byte-identical. The same spec on things_custom14 (`--expect-dat-md5 1667a349...`) gives the same dat.
 A re-run on its own output does too. `things-1098.tar.xz` is built like things_custom15's, mtime 2026-10-11 17:00:
 sha256 5952476dde9fb93f866bb4e41ec7662490560aec777ad891806bc5a110c0e83b (65,521,896 bytes).
-**Not pushed to `windows-assets` yet.** It waits for the owner's approval (docs/OWNER_TODO.md). Until then the live pair
-is things_custom15. A client on things_custom15 keeps the old seats. No server change goes with it.
+Live on `windows-assets` at 1cae7c3 (owner's approval, 2026-10-11). A client still on things_custom15 keeps the old
+seats. No server change goes with it.
 - Not checked in a live client. The before/after contact sheets of all 145 mounts are offline renders, kept outside
   the repository.
 
