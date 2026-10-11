@@ -13,7 +13,8 @@ What you need:
 - a checkout of this repository, for example in `/opt/chaos/repo`.
 
 To play it on one Windows PC first, without any of this: run the **Windows package** workflow (Actions -> Windows
-package -> Run workflow) and download the `CindersOfChaos-Windows` artifact from the run. It holds the patched engine
+package -> Run workflow) and download `CindersOfChaos-Windows.zip` from the prerelease `winpkg-<run number>` (Releases;
+the run's Summary links it; the newest 3 are kept). It holds the patched engine
 (`ChaosServer.exe`), the Cinders of Chaos client, the merged dat/spr, a portable MariaDB and `start-server.bat` /
 `start-client.bat` (`tools/windows/package/README.txt`). Its inputs live on the private branch `windows-assets`
 (its README.md); `tools/windows/prepare_server.sh` turns the base server into the package's server folder. It has

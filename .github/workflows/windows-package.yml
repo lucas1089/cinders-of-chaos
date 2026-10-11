@@ -1,5 +1,6 @@
-# Windows package: the whole Cinders of Chaos game for one Windows PC, as one artifact (CindersOfChaos-Windows).
-# Download it from the run's page (Summary -> Artifacts), extract it and run start-server.bat, then start-client.bat
+# Windows package: the whole Cinders of Chaos game for one Windows PC, as one zip (CindersOfChaos-Windows.zip).
+# Download it from the prerelease winpkg-<run number> (Releases; the run's Summary links it), extract it and run
+# start-server.bat, then start-client.bat
 # (tools/windows/package/README.txt is in the zip).
 #
 # MANUAL ONLY (workflow_dispatch): it never runs on push or pull_request, so it cannot turn PR checks red.
@@ -42,8 +43,11 @@ on:
         required: false
         default: "1"
 
+# contents: write: the jobs hand their parts over through a prerelease of this run (tag winpkg-<run number>) instead of
+# workflow artifacts, which count against the account's artifact storage quota; release assets do not. The package
+# job deletes the intermediate parts, keeps the zip and prunes older winpkg releases (the newest 3 stay).
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: windows-package-${{ github.ref }}
@@ -57,6 +61,8 @@ env:
   # vcpkg registry state for the engine's libraries (tag 2023.12.12: Boost 1.83); fmt is pinned to 9.1.0 below
   ENGINE_VCPKG_BASELINE: c8696863d371ab7f46e213d8f5ca923c4aef2a00
   MARIADB_VERSION: "10.11.14"
+  GH_TOKEN: ${{ github.token }}
+  PKG_TAG: winpkg-${{ github.run_number }}
 
 jobs:
   server:
@@ -88,12 +94,17 @@ jobs:
           bash chaos/tools/windows/prepare_server.sh work/server
           tar -cf server.tar -C work server
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: server-folder
-          path: server.tar
-          if-no-files-found: error
-          retention-days: 3
+      - name: Release of this run (created by whichever job gets here first)
+        shell: bash
+        run: |
+          gh release view "$PKG_TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create "$PKG_TAG" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+              --title "Windows package ${{ github.run_number }}" \
+              --notes "Windows test package built by run ${{ github.run_id }} from $GITHUB_SHA (assets: $ASSETS_REF)." || \
+            gh release view "$PKG_TAG" -R "$GITHUB_REPOSITORY" >/dev/null
+
+      - name: Hand the server folder over
+        run: gh release upload "$PKG_TAG" server.tar -R "$GITHUB_REPOSITORY" --clobber
 
   engine:
     name: Engine (MSVC, vcpkg x64-windows, v142 libraries)
@@ -105,9 +116,9 @@ jobs:
       VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\vcpkg_cache
       VCPKG_BINARY_SOURCES: "clear;files,${{ github.workspace }}\\vcpkg_cache,readwrite"
     steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: server-folder
+      - name: Get the server folder
+        shell: bash
+        run: gh release download "$PKG_TAG" -R "$GITHUB_REPOSITORY" -p server.tar --clobber
 
       - name: Unpack the engine source
         shell: bash
@@ -198,15 +209,15 @@ jobs:
           cp server/build/*.dll out/
           ls -la out
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: server-exe
-          path: out/
-          if-no-files-found: error
-          retention-days: 3
+      - name: Hand the engine over
+        shell: bash
+        run: |
+          tar -cf server-exe.tar -C out .
+          gh release upload "$PKG_TAG" server-exe.tar -R "$GITHUB_REPOSITORY" --clobber
 
       - name: Upload the vcpkg build logs (on failure)
         if: failure()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: engine-vcpkg-logs
@@ -327,15 +338,22 @@ jobs:
           if [ -d game/build/data ]; then cp -r game/build/data/. out/client/data/; fi
           tar -cf client.tar -C out client
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: client-folder
-          path: client.tar
-          if-no-files-found: error
-          retention-days: 3
+      - name: Release of this run (created by whichever job gets here first)
+        shell: bash
+        run: |
+          gh release view "$PKG_TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create "$PKG_TAG" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+              --title "Windows package ${{ github.run_number }}" \
+              --notes "Windows test package built by run ${{ github.run_id }} from $GITHUB_SHA (assets: $ASSETS_REF)." || \
+            gh release view "$PKG_TAG" -R "$GITHUB_REPOSITORY" >/dev/null
+
+      - name: Hand the client folder over
+        shell: bash
+        run: gh release upload "$PKG_TAG" client.tar -R "$GITHUB_REPOSITORY" --clobber
 
       - name: Upload the vcpkg build logs (on failure)
         if: failure()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: client-vcpkg-logs
@@ -364,20 +382,22 @@ jobs:
             SHA256SUMS.parts
           sparse-checkout-cone-mode: true
 
-      - uses: actions/download-artifact@v4
-        with:
-          path: parts
+      - name: Get the parts
+        run: |
+          mkdir -p parts
+          gh release download "$PKG_TAG" -R "$GITHUB_REPOSITORY" -D parts \
+            -p server.tar -p server-exe.tar -p client.tar --clobber
 
       - name: Put the package together
         run: |
           set -euo pipefail
           P=CindersOfChaos
           mkdir -p "$P"
-          tar -xf parts/server-folder/server.tar -C "$P"
-          tar -xf parts/client-folder/client.tar -C "$P"
+          tar -xf parts/server.tar -C "$P"
+          tar -xf parts/client.tar -C "$P"
           # the engine source stays out of the package (it is in the base download and src-patches/)
           rm -rf "$P/server/src" "$P/server/cmake" "$P/server/CMakeLists.txt"
-          cp parts/server-exe/* "$P/server/"
+          tar -xf parts/server-exe.tar -C "$P/server/"
 
           (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
           mkdir -p "$P/client/data/things/1098"
@@ -424,9 +444,21 @@ jobs:
           } | sed 's/$/\r/' > "$P/BUILD_INFO.txt"
           du -sh "$P" "$P"/*
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: CindersOfChaos-Windows
-          path: CindersOfChaos/
-          if-no-files-found: error
-          retention-days: 14
+      - name: Publish the package on the release
+        run: |
+          set -euo pipefail
+          zip -qr -9 CindersOfChaos-Windows.zip CindersOfChaos
+          ls -la CindersOfChaos-Windows.zip
+          gh release upload "$PKG_TAG" CindersOfChaos-Windows.zip -R "$GITHUB_REPOSITORY" --clobber
+          for part in server.tar server-exe.tar client.tar; do
+            gh release delete-asset "$PKG_TAG" "$part" -R "$GITHUB_REPOSITORY" -y || true
+          done
+          echo "Download: https://github.com/$GITHUB_REPOSITORY/releases/tag/$PKG_TAG" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the newest 3 package releases
+        run: |
+          gh release list -R "$GITHUB_REPOSITORY" --limit 100 --json tagName,createdAt \
+            --jq '[.[] | select(.tagName | startswith("winpkg-"))] | sort_by(.createdAt) | reverse | .[3:] | .[].tagName' |
+          while read -r tag; do
+            gh release delete "$tag" -R "$GITHUB_REPOSITORY" -y --cleanup-tag || true
+          done
