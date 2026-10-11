@@ -341,7 +341,7 @@ do
 	eq(lone.keystone, "Lone Ember", "keystone name")
 	local crown = A.resolve(cfg, fullAtlas(216), {theme = "Obsidian Hall", tier = 10})
 	eq(crown.guardianMult, 2, "Obsidian Crown guardian")
-	eq(crown.orbsMult, 2, "Obsidian Crown orbs")
+	eq(crown.orbsMult, 1.5, "Obsidian Crown orbs")
 	local ascent = A.resolve(cfg, fullAtlas(316), {theme = "Ashen Crypt", tier = 10})
 	eq(ascent.keyChanceMult, 0.5, "Ashen Ascent halves")
 	ok(ascent.keyAscend, "Ashen Ascent ascends")
@@ -434,7 +434,7 @@ do
 		sumC = sumC + R.atlasReward(rcfg, R.reward(rcfg, tier, {quantity = 0}, rng(s)), nil, nil, rng(s)).chaos
 		sumC2 = sumC2 + R.atlasReward(rcfg, R.reward(rcfg, tier, {quantity = 0}, rng(s)), nil, amC, rng(s)).chaos
 	end
-	ok(sumC2 > 1.8 * sumC and sumC2 < 2.2 * sumC, "Obsidian Crown doubles the orbs: " .. sumC .. " -> " .. sumC2)
+	ok(sumC2 > 1.35 * sumC and sumC2 < 1.65 * sumC, "Obsidian Crown +50% orbs: " .. sumC .. " -> " .. sumC2)
 	-- fragments
 	eq(R.atlasFragments(10, nil, rng(1)), 10, "no atlas: same fragments")
 	local fr = 0

@@ -6090,7 +6090,7 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   Before, a party of 4 got the solo chest each and cleared about 2.5x faster (3.9x the damage against 1.55x the
   monsters at tier 15), so about 2.5x solo per head; now a party of 5 gets 1.5x solo per head from the chests. The
   atlas's `goldMult` and the Lone Ember / Fleeting Sanctum `rewardMult` now raise gold and item rolls only, never the
-  orbs. Open: Obsidian Crown still doubles the orbs (21x hunting with a full Hall atlas) for a guardian twice as strong.
+  orbs. Obsidian Crown raises the orbs by 50% (`orbsMult` 1.5, about 16x hunting with a full Hall atlas; it was x2, 21x) for a guardian twice as strong.
   `tests/rift_test.lua` checks the solo and party rows against these bounds.
 - **Keys.** A sealed rift drops one key (to the player who used the key, else a random finisher) with 30% + 10% per
   modifier (max 60%); of those 50% + 10% per modifier are the next tier (with more modifiers), the rest the same tier.
@@ -6321,7 +6321,7 @@ table `chaos_rift_atlas`, no storages. Window: Adventure > Rift Atlas, or the Ri
   modifiers), tier-up 70% -> 84% (95% in the Crypt), +2 lives from tier 12. Roughly +30-40% income per run for a player
   who has sealed everything up to tier 15 in every theme; a tier-5 player with ~25 points gets about a quarter of it.
   Lone Ember (+60% chest gold and item rolls, one life) and Fleeting Sanctum (+30% chest gold and item rolls, +40%
-  packs, 35% less time) are the big bets; Obsidian Crown doubles the chest's orbs (about +7 orbs at tier 15) against a
+  packs, 35% less time) are the big bets; Obsidian Crown raises the chest's orbs by 50% (about +3.5 orbs at tier 15) against a
   guardian twice as strong.
 - **Persistence and seasons.** One row per character: `done` (cell keys `c<theme>.<tier>`, `f<tier>`, `s<tier>`,
   `o<kind>`) and `nodes` (ids), both comma lists; `atlas.lua` creates the table when it is missing. Loaded at login and

@@ -121,7 +121,7 @@ local cfg = {
 	--   density       (as a stat, but outside the cap)
 	keystones = {
 		lone_ember = {oneLife = true, rewardMult = 60},
-		obsidian_crown = {guardianMult = 2, orbsMult = 2},
+		obsidian_crown = {guardianMult = 2, orbsMult = 1.5},
 		ashen_ascent = {keyChanceMult = 0.5, keyAscend = true},
 		fleeting_sanctum = {timeMult = 0.65, density = 40, rewardMult = 30}
 	}
@@ -227,7 +227,7 @@ add(branch(200, T_HALL, "east", shape({
 	n14 = "Gilded Seal", s14 = {{stat = "goldMult", value = 4}}, g14 = "gold",
 	n15 = "Spoils of the Hall", s15 = {{stat = "rolls", value = 0.25}}, g15 = "rolls",
 	n16 = "Obsidian Crown", g16 = "ks_crown", ks = "obsidian_crown",
-	t16 = "Guardians of your rifts have +100% health and damage. Orbs of Upheaval and Fate in every finisher's chest x2."
+	t16 = "Guardians of your rifts have +100% health and damage. Orbs of Upheaval and Fate in every finisher's chest +50%."
 })))
 
 -- Ashen Crypt (south): keys
