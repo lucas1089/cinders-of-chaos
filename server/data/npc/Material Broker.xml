@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The Material Broker: buys the professions' materials and sells the gathering tools (server/data/scripts/chaos/professions.lua,
+     professions_config.lua; server/README.md "Professions"). Placed next to every temple at startup; installed by
+     server/tools/install_professions.py. -->
+<npc name="Material Broker" script="material_broker.lua" walkinterval="0" floorchange="0">
+	<health now="100" max="100" />
+	<look type="128" head="78" body="94" legs="114" feet="76" addons="1" />
+	<parameters>
+		<parameter key="message_greet" value="Ore, herbs, hides and fish, |PLAYERNAME|: I pay for all of it. Ask me to {sell}, about this week's {demand}, or {trade} for tools." />
+		<parameter key="message_farewell" value="Come back with full bags, |PLAYERNAME|." />
+		<parameter key="message_walkaway" value="Hm. Another time." />
+		<parameter key="message_sendtrade" value="Picks, sickles, knives and rods. Sell me what you gather with them: ask to {sell}." />
+	</parameters>
+</npc>

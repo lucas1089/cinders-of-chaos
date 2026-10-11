@@ -134,7 +134,7 @@ function LB.awards(boards, ranked, cfg)
 		for i = 1, math.min(cfg.top or 3, #list) do
 			local e = list[i]
 			local items = {}
-			for _, it in ipairs((cfg.rewards or {})[i] or {}) do
+			for _, it in ipairs(not b.noReward and (cfg.rewards or {})[i] or {}) do -- noReward: the title only
 				items[#items + 1] = {id = it.id, count = it.count}
 			end
 			out[#out + 1] = {board = b.key, boardName = b.name, title = b.title, rank = i,

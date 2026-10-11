@@ -121,10 +121,23 @@ function LW.closed(player, key)
 	end
 end
 
+LW.starting = LW.starting or {}
 function LW.start(player)
+	local pid0 = player:getId()
+	-- one queue at a time (the tutorial's end may start it during the login's own start delay)
+	if LW.starting[pid0] or LW.state[pid0] then
+		return
+	end
+	LW.starting[pid0] = true
 	addEvent(function(pid)
+		LW.starting[pid] = nil
 		local p = Player(pid)
 		if not p then
+			return
+		end
+		-- a character on the tutorial island gets no login windows: NP.tutorialFinish starts the queue when it leaves
+		local NP = ChaosNewPlayer
+		if NP and NP.onTutorial and NP.onTutorial(p) then
 			return
 		end
 		local wanted = {}
@@ -369,6 +382,7 @@ end
 local LogoutEvent = CreatureEvent("ChaosDailyLogout")
 function LogoutEvent.onLogout(player)
 	LW.state[player:getId()] = nil
+	LW.starting[player:getId()] = nil
 	return true
 end
 

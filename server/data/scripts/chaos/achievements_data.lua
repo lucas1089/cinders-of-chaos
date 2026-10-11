@@ -48,6 +48,7 @@
 --   season_hc_level, season_ssf_level, season_hc_survived, season_ssf_finished   season modes (season_modes.lua)
 --   mentor_graduates, mentor_fledged                                 mentors (mentor.lua, at a graduation)
 --   pvpzone_kills, pvpzone_banked, pvpzone_haul, pvpzone_captures   the Scorched Marches (pvpzone.lua)
+--   prof_<delving|wortcunning|flaying|angling>, prof_total          professions (professions.lua: the level; all four levels together)
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible; no engine calls (also read by server/tests/achievements_test.lua).
 
 local CHAOS, DIVINE, EXALTED = 29856, 29857, 29855
@@ -408,6 +409,27 @@ return {
 			points = 25, stat = "faction_exalted_circle", reward = {items = orbs(0, 3, 1)}},
 		{id = "faction_all", cat = "explore", name = "Oath of Four Banners", desc = "Become Exalted with all four factions.",
 			points = 50, stat = "faction_exalted", target = 4, title = "Oathbound", reward = {items = orbs(0, 5, 2)}},
+		-- professions (professions.lua, professions_config.lua): a profession at level 50 and 100, all four together
+		{id = "prof_delving_50", cat = "explore", name = "Deep Delver", desc = "Reach Delving level 50.", points = 10,
+			stat = "prof_delving", target = 50},
+		{id = "prof_delving_100", cat = "explore", name = "Heart of the Mountain", desc = "Reach Delving level 100.",
+			points = 25, stat = "prof_delving", target = 100, title = "Master Delver"},
+		{id = "prof_wortcunning_50", cat = "explore", name = "Bitter Harvest", desc = "Reach Wortcunning level 50.",
+			points = 10, stat = "prof_wortcunning", target = 50},
+		{id = "prof_wortcunning_100", cat = "explore", name = "Keeper of the Wort", desc = "Reach Wortcunning level 100.",
+			points = 25, stat = "prof_wortcunning", target = 100, title = "Master Herbwife"},
+		{id = "prof_flaying_50", cat = "explore", name = "Hidecutter", desc = "Reach Flaying level 50.", points = 10,
+			stat = "prof_flaying", target = 50},
+		{id = "prof_flaying_100", cat = "explore", name = "The Skinner", desc = "Reach Flaying level 100.", points = 25,
+			stat = "prof_flaying", target = 100, title = "Master Flayer"},
+		{id = "prof_angling_50", cat = "explore", name = "Patient Line", desc = "Reach Angling level 50.", points = 10,
+			stat = "prof_angling", target = 50},
+		{id = "prof_angling_100", cat = "explore", name = "Lord of the Dark Waters", desc = "Reach Angling level 100.",
+			points = 25, stat = "prof_angling", target = 100, title = "Master Angler"},
+		{id = "prof_total_200", cat = "explore", name = "Jack of the Wilds", desc = "Reach 200 profession levels in total.",
+			points = 25, stat = "prof_total", target = 200},
+		{id = "prof_total_400", cat = "explore", name = "Master of the Wilds", desc = "Reach level 100 in all four professions.",
+			points = 50, stat = "prof_total", target = 400, title = "Master of the Wilds"},
 
 		-- mentors (mentor.lua): mentor_graduates = apprentices this character mentored to graduation (with enough time
 		-- hunting together); mentor_fledged = 1 once this character graduated from a mentor

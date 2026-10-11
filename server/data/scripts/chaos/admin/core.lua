@@ -334,6 +334,13 @@ function ChaosAdmin.buildCatalog(player)
 	return {categories = out, group = gid}
 end
 
+-- true for the plain {"action":"catalog"} request the client sends by itself at login (and on refresh)
+function ChaosAdmin.isCatalogProbe(buffer)
+	if type(buffer) ~= "string" or #buffer > 256 then return false end
+	local ok, req = pcall(json.decode, buffer)
+	return ok and type(req) == "table" and req.action == "catalog"
+end
+
 local function handleRequest(player, req)
 	if req.action == "catalog" then
 		send(player, "catalog", ChaosAdmin.buildCatalog(player))
@@ -404,6 +411,8 @@ function extEvent.onExtendedOpcode(player, opcode, buffer)
 
 	-- Permission is evaluated here, on every single message. Non-admins get no reply at all.
 	if not ChaosAdmin.isAdmin(player) then
+		-- every client asks for the catalog once after login (game_admin): not worth a log line or a row
+		if ChaosAdmin.isCatalogProbe(buffer) then return end
 		local now = os.mtime and os.mtime() or os.time() * 1000
 		local last = ChaosAdmin.lastRequest[player:getId()] or 0
 		if now - last > 5000 then

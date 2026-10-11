@@ -49,6 +49,15 @@ local function dailyVisible()
   return ok and visible == true
 end
 
+-- a server modal dialog (the new-player welcome, a tutorial lesson) is on screen: the login auto-open waits for it
+local function modalOpen()
+  local ok, open = pcall(function()
+    local md = modules and modules.game_modaldialog
+    return md and rawget(md, 'modalDialog') ~= nil or false
+  end)
+  return ok and open == true
+end
+
 local function markSeen(id)
   if id and not seenSent[id] and window and window:isVisible() then
     seenSent[id] = true
@@ -195,7 +204,9 @@ local function autoTick()
   autoEvent = nil
   if not window or not g_game.isOnline() then return end
   if auto then
-    if V.autoStep(auto, dailyVisible(), now()) == 'show' then
+    if modalOpen() then
+      -- try again on the next tick
+    elseif V.autoStep(auto, dailyVisible(), now()) == 'show' then
       auto = nil
       show()
       autoShownAt = now()

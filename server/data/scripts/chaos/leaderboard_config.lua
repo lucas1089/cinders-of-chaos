@@ -20,7 +20,8 @@ return {
 	-- "min" keeps the lowest and ranks lowest first).
 	-- value / count: column labels; count = how many times record() was called for the player this week
 	-- (world boss kills participated, contracts, rift runs). title: given to the top `top` of the board for the next
-	-- week (look text and the board). reward: per rank, orbs delivered to the inbox at the reset.
+	-- week (look text and the board). reward: per rank, orbs delivered to the inbox at the reset (not for a board with
+	-- noReward = true: the title only).
 	boards = {
 		{key = "worldboss", name = "World Boss", mode = "add", value = "Damage", count = "Kills", title = "Bossbane",
 			info = "Damage dealt to world bosses this week."},
@@ -67,7 +68,11 @@ return {
 			format = "time", info = "Fastest full clear of the Ashen Sepulchre this week (all five bosses in one sitting)."},
 		-- the Scorched Marches (pvpzone.lua): embers banked at a safe exit this week
 		{key = "marches", name = "Scorched Marches", mode = "add", value = "Embers", count = "Exits", title = "Marchlord",
-			info = "Embers banked from the Scorched Marches this week."}
+			info = "Embers banked from the Scorched Marches this week."},
+		-- professions (professions.lua): materials gathered this week (every profession together)
+		-- noReward: the title only (professions give no orbs: the owner's rule, professions_config.lua)
+		{key = "professions", name = "Gatherers", mode = "add", value = "Materials", title = "Gatherer of the Week",
+			noReward = true, info = "Materials gathered this week with the professions (Delving, Wortcunning, Flaying, Angling)."}
 	},
 	top = 3,
 	rewards = {

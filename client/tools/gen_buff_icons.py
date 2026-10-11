@@ -700,6 +700,18 @@ def m_blessing_orb(c):
     ember_mark(c, 20, 14)
 
 
+# Professions (server professions.lua): a pick and a sickle crossed over a gold arrow (gathering -> experience)
+def m_professions(c):
+    c.line([(5, 21), (18, 6)], B, 1.7)                                             # the pick's handle
+    c.arc(9, 2, 25, 14, 200, 335, A, 2.2)                                          # its head
+    c.px(['h'], 17, 5, {'h': AH})
+    c.arc(2, 4, 16, 18, 150, 320, A, 1.8)                                          # the sickle's blade
+    c.line([(14, 14), (20, 21)], B, 1.7)                                           # its handle
+    c.px(['W'], 5, 7, {'W': W})
+    c.poly([(13, 15), (17.5, 19.5), (15, 19.5), (15, 23), (11, 23), (11, 19.5), (8.5, 19.5)], C)   # a small gold arrow
+    c.px(['h'], 13, 16, {'h': CH})
+
+
 MOTIFS = {  # name: (function, ramps A, B, C)
     'world_xp': (m_world_xp, 'gold', 'water'), 'world_loot': (m_world_loot, 'gold', 'wood'),
     'world_skill': (m_world_skill, 'steel', 'arcane'), 'victory': (m_victory, 'nature', 'steel', 'gold'),
@@ -727,6 +739,7 @@ MOTIFS = {  # name: (function, ramps A, B, C)
     'blessing_speed': (m_blessing_speed, 'wind', 'water', 'ember'), 'blessing_regen': (m_blessing_regen, 'blood', 'water', 'ember'),
     'blessing_crit': (m_blessing_crit, 'holy', 'steel', 'ember'), 'blessing_loot': (m_blessing_loot, 'gold', 'wood', 'ember'),
     'blessing_rarity': (m_blessing_rarity, 'arcane', 'arcane', 'ember'), 'blessing_orb': (m_blessing_orb, 'energy', 'coal', 'ember'),
+    'professions': (m_professions, 'steel', 'wood', 'gold'),
 }
 
 # the class buffs that come from a Chaos spell show that spell's icon (key -> the spell's words)

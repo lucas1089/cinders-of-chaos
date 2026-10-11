@@ -419,6 +419,15 @@ function NP.tutorialFinish(player, how)
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You finished the tutorial. Good hunting!")
 	end
 	NP.kitAndWelcome(player, 1000)
+	-- the login windows (Daily Reward, patch notes) waited for the island; the client shows them after the welcome
+	if ChaosLoginWindows and ChaosLoginWindows.start then
+		ChaosLoginWindows.start(player)
+	end
+end
+
+-- true while the character is on the tutorial island (stations 1..rooms)
+function NP.onTutorial(player)
+	return NP.inTutorial(stageOf(player))
 end
 
 -- called by newplayer.lua's login event; true when the tutorial handled the login

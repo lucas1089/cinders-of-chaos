@@ -228,7 +228,8 @@ function LB.deliverPending(player)
 		db.query(string.format("UPDATE `%s` SET `rewarded` = 1 WHERE `week` = %d AND `board` = %s AND `rank` = %d",
 			T_TITLES, r.week, db.escapeString(r.board), r.rank))
 		local parts = {}
-		for _, it in ipairs(cfg.rewards[r.rank] or {}) do
+		local nb = boardByKey[r.board]
+		for _, it in ipairs(not (nb and nb.noReward) and cfg.rewards[r.rank] or {}) do -- noReward: the title only
 			if inboxGive(player, it.id, it.count) then
 				parts[#parts + 1] = it.count .. "x " .. itemName(it.id)
 			end

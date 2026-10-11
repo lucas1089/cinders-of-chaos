@@ -285,6 +285,7 @@ assert(text:find("login streak title", 1, true), "look text with the title")
 local order = {}
 ChaosLoginWindows.register("first", 10, function() return true end, function() order[#order + 1] = "first" end)
 events = {}
+registry["ChaosDailyLogout"].onLogout(c) -- a new session (the earlier logins' pending starts were dropped above)
 registry["ChaosDailyLogin"].onLogin(c)
 local e = events[1]
 e.fn(table.unpack and table.unpack(e.args) or unpack(e.args))
@@ -295,4 +296,21 @@ eq(#sent, count, "a 'closed' for another window does nothing")
 ChaosLoginWindows.closed(c, "first")
 eq(#sent, count + 1, "then the daily window")
 eq(lastWindow().Login, 1, "as a login opening")
+-- no login windows while on the tutorial island; its end starts the queue once (one start at a time)
+registry["ChaosDailyLogout"].onLogout(c)
+local onIsland = true
+ChaosNewPlayer = {onTutorial = function() return onIsland end}
+order, events = {}, {}
+registry["ChaosDailyLogin"].onLogin(c)
+eq(#events, 1, "start scheduled")
+events[1].fn(table.unpack and table.unpack(events[1].args) or unpack(events[1].args))
+eq(#order, 0, "nothing opens on the tutorial island")
+eq(ChaosLoginWindows.state[c:getId()], nil, "no queue")
+onIsland, events = false, {}
+ChaosLoginWindows.start(c)
+ChaosLoginWindows.start(c)
+eq(#events, 1, "a second start while one is pending is ignored")
+events[1].fn(table.unpack and table.unpack(events[1].args) or unpack(events[1].args))
+eq(order[1], "first", "after the tutorial the queue opens")
+ChaosNewPlayer = nil
 print("daily_test: OK")

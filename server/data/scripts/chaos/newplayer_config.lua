@@ -210,7 +210,7 @@ return {
 	-- ------------------------------------------------------------------ welcome (one time, after the kit)
 	welcome = {
 		title = "Welcome to Cinders of Chaos",
-		-- %s = character name, %s = vocation name
+		-- %s = character name, %s = vocation name, %s = the gift line (NP.giftLine: the milestone levels still ahead)
 		text = "Welcome, %s the %s.\n\n" ..
 			"Your starter kit is in your backpack. Next steps:\n" ..
 			"- Character > Spellbook (Alt+S): every spell of your class and what it does.\n" ..
@@ -218,7 +218,7 @@ return {
 			"- Adventure > Bounty Board: daily contracts that pay gold and Orbs of Upheaval.\n" ..
 			"- The store (top menu, Economy): temple scrolls, stamina and services.\n" ..
 			"- The top menu holds every game window: dungeons, the tower, dailies, bank and stash.\n\n" ..
-			"Gifts wait for you at levels 20, 50, 100 and 200.",
+			"%s",
 		toast = "Welcome to Cinders of Chaos! Your kit is in your backpack. Everything else is in the menu at the top.",
 		delayMs = 2500
 	},

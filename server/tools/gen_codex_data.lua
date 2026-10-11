@@ -22,7 +22,7 @@ Gen.SOURCES = {
 	"data/scripts/chaos/salvage_config.lua", "data/scripts/chaos/shop_config.lua", "data/scripts/chaos/bounty_config.lua",
 	"data/scripts/chaos/rift_config.lua", "data/scripts/chaos/rift_core.lua", "data/scripts/chaos/chaos_constants.lua",
 	"data/scripts/chaos/uber_config.lua", "data/lib/chaos_item_sets.lua", "data/lib/chaos_item_sets_config.lua",
-	"data/lib/chaos_veiled.lua", "data/lib/chaos_veiled_config.lua"
+	"data/lib/chaos_veiled.lua", "data/lib/chaos_veiled_config.lua", "data/scripts/chaos/professions_config.lua"
 }
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -273,6 +273,7 @@ function Gen.load()
 	D.bounty = dofile("data/scripts/chaos/bounty_config.lua")
 	D.rift = dofile("data/scripts/chaos/rift_config.lua")
 	D.uber = dofile("data/scripts/chaos/uber_config.lua") -- the Ascended Omens and the Cinderheart (uber.lua)
+	D.prof = dofile("data/scripts/chaos/professions_config.lua") -- the professions' materials (professions.lua)
 	D.uniques = ChaosUniqueItems
 	D.specs = ChaosUniqueSpecs
 	D.itemSets = ChaosItemSets -- data/lib/chaos_item_sets.lua (loaded by chaos_unique_items.lua)
@@ -1561,6 +1562,89 @@ function Gen.pruneOptions(tab)
 	end
 end
 
+-- the professions' materials (professions_config.lua): one entry per material and one about the professions
+function Gen.materialEntries(D)
+	local P = D.prof
+	if not P then
+		return {}
+	end
+	local out = {}
+	local names = {}
+	for _, p in ipairs(P.professions) do
+		names[p.key] = p
+	end
+	local slots = {}
+	for _, v in ipairs(P.demand.slots) do
+		slots[#slots + 1] = "x" .. Gen.num(v)
+	end
+	local b = P.broker
+	local bonusRows = {}
+	for _, lv in ipairs({10, 25, 50, 75, 100}) do
+		bonusRows[#bonusRows + 1] = {Gen.num(lv), Gen.num(math.min(P.bonus.cap, math.floor(4 * (lv - 1) * P.bonus.perLevel * 100 + 0.5) / 100)) .. "%"}
+	end
+	out[#out + 1] = {id = "mat:professions", name = "The professions", color = COLORS.basics,
+		sub = "Gather materials, sell them to a Material Broker, earn an experience bonus", f = {group = "about"},
+		sections = {
+			{h = "What they are", p = {"Four gathering professions, each with its own level 1-" .. P.maxLevel .. ": " ..
+				"Delving (ore veins), Wortcunning (herb patches), Flaying (corpses of beasts and reptiles) and Angling (fishing). " ..
+				"They make no gear and no orbs: what you gather is sold to a Material Broker (one stands next to every temple).",
+				"Every profession level above 1 adds " .. Gen.num(P.bonus.perLevel) .. "% experience from monsters, all four " ..
+				"together at most +" .. Gen.num(P.bonus.cap) .. "% (every profession at " .. P.maxLevel .. ")."}},
+			{h = "Experience bonus with all four at a level", cols = {"Level", "Bonus"}, w = {50, 50}, rows = bonusRows},
+			{h = "Tiers", cols = {"Tier", "Profession", "Character", "Base price"}, w = {25, 25, 25, 25}, rows = (function()
+				local rows = {}
+				for _, t in ipairs(P.tiers) do
+					rows[#rows + 1] = {t.name, Gen.num(t.profLevel), Gen.num(t.charLevel), Gen.num(t.price)}
+				end
+				return rows
+			end)()},
+			{h = "Selling", p = {string.format("Each week every material gets one of the demand multipliers %s (Economy > " ..
+				"Professions shows the week's board). Per material and day the broker pays the full price for %d units, " ..
+				"then %s of it up to %d, then takes no more until the next day.", table.concat(slots, ", "), b.fullPerDay,
+				Gen.num(b.lateMult * 100) .. "%", b.capPerDay)}}
+		}}
+	for _, m in ipairs(P.materials) do
+		local p, t = names[m.prof], P.tiers[m.tier]
+		local where = {}
+		if m.prof == "flaying" then
+			where[#where + 1] = {"Corpses", string.format("Beasts and reptiles of hunting level %d+, flayed once with %s (%d%% " ..
+				"chance of a hide).", t.charLevel, p.toolName, math.floor(P.flaying.chance * 100 + 0.5))}
+		elseif m.prof == "angling" then
+			local list = {}
+			for _, a in ipairs(P.areas) do
+				if a.fishing and a.tier == m.tier then
+					list[#list + 1] = a.name
+				end
+			end
+			if m.tier == P.angling.defaultTier then
+				list[#list + 1] = "any other water"
+			end
+			where[#where + 1] = {"Waters", (#list > 0 and table.concat(list, ", ") or "none yet") .. string.format(
+				" (%s; a catch on %d%% of the casts, one roll every %s s).", p.toolName, math.floor(P.angling.chance * 100 + 0.5),
+				Gen.num(P.angling.rollMs / 1000))}
+		else
+			local list = {}
+			for _, a in ipairs(P.areas) do
+				if a.tier == m.tier and (a.nodes or {})[m.prof] then
+					list[#list + 1] = a.name
+				end
+			end
+			where[#where + 1] = {"Nodes", (#list > 0 and table.concat(list, ", ") or "none yet") .. " (" .. p.toolName ..
+				"; every node is ready for you again " .. P.respawnMin .. " minutes after you gathered it)."}
+		end
+		out[#out + 1] = {id = "mat:" .. m.id, name = m.name:gsub("^%l", string.upper), color = t.color,
+			sub = string.format("%s, tier %d (%s), base price %d gold", p.name, m.tier, t.name, t.price), f = {group = m.prof},
+			sections = {
+				{h = "Gathering", p = {string.format("Needs %s %d; a character below level %d gets a lower tier instead.",
+					p.name, t.profLevel, t.charLevel), m.description}, cols = {"Where", "How"}, w = {20, 80}, rows = where},
+				{h = "Selling", p = {string.format("%d gold at the Material Broker, x the week's demand (%s); the full price " ..
+					"for %d a day, then %s up to %d a day.", t.price, table.concat(slots, ", "), b.fullPerDay,
+					Gen.num(b.lateMult * 100) .. "%", b.capPerDay)}}
+			}}
+	end
+	return out
+end
+
 function Gen.build(D)
 	local M, C = D.M, D.C
 	D.shared = {}
@@ -1631,6 +1715,9 @@ function Gen.build(D)
 			{key = "level", label = "Key tier", match = "max", options = riftTiers}}},
 		{id = "supports", name = "Supports", entries = Gen.supportEntries(D), filters = {
 			{key = "kind", label = "Spell", match = "has", options = spellKinds}}},
+		{id = "materials", name = "Materials", entries = Gen.materialEntries(D), filters = {
+			{key = "group", label = "Profession", match = "eq", options = {{"", "Every profession"}, {"about", "About"},
+				{"delving", "Delving"}, {"wortcunning", "Wortcunning"}, {"flaying", "Flaying"}, {"angling", "Angling"}}}}},
 		{id = "basics", name = "Basics", entries = Gen.basicsEntries(D), filters = {}}
 	}
 	for _, tab in ipairs(tabs) do

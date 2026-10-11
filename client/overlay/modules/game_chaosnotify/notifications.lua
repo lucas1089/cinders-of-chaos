@@ -586,7 +586,9 @@ local function createCompactNotification(data, isPinned)
             messageLabel:setColor('#FFD700')
             messageLabel:setTextAlign(AlignLeft)
             messageLabel:setTextWrap(true)
-            messageLabel:setHeight(35)
+            -- four wrapped lines fit above the timer bar; two where Accept/Start buttons sit below the text
+            local hasButtons = data.notificationType == "PARTY_INVITE" or data.notificationType == "CATACOMB_FREE"
+            messageLabel:setHeight(hasButtons and 35 or 64)
             messageLabel:setMarginLeft(80)
             messageLabel:setMarginTop(28)
             messageLabel:setMarginRight(30)

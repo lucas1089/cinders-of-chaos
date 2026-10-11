@@ -58,7 +58,7 @@ Client: `client/tools/assemble_client.sh <base-client-dir> <out>` applies `base-
   - Tests `dofile` the core against a mocked engine API.
   - `chaos_constants.lua` holds every opcode, storage key, table name and shared helper.
   - New opcodes must not collide (server/README.md "Opcode collision check").
-  - Storage keys use 7100000-7100999. DB tables are `chaos_*` in `server/sql/`.
+  - Storage keys use reserved blocks in 7100000-7127999. Table in server/README.md "Storage keys". DB tables are `chaos_*` in `server/sql/`.
 - **Client/server protocol:** JSON over extended opcodes, one opcode per module.
   - Payloads over 8192 bytes must go through `Chaos.sendChunked`.
 - **Base data is never hand-edited.** Changes to the installed base server go through idempotent `server/tools/patch_*.py` and `install_*.py`, wired into `install_all.py`.

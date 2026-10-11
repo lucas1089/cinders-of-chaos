@@ -147,6 +147,8 @@ source("blessing_crit", "blessings", "buff", "Ember of Precision", "buff:blessin
 source("blessing_loot", "blessings", "buff", "Ember of Plenty", "buff:blessing_loot", "More Chaos loot from your kills.", 25, {blessing = "loot"})
 source("blessing_rarity", "blessings", "buff", "Ember of Fortune", "buff:blessing_rarity", "Gear drops roll a higher rarity more often.", 25, {blessing = "rarity"})
 source("blessing_orb", "blessings", "buff", "Ember of the Forge", "buff:blessing_orb", "Orbs drop more often from your kills.", 25, {blessing = "orb"})
+-- Professions (data/scripts/chaos/professions.lua): the passive experience bonus of the profession levels, no timer
+source("professions", "professions", "buff", "Profession Mastery", "buff:professions", "Your profession levels add experience from monsters.", 29)
 
 -- ---- engine conditions: buffs
 cond("haste", "CONDITION_HASTE", 0, "buff", "Haste", "buff:haste", "You move faster.", 50)
@@ -479,6 +481,20 @@ function S.blessings(player, now, def)
 		return nil
 	end
 	local out = item(def, it.leftMs)
+	out.name, out.desc = clip(it.name or def.name, B.cfg.maxName), clip(it.desc or def.desc, B.cfg.maxDesc)
+	return {out}
+end
+
+-- the professions' experience bonus (professions.lua): ChaosProfessions.buffItem(player, def) -> {name, desc} or nil
+function S.professions(player, now, def)
+	local X = ChaosProfessions
+	local it = X and X.buffItem and X.buffItem(player, def)
+	if not it then
+		return nil
+	end
+	-- the whole percent as stacks (shown on the icon, as Rage does), so a new level is sent at once
+	local whole = math.floor(tonumber(it.pct) or 0)
+	local out = item(def, nil, whole >= 1 and whole or nil)
 	out.name, out.desc = clip(it.name or def.name, B.cfg.maxName), clip(it.desc or def.desc, B.cfg.maxDesc)
 	return {out}
 end

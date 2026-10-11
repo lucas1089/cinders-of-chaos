@@ -232,6 +232,10 @@ server/
    `orbs`, after `crafting`) adds the six new orbs (32251..32256) to `items.otb` / `items.xml`, gives the base server's
    currency items their new names (`items.xml` and every loot list or shop that names them) and needs no client change.
    See "Crafting orbs v2" and "Legendary powers".
+5h. Professions: `python3 -I server/tools/install_professions.py <server>/data [--dry-run]` (idempotent; `install_all.py` step
+   `professions`, after `charms`): the 20 materials and 10 gathering nodes (32351..32380) in `items.otb` / `items.xml`, the
+   Material Broker in `data/npc`, one hooked line in the stock pick, sickle, skinning and fishing scripts; then
+   `sql/chaos_professions.sql` (also created at startup). See "Professions".
 6. Restart the server (or `/reload scripts`). Check the console for Lua errors.
 7. Player commands: `python3 -I server/tools/install_commands.py <server>/data` takes the base server's spoken player
    commands out (talkactions.xml lines with "!" words, the "!" words of base revscripts, the "!commands" login lines);
@@ -304,6 +308,7 @@ working directory, as with the rest of the base server libs).
 | game_dpsmeter | `combatlog.lua`, `combatlog_core.lua`, `combatlog_config.lua` (one hunk in `hunt.lua`) | **204**, Hunt > DPS Meter, the Hunt Tracker's Meter button | DPS meter and combat log: damage, healing, damage taken and healing received per skill (spell, rune, weapon attack, damage over time, proc, summon) and per attacker, the current fight, the last 10 fights (bosses named) and the session, party totals; detail window with hits, crits, average and max (see "DPS meter and combat log"). Unit, mocked-engine and benchmark tests; tested on a live test server. |
 | game_loadouts | `loadouts.lua`, `loadouts_core.lua`, `loadouts_config.lua`, `sql/chaos_loadouts.sql` | **206**, Character > Loadouts, the Loadouts button of the passive tree window | Loadouts (Armory): save whole builds (passive tree, Paragon, support runes, the vocation, an equipment set by item reference) and switch between them for free; anti-dodge rules, validation against the current tree, crash-safe switch (see "Loadouts (Armory)"). Unit and mocked-engine tests; tested on a live test server. |
 | game_charms | `charms.lua`, `charms_core.lua`, `charms_config.lua`, `sql/chaos_charms.sql`, `tools/install_charms.py` (hooks in `item_mods.lua`, `loot.lua`, `rift.lua`, `bounty.lua`, `invasion.lua`, `dungeons.lua`, `descent.lua`, `factions.lua`, `market.lua`) | **198**, Character > Charms | Charms: a 5x4 grid of small charms with minor bonuses (see "Charms"); tested on a live test server with one client. |
+| game_professions | `professions.lua`, `professions_core.lua`, `professions_config.lua`, `sql/chaos_professions.sql`, `tools/install_professions.py`, NPC `data/npc/Material Broker.xml` (buff source in `data/lib/chaos_buffs.lua`) | **195**, Economy > Professions, the Material Broker next to every temple | Four gathering professions (Delving, Wortcunning, Flaying, Angling) with levels 1-100, materials sold to the Material Broker (weekly demand, daily diminishing price and cap) and a passive experience bonus (+10% at the most); no gear, no orbs (see "Professions"). Unit and mocked-engine tests; tested on a live test server with one client. |
 
 Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 208, 209, 211, 214, 216, 217, 218, 219, 221, 222, 223, 224 (sent by the engine, patch 0015), 225, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
@@ -338,6 +343,11 @@ free against the reference server's list below, the reference client's own opcod
 213, 230, 246 and 140), every Chaos script and client module (grep for `sendExtendedOpcode`, `registerExtended*Opcode` and opcode
 constants: 190-199 had 192 hideout, 194 mentor, 196 veiled, 197 guild wars); `tests/charms_test.lua` checks it against
 `ChaosOpcodes` and those lists.
+Extended opcode 195 (Professions, client `game_professions`) is registered there too, as `ChaosOpcodes.professions` below the
+table; checked free against the reference server's list below, the reference client's own opcodes (144-146, 210, 212, 213, 230,
+246 and 140), every Chaos script and client module (grep for `sendExtendedOpcode`, `registerExtended*Opcode` and opcode
+constants: 190-199 had 192 hideout, 193 PvP zone, 194 mentor, 196 veiled, 197 guild wars, 198 charms); `tests/professions_test.lua`
+checks it against `ChaosOpcodes` and those lists. The Material Broker's NPC script sends `npc` on it too.
 
 ### Opcode collision check
 Searched the reference server for every `onExtendedOpcode`, `sendExtendedOpcode(` and opcode
@@ -345,8 +355,33 @@ constant. Opcodes in use there: 1, 67, 73, 89, 91, 92, 99, 106, 107, 136, 181, 2
 `ServerOpcodes` 125/126 in `global.lua` are game-protocol opcodes, a different number space.)
 None of the Chaos opcodes collide; no adjustment was needed. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
 `ExtendedIds` 144-146, 210, 212, 213, 230, 246 and 0x8C = 140): 145 was taken there by the skill wheel. 110 was chosen for the stash because
-the client has no fixed value and 110 is free. Storage keys `7100000-7100999` and DB tables
+the client has no fixed value and 110 is free. Storage keys (see "Storage keys" below) and DB tables
 `chaos_*` are new; the one deliberate overlap is autoloot's storage base 80000 (shared on purpose).
+
+Base client `ExtendedIds` (`gamelib` `const.lua`): 144 StaffVisuals, 145 WheelSkills, 146 MonkData, 210 Cavebot,
+212 SmartFollow, 213 NpcConversationEnd, 230 BotCheckAlert, 246 Teleportation. Of these only 213 is registered by a base
+module (`game_npctrade` `npcdialog.lua`, plain text); `game_raid` registers 213 too (JSON). That is harmless today (the
+server never sends the NPC dialog end on 213), but the later registration replaces the earlier one, so a new system must
+not take any of 144-146, 210, 212, 213, 230 or 246 (230 and 246 are already Chaos: ground labels and seasons; the base
+defines both but registers neither).
+
+### Storage keys
+Player storages of the Chaos scripts; every block is unused by the base server. A new system takes a free block and
+names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
+
+| Range | Owner |
+|---|---|
+| 80000 + n | autoloot list, shared on purpose with the base autoloot (`Chaos.storage.autolootBase`) |
+| 7100000 - 7100999 | `Chaos.storage` in `chaos_constants.lua` and the `*_config.lua` blocks it lists (daily, stash, passive tree, bounty, rifts, new player, monk, market, store cosmetics, ...) |
+| 7101000 - 7101004 | ascension quest (`ascension_quest_config.lua`) |
+| 7101300 - 7101309 | guilds (`guild_config.lua`; 7101302 guild boss lockout) |
+| 7101400 - 7101419 | boss points (`bosspoints_config.lua`) |
+| 7101600 - 7101639 | Town Portal (`townportal_config.lua`) |
+| 7101700 - 7101799 | Vocation Trials (`trials_config.lua`) |
+| 7101800 | Last Breath power cooldown (`data/lib/chaos_powers.lua`) |
+| 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
+| 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
+| 7112000 - 7127999 | loadouts: support runes parked per loadout (`loadouts_config.lua` `runeMirrorBase`) |
 
 ### Extended opcode size limit (`extended_opcode.lua`, `Chaos.sendChunked`)
 One extended opcode message carries at most 8192 bytes (`NetworkMessage::addString` refuses longer strings without an
@@ -2726,6 +2761,8 @@ window, and builds its SQL from client input without checks. So the Chaos window
   the `rewarded` flag is in the DB, so a restart loses nothing. The reset broadcasts the winners (also as a toast with
   `game_chaosnotify`). Score rows older than `keepWeeks` (8) are deleted. When the server was down over several
   Mondays, only the week just ended is scored.
+  A board with `noReward = true` gives its title only, no orbs (the professions' Gatherers board: professions make no orbs,
+  see "Professions").
 - **Titles.** They show in the look text ("He holds the title Bossbane (1st)."; an `onLook` EventCallback registered
   at index 100, after the base server's `default_onLook` at index 0, which builds the "You see" text and ignores what came
   before it) and next to the name on every board (that board's title first, "+n" for more).
@@ -7998,3 +8035,144 @@ reason, a placed charm dragged back onto the list and taken out, then placed aga
 server restart, salvage and reforge with shards, the look text, 60 tier 15 rift drops (8 charms). Not run in game: a real
 crash, the drop hooks from real rifts, bounties, invasions, dungeons and Descent rooms (called directly), the market listing of
 a charm.
+
+## Professions (`professions.lua`, `professions_core.lua`, `professions_config.lua`, `sql/chaos_professions.sql`, `tools/install_professions.py`, client `game_professions`)
+
+The owner's rule: professions gather materials **to sell to NPCs** and give an **experience bonus**. They make no gear and no
+orbs and feed no crafting, so they never compete with the crafting orbs or salvage. Every number is in `professions_config.lua`.
+
+**Four gathering professions**, each with its own level 1-100 per character (table `chaos_professions`):
+
+| Profession | Gathers | Tool (stock item, sold by the broker) | Channel |
+|---|---|---|---|
+| Delving | ore veins (node items) | pick 2553 | 3 s |
+| Wortcunning | herb patches (node items) | sickle 2405 | 3 s |
+| Flaying | fresh corpses of beasts and reptiles (bestiary families `beasts`, `reptiles`) | obsidian knife 5908 | 2.5 s |
+| Angling | water: the base server's own fishing, extended | fishing rod 2580 / 10223 | none (the stock cast) |
+
+They are separate from the base server's engine skills of the same trades (the skills window's Mining, Herbalist, Fishing, ...),
+which stay as they were: gear and passive nodes raise those skills, never a profession level, so the experience bonus cannot be
+pumped with items. The base server's own veins, plants, trees and its crafting tables are not touched.
+
+**Gathering.** Delving and Wortcunning: "use" a node with the tool in the backpack, or "use with" the stock pick / sickle on it.
+Flaying: "use with" the obsidian knife on a corpse. A gather is a channel on the cast bar (opcode 231, client `game_castbar`;
+clicking the bar cancels it): moving, attacking (a target set) or taking damage interrupts it (healing does not). The stock tool
+scripts ask `ChaosProfessions.onTool` first (one line each, `install_professions.py`); it handles only our nodes and tagged
+corpses and returns false for everything else, so the stock pick, sickle and knife work as before. Angling: every stock fishing
+cast on fishable water calls `ChaosProfessions.onFishCast` (one line right before the stock skill try): one roll per character
+every 3 s at most, 10% chance of a material; the stock catch (fish, the Fishing skill, worms) is unchanged.
+
+A gather yields a material of tier **min(the place's tier, the profession's tier, the character's tier)**, `1 + 1 (chance
+min(60%, (profession level - the tier's level) / 100)) + 1 (3%)` units, profession experience (x0.6 one tier below the
+profession's own, x0.25 two or more), and a little character experience (0.1% of what the character needs for its next level,
+no stages, no bonuses: a level 1000 character gets 49,850). A flay can miss (40% chance of a hide; a miss gives half the
+experience); each corpse once, only the corpse owner and the owner's party (`ChaosLootFilter.canLoot`). The corpse is tagged at
+the death (EventCallback `onDropLoot` index 4: custom attribute `chaos_flay` = serial x 10 + tier, tier by the monster's
+hunting level `ChaosBestiaryCore.estimateLevel`; summons and `flaying.exclude` (rabbit: the stock skinning keeps it) are not).
+
+| Tier | Profession level | Character level (= the places' hunting level) | Base price | Profession experience |
+|---|---|---|---|---|
+| 1 Common | 1 | 1 (8) | 20 | 10 |
+| 2 Fine | 20 | 40 | 80 | 18 |
+| 3 Rare | 40 | 100 | 350 | 30 |
+| 4 Grim | 60 | 250 | 800 | 45 |
+| 5 Infernal | 80 | 500 | 4,000 | 65 |
+
+Level curve: level L -> L+1 needs floor(30 + 8 L + 0.45 L^2) (38 at 1, 5,232 at 99; 190,295 in all): about 4,000 gathers of the
+right tier, 35-45 hours per profession.
+
+**Items** (`install_professions.py`, copies of stock nodes: their looks, no client change): materials 32351..32370, stackable
+(Delving: ashstone ore, bloodiron ore, duskglass shard, wraithsilver ore, emberheart crystal; Wortcunning: gravemoss, bitterroot,
+nightshade bloom, wraithcap, emberbloom; Flaying: matted pelt, tough hide, scaled hide, dire pelt, wyrmscale; Angling: mudfin,
+gloomcarp, bloodfin trout, dusk pike, drowned pearl), nodes 32371..32375 (veins, the base server's vein looks) and 32376..32380
+(herb patches, its plant looks). Range 32351..32399 is reserved for the professions.
+
+**Nodes and places.** Chosen: a **per-player node cooldown**, not shared depletion. A node never disappears; after a character
+gathers it, it is ready again for that character after 6 minutes (`respawnMin`; in memory, a restart makes every node ready).
+Nobody can camp or steal a node, players hunting the same ground do not compete, and the node's look never has to change. Node
+items are put at startup (and by `/professions nodes`) on tiles of the areas of `professions_config.lua` `areas`: existing
+hunting grounds of the real map (centres from `bestiary_spawns.lua`), a box centre +- r on one floor, `nodes` per profession on
+walkable ground with nothing on it (no protection zone, house, teleport or stairs), at least 3 tiles apart, picked by a seed from
+the area key (the same tiles after every restart; fixed `pos` spots first). `fishing = true` makes the water in the box fish at
+the area's tier; any other water fishes tier 1.
+
+| Area | Tier | Centre | Nodes | Fishing |
+|---|---|---|---|---|
+| Rotworm Burrows | 1 | 32224, 32746, 8 | Delving 10 | |
+| Wolf Meadows | 1 | 32580, 32036, 7 | Wortcunning 10 | yes |
+| Cyclops Crags | 2 | 32448, 32073, 8 | Delving 10 | |
+| Lion's Rest | 2 | 32661, 32103, 7 | Wortcunning 10 | yes |
+| Dragon Scar | 3 | 33215, 31297, 7 | Delving 10, Wortcunning 10 | yes |
+| Behemoth Depths | 4 | 33521, 31643, 13 | Delving 12 | |
+| Hydra Fens | 4 | 33700, 31657, 14 | Wortcunning 12 | yes |
+| Infernal Rift | 5 | 33841, 31312, 12 | Delving 10, Wortcunning 10 | |
+
+**Selling.** One Material Broker stands next to every temple (`data/npc/Material Broker.xml`, placed at startup like the faction
+NPCs; `broker.towns = "all"`). "trade" opens his trade window with the four stock tools; "sell" / "demand" / "materials" opens the
+Professions window on its broker board (opcode 195 `npc`). The sale is checked by `professions.lua` (a broker within 4 tiles, the
+items in the backpack) and paid to the **bank account**. Per material, character and day (days start at 06:00, like the bounty
+board): the full price for the first 100 units, then 50% up to 200, then nothing more that day (`chaos_professions_sales`).
+**Weekly demand**: per profession and week (Monday 06:00) the five materials get the multipliers x1.5, x1.25, x1, x1, x0.75 in an
+order drawn from the week key (`K.demand`: Park-Miller generator, the same draw under LuaJIT and Lua 5.3, after a restart and for
+every character). Season characters are characters of their own (levels and caps per character); Self-Found characters sell to
+the broker like everyone (selling to an NPC is not trading).
+
+**Gold per hour** (`K.balance`, checked by the test): the best case per tier (profession 100, the best demand week, no daily cap)
+against hunting gold per hour at the tier's character level ("Respec" table: 358,839 at 100, 881,866 at 300, 5,548,330 at 500;
+levels 8 and 40 from the same model on Rotworm / Troll / Orc and Cyclops / Dwarf Guard / Minotaur Guard hunts: 19,000 and 83,000).
+Pace model: node professions min(3600 / (channel + 12 s walking), nodes of the tier x 60 / 6 min) = 100 gathers an hour (one area
+of 10 nodes); Flaying 3600 / (2.5 s + 10 s per kill) x 40%; Angling 1,200 rolls x 10%.
+
+| Tier | Delving | Wortcunning | Flaying | Angling | Hunting / h | One material's best day |
+|---|---|---|---|---|---|---|
+| 1 Common | 4,890 (26%) | 4,890 (26%) | 5,633 (30%) | 5,868 (31%) | 19,000 | 4,500 |
+| 2 Fine | 19,560 (24%) | 19,560 (24%) | 22,533 (27%) | 23,472 (28%) | 83,000 | 18,000 |
+| 3 Rare | 85,575 (24%) | 85,575 (24%) | 98,582 (27%) | 102,690 (29%) | 358,839 | 78,800 |
+| 4 Grim | 205,920 (27%) | 205,920 (27%) | 197,683 (26%) | 205,920 (27%) | 751,109 | 180,000 |
+| 5 Infernal | 738,000 (13%) | 738,000 (13%) | 850,176 (15%) | 885,600 (16%) | 5,548,330 | 900,000 |
+
+Every cell stays below `balance.maxShare` (40%) of hunting, and one material's best day (100 at full price + 100 at half, x1.5)
+stays below one hour of hunting at its level. Flaying comes on top of a beast hunt but costs the channel time per corpse.
+
+**Experience bonus.** +0.0253% monster experience per profession level above 1, all four together, at most +10%: every
+profession at 100 (396 levels) reaches the cap, a new character has +0%; all at 50 give +4.96%. EventCallback `onGainExperience`
+at index 6 (after the world buff, before the dungeon / rift caps), monster kills only (no summons, no other sources). Shown on the
+buff bar as one passive entry "Profession Mastery +N%" (`chaos_buffs.lua` source `professions`, icon `buff:professions` from
+`client/tools/gen_buff_icons.py`, the whole percent as stacks on the icon, no timer; hidden at +0%).
+
+**Also:** achievements (`achievements_data.lua`, category Exploration): each profession at 50 and 100 (titles Master Delver,
+Master Herbwife, Master Flayer, Master Angler), 200 profession levels in total, all four at 100 (title Master of the Wilds); stats
+`prof_<key>` and `prof_total`, set at login (retroactive) and at each level up. Weekly leaderboard "Gatherers" (materials
+gathered, `leaderboard_config.lua` key `professions`, flushed every minute and at logout): the title Gatherer of the Week only,
+no orbs (`noReward = true`, new in `leaderboard.lua` / `leaderboard_core.lua`). Codex: a Materials tab (every material: profession,
+tier, where, price, the daily rule; and a page about the professions with the bonus table), `tools/gen_codex_data.lua`.
+
+**Client** (`game_professions`, Economy > Professions): the four professions (level, experience bar, the tier they gather, tool and
+total in the tooltip), the bonus line, "Where to Gather" (every area with its tier, your ready nodes per profession, fishing, the
+nearest town; position and monsters in the tooltip), the broker board of the week (look, price x demand, sold today of the cap,
+carried, Sell; Sell All with the estimate; enabled only next to a broker), the daily rule and the time to the next day and week.
+
+Protocol (opcode 195, JSON `{action, data}`): client -> server `open` | `close` | `sell {id, n}` | `sellAll`; server -> client
+`state` (`K.payload`, through `Chaos.sendChunked`), `result {ok, text}`, `levelup {k, lv}`, `npc {}` (from the broker's NPC script).
+Staff: `/professions Name[, profession, level]` (show / set), `/professions nodes` (place the nodes again). Test or event areas:
+`ChaosProfessions.addArea{key, name, tier, center, r, nodes, fishing}` places them at once.
+
+**Tests:** `tests/professions_test.lua` (635 checks under LuaJIT and Lua 5.3): config, curve, tiers and yields, the bonus and its
+cap, the demand draw of a fixed week (exact values), weeks and days, prices, the daily cap, the gold per hour bound against
+hunting, node spots (deterministic, spaced), fishing places; and `professions.lua` against a mocked engine: placing an area twice,
+a node gather through the action and the cast bar, the profession tier cap, the per-player cooldown, another character on the same
+node, moving / damage interrupting (healing not), the wrong tool, the stock pick's own uses, flaying a tagged wolf (and once only,
+the owner rule; a dragon is no beast), the angling roll limit, selling away from / at the broker, the full / late price and the cap,
+a new day, Sell All, the bonus on monster experience only (+10% at the cap), the buff entry, the weekly board, the title-only
+board. Client: `game_professions/professionsview_test.lua` (45 checks).
+
+**Tested in game** (test server with the cropped map, a runtime test area next to the temple, one client): a vein by "use" with the
+pick in the backpack (cast bar, "You gathered 1 duskglass shard (+30 Delving experience)", 49.8k character experience at level
+1000), a herb patch with the stock sickle by "use with" (the tier capped by Wortcunning 31, with the message), Angling with the
+stock rod in the test water (bloodfin trout, +18), flaying two wolves with the obsidian knife (a miss with half the experience, a
+matted pelt; full backpack -> inbox), the broker placed at the temple, "sell" in the NPC channel opening the window, one Sell
+(26 duskglass shards, 9,100 gold to the bank, 26 / 200 today) and Sell All (135 materials, 29,885 gold, the estimate's number),
+"trade" with the tools, the window from the menu away from the broker (selling disabled), the buff bar entry and its tooltip,
+levels kept over a relogin, the bonus on monster experience: Demons 175,500 -> 193,050 with +10% (exactly x1.10).
+Not tested: the real map (the area centres come from the spawn data; the tile picks there are not seen), more than one broker,
+the weekly leaderboard reset and the achievements unlocking at 50 / 100.

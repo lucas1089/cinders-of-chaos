@@ -98,7 +98,8 @@ Chaos.itemAttr = {
 }
 
 -- ---------------------------------------------------------------------------
--- Player storage keys (7100000 - 7100999 is reserved for Chaos; unused by the reference server)
+-- Player storage keys (7100000 - 7100999 is reserved for Chaos; unused by the reference server). The other Chaos
+-- blocks up to 7127999 are listed in server/README.md "Storage keys".
 -- ---------------------------------------------------------------------------
 Chaos.storage = {
 	-- autoloot: SAME base as the reference server's own scripts/creaturescripts/autoloot.lua
@@ -256,6 +257,11 @@ Chaos.tables.charms = "chaos_charms"
 ChaosOpcodes.pvpZone = 193
 Chaos.storage.pvpZone = 7100520
 Chaos.tables.pvpZone = "chaos_pvpzone_players"
+-- Professions: gathering for the Material Broker and the experience bonus (client game_professions; professions.lua,
+-- professions_core.lua, professions_config.lua, sql/chaos_professions.sql); no storages (node cooldowns in memory)
+ChaosOpcodes.professions = 195
+Chaos.tables.professions = "chaos_professions"
+Chaos.tables.professionSales = "chaos_professions_sales"
 
 -- ---------------------------------------------------------------------------
 -- Module settings

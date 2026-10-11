@@ -581,6 +581,60 @@ layoutInfo = function()
   end
 end
 
+-- the stock event schedule rows (client_background schedule.lua, EventsScheduleLabel) are about 95 px wide and cut
+-- a long event name mid-letter ("Tower Ascensio"): such a name ends in whole letters and ".." instead (the row's
+-- tooltip keeps the full name and description)
+local function elideRow(ui)
+  local w = ui:getWidth()
+  if w <= 0 and ui:getParent() then w = ui:getParent():getWidth() - 2 end
+  if w <= 8 then return end
+  local fits = function() return ui:getTextSize().width <= w - 4 end
+  if fits() then return end
+  local s = ui:getText()
+  while #s > 1 do
+    s = s:sub(1, -2):gsub('%s+$', '')
+    ui:setText(s .. '..')
+    if fits() then return end
+  end
+end
+
+local function elideSchedule(widget)
+  if not alive(widget) then return end
+  for _, id in ipairs({ 'activeEvent', 'upcomingEvent' }) do
+    local list = widget:recursiveGetChildById(id)
+    if list then
+      for _, ui in ipairs(list:getChildren()) do try(elideRow, ui) end
+    end
+  end
+end
+
+local function scheduleTable()
+  local m = modules.client_background
+  local es = m and rawget(m, 'EventSchedule')
+  return type(es) == 'table' and type(es.configureEvent) == 'function' and es or nil
+end
+
+local function hookSchedule()
+  local es = scheduleTable()
+  if not es or es.chaosConfigure then return end
+  local orig = es.configureEvent
+  es.chaosConfigure = orig
+  es.configureEvent = function(self, widget)
+    orig(self, widget)
+    try(elideSchedule, widget)
+  end
+  local la = alive(bg) and bg:getChildById('loadAfter')
+  try(elideSchedule, la and la:getChildById('informationScroll'))
+end
+
+local function unhookSchedule()
+  local es = scheduleTable()
+  if es and es.chaosConfigure then
+    es.configureEvent = es.chaosConfigure
+    es.chaosConfigure = nil
+  end
+end
+
 -- ---------------------------------------------------------------- animation
 local function tick()
   animEvent = scheduleEvent(tick, 50)
@@ -760,6 +814,7 @@ function init()
   createDecor()
   relayout()
   updateStatus()
+  try(hookSchedule)
 
   connect(bg, { onGeometryChange = relayout })
   connect(enterGame, { onVisibilityChange = syncVisibility })
@@ -791,6 +846,7 @@ end
 
 function terminate()
   disconnect(g_game, { onGameStart = onGameStart })
+  try(unhookSchedule)
   removeEvent(animEvent)
   removeEvent(fadeEvent)
   if ChaosLogin and ChaosLogin.statusEvent then removeEvent(ChaosLogin.statusEvent) end

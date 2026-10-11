@@ -190,7 +190,8 @@ function NP.showWelcome(player, force)
 	local w = C().welcome
 	setS(player, "welcome", 1)
 	NP.modal(player, C().tutorial.modalBase, w.title,
-		string.format(w.text, player:getName(), NP.vocationName(player:getVocation():getId())))
+		string.format(w.text, player:getName(), NP.vocationName(player:getVocation():getId()),
+			NP.giftLine(player:getLevel())))
 	NP.toast(player, w.toast)
 	return true
 end

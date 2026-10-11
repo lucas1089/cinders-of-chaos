@@ -81,7 +81,7 @@ local text = Gen.render(data)
 eq(text, Gen.render(Gen.build(D)), "byte-stable output"); count()
 local loaded = (loadstring or load)(text)()
 eq(type(loaded), "table", "the output loads"); count()
-eq(#loaded.tabs, 9, "nine tabs"); count()
+eq(#loaded.tabs, 10, "ten tabs"); count()
 
 local tabs, ids, entries = {}, {}, 0
 for _, tab in ipairs(loaded.tabs) do
@@ -119,6 +119,7 @@ eq(#tabs.sets.entries, #D.itemSets.sets, "every item set"); count()
 eq(#tabs.supports.entries, #D.S.config.supports, "every support"); count()
 eq(#tabs.gems.entries, #D.G.config.types + 1, "every gem type and the sockets page"); count()
 eq(#tabs.rift.entries, #D.rift.mods + 3, "every rift modifier, keys, tiers, omens"); count()
+eq(#tabs.materials.entries, #D.prof.materials + 1, "every profession material and the professions page"); count()
 for _, orb in ipairs(C.config.orbs) do
 	ok(ids["orb:" .. orb.key], "orb page " .. orb.key); count()
 end

@@ -164,6 +164,19 @@ end
 
 -- ------------------------------------------------------------------ milestones
 do
+	-- the welcome's gift line follows the milestone levels in the config and drops the ones already passed
+	local levels = {}
+	for _, m in ipairs(NP.cfg().milestones) do levels[#levels + 1] = m.level end
+	local line = NP.giftLine(1)
+	for _, l in ipairs(levels) do
+		assert(line:find(tostring(l), 1, true), "gift line names level " .. l)
+	end
+	eq(NP.giftLine(levels[#levels]), "", "no gift line past the last milestone")
+	eq(NP.giftLine(levels[#levels] - 1), "A gift waits for you at level " .. levels[#levels] .. ".", "one gift left")
+	local text = string.format(NP.cfg().welcome.text, "Name", "Warrior", NP.giftLine(1))
+	assert(text:find(line, 1, true) and not text:find("%s", 1, true), "welcome text takes the gift line")
+end
+do
 	local claimed = {}
 	local function isClaimed(i)
 		return claimed[i] == true
