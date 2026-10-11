@@ -128,10 +128,12 @@ sudo chown -R chaos:chaos /opt/chaos/server
 sudo install -d -m 0755 /var/log/chaos
 sudo cp server/deploy/chaos-server.service server/deploy/chaos-clientservices.service \
         server/deploy/chaos-backup.service server/deploy/chaos-backup.timer \
-        server/deploy/chaos-watchdog.service server/deploy/chaos-watchdog.timer /etc/systemd/system/
+        server/deploy/chaos-watchdog.service server/deploy/chaos-watchdog.timer \
+        server/deploy/chaos-health.service server/deploy/chaos-health.timer /etc/systemd/system/
 sudo cp server/deploy/chaos.logrotate /etc/logrotate.d/chaos
 sudo systemctl daemon-reload
-sudo systemctl enable --now chaos-server chaos-clientservices chaos-backup.timer chaos-watchdog.timer
+sudo systemctl enable --now chaos-server chaos-clientservices chaos-backup.timer chaos-watchdog.timer \
+        chaos-health.timer
 ```
 
 - `chaos-server.service`: `Restart=always` brings the engine back after the daily save (which shuts it down on
@@ -150,6 +152,9 @@ sudo systemctl enable --now chaos-server chaos-clientservices chaos-backup.timer
 - `chaos-clientservices.service`: the login-screen endpoint (`server/tools/clientservices.py`, port 8090) that serves
   `data/chaos_clientservices.json`, which the game server rewrites every 5 minutes.
 - `chaos.logrotate`: daily, 14 days, compressed, `copytruncate` (systemd keeps the files open).
+- `chaos-health.timer`: every 5 minutes `server/tools/chaos_health.py` checks the services, ports, status protocol,
+  database, disk, backups and new log errors, and posts to `CHAOS_ALERT_WEBHOOK` when something fails or recovers,
+  plus a daily summary at 09:00 (section 9).
 
 Firewall (ufw example):
 
@@ -198,22 +203,71 @@ sudo ufw default deny incoming && sudo ufw allow 22/tcp && sudo ufw allow 7171/t
 
 `chaos-backup.timer` runs it at 00:15, 06:15 (15 minutes after the daily save), 12:15 and 18:15. Cron instead:
 `15 0,6,12,18 * * * root set -a; . /etc/chaos/chaos.env; /opt/chaos/repo/server/tools/backup.sh --save-service chaos-server >> /var/log/chaos/backup.log 2>&1`
+Read the result in `/var/log/chaos/backup.log`; `systemctl status chaos-backup` shows the last run's exit status.
 
-Copy `/var/backups/chaos` off the machine as well (rsync or object storage): a backup on the same disk does not survive
-the disk.
+### Off-site copy
 
-**Restore**:
+A backup on the same disk does not survive the disk. `chaos-backup.service` runs `server/tools/backup_offsite.sh`
+right after `backup.sh`. It sends the newest dump and the newest data archive, each file once (`DIR/.offsite_sent`),
+encrypted when a key is set, then deletes `chaos-*` files older than `CHAOS_BACKUP_REMOTE_KEEP` days (30) on the
+target. Success writes `DIR/.offsite_last`; the health check alerts when that is older than 26 h. With no target set
+it logs one line ("not configured") and exits 0. Encryption writes a temporary copy in `DIR` first, so `DIR` needs free
+space for one more dump. Settings: `server/deploy/chaos.env.example`.
+
+Owner setup, once, as root:
+1. **A target.** Either or both:
+   - rclone (S3, Backblaze B2, Google Drive, any rclone backend): `sudo apt install rclone`, then
+     `sudo rclone config --config /etc/chaos/rclone.conf` (make a remote, e.g. `b2`), `sudo chmod 600 /etc/chaos/rclone.conf`,
+     and set `CHAOS_BACKUP_REMOTE=b2:chaos-backups` (remote name, colon, bucket or folder). Use a bucket key that can
+     write and delete in that bucket only. Check: `sudo rclone --config /etc/chaos/rclone.conf lsf b2:chaos-backups`.
+   - a machine you control over ssh: `sudo ssh-keygen -t ed25519 -f /etc/chaos/backup_ssh -N ''`, put
+     `/etc/chaos/backup_ssh.pub` in the target user's `~/.ssh/authorized_keys`, create the folder there, accept the
+     host key once (`sudo ssh -i /etc/chaos/backup_ssh backup@host true`), then set
+     `CHAOS_BACKUP_RSYNC=backup@host:/srv/chaos-backups` and `CHAOS_BACKUP_SSH_KEY=/etc/chaos/backup_ssh`. The target
+     needs rsync (or set `CHAOS_BACKUP_RSYNC_TOOL=scp`) and `find` for the retention.
+2. **A key** (the dump holds password hashes and emails: encrypt anything that leaves your own machines):
+   - age (simplest): on your own computer, not the server, `age-keygen -o chaos-backup.key`; store that file in your
+     password manager; set `CHAOS_BACKUP_AGE_RECIPIENT=age1...` (the public key it printed). `sudo apt install age`.
+   - or gpg: `gpg --export --armor KEYID > pub.asc` on your computer, then on the server
+     `sudo install -d -m 700 /etc/chaos/gnupg && sudo gpg --homedir /etc/chaos/gnupg --import pub.asc`, and set
+     `CHAOS_BACKUP_GPG_RECIPIENT=KEYID`.
+   - or a passphrase: `sudo sh -c 'openssl rand -base64 32 > /etc/chaos/backup.pass' && sudo chmod 600 /etc/chaos/backup.pass`,
+     `CHAOS_BACKUP_PASSPHRASE_FILE=/etc/chaos/backup.pass`. Copy the passphrase to your password manager too: a lost
+     server loses this file with it.
+3. Test: `sudo sh -c 'set -a; . /etc/chaos/chaos.env; /opt/chaos/repo/server/tools/backup_offsite.sh --dry-run'`, then
+   `sudo systemctl start chaos-backup` and read `/var/log/chaos/backup.log` (lines `offsite: ...`).
+
+### Restore
+
+A full rollback with exact commands is in "Incident runbook" below. In short:
 ```
 sudo systemctl stop chaos-server                      # saves, then stops
 set -a; . /etc/chaos/chaos.env; set +a
-mysql -e "DROP DATABASE $CHAOS_DB_NAME; CREATE DATABASE $CHAOS_DB_NAME"      # as a user that may do this
-zcat /var/backups/chaos/db/chaos-db-<db>-<timestamp>.sql.gz | mysql "$CHAOS_DB_NAME"
+sudo mysql -e "DROP DATABASE $CHAOS_DB_NAME; CREATE DATABASE $CHAOS_DB_NAME"      # as a user that may do this
+zcat /var/backups/chaos/db/chaos-db-<db>-<timestamp>.sql.gz | sudo mysql "$CHAOS_DB_NAME"
 # only if the server folder is lost or damaged (the map .otbm is not in the archive: copy it from the download):
 sudo tar -C /opt/chaos/server -xzf /var/backups/chaos/data/chaos-data-<timestamp>.tar.gz
 sudo systemctl start chaos-server
 ```
-Test a restore into a scratch database once before launch (the dump of the test database restored with the same tables
-and rows).
+An off-site copy first comes back and is decrypted:
+```
+sudo rclone --config /etc/chaos/rclone.conf copy b2:chaos-backups/chaos-db-<db>-<timestamp>.sql.gz.age /tmp/  # or scp
+age -d -i chaos-backup.key -o chaos-db.sql.gz /tmp/chaos-db-<db>-<timestamp>.sql.gz.age      # age
+gpg -o chaos-db.sql.gz -d /tmp/chaos-db-<db>-<timestamp>.sql.gz.gpg                          # gpg (key or passphrase)
+```
+
+### Restore drill
+
+Before launch and then once a month, restore the newest dump into a scratch database, from the off-site copy (that also
+proves the key works):
+```
+sudo mysql -e "CREATE DATABASE chaos_drill"
+zcat chaos-db.sql.gz | sudo mysql chaos_drill
+sudo mysql -e "SELECT COUNT(*) FROM chaos_drill.accounts; SELECT COUNT(*) FROM chaos_drill.players;
+               SELECT MAX(lastlogin) FROM chaos_drill.players"       # counts close to live, last login recent
+sudo mysql -e "DROP DATABASE chaos_drill"
+```
+Write down the date and how long it took; that time is the rollback time.
 
 ## 8. Client
 
@@ -229,15 +283,50 @@ and rows).
 
 ## 9. Monitoring
 
-- `systemctl status chaos-server chaos-clientservices`, `systemctl list-timers chaos-backup.timer`.
-- The console log: `grep -c "Lua Script Error" /var/log/chaos/server.log` after every restart and every update; a new
-  error is a bug. The known base server noise on the full map is listed in the first-start log; keep a copy of it to
-  compare against.
+**Alerts** (`chaos-health.timer`, every 5 minutes, `server/tools/chaos_health.py`). Every message goes to
+`CHAOS_ALERT_WEBHOOK` (the crash alerts use the same hook), prefixed `Cinders of Chaos health (<host>):`. A check posts
+only when it changes state: `FAIL <check>: <detail>` when it starts failing, `OK <check>: <detail>` when it recovers;
+nothing while a state holds, so a FAIL without a later OK means it is still broken. Set the webhook (a Discord channel
+webhook, or anything that takes `{"content": "..."}`) in `/etc/chaos/chaos.env`, then
+`sudo sh -c 'set -a; . /etc/chaos/chaos.env; python3 -I /opt/chaos/repo/server/tools/chaos_health.py --test-alert'`.
+
+| Check | Fails when | First look |
+|---|---|---|
+| `service chaos-server`, `mariadb`, `chaos-clientservices`, `chaos-payworker`, `nginx`, `php*-fpm` | the unit is not `active` (nginx and PHP-FPM only when installed; the list: `CHAOS_HEALTH_UNITS`) | `systemctl status <unit>`, `journalctl -u <unit> -n 50` |
+| `login port` / `game port` | 7171 / 7172 refuse a TCP connection | the engine log; the firewall |
+| `status protocol` | no status document on 7171 (the watchdog restarts a hang after 3 minutes) | `/var/log/chaos/crashes/watchdog.log` |
+| `database` | `SELECT 1` with the `CHAOS_DB_*` credentials fails (the detail has the client's error) | `systemctl status mariadb`, runbook "DB down" |
+| `disk /`, `disk /var/backups/chaos` | less than 10 % or 5 GB free (`CHAOS_HEALTH_MIN_FREE_PCT`, `_GB`) | runbook "Disk full" |
+| `local backup` | the newest dump is older than 26 h, or there is none | `/var/log/chaos/backup.log` |
+| `off-site backup` | `.offsite_last` older than 26 h (only when a target is set) | the `offsite:` lines in `backup.log` |
+
+The game checks (chaos-server, both ports, status) alert after 2 failed runs in a row and are skipped in the first
+5 minutes after a start, so the daily restart is silent. Crashes alert on their own (`chaos_crashlog.sh`).
+
+**Error lines.** New lines in `/var/log/chaos/server.log` that match `Lua Script Error`, `stack traceback`, `[Error`,
+`attempt to index/call/...` or a segfault are counted each run and posted as `N error line(s) in the server log` with
+the first 5 lines, at most once per 30 minutes (more errors in between wait and go out together). The first run starts at
+the end of the log. A burst right after an update is a bug in that update; the same line every 30 minutes is a loop to
+fix or a script to roll back.
+
+**Daily summary**, with the first run after 09:00 server time (`CHAOS_HEALTH_SUMMARY_HOUR`): the online peak of the last
+24 h (from the status replies, every 5 minutes) and the number online now, the dumps written in 24 h and the age of the
+newest local and off-site copy, crashes (`/var/log/chaos/crashes/crash-*.log`) and watchdog restarts, the count of error
+lines, free disk, and what is failing now. A day without a summary means the timer or the webhook is broken:
+`systemctl list-timers chaos-health.timer`, `journalctl -u chaos-health -n 30`. A post that fails is kept and sent
+again by the next run.
+
+By hand: `sudo sh -c 'set -a; . /etc/chaos/chaos.env; python3 -I /opt/chaos/repo/server/tools/chaos_health.py --dry-run'`
+prints every check and what it would post (`--summary-now` adds the summary). State: `/var/lib/chaos/health.json`
+(delete it to start fresh; the next run posts only what fails).
+
+Other manual checks:
+- `systemctl status chaos-server chaos-clientservices`, `systemctl list-timers 'chaos-*'`.
+- After every restart and update: `grep -c "Lua Script Error" /var/log/chaos/server.log`. The known base server noise
+  on the full map is listed in the first-start log; keep a copy of it to compare against.
 - Players online: the status protocol on 7171, e.g.
   `python3 -c "import socket;s=socket.create_connection(('127.0.0.1',7171));s.send(b'\x06\x00\xff\xffinfo');print(s.recv(4096))"`
   (XML with `<players online=...>`), or `data/chaos_clientservices.json` (`cacheinfo`).
-- Freshness checks for an external monitor: `data/chaos_clientservices.json` changes every 5 minutes; the newest file in
-  `/var/backups/chaos/db` is younger than 7 hours; free disk space; the MariaDB process.
 - Load: `server/tools/loadtest.py` (bots over the real protocol) with the TEST ONLY probe `server/tools/loadtest_probe.lua`.
   Measured on the test server (cropped map, so no monsters; the real map adds spawn and monster AI work): 30 bots walking
   every second and talking every 20 s took 4.5 % of one core (p95 7.9 %), the engine stayed at 192 MB RSS, and the
@@ -320,9 +409,107 @@ Check the server folder before the first start (`ls data/scripts data/scripts/ta
    events, players online), a store purchase, a crafting orb, the bank, the stash.
 8. Website: character creation with the class lock (section 6). Donations: the sandbox test of "Donations" below, then
    the live credentials.
-9. Backups: run `chaos-backup.service` once, restore the dump into a scratch database (section 7).
+9. Backups: run `chaos-backup.service` once, check the off-site copy, do the restore drill (section 7).
+   Alerts: `chaos_health.py --test-alert`, then `--dry-run` shows every check `ok` (section 9).
 10. Load test on the full map, then set `maxPlayers` (section 9).
 11. Open the firewall ports, announce.
+
+## Incident runbook
+
+First: read the alert, then `systemctl status chaos-server mariadb` and `tail -n 100 /var/log/chaos/server.log`. Tell
+the players early (Discord, the website) and post when it is fixed. Every command below runs as root on the server
+with the settings loaded: `sudo -i`, then `set -a; . /etc/chaos/chaos.env; set +a`.
+
+**Server down** (`FAIL service chaos-server`, the ports, the status protocol):
+1. `systemctl status chaos-server`. `activating (auto-restart)` means it is crashing: see "Crash loop".
+2. `inactive` or `failed` with no crash: someone stopped it. `systemctl start chaos-server`, then
+   `tail -f /var/log/chaos/server.log` until the map is loaded (a few minutes).
+3. Running but the ports fail: `ss -ltnp | grep -E ':717[12]'` (is the engine listening?), `ufw status` (is it open?),
+   then test from outside: `nc -vz <public ip> 7172`. Nothing local is wrong: see "DDoS".
+4. Running, ports open, no status answer: a hang. The watchdog restarts it within 3 minutes
+   (`/var/log/chaos/crashes/watchdog.log`); if not, `systemctl restart chaos-server`.
+
+**Crash loop** (several crash alerts in a few minutes):
+1. `ls -t /var/log/chaos/crashes/ | head` and read the newest `crash-*.log`: the last lines before the stop show the
+   script or the action. `coredumpctl list tfs` when core dumps are kept (`LimitCORE=infinity`).
+2. It started after an update: roll the update back (`git -C /opt/chaos/repo checkout <last good commit>`, run
+   `install_all.py` again, or restore the data archive of section 7), then `systemctl restart chaos-server`.
+3. It started with no update: a player action or a bad row. Close the server to players while you look:
+   `ufw insert 1 deny 7172/tcp` (the login still answers), fix, `ufw delete deny 7172/tcp`.
+4. To stop the loop while you work: `systemctl stop chaos-server` (it stays down until you start it).
+
+**DB down** (`FAIL database`, `FAIL service mariadb`):
+1. `systemctl status mariadb`, `journalctl -u mariadb -n 100`. Start it: `systemctl start mariadb`.
+2. It does not start: `df -h /var/lib/mysql` (a full disk is the usual cause: see "Disk full"), then the error log
+   (`/var/log/mysql/error.log` or the journal). InnoDB corruption: do not delete files; restore (rollback below).
+3. Up but `Access denied`: the `CHAOS_DB_*` credentials do not match the user in MariaDB. Check
+   `mysql -u "$CHAOS_DB_USER" -p"$CHAOS_DB_PASS" "$CHAOS_DB_NAME" -e 'SELECT 1'`.
+4. When the database is back, restart the game server so it reconnects: `systemctl restart chaos-server`.
+
+**Disk full** (`FAIL disk ...`):
+1. `df -h`, then the biggest: `du -xh --max-depth=2 /var | sort -h | tail -20`.
+2. Usual causes: `/var/log/chaos/server.log` growing from an error loop (fix the loop; `logrotate -f /etc/logrotate.d/chaos`),
+   old dumps (`ls -lh /var/backups/chaos/db`; lower `CHAOS_BACKUP_KEEP_DAYS` once the off-site copy works; never delete
+   the newest), core dumps (`coredumpctl list`; `journalctl --vacuum-size=500M`), MariaDB binary logs
+   (`mysql -e "PURGE BINARY LOGS BEFORE NOW() - INTERVAL 2 DAY"` when binary logging is on).
+3. A full disk can stop saves: once there is space, `systemctl kill -s SIGUSR1 chaos-server` (save now) and read the log.
+
+**Rollback to the last backup** (data loss up to the dump time; announce it first):
+```
+systemctl stop chaos-health.timer chaos-backup.timer          # no alerts or new dumps while you work
+ufw insert 1 deny 7171/tcp && ufw insert 1 deny 7172/tcp      # nobody logs in (before the allow rules)
+systemctl stop chaos-server                                   # saves, then stops
+ls -lt /var/backups/chaos/db | head                           # pick the dump (newest before the incident)
+DUMP=/var/backups/chaos/db/chaos-db-$CHAOS_DB_NAME-YYYYmmdd-HHMMSS.sql.gz
+gzip -t "$DUMP" && zcat "$DUMP" | tail -n 1                   # must end with "Dump completed"
+/opt/chaos/repo/server/tools/backup.sh --no-data             # keep the broken state too, for the investigation
+mysql -e "DROP DATABASE \`$CHAOS_DB_NAME\`; CREATE DATABASE \`$CHAOS_DB_NAME\`"
+zcat "$DUMP" | mysql "$CHAOS_DB_NAME"
+mysql "$CHAOS_DB_NAME" -e "SELECT COUNT(*) FROM players; SELECT MAX(lastlogin) FROM players"
+# only if the server folder is damaged (the map .otbm is not in the archive):
+# tar -C /opt/chaos/server -xzf /var/backups/chaos/data/chaos-data-YYYYmmdd-HHMMSS.tar.gz && chown -R chaos:chaos /opt/chaos/server
+systemctl start chaos-server && tail -f /var/log/chaos/server.log    # wait for the map, log in with a staff character
+ufw delete deny 7171/tcp && ufw delete deny 7172/tcp
+systemctl start chaos-health.timer chaos-backup.timer
+```
+The safety dump taken before the drop is the newest file in `db/` now: the rollback dump is the second newest. Donations
+paid after the dump time are not in the restored database: compare the provider's list with `chaos_coin_orders` and
+credit them again (admin panel, Store > Donations).
+
+**Suspected exploit or dupe** (gold or items appearing, a report):
+1. Do not restart or roll back yet: the evidence is in the database and the log.
+2. Find who: admin panel (opcode 120) `Player info`, `Account lookup`, `Active sessions` (same IP on many accounts);
+   richest players: `mysql "$CHAOS_DB_NAME" -e "SELECT name, level, balance FROM players ORDER BY balance DESC LIMIT 20"`.
+3. Market: every listing, sale, cancel, expiry, delivery and refusal is a row in `chaos_market_log` (`action`:
+   list, buy, cancel, expire, deliver, fill, order, ordercancel, orderexpire, recover, error):
+   `SELECT FROM_UNIXTIME(at), action, offer_id, player_id, other_id, item_id, count, name, currency, amount, text FROM chaos_market_log WHERE player_id = <id> OR other_id = <id> ORDER BY id DESC LIMIT 200`.
+   A dupe shows as two `deliver` rows for one `offer_id`, or `recover` / `error` rows around the time. The console
+   has the same events as `[Chaos market]` lines: `grep '\[Chaos market\]' /var/log/chaos/server.log`.
+4. Orb exchange: `chaos_orbx_log` (`action`: place, take, fill, merge, cancel, expire, deliver, recover, error), the
+   same query with `order_id`; console lines `[Chaos orb exchange]`.
+5. Staff: every admin panel action and staff talkaction is logged by `ChaosAdmin.log` to `chaos_admin_log` and as
+   `[ChaosAdmin]` console lines: the `Admin log viewer` in the panel, or
+   `SELECT FROM_UNIXTIME(created_at), player_name, action, target, params, status FROM chaos_admin_log ORDER BY id DESC LIMIT 100`
+   (look for `give_*`, `stash_give`, `give_coins`, `set_*` you did not expect), and `grep '\[ChaosAdmin\]' /var/log/chaos/server.log*`.
+6. Contain: `Ban account` / `IP ban` in the panel; `Remove gold` / `Remove item` for what was duped. If the hole is
+   still open and you do not know it, close the server to players (`Open / close server` in the panel) until it is
+   found and fixed.
+7. Only if the damage is wide and cannot be cleaned by hand: the rollback above, to a dump before the first bad row.
+   Fix the hole before reopening.
+
+**DDoS** (players lag or drop, ports fail from outside, the machine itself is fine):
+1. Confirm: `ss -s` and `ss -tn state syn-recv | wc -l` (a SYN flood), `iftop` / `nload` (traffic far above normal),
+   `journalctl -k | grep -i drop`.
+2. Contact the hosting provider at once through its panel or support ticket: report the attack on the server's IP and
+   ask for (or turn on) its DDoS filtering for game traffic (TCP 7171, 7172). Write the provider's support contact,
+   its panel URL and the account owner's name here before launch: ______.
+3. On the machine: keep SSH limited to your addresses (section 5); turn on SYN cookies
+   (`sysctl -w net.ipv4.tcp_syncookies=1`); limit new connections per address, e.g.
+   `iptables -I INPUT -p tcp --syn -m multiport --dports 7171,7172 -m connlimit --connlimit-above 10 -j DROP`
+   (remove with `-D` instead of `-I` afterwards). A volume attack that fills the uplink can only be stopped by the
+   provider.
+4. The website and the login-screen service on 8090 can be put behind a proxy or CDN; the game ports cannot, so the
+   provider's filtering is what protects them. Tell the players on Discord.
 
 ## Website
 

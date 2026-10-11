@@ -24,11 +24,17 @@ STATUS_REQUEST = bytes([0x06, 0x00, 0xFF, 0xFF]) + b'info'
 
 def ask_status(host, port, timeout):
     """True when the server answers the status "info" request with its XML document."""
+    return is_status_reply(fetch_status(host, port, timeout))
+
+
+def fetch_status(host, port, timeout):
+    """The raw reply to the status "info" request (b'' when nothing came back). server/tools/chaos_health.py reads the
+    player count from it."""
+    data = b''
     try:
         with socket.create_connection((host, port), timeout=timeout) as s:
             s.settimeout(timeout)
             s.sendall(STATUS_REQUEST)
-            data = b''
             deadline = time.monotonic() + timeout
             while time.monotonic() < deadline:
                 chunk = s.recv(4096)
@@ -38,8 +44,8 @@ def ask_status(host, port, timeout):
                 if b'</tsqp>' in data:
                     break
     except OSError:
-        return False
-    return is_status_reply(data)
+        pass
+    return data
 
 
 def is_status_reply(data):

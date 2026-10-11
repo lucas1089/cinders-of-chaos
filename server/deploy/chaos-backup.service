@@ -2,6 +2,8 @@
 #   sudo cp server/deploy/chaos-backup.service server/deploy/chaos-backup.timer /etc/systemd/system/
 #   sudo systemctl daemon-reload && sudo systemctl enable --now chaos-backup.timer
 # Runs as root so it can signal the game server (save before the dump) and write /var/backups/chaos.
+# Then server/tools/backup_offsite.sh copies the newest dump off the machine (rclone or rsync / scp, encrypted with age or
+# gpg; docs/LAUNCH.md "Off-site copy"). With no target in /etc/chaos/chaos.env it logs one line and does nothing.
 
 [Unit]
 Description=Cinders of Chaos backup (database dump + server data)
@@ -11,7 +13,19 @@ After=mariadb.service mysql.service
 Type=oneshot
 EnvironmentFile=/etc/chaos/chaos.env
 ExecStart=/opt/chaos/repo/server/tools/backup.sh --save-service chaos-server
+ExecStart=/opt/chaos/repo/server/tools/backup_offsite.sh
+# the off-site upload of a large dump can take a while
+TimeoutStartSec=2h
 StandardOutput=append:/var/log/chaos/backup.log
 StandardError=append:/var/log/chaos/backup.log
 Nice=10
 IOSchedulingClass=idle
+# hardening that leaves /var (the backups, /var/log/chaos) writable. /etc/chaos stays writable because rclone saves
+# refreshed tokens into /etc/chaos/rclone.conf and gpg locks its keyring in /etc/chaos/gnupg. /root stays as it is
+# (ssh known_hosts, rclone's cache).
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=-/etc/chaos
+ProtectKernelTunables=true
+ProtectControlGroups=true

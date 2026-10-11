@@ -1,0 +1,32 @@
+# Cinders of Chaos health alerts (server/tools/chaos_health.py; docs/LAUNCH.md "Monitoring"). Run every 5 minutes by
+# chaos-health.timer. Checks the services, the login and game ports, the status protocol, MariaDB, free disk, the age of
+# the newest backup (and of the off-site copy when one is configured) and new error lines in the console log, and posts
+# to CHAOS_ALERT_WEBHOOK (/etc/chaos/chaos.env) only when a check fails or recovers, plus a daily summary at 09:00.
+#   sudo cp server/deploy/chaos-health.service server/deploy/chaos-health.timer /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now chaos-health.timer
+# Runs as root to read /var/backups/chaos (mode 0700); everything but its state directory is read only.
+
+[Unit]
+Description=Cinders of Chaos health alerts
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/chaos/chaos.env
+ExecStart=/usr/bin/python3 -I /opt/chaos/repo/server/tools/chaos_health.py --state /var/lib/chaos/health.json
+TimeoutStartSec=120
+Nice=5
+# /var/lib/chaos (health.json); the watchdog keeps its state there too
+StateDirectory=chaos
+StateDirectoryMode=0755
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+# AF_UNIX: systemctl (D-Bus) and the MariaDB socket
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+MemoryMax=128M
