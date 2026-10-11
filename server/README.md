@@ -7638,3 +7638,62 @@ Tested on a live test server copy with the client: two loadouts of a Juggernaut 
 with Bulwark, 2 runes and a two-handed sword), switching in the temple and through the channel outside it, runes and gear moving
 both ways without duplicates, the state kept over a server restart, an item left in the depot reported, a saved tree with nodes
 that left the tree refunded for free, the Loadouts button in the passive tree window.
+
+## Ember Blessings (`blessings.lua`, `blessings_core.lua`, `blessings_config.lua`)
+
+A monster kill may bless its loot owner for one minute. Numbers live in `blessings_config.lua`, rules in
+`blessings_core.lua` (pure, tested), the engine glue in `blessings.lua`. Nothing to install beyond the scripts: no
+database table, no storage, no opcode (the buff bar carries it).
+
+**Who rolls.** One roll per kill, in `EventCallback onDropLoot`, for the corpse owner only: the player who dealt the most
+damage, or the master of the summon that did. That is the player the Chaos loot is for. Party members do not share the
+roll; a party hunt still procs often, since every member owns some of the corpses. No roll for a summon's death, without
+stamina for loot (`ChaosLootConfig.minStamina`), or in a PvP place (battleground, arena, siege, a PvP-zone tile, the open
+PvP zone module when installed). Season realms make no difference.
+
+**The chance.** By the monster's tier: normal 1.5%, magic 4%, rare 8%, legendary 15%, boss 25% (capped at 40%). A monster at
+most 10 levels under the character counts in full; past that its level as a share of the character's level decides:
+0.75 or more full, 0.6 half, 0.45 a fifth, below that nothing. The monster level is `ChaosLoot.monsterLevel`. After a proc
+no other proc for 20 s (`cooldownMs`), whatever the kind.
+
+**The pool** (weight, one minute each):
+
+| key | name | weight | effect | how |
+|---|---|---|---|---|
+| xp | Ember of Insight | 20 | +25% experience from monsters | `onGainExperience`, index 6 |
+| gold | Ember of Avarice | 18 | +50% gold coins in the corpse | `onDropLoot`, index 2 |
+| damage | Ember of Fury | 16 | +15% damage dealt to monsters | `onHealthChange` on the monster, registered by `onTargetCombat` |
+| ward | Ember of Warding | 14 | -15% damage taken from monsters | `onHealthChange` / `onManaChange` on the player |
+| speed | Ember of Haste | 14 | +25% of the base speed | `CONDITION_HASTE`, sub id 7260 |
+| regen | Ember of Renewal | 12 | 2% of max health and mana every 2 s | `CONDITION_REGENERATION`, sub id 7261 |
+| crit | Ember of Precision | 12 | +10% critical chance, +25% critical damage | `CONDITION_ATTRIBUTES`, sub id 7262 |
+| loot | Ember of Plenty | 10 | +40% Chaos loot (extra rolls, currency, gems, runes) | `loot_config.lua` `rateMult` |
+| rarity | Ember of Fortune | 8 | +60 rarity find on gear drops | `loot.lua` rarity find |
+| orb | Ember of the Forge | 6 | orbs x2 | `loot.lua` `rollCurrency` |
+
+Damage and ward touch only fights with monsters: no PvP effect.
+
+**Stacking.** The same kind never stacks. A proc of an active kind refreshes it to the full 60 s; the value stays.
+Different kinds run side by side, at most 3 (`maxActive`). A new kind past the cap replaces the one with the least time
+left, so a proc is never lost.
+
+**Feedback.** A floating label on the player (`ChaosCombatFx.label`, palette byte colours from the config, never hex
+strings), a magic effect and a status line. The buff bar shows one row per kind (`blessing_<key>` in
+`data/lib/chaos_buffs.lua`, source `blessings`) with its countdown and the effect text. Icons `buff:blessing_<key>`
+come from `client/tools/gen_buff_icons.py`: the motif plus a small ember flame in the corner.
+
+**Ends.** A once-a-second look removes what ran out. State lives in memory only: logout, login and death clear it.
+Entering a PvP place takes every blessing away, with a message.
+
+**Staff.** `/blessing <key>` gives one now (refresh and cap rules apply). `/blessing list` shows the active ones and the
+pool, `/blessing clear` takes them all. `/blessing roll <tier>, <monster level>[, n]` prints the chance for you and n
+simulated kills at one kill every 2 s.
+
+**Tests.** `tests/blessings_test.lua` (LuaJIT and Lua 5.3): the config (palette bytes, labels, formats), the chance by tier
+and level gap, the cap, the roll reasons, the cooldown, the weighted draw, refresh without stacking, the cap and its
+replacement, expiry. Then `blessings.lua` against a mocked engine: a kill blesses the corpse owner (label, effect,
+message), no proc inside the cooldown, for a summon, a trivial monster, without stamina or in a PvP place; every effect on
+and gone after 60 s; the buff bar rows; logout and `/blessing`.
+Tested on a live test server copy with one client: a proc label on a kill, three blessings on the bar with their
+countdowns and tooltip, a refresh of the same kind by a kill (48 s back to 58 s, one icon), the cap replacing the
+weakest, +25% experience (145 to 181) and +25% speed (2228 to 2785) measured. Not run live: the PvP-place fade, ward, gold.

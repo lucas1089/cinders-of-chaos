@@ -136,6 +136,17 @@ source("descent_curse", "descent", "debuff", "Descent Curse", "buff:descent_curs
 -- (login, lost connection, restart) while it holds
 source("self_found", "seasonMode", "buff", "Self-Found", "buff:self_found", "No trading; more and better loot.", 27, {mode = "ssf"})
 source("hardcore_ward", "seasonMode", "buff", "Hardcore Ward", "buff:hardcore_ward", "You cannot be hurt for now.", 28, {mode = "ward"})
+-- Ember Blessings (data/scripts/chaos/blessings.lua): one row per kind, 60 s from a kill; the same kind never stacks
+source("blessing_xp", "blessings", "buff", "Ember of Insight", "buff:blessing_xp", "More experience from monsters.", 25, {blessing = "xp"})
+source("blessing_gold", "blessings", "buff", "Ember of Avarice", "buff:blessing_gold", "More gold coins in your kills' corpses.", 25, {blessing = "gold"})
+source("blessing_damage", "blessings", "buff", "Ember of Fury", "buff:blessing_damage", "More damage dealt to monsters.", 25, {blessing = "damage"})
+source("blessing_ward", "blessings", "buff", "Ember of Warding", "buff:blessing_ward", "Less damage taken from monsters.", 25, {blessing = "ward"})
+source("blessing_speed", "blessings", "buff", "Ember of Haste", "buff:blessing_speed", "You move faster.", 25, {blessing = "speed"})
+source("blessing_regen", "blessings", "buff", "Ember of Renewal", "buff:blessing_regen", "Health and mana come back every 2 seconds.", 25, {blessing = "regen"})
+source("blessing_crit", "blessings", "buff", "Ember of Precision", "buff:blessing_crit", "More critical hits, and harder ones.", 25, {blessing = "crit"})
+source("blessing_loot", "blessings", "buff", "Ember of Plenty", "buff:blessing_loot", "More Chaos loot from your kills.", 25, {blessing = "loot"})
+source("blessing_rarity", "blessings", "buff", "Ember of Fortune", "buff:blessing_rarity", "Gear drops roll a higher rarity more often.", 25, {blessing = "rarity"})
+source("blessing_orb", "blessings", "buff", "Ember of the Forge", "buff:blessing_orb", "Orbs drop more often from your kills.", 25, {blessing = "orb"})
 
 -- ---- engine conditions: buffs
 cond("haste", "CONDITION_HASTE", 0, "buff", "Haste", "buff:haste", "You move faster.", 50)
@@ -458,6 +469,18 @@ function S.descent(player, now, def)
 		it.name, it.desc = clip(it.name, B.cfg.maxName), clip(it.desc, B.cfg.maxDesc)
 	end
 	return list
+end
+
+-- the Ember Blessings (blessings.lua): the blessing of def.blessing while it runs, with the time left
+function S.blessings(player, now, def)
+	local X = ChaosBlessings
+	local it = X and X.buffItem and X.buffItem(player, def.blessing)
+	if not it then
+		return nil
+	end
+	local out = item(def, it.leftMs)
+	out.name, out.desc = clip(it.name or def.name, B.cfg.maxName), clip(it.desc or def.desc, B.cfg.maxDesc)
+	return {out}
 end
 
 -- the Ashen Sepulchre's boss debuffs of the fight the player is in (raid.lua)

@@ -367,6 +367,8 @@ function L.rollCurrency(tier, ctx)
 	tier = L.normTier(tier)
 	ctx = ctx or {}
 	local scale = rateMult(ctx) * (ctx.itemFind or 1)
+	-- the Ember of the Forge blessing of the corpse owner (blessings.lua): every orb of the list more often
+	scale = scale * (ChaosBlessings and ChaosBlessings.mult and ChaosBlessings.mult(ctx.player, "orb") or 1)
 	local cm = tierValue(cur.countMult, tier, 1)
 	local merged, order = {}, {}
 	local function add(e)
@@ -819,6 +821,8 @@ local function processKill(monster, corpse)
 	local rarityFind = ChaosItemMods and ChaosItemMods.playerBonus and ChaosItemMods.playerBonus(owner, "rarityfind") or 0
 	-- and the Self-Found loot bonus (season_modes.lua)
 	rarityFind = rarityFind + (ChaosSeason and ChaosSeason.modesLootBonus and select(2, ChaosSeason.modesLootBonus(owner)) or 0)
+	-- and the Ember of Fortune blessing (blessings.lua)
+	rarityFind = rarityFind + (ChaosBlessings and ChaosBlessings.value and ChaosBlessings.value(owner, "rarity") or 0)
 	-- Only the "rarity" attribute is raised here, as the stock callback sets it: the engine rolls the stats of every
 	-- item that still carries one in the corpse after all onDropLoot callbacks (Monster::dropLoot), once. Rolling here
 	-- too (Game.createItemWithRarity) gave corpse items two sets of stats. Items that leave the corpse before the

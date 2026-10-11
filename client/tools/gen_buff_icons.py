@@ -609,6 +609,97 @@ def m_skull_black(c):
     skull(c, 6, 6, eye=C)
 
 
+# Ember Blessings (server blessings.lua): the blessing's motif and a small ember flame in the lower right (ramp C)
+def ember_mark(c, x=19, y=16):
+    c.poly([(x, y), (x + 3, y + 4), (x + 4, y + 2.5), (x + 4.5, y + 6), (x + 2.5, y + 8.5), (x - 0.5, y + 8.5),
+            (x - 2.5, y + 6), (x - 2, y + 3)], C)
+    c.poly([(x + 0.5, y + 4), (x + 2, y + 6.5), (x + 0.8, y + 8), (x - 0.8, y + 6.5)], CH)
+
+
+def m_blessing_xp(c):
+    c.poly([(3, 12), (8, 7), (18, 7), (23, 12), (18, 17), (8, 17)], B)       # an open eye of insight
+    c.ell(9, 8, 17, 16, A); c.ell(11, 10, 15, 14, KK)
+    c.px(['W'], 11, 10, {'W': W})
+    m_up_arrow(c, 13, 1, 0.45, AL)
+    ember_mark(c, 19, 15)
+
+
+def m_blessing_gold(c):
+    for i, (x, y) in enumerate(((5, 17), (5, 14), (5, 11), (12, 18), (12, 15))):   # stacks of coins
+        c.ell(x, y, x + 8, y + 4, A); c.line([(x + 1, y + 2), (x + 7, y + 2)], AD, 0.6)
+    c.ell(12, 4, 20, 12, A); c.ell(14, 6, 18, 10, AD)                              # one coin standing
+    c.px(['W'], 14, 5, {'W': W})
+    ember_mark(c, 20, 15)
+
+
+def m_blessing_damage(c):
+    c.line([(5, 21), (18, 8)], B, 2.4); c.poly([(18, 8), (22, 3), (23, 4), (19, 9)], B)   # a sword
+    c.line([(6, 14), (12, 20)], BD, 1.6)
+    c.line([(7, 19), (17, 9)], BH, 0.6)
+    c.poly([(16, 12), (14, 5), (18, 8), (20, 3), (22, 10), (19, 14)], A)                  # flames along the blade
+    ember_mark(c, 19, 15)
+
+
+def m_blessing_ward(c):
+    shield(c, 4, 3, 20, 23, B)                                                     # a shield with an ember on it
+    shield(c, 6, 5, 18, 20, BD)
+    c.poly([(12, 7), (15, 12), (14, 17), (12, 18), (10, 17), (9, 12)], A)
+    c.poly([(12, 12), (13, 15), (12, 17), (11, 15)], AH)
+    ember_mark(c, 20, 15)
+
+
+def m_blessing_speed(c):
+    for i, y in enumerate((5, 10, 15)):                                            # wind streaks and chevrons
+        c.poly([(4 + i, y), (10 + i, y + 3), (4 + i, y + 6), (6 + i, y + 3)], A)
+        c.poly([(11 + i, y), (17 + i, y + 3), (11 + i, y + 6), (13 + i, y + 3)], B)
+    c.line([(3, 22), (13, 22)], AL, 0.8)
+    ember_mark(c, 20, 15)
+
+
+def m_blessing_regen(c):
+    c.ell(3, 5, 12, 13, A); c.ell(10, 5, 19, 13, A)                                # a heart and a mana drop
+    c.poly([(3.5, 10), (18.5, 10), (11, 19)], A)
+    c.rect(9.5, 7, 12.5, 15, W); c.rect(7, 9.5, 15, 12.5, W)
+    drop(c, 17, 11, 0.6, B)
+    ember_mark(c, 20, 15)
+
+
+def m_blessing_crit(c):
+    c.arc(3, 3, 21, 21, 0, 360, B, 1.2)                                            # a reticle with a burst in it
+    for (x0, y0, x1, y1) in ((12, 2, 12, 6), (12, 18, 12, 22), (2, 12, 6, 12), (18, 12, 22, 12)):
+        c.line([(x0, y0), (x1, y1)], B, 1)
+    star(c, 12, 12, 6, 2.4, A, n=8)
+    c.px(['W'], 12, 12, {'W': W})
+    ember_mark(c, 20, 15)
+
+
+def m_blessing_loot(c):
+    c.ell(4, 9, 19, 23, B)                                                         # a full sack, tied
+    c.poly([(8, 5), (15, 5), (13, 10), (10, 10)], B)
+    c.rect(8, 9, 15, 11, BD)
+    c.ell(9, 3, 14, 6, A); c.ell(15, 2, 19, 6, A)                                  # coins spilling from it
+    c.px(['h'], 7, 13, {'h': BH})
+    ember_mark(c, 20, 15)
+
+
+def m_blessing_rarity(c):
+    c.poly([(7, 5), (17, 5), (21, 10), (12, 22), (3, 10)], A)                       # a cut gem
+    c.poly([(7, 5), (17, 5), (15, 10), (9, 10)], AL)
+    c.poly([(3, 10), (9, 10), (12, 22)], AD)
+    c.line([(15, 10), (12, 22)], AD, 0.6)
+    c.px(['W.', '.W'], 8, 6, {'W': W})
+    ember_mark(c, 20, 15)
+
+
+def m_blessing_orb(c):
+    c.ell(4, 4, 19, 19, A)                                                         # a glowing orb on an anvil
+    c.arc(6, 6, 17, 17, 200, 320, AH, 1.2)
+    c.ell(9, 9, 14, 14, AL)
+    c.rect(3, 19, 18, 21, B); c.rect(7, 21, 14, 24, BD)
+    c.px(['W'], 8, 7, {'W': W})
+    ember_mark(c, 20, 14)
+
+
 MOTIFS = {  # name: (function, ramps A, B, C)
     'world_xp': (m_world_xp, 'gold', 'water'), 'world_loot': (m_world_loot, 'gold', 'wood'),
     'world_skill': (m_world_skill, 'steel', 'arcane'), 'victory': (m_victory, 'nature', 'steel', 'gold'),
@@ -630,6 +721,12 @@ MOTIFS = {  # name: (function, ramps A, B, C)
     'infight': (m_infight, 'steel', 'wood', 'blood'),
     'self_found': (m_self_found, 'gold', 'wood', 'steel'), 'hardcore_ward': (m_hardcore_ward, 'bone', 'holy'),
     'skull_white': (m_skull, 'bone'), 'skull_red': (m_skull, 'blood'), 'skull_black': (m_skull_black, 'obsidian', 'obsidian', 'blood'),
+    # Ember Blessings (blessings.lua): ramp C is always the ember of the corner flame
+    'blessing_xp': (m_blessing_xp, 'arcane', 'bone', 'ember'), 'blessing_gold': (m_blessing_gold, 'gold', 'gold', 'ember'),
+    'blessing_damage': (m_blessing_damage, 'ember', 'steel', 'ember'), 'blessing_ward': (m_blessing_ward, 'ember', 'steel', 'ember'),
+    'blessing_speed': (m_blessing_speed, 'wind', 'water', 'ember'), 'blessing_regen': (m_blessing_regen, 'blood', 'water', 'ember'),
+    'blessing_crit': (m_blessing_crit, 'holy', 'steel', 'ember'), 'blessing_loot': (m_blessing_loot, 'gold', 'wood', 'ember'),
+    'blessing_rarity': (m_blessing_rarity, 'arcane', 'arcane', 'ember'), 'blessing_orb': (m_blessing_orb, 'energy', 'coal', 'ember'),
 }
 
 # the class buffs that come from a Chaos spell show that spell's icon (key -> the spell's words)

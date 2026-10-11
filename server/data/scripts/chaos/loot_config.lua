@@ -22,7 +22,9 @@ return {
 		local world = ChaosWorldEvents and ChaosWorldEvents.lootMult and ChaosWorldEvents.lootMult(ctx) or 1 -- Golden Hour (worldevents.lua)
 		-- community goal loot stage and the week's family modifier (community.lua); 1 when neither is active
 		local community = ChaosCommunity and ChaosCommunity.lootMult and ChaosCommunity.lootMult(ctx) or 1
-		return event * buff * rift * world * community
+		-- the Ember of Plenty blessing of the corpse owner (blessings.lua); 1 when none
+		local blessing = ChaosBlessings and ChaosBlessings.mult and ChaosBlessings.mult(ctx and ctx.player, "loot") or 1
+		return event * buff * rift * world * community * blessing
 	end,
 
 	-- player storage key; value v means +v % to all chances of this layer (extra rolls, currency,
