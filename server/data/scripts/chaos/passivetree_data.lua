@@ -243,7 +243,6 @@ ChaosPassiveTreeData = { root = 1, nodes = {
 [236]={n={207,232,233},s={shieldingSkill=1}},
 [237]={n={234,241},s={absorbDrown=1}},
 [238]={n={193,212,255,467},s={vitality=10}},
-[239]={n={},s={strength=239}},
 [240]={n={186,218,258,510},s={dexterity=5}},
 [241]={n={183,237,248,392},s={strength=5}},
 [242]={n={196,228,251,584},s={intelligence=5}},

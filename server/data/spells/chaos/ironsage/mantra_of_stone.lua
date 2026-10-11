@@ -1,5 +1,5 @@
 -- Mantra of Stone: chant for 12 s; you and party members within 6 sqm take 8% less damage while they stay near, and
--- every pulse (2 s) heals them for level x 1 + fist x 24 (the Iron Sage's party heal, ChaosMonk.cfg.mantra.heal).
+-- every pulse (2 s) heals them for level x 1 + fist x 26 (the Iron Sage's party heal, ChaosMonk.cfg.mantra.heal).
 --
 -- The aura pulses every 2 s: everyone in reach gets a 3 s timer condition (ChaosMonk.ids.subId.mantra) that
 -- data/scripts/chaos/monk_combat.lua reads on damage taken. Uses no chi. Stops when the Sage dies or logs out.

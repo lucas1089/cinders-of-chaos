@@ -245,6 +245,11 @@ function ChaosSpell.canAttack(caster, target)
 	if siege ~= nil then
 		return siege
 	end
+	-- the Scorched Marches (data/scripts/chaos/pvpzone.lua): open PvP inside, its own refusals (nil = not its business)
+	local marches = ChaosPvpZone and ChaosPvpZone.canAttack and ChaosPvpZone.canAttack(casterPlayer, targetPlayer)
+	if marches ~= nil then
+		return marches
+	end
 	for _, pos in ipairs({targetPlayer:getPosition(), casterPlayer:getPosition()}) do
 		local tile = Tile(pos)
 		if tile and (tile:hasFlag(TILESTATE_PROTECTIONZONE) or tile:hasFlag(TILESTATE_NOPVPZONE)) then

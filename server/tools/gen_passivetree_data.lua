@@ -7,7 +7,8 @@
 -- customStats are stored in `v`; passivetree.lua uses them instead of `s` for that variant key (ChaosClasses.keystoneKey).
 -- node.classes (the classes that may take the node) is stored as `c` = {[class key] = true} (class_tree.lua checks it).
 -- Start nodes (isStartNode) other than the root are the start of a class section: they are not stored; their edges
--- go to the root instead, so the section connects to the root like any other branch.
+-- go to the root instead, so the section connects to the root like any other branch. Hidden nodes (node.hidden: a stray
+-- node of the original tree, never reachable) are not stored either.
 -- (One client node has the typo `customStast` and therefore carries no stats; fix it client-side.)
 dofile("nodes.lua")
 local nodes = getTreeNodes()
@@ -23,6 +24,7 @@ local function alias(id)
   return id
 end
 local function link(a, b)
+  if (nodes[a] and nodes[a].hidden) or (nodes[b] and nodes[b].hidden) then return end
   a, b = alias(a), alias(b)
   if nodes[a] and nodes[b] and a ~= b then adj[a][b] = true; adj[b][a] = true end
 end
@@ -53,7 +55,7 @@ end
 local written = 0
 for _, id in ipairs(ids) do
   local n = nodes[id]
-  if n.isStartNode and id ~= ROOT then goto continue end
+  if (n.isStartNode and id ~= ROOT) or n.hidden then goto continue end
   written = written + 1
   local nb = {}
   for k in pairs(adj[id]) do nb[#nb+1] = k end

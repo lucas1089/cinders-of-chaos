@@ -71,7 +71,15 @@ function hit.onHealthChange(creature, attacker, primaryDamage, primaryType, seco
 			addEvent(function()
 				local a = Creature(attackerId)
 				if a then
-					doAreaCombat(a, primaryType, pos, splashArea, -amount, -amount, CONST_ME_HITAREA)
+					-- a share of a hit that had the passive tree's bonuses already: the keystone guard keeps the tree (and
+					-- the keystones) from applying to the splash a second time
+					local K = ChaosKeystones
+					if K then K.depth = (K.depth or 0) + 1 end
+					local ok, err = pcall(doAreaCombat, a, primaryType, pos, splashArea, -amount, -amount, CONST_ME_HITAREA)
+					if K then K.depth = K.depth - 1 end
+					if not ok then
+						print("[ChaosWeaponStyle] " .. tostring(err))
+					end
 				end
 			end, 0)
 		end

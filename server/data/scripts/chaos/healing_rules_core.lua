@@ -23,7 +23,7 @@ M.cfg = {
 	},
 	-- Weaver's Grace: heals the Illusionist casts on another creature (a party member, any player) x (1 + othersBonus);
 	-- its own self heals are unchanged
-	weaversGrace = {othersBonus = 0.05},
+	weaversGrace = {othersBonus = 0.16}, -- 0.05 until the role rebalance: kept the Illusionist >= 12% over the Iron Sage
 	-- Mirror Mend: heal = level x level + magic level x ml + base (min..max) on the party member within range with the
 	-- lowest health share (or the one named); the mirror heals the next most hurt (the Illusionist included) for
 	-- `mirror` of it. Without a hurt party member it heals the Illusionist.

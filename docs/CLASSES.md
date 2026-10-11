@@ -53,7 +53,7 @@ stealth crits); poison blades; evasion (dodge chance).
 **Mystic** (base): the shared caster kit.
 - **Elementalist**: today's Sorcerer area spells, plus Arcane Echo.
 - **Illusionist**: the best healer, plus party attack buffs (Inspiring Illusion, Shared Phantasm: party members also heal
-  for 4% of what they deal to a marked enemy), target debuffs. Heals: Weaver's Grace (passive: +5% on heals on other
+  for 4% of what they deal to a marked enemy), target debuffs. Heals: Weaver's Grace (passive: +16% on heals on other
   players), Mirror Mend (the most hurt ally, a mirror heals the next), Lucid Reverie (party heal over time), and the
   Druid-style heals (Purifying Wellspring, Verdant Sanctuary). See "Illusionist healer pass" below.
 
@@ -70,8 +70,8 @@ their owner, so their damage counts for it.
 grow with the chi spent; evasion; light armour.
 - **Shadowfist**: Pressure Points (a stacking debuff: the target takes more from Monks), Shadowfist Flurry (2 + 1 hit per chi),
   focus: after a finisher, crit chance 2.5% per chi spent for 4 s (12.5% at 5 chi).
-- **Iron Sage** (the second healer): Kindled Breath heals the most hurt party member (level x 0.5 + fist x 27 at 5 chi, +60%
-  over 6 s), Mantra of Stone (party aura: -8% damage taken, and every 2 s a heal of level + fist x 24 on the party), Chi Ward
+- **Iron Sage** (the second healer): Kindled Breath heals the most hurt party member (fist x 33 at 5 chi, +60%
+  over 6 s), Mantra of Stone (party aura: -8% damage taken, and every 2 s a heal of level + fist x 26 on the party), Chi Ward
   (an absorb shield on a party member or itself), Iron Palm (a stun); more health and armour.
 
 **Templar** (base): holy melee with a one-handed sword or mace and a shield; a party defence aura and Radiant Strikes (each
@@ -359,7 +359,8 @@ Open for the Templar:
 
 The owner's call: the Illusionist is the best healer class, plus party attack buffs. Done by adding to its kit, not by cutting
 other classes' heals (numbers and the measurement: `server/data/spells/README.md`, "Healing"):
-- **Weaver's Grace** (passive): heals the Illusionist casts on another player +5%.
+- **Weaver's Grace** (passive): heals the Illusionist casts on another player +16% (+5% until the role rebalance of
+  2026-10, which made the Iron Sage the second healer: it keeps the Illusionist at least 12% ahead).
 - **Mirror Mend** (spell 96, `saen spek ["Name"]`): the most hurt party member within 7 sqm, and a mirror heal for 25% on the
   next most hurt. **Lucid Reverie** (spell 97, `reth vas spek`): a party heal over time (5 pulses in 10 s).
 - **Shared Phantasm** (keystone): party members also heal for 4% of what they deal to the marked enemy; the +12% stays.
@@ -367,8 +368,8 @@ other classes' heals (numbers and the measurement: `server/data/spells/README.md
   siege arena) is -30%, for every class, so healers do not make fights endless.
 - Measured lead: party healing +32% / +41% (level 300 / 1000) over the next class (the base Mystic) and +58% / +66% over the
   next ascended one (the Lich), single target on another player +22% / +33%. The Sentinel keeps the biggest emergency heal
-  (Lay on Hands) and stays a tank-support. Since the role rebalance the Iron Sage is the second healer (1591 / 2375 per second on an
-  ally, between the Mystic and the Illusionist).
+  (Lay on Hands) and stays a tank-support. Since the role rebalance the Iron Sage is the second healer (1765 / 2525 per second on an
+  ally, +20% / +24% over the Mystic; the Illusionist 1985 / 3007, at least 12% ahead of it).
 - Open: the Necromancer line has the Mystic's stock heals (Circle of Mending, Kindred Mend, Heartwood Embrace) and is the
   second healer through them; worth a look when that line is balanced.
 
@@ -487,10 +488,15 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
 
 Every class measured the same way at levels 300 and 1000 with a tree build (`server/data/spells/README.md` "Classes with the
 passive trees"). The level factors that stood in for the tree are dropped; the four new lines' damage is scaled by a per-class
-factor (`ChaosClassTree.classDamage`, level 300 to 1000), and the Berserker by 0.92 at level 300 (its area damage had passed the
-Elementalist's). Result: Deadeye the best single target (1351 / 4769), Shadowfist, Ninja and Lich next; Elementalist the best area
-(3349 / 10097); Illusionist the best healer, Iron Sage the second (1591 / 2375 per second on an ally, Mystic 1473 / 2039); Samurai
-about the Juggernaut's damage with off-tank toughness (about 15.4 effective health per level, Sentinel 17.3, Juggernaut 19.6).
+factor (`ChaosClassTree.classDamage`, level 300 to 1000). The owner's targets (2026-10-11): the Deadeye and the Elementalist at
+least 8-10% ahead of the next class, met by trimming the classes right behind (Ninja 0.45 / 0.57, Shadowfist 0.49 / 0.69, Lich
+0.50 / 0.57, Bone Lord 0.75 / 0.61, Inquisitor 0.65 / 0.58, Berserker 0.78 / 1.0, Ranger and Beastmaster 1.0 / 0.95; level 300 /
+1000), not by raising the leaders. Result (level 300 / 1000): Deadeye the best single target (1312 / 4571; Shadowfist -10% / -19%,
+Lich -11% / -12%, Bone Lord -12% / -10%, Ninja -15% / -22%); Elementalist the best area (3442 / 11004; Berserker -15% / -25%,
+Beastmaster -44% / -16%); Illusionist the best healer (1985 / 3007 per second on an ally), Iron Sage the second (1765 / 2525,
++20% / +24% over the Mystic's 1473 / 2039; group +20% / +22%); Samurai a bit under the Juggernaut's damage with off-tank toughness
+(about 15.4 effective health per level, Sentinel 17.3, Juggernaut 19.6). Table: `server/data/spells/README.md` "Classes with the
+passive trees"; the harness spread is about +-5% per run, so the leads are on means of several runs.
 
 ### Phase 2b (open)
 

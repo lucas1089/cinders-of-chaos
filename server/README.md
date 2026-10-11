@@ -458,8 +458,11 @@ notifications
 - `/gmnotify` is allowed for any group with `Group:getAccess()`.
 
 passivetree
-- Tree shape comes from the client's `nodes.lua` (664 nodes, 660 on the server: the four class section start nodes fold into the root;
-  the generator records 1025 stat entries, per-class keystone variants included).
+- Tree shape comes from the client's `nodes.lua` (664 nodes, 659 on the server: the four class section start nodes fold into the root,
+  and node 239, a stray copy of the original tree on top of 240 with no links, is `hidden`; the generator records 1024 stat entries,
+  per-class keystone variants included). `server/tests/passivetree_layout_test.lua` checks the whole tree: every client link is a
+  server link and the other way round, every link is drawn (the client draws from `out` lists), no overlapping nodes, no line
+  through a node, no node without links, and the class sections reachable only through themselves.
   Regenerate `passivetree_data.lua` with `tools/gen_passivetree_data.lua` whenever the client tree changes.
 - Points formula is invented: `(level - 8) * 1` plus storage `7100020`. Change `Chaos.passive`.
 - Only one preset slot exists in the client UI; presets 0 and 1 are the same slot. `refund` is just a resync.
@@ -1161,9 +1164,10 @@ variant the server applies (the client's own vocation number did not match: an E
   (Hunter's Focus: bow / crossbow hits on the same target +4% each, at most +20%, reset by another target or 6 s; Deadeye),
   Beastmaster `beastmaster` (Ricochet; Pack Alpha: companion bites and Feral Command +35%, companions take 20% less), Mystic /
   Elementalist `sorcerer`, Illusionist `illusionist`. Only these nine classes may take 621 / 624 (`c` in the data).
-- **Class sections** (nodes 625-664, top left of the tree; the four lines share the place, the client shows only the player's
-  line): a start node (not a server node: the generator links its first node to the root), three line nodes for the whole line and
-  two ascended paths of two notables and a keystone. Thief: Light Feet, Venom Craft, Shadow-born; Ninja: Twin Fangs (off-hand 65%),
+- **Class sections** (nodes 625-664, top left of the tree, one group at (-1800, -2350); the four lines share it, the client shows
+  only the player's line): the start node in the centre (not a server node: the generator links its first node to the root; the
+  client draws that link from the medallion's rim), three line nodes going up to a ring of radius 300 and the two ascended paths
+  round the ring at 45 degree steps (two notables and a keystone each), like the outer clusters of the tree. Thief: Light Feet, Venom Craft, Shadow-born; Ninja: Twin Fangs (off-hand 65%),
   Fleet Shadow (evasion +4%), **Living Shadow** (a dodge or the first hit out of Shadow Veil: 4 s of +25% weapon damage); Samurai
   (the duelist off-tank): Steel Discipline, Iron Parry (Counter Stance answers +50%, +1 s), **Way of the Blade** (the stance
   parries every melee hit while it lasts, a hit keeps half of the Bushido stacks). Necromancer: Grave Lore, Bone Craft, Dark Pact; Lich: Spreading Blight (the curse spreads to one more), Lingering Rot

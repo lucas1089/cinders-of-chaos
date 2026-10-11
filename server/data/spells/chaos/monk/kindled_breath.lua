@@ -2,7 +2,7 @@
 --
 -- Finisher (needs 1 chi). Monk and Shadowfist: heal yourself for (level x 2 + fist x 6) x the finisher scale.
 -- Iron Sage (the line's healer): the most hurt party member within 5 sqm (yourself without a party, or when you are the
--- most hurt) for (level x 0.5 + fist x 27) x the finisher scale, and 60% more over 6 s (CONDITION_REGENERATION, sub id
+-- most hurt) for fist x 33 x the finisher scale, and 60% more over 6 s (CONDITION_REGENERATION, sub id
 -- ChaosMonk.ids.subId.breath). The Flowing Mercy keystone (the passive tree, class_tree.lua) also heals the next most
 -- hurt for a share of it. Numbers: ChaosMonk.cfg.breath / sageBreath.
 dofile('data/spells/scripts/chaos/_monk.lua')

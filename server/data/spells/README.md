@@ -127,13 +127,13 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 63 | Ashen Fist | `kah dhun` | Mo, SF, IS | 15 | 30 | 2s | Quick strike at the target next to you; +2 chi. The builder. |
 | 64 | Sundering Palm | `kah gal dhun` | Mo, SF, IS | 30 | 80 | 6s | Finisher: heavy palm strike, x(0.30 + 0.14 per chi). |
 | 65 | Whirling Heel | `drai spir dhun` | Mo, SF, IS | 50 | 120 | 8s | Finisher: spinning kick on everything next to you (3x3), x chi scale. |
-| 66 | Kindled Breath | `saen qhal` | Mo, SF, IS | 40 | 100 | 8s | Finisher: heals yourself (level x 2 + fist x 6) x chi scale. Iron Sage (the second healer): the most hurt party member within 5 sqm (you without a party) for (level x 0.5 + fist x 27) x chi scale, and 60% more over 6 s. |
+| 66 | Kindled Breath | `saen qhal` | Mo, SF, IS | 40 | 100 | 8s | Finisher: heals yourself (level x 2 + fist x 6) x chi scale. Iron Sage (the second healer): the most hurt party member within 5 sqm (you without a party) for fist x 33 x chi scale, and 60% more over 6 s. |
 | 67 | Mistborne Step | `ash qhal` | Mo, SF, IS | 35 | 60 | 10s | Roll up to 3 sqm forward; +25% dodge for 2 s. |
 | 68 | Pressure Points | `kah mynd dhun` | SF | 100 | 120 | 4s | Strike + 1 chi + a stack on the target (max 5, 8 s): +5% damage taken from Monks per stack. |
 | 69 | Shadowfist Flurry | `kah gal umh dhun` | SF | 150 | 300 | 12s | Finisher: 2 + 1 per chi hits, one every 0.2 s, while the target stays next to you. |
 | 70 | Chi Ward | `tor qhal ["Name"]` | IS | 100 | 200 | 12s | Finisher: shield absorbing (level x 2.5 + fist x 8) x chi scale for 8 s on a party member within 5 sqm (the named one, or the most hurt; you without a party). |
 | 71 | Iron Palm | `kah brak dhun` | IS | 120 | 200 | 8s | Finisher: strike x chi scale; stuns a monster 0.6 s + 0.4 s per chi (cannot move or attack), then 4 s immune; >50000 max health: only slowed 50%. A player (when the hit lands): 0.5 s + 0.1 s per chi (no moving, attacks or attack spells), then 6 s immune, half as long within 15 s (server/README.md "Iron Palm stun on players"). |
-| 72 | Mantra of Stone | `tor vas qhal` | IS | 150 | 400 | 30s | 12 s aura: you and party members within 6 sqm take 8% less damage, and every 2 s each is healed for level + fist x 24. |
+| 72 | Mantra of Stone | `tor vas qhal` | IS | 150 | 400 | 30s | 12 s aura: you and party members within 6 sqm take 8% less damage, and every 2 s each is healed for level + fist x 26. |
 | **templar** (T Templar, I Inquisitor, Se Sentinel; P = weapon power, see "Templar line"; rotations measured there) | | | | | | | |
 | 189 | Radiant Smite | `kah sol dyr` | T, I, Se | 20 | 60 | 4s | Holy strike on one target within 3 sqm: P x 0.10-0.16 + ml x 1-1.5 + 30-60. The filler. |
 | 190 | Consecration | `drai sol haln` | T, I, Se | 40 | 200 | 20s | Holy ground (circle 2) for 6 pulses: P x 0.025-0.04 + ml x 0.4-0.6 + 10-20 per pulse; allies in it healed 30% of a pulse. |
@@ -281,7 +281,8 @@ The Illusionist is the best healer, for one ally and for the party, and keeps it
 numbers: `data/scripts/chaos/healing_rules_core.lua` (`ChaosHealing.cfg`), glue `healing_rules.lua`, tests
 `server/tests/healing_rules_test.lua`.
 
-- **Weaver's Grace** (Illusionist passive): heals it casts on another player are +5% (stock heals included; its self heals are not).
+- **Weaver's Grace** (Illusionist passive): heals it casts on another player are +16% (stock heals included; its self heals are not).
+  It was +5% until the role rebalance (2026-10-10): raised so the Illusionist stays at least 12% above the Iron Sage.
 - **Mirror Mend** (96) and **Lucid Reverie** (97): the table above. Ids 96 and 97 are free in the base server's spells.xml, the
   client's stock spell list and the Chaos block, and outside the class lines' reserved ranges.
 - **Shared Phantasm** (keystone 621): party members also heal for 4% of the damage they deal to a marked enemy (healed by the
@@ -306,24 +307,28 @@ Beastmaster's Wild Bond (heals companions only) and the Bone Lord's banner (mini
 | Level | Class | On another player /s | Heal per mana | Group, 4 allies /s | Mana/min (group) | Self /s | Biggest single cast on an ally |
 |---|---|---|---|---|---|---|---|
 | 300 | Illusionist (before) | 1570 | 10.1 | 3950 | 8280 | 1555 | 3140 |
-| 300 | **Illusionist (after)** | 1797 | 10.3 | 4429 | 9320 | 1538 | 3261 |
+| 300 | Illusionist (after, Weaver's Grace +5%) | 1797 | 10.3 | 4429 | 9320 | 1538 | 3261 |
+| 300 | **Illusionist (Weaver's Grace +16%, 2026-10-11)** | 1985 | 11.4 | 4893 | 9320 | 1538 | 3602 |
 | 300 | Mystic (base class) | 1473 | 10.2 | 3363 | 7660 | 1456 | 3140 |
 | 300 | Lich (Necromancer line, same stock heals) | 1473 | 10.2 | 2811 | 8960 | 1547 | 3140 |
 | 300 | Elementalist | 0 | 0.0 | 0 | 0 | 1456 | 0 |
 | 300 | Sentinel (+ aura 0.4%/s) | 92 | 4.2 | 235 | 1000 | 150 | 2668 |
 | 300 | Iron Sage (Chi Ward = absorb) | 136 | 8.2 | 136 | 1000 | 302 | 1630 |
-| 300 | **Iron Sage, the second healer (2026-10-10)** | 1591 | | 3709 | 2550 | 1591 | 3744 |
+| 300 | Iron Sage, the second healer (2026-10-10) | 1591 | | 3709 | 2550 | 1591 | 3744 |
+| 300 | **Iron Sage, the second healer (2026-10-11)** | 1765 | | 4039 | 2550 | 1765 | 4356 |
 | 300 | Ranger line | 0 | 0.0 | 0 | 0 | 798 | 0 |
 | 300 | Thief line (Shadow Mend) | 0 | 12.9 | 0 | 0 | 466 | 0 |
 | 300 | Warrior line | 0 | 0.0 | 0 | 0 | 359 | 0 |
 | 1000 | Illusionist (before) | 2205 | 14.2 | 5738 | 8280 | 2222 | 4595 |
-| 1000 | **Illusionist (after)** | 2722 | 15.7 | 6780 | 9290 | 2317 | 4736 |
+| 1000 | Illusionist (after, Weaver's Grace +5%) | 2722 | 15.7 | 6780 | 9290 | 2317 | 4736 |
+| 1000 | **Illusionist (Weaver's Grace +16%, 2026-10-11)** | 3007 | 17.3 | 7490 | 9290 | 2317 | 5232 |
 | 1000 | Mystic (base class) | 2039 | 14.1 | 4812 | 7660 | 2048 | 4595 |
 | 1000 | Lich (Necromancer line, same stock heals) | 2039 | 14.1 | 4091 | 8960 | 2267 | 4595 |
 | 1000 | Elementalist | 0 | 0.0 | 0 | 0 | 2048 | 0 |
 | 1000 | Sentinel (+ aura 0.4%/s) | 309 | 14.2 | 825 | 1000 | 373 | 8218 |
 | 1000 | Iron Sage (Chi Ward = absorb) | 302 | 18.1 | 302 | 1000 | 682 | 3620 |
-| 1000 | **Iron Sage, the second healer (2026-10-10)** | 2375 | | 5513 | 2550 | 2375 | 5136 |
+| 1000 | Iron Sage, the second healer (2026-10-10) | 2375 | | 5513 | 2550 | 2375 | 5136 |
+| 1000 | **Iron Sage, the second healer (2026-10-11)** | 2525 | | 5867 | 2550 | 2525 | 5544 |
 | 1000 | Ranger line | 0 | 0.0 | 0 | 0 | 1180 | 0 |
 | 1000 | Thief line (Shadow Mend) | 0 | 10.0 | 0 | 0 | 1201 | 0 |
 | 1000 | Warrior line | 0 | 0.0 | 0 | 0 | 733 | 0 |
@@ -350,6 +355,12 @@ identity; at level 300 Heartwood Embrace is bigger. The Sentinel (aura, Lay on H
 Ward, Kindled Breath) stayed far behind as healers (a tank-support and a bruiser). Since the role rebalance (2026-10-10) the Iron
 Sage is the second healer (rows in bold: Kindled Breath on the most hurt ally, Mantra of Stone heals the party; Chi Ward as before;
 the model of this table, the per-cast heals checked in game), between the Mystic and the Illusionist.
+
+Owner targets (2026-10-11): the Iron Sage about +20-25% over the Mystic, the Illusionist at least ~12% over the Iron Sage, one
+ally and group, both levels. Kindled Breath on the Iron Sage is now fist x 33 (was level x 0.5 + fist x 27) and the Mantra of
+Stone pulse level + fist x 26 (was x 24); Weaver's Grace +16% (was +5%; the Illusionist rows above are the +5% rows x 1.16/1.05,
+the multiplier unit-tested in `healing_rules_test.lua`). Iron Sage over the Mystic: one ally +20% / +24% (level 300 / 1000),
+group +20% / +22%. Illusionist over the Iron Sage: one ally +12% / +19%, group +21% / +28%.
 
 PvP check (two clients, level 300): a real auto attack from the second player fight-locks it and puts both in PvP combat;
 heals then land at x0.70 (a flat 1000 heal: 1200 -> 840 on the Illusionist, 1260 -> 882 with Weaver's Grace on the other
@@ -599,7 +610,7 @@ aura it regenerated 80 in 10 s (0.4% of 1974 per second), out of it 0, and nobod
 named member healed it (35% + magic level x 10 = 941, x1.2 by the stat window's intelligence 20, which every heal gets) while the
 Sentinel itself was lower; Aegis of Faith took a hit of 854 to 512 (-40%); Rebuke slowed and taunted the monsters around.
 
-### Classes with the passive trees (C4, measured 2026-10-10)
+### Classes with the passive trees (C4, measured 2026-10-11)
 
 Since the class trees (docs/CLASSES.md "Phase 2b") every class is measured **the same way** (the earlier tables above used
 different methods per line and must not be compared with this one):
@@ -616,51 +627,59 @@ different methods per line and must not be compared with this one):
   buffs kept up, minions raised in a 12-24 s warm-up, cast-time spells waited for), auto attack on the main dummy, 60 s, damage =
   health the dummies lost. 1 target: one dummy; 5 targets: the main dummy and four around it, the same rotation.
 - healing per second on another player: the "Healing" table above (no tree, its own method), the Iron Sage measured per cast
-  in game (Kindled Breath on an ally 3744 at 5 chi, a Mantra pulse 3528, level 300) and put in the same rotation model. The
-  Necromancer and the Bone Lord have the Lich's stock heals. Max health: the vocation's gain, no gear and no tree.
+  in game and put in the same rotation model (Kindled Breath 4356 at 5 chi, level 300, fist 110; in game 4921 in the first
+  0.4 s, 3 casts: the cast plus the first heal-over-time tick, 436, and regeneration; the Illusionist with Weaver's
+  Grace +16%). The Necromancer and the Bone Lord have the Lich's stock heals. Max health: the vocation's gain, no gear and no tree.
+- every area hit gets the tree's damage bonuses and the class factor (the damage event is registered on every monster at spawn;
+  before 2026-10-11 only on the attacked one, so the 5-target numbers of the four new lines missed them); procs and splashes that
+  deal damage from inside a hit (the Bone Lord's splash, the arrow splash) do not get them twice (`ChaosKeystones.depth`);
+- the Monk line's finishers are cast at 5 chi by the harness (earlier level 1000 runs of the Monk and the Iron Sage cast none);
+- the spread run to run is about +-5% (up to 10% on one sample): the leads are on the mean of 2-6 samples (Deadeye 6 / 3,
+  Elementalist 4 / 1, Berserker 2 / 1, the classes right behind 1-3).
 
 **Class damage factor** (`ChaosClassTree.classDamage`, class_tree.lua): the four new lines were tuned without a tree (their kits matched
 the other classes' numbers *with* tree points); with their trees they measured x2 to x3 too high (level 300: Ninja 2741, Samurai
 2937, Lich 2371, Shadowfist 2389 against the Deadeye's 1351; level 1000: Ninja 7554, Lich 7408 against 4769). The level factors that
 stood in for the tree (Thief / Monk / Templar spellLevelScale, x2 at level 1000; necro_config levelScale, x1.25) are dropped and every
-damage of these classes is x a per-class factor, linear between level 300 and 1000 (Thief 0.48 / 0.53, Ninja 0.47 / 0.67, Samurai
-0.30 / 0.37, Necromancer 1.0 / 0.64, Lich 0.55 / 0.60, Bone Lord 0.78 / 0.65, Monk 0.85 / 1.0, Shadowfist 0.55 / 0.78, Iron Sage
-0.75 / 0.90, Templar 0.78 / 0.60, Inquisitor 0.70 / 0.58, Sentinel 0.73 / 0.60). The Berserker passed the Elementalist's area
-damage at level 300 (3441 against 3349): x0.92 at level 300, 1.0 at 1000. Every number below is with these factors.
+damage of these classes is x a per-class factor, linear between level 300 and 1000 (Thief 0.48 / 0.53, Ninja 0.45 / 0.57, Samurai
+0.30 / 0.37, Necromancer 1.0 / 0.64, Lich 0.50 / 0.57, Bone Lord 0.75 / 0.61, Monk 0.63 / 0.75, Shadowfist 0.49 / 0.69, Iron Sage
+0.61 / 0.75, Templar 0.78 / 0.60, Inquisitor 0.65 / 0.58, Sentinel 0.73 / 0.60). The owner's targets (2026-10-11: the Deadeye and
+the Elementalist at least 8-10% ahead, the classes right behind trimmed rather than the leaders raised) also set Berserker 0.78 /
+1.0, Ranger and Beastmaster 1.0 / 0.95. Every number below is with these factors.
 
 | Class | Role | 300: 1 target | 300: 5 targets | 300: heal/s on an ally | 300: max health | 1000: 1 target | 1000: 5 targets | 1000: heal/s on an ally | 1000: max health |
 |---|---|---|---|---|---|---|---|---|---|
-| Warrior | area / melee | 901 | 2319 | 0 | 4565 | 2353 | 6097 | 0 | 15065 |
-| Juggernaut | tank (tankiest) | 861 | 1633 | 0 | 4565 | 2382 | 4416 | 0 | 15065 |
-| Berserker | area | 1117 | 3265 | 0 | 4273 | 2682 | 8712 | 0 | 14073 |
-| Ranger | ranged | 1207 | 1389 | 0 | 3105 | 4085 | 7198 | 0 | 10105 |
-| Deadeye | single target (best) | 1351 | 1418 | 0 | 3105 | 4769 | 5499 | 0 | 10105 |
-| Beastmaster | pets / single target | 842 | 1849 | 0 | 3397 | 3528 | 9715 | 0 | 11097 |
-| Mystic | caster | 795 | 2317 | 1473 | 1645 | 2242 | 7927 | 2039 | 5145 |
-| Elementalist | area (best) | 923 | 3349 | 0 | 1645 | 2787 | 10097 | 0 | 5145 |
-| Illusionist | healer (best) / support | 764 | 1873 | 1797 | 2229 | 2026 | 5274 | 2722 | 7129 |
-| Thief | melee | 886 | 950 | 0 | 3689 | 2125 | 2412 | 0 | 12089 |
-| Ninja | single target (burst) | 1191 | 1530 | 0 | 3689 | 4501 | 5340 | 0 | 12089 |
-| Samurai | duelist off-tank | 777 | 768 | 0 | 3981 | 2251 | 2156 | 0 | 13081 |
-| Necromancer | summoner | 978 | 1009 | 1473 | 2521 | 2670 | 2627 | 2039 | 8121 |
-| Lich | single target | 1250 | 2124 | 1473 | 2229 | 4419 | 7052 | 2039 | 7129 |
-| Bone Lord | area / pets | 1193 | 2053 | 1473 | 2813 | 4170 | 7695 | 2039 | 9113 |
-| Monk | melee | 876 | 933 | 0 | 3689 | 2625 | 2492 | 0 | 12089 |
-| Shadowfist | single target (burst) | 1316 | 1439 | 0 | 3689 | 4463 | 4636 | 0 | 12089 |
-| Iron Sage | healer (second) | 741 | 548 | 1591 | 4273 | 2110 | 2069 | 2375 | 14073 |
-| Templar | holy melee / aura | 888 | 1475 | 0 | 4273 | 2130 | 3476 | 0 | 14073 |
-| Inquisitor | area | 1246 | 2407 | 0 | 3981 | 3955 | 6503 | 0 | 13081 |
-| Sentinel | tank-support | 689 | 1243 | 92 | 4273 | 1958 | 3239 | 309 | 14073 |
+| Warrior | area / melee | 886 | 2127 | 0 | 4565 | 2351 | 6280 | 0 | 15065 |
+| Juggernaut | tank (tankiest) | 781 | 1623 | 0 | 4565 | 2569 | 4424 | 0 | 15065 |
+| Berserker | area | 974 | 2932 | 0 | 4273 | 2634 | 8218 | 0 | 14073 |
+| Ranger | ranged | 1075 | 1409 | 0 | 3105 | 3673 | 5305 | 0 | 10105 |
+| Deadeye | single target (best) | 1312 | 1446 | 0 | 3105 | 4571 | 5385 | 0 | 10105 |
+| Beastmaster | pets / single target | 832 | 1919 | 0 | 3397 | 3267 | 9255 | 0 | 11097 |
+| Mystic | caster | 803 | 2692 | 1473 | 1645 | 2439 | 8354 | 2039 | 5145 |
+| Elementalist | area (best) | 913 | 3442 | 0 | 1645 | 2954 | 11004 | 0 | 5145 |
+| Illusionist | healer (best) / support | 765 | 1747 | 1985 | 2229 | 2014 | 5239 | 3007 | 7129 |
+| Thief | melee | 870 | 870 | 0 | 3689 | 2391 | 2297 | 0 | 12089 |
+| Ninja | single target (burst) | 1121 | 1424 | 0 | 3689 | 3565 | 5101 | 0 | 12089 |
+| Samurai | duelist off-tank | 751 | 770 | 0 | 3981 | 2025 | 2018 | 0 | 13081 |
+| Necromancer | summoner | 1009 | 1069 | 1473 | 2521 | 2598 | 2622 | 2039 | 8121 |
+| Lich | single target | 1164 | 2057 | 1473 | 2229 | 4037 | 7696 | 2039 | 7129 |
+| Bone Lord | area / pets | 1158 | 2326 | 1473 | 2813 | 4104 | 7883 | 2039 | 9113 |
+| Monk | melee | 955 | 1122 | 0 | 3689 | 2326 | 2794 | 0 | 12089 |
+| Shadowfist | single target (burst) | 1181 | 1262 | 0 | 3689 | 3683 | 3948 | 0 | 12089 |
+| Iron Sage | healer (second) | 796 | 829 | 1765 | 4273 | 1992 | 2399 | 2525 | 14073 |
+| Templar | holy melee / aura | 904 | 1422 | 0 | 4273 | 2103 | 3375 | 0 | 14073 |
+| Inquisitor | area | 1086 | 2056 | 0 | 3981 | 3556 | 6192 | 0 | 13081 |
+| Sentinel | tank-support | 743 | 1285 | 92 | 4273 | 1948 | 3429 | 309 | 14073 |
 
-Roles (the owner's order): the Deadeye leads single target at both levels (Shadowfist -3% / -6%, Ninja -12% / -6%, Lich -7% / -7%),
-the Elementalist leads area (Berserker -3% / -14%, Beastmaster -45% / -4%), the Illusionist is the best healer and the Iron Sage the
-second (on an ally +8% / +16% over the Mystic's stock heals, -11% / -13% under the Illusionist; the group, 4 allies: 3709 / 5513
-against the Illusionist's 4429 / 6780 and the Mystic's 3363 / 4812). The Samurai deals about the Juggernaut's damage and is an
-off-tank: 13 health per level, 5% evasion, Counter Stance (3 s of every 8 s, 4 s with Iron Parry) parries a melee hit and takes 30%
-off every other hit (checked in game: a hit of 727 -> 509) and taunts: about 15.4 effective health per level against the
-Sentinel's 17.3 and the Juggernaut's 19.6 (21.3 with Immovable) in the toughness model of "Templar line". The Iron Sage's damage
-is below the Warrior's. Margins at the top are small at level 300 (Deadeye 1351, Shadowfist 1316; Elementalist 3349, Berserker
-3265); the run-to-run spread of this harness is about +-4%.
+Roles (the owner's order): the Deadeye leads single target at both levels (level 300 / 1000: Shadowfist -10% / -19%, Lich
+-11% / -12%, Bone Lord -12% / -10%, Ninja -15% / -22%; level 300 1312 on the mean of 6 runs, 1256-1371; level 1000 4571, 3 runs,
+4419-4681), the Elementalist leads area (Berserker -15% / -25%, Mystic -22% / -24%, Beastmaster -44% / -16%; level 300 3442 on 4
+runs, 3173-3685), the Illusionist is the best healer and the Iron Sage the second (on an ally +20% / +24% over the Mystic's stock
+heals, the Illusionist +12% / +19% ahead of it; the group, 4 allies: 4039 / 5867 against the Illusionist's 4893 / 7490 and the
+Mystic's 3363 / 4812; "Healing" above). The Samurai deals a bit less than the Juggernaut and is an off-tank: 13 health per level,
+5% evasion, Counter Stance (3 s of every 8 s, 4 s with Iron Parry) parries a melee hit and takes 30% off every other hit (checked
+in game: a hit of 727 -> 509) and taunts: about 15.4 effective health per level against the Sentinel's 17.3 and the Juggernaut's
+19.6 (21.3 with Immovable) in the toughness model of "Templar line". The Iron Sage's damage is below the Warrior's.
 
 ### PvP (tested with two characters on the test server)
 

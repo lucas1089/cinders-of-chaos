@@ -115,7 +115,7 @@ registered["ChaosHealingLogin"].onLogin(knight)
 events[1].fn(); events = {}
 assert(knight.reg["ChaosHealing"], "registered on the player one tick after login")
 
-eq(ev.onHealthChange(knight, illu, 1000, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_SPELL), 1050, "Illusionist heals the knight: +5%")
+eq(ev.onHealthChange(knight, illu, 1000, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_SPELL), 1160, "Illusionist heals the knight: +16%")
 eq(ev.onHealthChange(illu, illu, 1000, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_SPELL), 1000, "its self heal unchanged")
 eq(ev.onHealthChange(knight, mystic, 1000, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_SPELL), 1000, "the Mystic's heal unchanged")
 eq(ev.onHealthChange(knight, nil, 1000, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_NONE), 1000, "no healer")
@@ -126,11 +126,11 @@ eq(ev.onHealthChange(knight, monster, -500, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NON
 eq(H.inPvp(knight), false, "monster damage is no PvP")
 ev.onHealthChange(knight, wolf, -500, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
 eq(H.inPvp(knight), true, "hit by a player's summon"); eq(H.inPvp(foe), true, "its owner too")
-eq(ev.onHealthChange(knight, illu, 1000, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_SPELL), 735, "PvP: 1000 x 1.05 x 0.70")
+eq(ev.onHealthChange(knight, illu, 1000, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_SPELL), 812, "PvP: 1000 x 1.16 x 0.70")
 eq(ev.onHealthChange(knight, knight, 1000, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_SPELL), 700, "PvP: self heals too")
 eq(ev.onHealthChange(foe, nil, 1000, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_NONE), 700, "PvP: any heal (potions)")
 NOW = NOW + cfg.pvp.windowMs + 1
-eq(ev.onHealthChange(knight, illu, 1000, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_SPELL), 1050, "window over")
+eq(ev.onHealthChange(knight, illu, 1000, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_SPELL), 1160, "window over")
 ev.onHealthChange(knight, knight, -100, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
 eq(H.inPvp(knight), false, "own damage is no PvP")
 ev.onHealthChange(knight, foe, 0, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)

@@ -115,10 +115,10 @@ M.cfg = {
 	-- the Iron Sage, the second healer (docs/CLASSES.md): its Kindled Breath heals the most hurt party member within
 	-- `range` sqm (itself without a party) for (level x perLevel + fist x perFist) x the finisher scale, + hotShare over
 	-- hotTicks s. Below the Illusionist, above every non-healer: server/data/spells/README.md "Healing".
-	sageBreath = {perLevel = 0.5, perFist = 27, range = 5},
+	sageBreath = {perLevel = 0, perFist = 33, range = 5},
 	-- Mantra of Stone: party members within radius take `reduction` less damage while it lasts; every pulse also heals
 	-- them (and the Iron Sage) for level x heal.perLevel + fist x heal.perFist
-	mantra = {reduction = 0.08, durationMs = 12000, pulseMs = 2000, radius = 6, heal = {perLevel = 1.0, perFist = 24}},
+	mantra = {reduction = 0.08, durationMs = 12000, pulseMs = 2000, radius = 6, heal = {perLevel = 1.0, perFist = 26}},
 	-- Mistborne Step: dash range
 	step = {maxSteps = 3}
 }

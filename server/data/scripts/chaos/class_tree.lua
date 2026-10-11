@@ -96,19 +96,22 @@ M.fx = {
 -- key. Measured: server/data/spells/README.md "Classes with the passive trees". Classes without an entry: 1.
 M.classDamage = {
 	thief = {{300, 0.48}, {1000, 0.53}},
-	ninja = {{300, 0.47}, {1000, 0.67}},
+	ninja = {{300, 0.45}, {1000, 0.57}},
 	samurai = {{300, 0.30}, {1000, 0.37}}, -- the duelist off-tank: damage at the Juggernaut's
 	necromancer = {{300, 1.0}, {1000, 0.64}},
-	lich = {{300, 0.55}, {1000, 0.60}},
-	bonelord = {{300, 0.78}, {1000, 0.65}},
-	monk = {{300, 0.85}, {1000, 1.0}},
-	shadowfist = {{300, 0.55}, {1000, 0.78}},
-	ironsage = {{300, 0.75}, {1000, 0.90}}, -- the second healer: damage below the Warrior's
+	lich = {{300, 0.50}, {1000, 0.57}},
+	bonelord = {{300, 0.75}, {1000, 0.61}},
+	monk = {{300, 0.63}, {1000, 0.75}},
+	shadowfist = {{300, 0.49}, {1000, 0.69}},
+	ironsage = {{300, 0.61}, {1000, 0.75}}, -- the second healer: damage below the Warrior's
 	templar = {{300, 0.78}, {1000, 0.60}},
-	inquisitor = {{300, 0.70}, {1000, 0.58}},
+	inquisitor = {{300, 0.65}, {1000, 0.58}},
 	sentinel = {{300, 0.73}, {1000, 0.60}},
-	-- with tree builds the Berserker's area damage passed the Elementalist's at level 300 (3441 against 3349)
-	berserker = {{300, 0.92}, {1000, 1.0}},
+	-- the leaders keep a lead of 8-10% (the owner, 2026-10): the Berserker's area damage passed the Elementalist's at
+	-- level 300 with tree builds (3441 against 3349), the Beastmaster's came within 4% at level 1000
+	berserker = {{300, 0.78}, {1000, 1.0}},
+	beastmaster = {{300, 1.0}, {1000, 0.95}},
+	ranger = {{300, 1.0}, {1000, 0.95}},
 }
 function M.damageFactor(classKey, lineKey, level)
 	local pts = (classKey and M.classDamage[classKey]) or (lineKey and M.classDamage[lineKey])

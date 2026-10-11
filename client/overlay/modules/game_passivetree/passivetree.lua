@@ -71,8 +71,9 @@ local function getPlayerVocation()
 end
 
 -- class nodes: shown only to their line (node.line); taken only by their classes (node.classes)
+-- hidden nodes (node.hidden: a stray node of the original tree) are never shown
 local function nodeShown(node)
-  return not node.line or node.line == getPlayerLine()
+  return not node.hidden and (not node.line or node.line == getPlayerLine())
 end
 
 local function nodeAllowed(node)
@@ -94,6 +95,9 @@ local CLASS_NAMES = { warrior = "Warrior", juggernaut = "Juggernaut", berserker 
   illusionist = "Illusionist", thief = "Thief", ninja = "Ninja", samurai = "Samurai", monk = "Monk",
   shadowfist = "Shadowfist", ironsage = "Iron Sage", necromancer = "Necromancer", lich = "Lich", bonelord = "Bone Lord",
   templar = "Templar", inquisitor = "Inquisitor", sentinel = "Sentinel" }
+
+-- radius of a class section's start medallion (treedata/icons.lua cs..., 150 x 150): its link starts there
+START_RIM = 70
 
 local orbitDist = {
 	[0] = 0,
@@ -450,6 +454,7 @@ local function buildTree()
 
 			if node.isStartNode then
 				node.alloc = true
+				node.x, node.y = group.x, group.y
 				allocNodes[node.id] = node
 				widget = g_ui.createWidget("DecorationCircle", decoView)
 
@@ -658,8 +663,20 @@ local function buildTree()
 				t_insert(node.linkedId, otherId)
 				t_insert(other.linkedId, node.id)
 
-				if not node.isStartNode and not other.isStartNode then
-					BuildConnector(node, other)
+				-- the root's links are not drawn (its nodes sit on its ring); a class section's start draws its link
+				local rootLink = (node.isStartNode and not node.line) or (other.isStartNode and not other.line)
+				if not rootLink then
+					-- a class start's link begins at the rim of its medallion, not under it
+					local a, b = node, other
+					if a.isStartNode or b.isStartNode then
+						local st, o = a.isStartNode and a or b, a.isStartNode and b or a
+						local dx, dy = o.x - st.x, o.y - st.y
+						local len = m_sqrt(dx * dx + dy * dy)
+						local r = START_RIM / len
+						local rim = {id = st.id, x = st.x + dx * r, y = st.y + dy * r, alloc = st.alloc}
+						if a.isStartNode then a = rim else b = rim end
+					end
+					BuildConnector(a, b)
 				end
 			end
 		end

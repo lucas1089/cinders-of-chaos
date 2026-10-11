@@ -126,7 +126,11 @@ local function hit(owner, classKey, minion, kind, target, aura)
 		for _, e in ipairs(L.enemiesAround(owner, tpos, 1, false)) do
 			if e ~= target then
 				local v = math.max(1, math.floor(dealt * share))
-				L.damage(owner, e, ctype, v, v, CONST_ME_BLOCKHIT, ORIGIN_SPELL)
+				-- a share of a hit that had the passive tree's bonuses already: guarded like the keystone procs
+				local K = ChaosKeystones
+				if K then K.depth = (K.depth or 0) + 1 end
+				pcall(L.damage, owner, e, ctype, v, v, CONST_ME_BLOCKHIT, ORIGIN_SPELL)
+				if K then K.depth = K.depth - 1 end
 			end
 		end
 	end
