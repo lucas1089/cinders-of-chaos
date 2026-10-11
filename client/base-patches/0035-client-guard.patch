@@ -1,0 +1,412 @@
+# Client guard, the client half of server src-patch 0021 (client/BASE.md "Client guard", server/README.md "Client guard").
+#   * src/client/chaosguard.h (new, header only; vectors in client/tools/chaosguard_test.cpp): the identifier
+#     0x4343 << 16 | CHAOS_CLIENT_BUILD, the challenge parser and the answer "cg1:<build>:<hex>" of
+#     HMAC-SHA256(key, nonce || u16le #account || account || u16le #character || character || u16le build) through
+#     OpenSSL (which the client links already).
+#   * src/client/chaosguard_builtin.h (new): the key built into this client, put together from the generated
+#     build/chaosguard/chaosguard_key.h only for the HMAC, then wiped.
+#   * src/client/CMakeLists.txt: CHAOS_CLIENT_BUILD (cache, default 1) and the key from the environment variable
+#     CHAOS_CLIENT_KEY or the file CHAOS_CLIENT_KEY_FILE, else the public development key (a configure warning). The key
+#     is never cached; it is written into the build folder only, shuffled and XOR-masked with a mask made at configure
+#     time, the arrays volatile so the compiler cannot fold them back. That is obfuscation, not protection.
+#   * protocolgamesend.cpp: the game login packet's u32 client version field carries the identifier;
+#     sendChaosGuardAnswer() answers the challenge (account = first line of the session key, as the server reads it).
+#   * protocolgameparse.cpp: extended opcode 189 (the challenge) is answered in C++ and never handed to Lua.
+#   * luafunctions_client.cpp: g_game.getChaosClientId() / g_game.getChaosClientBuild() for Lua.
+#   * modules/gamelib/protocollogin.lua: the account login packet (built in Lua) sends g_game.getChaosClientId() in
+#     the same field; an exe without this patch has no such function and sends its version, which the server refuses.
+#   * modules/client_entergame/characterlist.lua: a login error the server sends while in game (the guard's kick)
+#     arrived while online and the logout right after it destroyed its box, so the player never saw why; it is now
+#     kept and shown once the game has ended (any in-game 0x14 message benefits).
+# Apply after 0001-0034: patch -p1 < 0035-client-guard.patch (tools/assemble_client.sh applies every patch in order).
+--- a/modules/client_entergame/characterlist.lua
++++ b/modules/client_entergame/characterlist.lua
+@@ -17,6 +17,7 @@ local charactersWindow
+ local characterList
+ local panelSort
+ local errorBox
++local pendingGameError -- Cinders of Chaos (base patch 0035): a login error that came in game, shown after the game ends
+ local waitingWindow
+ local updateWaitEvent
+ local resendWaitEvent
+@@ -363,6 +364,13 @@ function onGameLoginError(message)
+   removeAutoReconnectEvent()
+   removeLoginWaitEvents()
+   consoleln("[+] CharacterList.onGameLoginError()", message)
++  -- Cinders of Chaos (base patch 0035): an error the server sends in game (the client guard's "Please use the official
++  -- client", a kick) arrives while still online, and the logout right after it destroyed its box (destroyLoadBox).
++  -- Keep it and show it when the game has ended.
++  if g_game.isOnline() then
++    pendingGameError = message
++    return
++  end
+   CharacterList.destroyLoadBox()
+ 
+   if message:find("Your client version is too old.\n") then
+@@ -527,6 +535,11 @@ local function onGameEnd()
+   CharacterList.destroyLoadBox()
+   removeAutoReconnectEvent()
+   CharacterList.showAgain()
++  if pendingGameError then
++    local message = pendingGameError
++    pendingGameError = nil
++    scheduleEvent(function() onGameLoginError(message) end, 100) -- after the other game end handlers
++  end
+ end
+ 
+ function onLogout()
+--- a/modules/gamelib/protocollogin.lua
++++ b/modules/gamelib/protocollogin.lua
+@@ -84,7 +84,9 @@ function ProtocolLogin:sendLoginPacket()
+   msg:addU16(protocolVersion)
+ 
+   if g_game.getFeature(GameClientVersion) then
+-    msg:addU32(g_game.getClientVersion())
++    -- Cinders of Chaos (base patch 0035): the client guard's identifier (0x4343 << 16 | build) instead of the version;
++    -- an exe built without the patch has no getChaosClientId and sends the version (the server refuses it in "enforce")
++    msg:addU32(g_game.getChaosClientId and g_game.getChaosClientId() or g_game.getClientVersion())
+   end
+ 
+   if g_game.getFeature(GameContentRevision) then
+--- a/src/client/CMakeLists.txt
++++ b/src/client/CMakeLists.txt
+@@ -108,3 +108,83 @@ set(client_SOURCES ${client_SOURCES}
+     ${CMAKE_CURRENT_LIST_DIR}/position.cpp
+     ${CMAKE_CURRENT_LIST_DIR}/position.h
+ )
++
++# Cinders of Chaos client guard (base patch 0035, client/BASE.md "Client guard"; server src-patch 0021).
++# CHAOS_CLIENT_BUILD: the build number the client sends at login (1..65535; the server's clientGuardBuilds and the
++# updater's min_package / Services.update.package count the same builds).
++# The handshake key: the environment variable CHAOS_CLIENT_KEY (64 hex digits; the Windows workflows pass the GitHub
++# secret of that name), else the file CHAOS_CLIENT_KEY_FILE, else the public DEVELOPMENT key, which a server refuses
++# unless its config says clientGuardAllowDevKey = true. The key is read at configure time, never cached and written
++# only into the build folder (chaosguard/chaosguard_key.h), shuffled and XOR-masked with a random mask: obfuscation,
++# not protection (whoever has the binary can recover it).
++set(CHAOS_CLIENT_BUILD "1" CACHE STRING "Cinders of Chaos client build number (1..65535), sent at login")
++set(CHAOS_CLIENT_KEY_FILE "" CACHE FILEPATH "File holding the client guard key (64 hex digits)")
++if(NOT CHAOS_CLIENT_BUILD MATCHES "^[0-9]+$" OR CHAOS_CLIENT_BUILD LESS 1 OR CHAOS_CLIENT_BUILD GREATER 65535)
++    message(FATAL_ERROR "CHAOS_CLIENT_BUILD must be a number from 1 to 65535")
++endif()
++set(_chaos_key "$ENV{CHAOS_CLIENT_KEY}")
++if(_chaos_key STREQUAL "" AND CHAOS_CLIENT_KEY_FILE)
++    file(READ "${CHAOS_CLIENT_KEY_FILE}" _chaos_key)
++endif()
++string(STRIP "${_chaos_key}" _chaos_key)
++string(TOLOWER "${_chaos_key}" _chaos_key)
++set(_chaos_dev 0)
++if(_chaos_key STREQUAL "")
++    # the bytes of "DEV-KEY-cinders-of-chaos-UNSAFE!" (server ClientGuard::DEV_KEY_HEX)
++    set(_chaos_key "4445562d4b45592d63696e646572732d6f662d6368616f732d554e5341464521")
++    set(_chaos_dev 1)
++    message(WARNING "Client guard: no CHAOS_CLIENT_KEY; this client gets the public DEVELOPMENT key (test servers only)")
++else()
++    string(LENGTH "${_chaos_key}" _chaos_len)
++    if(NOT _chaos_key MATCHES "^[0-9a-f]+$" OR NOT _chaos_len EQUAL 64)
++        message(FATAL_ERROR "Client guard: CHAOS_CLIENT_KEY must be 64 hex digits (32 bytes)")
++    endif()
++endif()
++string(SHA256 _chaos_fp "chaos-client-guard-fingerprint:${_chaos_key}")
++set(_chaos_hdr "${CMAKE_BINARY_DIR}/chaosguard/chaosguard_key.h")
++set(_chaos_old "")
++if(EXISTS "${_chaos_hdr}")
++    file(STRINGS "${_chaos_hdr}" _chaos_old REGEX "^// fingerprint ")
++endif()
++if(NOT _chaos_old STREQUAL "// fingerprint ${_chaos_fp}")
++    string(RANDOM LENGTH 64 ALPHABET "0123456789abcdef" _chaos_mask)
++    string(RANDOM LENGTH 2 ALPHABET "0123456789" _chaos_shift)
++    math(EXPR _chaos_shift "${_chaos_shift} % 32")
++    set(_chaos_x "")
++    set(_chaos_m "")
++    set(_chaos_p "")
++    foreach(_i RANGE 31)
++        math(EXPR _p "(${_i} * 13 + ${_chaos_shift}) % 32")
++        math(EXPR _ko "${_p} * 2")
++        math(EXPR _mo "${_i} * 2")
++        string(SUBSTRING "${_chaos_key}" ${_ko} 2 _kb)
++        string(SUBSTRING "${_chaos_mask}" ${_mo} 2 _mb)
++        math(EXPR _xb "0x${_kb} ^ 0x${_mb}" OUTPUT_FORMAT HEXADECIMAL)
++        string(APPEND _chaos_x "${_xb},")
++        string(APPEND _chaos_m "0x${_mb},")
++        string(APPEND _chaos_p "${_p},")
++    endforeach()
++    file(WRITE "${_chaos_hdr}"
++        "// generated by src/client/CMakeLists.txt (Cinders of Chaos client guard); never commit this file\n"
++        "// fingerprint ${_chaos_fp}\n"
++        "#pragma once\n"
++        "#define CHAOS_GUARD_KEY_IS_DEV ${_chaos_dev}\n"
++        "namespace chaosguard_key {\n"
++        "static const volatile unsigned char x[32] = {${_chaos_x}};\n"
++        "static const volatile unsigned char m[32] = {${_chaos_m}};\n"
++        "static const volatile unsigned char p[32] = {${_chaos_p}};\n"
++        "}\n")
++endif()
++unset(_chaos_key)
++unset(_chaos_mask)
++include_directories("${CMAKE_BINARY_DIR}/chaosguard")
++add_definitions(-DCHAOS_CLIENT_BUILD=${CHAOS_CLIENT_BUILD})
++if(_chaos_dev)
++    message(STATUS "Client guard: build ${CHAOS_CLIENT_BUILD}, DEVELOPMENT key")
++else()
++    message(STATUS "Client guard: build ${CHAOS_CLIENT_BUILD}, key from CHAOS_CLIENT_KEY / CHAOS_CLIENT_KEY_FILE")
++endif()
++set(client_SOURCES ${client_SOURCES}
++    ${CMAKE_CURRENT_LIST_DIR}/chaosguard.h
++    ${CMAKE_CURRENT_LIST_DIR}/chaosguard_builtin.h
++)
+--- a/src/client/chaosguard.h
++++ b/src/client/chaosguard.h
+@@ -0,0 +1,118 @@
++// Cinders of Chaos client guard: the client half of server src-patch 0021 (client/base-patches/0035-client-guard.patch,
++// client/BASE.md "Client guard").
++//
++//  * login gate: both login packets carry clientId() in their u32 "client version" field (0x4343 << 16 | build) where
++//    a stock client sends its version (1098);
++//  * handshake: the game server sends "cg1:<32 hex digits nonce>" on extended opcode OPCODE right after the game login;
++//    the client answers on the same opcode, from C++ (the challenge never reaches Lua), with
++//        "cg1:<build>:" + hex(HMAC-SHA256(key, nonce || u16le #account || account || u16le #character || character
++//                                          || u16le build))
++//    The key comes from the build (src/client/CMakeLists.txt, environment variable CHAOS_CLIENT_KEY), see
++//    chaosguard_builtin.h. This is obfuscation, not protection: the key is in every binary.
++//
++// Header only, so client/tools/chaosguard_test.cpp builds it on its own against OpenSSL.
++#pragma once
++
++#include <cstdint>
++#include <string>
++
++#include <openssl/crypto.h>
++#include <openssl/evp.h>
++#include <openssl/hmac.h>
++
++#ifndef CHAOS_CLIENT_BUILD
++#define CHAOS_CLIENT_BUILD 1
++#endif
++
++namespace chaosguard
++{
++
++constexpr uint32_t CLIENT_ID_TAG = 0x4343; // "CC", the server's ClientGuard::CLIENT_ID_TAG
++constexpr uint8_t OPCODE = 189;            // the server's ClientGuard::HANDSHAKE_OPCODE
++constexpr size_t NONCE_BYTES = 16;
++
++inline uint16_t build() { return static_cast<uint16_t>(CHAOS_CLIENT_BUILD); }
++inline uint32_t clientId() { return (CLIENT_ID_TAG << 16) | build(); }
++
++inline std::string toHex(const std::string& bytes)
++{
++    static const char digits[] = "0123456789abcdef";
++    std::string out;
++    out.reserve(bytes.size() * 2);
++    for (unsigned char c : bytes) {
++        out.push_back(digits[c >> 4]);
++        out.push_back(digits[c & 15]);
++    }
++    return out;
++}
++
++inline bool fromHex(const std::string& hex, std::string& out)
++{
++    if (hex.size() % 2 != 0)
++        return false;
++    out.clear();
++    for (size_t i = 0; i < hex.size(); i += 2) {
++        int v = 0;
++        for (size_t j = 0; j < 2; ++j) {
++            const char c = hex[i + j];
++            v <<= 4;
++            if (c >= '0' && c <= '9') v |= c - '0';
++            else if (c >= 'a' && c <= 'f') v |= c - 'a' + 10;
++            else if (c >= 'A' && c <= 'F') v |= c - 'A' + 10;
++            else return false;
++        }
++        out.push_back(static_cast<char>(v));
++    }
++    return true;
++}
++
++// "cg1:<32 hex digits>" -> the 16 nonce bytes
++inline bool parseChallenge(const std::string& payload, std::string& nonce)
++{
++    if (payload.size() != 4 + NONCE_BYTES * 2 || payload.compare(0, 4, "cg1:") != 0)
++        return false;
++    return fromHex(payload.substr(4), nonce);
++}
++
++inline void appendU16(std::string& s, size_t v)
++{
++    s.push_back(static_cast<char>(v & 0xFF));
++    s.push_back(static_cast<char>((v >> 8) & 0xFF));
++}
++
++// raw 32-byte HMAC-SHA256 of the handshake message; "" when OpenSSL fails
++inline std::string mac(const std::string& key, const std::string& nonce, const std::string& account,
++                       const std::string& character, uint16_t buildNumber)
++{
++    std::string data = nonce;
++    appendU16(data, account.size());
++    data += account;
++    appendU16(data, character.size());
++    data += character;
++    appendU16(data, buildNumber);
++    unsigned char out[EVP_MAX_MD_SIZE];
++    unsigned int outLen = 0;
++    if (!HMAC(EVP_sha256(), key.data(), static_cast<int>(key.size()), reinterpret_cast<const unsigned char*>(data.data()),
++              data.size(), out, &outLen) || outLen != 32)
++        return std::string();
++    return std::string(reinterpret_cast<const char*>(out), outLen);
++}
++
++// what the client sends back: "cg1:<build>:<64 hex digits>"
++inline std::string answer(const std::string& key, const std::string& nonce, const std::string& account,
++                          const std::string& character, uint16_t buildNumber)
++{
++    const std::string m = mac(key, nonce, account, character, buildNumber);
++    if (m.empty())
++        return std::string();
++    return "cg1:" + std::to_string(buildNumber) + ":" + toHex(m);
++}
++
++inline void wipe(std::string& secret)
++{
++    if (!secret.empty())
++        OPENSSL_cleanse(&secret[0], secret.size());
++    secret.clear();
++}
++
++} // namespace chaosguard
+--- a/src/client/chaosguard_builtin.h
++++ b/src/client/chaosguard_builtin.h
+@@ -0,0 +1,24 @@
++// Cinders of Chaos client guard: the key built into this client (client/base-patches/0035-client-guard.patch).
++// chaosguard_key.h is written by src/client/CMakeLists.txt into the build folder (never into the source tree) from the
++// environment variable CHAOS_CLIENT_KEY or the file CHAOS_CLIENT_KEY_FILE, else from the public development key. It
++// holds the 32 key bytes shuffled and XOR-masked with a mask made at configure time; the arrays are volatile so the
++// compiler cannot fold them back into the plain key. Obfuscation only: anyone with the binary can recover the key.
++#pragma once
++
++#include "chaosguard.h"
++#include "chaosguard_key.h"
++
++namespace chaosguard
++{
++
++inline bool builtInKeyIsDevelopment() { return CHAOS_GUARD_KEY_IS_DEV != 0; }
++
++inline std::string builtInKey()
++{
++    std::string key(32, '\0');
++    for (int i = 0; i < 32; ++i)
++        key[chaosguard_key::p[i] & 31] = static_cast<char>(chaosguard_key::x[i] ^ chaosguard_key::m[i]);
++    return key;
++}
++
++} // namespace chaosguard
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -23,6 +23,7 @@
+ #include "client.h"
+ #include "luavaluecasts_client.h"
+ #include "game.h"
++#include "chaosguard.h"
+ #include "gameconfig.h"
+ #include "tile.h"
+ #include "houses.h"
+@@ -248,6 +249,9 @@ void Client::registerLuaFunctions()
+     g_lua.bindSingletonFunction("g_creatures", "deleteSpawn", &CreatureManager::deleteSpawn, &g_creatures);
+ 
+     g_lua.registerSingletonClass("g_game");
++    // Chaos (base patch 0035): the client guard's identifier and build (the account login packet is built in Lua)
++    g_lua.bindClassStaticFunction("g_game", "getChaosClientId", std::function<uint32()>([]() { return chaosguard::clientId(); }));
++    g_lua.bindClassStaticFunction("g_game", "getChaosClientBuild", std::function<int()>([]() { return static_cast<int>(chaosguard::build()); }));
+     g_lua.bindSingletonFunction("g_game", "loginWorld", &Game::loginWorld, &g_game);
+     g_lua.bindSingletonFunction("g_game", "playRecord", &Game::playRecord, &g_game);
+     g_lua.bindSingletonFunction("g_game", "cancelLogin", &Game::cancelLogin, &g_game);
+--- a/src/client/protocolgame.h
++++ b/src/client/protocolgame.h
+@@ -35,6 +35,7 @@ public:
+     void send(const OutputMessagePtr& outputMessage, bool rawPacket = false);
+ 
+     void sendExtendedOpcode(uint8 opcode, const std::string& buffer);
++    void sendChaosGuardAnswer(const std::string& challenge); // Chaos (base patch 0035): the client guard
+     void sendLoginPacket(uint challengeTimestamp, uint8 challengeRandom);
+     void sendWorldName();
+     void sendEnterGame();
+--- a/src/client/protocolgameparse.cpp
++++ b/src/client/protocolgameparse.cpp
+@@ -22,6 +22,7 @@
+ 
+ #include "protocolgame.h"
+ #include "spellcooldown.h"
++#include "chaosguard.h"
+ 
+ #include <algorithm>
+ #include <ctime>
+@@ -4555,6 +4556,8 @@ void ProtocolGame::parseExtendedOpcode(const InputMessagePtr& msg)
+ 
+     if (opcode == 0)
+         m_enableSendExtendedOpcode = true;
++    else if (opcode == chaosguard::OPCODE)
++        sendChaosGuardAnswer(buffer); // Chaos (base patch 0035): the client guard's challenge never reaches Lua
+     else
+         callLuaField("onExtendedOpcode", opcode, buffer);
+ }
+--- a/src/client/protocolgamesend.cpp
++++ b/src/client/protocolgamesend.cpp
+@@ -23,6 +23,7 @@
+ #include "protocolgame.h"
+ #include "game.h"
+ #include "client.h"
++#include "chaosguard_builtin.h"
+ #include <framework/core/application.h>
+ #include <framework/platform/platform.h>
+ #include <framework/util/crypt.h>
+@@ -103,6 +104,39 @@ void ProtocolGame::sendExtendedOpcode(uint8 opcode, const std::string& buffer)
+     g_game.disableBotCall();
+ }
+ 
++// Chaos (base patch 0035): the client guard's answer (chaosguard.h). The account is the one the server reads from the
++// session key (its first line), the character the one this login sent; the key is put together only for the HMAC.
++void ProtocolGame::sendChaosGuardAnswer(const std::string& challenge)
++{
++    std::string nonce;
++    if (!chaosguard::parseChallenge(challenge, nonce)) {
++        g_logger.warning("client guard: malformed challenge from the server");
++        return;
++    }
++    const std::string account = m_sessionKey.empty() ? m_accountName : m_sessionKey.substr(0, m_sessionKey.find('\n'));
++    std::string key = chaosguard::builtInKey();
++    const std::string answer = chaosguard::answer(key, nonce, account, m_characterName, chaosguard::build());
++    chaosguard::wipe(key);
++    if (answer.empty()) {
++        g_logger.error("client guard: HMAC failed");
++        return;
++    }
++    if (chaosguard::builtInKeyIsDevelopment()) {
++        static bool warned = false;
++        if (!warned) {
++            warned = true;
++            g_logger.warning("client guard: this client was built with the DEVELOPMENT key (no CHAOS_CLIENT_KEY); only test servers accept it");
++        }
++    }
++    auto msg = std::make_shared<OutputMessage>();
++    msg->addU8(Proto::ClientExtendedOpcode);
++    msg->addU8(chaosguard::OPCODE);
++    msg->addString(answer);
++    g_game.enableBotCall();
++    send(msg);
++    g_game.disableBotCall();
++}
++
+ void ProtocolGame::sendWorldName()
+ {
+     auto msg = std::make_shared<OutputMessage>();
+@@ -141,7 +175,7 @@ void ProtocolGame::sendLoginPacket(uint challengeTimestamp, uint8 challengeRando
+     msg->addU16(g_game.getCustomProtocolVersion());
+ 
+     if (g_game.getFeature(Otc::GameClientVersion))
+-        msg->addU32(g_game.getClientVersion());
++        msg->addU32(chaosguard::clientId()); // Chaos (base patch 0035): the client guard's identifier, not the version
+ 
+     if (g_game.getFeature(Otc::GameTibia12Protocol) && g_game.getProtocolVersion() >= 1240)
+         msg->addString(std::to_string(g_game.getClientVersion()));

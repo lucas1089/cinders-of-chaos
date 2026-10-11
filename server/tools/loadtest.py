@@ -8,6 +8,7 @@ Standard library only (Python 3.7+). Three commands:
   run      log the bots in, walk, talk, measure, print a report
              python3 -I server/tools/loadtest.py run --count 30 --host 127.0.0.1 --port 7171 --duration 120
                  [--server-pid PID] [--server-log PATH] [--key key.pem] [--ramp 0.5] [--walk 1.0] [--say 20]
+                 [--dev-key | --client-key HEX] [--client-build N]
   cleanup  delete the bot characters and accounts again
              python3 -I server/tools/loadtest.py cleanup
 
@@ -28,6 +29,13 @@ Protocol (what the engine's protocollogin.cpp / protocolgame.cpp expect, the sam
   in game        0x65-0x68 walk north/east/south/west, 0x96 say (type 1, text), 0x1E ping (keeps the engine's
                  no-pong kick away); everything the server sends is read and counted, only the first message is
                  decrypted (to tell a login error from entering the game)
+Client guard (server/README.md "Client guard", engine src-patch 0021): by default the bots send the stock client version
+1098 in the u32 client version fields, which a server with clientGuardMode "off" or "log" lets in (log: one line per
+bot in data/logs/clientguard.log). Against "enforce" give the bots the client's key: --dev-key (the public development
+key; the server needs clientGuardAllowDevKey = true, a test server only) or --client-key HEX / the environment variable
+CHAOS_CLIENT_KEY (the real key: keep it out of shell history and logs). Then each bot sends the official identifier
+(0x4343 << 16 | --client-build, default 1), answers the server's challenge on extended opcode 189 with the HMAC the
+client computes and sends the module hello on extended opcode 190, as the client does.
 RSA: m^65537 mod n. n is read from --key (the server's key.pem, PKCS#1, only the modulus is used) or is the standard
 open-server public key that the client also ships.
 The os sent is 10 (OTClient on Linux), so the engine enables extended opcodes and the Chaos modules talk to the bots
@@ -40,6 +48,9 @@ probe server/tools/loadtest_probe.lua (TEST ONLY) that the server printed during
 """
 import asyncio
 import base64
+import hashlib
+import hmac
+import json
 import os
 import random
 import re
@@ -61,6 +72,11 @@ OT_RSA_N = int(
     '3429057592827629436413108566029093628212635953836686562675849720'
     '6207862794310902180176810615217550567108238764764442605581471797'
     '07119674283982419152118103759076030616683978566631413')
+# client guard (engine src-patch 0021, client base patch 0035)
+GUARD_TAG = 0x4343
+GUARD_OPCODE = 189
+GUARD_HELLO_OPCODE = 190
+GUARD_DEV_KEY = bytes.fromhex('4445562d4b45592d63696e646572732d6f662d6368616f732d554e5341464521')  # "DEV-KEY-cinders-of-chaos-UNSAFE!"
 DELTA = 0x9E3779B9
 MASK = 0xFFFFFFFF
 PREFIX = 'loadbot'
@@ -132,8 +148,25 @@ def modulus_from_pem(path):
 
 
 def string(s):
-    b = s.encode('latin-1')
+    b = s.encode('latin-1') if isinstance(s, str) else s
     return struct.pack('<H', len(b)) + b
+
+
+def guard_mac(key, nonce, account, character, build):
+    """HMAC-SHA256(key, nonce || u16le #account || account || u16le #character || character || u16le build)"""
+    a, c = account.encode('latin-1'), character.encode('latin-1')
+    data = nonce + struct.pack('<H', len(a)) + a + struct.pack('<H', len(c)) + c + struct.pack('<H', build)
+    return hmac.new(key, data, hashlib.sha256).digest()
+
+
+def guard_answer(key, nonce, account, character, build):
+    return 'cg1:%d:%s' % (build, guard_mac(key, nonce, account, character, build).hex())
+
+
+def find_challenge(plain):
+    """the nonce of a client guard challenge (0x32, opcode 189, string "cg1:<32 hex>") in a decrypted message, or None"""
+    m = re.search(re.escape(bytes([0x32, GUARD_OPCODE])) + rb'\x24\x00cg1:([0-9a-f]{32})', plain)
+    return bytes.fromhex(m.group(1).decode()) if m else None
 
 
 # ------------------------------------------------------------------------------------------------ framing
@@ -198,7 +231,7 @@ class Bot:
         c.key = self.key()
         rsa1 = b'\x00' + struct.pack('<4I', *c.key) + string(self.account) + string(self.password)
         rsa2 = b'\x00' + string('') + b'\x00'
-        body = (b'\x01' + struct.pack('<HHI', OS_OTCLIENT_LINUX, VERSION, VERSION) + struct.pack('<3I', 0, 0, 0)
+        body = (b'\x01' + struct.pack('<HHI', OS_OTCLIENT_LINUX, VERSION, self.args.client_id) + struct.pack('<3I', 0, 0, 0)
                 + b'\x00' + rsa_block(rsa1, self.n) + rsa_block(rsa2, self.n))
         c.send_raw(body)
         await c.w.drain()
@@ -246,8 +279,8 @@ class Bot:
         c.key = self.key()
         rsa = (b'\x00' + struct.pack('<4I', *c.key) + b'\x00' + string(session) + string(self.name)
                + struct.pack('<IB', ts, rnd) + struct.pack('<H', 0))
-        body = (b'\x0A' + struct.pack('<HHI', OS_OTCLIENT_LINUX, VERSION, VERSION) + b'\x00' + struct.pack('<H', 0)
-                + rsa_block(rsa, self.n))
+        body = (b'\x0A' + struct.pack('<HHI', OS_OTCLIENT_LINUX, VERSION, self.args.client_id) + b'\x00'
+                + struct.pack('<H', 0) + rsa_block(rsa, self.n))
         c.send_raw(body)
         await c.w.drain()
         first = c.decrypt(await asyncio.wait_for(c.read_message(), 20))
@@ -256,7 +289,31 @@ class Bot:
             raise RuntimeError('game refused: ' + text.replace('\n', ' '))
         if first and first[0] == 0x16:
             raise RuntimeError('waiting list (server full)')
+        if self.args.guard_key:
+            await self.answer_guard(c, first)
         return c
+
+    async def answer_guard(self, c, first):
+        """the client guard: the HMAC answer to the challenge (it comes with the first messages), then the module hello"""
+        nonce, msg, extra = find_challenge(first), first, 0
+        while nonce is None and extra < 3:
+            try:
+                msg = c.decrypt(await asyncio.wait_for(c.read_message(), 2))
+            except asyncio.TimeoutError:
+                break
+            extra += 1
+            if msg and msg[0] == 0x14:
+                text, _ = read_string(msg, 1)
+                raise RuntimeError('game refused: ' + text.replace('\n', ' '))
+            nonce = find_challenge(msg)
+        if nonce is None:
+            self.stats['no_challenge'] += 1  # the server's client guard is off (or log mode with a refused id)
+            return
+        build = self.args.client_build
+        c.send(b'\x32' + bytes([GUARD_OPCODE]) + string(guard_answer(self.args.guard_key, nonce, self.account, self.name, build)))
+        hello = json.dumps({'action': 'hello', 'data': {'build': build, 'modules': 99}}, separators=(',', ':'))
+        c.send(b'\x32' + bytes([GUARD_HELLO_OPCODE]) + string(hello))
+        await c.w.drain()
 
     async def run(self, until):
         t0 = time.monotonic()
@@ -372,7 +429,7 @@ def probe_lines(path, start, end):
 
 async def run_test(args):
     n = modulus_from_pem(args.key) if args.key else OT_RSA_N
-    stats = {'login_ms': [], 'failed': [], 'bytes': 0, 'disconnects': 0, 'walks': 0, 'says': 0}
+    stats = {'login_ms': [], 'failed': [], 'bytes': 0, 'disconnects': 0, 'walks': 0, 'says': 0, 'no_challenge': 0}
     sampler = Sampler(args.server_pid) if args.server_pid else None
     baseline = None
     if sampler:
@@ -409,6 +466,11 @@ def report(args, s, sampler, baseline, ramp_end, until, wall0, wall1):
         print('  ... %d more failures' % (len(s['failed']) - 10))
     print('  disconnects during the run: %d; steps sent %d, chat lines %d; received %.1f MB' % (
         s['disconnects'], s['walks'], s['says'], s['bytes'] / 1e6))
+    if args.guard_key:
+        print('  client guard: build %d, %s key; logins without a challenge (guard off): %d' % (
+            args.client_build, 'development' if args.guard_key == GUARD_DEV_KEY else 'given', s['no_challenge']))
+    else:
+        print('  client guard: stock client version 1098 sent (only a server in clientGuardMode "off" or "log" lets it in)')
     if sampler and sampler.samples:
         def window(a, b):
             return [x for x in sampler.samples if a <= x['t'] <= b]
@@ -503,9 +565,10 @@ def parse(argv):
     a.cmd = argv[0]
     defaults = {'--count': 30, '--host': '127.0.0.1', '--port': 7171, '--game-port': 0, '--duration': 120,
                 '--server-pid': 0, '--server-log': '', '--key': '', '--ramp': 0.5, '--walk': 1.0, '--say': 20.0,
-                '--pos': '1500,1500,7', '--town': 1, '--vocation': 4, '--db': ''}
+                '--pos': '1500,1500,7', '--town': 1, '--vocation': 4, '--db': '', '--client-key': '',
+                '--client-build': 1}
     vals = dict(defaults)
-    flags = {'--no-source-ips': False}
+    flags = {'--no-source-ips': False, '--dev-key': False}
     i = 1
     while i < len(argv):
         k = argv[i]
@@ -522,6 +585,18 @@ def parse(argv):
         setattr(a, k.lstrip('-').replace('-', '_'), v)
     if a.count < 1 or a.count > 9999:
         sys.exit('--count 1..9999')
+    if not 1 <= a.client_build <= 0xFFFF:
+        sys.exit('--client-build 1..65535')
+    key = a.client_key or os.environ.get('CHAOS_CLIENT_KEY', '')
+    if a.dev_key:
+        a.guard_key = GUARD_DEV_KEY
+    elif key:
+        if not re.match(r'^[0-9a-fA-F]{64}$', key.strip()):
+            sys.exit('--client-key / CHAOS_CLIENT_KEY must be 64 hex digits')
+        a.guard_key = bytes.fromhex(key.strip())
+    else:
+        a.guard_key = None
+    a.client_id = (GUARD_TAG << 16 | a.client_build) if a.guard_key else VERSION
     return a
 
 

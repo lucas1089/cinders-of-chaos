@@ -13,6 +13,9 @@ cmake <game-dir> -DCMAKE_BUILD_TYPE=Release -DLUAJIT=ON -DPHYSFS_LIBRARY=/usr/li
   -DOPENAL_LIBRARY=/usr/lib/x86_64-linux-gnu/libopenal.so
 make -j$(nproc)
 ```
+Client guard (base patch 0035, `BASE.md` "Client guard: the build secret"): put `CHAOS_CLIENT_KEY=<64 hex digits>` in the
+environment of the `cmake` call and add `-DCHAOS_CLIENT_BUILD=N`; without the variable the client gets the public
+development key, which only a test server with `clientGuardAllowDevKey = true` accepts.
 `-DPHYSFS_LIBRARY=...so`: Ubuntu's static `libphysfs.a` has no archive index and the link fails without it.
 `-DOPENAL_LIBRARY=...so`: the sound framework is on (base patch 0032) and the base's `FindOpenAL.cmake` finds no
 `libopenal.a` on Ubuntu (there is none). With no sound card (a container, a server without ALSA devices) OpenAL's

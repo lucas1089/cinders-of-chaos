@@ -50,8 +50,34 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     rider. When the mount has a negative displacement and the Bones attribute and the rider has no Bones, the rider is
     moved by the mount's Bones pair for its direction (signed pixels, set by `tools/sprites/set_rider_seat.py`).
     Everything else draws as before (a stock mount was pixel-identical in the test); a client without the patch ignores
-    a mount-only Bones attribute. The chain 0001-0034 applies to the `windows-assets` base client. Built and checked in
-    the Linux client. Since things_custom16 each direction has its own seat (data only, same patch).
+    a mount-only Bones attribute. Built and checked in the Linux client. Since things_custom16 each direction has its
+    own seat (data only, same patch).
+
+15. `0035` (C++, CMake, `modules/gamelib/protocollogin.lua`): the client guard, the client half of server src-patch 0021
+    (server/README.md "Client guard"; overlay module `game_chaosguard` sends the Lua hello). Both login packets carry
+    `0x4343 << 16 | CHAOS_CLIENT_BUILD` in their u32 client version field instead of 1098; extended opcode 189 (the
+    server's challenge) is answered in C++ with an HMAC-SHA256 over the nonce, account, character and build
+    (`src/client/chaosguard.h`, OpenSSL; vectors `tools/chaosguard_test.cpp`, run in CI) and never reaches Lua;
+    `g_game.getChaosClientId()` / `getChaosClientBuild()` for Lua. The chain 0001-0035 applies to the `windows-assets`
+    base client; built and tested in the Linux client.
+
+### Client guard: the build secret
+
+The key the client proves itself with is read by CMake (`src/client/CMakeLists.txt`, patch 0035) at configure time:
+the environment variable **`CHAOS_CLIENT_KEY`** (64 hex digits), else the file `-DCHAOS_CLIENT_KEY_FILE=<path>`, else
+the public development key (a configure warning; only a server with `clientGuardAllowDevKey = true` accepts it). It is
+never cached in `CMakeCache.txt` and never written into the source tree: `build/chaosguard/chaosguard_key.h` holds it
+shuffled and XOR-masked with a random mask (volatile arrays, put together only for the HMAC and wiped after). That is
+obfuscation, not protection: whoever has the binary can recover the key with a debugger. `-DCHAOS_CLIENT_BUILD=N`
+(1..65535, default 1) is the build number the server checks (`clientGuardBuilds`, the updater's `min_package`).
+- **Owner, once:** `openssl rand -hex 32`; GitHub -> Settings -> Secrets and variables -> Actions -> New repository
+  secret **`CHAOS_CLIENT_KEY`** with that value; the same value as `CHAOS_CLIENT_KEY` in the game server's
+  `/etc/chaos/chaos.env` (server/README.md "Client guard").
+- **Workflows:** `windows-package.yml` and `windows-client.yml` pass the secret to the build step only (GitHub masks it
+  in the logs) and take the input `client_build` (`windows-package.yml` also writes it into `Services.update.package`).
+  Raise it for every new exe. Without the secret the run warns and the client gets the development key.
+- **Linux / local:** `CHAOS_CLIENT_KEY=$(cat ~/chaos-keys/client.key) cmake <game-dir> ... -DCHAOS_CLIENT_BUILD=N`
+  (`LINUX.md`); a build without it is a development client.
 
 ## What the overlay replaces
 - `game_stash` (the client's own targets a different protocol): ours, extended opcode 110.

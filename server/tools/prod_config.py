@@ -3,7 +3,9 @@
 
 usage: python3 -I server/tools/prod_config.py SERVER_DIR --ip HOST [--name NAME] [--motd TEXT] [--max-players N]
                                               [--pvp pvp|no-pvp|pvp-enforced] [--save-time HH:MM] [--owner NAME]
-                                              [--email ADDRESS] [--url URL] [--location TEXT] [--dry-run]
+                                              [--email ADDRESS] [--url URL] [--location TEXT]
+                                              [--client-url URL] [--client-builds LIST] [--client-manifest PATH]
+                                              [--client-staff-ips LIST] [--dry-run]
 
 SERVER_DIR is the folder with config.lua (and data/globalevents/globalevents.xml for --save-time). Every setting below is
 written as `key = value  -- Chaos production (server/tools/prod_config.py)`; a second run with the same options changes
@@ -52,6 +54,17 @@ What it sets, and why (docs/LAUNCH.md has the full checklist):
   playerSpeedSoftLevel = 300, playerSpeedPerTenLevelsAbove = 10
                           movement speed (engine patch 0018, README "Movement speed"): a player walks between about
                           1 and 10 tiles/s on normal ground; base speed = vocation + 50, 2.5 per level to 300, 1 after
+  clientGuardMode = "enforce", clientGuardKey = os.getenv("CHAOS_CLIENT_KEY") or "", clientGuardAllowDevKey = false,
+  clientGuardTimeout = 10, clientGuardDownloadUrl, clientGuardBuilds, clientGuardManifest, clientGuardStaffIps
+                          only the official client plays (engine patch 0021, README "Client guard"): the key is read from
+                          the environment (/etc/chaos/chaos.env, CHAOS_CLIENT_KEY: the same 64 hex digits as the GitHub
+                          secret the Windows client is built with), never written into config.lua; the public
+                          development key is refused. --client-url is the download page named in the refusal message
+                          (default: --url); --client-builds the accepted client builds, e.g. "4,5" during an update window
+                          (default: any); --client-manifest the updater's manifest.json on this machine, whose
+                          min_package then refuses older builds too (default: none); --client-staff-ips the IPs from
+                          which staff accounts may use another client (default: none). Without CHAOS_CLIENT_KEY in the
+                          environment every player is kicked at the handshake (the console says so at startup)
 
 Exit status 1 (nothing written) when --ip is missing or the map is a cropped test map.
 """
@@ -108,6 +121,14 @@ def settings(opts):
         ('playerSpeedPerTenLevels', '25'),
         ('playerSpeedSoftLevel', '300'),
         ('playerSpeedPerTenLevelsAbove', '10'),
+        ('clientGuardMode', '"enforce"'),
+        ('clientGuardKey', 'os.getenv("CHAOS_CLIENT_KEY") or ""'),
+        ('clientGuardAllowDevKey', 'false'),
+        ('clientGuardTimeout', '10'),
+        ('clientGuardDownloadUrl', lua_string(opts.get('--client-url', opts.get('--url', '')))),
+        ('clientGuardBuilds', lua_string(opts.get('--client-builds', ''))),
+        ('clientGuardManifest', lua_string(opts.get('--client-manifest', ''))),
+        ('clientGuardStaffIps', lua_string(opts.get('--client-staff-ips', ''))),
     ]
     for key, env, default in ENV_DB:
         expr = 'os.getenv("%s")' % env
@@ -156,6 +177,8 @@ def main(argv):
         return 1
     if opts.get('--pvp', 'pvp') not in ('pvp', 'no-pvp', 'pvp-enforced'):
         sys.exit('--pvp must be pvp, no-pvp or pvp-enforced')
+    if '--client-builds' in opts and not re.match(r'^\s*(\d{1,5}\s*(,\s*\d{1,5}\s*)*)?$', opts['--client-builds']):
+        sys.exit('--client-builds must be build numbers separated by commas, e.g. 4,5')
     if '--save-time' in opts and not re.match(r'^([01]\d|2[0-3]):[0-5]\d$', opts['--save-time']):
         sys.exit('--save-time must be HH:MM')
     server = pos[0]
@@ -181,6 +204,8 @@ def main(argv):
         print(save_time(server, opts['--save-time'], dry))
     print('The database settings are read from CHAOS_DB_HOST / CHAOS_DB_PORT / CHAOS_DB_USER / CHAOS_DB_PASS / '
           'CHAOS_DB_NAME (server/deploy/chaos.env.example).')
+    print('The client guard key is read from CHAOS_CLIENT_KEY (the same value as the GitHub secret CHAOS_CLIENT_KEY; '
+          'server/README.md "Client guard").')
     return 0
 
 

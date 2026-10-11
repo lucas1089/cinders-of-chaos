@@ -79,6 +79,11 @@ ChaosOpcodes = {
 ChaosOpcodes.riftAtlas = 210
 -- DPS meter and combat log: per-skill damage / healing / taken, fights, party totals (client game_dpsmeter; combatlog*.lua)
 ChaosOpcodes.combatLog = 204
+-- Client guard (engine src-patch 0021, client base patch 0035, clientguard*.lua; server/README.md "Client guard"): 189 is
+-- the engine's HMAC handshake, both ways, handled in C++ on both sides (it never reaches Lua; listed so that no module
+-- takes it); 190 is the module hello of client game_chaosguard, client -> server
+ChaosOpcodes.clientGuard = 189
+ChaosOpcodes.clientGuardHello = 190
 
 -- ---------------------------------------------------------------------------
 -- Item custom attributes in item packets (engine patch server/src-patches/0003-item-custom-attributes.patch, client

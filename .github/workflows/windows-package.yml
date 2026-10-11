@@ -13,6 +13,12 @@
 #   client   Windows job: base client + client/base-patches + client/overlay (client/tools/assemble_client.sh), built
 #            like windows-client.yml -> Chaos.exe
 #   package  Linux job: everything above + portable MariaDB + the .bat files
+#
+# Client guard (client/BASE.md "Client guard", server/README.md "Client guard"): the client is built with the repository
+# secret CHAOS_CLIENT_KEY (Settings -> Secrets and variables -> Actions -> New repository secret; 64 hex digits, the same
+# value as CHAOS_CLIENT_KEY on the game server) and the build number of the input client_build. Without the secret the
+# client gets the public development key (a warning in the run); a production server refuses it. The package's own
+# server folder keeps the guard off (local play).
 # The first run builds the vcpkg ports of both exes (about an hour); later runs reuse the vcpkg binary caches.
 name: Windows package
 
@@ -31,6 +37,10 @@ on:
         description: "Signed updater: the operator's Ed25519 public key, 64 hex digits (never the private key)"
         required: false
         default: ""
+      client_build:
+        description: "Client build number 1-65535 (CHAOS_CLIENT_BUILD; also Services.update.package). Raise it for every new exe"
+        required: false
+        default: "1"
 
 permissions:
   contents: read
@@ -43,6 +53,7 @@ env:
   ASSETS_REF: ${{ inputs.assets_ref || 'windows-assets' }}
   UPDATE_MANIFEST: ${{ inputs.update_manifest }}
   UPDATE_PUBLIC_KEY: ${{ inputs.update_public_key }}
+  CLIENT_BUILD: ${{ inputs.client_build || '1' }}
   # vcpkg registry state for the engine's libraries (tag 2023.12.12: Boost 1.83); fmt is pinned to 9.1.0 below
   ENGINE_VCPKG_BASELINE: c8696863d371ab7f46e213d8f5ca923c4aef2a00
   MARIADB_VERSION: "10.11.14"
@@ -241,6 +252,23 @@ jobs:
           bash chaos/client/tools/assemble_client.sh "$GITHUB_WORKSPACE/base-client" "$GITHUB_WORKSPACE/game"
           echo "chaos commit: $GITHUB_SHA" | tee game/BUILD_INFO.txt
 
+      - name: Client guard inputs (build number, key secret)
+        shell: bash
+        env:
+          CHAOS_CLIENT_KEY: ${{ secrets.CHAOS_CLIENT_KEY }}
+        run: |
+          if ! [[ "$CLIENT_BUILD" =~ ^[0-9]+$ ]] || [ "$CLIENT_BUILD" -lt 1 ] || [ "$CLIENT_BUILD" -gt 65535 ]; then
+            echo "::error::client_build must be a number from 1 to 65535"
+            exit 1
+          fi
+          if [ -z "$CHAOS_CLIENT_KEY" ]; then
+            echo "::warning::No CHAOS_CLIENT_KEY secret: this client gets the public DEVELOPMENT key; a production server (clientGuardMode enforce) kicks it."
+          elif ! [[ "$CHAOS_CLIENT_KEY" =~ ^[0-9a-fA-F]{64}$ ]]; then
+            echo "::error::The CHAOS_CLIENT_KEY secret must be 64 hex digits (openssl rand -hex 32)"
+            exit 1
+          fi
+          echo "Client build $CLIENT_BUILD"
+
       - name: Get CMake and Ninja
         uses: lukka/get-cmake@latest
 
@@ -254,9 +282,13 @@ jobs:
             vcpkg-chaos-client-
 
       # cmd + vcvars64, as the base client's own workflow does: the vcpkg port builds need the full MSVC environment
+      # the key reaches CMake only as this step's environment variable (src/client/CMakeLists.txt reads
+      # $ENV{CHAOS_CLIENT_KEY} at configure time, never caches it and writes it, masked, into build/chaosguard/ only)
       - name: Build
         shell: cmd
         working-directory: game
+        env:
+          CHAOS_CLIENT_KEY: ${{ secrets.CHAOS_CLIENT_KEY }}
         run: |
           if not exist "%VCPKG_DEFAULT_BINARY_CACHE%" mkdir "%VCPKG_DEFAULT_BINARY_CACHE%"
           for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSDIR=%%i"
@@ -265,7 +297,7 @@ jobs:
           if not exist vcpkg git clone https://github.com/microsoft/vcpkg vcpkg
           call vcpkg\bootstrap-vcpkg.bat -disableMetrics
           if errorlevel 1 exit /b 1
-          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_TOOLCHAIN_FILE=%CD%\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_TOOLCHAIN_FILE=%CD%\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCHAOS_CLIENT_BUILD=%CLIENT_BUILD%
           if errorlevel 1 exit /b 1
           cmake --build build --parallel %NUMBER_OF_PROCESSORS%
           if errorlevel 1 exit /b 1
@@ -355,7 +387,7 @@ jobs:
           # make_update_manifest.py accepts this exact client folder, dat/spr included (unsigned dry run)
           if [ -n "$UPDATE_MANIFEST" ] && [ -n "$UPDATE_PUBLIC_KEY" ]; then
             python3 -I chaos/client/tools/set_update_config.py "$P/client" \
-              --manifest "$UPDATE_MANIFEST" --public-key "$UPDATE_PUBLIC_KEY"
+              --manifest "$UPDATE_MANIFEST" --public-key "$UPDATE_PUBLIC_KEY" --package "$CLIENT_BUILD"
           fi
           python3 -I chaos/client/tools/make_update_manifest.py build "$P/client" --dry-run
 

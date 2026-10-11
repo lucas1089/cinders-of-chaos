@@ -99,6 +99,15 @@ jobs:
           g++ -std=c++17 -I "$d/src" client/tools/chaosupdate_test.cpp -lcrypto -o "$d/chaosupdate_test"
           "$d/chaosupdate_test"
 
+      - name: Client guard handshake vectors (C++, OpenSSL; header from base patch 0035)
+        run: |
+          d=$(mktemp -d)
+          awk '/^--- a\/src\/client\/chaosguard\.h/{p=1} p&&/^--- a\//&&!/chaosguard\.h/{p=0} p' \
+            client/base-patches/0035-client-guard.patch > "$d/h.patch"
+          patch -p1 -d "$d" < "$d/h.patch"
+          g++ -std=c++17 -I "$d/src/client" client/tools/chaosguard_test.cpp -lcrypto -o "$d/chaosguard_test"
+          "$d/chaosguard_test"
+
       - name: Unique item specs are up to date with chaos_items.xml
         run: |
           cd server && python3 -I tools/gen_unique_specs.py

@@ -92,6 +92,10 @@ server/
                                       (custom attribute "chaos_tmog"), drawn by client base patch 0030 (see "Transmog")
   src-patches/0020-guild-war-list-lua.patch   engine: player:getGuildWarList / setGuildWarList, the war emblems and
                                       skull rules change at once when a war starts or ends (see "Guild wars in game")
+  src-patches/0021-client-guard.patch   engine: only the official client plays: login gate on the client version field
+                                      of both logins, HMAC challenge on extended opcode 189 after the game login, config
+                                      clientGuard* (see "Client guard"; client base patch 0035)
+    clientguard.lua  clientguard_core.lua  clientguard_config.lua (the client guard's module hello check, opcode 190)
     transmog.lua  transmog_core.lua  transmog_config.lua (transmog: account wardrobe, appearance sets, client game_transmog;
                                       sql/chaos_transmog.sql, see "Transmog")
     item_tooltip.lua  item_tooltip_core.lua (rich item tooltips with the equipped-item compare, client game_itemtooltip)
@@ -8560,7 +8564,8 @@ rebuilt without our patches), logs every attempt, and makes the rest work for it
    skipped. Our client (base patch 0035) sends `0x4343 << 16 | build` there (stock clients send 1098). The login server
    and the game server refuse anything else with **"Please use the official Cinders of Chaos client: <download URL>"**
    (`clientGuardDownloadUrl`): the account login before the password check, the game login before the character is
-   loaded. The build must be in `clientGuardBuilds` (empty: any build), and when `clientGuardManifest` names the
+   loaded (with the guard on, a client of another protocol version gets this message too instead of "Only clients
+   with protocol 10.98 allowed!"). The build must be in `clientGuardBuilds` (empty: any build), and when `clientGuardManifest` names the
    updater's `manifest.json` on this machine, not below its `min_package` (re-read when the file changes).
 2. **Challenge-response (C++ on both sides).** Right after the game login, before the login packets, the server sends a
    16-byte random nonce on extended opcode **189** (`cg1:<hex>`). The client answers from C++ (the challenge never
@@ -8631,3 +8636,15 @@ behaviour checks (the anti-bot system).
 **Tests:** `tests/clientguard_test.lua` (Lua 5.3 and LuaJIT: which states are checked, the hello rules, timeout,
 logout, the engine glue against a mocked engine, the opcodes); `client/tools/chaosguard_test.cpp` (CI: RFC 4231 and the
 handshake vector, the same one `loadtest.py` computes with Python's `hmac`, so client, server and load test agree).
+**Tested end to end** (engine 0001-0021 built on Linux, client chain 0001-0035 assembled from the `windows-assets` base and
+built on Linux, test server with the cropped map): the official client (test key, build 7) logs in, is `verified`, stays
+past the 10 s and 30 s checks, the daily reward, store and passive tree windows work (their first requests went through
+the hold-back); the same client built with another key is kicked at once with the message (the box now survives the
+logout, base patch 0035); an exe without patch 0035 and a stock base client build (made to speak 10.98) are refused at
+the account login with the message; a hacked Lua account login with a stock game login is refused at the game login;
+bots: no answer -> kicked after 10 s, no hello -> kicked after 30 s, a hello sent before the answer is held and accepted,
+development key refused (and accepted with `clientGuardAllowDevKey`), build outside `clientGuardBuilds` and below the
+manifest's `min_package` refused, two keys (rotation) both accepted, key from config, file and environment, staff account
+from a staff IP let in and a normal account from that IP refused, enforce without a key fails closed with the startup
+error. Log mode: the stock-id client and the wrong-key client play, every check logged. `loadtest.py`: 6 bots for 40 s in
+log mode (stock id) and in enforce with `--dev-key`, all logged in, no disconnects. Not run: the Windows workflows.

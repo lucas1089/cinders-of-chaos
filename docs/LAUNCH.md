@@ -46,10 +46,11 @@ columns the schema already has) and errors about the website's `znote_*` tables.
 
 ```
 sudo install -d -m 0755 /etc/chaos
-sudo cp server/deploy/chaos.env.example /etc/chaos/chaos.env      # fill in CHAOS_DB_* (never commit it)
+sudo cp server/deploy/chaos.env.example /etc/chaos/chaos.env      # fill in CHAOS_DB_* and CHAOS_CLIENT_KEY (never commit it)
 sudo chmod 600 /etc/chaos/chaos.env
 python3 -I server/tools/prod_config.py /opt/chaos/server --ip play.example.org --name "Cinders of Chaos" \
-    --motd "Welcome to Cinders of Chaos." --max-players 300 --pvp pvp --save-time 06:00 --owner "..." --url "https://..."
+    --motd "Welcome to Cinders of Chaos." --max-players 300 --pvp pvp --save-time 06:00 --owner "..." --url "https://..." \
+    [--client-url https://.../download] [--client-builds 4,5] [--client-manifest /path/updates/live/manifest.json]
 ```
 
 `server/tools/prod_config.py` (idempotent; its docstring explains every value) sets:
@@ -69,6 +70,7 @@ python3 -I server/tools/prod_config.py /opt/chaos/server --ip play.example.org -
 | `passwordType`, `passwordHashIterations` | `"pbkdf2-sha256"`, 120000 | salted PBKDF2 account passwords (engine patch 0014, `server/README.md` "Account passwords"); the iterations are the engine's, `passwordType` only names the scheme |
 | `armorPercent`, `armorPercentConstant`, `armorPercentMax` | true, 250, 80 | percent armour for players (engine patch 0016, `server/README.md` "Percent armour"); `armorPercent = false` goes back to the stock flat formula |
 | `energyShieldRechargeDelay`, `energyShieldOpcode` | 2000, 224 | the energy shield's recharge delay in ms and its client opcode (engine patch 0015, `server/README.md` "Energy shield") |
+| `clientGuardMode`, `clientGuardKey`, `clientGuardAllowDevKey`, `clientGuardTimeout`, `clientGuardDownloadUrl`, `clientGuardBuilds`, `clientGuardManifest`, `clientGuardStaffIps` | `"enforce"`, `os.getenv("CHAOS_CLIENT_KEY") or ""`, false, 10, the options | only the official client plays (engine patch 0021, `server/README.md` "Client guard"): the key is the GitHub secret `CHAOS_CLIENT_KEY` the Windows client is built with, in `/etc/chaos/chaos.env`; without it every player is kicked (the console says so at start). `clientGuardMode = "log"` for a log-only first week or an emergency |
 | `minPlayerSpeed`, `maxPlayerSpeed`, `playerSpeedBonus`, `playerSpeedPerTenLevels`, `playerSpeedSoftLevel`, `playerSpeedPerTenLevelsAbove` | 120, 2600, 50, 25, 300, 10 | movement speed (engine patch 0018, `server/README.md` "Movement speed"): walk speed held between about 1 and 10 tiles/s on normal ground; base speed = vocation + 50, 2.5 per level up to 300, 1 per level after. The client needs base patch 0029 (same step times) |
 
 The tool refuses to run while `mapName` is a cropped test map (`zcrop_*`): set the real map name first.
@@ -406,7 +408,10 @@ settings). `Services.update.required = true` in a package makes the update serve
 
 **When a new package is needed** (the exe changed: a new base patch, an engine fix): build it with
 `windows-package.yml`, raise `Services.update.package` in it, then publish an update with `--min-package` set to
-that number so older clients send their players to the download page (`Services.update.download`).
+that number so older clients send their players to the download page (`Services.update.download`). The workflow input
+`client_build` is that number in the exe too, and the game server checks it (`server/README.md` "Client guard"): list the
+old and new build in `clientGuardBuilds` for the switch, or point `clientGuardManifest` at the published manifest so its
+`min_package` refuses the old exe on the server as well.
 
 **Production is HTTPS.** The updater warns in the client log when the manifest URL is plain HTTP;
 `client/tools/serve_updates.py` (HTTP, local) is only for tests.
