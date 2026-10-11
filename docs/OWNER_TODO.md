@@ -32,6 +32,7 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 
 ## On the live server
 
+- [ ] Machine timezone `America/Sao_Paulo` (`timedatectl set-timezone America/Sao_Paulo`). Weekly resets, events and the Gambler's 4-hour refresh use server time.
 - [ ] `expose_php = Off` in php.ini.
 - [ ] The nginx server block, the `limit_req_zone` lines and `fastcgi_param HTTPS on` from website/README.md "Web server".
 - [ ] No `mock` provider in `payments.env`.

@@ -251,6 +251,10 @@ server/
    `professions`, after `charms`): the 20 materials and 10 gathering nodes (32351..32380) in `items.otb` / `items.xml`, the
    Material Broker in `data/npc`, one hooked line in the stock pick, sickle, skinning and fishing scripts; then
    `sql/chaos_professions.sql` (also created at startup). See "Professions".
+5i. The Gambler: `python3 -I server/tools/install_gamble.py <server>/data [--dry-run]` (idempotent; `install_all.py` step
+   `gamble`, after `professions`) copies the Gambler NPC (`data/npc/Mordecai Ashwager.xml` and its script) into `data/npc`;
+   `gamble.lua` places him next to the main temple at startup. No items, no tables, no client change outside `game_gamble`.
+   See "The Gambler".
 6. Restart the server (or `/reload scripts`). Check the console for Lua errors.
 7. Player commands: `python3 -I server/tools/install_commands.py <server>/data` takes the base server's spoken player
    commands out (talkactions.xml lines with "!" words, the "!" words of base revscripts, the "!commands" login lines);
@@ -325,6 +329,7 @@ working directory, as with the rest of the base server libs).
 | game_loadouts | `loadouts.lua`, `loadouts_core.lua`, `loadouts_config.lua`, `sql/chaos_loadouts.sql` | **206**, Character > Loadouts, the Loadouts button of the passive tree window | Loadouts (Armory): save whole builds (passive tree, Paragon, support runes, the vocation, an equipment set by item reference) and switch between them for free; anti-dodge rules, validation against the current tree, crash-safe switch (see "Loadouts (Armory)"). Unit and mocked-engine tests; tested on a live test server. |
 | game_charms | `charms.lua`, `charms_core.lua`, `charms_config.lua`, `sql/chaos_charms.sql`, `tools/install_charms.py` (hooks in `item_mods.lua`, `loot.lua`, `rift.lua`, `bounty.lua`, `invasion.lua`, `dungeons.lua`, `descent.lua`, `factions.lua`, `market.lua`) | **198**, Character > Charms | Charms: a 5x4 grid of small charms with minor bonuses (see "Charms"); tested on a live test server with one client. |
 | game_professions | `professions.lua`, `professions_core.lua`, `professions_config.lua`, `sql/chaos_professions.sql`, `tools/install_professions.py`, NPC `data/npc/Material Broker.xml` (buff source in `data/lib/chaos_buffs.lua`) | **195**, Economy > Professions, the Material Broker next to every temple | Four gathering professions (Delving, Wortcunning, Flaying, Angling) with levels 1-100, materials sold to the Material Broker (weekly demand, daily diminishing price and cap) and a passive experience bonus (+10% at the most); no gear, no orbs (see "Professions"). Unit and mocked-engine tests; tested on a live test server with one client. |
+| game_gamble | `gamble.lua`, `gamble_core.lua`, `gamble_config.lua`, `tools/install_gamble.py`, NPC `data/npc/Mordecai Ashwager.xml` | **199**, Economy > The Gambler, the Gambler next to the main temple | The Gambler: per character a stock of 14 sealed pieces (base type, slot and item level shown, rarity hidden) from a seed of the character and the 4-hour window (00:00, 04:00, ... server time), sold slots in player storages, gold prices by item level and slot (about 18% of an hour of hunting per piece), the rarity rolled at the purchase with the loot layer's roll after the gold and a save, a paid early refresh (see "The Gambler"). Unit and mocked-engine tests; tested on a live test server (full map) with one client. |
 
 Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 208, 209, 211, 214, 216, 217, 218, 219, 221, 222, 223, 224 (sent by the engine, patch 0015), 225, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
 `ChaosOpcodes` table in `chaos_constants.lua`.
@@ -364,6 +369,12 @@ table; checked free against the reference server's list below, the reference cli
 246 and 140), every Chaos script and client module (grep for `sendExtendedOpcode`, `registerExtended*Opcode` and opcode
 constants: 190-199 had 192 hideout, 193 PvP zone, 194 mentor, 196 veiled, 197 guild wars, 198 charms); `tests/professions_test.lua`
 checks it against `ChaosOpcodes` and those lists. The Material Broker's NPC script sends `npc` on it too.
+Extended opcode 199 (the Gambler, client `game_gamble`) is registered there too, as `ChaosOpcodes.gamble` below the table;
+checked free against the reference server's list below, the reference client's own opcodes (144-146, 210, 212, 213, 230, 246
+and 140), every Chaos script and client module (grep for `sendExtendedOpcode`, `registerExtended*Opcode` and opcode
+constants: 190-199 had 189 / 190 client guard, 192 hideout, 193 PvP zone, 194 mentor, 195 professions, 196 veiled, 197 guild
+wars, 198 charms); `tests/gamble_test.lua` checks it against `ChaosOpcodes` and those lists. The Gambler's NPC script sends
+`npc` on it too.
 
 ### Opcode collision check
 Searched the reference server for every `onExtendedOpcode`, `sendExtendedOpcode(` and opcode
@@ -395,6 +406,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7101600 - 7101639 | Town Portal (`townportal_config.lua`) |
 | 7101700 - 7101799 | Vocation Trials (`trials_config.lua`) |
 | 7101800 | Last Breath power cooldown (`data/lib/chaos_powers.lua`) |
+| 7101900 - 7101909 | the Gambler (`gamble_config.lua` `storage`, `Chaos.storage.gamble`): +0 window, +1 level, +2 vocation, +3 sold slots, +4 early refreshes; +5..9 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
 | 7112000 - 7127999 | loadouts: support runes parked per loadout (`loadouts_config.lua` `runeMirrorBase`) |
@@ -8438,6 +8450,125 @@ reason, a placed charm dragged back onto the list and taken out, then placed aga
 server restart, salvage and reforge with shards, the look text, 60 tier 15 rift drops (8 charms). Not run in game: a real
 crash, the drop hooks from real rifts, bounties, invasions, dungeons and Descent rooms (called directly), the market listing of
 a charm.
+
+## The Gambler (`gamble.lua`, `gamble_core.lua`, `gamble_config.lua`, `tools/install_gamble.py`, client `game_gamble`)
+
+Mordecai Ashwager, the Gambler, sells sealed equipment for gold: the base type, the slot and the item level are shown, the
+rarity is hidden until the piece is bought. Every number is in `gamble_config.lua`; the rules are pure in `gamble_core.lua`.
+
+**The stock.** Each character sees its own stock of 14 pieces (`stock.size`). It is new at fixed times every 4 hours: 00:00,
+04:00, 08:00, 12:00, 16:00 and 20:00 of the **server's time zone** (the clock of the machine, as every other daily and weekly
+reset). `refresh.utcOffsetHours = -3` pins the times to UTC-3 (the owner's clock) whatever the machine is set to; with the
+machine on UTC and the default `nil`, the stock changes at 21:00, 01:00, 05:00, ... UTC-3. The window shows the time of the
+next stock, the zone and a countdown. The stock is computed, not stored: a Park-Miller generator seeded by the character, the
+window number and the early refreshes bought in it (`K.seed`), the same under LuaJIT and Lua 5.3, after a relog and after a
+restart (the test pins one stock). Five player storages (7101900 - 7101904) hold the window the stock belongs to, the level
+and vocation it was made for (frozen at the first look in a window, so a level up does not reshuffle it), the sold slots (a
+bit mask) and the early refreshes. No database rows.
+
+**What is offered.** Each piece draws a slot (weights weapon 3, armour / helmet / legs / boots 2, shield / amulet / ring 1) and
+a base type from `gamble_config.lua` `pool` (234 stock bases of the base server, each with the level it belongs to):
+the 4 bases with the highest level the character can use (`base.choices`). "Can use" is read from the installed
+`data/movements/movements.xml` (Equip entries: level and vocations, as rewritten by `add_vocations.py`) and
+`data/weapons/weapons.xml` (level, vocations); items with charges or a duration, uniques and non-gear never come. A slot with
+nothing usable is drawn again. The **item level** is between gate - 6 and the gate, where the gate is what a kill of a monster
+of the character's level gives (`ChaosItemMods.sourceLevel`, tier normal: 36 at 100, 90 at 500, 123 at 1000): never above
+the drops' own curve.
+
+**Prices** (gold, `price.curve` x `price.slot`, rounded to 100). An armour piece costs about 18% of an hour of hunting at the
+level whose kills give that item level (the hunting model of `professions_config.lua`; the test checks every level 8-1500
+stays between 8% and 35%). A whole stock costs about two and a half hours of hunting, so nobody buys every crate of every
+window. Gold comes from the backpack first, then the bank (`removeTotalMoney`).
+
+| Level | Gate | Weapon x1.3 | Armour x1.15 | Amulet, ring x1.1 | Helmet, legs, shield x1 | Boots x0.9 | Early refresh | Hunting / h |
+|---|---|---|---|---|---|---|---|---|
+| 8 | 4 | 3,900 | 3,400 | 3,300 | 3,000 | 2,700 | 1,700 | 19,000 |
+| 50 | 22 | 26,000 | 23,000 | 22,000 | 20,000 | 18,000 | 11,500 | 129,000 |
+| 100 | 36 | 72,800 | 64,400 | 61,600 | 56,000 | 50,400 | 32,200 | 358,839 |
+| 200 | 54 | 126,100 | 111,500 | 106,700 | 97,000 | 87,300 | 55,700 | 620,352 |
+| 300 | 67 | 195,000 | 172,500 | 165,000 | 150,000 | 135,000 | 86,200 | 881,866 |
+| 500 | 90 | 1,105,000 | 977,500 | 935,000 | 850,000 | 765,000 | 488,700 | 5,548,330 |
+| 700 | 106 | 1,430,000 | 1,265,000 | 1,210,000 | 1,100,000 | 990,000 | 632,500 | 7,136,882 |
+| 1000 | 123 | 1,950,000 | 1,725,000 | 1,650,000 | 1,500,000 | 1,350,000 | 862,500 | 9,519,711 |
+| 1500 | 136 | 2,145,000 | 1,897,500 | 1,815,000 | 1,650,000 | 1,485,000 | 948,700 | 9,519,711 |
+
+(Prices at the gate; a piece a few item levels lower costs a little less.)
+
+**Early refresh** ("Fresh Crates", next to the Gambler): a new stock now for half an armour piece at the gate, doubled for each
+earlier one in the same window, three per window (`reroll`). It only changes which bases and item levels are offered (the
+rarity is rolled at the purchase), and it clears the sold marks: every crate is still paid in full, so it is another sink.
+
+**The rarity** is rolled only after the gold is taken, the slot is marked sold and the character is saved
+(`Chaos.saveCharacter`, the shared "save before a database credit" rule): a failed save gives the gold back (to the bank),
+unmarks the slot and rolls nothing; a crash after the save loses at most the piece, never duplicates it. The roll is the loot
+layer's own (`ChaosLoot.stockRarity` then `ChaosLoot.upgradeRarity`, the API monster drops and the rift, raid and goblin
+rewards use) as a magic monster's gear drop, raised to at least Common and capped at Divine (`odds`; no item find). The piece
+is made with `ChaosCrafting.createItem(id, rarity, item level)` (modifiers, tiers, prefixes and suffixes as on drops) and
+gets sockets like a drop (`ChaosGems.rollDropSockets`); a full backpack sends it to the inbox. Odds per crate (exact,
+`ChaosGambleCore.odds`, checked by the test against 200,000 rolls of the real `loot.lua` functions):
+
+| Rarity | Gamble | Normal monster gear drop | Magic monster gear drop |
+|---|---|---|---|
+| plain | 0% | 58.28% | 52.45% |
+| Common | 61.90% | 10.50% | 12.95% |
+| Uncommon | 11.62% | 8.33% | 9.88% |
+| Rare | 8.09% | 6.14% | 6.92% |
+| Epic | 5.36% | 4.50% | 4.78% |
+| Legendary | 3.46% | 3.24% | 3.46% |
+| Exotic | 2.74% | 2.61% | 2.74% |
+| Mythic | 2.17% | 2.08% | 2.17% |
+| Chaos | 1.41% | 1.30% | 1.41% |
+| Eternal | 1.01% | 0.94% | 1.01% |
+| Divine | 2.24% (the cap) | 0.91% | 0.94% |
+| Phantasmal and above | 0% | 1.16% | 1.30% |
+| **Legendary or better** | **13.03%** | 12.25% | 13.03% |
+
+So a crate is always at least as good as a magic monster's gear drop at every rarity up to Divine, never plain, and Legendary
+is exactly as rare as from monsters (one crate in eight); the five rarities above Divine stay with the monsters. A Divine
+reveal is told to the players within 8 tiles (`announceFrom`).
+
+**Safety.** Rate limited (`Chaos.limited`, 300 ms per player). A purchase holds a per-character lock, so a second request
+while one runs (or from inside the save) is refused; the sold bit is set before the save, so the same slot cannot be paid
+for twice. The client sends the window number and the item id it saw: a purchase across a refresh or of another piece is
+refused ("The stock has changed"). Buying and the early refresh need the Gambler within 4 tiles; the window opens anywhere
+(to look and to see the countdown).
+
+**The NPC** (`data/npc/Mordecai Ashwager.xml`, script `mordecai_ashwager.lua`, installed by `tools/install_gamble.py`,
+`install_all.py` step `gamble`): placed at startup (3 s after the other temple NPCs) next to the temple of town 1, the main
+town, on the first free tile of `npc.offsets` (none of the Material Broker's, the Ascendant Oracle's, the Keeper of Trials',
+the Great Brazier's or the Descent / raid / world boss portals' offsets). "gamble" / "trade" / "crates" / "buy" opens the
+window (opcode 199 `npc`); "odds" and "refresh" answer in the NPC channel.
+
+Protocol (opcode 199, JSON `{action, data}`): client -> server `open` | `close` | `buy {i, w, id}` | `reroll {w}`; server ->
+client `state` (`K.payload`, through `Chaos.sendChunked`: `w`, `items {i, id, c, n, s, sn, l, p, sold}`, `level`, `gate`,
+`near`, `money`, `left`, `hours`, `at`, `tz`, `reroll`, `rerolls`, `rerollMax`, `odds {r, n, p}`, `npc`, `last`), `result {ok,
+text, reveal {r, rn, id, c, n, l, s, i}}`, `npc {}`. Staff: `/gamble Name` (window, level, gate, sold, refreshes), `/gamble
+Name, new` (a new stock now), `/gamble odds`.
+
+**Client** (`game_gamble`, Economy > The Gambler): a grid of crates (look with a "?" seal, name, slot, item level, price in red
+when you cannot pay, Buy), the countdown to the next stock and its time and zone, "Fresh Crates" with its price, the odds line,
+and the reveal of the last crate in its rarity colour.
+
+**Tests:** `tests/gamble_test.lua` (LuaJIT and Lua 5.3): config check; window boundaries (03:59:59 / 04:00:00 / 07:59:59 /
+08:00:00 at UTC-3, six windows a day, the server's own zone on 4-hour marks); prices, their rounding and rise, the share of
+hunting gold per hour at every level 8-1500, the early refresh price; bases (the best four, usable, at or below the level),
+stock determinism (same character and window, another window / character / refresh), item levels never above the gate at
+any level, a pinned stock; the sold mask; the exact odds (sum 1, never plain, cap, Legendary no more often than a magic drop,
+at least as good as normal and magic drops at every rarity, 200,000 real rolls); every purchase refusal; and `gamble.lua`
+against a mocked engine: reading movements.xml / weapons.xml, the NPC placement, the window state (no rarity sent), a
+purchase (gold from the backpack then the bank, the sold mark, two saves, the item at its item level with its rarity, the
+reveal), the same slot again, an old window, a wrong piece, too little gold, a failed save (gold back, nothing rolled), two
+requests at once and a re-entrant one, a full backpack, away from the Gambler, the rate limit, a relog and a restart (same
+stock, same sold slots), a level up inside a window, the early refresh (price, doubling, three at most, away), the next
+window, a Mystic's stock. Client: `game_gamble/gambleview_test.lua`.
+
+**Tested in game** (test server on the full map with a private MariaDB, one client with the things_custom15 pair, a level
+1000 Warrior): the Gambler placed next to the main temple (the first four offsets taken, he stood on {1, 5}), "hi" and
+"gamble" opening the window, 14 Warrior pieces at item level 117-123 with prices of 1.33M-1.95M, eight purchases (Common,
+Common, Rare, Epic, Exotic, ...; storages and bank balance saved at once; a full inventory sending pieces to the inbox), the
+same stock and sold slot after a server restart and a relogin, the window from Economy > The Gambler, Fresh Crates (862,500
+gold, a new stock, the next one 1.73M), the Buy buttons off and a forced request refused away from the Gambler. Not seen: a
+refresh at the 4-hour mark with the window open, the Divine announcement, two characters at once.
 
 ## Professions (`professions.lua`, `professions_core.lua`, `professions_config.lua`, `sql/chaos_professions.sql`, `tools/install_professions.py`, client `game_professions`)
 

@@ -268,6 +268,11 @@ Chaos.tables.pvpZone = "chaos_pvpzone_players"
 ChaosOpcodes.professions = 195
 Chaos.tables.professions = "chaos_professions"
 Chaos.tables.professionSales = "chaos_professions_sales"
+-- The Gambler: sealed equipment for gold, a stock per character every 4 hours (client game_gamble; gamble.lua,
+-- gamble_core.lua, gamble_config.lua, NPC data/npc/Mordecai Ashwager.xml); storages 7101900 - 7101909 reserved
+-- (+0 window, +1 level, +2 vocation, +3 sold slots, +4 early refreshes); no tables
+ChaosOpcodes.gamble = 199
+Chaos.storage.gamble = 7101900
 
 -- ---------------------------------------------------------------------------
 -- Module settings
