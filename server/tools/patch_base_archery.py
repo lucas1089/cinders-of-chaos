@@ -42,6 +42,10 @@ quivers, mods, ammo, conjureScripts), the same file the Lua side (data/lib/chaos
    (transformEquipTo / transformDeEquipTo, followed to the end), get <attribute key="chaosMightRing" value="1" />.
    Engine src-patch 0023 reads the key: Player::queryAdd refuses a might ring in a ring slot while the other ring slot
    holds one; the login check (archery.lua) reads it through itemType:isMightRing().
+12. data/scripts/customs/rarity/base_rarity.lua, a ring dragged onto the ring in the other ring slot: the engine
+   (0023) swaps the two and calls onItemMoved for each. The base's onItemMoved clears the slot an item left and fills
+   the slot it reached, so either call would clear the other ring's slot. When the slot an item left holds another
+   item now, it clears both slots and fills both again.
 
 Idempotent: a second run changes nothing. Unknown file layouts are left alone and listed.
 """
@@ -611,6 +615,38 @@ def patch_swap(text):
     return text[:m.end()] + add + text[m.end():], 'default_onMoveItem.lua: a quiver stays beside a launcher'
 
 
+# ------------------------------------------------------------------------------------------------ the ring swap
+RARITY_FILE = os.path.join('scripts', 'customs', 'rarity', 'base_rarity.lua')
+RARITY_MARK = '-- Chaos: two rings swapped between the ring slots (patch_base_archery.py)'
+RARITY_RE = re.compile(r'^([ \t]*)function ec\.onItemMoved\(player, item, count, fromPosition, toPosition, fromCylinder, '
+                       r'toCylinder\)[ \t]*\r?\n', re.M)
+
+
+def patch_rarity_swap(text):
+    """base_rarity.lua: a swap of the two ring slots (src-patch 0023) moves two rings in one go, and each of its two
+    onItemMoved calls would clear the other's slot. -> new text, status"""
+    if RARITY_MARK in text:
+        return text, 'base_rarity.lua: a ring swap keeps both rings'
+    m = RARITY_RE.search(text)
+    if not m:
+        return text, 'base_rarity.lua: onItemMoved not found, left alone'
+    nl = '\r\n' if m.group(0).endswith('\r\n') else '\n'
+    ind = m.group(1) + '    '
+    add = (ind + RARITY_MARK + nl
+           + ind + '-- (src-patch 0023): the from slot holds the other ring now; both slots are worked out again' + nl
+           + ind + 'local other = fromPosition.x == CONTAINER_POSITION and toPosition.x == CONTAINER_POSITION' + nl
+           + ind + '    and bit.band(fromPosition.y, 0x40) == 0 and bit.band(toPosition.y, 0x40) == 0' + nl
+           + ind + '    and player:getSlotItem(fromPosition.y)' + nl
+           + ind + 'if other and usesSlot(other:getType(), fromPosition.y) and usesSlot(item:getType(), toPosition.y) then' + nl
+           + ind + '    onDeEquip(player, fromPosition.y)' + nl
+           + ind + '    onDeEquip(player, toPosition.y)' + nl
+           + ind + '    onEquip(player, other, fromPosition.y)' + nl
+           + ind + '    onEquip(player, item, toPosition.y)' + nl
+           + ind + '    return' + nl
+           + ind + 'end' + nl)
+    return text[:m.end()] + add + text[m.end():], 'base_rarity.lua: a ring swap keeps both rings'
+
+
 # ------------------------------------------------------------------------------------------------ files
 def read(path):
     return open(path, encoding='utf-8', errors='surrogateescape', newline='').read()
@@ -731,6 +767,16 @@ def main():
             writes[swap_path] = new
     else:
         print('default_onMoveItem.lua: not found')
+
+    rarity_path = os.path.join(data, RARITY_FILE)
+    if os.path.exists(rarity_path):
+        t = writes.get(rarity_path) or read(rarity_path)
+        new, note = patch_rarity_swap(t)
+        print(note)
+        if new != t:
+            writes[rarity_path] = new
+    else:
+        print('base_rarity.lua: not found')
 
     rings = 0
     for p in walk(data, ('.lua',)):

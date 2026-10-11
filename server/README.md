@@ -263,8 +263,8 @@ server/
    `install_all.py` step `archery`, after `vocations` and `spells`) gives bows and crossbows the attack, hit chance and
    missile of their ammunition, makes the quivers off-hand equipment (items.xml, items.otb, movements.xml; needs engine
    src-patch 0023), maps the base's slot tables to the second ring slot, marks the might rings (items.xml
-   `chaosMightRing`: one at a time, "Second ring slot"), keeps a quiver in the base's two-handed swap and
-   takes arrows and bolts out of loot, shops, conjure spells and rewards; then run `server/sql/chaos_archery.sql` once, with the server stopped
+   `chaosMightRing`: one at a time, "Second ring slot"), keeps both rings of a ring slot swap in the base rarity
+   script, keeps a quiver in the base's two-handed swap and takes arrows and bolts out of loot, shops, conjure spells and rewards; then run `server/sql/chaos_archery.sql` once, with the server stopped
    (the `sql` step does), before the first start with the patched items.otb. See "Infinite arrows and quivers".
 5k. Base item names: `python3 -I server/tools/patch_base_item_names.py <server>/data [--dry-run]` (idempotent;
    `install_all.py` step `itemnames`, after `archery`) gives the base items of `data/items/base_item_names.csv` their
@@ -2835,10 +2835,18 @@ ammunition slot of the protocol) takes the item types the ring slot takes and no
   base's "Quiver" name exception goes). `MoveEvents::getEvent` looks up the ring events (`slot="ring"` in movements.xml)
   for slot 10, so a ring there gets its abilities, its vocation and level check and its transformation on equip and
   de-equip (time ring, stealth ring, the skill rings: they swap item ids when worn), and decays as in slot 9;
-  `Player::getArmor` counts it. The equip hotkey puts a ring into slot 10 when slot 9 holds another ring and slot 10 is
-  free (or holds that ring: then the hotkey takes it off).
+  `Player::getArmor` counts it. The equip hotkey (`Game::playerEquipItem`) of a ring worn in slot 9 or slot 10 takes
+  it off to the backpack, as in stock (slot 9 first when both hold it); a ring not worn goes into slot 10 when slot 9
+  holds another ring and slot 10 is free, else into slot 9. A ring taken off a ring slot (the hotkey, a drop on the
+  inventory) never lands in the other ring slot (`Player::queryDestination` skips it). A ring dragged from one ring
+  slot onto the ring in the other swaps the two, both ways (`Game::internalMoveItem`: the stock exchange cannot, as
+  the source slot is still taken; the de-equip and equip events and `onMoveItem` / `onItemMoved` run for both
+  rings). Both rings stay worn, so the one-might-ring rule holds.
 - **Base Lua** (`patch_base_archery.py`): the slot tables of `data/scripts/customs/rarity/base_rarity.lua` (the base
-  rarity conditions) and `data/lib/core/itemtype.lua` (`ItemType.usesSlot`) map slot 10 to the ring bit.
+  rarity conditions) and `data/lib/core/itemtype.lua` (`ItemType.usesSlot`) map slot 10 to the ring bit. The base's
+  `onItemMoved` in `base_rarity.lua` clears the slot an item left and fills the slot it reached, so in a ring swap
+  either call would clear the other ring's slot; when the slot an item left holds another item now, it clears both
+  slots and fills both again (step 12 of the tool).
 - **Chaos systems**: `ChaosItemMods.slotBits` maps slot 10 to the ring bit, so both rings count for the item
   modifiers, the legendary powers, the gems, the veiled modifiers, the item sets (`itemsets.lua`) and the stat
   totals. The item tooltip compares a ring with both ring slots; inspect, the hover tooltips, loadouts (slot 10 is in
@@ -2873,6 +2881,16 @@ ammunition slot of the protocol) takes the item types the ring slot takes and no
   time ring allowed both ways, by drag and hotkey; a might ring alone in slot 10 allowed; `addItemEx` into slot 10 next
   to a might ring returns `RETURNVALUE_ONLYONEMIGHTRING`; the login split into the backpack, into the inbox without a
   backpack, and no change at the next login.
+- **Tested** again after two fixes (a ring dragged between the ring slots answered "There is not enough room."; the
+  hotkey of a ring in slot 9 moved it into an empty slot 10 instead of taking it off). Base server from windows-assets
+  with 0001-0023 built on Linux, every install step, the full map, a private MariaDB, a protocol client on
+  `tools/loadtest.py` (drag 0x78, hotkey 0x77): two ordinary rings (sword ring, club ring) swapped 10 to 9 and 9 to
+  10 in both orders, their rarity skills (fist +7, club +9) and the ring bonuses unchanged; two copies of the sword
+  ring swapped; a might ring and a time ring swapped both ways, the time ring stayed active (speed +60); a second
+  might ring refused by drag into slot 10, into slot 9 and onto the time ring in slot 9, with the message; the
+  hotkey put rings into slot 9 and slot 10 and took them off from slot 9 (slot 10 empty or full) and from slot 10
+  (slot 9 empty or full), also with the worn ids of the time and sword rings; with both slots full the hotkey of a
+  third ring exchanged it with slot 9 (stock).
 
 ## Town names (`tools/patch_base_towns.py`, `tools/base_towns.csv`, `tests/base_towns_patch_test.lua`)
 

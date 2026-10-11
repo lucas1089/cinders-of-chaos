@@ -2,8 +2,8 @@
 -- tools/patch_base_archery.py on a small base server data folder written here: launchers fire without ammunition
 -- (attack, hit chance and missile of their band, no ammo type), quivers become equipment (items.xml, items.otb group,
 -- movements.xml with the launchers' vocations), the conjure spells go, arrows and bolts leave monster loot, NPC shops
--- and script rewards; the might ring gets the key chaosMightRing (with the ids it turns into); a second run changes
--- nothing.
+-- and script rewards; the might ring gets the key chaosMightRing (with the ids it turns into); base_rarity.lua keeps
+-- both rings of a ring slot swap; a second run changes nothing.
 local fails, checks = 0, 0
 local function ok(cond, what)
 	checks = checks + 1
@@ -204,6 +204,38 @@ local slotBits = {
 	[CONST_SLOT_AMMO] = SLOTP_AMMO,
     [CONST_SLOT_BADGE] = SLOTP_BADGE,
 }
+
+local function usesSlot(itemType, slot)
+	return bit.band(itemType:getSlotPosition(), slotBits[slot] or 0) ~= 0
+end
+
+local function onDeEquip(player, slotPosition)
+    player.conds[slotPosition] = nil
+end
+
+local function onEquip(player, item, slotPosition)
+    player.conds[slotPosition] = item.name
+end
+
+local ec = EventCallback
+
+function ec.onItemMoved(player, item, count, fromPosition, toPosition, fromCylinder, toCylinder)
+    if fromPosition.x == CONTAINER_POSITION and bit.band(fromPosition.y, 0x40) == 0 then
+        local itemType = item:getType()
+        if usesSlot(itemType, fromPosition.y) then
+            onDeEquip(player, fromPosition.y)
+        end
+    end
+
+    if toPosition.x == CONTAINER_POSITION and bit.band(toPosition.y, 0x40) == 0 then
+        local itemType = item:getType()
+        if usesSlot(itemType, toPosition.y) then
+            onEquip(player, item, toPosition.y)
+        end
+    end
+end
+
+ec:register(10)
 ]])
 writeFile(data .. "/lib/core/itemtype.lua", [[
 local slotBits = {
@@ -319,6 +351,50 @@ local rarityMap = readFile(data .. "/scripts/customs/rarity/base_rarity.lua")
 ok(rarityMap:find("[CONST_SLOT_AMMO] = SLOTP_RING, -- Chaos: the second ring slot", 1, true), "base rarity: slot 10 maps to the ring bit")
 ok(rarityMap:find("[CONST_SLOT_BADGE] = SLOTP_BADGE,", 1, true) and not rarityMap:find("SLOTP_AMMO", 1, true), "the rest kept")
 ok(readFile(data .. "/lib/core/itemtype.lua"):find("[CONST_SLOT_AMMO] = SLOTP_RING -- Chaos", 1, true), "ItemType.usesSlot: the same")
+
+-- the ring swap (engine 0023 swaps the rings of slots 9 and 10 and calls onItemMoved for each) run as code: the
+-- base's conditions per slot are a table here (player.conds[slot] = the ring's name)
+ok(rarityMap:find("-- Chaos: two rings swapped between the ring slots", 1, true), "base rarity: the ring swap hook")
+do
+	local env = setmetatable({
+		CONTAINER_POSITION = 0xFFFF, CONST_SLOT_RING = 9, CONST_SLOT_AMMO = 10, CONST_SLOT_BADGE = 12,
+		SLOTP_RING = 32, SLOTP_AMMO = 512, SLOTP_BADGE = 4096, SLOTP_BACKPACK = 4,
+		bit = bit or (load or loadstring)("return {band = function(a, b) return a & b end}")(),
+		EventCallback = {register = function() end},
+	}, {__index = _G})
+	local chunk
+	if setfenv then
+		chunk = assert(loadstring(rarityMap))
+		setfenv(chunk, env)
+	else
+		chunk = assert(load(rarityMap, "base_rarity", "t", env))
+	end
+	chunk()
+	local moved = env.EventCallback.onItemMoved
+	local function ring(name, slotp)
+		return {name = name, getType = function() return {getSlotPosition = function() return slotp or 32 end} end}
+	end
+	local a, b = ring("A"), ring("B")
+	local function slot(y) return {x = 0xFFFF, y = y, z = 0} end
+	-- before: A in slot 10, B in slot 9; after the engine's swap: A in 9, B in 10
+	local me = {conds = {[9] = "B", [10] = "A"}, slots = {[9] = a, [10] = b}}
+	function me:getSlotItem(y) return self.slots[y] end
+	moved(me, b, 1, slot(9), slot(10))
+	eq(me.conds[9], "A", "swap, first call: slot 9 holds A's conditions")
+	eq(me.conds[10], "B", "swap, first call: slot 10 holds B's conditions")
+	moved(me, a, 1, slot(10), slot(9))
+	eq(me.conds[9], "A", "swap, second call: slot 9 still A")
+	eq(me.conds[10], "B", "swap, second call: slot 10 still B")
+	-- a ring taken off into a container: its slot is cleared, the other ring stays (stock)
+	me.slots[9] = nil
+	moved(me, a, 1, slot(9), {x = 0xFFFF, y = 64, z = 0})
+	eq(me.conds[9], nil, "taken off: slot 9 cleared")
+	eq(me.conds[10], "B", "taken off: slot 10 kept")
+	-- a ring put on from a container (stock)
+	me.slots[9] = a
+	moved(me, a, 1, {x = 0xFFFF, y = 64, z = 0}, slot(9))
+	eq(me.conds[9], "A", "put on: slot 9 filled")
+end
 
 local swap = readFile(data .. "/scripts/eventcallbacks/player/default_onMoveItem.lua")
 ok(swap:find("moveItem = self:getSlotItem(CONST_SLOT_RIGHT)\n\t\t\t-- Chaos: a quiver stays beside a bow or crossbow", 1, true),
