@@ -412,8 +412,8 @@ Chaos.dungeons = {
 			}
 		},
 		[4] = {
-			title = "Rootkraken",
-			bossName = "the rootkraken",
+			title = "Rootmaw",
+			bossName = "the rootmaw",
 			loot = {{id = 2160, count = 10}},
 			challenges = {
 				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 10 minutes.", maxMs = 10 * 60 * 1000},
@@ -638,7 +638,7 @@ Chaos.worldBoss = {
 Chaos.boosted = {
 	creatures = {"Dragon", "Dragon Lord", "Giant Spider", "Hydra", "Behemoth", "Serpent Spawn", "Warlock", "Hero",
 		"Nightmare", "Grim Reaper", "Frost Dragon", "Medusa", "Sea Serpent", "Wyrm", "Lost Soul"},
-	bosses = {"Ferumbras", "Orshabaal", "Ghazbaran", "Morgaroth", "Zulazza the Corruptor", "The Plasmother"},
+	bosses = {"Vhalkareth", "Morgashal", "Moloveth", "Vharagoth", "Ssylvath the Corruptor", "The Spawnmother"},
 	storageCreature = 7100900, -- global storages for the fallback pick: index into the list above
 	storageBoss = 7100901,
 	storageDay = 7100902 -- YYYYMMDD of the fallback pick

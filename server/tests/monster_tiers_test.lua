@@ -73,7 +73,7 @@ Game = {getSpectators = function() return spectators end}
 -- types: maxHealth, boss flag
 local types = {
 	Dragon = {hp = 1000}, Rat = {hp = 20}, ["Dragon Lord"] = {hp = 1900},
-	Ferumbras = {hp = 50000, boss = true}, ["Blocked"] = {hp = 1000}
+	Vhalkareth = {hp = 50000, boss = true}, ["Blocked"] = {hp = 1000}
 }
 
 local function newMonster(typeName)
@@ -275,7 +275,7 @@ eq(forced.maxHealth, fhp, "forced: no second health multiplier")
 
 -- ---------------------------------------------------------------- bosses, skip list, small monsters, failed placement
 setChance(10000, 0, 0)
-local boss = Game.createMonster("Ferumbras", position(104, 100, 7), true, false)
+local boss = Game.createMonster("Vhalkareth", position(104, 100, 7), true, false)
 think(boss)
 eq(ChaosTierOf(boss), "boss", "boss: boss tier")
 check(state[boss:getId()] and #state[boss:getId()].mods >= 4, "boss: modifiers under its id")

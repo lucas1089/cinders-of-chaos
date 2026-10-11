@@ -36,10 +36,10 @@ Columns: server id / client id, the stock item that was overridden, required lev
 | --- | --- | --- | --- | --- | --- | --- |
 | Widowmaker | sword | 22690 / 20341 | light rapier | 40 | magic | Atk 24, Def 12, criticalHitChance 3, criticalHitAmount 15 |
 | Nightfang Katana | sword | 2412 / 3300 | katana | 60 | magic | Atk 32, Def 16, skillSword 2, criticalHitChance 4, criticalHitAmount 20 |
-| Gorecleaver | sword | 11426 / 6101 | the Ron the Ripper's sabre | 70 | rare | Atk 36, Def 18, lifeLeechChance 5, lifeLeechAmount 5 |
+| Gorecleaver | sword | 11426 / 6101 | the Mad Hobb the Ripper's sabre | 70 | rare | Atk 36, Def 18, lifeLeechChance 5, lifeLeechAmount 5 |
 | Bloodmoon Edge | sword | 11395 / 860 | crimson sword | 90 | rare | Atk 44, Def 22, skillSword 3, criticalHitChance 5, criticalHitAmount 25 |
 | Soulreaper | sword | 8209 / 7385 | crimson sword | 120 | legendary | Atk 52, Def 28, skillSword 4, lifeLeechChance 10, lifeLeechAmount 8 |
-| Executioner's Reckoning | axe | 2440 / 3328 | daramian waraxe | 80 | rare | Atk 50, Def 18, skillAxe 3, criticalHitChance 7, criticalHitAmount 30 |
+| Executioner's Reckoning | axe | 2440 / 3328 | scorchveil waraxe | 80 | rare | Atk 50, Def 18, skillAxe 3, criticalHitChance 7, criticalHitAmount 30 |
 | Harvester of Sorrows | axe | 10301 / 9384 | scythe of the reaper | 100 | legendary | Atk 50, Def 14, elementDeath 22, skillAxe 4, manaLeechChance 7, manaLeechAmount 6 |
 | Cinderbrand Axe | axe | 8925 / 8097 | solar axe | 130 | boss | Atk 58, Def 30, elementFire 24, skillAxe 5, absorbPercentFire 10 |
 | Lichfang Staff | club | 3961 / 3343 | lich staff | 70 | magic | Atk 36, Def 30, elementDeath 14, magicPoints 2, skillClub 2 |
@@ -79,14 +79,14 @@ Columns: server id / client id, the stock item that was overridden, required lev
 | Voidwalker Boots | feet | 26133 / 23477 | void boots | 100 | legendary | Arm 4, speed 30, absorbPercentDeath 6 |
 | Hornbinder Ring | ring | 21693 / 19359 | horn | 60 | magic | Arm 2, skillClub 3, maxHitPoints 120 |
 | Ring of the Last Ember | ring | 2206 / 3090 | time ring | 70 | rare | speed 20, healthGain 4, healthTicks 4000, manaGain 6, manaTicks 4000 |
-| Cinderclaw Band | ring | 10314 / 9397 | claw of 'The Noxious Spawn' | 80 | rare (set) | skillSword 3, skillAxe 3, skillClub 3, absorbPercentFire 8, magicPoints 1 |
+| Cinderclaw Band | ring | 10314 / 9397 | claw of 'The Bilespawn' | 80 | rare (set) | skillSword 3, skillAxe 3, skillClub 3, absorbPercentFire 8, magicPoints 1 |
 | Widow's Last Vow | ring | 10510 / 9593 | broken wedding ring | 90 | rare | lifeLeechChance 4, lifeLeechAmount 5, manaLeechChance 4, manaLeechAmount 5, maxHitPoints 100 |
 | Veil of the Wraith | ring | 29868 / 27212 | Myst Regalia Ring | 120 | boss | Arm 4, skillShield 5, magicPoints 2, absorbPercentPhysical 5 |
 | Grasp of the Pyre Saint | fist | 36659 / 33659 | our own "pyre saint's grasp" (server/README.md "Fist weapons") | 650 | legendary | Atk 64, Def 24, skillFist 5, criticalHitChance 4, criticalHitAmount 15, absorbPercentFire 6 |
 
 Drop chances (per 10000 per kill before the tier multiplier x1/x2/x4/x6 for magic/rare/legendary/boss; normal tier never drops uniques)
 are 4-6 (magic), 4-6 (rare), 7-9 (legendary) and 20 (boss-only items) and are in `chaos_unique_items.lua`. Measured with the
-mock harness over 20000 simulated kills of a Demon: normal 0, magic 20, rare 276, legendary 871 uniques; Ghazbaran (boss tier): 1132.
+mock harness over 20000 simulated kills of a Demon: normal 0, magic 20, rare 276, legendary 871 uniques; Moloveth (boss tier): 1132.
 
 ### Embers of Aranoth set (6 pieces)
 Hornsworn Helm, Cindermail Coat, Emberveil Greaves, Bloodstep Boots, Emberwarden, Cinderclaw Band. The set bonuses are

@@ -31,7 +31,7 @@ K.kits = {
 	mage = {
 		level = 500, skills = {[SKILL_SHIELD] = 60}, magic = 110,
 		slots = {
-			[CONST_SLOT_HEAD] = 9778, -- hollowspire mask (falcon coif is knight/paladin only)
+			[CONST_SLOT_HEAD] = 9778, -- hollowspire mask (talon coif is knight/paladin only)
 			[CONST_SLOT_ARMOR] = 11355, -- spellweaver's robe
 			[CONST_SLOT_LEGS] = 18400, -- gill legs
 			[CONST_SLOT_FEET] = 26133, -- Voidwalker Boots (unique)
@@ -58,8 +58,8 @@ K.kits = {
 	paladin = {
 		level = 500, skills = {[SKILL_DISTANCE] = 125, [SKILL_SHIELD] = 100}, magic = 30,
 		slots = {
-			[CONST_SLOT_HEAD] = 27196, -- falcon coif
-			[CONST_SLOT_ARMOR] = 12607, -- elite draken mail
+			[CONST_SLOT_HEAD] = 27196, -- talon coif
+			[CONST_SLOT_ARMOR] = 12607, -- elite wyrmblood mail
 			[CONST_SLOT_LEGS] = 27693, -- Nightshade Leggings (unique)
 			[CONST_SLOT_FEET] = 27288, -- Maw Treads (unique)
 			[CONST_SLOT_LEFT] = 8849, -- Gallowsbolt Crossbow (unique)

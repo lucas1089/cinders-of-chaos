@@ -156,13 +156,13 @@ for _, l in ipairs(lines) do joined[#joined + 1] = l.text end
 eq(table.concat(joined, ' '):find('Auto-collects orbs', 1, true) ~= nil, true, 'collects line')
 
 -- a transmog look (server transmog.lua): one "Appearance:" line, the stats stay the item's own
-local tm = { name = 'plate armor', rarity = 0, slot = 'Armor', look = { cid = 3400, name = 'falcon plate' }, weight = 120 }
+local tm = { name = 'plate armor', rarity = 0, slot = 'Armor', look = { cid = 3400, name = 'talon plate' }, weight = 120 }
 found = {}
 for _, l in ipairs(L.lines(tm)) do found[l.text] = l end
-eq(found['Appearance: falcon plate'] ~= nil and found['Appearance: falcon plate'].color, L.COLORS.mod, 'appearance line')
+eq(found['Appearance: talon plate'] ~= nil and found['Appearance: talon plate'].color, L.COLORS.mod, 'appearance line')
 found = {}
 for _, l in ipairs(L.lines({ name = 'plate armor', rarity = 0 })) do found[l.text] = l end
-eq(found['Appearance: falcon plate'], nil, 'no appearance line without a look')
+eq(found['Appearance: talon plate'], nil, 'no appearance line without a look')
 
 -- ---------------------------------------------------------------- compare
 local equipped = {

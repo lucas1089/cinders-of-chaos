@@ -48,8 +48,8 @@ local cfg = {
 		{"hellhound", "juggernaut", "plaguesmith", "undead dragon", "grim reaper"},
 		{"demon", "destroyer", "hellfire fighter", "massive fire elemental", "blightwalker"}
 	},
-	bosses = {"the old widow", "the pale count", "bazir", "verminor", "orshabaal", "ghazbaran", "morgaroth",
-		"zulazza the corruptor", "infernatil", "massacre", "tiquandas revenge", "ferumbras"},
+	bosses = {"the grey widow", "the ashen count", "zeburoth", "pestrogh", "morgashal", "moloveth", "vharagoth",
+		"ssylvath the corruptor", "ashvoran", "massacre", "jungle's revenge", "vhalkareth"},
 	fallbackMonster = "demon"
 }
 ChaosTowerRunConfig = cfg

@@ -74,7 +74,7 @@ eq(K.activity(acts, "dungeon").targets[1], "Bones Dungeon", "dungeon names")
 eq(K.activity(acts, "trial").targets[2], "Cruel", "trial tiers")
 check(K.activity(acts, "other").title, "other takes a title")
 local bare = K.buildActivities(cfg, {})
-eq(K.activity(bare, "dungeon").targets[4], "Rootkraken", "dungeon fallback")
+eq(K.activity(bare, "dungeon").targets[4], "Rootmaw", "dungeon fallback")
 eq(#K.activity(bare, "worldboss").targets, 0, "no world boss list without the config")
 eq(K.activity(bare, "rift").range.max, 15, "rift config default")
 for i, k in ipairs(riftCfg.omen.kinds) do

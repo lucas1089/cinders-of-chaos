@@ -137,8 +137,8 @@ C.nodeSpacing = 3 -- nodes of one area stay at least this many tiles apart
 -- area key: the same tiles after every restart. `pos` lists add fixed spots (used before the random picks).
 -- tier: the place's tier (C.tiers); fishing: true = water in the box fishes at this tier (Angling).
 C.areas = {
-	{key = "rotworm_burrows", name = "Rotworm Burrows", tier = 1, center = {x = 32224, y = 32746, z = 8}, r = 20,
-		nodes = {delving = 10}, monsters = "rotworms"},
+	{key = "gutworm_burrows", name = "Gutworm Burrows", tier = 1, center = {x = 32224, y = 32746, z = 8}, r = 20,
+		nodes = {delving = 10}, monsters = "gutworms"},
 	{key = "wolf_meadows", name = "Wolf Meadows", tier = 1, center = {x = 32580, y = 32036, z = 7}, r = 22,
 		nodes = {wortcunning = 10}, fishing = true, monsters = "wolves, bears"},
 	{key = "cyclops_crags", name = "Cyclops Crags", tier = 2, center = {x = 32448, y = 32073, z = 8}, r = 20,
@@ -190,7 +190,7 @@ C.rollHour = 6
 
 -- ------------------------------------------------------------------ balance (checked by tests/professions_test.lua)
 -- Hunting gold per hour at a character level (server/README.md "Respec": tools/respec_income.py from level 100; levels 8
--- and 40 from the same model on Rotworm / Troll / Orc and Cyclops / Dwarf Guard / Minotaur Guard hunts). Linear between.
+-- and 40 from the same model on Gutworm / Troll / Orc and Cyclops / Dwarf Guard / Minotaur Guard hunts). Linear between.
 -- The best gold per hour of a profession at its tier (profession 100, the best demand week, no daily cap) must stay
 -- below maxShare of the hunting income at the tier's charLevel. Model: gathers per hour = min(3600 / (channel + walkSec),
 -- nodes of the tier x 60 / respawnMin) for the node professions, 3600 / (channel + killSec) x flaying chance for

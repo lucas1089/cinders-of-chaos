@@ -48,7 +48,7 @@
 		<item id="7886" chance="400"/><!-- terra boots -->
 		<item id="2536" chance="300"/><!-- medusa shield -->
 		<item id="8912" chance="300"/><!-- springsprout rod -->
-		<item id="12607" chance="150"/><!-- elite draken mail -->
+		<item id="12607" chance="150"/><!-- elite wyrmblood mail -->
 		<item id="25380" countmax="1" chance="5"/><!-- talent token -->
 	</loot>
 </monster>

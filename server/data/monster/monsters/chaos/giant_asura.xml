@@ -51,17 +51,17 @@
 		<item id="2152" countmax="25" chance="65000"/><!-- Platinum Coin -->
 		<item id="5741" chance="600"/><!-- skull helmet;steel boots -->
 		<item id="2645" chance="600"/>
-		<item id="11302" chance="150"/><!-- zaoan helmet -->
+		<item id="11302" chance="150"/><!-- jadefen helmet -->
 		<item id="11301" chance="150"/>
 		<item id="11304" chance="150"/>
 		<item id="11303" chance="150"/>
-		<item id="8891" chance="400"/><!-- paladin armor;coconut shoes;Zaoan robe -->
+		<item id="8891" chance="400"/><!-- paladin armor;coconut shoes;Jadefen robe -->
 		<item id="9931" chance="400"/>
 		<item id="11356" chance="400"/>
 		<item id="2522" chance="167"/><!-- great shield;demon shield;crystal boots -->
 		<item id="2520" chance="167"/>
 		<item id="11117" chance="167"/>
-		<item id="8889" chance="237"/><!-- skullcrackerarmor;frozen plate;elite draken mail -->
+		<item id="8889" chance="237"/><!-- skullcrackerarmor;frozen plate;elite wyrmblood mail -->
 		<item id="8887" chance="237"/>
 		<item id="12607" chance="237"/>
 	</loot>

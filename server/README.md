@@ -21,6 +21,7 @@ server/
   tools/gen_codex_data.lua            regenerates the client Codex data (client game_codex/codex_data.lua), see "Codex data"
   tools/late_game.py, late_game_spawns.csv   late game stages and spawns (see "Late game")
   tools/patch_base_spawns.py, spawn_tuning.json   spawn density and respawn (see "Spawn density and respawn")
+  tools/patch_base_monster_names.py   Chaos names of the base monsters (see "Base monster names")
   data/scripts/chaos/
     chaos_constants.lua               ALL opcodes, storage keys, table names, tunables, shared helpers
     bank.lua  autoloot.lua  daily.lua  notifications.lua  passivetree.lua  passivetree_data.lua
@@ -273,6 +274,10 @@ server/
 5k. Base item names: `python3 -I server/tools/patch_base_item_names.py <server>/data [--dry-run]` (idempotent;
    `install_all.py` step `itemnames`, after `archery`) gives the base items of `data/items/base_item_names.csv` their
    Chaos names by id and moves the monster loot that named them to their ids. See "Base item names".
+5k2. Base monster names: `python3 -I server/tools/patch_base_monster_names.py <server>/data [--dry-run]` (idempotent;
+   `install_all.py` step `monsternames`, right after `lib`, before `lategame` and `spawns`) gives the base monsters of
+   `data/monster/base_monster_names.csv` (keyed by the sha256 of the old name) their Chaos names everywhere the base data
+   names them. See "Base monster names".
 5l. Town names: `python3 -I server/tools/patch_base_towns.py <server>/data [--dry-run]` (idempotent; `install_all.py`
    step `towns`, after `itemnames`) renames the map's towns by id from `tools/base_towns.csv` in the `.otbm` itself
    (`<map>.otbm.bak` keeps the original). See "Town names".
@@ -304,7 +309,7 @@ working directory, as with the rest of the base server libs).
 | game_notifications | `notifications.lua` | 79 out, 151/152 in | `/gmnotify`, accept/decline of a standard TFS party invite, `ChaosNotify.*` sender API. Catacomb start / leave-queue are hooks only; nothing triggers party/catacomb/task/battle pass toasts automatically. |
 | game_passivetree | `passivetree.lua`, `passivetree_data.lua`, `passivetree_effects.lua`, `passivetree_keystones.lua`, `paragon.lua` | 65 | Points, save with full validation (known ids, connected to root, point cap), preset storage, priced reset and single-node refund (see "Respec"), build codes (see "Build sharing"); the bonuses are applied (see "Passive tree effects"). Paragon track past level 1000 on the same opcode (see "Paragon"). |
 | game_dungeons | `dungeons.lua` | 109 | Reads the base server `DUNGEON_SYSTEM` table. Queue, group formation, teleport in, timer, monster-count progress, boss kill, difficulty unlock, speed/flawless challenges, solo/group rankings, teleport out. Difficulty does not change monsters; loot panel is display only. A shutdown ends the queue runs without a cooldown (members back where they entered); the first login after a restart or a crash inside a dungeon box goes to the temple (also for runs of the base modal, whose exit timer dies with the server). |
-| game_infinitytower | `infinitytower.lua` | 214 | Seasons, points, best floor/time, ranking, milestone claim, Adventure > Infinity Tower, `/towerrun` staff test helper. **The tower gameplay does not exist**; a future script reports results with `ChaosTower.recordRun`. Season-end top 3 chests not implemented. |
+| game_infinitytower | `infinitytower.lua`, `infinitytower_run.lua` | 214 | Seasons, points, best floor/time, ranking, milestone claim, Adventure > Infinity Tower, `/towerrun` staff test helper. The tower gameplay is `infinitytower_run.lua` (runtime-built arenas, floors as waves, boss floors; results through `ChaosTower.recordRun`; see "Infinity Tower gameplay"). Season-end top 3 chests not implemented. |
 | game_stash | `stash.lua` | **110** (new), Economy > Supply Stash | Deposit by drag, redeem, categories, block list, the Stash All button, DB persistence. Stash tabs per account limit (free / Chaos Pact / bought), Orbs / Gems / Keys tabs; tested in game (see "Chaos Pact and account storage"). |
 | game_spellbook | `spellbook.lua` | 219, Character > Spellbook / `/spells` | Spell list window: every player spell of `data/spells/spells.xml` with its data, a short description and its area of effect (see "Spellbook" below). |
 | game_lootfilter | `lootfilter.lua`, `lootfilter_core.lua`, `lootfilter_config.lua` | 238, Hunt > Loot Filter | Loot filter (glow/dim by rarity in corpses), loot channel with click-to-loot icons, rare-drop lines, loot rays, Rarity Autoloot store unlock, a counter (session / total) and an alert sound per filter rule. Tested in game (see "Loot filter"). |
@@ -331,7 +336,7 @@ working directory, as with the rest of the base server libs).
 | game_nameplate | `nameplate.lua`, `nameplate_core.lua`, `titles.lua` | 248, the Achievements window | Name plates over players: active title, `{guild}` and the name on a frame (client base patch 0022); title registry `ChaosTitles.register`; tested in game (see "Name plates and titles"). |
 | game_guild | `guild.lua`, `guild_hall.lua`, `guild_core.lua`, `guild_config.lua` | 252, Social > Guild | Guild levels (guild XP from the members, perks), guild bank, guild halls (runtime instance, upgrades, rent, depot), weekly top guilds; tested in game with two members (see "Guild levels and guild halls"). |
 | game_guildwar | `guildwar.lua`, `guildwar_core.lua`, `guildwar_config.lua`, `guildboss.lua`, `guildboss_core.lua`, `guildboss_config.lua`, `sql/chaos_guildwar.sql`, monsters `monsters/chaos/guildboss/`, engine patch 0020 | **197**, Social > Guild Wars, the Summoning Stone in the guild hall | Guild wars declared and answered in game (terms, gold stake in escrow, anti-farming kill rules, frag limit / time / surrender, base `guild_wars` rows for the engine's war emblems, war board) and the weekly guild boss (fuel, summon, instanced fight, rewards, banner, weekly board); see "Guild wars in game" and "The weekly guild boss". Unit and mocked-engine tests; tested on a live test server with two clients. |
-| game_achievements | `achievements.lua`, `achievements_core.lua`, `achievements_data.lua` | 250, Character > Achievements | Achievements: 100 in 9 categories with points, titles and rewards, progress fed by the other systems, retroactive at login; tested in game (see "Achievements"). |
+| game_achievements | `achievements.lua`, `achievements_core.lua`, `achievements_data.lua` | 250, Character > Achievements | Achievements: 173 in 10 categories (4170 points) with points, titles and rewards, progress fed by the other systems, retroactive at login; tested in game (see "Achievements"). |
 | game_pets | `pets.lua`, `pets_core.lua`, `pets_config.lua` | 254, Character > Pets / `/pet` | Pets: one companion out at a time that follows its owner, levels from kills, two small abilities per species; drops, store and achievements; tested in game (see "Pets"). |
 | game_buffbar | `buffbar.lua`, `data/lib/chaos_buffs.lua` | 234 (server -> client), Character > Buff Bar | Buff / debuff bar: icons with a countdown and stacks for the engine conditions, the Chaos class buffs, world buffs, the Victory buff, world events, trial kill stacks, chi, Rage and Reprisal; diffs only; tested in game (see "Buff bar and party frames"). |
 | game_partyframes | `partyframes.lua`, `partyframes_core.lua` | 235, Hunt > Party Frames | Party frames: health, mana, level, floor, distance, state and buffs of the party members every 500 ms, exact numbers only in range; kick / pass leadership / invite actions checked on the server; tested in game with three characters (see "Buff bar and party frames"). |
@@ -357,50 +362,99 @@ working directory, as with the rest of the base server libs).
 | game_professions | `professions.lua`, `professions_core.lua`, `professions_config.lua`, `sql/chaos_professions.sql`, `tools/install_professions.py`, NPC `data/npc/Material Broker.xml` (buff source in `data/lib/chaos_buffs.lua`) | **195**, Economy > Professions, the Material Broker next to every temple | Four gathering professions (Delving, Wortcunning, Flaying, Angling) with levels 1-100, materials sold to the Material Broker (weekly demand, daily diminishing price and cap) and a passive experience bonus (+10% at the most); no gear, no orbs (see "Professions"). Unit and mocked-engine tests; tested on a live test server with one client. |
 | game_gamble | `gamble.lua`, `gamble_core.lua`, `gamble_config.lua`, `tools/install_gamble.py`, NPC `data/npc/Mordecai Ashwager.xml` | **199**, Economy > The Gambler, the Gambler next to the main temple | The Gambler: per character a stock of 14 sealed pieces (base type, slot and item level shown, rarity hidden) from a seed of the character and the 4-hour window (00:00, 04:00, ... server time), sold slots in player storages, gold prices by item level and slot (about 18% of an hour of hunting per piece), the rarity rolled at the purchase with the loot layer's roll after the gold and a save, a paid early refresh (see "The Gambler"). Unit and mocked-engine tests; tested on a live test server (full map) with one client. |
 
-Extended opcodes 60, 65, 79, 109, 110, 151, 152, 207, 208, 209, 211, 214, 216, 217, 218, 219, 221, 222, 223, 224 (sent by the engine, patch 0015), 225, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 241, 242, 244, 246, 247, 248, 250, 251, 252, 253, 254 are all registered in the global
-`ChaosOpcodes` table in `chaos_constants.lua`.
-Extended opcode 210 (Rift Atlas) is registered there too, as `ChaosOpcodes.riftAtlas` below the table.
-Extended opcode 215 (Factions) is registered there too, as `ChaosOpcodes.factions` below the table; checked free against the
-reference server's list below, every Chaos script (`ChaosOpcodes`, `tests/factions_test.lua`) and a search of the client modules.
-Extended opcode 205 (The Ember Descent) is registered there too, as `ChaosOpcodes.descent` below the table; checked free
-against the reference server's list below, its scripts and client modules (grep for `sendExtendedOpcode`,
-`registerExtended*Opcode` and opcode constants) and every Chaos script (`tests/descent_test.lua`).
-Extended opcode 213 (the Ashen Sepulchre raid) is registered there too, as `ChaosOpcodes.raid` below the table; checked
-free the same way (`tests/raid_test.lua`).
-Extended opcode 203 (Community goals) is registered there too, as `ChaosOpcodes.community` below the table; checked free
-against the reference server's list below, every Chaos script and client module (grep for `sendExtendedOpcode`,
-`registerExtended*Opcode` and opcode constants; `tests/community_test.lua` checks `ChaosOpcodes` and that list).
-Extended opcode 204 (DPS meter and combat log) is registered there too, as `ChaosOpcodes.combatLog` below the table;
-checked free against the reference server's list below, its client modules and every Chaos script and client module
-(grep for `sendExtendedOpcode`, `registerExtended*Opcode` and opcode constants; `tests/combatlog_test.lua` checks it).
-Extended opcode 197 (guild wars and the guild boss, client `game_guildwar`) is registered there too, as `ChaosOpcodes.guildWar`
-below the table; checked free against the reference server's list below, every Chaos script and client module and the
-reference client's modules (grep for `sendExtendedOpcode`, `registerExtended*Opcode` and opcode constants: nothing in 190-199);
-`tests/guildwar_test.lua` checks it against `ChaosOpcodes` and that list.
-Extended opcode 206 (Loadouts / Armory) is registered there too, as `ChaosOpcodes.loadouts` below the table; checked free
-against the reference server's list below, every Chaos script and client module and the reference client's modules (grep for
-`sendExtendedOpcode`, `registerExtended*Opcode` and opcode constants: 200 and 206 were both free, 206 was taken);
-`tests/loadouts_test.lua` checks it against `ChaosOpcodes` and that list.
-Extended opcode 200 (the battleground and the PvP seasons, client `game_battleground`) is registered there too, as
-`ChaosOpcodes.battleground` below the table; checked free against the reference server's list below, every Chaos script and
-client module and the reference client's modules (grep for `sendExtendedOpcode`, `registerExtended*Opcode` and opcode
-constants); `tests/battleground_test.lua` checks it against `ChaosOpcodes` and that list.
-Extended opcode 198 (Charms, client `game_charms`) is registered there too, as `ChaosOpcodes.charms` below the table; checked
-free against the reference server's list below, the reference client's own opcodes (`gamelib` `ExtendedIds` 144-146, 210, 212,
-213, 230, 246 and 140), every Chaos script and client module (grep for `sendExtendedOpcode`, `registerExtended*Opcode` and opcode
-constants: 190-199 had 192 hideout, 194 mentor, 196 veiled, 197 guild wars); `tests/charms_test.lua` checks it against
-`ChaosOpcodes` and those lists.
-Extended opcode 195 (Professions, client `game_professions`) is registered there too, as `ChaosOpcodes.professions` below the
-table; checked free against the reference server's list below, the reference client's own opcodes (144-146, 210, 212, 213, 230,
-246 and 140), every Chaos script and client module (grep for `sendExtendedOpcode`, `registerExtended*Opcode` and opcode
-constants: 190-199 had 192 hideout, 193 PvP zone, 194 mentor, 196 veiled, 197 guild wars, 198 charms); `tests/professions_test.lua`
-checks it against `ChaosOpcodes` and those lists. The Material Broker's NPC script sends `npc` on it too.
-Extended opcode 199 (the Gambler, client `game_gamble`) is registered there too, as `ChaosOpcodes.gamble` below the table;
-checked free against the reference server's list below, the reference client's own opcodes (144-146, 210, 212, 213, 230, 246
-and 140), every Chaos script and client module (grep for `sendExtendedOpcode`, `registerExtended*Opcode` and opcode
-constants: 190-199 had 189 / 190 client guard, 192 hideout, 193 PvP zone, 194 mentor, 195 professions, 196 veiled, 197 guild
-wars, 198 charms); `tests/gamble_test.lua` checks it against `ChaosOpcodes` and those lists. The Gambler's NPC script sends
-`npc` on it too.
+### Extended opcodes in use
+
+Every Chaos extended opcode is a key of the global `ChaosOpcodes` table in `chaos_constants.lua` (most in the table
+itself, the newer ones as `ChaosOpcodes.<key> = n` below it), except the admin panel's 120, which is
+`CHAOS_ADMIN_OPCODE` in `admin/core.lua`. One opcode per module; the payload is JSON `{action, data}` unless the row says
+otherwise. This list was rebuilt on 2026-10-11 from `ChaosOpcodes` (loaded with LuaJIT and sorted) and a search of the
+client modules for opcode constants and `registerExtended*Opcode`; a new opcode must take a free number (see "Opcode
+collision check") and be added here.
+
+| Opcode | `ChaosOpcodes` key | Server | Client module | Notes |
+|---|---|---|---|---|
+| 60 | `bank` | `bank.lua` | `game_bank` | |
+| 65 | `passivetree` | `passivetree.lua`, `paragon.lua`, `buildshare.lua`, `respec.lua`, `trials.lua` | `game_passivetree` | |
+| 79 | `notifications` | `notifications.lua` (`ChaosNotify`) and many senders | `game_chaosnotify` | toasts, server -> client |
+| 91 | none (base server) | the base crafting script (`tools/patch_base_crafting_ui.py`) | `game_craftingtable` | the base server's own crafting opcode; listed so no module takes it |
+| 109 | `dungeons` | `dungeons.lua` | `game_dungeons` | |
+| 110 | `stash` | `stash.lua` | `game_stash` | |
+| 111 | `depotTabs` | `depot.lua` | `game_depottabs` | |
+| 120 | none (`CHAOS_ADMIN_OPCODE`) | `admin/core.lua` | `game_admin` | big payloads through `Chaos.sendChunked` |
+| 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua` | `game_monsterbar` | server -> client |
+| 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
+| 152 | `notificationsQueue` | `notifications.lua` | `game_chaosnotify` | client -> server: leave queue |
+| 188 | `rightClickEquip` | `rightclick_equip.lua` | `game_rightclickequip` | |
+| 189 | `clientGuard` | engine (src-patch 0021) | client C++ (base patch 0035) | HMAC handshake, never reaches Lua |
+| 190 | `clientGuardHello` | `clientguard.lua` | `game_chaosguard` | client -> server |
+| 191 | `levelWings` | `levelwings.lua` | `game_levelwings` | server -> client |
+| 192 | `hideout` | `hideout.lua` | `game_hideout` | |
+| 193 | `pvpZone` | `pvpzone.lua` | `game_pvpzone` | |
+| 194 | `mentor` | `mentor.lua` | `game_mentor` | |
+| 195 | `professions` | `professions.lua`, the Material Broker's NPC script | `game_professions` | |
+| 196 | `veiled` | `veiled.lua` | `game_unveil` | |
+| 197 | `guildWar` | `guildwar.lua`, `guildboss.lua` | `game_guildwar` | |
+| 198 | `charms` | `charms.lua` | `game_charms` | |
+| 199 | `gamble` | `gamble.lua`, the Gambler's NPC script | `game_gamble` | |
+| 200 | `battleground` | `battleground.lua` | `game_battleground` | |
+| 203 | `community` | `community.lua` | `game_community` | |
+| 204 | `combatLog` | `combatlog.lua` | `game_dpsmeter` | |
+| 205 | `descent` | `descent.lua` | `game_descent` | |
+| 206 | `loadouts` | `loadouts.lua` | `game_loadouts` | |
+| 207 | `daily` | `daily.lua` | `game_daily` | |
+| 208 | `partyFinder` | `party_finder.lua` | `game_partyfinder` | |
+| 209 | `orbExchange` | `orbexchange.lua` | `game_orbexchange` | |
+| 210 | `riftAtlas` | `atlas.lua` | `game_riftatlas` | |
+| 211 | `antibot` | `antibot.lua`, `reports.lua` | `game_antibot` | |
+| 212 | `transmog` | `transmog.lua` | `game_transmog` | |
+| 213 | `raid` | `raid.lua` | `game_raid` | the base client's `game_npctrade` registers 213 too (see below) |
+| 214 | `infinitytower` | `infinitytower.lua`, `infinitytower_run.lua` | `game_infinitytower` | |
+| 215 | `factions` | `factions.lua` | `game_factions` | |
+| 216 | `autoloot` | `autoloot.lua` | `game_autoloot` | |
+| 217 | `bossSpawns` | `bossspawns.lua` | `game_bossspawns` | |
+| 218 | `shop` | `shop.lua`, `shop_payments.lua` | `game_shop` | the base server's own store uses 201 |
+| 219 | `spellbook` | `spellbook.lua` | `game_spellbook` | |
+| 220 | `referral` | `referral.lua` | `game_referral` | |
+| 221 | `market` | `market.lua` (also buy orders, price history) | `game_market` | |
+| 222 | `pact` | `pact.lua` | `game_pact` | |
+| 223 | `bounty` | `bounty.lua` | `game_bounty` | |
+| 224 | `energyShield` | engine (src-patch 0015, `energyShieldOpcode`) | `game_energyshield` | server -> client, plain text `es:<current>:<max>` |
+| 225 | `cosmetics` | `cosmetics.lua` | `game_cosmetics` | |
+| 226 | `pouches` | `pouches.lua` | `game_pouches` | |
+| 227 | `seasonPass` | `seasonpass.lua` | `game_battlepass` | |
+| 228 | `rift` | `rift.lua` | `game_rift` | server -> client |
+| 229 | `leaderboard` | `leaderboard.lua` (the season ladder and mode tabs: `season.lua`, `season_modes.lua`) | `game_leaderboard` | |
+| 230 | `groundLoot` | `groundloot.lua` | `game_groundlabels` | a base client `ExtendedIds` value no base module registers |
+| 231 | `castbar` | `casting.lua`, `data/lib/chaos_casting.lua` | `game_castbar` | both ways |
+| 232 | `crafting` | `crafting.lua`, `salvage.lua` | `game_crafting` | |
+| 233 | `siege` | `siege.lua` | `game_siege` | |
+| 234 | `buffs` | `buffbar.lua`, `data/lib/chaos_buffs.lua` | `game_buffbar` | server -> client |
+| 235 | `partyFrames` | `partyframes.lua` | `game_partyframes` | |
+| 236 | `arena` | `arena.lua` | `game_arena` | |
+| 237 | `info` | `commands_ui.lua` | `game_chaosinfo` | the player commands of the menu |
+| 238 | `lootfilter` | `lootfilter.lua` | `game_lootfilter` | |
+| 239 | `townPortal` | `townportal.lua` | `game_townportal` | |
+| 240 | `inspect` | `inspect.lua` | `game_playerinspect` | |
+| 241 | `hunt` | `hunt.lua` | `game_hunt` | |
+| 242 | `itemTooltip` | `item_tooltip.lua` | `game_itemtooltip` | |
+| 243 | `supports` | `supports.lua` | `game_spellsupports` | |
+| 244 | `patchnotes` | `patchnotes.lua` | `game_patchnotes` | |
+| 245 | `mapmarks` | `map_marks.lua` | `game_mapoverlay` | |
+| 246 | `season` | `season.lua`, `season_modes.lua`, `season_journey.lua` | `game_season` | a base client `ExtendedIds` value no base module registers |
+| 247 | `monkChi` | `monk_combat.lua`, `monk_chi_core.lua` | `game_monkchi` | server -> client, plain text `chi:<chi>:<max>:<decaySec>` |
+| 248 | `nameplate` | `nameplate.lua` | `game_nameplate` | |
+| 249 | `itemLink` | `itemlink.lua` | `game_chatlinks` | |
+| 250 | `achievements` | `achievements.lua` | `game_achievements` | |
+| 251 | `invasion` | `invasion.lua` | `game_invasion` | |
+| 252 | `guild` | `guild.lua`, `guild_hall.lua` | `game_guild` | |
+| 253 | `bestiary` | `bestiary.lua` | `game_bestiary` | |
+| 254 | `pets` | `pets.lua` | `game_pets` | |
+
+From 188 to 254 every number is taken: by this list, or 201 and 202 by the reference server (its store, waystone maps).
+Below 188, a number in neither this list nor the reference lists below is free.
+The tests of the newer systems (`tests/<system>_test.lua`, for example `factions_test.lua`, `charms_test.lua`,
+`gamble_test.lua`) check that their opcode is free against `ChaosOpcodes`, the reference server's list and the base
+client's `ExtendedIds`; `tests/party_finder_test.lua` checks that no two `ChaosOpcodes` share a number.
 
 ### Opcode collision check
 Searched the reference server for every `onExtendedOpcode`, `sendExtendedOpcode(` and opcode
@@ -541,7 +595,7 @@ channel words `!mute` / `!unmute` stay: they are tutor tools inside that channel
    The envelope is an **assumption** about what client_manager does; only the client's outbound
    JSON proves it for the client-to-server direction.
 3. `game_dungeons` loads banners from `/images/dungeons/<title>`; no such images are in the
-   overlay (titles: Bones Dungeon, Master of the Elements, Forbidden Chevalier, Rootkraken).
+   overlay (titles: Bones Dungeon, Master of the Elements, Forbidden Chevalier, Rootmaw).
 4. `game_passivetree` sends via `protocolGame.sendExtendedJSONOpcode`, an OTClient call. Stock OTClient
    10.98 may lack it.
 5. (fixed) the JSON error branches of the bank, autoloot and daily client modules used an undefined variable.
@@ -557,7 +611,9 @@ General
   `result.getNumber`. None verified against a real server.
 - `json` global is the base server `lib/core/json.lua` (rxi). Empty tables encode as `[]`.
 - Packets stay far below the ~24 KB network message limit (stash is chunked at 40 items).
-- All client input is validated (integers, ranges, ownership), but there is no flood control.
+- All client input is validated (integers, ranges, ownership). Flood control: `ratelimit.lua` (`ChaosRateLimit.allow`,
+  `Chaos.limited`) drops repeats of the same action within a few hundred ms in the opcode handlers of most modules
+  (about 70 scripts use it; "Shared security rules"), and the engine's `maxPacketsPerSecond` limits every connection.
 
 bank
 - Star item id 35572 is **assumed** to be both the client id the client hard-codes and a valid server
@@ -618,7 +674,9 @@ dungeons
 - Ranking: solo = best time per player (party size 1), group = best runs with 2+ players. Times in ms.
 
 infinitytower
-- No tower gameplay. Milestone item ids are the ids the client displays and are assumed to be valid server ids.
+- The gameplay is `infinitytower_run.lua` ("Infinity Tower gameplay"); its engine calls are assumed from the engine
+  sources, tested on a mocked engine. Milestone rewards use item ids that exist (gold, Orbs of Upheaval and Fate,
+  Soulreaper; "Infinity Tower gameplay").
 - Season = 30 days counted from 2025-01-01 UTC (`Chaos.tower`). `nextTry` cooldown disabled by default.
 
 stash
@@ -1174,7 +1232,7 @@ bonuses.
 
 The first kill of each major boss gives the character +1 passive point, once per boss (10 points in all): the five world
 bosses (Kaelgor, Skaldra, The Rotmother, Nyxareth, Vharok), the Ascension Trial's Warden (type `Ascension Warden`, whatever
-class name it wears) and Ghazbaran, Apocalypse, Ferumbras Mortal Shell and Gaz'haragoth. Bosses are matched on the monster
+class name it wears) and Moloveth, Apocalypse, Vhalkareth Mortal Shell and Ul'thazmor. Bosses are matched on the monster
 TYPE name, so renamed spawns count.
 
 - Credit, as the bestiary and the bounty board (`ChaosBounty.credit`): every player in the boss's damage map (summons for
@@ -1434,7 +1492,7 @@ What taking passive points back costs. Every number is in `respec_config.lua`.
 | 600 | Soul War | 181 | 1,612,325 | 4,730,281 | 6,342,606 | 37.4 | 1.5 |
 | 1000 | Soul War | 272 | 2,419,962 | 7,099,748 | 9,519,711 | 37.5 | 1.5 |
 
-  The late-game tier 3 monsters (Darklight Core, `tools/late_game_spawns.csv`) are an experience hunt, not a gold hunt: about
+  The late-game tier 3 monsters (Nightglass Core, `tools/late_game_spawns.csv`) are an experience hunt, not a gold hunt: about
   162,000 gold per hour at level 1000 (33 kills, little coin loot), so the curve follows Soul War, which a level 1000 character can
   still hunt. The jump at level 500 is where Soul War opens. Vexclaw (in `monsters.xml` as `Vexclaw.xml`, file `vexclaw.xml`) is not
   loaded by the server and left out.
@@ -1487,7 +1545,7 @@ categories are left out. Every offer has a stable key (`ChaosShopCore.offerKey`:
 | Kind | Exists | In the store | Not sold (why) |
 |---|---|---|---|
 | Outfits (pairs of a male and a female look) | 118 | 56 full outfits with both addons + 9 addon sets of the outfits everyone has | 21 class looks (`class_looks_core.lua`, Knight and Mage among them), 16 donor-art class outfits (`Chaos.classes.outfits`; a helper is drawing new ones, they stay out too), 4 achievement rewards (Death Herald, Rift Warrior, Arena Champion, Demon Hunter), 1 season reward (Revenant), 4 season pass rewards (Everblight, Brotherhood, Doom Knight, Chaos Acolyte), 7 base battle pass rewards (Retro outfits) |
-| Mounts | 141 | 125 | 5 achievement rewards (Doombringer, Siegebreaker, Nightstinger, Rift Runner, Corpsefire Skull), 2 season rewards (Doom Skull, Darklight Devourer), 4 season pass rewards (Magma Skull, Cinderhoof, Flamesteed, Wrathfire Pegasus), 2 base battle pass rewards (Fire Panther, Erect Draptor), 3 rented horses |
+| Mounts | 141 | 125 | 5 achievement rewards (Doombringer, Siegebreaker, Nightstinger, Rift Runner, Corpsefire Skull), 2 season rewards (Doom Skull, Nightglass Devourer), 4 season pass rewards (Magma Skull, Cinderhoof, Flamesteed, Wrathfire Pegasus), 2 base battle pass rewards (Fire Panther, Erect Raptor Drake), 3 rented horses |
 | Wings (`wings.xml`) | 15 | 15 | |
 | Auras (`auras.xml`, 19 from `chaos_auras.csv`) | 24 | 24 | (Fireflies is also the guild aura; it was sold before) |
 | Outfit shaders (`shaders.xml`) | 17 | 16 | green_pixent (16): drew as a coloured checker grid in the test client, like 15 and 17 (sold before); the pixent shader files are fixed now (client/MANIFEST.md "Outfit shaders for monsters"), 16 could be sold |
@@ -1900,7 +1958,7 @@ character, `source.boss`), footprints and outlines (`ChaosCosmetics.grant`, sour
 | Outfit shaders | Verdant Sparks 16 `green_pixent` (Master of the Wilds) | Cinder Sparks 18 `ember_pixent` (Ascended Omens) |
 | Plate frames | Laurel (Keeper of the Flame); category titles bring their frames | Sepulchre (Sepulchre wardens), Infernal (the Cinderheart) |
 | Portal styles | the six achievement styles (Abyssal Maw ...) | Drowned Gate 51 (Skaldra), Seraph's Door 52 (Varkhul) |
-| Transmog | Thornmoth Vestments (Keeper of the Wort), Haloed Arms (Lifeline), Spiritthorn, Rimebound | Hellforged Visage (Kaelgor), Inferniarch Arms (Nyxareth), Deathlord Arms (Varkhul), Gilded Eldritch Arms (the Cinderheart) |
+| Transmog | Thornmoth Vestments (Keeper of the Wort), Haloed Arms (Lifeline), Spiritthorn, Rimebound | Hellforged Visage (Kaelgor), Pyrarch Arms (Nyxareth), Deathlord Arms (Varkhul), Gilded Eldritch Arms (the Cinderheart) |
 | Pets | Ash Cat, Gilded Goblin, Riftling | Rotling (the Rotmother), Ashweaver Spiderling (Sepulchre wardens) |
 | Footprints / outlines | see "Footprints and outlines" | see "Footprints and outlines" |
 
@@ -2571,7 +2629,7 @@ right-click an equipped item > Transmog. Numbers and sets: `transmog_config.lua`
   Arboreal (season), Arcanomancer (exclusive); the second store list Gravecloak (350, the star-less skeletal helmet, armor,
   legs, boots 26708-26711), Soulforged (400), Soulstalker (350), Mothwing (350), Cobra Regalia (300), Lionguard Arms (300),
   Grand Sanguine (350); achievement sets Thornmoth Vestments (`prof_wortcunning_100`) and Haloed Arms (`wb_heal_top_1`),
-  with their own `how` line; boss sets Hellforged Visage (Kaelgor), Inferniarch Arms (Nyxareth), Deathlord Arms (Varkhul),
+  with their own `how` line; boss sets Hellforged Visage (Kaelgor), Pyrarch Arms (Nyxareth), Deathlord Arms (Varkhul),
   Gilded Eldritch Arms (the Cinderheart). All are base server art that no monster drops and no NPC sells (checked against
   the installed base monsters and NPCs when they were picked; the test scans the repo data). `ChaosTransmogCore.validate`
   runs in the test and at startup.
@@ -2600,7 +2658,7 @@ Season set: `ChaosSeasonPass.ownsTransmog(player, key)` (`seasonpass.lua`) is tr
 reward `{kind = "transmog", key}`: the Ember Pack (and so Blaze and Inferno) holds Arboreal; synced when the window opens.
 Item links in chat: the snapshot carries `tip.look`, and the tooltip icon draws it (`game_itemtooltip`, `setAppearanceId`).
 **Tested in game** (cosmetics test server): Falconer's Regalia bought in the store (Owned. after), the Ember Pack granted to an
-account and Arboreal owned at the next window open, a linked transmogged helmet showing the falcon circlet in the other
+account and Arboreal owned at the next window open, a linked transmogged helmet showing the talon circlet in the other
 client's link tooltip.
 
 ## Cast-time spells (`data/lib/chaos_casting.lua`, `casting.lua`, client `game_castbar`)
@@ -3029,6 +3087,61 @@ turned into ids, 9 other mentions (an NPC shop, a quest reward text, comments), 
 
 The Haloed, Mercurial and Seraphic quivers keep their names: they belong to the base server's own late-game sets.
 
+**Second round (owner decision: every name of the other world goes).** The CSV now holds 1,182 ids: the 13 above and
+1,169 more, every base item whose name carried a proper noun or coinage of the other world (its races and factions,
+its towns as place adjectives, its bosses and their trophies, corpses and remains, its persons, named sets) or a name
+from another game (card sets, legendary weapons, a quiver, armour sets). Corpse and trophy names follow the monster
+renames ("Base monster names"), place adjectives follow the town renames (the old capital's swords take the new town
+name). An id may also be the fromid of a `fromid`/`toid` range entry (30 of them). Several ids may share a new name
+only when `items.xml` gave them the same old name (one item kind with several ids); otherwise the tool stops before
+it writes anything. Bonelord items keep their names (the Necromancer's Bonelord line uses the word; generic). On the
+reference server, run after the whole install: 1,182 ids renamed (700 distinct old names), 801 loot entries by name
+turned into ids, 516 other mentions, 318 files; a second run changes nothing. Item names that name NPCs of the other
+world (letters, keepsakes) got new person names that the later NPC rename should reuse or replace by id.
+
+## Base monster names (`tools/patch_base_monster_names.py`, `data/monster/base_monster_names.csv`, `tests/base_monster_names_patch_test.lua`)
+
+Owner decision: the base monsters that carried names of the other world (its named bosses, races, factions, cults,
+place adjectives, named sets) get Chaos names; generic fantasy names (rat, dragon, orc, skeleton, bonelord) stay.
+Stats, looks and loot are untouched: only names change.
+
+**The CSV holds no old name.** `data/monster/base_monster_names.csv` has the columns `sha256,name,kind`: the SHA-256 of
+the old name in lower case, the new name, and `monster` or `look`. The tool collects every name the base data uses
+(`monsters.xml`, the monster files, `Game.createMonsterType`, the spawn files, the raid files, the outfit and mount
+lists), hashes each one and renames the ones the CSV knows. The CSV is also the hashed mapping for the later renames of
+NPC dialogue, the quest log and raid texts: hash a name found in the data and look it up. 429 rows: 414 base monster
+types, 7 of our own Chaos monsters whose donor names came from other games (they spawn by those names in the base
+spawn file; their files in `monsters/chaos` were renamed with them), and 8 outfit and mount names with the old
+world's words (`look` rows; outfits and mounts named like a renamed monster follow its row).
+
+**What it changes** (step `monsternames` of `install_all.py`, right after `lib`): registrations in `monsters.xml` (a
+line whose new name another line already registers, from an older install, is dropped; lines that already shared a
+name stay); attribute values of the XML files (monster names, descriptions with the article fixed, summons, voices,
+event names, spawn entries and their `lategame` marks, raid spawns and messages, item descriptions, monster spells by
+name); Lua string literals (Lua monsters, scripts, actions, creature scripts, libs), never identifiers or comments.
+Whole words, case-insensitive; a match inside a longer item or monster name (a corpse "dead <name>", a kept monster)
+is left to that name, and so is a word joined by "_" or an apostrophe. Not touched: paths, NPC entries of the spawn
+file (an NPC may share a monster's name), engine effect names
+(`areaEffect` values), `data/npc` (dialogue keywords), `data/XML/quests.xml`, house files, `data/scripts/chaos`,
+`data/lib/chaos_*.lua` and the Chaos monster folders. Monster file names stay: the engine registers monsters by the
+`monsters.xml` name. It runs before `lategame` and `spawns` because `late_game_spawns.csv` names the monsters it
+replaces by their new names.
+
+**Measured on the reference server** (fresh install, the whole `install_all.py`): 414 names renamed, 272 registration
+lines, 10,696 spawn entries, 47 raid spawns, 12,501 mentions in all, 16 outfit and mount names, 606 files; a second
+run changes nothing. Started on the full map with a test database, compared with the same install before the
+renames: the same 74,255 spawn entries and 872 spawned names, every one with a monster type, 1,046 registrations all
+loaded, no "Can not find" or unknown monster warning, no Lua error, the raids load, and every loot row points to an
+item (10,533 rows; the run before had 10,526 and 6 bad rows, which the loot by id now resolves). The regenerated `bounty_pool.lua` and `bestiary_spawns.lua` differ from
+the old run only by the new names.
+
+Our tables follow the new names: boss spawns (keys renamed too; four raid bosses the base never defined were dropped),
+invasion bosses, boss points, tiers, infinity tower, bestiary words, transmog and exclusives (the Pyrarch Arms), late
+game spawns, professions areas, unique item sources and the client tests. Still named after the other world (later
+decisions): NPC names and dialogue, the quest log, raid folder and file names, house names, the other outfit and mount
+names, one engine effect name the plant monsters use (an engine constant), one base event name that a Chaos monster
+registers, and the two orb names of another game kept as `old =` keys in `chaos_orbs_config.lua` (install_orbs.py).
+
 ## World bosses (`worldboss.lua`, `data/monster/monsters/chaos/world_bosses/`)
 
 A server-wide event: a portal opens next to every temple, players gather in a lobby, one of five world bosses appears in an
@@ -3369,8 +3482,8 @@ invasion, the Victory buff and the world event; offline rewards wait in memory l
   from, `exclude` rectangles, a faction list, `kind` (town / hunt), `invasion = false` / `worldEvents = false`.
 - **Factions** (`factions`): existing monster types with their hunting level (the `bounty_pool.lua` estimates) and a
   boss. Orc Warband (Orc .. Orc Warlord, boss "Warchief Grashnak" = Orc Warlord renamed), Undead Legion (Skeleton ..
-  Blightwalker; Dracola as "Dracola the Unburied", The Pale Count from area level 200), Infernal Host (Fire Devil ..
-  Juggernaut; Orshabaal, Ghazbaran from 300), Minotaur Horde (Minotaur .. Moohtant; Bullwark as "Bullwark the Gorer").
+  Blightwalker; Sanguidrake as "Sanguidrake the Unburied", The Ashen Count from area level 200), Infernal Host (Fire Devil ..
+  Juggernaut; Morgashal, Moloveth from 300), Minotaur Horde (Minotaur .. Hornbrute; Ironbrow as "Ironbrow the Gorer").
   The renaming runs in an `onSpawn` callback, before the monster is placed, so clients see the new name.
 - **Waves**: 5. Wave i has (10 + 4 (i - 1)) x player factor monsters (1 + 0.15 per extra player within 30 tiles of
   the area, at most x3): 10, 14, 18, 22, 26 for one player. Monsters come from the faction's roster within [0.35, 1.25] x
@@ -4963,7 +5076,7 @@ out while the season runs. Season 1: Widowmaker, Riftcaller, Hellspite Arbalest,
 art; `chaos_unique_specs.lua` is unchanged).
 
 **Reward track.** Milestones of a season character (`track`): level 100 (title Ashborn), 300 (Death Herald outfit),
-600 (its addons), 1000 (Doom Skull mount), 25 bounty contracts (Revenant outfit), 5 world bosses (Darklight Devourer
+600 (its addons), 1000 (Doom Skull mount), 25 bounty contracts (Revenant outfit), 5 world bosses (Nightglass Devourer
 mount), and a tier 10 rift (title Ashen Riftwalker; listed only when `ChaosRift` exists). Season stats come from a wrapper
 around `ChaosLeaderboard.record` (`stats`: bounty and goblin add, rift keeps the best, world boss counts), so the bounty,
 rift, world boss and goblin scripts needed no change. A milestone unlocks the reward for the whole account forever
@@ -6477,10 +6590,10 @@ supports contexts, a failed cast, runes, procs labelled by file (through `pcall`
 healing done / received / overhealing, potions, the opcode actions, party with realms and sharing, pushes only on change
 and logout. It ends with the benchmark. Client: `game_dpsmeter/dpsmath_test.lua`.
 
-**Tested in game** (test server copy, a level 584 Mystic and a level 512 Deadeye in a party). The fight against Demodras
-was labelled "Demodras". Rows: Greater Arc Bolt, Supreme Arc Bolt, Supreme Frostbite, Reaper's Rune (its item icon),
+**Tested in game** (test server copy, a level 584 Mystic and a level 512 Deadeye in a party). The fight against Pyrevorn
+was labelled "Pyrevorn". Rows: Greater Arc Bolt, Supreme Arc Bolt, Supreme Frostbite, Reaper's Rune (its item icon),
 fist attacks. A spell on a fire-immune Dragon Lord counted nothing, as it dealt nothing. Healing (Grand Mending) showed
-in Healing and Received. Taken by Dragon / Demodras / Environment (fire fields). Party mode showed both members. The
+in Healing and Received. Taken by Dragon / Pyrevorn / Environment (fire fields). Party mode showed both members. The
 Combat Log window, the dropdown, To chat (the line in the chat input) and the Hunt Tracker's Meter button were checked.
 Not in game: summons, support, keystone and item-power procs, pets, and a season realm split in a party.
 
@@ -7039,6 +7152,12 @@ startup if missing; also `sql/chaos_patchnotes.sql`). The notes live on the serv
   one file name per line, when the server cannot run commands) at startup and again at most every 60 s, so a new file
   shows up within a minute; `/patchnotes reload` (staff) reads it at once. Weeks are ordered by date, then id (newest
   first); the list shows up to 52.
+- **The notes in the repository.** `2026-10-31.md` is the player-facing Open Beta note (what the game is, the systems to
+  try, the beta warning: progress may be wiped, report bugs in game and on Discord); its date makes it the newest, so
+  it opens at the first login of every account. `2026-10-08.md` and `2026-10-09.md` are the closed-test notes, kept as
+  history (the beta note says so). A server that installs the folder before 31 October shows the beta note at once;
+  where that is not wanted, delete `data/patchnotes/2026-10-31.md` after every `install_all.py` run (it copies the file
+  again). docs/BETA.md lists the notes still to write for the beta and for launch.
 - **Window.** Weeks on the left (date, title, NEW for unseen ones), the selected week on the right: title, date, intro,
   section headings in colour (New green, Changes gold, Fixes blue, Balance violet), bullets with a dot in the section
   colour, sub-bullets, bold leads. A long note is sent in parts of about 4 KB of text (`PN.parts`; one 9 KB message never
@@ -7342,8 +7461,9 @@ account storage, which is only saved at server save).
 
 ## Achievements (`achievements.lua`, `achievements_core.lua`, `achievements_data.lua`, client `game_achievements`)
 
-Long-term goals across every system: 100 achievements in 9 categories (Combat & Leveling, Monsters, World Bosses, Rifts,
-Bounties, Items & Crafting, PvP, Exploration & Social, Secrets), 2290 points in all. Client `game_achievements` (Chaos ->
+Long-term goals across every system: 173 achievements in 10 categories (Combat & Leveling, Monsters, World Bosses, Rifts,
+Raids, Bounties, Items & Crafting, PvP, Exploration & Social, Secrets), 4170 points in all (counted from
+`achievements_data.lua` on 2026-10-11). Client `game_achievements` (Chaos ->
 Achievements in the top menu, or Character > Achievements), extended opcode 250 (`ChaosOpcodes.achievements`), tables
 `chaos_achievements` and `chaos_achievement_stats` (`sql/chaos_achievements.sql`; also created at startup).
 
@@ -7503,7 +7623,7 @@ two-handed knight in full level 1000 gear):
 | Grove Keeper | 680-720 | 13,800 / 4,850 / 59 | 85k | 410 | 1.19 | 1,049 | 4,030 |
 | Blazebringer | 700-740 | 13,400 / 4,700 / 60 | 85k | 427 | 1.20 | 1,031 | 12,052 |
 | Garack | 710-750 | 14,800 / 5,400 / 67 | 95k | 483 | 1.25 | 1,008 | 5,017 |
-| Alptramun | 760-800 | 16,200 / 8,200 / 54 | 110k | 412 | 1.75 | 1,088 | 3,214 |
+| Dreamgorger | 760-800 | 16,200 / 8,200 / 54 | 110k | 412 | 1.75 | 1,088 | 3,214 |
 | Swamp Snapper | 760-800 | 16,200 / 8,200 / 55 | 110k | 420 | 1.75 | 1,229 | 8,904 |
 | Loricate Orger | 790-830 | 17,200 / 8,900 / 55 | 120k | 434 | 1.80 | 1,238 | 3,238 |
 | Frost Maiden | 800-840 | 16,300 / 8,450 / 50 | 115k | 399 | 1.80 | 1,058 | 3,725 |
@@ -7514,24 +7634,24 @@ two-handed knight in full level 1000 gear):
 | Lacewing Moth | 900-940 | 19,900 / 12,400 / 53 | 155k | 467 | 2.20 | 1,449 | 5,693 |
 | Jungle Beasts | 920-960 | 21,400 / 13,300 / 49 | 170k | 441 | 2.20 | 1,412 | 6,414 |
 | Lady bug | 940-980 | 20,400 / 12,900 / 52 | 165k | 476 | 2.25 | 1,719 | 7,450 |
-| Malofur Mangrinder | 960-1000 | 22,400 / 14,150 / 49 | 185k | 457 | 2.25 | 1,856 | 5,614 |
+| Grindmaw the Mauler | 960-1000 | 22,400 / 14,150 / 49 | 185k | 457 | 2.25 | 1,856 | 5,614 |
 | Dawn Strayer | 960-1000 | 22,000 / 13,900 / 50 | 181k | 465 | 2.25 * | ~1,750 * | - |
 | *existing, for comparison* | | | | | | | |
 | Embermaw Archon | - | 95,000 / 62,000 | 95k | - | 0.65 | 1,543 | 4,145 |
 | Inferno Juggernaut | - | 120,000 / 65,000 | 120k | - | 0.54 | 1,563 | 3,745 |
 | Pitlord Incarnate | - | 44,000 / 42,500 / 450 | 44k | 450 | 0.97 | 1,069 | 2,666 |
 | Aegis Sentinel | - | 40,000 / 58,000 / 350 | 40k | 350 | 1.45 | 783 | 2,231 |
-| Darklight Striker (replaced) | - | - | ~30k | 420 | ~0.69 | 110 | 738 |
+| Nightglass Striker (replaced) | - | - | ~30k | 420 | ~0.69 | 110 | 738 |
 
 \* Dawn Strayer (added later, tuned from its donor file): experience per health is the XML ratio, the same as
-Malofur's. Its damage was measured against a level 1000 test character in a rift (not the knight kit), 60 s each, next
-to Malofur in the same setup: Dawn Strayer 1,332/s, Malofur 1,265-1,551/s (mean ~1,410), so ~1,750/s scaled to
-Malofur's 1,856. Attacks: melee 540-820, a radius 3 physical burst 300-610, an energy bolt (range 7) 460-840, a fire
+Grindmaw's. Its damage was measured against a level 1000 test character in a rift (not the knight kit), 60 s each, next
+to Grindmaw in the same setup: Dawn Strayer 1,332/s, Grindmaw 1,265-1,551/s (mean ~1,410), so ~1,750/s scaled to
+Grindmaw's 1,856. Attacks: melee 540-820, a radius 3 physical burst 300-610, an energy bolt (range 7) 460-840, a fire
 wave 380-770. Checked in game on look 2122.
 
 "Largest hit" is the largest health drop in one 100 ms sample, so attacks that land on the same tick add up: Blazebringer's
 12k and Swamp Snapper's 8.9k are such peaks (Blazebringer peaked at 3.4k in an earlier 40 s run with nearly the same
-scale); most attacks land at 1-3k. A level 1000 knight standing in Darklight Core without healing went from 18k to 9k in
+scale); most attacks land at 1-3k. A level 1000 knight standing in Nightglass Core without healing went from 18k to 9k in
 about 2 s against a pull of 6-8 and died in the next area: these are not monsters to pull in packs of five.
 
 Tier averages of experience per health point: 1.19 (levels 650-750), 1.80 (760-850), 2.20 (860-1000). Today's best
@@ -7540,18 +7660,18 @@ the existing 650-700 hunts. The Chaos monster tiers (magic/rare/legendary) still
 
 ### Spawns (the loaded map's `<mapName>-spawn.xml`)
 
-277 entries of four level 500+ areas (the Bakragore monster set, Darklights task, level 500) are renamed to the new
-monsters (268 at first; Dawn Strayer's 9 Darklight Core entries came later, three packs of three on floors 12-14). Only weaker monsters were taken (all under 25k experience per kill: the Darklight / pillar / maggot set at
+277 entries of four level 500+ areas (the Gorevast monster set, Darklights task, level 500) are renamed to the new
+monsters (268 at first; Dawn Strayer's 9 Nightglass Core entries came later, three packs of three on floors 12-14). Only weaker monsters were taken (all under 25k experience per kill: the Nightglass / pillar / maggot set at
 19-23k and were-creatures; no bosses or unique names), spread evenly over each area in packs of three of a kind; the
 positions are the existing spawn positions (walkable, checked in game: tile with ground, not protection zone, not
 blocking, not a floor change). Each changed line carries `lategame="<old name>"`.
 
 | Area | Box (x, y, z) | Spawns there | Replaced | New monsters |
 |---|---|---|---|---|
-| Darklight Core | 34185-34306, 30999-31111, 11-14 | 136 | 77 (Darklight Matter, Striker, Construct, Emitter, Source) | tier 3: Azure Dragon, Golden Lord, Lacewing Moth, Jungle Beasts, Lady bug, Malofur Mangrinder, Dawn Strayer |
-| Jaded Roots | 34274-34393, 31198-31321, 9-12 | 299 | 119 (Mycobiontic Beetle, Rotten Man-Maggot, Meandering Mushroom, Oozing Corpus, Werecrocodile, ...) | tier 2: Alptramun, Swamp Snapper, Loricate Orger, Frost Maiden, Tundra Troll, Royal Man |
+| Nightglass Core | 34185-34306, 30999-31111, 11-14 | 136 | 77 (Nightglass Matter, Striker, Construct, Emitter, Source) | tier 3: Azure Dragon, Golden Lord, Lacewing Moth, Jungle Beasts, Lady bug, Grindmaw the Mauler, Dawn Strayer |
+| Jaded Roots | 34274-34393, 31198-31321, 9-12 | 299 | 119 (Sporeback Beetle, Rotten Corpse-grub, Meandering Mushroom, Oozing Corpus, Werecrocodile, ...) | tier 2: Dreamgorger, Swamp Snapper, Loricate Orger, Frost Maiden, Tundra Troll, Royal Man |
 | Gloom Pillars | 34445-34546, 31191-31303, 9-11 | 149 | 59 (Wandering/Walking Pillar, Sopping Carcass/Corpus, Weretiger) | tier 1: Orclops Ravager, Shaper Matriarch, Grove Keeper, Blazebringer, Garack |
-| Putrefactory | 33981-34065, 31144-31224, 11-12 | 58 | 22 (Bloated Man-Maggot, Converter, Elder Bloodjaw, ...) | tier 1 |
+| Putrefactory | 33981-34065, 31144-31224, 11-12 | 58 | 22 (Bloated Corpse-grub, Converter, Elder Bloodjaw, ...) | tier 1 |
 
 The full list (spawn centre, offset, old and new monster) is `tools/late_game_spawns.csv`. Editing it and running the tool
 again syncs the file: new rows are applied, changed rows updated, removed rows restored.
@@ -8048,7 +8168,7 @@ attack instead of the level value when it is higher (`ChaosMonk.cfg.unarmed.fist
 | ashbound cestus | 60 | 44 | 8 | weapon dealers 7,000 gp (buy back 1,400); Undead Gladiator 0.4%, Renegade Knight 0.3% |
 | pair of ember knuckles | 150 | 46 | 12 | Burning Gladiator 0.35%, Hellfire Fighter 0.3%; Yasir buys 4,500 |
 | ossuary gauntlet | 300 | 50 | 16 | Bonecleaver, Doombone, Bonelich, Grimbone, Bonecrusher 0.25%; Yasir buys 12,000 |
-| pair of cinderforged talons | 500 | 55 | 20 | Inferno Juggernaut, Nightflare Dreadknight, Malofur Mangrinder 0.15%, Orclops Ravager 0.12%; Yasir buys 28,000 |
+| pair of cinderforged talons | 500 | 55 | 20 | Inferno Juggernaut, Nightflare Dreadknight, Grindmaw the Mauler 0.15%, Orclops Ravager 0.12%; Yasir buys 28,000 |
 | Grasp of the Pyre Saint (unique, base "pyre saint's grasp") | 650 | 64 | 24 | legendary unique only (`chaos_unique_items.lua`): fist skill +5, crit 4% / +15%, fire absorb 6% |
 
 - Balance: bare fists are 40 + level x 0.025 (at most 60), so each tier is about 2 attack above them at its level: x1.04
@@ -8235,11 +8355,11 @@ at the first spawn of the map (so they never drift): the world bosses (`Chaos.wo
 |---|---|---|
 | World Bosses | Kaelgor, Skaldra, The Rotmother, Nyxareth, Vharok (arena at 5016, 5016, 7; portals at every temple) | rotation slots 03/09/15/21:00: the time of each boss's next slot; "Alive" while the event runs |
 | Island Bosses | Dreadscale (Sun 00:00), Aquatic Overlord Thalassa (Mon 16:00), Drak'thul (Tue 20:00), Thalador (Wed 20:00), Vorondor (Thu 20:00), Azazel (Fri 20:00), Mortis and Dreadbone (Sat 12:00), Tymagron (Sat 20:00), Gor'gul (Sun 20:00) | the base server's weekly timer (they stay until slain): next weekly time |
-| Raid Bosses | 29 single-spawn bosses of the base `data/raids/raids.xml` (Ferumbras, Morgaroth, Orshabaal, Ghazbaran, Gaz'haragoth, Omrafir, Zulazza, The Pale Count, The Old Widow, ...) | "Random", about every `interval2` minutes and at least `margin` after the last raid; numbers and positions read from the installed raid files at startup, raids the server does not have are left out |
-| Lair Bosses | map spawns of the real map: Apocalypse, Gaz'haragoth, Ferumbras Mortal Shell, Orshabaal, Demodras (x3), the seven Inquisition bosses, Koshei, The Collector, Bibby Bloodbath | spawntime after the tracked kill (countdown), "Respawn due" after that (the engine waits while a player sees the spot) |
-| Invasion Bosses | Warchief Grashnak, Goblin Chieftain, Mushroom King, Dracola the Unburied, Ancient Treant, Orshabaal, The Pale Count, Bullwark the Gorer, Ghazbaran | the next announced invasion whose area and faction pick this boss (`invasion_core.lua` upcoming + planBoss), else "Random" |
+| Raid Bosses | 25 single-spawn bosses of the base `data/raids/raids.xml` (Vhalkareth, Vharagoth, Morgashal, Moloveth, Ul'thazmor, Kazmorath, Ssylvath, The Ashen Count, The Grey Widow, ...) | "Random", about every `interval2` minutes and at least `margin` after the last raid; numbers and positions read from the installed raid files at startup, raids the server does not have are left out |
+| Lair Bosses | map spawns of the real map: Apocalypse, Ul'thazmor, Vhalkareth Mortal Shell, Morgashal, Pyrevorn (x3), the seven Inquisition bosses, Koshei, The Collector, Tibb the Butcher | spawntime after the tracked kill (countdown), "Respawn due" after that (the engine waits while a player sees the spot) |
+| Invasion Bosses | Warchief Grashnak, Goblin Chieftain, Mushroom King, Sanguidrake the Unburied, Ancient Treant, Morgashal, The Ashen Count, Ironbrow the Gorer, Moloveth | the next announced invasion whose area and faction pick this boss (`invasion_core.lua` upcoming + planBoss), else "Random" |
 | Rift Guardians and Omens | Rift Guardian, Sangrith, Morvane, Thalcyra | on demand (Rift Key, Omen Keys); the Omens' last kill is tracked |
-| Dungeon Bosses | Prince Skeletal, Master of the Elements, Forbidden Chevalier, The Rootkraken | on demand (dungeon queue); the player's own dungeon cooldown counts down |
+| Dungeon Bosses | Prince Skeletal, Master of the Elements, Forbidden Chevalier, The Rootmaw | on demand (dungeon queue); the player's own dungeon cooldown counts down |
 | Infinity Tower Bosses | the 12 tower bosses, floor 10, 20 ... 120, repeating every 120 floors | on demand |
 | Trial and Quest Bosses | the seven Vocation Trial bosses and the Ascension Warden | on demand; the player's trial / ascension cooldown counts down |
 | Rare Spawns | Treasure Goblin | 1 in 3000 natural respawns; "Alive" while one is up |
@@ -8248,7 +8368,7 @@ at the first spawn of the map (so they never drift): the world bosses (`Chaos.wo
 monster whose type is in the list gets the death event `ChaosBossSpawnsDeath`, and 100 ms later (the creature id exists only
 once the engine has placed it) the monsters of that type within `scanRadius` of the spawn point are matched by
 `ChaosBossSpawnsCore.match`: same type, the shown name for the renamed invasion bosses, and the place (within `radius` sqm and
-one floor of `pos`, inside a dungeon box, or anywhere). So a tower or rift copy of Orshabaal never counts for the raid or the
+one floor of `pos`, inside a dungeon box, or anywhere). So a tower or rift copy of Morgashal never counts for the raid or the
 lair, and a map Orc Warlord is no Warchief Grashnak (only the running invasion's boss is). The death stores the time, the
 player with the most damage (else the last hit) and the kill count in `chaos_boss_spawns` (one row per boss key, created at
 startup too); a boss removed without dying is dropped from "alive" when the list is built. Lair, island and raid entries
@@ -9473,7 +9593,7 @@ the area's tier; any other water fishes tier 1.
 
 | Area | Tier | Centre | Nodes | Fishing |
 |---|---|---|---|---|
-| Rotworm Burrows | 1 | 32224, 32746, 8 | Delving 10 | |
+| Gutworm Burrows | 1 | 32224, 32746, 8 | Delving 10 | |
 | Wolf Meadows | 1 | 32580, 32036, 7 | Wortcunning 10 | yes |
 | Cyclops Crags | 2 | 32448, 32073, 8 | Delving 10 | |
 | Lion's Rest | 2 | 32661, 32103, 7 | Wortcunning 10 | yes |
@@ -9494,7 +9614,7 @@ the broker like everyone (selling to an NPC is not trading).
 
 **Gold per hour** (`K.balance`, checked by the test): the best case per tier (profession 100, the best demand week, no daily cap)
 against hunting gold per hour at the tier's character level ("Respec" table: 358,839 at 100, 881,866 at 300, 5,548,330 at 500;
-levels 8 and 40 from the same model on Rotworm / Troll / Orc and Cyclops / Dwarf Guard / Minotaur Guard hunts: 19,000 and 83,000).
+levels 8 and 40 from the same model on Gutworm / Troll / Orc and Cyclops / Dwarf Guard / Minotaur Guard hunts: 19,000 and 83,000).
 Pace model: node professions min(3600 / (channel + 12 s walking), nodes of the tier x 60 / 6 min) = 100 gathers an hour (one area
 of 10 nodes); Flaying 3600 / (2.5 s + 10 s per kill) x 40%; Angling 1,200 rolls x 10%.
 

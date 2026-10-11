@@ -39,7 +39,7 @@ RENAME = {'Demon Outfit': 'Demon', 'Battle mage': 'Battle Mage', 'Astral ice': '
 EXCLUDED = [
     ({1240, 1241, 1242, 1243, 1244, 1245, 1246, 1247, 1248, 1249, 1250, 1251, 1252, 1253}, set(),
      'battle pass reward (Retro outfits, base retro_box_outfit.lua)'),
-    (set(), {122, 123}, 'battle pass reward (Fire Panther, Erect Draptor)'),
+    (set(), {122, 123}, 'battle pass reward (Fire Panther, Erect Raptor Drake)'),
     (set(), {22, 25, 26}, 'rented horse (temporary, base NPC)'),
 ]
 # outfit price by the highest look type of the pair: (below, price)

@@ -44,7 +44,7 @@ return {
 	activities = {
 		{key = "rift", name = "Rift", range = {min = 1, max = 15, label = "Tier", short = "T"}},
 		{key = "dungeon", name = "Dungeon", targets = "dungeons",
-			fallback = {"Bones Dungeon", "Master of the Elements", "Forbidden Chevalier", "Rootkraken"}},
+			fallback = {"Bones Dungeon", "Master of the Elements", "Forbidden Chevalier", "Rootmaw"}},
 		{key = "worldboss", name = "World Boss", targets = "worldBosses"},
 		{key = "omen", name = "Omen", targets = "omens",
 			fallback = {"Sangrith the Bloodmoon Herald", "Morvane the Hollow Crown", "Thalcyra the Stormbound Seer"}},

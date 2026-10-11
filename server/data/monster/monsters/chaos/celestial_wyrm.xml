@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Shenlong" nameDescription="an Shenlong" race="blood" experience="700000" evented = "8" speed="650" skulled="1" looting="1" manacost="0">
+<monster name="Celestial Wyrm" nameDescription="a celestial wyrm" race="blood" experience="700000" evented = "8" speed="650" skulled="1" looting="1" manacost="0">
 	<health now="500000" max="500000"/>
 	<look type="1500"  corpse="6068"/>
 	<level min="2800" max="3000"/>

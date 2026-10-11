@@ -70,7 +70,7 @@
 		<item id="2666" countmax="3" chance="20000"/><!-- meat -->
 		<item id="2147" countmax="3" chance="8000"/><!-- small ruby -->
 		<item id="2156" chance="4000"/><!-- red gem -->
-		<item id="7461" chance="500"/><!-- krimhorn helmet -->
+		<item id="7461" chance="500"/><!-- rimehorn helmet -->
 		<item id="7894" chance="300"/><!-- magma legs -->
 		<item id="7891" chance="300"/><!-- magma boots -->
 		<item id="7434" chance="300"/><!-- royal axe -->

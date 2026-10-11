@@ -103,7 +103,7 @@ return {
 		-- (tools/late_game_spawns.csv); the player lands on the nearest free walkable tile within 3 tiles, and a
 		-- destination without one is refused. Put the areas' real entrances here before going live.
 		hub = {
-			{name = "Darklight Core", pos = {x = 34206, y = 31047, z = 11}, level = 650},
+			{name = "Nightglass Core", pos = {x = 34206, y = 31047, z = 11}, level = 650},
 			{name = "Putrefactory", pos = {x = 34058, y = 31145, z = 11}, level = 700},
 			{name = "Jaded Roots", pos = {x = 34334, y = 31208, z = 9}, level = 800},
 			{name = "Gloom Pillars", pos = {x = 34494, y = 31257, z = 9}, level = 900}

@@ -30,6 +30,6 @@ ChaosFistWeapons = {
 		{"Inferno Juggernaut", 36658, 150},
 		{"Nightflare Dreadknight", 36658, 150},
 		{"Orclops Ravager", 36658, 120},
-		{"Malofur Mangrinder", 36658, 150},
+		{"Grindmaw the Mauler", 36658, 150},
 	}
 }

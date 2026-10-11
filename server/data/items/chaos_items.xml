@@ -26,7 +26,7 @@
 		<attribute key="description" value="Forged under a crimson moon; it never dries. (Requires level 90.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
-	<!-- 11426: stock "the Ron the Ripper's sabre", client id 6101 -->
+	<!-- 11426: stock "the Mad Hobb the Ripper's sabre", client id 6101 -->
 	<item id="11426" article="a" name="Gorecleaver">
 		<attribute key="weight" value="2500" />
 		<attribute key="weaponType" value="sword" />
@@ -89,7 +89,7 @@
 		<attribute key="description" value="It has reaped countless souls and still wants a few more. (Requires level 100.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
-	<!-- 2440: stock "daramian waraxe", client id 3328 -->
+	<!-- 2440: stock "scorchveil waraxe", client id 3328 -->
 	<item id="2440" article="an" name="Executioner's Reckoning">
 		<attribute key="weight" value="5250" />
 		<attribute key="weaponType" value="axe" />
@@ -516,7 +516,7 @@
 		<attribute key="description" value="The beetle was dead long before it was strung. (Requires level 50.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
-	<!-- 10314: stock "claw of 'The Noxious Spawn'", client id 9397 -->
+	<!-- 10314: stock "claw of 'The Bilespawn'", client id 9397 -->
 	<item id="10314" article="a" name="Cinderclaw Band">
 		<attribute key="weight" value="500" />
 		<attribute key="slotType" value="ring" />
@@ -1178,7 +1178,7 @@
 		<attribute key="description" value="A hood that swallows the light around the face. (Requires level 300.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
-	<!-- 11301: stock "Zaoan armor" -->
+	<!-- 11301: stock "Jadefen armor" -->
 	<item id="11301" article="a" name="Duskstalker Jerkin">
 		<attribute key="weight" value="9550" />
 		<attribute key="slotType" value="body" />
@@ -1188,7 +1188,7 @@
 		<attribute key="description" value="Black on black; blades slide off it like water. (Requires level 300.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
-	<!-- 11304: stock "Zaoan legs" -->
+	<!-- 11304: stock "Jadefen legs" -->
 	<item id="11304" article="a pair of" name="Duskstalker Breeches">
 		<attribute key="weight" value="6600" />
 		<attribute key="slotType" value="legs" />

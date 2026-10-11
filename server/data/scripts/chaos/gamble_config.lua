@@ -60,7 +60,7 @@ C.pool = {
 		{8930, 100}, {8928, 100}, {8852, 100}, {26756, 100}, {26757, 100}, -- emerald sword, obsidian truncheon, the devileye, frozen wand, venom rod
 		{8924, 110}, {8931, 120}, {8927, 120}, {8851, 130}, {27650, 150}, {27649, 150}, -- hellforged axe, the epiphany, dark trinity mace, royal crossbow, jungle wand, jungle rod
 		{22400, 250}, {22406, 250}, {22412, 250}, {22418, 250}, {27665, 250}, {27671, 250}, -- umbral master blade / axe / mace / bow, eldritch wand / rod
-		{27204, 300}, {27205, 300}, {27206, 300}, {27199, 300}, {27198, 300}, {27197, 300}, -- falcon longsword / battleaxe / mace / bow / wand / rod
+		{27204, 300}, {27205, 300}, {27206, 300}, {27199, 300}, {27198, 300}, {27197, 300}, -- talon longsword / battleaxe / mace / bow / wand / rod
 		{27377, 400}, {27380, 400}, {27381, 400}, {27383, 400}, {27385, 400}, {27386, 400}, -- soulcutter, souleater, soulcrusher, soulbleeder, soultainter, soulhexer
 		{27458, 600}, {27462, 600}, {27460, 600}, {27471, 600}, {27476, 600}, {27479, 600}, -- sanguine blade / hatchet / cudgel / bow / coil / rod
 		{29883, 1000}, {29885, 1000}, {29887, 1000}, {29874, 1000}, {29866, 1000} -- Dawnforged Blade / Chopper / Mace, Seraphic Bleeder, Myst Regalia Wand
@@ -69,13 +69,13 @@ C.pool = {
 		{2509, 1}, {2175, 1}, {2516, 20}, {8900, 30}, {2519, 35}, {8901, 40}, -- steel shield, spellbook, dragon shield, enlightenment, crown shield, warding
 		{2536, 50}, {8902, 50}, {8903, 60}, {2520, 70}, {2514, 80}, {8918, 80}, -- medusa shield, mind control, lost souls, demon shield, mastermind shield, dark mysteries
 		{8905, 100}, {22423, 120}, {15413, 130}, {18410, 150}, {16112, 150}, -- rainbow shield, umbral spellbook, ornate shield, prismatic shield, ancient arcana
-		{27653, 250}, {22424, 250}, {27202, 300}, {28111, 300}, -- eldritch shield, umbral master spellbook, falcon shield, vigils spellbook
+		{27653, 250}, {22424, 250}, {27202, 300}, {28111, 300}, -- eldritch shield, umbral master spellbook, talon shield, vigils spellbook
 		{29559, 400}, {29572, 400}, {29882, 1000}, {29865, 1000} -- Deathlord Shield, Soulbinder Tome, Dawnforged Shield, Myst Regalia Spellbook
 	},
 	helmet = {
 		{2457, 1}, {8820, 1}, {2491, 20}, {7903, 25}, {2475, 30}, {2498, 50}, {9778, 80}, -- steel helmet, mage hat, crown helmet, terra hood, warrior helmet, royal helmet, hollowspire mask
-		{12645, 100}, {26766, 100}, {26761, 100}, {18403, 150}, {18398, 150}, -- elite draken helmet, varruth helmet, netherwave helmet, prismatic helmet, gill gugel
-		{29470, 220}, {27227, 230}, {27667, 230}, {27668, 230}, {27196, 300}, {29471, 300}, -- hellstalker visor, terra helmet, eldritch cowl / hood, falcon coif, dreadfire headpiece
+		{12645, 100}, {26766, 100}, {26761, 100}, {18403, 150}, {18398, 150}, -- elite wyrmblood helmet, ironwrath helmet, netherwave helmet, prismatic helmet, gill gugel
+		{29470, 220}, {27227, 230}, {27667, 230}, {27668, 230}, {27196, 300}, {29471, 300}, -- hellstalker visor, terra helmet, eldritch cowl / hood, talon coif, dreadfire headpiece
 		{29560, 400}, {29567, 400}, {29573, 400}, {29878, 1000}, {29869, 1000}, {29861, 1000} -- Deathlord, Haloed, Soulbinder, Dawnforged, Seraphic, Myst Regalia
 	},
 	armor = {
@@ -88,14 +88,14 @@ C.pool = {
 	},
 	legs = {
 		{2647, 1}, {2477, 25}, {8923, 30}, {2488, 35}, {7885, 40}, {2470, 60}, {9777, 80}, -- plate legs, knight legs, ranger legs, crown legs, terra legs, golden legs, hollowspire leg piece
-		{26768, 100}, {26763, 100}, {26776, 100}, {15409, 130}, {18405, 150}, {27287, 180}, {15412, 185}, -- varruth, netherwave, felsinger, depth ocrea, prismatic, soulful, ornate
+		{26768, 100}, {26763, 100}, {26776, 100}, {15409, 130}, {18405, 150}, {27287, 180}, {15412, 185}, -- ironwrath, netherwave, ashborne, depth ocrea, prismatic, soulful, ornate
 		{27664, 250}, {27692, 250}, {27693, 250}, {28100, 300}, {28108, 300}, -- eldritch breeches, dawnfire pantaloons, midnight sarong, embersage legs, vigils legs
 		{29562, 350}, {29569, 350}, {29575, 400}, {27470, 500}, {27475, 500}, -- Deathlord, Haloed, Soulbinder, sanguine legs / greaves
 		{29880, 1000}, {29871, 1000}, {29863, 1000} -- Dawnforged, Seraphic, Myst Regalia
 	},
 	boots = {
-		{2643, 1}, {7886, 35}, {2195, 40}, {11117, 70}, {11118, 70}, {12646, 80}, {24637, 80}, -- leather boots, terra boots, boots of haste, crystal, dragon scale, draken boots, oriental shoes
-		{26769, 100}, {26777, 100}, {26764, 100}, {15410, 150}, {18406, 150}, {27647, 150}, {27648, 150}, -- varruth, felsinger, netherwave, depth calcei, prismatic, makeshift, make-do
+		{2643, 1}, {7886, 35}, {2195, 40}, {11117, 70}, {11118, 70}, {12646, 80}, {24637, 80}, -- leather boots, terra boots, boots of haste, crystal, dragon scale, wyrmblood boots, oriental shoes
+		{26769, 100}, {26777, 100}, {26764, 100}, {15410, 150}, {18406, 150}, {27647, 150}, {27648, 150}, -- ironwrath, ashborne, netherwave, depth calcei, prismatic, makeshift, make-do
 		{27211, 220}, {27249, 220}, {28101, 300}, {28115, 300}, {28109, 300}, -- cobra boots, winged boots, embersage, shadewalker, vigils
 		{29563, 400}, {29570, 400}, {29576, 400}, {27478, 500}, {27481, 500}, -- Deathlord, Haloed, Soulbinder, sanguine boots / galoshes
 		{29881, 1000}, {29872, 1000}, {29864, 1000} -- Dawnforged, Seraphic, Myst Regalia

@@ -1,5 +1,5 @@
 name,source,lookType,cls,spawns,pixdiff,dup_in_ours,note
-kroazur,donor server+second donor server,842,a_same,1039,0.0,,
+vorkhaz,donor server+second donor server,842,a_same,1039,0.0,,
 training monk,donor server,57,a_same,868,0.0475,,near-identical (re-encoded)
 grandpa lord,donor server,332,a_same,826,0.0,,
 mutated visco,donor server+second donor server,554,a_same,683,0.0,,
@@ -9,9 +9,9 @@ silicron,donor server,875,a_same,462,0.0,,
 dark sorcerer,donor server+second donor server,130,a_same,426,0.0,,
 tundra troll,donor server,257,a_same,248,0.025,,near-identical (re-encoded)
 tarrasque,donor server,268,a_same,248,0.0,,
-nerubian,donor server,579,a_same,164,0.0,,
+webbound crawler,donor server,579,a_same,164,0.0,,
 frost maiden,donor server,149,a_same,129,0.0,,
-elite seacrest serpent,donor server,675,a_same,127,0.0,,
+elite tidecrest serpent,donor server,675,a_same,127,0.0,,
 black stag,donor server,686,a_same,123,0.0,,
 blazebringer,donor server,376,a_same,87,0.0,,
 steelbeak,donor server,522,a_same,66,0.0,,
@@ -42,10 +42,10 @@ garack,donor server,1030,b_collision,866,0.8349,,
 black vixen,donor server+second donor server,1038,b_collision,774,0.673,,
 vorathrax,donor server,938,b_collision,547,0.7976,,
 thal,donor server,1365,b_collision,440,0.72,,
-alptramun,donor server+second donor server,1143,b_collision,419,0.6529,,
+dreamgorger,donor server+second donor server,1143,b_collision,419,0.6529,,
 facetis,donor server,931,b_collision,381,0.7632,,
 twisted shaper,donor server+second donor server,932,b_collision,318,0.9016,,
-malofur mangrinder,donor server+second donor server,1120,b_collision,309,0.6726,,
+grindmaw the mauler,donor server+second donor server,1120,b_collision,309,0.6726,,
 vyrm,donor server,980,b_collision,245,0.7657,906,
 dawn strayer,donor server,1286,b_collision,176,0.7324,1036,
 ice dragon,donor server+second donor server,947,b_collision,140,0.8447,,
@@ -64,7 +64,7 @@ talath,donor server,984,b_collision,1,0.7847,,
 shadowgeist,donor server,1298,b_collision,1,0.5204,,
 phantom shade,donor server,1143,b_collision,1,0.6529,,
 abyssal shadowfiend,donor server,2020,c_missing,869,,928,
-shenlong,donor server,2201,c_missing,855,,,
+celestial wyrm,donor server,2201,c_missing,855,,,
 jungle warrior,donor server,2200,c_missing,567,,,
 litle devil,donor server,2137,c_missing,430,,1296,
 golden lord,donor server,1701,c_missing,420,,,
@@ -88,12 +88,12 @@ actors power,donor server,1752,c_missing,1,,,
 evil man,donor server,1652,c_missing,1,,,
 legendary warrior,donor server,2161,c_missing,1,,,
 demon (goblin),none,,e_undefined,34,,,not in donor server registry/xml nor second donor server lua
-yalaharimonster,none,,e_undefined,30,,,not in donor server registry/xml nor second donor server lua
+hollowspire warden,none,,e_undefined,30,,,not in donor server registry/xml nor second donor server lua
 horse1,none,,e_undefined,4,,,not in donor server registry/xml nor second donor server lua
 nomadfemale,none,,e_undefined,4,,,not in donor server registry/xml nor second donor server lua
 horse3,none,,e_undefined,1,,,not in donor server registry/xml nor second donor server lua
 mercenary,donor server,1719,x_source_empty,97,,,source pair has no outfit/empty sprite at this id
 mercenary ranger,donor server,1718,x_source_empty,88,,,source pair has no outfit/empty sprite at this id
-zaoan badger,donor server,1249,x_source_empty,1,,,source pair has no outfit/empty sprite at this id
+jadefen badger,donor server,1249,x_source_empty,1,,,source pair has no outfit/empty sprite at this id
 gloomfire,donor server,1197,x_source_empty,1,,,source pair has no outfit/empty sprite at this id
 mortal illusion,donor server,1656,x_source_empty,1,,,source pair has no outfit/empty sprite at this id

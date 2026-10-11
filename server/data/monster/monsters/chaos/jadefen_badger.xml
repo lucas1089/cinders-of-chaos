@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Zaoan Badger" nameDescription="a Zaoan Badger" race="blood" experience="70" skulled="1" looting="1" speed="176" evented = "2" manacost="305">
+<monster name="Jadefen Badger" nameDescription="a jadefen badger" race="blood" experience="70" skulled="1" looting="1" speed="176" evented = "2" manacost="305">
 	<health now="65" max="65" />
 	<look type="2121" corpse="6068" />
 	<targetchange interval="4000" chance="0" />

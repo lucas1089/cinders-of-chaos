@@ -164,7 +164,8 @@ Elementalist / Illusionist, 6/16/26 Thief / Ninja / Samurai) to the server's voc
 (`g_game.getVocationName`, `VocationNames`, `translateVocationName`), sorts them for item / market / wheel lookups and
 `Creature:isKnight/isPaladin/isSorcerer/isDruid`, and gives the helper its classes (1 Warrior line, 2 Ranger line, 3 Mystic /
 Elementalist, 4 Illusionist with the druid's heals, 6 Thief line). The C++ part needs a rebuild.
-Classes five to seven (phase A, not tested in game; behind the store's class unlock): the class-byte table is `[3][10]` and reads
+Classes five to seven (phase B: tested in game with this client, level 300 rotations measured, ROADMAP C5-C7 and
+docs/CLASSES.md; behind the store's class unlock): the class-byte table is `[3][10]` and reads
 slots 7, 8 and 9: 7/17/27 Necromancer / Lich / Bone Lord (20 / 21 / 22), 8/18/28 Monk / Shadowfist / Iron Sage (17 / 18 / 19),
 9/19/29 Templar / Inquisitor / Sentinel (23 / 24 / 25). Names in every name map, `translateVocation` returns their own ids (their
 spell lists name them), the Necromancer line wears the casters' items (market 1, dat profession 3), `Creature:isNecromancer`,
@@ -352,7 +353,7 @@ and four shards rise from a violet ground ring, circle once, sink, 14 x 90 ms). 
 26 creature outfits for the rift-exclusive looks and the monsters that had no art, all donor-library creatures (owner
 rule: donated sprites first; no new art was needed): 2100-2115 the four rift families (minion, brute, elite, guardian of
 Abyssal Rift, Obsidian Hall, Ashen Crypt, Forsaken Sanctum), 2116-2118 the Omen guardians, 2119-2125 Saga, Gloomfire,
-Zaoan Badger, Dawn Strayer, Plant, Tarrasque, Cunning Hyaena. Picks: `tools/sprites/monster_looks/picks.csv`; licence
+Jadefen Badger, Dawn Strayer, Plant, Tarrasque, Cunning Hyaena. Picks: `tools/sprites/monster_looks/picks.csv`; licence
 tracing: `monster_looks/sources.csv`. Server side: server/README.md "Rifts" (looks) and
 `server/data/monster/CUSTOM_MONSTERS.md`.
 - `donor_pick.py` (new) cuts the picks from the libraries into one small pair in pick order, three of them recoloured

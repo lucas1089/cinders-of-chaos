@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Nerubian" nameDescription="a nerubian" race="blood" experience="136000" evented = "6" skulled="1" looting="1" speed="470">
+<monster name="Webbound Crawler" nameDescription="a webbound crawler" race="blood" experience="136000" evented = "6" skulled="1" looting="1" speed="470">
 	<health now="200000" max="200000" />
 	<look type="579" corpse="6068" />
 	<level min="1400" max="1550"/>

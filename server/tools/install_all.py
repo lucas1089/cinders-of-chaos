@@ -14,6 +14,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                register_spells.py reads) and patchnotes/*.md (+ index.txt). Only new or different files are written;
                files in SERVER_DIR/data/scripts/chaos that the repo no longer has are listed, never deleted.
   lib          data/lib/lib.lua loads chaos_unique_items.lua (data/items/README.md, "Install" 1)
+  monsternames tools/patch_base_monster_names.py Chaos names of the base monsters (data/monster/base_monster_names.csv,
+               keyed by the sha256 of the old name): registrations, monster files, spawns, raids, scripts, a few outfit and
+               mount names (README "Base monster names"; before lategame and spawns, which name monsters by the new names)
   vocations    tools/add_vocations.py            the classes (README "Install" 5b, docs/CLASSES.md)
                tools/patch_base_classes.py       the base server's vocation checks (NPCs, quests, familiars, ...) know
                                                  the classes (README "Install" 5b, docs/CLASSES.md "Base scripts")
@@ -80,8 +83,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                the base two-handed swap keeps a quiver, arrows and bolts leave
                loot, shops and quest rewards, the conjure spells go (README "Infinite arrows and quivers"; after
                vocations, which still reads the launchers' ammo type, and after spells)
-  itemnames    tools/patch_base_item_names.py    Chaos names of some base items by id (data/items/base_item_names.csv: the quivers,
-               the Gambler's gear with names of another world): items.xml, the monsters' loot by old name becomes loot by
+  itemnames    tools/patch_base_item_names.py    Chaos names of the base items with names of another world, by id
+               (data/items/base_item_names.csv): items.xml, the monsters' loot by old name becomes loot by
                id, other mentions in the base data renamed (README "Base item names"; after archery)
   towns        tools/patch_base_towns.py         Chaos names of the map's towns by town id (tools/base_towns.csv), in the
                towns node of the .otbm; <map>.otbm.bak keeps the original (README "Town names")
@@ -118,7 +121,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spawns', 'spells', 'archery', 'itemnames', 'towns', 'autoloot', 'commands', 'sql']
+STEPS = ['files', 'lib', 'monsternames', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spawns', 'spells', 'archery', 'itemnames', 'towns', 'autoloot', 'commands', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -261,6 +264,10 @@ def step_lib(server, data, ctx):
     sep = '' if text.endswith('\n') or text == '' else '\n'
     write(path, text + sep + LIB_MARK + '\n' + LIB_LINE + '\n')
     return True, ['lib.lua: added ' + LIB_LINE], []
+
+
+def step_monsternames(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_monster_names.py'), data], 'patch_base_monster_names.py'))
 
 
 def step_vocations(server, data, ctx):

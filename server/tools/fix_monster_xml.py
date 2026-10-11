@@ -36,18 +36,18 @@ BUILTIN_SPELLS = {'melee', 'physical', 'bleed', 'poison', 'earth', 'fire', 'ener
 BASE_MONSTER_SPELLS = {
     'ghastly dragon curse', 'djinn electrify', 'energy elemental electrify', 'massive energy elemental electrify',
     'massive fire elemental soulfire', 'hellfire fighter soulfire', 'hellspawn soulfire', 'spectre drown',
-    'phantasm drown', 'undead dragon curse', 'draken abomination curse', 'lancer beetle curse',
-    'lizard magistratus curse', 'death blob curse', 'choking fear drown', 'blightwalker curse', 'sea serpent drown',
-    'young sea serpent drown', 'quara constrictor freeze', 'quara constrictor electrify', 'cliff strider electrify',
-    'war golem electrify', 'souleater drown', 'mutated bat curse', 'vulcongra soulfire', 'lava golem soulfire',
+    'phantasm drown', 'undead dragon curse', 'wyrmblood abomination curse', 'lancer beetle curse',
+    'lizard magistrate curse', 'death blob curse', 'choking fear drown', 'blightwalker curse', 'sea serpent drown',
+    'young sea serpent drown', 'saltkin constrictor freeze', 'saltkin constrictor electrify', 'cliff strider electrify',
+    'war golem electrify', 'souleater drown', 'mutated bat curse', 'ashkarn soulfire', 'lava golem soulfire',
     'magma crawler soulfire', 'war golem skill reducer', 'silencer skill reducer', 'warlock skill reducer',
-    'cliff strider skill reducer', 'stampor skill reducer', 'diabolic imp skill reducer',
+    'cliff strider skill reducer', 'thundertusk skill reducer', 'diabolic imp skill reducer',
     'dark torturer skill reducer', 'forest fury skill reducer', 'demon outcast skill reducer', 'fury skill reducer',
-    'barbarian brutetamer skill reducer', 'deepling spellsinger skill reducer', 'werewolf skill reducer',
-    'ice golem skill reducer', 'feversleep skill reducer', 'shock head skill reducer 1', 'shock head skill reducer 2',
+    'barbarian brutetamer skill reducer', 'drownkin spellsinger skill reducer', 'werewolf skill reducer',
+    'ice golem skill reducer', 'feverdream skill reducer', 'shock head skill reducer 1', 'shock head skill reducer 2',
     'enslaved dwarf skill reducer 1', 'enslaved dwarf skill reducer 2', 'djinn cancel invisibility',
-    'betrayed wraith skill reducer', 'pirate corsair skill reducer', 'monster soulfire', 'dipthrah skill reducer',
-    'woodling paralyze', 'pixie skill reducer', 'physical explosion', 'glooth fairy skill reducer'}
+    'betrayed wraith skill reducer', 'pirate corsair skill reducer', 'monster soulfire', 'neferash skill reducer',
+    'woodling paralyze', 'pixie skill reducer', 'physical explosion', 'sludgebrass fairy skill reducer'}
 
 def known_spells():
     """lower-case monster spell names the installed server knows: built-ins, base monster instants, the stock
@@ -66,7 +66,7 @@ def known_spells():
 
 # unknown spell name (lower case) -> (extra attributes, [(effect key, value)]); same damage numbers, nearest shape
 SPELL_FIX = {
-    "gaz'haragoth iceball": ('name="ice" range="7" target="1" radius="3"',
+    "ul'thazmor iceball": ('name="ice" range="7" target="1" radius="3"',
                              [('shootEffect', 'ice'), ('areaEffect', 'icearea')]),
     'ranged_stun_stone': ('name="speed" target="1" speedchange="-700" duration="3000"',
                           [('shootEffect', 'largerock'), ('areaEffect', 'stun')]),

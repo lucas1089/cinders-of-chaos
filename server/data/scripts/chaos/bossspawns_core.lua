@@ -16,7 +16,7 @@ local function lower(s)
 end
 
 local function title(s)
-	-- "the old widow" -> "The Old Widow"; keeps "of", "the" small after the first word
+	-- "the grey widow" -> "The Grey Widow"; keeps "of", "the" small after the first word
 	local small = {of = true, the = true}
 	local i = 0
 	return (tostring(s or ""):gsub("(%a)([%w']*)", function(a, b)

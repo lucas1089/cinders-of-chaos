@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Alptramun" nameDescription="a Alptramun" race="blood" experience="8200" speed="54" evented = "4" skulled="1" looting="1" manacost="0">
+<monster name="Dreamgorger" nameDescription="a dreamgorger" race="blood" experience="8200" speed="54" evented = "4" skulled="1" looting="1" manacost="0">
 	<health now="16200" max="16200"/>
 	<level min="760" max="800"/>
 	<look type="1479" corpse="6068" corpseActionId = "41021" />
@@ -65,7 +65,7 @@
 		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
 		<item id="2152" countmax="25" chance="65000"/><!-- Platinum Coin -->
 		<item id="6500" countmax="1" chance="400"/><!-- demonic essences -->
-		<item id="11302" chance="375" /><!-- zaoan helmet -->
+		<item id="11302" chance="375" /><!-- jadefen helmet -->
 		<item id="11301" chance="375" />
 		<item id="11304" chance="375" />
 		<item id="11303" chance="375" />
@@ -73,7 +73,7 @@
 		<item id="9931" chance="375" />
 		<item id="11356" chance="375" />
 		<item id="2645" chance="375" />
-		<item id="8889" chance="250" /><!-- skullcrackerarmor;frozen plate;elite draken mail;swamplair armor -->
+		<item id="8889" chance="250" /><!-- skullcrackerarmor;frozen plate;elite wyrmblood mail;swamplair armor -->
 		<item id="8887" chance="250" />
 		<item id="12607" chance="250" />
 		<item id="8880" chance="250" />

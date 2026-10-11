@@ -102,8 +102,8 @@ return {
 			{name = "Lost Soul", level = 101}, {name = "Grim Reaper", level = 119}, {name = "Skeleton Elite Warrior", level = 130},
 			{name = "Undead Elite Gladiator", level = 133}, {name = "Undead Dragon", level = 139}, {name = "Blightwalker", level = 148}
 		}, bosses = {
-			{name = "Dracola", level = 110, rename = "Dracola the Unburied"},
-			{name = "The Pale Count", level = 200}
+			{name = "Sanguidrake", level = 110, rename = "Sanguidrake the Unburied"},
+			{name = "The Ashen Count", level = 200}
 		}},
 		demons = {name = "Infernal Host", color = "#e0603a", monsters = {
 			{name = "Fire Devil", level = 19}, {name = "Fire Elemental", level = 24}, {name = "Demon Skeleton", level = 25},
@@ -111,16 +111,16 @@ return {
 			{name = "Hellfire Fighter", level = 100}, {name = "Dark Torturer", level = 122}, {name = "Hellhound", level = 132},
 			{name = "Juggernaut", level = 284}
 		}, bosses = {
-			{name = "Orshabaal", level = 150},
-			{name = "Ghazbaran", level = 300}
+			{name = "Morgashal", level = 150},
+			{name = "Moloveth", level = 300}
 		}},
 		minotaurs = {name = "Minotaur Horde", color = "#c89a5a", monsters = {
 			{name = "Minotaur", level = 11}, {name = "Minotaur Archer", level = 13}, {name = "Minotaur Guard", level = 20},
-			{name = "Minotaur Mage", level = 20}, {name = "Mooh'Tah Warrior", level = 48}, {name = "Worm Priestess", level = 62},
-			{name = "Minotaur Hunter", level = 66}, {name = "Minotaur Amazon", level = 75}, {name = "Execowtioner", level = 78},
-			{name = "Moohtant", level = 82}
+			{name = "Minotaur Mage", level = 20}, {name = "Hornsworn Warrior", level = 48}, {name = "Worm Priestess", level = 62},
+			{name = "Minotaur Hunter", level = 66}, {name = "Minotaur Amazon", level = 75}, {name = "The Bovine Headsman", level = 78},
+			{name = "Hornbrute", level = 82}
 		}, bosses = {
-			{name = "Bullwark", level = 250, rename = "Bullwark the Gorer"}
+			{name = "Ironbrow", level = 250, rename = "Ironbrow the Gorer"}
 		}},
 		-- the pack monsters (data/monster/monsters/chaos/goblins, wildwood; server/README.md "Pack items and monsters")
 		goblins = {name = "Goblin Tribe", color = "#8fbf3f", monsters = {

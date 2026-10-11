@@ -58,8 +58,8 @@ local TYPES = {
 
 	[7404] = {name = "assassin dagger", weaponType = WEAPON_SWORD, slot = 48},
 	[7418] = {name = "nightmare blade", weaponType = WEAPON_SWORD, slot = 48},
-	[28112] = {name = "shadewalker helmet", slot = SLOTP_HEAD}, [11301] = {name = "Zaoan armor", slot = SLOTP_ARMOR},
-	[11304] = {name = "Zaoan legs", slot = SLOTP_LEGS}, [27249] = {name = "winged boots", slot = SLOTP_FEET},
+	[28112] = {name = "shadewalker helmet", slot = SLOTP_HEAD}, [11301] = {name = "Jadefen armor", slot = SLOTP_ARMOR},
+	[11304] = {name = "Jadefen legs", slot = SLOTP_LEGS}, [27249] = {name = "winged boots", slot = SLOTP_FEET},
 	[24637] = {name = "oriental shoes", slot = SLOTP_FEET}, [18406] = {name = "prismatic boots", slot = SLOTP_FEET},
 	[28691] = {name = "ring of temptation", slot = SLOTP_RING}, [28100] = {name = "embersage legs", slot = SLOTP_LEGS},
 	[27474] = {name = "grand sanguine crossbow", weaponType = WEAPON_DISTANCE, slot = 48 + SLOTP_TWO_HAND},

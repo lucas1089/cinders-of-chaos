@@ -78,7 +78,7 @@ for _, p in ipairs(credited) do got[p.id] = true end
 check(got[1] and got[5] and not got[4] and not got[6], "party in range only (not far, not another floor)")
 
 -- old kills
-local ids = K.retroIds(index, {bestiary = {["the rotmother"] = 2, ["apocalypse"] = 0, ["gaz'haragoth"] = 1},
+local ids = K.retroIds(index, {bestiary = {["the rotmother"] = 2, ["apocalypse"] = 0, ["ul'thazmor"] = 1},
 	stats = {wb_kaelgor = 1, wb_skaldra = 0}, storage = function(key) return key == 7101000 and 4 or -1 end})
 local set = {}
 for _, id in ipairs(ids) do set[id] = true end
@@ -223,11 +223,11 @@ check(T.totalPoints(tank) == base + 3, "tutorial extra point + boss points add u
 
 -- old kills, once per character at login
 local veteran = newPlayer(21, 201, 600)
-dbRows.bestiary[201] = {["the rotmother"] = 3, ["gaz'haragoth"] = 1, ["apocalypse"] = 0, ["demon"] = 400}
+dbRows.bestiary[201] = {["the rotmother"] = 3, ["ul'thazmor"] = 1, ["apocalypse"] = 0, ["demon"] = 400}
 dbRows.stats[201] = {wb_kaelgor = 2}
 veteran.storage[7101000] = 4 -- ascended through the quest
 registered.ChaosBossPointsLogin.onLogin(veteran)
-check(B.count(veteran) == 4, "retro: Kaelgor (stat), Rotmother + Gaz'haragoth (bestiary), Warden (Trial stage)")
+check(B.count(veteran) == 4, "retro: Kaelgor (stat), Rotmother + Ul'thazmor (bestiary), Warden (Trial stage)")
 check(veteran.storage[cfg.storageBase] == cfg.retroVersion, "retro marked done")
 local retroText = texts[#texts].text
 check(retroText:find("+4", 1, true) and retroText:find("Boss points 4/10", 1, true), "retro message")

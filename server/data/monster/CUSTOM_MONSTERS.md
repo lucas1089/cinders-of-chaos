@@ -18,7 +18,7 @@ loaded one). On the loaded map none of the 85 imported XML monsters spawned (onl
 level 500+ areas, with clamped levels and retuned stats: `server/tools/late_game.py` and `server/tools/late_game_spawns.csv`,
 see `server/README.md` "Late game". The other imported XML monsters are still registered but spawn nowhere on the loaded map.
 
-The two spawn files together spawn 958 monster names. 98 of them (19,530 spawns) had no definition in the base server package, so those spawns were silent. Found definitions for 90: 85 XML from the donor server (`monsters/chaos/`) and 5 Lua from the second donor server (`lua/chaos/`). Still undefined: demon (goblin), horse1, horse3, labirint, litle devil, nomadfemale, training monk, yalaharimonster (1,389 spawns; they look like placeholder names).
+The two spawn files together spawn 958 monster names. 98 of them (19,530 spawns) had no definition in the base server package, so those spawns were silent. Found definitions for 90: 85 XML from the donor server (`monsters/chaos/`) and 5 Lua from the second donor server (`lua/chaos/`). Still undefined: demon (goblin), horse1, horse3, labirint, litle devil, nomadfemale, training monk, hollowspire warden (1,389 spawns; they look like placeholder names).
 
 Adaptations (`adapt_report.txt`): 147 changes, mostly the donor server's corpse id 41162 (not in our items) replaced by 6068, and loot lines for items that do not exist here removed. A common one is item 40407 in almost every donor server monster, which looks like a server-specific token: its drops are gone until we decide what it is.
 
@@ -66,12 +66,12 @@ files were generated from a table (stats per monster: health, experience, speed,
 edit them by hand from now on.
 
 **Monster looks 2100-2125 (things_custom11).** A sprite audit against things_custom10 found every lookType inside the
-pair, but seven monsters without real art. Saga 1487 showed only a few specks. Gloomfire 1197 and Zaoan Badger 1249 sat
+pair, but seven monsters without real art. Saga 1487 showed only a few specks. Gloomfire 1197 and Jadefen Badger 1249 sat
 on unrelated stock player outfits (the source pair had no sprite for them). Dawn Strayer 1036 drew broken. Plant 353
 was a stock worm, Tarrasque 268 a stock player outfit, and Cunning Hyaena borrowed the Forest Wolf 2015. They now have
-donor-library creatures: Saga 2119, Gloomfire 2120, Zaoan Badger 2121, Dawn Strayer 2122, Plant 2123, Tarrasque 2124,
+donor-library creatures: Saga 2119, Gloomfire 2120, Jadefen Badger 2121, Dawn Strayer 2122, Plant 2123, Tarrasque 2124,
 Cunning Hyaena 2125. The Omen guardians got rift-exclusive looks: Sangrith 2116, Morvane 2117, Thalcyra 2118 (Thalcyra
-shared 842 with Kroazur). 2100-2115 are the rift family looks that rift.lua puts on rift monsters (server/README.md
+shared 842 with Vorkhaz). 2100-2115 are the rift family looks that rift.lua puts on rift monsters (server/README.md
 "Rifts"). No monster file may use them.
 - Picks and sources: `client/tools/sprites/monster_looks/picks.csv` and `sources.csv`; the client pair is built by
   `donor_pick.py` + `import_outfits.py --first-outfit 2100` (client/MANIFEST.md "Monster looks pair").
@@ -80,14 +80,14 @@ shared 842 with Kroazur). 2100-2115 are the rift family looks that rift.lua puts
   `--check` changes nothing and also checks that no file uses a rift family look and that `rift_config.lua` matches.
 - Shared looks left as they are, on purpose: the elite variants share their base monster's look (Elite Ice Dragon,
   Elite Twisted Shaper, Elite Ice Witch / Frost Maiden), Trial / Ascension Warden 1540, Warden Shade / Trial Thrall 233,
-  Phantom Shade / Alptramun 1479, the Gilded Goblin pet / Shard Goblin 61.
+  Phantom Shade / Dreamgorger 1479, the Gilded Goblin pet / Shard Goblin 61.
 - Corpses are unchanged: the generic 6068 for most, and the old stock corpses for Sangrith (22562) and Thalcyra (9780).
   Dawn Strayer (2122, an armoured beast with a burning mane) now spawns: it was left out of `late_game.py` only for
   its broken look, and its file was still the donor's (level 1150-1250, 110k health, a 2,000,000 physical area hit, the
   donor events, "one of" loot lines). It is now tuned like the late-game tier 3 it joins (server/README.md "Late
-  game"): level 960-1000, 22,000 / 13,900 / 50 (health / experience / speed, as Malofur Mangrinder), melee 540-820,
-  a radius 3 physical burst 300-610, an energy bolt 460-840, a fire wave 380-770 (measured next to Malofur in game, see
-  the README table), the late-game elements, the donor events removed, its loot lines split one per item. `late_game_spawns.csv` puts it on 9 Darklight Core entries (three
+  game"): level 960-1000, 22,000 / 13,900 / 50 (health / experience / speed, as Grindmaw the Mauler), melee 540-820,
+  a radius 3 physical burst 300-610, an energy bolt 460-840, a fire wave 380-770 (measured next to Grindmaw in game, see
+  the README table), the late-game elements, the donor events removed, its loot lines split one per item. `late_game_spawns.csv` puts it on 9 Nightglass Core entries (three
   packs of three on floors 12, 13 and 14).
 - Rift monsters wear the rift names of `rift_config.lua` `looks.names` ("Abyssal Spawn" ... "Sanctum Warden"); no
   monster file may use one of those names either (`tests/rift_test.lua`).

@@ -111,14 +111,14 @@ eq(C.categoryOf("Demon Skeleton", "undead", false, false, cfg), "undead")
 eq(C.categoryOf("Orc Berserker", "blood", false, false, cfg), "humanoids", "an earlier word when the last matches nothing")
 eq(C.categoryOf("Tarantula", "venom", false, false, cfg), "vermin")
 eq(C.categoryOf("Fire Elemental", "fire", false, false, cfg), "elementals")
-eq(C.categoryOf("Ferumbras", "blood", true, false, cfg), "bosses", "bosses first")
+eq(C.categoryOf("Vhalkareth", "blood", true, false, cfg), "bosses", "bosses first")
 eq(C.categoryOf("Dragon Thing", "blood", false, true, cfg), "chaos", "Chaos monsters next")
 eq(C.categoryOf("Xyzzy", "undead", false, false, cfg), "undead", "race fallback")
 eq(C.categoryOf("Xyzzy", "venom", false, false, cfg), "vermin")
 eq(C.categoryOf("Xyzzy", "blood", false, false, cfg), "other")
 eq(C.categoryOf("Xyzzy", nil, false, false, cfg), "other")
 eq(C.categoryOf("Dragonling", "blood", false, false, cfg), "dragons", "prefix words")
-eq(C.categoryOf("Rotworm", "blood", false, false, cfg), "vermin", "suffix words (*worm)")
+eq(C.categoryOf("Gutworm", "blood", false, false, cfg), "vermin", "suffix words (*worm)")
 eq(C.categoryOf("Lost Soul", "undead", false, false, cfg), "undead", "the head noun before 'lost'")
 
 -- ---------------------------------------------------------------- exclusions
@@ -135,7 +135,7 @@ local raw = {
 	{name = "Dragon Lord", exp = 2100, health = 1900, race = "blood"},
 	{name = "Frost Dragon", exp = 2100, health = 1800, race = "undead"},
 	{name = "Demon", exp = 6000, health = 8200, race = "fire"},
-	{name = "Ferumbras", exp = 12000, health = 90000, race = "venom", boss = true},
+	{name = "Vhalkareth", exp = 12000, health = 90000, race = "venom", boss = true},
 	{name = "Wolf", exp = 18, health = 25, race = "blood"},
 	{name = "War Wolf", exp = 55, health = 140, race = "blood"},
 	{name = "Winter Wolf", exp = 20, health = 30, race = "blood"},
@@ -152,7 +152,7 @@ assert(dragon and dragon.cat == "dragons" and dragon.spawns > 0, "dragon spawns 
 eq(dragon.level, 42, "1.6 x sqrt(700) rounded")
 eq(dragon.diff, "easy")
 eq(cat.byId[dragon.id], dragon)
-eq(cat.byKey["ferumbras"].cat, "bosses")
+eq(cat.byKey["vhalkareth"].cat, "bosses")
 eq(cat.list[1].cat, "bosses", "categories in config order")
 for i = 2, #cat.list do
 	local a, b = cat.list[i - 1], cat.list[i]
@@ -176,7 +176,7 @@ eq(s.points, expect, "points from the stages")
 eq(C.percent(1, 3), 33.3)
 eq(C.percent(0, 0), 0)
 eq(C.bonusOf(cat.byKey["rat"], cfg).damage, 1)
-eq(C.bonusOf(cat.byKey["ferumbras"], cfg).exp, 3)
+eq(C.bonusOf(cat.byKey["vhalkareth"], cfg).exp, 3)
 
 -- ---------------------------------------------------------------- task windows and hunts
 local w = C.window(100, cfg.takeWindow)
@@ -192,7 +192,7 @@ ok, task = C.canTakeHunt(dragon, 50, 0, cfg)
 assert(not ok and task:find("discovered"), "must be discovered first")
 ok, task = C.canTakeHunt(dragon, 500, 5, cfg)
 assert(not ok and task:find("not for your level"), "too low for a level 500")
-ok, task = C.canTakeHunt(cat.byKey["ferumbras"], 1000, 5, cfg)
+ok, task = C.canTakeHunt(cat.byKey["vhalkareth"], 1000, 5, cfg)
 assert(not ok and task:find("Bosses"), "no boss tasks")
 ok, task = C.canTakeHunt(lonely, 30, 5, cfg)
 assert(not ok and task:find("does not live"), "must spawn")
@@ -255,7 +255,7 @@ assert(C.matches(fam, dragon))
 local dl = cat.byKey["dragon lord"]
 eq(C.matches(fam, dl), dl.level >= 30 and dl.level <= 200, "family: level window")
 assert(not C.matches(fam, cat.byKey["wolf"]), "family: category")
-assert(not C.matches({kind = "family", target = "bosses", lo = 1, hi = 9999, status = 0}, cat.byKey["ferumbras"]),
+assert(not C.matches({kind = "family", target = "bosses", lo = 1, hi = 9999, status = 0}, cat.byKey["vhalkareth"]),
 	"bosses never count for a family")
 
 -- progress and milestones (the bounty board's)

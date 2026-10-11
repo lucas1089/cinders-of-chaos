@@ -140,7 +140,7 @@ return {
 		{key = "bounty25", stat = "bounty", value = 25, name = "Complete 25 bounty contracts",
 			reward = {kind = "outfit", male = 1066, female = 1067, name = "Revenant outfit"}},
 		{key = "worldboss5", stat = "worldboss", value = 5, name = "Defeat 5 world bosses",
-			reward = {kind = "mount", id = 103, name = "Darklight Devourer mount"}},
+			reward = {kind = "mount", id = 103, name = "Nightglass Devourer mount"}},
 		{key = "rift10", stat = "rift", value = 10, name = "Complete a tier 10 rift", requires = "ChaosRift",
 			reward = {kind = "title", title = "Ashen Riftwalker"}}
 	},

@@ -213,7 +213,7 @@ for _, b in ipairs(Chaos.worldBoss.bosses) do
 	local kill = K.worldBossKill(cfg, b.name)
 	eq(kill ~= nil and K.groupForKill(cfg, kill) ~= nil, true, "world boss " .. b.name .. " has a drop group")
 end
-eq(K.worldBossKill(cfg, "Ferumbras"), nil, "an unknown boss rolls nothing")
+eq(K.worldBossKill(cfg, "Vhalkareth"), nil, "an unknown boss rolls nothing")
 local raid = dofile("data/scripts/chaos/raid_config.lua")
 for _, b in ipairs(raid.bosses) do
 	eq(K.groupForKill(cfg, "raid_" .. b.key) ~= nil, true, "raid boss " .. b.key .. " has a drop group")

@@ -6336,7 +6336,7 @@ CodexData = {
 							w = {28, 72},
 							rows = {
 								{"Monster drops", "Boss monsters: per kill Boss 1.2% (x item find)."},
-								{"Bosses", "Ghazbaran, Morgaroth, Orshabaal, Ferumbras, Zugurosh, Infernatil, The Plasmother."},
+								{"Bosses", "Moloveth, Vharagoth, Morgashal, Vhalkareth, Ghorzuul, Ashvoran, The Spawnmother."},
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen, The Rotmother, Nyxareth the Void Archon, Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
@@ -7003,7 +7003,7 @@ CodexData = {
 							w = {28, 72},
 							rows = {
 								{"Monster drops", "Boss monsters: per kill Boss 1.2% (x item find)."},
-								{"Bosses", "Ghazbaran, Morgaroth, Orshabaal, Ferumbras, Zugurosh, Infernatil, The Plasmother."},
+								{"Bosses", "Moloveth, Vharagoth, Morgashal, Vhalkareth, Ghorzuul, Ashvoran, The Spawnmother."},
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen, The Rotmother, Nyxareth the Void Archon, Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
@@ -7196,7 +7196,7 @@ CodexData = {
 							w = {28, 72},
 							rows = {
 								{"Monster drops", "Boss monsters: per kill Boss 1.2% (x item find)."},
-								{"Bosses", "Ghazbaran, Morgaroth, Orshabaal, Ferumbras, Zugurosh, Infernatil, The Plasmother."},
+								{"Bosses", "Moloveth, Vharagoth, Morgashal, Vhalkareth, Ghorzuul, Ashvoran, The Spawnmother."},
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen, The Rotmother, Nyxareth the Void Archon, Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
@@ -7503,7 +7503,7 @@ CodexData = {
 							w = {28, 72},
 							rows = {
 								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.32%, Boss 0.48% (x item find)."},
-								{"Monsters", "Inferno Juggernaut, Nightflare Dreadknight, Orclops Ravager, Malofur Mangrinder, Royal Man, Grove Keeper, Garack, Alptramun."},
+								{"Monsters", "Inferno Juggernaut, Nightflare Dreadknight, Orclops Ravager, Grindmaw the Mauler, Royal Man, Grove Keeper, Garack, Dreamgorger."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
 							}
@@ -9023,7 +9023,7 @@ CodexData = {
 							w = {28, 72},
 							rows = {
 								{"Monster drops", "Boss monsters: per kill Boss 1.2% (x item find)."},
-								{"Bosses", "Ghazbaran, Morgaroth, Orshabaal, Ferumbras, Zugurosh, Infernatil, The Plasmother."},
+								{"Bosses", "Moloveth, Vharagoth, Morgashal, Vhalkareth, Ghorzuul, Ashvoran, The Spawnmother."},
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen, The Rotmother, Nyxareth the Void Archon, Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
@@ -9062,7 +9062,7 @@ CodexData = {
 							w = {28, 72},
 							rows = {
 								{"Monster drops", "Boss monsters: per kill Boss 1.2% (x item find)."},
-								{"Bosses", "Ghazbaran, Morgaroth, Orshabaal, Ferumbras, Zugurosh, Infernatil, The Plasmother."},
+								{"Bosses", "Moloveth, Vharagoth, Morgashal, Vhalkareth, Ghorzuul, Ashvoran, The Spawnmother."},
 								{"World bosses", "Kaelgor the Infernal Warlord, Skaldra the Rime Queen, The Rotmother, Nyxareth the Void Archon, Vharok the Blood Colossus: a corpse drop, and every eligible player has 0.5% (+ share x 3%) to get a boss-only unique of that boss."},
 								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
 								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
@@ -11309,7 +11309,7 @@ CodexData = {
 							cols = {"Where", "How"},
 							w = {20, 80},
 							rows = {
-								{"Nodes", "Rotworm Burrows (a pick; every node is ready for you again 6 minutes after you gathered it)."}
+								{"Nodes", "Gutworm Burrows (a pick; every node is ready for you again 6 minutes after you gathered it)."}
 							}
 						},
 						{

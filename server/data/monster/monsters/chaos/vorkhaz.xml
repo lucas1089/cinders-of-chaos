@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Kroazur" nameDescription="a kroazur" race="blood" experience="730000" evented = "8" speed="650" skulled="1" looting="1" manacost="0">
+<monster name="Vorkhaz" nameDescription="a vorkhaz" race="blood" experience="730000" evented = "8" speed="650" skulled="1" looting="1" manacost="0">
 	<health now="500000" max="500000"/>
 	<level min="2800" max="3000"/>
 	<look type="842" addons="3" head="133" body="133" legs="133" feet="133" corpse="6068" />

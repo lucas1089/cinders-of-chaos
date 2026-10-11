@@ -33,9 +33,9 @@ return {
 		{id = 5, name = "Vharok the Blood Colossus", label = "Vharok (world boss)", retro = {bestiary = true, stat = "wb_vharok"}},
 		-- the guardian of the Ascension Trial (every class's Warden is this type); stage 3 = Trial won, 4 = ascended
 		{id = 6, name = "Ascension Warden", label = "Trial Warden (ascension)", retro = {storage = {key = 7101000, atLeast = 3}}},
-		{id = 7, name = "Ghazbaran", label = "Ghazbaran (invasion, tower)", retro = {bestiary = true}},
+		{id = 7, name = "Moloveth", label = "Moloveth (invasion, tower)", retro = {bestiary = true}},
 		{id = 8, name = "Apocalypse", label = "Apocalypse", retro = {bestiary = true}},
-		{id = 9, name = "Ferumbras Mortal Shell", label = "Ferumbras Mortal Shell", retro = {bestiary = true}},
-		{id = 10, name = "Gaz'haragoth", label = "Gaz'haragoth", retro = {bestiary = true}}
+		{id = 9, name = "Vhalkareth Mortal Shell", label = "Vhalkareth Mortal Shell", retro = {bestiary = true}},
+		{id = 10, name = "Ul'thazmor", label = "Ul'thazmor", retro = {bestiary = true}}
 	}
 }

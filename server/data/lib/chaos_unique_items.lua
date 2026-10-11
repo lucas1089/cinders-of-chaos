@@ -100,21 +100,21 @@ ChaosUniqueItems = {
 	-- the Monk's legendary fist weapon: its base item (36659, "pyre saint's grasp") is a fist weapon of its own
 	-- (server/tools/install_fist_weapons.py); it is in no shop and no loot table, so it is only ever found as this unique
 	{ name = "Grasp of the Pyre Saint", id = 36659, minTier = "legendary", chance = 8, level = 650, slot = "fist",
-	  bossOnly = false, monsters = {"Inferno Juggernaut", "Nightflare Dreadknight", "Orclops Ravager", "Malofur Mangrinder", "Royal Man", "Grove Keeper", "Garack", "Alptramun"} },
+	  bossOnly = false, monsters = {"Inferno Juggernaut", "Nightflare Dreadknight", "Orclops Ravager", "Grindmaw the Mauler", "Royal Man", "Grove Keeper", "Garack", "Dreamgorger"} },
 	{ name = "Cinderbrand Axe", id = 8925, minTier = "boss", chance = 20, level = 130, slot = "axe",
-	  bossOnly = true, monsters = {"Ghazbaran", "Morgaroth", "Orshabaal", "Ferumbras", "Zugurosh", "Infernatil", "The Plasmother",
+	  bossOnly = true, monsters = {"Moloveth", "Vharagoth", "Morgashal", "Vhalkareth", "Ghorzuul", "Ashvoran", "The Spawnmother",
 	    "Kaelgor the Infernal Warlord", "Skaldra the Rime Queen", "The Rotmother", "Nyxareth the Void Archon", "Vharok the Blood Colossus"} },
 	{ name = "Fangs of the Ninth Circle", id = 24790, minTier = "boss", chance = 20, level = 120, slot = "necklace",
-	  bossOnly = true, monsters = {"Ghazbaran", "Morgaroth", "Orshabaal", "Ferumbras", "Zugurosh", "Infernatil", "The Plasmother",
+	  bossOnly = true, monsters = {"Moloveth", "Vharagoth", "Morgashal", "Vhalkareth", "Ghorzuul", "Ashvoran", "The Spawnmother",
 	    "Kaelgor the Infernal Warlord", "Skaldra the Rime Queen", "The Rotmother", "Nyxareth the Void Archon", "Vharok the Blood Colossus"} },
 	{ name = "Visage of the Pale King", id = 27675, minTier = "boss", chance = 20, level = 120, slot = "head",
-	  bossOnly = true, monsters = {"Ghazbaran", "Morgaroth", "Orshabaal", "Ferumbras", "Zugurosh", "Infernatil", "The Plasmother",
+	  bossOnly = true, monsters = {"Moloveth", "Vharagoth", "Morgashal", "Vhalkareth", "Ghorzuul", "Ashvoran", "The Spawnmother",
 	    "Kaelgor the Infernal Warlord", "Skaldra the Rime Queen", "The Rotmother", "Nyxareth the Void Archon", "Vharok the Blood Colossus"} },
 	{ name = "Duskweaver Wand", id = 29866, minTier = "boss", chance = 20, level = 140, slot = "wand",
-	  bossOnly = true, monsters = {"Ghazbaran", "Morgaroth", "Orshabaal", "Ferumbras", "Zugurosh", "Infernatil", "The Plasmother",
+	  bossOnly = true, monsters = {"Moloveth", "Vharagoth", "Morgashal", "Vhalkareth", "Ghorzuul", "Ashvoran", "The Spawnmother",
 	    "Kaelgor the Infernal Warlord", "Skaldra the Rime Queen", "The Rotmother", "Nyxareth the Void Archon", "Vharok the Blood Colossus"} },
 	{ name = "Veil of the Wraith", id = 29868, minTier = "boss", chance = 20, level = 120, slot = "ring",
-	  bossOnly = true, monsters = {"Ghazbaran", "Morgaroth", "Orshabaal", "Ferumbras", "Zugurosh", "Infernatil", "The Plasmother",
+	  bossOnly = true, monsters = {"Moloveth", "Vharagoth", "Morgashal", "Vhalkareth", "Ghorzuul", "Ashvoran", "The Spawnmother",
 	    "Kaelgor the Infernal Warlord", "Skaldra the Rime Queen", "The Rotmother", "Nyxareth the Void Archon", "Vharok the Blood Colossus"} },
 	-- the Ascended uniques (uber.lua, server/README.md "Ascended Omens and the Cinderheart"): ascended = true keeps them
 	-- out of the Omen chest pool (rift.lua); corpse drops of the listed bosses (x6 boss tier) and the spoils' unique rolls

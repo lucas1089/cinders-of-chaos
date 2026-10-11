@@ -84,9 +84,9 @@ eq(w1.level, Chaos.worldBoss.minLevel, "world boss level")
 local grashnak = idx.byKey.invasion_warchief_grashnak
 check(grashnak ~= nil and grashnak.monster == "Orc Warlord" and grashnak.shown == "Warchief Grashnak", "renamed invasion boss")
 -- tower floors
-eq(idx.byKey.tower_1.name, "The Old Widow", "tower names in title case")
+eq(idx.byKey.tower_1.name, "The Grey Widow", "tower names in title case")
 check(idx.byKey.tower_1.rule.how:find("10, " .. (10 + #tNames * 10)) ~= nil, "tower floors repeat")
-eq(idx.byKey.tower_8.name, "Zulazza the Corruptor", "small words stay small")
+eq(idx.byKey.tower_8.name, "Ssylvath the Corruptor", "small words stay small")
 -- trials
 local tw = idx.byKey.trial_warrior
 check(tw and tw.name == "Gauntlet Champion" and tw.look.type == 131 and tw.level == 100, "trial boss with its look and level")
@@ -117,8 +117,8 @@ local raidsXml = [[
 <?xml version="1.0" encoding="UTF-8"?>
 <raids>
 	<!-- <raid name="Old" file="old.xml" interval2="10" margin="1" /> -->
-	<raid name="Ferumbras" file="liberty_bay/ferumbras.xml" interval2="720" margin="60" />
-	<raid name="Ghazbaran" file="rimeholt/ghazbaran.xml" interval2="1440" margin="100" enabled="0" />
+	<raid name="Vhalkareth" file="liberty_bay/vhalkareth.xml" interval2="720" margin="60" />
+	<raid name="Moloveth" file="rimeholt/moloveth.xml" interval2="1440" margin="100" enabled="0" />
 	<raid name="Rats" file="cinderhold/rats.xml" interval2="500" margin="70" />
 </raids>]]
 local list = K.parseRaidList(raidsXml)
@@ -126,18 +126,18 @@ eq(#list, 3, "commented raid skipped")
 eq(list[1].interval, 720, "interval2")
 eq(list[2].enabled, false, "disabled raid")
 local spawns = K.parseRaidSpawns([[<raid><announce delay="0" type="event" message="x" />
-	<singlespawn delay="100000" name="Ferumbras" x="32125" y="32688" z="4"/></raid>]])
+	<singlespawn delay="100000" name="Vhalkareth" x="32125" y="32688" z="4"/></raid>]])
 eq(#spawns, 1, "one single spawn")
 list[1].spawns = spawns
-list[2].spawns = {{name = "Ghazbaran", x = 1, y = 1, z = 15}}
+list[2].spawns = {{name = "Moloveth", x = 1, y = 1, z = 15}}
 list[3].spawns = {}
 local ridx = K.build(cfg, {})
 eq(K.applyRaids(ridx, list), 1, "one raid boss found")
-local fer = ridx.byKey.raid_ferumbras
+local fer = ridx.byKey.raid_vhalkareth
 eq(fer.rule.interval, 720, "interval from the file")
 eq(fer.pos.x, 32125, "position from the file")
-eq(ridx.byKey.raid_ghazbaran.missing, true, "disabled raid -> left out")
-eq(ridx.byKey.raid_morgaroth.missing, true, "raid not on this server -> left out")
+eq(ridx.byKey.raid_moloveth.missing, true, "disabled raid -> left out")
+eq(ridx.byKey.raid_vharagoth.missing, true, "raid not on this server -> left out")
 
 -- ---------------------------------------------------------------- matching
 local function keysOf(es)
@@ -148,19 +148,19 @@ local function keysOf(es)
 	table.sort(out)
 	return table.concat(out, ",")
 end
-eq(keysOf(K.match(idx, {type = "Orshabaal", pos = {x = 33120, y = 31700, z = 7}}, 40)), "raid_orshabaal", "raid by place")
-eq(keysOf(K.match(idx, {type = "orshabaal", pos = {x = 31663, y = 32760, z = 12}}, 40)), "lair_orshabaal", "lair by place, any case")
-eq(keysOf(K.match(idx, {type = "Orshabaal", pos = {x = 2100, y = 2100, z = 7}}, 40)), "", "tower copy matches nothing")
-eq(keysOf(K.match(idx, {type = "Orshabaal", shown = "Orshabaal", pos = {x = 32365, y = 32245, z = 7}, invasion = true}, 40)),
-	"invasion_orshabaal", "the running invasion's boss")
+eq(keysOf(K.match(idx, {type = "Morgashal", pos = {x = 33120, y = 31700, z = 7}}, 40)), "raid_morgashal", "raid by place")
+eq(keysOf(K.match(idx, {type = "morgashal", pos = {x = 31663, y = 32760, z = 12}}, 40)), "lair_morgashal", "lair by place, any case")
+eq(keysOf(K.match(idx, {type = "Morgashal", pos = {x = 2100, y = 2100, z = 7}}, 40)), "", "tower copy matches nothing")
+eq(keysOf(K.match(idx, {type = "Morgashal", shown = "Morgashal", pos = {x = 32365, y = 32245, z = 7}, invasion = true}, 40)),
+	"invasion_morgashal", "the running invasion's boss")
 eq(keysOf(K.match(idx, {type = "Orc Warlord", shown = "Orc Warlord", pos = {x = 32365, y = 32245, z = 7}}, 40)), "",
 	"a plain orc warlord is no invasion boss")
 eq(keysOf(K.match(idx, {type = "Orc Warlord", shown = "Warchief Grashnak", pos = {x = 0, y = 0, z = 7}, invasion = true}, 40)),
 	"invasion_warchief_grashnak", "renamed invasion boss by its shown name")
 eq(keysOf(K.match(idx, {type = "Kaelgor the Infernal Warlord", pos = {x = 5016, y = 5010, z = 7}}, 40)), "world_1", "world boss in the arena")
 eq(keysOf(K.match(idx, {type = "Treasure Goblin", pos = {x = 1, y = 2, z = 3}}, 40)), "treasure_goblin", "anywhere")
-eq(keysOf(K.match(idx, {type = "Demodras", pos = {x = 31705, y = 32838, z = 14}}, 40)), "lair_demodras", "one floor of slack")
-eq(keysOf(K.match(idx, {type = "Demodras", pos = {x = 31705, y = 32838, z = 12}}, 40)), "", "not three floors away")
+eq(keysOf(K.match(idx, {type = "Pyrevorn", pos = {x = 31705, y = 32838, z = 14}}, 40)), "lair_pyrevorn", "one floor of slack")
+eq(keysOf(K.match(idx, {type = "Pyrevorn", pos = {x = 31705, y = 32838, z = 12}}, 40)), "", "not three floors away")
 eq(K.nearestTown({x = 10, y = 10, z = 7}, {{name = "A", pos = {x = 0, y = 0, z = 7}}, {name = "B", pos = {x = 12, y = 30, z = 7}}}), "A",
 	"nearest town")
 
@@ -197,28 +197,28 @@ eq(status("thalador").st, "scheduled", "island slain -> next week")
 eq(st.kills.thalador.killer, "Hero", "killer kept")
 eq(st.kills.thalador.count, 1, "kill counted")
 -- timer: unknown, alive, respawn countdown, due
-eq(status("lair_bibby").st, "unknown", "never seen")
-K.onSpawn(st, "lair_bibby", 200, wed)
-eq(status("lair_bibby").st, "alive", "lair alive")
-K.onDeath(st, "lair_bibby", 200, wed + 100, "Hero")
-s = status("lair_bibby")
+eq(status("lair_tibb").st, "unknown", "never seen")
+K.onSpawn(st, "lair_tibb", 200, wed)
+eq(status("lair_tibb").st, "alive", "lair alive")
+K.onDeath(st, "lair_tibb", 200, wed + 100, "Hero")
+s = status("lair_tibb")
 eq(s.st, "respawn", "lair respawn")
 eq(s.at, wed + 100 + 3600, "back an hour after the kill")
 ctx.now = wed + 100 + 3601
-eq(status("lair_bibby").st, "due", "timer over, nobody saw it come")
-K.onSpawn(st, "lair_bibby", 201, ctx.now)
-eq(status("lair_bibby").st, "alive", "came back")
+eq(status("lair_tibb").st, "due", "timer over, nobody saw it come")
+K.onSpawn(st, "lair_tibb", 201, ctx.now)
+eq(status("lair_tibb").st, "alive", "came back")
 ctx.now = wed
 -- counted timer boss: alive while all copies stand, a copy down -> its countdown
-K.onSpawn(st, "lair_demodras", 301, wed)
-K.onSpawn(st, "lair_demodras", 302, wed)
-K.onSpawn(st, "lair_demodras", 303, wed)
-eq(status("lair_demodras").st, "alive", "three of three")
-K.onDeath(st, "lair_demodras", 302, wed, "Hero")
-eq(status("lair_demodras").st, "respawn", "one down -> countdown")
-eq(K.aliveCount(st, "lair_demodras"), 2, "two left")
+K.onSpawn(st, "lair_pyrevorn", 301, wed)
+K.onSpawn(st, "lair_pyrevorn", 302, wed)
+K.onSpawn(st, "lair_pyrevorn", 303, wed)
+eq(status("lair_pyrevorn").st, "alive", "three of three")
+K.onDeath(st, "lair_pyrevorn", 302, wed, "Hero")
+eq(status("lair_pyrevorn").st, "respawn", "one down -> countdown")
+eq(K.aliveCount(st, "lair_pyrevorn"), 2, "two left")
 -- raid
-s = status("raid_ferumbras")
+s = status("raid_vhalkareth")
 eq(s.st, "random", "raid random")
 check(s.text:find("1d") ~= nil and s.text:find("2h") ~= nil, "raid text: " .. s.text)
 eq(s.short, "About every 1d", "raid short text")
@@ -258,11 +258,11 @@ ctx.cooldowns[50203] = wed - 1
 eq(status("dungeon_1").st, "ondemand", "cooldown over")
 
 -- prune: creatures gone without a death
-K.onSpawn(st, "raid_ferumbras", 900, wed)
-eq(status("raid_ferumbras").st, "alive", "raid alive")
+K.onSpawn(st, "raid_vhalkareth", 900, wed)
+eq(status("raid_vhalkareth").st, "alive", "raid alive")
 eq(K.prune(st, function(cid) return cid ~= 900 end), 1, "one creature gone")
-eq(status("raid_ferumbras").st, "random", "not alive after prune")
-eq(st.kills.raid_ferumbras, nil, "leaving is no kill")
+eq(status("raid_vhalkareth").st, "random", "not alive after prune")
+eq(st.kills.raid_vhalkareth, nil, "leaving is no kill")
 
 -- ---------------------------------------------------------------- payload
 ctx.now = wed
@@ -276,12 +276,12 @@ end
 eq(byKey.thalador["in"], 10 * 3600, "seconds to the next weekly time")
 eq(byKey.thalador.by, "Hero", "killer in the row")
 check(byKey.thalador.at ~= nil, "a far time also as text")
-eq(byKey.lair_demodras["in"], 120, "a short wait has no time text")
-eq(byKey.lair_demodras.at, nil, "no time text under 6 hours")
-eq(byKey.lair_demodras.alive, 2, "alive count in the row")
+eq(byKey.lair_pyrevorn["in"], 120, "a short wait has no time text")
+eq(byKey.lair_pyrevorn.at, nil, "no time text under 6 hours")
+eq(byKey.lair_pyrevorn.alive, 2, "alive count in the row")
 eq(byKey.world_1.p, nil, "no coordinates for the arena")
 eq(byKey.world_1.ln, "Portals at every temple", "the arena's note instead")
-eq(byKey.raid_ferumbras.p.z, 4, "raid coordinates")
+eq(byKey.raid_vhalkareth.p.z, 4, "raid coordinates")
 eq(byKey.trial_warrior.o.type, 131, "outfit in the row")
 eq(byKey.dungeon_1.st, "ondemand", "dungeon row")
 for _, r in ipairs(p.rows) do
@@ -309,17 +309,17 @@ end
 local size = #enc(p)
 check(size > 8192 and size < 64000, "payload size " .. size .. " needs chunks and stays small")
 -- missing entries are left out
-ridx.byKey.raid_morgaroth.missing = true
+ridx.byKey.raid_vharagoth.missing = true
 local rp = K.payload(ridx, {now = wed, state = K.newState(), cooldowns = {}})
 for _, r in ipairs(rp.rows) do
-	check(r.k ~= "raid_morgaroth", "missing raid left out")
+	check(r.k ~= "raid_vharagoth", "missing raid left out")
 end
 -- persistence rows
 local st2 = K.newState()
-eq(K.loadKills(st2, {{boss_key = "lair_bibby", last_kill = wed, killer = "", kills = 4}, {boss_key = "gone", last_kill = 5, killer = "x", kills = 1},
+eq(K.loadKills(st2, {{boss_key = "lair_tibb", last_kill = wed, killer = "", kills = 4}, {boss_key = "gone", last_kill = 5, killer = "x", kills = 1},
 	{boss_key = "thalador", last_kill = 0, killer = "", kills = 0}}, idx), 1, "known keys with a kill only")
-eq(st2.kills.lair_bibby.killer, nil, "empty killer -> nil")
-eq(st2.kills.lair_bibby.count, 4, "kill count")
+eq(st2.kills.lair_tibb.killer, nil, "empty killer -> nil")
+eq(st2.kills.lair_tibb.count, 4, "kill count")
 
 -- ---------------------------------------------------------------- bossspawns.lua against a mocked engine
 local registry, globals, spawnCb = {}, {}, nil
@@ -370,7 +370,7 @@ local function place(c)
 end
 Monster = function(id) return creatures[id] end
 MonsterType = function(name)
-	if name == "Morgaroth" then return nil end
+	if name == "Vharagoth" then return nil end
 	return {outfit = function() return {lookType = 35, lookHead = 1} end}
 end
 Position = function(x, y, z) return {x = x, y = y, z = z} end
@@ -393,8 +393,8 @@ io.open = (function(orig)
 	return function(path, mode)
 		if path == "data/raids/raids.xml" then
 			return {read = function() return raidsXml end, close = function() end}
-		elseif path == "data/raids/liberty_bay/ferumbras.xml" then
-			return {read = function() return '<singlespawn name="Ferumbras" x="32124" y="32687" z="4"/>' end, close = function() end}
+		elseif path == "data/raids/liberty_bay/vhalkareth.xml" then
+			return {read = function() return '<singlespawn name="Vhalkareth" x="32124" y="32687" z="4"/>' end, close = function() end}
 		end
 		return orig(path, mode)
 	end
@@ -406,15 +406,15 @@ dofile("data/scripts/chaos/bossspawns.lua")
 local S = ChaosBossSpawns
 check(spawnCb ~= nil and registry.ChaosBossSpawnsDeath ~= nil and registry.ChaosBossSpawnsExtended ~= nil, "events registered")
 -- a raid boss appears: onSpawn (id 0), then the scan finds it
-local fer2 = mkMonster("Ferumbras", nil, {x = 32124, y = 32687, z = 4})
+local fer2 = mkMonster("Vhalkareth", nil, {x = 32124, y = 32687, z = 4})
 check(spawnCb(fer2, fer2.pos, false, true) == true, "spawn allowed")
 check(fer2.events.ChaosBossSpawnsDeath, "death event on the boss")
 place(fer2)
 runEvents()
 check(S.tracked[fer2.id] ~= nil, "tracked after the scan")
-eq(K.aliveCount(S.state, "raid_ferumbras"), 1, "alive")
-eq(S.index.byKey.raid_ferumbras.rule.interval, 720, "raids.xml read at startup")
-eq(S.index.byKey.raid_morgaroth.missing, true, "raid not in raids.xml left out")
+eq(K.aliveCount(S.state, "raid_vhalkareth"), 1, "alive")
+eq(S.index.byKey.raid_vhalkareth.rule.interval, 720, "raids.xml read at startup")
+eq(S.index.byKey.raid_vharagoth.missing, true, "raid not in raids.xml left out")
 -- an ordinary monster is ignored
 local rat = mkMonster("Rat", nil, {x = 1, y = 1, z = 7})
 spawnCb(rat, rat.pos, false, false)
@@ -423,18 +423,18 @@ check(not rat.events.ChaosBossSpawnsDeath, "no death event on a rat")
 local hero = {isPlayer = function() return true end, getName = function() return "Hero" end}
 registry.ChaosBossSpawnsDeath.onDeath(fer2, nil, hero, hero)
 creatures[fer2.id] = nil
-eq(K.aliveCount(S.state, "raid_ferumbras"), 0, "dead")
-eq(S.state.kills.raid_ferumbras.killer, "Hero", "kill stored")
+eq(K.aliveCount(S.state, "raid_vhalkareth"), 0, "dead")
+eq(S.state.kills.raid_vhalkareth.killer, "Hero", "kill stored")
 local saved = false
 for _, q in ipairs(queries) do
-	if q:find("INSERT INTO `chaos_boss_spawns`", 1, true) and q:find("'raid_ferumbras'", 1, true) then saved = true end
+	if q:find("INSERT INTO `chaos_boss_spawns`", 1, true) and q:find("'raid_vhalkareth'", 1, true) then saved = true end
 end
 check(saved, "kill written to chaos_boss_spawns")
 -- a lair boss that leaves without dying
-local bib = place(mkMonster("Bibby Bloodbath", nil, {x = 32622, y = 31826, z = 7}))
+local bib = place(mkMonster("Tibb the Butcher", nil, {x = 32622, y = 31826, z = 7}))
 spawnCb(bib, bib.pos, true, false)
 runEvents()
-eq(K.aliveCount(S.state, "lair_bibby"), 1, "lair boss alive")
+eq(K.aliveCount(S.state, "lair_tibb"), 1, "lair boss alive")
 creatures[bib.id] = nil
 -- the window
 local player = {getStorageValue = function(_, k) return k == 7101002 and wed + 600 or -1 end, getId = function() return 1 end,
@@ -446,13 +446,13 @@ eq(sent.op, ChaosOpcodes.bossSpawns, "on the boss spawns opcode")
 eq(sent.parts, 2, "9000 bytes go in two chunks")
 local rowsByKey = {}
 for _, r in ipairs(msg.data.rows) do rowsByKey[r.k] = r end
-eq(rowsByKey.raid_ferumbras.by, "Hero", "kill in the list")
-eq(rowsByKey.lair_bibby.st, "unknown", "left without dying: not alive, no kill")
-eq(rowsByKey.lair_bibby.loc, "Orc fortress", "configured place")
+eq(rowsByKey.raid_vhalkareth.by, "Hero", "kill in the list")
+eq(rowsByKey.lair_tibb.st, "unknown", "left without dying: not alive, no kill")
+eq(rowsByKey.lair_tibb.loc, "Orc fortress", "configured place")
 eq(rowsByKey.lair_apocalypse.loc, "near Cinderhold", "nearest town for a place without a name")
 eq(rowsByKey.ascension_warden.st, "cooldown", "the player's own cooldown")
-eq(rowsByKey.raid_morgaroth, nil, "missing raid not sent")
-eq(rowsByKey.raid_ferumbras.o.type, 35, "outfit from the monster type")
+eq(rowsByKey.raid_vharagoth, nil, "missing raid not sent")
+eq(rowsByKey.raid_vhalkareth.o.type, 35, "outfit from the monster type")
 eq(msg.data.refresh, cfg.refreshSeconds, "refresh period")
 local before = #sent
 registry.ChaosBossSpawnsExtended.onExtendedOpcode(player, ChaosOpcodes.bossSpawns, "refresh")

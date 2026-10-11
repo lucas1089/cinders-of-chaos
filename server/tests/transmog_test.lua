@@ -32,8 +32,8 @@ end
 
 -- the set looks as the base server's items.xml has them (checked in game by transmog.lua's startup validation)
 local FIXTURE = {
-	[27195] = {name = "falcon circlet", kind = "helmet"}, [27200] = {name = "falcon plate", kind = "armor"},
-	[27201] = {name = "falcon greaves", kind = "legs"}, [27401] = {name = "lion spangenhelm", kind = "helmet"},
+	[27195] = {name = "talon circlet", kind = "helmet"}, [27200] = {name = "talon plate", kind = "armor"},
+	[27201] = {name = "talon greaves", kind = "legs"}, [27401] = {name = "lion spangenhelm", kind = "helmet"},
 	[27402] = {name = "lion plate", kind = "armor"}, [27399] = {name = "lion shield", kind = "shield"},
 	[27398] = {name = "lion spellbook", kind = "shield"}, [27674] = {name = "spiritthorn helmet", kind = "helmet"},
 	[27673] = {name = "spiritthorn armor", kind = "armor"}, [21696] = {name = "icicle bow", kind = "distance"},
@@ -61,11 +61,11 @@ local FIXTURE = {
 	[28392] = {name = "Moist Breeches", kind = "legs"}, [28393] = {name = "Moist Greaves", kind = "boots"},
 	[29564] = {name = "Haloed Bolter", kind = "distance"}, [29565] = {name = "Haloed Bow", kind = "distance"},
 	[29469] = {name = "maliceforged helmet", kind = "helmet"}, [29472] = {name = "demonfang mask", kind = "helmet"},
-	[8886] = {name = "molten plate", kind = "armor"}, [29486] = {name = "arcane inferniarch blade", kind = "sword"},
-	[29482] = {name = "arcane inferniarch battleaxe", kind = "axe"},
-	[29484] = {name = "arcane inferniarch mace", kind = "club"},
-	[29478] = {name = "arcane inferniarch bow", kind = "distance"},
-	[29488] = {name = "arcane inferniarch wand", kind = "wand"}, [29556] = {name = "Deathlord Cleaver", kind = "axe"},
+	[8886] = {name = "molten plate", kind = "armor"}, [29486] = {name = "arcane pyrarch blade", kind = "sword"},
+	[29482] = {name = "arcane pyrarch battleaxe", kind = "axe"},
+	[29484] = {name = "arcane pyrarch mace", kind = "club"},
+	[29478] = {name = "arcane pyrarch bow", kind = "distance"},
+	[29488] = {name = "arcane pyrarch wand", kind = "wand"}, [29556] = {name = "Deathlord Cleaver", kind = "axe"},
 	[29557] = {name = "Deathlord Mace", kind = "club"}, [29558] = {name = "Deathlord Blade", kind = "sword"},
 	[27655] = {name = "gilded eldritch claymore", kind = "sword"},
 	[27657] = {name = "gilded eldritch warmace", kind = "club"},

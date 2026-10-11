@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<monster name="Elite Seacrest Serpent" nameDescription="a elite seacrest serpent" race="venom"  experience="500000" evented = "8" speed="650" skulled="1" looting="1" manacost="0">
+<monster name="Elite Tidecrest Serpent" nameDescription="an elite tidecrest serpent" race="venom"  experience="500000" evented = "8" speed="650" skulled="1" looting="1" manacost="0">
 	<health now="450000" max="450000"/>
 	<look type="675" corpse="6068"/>
 	<level min="2500" max="3000"/>

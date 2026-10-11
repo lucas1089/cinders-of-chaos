@@ -48,15 +48,15 @@ eq(V.coords(nil), '', 'no coords')
 eq(V.where({ p = { x = 1, y = 2, z = 3 }, ln = 'x' }), '1, 2, 3', 'where: coords first')
 eq(V.where({ ln = 'Portals at every temple' }), 'Portals at every temple', 'where: note')
 eq(V.where(nil), '', 'where: nothing')
-eq(V.tooltip({ n = 'Ferumbras', tx = 'Random raid', ago = 60, by = 'Hero', kills = 2, p = { x = 1, y = 2, z = 3 } }, 0),
-  'Ferumbras\nRandom raid\nLast kill: 1m ago by Hero (2 kills)\nPosition: 1, 2, 3', 'tooltip')
+eq(V.tooltip({ n = 'Vhalkareth', tx = 'Random raid', ago = 60, by = 'Hero', kills = 2, p = { x = 1, y = 2, z = 3 } }, 0),
+  'Vhalkareth\nRandom raid\nLast kill: 1m ago by Hero (2 kills)\nPosition: 1, 2, 3', 'tooltip')
 
 local data = {
   cats = { { k = 'world', n = 'World Bosses' }, { k = 'raid', n = 'Raid Bosses' }, { k = 'empty', n = 'Nothing' } },
   rows = {
     { k = 'a', c = 'world', n = 'Kaelgor', st = 'alive' },
     { k = 'b', c = 'world', n = 'Skaldra', st = 'scheduled' },
-    { k = 'c', c = 'raid', n = 'Ferumbras', loc = 'Saltgrave', st = 'random' },
+    { k = 'c', c = 'raid', n = 'Vhalkareth', loc = 'Saltgrave', st = 'random' },
     { k = 'd', c = 'nope', n = 'Lost' },
   },
 }
@@ -68,7 +68,7 @@ eq(V.header(groups[1], false), '- World Bosses (2) - 1 alive', 'header')
 eq(V.header(groups[2], true), '+ Raid Bosses (1)', 'collapsed header')
 groups = V.group(data, 'saltg')
 eq(#groups, 1, 'filter by place')
-eq(groups[1].rows[1].n, 'Ferumbras', 'filtered row')
+eq(groups[1].rows[1].n, 'Vhalkareth', 'filtered row')
 groups = V.group(data, 'SKAL')
 eq(V.header(groups[1], false), '- World Bosses (1 of 2)', 'filtered header')
 eq(#V.group(nil), 0, 'no data')

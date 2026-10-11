@@ -4,11 +4,12 @@
 usage: python3 -I patch_base_item_names.py DATA_DIR [--names CSV] [--dry-run]
 
 The new names come from server/data/items/base_item_names.csv (columns id, article, name, plural; an empty article or
-plural removes that attribute). Only ids and new names are in the repository; the old names are read from the server's
+plural removes that attribute; several ids may share a new name only when items.xml gives them the same old name,
+else the tool stops before writing anything). Only ids and new names are in the repository; the old names are read from the server's
 own items.xml at install time.
 
-1. data/items/items.xml: the entry of each id (one `<item id="N" ...>` line; an id that is only inside a fromid/toid
-   range is left alone and listed) gets the new name, article and plural.
+1. data/items/items.xml: the entry of each id (one `<item id="N" ...>` line, or a `<item fromid="N" toid="M" ...>` range
+   whose fromid is N; an id that is only inside a range is left alone and listed) gets the new name, article and plural.
 2. The loot of the base monsters refers to items by id or by name. Every loot entry that names a renamed item by its old
    name is changed to its id: `id = "old name"` in monster Lua files, `<item name="old name" .../>` in monster XML. Loot
    by id needs nothing.
@@ -49,10 +50,27 @@ def read_names(path=CSV_PATH):
                 raise SystemExit('%s: id %s twice' % (path, iid))
             rows[int(iid)] = {'name': name, 'article': (row.get('article') or '').strip(),
                               'plural': (row.get('plural') or '').strip()}
-    lowered = [r['name'].lower() for r in rows.values()]
-    if len(set(lowered)) != len(lowered):
-        raise SystemExit('%s: two items with the same new name' % path)
     return rows
+
+
+def check_shared_names(text, rows):
+    """two CSV rows may share a new name only when items.xml gave both ids the same old name (one item kind with
+    several ids, such as a corpse in two looks) or already has the new name; anything else stops the tool"""
+    old = {}
+    for m in re.finditer(r'<item\s+(?:id="(\d+)"|fromid="(\d+)")[^>]*?\sname="([^"]*)"', text):
+        old.setdefault(int(m.group(1) or m.group(2)), m.group(3).lower())
+    by_new = {}
+    for iid, r in rows.items():
+        by_new.setdefault(r['name'].lower(), set()).add(iid)
+    bad = []
+    for new, ids in sorted(by_new.items()):
+        if len(ids) < 2:
+            continue
+        olds = {old.get(i, new) for i in ids} - {new}
+        if len(olds) > 1:
+            bad.append('%s (ids %s)' % (new, ', '.join(map(str, sorted(ids)))))
+    if bad:
+        raise SystemExit('two items of different old names would get the same new name: ' + '; '.join(bad))
 
 
 # ------------------------------------------------------------------------------------------------ items.xml
@@ -74,40 +92,58 @@ def patch_items(text, rows):
     """-> (new text, {old name lower: (id, new name)} of the entries renamed now, notes)"""
     renamed, notes = {}, []
     all_names = {}
-    for m in re.finditer(r'<item\s+id="(\d+)"[^>]*?\sname="([^"]*)"', text):
-        all_names.setdefault(m.group(2).lower(), set()).add(int(m.group(1)))
-    for iid, r in sorted(rows.items()):
-        m = re.search(r'<item\s+id="%d"([^>]*?)(/?)>' % iid, text)
-        if not m:
-            notes.append('items.xml: %d has no entry of its own (left alone)' % iid)
-            continue
-        attrs = m.group(1)
+    entry = re.compile(r'<item\s+(?:id="(\d+)"|fromid="(\d+)"(\s+toid="\d+")?)([^>]*?)(/?)>')
+    for m in entry.finditer(text):
+        n = re.search(r'\sname="([^"]*)"', m.group(4))
+        if n:
+            all_names.setdefault(n.group(1).lower(), set()).add(int(m.group(1) or m.group(2)))
+    seen = set()
+
+    def sub(m):
+        iid = int(m.group(1) or m.group(2))
+        r = rows.get(iid)
+        if r is None or iid in seen:
+            return m.group(0)
+        seen.add(iid)
+        attrs = m.group(4)
         old = re.search(r'\sname="([^"]*)"', attrs)
         old = old.group(1) if old else ''
         new = _set(_set(_set(attrs, 'name', r['name']), 'article', r['article']), 'plural', r['plural'])
         if new == attrs:
-            continue
-        text = text[:m.start(1)] + new + text[m.end(1):]
+            return m.group(0)
         if old and old.lower() != r['name'].lower():
-            others = sorted(all_names.get(old.lower(), set()) - {iid})
+            others = sorted(i for i in all_names.get(old.lower(), set()) - {iid}
+                            if rows.get(i, {}).get('name', '').lower() != r['name'].lower())
             if others:
                 notes.append('items.xml: %d shares its old name with %s; references by that name now mean %d'
                              % (iid, ', '.join(map(str, others)), iid))
-            renamed[old.lower()] = (iid, r['name'])
+            renamed.setdefault(old.lower(), (iid, r['name']))
         notes.append('items.xml: %d is now "%s"' % (iid, r['name']))
+        return m.group(0)[:m.start(4) - m.start(0)] + new + m.group(0)[m.end(4) - m.start(0):]
+    text = entry.sub(sub, text)
+    for iid in sorted(set(rows) - seen):
+        notes.append('items.xml: %d has no entry of its own (left alone)' % iid)
     taken = {}
-    for m in re.finditer(r'<item\s+id="(\d+)"[^>]*?\sname="([^"]*)"', text):
-        taken.setdefault(m.group(2).lower(), set()).add(int(m.group(1)))
+    for m in entry.finditer(text):
+        n = re.search(r'\sname="([^"]*)"', m.group(4))
+        if n:
+            taken.setdefault(n.group(1).lower(), set()).add(int(m.group(1) or m.group(2)))
     for iid, r in rows.items():
         clash = sorted(taken.get(r['name'].lower(), set()) - {iid})
-        if clash:
+        if clash and any(rows.get(c, {}).get('name', '').lower() != r['name'].lower() for c in clash):
             notes.append('items.xml: the new name of %d is also the name of %s' % (iid, ', '.join(map(str, clash))))
     return text, renamed, notes
 
 
 # ------------------------------------------------------------------------------------------------ references
+_WORDS = {}
+
+
 def _word(old):
-    return re.compile(r'(?<![A-Za-z0-9])%s(?![A-Za-z0-9])' % re.escape(old), re.I)
+    rx = _WORDS.get(old)
+    if rx is None:
+        rx = _WORDS[old] = re.compile(r'(?<![A-Za-z0-9])%s(?![A-Za-z0-9])' % re.escape(old), re.I)
+    return rx
 
 
 def patch_monster_lua(text, renamed):
@@ -141,14 +177,17 @@ def longer_names(renamed, names):
     out = {}
     for old in renamed:
         rx = _word(old)
-        out[old] = sorted((n for n in names if n != old and rx.search(n)), key=len, reverse=True)
+        out[old] = sorted((n for n in names if n != old and old in n and rx.search(n)), key=len, reverse=True)
     return out
 
 
 def patch_text(text, renamed, longer=None):
     n = 0
     longer = longer or {}
+    low = text.lower()
     for old in sorted(renamed, key=len, reverse=True):
+        if old not in low:
+            continue
         new = renamed[old][1]
         keep = []
 
@@ -164,6 +203,7 @@ def patch_text(text, renamed, longer=None):
         n += k
         if keep:
             text = re.sub('\x00(\\d+)\x00', lambda m: keep[int(m.group(1))], text)
+        low = text.lower()
     return text, n
 
 
@@ -236,6 +276,7 @@ def main(argv):
         return 1
     rows = read_names(names)
     text = read(xml)
+    check_shared_names(text, rows)
     new_xml, renamed, notes = patch_items(text, rows)
     for n in notes:
         print(n)
@@ -246,8 +287,9 @@ def main(argv):
     for p in sorted(writes):
         if p != xml:
             print('  %s' % os.path.relpath(p, data))
-    print('items: %d renamed now, %d of %d already named; loot by old name -> id: %d; other mentions: %d'
-          % (len(renamed), len(rows) - len(renamed), len(rows), loot, words))
+    done = sum(1 for n in notes if n.endswith('"') and ' is now "' in n)
+    print('items: %d renamed now (%d old names), %d of %d already named; loot by old name -> id: %d; other mentions: %d'
+          % (done, len(renamed), len(rows) - done, len(rows), loot, words))
     if dry:
         print('dry run: nothing written (%d file(s) would change)' % len(writes))
         return 0
