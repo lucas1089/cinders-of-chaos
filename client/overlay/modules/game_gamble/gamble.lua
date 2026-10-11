@@ -5,6 +5,9 @@
 -- A grid of sealed crates (the look, the slot, the item level and the price; the rarity hidden), the countdown to the
 -- next stock, the early refresh, the odds and the reveal of the last purchase. Buying works next to the Gambler only, the
 -- server checks it. Menu: Economy > The Gambler (ChaosTopBar.addEntry).
+-- One purchase at a time: a Buy click disables every Buy button until the result or the state comes (BUY_WAIT_MS at
+-- most). A state with the same crates fills the cells in place; only another stock builds new cells. Every widget call
+-- checks that the window is still there: answers can come after Close or after the module was unloaded.
 
 local OPCODE = 199
 local V = GambleView
@@ -16,6 +19,16 @@ local tickEvent
 local refreshAsked = false
 local handlers = {}
 local reported = {}
+local cells = {}       -- the cell widgets of the grid, in the order of shownCells
+local shownCells = {}  -- GambleView.cells of the last draw
+local buying = false   -- a purchase is on its way: every Buy button waits for the server's answer
+local buyTimeout       -- gives the buttons back when no answer comes (a request the server's rate limit dropped)
+local BUY_WAIT_MS = 4000
+
+-- a widget that is still there (the window can be gone after a module reload; a cell after a rebuild)
+local function alive(w)
+  return w ~= nil and w ~= false and not w:isDestroyed()
+end
 
 local function safe(name, fn)
   return function(...)
@@ -41,58 +54,121 @@ local function send(action, data)
 end
 
 local function setStatus(text, color)
-  if window then
+  if alive(window) and alive(window.status) then
     window.status:setText(text or '')
     window.status:setColor(color or V.COLORS.dim)
   end
 end
 
+-- the reveal (a result, or the last purchase in a state): it may come while the window is closed or after a reload
 local function showReveal(last)
-  if not window then return end
+  if not alive(window) then return end
+  local panel = window.revealPanel
+  if not (alive(panel) and alive(panel.text) and alive(panel.item) and alive(panel.frame)) then return end
   local text, color = V.reveal(last)
-  window.revealPanel.text:setText(text ~= '' and text or tr('Pick a crate. Its rarity shows when the seal breaks.'))
-  window.revealPanel.text:setColor(text ~= '' and color or V.COLORS.dim)
-  if last and tonumber(last.c) and tonumber(last.c) > 0 then
-    window.revealPanel.item:setItemId(tonumber(last.c))
-    window.revealPanel.item:setVisible(true)
-    window.revealPanel.frame:setBorderColor(color)
+  panel.text:setText(text ~= '' and text or tr('Pick a crate. Its rarity shows when the seal breaks.'))
+  panel.text:setColor(text ~= '' and color or V.COLORS.dim)
+  local cid = V.revealItem(last)
+  if cid ~= panel.shownId then
+    -- a new engine item for every look: Item::setId on the old one keeps the old look's animator when the new look
+    -- has none, and a look id the client does not know gives an item with no look (cid 0 here: nothing is set)
+    panel.item:setItemId(0)
+    if cid > 0 then panel.item:setItemId(cid) end
+    panel.shownId = cid
+  end
+  if cid > 0 then
+    panel.item:setVisible(true)
+    panel.frame:setBorderColor(color)
   else
-    window.revealPanel.item:setVisible(false)
-    window.revealPanel.frame:setBorderColor('#3a2c22')
+    panel.item:setVisible(false)
+    panel.frame:setBorderColor('#3a2c22')
   end
 end
 
-local function drawGrid()
-  local list = window.gridFrame.grid
-  list:destroyChildren()
-  for _, c in ipairs(V.cells(state)) do
-    local w = g_ui.createWidget('GambleCell', list)
+local buy
+
+local function fillCell(w, c)
+  if not (alive(w) and alive(w.item) and alive(w.buy)) then return end
+  if w.shownId ~= c.clientId then
+    w.item:setItemId(0)
     if c.clientId > 0 then w.item:setItemId(c.clientId) end
-    w.name:setText(c.name)
-    w.slot:setText(c.slotText)
-    w.level:setText(c.levelText)
-    w.price:setText(c.priceText)
-    w.price:setColor(c.priceColor)
-    w.buy:setText(c.buyText)
-    w.buy:setEnabled(c.canBuy)
-    w:setTooltip(c.tip)
-    w.buy:setTooltip(c.tip)
-    w.seal:setVisible(not c.sold)
-    w:setOpacity(c.sold and 0.55 or 1)
-    local i, id = c.i, c.id
-    w.buy.onClick = function()
-      if state then
-        setStatus(tr('Breaking the seal...'), V.COLORS.dim)
-        send('buy', { i = i, w = state.w, id = id })
-      end
+    w.shownId = c.clientId
+  end
+  w.name:setText(c.name)
+  w.slot:setText(c.slotText)
+  w.level:setText(c.levelText)
+  w.price:setText(c.priceText)
+  w.price:setColor(c.priceColor)
+  w.buy:setText(c.buyText)
+  w.buy:setEnabled(c.canBuy and not buying)
+  w:setTooltip(c.tip)
+  w.buy:setTooltip(c.tip)
+  w.seal:setVisible(not c.sold)
+  w:setOpacity(c.sold and 0.55 or 1)
+  local i, id = c.i, c.id
+  w.buy.onClick = function() buy(i, id) end
+end
+
+-- the same crates as on screen (a purchase, the gold, the countdown): the cells are filled again in place; another
+-- stock: new cells. Never destroys a cell from inside its own Buy click (buy() only sends and disables).
+local function drawGrid()
+  local list = alive(window) and alive(window.gridFrame) and window.gridFrame.grid or nil
+  if not alive(list) then return end
+  local new = V.cells(state)
+  local keep = V.sameCells(new, shownCells) and #cells == #new
+  for _, w in ipairs(cells) do
+    if not alive(w) then keep = false end
+  end
+  if not keep then
+    list:destroyChildren()
+    cells = {}
+    for k = 1, #new do
+      cells[k] = g_ui.createWidget('GambleCell', list)
+    end
+  end
+  for k, c in ipairs(new) do
+    fillCell(cells[k], c)
+  end
+  shownCells = new
+end
+
+local function setBuyButtons(enabled)
+  for k, w in ipairs(cells) do
+    local c = shownCells[k]
+    if alive(w) and alive(w.buy) then
+      w.buy:setEnabled(enabled == true and c ~= nil and c.canBuy == true)
     end
   end
 end
 
+local function buyDone()
+  buying = false
+  if buyTimeout then
+    removeEvent(buyTimeout)
+    buyTimeout = nil
+  end
+end
+
+-- one purchase at a time: quick clicks on several crates send one request, the next one waits for the answer
+buy = function(i, id)
+  if not state or buying then return end
+  buying = true
+  setStatus(tr('Breaking the seal...'), V.COLORS.dim)
+  send('buy', { i = i, w = state.w, id = id })
+  setBuyButtons(false)
+  buyTimeout = scheduleEvent(function()
+    buyTimeout = nil
+    buying = false
+    setBuyButtons(true)
+  end, BUY_WAIT_MS)
+end
+
 local function updateClock()
-  if not window or not state then return end
+  if not alive(window) or not state then return end
   local elapsed = now() - receivedAt
-  window.gridPlate.refreshLabel:setText(V.refreshText(state, elapsed))
+  local label = alive(window.gridPlate) and window.gridPlate.refreshLabel or nil
+  if not alive(label) then return end
+  label:setText(V.refreshText(state, elapsed))
   if V.left(state, elapsed) <= 0 and not refreshAsked then
     refreshAsked = true -- once: the server sends the new stock
     send('open')
@@ -106,13 +182,13 @@ end
 local function tick()
   tickEvent = nil
   updateClock()
-  if window and window:isVisible() then
+  if alive(window) and window:isVisible() then
     tickEvent = scheduleEvent(tick, 1000)
   end
 end
 
 local function redraw()
-  if not window or not state then return end
+  if not alive(window) or not state then return end
   window.header:setText(V.header(state))
   local text, color = V.nearText(state)
   window.nearLabel:setText(text)
@@ -135,8 +211,11 @@ local function onMessage(protocol, opcode, msg)
     state = data
     receivedAt = now()
     refreshAsked = false
+    buyDone()
     redraw()
   elseif msg.action == 'result' then
+    buyDone()
+    setBuyButtons(true)
     setStatus(data.text or '', data.ok and V.COLORS.good or V.COLORS.bad)
     if data.reveal then
       showReveal(data.reveal)
@@ -158,7 +237,7 @@ function refresh()
 end
 
 function show()
-  if not window then return end
+  if not alive(window) then return end
   send('open')
   window:show()
   window:raise()
@@ -169,18 +248,18 @@ end
 
 function hide()
   stopTick()
-  if window and window:isVisible() then
+  if alive(window) and window:isVisible() then
     window:hide()
     send('close')
   end
 end
 
 function toggle()
-  if window and window:isVisible() then hide() else show() end
+  if alive(window) and window:isVisible() then hide() else show() end
 end
 
 -- for other modules and tests
-function getState() return { state = state, visible = window and window:isVisible() or false } end
+function getState() return { state = state, visible = alive(window) and window:isVisible() or false, buying = buying } end
 function getWindow() return window end
 function setState(s) state = s receivedAt = now() redraw() end
 
@@ -206,7 +285,8 @@ end
 
 local function onGameEnd()
   stopTick()
-  if window then window:hide() end
+  buyDone()
+  if alive(window) then window:hide() end
   state = nil
 end
 
@@ -229,8 +309,11 @@ end
 
 function terminate()
   stopTick()
+  buyDone()
   disconnect(g_game, handlers.game)
   pcall(ProtocolGame.unregisterExtendedJSONOpcode, OPCODE)
-  if window then window:destroy() window = nil end
+  if alive(window) then window:destroy() end
+  window = nil
+  cells, shownCells = {}, {}
   handlers = {}
 end

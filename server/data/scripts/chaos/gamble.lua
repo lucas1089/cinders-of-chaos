@@ -338,16 +338,24 @@ function P.odds()
 	return P.oddsTable
 end
 
-function P.send(player)
-	local stock, S = P.stockOf(player)
+-- the client id of a server item id (cached; 0 when the item type has none). The reveal asks it too: a purchase can
+-- come before this server process sent that stock (a restart while the window stayed open).
+function P.clientId(id)
 	P.cid = P.cid or {}
 	P.names = P.names or {}
+	if not P.cid[id] then
+		local ok, cid = pcall(function() return ItemType(id):getClientId() end)
+		cid = ok and tonumber(cid) or 0
+		P.cid[id] = (cid >= 1 and cid <= 65535) and cid or 0
+		P.names[id] = itemName(id)
+	end
+	return P.cid[id]
+end
+
+function P.send(player)
+	local stock, S = P.stockOf(player)
 	for _, e in ipairs(stock) do
-		if not P.cid[e.id] then
-			local ok, it = pcall(ItemType, e.id)
-			P.cid[e.id] = ok and it and it:getClientId() or 0
-			P.names[e.id] = itemName(e.id)
-		end
+		P.clientId(e.id)
 	end
 	local view = {stock = stock, mask = S.mask, window = S.window, now = S.t, offset = S.offset, level = S.level,
 		gate = S.gate, rerolls = S.rerolls, near = P.near(player), money = money(player), names = P.names, cids = P.cid,
@@ -426,7 +434,7 @@ local function buyNow(player, d)
 	local inbox = deliver(player, item)
 	Chaos.saveCharacter(player)
 	local name = itemName(e.id)
-	local reveal = {r = rarity, rn = rarityName(rarity), id = e.id, c = P.cid and P.cid[e.id] or 0, n = name, l = e.ilvl,
+	local reveal = {r = rarity, rn = rarityName(rarity), id = e.id, c = P.clientId(e.id), n = name, l = e.ilvl,
 		s = e.slot, i = e.i}
 	P.last[guid] = reveal
 	local line = string.format("The seal breaks: a [%s] %s (item level %d) for %s gold.%s", rarityName(rarity), name, e.ilvl,

@@ -275,6 +275,70 @@ eq(#a.sent, n, "tip: unknown recipe or method name ignored")
 for _ = 1, 20 do send(a, "tip", {category = "herbalist", craftId = 1}) end
 ok(#a.sent - n <= 8, "tip: at most 8 per second, got " .. (#a.sent - n))
 
+-- 7. malformed requests (v2 valid): a category must be one of the 7 and a page a whole number, so a fetch that names
+-- one of the script's own functions ("craft") no longer takes the length of a function and logs a Lua error
+local function quiet(what, buffer)
+	local before = #a.sent
+	print = function() end -- the stock "[Crafting] Invalid fetch request" line
+	local okCall, err = pcall(opcode.onExtendedOpcode, a, 91, buffer)
+	print = realPrint
+	ok(okCall, what .. ": no Lua error (" .. tostring(err) .. ")")
+	eq(#a.sent, before, what .. ": nothing sent")
+end
+for _, cat in ipairs({"craft", "sendCrafts", "sendMaterials", "fetch", "__index", "", 5, true}) do
+	quiet("fetch category " .. tostring(cat), {action = "fetch", data = {category = cat, page = 1}})
+	quiet("show category " .. tostring(cat), {action = "show", data = {category = cat}})
+	quiet("craft category " .. tostring(cat), {action = "craft", data = {category = cat, craftId = 1}})
+end
+for _, pg in ipairs({0, -1, 1.5, "abc", 1e9, {}, true}) do
+	quiet("fetch page " .. tostring(pg), {action = "fetch", data = {category = "herbalist", page = pg}})
+end
+for _, data in ipairs({"junk", 5, true}) do
+	quiet("fetch data " .. tostring(data), {action = "fetch", data = data})
+	quiet("show data " .. tostring(data), {action = "show", data = data})
+	quiet("craft data " .. tostring(data), {action = "craft", data = data})
+end
+quiet("a JSON number", 5)
+quiet("a JSON string", "fetch")
+quiet("craft of an unknown recipe", {action = "craft", data = {category = "herbalist", craftId = "1"}})
+a.sent = {}
+send(a, "fetch", {category = "herbalist", page = "1"})
+ok(lastOf(a, "chunkedFetch") ~= nil, "a page given as text \"1\" is still answered")
+a.sent = {}
+send(a, "fetch", {category = "herbalist"})
+ok(lastOf(a, "chunkedFetch") ~= nil, "a fetch without a page shows page 1")
+ok(patched:find("v2 valid", 1, true) ~= nil, "the checks are marked")
+
+-- an install patched before the checks existed (v1 only) gets them on the next run, then nothing more
+local v1 = runPatch("patch_base_crafting_ui", guarded)
+local v1only = (function()
+	local path = os.tmpname()
+	local f = assert(io.open(path, "wb"))
+	f:write(guarded)
+	f:close()
+	local h = assert(io.popen("python3 -I -c \"import sys; sys.path.insert(0, 'tools'); import patch_base_crafting_ui as p; "
+		.. "t = open(sys.argv[1], encoding='utf-8', newline='').read(); n, s = p.patch_v1(t); "
+		.. "open(sys.argv[1], 'w', encoding='utf-8', newline='').write(n); print(s)\" " .. path))
+	h:read("*a")
+	h:close()
+	local out = readFile(path)
+	os.remove(path)
+	return out
+end)()
+ok(v1only and not v1only:find("v2 valid", 1, true) and v1only:find("v1 ui", 1, true), "a v1-only file for the upgrade")
+local upgraded, stu = runPatch("patch_base_crafting_ui", v1only)
+eq(stu, "patched", "a v1-only install gets the checks")
+eq(upgraded, v1, "the upgrade ends as a fresh install")
+local _, stu2 = runPatch("patch_base_crafting_ui", upgraded)
+eq(stu2, "already", "and then nothing more")
+local v1Crlf = v1only:gsub("\n", "\r\n")
+local upCrlf, stu3 = runPatch("patch_base_crafting_ui", v1Crlf)
+eq(stu3, "patched", "a CRLF v1-only install gets the checks")
+eq((upCrlf:gsub("\r\n", "\n")), v1, "and keeps CRLF")
+ok(not upCrlf:gsub("\r\n", ""):find("\n"), "CRLF kept on the upgrade")
+local _, stb = runPatch("patch_base_crafting_bonus", upgraded)
+eq(stb, "patched", "the bonus tool still finds its anchors")
+
 print(string.format("base_crafting_ui_test: %d checks, %d failed", checks, fails))
 if fails > 0 then
 	os.exit(1)

@@ -103,4 +103,24 @@ eq(V.reveal(nil), '', 'no reveal yet')
 eq(V.cells(nil)[1], nil, 'no state, no cells')
 eq(V.header(nil), '', 'no state, no header')
 
+-- client ids the engine can take, malformed states
+eq(V.clientId(9879), 9879, 'a client id')
+eq(V.clientId('2643'), 2643, 'from text')
+for _, bad in ipairs({ 0, -1, 65536, 70000, 12.5, 'x', true }) do eq(V.clientId(bad), 0, 'no id: ' .. tostring(bad)) end
+eq(V.clientId(0 / 0), 0, 'no id: nan')
+eq(V.revealItem(s.last), 9879, 'reveal look')
+eq(V.revealItem({ r = 5, c = 70000 }), 0, 'reveal look out of range')
+eq(V.revealItem(5), 0, 'reveal not a table')
+eq(V.reveal('x'), '', 'reveal text of a string')
+eq(#V.cells({ items = { 1, 'x', { i = 3, c = 99999 } } }), 3, 'malformed crates still give cells')
+eq(V.cells({ items = { 1 } })[1].canBuy, false, 'a malformed crate cannot be bought')
+eq(V.cells({ items = { { i = 3, c = 99999 } } })[1].clientId, 0, 'a crate look out of range')
+eq(#V.cells({ items = 'none' }), 0, 'items not a list')
+eq(V.soldCount({ items = { 1, { sold = true } } }), 1, 'sold count skips malformed crates')
+eq(V.sameCells(V.cells(s), V.cells(s)), true, 'same crates')
+local other = V.cells(s)
+other[2].id = 1
+eq(V.sameCells(V.cells(s), other), false, 'another crate')
+eq(V.sameCells(V.cells(s), {}), false, 'another count')
+
 print('gambleview_test: ' .. n .. ' checks passed')

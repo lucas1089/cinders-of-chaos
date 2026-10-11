@@ -3773,6 +3773,11 @@ tool's hash of the stock `Crafting:craft` still matches when both run on a fresh
 - `fetch`: each material carries its `name`.
 - Anchors `Crafting = {}`, `elseif action == "craft" then`, `player = player:getItemCount(mat.id)`, each exactly once;
   markers `-- Chaos: crafting window (patch_base_crafting_ui.py) v1 ui / tip / names`.
+- Request checks (marker `... v2 valid`, added on the next run to a file patched before): the JSON and its `data` must
+  be tables, `fetch`, `show` and `craft` take only one of the seven categories (`CraftingUi.CATEGORIES`), `fetch` only a
+  whole page 1..1000 (`CraftingUi.page`, "2" counts as 2). The stock check `Crafting[category]` let a fetch name a method
+  ("craft"): `sendCrafts` took the length of a function and the console showed a Lua error. Anchors: the crafting window
+  block's end line, the JSON check, `local data = json_data.data` and the three category checks, each exactly once.
 
 **The window** (`client/overlay/modules/game_craftingtable/`, logic in `craftingtableview.lua`): the seven categories as
 tabs (the table's own marked), the recipe list with a search over recipe and material names and a filter (All / Can

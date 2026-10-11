@@ -66,12 +66,20 @@ monster.voices = {
 }
 
 monster.loot = {
-	{name = "gold coin", chance = 50000, maxCount = 100},
-	{name = "gold coin", chance = 50000, maxCount = 56},
-	{name = "small amethyst", chance = 10000, maxCount = 2},
-	{name = "berserk potion", chance = 2173},
-	{name = "great health potion", chance = 10000},
-	{name = "energy soil", chance = 14285}
+	-- by id only: the base Loot():setId() takes no name, an entry without an id is dropped (check_content.py)
+	{id = 2148, chance = 50000, maxCount = 100},	-- gold coin
+	{id = 2148, chance = 50000, maxCount = 56},	-- gold coin
+	{id = 2152, chance = 15000, maxCount = 2},	-- platinum coin
+	{id = 2150, chance = 10000, maxCount = 2},	-- small amethyst
+	{id = 8303, chance = 14285},	-- energy soil
+	{id = 7591, chance = 10000},	-- great health potion
+	{id = 7590, chance = 5000},	-- great mana potion
+	{id = 7439, chance = 2173},	-- berserk potion
+	{id = 8920, chance = 730},	-- wand of starstorm
+	{id = 7889, chance = 730},	-- lightning pendant
+	{id = 7869, chance = 500},	-- energy spike sword
+	{id = 10221, chance = 500},	-- shockwave amulet
+	{id = 7895, chance = 150}	-- lightning legs
 }
 
 monster.attacks = {

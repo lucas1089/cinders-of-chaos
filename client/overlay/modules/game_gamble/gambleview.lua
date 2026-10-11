@@ -25,6 +25,14 @@ V.RARITY = {
 
 local function num(v) return tonumber(v) or 0 end
 
+-- a client item id the window may hand to UIItem:setItemId: a whole number 1..65535 (the engine keeps item looks in a
+-- 16-bit table and checks a larger id after cutting it to 16 bits, so 70000 would show another look), else 0
+function V.clientId(v)
+  v = tonumber(v)
+  if not v or v ~= v or v < 1 or v > 65535 or v ~= math.floor(v) then return 0 end
+  return v
+end
+
 -- 1234567 -> "1,234,567"
 function V.fmtNum(n)
   n = math.floor(num(n))
@@ -73,7 +81,9 @@ end
 -- canBuy, buyText, tip}
 function V.cells(s)
   local out = {}
-  for _, it in ipairs(s and s.items or {}) do
+  local items = type(s) == 'table' and type(s.items) == 'table' and s.items or {}
+  for _, it in ipairs(items) do
+    if type(it) ~= 'table' then it = { sold = true } end
     local can = V.canBuy(s, it)
     local afford = num(s.money) >= num(it.p)
     local why
@@ -87,7 +97,7 @@ function V.cells(s)
       why = 'Pay ' .. V.fmtNum(it.p) .. ' gold and break the seal.'
     end
     out[#out + 1] = {
-      i = num(it.i), id = num(it.id), clientId = num(it.c), name = (tostring(it.n or ''):gsub('^%l', string.upper)),
+      i = num(it.i), id = num(it.id), clientId = V.clientId(it.c), name = (tostring(it.n or ''):gsub('^%l', string.upper)),
       slotText = it.sn or it.s or '', levelText = 'iLvl ' .. num(it.l), level = num(it.l),
       priceText = V.fmtNum(it.p) .. ' gold', priceColor = it.sold and V.COLORS.sold or (afford and V.COLORS.gold or V.COLORS.bad),
       sold = it.sold == true, canBuy = can, buyText = it.sold and 'Sold' or ('Buy ' .. V.short(it.p)),
@@ -100,8 +110,8 @@ end
 
 function V.soldCount(s)
   local n = 0
-  for _, it in ipairs(s and s.items or {}) do
-    if it.sold then n = n + 1 end
+  for _, it in ipairs(type(s) == 'table' and type(s.items) == 'table' and s.items or {}) do
+    if type(it) == 'table' and it.sold then n = n + 1 end
   end
   return n
 end
@@ -157,10 +167,25 @@ end
 
 -- the reveal after a purchase: text, colour
 function V.reveal(last)
-  if not last or not last.r then return '', V.COLORS.dim end
+  if type(last) ~= 'table' or not last.r then return '', V.COLORS.dim end
   local name = (tostring(last.n or ''):gsub('^%l', string.upper))
   return string.format('The seal breaks: %s %s (item level %d)', last.rn or ('Rarity ' .. num(last.r)), name, num(last.l)),
     V.RARITY[num(last.r)] or V.COLORS.text
+end
+
+-- the look of the reveal: a client id (0: none)
+function V.revealItem(last)
+  if type(last) ~= 'table' or not last.r then return 0 end
+  return V.clientId(last.c)
+end
+
+-- the same crates in the same order (only their texts and sold marks changed): the grid keeps its cells
+function V.sameCells(a, b)
+  if #a ~= #b then return false end
+  for k = 1, #a do
+    if a[k].i ~= b[k].i or a[k].id ~= b[k].id then return false end
+  end
+  return true
 end
 
 return V

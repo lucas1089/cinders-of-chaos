@@ -38,6 +38,7 @@ usage: python3 -I add_vocations.py DATA_DIR [--dry-run]
    of the Mystic in spells.xml get it too (healing, haste, magic shield, light, cures, party spells; not rune
    conjuring, not the stock summon, which would bypass the minion caps, not other classes' custom spells).
    A list that already names the line's base class is left as it is, so every run after the first changes nothing.
+   The quiver block of movements.xml (patch_base_archery.py) is left alone: only the launcher classes wear a quiver.
    The Thief, Monk and Templar lines get the stock utility spells every other class has (LINE_STOCK_SPELLS: light, great
    light, haste, find person, levitate, magic rope, the poison / splash / bewitched cures); the Thief and Monk lines also
    strong haste, the Monk and Templar lines cure bleeding (as the Warrior), the Templar line cure curse (as the Ranger).
@@ -111,6 +112,11 @@ BASE_OF = {'Juggernaut': 'Warrior', 'Berserker': 'Warrior', 'Deadeye': 'Ranger',
 ORDER = ['Warrior', 'Juggernaut', 'Berserker', 'Ranger', 'Deadeye', 'Beastmaster', 'Mystic', 'Elementalist',
          'Illusionist', 'Thief', 'Ninja', 'Samurai', 'Monk', 'Shadowfist', 'Iron Sage', 'Necromancer', 'Lich',
          'Bone Lord', 'Templar', 'Inquisitor', 'Sentinel']
+# the quiver block of movements.xml belongs to patch_base_archery.py (its MOVE_BEGIN / MOVE_END): its lists are the
+# classes that may fire a launcher, rebuilt on every archery run, so the class lines are never added there (else the
+# two tools rewrite the block back and forth on every install)
+QUIVER_BLOCK = re.compile(re.escape('<!-- Chaos quivers (server/tools/patch_base_archery.py, do not edit by hand) -->')
+                          + r'.*?' + re.escape('<!-- end of the Chaos quivers -->'), re.S)
 
 
 def read(path):
@@ -379,9 +385,11 @@ def patch_movements(text, info):
             count[line[0]] += 1
         return new
 
+    skip = [b.span() for b in QUIVER_BLOCK.finditer(text)]
+
     def repl(m):
         el, tag = m.group(0), m.group(1)
-        if '<vocation' not in el:
+        if '<vocation' not in el or any(a <= m.start() < b for a, b in skip):
             return el
         slot = re.search(r'\bslot="([^"]+)"', tag)
         slot = slot.group(1).lower() if slot else ''

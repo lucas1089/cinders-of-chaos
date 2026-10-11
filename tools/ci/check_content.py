@@ -7,6 +7,8 @@
    listed in needs_sprites.txt; no loot id lists ("a;b"), monster spells, flags and element keys must be known to the
    base (server/tools/fix_monster_xml.py holds the lists and fixes most problems); experience > 0 needs a loot item
    unless the name is in LOOTLESS_OK
+ - Lua monsters (monster/lua/chaos): every loot entry has a numeric `id =` (the base ignores `name =`), experience > 0
+   needs a loot table unless the name is in LOOTLESS_OK
 Usage: python3 tools/ci/check_content.py"""
 import glob, os, re, subprocess, sys
 import xml.dom.minidom as minidom
@@ -133,5 +135,84 @@ for f in sorted(glob.glob('server/data/monster/monsters/chaos/**/*.xml', recursi
     loot = re.search(r'<loot>(.*?)</loot>', re.sub(r'<!--.*?-->', '', t, flags=re.S), re.S)
     if xp and int(xp.group(1)) > 0 and n not in LOOTLESS_OK and not (loot and '<item' in loot.group(1)):
         fail(f'{f}: experience {xp.group(1)} but no loot item (add a loot table or list it in LOOTLESS_OK)')
+# Lua monsters (Game.createMonsterType): the base's registerMonsterType.loot only calls Loot():setId(loot.id), so an entry
+# by name (or with no id) loads as nothing. Every entry, children too, needs an `id` that is one item id (1..65535).
+def _lua_code(t):
+    """the text with comments and string contents blanked (same length), so braces count right"""
+    out, i, n = [], 0, len(t)
+    while i < n:
+        if t.startswith('--', i):
+            m = re.match(r'--\[(=*)\[', t[i:i + 64])
+            if m:
+                e = t.find(']' + m.group(1) + ']', i + m.end())
+                j = n if e < 0 else e + len(m.group(1)) + 2
+            else:
+                e = t.find('\n', i)
+                j = n if e < 0 else e
+            out.append(' ' * (j - i)); i = j
+        elif t[i] in '"\'':
+            q, j = t[i], i + 1
+            while j < n and t[j] != q and t[j] != '\n':
+                j += 2 if t[j] == '\\' else 1
+            out.append(q + ' ' * (min(j, n) - i - 1) + (q if j < n else '')); i = j + 1
+        else:
+            out.append(t[i]); i += 1
+    return ''.join(out)[:n]
+
+def _closing(code, at):
+    depth = 0
+    for k in range(at, len(code)):
+        depth += {'{': 1, '}': -1}.get(code[k], 0)
+        if depth == 0:
+            return k
+    return -1
+
+def check_lua_loot(f, t):
+    code = _lua_code(t)
+    m = re.search(r'\bmonster\.loot\s*=\s*\{', code)
+    xp = re.search(r'\bmonster\.experience\s*=\s*(\d+)', code)
+    name = re.search(r'createMonsterType\(\s*"([^"]+)"', t)
+    if not m:
+        if xp and int(xp.group(1)) > 0 and not (name and name.group(1).lower() in LOOTLESS_OK):
+            fail(f'{f}: experience {xp.group(1)} but no monster.loot (add a loot table or list it in LOOTLESS_OK)')
+        return
+    end = _closing(code, m.end() - 1)
+    if end < 0:
+        fail(f'{f}: monster.loot is not closed'); return
+    entries, k = 0, m.end()
+    stack = [(m.end(), end)]
+    while stack:
+        lo, hi = stack.pop()
+        k = lo
+        while k < hi:
+            if code[k] == '{':
+                close = _closing(code, k)
+                body = code[k + 1:close]
+                # the entry's own fields: the body without its nested tables (child = {...})
+                own = body
+                for _ in range(10):
+                    own2 = re.sub(r'\{[^{}]*\}', '', own)
+                    if own2 == own:
+                        break
+                    own = own2
+                entries += 1
+                line = t.count('\n', 0, k) + 1
+                iid = re.search(r'\bid\s*=\s*(\d+)\s*(?:,|$)', own.strip() + ',')
+                if re.search(r'\bname\s*=', own):
+                    fail(f'{f}:{line}: loot entry by name; the base loads only `id =` (look the id up in items.xml)')
+                elif not iid or not 0 < int(iid.group(1)) < 65536:
+                    fail(f'{f}:{line}: loot entry without a valid item id')
+                child = re.search(r'\bchild\s*=\s*\{', code[k + 1:close])
+                if child:
+                    cs = k + 1 + child.end() - 1
+                    stack.append((cs + 1, _closing(code, cs)))
+                k = close + 1
+            else:
+                k += 1
+    if entries == 0 and xp and int(xp.group(1)) > 0 and not (name and name.group(1).lower() in LOOTLESS_OK):
+        fail(f'{f}: experience {xp.group(1)} but an empty monster.loot')
+
+for f in sorted(glob.glob('server/data/monster/lua/chaos/**/*.lua', recursive=True)):
+    check_lua_loot(f, open(f, encoding='utf-8', errors='ignore').read())
 print('content check:', 'OK' if not bad else f'{bad} problem(s)')
 sys.exit(1 if bad else 0)
