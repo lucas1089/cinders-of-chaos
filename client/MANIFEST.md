@@ -630,9 +630,8 @@ old sprites unchanged. The mount seats of things_custom16 are kept (old entries 
 - `things-1098.tar.xz` is built like things_custom16's (Tibia.dat and Tibia.spr at the archive root, owner 0/0, GNU tar,
   `xz -9 -T3`), mtime 2026-10-11 21:00: sha256 415763cd16249264769eba8840c31cd511b19713e50cdd0cfbcbeb0b2b04e01f
   (65,635,764 bytes). Its two files unpack to the md5s above.
-- **Not pushed to `windows-assets` yet.** It waits for the owner's approval (docs/OWNER_TODO.md). The live pair stays
-  things_custom16 (1cae7c3). A client on things_custom16 draws nothing for 2140-2142: the three wings show as no wings.
-  So the server change and the pair go out together. CI: `check_content.py` reads 2142 from picks.csv.
+- Live on `windows-assets` at 854d34c (owner's approval, 2026-10-11). A client still on things_custom16 draws nothing
+  for 2140-2142: the three wings show as no wings, so the server change and the pair go out together. CI: `check_content.py` reads 2142 from picks.csv.
 - Checked in the Linux client (base client + overlay, offline, data/things pointed at things_custom17): each wing on
   a Warrior and a Mystic class look in all four directions, animated, and in the wardrobe's Collection tab with the
   server's own rows (`exclusives_core.lua` `K.rows`): owned and not owned, the hidden achievement as "???". Not checked

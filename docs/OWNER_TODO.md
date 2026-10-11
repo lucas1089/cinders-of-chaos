@@ -10,9 +10,6 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
   - Open betas on the weekends of 31 Oct and 7 Nov.
   - The Season 1 start (now 1 Nov) moves to the launch date.
 - [ ] **Donation prices in USD (PayPal).** BRL prices for Pix are already set.
-- [ ] **Push sprite pair things_custom17 to `windows-assets`?** It adds the three achievement wings (looks 2140-2142).
-  - dat 8f0dcbfe..., spr 6aee9a34..., `things-1098.tar.xz` sha256 415763cd... (client/MANIFEST.md "Achievement wings").
-  - Built locally only. The server's wings 17-19 need it: on things_custom16 they draw nothing.
 
 ## Accounts and services
 
@@ -43,6 +40,7 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 ## Decided
 
 - Sprite pair 16 (mount rider seats): approved and pushed to `windows-assets` (1cae7c3).
+- Sprite pair 17 (achievement wings): approved and pushed to `windows-assets` (854d34c).
 - Rift atlas: the orb nodes stay cut about 3x (a full Hall atlas with Lone Ember lands at about 10.6x hunting orbs).
 - Lone Ember and Fleeting Sanctum raise gold and item rolls, not orbs: kept.
 - Guild boss orbs (3 Upheaval + 1 Fate per participant): kept.
