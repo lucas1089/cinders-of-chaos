@@ -1,9 +1,9 @@
 Module
   name: game_season
-  description: Seasons window (season, time left, account reward track, join; extended opcode 246)
+  description: Seasons window (season, time left, account reward track, join, Journey tab; extended opcode 246)
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ seasonjoin, season ]
+  scripts: [ seasonjoin, journeyview, journey, season ]
   dependencies:
     - client_chaos_theme
     - game_interface

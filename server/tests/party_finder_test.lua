@@ -64,7 +64,9 @@ for _, t in ipairs(trialsCfg.tiers) do sources.trials[#sources.trials + 1] = t.n
 for _, b in ipairs(Chaos.worldBoss.bosses) do sources.worldBosses[#sources.worldBosses + 1] = b.name end
 for i = 1, 4 do sources.dungeons[i] = Chaos.dungeons.extra[i].title end
 local acts = K.buildActivities(cfg, sources)
-eq(#acts, 8, "eight activities")
+eq(#acts, 9, "nine activities (the battleground too)")
+eq(K.activity(acts, "battleground").n, "Battleground", "the battleground activity")
+eq(K.activity(acts, "battleground").max, 5, "a battleground party is at most 5")
 eq(K.activity(acts, "rift").range.max, riftCfg.maxTier, "rift max tier from rift_config.lua")
 eq(#K.activity(acts, "omen").targets, 3, "three omen guardians")
 eq(#K.activity(acts, "worldboss").targets, 5, "five world bosses")
@@ -598,7 +600,7 @@ check(lead.events.ChaosPartyFinderExtended and lead.events.ChaosPartyFinderLogou
 
 op(lead, "open", {})
 eq(last("Brannoc", "init").op, 208, "init on opcode 208")
-eq(#last("Brannoc", "init").data.acts, 8, "init activities")
+eq(#last("Brannoc", "init").data.acts, 9, "init activities")
 eq(last("Brannoc", "list").data.mine, nil, "no listing yet")
 op(lead, "post", {a = "dungeon", t = 1, want = {tank = 0, healer = 1, dps = 1}, minLevel = 300, note = "fast run", exp = 30,
 	role = "tank"})

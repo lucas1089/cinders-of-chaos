@@ -1,0 +1,611 @@
+// Hideout (game_hideout): decoration catalogue, placement, theme and permissions, visits. Styles from client_chaos_theme.
+
+HideoutRow < ChaosPanelDark
+  height: 40
+  margin-bottom: 3
+  phantom: false
+  focusable: true
+
+  $focus:
+    background-color: #3a2410
+
+  UIItem
+    id: item
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+    size: 32 32
+    virtual: true
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin-left: 42
+    margin-top: 5
+    text-align: left
+    font: verdana-11px-rounded
+    color: #f6cf72
+    phantom: true
+
+  UILabel
+    id: sub
+    anchors.left: name.left
+    anchors.right: parent.right
+    anchors.top: name.bottom
+    margin-top: 2
+    text-align: left
+    font: verdana-11px-antialised
+    color: #a89c86
+    phantom: true
+
+HideoutSmallRow < ChaosPanelDark
+  height: 24
+  margin-bottom: 2
+  phantom: false
+  focusable: true
+
+  $focus:
+    background-color: #3a2410
+
+  UIItem
+    id: item
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 2
+    size: 20 20
+    virtual: true
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 26
+    text-align: left
+    font: verdana-11px-antialised
+    color: #d8cfbf
+    phantom: true
+
+HideoutVisitRow < ChaosPanelDark
+  height: 26
+  margin-bottom: 2
+  phantom: false
+  focusable: true
+
+  $focus:
+    background-color: #3a2410
+
+  UILabel
+    id: name
+    anchors.left: parent.left
+    anchors.right: go.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 6
+    text-align: left
+    font: verdana-11px-antialised
+    color: #d8cfbf
+    phantom: true
+
+  ChaosButton
+    id: go
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 3
+    size: 56 20
+    padding: 0
+    !text: tr('Visit')
+
+// the preview on the hovered tile (game_hideout.lua sets the item, opacity and border colour)
+HideoutGhost < UIItem
+  phantom: true
+  focusable: false
+  virtual: true
+  opacity: 0.7
+  border-width: 2
+
+// the bar over the map while placing
+HideoutPlaceBar < ChaosPanel
+  size: 480 54
+  padding: 4
+
+  UIItem
+    id: item
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    size: 32 32
+    virtual: true
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: item.right
+    anchors.right: rotate.left
+    anchors.top: parent.top
+    margin-left: 6
+    margin-top: 2
+    text-align: left
+    font: verdana-11px-rounded
+    color: #f6cf72
+
+  UILabel
+    id: hint
+    anchors.left: name.left
+    anchors.right: name.right
+    anchors.top: name.bottom
+    margin-top: 3
+    text-align: left
+    font: verdana-11px-antialised
+    color: #a89c86
+
+  ChaosButton
+    id: rotate
+    anchors.right: cancel.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 4
+    size: 64 22
+    padding: 0
+    !text: tr('Rotate')
+    @onClick: modules.game_hideout.rotate(1)
+
+  ChaosButton
+    id: cancel
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    size: 64 22
+    padding: 0
+    !text: tr('Done')
+    @onClick: modules.game_hideout.stopPlacing()
+
+ChaosMainWindow
+  id: hideoutWindow
+  size: 720 500
+  !text: tr('Hideout')
+  @onEscape: modules.game_hideout.hide()
+
+  Panel
+    id: tabs
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 24
+    layout:
+      type: horizontalBox
+      spacing: 4
+
+  ChaosLabel
+    id: counter
+    anchors.top: tabs.top
+    anchors.right: parent.right
+    height: 24
+    width: 300
+    text-align: right
+    color: #f6cf72
+
+  // ------------------------------------------------------------- Decorate
+  Panel
+    id: decorate
+    anchors.top: tabs.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: statusLabel.top
+    margin-top: 6
+    margin-bottom: 6
+
+    ChaosComboBox
+      id: catCombo
+      anchors.top: parent.top
+      anchors.left: parent.left
+      size: 120 22
+
+    ChaosComboBox
+      id: srcCombo
+      anchors.top: parent.top
+      anchors.left: catCombo.right
+      margin-left: 4
+      size: 126 22
+
+    ChaosCheckBox
+      id: ownedCheck
+      anchors.top: parent.top
+      anchors.left: srcCombo.right
+      margin-left: 8
+      margin-top: 3
+      width: 124
+      !text: tr('Unlocked only')
+
+    ChaosTextEdit
+      id: search
+      anchors.top: parent.top
+      anchors.left: ownedCheck.right
+      anchors.right: parent.right
+      margin-left: 10
+      height: 22
+      !placeholder: tr('Search')
+
+    ChaosPanelDark
+      id: listFrame
+      anchors.top: catCombo.bottom
+      anchors.left: parent.left
+      anchors.bottom: parent.bottom
+      margin-top: 6
+      width: 270
+      padding: 3
+
+    UIScrollArea
+      id: list
+      anchors.top: listFrame.top
+      anchors.left: listFrame.left
+      anchors.right: listScroll.left
+      anchors.bottom: listFrame.bottom
+      margin: 4
+      layout:
+        type: verticalBox
+      vertical-scrollbar: listScroll
+      auto-focus: none
+
+    ChaosScrollBar
+      id: listScroll
+      anchors.top: listFrame.top
+      anchors.right: listFrame.right
+      anchors.bottom: listFrame.bottom
+      margin-top: 3
+      margin-bottom: 3
+      margin-right: 3
+      step: 43
+      pixels-scroll: true
+
+    ChaosPanelDark
+      id: detail
+      anchors.top: listFrame.top
+      anchors.left: listFrame.right
+      anchors.right: parent.right
+      margin-left: 8
+      height: 196
+      padding: 8
+
+      UIItem
+        id: item
+        anchors.left: parent.left
+        anchors.top: parent.top
+        size: 64 64
+        virtual: true
+
+      ChaosTitle
+        id: nameLabel
+        anchors.left: item.right
+        anchors.right: parent.right
+        anchors.top: parent.top
+        margin-left: 10
+        text-align: left
+
+      ChaosLabel
+        id: howLabel
+        anchors.left: nameLabel.left
+        anchors.right: parent.right
+        anchors.top: nameLabel.bottom
+        margin-top: 6
+        height: 32
+        text-align: left
+        text-wrap: true
+        color: #5cc8c0
+
+      ChaosLabel
+        id: countLabel
+        anchors.left: nameLabel.left
+        anchors.right: parent.right
+        anchors.top: howLabel.bottom
+        margin-top: 2
+        height: 18
+        text-align: left
+
+      ChaosLabelDim
+        id: reasonLabel
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: item.bottom
+        margin-top: 14
+        height: 34
+        text-align: left
+        text-wrap: true
+
+      ChaosButton
+        id: placeButton
+        anchors.left: parent.left
+        anchors.bottom: parent.bottom
+        width: 110
+        !text: tr('Place')
+        @onClick: modules.game_hideout.placeCurrent()
+
+      ChaosButton
+        id: storeButton
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        width: 110
+        !text: tr('Open the Store')
+        @onClick: modules.game_hideout.openStore()
+
+    ChaosLabel
+      id: placedTitle
+      anchors.top: detail.bottom
+      anchors.left: detail.left
+      margin-top: 8
+      height: 18
+      !text: tr('In your hideout')
+
+    ChaosPanelDark
+      id: placedFrame
+      anchors.top: placedTitle.bottom
+      anchors.left: detail.left
+      anchors.right: detail.right
+      anchors.bottom: moveButton.top
+      margin-top: 2
+      margin-bottom: 6
+      padding: 3
+
+    UIScrollArea
+      id: placedList
+      anchors.top: placedFrame.top
+      anchors.left: placedFrame.left
+      anchors.right: placedScroll.left
+      anchors.bottom: placedFrame.bottom
+      margin: 3
+      layout:
+        type: verticalBox
+      vertical-scrollbar: placedScroll
+      auto-focus: none
+
+    ChaosScrollBar
+      id: placedScroll
+      anchors.top: placedFrame.top
+      anchors.right: placedFrame.right
+      anchors.bottom: placedFrame.bottom
+      margin-top: 3
+      margin-bottom: 3
+      margin-right: 3
+      step: 26
+      pixels-scroll: true
+
+    ChaosButton
+      id: moveButton
+      anchors.left: detail.left
+      anchors.bottom: parent.bottom
+      width: 90
+      !text: tr('Move')
+      @onClick: modules.game_hideout.moveCurrent()
+
+    ChaosButton
+      id: removeButton
+      anchors.left: moveButton.right
+      anchors.bottom: parent.bottom
+      margin-left: 6
+      width: 90
+      !text: tr('Remove')
+      @onClick: modules.game_hideout.removeCurrent()
+
+    ChaosButton
+      id: clearButton
+      anchors.right: detail.right
+      anchors.bottom: parent.bottom
+      width: 110
+      !text: tr('Put all away')
+      @onClick: modules.game_hideout.clearAll()
+
+  // ------------------------------------------------------------- Hideout (theme, visitors)
+  Panel
+    id: settings
+    anchors.top: tabs.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: statusLabel.top
+    margin-top: 6
+    margin-bottom: 6
+    visible: false
+
+    ChaosLabel
+      id: themeTitle
+      anchors.top: parent.top
+      anchors.left: parent.left
+      height: 18
+      !text: tr('Theme')
+
+    ChaosPanelDark
+      id: themeFrame
+      anchors.top: themeTitle.bottom
+      anchors.left: parent.left
+      anchors.bottom: parent.bottom
+      margin-top: 2
+      width: 340
+      padding: 3
+
+    UIScrollArea
+      id: themeList
+      anchors.fill: themeFrame
+      margin: 4
+      layout:
+        type: verticalBox
+
+    ChaosLabel
+      id: permTitle
+      anchors.top: parent.top
+      anchors.left: themeFrame.right
+      margin-left: 12
+      height: 18
+      !text: tr('Who may visit')
+
+    ChaosPanelDark
+      id: permFrame
+      anchors.top: permTitle.bottom
+      anchors.left: permTitle.left
+      anchors.right: parent.right
+      margin-top: 2
+      height: 186
+      padding: 6
+      layout:
+        type: verticalBox
+        spacing: 4
+
+    ChaosLabel
+      id: statsLabel
+      anchors.top: permFrame.bottom
+      anchors.left: permFrame.left
+      anchors.right: permFrame.right
+      margin-top: 10
+      height: 36
+      text-wrap: true
+      text-align: left
+
+    ChaosButton
+      id: enterButton
+      anchors.left: permFrame.left
+      anchors.top: statsLabel.bottom
+      margin-top: 6
+      width: 110
+      !text: tr('Enter')
+      @onClick: modules.game_hideout.enter()
+
+    ChaosButton
+      id: leaveButton
+      anchors.left: enterButton.right
+      anchors.top: enterButton.top
+      margin-left: 6
+      width: 110
+      !text: tr('Leave')
+      @onClick: modules.game_hideout.leave()
+
+    ChaosButton
+      id: kickButton
+      anchors.left: leaveButton.right
+      anchors.top: enterButton.top
+      margin-left: 6
+      width: 120
+      !text: tr('Send visitors out')
+      @onClick: modules.game_hideout.kick()
+
+    ChaosButton
+      id: likeButton
+      anchors.left: permFrame.left
+      anchors.top: enterButton.bottom
+      margin-top: 6
+      width: 230
+      !text: tr('Like this hideout')
+      @onClick: modules.game_hideout.like()
+
+  // ------------------------------------------------------------- Visit
+  Panel
+    id: visit
+    anchors.top: tabs.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: statusLabel.top
+    margin-top: 6
+    margin-bottom: 6
+    visible: false
+
+    ChaosLabel
+      id: friendsTitle
+      anchors.top: parent.top
+      anchors.left: parent.left
+      height: 18
+      !text: tr('Friends, party and guild')
+
+    ChaosPanelDark
+      id: friendsFrame
+      anchors.top: friendsTitle.bottom
+      anchors.left: parent.left
+      anchors.bottom: recentTitle.top
+      margin-top: 2
+      margin-bottom: 6
+      width: 340
+      padding: 3
+
+    UIScrollArea
+      id: friendsList
+      anchors.fill: friendsFrame
+      margin: 3
+      layout:
+        type: verticalBox
+
+    ChaosLabel
+      id: recentTitle
+      anchors.left: parent.left
+      anchors.bottom: recentFrame.top
+      margin-bottom: 2
+      height: 18
+      !text: tr('Your recent visits')
+
+    ChaosPanelDark
+      id: recentFrame
+      anchors.left: parent.left
+      anchors.bottom: parent.bottom
+      width: 340
+      height: 120
+      padding: 3
+
+    UIScrollArea
+      id: recentList
+      anchors.fill: recentFrame
+      margin: 3
+      layout:
+        type: verticalBox
+
+    ChaosLabel
+      id: showTitle
+      anchors.top: parent.top
+      anchors.left: friendsFrame.right
+      margin-left: 12
+      height: 18
+      !text: tr('Showcase')
+
+    ChaosTabButton
+      id: byLikes
+      anchors.top: parent.top
+      anchors.right: byVisits.left
+      margin-right: 4
+      size: 90 20
+      !text: tr('Most liked')
+      @onClick: modules.game_hideout.showcaseBy('likes')
+
+    ChaosTabButton
+      id: byVisits
+      anchors.top: parent.top
+      anchors.right: parent.right
+      size: 90 20
+      !text: tr('Most visited')
+      @onClick: modules.game_hideout.showcaseBy('visits')
+
+    ChaosPanelDark
+      id: showFrame
+      anchors.top: showTitle.bottom
+      anchors.left: showTitle.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 4
+      padding: 3
+
+    UIScrollArea
+      id: showList
+      anchors.fill: showFrame
+      margin: 3
+      layout:
+        type: verticalBox
+
+  ChaosLabelDim
+    id: statusLabel
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    height: 20
+    text-align: left
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 80
+    !text: tr('Close')
+    @onClick: modules.game_hideout.hide()

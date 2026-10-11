@@ -39,11 +39,14 @@
 --   orb_binding, ruin_improved, ruin_ruined, quality_max, power_found   orbs v2 and legendary powers (the crafting hook, loot)
 --   arena1v1_wins, arena1v1_rating, arena2v2_wins, arena2v2_rating   arena (retroactive from chaos_arena_ratings)
 --   siege_played, siege_wins                                         guild siege
+--   bg_matches, bg_wins, pvp_season_tier                             battleground (battleground.lua) and the PvP season
+--                                                                    end (arena_season.lua: the best tier reached, 1-6)
 --   faction_exalted_<vigil|compact|choir|circle>, faction_exalted   factions (factions.lua: 1 once Exalted; how many are)
 --   raid_kills, raid_<boss key>, raid_clears, raid_flawless, raid_speed   the Ashen Sepulchre (raid.lua: every raider present
 --                                                                    at a kill, looted or not)
 --   points                                                           the character's own achievement points
 --   season_hc_level, season_ssf_level, season_hc_survived, season_ssf_finished   season modes (season_modes.lua)
+--   mentor_graduates, mentor_fledged                                 mentors (mentor.lua, at a graduation)
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible; no engine calls (also read by server/tests/achievements_test.lua).
 
 local CHAOS, DIVINE, EXALTED = 29856, 29857, 29855
@@ -334,6 +337,16 @@ return {
 			stat = "arena2v2_rating", target = 1500, title = "Twinblade"},
 		{id = "arena2_1800", cat = "pvp", name = "Unbreakable Pair", desc = "Reach a 2v2 rating of 1800.", points = 50,
 			stat = "arena2v2_rating", target = 1800},
+		{id = "bg_win", cat = "pvp", name = "Kindle the Wells", desc = "Win an Ember Wells battleground.", points = 5,
+			stat = "bg_wins"},
+		{id = "bg_win50", cat = "pvp", name = "Keeper of the Wells", desc = "Win 50 Ember Wells battlegrounds.", points = 25,
+			stat = "bg_wins", target = 50, title = "Keeper of the Wells"},
+		{id = "bg_play100", cat = "pvp", name = "Ashes and Honor", desc = "Fight 100 Ember Wells battlegrounds.", points = 15,
+			stat = "bg_matches", target = 100},
+		{id = "pvp_season_blazing", cat = "pvp", name = "Blazing Season", desc = "Finish a PvP season Blazing or higher.",
+			points = 25, stat = "pvp_season_tier", target = 4},
+		{id = "pvp_season_sovereign", cat = "pvp", name = "Cinder Sovereign", desc = "Finish a PvP season as a Cinder Sovereign.",
+			points = 50, stat = "pvp_season_tier", target = 6, hidden = true},
 		{id = "siege_play", cat = "pvp", name = "Under the Banner", desc = "Score in a guild siege.", points = 10,
 			stat = "siege_played"},
 		{id = "siege_win", cat = "pvp", name = "Siege Champion", desc = "Win a guild siege with your guild.", points = 25,
@@ -365,6 +378,17 @@ return {
 			points = 25, stat = "faction_exalted_circle", reward = {items = orbs(0, 3, 1)}},
 		{id = "faction_all", cat = "explore", name = "Oath of Four Banners", desc = "Become Exalted with all four factions.",
 			points = 50, stat = "faction_exalted", target = 4, title = "Oathbound", reward = {items = orbs(0, 5, 2)}},
+
+		-- mentors (mentor.lua): mentor_graduates = apprentices this character mentored to graduation (with enough time
+		-- hunting together); mentor_fledged = 1 once this character graduated from a mentor
+		{id = "mentor_1", cat = "explore", name = "Guiding Hand", desc = "Mentor an apprentice to graduation.", points = 10,
+			stat = "mentor_graduates", title = "Mentor"},
+		{id = "mentor_5", cat = "explore", name = "Lamplighter", desc = "Mentor 5 apprentices to graduation.", points = 25,
+			stat = "mentor_graduates", target = 5, title = "Seasoned Mentor"},
+		{id = "mentor_15", cat = "explore", name = "Keeper of the Flame", desc = "Mentor 15 apprentices to graduation.",
+			points = 50, stat = "mentor_graduates", target = 15, title = "Master Mentor"},
+		{id = "mentor_fledged", cat = "explore", name = "Fledged", desc = "Graduate from your mentor.", points = 10,
+			stat = "mentor_fledged", title = "Fledgling"},
 
 		-- ------------------------------------------------------------------ Season modes (season_modes.lua)
 		-- season_hc_level / season_ssf_level: the level of a character while it plays Hardcore / Self-Found (alive);

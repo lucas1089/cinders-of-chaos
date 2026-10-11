@@ -175,6 +175,7 @@ local function blockFacts(player)
 		end),
 		dungeon = try(function() return ChaosDungeonIsInside and ChaosDungeonIsInside(player) end),
 		tower = try(function() return ChaosTowerRun and ChaosTowerRun.isInside and ChaosTowerRun.isInside(player) end),
+		hideout = try(function() return ChaosHideout and ChaosHideout.isInside and ChaosHideout.isInside(pos) end), -- Hideouts
 		pzLocked = player:isPzLocked(),
 		skull = skull == SKULL_WHITE or skull == SKULL_RED or skull == SKULL_BLACK,
 		pz = tile ~= nil and tile:hasFlag(TILESTATE_PROTECTIONZONE)

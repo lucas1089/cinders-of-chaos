@@ -12,7 +12,8 @@
 --            cosmetics_store.lua into the store's cosmetic categories, see the Cosmetics hunk of shop_config.lua)
 --   icon     server item id drawn for it in the store and the window (a picture only)
 --   source   "store" (price = the store price; the offer must carry it) | "achievement" (owned once the account has
---            the achievement `achievement` of achievements_data.lua; granted at login and when the window opens)
+--            the achievement `achievement` of achievements_data.lua; granted at login and when the window opens) |
+--            "pvp" (granted by battleground.lua / arena_season.lua: the honor vendor, the season rewards; pvp = how)
 -- Kinds:
 --   spellskin  line = a key of `lines`; spells = spell ids of that line (2-3); swaps per effect type, default name ->
 --              variant name, both in the same recolour family of `families` (the same picture in another colour, an
@@ -186,6 +187,19 @@ return {
 			vfx = "ember_crown", name = "Cinderheart Crown", desc = "A crown of embers burns over your kills. Achievement: Cinderbreaker."},
 		-- the Ashen Sepulchre's final boss (raid.lua; the achievement raid_sovereign)
 		{id = 109, key = "kill_sovereign", kind = "killfx", icon = 2498, source = "achievement", achievement = "raid_sovereign",
-			vfx = "dome_blast_violet", name = "Sovereign's Pyre", desc = "A pyre of violet ash rises from your kills. Achievement: The Last Door."}
+			vfx = "dome_blast_violet", name = "Sovereign's Pyre", desc = "A pyre of violet ash rises from your kills. Achievement: The Last Door."},
+		-- PvP (battleground.lua, arena_season.lua; source "pvp", pvp = how): the honor vendor and the season rewards
+		{id = 110, key = "kill_honorbrand", kind = "killfx", icon = 2400, source = "pvp", pvp = "Battleground vendor (honor)",
+			vfx = "px448_crimson", name = "Honor Brand", desc = "A crimson brand burns where your killing blow lands."},
+		{id = 111, key = "kill_cinderthrone", kind = "killfx", icon = 2343, source = "pvp", pvp = "PvP season reward: Cinder Sovereign",
+			vfx = "aura_burst_god", name = "Cinder Throne", desc = "A storm of light crowns your kills. PvP season: Cinder Sovereign."},
+		{id = 206, key = "loot_warbanner", kind = "lootbeam", icon = 1436, source = "pvp", pvp = "Battleground vendor (honor)",
+			accent = "#2c1010f0", name = "Warbanner Labels", desc = "Your highlighted loot labels sit on war-torn crimson. Rarity colours stay."},
+		{id = 207, key = "loot_blazing", kind = "lootbeam", icon = 1481, source = "pvp", pvp = "PvP season reward: Blazing or better",
+			accent = "#3a1c06f0", name = "Blazing Labels", desc = "Your highlighted loot labels sit on banked fire. PvP season: Blazing."},
+		{id = 307, key = "chat_gladiator", kind = "chatcolor", icon = 2392, source = "pvp", pvp = "Battleground vendor (honor)",
+			color = "#b8c4d4", name = "Gladiator Steel", desc = "Your name in chat shows polished steel for everyone."},
+		{id = 308, key = "chat_infernal", kind = "chatcolor", icon = 2343, source = "pvp", pvp = "PvP season reward: Infernal or better",
+			color = "#ff6a4a", name = "Infernal Name", desc = "Your name in chat burns infernal red for everyone. PvP season: Infernal."}
 	}
 }

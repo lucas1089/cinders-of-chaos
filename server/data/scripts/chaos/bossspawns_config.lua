@@ -64,7 +64,9 @@ return {
 		{key = "descent", name = "The Ember Descent", color = "#ff7a2a",
 			text = "A roguelike trial: 8-12 rooms, the boss in the last."},
 		{key = "sepulchre", name = "The Ashen Sepulchre (Raid)", color = "#c8503a",
-			text = "Weekly raid for 5-15: each boss's loot once a week per character."}
+			text = "Weekly raid for 5-15: each boss's loot once a week per character."},
+		{key = "guild", name = "Guild Boss", color = "#d89a3a",
+			text = "Summoned in the guild hall with the guild's fuel: one kill per guild and week."}
 	},
 
 	-- read from the systems above (false = leave that category out)
@@ -259,6 +261,14 @@ return {
 		{key = "raid_sovereign", category = "sepulchre", name = "Varkhul the Ashen Sovereign", monster = "Varkhul the Ashen Sovereign",
 			anywhere = true, loc = "Ashen Sepulchre (raid)", level = 800, rule = {type = "ondemand",
 			how = "The raid's last boss; loot once a week", short = "Raid, weekly loot", cooldown = 7100445}},
+
+		-- ------------------------------------------------------------------ the weekly guild boss (guildboss_config.lua)
+		-- on demand at the Summoning Stone of a guild hall; the cooldown column shows the guild's weekly lockout (storage
+		-- 7101302 = Chaos.storage.guildBossLockout: the next reset while the character's guild has its kill this week)
+		{key = "guild_gorvath", category = "guild", name = "Gorvath the Banner-Eater", monster = "Gorvath the Banner-Eater",
+			anywhere = true, loc = "Guild boss arena", level = 150, rule = {type = "ondemand",
+			how = "The Summoning Stone in your guild hall, fuelled by the members; one kill per guild and week",
+			short = "Guild, weekly", cooldown = 7101302}},
 
 		-- ------------------------------------------------------------------ rare spawns (treasure_goblin_config.lua)
 		{key = "treasure_goblin", category = "rare", name = "Treasure Goblin", monster = "Treasure Goblin", anywhere = true,

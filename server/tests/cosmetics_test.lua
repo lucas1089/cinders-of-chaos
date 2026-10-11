@@ -147,8 +147,8 @@ for _, c in ipairs(cfg.cosmetics) do
 		eq(c.price, store[c.kind], "one price per kind: " .. c.key)
 	end
 end
-eq(count.spellskin, 12, "12 spell skins") eq(count.killfx, 9, "9 kill effects (the Cinderheart Crown of uber.lua, Sovereign's Pyre of raid.lua)")
-eq(count.lootbeam, 5, "5 label accents") eq(count.chatcolor, 6, "6 chat colours")
+eq(count.spellskin, 12, "12 spell skins") eq(count.killfx, 11, "11 kill effects (the Cinderheart Crown of uber.lua, Sovereign's Pyre of raid.lua, two PvP)")
+eq(count.lootbeam, 7, "7 label accents (two PvP)") eq(count.chatcolor, 8, "8 chat colours (two PvP)")
 eq(store.spellskin, 250, "skins 250") eq(store.killfx, 200, "kill effects 200")
 eq(store.lootbeam, 150, "label accents 150") eq(store.chatcolor, 200, "chat colours 200")
 -- every line but the Necromancer's has 2-3 skins of 2-3 spells

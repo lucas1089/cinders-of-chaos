@@ -859,6 +859,14 @@ function RF.deliver(player, run, auto)
 				found[#found + 1] = "{" .. e.name .. "}"
 			end
 		end
+		-- item sets (itemsets.lua): one chase roll over the sets of this rift's theme
+		if not data.omen and ChaosItemSets and ChaosItemSets.grantChase then
+			local piece = ChaosItemSets.grantChase(player, "rift", run.themeName or run.theme,
+				{tier = data.tier, itemFind = itemFind}, rand)
+			if piece then
+				found[#found + 1] = "{" .. piece .. "}"
+			end
+		end
 	end
 	-- Omen Fragments from a sealed rift of omen.minTier or more
 	local frags = not data.omen and R.omenFragments(cfg, data.tier, data.bonus, rand) or 0

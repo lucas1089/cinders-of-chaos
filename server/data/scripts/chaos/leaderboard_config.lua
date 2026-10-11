@@ -40,6 +40,11 @@ return {
 			info = "Best 1v1 arena rating reached this week."},
 		{key = "arena2v2", name = "Arena 2v2", mode = "max", value = "Rating", title = "Gladiator",
 			info = "Best 2v2 arena rating reached this week."},
+		-- arena 3v3 and the battleground (arena.lua, battleground.lua)
+		{key = "arena3v3", name = "Arena 3v3", mode = "max", value = "Rating", title = "Triumvir",
+			info = "Best 3v3 arena rating reached this week."},
+		{key = "battleground", name = "Battleground", mode = "add", value = "Wins", title = "Wellkeeper",
+			info = "Ember Wells battleground wins this week."},
 		{key = "defender", name = "Defender", mode = "add", value = "Points", count = "Invasions", title = "Defender of the Realm",
 			info = "Invasions defended this week: 10 points each plus your share of the defence in percent."},
 		-- factions.lua: reputation gained with every faction this week (after diminishing returns and caps)

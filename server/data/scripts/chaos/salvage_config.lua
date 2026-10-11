@@ -67,6 +67,9 @@ return {
 
 	-- uniques are never salvaged: they are chase items with their own drop table and no rarity tier to price them
 	allowUniques = false,
+	-- except item set pieces (data/lib/chaos_item_sets.lua): duplicates are common enough, each gives this many shards
+	-- (about a Mythic drop; no orb chance beyond the Common one)
+	setPieceShards = 8,
 
 	-- "salvage all": items of rarity <= maxRarity directly inside one container (the backpack or one bag in it),
 	-- at most batchCap items per action

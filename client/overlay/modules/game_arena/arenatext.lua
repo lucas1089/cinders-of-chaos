@@ -17,7 +17,35 @@ ArenaText.RESULT_TEXT = { win = 'VICTORY', loss = 'DEFEAT', draw = 'DRAW' }
 ArenaText.RESULT_COLOR = { win = '#f6cf72', loss = '#e03a1e', draw = '#d6c9ae' }
 
 function ArenaText.result(r)
-  return ArenaText.RESULT_TEXT[r] or tostring(r or '?'):upper(), ArenaText.RESULT_COLOR[r] or '#d6c9ae'
+  ArenaText.MODE_TITLE = { ['1v1'] = 'Duel 1v1', ['2v2'] = 'Team 2v2', ['3v3'] = 'Warband 3v3' }
+
+-- the PvP season line of a mode card: tier and season rating, or the placement progress
+function ArenaText.seasonLine(v, seasonId)
+  if type(v) ~= 'table' then
+    return '', '#8c8070', ''
+  end
+  local tip = string.format('PvP Season %d rating %d (%d matches).', tonumber(seasonId) or 1, tonumber(v.rating) or 1500,
+    tonumber(v.matches) or 0)
+  if not v.placed then
+    local total = (tonumber(v.matches) or 0) + (tonumber(v.placementLeft) or 0)
+    return string.format('Season: placement %d/%d', tonumber(v.matches) or 0, total), '#8c8070', tip
+  end
+  return string.format('Season: %s %d', v.tierName or '?', tonumber(v.rating) or 1500), v.color or '#d6c9ae', tip
+end
+
+-- the season part of the result toast
+function ArenaText.seasonDelta(s)
+  if type(s) ~= 'table' then return '' end
+  local text = string.format('Season %d -> %d (%s)', tonumber(s.before) or 0, tonumber(s.after) or 0, ArenaText.delta(s.delta))
+  if s.placed and s.tierName then
+    text = text .. ' ' .. s.tierName
+  elseif not s.placed then
+    text = text .. string.format(', placement: %d left', tonumber(s.placementLeft) or 0)
+  end
+  return text
+end
+
+return ArenaText.RESULT_TEXT[r] or tostring(r or '?'):upper(), ArenaText.RESULT_COLOR[r] or '#d6c9ae'
 end
 
 -- "Rating 1000 -> 1020 (+20)"

@@ -90,6 +90,8 @@ server/
                                       base-patch 0029 matches (see "Movement speed"; data/lib/chaos_speed.lua)
   src-patches/0019-transmog-appearance.patch   engine: item custom attribute 8 = client id of the item's transmog look
                                       (custom attribute "chaos_tmog"), drawn by client base patch 0030 (see "Transmog")
+  src-patches/0020-guild-war-list-lua.patch   engine: player:getGuildWarList / setGuildWarList, the war emblems and
+                                      skull rules change at once when a war starts or ends (see "Guild wars in game")
     transmog.lua  transmog_core.lua  transmog_config.lua (transmog: account wardrobe, appearance sets, client game_transmog;
                                       sql/chaos_transmog.sql, see "Transmog")
     item_tooltip.lua  item_tooltip_core.lua (rich item tooltips with the equipped-item compare, client game_itemtooltip)
@@ -259,7 +261,8 @@ working directory, as with the rest of the base server libs).
 | game_groundlabels | `groundloot.lua`, `groundloot_core.lua` (client also `game_lootfilter`, `game_itemtooltip`) | 230 | Ground loot labels: names, rarity, category and decay of the items on the tiles in view and a short list of what lootable corpses hold; tooltips of ground items; `raise` puts an item lower in a pile on top so the normal move can pick it up. Tested in game (see "Ground loot labels") |
 | game_bounty | `bounty.lua`, `bounty_core.lua`, `bounty_config.lua`, `bounty_pool.lua` | 223, Adventure > Bounty Board | Daily rotating kill contracts per level band, tested in game (see "Bounty board"). |
 | game_rift | `rift.lua`, `rift_core.lua`, `rift_config.lua` | 228 (server -> client), Adventure > Rifts / `/rift` | Rift Keys open timed instances with modifiers; run HUD; tested in game (see "Rifts"). |
-| game_arena | `arena.lua`, `arena_core.lua`, `arena_config.lua` | 236, Adventure > Arena / `/arena` | Ranked PvP arena, 1v1 and 2v2 with Elo per mode, runtime instances, no death / skull / frag inside, tested in game with two clients (see "Arena"). |
+| game_arena | `arena.lua`, `arena_core.lua`, `arena_config.lua` | 236, Adventure > Arena / `/arena` | Ranked PvP arena, 1v1, 2v2 and 3v3 with Elo per mode and a season rating per bracket (`arena_season.lua`), runtime instances, no death / skull / frag inside, tested in game with two clients (see "Arena"). |
+| game_battleground | `battleground.lua`, `battleground_core.lua`, `battleground_config.lua`, `arena_season.lua`, `sql/chaos_battleground.sql` | **200**, Adventure > Battleground, `/bg` (staff) | Ember Wells battleground (5v5 to 10v10, three braziers to 1000), role and rating balanced matchmaking per realm and level bracket, level normalisation, respawn waves, AFK and deserter rules, honor and its vendor; PvP seasons (Glicko-lite per bracket 1v1 / 2v2 / 3v3 / battleground, placement, tiers, soft reset, decay, season rewards). Unit and mocked-engine tests; tested on a live test server with two clients as a 1v1 (see "Battleground and PvP seasons"). |
 | game_siege | `siege.lua`, `siege_core.lua`, `siege_config.lua` | 233, Adventure > Guild Siege / `/siege` | Weekly guild siege for the Chaos Obelisk: sign-ups, runtime arena, HUD, rewards and the champion title, tested in game (see "Guild siege"). |
 | game_leaderboard | `leaderboard.lua`, `leaderboard_core.lua`, `leaderboard_config.lua` | 229, Social > Leaderboards | Weekly World Boss / Bounty Hunter / Rifts / Goblin Slayer / Guild Siege / Arena boards with titles and orbs for the top 3, all-time class ladder, tested in game (see "Leaderboards"). |
 | game_crafting | `crafting.lua`, `data/lib/chaos_crafting.lua` | 232, Economy > Crafting Bench | Crafting bench and the crafting orbs (Awakening, Gilding, Grafting, Unmaking, Erasure, Upheaval, Fate, and the orbs v2: Tempering, Binding, Excision, Reforging, Ruin, Whetstone), tested in game (see "Crafting" and "Crafting orbs v2"). Salvage tab and the item lock: `salvage.lua`, `salvage_core.lua`, `salvage_config.lua`, Economy > Salvage (see "Salvage"). |
@@ -271,17 +274,19 @@ working directory, as with the rest of the base server libs).
 | game_orbexchange | `orbexchange.lua`, `orbexchange_core.lua`, `orbexchange_config.lua`, `sql/chaos_orbx.sql` | **209**, Economy > Orb Exchange (and a button in the Market window) | Currency order book for the crafting orbs: orb for orb and orb for gold, limit orders with the offered stack escrowed in the order row (crash-safe like the market), price-time matching at the resting order's ratio, partial fills, cancel / expiry refunds, inbox / bank delivery, gold-leg fee and orb-for-orb placing fee, season books apart; book, chart, My Orders. Unit, randomized and in-game tests (see "Orb Exchange"). |
 | game_pact | `pact.lua`, `pact_core.lua`, `pact_config.lua`, `sql/chaos_pact.sql` | **222**, Character > Chaos Pact | Chaos Pact subscription (30 days, stacks, daily Chaos Coins, title; no premium days) and account limits (stash tabs, market listings, saved builds, loot rules, character slots) from one config; one-time extras in the store; saved passive tree builds per account; tested in game (see "Chaos Pact and account storage"). |
 | game_referral | `referral.lua`, `referral_core.lua`, `referral_config.lua`, `sql/chaos_referral.sql` | **220**, Character > Referral | Referral program: an account's code, a friend's code entered at account creation (website) or in game in the first 7 days, a welcome gift for the friend (potions, a title), titles and a few Chaos Coins for the referrer at the friend's levels 50 and 150; anti-abuse checks; tested in game (see "Referral program"). |
+| game_mentor | `mentor.lua`, `mentor_core.lua`, `mentor_config.lua`, `sql/chaos_mentor.sql` | **194**, Social > Mentors | Mentors: veterans mentor new characters (list with filters, invitations, the referrer as mentor), +10% experience and 5% less damage taken while hunting together without power-levelling, Mentor Marks from milestones and shared time for titles / cosmetics / supplies, graduation at 200; mock-tested, not run on a live server (see "Mentors"). |
 | game_transmog | `transmog.lua`, `transmog_core.lua`, `transmog_config.lua`, `sql/chaos_transmog.sql` | **212**, Character > Transmog | Transmog: equipped gear takes the look of an unlocked item of its kind (appearance only), account-wide wardrobe with collection progress, appearance sets (store, achievement, season, exclusive), small gold fee; engine patch 0019 + client base patch 0030 draw the look everywhere; tested in game (see "Transmog"). |
 | game_patchnotes | `patchnotes.lua`, `patchnotes_core.lua`, `data/patchnotes/*.md` | 244, Social > Patch Notes / `/patchnotes` | Weekly patch notes read from Markdown files on the server, opened once per new week at login (after the Daily Reward), per-account "Don't show automatically"; tested in game (see "Patch notes"). |
 | game_monkchi | `monk_chi_core.lua`, `monk_combat.lua` | 247 (server -> client) | The Monk's chi HUD: five pips over the map, plain text `chi:<chi>:<max>:<decaySec>`; only the Monk line (17-19) sees it. Tested in game: under the character (the bottom of the map lies under the chat in the Chaos layout), fills and empties with the server's chi, empties after 12 s. |
 | game_nameplate | `nameplate.lua`, `nameplate_core.lua`, `titles.lua` | 248, the Achievements window | Name plates over players: active title, `{guild}` and the name on a frame (client base patch 0022); title registry `ChaosTitles.register`; tested in game (see "Name plates and titles"). |
 | game_guild | `guild.lua`, `guild_hall.lua`, `guild_core.lua`, `guild_config.lua` | 252, Social > Guild | Guild levels (guild XP from the members, perks), guild bank, guild halls (runtime instance, upgrades, rent, depot), weekly top guilds; tested in game with two members (see "Guild levels and guild halls"). |
+| game_guildwar | `guildwar.lua`, `guildwar_core.lua`, `guildwar_config.lua`, `guildboss.lua`, `guildboss_core.lua`, `guildboss_config.lua`, `sql/chaos_guildwar.sql`, monsters `monsters/chaos/guildboss/`, engine patch 0020 | **197**, Social > Guild Wars, the Summoning Stone in the guild hall | Guild wars declared and answered in game (terms, gold stake in escrow, anti-farming kill rules, frag limit / time / surrender, base `guild_wars` rows for the engine's war emblems, war board) and the weekly guild boss (fuel, summon, instanced fight, rewards, banner, weekly board); see "Guild wars in game" and "The weekly guild boss". Unit and mocked-engine tests; tested on a live test server with two clients. |
 | game_achievements | `achievements.lua`, `achievements_core.lua`, `achievements_data.lua` | 250, Character > Achievements | Achievements: 100 in 9 categories with points, titles and rewards, progress fed by the other systems, retroactive at login; tested in game (see "Achievements"). |
 | game_pets | `pets.lua`, `pets_core.lua`, `pets_config.lua` | 254, Character > Pets / `/pet` | Pets: one companion out at a time that follows its owner, levels from kills, two small abilities per species; drops, store and achievements; tested in game (see "Pets"). |
 | game_buffbar | `buffbar.lua`, `data/lib/chaos_buffs.lua` | 234 (server -> client), Character > Buff Bar | Buff / debuff bar: icons with a countdown and stacks for the engine conditions, the Chaos class buffs, world buffs, the Victory buff, world events, trial kill stacks, chi, Rage and Reprisal; diffs only; tested in game (see "Buff bar and party frames"). |
 | game_partyframes | `partyframes.lua`, `partyframes_core.lua` | 235, Hunt > Party Frames | Party frames: health, mana, level, floor, distance, state and buffs of the party members every 500 ms, exact numbers only in range; kick / pass leadership / invite actions checked on the server; tested in game with three characters (see "Buff bar and party frames"). |
 | game_bestiary | `bestiary.lua`, `bestiary_core.lua`, `bestiary_config.lua`, `bestiary_spawns.lua` | 253, Hunt > Bestiary, Hunt > Kill Tasks | Bestiary (an entry per monster, four stages by kills, completion bonus, points and ranks), personal kill tasks with daily / weekly limits, task tracker HUD with the bounty contracts; tested in game (see "Bestiary and kill tasks"). |
-| game_itemtooltip | `item_tooltip.lua`, `item_tooltip_core.lua` (client also `game_itemrarity`) | 242 | Rich item tooltips on hover (inventory, open containers): rarity, item level, base stats, every modifier with its tier and roll range, sockets and gems, unique and set, requirements; Ctrl compares with the equipped item(s) of the same slot. Rarity frames from the item custom attributes of engine patch 0003; tested in game (see "Item attributes in packets and rich tooltips"). |
+| game_itemtooltip | `item_tooltip.lua`, `item_tooltip_core.lua` (client also `game_itemrarity`) | 242 | Rich item tooltips on hover (inventory, open containers): rarity, item level, base stats, every modifier with its tier and roll range, sockets and gems, unique and set (pieces worn, bonuses active: "Item sets"), requirements; Ctrl compares with the equipped item(s) of the same slot. Rarity frames from the item custom attributes of engine patch 0003; tested in game (see "Item attributes in packets and rich tooltips"). |
 | game_chatlinks | `itemlink.lua`, `itemlink_core.lua` (client also `game_itemtooltip`) | 249, Shift+click an item | Item links in chat: the server checks the player carries the item and keeps a snapshot of its tooltip for 10 minutes under a random id; the link travels as ordinary speech `[Item Name]{<r><id>}` in every channel; receivers ask for the snapshot on hover. Limits, Help channel rule (`tools/patch_help_itemlinks.py`); tested in game with two clients (see "Item links in chat"). |
 | game_playerinspect | `inspect.lua`, `inspect_core.lua` | 240, Social > Inspect Player, right-click a player | Inspect Player: outfit, level, class, guild, achievement points, rift and trial records and the equipment with full tooltips; right-click within 10 tiles or any online player by name; privacy setting per character (storage `Chaos.storage.inspectOff`); tested in game with two clients (see "Inspect Player"). |
 | game_invasion | `invasion.lua`, `invasion_core.lua`, `invasion_config.lua`, `worldevents.lua` | 251 (server -> client; `query` / `calendar` back), Adventure > Events, `/invasion` | Invasions (waves at a town or hunting ground, breach meter, boss, contribution rewards, Defender board, Victory buff, occupation) and the world events Chaos Storm, Wandering Merchant and Golden Hour; HUD and upcoming events window; toasts with action `invasion` on 79; tested in game on a test area (see "Invasions and world events"). |
@@ -313,16 +318,25 @@ against the reference server's list below, every Chaos script and client module 
 Extended opcode 204 (DPS meter and combat log) is registered there too, as `ChaosOpcodes.combatLog` below the table;
 checked free against the reference server's list below, its client modules and every Chaos script and client module
 (grep for `sendExtendedOpcode`, `registerExtended*Opcode` and opcode constants; `tests/combatlog_test.lua` checks it).
+Extended opcode 197 (guild wars and the guild boss, client `game_guildwar`) is registered there too, as `ChaosOpcodes.guildWar`
+below the table; checked free against the reference server's list below, every Chaos script and client module and the
+reference client's modules (grep for `sendExtendedOpcode`, `registerExtended*Opcode` and opcode constants: nothing in 190-199);
+`tests/guildwar_test.lua` checks it against `ChaosOpcodes` and that list.
 Extended opcode 206 (Loadouts / Armory) is registered there too, as `ChaosOpcodes.loadouts` below the table; checked free
 against the reference server's list below, every Chaos script and client module and the reference client's modules (grep for
 `sendExtendedOpcode`, `registerExtended*Opcode` and opcode constants: 200 and 206 were both free, 206 was taken);
 `tests/loadouts_test.lua` checks it against `ChaosOpcodes` and that list.
+Extended opcode 200 (the battleground and the PvP seasons, client `game_battleground`) is registered there too, as
+`ChaosOpcodes.battleground` below the table; checked free against the reference server's list below, every Chaos script and
+client module and the reference client's modules (grep for `sendExtendedOpcode`, `registerExtended*Opcode` and opcode
+constants); `tests/battleground_test.lua` checks it against `ChaosOpcodes` and that list.
 
 ### Opcode collision check
 Searched the reference server for every `onExtendedOpcode`, `sendExtendedOpcode(` and opcode
 constant. Opcodes in use there: 1, 67, 73, 89, 91, 92, 99, 106, 107, 136, 181, 201, 202. (The
 `ServerOpcodes` 125/126 in `global.lua` are game-protocol opcodes, a different number space.)
-None of the Chaos opcodes collide; no adjustment was needed. 110 was chosen for the stash because
+None of the Chaos opcodes collide; no adjustment was needed. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
+`ExtendedIds` 144-146, 210, 212, 213, 230, 246 and 0x8C = 140): 145 was taken there by the skill wheel. 110 was chosen for the stash because
 the client has no fixed value and 110 is free. Storage keys `7100000-7100999` and DB tables
 `chaos_*` are new; the one deliberate overlap is autoloot's storage base 80000 (shared on purpose).
 
@@ -1372,7 +1386,7 @@ undone for them in `shop_services.lua` (also when the potion came from gold).
 
 **Gifts.** GIFT on an offer: a character name, a confirmation, then the server checks again (rate limit 3 s, 20 gifts per
 account per day; not to yourself, staff (group 2+) or a banned account; services, unlocks and starter packs cannot be
-gifted). Online: delivered at once with a message. Offline: kept in `chaos_shop_gifts` and delivered 2 s after the next
+gifted; the one exception is an unlock offer with `gift = true`, the hideout decorations). Online: delivered at once with a message. Offline: kept in `chaos_shop_gifts` and delivered 2 s after the next
 login; when it cannot be delivered then (owned meanwhile, no room) the sender gets the coins back. Coin gifts
 ("Transfer Coins") work as before.
 
@@ -1601,6 +1615,86 @@ buyer only), purchases ("Owned." after), the window and its tabs; Iron Bellow wi
 other client; Frost Shatter on a killing blow seen by the other client; the Frost name colour in the other client's chat next
 to an item link; the Azure accent on Legendary / Rare / Mythic labels; Veteran's Gold granted from the achievement at login;
 the Ember plate frame. Screenshots outside the repository.
+
+## Hideouts (`hideout.lua`, `hideout_core.lua`, `hideout_config.lua`, `hideout_store.lua`, `sql/chaos_hideout.sql`, client `game_hideout`)
+
+A personal room for every character (a season character is another character, so it has its own), built at runtime and
+decorated by its owner. Cosmetic only: decorations change how the room looks and nothing else; the utilities are the ones
+every town has (the owner's own depot, the supply stash, two exercise dummies), no buffs. Client `game_hideout`
+(Character > Hideout, next to the Town Portal; a "Go to Hideout" button in the Town Portal window), extended opcode 192
+(`ChaosOpcodes.hideout`). Numbers, themes and the catalogue: `hideout_config.lua`; pure rules: `hideout_core.lua`.
+
+**Grid and slots.** x/y 12288-12799, z 7: 256 slots of 32 tiles (16 columns), rooms 15 x 11 inside walls. Clear of every
+other runtime grid (tower 2000+, tutorial 4600+, world boss 5000+, siege 5100+, arena 6000-6100, ascension 7000-7100,
+Ascended Omens 7600-7700, rifts 8192-8447, trials 9000-9160, guild halls 9216-9536, Ember Descent 10000-10255 x
+10000-10127, raid 10400-10911 x 10000-10511, guild boss 11264-11456 x 10000-10144, battleground 11264-11456 x
+11264-11456); `tests/hideout_test.lua` reads those configs and checks the overlap. A slot is taken from the pool when
+someone enters (the owner keeps it while the room is up), built once with `Game.createTile` (a slot with a map tile in
+its footprint is skipped for good), furnished from the database, and torn down after `emptySeconds` (30) without a player
+inside: its items are removed and the slot goes back to the pool (tiles, ground and walls stay for the next owner).
+
+**Themes** (floor, walls, the four corner lights; every theme has the same layout, so a change never moves a decoration):
+Ashen Crypt (every character, 24 decorations), Ember Forge (Ember Descent depth 5, 30), Veiled Sanctum (the Veiled Choir
+Honored, 36), Thornbound Grove (the Thornbound Circle Honored, 36). Walls are a base wall family (vertical, horizontal,
+post, corner pieces by position); with the dark tile set installed the floor and the north / west walls use it (its
+tall wall is never put on the south / east side, where it would hide the floor).
+
+**Decorating.** The owner, inside the own hideout: Place / Move / Remove in the window; the window steps aside and the
+hovered tile shows the decoration (green fits, red does not, `HideoutLogic.check` mirrors the server); left click places,
+the wheel or Rotate turns it, right click or Done ends. Rules (`K.placeProblem`): one object per tile, a rug under it,
+wall decorations on the north or west wall (the side picks the item), the fixture tiles (arrival, exit, depot, stash,
+dummies, lights) stay free, a path of walkable tiles from the arrival to the exit, the depot, the stash and the dummies
+(8 directions), a limit per decoration and per theme. Decorations carry an action id: using them does nothing, moving
+them puts them back; items dropped on a hideout floor go back to the player; no PvP inside; the Town Portal is refused
+inside (`townportal_core.lua`, use the exit).
+
+**Unlocks** (the catalogue shows each lock reason): every character (thrones, tables, racks, basins, tapestries, rugs,
+banners, bones, trees), achievements (Skull Pillar: rift tier 5; Skull Candle: an omen guardian; Hero Statue: level 300),
+faction ranks (Compact Trusted / Honored, Choir Trusted / Revered, Vigil Revered, Circle Trusted / Revered), trophies of the
+character's own kills (the five raid bosses, the three Ascended Omens, the Cinderheart, the five world bosses as wall
+trophies; the look text names the boss and how often the owner slew it), the Ember Descent (depth 9, the boss slain),
+events (invasions defended 1 / 5, 10 Treasure Goblins), the season journey (chapters 1 and 3, `chaos_season_journey`;
+`ChaosHideout.sourceProbes.journey` may replace the probe), and the store. An earned unlock is kept in
+`chaos_hideout_unlocks` (a faction rank later lost to the rival keeps it).
+
+**Store.** Category "Hideout Decorations" (`hideout_store.lua`, the Hideouts hunk of `shop_config.lua`): Stone Seat 120,
+Wyrmbone Throne 300, Tall Candelabrum 150, Gargoyle 200, Mourning Angel 200, Black Crystal 250, Wyrm Banner 150, Azure
+Tapestry 100, Woven Rug 80 Chaos Coins. `{kind = "unlock", unlock = "hideout_<key>", gift = true}`: account-wide,
+giftable (`shop.lua` lets an unlock offer that says `gift = true` be gifted; online at once, offline at the next login),
+allowed to season characters (`season_config.lua` `unlockPrefixes`). Earned decorations are never sold;
+`K.validate` checks that the store sells exactly the store decorations at their price and that no decoration carries
+a power field.
+
+**Visiting.** Permission private / friends (the owner's VIP list and party) / guild / public (default friends); season and
+standard characters never mix while a season runs; staff (group 4+, `/hideout <character>`) may enter any. Entering is
+refused in a fight (pz-lock or the fight icon), with a skull, and where the Town Portal is refused. The exit forcefield
+leads back to the spot the character entered from (storages 7100180-7100183; also after a logout inside), else the
+temple. A forcefield next to every temple leads to the own hideout (placed at startup, checked once a minute). The
+Visit tab: hideouts of the VIP list, party and guild the character may enter, the showcase of public hideouts (most liked
+/ most visited), the recent visits. A visit counts once per visitor and day; a like once per account and hideout, only
+from inside it, 10 a day per account, one request per 2 s. The owner may send visitors out; a visitor who loses access
+(the owner changed the permission) is sent out at once.
+
+**Protocol** (JSON `{action, data}` on 192, server -> client chunked): client -> server `open | get | enter | leave |
+visit {guid} | place {key, x, y, r} | move {id, x, y, r} | remove {id} | clear | theme {key} | perm {level} | kick | visits
+| like {owner}`; server -> client `state {open, me, hideout, inside, layout, themes, catalogue, placed, permissions,
+categories}`, `visits {friends, showcase = {likes, visits}, recent}`, `result {ok, text}`.
+
+**Install.** The `files` and `sql` steps of `install_all.py` (`sql/chaos_hideout.sql`, 5 tables; `hideout.lua` also creates
+them at startup). The depot locker needs engine patch 0017 (`item:unserializeAttributes` sets its depot id to the owner's
+home town); without it the locker says to use a town depot.
+
+**Tests:** `tests/hideout_test.lua` (LuaJIT and Lua 5.3): the shipped config against achievements, factions and the
+store; the opcode against every ChaosOpcodes entry and the reference lists; the grid against the other grids; placement
+(layers, walls, reserved tiles, limits, the path, multi-tile and rotation), unlock sources, permissions, likes, visits,
+the showcase, the slot pool; then `hideout.lua` on a mocked engine and database (enter, build, wall pieces, the locker's
+depot id, place / move / remove, trophy text, store unlock and gift, themes, VIP / guild visits, likes, permission
+change sending a visitor out, no PvP, dropped items, teardown and slot reuse, login inside, staff entry). `shop_test.lua`
+(a hideout decoration may be gifted, other unlocks not), `season_test.lua` (the category is allowed). Client
+`game_hideout/hideoutlogic_test.lua` (filters, texts, rotation, positions, the placement check). **Tested in game** (a
+server copy with MariaDB and the reference client): window, enter, an empty Ashen Crypt, decorating 34 pieces (the theme
+limit refused the 25th in the Crypt), the Veiled Sanctum, the ghost preview green and red, placing by click. Not tested in
+game: two players (visits and likes), the depot window, the store purchase screen.
 
 ## Store pouches (`pouches.lua`, `pouches_core.lua`, `pouches_config.lua`, `tools/install_pouches.py`, client `game_pouches`)
 
@@ -1832,6 +1926,75 @@ the new account's first character levels. Approved by the owner. Nothing in it g
   Herald, 75 coins); an account made on the website with a wrong code was refused on the form, with the right one it got a
   pending row, accepted at its first login with the gift; its level 50 waited for the cap, the account was banned, and the
   reward became void; the referrer's window showed both friends. Screenshots are not in the repository.
+
+## Mentors (`mentor.lua`, `mentor_core.lua`, `mentor_config.lua`, `sql/chaos_mentor.sql`, client `game_mentor`)
+
+Veterans guide new characters; both get something for hunting together, nothing that adds power. Social > Mentors in the
+client (opcode **194**, `ChaosOpcodes.mentor`); the website lists the mentors who opted in (website/README.md "Mentors").
+Every number and text is in `mentor_config.lua`; the rules are pure functions in `mentor_core.lua` (tested by
+`tests/mentor_test.lua`, which also runs `mentor.lua` against a mocked engine).
+
+- **Mentors.** A character registers when its ACCOUNT is a veteran: a character at level 150 (`mentor.minAccountLevel`),
+  100 hours of play (sum of `players.onlinetime`), 30 days old; the mentoring character itself needs level 20, so a
+  veteran can mentor with a character near the apprentice's level (the bonus needs that, below). The mentor card:
+  language / region, hours, a note (printable text, cut to 24 / 24 / 80), "Taking apprentices", "Show on website".
+  At most 3 active apprentices (`maxApprentices`) and 6 new ones per calendar month (`monthlyLinks`). Retire: only without
+  apprentices; marks and graduates stay. A character with a mentor cannot mentor, a mentor cannot pick one.
+- **Apprentices.** A character up to level 79 on an account up to 60 days old picks a mentor from the list (filters:
+  class line, language / region text, online now / seen this week / any; online first, then the most graduates; full,
+  closed and own-account mentors left out) or accepts an invitation (a mentor invites an online character by name; 10
+  minutes; an invitation ignores "Taking apprentices", not the free place). "Looking for a mentor" sets the Party Finder
+  tag. At most 3 mentors per character ever; 24 h after a dismiss or a release before the next; never the same pair twice.
+- **Referral.** A referred account's first character (the one the referral tracks) gets the referrer's mentor character
+  at login when it has no mentor and every check passes (`referral.autoPick`, source `referral`); the window also offers
+  the referrer's mentor as a "Choose" row. It can be dismissed like any mentor.
+- **Anti-abuse** (`ChaosMentorCore.linkCheck`, each refusal in `chaos_mentor_log`): not the own account; no staff (account
+  type >= 2 or a character of group >= 2) on either side; nobody banned; the referral program's household rules through
+  `ChaosReferral.accountFacts` (added to `referral.lua`): no shared IP (login IPs of every character, online ones, the
+  website registration IP) and no shared private e-mail domain (`referral_config.lua` `publicDomains` are fine); the caps above.
+- **The bonus** (apprentice only): +10% experience from monsters (`onGainExperience` callback, needs the
+  `patch_base_events.py` experience dispatch like every Chaos experience bonus) and 5% less damage from monsters
+  (`onHealthChange` / `onManaChange`), while: the mentor is online, in the same party, within 30 tiles on the same floor,
+  not on the same IP right now, and **not over the content**: mentor level <= max(apprentice level, monster level) x 1.5 +
+  20 (`overLevel`; the monster level is `bounty_pool.lua`'s, else the experience / health estimate of
+  `tools/gen_bounty_pool.py`). A level 400 mentor carrying a level 40 apprentice on level 45 monsters gets nothing.
+- **Mentor Marks** (per mentor character, earned only). Shared hunting: a minute in which an apprentice got the bonus
+  counts (once a minute, `ChaosMentorTick`); one mark per 30 such minutes, at most 4 a day for all apprentices. Milestones,
+  once per apprentice character whoever the mentor is: levels 25 / 50 / 100 (5 / 10 / 20 marks), the first sealed rift,
+  finished dungeon, bounty contract, world boss reward (10 / 10 / 5 / 5; rift, bounty and world boss from a
+  `ChaosLeaderboard.record` wrapper like guild.lua's, the dungeon from `chaos_dungeon_run_players`). A milestone pays only
+  after 30 shared minutes on that link (`unearned` otherwise); one reached before the link is `before`. Everything respects
+  300 marks per calendar month (`capped` beyond). The mentor is told at once or at the next login.
+- **Graduation** at level 200: the link ends (`graduated`). With 120 shared minutes the mentor gets 50 marks and +1
+  graduate (achievements Guiding Hand / Lamplighter / Keeper of the Flame at 1 / 5 / 15, titles Mentor / Seasoned Mentor /
+  Master Mentor) and the apprentice 100 health and 100 mana potions and the achievement Fledged (title Fledgling);
+  without, the link ends with no reward. Top Mentors in the window and the website rank by graduates.
+- **Marks Shop** (`shop`, checked by `ChaosMentorCore.validate` at startup and in the test: titles, cosmetics, supplies
+  only; supplies only the potions of `supplyIds`, with a weekly limit): titles Lanternbearer 40, Pathfinder 90, Wayshower 160
+  (`ChaosTitles` source `mentor`); Ember Labels 100, Cinder Name 140, Soul Spark 140 (the store's cosmetics, unlocked for
+  the account with `ChaosCosmetics.grant(..., "mentor")`); 50 health / 50 mana potions for 6, 3 a week each. Marks are
+  taken with one conditional UPDATE before the delivery (given back when a cosmetic cannot be granted).
+- **Party Finder.** Listings, members and applications carry the tag `mt` (`ChaosMentor.tagOf`: `mentor` while
+  registered, taking apprentices and with a free place; `seeking` while "Looking for a mentor" is set and the character
+  may pick one); the client shows "Mentoring" / "Looking for mentor" (`party_finder.lua` `plain`, `party_finder_core.lua`).
+- **Protocol (JSON {action, data}).** Client `open`, `sync`, `list {line, lang, online}`, `register {lang, hours, note,
+  accepting, public}`, `retire`, `choose {guid}`, `invite {name}`, `accept {guid}`, `decline {guid}`, `dismiss`,
+  `release {guid}`, `seek {on}`, `buy {key}` (rate limited 0.5-2 s). Server `status` (`ChaosMentorCore.view`), `mentors
+  {rows, filter}`, `message {text, error}`, through `Chaos.sendChunked`.
+- **Opcode.** Referral's 220 is not reused: the client registers one handler per opcode and the mentor window is its own
+  module. 194 is free in the reference server ("Opcode collision check"), in every Chaos script and in every client module
+  of the reference client (grep for `sendExtendedOpcode`, `registerExtended*Opcode` and opcode constants; 190-199 had
+  only guild wars' 197). Storages 7100360 - 7100369 (+0 "looking for a mentor").
+- **State.** `chaos_mentors` (card, marks, graduates, today's minutes and marks, the month's marks), `chaos_mentor_links`,
+  `chaos_mentor_milestones`, `chaos_mentor_purchases`, `chaos_mentor_log` (`sql/chaos_mentor.sql`; `mentor.lua` creates
+  them at startup). Invitations live in memory. Staff: `/mentor <player>` (marks, graduates, link), `/mentor <player>, unlink`.
+- **Tests:** `tests/mentor_test.lua` (config and the fairness rule, opcode and storages, every mentor / apprentice / link
+  refusal, the household rules, the bonus and the over-level rule, hunting marks with the daily and monthly caps, the
+  milestone and graduation decisions, the shop, the list filters, the tags, the view; `mentor.lua` against a mocked engine:
+  events, the experience and damage bonus with party / floor / IP / over-level, the Party Finder tag, the leaderboard
+  hook, logout), client `game_mentor/mentorview_test.lua`, `game_partyfinder/partyfinderview_test.lua` (tags),
+  `website/tests/chaos_mentors_page_test.php`. The window was rendered in the Linux client with payloads built by the core
+  (offline); not run against a live server.
 
 ## Town Portal (`townportal.lua`, `townportal_core.lua`, `townportal_config.lua`, spell `shared/town_portal.lua`, client `game_townportal`)
 
@@ -3021,6 +3184,133 @@ powers' procs (Echo Shot, Critical Echo, Bloodrush, Shatter Splash, Ember Step, 
 cooldown. `tests/powers_test.lua` (240 checks) covers the catalogue, the maths, each handler against a mocked engine, the
 cooldowns, the guard and the dodge hook; `tests/orbs_test.lua` the rarity gate, one power per item and the side limits.
 
+## Item sets (`data/lib/chaos_item_sets.lua`, `chaos_item_sets_config.lua`, `chaos/itemsets.lua`)
+
+Ten sets of 4-6 pieces with bonuses at 2, 4 and 6 pieces, two per class family. A set gives a build its identity (a bleed
+build, a dodge build, a summoner) without being needed: a full set is about as strong as a good mix of rares and
+uniques, not above it. Every number and every set is in `chaos_item_sets_config.lua`; the pure part is
+`chaos_item_sets.lua` (counting, totals, texts, tooltip block, unique entries, chase rolls), the game side
+`itemsets.lua`. No new opcode, no storage, no table: the state is worked out again from the equipment.
+
+**Pieces.** A piece is a unique (`ChaosMakeUnique`): a copy of a stock base item with its own name, description and
+stats from `data/items/chaos_items.xml` (attribute `set` = the set key; `tools/gen_unique_specs.py` writes it into
+`chaos_unique_specs.lua`, and `ChaosMakeUnique` writes the custom attribute `chaos_set` on the copy). A stock copy of
+the same base item is no piece; a set key on an item that is no piece of that set counts for nothing; the six old
+Embers uniques (made before the key existed) are found by their spec. The base item's own equip rules stay
+(`movements.xml`: level and classes), so each set uses base items its classes can wear and its level is at least the
+highest equip level of its base items. As uniques the pieces take no orbs and keep their one socket; unlike other
+uniques they can be salvaged (`salvage_config.lua` `setPieceShards` = 8, never by "salvage all"); a transmog look
+(`chaos_tmog`) does not change the piece.
+
+**Counting** (`S.count`): a piece counts when it is worn in a slot it fits (`ChaosItemMods.fits`), its wearer has its
+level and it is another piece: the same piece twice (one dagger in each hand) counts once; a two-handed weapon
+(`hands = 2`) counts as two, so a set with one reaches its last bonus with an item less. `item_mods.lua` asks
+`ChaosItemSets.refresh(player)` on the path it already has (equip / unequip, login, every 3 s, so a level-up turns a
+piece on); a change of the counts is part of its signature.
+
+**Bonuses.**
+- Modifier numbers (block, bleed chance, damage over time, penetration, cooldown reduction, healing done, a legendary
+  power such as Death Blast...) are added to the equipped items' totals before the caps (`ChaosItemMods.totals(items,
+  extra)`), so a set never lifts a cap and everything that reads `ChaosItemModsCache` (item_powers.lua, loot.lua, the
+  spells' cooldown and mana cost) sees them.
+- Skills, magic level, maximum health / mana (flat or percent): one `CONDITION_ATTRIBUTES`, sub id 7245.
+- Resistances (`res_fire` ...): the wearer takes that much less of the element (`ChaosItemSetsTaken`).
+- Signature effects, each with a cooldown or a limit and a recursion guard, only on monsters that are nobody's summon:
+
+| Effect | Set | What | Hook |
+|---|---|---|---|
+| Pyre Bulwark | Embers 6 | a blocked or dodged hit sets the attacker ablaze: 40% of it as fire over 6 s (1 s) | `ChaosItemMods.onAvoid` (now passed the hit), chained after Glacial Ward |
+| Hemorrhage | Bloodsworn 4 | a monster that dies bleeding from you passes a bleed (the ailment share of the last hit) to 3 monsters within 2 sqm | dealt (bleed ticks) + onKill |
+| Red Harvest | Bloodsworn 6 | a critical hit opens a fresh bleed on the target (0.5 s) | dealt, `critical` (engine patch 0001) |
+| Ashen Oath | Ashwarden 4 | a block heals you and party members within 3 sqm 2% of their health (2 s) | onAvoid |
+| Hanging Verdict | Gallows 4 | ranged hits deal 20% more to monsters below 35% health | dealt |
+| Thorn Volley | Thornwake 4 | a ranged hit splinters 30% onto another monster within 2 sqm (1.5 s) | dealt |
+| Soul Siphon | Lichbound 4 | your damage over time heals you 6% of what it deals | dealt (condition ticks) |
+| Mirror Grace | Mirrorweave 6 | heals on another player heal you 25% of the amount | heal on the healed player |
+| Umbral Recoil | Duskstalker 6 | a dodge gives haste (3 s) and +40% on your next hit within 3 s (4 s) | onAvoid + dealt |
+| Pack Bond | Hollowpack 4 | your summons deal 20% more; their kills heal you 2% | dealt (summon hits) + onKill |
+
+The dealt event goes on a target through `onTargetCombat` (as item_mods.lua and item_powers.lua do), so it follows the
+same engine rule: weapon hits count after the player attacks the monster.
+
+**The sets.** Level = the level the pieces need to count; the drop sources are below.
+
+| Set | Family, for | Level | Pieces | 2 | 4 | 6 |
+|---|---|---|---|---|---|---|
+| Embers of Aranoth | support: Illusionist, Elementalist with a shield | 70 (pieces 70-250) | the six old uniques (helm, coat, greaves, boots, shield, ring) | Magic Level +1, Fire Resistance +6% | Damage Taken from Monsters -5%, Block +4% | Max Health +6%, Pyre Bulwark |
+| Bloodsworn Reaver | melee: Berserker | 300 | greataxe (two-handed), visage, hauberk, legplates, treads | Bleed Chance +10%, Damage over Time +15% | Hemorrhage | Axe +3, Red Harvest |
+| Oath of the Ashen Warden | melee: Sentinel, Juggernaut, Templar | 800 | visor, cuirass, bulwark (shield), seal (amulet) | Block +5%, Max Health +4% | Damage Taken from Monsters -4%, Ashen Oath | - |
+| Gallows Marksman | ranged: Deadeye | 600 | arbalest (two-handed), hood, coat, leggings | Distance +2, Physical Penetration +6% | Damage to Elites and Bosses +8%, Hanging Verdict | - |
+| Thornwake Volley | ranged: Ranger, Beastmaster | 150 | longbow (two-handed), jerkin, striders, loop (ring) | Movement Speed +4%, Life on Kill +40 | Thorn Volley | - |
+| Cinderstorm Court | caster: Elementalist | 400 | wand, crown, mantle, kilt, sandals, signet | Magic Level +2, Elemental Penetration +6% | Cooldown Reduction +6%, Mana Cost Reduction +8% | Chance to Ignite +10%, Death Blast 15% |
+| Lichbound Vestments | caster: Lich, Necromancer | 400 | mask, robe, kilt, phylactery (amulet) | Magic Level +2, Damage over Time +15% | Chance to Poison +10%, Soul Siphon | - |
+| Mirrorweave Raiment | support: Illusionist, Iron Sage | 300 | codex (spellbook), circlet, robe, skirt, slippers, band | Healing Done +6%, Magic Level +1 | Mana Cost Reduction +8%, Max Mana +5% | Healing Done +4%, Mirror Grace |
+| Duskstalker Garb | hybrid: Ninja, Thief (Shadowfist without the blades) | 300 | fang and sting (daggers), cowl, jerkin, breeches, tabi | Dodge +4%, Movement Speed +4% | Chance to Poison +12%, Damage over Time +10% | Umbral Recoil |
+| Hollowpack Covenant | hybrid: Beastmaster, Bone Lord | 250 | mask, hide, fang chain, bond (ring) | Max Health +4%, Health Regeneration +20 | Pack Bond | - |
+
+**Drops.** Every piece of a set from every source the set lists (`sources`):
+- World bosses (boss-only `ChaosUniqueItems` entries, added by `ChaosItemSets.register` from `chaos_unique_items.lua`):
+  Vharok (Bloodsworn), Nyxareth (Gallows, Duskstalker), Kaelgor and Skaldra (Cinderstorm), the Rotmother (Mirrorweave,
+  Hollowpack); chance 8 x the boss tier (0.48% per kill and piece) and the participation reward's boss unique roll.
+- Monsters: Thornwake from the rare Wildwood beasts (Ancient Treant, Mushroom King, Mycelium Horror, Elk Guardian,
+  Owlbear, Dire Bear: 0.06% per kill and piece from a rare one, 0.12% legendary); the Embers pieces keep their unique
+  entries (fire monsters, rare tier).
+- Rift chests by theme (`rift.lua` deliver, one roll per finisher, not Omen chests): Abyssal Rift (Duskstalker from
+  tier 4, Cinderstorm from 6), Obsidian Hall (Gallows from 7), Ashen Crypt (Hollowpack from 4, Bloodsworn from 5),
+  Forsaken Sanctum (Thornwake from 1, Mirrorweave from 5); 2.5% + 0.25% per tier above, at most 8%.
+- Chase: the Ashen Sepulchre (Ashwarden from Ulthar and the Sovereign: 2% per boss loot, 5% from the final boss;
+  `raid.lua` deliver) and the Ember Descent (Lichbound from depth 8: 3% + 1% per deeper room + 5% on a clear, at most 12%;
+  `descent.lua`); these pieces drop nowhere else.
+- Dungeon clears (`dungeons.lua`): Thornwake, Duskstalker, Hollowpack, 1.5% + 0.5% per difficulty step, at most 6%.
+- Every roll x the player's item find; rift, raid, Descent and dungeon rolls only for characters of at least the set's
+  level - 50 (`chase.levelBelow`). `ChaosItemSets.grantChase(player, source, key, ctx)` makes, gives (inbox when the
+  backpack is full) and announces the piece.
+
+**Balance** (the reasoning; not measured on the dummies yet). A rolled Legendary or better item carries 3-4 modifiers
+of tiers 4-7 (`chaos_item_mods.lua`), a power on some, quality on top; a unique carries 2-4 fixed stats. The pieces get
+fixed stats at about 60-70% of a unique of their level (one or two skills or protections, a crit or leech pair on the
+weapons), no rolled modifiers. The bonuses then hand back what the pieces lack: the numbers of a full set equal 4-6
+modifier rolls of about tier 5 (Bleed Chance +10% and Damage over Time +15% are one T5 roll each, Block +5% a T5-T6
+roll), and the signature effects are sized like a legendary power each: Hanging Verdict +20% on the last 35% of a
+monster's health is about +7% damage over a whole fight; Red Harvest adds a bleed of 40% of a critical hit (about +4-8%
+damage at 10-20% crit); Umbral Recoil gives one +40% hit at most every 4 s (+3-5% single target at 4-10% dodge); Pack
+Bond is +20% on the summons' share (a Beastmaster's companion is about a third of its damage: +6-8%); Soul Siphon and
+Mirror Grace are sustain, Hemorrhage and Thorn Volley pack clear. So 4-6 slots of a set trade 12-24 rolled modifiers
+for about 10-15 fixed stats, 4-6 modifier rolls and one or two powers: level with a good rare / unique mix, below a
+perfect one, and every number shares the item modifier caps. Partial sets (2 or 4 pieces) leave the other slots to rares
+and uniques, which is the intended mixing. The world boss pieces are 0.48% per kill and piece; a full set is a long
+chase, the raid and Descent sets more so.
+
+**Tooltips and the client.** `item_tooltip_core.lua` `T.setInfo` (`tip.unique.set`) and the client's
+`tooltiplogic.lua` `L.setLines`: the set name with the pieces that count (e.g. 3/6), every piece (worn: bright, worn
+below its level: rust with the level, not worn: dim; a two-handed piece says it counts 2), every bonus (active: bright,
+else dim). The title reads "Set ..." in the set green. The client drops every cached set piece's tooltip when the
+equipment changes (`LocalPlayer.onInventoryChange`, `L.dropSetTips`), so the next hover is current. Item links and
+Inspect Player count the pieces of the equipped ids (no level check). The look text adds "Set: <name> (n/total)" and
+every bonus, "[active]" when the viewer has it (`onLook`, index 121). Character > Info & Services > Character Info
+shows a line per worn set (command `sets`, `ChaosCommands`). The Codex has a Sets tab (pieces with links to their
+unique pages, bonuses, sources and rules, filters family and level), generated by `tools/gen_codex_data.lua`.
+
+**Install.** Nothing new: `install_all.py` step `files` copies the two libraries and `itemsets.lua`;
+`chaos_unique_items.lua` loads the sets. After editing a set or a piece: `cd server && python3 -I
+tools/gen_unique_specs.py && luajit tools/gen_codex_data.lua`.
+
+**Tests and checks.** `tests/itemsets_test.lua` (luajit and lua5.3): the data (every piece has a generated spec with
+its name, set key and level; families; thresholds; real rift themes, raid bosses and world bosses), counting
+(duplicates once, a two-handed piece twice, the level, a helmet in the hand, swaps through `item_mods.lua`, the caps),
+the condition (axe skill, percent health as 104), every signature effect with the set and the same call without it,
+the tooltip block, the look text, the Character Info line, the chase chances and a granted piece, salvage and a
+transmogged piece. Client: `game_itemtooltip/tooltipsets_test.lua` (the set block, wrapping, the cache drop),
+`tooltiplogic_test.lua`, `game_codex/codexview_test.lua`; `tests/codex_gen_test.lua` (nine tabs, every set). On a live
+test server (Thief level 1000): the tooltip at 3/6 and, after equipping the tabi, 4/6 without a new hover; the
+Character Info line; the Codex tab; Umbral Recoil fired by real dodges against demons (five times in about 40 s at 10%
+dodge) and its label and haste, then the "Recoil" hit on the next attack; a rift chase piece and its look text.
+Not run live: Ashen Oath and Mirror Grace with a real party, the raid / Descent / dungeon calls.
+
+**Found on the way, not changed.** Three old Embers uniques have base items with higher equip levels than their
+description says (Emberveil Greaves 250, Bloodstep Boots 150, Cinderclaw Band 100) and three are Mystic / Necromancer
+gear; the set counts them from those levels.
+
 ## Codex data (`tools/gen_codex_data.lua`, client `game_codex`)
 
 The client's Codex (Economy > Codex, Alt+K; `client/MANIFEST.md` "game_codex") shows the item system without asking the
@@ -3354,7 +3644,7 @@ with the worn helmet, the power line in orange).
   attack interval, element, and the item type's own skills, protections, max health / mana, magic level, speed),
   every modifier as `ChaosCrafting.readMods` lists it with its text, group and roll range (`absorbRange` /
   `elementRange` of the rarity for the engine's modifiers, `ChaosItemMods.range` for the Chaos modifiers, none for
-  uniques), sockets with each gem's effect in this item, unique and set (pieces of `ChaosSets` equipped), requirements
+  uniques), sockets with each gem's effect in this item, unique and set (the item set block: pieces worn, bonuses active; "Item sets"), requirements
   (level, the unique's level, magic level, vocations), weight, flavour text (a unique's text, else the item type's; a
   rolled item's description is its modifiers and is not repeated), the lock, a flat list of numbers for the compare and
   the compare slots.
@@ -3709,6 +3999,77 @@ client and was pulled to the temple after 8 s; deaths after the protection: fall
 Fallen tab with skulls, the Season window's fallen line); `/season end`-style migration: modes reset, Season Survivor
 and Needed No One unlocked. Not verified in game: the ping-loss path with a real stalled connection (a heartbeat gap was
 seen protecting a character while its client was attached), a real server save restart, mail between modes.
+
+## Seasonal Journey (`season_journey.lua`, `season_journey_core.lua`, `season_journey_config.lua`, `sql/chaos_season_journey.sql`, client `game_season` Journey tab)
+
+Roadmap item 67. A fixed, chaptered checklist per season and per season character that walks a fresh character through
+the season's content once. It is neither the season pass (account-wide, repeatable pass XP with daily / weekly
+challenges: the journey only feeds it pass XP when a chapter is finished) nor the season reward track (account-wide
+milestones kept forever, `season_config.lua` `track`). Nothing of the pass was changed: its challenges are rolling
+"do X today / this week" tasks, the journey is a one-time guide, so extending the pass would have mixed two models.
+
+**Install.** `sql/chaos_season_journey.sql` (tables `chaos_season_journey_stats` and `chaos_season_journey`; the script
+also creates them at startup). Nothing else: no storages, no base file. Small guarded hunks in `descent.lua` (end of a
+run per player), `dungeons.lua` (a cleared dungeon per member) and `atlas.lua` (points after a credit), each
+`if ChaosSeasonJourney and ChaosSeasonJourney.emit then ... end`. The client hunk is the Journey tab of the Season
+window (`journey.lua`, `journeyview.lua`, `season.otui`) and the `journey` toast of `game_chaosnotify`.
+
+**Who.** A character of the running season (`ChaosSeason.realmOfGuid`) walks that season's journey (one per season id
+in `season_journey_config.lua` `journeys`). Every other character (standard, migrated, fallen, staff) sees the journey
+of the running or next season as a read-only preview. A Hardcore fall migrates the character, so its journey stops.
+
+**Chapters.** In order; a chapter opens when the one before it is finished and the character has the chapter's level.
+Counters count from the join on, also while a chapter is locked: an objective is marked done once its chapter is open
+and its counter reaches the target (so a chapter that opens late completes at once what was already done). Objectives
+can be mode-specific (`only = "hc" | "ssf" | "nossf" | "nohc"`): Hardcore and Self-Found characters get their own
+objectives, Self-Found is never asked to use the Orb Exchange. A finished chapter writes its row (`c:<key>`) first and
+then gives its rewards once: pass XP to the account's pass of that season (`ChaosSeasonPass.addXp`, only while that
+pass runs), orbs (backpack, inbox when full), one piece of the season's appearance set (transmog looks through
+`ChaosTransmog.unlockLook`, account-wide; the outfit and mount on the character) and, at the end, a title (titles.lua
+source `journey`, kept after the season).
+
+Season of Ash, "The Ashen Pilgrimage" (set "Ashen Pilgrim"):
+
+| # | Chapter | Level | Objectives (all modes; mode-specific in brackets) | Rewards |
+|---|---|---|---|---|
+| 1 | First Embers | 0 | level 100, tier 1 rift, a world boss, 5 bounties, a bestiary task, 50 tiered kills, 5 orbs used | 1500 pass XP, 3 Upheaval, Magma Monocle look |
+| 2 | Ash and Iron | 150 | level 200, tier 4 rift, a dungeon, Trusted by a faction, a treasure goblin, an invasion fought, 500 party kills, 10 Atlas points [HC: a flawless rift] | 2000 pass XP, 5 Upheaval, Magma Coat look |
+| 3 | The Burning Road | 250 | level 300, tier 6 rift, Descent room 6, 3 world bosses, Tower 10 floors in a run, an invasion defended, a unique, 500 community points [SSF: 50 orbs used] | 2500 pass XP, 2 Fate, Magma Legs look |
+| 4 | Omens in the Ash | 350 | level 400, an Omen guardian, tier 8 rift, 25 bounties, Honored, a full Descent, 30 Atlas points [not SSF: an Orb Exchange order; SSF: 150 orbs used] | 3000 pass XP, 3 Fate, Magma Boots look |
+| 5 | The Ashen Sepulchre | 450 | level 500, a raid boss, 3 Omen guardians, tier 10 rift, 10 bestiary entries, an Orb of Grafting, Tower 25 floors [HC: level 550] | 3500 pass XP, 1 Grafting, Fiery Spike Sword look |
+| 6 | Ascended Omens | 600 | level 650, an Ascended Omen, a full raid clear, 50 Atlas points, 10 world bosses, Descent room 10 [SSF: an item with 5 modifiers] | 4000 pass XP, 2 Grafting, Fiery Rainbow Shield look |
+| 7 | The Cinderheart | 700 | level 750, 3 Ascended Omens, the Cinderheart, 3 raid clears, tier 12 rift, Revered, Tower 40 floors [HC: 5 flawless rifts] | 5000 pass XP, 5 Fate, Retro Knight outfit |
+| 8 | Ash Eternal | 850 | level 900, a flawless raid clear, 75 Atlas points, tier 15 rift, Exalted, 100 bounties, 25 world bosses [HC: level 1000; SSF: a legendary power] | 6000 pass XP, 3 Grafting, Fire Panther mount, title Ashen Pilgrim |
+
+Per mode a chapter has 6 to 9 objectives. Look types, mount and items are from the base server's XML (Retro Knight
+1248 / 1249, Fire Panther mount 122; looks 7900, 7899, 7894, 7891, 7744, 8906), not sold in the store and not used by
+another reward.
+
+**Counters** (`season_journey_config.lua` `stats`, "add" or "max"): the achievement counters it lists come from
+wrapping `ChaosAchievements.progress` / `set` (rifts, Omens, Ascended Omens, the Cinderheart, world bosses, invasions,
+the raid, bounties, the bestiary, orbs, uniques, goblins, party kills); `ChaosFactions.gain` (reputation, rank index),
+`ChaosCommunity.contribute` (points), `ChaosOrbExchange.place` (an order placed) and `ChaosTower.recordRun` (floors in a
+run) are wrapped too; the Descent, dungeons and the Atlas emit. The wrappers are installed at startup and again every
+30 s (after a `/reload` of the other script), once per function. An offline character's counter (an invasion share, a
+rift finisher) is written to SQL and counted at its next login. At login the counters are raised to the character's
+achievement counters, Atlas points and Descent record: a season character starts fresh at the join, so those are its
+season's numbers, and a journey added in the middle of a season counts what was done before.
+
+**Protocol** (season opcode 246, so the Season window keeps one opcode): `journey` (client: the tab opened) ->
+`journey` (header and chapter summaries) and one `journeyChapter` per chapter (objectives, rewards with client ids):
+every message stays far below 8192 bytes. `journeyDone` flashes the open tab; the toast is the notifications opcode 79,
+action `journey`. While the tab is open, progress is pushed at most every 2 s.
+
+**Gods.** `/journey status [name]`, `/journey stat name, stat, value` (test helper), `/journey reset name` (deletes the
+season's rows; rewards already given stay).
+
+**Tests.** `tests/season_journey_test.lua` (LuaJIT and Lua 5.3): the shipped journey (6-8 chapters, 6-10 objectives per
+mode, chapter 1 basics and endgame chapters, rewards per chapter, the title at the end, the validator), gating by
+chapter and level, mode objectives (Hardcore stops on its own objective, Self-Found finishes without the Orb Exchange),
+the window view and preview; then `season_journey.lua` with a mocked engine and a fake SQL store: counters from the
+wrapped achievement API, the factions, tower, Orb Exchange and emit hooks, rewards given once (also after a relog), offline
+counters (add and max), the preview for a standard character, the last chapter's mount, outfit and title. Client:
+`game_season/journeyview_test.lua`. Offline client screenshots of the tab and the toasts; not run on a live server.
 
 ## Season pass (`seasonpass.lua`, `seasonpass_core.lua`, `seasonpass_config.lua`, `seasonpass_store.lua`, `sql/chaos_seasonpass.sql`, client `game_battlepass`)
 
@@ -4412,6 +4773,105 @@ temples and hunting-area positions (the cropped map has neither: the test server
 and one hub destination at its tiles), several guilds' halls at once, a restart with a hall in use (the tiles are gone
 after a restart; the first entry builds them again).
 
+## Guild wars in game (`guildwar.lua`, `guildwar_core.lua`, `guildwar_config.lua`, `sql/chaos_guildwar.sql`, engine patch 0020, client `game_guildwar`)
+
+The base server knows guild wars only through the website (rows of `guild_wars`, status 1 = running; its
+`playerdeath.lua` logs every war kill in `guildwar_kills`). This adds the whole flow in game, on extended opcode
+**197** (`ChaosOpcodes.guildWar`), window Social > Guild Wars (also a button in the Guild window). Numbers:
+`guildwar_config.lua`; pure rules: `guildwar_core.lua` (`tests/guildwar_test.lua`, which also runs `guildwar.lua` against
+a mocked engine and database).
+
+**Declaring.** The leader or a vice-leader (rank level 2+) names the target guild, a frag limit (10 / 25 / 50 / 100 / 200
+counted kills), a duration (6 h / 1 / 3 / 7 days) and an optional gold stake per side (0, or 100,000 - 500,000,000; only
+the leader, who alone may withdraw from the guild bank). Refused: a target in another season realm (a guild belongs to
+the realm of its owner), guilds whose owners share an account or last IP (`sameOwnerBlocked`: a war could move a stake
+between their banks), fewer than 3 members on either side, an offer or war between the pair already (ours or a website
+one in `guild_wars`), 24 hours after their last war, 3 wars and offers per guild, one declaration a minute, a guild bank
+short of the stake, a season character's bank. The stake leaves the declarer's guild bank at once (escrow, one
+conditional UPDATE through `ChaosGuild.spend`). The other guild's members are told; the offer is open 24 hours.
+
+**Answering.** The other guild's leader or a vice-leader accepts or declines in the window (a war with a stake: the
+leader accepts). Accepting takes the same stake from that guild bank, inserts the base `guild_wars` row (status 1, and
+`znote_guild_wars` with the frag limit when the website's table exists) and refreshes the engine's war list of every
+online member of both guilds: with engine patch 0020 (`Player:setGuildWarList`) the war emblems (green own, red enemy)
+and the skull rules (no white skull, no unjustified kill against a war enemy) change at once; without it at the next
+login, and the members are told so. A declined, taken back or expired offer returns the stake. Pending offers live only
+in `chaos_guildwar` (the base startup deletes status-0 rows of `guild_wars`).
+
+**Kills that count** (`kills`): a player killed by a player of the other side (last hit, a summon's master, else the
+most damage) is a war kill. It counts for the killer's guild unless killer and victim share an IP or an account, the
+victim is below level 100 or below half the killer's level, the same victim already counted within 30 minutes, or either
+is of another realm than the war. Every war kill goes into `chaos_guildwar_kills` with its verdict (the window's Kill
+log shows refused ones with the reason); both guilds see each kill and the score.
+
+**The end.** First side to the frag limit wins; when the time is up the side with more counted kills wins (a tie is a
+draw); a surrender (leader or vice-leader, confirmed) gives the war to the other side; a guild that disbands loses; a
+base row ended elsewhere (the website) ends ours by the score. Every status change is one conditional UPDATE of the war
+row checked with `ROW_COUNT()`, so an end is paid once. The winner's guild bank gets both stakes minus `feePercent` 10%
+(the fee is burnt: a gold sink); a draw returns both stakes in full. `pay1 + pay2 + fee` is always what was held (tested
+for every stake and side). The base row goes to status 4, the war lists are refreshed. Winners of a war ended by the frag
+limit or the time with 10+ counted kills get 150 guild XP; trophy counters `wars` / `warWins` (chaos_guild_stats); a
+broadcast at the start and the end. Bank changes appear in the guild log (action `war`).
+
+**Board.** The window: offers (accept / decline / take back), running wars (score, time left, terms, kill log,
+surrender), the guild's history; the War Board tab and the website page `page.php?plugin=chaos&p=guildwars` (website
+README) show the running wars and the latest ended ones of the server. Staff: `/guildwar` (list), `/guildwar end, <id>`,
+`/guildwar expire, <id>`, `/guildwar time, <id>`.
+
+**Engine patch 0020** (`src-patches/0020-guild-war-list-lua.patch`): `player:getGuildWarList()` and
+`player:setGuildWarList({guildIds})` (luascript.cpp / .h only); setting the list re-sends the emblem and skull of the
+player to every player in view and theirs to the player.
+
+**Tested** on a live test server (engine 0001-0020, two clients on one machine): the same-owner refusal, a declaration with
+a 1,000,000 stake (escrow), the offer on the other side, accept (both stakes held, the base row, green / red emblems on
+both clients without a relog), a kill refused for the same IP, a counted kill with the IP rule switched off for the test,
+the kill log, a surrender (1,800,000 to the winner, 200,000 burnt), emblems gone, the War Board.
+
+## The weekly guild boss (`guildboss.lua`, `guildboss_core.lua`, `guildboss_config.lua`, monsters `monsters/chaos/guildboss/`)
+
+A guild-only instanced boss, Gorvath the Banner-Eater, once per guild and week (Monday 06:00). Window: the Guild Boss tab
+of `game_guildwar` (opcode 197), also opened by using the **Summoning Stone**, an obelisk (1560, action id 47609) that
+every guild hall gets on the east wall below the depot spot (`guild_hall.lua`'s `G.furnish` is wrapped, nothing edited
+there). Numbers: `guildboss_config.lua`; pure rules: `guildboss_core.lua` (`tests/guildboss_test.lua`, also the engine
+file against mocks: donations, the summon, a failed attempt, the lockout).
+
+**Fuel (a gold sink).** The stone needs 500 + 25 x guild level embers (level 10: 750). Members feed it during the week:
+gold (carried, then the bank balance; 10,000 gold = 1 ember, at least 100,000) and materials (every one carried, up to
+100: rune shard 2, omen fragment 3, Orb of Upheaval 5, Orb of Fate 25, Orb of Grafting 60 embers). Each gift is logged per
+member (`chaos_guildboss_contrib`, the window's "This week's fuel") and in the guild log (action `boss`). Fuel left at
+the weekly reset is gone; after the kill the stone takes nothing more.
+
+**Summon.** The leader or a vice-leader, standing in the guild hall with the stone full and the rent paid: one conditional
+UPDATE takes the need (fuel >= need, not killed this week, fewer than 3 summons). Every member of the guild in the same
+hall, level 150+, comes along (2 to 20). A failed attempt (wipe, time, everyone left) gives back half of the need as fuel;
+a server restart during a fight returns the whole need and the summon.
+
+**The fight** reuses the Ascended arenas (`uber_core.lua`: layout, telegraph shapes and marks, phase machine, enrage,
+shared lives, the lethal-hit catch) with this config: health 650,000 x (1 + 0.6 x (players - 1)); three phases (The Gnawed
+Standard: cone / ring / marks; Torn Colours at 66%: cross / circle / half and Banner Wraith adds; The Last Rally at 33%:
+five patterns, burning pools, adds that heal it); enrage at 10:00 (x1.6 damage, faster telegraphs, a pulse), the arena
+closes at 13:00; shared lives 3 + 1 per 3 more players (a lethal hit sends the player to the Ember Gate in the
+antechamber, back after 8 s). Balance model (level 600 characters, 1,400 dps at 75% uptime): about 495 s with 2, 420 s
+with 5, 395 s with 10 (tests keep them within 10% and before the enrage). The rift HUD (opcode 228) shows the fight.
+
+**Rewards.** Every participant present at the kill who dealt 1% of the damage or healed: 1,500,000 gold to the bank
+balance, 6 Orbs of Upheaval, 2 Orbs of Fate. The guild: 400 + 20 per participant guild XP (at most 800), the counter
+`guildBoss` (trophy room line, banner tiers Ember 1 / Cinder 4 / Blazing 10 / Undying Flame 20 kills shown on the hall
+flags), the weekly lockout (`chaos_guildboss_week.killed_at`; storage 7101302 = the next reset for the members: the Boss
+Spawns cooldown of the "Guild Boss" row). The boss also gives its XML experience and the loot system's boss bonus like
+other bosses.
+
+**Board.** This week's guilds: kills first (fastest), then the damage of their attempts (`chaos_guildboss_week`, every
+attempt in `chaos_guildboss_runs`).
+
+**Arena area:** x 11264-11455, y 10000-10095, z 7 (4 x 2 slots of 48, built with `Game.createTile`), clear of the tower,
+island, world boss, siege, arena, ascension trial, Ascended, rifts, trials, guild halls, the Ember Descent, the raid, the
+battleground (x/y 11264-11455 at y 11264+) and the hideouts (12288+); `tests/guildboss_test.lua` checks the overlaps.
+Staff: `/guildboss` (runs), `/guildboss fuel, <guild>, <n>`, `/guildboss reset, <guild>`, `/guildboss phase, <n>`,
+`/guildboss end`. Tested on a live test server: the stone in the hall, gold and orb donations, the summon with two
+members, telegraphs, falls to the Ember Gate, phase 2, the kill (rewards, 440 guild XP, the Ember Banner on the flags),
+the lockout and the Boss Spawns row.
+
 ## Arena (`arena.lua`, `arena_core.lua`, `arena_config.lua`, client `game_arena`)
 
 Ranked PvP: 1v1 and 2v2, an Elo rating per mode, matches in arena instances built at runtime. Settings are in
@@ -4468,7 +4928,10 @@ is rated against the other team's average (1v1: the opponent). Both the window a
 (`Rating 1000 -> 1020 (+20)`); the chat gets the same line. `ChaosLeaderboard.record("arena1v1" / "arena2v2", player,
 rating, "max")` is called after every rated match when the leaderboard module is loaded (board keys in
 `arena_config.lua` `modes`): the weekly Arena 1v1 and Arena 2v2 boards of the leaderboards (best rating of the week;
-titles Duelist and Gladiator). Seasonal resets are not there yet.
+titles Duelist and Gladiator; "arena3v3", title Triumvir). **3v3** (a party of exactly three) uses the same room (three
+spawns and gallery spots a side). **PvP seasons**: every rated match also counts for the mode's season rating
+(`arena_season.lua`, called at the end of `finish()`); the window shows the season tier or the placement per mode and the
+result toast the season change. The arena matchmaking keeps the lifetime Elo above. See "Battleground and PvP seasons".
 
 **Rewards.** A win: 1 Orb of Upheaval (at most 10 rewarded wins a day). The first win of the day on top: 1 Orb of Fate and 2
 Orbs of Upheaval. A draw or a loss gives nothing. Backpack first, the rest to the inbox. Storages 7100340-7100342 (player:
@@ -4502,6 +4965,107 @@ mocked engine only (there were two client displays).
 logout during a fight, so a logout mid-fight is a disconnect (counted after 3 s). Players keep their buffs, summons and
 items (potions and runes are used up as normal). The world type must allow PvP (`worldType = "pvp"`); on a no-pvp world
 the engine blocks the damage before the scripts see it.
+
+## Battleground and PvP seasons (`battleground.lua`, `battleground_core.lua`, `battleground_config.lua`, `arena_season.lua`, `sql/chaos_battleground.sql`, client `game_battleground`)
+
+**Ember Wells**, an objective battleground for 5v5 to 10v10, and **PvP seasons** for the arena brackets (1v1, 2v2, 3v3)
+and the battleground. Every number is in `battleground_config.lua`; the pure part (season dates, Glicko-lite, decay,
+soft reset, tiers, rewards, matchmaking, normalisation, capture, score, waves, AFK, honor, deserter, vendor, the map) is
+`battleground_core.lua` (`tests/battleground_test.lua`); `battleground.lua` is the runtime and `arena_season.lua` the
+season ratings (both run on a mocked engine in `tests/battleground_flow_test.lua`). Extended opcode 200
+(`ChaosOpcodes.battleground`), JSON through `Chaos.sendChunked`. Storages 7100380-7100389 (+0 inside a match, +1..+3 the
+return position, +9 a GLOBAL test switch, see below). Tables (`sql/chaos_battleground.sql`, also created at startup):
+`chaos_pvp_players` (honor, record, weekly honor and first win, deserter), `chaos_pvp_ratings` (season, character,
+bracket), `chaos_pvp_season_rewards`, `chaos_bg_matches`, `chaos_pvp_purchases`; server_config `chaos_pvp_season_done`.
+
+**Queue.** Adventure > Battleground (window tabs Battleground, PvP Season, Honor Vendor). Level 100+, in a protection zone,
+out of combat, not multi-clienting, not inside a dungeon / the tower / a rift / a siege / the Descent / a raid / an
+Ascended Omen / the world boss rooms, not queued for or fighting in the arena (and the arena refuses players queued for or
+inside the battleground), no deserter penalty. Solo, or the party leader queues the whole party (up to 5; everyone checked,
+same level bracket and realm). A player queues as one of the class's roles (`party_finder_config.lua` `classRoles`; the
+main role by default, Tank / Healer / DPS buttons when the class has several). The Party Finder has a "Battleground"
+activity (party of 5) to gather a group; the window's Find a Group button opens it.
+
+**Matchmaking** (every 5 s, `K.findMatches`). Entries are grouped by **realm** (standard or the running season,
+`ChaosSeason.realmOf`) and **level bracket** (100-299, 300-599, 600-899, 900+); groups never mix. Oldest entry first: the
+entries inside its rating window (250 + 50 per 15 s waited, at most 1200; the battleground season rating) fill up to 20
+players; the largest even match whole parties can fill is taken (10v10 at once; 5v5 to 9v9 only once the oldest entry
+waited 45 s). The split into two teams keeps parties whole and minimises |team average rating difference| + 120 x (tank
+difference + healer difference): subset-sum starts in a few orders plus 8 fixed pseudo-random ones, each improved by
+moving one entry against one of the same size or two that add up. Tested: solo queues always split tanks and healers
+evenly with team averages within 50; random party queues cost at most 10 above the exhaustive optimum. The window shows
+the estimated wait (the average of the last 10 waits of the group, sooner when enough are queued).
+
+**Level normalisation.** There was no PvP damage scaling before (only the healing reduction of `healing_rules_core.lua`,
+which stays). Inside a match every hit and heal between players is multiplied by `(ref / source level)^0.8 x (target level
+/ ref)^0.8`, each factor clamped to 0.6-1.6, `ref` being the bracket's reference level (200, 450, 750, 1000). Health,
+damage and healing grow about linearly with the level, so exponent 1 would erase the level; 0.8 leaves a small edge.
+Gear, the passive tree and skill are not touched.
+
+**The map** (built at runtime with `Game.createTile`, like the arena; never over an existing tile; `/bg slots` lists refused
+slots). Grid of 4 slots at **x/y 11264-11455, z 7** (origin 11264,11264, 2 columns, 96 apart; each slot 65 x 33 tiles; the
+guild boss grid is at y 10000+, the hideouts at 12288+). A 63 x 31 field of black marble with a 180-degree rotation
+symmetry: each team's base (7 x 9, stone floor, a 3-tile gate, two flags) at its end with a closed graveyard behind a wall
+above it; cover walls and pillars; three braziers (coal basins) on white marble circles: the West Well near team 1, the
+Heart Well in the centre, the East Well near team 2. Teams: **Emberguard** (west) and **Ashbound** (east).
+
+**The match.** 30 s preparation in the bases (no damage; anyone outside is put back), then up to 15 minutes.
+**Capture:** alive players of one team only within 2 tiles of a brazier move its progress towards their side, 8 s alone
+from neutral (x1.25 per extra player, at most x2); both teams inside = contested; an enemy brazier is neutral at the half
+and yours after 16 s. **Score:** every 2 s a team gets 4 / 10 / 20 points for 1 / 2 / 3 braziers held (all three win in 100
+s, one in 500 s), and 5 for every enemy downed. 1000 wins (both at once: the higher, equal = draw); at the time limit the
+higher score wins. **Death catch** (as the arena): a hit that would kill leaves 1 health; the player is **downed**, goes to
+the team's graveyard, cannot hit or be hit, and comes back at the base, healed, with the next **respawn wave** (every 15 s
+from the start of the fight). Nobody dies: no item or experience loss, no frag; the white skull and the fight lock are
+removed when everyone goes back where they stood (12 s after the end, healed). The killer gets the kill, everyone of the
+other team who hit in the last 10 s an assist. An enemy stepping into a base is thrown back to their own. Team mates and
+the downed cannot be attacked (`onTargetCombat`), nobody from outside the match can hit or heal into it.
+**AFK:** no step, hit, heal or brazier hold for 60 s: a warning (the HUD counts down), at 120 s removed as a deserter.
+**Deserter** (leave, logout, lost connection for 20 s, AFK, leaving the field): a loss for the season rating, no rewards,
+no queue for 15 / 30 / 60 / 120 minutes for the 1st / 2nd / 3rd / 4th+ desertion in 24 hours. A team with nobody left
+loses by forfeit. A shutdown, a closed server or `/bg stop` ends every match unrated; a crash inside sends the character back
+to where the match started at the next login.
+
+**Rewards.** **Honor** (per character, cap 50000): win 120, draw 80, loss 50, +4 per kill or assist (cap 40), +10 per
+brazier taken while standing in it (cap 50); at most 6000 a week from matches; the **weekly first win** (Monday 06:00) adds
+300 honor and 1 Orb of Fate + 3 Orbs of Upheaval. Deserters and players present for less than half the fight get nothing.
+The weekly **Battleground** leaderboard counts wins (title Wellkeeper); achievements Kindle the Wells, Keeper of the Wells
+(title), Ashes and Honor (stats `bg_wins`, `bg_matches`). **Honor vendor** (window tab): 50 great health / mana / spirit
+potions (60) and 50 ultimate health potions (120), and three cosmetics (`cosmetics_config.lua` source `pvp`): kill effect
+Honor Brand (3000), loot labels Warbanner (2000), chat name Gladiator Steel (2500). Nothing with power above PvE gear.
+
+**PvP seasons** (`arena_season.lua`, `ChaosPvpSeason`). 8 weeks each from the epoch Monday 5 Oct 2026 06:00 (`season.weeks`,
+`season.epoch`). A rating per bracket (`1v1`, `2v2`, `3v3`, `bg`): **Glicko-lite**, start 1500, deviation 350; one rated
+match is one Glicko-1 period against the other team's average rating and root-mean-square deviation (a leaver scores 0);
+the deviation never drops below 75 (about +/-15 between equals) and grows by 35 per idle week. The first **5 matches** of
+a bracket are placement (the tier stays hidden). **Tiers:** Ashen (below 1400), Smouldering 1400, Kindled 1600, Blazing
+1800, Infernal 2000, Cinder Sovereign 2200 (emblems from `client/tools/gen_battleground_art.py`). **Decay:** a rating of
+2000 or more loses 30 per full week after 14 days without a rated match of that bracket, never below 2000 (applied when
+read and at the season's end). **Season end** (checked every minute and at startup, idempotent): the best placed
+bracket's tier decides the rewards: honor (200 / 400 / 700 / 1000 / 1500 / 2500), a name plate title "<Tier> (S<n>)" from
+Smouldering on (title source `pvpseason`, with the plate frame ember / crimson / gold / violet from Kindled on), cosmetics
+for the account (Blazing labels from Blazing, Infernal chat name from Infernal, the Cinder Throne kill effect for Cinder
+Sovereign), achievement stat `pvp_season_tier` (achievements Blazing Season, Cinder Sovereign). Then every rating
+**soft-resets** when first read in the new season: 1500 + (rating - 1500) / 2, deviation at least 200, placement again.
+The arena keeps matching on its lifetime Elo; the battleground matches on its season rating.
+
+**Client** (`game_battleground`): the window (queue with role buttons, status and estimated wait, the four season cards
+with emblem / tier / rating or placement, honor and record; the season tab with the dates, rules and the rewards per tier;
+the vendor), the HUD at the top of the map (both scores towards 1000, the clock, the three wells with owner, capture
+progress or "contested", the respawn wave and AFK countdowns, a Scoreboard button), the scoreboard (kills, assists, downs,
+wells, damage, healing per player, both teams) and the end summary (result, score, season change, honor). Secure mode is
+turned off for the match and back on after it. Protocol: client -> server `open`, `query`, `queue {role}`, `role {role}`,
+`leave`, `board`, `buy {key}`; server -> client `state`, `start`, `hud`, `board`, `alert`, `end`, `msg`.
+
+**Staff / tests.** `/bg stop | slots | min <n> | off | on` (`min` lowers the smallest team in memory, TEST ONLY).
+`Game.setStorageValue(7100389, 1)` (global, in memory) skips the protection-zone rule on test maps without one; never on a
+live server. **Tested** on a live test server (two clients on one IP, multi-client blocks off, `/bg min 1`, season rows of
+one character seeded in the DB for the window): queue window, the match start and runtime map, preparation, a West Well
+capture and the score ticks, the HUD, real `ORIGIN_SPELL` hits (scaled, death catch, downed, graveyard, wave), the
+scoreboard, the end (season rating 1500 -> 1662 in placement, honor 438 with the weekly first win and its orbs, the
+achievement, the DB rows), the release to the start position, the season and vendor tabs and a purchase. 5v5 and larger
+ran on the mocked engine only. Note: scripted damage with `doTargetCombatHealth` and no origin skips `onHealthChange` on
+this engine (as for every Chaos system); real attacks carry an origin.
 
 ## Hunt tracker (`hunt.lua`, `hunt_core.lua`, `hunt_config.lua`, `hunt_supplies.lua`, `tools/gen_supply_prices.py`)
 

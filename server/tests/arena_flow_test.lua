@@ -323,5 +323,53 @@ events.ChaosArenaLogout.onLogout(a1)
 Game.getGameState = nil
 advance(cfg.endDelaySeconds * 1000)
 
+-- ---------------------------------------------------------------- 3v3 (a party of three) and the season hook
+local seasonCalls = {}
+ChaosPvpSeason = {recordArena = function(mode, sides, winner)
+  seasonCalls[#seasonCalls + 1] = {mode = mode, n1 = #sides[1], n2 = #sides[2], winner = winner}
+  local out = {}
+  for side = 1, 2 do for _, e in ipairs(sides[side]) do out[e.guid] = {before = 1500, after = side == winner and 1520 or 1480, delta = side == winner and 20 or -20} end end
+  return out
+end}
+local function party3(a, b, c)
+  local pt = {getLeader = function() return a end, getMembers = function() return {b, c} end}
+  a.party, b.party, c.party = pt, pt, pt
+end
+local t1 = {newPlayer("Hal", 900, 21, 1000), newPlayer("Ivo", 920, 22, 1000), newPlayer("Jun", 940, 23, 1000)}
+local t2 = {newPlayer("Kai", 910, 24, 1000), newPlayer("Lux", 930, 25, 1000), newPlayer("Mae", 950, 26, 1000)}
+party(t1[1], t1[2])
+check(not S.join(t1[1], "3v3"), "3v3 refused for a party of two")
+check(t1[1].msgs[#t1[1].msgs]:find("exactly 3") ~= nil, "3v3 party size message")
+party3(t1[1], t1[2], t1[3])
+party3(t2[1], t2[2], t2[3])
+check(S.join(t1[1], "3v3"), "3v3 party A queues")
+check(S.join(t2[1], "3v3"), "3v3 party B queues")
+advance(2000)
+local m6 = S.matchOf[t1[3]:getId()]
+check(m6 ~= nil and m6.mode == "3v3", "3v3 started")
+local L6 = A.layout(cfg, m6.slot)
+local spots = {}
+for _, p in ipairs({t1[1], t1[2], t1[3], t2[1], t2[2], t2[3]}) do
+  check(A.inArena(L6, p.pos), "3v3 fighter inside " .. p.name)
+  spots[p.pos.x .. "," .. p.pos.y] = true
+end
+local nspots = 0
+for _ in pairs(spots) do nspots = nspots + 1 end
+eq(nspots, 6, "six different spawn tiles")
+advance(10000)
+for _, p in ipairs(t2) do hit(p, t1[1], 99999) end
+advance(1000)
+eq(m6.phase, "done", "3v3: all three of B down")
+eq(m6.winner, 1, "3v3: A wins")
+eq(#seasonCalls, 1, "the season rating is recorded once")
+eq(seasonCalls[1].mode, "3v3", "for the 3v3 bracket")
+eq(seasonCalls[1].n1 + seasonCalls[1].n2, 6, "with all six")
+eq(lastSend(t1[2], "end").season.after, 1520, "the season change goes to the client")
+local b3 = 0
+for _, r in ipairs(records) do if r[1] == "arena3v3" then b3 = b3 + 1 end end
+eq(b3, 6, "the 3v3 board recorded for all six")
+advance(cfg.endDelaySeconds * 1000)
+ChaosPvpSeason = nil
+
 print(string.format("arena_flow_test: %d checks, %d failed", count, fails))
 if fails > 0 then os.exit(1) end

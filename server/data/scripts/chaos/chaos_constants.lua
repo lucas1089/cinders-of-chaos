@@ -182,6 +182,10 @@ Chaos.tables = {
 }
 -- Rift Atlas: one row per character, completed grid cells and allocated nodes (atlas.lua, sql/chaos_rift_atlas.sql)
 Chaos.tables.riftAtlas = "chaos_rift_atlas"
+-- Seasonal Journey (season_journey.lua, season_journey_config.lua, sql/chaos_season_journey.sql): on the season opcode
+-- (246, actions journey*), no player storages
+Chaos.tables.seasonJourneyStats = "chaos_season_journey_stats"
+Chaos.tables.seasonJourney = "chaos_season_journey"
 -- Ascended Omens and the Cinderheart (uber.lua): player storages 7100460 - 7100469 reserved; +0 the sigil kind of a run
 -- in progress (the crash refund marker), +1 its start, +2 the sigil use exhaust
 Chaos.storage.ascendedRun = 7100460
@@ -214,6 +218,29 @@ Chaos.tables.raidInstances = "chaos_raid_instances"
 ChaosOpcodes.loadouts = 206
 Chaos.storage.loadouts = 7100570
 Chaos.tables.loadouts = "chaos_loadouts"
+-- Hideouts (client game_hideout; hideout.lua, hideout_core.lua, hideout_config.lua, hideout_store.lua,
+-- sql/chaos_hideout.sql): decoration window, placement, permissions, visits and likes on one opcode; storages
+-- 7100180 - 7100189 reserved (hideout_config.lua storage: the spot a character entered from); map grid x/y 12288 - 12799
+ChaosOpcodes.hideout = 192
+Chaos.storage.hideout = 7100180
+Chaos.tables.hideouts = "chaos_hideouts"
+-- PvP battleground "Ember Wells" and the PvP seasons (client game_battleground; battleground*.lua, arena_season.lua,
+-- sql/chaos_battleground.sql): queue, vendor, season window, match HUD and scoreboard on one opcode; storages
+-- 7100380 - 7100389 reserved (battleground_config.lua storage); map grid x/y 11264 - 11455
+ChaosOpcodes.battleground = 200
+-- Guild wars in game and the weekly guild boss (client game_guildwar; guildwar*.lua, guildboss*.lua,
+-- sql/chaos_guildwar.sql): one opcode for both; storage 7101302 (in the guild block 7101300 - 7101309) holds the end of
+-- the guild boss lockout of the character's guild (the Boss Spawns cooldown)
+ChaosOpcodes.guildWar = 197
+Chaos.storage.guildBossLockout = 7101302
+Chaos.tables.guildWars = "chaos_guildwar"
+Chaos.tables.guildBoss = "chaos_guildboss_week"
+-- Mentors (client game_mentor; mentor.lua, mentor_core.lua, mentor_config.lua, sql/chaos_mentor.sql): mentor list,
+-- apprentice view, marks shop on one opcode; storages 7100360 - 7100369 reserved (+0 "looking for a mentor")
+ChaosOpcodes.mentor = 194
+Chaos.storage.mentor = 7100360
+Chaos.tables.mentors = "chaos_mentors"
+Chaos.tables.mentorLinks = "chaos_mentor_links"
 
 -- ---------------------------------------------------------------------------
 -- Module settings

@@ -1,6 +1,7 @@
 -- Rich item tooltips (server-driven). Hovering an item in the inventory or an open container asks the server
 -- (extended opcode 242, server/data/scripts/chaos/item_tooltip.lua) for its tooltip: name, rarity, item level, base
--- stats, every modifier with its tier and roll range, sockets and gems, unique and set, requirements. Holding Ctrl
+-- stats, every modifier with its tier and roll range, sockets and gems, unique and set (the pieces worn and the bonuses
+-- active; the cached set pieces are dropped when the equipment changes), requirements. Holding Ctrl
 -- shows the equipped item(s) worn the same way next to it, and the hovered tooltip lists the differences per stat
 -- (green better, red worse).
 -- Tooltips are cached by the item's per-item id and version (item custom attributes, game_itemrarity ChaosItemAttr):
@@ -362,6 +363,16 @@ local function onItemChange(widget)
   end
 end
 
+-- the equipment changed: the set block of every cached set piece may be stale (tooltiplogic.lua L.dropSetTips); the
+-- hovered piece is asked for again
+local function onInventoryChange()
+  if L.dropSetTips(cache) == 0 then return end
+  if hovered and not hovered.external and not L.cacheGet(cache, hovered.key, now()) then
+    if askEvent then removeEvent(askEvent) end
+    askEvent = scheduleEvent(ask, ASK_DELAY)
+  end
+end
+
 local function onTips(data)
   local t = now()
   for _, row in ipairs(type(data.items) == 'table' and data.items or {}) do
@@ -398,13 +409,16 @@ function init()
   handlers.change = safe('change', onItemChange)
   handlers.opcode = safe('opcode', onExtendedOpcode)
   handlers.reset = safe('reset', reset)
+  handlers.inventory = safe('inventory', onInventoryChange)
   connect(UIItem, { onHoverChange = handlers.hover, onItemChange = handlers.change })
+  connect(LocalPlayer, { onInventoryChange = handlers.inventory })
   connect(g_game, { onGameEnd = handlers.reset, onGameStart = handlers.reset })
   ProtocolGame.registerExtendedOpcode(OPCODE, handlers.opcode)
 end
 
 function terminate()
   disconnect(UIItem, { onHoverChange = handlers.hover, onItemChange = handlers.change })
+  disconnect(LocalPlayer, { onInventoryChange = handlers.inventory })
   disconnect(g_game, { onGameEnd = handlers.reset, onGameStart = handlers.reset })
   pcall(ProtocolGame.unregisterExtendedOpcode, OPCODE)
   if askEvent then removeEvent(askEvent) askEvent = nil end

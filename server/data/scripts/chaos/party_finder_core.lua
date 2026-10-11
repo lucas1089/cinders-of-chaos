@@ -267,7 +267,7 @@ end
 
 local function plainOf(who, role)
 	return {guid = who.guid, cid = who.cid, name = who.name, level = who.level, voc = who.voc, vocName = who.vocName,
-		role = role}
+		role = role, mt = who.mt} -- mt: the mentor tag ("mentor" / "seeking", mentor.lua ChaosMentor.tagOf)
 end
 
 local function crewOf(cfg, who, L)
@@ -752,7 +752,7 @@ end
 
 -- ---------------------------------------------------------------- payloads
 local function brief(p, st)
-	return {n = p.name, lv = p.level, vn = p.vocName, v = p.voc, r = p.role, st = st}
+	return {n = p.name, lv = p.level, vn = p.vocName, v = p.voc, r = p.role, st = st, mt = p.mt}
 end
 
 function K.row(cfg, acts, L, viewer, now)
@@ -768,6 +768,7 @@ function K.row(cfg, acts, L, viewer, now)
 	local row = {id = L.id, a = L.a, an = K.activityText(acts, L), ld = L.leader.name, comp = comp, want = L.want,
 		open = open, ml = L.minLevel, note = L.note, left = math.max(0, L.expires - now), auto = L.auto,
 		mine = L.leader.guid == viewer.guid, ap = app and app.role or nil, max = K.maxOf(cfg, L)}
+	row.mt = L.leader.mt
 	if L.realm and L.realm > 0 then
 		row.season = true
 	end
@@ -798,7 +799,7 @@ function K.list(state, cfg, acts, viewer, now)
 		for _, guid in ipairs(L.appOrder) do
 			local a = L.apps[guid]
 			mine.apps[#mine.apps + 1] = {g = a.guid, n = a.name, lv = a.level, vn = a.vocName, v = a.voc, r = a.role,
-				q = a.quick or nil, ago = math.max(0, now - a.at)}
+				q = a.quick or nil, ago = math.max(0, now - a.at), mt = a.mt}
 		end
 		out.mine = mine
 		out.badge = #mine.apps

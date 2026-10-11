@@ -133,8 +133,10 @@ eq(texts[#texts], 'Weight 45 oz', 'weight last')
 local unique = { name = 'Hornsworn Helm', unique = { name = 'Hornsworn Helm', set = { name = 'Embers of Aranoth', have = 2, total = 6 } },
   slot = 'Helmet', rarity = 0, desc = 'Forged in the embers of a dead god. (Requires level 70.)', locked = true }
 lines = L.lines(unique)
-eq(lines[1].text, 'Unique Helmet', 'unique title')
-eq(L.titleColor(unique), L.COLORS.unique, 'unique colour')
+eq(lines[1].text, 'Set Helmet', 'a set piece: set title')
+eq(L.titleColor(unique), L.COLORS.set, 'set colour')
+eq(L.titleColor({ unique = { name = 'Soulreaper' } }), L.COLORS.unique, 'unique colour')
+eq(L.lines({ name = 'Soulreaper', unique = { name = 'Soulreaper' }, slot = 'Weapon' })[1].text, 'Unique Weapon', 'unique title')
 local found = {}
 for _, l in ipairs(lines) do found[l.text] = l end
 eq(found['Set: Embers of Aranoth (2/6)'] ~= nil, true, 'set line')

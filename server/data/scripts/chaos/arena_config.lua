@@ -6,9 +6,10 @@ return {
 	-- mode key -> players per side, the leaderboard board key (ChaosLeaderboard.record, mode "max") and the shown name
 	modes = {
 		["1v1"] = {size = 1, board = "arena1v1", name = "Arena 1v1"},
-		["2v2"] = {size = 2, board = "arena2v2", name = "Arena 2v2"}
+		["2v2"] = {size = 2, board = "arena2v2", name = "Arena 2v2"},
+		["3v3"] = {size = 3, board = "arena3v3", name = "Arena 3v3"} -- a party of exactly three (PvP seasons bracket)
 	},
-	modeOrder = {"1v1", "2v2"},
+	modeOrder = {"1v1", "2v2", "3v3"},
 
 	minLevel = 50,
 	-- level rule (one rule for both modes, over every player of the match): the lowest level must be at least

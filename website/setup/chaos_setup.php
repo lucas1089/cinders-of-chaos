@@ -178,6 +178,12 @@ $out .= "menu: The World (Server Info, Patch Notes, Leaderboards, Seasons, Rules
 // the community goal and the week's world modifiers (plugins/chaos/pages/community.php, read from the game's tables)
 $menu('Community', 'page.php?plugin=chaos&p=community', 'fa-fire', 6, $world);
 $out .= "menu: The World > Community\n";
+// the guild wars declared in game: current wars and the history (plugins/chaos/pages/guildwars.php)
+$menu('Guild Wars', 'page.php?plugin=chaos&p=guildwars', 'fa-shield', 7, $world);
+$out .= "menu: The World > Guild Wars\n";
+// the mentors who opted in to be shown (plugins/chaos/pages/mentors.php, read from the game's chaos_mentor* tables)
+$menu('Mentors', 'page.php?plugin=chaos&p=mentors', 'fa-users', 8, $world);
+$out .= "menu: The World > Mentors\n";
 // the donation page (plugins/chaos/pages/coins.php): Chaos Coins are a thank-you for a voluntary donation
 $menu('Donate', 'page.php?plugin=chaos&p=coins', 'fa-heart', 16);
 $out .= "menu: Donate\n";

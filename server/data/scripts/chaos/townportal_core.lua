@@ -214,6 +214,9 @@ function K.blockReason(f)
 	if f.tower then
 		return "The Infinity Tower holds you: leave it through its own exit."
 	end
+	if f.hideout then -- Hideouts (hideout.lua)
+		return "Leave your hideout through its exit portal."
+	end
 	if f.pzLocked then
 		return "You cannot open a town portal right after fighting other players."
 	end

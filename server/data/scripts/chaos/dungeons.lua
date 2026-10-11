@@ -577,6 +577,9 @@ local function endRun(run, success, reason)
 	for _, p in ipairs(memberPlayers(run)) do
 		local guid = p:getGuid()
 		send(p, "killed", {boss = true})
+		if ChaosSeasonJourney and ChaosSeasonJourney.emit then -- Seasonal Journey (season_journey.lua)
+			ChaosSeasonJourney.emit(p, "dungeon_clears", 1)
+		end
 
 		local progress = loadProgress(guid, run.dungeonId)
 		if run.difficulty >= progress.difficulty and progress.difficulty < cfg.maxDifficulty then
@@ -598,6 +601,10 @@ local function endRun(run, success, reason)
 		end
 		saveProgress(guid, run.dungeonId, progress)
 		send(p, "dungeon", dungeonPayload(p, run.dungeonId, dg))
+		-- item sets (itemsets.lua): a chase roll over the dungeon sets on a clear
+		if ChaosItemSets and ChaosItemSets.grantChase then
+			ChaosItemSets.grantChase(p, "dungeon", nil, {difficulty = run.difficulty})
+		end
 	end
 
 	addEvent(function(runId)

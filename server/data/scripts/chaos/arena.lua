@@ -1,10 +1,12 @@
--- Ranked PvP arena: 1v1 and 2v2 with Elo ratings per mode (client game_arena, extended opcode 236).
+-- Ranked PvP arena: 1v1, 2v2 and 3v3 with Elo ratings per mode (client game_arena, extended opcode 236); the PvP
+-- season rating of each mode is kept by arena_season.lua (called from finish()).
 -- Settings: arena_config.lua. Pure part (ratings, matchmaking, level rule, death catch, timeout): arena_core.lua,
 -- tested by tests/arena_test.lua. Overview and numbers: server/README.md "Arena".
 --
 -- Flow
---   !arena queue 1v1 | 2v2 (or the window): only in a protection zone, out of combat, not multi-clienting, not inside
---   a dungeon / the tower / a rift / the world boss rooms / a siege; 2v2 = a party of exactly two, both checked.
+--   !arena queue 1v1 | 2v2 | 3v3 (or the window): only in a protection zone, out of combat, not multi-clienting, not inside
+--   a dungeon / the tower / a rift / the world boss rooms / a siege / the battleground; 2v2 = a party of exactly two,
+--   3v3 = a party of exactly three, everyone checked.
 --   -> every matchmakeSeconds the queue is paired by rating (window widens with the wait) and the level rule
 --   -> a free slot of the instance grid is built at runtime (Game.createTile, footprint checked as worldboss.lua does),
 --      everyone is checked again, teleported in, healed to full; countdown (no damage), then the fight
@@ -142,6 +144,9 @@ local function insideOther(player)
 	if ChaosSiege and ChaosSiege.isInside and ChaosSiege.isInside(player) then
 		return "a siege"
 	end
+	if ChaosBattleground and ChaosBattleground.isBusy and ChaosBattleground.isBusy(player) then
+		return "the battleground (queue or match)"
+	end
 	return nil
 end
 
@@ -220,6 +225,13 @@ function S.sendState(player, open)
 			after = row.rating_after, opponents = row.opponents, partner = row.partner, reason = row.reason, at = row.ended_at}
 	end
 	data.now = os.time()
+	-- PvP seasons (arena_season.lua): the season rating, tier and placement per bracket
+	if ChaosPvpSeason and ChaosPvpSeason.viewOf then
+		local ok, view = pcall(ChaosPvpSeason.viewOf, guid)
+		if ok then
+			data.season = {id = (ChaosPvpSeason.current()), brackets = view}
+		end
+	end
 	Chaos.send(player, OPCODE, "state", data)
 end
 
@@ -247,18 +259,20 @@ local function removeEntry(entry)
 	end
 end
 
--- members of a 2v2 party: exactly two, the player and one other; nil + reason otherwise
-local function partyPair(player)
+-- members of a team mode party (2v2: two, 3v3: three), the player included; nil + reason otherwise
+local function partyPair(player, size)
+	size = size or 2
+	local mode = size .. "v" .. size
 	local party = player:getParty()
 	if not party then
-		return nil, "2v2 is played as a party of two: invite your partner first."
+		return nil, string.format("%s is played as a party of %d: invite your partner%s first.", mode, size, size > 2 and "s" or "")
 	end
 	local list = {party:getLeader()}
 	for _, m in ipairs(party:getMembers() or {}) do
 		list[#list + 1] = m
 	end
-	if #list ~= 2 then
-		return nil, "2v2 is played as a party of exactly two players."
+	if #list ~= size then
+		return nil, string.format("%s is played as a party of exactly %d players.", mode, size)
 	end
 	return list
 end
@@ -266,12 +280,12 @@ end
 function S.join(player, mode)
 	local cfg = C()
 	if not cfg.modes[mode] then
-		player:sendCancelMessage("Arena modes: 1v1, 2v2.")
+		player:sendCancelMessage("Arena modes: " .. table.concat(cfg.modeOrder, ", ") .. ".")
 		return false
 	end
 	local members = {player}
-	if cfg.modes[mode].size == 2 then
-		local list, err = partyPair(player)
+	if cfg.modes[mode].size > 1 then
+		local list, err = partyPair(player, cfg.modes[mode].size)
 		if not list then
 			player:sendCancelMessage(err)
 			return false
@@ -733,6 +747,19 @@ finish = function(m, winner, reason)
 			end
 		end
 	end
+	-- PvP seasons (arena_season.lua): the season rating of the mode's bracket
+	if rated and ChaosPvpSeason and ChaosPvpSeason.recordArena then
+		local ok, res = pcall(ChaosPvpSeason.recordArena, m.mode, list, winner)
+		if ok and res then
+			for side = 1, 2 do
+				for _, e in ipairs(list[side]) do
+					e.season = res[e.guid]
+				end
+			end
+		elseif not ok then
+			log("season: " .. tostring(res))
+		end
+	end
 	-- tell everyone, rewards
 	local title = winner == 0 and "Draw" or nil
 	eachOnline(m, function(p, e)
@@ -751,7 +778,7 @@ finish = function(m, winner, reason)
 		msg(p, text)
 		Chaos.send(p, OPCODE, "end", {mode = m.mode, result = e.result, before = e.before or e.rating, after = e.after or e.rating,
 			delta = e.delta or 0, reason = reason, reward = reward, firstWin = first, rated = rated,
-			opponents = names(list[3 - e.team]), title = title})
+			opponents = names(list[3 - e.team]), title = title, season = e.season})
 	end)
 	log(string.format("match %d ended: winner %d (%s)", m.id, winner, reason))
 	hud(m)
@@ -1105,7 +1132,7 @@ local function statusText(player)
 	elseif S.matchOf[player:getId()] then
 		text = text .. " You are in a match."
 	else
-		text = text .. " Queue for 1v1 or 2v2 (party of two) in the Arena window (Adventure > Arena)."
+		text = text .. " Queue for 1v1, 2v2 (party of two) or 3v3 (party of three) in the Arena window (Adventure > Arena)."
 	end
 	return text
 end
@@ -1116,7 +1143,7 @@ local function onArena(player, words, param)
 	if cmd == "queue" or cmd == "join" then
 		local mode = A.parseMode(C(), arg)
 		if not mode then
-			player:sendCancelMessage("Choose 1v1 or 2v2.")
+			player:sendCancelMessage("Choose 1v1, 2v2 or 3v3.")
 			return false
 		end
 		S.join(player, mode)

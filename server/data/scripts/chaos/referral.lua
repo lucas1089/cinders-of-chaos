@@ -195,6 +195,17 @@ local function paidThisMonth(referrerId, now)
 	return r and r.n or 0
 end
 
+-- the account facts of the referral's anti-abuse checks, for other systems (mentor.lua reuses them): creation time,
+-- e-mail, every known IP, staff, banned, and the active referral link (referrer account, tracked character)
+function Ref.accountFacts(accountId)
+	local row = accountRow(accountId) or {ips = {}}
+	local link = linkOf(accountId)
+	local active = link and link.status == "active"
+	return {created = row.creation, email = row.email, ips = ipsOf(accountId, row, link), staff = isStaff(accountId, row),
+		banned = isBanned(accountId), referrerId = active and link.referrer_account_id or nil,
+		trackedPlayer = active and link.player_id or nil}
+end
+
 -- ------------------------------------------------------------------ codes
 local function codeOfAccount(accountId)
 	local r = Chaos.select(string.format("SELECT `code` FROM `%s` WHERE `account_id` = %d", T.codes, accountId), {{"code", "s"}})[1]

@@ -3,7 +3,8 @@
 --
 -- An item is described by an info table built by salvage.lua from the engine item:
 --   {gear, riftKey, rarity, level (item level), unique, sockets, gems (socketed), highTiers (modifiers of tier
---   cfg.highTier or better), locked, stackable, inBackpack}
+--   cfg.highTier or better), locked, stackable, inBackpack, setPiece (an item set piece: salvaged for setPieceShards
+--   although it is a unique without a rarity; "salvage all" never takes one)}
 --
 --   K.isLocked(value)                     a lock attribute value -> true / false
 --   K.check(info, cfg)                    nil when the item may be salvaged, else a reason key (K.reasons)
@@ -55,7 +56,7 @@ function K.check(info, cfg)
 	if info.riftKey then
 		return "riftKey"
 	end
-	if info.unique and not cfg.allowUniques then
+	if info.unique and not cfg.allowUniques and not info.setPiece then
 		return "unique"
 	end
 	if info.stackable then
@@ -64,7 +65,7 @@ function K.check(info, cfg)
 	if not info.gear then
 		return "notGear"
 	end
-	if (info.rarity or 0) < 1 then
+	if (info.rarity or 0) < 1 and not info.setPiece then
 		return "normal"
 	end
 	if (info.gems or 0) > 0 then
@@ -101,6 +102,10 @@ function K.levelFraction(level, cfg)
 end
 
 function K.shards(info, cfg)
+	if info.setPiece then
+		-- an item set piece (data/lib/chaos_item_sets.lua): a fixed number, it has no rarity to price it
+		return math.max(1, floor(tonumber(cfg.setPieceShards) or 1))
+	end
 	local r = rarityIndex(info, cfg)
 	local base = cfg.baseShards[r]
 	local n = floor(base * (1 + cfg.levelBonus * K.levelFraction(info.level, cfg)) + 1e-9)

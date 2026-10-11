@@ -1,0 +1,631 @@
+// Mentor window (game_mentor): find a mentor, my mentor, mentoring, the Mentor Marks shop, top mentors.
+// Styles from client_chaos_theme.
+
+MentorTab < ChaosTabButton
+  width: 124
+  margin-right: 4
+
+MentorPage < UIWidget
+  anchors.top: tabs.bottom
+  anchors.left: parent.left
+  anchors.right: parent.right
+  anchors.bottom: note.top
+  margin-top: 6
+  margin-bottom: 4
+
+MentorPlateTitle < ChaosTitlePlate
+  anchors.left: parent.left
+  anchors.right: parent.right
+
+  ChaosTitle
+    id: label
+    anchors.fill: parent
+
+MentorRow < ChaosPanelDark
+  height: 54
+  margin-bottom: 3
+
+  ChaosLabel
+    id: title
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: status.left
+    margin-right: 6
+    height: 15
+    color: #e8b84a
+
+  ChaosLabel
+    id: status
+    anchors.top: parent.top
+    anchors.right: choose.left
+    margin-right: 8
+    width: 60
+    height: 15
+    text-align: right
+
+  ChaosLabelDim
+    id: sub
+    anchors.top: title.bottom
+    anchors.left: parent.left
+    anchors.right: choose.left
+    margin-right: 6
+    height: 14
+
+  ChaosLabel
+    id: noteText
+    anchors.top: sub.bottom
+    anchors.left: parent.left
+    anchors.right: choose.left
+    margin-right: 6
+    height: 14
+
+  ChaosButton
+    id: choose
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    size: 84 24
+    !text: tr('Choose')
+
+MentorInviteRow < ChaosPanelHighlight
+  height: 30
+  margin-bottom: 3
+
+  ChaosLabel
+    id: text
+    anchors.left: parent.left
+    anchors.right: accept.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 6
+    height: 15
+
+  ChaosButton
+    id: accept
+    anchors.right: decline.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 4
+    size: 70 22
+    !text: tr('Accept')
+
+  ChaosButton
+    id: decline
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    size: 70 22
+    !text: tr('Decline')
+
+MentorMilestoneRow < ChaosPanelDark
+  height: 22
+  margin-bottom: 2
+
+  ChaosLabel
+    id: name
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    width: 260
+    height: 15
+
+  ChaosLabel
+    id: state
+    anchors.left: name.right
+    anchors.verticalCenter: parent.verticalCenter
+    width: 150
+    height: 15
+
+  ChaosLabelDim
+    id: marks
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    width: 90
+    height: 15
+    text-align: right
+
+MentorStep < ChaosLabel
+  height: 15
+  width: 34
+  text-align: center
+  text-auto-resize: false
+
+MentorApprenticeRow < ChaosPanelDark
+  height: 54
+  margin-bottom: 3
+
+  ChaosLabel
+    id: title
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: release.left
+    margin-right: 6
+    height: 15
+    color: #e8b84a
+
+  ChaosLabelDim
+    id: sub
+    anchors.top: title.bottom
+    anchors.left: parent.left
+    anchors.right: release.left
+    margin-right: 6
+    height: 14
+
+  UIWidget
+    id: steps
+    anchors.top: sub.bottom
+    anchors.left: parent.left
+    anchors.right: release.left
+    height: 16
+    layout:
+      type: horizontalBox
+      spacing: 2
+
+  ChaosButton
+    id: release
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    size: 76 24
+    !text: tr('Release')
+
+MentorShopRow < ChaosPanelDark
+  height: 40
+  margin-bottom: 3
+
+  ChaosLabel
+    id: name
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: price.left
+    margin-right: 6
+    height: 15
+
+  ChaosLabelDim
+    id: desc
+    anchors.top: name.bottom
+    anchors.left: parent.left
+    anchors.right: price.left
+    margin-right: 6
+    height: 14
+
+  ChaosLabel
+    id: price
+    anchors.right: buy.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 8
+    width: 70
+    height: 15
+    text-align: right
+    color: #e8b84a
+
+  ChaosButton
+    id: buy
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    size: 96 24
+    !text: tr('Buy')
+
+MentorTopRow < ChaosPanelDark
+  height: 22
+  margin-bottom: 2
+
+  ChaosLabel
+    id: rank
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    width: 40
+    height: 15
+    color: #e8b84a
+
+  ChaosLabel
+    id: name
+    anchors.left: rank.right
+    anchors.right: value.left
+    anchors.verticalCenter: parent.verticalCenter
+    height: 15
+
+  ChaosLabel
+    id: value
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    width: 120
+    height: 15
+    text-align: right
+
+MentorList < ScrollablePanel
+  layout:
+    type: verticalBox
+
+MentorWindow < ChaosMainWindow
+  id: mentorWindow
+  size: 680 580
+  !text: tr('Mentors')
+  @onEscape: modules.game_mentor.hide()
+
+  UIWidget
+    id: tabs
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 24
+    layout:
+      type: horizontalBox
+
+  // ------------------------------------------------------------ find a mentor
+  MentorPage
+    id: findPage
+
+    ChaosLabel
+      id: pickText
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 44
+      text-wrap: true
+      text-align: topLeft
+
+    ChaosComboBox
+      id: lineCombo
+      anchors.top: pickText.bottom
+      anchors.left: parent.left
+      margin-top: 4
+      size: 110 22
+
+    ChaosTextEdit
+      id: langEdit
+      anchors.top: lineCombo.top
+      anchors.left: lineCombo.right
+      margin-left: 6
+      size: 140 22
+      max-length: 24
+      placeholder: Language / region
+
+    ChaosComboBox
+      id: onlineCombo
+      anchors.top: lineCombo.top
+      anchors.left: langEdit.right
+      margin-left: 6
+      size: 110 22
+
+    ChaosButton
+      id: searchButton
+      anchors.top: lineCombo.top
+      anchors.left: onlineCombo.right
+      margin-left: 6
+      size: 70 22
+      !text: tr('Search')
+      @onClick: modules.game_mentor.search()
+
+    ChaosCheckBox
+      id: seekCheck
+      anchors.left: searchButton.right
+      anchors.verticalCenter: searchButton.verticalCenter
+      margin-left: 10
+      width: 180
+      !text: tr('Looking for a mentor')
+      !tooltip: tr('Shows "Looking for mentor" with your name in the Party Finder')
+
+    UIWidget
+      id: invites
+      anchors.top: lineCombo.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 6
+      height: 0
+      layout:
+        type: verticalBox
+        fit-children: true
+
+    ChaosLabelDim
+      id: listEmpty
+      anchors.top: invites.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 6
+      height: 15
+
+    MentorList
+      id: mentorList
+      anchors.top: invites.bottom
+      anchors.left: parent.left
+      anchors.right: mentorScroll.left
+      anchors.bottom: parent.bottom
+      margin-top: 4
+      margin-right: 2
+      vertical-scrollbar: mentorScroll
+
+    ChaosScrollBar
+      id: mentorScroll
+      anchors.top: invites.bottom
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      margin-top: 4
+      step: 20
+      pixels-scroll: true
+
+  // ------------------------------------------------------------ my mentor (apprentice view)
+  MentorPage
+    id: minePage
+
+    ChaosPanelHighlight
+      id: header
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 62
+
+      ChaosTitle
+        id: mentorName
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: dismissButton.left
+        margin-right: 6
+        height: 20
+        text-align: left
+
+      ChaosLabel
+        id: mentorSub
+        anchors.top: mentorName.bottom
+        anchors.left: parent.left
+        anchors.right: dismissButton.left
+        margin-right: 6
+        margin-top: 2
+        height: 15
+
+      ChaosLabel
+        id: bonus
+        anchors.top: mentorSub.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 2
+        height: 15
+
+      ChaosButton
+        id: dismissButton
+        anchors.top: parent.top
+        anchors.right: parent.right
+        margin-top: 6
+        size: 110 24
+        !text: tr('Dismiss mentor')
+        @onClick: modules.game_mentor.dismiss()
+
+    MentorPlateTitle
+      id: milestonesPlate
+      anchors.top: header.bottom
+      margin-top: 6
+
+    MentorList
+      id: milestoneList
+      anchors.top: milestonesPlate.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: mineRules.top
+      margin-top: 4
+      margin-bottom: 4
+
+    ChaosLabelDim
+      id: mineRules
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      height: 30
+      text-wrap: true
+      text-align: topLeft
+
+  // ------------------------------------------------------------ mentoring (the mentor's view)
+  MentorPage
+    id: mentoringPage
+
+    ChaosLabel
+      id: requirements
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 58
+      text-wrap: true
+      text-align: topLeft
+
+    ChaosPanelHighlight
+      id: card
+      anchors.top: requirements.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      height: 84
+
+      ChaosLabelDim
+        id: lLang
+        anchors.top: parent.top
+        anchors.left: parent.left
+        width: 70
+        height: 22
+        text-align: left
+        !text: tr('Language')
+
+      ChaosTextEdit
+        id: lang
+        anchors.top: parent.top
+        anchors.left: lLang.right
+        size: 170 22
+        max-length: 24
+        placeholder: English, EU
+
+      ChaosLabelDim
+        id: lHours
+        anchors.top: parent.top
+        anchors.left: lang.right
+        margin-left: 10
+        width: 50
+        height: 22
+        !text: tr('Hours')
+
+      ChaosTextEdit
+        id: hours
+        anchors.top: parent.top
+        anchors.left: lHours.right
+        size: 150 22
+        max-length: 24
+        placeholder: 18-23 UTC
+
+      ChaosLabelDim
+        id: lNote
+        anchors.top: lang.bottom
+        anchors.left: parent.left
+        margin-top: 4
+        width: 70
+        height: 22
+        !text: tr('Note')
+
+      ChaosTextEdit
+        id: cardNote
+        anchors.top: lNote.top
+        anchors.left: lNote.right
+        anchors.right: parent.right
+        height: 22
+        max-length: 80
+        placeholder: What you like to teach
+
+      ChaosCheckBox
+        id: accepting
+        anchors.top: cardNote.bottom
+        anchors.left: parent.left
+        margin-top: 8
+        width: 150
+        !text: tr('Taking apprentices')
+
+      ChaosCheckBox
+        id: public
+        anchors.top: accepting.top
+        anchors.left: accepting.right
+        margin-left: 10
+        width: 150
+        !text: tr('Show on website')
+
+      ChaosButton
+        id: saveButton
+        anchors.right: retireButton.left
+        anchors.verticalCenter: accepting.verticalCenter
+        margin-right: 6
+        size: 120 24
+        !text: tr('Become a mentor')
+        @onClick: modules.game_mentor.saveCard()
+
+      ChaosButton
+        id: retireButton
+        anchors.right: parent.right
+        anchors.verticalCenter: accepting.verticalCenter
+        size: 80 24
+        !text: tr('Retire')
+        @onClick: modules.game_mentor.retire()
+
+    ChaosLabel
+      id: stats
+      anchors.top: card.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
+      height: 15
+
+    ChaosTextEdit
+      id: inviteEdit
+      anchors.top: stats.bottom
+      anchors.left: parent.left
+      margin-top: 4
+      size: 200 22
+      max-length: 29
+      placeholder: Character name
+
+    ChaosButton
+      id: inviteButton
+      anchors.top: inviteEdit.top
+      anchors.left: inviteEdit.right
+      margin-left: 6
+      size: 120 22
+      !text: tr('Invite apprentice')
+      @onClick: modules.game_mentor.invite()
+
+    MentorPlateTitle
+      id: apprenticesPlate
+      anchors.top: inviteEdit.bottom
+      margin-top: 6
+
+    ChaosLabelDim
+      id: apprenticesEmpty
+      anchors.top: apprenticesPlate.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 6
+      height: 15
+
+    MentorList
+      id: apprenticeList
+      anchors.top: apprenticesPlate.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 4
+
+  // ------------------------------------------------------------ the Mentor Marks shop
+  MentorPage
+    id: shopPage
+
+    ChaosTitle
+      id: shopHeader
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 20
+      text-align: left
+
+    ChaosLabelDim
+      id: shopRule
+      anchors.top: shopHeader.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 15
+      !text: tr('Titles, cosmetics and supplies only: the store fairness rule, nothing that adds power.')
+
+    MentorList
+      id: shopList
+      anchors.top: shopRule.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 6
+
+  // ------------------------------------------------------------ top mentors
+  MentorPage
+    id: topPage
+
+    MentorPlateTitle
+      id: topPlate
+      anchors.top: parent.top
+
+    ChaosLabelDim
+      id: topEmpty
+      anchors.top: topPlate.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 6
+      height: 15
+
+    MentorList
+      id: topList
+      anchors.top: topPlate.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 4
+
+  ChaosLabel
+    id: note
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    height: 24
+    text-wrap: true
+    text-align: left
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 80 24
+    !text: tr('Close')
+    @onClick: modules.game_mentor.hide()

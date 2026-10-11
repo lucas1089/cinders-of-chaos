@@ -1,0 +1,473 @@
+// Battleground and PvP seasons (game_battleground): the window (queue, season, vendor), the match HUD, the scoreboard
+// and the end summary. Styles only (battleground.lua creates the widgets); theme styles from client_chaos_theme.
+
+BgText < UILabel
+  font: verdana-11px-antialised
+  color: #d6c9ae
+  text-align: left
+  text-auto-resize: true
+  phantom: true
+
+BgDim < BgText
+  color: #8c8070
+
+BgWrap < BgText
+  text-wrap: true
+  text-auto-resize: false
+  text-vertical-auto-resize: true
+
+BgHead < BgText
+  font: verdana-11px-rounded
+  color: #e8b84a
+  margin-top: 8
+
+BgTab < ChaosTabButton
+  size: 130 24
+  anchors.top: parent.top
+
+// a season bracket card: the emblem, the bracket, the tier, the rating and the record
+BgCard < ChaosPanelDark
+  size: 146 96
+  margin-right: 6
+  phantom: false
+
+  UIWidget
+    id: emblem
+    size: 36 36
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 4
+    phantom: true
+
+  BgText
+    id: name
+    anchors.top: emblem.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 2
+    color: #b8ab92
+
+  BgText
+    id: tier
+    anchors.top: name.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    font: verdana-11px-rounded
+
+  BgText
+    id: rating
+    anchors.top: tier.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    color: #f6cf72
+
+BgCardRow < UIWidget
+  height: 100
+  margin-top: 4
+  layout:
+    type: horizontalBox
+
+// a list row with a button on the right (vendor offers, season rewards)
+BgRow < ChaosPanelDark
+  height: 40
+  margin-bottom: 3
+
+  UIWidget
+    id: icon
+    size: 32 32
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+    phantom: true
+
+  BgText
+    id: title
+    anchors.top: parent.top
+    anchors.left: icon.right
+    margin-top: 4
+    margin-left: 8
+    color: #e8b84a
+
+  BgDim
+    id: sub
+    anchors.top: title.bottom
+    anchors.left: title.left
+    anchors.right: button.left
+    margin-top: 2
+    margin-right: 6
+    text-auto-resize: false
+    height: 14
+
+  BgDim
+    id: state
+    anchors.top: parent.top
+    anchors.right: button.left
+    margin-top: 4
+    margin-right: 8
+
+  ChaosButton
+    id: button
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 4
+    size: 100 22
+
+BgRoleButton < ChaosTabButton
+  size: 92 24
+  margin-right: 6
+
+BgRoleRow < UIWidget
+  height: 26
+  margin-top: 4
+  layout:
+    type: horizontalBox
+
+// ---------------------------------------------------------------- the window
+BgWindow < ChaosMainWindow
+  id: battlegroundWindow
+  size: 660 540
+  !text: tr('Battleground: Ember Wells')
+  @onEscape: modules.game_battleground.hide()
+
+  UIWidget
+    id: tabs
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 24
+
+    BgTab
+      id: tabQueue
+      anchors.left: parent.left
+      !text: tr('Battleground')
+      @onClick: modules.game_battleground.showTab('queue')
+
+    BgTab
+      id: tabSeason
+      anchors.left: prev.right
+      margin-left: 4
+      !text: tr('PvP Season')
+      @onClick: modules.game_battleground.showTab('season')
+
+    BgTab
+      id: tabVendor
+      anchors.left: prev.right
+      margin-left: 4
+      !text: tr('Honor Vendor')
+      @onClick: modules.game_battleground.showTab('vendor')
+
+  ChaosPanelDark
+    id: frame
+    anchors.top: tabs.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: message.top
+    margin-top: 6
+    margin-bottom: 6
+
+  UIScrollArea
+    id: list
+    anchors.top: frame.top
+    anchors.left: frame.left
+    anchors.right: listScroll.left
+    anchors.bottom: frame.bottom
+    margin: 8
+    vertical-scrollbar: listScroll
+    layout:
+      type: verticalBox
+
+  ChaosScrollBar
+    id: listScroll
+    anchors.top: frame.top
+    anchors.right: frame.right
+    anchors.bottom: frame.bottom
+    margin: 4
+    step: 24
+    pixels-scroll: true
+
+  BgText
+    id: message
+    anchors.bottom: buttons.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: false
+    height: 16
+    margin-bottom: 6
+    color: #f6cf72
+
+  UIWidget
+    id: buttons
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 24
+
+    ChaosButton
+      id: queueButton
+      anchors.left: parent.left
+      anchors.top: parent.top
+      size: 150 24
+      @onClick: modules.game_battleground.queueOrLeave()
+
+    ChaosButton
+      id: groupButton
+      anchors.left: queueButton.right
+      anchors.top: parent.top
+      margin-left: 6
+      size: 120 24
+      !text: tr('Find a Group')
+      !tooltip: tr('Open the Party Finder: post or join a Battleground group, then the leader queues the party (up to 5).')
+      @onClick: modules.game_battleground.findGroup()
+
+    ChaosButton
+      id: closeButton
+      anchors.right: parent.right
+      anchors.top: parent.top
+      size: 70 24
+      !text: tr('Close')
+      @onClick: modules.game_battleground.hide()
+
+// ---------------------------------------------------------------- the HUD (game root panel, top centre of the map, under the top menu)
+BgWell < UIWidget
+  size: 128 40
+  phantom: true
+
+  UIWidget
+    id: icon
+    size: 20 20
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    phantom: true
+
+  BgText
+    id: name
+    anchors.top: icon.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    color: #b8ab92
+
+  BgText
+    id: state
+    anchors.top: name.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    font: verdana-11px-rounded
+
+BgHud < UIWidget
+  id: battlegroundHud
+  size: 440 132
+  anchors.top: parent.top
+  anchors.horizontalCenter: gameMapPanel.horizontalCenter
+  margin-top: 44
+  image-source: /images/chaos/panel_dark
+  image-border: 6
+  padding: 8
+  focusable: false
+
+  BgText
+    id: myName
+    anchors.top: parent.top
+    anchors.left: parent.left
+    font: verdana-11px-rounded
+
+  BgText
+    id: theirName
+    anchors.top: parent.top
+    anchors.right: parent.right
+    font: verdana-11px-rounded
+
+  ChaosProgressBar
+    id: myBar
+    anchors.top: myName.bottom
+    anchors.left: parent.left
+    margin-top: 3
+    size: 150 16
+    phantom: true
+
+  ChaosProgressBar
+    id: theirBar
+    anchors.top: theirName.bottom
+    anchors.right: parent.right
+    margin-top: 3
+    size: 150 16
+    phantom: true
+
+  UILabel
+    id: clock
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    text-auto-resize: true
+    font: sans-bold-16px
+    color: #f6cf72
+    phantom: true
+
+  BgDim
+    id: phase
+    anchors.top: clock.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+
+  UIWidget
+    id: wells
+    anchors.top: myBar.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 44
+    phantom: true
+    layout:
+      type: horizontalBox
+      spacing: 8
+
+  BgText
+    id: notice
+    anchors.top: wells.bottom
+    anchors.left: parent.left
+    margin-top: 2
+    font: verdana-11px-rounded
+
+  ChaosButton
+    id: boardButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 76 18
+    font: verdana-11px-antialised
+    !text: tr('Scoreboard')
+    @onClick: modules.game_battleground.toggleBoard()
+
+// ---------------------------------------------------------------- the scoreboard / end summary
+BgBoardHead < UIWidget
+  height: 18
+  margin-top: 6
+
+  BgText
+    id: team
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    font: verdana-11px-rounded
+
+BgBoardRow < UIWidget
+  height: 16
+
+  BgText
+    id: name
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    text-auto-resize: false
+    width: 150
+
+  BgText
+    id: role
+    anchors.left: name.right
+    anchors.verticalCenter: parent.verticalCenter
+    text-auto-resize: false
+    width: 54
+
+  BgText
+    id: kills
+    anchors.left: role.right
+    anchors.verticalCenter: parent.verticalCenter
+    text-auto-resize: false
+    text-align: right
+    width: 36
+
+  BgText
+    id: assists
+    anchors.left: kills.right
+    anchors.verticalCenter: parent.verticalCenter
+    text-auto-resize: false
+    text-align: right
+    width: 36
+
+  BgText
+    id: downs
+    anchors.left: assists.right
+    anchors.verticalCenter: parent.verticalCenter
+    text-auto-resize: false
+    text-align: right
+    width: 36
+
+  BgText
+    id: captures
+    anchors.left: downs.right
+    anchors.verticalCenter: parent.verticalCenter
+    text-auto-resize: false
+    text-align: right
+    width: 44
+
+  BgText
+    id: damage
+    anchors.left: captures.right
+    anchors.verticalCenter: parent.verticalCenter
+    text-auto-resize: false
+    text-align: right
+    width: 80
+
+  BgText
+    id: healing
+    anchors.left: damage.right
+    anchors.verticalCenter: parent.verticalCenter
+    text-auto-resize: false
+    text-align: right
+    width: 80
+
+  BgText
+    id: honor
+    anchors.left: healing.right
+    anchors.verticalCenter: parent.verticalCenter
+    text-auto-resize: false
+    text-align: right
+    width: 50
+
+BgBoard < ChaosMainWindow
+  id: battlegroundBoard
+  size: 640 480
+  !text: tr('Ember Wells: Scoreboard')
+  @onEscape: modules.game_battleground.hideBoard()
+
+  UILabel
+    id: result
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    text-auto-resize: true
+    font: sans-bold-16px
+    phantom: true
+
+  BgText
+    id: score
+    anchors.top: result.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 2
+    font: verdana-11px-rounded
+    color: #f6cf72
+
+  BgDim
+    id: rating
+    anchors.top: score.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 2
+
+  BgText
+    id: honor
+    anchors.top: rating.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 2
+    color: #f6cf72
+
+  ChaosPanelDark
+    id: frame
+    anchors.top: honor.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-top: 6
+    margin-bottom: 6
+
+  UIScrollArea
+    id: list
+    anchors.fill: frame
+    margin: 8
+    layout:
+      type: verticalBox
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 70 24
+    !text: tr('Close')
+    @onClick: modules.game_battleground.hideBoard()

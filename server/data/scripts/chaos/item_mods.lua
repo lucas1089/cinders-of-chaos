@@ -89,11 +89,18 @@ function M.refresh(player, force)
 	local state = applied[id] or {speed = 0, sig = nil}
 	applied[id] = state
 	local items, sig = equipped(player)
+	-- item sets (itemsets.lua): the active set bonuses' modifier numbers, added to the items' before the caps
+	local setMods
+	if ChaosItemSets and ChaosItemSets.refresh then
+		local setSig
+		setMods, setSig = ChaosItemSets.refresh(player)
+		sig = sig .. "|" .. tostring(setSig or "")
+	end
 	if not force and sig == state.sig then
 		return cache[id]
 	end
 	state.sig = sig
-	local totals = M.totals(items)
+	local totals = M.totals(items, setMods)
 	if ChaosGems and ChaosGems.totals then
 		local gemTotals = ChaosGems.totals(items)
 		local def = M.byKey.movespeed
@@ -438,7 +445,7 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 	if (totals.dodge or 0) > 0 and math.random(1, 100) <= totals.dodge then
 		creature:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT)
 		if M.onAvoid then
-			M.onAvoid(creature, attacker, "dodge") -- Glacial Ward (item_powers.lua)
+			M.onAvoid(creature, attacker, "dodge", math.abs(primaryDamage) + math.abs(secondaryDamage)) -- Glacial Ward (item_powers.lua), sets
 		end
 		return 0, primaryType, 0, secondaryType
 	end
@@ -447,7 +454,7 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 			and (origin == ORIGIN_MELEE or origin == ORIGIN_RANGED) and math.random(1, 100) <= totals.block then
 		creature:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT)
 		if M.onAvoid then
-			M.onAvoid(creature, attacker, "block")
+			M.onAvoid(creature, attacker, "block", math.abs(primaryDamage) + math.abs(secondaryDamage))
 		end
 		return 0, primaryType, 0, secondaryType
 	end

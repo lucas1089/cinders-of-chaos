@@ -1,4 +1,4 @@
--- Codex: an in-client encyclopedia of the item system. Tabs (Modifiers, Powers, Orbs, Gems, Uniques, Rift, Supports,
+-- Codex: an in-client encyclopedia of the item system. Tabs (Modifiers, Powers, Orbs, Gems, Uniques, Sets, Rift, Supports,
 -- Basics), a search box (every word must be in the name or the page), the tab's filters (side, item kind, item level,
 -- level, group...), the list on the left and the page of the chosen entry on the right.
 -- No server round trip: everything comes from codex_data.lua, generated from the server's data files by

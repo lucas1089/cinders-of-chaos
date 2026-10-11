@@ -1232,6 +1232,13 @@ function X.deliver(player, b, idx)
 			Game.broadcastMessage(string.format("%s found %s in %s!", player:getName(), u.name, cfg.name), MESSAGE_EVENT_ADVANCE)
 		end
 	end
+	-- item sets (itemsets.lua): the raid set's chase roll of this boss
+	if ChaosItemSets and ChaosItemSets.grantChase then
+		local piece = ChaosItemSets.grantChase(player, "raid", b.key, {final = b.final and true or nil, itemFind = find}, rand)
+		if piece then
+			lines[#lines + 1] = "{" .. piece .. "}"
+		end
+	end
 	local row = X.row(player:getGuid())
 	row.marks = row.marks + sp.marks
 	lines[#lines + 1] = string.format("%d Sepulchre Marks", sp.marks)

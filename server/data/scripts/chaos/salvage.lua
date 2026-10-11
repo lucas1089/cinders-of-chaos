@@ -125,6 +125,7 @@ function S.infoOf(player, item)
 		rarity = C.rarityOf(item),
 		level = C.levelOf(item),
 		unique = C.isUnique(item),
+		setPiece = ChaosItemSets and ChaosItemSets.pieceOf and ChaosItemSets.pieceOf(item) ~= nil or nil, -- itemsets.lua
 		sockets = s.count or 0,
 		gems = s.filled or 0,
 		highTiers = high,
@@ -181,7 +182,7 @@ local function orbName(key)
 end
 
 local function rowText(info, roll)
-	local text = string.format("%s (level %d): %d %s", C.rarityName(info.rarity), info.level, roll.shards,
+	local text = string.format("%s (level %d): %d %s", info.setPiece and "Set piece" or C.rarityName(info.rarity), info.level, roll.shards,
 		roll.shards == 1 and cfg.shard.name or cfg.shard.plural)
 	if roll.orb then
 		text = text .. " + 1 " .. orbName(roll.orb)

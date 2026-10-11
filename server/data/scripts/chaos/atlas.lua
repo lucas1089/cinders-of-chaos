@@ -118,6 +118,9 @@ ChaosRiftCore.hooks.onSealed = function(info)
 		local new, pts = A.credit(cfg, RC(), st.done, keys)
 		if #new > 0 then
 			saveRow(guid, st)
+			if ChaosSeasonJourney and ChaosSeasonJourney.emit then -- Seasonal Journey (season_journey.lua)
+				ChaosSeasonJourney.emit(guid, "atlas_points", A.earned(cfg, RC(), st.done), "max")
+			end
 			local player = S.online[guid] and Player(S.online[guid])
 			if player and player:getGuid() == guid then
 				local names = {}

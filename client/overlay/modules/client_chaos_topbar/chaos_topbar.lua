@@ -187,6 +187,7 @@ local CATEGORIES = {
     entry('Transmog',        'inventory',   { modules = { 'game_transmog' },  fns = { 'toggle' } }),
     entry('Cosmetics',       'inventory',   { modules = { 'game_cosmetics' }, fns = { 'toggle' } }),
     entry('Town Portal',     'minimap',     { modules = { 'game_townportal' }, fns = { 'cast' } }),
+    entry('Hideout',         'minimap',     { modules = { 'game_hideout' },    fns = { 'toggle' } }),
     entry('Character Info',  'help',        info('character')),
     entry('Services',        'help',        info('services')),
     entry('More',            'inventory',   { sub = {

@@ -63,7 +63,7 @@ function V.slots(row)
   local out = {}
   if type(row) ~= 'table' then return out end
   for _, m in ipairs(row.comp or {}) do
-    out[#out + 1] = { role = m.r, filled = true, name = m.n, level = m.lv, voc = m.vn, st = m.st }
+    out[#out + 1] = { role = m.r, filled = true, name = m.n, level = m.lv, voc = m.vn, st = m.st, mt = m.mt }
   end
   for _, r in ipairs(V.ROLE_ORDER) do
     for _ = 1, num(row.open and row.open[r]) do
@@ -98,6 +98,7 @@ function V.compTooltip(row)
       local mark = ''
       if s.st == 'leader' then mark = ' - leader'
       elseif s.st == 'invited' then mark = ' - invited' end
+      if V.mentorTag(s.mt) then mark = mark .. ' - ' .. V.mentorTag(s.mt) end
       lines[#lines + 1] = string.format('%s, level %d %s (%s)%s', tostring(s.name or '?'), num(s.level),
         tostring(s.voc or ''), V.roleName(s.role), mark)
     else
@@ -151,9 +152,14 @@ function V.filter(rows, f, level)
   return out
 end
 
+-- the mentor tag of a character (server mentor.lua ChaosMentor.tagOf): "mentor" / "seeking"
+V.MENTOR_TAG = { mentor = 'Mentoring', seeking = 'Looking for mentor' }
+function V.mentorTag(mt) return V.MENTOR_TAG[mt or ''] end
+
 -- the sub line of a row: "Brannoc - Lv 300+ - 52m left"
 function V.subLine(row, elapsed)
   local parts = { tostring(row.ld or '?') }
+  if V.mentorTag(row.mt) then parts[#parts + 1] = V.mentorTag(row.mt) end
   if num(row.ml) > 1 then parts[#parts + 1] = string.format('Lv %d+', num(row.ml)) end
   parts[#parts + 1] = V.timeLeft(num(row.left) - num(elapsed)) .. ' left'
   if row.season then parts[#parts + 1] = 'Season' end
@@ -239,5 +245,6 @@ end
 
 -- the applicant line: "Seris  Lv 350 Illusionist"
 function V.applicantLine(app)
-  return string.format('%s  Lv %d %s', tostring(app.n or '?'), num(app.lv), tostring(app.vn or ''))
+  local tag = V.mentorTag(app.mt)
+  return string.format('%s  Lv %d %s', tostring(app.n or '?'), num(app.lv), tostring(app.vn or '')) .. (tag and ('  (' .. tag .. ')') or '')
 end

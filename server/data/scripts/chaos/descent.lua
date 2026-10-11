@@ -1073,6 +1073,14 @@ local function rewardPlayer(run, pe, cleared, player)
 					MESSAGE_EVENT_ADVANCE)
 			end
 		end
+		-- item sets (itemsets.lua): the Descent set's chase roll by the depth reached
+		if ChaosItemSets and ChaosItemSets.grantChase then
+			local piece = ChaosItemSets.grantChase(player, "descent", nil, {depth = depth, cleared = cleared and true or nil})
+			if piece then
+				lines[#lines + 1] = piece
+				items[#items + 1] = {name = piece, count = 1, unique = true}
+			end
+		end
 	end
 	-- the record: best depth, full clears, the weekly board, titles
 	local row = X.rowOf(pe.guid)
@@ -1093,6 +1101,14 @@ local function rewardPlayer(run, pe, cleared, player)
 		end
 	end
 	saveRow(pe.guid)
+	if ChaosSeasonJourney and ChaosSeasonJourney.emit then -- Seasonal Journey (season_journey.lua)
+		local who = player or {guid = pe.guid, name = pe.name}
+		ChaosSeasonJourney.emit(who, "descent_runs", 1)
+		ChaosSeasonJourney.emit(who, "descent_depth", depth, "max")
+		if cleared then
+			ChaosSeasonJourney.emit(who, "descent_clears", 1)
+		end
+	end
 	local after = DC.titles(cfg, row.best, row.bestClear == 1)
 	local newTitle
 	if #after > #before then

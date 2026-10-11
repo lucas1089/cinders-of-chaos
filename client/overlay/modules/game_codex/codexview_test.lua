@@ -100,7 +100,7 @@ eq(cols[1] >= 1 and cols[2] >= 1 and cols[3] >= 1, true, 'never below one pixel'
 dofile(here .. '/codex_data.lua')
 local D = CodexData
 eq(type(D), 'table', 'codex data loads')
-eq(#D.tabs, 8, 'eight tabs')
+eq(#D.tabs, 9, 'nine tabs')
 local total = 0
 for _, t in ipairs(D.tabs) do
   total = total + #t.entries

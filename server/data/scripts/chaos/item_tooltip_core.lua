@@ -16,7 +16,7 @@
 --                                                  the limit of that side when an Orb of Ruin gave it an extra slot)
 --   quality = {q, cap}                             item quality in percent (every modifier value is multiplied by it)
 --   ruined                                         true on an item an Orb of Ruin ruined: no orb changes it any more
---   unique = {name, set = {name, have, total}}    uniques only
+--   unique = {name, set = {key, name, have, total, pieces, bonuses}}  uniques only; set: a set piece (T.setInfo)
 --   base = [{k, l, v, fmt}]                        attack, defense, armour, hit chance, range, attack speed, element,
 --                                                  the item type's own bonuses (skills, protections, speed, ...)
 --   mods = [{k, l, t, v, g, lo, hi, l2, v2, tr, sd, bd, pw}]  every modifier, prefixes first: attribute key, label,
@@ -268,30 +268,30 @@ end
 -- ---------------------------------------------------------------------------------------------------------------
 -- the tooltip
 -- ---------------------------------------------------------------------------------------------------------------
--- set info of a unique: {name, have, total}; equippedIds = {[server id] = true} of the player's equipped items
-function T.setInfo(itemId, equippedIds)
-	if type(ChaosSets) ~= "table" then
+-- set info of a set piece (data/lib/chaos_item_sets.lua S.tooltip): {key, name, have, total, pieces = [{n, eq, lv, low,
+-- h}], bonuses = [{n, t, on}]} for the viewer. opts.setState = the viewer's counted sets (ChaosItemSets.stateOf);
+-- without it opts.equippedIds = {[server id] = true} counts the pieces worn (every level). nil for other items.
+function T.setInfo(item, opts)
+	local S = ChaosItemSets
+	if type(S) ~= "table" or not S.pieceOf then
 		return nil
 	end
-	for _, set in pairs(ChaosSets) do
-		local member = false
-		for _, id in ipairs(set.pieces or {}) do
-			if id == itemId then
-				member = true
-				break
-			end
-		end
-		if member then
-			local have = 0
-			for _, id in ipairs(set.pieces) do
-				if equippedIds and equippedIds[id] then
-					have = have + 1
-				end
-			end
-			return {name = set.name, have = have, total = #set.pieces}
-		end
+	local set = S.pieceOf(item)
+	if not set then
+		return nil
 	end
-	return nil
+	opts = opts or {}
+	local state = opts.setState
+	if not state and opts.equippedIds then
+		local entries = {}
+		for _, p in ipairs(set.pieces) do
+			if opts.equippedIds[p.id] then
+				entries[#entries + 1] = {id = p.id, set = set.key}
+			end
+		end
+		state = S.count(entries, math.huge)
+	end
+	return S.tooltip(set.key, state)
 end
 
 local function clip(s, n)
@@ -344,7 +344,7 @@ function T.build(item, opts)
 	local unique = C and C.isUnique(item) or false
 	local uniqueEntry = ChaosUniqueById and ChaosUniqueById[id] or nil
 	if unique then
-		tip.unique = {name = tip.name, set = T.setInfo(id, opts.equippedIds)}
+		tip.unique = {name = tip.name, set = T.setInfo(item, opts)}
 	end
 
 	tip.base = T.baseStats(item, it)

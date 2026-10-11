@@ -1,5 +1,5 @@
 -- Regenerates client/overlay/modules/game_codex/codex_data.lua (the in-client Codex: modifiers, legendary powers, orbs
--- and currency, gems, uniques, rift modifiers, spell supports and the item basics) from the real server data files.
+-- and currency, gems, uniques, item sets, rift modifiers, spell supports and the item basics) from the real server data files.
 -- Run from the server/ folder (the libraries dofile() their neighbours relative to it):
 --   luajit tools/gen_codex_data.lua            write the client file
 --   luajit tools/gen_codex_data.lua --check    exit 1 when the client file differs from what the data gives (CI)
@@ -21,7 +21,7 @@ Gen.SOURCES = {
 	"data/lib/chaos_supports.lua", "data/lib/chaos_supports_config.lua", "data/scripts/chaos/loot_config.lua",
 	"data/scripts/chaos/salvage_config.lua", "data/scripts/chaos/shop_config.lua", "data/scripts/chaos/bounty_config.lua",
 	"data/scripts/chaos/rift_config.lua", "data/scripts/chaos/rift_core.lua", "data/scripts/chaos/chaos_constants.lua",
-	"data/scripts/chaos/uber_config.lua"
+	"data/scripts/chaos/uber_config.lua", "data/lib/chaos_item_sets.lua", "data/lib/chaos_item_sets_config.lua"
 }
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -274,7 +274,7 @@ function Gen.load()
 	D.uber = dofile("data/scripts/chaos/uber_config.lua") -- the Ascended Omens and the Cinderheart (uber.lua)
 	D.uniques = ChaosUniqueItems
 	D.specs = ChaosUniqueSpecs
-	D.sets = ChaosSets
+	D.itemSets = ChaosItemSets -- data/lib/chaos_item_sets.lua (loaded by chaos_unique_items.lua)
 	D.worldBoss = Chaos and Chaos.worldBoss
 	return D
 end
@@ -1047,9 +1047,9 @@ function Gen.uniqueEntries(D)
 		worldBosses[b.name] = true
 	end
 	local setOf = {}
-	for _, set in pairs(D.sets or {}) do
-		for _, id in ipairs(set.pieces or {}) do
-			setOf[id] = set.name
+	for _, set in ipairs(D.itemSets and D.itemSets.sets or {}) do
+		for _, p in ipairs(set.pieces) do
+			setOf[p.id] = set.name
 		end
 	end
 	local out = {}
@@ -1095,13 +1095,14 @@ function Gen.uniqueEntries(D)
 			sources[#sources + 1] = {"Omen guardian chest", string.format("%d unique rolls at the boss tier over every unique, x%s find.",
 				D.rift.omen.reward.uniqueRolls, Gen.num(D.rift.omen.reward.uniqueFind))}
 		end
-		local rules = {"A unique keeps its stats: no orb changes it and it is never salvaged.",
+		local rules = {setOf[u.id] and string.format("A unique keeps its stats: no orb changes it. As a set piece it salvages for %d rune shards.",
+				D.salvage.setPieceShards or 0) or "A unique keeps its stats: no orb changes it and it is never salvaged.",
 			string.format("%d socket, fixed (gems may be socketed and taken out).", D.G.config.uniqueSockets)}
 		if u.season then
 			rules[#rules + 1] = string.format("Season unique: during season %d it drops only for that season's characters, afterwards for everyone.", u.season)
 		end
 		if setOf[u.id] then
-			rules[#rules + 1] = "Part of the set " .. setOf[u.id] .. " (set bonuses are not in the game yet)."
+			rules[#rules + 1] = "Part of the set " .. setOf[u.id] .. ": its bonuses are on the Sets tab."
 		end
 		local kind = SLOT_KIND[u.slot] or "other"
 		local p = {}
@@ -1117,6 +1118,88 @@ function Gen.uniqueEntries(D)
 				{h = "Stats", p = statLines},
 				{h = "Item", cols = {"", ""}, w = {35, 65}, rows = {{"Slot", SLOT_NAME[u.slot] or u.slot}, {"Required level", Gen.num(u.level)},
 					{"Drops from", TIER_NAME[u.minTier] .. (u.bossOnly and " (bosses only)" or " monsters and stronger")}}},
+				{h = "Sources", cols = {"Source", "How"}, w = {28, 72}, rows = sources},
+				{h = "Rules", p = rules}
+			}}
+	end
+	return sortByName(out)
+end
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- item sets (data/lib/chaos_item_sets.lua)
+-- ---------------------------------------------------------------------------------------------------------------
+local FAMILY_NAME = {melee = "Melee", ranged = "Ranged", caster = "Caster", support = "Healer / support", hybrid = "Hybrid"}
+local PIECE_SLOT = {head = "Helmet", body = "Body armour", legs = "Legs", feet = "Boots", necklace = "Amulet", ring = "Ring",
+	shield = "Shield", weapon = "Weapon"}
+
+function Gen.setEntries(D)
+	local S = D.itemSets
+	local out = {}
+	if not S then
+		return out
+	end
+	local c = S.config.chase
+	local uniqueIds = {}
+	for _, u in ipairs(D.uniques) do
+		uniqueIds[u.id] = true
+	end
+	for _, set in ipairs(S.sets) do
+		local rows, links = {}, {}
+		for _, p in ipairs(set.pieces) do
+			rows[#rows + 1] = {p.name, (PIECE_SLOT[p.slot] or p.slot) .. (p.hands > 1 and " (two-handed: 2 pieces)" or ""),
+				Gen.num(p.level)}
+			links[#links + 1] = uniqueIds[p.id] and ("unique:" .. p.id) or ""
+		end
+		local bonusRows = {}
+		for _, b in ipairs(set.bonuses) do
+			bonusRows[#bonusRows + 1] = {Gen.num(b.n) .. " pieces", S.bonusText(b)}
+		end
+		local sources, src = {}, set.sources or {}
+		if src.uniques then
+			local u = src.uniques
+			sources[#sources + 1] = {u.bossOnly and "World bosses" or "Monsters", table.concat(u.monsters or {}, ", ") ..
+				string.format(": %s per kill and piece (x item find)%s.", Gen.per10k(math.min(D.loot.unique.maxChance,
+					u.chance * (D.loot.unique.tierMult[u.minTier] or 0))), u.bossOnly
+					and ", and the bosses' participation reward rolls them with the other boss uniques" or
+					(" from " .. TIER_NAME[u.minTier]:lower() .. " monsters, " .. Gen.per10k(math.min(D.loot.unique.maxChance,
+					u.chance * (D.loot.unique.tierMult.boss or 0))) .. " as bosses"))}
+		elseif set.key == "embers" then
+			sources[#sources + 1] = {"Monsters", "Each piece drops as the unique it always was: see its Uniques page."}
+		end
+		if src.rift then
+			sources[#sources + 1] = {"Rift chest", string.format("%s rifts from key tier %d: %s per finisher's chest, +%s per tier above, at most %s.",
+				src.rift.theme, src.rift.minTier, Gen.per10k(c.rift.base), Gen.per10k(c.rift.perTier), Gen.per10k(c.rift.max))}
+		end
+		if src.raid then
+			sources[#sources + 1] = {"Ashen Sepulchre", string.format("Spoils of %s: %s per boss loot, %s from the final boss.",
+				table.concat(src.raid, ", "), Gen.per10k(c.raid.boss), Gen.per10k(c.raid.final))}
+		end
+		if src.descent then
+			sources[#sources + 1] = {"Ember Descent", string.format("Leaving from depth %d: %s, +%s per deeper room, +%s on a full clear, at most %s.",
+				src.descent.minDepth, Gen.per10k(c.descent.base), Gen.per10k(c.descent.perDepth), Gen.per10k(c.descent.clear),
+				Gen.per10k(c.descent.max))}
+		end
+		if src.dungeon then
+			sources[#sources + 1] = {"Dungeons", string.format("Every clear: %s, +%s per difficulty step, at most %s.",
+				Gen.per10k(c.dungeon.base), Gen.per10k(c.dungeon.perDifficulty), Gen.per10k(c.dungeon.max))}
+		end
+		if src.rift or src.raid or src.descent or src.dungeon then
+			sources[#sources + 1] = {"Who", string.format("Characters of level %d or more (the set's level - %d); item find raises the chances.",
+				math.max(1, set.level - c.levelBelow), c.levelBelow)}
+		end
+		local rules = {"A piece counts when it is worn in its slot and you have its level; the same piece twice counts once.",
+			"A two-handed weapon counts as two pieces.",
+			"Number bonuses add to your gear's modifiers under the same caps; a set never lifts a cap.",
+			string.format("Pieces are uniques: no orb changes them, they keep one socket; salvage gives %d rune shards; a transmog look keeps the bonus.",
+				D.salvage.setPieceShards or 0)}
+		out[#out + 1] = {id = "set:" .. set.key, name = set.name, color = "#58c878",
+			sub = string.format("%s, level %d, %d pieces. %s.", FAMILY_NAME[set.family] or set.family, set.level, set.total,
+				set.classes),
+			f = {family = set.family, level = set.level},
+			sections = {
+				{h = "Description", p = {set.lore}},
+				{h = "Pieces", cols = {"Piece", "Slot", "Level"}, w = {40, 45, 15}, rows = rows, links = links},
+				{h = "Bonuses", cols = {"Worn", "Bonus"}, w = {18, 82}, rows = bonusRows},
 				{h = "Sources", cols = {"Source", "How"}, w = {28, 72}, rows = sources},
 				{h = "Rules", p = rules}
 			}}
@@ -1460,6 +1543,10 @@ function Gen.build(D)
 	for _, lv in ipairs({50, 70, 90, 110, 130, 150}) do
 		uniqueLevels[#uniqueLevels + 1] = {Gen.num(lv), "Level " .. lv .. " or lower"}
 	end
+	local setLevels = {{"", "Any level"}}
+	for _, lv in ipairs({100, 200, 300, 400, 800}) do
+		setLevels[#setLevels + 1] = {Gen.num(lv), "Level " .. lv .. " or lower"}
+	end
 	local riftTiers = {{"", "Any key tier"}}
 	for t = 1, 4 do
 		riftTiers[#riftTiers + 1] = {Gen.num(t), "Key tier " .. t .. (t == 4 and "+" or "")}
@@ -1487,6 +1574,10 @@ function Gen.build(D)
 			{key = "level", label = "Level", match = "max", options = uniqueLevels},
 			{key = "source", label = "Source", match = "eq", options = {{"", "Any source"}, {"monster", "Monsters"},
 				{"boss", "Bosses only"}}}}},
+		{id = "sets", name = "Sets", entries = Gen.setEntries(D), filters = {
+			{key = "family", label = "Family", match = "eq", options = {{"", "Any family"}, {"melee", "Melee"},
+				{"ranged", "Ranged"}, {"caster", "Caster"}, {"support", "Healer / support"}, {"hybrid", "Hybrid"}}},
+			{key = "level", label = "Level", match = "max", options = setLevels}}},
 		{id = "rift", name = "Rift", entries = Gen.riftEntries(D), filters = {
 			{key = "group", label = "Group", match = "eq", options = {{"", "Everything"}, {"mod", "Map modifiers"},
 				{"boon", "Boons"}, {"key", "Keys, tiers, omens"}}},

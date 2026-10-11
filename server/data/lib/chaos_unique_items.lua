@@ -162,6 +162,9 @@ function ChaosMakeUnique(item)
 		item:setCustomAttribute(key, value)
 	end
 	item:setCustomAttribute("chaos_unique", 1)
+	if spec.set then
+		item:setCustomAttribute("chaos_set", spec.set) -- a set piece (chaos_item_sets.lua)
+	end
 	return true
 end
 
@@ -187,18 +190,11 @@ function ChaosGiveUnique(player, name)
 end
 
 -- ---------------------------------------------------------------------------
--- ChaosSets: DOCUMENTATION ONLY. Nothing reads this table yet; set bonuses are NOT implemented.
--- To implement: an onEquip/onDeEquip MoveEvent for each piece (or a creaturescript on equip change) that counts equipped
--- pieces and applies the bonus as a Condition (CONDITION_ATTRIBUTES: stats, absorbs) or a storage-driven bonus.
+-- Item sets: data/lib/chaos_item_sets.lua (the sets, bonuses and sources: chaos_item_sets_config.lua; the game side:
+-- data/scripts/chaos/itemsets.lua). Every set piece is a unique; the pieces with monster or world boss drops are
+-- added to ChaosUniqueItems here (set = key), the raid, Descent, rift and dungeon pieces drop through their own rolls.
+-- ChaosSets[key] = the set ({key, name, pieces = [{id, name, slot, hands, level}], bonuses, sources, ...}).
 -- ---------------------------------------------------------------------------
-ChaosSets = {
-	embers = {
-		name = "Embers of Aranoth",
-		pieces = {2496, 8892, 27692, 27647, 3975, 10314}, -- Hornsworn Helm, Cindermail Coat, Emberveil Greaves, Bloodstep Boots, Emberwarden, Cinderclaw Band
-		bonuses = { -- pieces equipped -> bonus (NOT implemented)
-			[2] = "+4% fire absorb",
-			[4] = "+5 magic level, +10% fire absorb",
-			[6] = "+10% max HP, melee hits burn target (fire DoT)",
-		},
-	},
-}
+dofile("data/lib/chaos_item_sets.lua")
+ChaosItemSets.register(ChaosUniqueItems, ChaosUniqueByName, ChaosUniqueById)
+ChaosSets = ChaosItemSets.byKey

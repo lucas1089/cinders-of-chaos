@@ -10,6 +10,8 @@
 --   client -> server  open | join {confirm, mode} | beat (a Hardcore character's heartbeat, mine.heartbeat seconds) |
 --                     sync (after the game starts: the server answers a Hardcore character with its state)
 -- The pure parts of the dialog and the modes: seasonjoin.lua (SeasonJoin, seasonjoin_test.lua).
+-- The Journey tab (Seasonal Journey, server season_journey.lua): journey.lua and journeyview.lua; its actions
+-- journey / journeyChapter / journeyDone arrive on this opcode and go to SeasonJourneyTab.onMessage.
 -- The top menu (Adventure > Season) calls toggle().
 
 local OPCODE = 246
@@ -22,6 +24,9 @@ local confirmBox
 local joinWindow    -- the join dialog (seasonjoin.otui)
 local joinChoices, joinChoice, joinAcked, modeButtons = {}, nil, false, {}
 local beatEvent, beatSeconds
+local currentTab = 'season'
+local OVERVIEW_IDS = { 'nameLabel', 'modifierLabel', 'minePanel', 'trackTitle', 'listFrame', 'trackList', 'listScroll',
+  'emptyText', 'titlesLabel', 'hintLabel' }
 
 local function send(action, data)
   local protocol = g_game.getProtocolGame()
@@ -75,7 +80,7 @@ local function showState()
   local s = type(state.season) == 'table' and state.season or nil
   local mine = type(state.mine) == 'table' and state.mine or {}
   window.trackList:destroyChildren()
-  window.emptyText:setVisible(s == nil)
+  window.emptyText:setVisible(s == nil and currentTab == 'season')
   if not s then
     window.nameLabel:setText(tr('Seasons'))
     window.modifierLabel:setText('')
@@ -234,12 +239,33 @@ local function onExtendedOpcode(protocol, opcode, buffer)
     stateAt = g_clock.seconds()
     showState()
     if data.open then show() end
+  elseif type(msg.action) == 'string' and msg.action:sub(1, 7) == 'journey' then
+    SeasonJourneyTab.onMessage(msg.action, data)
   elseif msg.action == 'confirm' then
     onConfirm(data)
   elseif msg.action == 'notice' then
     if window and window:isVisible() and data.text then
       window.minePanel.mineLabel:setText(tostring(data.text))
     end
+  end
+end
+
+-- ---------------------------------------------------------------- tabs: Season | Journey
+function showTab(name)
+  if not window then return end
+  currentTab = name == 'journey' and 'journey' or 'season'
+  local journey = currentTab == 'journey'
+  window.overviewTab:setChecked(not journey)
+  window.journeyTab:setChecked(journey)
+  for _, id in ipairs(OVERVIEW_IDS) do
+    local w = window:getChildById(id)
+    if w then w:setVisible(not journey) end
+  end
+  if journey then
+    SeasonJourneyTab.open()
+  else
+    SeasonJourneyTab.close()
+    showState()
   end
 end
 
@@ -257,6 +283,7 @@ function show()
 end
 
 function hide()
+  SeasonJourneyTab.close()
   if window then window:hide() end
   if tickEvent then removeEvent(tickEvent) tickEvent = nil end
   closeJoin()
@@ -275,6 +302,7 @@ local function onGameEnd()
   hide()
   stopBeat()
   state = nil
+  SeasonJourneyTab.reset()
 end
 
 -- the state (and with it the Hardcore heartbeat) also after a reconnect, which brings no login state from the server
@@ -285,6 +313,8 @@ end
 function init()
   window = g_ui.displayUI('season')
   window:hide()
+  SeasonJourneyTab.setup(window)
+  window.overviewTab:setChecked(true)
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
   connect(g_game, { onGameEnd = onGameEnd, onGameStart = onGameStart })
 end
@@ -294,6 +324,7 @@ function terminate()
   ProtocolGame.unregisterExtendedOpcode(OPCODE)
   hide()
   stopBeat()
+  SeasonJourneyTab.terminate()
   if window then
     window:destroy()
     window = nil

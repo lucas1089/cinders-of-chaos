@@ -117,6 +117,15 @@ local NOTIFICATION_TYPES = {
         borderColor = "#7a3a12",
         duration = 9000,
     },
+    -- Seasonal Journey (server data/scripts/chaos/season_journey.lua): an objective done, a chapter complete
+    JOURNEY = {
+        icon = "images/notifications/task.png",
+        title = "SEASONAL JOURNEY",
+        titleColor = "#ff9a3c",
+        backgroundColor = "#ccbebb",
+        borderColor = "#7a3a12",
+        duration = 8000,
+    },
     -- boss passive points (server data/scripts/chaos/bosspoints.lua): first kill of a major boss, +1 passive point
     BOSS_POINT = {
         icon = "images/notifications/task.png",
@@ -1162,6 +1171,13 @@ function onExtendedOpcode(protocol, opcode, buffer)
         seasonpass = function(data)
             if data.message then
                 addNotification("SEASON_PASS", data.message)
+            end
+        end,
+
+        -- Seasonal Journey (server data/scripts/chaos/season_journey.lua)
+        journey = function(data)
+            if data.message then
+                addNotification("JOURNEY", data.message)
             end
         end,
 

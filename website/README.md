@@ -30,6 +30,10 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `tests/chaos_reports_page_test.php` | `php website/tests/chaos_reports_page_test.php`: the reports page (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/community_lib.php`, `pages/community.php` | the community goal and the week's world modifiers (read only, from the game's `chaos_community_*` tables): a block on the front page and `page.php?plugin=chaos&p=community` (menu The World > Community) |
 | `tests/chaos_community_page_test.php` | `php website/tests/chaos_community_page_test.php`: the block and the page (php-cli with pdo_sqlite) |
+| `overlay/plugins/chaos/guildwar_lib.php`, `pages/guildwars.php` | the guild wars declared in game (read only, from the game's `chaos_guildwar` / `chaos_guildwar_kills`): `page.php?plugin=chaos&p=guildwars` (menu The World > Guild Wars): the running wars (score, terms, time left) and the latest ended ones (winner, gold won, end reason, kills the anti-farming rules did not count); see server/README.md "Guild wars in game" |
+| `tests/chaos_guildwars_page_test.php` | `php website/tests/chaos_guildwars_page_test.php`: the wars page (php-cli with pdo_sqlite) |
+| `overlay/plugins/chaos/mentor_lib.php`, `pages/mentors.php` | the mentors who opted in (card, class, graduates, free places) and the totals, read only from the game's `chaos_mentor*` tables: `page.php?plugin=chaos&p=mentors` (menu The World > Mentors; see "Mentors") |
+| `tests/chaos_mentors_page_test.php` | `php website/tests/chaos_mentors_page_test.php`: the Mentors page (php-cli with pdo_sqlite) |
 | `tools/recolor_layout.py` | turns Void's stylesheets into ours at install time |
 | `tools/gen_site_art.py` | draws the site art and the promotion material |
 | `art/` | promotion material: banners, social image, Discord banner and icon, class showcase, features infographic |
@@ -67,7 +71,7 @@ What it does, in order:
 5. **The database**, with `setup/chaos_setup.php`: ZnoteX's `znote_*` tables (`CREATE TABLE IF NOT EXISTS`, seed rows
    only into empty tables), every pending ZnoteX migration (recorded with its checksum), our plugin installed and
    enabled (its `install.sql` creates `chaos_class_unlocks` if the server has not yet), the layout switched on, the
-   menu entries "The World" (Server Info, Patch Notes, Leaderboards, Seasons, Rules, Community) and "Donate" (the donation page
+   menu entries "The World" (Server Info, Patch Notes, Leaderboards, Seasons, Rules, Community, Guild Wars) and "Donate" (the donation page
    `page.php?plugin=chaos&p=coins`) and the Rules page added once.
    Menu entries and the Rules page are never overwritten, so the owner's edits in the admin panel stay.
 
@@ -352,6 +356,16 @@ location ^~ /updates/ {
 ```
 
 `install_site.sh` copies `overlay/updates/.htaccess` and never touches `updates/live/`.
+
+## Mentors
+
+`page.php?plugin=chaos&p=mentors` (menu The World > Mentors, added by `setup/chaos_setup.php`) lists the mentor
+characters of the game's mentor system (server/README.md "Mentors"): only those that are mentors now and chose
+"Show on website" on their mentor card, never a staff character or a banned account. Per mentor: name and level,
+class, the language / region and hours text, the note, graduates and free places. Above the list: how many mentors
+there are, how many apprentices learn now and how many graduated. The page only reads `chaos_mentors` and
+`chaos_mentor_links`; without them it says that no mentor is listed yet. The numbers in the page's text
+(`chaos_mentor_rules()`) are checked against `server/data/scripts/chaos/mentor_config.lua` by the test.
 
 ## Not done / for later
 

@@ -10,12 +10,12 @@ local V = ChaosInfoView
 
 V.PAGES = {
   { id = 'character', title = 'Character Info',
-    text = 'Your classes, ascension, double experience and position. The buttons show more.',
-    auto = { 'classes', 'ascension', 'exp', 'pos' },
+    text = 'Your classes, ascension, double experience, position and the item sets you wear. The buttons show more.',
+    auto = { 'classes', 'ascension', 'exp', 'pos', 'sets' },
     rows = {
       { buttons = { { text = 'Resistances', id = 'resis' }, { text = 'Kills', id = 'kills' },
                     { text = 'Deaths', id = 'deathlist' }, { text = 'Ancestral Tasks', id = 'ancestral' },
-                    { text = 'Card Deck', id = 'deck' } } },
+                    { text = 'Card Deck', id = 'deck' }, { text = 'Item Sets', id = 'sets' } } },
     } },
   { id = 'services', title = 'Services',
     text = 'Store tokens (name and vocation change), the free class switch, familiars, the tutorial and web shop items.',

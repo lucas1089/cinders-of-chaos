@@ -100,6 +100,9 @@ local function fillOverview(d)
   end
   text(tr('Deposits come from your carried gold, then your bank balance (at least %s). Withdrawals go to the leader\'s bank balance.',
     GuildMath.money(g.minDeposit)), '#8c8070')
+  if modules.game_guildwar then -- wars and the weekly guild boss have their own window (game_guildwar, opcode 197)
+    buttonRow(tr('Guild wars and the weekly guild boss'), tr('Open'), true, function() modules.game_guildwar.openTab('wars') end)
+  end
   section(tr('Guild log'))
   local log = list(d.log)
   if #log == 0 then text(tr('Nothing yet.'), '#8c8070') end

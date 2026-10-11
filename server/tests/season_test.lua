@@ -265,6 +265,7 @@ local CATEGORY = {
 	["Outfit Shaders"] = true, ["Name Plates"] = true, ["Portal Styles"] = true, ["Bundles"] = true, ["Classes"] = true,
 	["Chaos Pact"] = true, ["Storage & Slots"] = true, ["Season Pass"] = true, ["Premium Time"] = true,
 	["Spell Effects"] = true, ["Kill Effects"] = true, ["Loot Labels"] = true, ["Chat Colours"] = true, ["Appearances"] = true,
+	["Hideout Decorations"] = true, -- hideout_store.lua: looks only
 	["Starter"] = false, ["Crafting"] = false, ["Supplies"] = false, ["Boosts"] = false, ["World Buffs"] = false,
 	["Convenience"] = false, ["Training"] = false, ["Pets"] = false, ["Services"] = "mixed"
 }

@@ -268,6 +268,10 @@ return {
 		dofile("data/scripts/chaos/cosmetics_store.lua")("lootbeam"),
 		dofile("data/scripts/chaos/cosmetics_store.lua")("chatcolor"),
 		-- <<< Cosmetics
+		-- >>> Hideouts (hideout.lua): decorations for the character's hideout; offers, prices and texts live in
+		-- hideout_config.lua (hideout_store.lua builds the category). Cosmetic only, account-wide, giftable.
+		dofile("data/scripts/chaos/hideout_store.lua")(),
+		-- <<< Hideouts
 		{
 			-- transmog appearance sets (transmog.lua, transmog_config.lua sets with source "store"): account-wide, appearance
 			-- only; names and prices must match the sets (ChaosTransmogCore.validate)

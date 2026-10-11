@@ -2,7 +2,8 @@
 -- asked from the server, the lines a tooltip shows and the differences of the Ctrl compare view.
 -- The tooltip itself comes from the server (extended opcode 242, server/data/scripts/chaos/item_tooltip_core.lua):
 --   {key, id, name, count, kind, slot, rarity, rarityName, level, maxTier, sides = {p, s, max},
---    unique = {name, set = {name, have, total}}, base = [{k, l, v, fmt}],
+--    unique = {name, set = {key, name, have, total, pieces = [{n, eq, low, lv, h}], bonuses = [{n, t, on}]}},
+--    base = [{k, l, v, fmt}],
 --    quality = {q, cap} (item quality in percent), ruined (an Orb of Ruin ruined it),
 --    mods = [{k, l, t, v, g, lo, hi, tr, sd, bd, pw}] (prefixes first; tr = tier 1..8, sd = 'p' / 's', bd = bound,
 --    pw = a legendary power),
@@ -20,7 +21,9 @@ L.WRAP = 44 -- characters per line of the flavour text
 L.COLORS = {
   text = '#d6c9ae', dim = '#8c8070', gold = '#e8b84a', mod = '#9ab8ff', chaos = '#e080d0', element = '#ffa060',
   gem = '#c8e8ff', empty = '#6b6258', power = '#ff9a3c', bound = '#e8b84a', quality = '#7fe0a0', better = '#5ccf5c', worse = '#e03a1e', unique = '#e07b24', red = '#e03a1e',
-  normal = '#e4d8c0'
+  normal = '#e4d8c0',
+  -- item sets: the title of a piece, the pieces worn and the bonuses active (dim when not)
+  set = '#58c878', setOn = '#7fe0a0', setLow = '#c0805a'
 }
 -- modifier tiers T1 (lowest) .. T8 (highest)
 L.TIER_COLORS = { '#8c8070', '#a89c88', '#c8c8c8', '#5ccf5c', '#4a90ff', '#a35cf0', '#ffd040', '#ff8a40' }
@@ -142,6 +145,7 @@ function L.tierColor(t)
 end
 
 function L.titleColor(tip)
+  if tip.unique and tip.unique.set then return L.COLORS.set end
   if tip.unique then return L.COLORS.unique end
   return L.rarityColor(tip.rarity) or L.COLORS.normal
 end
@@ -156,7 +160,9 @@ function L.lines(tip, ctx)
     out[#out + 1] = { text = text, color = color or C.text, sep = sep or false, parts = parts }
   end
   local sub = {}
-  if tip.unique then
+  if tip.unique and tip.unique.set then
+    sub[#sub + 1] = 'Set'
+  elseif tip.unique then
     sub[#sub + 1] = 'Unique'
   elseif tip.rarityName then
     sub[#sub + 1] = tip.rarityName
@@ -237,8 +243,9 @@ function L.lines(tip, ctx)
   end
 
   if tip.unique and tip.unique.set then
-    local set = tip.unique.set
-    add(string.format('Set: %s (%d/%d)', set.name, set.have or 0, set.total or 0), C.unique, true)
+    for _, row in ipairs(L.setLines(tip.unique.set)) do
+      add(row.text, row.color, row.sep)
+    end
   end
 
   local req = tip.req
@@ -277,6 +284,57 @@ function L.lines(tip, ctx)
     add(string.format('Weight %s oz', trim(tip.weight)), C.dim, not tip.locked and not tip.store)
   end
   return out
+end
+
+-- the set block of a set piece (server data/lib/chaos_item_sets.lua S.tooltip): the set and how many of its pieces
+-- count now, every piece (worn: bright; worn below its level: rust with the level; not worn: dim), every bonus
+-- (active: bright, else dim) with its text wrapped. Rows {text, color, sep}; a server without the lists sends only the
+-- name and the counts, which gives the header alone.
+function L.setLines(set)
+  local C = L.COLORS
+  local out = {}
+  if type(set) ~= 'table' then return out end
+  out[#out + 1] = { text = string.format('Set: %s (%d/%d)', tostring(set.name or '?'), tonumber(set.have) or 0,
+    tonumber(set.total) or 0), color = C.set, sep = true }
+  for _, p in ipairs(type(set.pieces) == 'table' and set.pieces or {}) do
+    local text = '  ' .. tostring(p.n or '?')
+    if (tonumber(p.h) or 1) > 1 then text = text .. string.format(' (counts %d)', p.h) end
+    local color = C.empty
+    if p.eq then
+      color = C.setOn
+    elseif p.low then
+      text = text .. string.format(' (level %d)', tonumber(p.lv) or 0)
+      color = C.setLow
+    end
+    out[#out + 1] = { text = text, color = color }
+  end
+  for i, b in ipairs(type(set.bonuses) == 'table' and set.bonuses or {}) do
+    local color = b.on and C.setOn or C.dim
+    for j, line in ipairs(L.wrap(string.format('(%d) %s', tonumber(b.n) or 0, tostring(b.t or '')), L.WRAP)) do
+      out[#out + 1] = { text = (j > 1 and '    ' or '') .. line, color = color, sep = i == 1 and j == 1 }
+    end
+  end
+  return out
+end
+
+-- a piece's tooltip says which pieces the player wears: forget every cached set piece when the equipment changes
+-- (the next hover asks again). Returns how many were dropped.
+function L.dropSetTips(cache)
+  local n = 0
+  for key, e in pairs(cache.entries) do
+    if type(e.tip) == 'table' and type(e.tip.unique) == 'table' and e.tip.unique.set then
+      cache.entries[key] = nil
+      n = n + 1
+    end
+  end
+  if n > 0 then
+    local order = {}
+    for _, key in ipairs(cache.order) do
+      if cache.entries[key] then order[#order + 1] = key end
+    end
+    cache.order = order
+  end
+  return n
 end
 
 -- ---------------------------------------------------------------- compare

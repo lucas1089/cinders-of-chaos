@@ -12,7 +12,8 @@ are unique.
 | --- | --- |
 | `data/items/chaos_items.xml` | source data for the 48 uniques (base id, name, description, stats); not installed into items.xml |
 | `data/lib/chaos_unique_specs.lua` | generated from the XML by `tools/gen_unique_specs.py`: what `ChaosMakeUnique` applies |
-| `data/lib/chaos_unique_items.lua` | `ChaosUniqueItems` (drop table for `loot.lua`), `ChaosMakeUnique`, `ChaosGiveUnique`, documented `ChaosSets` |
+| `data/lib/chaos_unique_items.lua` | `ChaosUniqueItems` (drop table for `loot.lua`), `ChaosMakeUnique`, `ChaosGiveUnique`; loads the item sets |
+| `data/lib/chaos_item_sets*.lua` | the item sets (server/README.md "Item sets"): a piece is a unique with `<attribute key="set">` in the XML |
 | `data/items/chaos_items_sheet.jpg` | contact sheet: sprite, name, slot, level, id, tier |
 
 How the stats are applied: attack, defense, extra defense, armor, hit chance and range as item attributes; skills, magic

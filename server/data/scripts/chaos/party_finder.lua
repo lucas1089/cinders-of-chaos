@@ -117,8 +117,14 @@ end
 
 local function plain(player)
 	local voc = player:getVocation()
-	return {guid = player:getGuid(), cid = player:getId(), name = player:getName(), level = player:getLevel(),
+	local w = {guid = player:getGuid(), cid = player:getId(), name = player:getName(), level = player:getLevel(),
 		voc = voc and voc:getId() or 0, vocName = voc and voc:getName() or ""}
+	-- the mentor tag of the character ("mentor" / "seeking"; mentor.lua), shown on listings and applications
+	if ChaosMentor and ChaosMentor.tagOf then
+		local ok, tag = pcall(ChaosMentor.tagOf, player)
+		w.mt = ok and tag or nil
+	end
+	return w
 end
 
 function PF.who(player)

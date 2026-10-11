@@ -794,7 +794,7 @@ function G.state(player, tab)
 			scroll = perks.scroll, scrollTaken = player:getStorageValue(cfg.storage.scrollDay) == Chaos.dayKey()},
 		perks = {now = perks, list = C.perkList(level, cfg)},
 		members = membersOf(gid),
-		log = G.logLines(gid, {"deposit", "withdraw", "hall", "upgrade", "rent", "refund", "level"}),
+		log = G.logLines(gid, {"deposit", "withdraw", "hall", "upgrade", "rent", "refund", "level", "war", "boss"}),
 		top = {rows = rows, resetIn = math.max(0, weekEnd - now()), lastWinner = lastWeek[1] and lastWeek[1].name or ""}
 	}
 	if G.hallView then

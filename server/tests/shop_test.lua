@@ -494,6 +494,9 @@ eq(buy(A, "aura:7", "Cara"), "Gift sent", "online gift"); ok(Cara.auras[7], "del
 eq(DB.purchases[#DB.purchases].giftPlayer, Cara.guid, "gift logged")
 eq(buy(A, "aura:7", "Cara"), "Not possible", "target owns it")
 eq(buy(A, "service:stamina", "Cara"), "Not possible", "services cannot be gifted")
+-- Hideouts: an unlock offer with gift = true (hideout_store.lua) may be gifted; other unlocks may not
+eq(buy(A, "unlock:hideout_gargoyle", "Cara"), "Gift sent", "a hideout decoration is giftable")
+eq(buy(A, "unlock:autoSeller", "Cara"), "Not possible", "other unlocks are not giftable")
 local Gm = newPlayer("Gamemaster", {group = 4})
 eq(buy(A, "aura:8", "Gamemaster"), "Not possible", "no gifts to staff")
 eq(buy(A, "aura:8", "Alice"), "Not possible", "not to yourself")

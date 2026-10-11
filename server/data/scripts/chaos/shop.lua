@@ -337,6 +337,11 @@ local function previewWith(field, value)
 end
 
 local function giftable(offer)
+	-- >>> Hideouts: an unlock offer opts in with gift = true (the hideout decorations, hideout_store.lua)
+	if offer.kind == "unlock" and offer.gift == true then
+		return true
+	end
+	-- <<< Hideouts
 	if offer.gift == false or not K.GIFTABLE[offer.kind] then
 		return false
 	end
@@ -719,6 +724,9 @@ local function buy(player, data)
 		end
 		target = giftTarget(player, giftName)
 		target.kind = giftable(offer) and offer.kind or "service"
+		if target.kind == "unlock" then
+			target.kind = nil -- Hideouts: an unlock that opted in with gift = true (giftable() checked it)
+		end
 		local problem = K.giftProblem(target)
 		if not problem and giftsToday(accountId) >= ((cfg.gifts or {}).perDay or 20) then
 			problem = "You sent as many gifts as you may today."

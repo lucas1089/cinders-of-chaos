@@ -6,7 +6,7 @@ ChaosCosmeticsCore = ChaosCosmeticsCore or {}
 local C = ChaosCosmeticsCore
 
 C.KINDS = {spellskin = true, killfx = true, lootbeam = true, chatcolor = true}
-C.SOURCES = {store = true, achievement = true}
+C.SOURCES = {store = true, achievement = true, pvp = true} -- pvp: battleground.lua / arena_season.lua grant it
 C.SWAP_TYPES = {"fx", "missile", "vfx", "vmissile"}
 C.UNLOCK_PREFIX = "cosmetic_"
 
@@ -231,6 +231,8 @@ end
 function C.how(c, achievementName)
 	if c.source == "store" then
 		return "Store: " .. tostring(c.price) .. " Chaos Coins"
+	elseif c.source == "pvp" then
+		return "PvP: " .. tostring(c.pvp or "battleground")
 	end
 	return "Achievement: " .. tostring(achievementName or c.achievement)
 end

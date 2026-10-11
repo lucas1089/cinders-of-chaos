@@ -81,7 +81,7 @@ local text = Gen.render(data)
 eq(text, Gen.render(Gen.build(D)), "byte-stable output"); count()
 local loaded = (loadstring or load)(text)()
 eq(type(loaded), "table", "the output loads"); count()
-eq(#loaded.tabs, 8, "eight tabs"); count()
+eq(#loaded.tabs, 9, "nine tabs"); count()
 
 local tabs, ids, entries = {}, {}, 0
 for _, tab in ipairs(loaded.tabs) do
@@ -115,6 +115,7 @@ eq(#tabs.modifiers.entries, nAffix, "every modifier"); count()
 eq(#tabs.powers.entries, nPower, "every power"); count()
 eq(#tabs.powers.entries, #D.P.defs, "powers = chaos_powers.lua"); count()
 eq(#tabs.uniques.entries, #D.uniques, "every unique"); count()
+eq(#tabs.sets.entries, #D.itemSets.sets, "every item set"); count()
 eq(#tabs.supports.entries, #D.S.config.supports, "every support"); count()
 eq(#tabs.gems.entries, #D.G.config.types + 1, "every gem type and the sockets page"); count()
 eq(#tabs.rift.entries, #D.rift.mods + 3, "every rift modifier, keys, tiers, omens"); count()

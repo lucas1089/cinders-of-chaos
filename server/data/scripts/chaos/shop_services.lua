@@ -350,6 +350,9 @@ local function unlockEntry(name)
 	if not u and ChaosCosmetics and ChaosCosmetics.storeUnlock then
 		u = ChaosCosmetics.storeUnlock(name) -- a cosmetic (cosmetics.lua), per account
 	end
+	if not u and ChaosHideout and ChaosHideout.storeUnlock then
+		u = ChaosHideout.storeUnlock(name) -- a hideout decoration (hideout.lua), per account
+	end
 	return u
 end
 

@@ -150,11 +150,21 @@ ChaosMainWindow
   ChaosLabelDim
     id: statusLabel
     anchors.left: parent.left
-    anchors.right: castButton.left
+    anchors.right: hideoutButton.left
     anchors.bottom: parent.bottom
     margin-right: 8
     height: 20
     text-align: left
+
+  // Hideouts (game_hideout): the way to your own hideout
+  ChaosButton
+    id: hideoutButton
+    anchors.right: castButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    width: 120
+    !text: tr('Go to Hideout')
+    @onClick: if modules.game_hideout then modules.game_hideout.enter() end
 
   ChaosButton
     id: castButton

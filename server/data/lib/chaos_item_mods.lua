@@ -856,11 +856,17 @@ end
 -- ---------------------------------------------------------------------------------------------------------------
 -- totals of a character
 -- ---------------------------------------------------------------------------------------------------------------
--- sum of the Chaos modifiers of the given items, each capped: {key -> value} (every key present, 0 when none)
-function M.totals(items)
+-- sum of the Chaos modifiers of the given items, each capped: {key -> value} (every key present, 0 when none).
+-- extra (optional): more numbers {key -> value} under the same caps (the item set bonuses, itemsets.lua)
+function M.totals(items, extra)
 	local t = {}
 	for _, def in ipairs(M.config.mods) do
 		t[def.key] = 0
+	end
+	for key, value in pairs(extra or {}) do
+		if t[key] then
+			t[key] = t[key] + (tonumber(value) or 0)
+		end
 	end
 	for _, item in ipairs(items or {}) do
 		for _, m in ipairs(M.read(item)) do

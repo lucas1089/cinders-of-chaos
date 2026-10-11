@@ -146,6 +146,12 @@ eq(V.queueText({ r = 'dps', since = 30 }, acts, 0), 'Queued as DPS (any activity
 eq(V.queueText({ r = 'healer', a = 'rift', since = 100 }, acts, 20), 'Queued as Healer (Rift) - 2m', 'queue rift')
 eq(V.queueText(nil, acts, 0), '', 'not queued')
 eq(V.applicantLine({ n = 'Seris', lv = 350, vn = 'Illusionist' }), 'Seris  Lv 350 Illusionist', 'applicant line')
+-- the mentor tags (server mentor.lua)
+eq(V.applicantLine({ n = 'Ash', lv = 12, vn = 'Warrior', mt = 'seeking' }), 'Ash  Lv 12 Warrior  (Looking for mentor)', 'seeking tag')
+eq(V.subLine({ ld = 'Brannoc', mt = 'mentor', left = 600 }, 0):find('Brannoc  -  Mentoring', 1, true) ~= nil, true, 'mentor tag on the row')
+eq(V.compTooltip({ comp = { { n = 'Brannoc', lv = 60, vn = 'Juggernaut', r = 'tank', st = 'leader', mt = 'mentor' } }, open = {} })
+  :find('leader - Mentoring', 1, true) ~= nil, true, 'mentor tag in the tooltip')
+eq(V.mentorTag(nil), nil, 'no tag')
 
 if fails > 0 then print(fails .. ' failure(s)') os.exit(1) end
 print('partyfinderview_test: OK')
