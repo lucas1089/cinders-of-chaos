@@ -183,6 +183,9 @@ server/
    an NPC `spellName` with an apostrophe escaped (it broke Ormuhn, Puffels, Thorwulf, Tristan, Uso and Zarak, which did
    not load) and repairs the lines an older run wrote. Tested by `tests/npc_lib_test.lua`; verified on the test server
    (Yberius answers "twist of fate" in four lines, "yes" charges the level's cost and gives the blessing).
+4d. Base crafting script: `python3 -I server/tools/patch_base_crafting.py <server>/data [--dry-run]` (idempotent;
+   `install_all.py` step `basecrafting`, after `events`). Closes the duplication hole of the base crafting tables; see
+   "Base crafting script".
 5. Late game: copy `server/data/monster/monsters/chaos/*.xml` to `<server>/data/monster/monsters/chaos/` (17 of them
    are tuned for levels 650-1000), then `python3 -I server/tools/late_game.py <server>/data` (idempotent; `--dry-run`
    shows what would change, `--remove` undoes it). It writes the new `experienceStages` into `config.lua` and puts the
@@ -2919,6 +2922,44 @@ every path; earlier: refusals (unique, full item, no orb, equipped item), drag a
 purchase and the loot simulation. `tests/crafting_test.lua` covers eligibility, each orb on a mocked item, slot limits,
 the description, unique protection, the Chaos modifiers through the orbs, the previews and every orb on a Rift Key.
 Not tested: the weekly bounty chest with the extra orbs (needs seven finished contracts), a hotkey set to plain "use".
+
+## Base crafting script (`tools/patch_base_crafting.py`, `tests/base_crafting_patch_test.lua`)
+
+The base server ships its own crafting, separate from the Chaos bench: `data/scripts/customs/crafting/1crafting_mod.lua`
+loads 7 categories (herbalist, woodcutting, mining, generalcrafting, armorsmith, weaponsmith, jewelsmith; 275 recipes in
+the category files), registers tables with action ids 38820-38826 on the shipped map and talks JSON on extended opcode 91.
+No client module of ours handles opcode 91, so only a modified client can open it or send a craft.
+
+**The stock bugs.** Gold and materials were checked when the "craft" request arrived; the item was made 860 ms later in
+an `addEvent`, and only after `addItemEx` were `removeMoney` / `removeItem` called, results unchecked. N requests inside
+860 ms gave N items for one set of materials (the leftovers' removals simply failed). `Crafting:craft` never checked that
+the player was at a table, so any client sending opcode 91 crafted from anywhere. `addItemEx` returns a ReturnValue, so
+the stock "not enough space" branch never ran.
+
+**What the patch changes** (the stock file is CRLF; line ends are kept):
+- Using a table records its category, position and time (`CraftGuard.markTable` in the tables' `onUse`). A craft is
+  refused unless the player used a table of that category in the last 5 minutes, stands on its floor within 2 tiles of
+  it, and has no craft pending; 1 s between two requests ("You are already crafting. Wait a moment.").
+- The delayed event finds the player again by id (a logout ends it), checks the table, recipe unlock, skill, gold,
+  materials, capacity and backpack space again, then takes the gold and each material, every result checked. A failed
+  removal gives back what that attempt took and crafts nothing. Only then is the item made and added; when it cannot be
+  made or added, gold and materials are given back (materials with `addItem(id, count, true)`: a full backpack drops
+  them at the player's feet).
+- Unchanged: recipes, texts, the 860 ms delay, skill tries, the rarity roll (5% x the stock tier chances; with the
+  duplication closed a rolled craft costs a full set of materials, so it is no cheap salvage source).
+
+**Anchors.** `local CODE_CRAFTING = 91` (the guard block goes after it), the tables' `function actionEvent.onUse(player)`
++ `player:showCrafting(category)`, and the whole stock `function Crafting:craft` ... `end, 860)` / `end`, compared by
+sha256 (line ends and trailing blanks ignored). Each must be found exactly once and in that order, else the tool says
+"not the expected stock version" and writes nothing (exit 1). Markers `-- Chaos: crafting guard (patch_base_crafting.py)
+v1 ...`; all three present: "already"; only some: refused. No crafting script in the base: skipped.
+
+**Tests.** `tests/base_crafting_patch_test.lua` patches `tests/fixtures/base_crafting/1crafting_mod.lua` (the stock file,
+LF) through the tool (twice, CRLF, another version, a partly patched file) and runs the patched script on a mock engine:
+no table / 3 tiles away / another floor / table use over 5 minutes old / other category refused; 5 requests at once give
+one craft and one set of materials; gold and materials are removed before the item is created; materials gone before
+the event, a failed gold or material removal and a logout create nothing; a failed `addItemEx` refunds everything.
+Against the stock script the same test gets 5 items for one set of materials.
 
 ## Crafting orbs v2 (`data/lib/chaos_orbs.lua`, `chaos_orbs_config.lua`, `tools/install_orbs.py`, `item_powers.lua`)
 

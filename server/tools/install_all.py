@@ -22,6 +22,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                tools/patch_report_chat.py        public channel lines for player reports (when the tool exists)
                tools/patch_market.py             the stock market item opens the Chaos market (when the tool exists)
                tools/patch_base_npcs.py          the base NPC library: replies as lists of lines, blessing cost tags
+  basecrafting tools/patch_base_crafting.py       the base crafting script (opcode 91, tables 38820-38826): table check,
+                                                 one pending craft per player, gold and materials taken before the item
+                                                 is made, refund when it cannot be added (README "Base crafting script")
   weapons      tools/two_handed.py               two-handed attack speed (README "Weapon styles")
   lategame     tools/late_game.py                experience stages in config.lua + late game spawns (README "Install" 5)
   crafting     tools/install_crafting.py         crafting orb items and the reroll guard (README "Crafting")
@@ -88,7 +91,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'vocations', 'events', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'charms', 'professions', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spells', 'autoloot', 'commands', 'sql']
+STEPS = ['files', 'lib', 'vocations', 'events', 'basecrafting', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'charms', 'professions', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spells', 'autoloot', 'commands', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -261,6 +264,10 @@ def step_events(server, data, ctx):
         ok5, more = run_tool([tool('patch_base_npcs.py'), data], 'patch_base_npcs.py')
         ok, lines = ok5, lines + more
     return tool_result((ok, lines))
+
+
+def step_basecrafting(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_crafting.py'), data], 'patch_base_crafting.py'))
 
 
 def step_weapons(server, data, ctx):
