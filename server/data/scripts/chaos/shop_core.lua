@@ -17,6 +17,8 @@
 --   C.clawbackPlan(shortfall, gifts)      what to take back from the receivers of a charged-back donor's coin gifts
 --   C.packCredit(pack, first, cfg)        {coins, bonus, firstBonus, total} for a paid Chaos Coin pack
 --   C.validate(cfg, cosmetics, ex)        list of problems in shop_config.lua (keys, prices, sales, bundles, exclusives)
+--   C.FRAMES / C.frameIndex(frame) / C.frameStorage(S, i)   name plate frames: the order is the ownership storage slot
+--                                         (shop.lua kind "frame", exclusives.lua kind "frame")
 -- Lua 5.1 / LuaJIT / Lua 5.3 compatible.
 
 ChaosShopCore = ChaosShopCore or {}
@@ -25,6 +27,37 @@ local C = ChaosShopCore
 -- offer kinds that can be bought for another character (services and unlocks run per character, right away)
 C.GIFTABLE = {item = true, wings = true, aura = true, shader = true, outfit = true, addons = true, mount = true,
 	premium = true, frame = true, bundle = true}
+
+-- ------------------------------------------------------------------ name plate frames
+-- index = the frame's slot: never reorder, only append. 1-5 the first store frames, 6-13 the second set of store frames,
+-- 14-16 never sold (exclusives_config.lua). Slots 1-8 own storage Chaos.storage.shopFrameBase + i (7100761-7100768),
+-- slots 9 and up Chaos.storage.shopFrameBase2 + i - 9 (7102010-7102039); Chaos.storage.shopFrameActive = the slot shown.
+C.FRAMES = {"violet", "frost", "ember", "verdant", "bone", "ashen", "sapphire", "rose", "jade", "copper", "obsidian",
+	"amber", "storm", "laurel", "sepulchre", "infernal"}
+C.FRAME_SLOTS2 = 30 -- 7102010 - 7102039
+
+function C.frameIndex(frame)
+	for i, f in ipairs(C.FRAMES) do
+		if f == frame then
+			return i
+		end
+	end
+	return nil
+end
+
+function C.frameStorage(S, i)
+	i = tonumber(i)
+	if not i or i < 1 or i % 1 ~= 0 then
+		return nil
+	end
+	if i <= 8 then
+		return S.shopFrameBase + i
+	end
+	if i - 9 >= C.FRAME_SLOTS2 then
+		return nil
+	end
+	return S.shopFrameBase2 + i - 9
+end
 
 -- ------------------------------------------------------------------ keys
 function C.offerKey(o)
@@ -106,6 +139,18 @@ function C.exclusions(src)
 	walkRewards(src.achievements, ex, seen)
 	walkRewards(src.season, ex, seen)
 	walkRewards(src.seasonpass, ex, seen)
+	-- the exclusives (exclusives_config.lua): never sold
+	for _, e in ipairs(src.exclusives and src.exclusives.exclusives or {}) do
+		if e.kind == "outfit" or e.kind == "addons" then
+			addLook(ex.looks, e.male); addLook(ex.looks, e.female)
+		elseif e.kind == "mount" then
+			addLook(ex.mounts, e.id)
+		elseif e.kind == "wings" or e.kind == "aura" or e.kind == "shader" then
+			addLook(ex[e.kind], e.id)
+		elseif e.kind == "frame" and e.frame then
+			ex.frames[e.frame] = true
+		end
+	end
 	for _, v in ipairs(src.looks or {}) do
 		addLook(ex.looks, v)
 	end

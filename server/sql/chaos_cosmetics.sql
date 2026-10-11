@@ -1,6 +1,7 @@
 -- Cosmetics (data/scripts/chaos/cosmetics.lua): the cosmetics an account has unlocked (cosmetics_config.lua keys:
--- spell effect skins, kill effects, loot label accents, chat name colours), from the store or an achievement.
--- What a character shows is chosen per character (player storages 7100940 - 7100949).
+-- spell effect skins, kill effects, loot label accents, chat name colours, footprints, outlines), from the store, an
+-- achievement, PvP or a boss drop (exclusives.lua).
+-- What a character shows is chosen per character (player storages 7100940 - 7100949, 7102000 - 7102001).
 -- cosmetics.lua also creates the table at startup if it is missing. Safe to run again.
 CREATE TABLE IF NOT EXISTS `chaos_cosmetics` (
   `account_id` int(11) NOT NULL,

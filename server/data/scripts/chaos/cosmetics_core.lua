@@ -1,12 +1,16 @@
 -- cosmetics_core.lua: the rules of cosmetics.lua without engine calls (server/tests/cosmetics_test.lua).
--- Spell effect skins, kill effects, loot label accents and chat name colours; data in cosmetics_config.lua.
+-- Spell effect skins, kill effects, loot label accents, chat name colours, footprints and outlines; data in
+-- cosmetics_config.lua.
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
 ChaosCosmeticsCore = ChaosCosmeticsCore or {}
 local C = ChaosCosmeticsCore
 
-C.KINDS = {spellskin = true, killfx = true, lootbeam = true, chatcolor = true}
-C.SOURCES = {store = true, achievement = true, pvp = true} -- pvp: battleground.lua / arena_season.lua grant it
+C.KINDS = {spellskin = true, killfx = true, lootbeam = true, chatcolor = true, footprint = true, outline = true}
+-- pvp: battleground.lua / arena_season.lua grant it; boss: a rare personal drop of a boss (exclusives.lua grants it)
+C.SOURCES = {store = true, achievement = true, pvp = true, boss = true}
+-- the kinds every viewer's client draws itself (client game_cosmeticfx): the art key names the client's picture
+C.DRAWN = {footprint = "prints", outline = "glows"}
 C.SWAP_TYPES = {"fx", "missile", "vfx", "vmissile"}
 C.UNLOCK_PREFIX = "cosmetic_"
 
@@ -296,6 +300,8 @@ function C.how(c, achievementName, categoryName)
 		return "Store: " .. tostring(c.price) .. " Chaos Coins"
 	elseif c.source == "pvp" then
 		return "PvP: " .. tostring(c.pvp or "battleground")
+	elseif c.source == "boss" then
+		return "Boss: " .. tostring(c.boss or "a boss")
 	elseif c.points then
 		return "Achievements: " .. tostring(c.points) .. " account points"
 	elseif c.category then
@@ -332,6 +338,9 @@ function C.rows(cfg, owned, chosen, opts)
 		end
 		if c.kind == "spellskin" or c.kind == "killfx" then
 			row.preview = true
+		elseif C.DRAWN[c.kind] then
+			-- footprints and outlines: the client draws the preview itself (game_cosmeticfx), no server effect
+			row.art, row.pulse, row.preview = c.art, c.pulse or nil, true
 		end
 		rows[#rows + 1] = row
 	end
@@ -347,6 +356,9 @@ function C.offerPreview(c)
 		return {color = c.color}
 	elseif c.kind == "lootbeam" then
 		return {accent = c.accent}
+	elseif C.DRAWN[c.kind] then
+		-- the SHOW button: the buyer's own client draws it on the buyer for a few seconds (cosmetics.lua "tryfx")
+		return {effect = true, color = c.color}
 	end
 	return {effect = true}
 end
@@ -411,6 +423,7 @@ function C.validate(cfg, opts)
 	end
 	local ids, keys, spellLine, lines = {}, {}, {}, {}
 	local trackPoints, trackCats = {}, {} -- the reward track: milestones and categories taken
+	local arts = {} -- "kind:art" -> cosmetic key (footprints and outlines)
 	for _, l in ipairs(cfg.lines or {}) do
 		if lines[l.key] then
 			bad("line %s listed twice", l.key)
@@ -474,6 +487,14 @@ function C.validate(cfg, opts)
 			end
 			if c.price ~= nil then
 				bad("%s: an achievement cosmetic has no price (never sold)", w)
+			end
+		elseif c.source == "boss" then
+			-- a rare personal drop (exclusives_config.lua names it in one boss group; exclusives_test.lua checks that)
+			if type(c.boss) ~= "string" or c.boss == "" then
+				bad("%s: a boss cosmetic needs the boss's name (boss)", w)
+			end
+			if c.price ~= nil then
+				bad("%s: a boss cosmetic has no price (never sold)", w)
 			end
 		end
 		-- never power: only the fields of the kind
@@ -555,6 +576,24 @@ function C.validate(cfg, opts)
 				if ratio < 4.5 then
 					bad("%s: %s is not readable in the console (contrast %.2f)", w, c.color, ratio)
 				end
+			end		elseif C.DRAWN[c.kind] then
+			-- footprints and outlines: an art key of the client's pictures (cfg.prints / cfg.glows), one per cosmetic
+			local list = cfg[C.DRAWN[c.kind]] or {}
+			local known = false
+			for _, a in ipairs(list) do
+				known = known or a == c.art
+			end
+			if type(c.art) ~= "string" or not known then
+				bad("%s: art %s is not in cfg.%s", w, tostring(c.art), C.DRAWN[c.kind])
+			elseif arts[c.kind .. ":" .. c.art] then
+				bad("%s: art %s used by %s too", w, c.art, arts[c.kind .. ":" .. c.art])
+			end
+			arts[c.kind .. ":" .. tostring(c.art)] = c.key
+			if not hex(c.color) or #c.color ~= 7 then
+				bad("%s: color #RRGGBB (the window's swatch)", w)
+			end
+			if c.pulse ~= nil and (c.kind ~= "outline" or type(c.pulse) ~= "boolean") then
+				bad("%s: pulse is true / false and only for outlines", w)
 			end
 		end
 	end

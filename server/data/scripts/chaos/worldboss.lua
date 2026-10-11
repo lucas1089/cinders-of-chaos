@@ -894,6 +894,8 @@ local function distribute()
 		local player = Player(r.name)
 		if player and player:getGuid() == r.guid then
 			W.deliver(player, r)
+			-- exclusives.lua: the rare personal drop of a visual exclusive (rewarded players online at the kill)
+			if ChaosExclusives and ChaosExclusives.worldBossKill then pcall(ChaosExclusives.worldBossKill, player, boss.name) end
 		else
 			W.pending[r.guid] = W.pending[r.guid] or {}
 			table.insert(W.pending[r.guid], r)

@@ -406,6 +406,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7101600 - 7101639 | Town Portal (`townportal_config.lua`) |
 | 7101700 - 7101799 | Vocation Trials (`trials_config.lua`) |
 | 7101800 | Last Breath power cooldown (`data/lib/chaos_powers.lua`) |
+| 7102000 - 7102049 | wardrobe (`Chaos.storage.wardrobe`): +0 footprint, +1 outline (`cosmetics_config.lua`), +10 .. +39 name plate frame slots 9 and up (`Chaos.storage.shopFrameBase2`, `shop_core.lua` `frameStorage`) |
 | 7101900 - 7101909 | the Gambler (`gamble_config.lua` `storage`, `Chaos.storage.gamble`): +0 window, +1 level, +2 vocation, +3 sold slots, +4 early refreshes; +5..9 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
@@ -1462,10 +1463,13 @@ categories are left out. Every offer has a stable key (`ChaosShopCore.offerKey`:
 | Wings (`wings.xml`) | 15 | 15 | |
 | Auras (`auras.xml`, 19 from `chaos_auras.csv`) | 24 | 24 | (Fireflies is also the guild aura; it was sold before) |
 | Outfit shaders (`shaders.xml`) | 17 | 16 | green_pixent (16): drew as a coloured checker grid in the test client, like 15 and 17 (sold before); the pixent shader files are fixed now (client/MANIFEST.md "Outfit shaders for monsters"), 16 could be sold |
-| Name plate frames (`nameplate.lua`) | 8 | violet, frost, ember, verdant, bone | default (everyone), gold (staff titles), crimson (Siege Champions) |
+| Name plate frames (`nameplate.lua`) | 19 | violet, frost, ember, verdant, bone, ashen, sapphire, rose, jade, copper, obsidian, amber, storm | default (everyone), gold (staff titles), crimson (Siege Champions), laurel, sepulchre, infernal (exclusives) |
+| Footprints, outlines (`cosmetics.lua`) | 13 / 13 | 9 / 9 | an achievement, a reward track milestone and two boss drops each ("Footprints and outlines") |
+| Exclusives (`exclusives.lua`) | 33 | none | never sold: 5 outfits, 2 addon sets, 6 mounts, wings, 2 auras, 2 shaders, 3 frames and the boss drops of portal styles, transmog sets, pets, footprints and outlines ("Exclusives") |
 | Spell effect skins, kill effects, loot label accents, chat name colours (`cosmetics.lua`) | 12 / 7 / 5 / 6 | 12 / 5 / 4 / 5 | Void Ring, Harbinger's Toll, Gilded Labels, Veteran's Gold: achievement rewards ("Cosmetics" below); the 17 reward track cosmetics (achievement points and complete categories, "Achievements") and the PvP ones are never sold either |
-| Transmog appearance sets (`transmog.lua`) | 6 | Falconer's Regalia 300, Lionguard 350 | achievement, season pass and exclusive sets ("Transmog") |
-| Town Portal styles | see "Town Portal" | 6 (unchanged) | the achievement styles |
+| Transmog appearance sets (`transmog.lua`) | 19 | Falconer's Regalia 300, Lionguard 350, Gravecloak 350, Soulforged 400, Soulstalker 350, Mothwing 350, Cobra Regalia 300, Lionguard Arms 300, Grand Sanguine 350 | achievement, season pass, exclusive and boss sets ("Transmog", "Exclusives") |
+| Pets (`pets.lua`) | 15 | Lantern Wisp, Hoarder Squirrel, Ember Parrot, Rime Penguin, Ashen Hare, Bog Frog, Dusk Moth, 400 each | drops, achievements and two boss drops ("Pets") |
+| Town Portal styles | see "Town Portal" | 6 (unchanged) | the achievement, season and boss styles |
 | Titles, name colours | titles of achievements, seasons, leaderboards, arena, the ascension quest, staff | none | all are earned; name colours come with the title's source. The client's `game_nameshaders` needs engine work and has no server side |
 
 How the rest is got today: class looks at login and on a class change; achievements (`achievements_data.lua`), the
@@ -1494,8 +1498,12 @@ that fails refunds the coins; a page reads "Owned." with the Buy button off for 
 after a purchase. All of it survives a reload and a restart (the engine and the storages hold the state).
 
 **Name plate frames.** The frame bought last is shown (titles.lua frame source "store"); Info & Services > Services >
-Plate frame switches between the owned frames or back to the title's own (command id `plateframe`). Ember, verdant and
-bone (300 each) are drawn by `client/tools/gen_nameplate_art.py` like the others (`shop.lua` FRAMES, storages 7100763-7100765).
+Plate frame switches between the owned frames or back to the title's own (command id `plateframe`: a frame name typed in
+the field, "My Frames" lists the owned ones; `commands_ui_core.lua` `K.PARAM` lets the name through, before that the
+parameter was dropped and the frame buttons did nothing). Ember, verdant and bone (300 each) are drawn by
+`client/tools/gen_nameplate_art.py` like the others (storages 7100763-7100765). Ashen, sapphire, rose, jade, copper,
+obsidian, amber and storm (300 each) are slots 6-13 and the exclusives laurel, sepulchre and infernal 14-16 of
+`shop_core.lua` `FRAMES` (the ownership slot is the index: 1-8 in 7100761-7100768, 9 and up in 7102010-7102039).
 
 **Storefront** (`shop_config.lua` `storefront`, all server side; the client only shows what it gets and echoes title
 and cost, so a changed price is refused, never charged): `featured` = `count` offers of `pool`, a new choice each week
@@ -1785,6 +1793,127 @@ buyer only), purchases ("Owned." after), the window and its tabs; Iron Bellow wi
 other client; Frost Shatter on a killing blow seen by the other client; the Frost name colour in the other client's chat next
 to an item link; the Azure accent on Legendary / Rare / Mythic labels; Veteran's Gold granted from the achievement at login;
 the Ember plate frame. Screenshots outside the repository.
+
+## Footprints and outlines (`cosmetics*.lua` kinds `footprint` / `outline`, client `game_cosmeticfx`, art `client/tools/gen_cosmeticfx_art.py`)
+
+Two more cosmetic kinds of `cosmetics_config.lua`, account-wide like the others, chosen per character in Character >
+Cosmetics (tabs Footprints and Outlines, a Default row takes them off; storages 7102000 footprint, 7102001 outline, the
+wardrobe block 7102000 - 7102049 of `chaos_constants.lua`). Everyone on screen sees them.
+
+| Kind | What | Store (coins) | Never sold |
+|---|---|---|---|
+| Footprints | prints on the tiles a walking player leaves, turned to the step, fading out in 3.2 s | Ember Steps, Frost Steps, Blood Trail, Ash Prints, Petal Trail, Venom Drips, Shadow Wisps, Gilded Steps, Storm Sparks, 200 each | Hunter's Tracks (Never Off Duty), Inkstep (reward track, 750 points), Rimewalker (boss: Skaldra), Omen Ash (boss: the Ascended Omens) |
+| Outlines | a soft glow behind the character, a colour or a vertical gradient; two of the store's and three earned ones pulse | Gilded, Crimson, Void, Frost, Verdant Glow, Ember Gradient, Storm Gradient, Radiant Pulse, Abyssal Pulse, 250 each | Paragon's Radiance (Absolute), Chronicler's Halo (reward track, 2000 points), Void Corona (boss: Nyxareth), Cinderheart Blaze (boss: the Cinderheart) |
+
+**Why client-drawn.** Two ways were weighed for the prints. Server magic effects on the tile left: one effect packet per step
+per spectator (a crowd of 30 walkers on one screen is about 60-80 packets a second to each viewer), effects of the pair that
+are spell art and too loud for a trail, and no way for a viewer to hide them. Client drawing: the server only says who
+wears what (`looks {names = {[name] = {f, o, p}}, full}` on the cosmetics opcode, sent in full at login and as a change to
+everyone online, like the chat colours), and each client draws its own generated pictures: no work per step on the server,
+nothing new in the pair, and a viewer setting. `game_cosmetics` hands `looks` and `tryfx` to `game_cosmeticfx`.
+
+**How the client draws them.** A print is a tile widget (`Tile:setWidget`, the way `game_groundlabels` draws its labels) on the
+tile the player left, put down once the step is done, turned with `UIWidget:setRotation`, fading out; at most 160 prints on
+screen and 8 per walker; never on a tile that holds another module's widget (ground labels, hideout marks). No new prints
+while the viewer stands in a protection zone (temples and depots are crowded; the client only knows its own zone flag). An
+outline is a creature bottom widget (drawn under the outfit, so it stacks with outfit shaders, wings and auras), the size of
+two tiles, centred on the creature; pulsing ones change their opacity. Bottom widgets of other modules (`game_levelwings`) are
+left alone: ours is cleared only when it is the creature's only bottom widget (the engine's `removeBottomWidget` walks the
+wrong list), else blanked. Character > Cosmetics has "Show other players' footprints / outlines" (this client only; the own
+character always shows). Preview (the window) and SHOW (the store, `tryfx {kind, art, pulse}` to the buyer only) draw the look
+on the own character for 6 s.
+
+**Outlines and outfit shaders.** The engine has one shader slot per outfit (`Outfit::m_shader`, the store's Outfit Shaders and the
+monster modifiers use it). An edge outline as an outfit shader (a fragment shader that samples the alpha of the neighbours)
+would be a true silhouette line but would replace the character's outfit shader. `Thing:setMarked` tints the whole sprite,
+only for unshaded outfits, and the map's hover uses it. A UI creature widget under the creature would copy the silhouette but
+not the walking frame. So the shipped outlines are glows behind the character (no engine change, they stack with everything).
+Proposed engine patch (no number taken): a second, outline pass in `Outfit::draw`: after the layers are queued, draw the same
+textured rects again with an outline program (alpha of the 8 neighbours at 1-2 px, the colour from a uniform, an optional
+pulse from `u_Time`), behind the outfit; `Creature:setOutline(color, width, pulse)` bound to Lua; the server would then send
+the colour in the `looks` message instead of an art key.
+
+Tests: `tests/cosmetics_test.lua` (art keys, one picture per cosmetic, pulse for outlines only, prices, the track milestones,
+the `looks` broadcast to every client, a reconnect keeping the look, `tryfx` to the buyer only, the boss source), client
+`game_cosmeticfx/cosmeticfxlogic_test.lua` (looks merge, preview, settings, step directions, fading, pulsing, the caps, sizes,
+a picture for every art key of the server) and `game_cosmetics/cosmeticslogic_test.lua` (the tabs, the Default rows).
+Tested in game (own server and database copy, two Linux clients): footprints in a walking trail and the glows, the own and the
+other player's, the window tabs and the setting. Screenshots outside the repository.
+
+## Exclusives (`exclusives.lua`, `exclusives_core.lua`, `exclusives_config.lua`, `sql/chaos_exclusives.sql`, client `game_cosmetics` Collection tab)
+
+Every visual kind of the store also has options that are never sold, only earned from an achievement or a rare boss drop.
+Unlocks are account-wide and not tradeable (table `chaos_exclusives`): a drop is a direct unlock for the account of the
+player who rolled it, never an item (the codebase has no tradeable cosmetic token, and an item would be lost to a trade or a
+death). What an unlock gives is applied at once to the account's characters online and to every character at its login
+(idempotent): outfits and addons (both looks with both addons), mounts, wings, auras, outfit shaders (the engine's own
+ownership), plate frames (the frame slot storages of the store), portal styles (route `boss` of `townportal_config.lua`, owned
+through `ChaosExclusives.owns`), transmog sets (`ChaosTransmog.grantSet`, source `boss`), pets (`ChaosPets.grant` on each
+character, `source.boss`), footprints and outlines (`ChaosCosmetics.grant`, source `boss`).
+
+| Kind | Achievement (never sold) | Boss drop (never sold) |
+|---|---|---|
+| Outfits | Wingbound 1455/1456 (Unrivalled), Jadeforged 1039/1040 (Master Artificer); before: Death Herald, Rift Warrior, Arena Champion, Demon Hunter | Ashen Seraph 1459 (Varkhul), Omen Lancer 1457/1458 (Ascended Omens), Mirewarden 1464/1465 (the Rotmother) |
+| Outfit addons | Mage addons 130/138 (Monster Scholar) | Knight addons 131/139 (Gorvath, guild boss) |
+| Mounts | Tuskhide Boar 146 / look 1323 (Nothing Surprises Me), Duskcrest Drake 147 / 428 (Untouchable); before: Doombringer, Corpsefire Skull, Rift Runner, Nightstinger, Siegebreaker | Rimebone Stalker 148 / 1444 (Skaldra), Bloodwing Fiend 149 / 1441 (Vharok), Bannerdrake 150 / 596 (Gorvath), Gloomwyrm 151 / 1450 (Nyxareth) |
+| Wings | none yet: needs a sprite pair (below) | Cinder Plumes 16 / look 1486 (the Cinderheart) |
+| Auras | Ashen Murmuration 29 / look 1487 (Witching Hour) | Scarlet Glimmer 30 / look 712 (Sepulchre wardens) |
+| Outfit shaders | Verdant Sparks 16 `green_pixent` (Master of the Wilds) | Cinder Sparks 18 `ember_pixent` (Ascended Omens) |
+| Plate frames | Laurel (Keeper of the Flame); category titles bring their frames | Sepulchre (Sepulchre wardens), Infernal (the Cinderheart) |
+| Portal styles | the six achievement styles (Abyssal Maw ...) | Drowned Gate 51 (Skaldra), Seraph's Door 52 (Varkhul) |
+| Transmog | Thornmoth Vestments (Keeper of the Wort), Haloed Arms (Lifeline), Spiritthorn, Rimebound | Hellforged Visage (Kaelgor), Inferniarch Arms (Nyxareth), Deathlord Arms (Varkhul), Gilded Eldritch Arms (the Cinderheart) |
+| Pets | Ash Cat, Gilded Goblin, Riftling | Rotling (the Rotmother), Ashweaver Spiderling (Sepulchre wardens) |
+| Footprints / outlines | see "Footprints and outlines" | see "Footprints and outlines" |
+
+Every look is existing art of the client pair: base looks that no outfits.xml / mounts.xml / wings.xml / auras.xml line had and
+no monster or NPC uses (a scan of the pair against the base data and the repository), the shaders are client code. The XML
+lines come from the install tools: `install_outfits.py` (a third outfits.xml block "Chaos exclusive outfits", mounts 146-151
+appended to MOUNTS, a wings.xml block, a shaders.xml block for the ids the base file lacks; all read from
+`exclusives_config.lua`), `install_auras.py` (`data/XML/chaos_auras_exclusive.csv`, ids 29 and 30). The store never sells them:
+`shop.lua` adds them to its exclusions (`ChaosShopCore.exclusions` reads `exclusives_config.lua`), `gen_shop_cosmetics.py`
+leaves them out, the validator refuses an exclusive that is sold and `tests/exclusives_test.lua` checks the store, the
+generated list and the other reward sources (class looks, achievement, season and season pass rewards, faction auras).
+
+**Achievements.** `achievements_data.lua` `reward.exclusives = {{key, name}}` names them (the achievements window shows the name
+next to the other rewards, `achievements_core.lua` `rewardText`). The account owns an achievement exclusive once any of its
+characters has the achievement: at login, when the wardrobe opens and after every new unlock (`ChaosAchievements.syncTrack` is
+wrapped once at runtime, no edit in `achievements.lua`); older unlocks count. Footprints and outlines use the cosmetics' own
+`achievement` / `points` fields (the reward track), transmog sets and pets their own `achievement` fields.
+
+**Boss drops.** `exclusives_config.lua` `bosses`: groups of kill keys with a chance and a reward list. One guarded line in each
+boss script rolls for every player that gets the kill's own rewards (personal loot, each player on its own): `worldboss.lua`
+(rewarded players online at the kill; the boss's name gives `wb_<boss>`), `raid.lua` (`raid_<boss>`, the players that loot it
+this week), `uber.lua` (`ascended_<kind>`, `cinder`), `guildboss.lua` (`guild_gorvath`, rewarded members online). A hit
+(rng below the chance) unlocks one reward of the group the account does not own yet, picked evenly; with all owned, nothing.
+Chances: world bosses 2%, the Sepulchre's first four bosses 1.5%, Varkhul 3%, the Ascended Omens 3%, the Cinderheart 5%, the
+guild boss 2% (the validator keeps every chance at or below 25%). The player gets a message and a "Rare drop!" toast.
+
+**The wardrobe.** Character > Cosmetics, tab Collection: every exclusive with its kind, owned or not, "Achievement: <name>
+(<goal>)" (a hidden achievement stays "???" until owned) or "Boss: <boss>, rare drop", where it is chosen, and a preview on the
+own character (outfits, mounts, wings, auras, shaders); owned ones first, "Earned N / M (never sold)". Exclusives never show in
+the store.
+
+Staff: `/exclusive <character>, <key | all>[, revoke]` (revoke removes the account row; what was applied stays on the
+characters) and `/exclusive <character>, roll, <kill key>` (group 4+). API: `ChaosExclusives.grant / revoke / owns / sync /
+bossKill / worldBossKill / rows / apply / applyAll`.
+
+**Needs a sprite pair (not done here; things_custom16 is being built for the mount fixes).** Achievement wings: the pair has
+only one unused wings look (1486, the Cinder Plumes). Plan: import two wings outfits from donor I (8.60, "wings, auras",
+the library of the faction auras; `donor_pick.py` + `import_outfits.py`, rows of family `exclusive`, kind `wings`, the
+silhouette and in-pair checks, displacement checked like `aura-feet`), outfit ids after the last one of the pair, then one
+achievement wings entry (for example Colossus Hunter or Absolute) and a wings.xml line through `install_outfits.py`. The
+Scarlet Glimmer aura (look 712) has no displacement in the dat: check it in game; if it draws off the feet, set it in the same
+pair (flags only).
+
+Tests: `tests/exclusives_test.lua` (LuaJIT and Lua 5.3): the shipped config against the store, the generated store list, the
+achievements, the cosmetics, transmog sets, pets, portal styles and frames; refusals (a sold look, a price, a chance too high,
+a boss drop nobody drops, a kill in two groups, wrong names); every kind has an achievement and a boss exclusive (wings: the
+boss one); the looks are no other reward; every world boss, raid boss, Ascended Omen, the Cinderheart and the guild boss has a
+group and its script the guarded hook; the roll (miss, hit, owned skipped, nothing left, rates over 20,000 rolls); the
+achievement sync and the rows; `exclusives.lua` on a mocked engine (a drop for the account and its online characters, the
+frame switched on for the roller only, transmog / pets / cosmetics handed to their systems, the sync and the wrapped
+`syncTrack`, a later login, the rows, the staff command). Also `transmog_test.lua`, `pets_test.lua`, `townportal_test.lua`,
+`cosmetics_test.lua`, `season_test.lua`.
 
 ## Hideouts (`hideout.lua`, `hideout_core.lua`, `hideout_config.lua`, `hideout_store.lua`, `sql/chaos_hideout.sql`, client `game_hideout`)
 
@@ -2308,6 +2437,11 @@ non-store style, an achievement reward for a non-achievement style, or a missing
 | Hoarder's Gate | achievement | Hoardbreaker (`goblin_50`, 50 Treasure Goblins) | royal gold gate; aura_burst_gold, loot_ray_legendary, arcane_burst |
 | Warbanner Gate | achievement | Siege Champion (`siege_win`, win a guild siege) | old stone siege gate; stone_rise, earth_spikes, stone_ward |
 | Gravecall Gate | achievement | Death Is a Teacher (`deaths_50`, hidden) | dark crypt door; necro_seal, px633_indigo, shadow_cloud |
+| Drowned Gate | boss | rare drop of Skaldra the Rime Queen (`exclusives_config.lua`, account-wide) | Underwater Portal 29638; frost_glyph, ice_shatter, frost_ripple |
+| Seraph's Door | boss | rare drop of Varkhul the Ashen Sovereign (account-wide) | Divine Portal 29639; holy_seal, solar_flash, holy_spiral, blink_appear |
+
+Route `boss` (ids 51 and up): owned while the account has the exclusive `portal_<key>` (`ChaosExclusives.owns`, the facts'
+`bossOwned`); never sold, never an achievement reward; `how` is the window's line. See "Exclusives".
 
 Store prices are in the range of the auras (200..300). All visuals come from items and effects already in the client pair (`things_custom12`,
 `vfx_catalog.csv`); no new art. **Follow-up:** the sprite libraries R and S on the sprite-libraries branch have portal and gate effects (swirl,
@@ -2355,9 +2489,15 @@ right-click an equipped item > Transmog. Numbers and sets: `transmog_config.lua`
   nothing). Sources: `store` (offer `{kind = "unlock", unlock = "transmog_<key>"}`, `ChaosTransmog.storeUnlock`, account-wide),
   `achievement` (owned while `ChaosAchievements.has` the named achievement; synced at window open), `season`
   (`ChaosSeasonPass.ownsTransmog(player, key)` when the season pass has that hook), `exclusive` (`ChaosTransmog.grantSet`, staff
-  `/transmog`). Shipped: Falconer's Regalia (store, 300), Lionguard (store, 350), Spiritthorn (`level_500`), Rimebound
-  (`rift_t10`), Arboreal (season), Arcanomancer (exclusive). All are base server art that no monster drops and no NPC sells
-  (the test scans the repo data). `ChaosTransmogCore.validate` runs in the test and at startup.
+  `/transmog`), `boss` (a rare boss drop: `exclusives.lua` calls `ChaosTransmog.grantSet`; `boss` names it for the window).
+  Shipped: Falconer's Regalia (store, 300), Lionguard (store, 350), Spiritthorn (`level_500`), Rimebound (`rift_t10`),
+  Arboreal (season), Arcanomancer (exclusive); the second store list Gravecloak (350, the star-less skeletal helmet, armor,
+  legs, boots 26708-26711), Soulforged (400), Soulstalker (350), Mothwing (350), Cobra Regalia (300), Lionguard Arms (300),
+  Grand Sanguine (350); achievement sets Thornmoth Vestments (`prof_wortcunning_100`) and Haloed Arms (`wb_heal_top_1`),
+  with their own `how` line; boss sets Hellforged Visage (Kaelgor), Inferniarch Arms (Nyxareth), Deathlord Arms (Varkhul),
+  Gilded Eldritch Arms (the Cinderheart). All are base server art that no monster drops and no NPC sells (checked against
+  the installed base monsters and NPCs when they were picked; the test scans the repo data). `ChaosTransmogCore.validate`
+  runs in the test and at startup.
 - **Fee:** apply 2000 gold + 10 per item level, at most 20000 (backpack, then bank); remove free.
 - **Refused:** empty slot, an item without a kind, another kind, the item's own look, the same look again, a look not
   unlocked, not enough gold.
@@ -7102,6 +7242,18 @@ is in `pets_config.lua`; the pure rules in `pets_core.lua`.
   | Ash Cat | 276 (cat) | Fetch, Mend | Achievement Hired Blade (`bounty_25`) |
   | Gilded Goblin | 61 (goblin) | Gold Sniffer, Fetch | Achievement Greed Is Good (`goblin_10`) |
   | Riftling | 232 (lost soul) | Treasure Sense, Spark Aura (death) | Achievement Deeper Wounds (`rift_t5`) |
+  | Ember Parrot | 217 (parrot) | Mend, Ward | Store, Pets: 400 Chaos Coins |
+  | Rime Penguin | 250 (penguin) | Gold Sniffer, Treasure Sense | Store, Pets: 400 Chaos Coins |
+  | Ashen Hare | 262 (silver rabbit) | Mend, Ward | Store, Pets: 400 Chaos Coins |
+  | Bog Frog | 224 (frog) | Gold Sniffer, Treasure Sense | Store, Pets: 400 Chaos Coins |
+  | Dusk Moth | 213 (butterfly) | Mend, Ward | Store, Pets: 400 Chaos Coins |
+  | Rotling | 314 (ooze) | Gold Sniffer, Fetch | Boss drop: the Rotmother (`exclusives_config.lua`, account-wide) |
+  | Ashweaver Spiderling | 350 (spider) | Treasure Sense, Mend | Boss drop: the Ashen Sepulchre's first four bosses (account-wide) |
+
+  The store pets reuse the two ability pairs of the first store pets (Mend + Ward, Gold Sniffer + Treasure Sense), so
+  coins buy no new power (`pets_test.lua` checks it). A boss pet is unlocked for the account by `exclusives.lua`, which
+  calls `ChaosPets.grant` on each of its characters (at once for the ones online, at login for the others;
+  `ChaosPets.owns` skips a character that has it).
 
   A drop goes straight to the character (message, fireworks, console line). A second copy of an owned species gives that
   pet 400 XP. Achievement pets are account-wide like achievements: checked at login, when the window opens and every

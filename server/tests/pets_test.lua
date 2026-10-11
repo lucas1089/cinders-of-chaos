@@ -26,13 +26,26 @@ for _, s in ipairs(cfg.species) do
 	end
 	assert(s.abilities[1] ~= s.abilities[2], "two different abilities: " .. s.key)
 	local src = s.source
-	assert(src and (src.drop or src.store or src.achievement), "a source: " .. s.key)
+	assert(src and (src.drop or src.store or src.achievement or src.boss), "a source: " .. s.key)
 	assert(type(s.how) == "string" and #s.how > 0, "how: " .. s.key)
 	assert(({fire = 1, ice = 1, death = 1, holy = 1, earth = 1, energy = 1, physical = 1})[s.element], "element " .. s.key)
 	if src.store then
 		eq(cfg.store[src.store], s.key, "store map of " .. s.key)
+		-- no new power for coins: a store pet has one of the ability pairs of the first two store pets
+		local pair = table.concat(s.abilities, "+")
+		assert(pair == "mend+ward" or pair == "goldFind+itemFind", "store pet abilities " .. s.key .. ": " .. pair)
 	end
 end
+-- the store pets and the boss pets (exclusives_config.lua drops; a boss pet never drops from monsters)
+local nStore, nBoss = 0, 0
+for _, s in ipairs(cfg.species) do
+	nStore = nStore + (s.source.store and 1 or 0)
+	if s.source.boss then
+		nBoss = nBoss + 1
+		eq(K.dropChance(s, "Dragon", "boss", true), 0, "a boss pet does not drop from monsters: " .. s.key)
+	end
+end
+eq(nStore, 7, "seven store pets") eq(nBoss, 2, "two boss pets")
 -- every pet's monster type: named as in the config, players walk through it, it cannot be attacked
 for _, s in ipairs(cfg.species) do
 	local path = "data/monster/monsters/chaos/pets/" .. s.key .. ".xml"

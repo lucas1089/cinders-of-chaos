@@ -5,6 +5,9 @@
 --   loot label accents  the background of the character's own highlighted ground loot labels (client game_groundlabels);
 --                       the rarity colours stay
 --   chat name colours   the character's name in chat, for every viewer (client game_cosmetics colours the name only)
+--   footprints          prints behind the walking character, for every viewer; outlines: a coloured glow behind the
+--                       character, for every viewer. Both are drawn by each client (game_cosmeticfx) from the "looks"
+--                       this script sends (who wears which art); the server does nothing per step
 -- Data: cosmetics_config.lua. Rules: cosmetics_core.lua (server/tests/cosmetics_test.lua). Unlocks are account-wide
 -- (table chaos_cosmetics, server/sql/chaos_cosmetics.sql, also created here at startup); the choice is per character
 -- (storages 7100940 - 7100949). Store offers: {kind = "unlock", unlock = "cosmetic_<key>"} (shop_services.lua asks
@@ -22,6 +25,10 @@
 --   client -> server  open | select {kind, id, line} (id 0 = the default; line for spell skins) | preview {id} | close
 --   server -> client  state {open, line, lineName, rows = [K.rows + item (client id of the icon)]}      style {accent}  (the character's own label accent)
 --                     colors {names = {[name] = "#rrggbb"}, full}  (chat name colours of online characters)
+--                     looks {names = {[name] = {f = print art, o = glow art, p = 1 pulse} | false}, full}  (footprints
+--                     and outlines of online characters; game_cosmetics hands them to game_cosmeticfx)
+--                     tryfx {kind, art, pulse}  (a preview the asking player's client draws on its own character)
+--                     state also carries collection = the exclusives of every visual kind (exclusives.lua), when loaded
 --                     result {ok, text}
 -- Staff: /cosmetic <character>, <key | all>[, revoke]   /cosmetic <character>, sync   (achievement cosmetics and the
 -- reward track of achievements.lua: granted at login, when the window opens and after new achievement unlocks)
@@ -54,6 +61,9 @@ M.core, M.config = K, cfg
 M.owned = M.owned or {} -- account id -> {[key] = true}
 M.active = M.active or {} -- player id -> {killfx = vfx name, lines = {[line] = id}}
 M.colors = M.colors or {} -- character name -> "#rrggbb" (online characters with a chat colour)
+M.looks = M.looks or {} -- character name -> {f = print art, o = glow art, p = 1} (online characters with a footprint / outline)
+M.lookOwner = M.lookOwner or {} -- character name -> creature id of the session that set M.looks (a reconnect's old session
+-- may log out after the new one logged in: it must not clear the new session's look)
 local lastPreview = {} -- player id -> ms
 
 local function nowMs()
@@ -118,7 +128,7 @@ end
 local function chosenOf(player)
 	local st = cfg.storage
 	local chosen = {lines = {}}
-	for _, kind in ipairs({"killfx", "lootbeam", "chatcolor"}) do
+	for _, kind in ipairs({"killfx", "lootbeam", "chatcolor", "footprint", "outline"}) do
 		chosen[kind] = math.max(0, player:getStorageValue(st[kind]))
 	end
 	for _, l in ipairs(cfg.lines) do
@@ -143,6 +153,33 @@ local function broadcastColor(name, color)
 	end
 end
 
+-- footprints and outlines: one character's look to everyone online (false = none any more)
+local function broadcastLook(name, look)
+	local msg = json.encode({action = "looks", data = {names = {[name] = look or false}}})
+	for _, p in ipairs(Game.getPlayers()) do
+		p:sendExtendedOpcode(OPCODE, msg)
+	end
+end
+
+-- {f, o, p} of the chosen footprint / outline (nil when the character shows neither)
+local function lookOf(chosen, player)
+	local foot = chosen.footprint > 0 and owned(player, chosen.footprint)
+	local glow = chosen.outline > 0 and owned(player, chosen.outline)
+	foot = foot and foot.kind == "footprint" and foot or nil
+	glow = glow and glow.kind == "outline" and glow or nil
+	if not foot and not glow then
+		return nil
+	end
+	return {f = foot and foot.art or nil, o = glow and glow.art or nil, p = glow and glow.pulse and 1 or nil}
+end
+
+local function sameLook(a, b)
+	if a == nil or b == nil then
+		return a == b
+	end
+	return a.f == b.f and a.o == b.o and a.p == b.p
+end
+
 -- rebuild the cache of a character from its storages (a choice that is not owned any more is dropped)
 local function refresh(player, announce)
 	local chosen = chosenOf(player)
@@ -165,6 +202,14 @@ local function refresh(player, announce)
 		M.colors[name] = color
 		if announce then
 			broadcastColor(name, color)
+		end
+	end
+	local look = lookOf(chosen, player)
+	M.lookOwner[name] = player:getId()
+	if not sameLook(M.looks[name], look) then
+		M.looks[name] = look
+		if announce then
+			broadcastLook(name, look)
 		end
 	end
 end
@@ -274,7 +319,13 @@ function M.sendState(player, open)
 		r.item = clientId(K.byId(cfg, r.id).icon)
 	end
 	local l = K.index(cfg).lines[line or ""]
-	send(player, "state", {open = open or nil, line = line, lineName = l and l.name, rows = rows})
+	-- the Collection tab: the exclusives of every visual kind and how each is earned (exclusives.lua)
+	local collection
+	if ChaosExclusives and ChaosExclusives.rows then
+		local ok, res = pcall(ChaosExclusives.rows, player)
+		collection = ok and res or nil
+	end
+	send(player, "state", {open = open or nil, line = line, lineName = l and l.name, rows = rows, collection = collection})
 end
 
 local function reply(player, ok, text)
@@ -331,7 +382,7 @@ end
 
 -- the preview of a cosmetic: its effects one after another, seen by the asking player only
 function M.preview(player, c)
-	if not c or (c.kind ~= "spellskin" and c.kind ~= "killfx") then
+	if not c or (c.kind ~= "spellskin" and c.kind ~= "killfx" and not K.DRAWN[c.kind]) then
 		return false
 	end
 	local pid, t = player:getId(), nowMs()
@@ -339,6 +390,11 @@ function M.preview(player, c)
 		return false
 	end
 	lastPreview[pid] = t
+	if K.DRAWN[c.kind] then
+		-- footprints and outlines: the asking client draws it on its own character for a few seconds (game_cosmeticfx)
+		send(player, "tryfx", {kind = c.kind, art = c.art, pulse = c.pulse and 1 or nil})
+		return true
+	end
 	for i, e in ipairs(K.previewOf(c)) do
 		addEvent(function(id, kind, name)
 			local p = Player(id)
@@ -425,6 +481,11 @@ function login.onLogin(player)
 		if color then
 			broadcastColor(player:getName(), color)
 		end
+		send(player, "looks", {names = M.looks, full = true})
+		local look = M.looks[player:getName()]
+		if look then
+			broadcastLook(player:getName(), look)
+		end
 	end)
 	if not ok then
 		print("[Chaos cosmetics] login failed: " .. tostring(err))
@@ -438,6 +499,10 @@ function logout.onLogout(player)
 	M.active[player:getId()] = nil
 	lastPreview[player:getId()] = nil
 	M.colors[player:getName()] = nil
+	if M.lookOwner[player:getName()] == player:getId() then
+		M.looks[player:getName()] = nil
+		M.lookOwner[player:getName()] = nil
+	end
 	return true
 end
 logout:register()

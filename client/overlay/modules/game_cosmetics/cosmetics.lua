@@ -1,14 +1,18 @@
 -- Cosmetics (server: server/data/scripts/chaos/cosmetics.lua, extended opcode 225, JSON {action, data}).
 --   client -> server  open | select {kind, id, line} | preview {id} | close
---   server -> client  state {open, line, lineName, rows}   style {accent}   colors {names, full}   result {ok, text}
+--   server -> client  state {open, line, lineName, rows, collection}   style {accent}   colors {names, full}
+--                     looks {names, full}   tryfx {kind, art, pulse}   result {ok, text}
 -- The window (Character > Cosmetics): spell effect skins of the character's class line, kill effects, loot label
--- accents and chat name colours; unlocks are account-wide, the choice per character. Preview plays the effects for this
--- player only (the server sends them); colours show a sample here.
+-- accents, chat name colours, footprints and outlines; unlocks are account-wide, the choice per character. Preview
+-- plays the effects for this player only (the server sends them); colours show a sample here; footprints and outlines
+-- show on the character for a few seconds (game_cosmeticfx). The Collection tab lists the exclusives of every visual
+-- kind (server exclusives.lua): never sold, earned from an achievement or a rare boss drop, and where each is chosen.
 -- Two things this module draws itself:
 --   * chat name colours: the stock console (game_console) Message:updateLabel is wrapped; in a player's line only the
 --     speaker's name gets the colour the server sent (item link colours of game_chatlinks stay: this module loads after
 --     it and reads the parts it drew);
 --   * the loot label accent: handed to game_groundlabels (setAccent), which keeps the rarity colours.
+-- Footprints and outlines are drawn by game_cosmeticfx: "looks" and "tryfx" are handed to it (setLooks, showPreview).
 
 local OPCODE = 225
 local CL = CosmeticsLogic
@@ -20,6 +24,7 @@ local selectedId
 local rowWidgets = {}
 local tabButtons = {}
 local names = {} -- chat name colours: character name -> '#rrggbb'
+local settingBox = false -- the window sets the checkbox itself (not the player)
 local accent -- the character's own label accent
 local original = {}
 
@@ -46,7 +51,15 @@ local function send(action, data)
 end
 
 local function tabRows()
+  if currentTab == 'collection' then
+    return CL.collectionRows(state and state.collection or {})
+  end
   return CL.tabRows(state and state.rows or {}, currentTab, state and state.line, state and state.lineName)
+end
+
+local function fx()
+  local m = modules.game_cosmeticfx
+  return m and type(m.showPreview) == 'function' and m or nil
 end
 
 local function rowOf(id)
@@ -74,6 +87,43 @@ local function showSample(r)
     l:setTextAutoResize(true)
     l:setColoredText(colored)
     box:setBackgroundColor('#1c1a18')
+  elseif CL.DRAWN[kind] then
+    -- the character with the glow behind it / a print beside it (the Preview button shows the real thing in the map)
+    box:setBackgroundColor('#1c1a18')
+    local holder = g_ui.createWidget('UIWidget', box)
+    holder:setHeight(56)
+    holder:setPhantom(true)
+    local me = g_game.getLocalPlayer()
+    local art = r and r.id ~= 0 and r.art or nil
+    if kind == 'outline' and art then
+      local glow = g_ui.createWidget('UIWidget', holder)
+      glow:setImageSource('/modules/game_cosmeticfx/images/glows/' .. art)
+      glow:setSize({ width = 64, height = 64 })
+      glow:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
+      glow:addAnchor(AnchorVerticalCenter, 'parent', AnchorVerticalCenter)
+      glow:setPhantom(true)
+    end
+    if me then
+      local c = g_ui.createWidget('UICreature', holder)
+      c:setSize({ width = 56, height = 56 })
+      c:setOutfit(me:getOutfit())
+      c:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
+      c:addAnchor(AnchorVerticalCenter, 'parent', AnchorVerticalCenter)
+      c:setPhantom(true)
+    end
+    if kind == 'footprint' and art then
+      for i, off in ipairs({ -70, 70 }) do
+        local p = g_ui.createWidget('UIWidget', holder)
+        p:setImageSource('/modules/game_cosmeticfx/images/prints/' .. art)
+        p:setSize({ width = 40, height = 40 })
+        p:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
+        p:addAnchor(AnchorVerticalCenter, 'parent', AnchorVerticalCenter)
+        p:setMarginLeft(off > 0 and off or 0)
+        p:setMarginRight(off < 0 and -off or 0)
+        p:setRotation(i == 1 and 90 or 270)
+        p:setPhantom(true)
+      end
+    end
   elseif kind == 'lootbeam' then
     box:setBackgroundColor('#2a2622')
     local bg = r and CL.validColor(r.accent) and r.accent or '#100c0ef0'
@@ -96,6 +146,31 @@ local function showSample(r)
   end
 end
 
+-- a Collection row: the look on the character (outfits, mounts, wings, auras, shaders) or the item picture
+local function showLook(d, r)
+  local me = g_game.getLocalPlayer()
+  local outfit
+  if r.collection and me and (r.look or r.with) then
+    outfit = me:getOutfit()
+    if r.kind == 'outfit' or r.kind == 'addons' then
+      outfit.type, outfit.addons = r.look, r.addons or 3
+    elseif r.kind == 'mount' then
+      outfit = { type = r.look }
+    elseif r.kind == 'wings' then
+      outfit.wings = r.look
+    elseif r.kind == 'aura' then
+      outfit.aura = r.look
+    elseif r.kind == 'shader' then
+      outfit.shader = r.shader
+    end
+  end
+  d.creature:setVisible(outfit ~= nil)
+  if outfit then
+    d.creature:setOutfit(outfit)
+    d.item:setVisible(false)
+  end
+end
+
 local function showDetail()
   if not window then return end
   local d = window.detail
@@ -104,8 +179,9 @@ local function showDetail()
   if not r then return end
   d.item:setVisible(r.item ~= nil)
   if r.item then d.item:setItemId(r.item) end
+  showLook(d, r)
   d.nameLabel:setText(r.name .. (r.selected and ('  (' .. tr('in use') .. ')') or ''))
-  d.descLabel:setText(r.desc or '')
+  d.descLabel:setText((r.desc or '') .. (r.collection and r.use and ('\n' .. r.use) or ''))
   local how = r.how or ''
   if r.id == 0 then
     how = ''
@@ -113,10 +189,12 @@ local function showDetail()
     how = r.source == 'store' and tr('Unlocked for your account') or (tr('Unlocked') .. ' - ' .. how)
   end
   d.howLabel:setText(how)
+  d.useButton:setVisible(not r.collection)
   d.useButton:setEnabled(CL.canUse(r))
-  d.previewButton:setVisible(r.preview == true)
+  d.previewButton:setVisible(r.preview == true and not r.collection)
   d.storeButton:setVisible(r.source == 'store' and not r.owned)
   showSample(r)
+  d.sample:setVisible(not r.collection)
 end
 
 local function pick(id)
@@ -160,7 +238,25 @@ local function showList()
   end
   local status = currentTab == 'spellskin' and (state.lineName and (tr('Your class line: ') .. state.lineName) or
     tr('Your class has no spell skins yet.')) or tr('Unlocks are for your whole account; each character chooses.')
+  if CL.DRAWN[currentTab] then
+    status = tr('Account-wide; each character chooses.') -- room for the checkbox beside it
+  elseif currentTab == 'collection' then
+    local have, all = CL.collectionCount(state.collection)
+    -- (tr() formats its text: no % in it)
+    status = tr('Earned') .. ' ' .. have .. ' / ' .. all .. ' ' .. tr('(never sold)')
+  end
   window.statusLabel:setText(status)
+  -- footprints and outlines: hide other players' ones (this client only)
+  local box = window.othersBox
+  local m = fx()
+  box:setVisible(CL.DRAWN[currentTab] == true and m ~= nil)
+  if CL.DRAWN[currentTab] and m then
+    local st = m.getSettings()
+    box:setText(currentTab == 'footprint' and tr("Show other players' footprints") or tr("Show other players' outlines"))
+    settingBox = true -- the onCheckChange below is ours, not the player's
+    box:setChecked(currentTab == 'footprint' and st.othersFootprints or (currentTab == 'outline' and st.othersOutlines))
+    settingBox = false
+  end
   pick(rowOf(selectedId) and selectedId or inUse or 0)
 end
 
@@ -199,7 +295,19 @@ end
 
 function previewCurrent()
   local r = rowOf(selectedId)
-  if r and r.preview then send('preview', { id = r.id }) end
+  if not r or not r.preview then return end
+  local m = fx()
+  if CL.DRAWN[r.kind] and m then
+    m.showPreview(r.kind, r.art, r.pulse) -- drawn here, no server round trip
+  else
+    send('preview', { id = r.id })
+  end
+end
+
+function onOthersChanged(checked)
+  local m = fx()
+  if settingBox or not m then return end
+  m.setSetting(currentTab == 'footprint' and 'othersFootprints' or 'othersOutlines', checked)
 end
 
 function openStore()
@@ -265,6 +373,12 @@ local function onMessage(protocol, opcode, msg)
     pushAccent()
   elseif msg.action == 'colors' then
     names = CL.mergeColors(names, data)
+  elseif msg.action == 'looks' then
+    local m = fx()
+    if m then m.setLooks(data) end
+  elseif msg.action == 'tryfx' then
+    local m = fx()
+    if m and (data.kind == 'footprint' or data.kind == 'outline') then m.showPreview(data.kind, data.art, data.p or data.pulse) end
   elseif msg.action == 'result' then
     if window and data.text then
       window.statusLabel:setText(tostring(data.text))
@@ -289,7 +403,7 @@ function init()
   for _, k in ipairs(CL.KINDS) do
     local b = g_ui.createWidget('ChaosTabButton', window.tabs)
     b:setText(tr(k.name))
-    b:setWidth(120)
+    b:setWidth(96)
     local key = k.key
     b.onClick = function() selectTab(key) end
     tabButtons[key] = b

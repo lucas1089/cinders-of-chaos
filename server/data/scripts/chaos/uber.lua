@@ -723,6 +723,10 @@ local function success(run)
 		local p = Player(id)
 		if p then
 			pcall(A.deliver, p, run)
+			-- exclusives.lua: the rare personal drop of a visual exclusive ("cinder" or "ascended_<kind>")
+			if ChaosExclusives and ChaosExclusives.bossKill then
+				pcall(ChaosExclusives.bossKill, p, def.final and "cinder" or ("ascended_" .. def.key))
+			end
 			if ChaosAchievements and ChaosAchievements.progress then
 				for _, s in ipairs(U.killStats(def, {players = size, deaths = run.deaths or 0})) do
 					pcall(ChaosAchievements.progress, p, s[1], s[2])

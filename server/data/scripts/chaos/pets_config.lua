@@ -80,7 +80,10 @@ return {
 	-- source: how it is obtained (drop = {chance = 1 / N per kill, monsters = names or nil for any monster,
 	-- tierMult = extra factor for tiered kills}; a drop from any monster needs a kill that counts for pet XP (see `xp`),
 	-- a drop from listed monsters needs only a kill that gives the owner experience; store = the store unlock key (shop_config.lua "Pets");
-	-- achievement = the achievement id (achievements_data.lua), account-wide like achievements)
+	-- achievement = the achievement id (achievements_data.lua), account-wide like achievements; boss = the boss's name:
+	-- a rare personal boss drop, unlocked for the account by exclusives.lua (exclusives_config.lua) and given to each
+	-- of its characters). Store pets reuse the ability pairs of the first two store pets (Mend + Ward, Gold Sniffer +
+	-- Treasure Sense): no new power for coins.
 	species = {
 		{key = "ember_whelp", name = "Ember Whelp", monster = "Ember Whelp", look = 272, element = "fire",
 			abilities = {"aura", "ward"},
@@ -113,11 +116,42 @@ return {
 		{key = "riftling", name = "Riftling", monster = "Riftling", look = 232, element = "death",
 			abilities = {"itemFind", "aura"},
 			source = {achievement = "rift_t5"},
-			how = "Achievement: Deeper Wounds (seal a tier 5 rift)."}
+			how = "Achievement: Deeper Wounds (seal a tier 5 rift)."},
+		-- the second set of store pets (creature looks of the base pair)
+		{key = "ember_parrot", name = "Ember Parrot", monster = "Ember Parrot", look = 217, element = "fire",
+			abilities = {"mend", "ward"},
+			source = {store = "petEmberParrot"},
+			how = "Store (Pets): 400 Chaos Coins."},
+		{key = "rime_penguin", name = "Rime Penguin", monster = "Rime Penguin", look = 250, element = "ice",
+			abilities = {"goldFind", "itemFind"},
+			source = {store = "petRimePenguin"},
+			how = "Store (Pets): 400 Chaos Coins."},
+		{key = "ashen_hare", name = "Ashen Hare", monster = "Ashen Hare", look = 262, element = "holy",
+			abilities = {"mend", "ward"},
+			source = {store = "petAshenHare"},
+			how = "Store (Pets): 400 Chaos Coins."},
+		{key = "bog_frog", name = "Bog Frog", monster = "Bog Frog", look = 224, element = "earth",
+			abilities = {"goldFind", "itemFind"},
+			source = {store = "petBogFrog"},
+			how = "Store (Pets): 400 Chaos Coins."},
+		{key = "dusk_moth", name = "Dusk Moth", monster = "Dusk Moth", look = 213, element = "death",
+			abilities = {"mend", "ward"},
+			source = {store = "petDuskMoth"},
+			how = "Store (Pets): 400 Chaos Coins."},
+		-- boss drops (exclusives_config.lua bosses; never sold)
+		{key = "rotling", name = "Rotling", monster = "Rotling", look = 314, element = "earth",
+			abilities = {"goldFind", "fetch"},
+			source = {boss = "The Rotmother"},
+			how = "Boss: The Rotmother (rare drop, whole account)."},
+		{key = "ashweaver", name = "Ashweaver Spiderling", monster = "Ashweaver Spiderling", look = 350, element = "death",
+			abilities = {"itemFind", "mend"},
+			source = {boss = "the Ashen Sepulchre's wardens"},
+			how = "Boss: the Ashen Sepulchre's first four bosses (rare drop, whole account)."}
 	},
 
 	-- store unlocks (shop_config.lua category "Pets"; the offer's unlock key -> species)
-	store = {petLanternWisp = "lantern_wisp", petHoarderSquirrel = "hoarder_squirrel"},
+	store = {petLanternWisp = "lantern_wisp", petHoarderSquirrel = "hoarder_squirrel", petEmberParrot = "ember_parrot",
+		petRimePenguin = "rime_penguin", petAshenHare = "ashen_hare", petBogFrog = "bog_frog", petDuskMoth = "dusk_moth"},
 
 	staffAccess = true, -- /pet give|xp|level|reset for characters with an access group
 	tables = {pets = "chaos_pets"}

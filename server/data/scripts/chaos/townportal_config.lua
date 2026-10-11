@@ -46,6 +46,8 @@ return {
 	--                 achievements_data.lua (one achievement per style; checked by server/tests/townportal_test.lua)
 	--   "season"      owned while the account has the season pass / season pack reward {kind = "portal", key = <key>}
 	--                 of seasonpass_config.lua (account-wide, kept after the season); `how` is the window's line
+	--   "boss"        a rare personal boss drop (exclusives.lua, exclusive "portal_<key>", account-wide); `how` is the
+	--                 window's line; never sold
 	-- Each style has exactly one route: a store style is never an achievement reward and the other way round.
 	styles = {
 		{id = 0, key = "waygate", name = "Waygate", route = "default", item = 5023,
@@ -114,6 +116,18 @@ return {
 			how = "Season of Ash: Blaze Pack or Inferno Pack",
 			desc = "A lion-guarded gate wreathed in the flames of a funeral pyre.",
 			open = {"fire_tornado", "fire_ring", ME_FIRE}, close = {"dome_blast_fire", "fire_explosion", ME_FIRE},
-			loop = {"inferno_burst", ME_FIRE}, travel = {"px197_crimson", ME_RED}}
+			loop = {"inferno_burst", ME_FIRE}, travel = {"px197_crimson", ME_RED}},
+
+		-- boss drops (exclusives_config.lua bosses): ids 51 and up
+		{id = 51, key = "drowned", name = "Drowned Gate", route = "boss", item = 29638,
+			how = "Boss: Skaldra the Rime Queen (rare drop)",
+			desc = "A gate of black water rimmed with frost.",
+			open = {"frost_glyph", "frost_ripple", ME_ICE}, close = {"ice_shatter", "frost_burst", ME_ICE},
+			loop = {"frost_ripple", ME_MAGIC_BLUE}, travel = {"frost_nova", ME_ICE}},
+		{id = 52, key = "seraph", name = "Seraph's Door", route = "boss", item = 29639,
+			how = "Boss: Varkhul the Ashen Sovereign (rare drop)",
+			desc = "A radiant door guarded by stone wings.",
+			open = {"holy_seal", "px586_white", ME_HOLY}, close = {"solar_flash", "holy_cross", ME_HOLY},
+			loop = {"holy_spiral", ME_HOLY}, travel = {"blink_appear", ME_TELEPORT}}
 	}
 }

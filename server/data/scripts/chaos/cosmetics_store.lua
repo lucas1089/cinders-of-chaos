@@ -7,12 +7,14 @@
 
 local cfg = dofile("data/scripts/chaos/cosmetics_config.lua")
 
-local ICONS = {spellskin = 7762, killfx = 5944, lootbeam = 18418, chatcolor = 2146}
+local ICONS = {spellskin = 7762, killfx = 5944, lootbeam = 18418, chatcolor = 2146, footprint = 2187, outline = 2154}
 local NOTES = {
 	spellskin = " Seen by all. Character > Cosmetics.",
 	killfx = " Seen by all. Character > Cosmetics.",
 	lootbeam = " Character > Cosmetics.",
-	chatcolor = " Character > Cosmetics."
+	chatcolor = " Character > Cosmetics.",
+	footprint = " Seen by all. Character > Cosmetics.",
+	outline = " Seen by all. Character > Cosmetics."
 }
 
 return function(kind)

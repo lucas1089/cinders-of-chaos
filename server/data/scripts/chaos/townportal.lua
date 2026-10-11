@@ -98,6 +98,11 @@ local function facts(player)
 		seasonOwned = function(styleKey)
 			local SP = ChaosSeasonPass
 			return SP and SP.ownsPortal and SP.ownsPortal(player, styleKey) or false
+		end,
+		-- route "boss": a rare boss drop, unlocked for the account by exclusives.lua (exclusive "portal_<key>")
+		bossOwned = function(styleKey)
+			local X = ChaosExclusives
+			return X and X.owns and X.owns(player:getAccountId(), "portal_" .. styleKey) or false
 		end
 	}
 end

@@ -265,6 +265,7 @@ local CATEGORY = {
 	["Outfit Shaders"] = true, ["Name Plates"] = true, ["Portal Styles"] = true, ["Bundles"] = true, ["Classes"] = true,
 	["Chaos Pact"] = true, ["Storage & Slots"] = true, ["Season Pass"] = true, ["Premium Time"] = true,
 	["Spell Effects"] = true, ["Kill Effects"] = true, ["Loot Labels"] = true, ["Chat Colours"] = true, ["Appearances"] = true,
+	["Footprints"] = true, ["Outlines"] = true, -- cosmetics.lua: looks only
 	["Hideout Decorations"] = true, -- hideout_store.lua: looks only
 	["Depot Tabs"] = true, -- depot_config.lua: account room (service pactExtra, as Storage & Slots)
 	["Starter"] = false, ["Crafting"] = false, ["Supplies"] = false, ["Boosts"] = false, ["World Buffs"] = false,

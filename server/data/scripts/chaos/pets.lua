@@ -19,6 +19,7 @@
 -- pet rest while it is out, so the stock limit of two summons is never reduced by a pet.
 --
 -- Obtaining: drops (pets_core K.rollDrop), the store (offer kind "unlock", shop_services.lua asks ChaosPets.storeUnlock),
+-- boss drops (source.boss: exclusives.lua unlocks the pet for the account and calls ChaosPets.grant on its characters),
 -- achievements (account-wide, checked at login, when the window opens and every flush; a season character only gets
 -- the pets of achievements it earned itself). A second copy of an owned species becomes cfg.duplicateXp pet XP.
 --
@@ -370,7 +371,12 @@ function P.addXp(player, key, amount, quiet)
 end
 
 -- ---------------------------------------------------------------- obtaining
--- give `key` to the player (source: "drop", "store", "achievement", "staff"); a duplicate becomes pet XP
+-- does the character have the pet `key` (exclusives.lua: a boss pet is given to every character of the account)
+function P.owns(player, key)
+	return rowsOf(player)[key or ""] ~= nil
+end
+
+-- give `key` to the player (source: "drop", "store", "achievement", "boss", "staff"); a duplicate becomes pet XP
 function P.grant(player, key, source, quiet)
 	local species = K.species(key, cfg)
 	if not species then

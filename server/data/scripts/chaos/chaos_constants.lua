@@ -143,6 +143,8 @@ Chaos.storage = {
 	-- store name plate frames (shop.lua, kind "frame"): base + 1 violet, + 2 frost; 7100760 - 7100769 reserved
 	shopFrameBase = 7100760,
 	shopFrameActive = 7100769, -- index of the frame shown (0 / unset = the title's own frame)
+	-- frame slots 9 and up (shop_core.lua C.FRAMES / frameStorage): base + slot - 9; 7102010 - 7102039 reserved
+	shopFrameBase2 = 7102010,
 
 	-- store services (shop_services.lua, autosell.lua): 7100100 - 7100159
 	shopLootPouch = 7100100, -- RESERVED: the retired Bottomless Loot Pouch unlock (1 = owned; pouches.lua gives those owners a
@@ -163,6 +165,13 @@ Chaos.storage = {
 ChaosOpcodes.antibot = 211
 Chaos.storage.antibot = 7100890
 Chaos.antibotTables = {reports = "chaos_reports", log = "chaos_antibot_log", holds = "chaos_antibot_holds"}
+
+-- Wardrobe: footprints and outlines (cosmetics.lua kinds footprint / outline, client game_cosmeticfx) and the visual
+-- exclusives (exclusives.lua, exclusives_core.lua, exclusives_config.lua, sql/chaos_exclusives.sql; the Collection tab
+-- of client game_cosmetics, cosmetics opcode 225, no new opcode). Storages 7102000 - 7102049 reserved: +0 the chosen
+-- footprint, +1 the chosen outline (cosmetics_config.lua storage), +10 .. +39 name plate frame slots 9 and up
+-- (shopFrameBase2 above)
+Chaos.storage.wardrobe = 7102000
 
 -- ---------------------------------------------------------------------------
 -- Database tables (created by server/sql/chaos.sql)
@@ -189,6 +198,8 @@ Chaos.tables = {
 }
 -- Rift Atlas: one row per character, completed grid cells and allocated nodes (atlas.lua, sql/chaos_rift_atlas.sql)
 Chaos.tables.riftAtlas = "chaos_rift_atlas"
+-- the visual exclusives, one row per account and unlock (exclusives.lua, sql/chaos_exclusives.sql; "Wardrobe" above)
+Chaos.tables.exclusives = "chaos_exclusives"
 -- Seasonal Journey (season_journey.lua, season_journey_config.lua, sql/chaos_season_journey.sql): on the season opcode
 -- (246, actions journey*), no player storages
 Chaos.tables.seasonJourneyStats = "chaos_season_journey_stats"

@@ -1315,6 +1315,8 @@ local function bossKilled(run, i)
 		saveRow(p:getGuid())
 		mirrorLocks(p)
 		send(p, "loot", {boss = b.name, eligible = true, lines = ok and lines or {}})
+		-- exclusives.lua: the rare personal drop of a visual exclusive (looting players only, like the spoils)
+		if ChaosExclusives and ChaosExclusives.bossKill then pcall(ChaosExclusives.bossKill, p, "raid_" .. b.key) end
 	end
 	for _, p in ipairs(helpers) do
 		p:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("You helped slay %s. You looted it already this week: no spoils " ..

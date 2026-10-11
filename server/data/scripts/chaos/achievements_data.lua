@@ -21,6 +21,9 @@
 --               mount  = {name, id = mount id}   data/XML/mounts.xml of the base server
 --               portal = {key, name}             a Town Portal style (townportal_config.lua, route "achievement"); it is
 --                                                owned while the character has the achievement (also for older unlocks)
+--               exclusives = {{key, name}}       visual exclusives of exclusives_config.lua (source "achievement"; name =
+--                                                "<kind> <name>"): unlocked for the whole account by exclusives.lua, also
+--                                                for older unlocks; never sold
 --             outfits and mounts are ones the base server already has (no new art).
 --
 -- Stats (per character; values only go up). Who feeds them, see server/README.md "Achievements":
@@ -157,7 +160,8 @@ return {
 		{id = "ambush_50", cat = "monsters", name = "Ambush Predator", desc = "Kill 50 ambushing monsters.", points = 15,
 			stat = "ambush_kills", target = 50},
 		{id = "ambush_250", cat = "monsters", name = "Nothing Surprises Me", desc = "Kill 250 ambushing monsters.", points = 25,
-			stat = "ambush_kills", target = 250},
+			stat = "ambush_kills", target = 250,
+			reward = {exclusives = {{key = "mount_tuskhide", name = "mount Tuskhide Boar"}}}},
 		{id = "goblin_1", cat = "monsters", name = "Grab the Sack", desc = "Slay a Treasure Goblin before it escapes.", points = 10,
 			stat = "goblin_kills"},
 		{id = "goblin_10", cat = "monsters", name = "Greed Is Good", desc = "Slay 10 Treasure Goblins.", points = 25,
@@ -172,7 +176,8 @@ return {
 		{id = "bestiary_done_1", cat = "monsters", name = "Know Thy Enemy", desc = "Complete a bestiary entry.", points = 10,
 			stat = "bestiary_completed", target = 1},
 		{id = "bestiary_done_50", cat = "monsters", name = "Monster Scholar", desc = "Complete 50 bestiary entries.", points = 25,
-			stat = "bestiary_completed", target = 50, title = "Lorekeeper", reward = {items = orbs(0, 2)}},
+			stat = "bestiary_completed", target = 50, title = "Lorekeeper",
+			reward = {items = orbs(0, 2), exclusives = {{key = "addons_mage", name = "outfit addons Mage"}}}},
 		{id = "tasks_50", cat = "monsters", name = "Exterminator", desc = "Complete 50 kill tasks.", points = 25,
 			stat = "bestiary_tasks", target = 50, title = "Exterminator"},
 
@@ -193,7 +198,7 @@ return {
 		{id = "wb_top_1", cat = "bosses", name = "Lion's Share", desc = "Deal the most damage of everyone to a world boss.",
 			points = 25, stat = "wb_top", title = "Worldbreaker"},
 		{id = "wb_top_5", cat = "bosses", name = "Unrivalled", desc = "Deal the most damage to a world boss 5 times.", points = 50,
-			stat = "wb_top", target = 5},
+			stat = "wb_top", target = 5, reward = {exclusives = {{key = "outfit_wingbound", name = "outfit Wingbound"}}}},
 		{id = "wb_10", cat = "bosses", name = "Raid Regular", desc = "Be rewarded at 10 world boss kills.", points = 25,
 			stat = "wb_kills", target = 10, reward = {items = orbs(5, 2)}},
 		{id = "wb_50", cat = "bosses", name = "Eternal Raider", desc = "Be rewarded at 50 world boss kills.", points = 50,
@@ -219,7 +224,7 @@ return {
 		{id = "rift_flawless", cat = "rifts", name = "Flawless Seal", desc = "Seal a rift with everyone who entered still standing.",
 			points = 15, stat = "rift_flawless"},
 		{id = "rift_flawless_10", cat = "rifts", name = "Untouchable", desc = "Seal 10 rifts without losing anyone.", points = 25,
-			stat = "rift_flawless", target = 10},
+			stat = "rift_flawless", target = 10, reward = {exclusives = {{key = "mount_duskcrest", name = "mount Duskcrest Drake"}}}},
 		{id = "rift_three", cat = "rifts", name = "Triple Threat", desc = "Seal a rift with three modifiers.", points = 15,
 			stat = "rift_three"},
 		{id = "rift_reflection", cat = "rifts", name = "Mirror, Mirror", desc = "Seal a rift with the Reflection modifier.",
@@ -316,7 +321,8 @@ return {
 		{id = "orbs_100", cat = "items", name = "Orbweaver", desc = "Use 100 orbs at the Crafting Bench.", points = 15,
 			stat = "orbs_used", target = 100, reward = {items = orbs(0, 0, 2)}},
 		{id = "orbs_1000", cat = "items", name = "Master Artificer", desc = "Use 1,000 orbs at the Crafting Bench.", points = 50,
-			stat = "orbs_used", target = 1000, title = "Artificer"},
+			stat = "orbs_used", target = 1000, title = "Artificer",
+			reward = {exclusives = {{key = "outfit_jadeforged", name = "outfit Jadeforged"}}}},
 		{id = "exalted_25", cat = "items", name = "Grafting Hands", desc = "Use 25 Orbs of Grafting.", points = 15, stat = "orb_exalted",
 			target = 25},
 		-- orbs v2 (data/lib/chaos_orbs.lua) and the legendary powers (data/lib/chaos_powers.lua)
@@ -429,7 +435,8 @@ return {
 		{id = "prof_total_200", cat = "explore", name = "Jack of the Wilds", desc = "Reach 200 profession levels in total.",
 			points = 25, stat = "prof_total", target = 200},
 		{id = "prof_total_400", cat = "explore", name = "Master of the Wilds", desc = "Reach level 100 in all four professions.",
-			points = 50, stat = "prof_total", target = 400, title = "Master of the Wilds"},
+			points = 50, stat = "prof_total", target = 400, title = "Master of the Wilds",
+			reward = {exclusives = {{key = "shader_verdant", name = "outfit shader Verdant Sparks"}}}},
 
 		-- mentors (mentor.lua): mentor_graduates = apprentices this character mentored to graduation (with enough time
 		-- hunting together); mentor_fledged = 1 once this character graduated from a mentor
@@ -438,7 +445,8 @@ return {
 		{id = "mentor_5", cat = "explore", name = "Lamplighter", desc = "Mentor 5 apprentices to graduation.", points = 25,
 			stat = "mentor_graduates", target = 5, title = "Seasoned Mentor"},
 		{id = "mentor_15", cat = "explore", name = "Keeper of the Flame", desc = "Mentor 15 apprentices to graduation.",
-			points = 50, stat = "mentor_graduates", target = 15, title = "Master Mentor"},
+			points = 50, stat = "mentor_graduates", target = 15, title = "Master Mentor",
+			reward = {exclusives = {{key = "frame_laurel", name = "name plate frame Laurel"}}}},
 		{id = "mentor_fledged", cat = "explore", name = "Fledged", desc = "Graduate from your mentor.", points = 10,
 			stat = "mentor_fledged", title = "Fledgling"},
 
@@ -476,7 +484,8 @@ return {
 		{id = "deaths_50", cat = "secrets", name = "Death Is a Teacher", desc = "Die 50 times.", points = 10, stat = "deaths",
 			target = 50, hidden = true, title = "the Undying", reward = {portal = {key = "gravecall", name = "Gravecall Gate"}}},
 		{id = "witching_hour", cat = "secrets", name = "Witching Hour", desc = "Kill a legendary monster between midnight and 1 am.",
-			points = 10, stat = "witching_legendary", hidden = true},
+			points = 10, stat = "witching_legendary", hidden = true,
+			reward = {exclusives = {{key = "aura_murmuration", name = "aura Ashen Murmuration"}}}},
 		{id = "ambushed_legend", cat = "secrets", name = "Out of the Frying Pan",
 			desc = "Kill a legendary monster that ambushed you.", points = 15, stat = "ambush_legendary", hidden = true}
 	}

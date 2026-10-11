@@ -26,13 +26,22 @@
 --   lootbeam   accent = background of the character's own highlighted ground loot labels (client game_groundlabels);
 --              the text and the border keep the rarity colour, the corpse loot rays keep their rarity colours
 --   chatcolor  color = the colour of the character's own name in chat (every viewer); readable on the console
+--   footprint  art = a key of `prints`: the prints every viewer's client leaves behind the walking character (client
+--              game_cosmeticfx draws its own generated pictures on the tiles left; no server work per step); color =
+--              the window's swatch
+--   outline    art = a key of `glows`: a coloured glow drawn behind the character for every viewer (game_cosmeticfx);
+--              pulse = true: it breathes in and out; color = the window's swatch
+-- Sources also: "boss" (boss = the boss's name for the window): a rare personal drop of that boss, granted by
+-- exclusives.lua (exclusives_config.lua `bosses`), never sold.
 
 return {
 	opcode = 225, -- ChaosOpcodes.cosmetics (client game_cosmetics)
 	table = "chaos_cosmetics", -- one row per account and unlocked cosmetic (server/sql/chaos_cosmetics.sql)
 	-- player storages, 7100940 - 7100949 reserved (chaos_constants.lua): the id of the chosen cosmetic per kind, and per
 	-- class line for the spell skins (skinBase + line slot, slots 0..6); 0 / unset = the default
-	storage = {killfx = 7100940, lootbeam = 7100941, chatcolor = 7100942, skinBase = 7100943},
+	storage = {killfx = 7100940, lootbeam = 7100941, chatcolor = 7100942, skinBase = 7100943,
+		-- footprints and outlines: the wardrobe block 7102000 - 7102049 (chaos_constants.lua Chaos.storage.wardrobe)
+		footprint = 7102000, outline = 7102001},
 	staffGroup = 4, -- /cosmetic <character>, <key | all>[, revoke]
 	previewCooldownMs = 1500, -- a store / window preview (an effect only the asking player sees)
 	consoleBackground = "#1c1a18", -- chat colours must stay readable on this (contrast 4.5 or more)
@@ -44,8 +53,17 @@ return {
 		{key = "spellskin", name = "Spell Effects", store = "Spell Effects"},
 		{key = "killfx", name = "Kill Effects", store = "Kill Effects"},
 		{key = "lootbeam", name = "Loot Labels", store = "Loot Labels"},
-		{key = "chatcolor", name = "Chat Name Colours", store = "Chat Colours"}
+		{key = "chatcolor", name = "Chat Name Colours", store = "Chat Colours"},
+		{key = "footprint", name = "Footprints", store = "Footprints"},
+		{key = "outline", name = "Outlines", store = "Outlines"}
 	},
+
+	-- the pictures of the client (client/tools/gen_cosmeticfx_art.py -> game_cosmeticfx/images/prints|glows/<art>.png);
+	-- a footprint / outline names one of these
+	prints = {"ember", "frost", "blood", "ash", "petal", "shadow", "gilded", "venom", "spark",
+		"hunter", "chronicle", "rime", "omen"},
+	glows = {"gold", "crimson", "void", "frost", "ember", "verdant", "radiant", "abyssal", "storm",
+		"absolute", "chronicle", "corona", "cinder"},
 
 	-- class lines (spell skins): slot = storage offset (skinBase + slot); the Necromancer line has no skins yet
 	lines = {
@@ -248,6 +266,66 @@ return {
 		{id = 313, key = "chat_lantern", kind = "chatcolor", icon = 2145, source = "achievement", category = "explore",
 			color = "#e8d890", name = "Lantern Name", desc = "Your name in chat shows lantern light for everyone. Complete Exploration & Social."},
 		{id = 119, key = "kill_starfall", kind = "killfx", icon = 2150, source = "achievement", category = "secrets",
-			vfx = "starfall_crown", name = "Falling Stars", desc = "Stars fall over your kills. Complete Secrets."}
+			vfx = "starfall_crown", name = "Falling Stars", desc = "Stars fall over your kills. Complete Secrets."},
+
+		-- ------------------------------------------------------------------ footprints (store 200)
+		-- every viewer's client draws them (game_cosmeticfx), behind the walking character, fading in about 2.5 s
+		{id = 401, key = "foot_ember", kind = "footprint", icon = 2187, source = "store", price = 200, art = "ember",
+			color = "#ff8a3a", name = "Ember Steps", desc = "Glowing ember prints smoulder where you walk."},
+		{id = 402, key = "foot_frost", kind = "footprint", icon = 2274, source = "store", price = 200, art = "frost",
+			color = "#9ad8ff", name = "Frost Steps", desc = "Each step leaves a print of rime."},
+		{id = 403, key = "foot_blood", kind = "footprint", icon = 9020, source = "store", price = 200, art = "blood",
+			color = "#c83030", name = "Blood Trail", desc = "Drops of blood mark your way."},
+		{id = 404, key = "foot_ash", kind = "footprint", icon = 2229, source = "store", price = 200, art = "ash",
+			color = "#a8a29a", name = "Ash Prints", desc = "Grey ash settles in your footprints."},
+		{id = 405, key = "foot_petal", kind = "footprint", icon = 18415, source = "store", price = 200, art = "petal",
+			color = "#ff9ec4", name = "Petal Trail", desc = "Pink petals fall where you step."},
+		{id = 406, key = "foot_venom", kind = "footprint", icon = 2149, source = "store", price = 200, art = "venom",
+			color = "#7ee05a", name = "Venom Drips", desc = "Green venom drips from your steps."},
+		{id = 407, key = "foot_shadow", kind = "footprint", icon = 2150, source = "store", price = 200, art = "shadow",
+			color = "#9a6ae0", name = "Shadow Wisps", desc = "Violet wisps of shadow curl behind you."},
+		{id = 408, key = "foot_gilded", kind = "footprint", icon = 2154, source = "store", price = 200, art = "gilded",
+			color = "#ffd040", name = "Gilded Steps", desc = "Golden prints that sparkle a moment."},
+		{id = 409, key = "foot_spark", kind = "footprint", icon = 7759, source = "store", price = 200, art = "spark",
+			color = "#a8e4ff", name = "Storm Sparks", desc = "Crackling sparks jump from every step."},
+		-- never sold: an achievement, the reward track and boss drops (exclusives_config.lua)
+		{id = 451, key = "foot_hunter", kind = "footprint", icon = 2392, source = "achievement", achievement = "bounty_week_10",
+			art = "hunter", color = "#c89060", name = "Hunter's Tracks", desc = "Paw-and-claw tracks of a bounty hunter. Achievement: Never Off Duty."},
+		{id = 452, key = "foot_chronicle", kind = "footprint", icon = 13531, source = "achievement", points = 750,
+			art = "chronicle", color = "#5cc8c0", name = "Inkstep", desc = "Teal ink runes mark your path. Reward track: 750 points."},
+		{id = 453, key = "foot_rime", kind = "footprint", icon = 2146, source = "boss", boss = "Skaldra the Rime Queen",
+			art = "rime", color = "#d8f4ff", name = "Rimewalker", desc = "Crystals of the Rime Queen's frost bloom in your steps."},
+		{id = 454, key = "foot_omen", kind = "footprint", icon = 6500, source = "boss", boss = "the Ascended Omens",
+			art = "omen", color = "#b070ff", name = "Omen Ash", desc = "Violet ash of a broken omen drifts behind you."},
+
+		-- ------------------------------------------------------------------ outlines (store 250, pulsing ones too)
+		{id = 501, key = "glow_gold", kind = "outline", icon = 2154, source = "store", price = 250, art = "gold",
+			color = "#ffd040", name = "Gilded Glow", desc = "A warm golden glow around you."},
+		{id = 502, key = "glow_crimson", kind = "outline", icon = 2156, source = "store", price = 250, art = "crimson",
+			color = "#e03838", name = "Crimson Glow", desc = "A blood-red glow around you."},
+		{id = 503, key = "glow_void", kind = "outline", icon = 2153, source = "store", price = 250, art = "void",
+			color = "#9a4ce0", name = "Void Glow", desc = "A deep violet glow around you."},
+		{id = 504, key = "glow_frost", kind = "outline", icon = 2146, source = "store", price = 250, art = "frost",
+			color = "#7fc8ff", name = "Frost Glow", desc = "A cold blue glow around you."},
+		{id = 505, key = "glow_verdant", kind = "outline", icon = 2149, source = "store", price = 250, art = "verdant",
+			color = "#6ee070", name = "Verdant Glow", desc = "A living green glow around you."},
+		{id = 506, key = "glow_ember", kind = "outline", icon = 2187, source = "store", price = 250, art = "ember",
+			color = "#ff7a2a", name = "Ember Gradient", desc = "Red at your feet, burning gold at your crown."},
+		{id = 507, key = "glow_storm", kind = "outline", icon = 7759, source = "store", price = 250, art = "storm",
+			color = "#a8f0ff", name = "Storm Gradient", desc = "Deep blue below, white lightning above."},
+		{id = 508, key = "glow_radiant", kind = "outline", icon = 2145, source = "store", price = 250, art = "radiant",
+			pulse = true, color = "#fff0a0", name = "Radiant Pulse", desc = "A golden light that breathes in and out."},
+		{id = 509, key = "glow_abyssal", kind = "outline", icon = 6500, source = "store", price = 250, art = "abyssal",
+			pulse = true, color = "#7040c0", name = "Abyssal Pulse", desc = "A violet darkness that swells and fades."},
+		-- never sold
+		{id = 551, key = "glow_absolute", kind = "outline", icon = 2343, source = "achievement", achievement = "paragon_282",
+			art = "absolute", pulse = true, color = "#fff8e0", name = "Paragon's Radiance",
+			desc = "A white-gold radiance that pulses with every breath. Achievement: Absolute."},
+		{id = 552, key = "glow_chronicle", kind = "outline", icon = 13531, source = "achievement", points = 2000,
+			art = "chronicle", color = "#5cc8c0", name = "Chronicler's Halo", desc = "A teal halo of old ink. Reward track: 2000 points."},
+		{id = 553, key = "glow_corona", kind = "outline", icon = 2153, source = "boss", boss = "Nyxareth the Void Archon",
+			art = "corona", pulse = true, color = "#5a2a90", name = "Void Corona", desc = "A black corona with a violet rim, torn from the Void Archon."},
+		{id = 554, key = "glow_cinder", kind = "outline", icon = 2353, source = "boss", boss = "Ysgrath the Cinderheart",
+			art = "cinder", pulse = true, color = "#ff5a1a", name = "Cinderheart Blaze", desc = "The Cinderheart's own fire, flaring round you."}
 	}
 }

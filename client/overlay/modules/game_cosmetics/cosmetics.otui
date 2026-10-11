@@ -1,5 +1,5 @@
-// Cosmetics (game_cosmetics): spell effect skins, kill effects, loot label accents, chat name colours. Styles from
-// client_chaos_theme.
+// Cosmetics (game_cosmetics): spell effect skins, kill effects, loot label accents, chat name colours, footprints,
+// outlines and the Collection of exclusives. Styles from client_chaos_theme.
 
 CosmeticRow < ChaosPanelDark
   height: 40
@@ -61,7 +61,7 @@ CosmeticSampleLabel < UILabel
 
 ChaosMainWindow
   id: cosmeticsWindow
-  size: 660 460
+  size: 720 480
   !text: tr('Cosmetics')
   @onEscape: modules.game_cosmetics.hide()
 
@@ -124,6 +124,15 @@ ChaosMainWindow
       margin-top: 4
       size: 64 64
       virtual: true
+
+    UICreature
+      id: creature
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.top: parent.top
+      margin-top: 0
+      size: 72 72
+      phantom: true
+      visible: false
 
     ChaosTitle
       id: nameLabel
@@ -196,11 +205,21 @@ ChaosMainWindow
   ChaosLabelDim
     id: statusLabel
     anchors.left: parent.left
-    anchors.right: closeButton.left
+    anchors.right: othersBox.left
     anchors.bottom: parent.bottom
     margin-right: 8
     height: 20
     text-align: left
+
+  // footprints and outlines are drawn by every client (game_cosmeticfx): hide other players' ones
+  ChaosCheckBox
+    id: othersBox
+    anchors.right: closeButton.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    margin-right: 12
+    width: 230
+    visible: false
+    @onCheckChange: modules.game_cosmetics.onOthersChanged(self:isChecked())
 
   ChaosButton
     id: closeButton

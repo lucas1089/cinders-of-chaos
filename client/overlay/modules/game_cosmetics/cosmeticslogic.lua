@@ -1,6 +1,7 @@
 -- Cosmetics: the rules without client API (tested by cosmeticslogic_test.lua with luajit and lua5.3).
 -- Rows of the window (server server/data/scripts/chaos/cosmetics.lua, cosmetics_core.lua C.rows), the chat name colour
--- (only the speaker's name, only player messages, only colours the server sent) and the label accent.
+-- (only the speaker's name, only player messages, only colours the server sent), the label accent, and the Collection
+-- tab (server exclusives.lua: the exclusives of every visual kind and how each is earned).
 
 CosmeticsLogic = {}
 local CL = CosmeticsLogic
@@ -10,12 +11,19 @@ CL.KINDS = {
   { key = 'killfx', name = 'Kill Effects' },
   { key = 'lootbeam', name = 'Loot Labels' },
   { key = 'chatcolor', name = 'Chat Colours' },
+  { key = 'footprint', name = 'Footprints' },
+  { key = 'outline', name = 'Outlines' },
+  { key = 'collection', name = 'Collection' },
 }
+-- footprints and outlines: drawn by game_cosmeticfx on every client; the window's settings hide other players' ones
+CL.DRAWN = { footprint = true, outline = true }
 CL.DEFAULT_TEXT = {
   spellskin = 'Your spells show their own effects.',
   killfx = 'No effect on your kills.',
   lootbeam = 'Your highlighted loot labels keep the dark background.',
   chatcolor = 'Your name in chat keeps the colour of the message.',
+  footprint = 'You leave no footprints.',
+  outline = 'No glow around you.',
 }
 CL.SAMPLE_RARITY = { { name = 'Legendary', color = '#ffd040' }, { name = 'Rare', color = '#4a90ff' },
   { name = 'Mythic', color = '#ff5a5a' } }
@@ -61,8 +69,42 @@ function CL.tabRows(rows, kind, line, lineName)
   return out
 end
 
+-- the Collection tab (server exclusives_core.lua K.rows): owned ones first, then the rest, each in the server's order;
+-- filter = nil | 'owned' | 'missing'
+function CL.collectionRows(collection, filter)
+  local owned, missing = {}, {}
+  for _, r in ipairs(type(collection) == 'table' and collection or {}) do
+    if type(r) == 'table' and type(r.key) == 'string' then
+      local copy = {}
+      for k, v in pairs(r) do copy[k] = v end
+      copy.id = 'x:' .. r.key -- the window's row id (never a cosmetic id)
+      copy.collection = true
+      if r.owned then owned[#owned + 1] = copy else missing[#missing + 1] = copy end
+    end
+  end
+  local out = {}
+  if filter ~= 'missing' then for _, r in ipairs(owned) do out[#out + 1] = r end end
+  if filter ~= 'owned' then for _, r in ipairs(missing) do out[#out + 1] = r end end
+  return out
+end
+
+-- "3 / 34 earned" of the Collection tab
+function CL.collectionCount(collection)
+  local have, all = 0, 0
+  for _, r in ipairs(type(collection) == 'table' and collection or {}) do
+    if type(r) == 'table' and type(r.key) == 'string' then
+      all = all + 1
+      if r.owned then have = have + 1 end
+    end
+  end
+  return have, all
+end
+
 -- the line text of a row in the list
 function CL.subText(r)
+  if r.collection then
+    return (r.kindName or r.kind or '') .. (r.owned and ' - Unlocked' or (' - ' .. (r.how or 'Locked')))
+  end
   if r.otherLine then return (r.lineName or 'Another line') .. ' - not your class' end
   if r.id == 0 then return r.selected and 'In use' or 'Default' end
   if r.selected then return 'In use' end
@@ -72,7 +114,7 @@ end
 
 -- can the row be chosen now (the server checks again)
 function CL.canUse(r)
-  return r ~= nil and r.owned == true and not r.selected and not r.otherLine
+  return r ~= nil and r.owned == true and not r.selected and not r.otherLine and not r.collection
 end
 
 -- ---------------------------------------------------------------- chat name colours

@@ -79,4 +79,35 @@ eq(#tab, 2, 'default + soul spark') eq(tab[1].selected, true, 'nothing chosen: t
 tab = CL.tabRows(rows, 'spellskin', nil)
 eq(tab[1].otherLine, true, 'a class without skins: no default row, all other lines')
 
+
+-- footprints and outlines: a Default row to take them off
+local fx = { { id = 401, kind = 'footprint', name = 'Ember Steps', owned = true, selected = true, art = 'ember' },
+  { id = 501, kind = 'outline', name = 'Gilded Glow', owned = false, how = 'Store: 250 Chaos Coins', art = 'gold' } }
+tab = CL.tabRows(fx, 'footprint')
+eq(#tab, 2, 'default + the footprint') eq(tab[1].selected, false, 'the footprint is in use')
+eq(tab[1].desc, 'You leave no footprints.', 'default text') eq(CL.canUse(tab[1]), true, 'take it off')
+tab = CL.tabRows(fx, 'outline')
+eq(tab[1].selected, true, 'no outline chosen') eq(CL.subText(tab[2]), 'Store: 250 Chaos Coins', 'how to get one')
+eq(CL.DRAWN.footprint and CL.DRAWN.outline, true, 'drawn kinds')
+local keys = {}
+for _, k in ipairs(CL.KINDS) do keys[#keys + 1] = k.key end
+eq(table.concat(keys, ','), 'spellskin,killfx,lootbeam,chatcolor,footprint,outline,collection', 'tabs')
+
+-- the Collection tab (server exclusives_core.lua rows): owned first, never usable here
+local col = { { key = 'mount_tuskhide', kind = 'mount', kindName = 'Mount', name = 'Tuskhide Boar',
+    how = 'Achievement: Nothing Surprises Me (Kill 250 ambushing monsters.)' },
+  { key = 'wings_cinderplumes', kind = 'wings', kindName = 'Wings', name = 'Cinder Plumes', owned = true,
+    how = 'Boss: Ysgrath the Cinderheart, rare drop' },
+  { key = 'frame_laurel', kind = 'frame', kindName = 'Name Plate Frame', name = 'Laurel' }, 'junk' }
+local cr = CL.collectionRows(col)
+eq(#cr, 3, 'three rows, junk skipped') eq(cr[1].key, 'wings_cinderplumes', 'owned first')
+eq(cr[2].key, 'mount_tuskhide', 'then the server order') eq(cr[1].id, 'x:wings_cinderplumes', 'row id')
+eq(CL.subText(cr[1]), 'Wings - Unlocked', 'owned line')
+eq(CL.subText(cr[2]), 'Mount - Achievement: Nothing Surprises Me (Kill 250 ambushing monsters.)', 'how to earn it')
+eq(CL.canUse(cr[1]), false, 'chosen in its own window')
+eq(#CL.collectionRows(col, 'owned'), 1, 'owned filter') eq(#CL.collectionRows(col, 'missing'), 2, 'missing filter')
+local have, all = CL.collectionCount(col)
+eq(have, 1, 'one earned') eq(all, 3, 'of the rows sent (junk skipped)')
+eq(col[1].id, nil, 'the server rows are not changed')
+
 print('cosmeticslogic_test: ' .. n .. ' checks OK')

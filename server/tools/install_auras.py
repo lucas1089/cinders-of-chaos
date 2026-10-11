@@ -14,12 +14,16 @@ A second manifest, data/XML/chaos_auras_donor.csv (same columns), is read after 
 whose art is a donor-library outfit imported by client/tools/sprites/donor_pick.py + import_outfits.py (picks.csv rows
 of family "faction", kind "aura"), not by import_vfx.py, so re-running import_vfx.py never drops them. They are rewards
 (factions_config.lua), not store offers.
+A third manifest, data/XML/chaos_auras_exclusive.csv (same columns), is read last when no --manifest is given: base
+looks of the client pair that no auras.xml line had, the never-sold auras of exclusives_config.lua (an achievement and a
+boss drop).
 """
 import csv, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_MANIFEST = os.path.join(os.path.dirname(HERE), 'data', 'XML', 'chaos_auras.csv')
 DONOR_MANIFEST = os.path.join(os.path.dirname(HERE), 'data', 'XML', 'chaos_auras_donor.csv')
+EXCLUSIVE_MANIFEST = os.path.join(os.path.dirname(HERE), 'data', 'XML', 'chaos_auras_exclusive.csv')
 BEGIN = '\t<!-- Chaos auras (server/tools/install_auras.py, do not edit by hand) -->\n'
 END = '\t<!-- end of the Chaos auras -->\n'
 
@@ -39,7 +43,7 @@ def read_manifest(*paths):
 def main(argv):
     args = [a for a in argv if not a.startswith('--')]
     dry = '--dry-run' in argv
-    manifests = [DEFAULT_MANIFEST] + ([DONOR_MANIFEST] if os.path.isfile(DONOR_MANIFEST) else [])
+    manifests = [DEFAULT_MANIFEST] + [m for m in (DONOR_MANIFEST, EXCLUSIVE_MANIFEST) if os.path.isfile(m)]
     if '--manifest' in argv:
         i = argv.index('--manifest')
         manifests = [argv[i + 1]]

@@ -312,6 +312,10 @@ function K.rewardText(reward, nameOf)
 	if reward.portal then
 		parts[#parts + 1] = "portal style " .. tostring(reward.portal.name or "?")
 	end
+	-- visual exclusives of exclusives_config.lua (unlocked for the account by exclusives.lua)
+	for _, e in ipairs(reward.exclusives or {}) do
+		parts[#parts + 1] = tostring(type(e) == "table" and e.name or e)
+	end
 	return table.concat(parts, ", ")
 end
 

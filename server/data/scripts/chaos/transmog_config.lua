@@ -79,6 +79,9 @@ return {
 	--   source "season"       owned when the season pass reports it (ChaosSeasonPass.ownsTransmog(player, key), when
 	--                         the season pass has that hook)
 	--   source "exclusive"    granted only by staff or a script: ChaosTransmog.grantSet(accountId, key, source)
+	--   source "boss"         a rare personal boss drop (exclusives.lua, exclusives_config.lua `bosses`; boss = the
+	--                         window's name); granted through ChaosTransmog.grantSet, never sold
+	-- how = the window's line of an achievement set (default "Achievement reward")
 	sets = {
 		{key = "falconer", name = "Falconer's Regalia", source = "store", price = 300,
 			desc = "A crested circlet, plate and greaves of the old falconers.",
@@ -97,7 +100,54 @@ return {
 			looks = {27679, 27680}},
 		{key = "arcanomancer", name = "Arcanomancer", source = "exclusive",
 			desc = "Regalia and folio of the arcanomancers. Event reward.",
-			looks = {27677, 27678}}
+			looks = {27677, 27678}},
+
+		-- the second store set list (shop_config.lua "Appearances"), base looks no monster drops and no NPC sells
+		{key = "gravecloak", name = "Gravecloak", source = "store", price = 350,
+			desc = "A hooded skull, bone-ribbed plate, legs and boots of a crypt warden.",
+			looks = {26708, 26709, 26710, 26711}},
+		{key = "soulforged", name = "Soulforged", source = "store", price = 400,
+			desc = "Soulshell plate, soulshanks, soulwalkers and the soulbastion shield.",
+			looks = {27389, 27387, 27392, 27394}},
+		{key = "soulstalker", name = "Soulstalker", source = "store", price = 350,
+			desc = "The soulshroud, soulstrider legs and soulstalker boots of a shadow hunter.",
+			looks = {27391, 27388, 27393}},
+		{key = "mothwing", name = "Mothwing", source = "store", price = 350,
+			desc = "A green mothwing helmet, plate, legs and boots.",
+			looks = {28382, 28383, 28384, 28385}},
+		{key = "cobra", name = "Cobra Regalia", source = "store", price = 300,
+			desc = "The cobra hood, a cobra sword, wand and rod.",
+			looks = {27213, 27214, 27208, 27209}},
+		{key = "lionarms", name = "Lionguard Arms", source = "store", price = 300,
+			desc = "The gilded lion's longsword, axe, hammer, longbow, rod and wand (the Lionguard set has the armour).",
+			looks = {27400, 27404, 27405, 27395, 27396, 27397}},
+		{key = "sanguine", name = "Grand Sanguine", source = "store", price = 350,
+			desc = "Blood-red grand sanguine blade, cudgel, hatchet, bow and coil.",
+			looks = {27459, 27461, 27463, 27472, 27477}},
+
+		-- achievements (exclusive, never sold)
+		{key = "thornmoth", name = "Thornmoth Vestments", source = "achievement", achievement = "prof_wortcunning_100",
+			how = "Achievement: Keeper of the Wort (reach Wortcunning level 100)",
+			desc = "A moth-winged coif, vestment, breeches and greaves of the herb gatherers.",
+			looks = {28390, 28391, 28392, 28393}},
+		{key = "haloed", name = "Haloed Arms", source = "achievement", achievement = "wb_heal_top_1",
+			how = "Achievement: Lifeline (heal the most of everyone at a world boss kill)",
+			desc = "A haloed bolter and bow for those who keep the raid alive.",
+			looks = {29564, 29565}},
+
+		-- boss drops (exclusives_config.lua bosses; never sold)
+		{key = "hellforged", name = "Hellforged Visage", source = "boss", boss = "Kaelgor the Infernal Warlord",
+			desc = "A maliceforged helmet, a demonfang mask and molten plate.",
+			looks = {29469, 29472, 8886}},
+		{key = "inferniarch", name = "Inferniarch Arms", source = "boss", boss = "Nyxareth the Void Archon",
+			desc = "The void-touched inferniarch blade, battleaxe, mace, bow and wand.",
+			looks = {29486, 29482, 29484, 29478, 29488}},
+		{key = "deathlord", name = "Deathlord Arms", source = "boss", boss = "Varkhul the Ashen Sovereign",
+			desc = "The Deathlord's cleaver, mace and blade.",
+			looks = {29556, 29557, 29558}},
+		{key = "eldritch", name = "Gilded Eldritch Arms", source = "boss", boss = "Ysgrath the Cinderheart",
+			desc = "A gilded eldritch claymore, warmace, greataxe, bow and rod.",
+			looks = {27655, 27657, 27659, 27662, 27672}}
 	},
 
 	staffGroup = 4, -- characters of this group and up may use /transmog (grant / revoke / unlock-all on a character)

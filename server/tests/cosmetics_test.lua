@@ -153,6 +153,9 @@ eq(count.lootbeam, 12, "12 label accents (three PvP, 4 reward track)")
 eq(count.chatcolor, 14, "14 chat colours (three PvP, 5 reward track)")
 eq(store.spellskin, 250, "skins 250") eq(store.killfx, 200, "kill effects 200")
 eq(store.lootbeam, 150, "label accents 150") eq(store.chatcolor, 200, "chat colours 200")
+eq(count.footprint, 13, "13 footprints (9 store, an achievement, the reward track, two boss drops)")
+eq(count.outline, 13, "13 outlines (9 store, an achievement, the reward track, two boss drops)")
+eq(store.footprint, 200, "footprints 200") eq(store.outline, 250, "outlines 250")
 -- every line but the Necromancer's has 2-3 skins of 2-3 spells
 for _, l in ipairs(cfg.lines) do
 	local skins = K.index(cfg).skinsOfLine[l.key]
@@ -215,21 +218,32 @@ for _, k in ipairs(cfg.kinds) do
 end
 eq(K.ofUnlock(cfg, "cosmetic_kill_voidring"), nil, "an achievement cosmetic is no store unlock")
 eq(K.ofUnlock(cfg, "transmog_falconer"), nil, "other unlocks are not ours")
-eq(cats["Name Plates"] ~= nil and #cats["Name Plates"].offers, 5, "five frames in the store")
+eq(cats["Name Plates"] ~= nil and #cats["Name Plates"].offers, 13, "13 frames in the store")
 -- the transmog store sets (follow-up): offers at the sets' prices
 local tm = {}
 for _, o in ipairs(cats["Appearances"].offers) do
 	tm[o.unlock] = o.cost
 end
 eq(tm.transmog_falconer, 300, "Falconer's Regalia 300") eq(tm.transmog_lionguard, 350, "Lionguard 350")
--- the three new frames exist everywhere a frame must
+-- every store and exclusive frame exists everywhere a frame must (shop_core.lua FRAMES is shop.lua's list)
 dofile("data/scripts/chaos/nameplate_core.lua")
-local shopText = readFile("data/scripts/chaos/shop.lua")
-for _, f in ipairs({"ember", "verdant", "bone"}) do
-	eq(ChaosNameplate.FRAMES[f], true, "nameplate_core frame " .. f)
-	eq(shopText:find('"' .. f .. '"', 1, true) ~= nil, true, "shop.lua FRAMES has " .. f)
-	eq(readFile("../client/overlay/modules/game_nameplate/images/plate_" .. f .. ".png") ~= nil, true, "art plate_" .. f)
+dofile("data/scripts/chaos/shop_core.lua")
+local framesSold = {}
+for _, o in ipairs(cats["Name Plates"].offers) do
+	framesSold[o.frame] = true
 end
+for i, f in ipairs(ChaosShopCore.FRAMES) do
+	eq(ChaosNameplate.FRAMES[f], true, "nameplate_core frame " .. f)
+	eq(readFile("../client/overlay/modules/game_nameplate/images/plate_" .. f .. ".png") ~= nil, true, "art plate_" .. f)
+	eq(ChaosShopCore.frameStorage(Chaos.storage, i) ~= nil, true, "a storage slot for " .. f)
+	eq(framesSold[f] == true, i <= 13, f .. ": the first 13 are sold, the exclusives never")
+end
+for f in pairs(framesSold) do
+	eq(ChaosShopCore.frameIndex(f) ~= nil, true, "shop_core.lua FRAMES has " .. f)
+end
+eq(ChaosShopCore.frameStorage(Chaos.storage, 8), 7100768, "slot 8 in the first block")
+eq(ChaosShopCore.frameStorage(Chaos.storage, 9), 7102010, "slot 9 in the wardrobe block")
+eq(ChaosShopCore.frameStorage(Chaos.storage, 39), nil, "past the block")
 -- the store unlock hooks of shop_services.lua
 local services = readFile("data/scripts/chaos/shop_services.lua")
 eq(services:find("ChaosTransmog.storeUnlock(name)", 1, true) ~= nil, true, "unlockEntry asks the transmog sets")
@@ -250,6 +264,22 @@ eq(why, "Void Ring is not unlocked yet.", "achievement cosmetic text")
 -- the achievement syncs
 local syncs = K.syncs(cfg, function(id) return id == "level_300" or id == "goblin_10" end, {loot_gilded = true})
 eq(#syncs, 1, "one to grant") eq(syncs[1], "chat_veteran", "Veteran's Gold")
+-- footprints and outlines from achievements and the track; boss ones only through exclusives.lua
+syncs = K.syncs(cfg, function(id) return id == "bounty_week_10" or id == "paragon_282" end, {}, {points = 2000})
+local got = {}
+for _, k in ipairs(syncs) do got[k] = true end
+eq(got.foot_hunter and got.glow_absolute and got.foot_chronicle and got.glow_chronicle, true, "achievement and track looks")
+eq(got.foot_rime or got.glow_cinder, nil, "boss looks are never synced")
+eq(K.earned(K.byKey(cfg, "glow_corona"), function() return true end, {points = 99999}), false, "a boss look is never earned")
+eq(K.how(K.byKey(cfg, "glow_cinder")), "Boss: Ysgrath the Cinderheart", "boss line of the window")
+c, why = K.choose(cfg, {}, "outline", 554)
+eq(why, "Cinderheart Blaze is not unlocked yet.", "a boss outline not owned")
+eq(K.choose(cfg, {glow_cinder = true}, "outline", 554).art, "cinder", "owned: chosen")
+eq(K.choose(cfg, {glow_cinder = true}, "footprint", 554), nil, "an outline is no footprint")
+local fp = K.offerPreview(K.byKey(cfg, "foot_ember"))
+eq(fp.effect, true, "footprints: the SHOW button") eq(fp.color, "#ff8a3a", "and the swatch colour")
+eq(K.storageOf(cfg, "footprint"), 7102000, "footprint storage") eq(K.storageOf(cfg, "outline"), 7102001, "outline storage")
+eq(K.storageOf(cfg, "footprint"), Chaos.storage.wardrobe, "the wardrobe block of chaos_constants.lua")
 
 -- ---------------------------------------------------------------- the reward track (achievement points, categories)
 dofile("data/scripts/chaos/achievements_core.lua")
@@ -262,8 +292,8 @@ end
 local trackProblems = K.validate(cfg, {achievements = achievements, categories = catSet, maxPoints = AK.maxPoints(aIndex)})
 eq(#trackProblems, 0, "the reward track validates: " .. table.concat(trackProblems, "; "))
 local steps = K.trackSteps(cfg)
-local milestones = {100, 250, 500, 1000, 1750, 2500, 3500}
-eq(#steps, #milestones, "seven point milestones")
+local milestones = {100, 250, 500, 750, 1000, 1750, 2000, 2500, 3500}
+eq(#steps, #milestones, "nine point milestones (750 Inkstep footprints, 2000 Chronicler's Halo outline)")
 for i, p in ipairs(milestones) do
 	eq(steps[i].points, p, "milestone " .. i)
 	eq(steps[i].cosmetic.source, "achievement", "milestone " .. p .. " is an achievement cosmetic")
@@ -297,10 +327,36 @@ for _, tc in ipairs(cfg.cosmetics) do
 		eq(offered[K.unlockName(tc)], nil, tc.key .. ": not in the store")
 	end
 end
-eq(trackCount, 17, "17 reward track cosmetics (7 milestones, 10 categories)")
-eq(broken(function(l) l[#l].price = 100 end):find("no price", 1, true) ~= nil, true, "a priced track cosmetic is refused")
-eq(broken(function(l) l[#l].points = 100 end):find("one of achievement, points or category", 1, true) ~= nil, true,
+eq(trackCount, 19, "19 reward track cosmetics (9 milestones, 10 categories)")
+-- the last category cosmetic of the list (Falling Stars)
+local function starfall(l)
+	for _, c in ipairs(l) do
+		if c.key == "kill_starfall" then
+			return c
+		end
+	end
+end
+eq(broken(function(l) starfall(l).price = 100 end):find("no price", 1, true) ~= nil, true, "a priced track cosmetic is refused")
+eq(broken(function(l) starfall(l).points = 100 end):find("one of achievement, points or category", 1, true) ~= nil, true,
 	"one way to earn it")
+-- footprints and outlines: art of the client's list, one per cosmetic, pulse for outlines only, boss ones named
+local function byKeyIn(l, key)
+	for _, c in ipairs(l) do
+		if c.key == key then
+			return c
+		end
+	end
+end
+eq(broken(function(l) byKeyIn(l, "foot_ember").art = "nope" end):find("art nope is not in cfg.prints", 1, true) ~= nil, true,
+	"unknown print art")
+eq(broken(function(l) byKeyIn(l, "foot_ember").art = "frost" end):find("art frost used by", 1, true) ~= nil, true,
+	"one picture per footprint")
+eq(broken(function(l) byKeyIn(l, "foot_ember").pulse = true end):find("only for outlines", 1, true) ~= nil, true,
+	"a footprint does not pulse")
+eq(broken(function(l) byKeyIn(l, "glow_cinder").boss = nil end):find("needs the boss's name", 1, true) ~= nil, true,
+	"a boss cosmetic names its boss")
+eq(broken(function(l) byKeyIn(l, "glow_cinder").price = 300 end):find("a boss cosmetic has no price", 1, true) ~= nil, true,
+	"a boss cosmetic is never sold")
 eq(table.concat(K.validate(cfg, {maxPoints = 3000}), "\n"):find("above the 3000", 1, true) ~= nil, true,
 	"an unreachable milestone is refused")
 eq(table.concat(K.validate(cfg, {categories = {combat = true}}), "\n"):find("category rifts does not exist", 1, true) ~= nil,
@@ -311,8 +367,8 @@ local function track(points, cats, have)
 end
 eq(#track(0), 0, "0 points: nothing") eq(#track(99), 0, "99 points: nothing")
 eq(#track(100), 1, "100 points: one") eq(track(100)[1], "chat_ashen", "Ashen Name at 100")
-eq(#track(999), 3, "999 points: three") eq(#track(1000), 4, "1000 points: four")
-eq(#track(AK.maxPoints(aIndex)), 7, "every milestone at the maximum")
+eq(#track(999), 4, "999 points: four") eq(#track(1000), 5, "1000 points: five")
+eq(#track(AK.maxPoints(aIndex)), 9, "every milestone at the maximum")
 -- idempotent: what the account owns is not granted again; never taken back (fewer points grant nothing, revoke nothing)
 local have = {}
 for _, key in ipairs(track(1000)) do
@@ -332,7 +388,8 @@ eq(#K.syncs(cfg, function(id) return id == "level_300" end, {}), 1, "without tra
 -- the window's view (one message: fits an extended opcode)
 local tv = K.trackView(cfg, 640, {chat_ashen = true, loot_chronicle = true, kill_riftsigil = true},
 	AK.categoryTrack(aIndex, {rift_t1 = true}))
-eq(tv.ap, 640, "account points") eq(#tv.steps, 7, "seven steps") eq(tv.steps[1].p, 100, "lowest first")
+eq(tv.ap, 640, "account points") eq(#tv.steps, 9, "nine steps") eq(tv.steps[1].p, 100, "lowest first")
+eq(tv.steps[4].k, "footprint", "750: footprints") eq(tv.steps[4].c, "#5cc8c0", "with the swatch colour")
 eq(tv.steps[1].o, 1, "owned") eq(tv.steps[3].o, nil, "not owned") eq(tv.steps[1].c, "#cfc4b4", "the colour for the preview")
 eq(tv.steps[2].a, "#0b2626f0", "the accent for the preview") eq(tv.steps[3].k, "killfx", "the kind")
 eq(#tv.cats, #achievementsData.categories, "a row per category")
@@ -631,6 +688,48 @@ opcode(bob, "select", {kind = "chatcolor", id = 0})
 eq(lastTo("Carl", "colors").names.Bob, false, "switched off: removed everywhere")
 registered.ChaosCosmeticsLogout.onLogout(carl)
 eq(M.active[3], nil, "logout clears the cache")
+
+-- footprints and outlines: who wears what goes to every client (each client draws them), a change to everyone
+M.storeUnlock("cosmetic_foot_ember").grant(bob)
+M.storeUnlock("cosmetic_glow_radiant").grant(bob)
+opcode(bob, "select", {kind = "footprint", id = 401})
+eq(storages[2][7102000], 401, "footprint stored in the wardrobe block")
+eq(lastTo("Ann", "looks").names.Bob.f, "ember", "Ann's client learns Bob's footprints")
+opcode(bob, "select", {kind = "outline", id = 508})
+local lk = lastTo("Ann", "looks").names.Bob
+eq(lk.f, "ember", "footprints kept") eq(lk.o, "radiant", "and the outline") eq(lk.p, 1, "a pulsing one")
+opcode(bob, "select", {kind = "outline", id = 503})
+eq(lastTo("Bob", "result").ok, false, "an outline not owned is refused")
+eq(lastTo("Ann", "looks").names.Bob.o, "radiant", "still the owned outline")
+local carl2 = newPlayer(5, "Cid", 30, "Ranger")
+registered.ChaosCosmeticsLogin.onLogin(carl2)
+local fullLooks = lastTo("Cid", "looks")
+eq(fullLooks.full, true, "full looks at login") eq(fullLooks.names.Bob.o, "radiant", "with Bob's outline")
+-- a reconnect: the old session of Bob logs out after the new one logged in; Bob's look stays known
+local bob2 = newPlayer(6, "Bob", 20, "Warrior")
+storages[6] = storages[2]
+registered.ChaosCosmeticsLogin.onLogin(bob2)
+registered.ChaosCosmeticsLogout.onLogout(bob)
+eq(M.looks.Bob ~= nil and M.looks.Bob.o, "radiant", "the old session's logout keeps the new session's look")
+players[6] = nil
+opcode(bob, "select", {kind = "footprint", id = 0})
+opcode(bob, "select", {kind = "outline", id = 0})
+eq(lastTo("Cid", "looks").names.Bob, false, "both off: removed everywhere")
+registered.ChaosCosmeticsLogout.onLogout(carl2)
+-- the store's SHOW button: the buyer's own client draws it (no effect sent to anybody)
+local beforeFx = #effects
+M.storePreview(carl2, "cosmetic_glow_abyssal")
+local try = lastTo("Cid", "tryfx")
+eq(try ~= nil and try.kind, "outline", "a preview to the asking client") eq(try.art, "abyssal", "its art")
+eq(try.pulse, 1, "pulsing") eq(#effects, beforeFx, "no magic effect")
+eq(M.offerPreview("cosmetic_foot_petal").effect, true, "footprint offers have the SHOW button")
+-- the state carries the Collection rows when exclusives.lua is loaded
+ChaosExclusives = {rows = function(p) return {{key = "x", kind = "mount", name = "X", owned = true}} end}
+opcode(ann, "open", {})
+eq(lastTo("Ann", "state").collection[1].key, "x", "collection rows in the state")
+ChaosExclusives = nil
+opcode(ann, "open", {})
+eq(lastTo("Ann", "state").collection, nil, "no exclusives: no collection")
 
 -- the label accent: only the character's own client
 M.storeUnlock("cosmetic_loot_azure").grant(bob)

@@ -95,8 +95,16 @@ end
 local WINGS = readXml("data/XML/wings.xml", "wing")
 local AURAS = readXml("data/XML/auras.xml", "aura")
 local SHADERS = readXml("data/XML/shaders.xml", "shader")
-local FRAMES = {"violet", "frost", "ember", "verdant", "bone"} -- index = storage offset (Chaos.storage.shopFrameBase + i)
-local FRAME_INDEX = {violet = 1, frost = 2, ember = 3, verdant = 4, bone = 5}
+-- name plate frames: index = the ownership slot (shop_core.lua C.FRAMES, C.frameStorage); store frames and the
+-- exclusives' frames (exclusives_config.lua, never sold) share the list
+local FRAMES = K.FRAMES
+local FRAME_INDEX = {}
+for i, f in ipairs(FRAMES) do
+	FRAME_INDEX[f] = i
+end
+local function frameKey(i)
+	return K.frameStorage(S, i)
+end
 
 -- ------------------------------------------------------------------ exclusives (checked again at every load)
 local function exclusions()
@@ -116,6 +124,8 @@ local function exclusions()
 	src.season = ok and data or nil
 	ok, data = pcall(dofile, "data/scripts/chaos/seasonpass_config.lua")
 	src.seasonpass = ok and data or nil
+	ok, data = pcall(dofile, "data/scripts/chaos/exclusives_config.lua")
+	src.exclusives = ok and data or nil
 	return K.exclusions(src)
 end
 Shop.exclusions = exclusions()
@@ -198,7 +208,7 @@ local function storageKey(offer)
 	elseif offer.kind == "shader" then
 		return S.shopShaderBase + offer.id
 	elseif offer.kind == "frame" and FRAME_INDEX[offer.frame] then
-		return S.shopFrameBase + FRAME_INDEX[offer.frame]
+		return frameKey(FRAME_INDEX[offer.frame])
 	end
 	return nil
 end
@@ -920,7 +930,7 @@ ext:register()
 function Shop.frameOf(player)
 	local i = player:getStorageValue(S.shopFrameActive)
 	local frame = FRAMES[i]
-	if frame and player:getStorageValue(S.shopFrameBase + i) > 0 then
+	if frame and frameKey(i) and player:getStorageValue(frameKey(i)) > 0 then
 		return frame
 	end
 	return nil
@@ -933,7 +943,7 @@ local function registerFrames()
 end
 registerFrames()
 
--- switching frames: Info & Services > Services, "Plate frame" (commands_ui.lua id "plateframe": violet | frost | off)
+-- switching frames: Info & Services > Services, "Plate frame" (commands_ui.lua id "plateframe": a frame name | off)
 if not ChaosCommands then
 	dofile("data/scripts/chaos/commands_ui_core.lua")
 end
@@ -941,13 +951,13 @@ local function plateFrame(player, param)
 	local want = (param or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
 	local owned = {}
 	for i, f in ipairs(FRAMES) do
-		if player:getStorageValue(S.shopFrameBase + i) > 0 then
+		if frameKey(i) and player:getStorageValue(frameKey(i)) > 0 then
 			owned[#owned + 1] = f
 		end
 	end
 	if want == "off" then
 		player:setStorageValue(S.shopFrameActive, 0)
-	elseif FRAME_INDEX[want] and player:getStorageValue(S.shopFrameBase + FRAME_INDEX[want]) > 0 then
+	elseif FRAME_INDEX[want] and player:getStorageValue(frameKey(FRAME_INDEX[want])) > 0 then
 		player:setStorageValue(S.shopFrameActive, FRAME_INDEX[want])
 	else
 		player:sendTextMessage(MESSAGE_INFO_DESCR, "Your name plate frames: " ..

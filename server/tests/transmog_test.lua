@@ -39,7 +39,39 @@ local FIXTURE = {
 	[27673] = {name = "spiritthorn armor", kind = "armor"}, [21696] = {name = "icicle bow", kind = "distance"},
 	[21697] = {name = "runic ice shield", kind = "shield"}, [27679] = {name = "Arboreal Crown", kind = "helmet"},
 	[27680] = {name = "Arboreal Tome", kind = "shield"}, [27677] = {name = "arcanomancer regalia", kind = "helmet"},
-	[27678] = {name = "Arcanomancer Folio", kind = "shield"}
+	[27678] = {name = "Arcanomancer Folio", kind = "shield"},
+	-- the second store sets, the achievement and the boss sets (exclusives_config.lua)
+	[26708] = {name = "skeletal helmet", kind = "helmet"}, [26709] = {name = "skeletal armor", kind = "armor"},
+	[26710] = {name = "skeletal legs", kind = "legs"}, [26711] = {name = "skeletal boots", kind = "boots"},
+	[27389] = {name = "soulshell", kind = "armor"}, [27387] = {name = "soulshanks", kind = "legs"},
+	[27392] = {name = "pair of soulwalkers", kind = "boots"}, [27394] = {name = "soulbastion", kind = "shield"},
+	[27391] = {name = "soulshroud", kind = "armor"}, [27388] = {name = "soulstrider", kind = "legs"},
+	[27393] = {name = "pair of soulstalkers", kind = "boots"}, [28382] = {name = "Moist Helmet", kind = "helmet"},
+	[28383] = {name = "Moist Armor", kind = "armor"}, [28384] = {name = "Moist Legs", kind = "legs"},
+	[28385] = {name = "Moist Boots", kind = "boots"}, [27213] = {name = "cobra hood", kind = "helmet"},
+	[27214] = {name = "cobra sword", kind = "sword"}, [27208] = {name = "cobra wand", kind = "wand"},
+	[27209] = {name = "cobra rod", kind = "wand"}, [27400] = {name = "lion longsword", kind = "sword"},
+	[27404] = {name = "lion axe", kind = "axe"}, [27405] = {name = "lion hammer", kind = "club"},
+	[27395] = {name = "lion longbow", kind = "distance"}, [27396] = {name = "lion rod", kind = "wand"},
+	[27397] = {name = "lion wand", kind = "wand"}, [27459] = {name = "grand sanguine blade", kind = "sword"},
+	[27461] = {name = "grand sanguine cudgel", kind = "club"},
+	[27463] = {name = "grand sanguine hatchet", kind = "axe"},
+	[27472] = {name = "grand sanguine bow", kind = "distance"}, [27477] = {name = "grand sanguine coil", kind = "wand"},
+	[28390] = {name = "Moist Coiff", kind = "helmet"}, [28391] = {name = "Moist Vestment", kind = "armor"},
+	[28392] = {name = "Moist Breeches", kind = "legs"}, [28393] = {name = "Moist Greaves", kind = "boots"},
+	[29564] = {name = "Haloed Bolter", kind = "distance"}, [29565] = {name = "Haloed Bow", kind = "distance"},
+	[29469] = {name = "maliceforged helmet", kind = "helmet"}, [29472] = {name = "demonfang mask", kind = "helmet"},
+	[8886] = {name = "molten plate", kind = "armor"}, [29486] = {name = "arcane inferniarch blade", kind = "sword"},
+	[29482] = {name = "arcane inferniarch battleaxe", kind = "axe"},
+	[29484] = {name = "arcane inferniarch mace", kind = "club"},
+	[29478] = {name = "arcane inferniarch bow", kind = "distance"},
+	[29488] = {name = "arcane inferniarch wand", kind = "wand"}, [29556] = {name = "Deathlord Cleaver", kind = "axe"},
+	[29557] = {name = "Deathlord Mace", kind = "club"}, [29558] = {name = "Deathlord Blade", kind = "sword"},
+	[27655] = {name = "gilded eldritch claymore", kind = "sword"},
+	[27657] = {name = "gilded eldritch warmace", kind = "club"},
+	[27659] = {name = "gilded eldritch greataxe", kind = "axe"},
+	[27662] = {name = "gilded eldritch bow", kind = "distance"},
+	[27672] = {name = "gilded eldritch rod", kind = "wand"}
 }
 local function describe(id)
 	return FIXTURE[id]
@@ -69,8 +101,12 @@ for _, s in ipairs(cfg.sets) do
 		eq(FIXTURE[id] ~= nil, true, "fixture knows look " .. id)
 	end
 end
-eq(sources.store, 2, "two store sets") eq(sources.achievement, 2, "two achievement sets")
+eq(sources.store, 9, "nine store sets") eq(sources.achievement, 4, "four achievement sets")
 eq(sources.season, 1, "one season set") eq(sources.exclusive, 1, "one exclusive set")
+eq(sources.boss, 4, "four boss sets (exclusives_config.lua drops)")
+eq(K.setHow(K.setByKey(cfg, "deathlord")), "Boss: Varkhul the Ashen Sovereign (rare drop)", "a boss set's line")
+eq(K.setHow(K.setByKey(cfg, "haloed")):find("Achievement: Lifeline", 1, true) ~= nil, true, "an achievement set's own line")
+eq(K.setOfUnlock(cfg, "transmog_deathlord"), nil, "a boss set is no store unlock")
 eq(cfg.fee.apply > 0 and cfg.fee.apply <= 5000, true, "a small apply fee")
 eq(#cfg.slots, 6, "six slots")
 
@@ -100,7 +136,7 @@ do
 	eq(t2:find("store price 1") ~= nil, true, "price mismatch")
 	eq(t2:find("spiritthorn is sold") ~= nil, true, "achievement set sold")
 	eq(t2:find("transmog_nothing names no") ~= nil, true, "offer without set")
-	eq(#w2, 1, "lionguard offer missing: a warning only")
+	eq(#w2, 8, "the other store sets' offers missing: warnings only")
 end
 
 -- ---------------------------------------------------------------- kinds
@@ -172,8 +208,10 @@ local syncs = K.setSyncs(cfg, {
 }, {})
 table.sort(syncs)
 eq(#syncs, 2, "two sets to sync") eq(syncs[1], "arboreal", "season set") eq(syncs[2], "spiritthorn", "achievement set")
-eq(#K.setSyncs(cfg, {hasAchievement = function() return true end}, {spiritthorn = true, rimebound = true}), 0,
-	"already owned sets are not synced again")
+eq(#K.setSyncs(cfg, {hasAchievement = function() return true end}, {spiritthorn = true, rimebound = true,
+	thornmoth = true, haloed = true}), 0, "already owned sets are not synced again")
+eq(#K.setSyncs(cfg, {hasAchievement = function() return true end, seasonOwned = function() return true end}, {}), 5,
+	"the four achievement sets and the season set; boss sets only through exclusives.lua")
 eq(#K.setSyncs(cfg, {}, {}), 0, "no facts: nothing")
 
 -- ---------------------------------------------------------------- fee, apply and remove

@@ -25,7 +25,7 @@ for _, p in ipairs(problems) do
 end
 eq(#problems, 0, "validate")
 
-local routes = {default = 0, store = 0, achievement = 0, season = 0}
+local routes = {default = 0, store = 0, achievement = 0, season = 0, boss = 0}
 for _, s in ipairs(cfg.styles) do
 	routes[s.route] = routes[s.route] + 1
 	for _, field in ipairs({"open", "close", "loop", "travel"}) do
@@ -46,6 +46,13 @@ eq(routes.default, 1, "one default style")
 eq(routes.store, 6, "six store styles")
 eq(routes.achievement, 6, "six achievement styles")
 eq(routes.season, 2, "two season pass styles (seasonpass_config.lua; checked in seasonpass_test.lua)")
+eq(routes.boss, 2, "two boss drop styles (exclusives_config.lua; checked in exclusives_test.lua)")
+-- a boss style: owned only through the exclusives (account-wide), never sold, never an achievement reward
+local drowned = K.styleByKey(cfg, "drowned")
+eq(K.owns(drowned, {bossOwned = function(key) return key == "drowned" end}), true, "boss style owned through the exclusives")
+eq(K.owns(drowned, {bossOwned = function() return false end}), false, "not owned without the drop")
+eq(K.owns(drowned, {}), false, "no exclusives loaded: not owned")
+eq(K.styleOfUnlock(cfg, "portal_drowned"), nil, "a boss style is never a store unlock")
 for _, e in ipairs(cfg.castEffect) do
 	assert(type(e) == "number" or ChaosVfx[e] or ChaosFx[e], "cast effect " .. tostring(e))
 end

@@ -44,6 +44,7 @@ eq(store[3].group, 3, "group")
 -- ---------------------------------------------------------------- params
 eq(K.cleanParam("  New\tName\n ", 64), "New Name", "trimmed, control characters out")
 eq(#K.cleanParam(string.rep("a", 100), 10), 10, "cut at the maximum")
+eq(K.PARAM.plateframe ~= nil and K.PARAM.plateframe >= #"sepulchre", true, "the plate frame command takes a frame name")
 
 -- ---------------------------------------------------------------- capture
 local Methods = {}

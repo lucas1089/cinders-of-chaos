@@ -2,7 +2,9 @@
 """Name plate frames of game_nameplate (drawn behind player names by base patch 0022 as a 9-slice, border 6):
   plate_<id>.png  16x15: 6 px end caps (rim corners and a small ornament), a 4 px middle that is stretched under the name.
   ids: default (blackened iron, ember accent), gold (staff), crimson (siege champions), violet, frost, ember, verdant
-  and bone (store frames). preview_nameplates.png (not shipped) shows them at 4x.
+  and bone (store frames), ashen, sapphire, rose, jade, copper, obsidian, amber and storm (the second store set),
+  laurel, sepulchre and infernal (never sold: exclusives_config.lua; a crowned ornament). preview_nameplates.png (not
+  shipped) shows them at 4x.
 python3 -I client/tools/gen_nameplate_art.py   (writes into client/overlay/modules/game_nameplate/images/)"""
 import os
 import sys
@@ -23,7 +25,21 @@ FRAMES = {
     'ember':   ((200, 96, 32), (255, 180, 110), (50, 22, 10), (16, 7, 4), (224, 110, 36), (255, 214, 140)),
     'verdant': ((70, 150, 70), (170, 230, 150), (18, 40, 20), (6, 14, 7), (84, 170, 80), (210, 255, 190)),
     'bone':    ((186, 176, 150), (240, 232, 210), (44, 40, 34), (14, 13, 11), (204, 194, 168), (255, 250, 236)),
+    # the second set of store frames (server shop_core.lua FRAMES 6-13)
+    'ashen':    ((132, 126, 120), (196, 190, 182), (34, 32, 30), (12, 11, 10), (150, 142, 132), (226, 218, 206)),
+    'sapphire': ((40, 76, 176), (130, 170, 250), (12, 20, 52), (4, 7, 18), (52, 96, 210), (176, 206, 255)),
+    'rose':     ((196, 92, 132), (250, 176, 206), (48, 18, 30), (16, 6, 10), (220, 108, 150), (255, 210, 228)),
+    'jade':     ((40, 150, 130), (140, 230, 206), (10, 40, 36), (4, 14, 12), (52, 176, 150), (190, 255, 236)),
+    'copper':   ((176, 102, 56), (236, 170, 120), (44, 24, 14), (15, 8, 5), (196, 116, 62), (255, 200, 150)),
+    'obsidian': ((54, 44, 66), (130, 104, 160), (14, 11, 18), (5, 4, 7), (110, 70, 160), (200, 160, 255)),
+    'amber':    ((210, 140, 30), (255, 210, 120), (52, 32, 8), (18, 11, 3), (230, 156, 36), (255, 230, 150)),
+    'storm':    ((90, 150, 200), (220, 240, 255), (16, 26, 40), (5, 8, 14), (120, 190, 240), (255, 255, 255)),
+    # never sold (exclusives_config.lua): drawn with a crowned ornament
+    'laurel':    ((88, 150, 60), (226, 210, 120), (24, 38, 14), (8, 13, 5), (200, 176, 70), (255, 240, 160)),
+    'sepulchre': ((96, 84, 96), (180, 164, 180), (24, 20, 26), (8, 7, 9), (150, 90, 200), (220, 180, 255)),
+    'infernal':  ((150, 40, 16), (255, 150, 60), (40, 10, 4), (14, 3, 1), (255, 96, 24), (255, 220, 120)),
 }
+CROWNED = {'laurel', 'sepulchre', 'infernal'}
 FILL_ALPHA = 225
 
 
@@ -37,7 +53,7 @@ def inside(x, y):
     return cut <= x <= W - 1 - cut
 
 
-def plate(spec):
+def plate(spec, crowned=False):
     rim, hi, top, bottom, orn, core = spec
     im = Image.new('RGBA', (W, H), (0, 0, 0, 0))
     px = im.load()
@@ -60,6 +76,10 @@ def plate(spec):
         for (dx, dy, c) in ((0, 0, core), (-1, 0, orn), (1, 0, orn), (0, -1, orn), (0, 1, orn),
                             (0, -2, rim), (0, 2, rim)):
             px[cx + dx, mid + dy] = c + (255,)
+        if crowned:
+            # two more points above and below the diamond: a small crown on the end cap
+            for (dx, dy) in ((-1, -2), (1, -2), (-1, 2), (1, 2)):
+                px[cx + dx, mid + dy] = core + (255,)
     # thin rule from each ornament toward the name (kept inside the cap, the stretched middle stays plain)
     for x in (4, 5):
         px[x, mid] = lerp(orn, bottom, 0.45) + (220,)
@@ -71,7 +91,7 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     images = {}
     for key, spec in FRAMES.items():
-        images[key] = plate(spec)
+        images[key] = plate(spec, key in CROWNED)
         images[key].save(os.path.join(OUT, 'plate_%s.png' % key))
     if '--preview' in sys.argv:
         # the plates stretched to a name width, at 4x, for a look before a client build

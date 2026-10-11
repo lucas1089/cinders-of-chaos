@@ -26,11 +26,11 @@ V.PAGES = {
       { label = 'Familiar', buttons = { { text = 'Summon', id = 'summonfamiliar' }, { text = 'Level', id = 'familiarlevel' },
                                         { text = 'Choose', id = 'choosefamiliar' } } },
       { label = 'Other', buttons = { { text = 'Leave Tutorial', id = 'skiptutorial' }, { text = 'Claim Web Shop Items', id = 'webshop' } } },
-      -- name plate frames bought in the store (server shop.lua, command id plateframe)
-      { label = 'Plate frame', buttons = { { text = 'Violet', id = 'plateframe', param = 'violet' }, { text = 'Frost', id = 'plateframe', param = 'frost' },
-                                           { text = 'Ember', id = 'plateframe', param = 'ember' }, { text = 'Verdant', id = 'plateframe', param = 'verdant' },
-                                           { text = 'Bone', id = 'plateframe', param = 'bone' },
-                                           { text = 'Title Frame', id = 'plateframe', param = 'off' } } },
+      -- name plate frames from the store and the exclusives (server shop.lua, command id plateframe): 16 frames, so a
+      -- name to type; My Frames lists the character's own
+      { label = 'Plate frame', edit = 'frame', buttons = { { text = 'Use Frame', id = 'plateframe', param = '$' },
+                                                           { text = 'My Frames', id = 'plateframe', param = 'list' },
+                                                           { text = 'Title Frame', id = 'plateframe', param = 'off' } } },
     } },
   { id = 'autoseller', title = 'Auto Seller',
     text = 'Loot on this list is sold at NPC prices as it drops; the gold goes to your bank. Uniques are never sold.',

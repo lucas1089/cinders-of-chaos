@@ -24,7 +24,8 @@
 ChaosTransmogCore = ChaosTransmogCore or {}
 local K = ChaosTransmogCore
 
-local SOURCES = {store = true, achievement = true, season = true, exclusive = true}
+-- boss: a rare personal drop of a boss (exclusives.lua grants it through ChaosTransmog.grantSet; boss = the boss's name)
+local SOURCES = {store = true, achievement = true, season = true, exclusive = true, boss = true}
 K.SOURCES = SOURCES
 
 local function hasBit(value, bitValue)
@@ -104,7 +105,9 @@ function K.setHow(set)
 	if set.source == "store" then
 		return "Store, " .. tostring(set.price or "?") .. " Chaos Coins"
 	elseif set.source == "achievement" then
-		return "Achievement reward"
+		return set.how or "Achievement reward"
+	elseif set.source == "boss" then
+		return "Boss: " .. tostring(set.boss or "a boss") .. " (rare drop)"
 	elseif set.source == "season" then
 		return "Season reward"
 	end
@@ -293,6 +296,9 @@ function K.validate(cfg, describe, shopConfig, achievementsData)
 		end
 		if s.source == "store" and (tonumber(s.price) or 0) <= 0 then
 			bad("store set %s has no price", tostring(s.key))
+		end
+		if s.source == "boss" and (type(s.boss) ~= "string" or s.boss == "") then
+			bad("boss set %s names no boss", tostring(s.key))
 		end
 		if s.source == "achievement" then
 			if type(s.achievement) ~= "string" then

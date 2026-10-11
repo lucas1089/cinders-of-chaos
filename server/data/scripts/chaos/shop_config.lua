@@ -230,8 +230,8 @@ return {
 			}
 		},
 		{
-			-- name plate frames (nameplate.lua; shop.lua registers the titles.lua frame source "store"): violet and
-			-- frost. Gold (staff) and crimson (Siege Champions) stay theirs. The frame bought last is shown;
+			-- name plate frames (nameplate.lua; shop.lua registers the titles.lua frame source "store"): 13 store frames.
+			-- Gold (staff) and crimson (Siege Champions) stay theirs; laurel, sepulchre and infernal are exclusives. The frame bought last is shown;
 			-- switches (commands_ui id "plateframe").
 			name = "Name Plates", icon = {item = 2160},
 			offers = {
@@ -245,8 +245,27 @@ return {
 				{kind = "frame", frame = "verdant", icon = 2155, cost = 300, name = "Verdant Plate Frame",
 					description = "A leaf-green frame round your name plate, for good. Switch frames in Info & Services > Services."},
 				{kind = "frame", frame = "bone", icon = 2230, cost = 300, name = "Bone Plate Frame",
-					description = "A pale bone frame round your name plate, for good. Switch frames in Info & Services > Services."}
+					description = "A pale bone frame round your name plate, for good. Switch frames in Info & Services > Services."},
 				-- <<< Cosmetics
+				-- >>> Wardrobe: eight more frames (client/tools/gen_nameplate_art.py; shop_core.lua FRAMES 6-13). Laurel,
+				-- Sepulchre and Infernal (14-16) are never sold: exclusives_config.lua
+				{kind = "frame", frame = "ashen", icon = 2229, cost = 300, name = "Ashen Plate Frame",
+					description = "A grey ash frame round your name plate, for good. Switch frames in Info & Services > Services."},
+				{kind = "frame", frame = "sapphire", icon = 2146, cost = 300, name = "Sapphire Plate Frame",
+					description = "A deep sapphire frame round your name plate, for good. Switch frames in Info & Services > Services."},
+				{kind = "frame", frame = "rose", icon = 2145, cost = 300, name = "Rose Plate Frame",
+					description = "A rose-pink frame round your name plate, for good. Switch frames in Info & Services > Services."},
+				{kind = "frame", frame = "jade", icon = 2155, cost = 300, name = "Jade Plate Frame",
+					description = "A jade-green frame round your name plate, for good. Switch frames in Info & Services > Services."},
+				{kind = "frame", frame = "copper", icon = 2148, cost = 300, name = "Copper Plate Frame",
+					description = "A burnished copper frame round your name plate, for good. Switch frames in Info & Services > Services."},
+				{kind = "frame", frame = "obsidian", icon = 2153, cost = 300, name = "Obsidian Plate Frame",
+					description = "A black obsidian frame with violet light round your name plate, for good. Switch frames in Info & Services > Services."},
+				{kind = "frame", frame = "amber", icon = 2154, cost = 300, name = "Amber Plate Frame",
+					description = "A warm amber frame round your name plate, for good. Switch frames in Info & Services > Services."},
+				{kind = "frame", frame = "storm", icon = 7759, cost = 300, name = "Storm Plate Frame",
+					description = "A storm-blue frame edged in white round your name plate, for good. Switch frames in Info & Services > Services."}
+				-- <<< Wardrobe
 			}
 		},
 		{
@@ -274,6 +293,10 @@ return {
 		dofile("data/scripts/chaos/cosmetics_store.lua")("killfx"),
 		dofile("data/scripts/chaos/cosmetics_store.lua")("lootbeam"),
 		dofile("data/scripts/chaos/cosmetics_store.lua")("chatcolor"),
+		-- >>> Footprints and outlines (cosmetics_config.lua kinds footprint / outline; client game_cosmeticfx draws them)
+		dofile("data/scripts/chaos/cosmetics_store.lua")("footprint"),
+		dofile("data/scripts/chaos/cosmetics_store.lua")("outline"),
+		-- <<< Footprints and outlines
 		-- <<< Cosmetics
 		-- >>> Hideouts (hideout.lua): decorations for the character's hideout; offers, prices and texts live in
 		-- hideout_config.lua (hideout_store.lua builds the category). Cosmetic only, account-wide, giftable.
@@ -287,7 +310,23 @@ return {
 				{kind = "unlock", unlock = "transmog_falconer", icon = 27200, cost = 300, name = "Falconer's Regalia", gift = false,
 					description = "Transmog looks: a crested circlet, plate and greaves of the old falconers. Character > Transmog."},
 				{kind = "unlock", unlock = "transmog_lionguard", icon = 27402, cost = 350, name = "Lionguard", gift = false,
-					description = "Transmog looks: the gilded lion helmet, plate, shield and spellbook. Character > Transmog."}
+					description = "Transmog looks: the gilded lion helmet, plate, shield and spellbook. Character > Transmog."},
+				-- >>> Wardrobe: seven more sets (transmog_config.lua; achievement and boss sets are never sold)
+				{kind = "unlock", unlock = "transmog_gravecloak", icon = 26709, cost = 350, name = "Gravecloak", gift = false,
+					description = "Transmog looks: hooded skull, bone-ribbed plate, legs and boots. Character > Transmog."},
+				{kind = "unlock", unlock = "transmog_soulforged", icon = 27389, cost = 400, name = "Soulforged", gift = false,
+					description = "Transmog looks: soulshell plate, soulshanks, soulwalkers, soulbastion. Character > Transmog."},
+				{kind = "unlock", unlock = "transmog_soulstalker", icon = 27391, cost = 350, name = "Soulstalker", gift = false,
+					description = "Transmog looks: the soulshroud, soulstrider legs, soulstalker boots. Character > Transmog."},
+				{kind = "unlock", unlock = "transmog_mothwing", icon = 28383, cost = 350, name = "Mothwing", gift = false,
+					description = "Transmog looks: a green mothwing helmet, plate, legs and boots. Character > Transmog."},
+				{kind = "unlock", unlock = "transmog_cobra", icon = 27213, cost = 300, name = "Cobra Regalia", gift = false,
+					description = "Transmog looks: the cobra hood, sword, wand and rod. Character > Transmog."},
+				{kind = "unlock", unlock = "transmog_lionarms", icon = 27400, cost = 300, name = "Lionguard Arms", gift = false,
+					description = "Transmog looks: the lion longsword, axe, hammer, longbow, rod and wand. Character > Transmog."},
+				{kind = "unlock", unlock = "transmog_sanguine", icon = 27459, cost = 350, name = "Grand Sanguine", gift = false,
+					description = "Transmog looks: grand sanguine blade, cudgel, hatchet, bow and coil. Character > Transmog."}
+				-- <<< Wardrobe
 			}
 		},
 		{
@@ -298,7 +337,19 @@ return {
 				{kind = "unlock", unlock = "petLanternWisp", look = 294, icon = 2050, cost = 400, name = "Lantern Wisp",
 					description = "A pet that mends you below half health and later wards you. Call it in Character > Pets."},
 				{kind = "unlock", unlock = "petHoarderSquirrel", look = 274, icon = 2148, cost = 400, name = "Hoarder Squirrel",
-					description = "A pet that finds more gold in your kills and later more items. Call it in Character > Pets."}
+					description = "A pet that finds more gold in your kills and later more items. Call it in Character > Pets."},
+				-- >>> Wardrobe: five more pets, the same two ability pairs (pets_config.lua; boss pets are never sold)
+				{kind = "unlock", unlock = "petEmberParrot", look = 217, icon = 2050, cost = 400, name = "Ember Parrot",
+					description = "A pet that mends you below half health and later wards you. Call it in Character > Pets."},
+				{kind = "unlock", unlock = "petRimePenguin", look = 250, icon = 2148, cost = 400, name = "Rime Penguin",
+					description = "A pet that finds more gold in your kills and later more items. Call it in Character > Pets."},
+				{kind = "unlock", unlock = "petAshenHare", look = 262, icon = 2050, cost = 400, name = "Ashen Hare",
+					description = "A pet that mends you below half health and later wards you. Call it in Character > Pets."},
+				{kind = "unlock", unlock = "petBogFrog", look = 224, icon = 2148, cost = 400, name = "Bog Frog",
+					description = "A pet that finds more gold in your kills and later more items. Call it in Character > Pets."},
+				{kind = "unlock", unlock = "petDuskMoth", look = 213, icon = 2050, cost = 400, name = "Dusk Moth",
+					description = "A pet that mends you below half health and later wards you. Call it in Character > Pets."}
+				-- <<< Wardrobe
 			}
 		},
 		{
