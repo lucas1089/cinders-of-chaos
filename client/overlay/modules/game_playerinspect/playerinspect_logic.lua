@@ -21,7 +21,7 @@ L.SLOTS = {
   [5] = { col = 2, row = 1, name = 'Right hand' },
   [9] = { col = 0, row = 2, name = 'Ring' },
   [7] = { col = 1, row = 2, name = 'Legs' },
-  [10] = { col = 2, row = 2, name = 'Ammunition' },
+  [10] = { col = 2, row = 2, name = 'Ring' }, -- the second ring slot (the old ammunition slot, server src-patch 0023)
   [8] = { col = 1, row = 3, name = 'Boots' },
 }
 

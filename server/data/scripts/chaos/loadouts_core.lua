@@ -650,7 +650,24 @@ function C.encodeGear(set, slots)
 	return table.concat(parts, "|")
 end
 
-function C.decodeGear(text)
+-- a set saved before the quiver went to the off-hand (engine patch 0023: slot 10, the old ammunition slot, is the second
+-- ring slot now): a quiver in slot 10 is the set's off-hand item (slot 5) when the set leaves that hand empty, and
+-- slot 10 is no longer part of the set (a ring worn there stays). isQuiver(id): ChaosArchery.isQuiverId by default.
+C.OFF_HAND, C.SECOND_RING = 5, 10
+function C.legacyGear(set, isQuiver)
+	isQuiver = isQuiver or (ChaosArchery and ChaosArchery.isQuiverId)
+	local q = set[C.SECOND_RING]
+	if q and not q.empty and isQuiver and isQuiver(q.id) then
+		local off = set[C.OFF_HAND]
+		if off == nil or off.empty then
+			set[C.OFF_HAND] = q
+		end
+		set[C.SECOND_RING] = nil
+	end
+	return set
+end
+
+function C.decodeGear(text, isQuiver)
 	local out = {}
 	for part in tostring(text or ""):gmatch("[^|]+") do
 		local slot, rest = part:match("^(%d+)=(.*)$")
@@ -666,7 +683,7 @@ function C.decodeGear(text)
 			end
 		end
 	end
-	return out
+	return C.legacyGear(out, isQuiver)
 end
 
 return ChaosLoadoutsCore

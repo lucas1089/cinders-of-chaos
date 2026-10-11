@@ -46,10 +46,11 @@ stealth crits); poison blades; evasion (dodge chance).
 - **Juggernaut**: Iron Will, Bulwark (block/reflect), taunts.
 - **Berserker**: Cleaving Arc (two-handed hits strike everything adjacent), rage.
 
-**Ranger** (base): today's Paladin kit. Bows and crossbows fire without ammunition; the ammunition slot holds a quiver
-(gear with implicit and rolled modifiers that work only while a bow or crossbow is held: distance fighting, attack speed,
+**Ranger** (base): today's Paladin kit. Bows and crossbows fire without ammunition; the off-hand holds a quiver beside the
+bow or crossbow (engine src-patch 0023; bows stay two-handed, so no shield; gear with implicit and rolled modifiers that work only while a bow or crossbow is held: distance fighting, attack speed,
 critical strike, extra projectiles, elemental shares; server/README.md "Infinite arrows and quivers"). The new-player kit has
-the bow and no arrows. Only the Ranger, Deadeye and Beastmaster may wear quivers (the launchers' vocations).
+the bow and no arrows. Only the Ranger, Deadeye and Beastmaster may wear quivers (the launchers' vocations). Every class
+may wear two rings: the ammunition slot is a second ring slot (server/README.md "Second ring slot").
 - **Deadeye**: crossbow, Final Verdict, marks.
 - **Beastmaster**: a wolf/bear companion that scales with level, arrow splash, Ricochet.
 

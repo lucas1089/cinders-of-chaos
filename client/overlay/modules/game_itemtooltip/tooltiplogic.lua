@@ -168,8 +168,15 @@ function L.lines(tip, ctx)
   elseif tip.rarityName then
     sub[#sub + 1] = tip.rarityName
   end
-  if tip.slot then sub[#sub + 1] = tip.slot end
+  -- a slot of the form 'Where: What' (the server's quiver: 'Off-hand: Quiver'): the title names what, a line of its
+  -- own says where it is worn
+  local slotWhat, slotLine = tip.slot, nil
+  if type(tip.slot) == 'string' and tip.slot:find(': ', 1, true) then
+    slotWhat, slotLine = tip.slot:match(': (.+)$'), tip.slot
+  end
+  if slotWhat then sub[#sub + 1] = slotWhat end
   if #sub > 0 then add(table.concat(sub, ' '), L.titleColor(tip)) end
+  if slotLine then add(slotLine, C.dim) end
   if tip.level then
     add(string.format('Item Level %d', tip.level) .. (tip.maxTier and string.format('  (up to T%d)', tip.maxTier) or ''),
       C.dim)

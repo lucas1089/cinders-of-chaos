@@ -21,7 +21,7 @@ I.config = {
 	nameLength = 29
 }
 
-I.SLOT_FIRST, I.SLOT_LAST = 1, 10
+I.SLOT_FIRST, I.SLOT_LAST = 1, 10 -- head .. the second ring slot (10, the old ammunition slot)
 
 -- refusals: code -> text for the window. "notfound" is also the answer for a hidden staff member or a player in ghost mode,
 -- so the window cannot be used to tell whether one is online.

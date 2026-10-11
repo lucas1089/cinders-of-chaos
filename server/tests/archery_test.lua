@@ -3,7 +3,12 @@
 --   * data/lib/chaos_archery_core.lua: the launcher bands, the attack and hit chance without ammunition, the balance
 --     bands (the engine's damage formula with the ammunition of before against the launcher alone), old items, refunds
 --   * quivers in the item system: kind, gear, which modifiers they roll (and weapons never roll), item level gates,
---     the slot rules (the ammunition slot counts only with a bow or crossbow), implicits, the crafting bonus, the tooltip
+--     the slot rules (the quiver counts in the off-hand only with a bow or crossbow), implicits, the crafting bonus,
+--     the tooltip ("Off-hand: Quiver")
+--   * the hands (engine src-patch 0023, mirrored in ChaosArchery.handsAllowed): bow or crossbow + quiver allowed, a
+--     shield or anything else beside a launcher refused, a quiver beside an empty weapon hand allowed and beside any
+--     other weapon refused, the ammunition slot refused; the login check (archery.lua A.checkHands) moves a quiver
+--     out of the ammunition slot to the off-hand, else the backpack, else the inbox, saved, idempotent
 --   * data/scripts/chaos/archery.lua: the ammunition sweep (save-safe, once, the stash), the quiver's skill and speed,
 --     old launchers; weapon_styles.lua: the no-ammunition hit (splash by kind, critical strike, element, extra shot)
 --   * loot.lua: quivers are gear drops, arrows and bolts are none; server/sql/chaos_archery.sql names the quivers
@@ -38,6 +43,7 @@ CONST_SLOT_FIRST, CONST_SLOT_LAST = 1, 10
 SLOTP_HEAD, SLOTP_NECKLACE, SLOTP_BACKPACK, SLOTP_ARMOR, SLOTP_RIGHT, SLOTP_LEFT = 1, 2, 4, 8, 16, 32
 SLOTP_LEGS, SLOTP_FEET, SLOTP_RING, SLOTP_AMMO, SLOTP_TWO_HAND = 64, 128, 256, 512, 2048
 WEAPON_NONE, WEAPON_SWORD, WEAPON_CLUB, WEAPON_AXE, WEAPON_SHIELD, WEAPON_DISTANCE, WEAPON_WAND, WEAPON_AMMO = 0, 1, 2, 3, 4, 5, 6, 7
+WEAPON_QUIVER = 8 -- engine src-patch 0023
 AMMO_NONE, AMMO_BOLT, AMMO_ARROW = 0, 1, 2
 ITEM_ATTRIBUTE_DESCRIPTION, ITEM_ATTRIBUTE_ATTACK, ITEM_ATTRIBUTE_HITCHANCE, ITEM_ATTRIBUTE_ATTACK_SPEED = 1, 2, 3, 4
 ITEM_ATTRIBUTE_DEFENSE, ITEM_ATTRIBUTE_ARMOR = 5, 6
@@ -79,7 +85,12 @@ local TYPES = {
 	[2148] = {name = "gold coin", stackable = true},
 	[1988] = {name = "backpack", container = true, slot = SLOTP_BACKPACK},
 	[99002] = {name = "old bolter", weaponType = WEAPON_DISTANCE, attack = 70, slot = 48 + SLOTP_TWO_HAND, minLevel = 400},
-	[99003] = {name = "old quiver", container = true, slot = SLOTP_AMMO}
+	[99003] = {name = "old quiver", container = true, slot = SLOTP_AMMO},
+	[2520] = {name = "demon shield", weaponType = WEAPON_SHIELD, slot = 48},
+	[2454] = {name = "war axe", weaponType = WEAPON_AXE, attack = 45, slot = 48 + SLOTP_TWO_HAND},
+	[2410] = {name = "throwing knife", weaponType = WEAPON_DISTANCE, attack = 15, slot = 48, stackable = true},
+	[2357] = {name = "ring of wisdom", slot = SLOTP_RING + 48},
+	[2165] = {name = "stealth ring", slot = SLOTP_RING + 48}
 }
 -- the patched launchers: attack and hit chance of their band, no ammunition type
 local A -- ChaosArchery, loaded below
@@ -91,7 +102,8 @@ local function patchedLaunchers()
 			minLevel = level}
 	end
 	for id in pairs(A_CFG.quivers) do
-		TYPES[id] = {name = "quiver " .. id, slot = SLOTP_AMMO, minLevel = A_CFG.quivers[id][1],
+		-- the install tool's quiver: weapon type quiver, the off-hand (items.xml slotType right-hand)
+		TYPES[id] = {name = "quiver " .. id, weaponType = WEAPON_QUIVER, slot = SLOTP_RIGHT, minLevel = A_CFG.quivers[id][1],
 			description = "Implicit: the type text"}
 	end
 end
@@ -339,7 +351,7 @@ for seed = 1, 40 do
 	end
 end
 
--- slot rules: the ammunition slot counts for a quiver only while a bow or crossbow is held
+-- slot rules: a quiver counts in the off-hand (the shield hand) only while a bow or crossbow is held
 local function newPlayer()
 	return {slots = {}, storage = {}, bank = 0, conditions = {}, msgs = {}, id = 0x10000001,
 		getId = function(self) return self.id end,
@@ -358,20 +370,69 @@ end
 local p = newPlayer()
 local quiver = newItem(QUIVER)
 C.forge(quiver, 5, 100, lcg(3))
-p.slots[CONST_SLOT_AMMO] = quiver
+p.slots[CONST_SLOT_RIGHT] = quiver
 local bits = M.slotBits()
-ok(not M.fits(quiver, CONST_SLOT_AMMO, bits, p), "no launcher: the quiver does not count")
-ok(not M.fits(quiver, CONST_SLOT_AMMO, bits), "no player given: never")
+eq(bits[CONST_SLOT_AMMO], SLOTP_RING, "the ammunition slot is the second ring slot (engine patch 0023)")
+ok(not M.fits(quiver, CONST_SLOT_RIGHT, bits, p), "no launcher: the quiver does not count")
+ok(not M.fits(quiver, CONST_SLOT_RIGHT, bits), "no player given: never")
 p.slots[CONST_SLOT_LEFT] = newItem(2400)
-ok(not M.fits(quiver, CONST_SLOT_AMMO, bits, p), "a sword: the quiver does not count")
+ok(not M.fits(quiver, CONST_SLOT_RIGHT, bits, p), "a sword: the quiver does not count")
 p.slots[CONST_SLOT_LEFT] = newItem(2456)
-ok(M.fits(quiver, CONST_SLOT_AMMO, bits, p), "a bow: it counts")
+ok(M.fits(quiver, CONST_SLOT_RIGHT, bits, p), "a bow: it counts in the off-hand")
 eq(#M.equippedItems(p), 2, "bow and quiver")
+ok(not M.fits(quiver, CONST_SLOT_LEFT, bits, p), "never in the weapon hand")
+ok(not M.fits(quiver, CONST_SLOT_AMMO, bits, p), "never in the ammunition slot")
 p.slots[CONST_SLOT_LEFT] = newItem(29875)
-ok(M.fits(quiver, CONST_SLOT_AMMO, bits, p), "a crossbow: it counts")
-eq(M.handLauncher(p), "crossbow", "the hand's launcher kind")
+ok(M.fits(quiver, CONST_SLOT_RIGHT, bits, p), "a crossbow: it counts")
+eq(M.handLauncher(p), "crossbow", "the hand's launcher kind (the quiver in the other hand is none)")
+eq(M.kindOfType(ItemType(QUIVER)), "quiver", "a quiver of weapon type quiver is no weapon")
+p.slots[CONST_SLOT_LEFT] = nil
+eq(M.handLauncher(p), nil, "a quiver alone: no launcher")
 local torch = newItem(2050)
 ok(not M.fits(torch, CONST_SLOT_AMMO, bits, p), "a torch never counts")
+-- two rings: both count, their modifiers add up under the catalogue's caps
+local pr2 = newPlayer()
+local ringA, ringB = newItem(2357), newItem(2165)
+C.forge(ringA, 5, 120, lcg(21))
+C.forge(ringB, 5, 120, lcg(22))
+pr2.slots[CONST_SLOT_RING], pr2.slots[CONST_SLOT_AMMO] = ringA, ringB
+ok(M.fits(ringA, CONST_SLOT_RING, bits, pr2) and M.fits(ringB, CONST_SLOT_AMMO, bits, pr2), "both rings count")
+eq(#M.equippedItems(pr2), 2, "two rings equipped")
+local one, two = M.totals({ringA}), M.totals(M.equippedItems(pr2))
+local onlyB = M.totals({ringB})
+local keys = 0
+for k, v in pairs(two) do
+	local def = M.byKey[k]
+	local want = (one[k] or 0) + (onlyB[k] or 0)
+	if def and def.cap then
+		want = math.min(def.cap, want)
+	end
+	eq(v, want, "two rings: " .. k .. " is the sum of both under the cap")
+	keys = keys + 1
+end
+ok(keys >= 1, "the rings rolled modifiers")
+-- the ring budget: at the top tier every modifier a ring may roll already reaches its cap from the slots a character
+-- had with one ring (weapon, shield, helmet, armour, legs, boots, amulet + ring, gloves + belt), so the second ring
+-- does not raise any ceiling at T8; it only makes the caps easier to reach (server/data/spells/README.md "Second ring")
+local ONE_RING = {weapon = 1, shield = 1, helmet = 1, armor = 1, legs = 1, boots = 1, jewel = 2, other = 2}
+for _, def in ipairs(M.config.mods) do
+	if def.kinds and def.kinds.jewel and def.cap then
+		local n = 0
+		for k, c in pairs(ONE_RING) do
+			if def.kinds[k] then n = n + c end
+		end
+		ok(n * def.tiers[#def.tiers][2] >= def.cap, def.key .. ": the cap is reached at T8 without a second ring")
+	end
+end
+-- the same unique ring twice: allowed (no unique says otherwise); its modifiers add up under the caps as well
+local twin = newItem(2357)
+for k, v in pairs(ringA.custom) do twin.custom[k] = v end
+for k, v in pairs(ringA.attrs) do twin.attrs[k] = v end
+local twins = M.totals({ringA, twin})
+for k, v in pairs(one) do
+	local def = M.byKey[k]
+	eq(twins[k], def and def.cap and math.min(def.cap, 2 * v) or 2 * v, "two copies: " .. k)
+end
 -- implicits under the caps
 local imp = A.implicits(29873)
 local totals = M.totals({}, imp)
@@ -383,7 +444,7 @@ eq(capped.bowdistance, M.byKey.bowdistance.cap, "implicit + more stays under the
 -- the crafting bonus counts a quiver as equipment (not a tool)
 dofile("data/scripts/chaos/craft_bonus_core.lua")
 local CB = dofile("data/scripts/chaos/craft_bonus_config.lua")
-ok(not ChaosCraftBonusCore.isTool(CB, "quiver", SLOTP_AMMO), "a crafted quiver rolls a rarity")
+ok(not ChaosCraftBonusCore.isTool(CB, "quiver", SLOTP_RIGHT), "a crafted quiver rolls a rarity")
 local craftLevel = ChaosCraftBonusCore.itemLevel(CB, 35, 60, 0)
 local cq = C.createItem and nil
 ok(craftLevel >= 35 and craftLevel <= CB.gear.itemLevel.max, "a crafted quiver's item level " .. craftLevel)
@@ -398,8 +459,11 @@ dofile("data/scripts/chaos/item_tooltip_core.lua")
 local T = ChaosItemTooltip
 local tip = T.build(newItem(29873), {})
 eq(tip.kind, "quiver", "tooltip kind")
-eq(tip.slot, "Quiver", "tooltip slot")
-eq(tip.cmp and tip.cmp[1], 10, "compared with the ammunition slot")
+eq(tip.slot, "Off-hand: Quiver", "tooltip slot")
+eq(tip.cmp and tip.cmp[1], CONST_SLOT_RIGHT, "compared with the off-hand")
+eq(tip.cmp and #tip.cmp, 1, "and only there")
+eq(T.SLOT_LAST, 10, "the tooltip asks for slots 1-10 (10: the second ring slot)")
+eq(T.decodePos({x = CONTAINER_POSITION, y = 10, z = 0}).slot, 10, "a ring in the second ring slot has a tooltip")
 eq(tip.note, T.QUIVER_NOTE, "the bow note")
 eq(tip.desc, nil, "no type text (it repeats the implicits)")
 local imps = 0
@@ -410,6 +474,63 @@ for _, b in ipairs(tip.base) do
 	end
 end
 eq(imps, 3, "three implicit rows on the Seraphic quiver")
+
+-- ---------------------------------------------------------------- 3b. the hands (engine src-patch 0023)
+eq(A.handKind(ItemType(QUIVER)), "quiver", "a quiver")
+eq(A.handKind(ItemType(2456)), "launcher", "a bow")
+eq(A.handKind(ItemType(29875)), "launcher", "a crossbow")
+eq(A.handKind(ItemType(2520)), "shield", "a shield")
+eq(A.handKind(ItemType(2454)), "twohanded", "a two-handed axe")
+eq(A.handKind(ItemType(2400)), "weapon", "a one-handed sword")
+eq(A.handKind(ItemType(2410)), "weapon", "a throwing weapon is one-handed")
+eq(A.handKind(ItemType(2466)), "other", "an armour")
+eq(A.handKind(ItemType(2357)), "ring", "a ring")
+eq(A.handKind(ItemType(2050)), "other", "a torch (slot position ammo) is no ring")
+-- WEAPON_QUIVER is the engine's constant; without it the core uses the same value
+local savedWQ = WEAPON_QUIVER
+WEAPON_QUIVER = nil
+eq(A.quiverWeaponType(), 8, "the weapon type quiver without the engine constant")
+WEAPON_QUIVER = savedWQ
+-- main = the weapon hand, off = the shield hand
+ok(A.handsAllowed("launcher", "quiver"), "bow or crossbow + quiver: allowed")
+ok(not A.handsAllowed("launcher", "shield"), "bow + shield: refused")
+ok(not A.handsAllowed("launcher", "weapon"), "bow + an off-hand blade: refused")
+ok(not A.handsAllowed("launcher", "other"), "bow + anything else: refused")
+ok(A.handsAllowed("launcher", nil), "bow alone")
+ok(A.handsAllowed(nil, "quiver"), "quiver without a bow: allowed (equip it first, or take the bow off; it does nothing)")
+ok(not A.handsAllowed("weapon", "quiver"), "quiver beside a sword: refused")
+ok(not A.handsAllowed("twohanded", "quiver"), "quiver beside a two-handed axe: refused")
+ok(not A.handsAllowed("quiver", nil), "a quiver never in the weapon hand")
+ok(not A.handsAllowed(nil, "launcher"), "a bow never in the shield hand")
+ok(not A.handsAllowed("twohanded", "shield"), "two-handed + shield: refused (as the engine always did)")
+ok(A.handsAllowed("weapon", "shield"), "sword + shield")
+ok(A.handsAllowed("weapon", "weapon"), "dual wield (the engine asks the storage)")
+ok(A.slotAllowed(CONST_SLOT_AMMO, "ring"), "the second ring slot takes a ring")
+ok(not A.slotAllowed(CONST_SLOT_AMMO, "quiver"), "not a quiver")
+ok(not A.slotAllowed(CONST_SLOT_AMMO, "other"), "not a torch or anything else")
+ok(not A.slotAllowed(CONST_SLOT_AMMO, nil), "not an unknown item")
+ok(A.slotAllowed(CONST_SLOT_RING, "ring"), "the ring slot takes a ring as always")
+-- the login plan
+local function plan(s)
+	local out = {}
+	for _, st in ipairs(A.loginPlan(s)) do
+		out[#out + 1] = st.from .. ">" .. st.to
+	end
+	return table.concat(out, ",")
+end
+eq(plan({}), "", "nothing equipped: nothing to do")
+eq(plan({main = "launcher", off = "quiver"}), "", "bow + quiver: nothing to do (idempotent)")
+eq(plan({main = "launcher", ammo = "quiver"}), "ammo>off", "a quiver of before beside a bow: to the off-hand")
+eq(plan({ammo = "quiver"}), "ammo>off", "a quiver of before, empty hands: to the off-hand")
+eq(plan({main = "weapon", off = "shield", ammo = "quiver"}), "ammo>stow", "the off-hand is taken: stowed")
+eq(plan({main = "weapon", ammo = "quiver"}), "ammo>stow", "beside a sword: stowed")
+eq(plan({main = "launcher", ammo = "other"}), "ammo>stow", "anything else in the ammunition slot: stowed")
+eq(plan({main = "launcher", off = "quiver", ammo = "ring"}), "", "a ring in the second ring slot stays")
+eq(plan({main = "launcher", ammo = "ring"}), "", "a ring stays even with the off-hand free")
+eq(plan({main = "launcher", off = "shield", ammo = "quiver"}), "off>stow,ammo>off",
+	"a refused pair loses its off-hand item first; then the quiver goes there")
+eq(plan({main = "weapon", off = "quiver"}), "off>stow", "a quiver beside a sword: stowed")
+eq(plan({main = "quiver", ammo = "quiver"}), "main>stow,ammo>off", "a quiver in the weapon hand: stowed")
 
 -- ---------------------------------------------------------------- 4. the ammunition, refunds
 ok(A.isAmmoId(2544), "arrow")
@@ -521,6 +642,119 @@ sp, sg, sdone = A.sweepStash(pl2)
 eq(sdone and sp, 40, "the next try sweeps the stash")
 eq(pl2.bank, bank2 + 40, "and pays once")
 eq(#dbq, 1, "and deletes the row")
+
+-- the hands at login (A.checkHands): the mock engine refuses what Player::queryAdd (0023) refuses
+function Item:clone()
+	local c = newItem(self.id, self.count)
+	for k, v in pairs(self.attrs) do c.attrs[k] = v end
+	for k, v in pairs(self.custom) do c.custom[k] = v end
+	return c
+end
+function Item:moveTo(target)
+	if target.full then
+		return false
+	end
+	self.moved = true -- out of its slot (the mock player's getSlotItem skips it)
+	target:addInner(self)
+	return true
+end
+local function handsPlayer(left, right, ammo, opts)
+	opts = opts or {}
+	local pl = newPlayer()
+	local getSlot = pl.getSlotItem
+	pl.getSlotItem = function(self, s)
+		local it = getSlot(self, s)
+		return it and not it.moved and it or nil
+	end
+	pl.slots[CONST_SLOT_LEFT], pl.slots[CONST_SLOT_RIGHT], pl.slots[CONST_SLOT_AMMO] = left, right, ammo
+	local bp = newItem(1988)
+	bp.full = opts.bagFull
+	pl.slots[CONST_SLOT_BACKPACK] = bp
+	local inbox = newItem(1988)
+	pl.getInbox = function() return inbox end
+	pl.addItemEx = function(self, item, _, slot)
+		if not A.slotAllowed(slot, A.handKind(ItemType(item:getId()))) or self:getSlotItem(slot) or opts.refuseOff then
+			return 1
+		end
+		local function kind(s)
+			local it = self:getSlotItem(s)
+			return it and A.handKind(ItemType(it:getId())) or nil
+		end
+		local main, off = kind(CONST_SLOT_LEFT), kind(CONST_SLOT_RIGHT)
+		local k = A.handKind(ItemType(item:getId()))
+		if slot == CONST_SLOT_RIGHT then off = k else main = k end
+		if not A.handsAllowed(main, off) then
+			return 1
+		end
+		self.slots[slot] = item
+		return RETURNVALUE_NOERROR
+	end
+	return pl, bp, inbox
+end
+local function rolledQuiver()
+	local q = newItem(QUIVER)
+	q.custom.chaos_iid = "123456"
+	q.attrs[ITEM_ATTRIBUTE_ATTACK] = 0
+	return q
+end
+saves = 0
+-- a bow and a quiver of before in the ammunition slot: the quiver moves to the off-hand, keeps its rolls, saved
+local oldQ = rolledQuiver()
+local ph, bpH, inboxH = handsPlayer(newItem(2456), nil, oldQ)
+eq(A.checkHands(ph), 1, "one item moved")
+local nowQ = ph:getSlotItem(CONST_SLOT_RIGHT)
+ok(nowQ and nowQ.id == QUIVER and nowQ ~= oldQ, "the quiver is in the off-hand")
+eq(nowQ and nowQ.custom.chaos_iid, "123456", "with its rolls (one item, moved)")
+ok(oldQ.removed, "the old one is gone")
+eq(ph:getSlotItem(CONST_SLOT_AMMO), nil, "the ammunition slot is empty")
+eq(saves, 1, "saved at once")
+ok(ph.msgs[1] and ph.msgs[1]:find("your off-hand", 1, true) ~= nil, "the player is told")
+eq(A.checkHands(ph), 0, "a second login: nothing to do")
+eq(saves, 1, "and no save")
+-- the off-hand is taken by a shield (a sword in the hand): the quiver goes to the backpack
+local q2 = rolledQuiver()
+local ps, bpS = handsPlayer(newItem(2400), newItem(2520), q2)
+eq(A.checkHands(ps), 1, "moved")
+ok(q2.moved and bpS:getItems()[1] == q2, "into the backpack")
+eq(ps:getSlotItem(CONST_SLOT_RIGHT).id, 2520, "the shield stays")
+-- the backpack is full: the inbox
+local q3 = rolledQuiver()
+local pf, _, inboxF = handsPlayer(newItem(2400), nil, q3, {bagFull = true})
+eq(A.checkHands(pf), 1, "moved")
+ok(inboxF:getItems()[1] == q3, "into the inbox")
+ok(pf.msgs[1]:find("your inbox", 1, true) ~= nil, "the message names the inbox")
+-- the engine refuses the off-hand (a vocation or level of movements.xml): stowed instead
+local q4 = rolledQuiver()
+local pr, bpR = handsPlayer(newItem(2456), nil, q4, {refuseOff = true})
+eq(A.checkHands(pr), 1, "moved")
+ok(bpR:getItems()[1] == q4 and not q4.removed, "the quiver kept, in the backpack")
+eq(pr:getSlotItem(CONST_SLOT_RIGHT), nil, "the off-hand stays empty")
+-- something else left in the ammunition slot (a torch): the backpack
+local torch2 = newItem(2050)
+local pt, bpT = handsPlayer(newItem(2456), nil, torch2)
+eq(A.checkHands(pt), 1, "moved")
+ok(bpT:getItems()[1] == torch2, "the torch into the backpack")
+-- a ring in the second ring slot stays; no save, no message
+local ring2 = newItem(2357)
+local pring = handsPlayer(newItem(2456), rolledQuiver(), ring2)
+saves = 0
+eq(A.checkHands(pring), 0, "a ring in the second ring slot: nothing to do")
+ok(pring:getSlotItem(CONST_SLOT_AMMO) == ring2 and not ring2.moved, "the ring stays")
+eq(saves, 0, "no save")
+eq(#pring.msgs, 0, "no message")
+-- bow + quiver already right: nothing; a quiver beside a sword: stowed
+local pk = handsPlayer(newItem(2456), rolledQuiver(), nil)
+eq(A.checkHands(pk), 0, "bow + quiver in the off-hand: nothing to do")
+local qw = rolledQuiver()
+local pw, bpW = handsPlayer(newItem(2400), qw, nil)
+eq(A.checkHands(pw), 1, "a quiver beside a sword is moved")
+ok(bpW:getItems()[1] == qw, "to the backpack")
+-- the login event runs the check before the sweep
+local pe = handsPlayer(newItem(29875), nil, rolledQuiver())
+pe.getDepotChest = function() return nil end
+events.ChaosArcheryLogin.onLogin(pe)
+eq(pe:getSlotItem(CONST_SLOT_RIGHT) and pe:getSlotItem(CONST_SLOT_RIGHT).id, QUIVER, "login: the quiver is in the off-hand")
+eq(pe:getSlotItem(CONST_SLOT_AMMO), nil, "login: the ammunition slot is empty")
 
 -- the quiver's Distance Fighting condition and Attack Speed with Bows
 local pa = newPlayer()

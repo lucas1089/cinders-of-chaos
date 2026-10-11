@@ -307,12 +307,13 @@ function M.kindOfType(it)
 		end
 		return "shield"
 	end
-	if weapon ~= 0 and weapon ~= (WEAPON_AMMO or 7) then
-		return "weapon"
-	end
-	-- a quiver (data/lib/chaos_archery_core.lua): equipment of the ammunition slot with modifiers of its own
+	-- a quiver (data/lib/chaos_archery_core.lua): off-hand equipment with modifiers of its own (weapon type "quiver",
+	-- engine patch 0023: no weapon)
 	if ChaosArchery and ChaosArchery.isQuiverType(it) then
 		return "quiver"
+	end
+	if weapon ~= 0 and weapon ~= (WEAPON_AMMO or 7) and weapon ~= (WEAPON_QUIVER or 8) then
+		return "weapon"
 	end
 	local slots = typeNumber(it, "getSlotPosition")
 	if hasBit(slots, SLOTP.head) then
@@ -834,7 +835,8 @@ function M.slotBits()
 	add(CONST_SLOT_LEGS, SLOTP_LEGS); add(CONST_SLOT_FEET, SLOTP_FEET); add(CONST_SLOT_RING, SLOTP_RING)
 	add(CONST_SLOT_RIGHT, SLOTP_RIGHT); add(CONST_SLOT_LEFT, SLOTP_LEFT)
 	add(CONST_SLOT_BADGE, SLOTP_BADGE); add(CONST_SLOT_GLOVES, SLOTP_GLOVES); add(CONST_SLOT_BELT, SLOTP_BELT)
-	add(CONST_SLOT_AMMO, SLOTP_AMMO)
+	-- the second ring slot (the old ammunition slot, engine patch 0023): a ring counts there as in the ring slot
+	add(CONST_SLOT_AMMO, SLOTP_RING)
 	return bits
 end
 
@@ -853,23 +855,24 @@ function M.handLauncher(player)
 	return nil
 end
 
--- true when the item counts in this slot (worn where it belongs; weapons and shields in a hand). The ammunition slot
--- counts only for a quiver while `player` holds a bow or crossbow (without a player: never)
+-- true when the item counts in this slot (worn where it belongs; weapons and shields in a hand). A quiver counts only
+-- in the off-hand (the shield hand) while `player` holds a bow or crossbow (without a player: never)
 function M.fits(item, slot, bits, player)
 	bits = bits or M.slotBits()
 	local bitValue = bits[slot]
 	if not bitValue then
 		return false
 	end
-	if slot == CONST_SLOT_AMMO then
-		return M.kindOf(item) == "quiver" and M.handLauncher(player) ~= nil
+	if M.kindOf(item) == "quiver" then
+		return slot == CONST_SLOT_RIGHT and M.handLauncher(player) ~= nil
 	end
 	local it = item:getType()
 	if hasBit(it:getSlotPosition(), bitValue) then
 		return true
 	end
 	if slot == CONST_SLOT_LEFT or slot == CONST_SLOT_RIGHT then
-		return it:getWeaponType() ~= (WEAPON_NONE or 0) and it:getWeaponType() ~= (WEAPON_AMMO or 7)
+		local wt = it:getWeaponType()
+		return wt ~= (WEAPON_NONE or 0) and wt ~= (WEAPON_AMMO or 7) and wt ~= (WEAPON_QUIVER or 8)
 	end
 	return false
 end

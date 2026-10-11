@@ -256,14 +256,14 @@ local function copyPos(p)
 	return {x = p.x, y = p.y, z = p.z}
 end
 
--- weapon in the hands (not a shield, not ammunition), like weapon_styles.lua
+-- weapon in the hands (not a shield, not ammunition, not a quiver), like weapon_styles.lua
 local function handWeapon(player)
 	for _, slot in ipairs({CONST_SLOT_LEFT, CONST_SLOT_RIGHT}) do
 		local item = player:getSlotItem(slot)
 		if item then
 			local it = ItemType(item:getId())
 			local wt = it:getWeaponType()
-			if wt ~= WEAPON_NONE and wt ~= WEAPON_SHIELD and wt ~= WEAPON_AMMO then
+			if wt ~= WEAPON_NONE and wt ~= WEAPON_SHIELD and wt ~= WEAPON_AMMO and wt ~= (WEAPON_QUIVER or 8) then
 				return it
 			end
 		end

@@ -44,7 +44,7 @@ local root = os.tmpname()
 os.remove(root)
 local data = root .. "/data"
 for _, d in ipairs({"items", "weapons", "movements", "spells", "monster/monsters", "monster/lua", "npc/scripts",
-		"creaturescripts/scripts", "actions/scripts"}) do
+		"creaturescripts/scripts", "actions/scripts", "scripts/customs/rarity", "lib/core", "scripts/eventcallbacks/player"}) do
 	os.execute("mkdir -p '" .. data .. "/" .. d .. "'")
 end
 
@@ -182,6 +182,31 @@ local items = {
 writeFile(data .. "/actions/scripts/enchanting.lua", [[
 if not isInArray({2544, 8905}, target.itemid) then end
 ]])
+-- the base slot maps (the second ring slot, engine patch 0023)
+writeFile(data .. "/scripts/customs/rarity/base_rarity.lua", [[
+local slotBits = {
+	[CONST_SLOT_RING] = SLOTP_RING,
+	[CONST_SLOT_AMMO] = SLOTP_AMMO,
+    [CONST_SLOT_BADGE] = SLOTP_BADGE,
+}
+]])
+writeFile(data .. "/lib/core/itemtype.lua", [[
+local slotBits = {
+	[CONST_SLOT_RING] = SLOTP_RING,
+	[CONST_SLOT_AMMO] = SLOTP_AMMO
+}
+]])
+-- the base's two-handed swap (a quiver must stay beside a launcher)
+writeFile(data .. "/scripts/eventcallbacks/player/default_onMoveItem.lua", [[
+	if item:getTopParent() == self and bit.band(toPosition.y, 0x40) == 0 then
+		local itemType, moveItem = ItemType(item:getId())
+		if bit.band(itemType:getSlotPosition(), SLOTP_TWO_HAND) ~= 0 and toPosition.y == CONST_SLOT_LEFT then
+			moveItem = self:getSlotItem(CONST_SLOT_RIGHT)
+		elseif itemType:getWeaponType() == WEAPON_SHIELD and toPosition.y == CONST_SLOT_RIGHT then
+			moveItem = self:getSlotItem(CONST_SLOT_LEFT)
+		end
+	end
+]])
 -- items.otb: the root and three nodes (the bow, the quiver as a container, the arrow)
 local mk = io.popen("python3 -I -c \"import sys, struct; sys.path.insert(0, 'tools'); "
 	.. "from install_gems import escape, attr, START, END; "
@@ -223,8 +248,12 @@ ok(entry(2389):find('value="spear"', 1, true) and not entry(2389):find("hitChanc
 ok(entry(2544):find("ammoType"), "the arrow item itself stays (players' leftovers are refunded in game)")
 local q = entry(29873)
 ok(not q:lower():find("containersize"), "quiver: no container size")
-ok(not q:find("right%-hand") and not q:find("absorbpercent"), "quiver: no hand slot, no stock abilities")
-ok(q:find('key="slotType" value="ammo"', 1, true), "quiver: ammunition slot")
+ok(not q:find("absorbpercent"), "quiver: no stock abilities")
+ok(q:find('key="weaponType" value="quiver"', 1, true), "quiver: weapon type quiver (engine patch 0023)")
+ok(q:find('key="slotType" value="right-hand"', 1, true), "quiver: the off-hand (the shield hand)")
+ok(not q:find('value="ammo"', 1, true), "quiver: no ammunition slot")
+local _, slotTypes = q:gsub('key="slotType"', "")
+eq(slotTypes, 1, "quiver: one slot type")
 ok(q:find("Distance Fighting +4", 1, true) and q:find("Extra Projectile Chance +8%", 1, true), "quiver: implicits in its text")
 ok(q:find('key="weight" value="2470"', 1, true), "quiver: weight kept")
 
@@ -237,12 +266,48 @@ ok(groups:find("29873:0", 1, true) and groups:find("2456:0", 1, true), "items.ot
 ok(readFile(data .. "/items/items.otb.bak") ~= nil, "items.otb.bak kept")
 
 local moves = readFile(data .. "/movements/movements.xml")
-ok(not moves:find('itemid="29873" slot="ammo" level="1000" function="onDeEquipItem"', 1, true), "stock quiver entry gone")
-ok(moves:find('itemid="29873" slot="ammo" level="1000" function="onEquipItem"', 1, true), "Chaos quiver entry")
+ok(not moves:find('itemid="29873" slot="ammo"', 1, true), "stock quiver entry gone")
+ok(moves:find('itemid="29873" slot="shield" level="1000" function="onEquipItem"', 1, true), "Chaos quiver entry (the hands)")
+ok(moves:find('event="DeEquip" itemid="29873" slot="shield" function="onDeEquipItem"', 1, true), "Chaos quiver DeEquip")
 ok(moves:find('name="Ranger"', 1, true) and moves:find('name="Beastmaster"', 1, true) and moves:find('name="Deadeye"', 1, true),
 	"the launchers' vocations")
 ok(not moves:find('name="Thief"', 1, true), "not the stock list")
 ok(moves:find('itemid="2463"', 1, true), "other entries kept")
+
+local rarityMap = readFile(data .. "/scripts/customs/rarity/base_rarity.lua")
+ok(rarityMap:find("[CONST_SLOT_AMMO] = SLOTP_RING, -- Chaos: the second ring slot", 1, true), "base rarity: slot 10 maps to the ring bit")
+ok(rarityMap:find("[CONST_SLOT_BADGE] = SLOTP_BADGE,", 1, true) and not rarityMap:find("SLOTP_AMMO", 1, true), "the rest kept")
+ok(readFile(data .. "/lib/core/itemtype.lua"):find("[CONST_SLOT_AMMO] = SLOTP_RING -- Chaos", 1, true), "ItemType.usesSlot: the same")
+
+local swap = readFile(data .. "/scripts/eventcallbacks/player/default_onMoveItem.lua")
+ok(swap:find("moveItem = self:getSlotItem(CONST_SLOT_RIGHT)\n\t\t\t-- Chaos: a quiver stays beside a bow or crossbow", 1, true),
+	"the base swap keeps the quiver (hook right after the off-hand lookup)")
+ok(swap:find("ChaosArchery.handsAllowed(ChaosArchery.handKind(itemType),", 1, true), "asks the hand rule")
+-- the hook run as code: the block's local moveItem is made visible to the test (what the swap would move)
+local swapCode = swap:gsub("local itemType, moveItem = ", "local itemType; itemType, moveItem = ")
+local swapFn = assert((loadstring or load)("return function(self, item, toPosition) moveItem = nil " .. swapCode
+	.. " return moveItem end"))()
+CONST_SLOT_LEFT, CONST_SLOT_RIGHT, SLOTP_TWO_HAND, WEAPON_SHIELD = 6, 5, 2048, 4
+bit = bit or {band = function(a, b) local r, p = 0, 1 while a > 0 and b > 0 do if a % 2 == 1 and b % 2 == 1 then r = r + p end a, b, p = math.floor(a / 2), math.floor(b / 2), p * 2 end return r end}
+local kinds = {[1] = "launcher", [2] = "quiver", [3] = "shield", [4] = "twohanded"}
+ChaosArchery = {handKind = function(it) return kinds[it.id] end,
+	handsAllowed = function(m, o) return m == "launcher" and o == "quiver" end}
+ItemType = function(id) return {id = id, getSlotPosition = function() return (id == 1 or id == 4) and 2048 or 48 end,
+	getWeaponType = function() return id == 3 and 4 or 0 end} end
+local function holder(offId)
+	local off = {getId = function() return offId end}
+	return {getSlotItem = function(_, s) return s == 5 and off or nil end}, off
+end
+local me, quiverItem = holder(2)
+local self1 = me
+local bowItem = {getId = function() return 1 end, getTopParent = function() return self1 end}
+eq(swapFn(me, bowItem, {y = 6}), nil, "a bow taken into the hand leaves the quiver in the off-hand")
+local me2, shieldItem = holder(3)
+self1 = me2
+eq(swapFn(me2, bowItem, {y = 6}), shieldItem, "a bow taken into the hand still moves a shield out (stock)")
+local axe = {getId = function() return 4 end, getTopParent = function() return me end}
+self1 = me
+eq(swapFn(me, axe, {y = 6}), quiverItem, "a two-handed axe moves the quiver out")
 
 local spells = readFile(data .. "/spells/spells.xml")
 ok(spells:find("<!-- Chaos: no ammunition", 1, true) and spells:find('name="Mend"', 1, true), "conjure spell commented out")
@@ -274,7 +339,8 @@ ok(readFile(data .. "/actions/scripts/enchanting.lua"):find("{2544, 8905}", 1, t
 local before = {}
 for _, p in ipairs({"/items/items.xml", "/items/items.otb", "/movements/movements.xml", "/spells/spells.xml",
 		"/monster/monsters/elf.xml", "/monster/lua/orc.lua", "/npc/Seller.xml", "/npc/scripts/Seller.lua", "/npc/scripts/Older.lua",
-		"/creaturescripts/scripts/firstitems.lua"}) do
+		"/creaturescripts/scripts/firstitems.lua", "/scripts/customs/rarity/base_rarity.lua", "/lib/core/itemtype.lua",
+		"/scripts/eventcallbacks/player/default_onMoveItem.lua"}) do
 	before[p] = readFile(data .. p)
 end
 local out2 = run()
@@ -282,6 +348,19 @@ ok(out2:find("0 file(s) written", 1, true) ~= nil, "second run: nothing written 
 for p, text in pairs(before) do
 	eq(readFile(data .. p), text, "second run keeps " .. p)
 end
+
+-- a server patched with the earlier layout (quivers in the ammunition slot) is moved to the off-hand by the next run
+local items = readFile(data .. "/items/items.xml")
+local oldItems = items:gsub('<attribute key="weaponType" value="quiver" />%s*<attribute key="slotType" value="right%-hand" />',
+	'<attribute key="slotType" value="ammo" />')
+local oldMoves = readFile(data .. "/movements/movements.xml"):gsub('slot="shield"', 'slot="ammo"')
+ok(oldItems ~= items and oldMoves:find('slot="ammo"', 1, true), "earlier layout written back")
+writeFile(data .. "/items/items.xml", oldItems)
+writeFile(data .. "/movements/movements.xml", oldMoves)
+local out3 = run()
+ok(out3:find("2 file(s) written", 1, true) ~= nil, "earlier layout: items.xml and movements.xml rewritten (" .. out3 .. ")")
+eq(readFile(data .. "/items/items.xml"), before["/items/items.xml"], "earlier layout: items.xml as a fresh install")
+eq(readFile(data .. "/movements/movements.xml"), before["/movements/movements.xml"], "earlier layout: movements.xml as a fresh install")
 
 os.execute("rm -rf '" .. root .. "'")
 print(string.format("base_archery_patch_test: %d checks, %d failures", checks, fails))

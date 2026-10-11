@@ -1043,8 +1043,10 @@ def gen_stock():
     save(slot(44, seed=82), 'game/actionbar/slot-actionbar_')
     save(slot(66, seed=83), 'ui/item66')
     for nm in SLOTS:
-        save(slot_with_silhouette(stock('game/slots/' + nm), False, 90), 'game/slots/' + nm)
-        save(slot_with_silhouette(stock('game/slots/' + nm), True, 90), 'game/slots/' + nm + '-blessed')
+        # the ammunition slot is the second ring slot (server src-patch 0023): it shows the ring's silhouette
+        src = 'game/slots/' + ('finger' if nm == 'ammo' else nm)
+        save(slot_with_silhouette(stock(src), False, 90), 'game/slots/' + nm)
+        save(slot_with_silhouette(stock(src), True, 90), 'game/slots/' + nm + '-blessed')
 
 
 def map_frame(n):

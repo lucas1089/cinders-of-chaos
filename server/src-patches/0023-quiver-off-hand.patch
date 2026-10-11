@@ -1,0 +1,192 @@
+# Quivers in the off-hand; the ammunition slot becomes a second ring slot (server/README.md "Infinite arrows and
+# quivers", "Second ring slot"). Owner requests: "Quivers go in the off-hand now." and then "Don't remove the ammo slot.
+# Turn it into a second ring slot." Bows and crossbows stay two-handed (every two-handed rule, weapon_styles.lua's
+# two-handed speed and damage, the keystones and the class kits see them as before); the one exception is the quiver.
+#   * a new weapon type WEAPON_QUIVER (const.h; items.xml weaponType "quiver", written by
+#     server/tools/patch_base_archery.py; Lua constant WEAPON_QUIVER = 8; getWeaponName "quiver"). It is no weapon:
+#     Player::getWeapon skips it, Player::getShieldAndWeapon counts it as neither shield nor weapon (defense, shielding).
+#   * Player::queryAdd, classicEquipmentSlots = false (the Chaos setting): the shield hand takes a quiver while the
+#     weapon hand holds a bow or crossbow (a two-handed distance weapon) or nothing; the weapon hand takes a bow or
+#     crossbow next to a quiver, and refuses every other weapon while a quiver is in the shield hand. A shield (or a
+#     dual-wield blade) next to a launcher is still refused (both hands need to be free). A quiver never goes in the
+#     weapon hand. Every equip path asks queryAdd: drag and drop, the equip hotkey (Game::playerEquipItem), a script's
+#     addItem / addItemEx with a slot (loadouts, kits), Player::queryDestination; only the login (IOLoginData) skips it,
+#     and data/scripts/chaos/archery.lua checks the hands and the second ring slot there.
+#   * the second ring slot (CONST_SLOT_AMMO, slot 10): it takes the item types the ring slot takes (slot position
+#     ring) and nothing else (the base's "Quiver" name exception goes). MoveEvents::getEvent looks up the ring events
+#     for it (slot="ring" in movements.xml), so a ring there gets its abilities, its vocation and level check and its
+#     transformation on equip and de-equip (the timed rings) as in the ring slot; Player::getArmor counts it. The equip
+#     hotkey of a ring uses the second slot when the first holds another ring and the second is free (or holds that
+#     ring: the hotkey takes it off).
+#   * classicEquipmentSlots = true is not supported for quivers: a quiver is then a second hand item and is refused
+#     next to a two-handed launcher, as before.
+# Apply in the server source root after 0001-0022: patch -p1 < 0023-quiver-off-hand.patch, then rebuild.
+--- a/src/const.h
++++ b/src/const.h
+@@ -364,6 +364,7 @@
+ 	WEAPON_DISTANCE,
+ 	WEAPON_WAND,
+ 	WEAPON_AMMO,
++	WEAPON_QUIVER, // Chaos (src-patch 0023): worn in the shield hand next to a bow or crossbow
+ };
+ 
+ enum Ammo_t : uint8_t {
+--- a/src/items.cpp
++++ b/src/items.cpp
+@@ -191,6 +191,7 @@
+ 	{"distance", WEAPON_DISTANCE},
+ 	{"wand", WEAPON_WAND},
+ 	{"ammunition", WEAPON_AMMO},
++	{"quiver", WEAPON_QUIVER},
+ };
+ 
+ const std::unordered_map<std::string, FluidTypes_t> FluidTypesMap = {
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -1791,6 +1791,7 @@
+ 	registerEnum(WEAPON_DISTANCE)
+ 	registerEnum(WEAPON_WAND)
+ 	registerEnum(WEAPON_AMMO)
++	registerEnum(WEAPON_QUIVER)
+ 
+ 	registerEnum(WORLD_TYPE_NO_PVP)
+ 	registerEnum(WORLD_TYPE_PVP)
+--- a/src/tools.cpp
++++ b/src/tools.cpp
+@@ -908,6 +908,7 @@
+ 		case WEAPON_DISTANCE: return "distance";
+ 		case WEAPON_WAND: return "wand";
+ 		case WEAPON_AMMO: return "ammunition";
++		case WEAPON_QUIVER: return "quiver";
+ 		default: return std::string();
+ 	}
+ }
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -194,7 +194,7 @@
+ 	}
+ 
+ 	WeaponType_t weaponType = item->getWeaponType();
+-	if (weaponType == WEAPON_NONE || weaponType == WEAPON_SHIELD || weaponType == WEAPON_AMMO) {
++	if (weaponType == WEAPON_NONE || weaponType == WEAPON_SHIELD || weaponType == WEAPON_AMMO || weaponType == WEAPON_QUIVER) {
+ 		return nullptr;
+ 	}
+ 
+@@ -289,7 +289,7 @@
+ {
+ 	int32_t armor = 0;
+ 
+-	static const slots_t armorSlots[] = {CONST_SLOT_HEAD, CONST_SLOT_NECKLACE, CONST_SLOT_ARMOR, CONST_SLOT_LEGS, CONST_SLOT_FEET, CONST_SLOT_RING, CONST_SLOT_DECK, CONST_SLOT_BADGE, CONST_SLOT_SHIP, CONST_SLOT_BELT, CONST_SLOT_GLOVES };
++	static const slots_t armorSlots[] = {CONST_SLOT_HEAD, CONST_SLOT_NECKLACE, CONST_SLOT_ARMOR, CONST_SLOT_LEGS, CONST_SLOT_FEET, CONST_SLOT_RING, CONST_SLOT_AMMO /* Chaos 0023: the second ring */, CONST_SLOT_DECK, CONST_SLOT_BADGE, CONST_SLOT_SHIP, CONST_SLOT_BELT, CONST_SLOT_GLOVES };
+ 	for (slots_t slot : armorSlots) {
+ 		Item* inventoryItem = inventory[slot];
+ 		if (inventoryItem) {
+@@ -312,6 +312,7 @@
+ 
+ 		switch (item->getWeaponType()) {
+ 			case WEAPON_NONE:
++			case WEAPON_QUIVER: // Chaos: a quiver is neither shield nor weapon
+ 				break;
+ 
+ 			case WEAPON_SHIELD: {
+@@ -2476,6 +2477,21 @@
+ 	return player->getStorageValue(CHAOS_DUAL_WIELD_STORAGE, value) && value > 0;
+ }
+ 
++// Chaos (src-patch 0023, server/README.md "Infinite arrows and quivers"): a quiver (items.xml weaponType "quiver") is
++// worn in the shield hand. A bow or crossbow (a two-handed distance weapon) and a quiver may share the hands; nothing
++// else goes in the shield hand with a launcher, and a quiver goes only next to a launcher or an empty weapon hand.
++// The ammunition slot is a second ring slot: it takes rings only (classicEquipmentSlots = false; with classic slots a
++// quiver is refused next to a launcher like any other second item).
++static bool chaosIsQuiver(const Item* item)
++{
++	return item && item->getWeaponType() == WEAPON_QUIVER;
++}
++
++static bool chaosIsLauncher(const Item* item)
++{
++	return item && item->getWeaponType() == WEAPON_DISTANCE && (item->getSlotPosition() & SLOTP_TWO_HAND);
++}
++
+ ReturnValue Player::queryAdd(int32_t index, const Thing& thing, uint32_t count, uint32_t flags, Creature*) const
+ {
+ 	const Item* item = thing.getItem();
+@@ -2552,7 +2568,15 @@
+ 		case CONST_SLOT_RIGHT: {
+ 			if (slotPosition & SLOTP_RIGHT) {
+ 				if (!g_config.getBoolean(ConfigManager::CLASSIC_EQUIPMENT_SLOTS)) {
+-					if (item->getWeaponType() != WEAPON_SHIELD && chaosCanHoldOffhand(this, item)) {
++					if (chaosIsQuiver(item)) {
++						// Chaos 0023: next to a bow or crossbow, or with the weapon hand empty
++						const Item* leftItem = inventory[CONST_SLOT_LEFT];
++						if (!leftItem || leftItem == item || chaosIsLauncher(leftItem)) {
++							ret = RETURNVALUE_NOERROR;
++						} else {
++							ret = RETURNVALUE_CANNOTBEDRESSED;
++						}
++					} else if (item->getWeaponType() != WEAPON_SHIELD && chaosCanHoldOffhand(this, item)) {
+ 						const Item* leftItem = inventory[CONST_SLOT_LEFT];
+ 						if (leftItem && leftItem != item && (leftItem->getSlotPosition() & SLOTP_TWO_HAND)) {
+ 							ret = RETURNVALUE_BOTHHANDSNEEDTOBEFREE;
+@@ -2607,9 +2631,13 @@
+ 			if (slotPosition & SLOTP_LEFT) {
+ 				if (!g_config.getBoolean(ConfigManager::CLASSIC_EQUIPMENT_SLOTS)) {
+ 					WeaponType_t type = item->getWeaponType();
+-					if (type == WEAPON_NONE || type == WEAPON_SHIELD || type == WEAPON_AMMO) {
++					const Item* rightItem = inventory[CONST_SLOT_RIGHT];
++					if (type == WEAPON_NONE || type == WEAPON_SHIELD || type == WEAPON_AMMO || type == WEAPON_QUIVER) {
+ 						ret = RETURNVALUE_CANNOTBEDRESSED;
+-					} else if (inventory[CONST_SLOT_RIGHT] && (slotPosition & SLOTP_TWO_HAND)) {
++					} else if (chaosIsQuiver(rightItem) && rightItem != item) {
++						// Chaos 0023: a quiver in the shield hand takes a bow or crossbow only
++						ret = chaosIsLauncher(item) ? RETURNVALUE_NOERROR : RETURNVALUE_CANNOTBEDRESSED;
++					} else if (rightItem && (slotPosition & SLOTP_TWO_HAND)) {
+ 						ret = RETURNVALUE_BOTHHANDSNEEDTOBEFREE;
+ 					} else {
+ 						ret = RETURNVALUE_NOERROR;
+@@ -2701,11 +2729,10 @@
+ 		}
+ 
+ 		case CONST_SLOT_AMMO: {
+-			if ((slotPosition & SLOTP_AMMO) || g_config.getBoolean(ConfigManager::CLASSIC_EQUIPMENT_SLOTS)) {
+-				ret = RETURNVALUE_NOERROR;
+-			} else if (slotPosition & SLOTP_BACKPACK && item->getName() == "Quiver") {
+-				ret = RETURNVALUE_NOERROR;
+-			}
++			// Chaos 0023: the ammunition slot is a second ring slot (bows fire without ammunition, the quiver is worn in
++			// the shield hand): rings only, the item types the ring slot takes. Anything else left in it is moved at
++			// login (archery.lua).
++			ret = (slotPosition & SLOTP_RING) ? RETURNVALUE_NOERROR : RETURNVALUE_CANNOTBEDRESSED;
+ 			break;
+ 		}
+ 
+--- a/src/movement.cpp
++++ b/src/movement.cpp
+@@ -346,7 +346,7 @@
+ 		case CONST_SLOT_LEFT: slotp = SLOTP_LEFT; break;
+ 		case CONST_SLOT_LEGS: slotp = SLOTP_LEGS; break;
+ 		case CONST_SLOT_FEET: slotp = SLOTP_FEET; break;
+-		case CONST_SLOT_AMMO: slotp = SLOTP_AMMO; break;
++		case CONST_SLOT_AMMO: slotp = SLOTP_RING; break; // Chaos 0023: the second ring slot runs the ring events
+ 		case CONST_SLOT_RING: slotp = SLOTP_RING; break;
+ 		case CONST_SLOT_DECK: slotp = SLOTP_DECKBAD; break;
+ 		case CONST_SLOT_BADGE: slotp = SLOTP_DECKBAD; break;
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -1860,6 +1860,16 @@
+ 	const ItemType& it = Item::items.getItemIdByClientId(spriteId);
+ 	slots_t slot = getSlotType(it);
+ 
++	// Chaos 0023: the second ring slot (the old ammunition slot). A ring goes there when the first slot holds another
++	// ring and it is free; the hotkey of a ring worn there takes it off again.
++	if (slot == CONST_SLOT_RING) {
++		const Item* first = player->getInventoryItem(CONST_SLOT_RING);
++		const Item* second = player->getInventoryItem(CONST_SLOT_AMMO);
++		if (first && first->getID() != it.id && (!second || second->getID() == it.id)) {
++			slot = CONST_SLOT_AMMO;
++		}
++	}
++
+ 	Item* slotItem = player->getInventoryItem(slot);
+ 	Item* equipItem = searchForItem(backpack, it.id);
+ 	if (slotItem && slotItem->getID() == it.id && (!it.stackable || slotItem->getItemCount() == 100 || !equipItem)) {

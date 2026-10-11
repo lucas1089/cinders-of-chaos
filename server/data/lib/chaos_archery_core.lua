@@ -186,6 +186,91 @@ function A.quiverActive(handKind, quiverId)
 	return handKind ~= nil and A.isQuiverId(quiverId)
 end
 
+-- ---------------------------------------------------------------------------------------------------------------
+-- the hands: the quiver is worn in the off-hand (the shield hand) next to a bow or crossbow; the ammunition slot is
+-- a second ring slot (rings only). The engine enforces it (src-patch 0023, Player::queryAdd); this mirrors the rule
+-- for the login check (archery.lua) and the tests.
+-- ---------------------------------------------------------------------------------------------------------------
+A.WEAPON_QUIVER = 8 -- items.xml weaponType "quiver" (0023 registers the Lua constant WEAPON_QUIVER with this value)
+
+function A.quiverWeaponType()
+	return num(WEAPON_QUIVER or A.WEAPON_QUIVER)
+end
+
+-- what an item type is to the hands: "quiver", "launcher" (bow or crossbow), "shield", "twohanded" (any other
+-- two-handed weapon), "weapon" (one-handed), "ring" (slot position ring: the ring slots), "other" (anything else);
+-- nil without an item type
+function A.handKind(it)
+	if not it then
+		return nil
+	end
+	local wt = num(call(it, "getWeaponType"))
+	if wt == A.quiverWeaponType() or A.isQuiverType(it) then
+		return "quiver"
+	end
+	if A.isLauncherType(it) then
+		return "launcher"
+	end
+	if wt == num(WEAPON_SHIELD or 4) then
+		return "shield"
+	end
+	if wt == 0 or wt == num(WEAPON_AMMO or 7) then
+		return hasBit(call(it, "getSlotPosition"), SLOTP_RING or 256) and "ring" or "other"
+	end
+	return hasBit(call(it, "getSlotPosition"), SLOTP_TWO_HAND or 2048) and "twohanded" or "weapon"
+end
+
+-- may `main` (weapon hand) and `off` (shield hand) be held together? Kinds of A.handKind, nil = an empty hand.
+-- A quiver goes only in the off-hand, next to a launcher or an empty weapon hand; a launcher or another two-handed
+-- weapon takes nothing else beside it. (The engine also asks the item's own slot and the dual-wield storage for a
+-- blade in the off-hand; those do not change here.)
+function A.handsAllowed(main, off)
+	if main == "quiver" or off == "launcher" or off == "twohanded" then
+		return false
+	end
+	if off == "quiver" then
+		return main == nil or main == "launcher"
+	end
+	if off ~= nil and (main == "launcher" or main == "twohanded") then
+		return false
+	end
+	return true
+end
+
+-- the ammunition slot is the second ring slot: it takes a ring (kind of A.handKind) and nothing else
+function A.slotAllowed(slot, kind)
+	if num(slot) == num(CONST_SLOT_AMMO or 10) then
+		return kind == "ring"
+	end
+	return true
+end
+
+-- the login check: the engine loads a character without asking Player::queryAdd, so a quiver of before (in the
+-- ammunition slot, now the second ring slot), anything else there that is no ring, or a pair of hands the rules
+-- refuse stays until it is moved. A ring there stays. s = {main, off, ammo}: the A.handKind
+-- of what the weapon hand, the shield hand and the ammunition slot hold (nil = empty). Returns the moves in order:
+-- {from = "main" | "off" | "ammo", to = "off" (the shield hand) | "stow" (backpack, else inbox)}. Nothing to do: {}.
+function A.loginPlan(s)
+	local steps = {}
+	local main, off = s.main, s.off
+	if main == "quiver" then
+		steps[#steps + 1] = {from = "main", to = "stow"}
+		main = nil
+	end
+	if off ~= nil and not A.handsAllowed(main, off) then
+		steps[#steps + 1] = {from = "off", to = "stow"}
+		off = nil
+	end
+	if s.ammo ~= nil and s.ammo ~= "ring" then
+		if s.ammo == "quiver" and off == nil and A.handsAllowed(main, "quiver") then
+			steps[#steps + 1] = {from = "ammo", to = "off"}
+		else
+			steps[#steps + 1] = {from = "ammo", to = "stow"}
+		end
+	end
+	return steps
+end
+
 -- add `extra` {key -> value} into `into` (nil makes a new table)
 function A.merge(into, extra)
 	into = into or {}

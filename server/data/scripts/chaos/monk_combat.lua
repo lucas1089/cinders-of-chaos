@@ -54,7 +54,7 @@ local function fistWeaponAttack(player)
 		local item = player:getSlotItem(slot)
 		if item then
 			local wt = ItemType(item:getId()):getWeaponType()
-			if wt ~= WEAPON_NONE and wt ~= WEAPON_SHIELD and wt ~= WEAPON_AMMO then
+			if wt ~= WEAPON_NONE and wt ~= WEAPON_SHIELD and wt ~= WEAPON_AMMO and wt ~= (WEAPON_QUIVER or 8) then
 				return nil
 			end
 			for _, id in ipairs(M.cfg.unarmed.fistWeapons) do

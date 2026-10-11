@@ -78,11 +78,12 @@ return {
 	},
 
 	-- ------------------------------------------------------------------ quivers
-	-- the base quivers become equipment of the ammunition slot (no longer containers): [server id] = {level, implicit}.
+	-- the base quivers become equipment of the off-hand (the shield hand, next to a bow or crossbow; engine patch 0023,
+	-- no longer containers): [server id] = {level, implicit}.
 	-- level = the required level (movements.xml) and the band the Gambler offers it from; implicit = the base's own
 	-- modifiers (keys of the item modifier catalogue, under its caps), active like every quiver modifier only while
 	-- the wearer holds a bow or crossbow. The stock hunter's quiver (12425) stays a decoration: it is stackable in the
-	-- client's data, which an item of the ammunition slot must not be.
+	-- client's data, which a worn quiver must not be.
 	quivers = {
 		[28693] = {20, {bowspeed = 2}},
 		[27651] = {50, {bowdistance = 2}},

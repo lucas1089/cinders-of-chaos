@@ -727,6 +727,37 @@ equal):
   then gave 722 physical and 137 ice per hit (after the two-handed factor).
 - The quiver modifiers are new damage on top (critical strike +50%, extra projectile 60%, elemental shares, distance
   fighting, attack speed), capped like every item modifier; a quiver works only while a bow or crossbow is held.
+- Quiver in the off-hand (2026-10-11, engine src-patch 0023): bows and crossbows stay two-handed, so the two-handed
+  factor of "Weapon styles", the keystones and the kits are unchanged and the table above stands. No number changed.
+
+### Second ring (the ammunition slot as a second ring slot, 2026-10-11)
+
+Every character may wear two rings (server/README.md "Second ring slot"). The Chaos modifiers a ring may roll are summed
+under the catalogue's caps. Ceiling of each such modifier from the slots that may roll it (tier 8 and tier 5 maximum per
+item, every source rolling it; `tests/archery_test.lua` checks that the tier 8 ceiling needs no second ring):
+
+| Modifier | Cap | T8 per item | T8 ceiling, one ring -> two | T5 per item | T5 ceiling, one ring -> two |
+|---|---|---|---|---|---|
+| Damage to Elites and Bosses | 30 | 16 | 30 -> 30 | 10 | 30 -> 30 |
+| Physical / Elemental Penetration | 25 | 13 | 25 -> 25 | 7 | 21 -> 25 |
+| Damage over Time | 60 | 28 | 60 -> 60 | 15 | 60 -> 60 |
+| Health on Hit / Mana on Hit | 120 / 80 | 35 / 22 | 120 / 80 -> same | 13 / 8 | 65 / 40 -> 78 / 48 |
+| Life / Mana on Kill | 300 / 200 | 150 / 100 | 300 / 200 -> same | 60 / 40 | 240 / 160 -> 300 / 200 |
+| Health Regeneration | 120 | 40 | 120 -> 120 | 15 | 90 -> 105 |
+| Energy Shield (flat) | 1500 | 480 | 1500 -> 1500 | 195 | 975 -> 1170 |
+| Cooldown / Mana Cost Reduction, Healing Done, Experience, Gold Find | caps | | at the cap -> same | | at the cap -> same |
+| Item / Rarity Find, Treasure Goblin Chance | 25 / 40 / 100 | 12 / 20 / 60 | at the cap -> same | 6 / 10 / 33 | 18 / 30 / 99 -> 24 / 40 / 100 |
+
+Decision: the same budget on both rings, no change. At tier 8 (the end game the class targets are set for) no ceiling
+rises; in the middle game the second ring lets the penetrations reach their cap of 25 a little earlier (21 -> 25 if
+every source rolls them, about +4% damage against a resistant monster) and adds sustain. Item sets count a piece once
+however many copies are worn, so two copies of one set ring give nothing extra; two copies of a unique are allowed.
+
+Stock ring attributes stack too (the engine adds abilities per slot): two skill rings give +8 instead of +4 (about +3.8%
+more weapon damage at skill 100, the formula above), two time rings +120 speed (measured in game: 1217 -> 1277 -> 1337),
+two might rings 40% physical and magic damage absorbed instead of 20% (charges run out on both). Proposed, not applied:
+if the double might ring proves too strong, a rule "one might ring at a time" in `Player::queryAdd` would be a one-line
+change; the owner decides.
 
 ### PvP (tested with two characters on the test server)
 

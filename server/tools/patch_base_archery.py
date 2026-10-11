@@ -13,13 +13,16 @@ quivers, mods, ammo, conjureScripts), the same file the Lua side (data/lib/chaos
    weapon as the whole chance), shootType = the band's missile (an elemental one by name). The kind and level come from
    the config's launchers table, else from the ammoType and the weapons.xml level (printed). A launcher without an
    ammoType is done: a second run changes nothing.
-2. items.xml, quivers (the config's quivers): no containerSize, no right-hand slot, no stock abilities; slotType ammo;
-   the description names the implicit modifiers.
+2. items.xml, quivers (the config's quivers): no containerSize, no stock abilities; weaponType quiver and slotType
+   right-hand: worn in the off-hand (the shield hand) next to a bow or crossbow, the rule of engine src-patch 0023
+   (Player::queryAdd; an engine without it does not know the weapon type and lets no quiver be worn); the description
+   names the implicit modifiers. An entry of the earlier layout (slotType ammo) is rewritten.
 3. items.otb: the quiver nodes lose the container group (2 -> 0), flags and attributes stay. The engine makes a
    container only of that group. items.otb.bak keeps the original the first time. What players kept inside a quiver is
    moved out by server/sql/chaos_archery.sql (before the first start with the new items.otb).
-4. movements.xml: every equip entry of a quiver is replaced by one Chaos pair: Equip with onEquipItem, the quiver's
-   level and the vocations that may fire a launcher (the union of the launchers' weapons.xml lists), DeEquip.
+4. movements.xml: every equip entry of a quiver is replaced by one Chaos pair (slot shield, the hands): Equip with
+   onEquipItem, the quiver's level and the vocations that may fire a launcher (the union of the launchers'
+   weapons.xml lists), DeEquip.
 5. spells.xml: the spells that conjured ammunition (conjureScripts) are commented out.
 6. data/monster (XML and Lua): one-line loot entries of an arrow or bolt (by id or by name) are removed.
 7. data/npc: shop lists of the XML NPCs lose every arrow and bolt; in the NPC scripts one-line shop entries of them go
@@ -28,6 +31,13 @@ quivers, mods, ammo, conjureScripts), the same file the Lua side (data/lib/chaos
    ({id, n} pairs with n < 1000, addItem(id, n), itemId = id, count = n); a trade of something for ammunition in an
    NPC script gives gold coins; removeItem(id, n) asks for gold instead, and the NPC's texts that asked for
    "<n> arrows" / "<n> bolts" ask for that gold (also on a script an earlier version of this tool patched).
+9. The second ring slot (engine src-patch 0023 makes the ammunition slot take rings only and run the ring events
+   there): base Lua tables that map an inventory slot to its slot position bit (`[CONST_SLOT_AMMO] = SLOTP_AMMO`, in
+   data/scripts/customs/rarity/base_rarity.lua and data/lib/core/itemtype.lua) map it to SLOTP_RING, so the base
+   rarity conditions and ItemType.usesSlot treat a ring there as in the ring slot.
+10. data/scripts/eventcallbacks/player/default_onMoveItem.lua: the base's convenience swap (a two-handed weapon taken
+   into the weapon hand puts the off-hand item into the container it came from) keeps a quiver beside a bow or
+   crossbow (ChaosArchery.handsAllowed); without this, equipping a bow would push the quiver out of the off-hand.
 
 Idempotent: a second run changes nothing. Unknown file layouts are left alone and listed.
 """
@@ -213,7 +223,9 @@ def patch_items(text, cfg, weapons_text=''):
                 label, fmt = cfg['mods'][k]
                 parts.append('%s +%d%s' % (label, v, '' if fmt == 'flat' else '%'))
             desc = 'Implicit: %s. %s' % (', '.join(parts), QUIVER_NOTE)
-            lines = [indent + '<item %s>' % head.strip(), pad + QUIVER_MARK, pad + '<attribute key="slotType" value="ammo" />']
+            lines = [indent + '<item %s>' % head.strip(), pad + QUIVER_MARK,
+                     pad + '<attribute key="weaponType" value="quiver" />',
+                     pad + '<attribute key="slotType" value="right-hand" />']
             lines += [pad + l for l in keep]
             lines.append(pad + '<attribute key="description" value="%s" />' % desc)
             lines.append(indent + '</item>')
@@ -322,10 +334,10 @@ def patch_movements(text, cfg, weapons_text, launchers):
     lines = [MOVE_BEGIN]
     for qid in sorted(ids):
         lv = cfg['quivers'][qid][0]
-        lines.append('\t<movevent event="Equip" itemid="%d" slot="ammo" level="%d" function="onEquipItem">' % (qid, lv))
+        lines.append('\t<movevent event="Equip" itemid="%d" slot="shield" level="%d" function="onEquipItem">' % (qid, lv))
         lines += ['\t\t' + v for v in vocs]
         lines.append('\t</movevent>')
-        lines.append('\t<movevent event="DeEquip" itemid="%d" slot="ammo" function="onDeEquipItem" />' % qid)
+        lines.append('\t<movevent event="DeEquip" itemid="%d" slot="shield" function="onDeEquipItem" />' % qid)
     lines.append(MOVE_END)
     block = nl.join(lines) + nl
     if '</movements>' not in text2:
@@ -496,6 +508,49 @@ def patch_ammo_dialogue(text, cfg):
     return out, n[0]
 
 
+# ------------------------------------------------------------------------------------------------ second ring slot
+RING_SLOT_RE = re.compile(r'\[CONST_SLOT_AMMO\](\s*)=(\s*)SLOTP_AMMO\b')
+RING_SLOT_MARK = ' -- Chaos: the second ring slot (patch_base_archery.py)'
+
+
+def patch_ring_slot(text):
+    """slot -> slot position maps: the ammunition slot is the second ring slot. -> new text, changes"""
+    n = [0]
+
+    def ring(m):
+        n[0] += 1
+        return '[CONST_SLOT_AMMO]%s=%sSLOTP_RING' % (m.group(1), m.group(2))
+    out = RING_SLOT_RE.sub(ring, text)
+    if n[0]:
+        # the mark after the first changed line's value (a trailing comma stays in front of it)
+        out = re.sub(r'(\[CONST_SLOT_AMMO\]\s*=\s*SLOTP_RING,?)(?![^\n]*Chaos: the second ring slot)', r'\1' + RING_SLOT_MARK,
+                     out)
+    return out, n[0]
+
+
+# ------------------------------------------------------------------------------------------------ the base swap
+SWAP_FILE = os.path.join('scripts', 'eventcallbacks', 'player', 'default_onMoveItem.lua')
+SWAP_MARK = '-- Chaos: a quiver stays beside a bow or crossbow (patch_base_archery.py)'
+SWAP_RE = re.compile(r'^([ \t]*)moveItem = self:getSlotItem\(CONST_SLOT_RIGHT\)[ \t]*\r?\n', re.M)
+
+
+def patch_swap(text):
+    """-> new text, status"""
+    if SWAP_MARK in text:
+        return text, 'default_onMoveItem.lua: the quiver stays beside a launcher'
+    m = SWAP_RE.search(text)
+    if not m:
+        return text, 'default_onMoveItem.lua: two-handed swap not found, left alone'
+    ind = m.group(1)
+    nl = '\r\n' if m.group(0).endswith('\r\n') else '\n'
+    add = (ind + SWAP_MARK + nl
+           + ind + 'if moveItem and ChaosArchery and ChaosArchery.handsAllowed(ChaosArchery.handKind(itemType),' + nl
+           + ind + '\t\tChaosArchery.handKind(ItemType(moveItem:getId()))) then' + nl
+           + ind + '\tmoveItem = nil' + nl
+           + ind + 'end' + nl)
+    return text[:m.end()] + add + text[m.end():], 'default_onMoveItem.lua: a quiver stays beside a launcher'
+
+
 # ------------------------------------------------------------------------------------------------ files
 def read(path):
     return open(path, encoding='utf-8', errors='surrogateescape', newline='').read()
@@ -605,6 +660,28 @@ def main():
             writes[p] = new
             print('  rewards: %s (%d)' % (os.path.relpath(p, data), k))
     print('scripts: %d ammunition reward(s) turned into gold' % rewards)
+
+    swap_path = os.path.join(data, SWAP_FILE)
+    if os.path.exists(swap_path):
+        t = writes.get(swap_path) or read(swap_path)
+        new, note = patch_swap(t)
+        print(note)
+        if new != t:
+            writes[swap_path] = new
+    else:
+        print('default_onMoveItem.lua: not found')
+
+    rings = 0
+    for p in walk(data, ('.lua',)):
+        if p.startswith(os.path.join(data, 'scripts', 'chaos')):
+            continue
+        t = writes.get(p) or read(p)
+        new, k = patch_ring_slot(t)
+        if k:
+            rings += k
+            writes[p] = new
+            print('  second ring slot: %s' % os.path.relpath(p, data))
+    print('second ring slot: %d slot map(s) changed' % rings if rings else 'second ring slot: the slot maps are done')
 
     if dry:
         print('dry run: nothing written (%d file(s) would change%s)' % (len(writes) + (new_otb != raw),

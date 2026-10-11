@@ -111,9 +111,9 @@ function M.refresh(player, force)
 		setMods = ChaosCharms.merge(setMods, charmMods)
 	end
 	-- the quiver's implicit modifiers (data/lib/chaos_archery_config.lua quivers), while it counts (a bow or crossbow
-	-- in the hands), added like the set bonuses before the caps
-	local quiver = CONST_SLOT_AMMO and player:getSlotItem(CONST_SLOT_AMMO)
-	if quiver and ChaosArchery and M.fits(quiver, CONST_SLOT_AMMO, SLOT_BITS, player) then
+	-- in the hands), added like the set bonuses before the caps. The quiver is worn in the off-hand (engine patch 0023)
+	local quiver = player:getSlotItem(CONST_SLOT_RIGHT)
+	if quiver and ChaosArchery and M.kindOf(quiver) == "quiver" and M.fits(quiver, CONST_SLOT_RIGHT, SLOT_BITS, player) then
 		setMods = ChaosArchery.merge(ChaosArchery.merge({}, setMods), ChaosArchery.implicits(quiver:getId()))
 		sig = sig .. "|q" .. quiver:getId()
 	end

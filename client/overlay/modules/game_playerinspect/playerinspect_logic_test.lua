@@ -22,6 +22,7 @@ eq(L.numberText(nil), '0', 'nil')
 local n = 0
 for slot = 1, 10 do if L.SLOTS[slot] then n = n + 1 end end
 eq(n, 10, 'all ten inventory slots have a place')
+eq(L.SLOTS[10].name, 'Ring', 'slot 10 is the second ring slot (server src-patch 0023)')
 local seen = {}
 for slot, p in pairs(L.SLOTS) do
   local k = p.col .. ',' .. p.row

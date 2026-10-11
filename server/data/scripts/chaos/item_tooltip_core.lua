@@ -78,7 +78,7 @@ end
 -- ---------------------------------------------------------------------------------------------------------------
 -- positions: what a client may ask about
 -- ---------------------------------------------------------------------------------------------------------------
-T.SLOT_FIRST, T.SLOT_LAST = 1, 10 -- head .. ammo: the inventory the 10.98 client shows
+T.SLOT_FIRST, T.SLOT_LAST = 1, 10 -- head .. the second ring slot (10, the old ammunition slot): the inventory the client shows
 T.QUIVER_NOTE = "Works only while you hold a bow or crossbow."
 
 -- a position from the client -> {kind = "slot", slot} | {kind = "container", cid, index} | {kind = "map", x, y, z,
@@ -149,8 +149,8 @@ end
 -- slots
 -- ---------------------------------------------------------------------------------------------------------------
 local SLOTP = {head = 1, necklace = 2, backpack = 4, armor = 8, right = 16, left = 32, legs = 64, feet = 128, ring = 256,
-	ammo = 512, twohand = 2048}
-local INV = {head = 1, necklace = 2, backpack = 3, armor = 4, right = 5, left = 6, legs = 7, feet = 8, ring = 9, ammo = 10}
+	twohand = 2048}
+local INV = {head = 1, necklace = 2, backpack = 3, armor = 4, right = 5, left = 6, legs = 7, feet = 8, ring = 9, ring2 = 10}
 
 local function hasBit(value, b)
 	return floor((value or 0) / b) % 2 == 1
@@ -165,16 +165,21 @@ function T.slotsOf(slotPosition, kind)
 		local name = kind == "shield" and "Shield" or (hasBit(sp, SLOTP.twohand) and "Two-handed weapon" or "Weapon")
 		return {INV.left, INV.right}, name
 	end
+	-- a quiver is worn in the off-hand (the shield hand) next to a bow or crossbow (engine patch 0023)
 	if kind == "quiver" then
-		return {INV.ammo}, "Quiver"
+		return {INV.right}, "Off-hand: Quiver"
 	end
 	local order = {
 		{SLOTP.head, INV.head, "Helmet"}, {SLOTP.necklace, INV.necklace, "Amulet"}, {SLOTP.armor, INV.armor, "Armour"},
 		{SLOTP.legs, INV.legs, "Legs"}, {SLOTP.feet, INV.feet, "Boots"}, {SLOTP.ring, INV.ring, "Ring"},
-		{SLOTP.ammo, INV.ammo, "Ammunition"}, {SLOTP.backpack, INV.backpack, "Container"}
+		{SLOTP.backpack, INV.backpack, "Container"}
 	}
 	for _, o in ipairs(order) do
 		if hasBit(sp, o[1]) then
+			-- a ring is worn in either ring slot (slot 10 is the second ring slot, engine patch 0023): compared with both
+			if o[2] == INV.ring then
+				return {INV.ring, INV.ring2}, o[3]
+			end
 			return {o[2]}, o[3]
 		end
 	end

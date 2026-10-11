@@ -66,7 +66,7 @@ K.kits = {
 			[CONST_SLOT_NECKLACE] = 24851, -- Tear of the Void (unique)
 			[CONST_SLOT_RING] = 2206 -- Ring of the Last Ember (unique)
 		},
-		-- bows and crossbows fire without ammunition: a Legendary Haloed Quiver in the ammunition slot (chaos_archery_config.lua)
+		-- bows and crossbows fire without ammunition: a Legendary Haloed Quiver in the off-hand (chaos_archery_config.lua)
 		quiver = {id = 29566, rarity = 5}
 	}
 }
@@ -235,11 +235,13 @@ function K.give(player, kind)
 		end
 	end
 	if kit.quiver then
+		-- worn in the off-hand next to the kit's bow or crossbow (engine patch 0023), else into the backpack
 		local q
-		if player:getSlotItem(CONST_SLOT_AMMO) then
+		if not player:getSlotItem(CONST_SLOT_RIGHT) then
+			q = makeItem(player, kit.quiver.id, 1, CONST_SLOT_RIGHT)
+		end
+		if not q then
 			q = bag and bag:addItem(kit.quiver.id, 1)
-		else
-			q = makeItem(player, kit.quiver.id, 1, CONST_SLOT_AMMO)
 		end
 		-- rolled like a drop of the kit's level (tiers by item level)
 		if q and ChaosCrafting and ChaosCrafting.forge and ChaosItemMods then

@@ -14,6 +14,11 @@
 --     (Chaos.saveCharacter); a crash before the save keeps nothing and the next login sweeps again. The stash (a database
 --     table) is its own step (storage +1): the refund and the mark are saved first, the rows deleted after a good save;
 --     a failed save takes the refund and the mark back and leaves the rows for the next login.
+--   * the hands at login (A.checkHands): the quiver is worn in the shield hand next to a bow or crossbow and the
+--     ammunition slot is a second ring slot, rings only (engine src-patch 0023); the engine loads a character without
+--     its slot rules, so a quiver left in the ammunition slot moves to the shield hand (else the backpack or the
+--     inbox), anything else there that is no ring goes to the backpack or the inbox, as does an off-hand item the
+--     rules refuse. A ring there stays. Saved at once; idempotent.
 --   * later arrivals (a map chest, a trade, the market): ammunition that reaches a character's inventory is turned into
 --     its refund at once; every later login looks at the inventory again (a base script reward the install tool did
 --     not know).
@@ -242,9 +247,94 @@ function A.sweep(player)
 	return pieces, gold
 end
 
+-- ---------------------------------------------------------------- the hands and the ammunition slot at login
+-- The engine (src-patch 0023) takes only rings in the ammunition slot (the second ring slot) and refuses every pair of
+-- hands A.handsAllowed refuses, but it loads a character without asking. A quiver of before in the ammunition slot
+-- goes to the shield hand when that is free and allowed (the engine asks again: vocation and level of movements.xml),
+-- else to the backpack (or a container in it), else to the inbox; so does anything else there that is no ring, and an
+-- off-hand item the rules refuse. A ring in the second ring slot stays. All of it is
+-- in memory and saved with the character as one (Chaos.saveCharacter right after); a crash before the save leaves the
+-- old state and the next login moves it again. Nothing to move: nothing changes (idempotent without a mark).
+-- into the backpack or a container in it, else the inbox; never merged into a stack
+function A.stow(player, item)
+	local flags = (FLAG_NOLIMIT or 1) + (FLAG_IGNOREAUTOSTACK or 0)
+	local bp = player:getSlotItem(CONST_SLOT_BACKPACK)
+	if bp and bp:isContainer() then
+		if item:moveTo(bp, flags) then
+			return "backpack"
+		end
+		for _, c in ipairs(bp:getItems(true) or {}) do
+			if c:isContainer() and c ~= item and item:moveTo(c, flags) then
+				return "backpack"
+			end
+		end
+	end
+	local okI, inbox = pcall(function() return player:getInbox() end)
+	if okI and inbox and item:moveTo(inbox, flags) then
+		return "inbox"
+	end
+	return nil
+end
+
+-- a copy is placed in the shield hand, then the item itself is removed (one item, moved; as loadouts.lua does)
+local function toOffHand(player, item)
+	local copy = item:clone()
+	if copy and player:addItemEx(copy, false, CONST_SLOT_RIGHT, 0) == RETURNVALUE_NOERROR then
+		item:remove()
+		return true
+	end
+	return false
+end
+
+-- returns the number of items moved
+function A.checkHands(player)
+	local slots = {main = CONST_SLOT_LEFT, off = CONST_SLOT_RIGHT, ammo = CONST_SLOT_AMMO}
+	local items, state = {}, {}
+	for key, slot in pairs(slots) do
+		local item = slot and player:getSlotItem(slot)
+		if item then
+			items[key] = item
+			state[key] = A.handKind(ItemType(item:getId())) or "other"
+		end
+	end
+	local moved, lines = 0, {}
+	for _, step in ipairs(A.loginPlan(state)) do
+		local item = items[step.from]
+		local name = item and item:getName() or "?"
+		local where
+		if item and step.to == "off" and toOffHand(player, item) then
+			where = "your off-hand"
+		elseif item then
+			local s = A.stow(player, item)
+			where = s == "backpack" and "your backpack" or s == "inbox" and "your inbox" or nil
+		end
+		if where then
+			moved = moved + 1
+			lines[#lines + 1] = name .. " -> " .. where
+		else
+			log(player:getName() .. ": could not move " .. name .. " out of slot " .. tostring(slots[step.from]))
+		end
+	end
+	if moved > 0 then
+		if not Chaos.saveCharacter(player) then
+			log(player:getName() .. ": the save after the hands check failed; the logout save keeps it")
+		end
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, "The ammunition slot is a second ring slot now and " ..
+			"quivers are worn in the off-hand next to a bow or crossbow. Moved: " .. table.concat(lines, ", ") .. ".")
+		if ChaosItemMods and ChaosItemMods.refresh then
+			pcall(ChaosItemMods.refresh, player, true)
+		end
+	end
+	return moved
+end
+
 -- ---------------------------------------------------------------- events
 local login = CreatureEvent("ChaosArcheryLogin")
 function login.onLogin(player)
+	local okH, errH = pcall(A.checkHands, player)
+	if not okH then
+		log("hands check of " .. player:getName() .. " failed: " .. tostring(errH))
+	end
 	local ok, err = pcall(A.sweep, player)
 	if not ok then
 		log("sweep of " .. player:getName() .. " failed: " .. tostring(err))

@@ -261,8 +261,9 @@ server/
    See "The Gambler".
 5j. Infinite arrows and quivers: `python3 -I server/tools/patch_base_archery.py <server>/data [--dry-run]` (idempotent;
    `install_all.py` step `archery`, after `vocations` and `spells`) gives bows and crossbows the attack, hit chance and
-   missile of their ammunition, makes the quivers equipment (items.xml, items.otb, movements.xml) and takes arrows and bolts
-   out of loot, shops, conjure spells and rewards; then run `server/sql/chaos_archery.sql` once, with the server stopped
+   missile of their ammunition, makes the quivers off-hand equipment (items.xml, items.otb, movements.xml; needs engine
+   src-patch 0023), maps the base's slot tables to the second ring slot, keeps a quiver in the base's two-handed swap and
+   takes arrows and bolts out of loot, shops, conjure spells and rewards; then run `server/sql/chaos_archery.sql` once, with the server stopped
    (the `sql` step does), before the first start with the patched items.otb. See "Infinite arrows and quivers".
 5k. Base item names: `python3 -I server/tools/patch_base_item_names.py <server>/data [--dry-run]` (idempotent;
    `install_all.py` step `itemnames`, after `archery`) gives the base items of `data/items/base_item_names.csv` their
@@ -2650,10 +2651,44 @@ refused entry, a third login was refused.
   their target. Which kind a launcher is comes from `data/lib/chaos_archery_config.lua` (bows and crossbows fire without
   ammunition: "Infinite arrows and quivers" below).
 
-## Infinite arrows and quivers (`data/lib/chaos_archery_core.lua`, `chaos_archery_config.lua`, `archery.lua`, `weapon_styles.lua`, `tools/patch_base_archery.py`, `sql/chaos_archery.sql`)
+## Infinite arrows and quivers (`data/lib/chaos_archery_core.lua`, `chaos_archery_config.lua`, `archery.lua`, `weapon_styles.lua`, `tools/patch_base_archery.py`, `sql/chaos_archery.sql`, `src-patches/0023-quiver-off-hand.patch`)
 
-Bows and crossbows fire without ammunition. A quiver is gear of the ammunition slot with modifiers for bow and crossbow
-users. Arrows and bolts are gone from the game.
+Bows and crossbows fire without ammunition. A quiver is off-hand gear (the shield hand, next to a bow or crossbow) with
+modifiers for bow and crossbow users. Arrows and bolts are gone from the game. The ammunition slot is a second ring slot
+("Second ring slot" below).
+
+**The off-hand quiver** (owner request "Quivers go in the off-hand now"; engine src-patch 0023). Bows and crossbows stay
+two-handed, so the two-handed speed and damage of "Weapon styles", the keystones that ask for a two-handed weapon or no
+shield, and the class kits see them as before; balance does not change. The one exception is the quiver, in
+`Player::queryAdd` (classic equipment slots off, the Chaos setting):
+
+| Weapon hand | Off-hand | Allowed |
+|---|---|---|
+| bow or crossbow | quiver | yes |
+| bow or crossbow | shield, a dual-wield blade, anything else | no (both hands need to be free) |
+| empty | quiver | yes (it does nothing alone; so the order of equipping does not matter and taking the bow off keeps it) |
+| sword, axe, club, wand, a throwing weapon, any other two-handed weapon | quiver | no ("You cannot dress this object there.") |
+| anything | (the quiver in the weapon hand) | never |
+
+Why an engine exception and not one-handed bows with a Lua move hook: `Player:onMoveItem` only sees moves a player makes,
+while queryAdd is asked by every path that equips something (drag and drop, the equip hotkey `Game::playerEquipItem`,
+`Player::queryDestination`, a script's `addItem` / `addItemEx` with a slot: loadouts, kits, the store and stash only
+deliver to containers). One-handed bows would also have changed every "two-handed" rule in Lua. The quiver has its own
+weapon type (`weaponType="quiver"`, Lua `WEAPON_QUIVER` = 8): the engine never treats it as a weapon or a shield
+(`Player::getWeapon`, `getShieldAndWeapon`: no defense, no shielding), and the Lua loops that find "the weapon in the
+hands" (`weapon_styles.lua`, `passivetree_keystones.lua`, `monk_combat.lua`, `ChaosItemMods.kindOfType` / `fits`) skip
+it. The base's convenience swap (`data/scripts/eventcallbacks/player/default_onMoveItem.lua`: a two-handed weapon taken
+into the hand puts the off-hand item away) keeps a quiver beside a launcher (`patch_base_archery.py`). A shield taken
+into the off-hand still puts the bow away, so a bow and a shield are never held together.
+
+**At login** (`ChaosArchery.checkHands`, archery.lua; the engine loads a character without queryAdd): a quiver in the
+ammunition slot (from the last change) goes to the off-hand when that is free and allowed (the engine asks again, with
+the vocation and level of movements.xml), else to the backpack or a container in it, else to the inbox; anything else
+there that is no ring goes the same way; an off-hand item the rules refuse goes to the backpack. A copy is placed and the
+item removed (one item, its rolls and per-item id kept), then the character is saved (`Chaos.saveCharacter`); a crash
+before the save keeps the old state and the next login moves it again. Nothing to move: nothing changes (no mark
+needed). The player is told what moved. Saved loadouts (`loadouts_core.lua` `C.legacyGear`): a quiver in slot 10 becomes
+the set's off-hand item when the set left that hand empty; slot 10 is then no longer part of that set.
 
 **No engine patch.** The engine asks for ammunition only when the launcher has an ammo type (`Player::getWeapon`), and
 `Weapons::loadDefaults` gives every distance weapon without one a weapon of its own, which fires the launcher itself with
@@ -2686,11 +2721,10 @@ from before (a rarity roll or a unique) still holds the attack without ammunitio
 smallest band, 29, beats the biggest rarity bonus, 19) and gets its band once; the hit chance attribute goes. A value at or
 above the type attack is a roll of after the patch and stays. On an unpatched server nothing changes.
 
-**Quivers.** The ammunition slot: bows and crossbows are two-handed, so the shield hand is taken, and the ammunition slot is
-free now. The 12 base quivers (`quivers` in the config: id, level, implicit modifiers) stop being containers: items.otb group
+**Quivers.** Worn in the off-hand next to a bow or crossbow (above). The 12 base quivers (`quivers` in the config: id, level, implicit modifiers) stop being containers: items.otb group
 2 -> 0 (the engine makes containers of that group only; `items.otb.bak` keeps the original), items.xml without container
-size, hand slot and stock abilities, slot ammo, a text with the implicits; movements.xml gets one Equip / DeEquip pair per
-quiver (`onEquipItem`, the quiver's level, the vocations that may fire a launcher: Ranger, Deadeye, Beastmaster). The stock
+size and stock abilities, `weaponType` quiver and `slotType` right-hand, a text with the implicits; movements.xml gets one Equip / DeEquip pair per
+quiver (slot shield, the hands; `onEquipItem`, the quiver's level, the vocations that may fire a launcher: Ranger, Deadeye, Beastmaster). The stock
 hunter's quiver stays a decoration (stackable in the client's data). `sql/chaos_archery.sql` (the `sql` step) moves what
 players kept inside a quiver into the container around it, the backpack, or next to it in a depot or inbox: the engine
 would drop it at login. Arrows and bolts among it are refunded at the next login.
@@ -2723,13 +2757,13 @@ rarity script would apply those whatever the wearer holds). Weapons never roll t
 | Adds N% of Bow Damage as Fire / Ice / Energy / Earth | prefix | 2-4% .. 20-28% | 40% each | the strongest element of the totals adds that share of the hit as its element, against the monster's resistance, with its hit effect |
 | Attack Speed with Bows | suffix | 1-2% .. 8-10% | 12% | written on the launcher in the hands ("chaos_qspd") and folded into its attack interval (the engine's attack speed cap, patch 0011, applies); off again when the launcher leaves the hands |
 
-A quiver counts only while a bow or crossbow is held (`ChaosItemMods.fits`: the ammunition slot needs a quiver and a
-launcher in a hand); its modifiers and implicits then join the totals like set bonuses, under the same caps. Without a
+A quiver counts only while a bow or crossbow is held (`ChaosItemMods.fits`: a quiver counts in the off-hand while a
+launcher is in the weapon hand); its modifiers and implicits then join the totals like set bonuses, under the same caps. Without a
 launcher it does nothing (the item_mods refresh after every slot move drops it). The engine refuses it to other
 vocations (movements.xml). Quivers drop like other gear (`ChaosLoot.isGearId`; the base monsters already list them),
 roll item levels and tiers like other gear (the item level gates of `chaos_item_mods.lua`), take the crafting bonus
 (the Haloed and Seraphic recipes) and are in the Gambler's pool (a "Quiver" slot, the bow classes only). The tooltip
-names them "Quiver", lists the implicits in the modifier colour and adds "Works only while you hold a bow or crossbow.".
+names them "Quiver" with a line "Off-hand: Quiver", compares them with the off-hand, lists the implicits in the modifier colour and adds "Works only while you hold a bow or crossbow.".
 
 **Ammunition removed** (`patch_base_archery.py`): one-line loot entries of arrows and bolts in the base monsters (XML and
 Lua, by id or by name: 142 entries on the reference server), the NPC shops (XML lists and Lua shop tables,
@@ -2772,6 +2806,50 @@ moved to the backpack by the SQL with 7 platinum coins), 20 onyx arrows in the d
 stash, and paid 2,210 gold to the bank; a Legendary Haloed Quiver (item level 120) raised distance 114 -> 117 and the bow's
 interval 3.0 -> 2.88 s, and its 19% ice share added 137 ice to hits of 722; the tooltip showed the implicits and the note;
 the Gambler offered the Ranger a quiver and refused one to a Warrior.
+
+Off-hand quiver and second ring slot: `tests/archery_test.lua` (the hand rules: bow or crossbow + quiver, bow + shield,
+quiver without a bow, quiver beside a sword or a two-handed axe; the second ring slot takes rings only; the login plan
+and `checkHands` against a mock engine: to the off-hand with the rolls kept, to the backpack, to the inbox, refused by
+the engine, a ring stays, idempotent; two rings and two copies of one ring add up under the caps; the ring budget),
+`tests/base_archery_patch_test.lua` (the quiver entry, the movements, an earlier layout rewritten, the base slot maps,
+the base swap run as code), `tests/loadouts_test.lua` (old loadouts), `tests/item_tooltip_test.lua` and the client's
+`tooltiplogic_test.lua`, `playerinspect_logic_test.lua`, `ringslotlogic_test.lua`. Tested in game (base server from
+windows-assets with src-patches 0001-0023 built, every install step, the full map, a private MariaDB, the client
+`game22`): a Ranger with a bow and a quiver of before in the ammunition slot logged in with the quiver in the off-hand
+(saved at once); a character with a sword and a shield had it moved to the backpack; dragged in the client: a sword
+next to the quiver, a quiver, a torch into slot 10 refused; a bow taken into the hand kept the quiver; a shield onto the
+off-hand put the bow away (stock swap); a crossbow beside the quiver; the equip hotkey put a time ring into slot 10
+when slot 9 held one and refused a shield beside the crossbow; two time rings turned active in both slots (speed
++60 each), slot 10's ring lost duration and turned back with its time kept when taken off; the quiver tooltip read
+"Off-hand: Quiver".
+
+## Second ring slot (`src-patches/0023-quiver-off-hand.patch`, `data/lib/chaos_item_mods.lua`, `archery.lua`, `tools/patch_base_archery.py`, client `game_ringslot`)
+
+Owner request: "Don't remove the ammo slot. Turn it into a second ring slot." Inventory slot 10 (`CONST_SLOT_AMMO`, the
+ammunition slot of the protocol) takes the item types the ring slot takes and nothing else.
+
+- **Engine** (0023): `Player::queryAdd` takes an item with the ring slot position there, every other item is refused (the
+  base's "Quiver" name exception goes). `MoveEvents::getEvent` looks up the ring events (`slot="ring"` in movements.xml)
+  for slot 10, so a ring there gets its abilities, its vocation and level check and its transformation on equip and
+  de-equip (time ring, stealth ring, the skill rings: they swap item ids when worn), and decays as in slot 9;
+  `Player::getArmor` counts it. The equip hotkey puts a ring into slot 10 when slot 9 holds another ring and slot 10 is
+  free (or holds that ring: then the hotkey takes it off).
+- **Base Lua** (`patch_base_archery.py`): the slot tables of `data/scripts/customs/rarity/base_rarity.lua` (the base
+  rarity conditions) and `data/lib/core/itemtype.lua` (`ItemType.usesSlot`) map slot 10 to the ring bit.
+- **Chaos systems**: `ChaosItemMods.slotBits` maps slot 10 to the ring bit, so both rings count for the item
+  modifiers, the legendary powers, the gems, the veiled modifiers, the item sets (`itemsets.lua`) and the stat
+  totals. The item tooltip compares a ring with both ring slots; inspect, the hover tooltips, loadouts (slot 10 is in
+  `gearSlots`), the hunt supplies, the rift and uber key searches, the new-player kit slots and the testkit keep slot 10.
+  A set piece counts once however many copies are worn (`ChaosItemSets.count` counts piece ids).
+- **Two copies of one ring are allowed**, uniques included: no unique ring says otherwise, the modifiers of both add up
+  under the catalogue's caps, and a set counts the piece once.
+- **Migration**: anything in slot 10 that is no ring moves at login ("Infinite arrows and quivers", At login).
+- **Client**: the slot stays where it was. The Chaos skin draws its placeholder with the ring's silhouette
+  (`client/tools/gen_skin.py`: `data/images/game/slots/ammo(-blessed).png`), so the inventory window and the action
+  bar's equipment presets show a ring slot; the overlay module `game_ringslot` gives the empty slot the tooltip "Ring"
+  and drops "ammunition" from the soul label's tooltip; the inspect window names slot 10 "Ring". No client base patch.
+- **Balance** (`server/data/spells/README.md` "Second ring"): every modifier a ring may roll already reaches its cap
+  at T8 with the slots of one ring, so no ceiling rises; the stock rings stack (two might rings, two skill rings).
 
 ## Town names (`tools/patch_base_towns.py`, `tools/base_towns.csv`, `tests/base_towns_patch_test.lua`)
 
@@ -3551,7 +3629,7 @@ required level, at least 0. Stock recipes need 10-35. All numbers are in `craft_
 
 **Equipment** (`ChaosCraftBonus.kind`: `ChaosCrafting.isGear` of the result, one piece a craft, not a tool). On the
 stock recipes: 164 of the armorsmith, weaponsmith and jewelsmith results (helmets, armors, legs, boots, weapons, shields,
-rings and amulets, gloves and belts) and the two quivers (Haloed and Seraphic: equipment of the ammunition slot since
+rings and amulets, gloves and belts) and the two quivers (Haloed and Seraphic: off-hand equipment since
 "Infinite arrows and quivers"). Not equipment: the profession tools and the mount scroll (`isGear` accepts them for
 their skill bonus, but they are "other" items that fit only the hands: `toolSlots`), the backpacks, materials. One roll
 over:
@@ -3826,7 +3904,7 @@ counts, every effect against a mocked engine), `tests/crafting_test.lua` (forge,
 `tests/item_tooltip_test.lua`, `tests/salvage_test.lua`, `tests/lootfilter_test.lua`, `tests/supports_test.lua`.
 
 Kinds (`M.kindOf`): weapon, shield, helmet, armor, legs, boots, jewel, other, and **quiver** (the quiver bases of
-`data/lib/chaos_archery_config.lua`, equipment of the ammunition slot). A quiver rolls only modifiers whose `kinds` name it
+`data/lib/chaos_archery_config.lua`, off-hand equipment). A quiver rolls only modifiers whose `kinds` name it
 (its eight of `chaos_archery_config.lua` `mods`, added to the catalogue by `chaos_archery_core.lua`, and the shared ones);
 see "Infinite arrows and quivers".
 
