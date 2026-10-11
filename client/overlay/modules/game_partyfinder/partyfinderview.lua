@@ -204,6 +204,25 @@ function V.postInput(acts, f)
   return input
 end
 
+-- the size and wanted caps of an activity (server K.buildActivities: max, per; a raid holds 15), with the init limits
+-- (lim.party, lim.perRole) for a server that does not send them -> {max, per = {tank, healer, dps}}
+function V.limits(act, lim)
+  lim = type(lim) == 'table' and lim or {}
+  local out = { max = math.floor(num(act and act.max) > 0 and num(act.max) or (num(lim.party) > 0 and num(lim.party) or 10)), per = {} }
+  for _, r in ipairs(V.ROLE_ORDER) do
+    local n = act and act.per and tonumber(act.per[r])
+    out.per[r] = math.floor(n or (num(lim.perRole) > 0 and num(lim.perRole) or 6))
+  end
+  return out
+end
+
+-- the grid of n slot boxes, at most maxCols wide, rows balanced (15 -> 8 + 7, 10 -> one row) -> cols, rows
+function V.slotGrid(n, maxCols)
+  n, maxCols = math.max(1, math.floor(num(n))), math.max(1, math.floor(num(maxCols) > 0 and num(maxCols) or 10))
+  local rows = math.ceil(n / maxCols)
+  return math.ceil(n / rows), rows
+end
+
 -- the total size of the group the form describes (leader + wanted)
 function V.formSize(f)
   return 1 + (int(f.tank) or 0) + (int(f.healer) or 0) + (int(f.dps) or 0)

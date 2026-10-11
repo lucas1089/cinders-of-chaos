@@ -6171,10 +6171,20 @@ a role, and the leader accepts (a real party invite) or declines.
 **Listing.** Activity: Rift (tier range, max from `rift_config.lua` `maxTier`), Dungeon (from `Chaos.dungeons.extra`),
 World Boss (`Chaos.worldBoss.bosses`), Omen (the guardians of `rift_config.lua` `omen.kinds`), Infinity Tower (floor
 range), Raid, Trial (`trials_config.lua` tiers), Other (a free title). Wanted tank / healer / DPS counts (0-6 each, leader +
-party + wanted at most 10), the leader's own role, minimum level, a note (80 printable characters; bad words become
+party + wanted at most 10; a raid: see below), the leader's own role, minimum level, a note (80 printable characters; bad words become
 asterisks, link-like words are cut), expiry (15 / 30 / 60 / 120 min), "auto-accept quick joins". One listing per
 character; posting again updates it (ids and applications kept; a role can not drop below the slots already taken).
 Only a party leader (or a character without a party) can post.
+
+**Raid listings of 15.** An activity may set its own size and caps (`party_finder_config.lua` `activities`: `maxParty`,
+`perRole`, `suggest`). The Raid sets 15 (raid_config.lua `maxPlayers`; `tests/party_finder_test.lua` checks they match),
+up to 3 tanks, 4 healers and 12 DPS wanted (the leader's own role comes on top), and the form proposes 2 / 3 / 9 (15 with
+the leader). Every other activity keeps 10 and 0-6 per role. The listing stores its size (`L.max`, `K.maxOf`); post,
+update (a raid of 12 cannot become a rift) and accept (`partyFull`) check against it, and rows carry `max`; init `acts`
+carry `max`, `per` and `suggest`. The engine side needs nothing new: TFS 1.4.2 parties have no member cap (`Party`
+holds a plain member list; `invitePlayer` and `joinParty` never count it), and the raid uses one engine party: `raid.lua`
+`groupOf` takes the opener's party members within `partyRange` (12 sqm, same floor), up to `maxPlayers`. So the listing's
+15 slots are that one party's 15 members; no raid roster is needed. Party frames list up to 20 and wrap a raid of 15.
 
 **Roles.** `party_finder_config.lua` `classRoles`, by vocation id, from docs/CLASSES.md "Roles in a group": tanks are the
 Juggernaut, Sentinel and Samurai (and the Warrior and Templar base classes); healers the Illusionist, Iron Sage, Sentinel
@@ -6212,7 +6222,9 @@ constants); `tests/party_finder_test.lua` checks that no two `ChaosOpcodes` shar
 **Tests.** `tests/party_finder_test.lua` (luajit and lua5.3): roles of every class, the activities from the real configs,
 the note filter, every post / apply / decide refusal, the reconcile cases, realms and staff, the queue, the payloads, and
 `party_finder.lua` against a mocked engine (post, apply, toast and badge, decline, accept with the party invite, join,
-quick join, full, staff close, logout). Client: `game_partyfinder/partyfinderview_test.lua`. The window was rendered in
+quick join, full, staff close, logout); raid listings of 15 (sizes and role caps, a crew counting against 15, 14
+accepts, the 16th refused, full at 15, an update to a rift refused). Client: `game_partyfinder/partyfinderview_test.lua`
+(limits per activity, the slot grid: 15 boxes wrap into 8 + 7). The 15-slot raid listing was rendered offline too. The window was rendered in
 the Linux client with payloads built by the core (offline); not run against a live server.
 
 ## Anti-bot and player reports (`antibot.lua`, `antibot_core.lua`, `antibot_config.lua`, `reports.lua`, `reports_core.lua`, `sql/chaos_reports.sql`, `tools/patch_report_chat.py`, client `game_antibot`)
@@ -6760,8 +6772,8 @@ Withering Hex, the last call-outs) and the call-outs over the map ("TANK SWAP", 
 IT!"). The buff bar source `raid` (`data/lib/chaos_buffs.lua`, icons `buff:raid_*` by `client/tools/gen_raid_icons.py`)
 shows Sundered and Hexed with stacks and the hex with its timer. Party frames: a raid of 15 wraps into columns
 (`PartyMath.grid`). Boss Spawns: the category "The Ashen Sepulchre (Raid)", a row per boss with the character's lockout as
-its cooldown. Party Finder: the activity Raid offers "The Ashen Sepulchre" (`party_finder.lua` `src.raids`); a listing still
-holds at most 10 (`maxParty`).
+its cooldown. Party Finder: the activity Raid offers "The Ashen Sepulchre" (`party_finder.lua` `src.raids`); a raid
+listing holds 15 (`party_finder_config.lua` raid `maxParty`; "Party Finder", "Raid listings of 15").
 
 **Protocol** (JSON `{action, data}`, `Chaos.sendChunked`): client -> server `open | start | continue {id} | join {id} |
 leave | buy {key} | journal | query`; server -> client `info` (lockouts, saved raids, marks, records, the vendor's stock),

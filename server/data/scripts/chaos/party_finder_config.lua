@@ -38,6 +38,9 @@ return {
 	--           raid_config.lua name);
 	--           `fallback` when that config is not loaded. "Any" is always offered first.
 	--   title = true: a short free text title is required ("other")
+	--   maxParty = n: this activity's group size (leader + party + wanted), else the `maxParty` below
+	--   perRole = {tank, healer, dps}: wanted count of each role, else `maxPerRole` below
+	--   suggest = {tank, healer, dps}: what the client's form proposes when this activity is picked for a new listing
 	activities = {
 		{key = "rift", name = "Rift", range = {min = 1, max = 15, label = "Tier", short = "T"}},
 		{key = "dungeon", name = "Dungeon", targets = "dungeons",
@@ -46,14 +49,16 @@ return {
 		{key = "omen", name = "Omen", targets = "omens",
 			fallback = {"Sangrith the Bloodmoon Herald", "Morvane the Hollow Crown", "Thalcyra the Stormbound Seer"}},
 		{key = "tower", name = "Infinity Tower", range = {min = 1, max = 200, label = "Floor", short = "F"}},
-		{key = "raid", name = "Raid", targets = "raids", fallback = {"The Ashen Sepulchre"}}, -- raid_config.lua name
+		{key = "raid", name = "Raid", targets = "raids", fallback = {"The Ashen Sepulchre"}, -- raid_config.lua name
+			-- one engine party of 5-15 (raid_config.lua minPlayers / maxPlayers; TFS parties have no size cap)
+			maxParty = 15, perRole = {tank = 3, healer = 4, dps = 12}, suggest = {tank = 2, healer = 3, dps = 9}},
 		{key = "trial", name = "Trial", targets = "trials", fallback = {"Normal", "Cruel", "Merciless"}},
 		{key = "other", name = "Other", title = true}
 	},
 
 	-- ------------------------------------------------------------------ listings
-	maxParty = 10, -- leader + members + wanted slots of one listing (the party frames show 10)
-	maxPerRole = 6, -- wanted count of one role
+	maxParty = 10, -- leader + members + wanted slots of one listing (an activity's maxParty overrides it)
+	maxPerRole = 6, -- wanted count of one role (an activity's perRole overrides it)
 	maxLevel = 2000, -- highest minimum level a listing may ask for
 	noteMax = 80, -- characters of the note (printable ASCII; longer is cut)
 	titleMax = 24, -- characters of the "other" title

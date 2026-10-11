@@ -1,5 +1,6 @@
 // Party Finder window (game_partyfinder): browse groups, apply with a role, post and run your own listing.
 // Styles from client_chaos_theme. Opened from the menu (Social > Party Finder). Fixed size: laid out for 720 px.
+// Slot boxes sit in a grid that partyfinder.lua sizes per row (V.slotGrid): up to 10 in a line, a raid of 15 wraps.
 
 PartyFinderTab < ChaosTabButton
   width: 110
@@ -52,7 +53,7 @@ PartyFinderRow < UIWidget
     id: sub
     anchors.top: activity.bottom
     anchors.left: activity.left
-    anchors.right: slots.left
+    anchors.right: openText.left
     margin-top: 4
     margin-right: 8
     text-align: left
@@ -66,18 +67,21 @@ PartyFinderRow < UIWidget
     anchors.right: action.left
     margin-top: 6
     margin-right: 12
-    size: 200 18
+    size: 198 18
     phantom: false
     layout:
-      type: horizontalBox
+      type: grid
+      cell-size: 18 18
+      cell-spacing: 2
+      flow: true
 
   UILabel
     id: openText
     anchors.top: slots.bottom
-    anchors.left: slots.left
     anchors.right: slots.right
     margin-top: 4
-    text-align: left
+    text-auto-resize: true
+    text-align: right
     font: verdana-11px-antialised
     color: #8c8070
     phantom: true
@@ -603,9 +607,12 @@ ChaosMainWindow
         anchors.top: listedSub.bottom
         anchors.left: parent.left
         margin-top: 6
-        size: 220 18
+        size: 198 18
         layout:
-          type: horizontalBox
+          type: grid
+          cell-size: 18 18
+          cell-spacing: 2
+          flow: true
 
     ChaosTitlePlate
       id: appsPlate

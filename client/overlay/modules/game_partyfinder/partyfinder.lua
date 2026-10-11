@@ -142,9 +142,15 @@ local function activityOptions(first)
 end
 
 -- ---------------------------------------------------------------- browse
+local SLOT, SLOT_GAP, SLOT_COLS = 18, 2, 10
+
+-- the slot boxes wrap: a raid of 15 is two rows of 8 + 7. -> the number of rows
 local function fillSlots(panel, row)
   panel:destroyChildren()
-  for _, s in ipairs(V.slots(row)) do
+  local slots = V.slots(row)
+  local cols, rows = V.slotGrid(#slots, SLOT_COLS)
+  panel:setSize({ width = cols * (SLOT + SLOT_GAP) - SLOT_GAP, height = rows * (SLOT + SLOT_GAP) - SLOT_GAP })
+  for _, s in ipairs(slots) do
     local w = g_ui.createWidget('PartyFinderSlot', panel)
     w:setText(V.roleLetter(s.role))
     if s.filled then
@@ -158,6 +164,7 @@ local function fillSlots(panel, row)
     end
   end
   panel:setTooltip(V.compTooltip(row))
+  return rows
 end
 
 local function applyTo(row)
@@ -191,7 +198,8 @@ local function renderBrowse()
     w.note:setTooltip(row.note ~= '' and row.note or nil)
     w.sub:setText(V.subLine(row, e))
     w.openText:setText(V.openText(row))
-    fillSlots(w.slots, row)
+    local slotRows = fillSlots(w.slots, row)
+    w:setHeight(48 + (slotRows - 1) * (SLOT + SLOT_GAP))
     local ok, why = V.canApply(row, srv and srv.my, level)
     if row.mine then
       w.action:setText(tr('Manage'))
@@ -226,9 +234,26 @@ local function renderBrowse()
 end
 
 -- ---------------------------------------------------------------- my group
-local function updateDetail()
+-- the wanted boxes go up to the activity's cap per role (raid: 3 tanks, 4 healers, 12 DPS); `suggest` sets the
+-- activity's proposal (a new listing only)
+local function updateWant(act, suggest)
+  local f = window.myPanel.form
+  local lim = V.limits(act, srv and srv.lim)
+  for _, e in ipairs({ { f.wantTank, 'tank' }, { f.wantHealer, 'healer' }, { f.wantDps, 'dps' } }) do
+    local combo, r = e[1], e[2]
+    local current = tonumber(comboData(combo)) or 0
+    local counts = {}
+    for i = 0, lim.per[r] do counts[#counts + 1] = { tostring(i), i } end
+    fillCombo(combo, counts)
+    local want = suggest and act and act.suggest and tonumber(act.suggest[r]) or current
+    combo:setCurrentOptionByData(math.min(want, lim.per[r]), true)
+  end
+end
+
+local function updateDetail(suggest)
   local f = window.myPanel.form
   local act = V.activityOf(srv and srv.acts, comboData(f.activity))
+  updateWant(act, suggest and not (data and data.mine))
   local kind = V.formKind(act)
   f.lo:setVisible(kind == 'range')
   f.hi:setVisible(kind == 'range')
@@ -260,8 +285,8 @@ end
 local function updateSize()
   local f = window.myPanel.form
   local size = V.formSize(formValues())
-  local max = srv and srv.lim and srv.lim.party or 10
-  f.sizeLabel:setText(tr('group of %d', size))
+  local max = V.limits(V.activityOf(srv and srv.acts, comboData(f.activity)), srv and srv.lim).max
+  f.sizeLabel:setText(tr('group of %d / %d', size, max))
   f.sizeLabel:setColor(size > max and V.COLORS.error or V.COLORS.dim)
 end
 
@@ -367,11 +392,6 @@ local function onInit(d)
   fillCombo(p.queuePanel.queueActivity, activityOptions({ tr('Any activity'), '' }), true)
   fillCombo(f.activity, activityOptions(), true)
   fillCombo(f.role, roleOptions(d.my or {}), true)
-  local counts = {}
-  for i = 0, (d.lim and d.lim.perRole or 6) do counts[#counts + 1] = { tostring(i), i } end
-  fillCombo(f.wantTank, counts, true)
-  fillCombo(f.wantHealer, counts, true)
-  fillCombo(f.wantDps, counts, true)
   local exps = {}
   for _, m in ipairs(d.exp or {}) do exps[#exps + 1] = { m >= 60 and tr('%d h', math.floor(m / 60)) or tr('%d min', m), m } end
   fillCombo(f.exp, exps, true)
@@ -515,7 +535,7 @@ function init()
     p.activityFilter.onOptionChange = rerender
     p.roleFilter.onOptionChange = rerender
     p.fitsCheck.onCheckChange = rerender
-    f.activity.onOptionChange = safe('activity', function() if not updating then updateDetail() end end)
+    f.activity.onOptionChange = safe('activity', function() if not updating then updateDetail(true) updateSize() end end)
     local resize = safe('size', function() if not updating then updateSize() end end)
     f.wantTank.onOptionChange = resize
     f.wantHealer.onOptionChange = resize

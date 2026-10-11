@@ -407,6 +407,118 @@ eq(list.queue, nil, "not queued")
 K.queueJoin(st, cfg, acts, who(84, ids.deadeye), "dps", "", now)
 eq(K.list(st, cfg, acts, who(84, ids.deadeye), now + 9).queue.since, 9, "queued 9 s")
 
+-- ---------------------------------------------------------------- raid listings of 15 (one engine party, raid.lua groupOf)
+do
+	local raidCfg = dofile("data/scripts/chaos/raid_config.lua")
+	local R = K.activity(acts, "raid")
+	eq(R.max, raidCfg.maxPlayers, "a raid listing holds the raid's maxPlayers")
+	eq(R.max, 15, "raid: 15")
+	eq(K.activity(acts, "rift").max, cfg.maxParty, "other activities: maxParty")
+	eq(K.activity(acts, "rift").max, 10, "rift: 10")
+	eq(R.per.tank, 3, "raid: up to 3 tanks wanted")
+	eq(R.per.healer, 4, "raid: up to 4 healers wanted")
+	eq(R.per.dps, 12, "raid: up to 12 DPS wanted")
+	eq(K.activity(acts, "dungeon").per.dps, cfg.maxPerRole, "dungeon: maxPerRole")
+	eq(K.activity(acts, "rift").suggest, nil, "no suggestion for a rift")
+	eq(1 + R.suggest.tank + R.suggest.healer + R.suggest.dps, 15, "the raid suggestion fills 15")
+	check(R.max >= raidCfg.minPlayers, "a full raid listing can open the raid")
+	local rs = K.newState()
+	local lead = who(300, ids.juggernaut, 900)
+	local function rpost(w, input)
+		return K.post(rs, cfg, acts, w, input, now)
+	end
+	local function rrefused(input, reason, label)
+		local Lr, whyR = rpost(lead, input)
+		check(Lr == nil, label .. " refused")
+		eq(whyR, reason, label .. " reason")
+	end
+	rrefused({a = "raid", want = {tank = 3, healer = 4, dps = 8}, role = "tank"}, "size", "raid of 16")
+	rrefused({a = "raid", want = {tank = 4, healer = 3, dps = 7}, role = "tank"}, "perRole", "raid: 4 tanks wanted")
+	rrefused({a = "raid", want = {tank = 2, healer = 5, dps = 7}, role = "tank"}, "perRole", "raid: 5 healers wanted")
+	rrefused({a = "raid", want = {tank = 0, healer = 0, dps = 13}, role = "tank"}, "perRole", "raid: 13 DPS wanted")
+	rrefused({a = "rift", lo = 1, hi = 2, want = {tank = 1, healer = 3, dps = 6}, role = "tank"}, "size", "rift of 11")
+	rrefused({a = "rift", lo = 1, hi = 2, want = {dps = 7}, role = "tank"}, "perRole", "rift: 7 DPS")
+	check(K.post(K.newState(), cfg, acts, who(301, ids.deadeye, 900), {a = "raid", want = {tank = 2, dps = 12}, role = "dps"},
+		now) ~= nil, "raid: 2 tanks and 12 DPS")
+	-- a raid with a party of 3 already: the crew counts against the 15
+	local withCrew = who(302, ids.sentinel, 900, {party = {leader = true, members = {who(303, ids.deadeye, 900),
+		who(304, ids.ninja, 900), who(305, ids.ironsage, 900)}}})
+	check(K.post(K.newState(), cfg, acts, withCrew, {a = "raid", want = {tank = 1, healer = 2, dps = 8}, role = "tank"}, now)
+		~= nil, "raid: 4 in the party + 11 wanted")
+	local _, whyC = K.post(K.newState(), cfg, acts, withCrew, {a = "raid", want = {tank = 1, healer = 2, dps = 9},
+		role = "tank"}, now)
+	eq(whyC, "size", "raid: 4 in the party + 12 wanted")
+
+	local RL = rpost(lead, {a = "raid", t = 1, want = {tank = 2, healer = 3, dps = 9}, minLevel = 800, role = "tank"})
+	check(RL ~= nil, "raid of 15 posted")
+	eq(RL.max, 15, "listing max 15")
+	eq(K.maxOf(cfg, RL), 15, "maxOf")
+	eq(K.maxOf(cfg, {}), cfg.maxParty, "maxOf without a max")
+	local _, openTotal = K.open(cfg, RL)
+	eq(openTotal, 14, "14 open slots")
+	local row = K.row(cfg, acts, RL, lead, now)
+	eq(row.max, 15, "row max")
+	eq(row.an, "Raid: " .. raidCfg.name, "row names the raid")
+	-- 14 applicants (2 tanks, 3 healers, 9 DPS), all accepted
+	local vocs = {tank = ids.juggernaut, healer = ids.illusionist, dps = ids.deadeye}
+	local order = {"tank", "tank", "healer", "healer", "healer"}
+	for _ = 1, 9 do order[#order + 1] = "dps" end
+	local party, crewList = {}, {}
+	for i, role in ipairs(order) do
+		local w = who(310 + i, vocs[role], 900)
+		local app = K.apply(rs, cfg, w, RL.id, role, now)
+		check(app ~= nil, "raid applicant " .. i)
+		if i == 14 then
+			-- an outsider the leader invited by hand fills the 15th place: the last accept is refused
+			local outsider = who(399, ids.berserker, 900)
+			K.reconcile(rs, cfg, RL.id, info({leaderInParty = true, leaderIsLeader = true, party = party,
+				crew = {outsider}}), now + 1)
+			eq(K.size(RL), 15, "13 invited + leader + outsider")
+			local okF, whyF = K.decide(rs, cfg, 300, RL.id, w.guid, true, now + 1)
+			check(not okF, "16th refused")
+			eq(whyF, "partyFull", "raid party full at 15")
+			K.reconcile(rs, cfg, RL.id, info({leaderInParty = true, leaderIsLeader = true, party = party}), now + 2)
+			eq(K.size(RL), 14, "the outsider left")
+		end
+		local okA = K.decide(rs, cfg, 300, RL.id, w.guid, true, now + 2)
+		check(okA, "raid accept " .. i)
+		party[w.guid] = true
+		crewList[#crewList + 1] = w
+	end
+	eq(K.size(RL), 15, "15 on their way")
+	eq(#K.row(cfg, acts, RL, lead, now).comp, 15, "15 in the row's composition")
+	_, openTotal = K.open(cfg, RL)
+	eq(openTotal, 0, "no slot open")
+	-- 13 joined, one invite pending: the listing stays
+	local partial = {}
+	for i = 1, 13 do partial[crewList[i].guid] = true end
+	local evs, closedR = K.reconcile(rs, cfg, RL.id, info({leaderInParty = true, leaderIsLeader = true, party = partial,
+		crew = {(table.unpack or unpack)(crewList, 1, 13)}}), now + 3)
+	local joined = 0
+	for _, m in ipairs(RL.members) do
+		if m.st == "joined" then joined = joined + 1 end
+	end
+	eq(joined, 13, "13 joined")
+	eq(#evs, 0, "they joined on the earlier reconcile")
+	eq(closedR, nil, "one invite pending: still listed")
+	eq(#RL.crew, 0, "listing members are not crew")
+	-- an update to a rift is refused: 15 do not fit in 10
+	local _, whyU = K.post(rs, cfg, acts, lead, {a = "rift", lo = 1, hi = 2, want = {tank = 2, healer = 3, dps = 9},
+		role = "tank"}, now + 10)
+	eq(whyU, "perRole", "15 do not fit a rift")
+	_, whyU = K.post(rs, cfg, acts, lead, {a = "rift", lo = 1, hi = 2, want = {tank = 2, healer = 3, dps = 6},
+		role = "tank"}, now + 10)
+	eq(whyU, "size", "12 do not fit a rift")
+	eq(RL.a, "raid", "still a raid")
+	evs, closedR = K.reconcile(rs, cfg, RL.id, info({leaderInParty = true, leaderIsLeader = true, party = party,
+		crew = crewList}), now + 4)
+	eq(#evs, 1, "the 14th joined")
+	eq(closedR and closedR.closed, "full", "raid of 15 full and closed")
+	local init = K.init(cfg, acts, lead)
+	eq(init.lim.party, cfg.maxParty, "init: default size")
+	eq(K.activity(init.acts, "raid").max, 15, "init: the raid's size")
+end
+
 -- ---------------------------------------------------------------- party_finder.lua against a mocked engine
 ChaosPartyFinderCore = nil
 dofile("data/scripts/chaos/party_finder_core.lua")

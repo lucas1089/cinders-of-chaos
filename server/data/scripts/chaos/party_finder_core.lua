@@ -7,7 +7,7 @@
 --   party.members are the OTHER members of the character's party (the engine's party, not the listing's).
 -- A listing:
 --   {id, leader = {guid, cid, name, level, voc, vocName, role}, realm, staff, a (activity key), lo, hi, t (target, 0 =
---    any), title, want = {tank, healer, dps}, minLevel, note, expMin, created, expires, auto,
+--    any), title, want = {tank, healer, dps}, minLevel, note, expMin, created, expires, auto, max (group size: 10, raid 15),
 --    members = {{guid, cid, name, level, voc, vocName, role, st = "invited" | "joined", at}, ...} (taken by the listing),
 --    crew = {{guid, name, level, voc, vocName, role}, ...} (in the leader's party without a listing slot),
 --    apps = {[guid] = app}, appOrder = {guid, ...}, hadParty}
@@ -133,6 +133,18 @@ function K.buildActivities(cfg, sources)
 		if a.title then
 			e.title = true
 		end
+		-- the group size and wanted caps per role of this activity (a raid holds 15), and the form's proposal
+		e.max = int(a.maxParty) or cfg.maxParty
+		e.per = {}
+		for _, r in ipairs(K.roleKeys(cfg)) do
+			e.per[r] = int(a.perRole and a.perRole[r]) or cfg.maxPerRole
+		end
+		if type(a.suggest) == "table" then
+			e.suggest = {}
+			for _, r in ipairs(K.roleKeys(cfg)) do
+				e.suggest[r] = int(a.suggest[r]) or 0
+			end
+		end
 		list[#list + 1] = e
 	end
 	return list
@@ -233,6 +245,11 @@ end
 -- characters in the group now or on their way: leader + crew + listing members
 function K.size(L)
 	return 1 + #L.crew + #L.members
+end
+
+-- the most characters the listing's group may hold (its activity's maxParty, set by K.post)
+function K.maxOf(cfg, L)
+	return int(L and L.max) or cfg.maxParty
 end
 
 function K.visibleTo(L, viewer)
@@ -338,7 +355,7 @@ function K.post(state, cfg, acts, who, input, now)
 	local wantIn = type(input.want) == "table" and input.want or {}
 	for _, r in ipairs(K.roleKeys(cfg)) do
 		local n = int(wantIn[r] or 0)
-		if not n or n < 0 or n > cfg.maxPerRole then
+		if not n or n < 0 or n > ((a.per and a.per[r]) or cfg.maxPerRole) then
 			return nil, "perRole"
 		end
 		want[r] = n
@@ -357,7 +374,8 @@ function K.post(state, cfg, acts, who, input, now)
 	end
 	local crew = crewOf(cfg, who, L)
 	-- the slots: the leader, the party without a listing slot, and every wanted slot (taken ones included)
-	if 1 + #crew + sum > cfg.maxParty then
+	local max = a.max or cfg.maxParty
+	if 1 + #crew + sum > max then
 		return nil, "size"
 	end
 	if L then
@@ -395,6 +413,7 @@ function K.post(state, cfg, acts, who, input, now)
 	L.leader = plainOf(who, role)
 	L.realm, L.staff = who.realm or 0, who.staff and true or false
 	L.a, L.lo, L.hi, L.t, L.title = a.k, lo, hi, t, title
+	L.max = max
 	L.want, L.minLevel, L.expMin, L.auto = want, minLevel, expMin, input.auto and true or false
 	L.note = K.cleanText(input.note, cfg.noteMax, cfg)
 	L.crew = crew
@@ -550,7 +569,7 @@ function K.decide(state, cfg, leaderGuid, id, guid, accept, now)
 	if (open[app.role] or 0) <= 0 then
 		return nil, "full"
 	end
-	if K.size(L) >= cfg.maxParty then
+	if K.size(L) >= K.maxOf(cfg, L) then
 		return nil, "partyFull"
 	end
 	removeApp(state, L, guid)
@@ -748,7 +767,7 @@ function K.row(cfg, acts, L, viewer, now)
 	local app = L.apps[viewer.guid]
 	local row = {id = L.id, a = L.a, an = K.activityText(acts, L), ld = L.leader.name, comp = comp, want = L.want,
 		open = open, ml = L.minLevel, note = L.note, left = math.max(0, L.expires - now), auto = L.auto,
-		mine = L.leader.guid == viewer.guid, ap = app and app.role or nil}
+		mine = L.leader.guid == viewer.guid, ap = app and app.role or nil, max = K.maxOf(cfg, L)}
 	if L.realm and L.realm > 0 then
 		row.season = true
 	end
