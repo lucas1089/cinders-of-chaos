@@ -98,6 +98,10 @@ server/
                                       clientGuard* (see "Client guard"; client base patch 0035)
   src-patches/0022-dynamic-respawn.patch   engine: Game.setSpawnIntervalPercent, a respawn interval in percent per spawn
                                       (see "Spawn density and respawn")
+  src-patches/0024-equip-on-use.patch   engine: a use of equipment without an action of its own puts it on or takes it
+                                      off; the equip hotkey runs the Lua move events (see "Right-click equips")
+    rightclick_equip.lua  rightclick_equip_core.lua  rightclick_equip_config.lua (the client option and the multi-use
+                                      weapon list, opcode 188, see "Right-click equips")
     respawn.lua  respawn_core.lua  respawn_config.lua (dynamic respawn: faster where several players hunt together)
     clientguard.lua  clientguard_core.lua  clientguard_config.lua (the client guard's module hello check, opcode 190)
     transmog.lua  transmog_core.lua  transmog_config.lua (transmog: account wardrobe, appearance sets, client game_transmog;
@@ -264,7 +268,7 @@ server/
    missile of their ammunition, makes the quivers off-hand equipment (items.xml, items.otb, movements.xml; needs engine
    src-patch 0023), maps the base's slot tables to the second ring slot, marks the might rings (items.xml
    `chaosMightRing`: one at a time, "Second ring slot"), keeps both rings of a ring slot swap in the base rarity
-   script, keeps a quiver in the base's two-handed swap and takes arrows and bolts out of loot, shops, conjure spells and rewards; then run `server/sql/chaos_archery.sql` once, with the server stopped
+   script and clears there a hand the base two-handed swap emptied ("Right-click equips"), keeps a quiver in the base's two-handed swap and takes arrows and bolts out of loot, shops, conjure spells and rewards; then run `server/sql/chaos_archery.sql` once, with the server stopped
    (the `sql` step does), before the first start with the patched items.otb. See "Infinite arrows and quivers".
 5k. Base item names: `python3 -I server/tools/patch_base_item_names.py <server>/data [--dry-run]` (idempotent;
    `install_all.py` step `itemnames`, after `archery`) gives the base items of `data/items/base_item_names.csv` their
@@ -331,6 +335,7 @@ working directory, as with the rest of the base server libs).
 | game_pets | `pets.lua`, `pets_core.lua`, `pets_config.lua` | 254, Character > Pets / `/pet` | Pets: one companion out at a time that follows its owner, levels from kills, two small abilities per species; drops, store and achievements; tested in game (see "Pets"). |
 | game_buffbar | `buffbar.lua`, `data/lib/chaos_buffs.lua` | 234 (server -> client), Character > Buff Bar | Buff / debuff bar: icons with a countdown and stacks for the engine conditions, the Chaos class buffs, world buffs, the Victory buff, world events, trial kill stacks, chi, Rage and Reprisal; diffs only; tested in game (see "Buff bar and party frames"). |
 | game_partyframes | `partyframes.lua`, `partyframes_core.lua` | 235, Hunt > Party Frames | Party frames: health, mana, level, floor, distance, state and buffs of the party members every 500 ms, exact numbers only in range; kick / pass leadership / invite actions checked on the server; tested in game with three characters (see "Buff bar and party frames"). |
+| game_rightclickequip | `rightclick_equip.lua`, `rightclick_equip_core.lua`, `rightclick_equip_config.lua`, engine patch 0024 | **188** | Right-click equips: the client option "Right-click equips items" (client -> server) and the multi-use weapons a right-click equips (server -> client, at login); the equipping is the engine's (see "Right-click equips"). Tested in game. |
 | game_levelwings | `levelwings.lua`, `levelwings_core.lua`, `levelwings_config.lua` | **191** (server -> client) | Level-up wings: golden wings open behind a character that gains a level, seen by every player on screen (see "Level-up wings"). Tested in game. |
 | game_bestiary | `bestiary.lua`, `bestiary_core.lua`, `bestiary_config.lua`, `bestiary_spawns.lua` | 253, Hunt > Bestiary, Hunt > Kill Tasks | Bestiary (an entry per monster, four stages by kills, completion bonus, points and ranks), personal kill tasks with daily / weekly limits, task tracker HUD with the bounty contracts; tested in game (see "Bestiary and kill tasks"). |
 | game_itemtooltip | `item_tooltip.lua`, `item_tooltip_core.lua` (client also `game_itemrarity`) | 242 | Rich item tooltips on hover (inventory, open containers): rarity, item level, base stats, every modifier with its tier and roll range, sockets and gems, unique and set (pieces worn, bonuses active: "Item sets"), requirements; Ctrl compares with the equipped item(s) of the same slot. Rarity frames from the item custom attributes of engine patch 0003; tested in game (see "Item attributes in packets and rich tooltips"). |
@@ -428,6 +433,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7101600 - 7101639 | Town Portal (`townportal_config.lua`) |
 | 7101700 - 7101799 | Vocation Trials (`trials_config.lua`) |
 | 7101800 | Last Breath power cooldown (`data/lib/chaos_powers.lua`) |
+| 7101810 - 7101819 | right-click equips (`Chaos.storage.rightClickEquipOff`): +0 is 1 while the player turned the option off; the engine reads it (src-patch 0024) |
 | 7102000 - 7102049 | wardrobe (`Chaos.storage.wardrobe`): +0 footprint, +1 outline (`cosmetics_config.lua`), +10 .. +39 name plate frame slots 9 and up (`Chaos.storage.shopFrameBase2`, `shop_core.lua` `frameStorage`) |
 | 7101900 - 7101909 | the Gambler (`gamble_config.lua` `storage`, `Chaos.storage.gamble`): +0 window, +1 level, +2 vocation, +3 sold slots, +4 early refreshes; +5..9 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
@@ -2844,7 +2850,8 @@ ammunition slot of the protocol) takes the item types the ring slot takes and no
   inventory) never lands in the other ring slot (`Player::queryDestination` skips it). A ring dragged from one ring
   slot onto the ring in the other swaps the two, both ways (`Game::internalMoveItem`: the stock exchange cannot, as
   the source slot is still taken; the de-equip and equip events and `onMoveItem` / `onItemMoved` run for both
-  rings). Both rings stay worn, so the one-might-ring rule holds.
+  rings). Both rings stay worn, so the one-might-ring rule holds. Since src-patch 0024 the hotkey's own moves run the Lua
+  move events too, so the rarity bonuses of a ring put on by hotkey apply at once ("Right-click equips").
 - **Base Lua** (`patch_base_archery.py`): the slot tables of `data/scripts/customs/rarity/base_rarity.lua` (the base
   rarity conditions) and `data/lib/core/itemtype.lua` (`ItemType.usesSlot`) map slot 10 to the ring bit. The base's
   `onItemMoved` in `base_rarity.lua` clears the slot an item left and fills the slot it reached, so in a ring swap
@@ -2894,6 +2901,75 @@ ammunition slot of the protocol) takes the item types the ring slot takes and no
   hotkey put rings into slot 9 and slot 10 and took them off from slot 9 (slot 10 empty or full) and from slot 10
   (slot 9 empty or full), also with the worn ids of the time and sword rings; with both slots full the hotkey of a
   third ring exchanged it with slot 9 (stock).
+
+## Right-click equips (`src-patches/0024-equip-on-use.patch`, `rightclick_equip.lua`, `rightclick_equip_core.lua`, `rightclick_equip_config.lua`, client `game_rightclickequip`, base patch 0037)
+
+Owner request: "Make items get equipped on right-click." A right-click on a piece of equipment in the backpack (any
+open container) puts it on; a right-click on a worn piece takes it off into the backpack. Potions, runes, food, tools,
+keys, containers and every item with a use of its own work as before.
+
+- **Where it is decided: the server, on the use.** The client's mouse presets already send a use for that click (a
+  right-click in Classic Controls, Ctrl + click in Regular Controls, a left-click in Left Smart-Click, "Use" in the
+  context menu), with the exact item's position. `Actions::internalUseItem` (0024) calls `Game::chaosUseEquip` where it
+  used to answer "You cannot use this object.": only when the item has no action at all. So the server's own action
+  list decides what has a use of its own; nothing in the client has to know it. The equip hotkey packet (0x77) was not
+  used for this: it names an item type, and the engine equips the first one it finds in the backpack, which is the
+  wrong one when two rings or swords of one type carry different rarities.
+- **What counts as equipment** (`Game::chaosEquipsOnUse`): a head, necklace, armour, legs, feet or ring item, or a sword,
+  club, axe, distance weapon, wand, shield or quiver. Every item may be held in a hand by default, so the hands count by
+  weapon type. Not ammunition, the base's extra slots (deck, badge, ship, belt, gloves), the backpack slot, an item that
+  cannot be moved, a container. Not a hotkey use (`isHotkey`), not an item lying on the map. The item may be in any
+  container the player has open (the backpack, a bag, the depot, a corpse), as with drag and drop.
+- **Which slot:** the equip hotkey's (`getSlotType`). A ring goes into the free ring slot (9 first), else into the slot
+  holding a might ring when it is one (one might ring at a time, "Second ring slot"), else into slot 9 (the rings swap).
+  A worn item goes into the backpack first, then wherever the stock hotkey put it when the backpack has no room.
+- **The move** (`Game::chaosEquipMove`) runs with the player as the actor and the client positions, so it is the same
+  as drag and drop: `Player:onMoveItem`, every onMoveItem and onItemMoved callback, `Player::queryAdd` (the hand rules,
+  the quiver, the might ring), the base two-handed swap in `default_onMoveItem.lua` (a two-handed weapon or bow puts the
+  shield into the container it came from, a shield puts the two-handed weapon away, a quiver stays beside a launcher),
+  the exchange with the worn item, the depot tab limits. A refusal shows its message.
+- **Multi-use weapons.** The stock weapons are multi-use (their action, `other/destroy.lua`, breaks furniture with a
+  use with), so the client starts a use with on them and the engine refuses a plain use of a multi-use item. 0024 lets
+  a plain use of one in an open container or the inventory through to `chaosUseEquip` (its use with is not run), and
+  the client module sends that plain use for the multi-use weapons the server lists at login (`rightclick_equip.lua`:
+  every multi-use item type that is equipment, minus those with any other action in `data/actions/actions.xml`, minus
+  `keepUseWith`; 384 looks on the test server). The machete, the crowbar and the scythe are weapons with tool actions:
+  they are not listed and keep their use with. "Use with ..." stays in the context menu of every multi-use weapon.
+- **The option** "Right-click equips items" (Options > Interface, client base patch 0037, on by default): the client
+  sends extended opcode **188** `{"on": true | false}` at every login and when it changes; `rightclick_equip.lua` keeps
+  storage 7101810 at 1 while it is off, and the engine then answers a use as before. Opcode 188 is free in the reference
+  server, the base client's `ExtendedIds` and every Chaos script and module. Storages 7101810 - 7101819 reserved.
+- **The equip hotkey and the rarity bonuses.** A club ring put on with the equip hotkey showed +4 club (its own) instead
+  of +9 (with its +5 rarity). Cause: `Game::playerEquipItem` moved the item with `internalMoveItem(..., nullptr)`, no
+  actor and no positions, and the engine runs the Lua move events only with both. The base rarity script
+  (`customs/rarity/base_rarity.lua`) turns the rarity attributes into conditions and storages only in `onItemMoved` and
+  at login (its 3 s check only clears empty slots), so the ring's rarity never applied, and a worn item the hotkey
+  swapped out kept its conditions for as long as the slot was taken. The item modifiers, archery (a launcher's quiver
+  speed, a bow migrated on equip) and the base two-handed swap missed it too. Fix (0024): the hotkey moves through
+  `chaosEquipMove` as well; every refusal of the hotkey shows its message. Checked live: the hotkey put a club ring with
+  +5 club rarity on at 23 club with another club ring worn (10 + 4 + 4 + 5), and swapping it for a stealth ring with
+  +1 left 15 (the +5 went at once). The same server built without 0024, same data: the hotkey put the +5 club ring on
+  at 14 club (10 + 4, the rarity missing); with 0024 the same ring and steps gave 19.
+- **A hand emptied by the two-handed swap** (`patch_base_archery.py` step 13): the base swap moves the other hand's
+  item with `moveTo`, which runs no onItemMoved, so its rarity conditions stayed until the 3 s check. The base rarity
+  script now clears the other hand at once when an item reaches a hand and the other hand is empty. Drag and drop gets
+  the same fix. The item modifiers (`item_mods.lua`) work out every slot again on each move and needed nothing; the
+  keystone and weapon style checks read the slots when they are needed.
+- **Tests:** `tests/rightclick_equip_test.lua` (opcode and storage unique, the engine's key and rules in the patch, the
+  message, the stored value, the equipment rule, actions.xml with ranges, lists, functions and comments, the
+  multi-use list, the glue against a mocked engine), `tests/base_archery_patch_test.lua` (step 13 run as code), client
+  `game_rightclickequip/rightclickequiplogic_test.lua`.
+- **Tested** on a Linux test server (the windows-assets base with src-patches 0001-0024 built, every install step, the
+  full map, a private MariaDB) with the Linux client (`game22` with this overlay and 0037's Lua part), real mouse
+  clicks: helmet, armour, legs, boots, amulet, sword, shield, a two-handed sword replacing sword and shield (the shield's
+  +6 shielding gone at once), a shield replacing the two-handed sword, a club ring into slot 9 and a second one into
+  slot 10 (the exact copy clicked: the one without rarity), might rings exchanging with the worn might ring and never
+  two, a ring into a free slot 10, a bow next to a quiver, a quiver with empty hands, a second quiver swapped in, a
+  crossbow replacing the bow with the quiver kept, a shield replacing crossbow and quiver, every rarity and quiver bonus
+  applied and removed at once; every worn piece taken off by right-click on its slot (a two-handed sword too). Potions
+  and the rope still start a use with, food is eaten, a bag opens, the machete keeps its use with. Regular Controls:
+  right-click opens the menu ("Use" equips), Ctrl + click equips; Left Smart-Click: a click equips and takes off;
+  Classic Ctrl + right-click still opens the menu. The option off: a right-click equips nothing; back on: it does.
 
 ## Town names (`tools/patch_base_towns.py`, `tools/base_towns.csv`, `tests/base_towns_patch_test.lua`)
 

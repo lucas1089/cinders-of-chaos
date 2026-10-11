@@ -288,6 +288,12 @@ Chaos.tables.professionSales = "chaos_professions_sales"
 -- (+0 window, +1 level, +2 vocation, +3 sold slots, +4 early refreshes); no tables
 ChaosOpcodes.gamble = 199
 Chaos.storage.gamble = 7101900
+-- Right-click equips (engine src-patch 0024, server/README.md "Right-click equips"; rightclick_equip.lua,
+-- rightclick_equip_core.lua; client game_rightclickequip): the client option "Right-click equips items", client ->
+-- server {on = true | false}. Storages 7101810 - 7101819 reserved: +0 is 1 while the player turned it off (the engine
+-- reads it, CHAOS_EQUIP_ON_USE_OFF in game.cpp). No tables.
+ChaosOpcodes.rightClickEquip = 188
+Chaos.storage.rightClickEquipOff = 7101810
 
 -- ---------------------------------------------------------------------------
 -- Module settings

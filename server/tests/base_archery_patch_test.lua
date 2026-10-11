@@ -394,7 +394,22 @@ do
 	me.slots[9] = a
 	moved(me, a, 1, {x = 0xFFFF, y = 64, z = 0}, slot(9))
 	eq(me.conds[9], "A", "put on: slot 9 filled")
+	-- step 13: a two-handed weapon reached the weapon hand and the base swap moved the shield away with moveTo (no
+	-- onItemMoved for the shield): the empty shield hand is cleared at once; a hand still holding an item is kept (the
+	-- fixture's slot map has no hands, so the weapon hand's own conditions are not filled here)
+	env.CONST_SLOT_LEFT, env.CONST_SLOT_RIGHT, env.SLOTP_LEFT = 6, 5, 32
+	local axe = ring("Axe", 32)
+	me.conds[5], me.conds[6] = "Shield", "Sword"
+	me.slots[5], me.slots[6] = nil, axe
+	moved(me, axe, 1, {x = 0xFFFF, y = 64, z = 0}, slot(6))
+	eq(me.conds[5], nil, "two-handed swap: the emptied shield hand is cleared")
+	me.conds[5], me.slots[5] = "Shield", ring("Shield", 16)
+	moved(me, axe, 1, {x = 0xFFFF, y = 64, z = 0}, slot(6))
+	eq(me.conds[5], "Shield", "a weapon next to a shield: the shield hand is kept")
+	moved(me, a, 1, {x = 0xFFFF, y = 64, z = 0}, slot(9))
+	eq(me.conds[5], "Shield", "a ring put on: the hands are left alone")
 end
+ok(rarityMap:find("-- Chaos: a hand emptied by the two-handed swap", 1, true), "base rarity: the hand hook")
 
 local swap = readFile(data .. "/scripts/eventcallbacks/player/default_onMoveItem.lua")
 ok(swap:find("moveItem = self:getSlotItem(CONST_SLOT_RIGHT)\n\t\t\t-- Chaos: a quiver stays beside a bow or crossbow", 1, true),

@@ -62,6 +62,13 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     `g_game.getChaosClientId()` / `getChaosClientBuild()` for Lua. The chain 0001-0035 applies to the `windows-assets`
     base client; built and tested in the Linux client.
 
+17. `0037` (`client_settings/classes/dataset.lua`, `client_settings/options/interface.otui`): the option "Right-click
+    equips items" (`rightClickEquip`, on by default) in a new panel after "Show Link Copy Warning" in Options >
+    Interface; its `apply` hands the new value to the overlay module `game_rightclickequip` (`MANIFEST.md`), which tells
+    the server (extended opcode 188; server/README.md "Right-click equips"). Without the patch the option counts as on.
+    Lua and OTUI only (no C++). Applies after 0001-0036, and 0038 applies after it; tested in the Linux client (the
+    checkbox through Ok turns it off on the server, `setOption` back on).
+
 18. `0038` (C++, `src/client/outfit.h/.cpp`, `creature.h/.cpp`, `luafunctions_client.cpp`): silhouette outlines for the
     outline cosmetics (`MANIFEST.md` "game_cosmeticfx", server/README.md "Footprints and outlines"). Lua:
     `creature:setOutline(r, g, b, a, widthPx, pulseMs)` (colour 0-255, width 1-3 sprite pixels, 0 takes it off;
@@ -82,7 +89,7 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     pass would bind, clear and resolve once per creature and break the draw cache batching. Why not 8 offset copies in
     a flat colour: 8 draws per part (16 for a 2 px line) instead of one, for the same picture.
     Measured in the Linux client (software OpenGL, Xvfb): 39 outlined monsters and 2 players on screen ran 14.6-17.2 fps
-    against 15.2-18.7 fps without outlines, within the noise of the moving crowd. Applies after 0001-0036 and touches
+    against 15.2-18.7 fps without outlines, within the noise of the moving crowd. Applies after 0001-0037 and touches
     no file a depot window or quiver change would (built and tested in the Linux client, outlines standing, walking,
     mounted, with an outfit shader, at scale factor 1 and 2, gradient and pulsing ones; screenshots outside the
     repository).

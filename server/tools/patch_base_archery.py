@@ -46,6 +46,11 @@ quivers, mods, ammo, conjureScripts), the same file the Lua side (data/lib/chaos
    (0023) swaps the two and calls onItemMoved for each. The base's onItemMoved clears the slot an item left and fills
    the slot it reached, so either call would clear the other ring's slot. When the slot an item left holds another
    item now, it clears both slots and fills both again.
+13. data/scripts/customs/rarity/base_rarity.lua, the two-handed swap: when an item reaches a hand, the base's
+   default_onMoveItem.lua may have moved the other hand's item out with moveTo (a two-handed weapon or bow puts the
+   shield away, a shield puts the two-handed weapon away), and moveTo runs no onItemMoved. The other hand's rarity
+   conditions would stay until the 3 s check; when that hand is empty now, its slot is cleared at once. A drag, the
+   equip hotkey and a use that equips (engine src-patch 0024, server/README.md "Right-click equips") all go this way.
 
 Idempotent: a second run changes nothing. Unknown file layouts are left alone and listed.
 """
@@ -647,6 +652,30 @@ def patch_rarity_swap(text):
     return text[:m.end()] + add + text[m.end():], 'base_rarity.lua: a ring swap keeps both rings'
 
 
+HAND_MARK = '-- Chaos: a hand emptied by the two-handed swap (patch_base_archery.py)'
+
+
+def patch_rarity_hands(text):
+    """base_rarity.lua: the other hand emptied by default_onMoveItem.lua's two-handed swap (a moveTo, no onItemMoved)
+    loses its rarity conditions when an item reaches a hand. -> new text, status"""
+    if HAND_MARK in text:
+        return text, 'base_rarity.lua: a hand emptied by the two-handed swap is cleared'
+    m = RARITY_RE.search(text)
+    if not m:
+        return text, 'base_rarity.lua: onItemMoved not found, left alone'
+    nl = '\r\n' if m.group(0).endswith('\r\n') else '\n'
+    ind = m.group(1) + '    '
+    add = (ind + HAND_MARK + nl
+           + ind + '-- (default_onMoveItem.lua moves the other hand\'s item away with moveTo, which runs no onItemMoved)' + nl
+           + ind + 'if toPosition.x == CONTAINER_POSITION and (toPosition.y == CONST_SLOT_LEFT or toPosition.y == CONST_SLOT_RIGHT) then' + nl
+           + ind + '    local otherHand = toPosition.y == CONST_SLOT_LEFT and CONST_SLOT_RIGHT or CONST_SLOT_LEFT' + nl
+           + ind + '    if not player:getSlotItem(otherHand) then' + nl
+           + ind + '        onDeEquip(player, otherHand)' + nl
+           + ind + '    end' + nl
+           + ind + 'end' + nl)
+    return text[:m.end()] + add + text[m.end():], 'base_rarity.lua: a hand emptied by the two-handed swap is cleared'
+
+
 # ------------------------------------------------------------------------------------------------ files
 def read(path):
     return open(path, encoding='utf-8', errors='surrogateescape', newline='').read()
@@ -772,6 +801,8 @@ def main():
     if os.path.exists(rarity_path):
         t = writes.get(rarity_path) or read(rarity_path)
         new, note = patch_rarity_swap(t)
+        print(note)
+        new, note = patch_rarity_hands(new)
         print(note)
         if new != t:
             writes[rarity_path] = new
