@@ -736,9 +736,15 @@ local function storedItems(player)
 	return n
 end
 
+-- items only when joinCheck reads them (S.joinNeedsItems): the count opens the depot chests, and an opened depot is
+-- rewritten by the engine at every save and logout (the login state send asks for this for every character)
 function S.joinInfo(player)
-	return {level = player:getLevel(), row = S.rowOf(player:getGuid()), items = storedItems(player),
+	local info = {level = player:getLevel(), row = S.rowOf(player:getGuid()), items = 0,
 		party = player:getParty() ~= nil, house = player:getHouse() ~= nil}
+	if S.joinNeedsItems(info, cfg) then
+		info.items = storedItems(player)
+	end
+	return info
 end
 
 local function joinTerms(season)

@@ -250,6 +250,9 @@ function Z.rowOf(guid)
 		end
 		r.boughtWeek = wk
 		Z.rows[guid] = r
+		-- what the database gives back (rolled the same way at the next load): saveRow skips a row still equal to it
+		K.roll(r, dayKey(), weekKey())
+		r.savedSig = K.rowSig(r)
 	end
 	K.roll(r, dayKey(), weekKey())
 	if r.boughtWeek ~= r.week then
@@ -263,7 +266,11 @@ function Z.saveRow(guid)
 	if not r then
 		return
 	end
-	db.query(string.format("INSERT INTO `%s` (`player_id`, `banked`, `banked_total`, `kills`, `defeats`, `captures`, `haul`, " ..
+	local sig = K.rowSig(r)
+	if sig == r.savedSig then
+		return -- unchanged since loaded or last written
+	end
+	local ok = db.query(string.format("INSERT INTO `%s` (`player_id`, `banked`, `banked_total`, `kills`, `defeats`, `captures`, `haul`, " ..
 		"`pledge`, `pledge_at`, `day`, `day_rep`, `day_picked`, `week`, `week_banked`, `updated_at`) VALUES (%d, %d, %d, %d, %d, " ..
 		"%d, %d, %s, %d, %d, %d, %d, %d, %d, %d) ON DUPLICATE KEY UPDATE `banked` = VALUES(`banked`), " ..
 		"`banked_total` = VALUES(`banked_total`), `kills` = VALUES(`kills`), `defeats` = VALUES(`defeats`), " ..
@@ -272,6 +279,9 @@ function Z.saveRow(guid)
 		"`week_banked` = VALUES(`week_banked`), `updated_at` = VALUES(`updated_at`)", T("players"), guid, r.banked, r.total,
 		r.kills, r.defeats, r.captures, r.haul, db.escapeString(r.pledge or ""), r.pledgeAt or 0, r.day, r.dayRep, r.dayPicked,
 		r.week, r.weekBanked, now()))
+	if ok ~= false then
+		r.savedSig = sig
+	end
 end
 
 local function getCarried(player)

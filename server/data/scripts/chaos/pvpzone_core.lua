@@ -431,6 +431,14 @@ function K.roll(row, day, week)
 	return row
 end
 
+-- the saved columns of a row as one string: pvpzone.lua writes a row only when this changed since it was loaded or
+-- last written (most characters never enter the Marches, and their logout wrote the same row every time)
+function K.rowSig(row)
+	return table.concat({row.banked or 0, row.total or 0, row.kills or 0, row.defeats or 0, row.captures or 0,
+		row.haul or 0, row.pledge or "", row.pledgeAt or 0, row.day or 0, row.dayRep or 0, row.dayPicked or 0,
+		row.week or 0, row.weekBanked or 0}, "|")
+end
+
 -- ====================================================================== kills: anti-farming and reputation
 -- k = {killerAccount, victimAccount, killerIp, victimIp, killerLevel, victimLevel, enteredAt (the victim's entry),
 -- at, lastCounted (this killer's last counted defeat of this victim, or nil)}. Returns counted, reason ("ok" or why not).

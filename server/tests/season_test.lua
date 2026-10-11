@@ -121,6 +121,34 @@ eq(ok and ok.id, 1, "joins after /season start")
 ok = join({level = 1, items = 0}, t(2027, 3, 10))
 eq(ok and ok.id, 2, "second season")
 
+-- the stored items are counted only when joinCheck reads them (counting opens the depots, which the engine then
+-- rewrites at every save): the same verdict with items left at 0 whenever joinNeedsItems says no
+eq(S.joinNeedsItems({level = 1}, C), true, "fresh character: items needed")
+eq(S.joinNeedsItems({level = 7}, C), true, "level 7: items needed")
+eq(S.joinNeedsItems({level = 8}, C), false, "level 8: not needed")
+eq(S.joinNeedsItems({level = 500}, C), false, "high level: not needed")
+eq(S.joinNeedsItems({level = 1, row = {season = 1, migrated = 0}}, C), false, "season row: not needed")
+eq(S.joinNeedsItems({level = 1}, {join = {maxLevel = 7, requireEmptyDepot = false}}), false, "rule off: not needed")
+for _, when in ipairs({during, after, t(2026, 10, 1), t(2027, 3, 10)}) do
+	for _, level in ipairs({1, 7, 8, 300}) do
+		for _, row in ipairs({false, {season = 1, migrated = 0}, {season = 1, migrated = 99}}) do
+			for _, items in ipairs({0, 5}) do
+				for _, party in ipairs({false, true}) do
+					local full = {level = level, row = row or nil, items = items, party = party}
+					local lazy = {level = level, row = row or nil, items = 0, party = party}
+					if S.joinNeedsItems(lazy, C) then
+						lazy.items = items
+					end
+					local a, ra = join(full, when)
+					local b, rb = join(lazy, when)
+					eq(a and a.id, b and b.id, "lazy items: same season")
+					eq(ra, rb, "lazy items: same reason")
+				end
+			end
+		end
+	end
+end
+
 -- ---------------------------------------------------------------- isolation decisions
 eq(S.tradeAllowed(1, 1), true, "same season trades")
 eq(S.tradeAllowed(0, 0), true, "standard trades")

@@ -808,6 +808,45 @@ eq(#s.vendor, #cfg.vendor, "vendor rows")
 eq(#s.factions, 4, "four factions to pledge")
 eq(s.factions[1].rivalName, "The Veiled Choir", "rival names for the window")
 eq(s.contest.holder and s.contest.holder.key, "vigil", "the holder in the window")
+-- the row is written at a logout only when it changed (every character's logout used to write it)
+local rowWrites = 0
+local realQuery = db.query
+db.query = function(q)
+  if q:find("INSERT INTO `" .. Chaos.tables.pvpZone .. "`", 1, true) then rowWrites = rowWrites + 1 end
+  return realQuery(q)
+end
+local idle = newPlayer("Idle", 300)
+Z.stateOf(idle)
+events.ChaosMarchesLogout.onLogout(idle)
+eq(rowWrites, 0, "a character that never touched the Marches: no write at logout")
+local busy = newPlayer("Busy", 400)
+check(Z.pledge(busy, "vigil"), "Busy pledges")
+events.ChaosMarchesLogout.onLogout(busy)
+check(rowWrites >= 1, "a pledge is written")
+local w0 = rowWrites
+local again2 = newPlayer("Again2", 400)
+Z.rowOf(again2:getGuid()).haul = 7
+events.ChaosMarchesLogout.onLogout(again2)
+eq(rowWrites, w0 + 1, "a changed row is written at the logout")
+local again3 = newPlayer("Again3", 400)
+Z.rowOf(again3:getGuid()).haul = 7
+Z.saveRow(again3:getGuid())
+eq(rowWrites, w0 + 2, "written once")
+Z.saveRow(again3:getGuid())
+events.ChaosMarchesLogout.onLogout(again3)
+eq(rowWrites, w0 + 2, "not again while unchanged")
+local failing = newPlayer("Failing", 400)
+Z.rowOf(failing:getGuid()).kills = 1
+db.query = function(q) if q:find("INSERT INTO `" .. Chaos.tables.pvpZone .. "`", 1, true) then rowWrites = rowWrites + 1; return false end return true end
+Z.saveRow(failing:getGuid())
+db.query = function(q)
+  if q:find("INSERT INTO `" .. Chaos.tables.pvpZone .. "`", 1, true) then rowWrites = rowWrites + 1 end
+  return realQuery(q)
+end
+events.ChaosMarchesLogout.onLogout(failing)
+eq(rowWrites, w0 + 4, "a failed write is tried again at the logout")
+db.query = realQuery
+
 -- no-pvp world: warning at startup
 worldType = WORLD_TYPE_NO_PVP
 globals.ChaosMarchesStartup.onStartup()

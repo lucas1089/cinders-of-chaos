@@ -3,7 +3,7 @@
 --              formatDuration(seconds)
 --   realms     realm = 0 for standard characters, the season id for an unmigrated character of a running season.
 --              realm(row, now, seasons, ov), tagRealm(tag, now, seasons, ov)
---   joining    joinCheck(info, cfg, now, ov)
+--   joining    joinCheck(info, cfg, now, ov), joinNeedsItems(info, cfg)
 --   isolation  tradeAllowed(a, b), moveCheck(m), partyAllowed(a, b), mailReceiver(text)
 --   coins      storePartAllowed(offer, rules), storeRefusal(offer, rules), storeText(realm, offer, rules, gift, name),
 --              passClaimAllowed(reward, realm, rules),
@@ -177,6 +177,14 @@ function S.joinCheck(info, cfg, now, ov)
 		return nil, "Characters that own a house cannot join a season."
 	end
 	return season, nil
+end
+
+-- Does joinCheck read info.items for this info? Only a character without a season row, at or below the join level,
+-- with requireEmptyDepot on. season.lua counts the stored items only then: counting opens every depot chest with
+-- player:getDepotChest, and the engine then rewrites that character's whole depot at every save and logout.
+function S.joinNeedsItems(info, cfg)
+	local jc = cfg.join
+	return info.row == nil and (info.level or 0) <= jc.maxLevel and jc.requireEmptyDepot and true or false
 end
 
 -- ---------------------------------------------------------------- isolation
