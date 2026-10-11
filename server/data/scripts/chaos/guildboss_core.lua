@@ -7,7 +7,8 @@
 --              B.fuelAfterFail(fuel, need, cfg)
 --   summon     B.summonError(info, cfg)
 --   scaling    B.healthMult(cfg, players), B.addHealthMult(cfg, players), B.livesFor(cfg, players), B.killTime(cfg, players)
---   rewards    B.rewarded(damage, healers, present, cfg), B.gxp(players, cfg), B.banner(kills, cfg)
+--   rewards    B.rewarded(damage, healers, present, cfg), B.goldPool(n, cfg), B.splitGold(pool, winners, damage, healing, cfg),
+--              B.gxp(players, cfg), B.banner(kills, cfg)
 --   board      B.rankGuilds(rows)
 --   texts      B.clockText(s), B.money(n)
 -- Lua 5.1 / LuaJIT and Lua 5.3.
@@ -171,6 +172,60 @@ function B.rewarded(damage, healers, present, cfg)
 		end
 	end
 	return out
+end
+
+-- the kill's gold: one pool for the guild, reward.pool.perPlayer per rewarded participant, counted up to
+-- reward.pool.maxPlayers (5 rewarded: 7,500,000; 10 or more: 15,000,000)
+function B.goldPool(n, cfg)
+	local p = (cfg.reward and cfg.reward.pool) or {}
+	n = math.max(0, floor(tonumber(n) or 0))
+	return floor((p.perPlayer or 0) * math.min(n, p.maxPlayers or n))
+end
+
+-- The pool split among the rewarded guids (winners = {[guid] = true}) by contribution: damage to the boss plus
+-- reward.healWeight x the healing done to the other participants. Every winner first gets the floor,
+-- floor(pool x reward.floorShare / n); the rest goes in proportion to the contribution (an even split when nobody has
+-- any), rounded down, and the rounding remainder goes to the top contributor: the shares sum to the pool exactly.
+-- Returns shares {[guid] = gold} and the list {{guid, gold, weight}} from the top contributor down.
+function B.splitGold(pool, winners, damage, healing, cfg)
+	local r = cfg.reward or {}
+	pool = math.max(0, floor(tonumber(pool) or 0))
+	local hw = r.healWeight or 1
+	local list, total = {}, 0
+	for guid in pairs(winners or {}) do
+		local w = math.max(0, tonumber((damage or {})[guid]) or 0) + hw * math.max(0, tonumber((healing or {})[guid]) or 0)
+		list[#list + 1] = {guid = guid, weight = w, gold = 0}
+		total = total + w
+	end
+	local shares = {}
+	local n = #list
+	if n == 0 then
+		return shares, list
+	end
+	table.sort(list, function(a, b)
+		if a.weight ~= b.weight then
+			return a.weight > b.weight
+		end
+		return a.guid < b.guid
+	end)
+	local base = floor(pool * math.min(1, math.max(0, r.floorShare or 0)) / n)
+	local rest = pool - base * n
+	local paid = 0
+	for _, e in ipairs(list) do
+		local part
+		if total > 0 then
+			part = floor(rest * e.weight / total)
+		else
+			part = floor(rest / n)
+		end
+		e.gold = base + part
+		paid = paid + e.gold
+	end
+	list[1].gold = list[1].gold + (pool - paid)
+	for _, e in ipairs(list) do
+		shares[e.guid] = e.gold
+	end
+	return shares, list
 end
 
 function B.gxp(players, cfg)

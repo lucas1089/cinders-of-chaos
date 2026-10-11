@@ -82,6 +82,8 @@ eq(V.goldEmbers('bad', 10000), 0, 'gold embers bad')
 eq(V.bossBoardLine({ rank = 1, name = 'Iron Crows', killed = true, seconds = 400, players = 9 }), '1. Iron Crows - slain in 6:40 by 9', 'board kill')
 eq(V.bossBoardLine({ rank = 2, name = 'Ashen Wolves', damage = 1234567 }), '2. Ashen Wolves - 1,234,567 damage', 'board damage')
 eq(V.contributorLine({ name = 'Vex', embers = 300, gold = 3000000 }), 'Vex: 300 embers (3,000,000 gold)', 'contributor')
+eq(V.spoilsLine({ name = 'Vex', gold = 2250000 }, 7500000), 'Vex: 2,250,000 gold (30%)', 'spoils share')
+eq(V.spoilsLine({ name = 'Ida', gold = 5 }, 0), 'Ida: 5 gold (0%)', 'spoils without a pool')
 
 if fails > 0 then os.exit(1) end
 print('guildwarview tests OK')

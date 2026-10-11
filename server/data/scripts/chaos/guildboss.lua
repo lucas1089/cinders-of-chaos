@@ -16,8 +16,11 @@
 --               need, not killed, attempts < max); a failed attempt gives back failKeep of the need.
 --   the fight   uber.lua's model: telegraphs, phases, adds, hazards, enrage and time limit, shared lives (a lethal hit
 --               sends the player to the antechamber's Ember Gate), health x (1 + healthPerExtraPlayer x (players - 1)).
---   rewards     every participant present at the kill with minDamageShare of the damage (or who healed): gold to the
---               bank balance and orbs; the guild: guild XP (guild levels), the kill counter (banner tier, trophy room),
+--   rewards     every participant present at the kill with minDamageShare of the damage (or who healed): a share of
+--               the kill's gold pool (B.goldPool, split by damage + healing with a floor, B.splitGold) to the bank
+--               balance, and the orbs each; the split is kept in chaos_guildboss_week.pool and
+--               chaos_guildboss_contrib.spoils / contribution (the tab's "This week's spoils") and the guild log.
+--               The guild: guild XP (guild levels), the kill counter (banner tier, trophy room),
 --               the lockout (storage Chaos.storage.guildBossLockout = the next reset, the Boss Spawns cooldown).
 --   board       this week's guilds: kills first (fastest), then the damage of their attempts.
 -- Exports: ChaosGuildBoss.view(player), ChaosGuildBoss.handle(player, action, data) (guildwar.lua routes the boss*
@@ -117,7 +120,11 @@ local SCHEMA = {
 	`week` int(10) unsigned NOT NULL, `started_at` int(10) unsigned NOT NULL DEFAULT 0, `ended_at` int(10) unsigned NOT NULL DEFAULT 0,
 	`players` smallint(5) unsigned NOT NULL DEFAULT 0, `result` varchar(12) NOT NULL DEFAULT '', `seconds` int(10) unsigned NOT NULL DEFAULT 0,
 	`damage` bigint(20) unsigned NOT NULL DEFAULT 0, PRIMARY KEY (`id`), KEY `chaos_guildboss_runs_guild` (`guild_id`, `week`))
-	ENGINE=InnoDB DEFAULT CHARSET=utf8]]
+	ENGINE=InnoDB DEFAULT CHARSET=utf8]],
+	-- the gold pool of the kill and each member's share of it (a database of the first version gets the columns)
+	[[ALTER TABLE `chaos_guildboss_week` ADD COLUMN IF NOT EXISTS `pool` bigint(20) unsigned NOT NULL DEFAULT 0]],
+	[[ALTER TABLE `chaos_guildboss_contrib` ADD COLUMN IF NOT EXISTS `spoils` bigint(20) unsigned NOT NULL DEFAULT 0,
+	ADD COLUMN IF NOT EXISTS `contribution` bigint(20) unsigned NOT NULL DEFAULT 0]]
 }
 
 function GB.ensureTables()
@@ -129,14 +136,16 @@ end
 -- this week's row of a guild (created when missing)
 function GB.weekRow(gid, week)
 	week = week or weekNow()
-	local cols = {{"fuel", "n"}, {"attempts", "n"}, {"killed_at", "n"}, {"best_seconds", "n"}, {"damage", "n"}, {"players", "n"}}
-	local q = string.format("SELECT `fuel`, `attempts`, `killed_at`, `best_seconds`, `damage`, `players` FROM `%s` WHERE `guild_id` = %d AND `week` = %d",
-		T().week, gid, week)
+	local cols = {{"fuel", "n"}, {"attempts", "n"}, {"killed_at", "n"}, {"best_seconds", "n"}, {"damage", "n"}, {"players", "n"},
+		{"pool", "n"}}
+	local q = string.format("SELECT `fuel`, `attempts`, `killed_at`, `best_seconds`, `damage`, `players`, `pool` FROM `%s` " ..
+		"WHERE `guild_id` = %d AND `week` = %d", T().week, gid, week)
 	local r = Chaos.select(q, cols)[1]
 	if not r then
 		db.query(string.format("INSERT IGNORE INTO `%s` (`guild_id`, `week`, `updated_at`) VALUES (%d, %d, %d)", T().week, gid, week, now()))
-		r = {fuel = 0, attempts = 0, killed_at = 0, best_seconds = 0, damage = 0, players = 0}
+		r = {fuel = 0, attempts = 0, killed_at = 0, best_seconds = 0, damage = 0, players = 0, pool = 0}
 	end
+	r.pool = r.pool or 0
 	return r
 end
 
@@ -302,7 +311,7 @@ function GB.view(player)
 	local t = now()
 	local v = {enabled = cfg.enabled, boss = cfg.boss.boss, minLevel = cfg.minLevel, minPlayers = cfg.minPlayers,
 		maxPlayers = cfg.maxPlayers, maxAttempts = cfg.maxAttempts, resetIn = math.max(0, B.nextReset(cfg, t) - t),
-		gold = {perEmber = cfg.gold.perEmber, min = cfg.gold.min}, materials = {}, contributors = {}, board = {}}
+		gold = {perEmber = cfg.gold.perEmber, min = cfg.gold.min}, materials = {}, contributors = {}, spoils = {}, board = {}}
 	for i, r in ipairs(GB.board()) do
 		if i > cfg.board.rows then
 			break
@@ -318,7 +327,7 @@ function GB.view(player)
 	local why = B.summonError(info, cfg)
 	v.guild = true
 	v.fuel, v.need, v.attempts, v.killed = row.fuel, info.need, row.attempts, row.killed_at > 0
-	v.bestSeconds, v.damage = row.best_seconds, row.damage
+	v.bestSeconds, v.damage, v.pool = row.best_seconds, row.damage, row.pool
 	v.canSummon = why == nil
 	v.reason = why or ""
 	v.hasHall = info.hasHall
@@ -336,8 +345,17 @@ function GB.view(player)
 		end
 	end
 	for _, r in ipairs(Chaos.select(string.format("SELECT `name`, `gold`, `embers` FROM `%s` WHERE `guild_id` = %d AND `week` = %d " ..
-			"ORDER BY `embers` DESC, `updated_at` ASC LIMIT 10", T().contrib, gid, weekNow()), {{"name", "s"}, {"gold", "n"}, {"embers", "n"}})) do
+			"AND `embers` > 0 ORDER BY `embers` DESC, `updated_at` ASC LIMIT 10", T().contrib, gid, weekNow()),
+			{{"name", "s"}, {"gold", "n"}, {"embers", "n"}})) do
 		v.contributors[#v.contributors + 1] = {name = r.name, gold = r.gold, embers = r.embers}
+	end
+	-- this week's split of the kill's gold pool (every rewarded participant)
+	if row.pool > 0 then
+		for _, r in ipairs(Chaos.select(string.format("SELECT `name`, `spoils` FROM `%s` WHERE `guild_id` = %d AND `week` = %d " ..
+				"AND `spoils` > 0 ORDER BY `spoils` DESC, `player_id` ASC LIMIT %d", T().contrib, gid, weekNow(), cfg.maxPlayers),
+				{{"name", "s"}, {"spoils", "n"}})) do
+			v.spoils[#v.spoils + 1] = {name = r.name, gold = r.spoils}
+		end
 	end
 	return v
 end
@@ -787,17 +805,40 @@ local function success(run)
 	pcall(G().addStat, run.gid, "guildBoss", 1)
 	local gxp = B.gxp(size, cfg)
 	pcall(G().addXp, run.gid, 0, "guildboss", gxp, true)
-	run.endText = string.format("%s falls in %s! The guild earns %d guild XP. You return to the hall in %d seconds.",
-		cfg.boss.boss, B.clockText(secs), gxp, cfg.exitDelay)
-	say(run, run.endText)
+	-- the guild's gold pool, split by contribution (damage + healing, with a floor) among the rewarded participants
 	local r = cfg.reward
+	local healing = run.healing or {}
+	local nWin = 0
+	for _ in pairs(winners) do
+		nWin = nWin + 1
+	end
+	local pool = B.goldPool(nWin, cfg)
+	local shares = B.splitGold(pool, winners, run.damage, healing, cfg)
+	db.query(string.format("UPDATE `%s` SET `pool` = %d WHERE `guild_id` = %d AND `week` = %d", T().week, pool, run.gid, run.week))
+	run.endText = string.format("%s falls in %s! The guild earns %d guild XP and %s gold, shared by contribution. " ..
+		"You return to the hall in %d seconds.", cfg.boss.boss, B.clockText(secs), gxp, B.money(pool), cfg.exitDelay)
+	say(run, run.endText)
 	for id, e in pairs(run.players) do
 		local p = Player(id)
-		if p then
-			if winners[e.guid] then
-				p:setBankBalance(p:getBankBalance() + r.gold)
+		if winners[e.guid] then
+			local gold = shares[e.guid] or 0
+			local contribution = math.floor((run.damage[e.guid] or 0) + (r.healWeight or 1) * (healing[e.guid] or 0))
+			if p then
+				p:setBankBalance(p:getBankBalance() + gold)
+			else
+				-- logged out in the arena: the share still reaches the bank
+				db.query(string.format("UPDATE `players` SET `balance` = `balance` + %d WHERE `id` = %d", gold, e.guid))
+			end
+			db.query(string.format("INSERT INTO `%s` (`guild_id`, `week`, `player_id`, `name`, `spoils`, `contribution`, `updated_at`) " ..
+				"VALUES (%d, %d, %d, %s, %d, %d, %d) ON DUPLICATE KEY UPDATE `spoils` = %d, `contribution` = %d, `name` = VALUES(`name`)",
+				T().contrib, run.gid, run.week, e.guid, db.escapeString(e.name or (p and p:getName()) or ""), gold, contribution, now(),
+				gold, contribution))
+			pcall(G().logRow, run.gid, p or e, "boss", gold, 0, 0, string.format("share of the guild boss gold: %s of %s",
+				B.money(gold), B.money(pool)))
+			if p then
 				local inbox = false
-				local parts = {B.money(r.gold) .. " gold to your bank"}
+				local parts = {string.format("%s gold to your bank (%d%% of the guild's %s)", B.money(gold),
+					pool > 0 and math.floor(gold * 100 / pool + 0.5) or 0, B.money(pool))}
 				for _, o in ipairs(r.orbs) do
 					local it = ItemType(o.id)
 					if it and it:getId() ~= 0 then
@@ -808,9 +849,9 @@ local function success(run)
 				p:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Spoils of the guild boss: " .. table.concat(parts, ", ") .. "." ..
 					(inbox and " Your backpack was full: the rest is in your inbox." or ""))
 				p:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
-			else
-				p:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You did too little of the damage for a share of the spoils.")
 			end
+		elseif p then
+			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, "You did too little of the damage for a share of the spoils.")
 		end
 	end
 	for _, m in ipairs(G().onlineMembers(run.gid)) do
@@ -835,6 +876,7 @@ local function success(run)
 		end
 	end, cfg.exitDelay * 1000, run.slot, run.id)
 end
+GB._success = success
 
 -- ======================================================================== the fight (uber.lua's, with this config)
 local COMBAT = {physical = "COMBAT_PHYSICALDAMAGE", death = "COMBAT_DEATHDAMAGE", energy = "COMBAT_ENERGYDAMAGE",
@@ -1201,7 +1243,7 @@ function GB.summon(player)
 	cleanSlot(L)
 	GB.nextId = GB.nextId + 1
 	local run = {id = GB.nextId, slot = slot, L = L, gid = gid, guildName = gname, week = week, need = info.need, players = {},
-		adds = {}, damage = {}, healers = {}, state = "running", boss = "waiting", size = #group, startedAt = now(),
+		adds = {}, damage = {}, healers = {}, healing = {}, state = "running", boss = "waiting", size = #group, startedAt = now(),
 		bossDueAt = mnow() + cfg.startDelay * 1000, deaths = 0}
 	run.lives = B.livesFor(cfg, #group)
 	run.livesMax = run.lives
@@ -1384,8 +1426,23 @@ local function scaled(creature, attacker, primaryDamage, primaryType, secondaryD
 	return primaryDamage, primaryType, secondaryDamage, secondaryType, run
 end
 
+-- the healing a participant does to the others (what restores missing health): their contribution to the gold split
+local function countHealing(creature, attacker, amount)
+	local run = GB.runOf[creature:getId()]
+	local healer = playerOf(attacker)
+	if run and run.state == "running" and healer and healer:getId() ~= creature:getId() and run.players[healer:getId()] then
+		local missing = math.max(0, creature:getMaxHealth() - creature:getHealth())
+		local guid = healer:getGuid()
+		run.healing[guid] = (run.healing[guid] or 0) + math.min(math.abs(amount or 0), missing)
+	end
+end
+GB._countHealing = countHealing
+
 local playerHit = CreatureEvent("ChaosGuildBossPlayerHit")
 function playerHit.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+	if primaryType == COMBAT_HEALING then
+		countHealing(creature, attacker, primaryDamage)
+	end
 	local run
 	primaryDamage, primaryType, secondaryDamage, secondaryType, run = scaled(creature, attacker, primaryDamage, primaryType,
 		secondaryDamage, secondaryType)

@@ -197,3 +197,11 @@ function V.contributorLine(c)
   return string.format('%s: %s embers%s', tostring(c.name or '?'), V.money(c.embers),
     (tonumber(c.gold) or 0) > 0 and string.format(' (%s gold)', V.money(c.gold)) or '')
 end
+
+-- a member's share of the kill's gold pool: 'Vex: 2,250,000 gold (30%)'
+function V.spoilsLine(sp, pool)
+  sp = sp or {}
+  local gold, total = tonumber(sp.gold) or 0, tonumber(pool) or 0
+  local pct = total > 0 and math.floor(gold * 100 / total + 0.5) or 0
+  return string.format('%s: %s gold (%d%%)', tostring(sp.name or '?'), V.money(gold), pct)
+end

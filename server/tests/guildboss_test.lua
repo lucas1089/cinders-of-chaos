@@ -1,9 +1,10 @@
 -- Run from the server/ folder: luajit tests/guildboss_test.lua (and lua5.3; CI runs both)
 -- The weekly guild boss: the pure rules (guildboss_core.lua) with the real guildboss_config.lua (the week, the fuel and
--- its gold / material rates, the summon checks with the weekly lockout, scaling and the balance targets, rewards,
--- banners, the board), the arena grid (inside its cells, clear of every other runtime area), the stone in the guild
--- hall layout, the monster XML; then guildboss.lua against a mocked engine: donations, the summon (one conditional
--- UPDATE that spends the need), a failed attempt keeping half of the need, the lockout after a kill.
+-- its gold / material rates, the summon checks with the weekly lockout, scaling and the balance targets, rewards (the
+-- gold pool and its split: exact sum, floor, proportionality, a single winner), banners, the board), the arena grid
+-- (inside its cells, clear of every other runtime area), the stone in the guild hall layout, the monster XML; then
+-- guildboss.lua against a mocked engine: donations, the summon (one conditional UPDATE that spends the need), a failed
+-- attempt keeping half of the need, a kill (healing counted, the shares to the banks, persisted and logged), the lockout.
 dofile("data/scripts/chaos/uber_core.lua")
 dofile("data/scripts/chaos/guildboss_core.lua")
 dofile("data/scripts/chaos/guild_core.lua")
@@ -118,6 +119,73 @@ ok(won[1] and won[2], "damage dealers")
 ok(not won[3], "under 1% of the damage")
 ok(won[4], "a healer")
 ok(not B.rewarded(dmg, {}, {[1] = true}, cfg)[2], "absent players get nothing")
+-- the gold pool of a kill and its split by contribution
+eq(B.goldPool(1, cfg), 1500000, "pool of one rewarded participant")
+eq(B.goldPool(5, cfg), 7500000, "pool of 5: as much as the old 1.5M each")
+eq(B.goldPool(10, cfg), 15000000, "pool of 10")
+eq(B.goldPool(20, cfg), 15000000, "pool capped at 10 participants")
+eq(B.goldPool(0, cfg), 0, "no winners, no pool")
+local function sum(t)
+	local n = 0
+	for _, v in pairs(t) do
+		n = n + v
+	end
+	return n
+end
+-- single participant: all of it
+local sh = B.splitGold(1500000, {[7] = true}, {[7] = 650000}, {}, cfg)
+eq(sh[7], 1500000, "a single participant gets the whole pool")
+sh = B.splitGold(1500000, {[7] = true}, {}, {}, cfg)
+eq(sh[7], 1500000, "a single participant without damage too")
+-- proportionality and the floor
+local pool5 = B.goldPool(5, cfg)
+local winners5 = {[1] = true, [2] = true, [3] = true, [4] = true, [5] = true}
+local dmg5 = {[1] = 400000, [2] = 200000, [3] = 100000, [4] = 100000, [5] = 0}
+local heal5 = {[5] = 200000}
+local list5
+sh, list5 = B.splitGold(pool5, winners5, dmg5, heal5, cfg)
+eq(sum(sh), pool5, "the shares sum to the pool")
+local floorGold = math.floor(pool5 * cfg.reward.floorShare / 5)
+eq(floorGold, 375000, "the floor of a 5-player kill")
+for guid in pairs(winners5) do
+	ok(sh[guid] >= floorGold, "every winner gets at least the floor")
+end
+eq(sh[3], sh[4], "equal contribution, equal share")
+eq(sh[2] - floorGold, 2 * (sh[3] - floorGold), "twice the contribution, twice the variable part")
+eq(sh[2], sh[5], "healing counts like damage")
+ok(sh[1] > sh[2] and sh[2] > sh[3], "more contribution, more gold")
+eq(list5[1].guid, 1, "the top contributor first")
+eq(sh[1], floorGold + (pool5 - 5 * floorGold) * 4 / 10, "the top share: floor + 40% of the rest")
+-- the minimum share: a winner with no contribution at all still gets the floor
+sh = B.splitGold(pool5, winners5, {[1] = 10 ^ 9}, {}, cfg)
+eq(sh[2], floorGold, "no contribution: exactly the floor")
+eq(sh[1], pool5 - 4 * floorGold, "the rest to the only contributor")
+-- rounding: an awkward pool and weights, the remainder to the top contributor
+local w3 = {[11] = true, [12] = true, [13] = true}
+sh = B.splitGold(1000001, w3, {[11] = 1, [12] = 1, [13] = 1}, {}, cfg)
+eq(sum(sh), 1000001, "the shares sum to an odd pool exactly")
+eq(sh[11], sh[12] + 2, "the rounding remainder to the top contributor (lowest guid on a tie)")
+eq(sh[12], sh[13], "the others round down evenly")
+sh = B.splitGold(7777777, w3, {[11] = 333, [12] = 777, [13] = 1}, {[13] = 5}, cfg)
+eq(sum(sh), 7777777, "uneven weights sum exactly")
+ok(sh[12] > sh[11] and sh[11] > sh[13], "order of the shares")
+math.randomseed(70)
+for _ = 1, 200 do
+	local n = math.random(1, 20)
+	local w, d, h = {}, {}, {}
+	for i = 1, n do
+		w[i] = true
+		d[i] = math.random(0, 3) == 0 and 0 or math.random(1, 2000000)
+		h[i] = math.random(0, 2) == 0 and math.random(1, 300000) or nil
+	end
+	local p = B.goldPool(n, cfg) + math.random(0, 99)
+	local s2 = B.splitGold(p, w, d, h, cfg)
+	eq(sum(s2), p, "random split sums to the pool")
+	for i = 1, n do
+		ok(s2[i] >= math.floor(p * cfg.reward.floorShare / n), "random split keeps the floor")
+	end
+end
+eq(next((B.splitGold(1000, {}, {}, {}, cfg))), nil, "no winners, no shares")
 eq(B.gxp(5, cfg), 500, "guild XP of 5")
 eq(B.gxp(40, cfg), cfg.gxp.max, "guild XP capped")
 local tier, name, nextAt = B.banner(0, cfg)
@@ -247,6 +315,8 @@ Game = {createTile = function() return {getGround = function() return nil end} e
 	broadcastMessage = function() end}
 -- database
 local WEEK = {}
+local SPOILS = {}
+local guildLog = {}
 local lastExec
 db = {escapeString = function(s) return "'" .. tostring(s) .. "'" end, asyncQuery = function() return true end}
 function db.query(q)
@@ -263,6 +333,16 @@ function db.query(q)
 		r.fuel = r.fuel + tonumber(keep)
 		return true
 	end
+	local pool, gidp, wkp = q:match("UPDATE `chaos_guildboss_week` SET `pool` = (%d+) WHERE `guild_id` = (%d+) AND `week` = (%d+)")
+	if pool then
+		WEEK[gidp .. ":" .. wkp].pool = tonumber(pool)
+		return true
+	end
+	local spoilPid, spoils = q:match("INSERT INTO `chaos_guildboss_contrib` %(.-`spoils`.-VALUES %(%d+, %d+, (%d+), '[^']*', (%d+),")
+	if spoilPid then
+		SPOILS[tonumber(spoilPid)] = tonumber(spoils)
+		return true
+	end
 	local killed, gid3, wk3 = q:match("UPDATE `chaos_guildboss_week` SET `killed_at` = (%d+).-WHERE `guild_id` = (%d+) AND `week` = (%d+)")
 	if killed then
 		WEEK[gid3 .. ":" .. wk3].killed_at = tonumber(killed)
@@ -275,7 +355,7 @@ Chaos.select = function(q)
 	if gid then
 		local r = WEEK[gid .. ":" .. wk]
 		return r and {{fuel = r.fuel, attempts = r.attempts, killed_at = r.killed_at, best_seconds = r.best_seconds, damage = r.damage,
-			players = r.players}} or {}
+			players = r.players, pool = r.pool}} or {}
 	end
 	return {}
 end
@@ -292,7 +372,7 @@ ChaosGuild = {
 	inHall = function(pos) return pos.hall and 1 or nil, pos.hall and 4 or nil end,
 	onlineMembers = function() return members end,
 	tellGuild = function() end,
-	logRow = function() end,
+	logRow = function(gid, who, action, amount, _, _, text) guildLog[#guildLog + 1] = {action = action, amount = amount, text = text} end,
 	addStat = function() end,
 	addXp = function() end,
 	payFromPlayer = function(player, n)
@@ -336,6 +416,13 @@ local function member(id, rank, level, money)
 	function p:getItemCount(id) return self.items[id] or 0 end
 	function p:removeItem(id, n) self.items[id] = (self.items[id] or 0) - n return true end
 	function p:setStorageValue(k, v) self.storage = v end
+	p.bank, p.hp, p.maxHp = 0, 1000, 1000
+	function p:isPlayer() return true end
+	function p:getHealth() return self.hp end
+	function p:getMaxHealth() return self.maxHp end
+	function p:getBankBalance() return self.bank end
+	function p:setBankBalance(v) self.bank = v end
+	function p:getInbox() return nil end
 	members[#members + 1] = p
 	return p
 end
@@ -397,6 +484,58 @@ GB._fail(run, "Test.")
 eq(WEEK[key].fuel, 50 + 375, "half of the need back")
 eq(GB.guildRun[4], nil, "the run is over")
 ok(not GB.isInside(leader), "everyone left")
+
+-- a kill: one gold pool, split by contribution, to each rewarded member's bank; orbs each; the split persisted
+WEEK[key].fuel = 800
+NOW = NOW + 2
+okd, text = GB.handle(leader, "bossSummon", {})
+eq(okd, true, "second summon: " .. tostring(text))
+run = GB.guildRun[4]
+run.damage[leader:getGuid()] = 600000
+run.damage[m2:getGuid()] = 200000
+leader.hp = 400
+GB._countHealing(leader, m2, 999999)
+eq(run.healing[m2:getGuid()], 600, "healing counts the missing health only")
+GB._countHealing(m2, m2, 500)
+eq(run.healing[m2:getGuid()], 600, "healing oneself does not count")
+eq(run.healing[leader:getGuid()], nil, "no healing from the leader")
+leader.hp = 1000
+run.healing[m2:getGuid()] = 100000
+leader.msgs, m2.msgs = {}, {}
+GB._success(run)
+local pool2 = B.goldPool(2, cfg)
+eq(WEEK[key].pool, pool2, "the pool is kept in the week row")
+local sh2 = B.splitGold(pool2, {[leader:getGuid()] = true, [m2:getGuid()] = true},
+	{[leader:getGuid()] = 600000, [m2:getGuid()] = 200000}, {[m2:getGuid()] = 100000}, cfg)
+eq(leader.bank, sh2[leader:getGuid()], "the leader's share to the bank")
+eq(m2.bank, sh2[m2:getGuid()], "the healer's share to the bank")
+eq(leader.bank + m2.bank, pool2, "the bank credits sum to the pool")
+ok(leader.bank > m2.bank, "more contribution, more gold")
+eq(SPOILS[leader:getGuid()], leader.bank, "the leader's share persisted")
+eq(SPOILS[m2:getGuid()], m2.bank, "the healer's share persisted")
+local logged = 0
+for _, row in ipairs(guildLog) do
+	if row.action == "boss" and row.text:find("share of the guild boss gold") then
+		logged = logged + row.amount
+	end
+end
+eq(logged, pool2, "the guild log holds the split")
+local spoilMsg
+for _, t in ipairs(leader.msgs) do
+	if t:find("Spoils of the guild boss") then
+		spoilMsg = t
+	end
+end
+ok(spoilMsg and spoilMsg:find(B.money(leader.bank), 1, true) and spoilMsg:find(B.money(pool2), 1, true), "the kill message shows the share and the pool")
+ok(spoilMsg:find("Orbs", 1, true) or spoilMsg:find("items", 1, true), "orbs still given")
+eq(WEEK[key].killed_at, NOW, "killed this week")
+local v = GB.view(leader)
+eq(v.pool, pool2, "the view carries the pool")
+-- the exit after the kill: everyone back in the hall
+local exitEv = events[#events]
+eq(exitEv.ms, cfg.exitDelay * 1000, "the exit is queued")
+exitEv.fn((table.unpack or unpack)(exitEv.args))
+ok(not GB.isInside(leader) and GB.guildRun[4] == nil, "everyone left after the kill")
 
 -- the lockout: once the guild killed it this week, no summon and no more donations
 WEEK[key].killed_at = NOW

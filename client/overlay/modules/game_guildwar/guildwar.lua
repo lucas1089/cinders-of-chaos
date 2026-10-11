@@ -266,6 +266,11 @@ local function fillBoss(d)
     local cs = list(b.contributors)
     if #cs == 0 then text(tr('No embers yet.'), '#8c8070') end
     for _, c in ipairs(cs) do text(V.contributorLine(c)) end
+    if (tonumber(b.pool) or 0) > 0 then
+      section(tr('This week\'s spoils: %s gold', V.money(b.pool)))
+      text(tr('Split among the rewarded fighters by damage and healing; everyone gets a floor share.'), '#8c8070')
+      for _, sp in ipairs(list(b.spoils)) do text(V.spoilsLine(sp, b.pool)) end
+    end
   else
     text(stateText, stateColor)
   end

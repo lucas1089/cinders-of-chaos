@@ -4854,12 +4854,21 @@ closes at 13:00; shared lives 3 + 1 per 3 more players (a lethal hit sends the p
 antechamber, back after 8 s). Balance model (level 600 characters, 1,400 dps at 75% uptime): about 495 s with 2, 420 s
 with 5, 395 s with 10 (tests keep them within 10% and before the enrage). The rift HUD (opcode 228) shows the fight.
 
-**Rewards.** Every participant present at the kill who dealt 1% of the damage or healed: 1,500,000 gold to the bank
-balance, 6 Orbs of Upheaval, 2 Orbs of Fate. The guild: 400 + 20 per participant guild XP (at most 800), the counter
+**Rewards.** Every participant present at the kill who dealt 1% of the damage or healed is rewarded: 6 Orbs of Upheaval
+and 2 Orbs of Fate each, and a share of one **gold pool** for the guild. The pool is 1,500,000 per rewarded participant,
+counted up to 10 (2: 3M, 5: 7.5M, 10 or more: 15M; `reward.pool`), so a 5-10 player kill pays the same total as the old
+fixed 1.5M each and larger guilds share the 15M. The split (`B.splitGold`): everyone first gets 25% of an even split
+(`floorShare`; 375,000 with 5 and with 10 rewarded), the rest goes in proportion to the contribution,
+damage to the boss + healing done to the other participants (only the missing health counts; `healWeight` 1). Shares
+are rounded down and the remainder goes to the top contributor, so they sum to the pool exactly. Each share goes to the
+bank balance (a member who logged out in the arena gets it by an UPDATE of `players.balance`), is shown in the kill
+message ("x gold to your bank (y% of the guild's pool)"), kept in `chaos_guildboss_week.pool` and
+`chaos_guildboss_contrib.spoils` / `contribution` (the Guild Boss tab's "This week's spoils") and in the guild log
+(action `boss`). The guild: 400 + 20 per participant guild XP (at most 800), the counter
 `guildBoss` (trophy room line, banner tiers Ember 1 / Cinder 4 / Blazing 10 / Undying Flame 20 kills shown on the hall
 flags), the weekly lockout (`chaos_guildboss_week.killed_at`; storage 7101302 = the next reset for the members: the Boss
 Spawns cooldown of the "Guild Boss" row). The boss also gives its XML experience and the loot system's boss bonus like
-other bosses.
+other bosses (unchanged by the pool).
 
 **Board.** This week's guilds: kills first (fastest), then the damage of their attempts (`chaos_guildboss_week`, every
 attempt in `chaos_guildboss_runs`).
@@ -4870,7 +4879,8 @@ battleground (x/y 11264-11455 at y 11264+) and the hideouts (12288+); `tests/gui
 Staff: `/guildboss` (runs), `/guildboss fuel, <guild>, <n>`, `/guildboss reset, <guild>`, `/guildboss phase, <n>`,
 `/guildboss end`. Tested on a live test server: the stone in the hall, gold and orb donations, the summon with two
 members, telegraphs, falls to the Ember Gate, phase 2, the kill (rewards, 440 guild XP, the Ember Banner on the flags),
-the lockout and the Boss Spawns row.
+the lockout and the Boss Spawns row. The gold pool split is covered by the unit and mocked-engine tests only (not yet
+on the live test server).
 
 ## Arena (`arena.lua`, `arena_core.lua`, `arena_config.lua`, client `game_arena`)
 

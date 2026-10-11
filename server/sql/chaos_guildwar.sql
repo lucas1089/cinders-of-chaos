@@ -8,8 +8,10 @@
 --   the end reason, the gold held (escrow1 / escrow2) and paid out (payout) or burnt (fee). war_id = guild_wars.id.
 -- chaos_guildwar_kills: every war kill with its verdict (counted, or the anti-farming reason it did not count).
 -- chaos_guildboss_week: per guild and week (YYYYMMDD of the Monday): the Summoning Stone's fuel (embers), the summons
---   used, the kill (killed_at, best_seconds, players) and the damage of every attempt (the weekly board).
--- chaos_guildboss_contrib: per guild, week and member: the gold given and the embers it and the materials made.
+--   used, the kill (killed_at, best_seconds, players), the damage of every attempt (the weekly board) and the kill's
+--   gold pool (pool).
+-- chaos_guildboss_contrib: per guild, week and member: the gold given and the embers it and the materials made; after
+--   the kill the member's share of the gold pool (spoils) and the contribution it was split by (damage + healing).
 -- chaos_guildboss_runs: one row per attempt (players, result, seconds, damage).
 
 CREATE TABLE IF NOT EXISTS `chaos_guildwar` (`id` int(11) NOT NULL AUTO_INCREMENT, `war_id` int(11) NOT NULL DEFAULT 0,
@@ -38,13 +40,20 @@ CREATE TABLE IF NOT EXISTS `chaos_guildboss_week` (`guild_id` int(11) NOT NULL, 
   `fuel` int(10) unsigned NOT NULL DEFAULT 0, `attempts` tinyint(3) unsigned NOT NULL DEFAULT 0,
   `killed_at` int(10) unsigned NOT NULL DEFAULT 0, `best_seconds` int(10) unsigned NOT NULL DEFAULT 0,
   `damage` bigint(20) unsigned NOT NULL DEFAULT 0, `players` smallint(5) unsigned NOT NULL DEFAULT 0,
+  `pool` bigint(20) unsigned NOT NULL DEFAULT 0,
   `updated_at` int(10) unsigned NOT NULL DEFAULT 0, PRIMARY KEY (`guild_id`, `week`), KEY `chaos_guildboss_week_week` (`week`))
   ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `chaos_guildboss_contrib` (`guild_id` int(11) NOT NULL, `week` int(10) unsigned NOT NULL,
   `player_id` int(11) NOT NULL, `name` varchar(255) NOT NULL DEFAULT '', `gold` bigint(20) unsigned NOT NULL DEFAULT 0,
-  `embers` int(10) unsigned NOT NULL DEFAULT 0, `updated_at` int(10) unsigned NOT NULL DEFAULT 0,
+  `embers` int(10) unsigned NOT NULL DEFAULT 0, `spoils` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `contribution` bigint(20) unsigned NOT NULL DEFAULT 0, `updated_at` int(10) unsigned NOT NULL DEFAULT 0,
   PRIMARY KEY (`guild_id`, `week`, `player_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- a database made by the first version: the gold split columns (MariaDB's ADD COLUMN IF NOT EXISTS)
+ALTER TABLE `chaos_guildboss_week` ADD COLUMN IF NOT EXISTS `pool` bigint(20) unsigned NOT NULL DEFAULT 0;
+ALTER TABLE `chaos_guildboss_contrib` ADD COLUMN IF NOT EXISTS `spoils` bigint(20) unsigned NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `contribution` bigint(20) unsigned NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS `chaos_guildboss_runs` (`id` int(11) NOT NULL AUTO_INCREMENT, `guild_id` int(11) NOT NULL,
   `week` int(10) unsigned NOT NULL, `started_at` int(10) unsigned NOT NULL DEFAULT 0, `ended_at` int(10) unsigned NOT NULL DEFAULT 0,
