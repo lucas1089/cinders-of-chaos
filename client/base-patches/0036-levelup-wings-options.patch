@@ -1,0 +1,75 @@
+# Level-up wings settings (client/MANIFEST.md "game_levelwings"): two options in Options > Effects, "Level-up wings on my character" (levelWingsOwn) and "Level-up wings on other characters" (levelWingsOthers), both on by default. The overlay module game_levelwings reads them; without this patch both count as on.
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -1936,6 +1936,15 @@
+         end,
+ 	},
+ 
++  -- level-up wings (overlay module game_levelwings): on your own character and on others
++  levelWingsOwn = {
++    value = true,
++  },
++
++  levelWingsOthers = {
++    value = true,
++  },
++
+   enableShaders = {
+     value = true,
+     apply = function(value)
+--- a/mods/client_settings/options/effects.otui
++++ b/mods/client_settings/options/effects.otui
+@@ -457,6 +457,53 @@
+       margin-top: 1
+       image-source: /images/skin/show-gui-help-grey
+       !tooltip: tr('Activate this to experience all in-game effects with no limitations.\nOffering a complete and immersive gaming experience')
++  FlatPanel
++    size: 505 44
++    anchors.top: prev.bottom
++    anchors.left: parent.left
++    margin-top: 5
++    margin-left: 4
++    margin-right: 4
++
++    SettingsCheckBox
++      id: levelWingsOwn
++      size: 12 12
++      !text: tr('Level-up wings on my character')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: parent.top
++      margin-top: 7
++      margin-left: 16
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++
++    SettingsCheckBox
++      id: levelWingsOthers
++      size: 12 12
++      !text: tr('Level-up wings on other characters')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: prev.bottom
++      margin-top: 6
++      margin-left: 16
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++
++    UIWidget
++      size: 12 12
++      anchors.top: parent.top
++      anchors.right: parent.right
++      margin-right: 5
++      margin-top: 7
++      image-source: /images/skin/show-gui-help-grey
++      !tooltip: tr('Golden wings open behind a character for a moment when it gains a level.\nThe level-up text and effect show either way.')
++
+   Button
+     id: resetButton
+     size: 43 20

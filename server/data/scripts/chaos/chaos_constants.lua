@@ -700,6 +700,10 @@ Chaos.clientServices = {
 -- Party Finder (LFG) window (client game_partyfinder; party_finder.lua, party_finder_core.lua, party_finder_config.lua)
 ChaosOpcodes.partyFinder = 208
 
+-- Level-up wings: golden wings open behind a character that gains a level, server -> client to every player who sees
+-- it (client game_levelwings; levelwings.lua, levelwings_core.lua, levelwings_config.lua); no storages, no tables
+ChaosOpcodes.levelWings = 191
+
 -- Classes (docs/CLASSES.md). Logic in classes.lua (ChaosClasses), the ascension in ascension.lua, the migration of the
 -- old vocations in class_migration.lua, the combat mechanics in thief_combat.lua (Thief line), berserker_combat.lua (Rage,
 -- Bloodrage) and beastmaster.lua (the companion), the spells in data/spells/chaos/<class>/.

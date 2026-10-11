@@ -306,6 +306,7 @@ working directory, as with the rest of the base server libs).
 | game_pets | `pets.lua`, `pets_core.lua`, `pets_config.lua` | 254, Character > Pets / `/pet` | Pets: one companion out at a time that follows its owner, levels from kills, two small abilities per species; drops, store and achievements; tested in game (see "Pets"). |
 | game_buffbar | `buffbar.lua`, `data/lib/chaos_buffs.lua` | 234 (server -> client), Character > Buff Bar | Buff / debuff bar: icons with a countdown and stacks for the engine conditions, the Chaos class buffs, world buffs, the Victory buff, world events, trial kill stacks, chi, Rage and Reprisal; diffs only; tested in game (see "Buff bar and party frames"). |
 | game_partyframes | `partyframes.lua`, `partyframes_core.lua` | 235, Hunt > Party Frames | Party frames: health, mana, level, floor, distance, state and buffs of the party members every 500 ms, exact numbers only in range; kick / pass leadership / invite actions checked on the server; tested in game with three characters (see "Buff bar and party frames"). |
+| game_levelwings | `levelwings.lua`, `levelwings_core.lua`, `levelwings_config.lua` | **191** (server -> client) | Level-up wings: golden wings open behind a character that gains a level, seen by every player on screen (see "Level-up wings"). Tested in game. |
 | game_bestiary | `bestiary.lua`, `bestiary_core.lua`, `bestiary_config.lua`, `bestiary_spawns.lua` | 253, Hunt > Bestiary, Hunt > Kill Tasks | Bestiary (an entry per monster, four stages by kills, completion bonus, points and ranks), personal kill tasks with daily / weekly limits, task tracker HUD with the bounty contracts; tested in game (see "Bestiary and kill tasks"). |
 | game_itemtooltip | `item_tooltip.lua`, `item_tooltip_core.lua` (client also `game_itemrarity`) | 242 | Rich item tooltips on hover (inventory, open containers): rarity, item level, base stats, every modifier with its tier and roll range, sockets and gems, unique and set (pieces worn, bonuses active: "Item sets"), requirements; Ctrl compares with the equipped item(s) of the same slot. Rarity frames from the item custom attributes of engine patch 0003; tested in game (see "Item attributes in packets and rich tooltips"). |
 | game_chatlinks | `itemlink.lua`, `itemlink_core.lua` (client also `game_itemtooltip`) | 249, Shift+click an item | Item links in chat: the server checks the player carries the item and keeps a snapshot of its tooltip for 10 minutes under a random id; the link travels as ordinary speech `[Item Name]{<r><id>}` in every channel; receivers ask for the snapshot on hover. Limits, Help channel rule (`tools/patch_help_itemlinks.py`); tested in game with two clients (see "Item links in chat"). |
@@ -7342,6 +7343,33 @@ meantime). The server is the authority: the client draws what it is told and cou
   and stay as they are, so the stock states show twice; the order of the icons is the server's after a full list and the
   order of arrival between two (nothing jumps about); the party frames' outfit is the character's whole outfit in a small
   square (class outfits are larger than a tile, so they are drawn small); Hex / Brand marks on the target are not done.
+
+## Level-up wings (`levelwings.lua`, `levelwings_core.lua`, `levelwings_config.lua`, client `game_levelwings`)
+
+When a character gains a level, a pair of golden wings opens behind it for about 1.8 s, and everyone on screen sees it.
+The stock level-up text and magic effect are the engine's and stay as they were. No change to the `.dat` / `.spr` pair
+and no engine patch: the client draws PNG frames as creature widgets (client/MANIFEST.md "game_levelwings").
+
+- **Trigger:** a `CreatureEvent` `onAdvance` (`ChaosLevelWingsAdvance`, registered at login) for `SKILL_LEVEL` with a
+  higher new level. Several levels from one experience gain are one `onAdvance` call, so they play once; a level lost on
+  death plays nothing.
+- **Message:** extended opcode **191**, JSON `{"action": "play", "data": {"id": <creature id>, "lv": <new level>, "n":
+  <levels gained>}}` (about 60 bytes), to every player `Game.getSpectators(pos, false, true)` returns (the character
+  itself included; this floor only, `multifloor` in the config).
+- **Throttles** (`levelwings_config.lua`): one play per character per 4 s (`playerCooldownMs`; a staff `set_level` pressed
+  again and again, kills that each give a level), at most 3 plays per viewer per second (`viewerMax`), at most 40
+  broadcasts per second for the whole server (`globalMax`). A dropped play costs nothing and does not spend the
+  character's cooldown. Entries are pruned after a minute and dropped at logout.
+- **Client settings:** Options > Graphics > Effects, "Level-up wings on my character" and "Level-up wings on other
+  characters" (client base patch 0036), both on by default. The server sends to everyone; each client decides.
+- **Opcode:** 191 is free in the reference server, the base client (`ExtendedIds`) and every Chaos script and module
+  (189 / 190 client guard, 199 the Gambler). No storages, no tables.
+- **Tests:** `tests/levelwings_test.lua` (opcode unique and not a base one, the payload, the per-character cooldown, the
+  server-wide and per-viewer budgets with their windows, prune and forget, and `levelwings.lua` against a mocked engine:
+  the events, one message per spectator, cooldown, other skills and a lost level, an engine error caught); client
+  `game_levelwings/levelwingsmath_test.lua` (frame timing, layer, size, settings rule, message check). Tested on a live
+  test server with two Linux clients: a real level-up through `addExperience` showed the wings to the character and to
+  a second player next to it; each setting turned off hid them on that client only.
 
 ## Boss spawns (`bossspawns.lua`, `bossspawns_core.lua`, `bossspawns_config.lua`, `sql/chaos_boss_spawns.sql`, client `game_bossspawns`)
 
