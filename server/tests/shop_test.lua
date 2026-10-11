@@ -168,6 +168,26 @@ ok(K.giftProblem({found = true, banned = true}), "banned")
 ok(K.giftProblem({found = true, self = true}), "self")
 ok(K.giftProblem({found = true, kind = "service"}), "services are not giftable")
 eq(K.giftProblem({found = true, kind = "outfit"}), nil, "ok")
+-- Chaos Coin gifts: a hold after the last donation, a daily cap, no banned receiver; chargebacks claw back
+local CG = cfg.coinGifts
+ok(CG and CG.holdDays >= 7 and CG.perDay > 0, "coin gift rules configured")
+local T0 = 1700000000
+ok(K.coinGiftProblem(CG, {now = T0, amount = 10, targetBanned = true}), "no coin gift to a banned account")
+ok(K.coinGiftProblem(CG, {now = T0, amount = 10, lastCredited = T0 - 86400}), "no coin gift the day after a donation")
+eq(K.coinGiftProblem(CG, {now = T0, amount = 10, lastCredited = T0 - CG.holdDays * 86400}), nil, "allowed after the hold")
+eq(K.coinGiftProblem(CG, {now = T0, amount = 10, lastCredited = 0}), nil, "never donated: allowed")
+ok(K.coinGiftProblem(CG, {now = T0, amount = 11, giftedToday = CG.perDay - 10}), "daily cap")
+eq(K.coinGiftProblem(CG, {now = T0, amount = 10, giftedToday = CG.perDay - 10}), nil, "up to the cap")
+local plan, rest = K.clawbackPlan(700, {{id = 3, to_account = 9, amount = 500, clawed = 0, balance = 300},
+	{id = 2, to_account = 8, amount = 500, clawed = 100, balance = 1000}, {id = 1, to_account = 7, amount = 500, clawed = 0, balance = 1000}})
+eq(#plan, 2, "two receivers")
+eq(plan[1].take, 300, "the newest gift: what its receiver still has")
+eq(plan[2].take, 400, "then the next: its unclawed rest")
+eq(rest, 0, "all recovered")
+plan, rest = K.clawbackPlan(900, {{id = 5, to_account = 9, amount = 500, clawed = 0, balance = 200},
+	{id = 4, to_account = 9, amount = 500, clawed = 0, balance = 200}})
+eq(#plan, 1, "one receiver's balance is shared by its gifts")
+eq(rest, 700, "the rest is flagged")
 local coins = dofile("data/scripts/chaos/shop_coins_config.lua")
 local packs = {}
 for _, p in ipairs(coins.packs) do packs[p.key] = p end
@@ -571,6 +591,69 @@ end
 Shop.processOrders()
 Chaos.select = realSelect
 eq(DB.orders[#DB.orders].status, "refunded", "refunded order left alone"); eq(DB.coins[77], 2300, "no coins for a refunded order")
+
+-- Chaos Coin gifts through shop.lua: hold, cap, ban, ledger
+do
+	local G1 = newPlayer("Giver", {account = 501})
+	local R1 = newPlayer("Receiver", {account = 502})
+	local orders, ledger = {}, {}
+	DB.coins[501] = 10000
+	local baseSelect, baseQuery = Chaos.select, db.query
+	Chaos.select = function(q, cols)
+		if q:find("MAX(`credited`)", 1, true) then
+			local acc = tonumber(q:match("`account_id` = (%d+)"))
+			return {{t = orders[acc] or 0, id = orders[acc] and 1 or 0}}
+		elseif q:find("FROM `chaos_coin_gifts`", 1, true) then
+			local from, since = tonumber(q:match("`from_account` = (%d+)")), tonumber(q:match("`created` >= (%d+)"))
+			local sum = 0
+			for _, g in ipairs(ledger) do if g.from == from and g.created >= since then sum = sum + g.amount end end
+			return {{n = sum}}
+		end
+		return baseSelect(q, cols)
+	end
+	db.query = function(q)
+		local f, t, a, o, c = q:match("INSERT INTO `chaos_coin_gifts` .- VALUES %((%d+), (%d+), (%d+), (%d+), (%d+)%)")
+		if f then ledger[#ledger + 1] = {from = tonumber(f), to = tonumber(t), amount = tonumber(a), order = tonumber(o), created = tonumber(c)}; return true end
+		return baseQuery(q)
+	end
+	orders[501] = os.time() - 3600
+	request(G1, "gift_coins", {name = "Receiver", amount = 100})
+	eq(DB.coins[501], 10000, "no coin gift right after a donation")
+	ok(last("message").data.msg:find("days after your last donation", 1, true), "told why")
+	orders[501] = os.time() - (cfg.coinGifts.holdDays + 1) * 86400
+	request(G1, "gift_coins", {name = "Receiver", amount = 100})
+	eq(DB.coins[501], 9900, "gift after the hold")
+	eq(DB.coins[502], 100, "received")
+	eq(#ledger, 1, "the gift is in the ledger")
+	eq(ledger[1].order, 1, "with the sender's last credited order")
+	request(G1, "gift_coins", {name = "Receiver", amount = cfg.coinGifts.perDay})
+	eq(DB.coins[501], 9900, "over the daily cap: refused")
+	DB.banned = {[502] = true}
+	request(G1, "gift_coins", {name = "Receiver", amount = 100})
+	eq(DB.coins[501], 9900, "no coin gift to a banned account")
+	DB.banned = nil
+	Chaos.select, db.query = baseSelect, baseQuery
+	-- /coins creates store currency: a gamemaster (group 4) is refused, an administrator (group 5) may; both logged
+	local gm = newPlayer("Gamemaster", {group = 4, account = 601})
+	local god = newPlayer("Admin", {group = 5, account = 602})
+	for _, p in ipairs({gm, god, R1}) do
+		function p:getGroup() local g = self.group; return {getId = function() return g end, getAccess = function() return g >= 4 end} end
+		function p:sendCancelMessage(t) self.cancel = t end
+		function p:sendTextMessage() end
+	end
+	local logged = {}
+	ChaosAdmin = {log = function(p, action, _, params, status) logged[#logged + 1] = {p = p, action = action, status = status} end}
+	local before = DB.coins[502]
+	eq(talks["/coins"].onSay(gm, "/coins", "Receiver, 500"), false, "staff words are swallowed")
+	eq(DB.coins[502], before, "a gamemaster cannot create coins")
+	eq(logged[1] and logged[1].status, "denied", "the refusal is logged")
+	talks["/coins"].onSay(god, "/coins", "Receiver, 500")
+	eq(DB.coins[502], before + 500, "an administrator can")
+	eq(logged[2] and logged[2].action, "talk/coins", "the use is logged")
+	eq(talks["/coins"].onSay(R1, "/coins", "Receiver, 500"), true, "a player: said as chat, nothing else")
+	eq(#logged, 2, "players are not logged")
+	ChaosAdmin = nil
+end
 
 -- a reload builds the same store and keeps what was bought
 local keysBefore = #Shop.view(A)

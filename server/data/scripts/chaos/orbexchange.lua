@@ -1090,8 +1090,10 @@ sweep:register()
 -- staff: /orbx sweep | info <order id> | escrow
 local staffCmd = TalkAction("/orbx")
 function staffCmd.onSay(player, words, param)
-	if not player:getGroup():getAccess() then
-		return true
+	-- reports and the expiry sweep (nothing is created): staff, every use in the audit log (chaos_constants.lua)
+	local allowed, staff = Chaos.staffCommand(player, words, param, false)
+	if not allowed then
+		return not staff
 	end
 	local p = tostring(param or ""):gsub("^%s+", "")
 	if p == "sweep" then

@@ -1936,8 +1936,10 @@ marketItem:register()
 -- staff: /market sweep | info <offer id> | orders [character]
 local staffCmd = TalkAction("/market")
 function staffCmd.onSay(player, words, param)
-	if not player:getGroup():getAccess() then
-		return true
+	-- reports and the expiry sweep (nothing is created): staff, every use in the audit log (chaos_constants.lua)
+	local allowed, staff = Chaos.staffCommand(player, words, param, false)
+	if not allowed then
+		return not staff
 	end
 	local p = tostring(param or ""):gsub("^%s+", "")
 	if p == "sweep" then

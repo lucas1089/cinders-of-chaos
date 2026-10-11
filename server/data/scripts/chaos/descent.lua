@@ -1408,6 +1408,11 @@ function X.tick(slot, rid)
 	if run.ended then
 		return
 	end
+	-- strangers in this slot (a town portal or a stored hideout spot let them in): out (chaos_constants.lua)
+	if Chaos.sweepDue and Chaos.sweepDue(run, now * 1000) then
+		Chaos.sweepIntruders(function(pos) return R.slotOfPos(C(), pos) == run.slot end,
+			function(p) return run.players[p:getId()] ~= nil end, "You are not part of this descent: you were sent to your temple.")
+	end
 	if run.state == "rest" and now >= (run.restUntil or now) then
 		for pid in pairs(run.players) do
 			run.ready[pid] = true
@@ -1809,6 +1814,10 @@ end
 function X.isInside(player)
 	return X.runOf[player:getId()] ~= nil
 end
+
+Chaos.registerInstance("descent", {label = "the Ember Descent", inside = X.isInside, at = function(pos)
+	return R.slotOfPos(C(), pos) ~= nil
+end})
 
 if ChaosTitles and ChaosTitles.register then
 	ChaosTitles.register("descent", function(player)

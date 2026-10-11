@@ -53,6 +53,12 @@ S.built = S.built or {} -- slot -> true
 S.bad = S.bad or {} -- slot -> reason
 S.guardianOf = S.guardianOf or {} -- monster id -> player id (guardian and adds)
 
+Chaos.registerInstance("ascension", {label = "an ascension trial", inside = function(player)
+	return S.trials[player:getId()] ~= nil
+end, at = function(pos)
+	return Q.slotAt(pos) ~= nil
+end})
+
 local function C()
 	return Q.cfg()
 end

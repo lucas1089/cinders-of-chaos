@@ -283,4 +283,38 @@ DB.pay[4] = {order_id = 4, method = "paypal", amount_cents = 499, currency = "US
 ChaosShopPay.poll()
 eq(DB.coins[77], 0, "what was left"); eq(DB.pay[4].reversal_coins, 200, "200 of 250")
 
+-- a chargeback after the coins were gifted on: taken back from the receiver (shop.lua's chaos_coin_gifts ledger)
+DB.gifts = {{id = 1, from = 77, to = 88, amount = 300, order = 5, clawed = 0}}
+DB.coins[88] = 1000
+local baseSelect, baseQuery = Chaos.select, db.query
+Chaos.select = function(q, cols)
+	if q:find("FROM `chaos_coin_gifts` g", 1, true) then
+		local from, since = tonumber(q:match("g.`from_account` = (%d+)")), tonumber(q:match("g.`order_id` >= (%d+)"))
+		local out = {}
+		for i = #DB.gifts, 1, -1 do
+			local g = DB.gifts[i]
+			if g.from == from and g.order >= since and g.clawed < g.amount then
+				out[#out + 1] = {id = g.id, to_account = g.to, amount = g.amount, clawed = g.clawed, balance = DB.coins[g.to] or 0}
+			end
+		end
+		return out
+	end
+	return baseSelect(q, cols)
+end
+db.query = function(q)
+	local c, id = q:match("^UPDATE `chaos_coin_gifts` SET `clawed` = `clawed` %+ (%d+) WHERE `id` = (%d+)")
+	if c then DB.gifts[tonumber(id)].clawed = DB.gifts[tonumber(id)].clawed + tonumber(c); return true end
+	return baseQuery(q)
+end
+DB.orders[#DB.orders + 1] = {id = 5, account_id = 77, pack_key = "coins250", provider = "paypal", provider_ref = "z", status = "credited",
+	coins = 250, bonus = 0, first_bonus = 0, created = now}
+DB.pay[5] = {order_id = 5, method = "paypal", amount_cents = 499, currency = "USD", reversal = "charged_back", reversal_cents = 0, reversal_done = 0}
+ChaosShopPay.poll()
+eq(DB.coins[77], 0, "the donor had nothing left")
+eq(DB.coins[88], 750, "250 taken back from the gift's receiver")
+eq(DB.gifts[1].clawed, 250, "the ledger records the clawback")
+ChaosShopPay.poll()
+eq(DB.coins[88], 750, "only once")
+Chaos.select, db.query = baseSelect, baseQuery
+
 print("shop_payments_test: ok")

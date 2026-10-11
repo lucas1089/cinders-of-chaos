@@ -598,6 +598,11 @@ function G.deposit(player, amount)
 	if not payFromPlayer(player, amount) then
 		return false, "You do not have that much gold (carried and in the bank)."
 	end
+	-- saved before the guild bank row is credited: a crash in between cannot leave the gold in both places
+	if not Chaos.saveCharacter(player) then
+		player:setBankBalance(player:getBankBalance() + amount)
+		return false, "The guild bank is busy; your gold went back to your bank balance."
+	end
 	if not G.credit(gid, amount) then
 		player:setBankBalance(player:getBankBalance() + amount)
 		G.logRow(gid, player, "refund", amount, 0, 0, "deposit failed, gold returned to the bank balance")

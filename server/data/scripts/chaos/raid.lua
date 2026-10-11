@@ -1461,6 +1461,10 @@ function X.isInside(player)
 	return X.runOf[player:getId()] ~= nil
 end
 
+Chaos.registerInstance("raid", {label = "a raid", inside = X.isInside, at = function(pos)
+	return ChaosRiftCore.slotOfPos(C(), pos) ~= nil
+end})
+
 local function memberProblem(m)
 	local cfg = C()
 	if X.runOf[m:getId()] then
@@ -1756,6 +1760,11 @@ function X.tick(slot, id)
 		elseif ChaosRiftCore.slotOfPos(cfg, p:getPosition()) ~= run.slot then
 			removePlayer(run, pid, "exit")
 		end
+	end
+	-- strangers in this slot (a town portal or a stored hideout spot let them in): out (chaos_constants.lua)
+	if Chaos.sweepDue and Chaos.sweepDue(run, now) then
+		Chaos.sweepIntruders(function(pos) return ChaosRiftCore.slotOfPos(cfg, pos) == run.slot end,
+			function(p) return run.players[p:getId()] ~= nil end, "You are not part of this raid: you were sent to your temple.")
 	end
 	if next(run.players) == nil then
 		if os.time() - (run.lastActive or os.time()) >= cfg.idleMinutes * 60 or run.inst.cleared then

@@ -1020,6 +1020,10 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	if not msg then
 		return
 	end
+	-- per action (ratelimit.lua): requests that hit the database cannot be flooded
+	if Chaos.limited and Chaos.limited(player, "bestiary." .. tostring(msg.action), 300) then
+		return
+	end
 	local data = type(msg.data) == "table" and msg.data or {}
 	local a = msg.action
 	if a == "open" then

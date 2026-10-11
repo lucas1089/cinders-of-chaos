@@ -1029,6 +1029,11 @@ local function tick(slot, rid)
 	if run.ended or A.runs[slot] ~= run then
 		return
 	end
+	-- strangers in this slot (a town portal or a stored hideout spot let them in): out (chaos_constants.lua)
+	if Chaos.sweepDue and Chaos.sweepDue(run, now) then
+		Chaos.sweepIntruders(function(pos) return U.slotAt(cfg, pos) == slot end,
+			function(p) return run.players[p:getId()] ~= nil end, "You are not part of this Ascended Omen: you were sent to your temple.")
+	end
 	if run.state == "running" and run.boss == "waiting" and now >= (run.bossDueAt or 0) then
 		spawnBoss(run)
 	end
@@ -1264,6 +1269,10 @@ end
 function A.isInside(player)
 	return A.runOf[player:getId()] ~= nil
 end
+
+Chaos.registerInstance("ascended", {label = "an Ascended Omen", inside = A.isInside, at = function(pos)
+	return U.slotAt(C(), pos) ~= nil
+end})
 
 -- a caught lethal hit: to the antechamber, one life less (the last one ends the run)
 local function fall(run, pid)

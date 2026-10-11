@@ -179,7 +179,8 @@ Chaos.tables = {
 	shopGifts = "chaos_shop_gifts",
 	coinOrders = "chaos_coin_orders",
 	-- the Pix / PayPal donation of an order (shop_payments.lua, the website's pay/ worker and webhook)
-	coinPayments = "chaos_coin_payments"
+	coinPayments = "chaos_coin_payments",
+	coinGifts = "chaos_coin_gifts"
 }
 -- Rift Atlas: one row per character, completed grid cells and allocated nodes (atlas.lua, sql/chaos_rift_atlas.sql)
 Chaos.tables.riftAtlas = "chaos_rift_atlas"
@@ -1109,4 +1110,148 @@ function Chaos.createMonsterNamed(typeName, position, extended, force, shownName
 		error(monster, 0)
 	end
 	return monster
+end
+
+-- ---------------------------------------------------------------------------
+-- Instances: every place with its own way in and out (rift, dungeon, raid, arena, ...) registers here. The Town
+-- Portal and the hideout ask Chaos.inAnyInstance before they move a player, the hideout asks Chaos.instanceAt before
+-- it sends a player back to a stored spot, and the instances sweep strangers out of their slots.
+--   Chaos.registerInstance(key, {label = "a raid", inside = function(player) end, at = function(pos) end})
+--       inside: the player takes part in a run (membership); at: the position lies in the instance's area
+--   Chaos.inAnyInstance(player[, except]) -> key, label   (taking part in one, or standing in one's area)
+--   Chaos.instanceAt(pos[, except]) -> key, label         (area only)
+--   Chaos.sweepIntruders(inArea, isMember[, text]) -> n   non-staff players in the area who are not members go home
+-- A check that errors counts as "no" (one broken module must not lock everybody in place).
+-- ---------------------------------------------------------------------------
+Chaos.instances = {}
+Chaos.instanceOrder = {}
+
+function Chaos.registerInstance(key, def)
+	if type(key) ~= "string" or type(def) ~= "table" then
+		return false
+	end
+	if not Chaos.instances[key] then
+		Chaos.instanceOrder[#Chaos.instanceOrder + 1] = key
+	end
+	Chaos.instances[key] = def
+	return true
+end
+
+local function instanceCheck(fn, arg)
+	if type(fn) ~= "function" or arg == nil then
+		return false
+	end
+	local ok, v = pcall(fn, arg)
+	return ok and v ~= nil and v ~= false
+end
+
+function Chaos.instanceAt(pos, except)
+	for _, key in ipairs(Chaos.instanceOrder) do
+		local def = Chaos.instances[key]
+		if key ~= except and def and instanceCheck(def.at, pos) then
+			return key, def.label or key
+		end
+	end
+	return nil
+end
+
+function Chaos.inAnyInstance(player, except)
+	if not player then
+		return nil
+	end
+	local okPos, pos = pcall(function() return player:getPosition() end)
+	for _, key in ipairs(Chaos.instanceOrder) do
+		local def = Chaos.instances[key]
+		if key ~= except and def and (instanceCheck(def.inside, player) or (okPos and instanceCheck(def.at, pos))) then
+			return key, def.label or key
+		end
+	end
+	return nil
+end
+
+function Chaos.isStaff(player)
+	local ok, v = pcall(function()
+		local g = player:getGroup()
+		return g and g:getAccess()
+	end)
+	return ok and v == true
+end
+
+-- how often an instance's tick sweeps its slot for strangers (Chaos.sweepDue keeps the time per run table)
+Chaos.instanceSweepMs = 3000
+function Chaos.sweepDue(run, nowMs)
+	if not run or (run.sweptAt and nowMs - run.sweptAt < Chaos.instanceSweepMs and nowMs >= run.sweptAt) then
+		return false
+	end
+	run.sweptAt = nowMs
+	return true
+end
+
+function Chaos.sweepIntruders(inArea, isMember, text)
+	if not Game or type(Game.getPlayers) ~= "function" then
+		return 0
+	end
+	local n = 0
+	for _, p in ipairs(Game.getPlayers() or {}) do
+		if instanceCheck(inArea, p:getPosition()) and not instanceCheck(isMember, p) and not Chaos.isStaff(p) then
+			local town = p:getTown()
+			local to = town and town:getTemplePosition()
+			if to then
+				p:teleportTo(to)
+				if to.sendMagicEffect then
+					to:sendMagicEffect(CONST_ME_TELEPORT)
+				end
+				p:sendTextMessage(MESSAGE_EVENT_ADVANCE, text or "You do not belong to the group in there: you were sent to your temple.")
+				n = n + 1
+			end
+		end
+	end
+	return n
+end
+
+-- ---------------------------------------------------------------------------
+-- Save before a database credit. Moving value from the character (memory, written at logout and server saves) into
+-- a database row (stash, bank, guild bank, ...) at once leaves a window: a crash before the next save brings the
+-- character back with the value while the row keeps it too. Remove in memory, Chaos.saveCharacter(player), and only
+-- then credit the row; when the save fails, give back what was taken and stop (as market.lua and orbexchange.lua do).
+-- ---------------------------------------------------------------------------
+function Chaos.saveCharacter(player)
+	local ok, saved = pcall(function() return player:save() end)
+	return ok and saved == true
+end
+
+-- ---------------------------------------------------------------------------
+-- Staff talkactions. Commands that create or move economy value (/coins, /charm give, /pact days|extra|claimreset)
+-- need group >= Chaos.economyMinGroup (the admin panel's economy.* actions ask the same); the rest only staff access.
+-- Every use by staff is written to the admin audit log (admin/core.lua ChaosAdmin.log; the console when it is absent).
+-- Returns allowed, isStaff: callers return `not isStaff` when not allowed (a player's words are said as chat, staff's
+-- are swallowed).
+-- ---------------------------------------------------------------------------
+Chaos.economyMinGroup = 5
+function Chaos.staffCommand(player, words, param, economy)
+	local ok, access, gid = pcall(function()
+		local g = player:getGroup()
+		return g:getAccess(), g:getId()
+	end)
+	if not ok or not access then
+		return false, false
+	end
+	local allowed = not economy or (tonumber(gid) or 0) >= Chaos.economyMinGroup
+	local status = allowed and "ok" or "denied"
+	local text = tostring(words) .. " " .. tostring(param or "")
+	if ChaosAdmin and ChaosAdmin.log then
+		pcall(ChaosAdmin.log, player, "talk" .. tostring(words), "", {param = tostring(param or "")}, status, text)
+	else
+		print(string.format("[Chaos staff] %s (group %s) %s -> %s", player:getName(), tostring(gid), text, status))
+	end
+	if not allowed then
+		player:sendCancelMessage("Only an administrator may use " .. tostring(words) .. " this way.")
+	end
+	return allowed, true
+end
+
+-- true when a client request must be dropped (ratelimit.lua; per player and key, e.g. "bounty.accept"): for the opcode
+-- handlers whose actions read or write the database or walk large tables
+function Chaos.limited(player, key, ms)
+	return ChaosRateLimit ~= nil and ChaosRateLimit.allow ~= nil and not ChaosRateLimit.allow(player, key, ms or 300)
 end

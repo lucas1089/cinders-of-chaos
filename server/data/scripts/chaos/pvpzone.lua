@@ -306,6 +306,10 @@ function Z.isInside(player)
 	return player ~= nil and Z.state[player:getId()] ~= nil
 end
 
+Chaos.registerInstance("marches", {label = "the Scorched Marches", inside = Z.isInside, at = function(pos)
+	return Z.inZone(pos) ~= nil
+end})
+
 local function placeItem(pos, id)
 	local tile = Tile(pos)
 	if tile and not tile:getItemById(id) then

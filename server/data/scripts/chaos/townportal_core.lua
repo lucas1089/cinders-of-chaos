@@ -220,6 +220,10 @@ function K.blockReason(f)
 	if f.marches then -- the Scorched Marches (pvpzone.lua)
 		return "The Marches hold you: leave through a safe exit (your embers are banked there)."
 	end
+	if f.instance then -- any other registered instance (Chaos.inAnyInstance): its label, e.g. "a raid"
+		return string.format("You cannot open a town portal in %s: leave it through its own exit.",
+			type(f.instance) == "string" and f.instance or "this place")
+	end
 	if f.pzLocked then
 		return "You cannot open a town portal right after fighting other players."
 	end

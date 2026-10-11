@@ -553,6 +553,8 @@ function M.isInside(pos)
 	return slot ~= nil and M.built[slot] == true
 end
 
+Chaos.registerInstance("hideout", {label = "a hideout", at = M.isInside})
+
 -- slot, room of the hideout a position is in
 function M.roomAt(pos)
 	local slot = pos and K.fromWorld(cfg, pos)
@@ -648,6 +650,9 @@ local function enterFacts(player)
 		end),
 		dungeon = try(function() return ChaosDungeonIsInside and ChaosDungeonIsInside(player) end),
 		tower = try(function() return ChaosTowerRun and ChaosTowerRun.isInside and ChaosTowerRun.isInside(player) end),
+		-- every registered instance (raid, Ember Descent, Ascended, guild boss, battleground, trials, the Marches, ...);
+		-- the hideout itself is left out: moving from one hideout to another is allowed (M.enter)
+		instance = Chaos.inAnyInstance and Chaos.inAnyInstance(player, "hideout") ~= nil or false,
 		pzLocked = player:isPzLocked(),
 		inFight = CONDITION_INFIGHT ~= nil and player:getCondition(CONDITION_INFIGHT) ~= nil,
 		skull = skull == SKULL_WHITE or skull == SKULL_RED or skull == SKULL_BLACK
@@ -733,7 +738,9 @@ function M.leave(player, text)
 	if player:getStorageValue(ST.returnSet) == 1 then
 		local p = Position(player:getStorageValue(ST.returnX), player:getStorageValue(ST.returnY), player:getStorageValue(ST.returnZ))
 		local tile = Tile(p)
-		if tile and tile:getGround() and not K.fromWorld(cfg, p) then
+		-- never back into an instance area (a raid, a battleground, ...): its run may belong to another group now
+		local instance = Chaos.instanceAt and Chaos.instanceAt(p, "hideout")
+		if tile and tile:getGround() and not K.fromWorld(cfg, p) and not instance then
 			dest = p
 		end
 	end

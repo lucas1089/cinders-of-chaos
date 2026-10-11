@@ -145,7 +145,8 @@ reg{id = "set_vocation", name = "Set vocation", description = "Change vocation b
 		return true, t:getName() .. " is now a " .. v:getName() .. ". (Relog recommended.)"
 	end}
 
-reg{id = "give_item", name = "Give item", description = "Add an item (id or name) to a player's inventory.",
+-- creates items (economy): administrators like economy.*, also for the actor's own character (it can trade them on)
+reg{id = "give_item", name = "Give item", description = "Add an item (id or name) to a player's inventory.", minGroup = 5,
 	params = {PLAYER_OPT, {name = "item", label = "Item id or name", type = "string", max = 60},
 		{name = "count", label = "Count", type = "int", min = 1, max = 10000, default = 1}},
 	handler = function(actor, p)

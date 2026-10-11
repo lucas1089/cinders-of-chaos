@@ -547,8 +547,11 @@ end, 0)
 -- ------------------------------------------------------------------ staff
 local talk = TalkAction("/pact")
 function talk.onSay(player, words, param)
-	if not player:getGroup():getAccess() then
-		return true
+	-- days / extra / claimreset create value: administrators only; info: staff. Every use in the audit log.
+	local sub = tostring(param or ""):match(",%s*(%S+)")
+	local allowed, staff = Chaos.staffCommand(player, words, param, sub ~= nil and sub ~= "info")
+	if not allowed then
+		return not staff
 	end
 	local name, rest = param:match("^%s*(.-)%s*,%s*(.-)%s*$")
 	local guid, realName = Chaos.findPlayer(name or "")

@@ -13,6 +13,8 @@
 --   C.price(offer, categoryName, ctx)     cost, oldCost (nil when not reduced), tags {"Sale", "New", "Featured"}
 --   C.bundleCost(bundle, listSum)         a bundle's price: its own cost, or listSum minus its pct
 --   C.giftProblem(t)                      why a gift to this target is refused, or nil
+--   C.coinGiftProblem(rules, f)           why a Chaos Coin gift is refused (hold after a donation, daily cap, ban), or nil
+--   C.clawbackPlan(shortfall, gifts)      what to take back from the receivers of a charged-back donor's coin gifts
 --   C.packCredit(pack, first, cfg)        {coins, bonus, firstBonus, total} for a paid Chaos Coin pack
 --   C.validate(cfg, cosmetics, ex)        list of problems in shop_config.lua (keys, prices, sales, bundles, exclusives)
 -- Lua 5.1 / LuaJIT / Lua 5.3 compatible.
@@ -267,6 +269,56 @@ function C.giftProblem(t)
 		return "This offer cannot be gifted."
 	end
 	return nil
+end
+
+-- ------------------------------------------------------------------ coin gifts
+-- Chaos Coins given to another account must not outlive a chargeback of the donation that bought them.
+-- rules = shop_config.lua coinGifts {holdDays, perDay}; f = {now, amount, lastCredited (unix time of the sender's last
+-- credited coin order, 0 = none), giftedToday (coins gifted by the sender in the last 24 hours), targetBanned}
+function C.coinGiftProblem(rules, f)
+	rules = rules or {}
+	if f.targetBanned then
+		return "That account cannot receive gifts."
+	end
+	local hold = (tonumber(rules.holdDays) or 0) * 86400
+	local last = tonumber(f.lastCredited) or 0
+	if hold > 0 and last > 0 and f.now - last < hold then
+		local days = math.ceil((hold - (f.now - last)) / 86400)
+		return string.format("Chaos Coins can be gifted %d days after your last donation (in %d day%s).",
+			rules.holdDays, days, days == 1 and "" or "s")
+	end
+	local cap = tonumber(rules.perDay) or 0
+	if cap > 0 and (tonumber(f.giftedToday) or 0) + f.amount > cap then
+		local left = math.max(0, cap - (tonumber(f.giftedToday) or 0))
+		return string.format("You can gift at most %d Chaos Coins a day (%d left today).", cap, left)
+	end
+	return nil
+end
+
+-- shortfall: coins of a reversed donation the donor's balance could not cover; gifts: the donor's coin gifts made since
+-- that donation, newest first {id, to_account, amount, clawed, balance (the receiver's coins now)}. Takes from the newest
+-- gift first, never more than a gift's unclawed rest or the receiver's balance. Returns {{id, account, take}}, the rest
+-- that could not be taken back (to be flagged for staff).
+function C.clawbackPlan(shortfall, gifts)
+	local plan, left = {}, math.max(0, math.floor(tonumber(shortfall) or 0))
+	local balances = {}
+	for _, g in ipairs(gifts or {}) do
+		if left <= 0 then
+			break
+		end
+		local acc = g.to_account
+		if balances[acc] == nil then
+			balances[acc] = math.max(0, math.floor(tonumber(g.balance) or 0))
+		end
+		local open = math.max(0, (tonumber(g.amount) or 0) - (tonumber(g.clawed) or 0))
+		local take = math.min(left, open, balances[acc])
+		if take > 0 then
+			plan[#plan + 1] = {id = g.id, account = acc, take = take}
+			balances[acc] = balances[acc] - take
+			left = left - take
+		end
+	end
+	return plan, left
 end
 
 -- ------------------------------------------------------------------ coin packs

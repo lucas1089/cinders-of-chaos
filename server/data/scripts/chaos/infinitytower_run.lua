@@ -400,6 +400,10 @@ function ChaosTowerRun.isInside(player)
 	return runOf[player:getId()] ~= nil
 end
 
+if Chaos.registerInstance then -- chaos_constants.lua (a test may stub Chaos)
+	Chaos.registerInstance("tower", {label = "the Infinity Tower", inside = ChaosTowerRun.isInside, at = inArena})
+end
+
 function ChaosTowerRun.leave(player)
 	local run = runOf[player:getId()]
 	if not run then

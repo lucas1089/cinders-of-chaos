@@ -990,8 +990,10 @@ startup:register()
 -- staff: /charm give <shape | unique> [rarity] [item level]
 local talk = TalkAction("/charm")
 function talk.onSay(player, words, param)
-	if not player:getGroup():getAccess() then
-		return true
+	-- creates items: administrators only, every use in the audit log (chaos_constants.lua)
+	local allowed, staff = Chaos.staffCommand(player, words, param, true)
+	if not allowed then
+		return not staff
 	end
 	local args = {}
 	for a in tostring(param or ""):gmatch("[^,%s]+") do

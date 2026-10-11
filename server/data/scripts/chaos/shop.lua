@@ -32,6 +32,7 @@ local OPCODE = ChaosOpcodes.shop
 local TB = Chaos.tables
 local T_COINS, T_HISTORY = TB.shopCoins, TB.shopHistory
 local T_PURCHASES, T_GIFTS, T_ORDERS = TB.shopPurchases, TB.shopGifts, TB.coinOrders
+local T_COIN_GIFTS = TB.coinGifts or "chaos_coin_gifts"
 local S = Chaos.storage
 local SF = cfg.storefront or {}
 
@@ -63,6 +64,13 @@ db.query([[CREATE TABLE IF NOT EXISTS `chaos_coin_orders` (
   `first_bonus` int(11) NOT NULL DEFAULT 0, `note` varchar(255) NOT NULL DEFAULT '', `created` int(10) unsigned NOT NULL,
   `credited` int(10) unsigned NOT NULL DEFAULT 0, PRIMARY KEY (`id`), UNIQUE KEY `chaos_coin_orders_ref` (`provider`, `provider_ref`),
   KEY `chaos_coin_orders_status` (`status`), KEY `chaos_coin_orders_account` (`account_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8]])
+
+-- Chaos Coin gifts between accounts (gift_coins): the ledger a chargeback of the sender claws back from
+db.query([[CREATE TABLE IF NOT EXISTS `chaos_coin_gifts` (
+  `id` int(11) NOT NULL AUTO_INCREMENT, `from_account` int(11) NOT NULL, `to_account` int(11) NOT NULL,
+  `amount` int(11) NOT NULL, `order_id` int(11) NOT NULL DEFAULT 0, `created` int(10) unsigned NOT NULL,
+  `clawed` int(11) NOT NULL DEFAULT 0, PRIMARY KEY (`id`), KEY `chaos_coin_gifts_from` (`from_account`, `created`),
+  KEY `chaos_coin_gifts_to` (`to_account`)) ENGINE=InnoDB DEFAULT CHARSET=utf8]])
 
 -- ------------------------------------------------------------------ cosmetics names from the XML files
 local function readXml(file, tag)
@@ -836,10 +844,26 @@ local function gift(player, data)
 	if not target or target == player:getAccountId() then
 		return message(player, "Error", "You cannot gift coins to your own account.")
 	end
-	if not spend(player:getAccountId(), amount) then
+	-- chargebacks: a hold after the last donation, a daily cap, no banned receivers, and a ledger (shop_core.lua)
+	local from, t = player:getAccountId(), os.time()
+	local last = Chaos.select("SELECT MAX(`credited`) AS `t`, MAX(`id`) AS `id` FROM `" .. T_ORDERS .. "` WHERE `status` = 'credited' " ..
+		"AND `account_id` = " .. from, {{"t", "n"}, {"id", "n"}})[1] or {}
+	local today = Chaos.select("SELECT COALESCE(SUM(`amount`), 0) AS `n` FROM `" .. T_COIN_GIFTS .. "` WHERE `from_account` = " .. from ..
+		" AND `created` >= " .. (t - 86400), {{"n", "n"}})[1]
+	local bans = Chaos.select("SELECT COUNT(*) AS `n` FROM `account_bans` WHERE `account_id` = " .. target ..
+		" AND (`expires_at` <= 0 OR `expires_at` > " .. t .. ")", {{"n", "n"}})[1]
+	local problem = K.coinGiftProblem(cfg.coinGifts, {now = t, amount = amount, lastCredited = last.t or 0,
+		giftedToday = today and today.n or 0, targetBanned = (bans and bans.n or 0) > 0})
+	if problem then
+		return message(player, "Not possible", problem)
+	end
+	if not spend(from, amount) then
 		return message(player, "Not enough coins", "You do not have " .. amount .. " Chaos Coins.")
 	end
 	Shop.addCoins(target, amount)
+	db.query("INSERT INTO `" .. T_COIN_GIFTS .. "` (`from_account`, `to_account`, `amount`, `order_id`, `created`) VALUES (" ..
+		from .. ", " .. target .. ", " .. amount .. ", " .. (last.id or 0) .. ", " .. t .. ")")
+	log(string.format("%s (account %d) gifted %d Chaos Coins to %s (account %d)", player:getName(), from, amount, name, target))
 	logHistory(player, "Gift to " .. name, amount)
 	message(player, "Gift sent", "You gifted " .. amount .. " Chaos Coins to " .. name .. ".")
 end
@@ -1034,8 +1058,10 @@ login:register()
 -- /coins <player>, <amount>   (staff; negative amounts take coins away)
 local talk = TalkAction("/coins")
 function talk.onSay(player, words, param)
-	if not player:getGroup():getAccess() then
-		return true
+	-- creates store currency: administrators only, every use in the audit log (chaos_constants.lua)
+	local allowed, staff = Chaos.staffCommand(player, words, param, true)
+	if not allowed then
+		return not staff
 	end
 	local name, amount = param:match("^%s*(.-)%s*,%s*(%-?%d+)%s*$")
 	local guid, realName = Chaos.findPlayer(name or "")

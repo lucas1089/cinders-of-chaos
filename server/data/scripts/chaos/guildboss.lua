@@ -376,6 +376,11 @@ local function donateGold(player, amount)
 	if not G().payFromPlayer(player, gold) then
 		return false, "You do not have that much gold (carried and in the bank)."
 	end
+	-- saved before the fuel row is credited: a crash in between cannot keep both the gold and the embers
+	if not Chaos.saveCharacter(player) then
+		player:setBankBalance(player:getBankBalance() + gold)
+		return false, "The stone is busy; your gold went back to your bank balance."
+	end
 	addFuel(gid, embers)
 	addContrib(gid, player, gold, embers)
 	G().logRow(gid, player, "boss", gold, 0, embers, string.format("fed the Summoning Stone %d embers", embers))
@@ -401,6 +406,10 @@ local function donateItems(player, key)
 	end
 	if not player:removeItem(def.id, take) then
 		return false, "The items could not be taken."
+	end
+	if not Chaos.saveCharacter(player) then -- see donateGold
+		player:addItem(def.id, take)
+		return false, "The stone is busy. Try again in a moment."
 	end
 	addFuel(gid, embers)
 	addContrib(gid, player, 0, embers)
@@ -1130,6 +1139,11 @@ local function tick(slot, rid)
 	if run.ended or GB.runs[slot] ~= run then
 		return
 	end
+	-- strangers in this slot (a town portal or a stored hideout spot let them in): out (chaos_constants.lua)
+	if Chaos.sweepDue and Chaos.sweepDue(run, t) then
+		Chaos.sweepIntruders(function(pos) return U.slotAt(cfg, pos) == slot end,
+			function(p) return run.players[p:getId()] ~= nil end, "You are not part of this guild boss fight: you were sent to your temple.")
+	end
 	if run.state == "running" and run.boss == "waiting" and t >= (run.bossDueAt or 0) then
 		spawnBoss(run)
 	end
@@ -1270,6 +1284,10 @@ end
 function GB.isInside(player)
 	return GB.runOf[player:getId()] ~= nil
 end
+
+Chaos.registerInstance("guildboss", {label = "the guild boss arena", inside = GB.isInside, at = function(pos)
+	return U.slotAt(C(), pos) ~= nil
+end})
 
 local function fall(run, pid)
 	local cfg = C()

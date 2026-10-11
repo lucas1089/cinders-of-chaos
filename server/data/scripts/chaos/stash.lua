@@ -249,6 +249,33 @@ end
 
 -- ---------------------------------------------------------------- item lookup
 
+local function blocks(t)
+	return t ~= nil and t.hasProperty ~= nil and (t:hasProperty(CONST_PROP_BLOCKSOLID) or t:hasProperty(CONST_PROP_BLOCKPROJECTILE))
+end
+
+-- a floor tile the player could reach with the hand, not through a wall, bars or a window: the own tile, or a
+-- tile that does not block (wall, bars, window) in clear sight; a diagonal one needs one open side (no reaching between
+-- two walls at a corner). Item:remove() skips all of the engine's reach rules, so they are checked here.
+local function reachable(playerPos, position, tile)
+	if position.x == playerPos.x and position.y == playerPos.y then
+		return true
+	end
+	if blocks(tile) then
+		return false
+	end
+	if playerPos.isSightClear and not playerPos:isSightClear(position, true) then
+		return false
+	end
+	if position.x ~= playerPos.x and position.y ~= playerPos.y then
+		local a = Tile(Position(position.x, playerPos.y, position.z))
+		local b = Tile(Position(playerPos.x, position.y, position.z))
+		if (not a or blocks(a)) and (not b or blocks(b)) then
+			return false
+		end
+	end
+	return true
+end
+
 -- Resolve the {x,y,z,stackpos} the client sends into a real item the player may touch.
 local function resolveItem(player, pos)
 	if type(pos) ~= "table" then
@@ -273,7 +300,7 @@ local function resolveItem(player, pos)
 		return nil
 	end
 	local tile = Tile(position)
-	if not tile then
+	if not tile or not reachable(playerPos, position, tile) then
 		return nil
 	end
 	-- Item:remove() skips the engine's house rule (HouseTile::queryRemove only checks when there is an actor), so a
@@ -334,6 +361,13 @@ local function stashItem(player, item)
 		player:sendCancelMessage("Could not take the item.")
 		return false
 	end
+	-- the character is written before the row is credited: a crash in between cannot hand the item back while the
+	-- stash keeps it too (chaos_constants.lua Chaos.saveCharacter). Stashable items are plain stacks: addItem restores.
+	if not Chaos.saveCharacter(player) then
+		player:addItem(itemId, count)
+		player:sendCancelMessage("The stash is busy. Try again in a moment.")
+		return false
+	end
 	stashAdd(guid, itemId, count, tab)
 	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Stashed %dx %s.", count, name))
 	return true
@@ -342,6 +376,8 @@ end
 local function stashAll(player)
 	send(player, {make = "StashAll", status = true})
 	local moved, full = 0, nil
+	local taken = {} -- {itemId, count, tab} removed in memory, credited after the save
+	local pending = {} -- itemId -> count taken but not yet credited (the entry limit)
 	local lim = tabsReady() and ChaosPact.limits(player) or nil
 	local entries = lim and tabEntries(player, lim) or nil
 	local backpack = player:getSlotItem(CONST_SLOT_BACKPACK)
@@ -356,7 +392,7 @@ local function stashAll(player)
 		for _, item in ipairs(candidates) do
 			if not isBlocked(player:getGuid(), item:getId()) then
 				local count = item:getCount()
-				if stashCount(player:getGuid(), item:getId()) + count <= cfg.maxStackPerEntry then
+				if stashCount(player:getGuid(), item:getId()) + (pending[item:getId()] or 0) + count <= cfg.maxStackPerEntry then
 					local itemId = item:getId()
 					local tab, refusal = true, nil
 					if lim then
@@ -365,13 +401,25 @@ local function stashAll(player)
 					if not tab then
 						full = refusal
 					elseif item:remove(count) then
-						stashAdd(player:getGuid(), itemId, count, tab)
+						taken[#taken + 1] = {itemId, count, tab}
+						pending[itemId] = (pending[itemId] or 0) + count
 						noteDeposit(entries, itemId, tab)
-						moved = moved + 1
 					end
 				end
 			end
 		end
+	end
+	-- one save for the whole batch, before any row is credited (see stashItem); a failed save gives everything back
+	if #taken > 0 and not Chaos.saveCharacter(player) then
+		for _, t in ipairs(taken) do
+			player:addItem(t[1], t[2])
+		end
+		taken = {}
+		full = "The stash is busy. Try again in a moment."
+	end
+	for _, t in ipairs(taken) do
+		stashAdd(player:getGuid(), t[1], t[2], t[3])
+		moved = moved + 1
 	end
 	send(player, {make = "StashAll", status = false})
 	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Stashed %d item stack(s).", moved))
@@ -516,6 +564,10 @@ function ChaosStash.storeItem(player, item)
 		return false
 	end
 	if not item:remove(count) then
+		return false
+	end
+	if not Chaos.saveCharacter(player) then -- see stashItem
+		player:addItem(itemId, count)
 		return false
 	end
 	stashAdd(guid, itemId, count, tab)

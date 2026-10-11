@@ -129,6 +129,16 @@ local function locate(pos)
 end
 S.locate = locate
 
+-- a player (or a position) inside any built bracket of the siege: guild.lua, arena.lua, treasure_goblin.lua and the
+-- instance registry (chaos_constants.lua) ask
+function S.isInsidePos(pos)
+	return locate(pos) ~= nil
+end
+function S.isInside(player)
+	return player ~= nil and locate(player:getPosition()) ~= nil
+end
+Chaos.registerInstance("siege", {label = "a guild siege", at = S.isInsidePos})
+
 local function team(p)
 	local br = state.brackets and state.brackets[p.bracket]
 	return br and br.teams[p.slot] or nil
@@ -1030,6 +1040,10 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	end
 	local msg = Chaos.decode(buffer)
 	if not msg then
+		return true
+	end
+	-- per action (ratelimit.lua): requests that hit the database cannot be flooded
+	if Chaos.limited and Chaos.limited(player, "siege." .. tostring(msg.action), 300) then
 		return true
 	end
 	if msg.action == "open" then

@@ -119,6 +119,8 @@ add a `ChaosAdminRegisterHook` call next to them.
 
 Players: info, kick, ban (account), unban, mute, set_level, set_skill (raise only), set_vocation, give_item, remove_item,
 give_premium, teleport_to, summon, heal, set_group (dangerous), add_storage (set storage).
+give_item (Players) and create_item (World) create items, so they need group 5 like the Economy actions
+(`minGroup = 5` on the action); the other Players and World actions stay at group 4.
 
 Server: broadcast, save, reload (talkactions, scripts, monsters, npcs, config, actions, movements, creaturescripts,
 globalevents, spells, weapons, items, quests, raids, mounts, chat, events, global, all; dangerous), shutdown / restart with

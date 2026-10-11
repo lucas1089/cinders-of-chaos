@@ -81,6 +81,11 @@ return {
 	-- buying an offer for another character (shop.lua "gift"): rate limit and a daily cap per account; a gift to an
 	-- offline character waits in chaos_shop_gifts and is delivered at its next login (refunded when it cannot be)
 	gifts = {cooldownMs = 3000, perDay = 20},
+	-- Chaos Coin gifts (shop.lua "gift_coins"): refused for holdDays after the sender's last credited coin order (a
+	-- chargeback usually arrives within that time), at most perDay coins in 24 hours, never to a banned account. Every
+	-- gift is kept in chaos_coin_gifts so a later chargeback of the sender takes the coins back from the receiver too
+	-- (shop_payments.lua processReversals).
+	coinGifts = {holdDays = 14, perDay = 5000},
 	-- the Chaos Pact (another system): bundles give pact days through _G[api][fn](player, days, "store") when it exists
 	pact = {api = "ChaosPact", fn = "grantDays"},
 	-- storefront: server-authoritative prices; the client shows what shop.lua sends

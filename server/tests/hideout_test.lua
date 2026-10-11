@@ -1049,5 +1049,27 @@ req(ana, "perm", {level = 0})
 talks["/hideout"].onSay(cy, "/hideout", "Ana")
 eq(K.fromWorld(cfg, cy:getPosition()), 2, "staff may enter a private hideout")
 
+-- instances (chaos_constants.lua registry): no entry from inside one, and "leave" never drops a player into one
+local raidMembers = {}
+Chaos.registerInstance("raid", {label = "a raid", inside = function(p) return raidMembers[p:getGuid()] end,
+	at = function(pos) return pos.x >= 2000 and pos.x < 2100 and pos.z == 7 end})
+local dee = newPlayer(4, "Dee", 40, {x = 2050, y = 100, z = 7})
+r = req(dee, "enter")
+ok(r and not r.ok and r.text:find("exit", 1, true), "no hideout from inside a raid slot (area)")
+eq(K.fromWorld(cfg, dee:getPosition()), nil, "Dee stays")
+dee.pos = {x = 100, y = 100, z = 7}
+raidMembers[4] = true
+r = req(dee, "enter")
+ok(r and not r.ok, "no hideout for a raid member (membership)")
+raidMembers[4] = nil
+r = req(dee, "enter")
+ok(r == nil or r.ok, "Dee enters from the street")
+ok(K.fromWorld(cfg, dee:getPosition()), "Dee inside")
+-- the stored spot lies in a raid slot now (stored before the check, or the slot was rebuilt there): the temple
+dee.st[cfg.storage.returnX], dee.st[cfg.storage.returnY], dee.st[cfg.storage.returnZ] = 2050, 100, 7
+newTile({x = 2050, y = 100, z = 7}).ground = newItem(100, nil)
+req(dee, "leave")
+eq(dee.pos.x, 50, "leave refuses a return spot inside an instance: temple")
+
 os.time = realTime
 print(string.format("hideout_test: %d checks OK", checks))

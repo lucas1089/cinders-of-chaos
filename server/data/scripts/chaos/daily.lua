@@ -396,6 +396,10 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 	if not msg then
 		return
 	end
+	-- per action (ratelimit.lua): requests that hit the database cannot be flooded
+	if Chaos.limited and Chaos.limited(player, "daily." .. tostring(msg.action), 300) then
+		return
+	end
 	if msg.action == "calim" then
 		claim(player, msg.data)
 	elseif msg.action == "open" then

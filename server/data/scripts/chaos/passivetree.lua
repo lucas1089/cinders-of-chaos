@@ -257,19 +257,13 @@ local function handleSave(player, data)
 	end
 
 	local rows = loadPresets(guid)
-	local preset = Chaos.toInt(data.preset, 0) or 0
-	-- Only one preset slot exists in the client UI: 0 (never saved) and 1 both mean slot 1.
-	if preset < 1 or preset > cfg.maxPresets then
-		preset = 1
-	end
-	local name = "Preset " .. preset
-	local saved
-	for _, row in ipairs(rows) do
-		if row.preset == preset then
-			name = row.name
-			saved = row.nodes
-		end
-	end
+	-- Only one preset slot exists in the client UI: a save always goes to the active preset (activePreset: the lowest
+	-- saved one; slot 1 when none) and is checked against it. data.preset is ignored: saving a fresh set into another
+	-- slot number that then becomes the active one would be a free respec.
+	local active = activePreset(rows)
+	local preset = active and active.preset or 1
+	local name = active and active.name or ("Preset " .. preset)
+	local saved = active and active.nodes or nil
 	-- allocations only go up: taking a node back is a priced reset or refund (respec.lua), never a plain save
 	if saved and #saved > 0 then
 		local kept = {}
@@ -416,8 +410,15 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 	elseif action == "requestNodesUnlocked" then
 		sendNodes(player)
 	elseif action == "sendNodes" then
+		-- a SELECT, a graph walk, an INSERT and every bonus re-applied: at most once a second (ratelimit.lua)
+		if ChaosRateLimit and not ChaosRateLimit.allow(player, "passivetree.save", 1000) then
+			return
+		end
 		handleSave(player, msg.data)
 	elseif action == "resetPreset" then
+		if ChaosRateLimit and not ChaosRateLimit.allow(player, "passivetree.reset", 1000) then
+			return
+		end
 		handleReset(player, msg.data)
 	elseif action == "refund" then
 		sendNodes(player)

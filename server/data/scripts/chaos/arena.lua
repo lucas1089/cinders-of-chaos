@@ -154,6 +154,10 @@ function S.isInside(player)
 	return S.matchOf[player:getId()] ~= nil
 end
 
+Chaos.registerInstance("arena", {label = "an arena match", inside = S.isInside, at = function(pos)
+	return A.slotOfPos(C(), pos) ~= nil
+end})
+
 function S.isQueued(player)
 	return S.queued[player:getId()] ~= nil
 end
@@ -1097,6 +1101,10 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	end
 	local m = Chaos.decode(buffer)
 	if not m then
+		return
+	end
+	-- per action (ratelimit.lua): requests that hit the database cannot be flooded
+	if Chaos.limited and Chaos.limited(player, "arena." .. tostring(m.action), 300) then
 		return
 	end
 	local data = type(m.data) == "table" and m.data or {}

@@ -649,6 +649,10 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	if not msg then
 		return
 	end
+	-- per action (ratelimit.lua): requests that hit the database cannot be flooded
+	if Chaos.limited and Chaos.limited(player, "journey." .. tostring(msg.action), 300) then
+		return
+	end
 	if msg.action == "journey" then
 		if J.st[player:getGuid()] then
 			J.check(player)

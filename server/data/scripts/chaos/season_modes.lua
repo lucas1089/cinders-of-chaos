@@ -806,6 +806,9 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		return
 	end
 	local msg = Chaos.decode(buffer)
+	if msg and Chaos.limited and Chaos.limited(player, "seasonmodes." .. tostring(msg.action), 300) then
+		return
+	end
 	if msg and msg.action == "beat" then
 		local st = S.hcState[player:getId()]
 		if st then

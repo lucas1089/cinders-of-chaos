@@ -255,6 +255,10 @@ function B.isQueued(player)
 	return B.queued[player:getId()] ~= nil
 end
 
+Chaos.registerInstance("battleground", {label = "a battleground", inside = B.isInside, at = function(pos)
+	return K.slotOfPos(C(), pos) ~= nil
+end})
+
 -- queued or in a match (the arena refuses those)
 function B.isBusy(player)
 	return B.isInside(player) or B.isQueued(player)
@@ -1025,6 +1029,13 @@ local function tickMatch(m)
 	local cfg = C()
 	local now = os.time()
 	local L = K.layout(cfg, m.slot)
+	-- strangers on this field (a town portal or a stored hideout spot let them in): out (chaos_constants.lua)
+	if Chaos.sweepDue and Chaos.sweepDue(m, now * 1000) then
+		Chaos.sweepIntruders(function(pos) return K.inSlot(L, pos) end, function(p)
+			local e = m.players[p:getId()]
+			return e ~= nil and not e.gone
+		end, "You are not playing on this battlefield: you were sent to your temple.")
+	end
 	for _, cid in ipairs(m.order) do
 		local e = m.players[cid]
 		if not e.gone then

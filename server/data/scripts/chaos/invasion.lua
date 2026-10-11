@@ -1140,6 +1140,10 @@ function opcode.onExtendedOpcode(player, op, buffer)
 	if not msg then
 		return
 	end
+	-- per action (ratelimit.lua): requests that hit the database cannot be flooded
+	if Chaos.limited and Chaos.limited(player, "invasion." .. tostring(msg.action), 300) then
+		return
+	end
 	if msg.action == "query" then -- the client (re)loaded: the HUD if an invasion runs
 		if state.phase == "running" or state.phase == "occupied" then
 			local list = hudList()

@@ -910,16 +910,30 @@ function G.depotPut(player, item)
 	if err then
 		return false, err
 	end
-	local attrs = C.encodeAttrs(readAttrs(item))
+	local list = readAttrs(item)
+	local attrs = C.encodeAttrs(list)
 	local name = item:getName()
-	if not db.query(string.format("INSERT INTO `%s` (`guild_id`, `item_id`, `count`, `name`, `attrs`, `added_by`, `added_at`) VALUES (%d, %d, %d, %s, %s, %d, %d)",
-			T.depot, gid, item:getId(), count, db.escapeString(name), db.escapeString(attrs), player:getGuid(), now())) then
-		return false, "The guild depot could not take it."
+	local itemId = item:getId()
+	-- the item leaves the character, the character is saved, and only then the depot row is written: a crash in
+	-- between cannot leave the item in both places. A failed save or insert gives back a copy (same attributes).
+	local function giveBack()
+		local back = Game.createItem(itemId, count)
+		if back then
+			writeAttrs(back, list)
+			player:addItemEx(back, true)
+		end
 	end
-	local id = (Chaos.select("SELECT LAST_INSERT_ID() AS `id`", {{"id", "n"}})[1] or {}).id or 0
 	if not item:remove() then
-		db.query(string.format("DELETE FROM `%s` WHERE `id` = %d", T.depot, id))
 		return false, "The item could not be moved into the guild depot."
+	end
+	if not Chaos.saveCharacter(player) then
+		giveBack()
+		return false, "The guild depot is busy. Try again in a moment."
+	end
+	if not db.query(string.format("INSERT INTO `%s` (`guild_id`, `item_id`, `count`, `name`, `attrs`, `added_by`, `added_at`) VALUES (%d, %d, %d, %s, %s, %d, %d)",
+			T.depot, gid, itemId, count, db.escapeString(name), db.escapeString(attrs), player:getGuid(), now())) then
+		giveBack()
+		return false, "The guild depot could not take it."
 	end
 	G.logRow(gid, player, "put", 0, it:getId(), count, name)
 	return true, string.format("You put %d x %s into the guild depot.", count, name)

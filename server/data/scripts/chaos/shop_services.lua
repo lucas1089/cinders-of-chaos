@@ -290,6 +290,12 @@ function S.teleportBlocked(player)
 	if ChaosRift and ChaosRift.isInside and ChaosRift.isInside(player) then
 		return "You cannot use this inside a rift."
 	end
+	-- every other registered instance (raid, Descent, battleground, Marches, guild boss, siege, arena, ...); a hideout
+	-- stays allowed (a teleport out of it is harmless)
+	local label = Chaos.inAnyInstance and select(2, Chaos.inAnyInstance(player, "hideout")) or nil
+	if label then
+		return "You cannot use this inside " .. label .. "."
+	end
 	return nil
 end
 

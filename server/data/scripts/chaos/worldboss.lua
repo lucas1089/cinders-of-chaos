@@ -105,6 +105,10 @@ function W.inside(pos, L)
 	return inRect(L.arena, L.z, pos) or inRect(L.lobby, L.z, pos)
 end
 
+Chaos.registerInstance("worldboss", {label = "the world boss arena", at = function(pos)
+	return W.inside(pos)
+end})
+
 -- Every tile of both rooms: {x, y, z, wall = bool, lobby = bool}
 function W.footprint(L)
 	L = L or W.layout()

@@ -420,6 +420,15 @@ function ChaosDungeonIsInside(player)
 	return runOfPlayer[player:getGuid()] ~= nil
 end
 
+Chaos.registerInstance("dungeon", {label = "a dungeon", inside = ChaosDungeonIsInside, at = function(pos)
+	for _, dg in pairs(baseDungeons()) do
+		if dg.FromPos and dg.ToPos and dg.DungeonPos and inBox(dg, pos) then
+			return true
+		end
+	end
+	return false
+end})
+
 local function entryProblem(player, id, dg, difficulty)
 	local guid = player:getGuid()
 	if runOfPlayer[guid] then

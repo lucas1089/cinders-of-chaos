@@ -177,6 +177,8 @@ local function blockFacts(player)
 		tower = try(function() return ChaosTowerRun and ChaosTowerRun.isInside and ChaosTowerRun.isInside(player) end),
 		hideout = try(function() return ChaosHideout and ChaosHideout.isInside and ChaosHideout.isInside(pos) end), -- Hideouts
 		marches = try(function() return ChaosPvpZone and ChaosPvpZone.isInside and ChaosPvpZone.isInside(player) end), -- pvpzone.lua
+		-- every other instance (raid, Ember Descent, Ascended, guild boss, battleground, trials, ...): chaos_constants.lua
+		instance = Chaos.inAnyInstance and select(2, Chaos.inAnyInstance(player)) or nil,
 		pzLocked = player:isPzLocked(),
 		skull = skull == SKULL_WHITE or skull == SKULL_RED or skull == SKULL_BLACK,
 		pz = tile ~= nil and tile:hasFlag(TILESTATE_PROTECTIONZONE)

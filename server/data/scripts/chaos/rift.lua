@@ -1677,6 +1677,10 @@ function RF.isInside(player)
 	return player ~= nil and RF.runOf[player:getId()] ~= nil
 end
 
+Chaos.registerInstance("rift", {label = "a rift", inside = RF.isInside, at = function(pos)
+	return ChaosRiftCore.slotOfPos(C(), pos) ~= nil
+end})
+
 -- loot_config.lua rateMult: the Quantity bonus of the rift the corpse owner / chest opener is in
 function RF.lootMult(ctx)
 	local p = ctx and ctx.player
@@ -2128,6 +2132,9 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		return
 	end
 	local msg = Chaos.decode(buffer)
+	if msg and Chaos.limited and Chaos.limited(player, "rift." .. tostring(msg.action), 300) then
+		return
+	end
 	local run = RF.runOf[player:getId()]
 	if msg and msg.action == "query" and run then
 		sendHud(run, "start", player)

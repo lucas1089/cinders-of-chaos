@@ -38,6 +38,12 @@ dofile("data/lib/chaos_dark_paint.lua")
 ChaosTrials = ChaosTrials or {}
 local T = ChaosTrials
 local M = ChaosTrialsCore
+
+Chaos.registerInstance("trials", {label = "a trial", inside = function(player)
+	return T.runs ~= nil and T.runs[player:getId()] ~= nil
+end, at = function(pos)
+	return M.slotAt(pos) ~= nil
+end})
 local OPCODE = ChaosOpcodes.passivetree
 local RIFT_OPCODE = ChaosOpcodes.rift
 

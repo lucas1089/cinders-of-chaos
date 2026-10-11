@@ -207,6 +207,22 @@ CREATE TABLE IF NOT EXISTS `chaos_coin_payments` (
   KEY `chaos_coin_payments_reversal` (`reversal_done`, `reversal`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+-- Chaos Coin gifts between accounts (shop.lua gift_coins). order_id: the sender's last credited coin order at the time;
+-- clawed: coins taken back from the receiver when a donation of the sender was refunded or charged back later
+-- (shop_payments.lua processReversals).
+CREATE TABLE IF NOT EXISTS `chaos_coin_gifts` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `from_account` int(11) NOT NULL,
+  `to_account` int(11) NOT NULL,
+  `amount` int(11) NOT NULL,
+  `order_id` int(11) NOT NULL DEFAULT 0,
+  `created` int(10) unsigned NOT NULL,
+  `clawed` int(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `chaos_coin_gifts_from` (`from_account`, `created`),
+  KEY `chaos_coin_gifts_to` (`to_account`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 -- Bounty board (data/scripts/chaos/bounty.lua; table name in bounty_config.lua): one row per accepted contract. day = bounty day (YYYYMMDD, the day
 -- starts at the roll hour), contract = "<band>-<slot>" of that day's board, status 0 active / 1 completed,
 -- mc = 1 when a kill was made while multi-clienting (no reward). Unfinished rows of past days and rows older than

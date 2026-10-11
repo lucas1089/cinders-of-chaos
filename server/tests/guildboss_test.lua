@@ -423,6 +423,8 @@ local function member(id, rank, level, money)
 	function p:sendTextMessage(_, t) self.msgs[#self.msgs + 1] = t end
 	function p:getItemCount(id) return self.items[id] or 0 end
 	function p:removeItem(id, n) self.items[id] = (self.items[id] or 0) - n return true end
+	function p:addItem(id, n) self.items[id] = (self.items[id] or 0) + n return true end
+	function p:save() return not self.saveFails end
 	function p:setStorageValue(k, v) self.storage = v end
 	p.bank, p.hp, p.maxHp = 0, 1000, 1000
 	function p:isPlayer() return true end
@@ -452,7 +454,21 @@ local week = B.weekKey(cfg, NOW)
 local key = "4:" .. week
 
 -- donations: gold (whole embers) and materials
+-- the character is saved before the fuel row is credited; a failed save gives the gold back and credits nothing
+leader.saveFails = true
+local bankBefore = leader.bank
 local okd, text = GB.handle(leader, "bossGold", {amount = 5000000})
+eq(okd, false, "no donation when the save fails")
+eq(WEEK[key] == nil or WEEK[key].fuel == 0, true, "no fuel credited without a save")
+eq(leader.bank, (bankBefore or 0) + 5000000, "the gold went back to the bank balance")
+leader.money, leader.bank, bankPaid = leader.money + 5000000, bankBefore, 0
+leader.items[29857] = 4
+eq((GB.handle(leader, "bossItem", {key = "fate"})), false, "no material donation when the save fails")
+eq(leader.items[29857], 4, "the orbs are given back")
+leader.items[29857] = nil
+leader.saveFails = false
+NOW = NOW + 2
+okd, text = GB.handle(leader, "bossGold", {amount = 5000000})
 eq(okd, true, "gold donation: " .. tostring(text))
 eq(WEEK[key].fuel, 500, "5,000,000 gold = 500 embers")
 eq(bankPaid, 5000000, "the gold is paid (a sink)")

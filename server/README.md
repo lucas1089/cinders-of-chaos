@@ -186,6 +186,9 @@ server/
 4d. Base crafting script: `python3 -I server/tools/patch_base_crafting.py <server>/data [--dry-run]` (idempotent;
    `install_all.py` step `basecrafting`, after `events`). Closes the duplication hole of the base crafting tables; see
    "Base crafting script".
+4e. Crafting Table window: `python3 -I server/tools/patch_base_crafting_ui.py <server>/data [--dry-run]` (idempotent;
+   `install_all.py` step `basecraftingui`, right after `basecrafting`, whose patch it needs). The base crafting script
+   talks to the client's Crafting Table window; see "Crafting Table window".
 5. Late game: copy `server/data/monster/monsters/chaos/*.xml` to `<server>/data/monster/monsters/chaos/` (17 of them
    are tuned for levels 650-1000), then `python3 -I server/tools/late_game.py <server>/data` (idempotent; `--dry-run`
    shows what would change, `--remove` undoes it). It writes the new `experienceStages` into `config.lua` and puts the
@@ -397,6 +400,35 @@ ancestral points push 89, sometimes the loot filter settings 238 and name plates
 it. Big JSON goes through `Chaos.sendChunked(player, opcode, json)` (parts `S...`, `P...`, `E...` of 8000 bytes, joined by
 the client's `ProtocolGame.registerExtendedJSONOpcode`); the admin panel uses it. `tests/extended_opcode_test.lua`; tested in
 game (admin and player logins without the exception, admin panel filled and running actions).
+
+## Shared security rules (`chaos_constants.lua`)
+
+- **Instances.** Every system with its own way in and out registers with `Chaos.registerInstance(key, {label, inside(player),
+  at(pos)})`: rift, dungeon, tower, arena, worldboss, siege, raid, descent, ascended, guildboss, battleground, trials, ascension,
+  marches, hideout. `Chaos.inAnyInstance(player[, except])` (a member of a run or standing in its area) is asked by the Town Portal,
+  the hideout entry and the store teleports (`ShopServices.teleportBlocked`: temple teleport scroll, guild hall scroll; a hideout stays
+  allowed there). `Chaos.instanceAt(pos)` is asked by the hideout before it returns a player to a stored spot. A check that errors
+  counts as "no". `ChaosSiege.isInside(player)` and `ChaosSiege.isInsidePos(pos)` exist now (guild hall scroll, arena, treasure goblin).
+- **Strangers in a slot.** Raid, Ember Descent, Ascended Omen, guild boss and battleground runs sweep their slot every 3 s
+  (`Chaos.instanceSweepMs`, from their tick): an online non-staff player standing there who is not in the run goes to the temple
+  (`Chaos.sweepIntruders`). Login inside a slot without a run already did that.
+- **Save before a database credit.** Value that leaves the character in memory and is credited to a row (stash deposit and Stash
+  All, star bank deposit, gold transfer to an offline character, guild bank deposit, guild depot, guild boss gold and materials) is
+  credited only after `player:save()` succeeded (`Chaos.saveCharacter`); a failed save gives it back and credits nothing, as the
+  market and the orb exchange do. Otherwise a crash between the two duplicated it.
+- **Staff talkactions.** `Chaos.staffCommand(player, words, param, economy)`: `/coins`, `/charm give` and `/pact` (all but
+  `info`) need group 5 (`Chaos.economyMinGroup`), `/market` and `/orbx` staff access; every staff use goes to `ChaosAdmin.log`.
+  The admin panel's `players.give_item` and `world.create_item` need group 5 too (like `economy.*`).
+- **Rate limits.** `Chaos.limited(player, key, ms)` (over `ratelimit.lua`) drops a request inside 300 ms of the same action in the
+  opcode handlers of season, siege, arena, bounty, rift, season journey, season modes, daily, hunt, invasion, infinity tower, patch
+  notes and bestiary; the passive tree's save and reset at most once a second. A save always goes to the active preset (no free
+  respec through another preset number).
+- **Stash reach.** A floor item is stashed only from the own tile or a tile that does not block (wall, bars, window), in clear
+  sight, and not diagonally between two walls.
+
+Tests: `tests/instances_test.lua`, `save_before_credit_test.lua`, `staff_permissions_test.lua`, `rate_limits_test.lua`,
+`passivetree_preset_test.lua`, and new cases in `hideout_test.lua`, `security_test.lua`, `guildboss_test.lua`, `shop_test.lua`,
+`shop_payments_test.lua`.
 
 ## Player commands: the menu (`commands_ui.lua`, `commands_ui_core.lua`, `tools/install_commands.py`)
 
@@ -1386,7 +1418,8 @@ Kinds (`ChaosTestKit.kindByVocation`, picked from the vocation when none is give
 ## Store (`shop.lua`, `shop_core.lua`, `shop_config.lua`, `shop_cosmetics.lua`, `shop_coins_config.lua`)
 The client's Store (menu Economy > Store, module `game_shop`) talks JSON on extended opcode 218 (`ChaosOpcodes.shop`; the
 base server's own store script uses 201 and is left alone). Prices are in Chaos Coins, kept per account in
-`chaos_shop_coins`. Staff give coins with `/coins <player>, <amount>` or the admin panel (Store > Give Chaos Coins).
+`chaos_shop_coins`. Administrators (group 5+) give coins with `/coins <player>, <amount>` or the admin panel (Store > Give
+Chaos Coins); a gamemaster is refused, and every use is in the admin audit log.
 Rules without engine calls are in `shop_core.lua` (tested by `tests/shop_test.lua`); offers in `shop_config.lua`; the
 services, unlocks and boosts in `shop_services.lua` (next section).
 
@@ -1468,8 +1501,15 @@ undone for them in `shop_services.lua` (also when the potion came from gold).
 **Gifts.** GIFT on an offer: a character name, a confirmation, then the server checks again (rate limit 3 s, 20 gifts per
 account per day; not to yourself, staff (group 2+) or a banned account; services, unlocks and starter packs cannot be
 gifted; the one exception is an unlock offer with `gift = true`, the hideout decorations). Online: delivered at once with a message. Offline: kept in `chaos_shop_gifts` and delivered 2 s after the next
-login; when it cannot be delivered then (owned meanwhile, no room) the sender gets the coins back. Coin gifts
-("Transfer Coins") work as before.
+login; when it cannot be delivered then (owned meanwhile, no room) the sender gets the coins back.
+
+**Coin gifts** ("Transfer Coins", action `gift_coins`). Refused for `coinGifts.holdDays` (14) days after the sender's last
+credited coin order, above `coinGifts.perDay` (5000) coins in 24 hours, to the own account and to a banned account
+(`shop_config.lua`, `ChaosShopCore.coinGiftProblem`). Every gift is a row of `chaos_coin_gifts` (sender and receiver account,
+amount, the sender's last credited order id, time, `clawed`). When a donation is refunded or charged back
+(`shop_payments.lua processReversals`) and the donor's balance does not cover its coins, the rest is taken back from the
+receivers of the donor's gifts made since that order, newest first, never more than a receiver has (`ChaosShopCore.clawbackPlan`);
+the receiver is told, and what could not be recovered is logged for staff.
 
 **Purchase log and dashboard.** Every purchase and gift is a row of `chaos_shop_purchases` (account, character, name,
 level, offer key, category, title, price, list price, gift account and character, time); `chaos_shop_history` keeps
@@ -1754,7 +1794,10 @@ wall decorations on the north or west wall (the side picks the item), the fixtur
 dummies, lights) stay free, a path of walkable tiles from the arrival to the exit, the depot, the stash and the dummies
 (8 directions), a limit per decoration and per theme. Decorations carry an action id: using them does nothing, moving
 them puts them back; items dropped on a hideout floor go back to the player; no PvP inside; the Town Portal is refused
-inside (`townportal_core.lua`, use the exit).
+inside (`townportal_core.lua`, use the exit). Entering is refused from inside any registered instance (`Chaos.inAnyInstance`:
+rift, dungeon, tower, arena, world boss arena, siege, raid, Ember Descent, Ascended Omen, guild boss, battleground, trials, ascension
+trial, the Scorched Marches), so no return spot inside one is stored. Leaving never goes back to a spot that lies in an instance area
+now (`Chaos.instanceAt`): such a player goes to the temple instead.
 
 **Unlocks** (the catalogue shows each lock reason): every character (thrones, tables, racks, basins, tapestries, rugs,
 banners, bones, trees), achievements (Skull Pillar: rift tier 5; Skull Candle: an omen guardian; Hero Statue: level 300),
@@ -2124,7 +2167,10 @@ vocation; `needlearn="0"`, so existing characters have it at the next login afte
 - **Who:** the owner and the owner's party members (`partyCanUse`, at the moment of the step); others are pushed back with a message. A party
   member who uses the return portal arrives at the owner's spot and leaves the pair open; only the owner's return closes it.
 - **Refused to cast:** already channelling, cooldown, tutorial island (`ChaosNewPlayer.onIsland`), arena match, world boss lobby/arena, guild siege
-  (`ChaosSiege.locate`), inside a rift or omen arena, a dungeon, the Infinity Tower, pz-lock, white/red/black skull, inside a protection zone.
+  (`ChaosSiege.locate`), inside a rift or omen arena, a dungeon, the Infinity Tower, pz-lock, white/red/black skull, inside a protection zone,
+  and inside any other registered instance (`Chaos.inAnyInstance`, see "Shared security rules"): raid, Ember Descent, Ascended Omen, guild boss,
+  battleground, Vocation Trial, ascension trial, the Scorched Marches, a hideout. Taking part in a run or standing in its slot both count, so a raid
+  member cannot open a pair that lets non-member party members walk into the raid.
   The field portal refuses a pz-locked or skulled player at the step as well.
 - **Instances (decision):** the portal cannot be opened inside rifts, dungeons or the tower, and so there is no pair that could point into one: the
   return portal always puts the player back on an open-world tile. (A portal opened outside stays usable while a run is going on elsewhere, but its
@@ -2995,6 +3041,64 @@ no table / 3 tiles away / another floor / table use over 5 minutes old / other c
 one craft and one set of materials; gold and materials are removed before the item is created; materials gone before
 the event, a failed gold or material removal and a logout create nothing; a failed `addItemEx` refunds everything.
 Against the stock script the same test gets 5 items for one set of materials.
+
+## Crafting Table window (`tools/patch_base_crafting_ui.py`, `tests/base_crafting_ui_test.lua`, client `game_craftingtable`)
+
+The client side of the base crafting tables ("Base crafting script"): using a table opens the Crafting Table window on
+its category. The base protocol is kept as it is (extended opcode 91, JSON `{action, data}`; the client module registers
+91, which no other Chaos script or client module uses):
+
+| Direction | Action | Data |
+|---|---|---|
+| server -> client | `show` | `{category}`: a table was used (sent with `money` first) |
+| server -> client | `money` | the gold the player carries (`getMoney`), after `show` and after a craft |
+| server -> client | `chunkedFetch` | `{chunkData = {msgID, index, count, payload}}`: 512-byte pieces of the JSON text of `fetch` |
+| (joined) | `fetch` | `{category, page, totalPages, crafts = [{index, name, id, clientId, level, cost, count, storage, playerStorage, storageText, materials = [{id, clientId, count, player, name}]}]}`, 10 recipes a page, `player` = the player's count (`getItemCount`) |
+| server -> client | `craft` | `{success = true}`: accepted, the item comes 860 ms later; the recipe's page is sent again after it |
+| server -> client | `message` | `{kind = "ok" / "error", text}` (this patch) |
+| server -> client | `tip` | `{category, craftId, tip}` (this patch; `tip = false` without the Chaos item tooltip) |
+| client -> server | `fetch` | `{category, page}` |
+| client -> server | `craft` | `{category, craftId}` (`craftId` = the recipe's index in its category) |
+| client -> server | `tip` | `{category, craftId}` (this patch) |
+
+The base `show` from the client and the `materials` answer are not used. Categories and skills: herbalist (skill 10),
+woodcutting (8), mining (9), generalcrafting (7), armorsmith (11), weaponsmith (12), jewelsmith (13); the client reads
+the skill levels from the skills packet (base patch 0012, `g_game.onCraftingSkill(skill - 7, ...)`, `game_craftskills`).
+
+**What the patch changes** (after `patch_base_crafting.py`, whose markers it needs; it refuses a file without them, so that
+tool's hash of the stock `Crafting:craft` still matches when both run on a fresh file):
+- Every `player:popupFYI(` of the script becomes `CraftingUi.notify(player, "ok" | "error", ...)`: the texts go to the
+  window as `message` instead of popup boxes. All of them answer a `craft` request, which only a client with the window
+  sends. "ok" for the two success texts, "error" for the rest (table, busy, unlock, gold, skill, materials, capacity,
+  backpack, refunds).
+- `tip`: the Chaos item tooltip (`ChaosItemTooltip.build`) of a new item of the recipe's result, made with
+  `Game.createItem` and never placed (rarity and modifiers are rolled when the real item is crafted); 8 per second per
+  player; an unknown category, a method name of `Crafting` or an unknown recipe gets no answer.
+- `fetch`: each material carries its `name`.
+- Anchors `Crafting = {}`, `elseif action == "craft" then`, `player = player:getItemCount(mat.id)`, each exactly once;
+  markers `-- Chaos: crafting window (patch_base_crafting_ui.py) v1 ui / tip / names`.
+
+**The window** (`client/overlay/modules/game_craftingtable/`, logic in `craftingtableview.lua`): the seven categories as
+tabs (the table's own marked), the recipe list with a search over recipe and material names and a filter (All / Can
+craft: unlocked, the skill, the gold and the materials the player carries), the recipe: result icon with the item tooltip,
+count, skill needed against the player's, gold against what he carries, the materials with have/need in green or red,
+Craft with a count (Craft x N sends the next request when the previous one succeeded and the 1 s cooldown passed, and
+stops at the first refusal), a bar for the 860 ms and the server's answer under it. Craft is off, with the reason, for
+another category's tab, when the player moved more than 1 tile from where the table opened the window, when the table
+use is over 290 s old, and when the counts say something is missing (the counts come from the server: the window asks
+for every page when a table opens it, the page again after a refusal, and on Refresh). Economy > Crafting Tables only
+explains where the tables are: in the crafting hall around x 31650, y 32233; z 4 general crafting, jewelsmith (two
+each), armorsmith, weaponsmith (two each); z 5 mining (three); z 6 woodcutting (three), herbalist (four).
+
+**Tests.** `tests/base_crafting_ui_test.lua` (both tools on the stock fixture: refused without the guard patch,
+idempotent, CRLF, partly patched refused; the patched script on a mock engine: refusal, success, busy, gold and skill
+texts as `message`, no popup, material names, `tip` and its limit) and client `game_craftingtable/craftingtableview_test.lua`
+(messages, chunks out of order, pages, have/need, unlock / skill / gold / material / table checks, how many, search and
+filters, progress and repeat timing). **Tested in game** on the full map (test server with the patched script, MariaDB,
+Linux client): a herbalist table used from the client opens the window with 34 recipes, the stats tooltip of a weapon of
+another tab, Craft x2 (two items, 2,000 gold and two sets of materials taken, the skill rose, the counts refreshed),
+the server's refusal for materials that were gone (stale counts), the walked-away state and the server's table refusal
+for a request sent from 3 tiles away, the menu entry.
 
 ## Crafting orbs v2 (`data/lib/chaos_orbs.lua`, `chaos_orbs_config.lua`, `tools/install_orbs.py`, `item_powers.lua`)
 
