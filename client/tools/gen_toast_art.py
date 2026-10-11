@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Art of the game_chaosnotify toasts: the answer buttons and the party invitation icon.
+"""Art of the game_chaosnotify toasts: the answer buttons and the party and catacomb invitation icons.
 
 usage: python3 -I client/tools/gen_toast_art.py [OUTDIR] [--sheet SHEET.png]
        default OUTDIR: client/overlay/modules/game_chaosnotify/images/toast
@@ -11,6 +11,9 @@ Files:
   decline.png       80x96: the "no" button (Decline, Cancel), same layout
   party_invite.png  48x48: the PARTY INVITATION icon (crossed swords over an iron buckler), drawn at the size the
                     toast shows it, so it is never scaled
+  catacomb_invite.png 48x48: the CATACOMB AVAILABLE icon (a stone archway with a skull keystone, an iron band
+                    outside, a gold rim round the doorway, ember light rising from the stairs inside), same size and
+                    frame as the party icon
 
 The plates carry no text: the client draws the label in its own font (the Chaos heading font when it is loaded), so
 one image serves Accept and Start, another Decline and Cancel, and the text stays crisp.
@@ -202,6 +205,124 @@ def icon_party():
     return out
 
 
+# ============================================================== catacomb invitation icon
+def _grow(m):
+    """Binary mask grown by one pixel (4-neighbours)."""
+    g = m.copy()
+    g[1:, :] |= m[:-1, :]
+    g[:-1, :] |= m[1:, :]
+    g[:, 1:] |= m[:, :-1]
+    g[:, :-1] |= m[:, 1:]
+    return g
+
+
+def icon_catacomb():
+    yy, xx = np.mgrid[0:N, 0:N].astype(np.float32)
+    c = (N - 1) / 2.0
+    # backdrop: the same abyss stone as the party icon, a colder warmth (the light is in the door)
+    bg = sk.mat_stone(N, N, 91, tint=hexc('#141016'))
+    r0 = np.sqrt((xx - c) ** 2 + (yy - 30) ** 2)
+    bg = np.clip(bg + (np.clip(1 - r0 / 30.0, 0, 1) ** 2)[..., None] * hexc('#5a1e0a')[None, None, :] * 0.35, 0, 1)
+    out = sk.rgba(bg)
+
+    # the archway: a round arch on two jambs, the doorway inside it
+    ay = 20.0                      # springing line of the arch
+    ri, ro = 7.5, 14.5             # inner and outer radius
+    floor_y = 41
+    r = np.sqrt((xx - c) ** 2 + (yy - ay) ** 2)
+    upper = yy <= ay
+    opening = np.where(upper, r <= ri, np.abs(xx - c) <= ri) & (yy <= floor_y)
+    outer = np.where(upper, r <= ro, np.abs(xx - c) <= ro) & (yy <= floor_y + 1)
+    ring = outer & ~opening
+
+    # joints: seven voussoirs over the arch (the middle one is the keystone), coursed blocks down the jambs
+    ang = np.arctan2(ay - yy, xx - c)                       # 0 at the right springer, pi at the left
+    step = math.pi / 7
+    k = np.round(ang / step)
+    arcjoint = upper & (np.abs(ang - k * step) * r < 0.55) & (k > 0) & (k < 7)
+    course = np.floor((yy - ay) / 5.5)
+    jamb = ~upper
+    rowjoint = jamb & (np.abs((yy - ay) - np.round((yy - ay) / 5.5) * 5.5) < 0.5) & (yy > ay + 1)
+    side = np.where(xx < c, -1, 1)
+    mid = c + side * (ri + ro) / 2 + np.where(course % 2 == 0, -1.0, 1.0) * side * 0.5
+    vjoint = jamb & (np.abs(xx - mid) < 0.5) & (course % 2 == 0)
+    joints = ring & (arcjoint | rowjoint | vjoint | (upper & (np.abs(yy - ay) < 0.5)))
+    blocks = ring & ~joints
+
+    # the stone: each block a low cushion (lit from the top left), the joints sunk and dark
+    stone = sk.mat_stone(N, N, 92, tint=hexc('#544c52'), tone=1.0)
+    hgt = sk.gauss(blocks.astype(np.float32), 0.7) * 2.2
+    lit = sk.shade(hgt, stone, amb=0.4, diff=0.9, spec=0.25, shin=12, strength=1.3)
+    # ember light from the doorway warms the inner faces of the arch
+    din = np.where(upper, r - ri, np.abs(xx - c) - ri)
+    warm = np.clip(1 - din / 5.0, 0, 1) ** 1.5 * np.clip((yy - 4) / 30.0, 0.25, 1)
+    lit = np.clip(lit + warm[..., None] * hexc('#c2410c')[None, None, :] * 0.55, 0, 1)
+    lit = np.where(joints[..., None], hexc('#0c090b')[None, None, :], lit)
+
+    # inside the door: black depth, an ember glow rising from the stairs going down
+    gd = np.sqrt(((xx - c) / 1.15) ** 2 + (yy - (floor_y + 2)) ** 2)
+    glow = np.clip(1 - gd / 17.0, 0, 1) ** 1.7
+    dark = hexc('#07040a')[None, None, :] * np.ones((N, N, 1), np.float32)
+    inside = np.clip(dark + glow[..., None] * hexc('#ff6a1a')[None, None, :] * 1.05
+                     + (glow ** 3)[..., None] * hexc('#ffd27a')[None, None, :] * 0.6, 0, 1)
+    for sy in (floor_y - 9, floor_y - 6, floor_y - 3):
+        w = ri - (floor_y - sy) * 0.35
+        edge = (np.abs(yy - sy) < 0.5) & (np.abs(xx - c) <= w)
+        inside = np.where(edge[..., None], np.clip(inside * 1.6 + hexc('#ffb347') * 0.18, 0, 1), inside)
+        under = (np.abs(yy - sy - 1) < 0.5) & (np.abs(xx - c) <= w)
+        inside = np.where(under[..., None], inside * 0.45, inside)
+
+    # drop shadow of the arch on the wall, then the arch and the door
+    sh = np.zeros((N, N), bool)
+    sh[1:, 1:] = outer[:-1, :-1]
+    sk.blend_rgb(out, sk.BLACK, (sh & ~outer).astype(np.float32) * 0.7)
+    out[..., :3] = np.where(ring[..., None], lit, out[..., :3])
+    out[..., :3] = np.where(opening[..., None], inside, out[..., :3])
+
+    # iron band round the outside of the arch, gold rim round the doorway
+    iron_band = ring & _grow(~outer)
+    gold_band = ring & _grow(opening) & ~iron_band
+    ironc = sk.mat_iron(N, N, 93, tone=1.0, tint=sk.STEEL * 0.85)
+    ironc = np.where(((yy < ay) & (xx < c + 2))[..., None], np.clip(ironc * 1.35, 0, 1), ironc * 0.8)
+    out[..., :3] = np.where(iron_band[..., None], ironc, out[..., :3])
+    goldc = sk.mat_gold(N, N, 94, tone=1.05)
+    goldc = np.where(((yy < ay) & (xx < c + 2))[..., None], np.clip(goldc * 1.3, 0, 1), goldc)
+    out[..., :3] = np.where(gold_band[..., None], goldc, out[..., :3])
+    sk.blend_rgb(out, sk.BLACK, (_grow(outer) & ~outer).astype(np.float32) * 0.85)
+
+    # threshold slab under the door
+    slab = (yy >= floor_y + 2) & (yy <= floor_y + 3) & (np.abs(xx - c) <= ro + 1.5)
+    slabc = sk.mat_stone(N, N, 95, tint=hexc('#3b3439'))
+    slabc = np.where((yy == floor_y + 2)[..., None], np.clip(slabc * 1.35 + hexc('#7a2a0c') * 0.25, 0, 1), slabc)
+    out[..., :3] = np.where(slab[..., None], slabc, out[..., :3])
+
+    # the skull keystone: bone, hard edged, ember light in the eyes
+    sx, sy0 = c, 8.0
+    cran = ((xx - sx) / 4.6) ** 2 + ((yy - sy0) / 4.1) ** 2 <= 1.0
+    jaw = (np.abs(xx - sx) <= 2.6) & (yy > sy0) & (yy <= sy0 + 5.0)
+    skull = cran | jaw
+    bone = np.ones((N, N, 3), np.float32) * hexc('#cbbd9f')[None, None, :]
+    sk_img = sk.metal_from_mask(skull.astype(np.float32), bone, height_scale=2.0, blur=0.8, spec=0.35, shin=10,
+                                outline=0.95, shadow=0.85)
+    sk_img[..., 3] = (sk_img[..., 3] > 0.5).astype(np.float32)
+    sk.over(out, sk_img)
+    eyes = ((np.abs(xx - (sx - 2.0)) <= 1.0) | (np.abs(xx - (sx + 2.0)) <= 1.0)) & (yy >= sy0) & (yy <= sy0 + 1.0)
+    out[..., :3] = np.where(eyes[..., None], hexc('#1a0604')[None, None, :], out[..., :3])
+    pupils = eyes & (yy == sy0 + 1.0) & ((np.abs(xx - (sx - 2.0)) <= 0.5) | (np.abs(xx - (sx + 2.0)) <= 0.5))
+    out[..., :3] = np.where(pupils[..., None], sk.EMBER[None, None, :], out[..., :3])
+    nose = (np.abs(xx - sx) <= 0.5) & (yy == sy0 + 2.0)
+    teeth = (yy == sy0 + 4.0) & (np.abs(xx - sx) <= 2.0) & ((np.floor(xx - sx + 0.5) % 2) == 0)
+    out[..., :3] = np.where((nose | teeth)[..., None], hexc('#2a1f1a')[None, None, :], out[..., :3])
+
+    # a thin gold rim on a black outline, like the party icon
+    d = sk.dist_rect(N, N)
+    sk.blend_rgb(out, sk.GOLD * 0.85, ((d >= 1) & (d < 2)).astype(np.float32))
+    sk.blend_rgb(out, sk.GOLD_L, ((d >= 1) & (d < 2) & (yy < 2)).astype(np.float32) * 0.6)
+    sk.blend_rgb(out, sk.BLACK, (d < 1).astype(np.float32) * 0.92)
+    out[..., 3] = 1.0
+    return out
+
+
 # ============================================================== io
 def to_img(a):
     return sk.to_img(a) if hasattr(sk, 'to_img') else Image.fromarray((np.clip(a, 0, 1) * 255 + 0.5).astype(np.uint8))
@@ -239,7 +360,8 @@ def main(argv):
     out = args[0] if args else DEFAULT_OUT
     imgs = [write(button_sheet('accept'), os.path.join(out, 'accept.png')),
             write(button_sheet('decline'), os.path.join(out, 'decline.png')),
-            write(icon_party(), os.path.join(out, 'party_invite.png'))]
+            write(icon_party(), os.path.join(out, 'party_invite.png')),
+            write(icon_catacomb(), os.path.join(out, 'catacomb_invite.png'))]
     if sheet_path:
         sheet(imgs, sheet_path)
 

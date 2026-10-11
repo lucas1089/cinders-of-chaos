@@ -147,7 +147,7 @@ local NOTIFICATION_TYPES = {
         duration = 10000,
     },
     CATACOMB_FREE = {
-        icon = "images/notifications/catacomb2.png",
+        icon = "images/toast/catacomb_invite.png",
         title = "CATACOMB AVAILABLE",
         titleColor = "#a3844b",
         backgroundColor = "#ccbebb",
