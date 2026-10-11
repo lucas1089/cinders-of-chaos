@@ -16,7 +16,7 @@ local isInitialized = false
 -- Tipos de notificação com configurações melhoradas + CATACOMB
 local NOTIFICATION_TYPES = {
     GM_BROADCAST = {
-        icon = "images/notifications/gm.png",
+        icon = "images/toast/announce.png",
         title = "GAMEMASTER NOTIFICATION",
         titleColor = "#a3844b",
         backgroundColor = "#ccbebb",
@@ -24,7 +24,7 @@ local NOTIFICATION_TYPES = {
         duration = 30000, -- 10 segundos
     },
     TASK_COMPLETE = {
-        icon = "images/notifications/task.png",
+        icon = "images/toast/task.png",
         title = "TASK COMPLETED",
         titleColor = "#a3844b",
         backgroundColor = "#ccbebb",
@@ -32,7 +32,7 @@ local NOTIFICATION_TYPES = {
         duration = 10000, -- 10 segundos
     },
     BATTLE_PASS = {
-        icon = "images/notifications/battlepass.png",
+        icon = "images/toast/season_pass.png",
         title = "BATTLE PASS REWARD",
         titleColor = "#a3844b",
         backgroundColor = "#ccbebb",
@@ -48,7 +48,7 @@ local NOTIFICATION_TYPES = {
         duration = 30000, -- 30 segundos
     },
     BOUNTY = {
-        icon = "images/notifications/task.png",
+        icon = "images/toast/bounty.png",
         title = "BOUNTY BOARD",
         titleColor = "#a3844b",
         backgroundColor = "#ccbebb",
@@ -56,7 +56,7 @@ local NOTIFICATION_TYPES = {
         duration = 8000,
     },
     NEW_PLAYER = {
-        icon = "images/notifications/gm.png",
+        icon = "images/toast/new_player.png",
         title = "NEW ADVENTURER",
         titleColor = "#a3844b",
         backgroundColor = "#ccbebb",
@@ -65,7 +65,7 @@ local NOTIFICATION_TYPES = {
     },
     -- bestiary and kill tasks (server data/scripts/chaos/bestiary.lua): new stages, completed tasks
     BESTIARY = {
-        icon = "images/notifications/task.png",
+        icon = "images/toast/bestiary.png",
         title = "BESTIARY",
         titleColor = "#b08a4a",
         backgroundColor = "#ccbebb",
@@ -84,7 +84,7 @@ local NOTIFICATION_TYPES = {
     },
     -- ascension quest (server data/scripts/chaos/ascension_quest.lua): Proof, Trial and the ascension itself
     ASCENSION = {
-        icon = "images/notifications/gm.png",
+        icon = "images/toast/ascension.png",
         title = "ASCENSION",
         titleColor = "#c9a24a",
         backgroundColor = "#ccbebb",
@@ -94,7 +94,7 @@ local NOTIFICATION_TYPES = {
     -- invasions and world events (server data/scripts/chaos/invasion.lua, worldevents.lua): warnings, waves, the end
     -- the market (server data/scripts/chaos/market.lua): a sale, a purchase, items and gold delivered
     MARKET = {
-        icon = "images/notifications/gm.png",
+        icon = "images/toast/market.png",
         title = "MARKET",
         titleColor = "#e8b84a",
         backgroundColor = "#ccbebb",
@@ -112,7 +112,7 @@ local NOTIFICATION_TYPES = {
         duration = 12000,
     },
     INVASION = {
-        icon = "images/notifications/gm.png",
+        icon = "images/toast/invasion.png",
         title = "INVASION",
         titleColor = "#d8452a",
         backgroundColor = "#ccbebb",
@@ -121,7 +121,7 @@ local NOTIFICATION_TYPES = {
     },
     -- season pass (server data/scripts/chaos/seasonpass.lua): tier up, challenge done, premium and packs
     SEASON_PASS = {
-        icon = "images/notifications/battlepass.png",
+        icon = "images/toast/season_pass.png",
         title = "SEASON PASS",
         titleColor = "#ff9a3c",
         backgroundColor = "#ccbebb",
@@ -130,7 +130,7 @@ local NOTIFICATION_TYPES = {
     },
     -- Seasonal Journey (server data/scripts/chaos/season_journey.lua): an objective done, a chapter complete
     JOURNEY = {
-        icon = "images/notifications/task.png",
+        icon = "images/toast/journey.png",
         title = "SEASONAL JOURNEY",
         titleColor = "#ff9a3c",
         backgroundColor = "#ccbebb",
@@ -139,7 +139,7 @@ local NOTIFICATION_TYPES = {
     },
     -- boss passive points (server data/scripts/chaos/bosspoints.lua): first kill of a major boss, +1 passive point
     BOSS_POINT = {
-        icon = "images/notifications/task.png",
+        icon = "images/toast/boss_point.png",
         title = "BOSS PASSIVE POINT",
         titleColor = "#d8a03a",
         backgroundColor = "#ccbebb",
@@ -538,7 +538,7 @@ local function createCompactNotification(data, isPinned)
             pcall(function()
                 moduleIcon:setId('moduleIcon')
                 moduleIcon:setSize({width = 48, height = 48})
-                moduleIcon:setImageSource(data.icon or 'images/notifications/gm.png')
+                moduleIcon:setImageSource(data.icon or 'images/toast/announce.png')
                 moduleIcon:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
                 moduleIcon:addAnchor(AnchorVerticalCenter, 'parent', AnchorVerticalCenter)
             end)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Art of the game_chaosnotify toasts: the answer buttons and the party and catacomb invitation icons.
+"""Art of the game_chaosnotify toasts: the answer buttons and every toast icon of our own.
 
 usage: python3 -I client/tools/gen_toast_art.py [OUTDIR] [--sheet SHEET.png]
        default OUTDIR: client/overlay/modules/game_chaosnotify/images/toast
@@ -14,6 +14,18 @@ Files:
   catacomb_invite.png 48x48: the CATACOMB AVAILABLE icon (a stone archway with a skull keystone, an iron band
                     outside, a gold rim round the doorway, ember light rising from the stairs inside), same size and
                     frame as the party icon
+  message icons     48x48 each, same frame, backdrop and materials, no text (TYPE -> file, notifications.lua):
+    announce.png      GM_BROADCAST and the fallback: a sealed scroll, crimson ribbon, gold seal with an ember stone
+    task.png          TASK_COMPLETE: a parchment pinned by an iron nail, ruled lines, an ember-green check mark
+    season_pass.png   BATTLE_PASS, SEASON_PASS: a gold medallion with an ember stone in a laurel wreath
+    new_player.png    NEW_PLAYER: an iron lantern with an ember flame
+    ascension.png     ASCENSION: a rising flame between two gold wings
+    market.png        MARKET: gold balance scales on an iron post
+    invasion.png      INVASION: two crossed war axes over a blood-red glow
+    bounty.png        BOUNTY: a wanted poster (hooded head) pinned by a dagger
+    bestiary.png      BESTIARY: a leather tome torn by three claw marks
+    journey.png       JOURNEY: a compass, gold ring, ember north needle
+    boss_point.png    BOSS_POINT: a crowned skull with ember eyes
 
 The plates carry no text: the client draws the label in its own font (the Chaos heading font when it is loaded), so
 one image serves Accept and Start, another Decline and Cancel, and the text stays crisp.
@@ -323,6 +335,512 @@ def icon_catacomb():
     return out
 
 
+# ============================================================== message toast icons
+# Same frame, backdrop and materials as the party and catacomb icons. Shapes are drawn at 4x and thresholded, so
+# every edge is hard; colour layers inside a shape are set per pixel. One emblem per icon, no text.
+YY, XX = np.mgrid[0:N, 0:N].astype(np.float32)
+CC = (N - 1) / 2.0
+STEEL_A = hexc('#b9b2b4')
+BONE = hexc('#cbbd9f')
+PARCH = hexc('#d2bd93')
+INK = hexc('#5a3a22')
+CRIMSON = hexc('#8e1a14')
+
+
+def _backdrop(seed, warm, cx=CC, cy=CC, k=0.55, rad=26.0):
+    """Abyss stone with a coloured warmth round (cx, cy), as RGBA."""
+    bg = sk.mat_stone(N, N, seed, tint=hexc('#141016'))
+    r = np.sqrt((XX - cx) ** 2 + (YY - cy) ** 2)
+    w = np.clip(1 - r / rad, 0, 1) ** 1.6
+    return sk.rgba(np.clip(bg + w[..., None] * hexc(warm)[None, None, :] * k, 0, 1))
+
+
+def _frame(out):
+    """The thin gold rim on a black outline of every toast icon; the icon is opaque."""
+    d = sk.dist_rect(N, N)
+    sk.blend_rgb(out, sk.GOLD * 0.85, ((d >= 1) & (d < 2)).astype(np.float32))
+    sk.blend_rgb(out, sk.GOLD_L, ((d >= 1) & (d < 2) & (YY < 2)).astype(np.float32) * 0.6)
+    sk.blend_rgb(out, sk.BLACK, (d < 1).astype(np.float32) * 0.92)
+    out[..., 3] = 1.0
+    return out
+
+
+def _mask(fn):
+    """Hard 0/1 mask drawn with PIL at 4x; fn(d, P, s) where P(x, y) maps icon pixels to the canvas."""
+    def draw(d, ss):
+        fn(d, lambda x, y: (x * ss, y * ss), ss)
+    return (sk.mask_draw(N, N, draw, ss=4) > 0.5)
+
+
+def _ell(d, P, x0, y0, x1, y1, fill=255):
+    d.ellipse([*P(x0, y0), *P(x1, y1)], fill=fill)
+
+
+def _piece(out, m, alb, hs=1.8, spec=0.7, shin=12, shadow=0.8):
+    """Emboss a mask in a material (dark outline, drop shadow) and lay it on out, hard edged."""
+    img = sk.metal_from_mask(m.astype(np.float32), alb, height_scale=hs, blur=0.6, spec=spec, shin=shin,
+                             outline=0.95, shadow=shadow)
+    img[..., 3] = (img[..., 3] > 0.5).astype(np.float32)
+    sk.over(out, img)
+
+
+def _paint(out, m, col):
+    out[..., :3] = np.where(m[..., None], np.broadcast_to(col, out[..., :3].shape), out[..., :3])
+
+
+def _flat(col):
+    return np.ones((N, N, 3), np.float32) * hexc(col)[None, None, :] if isinstance(col, str) \
+        else np.ones((N, N, 3), np.float32) * col[None, None, :]
+
+
+def _parch(seed, tone=1.0):
+    n = sk.fbm(N, N, base=3, octaves=4, seed=seed)
+    return np.clip(PARCH[None, None, :] * ((0.82 + 0.24 * n) * tone)[..., None], 0, 1)
+
+
+def _wood(seed):
+    return sk.mat_leather(N, N, seed, tint=hexc('#4f321d'), tone=1.15)
+
+
+def _gem(out, cx, cy, r=3, col='#a8320c', light=None):
+    g = sk.gem(r, hexc(col), sk.EMBER if light is None else hexc(light), glow=0.0)
+    g[..., 3] = (g[..., 3] > 0.5).astype(np.float32)
+    n = g.shape[0]
+    sk.over(out, g, int(round(cx - n // 2)), int(round(cy - n // 2)))
+
+
+def _flame(cx, by, h, w):
+    """Mask of a flame: a round base at (cx, by) of half width w, rising to a tip h above it."""
+    def fn(d, P, s):
+        _ell(d, P, cx - w, by - w, cx + w, by + w)
+        d.polygon([P(cx - w, by - 0.2), P(cx - w * 0.55, by - h * 0.55), P(cx + w * 0.1, by - h),
+                   P(cx + w * 0.35, by - h * 0.62), P(cx + w, by - 0.2)], fill=255)
+    return _mask(fn)
+
+
+def _fire(out, cx, by, h, w):
+    """Three nested flames: blood red, ember, a pale gold core."""
+    for k, col in ((1.0, '#b3260c'), (0.7, '#ff7a1c'), (0.4, '#ffd27a')):
+        m = _flame(cx, by + (1 - k) * w * 0.6, h * k, w * k)
+        _paint(out, m, hexc(col))
+
+
+# -- announcement: a sealed scroll tied with a crimson ribbon, a gold seal with an ember stone
+def icon_announce():
+    out = _backdrop(101, '#7a2a0c')
+    x0, x1, cy, r = 8.0, 40.0, 21.0, 7.0
+    body = (XX >= x0) & (XX <= x1) & (np.abs(YY - cy) <= r)
+    caps = [((XX - ex) / 2.6) ** 2 + ((YY - cy) / r) ** 2 <= 1.0 for ex in (x0, x1)]
+    shape = body | caps[0] | caps[1]
+    # the rolled paper is a lit cylinder; the two ends show the curl
+    t = np.clip((YY - cy) / r, -1, 1)
+    hgt = np.sqrt(1 - t ** 2) * r * 0.9
+    paper = sk.shade(hgt, _parch(102), amb=0.45, diff=0.9, spec=0.15, shin=10, strength=1.0)
+    sh = np.zeros((N, N), bool)
+    sh[2:, 2:] = shape[:-2, :-2]
+    sk.blend_rgb(out, sk.BLACK, (sh & ~shape).astype(np.float32) * 0.7)
+    _paint(out, _grow(shape) & ~shape, sk.IRON_D * 0.5)
+    out[..., :3] = np.where(shape[..., None], paper, out[..., :3])
+    _paint(out, caps[0], PARCH * 0.62)
+    _paint(out, caps[1] & ~body, PARCH * 0.5)
+    curl = np.abs(((XX - x0) / 1.4) ** 2 + ((YY - cy - 0.5) / 3.6) ** 2 - 1) < 0.45
+    _paint(out, curl, INK * 0.9)
+
+    # ribbon round the roll and its two tails
+    def ribbon(d, P, s):
+        d.rectangle([*P(21.5, cy - r - 0.6), *P(26.5, cy + r + 0.6)], fill=255)
+        d.polygon([P(22, 28), P(25, 28), P(20.5, 41), P(18.5, 39.5), P(17, 42)], fill=255)
+        d.polygon([P(23, 28), P(26, 28), P(31, 42), P(29.5, 39.5), P(27.5, 41)], fill=255)
+    rb = _mask(ribbon)
+    alb = _flat(CRIMSON) * (0.9 + 0.2 * sk.fbm(N, N, base=6, octaves=3, seed=103))[..., None]
+    _piece(out, rb, alb, hs=1.4, spec=0.4, shin=10)
+    # the seal: a gold disc with a raised ring and an ember stone
+    seal = _mask(lambda d, P, s: _ell(d, P, 17.5, 22.5, 30.5, 35.5))
+    _piece(out, seal, sk.mat_gold(N, N, 104, tone=1.05), hs=2.2, spec=0.9, shin=10)
+    rr = np.sqrt((XX - 24) ** 2 + (YY - 29) ** 2)
+    ring = (np.abs(rr - 4.6) < 0.55)
+    _paint(out, ring & seal, sk.GOLD_D)
+    _paint(out, (np.abs(rr - 5.4) < 0.5) & seal & (YY < 29) & (XX < 26), sk.GOLD_H)
+    _gem(out, 24, 29, r=2)
+    return _frame(out)
+
+
+# -- task: a parchment pinned with an iron nail, a few ruled lines and an ember-green check mark
+def icon_task():
+    out = _backdrop(111, '#6a4a14', k=0.5)
+    sheet = _mask(lambda d, P, s: d.polygon([P(11, 8), P(37, 6.5), P(38.5, 33), P(32.5, 41.5), P(10, 42)],
+                                            fill=255))
+    _piece(out, sheet, _parch(112), hs=1.2, spec=0.15, shin=10)
+    # the folded corner at the bottom right
+    fold = _mask(lambda d, P, s: d.polygon([P(38.5, 33), P(32.5, 41.5), P(33.5, 34.5)], fill=255))
+    _paint(out, fold, PARCH * 0.62)
+    _paint(out, _grow(fold) & ~fold & sheet & (XX > 31) & (YY > 31), INK * 0.8)
+    # ruled lines (no writing)
+    for i, ly in enumerate((14, 18, 22)):
+        ln = _mask(lambda d, P, s, ly=ly, i=i: d.line([P(15, ly + 0.2), P(33 - i * 3, ly - 0.6)], fill=255,
+                                                      width=max(1, int(1.1 * s))))
+        _paint(out, ln & sheet, INK * 1.1)
+    # the check mark
+    chk = _mask(lambda d, P, s: d.line([P(15, 27), P(21.5, 34.5), P(34.5, 17.5)], fill=255,
+                                       width=int(4.2 * s), joint='curve'))
+    _piece(out, chk, _flat('#6f9e3a'), hs=1.8, spec=0.6, shin=12, shadow=0.7)
+    _paint(out, _mask(lambda d, P, s: d.line([P(15.5, 26.2), P(21.5, 33), P(33.6, 17.2)], fill=255,
+                                             width=max(1, int(1.0 * s)))) & chk, hexc('#b6e07a'))
+    # the nail
+    rv = sk.rivet(2.6, tone=1.2)
+    rv[..., 3] = (rv[..., 3] > 0.5).astype(np.float32)
+    sk.over(out, rv, 24 - rv.shape[0] // 2, 9 - rv.shape[0] // 2)
+    return _frame(out)
+
+
+# -- season pass: a gold medallion with an ember stone in a laurel wreath, crimson ribbon tails
+def icon_season():
+    out = _backdrop(121, '#a4420e', cy=22, k=0.6)
+    cx, cy = CC, 21.0
+
+    def tails(d, P, s):
+        d.polygon([P(20, 30), P(24, 31), P(17, 43), P(15.5, 39.5), P(12.5, 41)], fill=255)
+        d.polygon([P(24, 31), P(28, 30), P(35.5, 41), P(32.5, 39.5), P(31, 43)], fill=255)
+    _piece(out, _mask(tails), _flat(CRIMSON), hs=1.4, spec=0.4)
+
+    def laurel(d, P, s):
+        R = 15.5
+        for side in (-1, 1):
+            # phi: 0 at the bottom of the wreath, rising up this side
+            stem = [P(cx + side * R * math.sin(math.radians(f)), cy + R * math.cos(math.radians(f)))
+                    for f in range(18, 122, 6)]
+            d.line(stem, fill=255, width=max(1, int(1.2 * s)))
+            for i in range(5):
+                f = math.radians(30 + i * 22)
+                lx, ly = cx + side * R * math.sin(f), cy + R * math.cos(f)
+                tx, ty = side * math.cos(f), -math.sin(f)
+                ox, oy = side * math.sin(f), math.cos(f)
+                for o in (1, -1):        # a leaf each side of the stem, leaning up the wreath
+                    mx, my = lx + ox * o * 1.9 + tx * 1.2, ly + oy * o * 1.9 + ty * 1.2
+                    L, W = 3.4, 2.0
+                    ax, ay = tx + ox * o * 0.45, ty + oy * o * 0.45
+                    al = math.hypot(ax, ay)
+                    ax, ay = ax / al, ay / al
+                    nx, ny = -ay, ax
+                    d.polygon([P(mx - ax * L, my - ay * L), P(mx - ax * L * 0.3 + nx * W, my - ay * L * 0.3 + ny * W),
+                               P(mx + ax * L, my + ay * L), P(mx - ax * L * 0.3 - nx * W, my - ay * L * 0.3 - ny * W)],
+                              fill=255)
+    _piece(out, _mask(laurel), sk.mat_gold(N, N, 122, tone=0.95), hs=1.6, spec=0.7)
+    med = _mask(lambda d, P, s: _ell(d, P, cx - 10.5, cy - 10.5, cx + 10.5, cy + 10.5))
+    _piece(out, med, sk.mat_gold(N, N, 123, tone=1.08), hs=2.6, spec=0.9, shin=10)
+    rr = np.sqrt((XX - cx) ** 2 + (YY - cy) ** 2)
+    face = rr <= 6.8
+    _paint(out, face, hexc('#2a1a14'))
+    _paint(out, (np.abs(rr - 7.4) < 0.55), sk.GOLD_D)
+    _paint(out, (np.abs(rr - 8.6) < 0.5) & (YY < cy) & (XX < cx + 2), sk.GOLD_H)
+    _gem(out, cx, cy, r=4)
+    return _frame(out)
+
+
+# -- new player: an iron lantern with an ember flame
+def icon_newplayer():
+    out = _backdrop(131, '#b0520f', cy=26, k=0.7, rad=22)
+    iron = sk.mat_iron(N, N, 132, tone=1.25, tint=sk.STEEL * 0.8)
+
+    def handle(d, P, s):
+        d.ellipse([*P(18.5, 3.5), *P(29.5, 13.5)], outline=255, width=int(2.0 * s))
+    hm = _mask(handle) & (YY < 10)
+    _piece(out, hm, iron, hs=1.4)
+    # glass and its light
+    glass = (XX >= 16) & (XX <= 31) & (YY >= 15) & (YY <= 35)
+    gd = np.sqrt(((XX - 23.5) / 1.1) ** 2 + (YY - 29) ** 2)
+    light = np.clip(1 - gd / 13.0, 0, 1) ** 1.3
+    gl = np.clip(hexc('#2a0e06')[None, None, :] + light[..., None] * hexc('#ff7a1c')[None, None, :] * 0.85, 0, 1)
+    out[..., :3] = np.where(glass[..., None], gl, out[..., :3])
+    _fire(out, 23.5, 30.5, 13, 4.2)
+
+    def frame_(d, P, s):
+        d.polygon([P(17, 12), P(30, 12), P(33, 15.5), P(14, 15.5)], fill=255)      # cap
+        d.rectangle([*P(19, 9.5), *P(28, 12)], fill=255)
+        d.rectangle([*P(14, 35), *P(33, 38)], fill=255)                             # base
+        d.polygon([P(16, 38), P(31, 38), P(29.5, 40.5), P(17.5, 40.5)], fill=255)
+        for bx in (14, 31.2):                                                        # corner posts
+            d.rectangle([*P(bx, 15), *P(bx + 2.8, 35.5)], fill=255)
+        d.rectangle([*P(14, 24.5), *P(33, 25.8)], fill=0)
+    fm = _mask(frame_)
+    bar = (np.abs(YY - 25) <= 0.6) & (XX >= 16) & (XX <= 31)
+    _piece(out, fm, iron, hs=1.8, spec=0.8, shin=14)
+    _paint(out, bar, sk.IRON_D * 0.8)
+    _paint(out, (np.abs(YY - 15) < 0.5) & (XX >= 17) & (XX <= 30), sk.GOLD)
+    _paint(out, (np.abs(YY - 35) < 0.5) & (XX >= 15) & (XX <= 32), sk.GOLD)
+    return _frame(out)
+
+
+# -- ascension: a rising flame between two gold wings
+def icon_ascension():
+    out = _backdrop(141, '#a4420e', cy=20, k=0.65)
+
+    def wings(d, P, s):
+        for side in (-1, 1):
+            bx, by = CC + side * 3.5, 31.0
+            for i, (ang, ln, wd) in enumerate(((150, 17, 2.6), (135, 18, 2.6), (118, 17, 2.6), (100, 13, 2.4))):
+                a = math.radians(ang)
+                dx, dy = math.cos(a) * -side, -math.sin(a)
+                nx, ny = -dy, dx
+                x0, y0 = bx + side * i * 0.4, by - i * 1.6
+                x1, y1 = x0 + dx * ln, y0 + dy * ln
+                d.polygon([P(x0 + nx * wd, y0 + ny * wd), P(x1 + nx * wd * 0.5, y1 + ny * wd * 0.5),
+                           P(x1 + dx * 2.2, y1 + dy * 2.2), P(x1 - nx * wd * 0.5, y1 - ny * wd * 0.5),
+                           P(x0 - nx * wd, y0 - ny * wd)], fill=255)
+    wm = _mask(wings)
+    _piece(out, wm, sk.mat_gold(N, N, 142, tone=1.08), hs=1.6, spec=0.8)
+    # feather joints
+    for side in (-1, 1):
+        for i, ang in enumerate((142, 126, 109)):
+            a = math.radians(ang)
+            dx, dy = math.cos(a) * -side, -math.sin(a)
+            x0, y0 = CC + side * 3.5 + side * i * 0.4, 31.0 - i * 1.6 - 0.8
+            ln = _mask(lambda d, P, s, x0=x0, y0=y0, dx=dx, dy=dy: d.line(
+                [P(x0 + dx * 4, y0 + dy * 4), P(x0 + dx * 15, y0 + dy * 15)], fill=255, width=max(1, int(0.9 * s))))
+            _paint(out, ln & wm, sk.GOLD_D)
+    # the flame, rising from an ember on a gold base
+    fl = _flame(CC, 30, 25, 6.5)
+    ol = _grow(fl) & ~fl
+    _paint(out, ol, hexc('#1a0604'))
+    _fire(out, CC, 30, 25, 6.5)
+    base = _mask(lambda d, P, s: d.polygon([P(17, 36), P(31, 36), P(28.5, 41), P(19.5, 41)], fill=255))
+    _piece(out, base, sk.mat_iron(N, N, 143, tone=1.2, tint=sk.STEEL * 0.8), hs=1.6)
+    _paint(out, (np.abs(YY - 36) < 0.5) & (XX >= 18) & (XX <= 30), sk.GOLD)
+    return _frame(out)
+
+
+# -- market: gold balance scales on an iron post
+def icon_market():
+    out = _backdrop(151, '#7a4a0c', k=0.5)
+    gold = sk.mat_gold(N, N, 152, tone=1.08)
+
+    def chains(d, P, s):
+        for px in (11.0, 37.0):
+            d.line([P(px, 13), P(px - 6.5, 28)], fill=255, width=max(1, int(1.1 * s)))
+            d.line([P(px, 13), P(px + 6.5, 28)], fill=255, width=max(1, int(1.1 * s)))
+    cm = _mask(chains)
+    _paint(out, cm, hexc('#8a7f78'))
+
+    def post(d, P, s):
+        d.rectangle([*P(22.6, 10), *P(25.4, 37)], fill=255)
+        d.polygon([P(17, 40.5), P(31, 40.5), P(28, 36.5), P(20, 36.5)], fill=255)
+    _piece(out, _mask(post), sk.mat_iron(N, N, 153, tone=1.25, tint=sk.STEEL * 0.8), hs=1.6)
+
+    def beam(d, P, s):
+        d.polygon([P(9, 11.6), P(39, 11.6), P(39, 14.2), P(9, 14.2)], fill=255)
+        _ell(d, P, 21, 5.5, 27, 11.5)
+        for px in (11.0, 37.0):
+            _ell(d, P, px - 2, 11, px + 2, 15)
+
+    def pans(d, P, s):
+        for px in (11.0, 37.0):
+            d.chord([*P(px - 8, 21), *P(px + 8, 34)], 0, 180, fill=255)
+    _piece(out, _mask(beam), gold, hs=1.8, spec=0.9, shin=10)
+    pm = _mask(pans)
+    _piece(out, pm, gold, hs=2.2, spec=0.9, shin=10)
+    _paint(out, pm & (np.abs(YY - 27.6) < 0.55), sk.GOLD_H)
+    _gem(out, 24, 8.5, r=1.5)
+    return _frame(out)
+
+
+# -- invasion: two crossed war axes over a blood-red glow
+def icon_invasion():
+    out = _backdrop(161, '#8a160c', k=0.7)
+    steel = _flat(STEEL_A)
+
+    def axe(flip, part):
+        def fn(d, P0, s):
+            def P(x, y):
+                return P0(N - 1 - x if flip else x, y)
+            hx0, hy0, hx1, hy1 = 11.0, 41.0, 33.0, 8.0
+            L = math.hypot(hx1 - hx0, hy1 - hy0)
+            ux, uy = (hx1 - hx0) / L, (hy1 - hy0) / L
+            nx, ny = -uy, ux          # outward: right and down
+            if part == 'haft':
+                w = 1.6
+                d.polygon([P(hx0 + nx * w, hy0 + ny * w), P(hx1 + nx * w + ux, hy1 + ny * w + uy),
+                           P(hx1 - nx * w + ux, hy1 - ny * w + uy), P(hx0 - nx * w, hy0 - ny * w)], fill=255)
+            else:
+                def Q(a, b):            # a along the haft from the top, b outward
+                    return P(hx1 - ux * a + nx * b, hy1 - uy * a + ny * b)
+                pts = [Q(2.5, 1.0), Q(-0.5, 4.0), Q(-4.5, 8.0)]
+                for k in range(11):       # the curved edge
+                    t = k / 10.0
+                    pts.append(Q(-4.5 + t * 16.0, 8.0 + 3.4 * math.sin(math.pi * t)))
+                pts += [Q(9.0, 4.0), Q(6.0, 1.0), Q(5.6, -1.6), Q(2.9, -1.6)]
+                pts += [Q(3.4, -4.6), Q(4.6, -1.6)]       # back spike
+                d.polygon(pts, fill=255)
+        return _mask(fn)
+    for flip in (False, True):
+        _piece(out, axe(flip, 'haft'), _wood(162), hs=1.4, spec=0.3)
+    for flip in (False, True):
+        hm = axe(flip, 'head')
+        _piece(out, hm, steel, hs=1.8, spec=1.0, shin=16)
+        _paint(out, hm & ~_shrink(hm, 1) & _far_side(flip), hexc('#e8e2e0'))
+    _gem(out, CC + 0.5, 25.5, r=2, col='#8e1a14', light='#ff5a2a')
+    return _frame(out)
+
+
+def _shrink(m, n=1):
+    for _ in range(n):
+        m = ~_grow(~m)
+    return m
+
+
+def _far_side(flip):
+    """Pixels on the outer (edge) side of an axe head."""
+    return (XX + YY > 46) if not flip else ((N - 1 - XX) + YY > 46)
+
+
+# -- bounty: a wanted poster with a hooded head, pinned by a dagger
+def icon_bounty():
+    out = _backdrop(171, '#8a160c', k=0.55)
+    sheet = _mask(lambda d, P, s: d.polygon([P(8, 11), P(31, 9), P(33, 41), P(9.5, 42)], fill=255))
+    _piece(out, sheet, _parch(172, tone=0.95), hs=1.2, spec=0.15)
+
+    def head(d, P, s):
+        _ell(d, P, 15.5, 16, 25.5, 27)
+        d.polygon([P(11.5, 37), P(14, 29), P(20.5, 26), P(27, 29), P(29.5, 37)], fill=255)
+    _paint(out, _mask(head) & sheet, hexc('#2a1c14'))
+    _paint(out, _mask(lambda d, P, s: _ell(d, P, 17.4, 20.0, 19.4, 21.6)), hexc('#c2410c'))
+    _paint(out, _mask(lambda d, P, s: _ell(d, P, 21.6, 20.0, 23.6, 21.6)), hexc('#c2410c'))
+    _paint(out, (np.abs(YY - 13.5) < 0.6) & (XX >= 12) & (XX <= 28) & sheet, INK)
+    _paint(out, (np.abs(YY - 39) < 0.6) & (XX >= 13) & (XX <= 29) & sheet, INK)
+
+    # the dagger, point in the poster's top right corner
+    def blade(d, P, s):
+        d.polygon([P(24.5, 20.5), P(33.7, 9.9), P(36.1, 12.3), P(26.1, 22.1)], fill=255)
+
+    def hilt(d, P, s):
+        d.polygon([P(31.7, 7.1), P(32.9, 5.9), P(39.1, 12.1), P(37.9, 13.3)], fill=255)     # guard
+        d.line([P(36.5, 8.5), P(40.5, 4.5)], fill=255, width=int(2.4 * s))
+        _ell(d, P, 39.5, 3.3, 42.5, 6.3)
+    bm = _mask(blade)
+    _piece(out, bm, _flat(STEEL_A), hs=1.6, spec=1.0, shin=16)
+    _paint(out, bm & (np.abs((XX - 25.3) + (YY - 21.3)) < 0.8), hexc('#e8e2e0'))
+    _piece(out, _mask(hilt), sk.mat_gold(N, N, 173, tone=1.05), hs=1.6, spec=0.9)
+    cut = _mask(lambda d, P, s: d.polygon([P(22.9, 21.7), P(25.9, 18.7), P(26.7, 23.7)], fill=255))
+    _paint(out, cut & sheet, hexc('#5a0c08'))
+    return _frame(out)
+
+
+# -- bestiary: a leather tome torn by three claw marks
+def icon_bestiary():
+    out = _backdrop(181, '#6a2a0c', k=0.55)
+    pages = _mask(lambda d, P, s: d.polygon([P(14, 9), P(39, 9), P(39, 41), P(14, 41)], fill=255))
+    _piece(out, pages, _parch(182, tone=0.9), hs=1.0, spec=0.1)
+    for px in (37.0, 38.2):
+        _paint(out, (np.abs(XX - px) < 0.5) & (YY > 10) & (YY < 40), INK * 1.2)
+    cover = _mask(lambda d, P, s: d.polygon([P(9, 7), P(36, 7), P(36, 41), P(9, 41)], fill=255))
+    lea = sk.mat_leather(N, N, 183, tint=hexc('#4a1d16'), tone=1.25)
+    _piece(out, cover, lea, hs=1.6, spec=0.3)
+    spine = cover & (XX <= 12)
+    out[..., :3] = np.where(spine[..., None], out[..., :3] * 0.6, out[..., :3])
+    _paint(out, cover & (np.abs(XX - 12.5) < 0.5), sk.GOLD_D)
+    for y in (12.0, 36.0):
+        _paint(out, spine & (np.abs(YY - y) < 0.8), sk.GOLD)
+    # iron corners
+    corners = _mask(lambda d, P, s: [d.polygon(p, fill=255) for p in (
+        [P(30, 7), P(36, 7), P(36, 13)], [P(30, 41), P(36, 41), P(36, 35)])])
+    _piece(out, corners, sk.mat_iron(N, N, 184, tone=1.3, tint=sk.STEEL * 0.8), hs=1.2, shadow=0)
+
+    # three claw gashes, black inside with an ember rim
+    def claws(d, P, s):
+        for i in range(3):
+            ox = i * 5.2
+            x0, y0, x1, y1 = 23 + ox, 10.5, 12 + ox, 37.5
+            mx, my = (x0 + x1) / 2 + 2.0, (y0 + y1) / 2
+            d.polygon([P(x0, y0), P(mx + 2.4, my), P(x1, y1), P(mx - 1.8, my)], fill=255)
+    cl = _mask(claws) & cover
+    _paint(out, _grow(cl) & cover & ~cl, hexc('#d8501a'))
+    _paint(out, cl, hexc('#0a0406'))
+    _paint(out, cl & ~_shrink(cl, 1), hexc('#5a0c08'))
+    return _frame(out)
+
+
+# -- journey: a compass with a gold ring and an ember north needle
+def icon_journey():
+    out = _backdrop(191, '#6a4a14', k=0.5)
+    ringm = _mask(lambda d, P, s: _ell(d, P, CC - 18, CC - 18, CC + 18, CC + 18))
+    _piece(out, ringm, sk.mat_gold(N, N, 192, tone=1.05), hs=2.4, spec=0.9, shin=10)
+    rr = np.sqrt((XX - CC) ** 2 + (YY - CC) ** 2)
+    face = rr <= 14.6
+    fc = sk.mat_iron(N, N, 193, tone=0.9, tint=hexc('#2a2024'))
+    out[..., :3] = np.where(face[..., None], fc, out[..., :3])
+    _paint(out, np.abs(rr - 15.2) < 0.6, sk.GOLD_D)
+    ang = np.arctan2(YY - CC, XX - CC)
+    for k in range(8):
+        a = k * math.pi / 4
+        tick = (np.abs(np.angle(np.exp(1j * (ang - a)))) * rr < 0.7) & (rr > 12.2) & (rr < 14.4)
+        _paint(out, tick, sk.GOLD_L if k % 2 == 0 else sk.GOLD * 0.8)
+
+    def star(d, P, s, axis):
+        if axis == 'ns':
+            d.polygon([P(CC, CC - 13), P(CC + 3, CC), P(CC, CC + 13), P(CC - 3, CC)], fill=255)
+        else:
+            d.polygon([P(CC - 10.5, CC), P(CC, CC - 2.4), P(CC + 10.5, CC), P(CC, CC + 2.4)], fill=255)
+    ew = _mask(lambda d, P, s: star(d, P, s, 'ew'))
+    _piece(out, ew, _flat(hexc('#8a8286')), hs=1.4, spec=0.8, shadow=0.6)
+    ns = _mask(lambda d, P, s: star(d, P, s, 'ns'))
+    alb = np.where((YY < CC)[..., None], _flat('#d2420e'), _flat(STEEL_A))
+    _piece(out, ns, alb, hs=1.6, spec=0.9, shadow=0.6)
+    _paint(out, ns & (XX < CC) & (YY < CC), hexc('#ff8a3a'))
+    _paint(out, ns & (XX < CC) & (YY > CC), hexc('#d8d2d4'))
+    _gem(out, CC, CC, r=1.5)
+    return _frame(out)
+
+
+# -- boss points: a crowned skull with ember eyes
+def icon_bosspoint():
+    out = _backdrop(201, '#8a2a0c', cy=28, k=0.6)
+    skull = _mask(lambda d, P, s: (_ell(d, P, 13, 15, 35, 36), d.rectangle([*P(17.5, 30), *P(30.5, 42)], fill=255)))
+    _piece(out, skull, _flat(BONE), hs=2.2, spec=0.35, shin=10)
+    # cheek notches beside the jaw
+    for sx in (-1, 1):
+        notch = _mask(lambda d, P, s, sx=sx: _ell(d, P, CC + sx * 8 - 2.5, 33, CC + sx * 8 + 2.5, 38))
+        _paint(out, notch & skull & (np.abs(XX - CC) > 6.2), hexc('#141016'))
+    for sx in (-1, 1):
+        ex = CC + sx * 5.2
+        eye = _mask(lambda d, P, s, ex=ex, sx=sx: d.polygon(
+            [P(ex - sx * 3.6, 23.2), P(ex + sx * 3.4, 25.2), P(ex + sx * 3.0, 30.2), P(ex - sx * 3.4, 30.2)], fill=255))
+        _paint(out, eye, hexc('#1a0604'))
+        pu = (np.abs(XX - (ex - sx * 0.3) + 0.5 * (sx < 0)) <= 1.0) & (YY >= 26.5) & (YY <= 28.5)
+        _paint(out, pu & eye, sk.EMBER)
+        _paint(out, pu & eye & (YY < 27.5), hexc('#ffd27a'))
+    nose = _mask(lambda d, P, s: d.polygon([P(CC, 30.5), P(CC + 1.8, 34), P(CC - 1.8, 34)], fill=255))
+    _paint(out, nose, hexc('#2a1f1a'))
+    teeth = (YY >= 37) & (YY <= 40) & (np.abs(XX - CC) <= 5.6) & ((np.floor(XX) % 3) == 0)
+    _paint(out, teeth & skull, hexc('#3a2c24'))
+    _paint(out, (np.abs(YY - 38.5) < 0.5) & (np.abs(XX - CC) <= 5.6), hexc('#3a2c24'))
+
+    def crown(d, P, s):
+        d.polygon([P(12.5, 19.5), P(12, 6.5), P(17.5, 12), P(CC, 3.5), P(29.5, 12), P(35, 6.5), P(34.5, 19.5)],
+                  fill=255)
+    cm = _mask(crown)
+    _piece(out, cm, sk.mat_gold(N, N, 202, tone=1.08), hs=2.0, spec=0.9, shin=10)
+    _paint(out, cm & (np.abs(YY - 16.5) < 0.5), sk.GOLD_D)
+    _gem(out, CC, 15.5, r=1.5)
+    for px in (12.5, 34.5):
+        _paint(out, (np.abs(XX - px) <= 1) & (np.abs(YY - 7) <= 1) & cm, sk.EMBER)
+    return _frame(out)
+
+
+# file name -> drawing, in the order of the contact sheet
+MESSAGE_ICONS = (
+    ('announce.png', icon_announce),
+    ('task.png', icon_task),
+    ('season_pass.png', icon_season),
+    ('new_player.png', icon_newplayer),
+    ('ascension.png', icon_ascension),
+    ('market.png', icon_market),
+    ('invasion.png', icon_invasion),
+    ('bounty.png', icon_bounty),
+    ('bestiary.png', icon_bestiary),
+    ('journey.png', icon_journey),
+    ('boss_point.png', icon_bosspoint),
+)
+
+
 # ============================================================== io
 def to_img(a):
     return sk.to_img(a) if hasattr(sk, 'to_img') else Image.fromarray((np.clip(a, 0, 1) * 255 + 0.5).astype(np.uint8))
@@ -362,6 +880,7 @@ def main(argv):
             write(button_sheet('decline'), os.path.join(out, 'decline.png')),
             write(icon_party(), os.path.join(out, 'party_invite.png')),
             write(icon_catacomb(), os.path.join(out, 'catacomb_invite.png'))]
+    imgs += [write(fn(), os.path.join(out, name)) for name, fn in MESSAGE_ICONS]
     if sheet_path:
         sheet(imgs, sheet_path)
 
