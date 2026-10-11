@@ -73,4 +73,23 @@
         <immunity drunk="1"/>
         <immunity invisible="1"/>
     </immunities>
+	<loot>
+		<item id="2152" countmax="100" chance="100000"/><!-- platinum coin -->
+		<item id="2160" countmax="30" chance="100000"/><!-- crystal coin -->
+		<item id="29856" countmax="6" chance="100000"/><!-- Orb of Upheaval -->
+		<item id="29857" countmax="2" chance="50000"/><!-- Orb of Fate -->
+		<item id="2156" countmax="4" chance="30000"/><!-- red gem -->
+		<item id="2158" countmax="4" chance="30000"/><!-- blue gem -->
+		<item id="2155" countmax="4" chance="30000"/><!-- green gem -->
+		<item id="2153" countmax="2" chance="20000"/><!-- violet gem -->
+		<item id="8890" chance="3000"/><!-- robe of the underworld -->
+		<item id="8918" chance="3000"/><!-- spellbook of dark mysteries -->
+		<item id="7418" chance="3000"/><!-- nightmare blade -->
+		<item id="6300" chance="5000"/><!-- death ring -->
+		<item id="29861" chance="2000"/><!-- Myst Regalia Helmet -->
+		<item id="29862" chance="1500"/><!-- Myst Regalia Mantle -->
+		<item id="29866" chance="1500"/><!-- Myst Regalia Wand -->
+		<item id="29868" chance="1000"/><!-- Myst Regalia Ring -->
+		<item id="25380" countmax="1" chance="2500"/><!-- talent token -->
+	</loot>
 </monster>

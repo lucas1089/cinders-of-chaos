@@ -15,7 +15,6 @@
 		<flag canpushcreatures="1"/>
 		<flag targetdistance="1"/>
 		<flag runonhealth="0"/>
-		<flag isBlocked="1"/>
 	</flags>
 	<attacks>
 		<attack name="physical" interval="1000"  range="5" min="-7500" max="-9000">
@@ -36,7 +35,7 @@
 	<defenses armor="65" defense="75">
 		<defense name="healing" interval="3000" chance="20" min="1000" max="5000">
 			<attribute key="areaEffect" value="blueshimmer"/>
-		</defense>>
+		</defense>
 		<defense name="speed" interval="1000" chance="6" speedchange="1901" duration="7000">
 			<attribute key="areaEffect" value="redshimmer"/>
 		</defense>

@@ -66,8 +66,12 @@
 		<item id="2148" countmax="90" chance="31000"/><!-- gold coin -->
 		<item id="2148" countmax="80" chance="31000"/><!-- gold coin -->
 		<item id="2148" countmax="75" chance="31000"/><!-- gold coin -->
-		<item id="2195;7903;7886" countmax="1" chance="2000"/><!-- bots of haste terra hood terra boots-->
-		<item id="2536;7885;7884" countmax="1"  chance="1000"/><!-- medusa shield terra legs terra armor-->
+		<item id="2195" countmax="1" chance="667"/><!-- bots of haste terra hood terra boots-->
+		<item id="7903" countmax="1" chance="667"/>
+		<item id="7886" countmax="1" chance="667"/>
+		<item id="2536" countmax="1" chance="333"/><!-- medusa shield terra legs terra armor-->
+		<item id="7885" countmax="1" chance="333"/>
+		<item id="7884" countmax="1" chance="333"/>
 		<item id="13305" countmax="1" chance="10"/><!-- giant shrimp-->
 	</loot>
 </monster>

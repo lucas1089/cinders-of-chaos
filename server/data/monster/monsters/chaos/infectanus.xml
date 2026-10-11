@@ -14,7 +14,6 @@
 		<flag canpushitems="1"/>
 		<flag canpushcreatures="1"/>
 		<flag targetdistance="1"/>
-		<flag ignorespawnboost="1"/>
 		<flag staticattack="90"/>
 		<flag runonhealth="30000"/>
 	</flags>
@@ -52,4 +51,18 @@
 	<voices interval="5000" chance="10">
 		<voice sentence="You will ssuch a fine ssstatue!"/>
 	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="35" chance="65000"/><!-- platinum coin -->
+		<item id="2149" countmax="4" chance="8000"/><!-- small emerald -->
+		<item id="2155" chance="3000"/><!-- green gem -->
+		<item id="7884" chance="400"/><!-- terra mantle -->
+		<item id="7885" chance="400"/><!-- terra legs -->
+		<item id="7886" chance="400"/><!-- terra boots -->
+		<item id="8869" chance="250"/><!-- greenwood coat -->
+		<item id="8912" chance="300"/><!-- springsprout rod -->
+		<item id="2499" chance="250"/><!-- amazon helmet -->
+		<item id="25380" countmax="1" chance="8"/><!-- talent token -->
+	</loot>
 </monster>

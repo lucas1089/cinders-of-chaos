@@ -5,7 +5,6 @@
 	<look type="1550" corpse="6068" />
 	<targetchange interval="5000" chance="20" />
 	<flags>
-		<flag bestiary="1" />
 		<flag summonable="0" />
 		<flag attackable="1" />
 		<flag hostile="1" />

@@ -16,7 +16,6 @@
 		<flag staticattack="85"/>
 		<flag targetdistance="1"/>
 		<flag runonhealth="0"/>
-		<flag respenpercent="15"/>
 	</flags>
 	<attacks>
 		<attack name="melee" interval="2000" min="-300" max="-460"/>

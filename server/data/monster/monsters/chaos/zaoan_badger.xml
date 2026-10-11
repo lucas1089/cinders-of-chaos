@@ -4,7 +4,6 @@
 	<look type="2121" corpse="6068" />
 	<targetchange interval="4000" chance="0" />
 	<flags>
-		<flag bestiary="1" />
 		<flag summonable="0" />
 		<flag attackable="1" />
 		<flag hostile="1" />
@@ -30,7 +29,11 @@
 	<loot>
         <item id="2148" countmax="70" chance="37500"/><!-- gold coin -->
 		<item id="2148" countmax="50" chance="37500"/><!-- gold coin -->
-		<item id="7461;3968;7896;11303;2527" countmax="1" chance="1000"/><!-- items for loot seller-->
+		<item id="7461" countmax="1" chance="200"/><!-- items for loot seller-->
+		<item id="3968" countmax="1" chance="200"/>
+		<item id="7896" countmax="1" chance="200"/>
+		<item id="11303" countmax="1" chance="200"/>
+		<item id="2527" countmax="1" chance="200"/>
 		<item id="25379" countmax="1" chance="50"/><!-- plainum tokens -->
 	</loot>
 </monster>

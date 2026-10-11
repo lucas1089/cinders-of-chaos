@@ -145,3 +145,24 @@ Ward Barbarian: corpse 41162 -> 6068
 Winterstride: corpse 41162 -> 6068
 Winterstride: dropped 1 loot lines for ids [40407]
 Zaoan Badger: corpse 41162 -> 6068
+Twisted Shaper: dropped loot id 37431 (split from a loot list by fix_monster_xml.py, missing from items.otb)
+Vorathrax: dropped loot ids [38977, 38983] (split from a loot list by fix_monster_xml.py, missing from items.otb); replacement loot set by hand (coins, gems, late-game armours, talent token; modelled on Nerubian, scaled up)
+Serpent Pride: loot table set by hand, modelled on Giant Asura (coins, small emeralds, terra set, medusa shield, talent token)
+Snake Master: loot table set by hand, modelled on Giant Asura and Serpent Pride (coins, emeralds, terra set, medusa shield, elite draken mail, talent token)
+Phantom Shade: loot table set by hand, modelled on Giant Asura, coins raised for its 8M health (soul orbs, amethysts, underworld caster gear, death ring, talent token)
+Shadowgeist: loot table set by hand, modelled on Phantom Shade (soul orbs, amethysts, underworld caster gear, nightmare blade, talent token)
+Mortal Illusion: loot table set by hand, modelled on Giant Asura, coins raised for its 18M health (diamonds, mind caster gear, crystal sword and ring, talent token)
+Infectanus: loot table set by hand, modelled on Nerubian (coins, emeralds, terra set, greenwood coat, talent token)
+Metal Freak: loot table set by hand, modelled on Vorathrax (tanky, 10M health; scrap metal, plate armours, steel boots, the stomper, talent token)
+Ward Barbarian: loot table set by hand, modelled on Nerubian (coins, meat, rubies, krimhorn helmet, magma legs and boots, axes, talent token)
+Tarrasque: loot table set by hand, modelled on Vorathrax (same experience; gems, dragon scale set, dragon shield, magma coat and legs, talent token)
+Steelbeak: loot table set by hand, modelled on Dark Sorcerer and Captain Bloodbeard (same experience; feathers, amazon set, ravenwing, boots of haste, talent token)
+Death Mage: loot table set by hand, modelled on Dark Sorcerer (soul orbs, amethysts, underworld caster gear, skull staff, death ring, talent token)
+Actors Power: loot table set by hand, modelled on Elite Twisted Shaper, coins scaled like Vorathrax (gems, crown set, golden armor and legs, holy weapons, talent token)
+Ancient Fungus: loot table set by hand, modelled on Elite Twisted Shaper (spore products, emeralds, terra set, greenwood coat, talent token)
+Nightdweller: loot table set by hand, modelled on Vyrm and Thal, coins raised for its 18M health (soul orbs, gems, underworld caster gear, Myst Regalia helmet and wand at 0.06%, talent token)
+Arcane Energizer: loot table set by hand, modelled on Facetis, coins raised for its 60M health (sapphires, lightning set, Myst Regalia spellbook and ring at 0.06%, talent token)
+Saga: loot table set by hand, modelled on the world bosses at about a seventh of their coins and orbs (up to 8 crystal coins, orbs, gems, golden armor and legs, one set item each at 0.8%, talent token 0.5%); a normal monster, no script spawns it
+Gloomfire: loot table set by hand, modelled on Kaelgor the Infernal Warlord at about half its coins and orbs (up to 30 crystal coins, orbs, gems, magma set, Dawnforged items at 1-2%, talent token 2.5%); a normal monster, no script spawns it
+Talath: loot table set by hand, modelled on Nyxareth the Void Archon at about half its coins and orbs (up to 30 crystal coins, orbs, gems, underworld gear, Myst Regalia items at 1-2%, talent token 2.5%); a normal monster, no script spawns it
+Ormathulak: loot table set by hand, modelled on Skaldra the Rime Queen at about half its coins and orbs (up to 30 crystal coins, orbs, gems, terra and glacier items, Seraphic items at 1-2%, talent token 2%); a normal monster, no script spawns it

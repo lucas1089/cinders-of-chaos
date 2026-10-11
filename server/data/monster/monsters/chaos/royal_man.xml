@@ -6,7 +6,6 @@
 	<targetchange interval="5000" chance="25"/>
 	<strategy attack="100" defense="0"/>
 	<flags>
-		<flag bestiary="1" />
 		<flag summonable="1" />
 		<flag attackable="1" />
 		<flag hostile="1" />

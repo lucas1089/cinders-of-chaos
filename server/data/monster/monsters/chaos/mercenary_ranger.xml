@@ -27,7 +27,10 @@
 		<attack name="melee" interval="1500" range="6" min="-3570" max="-5000">
 		<attribute key="shootEffect" value="poisonarrow"/>
 		</attack>
-		<attack name="Advanced Thunder Shuriken" interval="2000" chance="66" min="-3550" max="-5600"/>
+		<attack name="energy" range="7" target="1" interval="2000" chance="66" min="-3550" max="-5600">
+			<attribute key="shootEffect" value="throwingstar"/>
+			<attribute key="areaEffect" value="energy"/>
+		</attack>
 		<attack name="bleedcondition" interval="2000" chance="20" target="0" radius="3" range="7" min="-1800" max="-2600">
 			<attribute key="shootEffect" value="shiverarrow"/>
 		</attack>
@@ -42,8 +45,22 @@
 		<item id="2148" countmax="100" chance="43750"/><!-- gold coin -->
 		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
 		<item id="2152" countmax="50" chance="65000"/><!-- Platinum Coin -->
-		<item id="11302;11301;11304;11303;8891;9931;11356;2645" chance="3000" /><!-- zaoan helmet -->
-		<item id="8889;8887;12607;8880;2522;2520;11117;5741" chance="2000" /><!-- skullcrackerarmor;frozen plate;elite draken mail;swamplair armor -->
+		<item id="11302" chance="375"/><!-- zaoan helmet -->
+		<item id="11301" chance="375"/>
+		<item id="11304" chance="375"/>
+		<item id="11303" chance="375"/>
+		<item id="8891" chance="375"/>
+		<item id="9931" chance="375"/>
+		<item id="11356" chance="375"/>
+		<item id="2645" chance="375"/>
+		<item id="8889" chance="250"/><!-- skullcrackerarmor;frozen plate;elite draken mail;swamplair armor -->
+		<item id="8887" chance="250"/>
+		<item id="12607" chance="250"/>
+		<item id="8880" chance="250"/>
+		<item id="2522" chance="250"/>
+		<item id="2520" chance="250"/>
+		<item id="11117" chance="250"/>
+		<item id="5741" chance="250"/>
 		<item id="6088" countmax="1" chance="25"/><!-- music sheet 2 -->
 	</loot>
 </monster>

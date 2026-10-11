@@ -59,8 +59,18 @@
 	<loot>
 		<item id="2148" countmax="80" chance="46000"/><!-- gold coin -->
 		<item id="2148" countmax="70" chance="46000"/><!-- gold coin -->
-		<item id="2498;2516;2466;2470" countmax="1" chance="1500"/><!-- royal helmet dragon shield golden armor golden legs-->
-		<item id="7884;2536;2195;2487;2519;2491;2488;2492" countmax="1" chance="2000"/><!-- terra mantle medusa shield boots of haste crown armor crown shield crown helmet crown legs dragon scale mail-->
+		<item id="2498" countmax="1" chance="375"/><!-- royal helmet dragon shield golden armor golden legs-->
+		<item id="2516" countmax="1" chance="375"/>
+		<item id="2466" countmax="1" chance="375"/>
+		<item id="2470" countmax="1" chance="375"/>
+		<item id="7884" countmax="1" chance="250"/><!-- terra mantle medusa shield boots of haste crown armor crown shield crown helmet crown legs dragon scale mail-->
+		<item id="2536" countmax="1" chance="250"/>
+		<item id="2195" countmax="1" chance="250"/>
+		<item id="2487" countmax="1" chance="250"/>
+		<item id="2519" countmax="1" chance="250"/>
+		<item id="2491" countmax="1" chance="250"/>
+		<item id="2488" countmax="1" chance="250"/>
+		<item id="2492" countmax="1" chance="250"/>
 		<item id="11231"  countmax="1" chance="200"/><!-- nettle blossoms -->
 	</loot>
 </monster>

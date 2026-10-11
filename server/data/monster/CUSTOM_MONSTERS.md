@@ -4,9 +4,11 @@
 
 **World bosses.** `monsters/chaos/world_bosses/` holds the five world bosses of `worldboss.lua` (our own, not imported). Register that folder too: `python3 -I server/tools/register_monsters.py data/monster/monsters.xml data/monster/monsters/chaos/world_bosses`. See `server/README.md` "World bosses".
 
-**Checking.** `python3 -I server/tools/check_monsters.py items.otb 1504 data/monster` flags a lookType above the outfit count of your `Tibia.dat` (no sprite on the client), corpse or loot ids missing from `items.otb`, and, with `--known names.txt`, undefined summons.
+**Checking.** `python3 -I server/tools/check_monsters.py items.otb 1504 data/monster` flags a lookType above the outfit count of your `Tibia.dat` (no sprite on the client), corpse or loot ids missing from `items.otb`, and, with `--known names.txt`, undefined summons. `tools/ci/check_content.py` also fails on a monster with experience above 0 and no loot item, unless its name is in `LOOTLESS_OK` there (adds and bosses whose script pays the rewards: uber, guild boss, raid). The 19 imported monsters that had no loot got tables by hand, each modelled on a monster of similar experience and health in this folder (`adapt_report.txt` names the model).
 
 **Importing from another server.** `server/tools/adapt_monsters.py` replaces unknown corpse ids with a fallback and drops loot lines whose item does not exist here. It does not touch lookType.
+
+**Base loader rules.** `server/tools/fix_monster_xml.py` (idempotent; default folder `monsters/chaos`) rewrites what the base server cannot read: a loot list `<item id="a;b;c" chance="C"/>` becomes one `<item>` per id with chance C/N (other attributes kept), monster spells it does not know become the built-in attack of the same role with the same numbers (its `SPELL_FIX` table), unknown flags are removed, element keys get the base's case and stray text in `<attacks>`/`<defenses>` goes. `tools/ci/check_content.py` fails on loot id lists, unknown spells (built-ins, the base monster instants, `spell_names.csv` and `spells_chaos.xml`), unknown flags (base list plus flags added by `src-patches`) and element keys. Split ids missing from `items.otb` were dropped by hand (see `adapt_report.txt`).
 
 ## What was imported
 **Correction (they did not spawn).** The figures below were counted over two spawn files, and the 19,530 spawns of the imported

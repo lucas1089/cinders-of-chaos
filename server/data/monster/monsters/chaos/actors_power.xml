@@ -52,4 +52,23 @@
   		 <voice sentence="Its not your time yet!"/>
    		 <voice sentence="Go back, Intruder!"/>
 	</voices>
+	<loot>
+		<item id="2148" countmax="100" chance="60000"/><!-- gold coin -->
+		<item id="2148" countmax="100" chance="60000"/><!-- gold coin -->
+		<item id="2152" countmax="80" chance="80000"/><!-- platinum coin -->
+		<item id="2160" countmax="2" chance="30000"/><!-- crystal coin -->
+		<item id="2156" countmax="2" chance="8000"/><!-- red gem -->
+		<item id="2158" countmax="2" chance="8000"/><!-- blue gem -->
+		<item id="2155" countmax="2" chance="8000"/><!-- green gem -->
+		<item id="2153" chance="4000"/><!-- violet gem -->
+		<item id="2487" chance="400"/><!-- crown armor -->
+		<item id="2488" chance="400"/><!-- crown legs -->
+		<item id="2491" chance="400"/><!-- crown helmet -->
+		<item id="2519" chance="400"/><!-- crown shield -->
+		<item id="2466" chance="200"/><!-- golden armor -->
+		<item id="2470" chance="200"/><!-- golden legs -->
+		<item id="7429" chance="300"/><!-- blessed sceptre -->
+		<item id="7436" chance="300"/><!-- angelic axe -->
+		<item id="25380" countmax="1" chance="45"/><!-- talent token -->
+	</loot>
 </monster>

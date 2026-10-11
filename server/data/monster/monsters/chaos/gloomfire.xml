@@ -4,7 +4,6 @@
 	<look type="2120" corpse="6068" />
 	<targetchange interval="4000" chance="10" />
 	<flags>
-		<flag bestiary="1" />
 		<flag summonable="0" />
 		<flag attackable="1" />
 		<flag hostile="1" />
@@ -70,5 +69,22 @@
 		<voice sentence="ZZZZZZSSS!"/>
 	</voices>
 	<loot>
+		<item id="2152" countmax="100" chance="100000"/><!-- platinum coin -->
+		<item id="2160" countmax="30" chance="100000"/><!-- crystal coin -->
+		<item id="29856" countmax="6" chance="100000"/><!-- Orb of Upheaval -->
+		<item id="29857" countmax="2" chance="50000"/><!-- Orb of Fate -->
+		<item id="2156" countmax="4" chance="30000"/><!-- red gem -->
+		<item id="2158" countmax="4" chance="30000"/><!-- blue gem -->
+		<item id="2155" countmax="4" chance="30000"/><!-- green gem -->
+		<item id="2153" countmax="2" chance="20000"/><!-- violet gem -->
+		<item id="7899" chance="3000"/><!-- magma coat -->
+		<item id="7894" chance="3000"/><!-- magma legs -->
+		<item id="7891" chance="3000"/><!-- magma boots -->
+		<item id="7900" chance="3000"/><!-- magma monocle -->
+		<item id="29879" chance="2000"/><!-- Dawnforged Plate -->
+		<item id="29878" chance="1500"/><!-- Dawnforged Helmet -->
+		<item id="29884" chance="1500"/><!-- Dawnforged Longsword -->
+		<item id="29890" chance="1000"/><!-- Dawnforged Ring -->
+		<item id="25380" countmax="1" chance="2500"/><!-- talent token -->
 	</loot>
 </monster>

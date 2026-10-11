@@ -72,7 +72,21 @@
 		<item id="2152" countmax="50" chance="65000"/><!-- Platinum Coin -->
 		<item id="25380" countmax="1" chance="50"/><!-- talent token -->
 		<item id="11261" countmax="1" chance="100"/><!-- twin sun charms -->
-		<item id="3983;2495;2469;7894;8888;2500;2472;8885;8884" countmax="1" chance="4000" /><!-- legs -->
-		<item id="5462;2644;11118;11240;2537;2514;2499" countmax="1" chance="3000" /><!-- great shield;demon shield;crystal boots -->
+		<item id="3983" countmax="1" chance="444"/><!-- legs -->
+		<item id="2495" countmax="1" chance="444"/>
+		<item id="2469" countmax="1" chance="444"/>
+		<item id="7894" countmax="1" chance="444"/>
+		<item id="8888" countmax="1" chance="444"/>
+		<item id="2500" countmax="1" chance="444"/>
+		<item id="2472" countmax="1" chance="444"/>
+		<item id="8885" countmax="1" chance="444"/>
+		<item id="8884" countmax="1" chance="444"/>
+		<item id="5462" countmax="1" chance="429"/><!-- great shield;demon shield;crystal boots -->
+		<item id="2644" countmax="1" chance="429"/>
+		<item id="11118" countmax="1" chance="429"/>
+		<item id="11240" countmax="1" chance="429"/>
+		<item id="2537" countmax="1" chance="429"/>
+		<item id="2514" countmax="1" chance="429"/>
+		<item id="2499" countmax="1" chance="429"/>
 	</loot>
 </monster>

@@ -66,5 +66,20 @@
 		<immunity paralyze="1"/>
 	</immunities>
 	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="60" chance="70000"/><!-- platinum coin -->
+		<item id="2160" chance="8000"/><!-- crystal coin -->
+		<item id="36016" countmax="3" chance="20000"/><!-- tribal feather -->
+		<item id="2158" countmax="2" chance="6000"/><!-- blue gem -->
+		<item id="2153" chance="2000"/><!-- violet gem -->
+		<item id="8888" chance="400"/><!-- master archer's armor -->
+		<item id="2500" chance="400"/><!-- amazon armor -->
+		<item id="2499" chance="400"/><!-- amazon helmet -->
+		<item id="2537" chance="300"/><!-- amazon shield -->
+		<item id="7433" chance="300"/><!-- ravenwing -->
+		<item id="11240" chance="300"/><!-- guardian boots -->
+		<item id="2195" chance="250"/><!-- boots of haste -->
+		<item id="25380" countmax="1" chance="30"/><!-- talent token -->
 	</loot>
 </monster>

@@ -72,4 +72,19 @@
 		<voice sentence="*** STEALTH ***"/>
 		<voice sentence="*** DEATH ***"/>
 	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="60" chance="65000"/><!-- platinum coin -->
+		<item id="2160" chance="5000"/><!-- crystal coin -->
+		<item id="2145" countmax="3" chance="8000"/><!-- small diamond -->
+		<item id="2153" chance="2000"/><!-- violet gem -->
+		<item id="8871" chance="300"/><!-- focus cape -->
+		<item id="8868" chance="300"/><!-- velvet mantle -->
+		<item id="8902" chance="300"/><!-- spellbook of mind control -->
+		<item id="8920" chance="300"/><!-- wand of starstorm -->
+		<item id="7449" chance="300"/><!-- crystal sword -->
+		<item id="2124" chance="500"/><!-- crystal ring -->
+		<item id="25380" countmax="1" chance="8"/><!-- talent token -->
+	</loot>
 </monster>
