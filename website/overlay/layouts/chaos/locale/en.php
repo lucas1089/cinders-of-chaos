@@ -19,6 +19,9 @@ return array(
 	'downloads.os_step_apply' => 'Pick your character and enter the world.',
 	// no premium accounts here: the stock "You have a free account." line of the account page says nothing
 	'acc.free_account' => '',
+	// account creation: the same answer for a malformed and a taken e-mail address, never "already in use"
+	'reg.email_invalid' => 'Please use another e-mail address.',
+	'reg.email_taken' => 'Please use another e-mail address.',
 	'createchar.vocation' => 'Class',
 	'createchar.male' => 'Male',
 	'createchar.female' => 'Female',

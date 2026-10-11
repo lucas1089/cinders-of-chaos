@@ -1,0 +1,3 @@
+# Cinders of Chaos: ZnoteX's maintenance scripts are never served (install_site.sh also deletes them from the site).
+# Apache 2.4 syntax; ZnoteX's own file used the 2.2 "order / deny / allow from localhost" form.
+Require all denied

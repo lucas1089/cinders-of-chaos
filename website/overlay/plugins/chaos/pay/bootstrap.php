@@ -21,8 +21,26 @@ const CHAOS_PAY_KEYS = array(
 	'CHAOS_MP_ACCESS_TOKEN', 'CHAOS_MP_WEBHOOK_SECRET', 'CHAOS_MP_NOTIFICATION_URL', 'CHAOS_MP_SIGNATURE_TOLERANCE',
 	'CHAOS_PAYPAL_CLIENT_ID', 'CHAOS_PAYPAL_CLIENT_SECRET', 'CHAOS_PAYPAL_WEBHOOK_ID', 'CHAOS_PAYPAL_ENV',
 	'CHAOS_PAYPAL_CATEGORY', 'CHAOS_PAYPAL_BRAND',
-	'CHAOS_PAY_MOCK_APPROVE_AFTER', 'CHAOS_PAY_MOCK_STATE', 'CHAOS_PAY_MOCK_SECRET', 'CHAOS_PAY_MOCK_URL',
+	'CHAOS_PAY_MOCK_APPROVE_AFTER', 'CHAOS_PAY_MOCK_STATE', 'CHAOS_PAY_MOCK_SECRET', 'CHAOS_PAY_MOCK_URL', 'CHAOS_PAY_ALLOW_MOCK',
 );
+
+/**
+ * The mock provider approves charges nobody paid, so it only runs on a local site (localhost, 127.0.0.1, ::1) or with
+ * CHAOS_PAY_ALLOW_MOCK=1 (a demo server that knows what it does). $siteUrl: the site's address.
+ */
+function chaos_pay_mock_allowed(array $s, string $siteUrl): bool {
+	if (($s['CHAOS_PAY_ALLOW_MOCK'] ?? '') === '1') {
+		return true;
+	}
+	$host = strtolower(trim((string)parse_url($siteUrl, PHP_URL_HOST), '[]'));
+	return in_array($host, array('localhost', '127.0.0.1', '::1'), true);
+}
+
+/** The site's address of the settings: CHAOS_PAY_SITE_URL, else ZnoteX's site_url. */
+function chaos_pay_site_url(array $s, ?array $config = null): string {
+	$config = $config ?? (array)($GLOBALS['config'] ?? array());
+	return ($s['CHAOS_PAY_SITE_URL'] ?? '') !== '' ? (string)$s['CHAOS_PAY_SITE_URL'] : (string)($config['site_url'] ?? '');
+}
 
 /** KEY=value lines of a settings file (quotes around a value are removed). */
 function chaos_pay_read_env_file(string $path): array {
@@ -59,15 +77,22 @@ function chaos_pay_settings(?string $file = null): array {
 }
 
 /** The providers the settings switch on: method => provider. */
-function chaos_pay_providers(array $s, ?callable $http = null, ?callable $now = null): array {
+function chaos_pay_providers(array $s, ?callable $http = null, ?callable $now = null, ?string $siteUrl = null): array {
 	$out = array();
+	$mockOk = chaos_pay_mock_allowed($s, $siteUrl ?? chaos_pay_site_url($s));
+	foreach (array('CHAOS_PAY_PIX_PROVIDER', 'CHAOS_PAY_PAYPAL_PROVIDER') as $k) {
+		if (($s[$k] ?? '') === 'mock' && !$mockOk) {
+			error_log("[chaos pay] $k=mock refused: the site is not local (set CHAOS_PAY_ALLOW_MOCK=1 for a demo server)");
+			$s[$k] = 'off';
+		}
+	}
 	$mockState = $s['CHAOS_PAY_MOCK_STATE'] !== '' ? $s['CHAOS_PAY_MOCK_STATE'] : sys_get_temp_dir() . '/chaos_pay_mock.json';
 	$mockAfter = $s['CHAOS_PAY_MOCK_APPROVE_AFTER'] !== '' ? (int)$s['CHAOS_PAY_MOCK_APPROVE_AFTER'] : 20;
 	$mockUrl = $s['CHAOS_PAY_MOCK_URL'] !== '' ? $s['CHAOS_PAY_MOCK_URL'] : 'https://www.example.invalid/mock-donation/';
 	switch ($s['CHAOS_PAY_PIX_PROVIDER']) {
 		case 'mercadopago':
 			$out['pix'] = new ChaosPayMercadoPago($s['CHAOS_MP_ACCESS_TOKEN'], $s['CHAOS_MP_WEBHOOK_SECRET'], $s['CHAOS_MP_NOTIFICATION_URL'],
-				(int)$s['CHAOS_MP_SIGNATURE_TOLERANCE'], $http, $now);
+				$s['CHAOS_MP_SIGNATURE_TOLERANCE'] !== '' ? (int)$s['CHAOS_MP_SIGNATURE_TOLERANCE'] : 600, $http, $now);
 			break;
 		case 'mock':
 			$out['pix'] = new ChaosPayMock('pix', $mockAfter, $mockState, $s['CHAOS_PAY_MOCK_SECRET'], $mockUrl, $now);
@@ -111,8 +136,8 @@ function chaos_pay_logger(array $s): callable {
 function chaos_pay_service(array $config, ?array $settings = null, ?ChaosPayDb $db = null): ChaosPayService {
 	$GLOBALS['config'] = $GLOBALS['config'] ?? $config;
 	$s = $settings ?? chaos_pay_settings();
-	$site = $s['CHAOS_PAY_SITE_URL'] !== '' ? $s['CHAOS_PAY_SITE_URL'] : (string)($config['site_url'] ?? '');
-	return new ChaosPayService($db ?? ChaosPayMysqli::fromConfig($config), chaos_pay_providers($s), chaos_pay_packs(), chaos_pay_config(),
+	$site = chaos_pay_site_url($s, $config);
+	return new ChaosPayService($db ?? ChaosPayMysqli::fromConfig($config), chaos_pay_providers($s, null, null, $site), chaos_pay_packs(), chaos_pay_config(),
 		array('site_url' => $site, 'payer_email' => $s['CHAOS_PAY_PAYER_EMAIL'],
 			'reconcile_seconds' => $s['CHAOS_PAY_RECONCILE_SECONDS'] !== '' ? (int)$s['CHAOS_PAY_RECONCILE_SECONDS'] : 60),
 		null, chaos_pay_logger($s));

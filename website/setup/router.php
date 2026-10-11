@@ -8,7 +8,7 @@ $uri  = rawurldecode((string)parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
 $root = $_SERVER['DOCUMENT_ROOT'];
 
 // never serve repository internals, schemas, caches, plugin code or the installer's leftovers
-if (preg_match('#(^|/)(\.[^/]*|SQL|Lua|tests|docker|tools|cache|node_modules|vendor|composer\.[a-z]+|phpunit\.xml|phpstan\.neon|Dockerfile|docker-compose\.yml|config\.local\.php|install)(/|$)|\.(sql|md|lock|dist|log|json|bbcode)$#i', $uri)
+if (preg_match('#(^|/)(\.[^/]*|SQL|Lua|tests|docker|tools|special|backups|cache|node_modules|vendor|composer\.[a-z]+|phpunit\.xml|phpstan\.neon|Dockerfile|docker-compose\.yml|config\.local\.php|install)(/|$)|\.(sql|md|lock|dist|log|json|bbcode|example|bak|yml|yaml|env|phar)$#i', $uri)
 	|| (preg_match('#^/plugins/#', $uri) && !preg_match('#^/plugins/[a-z0-9_-]+/assets/#', $uri))) {
 	http_response_code(404);
 	exit('not found');

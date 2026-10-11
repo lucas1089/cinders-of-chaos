@@ -8,8 +8,9 @@
  *    the account's last donations.
  *  - POST pack + method (+ CSRF token): writes the order and makes the charge (pay/Service.php); PayPal goes to its
  *    approval page, Pix shows the QR code and the copy-and-paste code.
- *  - GET order=<id>: the order of this account (refreshes itself until it is paid and credited); &cancel=1 (PayPal's
- *    cancel link) cancels it.
+ *  - GET order=<id>: the order of this account (refreshes itself until it is paid and credited); &cancel=1 (the
+ *    page's link and PayPal's cancel_url) only asks "Cancel this donation?"; the POST of that form (chaos_pay_cancel
+ *    + CSRF token) cancels it, so a link alone can never cancel a donation.
  */
 if (!isset($config)) { http_response_code(403); die('Direct access denied.'); }
 require_once __DIR__ . '/../pay/bootstrap.php';
@@ -39,6 +40,7 @@ $csrf = (string)($_SESSION['chaos_pay_csrf'] ?? '');
 
 $error = '';
 $order = null;
+$confirmCancel = false;
 $redirect = '';
 if ($accountId > 0 && $service && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['chaos_pay_pack'])) {
 	if ($csrf === '' || !hash_equals($csrf, (string)($_POST['chaos_pay_csrf'] ?? ''))) {
@@ -57,12 +59,18 @@ if ($accountId > 0 && $service && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POS
 			}
 		}
 	}
-} elseif ($accountId > 0 && $service && isset($_GET['order'])) {
-	$oid = (int)$_GET['order'];
-	if (!empty($_GET['cancel'])) {
+} elseif ($accountId > 0 && $service && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['chaos_pay_cancel'])) {
+	$oid = (int)$_POST['chaos_pay_cancel'];
+	if ($csrf === '' || !hash_equals($csrf, (string)($_POST['chaos_pay_csrf'] ?? ''))) {
+		$error = 'The form expired. Please try again.';
+	} else {
 		$service->cancelOrder($accountId, $oid);
 	}
 	$order = $service->order($accountId, $oid);
+} elseif ($accountId > 0 && $service && isset($_GET['order'])) {
+	$oid = (int)$_GET['order'];
+	$order = $service->order($accountId, $oid);
+	$confirmCancel = !empty($_GET['cancel']) && $order && in_array($order['status'], array('pending', 'open'), true);
 	if ($order && $order['status'] === 'open' && !empty($_GET['done'])) {
 		$service->sync($oid); // back from PayPal: capture at once instead of waiting for the webhook
 		$order = $service->order($accountId, $oid);
@@ -85,7 +93,7 @@ $statusText = array(
 	'refunded' => 'This donation was refunded.',
 	'rejected' => 'This order could not be credited. Please contact staff.',
 );
-$waiting = $order && in_array($order['status'], array('pending', 'open', 'paid'), true);
+$waiting = $order && in_array($order['status'], array('pending', 'open', 'paid'), true) && !$confirmCancel;
 ?>
 <div class="chaos-page">
 	<div class="chaos-box">
@@ -130,7 +138,15 @@ $waiting = $order && in_array($order['status'], array('pending', 'open', 'paid')
 				<?php elseif ($order['status'] === 'open' && $order['method'] === 'paypal' && $order['pay_url'] !== ''): ?>
 					<p><a class="chaos-button" href="<?= chaos_h($order['pay_url']) ?>">Continue to PayPal</a></p>
 				<?php endif; ?>
-				<?php if (in_array($order['status'], array('pending', 'open'), true)): ?>
+				<?php if ($confirmCancel): ?>
+					<form method="post" action="<?= chaos_h($self) ?>" id="chaos-donation-cancel">
+						<p><strong>Cancel this donation?</strong> Nothing has been charged for it.</p>
+						<input type="hidden" name="chaos_pay_csrf" value="<?= chaos_h($csrf) ?>">
+						<input type="hidden" name="chaos_pay_cancel" value="<?= (int)$order['id'] ?>">
+						<button type="submit" class="chaos-button">Yes, cancel it</button>
+						<a href="<?= chaos_h($self . '&order=' . (int)$order['id']) ?>">No, keep it</a>
+					</form>
+				<?php elseif (in_array($order['status'], array('pending', 'open'), true)): ?>
 					<p><a href="<?= chaos_h($self . '&order=' . (int)$order['id'] . '&cancel=1') ?>">Cancel this donation</a></p>
 				<?php endif; ?>
 				<?php if ($waiting): ?>

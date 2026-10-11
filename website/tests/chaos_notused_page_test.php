@@ -15,7 +15,19 @@ $pages = chaos_unused_pages();
 foreach (array('shop.php' => 'store', 'buypoints.php' => 'store', 'creatures.php' => 'creatures', 'spells.php' => 'spells', 'forum.php' => 'forum') as $script => $what) {
 	check(($pages[$script] ?? '') === $what, "$script -> $what");
 }
-foreach (array('houses.php', 'house.php', 'index.php', 'guilds.php', 'page.php', 'highscores.php') as $kept) {
+// the stock payment callbacks: paygol_ipn.php credited points with only the stock secret 'xxxx-xxxx-xxxx-xxxx'
+foreach (array('paygol_ipn.php', 'ipn.php', 'pagseguro_ipn.php', 'pagseguro_retorno.php', 'payment_webhook.php') as $script) {
+	check(($pages[$script] ?? '') === 'store', "$script is off");
+}
+// the two callbacks that never load plugins are stopped by a patch instead
+$patch = (string)@file_get_contents(__DIR__ . '/../patches/znotex-chaos-unused-callbacks.patch');
+foreach (array('pagseguro_retorno.php', 'payment_webhook.php') as $script) {
+	check(strpos($patch, "+++ b/$script") !== false, "$script stopped by the patch");
+}
+// a random PayGol secret in config.local.php (defence in depth)
+$wc = (string)file_get_contents(__DIR__ . '/../setup/write_config.php');
+check(strpos($wc, "\$config['paygol']['secretKey']") !== false && strpos($wc, 'bin2hex(random_bytes(32))') !== false, 'random PayGol secret');
+foreach (array('houses.php','house.php', 'index.php', 'guilds.php', 'page.php', 'highscores.php') as $kept) {
 	check(!isset($pages[$kept]), "$kept stays");
 }
 

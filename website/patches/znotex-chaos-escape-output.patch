@@ -1,0 +1,225 @@
+diff --git a/characterprofile.php b/characterprofile.php
+index 3608781..1632bbb 100644
+--- a/characterprofile.php
++++ b/characterprofile.php
+@@ -591,7 +591,7 @@ if (isset($_GET['name']) === true && empty($_GET['name']) === false) {
+ 				</thead>
+ 				<tbody>
+ 					<tr>
+-						<td><?php echo preg_replace('/\v+|\\\r\\\n/','<br/>',$profile_znote_data['comment']); ?></td>
++						<td><?php echo preg_replace('/\v+|\\\r\\\n/','<br/>',htmlspecialchars((string)$profile_znote_data['comment'], ENT_QUOTES, 'UTF-8', false)); ?></td>
+ 					</tr>
+ 				</tbody>
+ 			</table>
+diff --git a/guilds.php b/guilds.php
+index ee41169..550289e 100644
+--- a/guilds.php
++++ b/guilds.php
+@@ -3,6 +3,15 @@ znote_csrf_protect_public_post();
+ if ($config['require_login']['guilds']) protect_page();
+ 
+ // These functions are page-specific and only used in this file. 
++// Cinders of Chaos: names, ranks and messages from the database are escaped on output (a guild or rank name, a
++// MOTD written by the game server or another tool is not run through sanitize()). Values the site stored already
++// encoded are not encoded twice.
++function chaos_guild_h($value): string {
++	return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8', false);
++}
++function chaos_guild_go(string $url): string {
++	return htmlspecialchars('window.location.href=' . json_encode($url, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES, 'UTF-8');
++}
+ function guild_list($TFSVersion) {
+ 	$cache = new Cache('engine/cache/guildlist');
+ 	if ($cache->hasExpired()) {
+@@ -250,16 +259,16 @@ if (isset($guilds) && !empty($guilds) && $guilds !== false) {
+ 			<?php
+ 			foreach ($guilds as $guild) {
+ 				if ($guild['total'] >= 1) {
+-					$url = url("guilds.php?name=". $guild['name']);
++					$url = url('guilds.php?name=' . rawurlencode((string)$guild['name']));
+ 					?>
+-					<tr class="special" onclick="javascript:window.location.href='<?php echo $url; ?>'">
++					<tr class="special" onclick="<?php echo chaos_guild_go($url); ?>">
+ 						<td style="width: 100px;">
+ 							<img style="max-height: 100px; margin: auto; display: block;" 
+ 								src="<?php logo_exists($guild['name']); ?>">
+ 						</td>
+ 						<td>
+-							<b><?php echo $guild['name']; ?></b>
+-							<?php if (strlen($guild['motd']) > 0) echo '<br>'.$guild['motd']; ?>
++							<b><?php echo chaos_guild_h($guild['name']); ?></b>
++							<?php if (strlen($guild['motd']) > 0) echo '<br>'.chaos_guild_h($guild['motd']); ?>
+ 						</td>
+ 						<td>
+ 							<?php echo "Total members: ".$guild['level']['players']; ?>
+@@ -420,7 +429,7 @@ view('guild_create_form', ['guildCreateFormHtml' => $guildCreateFormHtml]);
+ 		endif; ?>
+ 		<div id="guildDescription">
+ 			<h1><?= t('guild.title_char', ['name' => sanitize($_GET['name'])]) ?></h1>
+-			<p><?php echo $guild['motd']; ?></p>
++			<p><?php echo chaos_guild_h($guild['motd']); ?></p>
+ 		</div>
+ 	</div>
+ 
+@@ -453,11 +462,11 @@ view('guild_create_form', ['guildCreateFormHtml' => $guildCreateFormHtml]);
+ 			foreach ($players as $player) {
+ 				$chardata['online'] = (in_array($player['id'], $onlinelist)) ? 1 : 0;
+ 				echo '<tr>';
+-				echo '<td>' . ($rankName !== $player['rank_name'] ? $player['rank_name'] : '') . '</td>';
++				echo '<td>' . ($rankName !== $player['rank_name'] ? chaos_guild_h($player['rank_name']) : '') . '</td>';
+ 				$rankName = $player['rank_name'];
+-				echo '<td><a href="characterprofile.php?name='. $player['name'] .'">'. $player['name'] .'</a>';
++				echo '<td><a href="characterprofile.php?name='. chaos_guild_h(rawurlencode((string)$player['name'])) .'">'. chaos_guild_h($player['name']) .'</a>';
+ 				if (!empty($player['guildnick'])) {
+-					echo ' ('. $player['guildnick'] .')';
++					echo ' ('. chaos_guild_h($player['guildnick']) .')';
+ 				}
+ 				echo '</td>';
+ 				echo '<td>'. $player['level'] .'</td>';
+@@ -496,7 +505,7 @@ view('guild_create_form', ['guildCreateFormHtml' => $guildCreateFormHtml]);
+ 				$bool = false;
+ 				if ($inv_data !== false) foreach ($inv_data as $inv) {
+ 					echo '<tr>';
+-					echo '<td>'. $inv['name'] .'</td>';
++					echo '<td>'. chaos_guild_h($inv['name']) .'</td>';
+ 					// Remove invitation
+ 					if ($highest_access == 2 || $highest_access == 3) {
+ 					?> <form action="" method="post"> <?php
+@@ -829,7 +838,7 @@ view('guild_create_form', ['guildCreateFormHtml' => $guildCreateFormHtml]);
+ 				<ul>
+ 					<li><?= t('guild.change_motd') ?></li>
+ 					<li>
+-						<textarea name="motd" placeholder="<?= t('guild.message_placeholder') ?>" cols="50" rows="3"><?php echo $guild['motd']; ?></textarea><br>
++						<textarea name="motd" placeholder="<?= t('guild.message_placeholder') ?>" cols="50" rows="3"><?php echo chaos_guild_h($guild['motd']); ?></textarea><br>
+ 						<input type="submit" value="<?= t('guild.update_motd') ?>">
+ 					</li>
+ 				</ul>
+@@ -847,10 +856,10 @@ view('guild_create_form', ['guildCreateFormHtml' => $guildCreateFormHtml]);
+ 							//$players = get_guild_players($gid);
+ 							foreach ($players as $player) {
+ 								if ($player['rank_level'] != 3) {
+-									echo '<option value="'. $player['name'] .'">'. $player['name'] .'</option>';
++									echo '<option value="'. chaos_guild_h($player['name']) .'">'. chaos_guild_h($player['name']) .'</option>';
+ 								} else {
+ 									if ($highest_access == 3) {
+-										echo '<option value="'. $player['name'] .'">'. $player['name'] .'</option>';
++										echo '<option value="'. chaos_guild_h($player['name']) .'">'. chaos_guild_h($player['name']) .'</option>';
+ 									}
+ 								}
+ 							}
+@@ -875,7 +884,7 @@ view('guild_create_form', ['guildCreateFormHtml' => $guildCreateFormHtml]);
+ 							//$players = get_guild_players($gid);
+ 							foreach ($players as $player) {
+ 								if ($player['rank_level'] != 3) {
+-									echo '<option value="'. $player['name'] .'">'. $player['name'] .'</option>';
++									echo '<option value="'. chaos_guild_h($player['name']) .'">'. chaos_guild_h($player['name']) .'</option>';
+ 								}
+ 							}
+ 							?>
+@@ -885,10 +894,10 @@ view('guild_create_form', ['guildCreateFormHtml' => $guildCreateFormHtml]);
+ 								foreach ($ranks as $rank) {
+ 									if ($rank['level'] != 3) {
+ 										if ($rank['level'] != 2) {
+-											echo '<option value="'. $rank['id'] .'">'. $rank['name'] .'</option>';
++											echo '<option value="'. $rank['id'] .'">'. chaos_guild_h($rank['name']) .'</option>';
+ 										} else {
+ 											if ($highest_access == 3) {
+-												echo '<option value="'. $rank['id'] .'">'. $rank['name'] .'</option>';
++												echo '<option value="'. $rank['id'] .'">'. chaos_guild_h($rank['name']) .'</option>';
+ 											}
+ 										}
+ 									}
+@@ -912,10 +921,10 @@ view('guild_create_form', ['guildCreateFormHtml' => $guildCreateFormHtml]);
+ 								foreach ($players as $player) {
+ 									if ($player['rank_level'] != 3) {
+ 										if ($player['rank_level'] != 2) {
+-											echo '<option value="'. $player['name'] .'">'. $player['name'] .'</option>';
++											echo '<option value="'. chaos_guild_h($player['name']) .'">'. chaos_guild_h($player['name']) .'</option>';
+ 										} else {
+ 											if ($highest_access == 3) {
+-												echo '<option value="'. $player['name'] .'">'. $player['name'] .'</option>';
++												echo '<option value="'. chaos_guild_h($player['name']) .'">'. chaos_guild_h($player['name']) .'</option>';
+ 											}
+ 										}
+ 									}
+@@ -1034,7 +1043,7 @@ view('guild_create_form', ['guildCreateFormHtml' => $guildCreateFormHtml]);
+ 						<?php
+ 						$rank_count = 1;
+ 						foreach ($ranks as $rank) {
+-							echo '<input type="text" name="rank_name!'. $rank['level'] .'" value="'. $rank['name'] .'">';
++							echo '<input type="text" name="rank_name!'. $rank['level'] .'" value="'. chaos_guild_h($rank['name']) .'">';
+ 						}
+ 						echo '<input type="hidden" name="change_ranks" value="' . $gid . '" />';
+ 						?>
+@@ -1064,7 +1073,7 @@ view('guild_create_form', ['guildCreateFormHtml' => $guildCreateFormHtml]);
+ 							//$players = get_guild_players($gid);
+ 							foreach ($players as $player) {
+ 								if ($player['rank_level'] != 3) {
+-									echo '<option value="'. $player['id'] .'">'. $player['name'] .'</option>';
++									echo '<option value="'. $player['id'] .'">'. chaos_guild_h($player['name']) .'</option>';
+ 								}
+ 							}
+ 							?>
+@@ -1181,11 +1190,11 @@ view('guild_create_form', ['guildCreateFormHtml' => $guildCreateFormHtml]);
+ 				<?php
+ 				foreach ($wardata as $wars): 
+ 					if ($wars['guild1'] == $gid || $wars['guild2'] == $gid): 
+-						$url = url("guildwar.php?warid=". $wars['id']);
++						$url = url('guildwar.php?warid=' . (int)$wars['id']);
+ 						?>
+-						<tr class="special" onclick="javascript:window.location.href='<?php echo $url; ?>'">
+-							<td><?php echo $wars['name1']; ?></td>
+-							<td><?php echo $wars['name2']; ?></td>
++						<tr class="special" onclick="<?php echo chaos_guild_go($url); ?>">
++							<td><?php echo chaos_guild_h($wars['name1']); ?></td>
++							<td><?php echo chaos_guild_h($wars['name2']); ?></td>
+ 							<td><?php echo $config['war_status'][$wars['status']]; ?></td>
+ 							<td><?php echo getClock($wars['started'], true); ?></td>
+ 						</tr>
+diff --git a/layouts/default/views/guilds.php b/layouts/default/views/guilds.php
+index 82d9f65..85b48fa 100644
+--- a/layouts/default/views/guilds.php
++++ b/layouts/default/views/guilds.php
+@@ -19,16 +19,16 @@
+ 		<?php
+ 		foreach ($guilds as $guild) {
+ 			if ($guild['total'] >= 1) {
+-				$url = url("guilds.php?name=". $guild['name']);
++				$url = url('guilds.php?name=' . rawurlencode((string)$guild['name']));
+ 				?>
+-				<tr class="special" onclick="javascript:window.location.href='<?php echo $url; ?>'">
++				<tr class="special" onclick="<?php echo htmlspecialchars('window.location.href=' . json_encode($url, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES, 'UTF-8'); ?>">
+ 					<td style="width: 100px;">
+ 						<img style="max-height: 100px; margin: auto; display: block;"
+ 							src="<?php logo_exists($guild['name']); ?>">
+ 					</td>
+ 					<td>
+-						<b><?php echo $guild['name']; ?></b>
+-						<?php if (strlen($guild['motd']) > 0) echo '<br>'.$guild['motd']; ?>
++						<b><?php echo htmlspecialchars((string)$guild['name'], ENT_QUOTES, 'UTF-8', false); ?></b>
++						<?php if (strlen($guild['motd']) > 0) echo '<br>'.htmlspecialchars((string)$guild['motd'], ENT_QUOTES, 'UTF-8', false); ?>
+ 					</td>
+ 					<td>
+ 						<?php echo "Total members: ".$guild['level']['players']; ?>
+diff --git a/layouts/default/views/topguilds.php b/layouts/default/views/topguilds.php
+index e2406ae..b0c0696 100644
+--- a/layouts/default/views/topguilds.php
++++ b/layouts/default/views/topguilds.php
+@@ -13,14 +13,14 @@
+ 	    </tr>
+ 	    <?php
+ 		foreach ($guilds as $guild):
+-		    $url = url("guilds.php?name=". $guild['name']);
++		    $url = url('guilds.php?name=' . rawurlencode((string)$guild['name']));
+ 			?>
+-			<tr class="special" onclick="javascript:window.location.href='<?php echo $url; ?>'">
++			<tr class="special" onclick="<?php echo htmlspecialchars('window.location.href=' . json_encode($url, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES, 'UTF-8'); ?>">
+ 				<td><?php
+ 					echo convert_number_to_words($count);
+ 					$count++;
+ 				?></td>
+-		        <td><a href="" onclick="return false"><?php echo $guild['name']; ?></a></td>
++		        <td><a href="" onclick="return false"><?php echo htmlspecialchars((string)$guild['name'], ENT_QUOTES, 'UTF-8', false); ?></a></td>
+ 		        <td><?php echo $guild['frags']; ?></td>
+ 		    </tr>
+ 	    	<?php

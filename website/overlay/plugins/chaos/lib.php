@@ -80,10 +80,15 @@ function chaos_class_lines(): array {
  * Stock ZnoteX pages this server does not use (website/README.md "Not used on this server"): root script => what
  * pages/notused.php explains. plugin.php sends a request for one of them there. The store is in the game and
  * donations are the Donate page; creatures and spells are in the client; there is no forum.
+ * The stock payment callbacks (PayGol, PayPal IPN, PagSeguro, the stock webhook) are off too: our donations have
+ * their own webhook (chaos_pay_webhook.php). pagseguro_retorno.php and payment_webhook.php do not load plugins, so
+ * patches/znotex-chaos-unused-callbacks.patch stops those two itself.
  */
 function chaos_unused_pages(): array {
 	return array(
 		'shop.php' => 'store', 'buypoints.php' => 'store', 'payment.php' => 'store',
+		'paygol_ipn.php' => 'store', 'ipn.php' => 'store', 'pagseguro_ipn.php' => 'store',
+		'pagseguro_retorno.php' => 'store', 'payment_webhook.php' => 'store',
 		'creatures.php' => 'creatures', 'spells.php' => 'spells',
 		'forum.php' => 'forum', 'forum_search.php' => 'forum',
 	);

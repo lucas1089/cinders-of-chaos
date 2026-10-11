@@ -42,6 +42,19 @@ case "$SITE/" in
   "$REPO/"*) echo "CHAOS_SITE_DIR must be outside the repository ($REPO)." >&2; exit 1 ;;
 esac
 mkdir -p "$SITE"
+# ZnoteX's git data lives OUTSIDE the web root (README "Web server"): default next to it, /var/www/.chaos.znotex.git for
+# /var/www/chaos. An install of an older version of this script had it in $SITE/.git; it is moved on the next run.
+ZGIT="${CHAOS_SITE_GIT_DIR:-$(dirname "$SITE")/.$(basename "$SITE").znotex.git}"
+ZGIT="$(realpath -m "$ZGIT")"
+case "$ZGIT/" in
+  "$SITE/"*) echo "CHAOS_SITE_GIT_DIR must be outside CHAOS_SITE_DIR ($SITE)." >&2; exit 1 ;;
+esac
+if [ -d "$SITE/.git" ] && [ ! -e "$ZGIT" ]; then
+  echo "Moving ZnoteX's git data out of the web root to $ZGIT"
+  mv "$SITE/.git" "$ZGIT"
+  git --git-dir="$ZGIT" config core.worktree "$SITE"
+fi
+zgit() { git --git-dir="$ZGIT" --work-tree="$SITE" "$@"; }
 
 PHP="${PHP:-php}"
 "$PHP" -r 'exit(PHP_VERSION_ID >= 80100 && extension_loaded("mysqli") ? 0 : 1);' 2>/dev/null \
@@ -57,11 +70,11 @@ sha256() {
 }
 
 # ---------------------------------------------------------------- 1. ZnoteX at the pinned commit
-if [ -d "$SITE/.git" ]; then
-  if [ "$(git -C "$SITE" rev-parse HEAD 2>/dev/null)" != "$ZNOTEX_COMMIT" ]; then
+if [ -d "$ZGIT" ]; then
+  if [ "$(zgit rev-parse HEAD 2>/dev/null)" != "$ZNOTEX_COMMIT" ]; then
     echo "Updating ZnoteX to $ZNOTEX_COMMIT ..."
-    git -C "$SITE" fetch -q --depth 1 origin "$ZNOTEX_COMMIT"
-    git -C "$SITE" checkout -q --force FETCH_HEAD
+    zgit fetch -q --depth 1 origin "$ZNOTEX_COMMIT"
+    zgit checkout -q --force FETCH_HEAD
   else
     echo "ZnoteX already at $ZNOTEX_COMMIT"
   fi
@@ -70,10 +83,12 @@ else
     echo "$SITE is not empty and is not a ZnoteX checkout; refusing to install over it." >&2; exit 1
   fi
   echo "Cloning ZnoteX $ZNOTEX_COMMIT into $SITE ..."
-  git -C "$SITE" init -q
-  git -C "$SITE" remote add origin "$ZNOTEX_REPO"
-  git -C "$SITE" fetch -q --depth 1 origin "$ZNOTEX_COMMIT"
-  git -C "$SITE" checkout -q FETCH_HEAD
+  git init -q --bare "$ZGIT"
+  git --git-dir="$ZGIT" config core.bare false
+  git --git-dir="$ZGIT" config core.worktree "$SITE"
+  zgit remote add origin "$ZNOTEX_REPO"
+  zgit fetch -q --depth 1 origin "$ZNOTEX_COMMIT"
+  zgit checkout -q FETCH_HEAD
 fi
 
 # ---------------------------------------------------------------- 2. the purple layout (parent of ours)
@@ -103,11 +118,14 @@ python3 -I "$HERE/tools/recolor_layout.py" "$SITE/layouts/void" "$SITE/layouts/c
 # ---------------------------------------------------------------- 3b. salted passwords (patches/, README "Passwords")
 # ZnoteX files changed in place by patches/*.patch (the pinned checkout, so they always apply); a patch that is
 # already in is skipped, a file changed by hand stops the install.
+# The patches are applied to the site folder as a plain folder (git apply outside a repository: the git data is not in
+# the web root, and GIT_CEILING_DIRECTORIES stops git from finding a repository above it).
+sapply() { (cd "$SITE" && GIT_CEILING_DIRECTORIES="$(dirname "$SITE")" git apply "$@"); }
 for p in "$HERE"/patches/*.patch; do
-  if git -C "$SITE" apply --check "$p" 2>/dev/null; then
-    git -C "$SITE" apply "$p"
+  if sapply --check "$p" 2>/dev/null; then
+    sapply "$p"
     echo "Applied $(basename "$p")"
-  elif git -C "$SITE" apply --reverse --check "$p" 2>/dev/null; then
+  elif sapply --reverse --check "$p" 2>/dev/null; then
     echo "$(basename "$p") already applied"
   else
     echo "$(basename "$p") does not apply to $SITE (a ZnoteX file was changed by hand?)" >&2; exit 1
@@ -131,6 +149,18 @@ fi
 
 # ---------------------------------------------------------------- 5. tables, migrations, plugin, layout, menu
 (cd "$SITE" && "$PHP" "$HERE/setup/chaos_setup.php")
+
+# ---------------------------------------------------------------- 6. nothing but the site in the web root
+# ZnoteX's tests, tools, docker files, composer files and the special/ maintenance scripts are not needed by the site
+# and are deleted from it (README "Web server"); the git data is already outside. A ZnoteX update restores them and
+# the next run deletes them again. SQL/ (the setup and the admin panel's migrations read it), Lua/ and install/ (the
+# installer lock) stay and are denied by .htaccess / the nginx rules.
+for f in tests tools docker .github docker-compose.yml Dockerfile .dockerignore .env.example .codefactor.yml \
+         .editorconfig .gitattributes .gitignore composer.json composer.lock composer.phar phpunit.xml phpstan.neon; do
+  rm -rf "${SITE:?}/$f"
+done
+find "$SITE/special" -mindepth 1 ! -name .htaccess -exec rm -rf {} + 2>/dev/null || true
+[ ! -e "$SITE/.git" ] || { echo "$SITE/.git is still there: move it out of the web root (CHAOS_SITE_GIT_DIR)." >&2; exit 1; }
 
 echo "Done. Website: $SITE (layout ${CHAOS_LAYOUT:-chaos})."
 echo "Local test: $PHP -S 127.0.0.1:8095 -t \"$SITE\" \"$HERE/setup/router.php\""

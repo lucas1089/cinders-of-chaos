@@ -6,5 +6,9 @@
 if (function_exists('chaos_referral_add_error')) {
 	chaos_referral_add_error();
 }
+// too many accounts from this address in the last hour (plugins/chaos/register_guard.php)
+if (function_exists('chaos_register_add_error')) {
+	chaos_register_add_error();
+}
 ?>
 <h1><?= t('reg.heading') ?></h1>

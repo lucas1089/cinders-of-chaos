@@ -49,9 +49,12 @@ $chaosRefDays = function_exists('chaos_referral_settings') ? (int)chaos_referral
 
 		<?php
 		if ($config['use_captcha']) {
+			/* Cinders of Chaos: on when CHAOS_RECAPTCHA_SITE_KEY and CHAOS_RECAPTCHA_SECRET are set; ZnoteX's form never
+			   loaded Google's script, so the widget did not show */
 			?>
 			<li>
-				 <div class="g-recaptcha" data-sitekey="<?php echo $config['captcha_site_key']; ?>"></div>
+				 <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+				 <div class="g-recaptcha" data-sitekey="<?= htmlspecialchars((string)$config['captcha_site_key'], ENT_QUOTES, 'UTF-8') ?>"></div>
 			</li>
 			<?php
 		}

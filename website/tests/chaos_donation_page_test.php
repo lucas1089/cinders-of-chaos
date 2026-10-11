@@ -44,6 +44,10 @@ $state = tempnam(sys_get_temp_dir(), 'chaos_pay_page');
 $GLOBALS['chaos_pay_service'] = new ChaosPayService($db, array('pix' => new ChaosPayMock('pix', 5, $state), 'paypal' => new ChaosPayMock('paypal', 5, $state)),
 	chaos_pay_packs(), chaos_pay_config(), array('site_url' => 'https://site.example.invalid'), null, static function () {});
 
+function order_status($db, int $id): string {
+	$r = $db->rows('SELECT status FROM chaos_coin_orders WHERE id = ?', array($id));
+	return (string)($r[0]['status'] ?? '');
+}
 $notices = static function (string $html): bool {
 	return strpos($html, chaos_h(ChaosPayService::NOTICE_EN)) !== false && strpos($html, chaos_h(ChaosPayService::NOTICE_PT)) !== false;
 };
@@ -67,6 +71,19 @@ check(strpos($html, 'The form expired') !== false, 'CSRF token checked');
 $html = render(array(), array('chaos_pay_csrf' => $_SESSION['chaos_pay_csrf'], 'chaos_pay_pack' => 'coins750', 'chaos_pay_method' => 'pix'));
 check(strpos($html, 'Your donation: Sack of Coins') !== false && strpos($html, '0014br.gov.bcb.pix') !== false, 'Pix code shown');
 check(strpos($html, 'Cancel this donation') !== false, 'cancel link');
+// cancelling: a GET (the page's link, PayPal's cancel_url) only asks; the POST with the CSRF token cancels
+$html = render(array('order' => '1', 'cancel' => '1'));
+check(strpos($html, 'Cancel this donation?') !== false && strpos($html, 'name="chaos_pay_cancel" value="1"') !== false, 'GET cancel shows the confirmation form');
+check(order_status($db, 1) === 'open', 'GET cancel changes nothing');
+check(strpos($html, 'setTimeout') === false, 'the confirmation page does not reload itself');
+$html = render(array(), array('chaos_pay_csrf' => 'wrong', 'chaos_pay_cancel' => '1'));
+check(strpos($html, 'The form expired') !== false && order_status($db, 1) === 'open', 'cancel POST without the token refused');
+$SESSION_USER = 78;
+render(array(), array('chaos_pay_csrf' => $_SESSION['chaos_pay_csrf'], 'chaos_pay_cancel' => '1'));
+check(order_status($db, 1) === 'open', 'another account cannot cancel it');
+$SESSION_USER = 77;
+$html = render(array(), array('chaos_pay_csrf' => $_SESSION['chaos_pay_csrf'], 'chaos_pay_cancel' => '1'));
+check(order_status($db, 1) === 'cancelled' && strpos($html, 'This donation was cancelled') !== false, 'cancel POST with the token cancels');
 $db->exec("UPDATE chaos_coin_orders SET status = 'credited' WHERE id = 1");
 $html = render(array('order' => '1'));
 check(strpos($html, chaos_h('Thank you for your voluntary donation! You received 975 Chaos Coins as a thank-you.')) !== false, 'thanks after the donation (EN)');

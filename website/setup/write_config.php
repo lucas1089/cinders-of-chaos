@@ -109,6 +109,19 @@ foreach ($classes as $id => $name) {
 $iterations = max(1000, min(10000000, (int)env('CHAOS_PASSWORD_ITERATIONS', '120000')));
 $admins = array_values(array_filter(array_map('trim', explode(',', env('CHAOS_ADMIN_ACCOUNTS')))));
 $serverData = env('CHAOS_SERVER_DATA');
+$siteUrl = env('CHAOS_SITE_URL', 'http://localhost');
+$https = stripos($siteUrl, 'https://') === 0;
+$captchaSite = env('CHAOS_RECAPTCHA_SITE_KEY');
+$captchaSecret = env('CHAOS_RECAPTCHA_SECRET');
+$captcha = $captchaSite !== '' && $captchaSecret !== '';
+// Content-Security-Policy (README "Web server"). script-src keeps 'unsafe-inline': the parent layout (Void) and
+// ZnoteX's pages and admin panel carry inline scripts and onclick handlers we do not own. Everything else is 'self'
+// (plus Google's reCAPTCHA hosts when it is on, and YouTube frames for the news [youtube] BBCode).
+$google = $captcha ? ' https://www.google.com https://www.gstatic.com' : '';
+$csp = "default-src 'self'; script-src 'self' 'unsafe-inline'" . $google . "; style-src 'self' 'unsafe-inline'; "
+	. "img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; "
+	. "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com" . $google . "; "
+	. "form-action 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'self'";
 $winUrl = env('CHAOS_CLIENT_WINDOWS_URL', '#download-coming-soon');
 $linuxUrl = env('CHAOS_CLIENT_LINUX_URL', '#download-coming-soon');
 
@@ -125,7 +138,7 @@ $out = "<?php\n"
 	. "\$config['client'] = 1098;\n"
 	. "\$config['site_title'] = 'Cinders of Chaos';\n"
 	. "\$config['site_title_context'] = 'The world was not ended. It was broken, and the pieces still bleed.';\n"
-	. "\$config['site_url'] = " . export(env('CHAOS_SITE_URL', 'http://localhost')) . ";\n"
+	. "\$config['site_url'] = " . export($siteUrl) . ";\n"
 	. "\$config['cache']['memory'] = false; // no APCu needed\n"
 	. "\$config['language_selector'] = false; // the site is written in English\n"
 	. "// English only: the Void layout shows its flag switcher whenever two languages are enabled (it does not read\n"
@@ -169,7 +182,27 @@ $out = "<?php\n"
 	. "\$config['buypoints_enabled'] = false;\n"
 	. "\$config['houseConfig']['shopPoints']['enabled'] = false;\n"
 	. "\$config['forum']['enabled'] = false;\n"
-	. "\$config['forum']['guildboard'] = false;\n\n"
+	. "\$config['forum']['guildboard'] = false;\n"
+	. "// The stock payment callbacks are sent away by the plugin (chaos_unused_pages) or stopped by a patch; a random\n"
+	. "// PayGol secret (new on every run) in place of the stock 'xxxx-xxxx-xxxx-xxxx' as defence in depth.\n"
+	. "\$config['paygol']['enabled'] = false;\n"
+	. "\$config['paygol']['secretKey'] = " . export(bin2hex(random_bytes(32))) . ";\n"
+	. "\$config['pagseguro']['enabled'] = false;\n"
+	. "\$config['paypal']['enabled'] = false;\n\n"
+	. "// Browser security (README \"Web server\"). With an https:// site address the session cookie is Secure and HSTS\n"
+	. "// is sent; behind a TLS proxy PHP must still be told the request was HTTPS (fastcgi_param HTTPS on).\n"
+	. ($https ? "\$config['session']['cookie_secure'] = true;\n" : '')
+	. "\$config['security']['hsts'] = " . export($https) . ";\n"
+	. "\$config['security']['content_type_options'] = true;\n"
+	. "\$config['security']['referrer_policy'] = 'strict-origin-when-cross-origin';\n"
+	. "\$config['security']['content_security_policy'] = " . export($csp) . ";\n\n"
+	. "// reCAPTCHA on the account creation form when both keys are set (CHAOS_RECAPTCHA_SITE_KEY / CHAOS_RECAPTCHA_SECRET)\n"
+	. "\$config['use_captcha'] = " . export($captcha) . ";\n"
+	. ($captcha ? "\$config['captcha_site_key'] = " . export($captchaSite) . ";\n"
+		. "\$config['captcha_secret_key'] = " . export($captchaSecret) . ";\n"
+		. "\$config['captcha_use_curl'] = false; // ZnoteX's cURL path turns certificate checks off; file_get_contents keeps them\n" : '')
+	. "// Account creation: at most this many accounts per IP address per hour (plugins/chaos/register_guard.php)\n"
+	. "\$config['chaos_register_limit'] = " . export(array('per_ip' => max(0, (int)env('CHAOS_REGISTER_PER_IP_HOUR', '3')), 'window_seconds' => 3600)) . ";\n\n"
 	. "// Cinders of Chaos (plugins/chaos)\n"
 	. "\$config['chaos'] = " . export(array(
 		'server_data' => $serverData,

@@ -1,0 +1,24 @@
+diff --git a/pagseguro_retorno.php b/pagseguro_retorno.php
+index 201b0b7..75abd32 100644
+--- a/pagseguro_retorno.php
++++ b/pagseguro_retorno.php
+@@ -1,4 +1,7 @@
+ <?php
++// Cinders of Chaos: not used on this server (website/README.md "Not used on this server"); donations have their
++// own webhook, chaos_pay_webhook.php. This script never loads plugins, so it stops here itself.
++http_response_code(404); header('Content-Type: text/plain; charset=utf-8'); exit("Not used on this server.\n");
+ 	/*
+ 		Instalação
+ 			- Configurando Pagseguro (Acessar https://pagseguro.uol.com.br/preferencias/integracoes.jhtml)
+diff --git a/payment_webhook.php b/payment_webhook.php
+index fc5eb1a..0de57e6 100644
+--- a/payment_webhook.php
++++ b/payment_webhook.php
+@@ -1,4 +1,7 @@
+ <?php
++// Cinders of Chaos: not used on this server (website/README.md "Not used on this server"); donations have their
++// own webhook, chaos_pay_webhook.php. This script never loads plugins, so it stops here itself.
++http_response_code(404); header('Content-Type: text/plain; charset=utf-8'); exit("Not used on this server.\n");
+ if (PHP_VERSION_ID < 80100) {
+ 	http_response_code(500);
+ 	exit('PHP 8.1 or higher is required.');

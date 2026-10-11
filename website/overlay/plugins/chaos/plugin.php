@@ -15,7 +15,7 @@
  *    ADD_DEPOT_BOXES_NEW_PLAYERS snippet), on the character.created hook. Off by
  *    default ($config['chaos']['depot_boxes']): !season join needs an empty depot.
  *  - The stock pages this server does not use (shop, points, creatures, spells,
- *    forum) send the visitor to pages/notused.php.
+ *    forum, the stock payment callbacks) send the visitor to pages/notused.php.
  */
 
 if (!isset($config)) {
@@ -28,6 +28,8 @@ if (!is_array($config)) {
 require_once __DIR__ . '/lib.php';
 // referral code on the account creation form (referral.php registers its own hooks)
 require_once __DIR__ . '/referral.php';
+// account creation: per-IP limit (register_guard.php registers its own hook)
+require_once __DIR__ . '/register_guard.php';
 // the community goal and the week's world modifiers (read only: the front page block and pages/community.php)
 require_once __DIR__ . '/community_lib.php';
 

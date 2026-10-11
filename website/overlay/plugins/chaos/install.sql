@@ -65,3 +65,13 @@ CREATE TABLE IF NOT EXISTS `chaos_coin_payments` (
   KEY `chaos_coin_payments_ref` (`psp`, `psp_ref`),
   KEY `chaos_coin_payments_reversal` (`reversal_done`, `reversal`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Accounts created on the website per address (register_guard.php: the per-IP limit of account creation). Rows older
+-- than a day are deleted by the site. Website only; the game server does not use it.
+CREATE TABLE IF NOT EXISTS `chaos_web_registrations` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ip` varchar(64) NOT NULL,
+  `created` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `chaos_web_registrations_ip` (`ip`, `created`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

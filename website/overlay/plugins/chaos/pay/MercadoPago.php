@@ -27,7 +27,7 @@ final class ChaosPayMercadoPago implements ChaosPayProvider {
 	/** @var callable():int */
 	private $now;
 
-	public function __construct(string $accessToken, string $webhookSecret, string $notificationUrl = '', int $tolerance = 0,
+	public function __construct(string $accessToken, string $webhookSecret, string $notificationUrl = '', int $tolerance = 600,
 			?callable $http = null, ?callable $now = null) {
 		$this->token = $accessToken;
 		$this->secret = $webhookSecret;

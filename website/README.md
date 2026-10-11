@@ -17,6 +17,13 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `overlay/plugins/chaos/` | our plugin: class names and class lock, character slots, starter depot boxes, the referral code field (`referral.php`), Leaderboards / Patch Notes / Seasons pages |
 | `overlay/engine/function/chaos_password.php` | salted PBKDF2 passwords, the game server's format (see "Passwords") |
 | `patches/znotex-chaos-passwords.patch` | ZnoteX's password and login code switched to it, per-account login throttling |
+| `patches/znotex-chaos-escape-output.patch` | guild names, ranks, MOTD and member names (`guilds.php` and its views, `topguilds`) and the character comment (`characterprofile.php`) escaped on output (see "Web server") |
+| `patches/znotex-chaos-unused-callbacks.patch` | `pagseguro_retorno.php` and `payment_webhook.php` answer 404 (see "Not used on this server") |
+| `overlay/.htaccess`, `overlay/special/.htaccess` | Apache 2.4 rules: ZnoteX's character rule plus deny rules for every internal folder and file (see "Web server") |
+| `overlay/plugins/chaos/register_guard.php` | the per-IP limit of account creation (see "Account creation") |
+| `tests/chaos_escape_patch_test.php` | `php website/tests/chaos_escape_patch_test.php`: every line of the escape patch rendered with malicious guild / rank / MOTD / comment values (php-cli only) |
+| `tests/chaos_site_security_test.php` | `php website/tests/chaos_site_security_test.php`: `config.local.php` (Secure cookie, HSTS, CSP, reCAPTCHA, PayGol secret), the `.htaccess` and router deny rules, the web root clean-up (php-cli only) |
+| `tests/chaos_register_guard_test.php` | `php website/tests/chaos_register_guard_test.php`: the registration limit, the generic e-mail message, reCAPTCHA on the form (php-cli only) |
 | `overlay/updates/.htaccess` | the client update folder: static files only, cache headers (see "Client updates") |
 | `tests/chaos_password_test.php` | `php website/tests/chaos_password_test.php` (php-cli only) |
 | `tests/chaos_slots_test.php` | `php website/tests/chaos_slots_test.php`: the character slot limit (php-cli only, a fake database) |
@@ -60,13 +67,15 @@ repository or changing a setting; a second run changes nothing in the database.
 What it does, in order:
 
 1. **ZnoteX** is cloned shallow at the pinned commit (`ZNOTEX_COMMIT` in the script, ZnoteX 2.0.5) into
-   `CHAOS_SITE_DIR`, which must be outside the repository; an existing checkout is moved to the pin.
+   `CHAOS_SITE_DIR`, which must be outside the repository; an existing checkout is moved to the pin. Its git data
+   is kept **outside the web root** (`CHAOS_SITE_GIT_DIR`, default `/var/www/.chaos.znotex.git` for `/var/www/chaos`);
+   a `.git` folder left in the site by an older installer is moved there.
 2. **The purple layout "Void"** comes from ZnoteX's layout catalogue (branch `layouts`), pinned to a commit and
    checked against a SHA-256, and goes to `layouts/void/` (only when the pin changed).
 3. **Our overlay** (`overlay/`) is copied over the checkout; `layouts/chaos/` and `plugins/chaos/` are replaced as a
    whole, so nothing else of ZnoteX is touched. `tools/recolor_layout.py` then writes the re-coloured stylesheets.
    `patches/*.patch` are applied to the checkout (skipped when already in; a ZnoteX file changed by hand stops the
-   installer), see "Passwords".
+   installer), see "Passwords" and "Web server".
 4. **`config.local.php`** (mode 600; ZnoteX reads it after its own `config.php`) is written from the environment:
    database, site title "Cinders of Chaos", site URL, admin accounts, the classes, the towns, new characters, the
    download links and our plugin's settings. Credentials only ever live there and in the env files, never here.
@@ -80,18 +89,168 @@ What it does, in order:
    Community > Forum, and Library, then empty) are switched off once, on a fresh install and at the next run on an
    existing one (marker `chaos:stock_menu_hidden` in `znote_config`).
    Menu entries and the Rules page are never overwritten, so the owner's edits in the admin panel stay.
+6. **The web root is cleaned**: ZnoteX's `tests/`, `tools/`, `docker/`, docker and composer files, dot files and the
+   `special/` maintenance scripts are deleted from the site (a ZnoteX update brings them back, the next run deletes
+   them again). `SQL/` (read by the setup and the admin panel's migrations), `Lua/` and `install/` stay and are denied
+   by the web server rules (see "Web server").
 
 Settings (`site.env.example` has them all): `CHAOS_SITE_DIR`, `CHAOS_SITE_URL`, `CHAOS_ADMIN_ACCOUNTS` (account names
 with the admin panel), `CHAOS_SERVER_DATA` (the game server's `data/` folder: patch notes, season and leaderboard
 settings; default `server/data` of this repository), `CHAOS_START_TOWNS`, `CHAOS_GAME_HOST`, `CHAOS_GAME_PORT`,
 `CHAOS_DISCORD_URL`, `CHAOS_CLIENT_WINDOWS_URL`, `CHAOS_CLIENT_LINUX_URL`, `CHAOS_WEB_USER`, `CHAOS_LAYOUT`
-(`void` shows the original purple layout), `CHAOS_DEPOT_BOXES`, `CHAOS_PASSWORD_ITERATIONS` (see "Passwords").
+(`void` shows the original purple layout), `CHAOS_DEPOT_BOXES`, `CHAOS_PASSWORD_ITERATIONS` (see "Passwords"),
+`CHAOS_SITE_GIT_DIR`, `CHAOS_RECAPTCHA_SITE_KEY` / `CHAOS_RECAPTCHA_SECRET` and `CHAOS_REGISTER_PER_IP_HOUR` (see
+"Account creation").
 
 **Placeholders the owner sets before launch:** the site address (`CHAOS_SITE_URL`), the game address shown on the
 downloads page (`CHAOS_GAME_HOST`), the client download links (empty = "Coming soon"), the Discord invite (empty =
 no Discord button), the admin account names. The Rules page is a first draft to edit in Admin Panel > Pages.
 
 Local test (what was used to check it): `php -S 127.0.0.1:8095 -t "$CHAOS_SITE_DIR" website/setup/router.php`.
+The router stands in for the `.htaccess` deny rules; it is for local tests only.
+
+## Web server
+
+ZnoteX keeps its internals in the web root and protects them with `.htaccess` files, which nginx ignores. The site is
+hardened on both servers:
+
+- **Not in the web root at all**: ZnoteX's git data (`CHAOS_SITE_GIT_DIR`), `tests/`, `tools/`, `docker/`, the docker
+  and composer files and the `special/` scripts (`database2znoteaac.php` and the others ran database conversions for
+  anyone who reached them). See "Install", steps 1 and 6.
+- **Denied**: `SQL/`, `Lua/`, `install/`, `engine/backups/` (the admin panel's database backups are written there),
+  `engine/cache/`, `vendor/`, dot files, `composer.*`, `docker-compose*`, `config.local.php` and files ending in
+  `.sql .md .lock .dist .example .bak .yml .env .log .phar`. Apache: `overlay/.htaccess` (Apache 2.4 syntax, copied
+  over ZnoteX's root `.htaccess` and keeping its character-name rule) and `overlay/special/.htaccess`
+  (`Require all denied`; ZnoteX's own used the 2.2 `allow from localhost` form). ZnoteX's `plugins/.htaccess` and
+  `layouts/.htaccess` (no PHP or data files served from there) stay. nginx: the server block below.
+- **Output escaping**: `patches/znotex-chaos-escape-output.patch` escapes the guild names (also inside the guild rows'
+  `onclick`), MOTD, rank names, nicks and member names of `guilds.php` and its views, the guild names of `topguilds`
+  and the character comment of `characterprofile.php`. A value the site already stored escaped is not escaped twice.
+- **Headers** (`setup/write_config.php`, sent by ZnoteX on every PHP page): `Content-Security-Policy` (`default-src
+  'self'`, images also `data:` and `https:`, YouTube frames for the news BBCode, Google's reCAPTCHA hosts when it is
+  on, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`, `frame-ancestors 'self'`),
+  `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options`.
+  **Documented compromise**: `script-src` (and `style-src`) keep `'unsafe-inline'`, because the parent layout Void
+  and ZnoteX's pages and admin panel have inline scripts and `onclick` handlers that are not ours to rewrite. The
+  policy still blocks scripts from other hosts, plugins, `<base>` hijacking and framing; the escaping above is what
+  stops injected inline code.
+- **HTTPS**: with `CHAOS_SITE_URL=https://...` the session cookie is `Secure` and HSTS is on (one year). ZnoteX sends
+  HSTS only when PHP sees an HTTPS request, so behind a TLS proxy set `fastcgi_param HTTPS on;` (nginx) or
+  `SetEnvIf X-Forwarded-Proto https HTTPS=on` (Apache), and pass the client address on (see "Passwords").
+- **PHP**: `expose_php = Off` in the php.ini of PHP-FPM / Apache (`/etc/php/8.x/fpm/php.ini`), so no
+  `X-Powered-By: PHP/...`; the `.htaccess` and the nginx block also drop the header. Keep `display_errors = Off`.
+
+nginx with PHP-FPM (replace the names, paths and the PHP version; the `limit_req_zone` lines go in the `http {}`
+block, e.g. `/etc/nginx/conf.d/chaos-limits.conf`):
+
+```
+limit_req_zone $binary_remote_addr zone=chaos_webhook:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=chaos_forms:10m rate=30r/m;
+
+server {
+    listen 80;
+    server_name www.example.org;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name www.example.org;
+    ssl_certificate     /etc/letsencrypt/live/www.example.org/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/www.example.org/privkey.pem;
+
+    root /var/www/chaos;
+    index index.php;
+    server_tokens off;
+    autoindex off;
+    client_max_body_size 2m;
+
+    # static files; PHP pages send these themselves (hidden from PHP below so they are not doubled)
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+
+    # never served (the same list as overlay/.htaccess); the regex blocks come before the PHP block on purpose
+    location ^~ /.well-known/acme-challenge/ { default_type text/plain; }
+    location ~ /\. { deny all; }
+    location ~ ^/(SQL|Lua|tests|tools|docker|special|install|engine/(backups|cache)|vendor)(/|$) { deny all; }
+    location ~ (^|/)(composer\.[^/]*|docker-compose[^/]*|Dockerfile|config\.local\.php)$ { deny all; }
+    location ~ \.(sql|md|lock|dist|example|bak|yml|yaml|env|log|phar)$ { deny all; }
+    # ZnoteX's plugins/.htaccess and layouts/.htaccess: only assets are served from these folders
+    location ~ ^/(plugins|layouts)/.*\.(php|phtml|php[0-9]|inc|sql|json|md|txt|ya?ml|ini|log|bak|dist|example)$ { deny all; }
+
+    # the client updates (README "Client updates")
+    location ^~ /updates/ {
+        location ~ \.(php|phtml|phar)$ { deny all; }
+        location ~ /manifest\.json$ { add_header Cache-Control "no-cache"; default_type application/json; }
+        location ~ "/files/[0-9a-f]{2}/[0-9a-f]{64}$" { add_header Cache-Control "public, max-age=31536000, immutable";
+                                                        default_type application/octet-stream; }
+        autoindex off;
+    }
+
+    # the donation webhook: each PayPal call makes the site call PayPal back, so limit it per address
+    location = /chaos_pay_webhook.php {
+        limit_req zone=chaos_webhook burst=20 nodelay;
+        limit_req_status 429;
+        include snippets/chaos-php.conf;
+    }
+    # account creation and login (the site also limits these itself; this keeps floods off PHP)
+    location ~ ^/(register|login|recovery)\.php$ {
+        limit_req zone=chaos_forms burst=10 nodelay;
+        limit_req_status 429;
+        include snippets/chaos-php.conf;
+    }
+    location ~ \.php$ {
+        include snippets/chaos-php.conf;
+    }
+
+    # any other path is a character name (ZnoteX's rewrite rule)
+    location / {
+        try_files $uri $uri/ @character;
+    }
+    location @character {
+        rewrite ^/(.*)$ /characterprofile.php?name=$1 last;
+    }
+}
+```
+
+`/etc/nginx/snippets/chaos-php.conf`:
+
+```
+try_files $uri =404;
+fastcgi_split_path_info ^(.+\.php)(/.+)$;
+include fastcgi_params;
+fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+fastcgi_param HTTPS on;            # TLS ends at this server or at a proxy in front: Secure cookie and HSTS from PHP
+fastcgi_hide_header X-Powered-By;
+fastcgi_hide_header X-Content-Type-Options;   # sent by the server block for every response
+fastcgi_hide_header Referrer-Policy;
+fastcgi_hide_header X-Frame-Options;
+fastcgi_hide_header Strict-Transport-Security;
+fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+```
+
+`expose_php` is set in php.ini (it cannot be changed per request); the `fastcgi_hide_header` line makes sure the
+header never leaves nginx even where php.ini was not changed. Behind a TLS proxy (a load balancer or a CDN
+in front of this nginx) keep `HTTPS on` and add `set_real_ip_from <proxy address>; real_ip_header X-Forwarded-For;`
+to the server block, so `REMOTE_ADDR` is the visitor's address.
+
+## Account creation
+
+- **Limit per address**: at most 3 accounts per IP address per hour (`CHAOS_REGISTER_PER_IP_HOUR`, 0 = no limit; an
+  IPv6 address counts by its /64). `plugins/chaos/register_guard.php` counts the accounts created in
+  `chaos_web_registrations` (`install.sql`; rows older than a day are deleted) and the refusal reaches register.php's
+  errors through our `register_header` view, before anything is created. The address is `REMOTE_ADDR`, as for the
+  login lock (pass the client address on behind a proxy). With `CHAOS_LAYOUT=void` the limit is not applied (the
+  view is ours).
+- **reCAPTCHA** (v2 checkbox): on when `CHAOS_RECAPTCHA_SITE_KEY` and `CHAOS_RECAPTCHA_SECRET` are both set in
+  `site.env` (keys from https://www.google.com/recaptcha/admin, domain = the site's). ZnoteX checks it on the
+  account creation and recovery forms; our form loads Google's script (ZnoteX's never did, so the widget was
+  missing) and the CSP allows Google's hosts then. Needs PHP's curl and openssl extensions (ZnoteX stops otherwise).
+- **E-mail**: a taken and a malformed e-mail address get the same answer, "Please use another e-mail address."
+  (`locale/en.php`), never "already in use". A taken address still cannot be used twice, so someone who tries many
+  addresses can still tell; the limit per address and reCAPTCHA make that slow.
 
 ## Game data
 
@@ -151,12 +310,20 @@ printed is escaped.
 ZnoteX ships pages this server has no use for. They stay in the checkout (nothing of ZnoteX is deleted) but are off:
 
 - **Shop, Buy points** (and `payment.php`): the store and Chaos Coins are in the game; donations are the Donate page.
+  **The stock payment callbacks** `paygol_ipn.php`, `ipn.php`, `pagseguro_ipn.php`, `pagseguro_retorno.php` and
+  `payment_webhook.php`: off. ZnoteX's `paygol_ipn.php` credited points to any account for a GET that only repeated
+  the stock secret (`xxxx-xxxx-xxxx-xxxx`) and service id, whatever `paygol.enabled` said, and `pagseguro_ipn.php`
+  wrote log rows for anyone. The first three load plugins and are sent to the note below before they read anything;
+  `pagseguro_retorno.php` and `payment_webhook.php` never load plugins, so `patches/znotex-chaos-unused-callbacks.patch`
+  makes them answer 404 at their first line. `config.local.php` also gets a random 64-hex-digit PayGol secret on every
+  run, and PayGol, PagSeguro and the stock PayPal are switched off. Our donations use `chaos_pay_webhook.php` only.
   **Library > Creatures, Spells**: the client has the Bestiary and the Spellbook. **Forum** (and `forum_search.php`):
   there is none; the stock forum also printed PHP warnings when empty. Houses stay.
 - Their menu entries are switched off by `setup/chaos_setup.php` (see "Install", step 5).
-- `setup/write_config.php` sets `$config['shop']['enabled']`, `buypoints_enabled`, `forum.enabled` and
-  `forum.guildboard` to false, and `houseConfig.shopPoints` (buying a house with points) off.
-- A direct link to one of them (`chaos_unused_pages()` in `lib.php`) is sent by the plugin to
+- `setup/write_config.php` sets `$config['shop']['enabled']`, `buypoints_enabled`, `forum.enabled`,
+  `forum.guildboard`, `paygol.enabled`, `pagseguro.enabled` and `paypal.enabled` to false, and `houseConfig.shopPoints`
+  (buying a house with points) off.
+- A direct link to one of them (`chaos_unused_pages()` in `lib.php`, the callbacks included) is sent by the plugin to
   `page.php?plugin=chaos&p=notused&what=store|creatures|spells|forum`, a short note in our layout with the right links.
   The admin panel is not touched.
 - Premium and points: there are none. `layouts/chaos/assets/css/chaos.css` hides the account header's premium badge
@@ -186,6 +353,12 @@ Accounts use the game server's salted password format (engine patch 0014, `serve
   not locked). Settings in `config.local.php` (`login_guard`, written by `setup/write_config.php`); the setup adds an
   index on the account name. The IP is `REMOTE_ADDR`: behind a reverse proxy every visitor has the proxy's address, so
   pass the client address through to PHP there.
+- **Accepted trade-off: the account lock can be triggered by others.** Anyone who knows an account name can lock its
+  *website* login for 15 minutes with 10 wrong passwords from 2 or more addresses (one address alone is stopped by the
+  IP lock after 5). The owner then waits 15 minutes or logs in to the game, which is never locked. This is kept on
+  purpose: it stops password guessing spread over many addresses, and the cost to the victim is small (the website
+  only; the lock ends by itself). Staff can end it early by deleting that name's failed rows in `znote_login_attempts`
+  (the admin panel's Login attempts page unlocks per IP only).
 - `CHAOS_PASSWORD_ITERATIONS` (default 120000) is the cost of new hashes; keep it equal to `passwordHashIterations` in
   the server's config.lua. `setup/chaos_setup.php` widens `accounts.password` to VARCHAR(255) if the server's
   `server/sql/chaos_passwords.sql` was not imported yet.
@@ -289,6 +462,8 @@ USD x `brlPerUsd` (5), so the two prices never drift. The game server credits ev
 4. **Confirmation.** The provider calls `chaos_pay_webhook.php`. Mercado Pago: `x-signature`, HMAC-SHA256 with the
    webhook secret over `id:<data.id>;request-id:<x-request-id>;ts:<ts>;`. PayPal: `POST /v1/notifications/verify-webhook-signature`
    with the transmission headers and the webhook id. A bad signature is refused (401), an id we never charged too (404).
+   A Mercado Pago signature older than 600 s is refused too (`CHAOS_MP_SIGNATURE_TOLERANCE`). Each PayPal check is a
+   call to PayPal, so rate-limit the webhook path at the web server (see "Web server").
    The charge is then **fetched again** from the provider (`GET /v1/payments/{id}`, `GET /v2/checkout/orders/{id}`;
    PayPal is captured here once the payer approved). It is checked against the order: provider id, our token, amount in
    cents, currency, status approved. Only then the order becomes `paid`, with one conditional UPDATE, so a repeated
@@ -297,7 +472,9 @@ USD x `brlPerUsd` (5), so the two prices never drift. The game server credits ev
 5. **Coins.** The game server sees the `paid` row within 3 s (`shop_payments.lua` poll). It credits it in one transaction
    (`shop.lua` re-reads the row locked first) and pushes the thank-you: toast and balance in the client, no relog.
 6. **Ends.** Not paid by the expiry: `expired` (checked once more first, then cancelled at the provider). Cancelled by
-   the player: `cancelled` (a Mercado Pago charge is cancelled; a PayPal order is simply never captured). A refund or
+   the player: `cancelled` (a Mercado Pago charge is cancelled; a PayPal order is simply never captured). The page's
+   "Cancel this donation" link and PayPal's cancel link (`&order=N&cancel=1`) only open a confirmation; the order is
+   cancelled by its POST form with the page's CSRF token, so a link alone cannot cancel a donation. A refund or
    chargeback before crediting: `refunded`. After crediting: flagged on the row; the game server takes back the coins
    still unspent (`removeCoinsOnReversal`) and staff see it in the admin panel (Store > Donations: refunds and
    chargebacks). No charge after 10 minutes (worker down): `failed`.
@@ -320,13 +497,13 @@ a donation by hand with the admin panel (Store > Record a donation).
    | `CHAOS_PAY_PIX_PROVIDER` | `mercadopago`, `mock` or `off` |
    | `CHAOS_PAY_PAYPAL_PROVIDER` | `paypal`, `mock` or `off` |
    | `CHAOS_MP_ACCESS_TOKEN`, `CHAOS_MP_WEBHOOK_SECRET` | Mercado Pago access token, webhook secret |
-   | `CHAOS_MP_NOTIFICATION_URL`, `CHAOS_MP_SIGNATURE_TOLERANCE` | optional: per-payment notification URL; max age of a signature in s |
+   | `CHAOS_MP_NOTIFICATION_URL`, `CHAOS_MP_SIGNATURE_TOLERANCE` | optional: per-payment notification URL; max age of a signature in s (empty = 600, 0 = off) |
    | `CHAOS_PAYPAL_CLIENT_ID`, `CHAOS_PAYPAL_CLIENT_SECRET`, `CHAOS_PAYPAL_WEBHOOK_ID` | PayPal app credentials and its webhook's id |
    | `CHAOS_PAYPAL_ENV`, `CHAOS_PAYPAL_CATEGORY`, `CHAOS_PAYPAL_BRAND` | `sandbox` / `live`; `DONATION` / `DIGITAL_GOODS`; the name on PayPal's page |
    | `CHAOS_PAY_SITE_URL` | the site address for PayPal's return links (default `CHAOS_SITE_URL`) |
    | `CHAOS_PAY_PAYER_EMAIL` | Pix payer e-mail for accounts without one, with `{account}` (e.g. `donor+{account}@your-domain`) |
    | `CHAOS_PAY_RECONCILE_SECONDS`, `CHAOS_PAY_LOG` | how often open orders are checked (60); log file (order ids and amounts only) |
-   | `CHAOS_PAY_MOCK_*` | the mock provider (tests and demos only) |
+   | `CHAOS_PAY_MOCK_*`, `CHAOS_PAY_ALLOW_MOCK` | the mock provider (tests and demos only; see "Mock mode") |
 
    A variable in the real environment wins over the file. The webhook and the worker read the same file.
 3. Webhook URLs, set in each dashboard: `https://<site>/chaos_pay_webhook.php?psp=mercadopago` (Mercado Pago, topic
@@ -339,7 +516,9 @@ a donation by hand with the admin panel (Store > Record a donation).
 5. Tables: `chaos_coin_orders` and `chaos_coin_payments` (`install.sql`, `server/sql/chaos.sql`; the game server also
    creates them at startup).
 
-**Mock mode** (`CHAOS_PAY_*_PROVIDER=mock`): no network, no money. A charge approves itself after
+**Mock mode** (`CHAOS_PAY_*_PROVIDER=mock`): no network, no money. It only runs when the site address
+(`CHAOS_PAY_SITE_URL`, else `CHAOS_SITE_URL`) is `localhost`, `127.0.0.1` or `::1`, or with `CHAOS_PAY_ALLOW_MOCK=1`;
+otherwise the method stays off and the refusal is logged (a mock charge would credit real Chaos Coins). A charge approves itself after
 `CHAOS_PAY_MOCK_APPROVE_AFTER` seconds (Pix: a well-formed EMV code with its CRC; PayPal: a fake link, then captured).
 `worker.php --mock-refund <order id>` / `--mock-dispute <order id>` simulate a refund or chargeback after crediting.
 Never on a live server.
@@ -380,8 +559,8 @@ writes `manifest.json` last, so a client never sees a manifest whose files are n
 location ^~ /updates/ {
     location ~ \.(php|phtml|phar)$ { deny all; }
     location ~ /manifest\.json$ { add_header Cache-Control "no-cache"; default_type application/json; }
-    location ~ /files/[0-9a-f]{2}/[0-9a-f]{64}$ { add_header Cache-Control "public, max-age=31536000, immutable";
-                                                  default_type application/octet-stream; }
+    location ~ "/files/[0-9a-f]{2}/[0-9a-f]{64}$" { add_header Cache-Control "public, max-age=31536000, immutable";
+                                                    default_type application/octet-stream; }
     autoindex off;
 }
 ```

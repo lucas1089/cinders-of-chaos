@@ -353,7 +353,31 @@ putenv('CHAOS_MP_ACCESS_TOKEN=from-env');
 $s = chaos_pay_settings($f);
 putenv('CHAOS_MP_ACCESS_TOKEN');
 check($s['CHAOS_PAY_PIX_PROVIDER'] === 'mock' && $s['CHAOS_MP_ACCESS_TOKEN'] === 'from-env' && $s['CHAOS_PAYPAL_ENV'] === 'live', 'settings file and environment');
-check(array_keys(chaos_pay_providers($s)) === array('pix'), 'providers from the settings');
+check(array_keys(chaos_pay_providers($s, null, null, 'http://127.0.0.1:8095')) === array('pix'), 'providers from the settings');
+// the mock never runs on a public site: only localhost / 127.0.0.1 / ::1, or with CHAOS_PAY_ALLOW_MOCK=1
+$sm = $s + array();
+$sm['CHAOS_PAY_PAYPAL_PROVIDER'] = 'mock';
+$errorLog = ini_set('error_log', DIRECTORY_SEPARATOR === '/' ? '/dev/null' : 'NUL'); // the refusals are logged
+check(chaos_pay_providers($sm, null, null, 'https://www.example.org') === array(), 'mock refused on a public site');
+check(chaos_pay_providers($sm, null, null, '') === array(), 'mock refused without a site address');
+check(chaos_pay_providers($sm, null, null, 'http://evil.localhost.example.org') === array(), 'mock refused on a look-alike host');
+check(array_keys(chaos_pay_providers($sm, null, null, 'http://localhost')) === array('pix', 'paypal'), 'mock on localhost');
+check(array_keys(chaos_pay_providers($sm, null, null, 'http://[::1]:8080/')) === array('pix', 'paypal'), 'mock on ::1');
+$sm['CHAOS_PAY_ALLOW_MOCK'] = '1';
+check(array_keys(chaos_pay_providers($sm, null, null, 'https://demo.example.org')) === array('pix', 'paypal'), 'mock with CHAOS_PAY_ALLOW_MOCK=1');
+$sm['CHAOS_PAY_ALLOW_MOCK'] = '';
+$sm['CHAOS_PAY_SITE_URL'] = 'https://www.example.org';
+check(chaos_pay_providers($sm) === array(), 'mock refused: site address from the settings');
+ini_set('error_log', (string)$errorLog);
+// Mercado Pago: a signature older than 600 s is refused unless the setting says otherwise
+$smp = $s + array();
+$smp['CHAOS_PAY_PIX_PROVIDER'] = 'mercadopago';
+$smp['CHAOS_MP_SIGNATURE_TOLERANCE'] = '';
+$tol = (new ReflectionProperty(ChaosPayMercadoPago::class, 'tolerance'));
+$tol->setAccessible(true);
+check($tol->getValue(chaos_pay_providers($smp)['pix']) === 600, 'Mercado Pago signature tolerance 600 s by default');
+$smp['CHAOS_MP_SIGNATURE_TOLERANCE'] = '0';
+check($tol->getValue(chaos_pay_providers($smp)['pix']) === 0, 'tolerance 0 = off when set');
 @unlink($f);
 $example = (string)file_get_contents(__DIR__ . '/../payments.env.example');
 foreach (CHAOS_PAY_KEYS as $k) {
