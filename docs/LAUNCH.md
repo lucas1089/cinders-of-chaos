@@ -12,13 +12,27 @@ What you need:
 - a Linux machine (the test server runs Ubuntu 24.04), MariaDB 10.x, Python 3.7+ and the `mysql` client;
 - a checkout of this repository, for example in `/opt/chaos/repo`.
 
-To play it on one Windows PC first, without any of this: run the **Windows package** workflow (Actions -> Windows
-package -> Run workflow) and download `CindersOfChaos-Windows.zip` from the prerelease `winpkg-<run number>` (Releases;
-the run's Summary links it; the newest 3 are kept). It holds the patched engine
-(`ChaosServer.exe`), the Cinders of Chaos client, the merged dat/spr, a portable MariaDB and `start-server.bat` /
-`start-client.bat` (`tools/windows/package/README.txt`). Its inputs live on the private branch `windows-assets`
-(its README.md); `tools/windows/prepare_server.sh` turns the base server into the package's server folder. It has
-test accounts with known passwords: local play only.
+To play it first without any of this: run the **Windows package** workflow (Actions -> Windows package -> Run
+workflow). Its prerelease `winpkg-<run number>` (Releases; the run's Summary links each file; the newest 3 are kept) has
+five ready-to-use downloads, listed in the release notes:
+- `CindersOfChaos-Windows.zip`: the whole game for one Windows PC. The patched engine (`ChaosServer.exe`), the client,
+  the merged dat/spr, a portable MariaDB, the map editor and `start-server.bat` / `start-client.bat`
+  (`tools/windows/package/README.txt`). Test accounts with known passwords: local play only.
+- `CindersOfChaos-Client-Windows.zip` and `CindersOfChaos-Client-Linux.tar.gz`: the client alone (`Chaos.exe`, or
+  `run-client.sh` with its libraries in `lib/`), pointed at the workflow input `server_host` (default 127.0.0.1;
+  `client/tools/set_server_host.py`). Both are built with the secret `CHAOS_CLIENT_KEY` and the input `client_build`,
+  and both get the updater inputs.
+- `CindersOfChaos-Server-Windows.zip`: the Windows server alone (engine, portable MariaDB, the start / stop .bat files,
+  the test accounts; `tools/windows/server-README.txt`), `ip = server_host`.
+- `CindersOfChaos-Server-Linux.tar.gz`: the engine built on Ubuntu 22.04 (runs on Ubuntu 22.04+ and Debian 12+), its
+  libraries in `server/lib/`, the production `config.lua` of `prod_config.py` (`ip = server_host`), a portable MariaDB
+  and `start-server.sh` / `stop-server.sh` / `add-account.sh` (`tools/linux/server/README.txt`). The first start makes
+  the database, a database user with a random password (`chaos.env`) and a staff account with a random password. No
+  test accounts. The client guard is on once `chaos.env` has `CHAOS_CLIENT_KEY`. Good for a small server; a public one
+  follows this checklist (its `deploy/` folder holds the systemd units used below).
+The inputs live on the private branch `windows-assets` (its README.md). `tools/windows/prepare_server.sh` turns the
+base server into the server folder that all three servers share. `tools/linux/package_server.sh` and
+`tools/linux/package_client.sh` put the Linux downloads together.
 
 ## 1. Engine
 

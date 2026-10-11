@@ -106,7 +106,7 @@ obfuscation, not protection: whoever has the binary can recover the key with a d
 - **Owner, once:** `openssl rand -hex 32`; GitHub -> Settings -> Secrets and variables -> Actions -> New repository
   secret **`CHAOS_CLIENT_KEY`** with that value; the same value as `CHAOS_CLIENT_KEY` in the game server's
   `/etc/chaos/chaos.env` (server/README.md "Client guard").
-- **Workflows:** `windows-package.yml` and `windows-client.yml` pass the secret to the build step only (GitHub masks it
+- **Workflows:** `windows-package.yml` (its Windows and Linux client jobs) and `windows-client.yml` pass the secret to the build step only (GitHub masks it
   in the logs) and take the input `client_build` (`windows-package.yml` also writes it into `Services.update.package`).
   Raise it for every new exe. Without the secret the run warns and the client gets the development key.
 - **Linux / local:** `CHAOS_CLIENT_KEY=$(cat ~/chaos-keys/client.key) cmake <game-dir> ... -DCHAOS_CLIENT_BUILD=N`

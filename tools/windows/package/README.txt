@@ -38,3 +38,6 @@ Notes
   - The Visual C++ runtime is needed (most PCs have it). If ChaosServer.exe reports VCRUNTIME140.dll or
     MSVCP140.dll missing, install "Microsoft Visual C++ Redistributable x64" from microsoft.com.
   - BUILD_INFO.txt says which commits this package was built from.
+  - The same release also has the client and the server as separate downloads, for Windows and for Linux
+    (CindersOfChaos-Client-Windows.zip, CindersOfChaos-Server-Windows.zip, CindersOfChaos-Client-Linux.tar.gz,
+    CindersOfChaos-Server-Linux.tar.gz; the release notes say what each one holds).

@@ -3,6 +3,21 @@
 Tested in a Ubuntu 24.04 cloud container (software OpenGL, virtual display): the client builds, logs in to the server
 and enters the game.
 
+## Download
+Every run of the **Windows package** workflow (`.github/workflows/windows-package.yml`, job `client-linux`) builds this
+client on Ubuntu 22.04 exactly as "Build" below says and publishes `CindersOfChaos-Client-Linux.tar.gz` on its
+prerelease. Extract it and run `./run-client.sh` (Ubuntu 22.04+, Debian 12+; `tools/linux/client/README.txt`).
+- `tools/linux/package_client.sh` copies the binary as `chaos-client` with init.lua, data, modules, mods and layouts.
+  `tools/linux/bundle_libs.sh` copies every library that is not a base system one into `lib/` (PhysicsFS, OpenAL,
+  libzip, sndio) and sets RUNPATH `$ORIGIN/lib`. It fails the job when ldd still finds a non-system library outside
+  `lib/`. OpenGL, X11, ALSA, OpenSSL 3, zlib and glibc come from the system.
+- The dat/spr pair, the updater settings (the same inputs as the Windows client) and the input `server_host`
+  (`client/tools/set_server_host.py`) are added before packing. The job then starts the packed client for 30 seconds
+  under Xvfb with software OpenGL and no sound device.
+- `run-client.sh` sets `ALSOFT_DRIVERS=null` when the machine has no sound device (see below).
+- No AppImage: it needs FUSE on the player's machine, which Ubuntu 22.04+ no longer installs by default
+  (`libfuse2`). A plain folder runs everywhere and keeps `init.lua` editable.
+
 ## Build
 ```
 sudo apt-get install -y cmake g++ libboost-all-dev libphysfs-dev libogg-dev libvorbis-dev zlib1g-dev libzip-dev \

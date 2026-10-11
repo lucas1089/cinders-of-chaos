@@ -9729,8 +9729,11 @@ separated by commas are all accepted (a key rotation: old and new until every pl
 **What the owner must set up (once):**
 1. Make the key on your own machine: `openssl rand -hex 32`. Keep it out of the repository, chats and screenshots.
 2. GitHub: Settings -> Secrets and variables -> Actions -> New repository secret, name **`CHAOS_CLIENT_KEY`**, value the
-   64 hex digits. `windows-package.yml` and `windows-client.yml` build the client with it (without it the run warns and
-   the client gets the development key, which a production server kicks).
+   64 hex digits. `windows-package.yml` (the Windows and the Linux client) and `windows-client.yml` build the client
+   with it (without it the run warns and the client gets the development key, which a production server kicks). The
+   Linux server download of `windows-package.yml` writes `clientGuardMode` as "enforce" when its `chaos.env` sets
+   `CHAOS_CLIENT_KEY` and "off" otherwise (`tools/linux/package_server.sh`); a rerun of `prod_config.py` makes it
+   "enforce" again.
 3. Game server: the same value as `CHAOS_CLIENT_KEY=` in `/etc/chaos/chaos.env` (`server/deploy/chaos.env.example`,
    mode 0600), then `server/tools/prod_config.py ... --url https://<site> [--client-url URL] [--client-builds 4,5]
    [--client-manifest /path/updates/live/manifest.json] [--client-staff-ips IP,...]`. It writes `clientGuardMode =

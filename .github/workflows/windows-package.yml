@@ -1,25 +1,42 @@
-# Windows package: the whole Cinders of Chaos game for one Windows PC, as one zip (CindersOfChaos-Windows.zip).
-# Download it from the prerelease winpkg-<run number> (Releases; the run's Summary links it), extract it and run
-# start-server.bat, then start-client.bat
-# (tools/windows/package/README.txt is in the zip).
+# Windows package and release downloads: every run publishes a prerelease winpkg-<run number> (Releases; the run's
+# Summary links each file) with five ready-to-use downloads:
+#   CindersOfChaos-Windows.zip         the whole game for one Windows PC: server, client, portable MariaDB, map editor;
+#                                      extract it and run start-server.bat, then start-client.bat
+#                                      (tools/windows/package/README.txt is in the zip)
+#   CindersOfChaos-Client-Windows.zip  the Windows client alone (Chaos.exe, data with the 10.98 dat/spr, modules),
+#                                      pointed at the input server_host (tools/windows/client-README.txt)
+#   CindersOfChaos-Server-Windows.zip  the Windows server alone: ChaosServer.exe + DLLs, portable MariaDB, the start /
+#                                      stop .bat files (tools/windows/server-README.txt)
+#   CindersOfChaos-Server-Linux.tar.gz the engine built on Ubuntu 22.04 with its libraries in server/lib (RUNPATH
+#                                      $ORIGIN/lib), production config.lua, portable MariaDB, start-server.sh /
+#                                      stop-server.sh / add-account.sh, systemd unit examples (tools/linux/server/README.txt)
+#   CindersOfChaos-Client-Linux.tar.gz the client built on Ubuntu 22.04 with its libraries in lib/, run-client.sh
+#                                      (tools/linux/client/README.txt)
 #
 # MANUAL ONLY (workflow_dispatch): it never runs on push or pull_request, so it cannot turn PR checks red.
 #
 # Inputs come from the private branch windows-assets (its README.md): the base server download, the base client and
 # the merged Chaos Tibia.dat / Tibia.spr (one archive, things/things-1098.tar.xz); large files are cut into parts under
 # GitHub's 100 MB file limit.
-#   server   Linux job: tools/windows/prepare_server.sh (engine patches, config.lua, install_all.py, sql-setup/)
-#   engine   Windows job: the patched engine built with MSVC + vcpkg (x64-windows, the libraries the Linux build was
-#            checked with: Boost 1.83, fmt 9.1) -> ChaosServer.exe + DLLs
-#   client   Windows job: base client + client/base-patches + client/overlay (client/tools/assemble_client.sh), built
-#            like windows-client.yml -> Chaos.exe
-#   package  Linux job: everything above + portable MariaDB + the .bat files
+#   server        Linux job: tools/windows/prepare_server.sh (engine patches, config.lua, install_all.py, sql-setup/)
+#   engine        Windows job: the patched engine built with MSVC + vcpkg (x64-windows, the libraries the Linux build was
+#                 checked with: Boost 1.83, fmt 9.1) -> ChaosServer.exe + DLLs
+#   client        Windows job: base client + client/base-patches + client/overlay (client/tools/assemble_client.sh), built
+#                 like windows-client.yml -> Chaos.exe
+#   package       Linux job: everything above + portable MariaDB + the .bat files -> the three Windows downloads
+#   engine-linux  Ubuntu 22.04 job (the oldest glibc of the supported systems): the same server folder, the engine built
+#                 with the distribution's libraries, tools/linux/package_server.sh, a start test -> Server-Linux.tar.gz
+#   client-linux  Ubuntu 22.04 job: the client assembled and built as client/LINUX.md says, tools/linux/package_client.sh,
+#                 a start test under Xvfb -> Client-Linux.tar.gz
+#   publish       release notes, download links in the Summary, intermediate parts deleted, older releases pruned
 #
-# Client guard (client/BASE.md "Client guard", server/README.md "Client guard"): the client is built with the repository
-# secret CHAOS_CLIENT_KEY (Settings -> Secrets and variables -> Actions -> New repository secret; 64 hex digits, the same
-# value as CHAOS_CLIENT_KEY on the game server) and the build number of the input client_build. Without the secret the
-# client gets the public development key (a warning in the run); a production server refuses it. The package's own
-# server folder keeps the guard off (local play).
+# Client guard (client/BASE.md "Client guard", server/README.md "Client guard"): both clients are built with the
+# repository secret CHAOS_CLIENT_KEY (Settings -> Secrets and variables -> Actions -> New repository secret; 64 hex
+# digits, the same value as CHAOS_CLIENT_KEY on the game server) and the build number of the input client_build. Without
+# the secret they get the public development key (a warning in the run); a production server refuses it. The Windows
+# packages' server folder keeps the guard off (local play); the Linux server turns it on when its chaos.env sets the key.
+# Signed updater (client/MANIFEST.md "Signed updater"): it updates only modules/ mods/ data/ layouts/, which both clients
+# share, so update_manifest / update_public_key go into the Windows and the Linux client alike.
 # The first run builds the vcpkg ports of both exes (about an hour); later runs reuse the vcpkg binary caches.
 name: Windows package
 
@@ -42,10 +59,14 @@ on:
         description: "Client build number 1-65535 (CHAOS_CLIENT_BUILD; also Services.update.package). Raise it for every new exe"
         required: false
         default: "1"
+      server_host:
+        description: "Server address of the separate client and server downloads (DNS name or IPv4; the full Windows zip keeps 127.0.0.1)"
+        required: false
+        default: "127.0.0.1"
 
 # contents: write: the jobs hand their parts over through a prerelease of this run (tag winpkg-<run number>) instead of
-# workflow artifacts, which count against the account's artifact storage quota; release assets do not. The package
-# job deletes the intermediate parts, keeps the zip and prunes older winpkg releases (the newest 3 stay).
+# workflow artifacts, which count against the account's artifact storage quota; release assets do not. The publish
+# job deletes the intermediate parts, keeps the five downloads and prunes older winpkg releases (the newest 3 stay).
 permissions:
   contents: write
 
@@ -58,6 +79,7 @@ env:
   UPDATE_MANIFEST: ${{ inputs.update_manifest }}
   UPDATE_PUBLIC_KEY: ${{ inputs.update_public_key }}
   CLIENT_BUILD: ${{ inputs.client_build || '1' }}
+  SERVER_HOST: ${{ inputs.server_host || '127.0.0.1' }}
   # vcpkg registry state for the engine's libraries (tag 2023.12.12: Boost 1.83); fmt is pinned to 9.1.0 below
   ENGINE_VCPKG_BASELINE: c8696863d371ab7f46e213d8f5ca923c4aef2a00
   MARIADB_VERSION: "10.11.14"
@@ -444,18 +466,356 @@ jobs:
           } | sed 's/$/\r/' > "$P/BUILD_INFO.txt"
           du -sh "$P" "$P"/*
 
-      - name: Publish the package on the release
+      # the separate downloads, made from the same folders: the client pointed at server_host, the server without the
+      # client and the map editor (its config.lua ip = server_host; the database stays local, root without a password)
+      - name: Client and server downloads (Windows)
+        run: |
+          set -euo pipefail
+          P=CindersOfChaos
+          crlf() { sed 's/\r$//; s/$/\r/' "$1" > "$2"; }
+          info() {
+            {
+              echo "chaos commit: $GITHUB_SHA"
+              echo "assets: $ASSETS_REF @ $(git -C assets rev-parse HEAD)"
+              printf '%s\n' "$@"
+              echo "built: $(date -u +%Y-%m-%dT%H:%MZ) by run $GITHUB_RUN_ID"
+            } | sed 's/$/\r/'
+          }
+
+          C=CindersOfChaos-Client
+          cp -a "$P/client" "$C"
+          python3 -I chaos/client/tools/set_server_host.py "$C" "$SERVER_HOST"
+          python3 -I chaos/client/tools/make_update_manifest.py build "$C" --dry-run
+          crlf chaos/tools/windows/client-README.txt "$C/README.txt"
+          info "server host: $SERVER_HOST" "client build: $CLIENT_BUILD" > "$C/BUILD_INFO.txt"
+
+          S=CindersOfChaos-Server
+          mkdir "$S"
+          cp -a "$P/server" "$P/mariadb" "$P/start-server.bat" "$P/stop-server.bat" "$S/"
+          python3 -I - "$S/server/config.lua" "$SERVER_HOST" <<'PY'
+          import re, sys
+          path, host = sys.argv[1], sys.argv[2]
+          text = open(path, encoding='latin-1').read()
+          text, n = re.subn(r'^(ip\s*=\s*)[^\r\n]*', lambda m: m.group(1) + '"%s"' % host, text, count=1, flags=re.M)
+          if n != 1:
+              sys.exit('config.lua: no ip line')
+          open(path, 'w', encoding='latin-1', newline='').write(text)
+          print('server config.lua: ip = "%s"' % host)
+          PY
+          crlf chaos/tools/windows/server-README.txt "$S/README.txt"
+          info "server host: $SERVER_HOST" "mariadb: $MARIADB_VERSION" > "$S/BUILD_INFO.txt"
+          du -sh "$C" "$S"
+
+      - name: Publish the Windows downloads on the release
         run: |
           set -euo pipefail
           zip -qr -9 CindersOfChaos-Windows.zip CindersOfChaos
-          ls -la CindersOfChaos-Windows.zip
-          gh release upload "$PKG_TAG" CindersOfChaos-Windows.zip -R "$GITHUB_REPOSITORY" --clobber
+          zip -qr -9 CindersOfChaos-Client-Windows.zip CindersOfChaos-Client
+          zip -qr -9 CindersOfChaos-Server-Windows.zip CindersOfChaos-Server
+          ls -la CindersOfChaos-*.zip
+          gh release upload "$PKG_TAG" CindersOfChaos-Windows.zip CindersOfChaos-Client-Windows.zip \
+            CindersOfChaos-Server-Windows.zip -R "$GITHUB_REPOSITORY" --clobber
+
+  engine-linux:
+    name: Linux server (engine on Ubuntu 22.04, portable MariaDB)
+    needs: server
+    # the oldest glibc / libstdc++ of the supported systems: the binary then runs on Ubuntu 22.04+ and Debian 12+
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    env:
+      APT_PACKAGES: >-
+        cmake ninja-build g++ patchelf file libboost-date-time-dev libboost-system-dev libboost-filesystem-dev
+        libboost-iostreams-dev libfmt-dev libpugixml-dev libcrypto++-dev libluajit-5.1-dev libmariadb-dev
+        libmariadb-dev-compat
+    steps:
+      - name: Check out Cinders of Chaos
+        uses: actions/checkout@v4
+        with:
+          path: chaos
+
+      # the downloaded .deb files are cached (apt itself still installs them, so dpkg knows every package)
+      - name: Restore the apt download cache
+        uses: actions/cache@v4
+        with:
+          path: ~/apt-cache
+          key: apt-chaos-engine-ubuntu-22.04-v1
+
+      - name: Build tools and libraries (apt)
+        run: |
+          mkdir -p ~/apt-cache/partial
+          sudo apt-get update -qq
+          # shellcheck disable=SC2086 # APT_PACKAGES is a list of package names
+          sudo apt-get install -y -qq --no-install-recommends -o Dir::Cache::archives="$HOME/apt-cache" $APT_PACKAGES
+          sudo chown -R "$(id -u):$(id -g)" ~/apt-cache
+
+      - name: Get the server folder
+        run: |
+          gh release download "$PKG_TAG" -R "$GITHUB_REPOSITORY" -p server.tar --clobber
+          mkdir work
+          tar -xf server.tar -C work
+          rm server.tar
+
+      - name: Build the engine
+        working-directory: work/server
+        run: |
+          set -euo pipefail
+          # GCC 11 of Ubuntu 22.04 warns in places where GCC 13 (the test server) does not; a warning must not stop the
+          # release, and the warnings stay in this log
+          grep -q -- ' -Werror ' CMakeLists.txt
+          sed -i 's/ -Werror / /' CMakeLists.txt
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSKIP_GIT=ON
+          cmake --build build --parallel "$(nproc)"
+          ls -la build/tfs
+
+      - name: Portable MariaDB (official Linux build)
+        run: bash chaos/tools/linux/fetch_mariadb.sh "$MARIADB_VERSION" mariadb-linux
+
+      - name: Put the Linux server together
+        run: |
+          set -euo pipefail
+          P=CindersOfChaos-Server-Linux
+          bash chaos/tools/linux/package_server.sh work/server work/server/build/tfs mariadb-linux "$SERVER_HOST" "$P"
+          {
+            echo "chaos commit: $GITHUB_SHA"
+            echo "assets: $ASSETS_REF"
+            echo "server host: $SERVER_HOST"
+            echo "mariadb: $MARIADB_VERSION"
+            echo "engine: built on $(lsb_release -ds), $(g++ --version | head -n 1)"
+            echo "built: $(date -u +%Y-%m-%dT%H:%MZ) by run $GITHUB_RUN_ID"
+          } > "$P/BUILD_INFO.txt"
+          tar -czf "$P.tar.gz" "$P"
+          ls -la "$P.tar.gz"
+          rm -rf "$P" work mariadb-linux
+
+      # the archive as a player gets it: extract, first start (database, sql-setup), "Server Online", the login port
+      # answers, stop (the engine saves, the database stops)
+      - name: Start test
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/smoke"
+          tar -xzf CindersOfChaos-Server-Linux.tar.gz -C "$RUNNER_TEMP/smoke"
+          cd "$RUNNER_TEMP/smoke/CindersOfChaos-Server-Linux"
+          ./start-server.sh -d
+          ok=0
+          for _ in $(seq 1 600); do
+            if grep -q "Server Online" logs/server.log 2>/dev/null; then ok=1; break; fi
+            # start-server.sh's own messages when it gives up (the engine's output is not matched)
+            if grep -qE "^(Stopped\.|Missing: |mariadb-install-db failed|The database did not start|It crashed 5 times)" \
+              logs/server.log 2>/dev/null; then break; fi
+            sleep 1
+          done
+          tail -n 60 logs/server.log
+          if [ $ok -ne 1 ]; then
+            echo "::error::The Linux server package did not reach Server Online"
+            tail -n 40 logs/mariadb.err logs/database-setup.log 2>/dev/null || true
+            ./stop-server.sh || true
+            exit 1
+          fi
+          timeout 5 bash -c 'echo > /dev/tcp/127.0.0.1/7171' && timeout 5 bash -c 'echo > /dev/tcp/127.0.0.1/7172'
+          ./add-account.sh smoketest smoketest1 "Smoke Tester" mystic
+          ./stop-server.sh
+          if pgrep -af "$RUNNER_TEMP/smoke"; then
+            echo "::error::processes of the package still run after stop-server.sh"
+            exit 1
+          fi
+          cd / && rm -rf "$RUNNER_TEMP/smoke"
+
+      - name: Publish the Linux server on the release
+        run: gh release upload "$PKG_TAG" CindersOfChaos-Server-Linux.tar.gz -R "$GITHUB_REPOSITORY" --clobber
+
+  client-linux:
+    name: Linux client (Ubuntu 22.04)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    env:
+      # client/LINUX.md "Build", plus patchelf (tools/linux/bundle_libs.sh) and Xvfb / Mesa (the start test)
+      APT_PACKAGES: >-
+        cmake g++ libboost-all-dev libphysfs-dev libogg-dev libvorbis-dev zlib1g-dev libzip-dev libbz2-dev libssl-dev
+        libopenal-dev libglew-dev libluajit-5.1-dev libgl1-mesa-dev libglu1-mesa-dev libx11-dev
+        patchelf file xvfb xauth libgl1-mesa-dri
+    steps:
+      - name: Check out Cinders of Chaos
+        uses: actions/checkout@v4
+        with:
+          path: chaos
+
+      - name: Check out the assets
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.ASSETS_REF }}
+          path: assets
+          sparse-checkout: |
+            client
+            things
+            SHA256SUMS.parts
+          sparse-checkout-cone-mode: true
+
+      - name: Restore the apt download cache
+        uses: actions/cache@v4
+        with:
+          path: ~/apt-cache
+          key: apt-chaos-client-ubuntu-22.04-v1
+
+      - name: Build tools and libraries (apt)
+        run: |
+          mkdir -p ~/apt-cache/partial
+          sudo apt-get update -qq
+          # shellcheck disable=SC2086 # APT_PACKAGES is a list of package names
+          sudo apt-get install -y -qq --no-install-recommends -o Dir::Cache::archives="$HOME/apt-cache" $APT_PACKAGES
+          sudo chown -R "$(id -u):$(id -g)" ~/apt-cache
+
+      - name: Assemble the Cinders of Chaos client (base + client/base-patches + client/overlay)
+        run: |
+          (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
+          mkdir base
+          cat assets/client/base-client.tar.xz.part* | xz -d | tar -xf - -C base
+          mv base/*/ base-client  # the archive holds one folder: the base client
+          patch --version | head -n 1
+          bash chaos/client/tools/assemble_client.sh "$GITHUB_WORKSPACE/base-client" "$GITHUB_WORKSPACE/game"
+          rm -rf base base-client
+
+      - name: Client guard inputs (build number, key secret)
+        env:
+          CHAOS_CLIENT_KEY: ${{ secrets.CHAOS_CLIENT_KEY }}
+        run: |
+          if ! [[ "$CLIENT_BUILD" =~ ^[0-9]+$ ]] || [ "$CLIENT_BUILD" -lt 1 ] || [ "$CLIENT_BUILD" -gt 65535 ]; then
+            echo "::error::client_build must be a number from 1 to 65535"
+            exit 1
+          fi
+          if [ -z "$CHAOS_CLIENT_KEY" ]; then
+            echo "::warning::No CHAOS_CLIENT_KEY secret: this client gets the public DEVELOPMENT key; a production server (clientGuardMode enforce) kicks it."
+          elif ! [[ "$CHAOS_CLIENT_KEY" =~ ^[0-9a-fA-F]{64}$ ]]; then
+            echo "::error::The CHAOS_CLIENT_KEY secret must be 64 hex digits (openssl rand -hex 32)"
+            exit 1
+          fi
+          echo "Client build $CLIENT_BUILD"
+
+      # client/LINUX.md "Build"; the key reaches CMake only as this step's environment variable (base patch 0035)
+      - name: Build
+        env:
+          CHAOS_CLIENT_KEY: ${{ secrets.CHAOS_CLIENT_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir build
+          cd build
+          cmake "$GITHUB_WORKSPACE/game" -DCMAKE_BUILD_TYPE=Release -DLUAJIT=ON \
+            -DPHYSFS_LIBRARY=/usr/lib/x86_64-linux-gnu/libphysfs.so -DOPENAL_LIBRARY=/usr/lib/x86_64-linux-gnu/libopenal.so \
+            -DCHAOS_CLIENT_BUILD="$CLIENT_BUILD"
+          make -j"$(nproc)"
+
+      - name: Put the Linux client together
+        run: |
+          set -euo pipefail
+          P=CindersOfChaos-Client-Linux
+          bash chaos/tools/linux/package_client.sh game build "$P"
+          (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
+          mkdir -p "$P/data/things/1098"
+          tar -xJf assets/things/things-1098.tar.xz -C "$P/data/things/1098"
+          # the same updater settings as the Windows client (client/MANIFEST.md "Signed updater")
+          if [ -n "$UPDATE_MANIFEST" ] && [ -n "$UPDATE_PUBLIC_KEY" ]; then
+            python3 -I chaos/client/tools/set_update_config.py "$P" \
+              --manifest "$UPDATE_MANIFEST" --public-key "$UPDATE_PUBLIC_KEY" --package "$CLIENT_BUILD"
+          fi
+          python3 -I chaos/client/tools/set_server_host.py "$P" "$SERVER_HOST"
+          python3 -I chaos/client/tools/make_update_manifest.py build "$P" --dry-run
+          {
+            echo "chaos commit: $GITHUB_SHA"
+            echo "assets: $ASSETS_REF @ $(git -C assets rev-parse HEAD)"
+            echo "server host: $SERVER_HOST"
+            echo "client build: $CLIENT_BUILD"
+            echo "built: $(date -u +%Y-%m-%dT%H:%MZ) by run $GITHUB_RUN_ID on $(lsb_release -ds)"
+          } > "$P/BUILD_INFO.txt"
+          tar -czf "$P.tar.gz" "$P"
+          ls -la "$P.tar.gz"
+          rm -rf "$P" game build
+
+      # the archive as a player gets it, on a virtual display with software OpenGL and no sound card: the client must
+      # still be running after 30 seconds (it waits at the login screen)
+      - name: Start test
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/smoke/home"
+          tar -xzf CindersOfChaos-Client-Linux.tar.gz -C "$RUNNER_TEMP/smoke"
+          cd "$RUNNER_TEMP/smoke/CindersOfChaos-Client-Linux"
+          code=0
+          HOME="$RUNNER_TEMP/smoke/home" LIBGL_ALWAYS_SOFTWARE=1 ALSOFT_DRIVERS=null \
+            xvfb-run -a -s "-screen 0 1280x720x24" timeout 30 ./run-client.sh > "$RUNNER_TEMP/client.log" 2>&1 || code=$?
+          tail -n 40 "$RUNNER_TEMP/client.log"
+          if [ $code -ne 124 ]; then
+            echo "::error::The Linux client stopped within 30 seconds (exit code $code)"
+            exit 1
+          fi
+          cd / && rm -rf "$RUNNER_TEMP/smoke"
+
+      - name: Release of this run (created by whichever job gets here first)
+        run: |
+          gh release view "$PKG_TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create "$PKG_TAG" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+              --title "Windows package ${{ github.run_number }}" \
+              --notes "Windows test package built by run ${{ github.run_id }} from $GITHUB_SHA (assets: $ASSETS_REF)." || \
+            gh release view "$PKG_TAG" -R "$GITHUB_REPOSITORY" >/dev/null
+
+      - name: Publish the Linux client on the release
+        run: gh release upload "$PKG_TAG" CindersOfChaos-Client-Linux.tar.gz -R "$GITHUB_REPOSITORY" --clobber
+
+  publish:
+    name: Publish (release notes, links, cleanup)
+    needs: [package, engine-linux, client-linux]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      KEY_STATE: ${{ secrets.CHAOS_CLIENT_KEY != '' && 'the official key (secret CHAOS_CLIENT_KEY)' || 'the public development key (no CHAOS_CLIENT_KEY secret)' }}
+      ALL_OK: ${{ needs.package.result == 'success' && needs.engine-linux.result == 'success' && needs.client-linux.result == 'success' }}
+    steps:
+      - name: Release notes and download links
+        run: |
+          set -euo pipefail
+          if ! gh release view "$PKG_TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::No release $PKG_TAG: the first jobs failed"
+            exit 1
+          fi
+          have=$(gh release view "$PKG_TAG" -R "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')
+          base="https://github.com/$GITHUB_REPOSITORY/releases/download/$PKG_TAG"
+          line() {  # asset, description
+            if grep -qxF "$1" <<< "$have"; then
+              echo "- [$1]($base/$1): $2"
+            else
+              echo "- $1: not built in this run (see the run's failed job)"
+            fi
+          }
+          {
+            echo "Cinders of Chaos packages built by run [$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) from $GITHUB_SHA (assets: $ASSETS_REF)."
+            echo
+            line CindersOfChaos-Windows.zip "the whole game on one Windows PC: server, client, portable MariaDB, map editor; start-server.bat, then start-client.bat (test accounts, local play)."
+            line CindersOfChaos-Client-Windows.zip "the Windows client alone (Chaos.exe), connects to $SERVER_HOST."
+            line CindersOfChaos-Server-Windows.zip "the Windows server alone: ChaosServer.exe, portable MariaDB, start-server.bat / stop-server.bat."
+            line CindersOfChaos-Server-Linux.tar.gz "the Linux server (Ubuntu 22.04+, Debian 12+) with its own MariaDB: ./start-server.sh."
+            line CindersOfChaos-Client-Linux.tar.gz "the Linux client (Ubuntu 22.04+, Debian 12+): ./run-client.sh, connects to $SERVER_HOST."
+            echo
+            echo "Client build $CLIENT_BUILD, built with $KEY_STATE. Server host of the separate downloads: $SERVER_HOST."
+          } > notes.md
+          cat notes.md
+          gh release edit "$PKG_TAG" -R "$GITHUB_REPOSITORY" --title "Cinders of Chaos packages ${{ github.run_number }}" \
+            --notes-file notes.md
+          {
+            echo "## Downloads ($PKG_TAG)"
+            echo
+            cat notes.md
+            echo
+            echo "Release: https://github.com/$GITHUB_REPOSITORY/releases/tag/$PKG_TAG"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # kept after a failure, so that "Re-run failed jobs" still finds them (the release is pruned later anyway)
+      - name: Delete the intermediate parts
+        if: ${{ env.ALL_OK == 'true' }}
+        run: |
           for part in server.tar server-exe.tar client.tar; do
             gh release delete-asset "$PKG_TAG" "$part" -R "$GITHUB_REPOSITORY" -y || true
           done
-          echo "Download: https://github.com/$GITHUB_REPOSITORY/releases/tag/$PKG_TAG" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Keep the newest 3 package releases
+        if: ${{ needs.package.result == 'success' }}
         run: |
           gh release list -R "$GITHUB_REPOSITORY" --limit 100 --json tagName,createdAt \
             --jq '[.[] | select(.tagName | startswith("winpkg-"))] | sort_by(.createdAt) | reverse | .[3:] | .[].tagName' |
