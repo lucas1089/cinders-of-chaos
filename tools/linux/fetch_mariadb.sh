@@ -18,7 +18,8 @@ trap 'rm -rf "$TMP"' EXIT
 
 curl -fsSL --retry 3 -o "$TMP/$NAME.tar.gz" "$URL/$NAME.tar.gz"
 curl -fsSL --retry 3 -o "$TMP/sha256sums.txt" "$URL/sha256sums.txt"
-(cd "$TMP" && grep " $NAME.tar.gz\$" sha256sums.txt | sha256sum -c -)
+# the list names the file as "./NAME.tar.gz" (or without "./" on some releases)
+(cd "$TMP" && grep -E "  (\./)?$NAME\.tar\.gz\$" sha256sums.txt | sed 's#  \./#  #' | sha256sum -c -)
 
 KEEP_BIN="mariadbd mariadb mariadb-admin mariadb-dump mariadb-check mariadb-upgrade my_print_defaults resolveip"
 members=()
