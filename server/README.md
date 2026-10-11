@@ -7709,7 +7709,7 @@ left) and on the website (`chaos_community_week`).
 | Modifier | Effect | Hook |
 |---|---|---|
 | Ember Tides | rifts open with one more modifier, chests 15% richer | `R.worldKeyMods` in `rift.lua` (after the refund marker, so a crash refunds the key as it was); `rewardMult` through `R.hooks.world` |
-| Bloodmoon Week | magic / rare / legendary monsters x1.5 as often | `ChaosEvents.dynamic` bonus `tierChance` (`monster_tiers.lua`) |
+| Champions' Week | magic / rare / legendary monsters x1.5 as often | `ChaosEvents.dynamic` bonus `tierChance` (`monster_tiers.lua`) |
 | Restless Dead | undead +30% experience and +30% Chaos loot | the experience callback, `ChaosCommunity.lootMult`; the family is the bestiary's (`ChaosBestiary.cat()`), else `week.familyWords` |
 | Gilded Week | treasure goblins x2 | `ChaosEvents.dynamic` bonus `goblin` (`treasure_goblin.lua`) |
 | Forgefire | crafting orb cost -20%: each orb used has a 20% chance to be kept | `ChaosCommunity.onOrbUsed` in `crafting.lua` |

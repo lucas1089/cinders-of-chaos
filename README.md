@@ -538,7 +538,7 @@ seven in a week for the weekly bounty chest.
   per character keep it fair.
 - **Stages** at 25, 50, 75 and 100% light buffs for everybody: +10% experience, +10% loot, a better Rift Key chance and
   more reputation. The top 3 contributors earn a title, everyone above 1,500 points some orbs.
-- **A weekly world modifier** (one or two each week) changes the world for seven days: *Ember Tides*, *Bloodmoon Week*,
+- **A weekly world modifier** (one or two each week) changes the world for seven days: *Ember Tides*, *Champions' Week*,
   *Restless Dead*, *Gilded Week*, *Forgefire*, *Dragonfall*, *Ambush Season*, *Banner Week* or *Tower Echoes*.
 
 ### Boss Spawns

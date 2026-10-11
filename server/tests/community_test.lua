@@ -181,7 +181,7 @@ eq(K.weekSeed(cfg, 20261005), 518561481, "the week's seed")
 local expected = {
 	[20261005] = "restless_dead,forgefire", [20261012] = "restless_dead,banner_week",
 	[20261019] = "restless_dead,banner_week", [20261026] = "ember_tides,ambush_season", [20261102] = "forgefire",
-	[20261109] = "ember_tides", [20261116] = "bloodmoon,forgefire", [20261123] = "restless_dead,tower_echoes"}
+	[20261109] = "ember_tides", [20261116] = "champions_week,forgefire", [20261123] = "restless_dead,tower_echoes"}
 for w, keys in pairs(expected) do
 	eq(table.concat(K.pickModifiers(cfg, w), ","), keys, "draw of week " .. w)
 	eq(table.concat(K.pickModifiers(cfg, w), ","), keys, "again: the same draw of week " .. w)
@@ -207,7 +207,7 @@ end
 -- overrides
 local keys, err = K.checkKeys(cfg, "ember_tides, gilded_week")
 eq(keys and table.concat(keys, ","), "ember_tides,gilded_week", "staff keys")
-check(not K.checkKeys(cfg, "bloodmoon,ambush_season"), "two of one group refused")
+check(not K.checkKeys(cfg, "champions_week,ambush_season"), "two of one group refused")
 check(not K.checkKeys(cfg, "nope"), "unknown refused")
 check(not K.checkKeys(cfg, ""), "empty refused")
 local ow = K.encodeOverride(20261005, {"gilded_week"})
@@ -307,7 +307,7 @@ eq(#added, 1, "rift: Ember Tides adds a modifier")
 eq(#key2.mods, 2, "rift: the key has two now")
 R.hooks.world = nil
 eq(K.orbKeep({K.mod(cfg, "forgefire")}), 20, "Forgefire keeps 20%")
-local eb = K.eventBonus({K.mod(cfg, "bloodmoon"), K.mod(cfg, "gilded_week")})
+local eb = K.eventBonus({K.mod(cfg, "champions_week"), K.mod(cfg, "gilded_week")})
 check(eb and eb.tierChance == 1.5 and eb.goblin == 2, "calendar bonuses merged")
 eq(math.floor(K.repMult(cfg, buffs, {K.mod(cfg, "banner_week")}, now0 + 60) * 100 + 0.5), 140, "rep: Ablaze 20% + Banner 20%")
 local items = K.buffItems(cfg, buffs, undead, now0 + 60, now0 + 3600, "stage")
@@ -485,6 +485,7 @@ eq(X.week.key, 20261005, "the week")
 eq(#X.week.mods, 2, "this week's draw: two modifiers")
 eq(X.week.mods[1].key .. "," .. X.week.mods[2].key, "restless_dead,forgefire", "the seeded week")
 check(queried("INSERT INTO `chaos_community_week`.-restless_dead,forgefire"), "the week written for the website")
+check(queried("INSERT INTO `chaos_community_week`.-, 'seed', %d+, %d+%)"), "the week's source written as a quoted string")
 check(ChaosEvents.dynamic.community_restless_dead and ChaosEvents.dynamic.community_forgefire, "runtime events in !events")
 eq(ChaosEvents.bonus("tierChance"), 1, "no calendar bonus from these two")
 eq(created[1] and created[1].aid, cfg.brazier.actionId, "the Brazier placed with its action id")

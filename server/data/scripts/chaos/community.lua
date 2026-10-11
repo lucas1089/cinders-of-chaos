@@ -14,7 +14,7 @@
 -- Hooks (each guarded; with no stage window open and no modifier active every one is neutral):
 --   EventCallback onGainExperience   stage xp windows x the family modifier (Restless Dead ...), monster kills only
 --   loot_config.lua rateMult          ChaosCommunity.lootMult(ctx): stage loot windows x the family modifier
---   ChaosEvents.dynamic               the week's calendar bonuses (Bloodmoon Week tierChance, Gilded Week goblin ...)
+--   ChaosEvents.dynamic               the week's calendar bonuses (Champions' Week tierChance, Gilded Week goblin ...)
 --                                     as runtime events, so monster_tiers.lua / treasure_goblin.lua / infinitytower.lua
 --                                     apply them as they apply the event calendar
 --   ChaosRiftCore.hooks.world         Rift Beacon key chance, Ember Tides (one more modifier, richer chests)
@@ -385,7 +385,7 @@ function X.currentWeek(force)
 	db.asyncQuery(string.format("INSERT INTO `%s` (`week`, `mods`, `names`, `texts`, `source`, `finish`, `updated_at`) VALUES " ..
 		"(%d, %s, %s, %s, %s, %d, %d) ON DUPLICATE KEY UPDATE `mods` = VALUES(`mods`), `names` = VALUES(`names`), " ..
 		"`texts` = VALUES(`texts`), `source` = VALUES(`source`), `finish` = VALUES(`finish`), `updated_at` = VALUES(`updated_at`)",
-		T.week, key, q(table.concat(keys, ",")), q(table.concat(names, "|")), q(table.concat(texts, "|")), source, w.finish, now()))
+		T.week, key, q(table.concat(keys, ",")), q(table.concat(names, "|")), q(table.concat(texts, "|")), q(source), w.finish, now()))
 	if fresh and X.started then
 		broadcast("A new week: the world changes. " .. table.concat(names, ", ") .. " (Adventure > Community).")
 	end

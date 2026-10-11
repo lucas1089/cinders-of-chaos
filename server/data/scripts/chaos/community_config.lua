@@ -96,7 +96,7 @@ return {
 		pool = {
 			{key = "ember_tides", name = "Ember Tides", group = "rift", weight = 100, riftMods = 1, riftReward = 15,
 				text = "Rifts open with one more modifier, and their rewards are 15% richer."},
-			{key = "bloodmoon", name = "Bloodmoon Week", group = "tier", weight = 100, events = {tierChance = 1.5},
+			{key = "champions_week", name = "Champions' Week", group = "tier", weight = 100, events = {tierChance = 1.5},
 				text = "Magic, rare and legendary monsters appear 50% more often."},
 			{key = "restless_dead", name = "Restless Dead", group = "family", weight = 100, family = "undead", xp = 0.30, loot = 0.30,
 				text = "Undead give 30% more experience and 30% more Chaos loot."},

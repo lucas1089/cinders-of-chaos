@@ -34,7 +34,7 @@ WANT = {
     'community_ablaze': ([], []),
     'wmod_week': ([], []),
     'wmod_ember_tides': (['Fire'], ['wave', 'burstring']),
-    'wmod_bloodmoon': (['Blood'], ['challenge', 'avatar']),
+    'wmod_champions_week': (['Blood'], ['challenge', 'avatar']),
     'wmod_restless_dead': (['Blood', 'Arcane'], ['summon']),
     'wmod_gilded_week': ([], []),
     'wmod_forgefire': ([], []),
