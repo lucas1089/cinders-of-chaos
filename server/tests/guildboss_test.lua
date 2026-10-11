@@ -120,10 +120,18 @@ ok(not won[3], "under 1% of the damage")
 ok(won[4], "a healer")
 ok(not B.rewarded(dmg, {}, {[1] = true}, cfg)[2], "absent players get nothing")
 -- the gold pool of a kill and its split by contribution
-eq(B.goldPool(1, cfg), 1500000, "pool of one rewarded participant")
-eq(B.goldPool(5, cfg), 7500000, "pool of 5: as much as the old 1.5M each")
-eq(B.goldPool(10, cfg), 15000000, "pool of 10")
-eq(B.goldPool(20, cfg), 15000000, "pool capped at 10 participants")
+eq(B.goldPool(1, cfg), 250000, "pool of one rewarded participant")
+eq(B.goldPool(5, cfg), 1250000, "pool of 5")
+eq(B.goldPool(10, cfg), 2500000, "pool of 10")
+eq(B.goldPool(20, cfg), 2500000, "pool capped at 10 participants")
+-- a net gold sink: the largest pool is at most half of the cheapest stone's fuel in gold (guild level 1)
+ok(B.goldPool(cfg.reward.pool.maxPlayers, cfg) <= 0.5 * B.need(1, cfg) * cfg.gold.perEmber, "the pool is at most 50% of the fuel")
+local orbs = {}
+for _, o in ipairs(cfg.reward.orbs) do
+	orbs[o.id] = o.count
+end
+eq(orbs[29856], 3, "3 Orbs of Upheaval each")
+eq(orbs[29857], 1, "1 Orb of Fate each")
 eq(B.goldPool(0, cfg), 0, "no winners, no pool")
 local function sum(t)
 	local n = 0
@@ -146,7 +154,7 @@ local list5
 sh, list5 = B.splitGold(pool5, winners5, dmg5, heal5, cfg)
 eq(sum(sh), pool5, "the shares sum to the pool")
 local floorGold = math.floor(pool5 * cfg.reward.floorShare / 5)
-eq(floorGold, 375000, "the floor of a 5-player kill")
+eq(floorGold, 62500, "the floor of a 5-player kill")
 for guid in pairs(winners5) do
 	ok(sh[guid] >= floorGold, "every winner gets at least the floor")
 end

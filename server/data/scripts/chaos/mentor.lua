@@ -164,10 +164,9 @@ local function monthStart(t)
 	return os.time({year = d.year, month = d.month, day = 1, hour = 0, min = 0, sec = 0})
 end
 
+-- the shop's weekly limits: the shared Monday 06:00 week (mentor_core.lua K.shopWeekStart)
 local function weekStart(t)
-	local d = os.date("*t", t)
-	local back = (d.wday + 5) % 7 -- days since Monday
-	return os.time({year = d.year, month = d.month, day = d.day - back, hour = 0, min = 0, sec = 0})
+	return K.shopWeekStart(t, cfg)
 end
 
 -- ------------------------------------------------------------------ rows

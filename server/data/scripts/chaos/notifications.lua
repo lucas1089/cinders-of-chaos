@@ -8,6 +8,7 @@
 --     {"action":"battlePassComplete","missionName":"..","expPoints":N,"monsterLookType":N (optional)}
 --     {"action":"partyInvite","inviterName":"..","inviterResets":N,"element":"..","level":N}
 --     {"action":"catacombFree","element":"..","level":N}
+--     {"action":"achievement" (or another message kind),"message":"title: text"}   ChaosNotify.send
 --   client -> server, opcode 151, plain text (NOT json):
 --     "accept_invite|<inviterName>"
 --     "decline_invite|<inviterName>"
@@ -78,6 +79,29 @@ end
 
 function ChaosNotify.catacombFree(player, element, level)
 	sendFlat(player, {action = "catacombFree", element = tostring(element), level = tonumber(level) or 0})
+end
+
+-- A generic toast: send(player, title, text[, kind]). kind is one of the client's message actions (default
+-- "achievement"); the client shows "title: text" under that kind's header. Used by guild.lua (guild level-up) and
+-- guildwar.lua (war toasts).
+local SEND_KINDS = {achievement = true, bounty = true, newplayer = true, bestiary = true, bosspoints = true,
+	ascension = true, market = true, seasonpass = true, journey = true, invasion = true}
+
+function ChaosNotify.send(player, title, text, kind)
+	if not player then
+		return false
+	end
+	title = title ~= nil and tostring(title) or ""
+	text = text ~= nil and tostring(text) or ""
+	local message = text
+	if title ~= "" then
+		message = text ~= "" and (title .. ": " .. text) or title
+	end
+	if message == "" then
+		return false
+	end
+	sendFlat(player, {action = SEND_KINDS[kind] and kind or "achievement", message = message})
+	return true
 end
 
 -- Overridable hooks (no catacomb system exists in the reference server).

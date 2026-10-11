@@ -1,7 +1,7 @@
 -- Mentor system: pure logic (no engine calls), shared by mentor.lua and server/tests/mentor_test.lua.
 --   texts       cleanText(text, max) -> printable text; say(cfg, reason) -> the message of a refusal; leftText(seconds)
 --   classes     lineOf(cfg, vocId, baseOf) -> line key of cfg.lines or nil
---   time        dayKey(t), monthKey(t)
+--   time        dayKey(t), monthKey(t), shopWeekStart(t, cfg) (the shared Monday 06:00 week, ChaosBounty.week)
 --   rules       mentorCheck(info, cfg), apprenticeCheck(info, cfg), linkCheck(info, cfg, refCfg) -> true or nil, reason
 --               (refCfg = referral_config.lua: its antiAbuse.publicDomains; the IP and e-mail rules are the referral's,
 --               ChaosReferralCore.shareIp / emailDomain)
@@ -16,6 +16,10 @@
 --   view        milestoneRows(states, cfg); view(state, cfg, now) -> what the client window shows
 --   checks      validate(cfg, opts) -> problems (the store's fairness rule among them)
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
+
+if not ChaosBounty or not ChaosBounty.week then
+	dofile("data/scripts/chaos/bounty_core.lua")
+end
 
 ChaosMentorCore = ChaosMentorCore or {}
 local K = ChaosMentorCore
@@ -90,6 +94,25 @@ end
 
 function K.monthKey(t)
 	return tonumber(os.date("%Y%m", t))
+end
+
+-- unix time the shop week of t starts: the shared week of the bounty board, leaderboards, raids and the guild boss
+-- (ChaosBounty.week: Monday cfg.weekResetHour, default 6). Until cfg.shopWeekGraceUntil the later of that and the
+-- old start (Monday 00:00) counts, so the switch never counts a purchase the old week had already forgotten.
+function K.shopWeekStart(t, cfg)
+	local hour = cfg and cfg.weekResetHour or 6
+	local w = ChaosBounty.week(t, {rollHour = hour})
+	local start = os.time({year = floor(w / 10000), month = floor(w / 100) % 100, day = w % 100, hour = hour, min = 0, sec = 0})
+	local grace = cfg and tonumber(cfg.shopWeekGraceUntil)
+	if grace and t < grace then
+		local d = os.date("*t", t)
+		local back = (d.wday + 5) % 7 -- days since Monday
+		local old = os.time({year = d.year, month = d.month, day = d.day - back, hour = 0, min = 0, sec = 0})
+		if old > start then
+			start = old
+		end
+	end
+	return start
 end
 
 -- ---------------------------------------------------------------- rules

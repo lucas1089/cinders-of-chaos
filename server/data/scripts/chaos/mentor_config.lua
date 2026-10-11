@@ -92,6 +92,10 @@ return {
 	-- the Mentor Marks shop. kind "title": a name plate title of this character (ChaosTitles source "mentor");
 	-- "cosmetic": a cosmetic of cosmetics_config.lua, unlocked for the account (as the store does); "item": supplies
 	-- (only ids of supplyIds), `weekly` = at most this many per character and week.
+	-- The week: Monday weekResetHour (the bounty board's week, ChaosBounty.week). Until shopWeekGraceUntil the later of
+	-- that and the old Monday 00:00 start counts (the one-time switch from Monday 00:00; mentor_core.lua shopWeekStart).
+	weekResetHour = 6,
+	shopWeekGraceUntil = os.time({year = 2026, month = 10, day = 19, hour = 6, min = 0, sec = 0}),
 	shop = {
 		{key = "title_lantern", kind = "title", cost = 40, name = "Lanternbearer", color = "#f0c060",
 			desc = "A name plate title for those who light the way."},

@@ -450,7 +450,7 @@ end
 logout:register()
 
 -- somebody who logged out or crashed inside an arena is sent to the temple
-local login = CreatureEvent("ChaosTowerLogin")
+local login = CreatureEvent("ChaosTowerRunLogin") -- infinitytower.lua owns "ChaosTowerLogin" (a second one of that name is dropped)
 function login.onLogin(player)
 	if inArena(player:getPosition()) and not runOf[player:getId()] then
 		player:teleportTo(player:getTown():getTemplePosition())

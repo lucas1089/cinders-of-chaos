@@ -219,9 +219,22 @@ do
 	eq(o.tokens, 0, "no token above the cap")
 	o = M.clearOutcome(1, 300, 2, 0, cfg.reward.repeatsPerWeek)
 	ok(o.tokens == 1 and o.gold == 0 and not o.counted, "weekly cap: the token still comes, the reward does not")
-	local w1 = M.weekKey(os.time({year = 2026, month = 1, day = 3, hour = 12}))
-	local w2 = M.weekKey(os.time({year = 2026, month = 1, day = 9, hour = 12}))
-	ok(w2 > w1 and w1 > 202600, "week key rolls")
+	-- the shared week (ChaosBounty.week: Monday 06:00), not the day-of-year weeks (Dec 31 was a one-day week 53)
+	local function at(y, m, d, h)
+		return os.time({year = y, month = m, day = d, hour = h, min = 0, sec = 0})
+	end
+	local w1 = M.weekKey(at(2026, 1, 3, 12))
+	local w2 = M.weekKey(at(2026, 1, 9, 12))
+	ok(w2 > w1, "week key rolls")
+	eq(w1, 20251229, "Saturday 3 Jan 2026: the week of Monday 29 Dec 2025")
+	eq(w2, 20260105, "Friday 9 Jan: the week of Monday 5 Jan")
+	eq(M.weekKey(at(2026, 12, 31, 12)), M.weekKey(at(2026, 12, 28, 12)), "31 Dec is in its Monday's week, not a week of its own")
+	eq(M.weekKey(at(2027, 1, 3, 23)), 20261228, "the week runs across the year end")
+	eq(M.weekKey(at(2026, 10, 12, 5)), 20261005, "Monday 05:00: still last week")
+	eq(M.weekKey(at(2026, 10, 12, 6)), 20261012, "Monday 06:00: the new week")
+	eq(M.weekKey(at(2026, 10, 14, 12)), ChaosBounty.week(at(2026, 10, 14, 12), {rollHour = 6}), "the bounty board's week")
+	-- an old key (YYYYWW) never matches: the first clear after the switch counts from 0 (no repeat is lost)
+	ok(M.weekKey(at(2026, 10, 14, 12)) > 99999999 / 10 and 202641 ~= M.weekKey(at(2026, 10, 14, 12)), "old 6-digit keys never match")
 end
 
 -- ------------------------------------------------------------------ combat maths

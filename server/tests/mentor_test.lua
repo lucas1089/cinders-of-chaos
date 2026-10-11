@@ -486,6 +486,25 @@ do
 	eq(M.online[2], nil, "logout clears online")
 end
 
+-- the shop week: the shared Monday 06:00 week (ChaosBounty.week), with the one-time grace of the switch
+do
+	local function at(y, m, d, h)
+		return os.time({year = y, month = m, day = d, hour = h, min = 0, sec = 0})
+	end
+	eq(cfg.weekResetHour, 6, "shop week resets Monday 06:00")
+	eq(K.shopWeekStart(at(2026, 11, 4, 12), cfg), at(2026, 11, 2, 6), "Wednesday: this Monday 06:00")
+	eq(K.shopWeekStart(at(2026, 11, 2, 3), cfg), at(2026, 10, 26, 6), "Monday 03:00: still last week")
+	eq(K.shopWeekStart(at(2026, 11, 2, 6), cfg), at(2026, 11, 2, 6), "Monday 06:00: the new week")
+	eq(K.shopWeekStart(at(2026, 11, 8, 23), cfg), at(2026, 11, 2, 6), "Sunday night: same week")
+	eq(K.dayKey(K.shopWeekStart(at(2026, 12, 31, 12), cfg)), ChaosBounty.week(at(2026, 12, 31, 12), {rollHour = 6}),
+		"the same week as the bounty board (across the year end)")
+	-- grace: the later of the new and the old (Monday 00:00) start, so nothing the old week forgot counts again
+	eq(K.shopWeekStart(at(2026, 10, 12, 3), cfg), at(2026, 10, 12, 0), "grace: Monday 03:00 keeps the old reset")
+	eq(K.shopWeekStart(at(2026, 10, 14, 12), cfg), at(2026, 10, 12, 6), "grace: mid-week the new start (later) counts")
+	ok(cfg.shopWeekGraceUntil <= at(2026, 10, 19, 6), "grace is one week")
+	eq(K.shopWeekStart(at(2026, 10, 26, 3), cfg), at(2026, 10, 19, 6), "after the grace: the shared week only")
+end
+
 print(string.format("mentor_test: %d checks, %d failed", checks, fails))
 if fails > 0 then
 	os.exit(1)

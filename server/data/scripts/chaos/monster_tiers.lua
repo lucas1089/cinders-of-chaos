@@ -50,9 +50,23 @@ local cfg = {
 	bossMods = true, -- bosses get modifiers (and their shader)
 	modCount = {magic = {1, 2}, rare = {2, 3}, legendary = {3, 4}, boss = {4, 5}},
 	tickMs = 2500, -- ambient effect / regeneration step
-	announceLegendary = true
+	announceLegendary = true,
+	-- the spawn chance multipliers (event day x Chaos Storm ...) multiply, at most this much together
+	maxSpawnMult = 3.0
 }
 ChaosTierConfig = cfg
+
+-- the multiplier on spawnChance at a position: the Chaos Rift day (events_schedule.lua) x the Chaos Storm
+-- (worldevents.lua), capped at cfg.maxSpawnMult (2 x 1.5 x 3 was 9x)
+function ChaosTierSpawnMult(position)
+	local m = ChaosEvents and ChaosEvents.bonus("tierChance") or 1
+	m = m * (ChaosWorldEvents and ChaosWorldEvents.tierMult and ChaosWorldEvents.tierMult(position) or 1)
+	local cap = tonumber(cfg.maxSpawnMult)
+	if cap and m > cap then
+		m = cap
+	end
+	return m
+end
 
 -- World bosses (worldboss.lua): boss tier for the client (their XML also has isboss="1"; this is the fallback) but
 -- no random modifiers: Regenerating, Juggernaut or Explosive (5% of max health on death) would wreck the tuned fight.
@@ -383,8 +397,7 @@ spawnCb.onSpawn = function(self, position, startup, artificial)
 	end
 	if eligible(self) then
 		local roll = math.random(10000)
-		local eventMult = ChaosEvents and ChaosEvents.bonus("tierChance") or 1
-		eventMult = eventMult * (ChaosWorldEvents and ChaosWorldEvents.tierMult and ChaosWorldEvents.tierMult(position or self:getPosition()) or 1) -- Chaos Storm (worldevents.lua)
+		local eventMult = ChaosTierSpawnMult(position or self:getPosition())
 		for _, tier in ipairs({"legendary", "rare", "magic"}) do
 			if roll <= cfg.spawnChance[tier] * eventMult then
 				self:registerEvent(rollEvent[tier])

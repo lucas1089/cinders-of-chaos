@@ -150,5 +150,7 @@ invisible, ghost (group 6), god_mode (group 5; uses `healthchange` + `manachange
 * `mute` uses `CONDITION_MUTED`, which TFS only applies to some chat paths; verify it blocks speech on your build.
 * The exp event assumes this server's `EventCallback.onGainExperience` is actually invoked by the engine
   (`data/scripts/lib/event_callbacks.lua` lists it, the engine side was not verified). The server also has its own `storage 6000` 2x exp.
+  Both count under the global experience cap (`xpcap.lua`, index 85: at most 4x a kill's base; server/README.md "Experience
+  cap"), so `double_exp` doubles only while the other bonuses leave room.
 * `god_mode` relies on per-player `healthchange`/`manachange` CreatureEvents.
 * Admin log DB writes use `db.asyncQuery`.

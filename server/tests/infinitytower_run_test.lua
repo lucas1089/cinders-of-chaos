@@ -160,6 +160,18 @@ registry["ChaosTowerLogout"].onLogout(d)
 assertEq(ChaosTowerRun.activeRuns(), 0, "logout ends the run")
 -- login inside the arena goes to the temple
 local e = mkPlayer(5, "Ed"); players[5] = e; e.pos = Position(2000, 2005, 7)
-registry["ChaosTowerLogin"].onLogin(e)
+assertEq(registry["ChaosTowerLogin"], nil, "the run file does not reuse infinitytower.lua's login event name")
+registry["ChaosTowerRunLogin"].onLogin(e)
 assertEq(e.pos.x, 1, "stuck player sent to the temple")
+-- the engine keeps only the first creature event of a name: the two tower files must not share one
+local names = {}
+for _, f in ipairs({"data/scripts/chaos/infinitytower.lua", "data/scripts/chaos/infinitytower_run.lua"}) do
+	local h = assert(io.open(f, "r"))
+	for name in h:read("*a"):gmatch('CreatureEvent%("([^"]+)"%)') do
+		assertEq(names[name], nil, "creature event name used twice: " .. name)
+		names[name] = f
+	end
+	h:close()
+end
+assertEq(names["ChaosTowerLogin"], "data/scripts/chaos/infinitytower.lua", "ChaosTowerLogin stays infinitytower.lua's")
 print("infinity tower run: all asserts passed")

@@ -11,7 +11,7 @@ return {
 		tierBase = 7101700,
 		picksBase = 7101730,
 		tokens = 7101760, -- Trial Tokens held
-		weekKey = 7101761, -- ISO week (YYYYWW) of the repeat rewards counted in weekCount
+		weekKey = 7101761, -- week (YYYYMMDD of its Monday, ChaosBounty.week) of the repeat rewards counted in weekCount
 		weekCount = 7101762,
 		runs = 7101763, -- completed runs (information, achievements)
 		cooldown = 7101764, -- os.time until the next attempt after a failed one
@@ -64,6 +64,7 @@ return {
 		first = {goldPerLevel = 4000, chaos = {2, 4, 8}, divine = {0, 1, 3}},
 		repeatReward = {goldPerLevel = 800, chaos = {1, 2, 3}, divine = {0, 0, 1}},
 		repeatsPerWeek = 5,
+		weekResetHour = 6, -- the week: Monday 06:00, the bounty board's (ChaosBounty.week)
 		items = {chaos = 29856, divine = 29857}
 	},
 

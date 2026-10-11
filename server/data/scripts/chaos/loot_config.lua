@@ -10,7 +10,7 @@ return {
 	priority = 1,
 
 	-- global hook. A number, or function(ctx) returning a number; ctx = {tier=, monster=, player=}.
-	-- Multiplies the chance and the count of the EXTRA rolls and the currency chances.
+	-- Multiplies the chance of the EXTRA rolls (not their stack counts) and the currency chances.
 	-- (Unique items are only scaled by tierMult and item find.)
 	-- the Loot Frenzy event (events_schedule.lua) raises it on its days, the World Loot buff from the store
 	-- (shop_services.lua) while it runs
@@ -28,6 +28,9 @@ return {
 		local blessing = ChaosBlessings and ChaosBlessings.mult and ChaosBlessings.mult(ctx and ctx.player, "loot") or 1
 		return event * buff * rift * world * community * marches * blessing
 	end,
+	-- cap on the final rate (rateMult, guild perk wrapper included; loot.lua clamps it). The bonuses multiply: all at
+	-- once came to ~8-10x. The rift's own Quantity rules still apply, under this cap.
+	maxRate = 3.0,
 
 	-- player storage key; value v means +v % to all chances of this layer (extra rolls, currency,
 	-- uniques, gear upgrade chance). 0 / unset = no bonus. Read from the corpse owner only.
@@ -79,6 +82,8 @@ return {
 
 	-- 3. currency / crafting drops
 	currency = {
+		-- cap on the chance scale of the entries: rate x item find x orb find (charms) x Ember of the Forge
+		maxScale = 3.0,
 		-- chance per kill in 1/10000 for EACH entry whose chance table has the tier
 		entries = {
 			{id = 29857, name = "Orb of Fate", weight = 30, count = {1, 1},

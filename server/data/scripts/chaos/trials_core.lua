@@ -452,11 +452,16 @@ function M.hasMech(familyKey, name)
 	return false
 end
 
--- ISO-like week key (YYYYWW) of a time, from the day of the year (a week rolls on the 7-day steps from Jan 1: enough
--- for a weekly cap, and the same on every platform)
+-- week key of a time: YYYYMMDD of the Monday that starts its week (Monday reward.weekResetHour, 6), the shared week of
+-- the bounty board, leaderboards, raids and the guild boss (ChaosBounty.week). The old keys were YYYYWW (6 digits, from
+-- the day of the year): one never equals a new key, so the first clear after the switch starts a fresh count (a
+-- one-time grace: nobody keeps fewer repeats than before).
 function M.weekKey(t)
-	local d = os.date("*t", t or os.time())
-	return d.year * 100 + floor((d.yday - 1) / 7) + 1
+	if not ChaosBounty or not ChaosBounty.week then
+		dofile("data/scripts/chaos/bounty_core.lua")
+	end
+	local hour = M.cfg().reward.weekResetHour or 6
+	return ChaosBounty.week(t or os.time(), {rollHour = hour})
 end
 
 -- what a clear pays: {first = bool, gold, chaos, divine, tokens, counted}. tierCleared = before this clear.

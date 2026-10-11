@@ -102,11 +102,18 @@ local function rateMult(ctx)
 		r = ok and v or 1
 	end
 	r = tonumber(r) or 1
-	if r < 0 then
+	if r ~= r or r < 0 then
 		r = 0
+	end
+	-- every loot bonus multiplies into this one rate (events, store, rift quantity, Golden Hour, community, Marches,
+	-- blessings, the guild perk wrapper): the product is capped here (loot_config.lua maxRate)
+	local cap = tonumber(cfg().maxRate)
+	if cap and r > cap then
+		r = cap
 	end
 	return r
 end
+L.rateMult = rateMult
 
 function L.itemFindMult(player)
 	local c = cfg()
@@ -333,7 +340,8 @@ function L.rollExtraLoot(lootTable, tier, ctx)
 	local rm = rateMult(ctx)
 	local find = ctx.itemFind or 1
 	local chanceMult = tierValue(c.extraChanceMult, tier, 1) * rm * find
-	local countMult = tierValue(c.extraCountMult, tier, 1) * levelCountMult(ctx.level or 0) * rm
+	-- the rate scales how often an extra roll hits, not its stack size (rate x count would square the bonus)
+	local countMult = tierValue(c.extraCountMult, tier, 1) * levelCountMult(ctx.level or 0)
 	for _ = 1, rolls do
 		for _, entry in ipairs(lootTable) do
 			local id = entry.itemId
@@ -369,6 +377,11 @@ function L.rollCurrency(tier, ctx)
 	local scale = rateMult(ctx) * (ctx.itemFind or 1) * (ctx.orbFind or 1) -- orbFind: charms.lua
 	-- the Ember of the Forge blessing of the corpse owner (blessings.lua): every orb of the list more often
 	scale = scale * (ChaosBlessings and ChaosBlessings.mult and ChaosBlessings.mult(ctx.player, "orb") or 1)
+	-- rate, item find, orb find and the Forge together: capped (loot_config.lua currency.maxScale)
+	local maxScale = tonumber(cur.maxScale)
+	if maxScale and scale > maxScale then
+		scale = maxScale
+	end
 	local cm = tierValue(cur.countMult, tier, 1)
 	local merged, order = {}, {}
 	local function add(e)

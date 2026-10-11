@@ -563,6 +563,37 @@ The server also pushes `info` for tiered monsters to players within about 10 til
 
 The `info` answer also carries `role` (`guardian` for a rift guardian, `omen` for an Omen guardian, read from `ChaosRift.monsterRun` and the run's `bossIds`; absent otherwise) and `level` (`ChaosLoot.monsterLevel`, absent when loot.lua is not loaded). The client picks the bar's look from them (`game_monsterbar/monsterbarstyle.lua`). Both are tested in `tests/monster_tiers_test.lua`.
 
+## Chaos loot rate caps (`loot.lua`, `loot_config.lua`, details in `data/scripts/chaos/LOOT.md`)
+
+Every loot bonus multiplies into one rate (`loot_config.lua` `rateMult`): the Loot Frenzy event 1.5, World Loot 1.25, a
+rift's Quantity (up to 2.28, its own rules unchanged), Golden Hour 1.25, community stage 1.10 and family 1.30, the Marches
+1.5 and shrine 1.1, Ember of Plenty 1.4, and the guild perk wrapper (`guild.lua` `G.wrapLoot`, x1.05). Together that came
+to ~8-10x, and the rate multiplied both the extra-roll chance and the stack counts (an expected value of ~rate^2 x item
+find). Now:
+
+- `ChaosLoot.rateMult(ctx)` clamps the final rate (wrapper included) to `maxRate` (3.0). Extra rolls, currency, gems and
+  supports all read that value.
+- The rate scales the chance of an extra roll only; the stack count is `extraCountMult x levelCountMult`.
+- The currency chance scale (rate x item find x orb find of the charms x Ember of the Forge) is capped at
+  `currency.maxScale` (3.0), so orb find no longer saturates the entries (a normal-tier Orb of Fate stays rare; boss-tier
+  entries above 1/3 still always hit).
+
+`tests/loot_caps_test.lua` loads `loot.lua` against a mocked engine.
+
+## Experience cap (`xpcap.lua`, `xpcap_core.lua`, `xpcap_config.lua`)
+
+The base `player.lua` (patched by `tools/patch_base_events.py`) computes the staged experience (monster level factor
+x0.03 L, stage, stamina, the store potion x2) and then runs the `onGainExperience` callbacks; 19 Chaos callbacks multiply
+it (Blood Moon 1.5, Victory 1.1, World Experience 1.25, blessing 1.25, professions 1.10, community up to 1.495, Marches 1.5,
+shrine 1.1, passive tree 1.33, item mods 1.15, waystone 2.0, bestiary 1.06, guild 1.05, siege 1.05, mentor 1.10, the
+season modifier, the admin `double_exp` event at index 50: ~55x with the potion). The cap callback at index 85 clamps a
+monster kill to `cap` (4.0) x its base: rawExp x the monster level factor x the stage of the player's level x the monster
+tier (magic 2, rare 4, legendary 10: the monster, not a bonus). The potion and the admin event count against the cap like
+any bonus; a season character's potion is still halved back first (`shop_services.lua`, index 5). The dungeon difficulty
+(90, it goes with the monster's 1.3-13x health), the rift cap (100) and the hunt tracker (1000) run after the cap. When
+the engine passes no rawExp, a recorder at index -1000 keeps the experience as it entered the chain and that x tier stands
+in for the base. Player kills are not capped. `tests/xpcap_test.lua` runs a mocked chain.
+
 ## Custom spells and spell effects
 36 spells (`data/spells/chaos/`, installer `tools/register_spells.py`, table in `data/spells/README.md`) and 52 extra magic effects plus 10 projectiles (`data/lib/chaos_fx.lua`, catalog `data/spells/effects_catalog.csv`, build commands in `data/spells/README_FX.md`). All spell effects are our own procedurally drawn art (`client/tools/sprites/gen_effects.py`): it appends the 52 + 10 and also redraws, at the same ids, the 83 stock effects and 25 stock missiles that spells and spell hits use, so stock spell scripts need no change. The spells load `chaos_fx.lua` themselves and fall back to standard effects if it is missing, so they work before the generated dat/spr is in use; the custom art shows only with that pair on the client. Effect ids above 255 work because the base server sends them as 16 bits and the client profile enables `GameMagicEffectU16`. Not run on a server. The client spell list and action bar need entries and icons for the new spells (see `data/spells/README.md`).
 
@@ -2049,7 +2080,9 @@ Every number and text is in `mentor_config.lua`; the rules are pure functions in
 - **Marks Shop** (`shop`, checked by `ChaosMentorCore.validate` at startup and in the test: titles, cosmetics, supplies
   only; supplies only the potions of `supplyIds`, with a weekly limit): titles Lanternbearer 40, Pathfinder 90, Wayshower 160
   (`ChaosTitles` source `mentor`); Ember Labels 100, Cinder Name 140, Soul Spark 140 (the store's cosmetics, unlocked for
-  the account with `ChaosCosmetics.grant(..., "mentor")`); 50 health / 50 mana potions for 6, 3 a week each. Marks are
+  the account with `ChaosCosmetics.grant(..., "mentor")`); 50 health / 50 mana potions for 6, 3 a week each. The week is
+  the shared one (Monday 06:00, `ChaosBounty.week`; `K.shopWeekStart`); it was Monday 00:00, and until
+  `shopWeekGraceUntil` (19 Oct 2026 06:00) the later of both starts counts, so the switch costs nobody a purchase. Marks are
   taken with one conditional UPDATE before the delivery (given back when a cosmetic cannot be granted).
 - **Party Finder.** Listings, members and applications carry the tag `mt` (`ChaosMentor.tagOf`: `mentor` while
   registered, taking apprentices and with a free place; `seeking` while "Looking for a mentor" is set and the character
@@ -2662,7 +2695,8 @@ invasion, never during one, and never within 45 minutes of an invasion start. Th
 merchant 30, golden 30), never the same twice in a row. A broadcast + toast at the start and the end, and an entry in
 Adventure > Events while it runs (`ChaosEvents.dynamic.worldEvent`).
 - **Chaos Storm** (15 min): magic, rare and legendary spawn chances x3 in the area. `monster_tiers.lua` multiplies its
-  spawn roll by `ChaosWorldEvents.tierMult(position)`. Lightning and clouds around the players inside every 2 s.
+  spawn roll by `ChaosWorldEvents.tierMult(position)` (with the event days at most x3 together, `maxSpawnMult`).
+  Lightning and clouds around the players inside every 2 s.
 - **Wandering Merchant** (20 min, town areas only): the NPC "Wandering Merchant" at a random free tile of the area (or
   one of `merchantSpots`). Only the area is announced. Goods: Orb of Upheaval 40k, Orb of Fate 120k, Orb of Grafting 200k, Orb of
   Gilding 60k, Orb of Unmaking 80k, Double Experience Potion 350k, supreme health potion 900 (no stock limit). An item with
@@ -2672,7 +2706,8 @@ Adventure > Events while it runs (`ChaosEvents.dynamic.worldEvent`).
   season character was refused the potion both ways and bought an orb; a standard character bought the potion
   (`tests/wandering_merchant_test.lua` covers both paths and a migrated character).
 - **Golden Hour** (30 min): +25% Chaos loot in the area. `loot_config.lua` `rateMult` multiplies by
-  `ChaosWorldEvents.lootMult(ctx)`, as for the rifts; golden rings around the players inside.
+  `ChaosWorldEvents.lootMult(ctx)`, as for the rifts (under the loot rate cap, "Chaos loot rate caps"); golden rings
+  around the players inside.
 
 ### Commands
 
@@ -3333,7 +3368,8 @@ modifiers, seven effects of their own), the player picks one and the choice is f
   Ruined items refuse the orb like every orb.
 - **Totals.** `item_mods.lua` sums the unveiled modifiers of the equipped items (`ChaosVeiled.totals`): catalogue keys go into
   `ChaosItemMods.totals`' `extra`, so the catalogue caps hold; the hook keys get their own caps (`hookCaps`).
-- **Hooks** (`item_mods.lua`): Veilpiercer and Last Ember scale your hits (target above 80% health, you below 50%); Gravebound,
+- **Hooks** (`item_mods.lua`): Veilpiercer and Last Ember scale your hits (target above 80% health, you below 50%; together
+  at most +40%, `hook.maxDealt`); Gravebound,
   Hexbreaker and Ashen Ward take a share off hits taken (you below 35% / a boss / an elemental hit of a monster; together at
   most 40%); Blood Harvest and Soul Harvest restore health / mana on a kill.
 - **Display.** The tooltip's `veil` block (`item_tooltip_core.lua`) in its own violet colour, the look text ("Veiled modifier:
@@ -3654,7 +3690,9 @@ solo runtime-built challenge arena (x / y 9000+, 8 / 9 / 10 minutes, 3 / 3 / 2 l
 per pair. The full design table (every trial, every pair with its trade-off and numbers) is `server/data/scripts/chaos/TRIALS.md`.
 Entry: the Keeper of Trials NPC (temple) or the Trials button of the Passive Tree window (opcode 65 `extraActions`); the
 run HUD is the rift HUD (opcode 228). A lethal hit costs a life instead of killing (no experience or item loss). First
-clear: bank gold, Orbs of Upheaval and Fate and the pair; repeat: 1 Trial Token (5 a week) and a small reward. Switching a
+clear: bank gold, Orbs of Upheaval and Fate and the pair; repeat: 1 Trial Token and a small reward (5 a week; the week is
+the shared Monday 06:00 one, `ChaosBounty.week`, key YYYYMMDD of its Monday in storage 7101761: the old day-of-year keys
+YYYYWW made 31 Dec a one-day week 53 and never match a new key, so the first clear after the switch counts from 0). Switching a
 pick or giving a pair up: 1 Trial Token + level x 250 gold, not in combat or during a run. Special nodes use their own
 combat code (`trials_effects.lua`, about 40 keys, damage dealt bounded 0.25-2.5 and taken 0.3-2.0), are separate from the
 passive points, survive every tree reset, and are not in build codes. Ten nodes use spell cost / cooldown keys and need
@@ -5045,11 +5083,12 @@ closes at 13:00; shared lives 3 + 1 per 3 more players (a lethal hit sends the p
 antechamber, back after 8 s). Balance model (level 600 characters, 1,400 dps at 75% uptime): about 495 s with 2, 420 s
 with 5, 395 s with 10 (tests keep them within 10% and before the enrage). The rift HUD (opcode 228) shows the fight.
 
-**Rewards.** Every participant present at the kill who dealt 1% of the damage or healed is rewarded: 6 Orbs of Upheaval
-and 2 Orbs of Fate each, and a share of one **gold pool** for the guild. The pool is 1,500,000 per rewarded participant,
-counted up to 10 (2: 3M, 5: 7.5M, 10 or more: 15M; `reward.pool`), so a 5-10 player kill pays the same total as the old
-fixed 1.5M each and larger guilds share the 15M. The split (`B.splitGold`): everyone first gets 25% of an even split
-(`floorShare`; 375,000 with 5 and with 10 rewarded), the rest goes in proportion to the contribution,
+**Rewards.** Every participant present at the kill who dealt 1% of the damage or healed is rewarded: 3 Orbs of Upheaval
+and 1 Orb of Fate each, and a share of one **gold pool** for the guild. The pool is 250,000 per rewarded participant,
+counted up to 10 (2: 500k, 5: 1.25M, 10 or more: 2.5M; `reward.pool`). The kill is a net gold sink: the fuel is 525-1000
+embers (5.25M-10M gold), so the largest pool is at most ~50% of the cheapest stone (before: 1.5M each, 15M and 6 + 2
+orbs each for 10 players, more than the fuel). The split (`B.splitGold`): everyone first gets 25% of an even split
+(`floorShare`; 62,500 with 5 and with 10 rewarded), the rest goes in proportion to the contribution,
 damage to the boss + healing done to the other participants (only the missing health counts; `healWeight` 1). Shares
 are rounded down and the remainder goes to the top contributor, so they sum to the pool exactly. Each share goes to the
 bank balance (a member who logged out in the arena gets it by an UPDATE of `players.balance`), is shown in the kill

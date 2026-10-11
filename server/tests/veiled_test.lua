@@ -405,6 +405,11 @@ eq(V.dealtPct(t, {targetHp = 80, targetMax = 100, ownHp = 100, ownMax = 100}), 0
 eq(V.dealtPct(t, {targetHp = 10, targetMax = 100, ownHp = 49, ownMax = 100}), 15, "Last Ember below 50%")
 eq(V.dealtPct(t, {targetHp = 100, targetMax = 100, ownHp = 10, ownMax = 100}), 35, "both")
 eq(V.dealtPct(nil, {}), 0)
+-- both hooks at their caps (40 + 40): together at most hook.maxDealt
+eq(V.dealtPct({veil_firststrike = 40, veil_desperation = 40}, {targetHp = 100, targetMax = 100, ownHp = 10, ownMax = 100}), 40,
+	"Veilpiercer + Last Ember capped at 40 together")
+eq(V.dealtPct({veil_firststrike = 40, veil_desperation = 40}, {targetHp = 100, targetMax = 100, ownHp = 100, ownMax = 100}), 40,
+	"one hook alone: its own 40")
 eq(V.takenPct(t, {hp = 34, maxHp = 100, monster = true}), 20, "Gravebound below 35%")
 eq(V.takenPct(t, {hp = 35, maxHp = 100, monster = true}), 0, "not at 35%")
 eq(V.takenPct(t, {hp = 90, maxHp = 100, monster = true, boss = true}), 12, "Hexbreaker")

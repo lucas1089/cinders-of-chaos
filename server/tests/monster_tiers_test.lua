@@ -306,6 +306,44 @@ eq(ChaosTierOf(named), "legendary", "shown name: rolled by its type")
 eq(messages[#messages], "A legendary Abyssal Gazer appears!", "shown name: announced under the shown name")
 eq(state[0], nil, "end: nothing ever under id 0")
 
+-- ---------------------------------------------------------------- spawn chance multipliers (capped)
+eq(cfg.maxSpawnMult, 3.0, "spawn multiplier cap")
+eq(ChaosTierSpawnMult(position(100, 100, 7)), 1, "no event: x1")
+local dayBonus = 2.0 * 1.5 -- Chaos Rift day x Champions' Week (ChaosEvents.bonus multiplies them)
+ChaosEvents = {bonus = function(kind) return kind == "tierChance" and dayBonus or 1 end}
+ChaosWorldEvents = {tierMult = function() return 3.0 end} -- Chaos Storm
+eq(ChaosTierSpawnMult(position(100, 100, 7)), 3.0, "2 x 1.5 x 3 = 9x capped at 3x")
+dayBonus = 1.5
+ChaosWorldEvents = nil
+eq(ChaosTierSpawnMult(position(100, 100, 7)), 1.5, "below the cap: unchanged")
+-- the roll uses it: magic 600 x 3 = 1800 of 10000; a roll of 1801 stays normal under the 9x stack
+dayBonus = 3.0
+ChaosWorldEvents = {tierMult = function() return 3.0 end}
+setChance(0, 0, 600)
+local realRandom = math.random
+local function rollAt(v)
+	math.random = function(a, b)
+		if a == 10000 and b == nil then
+			return v
+		elseif a == nil then
+			return realRandom()
+		elseif b == nil then
+			return realRandom(a)
+		end
+		return realRandom(a, b)
+	end
+end
+rollAt(1801)
+local capped = Game.createMonster("Dragon", position(109, 100, 7), true, false)
+think(capped)
+eq(ChaosTierOf(capped), "normal", "a roll above 600 x 3 stays normal")
+rollAt(1800)
+local magic = Game.createMonster("Dragon", position(110, 100, 7), true, false)
+think(magic)
+eq(ChaosTierOf(magic), "magic", "a roll at 600 x 3 is magic")
+math.random = realRandom
+ChaosEvents, ChaosWorldEvents = nil, nil
+
 print(string.format("monster tiers tests: %d checks, %d failed", count, failures))
 if failures > 0 then
 	os.exit(1)

@@ -58,8 +58,9 @@ return {
 	-- The other veiled modifiers add to the catalogue's modifiers (chaos_item_mods.lua) under the catalogue's caps.
 	hookCaps = {veil_firststrike = 40, veil_desperation = 40, veil_gravebound = 25, veil_soulharvest = 5,
 		veil_bloodharvest = 5, veil_hexbreaker = 20, veil_ashenward = 15},
-	-- the hook rules: health thresholds (percent) and the most damage the three reductions take off together
-	hook = {firstStrikeAbove = 80, desperationBelow = 50, graveboundBelow = 35, maxReduction = 40},
+	-- the hook rules: health thresholds (percent), the most damage the three reductions take off together and the most
+	-- Veilpiercer + Last Ember add together (each is capped at 40 by hookCaps; both at once were +80%)
+	hook = {firstStrikeAbove = 80, desperationBelow = 50, graveboundBelow = 35, maxReduction = 40, maxDealt = 40},
 
 	-- the veiled pool. key, name, text (format: the effects' values in order), kinds (chaos_item_mods.lua M.kindOf), minLevel
 	-- (the item level the modifier needs at all), tiers V1 .. V4 {lo, hi}, effects {k = a catalogue key or a hook key,

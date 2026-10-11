@@ -525,7 +525,7 @@ function V.dealtPct(totals, ctx)
 	if (totals.veil_desperation or 0) > 0 and below(ctx.ownHp, ctx.ownMax, H.desperationBelow) then
 		pct = pct + totals.veil_desperation
 	end
-	return pct
+	return math.min(H.maxDealt or pct, pct)
 end
 
 -- percent less damage of a hit taken: ctx = {hp, maxHp, monster (the attacker is a monster), boss, elemental}

@@ -94,12 +94,14 @@ return {
 	-- every participant still in the arena at the kill (or fallen and waiting at the gate) who dealt at least
 	-- minDamageShare of the boss's damage, or healed, is rewarded: a share of the guild's gold pool to the bank balance
 	-- and the orbs (each; backpack, else store inbox).
-	-- The gold pool of a kill: pool.perPlayer per rewarded participant, counted up to pool.maxPlayers (5: 7.5M, 10 or
-	-- more: 15M; the same total as the old fixed 1.5M each up to 10). It is split by contribution (damage to the boss
-	-- + healWeight x healing done to the others); everyone first gets floorShare of an even split (25%: a 10-player
-	-- kill pays at least 375,000), the rest goes by contribution, the rounding remainder to the top contributor.
-	reward = {pool = {perPlayer = 1500000, maxPlayers = 10}, floorShare = 0.25, healWeight = 1,
-		orbs = {{id = 29856, count = 6}, {id = 29857, count = 2}}, minDamageShare = 0.01},
+	-- The gold pool of a kill: pool.perPlayer per rewarded participant, counted up to pool.maxPlayers (5: 1.25M, 10 or
+	-- more: 2.5M). A net gold sink: the fuel is 525-1000 embers = 5.25M-10M gold, so even the 10-player pool is at most
+	-- ~50% of the cheapest stone (it was 1.5M each, 15M for 10: more than the fuel). It is split by contribution (damage
+	-- to the boss + healWeight x healing done to the others); everyone first gets floorShare of an even split (25%: a
+	-- 10-player kill pays at least 62,500), the rest goes by contribution, the rounding remainder to the top contributor.
+	-- Orbs each: 3 Upheaval + 1 Fate (was 6 + 2).
+	reward = {pool = {perPlayer = 250000, maxPlayers = 10}, floorShare = 0.25, healWeight = 1,
+		orbs = {{id = 29856, count = 3}, {id = 29857, count = 1}}, minDamageShare = 0.01},
 	-- the guild: guild XP (guild levels) once per kill, and a banner tier from its weekly kills in total
 	gxp = {base = 400, perPlayer = 20, max = 800},
 	banners = {
