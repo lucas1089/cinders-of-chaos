@@ -38,6 +38,10 @@ quivers, mods, ammo, conjureScripts), the same file the Lua side (data/lib/chaos
 10. data/scripts/eventcallbacks/player/default_onMoveItem.lua: the base's convenience swap (a two-handed weapon taken
    into the weapon hand puts the off-hand item into the container it came from) keeps a quiver beside a bow or
    crossbow (ChaosArchery.handsAllowed); without this, equipping a bow would push the quiver out of the off-hand.
+11. items.xml, one might ring at a time: the config's mightRings, and the ids they turn into on equip and de-equip
+   (transformEquipTo / transformDeEquipTo, followed to the end), get <attribute key="chaosMightRing" value="1" />.
+   Engine src-patch 0023 reads the key: Player::queryAdd refuses a might ring in a ring slot while the other ring slot
+   holds one; the login check (archery.lua) reads it through itemType:isMightRing().
 
 Idempotent: a second run changes nothing. Unknown file layouts are left alone and listed.
 """
@@ -101,6 +105,8 @@ def read_config(path=CONFIG):
     cfg['ammo'] = {int(i): int(v) for i, v in re.findall(r'\[(\d+)\]\s*=\s*(\d+)', _block(text, 'ammo'))}
     cfg['defaultRefund'] = int(re.search(r'defaultRefund\s*=\s*(\d+)', text).group(1))
     cfg['conjureScripts'] = re.findall(r'"([^"]+)"', _block(text, 'conjureScripts'))
+    cfg['mightRings'] = [int(i) for i in re.findall(r'\d+', _block(text, 'mightRings'))]
+    assert cfg['mightRings'], 'no mightRings'
     for qid, (_lv, imp) in cfg['quivers'].items():
         for k, _v in imp:
             assert k in cfg['mods'], 'quiver %d: implicit %s is no quiver modifier' % (qid, k)
@@ -271,6 +277,60 @@ def patch_items(text, cfg, weapons_text=''):
     notes.append('items.xml: %d quiver entr%s made equipment' % (changed['quivers'], 'y' if changed['quivers'] == 1 else 'ies')
                  if changed['quivers'] else 'items.xml: the %d quivers are equipment' % len(found))
     return out, notes, launchers
+
+
+# ------------------------------------------------------------------------------------------------ might rings
+MIGHT_KEY = 'chaosMightRing'
+
+
+def might_ring_ids(items_text, ids):
+    """the config's might rings and every id they turn into on equip or de-equip, followed to the end"""
+    links = {}
+    for m in ITEM_RE.finditer(items_text):
+        a = _attrs(m.group(4))
+        for iid in _ids(m.group(2)):
+            links[iid] = [int(a[k]) for k in ('transformequipto', 'transformdeequipto') if a.get(k, '').isdigit()]
+    out, todo = set(), list(ids)
+    while todo:
+        iid = todo.pop()
+        if iid in out or not iid:
+            continue
+        out.add(iid)
+        todo.extend(links.get(iid, []))
+    return out
+
+
+def patch_might_rings(text, ids):
+    """-> new text, notes. Marks every might ring id (one item entry each) with the key chaosMightRing."""
+    want = might_ring_ids(text, ids)
+    nl = '\r\n' if '\r\n' in text else '\n'
+    found, changed, notes = set(), [], []
+
+    def item(m):
+        indent, head, close, body = m.group(1), m.group(2), m.group(3), m.group(4)
+        ids_here = _ids(head)
+        hit = [i for i in ids_here if i in want]
+        if not hit:
+            return m.group(0)
+        if len(ids_here) > 1:
+            notes.append('items.xml: might ring %s is part of a fromid/toid range, left alone' % hit)
+            return m.group(0)
+        found.add(ids_here[0])
+        if _attrs(body).get(MIGHT_KEY.lower()) == '1':
+            return m.group(0)
+        changed.append(ids_here[0])
+        if close == '/>':
+            return '%s<item %s>%s%s\t<attribute key="%s" value="1" />%s%s</item>' % (
+                indent, head.rstrip(' /'), nl, indent, MIGHT_KEY, nl, indent)
+        body = _set_attr(body, MIGHT_KEY, '1', indent + '\t', nl + indent)
+        return indent + '<item ' + head + '>' + body + '</item>'
+
+    out = ITEM_RE.sub(item, text)
+    for iid in sorted(want - found):
+        notes.append('items.xml: might ring %d has no entry' % iid)
+    notes.append('items.xml: might rings %s marked (one at a time)' % ', '.join(map(str, sorted(changed))) if changed
+                 else 'items.xml: the might rings %s are marked' % ', '.join(map(str, sorted(found))))
+    return out, notes
 
 
 # ------------------------------------------------------------------------------------------------ items.otb
@@ -593,7 +653,8 @@ def main():
     is_ammo = _id_or_name(set(ammo), names)
 
     new_items, notes, _launchers = patch_items(items, cfg, weapons)
-    for note in notes:
+    new_items, mnotes = patch_might_rings(new_items, cfg['mightRings'])
+    for note in notes + mnotes:
         print(note)
     if new_items != items:
         writes[xml_path] = new_items

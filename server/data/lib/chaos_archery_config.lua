@@ -146,5 +146,12 @@ return {
 	-- the conjure spells that made ammunition (data/spells/scripts/conjuring/), switched off by the install tool
 	conjureScripts = {"arrow_call.lua", "conjure_arrow.lua", "conjure_bolt.lua", "conjure_diamond_arrow.lua",
 		"conjure_explosive_arrow.lua", "conjure_piercing_bolt.lua", "conjure_poisoned_arrow.lua",
-		"conjure_power_bolt.lua", "conjure_sniper_arrow.lua", "spectral_bolt.lua"}
+		"conjure_power_bolt.lua", "conjure_sniper_arrow.lua", "spectral_bolt.lua"},
+
+	-- ------------------------------------------------------------------ the second ring slot
+	-- one might ring at a time over both ring slots (server/README.md "Second ring slot"). The might ring ids: the
+	-- install tool writes the items.xml key "chaosMightRing" on each, and on the worn or unworn id each one turns into
+	-- (transformEquipTo / transformDeEquipTo). The engine (src-patch 0023) and the login check read that key
+	-- (itemType:isMightRing()), not this list. The base has one: 2164, which does not transform.
+	mightRings = {2164}
 }

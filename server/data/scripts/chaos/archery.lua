@@ -18,7 +18,8 @@
 --     ammunition slot is a second ring slot, rings only (engine src-patch 0023); the engine loads a character without
 --     its slot rules, so a quiver left in the ammunition slot moves to the shield hand (else the backpack or the
 --     inbox), anything else there that is no ring goes to the backpack or the inbox, as does an off-hand item the
---     rules refuse. A ring there stays. Saved at once; idempotent.
+--     rules refuse. A ring there stays. One might ring at a time (0023): with a might ring in both ring slots, the one
+--     in the second ring slot goes to the backpack or the inbox. Saved at once; idempotent.
 --   * later arrivals (a map chest, a trade, the market): ammunition that reaches a character's inventory is turned into
 --     its refund at once; every later login looks at the inventory again (a base script reward the install tool did
 --     not know).
@@ -252,7 +253,8 @@ end
 -- hands A.handsAllowed refuses, but it loads a character without asking. A quiver of before in the ammunition slot
 -- goes to the shield hand when that is free and allowed (the engine asks again: vocation and level of movements.xml),
 -- else to the backpack (or a container in it), else to the inbox; so does anything else there that is no ring, and an
--- off-hand item the rules refuse. A ring in the second ring slot stays. All of it is
+-- off-hand item the rules refuse. A ring in the second ring slot stays, unless it is a might ring and the ring slot
+-- holds one too (one might ring at a time; the one in the ring slot stays). All of it is
 -- in memory and saved with the character as one (Chaos.saveCharacter right after); a crash before the save leaves the
 -- old state and the next login moves it again. Nothing to move: nothing changes (idempotent without a mark).
 -- into the backpack or a container in it, else the inbox; never merged into a stack
@@ -297,7 +299,10 @@ function A.checkHands(player)
 			state[key] = A.handKind(ItemType(item:getId())) or "other"
 		end
 	end
-	local moved, lines = 0, {}
+	local ring = player:getSlotItem(CONST_SLOT_RING)
+	state.ringMight = ring ~= nil and A.isMightRing(ItemType(ring:getId()))
+	state.ammoMight = items.ammo ~= nil and A.isMightRing(ItemType(items.ammo:getId()))
+	local moved, lines, mightLines = 0, {}, {}
 	for _, step in ipairs(A.loginPlan(state)) do
 		local item = items[step.from]
 		local name = item and item:getName() or "?"
@@ -310,7 +315,8 @@ function A.checkHands(player)
 		end
 		if where then
 			moved = moved + 1
-			lines[#lines + 1] = name .. " -> " .. where
+			local into = step.why == "might" and mightLines or lines
+			into[#into + 1] = name .. " -> " .. where
 		else
 			log(player:getName() .. ": could not move " .. name .. " out of slot " .. tostring(slots[step.from]))
 		end
@@ -319,8 +325,14 @@ function A.checkHands(player)
 		if not Chaos.saveCharacter(player) then
 			log(player:getName() .. ": the save after the hands check failed; the logout save keeps it")
 		end
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, "The ammunition slot is a second ring slot now and " ..
-			"quivers are worn in the off-hand next to a bow or crossbow. Moved: " .. table.concat(lines, ", ") .. ".")
+		if #lines > 0 then
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, "The ammunition slot is a second ring slot now and " ..
+				"quivers are worn in the off-hand next to a bow or crossbow. Moved: " .. table.concat(lines, ", ") .. ".")
+		end
+		if #mightLines > 0 then
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, "You can only wear one might ring at a time. " ..
+				"Moved: " .. table.concat(mightLines, ", ") .. ".")
+		end
 		if ChaosItemMods and ChaosItemMods.refresh then
 			pcall(ChaosItemMods.refresh, player, true)
 		end

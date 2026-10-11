@@ -75,7 +75,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                tools/rename_spells.py --sql      Chaos names of the stock spells and runes (+ the player_spells UPDATEs)
   archery      tools/patch_base_archery.py       bows and crossbows fire without ammunition (attack, hit chance and missile of
                their band), quivers become off-hand equipment (items.xml, items.otb, movements.xml; engine src-patch
-               0023), the base slot tables know the second ring slot, the base two-handed swap keeps a quiver, arrows and bolts leave
+               0023), the base slot tables know the second ring slot, the might rings are marked (one at a time), the base
+               two-handed swap keeps a quiver, arrows and bolts leave
                loot, shops and quest rewards, the conjure spells go (README "Infinite arrows and quivers"; after
                vocations, which still reads the launchers' ammo type, and after spells)
   itemnames    tools/patch_base_item_names.py    Chaos names of some base items by id (data/items/base_item_names.csv: the quivers,

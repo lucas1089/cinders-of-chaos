@@ -8,7 +8,8 @@
 --   * the hands (engine src-patch 0023, mirrored in ChaosArchery.handsAllowed): bow or crossbow + quiver allowed, a
 --     shield or anything else beside a launcher refused, a quiver beside an empty weapon hand allowed and beside any
 --     other weapon refused, the ammunition slot refused; the login check (archery.lua A.checkHands) moves a quiver
---     out of the ammunition slot to the off-hand, else the backpack, else the inbox, saved, idempotent
+--     out of the ammunition slot to the off-hand, else the backpack, else the inbox, saved, idempotent; one might ring
+--     at a time (A.isMightRing): with two worn, the one in the second ring slot goes to the backpack or the inbox
 --   * data/scripts/chaos/archery.lua: the ammunition sweep (save-safe, once, the stash), the quiver's skill and speed,
 --     old launchers; weapon_styles.lua: the no-ammunition hit (splash by kind, critical strike, element, extra shot)
 --   * loot.lua: quivers are gear drops, arrows and bolts are none; server/sql/chaos_archery.sql names the quivers
@@ -90,7 +91,9 @@ local TYPES = {
 	[2454] = {name = "war axe", weaponType = WEAPON_AXE, attack = 45, slot = 48 + SLOTP_TWO_HAND},
 	[2410] = {name = "throwing knife", weaponType = WEAPON_DISTANCE, attack = 15, slot = 48, stackable = true},
 	[2357] = {name = "ring of wisdom", slot = SLOTP_RING + 48},
-	[2165] = {name = "stealth ring", slot = SLOTP_RING + 48}
+	[2165] = {name = "stealth ring", slot = SLOTP_RING + 48},
+	[2164] = {name = "might ring", slot = SLOTP_RING + 48, might = true}, -- items.xml chaosMightRing (0023)
+	[2169] = {name = "time ring", slot = SLOTP_RING + 48}
 }
 -- the patched launchers: attack and hit chance of their band, no ammunition type
 local A -- ChaosArchery, loaded below
@@ -135,6 +138,7 @@ function ItemType(id)
 		getDescription = function() return t.description or "" end,
 		getClientId = function() return id end,
 		getCharges = function() return 0 end,
+		isMightRing = function() return t.might == true end,
 		getDuration = function() return 0 end
 	}
 end
@@ -531,6 +535,16 @@ eq(plan({main = "launcher", off = "shield", ammo = "quiver"}), "off>stow,ammo>of
 	"a refused pair loses its off-hand item first; then the quiver goes there")
 eq(plan({main = "weapon", off = "quiver"}), "off>stow", "a quiver beside a sword: stowed")
 eq(plan({main = "quiver", ammo = "quiver"}), "main>stow,ammo>off", "a quiver in the weapon hand: stowed")
+-- one might ring at a time (0023): the one in the second ring slot goes, the one in the ring slot stays
+ok(A.isMightRing(ItemType(2164)), "a might ring")
+ok(not A.isMightRing(ItemType(2169)) and not A.isMightRing(ItemType(2357)), "a time ring or another ring is none")
+ok(not A.isMightRing(nil) and not A.isMightRing({}), "no item type, or an engine without isMightRing: none")
+eq(plan({ammo = "ring", ammoMight = true, ringMight = true}), "ammo>stow", "two might rings: the second ring slot's is stowed")
+eq(A.loginPlan({ammo = "ring", ammoMight = true, ringMight = true})[1].why, "might", "for the might rule")
+eq(plan({ammo = "ring", ammoMight = true}), "", "a might ring alone in the second ring slot stays")
+eq(plan({ammo = "ring", ringMight = true}), "", "a might ring and another ring stay")
+eq(plan({main = "launcher", off = "shield", ammo = "ring", ammoMight = true, ringMight = true}), "off>stow,ammo>stow",
+	"the hands and the rings in one check")
 
 -- ---------------------------------------------------------------- 4. the ammunition, refunds
 ok(A.isAmmoId(2544), "arrow")
@@ -749,6 +763,43 @@ local qw = rolledQuiver()
 local pw, bpW = handsPlayer(newItem(2400), qw, nil)
 eq(A.checkHands(pw), 1, "a quiver beside a sword is moved")
 ok(bpW:getItems()[1] == qw, "to the backpack")
+-- one might ring at a time: two worn from before, the one in the second ring slot goes to the backpack, saved
+local might9, might10 = newItem(2164), newItem(2164)
+local pm, bpM = handsPlayer(nil, nil, might10)
+pm.slots[CONST_SLOT_RING] = might9
+saves = 0
+eq(A.checkHands(pm), 1, "two might rings: one moved")
+ok(bpM:getItems()[1] == might10 and not might10.removed, "the second ring slot's might ring is in the backpack")
+ok(pm:getSlotItem(CONST_SLOT_RING) == might9 and not might9.moved, "the ring slot's might ring stays")
+eq(pm:getSlotItem(CONST_SLOT_AMMO), nil, "the second ring slot is empty")
+eq(saves, 1, "saved at once")
+eq(#pm.msgs, 1, "one message")
+ok(pm.msgs[1]:find("You can only wear one might ring at a time.", 1, true) == 1
+	and pm.msgs[1]:find("might ring -> your backpack", 1, true) ~= nil, "the player is told why: " .. tostring(pm.msgs[1]))
+eq(A.checkHands(pm), 0, "a second login: nothing to do")
+eq(saves, 1, "and no save")
+-- the backpack is full: the inbox
+local mightF = newItem(2164)
+local pmf, _, inboxMF = handsPlayer(nil, nil, mightF, {bagFull = true})
+pmf.slots[CONST_SLOT_RING] = newItem(2164)
+eq(A.checkHands(pmf), 1, "moved")
+ok(inboxMF:getItems()[1] == mightF, "into the inbox")
+-- a might ring with a time ring, or a might ring alone in the second ring slot: nothing moves
+local pmt = handsPlayer(nil, nil, newItem(2164))
+pmt.slots[CONST_SLOT_RING] = newItem(2169)
+saves = 0
+eq(A.checkHands(pmt), 0, "a might ring and a time ring: nothing to do")
+local pma = handsPlayer(nil, nil, newItem(2164))
+eq(A.checkHands(pma), 0, "a might ring alone in the second ring slot: nothing to do")
+local pmr = handsPlayer(nil, nil, newItem(2169))
+pmr.slots[CONST_SLOT_RING] = newItem(2164)
+eq(A.checkHands(pmr), 0, "a might ring in the ring slot and a time ring in the second: nothing to do")
+eq(saves, 0, "no save")
+-- the quiver message and the might ring message in one login
+local pqm = handsPlayer(newItem(2456), nil, rolledQuiver())
+eq(A.checkHands(pqm), 1, "a quiver of before moved")
+eq(#pqm.msgs, 1, "only the quiver message")
+ok(pqm.msgs[1]:find("might", 1, true) == nil, "no might ring text")
 -- the login event runs the check before the sweep
 local pe = handsPlayer(newItem(29875), nil, rolledQuiver())
 pe.getDepotChest = function() return nil end

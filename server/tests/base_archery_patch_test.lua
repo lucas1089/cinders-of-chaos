@@ -2,7 +2,8 @@
 -- tools/patch_base_archery.py on a small base server data folder written here: launchers fire without ammunition
 -- (attack, hit chance and missile of their band, no ammo type), quivers become equipment (items.xml, items.otb group,
 -- movements.xml with the launchers' vocations), the conjure spells go, arrows and bolts leave monster loot, NPC shops
--- and script rewards; a second run changes nothing.
+-- and script rewards; the might ring gets the key chaosMightRing (with the ids it turns into); a second run changes
+-- nothing.
 local fails, checks = 0, 0
 local function ok(cond, what)
 	checks = checks + 1
@@ -92,6 +93,20 @@ writeFile(data .. "/items/items.xml", [[
 	<item id="2543" article="a" name="bolt" plural="bolts">
 		<attribute key="weaponType" value="ammunition" />
 		<attribute key="ammoType" value="bolt" />
+	</item>
+	<item id="2164" article="a" name="might ring">
+		<attribute key="slotType" value="ring" />
+		<attribute key="charges" value="20" />
+		<attribute key="absorbPercentPhysical" value="20" />
+		<attribute key="absorbPercentMagic" value="20" />
+	</item>
+	<item id="2169" article="a" name="time ring">
+		<attribute key="slotType" value="ring" />
+		<attribute key="transformEquipTo" value="2206" />
+	</item>
+	<item id="2206" article="a" name="time ring">
+		<attribute key="slotType" value="ring" />
+		<attribute key="transformDeEquipTo" value="2169" />
 	</item>
 	<item id="29873" article="a" name="test quiver">
 		<attribute key="showattributes" value="1" />
@@ -256,6 +271,32 @@ local _, slotTypes = q:gsub('key="slotType"', "")
 eq(slotTypes, 1, "quiver: one slot type")
 ok(q:find("Distance Fighting +4", 1, true) and q:find("Extra Projectile Chance +8%", 1, true), "quiver: implicits in its text")
 ok(q:find('key="weight" value="2470"', 1, true), "quiver: weight kept")
+-- one might ring at a time (engine src-patch 0023 reads the key)
+ok(entry(2164):find('<attribute key="chaosMightRing" value="1" />', 1, true), "might ring: marked")
+ok(entry(2164):find('key="absorbPercentMagic" value="20"', 1, true), "might ring: its stats stay")
+ok(not entry(2169):find("chaosMightRing", 1, true) and not entry(2206):find("chaosMightRing", 1, true),
+	"a time ring (normal and worn) is no might ring")
+ok(out1:find("might rings 2164 marked", 1, true) ~= nil, "might rings reported")
+-- a might ring that turns into a worn id on equip: both ids are marked, other rings are not
+writeFile(root .. "/rings.xml", [[
+<items>
+	<item id="5000" name="m">
+		<attribute key="transformEquipTo" value="5001" />
+	</item>
+	<item id="5001" name="m">
+		<attribute key="transformDeEquipTo" value="5000" />
+	</item>
+	<item id="5002" name="r" />
+</items>
+]])
+local mr = io.popen("python3 -I -c \"import sys; sys.path.insert(0, 'tools'); import patch_base_archery as P; "
+	.. "x = open(sys.argv[1]).read(); y, n = P.patch_might_rings(x, [5000]); z, n2 = P.patch_might_rings(y, [5000]); "
+	.. "print(sorted(P.might_ring_ids(x, [5000])), y.count('chaosMightRing'), z == y, n[-1], n2[-1])\" '"
+	.. root .. "/rings.xml'")
+local mrOut = mr:read("*a")
+mr:close()
+ok(mrOut:find("[5000, 5001] 2 True items.xml: might rings 5000, 5001 marked", 1, true) ~= nil
+	and mrOut:find("the might rings 5000, 5001 are marked", 1, true) ~= nil, "worn ids followed, idempotent: " .. mrOut)
 
 local check = io.popen("python3 -I -c \"import sys; sys.path.insert(0, 'tools'); from install_gems import scan; "
 	.. "k, _ = scan(open(sys.argv[1], 'rb').read()); print(' '.join('%d:%d' % (x[2], x[4]) for x in k))\" '"

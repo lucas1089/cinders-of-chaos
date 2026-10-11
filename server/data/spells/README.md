@@ -755,9 +755,10 @@ however many copies are worn, so two copies of one set ring give nothing extra; 
 
 Stock ring attributes stack too (the engine adds abilities per slot): two skill rings give +8 instead of +4 (about +3.8%
 more weapon damage at skill 100, the formula above), two time rings +120 speed (measured in game: 1217 -> 1277 -> 1337),
-two might rings 40% physical and magic damage absorbed instead of 20% (charges run out on both). Proposed, not applied:
-if the double might ring proves too strong, a rule "one might ring at a time" in `Player::queryAdd` would be a one-line
-change; the owner decides.
+two might rings would absorb 40% physical and magic damage instead of 20%. Owner decision: one might ring at a time.
+`Player::queryAdd` (src-patch 0023) refuses a second one in either ring slot ("You can only wear one might ring at a
+time."), and a character who wore two keeps the one in slot 9 (the other goes to the backpack or the inbox at login;
+server/README.md "Second ring slot"). So the might ring stays at 20% absorbed; every other stock ring still stacks.
 
 ### PvP (tested with two characters on the test server)
 

@@ -262,7 +262,8 @@ server/
 5j. Infinite arrows and quivers: `python3 -I server/tools/patch_base_archery.py <server>/data [--dry-run]` (idempotent;
    `install_all.py` step `archery`, after `vocations` and `spells`) gives bows and crossbows the attack, hit chance and
    missile of their ammunition, makes the quivers off-hand equipment (items.xml, items.otb, movements.xml; needs engine
-   src-patch 0023), maps the base's slot tables to the second ring slot, keeps a quiver in the base's two-handed swap and
+   src-patch 0023), maps the base's slot tables to the second ring slot, marks the might rings (items.xml
+   `chaosMightRing`: one at a time, "Second ring slot"), keeps a quiver in the base's two-handed swap and
    takes arrows and bolts out of loot, shops, conjure spells and rewards; then run `server/sql/chaos_archery.sql` once, with the server stopped
    (the `sql` step does), before the first start with the patched items.otb. See "Infinite arrows and quivers".
 5k. Base item names: `python3 -I server/tools/patch_base_item_names.py <server>/data [--dry-run]` (idempotent;
@@ -2684,7 +2685,8 @@ into the off-hand still puts the bow away, so a bow and a shield are never held 
 **At login** (`ChaosArchery.checkHands`, archery.lua; the engine loads a character without queryAdd): a quiver in the
 ammunition slot (from the last change) goes to the off-hand when that is free and allowed (the engine asks again, with
 the vocation and level of movements.xml), else to the backpack or a container in it, else to the inbox; anything else
-there that is no ring goes the same way; an off-hand item the rules refuse goes to the backpack. A copy is placed and the
+there that is no ring goes the same way, and so does a might ring in slot 10 while slot 9 holds one too (one might ring
+at a time, "Second ring slot"); an off-hand item the rules refuse goes to the backpack. A copy is placed and the
 item removed (one item, its rolls and per-item id kept), then the character is saved (`Chaos.saveCharacter`); a crash
 before the save keeps the old state and the next login moves it again. Nothing to move: nothing changes (no mark
 needed). The player is told what moved. Saved loadouts (`loadouts_core.lua` `C.legacyGear`): a quiver in slot 10 becomes
@@ -2810,9 +2812,10 @@ the Gambler offered the Ranger a quiver and refused one to a Warrior.
 Off-hand quiver and second ring slot: `tests/archery_test.lua` (the hand rules: bow or crossbow + quiver, bow + shield,
 quiver without a bow, quiver beside a sword or a two-handed axe; the second ring slot takes rings only; the login plan
 and `checkHands` against a mock engine: to the off-hand with the rolls kept, to the backpack, to the inbox, refused by
-the engine, a ring stays, idempotent; two rings and two copies of one ring add up under the caps; the ring budget),
-`tests/base_archery_patch_test.lua` (the quiver entry, the movements, an earlier layout rewritten, the base slot maps,
-the base swap run as code), `tests/loadouts_test.lua` (old loadouts), `tests/item_tooltip_test.lua` and the client's
+the engine, a ring stays, idempotent; two might rings: the one in slot 10 to the backpack or the inbox, a might ring
+with another ring or alone in slot 10 stays, the might ring message; two rings and two copies of one ring add up under
+the caps; the ring budget), `tests/base_archery_patch_test.lua` (the quiver entry, the movements, an earlier layout
+rewritten, the base slot maps, the base swap run as code, the might ring key and the worn ids it follows), `tests/loadouts_test.lua` (old loadouts), `tests/item_tooltip_test.lua` and the client's
 `tooltiplogic_test.lua`, `playerinspect_logic_test.lua`, `ringslotlogic_test.lua`. Tested in game (base server from
 windows-assets with src-patches 0001-0023 built, every install step, the full map, a private MariaDB, the client
 `game22`): a Ranger with a bow and a quiver of before in the ammunition slot logged in with the quiver in the off-hand
@@ -2842,14 +2845,34 @@ ammunition slot of the protocol) takes the item types the ring slot takes and no
   `gearSlots`), the hunt supplies, the rift and uber key searches, the new-player kit slots and the testkit keep slot 10.
   A set piece counts once however many copies are worn (`ChaosItemSets.count` counts piece ids).
 - **Two copies of one ring are allowed**, uniques included: no unique ring says otherwise, the modifiers of both add up
-  under the catalogue's caps, and a set counts the piece once.
-- **Migration**: anything in slot 10 that is no ring moves at login ("Infinite arrows and quivers", At login).
+  under the catalogue's caps, and a set counts the piece once. The one exception is the might ring.
+- **One might ring at a time** (owner decision; two would absorb 40% physical and magic damage instead of 20%):
+  `Player::queryAdd` (0023) refuses a might ring in slot 9 or slot 10 while the other ring slot holds one, with the
+  message "You can only wear one might ring at a time." (`RETURNVALUE_ONLYONEMIGHTRING`). Drag and drop, the equip
+  hotkey (it also shows the message), automatic placement, scripts (`addItem` / `addItemEx` with a slot) and loadouts
+  (the refused ring is listed as not equipped) all ask `queryAdd`. A might ring next to any other ring, or alone in
+  slot 10, is allowed. Which ids are might rings is data: `chaos_archery_config.lua` `mightRings` (the base has one,
+  2164 "might ring", 20% physical and magic, 20 charges, no worn id), and `patch_base_archery.py` writes the items.xml
+  key `chaosMightRing` on each and on every id it turns into on equip or de-equip. The engine reads the key
+  (`ItemType::chaosMightRing`, Lua `itemType:isMightRing()`). No Chaos unique or other ring has the might ring's
+  absorb: none is based on 2164, and no other ring absorbs both physical and magic damage.
+- **Migration**: anything in slot 10 that is no ring moves at login ("Infinite arrows and quivers", At login). A
+  character who wears two might rings keeps the one in slot 9; the one in slot 10 goes to the backpack (or a
+  container in it), else the inbox, and the character is saved at once (`ChaosArchery.loginPlan`, `checkHands`).
+  Nothing to move: nothing changes, so it is idempotent; a crash before the save leaves both rings and the next login
+  moves it again.
 - **Client**: the slot stays where it was. The Chaos skin draws its placeholder with the ring's silhouette
   (`client/tools/gen_skin.py`: `data/images/game/slots/ammo(-blessed).png`), so the inventory window and the action
   bar's equipment presets show a ring slot; the overlay module `game_ringslot` gives the empty slot the tooltip "Ring"
   and drops "ammunition" from the soul label's tooltip; the inspect window names slot 10 "Ring". No client base patch.
 - **Balance** (`server/data/spells/README.md` "Second ring"): every modifier a ring may roll already reaches its cap
-  at T8 with the slots of one ring, so no ceiling rises; the stock rings stack (two might rings, two skill rings).
+  at T8 with the slots of one ring, so no ceiling rises; the stock rings stack (two skill rings, two time rings), the
+  might ring does not (one at a time).
+- **Tested** on a Linux test server (0001-0023, the base map, a private database), with a protocol client: a second
+  might ring refused by drag into slot 10 and into slot 9 and by the hotkey, with the message; a might ring with a
+  time ring allowed both ways, by drag and hotkey; a might ring alone in slot 10 allowed; `addItemEx` into slot 10 next
+  to a might ring returns `RETURNVALUE_ONLYONEMIGHTRING`; the login split into the backpack, into the inbox without a
+  backpack, and no change at the next login.
 
 ## Town names (`tools/patch_base_towns.py`, `tools/base_towns.csv`, `tests/base_towns_patch_test.lua`)
 

@@ -245,11 +245,20 @@ function A.slotAllowed(slot, kind)
 	return true
 end
 
+-- one might ring at a time over both ring slots (engine src-patch 0023 refuses a second one): the items.xml key
+-- "chaosMightRing" (patch_base_archery.py, from the config's mightRings), read through itemType:isMightRing(). An
+-- engine without the method knows no might ring.
+function A.isMightRing(it)
+	return it ~= nil and call(it, "isMightRing") == true
+end
+
 -- the login check: the engine loads a character without asking Player::queryAdd, so a quiver of before (in the
--- ammunition slot, now the second ring slot), anything else there that is no ring, or a pair of hands the rules
--- refuse stays until it is moved. A ring there stays. s = {main, off, ammo}: the A.handKind
--- of what the weapon hand, the shield hand and the ammunition slot hold (nil = empty). Returns the moves in order:
--- {from = "main" | "off" | "ammo", to = "off" (the shield hand) | "stow" (backpack, else inbox)}. Nothing to do: {}.
+-- ammunition slot, now the second ring slot), anything else there that is no ring, a second might ring, or a pair of
+-- hands the rules refuse stays until it is moved. A ring there stays, unless it is a might ring and the ring slot
+-- holds one too (the one in the ring slot stays). s = {main, off, ammo, ringMight, ammoMight}: the A.handKind of what
+-- the weapon hand, the shield hand and the ammunition slot hold (nil = empty); ringMight / ammoMight: the ring slot /
+-- the ammunition slot holds a might ring. Returns the moves in order: {from = "main" | "off" | "ammo", to = "off"
+-- (the shield hand) | "stow" (backpack, else inbox), why = "might" for the second might ring}. Nothing to do: {}.
 function A.loginPlan(s)
 	local steps = {}
 	local main, off = s.main, s.off
@@ -267,6 +276,8 @@ function A.loginPlan(s)
 		else
 			steps[#steps + 1] = {from = "ammo", to = "stow"}
 		end
+	elseif s.ammo == "ring" and s.ammoMight and s.ringMight then
+		steps[#steps + 1] = {from = "ammo", to = "stow", why = "might"}
 	end
 	return steps
 end
