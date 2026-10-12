@@ -343,7 +343,7 @@ server/
    (idempotent; `install_all.py` step `stalls`, after `autosave`): the expedition announcements look at the players
    online instead of every tile of an island, the upgrade-slot check keeps its parse per item description and runs
    once a second per player (at once on an equip move) instead of every 100 ms, and adds and removes each slot bonus
-   under one condition id. See "Game loop stalls".
+   under one condition id, forgetting the bonus of an emptied slot. See "Game loop stalls".
 7c. Base lever and step-in boss rooms: `python3 -I server/tools/patch_base_bossrooms.py <server>/data [--dry-run]`
    (idempotent; `install_all.py` step `bossrooms`, after `stalls`): the lever (or entry tile) is locked while a group is
    inside, a time limit with warnings, the exit and the clean-up. See "Instance limits".
@@ -3809,6 +3809,12 @@ game loop (30-120 ms a login); see "Left as it is".
    does not save, so after a restart no old id is left anyway. No other script uses the subids 101-154. The `Attr`
    compare by identity stays: every check removes and adds each slot bonus again, which also puts back a bonus that
    another script removed.
+8. `tools/patch_base_stalls.py` step 5: an emptied slot is forgotten. The check keeps the bonus it added per player
+   and subid (`slotAttribute.cache`). The removals (an emptied slot, the indexes an item no longer has) took the
+   condition off but kept that entry. With the identity compare above this changed nothing, since every check adds
+   every bonus again. With a compare by value (the base's intent, should `Attr.__eq` ever be fixed) the same item
+   put back on would match the stale entry and stay without its bonus. The removals now drop the entry too. Own
+   marker, so a base patched up to step 4 gets it on the next install.
 
 **Measured** (the setup above, 200 bots, 3 runs each, before and after taken in turns; 5 minutes at 200 online per
 run; the box ran other test servers and builds at the same time, so single outliers can be the machine). A stall is a
@@ -3851,8 +3857,10 @@ code; the stock and patched scripts give the same players, marks, broadcasts and
 with a clock, the conditions compared once each change has settled for 1 s; the upgrade check at login and at once
 on an equip move, 24 players each checked once a second in groups of 2 per 83 ms tick, a player who left dropped,
 one chain after a reload; after login, equip, unequip, swap, decay, relog and a reload every player has the bonuses
-of the worn items, each once, which the stock script fails and the patched one passes; idempotence, dry run, CRLF, a
-script patched by an older tool gets steps 3 and 4), `tools/chaoszones_test.cpp` in CI (the index against the old way over 300 random zone lists).
+of the worn items, each once, which the stock script fails and the patched one passes; the sword put back on gets its
+bonus again, also with a compare by value, which fails without step 5; every slot 1-16 and index 1-3 adds under its
+own subid and is removed under the same one; idempotence, dry run, CRLF, a script patched by an older tool gets
+steps 3 to 5), `tools/chaoszones_test.cpp` in CI (the index against the old way over 300 random zone lists).
 
 ### Slow task log (`slowTaskLogMs`, engine patch 0027)
 

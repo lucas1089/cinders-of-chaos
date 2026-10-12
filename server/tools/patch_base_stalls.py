@@ -36,8 +36,13 @@ usage: python3 -I patch_base_stalls.py DATA_DIR [--dry-run]
    The bonus is now added with the id the removals use (16 x index: one id per slot and index for slots 1-16). The
    first check of a player after the script loaded (a login, or a reload with the player online) removes both ids
    of every slot once, so a bonus added under the old id is not kept next to the new one.
+5. The same script's cache of the bonuses it added (slotAttribute.cache, per player and sub id). A removal (an emptied
+   slot, or the indexes an item no longer has) took the condition off but kept the cache entry. The stock compare of
+   two bonuses is by table identity (Attr's __eq sits on the metatable of Attr, not of its instances), so every check
+   re-adds every bonus anyway and the stale entry did nothing; with a compare by value (the base's intent) a bonus put
+   back on with the same value would stay off. The removal now drops the entry too.
 
-Every change carries a marker and is made once (3 and 4 have their own markers, so a base patched by an older
+Every change carries a marker and is made once (3, 4 and 5 have their own markers, so a base patched by an older
 version of this tool gets them too) (a second run changes nothing). A file without the stock code is left
 alone: exit status 0, an install without these base scripts has nothing to do.
 """
@@ -199,6 +204,15 @@ UPGRADE_CLEAR = (
     '\n') % MARK_IDS
 
 
+# ------------------------------------------------------------------------------------------------ 5. emptied slots
+MARK_EMPTY = 'Chaos (patch_base_stalls.py, emptied slots)'
+# the removals of autoDetection (an emptied slot, the indexes an item no longer has); "slot +", not onSlotEquip's
+# "slotIndex +"
+UPGRADE_REMOVE_ID_RE = re.compile(r'^([ \t]*)local subid = slotAttribute\.baseSubids \+ slot \+ '
+                                  r'\(CONST_SLOT_GLOVES \* index\)[ \t]*\r?\n', re.M)
+UPGRADE_FORGET = '{i}slotAttribute.cache[playerId][subid] = nil -- %s: the bonus is taken off below\n' % MARK_EMPTY
+
+
 def crlf(text, new):
     return new.replace('\n', '\r\n') if '\r\n' in text else new
 
@@ -279,19 +293,37 @@ def patch_upgrade_ids(text):
     return ''.join(out), 'patched'
 
 
+def patch_upgrade_empty(text):
+    """(new text, status): 'already', 'patched' or 'none'"""
+    if MARK_EMPTY in text:
+        return text, 'already'
+    d = UPGRADE_DEF_RE.search(text)
+    if not d:
+        return text, 'none'
+    out, pos = [], 0
+    for m in UPGRADE_REMOVE_ID_RE.finditer(text, d.end()):
+        out += [text[pos:m.end()], crlf(text, UPGRADE_FORGET.format(i=m.group(1)))]
+        pos = m.end()
+    if not out:
+        return text, 'none'
+    return ''.join(out) + text[pos:], 'patched'
+
+
 def patch_upgrade(text):
-    """(new text, status) for 2, 3 and 4: 'already', 'patched (...)' or 'none'"""
+    """(new text, status) for 2 to 5: 'already', 'patched (...)' or 'none'"""
     text, cache = patch_upgrade_cache(text)
     text, interval = patch_upgrade_interval(text)
     text, ids = patch_upgrade_ids(text)
-    if cache == 'none' and interval == 'none' and ids == 'none':
+    text, empty = patch_upgrade_empty(text)
+    if cache == 'none' and interval == 'none' and ids == 'none' and empty == 'none':
         return text, 'none'
     done = [what for what, st in (('slot cache', cache), ('check every 1 s and on equip', interval),
-                                  ('one condition id per bonus', ids)) if st == 'patched']
+                                  ('one condition id per bonus', ids), ('emptied slots forgotten', empty))
+            if st == 'patched']
     if not done:
         return text, 'already'
     rest = [what + ' ' + st for what, st in (('slot cache', cache), ('check interval', interval),
-                                             ('condition ids', ids))
+                                             ('condition ids', ids), ('emptied slots', empty))
             if st != 'patched']
     rest = [r.replace(' none', ': stock code not found') for r in rest]
     return text, 'patched (%s%s)' % (', '.join(done), '; ' + ', '.join(rest) if rest else '')

@@ -115,7 +115,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                0.6-0.9 s of frozen game loop at each spawn time; same players, sounds, marks and broadcasts); the base
                upgrade-slot check keeps the slots it parsed per item description and runs at login, at once on an
                equip move and once a second per player in 12 groups instead of every 100 ms, and adds and
-               removes each slot bonus under one condition id (README "Game loop stalls")
+               removes each slot bonus under one condition id, forgetting the bonus of an emptied slot (README
+               "Game loop stalls")
   bossrooms    tools/patch_base_bossrooms.py     the base lever boss rooms and the step-in miniboss rooms (several in one file):
                the lever (or entry tile) is locked while a group is inside, a time limit (the room's own kick time, at
                most 30 minutes) with warnings and a countdown, everyone out to the room's exit and its monsters removed

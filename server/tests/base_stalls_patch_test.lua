@@ -7,11 +7,14 @@
 --   upgrade check interval   a check at login and at once on an equip / unequip move, every player once a second in
 --                            12 groups (instead of 10 times a second each), a player who left dropped, a reload
 --                            of the scripts does not run two chains
---   upgrade condition ids    after login, equip, unequip, swap, decay, relog and a reload every player has the
---                            bonuses of the worn items, each once (at once on a move with the patch); the stock
---                            script fails this, and so does the patch without its clear of the old ids
+--   upgrade condition ids    after login, equip, unequip, re-equip, swap, decay, relog and a reload every player has
+--                            the bonuses of the worn items, each once (at once on a move with the patch); the stock
+--                            script fails this, and so does the patch without its clear of the old ids; every slot
+--                            and index adds under its own sub id and is removed under the same one
+--   upgrade emptied slots    with a compare by value the sword put back on gets its bonus again, not without the drop
 -- and: a second run changes nothing, --dry-run writes nothing, a removal loop (not a player scan) is left alone, CRLF
--- files stay CRLF, a script patched by an older tool (slot cache only, or steps 2 and 3) gets the missing steps.
+-- files stay CRLF, a script patched by an older tool (slot cache only, steps 2 and 3, or 2 to 4) gets the missing
+-- steps.
 local fails, checks = 0, 0
 local function ok(cond, what)
 	checks = checks + 1
@@ -251,8 +254,8 @@ writeFile(upPath, UPGRADE)
 local tool = "python3 -I tools/patch_base_stalls.py '" .. data .. "'"
 local out = sh(tool .. " --dry-run")
 ok(out:find("spawn_npc_lost_objects.lua: patched %(1 loop%) %(dry run"), "dry run reports the expedition: " .. out)
-ok(out:find("upgrade_slot_item.lua: patched %(slot cache, check every 1 s and on equip, one condition id per bonus%) "
-	.. "%(dry run"),
+ok(out:find("upgrade_slot_item.lua: patched %(slot cache, check every 1 s and on equip, one condition id per bonus, "
+	.. "emptied slots forgotten%) %(dry run"),
 	"dry run reports the upgrade script")
 ok(readFile(expPath) == EXPEDITION and readFile(upPath) == UPGRADE, "dry run writes nothing")
 out = sh(tool)
@@ -267,6 +270,31 @@ ok(not patchedUp:find("addEvent(slotAttribute.autoDetection", 1, true), "no time
 ok(not patchedUp:find("(CONST_SLOT_AMMO * index)", 1, true) and select(2, patchedUp:gsub("chaosUpgradeClearOnce%(", "")) == 2,
 	"one condition id per bonus: the adds use the removals' id, the clear once per player is called")
 ok(patchedUp:find("chaosUpgradeMoved:register(13)", 1, true) ~= nil, "the equip callback is registered")
+ok(select(2, patchedUp:gsub("slotAttribute%.cache%[playerId%]%[subid%] = nil", "")) == 2,
+	"emptied slots: both removal loops forget the bonus")
+-- no two slots meet: the sub id expressions of the patched add and of every removal, with the engine's constants
+local function subidOf(expr, slot, index)
+	return assert(load("local slotAttribute, slotIndex, slot, index, CONST_SLOT_AMMO, CONST_SLOT_GLOVES = "
+		.. "{baseSubids = 90}, ...; return " .. expr))(slot, slot, index, 10, 16)
+end
+local addExprs, removeExprs = {}, {}
+for expr in patchedUp:gmatch("local subid = (slotAttribute%.baseSubids %+ slotIndex [^\n]-)\n") do
+	addExprs[#addExprs + 1] = expr
+end
+for expr in patchedUp:gmatch("local subid = (slotAttribute%.baseSubids %+ slot [^\n]-)\n") do
+	removeExprs[#removeExprs + 1] = expr
+end
+local ids, idsOk = {}, #addExprs == 1 and #removeExprs == 2
+for slot = 1, 16 do
+	for index = 1, 3 do
+		local id = idsOk and subidOf(addExprs[1], slot, index)
+		idsOk = idsOk and not ids[id] and subidOf(removeExprs[1], slot, index) == id
+			and subidOf(removeExprs[2], slot, index) == id
+		ids[id or 0] = true
+	end
+end
+ok(idsOk, "condition ids: slots 1-16 x 3 indexes, each add id unique and removed under the same id ("
+	.. #addExprs .. " add, " .. #removeExprs .. " removal expressions)")
 out = sh(tool)
 ok(out:find("spawn_npc_lost_objects.lua: already") and out:find("upgrade_slot_item.lua: already"), "second run: already")
 ok(readFile(expPath) == patchedExp and readFile(upPath) == patchedUp, "second run changes nothing")
@@ -279,8 +307,8 @@ local cacheOnly = readFile(upPath)
 ok(cacheOnly:find("chaosItemSlots", 1, true) and not cacheOnly:find("check interval", 1, true),
 	"the older patch made for the test")
 out = sh(tool)
-ok(out:find("upgrade_slot_item.lua: patched %(check every 1 s and on equip, one condition id per bonus; slot cache "
-	.. "already%)"), "older patch: the interval and id steps added: " .. out)
+ok(out:find("upgrade_slot_item.lua: patched %(check every 1 s and on equip, one condition id per bonus, emptied slots "
+	.. "forgotten; slot cache already%)"), "older patch: the interval, id and emptied slot steps added: " .. out)
 ok(readFile(upPath) == patchedUp, "older patch: the same text as a fresh install")
 -- a script patched by the tool before step 4 (slot cache and interval): only the condition ids are added
 writeFile(upPath, UPGRADE)
@@ -290,15 +318,26 @@ sh("python3 -I -c 'import sys; sys.path.insert(0, \"tools\"); import patch_base_
 local before4 = readFile(upPath)
 ok(before4:find("check interval", 1, true) and not before4:find("condition ids", 1, true), "the step 3 patch made for the test")
 out = sh(tool)
-ok(out:find("upgrade_slot_item.lua: patched %(one condition id per bonus; slot cache already, check interval already%)"),
-	"step 3 patch: the id step added: " .. out)
+ok(out:find("upgrade_slot_item.lua: patched %(one condition id per bonus, emptied slots forgotten; slot cache already, "
+	.. "check interval already%)"), "step 3 patch: the id and emptied slot steps added: " .. out)
 ok(readFile(upPath) == patchedUp, "step 3 patch: the same text as a fresh install")
+-- a script patched by the tool before step 5 (steps 2 to 4): only the emptied slots are added
+writeFile(upPath, UPGRADE)
+sh("python3 -I -c 'import sys; sys.path.insert(0, \"tools\"); import patch_base_stalls as p; f = sys.argv[1]; "
+	.. "t = open(f, newline=\"\").read(); t = p.patch_upgrade_ids(p.patch_upgrade_interval(p.patch_upgrade_cache(t)[0])[0])[0]; "
+	.. "open(f, \"w\", newline=\"\").write(t)' '" .. upPath .. "'")
+local before5 = readFile(upPath)
+ok(before5:find("condition ids", 1, true) and not before5:find("emptied slots", 1, true), "the step 4 patch made for the test")
+out = sh(tool)
+ok(out:find("upgrade_slot_item.lua: patched %(emptied slots forgotten; slot cache already, check interval already, "
+	.. "condition ids already%)"), "step 4 patch: the emptied slot step added: " .. out)
+ok(readFile(upPath) == patchedUp, "step 4 patch: the same text as a fresh install")
 -- CRLF: the stock script with Windows line ends is patched the same and stays CRLF
 writeFile(upPath, (UPGRADE:gsub("\n", "\r\n")))
 out = sh(tool)
 local crlfUp = readFile(upPath)
-ok(out:find("upgrade_slot_item.lua: patched %(slot cache, check every 1 s and on equip, one condition id per bonus%)"),
-	"CRLF patched: " .. out)
+ok(out:find("upgrade_slot_item.lua: patched %(slot cache, check every 1 s and on equip, one condition id per bonus, "
+	.. "emptied slots forgotten%)"), "CRLF patched: " .. out)
 ok(crlfUp == patchedUp:gsub("\n", "\r\n") and not crlfUp:find("[^\r]\n"), "CRLF: same text, every line CRLF")
 writeFile(upPath, patchedUp)
 local empty = root .. "/empty"
@@ -610,6 +649,13 @@ local function runUpgrade(text, patched)
 	advance(1000)
 	snap("unequip settled")
 
+	-- re-equip: the same sword back on (backpack -> right hand): the same bonus again
+	all[7].items[5] = "You see a sword. [Sword+2]"
+	move(7, {x = INV, y = 64, z = 0}, {x = INV, y = 5, z = 0})
+	r.reequipAtOnce = right(7)
+	advance(1000)
+	snap("re-equip settled")
+
 	-- swap: 12 puts on an armor with one slot in place of the one with two (backpack -> armor slot)
 	all[12].items[4] = "You see an armor. [Sword+3]"
 	move(12, {x = INV, y = 64, z = 2}, {x = INV, y = 4, z = 0})
@@ -687,7 +733,7 @@ end
 
 local stock = runUpgrade(UPGRADE, false)
 local new = runUpgrade(patchedUp, true)
-ok(#new.snaps == 11 and #stock.snaps == 10, "upgrade: every step ran: " .. #new.snaps .. " / " .. #stock.snaps)
+ok(#new.snaps == 12 and #stock.snaps == 11, "upgrade: every step ran: " .. #new.snaps .. " / " .. #stock.snaps)
 for _, name in ipairs(new.snaps) do
 	ok(not new.wrong[name], "patched: the bonuses of the worn items, each once, at '" .. name .. "': "
 		.. tostring(new.wrong[name]))
@@ -713,6 +759,22 @@ ok(noClear ~= patchedUp, "the clear call removed for the next check")
 local withoutClear = runUpgrade(noClear, true)
 ok(not withoutClear.oldIdAtLogin and withoutClear.wrong.login and withoutClear.wrong.login:find("16 has {10=1 11=1 11=1}", 1, true),
 	"without the clear: the old id and the new one, the bonus twice: " .. tostring(withoutClear.wrong.login))
+-- the drop of an emptied slot's cache entry is what brings a bonus back: with a compare by value (Attr's __eq on its
+-- instances, the base's intent; the stock compare is by identity) and without the drop, the sword put back on stays
+-- without its bonus
+local byValue = patchedUp:gsub("Attr%.__index = Attr\n",
+	"Attr.__index = Attr\nAttr.__eq = function(a, b) return a.name == b.name and a.value == b.value end\n")
+local noForget = byValue:gsub("\n[ \t]*slotAttribute%.cache%[playerId%]%[subid%] = nil[^\n]*", "")
+ok(byValue ~= patchedUp and noForget ~= byValue, "the compare by value and the script without the drop made for the test")
+local withValue, withoutForget = runUpgrade(byValue, true), runUpgrade(noForget, true)
+local valueOk = withValue.reequipAtOnce
+for _, name in ipairs(withValue.snaps) do
+	valueOk = valueOk and not withValue.wrong[name]
+end
+ok(valueOk, "compare by value: the bonuses of the worn items at every step, the sword's again on re-equip")
+ok(withoutForget.wrong["re-equip settled"] and withoutForget.wrong["re-equip settled"]:find("7 has {10=1 10=2 11=1 11=3} "
+	.. "wears {10=1 10=2 11=1 11=2 11=3}", 1, true), "without the drop: the sword put back on has no bonus: "
+	.. tostring(withoutForget.wrong["re-equip settled"]))
 ok(stock.upgradeDelay and stock.upgradeDelay <= 100, "stock: a slot on a worn item applied within 100 ms")
 ok(new.upgradeDelay and new.upgradeDelay <= 1000, "patched: a slot on a worn item applied within 1 s: "
 	.. tostring(new.upgradeDelay))
