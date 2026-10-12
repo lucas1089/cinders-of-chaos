@@ -3677,7 +3677,8 @@ Base items that our systems show (quivers, the Gambler's pool) and that carried 
 by id: `data/items/base_item_names.csv` (columns `id,article,name,plural`; an empty article or plural removes it; only
 ids and new names are in the repository). `patch_base_item_names.py` (step `itemnames` of `install_all.py`, after
 `archery`) reads the old name from the server's `items.xml`, writes the new name, article and plural, turns every monster
-loot entry that named the item (`id = "old name"` in Lua, `<item name="old name"/>` in XML) into loot by id, and renames
+loot entry that named the item (`id = "old name"` in Lua, `<item name="old name"/>` in XML) into loot by id (an XML entry
+with an id as well only loses its name; a doubled `id` an older version wrote is written once), and renames
 the other mentions in the base data, whole words and case-insensitively, but not inside the name of another item
 (`data/scripts/chaos`, `data/lib/chaos_*.lua` and `data/items` are not touched). The engine finds loot by name, so a
 renamed item would otherwise drop out of the loot lists. On the reference server: 13 items, 122 loot entries by name
