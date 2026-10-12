@@ -22,7 +22,7 @@ server/
   tools/late_game.py, late_game_spawns.csv   late game stages and spawns (see "Late game")
   tools/patch_base_spawns.py, spawn_tuning.json   spawn density and respawn (see "Spawn density and respawn")
   tools/patch_base_monster_names.py   Chaos names of the base monsters (see "Base monster names")
-  tools/patch_base_bossrooms.py       the base lever boss rooms: lock, time limit, exit, clean-up (see "Instance limits")
+  tools/patch_base_bossrooms.py       the base lever and step-in boss rooms: lock, time limit, exit, clean-up (see "Instance limits")
   tools/patch_base_dungeon.py         the base dungeon entry tile opens the Chaos dungeon window (see "Instance limits")
   data/scripts/chaos/
     chaos_constants.lua               ALL opcodes, storage keys, table names, tunables, shared helpers
@@ -335,9 +335,9 @@ server/
    (idempotent; `install_all.py` step `stalls`, after `autosave`): the expedition announcements look at the players
    online instead of every tile of an island, the upgrade-slot check keeps its parse per item description. See "Game
    loop stalls".
-7c. Base lever boss rooms: `python3 -I server/tools/patch_base_bossrooms.py <server>/data [--dry-run]` (idempotent;
-   `install_all.py` step `bossrooms`, after `stalls`): the lever is locked while a group is inside, a time limit with
-   warnings, the exit and the clean-up. See "Instance limits".
+7c. Base lever and step-in boss rooms: `python3 -I server/tools/patch_base_bossrooms.py <server>/data [--dry-run]`
+   (idempotent; `install_all.py` step `bossrooms`, after `stalls`): the lever (or entry tile) is locked while a group is
+   inside, a time limit with warnings, the exit and the clean-up. See "Instance limits".
 7d. Base dungeon entry: `python3 -I server/tools/patch_base_dungeon.py <server>/data [--dry-run]` (idempotent;
    `install_all.py` step `dungeonentry`, after `bossrooms`): the step-in tile of the base modal dungeon entry opens the
    Chaos dungeon window instead, so every dungeon run goes through the queue. See "Instance limits", "Base modal
@@ -7750,29 +7750,42 @@ on parallel copies with a wait estimate, and a staff view. Each system keeps its
 | World boss | 45 min after the boss | + warnings | the boss withdraws, temple after 90 s, arena cleaned | event (not per group) | 1 arena, 40 players | stays in the event | login inside an idle arena: temple |
 | Guild siege | 25 min match | + warnings | results, temple after 30 s | event | one a week | rejoins through the portals | unchanged |
 | Tutorial island | none | 30 min online (offline time does not count), warnings at 5 and 1 min | leaves as with Skip tutorial: kit, welcome, temple | shared island, no copies | none needed | time kept; a login past the limit leaves at once | unchanged |
-| Base lever boss rooms (51) | the script's own kick 10-60 min, no warning; the lever free whenever nobody stood inside; the old kick timer also hit the next group; monsters stayed | lever locked while a group's session runs, limit = the room's own time at most 30 min, warnings, countdown bars over the entrance and the lever | everyone to the room's exit, monsters removed | empty room frees up after 2 min (at once after a kill) | 1 group per room | login inside a closed room: its exit; inside its own running room: stays | closed at shutdown (exit) |
+| Base lever boss rooms (51) and step-in miniboss rooms (7) | the script's own kick 10-60 min, no warning; the lever (tile) free whenever nobody stood inside; the old kick timer also hit the next group; monsters stayed | lever locked while a group's session runs, limit = the room's own time at most 30 min, warnings, countdown bars over the entrance and the lever | everyone to the room's exit, monsters removed | empty room frees up after 2 min (at once after a kill) | 1 group per room | login inside a closed room: its exit; inside its own running room: stays | closed at shutdown (exit) |
 | Invasions, Scorched Marches, hideouts | open world / personal | unchanged | | | | | |
 
 **Base lever boss rooms** (`tools/patch_base_bossrooms.py`, install step `bossrooms`; `ChaosBossRooms` in
 `instance_limits.lua`). 51 base scripts share one template (a `config` with bossArea, participantsPos and
-kickParticipantAfterSeconds; a lever Action; a boss death that opens a teleport out). The tool adds three marked lines to
-each, the rest untouched: the room's config is registered at load (`ChaosBossRoomsPending["aid<actionId>"]`), the lever's
+kickParticipantAfterSeconds; a lever Action; a boss death that opens a teleport out). 7 more rooms use the same template
+entered by a tile instead of a lever, several in one file (see "Step-in miniboss rooms" below). The tool adds three marked
+lines to each room, the rest untouched: the room's config is registered at load (`ChaosBossRoomsPending["aid<actionId>"]`), the lever's
 onUse first asks `ChaosBossRooms.leverUse` (refused with "A group is fighting in there. The room frees up in ~X at the
 latest."), and after the group went in `ChaosBossRooms.started` takes over the kick: the script's own timer is stopped
 (it was never stopped when a room emptied and so hit the next group), the time limit is the room's own time capped at
 `bossRooms.maxSeconds` (30 min: one boss fight, twice the longest Chaos boss limit; 3 of the 51 rooms had more), warnings,
 a "Time left" bar over the entrance and a "Room in use" bar over the lever (tilebars.lua). At the end everyone inside goes
 to the script's exitPosition and every monster in the room is removed; after a boss kill the script's own exit runs and
-the room frees up when it is empty. Without the Chaos scripts the rooms work as before. Left alone (listed by the tool or
-of another shape): 2 files with several step-in rooms each, the soul pit and the tower defence, and about a dozen old XML
-quest levers and pits. All of them are on the map (checked on the base map, the action and unique ids of every
-map item): the 7 step-in miniboss rooms of `extensions/fear_feaster/minibosses.lua` (entry tiles aid 33717 / 33719 /
-33721) and `extensions/lions/minibosses.lua` (33723 / 33725 / 33727 / 33729), each with its exit tile; the soul pit (its
+the room frees up when it is empty. Without the Chaos scripts the rooms work as before. Left alone (of another shape):
+the soul pit and the tower defence, and about a dozen old XML quest levers and pits. Map check (the base map, the action
+and unique ids of every map item): the 7 step-in miniboss rooms are on the map (below); the soul pit (its
 start lever aid 57392 at 31588,32269,8, the entrance aid 5896); the tower defence (aid 27931 twice, aid 25486); of 11
 XML lever and pit scripts that teleport a group into a fight with a timer or a room check, 9 have their ids on the map
 (annihilator, elemental spheres, the new frontier arena, the warzones and their lever, children of the revolution,
 Pythius, the two Killing in the Name of boss rooms); the Payback Time lever (uid 3198) and the demon oak (item 8293, set at
 runtime) are not. These are left for a later change.
+
+**Step-in miniboss rooms** (the same tool and step). `extensions/fear_feaster/minibosses.lua` (Vok the Freakish twice,
+Irgix the Flimsy; entry tiles aid 33717 / 33719 / 33721) and `extensions/lions/minibosses.lua` (Srezz Yellow Eyes, Yirkas
+Blue Scales, Katex Blood Tongue, Utua Stone Sting; 33723 / 33725 / 33727 / 33729) hold 3 and 4 rooms of the lever
+template: one `local config` each, a MoveEvent `onStepIn` with the lever's signature instead of the lever, a 10 minute
+kick, an exit tile inside the room, no boss death script. All 7 entry tiles and exit tiles are on the map. The tool cuts
+such a file into one room per `local config` and patches each room as a lever room (its tile's onStepIn gets the lock);
+a file is patched only when every room in it is recognised, otherwise it is listed and left alone whole. Each room locks
+on its own (the other rooms of the file stay free); the "Room in use" bar stands over the entry tile (participantsPos[1]).
+With the Chaos scripts, a monster or a summon walking onto an entry tile starts nothing (`leverUse` refuses non-players;
+the stock script made the boss for it and started the kick timer). The rooms have no boss death script, so after a kill
+the session sends the group out 65 s later (the default 60 s of `teleportRemoveSeconds` + 5; before, they stayed until
+the 10 minute kick or took the exit tile). The 51 lever rooms come out of the tool byte for byte as before (checked on
+the base data).
 
 **Base modal dungeon entry** (`tools/patch_base_dungeon.py`, install step `dungeonentry`; `ChaosDungeonsOpen` in
 `dungeons.lua`). The base server has a second way into the 4 dungeons of `DUNGEON_SYSTEM` (lib/core/dungeon.lua): a
@@ -7815,7 +7828,10 @@ warnings, time up with the exit and the monsters removed, the idle grace, a kill
 shutdown), `tests/instance_limits_systems_test.lua` (dungeons and the tutorial island on their real files), and an
 "instance limits" part in `rift_refund_test`, `raid_test`, `uber_test`, `guildboss_test`, `trials_flow_test`,
 `arena_flow_test`, `battleground_flow_test`, `infinitytower_run_test` and `worldboss_test` (each system's limit,
-warnings, cap and line, idle close, staff list and close where it applies). `tests/base_dungeon_patch_test.lua`: the
+warnings, cap and line, idle close, staff list and close where it applies). `instance_limits_test` also patches a
+stock-shaped miniboss file (two step-in rooms, CRLF) and runs it: each room locks on its own, the kick timer is stopped,
+a monster on the tile starts nothing, time up sends each group to its room's exit and removes the monsters; a file with
+one room of another shape is left alone whole. `tests/base_dungeon_patch_test.lua`: the
 tool on the stock entry (written there with made-up dungeons: dry run, idempotence, CRLF, another shape and a non
 StepIn script left alone), then the stock and the patched entry on a mocked engine: without the Chaos scripts the same
 modal window and answer; with `dungeons.lua` loaded no modal window, not one tile looked at, the list and `open` sent,

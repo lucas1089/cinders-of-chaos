@@ -115,10 +115,11 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                0.6-0.9 s of frozen game loop at each spawn time; same players, sounds, marks and broadcasts); the base
                upgrade-slot check (every 100 ms per player) keeps the slots it parsed per item description (README "Game
                loop stalls")
-  bossrooms    tools/patch_base_bossrooms.py     the base lever boss rooms: the lever is locked while a group is inside, a time
-               limit (the room's own kick time, at most 30 minutes) with warnings and a countdown, everyone out to the
-               room's exit and its monsters removed at the end, an empty room frees up after 2 minutes, a login inside a
-               closed room goes to its exit (README "Instance limits")
+  bossrooms    tools/patch_base_bossrooms.py     the base lever boss rooms and the step-in miniboss rooms (several in one file):
+               the lever (or entry tile) is locked while a group is inside, a time limit (the room's own kick time, at
+               most 30 minutes) with warnings and a countdown, everyone out to the room's exit and its monsters removed
+               at the end, an empty room frees up after 2 minutes, a login inside a closed room goes to its exit (README
+               "Instance limits")
   dungeonentry tools/patch_base_dungeon.py       the base dungeon entry tile (step-in, item 26702) opens the Chaos dungeon
                window instead of the base modal window, so every dungeon entry goes through the queue (one run per
                box, the time cap and warnings); the modal run with its box scan and fixed timer never starts (README

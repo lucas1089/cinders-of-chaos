@@ -256,9 +256,11 @@ if TalkAction then
 end
 
 -- ======================================================================== base lever boss rooms
--- tools/patch_base_bossrooms.py makes each recognised room script call:
---   ChaosBossRoomsPending[key] = config                      at load (key = "aid" .. the lever's action id)
---   ChaosBossRooms.leverUse(player, key, config) -> false   at the start of the lever's onUse: the room is in use
+-- tools/patch_base_bossrooms.py makes each recognised room script (a lever room, or a step-in room of the miniboss files)
+-- call:
+--   ChaosBossRoomsPending[key] = config                      at load (key = "aid" .. the lever's / tile's action id)
+--   ChaosBossRooms.leverUse(player, key, config) -> false   at the start of the lever's onUse (the tile's onStepIn): the
+--                                                            room is in use, or a monster stepped on the tile
 --   ChaosBossRooms.started(key, config, participants)        after the group went in and the boss was made
 -- The script keeps its own checks (participants, level, cooldown, a player in the room), its boss and its exit after a
 -- kill. This side adds: the lever is locked while a group's session runs; the time limit (the script's own kick time,
@@ -366,9 +368,13 @@ local function clearBars(key)
 	end
 end
 
--- the lever: false (and a message) while the room's session runs
+-- the lever (or the entry tile of a step-in room): false (and a message) while the room's session runs; a monster or a
+-- summon walking onto an entry tile never starts a fight (the stock step-in would make the boss for it)
 function BR.leverUse(player, key, config)
 	BR.register(key, config)
+	if not (player and player.isPlayer and player:isPlayer()) then
+		return false
+	end
 	if not RC().enabled then
 		return true
 	end
