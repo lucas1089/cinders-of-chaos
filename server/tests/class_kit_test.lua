@@ -146,27 +146,49 @@ do
 	-- an ascended class wearing its base class's look gets that look's addons; another class's look is not touched
 	eq(L.loginOutfit({lookType = 2051, lookAddons = 0}, 12, L.MALE, false, {[2051] = true}).lookAddons, 3, "base look")
 	eq(L.loginOutfit({lookType = 2073, lookAddons = 0}, 11, L.MALE, false, {[2073] = true}), nil, "not this class's look")
-	eq(L.loginOutfit({lookType = 2161, lookAddons = 0}, 8, L.MALE, false, {}), nil, "switch off: nothing about 2161")
 	eq(L.isFirstLogin(0), true, "first login"); eq(L.isFirstLogin(1700000000), false, "later login")
 end
 
 -- ------------------------------------------------------------------ class looks: the pair 19 switch
+-- Shipped on (things_custom19 on windows-assets since 2026-10-12). The off path (the rollback) is tested on a second
+-- copy of the core with the switch line forced to false, loaded into a fresh environment.
+local function loadIn(text, name, env)
+	if setfenv then -- LuaJIT / Lua 5.1
+		local f = assert(loadstring(text, name))
+		setfenv(f, env)
+		return f
+	end
+	return assert(load(text, name, "t", env))
+end
 do
-	-- off by default: no class look needs things_custom19, nothing replaced, nothing retired beyond the stock looks
-	eq(L.PAIR19_LOOKS, false, "the switch is off until things_custom19 is on windows-assets")
-	eq(L.pair19, false, "applied off")
 	-- install_outfits.py and gen_shop_cosmetics.py read the switch as this exact line
 	local src = io.open("data/scripts/chaos/class_looks_core.lua"):read("*a")
 	eq(src:match("\nL%.PAIR19_LOOKS = (%a+)\n"), tostring(L.PAIR19_LOOKS), "the switch is one plain line")
-	local n18 = #L.retired
-	for vocId, e in pairs(L.looks) do
+	eq(L.PAIR19_LOOKS, true, "the switch is on: things_custom19 is on windows-assets")
+	eq(L.pair19, true, "applied on")
+
+	-- the off copy: same source, the switch line set to false, its own ChaosClassLooks (Chaos from the globals)
+	local offSrc, nSub = src:gsub("\nL%.PAIR19_LOOKS = true\n", "\nL.PAIR19_LOOKS = false\n")
+	eq(nSub, 1, "the switch line forced off")
+	local env = setmetatable({ChaosClassLooks = false}, {__index = _G})
+	local O = loadIn(offSrc, "=class_looks_core.lua (off)", env)()
+	ok(O ~= L and env.ChaosClassLooks == O, "the off copy is a separate module")
+	eq(ChaosClassLooks, L, "the shipped module stays the global one")
+
+	-- off: no class look needs things_custom19, nothing replaced, nothing retired beyond the stock looks
+	eq(O.PAIR19_LOOKS, false, "off copy: the switch is off"); eq(O.pair19, false, "off copy: applied off")
+	local n18 = #O.retired
+	for vocId, e in pairs(O.looks) do
 		ok(e.male < 2143 and e.female < 2143, "class " .. vocId .. ": no things_custom19 look with the switch off")
 	end
-	eq(next(L.replaced), nil, "nothing replaced")
+	eq(next(O.replaced), nil, "off: nothing replaced"); eq(next(O.former), nil, "off: nothing kept as (old)")
+	eq(O.lookFor(8, O.MALE), 2039, "off: juggernaut on the things_custom18 look")
+	eq(O.loginOutfit({lookType = 2161, lookAddons = 0}, 8, O.MALE, false, {}), nil, "switch off: nothing about 2161")
+	eq(O.loginOutfit({lookType = 2039, lookAddons = 0}, 8, O.MALE, false, {}), nil, "off: the old look is the class look")
 	-- the six new looks: 2161-2172, one class each, both sexes, a class with a look
 	local ids, count = {}, 0
-	for vocId, n in pairs(L.pair19Looks) do
-		ok(L.looks[vocId], "class " .. vocId .. " has a look")
+	for vocId, n in pairs(O.pair19Looks) do
+		ok(O.looks[vocId], "class " .. vocId .. " has a look")
 		ids[n.male] = true; ids[n.female] = true; count = count + 1
 	end
 	eq(count, 6, "six classes")
@@ -180,9 +202,7 @@ do
 		end
 	end
 
-	-- on
-	L.usePair19(true)
-	eq(L.pair19, true, "applied on")
+	-- on (the shipped module)
 	eq(L.lookFor(8, L.MALE), 2161, "juggernaut male"); eq(L.lookFor(8, L.FEMALE), 2162, "juggernaut female")
 	eq(L.lookFor(3, L.MALE), 2163, "ranger"); eq(L.lookFor(15, L.FEMALE), 2166, "beastmaster")
 	eq(L.lookFor(22, L.MALE), 2167, "bone lord"); eq(L.lookFor(18, L.FEMALE), 2170, "shadowfist")
@@ -192,6 +212,20 @@ do
 	eq(L.former[4], nil, "kept class: nothing replaced")
 	eq(#L.retired, n18 + 6, "the six replaced looks retired (never sold)")
 	eq(L.replaced[2039], 2161, "old -> new"); eq(L.replaced[2041], 2172, "sentinel female old -> new")
+	-- on and off differ only in the six classes; the replaced looks are the off copy's looks
+	for vocId, e in pairs(O.looks) do
+		local n = L.pair19Looks[vocId]
+		if n then
+			eq(L.looks[vocId].male, n.male, "on: class " .. vocId .. " male is the new look")
+			eq(L.looks[vocId].female, n.female, "on: class " .. vocId .. " female is the new look")
+			eq(L.former[vocId].male, e.male, "on: class " .. vocId .. " old male kept")
+			eq(L.former[vocId].female, e.female, "on: class " .. vocId .. " old female kept")
+			eq(L.former[vocId].name, e.name .. " (old)", "on: class " .. vocId .. " old name")
+		else
+			local k = L.looks[vocId]
+			ok(k.male == e.male and k.female == e.female and k.name == e.name, "on: class " .. vocId .. " unchanged")
+		end
+	end
 	-- the rules of the class looks hold with the new ids
 	local seen, retired = {}, {}
 	for _, e in ipairs(L.retired) do retired[e.male] = true; retired[e.female] = true end
@@ -209,8 +243,10 @@ do
 			if look then listed[tonumber(look)] = true end
 		end
 		csv:close()
-		for vocId, e in pairs(L.looks) do
-			ok(listed[e.male] and listed[e.female], "on: class " .. vocId .. " looks listed in class_looks_sources.csv")
+		for _, mod in ipairs({L, O}) do
+			for vocId, e in pairs(mod.looks) do
+				ok(listed[e.male] and listed[e.female], "class " .. vocId .. " looks listed in class_looks_sources.csv")
+			end
 		end
 	end
 	-- logins: a replaced look of the character's class becomes the new one, colours kept; a store outfit stays
@@ -221,12 +257,15 @@ do
 	eq(L.loginOutfit({lookType = 2039, lookAddons = 0}, 4, L.MALE, false, {}), nil, "a warrior in the old juggernaut look")
 	eq(L.loginOutfit({lookType = 128, lookAddons = 3}, 8, L.MALE, false, {[2161] = true}), nil, "store outfit stays")
 	eq(L.loginOutfit({lookType = 2161, lookAddons = 0}, 8, L.MALE, false, {[2161] = true}).lookAddons, 3, "new look: addons")
+	eq(L.loginOutfit({lookType = 2161, lookAddons = 0}, 8, L.MALE, false, {}), nil, "on: the new look worn, addons owned before")
 	eq(L.unlocksFor(15, L.MALE)[1], 2165, "beastmaster gets the new look"); eq(L.unlocksFor(15, L.MALE)[2], 2163, "and the ranger's")
 
-	-- off again: back to things_custom18
+	-- usePair19 toggles in place: off gives the off copy's state, on again the shipped one
 	L.usePair19(false)
-	eq(L.lookFor(8, L.MALE), 2039, "off: juggernaut back"); eq(#L.retired, n18, "off: retired back")
-	eq(next(L.replaced), nil, "off: nothing replaced")
+	eq(L.lookFor(8, L.MALE), 2039, "toggled off: juggernaut back"); eq(#L.retired, n18, "toggled off: retired back")
+	eq(next(L.replaced), nil, "toggled off: nothing replaced")
+	L.usePair19(true)
+	eq(L.lookFor(8, L.MALE), 2161, "toggled on again"); eq(#L.retired, n18 + 6, "toggled on: retired again")
 end
 
 -- ------------------------------------------------------------------ test kit (stubbed engine)

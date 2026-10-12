@@ -22,9 +22,9 @@
 -- addons are given. At a login, a look whose addons were just given is put on with them when it is the worn look
 -- (existing characters at their next login); any other worn look (a store outfit) stays.
 --
--- Pair 19 switch (L.PAIR19_LOOKS, off): client pair things_custom19 adds 2161-2172, six new class looks
--- (L.pair19Looks). An older pair draws nothing for those ids, so they are sent only when the switch is on. Flip it in
--- the commit that follows the pair's push to windows-assets (server/README.md "Class looks"). With it on, the six
+-- Pair 19 switch (L.PAIR19_LOOKS, on since 2026-10-12, when things_custom19 went to windows-assets): client pair
+-- things_custom19 adds 2161-2172, six new class looks (L.pair19Looks). An older pair draws nothing for those ids, so
+-- they are sent only when the switch is on (rollback: server/README.md "Class looks"). With it on, the six
 -- classes use the new looks, the looks they replace stay owned and wearable ("<name> (old)" in outfits.xml, listed
 -- in L.retired so the store never sells them), and a character wearing a replaced look of its class gets the new one
 -- at its next login.
@@ -66,7 +66,7 @@ L.looks = {
 
 -- the things_custom19 looks (client/tools/sprites/monster_looks/classlook_picks.csv) for six classes: used only with
 -- L.PAIR19_LOOKS on. vocation id -> {male, female}
-L.PAIR19_LOOKS = false
+L.PAIR19_LOOKS = true
 L.pair19Looks = {
 	[8] = {male = 2161, female = 2162}, -- Juggernaut: gilded plate, tower shield (donor D 997/998)
 	[3] = {male = 2163, female = 2164}, -- Ranger: hooded archer (donor H 246/247)

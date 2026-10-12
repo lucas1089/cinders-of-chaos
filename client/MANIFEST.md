@@ -836,9 +836,9 @@ unchanged. No art was generated and no pixel was changed. 2143-2160 are blank pa
   looks with both addons (server/README.md "Class looks").
 - Silhouette against stock (best IoU): 0.64 to 0.86; none is a pixel copy of a pair look. Per look in
   `outfit_art/class_looks_sources.csv` (licence tracing).
-- The server uses them only with `ChaosClassLooks.PAIR19_LOOKS` on (off now). A client still on things_custom18 draws
-  nothing for 2161-2172, and the dat and spr signatures are unchanged (0x42a3, 0x57bbd603), so the switch goes on in
-  the commit after this pair is on `windows-assets` and in the package.
+- The server uses them: `ChaosClassLooks.PAIR19_LOOKS` is on since the pair push (server/README.md "Class looks").
+  A client still on things_custom18 draws nothing for 2161-2172. The dat and spr signatures are unchanged (0x42a3,
+  0x57bbd603), so the server cannot tell the pairs apart: players need the package rebuilt from the branch.
 
 ```
 python3 -I client/tools/sprites/donor_pick.py --picks client/tools/sprites/monster_looks/classlook_picks.csv --lib-dir L \
@@ -862,8 +862,8 @@ sprites unchanged.
 - `things-1098.tar.xz` is built like things_custom18's (Tibia.dat and Tibia.spr at the archive root, owner 0/0,
   GNU tar, `xz -9 -T3`), mtime 2026-10-12 14:00: sha256 a203681267535b90cc420a6f6bed8931c7e59a8845d2cfcd6b9f27ac74a78c41
   (66,144,948 bytes). Its two files unpack to the md5s above. A rebuild gives the same sha256.
-- Not on `windows-assets` yet: it waits for the owner's approval. CI `live-pair` and the Windows package read the
-  branch's own `SHA256SUMS.parts`, so nothing in `main` changes with the push.
+- On `windows-assets` since 2026-10-12 (b36204f2, approved by the owner). CI `live-pair` and the Windows package
+  read the branch's own `SHA256SUMS.parts`, so nothing in `main` pins the pair's md5.
 - Checked offline: a contact sheet of the twelve looks, addons 0 and 3, four directions and the mounted pattern,
   drawn with the client's colour shader. Not checked in a live client.
 

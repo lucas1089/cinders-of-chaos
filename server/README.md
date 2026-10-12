@@ -8721,26 +8721,26 @@ client/MANIFEST.md "Class looks pair" and "things_custom19").
   that just got its addons, it is put on with them, once; a later choice of fewer addons is kept.
 - outfits.xml: `install_outfits.py` (install step `outfits`) writes the marked block "Chaos class looks" from
   `L.looks`, both sexes, locked. Re-run it after the list changes.
-- Pair 19 switch: `L.PAIR19_LOOKS` in `class_looks_core.lua`, off. With it on, Juggernaut, Ranger, Beastmaster, Bone
-  Lord, Shadowfist and Sentinel use outfits 2161-2172 of client pair things_custom19 (`L.pair19Looks`). Off, no
-  script, outfits.xml line or store list names 2161-2172. A client on things_custom18 or older draws nothing for
+- Pair 19 switch: `L.PAIR19_LOOKS` in `class_looks_core.lua`, on since 2026-10-12 (things_custom19 on windows-assets
+  at b36204f2). Keep it one plain line: `install_outfits.py` and the test read it. On, Juggernaut, Ranger,
+  Beastmaster, Bone Lord, Shadowfist and Sentinel use outfits 2161-2172 of client pair things_custom19
+  (`L.pair19Looks`). Off, no script, outfits.xml line or store list names 2161-2172. A client on things_custom18 or older draws nothing for
   them, and the pair's dat and spr signatures did not change, so the server cannot tell the pairs apart.
   With it on:
   - the replaced looks stay owned and wearable as "<class> Class (old)" in outfits.xml
   - they join `L.retired`, so the store never sells them (`gen_shop_cosmetics.py` excludes 2161-2172 either way)
   - a character wearing a replaced look of its class or base class gets the new look at its next login, colours kept,
     with both addons
-- Flip step, in one commit on main after the owner's "pode mandar o par para o windows-assets" and the push of
-  things_custom19 (scratchpad `things_custom19/windows-assets/PUSH_STEPS.txt`), once the Windows package is rebuilt
-  from it:
-  1. `L.PAIR19_LOOKS = false` -> `true` (keep it one plain line: `install_outfits.py` and the test read it).
-  2. Update client/MANIFEST.md (the windows-assets commit), ROADMAP.md C4 and this section.
-  3. Run the CI checks (`tests/class_kit_test.lua` checks the switch off and on).
-  4. On the server: `python3 -I tools/install_all.py SERVER_DIR --only outfits`, then restart.
+- Flip step: done 2026-10-12, after the owner's approval and the push of things_custom19 to windows-assets
+  (b36204f2, archive sha256 a203681267535b90cc420a6f6bed8931c7e59a8845d2cfcd6b9f27ac74a78c41). The switch line was
+  set to true, with client/MANIFEST.md, ROADMAP.md C4 and this section. On each server, once the Windows package is
+  rebuilt from the branch: `python3 -I tools/install_all.py SERVER_DIR --only outfits`, then restart. On a base
+  outfits.xml it writes 27 class looks: the 21 looks and the six "(old)" ones. A second run changes nothing.
   Rollback: set it back to false and re-run the step. The old looks are the class looks again; nobody lost them. A
   character still wearing 2161-2172 keeps that look type until it changes outfit, so roll back only while the clients
   still have things_custom19.
-- Tests: `tests/class_kit_test.lua` (wear, login, addons, the switch both ways, sources listed for every look).
+- Tests: `tests/class_kit_test.lua` (wear, login, addons, sources listed for every look, the switch both ways: on
+  as shipped, off on a second copy of the core loaded with the switch line set to false).
 
 ## Class lock (`class_unlocks.lua`, `class_unlocks_core.lua`, `sql/chaos_class_unlocks.sql`)
 

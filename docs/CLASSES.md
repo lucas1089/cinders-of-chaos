@@ -119,10 +119,11 @@ for free, at the migration.
     2039-2081 of things_custom10b, no stock art; list in `class_looks_core.lua`, sources in
     `client/tools/outfit_art/class_looks_sources.csv`, client/MANIFEST.md "Class looks pair"). Worn with both addons
     (addons 3); the character owns both addons of each class look it is given, and no other outfit's addons. Six looks
-    change with the pair 19 switch (`ChaosClassLooks.PAIR19_LOOKS`, off until things_custom19 is live; server/README.md
-    "Class looks"). Looks per class (male / female look type; "now" = things_custom18, "pair 19" = with the switch on):
+    changed with the pair 19 switch (`ChaosClassLooks.PAIR19_LOOKS`, on since 2026-10-12: things_custom19 is live;
+    server/README.md "Class looks"). Looks per class (male / female look type; "before" = things_custom18, "pair 19" =
+    live now):
 
-    | Line | Class (id) | Now | Pair 19 |
+    | Line | Class (id) | Before | Pair 19 (live) |
     |---|---|---|---|
     | Warrior | Warrior (4) | 2073 / 2074 | kept |
     | | Juggernaut (8) | 2039 / 2040 | 2161 / 2162: gilded plate, tower shield (donor D 997 / 998) |
@@ -146,7 +147,8 @@ for free, at the migration.
     | | Inquisitor (24) | 2077 (one look) | kept |
     | | Sentinel (25) | 2042 / 2041 | 2171 / 2172: holy orbs, tower shield (donor D 992 / 993) |
 
-    With the switch on, a replaced look stays owned and wearable as "<class> Class (old)".
+    A replaced look stays owned and wearable as "<class> Class (old)". A character wearing one gets the new look at its
+    next login.
   - starting gear and a new-player kit: done in `newplayer_config.lua`, keyed by these class ids. A new class adds a row there or
     calls `ChaosNewPlayer.setKit(name, def, {ids})`; `ChaosNewPlayer.kitFor(vocationId)` returns a class's kit (own row, then its
     base class, then `default`). See server/README.md "New players".

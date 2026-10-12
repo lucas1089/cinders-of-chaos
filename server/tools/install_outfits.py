@@ -16,8 +16,8 @@ locked (unlocked="no": class_looks.lua gives them at login and at a class change
 Player:addOutfitAddon; outfits.xml has no way to grant addons, and unlocked="yes" would give the look to every
 character). Same rules: rewritten when the list changed, refused when a look type has an entry outside the block.
 With the pair 19 switch on (class_looks_core.lua L.PAIR19_LOOKS = true) the six classes of L.pair19Looks get their
-things_custom19 looks (2161-2172) and their replaced looks stay as "<name> (old)"; with it off (the default) no line
-names 2161-2172, so a client on an older pair is never offered them.
+things_custom19 looks (2161-2172) and their replaced looks stay as "<name> (old)" (on since 2026-10-12); with it off
+(the rollback) no line names 2161-2172, so a client on an older pair is never offered them.
 
 Mounts (MOUNTS below) go into mounts.xml the same way: a marked block before </mounts>; a mount id or client id that
 already has an entry outside the block stops the script.
