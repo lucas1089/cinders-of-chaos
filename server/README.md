@@ -3281,6 +3281,11 @@ ammunition slot of the protocol) takes the item types the ring slot takes and no
   hotkey put rings into slot 9 and slot 10 and took them off from slot 9 (slot 10 empty or full) and from slot 10
   (slot 9 empty or full), also with the worn ids of the time and sword rings; with both slots full the hotkey of a
   third ring exchanged it with slot 9 (stock).
+- **Live test** of the equip hotkey: `tools/ring_hotkey_test.py` (test server only, not in CI; the bot of
+  `tools/loadtest.py setup --count 1`). Six cases: a ring taken off slot 9 or slot 10 goes to the backpack and never
+  into the other ring slot, a ring put on goes into slot 9, or into slot 10 when slot 9 holds another ring. Run on
+  0001-0030: 6/6. With the `queryDestination` check of 0023 and the backpack-first take-off of 0024 both removed it
+  fails the two take-off cases, the ring lands in the other ring slot, as on the old test server.
 
 ## Right-click equips (`src-patches/0024-equip-on-use.patch`, `rightclick_equip.lua`, `rightclick_equip_core.lua`, `rightclick_equip_config.lua`, client `game_rightclickequip`, base patch 0037)
 
