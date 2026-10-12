@@ -9258,7 +9258,7 @@ art); looks per effect: `data/spells/README_FX.md` "Class signature effects".
 - Snares and vigils: snare_jaws, snare_blast, vigil_wrath, vigil_iron, vigil_haste, vigil_clarity are in the pair
   (`ChaosClassFx.unwired`) but not sent yet: `_snares.lua` and `_vigils.lua` send stock effects. To wire them, those
   scripts call `ChaosClassFx.send(pos, name, stockFallback)` (the stock effect while the switch is off).
-- Pair switch: `C.PAIR22_FX` in `chaos_class_fx.lua`, **off**. things_custom22 is built, not on windows-assets.
+- Pair switch: `C.PAIR22_FX` in `chaos_class_fx.lua`, **on** (2026-10-12; things_custom22 on windows-assets, 13e289c7).
   Off, `chaos_class_fx_ids.lua` is never loaded and every spell sends what it sent before. Flip step, after the
   owner approves the push and the Windows package is rebuilt from the branch: set the line to true (and flip the
   check in `tests/class_fx_test.lua`), `python3 -I tools/install_all.py SERVER_DIR --only files`, restart. Rollback:

@@ -1063,8 +1063,8 @@ Necromancer void and soul green; Monk chi, violet and jade; Templar gold. Which 
   full check 0 errors, 121 warnings, the same as things_custom21.
 - `things-1098.tar.xz` like things_custom21's (mtime 2026-10-12 23:00): sha256
   81cd9eefb35e2f1467af13a17bc1d88c61ebed02c19aeaaaf91f453e7c0235b5 (66,725,980 bytes); unpacks to the md5s above.
-- Built, not pushed: windows-assets waits for the owner. The server switch `ChaosClassFx.PAIR22_FX` stays off until
-  then; off, every spell sends the effects it sent before.
+- On windows-assets since 2026-10-12 (commit 13e289c7, owner approved). The server switch `ChaosClassFx.PAIR22_FX`
+  is on; a client still on things_custom21 draws nothing for the 35 new effect ids.
 - Checked offline only (frame sheets and the mock scenes); not run in a client.
 
 ## Leaderboards: fastest-time boards with class tabs (`game_leaderboard`)

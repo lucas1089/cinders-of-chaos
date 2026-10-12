@@ -215,7 +215,7 @@ ember; Ranger amber, leaf and wind; Mystic prism and rose (the Elementalist thre
 sakura; Necromancer void and soul green; Monk chi, violet and jade; Templar gold. Drawn by
 `client/tools/sprites/gen_class_fx.py` (spec `art_import/class_fx.csv`, strips `art_import/class_fx/`), appended by
 `import_fx_art.py` (ids in `server/data/lib/chaos_class_fx_ids.lua`, catalogue `class_fx_catalog.csv`). Which spell of
-which class sends which, and the pair switch `ChaosClassFx.PAIR22_FX` (off until things_custom22 is live):
+which class sends which, and the pair switch `ChaosClassFx.PAIR22_FX` (on since 2026-10-12, things_custom22 live):
 server/README.md "Class signature effects". Build and md5s: client/MANIFEST.md "Class signature effects".
 
 | id | name | size, offset | frames | look |

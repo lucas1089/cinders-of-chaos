@@ -2,7 +2,7 @@
 -- The art: client/tools/sprites/gen_class_fx.py (art_import/class_fx.csv), appended to the client pair things_custom22
 -- by import_fx_art.py, which writes the ids to data/lib/chaos_class_fx_ids.lua.
 --
--- Pair switch (C.PAIR22_FX): off until things_custom22 is on windows-assets and in the Windows package. Off, nothing
+-- Pair switch (C.PAIR22_FX): on since 2026-10-12 (things_custom22 on windows-assets, 13e289c7). Off, nothing
 -- changes: the ids file is not loaded and every spell sends the effects it sent before. On, during a cast (the
 -- supports wrapper knows the caster and the spell, also in the cast's addEvent callbacks) an effect name in C.swaps
 -- for the caster's class and spell is sent as the class effect instead (ChaosSpell.fx / vfx and the wrapped Fx in
@@ -12,7 +12,7 @@
 ChaosClassFx = ChaosClassFx or {}
 local C = ChaosClassFx
 
-C.PAIR22_FX = false
+C.PAIR22_FX = true
 
 -- vocation id -> class key (Chaos.classes.ids in chaos_constants.lua; checked by tests/class_fx_test.lua)
 C.vocations = {

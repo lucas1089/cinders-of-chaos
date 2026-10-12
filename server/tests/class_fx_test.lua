@@ -43,9 +43,9 @@ CONST_ME_POFF = 3
 dofile("data/lib/chaos_class_fx.lua")
 local C = ChaosClassFx
 
--- the switch: one plain line, off until things_custom22 is on windows-assets
+-- the switch: one plain line, on since things_custom22 is on windows-assets
 local src = readFile("data/lib/chaos_class_fx.lua") or ""
-eq(src:match("\nC%.PAIR22_FX = (%a+)\n"), "false", "the switch is one plain line, off")
+eq(src:match("\nC%.PAIR22_FX = (%a+)\n"), "true", "the switch is one plain line, on")
 
 -- vocations equal Chaos.classes.ids
 local consts = readFile("data/scripts/chaos/chaos_constants.lua") or ""
@@ -131,7 +131,9 @@ eq(C.pick("templar", 250, "aura_burst_gold"), nil, "no swap for a spell not list
 eq(C.pick("ranger", 214, "holy_spear"), nil, "no swap for another name")
 eq(C.pick(nil, 214, "holy_hit"), nil, "no class")
 
--- switch off: nothing
+-- switch off: nothing (the shipped line is on; the off path is tested by turning it off here)
+local shipped = C.PAIR22_FX
+C.PAIR22_FX = false
 vocOf[1] = 8
 eq(C.live(), false, "off: not live")
 eq(C.swapFor(1, 223, "aura_burst_gold"), nil, "off: no swap")
