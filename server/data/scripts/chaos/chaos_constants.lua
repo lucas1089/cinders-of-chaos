@@ -411,10 +411,14 @@ Chaos.dungeons = {
 	maxDifficulty = 6, -- client has 6 difficulty buttons
 	-- percentage of area monsters that must die before the "boss can be killed" notice
 	progressNeeded = 100,
+	-- area = {{from, to}, ...}: boxes that belong to the dungeon next to the base FromPos/ToPos box (dungeons.lua areaOf),
+	-- for the parts that box misses: measured on the base map and its boss scripts (server/README.md "dungeons")
 	extra = {
 		[1] = {
 			title = "Bones Dungeon",
 			bossName = "prince skeletal",
+			-- the lever boss room east of the box (the boss script's bossArea; boss, entrance and exit teleport in it)
+			area = {{{x = 31856, y = 32197, z = 8}, {x = 31908, y = 32236, z = 8}}},
 			loot = {{id = 2160, count = 3}},
 			challenges = {
 				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 15 minutes.", maxMs = 15 * 60 * 1000},
@@ -433,6 +437,9 @@ Chaos.dungeons = {
 		[3] = {
 			title = "Forbidden Chevalier",
 			bossName = "forbidden chevalier",
+			-- the base box is floor 7 only (widened to the entry on floor 0): the tower's floors 0-10 with every spawn,
+			-- the lever and the boss room on floor 10 (the map's tiles of the dungeon)
+			area = {{{x = 31950, y = 33098, z = 0}, {x = 32078, y = 33245, z = 10}}},
 			loot = {{id = 2160, count = 8}},
 			challenges = {
 				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 20 minutes.", maxMs = 20 * 60 * 1000},
@@ -442,6 +449,9 @@ Chaos.dungeons = {
 		[4] = {
 			title = "Rootmaw",
 			bossName = "the rootmaw",
+			-- the base box is only the entry hall (and DungeonPos is 3 tiles south of it): floors 8-12 with every spawn,
+			-- the lever on floor 11 and the boss room on floor 12 (the map's tiles of the dungeon)
+			area = {{{x = 31452, y = 31495, z = 8}, {x = 31736, y = 31644, z = 12}}},
 			loot = {{id = 2160, count = 10}},
 			challenges = {
 				{key = "speed", title = "Speed Runner", points = 5, desc = "Finish in under 10 minutes.", maxMs = 10 * 60 * 1000},

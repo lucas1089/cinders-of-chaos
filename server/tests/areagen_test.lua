@@ -541,6 +541,22 @@ do
 	local vault = AG.areas.vault
 	local d = vault.def.dungeon
 	ok(DUNGEON_SYSTEM.Dungeons[d.id] and DUNGEON_SYSTEM.Dungeons[d.id].Level == d.level, "the vault is a base dungeon")
+	-- its box (the area of a queue run in dungeons.lua: who is inside, the count, the clean-up) holds the entry point,
+	-- the exit portal, the boss and every spawn
+	do
+		local dg = DUNGEON_SYSTEM.Dungeons[d.id]
+		local f, t = dg.FromPos, dg.ToPos
+		local function inside(q)
+			return q.x >= f.x and q.x <= t.x and q.y >= f.y and q.y <= t.y and q.z >= f.z and q.z <= t.z
+		end
+		local vm = vault.model
+		ok(inside(dg.DungeonPos) and inside(vm.exit) and inside(vm.boss), "the vault: entry, exit and boss in its box")
+		local out = 0
+		for _, s in ipairs(vm.spawns) do
+			out = out + (inside(s) and 0 or 1)
+		end
+		eq(out, 0, "the vault: spawns outside its box")
+	end
 	local extra = Chaos.dungeons.extra[d.id]
 	ok(extra and extra.populate and extra.bossType == vault.def.boss.monster, "the dungeon hook and the boss look")
 	extra.populate()

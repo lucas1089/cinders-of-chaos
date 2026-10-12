@@ -741,6 +741,15 @@ dungeons
   `Storages.TimerCooldown` while the table defines `timerCooldown` (existing bug); this module accepts both.
   `DUNGEON_SYSTEM.Dungeons[3]` has `DungeonPos` z=0 but `FromPos/ToPos` z=7; the box is widened to include
   DungeonPos so players are not treated as "outside".
+- The area of a run (who is inside on every tick, the login and shutdown checks, the monster count, the clean-up) is
+  the base box plus `Chaos.dungeons.extra[id].area` (`dungeons.lua` `areaOf`). Measured on the base map, its spawn file
+  and the dungeons' lever boss scripts: dungeon 2 fits its box. Dungeon 1's boss room (31856-31908, 32197-32236, z 8) is
+  east of its box. Dungeon 3's box is floor 7 only; its spawns, lever and boss room reach floors 8-10 (area 31950-32078,
+  33098-33245, z 0-10). Dungeon 4's box is its entry hall only: `DungeonPos` is 3 tiles south of it, so a queue run
+  ended on its first tick, and every spawn, the lever and the boss room lie outside (area 31452-31736, 31495-31644,
+  z 8-12). No other spawn lies in the added boxes. The generated dungeon 5 (The Hollow Vault, `areagen.lua`) gets the
+  whole generated grid as its box: entry, exit, boss and spawns inside. Tests: `tests/dungeons_area_test.lua`,
+  `tests/areagen_test.lua`.
 - Cooldown (`DUNGEON_SYSTEM.CooldownTime`, 1 h) is also applied after a win (`cooldownOnSuccess`) and when a
   member leaves/dies, and when a member who logged out inside logs in again while the server runs (sent to the temple).
 - The run's time is `DungeonTime` capped at `Chaos.dungeons.maxTimeSeconds` (45 min). The base modal entry tile opens
