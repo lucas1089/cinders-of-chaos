@@ -157,9 +157,15 @@ def load_monsters(data_dir):
             if m:
                 m['name'] = m['name'] or name
                 mons[name.lower()] = m
+    # The engine (otserv.cpp, monsters.cpp, script.cpp) only notes the monsters.xml names at startup and loads an XML
+    # file the first time its name is asked for; the Lua monsters run before that, in path order, and
+    # Game.createMonsterType makes the type (or takes over the one a former Lua file made). So a Lua definition wins over
+    # monsters.xml, and the last Lua file of a name wins. Files with '#' in the name and lib/ or events/ folders are skipped.
     for path in sorted(glob.glob(os.path.join(data_dir, 'monster', '**', '*.lua'), recursive=True)):
+        if '#' in os.path.basename(path) or os.path.basename(os.path.dirname(path)) in ('lib', 'events'):
+            continue
         for m in parse_lua_monsters(path):
-            mons.setdefault(m['name'].lower(), m)  # monsters.xml wins, as in the engine (loaded first)
+            mons[m['name'].lower()] = m
     return mons
 
 
