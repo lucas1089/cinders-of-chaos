@@ -1,0 +1,24 @@
+kind,cat,id,group,arg,reason
+durations,item,22664,0,0:500,phase 0 of 16; the other 15 are 500 ms
+durations,item,22679,0,17:100,last of 18 phases (loop once); the other 17 are 100 ms
+durations,item,22894,0,0-14:100,"animated ground, all 15 phases 0 ms (flashes a frame per draw); 100 ms like its sibling 23471"
+durations,item,23469,0,0-14:100,"animated ground, all 15 phases 0 ms; 100 ms like its sibling 23471"
+durations,item,23470,0,0-14:100,"animated ground, all 15 phases 0 ms; 100 ms like its sibling 23471"
+durations,item,24732,0,2:100,phase 2 of 16; the others are 100 ms (one 1000 ms hold)
+durations,item,25885,0,6-7:100,phases 6-7 of 8; the others are 100 ms
+durations,item,25886,0,6-7:100,phases 6-7 of 8; the others are 100 ms
+durations,outfit,1270,0,7:100,idle phase 7 of 8; the other idle phases are 100 ms
+durations,outfit,1374,0,1-7:100,"idle phases 1-7 of 8 (phase 0 is 100 ms); stock 8-phase idle groups are 100 ms"
+durations,outfit,1375,0,1-7:100,"idle phases 1-7 of 8 (phase 0 is 100 ms); stock 8-phase idle groups are 100 ms"
+durations,missile,83,0,0-7:100,all phases 0 ms; stock animated missiles are 100 ms (our client draws missiles at phase 0)
+durations,missile,96,0,0-5:100,all phases 0 ms; stock animated missiles are 100 ms
+durations,missile,102,0,0-2:100,all phases 0 ms; stock animated missiles are 100 ms
+durations,missile,103,0,0-3:100,all phases 0 ms; stock animated missiles are 100 ms
+durations,missile,105,0,0-3:100,all phases 0 ms; stock animated missiles are 100 ms
+durations,missile,106,0,0-2:100,all phases 0 ms; stock animated missiles are 100 ms
+zero_empty,outfit,637,*,"220064,220130,220194","colour-mask tile (layer 1, top-left tile, north, addon 2, mounted) pointing at empty spr slots; donor D outfit 125 (same art) has only one magenta pixel there, which is no template colour: blank on purpose"
+clear_addon_masks,outfit,1207,*,1-2,"addon patterns' second layer is a pixel copy of the addon art, not a colour mask: bright pixels got a random part tint and nothing else; no source holds real addon masks"
+clear_addon_masks,outfit,1208,*,1-2,"addon patterns' second layer is mostly a pixel copy of the addon art, not a colour mask; its real addon masks (template colours only) are kept"
+clear_addon_masks,outfit,1228,*,1-2,"addon patterns' second layer is a pixel copy of the addon art, not a colour mask"
+clear_addon_masks,outfit,1229,*,1-2,"addon patterns' second layer is a pixel copy of the addon art, not a colour mask"
+drop_addon_rows,outfit,267,0,1,"idle group has 2 addon rows, walk group 1: the client indexes both with 1 row, so idle mixed the rows and the walk group was never drawn; row 1 is a phase-shifted copy of row 0 with tiles missing, row 0 equals the walk group"

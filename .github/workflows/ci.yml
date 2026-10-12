@@ -189,6 +189,9 @@ jobs:
       - name: Sprite pair checker (check_pair.py on synthetic pairs, append-only guard)
         run: python3 -I client/tools/sprites/check_pair_test.py
 
+      - name: Pair warning fixes (fix_pair_warnings.py on a synthetic pair)
+        run: python3 -I client/tools/sprites/fix_pair_warnings_test.py
+
       - name: Outfit layer composer (compose_outfit.py on synthetic things, import round trip)
         run: |
           # system packages: python3 -I does not see pip's user site
