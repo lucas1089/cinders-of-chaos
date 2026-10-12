@@ -262,6 +262,9 @@ end
 --   ChaosBossRooms.leverUse(player, key, config) -> false   at the start of the lever's onUse (the tile's onStepIn): the
 --                                                            room is in use, or a monster stepped on the tile
 --   ChaosBossRooms.started(key, config, participants)        after the group went in and the boss was made
+-- tools/patch_base_eventrooms.py wires the soul pit and the tower defence the same way, with a room config of its own
+-- (config.chaosRoom: the time from bossRooms.ownSeconds; config.chaosOnClose(players, why): resets the place's state at
+-- the end) and ChaosBossRooms.finished(key) when the place ends by its own rule (completed, won or lost).
 -- The script keeps its own checks (participants, level, cooldown, a player in the room), its boss and its exit after a
 -- kill. This side adds: the lever is locked while a group's session runs; the time limit (the script's own kick time,
 -- at most bossRooms.maxSeconds) with warnings and a countdown over the entrance and the lever; at the end everyone inside
@@ -332,7 +335,7 @@ end
 BR.creaturesIn = creaturesIn
 
 function BR.limitOf(config)
-	local own = tonumber(config.kickParticipantAfterSeconds) or 600
+	local own = tonumber(config.kickParticipantAfterSeconds) or tonumber((RC().ownSeconds or {})[config.chaosRoom]) or 600
 	local cap = tonumber(RC().maxSeconds) or 0
 	if cap > 0 then
 		return math.min(own, cap)
@@ -387,6 +390,11 @@ function BR.leverUse(player, key, config)
 	if idle then
 		left = math.min(left, idle)
 	end
+	if s.guids[player:getGuid()] then
+		-- the group's own run (a lever inside the room, as in the tower defence)
+		player:sendCancelMessage(string.format("Your run is still going: %s left.", (K.about(left):gsub("^~", ""))))
+		return false
+	end
 	player:sendCancelMessage(string.format("A group is fighting in there. The room frees up in %s at the latest.", K.about(left)))
 	return false
 end
@@ -395,9 +403,12 @@ local tick
 
 function BR.started(key, config, participants)
 	BR.register(key, config)
-	if not RC().enabled then
+	config = config or BR.rooms[key]
+	if not RC().enabled or not config then
 		return nil
 	end
+	-- no list (a place entered before the start, as the tower defence): the players in the room
+	participants = participants or creaturesIn(config)
 	-- the script's own kick timer would also hit the next group (it is never stopped when the room empties): this
 	-- session's end replaces it
 	if config.kickEventId and stopEvent then
@@ -429,6 +440,20 @@ function BR.started(key, config, participants)
 	return s
 end
 
+-- the place's own end (a completed soul pit, the tower defence won or lost): as after a boss kill, the room closes
+-- 65 s later, at once when it is empty
+function BR.finished(key)
+	local s = BR.sessions[key]
+	local config = BR.rooms[key]
+	if not s or not config or s.state ~= "fight" then
+		return false
+	end
+	s.state = "won"
+	s.endsAt = math.min(s.endsAt, os.time() + (tonumber(config.teleportRemoveSeconds) or 60) + 5)
+	setBars(key, config, s)
+	return true
+end
+
 -- why: "time" | "idle" | "won" | "staff" | "shutdown"
 local OUT_TEXT = {
 	time = "Time is up: you were sent out of the boss room.",
@@ -447,6 +472,13 @@ function BR.close(key, why)
 		return false
 	end
 	local players, monsters = creaturesIn(config)
+	if config.chaosOnClose then
+		-- the place's own state (its waves, its counters) is reset before everyone goes out
+		local ok, err = pcall(config.chaosOnClose, players, why)
+		if not ok then
+			print("[ChaosBossRooms] " .. key .. " close hook: " .. tostring(err))
+		end
+	end
 	local exit = config.bossArea.exitPosition
 	for _, p in ipairs(players) do
 		if not (Chaos.isStaff and Chaos.isStaff(p)) and exit then

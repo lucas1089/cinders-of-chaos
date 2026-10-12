@@ -120,6 +120,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                most 30 minutes) with warnings and a countdown, everyone out to the room's exit and its monsters removed
                at the end, an empty room frees up after 2 minutes, a login inside a closed room goes to its exit (README
                "Instance limits")
+  eventrooms   tools/patch_base_eventrooms.py    the base soul pit and tower defence as boss rooms: locked while a group's run is on
+               (the tower defence's entrance tile sends a refused player back), a time limit of their own (soul pit 15,
+               tower defence 20 minutes) with warnings, everyone out and the monsters removed at the end, the script's
+               own state reset, its own end (completed, won, lost) closes the room (README "Instance limits")
   dungeonentry tools/patch_base_dungeon.py       the base dungeon entry tile (step-in, item 26702) opens the Chaos dungeon
                window instead of the base modal window, so every dungeon entry goes through the queue (one run per
                box, the time cap and warnings); the modal run with its box scan and fixed timer never starts (README
@@ -555,6 +559,13 @@ def step_dungeonentry(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('bossrooms') + 1, 'dungeonentry')  # after bossrooms, before sql
+
+
+def step_eventrooms(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_eventrooms.py'), data], 'patch_base_eventrooms.py'))
+
+
+STEPS.insert(STEPS.index('bossrooms') + 1, 'eventrooms')  # after bossrooms, before dungeonentry and sql
 
 
 def step_autoloot(server, data, ctx):

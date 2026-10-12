@@ -24,6 +24,7 @@ server/
   tools/patch_base_monster_names.py   Chaos names of the base monsters (see "Base monster names")
   tools/patch_base_bossrooms.py       the base lever and step-in boss rooms: lock, time limit, exit, clean-up (see "Instance limits")
   tools/patch_base_dungeon.py         the base dungeon entry tile opens the Chaos dungeon window (see "Instance limits")
+  tools/patch_base_eventrooms.py      the base soul pit and tower defence as boss rooms (see "Instance limits")
   data/scripts/chaos/
     chaos_constants.lua               ALL opcodes, storage keys, table names, tunables, shared helpers
     bank.lua  autoloot.lua  daily.lua  notifications.lua  passivetree.lua  passivetree_data.lua
@@ -338,6 +339,10 @@ server/
 7c. Base lever and step-in boss rooms: `python3 -I server/tools/patch_base_bossrooms.py <server>/data [--dry-run]`
    (idempotent; `install_all.py` step `bossrooms`, after `stalls`): the lever (or entry tile) is locked while a group is
    inside, a time limit with warnings, the exit and the clean-up. See "Instance limits".
+7c2. Soul pit and tower defence: `python3 -I server/tools/patch_base_eventrooms.py <server>/data [--dry-run]`
+   (idempotent; `install_all.py` step `eventrooms`, after `bossrooms`): both run as boss rooms (lock, time limit,
+   warnings, exit, clean-up of the waves and of the script's own state). See "Instance limits", "Soul pit and tower
+   defence".
 7d. Base dungeon entry: `python3 -I server/tools/patch_base_dungeon.py <server>/data [--dry-run]` (idempotent;
    `install_all.py` step `dungeonentry`, after `bossrooms`): the step-in tile of the base modal dungeon entry opens the
    Chaos dungeon window instead, so every dungeon run goes through the queue. See "Instance limits", "Base modal
@@ -7705,7 +7710,7 @@ sizes, switching labels off and on. **Not verified:** two players at once, a sea
 items (the engine refuses the move; the label still shows), labels while walking fast over many piles (positions follow
 the engine, the scan lags at most 400 ms).
 
-## Instance limits (`instance_limits.lua`, `instance_limits_core.lua`, `instance_limits_config.lua`, `tools/patch_base_bossrooms.py`, `tools/patch_base_dungeon.py`)
+## Instance limits (`instance_limits.lua`, `instance_limits_core.lua`, `instance_limits_config.lua`, `tools/patch_base_bossrooms.py`, `tools/patch_base_dungeon.py`, `tools/patch_base_eventrooms.py`)
 
 Owner request: a time limit on quests and dungeons, so the instances do not fill up or overload (roadmap item 108). Every
 place with its own way in and out has a time limit, warnings before it runs out, a rule for the end, an idle rule, a cap
@@ -7751,6 +7756,8 @@ on parallel copies with a wait estimate, and a staff view. Each system keeps its
 | Guild siege | 25 min match | + warnings | results, temple after 30 s | event | one a week | rejoins through the portals | unchanged |
 | Tutorial island | none | 30 min online (offline time does not count), warnings at 5 and 1 min | leaves as with Skip tutorial: kit, welcome, temple | shared island, no copies | none needed | time kept; a login past the limit leaves at once | unchanged |
 | Base lever boss rooms (51) and step-in miniboss rooms (7) | the script's own kick 10-60 min, no warning; the lever (tile) free whenever nobody stood inside; the old kick timer also hit the next group; monsters stayed | lever locked while a group's session runs, limit = the room's own time at most 30 min, warnings, countdown bars over the entrance and the lever | everyone to the room's exit, monsters removed | empty room frees up after 2 min (at once after a kill) | 1 group per room | login inside a closed room: its exit; inside its own running room: stays | closed at shutdown (exit) |
+| Soul pit | no limit, no lock against a second group with a core during the 5 s countdown, a group that left kept the run's state and loops going | soul core on the pit locked while a run is on, 15 min with warnings | everyone to the pit's lobby spot, waves removed, the pit's state reset | empty: 2 min; completed: 65 s | 1 | login inside a closed pit: lobby spot | closed at shutdown |
+| Tower defence | no limit; anyone could walk in mid-run; a lever pull after the spawning restarted the run under the walking monsters | the lever starts a 20 min session for the players inside; entrance tile and lever locked meanwhile; warnings | everyone to the exit drop, spawning stopped, summon counters reset, monsters and core removed | empty: 2 min; won or lost: 65 s (at once when empty) | 1 | login inside a closed arena: exit drop | closed at shutdown |
 | Invasions, Scorched Marches, hideouts | open world / personal | unchanged | | | | | |
 
 **Base lever boss rooms** (`tools/patch_base_bossrooms.py`, install step `bossrooms`; `ChaosBossRooms` in
@@ -7765,8 +7772,8 @@ latest."), and after the group went in `ChaosBossRooms.started` takes over the k
 a "Time left" bar over the entrance and a "Room in use" bar over the lever (tilebars.lua). At the end everyone inside goes
 to the script's exitPosition and every monster in the room is removed; after a boss kill the script's own exit runs and
 the room frees up when it is empty. Without the Chaos scripts the rooms work as before. Left alone (of another shape):
-the soul pit and the tower defence, and about a dozen old XML quest levers and pits. Map check (the base map, the action
-and unique ids of every map item): the 7 step-in miniboss rooms are on the map (below); the soul pit (its
+about a dozen old XML quest levers and pits. Map check (the base map, the action and unique ids of every map item): the 7
+step-in miniboss rooms are on the map (below); the soul pit (its
 start lever aid 57392 at 31588,32269,8, the entrance aid 5896); the tower defence (aid 27931 twice, aid 25486); of 11
 XML lever and pit scripts that teleport a group into a fight with a timer or a room check, 9 have their ids on the map
 (annihilator, elemental spheres, the new frontier arena, the warzones and their lever, children of the revolution,
@@ -7786,6 +7793,29 @@ the stock script made the boss for it and started the kick timer). The rooms hav
 the session sends the group out 65 s later (the default 60 s of `teleportRemoveSeconds` + 5; before, they stayed until
 the 10 minute kick or took the exit tile). The 51 lever rooms come out of the tool byte for byte as before (checked on
 the base data).
+
+**Soul pit and tower defence** (`tools/patch_base_eventrooms.py`, install step `eventrooms` after `bossrooms`). Neither is
+built from the boss room template and neither had a time limit, so the tool gives each a room config of its own and the
+same `ChaosBossRooms` session (lock, warnings, bars, idle rule, login rule, staff list and close, shutdown):
+- Soul pit (`soulpit_system/soulpit.lua`, a soul core used on the pit, aid 57392). The box is the script's room joined
+  with its spawn area (the spawn area reached 2 tiles past the room, so monsters there were outside the room's own
+  check). The lock comes first when a core is used on the pit (a core used on anything else is not touched; a refused
+  core is not spent); the session starts as soon as the core is taken (the 5 s countdown was open to a second group).
+  Time: `bossRooms.ownSeconds.soulpit` = 15 minutes (5 short waves). At the end everyone goes to the spot the pit's
+  entrance teleport leads to (31589,32281,8; not the start tiles, which the next group needs), the waves are removed and
+  the script's `event` state is reset (a group that left mid-run used to leave it and its 1 s loops going, and the next
+  group then shared them). A completed pit closes the room 65 s later, like a boss kill.
+- Tower defence (`tower_defense/tower_defense.lua`, lever aid 27931 in the arena; `entrance_teleport.lua`, aid 25485).
+  The arena box is the script's own (`fromPos` / `toPos`). The lever starts a session for the players inside (they came
+  in before the start); while it runs the entrance tile sends a newcomer back where they came from (with the time) and
+  the lever answers the group "Your run is still going" (a pull after the spawning used to restart the run under the
+  walking monsters). Time: `bossRooms.ownSeconds.towerdefense` = 20 minutes (the stock waves take about 7). At the end
+  spawning stops, every monster (core, waves, summons) is removed, the players' summon counters and marks are reset as
+  the login does, and everyone goes to the drop of the arena's own exit tile (31206,32295,8). A win or a loss (the
+  script's own rules) ends the session; after a loss the script has sent everyone out and the arena is free at once.
+  The bar "Room in use" stands at that drop, next to the entrance.
+Without the Chaos scripts both work as before (the test runs the stock and the patched pit and compares them). A script
+of another shape is listed and left alone.
 
 **Base modal dungeon entry** (`tools/patch_base_dungeon.py`, install step `dungeonentry`; `ChaosDungeonsOpen` in
 `dungeons.lua`). The base server has a second way into the 4 dungeons of `DUNGEON_SYSTEM` (lib/core/dungeon.lua): a
@@ -7831,7 +7861,11 @@ shutdown), `tests/instance_limits_systems_test.lua` (dungeons and the tutorial i
 warnings, cap and line, idle close, staff list and close where it applies). `instance_limits_test` also patches a
 stock-shaped miniboss file (two step-in rooms, CRLF) and runs it: each room locks on its own, the kick timer is stopped,
 a monster on the tile starts nothing, time up sends each group to its room's exit and removes the monsters; a file with
-one room of another shape is left alone whole. `tests/base_dungeon_patch_test.lua`: the
+one room of another shape is left alone whole. `tests/base_eventrooms_patch_test.lua`: the tool on the stock-shaped soul
+pit and tower defence (made-up monsters; dry run, CRLF, idempotence, another shape), the stock and the patched pit without
+the Chaos scripts (the same run), then both with them: lock, time, warnings, time up (exit, waves removed, state reset so
+the next run starts fresh), a completed pit; the tower's lever session, the entrance sending a newcomer back, the
+group's second pull, time up (exit, counters reset, spawning stopped), a win and both loss paths. `tests/base_dungeon_patch_test.lua`: the
 tool on the stock entry (written there with made-up dungeons: dry run, idempotence, CRLF, another shape and a non
 StepIn script left alone), then the stock and the patched entry on a mocked engine: without the Chaos scripts the same
 modal window and answer; with `dungeons.lua` loaded no modal window, not one tile looked at, the list and `open` sent,
