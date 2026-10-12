@@ -96,6 +96,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                (data/npc/base_world_names.csv + the NPC and monster lists; README "Base world texts"; after npcnames)
   houses       tools/patch_base_houses.py        Chaos street names of the houses by house id (tools/base_house_names.csv)
                in the map's house file (README "Base houses")
+  poi          tools/gen_poi.py                  the points of interest of the map markers (temples, depots, crafting tables,
+               service NPCs, hunting areas, boss places) from the installed map, items, NPCs and spawn data into
+               data/chaos_poi.lua (README "Map markers"; after towns, npcnames and worldtexts, which rename what it reads)
   autoloot     data/talkactions/talkactions.xml: the stock XML "!autoloot" line is commented out, so autoloot.lua's own
                talkaction runs and the window refreshes (README "Install" 7)
   commands     tools/install_commands.py         the players' spoken "!" commands of the base server commented out (every one is in the
@@ -133,7 +136,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'monsternames', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spawns', 'spells', 'archery', 'itemnames', 'towns', 'npcnames', 'worldtexts', 'houses', 'autoloot', 'commands', 'autosave', 'sql']
+STEPS = ['files', 'lib', 'monsternames', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spawns', 'spells', 'archery', 'itemnames', 'towns', 'npcnames', 'worldtexts', 'houses', 'poi', 'autoloot', 'commands', 'autosave', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -485,6 +488,23 @@ def step_worldtexts(server, data, ctx):
 
 def step_houses(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_houses.py'), data], 'patch_base_houses.py'))
+
+
+def step_poi(server, data, ctx):
+    if ctx['dry']:
+        # the dry copy has no map: read the real one, write into the copy
+        real = os.path.join(ctx['server'], 'data')
+        mp = tool_map_path(real)
+        if not mp:
+            return tool_result((False, ['no map in %s/world' % real]))
+        return tool_result(run_tool([tool('gen_poi.py'), server, '--map', mp], 'gen_poi.py'))
+    return tool_result(run_tool([tool('gen_poi.py'), server], 'gen_poi.py'))
+
+
+def tool_map_path(data_dir):
+    sys.path.insert(0, HERE)
+    import patch_base_towns
+    return patch_base_towns.map_path(data_dir)
 
 
 def step_commands(server, data, ctx):

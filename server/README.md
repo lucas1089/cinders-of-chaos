@@ -136,6 +136,10 @@ server/
     pets.lua  pets_core.lua  pets_config.lua (pets: companions that level from kills, small abilities; sql/chaos_pets.sql)
     buffbar.lua (buff / debuff bar, client game_buffbar; registry and rules in data/lib/chaos_buffs.lua)
     partyframes.lua  partyframes_core.lua (party frames, client game_partyframes; see "Buff bar and party frames")
+    partymarkers.lua  partymarkers_core.lua  partymarkers_config.lua (party members on the minimap, client
+                                      game_mapmarkers; see "Map markers")
+    poi.lua  poi_core.lua  poi_config.lua (points of interest on the minimap: data/chaos_poi.lua from tools/gen_poi.py,
+                                      discoveries in sql/chaos_poi.sql; see "Map markers")
     market.lua  market_core.lua  market_config.lua (our player market for gold and Chaos Coins; sql/chaos_market.sql,
                                       tools/patch_market.py, engine patch 0017; see "Market")
     bestiary.lua  bestiary_core.lua  bestiary_config.lua  bestiary_spawns.lua (bestiary, kill tasks, task tracker;
@@ -357,6 +361,7 @@ working directory, as with the rest of the base server libs).
 | game_pets | `pets.lua`, `pets_core.lua`, `pets_config.lua` | 254, Character > Pets / `/pet` | Pets: one companion out at a time that follows its owner, levels from kills, two small abilities per species; drops, store and achievements; tested in game (see "Pets"). |
 | game_buffbar | `buffbar.lua`, `data/lib/chaos_buffs.lua` | 234 (server -> client), Character > Buff Bar | Buff / debuff bar: icons with a countdown and stacks for the engine conditions, the Chaos class buffs, world buffs, the Victory buff, world events, trial kill stacks, chi, Rage and Reprisal; diffs only; tested in game (see "Buff bar and party frames"). |
 | game_partyframes | `partyframes.lua`, `partyframes_core.lua` | 235, Hunt > Party Frames | Party frames: health, mana, level, floor, distance, state and buffs of the party members every 500 ms, exact numbers only in range; kick / pass leadership / invite actions checked on the server; tested in game with three characters (see "Buff bar and party frames"). |
+| game_mapmarkers | `partymarkers.lua`, `partymarkers_core.lua`, `partymarkers_config.lua`, `poi.lua`, `poi_core.lua`, `poi_config.lua`, `data/chaos_poi.lua` (`tools/gen_poi.py`, install step `poi`), `sql/chaos_poi.sql` | **153**, Hunt > More > Map Markers | Map markers on the minimap and the full map: the other party members (pin in a party colour, floor triangle, edge arrow toward a member out of view, name / health / floor / distance on hover; sent only when something changed, at most once a second, throttled) and points of interest (temples, depots, banks, Chaos NPCs, shops, travel, crafting, guild hall, portals, dungeons, boss places, hunting areas; the remote ones discovered on approach), each category switchable (see "Map markers"). Unit tests, generator test; tested on a live test server (full map) with two clients and 395 bots. |
 | game_rightclickequip | `rightclick_equip.lua`, `rightclick_equip_core.lua`, `rightclick_equip_config.lua`, engine patch 0024 | **188** | Right-click equips: the client option "Right-click equips items" (client -> server) and the multi-use weapons a right-click equips (server -> client, at login); the equipping is the engine's (see "Right-click equips"). Tested in game. |
 | game_levelwings | `levelwings.lua`, `levelwings_core.lua`, `levelwings_config.lua` | **191** (server -> client) | Level-up wings: golden wings open behind a character that gains a level, seen by every player on screen (see "Level-up wings"). Tested in game. |
 | game_bestiary | `bestiary.lua`, `bestiary_core.lua`, `bestiary_config.lua`, `bestiary_spawns.lua` | 253, Hunt > Bestiary, Hunt > Kill Tasks | Bestiary (an entry per monster, four stages by kills, completion bonus, points and ranks), personal kill tasks with daily / weekly limits, task tracker HUD with the bounty contracts; tested in game (see "Bestiary and kill tasks"). |
@@ -401,6 +406,7 @@ collision check") and be added here.
 | 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua` | `game_monsterbar` | server -> client |
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
 | 152 | `notificationsQueue` | `notifications.lua` | `game_chaosnotify` | client -> server: leave queue |
+| 153 | `mapMarkers` | `partymarkers.lua`, `poi.lua` | `game_mapmarkers` | both scripts answer the client's hello; points of interest through `Chaos.sendChunked` |
 | 188 | `rightClickEquip` | `rightclick_equip.lua` | `game_rightclickequip` | |
 | 189 | `clientGuard` | engine (src-patch 0021) | client C++ (base patch 0035) | HMAC handshake, never reaches Lua |
 | 190 | `clientGuardHello` | `clientguard.lua` | `game_chaosguard` | client -> server |
@@ -8640,6 +8646,91 @@ the list with the player's cooldown, rate limit). Client: `game_bossspawns/bosss
 in the Linux client with a payload built by the core; not run against a live server (the island bosses' and raid bosses'
 looks and the lair positions come from the base data and the real map's spawn file: check them on the live server after
 the first install).
+
+## Map markers (`partymarkers.lua`, `poi.lua` and their `_core` / `_config` files, `tools/gen_poi.py`, `sql/chaos_poi.sql`, client `game_mapmarkers`)
+
+Markers on the minimap and on the full map (the same minimap widget, Ctrl+Shift+M): where the other party members are,
+and the points of interest. One opcode, **153** (`ChaosOpcodes.mapMarkers`), JSON `{action, data}`, shared by the two
+scripts: the client sends `hello {party, poi}` at login and `set {party}` / `set {poi}` when an option changes; each
+script answers its own part. Client: `client/overlay/modules/game_mapmarkers/` (view rules in `markermath.lua`, tested by
+`markermath_test.lua`), art from `client/tools/gen_mapmarker_art.py`. Settings: top menu Hunt > More > Map Markers
+(party members on / off, points of interest on / off, one check box per category; g_settings node `mapMarkers`).
+
+### Party members (`partymarkers.lua`, `partymarkers_core.lua`, `partymarkers_config.lua`)
+- **What is sent.** To every party member whose client asked for markers ("watcher"): `party {m = [{i, n, x, y, z, p}]}`,
+  every member it may see with its name, position, floor and health in 10% steps (0 only when dead, never 100 when
+  hurt), the viewer included (the client leaves itself out, so one list serves the whole party and is encoded once per
+  party). Far members and members on other floors are listed too: the minimap can be scrolled and the client draws an
+  up / down triangle. An empty list clears the markers (left the party, party disbanded).
+- **When.** A tick every `tickMs` (1 s) looks at the parties that have a watcher; a watcher is sent a list only when it
+  differs from the last one it got (`P.plan`: positions, floors, health steps, who is in the party, the leader order).
+  Joining, leaving, a disbanded party, a member logging in or out are seen by the next tick (at most 1 s later: the base
+  party events live in the base data and are not hooked). The hello at login and switching the option on are answered at
+  once (`P.sendNow`). Nothing is sent to clients without the module or with the option off.
+- **Who sees whom** (`P.visibleTo`). A member in ghost mode (invisible staff) is listed to nobody. A member inside a
+  battleground match has the scope `bg:<match>:<team>` and is listed only to watchers of the same match and team, so a
+  match's positions stay inside its team; members outside are listed to everyone of the party. The Scorched Marches and
+  the battleground have no other privacy rule: party members stay allies in the Marches, and the battleground keeps
+  parties whole on one team, so enemies are never in the same party.
+- **Throttle** (`P.tick`). At most `maxPartiesPerTick` (300) parties are read and `maxSendsPerTick` (600) messages sent
+  per tick; the next tick goes on after the last party handled (round robin), so a crowded server spreads the work over
+  a few ticks instead of stalling one.
+- **Cost.** Unit benchmark (`tests/partymarkers_test.lua`, 100 parties of 4, the core plus a JSON-like encode, LuaJIT):
+  0.5 ms per tick when nothing moved, 1.5 to 1.9 ms when every member moved (400 messages, about 200 bytes each, about
+  80 KB per tick). Live (TFS built with src-patches 0001-0026, full map, 395 bots in 98 parties of 4 walking a step every
+  second, on a shared 4-core machine with a load of 13): a tick that finds nothing changed takes 2.5 ms (reading 392
+  members through the engine), one that re-sends all 392 lists 13 to 14 ms; the sends dominate (about 30 us each, the
+  `NetworkMessage` of `extended_opcode.lua`), so `maxSendsPerTick` = 600 caps a tick near 20 ms.
+- **Client.** A pin per member in a party colour (a member keeps its colour while it stays; a newcomer takes the
+  lowest free one), tinted from one white image; an up or down triangle when the member is on another floor than the
+  one shown; outside the shown part of the map the pin becomes an arrow on the edge pointing toward the member (8
+  directions, kept clear of the minimap window's zoom and floor controls). The markers glide to the new place in
+  0.8 s (a jump for a teleport or a floor change). Hover: "Name, 80% health, 2 floors up, 140 squares north-east". The
+  markers never take the mouse (clicks, drags and the wheel stay the minimap's); the hover text comes from a hit test
+  in the minimap's mouse move. No screen-edge indicator on the game view: the edge arrows of the minimap cover it, and
+  the game view's tile geometry would need the probing that `game_mapoverlay` does.
+
+### Points of interest (`poi.lua`, `poi_core.lua`, `poi_config.lua`, `data/chaos_poi.lua`, `sql/chaos_poi.sql`)
+- **Data.** `tools/gen_poi.py SERVER_DIR` (install step `poi`, after `towns`, `npcnames` and `worldtexts`, which rename
+  what it reads) writes `data/chaos_poi.lua` from the installed server: temples (the map's towns, named from
+  `tools/base_towns.csv`), depots (the map's depot lockers: lockers within 30 tiles on one floor, at least 4), the base
+  crafting tables (action ids 38820-38826; three or more within 20 tiles are a "Crafting hall"), the service NPCs of the
+  spawn file (travel, bank, blessings, shop, by their NPC file and script), hunting areas (the bounty pool's monsters at
+  the busiest spots of the bestiary spawn data, spots within 40 tiles merged, the level band from the middle 70% of the
+  spawn entries, at least 12 entries, the 300 biggest) and the island, raid and lair bosses of `bossspawns_config.lua`.
+  Every name is checked against the rename lists (sha256 of each phrase); a mark that would still carry an old-world
+  name is left out. The committed `server/data/chaos_poi.lua` is the output for the shipped map (800 marks: 20 temples,
+  45 depots, 4 crafting halls, 27 banks, 19 blessings, 63 travel, 272 shops, 50 bosses, 300 hunting areas);
+  `tools/gen_poi_test.py` (CI) builds a small map and checks the generator. At runtime `poi.lua` adds what the systems
+  place at startup (found 20 s after the start and every 5 minutes, `poi_config.lua`): the Chaos NPCs within 12 tiles
+  of a temple (Material Broker, the Gambler, the Keeper of Trials, the Ascendant Oracle, the faction quartermasters),
+  the portals there by action id (hideout, guild hall, the Ember Descent, the Ashen Sepulchre, the Ember Gate, the world
+  boss and siege portals while they stand) and the dungeons of the base dungeon system at their entry point. On the
+  shipped map: 90 runtime marks. The Marches, the battleground, rifts, the arena and the tower have no place on the map
+  (they are entered from their windows), so they have no mark.
+- **Discovery.** Known from the start (`r = 0`): temples, depots, crafting, the Chaos NPCs, the portals next to the
+  temples and the shops, banks, travel and blessing NPCs within 80 tiles of a temple. Discovered (`r = 1`): hunting
+  areas, boss places, dungeons and the service NPCs out in the world, when the character comes within 20 tiles on the
+  same floor (checked every 2 s for every online character, also with the option off, so turning it on later shows what
+  was found), with "Discovered on your map: ..." and the new marker. Why: a new character needs the town services at
+  once, while the hunting grounds and lairs are worth finding; a first-kill rule would miss the areas you only pass
+  through, and the distance rule needs no hook in the kill path. The discoveries are one row per character in
+  `chaos_poi_seen` (keys of 10 characters, a kind letter and the position in hex, comma-separated: about 6 KB with every
+  mark found), read at login, written at most every minute and at logout. A key names a place, so regenerating the data
+  keeps the discoveries of the places that stayed. Staff: `/poi status | reset | all | rescan`.
+- **What is sent.** At the hello: `poi {v, marks = [{k, x, y, z, n}]}` (what is known: about 330 marks, 25 KB, through
+  `Chaos.sendChunked`); then `reveal {marks}` for each discovery. Undiscovered marks are never sent.
+- **Cost.** The reveal check looks only at the marks of the 3 x 3 cells of 32 tiles around each character: 2.2 ms per
+  check of about 400 characters on the live test (every 2 s); the unit test checks 1000 characters in about 7 ms.
+- **Client.** One 14 px icon per kind (temple, depot, bank, npc, shop, travel, bless, craft, guild, portal, boss, dungeon,
+  hunt) on the shown floor, only inside the shown area (at most 160, nearest first), under the party markers; the name
+  on hover. Categories: temples, depots and banks / Chaos NPCs / shops, travel and blessings / crafting / guild hall /
+  entrances and portals / dungeons / boss places / hunting areas.
+- **Tested** on a live test server (full map, committed src-patches 0001-0026, private MariaDB) with two clients and a
+  bot in a party, and 395 bots for the cost: pins, the floor triangle after a teleport to another floor, the edge arrow
+  for a member 600 tiles east with its hover text, the full map view, leave and disband clearing the markers, the
+  option off and on, a hunting area discovered on approach with the message, the discoveries kept over a relog, a
+  category switched off. Screenshots were taken but are not in the repository.
 
 ## Party Finder (`party_finder.lua`, `party_finder_core.lua`, `party_finder_config.lua`, client `game_partyfinder`)
 

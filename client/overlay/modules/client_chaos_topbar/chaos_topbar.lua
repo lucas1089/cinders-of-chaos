@@ -215,6 +215,7 @@ local CATEGORIES = {
     entry('Map Overlay',     'minimap',     { modules = { 'game_mapoverlay' }, fns = { 'toggle' } }),
     entry('More',            'battlelist',  { sub = {
       entry('Map Overlay Settings', 'minimap', { modules = { 'game_mapoverlay' }, fns = { 'toggleSettings' } }),
+      entry('Map Markers',          'minimap', { modules = { 'game_mapmarkers' }, fns = { 'toggleSettings' } }),
       entry('Loot Splitter',      'bank',      { modules = { 'game_lootsplitter' }, fns = { 'toggle' } }),
       entry('Prey',               'battlelist', { modules = { 'game_prey' },     fns = { 'toggle' } }),
       entry('Task Hunt',          'quests',    { modules = { 'game_task_hunt' }, fns = { 'toggle' } }),

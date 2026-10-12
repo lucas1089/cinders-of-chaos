@@ -289,6 +289,12 @@ Chaos.tables.professionSales = "chaos_professions_sales"
 -- (+0 window, +1 level, +2 vocation, +3 sold slots, +4 early refreshes); no tables
 ChaosOpcodes.gamble = 199
 Chaos.storage.gamble = 7101900
+-- Map markers (client game_mapmarkers; server/README.md "Map markers"). One opcode for two scripts, JSON {action, data}:
+-- partymarkers.lua (+ _core, _config): where the other party members are; poi.lua (+ _core, _config, the generated
+-- data/chaos_poi.lua of tools/gen_poi.py): points of interest, the discovered ones in chaos_poi_seen
+-- (sql/chaos_poi.sql). No player storages.
+ChaosOpcodes.mapMarkers = 153
+Chaos.tables.poiSeen = "chaos_poi_seen"
 -- Right-click equips (engine src-patch 0024, server/README.md "Right-click equips"; rightclick_equip.lua,
 -- rightclick_equip_core.lua; client game_rightclickequip): the client option "Right-click equips items", client ->
 -- server {on = true | false}. Storages 7101810 - 7101819 reserved: +0 is 1 while the player turned it off (the engine
