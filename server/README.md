@@ -1218,6 +1218,10 @@ modifier, so a character that stacks it gives up other prefixes (damage, reflect
 - damage over time and fields hit the shield (each tick restarts the delay); PvP works the same; healing, potions and
   regeneration never fill it.
 
+**Other systems** change the maximum and the recharge through `ChaosEnergyShieldModifiers` (name -> function of the
+player, the totals, the maximum and the recharge; applied in name order by `ChaosEnergyShield.apply`): Hollow Vessel and
+its uniques (`archetypes.lua`, "Build archetypes").
+
 **Engine**: `Player` holds the value, the maximum and the recharge (per mille of the maximum per second); Lua
 `player:getEnergyShield()`, `setEnergyShield(n)` (clamped to 0 .. max), `getMaxEnergyShield()`, `setMaxEnergyShield(n)`
 (lowers the current value), `getEnergyShieldRecharge()`, `setEnergyShieldRecharge(perMille)`. `item_mods.lua` sets the
@@ -1669,6 +1673,10 @@ docs/BUILDS.md. Computed numbers: `data/spells/README.md` "Build archetypes" (no
 | 106 | Sigil of Cinders (`arCinderSigil`) | Mystic, Templar lines | fire and holy spell hits ignite (15% of the hit over 4 s, a fire condition owned by you); a cast that hits one enemy brands it for 8 s: 5% of that hit every second on the enemies within 1 sqm of the bearer; it jumps to the nearest enemy within 3 sqm when the bearer dies; an ignited monster that dies passes the burn to 2 within 2 sqm, 3 steps | damage that is not fire or holy x0.8 |
 | 362 | Aether Edge (`arAetherEdge`) | Monk, Templar lines | weapon and fist hits add 6% of the current energy shield as energy (a spell of yours) | maximum health 80% (`CONDITION_ATTRIBUTES`, sub id 71090, set and removed with the keystone) |
 | 253 | Reliquary Vow (`arReliquary`) | Templar line | a Reliquary Warden summon follows you outside protection zones (brought back past 7 sqm); every 2 s it heals you and the party within 3 sqm for 0.6% of their maximum health + 2 x your magic level, gives the other members +5% damage for 3 s, and deals 0.6 x level + 3 x magic level holy to enemies within 2 sqm | own damage x0.9 |
+| 105 | Snarewright's Creed (`arSnarewright`) | Ranger, Thief lines | traps +2, mines +3 at once; arming x0.5; snare hits x1.25 (`snares_config.lua` keystone; "Snares" below) | every other hit x0.85, damage over time and the snares' own hits spared (the spells' side sets storage 7100027 while a snare's hits are dealt) |
+| 99 | Covenant of Vigils (`arVigils`) | Mystic, Necromancer, Templar lines | vigils reserve x0.7, radius +3, the party (not the holder) gets every effect x1.2 (`vigils_config.lua` keystone; "Vigils" below) | own damage x0.9 |
+| 102 | Iron Tithe (`arIronTithe`) | Warrior, Monk, Templar lines | vigils reserve maximum health instead of mana, at 0.6 of their share, and work x1.5 on the holder (`vigils_config.lua` tithe) | the vigils cover the holder alone; no effect next to Hollow Vessel |
+| 96 | Hollow Vessel (`arHollowVessel`) | Mystic, Necromancer, Monk, Templar lines | maximum health 100 (`CONDITION_ATTRIBUTES` sub id 71091 with a negative `STAT_MAXHITPOINTS`, sized from the maximum without it and renewed by the one second think when that changes); maximum energy shield = the items' x1.5 + half the health given up, recharge +150 per mille (the energy shield's `ChaosEnergyShieldModifiers.archetypes`, `data/lib/chaos_energy_shield.lua`); the recharge starts 1 s after a hit (the think adds the part between 1 s and the engine's `energyShieldRechargeDelay`); earth damage over time and life drain set to 0 in onHealthChange | heals, leech and regeneration fill only the 100 health |
 
 - **Casts.** A hit counts as a spell cast only inside the spell supports' cast context (storage 7109990, written by
   `data/spells/chaos/_supports.lua` around every wrapped spell script): effigies, sigils, ignites and the Effigy price
@@ -1696,15 +1704,86 @@ docs/BUILDS.md. Computed numbers: `data/spells/README.md` "Build archetypes" (no
   (15413), Knuckles of the Unbound (28023), Rotbloom Phial (21691), Splintered Instant (28049), Stormcaller Recurve
   (8858), Shard of the Long Winter (26756), Effigy Carver's Idol (22423), Brand of the Ashen Choir (18403), Aetherbound
   Plate (2466), Reliquary Censer (27251). `archetypes.lua` reads the worn copies (with `chaos_unique`) at login and
-  after every equipment move. Knuckles and the Recurve also work without their keystone.
+  after every equipment move. Knuckles and the Recurve also work without their keystone. The second round: Snarewalker
+  Greaves (28115) and Fusewright's Charm (7890) for the snares, Choirmaster's Circlet (27667) and Oathkeeper's Standard
+  (15453) for the vigils, Hollowglass Diadem (27668) and Stillheart Robe (27390) for the energy shield; the spells'
+  Lua state reads them with `ChaosArchetypesCore.wornUniques` (the snare and vigil spells), the scripts with
+  `archetypes.lua`. The snare uniques and the Diadem work without a keystone.
 - **Save data.** The twelve nodes keep their ids and links (`tests/passivetree_layout_test.lua`); reworked version 2
   refunds them once; build code format 4 (older codes leave them out). Client: `game_passivetree` tooltips and names,
-  icons `keystones.png` cells 28-39 (`client/tools/gen_keystone_icons.py`).
-- **Not done.** Traps and mines, aura stacking with reserved mana and a build that lives on its energy shield alone need new spells or a
-  reserve system. A spell cast by name on a critical hit needs an engine call; not added (it would skip the cast
-  checks), Cascade Edge deals its own burst.
-- Tests: `tests/archetypes_test.lua` (rules, data, tooltips, uniques, the glue against a mocked engine),
-  `tests/buildshare_test.lua` (format 4). Not run on a live server.
+  icons `keystones.png` cells 28-39 (`client/tools/gen_keystone_icons.py`). The second round (96, 99, 102, 105, the
+  ends of the four other elemental clusters): reworked version 3, build code format 5, `keystones.png` cells 40-43,
+  flag bits 13-16 of storage 7100024.
+- **Hollow Vessel and the other rules.** The rifts' percent-of-maximum-health hits (`rift.lua` `percentHit`: Scorched
+  Earth, Rimefloor, Veilstorm, the Wrathful Guardian's nova) take `ChaosArchetypes.percentBase(player)`: health +
+  maximum energy shield for a holder, so the fixed 100 health is no way around them. Festering Wounds is a poison
+  condition: a holder takes none. The hexes and Parched Veins work as on anyone. Pyre Oath, Sanguine Covenant's cap
+  and Thornbound Oath's cap read the maximum health (100). The mana shield and the Trials' Mana Ward come before the
+  energy shield as before. The other systems' percent-of-health damage (raids, world bosses) still read the health
+  alone: not changed in this round.
+- **Not done.** A spell cast by name on a critical hit needs an engine call; not added (it would skip the cast
+  checks), Cascade Edge deals its own burst. The vigils have no buff bar entry yet (the reservation shows as a lower
+  maximum mana).
+- Tests: `tests/archetypes_test.lua` (rules, data, tooltips, uniques, the glue against a mocked engine; the second
+  round's prices, the vigils' hit multipliers and Hollow Vessel), `tests/snares_test.lua`, `tests/vigils_test.lua`,
+  `tests/buildshare_test.lua` (format 5), `tests/passivetree_plan_test.lua` (reworked version 3). Not run on a live
+  server.
+
+## Snares (`data/spells/chaos/_snares.lua`, `snares_core.lua`, `snares_config.lua`, docs/BUILDS.md "Snares")
+Traps and mines for the Ranger and Thief lines (2026-10-12): Snare Trap (spell 99, `drai snar`, level 40), Seeker Mine
+(100, `kah snar`, level 60), Detonate Mines (104, `vok snar`, level 60). A snare is a record in the spells' Lua state
+(`ChaosSnares.state`): kind, owner, position, element, its hit, when it arms and ends. Nothing is created on the map.
+
+- **Placement.** Thrown up to 4 sqm: onto the attack target (in range and sight), else straight ahead to the last open
+  tile in sight, never into a protection zone. Per player 3 traps / 5 mines (Snarewright's Creed +2 / +3, the Greaves
+  +1 trap, the Charm +2 mines; the oldest goes); 400 for the whole server (refused with a message).
+- **The scheduler.** One `addEvent` loop every 200 ms while snares exist, started with the supports' raw `addEvent`
+  (`ChaosSupportsSpell.rawAddEvent`) so it never carries a cast context. Each tick it visits 60 snares round robin: an
+  armed trap makes one 3x3 spectator query (a monster within 1 sqm sets it off), a mine past its fuse goes off, a
+  trap past its 20 s goes; a visit also drops the snare when its owner logged out, died, changed floor, went 30 sqm
+  away or into a protection zone (`archetypes.lua` clears them at once at logout and death when the two sides share
+  a Lua state). At most 16 bursts a tick (a 5x5 query and up to 8 hits each), 200 waiting. Worst case about 2 ms a tick,
+  far under the 20 ms task class of "Game loop stalls".
+- **The hit.** level x 0.4 + power x 0.09 + 20 .. level x 0.4 + power x 0.135 + 40, power the best of distance skill x
+  distance attack, sword skill x blade attack and the shuriken power; a mine x1.15; the keystone x1.25, Greaves traps
+  x1.1, Charm mines x1.1; physical x1.15, energy x0.85 with 1 sqm more radius. Dealt with `doTargetCombat` from the
+  owner (`ORIGIN_SPELL`; tree bonuses and the class factor apply in the scripts' events) to monsters that are not a
+  player's summon, in sight of the snare. Storage 7100027 is 1 while they are dealt: Snarewright's price spares them.
+  Outside a cast context: no spell supports, no Effigy or Sigil from them.
+- **The element** (storage 7100026 remembers the last spoken one): the word after the spell words, else the
+  remembered one, else the first brand rune socketed in the spell (supports storage 7110000 + spell x 4 + 1..3; the
+  snare spells are kind "area" in `chaos_supports_config.lua` so brands fit), else physical. Fire: a burn of 30% over
+  4 s (a fire condition of the owner); ice: slowed 40% for 3 s; earth: a poison of 36% over 6 s; death: 4% of the
+  damage back as health; holy: the owner and party members within 2 sqm of the snare heal 2% of their maximum health.
+- PvP: monsters only. Tests: `tests/snares_test.lua` (rules; the glue against a mocked engine: thrown, armed,
+  triggered, bursts, sight, the marker, elements, mines, the fuse, caps, the protection zone, the cleanup, the work per
+  tick with 400 snares, the spells in the XML). Not run on a live server.
+
+## Vigils (`vigils.lua`, `vigils_core.lua`, `vigils_config.lua`, `data/spells/chaos/_vigils.lua`, docs/BUILDS.md "Vigils")
+Auras that reserve mana (2026-10-12), every class: Vigil of Wrath (spell 179, `vigh vyr`, level 60, reserves 35%,
++5% damage), Vigil of Iron (255, `vigh tor`, 60, 35%, -6% damage taken), Vigil of Haste (161, `vigh ruan`, 40, 20%,
++15% speed), Vigil of Clarity (162, `vigh lum`, 40, 20%, 1% of the maximum mana a second). `mana="0"`: a cast
+switches the vigil in storage 7100025 (a bit each) and costs nothing.
+
+- **Reservation.** `vigils.lua` thinks every second over the online players. A holder's reserved share (the vigils'
+  shares x0.7 with Covenant of Vigils, x0.85 with the Choirmaster's Circlet, x0.9 with Oathkeeper's Standard) becomes
+  one `CONDITION_ATTRIBUTES` (sub id 71092) with a negative `STAT_MAXMANAPOINTS`, sized from the maximum without it and
+  renewed when that changes; the engine lowers the current mana with it. Reserved mana is never spent: spells, the
+  mana shield and the Trials' Mana Ward see the lower maximum. Iron Tithe reserves health instead (sub id 71093, at
+  0.6 of the share). More than 100% cannot be switched on; vigils that stop fitting (a unique taken off) are switched
+  off, the last first, with a message. The condition goes at death; the next think puts it back.
+- **Coverage.** The holder and its party members on its floor within 5 sqm (+3 Covenant, +2 Standard), alive; Iron
+  Tithe and a multi-client holder cover only themselves. Per member and vigil the strongest holder counts. A member
+  keeps the cover 1.5 s after the last think that saw it. Haste: a haste condition (sub id 71094, +15% of the base
+  speed, refreshed each think). Clarity: `addMana` each think, none while the member's rift run has Parched Veins
+  (`ChaosRift.runOf[id].fx.noMana`).
+- **Hits.** `archetypes.lua` onHealthChange (on every player and every monster already) multiplies a covered
+  attacker's hits by `ChaosVigils.dealt` and a covered player's damage taken by `ChaosVigils.taken`. Wrath does not add
+  on top of Inspiring Illusion (a giver in range: only what is above its +8% counts); Iron does not add on top of the
+  Templar line's defence aura (`ChaosTemplar.activeAura`: only what is above its reduction counts).
+- Tests: `tests/vigils_test.lua` (rules; the toggle spells; the glue against a mocked engine: reservation, renewal,
+  death, Iron Tithe, the party, haste, Clarity under Parched Veins, what no longer fits, the hit factors with the
+  Templar aura and Inspiring Illusion; the spells in the XML). Not run on a live server.
 
 ## Build sharing (`buildshare.lua`, `buildshare_core.lua`)
 A build can be exported as a short text code and imported on another character (or after a reset). The server encodes, decodes,
@@ -1716,13 +1795,13 @@ validates and applies; the client only shows what the server sends.
   box showing the price) applies it, **Cancel Preview** shows the saved tree again.
 - **Chat:** the spoken `!build` commands are gone (everything is in the Build Code panel); a "build link" `[build CB1-...]`
   pasted in chat still opens the panel with that code.
-- **Code format, version 4** (since the build archetype keystones, 2026-10-12; versions 2 and 3 have the same layout):
-  `CB4-` + base64url of:
+- **Code format, version 5** (since the second round of build archetype keystones, 2026-10-12; versions 2 to 4 have the
+  same layout): `CB5-` + base64url of:
   class line (1 byte, index into `ChaosBuildShare.CLASS_LINES` = warrior, ranger, mystic, thief; 0 = no class; never a
   vocation id), flags (1 byte, 1 = Paragon part, 2 = mastery part), the optional
   Paragon part (count, then stat index into `PARAGON_KEYS` + points, 1 byte each), the optional mastery part (count, then node
   id in 2 bytes and the chosen effect in 1 byte), a bitset of the allocated node ids (bit `id % 8` of byte `id / 8`, trailing
-  zero bytes dropped) and a 3 byte checksum (`h = (h x 257 + byte) mod 16777213` over "CB4" and the bytes). Only the
+  zero bytes dropped) and a 3 byte checksum (`h = (h x 257 + byte) mod 16777213` over "CB5" and the bytes). Only the
   canonical base64 form is accepted, so every single-character typo is rejected (test). A 100 node build is ~60 characters, a
   248 node level 1000 build ~110, the whole tree ~120. **Version 1** (`CB1-`, the same without the mastery part) is still
   read: an import of it keeps the character's own mastery effects, else takes the first one (the preview says so). An import
@@ -1731,13 +1810,14 @@ validates and applies; the client only shows what the server sends.
   by array positions. New nodes are appended with new ids; existing ids are never renumbered or reused, so old codes stay valid
   and mean the same nodes. A retired id makes codes that use it invalid ("node N is not in the passive tree"). Class lines and
   Paragon stat keys are append-only lists, and so are a mastery's effects. A new format gets a new version number; `decode`
-  reads every version ever handed out (`ChaosBuildShare.READS`: 1, 2 and 3), others are rejected with a clear message.
+  reads every version ever handed out (`ChaosBuildShare.READS`: 1 to 5), others are rejected with a clear message.
   **A node whose meaning changes** keeps its id and gets an entry in `ChaosBuildShare.REWORKED` (id -> the first version
   made with the new meaning; append only) and a new format version: an older code that holds it leaves it out on import,
   with the nodes only connected through it, and the preview says so ("The code is older than a tree change: n nodes
   whose effect changed are left out."). Version 3 came with 369, 376, 383 and 390 becoming the line keystones; the 27
   path notables kept their meaning (old stats plus a premium) and need no entry. Version 4 came with the twelve build
-  archetype keystones (77, 78, 81, 82, 106-109, 253, 262, 355, 362); codes of versions 1-3 leave them out.
+  archetype keystones (77, 78, 81, 82, 106-109, 253, 262, 355, 362); codes of versions 1-3 leave them out. Version 5
+  came with the second round (96, 99, 102, 105); codes of versions 1-4 leave those out.
 - **Import rules (server):** same class line as the importer (Juggernaut and Berserker share the Warrior line; keystone variants
   follow the importer's class via `ChaosClasses.keystoneKey`), else "This build is for a Warrior line class; you are a ...";
   every node known and connected to the start through the build's own nodes; a keystone only if the importer's class has a variant

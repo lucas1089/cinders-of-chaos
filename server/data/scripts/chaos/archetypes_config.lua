@@ -11,7 +11,8 @@ ChaosArchetypesConfig = {
 	-- written after every apply by archetypes.lua, read by the spells' Lua state: ChaosSpell.meleeAttack for Open Hand)
 	storage = 7100024,
 
-	-- node id of each keystone (a leaf of the main tree; passivetree_config.lua reworked version 2) and its flag
+	-- node id of each keystone (a leaf of the main tree; passivetree_config.lua reworked versions 2 and 3) and its flag.
+	-- Append only: the order is the bit of the flag storage.
 	nodes = {
 		{id = 108, flag = "arPyreOath"},
 		{id = 81, flag = "arSanguine"},
@@ -25,6 +26,11 @@ ChaosArchetypesConfig = {
 		{id = 106, flag = "arCinderSigil"},
 		{id = 362, flag = "arAetherEdge"},
 		{id = 253, flag = "arReliquary"},
+		-- the second round (2026-10-12, reworked version 3): snares, vigils with reserved mana, a pure energy shield
+		{id = 105, flag = "arSnarewright"},
+		{id = 99, flag = "arVigils"},
+		{id = 102, flag = "arIronTithe"},
+		{id = 96, flag = "arHollowVessel"},
 	},
 
 	-- the classes that may take each keystone (the client nodes carry the same list; the test checks it)
@@ -42,6 +48,13 @@ ChaosArchetypesConfig = {
 		arCinderSigil = {"mystic", "elementalist", "illusionist", "templar", "inquisitor", "sentinel"},
 		arAetherEdge = {"monk", "shadowfist", "ironsage", "templar", "inquisitor", "sentinel"},
 		arReliquary = {"templar", "inquisitor", "sentinel"},
+		arSnarewright = {"ranger", "deadeye", "beastmaster", "thief", "ninja", "samurai"},
+		arVigils = {"mystic", "elementalist", "illusionist", "necromancer", "lich", "bonelord", "templar", "inquisitor",
+			"sentinel"},
+		arIronTithe = {"warrior", "juggernaut", "berserker", "monk", "shadowfist", "ironsage", "templar", "inquisitor",
+			"sentinel"},
+		arHollowVessel = {"mystic", "elementalist", "illusionist", "necromancer", "lich", "bonelord", "monk", "shadowfist",
+			"ironsage", "templar", "inquisitor", "sentinel"},
 	},
 
 	-- the work one server tick may do for the chain reactions (poison and burn spread, shatter): at most perTick
@@ -140,12 +153,34 @@ ChaosArchetypesConfig = {
 		healPerMagicLevel = 2, partyDamage = 0.05, buffMs = 3000, damageRadius = 2, damagePerLevel = 0.6,
 		damagePerMagicLevel = 3, leashSqm = 7, ownDamage = 0.90, uniqueBonus = 0.25},
 
+	-- Snarewright's Creed (Ranger and Thief lines; snares_config.lua keystone): more traps and mines, armed faster, snare
+	-- hits harder; every other hit x otherDamage. Its numbers live with the snares (the spells' side reads them there).
+	-- Covenant of Vigils (Mystic, Necromancer and Templar lines; vigils_config.lua keystone): vigils reserve less, reach
+	-- farther and give the party more; your own damage x ownDamage.
+	-- Iron Tithe (Warrior, Monk and Templar lines; vigils_config.lua tithe): vigils reserve maximum health instead of mana
+	-- and work on you alone, stronger.
+
+	-- Hollow Vessel (Mystic, Necromancer, Monk and Templar lines): your maximum health becomes `health` (a condition with
+	-- sub id subId, set to whatever brings it there). Your maximum energy shield: the items' x (1 + more) + fromHealth x
+	-- the health given up. The shield recharges recharge per mille of its maximum a second faster and starts earlyMs
+	-- after the last hit instead of the engine's 2000 (the archetypes' one second think adds that part). You take no
+	-- earth damage over time (poison, Festering Wounds) and no life drain. Health stays what it is: heals, regeneration
+	-- and leech fill only those `health` points. Percent-of-maximum-health damage of the rifts (Scorched Earth,
+	-- Rimefloor, Veilstorm, the Wrathful Guardian's nova) counts health + maximum shield for you.
+	-- Unique Stillheart Robe: more +uniqueMore. Unique Hollowglass Diadem: recharge +diademRecharge per mille, and the
+	-- early start without the keystone too.
+	arHollowVessel = {health = 100, fromHealth = 0.5, more = 0.5, recharge = 150, earlyMs = 1000, subId = 71091,
+		uniqueMore = 0.4, diademRecharge = 100},
+
 	-- the archetype uniques (data/items/chaos_items.xml `archetype`, chaos_unique_specs.lua): base server id -> the
 	-- archetype key the glue reads on the equipped copy (it must carry chaos_unique)
 	uniques = {
 		[8881] = "pyreMantle", [27652] = "sanguineVein", [15413] = "spitethorn", [28023] = "openHand",
 		[21691] = "rotbloom", [28049] = "splinteredInstant", [8858] = "stormcaller", [26756] = "longWinter",
 		[22423] = "effigyIdol", [18403] = "ashenChoir", [2466] = "aetherPlate", [27251] = "reliquaryCenser",
+		-- the second round: snares, vigils, Hollow Vessel
+		[28115] = "snarewalker", [7890] = "fusewright", [27667] = "choirmaster", [15453] = "oathkeeper",
+		[27668] = "hollowglass", [27390] = "stillheart",
 	},
 }
 

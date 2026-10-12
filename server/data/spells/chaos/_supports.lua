@@ -34,6 +34,8 @@ local cfg = S.config
 
 local SCRIPTS = "data/spells/scripts/"
 local rawAddEvent = addEvent
+-- the engine's addEvent without the cast context: for schedulers that outlive a cast (the snares, _snares.lua)
+W.rawAddEvent = rawAddEvent
 local serials = {} -- player id -> last cast serial
 
 -- ---------------------------------------------------------------- spells.xml: script -> spell

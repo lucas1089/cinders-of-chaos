@@ -38,6 +38,8 @@ return {
 		[63] = "single", [64] = "single", [68] = "single", [69] = "single", [71] = "single", -- Monk strikes
 		[189] = "single", [198] = "single", -- Radiant Smite, Judgement
 		[236] = "single", [240] = "single", [244] = "single", -- Shuriken Toss, Shadow Step, Iaijutsu
+		-- the snares (data/spells/chaos/_snares.lua): a brand rune socketed in them picks their element
+		[99] = "area", [100] = "area", [104] = "buff", -- Snare Trap, Seeker Mine, Detonate Mines
 	},
 
 	-- ------------------------------------------------------------------ the supports

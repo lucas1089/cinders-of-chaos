@@ -30,7 +30,7 @@ dropped (listed as `skipped` in `chaos_unique_specs.lua`).
 
 ## Items
 
-The build archetype uniques (2026-10-12, docs/BUILDS.md, server/README.md "Build archetypes") carry an `archetype`
+The build archetype uniques (2026-10-12, both rounds; docs/BUILDS.md, server/README.md "Build archetypes") carry an `archetype`
 attribute: the effect `data/scripts/chaos/archetypes.lua` reads on the worn copy. Their stats are ordinary ones.
 
 | name | slot | id | stock item | level | tier | archetype effect |
@@ -47,6 +47,12 @@ attribute: the effect `data/scripts/chaos/archetypes.lua` reads on the worn copy
 | Brand of the Ashen Choir | head | 18403 | prismatic helmet | 150 | rare | Sigil of Cinders pulses +25% |
 | Aetherbound Plate | body | 2466 | golden armor | 120 | rare | Aether Edge 10% of the shield |
 | Reliquary Censer | necklace | 27251 | rainbow necklace | 220 | legendary | Reliquary Warden pulses +25% |
+| Snarewalker Greaves | feet | 28115 | shadewalker boots | 120 | rare | snares: +1 trap, armed 0.3 s sooner, traps +10% (no keystone needed) |
+| Fusewright's Charm | necklace | 7890 | magma amulet | 150 | rare | snares: +2 mines, mines +10%, fuse 4 s longer (no keystone needed) |
+| Choirmaster's Circlet | head | 27667 | eldritch cowl | 200 | legendary | vigils reserve 15% less |
+| Oathkeeper's Standard | shield | 15453 | warrior's shield | 180 | legendary | vigils reserve 10% less, reach 2 sqm farther |
+| Hollowglass Diadem | head | 27668 | eldritch hood | 250 | legendary | energy shield recharge +10% a second, starts 1 s after a hit (no keystone needed) |
+| Stillheart Robe | body | 27390 | soulmantle | 300 | legendary | Hollow Vessel: the items' energy shield +40% more |
 
 
 Columns: server id / client id, the stock item that was overridden, required level (see caveats), drop tier (`minTier`), key stats.

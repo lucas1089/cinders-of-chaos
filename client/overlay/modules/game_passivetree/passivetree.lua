@@ -2042,7 +2042,9 @@ KEYSTONE_NAMES = {
 	arPyreOath = "Pyre Oath", arSanguine = "Sanguine Covenant", arThornbound = "Thornbound Oath",
 	arOpenHand = "Open Hand Creed", arContagion = "Contagion Rite", arCascade = "Cascade Edge",
 	arStormstring = "Stormstring", arWinterLattice = "Winter's Lattice", arEffigy = "Effigy Covenant",
-	arCinderSigil = "Sigil of Cinders", arAetherEdge = "Aether Edge", arReliquary = "Reliquary Vow"
+	arCinderSigil = "Sigil of Cinders", arAetherEdge = "Aether Edge", arReliquary = "Reliquary Vow",
+	arSnarewright = "Snarewright's Creed", arVigils = "Covenant of Vigils", arIronTithe = "Iron Tithe",
+	arHollowVessel = "Hollow Vessel"
 }
 -- class notables of the class sections (their effect is in the node's own tooltip lines)
 CLASS_NOTABLE_NAMES = {

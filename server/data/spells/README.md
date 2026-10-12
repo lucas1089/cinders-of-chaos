@@ -144,6 +144,14 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 251 | Rebuke | `vok sol kal` | Se | 100 | 150 | 12s | Taunts every monster within 4 sqm, 25% slow for 6 s. |
 | 252 | Aegis of Faith | `tor gal sol aeg` | Se | 120 | 150 | 25s | With a shield: -40% damage taken for 5 s. |
 | 253 | Lay on Hands | `saen gal manh "Name"` | Se | 150 | 400 | 60s | Party member (named, or the lowest health share) or itself within 5 sqm: 35% max health + ml x 10. |
+| **build archetypes, second round** (2026-10-12; docs/BUILDS.md "Snares", "Vigils"; server/README.md "Snares", "Vigils"; Rl = the Ranger line R, D, BM; Tl = the Thief line T, N, S; all = every class) | | | | | | | |
+| 99 | Snare Trap | `drai snar ["element"]` | Rl, Tl | 40 | 90 | 2s | A trap thrown up to 4 sqm (the target or ahead), armed after 0.6 s; a monster within 1 sqm sets it off: up to 8 enemies within 2 sqm take level x 0.4 + power x 0.09-0.135 + 20-40 (power: the best of bow, blade and shuriken). The element (fire, ice, energy, earth, death, holy, physical) is spoken, remembered, or the spell's brand rune. 3 at once, 20 s. |
+| 100 | Seeker Mine | `kah snar ["element"]` | Rl, Tl | 60 | 110 | 2s | A mine thrown the same way, armed after 0.8 s, bursts for 1.15 x a trap at Detonate Mines or its 8 s fuse. 5 at once. |
+| 104 | Detonate Mines | `vok snar` | Rl, Tl | 60 | 20 | 1s | Every armed mine of yours goes off, 0.1 s apart (support group, no attack cooldown). |
+| 179 | Vigil of Wrath | `vigh vyr` | all | 60 | 0 | 2s | Switches the vigil: 35% of the maximum mana reserved; you and party members within 5 sqm deal +5%. |
+| 255 | Vigil of Iron | `vigh tor` | all | 60 | 0 | 2s | Switches the vigil: 35% reserved; -6% damage taken (the Templar aura and it: the stronger counts). |
+| 161 | Vigil of Haste | `vigh ruan` | all | 40 | 0 | 2s | Switches the vigil: 20% reserved; +15% speed. |
+| 162 | Vigil of Clarity | `vigh lum` | all | 40 | 0 | 2s | Switches the vigil: 20% reserved; 1% of the maximum mana back a second (not under Parched Veins). |
 
 Damage formulas follow the stock style: `level/5 + magicLevel*a + b` (min/max with different a, b); knight spells use the stock
 skill*attack callback, paladin spells scale mainly with the distance skill (plus a little magic level).
@@ -796,6 +804,68 @@ unchanged. Sanguine Covenant in a pack: 146 / 410 health a second for a Berserke
 Reliquary Vow: 0.3% of the maximum health a second + magic level for every party member within 3 sqm (37 / 120 a
 second on an ally of 4000 / 13000 health), far below the Iron Sage's 1765 / 2525; the +5% party damage is under
 Inspiring Illusion's +8%.
+
+### Snares, vigils and Hollow Vessel (2026-10-12, computed, not measured in game)
+
+The second round of build archetypes (docs/BUILDS.md; server/README.md "Build archetypes", "Snares", "Vigils"). Not
+run on the dummies: the C4 harness needs a live test server. Every number below is computed from the C4 table above
+and the formulas, and marked so. The dummies stand still, so a trap set off at once and mines detonated after every
+throw are the dummies' best case; a moving pack loses some snares.
+
+Assumptions (the computation is test-only, like the first round's): one snare cast every 2 s (the attack group
+cooldown), no other attack spell; the weapon share of the damage 38% / 49% for the Ranger line (as before) and 50%
+for the Thief line; power 110 x 45 / 140 x 90 (distance or sword skill x attack); the tree and the class factor on a
+snare's hit x1.10 / x1.20 and `ChaosClassTree.classDamage` (Ranger line 1.0 / 0.95, Deadeye 1.0, Thief 0.48 / 0.53,
+Ninja 0.45 / 0.57); every burst hits all 5 dummies (they stand within 2 sqm); a mine x1.15 and detonated at once.
+Snare hit per target before the tree: 707 / 1848 (level 300 / 1000).
+
+| Archetype (keystone, unique) | Class | 300: 1 target | 300: 5 targets | 1000: 1 target | 1000: 5 targets | Against the leaders (300 / 1000) |
+|---|---|---|---|---|---|---|
+| Trapper (Snarewright's Creed) | Ranger | 1075 -> 833 | 1409 -> 2777 | 3673 -> 2846 | 5305 -> 8111 | 1T -36% / -38%, 5T -19% / -26% |
+| Trapper + Snarewalker Greaves | Ranger | 1075 -> 881 | 1409 -> 3020 | 3673 -> 2977 | 5305 -> 8769 | 1T -33% / -35%, 5T -12% / -20% |
+| Trapper + Greaves | Deadeye | 1312 -> 958 | 1446 -> 3096 | 4571 -> 3428 | 5385 -> 9524 | 1T -27% / -25%, 5T -10% / -13% |
+| Mine-layer + Fusewright's Charm | Deadeye | 1312 -> 1038 | 1446 -> 3497 | 4571 -> 3656 | 5385 -> 10667 | 1T -21% / -20%, 5T +2% / -3% |
+| Mine-layer + Charm | Ranger | 1075 -> 961 | 1409 -> 3421 | 3673 -> 3194 | 5305 -> 9855 | 1T -27% / -30%, 5T -1% / -10% |
+| Trapper + Greaves (the pets apart) | Beastmaster | 832 -> 803 | 1919 -> 2941 | 3267 -> 2808 | 9255 -> 8600 | 1T -39% / -39%, 5T -15% / -22% |
+| Mine-layer + Charm | Ninja | 1121 -> 753 | 1424 -> 1859 | 3565 -> 2514 | 5101 -> 6510 | 1T -43% / -45%, 5T -46% / -41% |
+| Trapper + Greaves | Thief | 870 -> 626 | 870 -> 1652 | 2391 -> 1823 | 2297 -> 5055 | 1T -52% / -60%, 5T -52% / -54% |
+| Snare Trap without the keystone | Ranger | 1075 -> 797 | 1409 -> 2352 | 3673 -> 2852 | 5305 -> 7065 | 1T -39% / -38%, 5T -32% / -36% |
+| Tithebound (Iron Tithe: Wrath x1.5, +7.5%) | Berserker | 974 -> 1047 | 2932 -> 3151 | 2634 -> 2831 | 8218 -> 8834 | 1T -20% / -38%, 5T -8% / -20% |
+| Tithebound | Shadowfist | 1181 -> 1269 | 1262 -> 1356 | 3683 -> 3959 | 3948 -> 4244 | 1T -3% / -13%, 5T -61% / -61% |
+| Tithebound | Inquisitor | 1086 -> 1167 | 2056 -> 2210 | 3556 -> 3822 | 6192 -> 6656 | 1T -11% / -16%, 5T -36% / -40% |
+| Choir Herald (Covenant of Vigils), own damage | Sentinel | 743 -> 668 | 1285 -> 1156 | 1948 -> 1753 | 3429 -> 3086 | 1T -49% / -62%, 5T -66% / -72% |
+| Choir Herald, own damage | Bone Lord | 1158 -> 1042 | 2326 -> 2093 | 4104 -> 3693 | 7883 -> 7094 | 1T -21% / -19%, 5T -39% / -36% |
+| Vigil of Wrath on mana (anyone) | Deadeye | 1312 -> 1377 | 1446 -> 1518 | 4571 -> 4799 | 5385 -> 5654 | the leader itself +5% |
+| Vigil of Wrath on mana (anyone) | Elementalist | 913 -> 958 | 3442 -> 3614 | 2954 -> 3101 | 11004 -> 11554 | the leader itself +5% |
+| Hollow Palm (Hollow Vessel + Aether Edge) | Shadowfist | 1181 -> 1266 | 1262 -> 1347 | 3683 -> 4094 | 3948 -> 4359 | 1T -4% / -10% |
+| Hollow Palm + Aetherbound Plate | Shadowfist | 1181 -> 1323 | 1262 -> 1404 | 3683 -> 4367 | 3948 -> 4632 | 1T +1% / -4% |
+| Hollow Palm + Plate + Stillheart Robe | Shadowfist | 1181 -> 1337 | 1262 -> 1418 | 3683 -> 4417 | 3948 -> 4682 | 1T +2% / -3% |
+
+Hollow Palm: Aether Edge's 6% (10% with the Plate) of a shield of 2,831 / 8,244 (Robe: 3,127 / 8,844; the health
+after Aether Edge's x0.8), at 0.5 / 0.83 hits a second (the rate the first round's Storm Palm row implies).
+
+Leaders after the change (the owner's order kept): the Deadeye leads single target and the Elementalist leads area at
+both levels. Closest: the Mine-layer Deadeye at level 300, 3497 in area, +2% over the Elementalist's 3442 (the dummies'
+best case: every mine detonated in the pack); the Hollow Palm with the Plate and the Robe, 1337 / 4417 on one target,
++2% / -3% against the Deadeye's 1312 / 4571. No archetype passes a leader by more than the ~10% the rule allows. The
+vigils lift everyone who runs them by the same 5%: compared with the leaders running Vigil of Wrath too, the order is
+unchanged (Tithebound Berserker -13% / -24% in area, the Herald's party +6% instead of +5%).
+
+Toughness (computed): Hollow Vessel's pool and recharge against health + shield without it (items 740 / 1,500 of
+shield, health x1.20 / x1.25 of the vocation's):
+
+| Hollow Vessel | Class | 300: shield | 300: pool (change) | 300: recharge | 1000: shield | 1000: pool (change) | 1000: recharge |
+|---|---|---|---|---|---|---|---|
+| Hollow Caster | Elementalist | 2047 | 2147 (-21%) | 716 / s | 5415 | 5515 (-30%) | 1895 / s |
+| Hollow Caster, Robe + Diadem | Elementalist | 2343 | 2443 (-10%) | 1054 / s | 6015 | 6115 (-23%) | 2707 / s |
+| Hollow Lich | Lich | 2397 | 2497 (-27%) | 839 / s | 6655 | 6755 (-35%) | 2329 / s |
+| Hollow Palm | Shadowfist | 2830 | 2930 (-32%) | 990 / s | 8244 | 8344 (-39%) | 2885 / s |
+| Hollow Templar line | Inquisitor | 3448 | 3548 (-36%) | 1207 / s | 10375 | 10475 (-41%) | 3631 / s |
+
+Without the keystone the shield recharges 148 / 300 a second (20% of 740 / 1,500), starting 2 s after a hit; with it
+the pool is smaller but comes back about five times as fast, starting after 1 s, and poison and life drain do nothing.
+The vigils: Iron Tithe's Wrath and Haste reserve a third of the health (21% + 12%); Vigil of Iron's -6% is about +6%
+effective health for the party, nothing more under the Sentinel's 12% aura.
 
 ### Infinite arrows (bows and crossbows without ammunition, 2026-10-11)
 

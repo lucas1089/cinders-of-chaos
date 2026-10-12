@@ -1193,7 +1193,12 @@ function getTreeIcons()
 		arEffigy = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2304, y = 0},
 		arCinderSigil = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2368, y = 0},
 		arAetherEdge = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2432, y = 0},
-		arReliquary = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2496, y = 0}
+		arReliquary = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2496, y = 0},
+		-- the second round (main tree nodes 105, 99, 102, 96)
+		arSnarewright = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2560, y = 0},
+		arVigils = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2624, y = 0},
+		arIronTithe = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2688, y = 0},
+		arHollowVessel = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2752, y = 0}
 	}
 end
 

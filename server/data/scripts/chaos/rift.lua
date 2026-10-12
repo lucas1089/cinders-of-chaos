@@ -1709,9 +1709,11 @@ local function targets(run, now)
 	return out
 end
 
--- value share of each listed player's max health as damage of the element (no attacker: nothing scales it again)
+-- value share of each listed player's max health as damage of the element (no attacker: nothing scales it again).
+-- A Hollow Vessel (archetypes.lua percentBase) counts health + maximum energy shield, its health being fixed and low.
 local function percentHit(p, share, element)
-	local amount = R.percentHit(p:getMaxHealth(), share)
+	local base = ChaosArchetypes and ChaosArchetypes.percentBase and ChaosArchetypes.percentBase(p) or p:getMaxHealth()
+	local amount = R.percentHit(base, share)
 	doTargetCombatHealth(0, p, combatOf(element), -amount, -amount, effectOf(element))
 end
 

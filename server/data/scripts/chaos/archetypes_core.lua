@@ -83,7 +83,19 @@ end
 -- ------------------------------------------------------------------------------------------------ prices (own damage)
 -- The multiplier of an own hit. ctx = {origin = "melee" | "ranged" | "spell" | "condition" | "other", bow = bool
 -- (a bow / crossbow hit), critical = bool, source = nil | "pyre" | "relic" | "effigy" | ... (a hit of an archetype
--- itself: the prices of that archetype do not apply to it)}. Type-dependent prices: typeFactor.
+-- itself: the prices of that archetype do not apply to it), snare = bool (a snare's hit, snares_config.lua storage.hit)}.
+-- Type-dependent prices: typeFactor.
+
+-- the configs of the second round's keystones (their numbers live with their systems)
+function A.snaresConfig()
+	ChaosSnaresConfig = ChaosSnaresConfig or dofile("data/scripts/chaos/snares_config.lua")
+	return ChaosSnaresConfig
+end
+
+function A.vigilsConfig()
+	ChaosVigilsConfig = ChaosVigilsConfig or dofile("data/scripts/chaos/vigils_config.lua")
+	return ChaosVigilsConfig
+end
 function A.hitFactor(flags, ctx)
 	local m = 1
 	local c = cfg()
@@ -95,6 +107,14 @@ function A.hitFactor(flags, ctx)
 	end
 	if flags.arReliquary and ctx.source ~= "relic" then
 		m = m * c.arReliquary.ownDamage
+	end
+	-- Covenant of Vigils: every hit of yours (vigils_config.lua keystone.ownDamage)
+	if flags.arVigils then
+		m = m * A.vigilsConfig().keystone.ownDamage
+	end
+	-- Snarewright's Creed: every hit that is not a snare's (and not damage over time) (snares_config.lua keystone)
+	if flags.arSnarewright and not ctx.snare and ctx.origin ~= "condition" then
+		m = m * A.snaresConfig().keystone.otherDamage
 	end
 	if not ctx.source then
 		local weapon = ctx.origin == "melee" or ctx.origin == "ranged"
@@ -279,6 +299,40 @@ function A.spellOpenHandAttack(player)
 		end
 	end
 	return A.openHandAttack(player:getLevel(), keystone, unique)
+end
+
+-- the archetype flags of a storage mask (the spells' Lua state reads the keystones this way)
+function A.flagsOfMask(mask)
+	local out = {}
+	for _, f in ipairs(A.FLAGS) do
+		if A.maskHas(mask, f) then
+			out[f] = true
+		end
+	end
+	return out
+end
+
+-- the archetype uniques a player wears: {key = true} (copies that carry chaos_unique; for the spells' Lua state, which
+-- has no archetypes.lua)
+local WORN_SLOTS = {"CONST_SLOT_HEAD", "CONST_SLOT_NECKLACE", "CONST_SLOT_ARMOR", "CONST_SLOT_RIGHT", "CONST_SLOT_LEFT",
+	"CONST_SLOT_LEGS", "CONST_SLOT_FEET", "CONST_SLOT_RING", "CONST_SLOT_AMMO"}
+function A.wornUniques(player)
+	local out = {}
+	if not player or not player.getSlotItem then
+		return out
+	end
+	for _, name in ipairs(WORN_SLOTS) do
+		local slot = _G[name]
+		local item = slot and player:getSlotItem(slot)
+		local key = item and cfg().uniques[item:getId()]
+		if key then
+			local ok, mark = pcall(item.getCustomAttribute, item, "chaos_unique")
+			if ok and mark ~= nil and mark ~= 0 then
+				out[key] = true
+			end
+		end
+	end
+	return out
 end
 
 -- ------------------------------------------------------------------------------------------------ chain reactions
@@ -490,6 +544,60 @@ function A.relicBuff(buffs, attackerId, now)
 		return 1 + cfg().arReliquary.partyDamage
 	end
 	return 1
+end
+
+-- ------------------------------------------------------------------------------------------------ Hollow Vessel
+-- the health cut that brings the maximum to arHollowVessel.health: maxHealth = the maximum now (the cut already applied
+-- is part of it), applied = that cut. Returns the cut, which is also the health given up.
+function A.hollowCut(maxHealth, applied)
+	local base = (maxHealth or 0) + (applied or 0)
+	return math.max(0, base - cfg().arHollowVessel.health)
+end
+
+-- the maximum energy shield: the items' maximum (ChaosEnergyShield.maximum), the health given up, the unique worn
+function A.hollowShield(itemMax, givenUp, keystone, stillheart)
+	local h = cfg().arHollowVessel
+	if not keystone then
+		return itemMax or 0
+	end
+	local more = h.more + (stillheart and h.uniqueMore or 0)
+	return math.floor((itemMax or 0) * (1 + more) + (givenUp or 0) * h.fromHealth + 1e-9)
+end
+
+-- the recharge per mille added (keystone, Hollowglass Diadem)
+function A.hollowRecharge(keystone, diadem)
+	local h = cfg().arHollowVessel
+	return (keystone and h.recharge or 0) + (diadem and h.diademRecharge or 0)
+end
+
+-- a hit the keystone ignores: earth damage over time (poison) and life drain
+function A.hollowImmune(ctype, origin)
+	return ctype == "lifedrain" or (ctype == "earth" and origin == "condition")
+end
+
+-- what the one second think adds to the shield: the part of the last `ms` that lies between earlyMs and the engine's
+-- delay after the last hit (the engine recharges from its delay on). sinceHit = ms since the last hit at the think.
+function A.earlyRecharge(current, maximum, perMille, sinceHit, ms, engineDelay)
+	local h = cfg().arHollowVessel
+	current, maximum, ms, engineDelay = current or 0, maximum or 0, ms or 1000, engineDelay or 2000
+	if maximum <= 0 or current >= maximum or not sinceHit then
+		return 0
+	end
+	local from = math.max(sinceHit - ms, h.earlyMs)
+	local to = math.min(sinceHit, engineDelay)
+	if to <= from then
+		return 0
+	end
+	local gain = math.max(1, math.floor(maximum * (perMille or 0) * (to - from) / 1000000))
+	return math.min(gain, maximum - current)
+end
+
+-- the base of a "percent of maximum health" hit (the rifts): health + maximum shield for a holder
+function A.percentBase(maxHealth, maxShield, keystone)
+	if keystone then
+		return (maxHealth or 0) + (maxShield or 0)
+	end
+	return maxHealth or 0
 end
 
 return A

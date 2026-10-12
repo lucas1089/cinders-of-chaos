@@ -576,6 +576,27 @@ archetypes" (not measured in game). Each line now has at least two archetypes, e
 The role order holds: the Deadeye stays the best single target, the Elementalist the best area (its own archetypes
 add at most +10%), the Juggernaut the tankiest.
 
+### Build archetypes, second round (2026-10-12)
+
+The three families left out at first: snares (traps and mines), vigils (auras that reserve mana) and a life on the
+energy shield alone. Four more keystones on the ends of the four other elemental clusters (96, 99, 102, 105; refunded
+once, build code format 5), six uniques, seven spells (Snare Trap, Seeker Mine, Detonate Mines for the Ranger and
+Thief lines; four vigils for every class). Guide docs/BUILDS.md; rules server/README.md "Build archetypes", "Snares",
+"Vigils"; computed numbers server/data/spells/README.md "Snares, vigils and Hollow Vessel" (not measured in game).
+
+| Line | New options |
+|---|---|
+| Warrior | **Tithebound** (Iron Tithe: vigils on health, Berserker) |
+| Ranger | **Trapper** and **Mine-layer** (Snarewright's Creed, Deadeye) |
+| Mystic | **Choir Herald** (Covenant of Vigils, Illusionist), **Hollow Caster** (Hollow Vessel, Elementalist) |
+| Thief | **Mine-layer** (Snarewright's Creed, Ninja), Trapper |
+| Necromancer | **Choir Herald** (Bone Lord), **Hollow Caster** (Lich) |
+| Monk | **Hollow Palm** (Hollow Vessel with Aether Edge, Shadowfist), **Tithebound** |
+| Templar | **Choir Herald** (Sentinel), **Tithebound** (Inquisitor), Hollow Vessel |
+
+The role order holds: the Deadeye and the Elementalist stay the leaders (the closest, a Mine-layer Deadeye in area at
+level 300, +2% on the dummies' best case), the Illusionist and the Iron Sage stay the healers.
+
 ### Balance with the trees
 
 Every class measured the same way at levels 300 and 1000 with a tree build (`server/data/spells/README.md` "Classes with the

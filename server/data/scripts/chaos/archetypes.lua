@@ -9,7 +9,13 @@
 --   * a listener of the passive tree (ChaosPassiveTree.listeners, after every save, reset and login): who holds what,
 --     the Aether Edge health condition.
 --   * a one second think (GlobalEvent) over the players holding a ticking archetype: Pyre Oath, effigies, sigils, the
---     Reliquary Warden; and a queue for the chain reactions, drained chain.perTick at a time (archetypes_config.lua).
+--     Reliquary Warden, Hollow Vessel's health and early recharge; and a queue for the chain reactions, drained
+--     chain.perTick at a time (archetypes_config.lua).
+--   * the second round (2026-10-12): Snarewright's Creed (its price spares the snares' hits, which the spells' side marks
+--     in a storage, snares_config.lua storage.hit), Covenant of Vigils (its price), the vigils' hit multipliers
+--     (vigils.lua ChaosVigils.dealt / taken) and Hollow Vessel (its health condition, the energy shield modifier read
+--     by data/lib/chaos_energy_shield.lua, the immunities, the early recharge, ChaosArchetypes.percentBase for the
+--     rifts' percent-of-health hits).
 --
 -- Damage of the archetypes, and the guards:
 --   * shares of a hit (Cascade, arcs, effigy and sigil pulses, the reflect) are dealt with ChaosKeystones.depth up, like
@@ -112,6 +118,16 @@ for _, s in ipairs({"CONST_SLOT_HEAD", "CONST_SLOT_NECKLACE", "CONST_SLOT_ARMOR"
 	end
 end
 
+local function refreshShieldLater(player)
+	local pid = player:getId()
+	addEvent(function()
+		local p = Player(pid)
+		if p and ChaosEnergyShield and ChaosEnergyShield.apply then
+			pcall(ChaosEnergyShield.apply, p, ChaosItemModsCache[pid] or {})
+		end
+	end, 0)
+end
+
 function M.refreshUniques(player)
 	local list, any = {}, false
 	for _, slot in ipairs(SLOTS) do
@@ -125,7 +141,13 @@ function M.refreshUniques(player)
 			end
 		end
 	end
+	local before = M.uniques[player:getId()]
 	M.uniques[player:getId()] = any and list or nil
+	-- the shield uniques change the energy shield's maximum and recharge
+	local was = before and (before.stillheart or before.hollowglass)
+	if was or list.stillheart or list.hollowglass then
+		refreshShieldLater(player)
+	end
 end
 
 -- the passive tree listener: after every save, reset and login
@@ -138,6 +160,7 @@ local function onTree(player, bonuses)
 		player:setStorageValue(cfg().storage, mask) -- for the spells' Lua state (Open Hand)
 	end
 	M.syncAether(player)
+	M.syncHollow(player)
 	if not flags.arReliquary then
 		M.dismissRelic(pid)
 	end
@@ -363,6 +386,8 @@ end
 M.state = state
 
 local relicBuffs = {} -- member id -> until time
+M.hollow = M.hollow or {} -- player id -> {cut = the health given up} (Hollow Vessel)
+M.lastHit = M.lastHit or {} -- player id -> ms of the last hit taken (Hollow Vessel, Hollowglass Diadem)
 
 -- ------------------------------------------------------------------------------------------------ Aether Edge
 function M.syncAether(player)
@@ -380,6 +405,94 @@ function M.syncAether(player)
 	elseif has then
 		player:removeCondition(CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, a.subId)
 	end
+end
+
+-- ------------------------------------------------------------------------------------------------ Hollow Vessel
+local function refreshShield(player)
+	if ChaosEnergyShield and ChaosEnergyShield.apply then
+		pcall(ChaosEnergyShield.apply, player, ChaosItemModsCache[player:getId()] or {})
+	end
+end
+
+-- the maximum health of a holder: a condition that brings it to arHollowVessel.health, sized from the maximum without it
+-- and renewed whenever that changes (level, items, tree, Aether Edge); the energy shield follows
+function M.syncHollow(player)
+	local pid = player:getId()
+	local flags = flagsOf(pid)
+	local h = cfg().arHollowVessel
+	local st = M.hollow[pid]
+	local has = player:getCondition(CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, h.subId) ~= nil
+	local applied = (st and has) and st.cut or 0
+	if flags and flags.arHollowVessel then
+		local cut = A.hollowCut(player:getMaxHealth(), applied)
+		if cut ~= applied or (cut > 0 and not has) or not st then
+			if has then
+				player:removeCondition(CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, h.subId)
+			end
+			if cut > 0 and Condition then
+				local c = Condition(CONDITION_ATTRIBUTES, CONDITIONID_COMBAT)
+				c:setParameter(CONDITION_PARAM_SUBID, h.subId)
+				c:setParameter(CONDITION_PARAM_TICKS, -1)
+				c:setParameter(CONDITION_PARAM_STAT_MAXHITPOINTS, -cut)
+				player:addCondition(c)
+			end
+			M.hollow[pid] = {cut = cut}
+			refreshShield(player)
+		end
+	elseif has or st then
+		if has then
+			player:removeCondition(CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, h.subId)
+		end
+		M.hollow[pid] = nil
+		refreshShield(player)
+	end
+end
+
+-- the energy shield modifier (data/lib/chaos_energy_shield.lua ChaosEnergyShieldModifiers): the keystone's maximum and
+-- recharge, the Hollowglass Diadem's recharge
+ChaosEnergyShieldModifiers = ChaosEnergyShieldModifiers or {}
+ChaosEnergyShieldModifiers.archetypes = function(player, totals, maximum, recharge)
+	local pid = player:getId()
+	local flags = flagsOf(pid)
+	local keystone = flags ~= nil and flags.arHollowVessel == true
+	local diadem = hasUnique(pid, "hollowglass")
+	if not keystone and not diadem then
+		return maximum, recharge
+	end
+	local cut = keystone and M.hollow[pid] and M.hollow[pid].cut or 0
+	return A.hollowShield(maximum, cut, keystone, hasUnique(pid, "stillheart")), recharge + A.hollowRecharge(keystone, diadem)
+end
+
+local function engineDelay()
+	local ok, v = pcall(function()
+		return configManager.getNumber(configKeys.ENERGY_SHIELD_RECHARGE_DELAY)
+	end)
+	return ok and tonumber(v) or 2000
+end
+
+-- the early recharge: the part of the last second between earlyMs and the engine's delay after the last hit
+local function earlyRecharge(player, t)
+	local pid = player:getId()
+	local last = M.lastHit[pid]
+	if not last or not player.getEnergyShield then
+		return
+	end
+	local gain = A.earlyRecharge(player:getEnergyShield(), player:getMaxEnergyShield(), player:getEnergyShieldRecharge(),
+		t - last, cfg().arPyreOath.thinkMs, engineDelay())
+	if gain > 0 then
+		player:setEnergyShield(player:getEnergyShield() + gain)
+	end
+	if t - last > 10000 then
+		M.lastHit[pid] = nil
+	end
+end
+
+-- the base of the rifts' percent-of-maximum-health hits: health + maximum shield for a Hollow Vessel
+function M.percentBase(player)
+	local flags = player and flagsOf(player:getId())
+	local keystone = flags ~= nil and flags.arHollowVessel == true
+	return A.percentBase(player:getMaxHealth(), keystone and player.getMaxEnergyShield and player:getMaxEnergyShield() or 0,
+		keystone)
 end
 
 -- ------------------------------------------------------------------------------------------------ effigies
@@ -546,13 +659,22 @@ end
 
 local reflecting = false
 
--- a player is hit: Thornbound Oath, Sanguine Covenant's healing price
+-- a player is hit: Thornbound Oath, Sanguine Covenant's healing price, Hollow Vessel's immunities
 local function defend(player, flags, attacker, pd, pt, sd, st, origin)
 	if pt == COMBAT_HEALING then
 		if flags.arSanguine then
 			pd, sd = A.healingTaken(pd), A.healingTaken(sd)
 		end
 		return pd, sd
+	end
+	if flags.arHollowVessel then
+		local oname = originName(origin)
+		if A.hollowImmune(typeName(pt), oname) then
+			pd = 0
+		end
+		if A.hollowImmune(typeName(st), oname) then
+			sd = 0
+		end
 	end
 	if not flags.arThornbound or reflecting or not attacker or attacker:getId() == player:getId() then
 		return pd, sd
@@ -620,11 +742,15 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 
 	-- the prices
 	local bow = weapon ~= nil and oname == "ranged" and isBow(weapon)
-	local ctx = {origin = oname, bow = bow, critical = critical == true, source = source}
+	local snare = flags.arSnarewright and player:getStorageValue(A.snaresConfig().storage.hit) == 1 or false
+	local ctx = {origin = oname, bow = bow, critical = critical == true, source = source, snare = snare}
 	local m = A.hitFactor(flags, ctx)
 	local m1, m2 = m * A.typeFactor(flags, typeName(pt), ctx), m * A.typeFactor(flags, typeName(st), ctx)
-	-- the Reliquary Warden's party buff
+	-- the Reliquary Warden's party buff and the vigils (Wrath)
 	local rb = A.relicBuff(relicBuffs, pid, now())
+	if ChaosVigils and ChaosVigils.any(pid) then
+		rb = rb * ChaosVigils.dealt(player)
+	end
 	m1, m2 = m1 * rb, m2 * rb
 	if m1 ~= 1 then
 		pd = A.scale(pd, m1)
@@ -752,9 +878,25 @@ function hit.onHealthChange(creature, attacker, pd, pt, sd, st, origin, critical
 		return pd, pt, sd, st
 	end
 	if creature:isPlayer() then
-		local flags = flagsOf(creature:getId())
+		local cpid = creature:getId()
+		local flags = flagsOf(cpid)
 		if flags then
 			pd, sd = defend(creature, flags, attacker, pd, pt, sd, st, origin)
+		end
+		if pt ~= COMBAT_HEALING then
+			-- the vigils (Iron) on the player taking the hit
+			if ChaosVigils and ChaosVigils.any(cpid) then
+				local m = ChaosVigils.taken(creature)
+				if m ~= 1 then
+					pd, sd = A.scale(pd, m), A.scale(sd, m)
+				end
+			end
+			-- the last hit taken, for Hollow Vessel's early recharge
+			if (flags and flags.arHollowVessel) or hasUnique(cpid, "hollowglass") then
+				if math.abs(pd) + math.abs(sd) > 0 then
+					M.lastHit[cpid] = now()
+				end
+			end
 		end
 	end
 	if pt == COMBAT_HEALING or not attacker or attacker:getId() == creature:getId() then
@@ -764,7 +906,7 @@ function hit.onHealthChange(creature, attacker, pd, pt, sd, st, origin, critical
 	if player then
 		local pid = player:getId()
 		local flags = flagsOf(pid)
-		if flags or M.uniques[pid] or relicBuffs[pid] then
+		if flags or M.uniques[pid] or relicBuffs[pid] or (ChaosVigils and ChaosVigils.any(pid)) then
 			pd, sd = attack(player, flags or {}, creature, pd, pt, sd, st, origin, critical)
 		end
 	end
@@ -895,6 +1037,11 @@ local function cleanup(pid)
 		M.dismissRelic(pid)
 	end
 	state[pid], M.flags[pid], M.uniques[pid], castBuffer[pid], relicBuffs[pid] = nil, nil, nil, nil, nil
+	M.hollow[pid], M.lastHit[pid] = nil, nil
+	-- the snares live on the spells' side; when it shares this Lua state they go at once (else at its next visit)
+	if ChaosSnares and ChaosSnares.clearOwner then
+		pcall(ChaosSnares.clearOwner, pid)
+	end
 end
 
 local logout = CreatureEvent("ChaosArchetypesLogout")
@@ -914,6 +1061,9 @@ function playerDeath.onDeath(player)
 		end
 		s.effigies, s.sigil = {}, nil
 		M.dismissRelic(pid)
+	end
+	if ChaosSnares and ChaosSnares.clearOwner then
+		pcall(ChaosSnares.clearOwner, pid)
 	end
 	return true
 end
@@ -1034,6 +1184,12 @@ local function think(player, t)
 	if flags and flags.arReliquary then
 		relicTick(player, stateOf(pid), t)
 	end
+	if flags and flags.arHollowVessel then
+		M.syncHollow(player)
+	end
+	if (flags and flags.arHollowVessel) or hasUnique(pid, "hollowglass") then
+		earlyRecharge(player, t)
+	end
 end
 
 local thinkEvent = GlobalEvent("ChaosArchetypesThink")
@@ -1048,6 +1204,15 @@ function thinkEvent.onThink(interval)
 			end
 		else
 			cleanup(pid)
+		end
+	end
+	-- the Hollowglass Diadem without a keystone: the early recharge only
+	for pid, u in pairs(M.uniques) do
+		if u.hollowglass and not M.flags[pid] then
+			local player = Player(pid)
+			if player then
+				pcall(earlyRecharge, player, t)
+			end
 		end
 	end
 	-- forget marks of monsters that are gone and old ones

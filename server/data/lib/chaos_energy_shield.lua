@@ -99,13 +99,36 @@ function E.effectiveHealth(creature)
 	return creature:getHealth() + E.current(creature)
 end
 
--- set the maximum and the recharge of a player from the totals of the equipped items
+-- other systems that change a player's maximum or recharge: name -> fn(player, totals, maximum, recharge) returning the
+-- new maximum and recharge (data/scripts/chaos/archetypes.lua: Hollow Vessel and its uniques). A global so that the
+-- systems can register before or after this file is loaded.
+ChaosEnergyShieldModifiers = ChaosEnergyShieldModifiers or {}
+
+-- the maximum and the recharge after the modifiers (sorted by name, so the order is fixed)
+function E.modified(player, totals)
+	local maximum, recharge = E.maximum(totals), E.rechargePerMille(totals)
+	local names = {}
+	for name in pairs(ChaosEnergyShieldModifiers) do
+		names[#names + 1] = name
+	end
+	table.sort(names)
+	for _, name in ipairs(names) do
+		local ok, m, r = pcall(ChaosEnergyShieldModifiers[name], player, totals, maximum, recharge)
+		if ok and tonumber(m) then
+			maximum, recharge = math.max(0, floor(tonumber(m))), tonumber(r) or recharge
+		end
+	end
+	return maximum, math.max(0, math.min(E.config.maxPerMille, floor(recharge)))
+end
+
+-- set the maximum and the recharge of a player from the totals of the equipped items (and the modifiers above)
 function E.apply(player, totals)
 	if not player or not player.setMaxEnergyShield then
 		return false
 	end
-	player:setMaxEnergyShield(E.maximum(totals))
-	player:setEnergyShieldRecharge(E.rechargePerMille(totals))
+	local maximum, recharge = E.modified(player, totals)
+	player:setMaxEnergyShield(maximum)
+	player:setEnergyShieldRecharge(recharge)
 	return true
 end
 

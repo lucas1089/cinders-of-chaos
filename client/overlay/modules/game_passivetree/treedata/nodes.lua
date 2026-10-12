@@ -1835,24 +1835,33 @@ function getTreeNodes()
 			}
 		},
 		--- 96 ---
+		-- build archetype keystone, second round (2026-10-12; was a small leaf: passivetree_config.lua reworked
+		-- version 3; numbers in server/data/scripts/chaos/archetypes_config.lua and the snares / vigils configs)
 		{
 			orbit = 2,
 			orbitDist = 118,
-			name = "Cold Nature",
+			name = "Hollow Vessel",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 330,
-			isUncommon = true,
 			group = 28,
-			icon = "coldNature",
+			icon = "arHollowVessel",
 			customStats = {
-				wisdom = 3,
-				incrementIce = 3,
-				absorbIce = 2
+				arHollowVessel = 1
 			},
+			stats = {
+				"Mystic, Necromancer, Monk and Templar lines: your",
+				"maximum health is 100. Your energy shield: the",
+				"items' +50%, plus 50% of the health given up. It",
+				"recharges 15% of its maximum a second faster and",
+				"starts 1 s after a hit. No poison, no life drain",
+				"can hurt you. Heals and leech fill only the 100."
+			},
+			classes = {"mystic", "elementalist", "illusionist", "necromancer", "lich", "bonelord", "monk", "shadowfist", "ironsage", "templar", "inquisitor", "sentinel"},
 			inputs = {
 				94
 			},
 			out = {
-				
 			}
 		},
 		--- 97 ---
@@ -1892,24 +1901,31 @@ function getTreeNodes()
 			}
 		},
 		--- 99 ---
+		-- build archetype keystone, second round (2026-10-12; was a small leaf: passivetree_config.lua reworked
+		-- version 3; numbers in server/data/scripts/chaos/archetypes_config.lua and the snares / vigils configs)
 		{
 			orbit = 2,
 			orbitDist = 118,
-			name = "Tides of Changes",
-			isUncommon = true,
+			name = "Covenant of Vigils",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 30,
 			group = 29,
-			icon = "tidesOfChange",
+			icon = "arVigils",
 			customStats = {
-				spirit = 3,
-				incrementDeath = 3,
-				absorbDeath = 2
+				arVigils = 1
 			},
+			stats = {
+				"Mystic, Necromancer and Templar lines: your vigils",
+				"reserve 30% less, reach 3 sqm farther and give",
+				"your party members 20% more of every effect.",
+				"Your own damage is 10% less."
+			},
+			classes = {"mystic", "elementalist", "illusionist", "necromancer", "lich", "bonelord", "templar", "inquisitor", "sentinel"},
 			inputs = {
 				97
 			},
 			out = {
-				
 			}
 		},
 		--- 100 ---
@@ -1949,24 +1965,31 @@ function getTreeNodes()
 			}
 		},
 		--- 102 ---
+		-- build archetype keystone, second round (2026-10-12; was a small leaf: passivetree_config.lua reworked
+		-- version 3; numbers in server/data/scripts/chaos/archetypes_config.lua and the snares / vigils configs)
 		{
 			orbit = 2,
 			orbitDist = 118,
-			name = "Hulking Smash",
-			isUncommon = true,
+			name = "Iron Tithe",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 230,
 			group = 30,
-			icon = "hulkingSmash",
+			icon = "arIronTithe",
 			customStats = {
-				strength = 3,
-				incrementPhysical = 3,
-				absorbPhysical = 2
+				arIronTithe = 1
 			},
+			stats = {
+				"Warrior, Monk and Templar lines: your vigils",
+				"reserve maximum health instead of mana, at 60% of",
+				"their share. They work on you alone, 50% stronger.",
+				"No effect next to Hollow Vessel."
+			},
+			classes = {"warrior", "juggernaut", "berserker", "monk", "shadowfist", "ironsage", "templar", "inquisitor", "sentinel"},
 			inputs = {
 				100
 			},
 			out = {
-				
 			}
 		},
 		--- 103 ---
@@ -2006,24 +2029,31 @@ function getTreeNodes()
 			}
 		},
 		--- 105 ---
+		-- build archetype keystone, second round (2026-10-12; was a small leaf: passivetree_config.lua reworked
+		-- version 3; numbers in server/data/scripts/chaos/archetypes_config.lua and the snares / vigils configs)
 		{
 			orbit = 2,
 			orbitDist = 118,
-			name = "Anticipation",
-			isUncommon = true,
+			name = "Snarewright's Creed",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 130,
 			group = 31,
-			icon = "anticipation",
+			icon = "arSnarewright",
 			customStats = {
-				dexterity = 3,
-				incrementDrown = 3,
-				absorbDrown = 2
+				arSnarewright = 1
 			},
+			stats = {
+				"Ranger and Thief lines: 2 more traps and 3 more",
+				"mines may be out at once; they arm in 50% of the",
+				"time and hit 25% harder. Your other hits (weapon,",
+				"spells; not damage over time) are 15% less."
+			},
+			classes = {"ranger", "deadeye", "beastmaster", "thief", "ninja", "samurai"},
 			inputs = {
 				103
 			},
 			out = {
-				
 			}
 		},
 		--- 106 ---

@@ -142,6 +142,19 @@ ChaosUniqueItems = {
 	  bossOnly = false, monsters = {"Phantom Shade", "Shadowgeist", "Nightdweller", "Abyssal Shadowfiend", "Lost Soul", "Nightstalker", "Death Mage", "Bonelord", "Elder Bonelord", "Crypt Shambler"} },
 	{ name = "Reliquary Censer", id = 27251, minTier = "legendary", chance = 7, level = 220, slot = "necklace",
 	  bossOnly = false, monsters = {"Lich", "Vampire", "Banshee", "Ghoul", "Grim Reaper", "Undead Dragon", "Demon Skeleton", "Betrayed Wraith", "Blightwalker", "Juggernaut", "Behemoth", "Minotaur", "Orc Warlord", "Destroyer"} },
+	-- the second round (2026-10-12): snares, vigils, Hollow Vessel; the snare and diadem uniques work without a keystone
+	{ name = "Snarewalker Greaves", id = 28115, minTier = "rare", chance = 5, level = 120, slot = "feet",
+	  bossOnly = false, monsters = {"Phantom Shade", "Shadowgeist", "Nightdweller", "Abyssal Shadowfiend", "Lost Soul", "Nightstalker", "Death Mage", "Bonelord", "Elder Bonelord", "Crypt Shambler"} },
+	{ name = "Fusewright's Charm", id = 7890, minTier = "rare", chance = 5, level = 150, slot = "necklace",
+	  bossOnly = false, monsters = {"Hellfire Fighter", "Fire Devil", "Massive Fire Elemental", "Hellhound", "Dragon Lord", "Blazebringer", "Demon", "Diabolic Imp", "Hellspawn", "Defiler", "Destroyer"} },
+	{ name = "Choirmaster's Circlet", id = 27667, minTier = "legendary", chance = 7, level = 200, slot = "head",
+	  bossOnly = false, monsters = {"Warlock", "Lich", "Dark Torturer", "Infernalist", "Necromancer", "Priestess", "Death Mage", "Phantom Shade", "Shadowgeist", "Nightdweller"} },
+	{ name = "Oathkeeper's Standard", id = 15453, minTier = "legendary", chance = 7, level = 180, slot = "shield",
+	  bossOnly = false, monsters = {"Juggernaut", "Behemoth", "Minotaur", "Orc Warlord", "Destroyer", "Dragon Lord", "Hand of Cursed Fate", "Demon", "Hellhound", "Fire Devil", "Hellfire Fighter"} },
+	{ name = "Hollowglass Diadem", id = 27668, minTier = "legendary", chance = 7, level = 250, slot = "head",
+	  bossOnly = false, monsters = {"Lich", "Vampire", "Banshee", "Ghoul", "Grim Reaper", "Undead Dragon", "Demon Skeleton", "Betrayed Wraith", "Blightwalker", "Juggernaut", "Behemoth", "Minotaur", "Orc Warlord", "Destroyer"} },
+	{ name = "Stillheart Robe", id = 27390, minTier = "legendary", chance = 7, level = 300, slot = "body",
+	  bossOnly = false, monsters = {"Inferno Juggernaut", "Nightflare Dreadknight", "Orclops Ravager", "Grindmaw the Mauler", "Royal Man", "Grove Keeper", "Garack", "Dreamgorger"} },
 	-- the Ascended uniques (uber.lua, server/README.md "Ascended Omens and the Cinderheart"): ascended = true keeps them
 	-- out of the Omen chest pool (rift.lua); corpse drops of the listed bosses (x6 boss tier) and the spoils' unique rolls
 	{ name = "Sanguine Crescent", id = 2408, minTier = "boss", chance = 10, level = 1000, slot = "sword",

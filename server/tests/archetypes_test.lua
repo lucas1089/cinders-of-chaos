@@ -8,7 +8,11 @@
 --   * the engine glue (archetypes.lua) against a mocked engine: the prices on a hit, the leech, the reflect and its
 --     guard, the healing price, Open Hand, a poison chain through a pack within the budget, the shatter, Cascade,
 --     Stormstring, an effigy from an area cast and its pulse, a sigil, Aether Edge's health condition, Pyre Oath's
---     tick and the relic.
+--     tick and the relic;
+--   * the second round (2026-10-12): the prices of Snarewright's Creed (snare hits spared) and Covenant of Vigils, the
+--     vigils' hit multipliers, Hollow Vessel (its health condition, the energy shield modifier, the immunities, the
+--     early recharge, the rifts' percent base). The snares and the vigils have their own tests (snares_test.lua,
+--     vigils_test.lua).
 local n = 0
 setmetatable(_G, {__index = function(t, k)
 	if type(k) == "string" and k:match("^[A-Z_0-9]+$") then n = n + 1; rawset(t, k, n); return n end
@@ -29,7 +33,7 @@ dofile("data/scripts/chaos/archetypes_core.lua")
 local C, A = ChaosArchetypesConfig, ChaosArchetypesCore
 
 -- ------------------------------------------------------------------------------------------------ core: prices
-eq(#A.FLAGS, 12, "twelve keystones")
+eq(#A.FLAGS, 16, "sixteen keystones (twelve, then four of the second round)")
 local all = {}
 for _, f in ipairs(A.FLAGS) do all[f] = true end
 local f1 = A.flagsOf({arPyreOath = 1, strength = 3})
@@ -47,6 +51,12 @@ near(A.hitFactor({arStormstring = true}, {origin = "ranged", bow = false}), 1, "
 near(A.hitFactor({arEffigy = true}, {origin = "spell"}), 0.65, "effigy: spells")
 near(A.hitFactor({arThornbound = true, arReliquary = true}, {origin = "melee"}), 0.81, "two prices multiply")
 near(A.hitFactor({arReliquary = true}, {origin = "spell", source = "relic"}), 1, "the relic's own pulse")
+-- the second round's prices
+near(A.hitFactor({arSnarewright = true}, {origin = "ranged"}), 0.85, "snarewright: a weapon hit")
+near(A.hitFactor({arSnarewright = true}, {origin = "spell", snare = true}), 1, "snarewright: a snare's hit")
+near(A.hitFactor({arSnarewright = true}, {origin = "condition"}), 1, "snarewright: damage over time free")
+near(A.hitFactor({arVigils = true}, {origin = "spell"}), 0.9, "covenant of vigils: own damage")
+near(A.hitFactor({arIronTithe = true, arHollowVessel = true}, {origin = "melee"}), 1, "tithe and hollow: no damage price")
 near(A.typeFactor({arWinterLattice = true}, "fire"), 0.7, "lattice: fire")
 near(A.typeFactor({arWinterLattice = true}, "ice"), 1, "lattice: ice")
 near(A.typeFactor({arCinderSigil = true}, "physical"), 0.8, "sigil: physical")
@@ -180,6 +190,30 @@ eq(A.relicDamage(300, 30), 270, "0.6 x level + 3 x ml")
 near(A.relicBuff({[5] = 2000}, 5, 1500), 1.05, "buffed")
 near(A.relicBuff({[5] = 2000}, 5, 2500), 1, "expired")
 
+-- Hollow Vessel
+local H = C.arHollowVessel
+eq(A.hollowCut(5000, 0), 5000 - H.health, "cut: down to the fixed health")
+eq(A.hollowCut(H.health, 4900), 4900, "cut: the applied one is part of the maximum")
+eq(A.hollowCut(60, 0), 0, "below the fixed health: nothing")
+eq(A.hollowShield(740, 0, false, false), 740, "no keystone: the items' shield")
+eq(A.hollowShield(740, 1874, true, false), math.floor(740 * (1 + H.more) + 1874 * H.fromHealth), "items +50%, half the health")
+eq(A.hollowShield(740, 1874, true, true), math.floor(740 * (1 + H.more + H.uniqueMore) + 1874 * H.fromHealth),
+	"the robe: the items' part +40% more")
+eq(A.hollowRecharge(true, false), H.recharge, "recharge")
+eq(A.hollowRecharge(true, true), H.recharge + H.diademRecharge, "recharge with the diadem")
+eq(A.hollowRecharge(false, true), H.diademRecharge, "the diadem alone")
+check(A.hollowImmune("earth", "condition") and A.hollowImmune("lifedrain", "melee"), "immune: poison, life drain")
+check(not A.hollowImmune("earth", "spell") and not A.hollowImmune("fire", "condition"), "not immune: an earth spell, a burn")
+eq(A.earlyRecharge(0, 2000, 350, 1500, 1000, 2000), math.floor(2000 * 350 * 500 / 1000000), "half a second early")
+eq(A.earlyRecharge(0, 2000, 350, 2600, 1000, 2000), math.floor(2000 * 350 * 400 / 1000000), "the part before the delay")
+eq(A.earlyRecharge(0, 2000, 350, 800, 1000, 2000), 0, "too soon")
+eq(A.earlyRecharge(0, 2000, 350, 4000, 1000, 2000), 0, "the engine's part")
+eq(A.earlyRecharge(1990, 2000, 350, 1500, 1000, 2000), 10, "never past the maximum")
+eq(A.percentBase(100, 2000, true), 2100, "percent base: health + shield")
+eq(A.percentBase(5000, 2000, false), 5000, "percent base: health alone")
+local mflags = A.flagsOfMask(A.mask({arHollowVessel = true, arVigils = true}))
+check(mflags.arHollowVessel and mflags.arVigils and not mflags.arSnarewright, "flags of a mask")
+
 -- ------------------------------------------------------------------------------------------------ data
 local tree = dofile("data/scripts/chaos/passivetree_data.lua")
 local ids = {}
@@ -206,12 +240,19 @@ check(A.classMay("arSanguine", "lich"), "Sanguine: every class")
 -- refund and build codes
 dofile("data/scripts/chaos/passivetree_config.lua")
 local rw = ChaosPassiveTreeConfig.reworked
-local v2 = {}
-for _, id in ipairs(rw[2].ids) do v2[id] = true end
+local refunded = {}
+for _, entry in ipairs(rw) do
+	for _, id in ipairs(entry.ids) do refunded[id] = entry.version end
+end
 eq(rw[2].version, 2, "rework version 2")
-for _, id in ipairs(ids) do check(v2[id], "refunded once: " .. id) end
+eq(rw[3].version, 3, "rework version 3")
 dofile("data/scripts/chaos/buildshare_core.lua")
-for _, id in ipairs(ids) do eq(ChaosBuildShare.REWORKED[id], 4, "older codes leave out " .. id) end
+for i, id in ipairs(ids) do
+	-- the first twelve came with rework 2 and code format 4, the second round with rework 3 and format 5
+	local round2 = i > 12
+	eq(refunded[id], round2 and 3 or 2, "refunded once: " .. id)
+	eq(ChaosBuildShare.REWORKED[id], round2 and 5 or 4, "older codes leave out " .. id)
+end
 -- client tooltips state the numbers
 local TD = "../client/overlay/modules/game_passivetree/treedata/nodes.lua"
 local fh = io.open(TD)
@@ -253,6 +294,16 @@ if fh then
 	has(253, "+" .. pct(C.arReliquary.partyDamage)); has(253, math.floor(C.arReliquary.buffMs / 1000) .. " s")
 	has(253, C.arReliquary.damageRadius .. " sqm"); has(253, string.format("%g", C.arReliquary.damagePerLevel) .. " x level")
 	has(253, C.arReliquary.damagePerMagicLevel .. " x magic"); has(253, pct(1 - C.arReliquary.ownDamage) .. " less")
+	-- the second round
+	local SC, VC = A.snaresConfig(), A.vigilsConfig()
+	has(105, SC.keystone.traps .. " more traps"); has(105, SC.keystone.mines .. " more"); has(105, pct(SC.keystone.armFactor))
+	has(105, pct(SC.keystone.damage) .. " harder"); has(105, pct(1 - SC.keystone.otherDamage) .. " less")
+	has(99, pct(1 - VC.keystone.reserve) .. " less"); has(99, VC.keystone.radius .. " sqm"); has(99, pct(VC.keystone.party) .. " more")
+	has(99, pct(1 - VC.keystone.ownDamage) .. " less")
+	has(102, pct(VC.tithe.healthShare)); has(102, pct(VC.tithe.self - 1) .. " stronger"); has(102, "Hollow Vessel")
+	has(96, "health is " .. C.arHollowVessel.health); has(96, "+" .. pct(C.arHollowVessel.more))
+	has(96, pct(C.arHollowVessel.fromHealth) .. " of the health"); has(96, pct(C.arHollowVessel.recharge / 1000))
+	has(96, math.floor(C.arHollowVessel.earlyMs / 1000) .. " s after")
 	for _, node in ipairs(C.nodes) do
 		local cn = nodes[node.id]
 		check(cn.isKeystone and cn.isDivine and cn.icon == node.flag, node.id .. " drawn as a keystone with its icon")
@@ -276,7 +327,7 @@ for id, key in pairs(C.uniques) do
 	local block = xml:match('<item id="' .. id .. '".-</item>') or ""
 	check(block:find('key="archetype" value="' .. key .. '"', 1, true) ~= nil, "unique " .. id .. " is " .. key)
 end
-eq(seen, 12, "twelve archetype uniques")
+eq(seen, 18, "eighteen archetype uniques (twelve, then six of the second round)")
 local specs = io.open("data/lib/chaos_unique_specs.lua"):read("*a")
 for id, key in pairs(C.uniques) do
 	check(specs:find("[" .. id .. "] = {", 1, true) ~= nil and specs:find('archetype = "' .. key .. '"', 1, true) ~= nil,
@@ -334,13 +385,22 @@ local function mk(kind, opt)
 	function m:isMonster() return c.kind == "monster" end
 	function m:getPlayer() return c.kind == "player" and self or nil end
 	function m:getHealth() return c.hp end
-	function m:getMaxHealth() return c.maxHp end
+	function m:getMaxHealth()
+		local v = c.maxHp
+		for _, cd in ipairs(c.conds) do v = v + (cd.params and cd.params[CONDITION_PARAM_STAT_MAXHITPOINTS] or 0) end
+		return v
+	end
 	function m:getPosition() return Position(c.pos) end
 	function m:getMaster() return c.master end
 	function m:getName() return c.name end
 	function m:getLevel() return c.level end
 	function m:getMagicLevel() return c.ml end
 	function m:getEnergyShield() return c.es end
+	function m:setEnergyShield(v) c.es = math.max(0, math.min(v, c.maxEs or 0)) end
+	function m:getMaxEnergyShield() return c.maxEs or 0 end
+	function m:setMaxEnergyShield(v) c.maxEs = v; c.es = math.min(c.es, v) end
+	function m:getEnergyShieldRecharge() return c.esRecharge or 200 end
+	function m:setEnergyShieldRecharge(v) c.esRecharge = v end
 	function m:getTile() return {hasFlag = function() return c.pz == true end} end
 	function m:registerEvent(name) c.events[name] = true end
 	function m:getSlotItem(slot) return c.slots[slot] end
@@ -684,6 +744,95 @@ registered.ChaosArchetypesThink.onThink(1000)
 eq(creatures[relic].c.pos.x, 900, "brought back past 7 sqm")
 setTree(sen, {})
 check(creatures[relic] == nil, "gone with the keystone")
+
+-- ------------------------------------------------------------------------------------------------ the second round
+-- Snarewright's Creed: the price spares the hits the spells' side marks as a snare's
+creatures, dealt = {}, {}
+local bowItem2 = {getId = function() return 8851 end}
+local trapper = mk("player", {hp = 3000, pos = P(1000, 1000), slots = {[CONST_SLOT_LEFT] = bowItem2}})
+setTree(trapper, {arSnarewright = 1})
+local tm = mk("monster", {hp = 90000, pos = P(1001, 1000)})
+eq(hitBy(trapper, tm, 1000, COMBAT_PHYSICALDAMAGE, ORIGIN_RANGED), 850, "snarewright: a bolt 85%")
+trapper.c.storage[A.snaresConfig().storage.hit] = 1
+tm.c.events.ChaosArchetypesHit = true
+eq(math.abs(hitEv.onHealthChange(tm, trapper, -1000, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)), 1000,
+	"snarewright: a snare's hit is spared")
+trapper.c.storage[A.snaresConfig().storage.hit] = -1
+-- Covenant of Vigils: own damage 90%; the vigils' multipliers (vigils.lua) on a holder without other keystones
+local herald = mk("player", {hp = 3000, pos = P(1000, 1002)})
+setTree(herald, {arVigils = 1})
+eq(hitBy(herald, tm, 1000), 900, "covenant: own damage 90%")
+local plain = mk("player", {hp = 3000, maxHp = 3000, pos = P(1000, 1003)})
+ChaosVigils = {any = function(pid) return pid == plain:getId() end, dealt = function() return 1.05 end,
+	taken = function() return 0.94 end}
+eq(hitBy(plain, tm, 1000), 1050, "a covered player deals 5% more")
+plain.c.events.ChaosArchetypesHit = true
+eq(math.abs(hitEv.onHealthChange(plain, tm, -1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)), 940,
+	"a covered player takes 6% less")
+eq(math.abs(hitEv.onHealthChange(plain, tm, 500, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_SPELL)), 500, "heals untouched")
+ChaosVigils = nil
+
+-- Hollow Vessel: the health condition, the shield, the immunities, the early recharge, the rifts' base
+creatures, dealt = {}, {}
+local applied = {}
+ChaosEnergyShield = {apply = function(player, totals)
+	local maximum, recharge = 740, 200
+	for _, fn in pairs(ChaosEnergyShieldModifiers) do maximum, recharge = fn(player, totals, maximum, recharge) end
+	player:setMaxEnergyShield(maximum)
+	player:setEnergyShieldRecharge(recharge)
+	applied[#applied + 1] = {maximum, recharge}
+end}
+local lich = mk("player", {hp = 1974, maxHp = 1974, pos = P(1100, 1100), es = 0, voc = 21})
+setTree(lich, {arHollowVessel = 1})
+local hc = lich:getCondition(CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, C.arHollowVessel.subId)
+check(hc and hc.params[CONDITION_PARAM_STAT_MAXHITPOINTS] == -(1974 - 100), "health cut to 100")
+eq(lich:getMaxHealth(), 100, "maximum health 100")
+eq(lich:getMaxEnergyShield(), math.floor(740 * 1.5 + 1874 * 0.5), "shield: items +50% and half the health")
+eq(lich:getEnergyShieldRecharge(), 200 + 150, "recharge +15% a second")
+-- a level up: the maximum without the cut grows by 30; the think renews the cut
+lich.c.maxHp = 2004
+registered.ChaosArchetypesThink.onThink(1000)
+eq(lich:getMaxHealth(), 100, "still 100 after a level")
+eq(M.hollow[lich:getId()].cut, 1904, "the cut follows")
+-- immunities: poison and life drain do nothing, a burn does
+local foe = mk("monster", {hp = 90000, pos = P(1101, 1100)})
+lich.c.events.ChaosArchetypesHit = true
+eq(hitEv.onHealthChange(lich, foe, -300, COMBAT_EARTHDAMAGE, 0, COMBAT_NONE, ORIGIN_CONDITION), 0, "poison: nothing")
+eq(hitEv.onHealthChange(lich, foe, -300, COMBAT_LIFEDRAIN, 0, COMBAT_NONE, ORIGIN_SPELL), 0, "life drain: nothing")
+eq(hitEv.onHealthChange(lich, foe, -300, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_CONDITION), -300, "a burn hurts")
+-- the early recharge: 1.5 s after that hit the think adds the part from 1 s on
+lich.c.es = 0
+NOW = NOW + 1500
+registered.ChaosArchetypesThink.onThink(1000)
+eq(lich.c.es, math.floor(lich:getMaxEnergyShield() * 350 * 500 / 1000000), "half a second of early recharge")
+-- the rifts' percent hits count health and shield
+eq(M.percentBase(lich), 100 + lich:getMaxEnergyShield(), "percent base of a holder")
+eq(M.percentBase(foe), 90000, "anyone else: the health")
+-- the robe and the diadem
+local robe = {getId = function() return 27390 end, getCustomAttribute = function() return 1 end}
+lich.c.slots[CONST_SLOT_ARMOR] = robe
+M.refreshUniques(lich)
+runEvents()
+eq(lich:getMaxEnergyShield(), math.floor(740 * 1.9 + 1904 * 0.5), "the robe: the items' part 90% more")
+-- the keystone goes: the health comes back, the shield is the items' again
+setTree(lich, {})
+check(lich:getCondition(CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, C.arHollowVessel.subId) == nil, "the cut removed")
+eq(lich:getMaxHealth(), 2004, "the full health back")
+eq(lich:getMaxEnergyShield(), 740, "the items' shield back")
+-- the diadem alone: recharge and the early start
+local diadem = {getId = function() return 27668 end, getCustomAttribute = function() return 1 end}
+local sage = mk("player", {hp = 4000, maxHp = 4000, pos = P(1200, 1200), es = 0})
+sage.c.slots[CONST_SLOT_HEAD] = diadem
+M.refreshUniques(sage)
+runEvents()
+eq(sage:getEnergyShieldRecharge(), 300, "the diadem: +10% a second")
+eq(sage:getMaxEnergyShield(), 740, "the diadem: no more shield")
+sage.c.events.ChaosArchetypesHit = true
+hitEv.onHealthChange(sage, foe, -100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+NOW = NOW + 1800
+registered.ChaosArchetypesThink.onThink(1000)
+eq(sage.c.es, math.floor(740 * 300 * 800 / 1000000), "the diadem's early start without the keystone")
+ChaosEnergyShield = nil
 
 print(string.format("archetypes_test: %d checks, %d failures", count, failures))
 if failures > 0 then os.exit(1) end

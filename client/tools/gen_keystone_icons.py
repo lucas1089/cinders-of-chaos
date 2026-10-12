@@ -9,7 +9,7 @@ Every icon here is a cell of data/images/passivetree/skills.png, the atlas the s
 nothing comes from outside the repository, so the medium and large nodes have the same painted look, light and palette
 as the small ones.
  * KEYSTONES (keystone frame, nodes 369, 376, 383, 390, 621, 624 with their per-class variants, 631-664, and the build
-   archetype keystones 77, 78, 81, 82, 106-109, 253, 262, 355, 362): one row of
+   archetype keystones 77, 78, 81, 82, 96, 99, 102, 105-109, 253, 262, 355, 362): one row of
    64x64 cells in keystones.png, in the order below (treedata/icons.lua: x = index * 64). Each cell is the atlas icon
    scaled up once here (Lanczos, a light unsharp mask), so the client does not stretch a 25 px clip to 60 px.
  * START (class section start nodes 625, 635, 645, 655): classstart_<line>.png, 150x150, written next to the sheet:
@@ -86,6 +86,11 @@ KEYSTONES = [  # (icon key in treedata/icons.lua, atlas cell): the order fixes t
     ('arCinderSigil', 'B2.35'),        # 106 a burning sigil ring
     ('arAetherEdge', 'B4.12'),         # 362 a blade of blue energy
     ('arReliquary', 'B0.24'),          # 253 a sacred relic
+    # the second round (2026-10-12): snares, vigils, Iron Tithe, Hollow Vessel
+    ('arSnarewright', 'B1.22'),        # 105 a bundled charge
+    ('arVigils', 'B1.32'),             # 99 a ring of element sigils
+    ('arIronTithe', 'B3.36'),          # 102 a shield with a heart
+    ('arHollowVessel', 'B5.10'),       # 96 a hollow orb of blue energy
 ]
 
 START = [  # (line, atlas cell): the start node of each class section
