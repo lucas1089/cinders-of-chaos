@@ -92,6 +92,9 @@ jobs:
       - name: Server health alerts (state changes, error-line rate limit, daily summary)
         run: python3 -I server/tools/chaos_health_test.py
 
+      - name: Area generator export (the Lua generator's dump, OTBM writer and reader, spawn file)
+        run: python3 -I server/tools/areagen_export_test.py
+
       - name: Points of interest generator (gen_poi.py on a small built map)
         run: python3 -I server/tools/gen_poi_test.py
 

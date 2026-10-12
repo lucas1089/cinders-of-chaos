@@ -8995,6 +8995,136 @@ stalls").
 - **Generated spawn data:** run `tools/gen_bounty_pool.py` and `tools/gen_bestiary_spawns.py` on the installed server
   after the spawns step. The repo copies were already behind the late game spawns.
 
+## Generated areas (`areagen.lua`, `areagen_core.lua`, `areagen_config.lua`, `tools/areagen_export.py`)
+
+A seeded generator builds hunting areas and dungeons that need no map edit (roadmap item 109; owner approval: a
+"generated" look for caves, wastes and rifts; towns and story areas stay hand-made). Item 89 left level 1000-1300 with
+6 hunting areas; three generated areas for that band are ready to go live.
+
+**Design.** One pure Lua core makes a tile model (every tile with its ground and items, the spawns, links, arrival,
+exit). Two users read the same model:
+- `areagen.lua` builds it at startup with `Game.createTile` / `Game.createItem`, like the rifts and the tutorial
+  island. It works on an installed server and needs no install step.
+- `tools/areagen_export.py` runs the same core through LuaJIT (`tools/areagen_dump.lua`). It writes an OTBM piece and
+  a spawn file for the map editor and renders previews.
+Why runtime first: no map edit, no merge with the 197 MB world file, and a config change ships with a restart. The OTBM
+writer stays so the owner can open, review or hand-place an area in the map editor.
+
+**Layouts** (`areagen_core.lua`):
+- `cave`: cellular automata. Pockets under `minRegion` tiles are filled. The rest are joined by winding tunnels.
+- `dungeon`: rooms joined by a spanning tree of L-shaped corridors, plus loop corridors between rooms that are 3+ steps
+  apart in the tree.
+- `waste`: the cave method with a low fill: an open field with rock islands. Enclosed rock islands are filled whole,
+  so there are no void holes inside an area.
+- Several floors are joined by a hole (8972) and a ladder (1386) at the same x, y. The stock ladder action climbs to
+  the tile south of the hole, and that tile is kept walkable.
+- Required points (arrival, holes, ladders, boss) are carved first and joined. Only the arrival's region is kept.
+- The walkable set is checked as one connected set over all floors, from the arrival through holes and ladders.
+
+**Borders and walls.**
+- Every ground family has a z order. The higher family draws its 12 border pieces on the lower tile. The piece comes
+  from the 8-neighbour pattern, as the map editor's auto-border does: n/e/s/w, outer corners c*, inner corners d*
+  (`A.borderPieces`). All 256 patterns are tested.
+- The piece sets and the wall piece table were measured on the live map with `tools/map/derive_borders.py`. The
+  winning piece of each pattern has an 85-100% share for most sets.
+- Rock (earth 101, mountain 919) borders the floor with blocking edge pieces (dirt walls 5631-5654, gravel
+  4468-4479). That is how the live map draws cave walls.
+- Dungeon walls take their piece from the 4-neighbour pattern, as on the live map: an east-west run is horizontal, the
+  north-west room corner is the pole, the south-east corner the corner piece.
+
+**Dressing.**
+- Grounds are picked by weight inside a family, so a 16x16 block mixes 5 ids.
+- Patches of a second ground are rounded blobs that never touch another patch family. Lava pools are blocking ground,
+  2+ cells wide, with their corners cut.
+- Decoration comes as clusters plus an even scatter, never on the paths from the arrival to the links, the boss and
+  the rooms.
+- Obstacles have a fully walkable ring. Lights and wall furniture stand against walls, in dungeon rooms only (never in
+  a corridor). Every blocking piece passes a "simple point" test, so it never cuts a path.
+- With the dark tile set installed the themes use its patches and props (dark moss, ash soil, glowcaps, braziers, dead
+  trees). Without it the stock palette is used.
+- `areagen_export.py check` checked all 244 ids against the live items.otb (3.57) and things_custom18. Each id exists,
+  has a sprite and has the right kind.
+
+**Spawns.**
+- Poisson-disc points at `minDistance`. Packs of 2-3 come with `packChance`. The density is per 100 walkable tiles
+  outside the arrival's safe radius.
+- Dungeon rooms fill before corridors, with a cap per room (`roomCap`, monsters per 100 room tiles).
+- The monsters are the level-scaled late-game set (README "Late game"). They are scaled to the area's level with the
+  engine's own formulas (`A.levelScale`):
+  - health x(1 + 0.0074 T)/(1 + 0.0074 L) at the spawn;
+  - damage x(1 + 0.0015 T)/(1 + 0.0015 L) in the player health and mana events;
+  - experience x T/L in an onGainExperience callback (index 1).
+  The engine has no Lua call to set a monster's level, so the name still shows its native level (960-1000).
+- Respawn: the dynamic respawn of item 89 changes engine spawns only. Runtime monsters have none, so `areagen.lua` runs
+  its own respawn with the same rules:
+  - the spawntime (120 s);
+  - no respawn while a player sees the spot (the timer starts again);
+  - the dynamic respawn's percent for the hunters near the point (`ChaosRespawn.percentFor`, `respawn_config.lua`:
+    2 hunters 85% down to 50%).
+- A monster more than 14 tiles from its point with no target is walked back (leash).
+- Boss: a stronger copy in its own room, by its shown name (`Chaos.createMonsterNamed`), health x8, damage x1.25,
+  respawn 1 hour.
+
+**Entrances and exit.**
+- A magic forcefield (1387) with action id 47950 is placed on the live map at startup. It sends players of `minLevel`
+  and above to the arrival; others are pushed back.
+- The exit forcefield (47951) stands next to the arrival and leads back beside the entrance (an area without an
+  entrance: the temple). Runtime tiles cannot be protection zones, so the arrival is a safe radius with no spawns.
+- An entrance tile that is not free and walkable is skipped with a log line; `/areagen goto <id>` still works.
+
+**The areas** (`areagen_config.lua`; free map region x/y 14336-15359, the other runtime areas use 2000-13824):
+
+| Area | Kind | Floors | Size | Walkable | Levels | Monsters (density) | Boss | Entrance |
+|---|---|---|---|---|---|---|---|---|
+| Emberdeep Hollows | cave: dirt walls, mud and lava cracks, lava pools | 2 (z 9-10), 2 holes | 66 x 52 | 3,307 | 1000-1100 | 65 (2.4 / 100): Tundra Troll, Loricate Orger, Lady bug, Lacewing Moth, Grindmaw | The Emberdeep Maw | 33221,33135,8: a lava-cracked dirt cave beside the Aegis Sentinel / Gloomstinger hunt |
+| Sunken Ossuary | ruins: rooms of slate, marble, flagstone, tiles in stone walls | 2 (z 9-10), 1 hole | 90 x 70 | 2,797 | 1100-1200 | 68 (2.8 / 100; rooms 3.5): Royal Man, Golden Lord, Dawn Strayer, Frost Maiden, Dreamgorger | The Ossuary Warden | 34295,31100,13: the stone halls of Nightglass Core (the 860-1000 late-game area) |
+| Cinderfall Wastes | open waste of grey rock, basalt fields, lava, mountain cliffs, dead trees | 1 (z 7, under the sky) | 100 x 80 | 4,993 | 1200-1300 | 72 (1.6 / 100): Azure Dragon, Jungle Beasts, Blazebringer, Swamp Snapper, Garack | Cinderwing | 31667,31269,7: the volcanic rock slopes of the Pyrrhaxis / Brinebrute hunt |
+| The Hollow Vault | dungeon of the dungeon system (base dungeon 5, level 800, 30 minutes) | 1 (z 9) | 76 x 64 | 1,062 | 800-850 | 24 (rooms 3.9) + Vault Keeper Ossrim | yes | the Dungeons window |
+
+- Entrance spots were chosen with the live map data. Each is a free walkable tile with a wall or rock behind it, a free
+  tile south of it, 5+ tiles from any spawn, inside a 700-1,500 tile region, next to a level 900-1300 hunt of
+  matching ground (`docs/map_guide/generated/entrances.jpg`).
+- Density against item 89: normal hunts 2.7-4.4, caves 2.7-3.2, dungeons 3.3-3.6, open land 1.2-2.0. The bulky scaled
+  monsters are pulled 3 at a time, so the areas sit a little lower.
+- Capacity: 205 monsters + 3 bosses at 120 s. That is +130% over the 158 monsters of the 1000+ band, so about 40 more
+  hunters (same ratio as 158 monsters for 31 hunters).
+- Map guide scorer (`tools/map/score_area.py` on the exported OTBMs): every value in band for the caves and the ruins.
+  The waste has 1.6 lights per 100 tiles against the lava band's 5+; it is under the sky, and the lava pools glow
+  (light 4) but are grounds the scorer does not count. The Vault has 0 small loops (one big circuit).
+
+**The generated dungeon.**
+- `dungeon = {...}` registers the area in `DUNGEON_SYSTEM.Dungeons` and `Chaos.dungeons.extra` at startup.
+- `extra.populate` fills every point and the boss at each run start. That is the hook in `dungeons.lua` `startRun`;
+  the run's teardown removes the monsters. `extra.bossType` gives the client list the boss look.
+- The base entry window (modal) path does not call the hook yet.
+
+**Install / enable.** Nothing to install. The areas are built when `enabled = true` (globally and per area); a
+refused area logs why. Disabling an area at a restart drops its tiles; a character saved inside goes to its temple.
+`/areagen status | goto <id> | fill <id>` (group 4+).
+
+**Tests.**
+- `tests/areagen_test.lua` covers:
+  - the random generator and the 256 border patterns;
+  - the wall table and the level scaling;
+  - every area with and without the dark set: valid, a fixed checksum, every transition bordered, spawns spread, room
+    caps, the guide's decoration and light numbers, dark ids only with the set;
+  - 60 small layouts over 12 seeds;
+  - `areagen.lua` against a mocked engine: build, portals, scaling, death and respawn with the view rule, leash, the
+    dungeon hook.
+- `tools/areagen_export_test.py` checks the dump, the OTBM writer and reader round trip (escaped bytes) and the spawn
+  file.
+
+**Checked on a test server** (the cropped test map, things_custom18, the Linux client):
+- all four areas built at startup (0.02-0.21 s each, dark tile set);
+- walked and shot in game with the 15x11 view (`docs/map_guide/generated/ingame_*.jpg`).
+Fixed after the walk: the dark ruined floor read as a brick wall (rooms use stock floors now); lights stood in
+corridors; rooms were bare (wall furniture added); monsters were uneven between rooms (room cap); two skeleton items
+drew as black puddles. Not run: the entrances on the full map, real hunting balance of the scaled monsters.
+
+**Previews.** `python3 -I server/tools/areagen_export.py preview OUT items.otb items.xml Tibia.dat Tibia.spr --dark --sheet`.
+Current ones are in `docs/map_guide/generated/`: sprite renders per floor, minimap maps with spawns, a contact sheet,
+the entrances, in-game shots.
+
 ## Name plates and titles (`nameplate.lua`, `nameplate_core.lua`, `titles.lua`, client `game_nameplate`, base patch 0022)
 
 Over every player the client draws three lines, like a name plate: the **active title** (coloured by where it comes from),

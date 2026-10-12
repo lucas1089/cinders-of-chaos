@@ -301,3 +301,59 @@ python3 -I tools/map/collect.py OUT_DIR a.json b.json ...
 An area type needs at least 3 blocks of 16x16 in the rectangle to be judged. Use rectangles of 48x48 or more, or
 force the type with `--type`. The bands are in `BANDS` at the top of `score_area.py`. They come from the 10-90 %
 range of the best maps, widened a little.
+
+## Generated areas
+
+Caves, wastes, rift-like halls and dungeon layouts can be generated from a seed instead of drawn
+(server/README.md "Generated areas"). Towns and story areas stay hand-made. The server builds the areas at startup.
+The same model can be written as an OTBM piece for the map editor.
+
+### Make or change an area
+1. Add or edit an entry in `areas` of `server/data/scripts/chaos/areagen_config.lua`:
+   - `kind`: `cave`, `dungeon` or `waste`; `theme`; `seed`;
+   - `origin`: top-left of the first floor, inside x/y 14336-15359, not overlapping another area;
+   - `size`, `floors`, `linksPerFloor`, `layout` (below), `spawns`, `boss`;
+   - `entrance` and `back` on the world map, and `minLevel`.
+2. Look at it before it goes live:
+   ```
+   python3 -I server/tools/areagen_export.py summary                  # tiles, monsters, density, problems
+   python3 -I server/tools/areagen_export.py preview OUT items.otb items.xml Tibia.dat Tibia.spr --dark --sheet
+   python3 -I server/tools/areagen_export.py otbm OUT                 # OUT/<id>.otbm + <id>-spawn.xml
+   python3 -I tools/map/score_area.py OUT/<id>.otbm items.otb items.xml X0 Y0 X1 Y1 Z --dat Tibia.dat \
+       --type cave --spawn OUT/<id>-spawn.xml                         # the bands of this guide
+   ```
+3. A new seed gives a new layout. Keep the seed of a layout you like. Change only the numbers you want to change.
+   Then run `luajit tests/areagen_test.lua` from `server/` and update the fixed checksum the test prints.
+4. Restart the server. `/areagen status`, `/areagen goto <id>`.
+
+### The knobs
+| knob | effect | typical |
+|---|---|---|
+| `layout.fill` (cave, waste) | share of rock at the start: higher = narrower passages | cave 0.45-0.48, waste 0.34-0.38 |
+| `layout.steps`, `spread` | smoothing passes; `spread` 1-2 keeps more pillars | 4-5, 1-2 |
+| `layout.minRegion` | pockets smaller than this are filled; bigger ones are joined by a tunnel | 40-60 |
+| `layout.tunnelRadius` | 1 = 3-wide tunnels, 2 = 5-wide | 1-2 |
+| `layout.rooms`, `room`, `corridor`, `loops`, `bossRoom` (dungeon) | room count and size, corridor width, extra circuits | 9-13 rooms of 7-12, corridor 3, loops 2-4 |
+| `spawns.density` | monsters per 100 walkable tiles outside the safe radius | cave 2.4, dungeon 2.8, waste 1.6 (item 89: 2.7-4.4 normal hunts) |
+| `spawns.roomCap` (dungeon) | most monsters per 100 tiles of one room | 5-5.5 |
+| `spawns.minDistance`, `packChance`, `packMax` | spacing of spawn points, packs | 4-5, 15-30 %, 2-3 |
+| `spawns.level` | the level the monsters are scaled to | the area's band |
+| `theme.decor.share`, `clusters` | single pieces per walkable tile, clusters per 1000 tiles | cave 0.10, dungeon 0.12, waste 0.08 |
+| `theme.lights.per100`, `props.per100` | lights and wall furniture per 100 walkable tiles | caves 2.5 (+ lava), dungeons 4.5-5 and 2.5-3 |
+| `theme.patches`, `pools` | share and radius of second grounds and lava pools | 0.05-0.10, 0.025-0.03 |
+
+### Palettes
+- A theme names ground families (`families`: weighted ground ids and a z order), border sets (`borders`, `pieces`),
+  walls, decoration, obstacles, lights and props.
+- Use only ids that `areagen_export.py check items.otb items.xml Tibia.dat --dark` passes.
+- New border sets come from the live map. `python3 -I tools/map/derive_borders.py MAP items.otb items.xml neighbours IDS`
+  shows which grounds real maps put next to a ground. `... edges OVER UNDER --lua` prints the 12 pieces as a table. A
+  set whose winning piece is under about 70 % is not a clean set: pick another pair.
+- `... walls H V C P` prints the piece per wall pattern.
+- The rules of this guide apply to generated areas too: border every transition (the generator does), mix ground ids,
+  keep decoration even, 2+ lights per 100 tiles underground, loops and dead ends in hunts, 1.5-5 monsters per 100 tiles.
+
+### What it does not do
+- No houses, roofs, towns or quest logic.
+- One monster level is shown per type: the native one. The scaling is in health, damage and experience.
+- Generated tiles cannot be protection zones. The arrival is a spawn-free radius with the exit portal next to it.

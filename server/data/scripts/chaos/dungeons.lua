@@ -303,7 +303,7 @@ local function bossOutfit(id)
 	local bossName = extraOf(id).bossName
 	local outfit = {lookType = 0}
 	if bossName then
-		local monsterType = MonsterType(bossName)
+		local monsterType = MonsterType(extraOf(id).bossType or bossName) -- bossType: a boss with a shown name (areagen.lua)
 		if monsterType then
 			local o = monsterType:getOutfit()
 			if o then
@@ -691,6 +691,10 @@ local function startRun(dungeonId, difficulty, players)
 		for monsterName, position in pairs(dg.Monsters) do
 			Game.createMonster(monsterName, position)
 		end
+	end
+	-- a generated dungeon (areagen.lua) fills its spawn points and its boss for every run
+	if extra.populate then
+		pcall(extra.populate, dungeonId)
 	end
 
 	for _, p in ipairs(players) do
