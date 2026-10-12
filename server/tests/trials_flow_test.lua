@@ -2,7 +2,8 @@
 -- The Vocation Trials with a mocked engine: trials.lua and trials_effects.lua load without errors and without clashing names
 -- (a table of one file was once overwritten by a function of the other), and the choice / switch / bonus flow works
 -- against a fake player: first pick free, the other node refused without a token, the switch costs a token and gold, the
--- node stats reach the passive bonus table, the picks survive a "tree reset" and are per vocation.
+-- node stats reach the passive bonus table, the picks survive a "tree reset" and are per vocation. Percent hits take
+-- Chaos.percentBase (a Hollow Vessel: health + maximum energy shield).
 local n = 0
 setmetatable(_G, {__index = function(t, k)
 	if type(k) == "string" and k:match("^[A-Z][A-Z_0-9]+$") then n = n + 1; rawset(t, k, n); return n end
@@ -179,6 +180,37 @@ do
 		T.runs[1000 + i], T.slotBusy[i] = nil, nil
 	end
 	Chaos.isMultiClient, Chaos.trials.enter.needProtectionZone = mc, pz
+end
+
+-- percent hits (the chamber's telegraphs and the monsters' scaled hits) take Chaos.percentBase: a Hollow Vessel counts
+-- health + maximum energy shield, anyone else the maximum health
+do
+	local vessel = {getId = function() return 501 end, getMaxHealth = function() return 100 end, shield = 2000}
+	local other = {getId = function() return 502 end, getMaxHealth = function() return 5000 end}
+	local savedA, savedRandom = ChaosArchetypes, math.random
+	ChaosArchetypes = {percentBase = function(pl) return pl:getMaxHealth() + (pl.shield or 0) end}
+	Monster = function() return nil end
+	local hits = {}
+	doTargetCombat = function(_, target, _, mn, mx) hits[#hits + 1] = {id = target:getId(), mn = mn, mx = mx} end
+	local tr = {raw = false}
+	T.hurt(tr, vessel, 0.25)
+	T.hurt(tr, other, 0.25)
+	eq(hits[1] and hits[1].mn, -525, "trials telegraph: 25% of 100 health + 2000 shield")
+	eq(hits[2] and hits[2].mn, -1250, "trials telegraph: 25% of 5000 health")
+	eq(tr.raw, false, "raw flag cleared after the hit")
+	math.random = function() return 0.5 end -- the hit's spread at its middle (x1.0)
+	local add = {getId = function() return 9001 end, isMonster = function() return true end}
+	for _, pl in ipairs({vessel, other}) do
+		T.runs[pl:getId()] = {over = false, pid = pl:getId(), bossId = 9000, scale = {hit = 0.3, addHit = 0.1}}
+	end
+	T.monsterRun[9001] = vessel:getId()
+	eq(T.hooks.preHit(vessel, add, -50, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), -210,
+		"trials monster hit: 10% of 100 health + 2000 shield")
+	T.monsterRun[9001] = other:getId()
+	eq(T.hooks.preHit(other, add, -50, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), -500,
+		"trials monster hit: 10% of 5000 health")
+	T.runs[501], T.runs[502], T.monsterRun[9001] = nil, nil, nil
+	ChaosArchetypes, math.random = savedA, savedRandom
 end
 
 print(string.format("trials_flow_test: %d checks, %d failures", checks, fails))

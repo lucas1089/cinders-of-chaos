@@ -3,8 +3,8 @@
 -- spells.xml index, the hit buffer, fight segmentation and labels, bounded rows, the session (hunt pause and reset),
 -- the views sent to the client, the party brief, the sweep. Part 2, the engine glue (combatlog.lua) against a mocked
 -- engine: weapon attacks, damage over time, summons, spells through the supports' cast context and the engine's
--- precast event, runes, procs labelled by the calling file (doTargetCombat wrapper, helper libraries, ORIGIN_NONE hits
--- measured), thorns, damage taken by monster and element, mana shield, healing done / received / overhealing, bosses,
+-- precast event, delayed spell hits named by CL.asSpell (the snares), runes, procs labelled by the calling file
+-- (doTargetCombat wrapper, helper libraries, ORIGIN_NONE hits measured), thorns, damage taken by monster and element, mana shield, healing done / received / overhealing, bosses,
 -- the party view with realms and sharing, the opcode actions and the hunt reset. Part 3, a synthetic benchmark
 -- (20 characters x 10 hits/s): printed, with a generous upper bound so a slow CI machine does not fail it.
 
@@ -561,6 +561,21 @@ eq(r["Minions"].total, 15, "the helper library outside a cast")
 eq(r["Witchfire Bolt"].total, 411 + 15 + 20, "the helper library and the spell file inside the cast")
 eq(r["Other"].total, 13, "an unlisted file: other")
 eq(r["Arrow splash"].total, 12, "doAreaCombat labelled")
+-- a spell's own delayed hits outside every cast context (the snares' scheduler, data/spells/chaos/_snares.lua): named
+-- by CL.asSpell; another character's name is not ours; nothing is left behind, also after an error
+local snareFile = chunk("data/spells/chaos/_snares.lua",
+	"local a, t, v = ... local r = doTargetCombat(a, t, COMBAT_FIREDAMAGE, -v, -v, 0, ORIGIN_SPELL) return r")
+CL.asSpell(hero.id, 201, snareFile, hero, dragon, 50)
+CL.asSpell(mage.id, 201, snareFile, hero, dragon, 2)
+CL.asSpell(hero.id, 201, function()
+	CL.asSpell(hero.id, 999, snareFile, hero, dragon, 4) -- an unknown spell id: the outer name is not lost
+	snareFile(hero, dragon, 6)
+end)
+ok(not pcall(CL.asSpell, hero.id, 201, error, "boom"), "an error is passed on")
+snareFile(hero, dragon, 3)
+r = heroRows(DMG)
+eq(r["Witchfire Bolt"].total, 411 + 15 + 20 + 50 + 6, "delayed spell hits named by CL.asSpell")
+eq(r["Other"].total, 13 + 2 + 4 + 3, "another character's name, an unknown id and after it: other")
 -- the wrapper passes errors and results through and leaves no label behind
 local okCall, err = pcall(doTargetCombat, hero, dragon, COMBAT_FIREDAMAGE)
 ok(okCall or err, "wrapper call")

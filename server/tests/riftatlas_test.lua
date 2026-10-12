@@ -175,14 +175,15 @@ do
 	eq(table.concat(k, ","), "c2.15,f15", "a second over is not")
 	k = A.runCells(cfg, rcfg, {theme = "Obsidian Hall", tier = 15, deaths = 0, secs = 420})
 	eq(table.concat(k, ","), "c2.15,f15,s15", "tier 15 in 7:00: swift (was out of reach at 5:00)")
-	k = A.runCells(cfg, rcfg, {theme = "Abyssal Rift", tier = 5, deaths = 0, secs = 300})
-	eq(table.concat(k, ","), "c1.5,f5", "tier 5 in 5:00: not swift (4:30)")
+	k = A.runCells(cfg, rcfg, {theme = "Abyssal Rift", tier = 5, deaths = 0, secs = 330})
+	eq(table.concat(k, ","), "c1.5,f5", "tier 5 in 5:30: not swift (5:15, the time of tier 1)")
 	k = A.runCells(cfg, rcfg, {omen = "storm", tier = 15, deaths = 3, secs = 900})
 	eq(table.concat(k, ","), "ostorm", "omen kill")
 	eq(#A.runCells(cfg, rcfg, {theme = "Abyssal Rift", tier = 16, deaths = 0, secs = 1}), 0, "off the grid")
 	-- the Swift times: the rift model's clear time of the tier on its band's typical map for a player with swiftDps x
 	-- the model's damage, rounded down to swiftRound seconds (atlas_config.lua swiftDps / swiftRound)
-	local want = {315, 300, 285, 285, 270, 285, 285, 285, 285, 285, 330, 360, 390, 435, 465}
+	-- and never less than a lower tier's time (the model's own time falls inside a size band)
+	local want = {315, 315, 315, 315, 315, 315, 315, 315, 315, 315, 330, 360, 390, 435, 465}
 	local swiftT = A.swiftTable(cfg, rcfg)
 	eq(#swiftT, 15, "a Swift time per tier")
 	for tier = 1, 15 do
@@ -191,7 +192,8 @@ do
 		eq(swiftT[tier], s, "swift table tier " .. tier)
 		eq(s % cfg.swiftRound, 0, "swift tier " .. tier .. " on whole steps")
 		local strong = R.clearSeconds(rcfg, tier, 1, cfg.swiftDps)
-		ok(s <= strong and strong < s + cfg.swiftRound, "swift tier " .. tier .. ": the strong player's model time")
+		ok(strong < s + cfg.swiftRound, "swift tier " .. tier .. ": the strong player's model time or more")
+		if tier > 1 then ok(s >= A.swiftSeconds(cfg, rcfg, tier - 1), "swift tier " .. tier .. ": not below tier " .. (tier - 1)) end
 		-- a strong player can make it (well inside the limit), the model's typical player cannot
 		local typical = R.clearSeconds(rcfg, tier, 1, 1)
 		ok(s < typical, "swift tier " .. tier .. ": under the typical clear time")

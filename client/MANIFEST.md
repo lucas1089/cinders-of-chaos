@@ -1020,7 +1020,7 @@ a run on its own output changes nothing. `pair_fixes/things_custom21_changes.csv
 - `things-1098.tar.xz` like things_custom20's (Tibia.dat and Tibia.spr at the root, owner 0/0, GNU tar, `xz -9 -T3`),
   mtime 2026-10-12 17:00: sha256 b0a3d8a4101c7251fd6809a1f07160c73419884a4dbc2ba9524a4cf54ddb522d (66,683,748 bytes).
   Its two files unpack to the md5s above. A rebuild gives the same sha256.
-- Built, not pushed: waits for the owner's "pode mandar o par para o windows-assets". No server change: the look ids
+- On windows-assets since 2026-10-12 (commit 0f1f416b, owner approved). No server change: the look ids
   stay the same. A client on things_custom20 keeps drawing the 22 looks 8 px low.
 - Checked offline: before / after sheets of the 22 looks, four directions with both addons, on a tile grid with the
   stock look 128 beside them, placed by the client's draw rule. Not checked in a live client.

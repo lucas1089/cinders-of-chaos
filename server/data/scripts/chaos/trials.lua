@@ -564,13 +564,15 @@ local function spawnMark(tr)
 	tr.notes = {string.format("Mark %d of %d: %d s.", tr.markIdx, tr.stage.count, tr.tierDef.markSeconds)}
 end
 
+-- a share of the maximum health; a Hollow Vessel counts health + maximum energy shield (Chaos.percentBase)
 local function hurt(tr, player, share, effect)
 	local g = tr.bossId and Monster(tr.bossId)
-	local dmg = math.max(1, math.floor(player:getMaxHealth() * share))
+	local dmg = math.max(1, math.floor(Chaos.percentBase(player) * share))
 	tr.raw = true
 	pcall(doTargetCombat, g or 0, player, COMBAT_PHYSICALDAMAGE, -dmg, -dmg, effect or CONST_ME_GROUNDSHAKER, ORIGIN_SPELL)
 	tr.raw = false
 end
+T.hurt = hurt -- tests
 
 local function spawnBossAdds(tr, player)
 	local c = C()
@@ -996,7 +998,8 @@ T.hooks.preHit = function(player, attacker, pd, pt, sd, st, origin)
 			share = share * C().enrageMult
 		end
 	end
-	local amount = math.max(1, math.floor(player:getMaxHealth() * share * (0.85 + math.random() * 0.3)))
+	-- a share of the maximum health; a Hollow Vessel counts health + maximum energy shield (Chaos.percentBase)
+	local amount = math.max(1, math.floor(Chaos.percentBase(player) * share * (0.85 + math.random() * 0.3)))
 	return -amount, 0
 end
 

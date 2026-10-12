@@ -3,7 +3,7 @@
 -- spells' side, data/spells/chaos/_snares.lua. Design: docs/BUILDS.md "Snares". Lua 5.1 / LuaJIT and Lua 5.3.
 --
 -- A snare = {id, kind = "trap" | "mine", owner (player id), pos = {x, y, z}, element, min, max, placed, armedAt,
--- untilTime (trap: its end; mine: its fuse), detonating (a mine already queued)}.
+-- untilTime (trap: its end; mine: its fuse), detonating (a mine already queued), detonated (queued by Detonate Mines)}.
 
 ChaosSnaresConfig = ChaosSnaresConfig or dofile("data/scripts/chaos/snares_config.lua")
 
@@ -299,11 +299,21 @@ function S.detonate(state, owner, now)
 	for _, s in ipairs(state.list) do
 		if s.owner == owner and s.kind == "mine" and now >= s.armedAt and not s.detonating then
 			if S.queueBurst(state, s, now + n * cfg().mine.staggerMs) then
+				s.detonated = true
 				n = n + 1
 			end
 		end
 	end
 	return n
+end
+
+-- the spell a snare's hits count for (the combat log): Snare Trap, Seeker Mine, or Detonate Mines for a mine it set off
+function S.spellOf(snare)
+	local ids = cfg().spells
+	if snare.kind == "trap" then
+		return ids.trap
+	end
+	return snare.detonated and ids.detonate or ids.mine
 end
 
 -- the bursts due at `now`, at most n, removed from the queue and from the list (the snare objects)

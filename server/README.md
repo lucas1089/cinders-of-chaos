@@ -1735,8 +1735,9 @@ docs/BUILDS.md. Computed numbers: `data/spells/README.md` "Build archetypes" (no
   (`guildboss.lua`). The world boss event (`worldboss.lua`) has no percent hits (its pulse is a flat range). Festering Wounds is a poison
   condition: a holder takes none. The hexes and Parched Veins work as on anyone. Pyre Oath, Sanguine Covenant's cap
   and Thornbound Oath's cap read the maximum health (100). The mana shield and the Trials' Mana Ward come before the
-  energy shield as before. Still on the health alone: the Vocation Trials' and the ascension trial's own percent hits
-  (`trials.lua`, `ascension_quest.lua`).
+  energy shield as before. Since 2026-10-12 also the Vocation Trials' telegraphs and their monsters' scaled hits
+  (`trials.lua` `hurt` and `preHit`) and the ascension trial's telegraphs (`ascension_quest.lua` `hurt`); tests
+  `tests/trials_flow_test.lua`, `tests/ascension_quest_test.lua`. No percent hit reads the health alone now.
 - **Not done.** A spell cast by name on a critical hit needs an engine call; not added (it would skip the cast
   checks), Cascade Edge deals its own burst.
 - Tests: `tests/archetypes_test.lua` (rules, data, tooltips, uniques, the glue against a mocked engine; the second
@@ -1764,15 +1765,17 @@ Traps and mines for the Ranger and Thief lines (2026-10-12): Snare Trap (spell 9
   x1.1, Charm mines x1.1; physical x1.15, energy x0.85 with 1 sqm more radius. Dealt with `doTargetCombat` from the
   owner (`ORIGIN_SPELL`; tree bonuses and the class factor apply in the scripts' events) to monsters that are not a
   player's summon, in sight of the snare. Storage 7100027 is 1 while they are dealt: Snarewright's price spares them.
-  Outside a cast context: no spell supports, no Effigy or Sigil from them.
+  Outside a cast context: no spell supports, no Effigy or Sigil from them. The DPS meter and combat log still name
+  them by their spell (`ChaosCombatLog.asSpell`, fixed 2026-10-12; they were "Other"): Snare Trap, Seeker Mine (a
+  mine past its fuse) or Detonate Mines (a mine it set off, `snares_core.lua` `spellOf`).
 - **The element** (storage 7100026 remembers the last spoken one): the word after the spell words, else the
   remembered one, else the first brand rune socketed in the spell (supports storage 7110000 + spell x 4 + 1..3; the
   snare spells are kind "area" in `chaos_supports_config.lua` so brands fit), else physical. Fire: a burn of 30% over
   4 s (a fire condition of the owner); ice: slowed 40% for 3 s; earth: a poison of 36% over 6 s; death: 4% of the
   damage back as health; holy: the owner and party members within 2 sqm of the snare heal 2% of their maximum health.
 - PvP: monsters only. Tests: `tests/snares_test.lua` (rules; the glue against a mocked engine: thrown, armed,
-  triggered, bursts, sight, the marker, elements, mines, the fuse, caps, the protection zone, the cleanup, the work per
-  tick with 400 snares, the spells in the XML). Not run on a live server.
+  triggered, bursts, sight, the marker, the combat log's spell name per hit, elements, mines, the fuse, caps, the
+  protection zone, the cleanup, the work per tick with 400 snares, the spells in the XML). Not run on a live server.
 
 ## Vigils (`vigils.lua`, `vigils_core.lua`, `vigils_config.lua`, `data/spells/chaos/_vigils.lua`, docs/BUILDS.md "Vigils")
 Auras that reserve mana (2026-10-12), every class: Vigil of Wrath (spell 179, `vigh vyr`, level 60, reserves 35%,
@@ -7731,7 +7734,10 @@ client's g_settings node `chaosDpsMeter`.
 - **Cast.** The spells supports' cast context (`ChaosSupportsSpell.cast()`): every wrapped spell, also in the addEvent
   callbacks it starts (pulses, cast-time spells). Otherwise the spell or rune between the engine's `onSpellPreCast` and
   `onSpellCast` (patch 0008, `ChaosSpellEvents`). A failed cast never reaches `onSpellCast`; the context is cleared one
-  dispatcher tick later. Names, words and rune ids come from `data/spells/spells.xml`.
+  dispatcher tick later. A spell's own delayed hits outside every cast context are named with
+  `ChaosCombatLog.asSpell(pid, spellId, fn, ...)`, checked first: the snares' scheduler (Snare Trap, Seeker Mine,
+  Detonate Mines). It names the hits only; no supports, no cast. Names, words and rune ids come from
+  `data/spells/spells.xml`.
 - **Origin.** `ORIGIN_CONDITION`: damage over time by element (Bleeding, Burning, Poison, Electrified, Freezing, Dazzled,
   Cursed, Drowning). The condition owner is the attacker. `ORIGIN_MELEE`: the weapon in hand (sword, axe, club, fist; the
   Monk's fist weapons count as fist). `ORIGIN_RANGED`: distance. Origin 5 (`ORIGIN_WAND`, no Lua constant): wand.
@@ -7790,13 +7796,13 @@ boss, received]]`. `v` = `{id, label, dur, live, boss, t = [damage, healing, tak
 el = {element = amount}, r = [[key, kind, name, icon, total, hits, crits, max, over]]}`. `party` = `[{n, self, fd, fh,
 ft, fdur, live, sd, sh, st, sdur}]`. Requests are rate limited (150 ms).
 
-**Tests.** `tests/combatlog_test.lua` (LuaJIT and Lua 5.3, 232 checks). It covers the spells.xml index, the attribution
+**Tests.** `tests/combatlog_test.lua` (LuaJIT and Lua 5.3, 237 checks). It covers the spells.xml index, the attribution
 order, buffer and fights, idle end, boss and target labels, the last 10, the bounds, the session with hunt pause and
 reset, views, party brief and sweep. Against a mocked engine it covers weapons, damage over time, summons, precast and
-supports contexts, a failed cast, runes, procs labelled by file (through `pcall`, `doTargetCombatHealth` and
-`doAreaCombat`), helper libraries, `ORIGIN_NONE` hits measured, thorns, damage taken, mana shield, overkill, bosses,
-healing done / received / overhealing, potions, the opcode actions, party with realms and sharing, pushes only on change
-and logout. It ends with the benchmark. Client: `game_dpsmeter/dpsmath_test.lua`.
+supports contexts, delayed spell hits named by `CL.asSpell`, a failed cast, runes, procs labelled by file (through
+`pcall`, `doTargetCombatHealth` and `doAreaCombat`), helper libraries, `ORIGIN_NONE` hits measured, thorns, damage
+taken, mana shield, overkill, bosses, healing done / received / overhealing, potions, the opcode actions, party with
+realms and sharing, pushes only on change and logout. It ends with the benchmark. Client: `game_dpsmeter/dpsmath_test.lua`.
 
 **Tested in game** (test server copy, a level 584 Mystic and a level 512 Deadeye in a party). The fight against Pyrevorn
 was labelled "Pyrevorn". Rows: Greater Arc Bolt, Supreme Arc Bolt, Supreme Frostbite, Reaper's Rune (its item icon),
@@ -8887,11 +8893,12 @@ table `chaos_rift_atlas`, no storages. Window: Adventure > Rift Atlas, or the Ri
 
   | Size band | Map, limit | Tiers: Swift time | Model's typical solo clear |
   |---|---|---|---|
-  | 1 | 160 x 160, 12:00 | 1: 5:15, 2: 5:00, 3-4: 4:45, 5: 4:30 | 6:17 -> 5:37 |
-  | 2 | 200 x 200, 13:00 | 6-10: 4:45 | 5:51 -> 5:42 |
+  | 1 | 160 x 160, 12:00 | 1-5: 5:15 (model 5:15 -> 4:30) | 6:17 -> 5:37 |
+  | 2 | 200 x 200, 13:00 | 6-10: 5:15 (model 4:45) | 5:51 -> 5:42 |
   | 3 | 240 x 240, 15:00 | 11: 5:30, 12: 6:00, 13: 6:30, 14: 7:15, 15: 7:45 | 6:41 -> 9:29 |
 
-  The times fall inside a band because the walk gets faster with the tier's level; a party of five (the party model)
+  The model's times fall inside a band because the walk gets faster with the tier's level, so a tier never gets less
+  time than a lower tier: each takes the most of its own and every lower tier's time (owner, 2026-10-12); a party of five (the party model)
   gets the same times. Without the generated layouts (or without `rift_core.lua` loaded) it is `swiftShare` (0.5) of
   `rift_config.lua` `timeLimit`, 5:00, as before. Swift cells already earned stay: the cells are stored by key and
   never re-checked. The window's tooltip names each tier's time (tree payload `grid.swiftTiers`; `grid.swift` stays

@@ -8,7 +8,8 @@
 -- the leash or into a protection zone. The scheduler runs outside any spell's cast context (the supports' raw addEvent),
 -- so a snare's hits are not a cast of the spell (no support effects, no Effigy, no Sigil); the snare's hits set the
 -- storage marker snares_config.lua storage.hit on the owner while they are dealt, which the scripts' side reads
--- (Snarewright's Creed: the price spares them).
+-- (Snarewright's Creed: the price spares them). The combat log still names them by their spell (ChaosCombatLog.asSpell,
+-- combatlog.lua): Snare Trap, Seeker Mine, Detonate Mines for the mines it sets off.
 -- Targets: monsters that are not a player's summon (ChaosSpell.isEnemy), never players.
 
 if ChaosSnares then
@@ -190,25 +191,38 @@ local function burst(snare)
 	local ctype = const(TYPES[snare.element], COMBAT_PHYSICALDAMAGE)
 	local avg = math.floor((snare.min + snare.max) / 2)
 	local drained, holy = 0, nil
-	setMarker(owner, true)
-	for _, t in ipairs(targets) do
-		local c = Creature(t.id)
-		if c and c:getHealth() > 0 then
-			local ok, err = pcall(doTargetCombat, owner, c, ctype, -snare.min, -snare.max, CONST_ME_NONE, ORIGIN_SPELL)
-			if not ok then
-				print("[ChaosSnares] " .. tostring(err))
-			end
-			c = Creature(t.id)
+	local function hits()
+		for _, t in ipairs(targets) do
+			local c = Creature(t.id)
 			if c and c:getHealth() > 0 then
-				local fxs = applyEffect(owner, c, snare, avg)
-				drained = drained + (fxs.drain or 0)
-				holy = holy or fxs.holy and fxs
-			elseif snare.element == "death" then
-				drained = drained + (S.elementEffect("death", avg).drain or 0)
+				local ok, err = pcall(doTargetCombat, owner, c, ctype, -snare.min, -snare.max, CONST_ME_NONE, ORIGIN_SPELL)
+				if not ok then
+					print("[ChaosSnares] " .. tostring(err))
+				end
+				c = Creature(t.id)
+				if c and c:getHealth() > 0 then
+					local fxs = applyEffect(owner, c, snare, avg)
+					drained = drained + (fxs.drain or 0)
+					holy = holy or fxs.holy and fxs
+				elseif snare.element == "death" then
+					drained = drained + (S.elementEffect("death", avg).drain or 0)
+				end
 			end
 		end
 	end
+	setMarker(owner, true)
+	-- the combat log (combatlog.lua, the same Lua state) names the hits by the snare's spell
+	local CLog = ChaosCombatLog
+	local ok, err
+	if CLog and CLog.asSpell then
+		ok, err = pcall(CLog.asSpell, owner:getId(), S.spellOf(snare), hits)
+	else
+		ok, err = pcall(hits)
+	end
 	setMarker(owner, false)
+	if not ok then
+		print("[ChaosSnares] burst: " .. tostring(err))
+	end
 	if drained > 0 and owner:getHealth() > 0 then
 		owner:addHealth(drained)
 	end

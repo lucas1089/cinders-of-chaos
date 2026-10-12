@@ -165,14 +165,22 @@ end
 -- generated layouts (rift_config.lua layout) and the density on, it is the rift model's clear time of the tier on its
 -- size band's typical layout (ChaosRiftCore.clearSeconds: packs, guardian and the walk) for a solo player with
 -- cfg.swiftDps times the model player's damage, rounded down to cfg.swiftRound seconds; so it grows with the map size
--- and the tier, and a strong player can earn it at every tier. Without them (or without rift_core.lua loaded):
+-- and the tier, and a strong player can earn it at every tier. A tier never gets less time than a lower tier: the
+-- model's time falls inside a size band (the walk gets faster with the level), so each tier takes the most of its own
+-- and every lower tier's time. Without them (or without rift_core.lua loaded):
 -- cfg.swiftShare of rift_config.lua timeLimit (5:00). The run's own limit (Waning Veil, atlas time) does not matter.
 function A.swiftSeconds(cfg, rcfg, tier)
 	local R = ChaosRiftCore
 	tier = floor(tonumber(tier) or 1)
 	if cfg.swiftDps and R and R.clearSeconds and R.band and R.densityOn and R.band(rcfg, tier) and R.densityOn(rcfg) then
 		local step = cfg.swiftRound or 1
-		return floor(R.clearSeconds(rcfg, tier, 1, cfg.swiftDps) / step) * step
+		local best = 0
+		for t = 1, tier do
+			if R.band(rcfg, t) then
+				best = math.max(best, floor(R.clearSeconds(rcfg, t, 1, cfg.swiftDps) / step) * step)
+			end
+		end
+		return best
 	end
 	return floor(rcfg.timeLimit * cfg.swiftShare)
 end

@@ -137,6 +137,14 @@ eq(#S.drainBursts(st3, 1000), 1, "the first at once")
 eq(#S.drainBursts(st3, 1050), 0, "the next one 0.1 s later")
 eq(#S.drainBursts(st3, 1100), 1, "then the second")
 eq(#st3.list, 2, "the burst ones are gone from the list")
+-- the spell a snare's hits count for (the combat log)
+eq(S.spellOf({kind = "trap"}), C.spells.trap, "a trap: Snare Trap")
+eq(S.spellOf({kind = "mine"}), C.spells.mine, "a mine (fuse): Seeker Mine")
+local st4 = S.newState()
+local dm = snare(1, "mine", 100, 0, 9000)
+S.add(st4, dm, 5)
+S.detonate(st4, 1, 1000)
+eq(S.spellOf(dm), C.spells.detonate, "a mine Detonate Mines set off: Detonate Mines")
 -- the scheduler's budget: 400 snares, perTick a tick, every snare visited within ceil(400 / perTick) ticks
 local st4 = S.newState()
 for i = 1, 400 do S.add(st4, snare(i, "trap", i), 3) end
@@ -238,8 +246,18 @@ Game = {getSpectators = function(center, a, b, rx)
 	return out
 end}
 local markerSeen = {}
+-- the combat log's naming of delayed spell hits (combatlog.lua CL.asSpell): the spell id each hit is dealt under
+local named, namedSeen = {}, {}
+ChaosCombatLog = {asSpell = function(pid, spellId, fn, ...)
+	local outer = named[pid]
+	named[pid] = spellId
+	local ok, err = pcall(fn, ...)
+	named[pid] = outer
+	if not ok then error(err, 0) end
+end}
 function doTargetCombat(attacker, target, ctype, a, b, effect, origin)
 	markerSeen[#markerSeen + 1] = attacker:getStorageValue(C.storage.hit)
+	namedSeen[#namedSeen + 1] = named[attacker:getId()] or false
 	dealt[#dealt + 1] = {attacker = attacker:getId(), target = target:getId(), type = ctype, min = -a, max = -b, origin = origin}
 	target.c.hp = target.c.hp - math.floor((-a - b) / 2)
 	if target.c.hp <= 0 then creatures[target:getId()] = nil end
@@ -272,6 +290,7 @@ local function cast(player, kind, param)
 end
 local function reset()
 	creatures, dealt, added, effects, markerSeen, slowed, queue = {}, {}, {}, {}, {}, {}, {}
+	namedSeen = {}
 	G.state = S.newState()
 	G.tick() -- stops the old scheduler
 	queue = {}
@@ -300,6 +319,9 @@ for _, d in ipairs(dealt) do
 	check(d.type == COMBAT_FIREDAMAGE and d.min == tmin and d.origin == ORIGIN_SPELL, "fire, the trap's hit")
 end
 for _, v in ipairs(markerSeen) do eq(v, 1, "the snare marker is set during the hit") end
+eq(#namedSeen, 2, "two named hits")
+for _, v in ipairs(namedSeen) do eq(v, C.spells.trap, "the combat log names the trap's hits Snare Trap") end
+eq(next(named), nil, "the name is gone after the burst")
 eq(ranger.c.storage[C.storage.hit], -1, "and cleared after")
 local burns = 0
 for _, a in ipairs(added) do if a.cond.type == CONDITION_FIRE then burns = burns + 1; check(a.cond.rounds == 4, "a 4 s burn") end end
@@ -372,12 +394,14 @@ eq(#dealt, 10, "ten mines went off, one hit each")
 local poisons = 0
 for _, a in ipairs(added) do if a.cond.type == CONDITION_POISON then poisons = poisons + 1 end end
 eq(poisons, 10, "earth poisons")
+for _, v in ipairs(namedSeen) do eq(v, C.spells.detonate, "detonated mines: Detonate Mines") end
 eq(#G.state.list, 0, "all spent")
 -- the fuse
-dealt = {}
+dealt, namedSeen = {}, {}
 cast(ninja, "mine", "fire")
 advance(400 + 12000 + 400)
 eq(#dealt, 1, "the fuse sets it off")
+check(#namedSeen == 1 and namedSeen[1] == C.spells.mine, "a fused mine: Seeker Mine")
 
 -- cleanup: logout, death, a floor change, the leash; the scheduler stops when nothing is left
 reset()
