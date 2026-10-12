@@ -65,3 +65,8 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 - Crafting: when a removal fails partway, the craft gives back what that attempt took, and gives no item. This is already implemented, see server/README.md "Base crafting script".
 - Rift density (2026-10-12): orbs per hour stay as they come out of the new density (tier 15: 4-5 runs an hour, up
   to +34% orbs for very fast runs). The chest orb rates are not cut.
+- Instance limits (2026-10-12, server/README.md "Instance limits"): kept as built. The raid's 150 minute session, the
+  Infinity Tower's 60 minute run, the 30 minute cap of the base lever boss rooms, and the 1 hour dungeon cooldown for
+  a relog inside a dungeon.
+- Class looks pair 19 (2026-10-12): approved and pushed to `windows-assets` (b36204f2); the six new class looks go live
+  with the switch in `class_looks_core.lua`.
