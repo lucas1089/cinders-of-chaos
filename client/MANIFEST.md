@@ -750,6 +750,73 @@ python3 -I client/tools/sprites/check_pair.py P/Tibia.dat P/Tibia.spr [--verbose
 python3 -I client/tools/sprites/check_pair.py NEW/Tibia.dat NEW/Tibia.spr --old P/Tibia.dat P/Tibia.spr --new-only
 ```
 
+## Pair warning fixes (things_custom18, `tools/sprites/fix_pair_warnings.py`, `tools/sprites/pair_fixes/`)
+The owner approved fixing the warnings of things_custom17 that matter in game. Each group was checked against the
+client's draw code (0001-0041). All flagged stock-range things are byte-identical to the base client's pair, so
+the problems came with the base. Only the dat changes. No sprite is added or edited.
+- `fix_pair_warnings.py` (new) applies `pair_fixes/fixes.csv` (kind, thing, group, argument, reason) to copies of
+  a pair. Kinds: `durations`, `zero_empty`, `clear_addon_masks`, `drop_addon_rows` (see its docstring). Each fix
+  checks its premise first: a duration must be 0 ms, a zeroed sprite id must be an empty slot, a cleared mask must be
+  a pixel copy of its art. A fix already applied is a no-op. It verifies that every other thing is byte-identical,
+  each fixed thing differs only in its fix's fields, the spr is byte-identical, and the append-only check with
+  exactly the changed things passes. `--changes-out` writes every changed field (`pair_fixes/things_custom18_changes.csv`,
+  2,904 rows). Tests: `fix_pair_warnings_test.py` (synthetic pair; in CI).
+- **0 ms phases (95, fixed).** All are async animators, so the client skips a 0 ms phase on the next draw. Every
+  such frame holds real art. The all-zero grounds 22894, 23469 and 23470 flashed through 15 frames at the frame
+  rate. Set: a phase to the thing's other phases (22664 500 ms; 22679, 24732, 25885, 25886, outfit 1270 idle 100 ms);
+  the three grounds 100 ms like their sibling 23471; outfits 1374 and 1375 idle 100 ms (stock 8-phase idle groups);
+  missiles 83, 96, 102, 103, 105, 106 100 ms (stock animated missiles). Async, loop and start bytes are unchanged.
+  Our client draws missiles at phase 0, so the missile change only matters to other readers of the pair.
+- **Outfit 637 (9 refs, fixed).** All nine are one tile: the colour mask, top-left tile, north, addon 2, mounted,
+  sprites 220064, 220130 and 220194. Donor D outfit 125 is the same look. There this tile holds one magenta pixel,
+  no template colour. Our base's masks are donor D's without the magenta pixels, so the tile was left blank and its
+  record dropped. Blank on purpose: the refs now point at sprite 0. No visible change.
+- **Outfit 267 (fixed).** The idle group had 2 addon rows, the walk group 1. The client merges the groups and
+  indexes both with the last group's patterns, so idle stepped through frames 0-4 with repeats and walk showed idle
+  frames. The
+  walk group was never drawn. Row 1 is a phase-shifted copy of row 0 with tiles missing; row 0 equals the walk
+  group. The idle group now keeps row 0 only (512 bytes shorter). Idle and walk now cycle all 8 frames.
+- **Outfits 1207, 1208, 1228, 1229 (store looks, fixed).** Their base-pattern masks are real. In the addon patterns
+  the second layer is a pixel copy of the addon art (1208: 368 copies and 166 real masks). The client never draws
+  layer 2 of a creature. Its shader tints the base wherever a mask pixel has a channel above 0.9, so the addons'
+  bright pixels took a random part colour. On 1228 and 1229 the bone spikes and trims went blue or purple. The 2,798
+  copied sprites now point at 0: addons draw in their own colours. 1208's real addon masks are kept. No library
+  has real addon masks for these looks (donor D 626 = 1208 with the same copies).
+- **Accepted warnings (121 remain).**
+  - exact-size (64): the client reads the byte and never uses it. Drawn sizes come from the texture bounds.
+  - mask-not-mask 932, 936: base auras ("Fire Essence", "Bats", base auras.xml ids 1 and 5). An aura's second
+    layer is its front layer and is drawn as such. The checker only knows the `chaos_auras*.csv` ids.
+  - mask-not-mask 2043: the unused former Inquisitor look.
+  - missile-patterns (18): 43, 46, 47 and 52 are blank (sprite 0). 137-149 and 152 are donor B missiles with one
+    pattern. Our client then draws them only when flying north-west (the texture index of other directions is out of
+    range). No server script or monster sends them. Give them 3x3 patterns before a spell uses one.
+  - outfit-directions 1239 (Fire Panther mount): patterns 0-3 are its four directions; 4-7 hold stray sprites the
+    client never reads.
+  - thing-empty (34 items): stock invisible things (stairs and "nothing special" markers, god rays, moon rays, an
+    energy barrier, "Empty Item"). The same in the base pair; no art to restore.
+
+```
+python3 -I client/tools/sprites/fix_pair_warnings.py --ours-dat things_custom17/Tibia.dat --ours-spr things_custom17/Tibia.spr \
+    --out-dir things_custom18 --expect-dat-md5 8f0dcbfe56be1a6b3f86677e497cdeaa \
+    --changes-out client/tools/sprites/pair_fixes/things_custom18_changes.csv
+python3 -I client/tools/sprites/check_pair.py things_custom18/Tibia.dat things_custom18/Tibia.spr \
+    --old things_custom17/Tibia.dat things_custom17/Tibia.spr \
+    --allow-changed 'item:22664,22679,22894,23469,23470,24732,25885,25886;outfit:267,637,1207,1208,1228,1229,1270,1374,1375;missile:83,96,102,103,105,106'
+```
+Output **things_custom18**: dat 63fd01750be7696bcf590d0145643cb1 (4,670,980 bytes, -512), spr
+6aee9a3429bdb9039787cb7eacf079c8 (unchanged: 587,305,926 bytes, 724,425 sprites), 33,659 items, 2,142 outfits, 592
+effects, 153 missiles. 23 things changed, 36,424 byte-identical. Built twice with identical md5s. A run on its own
+output changes nothing. Append-only with exactly those 23 ids: 0 errors (one id fewer: 1 error). Full check: 0
+errors, 121 warnings (things_custom17: 230).
+- `things-1098.tar.xz` is built like things_custom17's (Tibia.dat and Tibia.spr at the archive root, owner 0/0,
+  GNU tar, `xz -9 -T3`), mtime 2026-10-12 13:00: sha256 91c94c7db59244751aa98b6134e2ff76404c618aed771c42c20d26981efe15bb
+  (65,646,396 bytes). Its two files unpack to the md5s above. A rebuild gives the same sha256.
+- On `windows-assets` since 2026-10-12 (f543599, approved by the owner). Nothing in `main` pins the pair's md5: CI `live-pair` and
+  the Windows package check the archive against the branch's own `SHA256SUMS.parts`. No server change goes with it.
+  A client still on things_custom17 keeps the old animations and tints.
+- Checked offline: before / after contact sheets that follow the client's draw code (group merge, mask shader with
+  test colours). Not checked in a live client.
+
 ## Leaderboards: fastest-time boards with class tabs (`game_leaderboard`)
 Boards of mode "min" (the Cinderheart's fastest kills) come with `format = "time"` (values shown m:ss,
 `TabRows.valueText` in `tabrows.lua`, tested by `tabrows_test.lua`) and `byClass = true`: the class tabs of the ladder
