@@ -7,6 +7,7 @@ import csv
 import hashlib
 import io
 import os
+import struct
 import sys
 import tempfile
 from contextlib import redirect_stdout
@@ -89,8 +90,95 @@ def expect_exit(args, needle):
     raise AssertionError(f'no exit, wanted {needle!r}')
 
 
+def disp_flag(x, y):
+    return b'\x19' + struct.pack('<hh', x, y)
+
+
+def build_disp(d):
+    """outfits for the displacement kind (2x2, 4 directions, art in the bottom-right tile of each direction):
+    1 no flags but animateAlways, art on the frame's bottom rows (stands low) -> 8,8 inserted before byte 28
+    2 displacement 0,0, the same art -> replaced by 8,8          3 art 8 px clear of the frame edges (drawn for 0)
+    4 1x1                                                      5 already 8,8 (the reference look of the scan)
+    6 displacement 4,4                                         7 art at the edges but its feet line high (a thin
+                                                                 line down the right edge, a 3 px row at row 20)"""
+    low = {y * 32 + x: (90, 60, 30, 255) for y in range(26, 32) for x in range(8, 32)}
+    clear = {y * 32 + x: (90, 60, 30, 255) for y in range(18, 24) for x in range(0, 24)}
+    thin = {y * 32 + 31: (90, 60, 30, 255) for y in range(32)}
+    thin.update({20 * 32 + x: (90, 60, 30, 255) for x in (28, 29, 30)})
+    recs = [record(low), record(clear), record(thin)]
+
+    def big(sid):
+        sl = []
+        for x in range(4):
+            sl += [sid, 0, 0, 0]
+        return group(sl, w=2, h=2, px=4, gtype=0)
+    outs = [entry(b'\x1c', [big(1)], outfit=True), entry(disp_flag(0, 0), [big(1)], outfit=True),
+            entry(b'', [big(2)], outfit=True), entry(b'', [group([1, 1, 1, 1], px=4, gtype=0)], outfit=True),
+            entry(disp_flag(8, 8), [big(1)], outfit=True), entry(disp_flag(4, 4), [big(1)], outfit=True),
+            entry(b'', [big(3)], outfit=True)]
+    dp, sp = os.path.join(d, 'Tibia.dat'), os.path.join(d, 'Tibia.spr')
+    with open(dp, 'wb') as f:
+        f.write(dat_bytes([], outs, [], []))
+    with open(sp, 'wb') as f:
+        f.write(spr_bytes(recs))
+    return dp, sp
+
+
+def test_displacement(d):
+    src = os.path.join(d, 'dsrc'); os.makedirs(src)
+    dp, sp = build_disp(src)
+    spec = os.path.join(d, 'disp.csv')
+    write_spec(spec, [('displacement', 'outfit', 1, '*', '8,8', 't'), ('displacement', 'outfit', 2, '*', '8,8', 't'),
+                      ('displacement', 'outfit', 5, '*', '8,8', 't')])
+    out, out2 = os.path.join(d, 'dout'), os.path.join(d, 'dout2')
+    ch = os.path.join(d, 'dchanges.csv')
+    txt = run(['--ours-dat', dp, '--ours-spr', sp, '--out-dir', out, '--spec', spec, '--changes-out', ch])
+    assert "'outfit:1,2'" in txt and txt.startswith('2 field changes in 2 things'), txt
+    od = os.path.join(out, 'Tibia.dat')
+    data, old = open(od, 'rb').read(), open(dp, 'rb').read()
+    assert len(data) == len(old) + 5                     # one flag inserted, one replaced
+    _, _, th, _ = cp.parse_dat(data, None)
+    o = th['outfit']
+    assert [b for b, _, _ in o[0].flags] == [25, 28] and o[0].flag('displacement') == (8, 8), o[0].flags
+    assert [(b, v) for b, _, v in o[1].flags] == [(25, (8, 8))]
+    _, _, th0, _ = cp.parse_dat(old, None)
+    for a, b in zip(th0['outfit'], o):
+        assert [fx.groups_sig(g) for g in a.groups] == [fx.groups_sig(g) for g in b.groups]   # sprites untouched
+    for k in range(2, 7):
+        assert old[th0['outfit'][k].start:th0['outfit'][k].end] == data[o[k].start:o[k].end]
+    rows = list(csv.DictReader(open(ch, encoding='utf-8')))
+    assert [(r['id'], r['field'], r['old'], r['new']) for r in rows] == [
+        ('1', 'displacement', 'none', '8,8'), ('2', 'displacement', '0,0', '8,8')], rows
+    rep = cp.check(od, os.path.join(out, 'Tibia.spr'), old=(dp, sp), new_only=True, allow_changed=cp.parse_allow('outfit:1,2'))
+    assert rep.ok, rep.text()
+    # idempotent
+    txt = run(['--ours-dat', od, '--ours-spr', os.path.join(out, 'Tibia.spr'), '--out-dir', out2, '--spec', spec,
+               '--link-spr'])
+    assert txt.startswith('0 field changes'), txt
+    assert md5(od) == md5(os.path.join(out2, 'Tibia.dat'))
+    # premise refusals
+    bad = os.path.join(d, 'dbad.csv')
+    a = ['--ours-dat', dp, '--ours-spr', sp, '--out-dir', os.path.join(d, 'dx'), '--spec', bad]
+    for row, needle in ((('displacement', 'outfit', 3, '*', '8,8', 't'), 'drawn for no displacement'),
+                        (('displacement', 'outfit', 4, '*', '8,8', 't'), 'not 2x2 or larger'),
+                        (('displacement', 'outfit', 6, '*', '8,8', 't'), 'already has displacement 4,4'),
+                        (('displacement', 'outfit', 7, '*', '8,8', 't'), 'does not stand low'),
+                        (('displacement', 'outfit', 1, '0', '8,8', 't'), 'group must be "*"'),
+                        (('displacement', 'outfit', 1, '*', '8', 't'), 'is not "X,Y"'),
+                        (('displacement', 'outfit', 1, '*', '0,0', 't'), 'out of range')):
+        write_spec(bad, [row])
+        expect_exit(a, needle)
+    # the scan lists the low looks (1 no flag, 2 0,0) and outfit 7 (premise fails), not 3 / 4 / 5 / 6
+    txt = run(['--ours-dat', dp, '--ours-spr', sp, '--scan-displacement', '--looks', '1-7'])
+    assert '1 looks with displacement 8,8: feet line median 24' in txt, txt
+    listed = [line.split(':')[0].strip() for line in txt.splitlines() if line.startswith('  outfit')]
+    assert listed == ['outfit 1', 'outfit 2', 'outfit 7'], txt
+    assert txt.count('premise ok') == 2 and 'premise fails' in txt, txt
+
+
 def main():
     with tempfile.TemporaryDirectory() as d:
+        test_displacement(d)
         src = os.path.join(d, 'src'); os.makedirs(src)
         dp, sp = build(src)
         before = cp.check(dp, sp, auras=set())

@@ -789,7 +789,8 @@ The owner approved fixing the warnings of things_custom17 that matter in game. E
 client's draw code (0001-0041). All flagged stock-range things are byte-identical to the base client's pair, so
 the problems came with the base. Only the dat changes. No sprite is added or edited.
 - `fix_pair_warnings.py` (new) applies `pair_fixes/fixes.csv` (kind, thing, group, argument, reason) to copies of
-  a pair. Kinds: `durations`, `zero_empty`, `clear_addon_masks`, `drop_addon_rows` (see its docstring). Each fix
+  a pair. Kinds: `durations`, `zero_empty`, `clear_addon_masks`, `drop_addon_rows`, and since things_custom21
+  `displacement` ("Player look displacement" below; see its docstring). Each fix
   checks its premise first: a duration must be 0 ms, a zeroed sprite id must be an empty slot, a cleared mask must be
   a pixel copy of its art. A fix already applied is a no-op. It verifies that every other thing is byte-identical,
   each fixed thing differs only in its fix's fields, the spr is byte-identical, and the append-only check with
@@ -930,7 +931,8 @@ branch.
   a look per sex. None duplicates a look of the pair (`donor_pick.py` and the importers check).
 - Placement: D 609 / 610 have no displacement although their art sits like a stock player outfit's, so the client would
   draw them 8 px low and right of their tile; `donor_pick.py` edit `player-disp` sets 8,8 (no pixel changed). The
-  current Thief and Ninja looks 2051 / 2052 and 2069 / 2070 have the same fault (feet 6-8 px low); not changed here.
+  current Thief and Ninja looks 2051 / 2052 and 2069 / 2070 have the same fault (feet 6-8 px low); not changed here
+  (fixed in things_custom21, "Player look displacement" below).
 - Composer: a layer's `addons` may now be a map (`{"2": 1}`: drawn only on output addon pattern 2, from its own addon
   pattern 1, with its own mask). The Inquisitor's sceptre reaches past the tile, so the composer lowered the
   displacement to 6,6 (the male look is 3x3).
@@ -966,6 +968,62 @@ unchanged.
 - On `windows-assets` since 2026-10-12 (77b9cc9b, pushed by the owner after approving the picks). CI `live-pair` and
   the Windows package read the branch's own `SHA256SUMS.parts`, so nothing in `main` pins the pair's md5.
 - Not checked in a live client.
+
+## Player look displacement (things_custom21, `tools/sprites/fix_pair_warnings.py` kind `displacement`)
+The owner approved fixing the fault noted in "Class looks pair 20": player looks with no displacement whose art sits
+like a stock player look's. Our client (ThingType::draw, no GameCenteredOutfits in the 1098 profile) draws a frame
+pixel at (x - dx - (w-1)*32, y - dy - (h-1)*32) from the creature's tile, so such a look stood about 8 px low and
+right of its tile. Its name, health bar, light and target square (Creature::draw, `getDisplacement`) were 8 px off too.
+Mounted, the rider's own displacement cancels out on stock mounts (positive path of `Outfit::draw`), so a ridden look
+draws exactly as before; on the negative-displacement donor mounts the rider is drawn by its displacement, as the
+seats of patch 0034 expect (they were set with stock 8,8 riders). Only the dat changes: 22 outfits get dat byte 25 =
+8,8 (14 inserted in flag order, 8 had 0,0). No sprite is added or edited.
+- Check (`fix_pair_warnings.py --scan-displacement --looks IDS`, then by eye). Wearable looks: every looktype of the
+  installed outfits.xml plus `class_looks_core.lua` and `exclusives_config.lua` (291 looks). 161 of them have 8,8; their
+  feet line (lowest row with 3 or more art pixels, median of four directions) is row 24 of the tile. 66 are 2x2 or
+  larger with no displacement. 36 of those have art within 3 px of the frame's bottom and right edges (stock 8,8 art
+  touches them; art drawn for no displacement keeps about 8 px clear). 24 of these stand 5 px or more low (feet 29 to
+  31.5); 8,8 brings them to 21-23.5. Two of the 24 were left: 2059 (Lich Class (old)) and 2174 (Lich Class, female)
+  only measure low because chains and a cape trail below the feet. A silhouette match with the stock 8,8 looks puts
+  them at -7,-7 and 3,4. On a tile grid they stand right. Borderline and left: 884 / 885 (feet 4.5 px low, 8,8 would
+  be 3.5 px high). The match puts the 22 fixed looks at 4,4 to 13,13 (most 6-9).
+- Mounts (146 with no displacement, the stock convention; the five donor mounts are negative), wings (stock 0) and
+  auras have their own placement rules and are not player looks: none changed.
+- Fixed (fixes.csv, kind `displacement`, arg 8,8): class looks 2049 / 2050 (Illusionist), 2071 / 2072 (Samurai),
+  2051 / 2052 (Thief (old)), 2069 / 2070 (Ninja (old)), 2065 / 2066 (Bone Lord (old)); class outfits 1505 / 1506
+  (Shadow / Crimson Ninja; the art of 2069 / 2070) and 1508 / 1510 (Oni / Dark Samurai; the art of 2071 / 2072); the
+  exclusive Ashen Seraph 1459; outfits.xml 329 (Newly Wed), 745 / 746 (Recruiter), 852 / 853 (Winter Warden), 873 /
+  874 (Philosopher).
+- Premise of the kind: outfit, no displacement or 0,0 (another value stops the run), every frame group 2x2 or larger,
+  idle art (phase 0, addon 0, mount 0, layer 0, all directions) within 3 px of the frame's bottom and right edges, and
+  its feet line 5 px or more below row 24. A fix already applied is a no-op. Verified: the flags differ only in the
+  displacement, frame groups and sprites identical. Tests: `fix_pair_warnings_test.py` (insert before a later flag,
+  replace 0,0, a no-op on 8,8, each premise refusal, the scan).
+
+```
+python3 -I client/tools/sprites/fix_pair_warnings.py --ours-dat things_custom20/Tibia.dat --ours-spr things_custom20/Tibia.spr \
+    --scan-displacement --looks IDS
+python3 -I client/tools/sprites/fix_pair_warnings.py --ours-dat things_custom20/Tibia.dat --ours-spr things_custom20/Tibia.spr \
+    --out-dir things_custom21 --expect-dat-md5 4dfc1c79d0c0e46cd04994c5ff4e09f7 \
+    --changes-out client/tools/sprites/pair_fixes/things_custom21_changes.csv
+python3 -I client/tools/sprites/check_pair.py things_custom21/Tibia.dat things_custom21/Tibia.spr \
+    --old things_custom20/Tibia.dat things_custom20/Tibia.spr \
+    --allow-changed 'outfit:329,745,746,852,853,873,874,1459,1505,1506,1508,1510,2049,2050,2051,2052,2065,2066,2069,2070,2071,2072'
+```
+Input things_custom20 (dat 4dfc1c79d0c0e46cd04994c5ff4e09f7, spr 1a11296180c55dd64bbdce829580ec3b). Output
+**things_custom21**: dat 29e959f34600c3e5c11eec72f4aa34f5 (4,917,432 bytes, +70), spr 1a11296180c55dd64bbdce829580ec3b
+(unchanged: 599,349,497 bytes, 745,156 sprites), 33,659 items, 2,184 outfits, 592 effects, 153 missiles. The earlier
+fixes.csv rows are no-ops on things_custom20. 22 things changed, 36,467 byte-identical. Built twice with identical md5s;
+a run on its own output changes nothing. `pair_fixes/things_custom21_changes.csv`: 22 rows.
+- `check_pair.py`: append-only with exactly those 22 ids: 0 errors (21 ids: 1 error). Full check: 0 errors, 121
+  warnings, the same as things_custom20.
+- `things-1098.tar.xz` like things_custom20's (Tibia.dat and Tibia.spr at the root, owner 0/0, GNU tar, `xz -9 -T3`),
+  mtime 2026-10-12 17:00: sha256 b0a3d8a4101c7251fd6809a1f07160c73419884a4dbc2ba9524a4cf54ddb522d (66,683,748 bytes).
+  Its two files unpack to the md5s above. A rebuild gives the same sha256.
+- Built, not pushed: waits for the owner's "pode mandar o par para o windows-assets". No server change: the look ids
+  stay the same. A client on things_custom20 keeps drawing the 22 looks 8 px low.
+- Checked offline: before / after sheets of the 22 looks, four directions with both addons, on a tile grid with the
+  stock look 128 beside them, placed by the client's draw rule. Not checked in a live client.
 
 ## Leaderboards: fastest-time boards with class tabs (`game_leaderboard`)
 Boards of mode "min" (the Cinderheart's fastest kills) come with `format = "time"` (values shown m:ss,
