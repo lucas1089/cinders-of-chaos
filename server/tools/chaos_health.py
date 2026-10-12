@@ -11,7 +11,13 @@ The timer runs it every 5 minutes. Each run checks:
   - the newest dump in CHAOS_BACKUP_DIR/db is younger than --backup-max-age (26) hours;
   - the last off-site copy (server/tools/backup_offsite.sh) is younger than 26 hours, only when CHAOS_BACKUP_REMOTE or
     CHAOS_BACKUP_RSYNC is set;
-  - error lines in the console log since the last run (Lua errors, stack tracebacks, [Error ...], segfaults).
+  - error lines in the console log since the last run (Lua errors, stack tracebacks, [Error ...], segfaults);
+  - slow database COMMITs on the game loop: slow task log lines (engine patch 0027, config.lua slowTaskLogMs at or
+    under --slow-commit-ms) whose longest query is a COMMIT of --slow-commit-ms (200) ms or more. A COMMIT waits for
+    the database's log flush (fsync) on the game loop, so a slow disk freezes the game that long (0.3-0.8 s autosave
+    ticks were measured on a slow shared disk; 12-55 ms on a calm one). --slow-commit-count (3) of them within an hour
+    post one warning, at most once per --slow-commit-window (6 h); the daily summary counts them. Without the slow task
+    log there are no such lines and nothing is posted.
 
 It posts {"content": ...} to CHAOS_ALERT_WEBHOOK (the same webhook as chaos_crashlog.sh) only when a check changes
 state: FAIL when it starts failing, OK when it recovers. Nothing is posted while a state holds. Error lines are counted
@@ -45,6 +51,8 @@ OPTIONAL_UNITS = ['nginx', 'php*-fpm']
 GAME_CHECKS = ('unit:chaos-server', 'port:login', 'port:game', 'status')
 ERROR_RE = re.compile(r'lua script error|stack traceback|\[error\b|segmentation fault|segfault|'
                       r'attempt to (index|call|compare|perform|concatenate)', re.I)
+# a slow task log line (engine patch 0027) whose longest database query was a COMMIT
+SLOW_COMMIT_RE = re.compile(r'\[slow task\] \d+ ms\b.*\| db \d+ ms in .*, longest (\d+) ms: COMMIT\b')
 MAX_SCAN = 32 * 1024 * 1024    # read at most this much new log per run; a larger jump skips ahead
 MAX_POST = 1900                # webhook messages are cut here (Discord-style hooks refuse more than 2000)
 OUTBOX_MAX = 20
@@ -75,38 +83,43 @@ def step(prev, result, now, confirm=1):
     return st, None
 
 
-def scan_log(path, pos, max_bytes=MAX_SCAN, keep=5):
-    """New error lines in the log since pos ({'ino', 'off'} or None). Returns (pos, count, first lines).
+def scan_log(path, pos, max_bytes=MAX_SCAN, keep=5, commit_ms=200):
+    """New error lines in the log since pos ({'ino', 'off'} or None). Returns (pos, count, first lines, the ms of the
+    slow task log's COMMITs of commit_ms or more).
     The first run starts at the end (old lines are not news). A new inode or a shorter file (logrotate copytruncate)
     starts again from the top. Only whole lines are read; a half-written last line waits for the next run."""
     try:
         st = os.stat(path)
     except OSError:
-        return pos, 0, []
+        return pos, 0, [], []
     if not pos:
-        return {'ino': st.st_ino, 'off': st.st_size}, 0, []
+        return {'ino': st.st_ino, 'off': st.st_size}, 0, [], []
     off = pos.get('off', 0)
     if pos.get('ino') != st.st_ino or st.st_size < off:
         off = 0
     if st.st_size - off > max_bytes:
         off = st.st_size - max_bytes
-    count, lines = 0, []
+    count, lines, commits = 0, [], []
     try:
         with open(path, 'rb') as f:
             f.seek(off)
             data = f.read(st.st_size - off)
     except OSError:
-        return pos, 0, []
+        return pos, 0, [], []
     end = data.rfind(b'\n')
     if end < 0:
-        return {'ino': st.st_ino, 'off': off}, 0, []
+        return {'ino': st.st_ino, 'off': off}, 0, [], []
     for raw in data[:end].split(b'\n'):
         line = raw.decode('utf-8', 'replace').rstrip('\r')
         if ERROR_RE.search(line):
             count += 1
             if len(lines) < keep:
                 lines.append(line.strip()[:200])
-    return {'ino': st.st_ino, 'off': off + end + 1}, count, lines
+        elif '[slow task]' in line:
+            m = SLOW_COMMIT_RE.search(line)
+            if m and int(m.group(1)) >= commit_ms:
+                commits.append(int(m.group(1)))
+    return {'ino': st.st_ino, 'off': off + end + 1}, count, lines, commits
 
 
 def errors_step(err, count, lines, now, window=1800, keep=5):
@@ -126,6 +139,23 @@ def errors_step(err, count, lines, now, window=1800, keep=5):
         err.update(pending=0, lines=[], last_alert=now)
         return err, msg
     return err, None
+
+
+def commits_step(sc, commits, now, threshold_ms=200, min_count=3, window=6 * 3600):
+    """Slow COMMITs: sc['seen'] keeps [time, ms] for 24 h (the summary); a warning when min_count or more fell within
+    the last hour, at most once per window. Returns (sc, message or None)."""
+    sc = dict(sc or {})
+    seen = trim(sc.get('seen', []), now) + [[now, ms] for ms in commits]
+    sc['seen'] = seen
+    sc.setdefault('last_alert', 0)
+    hour = [ms for t, ms in seen if now - t <= 3600 and t > sc['last_alert']]
+    if commits and len(hour) >= min_count and (not sc['last_alert'] or now - sc['last_alert'] >= window):
+        sc['last_alert'] = now
+        return sc, ('WARN slow database COMMITs: %d of %d ms or more on the game loop in the last hour (longest %d ms). '
+                    'Each one froze the game that long while MariaDB waited for its disk flush. The database must be '
+                    'on a local NVMe / SSD (docs/LAUNCH.md section 2): check what else writes to that disk '
+                    '(iostat -x 5).' % (len(hour), threshold_ms, max(hour)))
+    return sc, None
 
 
 def parse_online(reply):
@@ -357,6 +387,9 @@ def summary_text(state, opts, now, results):
         count_since(os.path.join(opts.crash_dir, 'crash-*.log'), since),
         watchdog_restarts(os.path.join(opts.crash_dir, 'watchdog.log'), since))
     errs = 'error lines in the log: %d' % sum(n for _, n in state.get('errors_seen', []))
+    slow = [ms for _, ms in trim(state.get('slow_commits', {}).get('seen', []), now)]
+    errs += ', slow COMMITs (%d ms+, slow task log): %d%s' % (
+        opts.slow_commit_ms, len(slow), ' (longest %d ms)' % max(slow) if slow else '')
     disks = 'disk: ' + ', '.join('%s %s' % (k[5:], v[1]) for k, v in sorted(results.items()) if k.startswith('disk:'))
     failing = [k for k, v in sorted(state.get('checks', {}).items()) if not v.get('ok', True)]
     bad = 'failing now: ' + (', '.join(failing) if failing else 'nothing')
@@ -385,8 +418,12 @@ def run(sysm, opts, env, state, now, now_local):
     if events:
         msgs.append('\n'.join(events))
 
-    pos, count, lines = scan_log(opts.log, state.get('log_pos'))
+    pos, count, lines, commits = scan_log(opts.log, state.get('log_pos'), commit_ms=opts.slow_commit_ms)
     state['log_pos'] = pos
+    state['slow_commits'], commit_msg = commits_step(state.get('slow_commits'), commits, now, opts.slow_commit_ms,
+                                                     opts.slow_commit_count, opts.slow_commit_window)
+    if commit_msg:
+        msgs.append(commit_msg)
     state['errors'], err_msg = errors_step(state.get('errors'), count, lines, now, opts.error_window)
     if err_msg:
         msgs.append(err_msg)
@@ -456,6 +493,10 @@ def parse_args(argv, env):
     p.add_argument('--backup-max-age', type=float, default=float(env.get('CHAOS_HEALTH_BACKUP_MAX_AGE_H') or 26),
                    help='hours')
     p.add_argument('--error-window', type=float, default=1800, help='seconds between two error-line alerts')
+    p.add_argument('--slow-commit-ms', type=int, default=int(env.get('CHAOS_HEALTH_SLOW_COMMIT_MS') or 200),
+                   help='a COMMIT this slow (slow task log) counts as slow')
+    p.add_argument('--slow-commit-count', type=int, default=3, help='slow COMMITs within an hour that warn')
+    p.add_argument('--slow-commit-window', type=float, default=6 * 3600, help='seconds between two COMMIT warnings')
     p.add_argument('--summary-hour', type=int, default=int(env.get('CHAOS_HEALTH_SUMMARY_HOUR') or 9))
     p.add_argument('--summary-now', action='store_true', help='post the daily summary now')
     p.add_argument('--test-alert', action='store_true', help='post one test message and exit')

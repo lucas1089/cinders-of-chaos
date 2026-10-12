@@ -341,8 +341,8 @@ server/
    steps (without it the stock full save runs). See "Autosave in steps".
 7b. Base scripts that stalled the game loop: `python3 -I server/tools/patch_base_stalls.py <server>/data [--dry-run]`
    (idempotent; `install_all.py` step `stalls`, after `autosave`): the expedition announcements look at the players
-   online instead of every tile of an island, the upgrade-slot check keeps its parse per item description. See "Game
-   loop stalls".
+   online instead of every tile of an island, the upgrade-slot check keeps its parse per item description and runs
+   once a second per player (at once on an equip move) instead of every 100 ms. See "Game loop stalls".
 7c. Base lever and step-in boss rooms: `python3 -I server/tools/patch_base_bossrooms.py <server>/data [--dry-run]`
    (idempotent; `install_all.py` step `bossrooms`, after `stalls`): the lever (or entry tile) is locked while a group is
    inside, a time limit with warnings, the exit and the clean-up. See "Instance limits".
@@ -3667,6 +3667,18 @@ game loop (30-120 ms a login); see "Left as it is".
 5. The Lua collector's settings are not changed: with LuaJIT the pause and step multiplier only move the same sweep work
    between tasks. Less garbage (1, 4) is what shortened the sweeps: all Lua together made about 540 MB a minute before
    and about 215 MB after (200 online, no rain).
+6. `tools/patch_base_stalls.py` step 3 (owner decision 2026-10-12): the upgrade-slot check runs less often. The stock
+   script gave each player a 100 ms timer of its own. Now the check runs at login (as before), at once when an item
+   is put on or taken off (an `EventCallback onItemMoved` with an inventory slot on either side, index 13: drag and
+   drop, the equip hotkey and right-click equips since engine patch 0024), and once a second for every player in 12
+   groups (player id modulo 12, one group every 83 ms, like `item_mods.lua`). The second-by-second pass catches what
+   moves no item: decay, a script's `moveTo`, an upgrade rune or an orb used on a worn item; those apply within 1 s
+   instead of 100 ms. The check itself is unchanged, and a player who left is dropped from its cache by the pass, as
+   before. After `/reload scripts` the new chain takes over the players online and the old chain stops.
+   **Estimate, not measured:** the check took 8 s of game loop a minute at 200 online (13%) after the cache of 4, at
+   10 checks a second per player. At 1 a second plus the equip moves that is about 0.8-0.9 s a minute (1.3-1.5%): about
+   7 s a minute (11-12% of the game loop) saved at 200 online, about 14 s a minute at 400. Its garbage drops in the same
+   ratio (56 MB a minute to about 6), and the scheduler runs 12 events a second for it instead of 10 per player.
 
 **Measured** (the setup above, 200 bots, 3 runs each, before and after taken in turns; 5 minutes at 200 online per
 run; the box ran other test servers and builds at the same time, so single outliers can be the machine). A stall is a
@@ -3699,17 +3711,22 @@ should stay around 100-150 ms with no stall over 250 ms from these causes.
   0.3-1.7 s with 0 ms of Lua and a few ms of timed queries; `perf` showed the game loop thread blocked in the database
   client's poll inside the save, so the COMMIT, which the slow task log did not count then (it does since this patch).
   A calm repeat with 100 bots: every logout under 30 ms, the longest part a 12 ms COMMIT. Not a steady-state stall.
-- The upgrade-slot check still reads every worn item's description and removes up to 9 conditions per slot ten times a
-  second per player (about 13% of the game loop at 200 online). A longer interval would change when the bonuses apply;
-  owner decision.
+- The upgrade-slot check's own rules (a base bug, the same before and after fix 6): it adds a slot's bonus with the
+  condition subid `90 + slot + 10 x index` and removes the bonuses of an emptied slot with `90 + slot + 16 x index`
+  (`CONST_SLOT_AMMO` against `CONST_SLOT_GLOVES`), so an item taken off keeps its slot bonuses until a new item in that
+  slot replaces them or the player logs out; some subids of different slots also meet (slot 1 index 2 is slot 11
+  index 1), and its `Attr` compare is by identity, so every check removes and adds every slot condition again. Not
+  changed here; owner decision.
 - The base weather's rain (above) when it rains (6 s of game loop and 57 MB of garbage a minute at 200 online, ticks
   of 10-20 ms, a few of 70-180 ms); the base rarity check (`customs/rarity/base_rarity.lua`, 2 s and 42 MB a minute).
   Both are base scripts that work as designed; no stall over 250 ms from either in these runs.
 
 Tests: `tests/item_mods_test.lua` (the 12 groups, every player once in 3 s, regeneration), `tests/respawn_test.lua`
 (`R.zoneList`, the glue with `Game.setSpawnIntervalZones`), `tests/base_stalls_patch_test.lua` (the tool on the stock
-code; the stock and patched scripts give the same players, marks, broadcasts and conditions against a mocked engine;
-idempotence, dry run), `tools/chaoszones_test.cpp` in CI (the index against the old way over 300 random zone lists).
+code; the stock and patched scripts give the same players, marks, broadcasts and conditions against a mocked engine
+with a clock, the conditions compared once each change has settled for 1 s; the upgrade check at login and at once
+on an equip move, 24 players each checked once a second in groups of 2 per 83 ms tick, a player who left dropped,
+one chain after a reload; idempotence, dry run, CRLF, a script patched by the older tool gets step 3), `tools/chaoszones_test.cpp` in CI (the index against the old way over 300 random zone lists).
 
 ### Slow task log (`slowTaskLogMs`, engine patch 0027)
 
@@ -3847,9 +3864,10 @@ core after against 52.8% / 51.2% before, dispatcher busy 51% / 50% against 60% /
 
 **The slow task log's top offenders** (300 online, 10 minutes):
 - the save's COMMITs (`Game::saveIncrementalStep`, 0 ms of Lua): 0.3-0.8 s each while other jobs used the disk, 26-55 ms
-  otherwise. A COMMIT waits for the log flush on the game loop ("Left as it is" above). Production: the database on a
-  local SSD / NVMe; `innodb_flush_log_at_trx_commit = 2` would take the flush off the commit (an OS crash loses up to a
-  second of saves); owner decision, not set;
+  otherwise. A COMMIT waits for the log flush on the game loop ("Left as it is" above). Owner decision 2026-10-12: the
+  database on a local NVMe (a hosting requirement, docs/LAUNCH.md section 2); `innodb_flush_log_at_trx_commit` stays
+  1 (2 would take the flush off the commit, and an OS crash would lose up to a second of saves). With the slow task
+  log on, `tools/chaos_health.py` warns at 3 COMMITs of 200 ms or more within an hour;
 - the base server's `events/scripts/creature.lua:22` (`Creature:onTargetCombat`: registers three creature events on
   the target at every attack) and `deathrecap.lua:213` (the collector's sweep of 5-6 MB lands in these calls): 20-30
   tasks of 50-100 ms; at 700 online 240 and 435 tasks, up to 819 ms (part of the saturation, no fix here);
@@ -3865,7 +3883,7 @@ for MariaDB, 100 Mbit/s or more (0.6-1.3 KB/s per player, about 4 Mbit/s for 400
 these bots (spells and area attacks, more monsters woken in more places, trading, depot and market work, the rain):
 counted as 1.5-2 bots. The knee here is 450-500 bots (dispatcher 83-96%); on the assumed VPS about 600-750 bots, so
 300-500 real players.
-- **Beta: 300** (`prod_config.py --max-players 300`). The dispatcher stays under half busy with room for the unknowns;
+- **Beta: 300** (`prod_config.py --max-players 300`; owner decision 2026-10-12, with 400 at launch). The dispatcher stays under half busy with room for the unknowns;
   measure the beta weekend (the probe lag, the slow task log for an hour at the peak).
 - **Launch: 400** (the `prod_config.py` default). Raise to 500 after a week whose peak hour kept the timer lag under
   70 ms on average and the slow task log (`slowTaskLogMs = 100`) under a few tasks a minute; lower to 300 if it did not.

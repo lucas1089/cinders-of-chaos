@@ -55,6 +55,16 @@ base server into the server folder that all three servers share. `tools/linux/pa
 2. Load the base schema: `SQL_Server/schema.sql` and the other `SQL_Server/schema_*.sql` / `sql_*.sql` files of the
    download. Do not load `SQL_ONLY_for_existing_server-*.sql` into a fresh database.
 3. The Chaos tables come with step 4 (`install_all.py`, step `sql`).
+4. **Hosting requirement: the database files on a local NVMe or SSD** (owner decision 2026-10-12). Not a network
+   volume, not a disk shared with other busy machines. Keep MariaDB's default `innodb_flush_log_at_trx_commit = 1`
+   (every COMMIT is on disk; do not set 2). Why: the engine saves on the game loop. Each autosave step and each
+   logout ends with a COMMIT, and the COMMIT waits for the disk's flush (fsync) before the game goes on. On a slow
+   shared disk the full-map load test measured autosave ticks of 0.3-0.8 s (the whole game frozen that long); on a
+   calm disk the same COMMITs took 12-55 ms (server/README.md "Load test on the full map"). Check the disk before
+   launch, in a folder on the database's disk:
+   `fio --name=fsync --rw=write --bs=4k --size=64m --fsync=1 --filename=/var/lib/mysql-fio.tmp; rm /var/lib/mysql-fio.tmp`.
+   The fsync latencies it prints should be a few ms or less; tens of ms means a shared or network disk. After launch
+   `chaos_health.py` warns when COMMITs get slow (section 9; needs the slow task log).
 
 At the first start on a fresh database the engine prints a few `Duplicate column name` errors (its own migrations add
 columns the schema already has) and errors about the website's `znote_*` tables. They are harmless for the game; the
@@ -73,6 +83,9 @@ python3 -I server/tools/prod_config.py /opt/chaos/server --public-host play.exam
 ```
 (`--ip` is the old name of `--public-host` and still works.)
 
+For the beta run the same command with `--max-players 300` (owner decision 2026-10-12: 300 for the beta, 400 at launch;
+docs/BETA.md section 2). Run it again with `--max-players 400` (or without the option) before the launch.
+
 `server/tools/prod_config.py` (idempotent; its docstring explains every value) sets:
 
 | Setting | Value | Why |
@@ -80,7 +93,7 @@ python3 -I server/tools/prod_config.py /opt/chaos/server --public-host play.exam
 | `ip` | the public DNS name (`--public-host`) | the login server hands it to the client as text and the client resolves it, so a DNS change needs no restart. Behind gateways it is the gateways' name, never the real server's IP (section "Gateways and DDoS"); 127.0.0.1 only works on the machine itself |
 | `loginProtocolPort` / `gameProtocolPort` / `statusProtocolPort` | 7171 / 7172 / 7171 | the stock ports (the test servers use 74xx) |
 | `serverName`, `motd`, `ownerName`, `ownerEmail`, `url`, `location` | ours | the download ships its own name and someone else's contact data |
-| `maxPlayers` | 400 at launch (the default), 300 for the beta | from the full-map load test (section 9): the game loop's one thread fills up at 500-600 bots on the 4-core test machine, and real players cost more than bots. Raise to 500 after a launch week whose peak kept the lag low; 0 means unlimited |
+| `maxPlayers` | 400 at launch (the default), 300 for the beta (`--max-players 300`; owner decision 2026-10-12) | from the full-map load test (section 9): the game loop's one thread fills up at 500-600 bots on the 4-core test machine, and real players cost more than bots. Raise to 500 after a launch week whose peak kept the lag low; 0 means unlimited |
 | `worldType` | `pvp` (or `no-pvp`, `pvp-enforced`) | the arena and the guild siege never use real deaths, so they work in every type |
 | `allowClones`, `onePlayerOnlinePerAccount` | false, false | the multi-client rules live in `multiclient.lua` (2 characters per IP; the second cannot attack players or enter dungeons) |
 | `serverSaveShutdown` | **true** (kept) | the daily save shuts the engine down; systemd starts it again (section 5), so each day starts with a fresh process |
@@ -93,7 +106,7 @@ python3 -I server/tools/prod_config.py /opt/chaos/server --public-host play.exam
 | `clientGuardMode`, `clientGuardKey`, `clientGuardAllowDevKey`, `clientGuardTimeout`, `clientGuardDownloadUrl`, `clientGuardBuilds`, `clientGuardManifest`, `clientGuardStaffIps` | `"enforce"`, `os.getenv("CHAOS_CLIENT_KEY") or ""`, false, 10, the options | only the official client plays (engine patch 0021, `server/README.md` "Client guard"): the key is the GitHub secret `CHAOS_CLIENT_KEY` the Windows client is built with, in `/etc/chaos/chaos.env`; without it every player is kicked (the console says so at start). `clientGuardMode = "log"` for a log-only first week or an emergency |
 | `minPlayerSpeed`, `maxPlayerSpeed`, `playerSpeedBonus`, `playerSpeedPerTenLevels`, `playerSpeedSoftLevel`, `playerSpeedPerTenLevelsAbove` | 120, 2600, 50, 25, 300, 10 | movement speed (engine patch 0018, `server/README.md` "Movement speed"): walk speed held between about 1 and 10 tiles/s on normal ground; base speed = vocation + 50, 2.5 per level up to 300, 1 per level after. The client needs base patch 0029 (same step times) |
 | `proxyProtocolTrusted`, `proxyProtocolRequired` | the gateways' IPs, true (or `""`, false without gateways) | the gateways in front of the server (engine patch 0025, section "Gateways and DDoS"): a connection from a listed gateway must start with a PROXY header and the engine takes the player's real IP from it; `true` refuses every other address except 127.0.0.0/8. Not given: the value already in `config.lua` stays |
-| `slowTaskLogMs` | 0 (not set: off), or e.g. 100 while hunting lag | the slow task log (engine patch 0027, `server/README.md` "Slow task log"): every game loop task that took this many ms or more is one console line with the Lua script and line, the database queries and the collector's sweep that took the time. On, it costs about 1 us per Lua call (well under 1% of the game loop at 200 online) |
+| `slowTaskLogMs` | 0 (not set: off), or e.g. 100 while hunting lag; 200 or less for the slow COMMIT warning of section 9 | the slow task log (engine patch 0027, `server/README.md` "Slow task log"): every game loop task that took this many ms or more is one console line with the Lua script and line, the database queries and the collector's sweep that took the time. On, it costs about 1 us per Lua call (well under 1% of the game loop at 200 online) |
 | `loginPrefetch` | true (not set: true) | the login scripts' reads run on the login worker's own connection before the login (engine patch 0031, `server/README.md` "Login reads off the game loop"); answered from those rows only when the text is the same and no write reached a table they read since. `false` reads everything on the game loop as before. Read at startup |
 | `rateSpawn` | 3 | how many monsters one spawn brings back per check (stock 1: a pack of five took five spawntimes to refill). The timers themselves are in the spawn file (install step `spawns`); engine patch 0022 lets `respawn.lua` shorten them where several players hunt together (`server/README.md` "Spawn density and respawn"). Without patch 0022 the console prints one `[ChaosRespawn]` line and the stock timers apply |
 
@@ -336,6 +349,7 @@ webhook, or anything that takes `{"content": "..."}`) in `/etc/chaos/chaos.env`,
 | `disk /`, `disk /var/backups/chaos` | less than 10 % or 5 GB free (`CHAOS_HEALTH_MIN_FREE_PCT`, `_GB`) | runbook "Disk full" |
 | `local backup` | the newest dump is older than 26 h, or there is none | `/var/log/chaos/backup.log` |
 | `off-site backup` | `.offsite_last` older than 26 h (only when a target is set) | the `offsite:` lines in `backup.log` |
+| `WARN slow database COMMITs` | 3 or more COMMITs of 200 ms or more within an hour in the slow task log (`slowTaskLogMs` 200 or less in `config.lua`; `CHAOS_HEALTH_SLOW_COMMIT_MS`); a warning, at most once per 6 h, and a count in the daily summary | the database disk (section 2 step 4): `iostat -x 5`, other jobs writing to it, the host's disk type |
 
 The game checks (chaos-server, both ports, status) alert after 2 failed runs in a row and are skipped in the first
 5 minutes after a start, so the daily restart is silent. Crashes alert on their own (`chaos_crashlog.sh`).

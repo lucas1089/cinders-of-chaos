@@ -36,8 +36,9 @@ Notes:
 
 **Owner decides.** Recommendation: an **open beta**. Anyone makes an account on the website and plays with the official
 client (the client guard is on, `clientGuardMode = "enforce"`, docs/LAUNCH.md section 3).
-- `maxPlayers` 300 (`prod_config.py --max-players 300`): the full-map load test (docs/LAUNCH.md section 9, server/README.md
-  "Load test on the full map") filled the game loop at 500-600 bots; the beta keeps it under half busy. Launch: 400.
+- `maxPlayers` 300: run `prod_config.py` with `--max-players 300` on the beta server (decided 2026-10-12; docs/LAUNCH.md
+  section 3). The full-map load test (docs/LAUNCH.md section 9, server/README.md "Load test on the full map") filled the
+  game loop at 500-600 bots; the beta keeps it under half busy. Launch: 400 (the `prod_config.py` default).
 - The normal rules apply: two characters per IP (`multiclient.lua`), the Rules page, reports and bans (docs/GM_HANDBOOK.md).
 - The website's register guard, reCAPTCHA keys and SMTP must be live (docs/OWNER_TODO.md "Accounts and services").
 - Alternative: a closed beta with invitations. Nothing in the code issues invitations, so it would be a manual list of

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Two base server scripts that held or loaded the game loop (server/README.md "Game loop stalls").
+"""Base server scripts that held or loaded the game loop (server/README.md "Game loop stalls").
 
 usage: python3 -I patch_base_stalls.py DATA_DIR [--dry-run]
 
@@ -22,8 +22,17 @@ usage: python3 -I patch_base_stalls.py DATA_DIR [--dry-run]
    text: the same text gives the same slots, so only a new or changed description is parsed again (the description is
    still read every time). This took most of the script's garbage (a pattern iterator and tables per item, 10 times a
    second per player), which the Lua collector then had to sweep inside other tasks.
+3. The same check, less often. Each player had its own 100 ms timer (addEvent at the end of the check, started at
+   login): about 13% of the game loop at 200 online even with the cache of 2. The check now runs at login (as before),
+   at once when an item is put on or taken off (EventCallback onItemMoved with an inventory slot on either side: drag
+   and drop, the equip hotkey and right-click equips since engine patch 0024), and once a second for every player
+   online in 12 groups (player id modulo 12, one group every 83 ms, like item_mods.lua) for the other ways a worn item
+   changes (decay, a script's moveTo, an upgrade or an orb used on a worn item). A player who left is dropped from the
+   script's cache by the group pass, as the stock timer did. The check itself is unchanged. After a reload of the
+   scripts the new chain takes over the players online and the old one stops.
 
-Every change carries a marker and is made once (a second run changes nothing). A file without the stock code is left
+Every change carries a marker and is made once (3 has its own marker, so a base patched by an older version of
+this tool gets 3 too) (a second run changes nothing). A file without the stock code is left
 alone: exit status 0, an install without these base scripts has nothing to do.
 """
 import os
@@ -81,7 +90,7 @@ UPGRADE_CALL_RE = re.compile(r'^([ \t]*)local slots = slotAttribute\.getItemSlot
                              r'(?=[ \t]*slotAttribute\.onSlotEquip\(player, slots, slot\))', re.M)
 SLOTS_CACHE = (
     '-- %s: the slots parsed from an item description, kept per description text (the\n'
-    '-- same text always gives the same slots). The check below runs every 100 ms per player; it now parses only a new\n'
+    '-- same text always gives the same slots). The check below runs often for every player; it now parses only a new\n'
     '-- or changed description. The cached tables are only read (onSlotEquip copies what it keeps).\n'
     'local chaosSlotsByDescription, chaosSlotsCached = {}, 0\n'
     'local function chaosItemSlots(item)\n'
@@ -98,6 +107,56 @@ SLOTS_CACHE = (
     '\treturn slots\n'
     'end\n'
     '\n') % MARK
+
+
+# ------------------------------------------------------------------------------------------------ 3. check interval
+MARK_INTERVAL = 'Chaos (patch_base_stalls.py, check interval)'
+UPGRADE_TIMER_RE = re.compile(r'^([ \t]*)addEvent\(slotAttribute\.autoDetection, \d+, playerId\)[ \t]*\r?\n', re.M)
+UPGRADE_LOGIN_RE = re.compile(r'^local creatureEvent = CreatureEvent\(\)[ \t]*\r?\n'
+                              r'(?=(?:[ \t]*\r?\n)*function creatureEvent\.onLogin\(player\)[ \t]*\r?\n'
+                              r'[ \t]*slotAttribute\.autoDetection\(player\.uid\))', re.M)
+UPGRADE_TIMER_NEW = ('{i}-- %s: no timer per player any more; chaosUpgradeGroup below checks\n'
+                     '{i}-- every player once a second, onItemMoved at once\n') % MARK_INTERVAL
+UPGRADE_GROUPS = (
+    '-- %s: the check above ran every 100 ms for every player online (a timer per\n'
+    '-- player), about 13%% of the game loop at 200 online. Now it runs at login (onLogin below, as before), at once when\n'
+    '-- an item is put on or taken off (onItemMoved with an inventory slot on either side), and once a second for every\n'
+    '-- player in 12 groups (player id modulo 12, one group every 83 ms) for the other ways a worn item changes (decay, a\n'
+    '-- script, an upgrade or an orb used on a worn item). The check drops a player who left from the cache, as before.\n'
+    'local chaosUpgradeGroups, chaosUpgradeInterval = 12, 1000\n'
+    'ChaosUpgradeSlotsChain = (ChaosUpgradeSlotsChain or 0) + 1\n'
+    'local chaosUpgradeChain, chaosUpgradeSeeded = ChaosUpgradeSlotsChain, false\n'
+    'local function chaosUpgradeGroup(group)\n'
+    '\tif ChaosUpgradeSlotsChain ~= chaosUpgradeChain then\n'
+    '\t\treturn -- a reload of the scripts started a new chain\n'
+    '\tend\n'
+    '\tif not chaosUpgradeSeeded then\n'
+    '\t\tchaosUpgradeSeeded = true -- after a reload: the players already online\n'
+    '\t\tfor _, player in ipairs(Game.getPlayers()) do\n'
+    '\t\t\tlocal playerId = player:getId()\n'
+    '\t\t\tif not slotAttribute.cache[playerId] then\n'
+    '\t\t\t\tslotAttribute.cache[playerId] = {}\n'
+    '\t\t\tend\n'
+    '\t\tend\n'
+    '\tend\n'
+    '\tfor playerId in pairs(slotAttribute.cache) do\n'
+    '\t\tif playerId %% chaosUpgradeGroups == group then\n'
+    '\t\t\tslotAttribute.autoDetection(playerId)\n'
+    '\t\tend\n'
+    '\tend\n'
+    '\taddEvent(chaosUpgradeGroup, math.floor(chaosUpgradeInterval / chaosUpgradeGroups), (group + 1) %% chaosUpgradeGroups)\n'
+    'end\n'
+    'addEvent(chaosUpgradeGroup, math.floor(chaosUpgradeInterval / chaosUpgradeGroups), 0)\n'
+    '\n'
+    'local chaosUpgradeMoved = EventCallback\n'
+    'chaosUpgradeMoved.onItemMoved = function(player, item, count, fromPosition, toPosition, fromCylinder, toCylinder)\n'
+    '\tlocal inventory = CONTAINER_POSITION or 0xFFFF\n'
+    '\tif (fromPosition.x == inventory and fromPosition.y < 64) or (toPosition.x == inventory and toPosition.y < 64) then\n'
+    '\t\tslotAttribute.autoDetection(player:getId())\n'
+    '\tend\n'
+    'end\n'
+    'chaosUpgradeMoved:register(13) -- after base_rarity.lua (10), item_mods.lua (11), archery.lua (12)\n'
+    '\n') % MARK_INTERVAL
 
 
 def crlf(text, new):
@@ -124,7 +183,7 @@ def patch_expedition(text):
     return bom + crlf(text, PLAYER_TILES) + body[len(bom):], 'patched (%d loop%s)' % (n, '' if n == 1 else 's')
 
 
-def patch_upgrade(text):
+def patch_upgrade_cache(text):
     """(new text, status): 'already', 'patched' or 'none'"""
     if MARK in text:
         return text, 'already'
@@ -137,6 +196,39 @@ def patch_upgrade(text):
     new = (text[:d.start()] + crlf(text, SLOTS_CACHE) + text[d.start():c.start()]
            + crlf(text, '%slocal slots = chaosItemSlots(item)\n' % c.group(1)) + text[c.end():])
     return new, 'patched'
+
+
+def patch_upgrade_interval(text):
+    """(new text, status): 'already', 'patched' or 'none'"""
+    if MARK_INTERVAL in text:
+        return text, 'already'
+    d = UPGRADE_DEF_RE.search(text)
+    if not d:
+        return text, 'none'
+    tm = UPGRADE_TIMER_RE.search(text, d.end())
+    if not tm:
+        return text, 'none'
+    lg = UPGRADE_LOGIN_RE.search(text, tm.end())
+    if not lg:
+        return text, 'none'
+    new = (text[:tm.start()] + crlf(text, UPGRADE_TIMER_NEW.format(i=tm.group(1))) + text[tm.end():lg.start()]
+           + crlf(text, UPGRADE_GROUPS) + text[lg.start():])
+    return new, 'patched'
+
+
+def patch_upgrade(text):
+    """(new text, status) for 2 and 3: 'already', 'patched (...)' or 'none'"""
+    text, cache = patch_upgrade_cache(text)
+    text, interval = patch_upgrade_interval(text)
+    if cache == 'none' and interval == 'none':
+        return text, 'none'
+    done = [what for what, st in (('slot cache', cache), ('check every 1 s and on equip', interval)) if st == 'patched']
+    if not done:
+        return text, 'already'
+    rest = [what + ' ' + st for what, st in (('slot cache', cache), ('check interval', interval))
+            if st != 'patched']
+    rest = [r.replace(' none', ': stock code not found') for r in rest]
+    return text, 'patched (%s%s)' % (', '.join(done), '; ' + ', '.join(rest) if rest else '')
 
 
 def files(data):

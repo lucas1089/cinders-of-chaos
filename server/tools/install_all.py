@@ -113,8 +113,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   stalls       tools/patch_base_stalls.py        the base expedition scripts announce a new NPC or boss to the players on its
                island from the list of players online instead of a scan of every tile of the island (627,000 tiles,
                0.6-0.9 s of frozen game loop at each spawn time; same players, sounds, marks and broadcasts); the base
-               upgrade-slot check (every 100 ms per player) keeps the slots it parsed per item description (README "Game
-               loop stalls")
+               upgrade-slot check keeps the slots it parsed per item description and runs at login, at once on an
+               equip move and once a second per player in 12 groups instead of every 100 ms (README "Game loop
+               stalls")
   bossrooms    tools/patch_base_bossrooms.py     the base lever boss rooms and the step-in miniboss rooms (several in one file):
                the lever (or entry tile) is locked while a group is inside, a time limit (the room's own kick time, at
                most 30 minutes) with warnings and a countdown, everyone out to the room's exit and its monsters removed

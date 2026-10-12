@@ -26,6 +26,9 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 
 - [ ] **Domain.** The site address must be `https://...` (`CHAOS_SITE_URL`).
 - [ ] **Hosting with DDoS protection** for the game server, the website and the database.
+  - Required: the database (MariaDB) on a local NVMe or SSD of the game server's machine, not a network or shared
+    disk (decided 2026-10-12; `innodb_flush_log_at_trx_commit` stays 1). Each autosave step's COMMIT waits for the
+    disk flush on the game loop: a slow shared disk gave 0.3-0.8 s freezes. Steps: [LAUNCH.md](LAUNCH.md) section 2.
 - [ ] **2 or 3 gateway VPS** with DDoS filtering in front of the game server, a DNS name with one A record per
   gateway, and a backend IP that was never public. Steps: [LAUNCH.md](LAUNCH.md) "Gateways and DDoS".
 - [ ] **SMTP** for website mail: account recovery links and the website 2FA codes. Get an SMTP relay with TLS (port
@@ -70,3 +73,8 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
   a relog inside a dungeon.
 - Class looks pair 19 (2026-10-12): approved and pushed to `windows-assets` (b36204f2); the six new class looks go live
   with the switch in `class_looks_core.lua`.
+- maxPlayers (2026-10-12): 300 for the beta (`prod_config.py --max-players 300`), 400 at launch (the default).
+- Database disk (2026-10-12): MariaDB on a local NVMe, not `innodb_flush_log_at_trx_commit = 2`. Hosting requirement
+  in [LAUNCH.md](LAUNCH.md) section 2.
+- Base upgrade-slot check (2026-10-12): once a second per player in 12 groups, and at once on an equip or unequip
+  move, instead of every 100 ms (server/README.md "Game loop stalls").

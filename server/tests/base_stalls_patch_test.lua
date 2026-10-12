@@ -3,8 +3,12 @@
 -- scripts run against the same mocked engine and must do the same:
 --   expedition announcement  the same players get the sound, the map mark and the broadcast, in the same order (a player
 --                            under a monster, two players on one tile, other floors and places outside the box)
---   upgrade slots            the same conditions added and removed, tick after tick; the description is parsed once
--- and: a second run changes nothing, --dry-run writes nothing, a removal loop (not a player scan) is left alone.
+--   upgrade slots            the same conditions once a change has settled (1 s); each description parsed once
+--   upgrade check interval   a check at login and at once on an equip / unequip move, every player once a second in
+--                            12 groups (instead of 10 times a second each), a player who left dropped, a reload
+--                            of the scripts does not run two chains
+-- and: a second run changes nothing, --dry-run writes nothing, a removal loop (not a player scan) is left alone, CRLF
+-- files stay CRLF, a script patched by the older tool (slot cache only) gets the interval step.
 local fails, checks = 0, 0
 local function ok(cond, what)
 	checks = checks + 1
@@ -217,7 +221,14 @@ slotAttribute.autoDetection = function(playerId)
     end
 end
 
-UpgradeAutoDetection = slotAttribute.autoDetection
+local creatureEvent = CreatureEvent()
+
+function creatureEvent.onLogin(player)
+    slotAttribute.autoDetection(player.uid)
+    return true
+end
+
+creatureEvent:register()
 ]]
 
 local expPath = expDir .. "/spawn_npc_lost_objects.lua"
@@ -230,7 +241,8 @@ writeFile(upPath, UPGRADE)
 local tool = "python3 -I tools/patch_base_stalls.py '" .. data .. "'"
 local out = sh(tool .. " --dry-run")
 ok(out:find("spawn_npc_lost_objects.lua: patched %(1 loop%) %(dry run"), "dry run reports the expedition: " .. out)
-ok(out:find("upgrade_slot_item.lua: patched %(dry run"), "dry run reports the upgrade script")
+ok(out:find("upgrade_slot_item.lua: patched %(slot cache, check every 1 s and on equip%) %(dry run"),
+	"dry run reports the upgrade script")
 ok(readFile(expPath) == EXPEDITION and readFile(upPath) == UPGRADE, "dry run writes nothing")
 out = sh(tool)
 ok(out:find("spawn_npc_lost_objects.lua: patched %(1 loop%)"), "expedition patched: " .. out)
@@ -240,9 +252,30 @@ local patchedExp, patchedBoss, patchedUp = readFile(expPath), readFile(bossPath)
 ok(patchedExp:find("chaosPlayerTiles", 1, true) ~= nil, "the helper is in the expedition script")
 ok(select(2, patchedBoss:gsub("for x = ", "")) == 1, "the boss removal loop still scans its box")
 ok(patchedUp:find("local slots = chaosItemSlots(item)", 1, true) ~= nil, "the check uses the cached slots")
+ok(not patchedUp:find("addEvent(slotAttribute.autoDetection", 1, true), "no timer per player")
+ok(patchedUp:find("chaosUpgradeMoved:register(13)", 1, true) ~= nil, "the equip callback is registered")
 out = sh(tool)
 ok(out:find("spawn_npc_lost_objects.lua: already") and out:find("upgrade_slot_item.lua: already"), "second run: already")
 ok(readFile(expPath) == patchedExp and readFile(upPath) == patchedUp, "second run changes nothing")
+-- a script patched by the older tool (its slot cache step only): the interval step is added, the cache not doubled
+writeFile(upPath, UPGRADE)
+sh("python3 -I -c 'import sys; sys.path.insert(0, \"tools\"); import patch_base_stalls as p; f = sys.argv[1]; "
+	.. "t = open(f, newline=\"\").read(); open(f, \"w\", newline=\"\").write(p.patch_upgrade_cache(t)[0])' '"
+	.. upPath .. "'")
+local cacheOnly = readFile(upPath)
+ok(cacheOnly:find("chaosItemSlots", 1, true) and not cacheOnly:find("check interval", 1, true),
+	"the older patch made for the test")
+out = sh(tool)
+ok(out:find("upgrade_slot_item.lua: patched %(check every 1 s and on equip; slot cache already%)"),
+	"older patch: the interval step added: " .. out)
+ok(readFile(upPath) == patchedUp, "older patch: the same text as a fresh install")
+-- CRLF: the stock script with Windows line ends is patched the same and stays CRLF
+writeFile(upPath, (UPGRADE:gsub("\n", "\r\n")))
+out = sh(tool)
+local crlfUp = readFile(upPath)
+ok(out:find("upgrade_slot_item.lua: patched %(slot cache, check every 1 s and on equip%)"), "CRLF patched: " .. out)
+ok(crlfUp == patchedUp:gsub("\n", "\r\n") and not crlfUp:find("[^\r]\n"), "CRLF: same text, every line CRLF")
+writeFile(upPath, patchedUp)
 local empty = root .. "/empty"
 os.execute("mkdir -p '" .. empty .. "'")
 out = sh("python3 -I tools/patch_base_stalls.py '" .. empty .. "'; echo status=$?")
@@ -252,7 +285,8 @@ ok(out:find("nothing to do") and out:find("status=0"), "no base scripts: nothing
 MESSAGE_EVENT_ADVANCE = 1
 CONDITION_ATTRIBUTES, CONDITIONID_DEFAULT = 1, 0
 CONDITION_PARAM_SKILL_CLUB, CONDITION_PARAM_SKILL_SWORD, CONDITION_PARAM_SUBID = 10, 11, 12
-CONST_SLOT_HEAD, CONST_SLOT_AMMO, CONST_SLOT_GLOVES = 1, 10, 11
+CONST_SLOT_HEAD, CONST_SLOT_AMMO, CONST_SLOT_GLOVES = 1, 10, 16 -- as the engine (creature.h)
+CONTAINER_POSITION = 0xFFFF
 
 local log
 local tiles, players
@@ -342,31 +376,62 @@ local function runBoss(text)
 end
 ok(runBoss(BOSS) == runBoss(patchedBoss), "boss script: the same announcement and removal")
 
--- upgrade slots: a player with items whose descriptions change between ticks
-local function runUpgrade(text)
-	log = {}
-	local timers = {}
+-- upgrade slots: the stock script (a 100 ms timer per player) and the patched one (login, equip moves, 12 groups a
+-- second) against the same mocked engine with a clock; the same steps on 24 players
+local unpackf = table.unpack or unpack
+local INV = CONTAINER_POSITION
+local function runUpgrade(text, patched)
+	local now, queue, seq = 0, {}, 0
 	function addEvent(fn, ms, ...)
-		timers[#timers + 1] = {fn = fn, args = {...}}
+		seq = seq + 1
+		queue[#queue + 1] = {at = now + ms, seq = seq, fn = fn, args = {...}, n = select("#", ...)}
 	end
-	local descriptions = {
-		[1] = "You see a helmet. [Club+2], [Sword+1]",
-		[4] = "You see an armor.",
-		[8] = "You see a ring. [Sword+3]",
-	}
-	local parsed = 0
+	local function advance(ms)
+		local stop = now + ms
+		while true do
+			local best
+			for i, e in ipairs(queue) do
+				local b = best and queue[best]
+				if e.at <= stop and (not b or e.at < b.at or (e.at == b.at and e.seq < b.seq)) then
+					best = i
+				end
+			end
+			if not best then
+				break
+			end
+			local e = table.remove(queue, best)
+			now = e.at
+			e.fn(unpackf(e.args, 1, e.n))
+		end
+		now = stop
+	end
+	local online, all, checks, texts = {}, {}, {}, {}
+	local described, reads, ntexts = 0, 0, 0
+	local loginEvent, callbacks = nil, {}
+	local function newPlayer(id)
+		local p = {uid = id, items = {}, conds = {}}
+		function p:getId() return id end
+		function p:getSlotItem(slot)
+			if self.items[slot] then
+				reads = reads + 1
+				return {owner = self, slot = slot}
+			end
+		end
+		function p:removeCondition(t, cid, subid) self.conds[subid] = nil end
+		function p:addCondition(c) self.conds[c.subid] = c.attr .. "=" .. c.value end
+		return p
+	end
 	Item = {getDescription = function(item)
-		parsed = parsed + 1
-		return descriptions[item.slot]
+		described = described + 1
+		local s = item.owner.items[item.slot]
+		if not texts[s] then
+			texts[s], ntexts = true, ntexts + 1
+		end
+		return s
 	end}
-	local player = {uid = 7}
-	function player:getSlotItem(slot)
-		return descriptions[slot] and {slot = slot} or nil
-	end
-	function player:removeCondition(t, id, subid) log[#log + 1] = "remove " .. subid end
-	function player:addCondition(c) log[#log + 1] = "add " .. c.subid .. " " .. c.attr .. "=" .. c.value end
 	function Player(id)
-		return id == 7 and player or nil
+		checks[id] = (checks[id] or 0) + 1
+		return online[id]
 	end
 	function Condition(t, id)
 		local c = {}
@@ -379,28 +444,193 @@ local function runUpgrade(text)
 		end
 		return c
 	end
-	assert(load(text))()
-	local calls = {}
-	local function tick()
-		local t = table.remove(timers, 1)
-		t.fn((table.unpack or unpack)(t.args))
+	function CreatureEvent()
+		local e = {}
+		function e:register() loginEvent = self end
+		return e
 	end
-	UpgradeAutoDetection(7)
-	tick()
-	descriptions[4] = "You see an armor. [Club+1]" -- upgraded between two checks
-	tick()
-	descriptions[8] = nil -- the ring taken off
-	tick()
-	tick()
-	return table.concat(log, "\n"), parsed
+	EventCallback = {}
+	function EventCallback:register()
+		callbacks[#callbacks + 1] = rawget(self, "onItemMoved")
+		self.onItemMoved = nil
+	end
+	Game.getPlayers = function()
+		local list = {}
+		for id = 1, 24 do
+			if online[id] then
+				list[#list + 1] = online[id]
+			end
+		end
+		return list
+	end
+	assert(load(text))()
+
+	local r = {snaps = {}}
+	local function snap(name)
+		local parts = {}
+		for id = 1, 24 do
+			local subids = {}
+			for subid in pairs(all[id].conds) do
+				subids[#subids + 1] = subid
+			end
+			table.sort(subids)
+			for _, subid in ipairs(subids) do
+				parts[#parts + 1] = id .. ":" .. subid .. "=" .. all[id].conds[subid]
+			end
+		end
+		r.snaps[#r.snaps + 1] = name .. " " .. table.concat(parts, " ")
+	end
+	local function move(id, fromPos, toPos)
+		local results = {}
+		for _, cb in ipairs(callbacks) do
+			results[#results + 1] = select("#", cb(all[id], {}, 1, fromPos, toPos, nil, nil))
+		end
+		return results
+	end
+	local function checksOf(id)
+		return checks[id] or 0
+	end
+
+	-- 24 players log in at once; 7 wears a helmet with two slots, a plain armor and a ring; every second player a ring
+	for id = 1, 24 do
+		all[id] = newPlayer(id)
+		if id % 2 == 0 then
+			all[id].items[9] = "You see a ring. [Club+1]"
+		end
+	end
+	all[7].items[1] = "You see a helmet. [Club+2], [Sword+1]"
+	all[7].items[4] = "You see an armor."
+	all[7].items[9] = "You see a ring. [Sword+3]"
+	for id = 1, 24 do
+		online[id] = all[id]
+		loginEvent.onLogin(all[id])
+	end
+	snap("login")
+	advance(1000)
+	snap("1 s")
+
+	-- a worn item gets a slot without a move (an upgrade used on it): applied within a second
+	all[7].items[4] = "You see an armor. [Club+1]"
+	local t0 = now
+	local applied
+	for _ = 1, 20 do
+		advance(50)
+		if all[7].conds[104] then
+			applied = applied or now - t0
+		end
+	end
+	r.upgradeDelay = applied
+	snap("upgrade settled")
+
+	-- a sword put on by hand (ground -> right hand): at once with the equip event
+	all[7].items[5] = "You see a sword. [Sword+2]"
+	local before = checksOf(7)
+	r.equipCallbacks = move(7, {x = 100, y = 100, z = 7}, {x = INV, y = 5, z = 0})
+	r.equipChecks = checksOf(7) - before
+	r.equipAtOnce = all[7].conds[105]
+	advance(1000)
+	snap("equip settled")
+
+	-- taken off into the backpack: a check at once; then a move between two containers: no check
+	all[7].items[5] = nil
+	before = checksOf(7)
+	move(7, {x = INV, y = 5, z = 0}, {x = INV, y = 64, z = 0})
+	r.unequipChecks = checksOf(7) - before
+	before = checksOf(7)
+	move(7, {x = INV, y = 64, z = 1}, {x = INV, y = 65, z = 0})
+	r.containerChecks = checksOf(7) - before
+	advance(1000)
+	snap("unequip settled")
+
+	-- a ring that ends (decay): no move event, gone within a second
+	all[8].items[9] = nil
+	advance(1000)
+	snap("decay settled")
+
+	-- the rate and the spread: checks per player over 10 periods of the groups (9960 ms), the most in one group tick
+	local start = {}
+	for id = 1, 24 do
+		start[id] = checksOf(id)
+	end
+	r.maxPerStep = 0
+	for _ = 1, 120 do
+		local stepStart = 0
+		for id = 1, 24 do
+			stepStart = stepStart + checksOf(id)
+		end
+		advance(83)
+		local n = -stepStart
+		for id = 1, 24 do
+			n = n + checksOf(id)
+		end
+		r.maxPerStep = math.max(r.maxPerStep, n)
+	end
+	r.perPlayer = {}
+	for id = 1, 24 do
+		r.perPlayer[id] = checksOf(id) - start[id]
+	end
+	snap("10 s")
+
+	-- 7 logs out: dropped within a second, no checks after that
+	online[7] = nil
+	advance(1100)
+	before = checksOf(7)
+	advance(3000)
+	r.afterLogout = checksOf(7) - before
+	snap("logout")
+
+	r.described, r.reads, r.texts = described, reads, ntexts
+	if patched then
+		-- a reload of the scripts: the new chain takes the players online, the old chain stops
+		assert(load(text))()
+		advance(2000)
+		snap("reload")
+		for id = 1, 24 do
+			start[id] = checksOf(id)
+		end
+		advance(9960)
+		r.afterReload = {}
+		for id = 1, 24 do
+			r.afterReload[id] = checksOf(id) - start[id]
+		end
+	end
+	return r
 end
-local stockUp, stockParsed = runUpgrade(UPGRADE)
-local patchedUp2, patchedParsed = runUpgrade(patchedUp)
-ok(stockUp ~= "" and patchedUp2 == stockUp, "upgrade: the same conditions added and removed")
--- the stock check reads each description once per tick; the patched one reads it once per tick too, and once more
--- for a text it has not parsed before (the parse itself is kept)
-ok(patchedParsed == stockParsed + 4, "upgrade: each new description parsed once (4 texts), then only read: "
-	.. stockParsed .. " / " .. patchedParsed)
+
+local stock = runUpgrade(UPGRADE, false)
+local new = runUpgrade(patchedUp, true)
+for i, s in ipairs(stock.snaps) do
+	ok(new.snaps[i] == s, "upgrade: the same conditions at '" .. s:match("^[^%d]*") .. "':\n  stock   " .. s ..
+		"\n  patched " .. tostring(new.snaps[i]))
+end
+ok(#stock.snaps == 8 and stock.snaps[1]:find("7:", 1, true), "upgrade: the snapshots hold conditions")
+ok(stock.upgradeDelay and stock.upgradeDelay <= 100, "stock: a slot on a worn item applied within 100 ms")
+ok(new.upgradeDelay and new.upgradeDelay <= 1000, "patched: a slot on a worn item applied within 1 s: "
+	.. tostring(new.upgradeDelay))
+ok(new.equipAtOnce == CONDITION_PARAM_SKILL_SWORD .. "=2" and new.equipChecks == 1, "patched: equip applied at once")
+ok(new.equipCallbacks[1] == 0, "patched: the equip callback returns nothing (later callbacks still run)")
+ok(stock.equipAtOnce == nil and #stock.equipCallbacks == 0, "stock: no equip callback (the next 100 ms tick)")
+ok(new.unequipChecks == 1 and new.containerChecks == 0, "patched: a check on unequip, none between containers")
+local rateOk = true
+for id = 1, 24 do
+	if id ~= 7 and (new.perPlayer[id] ~= 10 or stock.perPlayer[id] < 99) then
+		rateOk = false
+	end
+end
+ok(rateOk, "every player checked once a second (10 in 9960 ms) instead of 10 times: " .. new.perPlayer[1] .. " / "
+	.. stock.perPlayer[1])
+ok(new.maxPerStep == 2, "patched: one group (2 of 24 players) per 83 ms tick: " .. new.maxPerStep)
+ok(new.afterLogout == 0 and stock.afterLogout == 0, "a player who left is no longer checked")
+local reloadOk = true
+for id = 1, 24 do
+	if id ~= 7 and new.afterReload[id] ~= 10 then
+		reloadOk = false
+	end
+end
+ok(reloadOk, "after a reload: one chain, every player still once a second")
+-- the stock check parses each description it reads; the patched one reads it the same way and parses each text once
+ok(stock.described == stock.reads and new.described == new.reads + new.texts, "upgrade: each description parsed "
+	.. "once: " .. new.described .. " reads " .. new.reads .. " texts " .. new.texts)
 
 os.execute("rm -rf '" .. root .. "'")
 if fails > 0 then
