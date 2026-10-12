@@ -160,9 +160,12 @@ local player = {isPlayer = function() return true end, isMonster = function() re
 	getPosition = function() return position(100, 100, 7) end}
 spectators = {player}
 
+-- a reload over a server that ran the old onSpawn roll: ChaosTierState is kept and holds an entry under id 0
+ChaosTierState = {[0] = {tier = "rare", depth = 0, mods = {"blazing"}, step = 0}}
 dofile("data/scripts/chaos/monster_tiers.lua")
 local cfg = ChaosTierConfig
 local state = ChaosTierState
+eq(state[0], nil, "load: a stale entry under id 0 is dropped")
 
 local function setChance(legendary, rare, magic)
 	cfg.spawnChance = {legendary = legendary, rare = rare, magic = magic}
