@@ -3,12 +3,15 @@
 -- scripts run against the same mocked engine and must do the same:
 --   expedition announcement  the same players get the sound, the map mark and the broadcast, in the same order (a player
 --                            under a monster, two players on one tile, other floors and places outside the box)
---   upgrade slots            the same conditions once a change has settled (1 s); each description parsed once
+--   upgrade slots            each description parsed once
 --   upgrade check interval   a check at login and at once on an equip / unequip move, every player once a second in
 --                            12 groups (instead of 10 times a second each), a player who left dropped, a reload
 --                            of the scripts does not run two chains
+--   upgrade condition ids    after login, equip, unequip, swap, decay, relog and a reload every player has the
+--                            bonuses of the worn items, each once (at once on a move with the patch); the stock
+--                            script fails this, and so does the patch without its clear of the old ids
 -- and: a second run changes nothing, --dry-run writes nothing, a removal loop (not a player scan) is left alone, CRLF
--- files stay CRLF, a script patched by the older tool (slot cache only) gets the interval step.
+-- files stay CRLF, a script patched by an older tool (slot cache only, or steps 2 and 3) gets the missing steps.
 local fails, checks = 0, 0
 local function ok(cond, what)
 	checks = checks + 1
@@ -176,12 +179,15 @@ slotAttribute.onSlotEquip = function(player, slots, slotIndex)
         if not slotAttribute.cache[player.uid][subid] or slotAttribute.cache[player.uid][subid] ~= attr then
             if slotAttribute.cache[player.uid][subid] and slotAttribute.cache[player.uid][subid] ~= attr then
                 player:removeCondition(CONDITION_ATTRIBUTES, CONDITIONID_DEFAULT, subid, true)
+                player:removeCondition(CONDITION_HASTE, CONDITIONID_DEFAULT, subid, true)
+                player:removeCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, subid, true)
             end
         local info = slotAttribute.conditions[attr.name]
             if info then
                 local condition = Condition(info.Type, CONDITIONID_DEFAULT)
                     if condition then
                         condition:setParameter(info.Attr, attr.value)
+                        condition:setParameter(CONDITION_PARAM_TICKS, -1)
                         condition:setParameter(CONDITION_PARAM_SUBID, subid)
                         player:addCondition(condition)
                         slotAttribute.cache[player.uid][subid] = attr
@@ -206,12 +212,16 @@ slotAttribute.autoDetection = function(playerId)
                                 for index = #slots+1, slotAttribute.maxSlots do
                                     local subid = slotAttribute.baseSubids + slot + (CONST_SLOT_GLOVES * index)
                                         player:removeCondition(CONDITION_ATTRIBUTES, CONDITIONID_DEFAULT, subid, true)
+                                        player:removeCondition(CONDITION_HASTE, CONDITIONID_DEFAULT, subid, true)
+                                        player:removeCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, subid, true)
                                 end
                             end
                     else
                         for index = 1, slotAttribute.maxSlots do
                             local subid = slotAttribute.baseSubids + slot + (CONST_SLOT_GLOVES * index)
                             player:removeCondition(CONDITION_ATTRIBUTES, CONDITIONID_DEFAULT, subid, true)
+                            player:removeCondition(CONDITION_HASTE, CONDITIONID_DEFAULT, subid, true)
+                            player:removeCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, subid, true)
                         end
                     end
             end
@@ -241,7 +251,8 @@ writeFile(upPath, UPGRADE)
 local tool = "python3 -I tools/patch_base_stalls.py '" .. data .. "'"
 local out = sh(tool .. " --dry-run")
 ok(out:find("spawn_npc_lost_objects.lua: patched %(1 loop%) %(dry run"), "dry run reports the expedition: " .. out)
-ok(out:find("upgrade_slot_item.lua: patched %(slot cache, check every 1 s and on equip%) %(dry run"),
+ok(out:find("upgrade_slot_item.lua: patched %(slot cache, check every 1 s and on equip, one condition id per bonus%) "
+	.. "%(dry run"),
 	"dry run reports the upgrade script")
 ok(readFile(expPath) == EXPEDITION and readFile(upPath) == UPGRADE, "dry run writes nothing")
 out = sh(tool)
@@ -253,6 +264,8 @@ ok(patchedExp:find("chaosPlayerTiles", 1, true) ~= nil, "the helper is in the ex
 ok(select(2, patchedBoss:gsub("for x = ", "")) == 1, "the boss removal loop still scans its box")
 ok(patchedUp:find("local slots = chaosItemSlots(item)", 1, true) ~= nil, "the check uses the cached slots")
 ok(not patchedUp:find("addEvent(slotAttribute.autoDetection", 1, true), "no timer per player")
+ok(not patchedUp:find("(CONST_SLOT_AMMO * index)", 1, true) and select(2, patchedUp:gsub("chaosUpgradeClearOnce%(", "")) == 2,
+	"one condition id per bonus: the adds use the removals' id, the clear once per player is called")
 ok(patchedUp:find("chaosUpgradeMoved:register(13)", 1, true) ~= nil, "the equip callback is registered")
 out = sh(tool)
 ok(out:find("spawn_npc_lost_objects.lua: already") and out:find("upgrade_slot_item.lua: already"), "second run: already")
@@ -266,14 +279,26 @@ local cacheOnly = readFile(upPath)
 ok(cacheOnly:find("chaosItemSlots", 1, true) and not cacheOnly:find("check interval", 1, true),
 	"the older patch made for the test")
 out = sh(tool)
-ok(out:find("upgrade_slot_item.lua: patched %(check every 1 s and on equip; slot cache already%)"),
-	"older patch: the interval step added: " .. out)
+ok(out:find("upgrade_slot_item.lua: patched %(check every 1 s and on equip, one condition id per bonus; slot cache "
+	.. "already%)"), "older patch: the interval and id steps added: " .. out)
 ok(readFile(upPath) == patchedUp, "older patch: the same text as a fresh install")
+-- a script patched by the tool before step 4 (slot cache and interval): only the condition ids are added
+writeFile(upPath, UPGRADE)
+sh("python3 -I -c 'import sys; sys.path.insert(0, \"tools\"); import patch_base_stalls as p; f = sys.argv[1]; "
+	.. "t = open(f, newline=\"\").read(); t = p.patch_upgrade_interval(p.patch_upgrade_cache(t)[0])[0]; "
+	.. "open(f, \"w\", newline=\"\").write(t)' '" .. upPath .. "'")
+local before4 = readFile(upPath)
+ok(before4:find("check interval", 1, true) and not before4:find("condition ids", 1, true), "the step 3 patch made for the test")
+out = sh(tool)
+ok(out:find("upgrade_slot_item.lua: patched %(one condition id per bonus; slot cache already, check interval already%)"),
+	"step 3 patch: the id step added: " .. out)
+ok(readFile(upPath) == patchedUp, "step 3 patch: the same text as a fresh install")
 -- CRLF: the stock script with Windows line ends is patched the same and stays CRLF
 writeFile(upPath, (UPGRADE:gsub("\n", "\r\n")))
 out = sh(tool)
 local crlfUp = readFile(upPath)
-ok(out:find("upgrade_slot_item.lua: patched %(slot cache, check every 1 s and on equip%)"), "CRLF patched: " .. out)
+ok(out:find("upgrade_slot_item.lua: patched %(slot cache, check every 1 s and on equip, one condition id per bonus%)"),
+	"CRLF patched: " .. out)
 ok(crlfUp == patchedUp:gsub("\n", "\r\n") and not crlfUp:find("[^\r]\n"), "CRLF: same text, every line CRLF")
 writeFile(upPath, patchedUp)
 local empty = root .. "/empty"
@@ -283,8 +308,8 @@ ok(out:find("nothing to do") and out:find("status=0"), "no base scripts: nothing
 
 -- ------------------------------------------------------------------ mocked engine
 MESSAGE_EVENT_ADVANCE = 1
-CONDITION_ATTRIBUTES, CONDITIONID_DEFAULT = 1, 0
-CONDITION_PARAM_SKILL_CLUB, CONDITION_PARAM_SKILL_SWORD, CONDITION_PARAM_SUBID = 10, 11, 12
+CONDITION_ATTRIBUTES, CONDITIONID_DEFAULT, CONDITION_HASTE, CONDITION_REGENERATION = 1, 0, 2, 3
+CONDITION_PARAM_SKILL_CLUB, CONDITION_PARAM_SKILL_SWORD, CONDITION_PARAM_SUBID, CONDITION_PARAM_TICKS = 10, 11, 12, 13
 CONST_SLOT_HEAD, CONST_SLOT_AMMO, CONST_SLOT_GLOVES = 1, 10, 16 -- as the engine (creature.h)
 CONTAINER_POSITION = 0xFFFF
 
@@ -377,9 +402,13 @@ end
 ok(runBoss(BOSS) == runBoss(patchedBoss), "boss script: the same announcement and removal")
 
 -- upgrade slots: the stock script (a 100 ms timer per player) and the patched one (login, equip moves, 12 groups a
--- second) against the same mocked engine with a clock; the same steps on 24 players
+-- second, one condition id per bonus) against the same mocked engine with a clock; the same steps on 24 players.
+-- The expectation: once a change has settled (and at once after an equip move with the patch), every player online
+-- has exactly the bonuses of the slots of the items worn, each once. The stock script fails it (a bonus added with
+-- 90 + slot + 10 x index and removed with 90 + slot + 16 x index); the patched one passes.
 local unpackf = table.unpack or unpack
 local INV = CONTAINER_POSITION
+local PARAM = {Club = CONDITION_PARAM_SKILL_CLUB, Sword = CONDITION_PARAM_SKILL_SWORD}
 local function runUpgrade(text, patched)
 	local now, queue, seq = 0, {}, 0
 	function addEvent(fn, ms, ...)
@@ -409,6 +438,7 @@ local function runUpgrade(text, patched)
 	local described, reads, ntexts = 0, 0, 0
 	local loginEvent, callbacks = nil, {}
 	local function newPlayer(id)
+		-- conds: the CONDITION_ATTRIBUTES conditions by sub id, as the engine keeps one per type, id and sub id
 		local p = {uid = id, items = {}, conds = {}}
 		function p:getId() return id end
 		function p:getSlotItem(slot)
@@ -417,8 +447,16 @@ local function runUpgrade(text, patched)
 				return {owner = self, slot = slot}
 			end
 		end
-		function p:removeCondition(t, cid, subid) self.conds[subid] = nil end
-		function p:addCondition(c) self.conds[c.subid] = c.attr .. "=" .. c.value end
+		function p:removeCondition(t, cid, subid)
+			if t == CONDITION_ATTRIBUTES then
+				self.conds[subid] = nil
+			end
+		end
+		function p:addCondition(c)
+			if c.type == CONDITION_ATTRIBUTES then
+				self.conds[c.subid] = c.attr .. "=" .. c.value -- the same sub id replaces (ticks -1)
+			end
+		end
 		return p
 	end
 	Item = {getDescription = function(item)
@@ -434,11 +472,11 @@ local function runUpgrade(text, patched)
 		return online[id]
 	end
 	function Condition(t, id)
-		local c = {}
+		local c = {type = t}
 		function c:setParameter(p, v)
 			if p == CONDITION_PARAM_SUBID then
 				c.subid = v
-			else
+			elseif p ~= CONDITION_PARAM_TICKS then
 				c.attr, c.value = p, v
 			end
 		end
@@ -465,20 +503,38 @@ local function runUpgrade(text, patched)
 	end
 	assert(load(text))()
 
-	local r = {snaps = {}}
-	local function snap(name)
-		local parts = {}
-		for id = 1, 24 do
-			local subids = {}
-			for subid in pairs(all[id].conds) do
-				subids[#subids + 1] = subid
-			end
-			table.sort(subids)
-			for _, subid in ipairs(subids) do
-				parts[#parts + 1] = id .. ":" .. subid .. "=" .. all[id].conds[subid]
+	-- the bonuses a player has (each condition once) and the ones its worn items give, both sorted
+	local function has(id)
+		local list = {}
+		for _, v in pairs(all[id].conds) do
+			list[#list + 1] = v
+		end
+		table.sort(list)
+		return table.concat(list, " ")
+	end
+	local function want(id)
+		local list = {}
+		for slot = CONST_SLOT_HEAD, CONST_SLOT_GLOVES do
+			for name, value in string.gmatch(all[id].items[slot] or "", "%[(%a+)%+(%d+)%]") do
+				list[#list + 1] = PARAM[name] .. "=" .. value
 			end
 		end
-		r.snaps[#r.snaps + 1] = name .. " " .. table.concat(parts, " ")
+		table.sort(list)
+		return table.concat(list, " ")
+	end
+	local function right(id)
+		return has(id) == want(id)
+	end
+	local r = {snaps = {}, wrong = {}}
+	local function snap(name)
+		local bad = {}
+		for id = 1, 24 do
+			if online[id] and not right(id) then
+				bad[#bad + 1] = id .. " has {" .. has(id) .. "} wears {" .. want(id) .. "}"
+			end
+		end
+		r.snaps[#r.snaps + 1] = name
+		r.wrong[name] = #bad > 0 and table.concat(bad, "; ") or nil
 	end
 	local function move(id, fromPos, toPos)
 		local results = {}
@@ -491,7 +547,10 @@ local function runUpgrade(text, patched)
 		return checks[id] or 0
 	end
 
-	-- 24 players log in at once; 7 wears a helmet with two slots, a plain armor and a ring; every second player a ring
+	-- 24 players log in at once; every second player wears a ring with a slot. 7 a helmet with two slots, a plain
+	-- armor and a ring; 8 an amulet; 12 an armor with two slots and boots with one; 14 an armor with one. 16 still
+	-- has the bonus of its helmet under the stock id (90 + 1 + 10, which no new id meets): a reload with the player
+	-- online, the old condition on.
 	for id = 1, 24 do
 		all[id] = newPlayer(id)
 		if id % 2 == 0 then
@@ -501,10 +560,17 @@ local function runUpgrade(text, patched)
 	all[7].items[1] = "You see a helmet. [Club+2], [Sword+1]"
 	all[7].items[4] = "You see an armor."
 	all[7].items[9] = "You see a ring. [Sword+3]"
+	all[12].items[4] = "You see an armor. [Club+2], [Sword+2]"
+	all[12].items[8] = "You see boots. [Club+1]"
+	all[8].items[2] = "You see an amulet. [Club+3]"
+	all[14].items[4] = "You see an armor. [Sword+2]"
+	all[16].items[1] = "You see a helmet. [Sword+1]"
+	all[16].conds[101] = CONDITION_PARAM_SKILL_SWORD .. "=1"
 	for id = 1, 24 do
 		online[id] = all[id]
 		loginEvent.onLogin(all[id])
 	end
+	r.oldIdAtLogin = right(16)
 	snap("login")
 	advance(1000)
 	snap("1 s")
@@ -515,35 +581,44 @@ local function runUpgrade(text, patched)
 	local applied
 	for _ = 1, 20 do
 		advance(50)
-		if all[7].conds[104] then
+		if has(7):find("10=1", 1, true) then
 			applied = applied or now - t0
 		end
 	end
 	r.upgradeDelay = applied
 	snap("upgrade settled")
 
-	-- a sword put on by hand (ground -> right hand): at once with the equip event
+	-- equip: a sword put on by hand (ground -> right hand): at once with the equip event
 	all[7].items[5] = "You see a sword. [Sword+2]"
 	local before = checksOf(7)
 	r.equipCallbacks = move(7, {x = 100, y = 100, z = 7}, {x = INV, y = 5, z = 0})
 	r.equipChecks = checksOf(7) - before
-	r.equipAtOnce = all[7].conds[105]
+	r.equipAtOnce = right(7)
 	advance(1000)
 	snap("equip settled")
 
-	-- taken off into the backpack: a check at once; then a move between two containers: no check
+	-- unequip: taken off into the backpack: a check and the bonus gone at once; then a move between two containers:
+	-- no check
 	all[7].items[5] = nil
 	before = checksOf(7)
 	move(7, {x = INV, y = 5, z = 0}, {x = INV, y = 64, z = 0})
 	r.unequipChecks = checksOf(7) - before
+	r.unequipAtOnce = right(7)
 	before = checksOf(7)
 	move(7, {x = INV, y = 64, z = 1}, {x = INV, y = 65, z = 0})
 	r.containerChecks = checksOf(7) - before
 	advance(1000)
 	snap("unequip settled")
 
-	-- a ring that ends (decay): no move event, gone within a second
-	all[8].items[9] = nil
+	-- swap: 12 puts on an armor with one slot in place of the one with two (backpack -> armor slot)
+	all[12].items[4] = "You see an armor. [Sword+3]"
+	move(12, {x = INV, y = 64, z = 2}, {x = INV, y = 4, z = 0})
+	r.swapAtOnce = right(12)
+	advance(1000)
+	snap("swap settled")
+
+	-- decay: an amulet that ends: no move event, gone within a second
+	all[8].items[2] = nil
 	advance(1000)
 	snap("decay settled")
 
@@ -571,6 +646,18 @@ local function runUpgrade(text, patched)
 	end
 	snap("10 s")
 
+	-- relog: 14 logs out, its armor is no longer worn when it comes back, and it logs in with the old conditions
+	-- still on (the armor's and its ring's under the stock id 90 + 9 + 10)
+	online[14] = nil
+	advance(1100)
+	all[14].items[4] = nil
+	all[14].conds[109] = CONDITION_PARAM_SKILL_CLUB .. "=1"
+	online[14] = all[14]
+	loginEvent.onLogin(all[14])
+	r.relogAtOnce = right(14)
+	advance(1000)
+	snap("relog settled")
+
 	-- 7 logs out: dropped within a second, no checks after that
 	online[7] = nil
 	advance(1100)
@@ -581,7 +668,8 @@ local function runUpgrade(text, patched)
 
 	r.described, r.reads, r.texts = described, reads, ntexts
 	if patched then
-		-- a reload of the scripts: the new chain takes the players online, the old chain stops
+		-- a reload of the scripts: the new chain takes the players online (each id cleared once, no bonus twice),
+		-- the old chain stops
 		assert(load(text))()
 		advance(2000)
 		snap("reload")
@@ -599,17 +687,38 @@ end
 
 local stock = runUpgrade(UPGRADE, false)
 local new = runUpgrade(patchedUp, true)
-for i, s in ipairs(stock.snaps) do
-	ok(new.snaps[i] == s, "upgrade: the same conditions at '" .. s:match("^[^%d]*") .. "':\n  stock   " .. s ..
-		"\n  patched " .. tostring(new.snaps[i]))
+ok(#new.snaps == 11 and #stock.snaps == 10, "upgrade: every step ran: " .. #new.snaps .. " / " .. #stock.snaps)
+for _, name in ipairs(new.snaps) do
+	ok(not new.wrong[name], "patched: the bonuses of the worn items, each once, at '" .. name .. "': "
+		.. tostring(new.wrong[name]))
 end
-ok(#stock.snaps == 8 and stock.snaps[1]:find("7:", 1, true), "upgrade: the snapshots hold conditions")
+-- the stock rules fail the same expectation: a taken-off, swapped-out or decayed item keeps its bonus, and an empty
+-- slot takes another slot's bonus away (7's helmet [Sword+1]: 90 + 1 + 10 x 2 = 90 + 5 + 16 x 1)
+for _, name in ipairs({"login", "unequip settled", "swap settled", "decay settled", "relog settled"}) do
+	ok(stock.wrong[name], "stock: wrong bonuses at '" .. name .. "' (the base bug)")
+end
+ok(stock.wrong["unequip settled"] and stock.wrong["unequip settled"]:find("7 has {10=1 10=2 11=2 11=3}", 1, true),
+	"stock: the sword taken off keeps its [Sword+2], the helmet's [Sword+1] is gone: "
+	.. tostring(stock.wrong["unequip settled"]))
+ok(stock.wrong["decay settled"] and stock.wrong["decay settled"]:find("8 has {10=1 10=3} wears {10=1}", 1, true),
+	"stock: the decayed amulet keeps its bonus: " .. tostring(stock.wrong["decay settled"]))
+ok(new.equipAtOnce and new.unequipAtOnce and new.swapAtOnce and new.relogAtOnce,
+	"patched: equip, unequip, swap and relog right at once (the move or the login)")
+ok(not stock.equipAtOnce and not stock.unequipAtOnce and not stock.swapAtOnce and not stock.relogAtOnce,
+	"stock: none of them right at once")
+ok(new.oldIdAtLogin, "patched: a bonus still on under the old id is cleared at login, not kept twice")
+-- the clear once per player is what keeps it single: without the call the old and the new id both count
+local noClear = patchedUp:gsub("\n[ \t]*chaosUpgradeClearOnce%(player, playerId%)[^\n]*", "")
+ok(noClear ~= patchedUp, "the clear call removed for the next check")
+local withoutClear = runUpgrade(noClear, true)
+ok(not withoutClear.oldIdAtLogin and withoutClear.wrong.login and withoutClear.wrong.login:find("16 has {10=1 11=1 11=1}", 1, true),
+	"without the clear: the old id and the new one, the bonus twice: " .. tostring(withoutClear.wrong.login))
 ok(stock.upgradeDelay and stock.upgradeDelay <= 100, "stock: a slot on a worn item applied within 100 ms")
 ok(new.upgradeDelay and new.upgradeDelay <= 1000, "patched: a slot on a worn item applied within 1 s: "
 	.. tostring(new.upgradeDelay))
-ok(new.equipAtOnce == CONDITION_PARAM_SKILL_SWORD .. "=2" and new.equipChecks == 1, "patched: equip applied at once")
+ok(new.equipChecks == 1, "patched: one check on the equip move")
 ok(new.equipCallbacks[1] == 0, "patched: the equip callback returns nothing (later callbacks still run)")
-ok(stock.equipAtOnce == nil and #stock.equipCallbacks == 0, "stock: no equip callback (the next 100 ms tick)")
+ok(#stock.equipCallbacks == 0, "stock: no equip callback (the next 100 ms tick)")
 ok(new.unequipChecks == 1 and new.containerChecks == 0, "patched: a check on unequip, none between containers")
 local rateOk = true
 for id = 1, 24 do

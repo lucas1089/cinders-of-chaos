@@ -30,9 +30,15 @@ usage: python3 -I patch_base_stalls.py DATA_DIR [--dry-run]
    changes (decay, a script's moveTo, an upgrade or an orb used on a worn item). A player who left is dropped from the
    script's cache by the group pass, as the stock timer did. The check itself is unchanged. After a reload of the
    scripts the new chain takes over the players online and the old one stops.
+4. The same script's condition ids (a base bug, owner decision 2026-10-12). A slot bonus was added with the sub id
+   90 + slot + 10 x index (CONST_SLOT_AMMO) and removed with 90 + slot + 16 x index (CONST_SLOT_GLOVES): an item
+   taken off kept its bonuses until logout, and an emptied slot could take another slot's bonus away (the ids met).
+   The bonus is now added with the id the removals use (16 x index: one id per slot and index for slots 1-16). The
+   first check of a player after the script loaded (a login, or a reload with the player online) removes both ids
+   of every slot once, so a bonus added under the old id is not kept next to the new one.
 
-Every change carries a marker and is made once (3 has its own marker, so a base patched by an older version of
-this tool gets 3 too) (a second run changes nothing). A file without the stock code is left
+Every change carries a marker and is made once (3 and 4 have their own markers, so a base patched by an older
+version of this tool gets them too) (a second run changes nothing). A file without the stock code is left
 alone: exit status 0, an install without these base scripts has nothing to do.
 """
 import os
@@ -159,6 +165,40 @@ UPGRADE_GROUPS = (
     '\n') % MARK_INTERVAL
 
 
+# ------------------------------------------------------------------------------------------------ 4. condition ids
+MARK_IDS = 'Chaos (patch_base_stalls.py, condition ids)'
+UPGRADE_ADD_ID_RE = re.compile(r'^([ \t]*)local subid = slotAttribute\.baseSubids \+ slotIndex \+ '
+                               r'\(CONST_SLOT_AMMO \* index\)[ \t]*(\r?\n)', re.M)
+UPGRADE_ADD_ID_NEW = ('{i}-- %s: the id the removals use (was CONST_SLOT_AMMO)\n'
+                      '{i}local subid = slotAttribute.baseSubids + slotIndex + (CONST_SLOT_GLOVES * index)\n') % MARK_IDS
+UPGRADE_CACHE_INIT_RE = re.compile(r'^([ \t]*)if not slotAttribute\.cache\[playerId\] then[ \t]*\r?\n'
+                                   r'[ \t]*slotAttribute\.cache\[playerId\] = \{\}[ \t]*\r?\n'
+                                   r'[ \t]*end[ \t]*\r?\n', re.M)
+UPGRADE_LEFT_RE = re.compile(r'^([ \t]*)slotAttribute\.cache\[playerId\] = nil[ \t]*\r?\n', re.M)
+UPGRADE_CLEAR = (
+    '-- %s: the slot bonuses were added with the sub id 90 + slot + 10 x index\n'
+    '-- (CONST_SLOT_AMMO) and removed with 90 + slot + 16 x index (CONST_SLOT_GLOVES), so an item taken off kept its\n'
+    '-- bonuses until logout and an emptied slot could remove another slot\'s bonus (the ids met). Both use 16 x index\n'
+    '-- now: one id per slot and index. The first check of a player after this script loaded (a login, or a reload\n'
+    '-- with the player online) removes both ids once, so a bonus added under the old id is not kept twice.\n'
+    'local chaosUpgradeCleared = {}\n'
+    'local function chaosUpgradeClearOnce(player, playerId)\n'
+    '\tif chaosUpgradeCleared[playerId] then\n'
+    '\t\treturn\n'
+    '\tend\n'
+    '\tchaosUpgradeCleared[playerId] = true\n'
+    '\tfor slot = CONST_SLOT_HEAD, CONST_SLOT_GLOVES do\n'
+    '\t\tfor index = 1, slotAttribute.maxSlots do\n'
+    '\t\t\tfor _, step in ipairs({CONST_SLOT_AMMO, CONST_SLOT_GLOVES}) do\n'
+    '\t\t\t\tplayer:removeCondition(CONDITION_ATTRIBUTES, CONDITIONID_DEFAULT, slotAttribute.baseSubids + slot + step * index, true)\n'
+    '\t\t\tend\n'
+    '\t\tend\n'
+    '\tend\n'
+    '\tslotAttribute.cache[playerId] = {}\n'
+    'end\n'
+    '\n') % MARK_IDS
+
+
 def crlf(text, new):
     return new.replace('\n', '\r\n') if '\r\n' in text else new
 
@@ -216,16 +256,42 @@ def patch_upgrade_interval(text):
     return new, 'patched'
 
 
+def patch_upgrade_ids(text):
+    """(new text, status): 'already', 'patched' or 'none'"""
+    if MARK_IDS in text:
+        return text, 'already'
+    d = UPGRADE_DEF_RE.search(text)
+    if not d:
+        return text, 'none'
+    adds = list(UPGRADE_ADD_ID_RE.finditer(text, 0, d.start()))
+    ci = UPGRADE_CACHE_INIT_RE.search(text, d.end())
+    left = ci and UPGRADE_LEFT_RE.search(text, ci.end())
+    if not adds or not left:
+        return text, 'none'
+    out, pos = [], 0
+    for m in adds:
+        out += [text[pos:m.start()], crlf(text, UPGRADE_ADD_ID_NEW.format(i=m.group(1)))]
+        pos = m.end()
+    out += [text[pos:d.start()], crlf(text, UPGRADE_CLEAR), text[d.start():ci.end()],
+            crlf(text, '%schaosUpgradeClearOnce(player, playerId) -- %s\n' % (ci.group(1), MARK_IDS)),
+            text[ci.end():left.end()], crlf(text, '%schaosUpgradeCleared[playerId] = nil\n' % left.group(1)),
+            text[left.end():]]
+    return ''.join(out), 'patched'
+
+
 def patch_upgrade(text):
-    """(new text, status) for 2 and 3: 'already', 'patched (...)' or 'none'"""
+    """(new text, status) for 2, 3 and 4: 'already', 'patched (...)' or 'none'"""
     text, cache = patch_upgrade_cache(text)
     text, interval = patch_upgrade_interval(text)
-    if cache == 'none' and interval == 'none':
+    text, ids = patch_upgrade_ids(text)
+    if cache == 'none' and interval == 'none' and ids == 'none':
         return text, 'none'
-    done = [what for what, st in (('slot cache', cache), ('check every 1 s and on equip', interval)) if st == 'patched']
+    done = [what for what, st in (('slot cache', cache), ('check every 1 s and on equip', interval),
+                                  ('one condition id per bonus', ids)) if st == 'patched']
     if not done:
         return text, 'already'
-    rest = [what + ' ' + st for what, st in (('slot cache', cache), ('check interval', interval))
+    rest = [what + ' ' + st for what, st in (('slot cache', cache), ('check interval', interval),
+                                             ('condition ids', ids))
             if st != 'patched']
     rest = [r.replace(' none', ': stock code not found') for r in rest]
     return text, 'patched (%s%s)' % (', '.join(done), '; ' + ', '.join(rest) if rest else '')

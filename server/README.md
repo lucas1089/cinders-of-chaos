@@ -342,7 +342,8 @@ server/
 7b. Base scripts that stalled the game loop: `python3 -I server/tools/patch_base_stalls.py <server>/data [--dry-run]`
    (idempotent; `install_all.py` step `stalls`, after `autosave`): the expedition announcements look at the players
    online instead of every tile of an island, the upgrade-slot check keeps its parse per item description and runs
-   once a second per player (at once on an equip move) instead of every 100 ms. See "Game loop stalls".
+   once a second per player (at once on an equip move) instead of every 100 ms, and adds and removes each slot bonus
+   under one condition id. See "Game loop stalls".
 7c. Base lever and step-in boss rooms: `python3 -I server/tools/patch_base_bossrooms.py <server>/data [--dry-run]`
    (idempotent; `install_all.py` step `bossrooms`, after `stalls`): the lever (or entry tile) is locked while a group is
    inside, a time limit with warnings, the exit and the clean-up. See "Instance limits".
@@ -3650,7 +3651,7 @@ payloads, the leaderboards, the bounty board, community goals, world events, the
 sweeps, the season, invasions and the base raids (each under 20 ms a run). A login runs 85-110 queries on the
 game loop (30-120 ms a login); see "Left as it is".
 
-**Fixes.** Same behaviour in each case.
+**Fixes.** Same behaviour in each case, except 7, which fixes a base bug.
 1. `item_mods.lua`: the check runs in 12 groups of players (player id modulo 12), one group every 250 ms, so every player
    is still checked every 3 s with the same regeneration. `chaos_item_mods.lua`, `chaos_gems.lua`, `chaos_veiled.lua`
    and `chaos_item_sets.lua` call `pcall` on named functions instead of a new closure per call: the check makes 85% less
@@ -3679,6 +3680,19 @@ game loop (30-120 ms a login); see "Left as it is".
    10 checks a second per player. At 1 a second plus the equip moves that is about 0.8-0.9 s a minute (1.3-1.5%): about
    7 s a minute (11-12% of the game loop) saved at 200 online, about 14 s a minute at 400. Its garbage drops in the same
    ratio (56 MB a minute to about 6), and the scheduler runs 12 events a second for it instead of 10 per player.
+7. `tools/patch_base_stalls.py` step 4 (owner decision 2026-10-12): the upgrade-slot condition ids, a base bug found
+   with fix 6. The stock check added a slot's bonus with the condition subid `90 + slot + 10 x index`
+   (`CONST_SLOT_AMMO`) and removed it with `90 + slot + 16 x index` (`CONST_SLOT_GLOVES`). So an item taken off,
+   swapped for one with fewer slots or decayed kept its skill bonus until logout. Ids of different slots also met,
+   so an empty slot took another slot's bonus away (the helmet's second slot `90 + 1 + 20` is the right hand's
+   first removal id `90 + 5 + 16`). Now the bonus is added with the removals' id. `16 x index` gives one id per slot
+   and index for slots 1-16 (`CONST_SLOT_GLOVES` is the last slot). A removed or swapped item's bonus goes away on
+   the next check: at once on the item move, within 1 s for decay or a script. The first check of a player after
+   the script loads clears both ids of every slot once (a login, or `/reload scripts` with the player online). So a
+   bonus still on under the old id is not kept next to the new one. These conditions have ticks -1, which the engine
+   does not save, so after a restart no old id is left anyway. No other script uses the subids 101-154. The `Attr`
+   compare by identity stays: every check removes and adds each slot bonus again, which also puts back a bonus that
+   another script removed.
 
 **Measured** (the setup above, 200 bots, 3 runs each, before and after taken in turns; 5 minutes at 200 online per
 run; the box ran other test servers and builds at the same time, so single outliers can be the machine). A stall is a
@@ -3711,12 +3725,6 @@ should stay around 100-150 ms with no stall over 250 ms from these causes.
   0.3-1.7 s with 0 ms of Lua and a few ms of timed queries; `perf` showed the game loop thread blocked in the database
   client's poll inside the save, so the COMMIT, which the slow task log did not count then (it does since this patch).
   A calm repeat with 100 bots: every logout under 30 ms, the longest part a 12 ms COMMIT. Not a steady-state stall.
-- The upgrade-slot check's own rules (a base bug, the same before and after fix 6): it adds a slot's bonus with the
-  condition subid `90 + slot + 10 x index` and removes the bonuses of an emptied slot with `90 + slot + 16 x index`
-  (`CONST_SLOT_AMMO` against `CONST_SLOT_GLOVES`), so an item taken off keeps its slot bonuses until a new item in that
-  slot replaces them or the player logs out; some subids of different slots also meet (slot 1 index 2 is slot 11
-  index 1), and its `Attr` compare is by identity, so every check removes and adds every slot condition again. Not
-  changed here; owner decision.
 - The base weather's rain (above) when it rains (6 s of game loop and 57 MB of garbage a minute at 200 online, ticks
   of 10-20 ms, a few of 70-180 ms); the base rarity check (`customs/rarity/base_rarity.lua`, 2 s and 42 MB a minute).
   Both are base scripts that work as designed; no stall over 250 ms from either in these runs.
@@ -3726,7 +3734,9 @@ Tests: `tests/item_mods_test.lua` (the 12 groups, every player once in 3 s, rege
 code; the stock and patched scripts give the same players, marks, broadcasts and conditions against a mocked engine
 with a clock, the conditions compared once each change has settled for 1 s; the upgrade check at login and at once
 on an equip move, 24 players each checked once a second in groups of 2 per 83 ms tick, a player who left dropped,
-one chain after a reload; idempotence, dry run, CRLF, a script patched by the older tool gets step 3), `tools/chaoszones_test.cpp` in CI (the index against the old way over 300 random zone lists).
+one chain after a reload; after login, equip, unequip, swap, decay, relog and a reload every player has the bonuses
+of the worn items, each once, which the stock script fails and the patched one passes; idempotence, dry run, CRLF, a
+script patched by an older tool gets steps 3 and 4), `tools/chaoszones_test.cpp` in CI (the index against the old way over 300 random zone lists).
 
 ### Slow task log (`slowTaskLogMs`, engine patch 0027)
 
