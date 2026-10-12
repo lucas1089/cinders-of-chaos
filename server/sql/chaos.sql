@@ -94,6 +94,24 @@ CREATE TABLE IF NOT EXISTS `chaos_tower_players` (
   CONSTRAINT `chaos_tower_players_players_fk` FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+-- game_infinitytower season end (infinitytower.lua ChaosTower.processSeason): the top 3 chests, one row per season and
+-- character (written once, INSERT IGNORE). rewarded = 1 once the chest is in the inbox (online at the season end, else
+-- at the next login). server_config `chaos_tower_season_done` = the last season paid out. infinitytower.lua also
+-- creates the table at startup when it is missing.
+CREATE TABLE IF NOT EXISTS `chaos_tower_season_rewards` (
+  `season` int(10) unsigned NOT NULL,
+  `player_id` int(11) NOT NULL,
+  `place` tinyint(3) unsigned NOT NULL,
+  `best_floor` int(10) unsigned NOT NULL DEFAULT 0,
+  `best_time` int(10) unsigned NOT NULL DEFAULT 0,
+  `chest` varchar(32) NOT NULL DEFAULT '',
+  `rewarded` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `awarded_at` int(10) unsigned NOT NULL DEFAULT 0,
+  `delivered_at` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`season`, `player_id`),
+  KEY `chaos_tower_season_rewards_pending` (`player_id`, `rewarded`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 -- Chaos store (data/scripts/chaos/shop.lua): coins per account and purchase history
 CREATE TABLE IF NOT EXISTS `chaos_shop_coins` (
   `account_id` int(11) NOT NULL,

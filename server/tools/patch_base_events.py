@@ -67,6 +67,13 @@ pet share, so the bonuses multiply the staged experience and the pet gets its sh
    mode does not protect it (open PvP), protected players and attacks across the zone border are refused. The hook
    returns nil outside the zone (the base rules then run as before).
 
+12. data/events/scripts/player.lua: Player:onReportBug (System > Report a Bug in the client) hands the report to
+   ChaosReports.onReportBug first (data/scripts/chaos/reports.lua): every account may report, the report is a
+   chaos_reports row (reason "bug") that staff read with /reports, the admin panel and the website, and the player gets
+   an answer. The stock callback (scripts/eventcallbacks/player/default_onReportBug.lua) refused normal accounts
+   (`getAccountType() == ACCOUNT_TYPE_NORMAL` -> return false, no message) and wrote text files under data/reports/bugs/
+   that nobody reads; it still runs when reports.lua is missing.
+
 Idempotent: every inserted block carries a marker comment and is not added twice.
 """
 import os, re, sys
@@ -403,6 +410,26 @@ def patch_loot_name(text):
     body = text[at:].replace(LOOTNAME_OLD, LOOTNAME_NEW)
     return text[:at] + LOOTNAME_HELPER + body, 'patched'
 
+BUG_MARKER = '-- Chaos: bug reports from every account into chaos_reports (patch_base_events.py)'
+BUG_RX = re.compile(r'function Player:onReportBug\(\s*(\w+)\s*,\s*(\w+)\s*,\s*(\w+)\s*\)[ \t]*(\r?\n)')
+
+
+def patch_report_bug(text):
+    """returns (new text, status): ChaosReports.onReportBug first in Player:onReportBug"""
+    if BUG_MARKER in text:
+        return text, 'already'
+    m = list(BUG_RX.finditer(text))
+    if len(m) != 1:
+        return text, 'unexpected player.lua (function Player:onReportBug(message, position, category) not found once)'
+    m = m[0]
+    msg, pos, cat, nl = m.group(1), m.group(2), m.group(3), m.group(4)
+    block = ('\t' + BUG_MARKER + nl
+             + '\tif ChaosReports and ChaosReports.onReportBug then' + nl
+             + '\t\treturn ChaosReports.onReportBug(self, %s, %s, %s)' % (msg, pos, cat) + nl
+             + '\tend' + nl)
+    return text[:m.end()] + block + text[m.end():], 'patched'
+
+
 def apply(path, fn, dry):
     text = open(path, encoding='utf-8', errors='surrogateescape').read()
     new, status = fn(text)
@@ -435,6 +462,7 @@ def main():
                make_spell_events('--enable-spell-events' in sys.argv), dry) and ok
     ok = apply(os.path.join(args[0], 'scripts', 'customs', 'rarity', 'rarity_onCombat_elementdamage.lua'),
                patch_rarity_elements, dry) and ok
+    ok = apply(os.path.join(args[0], 'events', 'scripts', 'player.lua'), patch_report_bug, dry) and ok
     return 0 if ok else 1
 
 

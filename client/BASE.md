@@ -93,6 +93,17 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     no file a depot window or quiver change would (built and tested in the Linux client, outlines standing, walking,
     mounted, with an outfit shader, at scale factor 1 and 2, gradient and pulsing ones; screenshots outside the
     repository).
+20. `0040` (C++ `src/client/game.h/.cpp`, `protocolgame.h`, `protocolgamesend.cpp`; Lua `modules/game_bugreport/bugreport.lua`):
+    System > Report a Bug sends what the player typed (server/README.md "Bug reports"). The base bound
+    `g_game.reportBug(comment)` with one string while `game_bugreport` calls `reportBug(category, text, position)`; the
+    Lua binder drops extra arguments from the top of the stack, so the category number ("0" to "3") went out as the
+    whole text, always as category 3 (other). `Game::reportBug(category, comment, position)` and
+    `ProtocolGame::sendBugReport` now send the 10.98 packet the server reads: u8 category (0 map, 1 typo, 2 technical,
+    3 other; anything else becomes 3), the text, and the position after it for a map report. The dialog passes the
+    local player's position when it has none (a nil position would fail the binder's cast). No new Lua function.
+    Applies after 0001-0039 (checked with `patch --dry-run` on the base tree with 0001-0039 applied); the patched
+    `protocolgamesend.cpp`, `game.cpp` and `luafunctions_client.cpp` compile (`g++ -fsyntax-only`); not built into a
+    client or run against a server yet.
 
 ### Client guard: the build secret
 

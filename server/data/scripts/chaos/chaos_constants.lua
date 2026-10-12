@@ -186,6 +186,7 @@ Chaos.tables = {
 	dungeonRuns = "chaos_dungeon_runs",
 	dungeonRunPlayers = "chaos_dungeon_run_players",
 	towerPlayers = "chaos_tower_players",
+	towerSeasonRewards = "chaos_tower_season_rewards", -- season-end top 3 chests, one row per season and character
 	shopCoins = "chaos_shop_coins",
 	shopHistory = "chaos_shop_history",
 	-- store purchase log (also the weekly limits), gifts to offline characters, paid Chaos Coin orders (shop.lua, sql/chaos.sql)
@@ -424,9 +425,33 @@ Chaos.dungeons = {
 }
 
 Chaos.tower = {
-	-- Season = fixed-length window counted from seasonEpoch (unix time).
-	seasonEpoch = 1735689600, -- 2025-01-01 00:00:00 UTC
+	-- Season = fixed-length window counted from seasonEpoch (infinitytower_core.lua K.seasonOf): a unix time or
+	-- {year, month, day, hour} in server local time. Before the epoch it is season 1. The tower keeps its own 30-day
+	-- seasons (points, milestones and the ranking reset each one); the server Seasons (season_config.lua) are 13-week
+	-- realms with gaps that staff can start and end by hand, so they are not used here. The epoch is the launch
+	-- (docs/BETA.md: Fri 20 Nov 2026 15:00), so Tower Season 1 starts with the server (it was 2025-01-01, which made the
+	-- launch season 22). Changing it renumbers the seasons of chaos_tower_players: only on a wiped database.
+	seasonEpoch = {year = 2026, month = 11, day = 20, hour = 15},
 	seasonLengthDays = 30,
+	-- Season end (infinitytower.lua ChaosTower.checkSeasons; server/README.md "Infinity Tower season rewards"): the top
+	-- 3 of the ended season's ranking (best floor, then best time; equal floor and time share the place; staff and
+	-- characters held by the anti-bot left out) get the chest of their place once: a row in chaos_tower_season_rewards,
+	-- delivered into the inbox at once when online, else at the next login. server_config `configKey` = the last season
+	-- paid out. chestId: an existing pickupable container of the base items (its look on the podium), renamed by the
+	-- item name attribute; items: existing orbs (install_orbs.py).
+	seasonEnd = {
+		checkSeconds = 60,
+		configKey = "chaos_tower_season_done",
+		staffGroup = 4,
+		chests = {
+			{name = "Gold Tower Chest", chestId = 1746, items = { -- treasure chest, 10 slots
+				{id = 29857, count = 20, name = "Orb of Fate"}, {id = 29856, count = 40, name = "Orb of Upheaval"}}},
+			{name = "Silver Tower Chest", chestId = 1740, items = { -- chest, 15 slots
+				{id = 29857, count = 12, name = "Orb of Fate"}, {id = 29856, count = 25, name = "Orb of Upheaval"}}},
+			{name = "Copper Tower Chest", chestId = 1738, items = { -- box, 10 slots
+				{id = 29857, count = 6, name = "Orb of Fate"}, {id = 29856, count = 12, name = "Orb of Upheaval"}}}
+		}
+	},
 	tryCooldownSeconds = 0, -- "Next Try Available"; 0 = always ready
 	pointsPerFloor = 1000,
 	rankingSize = 10,

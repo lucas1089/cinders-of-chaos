@@ -115,6 +115,13 @@ seasons = {
   `epoch = {year = 2026, month = 11, day = 16, hour = 6}` (the Monday before launch, so PvP Season 1 runs 16 Nov to
   11 Jan). The epoch must not lie after the launch: before the epoch the season number is 0. The wipe deletes
   `chaos_pvp_season_done`, so the new server counts from there.
+- Infinity Tower seasons (`Chaos.tower` in `chaos_constants.lua`) are their own 30-day cycle, not the realm Season:
+  points, milestones and the ranking reset every 30 days and the top 3 get their chests then, while a realm Season
+  lasts 13 weeks, has gaps and can be started or ended by hand. The epoch was 1 Jan 2025 (the launch would have been
+  Tower Season 22); it is now the launch, Fri 20 Nov 2026 15:00 server time, so Tower Season 1 runs 20 Nov to 20 Dec.
+  Before the epoch everything counts as Season 1 (the beta), and the wipe empties `chaos_tower_players` and deletes
+  `chaos_tower_season_done`. **Owner decides** if the launch moves: change `seasonEpoch` with it (only on a wiped
+  database). `/towerseason` shows the season, its end and the last season paid out.
 - Tests: `server/tests/season_test.lua` uses its own config, so these edits do not break it. Run it anyway.
 
 ## 6. Feedback channels
@@ -122,11 +129,14 @@ seasons = {
 **Owner decides** the Discord layout. Recommendation:
 - **In game:** System > Report a Bug (the base client's bug report) and right-click > Report Player / System > Report a
   Player (`chaos_reports`, staff see them at once; server/README.md "Anti-bot and player reports").
-  - **Check before 31 Oct:** the bug report goes to the base server's `Player:onReportBug`
-    (`data/events/scripts/player.lua`). The stock engine script refuses normal accounts and writes text files under
-    `data/reports/`. If the base server does that, players' bug reports go nowhere: patch it (an idempotent
-    `server/tools/patch_*.py`, wired into `install_all.py`) to accept every account and to log where staff read it,
-    or tell players to use Discord only. The beta patch note names both.
+  - **Checked (12 Oct):** the base server's `Player:onReportBug` handed the report to its stock callback, which
+    returned at once for a normal account (no message, nothing stored) and wrote text files under `data/reports/bugs/`
+    for the others. The base client also lost the text: it sent the category digit instead (client base patch 0040
+    fixes that). Now `server/tools/patch_base_events.py` step 12 (`install_all.py` step `events`) sends every report to
+    `reports.lua`: a `chaos_reports` row (reason "bug") with the text, category, position, time and character, a
+    confirmation for the player, `/reports list bugs`, the admin panel, the website staff page and the reports webhook
+    (server/README.md "Bug reports"; GM handbook section 3). **Test on the beta server:** one bug report from a normal
+    account with a client built with patch 0040. The beta patch note can still name Discord for screenshots.
 - **Discord** (the link is still empty: docs/OWNER_TODO.md): `#beta-announcements` (read only), `#bug-reports` (one bug
   per message: what, where, when, character name, a screenshot), `#balance-feedback`, `#group-testing` (to find
   parties for the test list below), `#questions`. Set `CHAOS_REPORTS_WEBHOOK` to a staff-only channel for player
@@ -184,7 +194,8 @@ From ROADMAP.md and server/README.md; put the short list in the patch note or on
 - The outfit window lists no shaders (store ones neither); shaders still work from the store and the wardrobe.
 - The Necromancer line has no spell effect skins yet.
 - Rift monsters keep the corpse of their pool type.
-- The Infinity Tower has no season-end top 3 chests yet; dungeon difficulty changes nothing in the dungeon.
+- Dungeon difficulty changes nothing in the dungeon. (The Infinity Tower season-end top 3 chests are paid since
+  12 Oct: server/README.md "Infinity Tower season rewards".)
 - Occupied towns do not raise NPC prices yet (invasions).
 - Rift Keys cannot be stashed (they do not stack).
 - The weapon (auto-attack) numbers are being re-measured; class balance may move between the weekends.
@@ -282,7 +293,8 @@ DELETE FROM znote_players;
 -- state rows of the beta world; the other chaos_* rows (migrations, index builds) stay
 DELETE FROM server_config
 WHERE config LIKE 'chaos\_season\_%' OR config LIKE 'chaos\_worldbuff\_%'
-   OR config IN ('chaos_community_override', 'chaos_leaderboard_reset', 'chaos_pvp_season_done');
+   OR config IN ('chaos_community_override', 'chaos_leaderboard_reset', 'chaos_pvp_season_done',
+                 'chaos_tower_season_done');
 SET FOREIGN_KEY_CHECKS = 1;
 SQL
 ```

@@ -26,11 +26,13 @@ function chaos_reports_is_admin(array $config, int $accountId): bool {
 	return is_array($row) && in_array((string)$row['name'], $admins, true);
 }
 
-/** The reasons of antibot_config.lua (keys and labels). */
+/** The reasons of antibot_config.lua (keys and labels), plus the bug reports. */
 function chaos_report_reasons(): array {
 	return array(
 		'botting' => 'Botting', 'cheating' => 'Cheating / exploiting', 'harassment' => 'Harassment',
 		'scam' => 'Scam', 'name' => 'Offensive name', 'other' => 'Other',
+		// System > Report a Bug in the client (reports.lua RP.onReportBug): the target is the reporter itself
+		'bug' => 'Bug report',
 	);
 }
 

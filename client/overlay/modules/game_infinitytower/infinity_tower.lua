@@ -70,6 +70,9 @@ function onExtendedOpcode(protocol, opcode, buffer)
         if data.rankings then
           populateRankings(data.rankings)
         end
+        if data.topRewards then
+          populatePodium(data.topRewards)
+        end
         populateSeasonInfos(data)
       end, 50)
     end
@@ -176,6 +179,9 @@ function show(data)
       if data.rankings then
         populateRankings(data.rankings)
       end
+      if data.topRewards then
+        populatePodium(data.topRewards)
+      end
       populateSeasonInfos(data)
     end, 50)
   else
@@ -194,16 +200,26 @@ function hide()
   end
 end
 
-function populatePodium()
-  local podiumItems = {
-    { id = 'podiumItem1', itemId = 63196 }, -- Gold Tower Chest
-    { id = 'podiumItem2', itemId = 63195 }, -- Silver Tower Chest
-    { id = 'podiumItem3', itemId = 63194 }, -- Copper Tower Chest
-  }
-  for _, entry in ipairs(podiumItems) do
-    local widget = infinityTowerWindow:recursiveGetChildById(entry.id)
-    if widget then
-      widget:setItemId(entry.itemId)
+-- The "Top Rank Rewards" podium: the chests the top 3 get at the season end (server: infinitytower.lua, Chaos.tower
+-- seasonEnd). The server sends them as topRewards {place, name, id = the chest's client id, text}; until then the
+-- stock chest looks of the server config are shown (treasure chest, chest, box of the 10.98 items).
+local DEFAULT_TOP_REWARDS = {
+  { place = 1, name = 'Gold Tower Chest', id = 2478 },
+  { place = 2, name = 'Silver Tower Chest', id = 2472 },
+  { place = 3, name = 'Copper Tower Chest', id = 2469 },
+}
+
+function populatePodium(topRewards)
+  if not infinityTowerWindow then return end
+  for _, entry in ipairs(topRewards or DEFAULT_TOP_REWARDS) do
+    local place = tonumber(entry.place)
+    local item = place and infinityTowerWindow:recursiveGetChildById('podiumItem' .. place)
+    if item and tonumber(entry.id) then
+      item:setItemId(tonumber(entry.id))
+    end
+    local slot = place and infinityTowerWindow:recursiveGetChildById('rewardSlot' .. place)
+    if slot then
+      slot:setTooltip(tostring(entry.text or entry.name or ''))
     end
   end
 end

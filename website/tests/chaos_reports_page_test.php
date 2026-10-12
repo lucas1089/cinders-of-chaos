@@ -128,6 +128,12 @@ check(strpos($html, 'chaos-antibot-log') !== false && strpos($html, 'check fail'
 $html = render(array('log' => '1', 'name' => 'Grimtooth'));
 check(strpos($html, 'Elda') === false && substr_count($html, '<td>Grimtooth') === 0 && substr_count($html, '>Grimtooth</a>') === 2, 'log of one character');
 
+// a bug report (System > Report a Bug, reports.lua RP.onReportBug): its own reason, details instead of chat
+$ins->execute(array(1791000300, 'Dana', 'Dana', 'bug', '[map] hole in the bridge', 0, "Category: map\nCharacter position: 1, 2, 7"));
+$html = render(array('reason' => 'bug'));
+check(strpos($html, '[map] hole in the bridge') !== false && strpos($html, 'Shady Sam') === false, 'filter by reason bug');
+check(strpos($html, '<summary>Details</summary>') !== false && strpos($html, '(bug report)') !== false, 'bug report details');
+
 // the leaderboard hold clause (lib.php)
 check(strpos(chaos_antibot_hold_sql(), 'NOT EXISTS (SELECT 1 FROM `chaos_antibot_holds`') !== false, 'hold clause for the boards');
 

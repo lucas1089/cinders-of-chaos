@@ -4,6 +4,8 @@
 --   R.allow(state, cfg, reporter, targetGuid, now)  cooldowns and limits against abuse -> true or nil, error key
 --   R.chatPush(state, cfg, guid, channel, text, now) / R.chatLines(state, guid)   last public-channel lines
 --   R.discordPayload(row), R.validWebhook(url)  the optional webhook post (no chat lines, no note)
+--   R.validateBug(bcfg, message, category) / R.allowBug / R.recordBug / R.bugPosition / R.bugDetails   bug reports
+--                                               (System > Report a Bug; tests/bugreport_test.lua)
 -- Privacy: only public channels reach chatPush (reports.lua checks the channel), never private messages; the lines of a
 -- character are kept in memory only and leave it chatKeepMinutes after its logout.
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
@@ -22,7 +24,11 @@ R.errors = {
 	level = "You need a higher level to send reports.",
 	cooldown = "Please wait a moment before sending another report.",
 	day = "You sent the most reports allowed today. Thank you; staff will look at them.",
-	same = "You already reported this character recently. Staff will look at it."
+	same = "You already reported this character recently. Staff will look at it.",
+	bugdisabled = "Bug reports are switched off. Please report the bug on our Discord.",
+	bugshort = "Describe the bug in a few words (at least 6 characters).",
+	bugrapid = "Please wait a moment before sending another bug report.",
+	bugday = "You sent the most bug reports allowed today. Thank you; staff will read them."
 }
 
 function R.reasonOf(cfg, key)
@@ -178,8 +184,103 @@ function R.validWebhook(url)
 end
 
 function R.discordPayload(row)
+	if row.reason == "bug" then
+		-- the category and the place, never the player's text (it can hold anything)
+		return {content = string.format("New bug report #%d (%s) from %s at %d, %d, %d.", row.id or 0,
+			R.bugCategory(row.category), row.reporter_name or "?", row.pos_x or 0, row.pos_y or 0, row.pos_z or 0),
+			allowed_mentions = {parse = {}}}
+	end
 	return {content = string.format("New player report #%d: %s - %s reported %s.", row.id or 0, row.reason or "?",
 		row.reporter_name or "?", row.target_name or "?"), allowed_mentions = {parse = {}}}
+end
+
+-- ---------------------------------------------------------------- bug reports
+-- System > Report a Bug in the client -> Player:onReportBug(message, position, category) (tools/patch_base_events.py
+-- step 12) -> reports.lua RP.reportBug. Stored as a chaos_reports row: reason "bug", target = the reporter itself,
+-- note "[category] text", the position (the reported map tile for a map report, else the character's), and in `chat`
+-- the detail lines of R.bugDetails. cfg = antibot_config.lua reports.bugs.
+R.bugCategories = {[0] = "map", [1] = "typo", [2] = "technical", [3] = "other"}
+
+-- the category name of a client category number (or of a name already given)
+function R.bugCategory(category)
+	for _, name in pairs(R.bugCategories) do
+		if category == name then
+			return name
+		end
+	end
+	return R.bugCategories[tonumber(category) or 3] or "other"
+end
+
+-- message from the client -> {category, text, note, shortened} or nil, error key
+function R.validateBug(cfg, message, category)
+	if not cfg or cfg.enabled == false then
+		return nil, "bugdisabled"
+	end
+	local text = R.clean(message)
+	if #text < (cfg.textMin or 6) then
+		return nil, "bugshort"
+	end
+	local max = cfg.textMax or 240
+	local shortened = #text > max
+	if shortened then
+		text = text:sub(1, max)
+	end
+	local cat = R.bugCategory(category)
+	return {category = cat, text = text, note = "[" .. cat .. "] " .. text, shortened = shortened}
+end
+
+-- per account: cooldownSeconds between two, perDay a day (state.bugs; the per-character Chaos.limited is in reports.lua)
+function R.allowBug(state, cfg, account, now)
+	state.bugs = state.bugs or {}
+	local r = state.bugs[account]
+	if not r then
+		return true
+	end
+	if r.last and now - r.last < (cfg.cooldownSeconds or 0) then
+		return nil, "bugrapid"
+	end
+	if r.day == dayOf(now) and r.count >= (cfg.perDay or 10) then
+		return nil, "bugday"
+	end
+	return true
+end
+
+function R.recordBug(state, account, now)
+	state.bugs = state.bugs or {}
+	local r = state.bugs[account]
+	if not r or r.day ~= dayOf(now) then
+		r = {day = dayOf(now), count = 0}
+		state.bugs[account] = r
+	end
+	r.count = r.count + 1
+	r.last = now
+end
+
+local function validPos(p)
+	return type(p) == "table" and tonumber(p.x) and tonumber(p.y) and tonumber(p.z) and p.x > 0 and p.y > 0 and true or false
+end
+
+-- the stored position: the reported tile of a map report when the client sent one, else the character's
+function R.bugPosition(category, reported, own)
+	if R.bugCategory(category) == "map" and validPos(reported) then
+		return {x = reported.x, y = reported.y, z = reported.z}, "reported tile"
+	end
+	return {x = own.x, y = own.y, z = own.z}, "character"
+end
+
+-- the detail lines stored in `chat`; info = {category, pos, posKind, own, level, vocation, at}
+function R.bugDetails(info, fmtTime)
+	local lines = {"Category: " .. info.category,
+		string.format("Character position: %d, %d, %d", info.own.x, info.own.y, info.own.z)}
+	if info.posKind == "reported tile" then
+		lines[#lines + 1] = string.format("Reported map tile: %d, %d, %d", info.pos.x, info.pos.y, info.pos.z)
+	end
+	lines[#lines + 1] = string.format("Level %d, %s", info.level or 0, R.clean(tostring(info.vocation or "?"), 32))
+	lines[#lines + 1] = "Sent " .. (fmtTime and fmtTime(info.at) or tostring(info.at))
+	if info.shortened then
+		lines[#lines + 1] = "(the text was shortened)"
+	end
+	return table.concat(lines, "\n")
 end
 
 -- ---------------------------------------------------------------- staff text
@@ -188,6 +289,15 @@ function R.statusText(status)
 end
 
 function R.listLine(row, fmtTime)
+	if row.reason == "bug" then
+		local note = tostring(row.note or "")
+		if #note > 60 then
+			note = note:sub(1, 57) .. "..."
+		end
+		return string.format("#%d %s %s: bug from %s at %d, %d, %d: %s", row.id, R.statusText(row.status),
+			fmtTime and fmtTime(row.created_at) or tostring(row.created_at), row.reporter_name, row.pos_x or 0,
+			row.pos_y or 0, row.pos_z or 0, note)
+	end
 	return string.format("#%d %s %s: %s reported %s%s", row.id, R.statusText(row.status),
 		fmtTime and fmtTime(row.created_at) or tostring(row.created_at), row.reporter_name, row.target_name,
 		string.format(" (%s, suspicion %d)", row.reason, row.suspicion or 0))

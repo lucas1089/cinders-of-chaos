@@ -157,5 +157,40 @@ jobs:
           lua5.3 tools/gen_codex_data.lua --check  # Lua 5.3 must write the same bytes
           git diff --exit-code ../client/overlay/modules/game_codex/codex_data.lua
 
+      - name: Passive tree data is up to date with the client tree (Lua 5.3 and LuaJIT write the same file)
+        run: |
+          cd client/overlay/modules/game_passivetree/treedata
+          out=../../../../../server/data/scripts/chaos/passivetree_data.lua
+          luajit ../../../../../server/tools/gen_passivetree_data.lua "$out"
+          git diff --exit-code "$out"
+          lua5.3 ../../../../../server/tools/gen_passivetree_data.lua "$out"
+          git diff --exit-code "$out"
+
+      - name: Monster looks match client/tools/sprites/monster_looks/picks.csv
+        run: python3 -I server/tools/apply_monster_looks.py --check
+
+      - name: PHP for the website tests (php-cli with PDO SQLite and mbstring)
+        run: |
+          if ! php -r 'exit(extension_loaded("pdo_sqlite") && extension_loaded("mbstring") ? 0 : 1);' 2>/dev/null; then
+            sudo apt-get install -y -qq php-cli php-sqlite3 php-mbstring
+          fi
+          php --version | head -1
+
+      - name: Website PHP syntax
+        run: |
+          status=0
+          while IFS= read -r f; do
+            out=$(php -l "$f" 2>&1) || { echo "$out"; status=1; }
+          done < <(git ls-files 'website/*.php')
+          exit $status
+
+      - name: Website unit tests (php-cli, in-memory SQLite, no network)
+        run: |
+          status=0
+          for t in website/tests/*_test.php; do
+            php "$t" || { echo "FAILED: $t"; status=1; }
+          done
+          exit $status
+
       - name: No references to other servers or clients
         run: python3 -I tools/ci/check_names.py

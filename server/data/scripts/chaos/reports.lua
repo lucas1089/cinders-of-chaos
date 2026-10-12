@@ -9,6 +9,8 @@
 -- Opened from: right-click a player > Report Player, or System > Report a Player (players type no commands: README
 -- "Player commands: the menu"; tests/commands_ui_test.lua refuses a spoken "!" command).
 -- The base client's rule violation report (Player:onReportRuleViolation) lands in the same table (reason "other").
+-- Bug reports (System > Report a Bug, Player:onReportBug via tools/patch_base_events.py step 12) too: reason "bug",
+-- RP.onReportBug below; `/reports list bugs` lists the open ones.
 -- Staff: `/reports` (list, show, close, log, score, check, clear) and the admin panel (Accounts & Security).
 -- Lua 5.1 / LuaJIT compatible.
 
@@ -114,6 +116,23 @@ local function targetOf(name)
 	return {guid = guid, name = canonical, online = online, group = group}
 end
 
+local function insertRow(row)
+	db.query(string.format("INSERT INTO `%s` (`created_at`, `reporter_id`, `reporter_account`, `reporter_name`, `target_id`, " ..
+		"`target_name`, `reason`, `note`, `pos_x`, `pos_y`, `pos_z`, `target_online`, `suspicion`, `chat`) VALUES (%d, %d, %d, " ..
+		"%s, %d, %s, %s, %s, %d, %d, %d, %d, %d, %s)", T.reports, row.created_at, row.reporter_id, row.reporter_account,
+		db.escapeString(row.reporter_name), row.target_id, db.escapeString(row.target_name), db.escapeString(row.reason),
+		db.escapeString(row.note), row.pos_x, row.pos_y, row.pos_z, row.target_online, row.suspicion, db.escapeString(row.chat)))
+	row.id = db.lastInsertId and db.lastInsertId() or 0
+end
+
+local function tellStaff(text)
+	for _, p in ipairs(Game.getPlayers()) do
+		if isStaff(p) then
+			p:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, text)
+		end
+	end
+end
+
 -- the row is written and returned (with its id) or nil, error key
 function RP.submit(player, input)
 	local reporter = {guid = player:getGuid(), name = player:getName(), level = player:getLevel(),
@@ -143,22 +162,72 @@ function RP.submit(player, input)
 		note = clean.note, pos_x = pos.x, pos_y = pos.y, pos_z = pos.z, target_online = target.online and 1 or 0,
 		suspicion = ChaosAntibot and ChaosAntibot.scoreOf and ChaosAntibot.scoreOf(target.guid) or 0,
 		chat = table.concat(R.chatLines(RP.state, target.guid, hhmm), "\n")}
-	db.query(string.format("INSERT INTO `%s` (`created_at`, `reporter_id`, `reporter_account`, `reporter_name`, `target_id`, " ..
-		"`target_name`, `reason`, `note`, `pos_x`, `pos_y`, `pos_z`, `target_online`, `suspicion`, `chat`) VALUES (%d, %d, %d, " ..
-		"%s, %d, %s, %s, %s, %d, %d, %d, %d, %d, %s)", T.reports, row.created_at, row.reporter_id, row.reporter_account,
-		db.escapeString(row.reporter_name), row.target_id, db.escapeString(row.target_name), db.escapeString(row.reason),
-		db.escapeString(row.note), row.pos_x, row.pos_y, row.pos_z, row.target_online, row.suspicion, db.escapeString(row.chat)))
-	row.id = db.lastInsertId and db.lastInsertId() or 0
+	insertRow(row)
 	R.record(RP.state, rcfg, reporter, target.guid, now)
 	log(string.format("#%d %s reported %s (%s)", row.id, row.reporter_name, row.target_name, row.reason))
-	for _, p in ipairs(Game.getPlayers()) do
-		if isStaff(p) then
-			p:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, string.format("[Report #%d] %s reported %s: %s. /reports show %d",
-				row.id, row.reporter_name, row.target_name, row.reason, row.id))
-		end
-	end
+	tellStaff(string.format("[Report #%d] %s reported %s: %s. /reports show %d", row.id, row.reporter_name,
+		row.target_name, row.reason, row.id))
 	pcall(postWebhook, row)
 	return row
+end
+
+-- ---------------------------------------------------------------- bug reports (System > Report a Bug)
+-- Player:onReportBug(message, position, category) of the base data/events/scripts/player.lua calls this first
+-- (tools/patch_base_events.py step 12), so the stock callback that refused normal accounts and wrote text files under
+-- data/reports/bugs/ no longer runs. Every account may report; limits: Chaos.limited per character (bugs.rapidMs) and
+-- R.allowBug per account (cooldown, per day). The row is a chaos_reports row with reason "bug" (/reports, the admin
+-- panel, the website staff page and the reports webhook show it). Returns the row or nil, error key.
+function RP.submitBug(player, message, position, category)
+	local bcfg = rcfg.bugs
+	local clean, err = R.validateBug(bcfg, message, category)
+	if not clean then
+		return nil, err
+	end
+	if Chaos.limited(player, "reports.bug", bcfg.rapidMs or 5000) then
+		return nil, "bugrapid"
+	end
+	local account = player:getAccountId()
+	local now = os.time()
+	local ok, why = R.allowBug(RP.state, bcfg, account, now)
+	if not ok then
+		return nil, why
+	end
+	local own = player:getPosition()
+	local pos, posKind = R.bugPosition(category, position, own)
+	local vocation = "?"
+	pcall(function()
+		vocation = player:getVocation():getName()
+	end)
+	local row = {created_at = now, reporter_id = player:getGuid(), reporter_account = account,
+		reporter_name = player:getName(), target_id = player:getGuid(), target_name = player:getName(), reason = "bug",
+		note = clean.note, pos_x = pos.x, pos_y = pos.y, pos_z = pos.z, target_online = 1, suspicion = 0,
+		category = clean.category, shortened = clean.shortened,
+		chat = R.bugDetails({category = clean.category, pos = pos, posKind = posKind, own = own,
+			level = player:getLevel(), vocation = vocation, at = now, shortened = clean.shortened}, stamp)}
+	insertRow(row)
+	R.recordBug(RP.state, account, now)
+	log(string.format("#%d bug (%s) from %s at %d, %d, %d", row.id, row.category, row.reporter_name, pos.x, pos.y, pos.z))
+	tellStaff(string.format("[Bug #%d] %s (%s) at %d, %d, %d. /reports show %d", row.id, row.reporter_name,
+		row.category, pos.x, pos.y, pos.z, row.id))
+	pcall(postWebhook, row)
+	return row
+end
+
+-- the engine event: the player always gets an answer in the server log window and on screen
+function RP.onReportBug(player, message, position, category)
+	local ok, row, err = pcall(RP.submitBug, player, message, position, category)
+	if not ok then
+		log("bug report: " .. tostring(row))
+		row, err = nil, nil
+	end
+	if row then
+		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Thank you. Your bug report #%d was sent to the staff%s.",
+			row.id, row.shortened and " (shortened to " .. rcfg.bugs.textMax .. " characters)" or ""))
+	else
+		player:sendTextMessage(MESSAGE_STATUS_SMALL, R.errors[err] or
+			"Your bug report could not be stored. Please report the bug on our Discord.")
+	end
+	return true
 end
 
 local function reasonsPayload()
@@ -211,6 +280,9 @@ end
 
 function RP.listLines(status, limit)
 	local where = status == "all" and "1 = 1" or string.format("`status` = %s", db.escapeString(status or "open"))
+	if status == "bugs" then
+		where = "`status` = 'open' AND `reason` = 'bug'"
+	end
 	local lines = {}
 	for _, r in ipairs(rowsWhere(where, limit or rcfg.listMax)) do
 		lines[#lines + 1] = R.listLine(r, stamp)
@@ -223,13 +295,15 @@ function RP.detail(id)
 	if not r then
 		return nil
 	end
+	local bug = r.reason == "bug"
 	local lines = {R.listLine(r, stamp),
-		string.format("Position %d, %d, %d (%s)", r.pos_x, r.pos_y, r.pos_z, r.target_online == 1 and "target" or "reporter; target offline"),
-		"Note: " .. (r.note ~= "" and r.note or "-")}
+		string.format("Position %d, %d, %d (%s)", r.pos_x, r.pos_y, r.pos_z, bug and "bug report" or
+			(r.target_online == 1 and "target" or "reporter; target offline")),
+		(bug and "Text: " or "Note: ") .. (r.note ~= "" and r.note or "-")}
 	if r.status == "closed" then
 		lines[#lines + 1] = string.format("Closed %s by %s: %s", stamp(r.closed_at), r.closed_by, r.staff_note)
 	end
-	lines[#lines + 1] = "Public chat of the target:"
+	lines[#lines + 1] = bug and "Details:" or "Public chat of the target:"
 	if r.chat == "" then
 		lines[#lines + 1] = "  (none)"
 	end
@@ -298,7 +372,7 @@ local function reply(player, lines)
 	end
 end
 
-local USAGE = "/reports [list [open|closed|all]] | show <id> | close <id>, <note> | log [name] | score <name> | " ..
+local USAGE = "/reports [list [open|closed|all|bugs]] | show <id> | close <id>, <note> | log [name] | score <name> | " ..
 	"check <name> | clear <name>"
 
 local staffTalk = TalkAction("/reports")
@@ -365,9 +439,10 @@ local function reg(def)
 	ChaosAdminPending[def.id] = def
 end
 
-reg{id = "reports_list", name = "Player reports", description = "Player reports, newest first (max 30).",
+reg{id = "reports_list", name = "Player reports", description = "Player and bug reports, newest first (max 30).",
 	params = {{name = "status", label = "Status", type = "select", default = "open",
-		options = {{value = "open", label = "Open"}, {value = "closed", label = "Closed"}, {value = "all", label = "All"}}}},
+		options = {{value = "open", label = "Open"}, {value = "bugs", label = "Bug reports (open)"},
+			{value = "closed", label = "Closed"}, {value = "all", label = "All"}}}},
 	handler = function(actor, p)
 		local lines = RP.listLines(p.status or "open")
 		return true, #lines .. " report(s).", lines

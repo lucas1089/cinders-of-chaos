@@ -126,9 +126,9 @@ $time = static function (int $t): string { return $t > 0 ? gmdate('Y-m-d H:i', $
 						<td></td>
 						<td colspan="6" style="font-size:13px;">
 							<div><span class="chaos-muted">Note:</span> <?= $r['note'] !== '' ? chaos_h($r['note']) : '<span class="chaos-muted">-</span>' ?></div>
-							<div class="chaos-muted">Position <?= (int)$r['pos_x'] ?>, <?= (int)$r['pos_y'] ?>, <?= (int)$r['pos_z'] ?> (<?= (int)$r['target_online'] === 1 ? 'reported player' : 'reporter; the player was offline' ?>)</div>
+							<div class="chaos-muted">Position <?= (int)$r['pos_x'] ?>, <?= (int)$r['pos_y'] ?>, <?= (int)$r['pos_z'] ?> (<?= $r['reason'] === 'bug' ? 'bug report' : ((int)$r['target_online'] === 1 ? 'reported player' : 'reporter; the player was offline') ?>)</div>
 							<?php if ((string)$r['chat'] !== ''): ?>
-								<details><summary>Public chat of <?= chaos_h($r['target_name']) ?></summary>
+								<details><summary><?= $r['reason'] === 'bug' ? 'Details' : 'Public chat of ' . chaos_h($r['target_name']) ?></summary>
 									<pre style="white-space:pre-wrap;margin:4px 0;"><?= chaos_h($r['chat']) ?></pre>
 								</details>
 							<?php endif; ?>

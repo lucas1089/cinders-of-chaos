@@ -85,7 +85,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | game_realminimap | none | none | Not in the overlay: it is the base client's own module |
 | game_nameshaders | extended opcode 96 | also hooks `onOpenOutfitWindow` with extra shader lists | Needs engine and server work |
 | game_dungeons | extended opcode 109 | none | Needs server script (base server has dungeon customs) |
-| game_infinitytower | extended opcode 214 | none | Needs server script. It is classic-style, so no conversion was needed |
+| game_infinitytower | extended opcode 214 | none | Needs server script. It is classic-style, so no conversion was needed. The "Top Rank Rewards" podium shows the chests the server sends in `topRewards` (look = the chest's client id, tooltip = its contents; server/README.md "Infinity Tower season rewards"); before the first update the stock chest looks 2478, 2472, 2469 (the old ids 63194-63196 did not exist in the 10.98 items) |
 | game_event | none seen in the module | none | Client-only UI; wiring to a server event system is open |
 | game_creatureinformation | none | engine APIs this client lacks | Not included |
 | client_chaos_numbers | none | none | Short-number formatter for every module (`formatShortNumber`, `shortNumbersIn`); self test `numbers_test.lua` runs in CI; not run in a client |

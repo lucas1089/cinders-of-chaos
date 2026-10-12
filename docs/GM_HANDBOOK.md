@@ -38,7 +38,7 @@ access flag (gamemaster or higher).
 
 | Command | Who | What |
 |---|---|---|
-| `/reports`, `/reports list closed\|all`, `show <id>`, `score <name>`, `log <name>`, `check <name>`, `close <id>, <text>`, `clear <name>` | 4+ | player reports and the anti-bot (section 3) |
+| `/reports`, `/reports list closed\|all\|bugs`, `show <id>`, `score <name>`, `log <name>`, `check <name>`, `close <id>, <text>`, `clear <name>` | 4+ | player reports and the anti-bot (section 3) |
 | `/gmnotify <message>` | 4+ | a toast to every online player |
 | `/patchnotes reload\|unseen` | 4+ | read the notes folder now; forget your account's last seen week |
 | `/rift key <tier> [count \| mods]`, `/rift status`, `/rift fail` | 4+ | Rift Keys for tests, the runs and slots, fail your run |
@@ -77,6 +77,17 @@ From server/README.md "Anti-bot and player reports", Staff guide:
 3. **Watch** the character, talk to it, `/reports check <name>` for a fresh presence check.
 4. **Decide** with the admin panel (kick, mute, ban), then `/reports close <id>, <what you found>`. `/reports clear
    <name>` resets the score and lifts a leaderboard hold after a review that found nothing.
+
+**Bug reports** (System > Report a Bug, every account; server/README.md "Bug reports"):
+1. Online staff see `[Bug #15] Name (map) at 1000, 1000, 7. /reports show 15`. `/reports list bugs` lists the open
+   ones; `/reports show <id>` has the text (`[category] text`, at most 240 characters), the position (the reported
+   tile of a map report, else the character's), the character's position, level and class. The admin panel (Accounts &
+   Security > Player reports, filter "Bug reports (open)") and the website (reason "Bug report") show them too; the
+   reports webhook (`CHAOS_REPORTS_WEBHOOK`) gets the id, category, name and place, never the text.
+2. Go there or reproduce it, then `/reports close <id>, <what you found or fixed>`. Crash, dupe or anything that gives
+   items or experience: tell an administrator at once and do not discuss it in public.
+3. Limits: one report per character every 5 s and per account every 30 s, 10 a day per account. A player who hits
+   them gets a message; ask them to put the rest on Discord.
 
 House rules (**Owner decides**; recommendation):
 - Answer every report within the shift; close it with what was found, even "nothing found".

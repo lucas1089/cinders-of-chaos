@@ -164,6 +164,8 @@ server/
    (+1% per level, x2.0 at level 100). Before, all three only stored their level and nothing read it.
    Verified on the test server: Experience 50 -> x1.5; Loot and Rarity 100 over 300 Dragon kills: items
    985 -> 1279, items with a rarity 81 -> 212.
+   Its step 12 sends System > Report a Bug of every account to `reports.lua` (`chaos_reports`, reason "bug"; the stock
+   callback refused normal accounts): "Bug reports" under "Anti-bot and player reports".
    It also removes the demotion from the base `creaturescripts/scripts/login.lua`: without premium (`freePremium =
    false`) the stock login set every vocation without a promotion back to `vocation:getDemotion()`, so a free account
    lost its ascended class (Berserker, Ninja, ...) at every login. The premium branch is left as it was; the engine
@@ -324,7 +326,7 @@ working directory, as with the rest of the base server libs).
 | game_notifications | `notifications.lua` | 79 out, 151/152 in | `/gmnotify`, accept/decline of a standard TFS party invite, `ChaosNotify.*` sender API. Catacomb start / leave-queue are hooks only; nothing triggers party/catacomb/task/battle pass toasts automatically. |
 | game_passivetree | `passivetree.lua`, `passivetree_data.lua`, `passivetree_effects.lua`, `passivetree_keystones.lua`, `paragon.lua` | 65 | Points, save with full validation (known ids, connected to root, point cap), preset storage, priced reset and single-node refund (see "Respec"), build codes (see "Build sharing"); the bonuses are applied (see "Passive tree effects"). Paragon track past level 1000 on the same opcode (see "Paragon"). |
 | game_dungeons | `dungeons.lua` | 109 | Reads the base server `DUNGEON_SYSTEM` table. Queue, group formation, teleport in, timer, monster-count progress, boss kill, difficulty unlock, speed/flawless challenges, solo/group rankings, teleport out. Difficulty does not change monsters; loot panel is display only. A shutdown ends the queue runs without a cooldown (members back where they entered); the first login after a restart or a crash inside a dungeon box goes to the temple (also for runs of the base modal, whose exit timer dies with the server). |
-| game_infinitytower | `infinitytower.lua`, `infinitytower_run.lua` | 214 | Seasons, points, best floor/time, ranking, milestone claim, Adventure > Infinity Tower, `/towerrun` staff test helper. The tower gameplay is `infinitytower_run.lua` (runtime-built arenas, floors as waves, boss floors; results through `ChaosTower.recordRun`; see "Infinity Tower gameplay"). Season-end top 3 chests not implemented. |
+| game_infinitytower | `infinitytower.lua`, `infinitytower_run.lua` | 214 | Seasons, points, best floor/time, ranking, milestone claim, Adventure > Infinity Tower, `/towerrun` staff test helper. The tower gameplay is `infinitytower_run.lua` (runtime-built arenas, floors as waves, boss floors; results through `ChaosTower.recordRun`; see "Infinity Tower gameplay"). Season-end top 3 chests: "Infinity Tower season rewards"; `/towerseason` staff status. |
 | game_stash | `stash.lua` | **110** (new), Economy > Supply Stash | Deposit by drag, redeem, categories, block list, the Stash All button, DB persistence. Stash tabs per account limit (free / Chaos Pact / bought), Orbs / Gems / Keys tabs; tested in game (see "Chaos Pact and account storage"). |
 | game_spellbook | `spellbook.lua` | 219, Character > Spellbook / `/spells` | Spell list window: every player spell of `data/spells/spells.xml` with its data, a short description and its area of effect (see "Spellbook" below). |
 | game_lootfilter | `lootfilter.lua`, `lootfilter_core.lua`, `lootfilter_config.lua` | 238, Hunt > Loot Filter | Loot filter (glow/dim by rarity in corpses), loot channel with click-to-loot icons, rare-drop lines, loot rays, Rarity Autoloot store unlock, a counter (session / total) and an alert sound per filter rule. Tested in game (see "Loot filter"). |
@@ -1522,7 +1524,45 @@ What taking passive points back costs. Every number is in `respec_config.lua`.
 ## Infinity Tower gameplay (`infinitytower_run.lua`)
 The tower exists now. The Enter Tower button of the client window (action `enter`) takes you, or your party (leader only, members within 12 tiles, up to 4), into an arena that is built at runtime with `Game.createTile` in an empty part of the map (x from 2000, y 2000, z 7; sixteen arenas side by side), so no map editing is needed. Floors are waves: kill everything to open the next one (6 s pause, half of the missing health and mana restored, `floorGold` x floor gold); every 10th floor is a boss floor with its helpers. Pools get harder every 8 floors, and the chance of magic, rare and legendary monsters (with their modifiers and shaders) rises with the floor. A floor has a 300 s limit. Dying, leaving (the Leave Tower button), logging out or running out of time ends your part of the run and records the cleared floors with `ChaosTower.recordRun` (points, best floor, ranking, milestones). Logging in inside an arena sends you to the temple. Milestone rewards now use item ids that exist (gold, Orbs of Upheaval and Fate, Soulreaper). Everything is configured at the top of the file (`ChaosTowerRunConfig`).
 - `server/tests/infinitytower_run_test.lua` covers the floor planner, entering, clearing floors, dying, leaving, the time limit, logout and login with a mocked engine; CI runs it with LuaJIT and Lua 5.3. The real `Game.createTile`, `Tile:addItem`, `Game.createMonster` and teleport calls are assumed from the engine sources, not run.
-- Not done: the season-end top 3 chests, a visible ladder of floors in the client window, and per-floor loot beyond what the monsters drop. Check that x 2000..2700, y 2000..2020, z 7 is really empty in your map (it is in the map analysed: the content starts at x 18992).
+- Not done: a visible ladder of floors in the client window, and per-floor loot beyond what the monsters drop. Check that x 2000..2700, y 2000..2020, z 7 is really empty in your map (it is in the map analysed: the content starts at x 18992).
+
+## Infinity Tower season rewards (`infinitytower.lua`, `infinitytower_core.lua`, `Chaos.tower` in `chaos_constants.lua`)
+
+The client window's "Top Rank Rewards" podium (Gold, Silver and Copper Tower Chest) is paid at the end of every tower
+season. Before 12 Oct 2026 no script paid it.
+
+- **Seasons.** `K.seasonOf`: fixed `seasonLengthDays` (30) windows from `seasonEpoch`, a unix time or `{year, month,
+  day, hour}` in server local time; before the epoch it is season 1. The epoch is the launch (Fri 20 Nov 2026 15:00,
+  docs/BETA.md section 5); it was 1 Jan 2025, which made the launch season 22. The tower does not follow the realm
+  Seasons of `season_config.lua`: those last 13 weeks, have gaps between them and staff can start or end them by hand,
+  while the tower's points, milestones and ranking reset every 30 days. Changing the epoch renumbers the seasons in
+  `chaos_tower_players`: only on a wiped database.
+- **Who gets a chest.** The ranking of the window: best floor, then best time. Characters of group 4+ (`seasonEnd.staffGroup`)
+  and accounts held by the anti-bot (`antibot.lua` `filterRanked`, only with `log.holdLeaderboards`) are left out.
+  Equal floor AND equal time share a place and the next place is skipped (1, 1, 3): two tied 1st both get gold and
+  nobody gets silver; a tie for 3rd gives every tied character copper.
+- **What is in it** (`seasonEnd.chests`): a stock pickupable container named by the item name attribute, with a
+  description "Infinity Tower Season N, 1st place": Gold = treasure chest (1746) with 20 Orbs of Fate and 40 Orbs of
+  Upheaval, Silver = chest (1740) with 12 and 25, Copper = box (1738) with 6 and 12. Orbs are the milestone and weekly
+  board currency (`install_orbs.py`). Stacks that do not fit the chest go into the inbox loose.
+- **Once per season.** `ChaosTower.checkSeasons` runs at startup and every `checkSeconds` (60). server_config
+  `chaos_tower_season_done` holds the last season paid out; a new server stores the current season minus 1 and pays
+  nothing earlier. Every ended season after it is paid oldest first (a long downtime pays them all at the next
+  startup): one `chaos_tower_season_rewards` row per season and character (`INSERT IGNORE` on the primary key, so a lost
+  marker never pays twice), then the marker. A broadcast names the winners (not at startup).
+- **Delivery.** Rows with `rewarded = 0` go into the character's inbox: at once for the characters online at the season
+  end, else at the next login (`ChaosTowerLogin`). The row is marked first, then the chest is made, so a failure never
+  pays twice (the server log names it). The player gets a message, a notification toast (`ChaosNotify.send`) and
+  fireworks.
+- **Client.** The `update` / `open` payload carries `topRewards` (place, chest name, the chest's client id, the
+  contents as tooltip); `game_infinitytower` shows those looks on the podium (the old fixed client ids 63194-63196 do
+  not exist in the 10.98 items).
+- **Staff.** `/towerseason` (group 4+): the season, its end and the last season paid out; `/towerseason pay` runs the
+  check now (pays only ended seasons; idempotent).
+- **Tests.** `tests/infinitytower_season_test.lua` (luajit and lua5.3): seasons and the epoch, ranking, ties, staff,
+  awards, pending seasons, the configured chests, and `infinitytower.lua` against an in-memory database: paid at the
+  end only, once (second check, restart, lost marker), online and offline delivery, several seasons after a downtime,
+  a full chest, the payload, `/towerseason`.
 
 ## Event calendar, boosted creature/boss and the login screen (`events_schedule.lua`, `clientservices.lua`)
 - **Events** (`Chaos.events` in `chaos_constants.lua`): recurring server days with real bonuses. Blood Moon (Saturday and Sunday, +50% experience), Chaos Rift (Wednesday, magic/rare/legendary spawns x2 and ambushes x1.5), Loot Frenzy (Friday, +50% Chaos loot and one extra loot roll on every monster) and Tower Ascension (days 1-3 and 15-17 of the month, double Infinity Tower points). Days are given as `weekdays` (1 = Sunday) or `monthdays`. Active events are announced on login and with Adventure > Events. The bonuses are read by `ChaosEvents.bonus(kind)` in the experience callback, `loot_config.lua` (`rateMult`), `loot.lua`, `monster_tiers.lua` and `infinitytower.lua`.
@@ -8748,6 +8788,36 @@ the website does not read the flag.
 3. **Watch** the character, talk to it, `/reports check <name>` for a fresh presence check.
 4. **Decide** with the normal staff tools (admin panel: kick, ban, notes), then `/reports close <id>, <what you
    found>`. `/reports clear <name>` resets the score and lifts a leaderboard hold after a review that found nothing.
+
+### Bug reports
+
+System > Report a Bug in the client (the base `game_bugreport` dialog: Map, Typo, Technical, Other and a text) sends
+the engine's bug report packet; the engine calls `Player:onReportBug(message, position, category)` of the base
+`data/events/scripts/player.lua`. That function handed it to the stock callback
+(`scripts/eventcallbacks/player/default_onReportBug.lua`), which returned at once for a normal account
+(`ACCOUNT_TYPE_NORMAL`: no message, nothing stored) and wrote text files under `data/reports/bugs/` for tutors and up.
+The base client also lost the text (its Lua passed three values to a one-string binding, so the category digit was
+sent as the text); client base patch 0040 sends the category, the text and, for a map report, the position.
+
+- **Install:** `tools/patch_base_events.py` step 12 (`install_all.py` step `events`) puts `ChaosReports.onReportBug`
+  first in `Player:onReportBug` (marker comment, idempotent; the stock path still runs when `reports.lua` is missing).
+- **What is stored** (`reports.lua` `RP.submitBug`, pure part `reports_core.lua`): a `chaos_reports` row with reason
+  `bug`, reporter and target = the character, note `[category] text` (control characters folded, non-ASCII removed, at
+  most `bugs.textMax` = 240 characters; the player is told when it was shortened), the position (the reported tile of
+  a map report, else the character's), the time, and in `chat` the details: category, the character's position, the
+  reported tile, level and class. Every account type may report.
+- **Limits** (`antibot_config.lua` `reports.bugs`): fewer than 6 characters is refused (also what a client without
+  patch 0040 sends); `Chaos.limited` one per character every 5 s; per account 30 s apart and 10 a day (kept over a
+  relog). Each refusal tells the player why.
+- **Player answer:** "Thank you. Your bug report #15 was sent to the staff." (or the reason it was refused). The client
+  also shows its own "Bug report sent." line.
+- **Staff:** online staff see `[Bug #15] Name (map) at x, y, z. /reports show 15`; `/reports list bugs` lists the open
+  ones; `/reports show` shows the text, position and details; the admin panel's Player reports has the filter "Bug
+  reports (open)"; the website staff page has the reason "Bug report". The reports webhook (`CHAOS_REPORTS_WEBHOOK`)
+  gets "New bug report #15 (map) from Name at x, y, z." (never the text). Close them like player reports.
+- **Tests:** `tests/bugreport_test.lua` (validation, categories, the cap, positions, limits, staff lines, webhook,
+  `RP.onReportBug` with a normal account against a mocked engine, `/reports list bugs`, the patch tool on the stock
+  function and the patched function's dispatch); `website/tests/chaos_reports_page_test.php` (the bug filter).
 
 ### Protocol (JSON `{action, data}` on 211)
 

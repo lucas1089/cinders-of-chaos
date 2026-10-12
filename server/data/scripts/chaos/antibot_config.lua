@@ -144,6 +144,16 @@ return {
 		-- CHAOS_REPORTS_WEBHOOK overrides this value. Only https://discord.com/api/webhooks/... URLs are accepted. The post
 		-- carries the report id, reason and the two names, never the chat lines or the note.
 		discordWebhook = "",
-		listMax = 30 -- rows of /reports list
+		listMax = 30, -- rows of /reports list
+		-- bug reports: System > Report a Bug (the base client's dialog) -> Player:onReportBug (tools/patch_base_events.py
+		-- step 12) -> reports.lua RP.reportBug: a chaos_reports row with reason "bug", for every account
+		bugs = {
+			enabled = true,
+			textMin = 6, -- the dialog wants 6 characters too; a client without base patch 0040 sends only "0".."3"
+			textMax = 240, -- note = "[category] text" in chaos_reports.note (varchar 255)
+			rapidMs = 5000, -- Chaos.limited: one bug report per character in this time
+			cooldownSeconds = 30, -- per account, survives a relog
+			perDay = 10 -- per account
+		}
 	}
 }
