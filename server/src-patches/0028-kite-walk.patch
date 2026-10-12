@@ -1,0 +1,231 @@
+# Keep attacking while moving (server/README.md "Keep attacking while moving"). Owner request: "Make the player not
+# stop to attack when moving by clicking on the map or on the field."
+# Why it stopped: with Chase Opponent on, the attacked creature is also the followed one, and the follow path is
+# rebuilt on every step of the player or the target (Player::onCreatureMove -> Game::updateCreatureWalk ->
+# Creature::goToFollowCreature, plus every 2 s in Creature::onThink): it clears the walk list and paths to the target,
+# so a map or minimap click (and a key step) was replaced by the chase after one step. Starting an attack while walking
+# (Creature::setFollowCreature) and losing the target (Player::onFollowCreature(nullptr) -> stopWalk) also dropped the
+# path. With or without the chase, every step (Player::onWalk) cancelled the scheduled attack check
+# (setNextActionTask(nullptr): with classicAttackSpeed = false the next attack is the next action task) and pushed the
+# next action to the end of the step, so melee only hit on the 1 s creature think and a distance weapon
+# (interruptSwing) or a rune never fired while walking without a stop.
+#   * A kite walk: Game::playerMove (a key) and Game::playerAutoWalk (a click on the map or the minimap) mark the walk as
+#     the player's own (Player::setKiteWalk) unless the player turned the client option "Keep attacking while moving"
+#     off (player storage 7101820 = 1, written by data/scripts/chaos/kitewalk.lua; then everything is stock).
+#   * Player::goToFollowCreature does no chase pathing of the attacked creature while a kite walk runs and for 400 ms
+#     after its last step (CHAOS_KITE_CHASE_RESUME_MS: held keys and a new click in that window keep walking). Following
+#     a creature that is not the target (party follow) is unchanged; the client cancels a follow before it walks anyway.
+#   * Creature::keepsWalkPathOnFollow (a virtual, false for monsters and NPCs): a player who starts to chase the new
+#     target (attack or Chase Opponent switched on) mid walk keeps the path. Player::onFollowCreature(nullptr) (the
+#     target died, the attack ended) and Player::setChaseMode(false) no longer stop a kite walk.
+#   * Player::onWalk: a step of a kite walk with a target neither cancels the next action task nor delays the next
+#     action, so the attack check runs on time and melee hits when adjacent, a bow or wand in range, a rune at once.
+#     Every other walk (no target, the option off, the server's own paths) keeps the stock lines.
+#   * Player::onWalkComplete / onWalkAborted end the kite walk and schedule Game::updateCreatureWalk after the 400 ms, so
+#     Chase Opponent resumes by itself when the player stops. Esc (cancel attack and follow) still stops the walk:
+#     Game::playerCancelAttackAndFollow calls stopWalk itself.
+# Untouched: the step timing (0018), creature chase, the PZ rules (entering a protection zone still drops the target),
+# the walk-to-use paths (walkTask), cast-time spells (data/lib/chaos_casting.lua still ends a cast on a step).
+# Applies after 0001-0026.
+--- a/src/creature.cpp
++++ b/src/creature.cpp
+@@ -985,7 +985,7 @@ bool Creature::setFollowCreature(Creature* creature)
+ 			return false;
+ 		}
+ 
+-		if (!listWalkDir.empty()) {
++		if (!listWalkDir.empty() && !keepsWalkPathOnFollow(creature)) {
+ 			listWalkDir.clear();
+ 			onWalkAborted();
+ 		}
+--- a/src/creature.h
++++ b/src/creature.h
+@@ -281,6 +281,10 @@ class Creature : virtual public Thing
+ 			return followCreature;
+ 		}
+ 		virtual bool setFollowCreature(Creature* creature);
++		// Chaos (kite walk): true keeps the walk path when the creature starts to follow `creature`
++		virtual bool keepsWalkPathOnFollow(const Creature*) const {
++			return false;
++		}
+ 
+ 		//follow events
+ 		virtual void onFollowCreature(const Creature*) {}
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -2165,6 +2165,18 @@ void Game::playerEquipItem(uint32_t playerId, uint16_t spriteId)
+ 	}
+ }
+ 
++// Chaos (kite walk, src-patch 0028): a walk the player asks for (a key, a map or minimap click) keeps the attack
++// going: the chase of the attacked creature waits until the walk ends, and the steps do not cancel or delay the next
++// attack. Off while the player turned the client option "Keep attacking while moving" off (storage
++// CHAOS_KITE_WALK_OFF = 1, written by data/scripts/chaos/kitewalk.lua); then walking works as before.
++static constexpr uint32_t CHAOS_KITE_WALK_OFF = 7101820;
++
++static bool chaosKiteWalkOn(const Player* player)
++{
++	int32_t off;
++	return !(player->getStorageValue(CHAOS_KITE_WALK_OFF, off) && off == 1);
++}
++
+ void Game::playerMove(uint32_t playerId, Direction direction)
+ {
+ 	Player* player = getPlayerByID(playerId);
+@@ -2180,6 +2192,7 @@ void Game::playerMove(uint32_t playerId, Direction direction)
+ 	player->resetIdleTime();
+ 	player->setNextWalkActionTask(nullptr);
+ 
++	player->setKiteWalk(chaosKiteWalkOn(player));
+ 	player->startAutoWalk(direction);
+ }
+ 
+@@ -2369,6 +2382,7 @@ void Game::playerAutoWalk(uint32_t playerId, const std::vector<Direction>& listD
+ 
+ 	player->resetIdleTime();
+ 	player->setNextWalkTask(nullptr);
++	player->setKiteWalk(!listDir.empty() && !player->isMovementBlocked() && chaosKiteWalkOn(player));
+ 	player->startAutoWalk(listDir);
+ }
+ 
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -1406,13 +1406,35 @@ void Player::updateBaseSpeed()
+ 	baseSpeed = static_cast<uint32_t>(std::max<int64_t>(1, std::min<int64_t>(speed, PLAYER_MAX_SPEED)));
+ }
+ 
++// Chaos (kite walk, src-patch 0028): after a kite walk ends, the chase of the attacked creature starts again this long
++// after the last step, so held keys and a new click in that window keep walking without a step toward the target
++static constexpr int64_t CHAOS_KITE_CHASE_RESUME_MS = 400;
++
+ void Player::onWalk(Direction& dir)
+ {
+ 	Creature::onWalk(dir);
++	if (kiteWalk) {
++		kiteChaseResumeTime = OTSYS_TIME() + getStepDuration(dir) + CHAOS_KITE_CHASE_RESUME_MS;
++		if (attackedCreature) {
++			// Chaos (kite walk): the step neither cancels the next attack (or a queued use) nor delays it
++			return;
++		}
++	}
+ 	setNextActionTask(nullptr);
+ 	setNextAction(OTSYS_TIME() + getStepDuration(dir));
+ }
+ 
++bool Player::isKiteWalking() const
++{
++	return (kiteWalk && (!listWalkDir.empty() || eventWalk != 0)) || OTSYS_TIME() < kiteChaseResumeTime;
++}
++
++bool Player::keepsWalkPathOnFollow(const Creature* creature) const
++{
++	// starting to chase the attacked creature does not drop the player's own path
++	return kiteWalk && creature && creature == attackedCreature;
++}
++
+ void Player::onCreatureMove(Creature* creature, const Tile* newTile, const Position& newPos,
+                             const Tile* oldTile, const Position& oldPos, bool teleport)
+ {
+@@ -3497,6 +3519,14 @@ bool Player::setAttackedCreature(Creature* creature)
+ 
+ void Player::goToFollowCreature()
+ {
++	if (followCreature && followCreature == attackedCreature && isKiteWalking()) {
++		// Chaos (kite walk): the player's own path wins; the chase starts again when it ends (onWalkComplete)
++		return;
++	}
++	if (kiteWalk && listWalkDir.empty() && eventWalk == 0) {
++		kiteWalk = false; // a kite walk that never started (no step was possible)
++	}
++
+ 	if (!walkTask) {
+ 		if ((OTSYS_TIME() - lastFailedFollow) < 2000) {
+ 			return;
+@@ -3572,7 +3602,8 @@ uint64_t Player::getGainedExperience(Creature* attacker) const
+ 
+ void Player::onFollowCreature(const Creature* creature)
+ {
+-	if (!creature) {
++	// Chaos (kite walk): losing the chased target (it died, the attack ended) does not stop the player's own path
++	if (!creature && !kiteWalk) {
+ 		stopWalk();
+ 	}
+ }
+@@ -3590,7 +3621,9 @@ void Player::setChaseMode(bool mode)
+ 			}
+ 		} else if (attackedCreature) {
+ 			setFollowCreature(nullptr);
+-			cancelNextWalk = true;
++			if (!kiteWalk) { // Chaos (kite walk): only a chase path stops here
++				cancelNextWalk = true;
++			}
+ 		}
+ 	}
+ }
+@@ -3599,6 +3632,7 @@ void Player::onWalkAborted()
+ {
+ 	setNextWalkActionTask(nullptr);
+ 	sendCancelWalk();
++	endKiteWalk();
+ }
+ 
+ void Player::onWalkComplete()
+@@ -3607,6 +3641,22 @@ void Player::onWalkComplete()
+ 		walkTaskEvent = g_scheduler.addEvent(walkTask);
+ 		walkTask = nullptr;
+ 	}
++	endKiteWalk();
++}
++
++void Player::endKiteWalk()
++{
++	if (!kiteWalk) {
++		return;
++	}
++
++	// Chaos (kite walk): the chase of the attacked creature starts again a moment after the last step
++	kiteWalk = false;
++	kiteChaseResumeTime = OTSYS_TIME() + CHAOS_KITE_CHASE_RESUME_MS;
++	if (followCreature && followCreature == attackedCreature) {
++		g_scheduler.addEvent(createSchedulerTask(CHAOS_KITE_CHASE_RESUME_MS + SCHEDULER_MINTICKS,
++		                                         std::bind(&Game::updateCreatureWalk, &g_game, getID())));
++	}
+ }
+ 
+ void Player::stopWalk()
+--- a/src/player.h
++++ b/src/player.h
+@@ -602,6 +602,17 @@ class Player final : public Creature, public Cylinder
+ 		void onWalkComplete() override;
+ 
+ 		void stopWalk();
++
++		// Chaos (kite walk, src-patch 0028): a walk the player asked for (a map / minimap click or a key) while the
++		// option "Keep attacking while moving" is on. Chase pathing waits until it ends, and its steps neither cancel
++		// the next attack nor delay it.
++		void setKiteWalk(bool on) {
++			kiteWalk = on;
++		}
++		bool isKiteWalking() const;
++		bool keepsWalkPathOnFollow(const Creature* creature) const override;
++		void endKiteWalk();
++
+ 		void openShopWindow(Npc* npc, const std::list<ShopInfo>& shop);
+ 		bool closeShopWindow(bool sendCloseShopWindow = true);
+ 		bool updateSaleShopList(const Item* item);
+@@ -1310,6 +1321,7 @@ class Player final : public Creature, public Cylinder
+ 		uint64_t bankBalance = 0;
+ 		uint64_t lastQuestlogUpdate = 0;
+ 		int64_t lastFailedFollow = 0;
++		int64_t kiteChaseResumeTime = 0; // Chaos (kite walk): chase pathing waits until then after a kite walk
+ 		int64_t skullTicks = 0;
+ 		int64_t lastWalkthroughAttempt = 0;
+ 		int64_t lastToggleMount = 0;
+@@ -1392,6 +1404,7 @@ class Player final : public Creature, public Cylinder
+ 		bool energyShieldDirty = false;
+ 		void rechargeEnergyShield(uint32_t interval);
+ 		bool chaseMode = false;
++		bool kiteWalk = false; // Chaos (kite walk)
+ 		bool secureMode = false;
+ 		bool inMarket = false;
+ 		bool wasMounted = false;

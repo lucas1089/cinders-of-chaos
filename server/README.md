@@ -107,8 +107,14 @@ server/
   src-patches/0026-incremental-save.patch   engine: Game.saveIncremental (the autosave in small steps, also SIGUSR1),
                                       saves write only the houses that changed (see "Autosave in steps";
                                       tools/patch_base_save.py, tools/chaossave_test.cpp)
+  src-patches/0028-kite-walk.patch   engine: a walk the player asks for (a map or minimap click, a key) wins over the
+                                      chase of the attacked creature and its steps neither cancel nor delay the next attack;
+                                      the chase resumes 400 ms after the walk; config: the client option, storage 7101820
+                                      (see "Keep attacking while moving"; kitewalk.lua, client game_kitewalk, base patch 0039)
     rightclick_equip.lua  rightclick_equip_core.lua  rightclick_equip_config.lua (the client option and the multi-use
                                       weapon list, opcode 188, see "Right-click equips")
+    kitewalk.lua  kitewalk_core.lua (the client option "Keep attacking while moving", opcode 186, storage 7101820, see
+                                      "Keep attacking while moving")
     respawn.lua  respawn_core.lua  respawn_config.lua (dynamic respawn: faster where several players hunt together)
     clientguard.lua  clientguard_core.lua  clientguard_config.lua (the client guard's module hello check, opcode 190)
     transmog.lua  transmog_core.lua  transmog_config.lua (transmog: account wardrobe, appearance sets, client game_transmog;
@@ -363,6 +369,7 @@ working directory, as with the rest of the base server libs).
 | game_partyframes | `partyframes.lua`, `partyframes_core.lua` | 235, Hunt > Party Frames | Party frames: health, mana, level, floor, distance, state and buffs of the party members every 500 ms, exact numbers only in range; kick / pass leadership / invite actions checked on the server; tested in game with three characters (see "Buff bar and party frames"). |
 | game_mapmarkers | `partymarkers.lua`, `partymarkers_core.lua`, `partymarkers_config.lua`, `poi.lua`, `poi_core.lua`, `poi_config.lua`, `data/chaos_poi.lua` (`tools/gen_poi.py`, install step `poi`), `sql/chaos_poi.sql` | **153**, Hunt > More > Map Markers | Map markers on the minimap and the full map: the other party members (pin in a party colour, floor triangle, edge arrow toward a member out of view, name / health / floor / distance on hover; sent only when something changed, at most once a second, throttled) and points of interest (temples, depots, banks, Chaos NPCs, shops, travel, crafting, guild hall, portals, dungeons, boss places, hunting areas; the remote ones discovered on approach), each category switchable (see "Map markers"). Unit tests, generator test; tested on a live test server (full map) with two clients and 395 bots. |
 | game_rightclickequip | `rightclick_equip.lua`, `rightclick_equip_core.lua`, `rightclick_equip_config.lua`, engine patch 0024 | **188** | Right-click equips: the client option "Right-click equips items" (client -> server) and the multi-use weapons a right-click equips (server -> client, at login); the equipping is the engine's (see "Right-click equips"). Tested in game. |
+| game_kitewalk | `kitewalk.lua`, `kitewalk_core.lua`, engine patch 0028 | **186** | Keep attacking while moving: the client option "Keep attacking while moving" (client -> server); the kiting itself is the engine's (see "Keep attacking while moving"). Tested in game. |
 | game_levelwings | `levelwings.lua`, `levelwings_core.lua`, `levelwings_config.lua` | **191** (server -> client) | Level-up wings: golden wings open behind a character that gains a level, seen by every player on screen (see "Level-up wings"). Tested in game. |
 | game_bestiary | `bestiary.lua`, `bestiary_core.lua`, `bestiary_config.lua`, `bestiary_spawns.lua` | 253, Hunt > Bestiary, Hunt > Kill Tasks | Bestiary (an entry per monster, four stages by kills, completion bonus, points and ranks), personal kill tasks with daily / weekly limits, task tracker HUD with the bounty contracts; tested in game (see "Bestiary and kill tasks"). |
 | game_itemtooltip | `item_tooltip.lua`, `item_tooltip_core.lua` (client also `game_itemrarity`) | 242 | Rich item tooltips on hover (inventory, open containers): rarity, item level, base stats, every modifier with its tier and roll range, sockets and gems, unique and set (pieces worn, bonuses active: "Item sets"), requirements; Ctrl compares with the equipped item(s) of the same slot. Rarity frames from the item custom attributes of engine patch 0003; tested in game (see "Item attributes in packets and rich tooltips"). |
@@ -407,6 +414,7 @@ collision check") and be added here.
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
 | 152 | `notificationsQueue` | `notifications.lua` | `game_chaosnotify` | client -> server: leave queue |
 | 153 | `mapMarkers` | `partymarkers.lua`, `poi.lua` | `game_mapmarkers` | both scripts answer the client's hello; points of interest through `Chaos.sendChunked` |
+| 186 | `kiteWalk` | `kitewalk.lua` | `game_kitewalk` | client -> server: the option "Keep attacking while moving" |
 | 188 | `rightClickEquip` | `rightclick_equip.lua` | `game_rightclickequip` | |
 | 189 | `clientGuard` | engine (src-patch 0021) | client C++ (base patch 0035) | HMAC handshake, never reaches Lua |
 | 190 | `clientGuardHello` | `clientguard.lua` | `game_chaosguard` | client -> server |
@@ -511,6 +519,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7101700 - 7101799 | Vocation Trials (`trials_config.lua`) |
 | 7101800 | Last Breath power cooldown (`data/lib/chaos_powers.lua`) |
 | 7101810 - 7101819 | right-click equips (`Chaos.storage.rightClickEquipOff`): +0 is 1 while the player turned the option off; the engine reads it (src-patch 0024) |
+| 7101820 - 7101829 | keep attacking while moving (`Chaos.storage.kiteWalkOff`): +0 is 1 while the player turned the option off; the engine reads it (src-patch 0028) |
 | 7102000 - 7102049 | wardrobe (`Chaos.storage.wardrobe`): +0 footprint, +1 outline (`cosmetics_config.lua`), +10 .. +39 name plate frame slots 9 and up (`Chaos.storage.shopFrameBase2`, `shop_core.lua` `frameStorage`) |
 | 7101900 - 7101909 | the Gambler (`gamble_config.lua` `storage`, `Chaos.storage.gamble`): +0 window, +1 level, +2 vocation, +3 sold slots, +4 early refreshes; +5..9 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
@@ -3091,6 +3100,62 @@ keys, containers and every item with a use of its own work as before.
   and the rope still start a use with, food is eaten, a bag opens, the machete keeps its use with. Regular Controls:
   right-click opens the menu ("Use" equips), Ctrl + click equips; Left Smart-Click: a click equips and takes off;
   Classic Ctrl + right-click still opens the menu. The option off: a right-click equips nothing; back on: it does.
+
+## Keep attacking while moving (`src-patches/0028-kite-walk.patch`, `kitewalk.lua`, `kitewalk_core.lua`, client `game_kitewalk`, base patch 0039)
+
+Owner request: "Make the player not stop to attack when moving by clicking on the map or on the field." With an attack
+target, a click on the map or the minimap (and a key step) now walks the clicked path while the attacks keep firing:
+melee when the target is adjacent, a bow, wand or spell whenever it is in range. The target stays. Chase Opponent
+starts again by itself when the walk ends.
+
+- **What stopped it (stock engine).** With Chase Opponent the attacked creature is also the followed one. Its path is
+  rebuilt on every step of the player or the target (`Player::onCreatureMove` -> `Game::updateCreatureWalk` ->
+  `Creature::goToFollowCreature`, and every 2 s in `Creature::onThink`), which clears the walk list: a click walk was
+  replaced by the chase after one step, and next to the target the click was eaten at once. Starting an attack mid
+  walk dropped the path (`Creature::setFollowCreature`), and so did losing the target (`Player::onFollowCreature`).
+  Every step (`Player::onWalk`) also cancelled the scheduled attack check (with `classicAttackSpeed = false` the next
+  attack is the next action task) and pushed the next action to the end of the step: melee waited for the 1 s creature
+  think, and a distance weapon (`interruptSwing`) or a rune fired only in the gaps between steps.
+- **What stopped it (base client).** The click handlers never cancelled the attack. But the base option "Auto Chase
+  Off" (Options > Gameplay, on by default; `game_inventory` `check()` on `onWalk` / `onAutoWalk`) switched the stance
+  to Don't Chase on every manual walk while attacking, so the chase never came back.
+- **The fix (0028).** `Game::playerMove` (a key) and `Game::playerAutoWalk` (a map or minimap click) mark the walk as
+  the player's own, a kite walk. While it runs and for 400 ms after its last step, `Player::goToFollowCreature` does no
+  chase pathing of the attacked creature, so held keys and the next click keep walking. Then a scheduled
+  `Game::updateCreatureWalk` starts the chase again. Starting an attack mid walk keeps the path
+  (`Creature::keepsWalkPathOnFollow`, a virtual that only the player overrides, so monsters and NPCs chase as before),
+  and so do losing the target and switching Chase Opponent off. A step of a kite walk with a target neither cancels
+  the next action task nor delays the next action, so the attack check runs on time. Every other walk keeps the stock
+  lines: no target, the option off, and the server's own paths (chase, follow, walk to use).
+- **The option** "Keep attacking while moving" (Options > Interface, client base patch 0039, on by default): the client
+  sends extended opcode **186** `{"on": true | false}` at every login and when it changes; `kitewalk.lua` keeps storage
+  7101820 at 1 while it is off, and the engine then walks as before. Storages 7101820 - 7101829 reserved. Opcode 186 is
+  free in the reference server, the base client's `ExtendedIds` and every Chaos script and module. While the option
+  is on, base patch 0039 skips "Auto Chase Off", so the stance stays Chase Opponent.
+- **Unchanged:** the step timing (0018 and client 0029: one step and diagonal 7/5); the chase of monsters; follow
+  outside combat (the client cancels a follow before it walks); Esc (`Game::playerCancelAttackAndFollow` clears the
+  target and stops the walk); the right-click equip and the use-with crosshair (client only); the PZ rules (stepping
+  into a protection zone still drops the target); cast-time spells (`data/lib/chaos_casting.lua` still ends a cast on
+  a step, by design). Instant spells were never blocked by walking.
+- **Tests:** `tests/kitewalk_test.lua` (opcode and storage unique, the engine key and the patch shape, the message and
+  the stored value, the glue against a mocked engine), client `game_kitewalk/kitewalklogic_test.lua` (also checks patch
+  0039).
+- **Tested live** (the windows-assets base with src-patches 0001-0026 and 0028 built, every install step, a small
+  test map, a private MariaDB; the Linux client built from the base with patches 0001-0039; real mouse clicks with
+  xdotool and real arrow keys). Chase Opponent on, a troll as the target:
+  - Ranger with a bow, map clicks 5 tiles east and west for 9 s: the path was walked, the target stayed, and the bow
+    fired every 3 s (its attack speed) during the walk. An engine trace showed every step of the walk as a kite step
+    and no blocked attack.
+  - Option off, same clicks: the stance flipped to Don't Chase at the first click (stock "Auto Chase Off"), and the
+    engine refused the attack mid step (7 times in 10 s) and fired late, in the gaps.
+  - Option off and "Auto Chase Off" off: a click 3 tiles away from an adjacent target took one step, then the chase
+    pulled the character back (the owner's report). Option on: the same click walked all 5 steps; the chase came back
+    1.4 s after the stop.
+  - Warrior with melee, a fast troll at the side: hits every 2 s while walking. Minimap clicks: the same as map
+    clicks. Arrow keys held for 1.6 s: 5 steps away, the target kept, then the chase walked back.
+  - Esc mid walk cleared the target and stopped the walk. Following a creature outside combat still follows. Walking
+    into a protection zone dropped the target on the first protected tile. Chase Opponent off: the click walk keeps
+    attacking. The option through the Options window and Ok wrote the storage (1 off, 0 on).
 
 ## Autosave in steps (`src-patches/0026-incremental-save.patch`, `tools/patch_base_save.py`, `tests/base_save_patch_test.lua`, `tools/chaossave_test.cpp`)
 

@@ -301,6 +301,12 @@ Chaos.tables.poiSeen = "chaos_poi_seen"
 -- reads it, CHAOS_EQUIP_ON_USE_OFF in game.cpp). No tables.
 ChaosOpcodes.rightClickEquip = 188
 Chaos.storage.rightClickEquipOff = 7101810
+-- Keep attacking while moving (engine src-patch 0028, server/README.md "Keep attacking while moving"; kitewalk.lua,
+-- kitewalk_core.lua; client game_kitewalk): the client option "Keep attacking while moving", client -> server
+-- {on = true | false}. Storages 7101820 - 7101829 reserved: +0 is 1 while the player turned it off (the engine reads it,
+-- CHAOS_KITE_WALK_OFF in game.cpp). No tables.
+ChaosOpcodes.kiteWalk = 186
+Chaos.storage.kiteWalkOff = 7101820
 
 -- ---------------------------------------------------------------------------
 -- Module settings

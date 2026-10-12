@@ -93,6 +93,17 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     no file a depot window or quiver change would (built and tested in the Linux client, outlines standing, walking,
     mounted, with an outfit shader, at scale factor 1 and 2, gradient and pulsing ones; screenshots outside the
     repository).
+19. `0039` (`client_settings/classes/dataset.lua`, `client_settings/options/interface.otui`,
+    `client_settings/options/gameplay.otui`, `modules/game_inventory/inventory.lua`): the option "Keep attacking while
+    moving" (`keepAttackingWhileMoving`, on by default) in a new panel after "Right-click equips items" in Options >
+    Interface; its `apply` hands the new value to the overlay module `game_kitewalk` (`MANIFEST.md`), which tells the
+    server (extended opcode 186; server/README.md "Keep attacking while moving", src-patch 0028). While it is on, the
+    base "Auto Chase Off" (`game_inventory` `check()`, run on every `onWalk` / `onAutoWalk`) no longer switches the
+    stance to Don't Chase when the player walks while attacking: the server keeps the walk and resumes the chase when it
+    ends. The "Auto Chase Off" tooltip says so. Lua and OTUI only (no C++). Applies after 0001-0038, and 0040 applies after it;
+    the chain 0001-0040 applies to the `windows-assets` base client with no fuzz. Built (0001-0039) and tested in the
+    Linux client (the checkbox through Ok turns it off and on on the server; kiting by map and minimap clicks and keys).
+
 20. `0040` (C++ `src/client/game.h/.cpp`, `protocolgame.h`, `protocolgamesend.cpp`; Lua `modules/game_bugreport/bugreport.lua`):
     System > Report a Bug sends what the player typed (server/README.md "Bug reports"). The base bound
     `g_game.reportBug(comment)` with one string while `game_bugreport` calls `reportBug(category, text, position)`; the
