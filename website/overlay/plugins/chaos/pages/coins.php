@@ -4,16 +4,19 @@
  * nobody is required to donate and the game is fully playable for free. The packs, prices (one USD table, Pix =
  * USD x 5) and bonuses come from the game server's shop_coins_config.lua; the game server credits every paid order.
  *
- *  - GET: the notice, the packs with a Donate button per method (Pix in BRL, PayPal in USD) for a logged-in account,
+ *  - GET: the notice (voluntary; no refund except where the law requires; not a purchase; the Donation Terms of
+ *    legal_lib.php), the packs with a Donate button per method (Pix in BRL, PayPal in USD) for a logged-in account,
  *    the account's last donations.
  *  - POST pack + method (+ CSRF token): writes the order and makes the charge (pay/Service.php); PayPal goes to its
  *    approval page, Pix shows the QR code and the copy-and-paste code.
- *  - GET order=<id>: the order of this account (refreshes itself until it is paid and credited); &cancel=1 (the
+ *  - GET order=<id>: the order of this account (refreshes itself until it is paid and credited; once paid it says
+ *    again that it was a voluntary donation, not a purchase); &cancel=1 (the
  *    page's link and PayPal's cancel_url) only asks "Cancel this donation?"; the POST of that form (chaos_pay_cancel
  *    + CSRF token) cancels it, so a link alone can never cancel a donation.
  */
 if (!isset($config)) { http_response_code(403); die('Direct access denied.'); }
 require_once __DIR__ . '/../pay/bootstrap.php';
+require_once __DIR__ . '/../legal_lib.php';
 $GLOBALS['page_title'] = 'Donate - Chaos Coins';
 
 $packs = chaos_coin_packs();
@@ -101,6 +104,10 @@ $waiting = $order && in_array($order['status'], array('pending', 'open', 'paid')
 		<div class="chaos-notice" id="chaos-donation-notice" style="border:1px solid #c89a3c;padding:10px 14px;margin:0 0 14px 0;">
 			<p class="chaos-gold" style="margin:0 0 4px 0;"><strong><?= chaos_h(ChaosPayService::NOTICE_EN) ?></strong></p>
 			<p style="margin:0;" lang="pt-BR"><?= chaos_h(ChaosPayService::NOTICE_PT) ?></p>
+			<p class="chaos-terms-note" id="chaos-donation-terms"><?= chaos_h(CHAOS_LEGAL_DONATION_BEFORE_EN) ?>
+				<a href="<?= chaos_h(chaos_legal_url('donations', 'en')) ?>">Donation Terms</a></p>
+			<p class="chaos-terms-note" lang="pt-BR"><?= chaos_h(CHAOS_LEGAL_DONATION_BEFORE_PT) ?>
+				<a href="<?= chaos_h(chaos_legal_url('donations')) ?>">Termos de Doação</a></p>
 		</div>
 		<p class="chaos-lead">Chaos Coins are our thank-you for your donation. They buy cosmetics, convenience and services in the in-game Store (Economy &gt; Store) and belong to your account, so every character can spend them.</p>
 
@@ -125,6 +132,12 @@ $waiting = $order && in_array($order['status'], array('pending', 'open', 'paid')
 					<p lang="pt-BR"><?= chaos_h($thanksPt) ?></p>
 				<?php else: ?>
 					<p><?= chaos_h($statusText[$order['status']] ?? $order['status']) ?></p>
+				<?php endif; ?>
+				<?php if (in_array($order['status'], array('paid', 'credited'), true)): ?>
+					<p class="chaos-terms-note" id="chaos-donation-receipt-terms"><?= chaos_h(CHAOS_LEGAL_DONATION_AFTER_EN) ?>
+						<a href="<?= chaos_h(chaos_legal_url('donations', 'en')) ?>">Donation Terms</a></p>
+					<p class="chaos-terms-note" lang="pt-BR"><?= chaos_h(CHAOS_LEGAL_DONATION_AFTER_PT) ?>
+						<a href="<?= chaos_h(chaos_legal_url('donations')) ?>">Termos de Doação</a></p>
 				<?php endif; ?>
 				<?php if ($order['status'] === 'open' && $order['method'] === 'pix'): ?>
 					<?php if (!empty($order['qr_image'])): ?>

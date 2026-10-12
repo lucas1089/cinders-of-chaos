@@ -362,3 +362,11 @@ html.sn-anim .sh-logo-img { animation: chaosLogo 7s ease-in-out infinite; }
 .cp-info-list > .cp-info-row:last-child,
 .sh-sidebar a[href^="forum.php"] { display: none !important; }
 .chaos-notused__links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+/* the legal pages (plugins/chaos/pages/legal.php), their footer links and the donation notes (website/README.md "Legal pages") */
+.chaos-legal h2 { font-family: var(--c-display); color: var(--c-gold3); font-size: 17px; margin: 20px 0 6px; }
+.chaos-legal h3 { color: var(--c-gold3); font-size: 15px; margin: 14px 0 4px; }
+.chaos-legal p, .chaos-legal li { line-height: 1.6; }
+.chaos-legal ul, .chaos-legal ol { margin: 4px 0 10px 20px; }
+.chaos-legal-placeholder { background: rgba(217,165,58,.25); color: var(--c-gold4); padding: 0 3px; }
+.chaos-legal-links a { margin: 0 2px; }
+.chaos-terms-note { margin: 4px 0 0 0; font-size: 13px; }

@@ -1,7 +1,8 @@
-# Gamemaster handbook (draft)
+# Gamemaster handbook
 
-Status: **draft for the owner.** The rules marked **Owner decides** are recommendations until the owner confirms them.
-The facts about groups and commands come from the code: the admin panel (`server/data/scripts/chaos/admin/`, its
+Status: **decided** (2026-10-12). The owner adopted the recommended staff rules; they are written below as the rules.
+The public part (offences and penalties, appeals) is on the website's Rules page and in the Terms of Use
+(docs/legal/). The facts about groups and commands come from the code: the admin panel (`server/data/scripts/chaos/admin/`, its
 README.md), `Chaos.staffCommand` in `chaos_constants.lua`, and each system's talkaction. When the code changes, this
 file follows.
 
@@ -27,8 +28,8 @@ Rules the code enforces: a target of the same or a higher group cannot be touche
 above your own group; every admin panel request (ok, denied or failed) and every use of a guarded `/` command goes to
 `chaos_admin_log` (Accounts & Security > Admin log viewer).
 
-**Owner decides:** who holds which group. Recommendation: gamemasters at 4 for day-to-day work, one or two trusted
-administrators at 5, the owner and the lead developer at 6 with god accounts.
+**Who holds which group (decided):** gamemasters at 4 for day-to-day work, one or two trusted administrators at 5,
+the owner and the lead developer at 6 with god accounts. Few people with power means few mistakes and a short audit.
 
 ## 2. Commands
 
@@ -64,9 +65,10 @@ access flag (gamemaster or higher).
 
 Many group 4 commands hand out value (`/rift key`, `/ascended sigil`, `/newplayerkit`, `/guild bank`, `/classunlock`,
 `/cosmetic`, `/pet give`). The code only guards `/coins`, `/charm give` and `/pact` at group 5.
-**Owner decides.** Recommendation: staff never give anything to a player character with any command; these tools are
-for staff test characters only. A refund after a confirmed bug goes through an administrator (group 5) with a written
-reason (section 6). Later, move those commands behind `Chaos.staffCommand(..., true)` too.
+**Rule (decided):** staff never give anything to a player character with any command; these tools are for staff test
+characters only. A refund after a confirmed bug goes through an administrator (group 5) with a written reason
+(section 6). Why: every gift to a player is economy value nobody earned. To do: move those commands behind
+`Chaos.staffCommand(..., true)` too, so the code enforces the rule.
 
 ## 3. Report handling
 
@@ -91,7 +93,7 @@ From server/README.md "Anti-bot and player reports", Staff guide:
 3. Limits: one report per character every 5 s and per account every 30 s, 10 a day per account. A player who hits
    them gets a message; ask them to put the rest on Discord.
 
-House rules (**Owner decides**; recommendation):
+House rules (decided):
 - Answer every report within the shift; close it with what was found, even "nothing found".
 - Never tell the reporter what happened to the other account; never name the reporter.
 - Harassment, scams and offensive names: read the public chat lines in the report; private messages are never stored.
@@ -100,7 +102,8 @@ House rules (**Owner decides**; recommendation):
 
 ## 4. Mutes and bans
 
-**Owner decides** the ladder and publishes it on the Rules page. Recommendation, per account, counted over 90 days:
+The ladder (decided), per account, counted over 90 days. It is published on the Rules page (section 7 of
+`website/setup/rules.bbcode`); staff apply the same table, so players can predict the result:
 
 | Offence | 1st | 2nd | 3rd | then |
 |---|---|---|---|---|
@@ -113,13 +116,19 @@ House rules (**Owner decides**; recommendation):
 | impersonating staff | ban 7 days | permanent | | |
 | real-money trading of characters or items | ban 30 days, the traded goods removed | permanent | | |
 
-- Tools: admin panel Players > Mute (online player, 1 to 10,080 minutes; check that it blocks speech on this engine,
-  admin README "Untested"), Players > Ban account (1 to 3,650 days, with a reason; kicks), Unban; Accounts & Security >
-  IP ban (group 5; for ban evasion only, never for a shared IP such as a school or a cafe without an administrator).
+- Tools: admin panel Players > Mute (online player, 1 to 1,440 minutes, default 60; longer than 24 h is a ban; check
+  that it blocks speech on this engine, admin README "Untested"), Players > Ban account (1 to 3,650 days, default 7,
+  with a reason; kicks; **permanent = 3,650 days**), Unban; Accounts & Security > IP ban (group 5; for ban evasion only,
+  never for a shared IP such as a school or a cafe without an administrator).
+- The code enforces the ladder's limits (`ChaosAdminLadder` in `admin/actions_players.lua`, `tests/staff_permissions_test.lua`):
+  a mute is at most 24 h, and a ban of 30 days or more (permanent included) needs an administrator (group 5), as in
+  section 7. A gamemaster who finds a case for a longer ban hands it to an administrator with the evidence.
 - A ban always has a reason the player could read, and the evidence (report id, log lines, screenshots) goes in the
   handover note.
-- Appeals: on Discord to an administrator who did not issue the ban. **Owner decides** the appeal channel.
-- Self-reported bugs are never punished; reward them (**Owner decides** how).
+- Appeals (decided): on Discord, in the appeals channel, to an administrator who did not issue the ban. One appeal
+  per penalty; the administrator's answer is final.
+- Self-reported bugs are never punished (decided). A useful report may be rewarded; the owner decides the reward
+  case by case, so nobody is promised anything in advance.
 
 ## 5. Never ship (and never do)
 
@@ -175,7 +184,7 @@ A duplicated item or currency is a server bug first and a ban second. Do not tel
 
 ## 7. Escalation
 
-**Owner decides** the names and contacts. Recommendation:
+The levels (decided). The names and contacts of each level are in the staff contact list, not in this repository:
 
 | Level | Who | When |
 |---|---|---|

@@ -16,6 +16,8 @@
  *    default ($config['chaos']['depot_boxes']): !season join needs an empty depot.
  *  - Mail and account recovery: mail_lib.php (one sender, off without SMTP settings) and recovery_lib.php (a
  *    one-time reset link; recovery.php hands over to recovery_page.php).
+ *  - Legal texts (legal_lib.php, pages/legal.php): Terms of Use, Privacy Policy, Donation Terms; account creation
+ *    needs the Terms checkbox, and the acceptance is recorded.
  *  - The stock pages this server does not use (shop, points, creatures, spells,
  *    forum, the stock payment callbacks) send the visitor to pages/notused.php.
  */
@@ -32,6 +34,8 @@ require_once __DIR__ . '/lib.php';
 require_once __DIR__ . '/referral.php';
 // account creation: per-IP limit (register_guard.php registers its own hook)
 require_once __DIR__ . '/register_guard.php';
+// the legal texts (pages/legal.php), the Terms checkbox of account creation and the donation notices (legal_lib.php)
+require_once __DIR__ . '/legal_lib.php';
 // site mail (SMTP from config.local.php, off without it) and recovery by a one-time link (recovery.php, README "Mail")
 require_once __DIR__ . '/mail_lib.php';
 require_once __DIR__ . '/recovery_lib.php';

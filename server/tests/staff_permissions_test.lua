@@ -2,6 +2,7 @@
 -- Economy-creating staff tools need an administrator (group >= 5): the admin panel's players.give_item and
 -- world.create_item (like economy.*), and the talkactions /coins, /charm give, /pact days|extra (Chaos.staffCommand in
 -- chaos_constants.lua). Every staff use of /coins, /charm, /pact, /market and /orbx is written to the audit log.
+-- The staff ladder of docs/GM_HANDBOOK.md section 4: mutes up to 24 h, bans of 30 days or more by an administrator.
 local checks = 0
 local function eq(a, b, m)
 	checks = checks + 1
@@ -37,6 +38,37 @@ eq(ChaosAdmin.canUse(gm, create), false, "a gamemaster cannot create items")
 eq(ChaosAdmin.canUse(god, give), true, "an administrator can")
 eq(ChaosAdmin.requiredGroup(ChaosAdminPending["players.kick"]), 4, "other players.* actions stay at group 4")
 eq(ChaosAdmin.requiredGroup(ChaosAdminPending["world.spawn_monster"]), 4, "other world.* actions stay at group 4")
+
+-- the staff ladder (docs/GM_HANDBOOK.md section 4): mutes up to 24 h; bans of 30 days or more by an administrator
+local function param(def, name)
+	for _, q in ipairs(def.params) do
+		if q.name == name then return q end
+	end
+end
+local mute, ban = ChaosAdminPending["players.mute"], ChaosAdminPending["players.ban"]
+eq(param(mute, "minutes").max, 1440, "the longest mute is 24 h")
+eq(param(mute, "minutes").default, 60, "the first mute of the ladder is 60 min")
+eq(param(ban, "days").max, 3650, "permanent = 3650 days")
+eq(param(ban, "days").default, 7, "the first ban of the ladder is 7 days")
+eq(ChaosAdmin.requiredGroup(ban), 4, "a gamemaster may ban")
+local banned = {}
+local realDbPlayer = ChaosAdmin.dbPlayer
+ChaosAdmin.dbPlayer = function(name) return {id = 100, account_id = 200, group_id = 1, name = name} end
+db.storeQuery = function() return nil end
+db.query = function(q) banned[#banned + 1] = q; return true end
+Player = function() return nil end
+local okBan, msg = ban.handler(gm, {player = "Bob", days = 30})
+eq(okBan, false, "a gamemaster cannot ban for 30 days")
+eq(msg:find("administrator", 1, true) ~= nil, true, "told why")
+eq(#banned, 0, "nothing written")
+okBan = ban.handler(gm, {player = "Bob", days = 3650})
+eq(okBan, false, "nor permanently")
+okBan = ban.handler(gm, {player = "Bob", days = 7})
+eq(okBan, true, "a gamemaster bans for 7 days")
+eq(#banned, 1, "the ban row")
+okBan = ban.handler(god, {player = "Bob", days = 3650})
+eq(okBan, true, "an administrator bans permanently")
+ChaosAdmin.dbPlayer = realDbPlayer
 
 -- ---------------------------------------------------------------- talkactions
 dofile("data/scripts/chaos/chaos_constants.lua")

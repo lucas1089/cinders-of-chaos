@@ -98,3 +98,15 @@ CREATE TABLE IF NOT EXISTS `chaos_recovery_requests` (
   KEY `chaos_recovery_requests_ip` (`ip`, `created`),
   KEY `chaos_recovery_requests_account` (`account_id`, `created`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Acceptance of the Terms of Use and the Privacy Policy at account creation (legal_lib.php, README "Legal pages"):
+-- the account, the version of the texts (the first 16 hex digits of the SHA-256 of the Portuguese texts) and the time.
+-- No IP address. Website only.
+CREATE TABLE IF NOT EXISTS `chaos_legal_acceptance` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `account_id` int(11) NOT NULL,
+  `version` varchar(32) NOT NULL,
+  `accepted_at` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `chaos_legal_acceptance_account` (`account_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

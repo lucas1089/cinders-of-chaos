@@ -114,6 +114,16 @@ fi
 rm -rf "$SITE/layouts/chaos" "$SITE/plugins/chaos"
 cp -R "$HERE/overlay/." "$SITE/"
 python3 -I "$HERE/tools/recolor_layout.py" "$SITE/layouts/void" "$SITE/layouts/chaos"
+# the legal texts (docs/legal/, README "Legal pages"): the plugin's legal page reads them; .md is denied by the web server
+mkdir -p "$SITE/plugins/chaos/legal"
+for doc in terms privacy donations; do
+  for lang in pt-BR en; do
+    cp "$REPO/docs/legal/$doc.$lang.md" "$SITE/plugins/chaos/legal/"
+  done
+done
+LEGAL_TODO="$("$PHP" -r 'require $argv[1]; $n = 0; foreach (glob($argv[2] . "/*.md") as $f) { $n += count(chaos_legal_placeholders((string)file_get_contents($f))); } echo $n;' \
+  "$SITE/plugins/chaos/legal_lib.php" "$SITE/plugins/chaos/legal")"
+[ "$LEGAL_TODO" = "0" ] || echo "WARNING: the legal texts still have $LEGAL_TODO placeholder(s) like [NOME DO RESPONSÁVEL]: fill them in docs/legal/ before launch (docs/legal/README.md)."
 
 # ---------------------------------------------------------------- 3b. salted passwords (patches/, README "Passwords")
 # ZnoteX files changed in place by patches/*.patch (the pinned checkout, so they always apply); a patch that is

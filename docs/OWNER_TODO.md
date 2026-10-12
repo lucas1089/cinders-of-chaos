@@ -19,8 +19,8 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
   placeholder in `server/data/scripts/chaos/class_unlocks_core.lua` and in the store offers of `shop_config.lua`
   (category "Classes"; change both). Decide the price, or another way to unlock them (the unlock method is
   pluggable: ROADMAP C8).
-- [ ] **Staff rules.** Groups, ban and mute ladder, what staff may never do: [docs/GM_HANDBOOK.md](GM_HANDBOOK.md)
-  (draft, decisions marked "Owner decides").
+- [x] **Staff rules.** Decided 2026-10-12: the recommended rules of [docs/GM_HANDBOOK.md](GM_HANDBOOK.md) (see
+  "Decided" below).
 
 ## Accounts and services
 
@@ -47,7 +47,12 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 
 ## Texts
 
-- [ ] **Legal texts:** terms of use, privacy policy and donation terms. Donations must say they are voluntary, before and after payment.
+- [ ] **Legal texts:** terms of use, privacy policy and donation terms. Drafts in Portuguese and English are in
+  [docs/legal/](legal/README.md) and on the website (footer, account creation checkbox, donation page). Left for the
+  owner: fill in the placeholders (name, CPF or CNPJ, contact and DPO e-mail, city, providers, prices, notice periods,
+  minimum age), have a lawyer review the texts and the "Check" list of docs/legal/README.md, then run
+  `website/install_site.sh` again. Donations say they are voluntary before and after payment (the site sends no mail
+  after a donation).
 
 ## On the live server
 
@@ -58,6 +63,12 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 - [ ] Behind a proxy, pass the real client address through to PHP. The register limit and the login lock use it.
 
 ## Decided
+
+- Staff rules (2026-10-12): the recommendations of docs/GM_HANDBOOK.md, now its rules. Groups: gamemasters 4, one or
+  two administrators 5, owner and lead developer 6. Staff give nothing to players; refunds through an administrator.
+  The ladder (over 90 days) is on the Rules page; mutes at most 24 h, bans of 30 days or more and permanent bans by an
+  administrator (enforced by the admin panel). Appeals on Discord to an administrator who did not give the penalty.
+  Self-reported bugs never punished; rewards case by case. Escalation levels 1-4 as in the handbook.
 
 - Sprite pair 16 (mount rider seats): approved and pushed to `windows-assets` (1cae7c3).
 - Sprite pair 17 (achievement wings): approved and pushed to `windows-assets` (854d34c).

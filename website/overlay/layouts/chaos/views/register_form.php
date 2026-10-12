@@ -1,8 +1,9 @@
 <?php
 /**
- * Account creation form: ZnoteX's default register_form view with one more field, the optional referral code
- * (plugins/chaos/referral.php checks it; the game server accepts or rejects it at the first login). Pre-filled from a
- * shared link register.php?ref=CODE. Keep the rest in step with layouts/default/views/register_form.php of ZnoteX.
+ * Account creation form: ZnoteX's default register_form view with two more fields: the optional referral code
+ * (plugins/chaos/referral.php checks it; the game server accepts or rejects it at the first login; pre-filled from a
+ * shared link register.php?ref=CODE) and the required Terms checkbox
+ * (plugins/chaos/legal_lib.php). Keep the rest in step with layouts/default/views/register_form.php of ZnoteX.
  */
 $chaosRefValue = function_exists('chaos_referral_form_value') ? chaos_referral_form_value() : null;
 $chaosRefDays = function_exists('chaos_referral_settings') ? (int)chaos_referral_settings()['entryDays'] : 7;
@@ -72,6 +73,16 @@ $chaosRefDays = function_exists('chaos_referral_settings') ? (int)chaos_referral
 			  <option value="1"><?= t('reg.agree_yes') ?></option>
 			  <option value="2"><?= t('reg.agree_no') ?></option>
 			</select>
+		</li>
+
+		<?php /* Cinders of Chaos: the Terms checkbox (plugins/chaos/legal_lib.php; register_header refuses the form without it) */ ?>
+		<li id="chaos-accept-terms">
+			<label><input type="checkbox" name="chaos_accept_terms" value="1"<?= (string)($_POST['chaos_accept_terms'] ?? '') === '1' ? ' checked' : '' ?>>
+			I accept the <a href="page.php?plugin=chaos&amp;p=legal&amp;doc=terms&amp;l=en" target="_blank">Terms of Use</a> and the
+			<a href="page.php?plugin=chaos&amp;p=legal&amp;doc=privacy&amp;l=en" target="_blank">Privacy Policy</a>.</label><br>
+			<small class="chaos-muted" lang="pt-BR">Li e aceito os <a href="page.php?plugin=chaos&amp;p=legal&amp;doc=terms" target="_blank">Termos de Uso</a>
+			e a <a href="page.php?plugin=chaos&amp;p=legal&amp;doc=privacy" target="_blank">Política de Privacidade</a>.
+			Under 18: only with the permission of a parent or guardian. / Menores de 18 anos: só com a autorização dos pais ou do responsável.</small>
 		</li>
 		<?php
 			/* Form file */

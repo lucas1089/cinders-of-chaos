@@ -51,10 +51,17 @@ reg{id = "kick", name = "Kick", description = "Disconnect an online player.", co
 		return true, name .. " was kicked."
 	end}
 
-reg{id = "ban", name = "Ban account", description = "Ban the account of a player (online or offline) for N days and kick.", confirm = true,
+-- The staff ladder (docs/GM_HANDBOOK.md section 4, decided 2026-10-12): mutes of up to 24 h; bans of 7 days by a
+-- gamemaster; a ban of 30 days or more (permanent = the 3650-day maximum) by an administrator (section 7, level 2).
+ChaosAdminLadder = {muteMaxMinutes = 1440, longBanDays = 30, longBanMinGroup = 5}
+
+reg{id = "ban", name = "Ban account", description = "Ban the account of a player (online or offline) for N days and kick. 30 days or more (3650 = permanent): administrators only.", confirm = true,
 	params = {PLAYER, {name = "days", label = "Days", type = "int", min = 1, max = 3650, default = 7},
 		{name = "reason", label = "Reason", type = "string", max = 200, required = false}},
 	handler = function(actor, p)
+		if p.days >= ChaosAdminLadder.longBanDays and actor:getGroup():getId() < ChaosAdminLadder.longBanMinGroup then
+			return false, string.format("A ban of %d days or more needs an administrator.", ChaosAdminLadder.longBanDays)
+		end
 		local d = ChaosAdmin.dbPlayer(p.player)
 		if not d then return false, "Player not found." end
 		if d.group_id >= actor:getGroup():getId() and d.id ~= actor:getGuid() then
@@ -80,8 +87,8 @@ reg{id = "unban", name = "Unban account", description = "Remove the account ban 
 		return true, "Account ban removed for " .. d.name .. " (if there was one)."
 	end}
 
-reg{id = "mute", name = "Mute", description = "Mute a player for N minutes (CONDITION_MUTED).",
-	params = {PLAYER, {name = "minutes", label = "Minutes", type = "int", min = 1, max = 10080, default = 10}},
+reg{id = "mute", name = "Mute", description = "Mute a player for N minutes (CONDITION_MUTED; at most 24 h, longer is a ban).",
+	params = {PLAYER, {name = "minutes", label = "Minutes", type = "int", min = 1, max = ChaosAdminLadder.muteMaxMinutes, default = 60}},
 	handler = function(actor, p)
 		local t, err = ChaosAdmin.targetOnline(actor, p.player)
 		if not t then return false, err end

@@ -187,7 +187,8 @@ sudo systemctl enable --now chaos-server chaos-clientservices chaos-backup.timer
   `systemctl list-timers chaos-watchdog.timer`, `journalctl -u chaos-watchdog`.
 - `chaos-clientservices.service`: the login-screen endpoint (`server/tools/clientservices.py`, port 8090) that serves
   `data/chaos_clientservices.json`, which the game server rewrites every 5 minutes.
-- `chaos.logrotate`: daily, 14 days, compressed, `copytruncate` (systemd keeps the files open).
+- `chaos.logrotate`: daily, 14 days, compressed, `copytruncate` (systemd keeps the files open). Also the client guard's
+  `data/logs/clientguard.log` (IPs, accounts), as the privacy policy says (docs/legal/).
 - `chaos-health.timer`: every 5 minutes `server/tools/chaos_health.py` checks the services, ports, status protocol,
   database, disk, backups and new log errors, and posts to `CHAOS_ALERT_WEBHOOK` when something fails or recovers,
   plus a daily summary at 09:00 (section 9).
@@ -233,7 +234,7 @@ Behind gateways (section "Gateways and DDoS") 7171, 7172 and 8090 are open to th
   `/classunlock`, `/worldboss`, `/siege`, `/newplayerkit` and `/towerrun` are open to every group with access (4+);
   `/goblin`, `/blessing`, `/season start|end`, `/seasonpass` and `/journey` need a god account (type 5). Every staff
   use of a guarded command goes to the admin audit log. Who may do what, and the rules for staff:
-  [docs/GM_HANDBOOK.md](GM_HANDBOOK.md) (draft).
+  [docs/GM_HANDBOOK.md](GM_HANDBOOK.md) (decided 2026-10-12).
 - Start from a **fresh database**, or from the beta database after its wipe (docs/BETA.md "Wipe procedure"); never from
   a test database: those have accounts with known passwords (`test`, `test2`, ...).
 
@@ -470,7 +471,8 @@ Still open:
   unlock; their price (750 Chaos Coins) is a placeholder (docs/OWNER_TODO.md). C2 / C3 polish and the C4 outfits and
   effects are still in progress (ROADMAP).
 - The community (Discord) link is empty (`ChaosTopBar.COMMUNITY_URL`, the website's Discord invite).
-- Staff rules, bans and mutes: [docs/GM_HANDBOOK.md](GM_HANDBOOK.md) (draft, decisions for the owner).
+- Staff rules, bans and mutes: [docs/GM_HANDBOOK.md](GM_HANDBOOK.md) (decided 2026-10-12; the ladder is on the Rules page).
+- Legal texts: [docs/legal/](legal/README.md) (drafts: placeholders to fill, a lawyer's review, then the installer again).
 
 Done or decided since the first version of this list (ROADMAP "Open decisions and loose ends"):
 - The base client's healing helper no longer replays missed cycles or floods casts (client base patch 0026).
@@ -766,7 +768,7 @@ Mercado Pago in BRL, PayPal in USD; one USD price table (`shop_coins_config.lua`
   Mercado Pago account; abroad: whatever the operator's country requires).
 - PayPal's donation category (`CHAOS_PAYPAL_CATEGORY=DONATION`) may require a registered charity or nonprofit in some
   countries; if PayPal refuses it, set `DIGITAL_GOODS`: the item stays labelled "voluntary donation".
-- Publish a refund policy (Rules page): a refund or chargeback after the coins were credited takes back the coins still
+- The refund policy is in the Donation Terms (docs/legal/donations.*.md, linked from the donation page): a refund or chargeback after the coins were credited takes back the coins still
   unspent (`removeCoinsOnReversal` in `shop_coins_config.lua`) and staff see it in the admin panel (Store > Donations:
   refunds and chargebacks).
 - Set the real prices (`usdCents` of each pack) before launch: the ones in the repository are placeholders.

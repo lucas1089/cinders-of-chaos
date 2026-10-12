@@ -46,6 +46,8 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `overlay/plugins/chaos/guildwar_lib.php`, `pages/guildwars.php` | the guild wars declared in game (read only, from the game's `chaos_guildwar` / `chaos_guildwar_kills`): `page.php?plugin=chaos&p=guildwars` (menu The World > Guild Wars): the running wars (score, terms, time left) and the latest ended ones (winner, gold won, end reason, kills the anti-farming rules did not count); see server/README.md "Guild wars in game" |
 | `tests/chaos_guildwars_page_test.php` | `php website/tests/chaos_guildwars_page_test.php`: the wars page (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/mentor_lib.php`, `pages/mentors.php` | the mentors who opted in (card, class, graduates, free places) and the totals, read only from the game's `chaos_mentor*` tables: `page.php?plugin=chaos&p=mentors` (menu The World > Mentors; see "Mentors") |
+| `overlay/plugins/chaos/legal_lib.php`, `pages/legal.php` | the legal pages: Terms of Use, Privacy Policy, Donation Terms in Portuguese and English, from `docs/legal/` (see "Legal pages") |
+| `tests/chaos_legal_pages_test.php` | `php website/tests/chaos_legal_pages_test.php`: the pages, the renderer's escaping, the footer links, the Terms checkbox and its refusal, the acceptance row, the donation notes before and after payment (php-cli only, a fake database) |
 | `tests/chaos_mentors_page_test.php` | `php website/tests/chaos_mentors_page_test.php`: the Mentors page (php-cli with pdo_sqlite) |
 | `tools/recolor_layout.py` | turns Void's stylesheets into ours at install time |
 | `tools/gen_site_art.py` | draws the site art and the promotion material |
@@ -256,6 +258,32 @@ to the server block, so `REMOTE_ADDR` is the visitor's address.
 - **E-mail**: a taken and a malformed e-mail address get the same answer, "Please use another e-mail address."
   (`locale/en.php`), never "already in use". A taken address still cannot be used twice, so someone who tries many
   addresses can still tell; the limit per address and reCAPTCHA make that slow.
+
+## Legal pages
+
+The Terms of Use, the Privacy Policy and the Donation Terms. Drafts: a lawyer reviews them before launch, and the
+owner fills in the placeholders (docs/legal/README.md lists both).
+
+- **Source**: `docs/legal/<doc>.<lang>.md`, doc `terms`, `privacy` or `donations`, lang `pt-BR` (prevails) or `en`.
+  `install_site.sh` copies them to `plugins/chaos/legal/` after the overlay (the `.md` deny rule keeps them from being
+  served raw) and warns while placeholders such as `[NOME DO RESPONSÁVEL]` are left.
+- **Page**: `page.php?plugin=chaos&p=legal&doc=terms|privacy|donations`, Portuguese by default, `&l=en` for English
+  (not `lang`, which is ZnoteX's own switch). Tabs for the three texts and the other language. `legal_lib.php` renders
+  the Markdown subset the texts use (headings, paragraphs, lists, tables, bold, links); every value is escaped, a link
+  goes only to another legal text, a site path (`/...`) or an `https://` address, and a placeholder left in is marked.
+- **Links**: the copyright line of every page's footer (`locale/en.php` `void.footer.copyright`, so an edited theme
+  footer text keeps them), the account creation form, the donation page and the Rules page (section 8).
+- **Account creation**: `register_form.php` has the checkbox "I accept the Terms of Use and the Privacy Policy" (with
+  the Portuguese text and the note for under-18s). A post without it gets an error through our `register_header`
+  view (as the referral code and the per-IP limit), so register.php creates nothing. With it, the
+  `account.registered` hook writes `chaos_legal_acceptance` (`install.sql`: account, version = the first 16 hex digits
+  of the SHA-256 of the three Portuguese texts, time; no IP). With `CHAOS_LAYOUT=void` the checkbox and the check are
+  not there (the views are ours).
+- **Donations**: before payment the donation page adds to the voluntary notice, in English and Portuguese: no right to
+  a refund except where the law requires one, not the purchase of a product, Chaos Coins have no real-world value, and
+  a link to the Donation Terms. A paid or credited order repeats that it was a voluntary donation and not a purchase. The
+  site sends no mail after a donation.
+- Test: `php website/tests/chaos_legal_pages_test.php`.
 
 ## Mail
 
