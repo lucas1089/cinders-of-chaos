@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Tests of loadtest.py: why a bot did not enter the game, the grouped report lines, the bots' password hashes.
+"""Tests of loadtest.py: why a bot did not enter the game, the grouped report lines, the bots' password hashes, the
+spread over temples and hunting areas.
 
 Run: python3 -I server/tools/loadtest_test.py (standard library only; a fake login server on 127.0.0.1)."""
 import asyncio
@@ -57,6 +58,41 @@ eq(lt.password_hash('loadbot', 0), hashlib.sha1(b'loadbot').hexdigest(), '0 iter
 a = lt.parse(['setup'])
 eq(a.hash_iterations, 120000, 'default iterations = the server default')
 eq(lt.parse(['run', '--login-timeout', '30']).login_timeout, 30.0, '--login-timeout')
+
+# ---------------------------------------------------------------- --spread: temples and hunting areas of chaos_poi.lua
+POI = """return {
+	marks = {
+		{k = "temple", x = 100, y = 200, z = 7, n = "Temple of A", r = 0},
+		{k = "depot", x = 1, y = 2, z = 7, n = "Depot", r = 0},
+		{k = "temple", x = 300, y = 400, z = 6, n = "Temple of B", r = 0},
+		{k = "hunt", x = 1000, y = 2000, z = 8, n = "Hunting: Rat (level 1-10)", r = 1},
+		{k = "hunt", x = 3000, y = 4000, z = 9, n = "Hunting: Wolf (level 10-20)", r = 1},
+		{k = "hunt", x = 5000, y = 6000, z = 10, n = "Hunting: Bear (level 20-30)", r = 1},
+	},
+}"""
+marks = lt.poi_marks(POI)
+eq(len(marks), 5, 'temples and hunts only')
+eq(marks[0], ('temple', 100, 200, 7), 'first mark')
+eq([m[1] for m in lt.poi_marks(POI, 15) if m[0] == 'hunt'], [1000, 3000], 'areas above the level left out')
+eq(len(lt.poi_marks(POI, 0)), 5, '0: every area')
+pos = lt.spread_positions(marks, 9, 1 / 3.0)
+eq(len(pos), 9, 'one position per bot')
+eq(pos, lt.spread_positions(marks, 9, 1 / 3.0), 'deterministic')
+for i, (x, y, z) in enumerate(pos[:3]):
+    t = [(100, 200, 7), (300, 400, 6)][i % 2]
+    eq(z == t[2] and abs(x - t[0]) <= 5 and abs(y - t[1]) <= 5, True, 'bot %d round its temple' % i)
+for i, (x, y, z) in enumerate(pos[3:]):
+    h = [(1000, 2000, 8), (3000, 4000, 9), (5000, 6000, 10)][i % 3]
+    eq(z == h[2] and abs(x - h[0]) <= 3 and abs(y - h[1]) <= 3, True, 'bot %d in its hunting area' % (i + 3))
+eq(all(p[2] in (8, 9, 10) for p in lt.spread_positions(marks, 4, 0)), True, 'town share 0: all hunting')
+try:
+    lt.spread_positions([('temple', 1, 1, 7)], 3, 0.5)
+    eq('no error', 'ValueError', 'no hunting marks')
+except ValueError:
+    eq(True, True, 'no hunting marks')
+eq(lt.parse(['setup', '--health', '60000']).health, 60000, '--health')
+eq(lt.parse(['run', '--hunt']).hunt, True, '--hunt')
+eq(lt.parse(['run']).hunt, False, 'no --hunt')
 
 # ---------------------------------------------------------------- a fake login server: the refusal text reaches the report
 KEY = [1, 2, 3, 4]

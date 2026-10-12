@@ -67,7 +67,7 @@ sudo install -d -m 0755 /etc/chaos
 sudo cp server/deploy/chaos.env.example /etc/chaos/chaos.env      # fill in CHAOS_DB_* and CHAOS_CLIENT_KEY (never commit it)
 sudo chmod 600 /etc/chaos/chaos.env
 python3 -I server/tools/prod_config.py /opt/chaos/server --public-host play.example.org --name "Cinders of Chaos" \
-    --motd "Welcome to Cinders of Chaos." --max-players 300 --pvp pvp --save-time 06:00 --owner "..." --url "https://..." \
+    --motd "Welcome to Cinders of Chaos." --max-players 400 --pvp pvp --save-time 06:00 --owner "..." --url "https://..." \
     [--client-url https://.../download] [--client-builds 4,5] [--client-manifest /path/updates/live/manifest.json] \
     [--proxy-trusted GW1,GW2,GW3 --proxy-required yes]
 ```
@@ -80,7 +80,7 @@ python3 -I server/tools/prod_config.py /opt/chaos/server --public-host play.exam
 | `ip` | the public DNS name (`--public-host`) | the login server hands it to the client as text and the client resolves it, so a DNS change needs no restart. Behind gateways it is the gateways' name, never the real server's IP (section "Gateways and DDoS"); 127.0.0.1 only works on the machine itself |
 | `loginProtocolPort` / `gameProtocolPort` / `statusProtocolPort` | 7171 / 7172 / 7171 | the stock ports (the test servers use 74xx) |
 | `serverName`, `motd`, `ownerName`, `ownerEmail`, `url`, `location` | ours | the download ships its own name and someone else's contact data |
-| `maxPlayers` | e.g. 300 | 0 means unlimited; pick a number from the load test (section 9) |
+| `maxPlayers` | 400 at launch (the default), 300 for the beta | from the full-map load test (section 9): the game loop's one thread fills up at 500-600 bots on the 4-core test machine, and real players cost more than bots. Raise to 500 after a launch week whose peak kept the lag low; 0 means unlimited |
 | `worldType` | `pvp` (or `no-pvp`, `pvp-enforced`) | the arena and the guild siege never use real deaths, so they work in every type |
 | `allowClones`, `onePlayerOnlinePerAccount` | false, false | the multi-client rules live in `multiclient.lua` (2 characters per IP; the second cannot attack players or enter dungeons) |
 | `serverSaveShutdown` | **true** (kept) | the daily save shuts the engine down; systemd starts it again (section 5), so each day starts with a fresh process |
@@ -368,8 +368,17 @@ Other manual checks:
   Measured on the test server (cropped map, so no monsters; the real map adds spawn and monster AI work): 30 bots walking
   every second and talking every 20 s took 4.5 % of one core (p95 7.9 %), the engine stayed at 192 MB RSS, and the
   game loop lag stayed at the idle level (about 53 ms on a 50 ms timer; max 122 ms); 30 bots walking 4 steps per
-  second and talking every 3 s: 7.0 % (max 11 %). Logins took 0.5 s (p95 1.2 s). Run it again on the full map with
-  50-100 bots before setting `maxPlayers`.
+  second and talking every 3 s: 7.0 % (max 11 %). Logins took 0.5 s (p95 1.2 s).
+  **On the full map** (server/README.md "Load test on the full map"; engine 0001-0032, every install step, a fresh
+  database, 4 vCPU Xeon 2.1 GHz shared with other jobs): bots spread over the towns and hunting areas, walking, talking
+  and fighting (`setup --spread`, `run --hunt` with the TEST ONLY `server/tools/loadtest_hunt.lua`). The game loop was
+  busy 11% at 100, 19% at 200, 39-79% at 300 (6 runs), 83% at 400-499 and 96-99% from 500 up; the timer lag stayed
+  51-75 ms on average up to 499 and went to 150-200 ms (maxima 0.6-1.5 s) above 500. RSS 4.6-4.7 GB (the map is
+  4.55 GB), 0.6-1.3 KB/s per player to the clients, the database at 5 connections and 5-40 queries a second. A rush of
+  300 first logins 0.2 s apart into the fresh database: login p50 0.33 s, p90 0.58 s, 300 of 300. The limit is the
+  game loop's one thread; slow COMMITs (an autosave tick of 0.3-0.8 s) came from a shared disk. Engine patch 0032 came
+  out of it (a quarter of the game loop was spent clearing 90 KB network buffers). `maxPlayers`: 300 for the beta, 400
+  at launch (section 3), on a VPS with a fast core (3 GHz or more), 16 GB RAM and a local NVMe disk for MariaDB.
 
 ## 10. Security review (launch)
 
@@ -418,7 +427,8 @@ Settled since the review:
 Check the server folder before the first start (`ls data/scripts data/scripts/talkactions data/monster/monsters`):
 - `ztest/` in the server root and every `data/scripts/zz_*` / `data/scripts/talkactions/zz_*` file of the test servers,
   above all **`zz_test_lua.lua`: `/lua <code>` runs any Lua for any player, no access check at all**;
-  `zz_balance_harness.lua`, `zz_ztest_arena_startup.lua`, a copy of `server/tools/loadtest_probe.lua`;
+  `zz_balance_harness.lua`, `zz_ztest_arena_startup.lua`, a copy of `server/tools/loadtest_probe.lua` or
+  `server/tools/loadtest_hunt.lua`;
 - `data/monster/monsters/ztest_chaos_dummy.xml` (and its line in `monsters.xml`);
 - the cropped test map: `mapName = "zcrop_..."` (`prod_config.py` refuses it) and its `.otbm`;
 - test switches, all off by default; never set them on the live server: the global storage
@@ -442,7 +452,6 @@ Still open:
 - Keystones not verified in game: Overgrowth, both Illusionist keystones (need a party), arrow Ricochet, and the
   visuals of Bulwark / Thorns / Deadeye. The weapon (auto-attack) numbers in `server/data/spells/README.md` need a
   re-measure (ROADMAP "Open decisions").
-- The load test on the full map with 50-100 bots, then `maxPlayers` (section 9).
 - The class lines: the Necromancer, Monk and Templar are tested in game (phase B) and stay behind the store's class
   unlock; their price (750 Chaos Coins) is a placeholder (docs/OWNER_TODO.md). C2 / C3 polish and the C4 outfits and
   effects are still in progress (ROADMAP).
@@ -471,7 +480,7 @@ Done or decided since the first version of this list (ROADMAP "Open decisions an
    the live credentials.
 9. Backups: run `chaos-backup.service` once, check the off-site copy, do the restore drill (section 7).
    Alerts: `chaos_health.py --test-alert`, then `--dry-run` shows every check `ok` (section 9).
-10. Load test on the full map, then set `maxPlayers` (section 9).
+10. `maxPlayers` 400 (section 3; load test on the full map in section 9); `loadtest.py cleanup` if bots were run.
 11. Open the firewall ports, announce.
 
 ## Incident runbook

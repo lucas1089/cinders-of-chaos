@@ -36,7 +36,8 @@ Notes:
 
 **Owner decides.** Recommendation: an **open beta**. Anyone makes an account on the website and plays with the official
 client (the client guard is on, `clientGuardMode = "enforce"`, docs/LAUNCH.md section 3).
-- `maxPlayers` from the load test (docs/LAUNCH.md section 9); 300 until it is measured on the full map.
+- `maxPlayers` 300 (`prod_config.py --max-players 300`): the full-map load test (docs/LAUNCH.md section 9, server/README.md
+  "Load test on the full map") filled the game loop at 500-600 bots; the beta keeps it under half busy. Launch: 400.
 - The normal rules apply: two characters per IP (`multiclient.lua`), the Rules page, reports and bans (docs/GM_HANDBOOK.md).
 - The website's register guard, reCAPTCHA keys and SMTP must be live (docs/OWNER_TODO.md "Accounts and services").
 - Alternative: a closed beta with invitations. Nothing in the code issues invitations, so it would be a manual list of
@@ -157,7 +158,7 @@ Weekend 1 (31 Oct to 1 Nov): fresh characters, the real start, and load.
 
 | What | How | ROADMAP |
 |---|---|---|
-| Load and spawn density | many real players at once on the full map; watch the game loop lag, CPU, RAM and the 300-600 hunting areas | #27 (load test open), #89 |
+| Load and spawn density | many real players at once on the full map; watch the game loop lag, CPU, RAM and the 300-600 hunting areas | #27 (bots: the game loop fills at 500-600; compare real players with it), #89 |
 | New player flow | tutorial island, class kits, gifts at 20 / 50, website sign-up, the official client, the updater | #21, #22, #82 |
 | Bounty and bestiary party credit | two or more players in a party on one contract / kill task; kills shared within 30 tiles | #10, #35 |
 | Rifts with a real party | low tiers with 2-5 players: party scaling (+100% health and +10% damage per extra player), chest bonus per finisher, shared lives, logout and death in a party | #8 |

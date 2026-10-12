@@ -1,0 +1,43 @@
+# The network message buffer is not cleared any more. This engine's NETWORKMESSAGE_MAXSIZE is 90459 bytes, and
+#   * 0007's "buffer[...] = {}" (networkmessage.h) made every NetworkMessage built on the stack (one per packet piece the
+#     game sends: a creature step, an effect, a missile, a text) copy 90 KB of zeros: undone here;
+#   * every new OutputMessage of the pool was value-initialised by allocate_shared (OutputMessage() = default), which
+#     clears the whole 90 KB object (stock behaviour, made 4 times larger by the base server's message size): the
+#     constructor is user-provided now, so only the members with an initialiser are set.
+# The full-map load test (server/README.md "Load test on the full map") found the two as the largest single cost of
+# the game loop: memcpy / memset in ProtocolGame::send* and OutputMessagePool::getOutputMessage, about 24% of the
+# dispatcher thread's samples at 300 online. No byte that was not written reaches the network: every outgoing byte
+# comes from an add* call or append, the XTEA padding is written as 0x33, the one outgoing skipBytes
+# (ProtocolGame::onConnect, the checksum) is filled again, and reads past the received length are refused (canRead).
+# Protocol::key stays zeroed (0007). Guard: tools/netmsg_buffer_patch_test.py (CI).
+# Applies after 0001-0031.
+--- a/src/networkmessage.h
++++ b/src/networkmessage.h
+@@ -161,7 +161,12 @@
+ 		};
+ 
+ 		NetworkMessageInfo info;
+-		uint8_t buffer[NETWORKMESSAGE_MAXSIZE] = {};
++		// Chaos (patch 0032): not zeroed. NETWORKMESSAGE_MAXSIZE is 90459 here, and "= {}" made every NetworkMessage
++		// on the stack (one per send: each creature move, effect, missile, text) copy 90 KB of zeros (with the cleared
++		// OutputMessage, outputmessage.h: about a quarter of the game loop at 300 online). Every byte that is sent is written
++		// first (add*, the XTEA padding is 0x33, the one outgoing skip in ProtocolGame::onConnect is filled again), and a
++		// read past the received length is refused (canRead), so no unwritten byte reaches the network or a script.
++		uint8_t buffer[NETWORKMESSAGE_MAXSIZE];
+ 
+ 	private:
+ 		bool canAdd(size_t size) {
+--- a/src/outputmessage.h
++++ b/src/outputmessage.h
+@@ -13,7 +13,10 @@
+ class OutputMessage : public NetworkMessage
+ {
+ 	public:
+-		OutputMessage() = default;
++		// Chaos (patch 0032): a user-provided constructor, so OutputMessagePool's allocate_shared<OutputMessage>() (a
++		// value-initialisation) no longer clears the whole object, 90 KB, for every output message; the members still get
++		// their initialisers (info, outputBufferStart), the buffer is written before it is sent (networkmessage.h)
++		OutputMessage() {}
+ 
+ 		// non-copyable
+ 		OutputMessage(const OutputMessage&) = delete;

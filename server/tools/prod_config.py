@@ -23,7 +23,10 @@ What it sets, and why (docs/LAUNCH.md has the full checklist):
   serverName, motd        what the character list and the login box show (the base server ships its own name)
   ownerName, ownerEmail, url, location
                           the status protocol answer (server lists); the base server ships someone else's values
-  maxPlayers              0 = unlimited in the engine; set a real cap from the load test (server/tools/loadtest.py)
+  maxPlayers              --max-players, default 400: the launch cap from the full-map load test (server/README.md
+                          "Load test on the full map": the game loop's one thread fills up at 500-600 bots on the
+                          4-core test machine; real players cost more than bots). The beta runs with --max-players
+                          300 (docs/BETA.md). 0 = unlimited in the engine
   worldType               "pvp" (default), "no-pvp" or "pvp-enforced"; the arena and the guild siege work in every
                           type (they never use real deaths)
   allowClones = false, onePlayerOnlinePerAccount = false
@@ -139,7 +142,7 @@ def settings(opts, text=''):
         ('ownerEmail', lua_string(opts.get('--email', ''))),
         ('url', lua_string(opts.get('--url', ''))),
         ('location', lua_string(opts.get('--location', ''))),
-        ('maxPlayers', str(int(opts.get('--max-players', '300')))),
+        ('maxPlayers', str(int(opts.get('--max-players', '400')))),
         ('worldType', lua_string(opts.get('--pvp', 'pvp'))),
         ('allowClones', 'false'),
         ('onePlayerOnlinePerAccount', 'false'),

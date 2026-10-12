@@ -127,6 +127,9 @@ server/
   src-patches/0031-login-reads-prefetch.patch   engine: the login scripts' SELECTs run on the login worker's own
                                       connection before the login; config loginPrefetch, on by default (see "Login reads
                                       off the game loop"; tools/chaosprefetch_test.cpp)
+  src-patches/0032-network-message-buffer.patch   engine: a network message is no longer cleared (90 KB copied or
+                                      zeroed per packet piece sent: about a quarter of the game loop at 300 online); undoes
+                                      the buffer part of 0007 (see "Load test on the full map"; tools/netmsg_buffer_patch_test.py)
     rightclick_equip.lua  rightclick_equip_core.lua  rightclick_equip_config.lua (the client option and the multi-use
                                       weapon list, opcode 188, see "Right-click equips")
     kitewalk.lua  kitewalk_core.lua (the client option "Keep attacking while moving", opcode 186, storage 7101820, see
@@ -3784,6 +3787,87 @@ to the database.
 
 Tests: `tools/chaosprefetch_test.cpp` in CI (which reads are prefetched, what a write writes from its first tokens,
 templates, the cascade and trigger closure, the clock with transactions and autocommit, the template set).
+
+## Load test on the full map (`tools/loadtest.py`, `tools/loadtest_hunt.lua`, `src-patches/0032-network-message-buffer.patch`)
+
+The launch audit's open item: how many players the full map holds, and `maxPlayers` for the beta and the launch.
+
+**Setup.** Engine with patches 0001-0032 (the 0032 numbers below; the before/after pairs used 0001-0030), the base
+server from the `windows-assets` branch with every `install_all.py` step and the production `config.lua` of
+`prod_config.py` (client guard on, the bots use the development key), the full map (RSS 4.55 GB at 0 players), a private
+MariaDB 10.11 (default settings: one fsync per commit), `slowTaskLogMs = 50`. A fresh database before the first run.
+The bots: `loadtest.py setup --spread data/chaos_poi.lua`: a third round the 20 temples, the rest over the hunting areas of
+level 150 and below (level 100 characters, 1500 health); `run --hunt`: they walk a step a second, talk every 20 s and
+fight. `tools/loadtest_hunt.lua` (TEST ONLY, next to the probe) gives every bot near a monster that monster as its
+target (chase on) and keeps the bots alive; about 70-90 of 300 were fighting at any time. Measured: every game loop
+task (a TEST ONLY timing histogram in a local build, not a patch), the slow task log, the probe's timer lag, CPU per
+core and per engine thread and RSS every 5 s, the database's status counters and its slow query log (50 ms and more),
+an autosave pass (SIGUSR1) in each run. The machine: 4 vCPU Intel Xeon @ 2.1 GHz (no SMT), 16 GB, one disk; the
+bots ran on the same machine (about one core at 300 bots), and other jobs ran beside it in several runs (noted).
+
+| Bots | dispatcher busy | task p50 / p99 / max | tasks >= 100 ms | timer lag avg / max | engine CPU (busiest thread) | RSS | to the bots per player | autosave pass (longest tick) |
+|---|---|---|---|---|---|---|---|---|
+| 100 | 11% | 0.01 / 0.81 / 131 ms | 0.1 a minute | 50.8 / 149 ms | 13% (9%) of one core | 4.63 GB | 0.7 KB/s | 2.0 s (29 ms) |
+| 200 | 19% | 0.01 / 0.95 / 305 ms | 1.4 a minute (the save's COMMITs) | 51.4 / 309 ms | 24% (17%) | 4.64 GB | 0.8 KB/s | 6.8 s (305 ms: a 300 ms COMMIT) |
+| 300 | 39% | 0.01 / 0.57 / 774 ms | 5.2 a minute (the save's COMMITs) | 57.8 / 803 ms | 46% (33%) | 4.65 GB | 0.6 KB/s | 22.4 s (774 ms: COMMITs of 430-670 ms, other jobs on the disk) |
+| 300, other runs | 50-79% | 0.01 / 0.57-0.98 / 95-312 ms | 0-38 a minute | 52-75 / 146-432 ms | 65-92% (45-78%) | 4.63-4.66 GB | 0.6-1.0 KB/s | 3.4-5.2 s (26-55 ms) on a calm disk |
+| 700 (ramp, 0.3 s apart) | 98% | 0.01 / 0.49 / 819 ms | 69 a minute, 63 of 250 ms and more in 4.5 min | 182 / 1,481 ms | 83% (67%: the machine was full) | 4.71 GB | 1.3 KB/s | 46.8 s (121 ms) |
+
+The 300 line is the fresh database run; the other 300 runs (6, before and after 0032, with the base weather's rain on or
+off and other jobs beside them) show how much it varies. The database was never the limit: 5 connections (main, the
+async thread, the two login workers, the sampler), 5-12 queries a second at 100-300 online and 40 at 700, 0.2-2.6
+commits a second, 0.3-8% of one core; the only slow queries were COMMITs (and a few INSERTs) while other jobs wrote to
+the same disk.
+
+**Where it breaks.** The game loop's one thread. In the ramp to 700 (per 100 bots): dispatcher busy 19% (0-99), 33%,
+43%, 67% (300-399), 83% (400-499), 96% (500-599), 99% (600-699); the timer lag stayed at 52-74 ms on average up to 499
+online, went to 151 ms at 500-599 and 180-200 ms with maxima of 0.6-1.5 s above 600 (36-69 tasks of 100 ms and more a
+minute). CPU of the other cores, RAM and the database had room left. All 700 bots logged in (login p50 0.28 s, p90
+1.2 s) and none were dropped; the game lagged. The machine was full in the ramp (bots, engine, other jobs; load 15), so
+the engine's thread got 67-75% of a core: on a core of its own the knee moves up, not down.
+
+**Login rush.** 300 bots 0.2 s apart into a fresh database (every character's first login): with 0001-0032, 300 of 300,
+login p50 0.33 s, p90 0.58 s, max 0.80 s (character list p50 53 ms); the first-login writes of `achievements.lua:841`
+were 207 tasks of 50-191 ms in the 90 s wave. The first fresh run, with 0001-0030 and another job beside it, was much
+slower: login p50 9.8 s, p90 15.0 s, max 17.9 s, 300 of 300, the dispatcher 82% busy in the wave with 81 tasks of 250 ms
+and more (`achievements.lua:841` and `daily.lua:371` waiting 140-190 ms on a single INSERT or `players_record` UPDATE).
+A launch rush is limited by the disk's fsync time of the first logins' writes, not by the password check.
+
+**Found and fixed: 0032, the network message buffer.** `perf` on the dispatcher thread at 300 online: 18.4% of the
+samples in `memmove` inside `ProtocolGame::sendDistanceShoot` (and every other send) and 5.6-6.5% in `memset` from
+`OutputMessagePool::getOutputMessage`. This engine's `NETWORKMESSAGE_MAXSIZE` is 90,459 bytes; 0007 made the buffer
+`= {}`, so every `NetworkMessage` on the stack (one per packet piece the game sends) copied 90 KB of zeros, and
+`allocate_shared<OutputMessage>()` value-initialised (cleared) every new output message, 90 KB. 0032 takes the
+initialiser out and gives `OutputMessage` a user-provided constructor; every byte that is sent is still written first
+(the add calls, XTEA padding 0x33, the one outgoing skip in `ProtocolGame::onConnect` filled again). After it the two
+are 0.26% each. Two before/after pairs, 300 bots, 5 minutes each, in turns: the dispatcher thread 45.6% / 45.5% of a
+core after against 52.8% / 51.2% before, dispatcher busy 51% / 50% against 60% / 55%, task p99 0.65 ms against
+0.93 ms, RSS 25 MB less. Guard: `tools/netmsg_buffer_patch_test.py` (CI).
+
+**The slow task log's top offenders** (300 online, 10 minutes):
+- the save's COMMITs (`Game::saveIncrementalStep`, 0 ms of Lua): 0.3-0.8 s each while other jobs used the disk, 26-55 ms
+  otherwise. A COMMIT waits for the log flush on the game loop ("Left as it is" above). Production: the database on a
+  local SSD / NVMe; `innodb_flush_log_at_trx_commit = 2` would take the flush off the commit (an OS crash loses up to a
+  second of saves); owner decision, not set;
+- the base server's `events/scripts/creature.lua:22` (`Creature:onTargetCombat`: registers three creature events on
+  the target at every attack) and `deathrecap.lua:213` (the collector's sweep of 5-6 MB lands in these calls): 20-30
+  tasks of 50-100 ms; at 700 online 240 and 435 tasks, up to 819 ms (part of the saturation, no fix here);
+- logins: `achievements.lua:841`, `customs/tasks/tasks.lua:800` (base), `mentor.lua:1125`: 50-190 ms at a first
+  login, under 100 ms after.
+- With `--area-level 0` (level 100 bots in level 400 areas) the bots' near-deaths ran the 19 prepare-death events about
+  150 times a second (tasks up to 300 ms, `deathrecap.lua:213`); `loadtest_hunt.lua` keeps them healed for that reason.
+  A real player pays it once per death.
+
+**maxPlayers.** Assumed production VPS: 4-8 dedicated vCPU at 3 GHz or more (a newer core runs the single game loop
+thread about 1.3-1.6 times as fast as this 2.1 GHz Xeon), 16 GB RAM (the engine needs 4.7 GB at 700), a local NVMe disk
+for MariaDB, 100 Mbit/s or more (0.6-1.3 KB/s per player, about 4 Mbit/s for 400). Real players cost more per head than
+these bots (spells and area attacks, more monsters woken in more places, trading, depot and market work, the rain):
+counted as 1.5-2 bots. The knee here is 450-500 bots (dispatcher 83-96%); on the assumed VPS about 600-750 bots, so
+300-500 real players.
+- **Beta: 300** (`prod_config.py --max-players 300`). The dispatcher stays under half busy with room for the unknowns;
+  measure the beta weekend (the probe lag, the slow task log for an hour at the peak).
+- **Launch: 400** (the `prod_config.py` default). Raise to 500 after a week whose peak hour kept the timer lag under
+  70 ms on average and the slow task log (`slowTaskLogMs = 100`) under a few tasks a minute; lower to 300 if it did not.
 
 ## Town names (`tools/patch_base_towns.py`, `tools/base_towns.csv`, `tests/base_towns_patch_test.lua`)
 

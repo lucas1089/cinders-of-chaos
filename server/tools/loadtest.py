@@ -4,12 +4,12 @@
 Standard library only (Python 3.7+). Three commands:
 
   setup    create the bot accounts and characters in the game database (mysql client; CHAOS_DB_* as for backup.sh)
-             python3 -I server/tools/loadtest.py setup --count 30 [--pos 1500,1500,7] [--town 1] [--vocation 4]
-                 [--hash-iterations 120000]
+             python3 -I server/tools/loadtest.py setup --count 30 [--pos 1500,1500,7 | --spread SERVER/data/chaos_poi.lua]
+                 [--town 1] [--vocation 4] [--hash-iterations 120000] [--town-share 0.34] [--area-level 150] [--health 1500]
   run      log the bots in, walk, talk, measure, print a report
              python3 -I server/tools/loadtest.py run --count 30 --host 127.0.0.1 --port 7171 --duration 120
                  [--server-pid PID] [--server-log PATH] [--key key.pem] [--ramp 0.5] [--walk 1.0] [--say 20]
-                 [--dev-key | --client-key HEX] [--client-build N] [--login-timeout 20]
+                 [--dev-key | --client-key HEX] [--client-build N] [--login-timeout 20] [--hunt]
   cleanup  delete the bot characters and accounts again
              python3 -I server/tools/loadtest.py cleanup
 
@@ -17,7 +17,17 @@ Accounts are named loadbot0000..., password "loadbot", stored as the website sto
 which must equal the server's passwordHashIterations, default 120000; one salt for all bots). --hash-iterations 0 writes
 the old unsalted SHA-1, which every first login re-hashes and writes back: only to test that migration, it is not what a
 new player's login costs. One character each ("Loadbot Aaa", "Loadbot Aab", ...), level 100, placed at --pos (spread
-over a square around it) with lastlogin set, so the new-player tutorial and kit do not start.
+over a square around it) with lastlogin set, so the new-player tutorial and kit do not start. --spread reads the
+installed server's map markers (data/chaos_poi.lua, install step poi) and spreads the bots over the towns and the hunting
+areas instead: --town-share of them (default 0.34) round the 20 temples, the rest over the hunting areas whose level
+band starts at --area-level or below (default 150: the bots are level 100; 0 = every area), a few tiles around each
+marker (a blocked tile puts the character on the nearest free one, or at its temple).
+Hunting: --hunt sends the fight modes (offensive, chase on) after entering. The bots cannot pick a monster themselves
+(that needs the creature ids of the map description, which they do not parse), so the TEST ONLY script
+server/tools/loadtest_hunt.lua gives every bot near a monster that monster as its target and keeps the bots alive; with
+it the bots fight the monsters of their hunting area (melee, the monsters' spells, loot, respawn) and never die (a real
+player dies now and then; a level 100 bot in a level 400 area would nearly die every second, and every lethal hit runs
+all prepare-death events, which is not what players cost). --health sets the bots' health.
 Never run setup against a live database you cannot clean: cleanup removes exactly the loadbot accounts and their
 characters.
 
@@ -348,6 +358,9 @@ class Bot:
         self.entered = time.monotonic()
         self.alive = True
         reader = asyncio.ensure_future(self.drain())
+        if self.args.hunt:
+            # fight modes as the client sends them: offensive, chase on, secure (no unmarked players), pvp mode
+            self.conn.send(b'\xA0\x01\x01\x00\x00')
         try:
             await self.act(clock)
         finally:
@@ -636,20 +649,53 @@ def password_hash(password, iterations):
     return 'pbkdf2-sha256$%d$%s$%s' % (iterations, base64.b64encode(salt).decode(), base64.b64encode(key).decode())
 
 
+def poi_marks(text, max_area_level=0):
+    """[(kind, x, y, z)] of the temple and hunt marks of a data/chaos_poi.lua (gen_poi.py's format); with
+    max_area_level only the hunting areas whose level band starts at or below it ("... (level 70-90)")"""
+    out = []
+    for m in re.finditer(r'\{k = "(temple|hunt)", x = (\d+), y = (\d+), z = (\d+), n = "([^"]*)"', text):
+        band = re.search(r'\(level (\d+)-\d+\)', m.group(5))
+        if m.group(1) == 'hunt' and max_area_level and band and int(band.group(1)) > max_area_level:
+            continue
+        out.append((m.group(1), int(m.group(2)), int(m.group(3)), int(m.group(4))))
+    return out
+
+
+def spread_positions(marks, count, town_share):
+    """count positions: the first round(count * town_share) round robin over the temples (up to 5 tiles off), the
+    others over the hunting areas (up to 3 tiles off); the same marks and count give the same positions"""
+    temples = [m[1:] for m in marks if m[0] == 'temple']
+    hunts = [m[1:] for m in marks if m[0] == 'hunt']
+    if not temples or not hunts:
+        raise ValueError('no temple or no hunting marks (is it data/chaos_poi.lua of an installed server?)')
+    towns = int(round(count * town_share))
+    out = []
+    for i in range(count):
+        rnd = random.Random(i)
+        (x, y, z), off = (temples[i % len(temples)], 5) if i < towns else (hunts[(i - towns) % len(hunts)], 3)
+        out.append((x + rnd.randint(-off, off), y + rnd.randint(-off, off), z))
+    return out
+
+
 def setup(args):
-    x, y, z = (int(v) for v in args.pos.split(','))
-    side = max(1, int(args.count ** 0.5 + 0.999))
+    if args.spread:
+        with open(args.spread, errors='replace') as f:
+            positions = spread_positions(poi_marks(f.read(), args.area_level), args.count, args.town_share)
+    else:
+        x, y, z = (int(v) for v in args.pos.split(','))
+        side = max(1, int(args.count ** 0.5 + 0.999))
+        positions = [(x - side // 2 + i % side, y - side // 2 + i // side, z) for i in range(args.count)]
     pw = password_hash(PREFIX, args.hash_iterations)
     st = []
     for i in range(args.count):
         acc = '%s%04d' % (PREFIX, i)
         st.append("INSERT IGNORE INTO `accounts` (`name`, `password`, `email`) VALUES ('%s', '%s', '');" % (acc, pw))
-        px, py = x - side // 2 + i % side, y - side // 2 + i // side
+        px, py, z = positions[i]
         st.append("INSERT IGNORE INTO `players` (`name`, `account_id`, `group_id`, `vocation`, `level`, `health`, "
                   "`healthmax`, `experience`, `mana`, `manamax`, `cap`, `town_id`, `posx`, `posy`, `posz`, `lastlogin`, "
-                  "`looktype`) SELECT '%s', `id`, 1, %d, 100, 1500, 1500, 15694800, 500, 500, 1500, %d, %d, %d, %d, "
+                  "`looktype`) SELECT '%s', `id`, 1, %d, 100, %d, %d, 15694800, 500, 500, 1500, %d, %d, %d, %d, "
                   "UNIX_TIMESTAMP() - 86400, 128 FROM `accounts` WHERE `name` = '%s';"
-                  % (bot_name(i), args.vocation, args.town, px, py, z, acc))
+                  % (bot_name(i), args.vocation, args.health, args.health, args.town, px, py, z, acc))
     sql(args, st)
     out = sql(args, ["SELECT COUNT(*) FROM `players` p JOIN `accounts` a ON a.`id` = p.`account_id` "
                      "WHERE a.`name` LIKE '%s%%';" % PREFIX])
@@ -676,9 +722,10 @@ def parse(argv):
     defaults = {'--count': 30, '--host': '127.0.0.1', '--port': 7171, '--game-port': 0, '--duration': 120,
                 '--server-pid': 0, '--server-log': '', '--key': '', '--ramp': 0.5, '--walk': 1.0, '--say': 20.0,
                 '--pos': '1500,1500,7', '--town': 1, '--vocation': 4, '--db': '', '--client-key': '',
-                '--client-build': 1, '--login-timeout': 20.0, '--hash-iterations': 120000}
+                '--client-build': 1, '--login-timeout': 20.0, '--hash-iterations': 120000, '--spread': '',
+                '--town-share': 0.34, '--health': 1500, '--area-level': 150}
     vals = dict(defaults)
-    flags = {'--no-source-ips': False, '--dev-key': False}
+    flags = {'--no-source-ips': False, '--dev-key': False, '--hunt': False}
     i = 1
     while i < len(argv):
         k = argv[i]
@@ -693,6 +740,8 @@ def parse(argv):
         i += 1
     for k, v in list(vals.items()) + list(flags.items()):
         setattr(a, k.lstrip('-').replace('-', '_'), v)
+    if not 0 <= a.town_share <= 1:
+        sys.exit('--town-share 0..1')
     if a.count < 1 or a.count > 9999:
         sys.exit('--count 1..9999')
     if not 1 <= a.client_build <= 0xFFFF:
