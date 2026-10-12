@@ -4,6 +4,8 @@ This is the order to follow on launch day, and the list of what must be checked 
 here was run on the test server, except where a step says otherwise (the systemd units and the Windows client
 workflow could not be run in the build environment).
 
+After launch, every update goes through "Updating the live server" at the end.
+
 What you need:
 - the base server download (TFS 1.4 based, protocol 10.98): its `config.lua`, `data/`, `key.pem`, `SQL_Server/` and
   the engine sources;
@@ -505,6 +507,7 @@ Done or decided since the first version of this list (ROADMAP "Open decisions an
    Alerts: `chaos_health.py --test-alert`, then `--dry-run` shows every check `ok` (section 9).
 10. `maxPlayers` 400 (section 3; load test on the full map in section 9); `loadtest.py cleanup` if bots were run.
 11. Open the firewall ports, announce.
+12. From then on, every update: "Updating the live server" below (`server/deploy/chaos_update.sh`).
 
 ## Incident runbook
 
@@ -524,8 +527,9 @@ with the settings loaded: `sudo -i`, then `set -a; . /etc/chaos/chaos.env; set +
 **Crash loop** (several crash alerts in a few minutes):
 1. `ls -t /var/log/chaos/crashes/ | head` and read the newest `crash-*.log`: the last lines before the stop show the
    script or the action. `coredumpctl list tfs` when core dumps are kept (`LimitCORE=infinity`).
-2. It started after an update: roll the update back (`git -C /opt/chaos/repo checkout <last good commit>`, run
-   `install_all.py` again, or restore the data archive of section 7), then `systemctl restart chaos-server`.
+2. It started after an update: roll the update back with `chaos_update.sh --rollback --now` ("Updating the live
+   server", "Rollback"). By hand: `git -C /opt/chaos/repo checkout <last good commit>`, run `install_all.py` again, or
+   restore the data archive of section 7, then `systemctl restart chaos-server`.
 3. It started with no update: a player action or a bad row. Close the server to players while you look:
    `ufw insert 1 deny 7172/tcp` (the login still answers), fix, `ufw delete deny 7172/tcp`.
 4. To stop the loop while you work: `systemctl stop chaos-server` (it stays down until you start it).
@@ -852,3 +856,118 @@ old and new build in `clientGuardBuilds` for the switch, or point `clientGuardMa
 **Production is HTTPS.** The updater warns in the client log when the manifest URL is plain HTTP;
 `client/tools/serve_updates.py` (HTTP, local) is only for tests.
 
+
+## Updating the live server
+
+Every update after launch follows this routine. `server/deploy/chaos_update.sh` runs it on the game server, as root.
+Its test drives stubs, not a real systemd (`server/deploy/chaos_update_test.py`): watch the first live run closely.
+
+### Kinds of update
+
+| Kind | Changed in the release | What it needs |
+|---|---|---|
+| Lua and data | `server/data/`, `server/tools/` | `install_all.py`, then a restart. A small Lua fix can go out with `/reload` instead (below). |
+| Read only at start | `config.lua` values, `items.otb`, the map, its spawn and house files, vocations | `install_all.py` writes them; the engine reads them at the next start. |
+| Engine | `server/src-patches/` | A rebuild of the engine from the release (section 1), into a new file such as `/opt/chaos/build/tfs`, never over the running `/opt/chaos/server/tfs`. The script takes it with `--engine` and swaps it in while the server is down. |
+| Database | `server/sql/` | The `sql` step applies it: `CREATE TABLE IF NOT EXISTS` and plain updates, safe to repeat. A rollback does not undo it. |
+| Client files | `client/overlay/` | A signed client update, published from the owner's machine ("Client updates (signed updater)"). |
+| Client exe | `client/base-patches/` | A new package from `windows-package.yml` with a higher `Services.update.package`, then a signed update with `--min-package` set to it. List the new `client_build` in `clientGuardBuilds` first. |
+| systemd units, logrotate | `server/deploy/*.service`, `*.timer`, `chaos.logrotate` | Copy them again and `systemctl daemon-reload` (section 5). |
+| Website | `website/` | Its own install ("Website"). |
+
+The script lists the kinds found in the release before it asks to go on.
+
+### When
+
+**Default: at the daily save** (06:00, section 3). The engine saves, kicks everyone and stops then anyway, after the
+save warnings. `chaos_update.sh --at-save` waits for that stop, holds off systemd's restart meanwhile, installs and
+starts the server. Nobody loses progress.
+
+**Sooner:** start the in-game warning yourself: admin panel (opcode 120) > Server > Restart (countdown), a few minutes,
+reason "update". It warns at 60, 30, 10, 5, 2 and 1 minutes, at 30 and 10 seconds and the last five, then saves and
+stops. `--at-save` catches that stop the same way. "Cancel countdown" leaves the script waiting; Ctrl-C ends it and puts
+everything back.
+
+**`--now`** stops at once with `systemctl stop`. The engine saves every player first. Only for an empty or closed
+server, or an urgent fix after a Broadcast in the admin panel.
+
+**Hotfix without a restart: `/reload`.** It covers Lua the engine loads again: the revscripts of `data/scripts`
+(`/reload scripts`), creaturescripts, actions, movements, talkactions, globalevents, spells, monsters, NPCs and the
+`config.lua` keys read on `/reload config`. Engine patch 0012 makes `/reload scripts`, `creaturescripts` and
+`all` safe with players online (server/README.md "Engine: reloads and oversize messages"). It does not cover the engine,
+the items (`items.otb`, `items.xml`), the map, spawns, houses, vocations, any `install_all.py` step but `files`, or the database. A reload runs
+every script file again, so state a system keeps only in memory can reset: read its section in server/README.md first.
+The steps, as root:
+```
+git -C /opt/chaos/repo fetch --tags && git -C /opt/chaos/repo checkout --detach <tag>
+python3 -I /opt/chaos/repo/server/tools/install_all.py /opt/chaos/server --only files --dry-run
+python3 -I /opt/chaos/repo/server/tools/install_all.py /opt/chaos/server --only files
+chown -R chaos:chaos /opt/chaos/server/data
+```
+Then `/reload scripts` with a god character, or admin panel > Server > Reload system, and read the log for
+`Lua Script Error`. Run `chaos_update.sh --ref <tag> --at-save` for the same tag afterwards: it runs every step at the
+next save and records the release.
+
+### The routine
+
+On the owner's machine:
+1. **The patch note.** One player-facing file per update in `server/data/patchnotes/<date>.md` (format:
+   server/README.md "Patch notes"). Only what is live after this update: nothing still in testing, nothing turned
+   off. Drafts start with `_` and are skipped. It goes out with the release's data, so a rollback takes it back too.
+2. **The release.** CI green on `main`, then a tag on that commit: `git tag -a live-2026-11-05 -m "..."` and
+   `git push origin live-2026-11-05`. The server only installs tags.
+3. **The engine**, only when `server/src-patches/` changed: build it from the tag (section 1) and copy the binary to the
+   server, for example `/opt/chaos/build/tfs`.
+
+On the game server, as root, inside `tmux` (an `--at-save` run waits for hours):
+```
+/opt/chaos/repo/server/deploy/chaos_update.sh --ref live-2026-11-05 --check-only    # any time: what changes, the dry run
+/opt/chaos/repo/server/deploy/chaos_update.sh --ref live-2026-11-05 --at-save       # [--engine /opt/chaos/build/tfs]
+```
+The script, in order:
+1. Refuses a checkout with uncommitted or untracked files. The server runs a release exactly as it is in git.
+2. Records the deployed commit (`/var/lib/chaos/deploy/state`) and fetches the tag. Refuses a branch or a commit
+   without a tag, and engine patches without `--engine`.
+3. Backup first: `server/tools/backup.sh` with the SIGUSR1 save and the data archive (section 7). Stops if it fails.
+4. Checks out the tag and shows `install_all.py --dry-run`. A failed dry run puts the checkout back.
+5. Asks (`--yes` skips the question).
+6. Waits for the stop (`--at-save`) or stops (`--now`), holds the health, watchdog and backup timers, and dumps the
+   stopped database (`backup.sh --no-data`): the exact state before the install.
+7. Swaps in the new engine (the old one stays in `/var/lib/chaos/deploy/`), runs `install_all.py`, gives the server
+   folder back to the unit's user, starts the server and the timers.
+8. The checks of section 9 "After every restart and update": waits for the status protocol (the map load), counts new
+   `Lua Script Error` lines since the start, and prints `chaos_health.py --dry-run`. Exit status 2 when one fails.
+
+Until step 7 any failure leaves the old release running. Each run is logged in `/var/lib/chaos/deploy/update-*.log`
+and `history.log`. A second run for the same tag does nothing.
+
+After it:
+- Log in with a staff character and try what the update changed. Watch the health alerts for the next hour: a burst of
+  error lines right after an update is a bug in that update (section 9).
+- **Client files changed:** publish the signed update from the owner's machine with the offline key ("Client updates
+  (signed updater)": assemble from the same tag, dry run, publish, verify). Never on the game or web server.
+- **A new exe:** the package first, then the update with `--min-package`.
+- Delete old engines from `/var/lib/chaos/deploy/` now and then; keep the newest.
+
+### Rollback
+
+```
+/opt/chaos/repo/server/deploy/chaos_update.sh --rollback --now       # or --at-save
+```
+It backs up the broken state first (`--no-backup` skips that in an emergency), stops the server, checks out the
+recorded previous commit, puts back the old engine when the update replaced it, and restores `config.lua` and `data/`
+from the pre-update data archive. The maps, logs and reports are carried over; the replaced folder stays as
+`data.before-rollback-<time>`. Then it starts the server and runs the checks.
+
+The database is never restored by the script. Restore it only when the update damaged data: bad saves, or a
+`server/sql/` change the old release cannot read. That loses everything played since the dump. The script prints the
+dump of the stopped server taken right before the install; use it with "Incident runbook", "Rollback to the last
+backup".
+
+The towns and worldtexts steps change the map `.otbm` itself, and the rollback keeps the map as it is. When their lines
+in the dry run report a change, copy the map aside before the update (`cp -p`).
+
+**If the script died** while waiting with `--at-save` (a lost SSH session outside tmux), remove its drop-in, or the
+server stays down after the next daily save:
+`rm /run/systemd/system/chaos-server.service.d/50-chaos-update.conf && systemctl daemon-reload`, then put the checkout back
+(`git -C /opt/chaos/repo checkout --detach <the deployed commit in /var/lib/chaos/deploy/state>`).

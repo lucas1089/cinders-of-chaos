@@ -176,6 +176,11 @@ jobs:
           server/deploy/gateway/setup_gateway.sh 203.0.113.10 --dry-run > /dev/null
           server/deploy/firewall/setup_backend_firewall.sh 203.0.113.10,203.0.113.11 --admin-ips any --dry-run > /dev/null
 
+      - name: Live server update script (chaos_update.sh on a throwaway repo with stubs; update, refusals, rollback)
+        run: |
+          bash -n server/deploy/chaos_update.sh
+          python3 -I server/deploy/chaos_update_test.py
+
       - name: Unique item specs are up to date with chaos_items.xml
         run: |
           cd server && python3 -I tools/gen_unique_specs.py
