@@ -1110,7 +1110,12 @@ function getTreeIcons()
 		ksHundredHands = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 1280, y = 0},
 		ksFlowingMercy = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 1344, y = 0},
 		ksDivineVerdict = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 1408, y = 0},
-		ksBastion = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 1472, y = 0}
+		ksBastion = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 1472, y = 0},
+		-- the second keystone of the Thief, Necromancer, Monk and Templar lines (main tree nodes 383, 369, 390, 376)
+		ksBlackbloodCreed = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 1536, y = 0},
+		ksGraveCovenant = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 1600, y = 0},
+		ksScarredDiscipline = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 1664, y = 0},
+		ksPenitentWrath = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 1728, y = 0}
 	}
 end
 

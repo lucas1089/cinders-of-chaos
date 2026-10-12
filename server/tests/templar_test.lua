@@ -226,4 +226,44 @@ eq(p, 1000, "a Templar with the condition from elsewhere gets nothing")
 -- the target callback hands the event to what a Templar attacks
 eq(callbacks.onTargetCombat(tp, mob), RETURNVALUE_NOERROR)
 
+-- Penitent's Wrath (the Templar line's keystone in the main tree, class_tree.lua): a melee / ranged hit taken is answered
+-- with a holy strike of 40% of what was taken + 4 x magic level, one every 0.5 s
+local CT = ChaosClassTree
+local store = {}
+function C_mt:getStorageValue(k) return (store[self.id] or {})[k] or -1 end
+function C_mt:setStorageValue(k, v) store[self.id] = store[self.id] or {}; store[self.id][k] = v end
+function C_mt:getMagicLevel() return 25 end
+function C_mt:getPosition() return {sendDistanceEffect = function() end, sendMagicEffect = function() end} end
+local pen = creature({id = 15, voc = TEMPLAR, player = true})
+local brute = creature({id = 51})
+T.auraState = {}
+scheduled, strikes = {}, {}
+p = onHealth(pen, brute, -1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+eq(#scheduled, 0, "without the keystone: no answer")
+CT.write(pen, {ksPenitentWrath = 1})
+local clockT = 50000
+T.now = function() return clockT end
+p = onHealth(pen, brute, -1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+eq(p, -1000, "the hit itself is unchanged"); eq(#scheduled, 1, "an answer is scheduled")
+scheduled[1].fn((unpack or table.unpack)(scheduled[1].args))
+eq(strikes[1].target, brute, "on the attacker"); eq(strikes[1].type, COMBAT_HOLYDAMAGE); eq(strikes[1].min, -(400 + 100))
+eq(strikes[1].origin, ORIGIN_SPELL)
+eq(ChaosKeystones == nil or ChaosKeystones.depth == 0, true, "the proc guard is down again")
+scheduled = {}
+onHealth(pen, brute, -1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+eq(#scheduled, 0, "one every 0.5 s")
+clockT = clockT + 500
+onHealth(pen, brute, -1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED)
+eq(#scheduled, 1, "a ranged hit after the cooldown")
+scheduled = {}
+clockT = clockT + 500
+onHealth(pen, brute, -1000, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+eq(#scheduled, 0, "a spell is not answered")
+-- under an aura the answer is of what was really taken
+T.applyAuras({[15] = {reduction = 0.12, regenPct = 0, source = 13, untilMs = clockT + 1000}}, clockT)
+strikes = {}
+p = onHealth(pen, brute, -1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+eq(p, -880); scheduled[1].fn((unpack or table.unpack)(scheduled[1].args))
+eq(strikes[1].min, -(352 + 100), "40% of 880 + 100")
+
 print("templar_test: OK")

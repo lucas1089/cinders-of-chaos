@@ -43,7 +43,7 @@ end
 -- round trip
 local nodes = connected(40)
 local code = B.encode({classId = 4, nodes = nodes})
-check(code:match("^CB2%-[%w_%-]+$"), "code format " .. code)
+check(code:match("^CB3%-[%w_%-]+$"), "code format " .. code)
 local build = assert(B.decode(code))
 check(build.classId == 4, "class id round trip")
 check(sorted(build.nodes) == sorted(nodes), "nodes round trip")
@@ -74,7 +74,7 @@ for i = 1, #body do
 		local ch = body:sub(i, i)
 		local pos = alphabet:find(ch, 1, true)
 		local other = alphabet:sub((pos + k - 1) % 64 + 1, (pos + k - 1) % 64 + 1)
-		local bad = "CB2-" .. body:sub(1, i - 1) .. other .. body:sub(i + 1)
+		local bad = "CB3-" .. body:sub(1, i - 1) .. other .. body:sub(i + 1)
 		tried = tried + 1
 		local ok, err = B.decode(bad)
 		if not ok and err then
@@ -83,20 +83,21 @@ for i = 1, #body do
 	end
 end
 check(rejected == tried, string.format("typos rejected %d/%d", rejected, tried))
-local swapped = "CB2-" .. body:sub(2, 2) .. body:sub(1, 1) .. body:sub(3)
+local swapped = "CB3-" .. body:sub(2, 2) .. body:sub(1, 1) .. body:sub(3)
 check(body:sub(1, 1) == body:sub(2, 2) or B.decode(swapped) == nil, "swapped characters rejected")
 local _, err = B.decode(code:sub(1, -3))
 check(err and err:find("damaged"), "truncated code rejected: " .. tostring(err))
 _, err = B.decode("hello")
 check(err and err:find("not a build code"), "garbage rejected")
-_, err = B.decode("CB2-" .. body .. "!")
+_, err = B.decode("CB3-" .. body .. "!")
 check(err ~= nil, "bad character rejected")
 
 -- versions
 _, err = B.decode("CB0-" .. body)
 check(err and err:find("old format"), "old version: " .. tostring(err))
-_, err = B.decode("CB3-" .. body)
+_, err = B.decode("CB4-" .. body)
 check(err and err:find("newer format"), "newer version: " .. tostring(err))
+check(B.decode("CB2-" .. body) == nil, "a version 3 body under the version 2 prefix fails its checksum")
 -- version 1 (before the masteries) still reads, the same nodes; its checksum covers "CB1"
 local v1 = B.encode({classId = 4, nodes = nodes, paragon = {damage = 3}}, 1)
 check(v1:match("^CB1%-"), "a version 1 code: " .. v1)
@@ -235,7 +236,7 @@ check(plan.paragon == nil and #plan.notes == 1, "paragon locked: skipped with a 
 local mNodes = {626, 627, 628, 665}
 local mCode = B.encode({classId = 4, nodes = mNodes, masteries = {[665] = 3}, paragon = {health = 2}})
 local mBuild = assert(B.decode(mCode))
-check(mBuild.version == 2 and mBuild.masteries[665] == 3 and mBuild.paragon.health == 2 and sorted(mBuild.nodes) == sorted(mNodes),
+check(mBuild.version == 3 and mBuild.masteries[665] == 3 and mBuild.paragon.health == 2 and sorted(mBuild.nodes) == sorted(mNodes),
 	"mastery round trip with a Paragon part")
 local both = assert(B.decode(B.encode({classId = 4, nodes = {626, 627, 628, 665, 636}, masteries = {[665] = 1, [666] = 2}})))
 check(both.masteries[665] == 1 and both.masteries[666] == 2, "two mastery choices")
@@ -275,6 +276,56 @@ plan = assert(B.plan(grown, build, {classId = 4, current = {}, points = 100}))
 check(sorted(plan.nodes) == sorted(nodes), "an old code is valid on a grown tree")
 local newCode = B.encode({classId = 4, nodes = {625}})
 check(B.decode(newCode).nodes[1] == 625, "new ids encode")
+
+-- reworked nodes (B.REWORKED, 2026-10: 369, 376, 383, 390 became the line keystones): a code made before the change
+-- (version 1 or 2) leaves them out, with the nodes only connected through them; a version 3 code keeps them
+local function pathTo(target, classKey)
+	local prev, queue, head = {[tree.root] = tree.root}, {tree.root}, 1
+	while head <= #queue do
+		local id = queue[head]
+		head = head + 1
+		for _, nb in ipairs(tree.nodes[id].n) do
+			local node = tree.nodes[nb]
+			if not prev[nb] and (not node.c or node.c[classKey]) and not node.v then
+				prev[nb] = id
+				queue[#queue + 1] = nb
+			end
+		end
+	end
+	local out, id = {}, target
+	while id ~= tree.root do
+		table.insert(out, 1, id)
+		id = prev[id]
+	end
+	return out
+end
+check(B.REWORKED[383] == 3 and B.REWORKED[369] == 3 and B.REWORKED[376] == 3 and B.REWORKED[390] == 3, "reworked list")
+local toCreed = pathTo(383, "thief")
+check(toCreed[#toCreed] == 383 and #toCreed > 10, "a path to Blackblood Creed (" .. #toCreed .. " nodes)")
+for _, version in ipairs({1, 2}) do
+	local old = assert(B.decode(B.encode({classId = 4, nodes = toCreed}, version)))
+	plan = assert(B.plan(tree, old, {classId = 4, classKey = "thief", current = {}, points = 300}))
+	local held = {}
+	for _, id in ipairs(plan.nodes) do held[id] = true end
+	check(not held[383] and plan.reworked == 1 and plan.applied == #toCreed - 1, "version " .. version .. ": 383 left out")
+	local noted = false
+	for _, n in ipairs(plan.notes) do noted = noted or n:find("tree change", 1, true) ~= nil end
+	check(noted, "version " .. version .. ": the note says so")
+end
+local new = assert(B.decode(B.encode({classId = 4, nodes = toCreed})))
+plan = assert(B.plan(tree, new, {classId = 4, classKey = "thief", current = {}, points = 300}))
+check(plan.applied == #toCreed and (plan.reworked or 0) == 0, "version 3 keeps the keystone")
+plan, err = B.plan(tree, new, {classId = 4, classKey = "ninja", current = {}, points = 300})
+check(plan and plan.applied == #toCreed, "every class of the line may take it")
+plan, err = B.plan(tree, assert(B.decode(B.encode({classId = 1, nodes = toCreed}))), {classId = 1, classKey = "warrior",
+	current = {}, points = 300})
+check(not plan and err:find("another class"), "another line may not: " .. tostring(err))
+-- a node only connected through a reworked one goes with it (a small made-up tree)
+local mini = {root = 1, nodes = {[1] = {n = {383}}, [383] = {n = {1, 5}}, [5] = {n = {383}}}}
+plan = assert(B.plan(mini, {classId = 4, version = 2, nodes = {383, 5}}, {classId = 4, current = {}, points = 9}))
+check(plan.applied == 0 and plan.reworked == 2, "the node behind it is left out too")
+_, err = B.plan(mini, {classId = 4, version = 3, nodes = {5}}, {classId = 4, current = {}, points = 9})
+check(err and err:find("not connected"), "without a reworked node a gap is still an error")
 
 print(string.format("buildshare_test: %d checks, %d failures", count, failures))
 if failures > 0 then

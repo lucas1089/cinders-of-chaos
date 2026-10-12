@@ -19,6 +19,8 @@
 --     Iron Parry (Counter Stance answers +50%, the window in the spell), Way of the Blade (Samurai keystone: the stance
 --     parries every melee hit while it lasts, a hit keeps half of the Bushido stacks).
 --   * Samurai, the duelist off-tank: Counter Stance also takes the guard off every hit it does not parry and taunts.
+--   * Blackblood Creed (the line's keystone in the main tree, node 383): every weapon hit poisons as Poison Blades does,
+--     with or without the buff, the poison +60%; evasion halved.
 -- Scripted strikes (off-hand, counter) are dealt with origin ORIGIN_NONE inside a guard flag, so they never trigger
 -- the weapon-hit rules again (no off-hand from an off-hand, no poison, no second ambush).
 
@@ -106,12 +108,12 @@ local function offhandStrike(attackerId, targetId, amount, ctype)
 	end
 end
 
-local function poison(attacker, target, hit)
+local function poison(attacker, target, hit, bonus)
 	local p = cfg().poisonBlades
 	local c = Condition(CONDITION_POISON)
 	c:setParameter(CONDITION_PARAM_OWNER, attacker:getId())
 	c:setParameter(CONDITION_PARAM_DELAYED, true)
-	c:addDamage(p.ticks, p.tickMs, -C.poisonTick(hit))
+	c:addDamage(p.ticks, p.tickMs, -C.poisonTick(hit, bonus))
 	target:addCondition(c)
 end
 
@@ -166,9 +168,10 @@ local function onOffence(creature, attacker, primaryDamage, primaryType, seconda
 		ChaosCombatFx.crit(creature:getPosition(), player:getId())
 	end
 
-	-- Poison Blades
-	if isWeapon and hasCond(player, CONDITION_ATTRIBUTES, cfg().subId.poisonBlades) then
-		poison(player, creature, amount)
+	-- Poison Blades; Blackblood Creed (the line keystone): every weapon hit, and a stronger poison
+	local creed = CT.has(player, "ksBlackbloodCreed")
+	if C.weaponPoisons(isWeapon, hasCond(player, CONDITION_ATTRIBUTES, cfg().subId.poisonBlades), creed) then
+		poison(player, creature, amount, creed and CT.fx.ksBlackbloodCreed.poisonBonus or 0)
 	end
 
 	-- Ninja dual wield: an off-hand strike after each melee hit of the main hand
@@ -246,7 +249,8 @@ local function onDefence(player, attacker, primaryDamage, primaryType, secondary
 	end
 
 	-- Evasion
-	if C.dodges(voc, isWeapon, math.random(), CT.value(player, "ctFleetShadow", "evasion")) then
+	if C.dodges(voc, isWeapon, math.random(), CT.value(player, "ctFleetShadow", "evasion"),
+			CT.value(player, "ksBlackbloodCreed", "evasionScale", 1)) then
 		if ChaosCombatFx then
 			ChaosCombatFx.dodge(player)
 		end

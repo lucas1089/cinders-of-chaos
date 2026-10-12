@@ -478,8 +478,32 @@ function M.dodgeChance(vocId, rolling)
 	return c
 end
 
-function M.dodges(vocId, isWeaponAttack, rolling, roll)
+-- noDodge: Scarred Discipline (the line keystone) takes the evasion away
+function M.dodges(vocId, isWeaponAttack, rolling, roll, noDodge)
+	if noDodge then
+		return false
+	end
 	return isWeaponAttack and roll < M.dodgeChance(vocId, rolling) or false
+end
+
+-- Scarred Discipline (the line keystone, class_tree.lua fx.ksScarredDiscipline): a hit taken gives fx.chi when the last
+-- such chi was at least fx.icdMs ago (pure, per player id)
+M.lastScarChi = M.lastScarChi or {}
+function M.scarGivesChi(id, now, fx)
+	local last = M.lastScarChi[id]
+	if last and now - last < fx.icdMs then
+		return false
+	end
+	M.lastScarChi[id] = now
+	return true
+end
+
+-- Scarred Discipline: the factor on damage taken while holding `chi` (before this hit's chi)
+function M.scarFactor(chi, fx)
+	if fx and (chi or 0) >= fx.minChi then
+		return 1 - fx.reduction
+	end
+	return 1
 end
 
 -- forget per-creature memory (logout, death)
@@ -487,6 +511,7 @@ M.lastWeaponChi = M.lastWeaponChi or {}
 function M.clear(id)
 	M.lastWeaponChi[id] = nil
 	M.lastCritChi[id] = nil
+	M.lastScarChi[id] = nil
 end
 
 return M

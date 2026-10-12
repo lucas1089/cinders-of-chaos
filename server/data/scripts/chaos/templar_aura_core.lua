@@ -121,13 +121,15 @@ function M.baseOf(vocId)
 end
 
 -- ------------------------------------------------------------------------------------------------ the aura
--- the aura of a vocation; bonus = the passive tree's changes {reduction, radius, regenPct, bastion} or nil
+-- the aura of a vocation; bonus = the passive tree's changes {reduction, radius, regenPct, bastion, scale} or nil
+-- (scale: Penitent's Wrath, a factor on the whole reduction, Bastion's share included)
 function M.auraOf(vocId, bonus)
 	local a = cfg().aura.byVocation[vocId]
 	if not a or not bonus then
 		return a
 	end
-	return {radius = a.radius + (bonus.radius or 0), reduction = a.reduction + (bonus.reduction or 0),
+	return {radius = a.radius + (bonus.radius or 0),
+		reduction = (a.reduction + (bonus.reduction or 0)) * (bonus.scale or 1),
 		regenPct = (a.regenPct or 0) + (bonus.regenPct or 0), bastion = bonus.bastion}
 end
 
@@ -353,10 +355,33 @@ function M.strikeValues(level, power, magicLevel, pMin, pMax, mMin, mMax, baseMi
 	return (l + power * pMin + magicLevel * mMin + baseMin) * k, (l + power * pMax + magicLevel * mMax + baseMax) * k
 end
 
+-- ------------------------------------------------------------------------------------------------ Penitent's Wrath
+-- the line keystone (class_tree.lua fx.ksPenitentWrath): the holy strike that answers a hit of `taken` (what the
+-- Templar really lost, after every reduction), 0 for nothing taken
+function M.penitentDamage(taken, magicLevel, fx)
+	taken = math.abs(taken or 0)
+	if taken <= 0 or not fx then
+		return 0
+	end
+	return math.floor(taken * fx.share + (magicLevel or 0) * fx.perMagicLevel)
+end
+
+-- at most one answer every fx.icdMs per Templar (state per id)
+M.penitentLast = M.penitentLast or {}
+function M.penitentReady(id, now, fx)
+	local last = M.penitentLast[id]
+	if last and now - last < fx.icdMs then
+		return false
+	end
+	M.penitentLast[id] = now
+	return true
+end
+
 -- forget everything about a creature (logout, death)
 function M.clear(id)
 	M.zeal[id] = nil
 	M.auraState[id] = nil
+	M.penitentLast[id] = nil
 end
 
 return M

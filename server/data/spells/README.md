@@ -691,6 +691,46 @@ vitality +4 / physical absorb +2 against Steel Discipline +5 / +3, Iron Knuckles
 ordinary node (1-2 of a stat), so a tree build of 73 / 248 points changes by one notable at most. Not run on the dummies;
 measure with the C4 harness when the class factors are next tuned.
 
+### Line keystones and the path notables (2026-10-12, computed, not measured in game)
+
+Not run on the dummies: the C4 harness (`zz_c4.lua` and the client rotation, test-only) needs a live test server and was not
+run for this change. Every number below is computed from the tables above and the formulas, and marked so; the
+dummies do not hit back, so the defensive halves of the keystones (and Penitent's Wrath and Scarred Discipline as a
+whole) would not show on them anyway. Measure with the C4 harness, and a monster hitting the character, at the next
+class factor tuning.
+
+**Line keystones** (server/README.md "Passive tree: class sections and per-class keystones"; the C4 table above is the
+"before"):
+
+| Keystone | Class | 300: 1 target | 1000: 1 target | Other | Price (computed) |
+|---|---|---|---|---|---|
+| Blackblood Creed | Thief | 870 -> ~920 (+6%) | 2391 -> ~2530 | the poison was ~11% of the Thief's damage (0.6 of a weapon hit over 4 s against a hit every 1.6 s, the 300 rotation) | evasion 8% -> 4%: weapon hits taken effectively +4% |
+| | Ninja | 1121 -> ~1180 (+5%) | 3565 -> ~3740 | the off-hand strike never poisons; the Deadeye stays 10% / 18% ahead | 12% -> 6%: +6% |
+| | Samurai | 751 -> ~790 (+5%) | 2025 -> ~2130 | | 5% -> 2.5%: +3% |
+| Covenant of the Grave | Necromancer | 1009 -> ~1090 (+8%) | 2598 -> ~2880 (+11%) | minions 40% of its damage (4 skeletons x 61 / s with the curse, 300) | the own spells -25% |
+| | Lich | 1164 -> ~1040 (-10%) | 4037 -> ~3710 (-8%) | the shade is 16% of its damage: a minion keystone does not suit the Lich (Hoarded Souls does) | |
+| | Bone Lord | 1158 -> ~1190 (+2.5%), 5 targets 2326 -> ~2740 (+18%) | 4104 -> ~4430 (+8%), 5 targets 7883 -> ~9300 (+18%) | the skeletons' splash makes the area gain; the Elementalist stays ahead (3442 / 11004, +25% / +18%) | |
+| Scarred Discipline | Monk line | unchanged on the dummies | unchanged | +1 chi per hit taken (one per 2 s): the chi income in melee doubles (0.5 / s from the auto attack plus 0.5 / s from hits) | no evasion (Monk 6%, Shadowfist 8%, Iron Sage 4%); -10% damage taken at 3+ chi, about even against weapon hits at 3+ chi half the time, better against spells |
+| Penitent's Wrath | Templar line | unchanged on the dummies | unchanged | per hit taken: 40% + 4 x magic level (magic level 25 / 40: +100 / +160); a monster hitting 1000 every 2 s takes ~250 / s holy back (+28% on the Templar's 904 at level 300 while tanking it) | aura 6% -> 3% (Inquisitor 4 -> 2%, Sentinel 12 -> 6%, with Bastion 16 -> 8%): the party's effective health -3% / -6% |
+
+**Path notables** (27 small nodes turned into notables, server/README.md "Passive tree notables on the paths"). The C4
+build weights ("damage per point" of each archetype, test-only) and its greedy builder were run offline on the tree data
+before and after (a copy of `zz_c4.lua C4.plan` reading `passivetree_data.lua`; value = the weighted stats of the build,
+damage = (100 + value after) / (100 + value before)):
+
+| Archetype (classes) | 73 points: tree value | damage | 248 points: tree value | damage |
+|---|---|---|---|---|
+| melee (Warrior line, Thief line) | +1.6% to +2.7% | +0.8% to +1.5% | +3.6% to +3.8% | +2.3% |
+| ranger (Ranger line) | +0.0% to +1.7% | +0.0% to +0.7% | +3.9% to +4.0% | +2.4% |
+| caster (Mystic, Elementalist) / Illusionist | +2.2% / +1.3% | +0.9% / +0.5% | +3.4% / +3.9% | +2.1% / +2.2% |
+| necro (Necromancer line) | +1.8% to +2.2% | +0.7% to +0.9% | +2.9% | +1.6% |
+| monk (Monk line) | +2.6% to +2.8% | +1.4% to +1.5% | +4.2% to +4.3% | +2.5% to +2.6% |
+| templar (Templar line) | +1.6% to +1.8% | +0.7% | +3.8% to +3.9% | +2.3% |
+| tank view (absorbs, health; Juggernaut, Sentinel) | +4.0% / +1.2% | | +4.4% / +4.3% | |
+
+So a build gains about one notable's premium per 25-50 points: +0.5% to +1.5% damage at level 300 and +1.6% to +2.6% at
+level 1000, the same for every class within a point, below the harness spread (+-5%); the leads of the C4 table keep.
+
 ### Infinite arrows (bows and crossbows without ammunition, 2026-10-11)
 
 Bows and crossbows fire without ammunition (server/README.md "Infinite arrows and quivers"). The install tool gives each

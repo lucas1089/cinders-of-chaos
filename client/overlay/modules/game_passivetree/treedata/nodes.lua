@@ -2538,13 +2538,14 @@ function getTreeNodes()
 		{
 			orbit = 2,
 			orbitDist = 100,
-			name = "Attribute",
+			name = "Red Harvest",
+			isUncommon = true,
 			orbitIndex = 270,
 			group = 37,
 			icon = "criticalHitChance",
 			customStats = {
-				criticalHitChance = 1,
-				criticalHitAmount = 1
+				criticalHitChance = 2,
+				criticalHitAmount = 3
 			},
 			inputs = {
 				134
@@ -2597,13 +2598,15 @@ function getTreeNodes()
 		{
 			orbit = 2,
 			orbitDist = 100,
-			name = "Attribute",
+			name = "Witchfire Gaze",
+			isUncommon = true,
 			orbitIndex = 90,
 			group = 38,
 			icon = "criticalHitChance",
 			customStats = {
-				criticalHitChance = 1,
-				criticalHitAmount = 1
+				criticalHitChance = 2,
+				criticalHitAmount = 2,
+				manaLeechAmount = 1
 			},
 			inputs = {
 				137
@@ -2891,12 +2894,14 @@ function getTreeNodes()
 		{
 			orbit = 2,
 			orbitDist = 70,
-			name = "Attribute",
+			name = "Pyre Litany",
+			isUncommon = true,
 			orbitIndex = 275,
 			group = 40,
 			icon = "holyDamage",
 			customStats = {
-				incrementHoly = 2,
+				incrementHoly = 3,
+				strength = 2
 			},
 			inputs = {
 				152
@@ -3037,12 +3042,15 @@ function getTreeNodes()
 		{
 			orbit = 2,
 			orbitDist = 70,
-			name = "Attribute",
+			name = "Iron Communion",
+			isUncommon = true,
 			orbitIndex = 270,
 			group = 41,
 			icon = "physicalDamage",
 			customStats = {
-				incrementPhysical = 2,
+				incrementPhysical = 3,
+				absorbPhysical = 1,
+				strength = 1
 			},
 			inputs = {
 				164
@@ -3928,12 +3936,14 @@ function getTreeNodes()
 		{
 			orbit = 2,
 			orbitDist = 70,
-			name = "Attribute",
+			name = "Undertow",
+			isUncommon = true,
 			orbitIndex = 90,
 			group = 52,
 			icon = "waterDamage",
 			customStats = {
-				incrementWater = 2,
+				incrementWater = 3,
+				dexterity = 2
 			},
 			inputs = {
 				214
@@ -4090,12 +4100,14 @@ function getTreeNodes()
 		{
 			orbit = 1,
 			orbitDist = 70,
-			name = "Attribute",
+			name = "Frostbitten Will",
+			isUncommon = true,
 			orbitIndex = 225,
 			group = 53,
-			icon = "baseStat",
+			icon = "coldDamage",
 			customStats = {
-				incrementIce = 2,
+				incrementIce = 3,
+				intelligence = 2
 			},
 			inputs = {
 				220
@@ -4596,12 +4608,15 @@ function getTreeNodes()
 		{
 			orbit = 2,
 			orbitDist = 115,
-			name = "Attribute",
+			name = "Thunderbrand",
+			isUncommon = true,
 			orbitIndex = -59,
 			group = 62,
 			icon = "lightningDamage",
 			customStats = {
-				incrementEnergy = 2,
+				incrementEnergy = 3,
+				absorbEnergy = 1,
+				intelligence = 1
 			},
 			inputs = {
 				247
@@ -4850,12 +4865,14 @@ function getTreeNodes()
 		{
 			orbit = 2,
 			orbitDist = 118,
-			name = "Attribute",
+			name = "Scarred Hide",
+			isUncommon = true,
 			orbitIndex = 120,
 			group = 63,
 			icon = "absorbPhysical",
 			customStats = {
-				absorbPhysical = 1,
+				absorbPhysical = 2,
+				vitality = 2
 			},
 			inputs = {
 				259
@@ -5146,13 +5163,15 @@ function getTreeNodes()
 		{
 			orbit = 1,
 			orbitDist = 43,
-			name = "Attribute",
+			name = "Crimson Parry",
+			isUncommon = true,
 			orbitIndex = 270,
 			group = 68,
 			icon = "criticalHitChance",
 			customStats = {
-				criticalHitChance = 1,
-				criticalHitAmount = 1
+				criticalHitChance = 2,
+				criticalHitAmount = 2,
+				shieldingSkill = 1
 			},
 			inputs = {
 				275
@@ -5430,13 +5449,15 @@ function getTreeNodes()
 		{
 			orbit = 1,
 			orbitDist = 43,
-			name = "Attribute",
+			name = "Headsman's Mark",
+			isUncommon = true,
 			orbitIndex = 270,
 			group = 74,
 			icon = "criticalHitChance",
 			customStats = {
-				criticalHitChance = 1,
-				criticalHitAmount = 1
+				criticalHitChance = 2,
+				criticalHitAmount = 2,
+				lifeLeechAmount = 1
 			},
 			inputs = {
 				291
@@ -5568,13 +5589,15 @@ function getTreeNodes()
 		{
 			orbit = 1,
 			orbitDist = 43,
-			name = "Attribute",
+			name = "Hawk's Malice",
+			isUncommon = true,
 			orbitIndex = 270,
 			group = 78,
 			icon = "criticalHitChance",
 			customStats = {
-				criticalHitChance = 1,
-				criticalHitAmount = 1
+				criticalHitChance = 2,
+				criticalHitAmount = 2,
+				distanceSkill = 1
 			},
 			inputs = {
 				298
@@ -5984,12 +6007,14 @@ function getTreeNodes()
 		{
 			orbit = 1,
 			orbitDist = 115,
-			name = "Attribute",
+			name = "Ashen Bulwark",
+			isUncommon = true,
 			orbitIndex = 330,
 			group = 82,
 			icon = "absorbPhysical",
 			customStats = {
-				absorbPhysical = 2,
+				absorbPhysical = 3,
+				shieldingSkill = 1
 			},
 			inputs = {
 				318
@@ -6289,12 +6314,14 @@ function getTreeNodes()
 		{
 			orbit = 2,
 			orbitDist = 115,
-			name = "Attribute",
+			name = "Rime Litany",
+			isUncommon = true,
 			orbitIndex = 300,
 			group = 83,
 			icon = "coldDamage",
 			customStats = {
-				incrementIce = 1,
+				incrementIce = 3,
+				absorbIce = 1
 			},
 			inputs = {
 				342
@@ -6722,12 +6749,14 @@ function getTreeNodes()
 		{
 			orbit = 1,
 			orbitDist = 70,
-			name = "Attribute",
+			name = "Mercy of Embers",
+			isUncommon = true,
 			orbitIndex = 88,
 			group = 85,
 			icon = "healthDamage",
 			customStats = {
-				incrementHealth = 2,
+				incrementHealth = 3,
+				vitality = 2
 			},
 			inputs = {
 				361
@@ -6921,14 +6950,21 @@ function getTreeNodes()
 		{
 			orbit = 0,
 			orbitDist = 0,
-			name = "Attribute",
-			isMythic = true,
+			name = "Covenant of the Grave",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 0,
 			group = 86,
-			icon = "mana",
+			icon = "ksGraveCovenant",
 			customStats = {
-				spirit = 10,
+				ksGraveCovenant = 1
 			},
+			stats = {
+				"Necromancer line: your minions deal +50% damage",
+				"and have +50% health.",
+				"Your own spells deal 25% less damage."
+			},
+			classes = {"necromancer", "lich", "bonelord"},
 			inputs = {
 				366
 			},
@@ -7048,14 +7084,23 @@ function getTreeNodes()
 		{
 			orbit = 0,
 			orbitDist = 0,
-			name = "Attribute",
-			isMythic = true,
+			name = "Penitent's Wrath",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 0,
 			group = 87,
-			icon = "healthDamage",
+			icon = "ksPenitentWrath",
 			customStats = {
-				incrementHealth = 5,
+				ksPenitentWrath = 1
 			},
+			stats = {
+				"Templar line: a melee or ranged hit you take is",
+				"answered with a holy strike on the attacker for",
+				"40% of the damage + 4 x magic level (at most one",
+				"every 0.5 s). Your defence aura's damage",
+				"reduction is halved (for the party too)."
+			},
+			classes = {"templar", "inquisitor", "sentinel"},
 			inputs = {
 				371
 			},
@@ -7139,12 +7184,14 @@ function getTreeNodes()
 		{
 			orbit = 3,
 			orbitDist = 70,
-			name = "Attribute",
+			name = "Nightshade Draught",
+			isUncommon = true,
 			orbitIndex = 330,
 			group = 88,
 			icon = "earthDamage",
 			customStats = {
-				incrementEarth = 2,
+				incrementEarth = 3,
+				dexterity = 2
 			},
 			inputs = {
 				380
@@ -7175,14 +7222,22 @@ function getTreeNodes()
 		{
 			orbit = 0,
 			orbitDist = 0,
-			name = "Attribute",
-			isMythic = true,
+			name = "Blackblood Creed",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 0,
 			group = 88,
-			icon = "cooldownRecovery",
+			icon = "ksBlackbloodCreed",
 			customStats = {
-				wisdom = 10,
+				ksBlackbloodCreed = 1
 			},
+			stats = {
+				"Thief line: every weapon hit poisons the target",
+				"as Poison Blades does, with or without the buff,",
+				"and your poison deals +60% damage.",
+				"Your evasion is halved."
+			},
+			classes = {"thief", "ninja", "samurai"},
 			inputs = {
 				382
 			},
@@ -7302,15 +7357,21 @@ function getTreeNodes()
 		{
 			orbit = 0,
 			orbitDist = 0,
-			name = "Attribute",
-			isMythic = true,
+			name = "Scarred Discipline",
+			isDivine = true,
+			isKeystone = true,
 			orbitIndex = 0,
 			group = 89,
-			icon = "lifeLeechChance",
+			icon = "ksScarredDiscipline",
 			customStats = {
-				lifeLeechChance = 5,
-				lifeLeechAmount = 7
+				ksScarredDiscipline = 1
 			},
+			stats = {
+				"Monk line: a hit you take gives 1 chi (at most",
+				"one every 2 s); while you hold 3 chi or more you",
+				"take 10% less damage. You can no longer dodge."
+			},
+			classes = {"monk", "shadowfist", "ironsage"},
 			inputs = {
 				386
 			},
@@ -7358,12 +7419,14 @@ function getTreeNodes()
 		{
 			orbit = 1,
 			orbitDist = 300,
-			name = "Attribute",
+			name = "Cinder Vein",
+			isUncommon = true,
 			orbitIndex = 180,
 			group = 90,
 			icon = "fireDamage",
 			customStats = {
-				incrementFire = 1,
+				incrementFire = 3,
+				absorbFire = 1
 			},
 			inputs = {
 				392
@@ -7720,12 +7783,14 @@ function getTreeNodes()
 		{
 			orbit = 1,
 			orbitDist = 300,
-			name = "Attribute",
+			name = "Marrowgrinder",
+			isUncommon = true,
 			orbitIndex = 180,
 			group = 91,
 			icon = "physicalDamage",
 			customStats = {
-				incrementPhysical = 1,
+				incrementPhysical = 3,
+				absorbPhysical = 1
 			},
 			inputs = {
 				411
@@ -8066,12 +8131,14 @@ function getTreeNodes()
 		{
 			orbit = 3,
 			orbitDist = 300,
-			name = "Attribute",
+			name = "Stormbound Nerves",
+			isUncommon = true,
 			orbitIndex = 150,
 			group = 92,
 			icon = "lightningDamage",
 			customStats = {
-				incrementEnergy = 1,
+				incrementEnergy = 3,
+				absorbEnergy = 1
 			},
 			inputs = {
 				429
@@ -8429,12 +8496,14 @@ function getTreeNodes()
 		{
 			orbit = 3,
 			orbitDist = 300,
-			name = "Attribute",
+			name = "Rotroot Venom",
+			isUncommon = true,
 			orbitIndex = 120,
 			group = 93,
 			icon = "earthDamage",
 			customStats = {
-				incrementEarth = 1,
+				incrementEarth = 3,
+				absorbEarth = 1
 			},
 			inputs = {
 				448
@@ -8797,12 +8866,14 @@ function getTreeNodes()
 		{
 			orbit = 3,
 			orbitDist = 300,
-			name = "Attribute",
+			name = "Gravecold Whisper",
+			isUncommon = true,
 			orbitIndex = 120,
 			group = 94,
 			icon = "deathDamage",
 			customStats = {
-				incrementDeath = 1,
+				incrementDeath = 3,
+				absorbDeath = 1
 			},
 			inputs = {
 				467
@@ -9160,12 +9231,14 @@ function getTreeNodes()
 		{
 			orbit = 3,
 			orbitDist = 300,
-			name = "Attribute",
+			name = "Drowned Lungs",
+			isUncommon = true,
 			orbitIndex = 120,
 			group = 95,
 			icon = "absorbDrown",
 			customStats = {
-				absorbDrown = 1,
+				absorbDrown = 2,
+				incrementDrown = 2
 			},
 			inputs = {
 				486
@@ -9546,12 +9619,14 @@ function getTreeNodes()
 		{
 			orbit = 1,
 			orbitDist = 300,
-			name = "Attribute",
+			name = "Hoarfrost Mantle",
+			isUncommon = true,
 			orbitIndex = 180,
 			group = 96,
 			icon = "absorbIce",
 			customStats = {
-				absorbIce = 1,
+				absorbIce = 2,
+				incrementIce = 2
 			},
 			inputs = {
 				508
@@ -9911,13 +9986,16 @@ function getTreeNodes()
 		{
 			orbit = 1,
 			orbitDist = 300,
-			name = "Attribute",
+			name = "Bloodward Communion",
+			isUncommon = true,
 			orbitIndex = 180,
 			group = 97,
 			icon = "absorbLifeMana",
 			customStats = {
-				absorbLife = 1,
-				absorbMana = 1
+				absorbLife = 2,
+				absorbMana = 2,
+				incrementLifeDrain = 1,
+				incrementManaDrain = 1
 			},
 			inputs = {
 				527
@@ -10290,12 +10368,14 @@ function getTreeNodes()
 		{
 			orbit = 1,
 			orbitDist = 300,
-			name = "Attribute",
+			name = "Litany of Ash",
+			isUncommon = true,
 			orbitIndex = 210,
 			group = 98,
 			icon = "holyDamage",
 			customStats = {
-				incrementHoly = 1,
+				incrementHoly = 3,
+				absorbHoly = 1
 			},
 			inputs = {
 				546
@@ -10636,13 +10716,15 @@ function getTreeNodes()
 		{
 			orbit = 3,
 			orbitDist = 300,
-			name = "Attribute",
+			name = "Bloodthirst Rite",
+			isUncommon = true,
 			orbitIndex = 120,
 			group = 99,
 			icon = "lifeLeechAmount",
 			customStats = {
-				lifeLeechChance = 1,
-				lifeLeechAmount = 1
+				lifeLeechChance = 2,
+				lifeLeechAmount = 2,
+				incrementHealth = 1
 			},
 			inputs = {
 				564
@@ -11032,12 +11114,14 @@ function getTreeNodes()
 		{
 			orbit = 1,
 			orbitDist = 300,
-			name = "Attribute",
+			name = "Voidglass Focus",
+			isUncommon = true,
 			orbitIndex = 180,
 			group = 100,
 			icon = "arcaneDamage",
 			customStats = {
-				incrementArcane = 1,
+				incrementArcane = 3,
+				absorbArcane = 1
 			},
 			inputs = {
 				584
@@ -11414,12 +11498,14 @@ function getTreeNodes()
 		{
 			orbit = 2,
 			orbitDist = 300,
-			name = "Attribute",
+			name = "Black Tide",
+			isUncommon = true,
 			orbitIndex = 240,
 			group = 101,
 			icon = "waterDamage",
 			customStats = {
-				incrementWater = 1,
+				incrementWater = 3,
+				absorbWater = 1
 			},
 			inputs = {
 				602	

@@ -9,6 +9,7 @@
 --   ChaosPassiveTreeCore.toMap(raw) / toList(map)     masteries from a request ({{id, choice}} or {[id] = choice}) / to JSON
 --   ChaosPassiveTreeCore.validatePlan(tree, current, currentMasteries, plan, ctx)   a whole planned allocation, see there
 --   ChaosPassiveTreeCore.checkMasteryChange(tree, current, masteries, id, choice)  changing the effect of a saved mastery
+--   ChaosPassiveTreeCore.reworkedSince(list, seen) / dropNodes(tree, ids, drop)   the free refund of reworked nodes
 --
 -- Saved allocation text (the `nodes` column of chaos_passive_tree and the `tree` column of chaos_loadouts):
 --   "2,3,9"              node ids (root excluded), as before
@@ -312,6 +313,56 @@ function M.checkMasteryChange(tree, current, masteries, id, choice)
 		return nil, "That effect is already chosen."
 	end
 	return true
+end
+
+-- ------------------------------------------------------------------------------------------------ reworked nodes
+-- A node whose meaning changed a lot (config `reworked`: {{version, ids}}, append only) is refunded once, for free:
+-- the saved trees lose it, and the nodes only connected through it, at the first login after its version.
+-- reworkedSince(list, seen) -> set of the ids reworked after version `seen` (a storage value; -1 / nil = none seen),
+-- the newest version (seen when there is nothing newer)
+function M.reworkedSince(list, seen)
+	seen = tonumber(seen) or -1
+	local set, newest, any = {}, seen, false
+	for _, entry in ipairs(list or {}) do
+		local v = tonumber(entry.version) or 0
+		if v > seen then
+			for _, id in ipairs(entry.ids or {}) do
+				set[id] = true
+				any = true
+			end
+		end
+		if v > newest then
+			newest = v
+		end
+	end
+	return set, newest, any
+end
+
+-- dropNodes(tree, ids, drop) -> kept (list, in the order of ids), removed (list of {id, why = "reworked" |
+-- "disconnected"}). The ids are a saved allocation (root excluded); drop is a set of ids.
+function M.dropNodes(tree, ids, drop)
+	local set, order, removed = {}, {}, {}
+	for _, id in ipairs(ids or {}) do
+		if drop[id] then
+			removed[#removed + 1] = {id = id, why = "reworked"}
+		elseif not set[id] then
+			set[id] = true
+			order[#order + 1] = id
+		end
+	end
+	if #removed == 0 then
+		return order, removed
+	end
+	local reached = reach(tree, set)
+	local kept = {}
+	for _, id in ipairs(order) do
+		if reached[id] then
+			kept[#kept + 1] = id
+		else
+			removed[#removed + 1] = {id = id, why = "disconnected"}
+		end
+	end
+	return kept, removed
 end
 
 return ChaosPassiveTreeCore

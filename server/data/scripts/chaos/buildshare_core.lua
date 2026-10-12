@@ -1,20 +1,22 @@
 -- Build sharing: the passive tree build code, without engine calls (buildshare.lua, server/tests/buildshare_test.lua).
 --
 --   ChaosBuildShare.encode(build[, version])  code string of {classId, nodes = {ids}, paragon = {statKey = points} | nil,
---                                            masteries = {[id] = choice} | nil}; version 2 unless asked (1: no masteries)
+--                                            masteries = {[id] = choice} | nil}; version 3 unless asked (1: no masteries)
 --   ChaosBuildShare.decode(code)             build, or nil + error text (bad format, old/unknown version, checksum)
 --   ChaosBuildShare.extract(text)            the first code inside any text (a chat line, a "build link"), or nil
 --   ChaosBuildShare.plan(tree, build, ctx)   what an import would do for a character (see below), or nil + error text
 --
--- Code format, version 2:  "CB2-" .. base64url(payload)   (CB = Chaos Build, 2 = format version)
+-- Code format, version 3:  "CB3-" .. base64url(payload)   (CB = Chaos Build, 3 = format version)
 --   payload = classId (1 byte: index of the class line in CLASS_LINES, 0 = no class; never a vocation id)
 --             flags   (1 byte: 1 = a Paragon part follows, 2 = a mastery part follows)
 --             [Paragon: count (1 byte), then count x (stat index 1 byte, points 1 byte); stat index into PARAGON_KEYS]
 --             [masteries: count (1 byte), then count x (node id 2 bytes, high first, chosen effect 1 byte)]
 --             bitset of the allocated node ids: bit (id % 8) of byte floor(id / 8), trailing zero bytes dropped
---             checksum (3 bytes): h = (h * 257 + x) % 16777213 over the characters of "CB2" and every byte before it
--- Version 1 ("CB1-", handed out before the mastery nodes) is the same without the mastery part (flag 2 unused) and is
--- still read: such a code has no mastery choices (an import keeps the character's own, else takes the first effect).
+--             checksum (3 bytes): h = (h * 257 + x) % 16777213 over the characters of "CB3" and every byte before it
+-- Version 2 ("CB2-") has the same layout; it was handed out before nodes 369, 376, 383 and 390 became keystones, so
+-- an import of it leaves those nodes out (B.REWORKED). Version 1 ("CB1-", handed out before the mastery nodes) is the
+-- same without the mastery part (flag 2 unused) and is still read: such a code has no mastery choices (an import keeps
+-- the character's own, else takes the first effect) and leaves the reworked nodes out too.
 -- Typical size: a 248 node level 1000 build ~110 characters, a 40 node build ~20-80.
 --
 -- The class byte is a class line, not a vocation id, so the vocation ids can change without breaking codes.
@@ -23,14 +25,19 @@
 -- the codes that use it invalid ("unknown node"), every other code stays valid. Paragon stats are indexed by
 -- PARAGON_KEYS: append new stat keys at the end, never reorder. A mastery's effects are indexed by their position in the
 -- node's list: append new effects, never reorder. A new format gets a new version number; decode keeps reading every
--- version that was ever handed out (B.READS: 1 and 2).
+-- version that was ever handed out (B.READS: 1, 2 and 3). A node whose meaning changes gets a new version and a
+-- B.REWORKED entry, so the older codes leave it out instead of granting the new meaning.
 
 ChaosBuildShare = ChaosBuildShare or {}
 local B = ChaosBuildShare
 
 B.PREFIX = "CB"
-B.VERSION = 2
-B.READS = {[1] = true, [2] = true} -- every version ever handed out
+B.VERSION = 3
+B.READS = {[1] = true, [2] = true, [3] = true} -- every version ever handed out
+-- Nodes whose meaning changed (passivetree_config.lua `reworked`): id -> the first code version made with the new
+-- meaning. An older code that holds such a node leaves it out on import (with a note), and the nodes only connected
+-- through it. Append only. Version 3 (2026-10): 369, 376, 383, 390 became the line keystones (they were mythic leaves).
+B.REWORKED = {[369] = 3, [376] = 3, [383] = 3, [390] = 3}
 -- class lines (the base classes of Chaos.classes.ids); index = the code's class byte. Append only, never reorder.
 B.CLASS_LINES = {"warrior", "ranger", "mystic", "thief"}
 B.PARAGON_KEYS = {"damage", "critDamage", "health", "reduction", "speed", "mana", "goldFind", "itemFind"}
@@ -292,12 +299,17 @@ function B.plan(tree, build, ctx)
 			name(build.classId or 0), name(ctx.classId or 0))
 	end
 	local set, wanted = {}, 0
+	local reworked = 0
+	local codeVersion = build.version or B.VERSION
 	for _, id in ipairs(build.nodes) do
 		local node = tree.nodes[id]
 		if not node then
 			return nil, string.format("This build uses node %d, which is not in the passive tree (the tree changed).", id)
 		end
-		if id ~= tree.root and not set[id] then
+		if B.REWORKED[id] and codeVersion < B.REWORKED[id] then
+			-- made before the node changed its meaning: left out (a free refund at login did the same to saved trees)
+			reworked = reworked + 1
+		elseif id ~= tree.root and not set[id] then
 			set[id] = true
 			wanted = wanted + 1
 			if node.v and not node.s and not (ctx.keystoneKey and node.v[ctx.keystoneKey]) then
@@ -336,7 +348,13 @@ function B.plan(tree, build, ctx)
 	end
 	for id in pairs(set) do
 		if not depth[id] then
-			return nil, string.format("This build is broken: node %d is not connected to the start.", id)
+			if reworked == 0 then
+				return nil, string.format("This build is broken: node %d is not connected to the start.", id)
+			end
+			-- it hung on a reworked node that was left out
+			set[id] = nil
+			wanted = wanted - 1
+			reworked = reworked + 1
 		end
 	end
 
@@ -442,6 +460,12 @@ function B.plan(tree, build, ctx)
 		plan.notes[#plan.notes + 1] = string.format(
 			"You own %d passive points; the build needs %d. The first %d nodes along the path are applied, %d are left out.",
 			points, wanted, #nodes, plan.skipped)
+	end
+	plan.reworked = reworked
+	if reworked > 0 then
+		plan.notes[#plan.notes + 1] = string.format(
+			"The code is older than a tree change: %d node%s whose effect changed %s left out.", reworked,
+			reworked == 1 and "" or "s", reworked == 1 and "is" or "are")
 	end
 
 	-- Paragon part

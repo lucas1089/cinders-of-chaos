@@ -123,7 +123,7 @@ function S.curse(player, classKey, target)
 		L.addTimer(target, sub, w.durationMs)
 		target:registerEvent("ChaosNecroCurse")
 	end
-	local min, max = N.curseTick(S.cfg, classKey, player:getLevel(), player:getMagicLevel(), L.hoard(player))
+	local min, max = N.curseTick(S.cfg, classKey, player:getLevel(), player:getMagicLevel(), L.spellFactor(player))
 	S.dot(player:getId(), target:getId(), "curse", w.ticks, w.tickMs, min, max, COMBAT_DEATHDAMAGE,
 		CONST_ME_SMALLCLOUDS)
 	ChaosSpell.fx(target:getPosition(), "necro_skull", CONST_ME_MORTAREA)

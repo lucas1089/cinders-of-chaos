@@ -5,7 +5,9 @@
 -- 621 / 624 variants and their class lists, the tree still too big to complete), the client tooltips stating the
 -- numbers of class_tree.lua, and the class rules that read the tree: Thief line (off-hand share, evasion, Living Shadow,
 -- Iron Parry, Way of the Blade), Necromancer line (Legion, Banner Bearer, Bone Colossus, Hoarded Souls), Monk line
--- (Nerve Strike, Deep Mantra, Hundred Hands), Templar line (Burning Zeal, Sanctuary, Bastion), Pack Alpha.
+-- (Nerve Strike, Deep Mantra, Hundred Hands), Templar line (Burning Zeal, Sanctuary, Bastion), Pack Alpha; the line
+-- keystones of the main tree (383 Blackblood Creed, 369 Covenant of the Grave, 390 Scarred Discipline, 376 Penitent's
+-- Wrath): the data, the tooltips and their rules.
 WEAPON_SWORD, WEAPON_CLUB, WEAPON_DISTANCE = 1, 2, 5
 SLOTP_TWO_HAND = 2048
 
@@ -102,6 +104,34 @@ for _, node in pairs(tree.nodes) do
 	for _, v in pairs(node.v or {}) do for stat in pairs(v) do onNodes[stat] = true end end
 end
 for _, key in ipairs(CT.keys) do eq(onNodes[key], true, "flag on a node: " .. key) end
+-- the line keystones: one per line of the class sections, on a main tree leaf, for the base class and both ascended
+-- classes of that line only
+local LINE_KS = {
+	{id = 383, key = "ksBlackbloodCreed", classes = {"thief", "ninja", "samurai"}},
+	{id = 369, key = "ksGraveCovenant", classes = {"necromancer", "lich", "bonelord"}},
+	{id = 390, key = "ksScarredDiscipline", classes = {"monk", "shadowfist", "ironsage"}},
+	{id = 376, key = "ksPenitentWrath", classes = {"templar", "inquisitor", "sentinel"}},
+}
+local lineOf = {}
+for _, ks in ipairs(LINE_KS) do
+	local node = tree.nodes[ks.id]
+	eq(node.s[ks.key], 1, ks.key .. " on " .. ks.id); eq(#node.n, 1, ks.id .. " is a leaf")
+	local n = 0
+	for _ in pairs(node.c) do n = n + 1 end
+	eq(n, 3, ks.id .. ": three classes")
+	for _, k in ipairs(ks.classes) do eq(node.c[k], true, ks.id .. " for " .. k); lineOf[k] = ks.id end
+	for _, k in ipairs({"warrior", "deadeye", "illusionist"}) do eq(CT.allowed(node, k), false, ks.id .. " not for " .. k) end
+end
+-- every class of the four lines now has a keystone it may take as its base class too
+for k in pairs(lineOf) do
+	local ks = 0
+	for _, node in pairs(tree.nodes) do
+		if node.c and CT.allowed(node, k) then
+			for stat in pairs(node.s or {}) do if stat:sub(1, 2) == "ks" then ks = ks + 1 end end
+		end
+	end
+	eq(ks, (k == "thief" or k == "necromancer" or k == "monk" or k == "templar") and 1 or 2, "keystones " .. k .. " may take")
+end
 -- 621 / 624: only the Warrior, Ranger and Mystic lines, a variant for each
 for _, id in ipairs({621, 624}) do
 	for _, k in ipairs({"warrior", "juggernaut", "berserker", "ranger", "deadeye", "beastmaster", "mystic", "elementalist", "illusionist"}) do
@@ -199,6 +229,24 @@ if fh then
 	has(663, nil, "0." .. math.floor((0.004 + fx.ctSanctuary.regen) * 1000 + 0.5) .. "%")
 	has(664, nil, math.floor(fx.ksBastion.reduction * 100 + 0.5) .. "%")
 	has(664, nil, fx.ksBastion.radius .. " sqm")
+	-- the line keystones (main tree)
+	has(383, nil, "+" .. math.floor(fx.ksBlackbloodCreed.poisonBonus * 100 + 0.5) .. "%")
+	has(383, nil, fx.ksBlackbloodCreed.evasionScale == 0.5 and "halved" or "?")
+	has(369, nil, "+" .. math.floor(fx.ksGraveCovenant.minionHit * 100 + 0.5) .. "% damage")
+	has(369, nil, "+" .. math.floor(fx.ksGraveCovenant.minionHealth * 100 + 0.5) .. "% health")
+	has(369, nil, math.floor(fx.ksGraveCovenant.ownSpell * 100 + 0.5) .. "% less")
+	has(390, nil, fx.ksScarredDiscipline.chi .. " chi")
+	has(390, nil, math.floor(fx.ksScarredDiscipline.icdMs / 1000) .. " s")
+	has(390, nil, fx.ksScarredDiscipline.minChi .. " chi or more")
+	has(390, nil, math.floor(fx.ksScarredDiscipline.reduction * 100 + 0.5) .. "% less")
+	has(376, nil, math.floor(fx.ksPenitentWrath.share * 100 + 0.5) .. "% of the damage")
+	has(376, nil, fx.ksPenitentWrath.perMagicLevel .. " x magic level")
+	has(376, nil, (fx.ksPenitentWrath.icdMs / 1000) .. " s")
+	has(376, nil, fx.ksPenitentWrath.auraScale == 0.5 and "halved" or "?")
+	for _, id in ipairs({369, 376, 383, 390}) do
+		eq(nodes[id].isKeystone and nodes[id].isDivine, true, id .. " is drawn as a keystone")
+		for _, k in ipairs(nodes[id].classes) do eq(tree.nodes[id].c[k], true, "client classes of " .. id .. ": " .. k) end
+	end
 	-- class lists on the client nodes match the server data
 	for id = 625, 664 do
 		local n, s = nodes[id], tree.nodes[id]
@@ -298,6 +346,81 @@ eq(got[2] ~= nil, true, "Bastion reaches 6 sqm"); eq(got[2].bastion, true)
 got = T.collectAuras({{id = 1, voc = 25, pos = players[1].pos, party = 9}}, players, 0)
 eq(got[2], nil, "5 sqm without it")
 near(T.damageTakenFactor(nil, true, 0.5), 0.8, "Aegis at half for the party"); near(T.damageTakenFactor(nil, true), 0.6)
+
+-- ------------------------------------------------------------------ the line keystones (rules)
+-- Blackblood Creed (Thief line): every weapon hit poisons, the poison +60%, evasion halved
+local creed = CT.fx.ksBlackbloodCreed
+local hit = 1000
+local plainTick = C.poisonTick(hit)
+eq(plainTick, math.floor(hit * cfg.poisonBlades.share / cfg.poisonBlades.ticks + 0.5), "Poison Blades tick")
+eq(C.poisonTick(hit, creed.poisonBonus), math.floor(hit * cfg.poisonBlades.share * 1.6 / cfg.poisonBlades.ticks + 0.5), "+60%")
+eq(C.poisonTick(hit, 0), plainTick, "no bonus")
+eq(C.weaponPoisons(true, false, true), true, "the keystone poisons without the buff")
+eq(C.weaponPoisons(true, true, false), true, "the buff alone"); eq(C.weaponPoisons(true, false, false), false, "neither")
+eq(C.weaponPoisons(false, true, true), false, "spells never poison")
+near(C.dodgeChance(12, 0, creed.evasionScale), 0.06, "Ninja 12% -> 6%")
+near(C.dodgeChance(12, 0.04, creed.evasionScale), 0.08, "Fleet Shadow is halved too")
+eq(C.dodges(11, true, 0.05, 0, creed.evasionScale), false, "Thief 8% -> 4%: a roll of 0.05 hits")
+eq(C.dodges(11, true, 0.05), true, "without the keystone it is a dodge")
+-- Covenant of the Grave (Necromancer line): minions +50% hit and health, the own spells -25%
+local cv = CT.fx.ksGraveCovenant
+local ch, chh, co = N.covenant(cv)
+near(ch, 1.5); near(chh, 1.5); near(co, 0.75)
+local a1n, b1n, c1n = N.covenant(nil)
+eq(a1n + b1n + c1n, 3, "without it: 1, 1, 1")
+local s1 = select(2, N.minionHit(ncfg, "necromancer", "skeleton", 300, 100, false))
+local s2 = select(2, N.minionHit(ncfg, "necromancer", "skeleton", 300, 100, false, ch))
+eq(math.abs(s2 / s1 - 1.5) < 0.01, true, "a skeleton hit +50%")
+eq(math.abs(N.minionHealth(ncfg, "lich", "shade", 300, 100, chh) / N.minionHealth(ncfg, "lich", "shade", 300, 100) - 1.5) < 0.01,
+	true, "the shade's health +50%")
+local f = {scale = 1, mlMin = 1, mlMax = 1, baseMin = 0, baseMax = 0}
+local v1a, v1b = N.values(ncfg, f, 300, 100, 1)
+local v2a, v2b = N.values(ncfg, f, 300, 100, co)
+eq(math.abs(v2b / v1b - 0.75) < 0.01, true, "an own spell -25%")
+-- the glue of necro_lib.lua (both Lua states use it): minion factors and the own spells
+local okLib = pcall(dofile, "data/scripts/chaos/necro_lib.lua")
+if okLib and ChaosNecro and ChaosNecro.minionFactor then
+	local NL = ChaosNecro
+	local nec = mkPlayer()
+	nec.getVocation = function() return {getId = function() return 20 end} end
+	nec.getLevel = function() return 300 end
+	nec.getMagicLevel = function() return 100 end
+	nec.getSummons = function() return {} end
+	near(NL.minionFactor(nec, "skeleton", "hit"), 1, "no keystone: skeleton 1")
+	near(NL.ownSpellFactor(nec), 1, "no keystone: own spells 1")
+	CT.write(nec, {ksGraveCovenant = 1})
+	near(NL.minionFactor(nec, "skeleton", "hit"), 1.5, "Covenant: skeleton hits")
+	near(NL.minionFactor(nec, "shade", "health"), 1.5, "Covenant: the shade's health")
+	CT.write(nec, {ksGraveCovenant = 1, ksBoneColossus = 1})
+	near(NL.minionFactor(nec, "golem", "hit"), 1.5 * 1.6, "Covenant and Bone Colossus multiply on the golem")
+	near(NL.ownSpellFactor(nec), 0.75, "own spells -25%")
+	near(NL.spellFactor(nec), 0.75, "a Necromancer has no Soul Hoard: 0.75")
+	local a0 = select(2, N.values(ncfg, f, 300, 100, 1))
+	eq(select(2, NL.values(nec, f)), select(2, N.values(ncfg, f, 300, 100, 0.75)), "a spell's values with the keystone")
+	eq(a0 > select(2, NL.values(nec, f)), true, "lower than without")
+else
+	print("(necro_lib.lua not loadable without the engine here: its glue check skipped)")
+end
+-- Scarred Discipline (Monk line): no dodge, chi from hits taken (one every 2 s), -10% at 3+ chi
+local sc = CT.fx.ksScarredDiscipline
+eq(M.dodges(17, true, false, 0.0), true, "a Monk dodges a roll of 0"); eq(M.dodges(17, true, false, 0.0, true), false, "not with it")
+eq(M.scarGivesChi(4, 10000, sc), true); eq(M.scarGivesChi(4, 11999, sc), false, "one every 2 s")
+eq(M.scarGivesChi(4, 12000, sc), true); M.clear(4); eq(M.scarGivesChi(4, 12100, sc), true, "cleared")
+near(M.scarFactor(2, sc), 1, "2 chi: nothing"); near(M.scarFactor(3, sc), 0.9, "3 chi: -10%"); near(M.scarFactor(5, sc), 0.9)
+near(M.scarFactor(5, nil), 1, "without it")
+-- Penitent's Wrath (Templar line): the answer, its cooldown, the halved aura
+local pw = CT.fx.ksPenitentWrath
+eq(T.penitentDamage(-1000, 25, pw), 400 + 100, "40% of 1000 + 4 x 25")
+eq(T.penitentDamage(0, 25, pw), 0, "nothing taken, no answer"); eq(T.penitentDamage(1000, 25, nil), 0, "without it")
+eq(T.penitentReady(8, 1000, pw), true); eq(T.penitentReady(8, 1499, pw), false, "one every 0.5 s")
+eq(T.penitentReady(8, 1500, pw), true); T.clear(8); eq(T.penitentReady(8, 1600, pw), true, "cleared")
+near(T.auraOf(23, {scale = pw.auraScale}).reduction, 0.03, "the Templar's aura 6% -> 3%")
+near(T.auraOf(25, {reduction = 0.04, radius = 1, bastion = true, scale = pw.auraScale}).reduction, 0.08,
+	"with Bastion: (12% + 4%) halved")
+eq(T.auraOf(23, {scale = pw.auraScale}).radius, 4, "the radius stays")
+got = T.collectAuras({{id = 1, voc = 23, pos = players[1].pos, party = 9, bonus = {scale = 0.5}},
+	{id = 3, voc = 24, pos = players[1].pos, party = 9}}, {players[1]}, 0)
+near(got[1].reduction, 0.04, "an Inquisitor's full 4% beats a halved Templar aura (3%)")
 
 -- ------------------------------------------------------------------ the class damage factor
 local saved = CT.classDamage

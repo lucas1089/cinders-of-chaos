@@ -309,27 +309,33 @@ function M.offhandDamage(hit, mainAttack, offAttack, targetIsPlayer, extraShare)
 	return math.floor(value + 0.5)
 end
 
--- Poison Blades: damage per tick for a weapon hit of `hit`.
-function M.poisonTick(hit)
+-- Poison Blades: damage per tick for a weapon hit of `hit`. bonus: Blackblood Creed's poisonBonus (0 / nil = none).
+function M.poisonTick(hit, bonus)
 	local p = cfg().poisonBlades
-	return math.max(1, math.floor(math.abs(hit or 0) * p.share / p.ticks + 0.5))
+	return math.max(1, math.floor(math.abs(hit or 0) * p.share * (1 + (bonus or 0)) / p.ticks + 0.5))
 end
 
-function M.dodgeChance(vocId, extra)
+-- Blackblood Creed (the line keystone): does a weapon hit poison? With the keystone always, else while Poison Blades lasts
+function M.weaponPoisons(isWeapon, bladesBuff, creed)
+	return isWeapon == true and (bladesBuff == true or creed == true)
+end
+
+-- scale: Blackblood Creed's evasionScale (nil = 1)
+function M.dodgeChance(vocId, extra, scale)
 	local base = cfg().evasion[vocId]
 	if not base then
 		return 0
 	end
-	return base + (extra or 0)
+	return (base + (extra or 0)) * (scale or 1)
 end
 
 -- `roll` in [0, 1) (math.random()); only weapon-style attacks (melee or ranged origin) can be dodged.
--- extra: evasion from the passive tree (Fleet Shadow)
-function M.dodges(vocId, isWeaponAttack, roll, extra)
+-- extra: evasion from the passive tree (Fleet Shadow); scale: Blackblood Creed halves it
+function M.dodges(vocId, isWeaponAttack, roll, extra, scale)
 	if not isWeaponAttack then
 		return false
 	end
-	return roll < M.dodgeChance(vocId, extra)
+	return roll < M.dodgeChance(vocId, extra, scale)
 end
 
 -- Living Shadow (Ninja keystone): livingState[id] = ms the window ends

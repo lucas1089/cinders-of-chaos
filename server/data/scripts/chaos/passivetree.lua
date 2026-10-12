@@ -503,8 +503,53 @@ local function refundForeignNodes(player)
 end
 ChaosPassiveTree.refundForeignNodes = refundForeignNodes
 
+-- nodes whose meaning changed a lot (passivetree_config.lua `reworked`): once per version, every preset and saved
+-- loadout of the character loses them (and the nodes only connected through them), for free, with a message.
+-- Chaos.storage.passiveRework keeps the last version handled (a new character simply records it).
+local function refundReworked(player)
+	local key = Chaos.storage.passiveRework
+	local list = planCfg.reworked
+	if not key or type(list) ~= "table" or #list == 0 then
+		return 0
+	end
+	local seen = player:getStorageValue(key)
+	local drop, newest, any = Core.reworkedSince(list, seen)
+	if newest == seen then
+		return 0
+	end
+	local total, inLoadouts = 0, 0
+	if any then
+		local tree = getTree()
+		for _, row in ipairs(loadPresets(player:getGuid())) do
+			local kept, removed = Core.dropNodes(tree, row.nodes, drop)
+			if #removed > 0 then
+				savePreset(player:getGuid(), row.preset, row.name, kept, row.masteries)
+				total = total + #removed
+			end
+		end
+		if ChaosLoadouts and ChaosLoadouts.dropNodes then
+			local ok, n = pcall(ChaosLoadouts.dropNodes, player, drop)
+			if ok then
+				inLoadouts = tonumber(n) or 0
+			else
+				print("[ChaosPassiveTree] reworked nodes in loadouts: " .. tostring(n))
+			end
+		end
+	end
+	player:setStorageValue(key, newest)
+	if total + inLoadouts > 0 then
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format(
+			"Your passive tree: %d node%s whose effect changed (now class keystones) %s refunded for free%s.",
+			total, total == 1 and "" or "s", total == 1 and "was" or "were",
+			inLoadouts > 0 and string.format("; your saved loadouts lost %d", inLoadouts) or ""))
+	end
+	return total
+end
+ChaosPassiveTree.refundReworked = refundReworked
+
 function LoginEvent.onLogin(player)
 	player:registerEvent("ChaosPassiveTreeExtended")
+	refundReworked(player)
 	refundForeignNodes(player)
 	refundOverBudget(player)
 	applyBonuses(player)

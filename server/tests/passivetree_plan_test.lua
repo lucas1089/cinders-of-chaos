@@ -7,7 +7,8 @@
 --   * the opcode handlers: planApply saves the whole plan at once or nothing (planResult), the rate limit, masteryChoose
 --     priced like a single-node refund, sendNodes carries the masteries, the bonuses use the chosen effect, a refund keeps
 --     the other masteries, the inspect view;
---   * the loadouts tree text keeps the masteries.
+--   * the loadouts tree text keeps the masteries;
+--   * reworked nodes (passivetree_config.lua reworked): the core (reworkedSince, dropNodes) and the free refund at login.
 local n = 0
 setmetatable(_G, {__index = function(t, k)
 	if type(k) == "string" and k:match("^[A-Z_0-9]+$") then n = n + 1; rawset(t, k, n); return n end
@@ -317,6 +318,61 @@ ChaosRespec = realRespec
 rows = {{preset = 1, name = "Preset 1", nodes = "626,627,628,665|665:4"}}
 local view = ChaosPassiveTree.publicView(p)
 check(#view.nodes == 4 and view.masteries[1].choice == 4 and view.cls == "ninja" and view.line == "thief", "the public view")
+
+-- ------------------------------------------------------------------------------------------------ reworked nodes
+-- the config: append only, version 1 = the four mythic leaves that became the line keystones
+local RW = ChaosPassiveTreeConfig.reworked
+check(RW[1].version == 1 and table.concat(RW[1].ids, ",") == "369,376,383,390", "version 1 of the reworked list")
+local set, newest, any = C.reworkedSince(RW, -1)
+check(set[383] and set[369] and set[376] and set[390] and newest == 1 and any, "a character that saw none")
+set, newest, any = C.reworkedSince(RW, 1)
+check(next(set) == nil and newest == 1 and not any, "a character that saw version 1")
+set, newest = C.reworkedSince({{version = 1, ids = {5}}, {version = 2, ids = {7}}}, 1)
+check(set[7] and not set[5] and newest == 2, "only what came after")
+local kept, removed = C.dropNodes(tree, {3, 8, 10, 12, 61}, {[61] = true})
+check(table.concat(kept, ",") == "3,8,10,12" and #removed == 1 and removed[1].why == "reworked", "a leaf goes alone")
+kept, removed = C.dropNodes(tree, {3, 8, 10, 12, 61}, {[8] = true})
+check(table.concat(kept, ",") == "3" and #removed == 4 and removed[2].why == "disconnected", "what hangs on it goes too")
+kept, removed = C.dropNodes(tree, {3, 8}, {})
+check(#kept == 2 and #removed == 0, "nothing to drop")
+-- at login (passivetree.lua refundReworked): once, presets and loadouts, with a message
+rows = {{preset = 1, name = "Preset 1", nodes = "2,9,11,101,100,102"}}
+local msgs = {}
+function p:sendTextMessage(_, text) msgs[#msgs + 1] = text end
+p.storage[Chaos.storage.passiveRework] = nil
+check(ChaosPassiveTree.refundReworked(p) == 0 and p.storage[Chaos.storage.passiveRework] == 1 and #msgs == 0,
+	"nothing reworked held: the version is recorded, no message")
+check(ChaosPassiveTree.refundReworked(p) == 0, "and not looked at again")
+-- a Thief line tree up to 383 (Blackblood Creed; it was the mythic leaf "wisdom 10")
+local path383 = {}
+do
+	local prev, queue, head = {[1] = 1}, {1}, 1
+	while head <= #queue do
+		local id = queue[head]
+		head = head + 1
+		for _, nb in ipairs(tree.nodes[id].n) do
+			if not prev[nb] and not tree.nodes[nb].c then prev[nb] = id; queue[#queue + 1] = nb end
+		end
+	end
+	prev[383] = prev[383] or 382
+	local id = 383
+	while id ~= 1 do table.insert(path383, 1, id); id = prev[id] end
+end
+rows = {{preset = 1, name = "Preset 1", nodes = table.concat(path383, ",")}}
+inserts, msgs = {}, {}
+local loadoutDrop
+ChaosLoadouts = {dropNodes = function(player, drop) loadoutDrop = drop; return 2 end}
+p.storage[Chaos.storage.passiveRework] = 0
+check(ChaosPassiveTree.refundReworked(p) == 1, "383 refunded")
+check(#inserts == 1 and not ("," .. inserts[1].nodes .. ","):find(",383,", 1, true), "saved without it")
+check(#C.parseAlloc(inserts[1].nodes) == #path383 - 1, "every other node kept")
+check(loadoutDrop and loadoutDrop[383] and loadoutDrop[390], "the loadouts are told the same ids")
+check(msgs[1] and msgs[1]:find("1 node", 1, true) and msgs[1]:find("loadouts lost 2", 1, true), "one message: " .. tostring(msgs[1]))
+check(p.storage[Chaos.storage.passiveRework] == 1, "version recorded")
+inserts = {}
+check(ChaosPassiveTree.refundReworked(p) == 0 and #inserts == 0, "only once")
+ChaosLoadouts = nil
+p.sendTextMessage = function() end
 
 -- ------------------------------------------------------------------------------------------------ loadouts text
 dofile("data/scripts/chaos/loadouts_config.lua")

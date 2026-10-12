@@ -29,6 +29,9 @@ function onCastSpell(creature, variant, isHotkey)
 	end
 	local o = cfg.boneOffering
 	local min, max = N.offeringValues(cfg, player:getLevel(), player:getMagicLevel(), pick.creature:getHealth())
+	-- Covenant of the Grave: a spell of the owner (the bigger skeleton's health already raised it)
+	local own = L.ownSpellFactor(player)
+	min, max = math.floor(min * own), math.floor(max * own)
 	local pos = pick.pos
 	L.dismiss(pick.creature)
 	if NecroSpell.fx(pos, {"bonelord_offering", "bone_burst"}, "bone_burst", CONST_ME_GROUNDSHAKER) ~= "bonelord_offering" then

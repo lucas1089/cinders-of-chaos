@@ -13,6 +13,8 @@
 --   * Evasion: a chance to dodge melee / ranged hits, more while Mistborne Step's window lasts (subId.roll).
 --   * Chi Ward: a shield on any player (subId.ward timer, storage.wardAmount) absorbs damage.
 --   * Mantra of Stone: players under it (subId.mantra) take less damage.
+--   * Scarred Discipline (the line's keystone in the main tree, node 390): no evasion; a hit taken from a creature
+--     gives a chi (one every 2 s); 10% less damage taken while holding 3 chi or more.
 --   * Iron Palm stun: a monster under the stun (subId.stun) cannot attack (onTargetCombat below). A player hit by an
 --     Iron Palm (the spell sets storage.palmChi while its strike lands) is stunned here, after every PvP rule let the
 --     damage through: the engine's movement block and no-move flag (no walking, not pushed; released by a timer at
@@ -153,15 +155,29 @@ local function onDefence(player, attacker, primaryDamage, secondaryDamage, prima
 		return primaryDamage, secondaryDamage
 	end
 	local voc = player:getVocation():getId()
+	-- Scarred Discipline (the line keystone): no evasion; hits taken give chi; less damage taken at 3+ chi
+	local scar = M.isMonkLine(voc) and CT.has(player, "ksScarredDiscipline") and CT.fx.ksScarredDiscipline or nil
 
 	-- evasion (Monk line; melee and ranged hits of creatures)
 	if attacker and M.isMonkLine(voc) and origin ~= ORIGIN_CONDITION then
 		local isWeapon = origin == ORIGIN_MELEE or origin == ORIGIN_RANGED
-		if M.dodges(voc, isWeapon, hasCond(player, CONDITION_ATTRIBUTES, ID.subId.roll), math.random()) then
+		if M.dodges(voc, isWeapon, hasCond(player, CONDITION_ATTRIBUTES, ID.subId.roll), math.random(), scar ~= nil) then
 			if ChaosCombatFx then
 				ChaosCombatFx.dodge(player)
 			end
 			return 0, 0
+		end
+	end
+
+	if scar and attacker and origin ~= ORIGIN_CONDITION then
+		local chi = M.getChi(player)
+		local f = M.scarFactor(chi, scar)
+		if f ~= 1 then
+			primaryDamage, secondaryDamage = scale(primaryDamage, f), scale(secondaryDamage, f)
+			amount = math.abs(primaryDamage) + math.abs(secondaryDamage)
+		end
+		if M.scarGivesChi(player:getId(), M.now(), scar) then
+			M.addChi(player, scar.chi)
 		end
 	end
 

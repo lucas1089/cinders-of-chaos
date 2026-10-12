@@ -11,7 +11,7 @@
 --   * the Paragon part is applied when the code has one and the track is unlocked
 --
 -- Protocol (opcode 65, through ChaosPassiveTree.extraActions in passivetree.lua):
---   client -> server  buildExport                  -> buildCode {code, nodes, paragon} (format version 2: with the masteries)
+--   client -> server  buildExport                  -> buildCode {code, nodes, paragon} (format version 3: with the masteries)
 --                     buildPreview {code}          -> buildPreview {code, nodes, current, wanted, applied, skipped, added,
 --                                                     removed, treeReset, paragon, paragonChange, paragonReset, cost,
 --                                                     free, points, notes, change, masteries = [{id, choice}]} or

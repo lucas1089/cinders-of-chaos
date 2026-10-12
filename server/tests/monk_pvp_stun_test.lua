@@ -4,7 +4,7 @@
 -- landed Iron Palm stuns (movement block + no-move + CONDITION_PACIFIED, immunity and window timers, text, buff bar
 -- pushed, a cast interrupted), the timer releases it on time, immunity refuses a second stun, the window halves the
 -- next one, a dodged / lethal / non-Iron-Palm hit does not stun, another script's movement block is left alone, the
--- think fallback frees a stun whose timer was lost.
+-- think fallback frees a stun whose timer was lost. Also the glue of Scarred Discipline (the Monk line keystone).
 local n = 0
 setmetatable(_G, {__index = function(t, k)
 	if type(k) == "string" and k:match("^[A-Z_0-9]+$") then n = n + 1; rawset(t, k, n); return n end
@@ -188,5 +188,33 @@ victim.conds = {}
 palm(1)
 events.ChaosMonkLogout.onLogout(victim)
 eq(M.pvpStun[2], nil, "logout clears")
+
+-- Scarred Discipline (the Monk line's keystone in the main tree, class_tree.lua): no dodge, a hit taken gives a chi
+-- (one every 2 s), 10% less damage taken while holding 3 chi or more
+local CT = ChaosClassTree
+local brawler = player(3, ID.vocation.monk, "Ash")
+local hitter = player(4, 4, "Orc")
+local realRandom = math.random
+math.random = function() return 0 end -- every roll would dodge
+local function hitMonk(dmg)
+	return onHealth(brawler, hitter, dmg or -1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+end
+eq(hitMonk(), 0, "without the keystone a roll of 0 is a dodge")
+CT.write(brawler, {ksScarredDiscipline = 1})
+eq(M.getChi(brawler), 0)
+eq(hitMonk(), -1000, "with it: no dodge, 0 chi: the full hit")
+eq(M.getChi(brawler), 1, "the hit gave a chi")
+eq(hitMonk(), -1000, "a second hit at once"); eq(M.getChi(brawler), 1, "no chi within 2 s")
+clock = clock + 2000
+M.setChi(brawler, 3)
+eq(hitMonk(), -900, "3 chi: -10%"); eq(M.getChi(brawler), 4, "and a chi")
+clock = clock + 2000
+eq(onHealth(brawler, hitter, -1000, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL), -900, "spells too (a creature's hit)")
+eq(M.getChi(brawler), 5)
+clock = clock + 2000
+M.setChi(brawler, 0)
+eq(onHealth(brawler, hitter, -1000, COMBAT_EARTHDAMAGE, 0, COMBAT_NONE, ORIGIN_CONDITION), -1000, "a poison tick: nothing")
+eq(M.getChi(brawler), 0, "and no chi")
+math.random = realRandom
 
 print("monk pvp stun tests OK")

@@ -95,6 +95,15 @@ function N.minionHit(cfg, classKey, kind, level, ml, aura, extra)
 	return floor(avg * (1 - s)), floor(avg * (1 + s))
 end
 
+-- Covenant of the Grave (the line keystone, class_tree.lua fx.ksGraveCovenant; nil = not held): the factors on a
+-- minion's hit and health (every kind) and on the owner's own spells
+function N.covenant(fx)
+	if not fx then
+		return 1, 1, 1
+	end
+	return 1 + (fx.minionHit or 0), 1 + (fx.minionHealth or 0), 1 - (fx.ownSpell or 0)
+end
+
 -- share of a skeleton hit that strikes the other enemies next to its target (Bone Lord), 0 for the others
 function N.splashShare(cfg, classKey, kind)
 	if kind ~= "skeleton" then

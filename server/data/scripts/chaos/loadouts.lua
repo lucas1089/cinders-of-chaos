@@ -915,6 +915,28 @@ function L.delete(player, slot)
 end
 
 -- ------------------------------------------------------------------------------------------------ login: crash recovery
+-- the passive tree's free refund of reworked nodes (passivetree.lua refundReworked, passivetree_config.lua reworked):
+-- every saved loadout tree loses the nodes of `drop` (a set of ids) and the ones only connected through them.
+-- Returns how many nodes were taken out.
+function L.dropNodes(player, drop)
+	local PC = ChaosPassiveTreeCore
+	if not PC or not PC.dropNodes then
+		return 0
+	end
+	local guid, tree, total = player:getGuid(), treeData(), 0
+	for slot, r in pairs(L.rows(guid)) do
+		if slot > 0 and (r.tree or "") ~= "" then
+			local kept, removed = PC.dropNodes(tree, Core.parseNodes(r.tree), drop)
+			if #removed > 0 then
+				r.tree = Core.formatNodes(kept, Core.parseMasteries(r.tree))
+				writeRow(guid, slot, r)
+				total = total + #removed
+			end
+		end
+	end
+	return total
+end
+
 function L.recover(player)
 	local guid = player:getGuid()
 	local rows = L.rows(guid)

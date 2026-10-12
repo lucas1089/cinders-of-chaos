@@ -1682,18 +1682,18 @@ local vocationSpecials = {
 	mystic = special("Mystic", "#00FFFF", {"Spells, wands and rods. Keystones:", "Arcane Echo, Elemental Overload.", "Ascends: Elementalist or Illusionist."}),
 	elementalist = special("Elementalist", "#00FFFF", {"The top area damage. Keystones:", "Arcane Echo, Elemental Overload."}),
 	illusionist = special("Illusionist", "#B070FF", {"The best healer, party attack buffs.", "Keystones: Shared Phantasm,", "Inspiring Illusion."}),
-	thief = special("Thief", "#C0C0C0", {"Light blades, shurikens, stealth.", "Class section (top left): Ninja", "and Samurai paths after ascension."}),
-	ninja = special("Ninja", "#C0C0C0", {"Dual daggers, evasion, shadow.", "Class section (top left), keystone", "Living Shadow."}),
-	samurai = special("Samurai", "#C0C0C0", {"Duelist off-tank: parries, counters,", "taunts. Class section (top left),", "keystone Way of the Blade."}),
-	necromancer = special("Necromancer", "#7FFF9F", {"Skeletons, curses and corpses.", "Class section (top left): Lich and", "Bone Lord paths after ascension."}),
-	lich = special("Lich", "#7FFF9F", {"Curses, rot, life drain, one shade.", "Class section (top left), keystone", "Hoarded Souls."}),
-	bonelord = special("Bone Lord", "#7FFF9F", {"The army, the Bone Golem, a banner.", "Class section (top left), keystone", "Bone Colossus."}),
-	monk = special("Monk", "#FFD27F", {"Unarmed strikes build chi, finishers", "spend it. Class section (top left):", "Shadowfist and Iron Sage paths."}),
-	shadowfist = special("Shadowfist", "#FFD27F", {"Single-target burst, focus crits.", "Class section (top left), keystone", "Hundred Hands."}),
-	ironsage = special("Iron Sage", "#FFD27F", {"Chi healer: Kindled Breath, Mantra,", "Chi Ward. Class section (top left),", "keystone Flowing Mercy."}),
-	templar = special("Templar", "#FFF4B0", {"Holy melee, shield, a defence aura.", "Class section (top left): Inquisitor", "and Sentinel paths after ascension."}),
-	inquisitor = special("Inquisitor", "#FFF4B0", {"Holy area damage, Judgement, Zealotry.", "Class section (top left), keystone", "Divine Verdict."}),
-	sentinel = special("Sentinel", "#FFF4B0", {"Tank-support, the strongest aura.", "Class section (top left), keystone", "Bastion."})
+	thief = special("Thief", "#C0C0C0", {"Light blades, shurikens, stealth.", "Class section (top left): Ninja", "and Samurai paths after ascension.", "Line keystone: Blackblood Creed."}),
+	ninja = special("Ninja", "#C0C0C0", {"Dual daggers, evasion, shadow.", "Class section (top left), keystone", "Living Shadow; Blackblood Creed."}),
+	samurai = special("Samurai", "#C0C0C0", {"Duelist off-tank: parries, counters,", "taunts. Class section (top left),", "keystone Way of the Blade;", "Blackblood Creed."}),
+	necromancer = special("Necromancer", "#7FFF9F", {"Skeletons, curses and corpses.", "Class section (top left): Lich and", "Bone Lord paths after ascension.", "Line keystone: Covenant of the Grave."}),
+	lich = special("Lich", "#7FFF9F", {"Curses, rot, life drain, one shade.", "Class section (top left), keystone", "Hoarded Souls; Covenant of the Grave."}),
+	bonelord = special("Bone Lord", "#7FFF9F", {"The army, the Bone Golem, a banner.", "Class section (top left), keystone", "Bone Colossus; Covenant of the Grave."}),
+	monk = special("Monk", "#FFD27F", {"Unarmed strikes build chi, finishers", "spend it. Class section (top left):", "Shadowfist and Iron Sage paths.", "Line keystone: Scarred Discipline."}),
+	shadowfist = special("Shadowfist", "#FFD27F", {"Single-target burst, focus crits.", "Class section (top left), keystone", "Hundred Hands; Scarred Discipline."}),
+	ironsage = special("Iron Sage", "#FFD27F", {"Chi healer: Kindled Breath, Mantra,", "Chi Ward. Class section (top left),", "keystone Flowing Mercy;", "Scarred Discipline."}),
+	templar = special("Templar", "#FFF4B0", {"Holy melee, shield, a defence aura.", "Class section (top left): Inquisitor", "and Sentinel paths after ascension.", "Line keystone: Penitent's Wrath."}),
+	inquisitor = special("Inquisitor", "#FFF4B0", {"Holy area damage, Judgement, Zealotry.", "Class section (top left), keystone", "Divine Verdict; Penitent's Wrath."}),
+	sentinel = special("Sentinel", "#FFF4B0", {"Tank-support, the strongest aura.", "Class section (top left), keystone", "Bastion; Penitent's Wrath."})
 }
 
 function calculateStats()
@@ -2035,7 +2035,9 @@ KEYSTONE_NAMES = {
 	ksImmovable = "Immovable", ksUndyingRage = "Undying Rage", ksHuntersFocus = "Hunter's Focus", ksPackAlpha = "Pack Alpha",
 	ksLivingShadow = "Living Shadow", ksWayOfTheBlade = "Way of the Blade", ksHoardedSouls = "Hoarded Souls",
 	ksBoneColossus = "Bone Colossus", ksHundredHands = "Hundred Hands", ksFlowingMercy = "Flowing Mercy",
-	ksDivineVerdict = "Divine Verdict", ksBastion = "Bastion"
+	ksDivineVerdict = "Divine Verdict", ksBastion = "Bastion",
+	ksBlackbloodCreed = "Blackblood Creed", ksGraveCovenant = "Covenant of the Grave",
+	ksScarredDiscipline = "Scarred Discipline", ksPenitentWrath = "Penitent's Wrath"
 }
 -- class notables of the class sections (their effect is in the node's own tooltip lines)
 CLASS_NOTABLE_NAMES = {

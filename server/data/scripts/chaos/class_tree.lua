@@ -8,6 +8,8 @@
 --     three line nodes and two ascended paths of three nodes, each ending in the ascended class's keystone. The start
 --     node is not a node of the server's data: its edges are the root's (node 1), so the section grows from the start
 --     like any other branch and every connectivity check (save, refund, build codes) works unchanged.
+--   * a second keystone for each of those four lines, for the base class and both ascended classes, on main tree
+--     leaves (383 Blackblood Creed, 369 Covenant of the Grave, 390 Scarred Discipline, 376 Penitent's Wrath).
 --   Nodes a class may hold are marked in the data (`c` = {[class key] = true}); nodes without `c` are for everyone.
 --
 -- What the class nodes do: their stats are flags (`ks...` keystones, `ct...` class notables) or ordinary tree stats.
@@ -34,7 +36,10 @@ M.keys = {
 	"ksDivineVerdict", "ksBastion",
 	-- class notables
 	"ctTwinFangs", "ctFleetShadow", "ctIronParry", "ctSpreadingBlight", "ctLingeringRot", "ctLegion", "ctBannerBearer",
-	"ctNerveStrike", "ctDeepMantra", "ctBurningZeal", "ctSanctuary"
+	"ctNerveStrike", "ctDeepMantra", "ctBurningZeal", "ctSanctuary",
+	-- the second keystone of the Thief, Necromancer, Monk and Templar lines (any class of the line; main tree nodes 383,
+	-- 369, 390, 376, converted from mythic leaves in 2026-10)
+	"ksBlackbloodCreed", "ksGraveCovenant", "ksScarredDiscipline", "ksPenitentWrath"
 }
 M.bit = {}
 for i, key in ipairs(M.keys) do
@@ -87,6 +92,19 @@ M.fx = {
 	ctBurningZeal = {share = 0.05},
 	-- Sentinel notable: the aura's regeneration +regen of the maximum health per second (0.4% -> 0.5%)
 	ctSanctuary = {regen = 0.001},
+	-- The line keystones (one per line, for the base class and both ascended classes; each has a price):
+	-- Thief line (383): every weapon hit poisons as Poison Blades does (buff or not), the poison x (1 + poisonBonus);
+	-- evasion x evasionScale
+	ksBlackbloodCreed = {poisonBonus = 0.60, evasionScale = 0.5},
+	-- Necromancer line (369): minion hits x (1 + minionHit), minion health x (1 + minionHealth); the own spells
+	-- x (1 - ownSpell) (necro_lib.lua ChaosNecro.values; the wand's auto attack and the heals are not spells of the line)
+	ksGraveCovenant = {minionHit = 0.50, minionHealth = 0.50, ownSpell = 0.25},
+	-- Monk line (390): no evasion; a hit taken from a creature gives `chi` (at most one every icdMs); while holding
+	-- minChi or more, damage taken x (1 - reduction)
+	ksScarredDiscipline = {chi = 1, icdMs = 2000, minChi = 3, reduction = 0.10},
+	-- Templar line (376): a melee / ranged hit taken is answered with a holy strike on the attacker for share x the
+	-- damage taken + perMagicLevel x magic level, at most one every icdMs; the own defence aura's reduction x auraScale
+	ksPenitentWrath = {share = 0.40, perMagicLevel = 4, icdMs = 500, auraScale = 0.5},
 }
 
 -- The lines that were tuned without a tree (their kits matched the other classes' numbers with tree points): every

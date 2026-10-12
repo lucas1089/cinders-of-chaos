@@ -488,11 +488,30 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
 
   The Warrior, Ranger and Mystic lines have no class section and no mastery yet. Rules and saved data: server/README.md
   "Passive tree planner and mastery nodes".
+- **Line keystones** (2026-10): the Thief, Necromancer, Monk and Templar lines had one keystone per ascended class (in the
+  section) and none for the base class, the other three lines two. Each of these lines now has a second keystone for
+  another play style, for the base class and both ascended classes, on a converted mythic leaf of the main tree (18-21
+  nodes from the start). Each has a price:
+
+  | Line | Keystone (node) | Play style | Gain | Price |
+  |---|---|---|---|---|
+  | Thief | **Blackblood Creed** (383) | poisoner | every weapon hit poisons (Poison Blades without the buff), the poison +60% | evasion halved |
+  | Necromancer | **Covenant of the Grave** (369) | minion master | minions +50% damage and +50% health | the own spells -25% |
+  | Monk | **Scarred Discipline** (390) | brawler who takes the hits | a hit taken gives a chi (one every 2 s); -10% damage taken at 3+ chi | no evasion at all |
+  | Templar | **Penitent's Wrath** (376) | retaliation | a melee / ranged hit taken is answered with a holy strike: 40% of it + 4 x magic level (one every 0.5 s) | the defence aura's reduction halved, for the party too |
+
+  The nodes were wisdom +10, spirit +10, healing +5% and life leech 5 / 7; a character that held one gets it refunded once,
+  for free, at the next login. Numbers: `server/data/spells/README.md` "Line keystones and the path notables" (computed,
+  not measured in game). Code: server/README.md "Passive tree: class sections and per-class keystones".
+- **Path notables** (2026-10): 27 small nodes in runs of three or more along the paths became notables with their own name
+  (old stats plus a modest premium, same ids and links): server/README.md "Passive tree notables on the paths".
 - **Points** are unchanged (1 per 4 levels: 73 at level 300, 248 at level 1000); every class can hold more than 600 nodes, so
   the tree still cannot be completed. The Paragon track and the Vocation Trials nodes are separate bonus channels and unchanged.
 - **Save data**: no node id changed (the new nodes are 625-664). At login every preset loses, for free and with a message, the
   nodes the class may not hold (another line's section, 621 / 624 for the four new lines), unknown ids and the nodes only connected
-  through them (`ChaosClassTree.sanitize`). Build codes refuse nodes of another class.
+  through them (`ChaosClassTree.sanitize`). Build codes refuse nodes of another class. Nodes whose meaning changed (the four
+  line keystones of 2026-10) are refunded once for every character (`passivetree_config.lua` `reworked`); build codes made
+  before them (versions 1 and 2) leave them out.
 - **Code**: numbers and flags in `server/data/scripts/chaos/class_tree.lua` (a storage bit per flag, read by the scripts and the
   spells); effects in `passivetree_keystones.lua` (Juggernaut, Berserker, Deadeye), `beastmaster.lua` / `classes.lua` (Pack
   Alpha), `thief_combat.lua` / `classes.lua`, `necro_core.lua` / `necro_lib.lua` / `necro_minions.lua` and the Lich spells,

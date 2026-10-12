@@ -224,12 +224,25 @@ function M.bannerBonus(player)
 	return cfg().bannerOfBones.damage + CT.value(player, "ctBannerBearer", "damage")
 end
 
--- Bone Colossus: the golem's hit / health factor (field "hit" | "health"), 1 for other kinds
+-- Covenant of the Grave (the line keystone): its numbers when the player holds it, else nil
+local function covenant(player)
+	return CT.has(player, "ksGraveCovenant") and CT.fx.ksGraveCovenant or nil
+end
+
+-- a minion's hit / health factor (field "hit" | "health"): Bone Colossus (the golem) and Covenant of the Grave (every kind)
 function M.minionFactor(player, kind, field)
-	if kind ~= "golem" then
-		return 1
+	local hit, health = N.covenant(covenant(player))
+	local f = field == "hit" and hit or health
+	if kind == "golem" then
+		f = f * (1 + CT.value(player, "ksBoneColossus", field))
 	end
-	return 1 + CT.value(player, "ksBoneColossus", field)
+	return f
+end
+
+-- the factor on the player's own spells: Covenant of the Grave takes ownSpell off (1 without it)
+function M.ownSpellFactor(player)
+	local _, _, own = N.covenant(covenant(player))
+	return own
 end
 
 -- ------------------------------------------------------------------ damage
@@ -244,8 +257,13 @@ function M.hoard(player)
 	return N.soulHoard(cfg(), classKey, N.minionCap(cfg(), classKey, kind, player:getLevel()), M.count(player, kind), tree)
 end
 
+-- the factor of the own spells' damage: Soul Hoard (Lich) x Covenant of the Grave
+function M.spellFactor(player)
+	return M.hoard(player) * M.ownSpellFactor(player)
+end
+
 function M.values(player, f, extra)
-	return N.values(cfg(), f, player:getLevel(), player:getMagicLevel(), (extra or 1) * M.hoard(player))
+	return N.values(cfg(), f, player:getLevel(), player:getMagicLevel(), (extra or 1) * M.spellFactor(player))
 end
 
 -- Deal damage as the caster (it counts for the caster: experience, loot, kill credit). PvP rules of the scripted

@@ -9,6 +9,9 @@
 --   * Zealotry (Inquisitor spell): a timer condition on the Inquisitor; melee weapon hits add stacks, each stack raises
 --     all its damage. The stacks fall off a few seconds after the last hit.
 --   * Aegis of Faith (Sentinel spell): a timer condition on the Sentinel; damage taken is cut for its duration.
+--   * Penitent's Wrath (the line's keystone in the main tree, node 376): a melee / ranged hit taken is answered with a
+--     holy strike on the attacker (40% of what was taken + 4 x magic level, one every 0.5 s); the own aura's reduction
+--     is halved (its party members' too).
 -- Scripted strikes (the holy strike) are dealt with origin ORIGIN_SPELL inside a guard flag, so they never trigger the
 -- weapon-hit rules again (nor Zealotry a second time: the strike is a share of a hit Zealotry already raised). Not
 -- ORIGIN_NONE: the engine runs no onHealthChange event for it, so Judgement and the curse never saw the strike.
@@ -68,10 +71,12 @@ local function auraTick()
 			-- the passive tree: Sanctuary (more regeneration), Bastion (a stronger, wider aura; Aegis covers the party)
 			local regen = CT.value(p, "ctSanctuary", "regen")
 			local bastion = CT.has(p, "ksBastion") and CT.fx.ksBastion or nil
-			if regen > 0 or bastion then
+			-- Penitent's Wrath (the line keystone): the aura's reduction is halved
+			local scale = CT.value(p, "ksPenitentWrath", "auraScale", 1)
+			if regen > 0 or bastion or scale ~= 1 then
 				entry.bonus = {regenPct = T.auraOf(entry.voc).regenPct > 0 and regen or 0,
 					reduction = bastion and bastion.reduction or 0, radius = bastion and bastion.radius or 0,
-					bastion = bastion ~= nil}
+					bastion = bastion ~= nil, scale = scale}
 			end
 			templars[#templars + 1] = entry
 		end
@@ -144,6 +149,33 @@ local function radiantStrike(attackerId, targetId, amount)
 	end
 end
 
+-- Penitent's Wrath (the line keystone): the holy answer to a hit the Templar took. Dealt like the keystone procs
+-- (passivetree_keystones.lua): ChaosKeystones.depth up, so no passive bonus or keystone runs on it, and the own guard.
+local function penitentStrike(playerId, attackerId, amount)
+	local player, target = Player(playerId), Creature(attackerId)
+	if not player or not target or target:getHealth() <= 0 or player:getHealth() <= 0 then
+		return
+	end
+	if ChaosSpell and not ChaosSpell.canAttack(player, target) then
+		return
+	end
+	player:getPosition():sendDistanceEffect(target:getPosition(), CONST_ANI_HOLY)
+	local K = ChaosKeystones
+	if K then
+		K.depth = (K.depth or 0) + 1
+	end
+	scripted = true
+	local ok, err = pcall(doTargetCombat, player, target, COMBAT_HOLYDAMAGE, -amount, -amount, CONST_ME_HOLYDAMAGE,
+		ORIGIN_SPELL)
+	scripted = false
+	if K then
+		K.depth = K.depth - 1
+	end
+	if not ok then
+		print("[ChaosTemplar] " .. tostring(err))
+	end
+end
+
 -- damage `creature` takes from a Templar-line attacker: Zealotry, Radiant Strikes
 local function onOffence(creature, player, primaryDamage, secondaryDamage, origin)
 	local voc = player:getVocation():getId()
@@ -210,6 +242,15 @@ function event.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 			local f = T.damageTakenFactor(aura, aegis, share)
 			if f ~= 1 then
 				p, s = T.scale(p, f), T.scale(s, f)
+			end
+			-- Penitent's Wrath: a melee / ranged hit taken from a creature is answered (what is left of it)
+			if attacker and attacker ~= creature and not scripted and (origin == ORIGIN_MELEE or origin == ORIGIN_RANGED)
+					and T.isTemplarLine(voc) and CT.has(creature, "ksPenitentWrath") then
+				local fx = CT.fx.ksPenitentWrath
+				local value = T.penitentDamage(math.abs(p) + math.abs(s), creature:getMagicLevel(), fx)
+				if value > 0 and T.penitentReady(creature:getId(), T.now(), fx) then
+					addEvent(penitentStrike, 0, creature:getId(), attacker:getId(), value)
+				end
 			end
 		end
 		return p, s

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Procedural icons for the passive tree keystones (game_passivetree: nodes 621 and 624, and the keystones of the
-class sections, 625-664) and the start images of the class sections.
+"""Procedural icons for the passive tree keystones (game_passivetree: nodes 621 and 624, the keystones of the
+class sections, 625-664, and the line keystones 369, 376, 383, 390) and the start images of the class sections.
 Run: python3 -I client/tools/gen_keystone_icons.py client/overlay/data/images/passivetree/keystones.png
 Writes one row of 64x64 cells, in the order of ICONS below; treedata/icons.lua points at each cell
 (x = index * 64). Next to the sheet: classstart_<line>.png (START below, 150x150), the start node of a class
@@ -120,6 +120,10 @@ ICONS = [  # (icon key in treedata/icons.lua, theme, glyph)
     ('ksHoardedSouls', 'necrotic', 'ghost'), ('ksBoneColossus', 'bone', 'golem'),
     ('ksHundredHands', 'shadow', 'fist'), ('ksFlowingMercy', 'light', 'flame'),
     ('ksDivineVerdict', 'holy', 'eye'), ('ksBastion', 'light', 'shield'),
+    # the second keystone of those four lines, in the main tree: Blackblood Creed, Covenant of the Grave, Scarred
+    # Discipline, Penitent's Wrath
+    ('ksBlackbloodCreed', 'poison', 'drop'), ('ksGraveCovenant', 'bone', 'skull'),
+    ('ksScarredDiscipline', 'blood', 'palm'), ('ksPenitentWrath', 'holy', 'thorns'),
 ]
 
 START = [  # (line, theme, glyph): the start node of each class section

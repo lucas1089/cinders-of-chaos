@@ -629,7 +629,7 @@ base server (idempotent; `--dry-run` lists the changes).
 Kept as typed commands: every staff command (`/` words with an access check: `/rift`, `/season`, `/arena`, `/daily`,
 `/leaderboard`, `/patchnotes`, `/spells reload`, `/supports reload`, `/achievements`, `/invasion`, `/worldboss`,
 `/siege`, `/guild`, `/pet`, `/reports`, `/classunlock`, `/ascendset`, `/towerrun`, `/goblin`, `/coins`, `/gmnotify`,
-`/newplayerkit` and the base server's `/` commands); for a player those words are plain chat. The base server's Help
+`/newplayerkit`, `/treestats` and the base server's `/` commands); for a player those words are plain chat. The base server's Help
 channel words `!mute` / `!unmute` stay: they are tutor tools inside that channel, not player commands.
 
 ## Client-side gaps found while reading the client (not changed, `client/` is out of scope)
@@ -1484,6 +1484,26 @@ variant the server applies (the client's own vocation number did not match: an E
   are in `class_tree.lua`; after each apply they are written as bits to storage 7100022 (`Chaos.storage.passiveClassFx`), which the
   class scripts and the spells (another Lua state) read with `ChaosClassTree.has / value`. `sendNodes` also carries `cls` and
   `line` for the client. Points: unchanged (1 per 4 levels, 248 at level 1000; every class can hold 600+ nodes).
+- **Line keystones (2026-10).** The four lines of the class sections had one keystone per ascended class and none for
+  the base class, where the Warrior, Ranger and Mystic lines have two (621 / 624). Each of them now has a second keystone
+  for another play style, open to the base class and both ascended classes of the line (`c` = the three classes). They
+  sit in the main tree on four mythic leaves that were converted (no layout change; 18-21 nodes from the start, the
+  other keystones 6 and 25): 383 (was wisdom +10, a stat without an engine effect), 369 (was spirit +10), 376 (was
+  healing +5%), 390 (was life leech 5 / 7). Flags appended to `ChaosClassTree.keys` (27 bits of the storage), numbers in
+  `ChaosClassTree.fx`:
+
+| Line | Node | Keystone | Gain | Price |
+|---|---|---|---|---|
+| Thief | 383 | **Blackblood Creed** (`thief_combat.lua`, `classes.lua`) | every weapon hit poisons as Poison Blades does, buff or not; the poison +60% | evasion halved (Thief 8 -> 4%, Ninja 12 -> 6%, Samurai 5 -> 2.5%; Fleet Shadow too) |
+| Necromancer | 369 | **Covenant of the Grave** (`necro_lib.lua`, `necro_core.lua`, `_necro.lua`, `bone_offering.lua`) | minions +50% damage and +50% health (every kind; the golem multiplies with Bone Colossus) | the own spells -25% (spell formulas, the curse's rot, Bone Offering; not the wand) |
+| Monk | 390 | **Scarred Discipline** (`monk_combat.lua`, `monk_chi_core.lua`) | a hit taken from a creature gives a chi (at most one every 2 s); 10% less damage taken while holding 3 chi or more | no evasion at all (Monk 6%, Shadowfist 8%, Iron Sage 4%, and Mistborne Step's +25%) |
+| Templar | 376 | **Penitent's Wrath** (`templar_combat.lua`, `templar_aura_core.lua`) | a melee / ranged hit taken is answered with a holy strike on the attacker: 40% of what was taken + 4 x magic level, at most one every 0.5 s (dealt like the keystone procs: `ChaosKeystones.depth` up, no passive bonus on it, PvP rules) | the own defence aura's reduction halved, for the party too (Templar 6 -> 3%, Inquisitor 4 -> 2%, Sentinel 12 -> 6%, with Bastion 16 -> 8%; the radius and the regeneration stay) |
+
+  The old nodes' meaning changed completely, so every character that held one gets it refunded once, for free, at its
+  next login (presets and saved loadouts, with a message; `passivetree_config.lua` `reworked`, see "Passive tree planner
+  and mastery nodes"); build codes made before (format versions 1 and 2) leave them out (see "Build sharing"). Icons:
+  `client/tools/gen_keystone_icons.py` (cells 24-27 of `keystones.png`). Numbers: `server/data/spells/README.md` "Line
+  keystones and the path notables" (computed, not measured in game).
 - Tests: `server/tests/class_tree_test.lua` (flags, sanitize, the generated data, tooltips against the numbers, the class rules),
   `passivetree_keystones_test.lua`, `buildshare_test.lua`, `classes_test.lua`.
 
@@ -1539,6 +1559,58 @@ effect. Rules in `passivetree_core.lua` (pure), numbers in `passivetree_config.l
   private character refused. Screenshots in the session's scratchpad (`treework/shots`).
 - Not done: the Warrior, Ranger and Mystic lines have no class section and so no mastery yet; the masteries were not
   measured on the dummies (one node of 73 / 248 points; each effect is sized like a notable of its section).
+- **Reworked nodes.** A node whose meaning changes a lot keeps its id and is listed in `passivetree_config.lua`
+  `reworked` (`{version, ids}`, append only). At the first login after a version (`Chaos.storage.passiveRework`, 7100023,
+  holds the last one handled) `ChaosPassiveTree.refundReworked` takes those nodes, and the ones only connected through
+  them, out of every preset (`passivetree_core.lua` `reworkedSince`, `dropNodes`) and every saved loadout
+  (`ChaosLoadouts.dropNodes`), for free, with one message. It runs before the class check of the login. Version 1:
+  369, 376, 383, 390 (the line keystones). A new character only records the version.
+
+## Passive tree notables on the paths (2026-10, client `treedata/nodes.lua`)
+Runs of three or more small nodes along a path (outside the class sections and the ring next to the start) had one
+node turned into a notable with its own name and a combined effect; 27 nodes in all, spread over every damage type,
+the crit paths and the defences. Only the node's type (`isUncommon`), name, stats and icon changed: same id, same
+place, same links (`tests/passivetree_layout_test.lua` passes), so saved trees and build codes keep them and nothing is
+refunded (each notable holds its old stats plus a premium). Each one is sized against the small nodes of its run and
+the notables around it, never above them: in the elemental clusters (small nodes 1, notables there 4 / 2 + 4) a
+notable is the run's stat +2 and its absorb +1 (for example 393 Cinder Vein: fire 1 -> fire 3, fire absorb 1); on the
+middle rings (small nodes 2) the stat +1 and 1-2 attribute points; on the crit runs crit chance 1 -> 2 and amount 1 ->
+2-3 with a small extra.
+
+| Node | Was | Now |
+|---|---|---|
+| 135 | crit chance 1, amount 1 | **Red Harvest**: crit chance 2, amount 3 |
+| 138 | crit chance 1, amount 1 | **Witchfire Gaze**: crit chance 2, amount 2, mana leech amount 1 |
+| 153 | holy 2 | **Pyre Litany**: holy 3, strength 2 |
+| 161 | physical 2 | **Iron Communion**: physical 3, physical absorb 1, strength 1 |
+| 210 | water 2 | **Undertow**: water 3, dexterity 2 |
+| 219 | ice 2 | **Frostbitten Will**: ice 3, intelligence 2 |
+| 246 | energy 2 | **Thunderbrand**: energy 3, energy absorb 1, intelligence 1 |
+| 260 | physical absorb 1 | **Scarred Hide**: physical absorb 2, vitality 2 |
+| 276 | crit chance 1, amount 1 | **Crimson Parry**: crit chance 2, amount 2, shielding 1 |
+| 290 | crit chance 1, amount 1 | **Headsman's Mark**: crit chance 2, amount 2, life leech amount 1 |
+| 297 | crit chance 1, amount 1 | **Hawk's Malice**: crit chance 2, amount 2, distance 1 |
+| 319 | physical absorb 2 | **Ashen Bulwark**: physical absorb 3, shielding 1 |
+| 335 | ice 1 | **Rime Litany**: ice 3, ice absorb 1 |
+| 358 | healing 2 | **Mercy of Embers**: healing 3, vitality 2 |
+| 381 | earth 2 | **Nightshade Draught**: earth 3, dexterity 2 |
+| 393 | fire 1 | **Cinder Vein**: fire 3, fire absorb 1 |
+| 412 | physical 1 | **Marrowgrinder**: physical 3, physical absorb 1 |
+| 430 | energy 1 | **Stormbound Nerves**: energy 3, energy absorb 1 |
+| 449 | earth 1 | **Rotroot Venom**: earth 3, earth absorb 1 |
+| 468 | death 1 | **Gravecold Whisper**: death 3, death absorb 1 |
+| 487 | drown absorb 1 | **Drowned Lungs**: drown absorb 2, drown 2 |
+| 507 | ice absorb 1 | **Hoarfrost Mantle**: ice absorb 2, ice 2 |
+| 526 | life / mana absorb 1 | **Bloodward Communion**: life / mana absorb 2, life / mana drain 1 |
+| 545 | holy 1 | **Litany of Ash**: holy 3, holy absorb 1 |
+| 563 | life leech chance 1, amount 1 | **Bloodthirst Rite**: life leech chance 2, amount 2, healing 1 |
+| 583 | arcane 1 | **Voidglass Focus**: arcane 3, arcane absorb 1 |
+| 603 | water 1 | **Black Tide**: water 3, water absorb 1 |
+
+  Power per point: the greedy class builds of the balance runs (the C4 build weights of
+  `server/data/spells/README.md` "Classes with the passive trees", run offline on the old and the new data) gain +0.5% to
+  +1.5% damage at 73 points and +1.6% to +2.6% at 248, evenly over the classes (the leads stay); see
+  `server/data/spells/README.md` "Line keystones and the path notables".
 
 ## Build sharing (`buildshare.lua`, `buildshare_core.lua`)
 A build can be exported as a short text code and imported on another character (or after a reset). The server encodes, decodes,
@@ -1550,11 +1622,12 @@ validates and applies; the client only shows what the server sends.
   box showing the price) applies it, **Cancel Preview** shows the saved tree again.
 - **Chat:** the spoken `!build` commands are gone (everything is in the Build Code panel); a "build link" `[build CB1-...]`
   pasted in chat still opens the panel with that code.
-- **Code format, version 2:** `CB2-` + base64url of: class line (1 byte, index into `ChaosBuildShare.CLASS_LINES` = warrior,
-  ranger, mystic, thief; 0 = no class; never a vocation id), flags (1 byte, 1 = Paragon part, 2 = mastery part), the optional
+- **Code format, version 3** (since the line keystones, 2026-10; version 2 has the same layout): `CB3-` + base64url of:
+  class line (1 byte, index into `ChaosBuildShare.CLASS_LINES` = warrior, ranger, mystic, thief; 0 = no class; never a
+  vocation id), flags (1 byte, 1 = Paragon part, 2 = mastery part), the optional
   Paragon part (count, then stat index into `PARAGON_KEYS` + points, 1 byte each), the optional mastery part (count, then node
   id in 2 bytes and the chosen effect in 1 byte), a bitset of the allocated node ids (bit `id % 8` of byte `id / 8`, trailing
-  zero bytes dropped) and a 3 byte checksum (`h = (h x 257 + byte) mod 16777213` over "CB2" and the bytes). Only the
+  zero bytes dropped) and a 3 byte checksum (`h = (h x 257 + byte) mod 16777213` over "CB3" and the bytes). Only the
   canonical base64 form is accepted, so every single-character typo is rejected (test). A 100 node build is ~60 characters, a
   248 node level 1000 build ~110, the whole tree ~120. **Version 1** (`CB1-`, the same without the mastery part) is still
   read: an import of it keeps the character's own mastery effects, else takes the first one (the preview says so). An import
@@ -1563,7 +1636,12 @@ validates and applies; the client only shows what the server sends.
   by array positions. New nodes are appended with new ids; existing ids are never renumbered or reused, so old codes stay valid
   and mean the same nodes. A retired id makes codes that use it invalid ("node N is not in the passive tree"). Class lines and
   Paragon stat keys are append-only lists, and so are a mastery's effects. A new format gets a new version number; `decode`
-  reads every version ever handed out (`ChaosBuildShare.READS`: 1 and 2), others are rejected with a clear message.
+  reads every version ever handed out (`ChaosBuildShare.READS`: 1, 2 and 3), others are rejected with a clear message.
+  **A node whose meaning changes** keeps its id and gets an entry in `ChaosBuildShare.REWORKED` (id -> the first version
+  made with the new meaning; append only) and a new format version: an older code that holds it leaves it out on import,
+  with the nodes only connected through it, and the preview says so ("The code is older than a tree change: n nodes
+  whose effect changed are left out."). Version 3 came with 369, 376, 383 and 390 becoming the line keystones; the 27
+  path notables kept their meaning (old stats plus a premium) and need no entry.
 - **Import rules (server):** same class line as the importer (Juggernaut and Berserker share the Warrior line; keystone variants
   follow the importer's class via `ChaosClasses.keystoneKey`), else "This build is for a Warrior line class; you are a ...";
   every node known and connected to the start through the build's own nodes; a keystone only if the importer's class has a variant
@@ -1582,12 +1660,53 @@ validates and applies; the client only shows what the server sends.
   {message}` or `buildError {message}`. No new opcode.
 - `server/tests/buildshare_test.lua`: round trip (40 / 248 nodes, Paragon part), every single-character typo, swapped and truncated
   codes, old / newer version, wrong class, unknown and disconnected nodes, keystones, too many points, reset detection, the Paragon
-  part, an old code on a tree with an appended node.
+  part, an old code on a tree with an appended node, the reworked nodes (versions 1 and 2 leave 383 out with a note, version 3
+  keeps it for the Thief line and refuses it to another line, a node behind a reworked one goes with it).
 - Tested on the test server (Deadeye, level 599, 147 points): a 100 node tree exported (63 characters, clipboard checked), reset
   (3,945,000 gold), imported (free) and saved identical to before; imported over a 147 node tree (took 47 back, 3,945,000 gold) and
   identical again; a 200 node code applied its first 147 nodes; bad checksum, wrong class and old version gave their messages; the
   Build Code panel flow (export / import / apply) and "You need 3,945,000 gold coins" with too little gold. Screenshots in the
   session's scratchpad. Not tested in game: the Paragon part (the character is below level 1000; unit tests only).
+
+## Passive tree pick statistics (`treestats.lua`, `treestats_core.lua`, `treestats_config.lua`)
+Beta telemetry of the tree: how often each node is taken, per class line and level band, read from the saved trees on
+demand (one query over `chaos_passive_tree` joined with `players`; no hook on allocations, nothing stored). Staff only
+(`Chaos.staffCommand`: access, every use in the admin audit log), at most one request per 5 s per staff member.
+
+- `/treestats`: characters with a saved tree per line and band. `/treestats <class> [band] [n]`: the n most taken nodes
+  (default 10, at most 40) with count, share of the characters and the node's stats, and the never-taken nodes of the
+  line (the count and the first 40 ids). The class may be the line or any class of it ("ninja" = the Thief line); the
+  band "1-99", "100-299", "300-499", "500-999", "1000+", a level ("350") or "all" (the default). `/treestats export`
+  writes every line, band and node the line may take (counts of 0 included) to `data/chaos_tree_picks_<YYYYMMDD-HHMM>.csv`
+  in the server folder: `line,band,characters,node,count,share,stats`.
+- Who counts: one tree per character, the active preset (the lowest preset number, as the tree reads it); characters
+  with an empty tree, of a retired vocation, marked for deletion or of group 4 and up (staff test characters) are left
+  out. Unknown (retired) node ids are not counted. Bands and the rest: `treestats_config.lua`.
+- **Counts only.** No character name, id or account is in a report or the CSV. A line and band with fewer than 3
+  characters (`minCharacters`) is not written to the CSV (its counts would show one character's build); the command marks
+  it "(few characters: not in the CSV)" and the export lists what it left out.
+- Example (test data: 4 Warrior-line and 5 Thief-line characters, one staff tree left out):
+
+```
+> /treestats berserker 300-499 5
+Passive tree picks: warrior, level 300-499, 4 characters.
+Top 5:
+ 1. node 2  3 (75%)  strength+1
+ 2. node 9  3 (75%)  incrementPhysical+2
+ 3. node 11  3 (75%)  absorbPhysical+1
+ 4. node 13  3 (75%)  strength+1
+ 5. node 61  3 (75%)  weaponsmithSkill+1
+Never taken: 594 nodes: 3, 5, 6, 7, 8, 10, 12, 14, 15, ...
+> /treestats export
+Written data/chaos_tree_picks_20261012-0745.csv: 2490 rows (counts only).
+Left out (fewer than 3 characters): thief 100-299, thief 1000+.
+```
+
+- `server/tests/treestats_test.lua`: bands, the active preset, staff / empty / retired left out, counts per line and band
+  and "all", top N and ties, never-taken, the node descriptions, the report, the CSV (every node of the line, small
+  groups left out, seven fields a row, no names) and the command against a mocked engine (class and band words, a level,
+  unknown words, the export file, staff only).
+- Not run against a live database: the query's join (`players.deletion`, `players.group_id`) is the base schema's.
 
 ## Respec (`respec.lua`, `respec_core.lua`, `respec_config.lua`, `tools/respec_income.py`)
 What taking passive points back costs. Every number is in `respec_config.lua`.
