@@ -1,0 +1,7 @@
+Reference copy only. Not ours; do not put in the game repo.
+Source: https://github.com/shunnergaming-bit/TFS-ALS-OTC-V8
+Commit: 8fb17f098e4973f0641d7247256984d748a76e43 (copied 2026-10-12)
+Contents: client module game_fate (skill tree "Fate" with planner, search, masteries) and game_skillpoints;
+server libs fate.lua, creed.lua, skillpoints.lua, extended_opcode.lua; their design notes notes/fate-planner.
+Licence: none stated for these files (engine tree is GPL-2.0; client is OTClientV8, MIT). The tree layout, art,
+icons and node names come from another game's tree data: never reuse them. Use for ideas only.
