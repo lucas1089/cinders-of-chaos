@@ -11,7 +11,8 @@
  *      ZnoteX's own installer, step 4)
  *   3. migrations: every pending one is run (tolerating "already exists" answers, since a fresh schema holds part
  *      of them) and recorded
- *   4. the Cinders of Chaos plugin (plugins/chaos): install.sql, enabled
+ *   4. the Cinders of Chaos plugin (plugins/chaos): install.sql, enabled; the legal texts' version into the game's
+ *      server_config (chaos_legal_version, for the in-game notice of legal_notice.lua)
  *   5. the layout: CHAOS_LAYOUT (default "chaos", our child of the purple "void" layout)
  *   6. the menu entries and the editable Rules page, once each (never overwritten); ZnoteX's entries of the pages
  *      this server does not use (shop, points, creatures, spells, forum) switched off once
@@ -146,6 +147,16 @@ if ($err !== '') {
 }
 znote_plugin_set_enabled('chaos', true);
 $out .= "plugin chaos: installed and enabled\n";
+// the version of the legal texts for the game server: server_config chaos_legal_version. The game's legal_notice.lua
+// tells an account without an acceptance of this version, at login, to accept on the website (legal_lib.php).
+require_once $Z . '/plugins/chaos/legal_lib.php';
+if ($tableExists('server_config') && chaos_legal_dir() !== '') {
+	$v = $link->real_escape_string(chaos_legal_version());
+	if (!$link->query("INSERT INTO `server_config` (`config`, `value`) VALUES ('chaos_legal_version', '$v') ON DUPLICATE KEY UPDATE `value` = '$v'")) {
+		finish($out . 'server_config chaos_legal_version: ' . $link->error . "\n", 1);
+	}
+	$out .= "legal texts: version $v\n";
+}
 
 // 5. layout
 $layout = theme_sanitize((string)(getenv('CHAOS_LAYOUT') ?: 'chaos'));

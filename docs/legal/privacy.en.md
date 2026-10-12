@@ -85,7 +85,7 @@ only shows on the website if you choose "Show on website".
 | Remembered device in two-step verification | 30 days |
 | Technical logs: server console, client checks, gateway servers | 14 days |
 | Death recap | the last 5 deaths of each character |
-| Player reports, bug reports, anti-cheat and staff logs | up to [PRAZO DOS REGISTROS DE MODERAÇÃO] |
+| Player reports, bug reports, anti-cheat and staff logs | up to [PRAZO DOS REGISTROS DE MODERAÇÃO], deleted automatically every day; longer only while a report is still open or a ban or an appeal needs them |
 | Bans | while the ban lasts and afterwards, as long as needed for appeals and repeat offences |
 | Donation records | as long as tax and accounting laws require, at least 5 years |
 | Backups | 14 days on the server and 30 days in the encrypted off-site copy |

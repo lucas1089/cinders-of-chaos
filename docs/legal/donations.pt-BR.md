@@ -65,8 +65,11 @@ escrever para [E-MAIL DE CONTATO] com o número da doação.
 - Se uma doação for contestada no banco, no Mercado Pago ou no PayPal, ou for estornada, as Chaos Coins dela são
   retiradas da conta, até o saldo que ainda existir.
 - Contestar uma doação que você mesmo fez, para ficar com as Chaos Coins de graça, é fraude. Usar meio de pagamento de
-  outra pessoa sem autorização também. Nesses casos, a conta pode ser suspensa ou banida, e podemos retirar o que foi
-  obtido com as Chaos Coins.
+  outra pessoa sem autorização também. Nesses casos, as Chaos Coins são retiradas como acima, podemos retirar o que foi
+  obtido com elas, e a conta fica bloqueada até a contestação ser resolvida. Repetir a fraude leva a banimento
+  permanente, decidido por um administrador. As penalidades estão na [página de Regras](/page.php?p=rules), seção 7.
+- Uma contestação feita de boa-fé não é fraude, por exemplo Chaos Coins que nunca chegaram ou um pagamento cobrado duas
+  vezes. Escreva antes para [E-MAIL DE CONTATO]; respondemos antes que você precise do banco.
 
 ## 7. Banimentos, wipes, temporadas e mudanças
 

@@ -84,7 +84,7 @@ cartão de mentor só aparece no site se você escolher "Mostrar no site".
 | Dispositivo lembrado na verificação em duas etapas | 30 dias |
 | Registros técnicos: console do servidor, verificações do cliente, servidores de entrada | 14 dias |
 | Resumo de morte | as últimas 5 mortes de cada personagem |
-| Denúncias, relatos de bugs, registros do antitrapaça e da equipe | até [PRAZO DOS REGISTROS DE MODERAÇÃO] |
+| Denúncias, relatos de bugs, registros do antitrapaça e da equipe | até [PRAZO DOS REGISTROS DE MODERAÇÃO], apagados automaticamente todo dia; mais tempo só enquanto uma denúncia estiver aberta ou um banimento ou recurso precisar deles |
 | Banimentos | enquanto o banimento valer e depois, pelo prazo necessário para tratar recursos e reincidência |
 | Registros de doação | pelo prazo exigido pelas leis fiscais e contábeis, de pelo menos 5 anos |
 | Cópias de segurança | 14 dias no servidor e 30 dias na cópia externa, criptografada |

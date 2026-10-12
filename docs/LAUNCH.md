@@ -476,6 +476,10 @@ Still open:
 - The community (Discord) link is empty (`ChaosTopBar.COMMUNITY_URL`, the website's Discord invite).
 - Staff rules, bans and mutes: [docs/GM_HANDBOOK.md](GM_HANDBOOK.md) (decided 2026-10-12; the ladder is on the Rules page).
 - Legal texts: [docs/legal/](legal/README.md) (drafts: placeholders to fill, a lawyer's review, then the installer again).
+  Built 2026-10-12: the daily purge of moderation records (`moderation_purge_config.lua` `days` must equal the Privacy
+  Policy's `[PRAZO DOS REGISTROS DE MODERAÇÃO]`), the acceptance of the current texts by existing accounts (website
+  accept page at the next login, an in-game notice with the link), chargeback fraud in the penalty ladder (Rules 7.9).
+  Run `website/install_site.sh` after the texts change: it writes the texts' version for the in-game notice.
 
 Done or decided since the first version of this list (ROADMAP "Open decisions and loose ends"):
 - The base client's healing helper no longer replays missed cycles or floods casts (client base patch 0026).
@@ -773,7 +777,8 @@ Mercado Pago in BRL, PayPal in USD; one USD price table (`shop_coins_config.lua`
   countries; if PayPal refuses it, set `DIGITAL_GOODS`: the item stays labelled "voluntary donation".
 - The refund policy is in the Donation Terms (docs/legal/donations.*.md, linked from the donation page): a refund or chargeback after the coins were credited takes back the coins still
   unspent (`removeCoinsOnReversal` in `shop_coins_config.lua`) and staff see it in the admin panel (Store > Donations:
-  refunds and chargebacks).
+  refunds and chargebacks). Chargeback fraud: the account is locked until the dispute is settled, fraud again is a
+  permanent ban by an administrator (docs/GM_HANDBOOK.md section 4, Rules 7.9, Donation Terms section 6).
 - Set the real prices (`usdCents` of each pack) before launch: the ones in the repository are placeholders.
 
 **Go-live steps.**

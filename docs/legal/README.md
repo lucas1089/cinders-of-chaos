@@ -20,7 +20,9 @@ The Portuguese text is the main one and prevails; the English one is a translati
   section 8 of the Rules page (`website/setup/rules.bbcode`).
 - Account creation needs the checkbox "I accept the Terms of Use and the Privacy Policy". The acceptance is stored in
   `chaos_legal_acceptance` with a version: the first 16 hex digits of the SHA-256 of the three Portuguese texts. Any
-  edit gives a new version.
+  edit gives a new version, and every account is asked again: on the website at its next login
+  (`page.php?plugin=chaos&p=accept`), in the game by a notice with that link. Run the installer after an edit: it
+  writes the version the game server compares (`server_config` `chaos_legal_version`).
 - Donations: the donation page says before payment that a donation is voluntary, gives no right to a refund except where
   the law requires one, and is not the purchase of a product. After payment the order says again that it was a
   voluntary donation. No e-mail is sent after a donation (the provider sends its own receipt); if one is ever added, it
@@ -42,7 +44,7 @@ Same names in both languages. The page highlights any placeholder still there.
 | `[IDADE MÍNIMA]` | minimum age to create an account. Suggestion: 13 | terms |
 | `[PRAZO DE AVISO DE WIPE]` | days of notice before a full wipe after launch. Suggestion: 30 | terms, donations |
 | `[PRAZO DE AVISO DE ENCERRAMENTO]` | days of notice before the game closes for good. Suggestion: 30 | terms |
-| `[PRAZO DOS REGISTROS DE MODERAÇÃO]` | how long reports, bug reports, anti-cheat and staff logs are kept. Suggestion: 2 years, then build the purge (see Check) | privacy |
+| `[PRAZO DOS REGISTROS DE MODERAÇÃO]` | how long reports, bug reports, anti-cheat and staff logs are kept. Suggestion: 2 years. Set the same number of days in `server/data/scripts/chaos/moderation_purge_config.lua` `days` (default 730) | privacy |
 | `[PROVEDOR DE E-MAIL]` | the SMTP relay (`CHAOS_SMTP_HOST`) | privacy |
 | `[PROVEDOR DE HOSPEDAGEM]`, `[PAÍS DA HOSPEDAGEM]` | the host of the game, the site and the database, and its country | privacy |
 | `[PROVEDOR ANTI-DDOS]` | the provider of the gateway VPS (docs/LAUNCH.md "Gateways and DDoS") | privacy |
@@ -55,9 +57,12 @@ The coin numbers in the donation table come from `shop_coins_config.lua` (the te
 
 What the code does was read for these texts. These points are not settled by the code, or need a legal opinion:
 
-1. **Moderation records have no deletion.** `chaos_reports` (with the 10 public chat lines), `chaos_antibot_log`,
-   `chaos_antibot_holds` and `chaos_admin_log` are never purged. The policy promises
-   `[PRAZO DOS REGISTROS DE MODERAÇÃO]`: pick it and build a purge before launch, or change the text.
+1. **Moderation records: built (2026-10-12).** A daily purge on the game server (`moderation_purge.lua`, server/README.md
+   "Moderation record purge") deletes `chaos_reports` (with the 10 public chat lines), `chaos_antibot_log`, cleared
+   `chaos_antibot_holds` and `chaos_admin_log` rows older than the days in `moderation_purge_config.lua` (default 730).
+   It keeps open reports, uncleared holds, every record about an account whose ban is active or ended less than 30 days
+   ago (appeals), and the admin log line of an active IP ban. Left: pick `[PRAZO DOS REGISTROS DE MODERAÇÃO]` and set
+   the same days in the config; check that "kept while a ban or an appeal needs it" is acceptable.
 2. **Other data kept without a limit:** `players.lastip` and the base ban tables (engine), `znote_accounts.ip` (sign-up
    IP), `chaos_referrals.reg_ip`. The policy says "while the account exists". Check this is acceptable.
 3. **Marco Civil da Internet, art. 15.** If the operator is a company providing the service for profit, access logs
@@ -77,15 +82,22 @@ What the code does was read for these texts. These points are not settled by the
    minimum age, LGPD art. 14 (children under 12) and the Brazilian statute for children and teenagers in digital
    environments (Lei 15.211/2025, ECA Digital): age checks, parental tools, and its rules on paid random rewards in
    games, against the store, the Gambler and any random reward bought with coins.
-9. **Chargeback fraud penalty.** The Donation Terms say the account "may be suspended or banned". The staff ladder has
-   no line for it. Decide the penalty and add it to the Rules page and docs/GM_HANDBOOK.md.
+9. **Chargeback fraud penalty: decided (2026-10-12).** The coins are taken back (as the refund section says), what they
+   bought may be removed, the account is locked until the dispute is settled; fraud again is a permanent ban by an
+   administrator. In the Donation Terms section 6, Rules page 7.9 and docs/GM_HANDBOOK.md section 4. A dispute in good
+   faith is not fraud. Check the wording of "locked until settled" with the lawyer.
 10. **Bans and donations.** The texts say a ban for breaking the rules gives no refund. Check this against consumer law.
 11. **International transfers.** Google, PayPal, Discord and maybe the host are abroad. The policy relies on the
     providers' contractual clauses (LGPD art. 33). Check the providers' terms and the ANPD rules on standard clauses.
 12. **DPO.** A small processing agent may not need a DPO but must give a contact channel (ANPD Resolution 2/2022).
     Decide who it is.
-13. **Existing accounts.** Accounts made before the checkbox (the beta accounts kept at launch) have no row in
-    `chaos_legal_acceptance`. Ask them to accept at launch (not built) or rely on the notice of the change.
+13. **Existing accounts: built (2026-10-12).** An account with no `chaos_legal_acceptance` row for the current version
+    (the beta accounts made before the checkbox, and every account after the texts change) is sent to
+    `page.php?plugin=chaos&p=accept` at its next website login: the same checkbox, the same row (version, time, no IP).
+    The game client's login cannot be held for a web form, so the game server shows such an account a message and a
+    window with that link at every login until it accepts (`legal_notice.lua`; the installer writes the texts'
+    version to `server_config`). Check that a player who only plays and never visits the site is covered by the
+    notice and Terms section 10 ("keep playing after that, you accept").
 14. **Account deletion.** There is no self-service deletion. Requests go by e-mail and staff delete by hand. Write the
     steps for staff (which tables to clear, which records to keep).
 15. **The game client.** Store > Donate in the client shows the voluntary notice and the website's refund sentence

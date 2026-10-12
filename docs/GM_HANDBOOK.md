@@ -120,6 +120,7 @@ The ladder (decided), per account, counted over 90 days. It is published on the 
 | duplicating items or currency, a third-party client, attacks on the server | permanent, the gain removed | | | |
 | impersonating staff | ban 7 days | permanent | | |
 | real-money trading of characters or items | ban 30 days, the traded goods removed | permanent | | |
+| chargeback fraud: disputing your own donation to keep the coins, or someone else's payment method without permission | the coins taken back (automatic), what they bought removed, the account locked until the dispute is settled | permanent, by an administrator | | |
 
 - Tools: admin panel Players > Mute (online player, 1 to 1,440 minutes, default 60; longer than 24 h is a ban; check
   that it blocks speech on this engine, admin README "Untested"), Players > Ban account (1 to 3,650 days, default 7,
@@ -128,6 +129,14 @@ The ladder (decided), per account, counted over 90 days. It is published on the 
 - The code enforces the ladder's limits (`ChaosAdminLadder` in `admin/actions_players.lua`, `tests/staff_permissions_test.lua`):
   a mute is at most 24 h, and a ban of 30 days or more (permanent included) needs an administrator (group 5), as in
   section 7. A gamemaster who finds a case for a longer ban hands it to an administrator with the evidence.
+- **Chargeback fraud** (decided 2026-10-12; Donation Terms section 6, Rules 7.9): the donation system takes the coins back by itself
+  when the provider reports a refund or a dispute (`removeCoinsOnReversal` in `shop_coins_config.lua`, up to the balance
+  still there). Gamemasters do not act on payments (section 7, level 4): an administrator checks the order
+  (`chaos_coin_orders`, `chaos_coin_payments`), removes what the coins bought, and locks the account with Ban account
+  for 3,650 days, reason "chargeback, locked until settled, order <id>". When the dispute is settled (withdrawn, or the
+  donation paid again) the administrator lifts it with Unban. Fraud again on the same account, or a payment method of
+  someone else: permanent, by an administrator. A dispute in good faith (coins that never arrived, a double charge)
+  is not fraud: settle it, never punish it.
 - A ban always has a reason the player could read, and the evidence (report id, log lines, screenshots) goes in the
   handover note.
 - Appeals (decided): on Discord, in the appeals channel, to an administrator who did not issue the ban. One appeal

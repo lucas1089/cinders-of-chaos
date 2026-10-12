@@ -48,6 +48,7 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `overlay/plugins/chaos/mentor_lib.php`, `pages/mentors.php` | the mentors who opted in (card, class, graduates, free places) and the totals, read only from the game's `chaos_mentor*` tables: `page.php?plugin=chaos&p=mentors` (menu The World > Mentors; see "Mentors") |
 | `overlay/plugins/chaos/legal_lib.php`, `pages/legal.php` | the legal pages: Terms of Use, Privacy Policy, Donation Terms in Portuguese and English, from `docs/legal/` (see "Legal pages") |
 | `tests/chaos_legal_pages_test.php` | `php website/tests/chaos_legal_pages_test.php`: the pages, the renderer's escaping, the footer links, the Terms checkbox and its refusal, the acceptance row, the donation notes before and after payment (php-cli only, a fake database) |
+| `tests/chaos_legal_accept_test.php` | `php website/tests/chaos_legal_accept_test.php`: existing accounts accept the current texts: the gate (which requests pass), the way back (this site only), the form (token, checkbox), the row (no IP), a new version asking again, the setup writing the version for the game (php-cli only, SQLite in memory) |
 | `tests/chaos_mentors_page_test.php` | `php website/tests/chaos_mentors_page_test.php`: the Mentors page (php-cli with pdo_sqlite) |
 | `tools/recolor_layout.py` | turns Void's stylesheets into ours at install time |
 | `tools/gen_site_art.py` | draws the site art and the promotion material |
@@ -283,7 +284,16 @@ owner fills in the placeholders (docs/legal/README.md lists both).
   a refund except where the law requires one, not the purchase of a product, Chaos Coins have no real-world value, and
   a link to the Donation Terms. A paid or credited order repeats that it was a voluntary donation and not a purchase. The
   site sends no mail after a donation.
-- Test: `php website/tests/chaos_legal_pages_test.php`.
+- **Existing accounts**: an account logged in without a `chaos_legal_acceptance` row for the current version (the beta
+  accounts made before the checkbox; everyone after the texts change, Terms section 10) is sent by `plugin.php` to
+  `page.php?plugin=chaos&p=accept&next=<page>` before any other page (303). The page has the same checkbox and links as
+  account creation, a CSRF token, and writes the same row (account, version, time; no IP); then back to the page the
+  player wanted (a page of this site only, else `myaccount.php`), or "log out" without accepting. Not gated: the accept
+  page, the legal texts, `login.php`, `logout.php`, `register.php`, `recovery.php`, `chaos_pay_webhook.php` and
+  XMLHttpRequest calls. `setup/chaos_setup.php` writes the version to the game's `server_config`
+  (`chaos_legal_version`); the game server shows an account without it a notice with the link at login
+  (server/README.md "Terms acceptance notice"), since the game login cannot be held for a web form.
+- Test: `php website/tests/chaos_legal_pages_test.php`, `php website/tests/chaos_legal_accept_test.php`.
 
 ## Mail
 

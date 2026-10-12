@@ -12,6 +12,9 @@
  *    (chaos_accept_terms). Without it, our register_header view puts an error into register.php's $errors, so nothing
  *    is created (the same way as the referral code and the per-IP limit). The acceptance is recorded with the texts'
  *    version in chaos_legal_acceptance on the account.registered hook.
+ *  - Existing accounts: a logged-in account without a row for the current version is sent to pages/accept.php (the
+ *    same checkbox, the same row) before any other page (plugin.php, chaos_legal_gate_target). The game server shows
+ *    such an account a notice with the link at login (server legal_notice.lua).
  *  - The donation notices before and after payment (pages/coins.php).
  */
 
@@ -197,8 +200,88 @@ function chaos_legal_record(string $accountName, int $now): void {
 	if (!is_array($row)) {
 		return;
 	}
+	chaos_legal_insert((int)$row['id'], $now);
+}
+
+/** One acceptance row: the account, the texts' version, the time. No IP address (the same row as at sign-up). */
+function chaos_legal_insert(int $accountId, int $now): void {
 	db()->execute('INSERT INTO `chaos_legal_acceptance` (`account_id`, `version`, `accepted_at`) VALUES (?, ?, ?);',
-		[(int)$row['id'], chaos_legal_version(), $now]);
+		[$accountId, chaos_legal_version(), $now]);
+}
+
+// ---------------------------------------------------------------- existing accounts: accept at the next login
+// Accounts made before the checkbox (the beta accounts) and every account after the texts change (Terms section 10:
+// a new version applies once announced) have no row for the current version. While logged in on the website they are
+// sent to page.php?plugin=chaos&p=accept first (plugin.php calls chaos_legal_gate_target on every request). The game
+// client cannot be held at login cleanly: the game server shows a notice with the link instead (server
+// data/scripts/chaos/legal_notice.lua, which reads the version setup/chaos_setup.php writes to server_config).
+
+define('CHAOS_LEGAL_ACCEPT_URL', 'page.php?plugin=chaos&p=accept');
+define('CHAOS_LEGAL_ACCEPT_ERROR', 'Please tick the box to accept the Terms of Use and the Privacy Policy. / Marque a caixa para aceitar os Termos de Uso e a Política de Privacidade.');
+
+/** True when the account accepted the current version of the texts (or when the table is not installed). */
+function chaos_legal_has_accepted(int $accountId): bool {
+	if ($accountId <= 0 || !function_exists('chaos_table_exists') || !chaos_table_exists('chaos_legal_acceptance')) {
+		return true;
+	}
+	$row = db()->fetchOne('SELECT `id` FROM `chaos_legal_acceptance` WHERE `account_id` = ? AND `version` = ? LIMIT 1;',
+		[$accountId, chaos_legal_version()]);
+	return is_array($row);
+}
+
+/**
+ * Requests that pass without the acceptance: the accept page itself, the legal texts, logging in and out, account
+ * creation and recovery, the donation webhook, and background (XMLHttpRequest) calls.
+ */
+function chaos_legal_gate_exempt(string $script, array $get, array $server = array()): bool {
+	$script = strtolower(basename($script));
+	if (in_array($script, array('login.php', 'logout.php', 'register.php', 'recovery.php', 'chaos_pay_webhook.php'), true)) {
+		return true;
+	}
+	if ($script === 'page.php' && (string)($get['plugin'] ?? '') === 'chaos' && in_array((string)($get['p'] ?? ''), array('accept', 'legal'), true)) {
+		return true;
+	}
+	return strtolower((string)($server['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest';
+}
+
+/** Where to go after accepting: a page of this site only ("x.php" or "x.php?..."), else the account page. */
+function chaos_legal_safe_next(string $next): string {
+	$next = ltrim($next, '/');
+	if (!preg_match('#^[a-z0-9_]+\.php(\?[^\s"\'<>\\\\]*)?$#i', $next) || stripos($next, 'p=accept') !== false) {
+		return 'myaccount.php';
+	}
+	return $next;
+}
+
+/** The accept page with the page to come back to. */
+function chaos_legal_accept_url(string $requestUri): string {
+	$next = chaos_legal_safe_next((string)(parse_url($requestUri, PHP_URL_PATH) ?? '') . (($q = parse_url($requestUri, PHP_URL_QUERY)) ? '?' . $q : ''));
+	return CHAOS_LEGAL_ACCEPT_URL . ($next !== 'myaccount.php' ? '&next=' . rawurlencode($next) : '');
+}
+
+/** The redirect for this request, or null: a logged-in account without the current acceptance on a gated page. */
+function chaos_legal_gate_target(int $accountId, string $script, array $get, array $server): ?string {
+	if ($accountId <= 0 || chaos_legal_gate_exempt($script, $get, $server) || chaos_legal_has_accepted($accountId)) {
+		return null;
+	}
+	return chaos_legal_accept_url((string)($server['REQUEST_URI'] ?? ''));
+}
+
+/** The accept form posted: [ok, error]. Records the row when the box is ticked and the form token is right. */
+function chaos_legal_accept_post(int $accountId, array $post, string $csrf, int $now): array {
+	if ($accountId <= 0) {
+		return array(false, 'Please log in. / Entre na sua conta.');
+	}
+	if ($csrf === '' || !hash_equals($csrf, (string)($post['csrf'] ?? ''))) {
+		return array(false, 'The form expired. Please try again. / O formulário expirou. Tente de novo.');
+	}
+	if ((string)($post['chaos_accept_terms'] ?? '') !== '1') {
+		return array(false, CHAOS_LEGAL_ACCEPT_ERROR);
+	}
+	if (!chaos_legal_has_accepted($accountId)) {
+		chaos_legal_insert($accountId, $now);
+	}
+	return array(true, '');
 }
 
 }

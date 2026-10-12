@@ -10648,6 +10648,48 @@ scripts: patched, idempotent, `luac -p` clean), the webhook post. The synthetic 
 real false-positive rates have to be watched in the log after launch (raise `check.at` or lower a weight if needed). A
 careful bot with human-like random delays on every signal is not caught by this; reports and staff are the answer there.
 
+## Moderation record purge (`moderation_purge.lua`, `moderation_purge_core.lua`, `moderation_purge_config.lua`)
+
+The Privacy Policy (docs/legal/privacy.*.md section 4) keeps reports, bug reports, anti-cheat and staff logs for
+`[PRAZO DOS REGISTROS DE MODERAÇÃO]`. This job keeps that promise: once a day it deletes rows older than
+`days.<table>` of `moderation_purge_config.lua` (default 730 for each; 0 = never purged) from `chaos_reports`,
+`chaos_antibot_log`, `chaos_antibot_holds` and `chaos_admin_log`. **Set `days` to the period the owner writes in the
+policy** (docs/legal/README.md "Placeholders"); the test checks the policy still names the placeholder or the number.
+
+- **Kept, whatever their age:** an open report (a closed one counts from `closed_at`); an uncleared hold (a cleared one
+  counts from `cleared_at`); every row about an account whose ban is active (base `account_bans`, `expires_at` 0 =
+  permanent) or ended less than `appealDays` (30) ago (`account_bans` rows not yet moved, `account_ban_history`), so an
+  appeal on Discord still has its evidence: reports on that account's characters, its anti-bot log and holds, admin log
+  lines whose target is one of its characters, its account name or id; the `security.ip_ban` admin log line of an IP ban
+  that is active or ended less than `appealDays` ago.
+- **When:** a globalevent looks every `checkSeconds` (1 h) and runs when `runEverySeconds` (1 day) passed since the last
+  run (`server_config` row `chaos_moderation_purge`), so the daily restart neither skips nor repeats it. Rows are read
+  in id order, `batch` (500) at a time, at most `maxBatches` (200) per table and run, and deleted by id; a report
+  reopened or a hold set again between the read and the delete stays. The console gets one line:
+  `[Chaos moderation purge] reports 3 deleted, 5 kept; ... (2 accounts protected by a ban)`.
+- **Not touched:** the base ban tables and `players.lastip` (docs/legal/README.md "Check" 2), mutes (not stored).
+- **Install:** nothing beyond the revscripts folder; the tables exist from `sql/chaos_reports.sql` and
+  `sql/chaos_admin.sql`.
+- **Tests:** `tests/moderation_purge_test.lua` (config, due check, cutoffs, every keep rule, the SQL, then the engine
+  file on an in-memory database: a full run over batches, no second run the same day, the appeal window running out,
+  a table at 0 days, a bad config deleting nothing). **Not run on a live server** (no MySQL here): the queries use
+  `UNION`, `LEFT JOIN` and `IN` lists only.
+
+## Terms acceptance notice (`legal_notice.lua`, `legal_notice_core.lua`, `legal_notice_config.lua`)
+
+The website records each acceptance of the Terms of Use and Privacy Policy in `chaos_legal_acceptance` (account, texts'
+version, time; no IP): at sign-up and, for accounts without a row for the current version (the beta accounts made
+before the checkbox, everyone after the texts change), on `page.php?plugin=chaos&p=accept`, which the site opens before
+any other page at the next website login (website/README.md "Legal pages"). The game login cannot be held for a web
+form cleanly, so at login (after `delayMs`, 2.5 s) such an account gets two lines (English, Portuguese) and a window
+(`Player:popupFYI`) naming that page, at every login until it accepts. Nothing is blocked.
+
+- The current version is the `server_config` row `chaos_legal_version`, written by `website/setup/chaos_setup.php`
+  (run by `install_site.sh`) from the installed texts; read again every `cacheSeconds` (300). No row: no notice.
+- **Tests:** `tests/legal_notice_test.lua` (version check, SQL, texts with the link, the mocked login: notice, none for an
+  accepted account, none without a version, the cache); website `tests/chaos_legal_accept_test.php`.
+- **Not verified on a live server:** `Player:popupFYI` (base 1.4 binding; skipped when missing).
+
 ## Ascended Omens and the Cinderheart (`uber.lua`, `uber_core.lua`, `uber_config.lua`, `tools/install_ascended.py`)
 
 **Limits** (`uber_config.lua` `limits`, "Instance limits"): the boss's own limit (13 minutes after it appears, the Cinderheart 18) with warnings at 5 min, 1 min and 10 s; time up fails the run (out, the sigil is spent); at most 4 arenas, the wait and the waiting line when all are in use.

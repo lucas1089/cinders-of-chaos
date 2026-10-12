@@ -54,6 +54,11 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
   minimum age), have a lawyer review the texts and the "Check" list of docs/legal/README.md, then run
   `website/install_site.sh` again. Donations say they are voluntary before and after payment (the site sends no mail
   after a donation).
+- [ ] **Moderation record period:** pick `[PRAZO DOS REGISTROS DE MODERAÇÃO]` (Privacy Policy section 4) and set the
+  same number of days in `server/data/scripts/chaos/moderation_purge_config.lua` `days` (default 730 = 2 years). The
+  daily purge is built (server/README.md "Moderation record purge").
+- [ ] **Rules page 7.9 on a site installed before 2026-10-12:** the installer adds the Rules page once and never
+  overwrites it. Paste line 7.9 (chargeback fraud) of `website/setup/rules.bbcode` in Admin Panel > Pages > Rules.
 
 ## On the live server
 
@@ -70,6 +75,13 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
   The ladder (over 90 days) is on the Rules page; mutes at most 24 h, bans of 30 days or more and permanent bans by an
   administrator (enforced by the admin panel). Appeals on Discord to an administrator who did not give the penalty.
   Self-reported bugs never punished; rewards case by case. Escalation levels 1-4 as in the handbook.
+- Moderation records (2026-10-12): purged daily after a configurable period (`moderation_purge_config.lua`); records
+  behind an open report, an active ban or a ban that ended less than 30 days ago (appeals) are kept.
+- Existing accounts and the terms (2026-10-12): the website asks every account without an acceptance of the current
+  texts at its next login (the same checkbox and row as sign-up, no IP); the game shows such an account a notice with
+  the link at login (the client login is not held).
+- Chargeback fraud (2026-10-12): coins taken back, what they bought removed, the account locked until the dispute is
+  settled; fraud again: permanent, by an administrator (GM handbook ladder, Rules 7.9, Donation Terms section 6).
 
 - Sprite pair 16 (mount rider seats): approved and pushed to `windows-assets` (1cae7c3).
 - Sprite pair 17 (achievement wings): approved and pushed to `windows-assets` (854d34c).

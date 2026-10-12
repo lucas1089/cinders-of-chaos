@@ -64,8 +64,11 @@ guardian, using a payment method they allowed. If a minor donated without permis
 - If a donation is disputed at the bank, at Mercado Pago or at PayPal, or is reversed, its Chaos Coins are taken back
   from the account, up to the balance still there.
 - Disputing a donation you made yourself, to keep the Chaos Coins for free, is fraud. So is using someone else's
-  payment method without permission. In those cases the account may be suspended or banned, and we may remove what was
-  obtained with the Chaos Coins.
+  payment method without permission. In those cases the Chaos Coins are taken back as above, we may remove what was
+  obtained with them, and the account is locked until the dispute is settled. Fraud again means a permanent ban,
+  decided by an administrator. The penalties are on the [Rules page](/page.php?p=rules), section 7.
+- A dispute made in good faith is not fraud, for example Chaos Coins that never arrived or a payment charged twice.
+  Please write to [E-MAIL DE CONTATO] first; we answer before you need the bank.
 
 ## 7. Bans, wipes, seasons and changes
 

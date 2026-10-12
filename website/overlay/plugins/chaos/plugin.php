@@ -17,7 +17,8 @@
  *  - Mail and account recovery: mail_lib.php (one sender, off without SMTP settings) and recovery_lib.php (a
  *    one-time reset link; recovery.php hands over to recovery_page.php).
  *  - Legal texts (legal_lib.php, pages/legal.php): Terms of Use, Privacy Policy, Donation Terms; account creation
- *    needs the Terms checkbox, and the acceptance is recorded.
+ *    needs the Terms checkbox, and the acceptance is recorded. A logged-in account without the acceptance of the
+ *    current texts is sent to pages/accept.php first.
  *  - The stock pages this server does not use (shop, points, creatures, spells,
  *    forum, the stock payment callbacks) send the visitor to pages/notused.php.
  */
@@ -53,6 +54,20 @@ if ($chaosWhat !== null && PHP_SAPI !== 'cli' && realpath(dirname($chaosScript))
 	exit;
 }
 unset($chaosScript, $chaosWhat);
+
+// ---------------------------------------------------------------- Terms for existing accounts
+// A logged-in account without the acceptance of the current texts (the beta accounts made before the sign-up
+// checkbox; everyone after the texts change) goes to page.php?plugin=chaos&p=accept first, then back. The accept page,
+// the legal texts, login, logout, register, recovery and the donation webhook pass (legal_lib.php).
+$chaosAccountId = function_exists('getSession') ? (int)getSession('user_id') : 0;
+if ($chaosAccountId > 0 && PHP_SAPI !== 'cli') {
+	$chaosGate = chaos_legal_gate_target($chaosAccountId, (string)($_SERVER['SCRIPT_NAME'] ?? ''), $_GET, $_SERVER);
+	if ($chaosGate !== null) {
+		header('Location: ' . $chaosGate, true, 303);
+		exit;
+	}
+	unset($chaosGate);
+}
 
 // ---------------------------------------------------------------- class lock
 // Session user, not $user_data: init.php loads the plugins before it reads the account.
