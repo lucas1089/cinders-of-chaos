@@ -1,0 +1,13 @@
+key,look,lib,lib_id,recolour,family,rank,monsters,description,edit
+juggernaut_male,2161,D,997,,classlook,warrior,Juggernaut,"Juggernaut class look (male): gilded plate, tower shield; sil 0.65",
+juggernaut_female,2162,D,998,,classlook,warrior,Juggernaut,"Juggernaut class look (female): gilded plate, tower shield; sil 0.65",
+ranger_male,2163,H,246,,classlook,ranger,Ranger,"Ranger class look (male): hooded archer, both addons, 8-frame walk; sil 0.85",
+ranger_female,2164,H,247,,classlook,ranger,Ranger,"Ranger class look (female): hooded archer, both addons, 8-frame walk; sil 0.85",
+beastmaster_male,2165,D,166,,classlook,ranger,Beastmaster,Beastmaster class look (male): fur cloak; sil 0.80,
+beastmaster_female,2166,D,167,,classlook,ranger,Beastmaster,Beastmaster class look (female): fur cloak; sil 0.80,
+bonelord_male,2167,D,508,,classlook,necromancer,Bone Lord,"Bone Lord class look (male): bone wings, skull rack; sil 0.76/0.66",
+bonelord_female,2168,D,509,,classlook,necromancer,Bone Lord,"Bone Lord class look (female): bone wings, skull rack; sil 0.76/0.66",
+shadowfist_male,2169,D,1057,,classlook,monk,Shadowfist,"Shadowfist class look (male): claws, violet glow; sil 0.83",
+shadowfist_female,2170,D,1058,,classlook,monk,Shadowfist,"Shadowfist class look (female): claws, violet glow; sil 0.83",
+sentinel_male,2171,D,992,,classlook,templar,Sentinel,"Sentinel class look (male): holy orbs, tower shield; sil 0.86/0.84",
+sentinel_female,2172,D,993,,classlook,templar,Sentinel,"Sentinel class look (female): holy orbs, tower shield; sil 0.86/0.84",

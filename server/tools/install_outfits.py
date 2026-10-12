@@ -12,8 +12,12 @@ script (nothing is written). Idempotent: a second run changes nothing.
 
 The class looks (class_looks_core.lua ChaosClassLooks.looks: a name and a male and a female look type per class) get
 a second marked block: type 1 = the male look, type 0 = the female look (both lines when one look serves both sexes),
-locked (unlocked="no": class_looks.lua gives them at login and at a class change). Same rules: rewritten when the list
-changed, refused when a look type has an entry outside the block.
+locked (unlocked="no": class_looks.lua gives them at login and at a class change, each with both addons through
+Player:addOutfitAddon; outfits.xml has no way to grant addons, and unlocked="yes" would give the look to every
+character). Same rules: rewritten when the list changed, refused when a look type has an entry outside the block.
+With the pair 19 switch on (class_looks_core.lua L.PAIR19_LOOKS = true) the six classes of L.pair19Looks get their
+things_custom19 looks (2161-2172) and their replaced looks stay as "<name> (old)"; with it off (the default) no line
+names 2161-2172, so a client on an older pair is never offered them.
 
 Mounts (MOUNTS below) go into mounts.xml the same way: a marked block before </mounts>; a mount id or client id that
 already has an entry outside the block stops the script.
@@ -150,7 +154,9 @@ def class_outfits(path=CONSTANTS):
 
 
 def class_looks(path=LOOKS):
-    """[(name, male look, female look)] in vocation id order"""
+    """[(name, male look, female look)] in vocation id order: L.looks, with the pair 19 switch applied
+    (L.PAIR19_LOOKS = true: the L.pair19Looks ids replace their class's look, and the replaced looks follow as
+    "<name> (old)" so the characters that own them can still wear them; class_looks_core.lua L.usePair19)"""
     text = open(path, encoding='utf-8').read()
     m = re.search(r'L\.looks = \{(.*?)\n\}', text, re.S)
     if not m:
@@ -158,7 +164,24 @@ def class_looks(path=LOOKS):
     rows = re.findall(r'\[(\d+)\] = \{name = "([^"]+)", male = (\d+), female = (\d+)\}', m.group(1))
     if not rows:
         sys.exit('%s: L.looks has no entries' % path)
-    return [(n, int(a), int(b)) for _, n, a, b in sorted(rows, key=lambda r: int(r[0]))]
+    new = pair19_looks(text) if re.search(r'^L\.PAIR19_LOOKS = true$', text, re.M) else {}
+    looks, former = [], []
+    for v, n, a, b in sorted(rows, key=lambda r: int(r[0])):
+        if int(v) in new:
+            looks.append((n, new[int(v)][0], new[int(v)][1]))
+            former.append((n + ' (old)', int(a), int(b)))
+        else:
+            looks.append((n, int(a), int(b)))
+    return looks + former
+
+
+def pair19_looks(text):
+    """{vocation id: (male, female)} of the L.pair19Looks block (the things_custom19 class looks)"""
+    m = re.search(r'L\.pair19Looks = \{(.*?)\n\}', text, re.S)
+    if not m:
+        sys.exit('no L.pair19Looks block')
+    return {int(v): (int(a), int(b)) for v, a, b in
+            re.findall(r'\[(\d+)\] = \{male = (\d+), female = (\d+)\}', m.group(1))}
 
 
 def install_class_looks(path, rest, original, dry):
@@ -168,7 +191,7 @@ def install_class_looks(path, rest, original, dry):
     clash = sorted({t for _, m, f in looks for t in (m, f) if t in taken})
     if clash:
         print('outfits.xml already has look type(s) %s outside the class looks block; nothing written' % clash)
-        return text, 1
+        return rest, 1
     lines = ''.join('\t<outfit type="%d" looktype="%d" name="%s" premium="no" unlocked="no" enabled="yes" />\n'
                     % (sex, look, name) for sex in (0, 1) for name, m, f in looks for look in [(f if sex == 0 else m)])
     at = rest.rfind('</outfits>')

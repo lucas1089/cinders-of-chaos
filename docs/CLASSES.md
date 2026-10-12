@@ -117,7 +117,36 @@ for free, at the migration.
   - generated spell icons and effects
   - outfits: a class look per class, male and female (October 2026: donor library art and free looks of the pair, look types
     2039-2081 of things_custom10b, no stock art; list in `class_looks_core.lua`, sources in
-    `client/tools/outfit_art/class_looks_sources.csv`, client/MANIFEST.md "Class looks pair")
+    `client/tools/outfit_art/class_looks_sources.csv`, client/MANIFEST.md "Class looks pair"). Worn with both addons
+    (addons 3); the character owns both addons of each class look it is given, and no other outfit's addons. Six looks
+    change with the pair 19 switch (`ChaosClassLooks.PAIR19_LOOKS`, off until things_custom19 is live; server/README.md
+    "Class looks"). Looks per class (male / female look type; "now" = things_custom18, "pair 19" = with the switch on):
+
+    | Line | Class (id) | Now | Pair 19 |
+    |---|---|---|---|
+    | Warrior | Warrior (4) | 2073 / 2074 | kept |
+    | | Juggernaut (8) | 2039 / 2040 | 2161 / 2162: gilded plate, tower shield (donor D 997 / 998) |
+    | | Berserker (14) | 2075 / 2076 | kept |
+    | Ranger | Ranger (3) | 2078 / 2079 | 2163 / 2164: hooded archer (donor H 246 / 247) |
+    | | Deadeye (7) | 2045 / 2046 | kept |
+    | | Beastmaster (15) | 2047 / 2048 | 2165 / 2166: fur cloak (donor D 166 / 167) |
+    | Mystic | Mystic (1) | 2060 / 2061 | kept |
+    | | Elementalist (5) | 2062 / 2063 | kept |
+    | | Illusionist (10) | 2049 / 2050 | kept |
+    | Thief | Thief (11) | 2051 / 2052 | kept |
+    | | Ninja (12) | 2069 / 2070 | kept |
+    | | Samurai (13) | 2071 / 2072 | kept |
+    | Monk | Monk (17) | 2080 / 2081 | kept |
+    | | Shadowfist (18) | 2053 / 2054 | 2169 / 2170: claws, violet glow (donor D 1057 / 1058) |
+    | | Iron Sage (19) | 2055 / 2056 | kept |
+    | Necromancer | Necromancer (20) | 2044 / 2064 | kept |
+    | | Lich (21) | 2059 (one look) | kept |
+    | | Bone Lord (22) | 2065 / 2066 | 2167 / 2168: bone wings, skull rack (donor D 508 / 509) |
+    | Templar | Templar (23) | 2067 / 2068 | kept |
+    | | Inquisitor (24) | 2077 (one look) | kept |
+    | | Sentinel (25) | 2042 / 2041 | 2171 / 2172: holy orbs, tower shield (donor D 992 / 993) |
+
+    With the switch on, a replaced look stays owned and wearable as "<class> Class (old)".
   - starting gear and a new-player kit: done in `newplayer_config.lua`, keyed by these class ids. A new class adds a row there or
     calls `ChaosNewPlayer.setKit(name, def, {ids})`; `ChaosNewPlayer.kitFor(vocationId)` returns a class's kit (own row, then its
     base class, then `default`). See server/README.md "New players".

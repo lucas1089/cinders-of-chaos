@@ -122,14 +122,111 @@ do
 	eq(L.unlocksFor(11, L.FEMALE)[1], L.looks[11].female, "female look")
 	eq(#L.unlocksFor(0, L.MALE), 0, "nothing for vocation 0")
 
-	-- wearing keeps the colours and the mount, drops the addons
-	local cur = {lookType = 128, lookHead = 78, lookBody = 69, lookLegs = 58, lookFeet = 76, lookAddons = 3, lookMount = 5}
+	-- wearing keeps the colours and the mount, puts both addons on
+	eq(L.ADDONS, 3, "both addons")
+	local cur = {lookType = 128, lookHead = 78, lookBody = 69, lookLegs = 58, lookFeet = 76, lookAddons = 0, lookMount = 5}
 	local w = L.wearOutfit(cur, 24, L.FEMALE)
-	eq(w.lookType, 2077, "inquisitor female"); eq(w.lookAddons, 0, "no addons"); eq(w.lookHead, 78, "colours kept")
+	eq(w.lookType, 2077, "inquisitor female"); eq(w.lookAddons, 3, "both addons worn"); eq(w.lookHead, 78, "colours kept")
 	eq(w.lookMount, 5, "mount kept"); eq(cur.lookType, 128, "the given table is not changed")
-	eq(L.wearOutfit({lookType = 2077, lookAddons = 0}, 24, L.FEMALE), nil, "already worn")
+	eq(L.wearOutfit({lookType = 2077, lookAddons = 3}, 24, L.FEMALE), nil, "already worn")
+	eq(L.wearOutfit({lookType = 2077, lookAddons = 0}, 24, L.FEMALE).lookAddons, 3, "worn without addons: addons put on")
 	eq(L.wearOutfit(cur, 0, L.MALE), nil, "no class look")
+
+	-- logins: the class look is the default, a store outfit stays
+	eq(L.loginOutfit(cur, 4, L.MALE, true, {}).lookType, 2073, "first login / class change: the class look")
+	eq(L.loginOutfit(cur, 4, L.MALE, true, {}).lookAddons, 3, "with both addons")
+	eq(L.loginOutfit(cur, 4, L.MALE, false, {[2073] = true}), nil, "a store outfit stays (addons given meanwhile)")
+	eq(L.loginOutfit(nil, 4, L.MALE, true, {}), nil, "no outfit")
+	-- an existing character wearing its class look: addons put on once, when they were just given
+	local old = {lookType = 2073, lookHead = 1, lookAddons = 0}
+	local up = L.loginOutfit(old, 4, L.MALE, false, {[2073] = true})
+	eq(up.lookType, 2073, "same look"); eq(up.lookAddons, 3, "addons put on"); eq(up.lookHead, 1, "colours kept")
+	eq(L.loginOutfit(old, 4, L.MALE, false, {}), nil, "addons owned before: the player's choice stays")
+	eq(L.loginOutfit({lookType = 2073, lookAddons = 3}, 4, L.MALE, false, {[2073] = true}), nil, "already with addons")
+	-- an ascended class wearing its base class's look gets that look's addons; another class's look is not touched
+	eq(L.loginOutfit({lookType = 2051, lookAddons = 0}, 12, L.MALE, false, {[2051] = true}).lookAddons, 3, "base look")
+	eq(L.loginOutfit({lookType = 2073, lookAddons = 0}, 11, L.MALE, false, {[2073] = true}), nil, "not this class's look")
+	eq(L.loginOutfit({lookType = 2161, lookAddons = 0}, 8, L.MALE, false, {}), nil, "switch off: nothing about 2161")
 	eq(L.isFirstLogin(0), true, "first login"); eq(L.isFirstLogin(1700000000), false, "later login")
+end
+
+-- ------------------------------------------------------------------ class looks: the pair 19 switch
+do
+	-- off by default: no class look needs things_custom19, nothing replaced, nothing retired beyond the stock looks
+	eq(L.PAIR19_LOOKS, false, "the switch is off until things_custom19 is on windows-assets")
+	eq(L.pair19, false, "applied off")
+	-- install_outfits.py and gen_shop_cosmetics.py read the switch as this exact line
+	local src = io.open("data/scripts/chaos/class_looks_core.lua"):read("*a")
+	eq(src:match("\nL%.PAIR19_LOOKS = (%a+)\n"), tostring(L.PAIR19_LOOKS), "the switch is one plain line")
+	local n18 = #L.retired
+	for vocId, e in pairs(L.looks) do
+		ok(e.male < 2143 and e.female < 2143, "class " .. vocId .. ": no things_custom19 look with the switch off")
+	end
+	eq(next(L.replaced), nil, "nothing replaced")
+	-- the six new looks: 2161-2172, one class each, both sexes, a class with a look
+	local ids, count = {}, 0
+	for vocId, n in pairs(L.pair19Looks) do
+		ok(L.looks[vocId], "class " .. vocId .. " has a look")
+		ids[n.male] = true; ids[n.female] = true; count = count + 1
+	end
+	eq(count, 6, "six classes")
+	for id = 2161, 2172 do ok(ids[id], "look " .. id .. " used") end
+	-- the store, achievements and seasons never give them
+	for _, f in ipairs({"shop_config.lua", "achievements_data.lua", "season_config.lua", "seasonpass_config.lua",
+		"exclusives_config.lua"}) do
+		local text = io.open("data/scripts/chaos/" .. f):read("*a")
+		for n in text:gmatch("(%d+)") do
+			ok(not ids[tonumber(n)] or tonumber(n) < 2161, f .. " names " .. n)
+		end
+	end
+
+	-- on
+	L.usePair19(true)
+	eq(L.pair19, true, "applied on")
+	eq(L.lookFor(8, L.MALE), 2161, "juggernaut male"); eq(L.lookFor(8, L.FEMALE), 2162, "juggernaut female")
+	eq(L.lookFor(3, L.MALE), 2163, "ranger"); eq(L.lookFor(15, L.FEMALE), 2166, "beastmaster")
+	eq(L.lookFor(22, L.MALE), 2167, "bone lord"); eq(L.lookFor(18, L.FEMALE), 2170, "shadowfist")
+	eq(L.lookFor(25, L.MALE), 2171, "sentinel"); eq(L.lookFor(4, L.MALE), 2073, "warrior kept")
+	eq(select(2, L.lookFor(8, L.MALE)), "Juggernaut Class", "name kept")
+	eq(L.former[8].name, "Juggernaut Class (old)", "replaced look named"); eq(L.former[8].male, 2039, "replaced male")
+	eq(L.former[4], nil, "kept class: nothing replaced")
+	eq(#L.retired, n18 + 6, "the six replaced looks retired (never sold)")
+	eq(L.replaced[2039], 2161, "old -> new"); eq(L.replaced[2041], 2172, "sentinel female old -> new")
+	-- the rules of the class looks hold with the new ids
+	local seen, retired = {}, {}
+	for _, e in ipairs(L.retired) do retired[e.male] = true; retired[e.female] = true end
+	for vocId in pairs(cfg.baseOf) do
+		local e = L.looks[vocId]
+		ok(not seen[e.male], "on: male look of " .. vocId .. " not shared"); seen[e.male] = true
+		ok(not seen[e.female] or e.female == e.male, "on: female look of " .. vocId .. " not shared"); seen[e.female] = true
+		ok(not retired[e.male] and not retired[e.female], "on: class " .. vocId .. " uses a retired look")
+	end
+	local csv = io.open("../client/tools/outfit_art/class_looks_sources.csv")
+	if csv then
+		local listed = {}
+		for line in csv:lines() do
+			local look = line:match("^%d+,[^,]*,[^,]*,(%d+),")
+			if look then listed[tonumber(look)] = true end
+		end
+		csv:close()
+		for vocId, e in pairs(L.looks) do
+			ok(listed[e.male] and listed[e.female], "on: class " .. vocId .. " looks listed in class_looks_sources.csv")
+		end
+	end
+	-- logins: a replaced look of the character's class becomes the new one, colours kept; a store outfit stays
+	local o = L.loginOutfit({lookType = 2039, lookHead = 7, lookAddons = 0, lookMount = 2}, 8, L.MALE, false, {})
+	eq(o.lookType, 2161, "juggernaut moved to the new look"); eq(o.lookAddons, 3, "with addons"); eq(o.lookHead, 7, "colours")
+	eq(o.lookMount, 2, "mount")
+	eq(L.loginOutfit({lookType = 2079, lookAddons = 0}, 7, L.FEMALE, false, {}).lookType, 2164, "deadeye in the old ranger look")
+	eq(L.loginOutfit({lookType = 2039, lookAddons = 0}, 4, L.MALE, false, {}), nil, "a warrior in the old juggernaut look")
+	eq(L.loginOutfit({lookType = 128, lookAddons = 3}, 8, L.MALE, false, {[2161] = true}), nil, "store outfit stays")
+	eq(L.loginOutfit({lookType = 2161, lookAddons = 0}, 8, L.MALE, false, {[2161] = true}).lookAddons, 3, "new look: addons")
+	eq(L.unlocksFor(15, L.MALE)[1], 2165, "beastmaster gets the new look"); eq(L.unlocksFor(15, L.MALE)[2], 2163, "and the ranger's")
+
+	-- off again: back to things_custom18
+	L.usePair19(false)
+	eq(L.lookFor(8, L.MALE), 2039, "off: juggernaut back"); eq(#L.retired, n18, "off: retired back")
+	eq(next(L.replaced), nil, "off: nothing replaced")
 end
 
 -- ------------------------------------------------------------------ test kit (stubbed engine)

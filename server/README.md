@@ -8536,6 +8536,42 @@ a Ranger, not to a Templar; The Oracle3 makes a vocation-less character a Thief 
 accepts a Thief ("Thief", then the Velgrim storage); Maran gives a Thief the frozen plate, a Ranger the ironworker and a
 Templar the windborn colossus armor. No Lua errors.
 
+## Class looks (`class_looks.lua`, `class_looks_core.lua`, `tools/install_outfits.py`)
+
+Every class has its own look, male and female (list and looks per class: docs/CLASSES.md "Content per class"; art:
+client/MANIFEST.md "Class looks pair" and "things_custom19").
+- Given and worn. First login and every class change: the class's look and its base class's look are given and the
+  class's look is put on. Other logins: looks of the class not owned yet are given; the worn look stays. Colours and
+  mount stay the player's. Nothing is taken away. A store outfit the player wears stays on; the class look is only the
+  default.
+- Addons. A class look is worn with both addons (`ChaosClassLooks.ADDONS` = 3). Each class look given comes with both
+  its addons (`Player:addOutfitAddon(look, 3)`): only that look's addons, no other outfit's. The base outfits.xml
+  cannot grant addons (`unlocked="yes"` would give the bare look to everyone), so the entries stay `unlocked="no"`
+  and the script grants them. Existing characters get the addons at their next login. If the worn look is the one
+  that just got its addons, it is put on with them, once; a later choice of fewer addons is kept.
+- outfits.xml: `install_outfits.py` (install step `outfits`) writes the marked block "Chaos class looks" from
+  `L.looks`, both sexes, locked. Re-run it after the list changes.
+- Pair 19 switch: `L.PAIR19_LOOKS` in `class_looks_core.lua`, off. With it on, Juggernaut, Ranger, Beastmaster, Bone
+  Lord, Shadowfist and Sentinel use outfits 2161-2172 of client pair things_custom19 (`L.pair19Looks`). Off, no
+  script, outfits.xml line or store list names 2161-2172. A client on things_custom18 or older draws nothing for
+  them, and the pair's dat and spr signatures did not change, so the server cannot tell the pairs apart.
+  With it on:
+  - the replaced looks stay owned and wearable as "<class> Class (old)" in outfits.xml
+  - they join `L.retired`, so the store never sells them (`gen_shop_cosmetics.py` excludes 2161-2172 either way)
+  - a character wearing a replaced look of its class or base class gets the new look at its next login, colours kept,
+    with both addons
+- Flip step, in one commit on main after the owner's "pode mandar o par para o windows-assets" and the push of
+  things_custom19 (scratchpad `things_custom19/windows-assets/PUSH_STEPS.txt`), once the Windows package is rebuilt
+  from it:
+  1. `L.PAIR19_LOOKS = false` -> `true` (keep it one plain line: `install_outfits.py` and the test read it).
+  2. Update client/MANIFEST.md (the windows-assets commit), ROADMAP.md C4 and this section.
+  3. Run the CI checks (`tests/class_kit_test.lua` checks the switch off and on).
+  4. On the server: `python3 -I tools/install_all.py SERVER_DIR --only outfits`, then restart.
+  Rollback: set it back to false and re-run the step. The old looks are the class looks again; nobody lost them. A
+  character still wearing 2161-2172 keeps that look type until it changes outfit, so roll back only while the clients
+  still have things_custom19.
+- Tests: `tests/class_kit_test.lua` (wear, login, addons, the switch both ways, sources listed for every look).
+
 ## Class lock (`class_unlocks.lua`, `class_unlocks_core.lua`, `sql/chaos_class_unlocks.sql`)
 
 The Necromancer, the Monk and the Templar (docs/CLASSES.md, classes five to seven) need an account-wide unlock. The method is one

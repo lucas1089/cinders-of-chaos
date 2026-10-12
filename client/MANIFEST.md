@@ -817,6 +817,56 @@ errors, 121 warnings (things_custom17: 230).
 - Checked offline: before / after contact sheets that follow the client's draw code (group merge, mask shader with
   test colours). Not checked in a live client.
 
+## Class looks pair 19 (things_custom19, outfits 2161-2172, `tools/sprites/monster_looks/classlook_picks.csv`)
+The owner approved six class look swaps (docs/CLASSES.md "Content per class"). Twelve donor-library outfits, imported
+unchanged. No art was generated and no pixel was changed. 2143-2160 are blank padding, kept for the open look slots.
+
+| looks | class | donor | look |
+|---|---|---|---|
+| 2161 / 2162 | Juggernaut | D 997 / 998 | gilded plate, tower shield |
+| 2163 / 2164 | Ranger | H 246 / 247 | hooded archer |
+| 2165 / 2166 | Beastmaster | D 166 / 167 | fur cloak |
+| 2167 / 2168 | Bone Lord | D 508 / 509 | bone wings, skull rack |
+| 2169 / 2170 | Shadowfist | D 1057 / 1058 | claws, violet glow |
+| 2171 / 2172 | Sentinel | D 992 / 993 | holy orbs, tower shield |
+
+- Every one has a colour mask, both addon patterns and an 8-frame walk. All but the Ranger pair have a mounted
+  pattern. The Ranger pair has none, like the look it replaces (2078 / 2079): the client then draws the rider without
+  the mount. The art is mostly in the addons: with addons 0 several look like a plain body. The server wears class
+  looks with both addons (server/README.md "Class looks").
+- Silhouette against stock (best IoU): 0.64 to 0.86; none is a pixel copy of a pair look. Per look in
+  `outfit_art/class_looks_sources.csv` (licence tracing).
+- The server uses them only with `ChaosClassLooks.PAIR19_LOOKS` on (off now). A client still on things_custom18 draws
+  nothing for 2161-2172, and the dat and spr signatures are unchanged (0x42a3, 0x57bbd603), so the switch goes on in
+  the commit after this pair is on `windows-assets` and in the package.
+
+```
+python3 -I client/tools/sprites/donor_pick.py --picks client/tools/sprites/monster_looks/classlook_picks.csv --lib-dir L \
+    --out-dir MINI12 --base-dat things_custom18/Tibia.dat --base-spr things_custom18/Tibia.spr
+python3 -I client/tools/sprites/import_outfits.py --src-dat MINI12/Tibia.dat --src-spr MINI12/Tibia.spr \
+    --ours-dat things_custom18/Tibia.dat --ours-spr things_custom18/Tibia.spr \
+    --looks 1,2,3,4,5,6,7,8,9,10,11,12 --first-outfit 2161 --out-dir things_custom19
+python3 -I client/tools/sprites/check_pair.py things_custom19/Tibia.dat things_custom19/Tibia.spr \
+    --old things_custom18/Tibia.dat things_custom18/Tibia.spr
+```
+MINI12: dat 7afd00b335071b8cec334b3f9735335f, spr 4c7602c35fc3a89845d3c87d5a9edb8b. Input things_custom18 (dat
+63fd01750be7696bcf590d0145643cb1, spr 6aee9a3429bdb9039787cb7eacf079c8). Output **things_custom19**: dat
+e73621a13faaa9f1f5aa94bbef25d443 (4,791,972 bytes), spr d700334dc8811dd02a59e33a37805224 (593,188,851 bytes,
+733,798 sprites, 9,373 appended), 33,659 items, 2,172 outfits, 592 effects, 153 missiles. Built twice with identical
+md5s. Verified by the importer: 29,760 sprite slots and 3,720 frames of the twelve outfits pixel-identical to MINI12,
+flags and animators equal, the 2,142 old outfits and every item, effect and missile byte-identical, 3000 sampled old
+sprites unchanged.
+- `check_pair.py`: append-only against things_custom18 passes (36,447 old things and 724,425 old sprites compared;
+  new: 30 outfits, 9,373 sprites). Full check: 0 errors, 121 warnings, the same 121 as things_custom18; none in the
+  new looks (2165 and 2170 have one cyan mask pixel each, info only).
+- `things-1098.tar.xz` is built like things_custom18's (Tibia.dat and Tibia.spr at the archive root, owner 0/0,
+  GNU tar, `xz -9 -T3`), mtime 2026-10-12 14:00: sha256 a203681267535b90cc420a6f6bed8931c7e59a8845d2cfcd6b9f27ac74a78c41
+  (66,144,948 bytes). Its two files unpack to the md5s above. A rebuild gives the same sha256.
+- Not on `windows-assets` yet: it waits for the owner's approval. CI `live-pair` and the Windows package read the
+  branch's own `SHA256SUMS.parts`, so nothing in `main` changes with the push.
+- Checked offline: a contact sheet of the twelve looks, addons 0 and 3, four directions and the mounted pattern,
+  drawn with the client's colour shader. Not checked in a live client.
+
 ## Leaderboards: fastest-time boards with class tabs (`game_leaderboard`)
 Boards of mode "min" (the Cinderheart's fastest kills) come with `format = "time"` (values shown m:ss,
 `TabRows.valueText` in `tabrows.lua`, tested by `tabrows_test.lua`) and `byClass = true`: the class tabs of the ladder

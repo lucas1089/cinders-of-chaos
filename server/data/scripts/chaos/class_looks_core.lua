@@ -16,6 +16,18 @@
 --
 -- None of these looks is sold in the store or given as a reward (gen_shop_cosmetics.py and shop.lua read L.looks and
 -- L.retired; the season pass test checks its own list against them).
+--
+-- Addons: a class look is worn with both addons (L.ADDONS) and the character owns both for every class look it is
+-- given (Player:addOutfitAddon; outfits.xml cannot grant addons, its entries stay locked). Only the class looks' own
+-- addons are given. At a login, a look whose addons were just given is put on with them when it is the worn look
+-- (existing characters at their next login); any other worn look (a store outfit) stays.
+--
+-- Pair 19 switch (L.PAIR19_LOOKS, off): client pair things_custom19 adds 2161-2172, six new class looks
+-- (L.pair19Looks). An older pair draws nothing for those ids, so they are sent only when the switch is on. Flip it in
+-- the commit that follows the pair's push to windows-assets (server/README.md "Class looks"). With it on, the six
+-- classes use the new looks, the looks they replace stay owned and wearable ("<name> (old)" in outfits.xml, listed
+-- in L.retired so the store never sells them), and a character wearing a replaced look of its class gets the new one
+-- at its next login.
 
 ChaosClassLooks = ChaosClassLooks or {}
 local L = ChaosClassLooks
@@ -50,6 +62,18 @@ L.looks = {
 	[23] = {name = "Templar Class", male = 2067, female = 2068}, -- crystal plate
 	[24] = {name = "Inquisitor Class", male = 2077, female = 2077}, -- Inquisitor: witch-hunter hat, gilded staff (one look)
 	[25] = {name = "Sentinel Class", male = 2042, female = 2041} -- Sentinel: white plate
+}
+
+-- the things_custom19 looks (client/tools/sprites/monster_looks/classlook_picks.csv) for six classes: used only with
+-- L.PAIR19_LOOKS on. vocation id -> {male, female}
+L.PAIR19_LOOKS = false
+L.pair19Looks = {
+	[8] = {male = 2161, female = 2162}, -- Juggernaut: gilded plate, tower shield (donor D 997/998)
+	[3] = {male = 2163, female = 2164}, -- Ranger: hooded archer (donor H 246/247)
+	[15] = {male = 2165, female = 2166}, -- Beastmaster: fur cloak (donor D 166/167)
+	[22] = {male = 2167, female = 2168}, -- Bone Lord: bone wings, skull rack (donor D 508/509)
+	[18] = {male = 2169, female = 2170}, -- Shadowfist: claws, violet glow (donor D 1057/1058)
+	[25] = {male = 2171, female = 2172} -- Sentinel: holy orbs, tower shield (donor D 992/993)
 }
 
 -- the stock looks classes wore before (until 2026-10): characters own them already, so the store does not sell them
@@ -93,24 +117,81 @@ function L.unlocksFor(vocId, sex)
 	return out
 end
 
--- the outfit to put on: `current` (the getOutfit table) with the class's look type and no addons, everything else
+-- worn class looks carry both addons (bit 1 and bit 2)
+L.ADDONS = 3
+
+local function withLook(current, look)
+	local out = {}
+	for k, v in pairs(current) do
+		out[k] = v
+	end
+	out.lookType = look
+	out.lookAddons = L.ADDONS
+	return out
+end
+
+-- the outfit to put on: `current` (the getOutfit table) with the class's look type and both addons, everything else
 -- (colours, mount) kept; nil when there is nothing to change
 function L.wearOutfit(current, vocId, sex)
 	local look = L.lookFor(vocId, sex)
 	if not look or not current then
 		return nil
 	end
-	if current.lookType == look and (current.lookAddons or 0) == 0 then
+	if current.lookType == look and (current.lookAddons or 0) == L.ADDONS then
 		return nil
 	end
-	local out = {}
-	for k, v in pairs(current) do
-		out[k] = v
-	end
-	out.lookType = look
-	out.lookAddons = 0
-	return out
+	return withLook(current, look)
 end
+
+-- the outfit to put on after L.apply gave the looks: with `wear` (first login, class change) the class's look; else
+-- only a class look of this character that it already wears: a replaced look (pair 19 switch) becomes its new look,
+-- a look whose addons were just given (`granted`: look type -> true) gets them. A store outfit stays. nil: no change
+function L.loginOutfit(current, vocId, sex, wear, granted)
+	if not current then
+		return nil
+	end
+	if wear then
+		return L.wearOutfit(current, vocId, sex)
+	end
+	local mine = {}
+	for _, look in ipairs(L.unlocksFor(vocId, sex)) do
+		mine[look] = true
+	end
+	local new = L.replaced[current.lookType]
+	if new and mine[new] then
+		return withLook(current, new)
+	end
+	if mine[current.lookType] and granted and granted[current.lookType] and (current.lookAddons or 0) ~= L.ADDONS then
+		return withLook(current, current.lookType)
+	end
+	return nil
+end
+
+-- the pair 19 switch: L.looks as of things_custom18 (L.pair18Looks, kept) with L.pair19Looks put in when `on`.
+-- L.former: vocation id -> the replaced entry ({name = "<name> (old)", male, female}); L.replaced: old look type -> new
+-- one; the replaced looks are appended to L.retired. Idempotent; run once at load with L.PAIR19_LOOKS.
+function L.usePair19(on)
+	L.looks, L.former, L.replaced = {}, {}, {}
+	local retired = {}
+	for _, e in ipairs(L.retired18) do
+		retired[#retired + 1] = e
+	end
+	for vocId, e in pairs(L.pair18Looks) do
+		local n = on and L.pair19Looks[vocId]
+		if n then
+			L.looks[vocId] = {name = e.name, male = n.male, female = n.female}
+			L.former[vocId] = {name = e.name .. " (old)", male = e.male, female = e.female}
+			L.replaced[e.male], L.replaced[e.female] = n.male, n.female
+			retired[#retired + 1] = {male = e.male, female = e.female}
+		else
+			L.looks[vocId] = e
+		end
+	end
+	L.retired = retired
+	L.pair19 = on and true or false
+end
+L.pair18Looks, L.retired18 = L.looks, L.retired
+L.usePair19(L.PAIR19_LOOKS)
 
 -- the first login of a character (the engine's lastLoginSaved is 0 until the first logout is saved)
 function L.isFirstLogin(lastLoginSaved)
