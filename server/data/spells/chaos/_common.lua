@@ -440,7 +440,9 @@ function ChaosSpell.loadClasses()
 	return ChaosClasses
 end
 
--- attack of the main-hand melee weapon (left hand first, as the engine picks it), never below 20 (an empty hand)
+-- attack of the main-hand melee weapon (left hand first, as the engine picks it), never below 20 (an empty hand). An
+-- empty hand with the Open Hand Creed keystone or the Knuckles of the Unbound (data/scripts/chaos/archetypes_core.lua)
+-- strikes with the fist attack of that archetype instead.
 function ChaosSpell.meleeAttack(player)
 	for _, slot in ipairs({CONST_SLOT_LEFT, CONST_SLOT_RIGHT}) do
 		local item = player:getSlotItem(slot)
@@ -451,6 +453,13 @@ function ChaosSpell.meleeAttack(player)
 				return math.max(20, itemAttack(item))
 			end
 		end
+	end
+	if not ChaosArchetypesCore then
+		pcall(dofile, 'data/scripts/chaos/archetypes_core.lua')
+	end
+	local open = ChaosArchetypesCore and ChaosArchetypesCore.spellOpenHandAttack(player)
+	if open then
+		return math.max(20, math.floor(open))
 	end
 	return 20
 end

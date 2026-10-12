@@ -731,6 +731,72 @@ damage = (100 + value after) / (100 + value before)):
 So a build gains about one notable's premium per 25-50 points: +0.5% to +1.5% damage at level 300 and +1.6% to +2.6% at
 level 1000, the same for every class within a point, below the harness spread (+-5%); the leads of the C4 table keep.
 
+### Build archetypes (2026-10-12, computed, not measured in game)
+
+The twelve archetype keystones and their uniques (server/README.md "Build archetypes", docs/BUILDS.md). Not run on the
+dummies: the C4 harness needs a live test server. Every number below is computed from the C4 table above ("Classes with
+the passive trees") and the formulas, and marked so. The dummies never die and never hit back, so the spreads, the
+shatter, the reflect and the leech would not show on them anyway. Measure with the C4 harness, a dying pack and a
+hitting monster at the next class factor tuning.
+
+Assumptions (the computation is test-only): maximum health with tree and gear x1.20 / x1.25 of the vocation's (level 300 /
+1000); the archetype's own element nodes +10% / +20% on its own damage (aura, relic, Aether Edge); the class factors of
+`ChaosClassTree.classDamage` on that own damage; weapon share of the Ranger line's damage 38% / 49% (the "Roles and
+balance" tables); crit chance 15% / 25% (Shadowfist 30% / 40% with the focus), a crit x1.5; the Elementalist's spells
+96% of its area damage, one area cast every 2 s; the Inquisitor half fire or holy, a branding hit 1500 / 4000; energy
+shield 740 / 1500 (four T5 / T7 flat mods and a percent mod); a monster hitting 1000 / 3000 every 2 s, item reflect 15%;
+an ice-weighted rotation x0.91 for Winter's Lattice and about +16% (+21% with the Shard) from shatters while a pack dies;
+for Contagion Rite a kill every 6 / 9 s seeding 3 x 5 ticks of 24% of a weapon hit.
+
+| Archetype (keystone) | Class | 300: 1 target | 300: 5 targets | 1000: 1 target | 1000: 5 targets | Against the leaders (300 / 1000) |
+|---|---|---|---|---|---|---|
+| Pyre Walker (Pyre Oath) | Juggernaut | 781 -> 827 | 1623 -> 2422 | 2569 -> 2831 | 4424 -> 7838 | 1T -37% / -38%, 5T -30% / -29% |
+| Pyre Walker (Pyre Oath) | Warrior | 886 -> 906 | 2127 -> 2800 | 2351 -> 2667 | 6280 -> 9230 | 1T -31% / -42%, 5T -19% / -16% |
+| Pyre Walker (Pyre Oath) | Berserker | 974 -> 906 | 2932 -> 3079 | 2634 -> 2820 | 8218 -> 10385 | 1T -31% / -38%, 5T -11% / -6% |
+| Pyre Walker (Pyre Oath) | Templar | 904 -> 854 | 1422 -> 1946 | 2103 -> 2084 | 3375 -> 5064 | 1T -35% / -54%, 5T -43% / -54% |
+| Pyre Walker (Pyre Oath) | Inquisitor | 1086 -> 951 | 2056 -> 2225 | 3556 -> 3122 | 6192 -> 6920 | 1T -28% / -32%, 5T -35% / -37% |
+| Pyre Walker (Pyre Oath) | Sentinel | 743 -> 722 | 1285 -> 1787 | 1948 -> 1968 | 3429 -> 5105 | 1T -45% / -57%, 5T -48% / -54% |
+| Bloodsworn Reaver (Sanguine Covenant) | Berserker | 974 -> 974 | 2932 -> 2932 | 2634 -> 2634 | 8218 -> 8218 | 1T -26% / -42%, 5T -15% / -25% |
+| Bloodsworn Reaver (Sanguine Covenant) | Warrior | 886 -> 886 | 2127 -> 2127 | 2351 -> 2351 | 6280 -> 6280 | 1T -32% / -49%, 5T -38% / -43% |
+| Iron Bastion (Thornbound Oath) | Juggernaut | 781 -> 878 | 1623 -> 2336 | 2569 -> 2837 | 4424 -> 6607 | 1T -33% / -38%, 5T -32% / -40% |
+| Iron Bastion (Thornbound Oath) | Sentinel | 743 -> 844 | 1285 -> 2032 | 1948 -> 2278 | 3429 -> 5711 | 1T -36% / -50%, 5T -41% / -48% |
+| Stormquiver (Stormstring) | Deadeye | 1312 -> 1262 | 1446 -> 1935 | 4571 -> 4347 | 5385 -> 7580 | 1T -4% / -5%, 5T -44% / -31% |
+| Stormquiver (Stormstring) | Ranger | 1075 -> 1034 | 1409 -> 1809 | 3673 -> 3493 | 5305 -> 7069 | 1T -21% / -24%, 5T -47% / -36% |
+| Cascade (Cascade Edge) | Ninja | 1121 -> 1077 | 1424 -> 1931 | 3565 -> 3446 | 5101 -> 7783 | 1T -18% / -25%, 5T -44% / -29% |
+| Cascade (Cascade Edge) | Shadowfist | 1181 -> 1145 | 1262 -> 2333 | 3683 -> 3591 | 3948 -> 8269 | 1T -13% / -21%, 5T -32% / -25% |
+| Cascade (Cascade Edge) | Deadeye | 1312 -> 1260 | 1446 -> 2048 | 4571 -> 4419 | 5385 -> 8862 | 1T -4% / -3%, 5T -40% / -19% |
+| Effigy Caller (Effigy Covenant) | Elementalist | 913 -> 632 | 3442 -> 3231 | 2954 -> 2044 | 11004 -> 10328 | 1T -52% / -55%, 5T -6% / -6% |
+| Effigy Caller (Effigy Covenant) + Idol | Elementalist | 913 -> 632 | 3442 -> 3703 | 2954 -> 2044 | 11004 -> 11839 | 1T -52% / -55%, 5T +8% / +8% |
+| Effigy Caller (Effigy Covenant) | Mystic | 803 -> 556 | 2692 -> 2527 | 2439 -> 1688 | 8354 -> 7841 | 1T -58% / -63%, 5T -27% / -29% |
+| Effigy Caller (Effigy Covenant) | Necromancer | 1009 -> 698 | 1069 -> 1003 | 2598 -> 1798 | 2622 -> 2461 | 1T -47% / -61%, 5T -71% / -78% |
+| Rime Orb (Winter's Lattice) | Elementalist | 913 -> 831 | 3442 -> 3633 | 2954 -> 2688 | 11004 -> 11616 | 1T -37% / -41%, 5T +6% / +6% |
+| Rime Orb (Winter's Lattice) + Shard | Elementalist | 913 -> 831 | 3442 -> 3790 | 2954 -> 2688 | 11004 -> 12117 | 1T -37% / -41%, 5T +10% / +10% |
+| Ember Brand (Sigil of Cinders) | Inquisitor | 1086 -> 1142 | 2056 -> 2395 | 3556 -> 3694 | 6192 -> 7084 | 1T -13% / -19%, 5T -30% / -36% |
+| Ember Brand (Sigil of Cinders) | Elementalist | 913 -> 897 | 3442 -> 3382 | 2954 -> 2902 | 11004 -> 10811 | 1T -32% / -37%, 5T -2% / -2% |
+| Storm Palm (Aether Edge) | Shadowfist | 1181 -> 1203 | 1262 -> 1284 | 3683 -> 3758 | 3948 -> 4023 | 1T -8% / -18%, 5T -63% / -63% |
+| Storm Palm (Aether Edge) | Inquisitor | 1086 -> 1102 | 2056 -> 2072 | 3556 -> 3594 | 6192 -> 6230 | 1T -16% / -21%, 5T -40% / -43% |
+| Reliquary Keeper (Reliquary Vow) | Sentinel | 743 -> 771 | 1285 -> 1668 | 1948 -> 2012 | 3429 -> 4382 | 1T -41% / -56%, 5T -52% / -60% |
+| Reliquary Keeper (Reliquary Vow) | Templar | 904 -> 923 | 1422 -> 1827 | 2103 -> 2152 | 3375 -> 4334 | 1T -30% / -53%, 5T -47% / -61% |
+| Iron Pilgrim (Open Hand Creed) | Templar | 904 -> 872 | 1422 -> 1372 | 2103 -> 2177 | 3375 -> 3493 | 1T -34% / -52%, 5T -60% / -68% |
+| Iron Pilgrim (Open Hand Creed) | Sentinel | 743 -> 717 | 1285 -> 1240 | 1948 -> 2016 | 3429 -> 3549 | 1T -45% / -56%, 5T -64% / -68% |
+| Plaguebearer (Contagion Rite + Blackblood Creed) | Thief | 870 -> ~850 | 870 -> ~1500 while the pack dies | 2391 -> ~2340 | 2297 -> ~3500 while the pack dies | 1T -35% / -49%, 5T -56% / -68% |
+| Plaguebearer | Ninja | 1121 -> ~1090 | 1424 -> ~2200 while the pack dies | 3565 -> ~3480 | 5101 -> ~6700 while the pack dies | 1T -17% / -24%, 5T -36% / -39% |
+
+Leaders after the change (the owner's order kept): the Deadeye leads single target (1312 / 4571; its own archetypes
+1262 / 4347 with Stormstring, 1260 / 4419 with Cascade Edge, both still first); the Elementalist leads area (3442 /
+11004; Rime Orb 3633 / 11616, +6%; with the Shard of the Long Winter 3790 / 12117, +10%; Effigy Caller with the Idol
+3703 / 11839, +8%); no other class passes either leader (the closest: a Pyre Oath Berserker at level 1000, 10385, -6%
+in area; Ember Brand Inquisitor 1142 / 3694 on one target, -13% / -19%). The single-target order behind the Deadeye
+keeps (Cascade Edge bursts only on the other enemies, so it adds area, not single target).
+
+Survivability (the toughness model of "Templar line"): Pyre Oath burns 2.5% and heals 2% of the maximum health a
+second: -0.5% a second with no fire absorb, +0.75% with 50%; the Juggernaut's 19.6 effective health per level is
+unchanged. Sanguine Covenant in a pack: 146 / 410 health a second for a Berserker (2.9% / 2.3% of its health; the cap is
+6%), healing received -30%. Aether Edge: maximum health x0.8 (a Shadowfist 12 per level becomes 9.6, plus the shield).
+Reliquary Vow: 0.3% of the maximum health a second + magic level for every party member within 3 sqm (37 / 120 a
+second on an ally of 4000 / 13000 health), far below the Iron Sage's 1765 / 2525; the +5% party damage is under
+Inspiring Illusion's +8%.
+
 ### Infinite arrows (bows and crossbows without ammunition, 2026-10-11)
 
 Bows and crossbows fire without ammunition (server/README.md "Infinite arrows and quivers"). The install tool gives each

@@ -120,6 +120,7 @@ Chaos.storage = {
 	passiveStatsFixed = 7100021, -- 1 once the stats older passive tree versions wrote into the character are clamped
 	passiveClassFx = 7100022, -- the class nodes of the passive tree the character holds, a bit each (class_tree.lua)
 	passiveRework = 7100023, -- the last reworked-nodes version refunded (passivetree_config.lua reworked)
+	archetypeFlags = 7100024, -- the build archetype keystones held, a bit each (archetypes_config.lua storage)
 	dungeonQueueLock = 7100030, -- (os.time of the last queue join; anti spam)
 	bountyWeekBonus = 7100300, -- bounty board (bounty.lua): 7100300 - 7100309 reserved; week key of the last weekly bonus
 	riftRun = 7100400, -- rifts (rift.lua): 7100400 - 7100409 reserved; +0 tier of the key of a run in progress, +1..+3 its modifiers, +4 start

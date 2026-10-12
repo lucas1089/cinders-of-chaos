@@ -1180,7 +1180,20 @@ function getTreeIcons()
 		ksBlackbloodCreed = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 1536, y = 0},
 		ksGraveCovenant = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 1600, y = 0},
 		ksScarredDiscipline = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 1664, y = 0},
-		ksPenitentWrath = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 1728, y = 0}
+		ksPenitentWrath = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 1728, y = 0},
+		-- the build archetype keystones (main tree nodes 108, 81, 77, 109, 107, 78, 82, 355, 262, 106, 362, 253)
+		arPyreOath = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 1792, y = 0},
+		arSanguine = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 1856, y = 0},
+		arThornbound = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 1920, y = 0},
+		arOpenHand = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 1984, y = 0},
+		arContagion = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2048, y = 0},
+		arCascade = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2112, y = 0},
+		arStormstring = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2176, y = 0},
+		arWinterLattice = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2240, y = 0},
+		arEffigy = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2304, y = 0},
+		arCinderSigil = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2368, y = 0},
+		arAetherEdge = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2432, y = 0},
+		arReliquary = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2496, y = 0}
 	}
 end
 

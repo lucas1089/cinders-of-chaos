@@ -30,6 +30,25 @@ dropped (listed as `skipped` in `chaos_unique_specs.lua`).
 
 ## Items
 
+The build archetype uniques (2026-10-12, docs/BUILDS.md, server/README.md "Build archetypes") carry an `archetype`
+attribute: the effect `data/scripts/chaos/archetypes.lua` reads on the worn copy. Their stats are ordinary ones.
+
+| name | slot | id | stock item | level | tier | archetype effect |
+| --- | --- | --- | --- | --- | --- | --- |
+| Pyreheart Mantle | body | 8881 | fireborn giant armor | 150 | legendary | Pyre Oath aura +20% |
+| Vein of the Unsated | necklace | 27652 | exotic amulet | 180 | rare | Sanguine Covenant leech +1%, cap +3% |
+| Spitethorn Bulwark | shield | 15413 | ornate shield | 130 | legendary | Thornbound Oath reflect +10% |
+| Knuckles of the Unbound | ring | 28023 | Astro Ring | 400 | legendary | Open Hand at 80% without the keystone, +10% with it |
+| Rotbloom Phial | necklace | 21691 | shrunken head necklace | 150 | rare | Contagion Rite +1 target, +1 step |
+| Splintered Instant | ring | 28049 | Mercurial Ring | 400 | legendary | Cascade Edge +25%, 0.2 s sooner |
+| Stormcaller Recurve | distance | 8858 | elemental bow | 70 | rare | one arc of 25% alone; Stormstring +1 arc |
+| Shard of the Long Winter | wand | 26756 | frozen wand | 100 | rare | Winter's Lattice +2%, +1 sqm |
+| Effigy Carver's Idol | shield | 22423 | umbral spellbook | 120 | rare | Effigy Covenant: a third effigy |
+| Brand of the Ashen Choir | head | 18403 | prismatic helmet | 150 | rare | Sigil of Cinders pulses +25% |
+| Aetherbound Plate | body | 2466 | golden armor | 120 | rare | Aether Edge 10% of the shield |
+| Reliquary Censer | necklace | 27251 | rainbow necklace | 220 | legendary | Reliquary Warden pulses +25% |
+
+
 Columns: server id / client id, the stock item that was overridden, required level (see caveats), drop tier (`minTier`), key stats.
 
 | name | slot | id (server/client) | stock item | level | tier | key stats |

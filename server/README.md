@@ -368,7 +368,7 @@ working directory, as with the rest of the base server libs).
 | game_autoloot | `autoloot.lua` | 216 | Window protocol (add / remove / clear over the opcode); list lives in the same storages (base 80000) as the base server onDropLoot callback, which does the actual looting. XML talkaction conflict possible (see below). |
 | game_daily | `daily.lua`, `daily_core.lua`, `daily_config.lua` | 207 | 7-day reward cycle with claim, midnight rollover, Adventure > Daily Reward, open on login through the login window queue. Rewards: platinum coins, Orbs of Upheaval and Fate and a crystal coin, plus a week bonus on day 7 (all or nothing); edit `Chaos.daily` in `chaos_constants.lua`. Account-wide login streaks with milestones, titles and grace days (see "Daily reward and login streaks"). |
 | game_notifications | `notifications.lua` | 79 out, 151/152 in | `/gmnotify`, accept/decline of a standard TFS party invite, `ChaosNotify.*` sender API. Catacomb start / leave-queue are hooks only; nothing triggers party/catacomb/task/battle pass toasts automatically. |
-| game_passivetree | `passivetree.lua`, `passivetree_data.lua`, `passivetree_effects.lua`, `passivetree_keystones.lua`, `paragon.lua` | 65 | Points, save with full validation (known ids, connected to root, point cap), preset storage, priced reset and single-node refund (see "Respec"), build codes (see "Build sharing"); the bonuses are applied (see "Passive tree effects"). Paragon track past level 1000 on the same opcode (see "Paragon"). |
+| game_passivetree | `passivetree.lua`, `passivetree_data.lua`, `passivetree_effects.lua`, `passivetree_keystones.lua`, `archetypes.lua` (with `archetypes_core.lua`, `archetypes_config.lua`), `paragon.lua` | 65 | Points, save with full validation (known ids, connected to root, point cap), preset storage, priced reset and single-node refund (see "Respec"), build codes (see "Build sharing"); the bonuses are applied (see "Passive tree effects"); the build archetype keystones (see "Build archetypes"). Paragon track past level 1000 on the same opcode (see "Paragon"). |
 | game_dungeons | `dungeons.lua` | 109 | Reads the base server `DUNGEON_SYSTEM` table. Queue, group formation, teleport in, timer, monster-count progress, boss kill, difficulty unlock, speed/flawless challenges, solo/group rankings, teleport out. Difficulty does not change monsters; loot panel is display only. A shutdown ends the queue runs without a cooldown (members back where they entered); the first login after a restart or a crash inside a dungeon box goes to the temple (also for runs of the base modal, whose exit timer dies with the server). A run lasts DungeonTime but at most 45 minutes (`Chaos.dungeons.maxTimeSeconds`) with warnings at 5 min, 1 min and 10 s; the queue shows the wait of the run inside; a relog inside the box while the server runs goes to the temple with the cooldown ("Instance limits"). |
 | game_infinitytower | `infinitytower.lua`, `infinitytower_run.lua` | 214 | Seasons, points, best floor/time, ranking, milestone claim, Adventure > Infinity Tower, `/towerrun` staff test helper. The tower gameplay is `infinitytower_run.lua` (runtime-built arenas, floors as waves, boss floors; results through `ChaosTower.recordRun`; see "Infinity Tower gameplay"). Season-end top 3 chests: "Infinity Tower season rewards"; `/towerseason` staff status. |
 | game_stash | `stash.lua` | **110** (new), Economy > Supply Stash | Deposit by drag, redeem, categories, block list, the Stash All button, DB persistence. Stash tabs per account limit (free / Chaos Pact / bought), Orbs / Gems / Keys tabs; tested in game (see "Chaos Pact and account storage"). |
@@ -1596,7 +1596,8 @@ effect. Rules in `passivetree_core.lua` (pure), numbers in `passivetree_config.l
   holds the last one handled) `ChaosPassiveTree.refundReworked` takes those nodes, and the ones only connected through
   them, out of every preset (`passivetree_core.lua` `reworkedSince`, `dropNodes`) and every saved loadout
   (`ChaosLoadouts.dropNodes`), for free, with one message. It runs before the class check of the login. Version 1:
-  369, 376, 383, 390 (the line keystones). A new character only records the version.
+  369, 376, 383, 390 (the line keystones). Version 2: 77, 78, 81, 82, 106-109, 253, 262, 355, 362 (the build
+  archetype keystones, "Build archetypes" below). A new character only records the version.
 
 ## Passive tree notables on the paths (2026-10, client `treedata/nodes.lua`)
 Runs of three or more small nodes along a path (outside the class sections and the ring next to the start) had one
@@ -1644,6 +1645,62 @@ middle rings (small nodes 2) the stat +1 and 1-2 attribute points; on the crit r
   +1.5% damage at 73 points and +1.6% to +2.6% at 248, evenly over the classes (the leads stay); see
   `server/data/spells/README.md` "Line keystones and the path notables".
 
+## Build archetypes (`archetypes.lua`, `archetypes_core.lua`, `archetypes_config.lua`, docs/BUILDS.md)
+The owner asked for the genre's most played build styles, at least two per class line (2026-10-12). Twelve keystones
+on converted leaves of the main tree, twelve uniques that push them, two summons. The build guide per line is
+docs/BUILDS.md. Computed numbers: `data/spells/README.md` "Build archetypes" (not measured in game).
+
+| Node | Keystone (flag) | Classes | Effect | Price |
+|---|---|---|---|---|
+| 108 | Pyre Oath (`arPyreOath`) | Warrior, Templar lines | every second, out of a protection zone and in a fight or with an enemy near: enemies within 2 sqm take 4% of your maximum health as fire (a spell of yours: tree bonuses and the class factor apply); you take 2.5% of it as fire (`doTargetCombatHealth` without an attacker, so absorbs apply; never lethal) and heal 2% | other damage x0.75 |
+| 81 | Sanguine Covenant (`arSanguine`) | all | 5% of every hit dealt as health (`Chaos.heal`, a tick later), at most 6% of the maximum health per second | healing received (`COMBAT_HEALING` on the player, any source) x0.7 |
+| 77 | Thornbound Oath (`arThornbound`) | all | a melee, ranged or spell hit from a creature: 20% of what landed (health + energy shield) + the items' Reflect Damage again, physical, at most 50% of the own maximum health a hit; players (only where `ChaosSpell.canAttack`): a third, at most 5% of their maximum health; bosses (`MonsterType:isBoss`): half, at most 2 x level per second per boss; never damage over time, never a reflect inside a reflect | damage dealt x0.9 |
+| 109 | Open Hand Creed (`arOpenHand`) | all but the Monk line | no weapon in the hands (a shield or quiver is fine): the engine's fist hit (attack 7) is scaled to the Monk's fist attack (40 + level x 0.025, at most 60) with the best of fist, sword, axe and club skill, x1.1. `ChaosSpell.meleeAttack` (the Thief and Templar strike spells) returns that attack for an empty hand (it reads the flag storage 7100024 and the worn ring); the Warrior's skill spells keep the engine's fist values | none |
+| 107 | Contagion Rite (`arContagion`) | Thief line | a monster dying within 4 s of a poison tick of yours: 5 ticks of that tick, every 2 s, on the 3 nearest monsters within 2 sqm that do not carry the chain yet; up to 4 steps | weapon hits x0.9 |
+| 78 | Cascade Edge (`arCascade`) | all | a critical hit (8th argument of onHealthChange, engine patch 0001): 60% of it on the other enemies within 1 sqm of the target, as the strongest element increment of the tree (energy without one), once per 0.8 s | non-critical hits x0.95 |
+| 82 | Stormstring (`arStormstring`) | Ranger line | bow and crossbow hits (`ChaosArchery.kindOfType`): 3 arcs of 40% of the hit, energy, to the nearest other enemies within 3 sqm in sight | that hit x0.9 |
+| 355 | Winter's Lattice (`arWinterLattice`) | Mystic, Necromancer lines | a monster dying within 2 s of an ice hit of yours bursts: 6% of its maximum health (at most 12 x level) as ice on enemies within 2 sqm (at most 8); bursts that kill burst again | fire and energy dealt x0.7 |
+| 262 | Effigy Covenant (`arEffigy`) | Mystic, Necromancer lines | a spell cast that hits 2+ enemies in one tick raises a Cinder Effigy on your tile (at most 2, the oldest goes; 12 s); every 2 s it hits the enemies within 3 sqm (as many as the cast hit) for 22% of the cast's average hit, of its main element | spells dealt x0.65 |
+| 106 | Sigil of Cinders (`arCinderSigil`) | Mystic, Templar lines | fire and holy spell hits ignite (15% of the hit over 4 s, a fire condition owned by you); a cast that hits one enemy brands it for 8 s: 5% of that hit every second on the enemies within 1 sqm of the bearer; it jumps to the nearest enemy within 3 sqm when the bearer dies; an ignited monster that dies passes the burn to 2 within 2 sqm, 3 steps | damage that is not fire or holy x0.8 |
+| 362 | Aether Edge (`arAetherEdge`) | Monk, Templar lines | weapon and fist hits add 6% of the current energy shield as energy (a spell of yours) | maximum health 80% (`CONDITION_ATTRIBUTES`, sub id 71090, set and removed with the keystone) |
+| 253 | Reliquary Vow (`arReliquary`) | Templar line | a Reliquary Warden summon follows you outside protection zones (brought back past 7 sqm); every 2 s it heals you and the party within 3 sqm for 0.6% of their maximum health + 2 x your magic level, gives the other members +5% damage for 3 s, and deals 0.6 x level + 3 x magic level holy to enemies within 2 sqm | own damage x0.9 |
+
+- **Casts.** A hit counts as a spell cast only inside the spell supports' cast context (storage 7109990, written by
+  `data/spells/chaos/_supports.lua` around every wrapped spell script): effigies, sigils, ignites and the Effigy price
+  read it. Other spell-origin hits (item reflect, other systems' procs, minions dealt as their owner) are not casts.
+- **Chain budget.** Poison and burn spreads and shatters wait in one queue: at most 24 run per 50 ms, at most 40 per
+  chain (a pack), 200 waiting (more are dropped). A spread is one spectator query and a condition or a hit, so one
+  tick stays near 2 ms, far under the 20 ms task class of "Game loop stalls". Unit test: a 30 monster pack killed in
+  waves ends within 6 waves and inside the budget.
+- **Guards.** Shares of a hit (Cascade, arcs, effigy and sigil pulses, reflect) are dealt with `ChaosKeystones.depth`
+  up like the keystone procs: no second tree bonus, nothing reacts to them. Own damage (aura, relic, shatter, Aether
+  Edge) is a spell of the player with `ChaosArchetypes.source` set: tree bonuses and the class factor apply, the
+  archetype's own price does not, only the leech and the marks react. The rift's Spiteglass reflect runs inside a
+  guarded reflect, so a reflect never bounces back and forth.
+- **Events.** `ChaosArchetypesHit` (onHealthChange) on every monster a tick after it spawns (after the passive tree's
+  event, so shares are of the hit with its bonuses), on attacked targets and on players at login;
+  `ChaosArchetypesDeath` on the same monsters; a passive tree listener writes the holders, the flag storage
+  `Chaos.storage.archetypeFlags` (7100024, a bit per keystone for the spells' Lua state) and the Aether Edge
+  condition; one global think a second runs Pyre Oath, the effigies, sigils and the relic for holders only.
+- **Summons.** `monsters/chaos/archetype_cinder_effigy.xml` (speed 0, look 95) and
+  `archetype_reliquary_warden.xml` (look 1074, to be checked in game): not attackable, not hostile, no attacks, health
+  10 (below the monster tiers), registered by the monsters step like the other Chaos monsters. Removed at logout,
+  death, a tree change and (relic) in a protection zone. `pets_config.lua` counts them as class summons.
+- **Uniques** (`data/items/chaos_items.xml` `archetype`, specs by `tools/gen_unique_specs.py`, drops in
+  `data/lib/chaos_unique_items.lua`): Pyreheart Mantle (8881), Vein of the Unsated (27652), Spitethorn Bulwark
+  (15413), Knuckles of the Unbound (28023), Rotbloom Phial (21691), Splintered Instant (28049), Stormcaller Recurve
+  (8858), Shard of the Long Winter (26756), Effigy Carver's Idol (22423), Brand of the Ashen Choir (18403), Aetherbound
+  Plate (2466), Reliquary Censer (27251). `archetypes.lua` reads the worn copies (with `chaos_unique`) at login and
+  after every equipment move. Knuckles and the Recurve also work without their keystone.
+- **Save data.** The twelve nodes keep their ids and links (`tests/passivetree_layout_test.lua`); reworked version 2
+  refunds them once; build code format 4 (older codes leave them out). Client: `game_passivetree` tooltips and names,
+  icons `keystones.png` cells 28-39 (`client/tools/gen_keystone_icons.py`).
+- **Not done.** Traps and mines, aura stacking with reserved mana and a build that lives on its energy shield alone need new spells or a
+  reserve system. A spell cast by name on a critical hit needs an engine call; not added (it would skip the cast
+  checks), Cascade Edge deals its own burst.
+- Tests: `tests/archetypes_test.lua` (rules, data, tooltips, uniques, the glue against a mocked engine),
+  `tests/buildshare_test.lua` (format 4). Not run on a live server.
+
 ## Build sharing (`buildshare.lua`, `buildshare_core.lua`)
 A build can be exported as a short text code and imported on another character (or after a reset). The server encodes, decodes,
 validates and applies; the client only shows what the server sends.
@@ -1654,12 +1711,13 @@ validates and applies; the client only shows what the server sends.
   box showing the price) applies it, **Cancel Preview** shows the saved tree again.
 - **Chat:** the spoken `!build` commands are gone (everything is in the Build Code panel); a "build link" `[build CB1-...]`
   pasted in chat still opens the panel with that code.
-- **Code format, version 3** (since the line keystones, 2026-10; version 2 has the same layout): `CB3-` + base64url of:
+- **Code format, version 4** (since the build archetype keystones, 2026-10-12; versions 2 and 3 have the same layout):
+  `CB4-` + base64url of:
   class line (1 byte, index into `ChaosBuildShare.CLASS_LINES` = warrior, ranger, mystic, thief; 0 = no class; never a
   vocation id), flags (1 byte, 1 = Paragon part, 2 = mastery part), the optional
   Paragon part (count, then stat index into `PARAGON_KEYS` + points, 1 byte each), the optional mastery part (count, then node
   id in 2 bytes and the chosen effect in 1 byte), a bitset of the allocated node ids (bit `id % 8` of byte `id / 8`, trailing
-  zero bytes dropped) and a 3 byte checksum (`h = (h x 257 + byte) mod 16777213` over "CB3" and the bytes). Only the
+  zero bytes dropped) and a 3 byte checksum (`h = (h x 257 + byte) mod 16777213` over "CB4" and the bytes). Only the
   canonical base64 form is accepted, so every single-character typo is rejected (test). A 100 node build is ~60 characters, a
   248 node level 1000 build ~110, the whole tree ~120. **Version 1** (`CB1-`, the same without the mastery part) is still
   read: an import of it keeps the character's own mastery effects, else takes the first one (the preview says so). An import
@@ -1673,7 +1731,8 @@ validates and applies; the client only shows what the server sends.
   made with the new meaning; append only) and a new format version: an older code that holds it leaves it out on import,
   with the nodes only connected through it, and the preview says so ("The code is older than a tree change: n nodes
   whose effect changed are left out."). Version 3 came with 369, 376, 383 and 390 becoming the line keystones; the 27
-  path notables kept their meaning (old stats plus a premium) and need no entry.
+  path notables kept their meaning (old stats plus a premium) and need no entry. Version 4 came with the twelve build
+  archetype keystones (77, 78, 81, 82, 106-109, 253, 262, 355, 362); codes of versions 1-3 leave them out.
 - **Import rules (server):** same class line as the importer (Juggernaut and Berserker share the Warrior line; keystone variants
   follow the importer's class via `ChaosClasses.keystoneKey`), else "This build is for a Warrior line class; you are a ...";
   every node known and connected to the start through the build's own nodes; a keystone only if the importer's class has a variant

@@ -5961,6 +5961,46 @@ CodexData = {
 			name = "Uniques",
 			entries = {
 				{
+					id = "unique:2466",
+					name = "Aetherbound Plate",
+					color = "#ff9c3a",
+					sub = "Body armour, level 120. Armor 16, Energy Absorb +8%, Magic Level +2",
+					f = {kind = {"armor"}, level = 120, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"The gold is only paint; the plate is lightning held still. Aether Edge: your hits add 4% more of your energy shield. (Requires level 120.)"}
+						},
+						{h = "Stats", p = {"Armor 16", "Energy Absorb +8%", "Magic Level +2"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Body armour"},
+								{"Required level", "120"},
+								{"Drops from", "Rare monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
+								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Bonelord, Elder Bonelord, Crypt Shambler."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {2466}
+				},
+				{
 					id = "unique:11395",
 					name = "Bloodmoon Edge",
 					color = "#ff9c3a",
@@ -6309,6 +6349,46 @@ CodexData = {
 						}
 					},
 					items = {3972}
+				},
+				{
+					id = "unique:18403",
+					name = "Brand of the Ashen Choir",
+					color = "#ff9c3a",
+					sub = "Helmet, level 150. Armor 10, Fire Absorb +6%, Holy Absorb +4%, Magic Level +2",
+					f = {kind = {"helmet"}, level = 150, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"A choir sang under it until the fire took the last voice. Sigil of Cinders: the sigil burns 25% harder. (Requires level 150.)"}
+						},
+						{h = "Stats", p = {"Armor 10", "Fire Absorb +6%", "Holy Absorb +4%", "Magic Level +2"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Helmet"},
+								{"Required level", "150"},
+								{"Drops from", "Rare monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
+								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {18403}
 				},
 				{
 					id = "unique:11374",
@@ -7074,6 +7154,46 @@ CodexData = {
 						}
 					},
 					items = {29866}
+				},
+				{
+					id = "unique:22423",
+					name = "Effigy Carver's Idol",
+					color = "#ff9c3a",
+					sub = "Shield, level 120. Defense 20, Death Absorb +5%, Magic Level +4",
+					f = {kind = {"shield"}, level = 120, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Its pages are carved, not written. Effigy Covenant: one more effigy may stand. (Requires level 120.)"}
+						},
+						{h = "Stats", p = {"Defense 20", "Death Absorb +5%", "Magic Level +4"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Shield"},
+								{"Required level", "120"},
+								{"Drops from", "Rare monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
+								{"Monsters", "Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Phantom Shade, Shadowgeist, Nightdweller."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {22423}
 				},
 				{
 					id = "unique:27692",
@@ -8057,6 +8177,46 @@ CodexData = {
 					items = {2496}
 				},
 				{
+					id = "unique:28023",
+					name = "Knuckles of the Unbound",
+					color = "#ff9c3a",
+					sub = "Ring, level 400. Critical Hit: chance +3%, damage +10%, Fist +6",
+					f = {kind = {"jewel"}, level = 400, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Worn on the hand that never held a blade. Your bare fists hit as with the Open Hand Creed at 80% without the keystone; with it, 10% harder. (Requires level 400.)"}
+						},
+						{h = "Stats", p = {"Critical Hit: chance +3%, damage +10%", "Fist +6"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Ring"},
+								{"Required level", "400"},
+								{"Drops from", "Legendary monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
+								{"Monsters", "Inferno Juggernaut, Nightflare Dreadknight, Orclops Ravager, Grindmaw the Mauler, Royal Man, Grove Keeper, Garack, Dreamgorger."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {28023}
+				},
+				{
 					id = "unique:3961",
 					name = "Lichfang Staff",
 					color = "#ff9c3a",
@@ -8634,6 +8794,86 @@ CodexData = {
 					items = {10296}
 				},
 				{
+					id = "unique:8881",
+					name = "Pyreheart Mantle",
+					color = "#ff9c3a",
+					sub = "Body armour, level 150. Armor 15, Fire Absorb +10%, Physical Absorb +3%",
+					f = {kind = {"armor"}, level = 150, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Cut from a giant that walked into its own pyre and did not stop. Pyre Oath: your burning aura deals 20% more. (Requires level 150.)"}
+						},
+						{h = "Stats", p = {"Armor 15", "Fire Absorb +10%", "Physical Absorb +3%"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Body armour"},
+								{"Required level", "150"},
+								{"Drops from", "Legendary monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
+								{"Monsters", "Hellfire Fighter, Fire Devil, Massive Fire Elemental, Hellhound, Dragon Lord, Blazebringer, Demon, Diabolic Imp, Hellspawn, Defiler, Destroyer."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {8881}
+				},
+				{
+					id = "unique:27251",
+					name = "Reliquary Censer",
+					color = "#ff9c3a",
+					sub = "Amulet, level 220. Holy Absorb +8%, Magic Level +2, Physical Absorb +3%",
+					f = {kind = {"jewel"}, level = 220, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Its smoke kneels before it rises. Reliquary Vow: your Reliquary Warden pulses 25% stronger. (Requires level 220.)"}
+						},
+						{h = "Stats", p = {"Holy Absorb +8%", "Magic Level +2", "Physical Absorb +3%"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Amulet"},
+								{"Required level", "220"},
+								{"Drops from", "Legendary monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
+								{"Monsters", "Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {27251}
+				},
+				{
 					id = "unique:13760",
 					name = "Riftcaller",
 					color = "#ff9c3a",
@@ -8711,6 +8951,46 @@ CodexData = {
 					items = {2206}
 				},
 				{
+					id = "unique:21691",
+					name = "Rotbloom Phial",
+					color = "#ff9c3a",
+					sub = "Amulet, level 150. Critical Hit: chance +2%, damage 0%, Earth Absorb +8%",
+					f = {kind = {"jewel"}, level = 150, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"The flower inside has never stopped growing. Contagion Rite: your poison spreads to one more monster and one step deeper. (Requires level 150.)"}
+						},
+						{h = "Stats", p = {"Critical Hit: chance +2%, damage 0%", "Earth Absorb +8%"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Amulet"},
+								{"Required level", "150"},
+								{"Drops from", "Rare monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
+								{"Monsters", "Phantom Shade, Shadowgeist, Nightdweller, Abyssal Shadowfiend, Lost Soul, Nightstalker, Death Mage, Bonelord, Elder Bonelord, Crypt Shambler."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {21691}
+				},
+				{
 					id = "unique:2408",
 					name = "Sanguine Crescent",
 					color = "#ff9c3a",
@@ -8747,6 +9027,49 @@ CodexData = {
 						}
 					},
 					items = {2408}
+				},
+				{
+					id = "unique:26756",
+					name = "Shard of the Long Winter",
+					color = "#ff9c3a",
+					sub = "Wand / rod, level 100. Range 3, Ice Absorb +6%, Magic Level +4, Mana Leech: chance +4%, amount +4%",
+					f = {kind = {"weapon"}, level = 100, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Cold enough to crack what it touches, and what that touches. Winter's Lattice: shatters deal 2% more of the maximum health and reach 1 sqm further. (Requires level 100.)"}
+						},
+						{
+							h = "Stats",
+							p = {"Range 3", "Ice Absorb +6%", "Magic Level +4", "Mana Leech: chance +4%, amount +4%"}
+						},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Wand / rod"},
+								{"Required level", "100"},
+								{"Drops from", "Rare monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
+								{"Monsters", "Warlock, Lich, Dark Torturer, Infernalist, Necromancer, Priestess, Death Mage, Phantom Shade, Shadowgeist, Nightdweller."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {26756}
 				},
 				{
 					id = "unique:27228",
@@ -8873,6 +9196,126 @@ CodexData = {
 						}
 					},
 					items = {29571}
+				},
+				{
+					id = "unique:15413",
+					name = "Spitethorn Bulwark",
+					color = "#ff9c3a",
+					sub = "Shield, level 130. Defense 36, Physical Absorb +4%, Shielding +3",
+					f = {kind = {"shield"}, level = 130, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Every dent in it was paid back. Thornbound Oath: you reflect 10% more. (Requires level 130.)"}
+						},
+						{h = "Stats", p = {"Defense 36", "Physical Absorb +4%", "Shielding +3"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Shield"},
+								{"Required level", "130"},
+								{"Drops from", "Legendary monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
+								{"Monsters", "Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {15413}
+				},
+				{
+					id = "unique:28049",
+					name = "Splintered Instant",
+					color = "#ff9c3a",
+					sub = "Ring, level 400. Critical Hit: chance +6%, damage +20%",
+					f = {kind = {"jewel"}, level = 400, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"A moment cracked in two; one half keeps happening. Cascade Edge: the burst deals 25% more of the critical hit and comes 0.2 s sooner. (Requires level 400.)"}
+						},
+						{h = "Stats", p = {"Critical Hit: chance +6%, damage +20%"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Ring"},
+								{"Required level", "400"},
+								{"Drops from", "Legendary monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.28%, Boss 0.42% (x item find)."},
+								{"Monsters", "Inferno Juggernaut, Nightflare Dreadknight, Orclops Ravager, Grindmaw the Mauler, Royal Man, Grove Keeper, Garack, Dreamgorger."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {28049}
+				},
+				{
+					id = "unique:8858",
+					name = "Stormcaller Recurve",
+					color = "#ff9c3a",
+					sub = "Distance weapon, level 70. Hit Chance 5, Distance +4, Energy Absorb +4%",
+					f = {kind = {"weapon"}, level = 70, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"The string hums before the storm does. Your bow hits arc to one more enemy for 25% as energy (with Stormstring: one more arc). (Requires level 70.)"}
+						},
+						{h = "Stats", p = {"Hit Chance 5", "Distance +4", "Energy Absorb +4%"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Distance weapon"},
+								{"Required level", "70"},
+								{"Drops from", "Rare monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
+								{"Monsters", "Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer, Dragon Lord, Hand of Cursed Fate, Demon, Hellhound, Fire Devil, Hellfire Fighter."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {8858}
 				},
 				{
 					id = "unique:24851",
@@ -9147,6 +9590,46 @@ CodexData = {
 						}
 					},
 					items = {29868}
+				},
+				{
+					id = "unique:27652",
+					name = "Vein of the Unsated",
+					color = "#ff9c3a",
+					sub = "Amulet, level 180. Death Absorb +4%, Life Leech: chance +8%, amount +5%",
+					f = {kind = {"jewel"}, level = 180, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"It drinks first and lets you have the rest. Sanguine Covenant: you leech 1% more, and up to 3% more of your maximum health a second. (Requires level 180.)"}
+						},
+						{h = "Stats", p = {"Death Absorb +4%", "Life Leech: chance +8%, amount +5%"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Amulet"},
+								{"Required level", "180"},
+								{"Drops from", "Rare monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.1%, Legendary 0.2%, Boss 0.3% (x item find)."},
+								{"Monsters", "Lich, Vampire, Banshee, Ghoul, Grim Reaper, Undead Dragon, Demon Skeleton, Betrayed Wraith, Blightwalker, Juggernaut, Behemoth, Minotaur, Orc Warlord, Destroyer."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it and it is never salvaged.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {27652}
 				},
 				{
 					id = "unique:27675",

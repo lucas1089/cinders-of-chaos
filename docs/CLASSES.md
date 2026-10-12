@@ -553,6 +553,26 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
 - **Role rebalance** (2026-10-10, the owner): the Iron Sage path became a healer path (Healing Hands, Deep Mantra, Flowing Mercy) and
   the Samurai path a duelist off-tank path (Steel Discipline, Iron Parry, Way of the Blade: the stance parries every melee hit).
 
+### Build archetypes (2026-10-12)
+
+The owner asked for the genre's most played build styles, at least two per class line. Twelve keystones on converted
+small leaves of the main tree (refunded once), twelve uniques that push them, two summons. The guide per line is
+docs/BUILDS.md; rules server/README.md "Build archetypes"; computed numbers server/data/spells/README.md "Build
+archetypes" (not measured in game). Each line now has at least two archetypes, each playable with the base class:
+
+| Line | Archetypes (new in bold) |
+|---|---|
+| Warrior | **Pyre Walker** (Pyre Oath, Juggernaut), **Bloodsworn Reaver** (Sanguine Covenant, Berserker), **Iron Bastion** (Thornbound Oath, Juggernaut), two-handed cleaver |
+| Ranger | **Stormquiver** (Stormstring, Deadeye), marked crossbow, pack hunter |
+| Mystic | **Rime Orb** (Winter's Lattice), **Effigy Caller** (Effigy Covenant), **Ember Brand** (Sigil of Cinders; all Elementalist), healer and support |
+| Thief | **Plaguebearer** (Contagion Rite with Blackblood Creed), **Twin-Fang Cascade** (Cascade Edge, Ninja), duelist |
+| Necromancer | bone army, **Grave Effigies** (Effigy Covenant or Winter's Lattice), rot curser |
+| Monk | **Storm Palm** (Aether Edge, Shadowfist), **Hundred-Fist Cascade** (Cascade Edge), chi healer |
+| Templar | **Reliquary Keeper** (Reliquary Vow, Sentinel), **Ember Brand** (Sigil of Cinders, Inquisitor), **Iron Pilgrim** (Open Hand Creed), holy area |
+
+The role order holds: the Deadeye stays the best single target, the Elementalist the best area (its own archetypes
+add at most +10%), the Juggernaut the tankiest.
+
 ### Balance with the trees
 
 Every class measured the same way at levels 300 and 1000 with a tree build (`server/data/spells/README.md` "Classes with the

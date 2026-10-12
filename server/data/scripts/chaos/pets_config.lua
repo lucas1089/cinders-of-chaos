@@ -38,7 +38,8 @@ return {
 	-- other summons: a pet rests while its owner has a summon that is not a class companion (Call Thrall, Moonfang Pack),
 	-- so the stock two-summon limit and Moonfang's cap of four are never reduced by a pet. Class companions are read at
 	-- run time (Chaos.classes.companion.monsters, ChaosNecroConfig.minions); these names are added to them:
-	classSummons = {"War Wolf", "Risen Skeleton", "Lich Shade", "Bone Golem"},
+	-- (Cinder Effigy, Reliquary Warden: the build archetype summons of archetypes.lua)
+	classSummons = {"War Wolf", "Risen Skeleton", "Lich Shade", "Bone Golem", "Cinder Effigy", "Reliquary Warden"},
 
 	-- where pets may go: "banned" = sent home and cannot be summoned there; "utility" = out, but only the utility
 	-- abilities (gold find, item find, fetch) work; anything else = everything works

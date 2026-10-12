@@ -1251,4 +1251,141 @@
 		<attribute key="description" value="When it grows warm, something you summoned has fed. (Requires level 250.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
+	<!-- the build archetype uniques (2026-10, docs/BUILDS.md): `archetype` names the effect data/scripts/chaos/archetypes.lua
+	     reads on the equipped copy (archetypes_config.lua uniques) -->
+	<!-- 8881: stock "fireborn giant armor" -->
+	<item id="8881" article="a" name="Pyreheart Mantle">
+		<attribute key="weight" value="15000" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="15" />
+		<attribute key="absorbPercentFire" value="10" />
+		<attribute key="absorbPercentPhysical" value="3" />
+		<attribute key="archetype" value="pyreMantle" />
+		<attribute key="description" value="Cut from a giant that walked into its own pyre and did not stop. Pyre Oath: your burning aura deals 20% more. (Requires level 150.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27652: stock "exotic amulet" -->
+	<item id="27652" article="a" name="Vein of the Unsated">
+		<attribute key="weight" value="600" />
+		<attribute key="slotType" value="necklace" />
+		<attribute key="lifeLeechChance" value="8" />
+		<attribute key="lifeLeechAmount" value="5" />
+		<attribute key="absorbPercentDeath" value="4" />
+		<attribute key="archetype" value="sanguineVein" />
+		<attribute key="description" value="It drinks first and lets you have the rest. Sanguine Covenant: you leech 1% more, and up to 3% more of your maximum health a second. (Requires level 180.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 15413: stock "ornate shield" -->
+	<item id="15413" article="a" name="Spitethorn Bulwark">
+		<attribute key="weight" value="7100" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="36" />
+		<attribute key="skillShield" value="3" />
+		<attribute key="absorbPercentPhysical" value="4" />
+		<attribute key="archetype" value="spitethorn" />
+		<attribute key="description" value="Every dent in it was paid back. Thornbound Oath: you reflect 10% more. (Requires level 130.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 28023: stock "Astro Ring" -->
+	<item id="28023" article="a" name="Knuckles of the Unbound">
+		<attribute key="weight" value="90" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="skillFist" value="6" />
+		<attribute key="criticalHitChance" value="3" />
+		<attribute key="criticalHitAmount" value="10" />
+		<attribute key="archetype" value="openHand" />
+		<attribute key="description" value="Worn on the hand that never held a blade. Your bare fists hit as with the Open Hand Creed at 80% without the keystone; with it, 10% harder. (Requires level 400.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 21691: stock "shrunken head necklace" -->
+	<item id="21691" article="a" name="Rotbloom Phial">
+		<attribute key="weight" value="450" />
+		<attribute key="slotType" value="necklace" />
+		<attribute key="absorbPercentEarth" value="8" />
+		<attribute key="criticalHitChance" value="2" />
+		<attribute key="archetype" value="rotbloom" />
+		<attribute key="description" value="The flower inside has never stopped growing. Contagion Rite: your poison spreads to one more monster and one step deeper. (Requires level 150.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 28049: stock "Mercurial Ring" -->
+	<item id="28049" article="a" name="Splintered Instant">
+		<attribute key="weight" value="90" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="criticalHitChance" value="6" />
+		<attribute key="criticalHitAmount" value="20" />
+		<attribute key="archetype" value="splinteredInstant" />
+		<attribute key="description" value="A moment cracked in two; one half keeps happening. Cascade Edge: the burst deals 25% more of the critical hit and comes 0.2 s sooner. (Requires level 400.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 8858: stock "elemental bow" -->
+	<item id="8858" article="a" name="Stormcaller Recurve">
+		<attribute key="weight" value="5000" />
+		<attribute key="weaponType" value="distance" />
+		<attribute key="slotType" value="two-handed" />
+		<attribute key="hitChance" value="5" />
+		<attribute key="skillDist" value="4" />
+		<attribute key="absorbPercentEnergy" value="4" />
+		<attribute key="archetype" value="stormcaller" />
+		<attribute key="description" value="The string hums before the storm does. Your bow hits arc to one more enemy for 25% as energy (with Stormstring: one more arc). (Requires level 70.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 26756: stock "frozen wand" -->
+	<item id="26756" article="a" name="Shard of the Long Winter">
+		<attribute key="weight" value="2300" />
+		<attribute key="weaponType" value="wand" />
+		<attribute key="shootType" value="ice" />
+		<attribute key="range" value="3" />
+		<attribute key="magicPoints" value="4" />
+		<attribute key="absorbPercentIce" value="6" />
+		<attribute key="manaLeechChance" value="4" />
+		<attribute key="manaLeechAmount" value="4" />
+		<attribute key="archetype" value="longWinter" />
+		<attribute key="description" value="Cold enough to crack what it touches, and what that touches. Winter's Lattice: shatters deal 2% more of the maximum health and reach 1 sqm further. (Requires level 100.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 22423: stock "umbral spellbook" -->
+	<item id="22423" article="an" name="Effigy Carver's Idol">
+		<attribute key="weight" value="1500" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="20" />
+		<attribute key="magicPoints" value="4" />
+		<attribute key="absorbPercentDeath" value="5" />
+		<attribute key="archetype" value="effigyIdol" />
+		<attribute key="description" value="Its pages are carved, not written. Effigy Covenant: one more effigy may stand. (Requires level 120.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 18403: stock "prismatic helmet" -->
+	<item id="18403" article="a" name="Brand of the Ashen Choir">
+		<attribute key="weight" value="3200" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="10" />
+		<attribute key="magicPoints" value="2" />
+		<attribute key="absorbPercentFire" value="6" />
+		<attribute key="absorbPercentHoly" value="4" />
+		<attribute key="archetype" value="ashenChoir" />
+		<attribute key="description" value="A choir sang under it until the fire took the last voice. Sigil of Cinders: the sigil burns 25% harder. (Requires level 150.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2466: stock "golden armor" -->
+	<item id="2466" article="an" name="Aetherbound Plate">
+		<attribute key="weight" value="8000" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="16" />
+		<attribute key="absorbPercentEnergy" value="8" />
+		<attribute key="magicPoints" value="2" />
+		<attribute key="archetype" value="aetherPlate" />
+		<attribute key="description" value="The gold is only paint; the plate is lightning held still. Aether Edge: your hits add 4% more of your energy shield. (Requires level 120.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27251: stock "rainbow necklace" -->
+	<item id="27251" article="a" name="Reliquary Censer">
+		<attribute key="weight" value="500" />
+		<attribute key="slotType" value="necklace" />
+		<attribute key="absorbPercentHoly" value="8" />
+		<attribute key="absorbPercentPhysical" value="3" />
+		<attribute key="magicPoints" value="2" />
+		<attribute key="archetype" value="reliquaryCenser" />
+		<attribute key="description" value="Its smoke kneels before it rises. Reliquary Vow: your Reliquary Warden pulses 25% stronger. (Requires level 220.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
 </items>

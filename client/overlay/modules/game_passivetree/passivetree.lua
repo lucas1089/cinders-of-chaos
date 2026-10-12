@@ -437,7 +437,7 @@ function setNodeTooltip(widget, node)
 	elseif customStats then
 		texts = getCustomStatString(customStats)
 		-- keystones: the class's own description lines under the stats (a class node: its own lines)
-		for _, line in ipairs((vocationNode and vocationNode.stats) or (node.classes and node.stats) or {}) do
+		for _, line in ipairs((vocationNode and vocationNode.stats) or ((node.classes or node.isKeystone) and node.stats) or {}) do
 			table.insert(texts, line)
 		end
 		if node.locked then
@@ -2037,7 +2037,12 @@ KEYSTONE_NAMES = {
 	ksBoneColossus = "Bone Colossus", ksHundredHands = "Hundred Hands", ksFlowingMercy = "Flowing Mercy",
 	ksDivineVerdict = "Divine Verdict", ksBastion = "Bastion",
 	ksBlackbloodCreed = "Blackblood Creed", ksGraveCovenant = "Covenant of the Grave",
-	ksScarredDiscipline = "Scarred Discipline", ksPenitentWrath = "Penitent's Wrath"
+	ksScarredDiscipline = "Scarred Discipline", ksPenitentWrath = "Penitent's Wrath",
+	-- the build archetype keystones (server archetypes_config.lua; docs/BUILDS.md)
+	arPyreOath = "Pyre Oath", arSanguine = "Sanguine Covenant", arThornbound = "Thornbound Oath",
+	arOpenHand = "Open Hand Creed", arContagion = "Contagion Rite", arCascade = "Cascade Edge",
+	arStormstring = "Stormstring", arWinterLattice = "Winter's Lattice", arEffigy = "Effigy Covenant",
+	arCinderSigil = "Sigil of Cinders", arAetherEdge = "Aether Edge", arReliquary = "Reliquary Vow"
 }
 -- class notables of the class sections (their effect is in the node's own tooltip lines)
 CLASS_NOTABLE_NAMES = {

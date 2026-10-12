@@ -17,8 +17,12 @@ ChaosPassiveTreeConfig = {
 	-- versions 1 and 2) leave them out on import (buildshare_core.lua REWORKED).
 	-- Version 1 (2026-10): the mythic leaves 369 (spirit), 376 (healing), 383 (wisdom), 390 (life leech) became the
 	-- keystones of the Necromancer, Templar, Thief and Monk lines.
+	-- Version 2 (2026-10, the build archetypes, docs/BUILDS.md): twelve small leaves became the archetype keystones
+	-- (archetypes_config.lua nodes): 77, 78, 81, 82 (leech / crit leaves), 106-109 (elemental cluster ends), 253, 262,
+	-- 355, 362 (mythic leaves).
 	reworked = {
-		{version = 1, ids = {369, 376, 383, 390}}
+		{version = 1, ids = {369, 376, 383, 390}},
+		{version = 2, ids = {77, 78, 81, 82, 106, 107, 108, 109, 253, 262, 355, 362}}
 	}
 }
 

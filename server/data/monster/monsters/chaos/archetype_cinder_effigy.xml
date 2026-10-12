@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Cinder Effigy: the stationary summon of the Effigy Covenant keystone (Mystic and Necromancer lines;
+     data/scripts/chaos/archetypes.lua, numbers in archetypes_config.lua arEffigy). An area attack spell of its owner raises
+     one on the owner's tile; it lives 12 s and repeats that cast every 2 s around itself (dealt as its owner). It has no
+     attacks of its own, cannot move and cannot be attacked, so monsters ignore it. Health is a placeholder below the
+     monster tiers' minimum (no tier roll at creation). Look: the gargoyle statue (95). -->
+<monster name="Cinder Effigy" nameDescription="a cinder effigy" race="undead" experience="0" speed="0" manacost="0">
+	<health now="10" max="10" />
+	<look type="95" corpse="0" />
+	<targetchange interval="4000" chance="0" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="0" />
+		<flag hostile="0" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="1" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="100" />
+		<flag runonhealth="0" />
+		<flag canwalkonenergy="1" />
+		<flag canwalkonfire="1" />
+		<flag canwalkonpoison="1" />
+	</flags>
+	<defenses armor="0" defense="0" />
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+		<immunity outfit="1" />
+		<immunity drunk="1" />
+		<immunity lifedrain="1" />
+		<immunity drown="1" />
+	</immunities>
+</monster>

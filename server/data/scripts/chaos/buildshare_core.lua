@@ -1,19 +1,21 @@
 -- Build sharing: the passive tree build code, without engine calls (buildshare.lua, server/tests/buildshare_test.lua).
 --
 --   ChaosBuildShare.encode(build[, version])  code string of {classId, nodes = {ids}, paragon = {statKey = points} | nil,
---                                            masteries = {[id] = choice} | nil}; version 3 unless asked (1: no masteries)
+--                                            masteries = {[id] = choice} | nil}; version 4 unless asked (1: no masteries)
 --   ChaosBuildShare.decode(code)             build, or nil + error text (bad format, old/unknown version, checksum)
 --   ChaosBuildShare.extract(text)            the first code inside any text (a chat line, a "build link"), or nil
 --   ChaosBuildShare.plan(tree, build, ctx)   what an import would do for a character (see below), or nil + error text
 --
--- Code format, version 3:  "CB3-" .. base64url(payload)   (CB = Chaos Build, 3 = format version)
+-- Code format, version 4:  "CB4-" .. base64url(payload)   (CB = Chaos Build, 4 = format version)
 --   payload = classId (1 byte: index of the class line in CLASS_LINES, 0 = no class; never a vocation id)
 --             flags   (1 byte: 1 = a Paragon part follows, 2 = a mastery part follows)
 --             [Paragon: count (1 byte), then count x (stat index 1 byte, points 1 byte); stat index into PARAGON_KEYS]
 --             [masteries: count (1 byte), then count x (node id 2 bytes, high first, chosen effect 1 byte)]
 --             bitset of the allocated node ids: bit (id % 8) of byte floor(id / 8), trailing zero bytes dropped
---             checksum (3 bytes): h = (h * 257 + x) % 16777213 over the characters of "CB3" and every byte before it
--- Version 2 ("CB2-") has the same layout; it was handed out before nodes 369, 376, 383 and 390 became keystones, so
+--             checksum (3 bytes): h = (h * 257 + x) % 16777213 over the characters of "CB4" and every byte before it
+-- Version 3 ("CB3-") has the same layout; it was handed out before twelve small leaves became the build archetype
+-- keystones (77, 78, 81, 82, 106-109, 253, 262, 355, 362), so an import of it leaves those out (B.REWORKED).
+-- Version 2 ("CB2-") has the same layout too; it was handed out before nodes 369, 376, 383 and 390 became keystones, so
 -- an import of it leaves those nodes out (B.REWORKED). Version 1 ("CB1-", handed out before the mastery nodes) is the
 -- same without the mastery part (flag 2 unused) and is still read: such a code has no mastery choices (an import keeps
 -- the character's own, else takes the first effect) and leaves the reworked nodes out too.
@@ -25,19 +27,22 @@
 -- the codes that use it invalid ("unknown node"), every other code stays valid. Paragon stats are indexed by
 -- PARAGON_KEYS: append new stat keys at the end, never reorder. A mastery's effects are indexed by their position in the
 -- node's list: append new effects, never reorder. A new format gets a new version number; decode keeps reading every
--- version that was ever handed out (B.READS: 1, 2 and 3). A node whose meaning changes gets a new version and a
+-- version that was ever handed out (B.READS: 1 to 4). A node whose meaning changes gets a new version and a
 -- B.REWORKED entry, so the older codes leave it out instead of granting the new meaning.
 
 ChaosBuildShare = ChaosBuildShare or {}
 local B = ChaosBuildShare
 
 B.PREFIX = "CB"
-B.VERSION = 3
-B.READS = {[1] = true, [2] = true, [3] = true} -- every version ever handed out
+B.VERSION = 4
+B.READS = {[1] = true, [2] = true, [3] = true, [4] = true} -- every version ever handed out
 -- Nodes whose meaning changed (passivetree_config.lua `reworked`): id -> the first code version made with the new
 -- meaning. An older code that holds such a node leaves it out on import (with a note), and the nodes only connected
 -- through it. Append only. Version 3 (2026-10): 369, 376, 383, 390 became the line keystones (they were mythic leaves).
-B.REWORKED = {[369] = 3, [376] = 3, [383] = 3, [390] = 3}
+-- Version 4 (2026-10): twelve small leaves became the build archetype keystones (archetypes_config.lua nodes).
+B.REWORKED = {[369] = 3, [376] = 3, [383] = 3, [390] = 3,
+	[77] = 4, [78] = 4, [81] = 4, [82] = 4, [106] = 4, [107] = 4, [108] = 4, [109] = 4, [253] = 4, [262] = 4, [355] = 4,
+	[362] = 4}
 -- class lines (the base classes of Chaos.classes.ids); index = the code's class byte. Append only, never reorder.
 B.CLASS_LINES = {"warrior", "ranger", "mystic", "thief"}
 B.PARAGON_KEYS = {"damage", "critDamage", "health", "reduction", "speed", "mana", "goldFind", "itemFind"}
