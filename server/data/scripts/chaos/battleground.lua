@@ -762,6 +762,9 @@ finish = function(m, winner, reason)
 	local cfg = C()
 	m.phase = "done"
 	m.winner = winner
+	if ChaosTileBars and ChaosTileBars.removePrefix then
+		ChaosTileBars.removePrefix("bg:" .. m.id .. ":")
+	end
 	local now = os.time()
 	local rated = reason ~= "stop"
 	-- season rating (bracket "bg"); deserters were part of the match and score 0
@@ -1018,6 +1021,11 @@ local function captureTick(m, L, now)
 		end
 		if b.owner ~= 0 and now % 3 == 0 then
 			Position(spot.x, spot.y, spot.z):sendMagicEffect(effect(cfg.teams[b.owner].effect))
+		end
+		-- the capture bar over the brazier for the players near it (tilebars.lua, client game_tileoverlays)
+		if ChaosTileBars and ChaosTileBars.set and Chaos.tileBarsConfig and Chaos.tileBarsConfig.battleground then
+			ChaosTileBars.set("bg:" .. m.id .. ":" .. i, ChaosTileBarsCore.brazierBar({x = spot.x, y = spot.y, z = spot.z},
+				b.name, b.progress, b.owner, b.contested, cfg.teams))
 		end
 	end
 end

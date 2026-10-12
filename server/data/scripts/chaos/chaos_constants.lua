@@ -311,6 +311,10 @@ Chaos.storage.kiteWalkOff = 7101820
 -- itemfinder.lua, itemfinder_core.lua, itemfinder_sources.lua, itemfinder_config.lua; server/README.md "Item finder").
 -- One index in memory, built at startup. No storages, no tables.
 ChaosOpcodes.itemFinder = 155
+-- Progress bars over tiles (client game_tileoverlays; tilebars.lua, tilebars_core.lua, tilebars_config.lua;
+-- server/README.md "Progress bars over tiles"): server -> client bars over map positions for the players near them
+-- (battleground braziers, profession nodes, the invasion breach), client -> server hello. No storages, no tables.
+ChaosOpcodes.tileBars = 156
 
 -- ---------------------------------------------------------------------------
 -- Module settings

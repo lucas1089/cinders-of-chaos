@@ -80,6 +80,9 @@ jobs:
       - name: Bitmap font tool (make_fonts.py pure parts and the font atlas model)
         run: python3 client/tools/make_fonts_test.py  # not -I: Pillow from the user site (installed above)
 
+      - name: Field timers generator (gen_field_timers.py on a small items.xml / items.otb)
+        run: python3 -I client/tools/gen_field_timers_test.py
+
       - name: Client updater tools (manifest builder, signer, path rules)
         run: python3 -I client/tools/make_update_manifest_test.py
 

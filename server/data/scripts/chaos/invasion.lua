@@ -561,6 +561,19 @@ end
 
 local giveRewards, occupy, finish
 
+-- the breach meter over the target point for the players near it (tilebars.lua, client game_tileoverlays)
+local function breachBar(on)
+	if not (ChaosTileBars and ChaosTileBars.set) then
+		return
+	end
+	if not on then
+		ChaosTileBars.remove("inv:breach")
+	elseif Chaos.tileBarsConfig and Chaos.tileBarsConfig.invasion and state.target then
+		ChaosTileBars.set("inv:breach", {pos = {x = state.target.x, y = state.target.y, z = state.target.z},
+			label = "Breach", progress = state.breach / 100, color = "#d0453a"})
+	end
+end
+
 local function tick(token)
 	if state.token ~= token then
 		return
@@ -575,6 +588,7 @@ local function tick(token)
 		elseif before < 80 and state.breach >= 80 then
 			announce(string.format("%s is about to fall: the breach is at 80%%!", state.areaName))
 		end
+		breachBar(true)
 		if state.bossAlive then
 			local b = Monster(state.bossId)
 			if b then
@@ -675,6 +689,7 @@ end
 finish = function(result)
 	local c = C()
 	local token = state.token
+	breachBar(false)
 	if result == "win" then
 		state.phase = "ending"
 		local list = giveRewards(1, state.contrib, false)
@@ -787,6 +802,7 @@ function V.stop()
 	end
 	state.token = state.token + 1
 	cleanupInvaders()
+	breachBar(false)
 	state.phase = "idle"
 	sendAll("hide", {})
 	announce(string.format("The invasion of %s was called off.", tostring(state.areaName)))

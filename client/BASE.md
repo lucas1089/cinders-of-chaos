@@ -116,6 +116,21 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     `protocolgamesend.cpp`, `game.cpp` and `luafunctions_client.cpp` compile (`g++ -fsyntax-only`); not built into a
     client or run against a server yet.
 
+21. `0041` (C++ `src/client/tile.h/.cpp`, `luafunctions_client.cpp`; `client_settings/classes/dataset.lua`,
+    `client_settings/options/interface.otui`): more widgets over a tile for the overlay module `game_tileoverlays`
+    (`MANIFEST.md`). A tile drew one widget (`Tile:setWidget`), which the ground loot labels use, so a second module
+    could not draw over the same tile. Lua: `tile:addOverlayWidget(w)`, `removeOverlayWidget(w)`,
+    `hasOverlayWidget(w)`, `getOverlayWidgets()`. `Tile::drawWidget` draws them after the `setWidget` one, placed the
+    same way (centred on the tile, moved by their margins; only the player's floor, clipped to the map), so they follow
+    walking, scrolling, zoom and floor changes and are not in the UI tree (no mouse input). At most 16 per tile (the
+    oldest is dropped); hidden or destroyed ones are skipped. Lua owns them: `Tile::clean` (the server sending a tile
+    again, the area leaving the view) forgets them without destroying them, and the module puts them on the new tile.
+    Also the option "Field timers over magic walls and fields" (`fieldTimers`, on by default) in a new panel after "Keep
+    attacking while moving" in Options > Interface; its `apply` hands the value to `game_tileoverlays`. The base already
+    had `Tile:setTimer` (one timer per tile, at most 60 s, tenths of seconds, no unknown state), which did not fit the
+    fields (fire lasts up to 6 minutes). Applies after 0001-0040 (checked with `patch --dry-run` on the base tree with
+    0001-0040 applied).
+
 ### Client guard: the build secret
 
 The key the client proves itself with is read by CMake (`src/client/CMakeLists.txt`, patch 0035) at configure time:

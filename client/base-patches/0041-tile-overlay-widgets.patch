@@ -1,0 +1,181 @@
+# Tile overlay widgets (client/MANIFEST.md "game_tileoverlays", BASE.md 21): a tile drew one widget (Tile:setWidget, taken by the ground loot labels), so a second module could not draw over the same tile. Tile:addOverlayWidget(widget) / removeOverlayWidget(widget) / hasOverlayWidget(widget) / getOverlayWidgets() keep a short list of more widgets that Tile::drawWidget draws after the setWidget one, placed the same way (centred on the tile, moved by their margins), so they follow walking, scrolling, zoom and floor changes and take no input. Lua owns them: Tile::clean forgets them without destroying them (the module puts them on the rebuilt tile). Also the option "Field timers over magic walls and fields" (fieldTimers, on by default) in a new panel after "Keep attacking while moving" in Options > Interface; its apply hands the value to game_tileoverlays. Touches src/client/tile.h/.cpp, luafunctions_client.cpp, client_settings dataset.lua and options/interface.otui.
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -1932,6 +1932,19 @@ return {
+ 		end,
+ 	},
+ 
++	-- field timers (overlay module game_tileoverlays): the seconds left over magic walls, wild growth and other timed
++	-- fields; the module starts or stops watching the tiles when this changes
++	fieldTimers = {
++		value = true,
++		apply = function(value)
++			local m = modules.game_tileoverlays
++			if m and m.onOptionChange then
++				m.onOptionChange(value)
++			end
++			return true
++		end,
++	},
++
+ 	enableLights = {
+ 		value = true,
+         apply = function(value)
+--- a/mods/client_settings/options/interface.otui
++++ b/mods/client_settings/options/interface.otui
+@@ -324,6 +324,42 @@ InterfaceWindow < Panel
+       image-source: /images/skin/show-gui-help-grey
+       !tooltip: tr('When checked, walking by a click on the map or the minimap, or by\nkeys, keeps your attack target: you walk the path you chose and your\nattacks keep firing whenever the target is in range, even with Chase\nOpponent on. Chasing starts again when you stop. Unchecked, each step\ndelays your attacks and Chase Opponent pulls you back to the target.')
+ 
++  FlatPanel
++    size: 505 22
++    anchors.top: prev.bottom
++    anchors.right: parent.right
++    anchors.left: parent.left
++    margin-top: 5
++    margin-left: 4
++    margin-right: 4
++
++    SettingsCheckBox
++      id: fieldTimers
++      size: 12 12
++      !text: tr('Field timers over magic walls and fields')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: parent.top
++      margin-top: 5
++      margin-left: 4
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      @onSetup: |
++        local value = modules.client_settings.getOption('fieldTimers')
++        self:setChecked(value ~= false)
++
++    UIWidget
++      size: 12 12
++      anchors.top: parent.top
++      anchors.right: parent.right
++      margin-right: 5
++      margin-top: 5
++      image-source: /images/skin/show-gui-help-grey
++      !tooltip: tr('When checked, the seconds left are shown over magic walls, wild\ngrowth and other timed fields. A field that was already there when it\ncame into view shows "~": its start is not known.')
++
+   FlatPanel
+     size: 505 44
+     anchors.top: prev.bottom
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -1044,6 +1044,11 @@ void Client::registerLuaFunctions()
+     g_lua.bindClassMemberFunction<Tile>("setWidget", &Tile::setWidget);
+     g_lua.bindClassMemberFunction<Tile>("getWidget", &Tile::getWidget);
+     g_lua.bindClassMemberFunction<Tile>("removeWidget", &Tile::removeWidget);
++    // Chaos (base patch 0041): more widgets over a tile (overlay module game_tileoverlays)
++    g_lua.bindClassMemberFunction<Tile>("addOverlayWidget", &Tile::addOverlayWidget);
++    g_lua.bindClassMemberFunction<Tile>("removeOverlayWidget", &Tile::removeOverlayWidget);
++    g_lua.bindClassMemberFunction<Tile>("hasOverlayWidget", &Tile::hasOverlayWidget);
++    g_lua.bindClassMemberFunction<Tile>("getOverlayWidgets", &Tile::getOverlayWidgets);
+     // for bot
+     g_lua.bindClassMemberFunction<Tile>("setText", &Tile::setText);
+     g_lua.bindClassMemberFunction<Tile>("getText", &Tile::getText);
+--- a/src/client/tile.cpp
++++ b/src/client/tile.cpp
+@@ -380,19 +380,53 @@ void Tile::drawTexts(Point dest)
+     }
+ }
+ 
++// one widget over the tile: centred on it, moved by its margins
++static void drawWidgetOverTile(const UIWidgetPtr& widget, Point dest)
++{
++    Rect dest_rect = widget->getRect();
++    dest.x += widget->getMarginLeft();
++    dest.x -= widget->getMarginRight();
++    dest.y += widget->getMarginTop();
++    dest.y -= widget->getMarginBottom();
++    dest_rect = Rect(dest - Point(dest_rect.width() / 2 - g_sprites.spriteSize(), dest_rect.height() / 2 - g_sprites.spriteSize()), dest_rect.width(), dest_rect.height());
++    widget->setRect(dest_rect);
++    widget->draw(dest_rect, Fw::ForegroundPane);
++}
++
+ void Tile::drawWidget(Point dest)
+ {
+-    if (!m_widget)
++    if (m_widget)
++        drawWidgetOverTile(m_widget, dest);
++
++    // Chaos (base patch 0041): the overlay widgets, in the order they were added
++    for (const UIWidgetPtr& widget : m_overlayWidgets) {
++        if (widget && !widget->isDestroyed() && widget->isVisible())
++            drawWidgetOverTile(widget, dest);
++    }
++}
++
++void Tile::addOverlayWidget(const UIWidgetPtr& widget)
++{
++    if (!widget || hasOverlayWidget(widget))
+         return;
+-    
+-    Rect dest_rect = m_widget->getRect();
+-    dest.x += m_widget->getMarginLeft();
+-    dest.x -= m_widget->getMarginRight();
+-    dest.y += m_widget->getMarginTop();
+-    dest.y -= m_widget->getMarginBottom();
+-    dest_rect = Rect(dest - Point(dest_rect.width() / 2 - g_sprites.spriteSize(), dest_rect.height() / 2 - g_sprites.spriteSize()), dest_rect.width(), dest_rect.height());
+-    m_widget->setRect(dest_rect);
+-    m_widget->draw(dest_rect, Fw::ForegroundPane);
++    if (m_overlayWidgets.size() >= 16) { // a module that keeps adding: drop the oldest
++        m_overlayWidgets.erase(m_overlayWidgets.begin());
++    }
++    m_overlayWidgets.push_back(widget);
++}
++
++bool Tile::removeOverlayWidget(const UIWidgetPtr& widget)
++{
++    auto it = std::find(m_overlayWidgets.begin(), m_overlayWidgets.end(), widget);
++    if (it == m_overlayWidgets.end())
++        return false;
++    m_overlayWidgets.erase(it);
++    return true;
++}
++
++bool Tile::hasOverlayWidget(const UIWidgetPtr& widget)
++{
++    return std::find(m_overlayWidgets.begin(), m_overlayWidgets.end(), widget) != m_overlayWidgets.end();
+ }
+ 
+ bool Tile::drawToImage(const Point& dest, ImagePtr image)
+@@ -456,6 +490,7 @@ void Tile::clean()
+         m_widget->destroy();
+         m_widget = nullptr;
+     }
++    m_overlayWidgets.clear(); // Chaos (base patch 0041): Lua owns them and puts them on the new tile
+ 
+     m_hasLootHighlightItem = false;
+     m_lootHighlightTimer.stop();
+--- a/src/client/tile.h
++++ b/src/client/tile.h
+@@ -174,6 +174,14 @@ public:
+         }
+     }
+ 
++    // Chaos (base patch 0041): more widgets over the tile, drawn after the setWidget one and placed the same way
++    // (centred on the tile, moved by their margins); overlay module game_tileoverlays (field timers, server bars).
++    // Lua owns them: clean() forgets them without destroying them.
++    void addOverlayWidget(const UIWidgetPtr& widget);
++    bool removeOverlayWidget(const UIWidgetPtr& widget);
++    bool hasOverlayWidget(const UIWidgetPtr& widget);
++    std::vector<UIWidgetPtr> getOverlayWidgets() { return m_overlayWidgets; }
++
+ private:
+     void checkTranslucentLight();
+     void updateLootHighlightItemFlag();
+@@ -200,6 +208,7 @@ private:
+     Color m_fill = Color::alpha;
+ 	
+ 	UIWidgetPtr m_widget;
++	std::vector<UIWidgetPtr> m_overlayWidgets; // Chaos (base patch 0041)
+ 
+     bool m_hasLootHighlightItem = false;
+     Timer m_lootHighlightTimer;

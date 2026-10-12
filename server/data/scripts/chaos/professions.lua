@@ -520,6 +520,11 @@ local function finish(player, ch)
 		end
 		P.cooldowns[S.guid] = P.cooldowns[S.guid] or {}
 		P.cooldowns[S.guid][ch.node] = now() + cfg.respawnMin * 60
+		-- a countdown over the node for this character only, until it is ready for them again (tilebars.lua)
+		if ChaosTileBars and ChaosTileBars.set and Chaos.tileBarsConfig and Chaos.tileBarsConfig.professions then
+			ChaosTileBars.set("prof:" .. S.guid .. ":" .. ch.node, {pos = nd.pos, label = "Ready in",
+				endsIn = cfg.respawnMin * 60, color = "#7fb069", owner = player})
+		end
 	elseif ch.corpse then
 		local corpse = P.findCorpse(ch.pos, ch.corpse)
 		if not corpse then

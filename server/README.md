@@ -384,6 +384,7 @@ working directory, as with the rest of the base server libs).
 | game_mapmarkers | `partymarkers.lua`, `partymarkers_core.lua`, `partymarkers_config.lua`, `poi.lua`, `poi_core.lua`, `poi_config.lua`, `data/chaos_poi.lua` (`tools/gen_poi.py`, install step `poi`), `sql/chaos_poi.sql` | **153**, Hunt > More > Map Markers | Map markers on the minimap and the full map: the other party members (pin in a party colour, floor triangle, edge arrow toward a member out of view, name / health / floor / distance on hover; sent only when something changed, at most once a second, throttled) and points of interest (temples, depots, banks, Chaos NPCs, shops, travel, crafting, guild hall, portals, dungeons, boss places, hunting areas; the remote ones discovered on approach), each category switchable (see "Map markers"). Unit tests, generator test; tested on a live test server (full map) with two clients and 395 bots. |
 | game_rightclickequip | `rightclick_equip.lua`, `rightclick_equip_core.lua`, `rightclick_equip_config.lua`, engine patch 0024 | **188** | Right-click equips: the client option "Right-click equips items" (client -> server) and the multi-use weapons a right-click equips (server -> client, at login); the equipping is the engine's (see "Right-click equips"). Tested in game. |
 | game_kitewalk | `kitewalk.lua`, `kitewalk_core.lua`, engine patch 0028 | **186** | Keep attacking while moving: the client option "Keep attacking while moving" (client -> server); the kiting itself is the engine's (see "Keep attacking while moving"). Tested in game. |
+| game_tileoverlays | `tilebars.lua`, `tilebars_core.lua`, `tilebars_config.lua` (users: `battleground.lua`, `professions.lua`, `invasion.lua`) | **156** (server -> client; `hello` back) | Progress bars over tiles: a labelled bar (progress or countdown) over a map position for the players near it; brazier captures, profession node respawns (gatherer only), the invasion breach. The same client module draws the field timers (client only). See "Progress bars over tiles". |
 | game_levelwings | `levelwings.lua`, `levelwings_core.lua`, `levelwings_config.lua` | **191** (server -> client) | Level-up wings: golden wings open behind a character that gains a level, seen by every player on screen (see "Level-up wings"). Tested in game. |
 | game_bestiary | `bestiary.lua`, `bestiary_core.lua`, `bestiary_config.lua`, `bestiary_spawns.lua` | 253, Hunt > Bestiary, Hunt > Kill Tasks | Bestiary (an entry per monster, four stages by kills, completion bonus, points and ranks), personal kill tasks with daily / weekly limits, task tracker HUD with the bounty contracts; tested in game (see "Bestiary and kill tasks"). |
 | game_itemtooltip | `item_tooltip.lua`, `item_tooltip_core.lua` (client also `game_itemrarity`) | 242 | Rich item tooltips on hover (inventory, open containers): rarity, item level, base stats, every modifier with its tier and roll range, sockets and gems, unique and set (pieces worn, bonuses active: "Item sets"), requirements; Ctrl compares with the equipped item(s) of the same slot. Rarity frames from the item custom attributes of engine patch 0003; tested in game (see "Item attributes in packets and rich tooltips"). |
@@ -3210,6 +3211,46 @@ starts again by itself when the walk ends.
   - Esc mid walk cleared the target and stopped the walk. Following a creature outside combat still follows. Walking
     into a protection zone dropped the target on the first protected tile. Chase Opponent off: the click walk keeps
     attacking. The option through the Options window and Ok wrote the storage (1 off, 0 on).
+
+## Progress bars over tiles (`tilebars.lua`, `tilebars_core.lua`, `tilebars_config.lua`, client `game_tileoverlays`, base patch 0041)
+
+Owner request: our own small map overlays. The server half is a bar over a map position; the client half also draws
+field timers (client only, see client/MANIFEST.md "game_tileoverlays").
+
+- **API** (`ChaosTileBars`, any script): `set(id, {pos, label, progress = 0..1, color = "#rrggbb"})`, or a countdown
+  `set(id, {pos, label, endsIn = s [, total = s], color [, keep = true]})` that goes away by itself when it ends;
+  `owner = player` shows it to that character only. `set` again updates; `progress(id, v)`, `remove(id)`,
+  `removePrefix(prefix)`, `get(id)`. Ids are strings up to 64 characters; labels up to 32 characters; at most 500 bars.
+- **Sending.** A global event every 250 ms (`tickMs`) works out who sees each bar (`Game.getSpectators` on the bar's
+  floor, 9 x 7 tiles; an owner bar by the owner's name and guid) and sends one message per player with something new:
+  `bars {s = [{i, p = [x, y, z], n, c, v | l + t}], d = [ids]}` on opcode **156**, at most 40 bars per message (far
+  under 8192 bytes). A countdown goes as ms left (`l`) and in all (`t`), so the client counts it down by itself with no
+  further messages. A change of the progress alone reaches a player at most every 500 ms (`progressMs`) and only when
+  it moved by 0.01 or reached 0 or 1; label, colour and place changes go out on the next tick. A player who walks away
+  gets the id in `d`, and the bar again when back. The client sends `hello` at every game start (and when its module
+  loads in game): the server forgets what that player had and answers `clear`; logout forgets too. No storages, no
+  tables; bars live in memory (kept over `/reload scripts`, gone at a restart).
+- **Users wired now** (each can be turned off in `tilebars_config.lua`):
+  - Battleground: a bar over each brazier during the fight (`bg:<match>:<i>`), the capture progress towards the team
+    that leans on it in its colour, "(contested)" in grey while both teams stand in it, "<name>: <team>" when held.
+    Set at the 1 s capture tick, removed when the match ends.
+  - Professions: after a vein or herb patch is gathered, "Ready in m:ss" over it for the gatherer only, as long as the
+    node cooldown (`respawnMin`, 6 minutes).
+  - Invasions: "Breach" over the target point while the waves come (red, the breach meter 0..100%); removed at the end
+    and when stopped. Other events have no capture or channel time to show.
+- **Opcode 156** was checked free: not in `ChaosOpcodes`, not 120 (admin), not in the reference server's list or the
+  base client's `ExtendedIds`, not registered by any Chaos or base module; 154 and 155 are taken by other modules being
+  added. `tests/tilebars_test.lua` checks it.
+- **Tests:** `tests/tilebars_test.lua` (set / update / remove, countdown expiry, spectator range and floor, owner bars,
+  the progress throttle and coalescing, walking away and back, hello and logout, message size, the brazier bar, the
+  glue on a mocked engine, the three users wired); client `game_tileoverlays/tileoverlayslogic_test.lua`.
+- **Tested live** (a small test map, the Linux client built from the base with patches 0001-0041, two clients):
+  bars set from a script showed over their tiles, stacked when two share a tile, a countdown counted down by itself
+  and was dropped at its end, and they came back after the module was reloaded (hello). A 1v1 battleground match
+  (test minimum): the West Well's bar filled in the colour of the team in the circle, showed "(contested)" while both
+  stood in it, "West Well: Ashbound" when held, and went away for both clients when the match was stopped. A vein
+  gathered with a pick showed "Ready in 5:56" over it for the gatherer; the other character next to it got nothing.
+  The invasion breach bar was not run live (unit tests only).
 
 ## Autosave in steps (`src-patches/0026-incremental-save.patch`, `tools/patch_base_save.py`, `tests/base_save_patch_test.lua`, `tools/chaossave_test.cpp`)
 
