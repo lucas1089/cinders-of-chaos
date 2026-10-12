@@ -59,6 +59,26 @@ local function skinned(kind, name)
 end
 ChaosSpell.skinned = skinned
 
+-- >>> Class signature effects (data/lib/chaos_class_fx.lua, switch ChaosClassFx.PAIR22_FX): the caster's class may send
+-- an effect of its own for this spell; nil when the switch is off or no swap fits. A cosmetic skin wins over it.
+if not ChaosClassFx then
+	pcall(dofile, 'data/lib/chaos_class_fx.lua')
+end
+local function classFx(name)
+	local C, W = ChaosClassFx, ChaosSupportsSpell
+	if type(name) ~= "string" or not C or not C.swapFor or not W or not W.cast then
+		return nil
+	end
+	local pid, spellId = W.cast()
+	if not pid then
+		return nil
+	end
+	local ok, alt = pcall(C.swapFor, pid, spellId, name)
+	return ok and alt or nil
+end
+ChaosSpell.classFx = classFx
+-- <<< Class signature effects
+
 -- Fx / FxMissile (chaos_fx.lua) are also called inside the casts (heal and area effects): wrapped once
 local function wrapFx()
 	if Fx and Fx ~= ChaosSpellSkinFx then
@@ -67,6 +87,11 @@ local function wrapFx()
 			local alt = skinned("fx", name)
 			if alt and ChaosFx and ChaosFx[alt] then
 				return raw(alt, fallback)
+			end
+			local cls = classFx(name) -- a class effect sent on the tile itself (offset 0,0) can stand in for the id
+			local e = cls and ChaosVfx and ChaosVfx[cls]
+			if e and e.dx == 0 and e.dy == 0 then
+				return e.id
 			end
 			return raw(name, fallback)
 		end
@@ -88,6 +113,10 @@ wrapFx()
 -- <<< Cosmetics
 
 function ChaosSpell.fx(pos, name, fallback)
+	local cls = not skinned("fx", name) and classFx(name) -- the class effect at its offset tile, unless a skin was chosen
+	if cls and Vfx and Vfx(Position(pos), cls) then
+		return
+	end
 	Position(pos):sendMagicEffect(Fx(name, fallback))
 end
 
@@ -133,6 +162,10 @@ function ChaosSpell.vfx(pos, name)
 	end
 	local alt = skinned("vfx", name) -- Cosmetics: the skin's variant first, the default when the pair lacks it
 	if alt and Vfx(Position(pos), alt) then
+		return true
+	end
+	local cls = not alt and classFx(name) -- the class effect, unless a skin was chosen
+	if cls and Vfx(Position(pos), cls) then
 		return true
 	end
 	return Vfx(Position(pos), name)

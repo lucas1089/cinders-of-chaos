@@ -114,7 +114,8 @@ for free, at the migration.
 - **Content per class:**
   - spells (`server/data/spells/chaos/<class>/`)
   - a passive tree (`game_passivetree`, `passivetree_data.lua`)
-  - generated spell icons and effects
+  - generated spell icons and effects (class signature effects: one look per line, server/README.md "Class signature
+    effects"; pair things_custom22, behind `ChaosClassFx.PAIR22_FX`)
   - outfits: a class look per class, male and female (October 2026: donor library art and free looks of the pair, look types
     2039-2081 of things_custom10b, no stock art; list in `class_looks_core.lua`, sources in
     `client/tools/outfit_art/class_looks_sources.csv`, client/MANIFEST.md "Class looks pair"). Worn with both addons

@@ -1025,6 +1025,48 @@ a run on its own output changes nothing. `pair_fixes/things_custom21_changes.csv
 - Checked offline: before / after sheets of the 22 looks, four directions with both addons, on a tile grid with the
   stock look 128 beside them, placed by the client's draw rule. Not checked in a live client.
 
+## Class signature effects (things_custom22, effects 593-627, `tools/sprites/gen_class_fx.py`, `art_import/class_fx.csv`)
+ROADMAP C4 left the effects open: the class lines shared the pack effects (aura_burst_gold for Iron Bellow, Bushido
+Focus, Zealotry and Banner Call; shield_bubble for Counter Stance, Chi Ward and Soulward; healing_bloom for Purifying
+Wellspring, Vow of Mending and Lay on Hands; dawn_aegis for Lightward and Aegis of Faith; earth_spikes for Earthbreaker
+and Briar Prison; whirlwind for Reaping Gyre and Whirling Heel; shade_vanish for the Thief, the Ninja and Umbral
+Stride; teleport_in for Wild Bond and Moonfang Pack; cursed and toxic_burst for the Necromancer line and the
+Illusionist; the Ranger's spells used the Templar's holy art), and the snares and vigils sent stock effects only.
+35 effects of our own procedural art, one look per line (palette and shape): Warrior iron, rock and ember; Ranger
+amber, leaf and wind; Mystic prism and rose (the Elementalist a three-element glyph); Thief smoke, ink and sakura;
+Necromancer void and soul green; Monk chi, violet and jade; Templar gold. Which spell sends which: server/README.md
+"Class signature effects"; looks: server/data/spells/README_FX.md "Class signature effects".
+- `gen_class_fx.py build` draws every frame in Python (discs, capsules, triangles, polygons, rings on a 4x supersample,
+  quantised per material to hard ramps with a dark outline; no painting service, no reference pixels) and writes the
+  strips `art_import/class_fx/<name>.png` and the spec `art_import/class_fx.csv`; deterministic (`build --check`
+  compares). Checks: alpha 0 / 255, every frame but the last has art, the last is empty, nothing touches the frame's
+  edge, the two 1x1 area effects keep 65 % of every frame transparent. 33 effects are 3x3 sent at the target + (1, 1)
+  (the target is the centre tile), ranger_arrowfall and ninja_smoke are 1x1 on the tile. `preview --out DIR --dat D
+  --spr S` writes a frame-by-frame sheet (`class_fx_frames.png`, one sheet per effect in `frames/`) and a mock combat
+  scene per class (`scenes/`, `class_fx_scenes.png`: the class look and a rift minion from the pair, the effects at
+  their peak frame by the client's draw rule).
+- Built on things_custom21 (dat 29e959f34600c3e5c11eec72f4aa34f5, spr 1a11296180c55dd64bbdce829580ec3b):
+  ```
+  python3 -I client/tools/sprites/gen_class_fx.py build
+  python3 -I client/tools/sprites/import_fx_art.py --ours-dat things_custom21/Tibia.dat --ours-spr things_custom21/Tibia.spr \
+      --out-dir things_custom22 --spec client/tools/sprites/art_import/class_fx.csv --expect-first-effect 593 \
+      --lua-out server/data/lib/chaos_class_fx_ids.lua --catalog-out server/data/spells/class_fx_catalog.csv
+  python3 -I client/tools/sprites/check_pair.py things_custom22/Tibia.dat things_custom22/Tibia.spr \
+      --old things_custom21/Tibia.dat things_custom21/Tibia.spr
+  ```
+  The ids go to their own Lua file (not `chaos_vfx_art.lua`), loaded only with the server switch on.
+  `import_fx_art.py` now names its spec in the generated header.
+- Output **things_custom22**: dat 9d1591bef8f9f89d102219baf8c38578 (4,929,187 bytes), spr
+  09f3a073b0a071d54b9604a422a9dffd (599,654,574 bytes, 745,653 sprites: 497 new), 33,659 items, 2,184 outfits, 627
+  effects, 153 missiles. Built twice with identical md5s. The importer verified 264 frames pixel-identical to the
+  strips and every old thing byte-identical. `check_pair.py`: append-only, 0 errors (35 new effects, 497 new sprites);
+  full check 0 errors, 121 warnings, the same as things_custom21.
+- `things-1098.tar.xz` like things_custom21's (mtime 2026-10-12 23:00): sha256
+  81cd9eefb35e2f1467af13a17bc1d88c61ebed02c19aeaaaf91f453e7c0235b5 (66,725,980 bytes); unpacks to the md5s above.
+- Built, not pushed: windows-assets waits for the owner. The server switch `ChaosClassFx.PAIR22_FX` stays off until
+  then; off, every spell sends the effects it sent before.
+- Checked offline only (frame sheets and the mock scenes); not run in a client.
+
 ## Leaderboards: fastest-time boards with class tabs (`game_leaderboard`)
 Boards of mode "min" (the Cinderheart's fastest kills) come with `format = "time"` (values shown m:ss,
 `TabRows.valueText` in `tabrows.lua`, tested by `tabrows_test.lua`) and `byClass = true`: the class tabs of the ladder

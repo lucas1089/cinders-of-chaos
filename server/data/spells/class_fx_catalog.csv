@@ -1,0 +1,36 @@
+kind,id,name,size,send_offset,patterns,frames,ms,note
+effect,593,warrior_quake,3x3,"1,1",1x1,8,85,"warrior: the ground splits in ember cracks, slabs of rock thrown up (Earthbreaker, Colossus Fall)"
+effect,594,warrior_gyre,3x3,"1,1",1x1,8,70,warrior: two steel crescents sweep a full circle at blade height (Reaping Gyre)
+effect,595,warrior_bellow,3x3,"1,1",1x1,8,80,warrior: an iron war cry; chevrons and broken rings rush outward (Iron Bellow)
+effect,596,juggernaut_bulwark,3x3,"1,1",1x1,8,90,juggernaut: an iron tower shield slams down before the caster and cracks the ground (Iron Bellow)
+effect,597,berserker_rage,3x3,"1,1",1x1,8,80,"berserker: blood flames tear up around the caster, droplets spray and fall (Red Frenzy, Bloodrage)"
+effect,598,berserker_cleave,3x3,"1,1",1x1,7,70,berserker: a huge crimson crescent falls overhead and splits the ground (Skyfall Cleave)
+effect,599,ranger_pierce,3x3,"1,1",1x1,7,70,ranger: a fletched arrow strikes and splits; feathers and amber splinters burst (Dawnpiercer)
+effect,600,ranger_arrowfall,1x1,"0,0",1x1,6,80,"ranger: two arrows drop steeply and stick in the ground, a puff of dust (Hail of Dawn, each tile)"
+effect,601,ranger_thornseal,3x3,"1,1",1x1,8,90,"ranger: a ring of thorned vines grows from the earth, amber motes rise (Blessed Earth)"
+effect,602,ranger_canopy,3x3,"1,1",1x1,8,90,"ranger: leaves whirl up into a canopy around the caster, a gust of wind (Lightward)"
+effect,603,deadeye_mark,3x3,"1,1",1x1,7,70,"deadeye: a reticle closes on the target, then a piercing flash and cracks (Final Verdict)"
+effect,604,beast_spirit,3x3,"1,1",1x1,8,90,"beastmaster: claw rakes tear the ground, paw prints and spirit wisps of amber and green (Wild Bond)"
+effect,605,mystic_mend,3x3,"1,1",1x1,8,90,"mystic: prismatic petals spiral up and open, rose and cyan motes (Purifying Wellspring, Mirror Mend)"
+effect,606,elementalist_glyph,3x3,"1,1",1x1,8,90,"elementalist: a rune circle in three arcs of fire, frost and storm turns and flares (Falling Pyre)"
+effect,607,illusion_mirror,3x3,"1,1",1x1,8,90,"illusionist: four mirror panes rise around the target, a glint crosses them, they shatter (Hall of Mirrors)"
+effect,608,illusion_shatter,3x3,"1,1",1x1,7,70,illusionist: a figure breaks into glass shards of cyan and rose (Umbral Stride)
+effect,609,thief_vanish,3x3,"1,1",1x1,7,80,"thief: low smoke billows from the feet, two dagger glints spin out (Shadow Veil, Shadow Mend)"
+effect,610,ninja_vanish,3x3,"1,1",1x1,7,70,"ninja: an ink slash crosses the spot, ink drops and leaves whirl (Shadow Step)"
+effect,611,ninja_smoke,1x1,"0,0",1x1,6,90,"ninja: a smoke bomb tile; grey puffs and a red spark (Smoke Bomb, each tile)"
+effect,612,samurai_focus,3x3,"1,1",1x1,8,90,"samurai: a blade gleam rises before the caster, crimson petals circle it (Bushido Focus)"
+effect,613,samurai_parry,3x3,"1,1",1x1,7,70,"samurai: crossed blades flash, sparks and a crescent of steel (Counter Stance)"
+effect,614,necro_curse,3x3,"1,1",1x1,8,90,"necromancer: a violet brand of runes closes on the target, a green skull mark sinks in (Withering Curse)"
+effect,615,lich_rot,3x3,"1,1",1x1,8,90,"lich: rot bubbles swell and burst on the target, green skull wisps rise (Soul Rot)"
+effect,616,monk_heel,3x3,"1,1",1x1,7,70,"monk: a ring of chi sweeps at kick height, ember footfalls flare (Whirling Heel)"
+effect,617,shadowfist_mark,3x3,"1,1",1x1,7,80,"shadowfist: five violet pressure points light up on the target, joined, then pulse (Pressure Points)"
+effect,618,ironsage_ward,3x3,"1,1",1x1,8,90,iron sage: jade hexagon plates close into a dome over the target and crumble (Chi Ward)
+effect,619,templar_mend,3x3,"1,1",1x1,8,90,"templar: a cross of gold light descends, feathers drift down (Vow of Mending, Lay on Hands)"
+effect,620,inquisitor_zeal,3x3,"1,1",1x1,8,80,"inquisitor: white-gold holy flames rise in a ring, sparks climb, a brand circle (Zealotry)"
+effect,621,sentinel_aegis,3x3,"1,1",1x1,8,90,sentinel: three radiant wall panes rise around the caster under a dome of light (Aegis of Faith)
+effect,622,snare_jaws,3x3,"1,1",1x1,6,70,"snare: iron jaws snap shut on the tile, sparks and dust (Snare Trap, triggered)"
+effect,623,snare_blast,3x3,"1,1",1x1,7,70,"snare: a mine bursts; ember shards, iron fragments and smoke (Seeker Mine, Detonate Mines)"
+effect,624,vigil_wrath,3x3,"1,1",1x1,8,90,vigil: a red war banner with a sword rises from the ground (Vigil of Wrath)
+effect,625,vigil_iron,3x3,"1,1",1x1,8,90,vigil: a steel banner with a shield rises from the ground (Vigil of Iron)
+effect,626,vigil_haste,3x3,"1,1",1x1,8,90,vigil: a green banner with a wing rises from the ground (Vigil of Haste)
+effect,627,vigil_clarity,3x3,"1,1",1x1,8,90,vigil: a blue banner with an eye rises from the ground (Vigil of Clarity)

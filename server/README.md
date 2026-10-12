@@ -9232,6 +9232,41 @@ client/MANIFEST.md "Class looks pair", "things_custom19" and "Class looks pair 2
 - Tests (pair 20): the same file, the switch both ways: on as shipped, off on a second copy of the core loaded with
   the pair 20 line set to false, both pairs off, and toggles.
 
+## Class signature effects (`data/lib/chaos_class_fx.lua`, `data/lib/chaos_class_fx_ids.lua`, hooks in `data/spells/chaos/_common.lua`)
+Each class line's signature spells send an effect of their own (ROADMAP C4 "effects"), so the classes read differently
+in combat. Art: client/MANIFEST.md "Class signature effects" (things_custom22, effects 593-627, our own procedural
+art); looks per effect: `data/spells/README_FX.md` "Class signature effects".
+- `ChaosClassFx.swaps`: class key -> spell id -> {effect the script sends = the class effect}. A class takes its
+  line's swaps (`lineOf`), its own win (the Juggernaut's Iron Bellow is not the Warrior's). No spell script changes:
+  during a cast (the supports wrapper's `ChaosSupportsSpell.cast()`, also in the cast's addEvent callbacks)
+  `ChaosSpell.vfx`, `ChaosSpell.fx` and the wrapped `Fx` ask `ChaosClassFx.swapFor(pid, spellId, name)`. Order: a
+  cosmetic spell skin the player chose, then the class effect, then the default. `Fx` (an id only, e.g. the per-tile
+  hit of an area) takes a class effect only when it sits on the tile itself (offset 0,0: ranger_arrowfall,
+  ninja_smoke); the 3x3 ones go through `Vfx` at the target + (1, 1).
+- Swaps: Warrior line: Earthbreaker and Colossus Fall warrior_quake, Reaping Gyre warrior_gyre, Iron Bellow
+  warrior_bellow (Juggernaut juggernaut_bulwark); Berserker: Red Frenzy and Bloodrage berserker_rage, Skyfall Cleave
+  berserker_cleave. Ranger line: Dawnpiercer ranger_pierce, Hail of Dawn ranger_arrowfall (each tile), Blessed Earth
+  ranger_thornseal, Lightward ranger_canopy; Deadeye: Final Verdict deadeye_mark; Beastmaster: Wild Bond
+  beast_spirit. Mystic line: Purifying Wellspring mystic_mend, Hall of Mirrors illusion_mirror, Umbral Stride
+  illusion_shatter; Elementalist: Falling Pyre elementalist_glyph; Illusionist: Mirror Mend mystic_mend. Thief line:
+  Shadow Veil and Shadow Mend thief_vanish; Ninja: Shadow Step ninja_vanish, Smoke Bomb ninja_smoke (each tile);
+  Samurai: Counter Stance samurai_parry, Bushido Focus samurai_focus. Necromancer line: Withering Curse necro_curse;
+  Lich: Soul Rot lich_rot (the Bone Lord keeps its own bone effects 586-592). Monk line: Whirling Heel monk_heel;
+  Shadowfist: Pressure Points shadowfist_mark; Iron Sage: Chi Ward ironsage_ward. Templar line: Vow of Mending
+  templar_mend; Inquisitor: Zealotry inquisitor_zeal; Sentinel: Aegis of Faith sentinel_aegis, Lay on Hands
+  templar_mend. Banner Call and Soulward (every class) keep the shared effects.
+- Snares and vigils: snare_jaws, snare_blast, vigil_wrath, vigil_iron, vigil_haste, vigil_clarity are in the pair
+  (`ChaosClassFx.unwired`) but not sent yet: `_snares.lua` and `_vigils.lua` send stock effects. To wire them, those
+  scripts call `ChaosClassFx.send(pos, name, stockFallback)` (the stock effect while the switch is off).
+- Pair switch: `C.PAIR22_FX` in `chaos_class_fx.lua`, **off**. things_custom22 is built, not on windows-assets.
+  Off, `chaos_class_fx_ids.lua` is never loaded and every spell sends what it sent before. Flip step, after the
+  owner approves the push and the Windows package is rebuilt from the branch: set the line to true (and flip the
+  check in `tests/class_fx_test.lua`), `python3 -I tools/install_all.py SERVER_DIR --only files`, restart. Rollback:
+  set it back to false; a client on things_custom21 would only log "invalid effect id" and show nothing in their place.
+- Tests: `tests/class_fx_test.lua` (vocations equal `Chaos.classes.ids`; every swap is a spell the class may cast,
+  a name its script sends, an effect in the spec and the ids; line inheritance; switch off: nothing changes; on: the
+  hooks send the class effect at its offset, a skin wins, the default outside a cast, `Fx` only for 0,0 effects).
+
 ## Class lock (`class_unlocks.lua`, `class_unlocks_core.lua`, `sql/chaos_class_unlocks.sql`)
 
 The Necromancer, the Monk and the Templar (docs/CLASSES.md, classes five to seven) need an account-wide unlock. The method is one
