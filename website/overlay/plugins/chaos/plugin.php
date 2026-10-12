@@ -14,6 +14,8 @@
  *  - Optional starter depot boxes for new characters (the base server's
  *    ADD_DEPOT_BOXES_NEW_PLAYERS snippet), on the character.created hook. Off by
  *    default ($config['chaos']['depot_boxes']): !season join needs an empty depot.
+ *  - Mail and account recovery: mail_lib.php (one sender, off without SMTP settings) and recovery_lib.php (a
+ *    one-time reset link; recovery.php hands over to recovery_page.php).
  *  - The stock pages this server does not use (shop, points, creatures, spells,
  *    forum, the stock payment callbacks) send the visitor to pages/notused.php.
  */
@@ -30,6 +32,9 @@ require_once __DIR__ . '/lib.php';
 require_once __DIR__ . '/referral.php';
 // account creation: per-IP limit (register_guard.php registers its own hook)
 require_once __DIR__ . '/register_guard.php';
+// site mail (SMTP from config.local.php, off without it) and recovery by a one-time link (recovery.php, README "Mail")
+require_once __DIR__ . '/mail_lib.php';
+require_once __DIR__ . '/recovery_lib.php';
 // the community goal and the week's world modifiers (read only: the front page block and pages/community.php)
 require_once __DIR__ . '/community_lib.php';
 

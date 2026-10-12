@@ -1,0 +1,32 @@
+diff --git a/engine/function/mail.php b/engine/function/mail.php
+index 41ca22e..0664f20 100644
+--- a/engine/function/mail.php
++++ b/engine/function/mail.php
+@@ -12,6 +12,11 @@ class Mail {
+ 
+     public function sendMail(string $to, string $title, string $html, string $accname = ''): bool
+     {
++        // Cinders of Chaos: every mail of the site goes through the plugin's sender (plugins/chaos/mail_lib.php): off
++        // without SMTP settings, a short timeout, the configured From address
++        if (function_exists('chaos_mail_send')) {
++            return chaos_mail_send($to, $accname, $title, chaos_mail_text_of($html), $html);
++        }
+         try {
+             $mail = new PHPMailer(true);
+ 
+diff --git a/recovery.php b/recovery.php
+index 3890040..debd17a 100644
+--- a/recovery.php
++++ b/recovery.php
+@@ -1,4 +1,11 @@
+ <?php require_once 'engine/init.php';
++// Cinders of Chaos: account recovery is a one-time link by e-mail (plugins/chaos/recovery_page.php, website/README.md
++// "Mail"); none of the stock recovery modes below runs.
++if (is_file(__DIR__ . '/plugins/chaos/recovery_page.php')) {
++	require __DIR__ . '/plugins/chaos/recovery_page.php';
++}
++http_response_code(404);
++exit;
+ znote_csrf_protect_public_post();
+ logged_in_redirect();
+ theme_open();

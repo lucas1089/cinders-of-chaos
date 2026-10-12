@@ -132,6 +132,34 @@ for p in "$HERE"/patches/*.patch; do
   fi
 done
 
+# ---------------------------------------------------------------- 3c. PHPMailer (README "Mail")
+# ZnoteX sends mail with PHPMailer, a composer package it does not ship. The three source files of the version in
+# ZnoteX's composer.lock go to vendor/ (denied by the web server rules), each checked against a SHA-256; the plugin
+# loads them (plugins/chaos/mail_lib.php). Installed even with mail off, so turning it on needs only site.env.
+PHPMAILER_COMMIT="1bc1716a507a65e039d4ac9d9adebbbd0d346e15"       # PHPMailer v7.1.1 (LGPL 2.1, LICENSE kept next to it)
+PHPMAILER_FILES="src/Exception.php:22ab858ae438d98f58f41f38ad2191d1b0d59570aebea0463a7948cfae1021b7
+src/PHPMailer.php:45599a196ae7944ee2dcd4f3d3da0ac4243513d346b2d77bbd15dbd0c37f7064
+src/SMTP.php:522bcf0d07be7e7e00114711db5c9ce2b4d59ac041c5ec36eaadd979d5fa7046
+LICENSE:a1a33180d02960ab1c5de36cf20b1a2f0fe9888d83826ad263da5db52f1b183b"
+PM="$SITE/vendor/phpmailer/phpmailer"
+if [ "$(cat "$PM/.chaos-pin" 2>/dev/null || true)" != "$PHPMAILER_COMMIT" ]; then
+  echo "Installing PHPMailer ..."
+  PMTMP="$(mktemp -d)"
+  while IFS=: read -r f want; do
+    mkdir -p "$PMTMP/$(dirname "$f")"
+    fetch "https://raw.githubusercontent.com/PHPMailer/PHPMailer/$PHPMAILER_COMMIT/$f" "$PMTMP/$f"
+    got="$(sha256 "$PMTMP/$f")"
+    [ "$got" = "$want" ] || { echo "PHPMailer $f checksum mismatch: $got" >&2; rm -rf "$PMTMP"; exit 1; }
+  done <<< "$PHPMAILER_FILES"
+  mkdir -p "$PM/src"
+  cp "$PMTMP"/src/*.php "$PM/src/"
+  cp "$PMTMP/LICENSE" "$PM/LICENSE"
+  echo "$PHPMAILER_COMMIT" > "$PM/.chaos-pin"
+  rm -rf "$PMTMP"
+else
+  echo "PHPMailer already installed"
+fi
+
 # ---------------------------------------------------------------- 4. config.local.php (secrets stay on this machine)
 umask 077
 "$PHP" "$HERE/setup/write_config.php" > "$SITE/config.local.php.new"

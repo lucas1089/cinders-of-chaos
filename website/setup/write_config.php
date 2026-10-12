@@ -122,6 +122,46 @@ $csp = "default-src 'self'; script-src 'self' 'unsafe-inline'" . $google . "; st
 	. "img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; "
 	. "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com" . $google . "; "
 	. "form-action 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'self'";
+// Mail (README "Mail"): on when CHAOS_SMTP_HOST is set. Wrong settings stop the installer here, so a typo never
+// leaves a site that fails on every mail; no host = no mail (the recovery page says it is not available).
+$smtpHost = env('CHAOS_SMTP_HOST');
+$smtpTls = strtolower(env('CHAOS_SMTP_TLS', 'starttls'));
+$smtpPort = (int)env('CHAOS_SMTP_PORT', $smtpTls === 'tls' ? '465' : '587');
+$smtpUser = env('CHAOS_SMTP_USER');
+$smtpPass = env('CHAOS_SMTP_PASSWORD');
+$mailFrom = env('CHAOS_MAIL_FROM');
+$mailFromName = env('CHAOS_MAIL_FROM_NAME', 'Cinders of Chaos');
+$mailOn = $smtpHost !== '';
+if ($mailOn) {
+	$mailErrors = array();
+	if (preg_match('/^[A-Za-z0-9.-]+$|^\[[0-9A-Fa-f:.]+\]$/', $smtpHost) !== 1) {
+		$mailErrors[] = 'CHAOS_SMTP_HOST must be a host name or address.';
+	}
+	if (!in_array($smtpTls, array('starttls', 'tls', 'none'), true)) {
+		$mailErrors[] = 'CHAOS_SMTP_TLS must be starttls (port 587), tls (port 465) or none.';
+	}
+	if ($smtpTls === 'none' && !in_array(strtolower($smtpHost), array('localhost', '127.0.0.1', '[::1]'), true)) {
+		$mailErrors[] = 'CHAOS_SMTP_TLS=none sends the password in clear: only for a relay on this machine (localhost).';
+	}
+	if ($smtpPort < 1 || $smtpPort > 65535) {
+		$mailErrors[] = 'CHAOS_SMTP_PORT must be 1-65535.';
+	}
+	if (filter_var($mailFrom, FILTER_VALIDATE_EMAIL) === false) {
+		$mailErrors[] = 'CHAOS_MAIL_FROM must be an e-mail address (e.g. no-reply@your-domain).';
+	}
+	if (preg_match('/[\r\n]/', $mailFromName . $smtpUser) === 1) {
+		$mailErrors[] = 'CHAOS_MAIL_FROM_NAME and CHAOS_SMTP_USER must be one line.';
+	}
+	if ($smtpPass !== '' && $smtpUser === '') {
+		$mailErrors[] = 'CHAOS_SMTP_PASSWORD is set but CHAOS_SMTP_USER is empty.';
+	}
+	if ($mailErrors) {
+		fwrite(STDERR, "Mail settings:\n  " . implode("\n  ", $mailErrors) . "\nFix them in site.env, or empty CHAOS_SMTP_HOST to run without mail.\n");
+		exit(1);
+	}
+} else {
+	fwrite(STDERR, "note: CHAOS_SMTP_HOST is empty: no mail; account recovery by e-mail is off (README \"Mail\").\n");
+}
 $winUrl = env('CHAOS_CLIENT_WINDOWS_URL', '#download-coming-soon');
 $linuxUrl = env('CHAOS_CLIENT_LINUX_URL', '#download-coming-soon');
 
@@ -201,6 +241,26 @@ $out = "<?php\n"
 	. ($captcha ? "\$config['captcha_site_key'] = " . export($captchaSite) . ";\n"
 		. "\$config['captcha_secret_key'] = " . export($captchaSecret) . ";\n"
 		. "\$config['captcha_use_curl'] = false; // ZnoteX's cURL path turns certificate checks off; file_get_contents keeps them\n" : '')
+	. "// Mail (README \"Mail\"): ZnoteX's keys, read by the plugin's sender (plugins/chaos/mail_lib.php). Recovery is the\n"
+	. "// plugin's one-time link (recovery_lib.php). No activation mail at registration (the game does not check it) and\n"
+	. "// no e-mail check on the account page; e-mail login codes of the website 2FA only with mail on.\n"
+	. "\$config['mailserver'] = " . export(array(
+		'register' => false,
+		'accountRecovery' => $mailOn,
+		'myaccount_verify_email' => false,
+		'verify_email_points' => 0,
+		'host' => $mailOn ? $smtpHost : '',
+		'securityType' => $smtpTls === 'starttls' ? 'tls' : ($smtpTls === 'tls' ? 'ssl' : ''),
+		'port' => $smtpPort,
+		'email' => $mailOn ? $mailFrom : '',
+		'username' => $mailOn ? $smtpUser : '',
+		'password' => $mailOn ? $smtpPass : '',
+		'debug' => false,
+		'fromName' => $mailFromName,
+	)) . ";\n"
+	. "\$config['chaos_mail'] = " . export(array('enabled' => $mailOn, 'tls' => $smtpTls, 'timeout' => 15,
+		'reset_minutes' => 30, 'per_ip_hour' => 5, 'per_account_hour' => 3)) . ";\n"
+	. "\$config['twoFactorV2']['email_otp_enabled'] = " . export($mailOn) . ";\n\n"
 	. "// Account creation: at most this many accounts per IP address per hour (plugins/chaos/register_guard.php)\n"
 	. "\$config['chaos_register_limit'] = " . export(array('per_ip' => max(0, (int)env('CHAOS_REGISTER_PER_IP_HOUR', '3')), 'window_seconds' => 3600)) . ";\n\n"
 	. "// Cinders of Chaos (plugins/chaos)\n"

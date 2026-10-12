@@ -75,3 +75,26 @@ CREATE TABLE IF NOT EXISTS `chaos_web_registrations` (
   PRIMARY KEY (`id`),
   KEY `chaos_web_registrations_ip` (`ip`, `created`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Account recovery links (recovery_lib.php, README "Mail"): the SHA-256 of the one-time token, one row per account
+-- (a new request replaces the older link), deleted when used or expired. Website only.
+CREATE TABLE IF NOT EXISTS `chaos_password_resets` (
+  `account_id` int(11) NOT NULL,
+  `token_hash` char(64) NOT NULL,
+  `created` int(10) unsigned NOT NULL,
+  `expires` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`account_id`),
+  UNIQUE KEY `chaos_password_resets_token` (`token_hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Recovery requests per address and links mailed per account (the limits of recovery_lib.php). Rows older than a day
+-- are deleted by the site. Website only.
+CREATE TABLE IF NOT EXISTS `chaos_recovery_requests` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ip` varchar(64) NOT NULL,
+  `account_id` int(11) NOT NULL DEFAULT 0,
+  `created` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `chaos_recovery_requests_ip` (`ip`, `created`),
+  KEY `chaos_recovery_requests_account` (`account_id`, `created`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

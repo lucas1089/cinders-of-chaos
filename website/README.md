@@ -21,6 +21,9 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `patches/znotex-chaos-unused-callbacks.patch` | `pagseguro_retorno.php` and `payment_webhook.php` answer 404 (see "Not used on this server") |
 | `overlay/.htaccess`, `overlay/special/.htaccess` | Apache 2.4 rules: ZnoteX's character rule plus deny rules for every internal folder and file (see "Web server") |
 | `overlay/plugins/chaos/register_guard.php` | the per-IP limit of account creation (see "Account creation") |
+| `overlay/plugins/chaos/mail_lib.php`, `recovery_lib.php`, `recovery_page.php` | the site's one mail sender (SMTP, off without settings) and account recovery by a one-time link (see "Mail") |
+| `patches/znotex-chaos-recovery-mail.patch` | `recovery.php` hands over to our recovery page; ZnoteX's `Mail` class sends through our sender (see "Mail") |
+| `tests/chaos_mail_test.php`, `tests/chaos_recovery_test.php` | `php website/tests/chaos_mail_test.php` / `chaos_recovery_test.php`: the SMTP settings from the environment, mail off, the sender with a fake transport; the recovery answers, limits, link, token and notice (php-cli with pdo_sqlite, no network) |
 | `tests/chaos_escape_patch_test.php` | `php website/tests/chaos_escape_patch_test.php`: every line of the escape patch rendered with malicious guild / rank / MOTD / comment values (php-cli only) |
 | `tests/chaos_site_security_test.php` | `php website/tests/chaos_site_security_test.php`: `config.local.php` (Secure cookie, HSTS, CSP, reCAPTCHA, PayGol secret), the `.htaccess` and router deny rules, the web root clean-up (php-cli only) |
 | `tests/chaos_register_guard_test.php` | `php website/tests/chaos_register_guard_test.php`: the registration limit, the generic e-mail message, reCAPTCHA on the form (php-cli only) |
@@ -75,7 +78,9 @@ What it does, in order:
 3. **Our overlay** (`overlay/`) is copied over the checkout; `layouts/chaos/` and `plugins/chaos/` are replaced as a
    whole, so nothing else of ZnoteX is touched. `tools/recolor_layout.py` then writes the re-coloured stylesheets.
    `patches/*.patch` are applied to the checkout (skipped when already in; a ZnoteX file changed by hand stops the
-   installer), see "Passwords" and "Web server".
+   installer), see "Passwords" and "Web server". PHPMailer (ZnoteX's mail library, a composer package it does not
+   ship) goes to `vendor/phpmailer/phpmailer/`: three source files and its license at a pinned commit, each checked
+   against a SHA-256 (see "Mail").
 4. **`config.local.php`** (mode 600; ZnoteX reads it after its own `config.php`) is written from the environment:
    database, site title "Cinders of Chaos", site URL, admin accounts, the classes, the towns, new characters, the
    download links and our plugin's settings. Credentials only ever live there and in the env files, never here.
@@ -100,7 +105,7 @@ settings; default `server/data` of this repository), `CHAOS_START_TOWNS`, `CHAOS
 `CHAOS_DISCORD_URL`, `CHAOS_CLIENT_WINDOWS_URL`, `CHAOS_CLIENT_LINUX_URL`, `CHAOS_WEB_USER`, `CHAOS_LAYOUT`
 (`void` shows the original purple layout), `CHAOS_DEPOT_BOXES`, `CHAOS_PASSWORD_ITERATIONS` (see "Passwords"),
 `CHAOS_SITE_GIT_DIR`, `CHAOS_RECAPTCHA_SITE_KEY` / `CHAOS_RECAPTCHA_SECRET` and `CHAOS_REGISTER_PER_IP_HOUR` (see
-"Account creation").
+"Account creation"), `CHAOS_SMTP_*` and `CHAOS_MAIL_FROM*` (see "Mail").
 
 **Placeholders the owner sets before launch:** the site address (`CHAOS_SITE_URL`), the game address shown on the
 downloads page (`CHAOS_GAME_HOST`), the client download links (empty = "Coming soon"), the Discord invite (empty =
@@ -246,11 +251,80 @@ to the server block, so `REMOTE_ADDR` is the visitor's address.
   view is ours).
 - **reCAPTCHA** (v2 checkbox): on when `CHAOS_RECAPTCHA_SITE_KEY` and `CHAOS_RECAPTCHA_SECRET` are both set in
   `site.env` (keys from https://www.google.com/recaptcha/admin, domain = the site's). ZnoteX checks it on the
-  account creation and recovery forms; our form loads Google's script (ZnoteX's never did, so the widget was
-  missing) and the CSP allows Google's hosts then. Needs PHP's curl and openssl extensions (ZnoteX stops otherwise).
+  account creation form and our recovery page on its form (see "Mail"); our forms load Google's script (ZnoteX's
+  never did, so the widget was missing) and the CSP allows Google's hosts then. Needs PHP's curl and openssl extensions (ZnoteX stops otherwise).
 - **E-mail**: a taken and a malformed e-mail address get the same answer, "Please use another e-mail address."
   (`locale/en.php`), never "already in use". A taken address still cannot be used twice, so someone who tries many
   addresses can still tell; the limit per address and reCAPTCHA make that slow.
+
+## Mail
+
+The site sends mail for **account recovery** (a one-time link) and the **e-mail login codes** of ZnoteX's website 2FA
+(only when a player turns them on). Nothing else: no activation mail at registration (the game never checks it, and a
+lost mail would lock the website login), no e-mail check on the account page, no newsletters.
+
+**Settings** (`site.env`, written into `config.local.php` by `setup/write_config.php`; `site.env.example` has
+placeholders only):
+
+| Variable | What |
+|---|---|
+| `CHAOS_SMTP_HOST` | the SMTP relay's host name. **Empty = no mail**: the recovery page says recovery by e-mail is not available, nothing ever connects |
+| `CHAOS_SMTP_PORT` | 587 (default) for `starttls`, 465 (default for `tls`) |
+| `CHAOS_SMTP_TLS` | `starttls` (default, port 587), `tls` (TLS from the first byte, port 465) or `none` (only for a relay on this machine: `localhost`) |
+| `CHAOS_SMTP_USER`, `CHAOS_SMTP_PASSWORD` | the relay's login (many providers use an API key as the password); put the password in single quotes |
+| `CHAOS_MAIL_FROM` | the From address, e.g. `no-reply@<your domain>`: a domain you own, set up as below |
+| `CHAOS_MAIL_FROM_NAME` | the From name (default "Cinders of Chaos") |
+
+Wrong values stop the installer with a message (unknown TLS mode, `none` to a remote host, no or a malformed From
+address, a line break in a value, a password without a user); the password is never printed. The password lives only in
+`site.env` and `config.local.php` (mode 600). With mail off, ZnoteX's e-mail login codes are off too.
+
+**Provider.** Any SMTP relay with TLS and authentication works: a transactional mail service, the mail service of the
+domain, or a local relay that forwards to one. Most VPS hosts block outgoing port 25, so use 587 (STARTTLS) or 465. Do
+not send from a free personal mailbox: its domain does not allow mail from your server, so recovery mails land in spam.
+
+**DNS of the From domain** (the owner adds these; the provider shows the exact values):
+
+- **SPF**: one TXT record on the domain, e.g. `v=spf1 include:<provider's SPF domain> -all` (one SPF record only;
+  merge with an existing one).
+- **DKIM**: the TXT or CNAME record(s) the provider gives (`<selector>._domainkey.<domain>`), so mails are signed.
+- **DMARC**: TXT on `_dmarc.<domain>`, e.g. `v=DMARC1; p=quarantine; rua=mailto:dmarc@<domain>` (start with `p=none`
+  for a week and read the reports if unsure).
+- A reverse DNS (PTR) name only matters for a relay on your own server.
+
+Check: request a recovery link for your own account on the live site; the mail's headers should show `spf=pass`,
+`dkim=pass` and `dmarc=pass`.
+
+**How it is built.**
+
+- `plugins/chaos/mail_lib.php` is the one sender (`chaos_mail_send`): PHPMailer over SMTP, 15 s timeout, our From
+  address, no mailer header, line breaks stripped from the subject and names, a failure logged to PHP's error log
+  without the password. `patches/znotex-chaos-recovery-mail.patch` makes ZnoteX's `Mail` class call it, so the 2FA
+  codes use the same settings. PHPMailer comes from `vendor/` (installer step 3); `vendor/` is denied by the web server
+  rules.
+- **Recovery** (`recovery.php`; the patch hands the whole page to `plugins/chaos/recovery_page.php`, so none of ZnoteX's
+  modes runs: they mailed a plain new password, reset a password from a GET link with a 9-digit key that never expired,
+  told which entries matched, and built links from the request's Host header):
+  1. The player enters an account name or e-mail address. The answer is always the same: "If an account matches what
+     you entered, we sent an e-mail ...". Unknown names, unknown addresses, accounts without an address and accounts
+     over their mail limit all get it. Under PHP-FPM the answer goes out before the mail is sent, so the time does not
+     tell either.
+  2. Each matching account with an e-mail address (an address shared by several accounts: up to 3) gets a link
+     `<CHAOS_SITE_URL>/recovery.php?reset=<token>`: 32 random bytes, only their SHA-256 stored in
+     `chaos_password_resets`, valid **30 minutes**, **once**. A new request replaces the account's older link. The
+     link uses `CHAOS_SITE_URL`, never the Host header. The mail names the account (so it also recovers a lost account
+     name) and says "Cinders of Chaos".
+  3. Opening the link shows a form (a mail scanner that opens it changes nothing). Posting the new password (6 to 29
+     characters, as at account creation) uses the token up with one conditional UPDATE (two posts at once: one wins),
+     writes the password with `user_change_password` (salted PBKDF2, hashed as typed; see "Passwords") and sends a
+     notice "your password was changed" to the account address.
+- **Limits** (`chaos_recovery_requests`, rows older than a day deleted): 5 requests per address per hour (IPv6 by /64,
+  `REMOTE_ADDR` as for the login lock; the answer then says to try again later), 3 links per account per hour (silent:
+  the same answer). nginx's `chaos_forms` zone already limits `recovery.php` (see "Web server"). reCAPTCHA is on the
+  form when the site has it (`CHAOS_RECAPTCHA_*`); a failed check records nothing and sends nothing. The form carries
+  ZnoteX's CSRF token. The page sends `Cache-Control: no-store` and `Referrer-Policy: no-referrer`.
+- Not done: no notice mail after a password change on the account page (ZnoteX has none; only after a reset).
+- Tests: `php website/tests/chaos_mail_test.php`, `php website/tests/chaos_recovery_test.php`.
 
 ## Game data
 
@@ -339,7 +413,7 @@ Accounts use the game server's salted password format (engine patch 0014, `serve
 `patches/znotex-chaos-passwords.patch` points ZnoteX's code at them:
 
 - **Writes**: registration (`user_create_account`), password change and the admin panel's reset (`user_change_password`),
-  the e-mailed new password of `recovery.php`. The password is hashed as typed: ZnoteX used to hash the HTML-escaped
+  the new password chosen through a recovery link (see "Mail"; ZnoteX's mailed random password is no longer used). The password is hashed as typed: ZnoteX used to hash the HTML-escaped
   form (`array_sanitize`), so a password with `< > & ' "` never worked in the game.
 - **Checks**: login, the current password on the change page, `recovery.php`, the character auction, and the JSON login
   service (`login_web_service`, for 12.x clients; switched off in `config.local.php`, ours log in through the game's

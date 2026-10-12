@@ -720,6 +720,13 @@ It covers section 6's rules: the four base classes only, the Monk / Necromancer 
 `CHAOS_SERVER_DATA` to `/opt/chaos/server/data` (patch notes, seasons), the site and game addresses, the client
 download links and the Discord invite, and `CHAOS_ADMIN_ACCOUNTS`; then edit the Rules page in the admin panel.
 
+**Mail** (account recovery links, website 2FA codes; `website/README.md` "Mail"): fill `CHAOS_SMTP_HOST`,
+`CHAOS_SMTP_PORT` (587), `CHAOS_SMTP_TLS` (`starttls`), `CHAOS_SMTP_USER`, `CHAOS_SMTP_PASSWORD` and `CHAOS_MAIL_FROM`
+(e.g. `no-reply@<your domain>`) in `site.env` and run the installer again. Add the SPF, DKIM and DMARC records of the
+From domain first. Check: ask for a recovery link for your own account; it arrives (not in spam), the link opens the
+password form once, and the headers show `spf=pass dkim=pass dmarc=pass`. Without `CHAOS_SMTP_HOST` the site runs
+without mail and the recovery page says recovery by e-mail is not available.
+
 ## Donations (Pix / PayPal)
 
 Chaos Coins are a thank-you for a **voluntary donation**: nobody is required to donate and the game is fully playable for

@@ -28,7 +28,11 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 - [ ] **Hosting with DDoS protection** for the game server, the website and the database.
 - [ ] **2 or 3 gateway VPS** with DDoS filtering in front of the game server, a DNS name with one A record per
   gateway, and a backend IP that was never public. Steps: [LAUNCH.md](LAUNCH.md) "Gateways and DDoS".
-- [ ] **SMTP** for website mail: account recovery and confirmations.
+- [ ] **SMTP** for website mail: account recovery links and the website 2FA codes. Get an SMTP relay with TLS (port
+  587) and fill in `site.env`: `CHAOS_SMTP_HOST`, `CHAOS_SMTP_USER`, `CHAOS_SMTP_PASSWORD` (in single quotes) and
+  `CHAOS_MAIL_FROM` (e.g. `no-reply@<your domain>`). `CHAOS_SMTP_PORT=587`, `CHAOS_SMTP_TLS=starttls` and
+  `CHAOS_MAIL_FROM_NAME` are already set. Add SPF, DKIM and DMARC for the From domain. Then run
+  `website/install_site.sh` again. Steps: website/README.md "Mail".
 - [ ] **reCAPTCHA keys:** `CHAOS_RECAPTCHA_SITE_KEY` and `CHAOS_RECAPTCHA_SECRET` in `site.env`.
 - [ ] **Discord invite link** for the website and the client.
 - [ ] **Payment accounts:** Mercado Pago (Pix) and PayPal, with live credentials in `payments.env`.
