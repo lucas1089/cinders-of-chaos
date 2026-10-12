@@ -2542,7 +2542,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 270,
 			group = 37,
-			icon = "criticalHitChance",
+			icon = "ntRedHarvest",
 			customStats = {
 				criticalHitChance = 2,
 				criticalHitAmount = 3
@@ -2602,7 +2602,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 90,
 			group = 38,
-			icon = "criticalHitChance",
+			icon = "ntWitchfireGaze",
 			customStats = {
 				criticalHitChance = 2,
 				criticalHitAmount = 2,
@@ -2898,7 +2898,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 275,
 			group = 40,
-			icon = "holyDamage",
+			icon = "ntPyreLitany",
 			customStats = {
 				incrementHoly = 3,
 				strength = 2
@@ -3046,7 +3046,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 270,
 			group = 41,
-			icon = "physicalDamage",
+			icon = "ntIronCommunion",
 			customStats = {
 				incrementPhysical = 3,
 				absorbPhysical = 1,
@@ -3940,7 +3940,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 90,
 			group = 52,
-			icon = "waterDamage",
+			icon = "ntUndertow",
 			customStats = {
 				incrementWater = 3,
 				dexterity = 2
@@ -4104,7 +4104,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 225,
 			group = 53,
-			icon = "coldDamage",
+			icon = "ntFrostbittenWill",
 			customStats = {
 				incrementIce = 3,
 				intelligence = 2
@@ -4612,7 +4612,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = -59,
 			group = 62,
-			icon = "lightningDamage",
+			icon = "ntThunderbrand",
 			customStats = {
 				incrementEnergy = 3,
 				absorbEnergy = 1,
@@ -4869,7 +4869,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 120,
 			group = 63,
-			icon = "absorbPhysical",
+			icon = "ntScarredHide",
 			customStats = {
 				absorbPhysical = 2,
 				vitality = 2
@@ -5167,7 +5167,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 270,
 			group = 68,
-			icon = "criticalHitChance",
+			icon = "ntCrimsonParry",
 			customStats = {
 				criticalHitChance = 2,
 				criticalHitAmount = 2,
@@ -5453,7 +5453,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 270,
 			group = 74,
-			icon = "criticalHitChance",
+			icon = "ntHeadsmansMark",
 			customStats = {
 				criticalHitChance = 2,
 				criticalHitAmount = 2,
@@ -5593,7 +5593,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 270,
 			group = 78,
-			icon = "criticalHitChance",
+			icon = "ntHawksMalice",
 			customStats = {
 				criticalHitChance = 2,
 				criticalHitAmount = 2,
@@ -6011,7 +6011,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 330,
 			group = 82,
-			icon = "absorbPhysical",
+			icon = "ntAshenBulwark",
 			customStats = {
 				absorbPhysical = 3,
 				shieldingSkill = 1
@@ -6318,7 +6318,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 300,
 			group = 83,
-			icon = "coldDamage",
+			icon = "ntRimeLitany",
 			customStats = {
 				incrementIce = 3,
 				absorbIce = 1
@@ -6753,7 +6753,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 88,
 			group = 85,
-			icon = "healthDamage",
+			icon = "ntMercyOfEmbers",
 			customStats = {
 				incrementHealth = 3,
 				vitality = 2
@@ -7188,7 +7188,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 330,
 			group = 88,
-			icon = "earthDamage",
+			icon = "ntNightshadeDraught",
 			customStats = {
 				incrementEarth = 3,
 				dexterity = 2
@@ -7423,7 +7423,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 180,
 			group = 90,
-			icon = "fireDamage",
+			icon = "ntCinderVein",
 			customStats = {
 				incrementFire = 3,
 				absorbFire = 1
@@ -7787,7 +7787,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 180,
 			group = 91,
-			icon = "physicalDamage",
+			icon = "ntMarrowgrinder",
 			customStats = {
 				incrementPhysical = 3,
 				absorbPhysical = 1
@@ -8135,7 +8135,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 150,
 			group = 92,
-			icon = "lightningDamage",
+			icon = "ntStormboundNerves",
 			customStats = {
 				incrementEnergy = 3,
 				absorbEnergy = 1
@@ -8500,7 +8500,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 120,
 			group = 93,
-			icon = "earthDamage",
+			icon = "ntRotrootVenom",
 			customStats = {
 				incrementEarth = 3,
 				absorbEarth = 1
@@ -8870,7 +8870,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 120,
 			group = 94,
-			icon = "deathDamage",
+			icon = "ntGravecoldWhisper",
 			customStats = {
 				incrementDeath = 3,
 				absorbDeath = 1
@@ -9235,7 +9235,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 120,
 			group = 95,
-			icon = "absorbDrown",
+			icon = "ntDrownedLungs",
 			customStats = {
 				absorbDrown = 2,
 				incrementDrown = 2
@@ -9623,7 +9623,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 180,
 			group = 96,
-			icon = "absorbIce",
+			icon = "ntHoarfrostMantle",
 			customStats = {
 				absorbIce = 2,
 				incrementIce = 2
@@ -9990,7 +9990,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 180,
 			group = 97,
-			icon = "absorbLifeMana",
+			icon = "ntBloodwardCommunion",
 			customStats = {
 				absorbLife = 2,
 				absorbMana = 2,
@@ -10372,7 +10372,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 210,
 			group = 98,
-			icon = "holyDamage",
+			icon = "ntLitanyOfAsh",
 			customStats = {
 				incrementHoly = 3,
 				absorbHoly = 1
@@ -10720,7 +10720,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 120,
 			group = 99,
-			icon = "lifeLeechAmount",
+			icon = "ntBloodthirstRite",
 			customStats = {
 				lifeLeechChance = 2,
 				lifeLeechAmount = 2,
@@ -11118,7 +11118,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 180,
 			group = 100,
-			icon = "arcaneDamage",
+			icon = "ntVoidglassFocus",
 			customStats = {
 				incrementArcane = 3,
 				absorbArcane = 1
@@ -11502,7 +11502,7 @@ function getTreeNodes()
 			isUncommon = true,
 			orbitIndex = 240,
 			group = 101,
-			icon = "waterDamage",
+			icon = "ntBlackTide",
 			customStats = {
 				incrementWater = 3,
 				absorbWater = 1
@@ -11822,7 +11822,7 @@ function getTreeNodes()
 			orbitIndex = 310,
 			isMythic = true,
 			group = 102,
-			icon = "attackDamage",
+			icon = "ntGatheringFury",
 			customStats = {
 				incrementPhysical = 3,
 				multiIncrement = 3
@@ -11842,7 +11842,7 @@ function getTreeNodes()
 			orbitIndex = 310,
 			isMythic = true,
 			group = 102,
-			icon = "spellDamage",
+			icon = "ntEdgeOfRuin",
 			customStats = {
 				incrementPhysical = 4,
 				multiIncrement = 4,
@@ -11994,7 +11994,7 @@ function getTreeNodes()
 			orbitIndex = 130,
 			isMythic = true,
 			group = 103,
-			icon = "life",
+			icon = "ntIronResolve",
 			customStats = {
 				vitality = 2,
 				spirit = 2
@@ -12014,7 +12014,7 @@ function getTreeNodes()
 			orbitIndex = 130,
 			isMythic = true,
 			group = 103,
-			icon = "damageReduction",
+			icon = "ntUnbrokenWill",
 			customStats = {
 				absorbPhysical = 2,
 				absorbAllElements = 2
@@ -12163,28 +12163,28 @@ function getTreeNodes()
 		--- 626 ---
 		{
 			orbit = 3, orbitDist = 110, orbitIndex = 0, group = 104, isRare = true,
-			name = "Light Feet", icon = "dexterity", line = "thief", classes = {"thief", "ninja", "samurai"},
+			name = "Light Feet", icon = "ntLightFeet", line = "thief", classes = {"thief", "ninja", "samurai"},
 			customStats = {dexterity = 4, speed = 200},
 			inputs = {625}, out = {627}
 		},
 		--- 627 ---
 		{
 			orbit = 4, orbitDist = 205, orbitIndex = 0, group = 104, isRare = true,
-			name = "Venom Craft", icon = "earthDamage", line = "thief", classes = {"thief", "ninja", "samurai"},
+			name = "Venom Craft", icon = "ntVenomCraft", line = "thief", classes = {"thief", "ninja", "samurai"},
 			customStats = {incrementEarth = 6, strength = 3},
 			inputs = {626}, out = {628}
 		},
 		--- 628 ---
 		{
 			orbit = 1, orbitDist = 300, orbitIndex = 0, group = 104, isRare = true,
-			name = "Shadow-born", icon = "swordSkill", line = "thief", classes = {"thief", "ninja", "samurai"},
+			name = "Shadow-born", icon = "ntShadowBorn", line = "thief", classes = {"thief", "ninja", "samurai"},
 			customStats = {swordSkill = 3, distanceSkill = 3, criticalHitChance = 1},
 			inputs = {627}, out = {629, 632, 665}
 		},
 		--- 629 ---
 		{
 			orbit = 2, orbitDist = 300, orbitIndex = 315, group = 104, isMythic = true,
-			name = "Twin Fangs", icon = "attackDamage", line = "thief", classes = {"ninja"},
+			name = "Twin Fangs", icon = "ntTwinFangs", line = "thief", classes = {"ninja"},
 			customStats = {ctTwinFangs = 1, strength = 2},
 			stats = {"Dual wield: the off-hand strike deals 65%", "of the main-hand hit (instead of 50%)."},
 			inputs = {628}, out = {630}
@@ -12192,7 +12192,7 @@ function getTreeNodes()
 		--- 630 ---
 		{
 			orbit = 1, orbitDist = 300, orbitIndex = 270, group = 104, isMythic = true,
-			name = "Fleet Shadow", icon = "dodgeLife", line = "thief", classes = {"ninja"},
+			name = "Fleet Shadow", icon = "ntFleetShadow", line = "thief", classes = {"ninja"},
 			customStats = {ctFleetShadow = 1, dexterity = 2},
 			stats = {"Evasion +4%."},
 			inputs = {629}, out = {631}
@@ -12208,14 +12208,14 @@ function getTreeNodes()
 		--- 632 ---
 		{
 			orbit = 2, orbitDist = 300, orbitIndex = 45, group = 104, isMythic = true,
-			name = "Steel Discipline", icon = "armor", line = "thief", classes = {"samurai"},
+			name = "Steel Discipline", icon = "ntSteelDiscipline", line = "thief", classes = {"samurai"},
 			customStats = {vitality = 5, absorbPhysical = 3},
 			inputs = {628}, out = {633}
 		},
 		--- 633 ---
 		{
 			orbit = 1, orbitDist = 300, orbitIndex = 90, group = 104, isMythic = true,
-			name = "Iron Parry", icon = "shield", line = "thief", classes = {"samurai"},
+			name = "Iron Parry", icon = "ntIronParry", line = "thief", classes = {"samurai"},
 			customStats = {ctIronParry = 1, shieldingSkill = 2},
 			stats = {"Counter Stance: the answer deals +50% and", "the stance lasts 1 s longer."},
 			inputs = {632}, out = {634}
@@ -12235,28 +12235,28 @@ function getTreeNodes()
 		--- 636 ---
 		{
 			orbit = 3, orbitDist = 110, orbitIndex = 0, group = 104, isRare = true,
-			name = "Grave Lore", icon = "magicSkill", line = "necromancer", classes = {"necromancer", "lich", "bonelord"},
+			name = "Grave Lore", icon = "ntGraveLore", line = "necromancer", classes = {"necromancer", "lich", "bonelord"},
 			customStats = {magicSkill = 2, intelligence = 3},
 			inputs = {635}, out = {637}
 		},
 		--- 637 ---
 		{
 			orbit = 4, orbitDist = 205, orbitIndex = 0, group = 104, isRare = true,
-			name = "Bone Craft", icon = "physicalDamage", line = "necromancer", classes = {"necromancer", "lich", "bonelord"},
+			name = "Bone Craft", icon = "ntBoneCraft", line = "necromancer", classes = {"necromancer", "lich", "bonelord"},
 			customStats = {incrementPhysical = 6, incrementDeath = 4},
 			inputs = {636}, out = {638}
 		},
 		--- 638 ---
 		{
 			orbit = 1, orbitDist = 300, orbitIndex = 0, group = 104, isRare = true,
-			name = "Dark Pact", icon = "life", line = "necromancer", classes = {"necromancer", "lich", "bonelord"},
+			name = "Dark Pact", icon = "ntDarkPact", line = "necromancer", classes = {"necromancer", "lich", "bonelord"},
 			customStats = {spirit = 4, vitality = 4},
 			inputs = {637}, out = {639, 642, 666}
 		},
 		--- 639 ---
 		{
 			orbit = 2, orbitDist = 300, orbitIndex = 315, group = 104, isMythic = true,
-			name = "Spreading Blight", icon = "deathDamage", line = "necromancer", classes = {"lich"},
+			name = "Spreading Blight", icon = "ntSpreadingBlight", line = "necromancer", classes = {"lich"},
 			customStats = {ctSpreadingBlight = 1, incrementDeath = 3},
 			stats = {"Withering Curse spreads to one more enemy."},
 			inputs = {638}, out = {640}
@@ -12264,7 +12264,7 @@ function getTreeNodes()
 		--- 640 ---
 		{
 			orbit = 1, orbitDist = 300, orbitIndex = 270, group = 104, isMythic = true,
-			name = "Lingering Rot", icon = "vitalityDrain", line = "necromancer", classes = {"lich"},
+			name = "Lingering Rot", icon = "ntLingeringRot", line = "necromancer", classes = {"lich"},
 			customStats = {ctLingeringRot = 1, magicSkill = 1},
 			stats = {"Soul Rot deals +25% damage."},
 			inputs = {639}, out = {641}
@@ -12280,7 +12280,7 @@ function getTreeNodes()
 		--- 642 ---
 		{
 			orbit = 2, orbitDist = 300, orbitIndex = 45, group = 104, isMythic = true,
-			name = "Legion", icon = "skill", line = "necromancer", classes = {"bonelord"},
+			name = "Legion", icon = "ntLegion", line = "necromancer", classes = {"bonelord"},
 			customStats = {ctLegion = 1, spirit = 2},
 			stats = {"Raise Dead: one more skeleton."},
 			inputs = {638}, out = {643}
@@ -12288,7 +12288,7 @@ function getTreeNodes()
 		--- 643 ---
 		{
 			orbit = 1, orbitDist = 300, orbitIndex = 90, group = 104, isMythic = true,
-			name = "Banner Bearer", icon = "multiStat", line = "necromancer", classes = {"bonelord"},
+			name = "Banner Bearer", icon = "ntBannerBearer", line = "necromancer", classes = {"bonelord"},
 			customStats = {ctBannerBearer = 1, vitality = 2},
 			stats = {"Banner of Bones: your minions deal +45%", "damage (instead of 30%)."},
 			inputs = {642}, out = {644}
@@ -12308,35 +12308,35 @@ function getTreeNodes()
 		--- 646 ---
 		{
 			orbit = 3, orbitDist = 110, orbitIndex = 0, group = 104, isRare = true,
-			name = "Iron Fist", icon = "physicalDamage", line = "monk", classes = {"monk", "shadowfist", "ironsage"},
+			name = "Iron Fist", icon = "ntIronFist", line = "monk", classes = {"monk", "shadowfist", "ironsage"},
 			customStats = {incrementPhysical = 6, strength = 3},
 			inputs = {645}, out = {647}
 		},
 		--- 647 ---
 		{
 			orbit = 4, orbitDist = 205, orbitIndex = 0, group = 104, isRare = true,
-			name = "Centered", icon = "dexterity", line = "monk", classes = {"monk", "shadowfist", "ironsage"},
+			name = "Centered", icon = "ntCentered", line = "monk", classes = {"monk", "shadowfist", "ironsage"},
 			customStats = {dexterity = 4, vitality = 3},
 			inputs = {646}, out = {648}
 		},
 		--- 648 ---
 		{
 			orbit = 1, orbitDist = 300, orbitIndex = 0, group = 104, isRare = true,
-			name = "Flowing Chi", icon = "criticalHitChance", line = "monk", classes = {"monk", "shadowfist", "ironsage"},
+			name = "Flowing Chi", icon = "ntFlowingChi", line = "monk", classes = {"monk", "shadowfist", "ironsage"},
 			customStats = {criticalHitChance = 2, speed = 200},
 			inputs = {647}, out = {649, 652, 667}
 		},
 		--- 649 ---
 		{
 			orbit = 2, orbitDist = 300, orbitIndex = 315, group = 104, isMythic = true,
-			name = "Precise Strikes", icon = "criticalHitAmount", line = "monk", classes = {"shadowfist"},
+			name = "Precise Strikes", icon = "ntPreciseStrikes", line = "monk", classes = {"shadowfist"},
 			customStats = {criticalHitChance = 2, criticalHitAmount = 6},
 			inputs = {648}, out = {650}
 		},
 		--- 650 ---
 		{
 			orbit = 1, orbitDist = 300, orbitIndex = 270, group = 104, isMythic = true,
-			name = "Nerve Strike", icon = "trueStrike", line = "monk", classes = {"shadowfist"},
+			name = "Nerve Strike", icon = "ntNerveStrike", line = "monk", classes = {"shadowfist"},
 			customStats = {ctNerveStrike = 1, strength = 2},
 			stats = {"Pressure Points: +6% damage taken per stack", "(instead of 5%)."},
 			inputs = {649}, out = {651}
@@ -12352,14 +12352,14 @@ function getTreeNodes()
 		--- 652 ---
 		{
 			orbit = 2, orbitDist = 300, orbitIndex = 45, group = 104, isMythic = true,
-			name = "Healing Hands", icon = "healing", line = "monk", classes = {"ironsage"},
+			name = "Healing Hands", icon = "ntHealingHands", line = "monk", classes = {"ironsage"},
 			customStats = {incrementHealth = 8, vitality = 3},
 			inputs = {648}, out = {653}
 		},
 		--- 653 ---
 		{
 			orbit = 1, orbitDist = 300, orbitIndex = 90, group = 104, isMythic = true,
-			name = "Deep Mantra", icon = "damageReduction", line = "monk", classes = {"ironsage"},
+			name = "Deep Mantra", icon = "ntDeepMantra", line = "monk", classes = {"ironsage"},
 			customStats = {ctDeepMantra = 1, vitality = 2},
 			stats = {"Mantra of Stone: 11% less damage taken", "(instead of 8%)."},
 			inputs = {652}, out = {654}
@@ -12379,35 +12379,35 @@ function getTreeNodes()
 		--- 656 ---
 		{
 			orbit = 3, orbitDist = 110, orbitIndex = 0, group = 104, isRare = true,
-			name = "Holy Vigor", icon = "holyDamage", line = "templar", classes = {"templar", "inquisitor", "sentinel"},
+			name = "Holy Vigor", icon = "ntHolyVigor", line = "templar", classes = {"templar", "inquisitor", "sentinel"},
 			customStats = {incrementHoly = 6, vitality = 3},
 			inputs = {655}, out = {657}
 		},
 		--- 657 ---
 		{
 			orbit = 4, orbitDist = 205, orbitIndex = 0, group = 104, isRare = true,
-			name = "Shield of Faith", icon = "shieldingSkill", line = "templar", classes = {"templar", "inquisitor", "sentinel"},
+			name = "Shield of Faith", icon = "ntShieldOfFaith", line = "templar", classes = {"templar", "inquisitor", "sentinel"},
 			customStats = {shieldingSkill = 3, absorbPhysical = 2},
 			inputs = {656}, out = {658}
 		},
 		--- 658 ---
 		{
 			orbit = 1, orbitDist = 300, orbitIndex = 0, group = 104, isRare = true,
-			name = "Righteous Arm", icon = "swordSkill", line = "templar", classes = {"templar", "inquisitor", "sentinel"},
+			name = "Righteous Arm", icon = "ntRighteousArm", line = "templar", classes = {"templar", "inquisitor", "sentinel"},
 			customStats = {swordSkill = 2, clubSkill = 2, strength = 3},
 			inputs = {657}, out = {659, 662, 668}
 		},
 		--- 659 ---
 		{
 			orbit = 2, orbitDist = 300, orbitIndex = 315, group = 104, isMythic = true,
-			name = "Sacred Fire", icon = "divineFervour", line = "templar", classes = {"inquisitor"},
+			name = "Sacred Fire", icon = "ntSacredFire", line = "templar", classes = {"inquisitor"},
 			customStats = {incrementHoly = 8, magicSkill = 2},
 			inputs = {658}, out = {660}
 		},
 		--- 660 ---
 		{
 			orbit = 1, orbitDist = 300, orbitIndex = 270, group = 104, isMythic = true,
-			name = "Burning Zeal", icon = "righteousDecree", line = "templar", classes = {"inquisitor"},
+			name = "Burning Zeal", icon = "ntBurningZeal", line = "templar", classes = {"inquisitor"},
 			customStats = {ctBurningZeal = 1, strength = 2},
 			stats = {"Radiant Strikes: the holy strike deals 30%", "of the hit (instead of 25%)."},
 			inputs = {659}, out = {661}
@@ -12423,14 +12423,14 @@ function getTreeNodes()
 		--- 662 ---
 		{
 			orbit = 2, orbitDist = 300, orbitIndex = 45, group = 104, isMythic = true,
-			name = "Steadfast", icon = "absorbLifeMana", line = "templar", classes = {"sentinel"},
+			name = "Steadfast", icon = "ntSteadfast", line = "templar", classes = {"sentinel"},
 			customStats = {absorbAllElements = 2, absorbPhysical = 2},
 			inputs = {658}, out = {663}
 		},
 		--- 663 ---
 		{
 			orbit = 1, orbitDist = 300, orbitIndex = 90, group = 104, isMythic = true,
-			name = "Sanctuary", icon = "healing", line = "templar", classes = {"sentinel"},
+			name = "Sanctuary", icon = "ntSanctuary", line = "templar", classes = {"sentinel"},
 			customStats = {ctSanctuary = 1, vitality = 2},
 			stats = {"Your aura regenerates 0.5% of the maximum", "health per second (instead of 0.4%)."},
 			inputs = {662}, out = {664}
@@ -12450,7 +12450,7 @@ function getTreeNodes()
 		--- 665 ---
 		{
 			orbit = 6, orbitDist = 420, orbitIndex = 0, group = 104, isMastery = true,
-			name = "Shadow Discipline", icon = "movementSpeed", line = "thief", classes = {"thief", "ninja", "samurai"},
+			name = "Shadow Discipline", icon = "msShadowDiscipline", line = "thief", classes = {"thief", "ninja", "samurai"},
 			stats = {"Mastery: choose one effect when you take it."},
 			masteries = {
 				{name = "Keen Edge", customStats = {criticalHitChance = 2, criticalHitAmount = 5}},
@@ -12463,7 +12463,7 @@ function getTreeNodes()
 		--- 666 ---
 		{
 			orbit = 6, orbitDist = 420, orbitIndex = 0, group = 104, isMastery = true,
-			name = "Grave Mastery", icon = "lifeManaDrain", line = "necromancer", classes = {"necromancer", "lich", "bonelord"},
+			name = "Grave Mastery", icon = "msGraveMastery", line = "necromancer", classes = {"necromancer", "lich", "bonelord"},
 			stats = {"Mastery: choose one effect when you take it."},
 			masteries = {
 				{name = "Withering Touch", customStats = {incrementDeath = 6, magicSkill = 1}},
@@ -12475,7 +12475,7 @@ function getTreeNodes()
 		--- 667 ---
 		{
 			orbit = 6, orbitDist = 420, orbitIndex = 0, group = 104, isMastery = true,
-			name = "Inner Discipline", icon = "constitution", line = "monk", classes = {"monk", "shadowfist", "ironsage"},
+			name = "Inner Discipline", icon = "msInnerDiscipline", line = "monk", classes = {"monk", "shadowfist", "ironsage"},
 			stats = {"Mastery: choose one effect when you take it."},
 			masteries = {
 				{name = "Iron Knuckles", customStats = {incrementPhysical = 6, strength = 2}},
@@ -12488,7 +12488,7 @@ function getTreeNodes()
 		--- 668 ---
 		{
 			orbit = 6, orbitDist = 420, orbitIndex = 0, group = 104, isMastery = true,
-			name = "Sacred Oath", icon = "heartAndSoul", line = "templar", classes = {"templar", "inquisitor", "sentinel"},
+			name = "Sacred Oath", icon = "msSacredOath", line = "templar", classes = {"templar", "inquisitor", "sentinel"},
 			stats = {"Mastery: choose one effect when you take it."},
 			masteries = {
 				{name = "Oath of Flame", customStats = {incrementHoly = 6, strength = 2}},
