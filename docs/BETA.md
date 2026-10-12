@@ -164,7 +164,7 @@ Weekend 1 (31 Oct to 1 Nov): fresh characters, the real start, and load.
 | Bounty and bestiary party credit | two or more players in a party on one contract / kill task; kills shared within 30 tiles | #10, #35 |
 | Rifts with a real party | low tiers with 2-5 players: party scaling (+100% health and +10% damage per extra player), chest bonus per finisher, shared lives, logout and death in a party | #8 |
 | The Ember Descent with friends | parties of 2-4, boons and curses per player, the merchant | #59 |
-| Keystones | Overgrowth, arrow Ricochet; both Illusionist keystones in a party; the Bulwark / Thorns / Deadeye visuals | "Open decisions": keystones |
+| Keystones | Overgrowth (an Iron Sage healing an ally), Thorns (a Sentinel holding a pack), arrow Ricochet; both Illusionist keystones in a party; the Bulwark / Thorns / Deadeye visuals | "Open decisions": keystones |
 | Invasions and world events | the Sunday 17:30 invasion on the real map areas (proposed from the map file, never walked) | #29 |
 | Guild siege | Saturday 20:00 with real guilds | #15 |
 | Reports and the anti-bot | real false-positive rates in `chaos_antibot_log` | #56 |

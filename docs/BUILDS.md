@@ -107,6 +107,14 @@ regeneration, heals, potions and leech fill only those 100 points. Poison and li
 
 Two or more per line. "New" marks an archetype these keystones made possible. The others already worked.
 
+Since 2026-10-12 two main tree keystones have a Monk and a Templar class: the Iron Sage may take **Overgrowth** on
+the Wrath keystone (621: heals on others heal 10% more over 6 s) and the Sentinel **Thorns** on the Resolve keystone
+(624: melee and ranged attackers take 30% of their hit + 2 x magic level back as earth damage). Each is about 25
+points from the start, so it suits a build of level 300 or more. Computed, not measured
+(`server/data/spells/README.md` "Overgrowth and Thorns for the Iron Sage and the Sentinel"): Overgrowth +8-9% healing
+for the Iron Sage, the Illusionist still 10-28% ahead; Thorns about 330 earth back per 750 hit at level 300 (magic
+level 25), 816 per 2000 hit at level 1000 (magic level 40), still far below the damage classes in area.
+
 | Archetype | Line | Class to aim for | Core: keystones, items, spells | Play style | Strengths | Weaknesses | Gear checkpoints |
 |---|---|---|---|---|---|---|---|
 | **Pyre Walker** (new) | Warrior | Juggernaut; Warrior works | Pyre Oath, Immovable, Bulwark; Pyreheart Mantle; Iron Bellow to pull packs in, Earthbreaker | walk into a pack and stand there; the aura does the killing | clears packs with no clicks; very tough | weak on one target; needs fire absorbs and regeneration | 300: fire absorb 40%+, Health Regeneration mods, vitality nodes. 1000: the Mantle, fire absorb 60%+ |
@@ -128,7 +136,7 @@ Two or more per line. "New" marks an archetype these keystones made possible. Th
 | Rot curser | Necromancer | Lich | Hoarded Souls, Spreading Blight; Soul Rot, Withering Curse, Life Siphon | the existing damage over time | strong single target | slow start | magic level, death nodes |
 | **Storm Palm** (new) | Monk | Shadowfist or Monk | Aether Edge, Hundred Hands; Aetherbound Plate; Maximum Energy Shield mods; Ashen Fist, Shadowfist Flurry | a fist fighter that burns its energy shield into its blows | hits harder as the shield grows | 20% less health; the shield must stay up | 300: four Maximum Energy Shield mods. 1000: the Plate, recharge mods |
 | **Hundred-Fist Cascade** (new) | Monk | Shadowfist | focus crits, Hundred Hands, Cascade Edge; Pressure Points, Flurry | crits from spent chi burst on the pack | turns a burst class into a clearer | non-crits 5% weaker | crit, Swift Palm mastery |
-| Chi healer | Monk | Iron Sage | Flowing Mercy, Deep Mantra; Kindled Breath, Mantra of Stone | the existing second healer | heals while fighting | modest damage | healing, vitality |
+| Chi healer | Monk | Iron Sage | Flowing Mercy, Deep Mantra, Overgrowth (since 2026-10-12); Kindled Breath, Mantra of Stone | the existing second healer | heals while fighting | modest damage | healing, vitality; 1000: the path to Overgrowth |
 | **Reliquary Keeper** (new) | Templar | Sentinel | Reliquary Vow, Bastion; Reliquary Censer; Rebuke, Lay on Hands | a guardian relic heals and buffs the party and burns the pack | the best party support of the line | own damage 10% lower | 300: magic level and holy nodes. 1000: the Censer |
 | **Iron Pilgrim** (new) | Templar, or any but Monk | Templar or Sentinel | Open Hand Creed; Knuckles of the Unbound; a shield; Radiant Smite, Consecration | bare fists and a shield; Radiant Strikes ride on every punch | no weapon to chase; strong shield play | the Warrior's skill spells see no weapon | 300: fist skill trains with use. 1000: the Knuckles |
 | Holy area | Templar | Inquisitor | Divine Verdict, Burning Zeal; Judgement, Purging Nova, Zealotry | the existing holy area | area with self heals | needs a group to shine | holy nodes |

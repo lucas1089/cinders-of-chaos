@@ -797,11 +797,12 @@ Level 300, two or three clients (screenshots in the session's scratchpad, `keyst
 - **Deadeye**: 4 of 29 counted rolls hit (14%; config 15%), a golden cross and "CRIT!" on the target.
 - **Bulwark** (Warrior, magic sword and blessed shield, 70 melee hits of 1000): 10 blocked (14%; config 15%) with the
   block effect and "DODGE"; every other hit reflected 270 (30% of the 750 taken) with the shockwave and the aegis.
-- **Thorns** (the druid variant, forced on a test character: no class has it since phase 2b): 292 earth back per 750
+- **Thorns** (the druid variant, forced on a test character: no class had it then; the Sentinel's since 2026-10-12): 292 earth back per 750
   taken (30% + 2 x magic level 9), an earth missile and the plant attack.
 - **Overgrowth** (the druid variant, forced): a heal of 1626 left three pulses of 225 at 2, 4 and 6 s, with small plants.
   Each pulse is a new heal by the healer, so the healing rules apply again (Weaver's Grace +16% for an Illusionist):
-  41% of the heal instead of 30%.
+  41% of the heal instead of 30%. Fixed 2026-10-12: the pulses are plain health, the bonuses count once; the Iron
+  Sage's since then, at 10% ("Overgrowth and Thorns for the Iron Sage and the Sentinel" below; not measured).
 - **Inspiring Illusion / Shared Phantasm** (Illusionist and Warrior in a party, fixed hits of the Warrior): 1200 without,
   1296 with Inspiring Illusion (+8%), 1440 on an enemy the Illusionist marked (+20%: the two add up); the Illusionist's
   own hits get nothing; two characters of one IP get nothing (the multi-client rule). The mark: a purple arcane circle;
@@ -913,6 +914,53 @@ C4 planner run offline on the current tree data gives the Mystic and the Element
 wand has no regression. Fixed in the harness: the kit goes by the character's target level, the level is put back
 first, and the log lists every damage stat. No game change. The C4 table's Mystic 2439 / 8354 stands (repeats 2350,
 2242). Measure it again with the fixed kit.
+
+### Overgrowth and Thorns for the Iron Sage and the Sentinel (2026-10-12, computed, not measured in game)
+
+The old druid pair on the main tree's keystone nodes had no class since the class rework. The owner approved giving
+them to the classes they fit (docs/CLASSES.md "Phase 2b"): **Overgrowth** to the Iron Sage (Wrath, 621) and **Thorns**
+to the Sentinel (Resolve, 624), each only its own node (`c` and the `ironsage` / `sentinel` variants in
+`passivetree_data.lua`). 621 is 26 points from the start (25 from the class start), 624 25.
+
+**Overgrowth** (`passivetree_keystones.lua` `cfg.overgrowth`): heals the Iron Sage casts on another player (Kindled Breath,
+Flowing Mercy, Mantra of Stone; not self heals, not the Kindled Breath heal over time) heal `percent` of the heal again in
+3 pulses at 2, 4 and 6 s. Two changes:
+- The pulses are plain health (`Chaos.heal`), so the healer's bonuses count once, in the heal that planted them. In game
+  each pulse was a new heal and got them again: 1626 left 3 x 225 (41%) instead of 3 x 162 (30%).
+- A new heal on the same player adds its share to what is left. Before, it replaced the running regrowth: with Mantra
+  of Stone every 2 s most of each share was lost.
+
+Model: the "Healing" table's Iron Sage per second on an ally (level 300 / 1000: Kindled Breath 544.5 / 693 direct and
+326.7 / 415.8 heal over time, Mantra of Stone 758.4 / 1113.6 per ally, Chi Ward 136 / 302). Tree builds as in "The
+combat log wrapper and the balance": the Iron Sage's spell heals x1.10 / x1.95, the Illusionist's x1.53 / x2.13 over
+the no-tree, no-Weaver's-Grace heal, i.e. x1.32 / x1.84 on the table's rows that already have Weaver's Grace (the
+smaller reading, so the Illusionist's lead is the low end). Group: 4 allies, Flowing Mercy on (Kindled Breath also on
+a second ally for 40%). The path to 621 is not charged (it costs the Iron Sage about 25 healing or vitality points),
+so the Iron Sage's numbers are the high end.
+
+| Overgrowth | Level | Iron Sage, one ally /s | Illusionist ahead | Iron Sage, group /s | Illusionist ahead |
+|---|---|---|---|---|---|
+| none | 300 | 1896 | +38% (2618) | 4769 | +35% (6454) |
+| none | 1000 | 4241 | +30% (5521) | 11462 | +20% (13753) |
+| 30% (the druid's) | 300 | 2326 | +12.6% | 6022 | +7.2% |
+| 30% | 1000 | 5298 | +4.2% | 14635 | **-6.0%** (the Iron Sage ahead) |
+| **10% (set)** | 300 | 2039 (+7.6%) | +28% | 5186 (+8.8%) | +24% |
+| **10% (set)** | 1000 | 4593 (+8.3%) | +20% | 12520 (+9.2%) | +9.9% |
+| 8% | 1000 | 4522 | +22% | 12308 | +11.7% |
+
+At 30% the Iron Sage would pass the Illusionist in a group at level 1000, so the Iron Sage gets 10%: +8-9% healing, the
+Illusionist 10-28% ahead. The group at level 1000 is under the owner's ~12% by two points before the path cost (8%
+would meet it everywhere). With the healer's bonuses on every pulse, 10% would be ~12-14%. The Iron Sage's damage is
+unchanged (no damage on the node). Measure on an ally before tuning further.
+
+**Thorns** (unchanged: 30% of the melee or ranged hit taken + 2 x magic level, earth, no cooldown; the engine's stat
+window +20% at intelligence 20 is in it, the tree's bonuses and the class factor are not). The Sentinel at magic level
+25 / 40: 330 back per 750 hit at level 300, 816 per 2000 hit at level 1000. It is the Sentinel's answer to the
+Juggernaut's Bulwark (reflect 30% of melee, with a 15% block); no toughness, so the Juggernaut stays the tankiest.
+Damage while it holds a pack (computed, one hit every 2 s per attacker): level 300 +165 / s per attacker (one: 750 ->
+~915; five: 1211 -> ~2036, the Elementalist 3378), level 1000 +408 / s per attacker (one: 2034 -> ~2442, the Deadeye
+4733; five: 3495 -> ~5535, the Elementalist 10882). On the dummies (they do not hit) it adds nothing. It stacks with
+Penitent's Wrath (376: a holy answer, 40% + 4 x magic level, one every 0.5 s), which halves the Sentinel's own aura.
 
 ### Mastery nodes of the class sections (2026-10-12, not measured)
 

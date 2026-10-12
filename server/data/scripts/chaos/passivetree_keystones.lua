@@ -1,7 +1,8 @@
 -- passivetree_keystones.lua: what the passive tree keystones do (client nodes 621 "Wrath" and 624 "Resolve").
 --
--- Every vocation gets its own keystone on the same two nodes (per-vocation customStats, `v` in passivetree_data.lua),
--- so the summed bonuses (ChaosPassiveCache, filled by passivetree.lua) carry one flag per allocated keystone:
+-- Every class that may take them gets its own keystone on the same two nodes (per-class customStats, `v` in
+-- passivetree_data.lua), so the summed bonuses (ChaosPassiveCache, filled by passivetree.lua) carry one flag per
+-- allocated keystone:
 --   knight       ksCleavingArc  two-handed melee hits also hit up to 3 other enemies next to the knight for 40%
 --                ksBulwark      with a shield: 15% to block a melee/ranged attack fully, 30% of melee damage reflected
 --   paladin      ksRicochet     bow/crossbow hits: 30% to bounce to the nearest other enemy (4 sqm) for 65%, then once
@@ -9,8 +10,12 @@
 --                ksDeadeye      crossbow: 15% for a Deadeye shot, double damage
 --   sorcerer     ksArcaneEcho   a spell that hits 2+ enemies: 35% to echo 0.6 s later on the same spots for 50%, 3 s cooldown
 --                ksOverload     a spell hit of one element primes the others: the next spell of another element +20% (8 s)
---   druid        ksOvergrowth   heals on others also heal 30% of the heal again over 6 s (3 pulses)
---                ksThorns       melee/ranged attackers take 30% of their hit + 2 x magic level back as earth damage
+--   ironsage     ksOvergrowth   (621 only) heals on others also heal 10% of the heal again over 6 s (3 pulses); a new
+--                               heal adds its share to what is left. The pulses are plain health (Chaos.heal), so the
+--                               healer's bonuses count once, in the heal that planted them (they were new heals until
+--                               2026-10-12: 41% instead of 30% for a healer with Weaver's Grace and intelligence 20)
+--   sentinel     ksThorns       (624 only) melee/ranged attackers take 30% of their hit + 2 x magic level back as earth
+--                               damage. Both were the druid's until phase 2b and no class's until 2026-10-12.
 --   juggernaut   ksImmovable    damage taken -8%, -16% while below 50% health (and Bulwark, as the knight)
 --   berserker    ksUndyingRage  melee weapon hits heal 4% of the damage dealt, 8% below 50% health (and Cleaving Arc)
 --   deadeye      ksHuntersFocus bow / crossbow hits on the same target +4% each, up to +20% (and Deadeye)
@@ -23,10 +28,11 @@
 --                Both need a party; multi-client characters neither give nor get them (Chaos.isMultiClient).
 -- The numbers are in `cfg` below; the client tooltips (treedata/nodes.lua) repeat them and the unit test checks that.
 --
--- Recursion: every extra hit (cleave, ricochet, echo, phantom, reflect, thorns, regrowth) is dealt from an addEvent
+-- Recursion: every extra hit (cleave, ricochet, echo, phantom, reflect, thorns) is dealt from an addEvent
 -- with ChaosKeystones.depth > 0 around doTargetCombat. All damage events run synchronously inside that call, so this
 -- script and passivetree_effects.lua (no second round of passive bonuses) skip it; the extra hits use ORIGIN_SPELL,
 -- which weapon_styles.lua ignores (no two-handed factor, no arrow splash). Extra hits never trigger keystones.
+-- The regrowth pulses (Overgrowth) are Chaos.heal, which runs no health event at all.
 -- Targets: monsters that are not a player's summon; players only when ChaosSpell.canAttack allows it (PvP rules).
 --
 -- Event order: damage events run in the order they were registered on the creature, and every onTargetCombat callback
@@ -46,7 +52,10 @@ local cfg = {
 	deadeye = {chance = 15, multiplier = 2.0},
 	echo = {chance = 35, percent = 0.50, delay = 600, cooldown = 3000, minTargets = 2},
 	overload = {bonus = 0.20, window = 8000, castWindow = 150},
-	overgrowth = {percent = 0.30, pulses = 3, interval = 2000},
+	-- 0.30 for the old druid; 0.10 for the Iron Sage keeps the Illusionist ahead of it with tree builds (at 0.30 the
+	-- Iron Sage passed it in a group at level 1000; computed: server/data/spells/README.md "Overgrowth and Thorns for
+	-- the Iron Sage and the Sentinel")
+	overgrowth = {percent = 0.10, pulses = 3, interval = 2000},
 	thorns = {percent = 0.30, perMagicLevel = 2},
 	phantasm = {bonus = 0.12, duration = 6000, leech = 0.04},
 	inspire = {bonus = 0.08, range = 8},
@@ -161,6 +170,18 @@ end
 
 function K.overgrowthPulse(heal)
 	return math.floor(math.abs(heal) * cfg.overgrowth.percent / cfg.overgrowth.pulses)
+end
+
+-- Overgrowth: a heal of `heal` on a target that still has `left` regrowth to come. Returns the pulses (a list of
+-- cfg.overgrowth.pulses amounts) that heal what was left plus the new share, exactly (the last pulse takes the rest).
+function K.overgrowthPlan(left, heal)
+	local c = cfg.overgrowth
+	local pool = math.max(0, math.floor(left or 0)) + math.floor(math.abs(heal or 0) * c.percent + 1e-6)
+	local each, list = math.floor(pool / c.pulses), {}
+	for i = 1, c.pulses do
+		list[i] = i < c.pulses and each or pool - each * (c.pulses - 1)
+	end
+	return list, pool
 end
 
 -- party key: the leader's id (members of one party share it), nil without a party
@@ -502,30 +523,37 @@ local function partyBonus(attacker, creature, pd, sd)
 	return pd, sd
 end
 
--- ---- druid: Overgrowth
-local regrowth = {} -- target id -> token of the running regrowth (a new heal replaces it)
-local regrowthToken = 0
-local function startRegrowth(healerId, targetId, pulse)
-	regrowthToken = regrowthToken + 1
-	local token = regrowthToken
-	regrowth[targetId] = token
+-- ---- Iron Sage: Overgrowth
+-- target id -> {left = health still to come}: the running regrowth. A new heal adds its share to what is left and
+-- starts the pulses again, so every heal gives exactly its share (nothing is lost to a refresh).
+-- The pulses are plain health (Chaos.heal: no health event), so the healer's bonuses (the stat window, the healing
+-- rules, the tree) count once, in the heal that planted them; a heal in PvP combat plants the reduced share.
+local regrowth = {}
+local function startRegrowth(targetId, heal)
+	local running = regrowth[targetId]
+	local pulses, pool = K.overgrowthPlan(running and running.left or 0, heal)
+	if pool <= 0 then
+		return
+	end
+	local entry = {left = pool}
+	regrowth[targetId] = entry
 	local target = Creature(targetId)
 	if target then
 		target:getPosition():sendMagicEffect(CONST_ME_SMALLPLANTS)
 	end
-	for i = 1, cfg.overgrowth.pulses do
+	for i, amount in ipairs(pulses) do
 		addEvent(function()
-			if regrowth[targetId] ~= token then
+			if regrowth[targetId] ~= entry then
 				return
 			end
-			if i == cfg.overgrowth.pulses then
+			entry.left = entry.left - amount
+			if i == #pulses then
 				regrowth[targetId] = nil
 			end
 			local t = Creature(targetId)
-			if t and t:getHealth() > 0 then
-				local healer = Player(healerId)
-				guarded(doTargetCombat, healer or 0, t, COMBAT_HEALING, pulse, pulse, fx("heal_sparkle", CONST_ME_MAGIC_GREEN),
-					ORIGIN_SPELL)
+			if t and t:getHealth() > 0 and amount > 0 and Chaos and Chaos.heal then
+				Chaos.heal(t, amount)
+				t:getPosition():sendMagicEffect(fx("heal_sparkle", CONST_ME_MAGIC_GREEN))
 			end
 		end, i * cfg.overgrowth.interval)
 	end
@@ -690,10 +718,7 @@ function event.onHealthChange(creature, attacker, pd, pt, sd, st, origin)
 	if pt == COMBAT_HEALING then
 		local b = attacker:isPlayer() and ChaosPassiveCache[attacker:getId()]
 		if b and b.ksOvergrowth and not selfHit and creature:isPlayer() and origin ~= ORIGIN_CONDITION then
-			local pulse = K.overgrowthPulse(math.abs(pd) + math.abs(sd))
-			if pulse > 0 then
-				startRegrowth(attacker:getId(), creature:getId(), pulse)
-			end
+			startRegrowth(creature:getId(), math.abs(pd) + math.abs(sd))
 		end
 		return pd, pt, sd, st
 	end

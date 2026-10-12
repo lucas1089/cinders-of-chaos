@@ -1690,10 +1690,10 @@ local vocationSpecials = {
 	bonelord = special("Bone Lord", "#7FFF9F", {"The army, the Bone Golem, a banner.", "Class section (top left), keystone", "Bone Colossus; Covenant of the Grave."}),
 	monk = special("Monk", "#FFD27F", {"Unarmed strikes build chi, finishers", "spend it. Class section (top left):", "Shadowfist and Iron Sage paths.", "Line keystone: Scarred Discipline."}),
 	shadowfist = special("Shadowfist", "#FFD27F", {"Single-target burst, focus crits.", "Class section (top left), keystone", "Hundred Hands; Scarred Discipline."}),
-	ironsage = special("Iron Sage", "#FFD27F", {"Chi healer: Kindled Breath, Mantra,", "Chi Ward. Class section (top left),", "keystone Flowing Mercy;", "Scarred Discipline."}),
+	ironsage = special("Iron Sage", "#FFD27F", {"Chi healer: Kindled Breath, Mantra,", "Chi Ward. Class section (top left),", "keystone Flowing Mercy; Scarred", "Discipline; Overgrowth (Wrath)."}),
 	templar = special("Templar", "#FFF4B0", {"Holy melee, shield, a defence aura.", "Class section (top left): Inquisitor", "and Sentinel paths after ascension.", "Line keystone: Penitent's Wrath."}),
 	inquisitor = special("Inquisitor", "#FFF4B0", {"Holy area damage, Judgement, Zealotry.", "Class section (top left), keystone", "Divine Verdict; Penitent's Wrath."}),
-	sentinel = special("Sentinel", "#FFF4B0", {"Tank-support, the strongest aura.", "Class section (top left), keystone", "Bastion; Penitent's Wrath."})
+	sentinel = special("Sentinel", "#FFF4B0", {"Tank-support, the strongest aura.", "Class section (top left), keystone", "Bastion; Penitent's Wrath; Thorns", "(Resolve)."})
 }
 
 function calculateStats()
@@ -2026,8 +2026,8 @@ function sendMessageBox(title, message)
 	return 
 end
 
--- keystone stats (nodes 621 and 624, one per class of the Warrior, Ranger and Mystic lines, and the keystones of the
--- class sections); effects on the server in passivetree_keystones.lua and the class scripts (class_tree.lua)
+-- keystone stats (nodes 621 and 624, one per class of the Warrior, Ranger and Mystic lines, the Iron Sage on 621 and the
+-- Sentinel on 624, and the keystones of the class sections); effects on the server in passivetree_keystones.lua and the class scripts (class_tree.lua)
 KEYSTONE_NAMES = {
 	ksCleavingArc = "Cleaving Arc", ksBulwark = "Bulwark", ksRicochet = "Ricochet", ksDeadeye = "Deadeye",
 	ksArcaneEcho = "Arcane Echo", ksOverload = "Elemental Overload", ksOvergrowth = "Overgrowth", ksThorns = "Thorns",

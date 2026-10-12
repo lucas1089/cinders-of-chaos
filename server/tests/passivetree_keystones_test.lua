@@ -145,7 +145,15 @@ eq(K.overloadStep(st, COMBAT_ICEDAMAGE, 4000), 1, "next ice cast: not boosted")
 eq(K.overloadStep(st, COMBAT_FIREDAMAGE, 4000 + cfg.overload.window + 1), 1, "primed element expired")
 eq(K.overloadStep(st, COMBAT_ENERGYDAMAGE, 20000), 1.2, "fire primed energy")
 
-eq(K.thornsAmount(1000, 100), 500, "thorns 30% + 2 x ml"); eq(K.overgrowthPulse(900), 90, "regrowth pulse 30% / 3")
+eq(K.thornsAmount(1000, 100), 500, "thorns 30% + 2 x ml"); eq(K.overgrowthPulse(900), 30, "regrowth pulse 10% / 3")
+-- Overgrowth: a heal's share over the pulses, exactly (the last takes the rest); a new heal adds what is left
+local plan, pool = K.overgrowthPlan(0, 1000)
+eq(pool, 100, "10% of the heal"); eq(#plan, 3, "3 pulses"); eq(plan[1], 33); eq(plan[3], 34, "the last takes the rest")
+plan, pool = K.overgrowthPlan(0, 1209)
+eq(pool, 120, "rounded down"); eq(plan[1] + plan[2] + plan[3], 120, "the pulses heal the share")
+plan, pool = K.overgrowthPlan(50, -1000)
+eq(pool, 150, "the rest of the running regrowth + the new share"); eq(plan[1], 50); eq(plan[3], 50)
+eq(select(2, K.overgrowthPlan(0, 0)), 0, "no heal, no regrowth")
 assert(K.hasKeystone({ksBulwark = 1}) and not K.hasKeystone({strength = 3}) and not K.hasKeystone(nil), "hasKeystone")
 
 -- ---------------------------------------------------------------- engine glue
@@ -201,7 +209,7 @@ ev.onHealthChange(t1, pal, 500, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RA
 eq(#dealt, 0, "no proc when the roll fails")
 math.random = function() return 1 end
 
--- knight with a shield: block, reflect; druid: thorns; both only against weapon attacks
+-- knight with a shield: block, reflect; sentinel: thorns; both only against weapon attacks
 for id in pairs(creatures) do creatures[id] = nil end
 local tank = mkCreature(3, pos(300, 300), "player")
 tank.slots[CONST_SLOT_RIGHT] = item(700, WEAPON_SHIELD)
@@ -221,18 +229,43 @@ ChaosCombatFx = nil
 dealt = {}; ev.onHealthChange(tank, mob, 800, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL); runEvents()
 eq(#dealt, 0, "spells are not reflected")
 math.random = function() return 1 end
-local druid = mkCreature(4, pos(400, 400), "player"); druid.ml = 120
-ChaosPassiveCache[4] = {ksThorns = 1, ksOvergrowth = 1}
+local sentinel = mkCreature(4, pos(400, 400), "player"); sentinel.ml = 120
+ChaosPassiveCache[4] = {ksThorns = 1}
 local mob2 = mkCreature(40, pos(401, 400), "monster")
-dealt = {}; ev.onHealthChange(druid, mob2, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE); runEvents()
+dealt = {}; ev.onHealthChange(sentinel, mob2, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE); runEvents()
 eq(#dealt, 1, "thorns"); eq(dealt[1].amount, -540, "300 + 2 x 120"); eq(dealt[1].type, COMBAT_EARTHDAMAGE, "earth")
+dealt = {}; ev.onHealthChange(sentinel, mob2, 1000, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL); runEvents()
+eq(#dealt, 0, "no thorns against a spell")
 
--- regrowth: a heal on another player plants 3 pulses of 10%; self heals and the pulses themselves plant nothing
+-- regrowth (Iron Sage): a heal on another player plants 3 pulses of 10% / 3, as plain health (Chaos.heal: no health
+-- event, so the healing rules and the stat window do not count again); self heals plant nothing
+local healed = {}
+Chaos = {heal = function(c, amount) healed[#healed + 1] = {target = c.id, amount = amount}; return amount end}
+local sage = mkCreature(9, pos(403, 400), "player")
+ChaosPassiveCache[9] = {ksOvergrowth = 1}
 local ally = mkCreature(5, pos(402, 400), "player")
-dealt = {}; ev.onHealthChange(ally, druid, 900, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_SPELL); runEvents()
-eq(#dealt, 3, "three pulses"); eq(dealt[1].amount, 90, "30% / 3"); eq(dealt[3].type, COMBAT_HEALING, "healing")
-dealt = {}; ev.onHealthChange(druid, druid, 900, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_SPELL); runEvents()
-eq(#dealt, 0, "no regrowth on self heals")
+dealt = {}; ev.onHealthChange(ally, sage, 900, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_SPELL); runEvents()
+eq(#healed, 3, "three pulses"); eq(healed[1].amount, 30, "10% / 3"); eq(healed[3].target, 5, "on the ally")
+eq(#dealt, 0, "the pulses are no new heal (no doTargetCombat)")
+healed = {}; ev.onHealthChange(sage, sage, 900, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_SPELL); runEvents()
+eq(#healed, 0, "no regrowth on self heals")
+ev.onHealthChange(ally, sage, 900, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_CONDITION); runEvents()
+eq(#healed, 0, "no regrowth from a heal over time")
+-- a second heal while the first regrowth runs: what is left is added, nothing is lost
+local held = {}
+local realAdd = addEvent
+addEvent = function(fn, delay, ...) held[#held + 1] = {fn = fn, args = {...}} end
+ev.onHealthChange(ally, sage, 900, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_SPELL)
+eq(#held, 3, "three pulses planned")
+held[1].fn((table.unpack or unpack)(held[1].args)) -- the first pulse (30) lands
+ev.onHealthChange(ally, sage, 600, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_SPELL) -- 60 left + 60 new
+for i = 2, #held do held[i].fn((table.unpack or unpack)(held[i].args)) end
+addEvent = realAdd
+local total = 0
+for _, h in ipairs(healed) do total = total + h.amount end
+eq(total, 30 + 120, "the first pulse, then the rest of the first heal and the second's share")
+eq(healed[#healed].amount, 40, "the new pulses: 120 / 3")
+Chaos = nil
 
 -- sorcerer echo: hits of one cast are buffered, the echo hits the same spots for 50% after the delay
 local sorc = mkCreature(6, pos(500, 500), "player")
@@ -303,9 +336,9 @@ eq(heals[1].amount, math.floor(1200 * cfg.phantasm.leech) + math.floor(1120 * cf
 -- ---------------------------------------------------------------- per-vocation stats in the generated data
 local data = dofile("data/scripts/chaos/passivetree_data.lua")
 local expected = {
-  [621] = {knight = "ksCleavingArc", paladin = "ksRicochet", sorcerer = "ksArcaneEcho", druid = "ksOvergrowth", illusionist = "ksSharedPhantasm",
+  [621] = {knight = "ksCleavingArc", paladin = "ksRicochet", sorcerer = "ksArcaneEcho", ironsage = "ksOvergrowth", illusionist = "ksSharedPhantasm",
     juggernaut = "ksImmovable", berserker = "ksCleavingArc", deadeye = "ksHuntersFocus", beastmaster = "ksRicochet"},
-  [624] = {knight = "ksBulwark", paladin = "ksDeadeye", sorcerer = "ksOverload", druid = "ksThorns", illusionist = "ksInspiringIllusion",
+  [624] = {knight = "ksBulwark", paladin = "ksDeadeye", sorcerer = "ksOverload", sentinel = "ksThorns", illusionist = "ksInspiringIllusion",
     juggernaut = "ksBulwark", berserker = "ksUndyingRage", deadeye = "ksDeadeye", beastmaster = "ksPackAlpha"},
 }
 for id, byVoc in pairs(expected) do
@@ -341,7 +374,14 @@ b = ChaosPassiveTree.getBonuses(voc(3)); eq(b.ksRicochet, 1, "ranger: the paladi
 b = ChaosPassiveTree.getBonuses(voc(5)); eq(b.ksArcaneEcho, 1, "elementalist"); eq(b.ksOverload, 1, "elementalist resolve")
 b = ChaosPassiveTree.getBonuses(voc(1)); eq(b.ksArcaneEcho, 1, "mystic: the sorcerer variant")
 b = ChaosPassiveTree.getBonuses(voc(10)); eq(b.ksSharedPhantasm, 1, "illusionist"); eq(b.ksInspiringIllusion, 1, "illusionist resolve")
-eq(b.ksOvergrowth, nil, "the druid variant is no class's")
+eq(b.ksOvergrowth, nil, "Overgrowth is the Iron Sage's")
+b = ChaosPassiveTree.getBonuses(voc(19)); eq(b.ksOvergrowth, 1, "iron sage wrath: Overgrowth")
+eq(b.ksThorns, nil, "624 is not the Iron Sage's"); eq(b.ksSharedPhantasm, nil, "no other class's keystone")
+b = ChaosPassiveTree.getBonuses(voc(25)); eq(b.ksThorns, 1, "sentinel resolve: Thorns")
+eq(b.ksOvergrowth, nil, "621 is not the Sentinel's"); eq(b.ksBulwark, nil, "no other class's keystone")
+for _, v in ipairs({17, 18, 23, 24}) do
+  assert(not K.hasKeystone(ChaosPassiveTree.getBonuses(voc(v))), "621 / 624 are not class " .. v .. "'s")
+end
 b = ChaosPassiveTree.getBonuses(voc(0)); assert(not K.hasKeystone(b), "no vocation: no keystone")
 b = ChaosPassiveTree.getBonuses(voc(12)); assert(not K.hasKeystone(b), "621 / 624 are not the Thief line's")
 eq(b.incrementPhysical, 7, "a Ninja still gets the shared notables of those paths")
@@ -363,8 +403,8 @@ if f then
       [624] = {cfg.deadeye.chance .. "%", "+" .. pct(cfg.deadeye.multiplier - 1)}},
     sorcerer = {[621] = {cfg.echo.chance .. "%", sec(cfg.echo.delay), pct(cfg.echo.percent), "Cooldown " .. sec(cfg.echo.cooldown),
       cfg.echo.minTargets .. " or more"}, [624] = {sec(cfg.overload.window), "+" .. pct(cfg.overload.bonus)}},
-    druid = {[621] = {pct(cfg.overgrowth.percent), sec(cfg.overgrowth.pulses * cfg.overgrowth.interval), cfg.overgrowth.pulses .. " pulses"},
-      [624] = {pct(cfg.thorns.percent), cfg.thorns.perMagicLevel .. " x your magic level"}},
+    ironsage = {[621] = {pct(cfg.overgrowth.percent), sec(cfg.overgrowth.pulses * cfg.overgrowth.interval), cfg.overgrowth.pulses .. " pulses"}},
+    sentinel = {[624] = {pct(cfg.thorns.percent), cfg.thorns.perMagicLevel .. " x your magic level"}},
     illusionist = {[621] = {sec(cfg.phantasm.duration), "+" .. pct(cfg.phantasm.bonus), "heal for " .. pct(cfg.phantasm.leech)},
       [624] = {cfg.inspire.range .. " sqm", "+" .. pct(cfg.inspire.bonus)}},
   }

@@ -3,7 +3,8 @@
 -- The tree (passivetree_data.lua, generated from the client's treedata/nodes.lua) has, next to the shared nodes:
 --   * per-class keystone variants on nodes 621 (Wrath) and 624 (Resolve) for the Warrior, Ranger and Mystic lines
 --     (ChaosClasses.keystoneKey: the base classes keep the old vocation's pair, the Juggernaut, Berserker, Deadeye and
---     Beastmaster swap one keystone for one of their own);
+--     Beastmaster swap one keystone for one of their own), and since 2026-10-12 the Iron Sage's Overgrowth on 621 and
+--     the Sentinel's Thorns on 624 (the old druid pair; keyed by the class key);
 --   * a class section for the Thief, Necromancer, Monk and Templar lines (nodes 625-664): a start node of the line,
 --     three line nodes and two ascended paths of three nodes, each ending in the ascended class's keystone. The start
 --     node is not a node of the server's data: its edges are the root's (node 1), so the section grows from the start

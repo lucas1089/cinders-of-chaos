@@ -253,8 +253,8 @@ Limits of phase 1:
   (`warrior|juggernaut|berserker|ranger|deadeye|beastmaster|mystic|elementalist|illusionist|thief|ninja|samurai`; the base word asks
   an ascended character to name the ascended class). The passive tree's keystone variant follows the line
   (`ChaosClasses.keystoneKey`): Warrior line knight, Ranger line paladin, Mystic / Elementalist sorcerer, Illusionist illusionist;
-  the druid variants (Overgrowth, Thorns) belong to no class now. Since phase 2b the Juggernaut, Berserker, Deadeye and Beastmaster
-  have their own variants.
+  the druid variants (Overgrowth, Thorns) belonged to no class until 2026-10-12, when they went to the Iron Sage and the Sentinel
+  (Phase 2b below). Since phase 2b the Juggernaut, Berserker, Deadeye and Beastmaster have their own variants.
 - **Migration** (`server/data/scripts/chaos/class_migration.lua`, rules in `classes.lua`, numbers in `Chaos.classes.migration`):
   at startup, once (server_config `chaos_class_migration` = 1), before anyone can log in, it runs `ChaosClasses.migrationSql`:
   1. `player_storage` 7100202 = the old vocation, for every character of vocations 1-10;
@@ -353,7 +353,8 @@ Open for the Monk:
   target (the focus crit, 8% per chi, on the auto attack); with 2.5% per chi it is 1078 against the Ninja's 1001 (+8%, a
   burst class's lead). Level 1000 by formula only (~3060 against the Ninja's 2837), not measured yet.
 - Passive tree: done in phase 2b (keystones Hundred Hands and, after the role rebalance, Flowing Mercy for the Iron Sage
-  healer instead of the proposed Stone Body); the level factor dropped.
+  healer instead of the proposed Stone Body); the level factor dropped. Since 2026-10-12 the Iron Sage may also take
+  Overgrowth on the main tree's Wrath keystone (621; "Phase 2b" below).
 - A stun on players: done (see "Iron Palm on players" above).
 
 ### Templar (C7, phase B: tested in game)
@@ -389,7 +390,8 @@ Files: `templar_aura_core.lua` (every id and number, and the rules: aura, strike
 `server/data/spells/chaos/templar|inquisitor|sentinel` with `_templar.lua`.
 
 Open for the Templar:
-- Passive tree: done in phase 2b (keystones Divine Verdict and Bastion); the level factor dropped.
+- Passive tree: done in phase 2b (keystones Divine Verdict and Bastion); the level factor dropped. Since 2026-10-12 the
+  Sentinel may also take Thorns on the main tree's Resolve keystone (624; "Phase 2b" below).
 - Aura status icon: done. A covered player has the buff **"<Templar>'s Aura"** (own aura: "Your Sentinel Aura") on the buff bar
   and under its party frame: stacks = the damage reduction in percent, the tooltip names the Templar, its class, the
   reduction, the Sentinel's regeneration per second and Bastion; the party frame's tooltip lists it by name. Sent only when it
@@ -489,8 +491,16 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
   | Beastmaster | Ricochet | **Pack Alpha**: companion bites and Feral Command +35%, companions take 20% less |
   | Mystic, Elementalist | Arcane Echo | Elemental Overload |
   | Illusionist | Shared Phantasm | Inspiring Illusion |
+  | Iron Sage (since 2026-10-12) | **Overgrowth**: heals on others heal 10% more over 6 s (3 pulses) | (not its node) |
+  | Sentinel (since 2026-10-12) | (not its node) | **Thorns**: melee and ranged attackers take 30% of their hit + 2 x magic level as earth damage |
 
-  Only these classes may take 621 / 624 (the druid variants stay in the data, used by no class).
+  Only these classes may take 621 / 624. The old druid pair (no class's since the class rework) went to the classes it fits (the owner
+  approved, 2026-10-12): Overgrowth to the Iron Sage, the second healer, and Thorns to the Sentinel, the tank-support, next to
+  the Juggernaut's Bulwark. Each takes only the node of its keystone, in the existing slot: no new node, no tree layout change,
+  so the build code format stays, and no character held them before (nothing to refund). Overgrowth is 10% for the Iron Sage
+  (30% for the old druid): at 30% the Iron Sage would pass the Illusionist in a group at level 1000. Its pulses are plain
+  health, so the healer's bonuses count once (in game they counted again on each pulse: 41% instead of 30%). Computed, not
+  measured: `server/data/spells/README.md` "Overgrowth and Thorns for the Iron Sage and the Sentinel".
 - **Class sections** for the Thief, Necromancer, Monk and Templar lines (nodes 625-664, top left of the tree; the four lines
   share the place, each player sees only its line's section): a start node of the line, three line nodes (for the base class
   and both ascended classes) and two ascended paths, two notables and a keystone each. A base class sees both paths locked
@@ -575,7 +585,8 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
 - **Points** are unchanged (1 per 4 levels: 73 at level 300, 248 at level 1000); every class can hold more than 600 nodes, so
   the tree still cannot be completed. The Paragon track and the Vocation Trials nodes are separate bonus channels and unchanged.
 - **Save data**: no node id changed (the new nodes are 625-664). At login every preset loses, for free and with a message, the
-  nodes the class may not hold (another line's section, 621 / 624 for the four new lines), unknown ids and the nodes only connected
+  nodes the class may not hold (another line's section, 621 / 624 for the four new lines but the Iron Sage's 621 and the
+  Sentinel's 624), unknown ids and the nodes only connected
   through them (`ChaosClassTree.sanitize`). Build codes refuse nodes of another class. Nodes whose meaning changed (the four
   line keystones of 2026-10) are refunded once for every character (`passivetree_config.lua` `reworked`); build codes made
   before them (versions 1 and 2) leave them out.

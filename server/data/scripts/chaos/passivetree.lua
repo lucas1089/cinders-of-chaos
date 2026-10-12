@@ -182,7 +182,8 @@ end
 
 -- key of the per-class node variants (keystones 621 / 624): ChaosClasses.keystoneKey (classes.lua): Warrior "knight",
 -- Juggernaut "juggernaut", Berserker "berserker", Ranger "paladin", Deadeye "deadeye", Beastmaster "beastmaster",
--- Mystic / Elementalist "sorcerer", Illusionist "illusionist"; the other lines their class key (no variant there).
+-- Mystic / Elementalist "sorcerer", Illusionist "illusionist"; the other lines their class key (a variant only for the
+-- Iron Sage, "ironsage" Overgrowth on 621, and the Sentinel, "sentinel" Thorns on 624).
 -- The class sections and the restricted nodes use the class key (class_tree.lua).
 if not ChaosClasses then
 	dofile("data/scripts/chaos/classes.lua")

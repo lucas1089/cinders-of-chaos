@@ -46,8 +46,8 @@ w("--         m = {{customStats of effect 1}, ...} (mastery nodes: the player pi
 w("if ChaosPassiveTreeData then return ChaosPassiveTreeData end")
 w("ChaosPassiveTreeData = { root = 1, nodes = {")
 local stats_total = 0
-local VARIANTS = {"beastmaster", "berserker", "deadeye", "druid", "illusionist", "juggernaut", "knight", "monk", "paladin",
-  "sorcerer"}
+local VARIANTS = {"beastmaster", "berserker", "deadeye", "illusionist", "ironsage", "juggernaut", "knight", "monk", "paladin",
+  "sentinel", "sorcerer"}
 local function statList(cs)
   local keys, s = {}, {}
   for k in pairs(cs) do keys[#keys+1] = k end

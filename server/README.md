@@ -1477,14 +1477,19 @@ variant the server applies (the client's own vocation number did not match: an E
 | Knight | Cleaving Arc: two-handed melee hits also hit up to 3 other enemies next to you for 40% | Bulwark: with a shield, 15% to block a melee/ranged attack completely; 30% of melee damage taken reflected |
 | Paladin | Ricochet: bow/crossbow hits, 30% to bounce to the nearest other enemy within 4 sqm for 65%, then once more for 42%; never the same target twice | Deadeye: a crossbow (no ammunition needed), 15% for a shot with double damage |
 | Sorcerer | Arcane Echo: a spell hitting 2+ enemies, 35% to repeat 0.6 s later on the same spots for 50%; 3 s cooldown | Elemental Overload: a spell hit primes the other elements, the next spell of another element within 8 s deals +20% |
-| Druid | Overgrowth: heals on others heal 30% more over 6 s (3 pulses) | Thorns: melee/ranged attackers take 30% of their hit + 2 x magic level as earth damage |
+| Iron Sage (621) / Sentinel (624), the old druid pair, since 2026-10-12 | Overgrowth (Iron Sage): heals on others heal 10% more over 6 s (3 pulses; 30% for the old druid) | Thorns (Sentinel): melee/ranged attackers take 30% of their hit + 2 x magic level as earth damage |
 | Illusionist (support) | Shared Phantasm: your hits mark the enemy for 6 s; other party members deal +12% to it | Inspiring Illusion: other party members within 8 sqm deal +8% damage |
 
-- Every extra hit (cleave, ricochet, echo, reflect, thorns, regrowth) is dealt from an `addEvent` with `ChaosKeystones.depth > 0` and
+- Every extra hit (cleave, ricochet, echo, reflect, thorns) is dealt from an `addEvent` with `ChaosKeystones.depth > 0` and
   `ORIGIN_SPELL`: no keystone, no passive bonus (`passivetree_effects.lua` skips it) and no weapon style (two-handed factor, arrow
   splash) applies to it, so nothing chains. Targets: monsters that are not a player's summon; players only where
   `ChaosSpell.canAttack` (the PvP rules) allows it. The illusionist bonuses need a party, never apply to the illusionist and are
   not given or received by multi-client characters (`Chaos.isMultiClient`).
+- Overgrowth's regrowth (since 2026-10-12) is plain health (`Chaos.heal`, no health event): the healer's bonuses (stat window,
+  tree, healing rules) count once, in the heal that planted it; a heal in PvP combat plants the reduced share. Before, each
+  pulse was a new heal by the healer and got them again (41% instead of 30% in game). A new heal on the same player adds its
+  share to what is left and starts the 3 pulses again, so no share is lost (before, it replaced the running regrowth).
+  Heals over time (`ORIGIN_CONDITION`) and self heals plant nothing. The pulses are not in the combat log.
 - The event order matters: the keystones' `onTargetCombat` callback registers with index 1, after the passive tree's and the weapon
   style's (index 0), so the cleave/ricochet share is taken of the hit after the passive bonuses and the two-handed factor.
 - Visuals: cleave `blood_slash`, ricochet a bolt/arrow missile between the targets, Deadeye `holy_cross`, echo `arcane_burst` on each
@@ -1502,8 +1507,9 @@ variant the server applies (the client's own vocation number did not match: an E
   the rest (shockwave, aegis); Inspiring Illusion +8% (1296 for 1200) and a marked enemy +20% (1440: the two add up)
   for the other party member, nothing for the Illusionist's own hits and nothing between two characters of one IP
   (multi-client rule); the mark heals the ally 4% of its hits (before the healer's bonuses). Overgrowth and Thorns work
-  when forced on a character for the test (3 pulses at 2 / 4 / 6 s; 30% + 2 x magic level as earth damage), but no
-  class can take them since phase 2b (`ChaosClasses.keystoneKey` has no `druid` class). Every proc is dealt by a player,
+  when forced on a character for the test (3 pulses at 2 / 4 / 6 s; 30% + 2 x magic level as earth damage); no class
+  could take them then. Since 2026-10-12 the Iron Sage has Overgrowth and the Sentinel Thorns (computed, not measured;
+  "Passive tree: class sections"). Every proc is dealt by a player,
   so the base engine's stat window (+1% per strength or intelligence point) and, on heals, the healer's healing rules
   (Weaver's Grace +16%) still apply to it; the passive tree's bonuses do not.
 - `server/tests/passivetree_keystones_test.lua`: chance maths, cleave and ricochet target choice, echo cooldown, overload priming, party
@@ -1516,7 +1522,12 @@ variant the server applies (the client's own vocation number did not match: an E
   melee weapon hits heal 4% of the damage, 8% below 50% health), Ranger `paladin` (Ricochet, Deadeye), Deadeye `deadeye`
   (Hunter's Focus: bow / crossbow hits on the same target +4% each, at most +20%, reset by another target or 6 s; Deadeye),
   Beastmaster `beastmaster` (Ricochet; Pack Alpha: companion bites and Feral Command +35%, companions take 20% less), Mystic /
-  Elementalist `sorcerer`, Illusionist `illusionist`. Only these nine classes may take 621 / 624 (`c` in the data).
+  Elementalist `sorcerer`, Illusionist `illusionist`. Since 2026-10-12 also the Iron Sage `ironsage` (621 only:
+  **Overgrowth**, heals on others heal 10% more over 6 s) and the Sentinel `sentinel` (624 only: **Thorns**, melee and
+  ranged attackers take 30% of their hit + 2 x magic level as earth damage), the old druid pair. Only these eleven classes
+  may take 621 / 624 (`c` in the data; the Iron Sage only 621, the Sentinel only 624). No character could hold them before
+  (the login sanitize removed them), so nothing is refunded; the node ids and links are unchanged, so the build code
+  format stays. Numbers: `data/spells/README.md` "Overgrowth and Thorns for the Iron Sage and the Sentinel" (computed).
 - **Class sections** (nodes 625-664, top left of the tree, one group at (-1800, -2350); the four lines share it, the client shows
   only the player's line): the start node in the centre (not a server node: the generator links its first node to the root; the
   client draws that link from the medallion's rim), three line nodes going up to a ring of radius 300 and the two ascended paths

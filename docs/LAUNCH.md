@@ -467,7 +467,7 @@ Still open:
 - Not run with a real group yet: rifts, Omens and the Ascended bosses with a full party, the Ashen Sepulchre raid, the
   Ember Descent with 2-4 players, the battleground at 5v5 and up, party credit for bounties and the bestiary.
 - Keystones: verified in game 2026-10-12 (Ricochet, Deadeye, Bulwark, both Illusionist keystones in a party; Overgrowth
-  and Thorns belong to no class). Weapon numbers re-measured. The Bone Lord with Covenant of the Grave and the Ninja
+  and Thorns belonged to no class then, now the Iron Sage's and the Sentinel's, computed, not measured). Weapon numbers re-measured. The Bone Lord with Covenant of the Grave and the Ninja
   with Blackblood Creed broke the Deadeye's single-target lead: fixed 2026-10-12, computed (ROADMAP "Open
   decisions"). Open: measure the fix on the dummies.
 - The class lines: the Necromancer, Monk and Templar are tested in game (phase B) and stay behind the store's class

@@ -11988,8 +11988,8 @@ function getTreeNodes()
 			}
 		},
 		--- 621 ---
-		-- keystone: every class of the Warrior, Ranger and Mystic lines sees (and gets) its own keystone here (the
-		-- variant key is ChaosClasses.keystoneKey); the server reads the same per-class customStats (passivetree_data.lua `v`); effects in passivetree_keystones.lua
+		-- keystone: every class of the Warrior, Ranger and Mystic lines, and the Iron Sage, sees (and gets) its own keystone
+		-- here (the variant key is ChaosClasses.keystoneKey); the server reads the same per-class customStats (passivetree_data.lua `v`); effects in passivetree_keystones.lua
 		{
 			orbit = 0,
 			orbitDist = 0,
@@ -12001,8 +12001,8 @@ function getTreeNodes()
 			icon = "ksWrath",
 			stats = {
 				"Holds the keystone of your class (Warrior,",
-				"Ranger and Mystic lines; the other lines have",
-				"theirs in their class section)."
+				"Ranger and Mystic lines, the Iron Sage; other",
+				"classes have theirs in their class section)."
 			},
 			knight = {
 				icon = "ksCleavingArc",
@@ -12040,7 +12040,7 @@ function getTreeNodes()
 					"their damage. Cooldown 3 s."
 				}
 			},
-			druid = {
+			ironsage = {
 				icon = "ksOvergrowth",
 				name = "Overgrowth",
 				customStats = {
@@ -12048,8 +12048,8 @@ function getTreeNodes()
 				},
 				stats = {
 					"Heals you cast on others also plant regrowth:",
-					"30% of the heal again over 6 s (3 pulses).",
-					"A new heal refreshes it."
+					"10% of the heal again over 6 s (3 pulses).",
+					"A new heal adds its share to what is left."
 				}
 			},
 			illusionist = {
@@ -12111,7 +12111,7 @@ function getTreeNodes()
 					"Never the same target twice."
 				}
 			},
-			classes = {"warrior", "juggernaut", "berserker", "ranger", "deadeye", "beastmaster", "mystic", "elementalist", "illusionist"},
+			classes = {"warrior", "juggernaut", "berserker", "ranger", "deadeye", "beastmaster", "mystic", "elementalist", "illusionist", "ironsage"},
 			inputs = {
 				620
 			},
@@ -12159,8 +12159,8 @@ function getTreeNodes()
 			}
 		},
 		--- 624 ---
-		-- keystone: every class of the Warrior, Ranger and Mystic lines sees (and gets) its own keystone here (the
-		-- variant key is ChaosClasses.keystoneKey); the server reads the same per-class customStats (passivetree_data.lua `v`); effects in passivetree_keystones.lua
+		-- keystone: every class of the Warrior, Ranger and Mystic lines, and the Sentinel, sees (and gets) its own keystone
+		-- here (the variant key is ChaosClasses.keystoneKey); the server reads the same per-class customStats (passivetree_data.lua `v`); effects in passivetree_keystones.lua
 		{
 			orbit = 0,
 			orbitDist = 0,
@@ -12172,8 +12172,8 @@ function getTreeNodes()
 			icon = "ksResolve",
 			stats = {
 				"Holds the keystone of your class (Warrior,",
-				"Ranger and Mystic lines; the other lines have",
-				"theirs in their class section)."
+				"Ranger and Mystic lines, the Sentinel; other",
+				"classes have theirs in their class section)."
 			},
 			knight = {
 				icon = "ksBulwark",
@@ -12210,7 +12210,7 @@ function getTreeNodes()
 					"+20% damage."
 				}
 			},
-			druid = {
+			sentinel = {
 				icon = "ksThorns",
 				name = "Thorns",
 				customStats = {
@@ -12277,7 +12277,7 @@ function getTreeNodes()
 					"+35% damage, and companions take 20% less."
 				}
 			},
-			classes = {"warrior", "juggernaut", "berserker", "ranger", "deadeye", "beastmaster", "mystic", "elementalist", "illusionist"},
+			classes = {"warrior", "juggernaut", "berserker", "ranger", "deadeye", "beastmaster", "mystic", "elementalist", "illusionist", "sentinel"},
 			inputs = {
 				623
 			},

@@ -8,7 +8,7 @@ Status: `todo`, `in progress`, `done`.
 | # | Item | Status | Notes |
 |---|---|---|---|
 | 1 | Store additions: stamina refill, temple teleport, bottomless loot pouch (retired, replaced by the store pouches, #41), auto seller, training weapons, world buffs, name change, vocation change, extras (double exp potion, blessings, frag/skull removal, sex change, respec) | done | `server/data/scripts/chaos/shop*.lua` |
-| 2 | Passive tree keystones per vocation (knight Cleaving Arc, paladin Ricochet, sorcerer Arcane Echo, druid Overgrowth, illusionist support) | done | measured on the test dummies so the role order holds |
+| 2 | Passive tree keystones per vocation (knight Cleaving Arc, paladin Ricochet, sorcerer Arcane Echo, druid Overgrowth, illusionist support) | done | measured on the test dummies so the role order holds; the druid pair went to the Iron Sage (Overgrowth, 10%) and the Sentinel (Thorns) on 2026-10-12 (computed, not measured) |
 | 3 | Combat visuals: elemental weapon damage as its own coloured number + element sprite; crit, dodge and reflect sprites | done | server module `ChaosCombatFx` |
 | 47 | Donations for Chaos Coins in the client and on the website: Pix (Mercado Pago, BRL) and PayPal (USD), automatic confirmation | done, live accounts not connected | `shop_payments*.lua`, client `game_shop` (Donate: QR code, copy and paste, countdown, toast), website `plugins/chaos/pay/` (provider adapter, worker, webhook) and `pages/coins.php`; voluntary donation notice in English and Portuguese everywhere; one USD price table, Pix = USD x 5; refunds and chargebacks logged for staff, unspent coins taken back. Tested with the mock provider in game; the owner still needs Mercado Pago and PayPal accounts and a sandbox run (docs/LAUNCH.md "Donations") |
 
@@ -194,8 +194,14 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 - Done 2026-10-12: the weapon (auto-attack) numbers re-measured with the client's own attack (tree, weapon styles and
   keystones on the dummies; `server/data/spells/README.md` "Line keystones, masteries and weapons measured in game"),
   and the keystones verified in game: Ricochet, Deadeye, Bulwark (visuals), both Illusionist keystones in a party
-  ("Keystones verified in game"). Overgrowth and Thorns work when forced on a character but no class can take them
+  ("Keystones verified in game"). Overgrowth and Thorns work when forced on a character but no class could take them
   (the druid variants). The four line keystones and the masteries measured on the dummies.
+- Done 2026-10-12 (owner approved; computed, not measured in game): the druid pair has classes again. The Iron Sage may
+  take Overgrowth on 621 and the Sentinel Thorns on 624 (existing slots, no layout change, nothing to refund).
+  Overgrowth's pulses are plain health, so the healer's bonuses count once (in game 41% instead of 30%), and a new
+  heal adds to the running regrowth; 10% for the Iron Sage, since 30% put it ahead of the Illusionist in a group at
+  level 1000 (`server/data/spells/README.md` "Overgrowth and Thorns for the Iron Sage and the Sentinel"). Open: measure
+  both in game (an Iron Sage healing an ally, a Sentinel holding a pack).
 - Done 2026-10-12 (owner approved; computed, not measured in game): the class order breaks of the keystone check.
   Covenant of the Grave's minion hits +20% for the Bone Lord (was +50%; Necromancer and Lich keep +50%), the level 300
   class factor Necromancer 1.0 -> 0.93 and Bone Lord 0.75 -> 0.63 (their path builds to the keystone were level with

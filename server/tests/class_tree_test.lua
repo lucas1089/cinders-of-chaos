@@ -132,12 +132,19 @@ for k in pairs(lineOf) do
 	end
 	eq(ks, (k == "thief" or k == "necromancer" or k == "monk" or k == "templar") and 1 or 2, "keystones " .. k .. " may take")
 end
--- 621 / 624: only the Warrior, Ranger and Mystic lines, a variant for each
+-- 621 / 624: the Warrior, Ranger and Mystic lines, and since 2026-10-12 the Iron Sage (621, Overgrowth) and the Sentinel
+-- (624, Thorns); a variant for each
+local only = {[621] = "ironsage", [624] = "sentinel"}
 for _, id in ipairs({621, 624}) do
-	for _, k in ipairs({"warrior", "juggernaut", "berserker", "ranger", "deadeye", "beastmaster", "mystic", "elementalist", "illusionist"}) do
+	for _, k in ipairs({"warrior", "juggernaut", "berserker", "ranger", "deadeye", "beastmaster", "mystic", "elementalist", "illusionist",
+			only[id]}) do
 		eq(tree.nodes[id].c[k], true, id .. " for " .. k)
 	end
-	for _, k in ipairs({"thief", "ninja", "lich", "monk", "sentinel"}) do eq(tree.nodes[id].c[k], nil, id .. " not for " .. k) end
+	for _, k in ipairs({"thief", "ninja", "lich", "monk", "shadowfist", "templar", "inquisitor",
+			id == 621 and "sentinel" or "ironsage"}) do
+		eq(tree.nodes[id].c[k], nil, id .. " not for " .. k)
+	end
+	eq(tree.nodes[id].v.druid, nil, id .. ": no druid variant left")
 	for v = 1, 25 do
 		local cls = C.classKey(v)
 		if cls and tree.nodes[id].c[cls] then

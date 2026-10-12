@@ -53,8 +53,8 @@ KEYSTONES = [  # (icon key in treedata/icons.lua, atlas cell): the order fixes t
     ('ksDeadeye', 'B17.20'),           # Paladin, Deadeye: a red hunter's eye
     ('ksArcaneEcho', 'A4.19'),         # Sorcerer: an arcane spiral
     ('ksOverload', 'B20.25'),          # Sorcerer, Elemental Overload: three element orbs
-    ('ksOvergrowth', 'B24.13'),        # Druid: a sprouting seedling
-    ('ksThorns', 'B13.21'),            # Druid: a thorned branch
+    ('ksOvergrowth', 'B24.13'),        # Iron Sage (621): a sprouting seedling
+    ('ksThorns', 'B13.21'),            # Sentinel (624): a thorned branch
     ('ksSharedPhantasm', 'B10.30'),    # Illusionist: a marking violet eye
     ('ksInspiringIllusion', 'B19.18'), # Illusionist: a figure in a golden aura
     ('ksImmovable', 'B11.11'),         # Juggernaut: an iron helm
